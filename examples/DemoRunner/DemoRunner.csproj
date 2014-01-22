@@ -1,0 +1,201 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.50727</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{68625601-A793-4222-8916-2A62E6971CB8}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>DemoRunner</RootNamespace>
+    <AssemblyName>DemoRunner</AssemblyName>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <OldToolsVersion>2.0</OldToolsVersion>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>True</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>False</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>True</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\AggTests\AggTests.csproj">
+      <Project>{F8441CFF-E5BF-4556-AF03-609087659B15}</Project>
+      <Name>AggTests</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\agg\Agg.csproj">
+      <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
+      <Name>Agg</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Gui\Gui.csproj">
+      <Project>{74F6BB6C-9D02-4512-A59A-21940E35C532}</Project>
+      <Name>Gui</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj">
+      <Project>{670BDDFF-927B-425D-9DD1-22ACB14356EB}</Project>
+      <Name>PlatformWin32</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\PolygonMesh\PolygonMesh.csproj">
+      <Project>{86F6AAF2-9B50-40B8-A427-1897D76471C5}</Project>
+      <Name>PolygonMesh</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\VectorMath\VectorMath.csproj">
+      <Project>{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}</Project>
+      <Name>VectorMath</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\aa_demo\aa_demo.csproj">
+      <Project>{B90FCE13-D2DA-4759-ABFE-70B36BD32EC1}</Project>
+      <Name>aa_demo</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\aa_test\aa_test.csproj">
+      <Project>{0CD72C9C-5111-4B90-BFA9-06C5ABC389F6}</Project>
+      <Name>aa_test</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\alpha_mask2\alpha_mask2.csproj">
+      <Project>{D933EF7C-9219-4C28-931C-95EB3C8494D6}</Project>
+      <Name>alpha_mask2</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\blur\blur.csproj">
+      <Project>{D0B56F16-6191-4337-8DA1-9B0A59708C7F}</Project>
+      <Name>blur</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\component_rendering\component_rendering.csproj">
+      <Project>{1FE9CE87-30B0-44A1-A8D4-4FCB80F81F34}</Project>
+      <Name>component_rendering</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\FloodFill\FloodFill.csproj">
+      <Project>{B40CE1AF-07A9-4B58-84CA-753D7D150AB9}</Project>
+      <Name>FloodFill</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\GCodeVisualizer\GCodeVisualizer.csproj">
+      <Project>{F67AE800-B0C7-42A8-836F-597B4E74591C}</Project>
+      <Name>GCodeVisualizer</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\gouraud\gouraud.csproj">
+      <Project>{DC6AEC82-D343-48C3-972B-88F608E5597D}</Project>
+      <Name>gouraud</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\gouraud_mesh\gouraud_mesh.csproj">
+      <Project>{50237EE2-28DC-4F54-9E89-A8839A83AAE5}</Project>
+      <Name>gouraud_mesh</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\gradients\gradients.csproj">
+      <Project>{D1562E89-00E2-44D6-BC1E-9B017E0212B4}</Project>
+      <Name>gradients</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\GUITester\GuiTester.csproj">
+      <Project>{3C2261E0-0CE9-422F-8050-F78BEBAE43F5}</Project>
+      <Name>GuiTester</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\image1\image1.csproj">
+      <Project>{25D8987B-5449-4A31-B444-BCDF9E52D561}</Project>
+      <Name>image1</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\image_filters\image_filters.csproj">
+      <Project>{74BA5082-FD08-4BB9-8B30-39D9E80D2C8F}</Project>
+      <Name>image_filters</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\image_resample\image_resample.csproj">
+      <Project>{C804A351-7E6F-4D93-8E4C-3AA8183D1608}</Project>
+      <Name>image_resample</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\lion\lion.csproj">
+      <Project>{3BEFA755-A647-4A16-A73C-0ACF18211EBD}</Project>
+      <Name>lion</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\lion_outline\lion_outline.csproj">
+      <Project>{3E06C55C-4CF1-4CC3-86F4-E4DA1FAFFB06}</Project>
+      <Name>lion_outline</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MomsSolitaire\MomsSolitaire.csproj">
+      <Project>{4C81E7D6-CA91-4724-851D-2C6092E362C7}</Project>
+      <Name>MomsSolitaire</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\perspective\perspective.csproj">
+      <Project>{EB8AE3D1-E17F-47D6-A7F3-3B670A65A702}</Project>
+      <Name>perspective</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PolygonClipping\PolygonClipping.csproj">
+      <Project>{E8D6F1EF-5AD2-45F0-B71D-1214D00C5CE4}</Project>
+      <Name>PolygonClipping</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\rounded_rect\rounded_rect.csproj">
+      <Project>{DA8EBDD6-0E11-422D-82E9-B2BA487D106D}</Project>
+      <Name>rounded_rect</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SmartSweepers\SmartSweepers.csproj">
+      <Project>{F237AE63-0021-4873-AC36-5B75C5F4DD1A}</Project>
+      <Name>SmartSweepers</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\trans_curve1\trans_curve1.csproj">
+      <Project>{E00C05A9-1DA5-48C4-B23F-9A2CEEE229D4}</Project>
+      <Name>trans_curve1</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="DemoRunner.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.0">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4 %28x86 and x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Windows.Installer.3.1">
+      <Visible>False</Visible>
+      <ProductName>Windows Installer 3.1</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+</Project>

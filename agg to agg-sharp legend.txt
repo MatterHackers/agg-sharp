@@ -1,0 +1,6 @@
+agg -> agg-sharp
+
+Rasterizer = ScanlineRasterizer
+Scanline = IScanlineCache
+Renderer = IImage
+ColorT = RGBA_Bytes

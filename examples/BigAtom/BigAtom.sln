@@ -1,0 +1,69 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual C# Express 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigAtom", "BigAtom.csproj", "{0B8D6F56-BD7F-4426-B858-D9292B084656}"
+	ProjectSection(ProjectDependencies) = postProject
+		{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B} = {657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}
+		{670BDDFF-927B-425D-9DD1-22ACB14356EB} = {670BDDFF-927B-425D-9DD1-22ACB14356EB}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AGG", "..\..\agg\AGG.csproj", "{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "agg_platform_win32", "..\..\agg_platform_win32\agg_platform_win32.csproj", "{670BDDFF-927B-425D-9DD1-22ACB14356EB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{74F6BB6C-9D02-4512-A59A-21940E35C532} = {74F6BB6C-9D02-4512-A59A-21940E35C532}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "agg_gui", "..\..\agg_gui\agg_gui.csproj", "{74F6BB6C-9D02-4512-A59A-21940E35C532}"
+	ProjectSection(ProjectDependencies) = postProject
+		{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B} = {657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tesselate", "..\..\Tesselate\Tesselate.csproj", "{AE37DE1F-22F7-49EE-8732-FC6BC8DC58D9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "agg_3d", "..\..\agg_3d\agg_3d.csproj", "{545B6912-77FF-4B34-BA76-6C3D6A32BE6A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RayTracer", "..\..\RayTracer\RayTracer.csproj", "{1E01ABE0-B494-4FE4-B0D6-540133286887}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0B8D6F56-BD7F-4426-B858-D9292B084656}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B8D6F56-BD7F-4426-B858-D9292B084656}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B8D6F56-BD7F-4426-B858-D9292B084656}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B8D6F56-BD7F-4426-B858-D9292B084656}.Release|Any CPU.Build.0 = Release|Any CPU
+		{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{670BDDFF-927B-425D-9DD1-22ACB14356EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{670BDDFF-927B-425D-9DD1-22ACB14356EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{670BDDFF-927B-425D-9DD1-22ACB14356EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{670BDDFF-927B-425D-9DD1-22ACB14356EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{74F6BB6C-9D02-4512-A59A-21940E35C532}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{74F6BB6C-9D02-4512-A59A-21940E35C532}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{74F6BB6C-9D02-4512-A59A-21940E35C532}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{74F6BB6C-9D02-4512-A59A-21940E35C532}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AE37DE1F-22F7-49EE-8732-FC6BC8DC58D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AE37DE1F-22F7-49EE-8732-FC6BC8DC58D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AE37DE1F-22F7-49EE-8732-FC6BC8DC58D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AE37DE1F-22F7-49EE-8732-FC6BC8DC58D9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{545B6912-77FF-4B34-BA76-6C3D6A32BE6A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{545B6912-77FF-4B34-BA76-6C3D6A32BE6A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{545B6912-77FF-4B34-BA76-6C3D6A32BE6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{545B6912-77FF-4B34-BA76-6C3D6A32BE6A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E01ABE0-B494-4FE4-B0D6-540133286887}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E01ABE0-B494-4FE4-B0D6-540133286887}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E01ABE0-B494-4FE4-B0D6-540133286887}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E01ABE0-B494-4FE4-B0D6-540133286887}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		StartupItem = BigAtom.csproj
+	EndGlobalSection
+EndGlobal
