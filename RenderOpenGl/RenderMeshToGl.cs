@@ -102,13 +102,13 @@ namespace MatterHackers.RenderOpenGl
 
                 if (subMesh.texture != null)
                 {
-                    GL.TexCoordPointer(2, TexCoordPointerType.Double, 0, subMesh.textureUVs.Array);
+                    GL.TexCoordPointer(2, TexCoordPointerType.Float, 0, subMesh.textureUVs.Array);
                     GL.EnableClientState(ArrayCap.TextureCoordArray);
                 }
 
-                GL.VertexPointer(3, VertexPointerType.Double, 0, subMesh.positions.Array);
+                GL.VertexPointer(3, VertexPointerType.Float, 0, subMesh.positions.Array);
                 GL.EnableClientState(ArrayCap.VertexArray);
-                GL.NormalPointer(NormalPointerType.Double, 0, subMesh.normals.Array);
+                GL.NormalPointer(NormalPointerType.Float, 0, subMesh.normals.Array);
                 GL.EnableClientState(ArrayCap.NormalArray);
 
                 RenderMeshToGL_DrawToGL2.Start();
@@ -136,10 +136,10 @@ namespace MatterHackers.RenderOpenGl
             GL.Enable(EnableCap.Texture2D);
             GL.BindTexture(TextureTarget.Texture2D, glMeshPlugin.textureHandle);
 
-            GL.TexCoordPointer(2, TexCoordPointerType.Double, 0, glMeshPlugin.textureUVs.Array);
+            GL.TexCoordPointer(2, TexCoordPointerType.Float, 0, glMeshPlugin.textureUVs.Array);
             GL.EnableClientState(EnableCap.TextureCoordArray);
 
-            GL.VertexPointer(3, VertexPointerType.Double, 0, glMeshPlugin.positions.Array);
+            GL.VertexPointer(3, VertexPointerType.Float, 0, glMeshPlugin.positions.Array);
             GL.EnableClientState(EnableCap.VertexArray);
 
             GL.DrawArrays(PrimitiveType.Lines, 0, glMeshPlugin.positions.Count / 3);

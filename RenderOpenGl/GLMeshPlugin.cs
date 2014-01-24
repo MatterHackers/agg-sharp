@@ -45,18 +45,29 @@ namespace MatterHackers.RenderOpenGl
     public class SubMesh
     {
         public ImageBuffer texture = null;
-        public VectorPOD<double> textureUVs = new VectorPOD<double>();
-        public VectorPOD<double> positions = new VectorPOD<double>();
-        public VectorPOD<double> normals = new VectorPOD<double>();
+        public VectorPOD<float> textureUVs = new VectorPOD<float>();
+        public VectorPOD<float> positions = new VectorPOD<float>();
+        public VectorPOD<float> normals = new VectorPOD<float>();
     }
 
     public class GLMeshPlugin
     {
+        struct RemoveData
+        {
+            internal int listHandle;
+
+            public RemoveData(int listHandle)
+            {
+                // TODO: Complete member initialization
+                this.listHandle = listHandle;
+            }
+        }
+
         public delegate void DrawToGL(Mesh meshToRender);
 
         private static ConditionalWeakTable<Mesh, GLMeshPlugin> meshesWithCacheData = new ConditionalWeakTable<Mesh, GLMeshPlugin>();
 
-        private static List<int> glDataNeedingToBeDeleted = new List<int>();
+        private static List<RemoveData> glDataNeedingToBeDeleted = new List<RemoveData>();
 
         public List<SubMesh> subMesh;
 
@@ -71,13 +82,13 @@ namespace MatterHackers.RenderOpenGl
                 // glcontext realized.
                 for (int i = glDataNeedingToBeDeleted.Count - 1; i >= 0; i--)
                 {
-                    GL.DeleteLists(glDataNeedingToBeDeleted[i], 1);
+                    GL.DeleteLists(glDataNeedingToBeDeleted[i].listHandle, 1);
                     glDataNeedingToBeDeleted.RemoveAt(i);
                 }
             }
         }
 
-        static public GLMeshPlugin GetGLMeshPlugin(Mesh meshToGetDisplayListFor, DrawToGL functionToDrawMesh = null)
+        static public GLMeshPlugin GetGLMeshPlugin(Mesh meshToGetDisplayListFor)
         {
             GLMeshPlugin plugin;
             meshesWithCacheData.TryGetValue(meshToGetDisplayListFor, out plugin);
@@ -88,8 +99,8 @@ namespace MatterHackers.RenderOpenGl
                 {
                     plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
                     // this could be better, but for now we will just throw it in the delete list
-                    glDataNeedingToBeDeleted.Add(plugin.GLDisplayList);
-                    plugin.BuildDisplayList(meshToGetDisplayListFor, functionToDrawMesh);
+                    glDataNeedingToBeDeleted.Add(new RemoveData(plugin.GLDisplayList));
+                    plugin.BuildDisplayList(meshToGetDisplayListFor);
                     plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
                 }
             }
@@ -100,7 +111,7 @@ namespace MatterHackers.RenderOpenGl
             {
                 GLMeshPlugin newPlugin = new GLMeshPlugin();
                 meshesWithCacheData.Add(meshToGetDisplayListFor, newPlugin);
-                newPlugin.BuildDisplayList(meshToGetDisplayListFor, functionToDrawMesh);
+                newPlugin.BuildDisplayList(meshToGetDisplayListFor);
                 newPlugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
 
                 return newPlugin;
@@ -126,11 +137,11 @@ namespace MatterHackers.RenderOpenGl
         {
             using (TimedLock.Lock(glDataNeedingToBeDeleted, "~GLMeshPlugin"))
             {
-                glDataNeedingToBeDeleted.Add(glDisplayListHandle);
+                glDataNeedingToBeDeleted.Add(new RemoveData(glDisplayListHandle));
             }
         }
 
-        private void BuildDisplayList(Mesh meshToBuildListFor, DrawToGL functionToDrawMesh)
+        private void BuildDisplayList(Mesh meshToBuildListFor)
         {
             subMesh = new List<SubMesh>();
             // first make sure all the textures are created
@@ -161,19 +172,19 @@ namespace MatterHackers.RenderOpenGl
                     }
                     else
                     {
-                        currentSubMesh.textureUVs.Add(textureUV[0].x); currentSubMesh.textureUVs.Add(textureUV[0].y);
-                        currentSubMesh.positions.Add(position[0].x); currentSubMesh.positions.Add(position[0].y); currentSubMesh.positions.Add(position[0].z);
-                        currentSubMesh.normals.Add(face.normal.x); currentSubMesh.normals.Add(face.normal.y); currentSubMesh.normals.Add(face.normal.z);
+                        currentSubMesh.textureUVs.Add((float)textureUV[0].x); currentSubMesh.textureUVs.Add((float)textureUV[0].y);
+                        currentSubMesh.positions.Add((float)position[0].x); currentSubMesh.positions.Add((float)position[0].y); currentSubMesh.positions.Add((float)position[0].z);
+                        currentSubMesh.normals.Add((float)face.normal.x); currentSubMesh.normals.Add((float)face.normal.y); currentSubMesh.normals.Add((float)face.normal.z);
 
-                        currentSubMesh.textureUVs.Add(textureUV[1].x); currentSubMesh.textureUVs.Add(textureUV[1].y);
-                        currentSubMesh.positions.Add(position[1].x); currentSubMesh.positions.Add(position[1].y); currentSubMesh.positions.Add(position[1].z);
-                        currentSubMesh.normals.Add(face.normal.x); currentSubMesh.normals.Add(face.normal.y); currentSubMesh.normals.Add(face.normal.z);
+                        currentSubMesh.textureUVs.Add((float)textureUV[1].x); currentSubMesh.textureUVs.Add((float)textureUV[1].y);
+                        currentSubMesh.positions.Add((float)position[1].x); currentSubMesh.positions.Add((float)position[1].y); currentSubMesh.positions.Add((float)position[1].z);
+                        currentSubMesh.normals.Add((float)face.normal.x); currentSubMesh.normals.Add((float)face.normal.y); currentSubMesh.normals.Add((float)face.normal.z);
 
                         Vector2 textureUV2 = faceEdge.GetUVs(0);
                         Vector3 position2 = faceEdge.vertex.Position;
-                        currentSubMesh.textureUVs.Add(textureUV2.x); currentSubMesh.textureUVs.Add(textureUV2.y);
-                        currentSubMesh.positions.Add(position2.x); currentSubMesh.positions.Add(position2.y); currentSubMesh.positions.Add(position2.z);
-                        currentSubMesh.normals.Add(face.normal.x); currentSubMesh.normals.Add(face.normal.y); currentSubMesh.normals.Add(face.normal.z);
+                        currentSubMesh.textureUVs.Add((float)textureUV2.x); currentSubMesh.textureUVs.Add((float)textureUV2.y);
+                        currentSubMesh.positions.Add((float)position2.x); currentSubMesh.positions.Add((float)position2.y); currentSubMesh.positions.Add((float)position2.z);
+                        currentSubMesh.normals.Add((float)face.normal.x); currentSubMesh.normals.Add((float)face.normal.y); currentSubMesh.normals.Add((float)face.normal.z);
 
                         textureUV[1] = faceEdge.GetUVs(0);
                         position[1] = faceEdge.vertex.Position;
@@ -190,11 +201,6 @@ namespace MatterHackers.RenderOpenGl
 
             //Create a display list and bind a texture to it
             GL.NewList((uint)(glDisplayListHandle), ListMode.Compile);
-
-            if (functionToDrawMesh != null)
-            {
-                functionToDrawMesh(meshToBuildListFor);
-            }
 
             GL.EndList();
         }

@@ -1718,6 +1718,11 @@ namespace MatterHackers.Agg.UI
             }
         }
 
+        public void CloseOnIdle()
+        {
+            UiThread.RunOnIdle((state) => { Close(); });
+        }
+
         /// <summary>
         /// Request a close
         /// </summary>

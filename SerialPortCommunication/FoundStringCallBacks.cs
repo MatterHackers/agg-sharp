@@ -20,7 +20,7 @@ namespace MatterHackers.SerialPortConnecton
 
         public FoundStringEventArgs(string lineReceived)
         {
-            this.lineToCheck = lineReceived;
+            this.lineToCheck = lineReceived.Trim();
         }
 
         public string LineToCheck { get { return lineToCheck; } }

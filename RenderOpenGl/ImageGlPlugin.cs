@@ -49,8 +49,8 @@ namespace MatterHackers.RenderOpenGl
         internal struct glAllocatedData
         {
             internal int glTextureHandle;
-            public double[] textureUVs;
-            public double[] positions;
+            public float[] textureUVs;
+            public float[] positions;
         }
         private static List<glAllocatedData> glDataNeedingToBeDeleted = new List<glAllocatedData>();
 
@@ -370,14 +370,14 @@ namespace MatterHackers.RenderOpenGl
                 }
             }
 
-			double texCoordX = imageWidth / (double)hardwareWidth;
-            double texCoordY = imageHeight / (double)hardwareHeight;
+			float texCoordX = imageWidth / (float)hardwareWidth;
+            float texCoordY = imageHeight / (float)hardwareHeight;
 
-            double OffsetX = bufferedImage.OriginOffset.x;
-            double OffsetY = bufferedImage.OriginOffset.y;
+            float OffsetX = (float)bufferedImage.OriginOffset.x;
+            float OffsetY = (float)bufferedImage.OriginOffset.y;
 
-            glData.textureUVs = new double[8];
-            glData.positions = new double[8];
+            glData.textureUVs = new float[8];
+            glData.positions = new float[8];
 
             glData.textureUVs[0] = 0; glData.textureUVs[1] = 0; glData.positions[0] = 0 - OffsetX; glData.positions[1] = 0 - OffsetY;
             glData.textureUVs[2] = 0; glData.textureUVs[3] = texCoordY; glData.positions[2] = 0 - OffsetX; glData.positions[3] = imageHeight - OffsetY;
@@ -400,10 +400,10 @@ namespace MatterHackers.RenderOpenGl
 
             GL.End();
 #else
-            GL.TexCoordPointer(2, TexCoordPointerType.Double, 0, glData.textureUVs);
+            GL.TexCoordPointer(2, TexCoordPointerType.Float, 0, glData.textureUVs);
             GL.EnableClientState(ArrayCap.TextureCoordArray);
             
-            GL.VertexPointer(2, VertexPointerType.Double, 0, glData.positions);
+            GL.VertexPointer(2, VertexPointerType.Float, 0, glData.positions);
             GL.EnableClientState(ArrayCap.VertexArray);
 
             GL.DrawArrays(PrimitiveType.TriangleFan, 0, 4);
@@ -411,7 +411,7 @@ namespace MatterHackers.RenderOpenGl
             GL.Disable(EnableCap.Texture2D);
             GL.DisableClientState(ArrayCap.TextureCoordArray);
             GL.DisableClientState(ArrayCap.VertexArray);
-#endif       
+#endif
             ImageGL_DrawToGL.Stop();
         }
     }
