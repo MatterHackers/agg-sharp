@@ -27,10 +27,13 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+#define INTERLIEVED_VERTEX_DATA
+
 using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
@@ -42,6 +45,27 @@ using OpenTK.Graphics.OpenGL;
 
 namespace MatterHackers.RenderOpenGl
 {
+#if INTERLIEVED_VERTEX_DATA
+    public struct VertexData
+    {
+        public float textureU;
+        public float textureV;
+        public float normalsX;
+        public float normalsY;
+        public float normalsZ;
+        public float positionsX;
+        public float positionsY;
+        public float positionsZ;
+
+        public static readonly int Stride = Marshal.SizeOf(default(VertexData));
+    }
+
+    public class SubMesh
+    {
+        public ImageBuffer texture = null;
+        public VectorPOD<VertexData> vertexDatas = new VectorPOD<VertexData>();
+    }
+#else
     public class SubMesh
     {
         public ImageBuffer texture = null;
@@ -49,6 +73,7 @@ namespace MatterHackers.RenderOpenGl
         public VectorPOD<float> positions = new VectorPOD<float>();
         public VectorPOD<float> normals = new VectorPOD<float>();
     }
+#endif
 
     public class GLMeshPlugin
     {
@@ -172,6 +197,25 @@ namespace MatterHackers.RenderOpenGl
                     }
                     else
                     {
+#if INTERLIEVED_VERTEX_DATA
+                        VertexData tempVertex;
+                        tempVertex.textureU = (float)textureUV[0].x; tempVertex.textureV = (float)textureUV[0].y;
+                        tempVertex.positionsX = (float)position[0].x; tempVertex.positionsY = (float)position[0].y; tempVertex.positionsZ = (float)position[0].z;
+                        tempVertex.normalsX = (float)face.normal.x; tempVertex.normalsY = (float)face.normal.y; tempVertex.normalsZ = (float)face.normal.z;
+                        currentSubMesh.vertexDatas.Add(tempVertex);
+
+                        tempVertex.textureU = (float)textureUV[1].x; tempVertex.textureV = (float)textureUV[1].y;
+                        tempVertex.positionsX = (float)position[1].x; tempVertex.positionsY = (float)position[1].y; tempVertex.positionsZ = (float)position[1].z;
+                        tempVertex.normalsX = (float)face.normal.x; tempVertex.normalsY = (float)face.normal.y; tempVertex.normalsZ = (float)face.normal.z;
+                        currentSubMesh.vertexDatas.Add(tempVertex);
+
+                        Vector2 textureUV2 = faceEdge.GetUVs(0);
+                        Vector3 position2 = faceEdge.vertex.Position;
+                        tempVertex.textureU = (float)textureUV2.x; tempVertex.textureV = (float)textureUV2.y;
+                        tempVertex.positionsX = (float)position2.x; tempVertex.positionsY = (float)position2.y; tempVertex.positionsZ = (float)position2.z;
+                        tempVertex.normalsX = (float)face.normal.x; tempVertex.normalsY = (float)face.normal.y; tempVertex.normalsZ = (float)face.normal.z;
+                        currentSubMesh.vertexDatas.Add(tempVertex);
+#else
                         currentSubMesh.textureUVs.Add((float)textureUV[0].x); currentSubMesh.textureUVs.Add((float)textureUV[0].y);
                         currentSubMesh.positions.Add((float)position[0].x); currentSubMesh.positions.Add((float)position[0].y); currentSubMesh.positions.Add((float)position[0].z);
                         currentSubMesh.normals.Add((float)face.normal.x); currentSubMesh.normals.Add((float)face.normal.y); currentSubMesh.normals.Add((float)face.normal.z);
@@ -185,6 +229,7 @@ namespace MatterHackers.RenderOpenGl
                         currentSubMesh.textureUVs.Add((float)textureUV2.x); currentSubMesh.textureUVs.Add((float)textureUV2.y);
                         currentSubMesh.positions.Add((float)position2.x); currentSubMesh.positions.Add((float)position2.y); currentSubMesh.positions.Add((float)position2.z);
                         currentSubMesh.normals.Add((float)face.normal.x); currentSubMesh.normals.Add((float)face.normal.y); currentSubMesh.normals.Add((float)face.normal.z);
+#endif
 
                         textureUV[1] = faceEdge.GetUVs(0);
                         position[1] = faceEdge.vertex.Position;
@@ -203,6 +248,10 @@ namespace MatterHackers.RenderOpenGl
             GL.NewList((uint)(glDisplayListHandle), ListMode.Compile);
 
             GL.EndList();
+        }
+
+        public void Render()
+        {
         }
     }
 }

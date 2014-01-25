@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 //#define USE_GLES2
+#define INTERLIEVED_VERTEX_DATA
 
 using System;
 using System.Collections.Generic;
@@ -64,7 +65,6 @@ namespace MatterHackers.RenderOpenGl
 
         static NamedExecutionTimer RenderMeshToGL_DrawToGL = new NamedExecutionTimer("RenderMeshToGL_DrawToGL");
         static NamedExecutionTimer RenderMeshToGL_DrawToGL1 = new NamedExecutionTimer("RenderMeshToGL_DrawToGL1");
-        static NamedExecutionTimer RenderMeshToGL_DrawToGL2 = new NamedExecutionTimer("RenderMeshToGL_DrawToGL2");
         static void DrawToGL(Mesh meshToRender)
         {
 #if USE_GLES2
@@ -100,27 +100,41 @@ namespace MatterHackers.RenderOpenGl
                     GL.Disable(EnableCap.Texture2D);
                 }
 
+#if INTERLIEVED_VERTEX_DATA
+                GL.InterleavedArrays(InterleavedArrayFormat.T2fN3fV3f, 0, subMesh.vertexDatas.Array);
+#endif
                 if (subMesh.texture != null)
                 {
+#if INTERLIEVED_VERTEX_DATA
+                    //GL.TexCoordPointer(2, TexCoordPointerType.Float, VertexData.Stride, subMesh.vertexDatas.Array);
+#else
                     GL.TexCoordPointer(2, TexCoordPointerType.Float, 0, subMesh.textureUVs.Array);
+#endif
                     GL.EnableClientState(ArrayCap.TextureCoordArray);
                 }
 
+#if INTERLIEVED_VERTEX_DATA
+                //GL.VertexPointer(3, VertexPointerType.Float, VertexData.Stride, subMesh.vertexDatas.Array);
+                //GL.NormalPointer(NormalPointerType.Float, VertexData.Stride, subMesh.vertexDatas.Array);
+#else
                 GL.VertexPointer(3, VertexPointerType.Float, 0, subMesh.positions.Array);
-                GL.EnableClientState(ArrayCap.VertexArray);
                 GL.NormalPointer(NormalPointerType.Float, 0, subMesh.normals.Array);
+#endif
+                GL.EnableClientState(ArrayCap.VertexArray);
                 GL.EnableClientState(ArrayCap.NormalArray);
 
-                RenderMeshToGL_DrawToGL2.Start();
+#if INTERLIEVED_VERTEX_DATA
+                GL.DrawArrays(PrimitiveType.Triangles, 0, subMesh.vertexDatas.Count);
+#else
                 GL.DrawArrays(PrimitiveType.Triangles, 0, subMesh.positions.Count / 3);
-                RenderMeshToGL_DrawToGL2.Stop();
+#endif
 
                 GL.DisableClientState(ArrayCap.NormalArray);
+                GL.DisableClientState(ArrayCap.VertexArray);
 
                 if (subMesh.texture != null)
                 {
                     GL.DisableClientState(ArrayCap.TextureCoordArray);
-                    GL.DisableClientState(ArrayCap.VertexArray);
                 }
             }
             RenderMeshToGL_DrawToGL.Stop();
