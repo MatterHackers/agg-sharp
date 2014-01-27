@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 #define INTERLIEVED_VERTEX_DATA
+//#define USE_VBO
 
 using System;
 using System.Collections.Generic;
@@ -63,7 +64,12 @@ namespace MatterHackers.RenderOpenGl
     public class SubMesh
     {
         public ImageBuffer texture = null;
+#if USE_VBO
+        public int count;
+        public int vboHandle;
+#else
         public VectorPOD<VertexData> vertexDatas = new VectorPOD<VertexData>();
+#endif
     }
 #else
     public class SubMesh
@@ -79,12 +85,11 @@ namespace MatterHackers.RenderOpenGl
     {
         struct RemoveData
         {
-            internal int listHandle;
+            internal int vboHandle;
 
-            public RemoveData(int listHandle)
+            public RemoveData(int vboHandle)
             {
-                // TODO: Complete member initialization
-                this.listHandle = listHandle;
+                this.vboHandle = vboHandle;
             }
         }
 
@@ -94,9 +99,8 @@ namespace MatterHackers.RenderOpenGl
 
         private static List<RemoveData> glDataNeedingToBeDeleted = new List<RemoveData>();
 
-        public List<SubMesh> subMesh;
+        public List<SubMesh> subMeshs;
 
-        internal int glDisplayListHandle;
         private int meshUpdateCount;
 
         static public void DeleteUnusedGLResources()
@@ -107,7 +111,7 @@ namespace MatterHackers.RenderOpenGl
                 // glcontext realized.
                 for (int i = glDataNeedingToBeDeleted.Count - 1; i >= 0; i--)
                 {
-                    GL.DeleteLists(glDataNeedingToBeDeleted[i].listHandle, 1);
+                    GL.DeleteBuffer(glDataNeedingToBeDeleted[i].vboHandle);
                     glDataNeedingToBeDeleted.RemoveAt(i);
                 }
             }
@@ -118,17 +122,13 @@ namespace MatterHackers.RenderOpenGl
             GLMeshPlugin plugin;
             meshesWithCacheData.TryGetValue(meshToGetDisplayListFor, out plugin);
 
-            using (TimedLock.Lock(glDataNeedingToBeDeleted, "GLMeshPluginUpdate"))
-            {
                 if (plugin != null && meshToGetDisplayListFor.ChangedCount != plugin.meshUpdateCount)
                 {
                     plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
-                    // this could be better, but for now we will just throw it in the delete list
-                    glDataNeedingToBeDeleted.Add(new RemoveData(plugin.GLDisplayList));
-                    plugin.BuildDisplayList(meshToGetDisplayListFor);
+                    plugin.AddRemoveData();
+                    plugin.CreateRenderData(meshToGetDisplayListFor);
                     plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
                 }
-            }
 
             DeleteUnusedGLResources();
 
@@ -136,7 +136,7 @@ namespace MatterHackers.RenderOpenGl
             {
                 GLMeshPlugin newPlugin = new GLMeshPlugin();
                 meshesWithCacheData.Add(meshToGetDisplayListFor, newPlugin);
-                newPlugin.BuildDisplayList(meshToGetDisplayListFor);
+                newPlugin.CreateRenderData(meshToGetDisplayListFor);
                 newPlugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
 
                 return newPlugin;
@@ -145,30 +145,34 @@ namespace MatterHackers.RenderOpenGl
             return plugin;
         }
 
-        public int GLDisplayList
-        {
-            get
-            {
-                return glDisplayListHandle;
-            }
-        }
-
         private GLMeshPlugin()
         {
             // This is private as you can't build one of these. You have to call GetImageGLDisplayListPlugin.
         }
 
-        ~GLMeshPlugin()
+        void AddRemoveData()
         {
+#if USE_VBO
             using (TimedLock.Lock(glDataNeedingToBeDeleted, "~GLMeshPlugin"))
             {
-                glDataNeedingToBeDeleted.Add(new RemoveData(glDisplayListHandle));
+                foreach (SubMesh subMesh in subMeshs)
+                {
+                    glDataNeedingToBeDeleted.Add(new RemoveData(subMesh.vboHandle));
+                }
             }
+#endif
         }
 
-        private void BuildDisplayList(Mesh meshToBuildListFor)
+        ~GLMeshPlugin()
         {
-            subMesh = new List<SubMesh>();
+            AddRemoveData();
+        }
+
+        private void CreateRenderData(Mesh meshToBuildListFor)
+        {
+            subMeshs = new List<SubMesh>();
+            SubMesh currentSubMesh = null;
+            VectorPOD<VertexData> vertexDatas = new VectorPOD<VertexData>();
             // first make sure all the textures are created
             foreach (Face face in meshToBuildListFor.Faces)
             {
@@ -177,14 +181,25 @@ namespace MatterHackers.RenderOpenGl
                     ImageGlPlugin.GetImageGlPlugin(face.GetTexture(0), true);
                 }
 
-                if (subMesh.Count == 0 || subMesh[subMesh.Count-1].texture != face.GetTexture(0))
+                if (subMeshs.Count == 0 || subMeshs[subMeshs.Count-1].texture != face.GetTexture(0))
                 {
-                    SubMesh newGroup = new SubMesh();
-                    newGroup.texture = face.GetTexture(0);
-                    subMesh.Add(newGroup);
+                    SubMesh newSubMesh = new SubMesh();
+                    newSubMesh.texture = face.GetTexture(0);
+                    subMeshs.Add(newSubMesh);
+
+#if USE_VBO
+                    if (currentSubMesh != null)
+                    {
+                        CreateVBOForSubMesh(vertexDatas, currentSubMesh);
+                        vertexDatas.Clear();
+                    }
+                    currentSubMesh = subMeshs[subMeshs.Count - 1];
+#else
+                    currentSubMesh = subMeshs[subMeshs.Count - 1];
+                    vertexDatas = currentSubMesh.vertexDatas;
+#endif
                 }
 
-                SubMesh currentSubMesh = subMesh[subMesh.Count - 1];
                 Vector2[] textureUV = new Vector2[2];
                 Vector3[] position = new Vector3[2];
                 int vertexIndex = 0;
@@ -202,19 +217,19 @@ namespace MatterHackers.RenderOpenGl
                         tempVertex.textureU = (float)textureUV[0].x; tempVertex.textureV = (float)textureUV[0].y;
                         tempVertex.positionsX = (float)position[0].x; tempVertex.positionsY = (float)position[0].y; tempVertex.positionsZ = (float)position[0].z;
                         tempVertex.normalsX = (float)face.normal.x; tempVertex.normalsY = (float)face.normal.y; tempVertex.normalsZ = (float)face.normal.z;
-                        currentSubMesh.vertexDatas.Add(tempVertex);
+                        vertexDatas.Add(tempVertex);
 
                         tempVertex.textureU = (float)textureUV[1].x; tempVertex.textureV = (float)textureUV[1].y;
                         tempVertex.positionsX = (float)position[1].x; tempVertex.positionsY = (float)position[1].y; tempVertex.positionsZ = (float)position[1].z;
                         tempVertex.normalsX = (float)face.normal.x; tempVertex.normalsY = (float)face.normal.y; tempVertex.normalsZ = (float)face.normal.z;
-                        currentSubMesh.vertexDatas.Add(tempVertex);
+                        vertexDatas.Add(tempVertex);
 
                         Vector2 textureUV2 = faceEdge.GetUVs(0);
                         Vector3 position2 = faceEdge.vertex.Position;
                         tempVertex.textureU = (float)textureUV2.x; tempVertex.textureV = (float)textureUV2.y;
                         tempVertex.positionsX = (float)position2.x; tempVertex.positionsY = (float)position2.y; tempVertex.positionsZ = (float)position2.z;
                         tempVertex.normalsX = (float)face.normal.x; tempVertex.normalsY = (float)face.normal.y; tempVertex.normalsZ = (float)face.normal.z;
-                        currentSubMesh.vertexDatas.Add(tempVertex);
+                        vertexDatas.Add(tempVertex);
 #else
                         currentSubMesh.textureUVs.Add((float)textureUV[0].x); currentSubMesh.textureUVs.Add((float)textureUV[0].y);
                         currentSubMesh.positions.Add((float)position[0].x); currentSubMesh.positions.Add((float)position[0].y); currentSubMesh.positions.Add((float)position[0].z);
@@ -239,15 +254,18 @@ namespace MatterHackers.RenderOpenGl
                 }
             }
 
-            // Create the texture handle and display list handle
-            glDisplayListHandle = GL.GenLists(1);
-            int[] glTextures = new int[1];
-            GL.GenTextures(1, glTextures);
+            CreateVBOForSubMesh(vertexDatas, currentSubMesh);
+        }
 
-            //Create a display list and bind a texture to it
-            GL.NewList((uint)(glDisplayListHandle), ListMode.Compile);
-
-            GL.EndList();
+        private static void CreateVBOForSubMesh(VectorPOD<VertexData> vertexDatas, SubMesh currentSubMesh)
+        {
+#if USE_VBO
+            currentSubMesh.count = vertexDatas.Count;
+            currentSubMesh.vboHandle = GL.GenBuffer();
+            GL.BindBuffer(BufferTarget.ArrayBuffer, currentSubMesh.vboHandle);
+            GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(currentSubMesh.count * VertexData.Stride), vertexDatas.Array, BufferUsageHint.StaticDraw);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+#endif
         }
 
         public void Render()

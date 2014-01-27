@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 //#define USE_GLES2
 #define INTERLIEVED_VERTEX_DATA
+//#define USE_VBO
 
 using System;
 using System.Collections.Generic;
@@ -64,7 +65,7 @@ namespace MatterHackers.RenderOpenGl
             "}";
 
         static NamedExecutionTimer RenderMeshToGL_DrawToGL = new NamedExecutionTimer("RenderMeshToGL_DrawToGL");
-        static NamedExecutionTimer RenderMeshToGL_DrawToGL1 = new NamedExecutionTimer("RenderMeshToGL_DrawToGL1");
+        static NamedExecutionTimer RenderMeshToGL_DrawArrays = new NamedExecutionTimer("RenderMeshToGL_DrawArrays");
         static void DrawToGL(Mesh meshToRender)
         {
 #if USE_GLES2
@@ -82,12 +83,10 @@ namespace MatterHackers.RenderOpenGl
             GL.UseProgram(fragmentShader);
 #endif
             RenderMeshToGL_DrawToGL.Start();
-            RenderMeshToGL_DrawToGL1.Start();
             GLMeshPlugin glMeshPlugin = GLMeshPlugin.GetGLMeshPlugin(meshToRender);
-            RenderMeshToGL_DrawToGL1.Stop();
-            for (int i = 0; i < glMeshPlugin.subMesh.Count; i++)
+            for (int i = 0; i < glMeshPlugin.subMeshs.Count; i++)
             {
-                SubMesh subMesh = glMeshPlugin.subMesh[i];
+                SubMesh subMesh = glMeshPlugin.subMeshs[i];
                 // Make sure the GLMeshPlugin has a reference to hold onto the image so it does not go away before this.
                 if (subMesh.texture != null)
                 {
@@ -101,7 +100,12 @@ namespace MatterHackers.RenderOpenGl
                 }
 
 #if INTERLIEVED_VERTEX_DATA
+#if USE_VBO
+                GL.BindBuffer(BufferTarget.ArrayBuffer, subMesh.vboHandle);
+                GL.InterleavedArrays(InterleavedArrayFormat.T2fN3fV3f, 0, new IntPtr());
+#else
                 GL.InterleavedArrays(InterleavedArrayFormat.T2fN3fV3f, 0, subMesh.vertexDatas.Array);
+#endif
 #endif
                 if (subMesh.texture != null)
                 {
@@ -110,7 +114,11 @@ namespace MatterHackers.RenderOpenGl
 #else
                     GL.TexCoordPointer(2, TexCoordPointerType.Float, 0, subMesh.textureUVs.Array);
 #endif
-                    GL.EnableClientState(ArrayCap.TextureCoordArray);
+                    //GL.EnableClientState(ArrayCap.TextureCoordArray);
+                }
+                else
+                {
+                    GL.DisableClientState(ArrayCap.TextureCoordArray);
                 }
 
 #if INTERLIEVED_VERTEX_DATA
@@ -120,14 +128,21 @@ namespace MatterHackers.RenderOpenGl
                 GL.VertexPointer(3, VertexPointerType.Float, 0, subMesh.positions.Array);
                 GL.NormalPointer(NormalPointerType.Float, 0, subMesh.normals.Array);
 #endif
-                GL.EnableClientState(ArrayCap.VertexArray);
-                GL.EnableClientState(ArrayCap.NormalArray);
+                //GL.EnableClientState(ArrayCap.VertexArray);
+                //GL.EnableClientState(ArrayCap.NormalArray);
 
+                RenderMeshToGL_DrawArrays.Start();
 #if INTERLIEVED_VERTEX_DATA
+#if USE_VBO
+                GL.DrawArrays(PrimitiveType.Triangles, 0, subMesh.count);
+                GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+#else
                 GL.DrawArrays(PrimitiveType.Triangles, 0, subMesh.vertexDatas.Count);
+#endif
 #else
                 GL.DrawArrays(PrimitiveType.Triangles, 0, subMesh.positions.Count / 3);
 #endif
+                RenderMeshToGL_DrawArrays.Stop();
 
                 GL.DisableClientState(ArrayCap.NormalArray);
                 GL.DisableClientState(ArrayCap.VertexArray);
