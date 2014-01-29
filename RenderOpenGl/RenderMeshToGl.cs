@@ -194,6 +194,27 @@ namespace MatterHackers.RenderOpenGl
             GL.Begin(PrimitiveType.Lines);
             foreach (MeshEdge edge in meshToRender.meshEdges)
             {
+#if false // a fun hack to show only the edges of the parts rather than all the polygon edges
+                if (edge.GetNumFacesSharingEdge() == 2)
+                {
+                    FaceEdge firstFaceEdge = edge.firstFaceEdge;
+                    FaceEdge nextFaceEdge = edge.firstFaceEdge.radialNextFaceEdge;
+                    double angle = Vector3.CalculateAngle(firstFaceEdge.face.normal, nextFaceEdge.face.normal);
+                    if (angle > MathHelper.Tau * .1)
+                    {
+                    GL.Color4(0.0, 0.0, 0.0, 1.0);
+                    GL.Color4(1.0, 1.0, 1.0, 1.0);
+                    GL.Vertex3(edge.vertex1.Position.x, edge.vertex1.Position.y, edge.vertex1.Position.z);
+                    GL.Vertex3(edge.vertex2.Position.x, edge.vertex2.Position.y, edge.vertex2.Position.z);
+                    }
+                }
+                else
+                {
+                    GL.Color4(1.0, 1.0, 1.0, 1.0);
+                    GL.Vertex3(edge.vertex1.Position.x, edge.vertex1.Position.y, edge.vertex1.Position.z);
+                    GL.Vertex3(edge.vertex2.Position.x, edge.vertex2.Position.y, edge.vertex2.Position.z);
+                }
+#else
                 if (edge.GetNumFacesSharingEdge() == 2)
                 {
                     GL.Color4(0.0, 0.0, 0.0, 1.0);
@@ -204,6 +225,7 @@ namespace MatterHackers.RenderOpenGl
                 }
                 GL.Vertex3(edge.vertex1.Position.x, edge.vertex1.Position.y, edge.vertex1.Position.z);
                 GL.Vertex3(edge.vertex2.Position.x, edge.vertex2.Position.y, edge.vertex2.Position.z);
+#endif
             }
             GL.End();
 
