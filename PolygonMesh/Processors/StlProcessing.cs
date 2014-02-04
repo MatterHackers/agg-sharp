@@ -107,9 +107,17 @@ namespace MatterHackers.PolygonMesh.Processors
                         loadedMesh = (Mesh)doWorkEventArgs.Result;
                     }
                 }
+#if DEBUG
                 catch (IOException)
                 {
+                    return null;
                 }
+#else
+                catch (Exception)
+                {
+                    return null;
+                }
+#endif
             }
 
             return loadedMesh;
@@ -124,9 +132,17 @@ namespace MatterHackers.PolygonMesh.Processors
                 ParseFileContents(null, doWorkEventArgs);
                 loadedMesh = (Mesh)doWorkEventArgs.Result;
             }
+#if DEBUG
             catch (IOException)
             {
+                return null;
             }
+#else
+            catch (Exception)
+            {
+                return null;
+            }
+#endif
 
             return loadedMesh;
         }
