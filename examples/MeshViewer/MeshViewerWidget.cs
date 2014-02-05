@@ -141,8 +141,12 @@ namespace MatterHackers.MeshVisualizer
         Mesh printerBed = null;
         Mesh buildVolume = null;
 
-        public MeshViewerWidget(Vector3 displayVolume, double scale)
+        public enum BedShape { Rectangular, Circular };
+        BedShape bedShape = BedShape.Rectangular;
+
+        public MeshViewerWidget(Vector3 displayVolume, double scale, BedShape bedShape)
         {
+            this.bedShape = bedShape;
             this.displayVolume = displayVolume;
             ShowWireFrame = false;
             RenderBed = true;
@@ -159,8 +163,6 @@ namespace MatterHackers.MeshVisualizer
 
             AddChild(trackballTumbleWidget);
 
-            CreateBedGridImage((int)(displayVolume.x / 10), (int)(displayVolume.y / 10));
-
             if (displayVolume.z > 0)
             {
                 buildVolume = PlatonicSolids.CreateCube(displayVolume);
@@ -170,19 +172,50 @@ namespace MatterHackers.MeshVisualizer
                 }
             }
 
-            printerBed = PlatonicSolids.CreateCube(displayVolume.x, displayVolume.y, 2);
-            Face face = printerBed.Faces[0];
+            switch (bedShape)
             {
-                FaceData faceData = new FaceData();
-                faceData.Textures.Add(bedCentimeterGridImage);
-                face.Data = faceData;
-                foreach (FaceEdge faceEdge in face.FaceEdgeIterator())
-                {
-                    FaceEdgeData edgeUV = new FaceEdgeData();
-                    edgeUV.TextureUV.Add(new Vector2((displayVolume.x / 2 + faceEdge.vertex.Position.x) / displayVolume.x,
-                        (displayVolume.y / 2 + faceEdge.vertex.Position.y) / displayVolume.y));
-                    faceEdge.Data = edgeUV;
-                }
+                case BedShape.Rectangular:
+                    CreateRectangularBedGridImage((int)(displayVolume.x / 10), (int)(displayVolume.y / 10));
+                    printerBed = PlatonicSolids.CreateCube(displayVolume.x, displayVolume.y, 2);
+                    {
+                        Face face = printerBed.Faces[0];
+                        {
+                            FaceData faceData = new FaceData();
+                            faceData.Textures.Add(bedCentimeterGridImage);
+                            face.Data = faceData;
+                            foreach (FaceEdge faceEdge in face.FaceEdgeIterator())
+                            {
+                                FaceEdgeData edgeUV = new FaceEdgeData();
+                                edgeUV.TextureUV.Add(new Vector2((displayVolume.x / 2 + faceEdge.vertex.Position.x) / displayVolume.x,
+                                    (displayVolume.y / 2 + faceEdge.vertex.Position.y) / displayVolume.y));
+                                faceEdge.Data = edgeUV;
+                            }
+                        }
+                    }
+                    break;
+
+                case BedShape.Circular:
+                    CreateCircularBedGridImage((int)(displayVolume.x / 10), (int)(displayVolume.y / 10));
+                    printerBed = PlatonicSolids.CreateCube(displayVolume.x, displayVolume.y, 2);
+                    {
+                        Face face = printerBed.Faces[0];
+                        {
+                            FaceData faceData = new FaceData();
+                            faceData.Textures.Add(bedCentimeterGridImage);
+                            face.Data = faceData;
+                            foreach (FaceEdge faceEdge in face.FaceEdgeIterator())
+                            {
+                                FaceEdgeData edgeUV = new FaceEdgeData();
+                                edgeUV.TextureUV.Add(new Vector2((displayVolume.x / 2 + faceEdge.vertex.Position.x) / displayVolume.x,
+                                    (displayVolume.y / 2 + faceEdge.vertex.Position.y) / displayVolume.y));
+                                faceEdge.Data = edgeUV;
+                            }
+                        }
+                    }
+                    break;
+
+                default:
+                    throw new NotImplementedException();
             }
 
             foreach (Vertex vertex in printerBed.Vertices)
@@ -383,7 +416,42 @@ namespace MatterHackers.MeshVisualizer
             base.OnMouseUp(mouseEvent);
         }
 
-        void CreateBedGridImage(int linesInX, int linesInY)
+        void CreateRectangularBedGridImage(int linesInX, int linesInY)
+        {
+            Vector2 bedImageCentimeters = new Vector2(linesInX, linesInY);
+            bedCentimeterGridImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
+            Graphics2D graphics2D = bedCentimeterGridImage.NewGraphics2D();
+            graphics2D.Clear(RGBA_Bytes.White);
+            {
+                double lineDist = bedCentimeterGridImage.Width / (double)linesInX;
+
+                int count = 1;
+                int pointSize = 20;
+                graphics2D.DrawString(count.ToString(), 0, 0, pointSize);
+                for (double linePos = lineDist; linePos < bedCentimeterGridImage.Width; linePos += lineDist)
+                {
+                    count++;
+                    int linePosInt = (int)linePos;
+                    graphics2D.Line(linePosInt, 0, linePosInt, bedCentimeterGridImage.Height, RGBA_Bytes.Black);
+                    graphics2D.DrawString(count.ToString(), linePos, 0, pointSize);
+                }
+            }
+            {
+                double lineDist = bedCentimeterGridImage.Height / (double)linesInY;
+
+                int count = 1;
+                int pointSize = 20;
+                for (double linePos = lineDist; linePos < bedCentimeterGridImage.Height; linePos += lineDist)
+                {
+                    count++;
+                    int linePosInt = (int)linePos;
+                    graphics2D.Line(0, linePosInt, bedCentimeterGridImage.Height, linePosInt, RGBA_Bytes.Black);
+                    graphics2D.DrawString(count.ToString(), 0, linePos, pointSize);
+                }
+            }
+        }
+
+        void CreateCircularBedGridImage(int linesInX, int linesInY)
         {
             Vector2 bedImageCentimeters = new Vector2(linesInX, linesInY);
             bedCentimeterGridImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
