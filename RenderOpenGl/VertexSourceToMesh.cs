@@ -26,12 +26,7 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies, 
 either expressed or implied, of the FreeBSD Project.
 */
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
-using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
@@ -40,7 +35,7 @@ namespace MatterHackers.RenderOpenGl
 {
     public static class VertexSourceToMesh
     {
-        public static Mesh Convert(IVertexSource vertexSource, double zHeight)
+        public static Mesh Extrude(IVertexSource vertexSource, double zHeight)
         {
             vertexSource.rewind();
             CachedTesselator teselatedSource = new CachedTesselator();
@@ -49,6 +44,8 @@ namespace MatterHackers.RenderOpenGl
             Mesh extrudedVertexSource = new Mesh();
 
             int numIndicies = teselatedSource.IndicesCache.Count;
+
+            // build the outside first so it will render first when we are translucent
             for (int i = 0; i < numIndicies; i += 3)
             {
                 Vector2 v0 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 0].Index].Position;
@@ -63,13 +60,9 @@ namespace MatterHackers.RenderOpenGl
                 Vertex bottomVertex1 = extrudedVertexSource.CreateVertex(new Vector3(v1, 0));
                 Vertex bottomVertex2 = extrudedVertexSource.CreateVertex(new Vector3(v2, 0));
 
-                extrudedVertexSource.CreateFace(new Vertex[] { bottomVertex2, bottomVertex1, bottomVertex0 });
-
                 Vertex topVertex0 = extrudedVertexSource.CreateVertex(new Vector3(v0, zHeight));
                 Vertex topVertex1 = extrudedVertexSource.CreateVertex(new Vector3(v1, zHeight));
                 Vertex topVertex2 = extrudedVertexSource.CreateVertex(new Vector3(v2, zHeight));
-
-                extrudedVertexSource.CreateFace(new Vertex[] { topVertex0, topVertex1, topVertex2 });
 
                 if (teselatedSource.IndicesCache[i + 0].IsEdge)
                 {
@@ -87,9 +80,39 @@ namespace MatterHackers.RenderOpenGl
                 }
             }
 
-            return extrudedVertexSource;
+            for (int i = 0; i < numIndicies; i += 3)
+            {
+                Vector2 v0 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 0].Index].Position;
+                Vector2 v1 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 1].Index].Position;
+                Vector2 v2 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 2].Index].Position;
+                if (v0 == v1 || v1 == v2 || v2 == v0)
+                {
+                    continue;
+                }
 
-            extrudedVertexSource = PlatonicSolids.CreateIcosahedron(30);
+                Vertex bottomVertex0 = extrudedVertexSource.CreateVertex(new Vector3(v0, 0));
+                Vertex bottomVertex1 = extrudedVertexSource.CreateVertex(new Vector3(v1, 0));
+                Vertex bottomVertex2 = extrudedVertexSource.CreateVertex(new Vector3(v2, 0));
+
+                extrudedVertexSource.CreateFace(new Vertex[] { bottomVertex2, bottomVertex1, bottomVertex0 });
+            }
+
+            for (int i = 0; i < numIndicies; i += 3)
+            {
+                Vector2 v0 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 0].Index].Position;
+                Vector2 v1 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 1].Index].Position;
+                Vector2 v2 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 2].Index].Position;
+                if (v0 == v1 || v1 == v2 || v2 == v0)
+                {
+                    continue;
+                }
+
+                Vertex topVertex0 = extrudedVertexSource.CreateVertex(new Vector3(v0, zHeight));
+                Vertex topVertex1 = extrudedVertexSource.CreateVertex(new Vector3(v1, zHeight));
+                Vertex topVertex2 = extrudedVertexSource.CreateVertex(new Vector3(v2, zHeight));
+
+                extrudedVertexSource.CreateFace(new Vertex[] { topVertex0, topVertex1, topVertex2 });
+            }
 
             return extrudedVertexSource;
         }

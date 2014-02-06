@@ -41,8 +41,6 @@
 */
 
 using System;
-using System.Collections.Generic;
-using Tesselate;
 
 namespace Tesselate
 {
