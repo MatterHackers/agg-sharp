@@ -45,7 +45,25 @@ namespace MatterHackers.RenderOpenGl
 
             int numIndicies = teselatedSource.IndicesCache.Count;
 
-            // build the outside first so it will render first when we are translucent
+            // build the top first so it will render first when we are translucent
+            for (int i = 0; i < numIndicies; i += 3)
+            {
+                Vector2 v0 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 0].Index].Position;
+                Vector2 v1 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 1].Index].Position;
+                Vector2 v2 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 2].Index].Position;
+                if (v0 == v1 || v1 == v2 || v2 == v0)
+                {
+                    continue;
+                }
+
+                Vertex topVertex0 = extrudedVertexSource.CreateVertex(new Vector3(v0, zHeight));
+                Vertex topVertex1 = extrudedVertexSource.CreateVertex(new Vector3(v1, zHeight));
+                Vertex topVertex2 = extrudedVertexSource.CreateVertex(new Vector3(v2, zHeight));
+
+                extrudedVertexSource.CreateFace(new Vertex[] { topVertex0, topVertex1, topVertex2 });
+            }
+
+            // then the outside edge
             for (int i = 0; i < numIndicies; i += 3)
             {
                 Vector2 v0 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 0].Index].Position;
@@ -80,6 +98,7 @@ namespace MatterHackers.RenderOpenGl
                 }
             }
 
+            // then the bottom
             for (int i = 0; i < numIndicies; i += 3)
             {
                 Vector2 v0 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 0].Index].Position;
@@ -95,23 +114,6 @@ namespace MatterHackers.RenderOpenGl
                 Vertex bottomVertex2 = extrudedVertexSource.CreateVertex(new Vector3(v2, 0));
 
                 extrudedVertexSource.CreateFace(new Vertex[] { bottomVertex2, bottomVertex1, bottomVertex0 });
-            }
-
-            for (int i = 0; i < numIndicies; i += 3)
-            {
-                Vector2 v0 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 0].Index].Position;
-                Vector2 v1 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 1].Index].Position;
-                Vector2 v2 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 2].Index].Position;
-                if (v0 == v1 || v1 == v2 || v2 == v0)
-                {
-                    continue;
-                }
-
-                Vertex topVertex0 = extrudedVertexSource.CreateVertex(new Vector3(v0, zHeight));
-                Vertex topVertex1 = extrudedVertexSource.CreateVertex(new Vector3(v1, zHeight));
-                Vertex topVertex2 = extrudedVertexSource.CreateVertex(new Vector3(v2, zHeight));
-
-                extrudedVertexSource.CreateFace(new Vertex[] { topVertex0, topVertex1, topVertex2 });
             }
 
             return extrudedVertexSource;
