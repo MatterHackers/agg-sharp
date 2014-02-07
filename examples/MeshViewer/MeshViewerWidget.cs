@@ -28,22 +28,19 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.ComponentModel;
 using System.Collections.Generic;
-using System.Text;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
-
 using MatterHackers.Agg;
-using MatterHackers.Agg.UI;
-using MatterHackers.Agg.Transform;
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.VectorMath;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.OpenGlGui;
+using MatterHackers.Agg.UI;
+using MatterHackers.Agg.VertexSource;
 using MatterHackers.PolygonMesh;
-using MatterHackers.RenderOpenGl;
 using MatterHackers.PolygonMesh.Processors;
+using MatterHackers.RenderOpenGl;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.MeshVisualizer
 {
@@ -163,18 +160,17 @@ namespace MatterHackers.MeshVisualizer
 
             AddChild(trackballTumbleWidget);
 
-            if (displayVolume.z > 0)
-            {
-                buildVolume = PlatonicSolids.CreateCube(displayVolume);
-                foreach (Vertex vertex in buildVolume.Vertices)
-                {
-                    vertex.Position = vertex.Position + new Vector3(0, 0, displayVolume.z / 2);
-                }
-            }
-
             switch (bedShape)
             {
                 case BedShape.Rectangular:
+                    if (displayVolume.z > 0)
+                    {
+                        buildVolume = PlatonicSolids.CreateCube(displayVolume);
+                        foreach (Vertex vertex in buildVolume.Vertices)
+                        {
+                            vertex.Position = vertex.Position + new Vector3(0, 0, displayVolume.z / 2);
+                        }
+                    }
                     CreateRectangularBedGridImage((int)(displayVolume.x / 10), (int)(displayVolume.y / 10));
                     printerBed = PlatonicSolids.CreateCube(displayVolume.x, displayVolume.y, 2);
                     {
@@ -192,35 +188,51 @@ namespace MatterHackers.MeshVisualizer
                             }
                         }
                     }
+                    foreach (Vertex vertex in printerBed.Vertices)
+                    {
+                        vertex.Position = vertex.Position - new Vector3(0, 0, 1.2);
+                    }
                     break;
 
                 case BedShape.Circular:
-                    CreateCircularBedGridImage((int)(displayVolume.x / 10), (int)(displayVolume.y / 10));
-                    printerBed = PlatonicSolids.CreateCube(displayVolume.x, displayVolume.y, 2);
                     {
-                        Face face = printerBed.Faces[0];
+                        if (displayVolume.z > 0)
                         {
-                            FaceData faceData = new FaceData();
-                            faceData.Textures.Add(bedCentimeterGridImage);
-                            face.Data = faceData;
-                            foreach (FaceEdge faceEdge in face.FaceEdgeIterator())
+                            buildVolume = VertexSourceToMesh.Extrude(new Ellipse(new Vector2(), displayVolume.x / 2, displayVolume.y / 2), displayVolume.z);
+                            foreach (Vertex vertex in buildVolume.Vertices)
                             {
-                                FaceEdgeData edgeUV = new FaceEdgeData();
-                                edgeUV.TextureUV.Add(new Vector2((displayVolume.x / 2 + faceEdge.vertex.Position.x) / displayVolume.x,
-                                    (displayVolume.y / 2 + faceEdge.vertex.Position.y) / displayVolume.y));
-                                faceEdge.Data = edgeUV;
+                                vertex.Position = vertex.Position + new Vector3(0, 0, .2);
                             }
+                        }
+                        CreateCircularBedGridImage((int)(displayVolume.x / 10), (int)(displayVolume.y / 10));
+                        printerBed = VertexSourceToMesh.Extrude(new Ellipse(new Vector2(), displayVolume.x / 2, displayVolume.y / 2), 2);
+                        {
+                            foreach (Face face in printerBed.Faces)
+                            {
+                                if (face.normal.z > 0)
+                                {
+                                    FaceData faceData = new FaceData();
+                                    faceData.Textures.Add(bedCentimeterGridImage);
+                                    face.Data = faceData;
+                                    foreach (FaceEdge faceEdge in face.FaceEdgeIterator())
+                                    {
+                                        FaceEdgeData edgeUV = new FaceEdgeData();
+                                        edgeUV.TextureUV.Add(new Vector2((displayVolume.x / 2 + faceEdge.vertex.Position.x) / displayVolume.x,
+                                            (displayVolume.y / 2 + faceEdge.vertex.Position.y) / displayVolume.y));
+                                        faceEdge.Data = edgeUV;
+                                    }
+                                }
+                            }
+                        }
+                        foreach (Vertex vertex in printerBed.Vertices)
+                        {
+                            vertex.Position = vertex.Position - new Vector3(0, 0, 2.2);
                         }
                     }
                     break;
 
                 default:
                     throw new NotImplementedException();
-            }
-
-            foreach (Vertex vertex in printerBed.Vertices)
-            {
-                vertex.Position = vertex.Position - new Vector3(0, 0, 1.2);
             }
 
             trackballTumbleWidget.AnchorAll();
@@ -457,6 +469,31 @@ namespace MatterHackers.MeshVisualizer
             bedCentimeterGridImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
             Graphics2D graphics2D = bedCentimeterGridImage.NewGraphics2D();
             graphics2D.Clear(RGBA_Bytes.White);
+#if true
+            {
+                double lineDist = bedCentimeterGridImage.Width / (double)linesInX;
+
+                int count = 1;
+                int pointSize = 20;
+                graphics2D.DrawString(count.ToString(), 0, 0, pointSize);
+                double currentRadius = lineDist;
+                Vector2 bedCenter = new Vector2(bedCentimeterGridImage.Width / 2, bedCentimeterGridImage.Height / 2);
+                for (double linePos = lineDist + bedCentimeterGridImage.Width / 2; linePos < bedCentimeterGridImage.Width; linePos += lineDist)
+                {
+                    int linePosInt = (int)linePos;
+                    graphics2D.DrawString(count.ToString(), linePos + 2, bedCentimeterGridImage.Height / 2, pointSize);
+
+                    Ellipse circle = new Ellipse(bedCenter, currentRadius);
+                    Stroke outline = new Stroke(circle);
+                    graphics2D.Render(outline, RGBA_Bytes.Black);
+                    currentRadius += lineDist;
+                    count++;
+                }
+
+                graphics2D.Line(0, bedCentimeterGridImage.Height / 2, bedCentimeterGridImage.Width, bedCentimeterGridImage.Height / 2, RGBA_Bytes.Black);
+                graphics2D.Line(bedCentimeterGridImage.Width / 2, 0, bedCentimeterGridImage.Width/2, bedCentimeterGridImage.Height, RGBA_Bytes.Black);
+            }
+#else
             {
                 double lineDist = bedCentimeterGridImage.Width / (double)linesInX;
 
@@ -484,6 +521,7 @@ namespace MatterHackers.MeshVisualizer
                     graphics2D.DrawString(count.ToString(), 0, linePos, pointSize);
                 }
             }
+#endif
         }
     }
 }

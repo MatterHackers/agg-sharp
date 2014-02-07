@@ -176,15 +176,17 @@ namespace MatterHackers.RenderOpenGl
             // first make sure all the textures are created
             foreach (Face face in meshToBuildListFor.Faces)
             {
-                if (face.GetTexture(0) != null)
+                ImageBuffer faceTexture = face.GetTexture(0);
+                if (faceTexture != null)
                 {
-                    ImageGlPlugin.GetImageGlPlugin(face.GetTexture(0), true);
+                    ImageGlPlugin.GetImageGlPlugin(faceTexture, true);
                 }
 
-                if (subMeshs.Count == 0 || subMeshs[subMeshs.Count-1].texture != face.GetTexture(0))
+                // don't compare the data of the texture but rather if they are just the same object
+                if (subMeshs.Count == 0 || (object)subMeshs[subMeshs.Count - 1].texture != (object)faceTexture)
                 {
                     SubMesh newSubMesh = new SubMesh();
-                    newSubMesh.texture = face.GetTexture(0);
+                    newSubMesh.texture = faceTexture;
                     subMeshs.Add(newSubMesh);
 
 #if USE_VBO
