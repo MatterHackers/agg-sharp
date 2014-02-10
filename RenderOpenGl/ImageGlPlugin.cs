@@ -392,7 +392,7 @@ namespace MatterHackers.RenderOpenGl
 
             GL.BindTexture(TextureTarget.Texture2D, GLTextureHandle);
 #if true
-            GL.Begin(PrimitiveType.TriangleFan);
+            GL.Begin(BeginMode.TriangleFan);
             GL.TexCoord2(glData.textureUVs[0], glData.textureUVs[1]); GL.Vertex2(glData.positions[0], glData.positions[1]);
             GL.TexCoord2(glData.textureUVs[2], glData.textureUVs[3]); GL.Vertex2(glData.positions[2], glData.positions[3]);
             GL.TexCoord2(glData.textureUVs[4], glData.textureUVs[5]); GL.Vertex2(glData.positions[4], glData.positions[5]);

@@ -111,7 +111,7 @@ namespace MatterHackers.RenderOpenGl
                 // glcontext realized.
                 for (int i = glDataNeedingToBeDeleted.Count - 1; i >= 0; i--)
                 {
-                    GL.DeleteBuffer(glDataNeedingToBeDeleted[i].vboHandle);
+                    //GL.DeleteBuffers(glDataNeedingToBeDeleted[i].vboHandle);
                     glDataNeedingToBeDeleted.RemoveAt(i);
                 }
             }

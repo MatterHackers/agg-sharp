@@ -137,7 +137,7 @@ namespace MatterHackers.RenderOpenGl
                 GL.DrawArrays(PrimitiveType.Triangles, 0, subMesh.count);
                 GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
 #else
-                GL.DrawArrays(PrimitiveType.Triangles, 0, subMesh.vertexDatas.Count);
+                GL.DrawArrays(BeginMode.Triangles, 0, subMesh.vertexDatas.Count);
 #endif
 #else
                 GL.DrawArrays(PrimitiveType.Triangles, 0, subMesh.positions.Count / 3);
@@ -191,7 +191,7 @@ namespace MatterHackers.RenderOpenGl
             GL.Disable(EnableCap.PolygonOffsetFill);
             GL.Disable(EnableCap.Lighting);
 
-            GL.Begin(PrimitiveType.Lines);
+            GL.Begin(BeginMode.Lines);
             foreach (MeshEdge edge in meshToRender.meshEdges)
             {
 #if false // a fun hack to show only the edges of the parts rather than all the polygon edges

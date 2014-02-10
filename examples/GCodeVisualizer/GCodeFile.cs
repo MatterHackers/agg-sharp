@@ -440,12 +440,18 @@ namespace MatterHackers.GCodeVisualizer
                     // set axis acceleration
                     break;
 
+                case "204": // - Set default acceleration
+                    break;
+
                 case "301":
                     break;
 
 #if DEBUG
                 default:
                     throw new NotImplementedException(lineString);
+#else
+                default:
+                    break;
 #endif
             }
         }
@@ -539,6 +545,9 @@ namespace MatterHackers.GCodeVisualizer
 #if DEBUG
                 default:
                     throw new NotImplementedException();
+#else
+                default:
+                    break;
 #endif
             }
         }
