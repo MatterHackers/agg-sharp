@@ -510,6 +510,12 @@ namespace MatterHackers.GCodeVisualizer
                     parsingLastZ = processingMachineState.Position.z;
                     break;
 
+                case "10": // firmware retract
+                    break;
+
+                case "11": // firmware unretract
+                    break;
+
                 case "21":
                     // set to metric
                     break;
