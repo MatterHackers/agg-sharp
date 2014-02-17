@@ -17,75 +17,19 @@ namespace MatterHackers.GCodeVisualizer
     {
         int currentVertexIndex;
         int currentLayer;
-        GCodeFile gCodeModel;
-        double currentZ;
-        List<int> firstVertexIndexInValidLayer = new List<int>();
+        GCodeFile gCodeFileToDraw;
 
-        public GCodeVertexSource(GCodeFile layer)
+        public double RetractionDistance { get; set; }
+
+        public GCodeVertexSource(GCodeFile gCodeFile)
         {
-            gCodeModel = layer;
-
-            switch (gCodeModel.IndexOfChangeInZ.Count)
-            {
-                case 0:
-                    firstVertexIndexInValidLayer.Add(0);
-                    break;
-
-                case 1:
-                    {
-                        int indexOfChangeInZ = gCodeModel.IndexOfChangeInZ[0];
-                        firstVertexIndexInValidLayer.Add(indexOfChangeInZ);
-                    }
-                    break;
-
-                default:
-                    {
-                        for (int i = 0; i < gCodeModel.IndexOfChangeInZ.Count; i++)
-                        {
-                            int indexOfChangeInZ = gCodeModel.IndexOfChangeInZ[i];
-                            double testZ = gCodeModel.GCodeCommandQueue[indexOfChangeInZ].xyzPosition.z;
-                            
-                            bool extruderWasAdvanced = false;
-                            if (i + 1 < gCodeModel.IndexOfChangeInZ.Count)
-                            {
-                                for (int j = indexOfChangeInZ; j < gCodeModel.IndexOfChangeInZ[i + 1]; j++)
-                                {
-                                    if (gCodeModel.GCodeCommandQueue[j].EPosition > gCodeModel.GCodeCommandQueue[indexOfChangeInZ].EPosition)
-                                    {
-                                        extruderWasAdvanced = true;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                // always take the last layer
-                                extruderWasAdvanced = true;
-                            }
-
-                            if (extruderWasAdvanced)
-                            {
-                                firstVertexIndexInValidLayer.Add(gCodeModel.IndexOfChangeInZ[i]);
-                            }
-                        }
-
-                        if (firstVertexIndexInValidLayer.Count == 0)
-                        {
-                            for (int i = 0; i < gCodeModel.IndexOfChangeInZ.Count - 2; i++)
-                            {
-                                int indexOfChangeInZ = gCodeModel.IndexOfChangeInZ[i];
-                                double testZ = gCodeModel.GCodeCommandQueue[indexOfChangeInZ].xyzPosition.z;
-
-                                firstVertexIndexInValidLayer.Add(gCodeModel.IndexOfChangeInZ[i]);
-                            }
-                        }
-                    }
-                    break;
-            }
+            RetractionDistance = .5;
+            this.gCodeFileToDraw = gCodeFile;
         }
 
         public int NumLayers
         {
-            get { return firstVertexIndexInValidLayer.Count; }
+            get { return gCodeFileToDraw.NumChangesInZ; }
         }
 
         public int GetNumSegmentsForLayer(int layerIndex)
@@ -99,80 +43,102 @@ namespace MatterHackers.GCodeVisualizer
             return temp;
         }
 
-        public enum RenderType { RenderExtrusions, RenderMoves };
+        public enum RenderType { Extrusions, Moves, Retractions };
         public RenderType WhatToRender { get; set; }
 
         public IEnumerable<VertexData> VertexIterator()
         {
+            double lastEPosition = 0;
             VertexData startPosition = new VertexData();
-            startPosition.position.x = gCodeModel.GCodeCommandQueue[currentVertexIndex].Position.x;
-            startPosition.position.y = gCodeModel.GCodeCommandQueue[currentVertexIndex].Position.y;
+            startPosition.position.x = gCodeFileToDraw.GCodeCommandQueue[currentVertexIndex].Position.x;
+            startPosition.position.y = gCodeFileToDraw.GCodeCommandQueue[currentVertexIndex].Position.y;
+            double currentZ = gCodeFileToDraw.GCodeCommandQueue[currentVertexIndex].Position.z;
             startPosition.command = MatterHackers.Agg.ShapePath.FlagsAndCommand.CommandMoveTo;
             yield return startPosition;
 
             bool needAMoveTo = false;
-            for (int i = currentVertexIndex + 1; i < gCodeModel.GCodeCommandQueue.Count; i++)
+            for (int i = currentVertexIndex + 1; i < gCodeFileToDraw.GCodeCommandQueue.Count; i++)
             {
-                if (gCodeModel.GCodeCommandQueue[i].Z != currentZ)
+                PrinterMachineInstruction currentInstruction = gCodeFileToDraw.GCodeCommandQueue[i];
+                PrinterMachineInstruction previousInstruction = gCodeFileToDraw.GCodeCommandQueue[i - 1];
+                if (currentInstruction.Z != currentZ)
                 {
                     break;
                 }
 
-                bool isExtruding = gCodeModel.IsExtruding(i);
+                bool isExtruding = gCodeFileToDraw.IsExtruding(i);
 
-                if (WhatToRender == RenderType.RenderExtrusions)
+                switch (WhatToRender)
                 {
-                    if (isExtruding)
-                    {
-                        if (needAMoveTo)
+                    case RenderType.Extrusions:
+                        if (isExtruding)
                         {
-                            VertexData gcodeMoveTo = new VertexData();
+                            if (needAMoveTo)
+                            {
+                                VertexData gcodeMoveTo = new VertexData();
 
-                            gcodeMoveTo.position.x = gCodeModel.GCodeCommandQueue[i - 1].Position.x;
-                            gcodeMoveTo.position.y = gCodeModel.GCodeCommandQueue[i - 1].Position.y;
-                            gcodeMoveTo.command = ShapePath.FlagsAndCommand.CommandMoveTo;
-                            yield return gcodeMoveTo;
-                            needAMoveTo = false;
+                                gcodeMoveTo.position.x = previousInstruction.Position.x;
+                                gcodeMoveTo.position.y = gCodeFileToDraw.GCodeCommandQueue[i - 1].Position.y;
+                                gcodeMoveTo.command = ShapePath.FlagsAndCommand.CommandMoveTo;
+                                yield return gcodeMoveTo;
+                                needAMoveTo = false;
+                            }
+
+                            VertexData gcodeLineTo = new VertexData();
+
+                            gcodeLineTo.position.x = currentInstruction.Position.x;
+                            gcodeLineTo.position.y = currentInstruction.Position.y;
+                            gcodeLineTo.command = ShapePath.FlagsAndCommand.CommandLineTo;
+                            yield return gcodeLineTo;
                         }
-
-                        VertexData gcodeLineTo = new VertexData();
-
-                        gcodeLineTo.position.x = gCodeModel.GCodeCommandQueue[i].Position.x;
-                        gcodeLineTo.position.y = gCodeModel.GCodeCommandQueue[i].Position.y;
-                        gcodeLineTo.command = ShapePath.FlagsAndCommand.CommandLineTo;
-                        yield return gcodeLineTo;
-                    }
-                    else
-                    {
-                        needAMoveTo = true;
-                    }
-                }
-                else
-                {
-                    if (!isExtruding)
-                    {
-                        if (needAMoveTo)
+                        else
                         {
-                            VertexData gcodeMoveTo = new VertexData();
-
-                            gcodeMoveTo.position.x = gCodeModel.GCodeCommandQueue[i - 1].Position.x;
-                            gcodeMoveTo.position.y = gCodeModel.GCodeCommandQueue[i - 1].Position.y;
-                            gcodeMoveTo.command = ShapePath.FlagsAndCommand.CommandMoveTo;
-                            yield return gcodeMoveTo;
-                            needAMoveTo = false;
+                            needAMoveTo = true;
                         }
+                        break;
 
-                        VertexData gcodeLineTo = new VertexData();
+                    case RenderType.Moves:
+                        if (!isExtruding)
+                        {
+                            if (needAMoveTo)
+                            {
+                                VertexData gcodeMoveTo = new VertexData();
 
-                        gcodeLineTo.position.x = gCodeModel.GCodeCommandQueue[i].Position.x;
-                        gcodeLineTo.position.y = gCodeModel.GCodeCommandQueue[i].Position.y;
-                        gcodeLineTo.command = ShapePath.FlagsAndCommand.CommandLineTo;
-                        yield return gcodeLineTo;
-                    }
-                    else
-                    {
-                        needAMoveTo = true;
-                    }
+                                gcodeMoveTo.position.x = previousInstruction.Position.x;
+                                gcodeMoveTo.position.y = previousInstruction.Position.y;
+                                gcodeMoveTo.command = ShapePath.FlagsAndCommand.CommandMoveTo;
+                                yield return gcodeMoveTo;
+                                needAMoveTo = false;
+                            }
+
+                            VertexData gcodeLineTo = new VertexData();
+
+                            gcodeLineTo.position.x = currentInstruction.Position.x;
+                            gcodeLineTo.position.y = currentInstruction.Position.y;
+                            gcodeLineTo.command = ShapePath.FlagsAndCommand.CommandLineTo;
+                            yield return gcodeLineTo;
+                        }
+                        else
+                        {
+                            needAMoveTo = true;
+                        }
+                        break;
+
+                    case RenderType.Retractions:
+                        if (currentInstruction.xyzPosition == previousInstruction.xyzPosition
+                            && Math.Abs(currentInstruction.EPosition - lastEPosition) > RetractionDistance)
+                        {
+                            Ellipse extrusion = new Ellipse(new Vector2(currentInstruction.X, currentInstruction.Y), 1.5);
+                            foreach (VertexData vertexData in extrusion.VertexIterator())
+                            {
+                                if (vertexData.command != ShapePath.FlagsAndCommand.CommandStop)
+                                {
+                                    yield return vertexData;
+                                }
+                            }
+                        }
+                        lastEPosition = currentInstruction.EPosition;
+                        break;
                 }
             }
 
@@ -185,8 +151,7 @@ namespace MatterHackers.GCodeVisualizer
         public void rewind(int layerIndex)
         {
             currentLayer = layerIndex;
-            currentVertexIndex = firstVertexIndexInValidLayer[layerIndex];
-            currentZ = gCodeModel.GCodeCommandQueue[currentVertexIndex].Z;
+            currentVertexIndex = gCodeFileToDraw.IndexOfChangeInZ[layerIndex];
 
             currentEnumerator = VertexIterator().GetEnumerator();
             currentEnumerator.MoveNext();

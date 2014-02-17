@@ -53,6 +53,20 @@ namespace MatterHackers.GCodeVisualizer
             }
         }
 
+        bool renderRetractions = true;
+        public bool RenderRetractions
+        {
+            get { return renderRetractions; }
+            set
+            {
+                if (renderRetractions != value)
+                {
+                    renderRetractions = value;
+                    Invalidate();
+                }
+            }
+        }
+
         BackgroundWorker backgroundWorker = null;
         Vector2 lastMousePosition = new Vector2(0, 0);
         Vector2 mouseDownPosition = new Vector2(0, 0);
@@ -153,8 +167,43 @@ namespace MatterHackers.GCodeVisualizer
             }
             else
             {
-                activeLayerIndex = 0;
+                SetInitalLayer();
                 CenterPartInView();
+            }
+        }
+
+        void SetInitalLayer()
+        {
+            activeLayerIndex = 0;
+            if (loadedGCode.GCodeCommandQueue.Count > 0)
+            {
+                int firstExtrusionIndex = 0;
+                Vector3 lastPosition = loadedGCode.GCodeCommandQueue[0].Position;
+                double ePosition = loadedGCode.GCodeCommandQueue[0].EPosition;
+                // let's find the first layer that has extrusion if possible and go to that
+                for (int i = 1; i < loadedGCode.GCodeCommandQueue.Count; i++)
+                {
+                    PrinterMachineInstruction currentInstruction = loadedGCode.GCodeCommandQueue[i];
+                    if (currentInstruction.EPosition > ePosition && lastPosition != currentInstruction.Position)
+                    {
+                        firstExtrusionIndex = i;
+                        break;
+                    }
+
+                    lastPosition = currentInstruction.Position;
+                }
+
+                if (firstExtrusionIndex > 0)
+                {
+                    for (int i = 0; i < loadedGCode.NumChangesInZ; i++)
+                    {
+                        if (firstExtrusionIndex < loadedGCode.IndexOfChangeInZ[i])
+                        {
+                            activeLayerIndex = Math.Max(0, i-1);
+                            break;
+                        }
+                    }
+                }
             }
         }
 
@@ -234,14 +283,20 @@ namespace MatterHackers.GCodeVisualizer
                     stroke.VertexSource = transformedPathStorage;
 
                     // This code renders the layer:
-                    gCodeView.WhatToRender = GCodeVertexSource.RenderType.RenderExtrusions;
+                    gCodeView.WhatToRender = GCodeVertexSource.RenderType.Extrusions;
                     graphics2D.Render(stroke, activeLayerIndex, RGBA_Bytes.Black);
 
                     if(RenderMoves)
                     {
                         stroke.width(movementLineWidth);
-                        gCodeView.WhatToRender = GCodeVertexSource.RenderType.RenderMoves;
+                        gCodeView.WhatToRender = GCodeVertexSource.RenderType.Moves;
                         graphics2D.Render(stroke, activeLayerIndex, movementColor);
+                    }
+
+                    if (RenderRetractions)
+                    {
+                        gCodeView.WhatToRender = GCodeVertexSource.RenderType.Retractions;
+                        graphics2D.Render(transformedPathStorage, activeLayerIndex, RGBA_Bytes.Red);
                     }
                 }
             }

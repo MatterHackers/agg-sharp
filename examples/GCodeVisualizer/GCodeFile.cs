@@ -621,7 +621,6 @@ namespace MatterHackers.GCodeVisualizer
         {
             double lastEPosition = 0;
             double filamentMm = 0;
-            bool absoluteMovements = true;
             for(int i=0; i<GCodeCommandQueue.Count; i++)
             {
                 PrinterMachineInstruction instruction = GCodeCommandQueue[i];
