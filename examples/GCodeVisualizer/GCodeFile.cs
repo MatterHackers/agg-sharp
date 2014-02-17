@@ -305,6 +305,22 @@ namespace MatterHackers.GCodeVisualizer
             return checksum;
         }
 
+        public static bool GetFirstStringAfter(string stringToCheckAfter, string fullStringToLookIn, string separatorString, ref string nextString, int startIndex = 0)
+        {
+            int stringPos = fullStringToLookIn.IndexOf(stringToCheckAfter, startIndex);
+            if (stringPos != -1)
+            {
+                int separatorPos = fullStringToLookIn.IndexOf(separatorString, stringPos);
+                if (separatorPos != -1)
+                {
+                    nextString = fullStringToLookIn.Substring(stringPos + stringToCheckAfter.Length, separatorPos - (stringPos + stringToCheckAfter.Length));
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         const string matchDouble = @"^-*[0-9]*\.?[0-9]*";
         public static bool GetFirstNumberAfter(string stringToCheckAfter, string stringWithNumber, ref double readValue, int startIndex = 0)
         {
