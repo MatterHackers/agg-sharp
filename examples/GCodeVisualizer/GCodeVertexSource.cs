@@ -72,7 +72,16 @@ namespace MatterHackers.GCodeVisualizer
             return temp;
         }
 
-        public enum RenderType { Extrusions, Moves, Retractions };
+        [Flags]
+        public enum RenderType 
+        { 
+            None = 0,
+            Extrusions = 1,
+            Moves = 2, 
+            Retractions = 4,
+            All = Extrusions | Moves | Retractions
+        };
+
         public RenderType WhatToRender { get; set; }
 
         public IEnumerable<VertexData> VertexIterator()

@@ -113,7 +113,7 @@ namespace MatterHackers.GCodeVisualizer
             {
                 gCodeViewWidget.Load(openParams.FileName);
                 currentLayerIndex.Value = 0;
-                currentLayerIndex.MaxValue = gCodeViewWidget.gCodeView.NumLayers;
+                currentLayerIndex.MaxValue = gCodeViewWidget.LoadedGCode.NumChangesInZ;
             }
 
             Invalidate();
@@ -125,7 +125,7 @@ namespace MatterHackers.GCodeVisualizer
 
             if (gCodeViewWidget.LoadedGCode != null)
             {
-                layerCountTextWidget.Text = "/" + gCodeViewWidget.gCodeView.NumLayers.ToString();
+                layerCountTextWidget.Text = "/" + gCodeViewWidget.LoadedGCode.NumChangesInZ.ToString();
             }
 
             base.OnDraw(graphics2D);

@@ -131,7 +131,7 @@ namespace MatterHackers.GCodeVisualizer
 
         public string FileNameAndPath;
         public GCodeFile loadedGCode;
-        public GCodeVertexSource gCodeView;
+        public GCodeRenderer gCodeRenderer;
 
         public event EventHandler ActiveLayerChanged;
 
@@ -156,13 +156,13 @@ namespace MatterHackers.GCodeVisualizer
                 {
                     activeLayerIndex = value;
 
-                    if (gCodeView == null || activeLayerIndex < 0)
+                    if (gCodeRenderer == null || activeLayerIndex < 0)
                     {
                         activeLayerIndex = 0;
                     }
-                    else if (activeLayerIndex >= gCodeView.NumLayers)
+                    else if (activeLayerIndex >= loadedGCode.NumChangesInZ)
                     {
-                        activeLayerIndex = gCodeView.NumLayers - 1;
+                        activeLayerIndex = loadedGCode.NumChangesInZ - 1;
                     }
                     Invalidate();
 
@@ -261,73 +261,27 @@ namespace MatterHackers.GCodeVisualizer
             {
                 Affine transform = TotalTransform;
 
-                double extrusionLineWidths = 0.2 * layerScale;
-                double movementLineWidth = 0.35 * layerScale;
-                RGBA_Bytes movementColor = new RGBA_Bytes(10, 190, 15);
                 CreateGrid(transform);
 
-                VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(gCodeView, transform);
-                if (false)//graphics2D.DestImage != null)
+                double gridLineWidths = 0.2 * layerScale;
+                Stroke stroke = new Stroke(grid, gridLineWidths);
+
+                if (RenderGrid)
                 {
-#if false
-                    LineProfileAnitAlias lineProfile = new LineProfileAnitAlias(extrusionLineWidths, new gamma_none());
-                    OutlineRenderer outlineRenderer = new OutlineRenderer(graphics2D.DestImage, lineProfile);
-                    rasterizer_outline_aa rasterizer = new rasterizer_outline_aa(outlineRenderer);
-
-                    rasterizer.RenderAllPaths(grid, new RGBA_Bytes[] { RGBA_Bytes.LightGray }, new int[] { 0 }, 1);
-
-                    rasterizer.line_join(rasterizer_outline_aa.outline_aa_join_e.outline_miter_accurate_join);
-                    rasterizer.round_cap(true);
-
-                    gCodeView.WhatToRender = GCodeVertexSource.RenderType.RenderExtrusions;
-                    {
-                        RGBA_Bytes[] colors = new RGBA_Bytes[] { RGBA_Bytes.Black };
-                        int[] pathIndex = new int[] { activeLayerIndex };
-                        rasterizer.RenderAllPaths(transformedPathStorage, colors, pathIndex, 1);
-                    }
-
-                    lineProfile.width(movementLineWidth);
-                    gCodeView.WhatToRender = GCodeVertexSource.RenderType.RenderMoves;
-                    {
-                        RGBA_Bytes[] colors = new RGBA_Bytes[] { movementColor };
-                        int[] pathIndex = new int[] { activeLayerIndex };
-                        rasterizer.RenderAllPaths(transformedPathStorage, colors, pathIndex, 1);
-                    }
-
-                    graphics2D.DestImage.MarkImageChanged();
-#endif
+                    graphics2D.Render(stroke, RGBA_Bytes.LightGray);
                 }
-                else
+
+                GCodeVertexSource.RenderType renderType = GCodeVertexSource.RenderType.Extrusions;
+                if (RenderMoves)
                 {
-                    Stroke stroke = new Stroke(grid, extrusionLineWidths);
-
-                    stroke.line_cap(LineCap.Round);
-                    stroke.line_join(LineJoin.Round);
-
-                    if (RenderGrid)
-                    {
-                        graphics2D.Render(stroke, RGBA_Bytes.LightGray);
-                    }
-
-                    stroke.VertexSource = transformedPathStorage;
-
-                    // This code renders the layer:
-                    gCodeView.WhatToRender = GCodeVertexSource.RenderType.Extrusions;
-                    graphics2D.Render(stroke, activeLayerIndex, RGBA_Bytes.Black);
-
-                    if(RenderMoves)
-                    {
-                        stroke.width(movementLineWidth);
-                        gCodeView.WhatToRender = GCodeVertexSource.RenderType.Moves;
-                        graphics2D.Render(stroke, activeLayerIndex, movementColor);
-                    }
-
-                    if (RenderRetractions)
-                    {
-                        gCodeView.WhatToRender = GCodeVertexSource.RenderType.Retractions;
-                        graphics2D.Render(transformedPathStorage, activeLayerIndex, RGBA_Bytes.Red);
-                    }
+                    renderType |= GCodeVertexSource.RenderType.Moves;
                 }
+                if (RenderRetractions)
+                {
+                    renderType |= GCodeVertexSource.RenderType.Retractions;
+                }
+
+                gCodeRenderer.Render(graphics2D, activeLayerIndex, transform, layerScale, renderType);
             }
 
             base.OnDraw(graphics2D);
@@ -478,7 +432,7 @@ namespace MatterHackers.GCodeVisualizer
                 {
                     layerScale = layerScale * (Width / oldWidth);
                 }
-                else if(gCodeView != null)
+                else if(gCodeRenderer != null)
                 {
                     CenterPartInView();
                 }
@@ -487,7 +441,7 @@ namespace MatterHackers.GCodeVisualizer
 
         public void CenterPartInView()
         {
-            gCodeView = new GCodeVertexSource(loadedGCode);
+            gCodeRenderer = new GCodeRenderer(loadedGCode);
             RectangleDouble partBounds = loadedGCode.GetBounds();
             Vector2 weightedCenter = loadedGCode.GetWeightedCenter();
 
