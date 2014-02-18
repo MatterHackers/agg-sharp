@@ -271,14 +271,14 @@ namespace MatterHackers.GCodeVisualizer
                     graphics2D.Render(stroke, RGBA_Bytes.LightGray);
                 }
 
-                GCodeVertexSource.RenderType renderType = GCodeVertexSource.RenderType.Extrusions;
+                GCodeRenderer.RenderType renderType = GCodeRenderer.RenderType.Extrusions;
                 if (RenderMoves)
                 {
-                    renderType |= GCodeVertexSource.RenderType.Moves;
+                    renderType |= GCodeRenderer.RenderType.Moves;
                 }
                 if (RenderRetractions)
                 {
-                    renderType |= GCodeVertexSource.RenderType.Retractions;
+                    renderType |= GCodeRenderer.RenderType.Retractions;
                 }
 
                 gCodeRenderer.Render(graphics2D, activeLayerIndex, transform, layerScale, renderType);

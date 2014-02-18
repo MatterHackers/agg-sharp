@@ -105,7 +105,6 @@
   <ItemGroup>
     <Compile Include="GCodeFile.cs" />
     <Compile Include="GCodeRenderer.cs" />
-    <Compile Include="GCodeVertexSource.cs" />
     <Compile Include="GCodeViewWidget.cs" />
     <Compile Include="GCodeViewerApplication.cs">
       <SubType>Code</SubType>
