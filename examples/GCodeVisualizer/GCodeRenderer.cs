@@ -91,7 +91,7 @@ namespace MatterHackers.GCodeVisualizer
                     break;
                 }
 
-                switch (GetNextRenderType(currentVertexIndex) & renderType)
+                switch (GetNextRenderType(currentVertexIndex))
                 {
                     case RenderType.None:
                         currentVertexIndex++;
@@ -100,14 +100,20 @@ namespace MatterHackers.GCodeVisualizer
                     case RenderType.Extrusions:
                         DrawRetractionIfRequired(graphics2D, transform, layerScale, renderType, currentInstruction, previousInstruction);
                         currentVertexIndex = GetNextPath(pathStorage, currentVertexIndex, true);
-                        graphics2D.Render(stroke, 0, RGBA_Bytes.Black);
+                        if ((RenderType.Extrusions & renderType) == RenderType.Extrusions)
+                        {
+                            graphics2D.Render(stroke, 0, RGBA_Bytes.Black);
+                        }
 
                         break;
 
                     case RenderType.Moves:
                         DrawRetractionIfRequired(graphics2D, transform, layerScale, renderType, currentInstruction, previousInstruction);
                         currentVertexIndex = GetNextPath(pathStorage, currentVertexIndex, false);
-                        graphics2D.Render(stroke, 0, movementColor);
+                        if ((RenderType.Moves & renderType) == RenderType.Moves)
+                        {
+                            graphics2D.Render(stroke, 0, movementColor);
+                        }
                         break;
                 }
             }
@@ -140,10 +146,11 @@ namespace MatterHackers.GCodeVisualizer
         {
             pathStorage.remove_all();
             PrinterMachineInstruction startInstruction = gCodeFileToDraw.GCodeCommandQueue[currentVertexIndex];
+            PrinterMachineInstruction previousInstruction = startInstruction;
 
             if (currentVertexIndex > 0 && currentVertexIndex < gCodeFileToDraw.GCodeCommandQueue.Count)
             {
-                PrinterMachineInstruction previousInstruction = gCodeFileToDraw.GCodeCommandQueue[currentVertexIndex - 1];
+                previousInstruction = gCodeFileToDraw.GCodeCommandQueue[currentVertexIndex - 1];
                 pathStorage.Add(previousInstruction.Position.x, previousInstruction.Position.y, ShapePath.FlagsAndCommand.CommandMoveTo);
             }
             else
@@ -155,14 +162,16 @@ namespace MatterHackers.GCodeVisualizer
             for (int i = currentVertexIndex; i < gCodeFileToDraw.GCodeCommandQueue.Count; i++)
             {
                 PrinterMachineInstruction currentInstruction = gCodeFileToDraw.GCodeCommandQueue[i];
-                PrinterMachineInstruction previousInstruction = gCodeFileToDraw.GCodeCommandQueue[i - 1];
+                
                 if (currentInstruction.Z != currentZ)
                 {
                     // we are done with the whole layer so we can let the next function know that we are advancing to the end of the gcode
                     break; 
                 }
 
-                if (Math.Abs(currentInstruction.EPosition - previousInstruction.EPosition) > RetractionDistance)
+                if (Math.Abs(currentInstruction.EPosition - previousInstruction.EPosition) > RetractionDistance 
+                    && currentInstruction.X == previousInstruction.X
+                    && currentInstruction.Y == previousInstruction.Y)
                 {
                     return Math.Max(currentVertexIndex + 1, i);
                 }
@@ -176,6 +185,8 @@ namespace MatterHackers.GCodeVisualizer
                     pathStorage.Add(currentInstruction.Position.x, currentInstruction.Position.y, ShapePath.FlagsAndCommand.CommandStop);
                     return Math.Max(currentVertexIndex + 1, i);
                 }
+
+                previousInstruction = currentInstruction;
             }
 
             return gCodeFileToDraw.GCodeCommandQueue.Count;
