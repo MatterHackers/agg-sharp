@@ -670,10 +670,10 @@ namespace MatterHackers.Agg
 
         public RGBA_Bytes(int r_, int g_, int b_, int a_)
         {
-            red = (byte)r_;
-            green = (byte)g_;
-            blue = (byte)b_;
-            alpha = (byte)a_;
+            red = (byte)Math.Min(Math.Max(r_, 0),255);
+            green = (byte)Math.Min(Math.Max(g_, 0), 255);
+            blue = (byte)Math.Min(Math.Max(b_, 0), 255);
+            alpha = (byte)Math.Min(Math.Max(a_, 0), 255);
         }
 
         public RGBA_Bytes(double r_, double g_, double b_, double a_)
