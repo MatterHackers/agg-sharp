@@ -193,6 +193,16 @@ namespace MatterHackers.GCodeVisualizer
             {
                 string lineString = outputString.Trim();
                 machineInstructionForLine = new PrinterMachineInstruction(lineString, machineInstructionForLine);
+                // take off any comments before we check its length
+                if (lineString.Contains(";"))
+                {
+                    int position = lineString.IndexOf(';');
+                    if (position > -1)
+                    {
+                        lineString = lineString.Substring(0, position);
+                    }
+                }
+
                 if (lineString.Length > 0)
                 {
                     switch (lineString[0])
@@ -519,8 +529,8 @@ namespace MatterHackers.GCodeVisualizer
         {
             PrinterMachineInstruction machineStateForLine = new PrinterMachineInstruction(lineString, processingMachineState);
             string[] splitOnSpace = lineString.Split(' ');
-            string skipGithoutSemiColon = splitOnSpace[0].Split(';')[0].Substring(1).Trim();
-            switch (skipGithoutSemiColon)
+            string onlyNumber = splitOnSpace[0].Substring(1).Trim();
+            switch (onlyNumber)
             {
                 case "0":
                     goto case "1";
