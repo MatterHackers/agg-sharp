@@ -48,7 +48,17 @@ namespace MatterHackers.Agg.UI
 
         void controlToHook_KeyDown(object sender, System.Windows.Forms.KeyEventArgs windowsKeyEvent)
         {
-            MatterHackers.Agg.UI.KeyEventArgs aggKeyEvent = new MatterHackers.Agg.UI.KeyEventArgs((MatterHackers.Agg.UI.Keys)windowsKeyEvent.KeyData);
+			MatterHackers.Agg.UI.KeyEventArgs aggKeyEvent;
+			if (WindowsFormsAbstract.GetOSType () == WindowsFormsAbstract.OSType.Mac 
+				&& (windowsKeyEvent.KeyData & System.Windows.Forms.Keys.Alt) == System.Windows.Forms.Keys.Alt) 
+			{
+
+				aggKeyEvent = new MatterHackers.Agg.UI.KeyEventArgs ((MatterHackers.Agg.UI.Keys)(System.Windows.Forms.Keys.Control | (windowsKeyEvent.KeyData & ~System.Windows.Forms.Keys.Alt)));
+			}
+			else 
+			{
+				aggKeyEvent = new MatterHackers.Agg.UI.KeyEventArgs ((MatterHackers.Agg.UI.Keys)windowsKeyEvent.KeyData);
+			}
             widgetToSendTo.OnKeyDown(aggKeyEvent);
 
             windowsKeyEvent.Handled = aggKeyEvent.Handled;
