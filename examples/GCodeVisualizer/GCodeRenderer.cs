@@ -106,20 +106,23 @@ namespace MatterHackers.GCodeVisualizer
 
         public override void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType)
         {
-            double movementLineWidth = 0.35 * layerScale;
-            RGBA_Bytes movementColor = new RGBA_Bytes(10, 190, 15);
+            if ((renderType & RenderType.Moves) == RenderType.Moves)
+            {
+                double movementLineWidth = 0.35 * layerScale;
+                RGBA_Bytes movementColor = new RGBA_Bytes(10, 190, 15);
 
-            PathStorage pathStorage = new PathStorage();
-            VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, transform);
-            Stroke stroke = new Stroke(transformedPathStorage, movementLineWidth);
+                PathStorage pathStorage = new PathStorage();
+                VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, transform);
+                Stroke stroke = new Stroke(transformedPathStorage, movementLineWidth);
 
-            stroke.line_cap(LineCap.Round);
-            stroke.line_join(LineJoin.Round);
+                stroke.line_cap(LineCap.Round);
+                stroke.line_join(LineJoin.Round);
 
-            pathStorage.Add(start.x, start.y, ShapePath.FlagsAndCommand.CommandMoveTo);
-            pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
+                pathStorage.Add(start.x, start.y, ShapePath.FlagsAndCommand.CommandMoveTo);
+                pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
 
-            graphics2D.Render(stroke, 0, movementColor);
+                graphics2D.Render(stroke, 0, movementColor);
+            }
         }
     }
 
@@ -135,20 +138,23 @@ namespace MatterHackers.GCodeVisualizer
 
         public override void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType)
         {
-            double extrusionLineWidths = 0.2 * layerScale;
-            RGBA_Bytes extrusionColor = RGBA_Bytes.Black;
+            if ((renderType & RenderType.Extrusions) == RenderType.Extrusions)
+            {
+                double extrusionLineWidths = 0.2 * layerScale;
+                RGBA_Bytes extrusionColor = RGBA_Bytes.Black;
 
-            PathStorage pathStorage = new PathStorage();
-            VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, transform);
-            Stroke stroke = new Stroke(transformedPathStorage, extrusionLineWidths);
+                PathStorage pathStorage = new PathStorage();
+                VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, transform);
+                Stroke stroke = new Stroke(transformedPathStorage, extrusionLineWidths);
 
-            stroke.line_cap(LineCap.Round);
-            stroke.line_join(LineJoin.Round);
+                stroke.line_cap(LineCap.Round);
+                stroke.line_join(LineJoin.Round);
 
-            pathStorage.Add(start.x, start.y, ShapePath.FlagsAndCommand.CommandMoveTo);
-            pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
+                pathStorage.Add(start.x, start.y, ShapePath.FlagsAndCommand.CommandMoveTo);
+                pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
 
-            graphics2D.Render(stroke, 0, extrusionColor);
+                graphics2D.Render(stroke, 0, extrusionColor);
+            }
         }
     }
 
