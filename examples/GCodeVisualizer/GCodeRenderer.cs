@@ -39,37 +39,104 @@ using MatterHackers.Agg.VertexSource;
 
 namespace MatterHackers.GCodeVisualizer
 {
-    public class GCodeRenderer
+    [Flags]
+    public enum RenderType
     {
-        [Flags]
-        public enum RenderType
-        {
-            None = 0,
-            Extrusions = 1,
-            Moves = 2,
-            Retractions = 4,
-            All = Extrusions | Moves | Retractions
-        };
+        None = 0,
+        Extrusions = 1,
+        Moves = 2,
+        Retractions = 4,
+        All = Extrusions | Moves | Retractions
+    };
 
-        GCodeFile gCodeFileToDraw;
-        public double RetractionDistance { get; set; }
-        public double RetractionDrawRadius { get; set; }
+    public abstract class RenderFeatureBase
+    {
+        public abstract void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType);
+    }
 
-        public GCodeRenderer(GCodeFile gCodeFileToDraw)
+    public class RenderFeatureRetract : RenderFeatureBase
+    {
+        public static double RetractionDistance  = .5;
+        public static double RetractionDrawRadius = 1;
+
+        double amount;
+        double mmPerSecond;
+        Vector3 position;
+        public RenderFeatureRetract(Vector3 position, double amount, double mmPerSecond)
         {
-            RetractionDistance = .5;
-            RetractionDrawRadius = 1;
-            this.gCodeFileToDraw = gCodeFileToDraw;
+            this.amount = amount;
+            this.mmPerSecond = mmPerSecond;
+            this.position = position;
         }
 
-        public void Render(Graphics2D graphics2D, int activeLayerIndex, Affine transform, double layerScale, GCodeRenderer.RenderType renderType)
+        public override void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType)
         {
-            double extrusionLineWidths = 0.2 * layerScale;
+            if ((renderType & RenderType.Retractions) == RenderType.Retractions)
+            {
+                Vector2 position = new Vector2(this.position.x, this.position.y);
+                transform.transform(ref position);
+                Ellipse extrusion = new Ellipse(position, RetractionDrawRadius * layerScale);
+
+                if (amount > 0)
+                {
+                    // unretraction
+                    graphics2D.Render(extrusion, RGBA_Bytes.Blue);
+                }
+                else
+                {
+                    // retraction
+                    graphics2D.Render(extrusion, RGBA_Bytes.Red);
+                }
+            }
+        }
+    }
+
+    public class RenderFeatureTravel : RenderFeatureBase
+    {
+        protected Vector3 start;
+        protected Vector3 end;
+        protected double travelSpeed;
+
+        public RenderFeatureTravel(Vector3 start, Vector3 end, double travelSpeed)
+        {
+            this.start = start;
+            this.end = end;
+            this.travelSpeed = travelSpeed;
+        }
+
+        public override void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType)
+        {
             double movementLineWidth = 0.35 * layerScale;
             RGBA_Bytes movementColor = new RGBA_Bytes(10, 190, 15);
 
-            int currentVertexIndex = gCodeFileToDraw.IndexOfChangeInZ[activeLayerIndex]; ;
-            double currentZ = gCodeFileToDraw.GCodeCommandQueue[currentVertexIndex].Position.z;
+            PathStorage pathStorage = new PathStorage();
+            VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, transform);
+            Stroke stroke = new Stroke(transformedPathStorage, movementLineWidth);
+
+            stroke.line_cap(LineCap.Round);
+            stroke.line_join(LineJoin.Round);
+
+            pathStorage.Add(start.x, start.y, ShapePath.FlagsAndCommand.CommandMoveTo);
+            pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
+
+            graphics2D.Render(stroke, 0, movementColor);
+        }
+    }
+
+    public class RenderFeatureExtrusion : RenderFeatureTravel
+    {
+        double totalExtrusion;
+
+        public RenderFeatureExtrusion(Vector3 start, Vector3 end, double travelSpeed, double totalExtrusion)
+            : base(start, end, travelSpeed)
+        {
+            this.totalExtrusion = totalExtrusion;
+        }
+
+        public override void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType)
+        {
+            double extrusionLineWidths = 0.2 * layerScale;
+            RGBA_Bytes extrusionColor = RGBA_Bytes.Black;
 
             PathStorage pathStorage = new PathStorage();
             VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, transform);
@@ -77,6 +144,32 @@ namespace MatterHackers.GCodeVisualizer
 
             stroke.line_cap(LineCap.Round);
             stroke.line_join(LineJoin.Round);
+
+            pathStorage.Add(start.x, start.y, ShapePath.FlagsAndCommand.CommandMoveTo);
+            pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
+
+            graphics2D.Render(stroke, 0, extrusionColor);
+        }
+    }
+
+    public class GCodeRenderer
+    {
+        int layerWithFeaturesIndex = -1;
+        List<RenderFeatureBase> renderFeaturesForLayer = new List<RenderFeatureBase>();
+
+        GCodeFile gCodeFileToDraw;
+
+        public GCodeRenderer(GCodeFile gCodeFileToDraw)
+        {
+            this.gCodeFileToDraw = gCodeFileToDraw;
+        }
+
+        void CreateFeaturesForLayer(int layerToCreate)
+        {
+            renderFeaturesForLayer.Clear();
+
+            int currentVertexIndex = gCodeFileToDraw.IndexOfChangeInZ[layerToCreate];
+            double currentZ = gCodeFileToDraw.GCodeCommandQueue[currentVertexIndex].Position.z;
 
             while (currentVertexIndex < gCodeFileToDraw.GCodeCommandQueue.Count)
             {
@@ -91,119 +184,41 @@ namespace MatterHackers.GCodeVisualizer
                     break;
                 }
 
-                switch (GetNextRenderType(currentVertexIndex))
+                if (currentInstruction.Position == previousInstruction.Position)
                 {
-                    case RenderType.None:
-                        currentVertexIndex++;
-                        break;
-
-                    case RenderType.Extrusions:
-                        DrawRetractionIfRequired(graphics2D, transform, layerScale, renderType, currentInstruction, previousInstruction);
-                        currentVertexIndex = GetNextPath(pathStorage, currentVertexIndex, true);
-                        if ((RenderType.Extrusions & renderType) == RenderType.Extrusions)
-                        {
-                            graphics2D.Render(stroke, 0, RGBA_Bytes.Black);
-                        }
-
-                        break;
-
-                    case RenderType.Moves:
-                        DrawRetractionIfRequired(graphics2D, transform, layerScale, renderType, currentInstruction, previousInstruction);
-                        currentVertexIndex = GetNextPath(pathStorage, currentVertexIndex, false);
-                        if ((RenderType.Moves & renderType) == RenderType.Moves)
-                        {
-                            graphics2D.Render(stroke, 0, movementColor);
-                        }
-                        break;
-                }
-            }
-        }
-
-        private void DrawRetractionIfRequired(Graphics2D graphics2D, Affine transform, double layerScale, GCodeRenderer.RenderType renderType, PrinterMachineInstruction currentInstruction, PrinterMachineInstruction previousInstruction)
-        {
-            if ((renderType & RenderType.Retractions) == RenderType.Retractions
-                && currentInstruction.xyzPosition == previousInstruction.xyzPosition
-                && Math.Abs(currentInstruction.EPosition - previousInstruction.EPosition) > RetractionDistance)
-            {
-                Vector2 position = new Vector2(currentInstruction.X, currentInstruction.Y);
-                transform.transform(ref position);
-                Ellipse extrusion = new Ellipse(position, RetractionDrawRadius * layerScale);
-
-                if (currentInstruction.EPosition - previousInstruction.EPosition > 0)
-                {
-                    // unretraction
-                    graphics2D.Render(extrusion, RGBA_Bytes.Blue);
+                    if (Math.Abs(currentInstruction.EPosition - previousInstruction.EPosition) > 0)
+                    {
+                        // this is a retraction
+                        renderFeaturesForLayer.Add(new RenderFeatureRetract(currentInstruction.Position, currentInstruction.EPosition - previousInstruction.EPosition, currentInstruction.FeedRate));
+                    }
                 }
                 else
                 {
-                    // retraction
-                    graphics2D.Render(extrusion, RGBA_Bytes.Red);
+                    if (gCodeFileToDraw.IsExtruding(currentVertexIndex))
+                    {
+                        renderFeaturesForLayer.Add(new RenderFeatureExtrusion(previousInstruction.Position, currentInstruction.Position, currentInstruction.FeedRate, currentInstruction.EPosition - previousInstruction.EPosition));
+                    }
+                    else
+                    {
+                        renderFeaturesForLayer.Add(new RenderFeatureTravel(previousInstruction.Position, currentInstruction.Position, currentInstruction.FeedRate));
+                    }
                 }
+
+                currentVertexIndex++;
             }
         }
 
-        private int GetNextPath(PathStorage pathStorage, int currentVertexIndex, bool extrusions)
+        public void Render(Graphics2D graphics2D, int activeLayerIndex, Affine transform, double layerScale, RenderType renderType)
         {
-            pathStorage.remove_all();
-            PrinterMachineInstruction startInstruction = gCodeFileToDraw.GCodeCommandQueue[currentVertexIndex];
-            PrinterMachineInstruction previousInstruction = startInstruction;
-
-            if (currentVertexIndex > 0 && currentVertexIndex < gCodeFileToDraw.GCodeCommandQueue.Count)
+            if (layerWithFeaturesIndex != activeLayerIndex)
             {
-                previousInstruction = gCodeFileToDraw.GCodeCommandQueue[currentVertexIndex - 1];
-                pathStorage.Add(previousInstruction.Position.x, previousInstruction.Position.y, ShapePath.FlagsAndCommand.CommandMoveTo);
-            }
-            else
-            {
-                pathStorage.Add(startInstruction.Position.x, startInstruction.Position.y, ShapePath.FlagsAndCommand.CommandMoveTo);
-            }
-            double currentZ = startInstruction.Position.z;
-
-            for (int i = currentVertexIndex; i < gCodeFileToDraw.GCodeCommandQueue.Count; i++)
-            {
-                PrinterMachineInstruction currentInstruction = gCodeFileToDraw.GCodeCommandQueue[i];
-                
-                if (currentInstruction.Z != currentZ)
-                {
-                    // we are done with the whole layer so we can let the next function know that we are advancing to the end of the gcode
-                    break; 
-                }
-
-                if (Math.Abs(currentInstruction.EPosition - previousInstruction.EPosition) > RetractionDistance 
-                    && currentInstruction.X == previousInstruction.X
-                    && currentInstruction.Y == previousInstruction.Y)
-                {
-                    return Math.Max(currentVertexIndex + 1, i);
-                }
-
-                if (gCodeFileToDraw.IsExtruding(i) == extrusions)
-                {
-                    pathStorage.Add(currentInstruction.Position.x, currentInstruction.Position.y, ShapePath.FlagsAndCommand.CommandLineTo);
-                }
-                else
-                {
-                    pathStorage.Add(currentInstruction.Position.x, currentInstruction.Position.y, ShapePath.FlagsAndCommand.CommandStop);
-                    return Math.Max(currentVertexIndex + 1, i);
-                }
-
-                previousInstruction = currentInstruction;
+                CreateFeaturesForLayer(activeLayerIndex);
+                layerWithFeaturesIndex = activeLayerIndex;
             }
 
-            return gCodeFileToDraw.GCodeCommandQueue.Count;
-        }
-
-        RenderType GetNextRenderType(int currentVertexIndex)
-        {
-            PrinterMachineInstruction currentInstruction = gCodeFileToDraw.GCodeCommandQueue[currentVertexIndex];
-            PrinterMachineInstruction previousInstruction = gCodeFileToDraw.GCodeCommandQueue[currentVertexIndex - 1];
-
-            if (gCodeFileToDraw.IsExtruding(currentVertexIndex))
+            foreach (RenderFeatureBase feature in renderFeaturesForLayer)
             {
-                return RenderType.Extrusions;
-            }
-            else
-            {
-                return RenderType.Moves;
+                feature.Render(graphics2D, transform, layerScale, renderType);
             }
         }
     }
