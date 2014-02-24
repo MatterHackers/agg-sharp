@@ -40,9 +40,9 @@ namespace MatterHackers.GCodeVisualizer
     {
         public string Line;
 
-        public Vector3 xyzPosition = new Vector3();
-        public double ePosition = 0;
-        public double feedRate = 0;
+        Vector3 xyzPosition = new Vector3();
+        double ePosition = 0;
+        double feedRate = 0;
 
         public enum MovementTypes { Absolute, Relative };
         public MovementTypes movementType = MovementTypes.Relative;
@@ -123,14 +123,7 @@ namespace MatterHackers.GCodeVisualizer
             get { return ePosition; }
             set
             {
-                if (movementType == MovementTypes.Absolute)
-                {
-                    ePosition = value;
-                }
-                else
-                {
-                    ePosition += value;
-                }
+                ePosition = value;
             }
         }
 

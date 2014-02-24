@@ -514,6 +514,7 @@ namespace MatterHackers.GCodeVisualizer
             }
         }
 
+        double amountOfAccumulatedE = 0;
         void ParseGLine(string lineString, PrinterMachineInstruction processingMachineState)
         {
             PrinterMachineInstruction machineStateForLine = new PrinterMachineInstruction(lineString, processingMachineState);
@@ -551,7 +552,18 @@ namespace MatterHackers.GCodeVisualizer
                                     break;
 
                                 case 'E':
-                                    processingMachineState.ePosition = value;
+                                    if (processingMachineState.movementType == PrinterMachineInstruction.MovementTypes.Absolute)
+                                    {
+                                        processingMachineState.EPosition = value + amountOfAccumulatedE;
+                                    }
+                                    else
+                                    {
+                                        processingMachineState.EPosition += value;
+                                    }
+                                    if ((int)processingMachineState.EPosition == 0 || (int)processingMachineState.EPosition > 100000)
+                                    {
+                                        int a = 0;
+                                    }
                                     break;
 
                                 case 'F':
@@ -596,6 +608,12 @@ namespace MatterHackers.GCodeVisualizer
 
                 case "92":
                     // set current head position values (used to reset origin)
+                    double ePosition = 0;
+                    if (GetFirstNumberAfter("E", lineString, ref ePosition))
+                    {
+                        // remember how much e position we just gave up
+                        amountOfAccumulatedE = (processingMachineState.EPosition - ePosition);
+                    }                    
                     break;
 
                 case "161":
@@ -645,11 +663,11 @@ namespace MatterHackers.GCodeVisualizer
             return bounds;
         }
 
-        public bool IsExtruding(int endingVertexIndex)
+        public bool IsExtruding(int vertexIndexToCheck)
         {
-            if (endingVertexIndex > 1 && endingVertexIndex < GCodeCommandQueue.Count)
+            if (vertexIndexToCheck > 1 && vertexIndexToCheck < GCodeCommandQueue.Count)
             {
-                double extrusionLengeth = GCodeCommandQueue[endingVertexIndex].EPosition - GCodeCommandQueue[endingVertexIndex - 1].EPosition;
+                double extrusionLengeth = GCodeCommandQueue[vertexIndexToCheck].EPosition - GCodeCommandQueue[vertexIndexToCheck - 1].EPosition;
                 if (extrusionLengeth > 0)
                 {
                     return true;
