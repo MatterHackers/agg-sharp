@@ -263,5 +263,12 @@ namespace MatterHackers.Agg
             RoundedRect rect = new RoundedRect(left, bottom, right, top, 0);
             Render(rect, fillColor.GetAsRGBA_Bytes());
         }
+
+        public static void AssertDebugNotDefined()
+        {
+#if DEBUG
+            throw new Exception("DEBUG is defined and should not be!");
+#endif
+        }
     }
 }
