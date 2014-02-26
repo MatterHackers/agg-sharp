@@ -524,6 +524,13 @@ namespace MatterHackers.GCodeVisualizer
             }
         }
 
+        public static void AssertDebugNotDefined()
+        {
+#if DEBUG
+            throw new Exception("DEBUG is defined and should not be!");
+#endif
+        }
+
         double amountOfAccumulatedE = 0;
         void ParseGLine(string lineString, PrinterMachineInstruction processingMachineState)
         {
