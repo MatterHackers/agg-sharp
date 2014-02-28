@@ -1727,6 +1727,7 @@ namespace MatterHackers.Agg.UI
         /// Request a close
         /// </summary>
         bool widgetHasBeenClosed = false;
+        protected bool WidgetHasBeenClosed { get { return widgetHasBeenClosed; } }
         public void Close()
         {
 #if DEBUG
