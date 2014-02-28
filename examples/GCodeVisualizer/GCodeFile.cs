@@ -552,40 +552,40 @@ namespace MatterHackers.GCodeVisualizer
                     for (int argIndex = 1; argIndex < splitOnSpace.Length; argIndex++)
                     {
                         double value;
+
                         if (splitOnSpace[argIndex].Length > 0 && double.TryParse(splitOnSpace[argIndex].Substring(1), NumberStyles.Number, null, out value))
                         {
-                            switch (splitOnSpace[argIndex][0])
+                            double valueX = 0;
+                            if (GCodeFile.GetFirstNumberAfter("X", lineString, ref valueX))
                             {
-                                case 'X':
-                                    processingMachineState.X = value;
-                                    break;
-
-                                case 'Y':
-                                    processingMachineState.Y = value;
-                                    break;
-
-                                case 'Z':
-                                    processingMachineState.Z = value;
-                                    break;
-
-                                case 'E':
-                                    if (processingMachineState.movementType == PrinterMachineInstruction.MovementTypes.Absolute)
-                                    {
-                                        processingMachineState.EPosition = value + amountOfAccumulatedE;
-                                    }
-                                    else
-                                    {
-                                        processingMachineState.EPosition += value;
-                                    }
-                                    if ((int)processingMachineState.EPosition == 0 || (int)processingMachineState.EPosition > 100000)
-                                    {
-                                        int a = 0;
-                                    }
-                                    break;
-
-                                case 'F':
-                                    processingMachineState.FeedRate = value;
-                                    break;
+                                processingMachineState.X = valueX;
+                            }
+                            double valueY = 0;
+                            if (GCodeFile.GetFirstNumberAfter("Y", lineString, ref valueY))
+                            {
+                                processingMachineState.Y = valueY;
+                            }
+                            double valueZ = 0;
+                            if (GCodeFile.GetFirstNumberAfter("Z", lineString, ref valueZ))
+                            {
+                                processingMachineState.Z = valueZ;
+                            }
+                            double valueE = 0;
+                            if (GCodeFile.GetFirstNumberAfter("E", lineString, ref valueE))
+                            {
+                                if (processingMachineState.movementType == PrinterMachineInstruction.MovementTypes.Absolute)
+                                {
+                                    processingMachineState.EPosition = value + amountOfAccumulatedE;
+                                }
+                                else
+                                {
+                                    processingMachineState.EPosition += value;
+                                }
+                            }
+                            double valueF = 0;
+                            if (GCodeFile.GetFirstNumberAfter("F", lineString, ref valueF))
+                            {
+                                processingMachineState.FeedRate = valueF;
                             }
                         }
                     }
