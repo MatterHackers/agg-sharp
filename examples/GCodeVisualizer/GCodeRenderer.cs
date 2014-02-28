@@ -201,6 +201,14 @@ namespace MatterHackers.GCodeVisualizer
                         // this is a retraction
                         renderFeaturesForLayer.Add(new RenderFeatureRetract(currentInstruction.Position, currentInstruction.EPosition - previousInstruction.EPosition, currentInstruction.FeedRate));
                     }
+                    if (currentInstruction.Line.StartsWith("G10"))
+                    {
+                        renderFeaturesForLayer.Add(new RenderFeatureRetract(currentInstruction.Position, -1, currentInstruction.FeedRate));
+                    }
+                    else if (currentInstruction.Line.StartsWith("G11"))
+                    {
+                        renderFeaturesForLayer.Add(new RenderFeatureRetract(currentInstruction.Position, 1, currentInstruction.FeedRate));
+                    }
                 }
                 else
                 {
