@@ -396,6 +396,13 @@ namespace MatterHackers.GCodeVisualizer
 
         public void Load(string gcodePathAndFileName)
         {
+            loadedGCode = new GCodeFile(gcodePathAndFileName);
+            SetInitalLayer();
+            CenterPartInView();
+        }
+
+        public void LoadInBackground(string gcodePathAndFileName)
+        {
             this.FileNameAndPath = gcodePathAndFileName;
             backgroundWorker = new BackgroundWorker();
             backgroundWorker.WorkerReportsProgress = true;
