@@ -110,6 +110,15 @@ namespace MatterHackers.Agg
             }
         }
 
+        public IEnumerator GetEnumerator()
+        {
+            for (int index = 0; index < currentSize; index++)
+            {
+                // Yield each day of the week. 
+                yield return internalArray[index];
+            }
+        }
+
         public int AllocatedSize
         {
             get
@@ -316,6 +325,17 @@ namespace MatterHackers.Agg
         public void Clear()
         {
             currentSize = 0;
+        }
+
+        public void Remove(dataType itemToRemove)
+        {
+            for (int i = 0; i < Length; i++)
+            {
+                if ((object)internalArray[i] == (object)itemToRemove)
+                {
+                    Remove(i);
+                }
+            }
         }
     }
 
