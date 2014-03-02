@@ -172,10 +172,8 @@ namespace MatterHackers.Agg.UI
 
         char[] spaceTrim = { ' ' };
 
-        static NamedExecutionTimer TextWidget_OnDraw = new NamedExecutionTimer("TextWidget_OnDraw");
         public override void OnDraw(Graphics2D graphics2D)
 		{
-            TextWidget_OnDraw.Start();
             graphics2D.PushTransform();
 
             int numLines = Text.Split('\n').Length - 1;
@@ -236,7 +234,6 @@ namespace MatterHackers.Agg.UI
             }
 
 			base.OnDraw(graphics2D);
-            TextWidget_OnDraw.Stop();
 		}
 
         public RGBA_Bytes TextColor

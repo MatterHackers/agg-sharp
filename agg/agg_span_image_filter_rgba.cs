@@ -24,7 +24,6 @@
 // PostScript and PDF technology for software developers.
 // 
 //----------------------------------------------------------------------------
-//#define use_timers
 #define USE_UNSAFE_CODE
 
 using System;
@@ -149,9 +148,6 @@ namespace MatterHackers.Agg
         {
         }
 
-#if use_timers
-            static NamedExecutionTimer Generate_Span = new NamedExecutionTimer("Generate_Span rgba");
-#endif
 #if false
             public void generate(out RGBA_Bytes destPixel, int x, int y)
             {
@@ -231,9 +227,6 @@ namespace MatterHackers.Agg
 
         public override void generate(RGBA_Bytes[] span, int spanIndex, int x, int y, int len)
         {
-#if use_timers
-                Generate_Span.Start();
-#endif
             base.interpolator().begin(x + base.filter_dx_dbl(), y + base.filter_dy_dbl(), len);
 
             ImageBuffer SourceRenderingBuffer = (ImageBuffer)base.GetImageBufferAccessor().SourceImage;
@@ -318,11 +311,8 @@ namespace MatterHackers.Agg
 
                 } while (--len != 0);
             }
-#if use_timers
-                Generate_Span.Stop();
-#endif
         }
-    };
+    }
 
     public class span_image_filter_rgba_bilinear_float : span_image_filter_float
     {
@@ -469,15 +459,8 @@ namespace MatterHackers.Agg
         public IColorType background_color() { return m_OutsideSourceColor; }
         public void background_color(IColorType v) { m_OutsideSourceColor = v.GetAsRGBA_Bytes(); }
 
-
-#if use_timers
-            static NamedExecutionTimer Generate_Span = new NamedExecutionTimer("Generate_Span rgba clip");
-#endif
         public override void generate(RGBA_Bytes[] span, int spanIndex, int x, int y, int len)
         {
-            /*#if use_timers
-                        Generate_Span.Start();
-            #endif*/
             ImageBuffer SourceRenderingBuffer = (ImageBuffer)base.GetImageBufferAccessor().SourceImage;
             int bufferIndex;
             byte[] fg_ptr;
@@ -671,9 +654,6 @@ namespace MatterHackers.Agg
                     spanInterpolator.Next();
                 } while (--len != 0);
             }
-#if use_timers
-                Generate_Span.Stop();
-#endif
         }
 
         private void BlendInFilterPixel(int[] accumulatedColor, int back_r, int back_g, int back_b, int back_a, IImageByte SourceRenderingBuffer, int maxx, int maxy, int x_lr, int y_lr, int weight)

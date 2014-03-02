@@ -132,36 +132,18 @@ namespace MatterHackers.Agg.OpenGlGui
             lastScreenRay = new Ray(origin, finalRayWorld);
         }
 
-        static NamedExecutionTimer TrackballTumbelOnDraw = new NamedExecutionTimer("TrackballTumbelOnDraw");
-        static NamedExecutionTimer TrackballTumbelOnDraw1 = new NamedExecutionTimer("TrackballTumbelOnDraw1");
-        static NamedExecutionTimer TrackballTumbelOnDraw2 = new NamedExecutionTimer("TrackballTumbelOnDraw2");
-        static NamedExecutionTimer TrackballTumbelOnDraw3 = new NamedExecutionTimer("TrackballTumbelOnDraw3");
-        static NamedExecutionTimer TrackballTumbelOnDraw4 = new NamedExecutionTimer("TrackballTumbelOnDraw4");
-        static NamedExecutionTimer TrackballTumbelOnDraw5 = new NamedExecutionTimer("TrackballTumbelOnDraw5");
         public override void OnDraw(MatterHackers.Agg.Graphics2D graphics2D)
         {
-            TrackballTumbelOnDraw.Start();
-            TrackballTumbelOnDraw1.Start();
             SetGlContext();
-            TrackballTumbelOnDraw1.Stop();
-            TrackballTumbelOnDraw2.Start();
             OnDrawGlContent();
-            TrackballTumbelOnDraw2.Stop();
-            TrackballTumbelOnDraw3.Start();
             UnsetGlContext();
-            TrackballTumbelOnDraw3.Stop();
 
             if (DrawRotationHelperCircle)
             {
-                TrackballTumbelOnDraw4.Start();
                 DrawTrackballRadius(graphics2D);
-                TrackballTumbelOnDraw4.Stop();
             }
 
-            TrackballTumbelOnDraw5.Start();
             base.OnDraw(graphics2D);
-            TrackballTumbelOnDraw5.Stop();
-            TrackballTumbelOnDraw.Stop();
         }
 
         public void DrawTrackballRadius(Graphics2D graphics2D)
@@ -276,7 +258,6 @@ namespace MatterHackers.Agg.OpenGlGui
             }
         }
 
-        static NamedExecutionTimer TimerPushAttrib_Trackball = new NamedExecutionTimer("GL.PushAttrib_Trackball");
         void SetGlContext()
         {
             GL.ClearDepth(1.0);
@@ -284,9 +265,7 @@ namespace MatterHackers.Agg.OpenGlGui
             GL.Clear(ClearBufferMask.DepthBufferBit);	// Clear the Depth Buffer
             //GL.Clear(GL._COLOR_BUFFER_BIT);	// Clear the Depth Buffer
 
-            TimerPushAttrib_Trackball.Start();
             GL.PushAttrib(AttribMask.ViewportBit);
-            TimerPushAttrib_Trackball.Stop();
             RectangleDouble screenRect = this.TransformRectangleToScreenSpace(LocalBounds);
             GL.Viewport((int)screenRect.Left, (int)screenRect.Bottom, (int)screenRect.Width, (int)screenRect.Height);
 

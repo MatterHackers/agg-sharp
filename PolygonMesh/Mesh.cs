@@ -26,7 +26,6 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies, 
 either expressed or implied, of the FreeBSD Project.
 */
-//#define RUN_TIMING_TESTS
 
 using System;
 using System.Collections.Generic;
@@ -591,14 +590,8 @@ namespace MatterHackers.PolygonMesh
             throw new NotImplementedException();
         }
 
-#if RUN_TIMING_TESTS
-        NamedExecutionTimer CreateFaceTimer = new NamedExecutionTimer("Mesh Create Face");
-#endif
         public Face CreateFace(Vertex[] verticesToUse, bool allowDuplicate = false)
         {
-#if RUN_TIMING_TESTS
-            CreateFaceTimer.Start();
-#endif
             if (verticesToUse.Length < 3)
             {
                 throw new ArgumentException("A face cannot have less than 3 vertices.");
@@ -609,9 +602,6 @@ namespace MatterHackers.PolygonMesh
                 Face existingFace = FindFace(verticesToUse);
                 if (existingFace != null)
                 {
-#if RUN_TIMING_TESTS
-                    CreateFaceTimer.Stop();
-#endif
                     return existingFace;
                 }
             }
@@ -657,9 +647,6 @@ namespace MatterHackers.PolygonMesh
 
             faces.Add(createdFace);
 
-#if RUN_TIMING_TESTS
-            CreateFaceTimer.Stop();
-#endif
             return createdFace;
         }
 
