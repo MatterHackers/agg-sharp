@@ -343,7 +343,7 @@ namespace MatterHackers.MeshVisualizer
             }
             else
             {
-                TextWidget no3DView = new TextWidget(string.Format("No 3D view for this file type '{0}'.", Path.GetExtension(meshPathAndFileName).ToUpper()));
+                TextWidget no3DView = new TextWidget(string.Format("Sorry! No 3D view available for this file type '{0}'.", Path.GetExtension(meshPathAndFileName).ToUpper()));
                 no3DView.Margin = new BorderDouble(0, 0, 0, 0);
                 no3DView.VAnchor = Agg.UI.VAnchor.ParentCenter;
                 no3DView.HAnchor = Agg.UI.HAnchor.ParentCenter;
@@ -357,7 +357,7 @@ namespace MatterHackers.MeshVisualizer
 
             if (loadedMesh == null)
             {
-                TextWidget no3DView = new TextWidget(string.Format("No 3D view for this file."));
+                TextWidget no3DView = new TextWidget(string.Format("Sorry! No 3D view available for this file."));
                 no3DView.Margin = new BorderDouble(0, 0, 0, 0);
                 no3DView.VAnchor = Agg.UI.VAnchor.ParentCenter;
                 no3DView.HAnchor = Agg.UI.HAnchor.ParentCenter;
