@@ -177,6 +177,8 @@ namespace MatterHackers.PolygonMesh.Processors
 
         public static void ParseFileContents(object sender, DoWorkEventArgs doWorkEventArgs)
         {
+            Stopwatch time = new Stopwatch();
+            time.Start();
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
             Stream stlStream = (Stream)doWorkEventArgs.Argument;
@@ -370,6 +372,10 @@ namespace MatterHackers.PolygonMesh.Processors
             meshFromStlFile.MergeVertecies();
 
             doWorkEventArgs.Result = meshFromStlFile;
+
+            time.Stop();
+            Debug.WriteLine(string.Format("STL Load in {0:0.00}s", time.Elapsed.Seconds));
+
             stlStream.Close();
         }
 
