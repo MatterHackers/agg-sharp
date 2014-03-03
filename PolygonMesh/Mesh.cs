@@ -349,9 +349,9 @@ namespace MatterHackers.PolygonMesh
         #endregion // Operations
 
         #region Vertex
-        public Vertex CreateVertex(double x, double y, double z, bool allowDuplicate = false)
+        public Vertex CreateVertex(double x, double y, double z, bool allowDuplicate = false, bool willSortLater = false)
         {
-            return CreateVertex(new Vector3(x, y, z), allowDuplicate);
+            return CreateVertex(new Vector3(x, y, z), allowDuplicate, willSortLater);
         }
 
         public List<Vertex> FindVertices(Vector3 position)
@@ -359,7 +359,7 @@ namespace MatterHackers.PolygonMesh
             return vertices.FindVertices(position, MaxDistanceToConsiderVertexAsSame);
         }
 
-        public Vertex CreateVertex(Vector3 position, bool allowDuplicate = false)
+        public Vertex CreateVertex(Vector3 position, bool allowDuplicate = false, bool willSortLater = false)
         {
             if (!allowDuplicate)
             {
@@ -371,13 +371,18 @@ namespace MatterHackers.PolygonMesh
             }
 
             Vertex createdVertex = new Vertex(position);
-            vertices.Add(createdVertex);
+            vertices.Add(createdVertex, willSortLater);
             return createdVertex;
         }
 
         public void DeleteVertex(Vertex vertex)
         {
             throw new NotImplementedException();
+        }
+
+        public void SortVertecies()
+        {
+            Vertices.Sort();
         }
 
         public void MergeVertecies()
@@ -615,9 +620,9 @@ namespace MatterHackers.PolygonMesh
             // make sure all the mesh edges exist (by trying to create them).
             for (int i = 0; i < verticesToUse.Length - 1; i++)
             {
-                CreateMeshEdge(verticesToUse[i], verticesToUse[i + 1]);
+                CreateMeshEdge(verticesToUse[i], verticesToUse[i + 1], allowDuplicate);
             }
-            CreateMeshEdge(verticesToUse[verticesToUse.Length - 1], verticesToUse[0]);
+            CreateMeshEdge(verticesToUse[verticesToUse.Length - 1], verticesToUse[0], allowDuplicate);
 
             // make the face and set it's data
             Face createdFace = new Face();

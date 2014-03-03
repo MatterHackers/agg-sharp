@@ -359,9 +359,9 @@ namespace MatterHackers.PolygonMesh.Processors
 
                     if (!Vector3.Collinear(vector[0], vector[1], vector[2]))
                     {
-                        Vertex vertex1 = meshFromStlFile.CreateVertex(vector[0], true);
-                        Vertex vertex2 = meshFromStlFile.CreateVertex(vector[1], true);
-                        Vertex vertex3 = meshFromStlFile.CreateVertex(vector[2], true);
+                        Vertex vertex1 = meshFromStlFile.CreateVertex(vector[0], true, true);
+                        Vertex vertex2 = meshFromStlFile.CreateVertex(vector[1], true, true);
+                        Vertex vertex3 = meshFromStlFile.CreateVertex(vector[2], true, true);
                         meshFromStlFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 }, true);
                     }
                 }
@@ -369,12 +369,13 @@ namespace MatterHackers.PolygonMesh.Processors
             }
 
             // TODO: merge all the vetexes that are in the same place together
+            meshFromStlFile.SortVertecies();
             meshFromStlFile.MergeVertecies();
 
             doWorkEventArgs.Result = meshFromStlFile;
 
             time.Stop();
-            Debug.WriteLine(string.Format("STL Load in {0:0.00}s", time.Elapsed.Seconds));
+            Debug.WriteLine(string.Format("STL Load in {0:0.00}s", time.Elapsed.TotalSeconds));
 
             stlStream.Close();
         }

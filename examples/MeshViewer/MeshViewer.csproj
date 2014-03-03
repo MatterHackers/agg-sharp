@@ -48,7 +48,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -93,6 +93,10 @@
     <ProjectReference Include="..\..\VectorMath\VectorMath.csproj">
       <Project>{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}</Project>
       <Name>VectorMath</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\WindowsFileDialogs\WindowsFileDialogs.csproj">
+      <Project>{A526DC5D-65F3-461B-805F-D3AC9665F5C9}</Project>
+      <Name>WindowsFileDialogs</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

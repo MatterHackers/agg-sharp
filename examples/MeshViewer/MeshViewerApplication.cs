@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Diagnostics;
 
 using MatterHackers.Agg;
 using MatterHackers.Agg.Transform;
@@ -58,6 +59,7 @@ namespace MatterHackers.MeshVisualizer
         public MeshViewerApplication(string meshFileToLoad = "")
             : base(800, 600)
         {
+            BackgroundColor = RGBA_Bytes.White;
             MinimumSize = new VectorMath.Vector2(200, 200);
             Title = "MatterHackers MeshViewr";
             UseOpenGL = true;
@@ -132,6 +134,11 @@ namespace MatterHackers.MeshVisualizer
 
         void openFileButton_ButtonClick(object sender, MouseEventArgs mouseEvent)
         {
+            UiThread.RunOnIdle(DoOpenFileButton_ButtonClick);
+        }
+
+        void DoOpenFileButton_ButtonClick(object state)
+        {
             OpenFileDialogParams openParams = new OpenFileDialogParams("3D Mesh Files|*.stl;*.amf");
             Stream streamToLoadFrom = FileDialog.OpenFileDialog(ref openParams);
 
@@ -140,11 +147,20 @@ namespace MatterHackers.MeshVisualizer
             Invalidate();
         }
 
+        Stopwatch totalDrawTime = new Stopwatch();
+        int drawCount = 0;
         public override void OnDraw(Graphics2D graphics2D)
         {
-            this.NewGraphics2D().Clear(new RGBA_Bytes(255, 255, 255));
-
+            totalDrawTime.Restart();
             base.OnDraw(graphics2D);
+            totalDrawTime.Stop();
+
+            if (true)
+            {
+                long memory = GC.GetTotalMemory(false);
+                this.Title = string.Format("Allocated = {0:n0} : {1}ms, d{2} Size = {3}x{4}", memory, totalDrawTime.ElapsedMilliseconds, drawCount++, this.Width, this.Height);
+                //GC.Collect();
+            }
         }
 
         [STAThread]

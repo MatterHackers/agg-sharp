@@ -49,6 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AxisAlignedBoundingBox.cs" />
+    <Compile Include="Vector3Float.cs" />
     <Compile Include="MathHelper.cs" />
     <Compile Include="Matrix4x4.cs" />
     <Compile Include="Quaternion.cs" />

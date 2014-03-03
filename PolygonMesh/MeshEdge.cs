@@ -36,6 +36,9 @@ namespace MatterHackers.PolygonMesh
 {
     public class MeshEdgeLinks
     {
+        public MeshEdge nextMeshEdge;
+        public MeshEdge prevMeshEdge;
+
         public MeshEdgeLinks()
         {
         }
@@ -66,11 +69,8 @@ namespace MatterHackers.PolygonMesh
             else
             {
                 totalDebug.Append("null\n");
-            }
+             }
         }
-
-        public MeshEdge nextMeshEdge;
-        public MeshEdge prevMeshEdge;
     }
 
     public class MeshEdge

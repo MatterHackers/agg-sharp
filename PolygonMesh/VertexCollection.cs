@@ -159,14 +159,26 @@ namespace MatterHackers.PolygonMesh
             return position;
         }
 
-        internal void Add(Vertex vertexToAdd)
+        public void Sort()
         {
-            int index = vertecies.BinarySearch(vertexToAdd, vertexSorter);
-            if (index < 0)
+            vertecies.Sort(vertexSorter);
+        }
+
+        internal void Add(Vertex vertexToAdd, bool willSortLater = false)
+        {
+            if (willSortLater)
             {
-                index = ~index;
+                vertecies.Add(vertexToAdd);
             }
-            vertecies.Insert(index, vertexToAdd);
+            else
+            {
+                int index = vertecies.BinarySearch(vertexToAdd, vertexSorter);
+                if (index < 0)
+                {
+                    index = ~index;
+                }
+                vertecies.Insert(index, vertexToAdd);
+            }
         }
 
         internal bool ContainsVertex(Vertex vertexToLookFor)
