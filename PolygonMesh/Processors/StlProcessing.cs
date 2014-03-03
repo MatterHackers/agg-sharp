@@ -364,8 +364,10 @@ namespace MatterHackers.PolygonMesh.Processors
                     }
                 }
                 //uint numTriangles = System.BitConverter.ToSingle(fileContents, 80);
-
             }
+
+            // TODO: merge all the vetexes that are in the same place together
+            meshFromStlFile.MergeVertecies();
 
             doWorkEventArgs.Result = meshFromStlFile;
             stlStream.Close();

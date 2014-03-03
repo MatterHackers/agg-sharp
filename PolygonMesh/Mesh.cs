@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Diagnostics;
 
 using MatterHackers.Agg;
 using MatterHackers.VectorMath;
@@ -377,6 +378,11 @@ namespace MatterHackers.PolygonMesh
         public void DeleteVertex(Vertex vertex)
         {
             throw new NotImplementedException();
+        }
+
+        public void MergeVertecies()
+        {
+            Debug.WriteLine("TODO: Implement MergeVertecies()");
         }
         #endregion
 
