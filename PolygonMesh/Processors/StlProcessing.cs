@@ -263,9 +263,9 @@ namespace MatterHackers.PolygonMesh.Processors
 
                     if (goodPolygon && !Vector3.Collinear(vector1, vector2, vector3))
                     {
-                        Vertex vertex1 = meshFromStlFile.CreateVertex(vector1);
-                        Vertex vertex2 = meshFromStlFile.CreateVertex(vector2);
-                        Vertex vertex3 = meshFromStlFile.CreateVertex(vector3);
+                        Vertex vertex1 = meshFromStlFile.CreateVertex(vector1, true);
+                        Vertex vertex2 = meshFromStlFile.CreateVertex(vector2, true);
+                        Vertex vertex3 = meshFromStlFile.CreateVertex(vector3, true);
                         if (vertex1.Data.ID == vertex2.Data.ID || vertex2.Data.ID == vertex3.Data.ID || vertex1.Data.ID == vertex3.Data.ID)
                         {
                             //throw new Exception("All vertecies should be generated no matter what. Check that the STL loader is not colapsing faces.");
