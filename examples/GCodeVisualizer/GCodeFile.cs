@@ -131,7 +131,7 @@ namespace MatterHackers.GCodeVisualizer
                 using (StreamReader streamReader = new StreamReader(fileStream))
                 {
                     GCodeFile loadedFile = GCodeFile.Load(streamReader.BaseStream);
-                    
+
                     this.indexOfChangeInZ = loadedFile.indexOfChangeInZ;
                     this.center = loadedFile.center;
                     this.parsingLastZ = loadedFile.parsingLastZ;
@@ -253,7 +253,7 @@ namespace MatterHackers.GCodeVisualizer
             Stopwatch maxProgressReport = new Stopwatch();
             maxProgressReport.Start();
 
-            for(int lineIndex = 0; lineIndex < GCodeCommandQueue.Count; lineIndex++)
+            for (int lineIndex = 0; lineIndex < GCodeCommandQueue.Count; lineIndex++)
             {
                 PrinterMachineInstruction instruction = GCodeCommandQueue[lineIndex];
                 string line = instruction.Line;
@@ -625,7 +625,7 @@ namespace MatterHackers.GCodeVisualizer
                     {
                         // remember how much e position we just gave up
                         amountOfAccumulatedE = (processingMachineState.EPosition - ePosition);
-                    }                    
+                    }
                     break;
 
                 case "161":
@@ -693,7 +693,7 @@ namespace MatterHackers.GCodeVisualizer
         {
             double lastEPosition = 0;
             double filamentMm = 0;
-            for(int i=0; i<GCodeCommandQueue.Count; i++)
+            for (int i = 0; i < GCodeCommandQueue.Count; i++)
             {
                 PrinterMachineInstruction instruction = GCodeCommandQueue[i];
                 //filamentMm += instruction.EPosition;
