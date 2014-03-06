@@ -285,53 +285,65 @@ namespace MatterHackers.MeshVisualizer
 
         public void LoadMesh(string meshPathAndFileName)
         {
-            backgroundWorker = new BackgroundWorker();
-            backgroundWorker.WorkerReportsProgress = true;
-            backgroundWorker.WorkerSupportsCancellation = true;
-
-            backgroundWorker.ProgressChanged += new ProgressChangedEventHandler(backgroundWorker_ProgressChanged);
-            backgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(backgroundWorker_RunWorkerCompleted);
-
-            bool loadingMeshFile = false;
-            switch(Path.GetExtension(meshPathAndFileName).ToUpper())
+            if (File.Exists(meshPathAndFileName))
             {
-                case ".STL":
-                    {
-                        StlProcessing.LoadInBackground(backgroundWorker, meshPathAndFileName);
-                        loadingMeshFile = true;
-                    }
-                    break;
+                backgroundWorker = new BackgroundWorker();
+                backgroundWorker.WorkerReportsProgress = true;
+                backgroundWorker.WorkerSupportsCancellation = true;
 
-                case ".AMF":
-                    {
-                        AmfProcessing amfLoader = new AmfProcessing();
-                        amfLoader.LoadInBackground(backgroundWorker, meshPathAndFileName);
-                        loadingMeshFile = true;
-                    }
-                    break;
+                backgroundWorker.ProgressChanged += new ProgressChangedEventHandler(backgroundWorker_ProgressChanged);
+                backgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(backgroundWorker_RunWorkerCompleted);
 
-                default:
-                    loadingMeshFile = false;
-                    break;
-            }
+                bool loadingMeshFile = false;
+                switch (Path.GetExtension(meshPathAndFileName).ToUpper())
+                {
+                    case ".STL":
+                        {
+                            StlProcessing.LoadInBackground(backgroundWorker, meshPathAndFileName);
+                            loadingMeshFile = true;
+                        }
+                        break;
 
-            if (loadingMeshFile)
-            {
-                meshLoadingStateInfoText = new TextWidget("Loading Mesh...");
-                meshLoadingStateInfoText.HAnchor = HAnchor.ParentCenter;
-                meshLoadingStateInfoText.VAnchor = VAnchor.ParentCenter;
-                meshLoadingStateInfoText.AutoExpandBoundsToText = true;
+                    case ".AMF":
+                        {
+                            AmfProcessing amfLoader = new AmfProcessing();
+                            amfLoader.LoadInBackground(backgroundWorker, meshPathAndFileName);
+                            loadingMeshFile = true;
+                        }
+                        break;
 
-                GuiWidget labelContainer = new GuiWidget();
-                labelContainer.AnchorAll();
-                labelContainer.AddChild(meshLoadingStateInfoText);
-                labelContainer.Selectable = false;
+                    default:
+                        loadingMeshFile = false;
+                        break;
+                }
 
-                this.AddChild(labelContainer);
+                if (loadingMeshFile)
+                {
+                    meshLoadingStateInfoText = new TextWidget("Loading Mesh...");
+                    meshLoadingStateInfoText.HAnchor = HAnchor.ParentCenter;
+                    meshLoadingStateInfoText.VAnchor = VAnchor.ParentCenter;
+                    meshLoadingStateInfoText.AutoExpandBoundsToText = true;
+
+                    GuiWidget labelContainer = new GuiWidget();
+                    labelContainer.AnchorAll();
+                    labelContainer.AddChild(meshLoadingStateInfoText);
+                    labelContainer.Selectable = false;
+
+                    this.AddChild(labelContainer);
+                }
+                else
+                {
+                    TextWidget no3DView = new TextWidget(string.Format("Sorry! No 3D view available for this file type '{0}'.", Path.GetExtension(meshPathAndFileName).ToUpper()));
+                    no3DView.Margin = new BorderDouble(0, 0, 0, 0);
+                    no3DView.VAnchor = Agg.UI.VAnchor.ParentCenter;
+                    no3DView.HAnchor = Agg.UI.HAnchor.ParentCenter;
+                    this.AddChild(no3DView);
+                }
             }
             else
             {
-                TextWidget no3DView = new TextWidget(string.Format("Sorry! No 3D view available for this file type '{0}'.", Path.GetExtension(meshPathAndFileName).ToUpper()));
+                string startingMessage = string.Format("{0}\n'{1}'", "File not found on disk.", Path.GetFileName(meshPathAndFileName));
+                TextWidget no3DView = new TextWidget(startingMessage);
                 no3DView.Margin = new BorderDouble(0, 0, 0, 0);
                 no3DView.VAnchor = Agg.UI.VAnchor.ParentCenter;
                 no3DView.HAnchor = Agg.UI.HAnchor.ParentCenter;

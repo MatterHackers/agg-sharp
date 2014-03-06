@@ -62,6 +62,10 @@
   </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
+    <ProjectReference Include="..\..\..\MatterControl\Localizations\Localizations.csproj">
+      <Project>{CA96058C-1A37-465D-A357-D6D695B13D25}</Project>
+      <Name>Localizations</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\agg\Agg.csproj">
       <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
       <Name>Agg</Name>
