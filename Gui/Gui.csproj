@@ -120,7 +120,7 @@
     <Compile Include="ScrollableWidget\ScrollBar.cs" />
     <Compile Include="ScrollableWidget\ScrollingArea.cs" />
     <Compile Include="SimpleVertexSourceWidget.cs" />
-    <Compile Include="Slider.cs" />
+    <Compile Include="Slider\Slider.cs" />
     <Compile Include="Splitter.cs" />
     <Compile Include="SystemWindow.cs" />
     <Compile Include="TabControl\Tab.cs" />

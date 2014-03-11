@@ -174,8 +174,13 @@ namespace MatterHackers.GCodeVisualizer
             }
         }
 
-        void CreateFeaturesForLayer(int layerToCreate)
+        void CreateFeaturesForLayerIfRequired(int layerToCreate)
         {
+            if (renderFeatures[layerToCreate].Count > 0)
+            {
+                return;
+            }
+
             List<RenderFeatureBase> renderFeaturesForLayer = renderFeatures[layerToCreate];
 
             int currentVertexIndex = gCodeFileToDraw.IndexOfChangeInZ[layerToCreate];
@@ -226,14 +231,17 @@ namespace MatterHackers.GCodeVisualizer
             }
         }
 
+        public int GetNumFeatures(int layerToCountFeaturesOn)
+        {
+            CreateFeaturesForLayerIfRequired(layerToCountFeaturesOn);
+            return renderFeatures[layerToCountFeaturesOn].Count;
+        }
+
         public void Render(Graphics2D graphics2D, int activeLayerIndex, Affine transform, double layerScale, RenderType renderType)
         {
             if (renderFeatures.Count > 0)
             {
-                if (renderFeatures[activeLayerIndex].Count == 0)
-                {
-                    CreateFeaturesForLayer(activeLayerIndex);
-                }
+                CreateFeaturesForLayerIfRequired(activeLayerIndex);
 
                 foreach (RenderFeatureBase feature in renderFeatures[activeLayerIndex])
                 {
