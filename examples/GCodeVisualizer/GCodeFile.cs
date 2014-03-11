@@ -263,20 +263,20 @@ namespace MatterHackers.GCodeVisualizer
                 if (lineToParse.StartsWith("G0") || lineToParse.StartsWith("G1"))
                 {
                     double newFeedRate = 0;
-                    if (GetFirstNumberAfter('F', lineToParse, ref newFeedRate))
+                    if (GetFirstNumberAfter("F", lineToParse, ref newFeedRate))
                     {
                         feedRate = newFeedRate;
                     }
 
                     Vector3 attemptedDestination = lastPrinterPosition;
-                    GetFirstNumberAfter('X', lineToParse, ref attemptedDestination.x);
-                    GetFirstNumberAfter('Y', lineToParse, ref attemptedDestination.y);
-                    GetFirstNumberAfter('Z', lineToParse, ref attemptedDestination.z);
+                    GetFirstNumberAfter("X", lineToParse, ref attemptedDestination.x);
+                    GetFirstNumberAfter("Y", lineToParse, ref attemptedDestination.y);
+                    GetFirstNumberAfter("Z", lineToParse, ref attemptedDestination.z);
 
                     Vector3 deltaPosition = attemptedDestination - lastPrinterPosition;
 
                     double ePosition = lastEPosition;
-                    GetFirstNumberAfter('E', lineToParse, ref ePosition);
+                    GetFirstNumberAfter("E", lineToParse, ref ePosition);
 
                     //if (newLine.extrusionType == PrinterMachineState.MovementTypes.Absolute)
                     {
@@ -294,7 +294,7 @@ namespace MatterHackers.GCodeVisualizer
                 else if (lineToParse.StartsWith("G92"))
                 {
                     double ePosition = 0;
-                    if (GetFirstNumberAfter('E', lineToParse, ref ePosition))
+                    if (GetFirstNumberAfter("E", lineToParse, ref ePosition))
                     {
                         lastEPosition = ePosition;
                     }
@@ -362,12 +362,12 @@ namespace MatterHackers.GCodeVisualizer
 
         const string matchDouble = @"^-*[0-9]*\.?[0-9]*";
         private static readonly Regex matchDoubleRegex = new Regex(matchDouble, RegexOptions.Compiled);
-        public static bool GetFirstNumberAfter(char stringToCheckAfter, string stringWithNumber, ref double readValue, int startIndex = 0)
+        public static bool GetFirstNumberAfter(string stringToCheckAfter, string stringWithNumber, ref double readValue, int startIndex = 0)
         {
             int stringPos = stringWithNumber.IndexOf(stringToCheckAfter, startIndex);
             if (stringPos != -1)
             {
-                string startingAfterCheckString = stringWithNumber.Substring(stringPos + 1).Trim();
+                string startingAfterCheckString = stringWithNumber.Substring(stringPos + stringToCheckAfter.Length).Trim();
                 string matchString = matchDoubleRegex.Match(startingAfterCheckString).Value;
                 return double.TryParse(matchString, out readValue);
             }
@@ -552,22 +552,22 @@ namespace MatterHackers.GCodeVisualizer
                     // get the x y z to move to
                     {
                         double valueX = 0;
-                        if (GCodeFile.GetFirstNumberAfter('X', lineString, ref valueX))
+                        if (GCodeFile.GetFirstNumberAfter("X", lineString, ref valueX))
                         {
                             processingMachineState.X = valueX;
                         }
                         double valueY = 0;
-                        if (GCodeFile.GetFirstNumberAfter('Y', lineString, ref valueY))
+                        if (GCodeFile.GetFirstNumberAfter("Y", lineString, ref valueY))
                         {
                             processingMachineState.Y = valueY;
                         }
                         double valueZ = 0;
-                        if (GCodeFile.GetFirstNumberAfter('Z', lineString, ref valueZ))
+                        if (GCodeFile.GetFirstNumberAfter("Z", lineString, ref valueZ))
                         {
                             processingMachineState.Z = valueZ;
                         }
                         double valueE = 0;
-                        if (GCodeFile.GetFirstNumberAfter('E', lineString, ref valueE))
+                        if (GCodeFile.GetFirstNumberAfter("E", lineString, ref valueE))
                         {
                             if (processingMachineState.movementType == PrinterMachineInstruction.MovementTypes.Absolute)
                             {
@@ -579,7 +579,7 @@ namespace MatterHackers.GCodeVisualizer
                             }
                         }
                         double valueF = 0;
-                        if (GCodeFile.GetFirstNumberAfter('F', lineString, ref valueF))
+                        if (GCodeFile.GetFirstNumberAfter("F", lineString, ref valueF))
                         {
                             processingMachineState.FeedRate = valueF;
                         }
@@ -621,7 +621,7 @@ namespace MatterHackers.GCodeVisualizer
                 case "92":
                     // set current head position values (used to reset origin)
                     double ePosition = 0;
-                    if (GetFirstNumberAfter('E', lineString, ref ePosition))
+                    if (GetFirstNumberAfter("E", lineString, ref ePosition))
                     {
                         // remember how much e position we just gave up
                         amountOfAccumulatedE = (processingMachineState.EPosition - ePosition);
@@ -702,7 +702,7 @@ namespace MatterHackers.GCodeVisualizer
                 if (lineToParse.StartsWith("G0") || lineToParse.StartsWith("G1"))
                 {
                     double ePosition = lastEPosition;
-                    GetFirstNumberAfter('E', lineToParse, ref ePosition);
+                    GetFirstNumberAfter("E", lineToParse, ref ePosition);
 
                     if (instruction.movementType == PrinterMachineInstruction.MovementTypes.Absolute)
                     {
@@ -719,7 +719,7 @@ namespace MatterHackers.GCodeVisualizer
                 else if (lineToParse.StartsWith("G92"))
                 {
                     double ePosition = 0;
-                    if (GetFirstNumberAfter('E', lineToParse, ref ePosition))
+                    if (GetFirstNumberAfter("E", lineToParse, ref ePosition))
                     {
                         lastEPosition = ePosition;
                     }
