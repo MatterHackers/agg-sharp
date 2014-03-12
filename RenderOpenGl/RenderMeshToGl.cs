@@ -51,6 +51,7 @@ namespace MatterHackers.RenderOpenGl
 {
     public static class RenderMeshToGl
     {
+#if USE_GLES2
         private static String vertexShaderCode =
             "attribute vec4 vPosition;" +
             "void main() {" +
@@ -63,6 +64,7 @@ namespace MatterHackers.RenderOpenGl
             "void main() {" +
             "  gl_FragColor = vColor;" +
             "}";
+#endif
 
         static void DrawToGL(Mesh meshToRender)
         {

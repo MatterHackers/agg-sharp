@@ -45,6 +45,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Csg\Csg.csproj">
+      <Project>{7E61A5BD-E78F-4B80-88C9-3821B4FA062E}</Project>
+      <Name>Csg</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Tesselate\Tesselate.csproj">
       <Project>{AE37DE1F-22F7-49EE-8732-FC6BC8DC58D9}</Project>
       <Name>Tesselate</Name>
@@ -52,10 +56,6 @@
     <ProjectReference Include="..\VectorMath\VectorMath.csproj">
       <Project>{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}</Project>
       <Name>VectorMath</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Csg\Csg.csproj">
-      <Project>{7E61A5BD-E78F-4B80-88C9-3821B4FA062E}</Project>
-      <Name>Csg</Name>
     </ProjectReference>
     <ProjectReference Include="..\PolygonMesh\PolygonMesh.csproj">
       <Project>{86F6AAF2-9B50-40B8-A427-1897D76471C5}</Project>

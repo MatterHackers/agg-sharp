@@ -52,7 +52,6 @@ namespace MatterHackers.PolygonMesh.Csg
         public static Mesh MeshFromPolygons(List<CsgPolygon> polygons)
         {
             Mesh model = new Mesh();
-            int p = 0;
             HashSet<PolygonMesh.Vertex> vertices = new HashSet<PolygonMesh.Vertex>();
             for (int polygonIndex = 0; polygonIndex < polygons.Count; polygonIndex++)
             {
