@@ -149,10 +149,6 @@ namespace MatterHackers.MarchingSquares
                 {
                     int offsetWithX = offset + x;
                     float point0 = buffer[offsetWithX + strideInFloats];
-                    if (point0 > 0)
-                    {
-                        int a = 0;
-                    }
                     float point1 = buffer[offsetWithX + 1 + strideInFloats];
                     float point2 = buffer[offsetWithX + 1];
                     float point3 = buffer[offsetWithX];
