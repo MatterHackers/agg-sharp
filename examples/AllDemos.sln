@@ -93,6 +93,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "clipper_library", "..\clipp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsFileDialogs", "..\WindowsFileDialogs\WindowsFileDialogs.csproj", "{A526DC5D-65F3-461B-805F-D3AC9665F5C9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HellowWorld", "HelloWorld\HellowWorld.csproj", "{6944B672-ED03-4A8E-BA31-804EEB788507}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -543,6 +545,16 @@ Global
 		{A526DC5D-65F3-461B-805F-D3AC9665F5C9}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{A526DC5D-65F3-461B-805F-D3AC9665F5C9}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{A526DC5D-65F3-461B-805F-D3AC9665F5C9}.Release|x86.ActiveCfg = Release|Any CPU
+		{6944B672-ED03-4A8E-BA31-804EEB788507}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6944B672-ED03-4A8E-BA31-804EEB788507}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6944B672-ED03-4A8E-BA31-804EEB788507}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{6944B672-ED03-4A8E-BA31-804EEB788507}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{6944B672-ED03-4A8E-BA31-804EEB788507}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6944B672-ED03-4A8E-BA31-804EEB788507}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6944B672-ED03-4A8E-BA31-804EEB788507}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6944B672-ED03-4A8E-BA31-804EEB788507}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{6944B672-ED03-4A8E-BA31-804EEB788507}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{6944B672-ED03-4A8E-BA31-804EEB788507}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -578,6 +590,7 @@ Global
 		{43254794-FC6F-4B7C-A840-64261F736C82} = {CB0173EF-5564-4835-8BBB-07124D7357AD}
 		{E4A36D88-953C-4587-A445-B63F626BDC8A} = {CB0173EF-5564-4835-8BBB-07124D7357AD}
 		{8DEE954D-1DCF-4C08-8C81-E847C8A48E80} = {CB0173EF-5564-4835-8BBB-07124D7357AD}
+		{6944B672-ED03-4A8E-BA31-804EEB788507} = {CB0173EF-5564-4835-8BBB-07124D7357AD}
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		StartupItem = DemoRunner\DemoRunner.csproj

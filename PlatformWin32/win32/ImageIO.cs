@@ -36,43 +36,92 @@ using System.Drawing.Imaging;
 
 namespace MatterHackers.Agg.Image
 {
-    public static class ImageBMPIO
+    public static class ImageIO
     {
+        static public bool LoadImageData(String pathToGifFile, ImageSequence destImageSequence)
+        {
+            if (File.Exists(pathToGifFile) && Path.GetExtension(pathToGifFile).ToUpper() == ".GIF")
+            {
+                System.Drawing.Image gifImg = System.Drawing.Image.FromFile(pathToGifFile);
+                if (gifImg != null)
+                {
+                    FrameDimension dimension = new FrameDimension(gifImg.FrameDimensionsList[0]);
+                    // Number of frames
+                    int frameCount = gifImg.GetFrameCount(dimension);
+
+                    for (int i = 0; i < frameCount; i++)
+                    {
+                        // Return an Image at a certain index
+                        gifImg.SelectActiveFrame(dimension, i);
+                        ImageBuffer frame = new ImageBuffer();
+                        ConvertBitmapToImage(frame, new Bitmap(gifImg));
+                        destImageSequence.AddImage(frame);
+                    }
+
+                    try
+                    {
+                        PropertyItem item = gifImg.GetPropertyItem(0x5100); // FrameDelay in libgdiplus
+                        // Time is in 1/100th of a second
+                        destImageSequence.SecondsPerFrame = (item.Value[0] + item.Value[1] * 256) / 100.0;
+                    }
+                    catch
+                    {
+                        destImageSequence.SecondsPerFrame = 2;
+                    }
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         static public bool LoadImageData(String fileName, ImageBuffer destImage)
         {
             if (System.IO.File.Exists(fileName))
             {
                 Bitmap m_WidowsBitmap = new Bitmap(fileName);
-                if (m_WidowsBitmap != null)
-                {
-                    switch (m_WidowsBitmap.PixelFormat)
-                    {
-                        case System.Drawing.Imaging.PixelFormat.Format32bppArgb:
-                            {
-                                destImage.Allocate(m_WidowsBitmap.Width, m_WidowsBitmap.Height, m_WidowsBitmap.Width * 4, 32);
-                                if (destImage.GetRecieveBlender() == null)
-                                {
-                                    destImage.SetRecieveBlender(new BlenderBGRA());
-                                }
+                return ConvertBitmapToImage(destImage, m_WidowsBitmap);
+            }
+            else
+            {
+                throw new System.Exception(string.Format("Image file not found: {0}", fileName));
+            }
+            return false;
+        }
 
-                                BitmapData bitmapData = m_WidowsBitmap.LockBits(new Rectangle(0, 0, m_WidowsBitmap.Width, m_WidowsBitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, m_WidowsBitmap.PixelFormat);
-                                int sourceIndex = 0;
-                                int destIndex = 0;
-                                unsafe
+        private static bool ConvertBitmapToImage(ImageBuffer destImage, Bitmap m_WidowsBitmap)
+        {
+            if (m_WidowsBitmap != null)
+            {
+                switch (m_WidowsBitmap.PixelFormat)
+                {
+                    case System.Drawing.Imaging.PixelFormat.Format32bppArgb:
+                        {
+                            destImage.Allocate(m_WidowsBitmap.Width, m_WidowsBitmap.Height, m_WidowsBitmap.Width * 4, 32);
+                            if (destImage.GetRecieveBlender() == null)
+                            {
+                                destImage.SetRecieveBlender(new BlenderBGRA());
+                            }
+
+                            BitmapData bitmapData = m_WidowsBitmap.LockBits(new Rectangle(0, 0, m_WidowsBitmap.Width, m_WidowsBitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, m_WidowsBitmap.PixelFormat);
+                            int sourceIndex = 0;
+                            int destIndex = 0;
+                            unsafe
+                            {
+                                int offset;
+                                byte[] destBuffer = destImage.GetBuffer(out offset);
+                                byte* pSourceBuffer = (byte*)bitmapData.Scan0;
+                                for (int y = 0; y < destImage.Height; y++)
                                 {
-                                    int offset;
-                                    byte[] destBuffer = destImage.GetBuffer(out offset);
-                                    byte* pSourceBuffer = (byte*)bitmapData.Scan0;
-                                    for (int y = 0; y < destImage.Height; y++)
+                                    destIndex = destImage.GetBufferOffsetXY(0, destImage.Height - 1 - y);
+                                    for (int x = 0; x < destImage.Width; x++)
                                     {
-                                        destIndex = destImage.GetBufferOffsetXY(0, destImage.Height - 1 - y);
-                                        for (int x = 0; x < destImage.Width; x++)
-                                        {
 #if true
-                                            destBuffer[destIndex++] = pSourceBuffer[sourceIndex++];
-                                            destBuffer[destIndex++] = pSourceBuffer[sourceIndex++];
-                                            destBuffer[destIndex++] = pSourceBuffer[sourceIndex++];
-                                            destBuffer[destIndex++] = pSourceBuffer[sourceIndex++];
+                                        destBuffer[destIndex++] = pSourceBuffer[sourceIndex++];
+                                        destBuffer[destIndex++] = pSourceBuffer[sourceIndex++];
+                                        destBuffer[destIndex++] = pSourceBuffer[sourceIndex++];
+                                        destBuffer[destIndex++] = pSourceBuffer[sourceIndex++];
 #else
                                             RGBA_Bytes notPreMultiplied = new RGBA_Bytes(pSourceBuffer[sourceIndex + 0], pSourceBuffer[sourceIndex + 1], pSourceBuffer[sourceIndex + 2], pSourceBuffer[sourceIndex + 3]);
                                             sourceIndex += 4;
@@ -82,81 +131,81 @@ namespace MatterHackers.Agg.Image
                                             destBuffer[destIndex++] = preMultiplied.red;
                                             destBuffer[destIndex++] = preMultiplied.alpha;
 #endif
-                                        }
                                     }
                                 }
-
-                                m_WidowsBitmap.UnlockBits(bitmapData);
-
-                                return true;
                             }
 
-                        case System.Drawing.Imaging.PixelFormat.Format24bppRgb:
+                            m_WidowsBitmap.UnlockBits(bitmapData);
+
+                            return true;
+                        }
+
+                    case System.Drawing.Imaging.PixelFormat.Format24bppRgb:
+                        {
+                            destImage.Allocate(m_WidowsBitmap.Width, m_WidowsBitmap.Height, m_WidowsBitmap.Width * 4, 32);
+
+                            BitmapData bitmapData = m_WidowsBitmap.LockBits(new Rectangle(0, 0, m_WidowsBitmap.Width, m_WidowsBitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, m_WidowsBitmap.PixelFormat);
+                            int sourceIndex = 0;
+                            int destIndex = 0;
+                            unsafe
                             {
-                                destImage.Allocate(m_WidowsBitmap.Width, m_WidowsBitmap.Height, m_WidowsBitmap.Width * 4, 32);
-
-                                BitmapData bitmapData = m_WidowsBitmap.LockBits(new Rectangle(0, 0, m_WidowsBitmap.Width, m_WidowsBitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, m_WidowsBitmap.PixelFormat);
-                                int sourceIndex = 0;
-                                int destIndex = 0;
-                                unsafe
+                                int offset;
+                                byte[] destBuffer = destImage.GetBuffer(out offset);
+                                byte* pSourceBuffer = (byte*)bitmapData.Scan0;
+                                for (int y = 0; y < destImage.Height; y++)
                                 {
-                                    int offset;
-                                    byte[] destBuffer = destImage.GetBuffer(out offset);
-                                    byte* pSourceBuffer = (byte*)bitmapData.Scan0;
-                                    for (int y = 0; y < destImage.Height; y++)
+                                    destIndex = destImage.GetBufferOffsetXY(0, destImage.Height - 1 - y);
+                                    for (int x = 0; x < destImage.Width; x++)
                                     {
-                                        destIndex = destImage.GetBufferOffsetXY(0, destImage.Height - 1 - y);
-                                        for (int x = 0; x < destImage.Width; x++)
-                                        {
-                                            destBuffer[destIndex++] = pSourceBuffer[sourceIndex++];
-                                            destBuffer[destIndex++] = pSourceBuffer[sourceIndex++];
-                                            destBuffer[destIndex++] = pSourceBuffer[sourceIndex++];
-                                            destBuffer[destIndex++] = 255;
-                                        }
+                                        destBuffer[destIndex++] = pSourceBuffer[sourceIndex++];
+                                        destBuffer[destIndex++] = pSourceBuffer[sourceIndex++];
+                                        destBuffer[destIndex++] = pSourceBuffer[sourceIndex++];
+                                        destBuffer[destIndex++] = 255;
                                     }
                                 }
-
-                                m_WidowsBitmap.UnlockBits(bitmapData);
-                                return true;
                             }
 
-                        case System.Drawing.Imaging.PixelFormat.Format8bppIndexed:
-                            {
-                                destImage.Allocate(m_WidowsBitmap.Width, m_WidowsBitmap.Height, m_WidowsBitmap.Width, 8);
+                            m_WidowsBitmap.UnlockBits(bitmapData);
+                            return true;
+                        }
 
-                                BitmapData bitmapData = m_WidowsBitmap.LockBits(new Rectangle(0, 0, m_WidowsBitmap.Width, m_WidowsBitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, m_WidowsBitmap.PixelFormat);
-                                int sourceIndex = 0;
-                                int destIndex = 0;
-                                unsafe
-                                {
-                                    int offset;
-                                    byte[] destBuffer = destImage.GetBuffer(out offset);
-                                    byte* pSourceBuffer = (byte*)bitmapData.Scan0;
-                                    for (int y = 0; y < destImage.Height; y++)
-                                    {
-                                        destIndex = destImage.GetBufferOffsetXY(0, destImage.Height - 1 - y);
-                                        for (int x = 0; x < destImage.Width; x++)
-                                        {
-                                            destBuffer[destIndex++] = pSourceBuffer[sourceIndex++];
-                                        }
-                                    }
-                                }
+                    case System.Drawing.Imaging.PixelFormat.Format8bppIndexed:
+                        {
+                            Copy8BitDataToImage(destImage, m_WidowsBitmap);
+                            return true;
+                        }
 
-                                m_WidowsBitmap.UnlockBits(bitmapData);
-                                return true;
-                            }
-
-                        default:
-                            throw new System.NotImplementedException();
-                    }
-
+                    default:
+                        throw new System.NotImplementedException();
                 }
-            }
-            else
-            {
-                throw new System.Exception(string.Format("Image file not found: {0}", fileName));
+
             }
             return false;
+        }
+
+        private static void Copy8BitDataToImage(ImageBuffer destImage, Bitmap m_WidowsBitmap)
+        {
+            destImage.Allocate(m_WidowsBitmap.Width, m_WidowsBitmap.Height, m_WidowsBitmap.Width, 8);
+
+            BitmapData bitmapData = m_WidowsBitmap.LockBits(new Rectangle(0, 0, m_WidowsBitmap.Width, m_WidowsBitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, m_WidowsBitmap.PixelFormat);
+            int sourceIndex = 0;
+            int destIndex = 0;
+            unsafe
+            {
+                int offset;
+                byte[] destBuffer = destImage.GetBuffer(out offset);
+                byte* pSourceBuffer = (byte*)bitmapData.Scan0;
+                for (int y = 0; y < destImage.Height; y++)
+                {
+                    destIndex = destImage.GetBufferOffsetXY(0, destImage.Height - 1 - y);
+                    for (int x = 0; x < destImage.Width; x++)
+                    {
+                        destBuffer[destIndex++] = pSourceBuffer[sourceIndex++];
+                    }
+                }
+            }
+
+            m_WidowsBitmap.UnlockBits(bitmapData);
         }
 
         static public bool SaveImageData(String filename, IImageByte sourceImage)

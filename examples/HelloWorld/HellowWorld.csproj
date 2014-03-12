@@ -5,7 +5,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.50727</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{3BEFA755-A647-4A16-A73C-0ACF18211EBD}</ProjectGuid>
+    <ProjectGuid>{6944B672-ED03-4A8E-BA31-804EEB788507}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>HellowWorld</RootNamespace>
@@ -94,6 +94,10 @@
     <ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj">
       <Project>{670BDDFF-927B-425D-9DD1-22ACB14356EB}</Project>
       <Name>PlatformWin32</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\VectorMath\VectorMath.csproj">
+      <Project>{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}</Project>
+      <Name>VectorMath</Name>
     </ProjectReference>
   </ItemGroup>
 </Project>

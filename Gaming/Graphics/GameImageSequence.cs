@@ -10,7 +10,7 @@ using MatterHackers.VectorMath;
 
 namespace Gaming.Graphics
 {
-    public class ImageSequence : GameObject
+    public class GameImageSequence : GameObject
     {
         [GameDataNumber("FramesPerSecond", 
             Description="Stored so that an object using this sequence knows how fast it should play.",
@@ -28,19 +28,19 @@ namespace Gaming.Graphics
 
         ImageBuffer[] m_Images;
 
-        public ImageSequence()
+        public GameImageSequence()
         {
         }
 
-        private static ImageSequence LoadSerializationFileForFolder(String gameDataObjectXMLPath)
+        private static GameImageSequence LoadSerializationFileForFolder(String gameDataObjectXMLPath)
         {
-            ImageSequence sequenceLoaded;
+            GameImageSequence sequenceLoaded;
 
-            sequenceLoaded = (ImageSequence)GameObject.Load(gameDataObjectXMLPath);
+            sequenceLoaded = (GameImageSequence)GameObject.Load(gameDataObjectXMLPath);
 
             if (sequenceLoaded == null)
             {
-                sequenceLoaded = new ImageSequence();
+                sequenceLoaded = new GameImageSequence();
                 sequenceLoaded.SaveXML(gameDataObjectXMLPath);
             }
 
@@ -75,7 +75,7 @@ namespace Gaming.Graphics
         {
             // First we load up the Data In the Serialization file.
             String gameDataObjectXMLPath = System.IO.Path.Combine(PathName, "ImageSequence");
-            ImageSequence sequenceLoaded = LoadSerializationFileForFolder(gameDataObjectXMLPath);
+            GameImageSequence sequenceLoaded = LoadSerializationFileForFolder(gameDataObjectXMLPath);
 
             // Now lets look for and load up any images that we find.
             String[] tgaFilesArray = Directory.GetFiles(PathName, "*.tga");

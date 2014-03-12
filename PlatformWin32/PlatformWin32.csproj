@@ -82,7 +82,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="win32\DirtyRects.cs" />
-    <Compile Include="win32\ImageBMPIO.cs">
+    <Compile Include="win32\ImageIO.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="win32\Joystick_win32.cs" />

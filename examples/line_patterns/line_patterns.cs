@@ -258,15 +258,15 @@ namespace MatterHackers.Agg
     {
         public override GuiWidget NewWidget()
         {
-            if (!ImageBMPIO.LoadImageData("1.bmp", line_patterns_application.rbuf_img0)
-                || !ImageBMPIO.LoadImageData("2.bmp", line_patterns_application.rbuf_img1)
-                || !ImageBMPIO.LoadImageData("3.bmp", line_patterns_application.rbuf_img2)
-                || !ImageBMPIO.LoadImageData("4.bmp", line_patterns_application.rbuf_img3)
-                || !ImageBMPIO.LoadImageData("5.bmp", line_patterns_application.rbuf_img4)
-                || !ImageBMPIO.LoadImageData("6.bmp", line_patterns_application.rbuf_img5)
-                || !ImageBMPIO.LoadImageData("7.bmp", line_patterns_application.rbuf_img6)
-                || !ImageBMPIO.LoadImageData("8.bmp", line_patterns_application.rbuf_img7)
-                || !ImageBMPIO.LoadImageData("9.bmp", line_patterns_application.rbuf_img8))
+            if (!ImageIO.LoadImageData("1.bmp", line_patterns_application.rbuf_img0)
+                || !ImageIO.LoadImageData("2.bmp", line_patterns_application.rbuf_img1)
+                || !ImageIO.LoadImageData("3.bmp", line_patterns_application.rbuf_img2)
+                || !ImageIO.LoadImageData("4.bmp", line_patterns_application.rbuf_img3)
+                || !ImageIO.LoadImageData("5.bmp", line_patterns_application.rbuf_img4)
+                || !ImageIO.LoadImageData("6.bmp", line_patterns_application.rbuf_img5)
+                || !ImageIO.LoadImageData("7.bmp", line_patterns_application.rbuf_img6)
+                || !ImageIO.LoadImageData("8.bmp", line_patterns_application.rbuf_img7)
+                || !ImageIO.LoadImageData("9.bmp", line_patterns_application.rbuf_img8))
             {
                 String buf = "There must be files 1%s...9%s\n"
                              + "Download and unzip:\n"

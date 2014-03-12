@@ -42,20 +42,20 @@ namespace RockBlaster
             m_Velocity = new Vector2(rand.NextDouble() * maxVelocity - maxVelocity / 2, rand.NextDouble() * maxVelocity - maxVelocity/2);
         }
 
-        ImageSequence GetImageSequence()
+        GameImageSequence GetImageSequence()
         {
-            return (ImageSequence)DataAssetCache.Instance.GetAsset(typeof(ImageSequence), "Asteroid 3");
+            return (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "Asteroid 3");
         }
 
         protected override void DoDraw(Graphics2D destRenderer)
         {
-            ImageSequence rockShip = GetImageSequence();
+            GameImageSequence rockShip = GetImageSequence();
             destRenderer.Render(rockShip.GetImageByRatio(playRatio), m_Position.x, m_Position.y, 0, scaleRatio, scaleRatio);
         }
 
         public override void Update(double numSecondsPassed)
         {
-            ImageSequence rockShip = GetImageSequence();
+            GameImageSequence rockShip = GetImageSequence();
             playRatio += (numSecondsPassed * rockShip.FramePerSecond) / rockShip.NumFrames;
             if (playRatio > 1) playRatio = 0;
             base.Update(numSecondsPassed);

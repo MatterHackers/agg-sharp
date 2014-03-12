@@ -158,17 +158,17 @@ namespace RockBlaster
 		{
             BoundsRelativeToParent = bounds;
 
-            ImageSequence startButtonSequence = (ImageSequence)DataAssetCache.Instance.GetAsset(typeof(ImageSequence), "MainMenuStartButton");
+            GameImageSequence startButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "MainMenuStartButton");
             Button StartGameButton = new Button(400, 310, new ButtonViewThreeImage(startButtonSequence.GetImageByIndex(0), startButtonSequence.GetImageByIndex(1), startButtonSequence.GetImageByIndex(2)));
             AddChild(StartGameButton);
             StartGameButton.Click += new Button.ButtonEventHandler(OnStartGameButton);
 
-            ImageSequence creditsButtonSequence = (ImageSequence)DataAssetCache.Instance.GetAsset(typeof(ImageSequence), "MainMenuCreditsButton");
+            GameImageSequence creditsButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "MainMenuCreditsButton");
             Button creditsGameButton = new Button(400, 230, new ButtonViewThreeImage(creditsButtonSequence.GetImageByIndex(0), creditsButtonSequence.GetImageByIndex(1), creditsButtonSequence.GetImageByIndex(2)));
             AddChild(creditsGameButton);
             creditsGameButton.Click += new Button.ButtonEventHandler(OnShowCreditsButton);
 
-            ImageSequence exitButtonSequence = (ImageSequence)DataAssetCache.Instance.GetAsset(typeof(ImageSequence), "MainMenuExitButton");
+            GameImageSequence exitButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "MainMenuExitButton");
             Button exitGameButton = new Button(400, 170, new ButtonViewThreeImage(exitButtonSequence.GetImageByIndex(0), exitButtonSequence.GetImageByIndex(1), exitButtonSequence.GetImageByIndex(2)));
 			AddChild(exitGameButton);
 			exitGameButton.Click += new Button.ButtonEventHandler(OnExitGameButton);
@@ -176,13 +176,13 @@ namespace RockBlaster
 
         public override void OnDraw(Graphics2D graphics2D)
         {
-            ImageSequence menuBackground = (ImageSequence)DataAssetCache.Instance.GetAsset(typeof(ImageSequence), "MainMenuBackground");
+            GameImageSequence menuBackground = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "MainMenuBackground");
             graphics2D.Render(menuBackground.GetImageByIndex(0), 0, 0);
 
-            ImageSequence planetOnMenu = (ImageSequence)DataAssetCache.Instance.GetAsset(typeof(ImageSequence), "PlanetOnMenu");
+            GameImageSequence planetOnMenu = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "PlanetOnMenu");
             graphics2D.Render(planetOnMenu.GetImageByRatio(planetRatio.Read()), 620, 360);
 
-            ImageSequence shipOnMenu = (ImageSequence)DataAssetCache.Instance.GetAsset(typeof(ImageSequence), "Player1Ship");
+            GameImageSequence shipOnMenu = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "Player1Ship");
 
             int numFrames = shipOnMenu.NumFrames;
             double animationRatio0to1 = shipRatio.Read();

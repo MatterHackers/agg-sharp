@@ -93,6 +93,7 @@
     <Compile Include="agg_rasterizer_outline_aa.cs" />
     <Compile Include="BorderDouble.cs" />
     <Compile Include="Font\UnitTests.cs" />
+    <Compile Include="Image\ImageSequence.cs" />
     <Compile Include="PluginFinder.cs" />
     <Compile Include="RectangleDouble.cs" />
     <Compile Include="RectangleInt.cs" />

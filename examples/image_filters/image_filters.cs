@@ -115,7 +115,7 @@ namespace MatterHackers.Agg
 #endif
 
             string img_name = "spheres.bmp";
-            if (!ImageBMPIO.LoadImageData(img_name, tempImageToLoadInto))
+            if (!ImageIO.LoadImageData(img_name, tempImageToLoadInto))
             {
                 string buf;
                 buf = "File not found: "

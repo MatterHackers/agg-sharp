@@ -107,6 +107,7 @@
     <Compile Include="RadioButton\RadioButtonViewStates.cs" />
     <Compile Include="RadioButton\RadioButtonViewText.cs" />
     <Compile Include="RootedObjectEventHandler.cs" />
+    <Compile Include="ImageSequenceWidget.cs" />
     <Compile Include="StringEventArgs.cs" />
     <Compile Include="Tests\MenuTests.cs" />
     <Compile Include="TextWidgets\InternalNumberEdit.cs" />
