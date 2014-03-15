@@ -585,8 +585,9 @@ namespace MatterHackers.GCodeVisualizer
                         }
                     }
 
-                    if (processingMachineState.Z != parsingLastZ)
+                    if (processingMachineState.Z != parsingLastZ || indexOfChangeInZ.Count == 0)
                     {
+                        // if we changed z or there is a movement and we have never started a layer index
                         indexOfChangeInZ.Add(GCodeCommandQueue.Count);
                     }
                     parsingLastZ = processingMachineState.Position.z;
