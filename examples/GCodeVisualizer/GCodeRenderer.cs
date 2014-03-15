@@ -119,8 +119,14 @@ namespace MatterHackers.GCodeVisualizer
                 stroke.line_join(LineJoin.Round);
 
                 pathStorage.Add(start.x, start.y, ShapePath.FlagsAndCommand.CommandMoveTo);
-                pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
-
+                if (end.x != start.x || end.y != start.y)
+                {
+                    pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
+                }
+                else
+                {
+                    pathStorage.Add(end.x + .01, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
+                }
                 graphics2D.Render(stroke, 0, movementColor);
             }
         }
@@ -252,8 +258,11 @@ namespace MatterHackers.GCodeVisualizer
                 startFeature = Math.Max(0, Math.Min(startFeature, featuresOnLayer));
 
                 // try to make sure we always draw at least one feature
-                if (endFeature < startFeature) endFeature = Math.Min(startFeature + 1, featuresOnLayer);
-                if (startFeature > endFeature)
+                if (endFeature <= startFeature)
+                {
+                    endFeature = Math.Min(startFeature + 1, featuresOnLayer);
+                }
+                if (startFeature >= endFeature)
                 {
                     // This can only happen if the sart and end are set to the last feature
                     // Try to set the start feture to one from the end
