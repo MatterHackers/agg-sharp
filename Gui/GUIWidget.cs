@@ -22,7 +22,6 @@ using System.Collections.ObjectModel;
 
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
-using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI

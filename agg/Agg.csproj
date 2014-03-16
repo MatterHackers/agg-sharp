@@ -99,6 +99,7 @@
     <Compile Include="RectangleInt.cs" />
     <Compile Include="ScanlineRasterizer.cs" />
     <Compile Include="ShapePath.cs" />
+    <Compile Include="StringHelper.cs" />
     <Compile Include="TimedLock.cs" />
     <Compile Include="Tests\UnitTests.cs" />
     <Compile Include="VectorClipper.cs" />
