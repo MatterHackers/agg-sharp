@@ -21,8 +21,8 @@ namespace MatterHackers.Agg
 
             Clipper clipper = new Clipper();
 
-            clipper.AddPolygons(aPolys, PolyType.ptSubject);
-            clipper.AddPolygons(bPolys, PolyType.ptClip);
+            clipper.AddPaths(aPolys, PolyType.ptSubject, true);
+            clipper.AddPaths(bPolys, PolyType.ptClip, true);
 
             List<List<IntPoint>> intersectedPolys = new List<List<IntPoint>>();
             clipper.Execute(clipType, intersectedPolys);
