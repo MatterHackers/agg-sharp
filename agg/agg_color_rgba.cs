@@ -120,6 +120,14 @@ namespace MatterHackers.Agg
         {
             this = from_wavelength(wavelen, gamma);
         }
+
+        public RGBA_Floats(RGBA_Bytes color)
+        {
+            red = color.Red0To1;
+            green = color.Green0To1;
+            blue = color.Blue0To1;
+            alpha = color.Alpha0To1;
+        }
         #endregion Constructors
 
         #region HSL

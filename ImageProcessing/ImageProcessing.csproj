@@ -52,6 +52,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Blur.cs" />
+    <Compile Include="InvertLightness.cs" />
     <Compile Include="Dilate.cs" />
     <Compile Include="Erode.cs" />
     <Compile Include="Multiply.cs" />

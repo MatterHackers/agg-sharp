@@ -6,7 +6,7 @@ using System.Text;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 
-namespace MatterHackers.ImagePrecessing
+namespace MatterHackers.ImageProcessing
 {
     public class Multiply
     {
