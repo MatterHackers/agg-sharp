@@ -271,7 +271,7 @@ namespace MatterHackers.VectorMath
             currentTranslationMatrix *= Matrix4X4.CreateScale(zoomDelta);
         }
 
-        Matrix4X4 CurrentRotation
+        public Matrix4X4 CurrentRotation
         {
             get
             {
