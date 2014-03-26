@@ -56,7 +56,6 @@ namespace MatterHackers.GCodeVisualizer
 
     public class RenderFeatureRetract : RenderFeatureBase
     {
-        public static double RetractionDistance  = .5;
         public static double RetractionDrawRadius = 1;
 
         double amount;
@@ -75,17 +74,17 @@ namespace MatterHackers.GCodeVisualizer
             {
                 Vector2 position = new Vector2(this.position.x, this.position.y);
                 transform.transform(ref position);
-                Ellipse extrusion = new Ellipse(position, RetractionDrawRadius * layerScale);
+                Ellipse extrusion = new Ellipse(position, RetractionDrawRadius * layerScale * amount);
 
                 if (amount > 0)
                 {
                     // unretraction
-                    graphics2D.Render(extrusion, RGBA_Bytes.Blue);
+                    graphics2D.Render(extrusion, new RGBA_Bytes(RGBA_Bytes.Blue, 140));
                 }
                 else
                 {
                     // retraction
-                    graphics2D.Render(extrusion, RGBA_Bytes.Red);
+                    graphics2D.Render(extrusion, new RGBA_Bytes(RGBA_Bytes.Red, 140));
                 }
             }
         }
