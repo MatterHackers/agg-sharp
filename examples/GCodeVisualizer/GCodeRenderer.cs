@@ -58,12 +58,12 @@ namespace MatterHackers.GCodeVisualizer
     {
         public static double RetractionDrawRadius = 1;
 
-        double amount;
+        double extrusionAmount;
         double mmPerSecond;
         Vector3 position;
-        public RenderFeatureRetract(Vector3 position, double amount, double mmPerSecond)
+        public RenderFeatureRetract(Vector3 position, double extrusionAmount, double mmPerSecond)
         {
-            this.amount = amount;
+            this.extrusionAmount = extrusionAmount;
             this.mmPerSecond = mmPerSecond;
             this.position = position;
         }
@@ -74,17 +74,21 @@ namespace MatterHackers.GCodeVisualizer
             {
                 Vector2 position = new Vector2(this.position.x, this.position.y);
                 transform.transform(ref position);
-                Ellipse extrusion = new Ellipse(position, RetractionDrawRadius * layerScale * amount);
+                double radius = RetractionDrawRadius * layerScale;
+                double area = Math.PI * radius * radius;
+                area *= Math.Abs(extrusionAmount);
+                radius = Math.Sqrt(area/Math.PI);
+                Ellipse extrusion = new Ellipse(position, radius);
 
-                if (amount > 0)
+                if (extrusionAmount > 0)
                 {
                     // unretraction
-                    graphics2D.Render(extrusion, new RGBA_Bytes(RGBA_Bytes.Blue, 140));
+                    graphics2D.Render(extrusion, new RGBA_Bytes(RGBA_Bytes.Blue, 200));
                 }
                 else
                 {
                     // retraction
-                    graphics2D.Render(extrusion, new RGBA_Bytes(RGBA_Bytes.Red, 140));
+                    graphics2D.Render(extrusion, new RGBA_Bytes(RGBA_Bytes.Red, 200));
                 }
             }
         }
