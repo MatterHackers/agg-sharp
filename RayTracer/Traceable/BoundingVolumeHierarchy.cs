@@ -357,9 +357,31 @@ namespace MatterHackers.RayTracer
             return Aabb;
         }
 
-        static int nextAxisForBigGroups = 0;
-        public static IRayTraceable CreateNewHierachy(List<IRayTraceable> traceableItems)
+        public class SortingAccelerator
         {
+            public int nextAxisForBigGroups = 0;
+
+            public int NextAxisForBigGroups { get { return nextAxisForBigGroups; } }
+
+            public SortingAccelerator(List<IRayTraceable> traceableItems)
+            {
+            }
+
+            public SortingAccelerator(int nextAxisForBigGroups)
+            {
+            }
+        }
+
+        public static IRayTraceable CreateNewHierachy(List<IRayTraceable> traceableItems, SortingAccelerator accelerator = null)
+        {
+            if (accelerator == null)
+            {
+                accelerator = new SortingAccelerator(traceableItems);
+            }
+
+            // make sure it is always one of the three axis
+            accelerator.nextAxisForBigGroups = accelerator.nextAxisForBigGroups % 3;
+
             int numItems = traceableItems.Count;
 
             if (numItems == 0)
@@ -377,8 +399,7 @@ namespace MatterHackers.RayTracer
             CompareCentersOnAxis axisSorter = new CompareCentersOnAxis(0);
             if (numItems > 100)
             {
-                bestAxis = nextAxisForBigGroups++;
-                if (nextAxisForBigGroups >= 3) nextAxisForBigGroups = 0;
+                bestAxis = accelerator.nextAxisForBigGroups;
                 bestIndexToSplitOn = numItems / 2;
             }
             else
@@ -501,7 +522,9 @@ namespace MatterHackers.RayTracer
                 {
                     rightItems.Add(traceableItems[i]);
                 }
-                BoundingVolumeHierarchy newBVHNode = new BoundingVolumeHierarchy(CreateNewHierachy(leftItems), CreateNewHierachy(rightItems), bestAxis);
+                IRayTraceable leftGroup = CreateNewHierachy(leftItems, new SortingAccelerator(accelerator.NextAxisForBigGroups + 1));
+                IRayTraceable rightGroup = CreateNewHierachy(rightItems, new SortingAccelerator(accelerator.NextAxisForBigGroups + 1));
+                BoundingVolumeHierarchy newBVHNode = new BoundingVolumeHierarchy(leftGroup, rightGroup, bestAxis);
                 return newBVHNode;
             }
         }
