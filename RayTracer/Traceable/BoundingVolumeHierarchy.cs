@@ -131,15 +131,19 @@ namespace MatterHackers.RayTracer
             return GetAxisAlignedBoundingBox().GetCenter();
         }
 
+        AxisAlignedBoundingBox cachedAABB = new AxisAlignedBoundingBox(Vector3.NegativeInfinity, Vector3.NegativeInfinity);
         public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
         {
-            AxisAlignedBoundingBox totalBounds = items[0].GetAxisAlignedBoundingBox();
-            for (int i = 1; i < items.Length; i++)
+            if (cachedAABB.minXYZ.x == double.NegativeInfinity)
             {
-                totalBounds += items[i].GetAxisAlignedBoundingBox();
+                cachedAABB = items[0].GetAxisAlignedBoundingBox();
+                for (int i = 1; i < items.Length; i++)
+                {
+                    cachedAABB += items[i].GetAxisAlignedBoundingBox();
+                }
             }
 
-            return totalBounds;
+            return cachedAABB;
         }
 
         /// <summary>
@@ -417,12 +421,12 @@ namespace MatterHackers.RayTracer
                     // Get all left bounds
                     AxisAlignedBoundingBox currentLeftBounds = traceableItems[0].GetAxisAlignedBoundingBox();
                     surfaceArreaOfItem[0] = currentLeftBounds.GetSurfaceArea();
-                    for (int i = 1; i < numItems - 1; i += skipInterval)
+                    for (int itemIndex = 1; itemIndex < numItems - 1; itemIndex += skipInterval)
                     {
-                        currentLeftBounds += traceableItems[i].GetAxisAlignedBoundingBox();
-                        surfaceArreaOfItem[i] = currentLeftBounds.GetSurfaceArea();
+                        currentLeftBounds += traceableItems[itemIndex].GetAxisAlignedBoundingBox();
+                        surfaceArreaOfItem[itemIndex] = currentLeftBounds.GetSurfaceArea();
 
-                        totalDeviationOnAxis[axis] += Math.Abs(traceableItems[i].GetCenter()[axis] - traceableItems[i - 1].GetCenter()[axis]);
+                        totalDeviationOnAxis[axis] += Math.Abs(traceableItems[itemIndex].GetCenter()[axis] - traceableItems[itemIndex - 1].GetCenter()[axis]);
                     }
 
                     // Get all right bounds
@@ -430,15 +434,15 @@ namespace MatterHackers.RayTracer
                     {
                         AxisAlignedBoundingBox currentRightBounds = traceableItems[numItems - 1].GetAxisAlignedBoundingBox();
                         rightBoundsAtItem[numItems - 2] = currentRightBounds.GetSurfaceArea();
-                        for (int i = numItems - 1; i > 1; i -= skipInterval)
+                        for (int itemIndex = numItems - 1; itemIndex > 1; itemIndex -= skipInterval)
                         {
-                            currentRightBounds += traceableItems[i - 1].GetAxisAlignedBoundingBox();
-                            rightBoundsAtItem[i - 2] = currentRightBounds.GetSurfaceArea();
+                            currentRightBounds += traceableItems[itemIndex - 1].GetAxisAlignedBoundingBox();
+                            rightBoundsAtItem[itemIndex - 2] = currentRightBounds.GetSurfaceArea();
                         }
                     }
 
                     // Sweep from left
-                    for (int i = 0; i < numItems - 1; i += skipInterval)
+                    for (int itemIndex = 0; itemIndex < numItems - 1; itemIndex += skipInterval)
                     {
                         double thisCost = 0;
 
@@ -447,12 +451,12 @@ namespace MatterHackers.RayTracer
                             double costOfTwoAABB = 2 * AxisAlignedBoundingBox.GetIntersectCost(); // the cost of the two children AABB tests
 
                             // do the left cost
-                            intersectCostOnLeft += traceableItems[i].GetIntersectCost();
-                            double leftCost = (surfaceArreaOfItem[i] / areaOfTotalBounds) * intersectCostOnLeft;
+                            intersectCostOnLeft += traceableItems[itemIndex].GetIntersectCost();
+                            double leftCost = (surfaceArreaOfItem[itemIndex] / areaOfTotalBounds) * intersectCostOnLeft;
 
                             // do the right cost
                             double intersectCostOnRight = totalIntersectCost - intersectCostOnLeft;
-                            double rightCost = (rightBoundsAtItem[i] / areaOfTotalBounds) * intersectCostOnRight;
+                            double rightCost = (rightBoundsAtItem[itemIndex] / areaOfTotalBounds) * intersectCostOnRight;
 
                             thisCost = costOfTwoAABB + leftCost + rightCost;
                         }
@@ -468,7 +472,7 @@ namespace MatterHackers.RayTracer
                                     {
                                         // this new axis is better and we'll switch to it.  Otherwise don't switch.
                                         bestCost = thisCost;
-                                        bestIndexToSplitOn = i;
+                                        bestIndexToSplitOn = itemIndex;
                                         bestAxis = axis;
                                     }
                                 }
@@ -476,7 +480,7 @@ namespace MatterHackers.RayTracer
                             else // this is just better
                             {
                                 bestCost = thisCost;
-                                bestIndexToSplitOn = i;
+                                bestIndexToSplitOn = itemIndex;
                                 bestAxis = axis;
                             }
                         }
