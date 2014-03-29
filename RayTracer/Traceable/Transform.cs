@@ -126,7 +126,12 @@ namespace MatterHackers.RayTracer.Traceable
         {
             return child.GetSurfaceArea();
         }
-        
+
+        public Vector3 GetCenter()
+        {
+            return GetAxisAlignedBoundingBox().GetCenter();
+        }
+
         public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
         {
             Vector3 localOrigin = Origin;

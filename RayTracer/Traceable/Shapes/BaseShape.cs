@@ -58,6 +58,11 @@ namespace MatterHackers.RayTracer
         public abstract IEnumerable IntersectionIterator(Ray ray);
 
         public abstract double GetSurfaceArea();
+        public virtual Vector3 GetCenter()
+        {
+            return GetAxisAlignedBoundingBox().GetCenter();
+        }
+
         public abstract AxisAlignedBoundingBox GetAxisAlignedBoundingBox();
         public abstract double GetIntersectCost();
     }

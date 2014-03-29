@@ -126,6 +126,11 @@ namespace MatterHackers.RayTracer
             return totalSurfaceArea;
         }
 
+        public Vector3 GetCenter()
+        {
+            return GetAxisAlignedBoundingBox().GetCenter();
+        }
+
         public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
         {
             AxisAlignedBoundingBox totalBounds = items[0].GetAxisAlignedBoundingBox();
@@ -352,36 +357,18 @@ namespace MatterHackers.RayTracer
             return Aabb.GetSurfaceArea();
         }
 
+        public Vector3 GetCenter()
+        {
+            return GetAxisAlignedBoundingBox().GetCenter();
+        }
+
         public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
         {
             return Aabb;
         }
 
-        public class SortingAccelerator
+        public static IRayTraceable CreateNewHierachy(List<IRayTraceable> traceableItems)
         {
-            public int nextAxisForBigGroups = 0;
-
-            public int NextAxisForBigGroups { get { return nextAxisForBigGroups; } }
-
-            public SortingAccelerator(List<IRayTraceable> traceableItems)
-            {
-            }
-
-            public SortingAccelerator(int nextAxisForBigGroups)
-            {
-            }
-        }
-
-        public static IRayTraceable CreateNewHierachy(List<IRayTraceable> traceableItems, SortingAccelerator accelerator = null)
-        {
-            if (accelerator == null)
-            {
-                accelerator = new SortingAccelerator(traceableItems);
-            }
-
-            // make sure it is always one of the three axis
-            accelerator.nextAxisForBigGroups = accelerator.nextAxisForBigGroups % 3;
-
             int numItems = traceableItems.Count;
 
             if (numItems == 0)
@@ -397,12 +384,6 @@ namespace MatterHackers.RayTracer
             int bestAxis = -1;
             int bestIndexToSplitOn = -1;
             CompareCentersOnAxis axisSorter = new CompareCentersOnAxis(0);
-            if (numItems > 100)
-            {
-                bestAxis = accelerator.nextAxisForBigGroups;
-                bestIndexToSplitOn = numItems / 2;
-            }
-            else
             {
                 double totalIntersectCost = 0;
                 int skipInterval = 1;
@@ -441,7 +422,7 @@ namespace MatterHackers.RayTracer
                         currentLeftBounds += traceableItems[i].GetAxisAlignedBoundingBox();
                         surfaceArreaOfItem[i] = currentLeftBounds.GetSurfaceArea();
 
-                        totalDeviationOnAxis[axis] += Math.Abs(traceableItems[i].GetAxisAlignedBoundingBox().GetCenter()[axis] - traceableItems[i - 1].GetAxisAlignedBoundingBox().GetCenter()[axis]);
+                        totalDeviationOnAxis[axis] += Math.Abs(traceableItems[i].GetCenter()[axis] - traceableItems[i - 1].GetCenter()[axis]);
                     }
 
                     // Get all right bounds
@@ -522,8 +503,8 @@ namespace MatterHackers.RayTracer
                 {
                     rightItems.Add(traceableItems[i]);
                 }
-                IRayTraceable leftGroup = CreateNewHierachy(leftItems, new SortingAccelerator(accelerator.NextAxisForBigGroups + 1));
-                IRayTraceable rightGroup = CreateNewHierachy(rightItems, new SortingAccelerator(accelerator.NextAxisForBigGroups + 1));
+                IRayTraceable leftGroup = CreateNewHierachy(leftItems);
+                IRayTraceable rightGroup = CreateNewHierachy(rightItems);
                 BoundingVolumeHierarchy newBVHNode = new BoundingVolumeHierarchy(leftGroup, rightGroup, bestAxis);
                 return newBVHNode;
             }

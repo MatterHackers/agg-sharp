@@ -45,8 +45,8 @@ namespace MatterHackers.RayTracer
                 throw new Exception();
             }
 
-            double axisCenterA = a.GetAxisAlignedBoundingBox().GetCenter()[whichAxis];
-            double axisCenterB = b.GetAxisAlignedBoundingBox().GetCenter()[whichAxis];
+            double axisCenterA = a.GetCenter()[whichAxis];
+            double axisCenterB = b.GetCenter()[whichAxis];
 
             if (axisCenterA > axisCenterB)
             {
@@ -94,6 +94,7 @@ namespace MatterHackers.RayTracer
 
         double GetSurfaceArea();
         AxisAlignedBoundingBox GetAxisAlignedBoundingBox();
+        Vector3 GetCenter();
 
         /// <summary>
         /// This is the computation cost of doing an intersection with the given type.

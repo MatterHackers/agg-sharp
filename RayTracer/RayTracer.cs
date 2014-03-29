@@ -73,6 +73,7 @@ namespace MatterHackers.RayTracer
 
         public RayTracer(AntiAliasing antialiasing, bool renderDiffuse, bool renderHighlights, bool renderShadow, bool renderReflection, bool renderRefraction)
         {
+            // run the ray trace unit tests.
             UnitTests.Run();
 
             RenderDiffuse = renderDiffuse;
