@@ -369,8 +369,12 @@ namespace MatterHackers.RayTracer
         {
             Stopwatch loadTime = new Stopwatch();
             loadTime.Start();
+            
             //PolygonMesh.Mesh simpleMesh = StlProcessing.Load("Simple.stl");
-            PolygonMesh.Mesh simpleMesh = StlProcessing.Load("Complex.stl");
+            //PolygonMesh.Mesh simpleMesh = StlProcessing.Load("Complex.stl");
+            PolygonMesh.Mesh simpleMesh = StlProcessing.Load("bunny.stl");
+            //PolygonMesh.Mesh simpleMesh = StlProcessing.Load("bunny_binary.stl");
+
             loadTime.Stop();
 
             timingStrings.Add("Time to load STL {0:0.0}s".FormatWith(loadTime.Elapsed.TotalSeconds));
@@ -434,6 +438,7 @@ namespace MatterHackers.RayTracer
         }
 
         public RGBA_Floats mouseOverColor = new RGBA_Floats();
+        bool SavedTimes = false;
         public override void OnDraw(Graphics2D graphics2D)
         {
             if(NeedRedraw)
@@ -455,7 +460,11 @@ namespace MatterHackers.RayTracer
             totalTime.Stop();
             timingStrings.Add("Total Time {0:0.0}s".FormatWith(totalTime.Elapsed.TotalSeconds));
 
-            File.WriteAllLines("timing.txt", timingStrings.ToArray());
+            if (!SavedTimes)
+            {
+                SavedTimes = true;
+                File.WriteAllLines("timing.txt", timingStrings.ToArray());
+            }
 
 
             graphics2D.DrawString("Ray Trace: " + renderTime.ElapsedMilliseconds.ToString(), 20, 10);

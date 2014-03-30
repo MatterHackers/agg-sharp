@@ -214,70 +214,46 @@ namespace MatterHackers.PolygonMesh.Processors
             {
                 stlStream.Position = 0;
                 StreamReader stlReader = new StreamReader(stlStream);
-                int lineIndex = 0;
-                string currentLine = stlReader.ReadLine(); lineIndex++;
-                currentLine = stlReader.ReadLine(); lineIndex++;// move past solid
-                // ths is an ascii stl
-                do
+                int vectorIndex = 0;
+                Vector3 vector0 = new Vector3(0, 0, 0);
+                Vector3 vector1 = new Vector3(0, 0, 0);
+                Vector3 vector2 = new Vector3(0, 0, 0);
+                string line = stlReader.ReadLine();
+                while (line != null)
                 {
-                    if (currentLine == null) // found end of file
+                    var parts = line.Trim().Split(' ');
+                    if (parts[0].Trim() == "vertex")
                     {
-                        break;
-                    }
-                    // skip blank lines
-                    while (currentLine.Trim() == "")
-                    {
-                        currentLine = stlReader.ReadLine(); lineIndex++;
-                    }
-                    if (currentLine.Trim().StartsWith("endsolid"))
-                    {
-                        break;
-                    }
-                    if (!currentLine.Trim().StartsWith("facet normal"))
-                    {
-                        // If there are more polygons they need to start with facet normal.
-                        // So if they didn't we stop loading and return whatever we have.
-                        break;
-                    }
-                    currentLine = stlReader.ReadLine(); lineIndex++;
-                    if (!currentLine.Trim().StartsWith("outer loop"))
-                    {
-                        throw new IOException("Error in STL file: expected 'outer loop'.");
-                    }
-                    currentLine = stlReader.ReadLine(); lineIndex++;
-
-                    Vector3 vector1; 
-                    bool goodPolygon = ParseLine(meshFromStlFile, currentLine, out vector1);
-                    currentLine = stlReader.ReadLine(); lineIndex++;
-                    
-                    Vector3 vector2; 
-                    goodPolygon &= ParseLine(meshFromStlFile, currentLine, out vector2);
-                    currentLine = stlReader.ReadLine(); lineIndex++;
-                    
-                    Vector3 vector3; 
-                    goodPolygon &= ParseLine(meshFromStlFile, currentLine, out vector3);
-                    currentLine = stlReader.ReadLine(); lineIndex++;
-
-                    if (currentLine == null)
-                    {
-                        return;
-                    }
-
-                    if (goodPolygon && !Vector3.Collinear(vector1, vector2, vector3))
-                    {
-                        Vertex vertex1 = meshFromStlFile.CreateVertex(vector1, true);
-                        Vertex vertex2 = meshFromStlFile.CreateVertex(vector2, true);
-                        Vertex vertex3 = meshFromStlFile.CreateVertex(vector3, true);
-                        if (vertex1.Data.ID == vertex2.Data.ID || vertex2.Data.ID == vertex3.Data.ID || vertex1.Data.ID == vertex3.Data.ID)
+                        vectorIndex++;
+                        switch (vectorIndex)
                         {
-                            //throw new Exception("All vertecies should be generated no matter what. Check that the STL loader is not colapsing faces.");
-                        }
-                        else
-                        {
-                            meshFromStlFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 });
+                            case 1:
+                                vector0.x = Convert.ToDouble(parts[1]);
+                                vector0.y = Convert.ToDouble(parts[2]);
+                                vector0.z = Convert.ToDouble(parts[3]);
+                                break;
+                            case 2:
+                                vector1.x = Convert.ToDouble(parts[1]);
+                                vector1.y = Convert.ToDouble(parts[2]);
+                                vector1.z = Convert.ToDouble(parts[3]);
+                                break;
+                            case 3:
+                                vector2.x = Convert.ToDouble(parts[1]);
+                                vector2.y = Convert.ToDouble(parts[2]);
+                                vector2.z = Convert.ToDouble(parts[3]);
+                                if (!Vector3.Collinear(vector0, vector1, vector2))
+                                {
+                                    Vertex vertex1 = meshFromStlFile.CreateVertex(vector0, true, true);
+                                    Vertex vertex2 = meshFromStlFile.CreateVertex(vector1, true, true);
+                                    Vertex vertex3 = meshFromStlFile.CreateVertex(vector2, true, true);
+                                    meshFromStlFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 }, true);
+                                }
+                                vectorIndex = 0;
+                                break;
                         }
                     }
-                    
+                    line = stlReader.ReadLine();
+
                     if (sender != null)
                     {
                         BackgroundWorker backgroundWorker = (BackgroundWorker)sender;
@@ -287,24 +263,13 @@ namespace MatterHackers.PolygonMesh.Processors
                             return;
                         }
 
-                        if(backgroundWorker.WorkerReportsProgress && maxProgressReport.ElapsedMilliseconds > 200)
+                        if (backgroundWorker.WorkerReportsProgress && maxProgressReport.ElapsedMilliseconds > 200)
                         {
-                            backgroundWorker.ReportProgress((int)(stlStream.Position * 100 / bytesInFile));
+                            backgroundWorker.ReportProgress((int)Math.Min((stlStream.Position * 100 / bytesInFile), 99));
                             maxProgressReport.Restart();
                         }
                     }
-
-                    if (!currentLine.Trim().StartsWith("endloop"))
-                    {
-                        throw new IOException("Error in STL file: expected 'endloop'.");
-                    }
-                    currentLine = stlReader.ReadLine(); lineIndex++;
-                    if (!currentLine.Trim().StartsWith("endfacet"))
-                    {
-                        throw new IOException("Error in STL file: expected 'endfacet'.");
-                    }
-                    currentLine = stlReader.ReadLine(); lineIndex++;
-                } while (true);
+                }
             }
             else
             {

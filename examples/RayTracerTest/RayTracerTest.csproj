@@ -126,6 +126,12 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="bunny.stl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="bunny_binary.stl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="complex.stl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
