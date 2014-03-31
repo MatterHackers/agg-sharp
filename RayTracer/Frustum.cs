@@ -41,6 +41,7 @@ namespace MatterHackers.RayTracer
 
     public class Frustum
     {
+        // Plane normals should point out
         public Plane[] planes = null;
 
         public Frustum()
@@ -48,19 +49,20 @@ namespace MatterHackers.RayTracer
             planes = new Plane[6];
         }
 
-        /// <summary>
-        /// The front plan is at 0 (the intersection of the 4 planes)
-        /// </summary>
-        public Frustum(Vector3 left, Vector3 right, Vector3 bottom, Vector3 top, Vector3 back, double distanceToBack)
+        // The front plan is at 0 (the intersection of the 4 side planes). Plane normals should point out.
+        public Frustum(Vector3 leftNormal, Vector3 rightNormal, 
+            Vector3 bottomNormal, Vector3 topNormal, 
+            Vector3 backNormal, double distanceToBack)
         {
             planes = new Plane[5];
-            planes[0] = new Plane(left.GetNormal(), 0);
-            planes[1] = new Plane(right.GetNormal(), 0);
-            planes[2] = new Plane(bottom.GetNormal(), 0);
-            planes[3] = new Plane(top.GetNormal(), 0);
-            planes[4] = new Plane(back.GetNormal(), distanceToBack);
+            planes[0] = new Plane(leftNormal.GetNormal(), 0);
+            planes[1] = new Plane(rightNormal.GetNormal(), 0);
+            planes[2] = new Plane(bottomNormal.GetNormal(), 0);
+            planes[3] = new Plane(topNormal.GetNormal(), 0);
+            planes[4] = new Plane(backNormal.GetNormal(), distanceToBack);
         }
 
+        // Plane normals should point out.
         public Frustum(Plane left, Plane right, Plane bottom, Plane top, Plane front, Plane back)
         {
             planes = new Plane[6];

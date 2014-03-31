@@ -51,7 +51,7 @@ namespace MatterHackers.RayTracer
         }
 
         [Test]
-        public void PolygonHitTests()
+        public void FrustumIntersetAABBTests()
         {
             {
                 Frustum frustum = new Frustum(
@@ -87,17 +87,18 @@ namespace MatterHackers.RayTracer
 
             {
                 Frustum frustum = new Frustum(
-                    new Plane(new Vector3(1, 1, 0), 0),
-                    new Plane(new Vector3(-1, 1, 0), 0),
-                    new Plane(new Vector3(0, 1, 1), 0),
-                    new Plane(new Vector3(0, 1, -1), 0),
-                    new Plane(new Vector3(0, 1, 0), 0),
-                    new Plane(new Vector3(0, -1, 0), 10000));
+                    new Plane(new Vector3(-1, -1, 0), 0),
+                    new Plane(new Vector3(1, -1, 0), 0),
+                    new Plane(new Vector3(0, -1, -1), 0),
+                    new Plane(new Vector3(0, -1, 1), 0),
+                    new Plane(new Vector3(0, -1, 0), 0),
+                    new Plane(new Vector3(0, 1, 0), 10000));
 
                 // outside to left
                 {
                     AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-110, 0, -10), new Vector3(-100, 10, 10));
-                    Assert.IsTrue(frustum.GetIntersect(aabb) == FrustumIntersection.Outside);
+                    FrustumIntersection intersection = frustum.GetIntersect(aabb);
+                    Assert.IsTrue(intersection == FrustumIntersection.Outside);
                 }
 
 
@@ -117,12 +118,35 @@ namespace MatterHackers.RayTracer
             }
 
             {
-                Frustum frustum5Plane = new Frustum(
-                    new Vector3(1, 1, 0),
-                    new Vector3(-1, 1, 0),
+                // looking down -z
+                Frustum frustum5PlaneNegZ = new Frustum(
+                    new Vector3(-1, 0, 1),
+                    new Vector3(-1, 0, 1),
                     new Vector3(0, 1, 1),
-                    new Vector3(0, 1, -1),
-                    new Vector3(0, -1, 0), -10000);
+                    new Vector3(0, -1, 1),
+                    new Vector3(0, 0, -1), 10000);
+
+                // outside to left
+                {
+                    AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-110, 0, -10), new Vector3(-100, 10, 10));
+                    FrustumIntersection intersection = frustum5PlaneNegZ.GetIntersect(aabb);
+                    Assert.IsTrue(intersection == FrustumIntersection.Outside);
+                }
+
+
+                // intersect with origin (front)
+                {
+                    AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-10, -10, -10), new Vector3(10, 10, 10));
+                    FrustumIntersection intersection = frustum5PlaneNegZ.GetIntersect(aabb);
+                    Assert.IsTrue(intersection == FrustumIntersection.Intersect);
+                }
+
+                // inside 
+                {
+                    AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-5, -5, -110), new Vector3(5, 5, -100));
+                    FrustumIntersection intersection = frustum5PlaneNegZ.GetIntersect(aabb);
+                    Assert.IsTrue(intersection == FrustumIntersection.Inside);
+                }
             }
         }
     }

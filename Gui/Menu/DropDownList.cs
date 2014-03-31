@@ -177,6 +177,26 @@ namespace MatterHackers.Agg.UI
             }
         }
 
+        void MinSizeTest()
+        {
+            Vector2 minSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
+
+            foreach (MenuItem item in MenuItems)
+            {
+                item.MinimumSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
+            }
+        }
+
+        public override void OnBoundsChanged(EventArgs e)
+        {
+            MinSizeTest();
+            if (this.Name == "CreateSliceEngineDropdown")
+            {
+                int a = 0;
+            }
+            base.OnBoundsChanged(e);
+        }
+
         void item_Selected(object sender, EventArgs e)
         {
             int newSelectedIndex = 0;

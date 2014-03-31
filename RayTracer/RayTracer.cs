@@ -36,7 +36,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-//#define MULTI_THREAD
+#define MULTI_THREAD
 
 using System;
 using System.Collections.Generic;
@@ -99,7 +99,7 @@ namespace MatterHackers.RayTracer
             }
         }
 
-        public bool traceWithRayBundles = true;
+        public bool traceWithRayBundles = false;
         public void RayTraceScene(Graphics2D graphics2D, RectangleInt viewport, Scene scene)
         {
             int maxsamples = (int)AntiAliasing;
