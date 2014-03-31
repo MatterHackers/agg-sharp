@@ -50,7 +50,7 @@ namespace MatterHackers.Agg.UI
 
         public override void OnBoundsChanged(EventArgs e)
         {
-            GL.Viewport(0, 0, (int)Width, (int)Height);					// Reset The Current Viewport
+			GL.Viewport(0, 0, WindowsFormsWindow.ClientSize.Width, WindowsFormsWindow.ClientSize.Height);					// Reset The Current Viewport
 
 
             // The following lines set the screen up for a perspective view. Meaning things in the distance get smaller. 
@@ -63,7 +63,7 @@ namespace MatterHackers.Agg.UI
 
             GL.MatrixMode(MatrixMode.Modelview);
             GL.LoadIdentity();
-            GL.Scissor(0, 0, (int)Width, (int)Height);
+			GL.Scissor(0, 0, WindowsFormsWindow.ClientSize.Width, WindowsFormsWindow.ClientSize.Height);
 
             NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
 
@@ -74,7 +74,7 @@ namespace MatterHackers.Agg.UI
         {
             Graphics2D graphics2D;
 
-            graphics2D = new Graphics2DOpenGL((int)Width, (int)Height);
+			graphics2D = new Graphics2DOpenGL(WindowsFormsWindow.ClientSize.Width, WindowsFormsWindow.ClientSize.Height);
 
             graphics2D.PushTransform();
             return graphics2D;

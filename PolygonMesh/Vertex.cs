@@ -43,7 +43,6 @@ namespace MatterHackers.PolygonMesh
 
         public Vector3 Position { get; set; }
         public Vector3 Normal { get; set; }
-
         public MeshEdge firstMeshEdge;
 
         public Vertex(Vector3 position)

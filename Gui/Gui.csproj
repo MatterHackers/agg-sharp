@@ -104,6 +104,7 @@
     <Compile Include="MessageBox.cs" />
     <Compile Include="MouseButtons.cs" />
     <Compile Include="MouseEventArgs.cs" />
+    <Compile Include="PerformanceFeedbackWindow.cs" />
     <Compile Include="RadioButton\RadioButtonViewStates.cs" />
     <Compile Include="RadioButton\RadioButtonViewText.cs" />
     <Compile Include="RootedObjectEventHandler.cs" />

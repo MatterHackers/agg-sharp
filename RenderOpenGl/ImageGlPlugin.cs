@@ -74,8 +74,10 @@ namespace MatterHackers.RenderOpenGl
             }
         }
 
+        static NamedExecutionTimer GetImageGlPluginTimer = new NamedExecutionTimer("GetImageGlPlugin");
         static public ImageGlPlugin GetImageGlPlugin(ImageBuffer imageToGetDisplayListFor, bool createAndUseMipMaps)
         {
+            GetImageGlPluginTimer.Start();
             ImageGlPlugin plugin;
             imagesWithCacheData.TryGetValue(imageToGetDisplayListFor.GetBuffer(), out plugin);
 
@@ -186,6 +188,7 @@ namespace MatterHackers.RenderOpenGl
                 }
             }
 #endif
+            GetImageGlPluginTimer.Stop();
             return plugin;
         }
 
@@ -382,8 +385,10 @@ namespace MatterHackers.RenderOpenGl
             glData.textureUVs[6] = texCoordX; glData.textureUVs[7] = 0; glData.positions[6] = imageWidth - OffsetX; glData.positions[7] = 0 - OffsetY;
         }
 
+        static NamedExecutionTimer ImageGL_DrawToGL = new NamedExecutionTimer("ImageGL_DrawToGL");
         public void DrawToGL()
         {
+            ImageGL_DrawToGL.Start();
 
             GL.BindTexture(TextureTarget.Texture2D, GLTextureHandle);
 #if true
@@ -407,6 +412,7 @@ namespace MatterHackers.RenderOpenGl
             GL.DisableClientState(ArrayCap.TextureCoordArray);
             GL.DisableClientState(ArrayCap.VertexArray);
 #endif
+            ImageGL_DrawToGL.Stop();
         }
     }
 }

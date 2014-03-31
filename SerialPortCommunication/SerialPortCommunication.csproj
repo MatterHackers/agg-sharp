@@ -46,11 +46,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FoundStringCallBacks.cs" />
-    <Compile Include="FrostedSerial\FrostedSerialPort.cs" />
-    <Compile Include="FrostedSerial\FrostedSerialStream.cs" />
-    <Compile Include="FrostedSerial\IFrostedSerialStream.cs" />
-    <Compile Include="FrostedSerial\TermiosH.cs" />
-    <Compile Include="FrostedSerial\WinSerialStream.cs" />
     <Compile Include="SerialPortCommunication.cs" />
   </ItemGroup>
   <ItemGroup>

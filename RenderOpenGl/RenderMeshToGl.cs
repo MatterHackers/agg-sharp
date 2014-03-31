@@ -64,6 +64,8 @@ namespace MatterHackers.RenderOpenGl
             "  gl_FragColor = vColor;" +
             "}";
 
+        static NamedExecutionTimer RenderMeshToGL_DrawToGL = new NamedExecutionTimer("RenderMeshToGL_DrawToGL");
+        static NamedExecutionTimer RenderMeshToGL_DrawArrays = new NamedExecutionTimer("RenderMeshToGL_DrawArrays");
         static void DrawToGL(Mesh meshToRender)
         {
 #if USE_GLES2
@@ -80,6 +82,7 @@ namespace MatterHackers.RenderOpenGl
             GL.UseProgram(vertexShader);
             GL.UseProgram(fragmentShader);
 #endif
+            RenderMeshToGL_DrawToGL.Start();
             GLMeshPlugin glMeshPlugin = GLMeshPlugin.GetGLMeshPlugin(meshToRender);
             for (int i = 0; i < glMeshPlugin.subMeshs.Count; i++)
             {
@@ -128,6 +131,7 @@ namespace MatterHackers.RenderOpenGl
                 //GL.EnableClientState(ArrayCap.VertexArray);
                 //GL.EnableClientState(ArrayCap.NormalArray);
 
+                RenderMeshToGL_DrawArrays.Start();
 #if INTERLIEVED_VERTEX_DATA
 #if USE_VBO
                 GL.DrawArrays(PrimitiveType.Triangles, 0, subMesh.count);
@@ -138,6 +142,7 @@ namespace MatterHackers.RenderOpenGl
 #else
                 GL.DrawArrays(PrimitiveType.Triangles, 0, subMesh.positions.Count / 3);
 #endif
+                RenderMeshToGL_DrawArrays.Stop();
 
                 GL.DisableClientState(ArrayCap.NormalArray);
                 GL.DisableClientState(ArrayCap.VertexArray);
@@ -147,6 +152,7 @@ namespace MatterHackers.RenderOpenGl
                     GL.DisableClientState(ArrayCap.TextureCoordArray);
                 }
             }
+            RenderMeshToGL_DrawToGL.Stop();
         }
 
         static void DrawWithWireOverlay(Mesh meshToRender)
@@ -232,8 +238,10 @@ namespace MatterHackers.RenderOpenGl
             Render(meshToRender, partColor, Matrix4X4.Identity, overlayWireFrame);
         }
 
+        static NamedExecutionTimer RenderMeshToGL_Render = new NamedExecutionTimer("RenderMeshToGL_Render");
         public static void Render(Mesh meshToRender, IColorType partColor, Matrix4X4 transform, bool overlayWireFrame = false)
         {
+            RenderMeshToGL_Render.Start();
             if (meshToRender != null)
             {
                 GL.Color4(partColor.Red0To1, partColor.Green0To1, partColor.Blue0To1, partColor.Alpha0To1);
@@ -262,6 +270,7 @@ namespace MatterHackers.RenderOpenGl
 
                 GL.PopMatrix();
             }
+            RenderMeshToGL_Render.Stop();
         }
     }
 }

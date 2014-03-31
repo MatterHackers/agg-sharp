@@ -26,6 +26,7 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies, 
 either expressed or implied, of the FreeBSD Project.
 */
+//#define RUN_TIMING_TESTS
 
 using System;
 using System.Diagnostics;
@@ -178,6 +179,9 @@ namespace MatterHackers.PolygonMesh.Processors
             }
         }
 
+#if RUN_TIMING_TESTS
+        static NamedExecutionTimer parseAMF = new NamedExecutionTimer("Parse AMF");
+#endif
         //public Mesh ParseFileContents(byte[] fileContents)
         public void ParseFileContents(object sender, DoWorkEventArgs e)
         {
@@ -189,6 +193,9 @@ namespace MatterHackers.PolygonMesh.Processors
             {
                 return;
             }
+#if RUN_TIMING_TESTS
+            parseAMF.Start();
+#endif
             Stopwatch maxProgressReport = new Stopwatch();
             maxProgressReport.Start();
             
@@ -331,6 +338,10 @@ namespace MatterHackers.PolygonMesh.Processors
                 //uint numTriangles = System.BitConverter.ToSingle(fileContents, 80);
 
             }
+
+#if RUN_TIMING_TESTS
+            parseSTL.Stop();
+#endif
 
             e.Result = meshFromStlFile;
 #endif

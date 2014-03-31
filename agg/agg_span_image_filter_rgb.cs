@@ -24,6 +24,8 @@
 // PostScript and PDF technology for software developers.
 // 
 //----------------------------------------------------------------------------
+//#define use_timers
+
 using System;
 using MatterHackers.Agg.Image;
 
@@ -96,7 +98,7 @@ namespace MatterHackers.Agg
 
         //--------------------------------------------------------------------
         public span_image_filter_rgb_nn(IImageBufferAccessor src, ISpanInterpolator inter)
-            : base(src, inter, null)
+            : base(src, inter, null) 
         {
         }
 
@@ -140,9 +142,8 @@ namespace MatterHackers.Agg
         const int base_mask = base_scale - 1;
 
         //--------------------------------------------------------------------
-        public span_image_filter_rgb_bilinear(IImageBufferAccessor src,
-                                            ISpanInterpolator inter)
-            : base(src, inter, null)
+        public span_image_filter_rgb_bilinear(IImageBufferAccessor src, 
+                                            ISpanInterpolator inter) : base(src, inter, null)
         {
             if (src.SourceImage.GetBytesBetweenPixelsInclusive() != 3)
             {
@@ -150,8 +151,14 @@ namespace MatterHackers.Agg
             }
         }
 
+#if use_timers
+        static NamedExecutionTimer Generate_Span = new NamedExecutionTimer("Generate_Span rgb");
+#endif
         public override void generate(RGBA_Bytes[] span, int spanIndex, int x, int y, int len)
         {
+//#if use_timers
+//            Generate_Span.Start();
+//#endif
             base.interpolator().begin(x + base.filter_dx_dbl(), y + base.filter_dy_dbl(), len);
 
             ImageBuffer SourceRenderingBuffer = (ImageBuffer)base.GetImageBufferAccessor().SourceImage;
@@ -229,11 +236,14 @@ namespace MatterHackers.Agg
 
                 } while (--len != 0);
             }
-        }
+//#if use_timers
+            //Generate_Span.Stop();
+//#endif
+            }
 
         private void BlendInFilterPixel(int[] fg, ref int src_alpha, int back_r, int back_g, int back_b, int back_a, ImageBuffer SourceRenderingBuffer, int maxx, int maxy, int x_lr, int y_lr, int weight)
         {
-            throw new NotImplementedException(); /*
+                throw new NotImplementedException(); /*
             int[] fg_ptr;
             int bufferIndex;
             unchecked
@@ -256,7 +266,7 @@ namespace MatterHackers.Agg
                 }
             }
                                                       */
-        }
+            }
     };
 
     //=====================================span_image_filter_rgb_bilinear_clip
@@ -269,18 +279,23 @@ namespace MatterHackers.Agg
         const int base_mask = base_scale - 1;
 
         //--------------------------------------------------------------------
-        public span_image_filter_rgb_bilinear_clip(IImageBufferAccessor src,
+        public span_image_filter_rgb_bilinear_clip(IImageBufferAccessor src, 
                                             IColorType back_color,
-                                            ISpanInterpolator inter)
-            : base(src, inter, null)
+                                            ISpanInterpolator inter) : base(src, inter, null)
         {
             m_OutsideSourceColor = back_color.GetAsRGBA_Bytes();
         }
         public IColorType background_color() { return m_OutsideSourceColor; }
         public void background_color(IColorType v) { m_OutsideSourceColor = v.GetAsRGBA_Bytes(); }
 
+#if use_timers
+        static NamedExecutionTimer Generate_Span = new NamedExecutionTimer("Generate_Span rgb");
+#endif
         public override void generate(RGBA_Bytes[] span, int spanIndex, int x, int y, int len)
         {
+/*#if use_timers
+            Generate_Span.Start();
+#endif*/
             base.interpolator().begin(x + base.filter_dx_dbl(), y + base.filter_dy_dbl(), len);
 
             int[] accumulatedColor = new int[3];
@@ -414,6 +429,9 @@ namespace MatterHackers.Agg
                     spanInterpolator.Next();
                 } while (--len != 0);
             }
+#if use_timers
+            Generate_Span.Stop();
+#endif
         }
 
         private void BlendInFilterPixel(int[] accumulatedColor, ref int sourceAlpha, int back_r, int back_g, int back_b, int back_a, ImageBuffer SourceRenderingBuffer, int maxx, int maxy, int x_lr, int y_lr, int weight)
@@ -449,7 +467,7 @@ namespace MatterHackers.Agg
 
         //--------------------------------------------------------------------
         public span_image_filter_rgb(IImageBufferAccessor src, ISpanInterpolator inter, ImageFilterLookUpTable filter)
-            : base(src, inter, filter)
+            : base(src, inter, filter) 
         {
             if (src.SourceImage.GetBytesBetweenPixelsInclusive() != 3)
             {
@@ -565,13 +583,13 @@ namespace MatterHackers.Agg
 
         //--------------------------------------------------------------------
         public span_image_filter_rgb_2x2(IImageBufferAccessor src, ISpanInterpolator inter, ImageFilterLookUpTable filter)
-            : base(src, inter, filter)
+            : base(src, inter, filter) 
         {
         }
 
         public override void generate(RGBA_Bytes[] span, int spanIndex, int x, int y, int len)
         {
-            throw new NotImplementedException(); /*
+                throw new NotImplementedException(); /*
             ISpanInterpolator spanInterpolator = base.interpolator();
             spanInterpolator.begin(x + base.filter_dx_dbl(), y + base.filter_dy_dbl(), len);
 
@@ -652,7 +670,7 @@ namespace MatterHackers.Agg
 
             } while (--len != 0);
                                                       */
-        }
+            }
     };
 
     /*
@@ -781,7 +799,7 @@ namespace MatterHackers.Agg
         private const int downscale_shift = (int)ImageFilterLookUpTable.image_filter_scale_e.image_filter_shift;
 
         //--------------------------------------------------------------------
-        public span_image_resample_rgb(IImageBufferAccessor src,
+        public span_image_resample_rgb(IImageBufferAccessor src, 
                             ISpanInterpolator inter,
                             ImageFilterLookUpTable filter) :
             base(src, inter, filter)
@@ -888,5 +906,5 @@ namespace MatterHackers.Agg
                 interpolator().Next();
             } while (--len != 0);
         }
-    }
+    };
 }

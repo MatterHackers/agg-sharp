@@ -247,8 +247,18 @@ namespace MatterHackers.MeshVisualizer
             base.OnClosed(e);
         }
 
+        static NamedExecutionTimer drawTimer = new NamedExecutionTimer("MshVwrWdgt");
+        public override void OnDraw(Graphics2D graphics2D)
+        {
+            drawTimer.Start();
+            base.OnDraw(graphics2D);
+            drawTimer.Stop();
+        }
+
+        static NamedExecutionTimer drawGLTimer = new NamedExecutionTimer("MshVwrWdgtDrwGLCntnt");
         void trackballTumbleWidget_DrawGlContent(object sender, EventArgs e)
         {
+            drawGLTimer.Start();
             for (int i = 0; i < Meshes.Count; i++)
             {
                 Mesh meshToRender = Meshes[i];
@@ -281,6 +291,8 @@ namespace MatterHackers.MeshVisualizer
                     RenderMeshToGl.Render(buildVolume, this.BuildVolumeColor);
                 }
             }
+
+            drawGLTimer.Stop();
         }
 
         public void LoadMesh(string meshPathAndFileName)

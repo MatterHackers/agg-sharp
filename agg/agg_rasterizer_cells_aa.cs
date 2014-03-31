@@ -30,6 +30,7 @@
 // PostScript and PDF technology for software developers.
 // 
 //----------------------------------------------------------------------------
+//#define use_timers
 
 using System;
 using poly_subpixel_scale_e = MatterHackers.Agg.agg_basics.poly_subpixel_scale_e;
@@ -304,6 +305,10 @@ namespace MatterHackers.Agg
         public int max_x() { return m_max_x; }
         public int max_y() { return m_max_y; }
 
+#if use_timers
+        static NamedExecutionTimer SortCellsTimer = new NamedExecutionTimer("SortCellsTimer");
+        static NamedExecutionTimer QSortTimer = new NamedExecutionTimer("QSortTimer");
+#endif
         public void sort_cells()
         {
             if (m_sorted) return; //Perform sort only the first time.
@@ -316,6 +321,9 @@ namespace MatterHackers.Agg
 
             if (m_num_used_cells == 0) return;
 
+#if use_timers
+            SortCellsTimer.Start();
+#endif
             // Allocate the array of cell pointers
             m_sorted_cells.Allocate(m_num_used_cells);
 
@@ -353,6 +361,9 @@ namespace MatterHackers.Agg
                 ++sortedYData[SortedIndex].num;
             }
 
+#if use_timers
+            QSortTimer.Start();
+#endif
             // Finally arrange the X-arrays
             for (int i = 0; i < SortedYSize; i++)
             {
@@ -361,7 +372,13 @@ namespace MatterHackers.Agg
                     m_QSorter.Sort(sortedCellsData, sortedYData[i].start, sortedYData[i].start + sortedYData[i].num - 1);
                 }
             }
+#if use_timers
+            QSortTimer.Stop();
+#endif
             m_sorted = true;
+#if use_timers
+            SortCellsTimer.Stop();
+#endif
         }
 
         public int total_cells()

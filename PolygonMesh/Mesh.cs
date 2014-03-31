@@ -26,12 +26,12 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies, 
 either expressed or implied, of the FreeBSD Project.
 */
+//#define RUN_TIMING_TESTS
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Diagnostics;
 
 using MatterHackers.Agg;
 using MatterHackers.VectorMath;
@@ -349,9 +349,9 @@ namespace MatterHackers.PolygonMesh
         #endregion // Operations
 
         #region Vertex
-        public Vertex CreateVertex(double x, double y, double z, bool allowDuplicate = false, bool willSortLater = false)
+        public Vertex CreateVertex(double x, double y, double z, bool allowDuplicate = false)
         {
-            return CreateVertex(new Vector3(x, y, z), allowDuplicate, willSortLater);
+            return CreateVertex(new Vector3(x, y, z), allowDuplicate);
         }
 
         public List<Vertex> FindVertices(Vector3 position)
@@ -359,7 +359,7 @@ namespace MatterHackers.PolygonMesh
             return vertices.FindVertices(position, MaxDistanceToConsiderVertexAsSame);
         }
 
-        public Vertex CreateVertex(Vector3 position, bool allowDuplicate = false, bool willSortLater = false)
+        public Vertex CreateVertex(Vector3 position, bool allowDuplicate = false)
         {
             if (!allowDuplicate)
             {
@@ -371,23 +371,13 @@ namespace MatterHackers.PolygonMesh
             }
 
             Vertex createdVertex = new Vertex(position);
-            vertices.Add(createdVertex, willSortLater);
+            vertices.Add(createdVertex);
             return createdVertex;
         }
 
         public void DeleteVertex(Vertex vertex)
         {
             throw new NotImplementedException();
-        }
-
-        public void SortVertecies()
-        {
-            Vertices.Sort();
-        }
-
-        public void MergeVertecies()
-        {
-            Debug.WriteLine("TODO: Implement MergeVertecies()");
         }
         #endregion
 
@@ -601,8 +591,14 @@ namespace MatterHackers.PolygonMesh
             throw new NotImplementedException();
         }
 
+#if RUN_TIMING_TESTS
+        NamedExecutionTimer CreateFaceTimer = new NamedExecutionTimer("Mesh Create Face");
+#endif
         public Face CreateFace(Vertex[] verticesToUse, bool allowDuplicate = false)
         {
+#if RUN_TIMING_TESTS
+            CreateFaceTimer.Start();
+#endif
             if (verticesToUse.Length < 3)
             {
                 throw new ArgumentException("A face cannot have less than 3 vertices.");
@@ -613,6 +609,9 @@ namespace MatterHackers.PolygonMesh
                 Face existingFace = FindFace(verticesToUse);
                 if (existingFace != null)
                 {
+#if RUN_TIMING_TESTS
+                    CreateFaceTimer.Stop();
+#endif
                     return existingFace;
                 }
             }
@@ -620,9 +619,9 @@ namespace MatterHackers.PolygonMesh
             // make sure all the mesh edges exist (by trying to create them).
             for (int i = 0; i < verticesToUse.Length - 1; i++)
             {
-                CreateMeshEdge(verticesToUse[i], verticesToUse[i + 1], allowDuplicate);
+                CreateMeshEdge(verticesToUse[i], verticesToUse[i + 1]);
             }
-            CreateMeshEdge(verticesToUse[verticesToUse.Length - 1], verticesToUse[0], allowDuplicate);
+            CreateMeshEdge(verticesToUse[verticesToUse.Length - 1], verticesToUse[0]);
 
             // make the face and set it's data
             Face createdFace = new Face();
@@ -658,6 +657,9 @@ namespace MatterHackers.PolygonMesh
 
             faces.Add(createdFace);
 
+#if RUN_TIMING_TESTS
+            CreateFaceTimer.Stop();
+#endif
             return createdFace;
         }
 

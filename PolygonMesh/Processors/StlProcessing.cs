@@ -26,6 +26,7 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies, 
 either expressed or implied, of the FreeBSD Project.
 */
+//#define RUN_TIMING_TESTS
 
 using System;
 using System.Diagnostics;
@@ -175,10 +176,12 @@ namespace MatterHackers.PolygonMesh.Processors
             }
         }
 
+#if RUN_TIMING_TESTS
+        static NamedExecutionTimer parseSTL = new NamedExecutionTimer("Parse STL");
+#endif
+
         public static void ParseFileContents(object sender, DoWorkEventArgs doWorkEventArgs)
         {
-            Stopwatch time = new Stopwatch();
-            time.Start();
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
             Stream stlStream = (Stream)doWorkEventArgs.Argument;
@@ -186,10 +189,9 @@ namespace MatterHackers.PolygonMesh.Processors
             {
                 return;
             }
-
-            //MemoryStream stlStream = new MemoryStream();
-            //stlStreamIn.CopyTo(stlStream);
-
+#if RUN_TIMING_TESTS
+            parseSTL.Start();
+#endif
             Stopwatch maxProgressReport = new Stopwatch();
             maxProgressReport.Start();
             Mesh meshFromStlFile = new Mesh();
@@ -265,9 +267,9 @@ namespace MatterHackers.PolygonMesh.Processors
 
                     if (goodPolygon && !Vector3.Collinear(vector1, vector2, vector3))
                     {
-                        Vertex vertex1 = meshFromStlFile.CreateVertex(vector1, true);
-                        Vertex vertex2 = meshFromStlFile.CreateVertex(vector2, true);
-                        Vertex vertex3 = meshFromStlFile.CreateVertex(vector3, true);
+                        Vertex vertex1 = meshFromStlFile.CreateVertex(vector1);
+                        Vertex vertex2 = meshFromStlFile.CreateVertex(vector2);
+                        Vertex vertex3 = meshFromStlFile.CreateVertex(vector3);
                         if (vertex1.Data.ID == vertex2.Data.ID || vertex2.Data.ID == vertex3.Data.ID || vertex1.Data.ID == vertex3.Data.ID)
                         {
                             //throw new Exception("All vertecies should be generated no matter what. Check that the STL loader is not colapsing faces.");
@@ -359,24 +361,21 @@ namespace MatterHackers.PolygonMesh.Processors
 
                     if (!Vector3.Collinear(vector[0], vector[1], vector[2]))
                     {
-                        Vertex vertex1 = meshFromStlFile.CreateVertex(vector[0], true, true);
-                        Vertex vertex2 = meshFromStlFile.CreateVertex(vector[1], true, true);
-                        Vertex vertex3 = meshFromStlFile.CreateVertex(vector[2], true, true);
-                        meshFromStlFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 }, true);
+                        Vertex vertex1 = meshFromStlFile.CreateVertex(vector[0]);
+                        Vertex vertex2 = meshFromStlFile.CreateVertex(vector[1]);
+                        Vertex vertex3 = meshFromStlFile.CreateVertex(vector[2]);
+                        meshFromStlFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 });
                     }
                 }
                 //uint numTriangles = System.BitConverter.ToSingle(fileContents, 80);
+
             }
 
-            // TODO: merge all the vetexes that are in the same place together
-            meshFromStlFile.SortVertecies();
-            meshFromStlFile.MergeVertecies();
+#if RUN_TIMING_TESTS
+            parseSTL.Stop();
+#endif
 
             doWorkEventArgs.Result = meshFromStlFile;
-
-            time.Stop();
-            Debug.WriteLine(string.Format("STL Load in {0:0.00}s", time.Elapsed.TotalSeconds));
-
             stlStream.Close();
         }
 
