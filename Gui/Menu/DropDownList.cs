@@ -177,7 +177,7 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        void MinSizeTest()
+        void SetMenuItemsToNewMinSIze()
         {
             Vector2 minSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
 
@@ -189,11 +189,7 @@ namespace MatterHackers.Agg.UI
 
         public override void OnBoundsChanged(EventArgs e)
         {
-            MinSizeTest();
-            if (this.Name == "CreateSliceEngineDropdown")
-            {
-                int a = 0;
-            }
+            SetMenuItemsToNewMinSIze();
             base.OnBoundsChanged(e);
         }
 
