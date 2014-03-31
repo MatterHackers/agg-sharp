@@ -23,7 +23,7 @@ namespace MatterHackers.RayTracer
         Plane plane;
         public RGBA_Floats OddColor;
 
-        public PlaneShape(Vector3 planeNormal, double distanceFromOrigin, IMaterial material)
+        public PlaneShape(Vector3 planeNormal, double distanceFromOrigin, MaterialAbstract material)
         {
             plane = new Plane(planeNormal, distanceFromOrigin);
             Material = material;

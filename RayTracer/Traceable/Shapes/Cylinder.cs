@@ -46,7 +46,7 @@ namespace MatterHackers.RayTracer
         Plane topPlane;
         Plane bottomPlane;
 
-        public CylinderShape(double bottomRadius, double topRadius, double height, IMaterial material)
+        public CylinderShape(double bottomRadius, double topRadius, double height, MaterialAbstract material)
         {
             this.radius = bottomRadius;
             this.topRadius = topRadius;
@@ -57,7 +57,7 @@ namespace MatterHackers.RayTracer
             bottomPlane = new Plane(-Vector3.UnitZ, height/2);
         }
 
-        public CylinderShape(double radius, double height, IMaterial material)
+        public CylinderShape(double radius, double height, MaterialAbstract material)
             : this(radius, radius, height, material)
         {
         }
@@ -409,12 +409,12 @@ public class ViewableCylinder
 	bool IsRightCylinderFlag;	// True for right cylinders
 								// False for general bounding planes
 
-	IMaterial SideOuterMat;
-	IMaterial SideInnerMat;
-	IMaterial TopOuterMat;
-	IMaterial TopInnerMat;
-	IMaterial BottomOuterMat;
-	IMaterial BottomInnerMat;
+	BaseMaterial SideOuterMat;
+	BaseMaterial SideInnerMat;
+	BaseMaterial TopOuterMat;
+	BaseMaterial TopInnerMat;
+	BaseMaterial BottomOuterMat;
+	BaseMaterial BottomInnerMat;
 
     // Constructors
 	public ViewableCylinder() 

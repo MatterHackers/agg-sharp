@@ -46,7 +46,7 @@ namespace MatterHackers.RayTracer
 
         public Plane(Vector3 planeNormal, double distanceFromOrigin)
         {
-            this.planeNormal = planeNormal;
+            this.planeNormal = planeNormal.GetNormal();
             this.distanceToPlaneFromOrigin = distanceFromOrigin;
         }
 

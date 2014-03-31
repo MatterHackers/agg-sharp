@@ -53,7 +53,7 @@ namespace MatterHackers.RayTracer
             throw new NotImplementedException("You should not get a color directly from a BoundingVolumeHierarchy.");
         }
 
-        public IMaterial Material
+        public MaterialAbstract Material
         {
             get
             {
@@ -99,7 +99,7 @@ namespace MatterHackers.RayTracer
             throw new NotImplementedException();
         }
 
-        public void GetClosestIntersections(RayBundle ray, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
+        public void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
         {
             throw new NotImplementedException();
         }
@@ -190,7 +190,7 @@ namespace MatterHackers.RayTracer
             throw new NotImplementedException("You should not get a color directly from a BoundingVolumeHierarchy.");
         }
 
-        public IMaterial Material
+        public MaterialAbstract Material
         {
             get
             {

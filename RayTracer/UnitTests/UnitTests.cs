@@ -58,6 +58,9 @@ namespace MatterHackers.RayTracer
                 PolygonTraceTests polygonTraceTests = new PolygonTraceTests();
                 polygonTraceTests.PolygonHitTests();
 
+                FrustumTests frustumTests = new FrustumTests();
+                frustumTests.PolygonHitTests();
+
                 BooleanTests booleanTests = new BooleanTests();
                 booleanTests.DiscoveredBadIntersectInfoListSubtraction();
                 booleanTests.DifferenceTestsForBox();

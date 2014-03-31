@@ -16,7 +16,7 @@ using MatterHackers.Agg.Image;
 
 namespace MatterHackers.RayTracer
 {
-    public class SolidMaterial : BaseMaterial
+    public class SolidMaterial : MaterialAbstract
     {
         private RGBA_Floats color;
         public SolidMaterial(RGBA_Floats color, double reflection, double transparency, double gloss)

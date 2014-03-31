@@ -69,7 +69,7 @@ namespace MatterHackers.RayTracer
 
         public override bool CheckIfBundleHitsAabb(AxisAlignedBoundingBox aabbToCheck)
         {
-            if (frustumOfRays.IntersectFrustum(aabbToCheck) == Frustum.FrustumIntersectState.Outside)
+            if (frustumOfRays.GetIntersect(aabbToCheck) == FrustumIntersection.Outside)
             {
                 return false;
             }

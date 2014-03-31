@@ -65,7 +65,7 @@
     <Compile Include="Camera.cs" />
     <Compile Include="Frustum.cs" />
     <Compile Include="Light.cs" />
-    <Compile Include="Materials\BaseMaterial.cs" />
+    <Compile Include="Materials\MaterialAbstract.cs" />
     <Compile Include="Materials\ChessboardMaterial.cs" />
     <Compile Include="Materials\SolidMaterial.cs" />
     <Compile Include="Materials\TextureMaterial.cs" />
@@ -81,6 +81,7 @@
     <Compile Include="Traceable\Shapes\TriangleShape.cs" />
     <Compile Include="Traceable\Transform.cs" />
     <Compile Include="UnitTests\BooleanTests.cs" />
+    <Compile Include="UnitTests\FrustumTests.cs" />
     <Compile Include="UnitTests\PolygonTraceTests.cs" />
     <Compile Include="UnitTests\TraceAPITests.cs" />
     <Compile Include="UnitTests\UnitTests.cs" />

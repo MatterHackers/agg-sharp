@@ -69,7 +69,7 @@ namespace MatterHackers.RayTracer.Traceable
             return child.GetColor(info);
         }
 
-        public IMaterial Material
+        public MaterialAbstract Material
         {
             get
             {

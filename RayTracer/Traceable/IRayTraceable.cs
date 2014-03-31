@@ -75,7 +75,7 @@ namespace MatterHackers.RayTracer
         /// <summary>
         /// Specifies the ambient and diffuse color of the element.
         /// </summary>
-        IMaterial Material { get; set; }
+        MaterialAbstract Material { get; set; }
 
         bool GetContained(List<IRayTraceable> results, AxisAlignedBoundingBox subRegion);
 
@@ -88,7 +88,7 @@ namespace MatterHackers.RayTracer
         IntersectInfo GetClosestIntersection(Ray ray);
 
         int FindFirstRay(RayBundle rayBundle, int rayIndexToStartCheckingFrom);
-        void GetClosestIntersections(RayBundle ray, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle);
+        void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle);
 
         IEnumerable IntersectionIterator(Ray ray);
 

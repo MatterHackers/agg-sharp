@@ -22,7 +22,7 @@ namespace MatterHackers.RayTracer
         public Vector3 minXYZ;
         public Vector3 maxXYZ;
 
-        public BoxShape(Vector3 minXYZ, Vector3 maxXYZ, IMaterial material)
+        public BoxShape(Vector3 minXYZ, Vector3 maxXYZ, MaterialAbstract material)
         {
             if (maxXYZ.x < minXYZ.x || maxXYZ.y < minXYZ.y || maxXYZ.z < minXYZ.z)
             {

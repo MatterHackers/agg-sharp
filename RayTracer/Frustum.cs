@@ -37,22 +37,83 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.RayTracer
 {
+    public enum FrustumIntersection { Inside, Outside, Intersect };
+
     public class Frustum
     {
-        public enum FrustumIntersectState { Inside, Outside, Intersect };
+        public Plane[] planes = null;
 
-        public Plane[] planes = new Plane[6];
-
-        public FrustumIntersectState IntersectFrustum(AxisAlignedBoundingBox boundingBox)
+        public Frustum()
         {
-            Frustum frustum = this;
-            FrustumIntersectState returnValue = FrustumIntersectState.Inside;
+            planes = new Plane[6];
+        }
+
+        /// <summary>
+        /// The front plan is at 0 (the intersection of the 4 planes)
+        /// </summary>
+        public Frustum(Vector3 left, Vector3 right, Vector3 bottom, Vector3 top, Vector3 back, double distanceToBack)
+        {
+            planes = new Plane[5];
+            planes[0] = new Plane(left.GetNormal(), 0);
+            planes[1] = new Plane(right.GetNormal(), 0);
+            planes[2] = new Plane(bottom.GetNormal(), 0);
+            planes[3] = new Plane(top.GetNormal(), 0);
+            planes[4] = new Plane(back.GetNormal(), distanceToBack);
+        }
+
+        public Frustum(Plane left, Plane right, Plane bottom, Plane top, Plane front, Plane back)
+        {
+            planes = new Plane[6];
+
+            planes[0] = left;
+            planes[1] = right;
+            planes[2] = bottom;
+            planes[3] = top;
+            planes[4] = front;
+            planes[5] = back;
+        }
+
+        static public Frustum Transform(Frustum frustum, Matrix4X4 matrix)
+        {
+            Frustum transformedFrustum = new Frustum();
+            transformedFrustum.planes = new Plane[frustum.planes.Length];
+            for (int i = 0; i < frustum.planes.Length; ++i)
+            {
+                Vector3 planeNormal = frustum.planes[i].planeNormal;
+                double distanceToPlane = frustum.planes[i].distanceToPlaneFromOrigin;
+                transformedFrustum.planes[i].planeNormal = Vector3.TransformNormal(planeNormal, matrix);
+                Vector3 pointOnPlane = planeNormal * distanceToPlane;
+                Vector3 pointOnTransformedPlane = Vector3.TransformNormal(pointOnPlane, matrix);
+                transformedFrustum.planes[i].distanceToPlaneFromOrigin = Vector3.Dot(transformedFrustum.planes[i].planeNormal, pointOnTransformedPlane);
+            }
+
+            return transformedFrustum;
+        }
+
+        public Frustum(Plane[] sixPlanes)
+        {
+            planes = new Plane[6];
+
+            if (sixPlanes.Length != 6)
+            {
+                throw new Exception("Must create with six planes");
+            }
+
+            for (int i = 0; i < 6; i++)
+            {
+                planes[i] = sixPlanes[i];
+            }
+        }
+
+        public FrustumIntersection GetIntersect(AxisAlignedBoundingBox boundingBox)
+        {
+            FrustumIntersection returnValue = FrustumIntersection.Inside;
             Vector3 vmin, vmax;
 
-            for (int i = 0; i < 6; ++i)
+            for (int i = 0; i < planes.Length; ++i)
             {
                 // X axis 
-                if (frustum.planes[i].planeNormal.x > 0)
+                if (planes[i].planeNormal.x > 0)
                 {
                     vmin.x = boundingBox.minXYZ.x;
                     vmax.x = boundingBox.maxXYZ.x;
@@ -64,7 +125,7 @@ namespace MatterHackers.RayTracer
                 }
 
                 // Y axis 
-                if (frustum.planes[i].planeNormal.y > 0)
+                if (planes[i].planeNormal.y > 0)
                 {
                     vmin.y = boundingBox.minXYZ.y;
                     vmax.y = boundingBox.maxXYZ.y;
@@ -76,7 +137,7 @@ namespace MatterHackers.RayTracer
                 }
 
                 // Z axis 
-                if (frustum.planes[i].planeNormal.z > 0)
+                if (planes[i].planeNormal.z > 0)
                 {
                     vmin.z = boundingBox.minXYZ.z;
                     vmax.z = boundingBox.maxXYZ.z;
@@ -87,14 +148,17 @@ namespace MatterHackers.RayTracer
                     vmax.z = boundingBox.minXYZ.z;
                 }
 
-                if (Vector3.Dot(frustum.planes[i].planeNormal, vmin) + frustum.planes[i].distanceToPlaneFromOrigin > 0)
+                if (Vector3.Dot(planes[i].planeNormal, vmin) - planes[i].distanceToPlaneFromOrigin > 0)
                 {
-                    return FrustumIntersectState.Outside;
+                    if (Vector3.Dot(planes[i].planeNormal, vmax) - planes[i].distanceToPlaneFromOrigin >= 0)
+                    {
+                        return FrustumIntersection.Outside;
+                    }
                 }
-
-                if (Vector3.Dot(frustum.planes[i].planeNormal, vmax) + frustum.planes[i].distanceToPlaneFromOrigin >= 0)
+                
+                if (Vector3.Dot(planes[i].planeNormal, vmax) - planes[i].distanceToPlaneFromOrigin >= 0)
                 {
-                    return FrustumIntersectState.Intersect;
+                    returnValue = FrustumIntersection.Intersect;
                 }
             }
 

@@ -28,7 +28,7 @@ namespace MatterHackers.RayTracer
         Vector3[] vertices = new Vector3[3];
         Vector3 center;
 
-        public TriangleShape(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2, IMaterial material)
+        public TriangleShape(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2, MaterialAbstract material)
         {
             Vector3 planeNormal = Vector3.Cross(vertex1 - vertex0, vertex2 - vertex0).GetNormal();
             double distanceFromOrigin = Vector3.Dot(vertex0, planeNormal);
@@ -211,7 +211,7 @@ namespace MatterHackers.RayTracer
             throw new NotImplementedException();
         }
 
-        public override void GetClosestIntersections(RayBundle ray, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
+        public override void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
         {
             throw new NotImplementedException();
         }

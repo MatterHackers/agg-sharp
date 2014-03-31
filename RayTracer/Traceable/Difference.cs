@@ -106,7 +106,7 @@ namespace MatterHackers.RayTracer.Traceable
             throw new NotImplementedException();
         }
 
-        public void GetClosestIntersections(RayBundle ray, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
+        public void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
         {
             throw new NotImplementedException();
         }
@@ -163,7 +163,7 @@ namespace MatterHackers.RayTracer.Traceable
             throw new NotImplementedException("You should not get a color directly from a Difference.");
         }
 
-        public IMaterial Material
+        public MaterialAbstract Material
         {
             get { throw new NotImplementedException(); }
             set { throw new NotImplementedException(); }
