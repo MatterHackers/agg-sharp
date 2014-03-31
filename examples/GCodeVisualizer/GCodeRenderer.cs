@@ -160,19 +160,23 @@ namespace MatterHackers.GCodeVisualizer
 
     public class GCodeRenderer
     {
-        int layerWithFeaturesIndex = -1;
-        List<RenderFeatureBase> renderFeaturesForLayer = new List<RenderFeatureBase>();
+        List<List<RenderFeatureBase>> renderFeatures = new List<List<RenderFeatureBase>>();
 
         GCodeFile gCodeFileToDraw;
 
         public GCodeRenderer(GCodeFile gCodeFileToDraw)
         {
             this.gCodeFileToDraw = gCodeFileToDraw;
+
+            for (int i = 0; i < gCodeFileToDraw.NumChangesInZ; i++)
+            {
+                renderFeatures.Add(new List<RenderFeatureBase>());
+            }
         }
 
         void CreateFeaturesForLayer(int layerToCreate)
         {
-            renderFeaturesForLayer.Clear();
+            List<RenderFeatureBase> renderFeaturesForLayer = renderFeatures[layerToCreate];
 
             int currentVertexIndex = gCodeFileToDraw.IndexOfChangeInZ[layerToCreate];
             double currentZ = gCodeFileToDraw.GCodeCommandQueue[currentVertexIndex].Position.z;
@@ -197,6 +201,14 @@ namespace MatterHackers.GCodeVisualizer
                         // this is a retraction
                         renderFeaturesForLayer.Add(new RenderFeatureRetract(currentInstruction.Position, currentInstruction.EPosition - previousInstruction.EPosition, currentInstruction.FeedRate));
                     }
+                    if (currentInstruction.Line.StartsWith("G10"))
+                    {
+                        renderFeaturesForLayer.Add(new RenderFeatureRetract(currentInstruction.Position, -1, currentInstruction.FeedRate));
+                    }
+                    else if (currentInstruction.Line.StartsWith("G11"))
+                    {
+                        renderFeaturesForLayer.Add(new RenderFeatureRetract(currentInstruction.Position, 1, currentInstruction.FeedRate));
+                    }
                 }
                 else
                 {
@@ -216,15 +228,17 @@ namespace MatterHackers.GCodeVisualizer
 
         public void Render(Graphics2D graphics2D, int activeLayerIndex, Affine transform, double layerScale, RenderType renderType)
         {
-            if (layerWithFeaturesIndex != activeLayerIndex)
+            if (renderFeatures.Count > 0)
             {
-                CreateFeaturesForLayer(activeLayerIndex);
-                layerWithFeaturesIndex = activeLayerIndex;
-            }
+                if (renderFeatures[activeLayerIndex].Count == 0)
+                {
+                    CreateFeaturesForLayer(activeLayerIndex);
+                }
 
-            foreach (RenderFeatureBase feature in renderFeaturesForLayer)
-            {
-                feature.Render(graphics2D, transform, layerScale, renderType);
+                foreach (RenderFeatureBase feature in renderFeatures[activeLayerIndex])
+                {
+                    feature.Render(graphics2D, transform, layerScale, renderType);
+                }
             }
         }
     }

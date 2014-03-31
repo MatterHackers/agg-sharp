@@ -274,7 +274,10 @@ namespace MatterHackers.Agg.UI
             }
 
             // Put this function back in so it will get called each update
-            UiThread.RunOnIdle(OnIdle);
+            if (!WidgetHasBeenClosed)
+            {
+                UiThread.RunOnIdle(OnIdle);
+            }
         }
 
         void RestartBarFlash()

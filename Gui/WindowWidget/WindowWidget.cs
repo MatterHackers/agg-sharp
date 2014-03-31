@@ -29,17 +29,11 @@ namespace MatterHackers.Agg.UI
             set;
         }
 
-        RGBA_Bytes BackGroundColor
-        {
-            get;
-            set;
-        }
-
         public WindowWidget(RectangleDouble InBounds)
         {
             int sizeOfDragBar = 20;
 
-            BackGroundColor = RGBA_Bytes.White;
+            BackgroundColor = RGBA_Bytes.White;
 
             OriginRelativeParent = new Vector2(InBounds.Left, InBounds.Bottom);
             LocalBounds = new RectangleDouble(0, 0, InBounds.Width, InBounds.Height);
@@ -78,11 +72,10 @@ namespace MatterHackers.Agg.UI
 
         public override void OnDraw(Graphics2D graphics2D)
         {
-            RoundedRect roundRect = new RoundedRect(LocalBounds, 0);
-            graphics2D.Render(roundRect, BackGroundColor);
+            graphics2D.Rectangle(LocalBounds, RGBA_Bytes.Black);
 
-            roundRect = new RoundedRect(dragBar.BoundsRelativeToParent, 0);
-            graphics2D.Render(roundRect, DragBarColor);
+            RoundedRect boundsRect = new RoundedRect(dragBar.BoundsRelativeToParent, 0);
+            graphics2D.Render(boundsRect, DragBarColor);
 
             base.OnDraw(graphics2D);
         }

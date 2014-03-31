@@ -2528,7 +2528,7 @@ template<class BlenderPre> struct comp_adaptor_clip_to_dst_rgba_pre
             //--------------------------------------------------------------------
             void copy_hline(int x, int y, int len, const color_type& c)
             {
-                value_type* p = (value_type*)m_rbuf->row_ptr(x, y, len) + (x << 2);;
+                value_type* p = (value_type*)m_rbuf->row_ptr(x, y, len) + (x << 2);
                 do
                 {
                     blender_type::blend_pix(m_comp_op, p, c.r, c.g, c.b, c.a, 255);

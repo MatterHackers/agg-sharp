@@ -34,6 +34,7 @@ namespace MatterHackers.Agg.UI
     //------------------------------------------------------------------------
     public class TextWidget : GuiWidget
     {
+        static bool debugIt = false;
         public static bool DoubleBufferDefault = true;
 
         RGBA_Bytes textColor;
@@ -212,12 +213,12 @@ namespace MatterHackers.Agg.UI
                 {
                     shortTextPrinter = new TypeFacePrinter(shortTextPrinter.Text.Substring(0, shortTextPrinter.Text.Length - 4).TrimEnd(spaceTrim) + "...", Printer);
                 }
-                graphics2D.Render(shortTextPrinter, currentColor);
+                shortTextPrinter.Render(graphics2D, currentColor);
             }
             else
             {
                 // it all fits or it's editable (if editable it will need to be offset/scrolled sometimes).
-                graphics2D.Render(Printer, currentColor);
+                Printer.Render(graphics2D, currentColor);
             }
 
             if (debugIt)
@@ -237,7 +238,6 @@ namespace MatterHackers.Agg.UI
 			base.OnDraw(graphics2D);
             TextWidget_OnDraw.Stop();
 		}
-        static bool debugIt = false;
 
         public RGBA_Bytes TextColor
         {

@@ -131,7 +131,7 @@ namespace MatterHackers.GCodeVisualizer
                 using (StreamReader streamReader = new StreamReader(fileStream))
                 {
                     GCodeFile loadedFile = GCodeFile.Load(streamReader.BaseStream);
-                    
+
                     this.indexOfChangeInZ = loadedFile.indexOfChangeInZ;
                     this.center = loadedFile.center;
                     this.parsingLastZ = loadedFile.parsingLastZ;
@@ -193,6 +193,16 @@ namespace MatterHackers.GCodeVisualizer
             {
                 string lineString = outputString.Trim();
                 machineInstructionForLine = new PrinterMachineInstruction(lineString, machineInstructionForLine);
+                // take off any comments before we check its length
+                if (lineString.Contains(";"))
+                {
+                    int position = lineString.IndexOf(';');
+                    if (position > -1)
+                    {
+                        lineString = lineString.Substring(0, position);
+                    }
+                }
+
                 if (lineString.Length > 0)
                 {
                     switch (lineString[0])
@@ -243,7 +253,7 @@ namespace MatterHackers.GCodeVisualizer
             Stopwatch maxProgressReport = new Stopwatch();
             maxProgressReport.Start();
 
-            for(int lineIndex = 0; lineIndex < GCodeCommandQueue.Count; lineIndex++)
+            for (int lineIndex = 0; lineIndex < GCodeCommandQueue.Count; lineIndex++)
             {
                 PrinterMachineInstruction instruction = GCodeCommandQueue[lineIndex];
                 string line = instruction.Line;
@@ -351,13 +361,14 @@ namespace MatterHackers.GCodeVisualizer
         }
 
         const string matchDouble = @"^-*[0-9]*\.?[0-9]*";
+        private static readonly Regex matchDoubleRegex = new Regex(matchDouble, RegexOptions.Compiled);
         public static bool GetFirstNumberAfter(string stringToCheckAfter, string stringWithNumber, ref double readValue, int startIndex = 0)
         {
             int stringPos = stringWithNumber.IndexOf(stringToCheckAfter, startIndex);
             if (stringPos != -1)
             {
                 string startingAfterCheckString = stringWithNumber.Substring(stringPos + stringToCheckAfter.Length).Trim();
-                string matchString = Regex.Match(startingAfterCheckString, matchDouble).Value;
+                string matchString = matchDoubleRegex.Match(startingAfterCheckString).Value;
                 return double.TryParse(matchString, out readValue);
             }
 
@@ -514,13 +525,20 @@ namespace MatterHackers.GCodeVisualizer
             }
         }
 
+        public static void AssertDebugNotDefined()
+        {
+#if DEBUG
+            throw new Exception("DEBUG is defined and should not be!");
+#endif
+        }
+
         double amountOfAccumulatedE = 0;
         void ParseGLine(string lineString, PrinterMachineInstruction processingMachineState)
         {
             PrinterMachineInstruction machineStateForLine = new PrinterMachineInstruction(lineString, processingMachineState);
             string[] splitOnSpace = lineString.Split(' ');
-            string skipGithoutSemiColon = splitOnSpace[0].Split(';')[0].Substring(1).Trim();
-            switch (skipGithoutSemiColon)
+            string onlyNumber = splitOnSpace[0].Substring(1).Trim();
+            switch (onlyNumber)
             {
                 case "0":
                     goto case "1";
@@ -532,44 +550,38 @@ namespace MatterHackers.GCodeVisualizer
 
                 case "1":
                     // get the x y z to move to
-                    for (int argIndex = 1; argIndex < splitOnSpace.Length; argIndex++)
                     {
-                        double value;
-                        if (splitOnSpace[argIndex].Length > 0 && double.TryParse(splitOnSpace[argIndex].Substring(1), NumberStyles.Number, null, out value))
+                        double valueX = 0;
+                        if (GCodeFile.GetFirstNumberAfter("X", lineString, ref valueX))
                         {
-                            switch (splitOnSpace[argIndex][0])
+                            processingMachineState.X = valueX;
+                        }
+                        double valueY = 0;
+                        if (GCodeFile.GetFirstNumberAfter("Y", lineString, ref valueY))
+                        {
+                            processingMachineState.Y = valueY;
+                        }
+                        double valueZ = 0;
+                        if (GCodeFile.GetFirstNumberAfter("Z", lineString, ref valueZ))
+                        {
+                            processingMachineState.Z = valueZ;
+                        }
+                        double valueE = 0;
+                        if (GCodeFile.GetFirstNumberAfter("E", lineString, ref valueE))
+                        {
+                            if (processingMachineState.movementType == PrinterMachineInstruction.MovementTypes.Absolute)
                             {
-                                case 'X':
-                                    processingMachineState.X = value;
-                                    break;
-
-                                case 'Y':
-                                    processingMachineState.Y = value;
-                                    break;
-
-                                case 'Z':
-                                    processingMachineState.Z = value;
-                                    break;
-
-                                case 'E':
-                                    if (processingMachineState.movementType == PrinterMachineInstruction.MovementTypes.Absolute)
-                                    {
-                                        processingMachineState.EPosition = value + amountOfAccumulatedE;
-                                    }
-                                    else
-                                    {
-                                        processingMachineState.EPosition += value;
-                                    }
-                                    if ((int)processingMachineState.EPosition == 0 || (int)processingMachineState.EPosition > 100000)
-                                    {
-                                        int a = 0;
-                                    }
-                                    break;
-
-                                case 'F':
-                                    processingMachineState.FeedRate = value;
-                                    break;
+                                processingMachineState.EPosition = valueE + amountOfAccumulatedE;
                             }
+                            else
+                            {
+                                processingMachineState.EPosition += valueE;
+                            }
+                        }
+                        double valueF = 0;
+                        if (GCodeFile.GetFirstNumberAfter("F", lineString, ref valueF))
+                        {
+                            processingMachineState.FeedRate = valueF;
                         }
                     }
 
@@ -613,7 +625,7 @@ namespace MatterHackers.GCodeVisualizer
                     {
                         // remember how much e position we just gave up
                         amountOfAccumulatedE = (processingMachineState.EPosition - ePosition);
-                    }                    
+                    }
                     break;
 
                 case "161":
@@ -681,7 +693,7 @@ namespace MatterHackers.GCodeVisualizer
         {
             double lastEPosition = 0;
             double filamentMm = 0;
-            for(int i=0; i<GCodeCommandQueue.Count; i++)
+            for (int i = 0; i < GCodeCommandQueue.Count; i++)
             {
                 PrinterMachineInstruction instruction = GCodeCommandQueue[i];
                 //filamentMm += instruction.EPosition;

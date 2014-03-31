@@ -83,6 +83,10 @@
       <Project>{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}</Project>
       <Name>VectorMath</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\WindowsFileDialogs\WindowsFileDialogs.csproj">
+      <Project>{A526DC5D-65F3-461B-805F-D3AC9665F5C9}</Project>
+      <Name>WindowsFileDialogs</Name>
+    </ProjectReference>
     <ProjectReference Include="..\aa_demo\aa_demo.csproj">
       <Project>{B90FCE13-D2DA-4759-ABFE-70B36BD32EC1}</Project>
       <Name>aa_demo</Name>
