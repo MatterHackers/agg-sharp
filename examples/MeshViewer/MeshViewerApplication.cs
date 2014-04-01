@@ -124,7 +124,14 @@ namespace MatterHackers.MeshVisualizer
 
         void wireframeCheckBox_CheckedStateChanged(object sender, EventArgs e)
         {
-            meshViewerWidget.ShowWireFrame = wireframeCheckBox.Checked;
+            if (wireframeCheckBox.Checked)
+            {
+                meshViewerWidget.RenderType = MeshVisualizer.MeshViewerWidget.RenderTypes.Polygons;
+            }
+            else
+            {
+                meshViewerWidget.RenderType = MeshVisualizer.MeshViewerWidget.RenderTypes.Shaded;
+            }
         }
 
         void bedCheckBox_CheckedStateChanged(object sender, EventArgs e)

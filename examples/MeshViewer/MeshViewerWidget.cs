@@ -60,15 +60,16 @@ namespace MatterHackers.MeshVisualizer
         public bool RenderBed { get; set; }
         public bool RenderBuildVolume { get; set; }
 
-        bool showWireFrame = false;
-        public bool ShowWireFrame
+        public enum RenderTypes { Shaded, Outlines, Polygons };
+        RenderTypes renderType = RenderTypes.Shaded;
+        public RenderTypes RenderType
         {
-            get { return showWireFrame; }
+            get { return renderType; }
             set
             {
-                if (showWireFrame != value)
+                if (renderType != value)
                 {
-                    showWireFrame = value;
+                    renderType = value;
                     foreach (Mesh mesh in Meshes)
                     {
                         mesh.MarkAsChanged();
@@ -145,7 +146,7 @@ namespace MatterHackers.MeshVisualizer
         {
             this.bedShape = bedShape;
             this.displayVolume = displayVolume;
-            ShowWireFrame = false;
+            RenderType = RenderTypes.Shaded;
             RenderBed = true;
             RenderBuildVolume = false;
             PartColor = RGBA_Bytes.White;
@@ -258,13 +259,19 @@ namespace MatterHackers.MeshVisualizer
                     drawColor = SelectedPartColor;
                 }
 
-                if (ShowWireFrame)
+                switch(RenderType)
                 {
-                    RenderMeshToGl.Render(meshToRender, drawColor, MeshTransforms[i], true);
-                }
-                else
-                {
-                    RenderMeshToGl.Render(meshToRender, drawColor, MeshTransforms[i]);
+                    case RenderTypes.Shaded:
+                        RenderMeshToGl.Render(meshToRender, drawColor, MeshTransforms[i]);
+                        break;
+
+                    case RenderTypes.Polygons:
+                        RenderMeshToGl.Render(meshToRender, drawColor, MeshTransforms[i], true);
+                        break;
+
+                    case RenderTypes.Outlines:
+                        RenderMeshToGl.Render(meshToRender, drawColor, MeshTransforms[i]);
+                        break;
                 }
             }
 
