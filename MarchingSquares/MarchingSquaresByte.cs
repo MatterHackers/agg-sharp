@@ -314,5 +314,12 @@ namespace MatterHackers.MarchingSquares
                 graphics2D.Render(StrockedLineToDraw, lineSegment.color);
             }
         }
+
+        public static void AssertDebugNotDefined()
+        {
+#if DEBUG
+            throw new Exception("DEBUG is defined and should not be!");
+#endif
+        }
     }
 }
