@@ -129,10 +129,30 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
         SerialError eventType;
     }
+
+    public interface IFrostedSerialPort
+    {
+        bool RtsEnable { get; set; }
+        bool DtrEnable { get; set; }
+        int BaudRate { get; set; }
+        int BytesToRead { get; }
+
+        void Write(string str);
+        int WriteTimeout { get; set; }
+
+        int ReadTimeout { get; set; }
+        int ReadChar();
+
+        bool IsOpen { get; }
+
+        void Open();
+        void Close();
+        void Dispose();
+    }
     
     [MonitoringDescription("")]
     [System.ComponentModel.DesignerCategory("")]
-    public class FrostedSerialPort : Component
+    public class FrostedSerialPort : Component, IFrostedSerialPort
     {
         public const int InfiniteTimeout = -1;
         const int DefaultReadBufferSize = 4096;
@@ -1002,6 +1022,121 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
         {
             add { Events.AddHandler(data_received, value); }
             remove { Events.RemoveHandler(data_received, value); }
+        }
+
+        public static IFrostedSerialPort Create(string serialPortName)
+        {
+            IFrostedSerialPort newPort = null;
+            try
+            {
+                newPort = new FrostedSerialPort(serialPortName);
+            }
+            catch(Exception)
+            {
+                // If we can't get the serial port offered by FrostedSerialStream then give the C# wrapped one.
+                newPort = new CSharpSerialPortWrapper(serialPortName);
+            }
+
+            return newPort;
+        }
+    }
+
+    public class CSharpSerialPortWrapper : IFrostedSerialPort
+    {
+        System.IO.Ports.SerialPort port;
+
+        internal CSharpSerialPortWrapper(string serialPortName)
+        {
+            port = new System.IO.Ports.SerialPort(serialPortName);
+        }
+
+        public int ReadTimeout
+        {
+            get { return port.ReadTimeout; }
+            set { port.ReadTimeout = value; }
+        }
+
+        public int ReadChar()
+        {
+            return port.ReadChar();
+        }
+
+        public int BytesToRead
+        {
+            get { return port.BytesToRead; }
+        }
+
+        public void Dispose()
+        {
+            port.Dispose();
+        }
+
+        public bool IsOpen
+        {
+            get { return port.IsOpen; }
+        }
+
+        public void Open()
+        {
+            port.Open();
+        }
+
+        public void Close()
+        {
+            port.Close();
+        }
+
+        public int WriteTimeout
+        {
+            get
+            {
+                return port.WriteTimeout;
+            }
+            set
+            {
+                port.WriteTimeout = value;
+            }
+        }
+
+        public int BaudRate
+        {
+            get
+            {
+                return port.BaudRate;
+            }
+            set
+            {
+                port.BaudRate = value;
+            }
+        }
+
+        public bool RtsEnable
+        {
+            get
+            {
+                return port.RtsEnable;
+            }
+            set
+            {
+                port.RtsEnable = value;
+            }
+        }
+
+        public bool DtrEnable
+        {
+            get
+            {
+                return port.DtrEnable;
+            }
+            set
+            {
+                port.DtrEnable = value;
+            }
+        }
+
+        public void Write(string str)
+        {
+            port.Write(str);
         }
     }
 
