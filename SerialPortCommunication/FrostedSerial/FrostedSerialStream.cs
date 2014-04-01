@@ -34,10 +34,9 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
                 bool dtrEnable, bool rtsEnable, Handshake handshake, int readTimeout, int writeTimeout,
                 int readBufferSize, int writeBufferSize)
         {
-
-
 			fd = open_serial(portName);
-			if (fd == -1) {
+			if (fd == -1) 
+            {
 				ThrowIOException ();
 			}
 
@@ -57,14 +56,15 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
             if (handshake != Handshake.RequestToSend &&
                     handshake != Handshake.RequestToSendXOnXOff)
+            {
                 SetSignal(SerialSignal.Rts, rtsEnable);
+            }
         }
 
 		private int SetupBaudRate(int baudRate)
 		{
 			throw new NotImplementedException();
 		}
-
 
 		[DllImport("FrostedSerialHelper", SetLastError = true)]
 		static extern int tcgetattr(int fd, tDeviceInfo newtio);
@@ -94,8 +94,6 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 			newtio.c_ospeed = (uint)baudRate;
 			return (int)newtio.c_ospeed;
 		}
-
-
 
 		private bool SetFrostedAttributes(int fd, int baudRate, Parity parity, int dataBits, StopBits stopBits, Handshake handshake)
 		{

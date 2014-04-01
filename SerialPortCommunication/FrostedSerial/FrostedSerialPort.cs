@@ -767,8 +767,17 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
                     rts_enable, handshake, read_timeout, write_timeout, readBufferSize, writeBufferSize);
             else // Use standard unix backend
 #endif
-                stream = new FrostedSerialPortStream(port_name, baud_rate, data_bits, parity, stop_bits, dtr_enable,
-                    rts_enable, handshake, read_timeout, write_timeout, readBufferSize, writeBufferSize);
+                try
+                {
+                    stream = new FrostedSerialPortStream(port_name, baud_rate, data_bits, parity, stop_bits, dtr_enable,
+                        rts_enable, handshake, read_timeout, write_timeout, readBufferSize, writeBufferSize);
+                }
+                catch (Exception)
+                {
+                    // if we can't get the mac stream just use what c# gives us (has a problem with 250k)
+                    stream = new WinSerialStream(port_name, baud_rate, data_bits, parity, stop_bits, dtr_enable,
+                        rts_enable, handshake, read_timeout, write_timeout, readBufferSize, writeBufferSize);
+                }
 
             is_open = true;
         }
