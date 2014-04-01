@@ -1022,7 +1022,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
         public static IFrostedSerialPort CreateAndOpen(string serialPortName, int baudRate, bool DtrEnableOnConnect)
         {
             IFrostedSerialPort newPort = null;
-            try
+			if(File.Exists("libFrostedSerialHelper"))
             {
                 newPort = new FrostedSerialPort(serialPortName);
                 newPort.BaudRate = baudRate;
@@ -1037,12 +1037,11 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
                 newPort.Open();
             }
-            catch(Exception)
+			else
             {
                 // If we can't get the serial port offered by FrostedSerialStream then give the C# wrapped one.
                 newPort = new CSharpSerialPortWrapper(serialPortName);
 
-                newPort = new FrostedSerialPort(serialPortName);
                 newPort.BaudRate = baudRate;
                 if (DtrEnableOnConnect)
                 {
