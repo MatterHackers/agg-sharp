@@ -783,21 +783,16 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
 #if !TARGET_JVM
             if (IsWindows) // Use windows kernel32 backend
+            {
                 stream = new WinSerialStream(port_name, baud_rate, data_bits, parity, stop_bits, dtr_enable,
                     rts_enable, handshake, read_timeout, write_timeout, readBufferSize, writeBufferSize);
+            }
             else // Use standard unix backend
 #endif
-                try
-                {
-                    stream = new FrostedSerialPortStream(port_name, baud_rate, data_bits, parity, stop_bits, dtr_enable,
-                        rts_enable, handshake, read_timeout, write_timeout, readBufferSize, writeBufferSize);
-                }
-                catch (Exception)
-                {
-                    // if we can't get the mac stream just use what c# gives us (has a problem with 250k)
-                    stream = new WinSerialStream(port_name, baud_rate, data_bits, parity, stop_bits, dtr_enable,
-                        rts_enable, handshake, read_timeout, write_timeout, readBufferSize, writeBufferSize);
-                }
+            {
+                stream = new FrostedSerialPortStream(port_name, baud_rate, data_bits, parity, stop_bits, dtr_enable,
+                    rts_enable, handshake, read_timeout, write_timeout, readBufferSize, writeBufferSize);
+            }
 
             is_open = true;
         }
@@ -1024,17 +1019,41 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
             remove { Events.RemoveHandler(data_received, value); }
         }
 
-        public static IFrostedSerialPort Create(string serialPortName)
+        public static IFrostedSerialPort CreateAndOpen(string serialPortName, int baudRate, bool DtrEnableOnConnect)
         {
             IFrostedSerialPort newPort = null;
             try
             {
                 newPort = new FrostedSerialPort(serialPortName);
+                newPort.BaudRate = baudRate;
+                if (DtrEnableOnConnect)
+                {
+                    newPort.DtrEnable = true;
+                }
+
+                // Set the read/write timeouts
+                newPort.ReadTimeout = 500;
+                newPort.WriteTimeout = 500;
+
+                newPort.Open();
             }
             catch(Exception)
             {
                 // If we can't get the serial port offered by FrostedSerialStream then give the C# wrapped one.
                 newPort = new CSharpSerialPortWrapper(serialPortName);
+
+                newPort = new FrostedSerialPort(serialPortName);
+                newPort.BaudRate = baudRate;
+                if (DtrEnableOnConnect)
+                {
+                    newPort.DtrEnable = true;
+                }
+
+                // Set the read/write timeouts
+                newPort.ReadTimeout = 500;
+                newPort.WriteTimeout = 500;
+
+                newPort.Open();
             }
 
             return newPort;
