@@ -152,7 +152,7 @@ namespace MatterHackers.PolygonMesh
         {
             foreach (FaceEdge faceEdge in FaceEdgeIterator())
             {
-                yield return faceEdge.vertex;
+                yield return faceEdge.firstVertex;
             }
         }
 
@@ -202,15 +202,15 @@ namespace MatterHackers.PolygonMesh
         {
             FaceEdge faceEdge0 = firstFaceEdge;
             FaceEdge faceEdge1 = faceEdge0.nextFaceEdge;
-            Vector3 faceEdge1Minus0 = faceEdge1.vertex.Position - faceEdge0.vertex.Position;
+            Vector3 faceEdge1Minus0 = faceEdge1.firstVertex.Position - faceEdge0.firstVertex.Position;
             FaceEdge faceEdge2 = faceEdge1;
             bool collinear = false;
             do
             {
                 faceEdge2 = faceEdge2.nextFaceEdge;
-                collinear = Vector3.Collinear(faceEdge0.vertex.Position, faceEdge1.vertex.Position, faceEdge2.vertex.Position);
+                collinear = Vector3.Collinear(faceEdge0.firstVertex.Position, faceEdge1.firstVertex.Position, faceEdge2.firstVertex.Position);
             } while (collinear && faceEdge2 != faceEdge0);
-            Vector3 face2Minus0 = faceEdge2.vertex.Position - faceEdge0.vertex.Position;
+            Vector3 face2Minus0 = faceEdge2.firstVertex.Position - faceEdge0.firstVertex.Position;
             normal = Vector3.Cross(faceEdge1Minus0, face2Minus0).GetNormal();
         }
 

@@ -183,8 +183,8 @@ namespace MatterHackers.MeshVisualizer
                             foreach (FaceEdge faceEdge in face.FaceEdgeIterator())
                             {
                                 FaceEdgeData edgeUV = new FaceEdgeData();
-                                edgeUV.TextureUV.Add(new Vector2((displayVolume.x / 2 + faceEdge.vertex.Position.x) / displayVolume.x,
-                                    (displayVolume.y / 2 + faceEdge.vertex.Position.y) / displayVolume.y));
+                                edgeUV.TextureUV.Add(new Vector2((displayVolume.x / 2 + faceEdge.firstVertex.Position.x) / displayVolume.x,
+                                    (displayVolume.y / 2 + faceEdge.firstVertex.Position.y) / displayVolume.y));
                                 faceEdge.Data = edgeUV;
                             }
                         }
@@ -218,8 +218,8 @@ namespace MatterHackers.MeshVisualizer
                                     foreach (FaceEdge faceEdge in face.FaceEdgeIterator())
                                     {
                                         FaceEdgeData edgeUV = new FaceEdgeData();
-                                        edgeUV.TextureUV.Add(new Vector2((displayVolume.x / 2 + faceEdge.vertex.Position.x) / displayVolume.x,
-                                            (displayVolume.y / 2 + faceEdge.vertex.Position.y) / displayVolume.y));
+                                        edgeUV.TextureUV.Add(new Vector2((displayVolume.x / 2 + faceEdge.firstVertex.Position.x) / displayVolume.x,
+                                            (displayVolume.y / 2 + faceEdge.firstVertex.Position.y) / displayVolume.y));
                                         faceEdge.Data = edgeUV;
                                     }
                                 }

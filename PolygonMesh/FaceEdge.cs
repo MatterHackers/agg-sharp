@@ -46,9 +46,9 @@ namespace MatterHackers.PolygonMesh
         MetaData data = new MetaData();
         public MetaData Data { get { return data; } set { data = value; } }
 
-        public Vertex vertex;
+        public Face containingFace;
+        public Vertex firstVertex;
         public MeshEdge meshEdge;
-        public Face face;
 
         public FaceEdge nextFaceEdge;
         public FaceEdge prevFaceEdge;
@@ -62,9 +62,9 @@ namespace MatterHackers.PolygonMesh
 
         public FaceEdge(Face face, MeshEdge meshEdge, Vertex vertex)
         {
-            this.face = face;
+            this.containingFace = face;
             this.meshEdge = meshEdge;
-            this.vertex = vertex;
+            this.firstVertex = vertex;
 
             nextFaceEdge = null;
             prevFaceEdge = null;
@@ -85,9 +85,9 @@ namespace MatterHackers.PolygonMesh
 
         public void AddDebugInfo(StringBuilder totalDebug, int numTabs, bool printRecursive = true)
         {
-            totalDebug.Append(new string('\t', numTabs) + String.Format("Face: {0}\n", face.Data.ID));
+            totalDebug.Append(new string('\t', numTabs) + String.Format("Face: {0}\n", containingFace.Data.ID));
             totalDebug.Append(new string('\t', numTabs) + String.Format("MeshEdge: {0}\n", meshEdge.Data.ID));
-            totalDebug.Append(new string('\t', numTabs) + String.Format("Vertex: {0}\n", vertex.Data.ID));
+            totalDebug.Append(new string('\t', numTabs) + String.Format("Vertex: {0}\n", firstVertex.Data.ID));
 
             if(printRecursive)
             {

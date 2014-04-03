@@ -64,7 +64,7 @@ namespace MatterHackers.PolygonMesh.Processors
                 List<Vector3> positionsCCW = new List<Vector3>();
                 foreach (FaceEdge faceEdge in face.FaceEdgeIterator())
                 {
-                    positionsCCW.Add(faceEdge.vertex.Position);
+                    positionsCCW.Add(faceEdge.firstVertex.Position);
                 }
 
                 int numPolys = positionsCCW.Count - 2;

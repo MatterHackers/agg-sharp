@@ -106,8 +106,8 @@ namespace MatterHackers.CSGOpenGL
                 foreach (FaceEdge faceEdge in face.FaceEdgeIterator())
                 {
                     FaceEdgeData edgeUV = new FaceEdgeData();
-                    edgeUV.TextureUV.Add(new Vector2((bedXSize / 2 + faceEdge.vertex.Position.x) / bedXSize,
-                        (bedYSize / 2 + faceEdge.vertex.Position.y) / bedYSize));
+                    edgeUV.TextureUV.Add(new Vector2((bedXSize / 2 + faceEdge.firstVertex.Position.x) / bedXSize,
+                        (bedYSize / 2 + faceEdge.firstVertex.Position.y) / bedYSize));
                     faceEdge.Data = edgeUV;
                 }
             }

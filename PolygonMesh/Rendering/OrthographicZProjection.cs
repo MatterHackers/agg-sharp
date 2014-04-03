@@ -55,7 +55,7 @@ namespace MatterHackers.PolygonMesh.Rendering
                     bool first = true;
                     foreach (FaceEdge faceEdge in face.FaceEdgeIterator())
                     {
-                        Vector2 position = new Vector2(faceEdge.vertex.Position.x, faceEdge.vertex.Position.y);
+                        Vector2 position = new Vector2(faceEdge.firstVertex.Position.x, faceEdge.firstVertex.Position.y);
                         position += offset;
                         position *= scale;
                         if (first)
