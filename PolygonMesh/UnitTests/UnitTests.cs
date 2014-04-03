@@ -82,7 +82,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
             Assert.IsTrue(meshEdge1.vertex1 == leftVertexBottom);
             Assert.IsTrue(meshEdge1.vertex2 == rightVertexBottom);
             Assert.IsTrue(meshEdge1.firstFaceEdge == null);
-            Assert.IsTrue(meshEdge1.vertex1MeshEdgeLinks.nextMeshEdge == meshEdge3.vertex2MeshEdgeLinks.nextMeshEdge);
+            Assert.IsTrue(meshEdge1.vertex1MeshEdgeLinks.nextMeshEdge == meshEdge2.vertex2MeshEdgeLinks.nextMeshEdge);
+            //Assert.IsTrue(meshEdge1.vertex1NextMeshEdge == meshEdge3);
+            //Assert.IsTrue(meshEdge1.vertex2NextMeshEdge == meshEdge2);
             Assert.IsTrue(meshEdge1.vertex1MeshEdgeLinks.prevMeshEdge == meshEdge3.vertex2MeshEdgeLinks.prevMeshEdge);
             Assert.IsTrue(meshEdge1.vertex2MeshEdgeLinks.nextMeshEdge == meshEdge2.vertex1MeshEdgeLinks.nextMeshEdge);
             Assert.IsTrue(meshEdge1.vertex2MeshEdgeLinks.prevMeshEdge == meshEdge2.vertex1MeshEdgeLinks.prevMeshEdge);
@@ -90,12 +92,17 @@ namespace MatterHackers.PolygonMesh.UnitTests
             Assert.IsTrue(meshEdge2.vertex1 == rightVertexBottom);
             Assert.IsTrue(meshEdge2.vertex2 == centerVertexTop);
             Assert.IsTrue(meshEdge2.firstFaceEdge == null);
+            //Assert.IsTrue(meshEdge2.vertex1NextMeshEdge == meshEdge1);
+            //Assert.IsTrue(meshEdge2.vertex2NextMeshEdge == meshEdge3);
             Assert.IsTrue(meshEdge2.vertex2MeshEdgeLinks.nextMeshEdge == meshEdge3.vertex1MeshEdgeLinks.nextMeshEdge);
             Assert.IsTrue(meshEdge2.vertex2MeshEdgeLinks.prevMeshEdge == meshEdge3.vertex1MeshEdgeLinks.prevMeshEdge);
 
             Assert.IsTrue(meshEdge3.vertex1 == centerVertexTop);
             Assert.IsTrue(meshEdge3.vertex2 == leftVertexBottom);
             Assert.IsTrue(meshEdge3.firstFaceEdge == null);
+            //Assert.IsTrue(meshEdge3.vertex1NextMeshEdge == meshEdge2);
+            //Assert.IsTrue(meshEdge3.vertex2NextMeshEdge == meshEdge1);
+            Assert.IsTrue(meshEdge3.vertex2MeshEdgeLinks.nextMeshEdge == meshEdge1.vertex1MeshEdgeLinks.nextMeshEdge);
             Assert.IsTrue(meshEdge3.vertex2MeshEdgeLinks.nextMeshEdge == meshEdge1.vertex1MeshEdgeLinks.nextMeshEdge);
             Assert.IsTrue(meshEdge3.vertex2MeshEdgeLinks.prevMeshEdge == meshEdge1.vertex1MeshEdgeLinks.prevMeshEdge);
         }

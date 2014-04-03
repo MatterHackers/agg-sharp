@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Diagnostics;
 
 using MatterHackers.VectorMath;
 using MatterHackers.Agg.Image;
@@ -42,6 +43,7 @@ namespace MatterHackers.PolygonMesh
         public List<ImageBuffer> Textures = new List<ImageBuffer>();
     }
 
+    [DebuggerDisplay("ID = {Data.ID}")]
     public class Face
     {
         MetaData data = new MetaData();

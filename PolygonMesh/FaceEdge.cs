@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Diagnostics;
 
 using MatterHackers.VectorMath;
 
@@ -41,6 +42,7 @@ namespace MatterHackers.PolygonMesh
         public List<Vector2> TextureUV = new List<Vector2>();
     }
 
+    [DebuggerDisplay("ID = {Data.ID}")]
     public class FaceEdge
     {
         MetaData data = new MetaData();

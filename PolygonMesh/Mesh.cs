@@ -38,6 +38,7 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh
 {
+    [DebuggerDisplay("ID = {Data.ID}")]
     public class Mesh
     {
         static public readonly double DefaultMaxDistanceToConsiderVertexAsSame = .0000001;

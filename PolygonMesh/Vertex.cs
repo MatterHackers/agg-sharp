@@ -33,9 +33,11 @@ using MatterHackers.VectorMath;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using System.Diagnostics;
 
 namespace MatterHackers.PolygonMesh
 {
+    [DebuggerDisplay("ID = {Data.ID}")]
     public class Vertex
     {
         MetaData data = new MetaData();

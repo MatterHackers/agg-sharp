@@ -31,9 +31,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Diagnostics;
 
 namespace MatterHackers.PolygonMesh
 {
+    [DebuggerDisplay("ID = {Data.ID}")]
     public class MeshEdgeLinks
     {
         public MeshEdge nextMeshEdge;
@@ -73,15 +75,18 @@ namespace MatterHackers.PolygonMesh
         }
     }
 
+    [DebuggerDisplay("ID = {Data.ID}")]
     public class MeshEdge
     {
         MetaData data = new MetaData();
         public MetaData Data { get { return data; } }
 
         public Vertex vertex1;
+        public MeshEdge vertex1NextMeshEdge;
         public MeshEdgeLinks vertex1MeshEdgeLinks = new MeshEdgeLinks();
 
         public Vertex vertex2;
+        public MeshEdge vertex2NextMeshEdge;
         public MeshEdgeLinks vertex2MeshEdgeLinks = new MeshEdgeLinks();
 
         public FaceEdge firstFaceEdge;
@@ -95,8 +100,10 @@ namespace MatterHackers.PolygonMesh
             this.vertex1 = vertex1;
             this.vertex2 = vertex2;
 
+            vertex1NextMeshEdge = this; // start out with a circular reference to ourselves
             vertex1MeshEdgeLinks.nextMeshEdge = this;
             vertex1MeshEdgeLinks.prevMeshEdge = this;
+            vertex2NextMeshEdge = this; // start out with a circular reference to ourselves
             vertex2MeshEdgeLinks.nextMeshEdge = this;
             vertex2MeshEdgeLinks.prevMeshEdge = this;
 
@@ -115,6 +122,7 @@ namespace MatterHackers.PolygonMesh
             {
                 totalDebug.Append(new string('\t', numTabs) + "null\n");
             }
+            totalDebug.Append(String.Format("Vertex1 Next MeshEdge: {0}\n", vertex1NextMeshEdge.Data.ID));
 
             totalDebug.Append(new string('\t', numTabs) + String.Format("Vertex2: {0}\n", vertex2 != null ? vertex2.Data.ID.ToString() : "null"));
             if (vertex2MeshEdgeLinks != null)
@@ -125,6 +133,7 @@ namespace MatterHackers.PolygonMesh
             {
                 totalDebug.Append(new string('\t', numTabs) + "null\n");
             }
+            totalDebug.Append(String.Format("Vertex2 Next MeshEdge: {0}\n", vertex2NextMeshEdge.Data.ID));
             int firstFaceEdgeID = -1;
             if (firstFaceEdge != null)
             {
