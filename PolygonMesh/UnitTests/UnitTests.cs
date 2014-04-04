@@ -83,7 +83,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
             Assert.IsTrue(meshEdge1.vertex2 == rightVertexBottom);
             Assert.IsTrue(meshEdge1.firstFaceEdge == null);
             Assert.IsTrue(meshEdge1.vertex1MeshEdgeLinks.nextMeshEdge == meshEdge2.vertex2MeshEdgeLinks.nextMeshEdge);
-            //Assert.IsTrue(meshEdge1.vertex1NextMeshEdge == meshEdge3);
+            Assert.IsTrue(meshEdge1.vertex1NextMeshEdge == meshEdge3);
             //Assert.IsTrue(meshEdge1.vertex2NextMeshEdge == meshEdge2);
             Assert.IsTrue(meshEdge1.vertex1MeshEdgeLinks.prevMeshEdge == meshEdge3.vertex2MeshEdgeLinks.prevMeshEdge);
             Assert.IsTrue(meshEdge1.vertex2MeshEdgeLinks.nextMeshEdge == meshEdge2.vertex1MeshEdgeLinks.nextMeshEdge);
