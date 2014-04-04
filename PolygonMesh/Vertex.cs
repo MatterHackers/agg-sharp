@@ -100,15 +100,7 @@ namespace MatterHackers.PolygonMesh
                 {
                     yield return curMeshEdge;
 
-                    MeshEdgeLinks nextEdgeLink = curMeshEdge.GetMeshEdgeLinksContainingVertex(this);
-                    if (nextEdgeLink.nextMeshEdge == curMeshEdge)
-                    {
-                        curMeshEdge = nextEdgeLink.prevMeshEdge;
-                    }
-                    else
-                    {
-                        curMeshEdge = nextEdgeLink.nextMeshEdge;
-                    }
+                    curMeshEdge = curMeshEdge.GetNextMeshEdge(this);
                 } while (curMeshEdge != this.firstMeshEdge);
             }
         }
@@ -140,37 +132,6 @@ namespace MatterHackers.PolygonMesh
             }
 
             return numConnectedEdges;
-        }
-
-        public void RemoveMeshEdgeFromMeshEdgeLinks(MeshEdge meshEdgeToRemove)
-        {
-            MeshEdgeLinks edgeLinksRemoveFrom1 = meshEdgeToRemove.GetMeshEdgeLinksContainingVertex(this);
-
-            if (edgeLinksRemoveFrom1.prevMeshEdge != null)
-            {
-                MeshEdgeLinks hold = edgeLinksRemoveFrom1.prevMeshEdge.GetMeshEdgeLinksContainingVertex(this);
-                hold.nextMeshEdge = edgeLinksRemoveFrom1.nextMeshEdge;
-            }
-
-            if (edgeLinksRemoveFrom1.nextMeshEdge != null)
-            {
-                MeshEdgeLinks hold = edgeLinksRemoveFrom1.nextMeshEdge.GetMeshEdgeLinksContainingVertex(this);
-                hold.prevMeshEdge = edgeLinksRemoveFrom1.prevMeshEdge;
-            }
-
-            if (firstMeshEdge == meshEdgeToRemove)
-            {
-                if (edgeLinksRemoveFrom1.nextMeshEdge == meshEdgeToRemove)
-                {
-                    firstMeshEdge = null;
-                }
-                else
-                {
-                    firstMeshEdge = edgeLinksRemoveFrom1.nextMeshEdge;
-                }
-            }
-
-            edgeLinksRemoveFrom1.nextMeshEdge = edgeLinksRemoveFrom1.prevMeshEdge = null;
         }
 
         public void Validate()

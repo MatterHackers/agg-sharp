@@ -41,8 +41,13 @@ namespace MatterHackers.PolygonMesh
         MetaData data = new MetaData();
         public MetaData Data { get { return data; } }
 
-        public Vertex[] attachedVertecies = new Vertex[2];
-        public MeshEdge[] vertexMeshEdgeLoop = new MeshEdge[2];
+        public struct EdgeEndData
+        {
+            public Vertex vertex;
+            public MeshEdge nextMeshEdge;
+        }
+
+        public EdgeEndData[] edgeEnds = new EdgeEndData[2];
 
         public FaceEdge firstFaceEdge;
 
@@ -52,11 +57,10 @@ namespace MatterHackers.PolygonMesh
 
         public MeshEdge(Vertex vertex1, Vertex vertex2)
         {
-            this.attachedVertecies[0] = vertex1;
-            this.attachedVertecies[1] = vertex2;
-
-            vertexMeshEdgeLoop[0] = this; // start out with a circular reference to ourselves
-            vertexMeshEdgeLoop[1] = this; // start out with a circular reference to ourselves
+            this.edgeEnds[0].vertex = vertex1;
+            this.edgeEnds[0].nextMeshEdge = this; // start out with a circular reference to ourselves
+            this.edgeEnds[1].vertex = vertex2;
+            this.edgeEnds[1].nextMeshEdge = this; // start out with a circular reference to ourselves
 
             AppendThisEdgeToEdgeLinksOfVertex(vertex1);
             AppendThisEdgeToEdgeLinksOfVertex(vertex2);
@@ -64,27 +68,12 @@ namespace MatterHackers.PolygonMesh
 
         public void AddDebugInfo(StringBuilder totalDebug, int numTabs)
         {
-            totalDebug.Append(new string('\t', numTabs) + String.Format("Vertex1: {0}\n", vertex1 != null ? vertex1.Data.ID.ToString() : "null"));
-            if (vertex1MeshEdgeLinks != null)
-            {
-                vertex1MeshEdgeLinks.AddDebugInfo(totalDebug, numTabs + 1);
-            }
-            else
-            {
-                totalDebug.Append(new string('\t', numTabs) + "null\n");
-            }
-            totalDebug.Append(String.Format("Vertex1 Next MeshEdge: {0}\n", vertex1NextMeshEdge.Data.ID));
+            totalDebug.Append(new string('\t', numTabs) + String.Format("Vertex1: {0}\n", edgeEnds[0].vertex != null ? edgeEnds[0].vertex.Data.ID.ToString() : "null"));
+            totalDebug.Append(String.Format("Vertex1 Next MeshEdge: {0}\n", edgeEnds[0].nextMeshEdge.Data.ID));
 
-            totalDebug.Append(new string('\t', numTabs) + String.Format("Vertex2: {0}\n", vertex2 != null ? vertex2.Data.ID.ToString() : "null"));
-            if (vertex2MeshEdgeLinks != null)
-            {
-                vertex2MeshEdgeLinks.AddDebugInfo(totalDebug, numTabs + 1);
-            }
-            else
-            {
-                totalDebug.Append(new string('\t', numTabs) + "null\n");
-            }
-            totalDebug.Append(String.Format("Vertex2 Next MeshEdge: {0}\n", vertex2NextMeshEdge.Data.ID));
+            totalDebug.Append(new string('\t', numTabs) + String.Format("Vertex2: {0}\n", edgeEnds[1].vertex != null ? edgeEnds[1].vertex.Data.ID.ToString() : "null"));
+            totalDebug.Append(String.Format("Vertex2 Next MeshEdge: {0}\n", edgeEnds[1].nextMeshEdge.Data.ID));
+
             int firstFaceEdgeID = -1;
             if (firstFaceEdge != null)
             {
@@ -93,15 +82,21 @@ namespace MatterHackers.PolygonMesh
             totalDebug.Append(new string('\t', numTabs) + String.Format("First FaceEdge: {0}\n", firstFaceEdgeID));
         }
 
-        public int GetVertexIndex(Vertex vertexToGetIndexOf)
+        public MeshEdge GetNextMeshEdge(Vertex vertex)
         {
-            if (vertexToGetIndexOf == attachedVertecies[0])
+            int endVertecies = GetEndIndex(vertex);
+            return edgeEnds[endVertecies].nextMeshEdge;
+        }
+
+        public int GetEndIndex(Vertex vertexToGetIndexOf)
+        {
+            if (vertexToGetIndexOf == edgeEnds[0].vertex)
             {
                 return 0;
             }
             else
             {
-                if (vertexToGetIndexOf == attachedVertecies[1])
+                if (vertexToGetIndexOf == edgeEnds[1].vertex)
                 {
                     throw new Exception("You must only ask to get the edge links for a MeshEdge that is linked to the given vertex.");
                 }
@@ -109,15 +104,15 @@ namespace MatterHackers.PolygonMesh
             }
         }
 
-        public MeshEdge GetOtherVertexIndex(Vertex vertexToNotGetIndexOf)
+        public int GetOtherVertexIndex(Vertex vertexToNotGetIndexOf)
         {
-            if (vertexToNotGetIndexOf == attachedVertecies[0])
+            if (vertexToNotGetIndexOf == edgeEnds[0].vertex)
             {
                 return 1;
             }
             else
             {
-                if (vertexToNotGetIndexOf == attachedVertecies[1])
+                if (vertexToNotGetIndexOf == edgeEnds[1].vertex)
                 {
                     throw new Exception("You must only ask to get the edge links for a MeshEdge that is linked to the given vertex.");
                 }
@@ -127,39 +122,33 @@ namespace MatterHackers.PolygonMesh
 
         void AppendThisEdgeToEdgeLinksOfVertex(Vertex vertexToAppendTo)
         {
-            int indexOfMeshEdgeForAddedVertex = GetVertexIndex(vertexToAppendTo);
+            int endIndex = GetEndIndex(vertexToAppendTo);
 
             if (vertexToAppendTo.firstMeshEdge == null)
             {
                 // the vertex is not currently part of any edge
                 // we are the only edge for this vertex so set its links all to this.
                 vertexToAppendTo.firstMeshEdge = this;
-                vertexMeshEdgeLoop[indexOfMeshEdgeForAddedVertex] = this;
+                edgeEnds[endIndex].nextMeshEdge = this;
             }
             else // the vertex is already part of an edge (or many)
             {
-                int indexInExistingMeshEdge = vertexToAppendTo.firstMeshEdge.GetVertexIndex(vertexToAppendTo);
-#if true
-                MeshEdge hold = vertexToAppendTo.firstMeshEdge.firstFaceEdge[indexInExistingMeshEdge];
-                thisEdgeLinks.prevMeshEdge = firstMeshEdgeEdgeLinks.nextMeshEdge;
-                firstMeshEdgeEdgeLinks.nextMeshEdge = hold;
-#else
-                MeshEdgeLinks edgeLinksForPrevFromExistingEdge = edgeLinksOnOtherMeshEdge.prevMeshEdge.GetMeshEdgeLinksContainingVertex(addedVertex);
+                int endIndexOnFirstMeshEdge = vertexToAppendTo.firstMeshEdge.GetEndIndex(vertexToAppendTo);
 
-                // point our links to the ones that are already there
-		        edgeLinksOnThis.nextMeshEdge = addedVertex.firstMeshEdge; // we point our next at the one that is currently on the vertex
-                edgeLinksOnThis.prevMeshEdge = edgeLinksOnOtherMeshEdge.prevMeshEdge; // we point our prev at the one that is currently the prev
+                // remember what the one that is there is poiting at
+                MeshEdge vertexCurrentNext = vertexToAppendTo.firstMeshEdge.edgeEnds[endIndexOnFirstMeshEdge].nextMeshEdge;
+
+                // point the one that is there at us
+                vertexToAppendTo.firstMeshEdge.edgeEnds[endIndexOnFirstMeshEdge].nextMeshEdge = this;
 
                 // and point the ones that are already there at this.
-                edgeLinksOnOtherMeshEdge.prevMeshEdge = this; // point that old prev to us
-                edgeLinksForPrevFromExistingEdge.nextMeshEdge = this; // and that prev next to us
-#endif
+                this.edgeEnds[endIndex].nextMeshEdge = vertexCurrentNext;
             }
         }
 
         internal bool IsConnectedTo(Vertex vertexToCheck)
         {
-            if (vertex1 == vertexToCheck || vertex2 == vertexToCheck)
+            if (edgeEnds[0].vertex == vertexToCheck || edgeEnds[1].vertex == vertexToCheck)
             {
                 return true;
             }
@@ -203,17 +192,17 @@ namespace MatterHackers.PolygonMesh
 
         internal Vertex GetOppositeVertex(Vertex vertexToGetOppositeFor)
         {
-            if (vertexToGetOppositeFor == vertex1)
+            if (vertexToGetOppositeFor == edgeEnds[0].vertex)
             {
-                return vertex2;
+                return edgeEnds[1].vertex;
             }
             else
             {
-                if (vertex2 != vertexToGetOppositeFor)
+                if (vertexToGetOppositeFor != edgeEnds[1].vertex)
                 {
                     throw new Exception("You must only ask to get the opposite vertex on a MeshEdge that is linked to the given vertexToGetOppositeFor.");
                 }
-                return vertex1;
+                return edgeEnds[0].vertex;
             }
         }
 

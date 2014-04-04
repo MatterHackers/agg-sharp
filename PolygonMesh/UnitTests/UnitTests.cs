@@ -52,7 +52,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
             Vertex centerVertexTop = testMesh.CreateVertex(0, 0, 2);
 
             MeshEdge meshEdge1 = testMesh.CreateMeshEdge(leftVertexBottom, rightVertexBottom);
-            Assert.IsTrue(meshEdge1.vertex1 == leftVertexBottom);
+            Assert.IsTrue(meshEdge1.edgeEnds[0].vertex == leftVertexBottom);
             Assert.IsTrue(meshEdge1.firstFaceEdge == null);
             Assert.IsTrue(meshEdge1.vertex1MeshEdgeLinks.nextMeshEdge == meshEdge1.vertex1MeshEdgeLinks.prevMeshEdge);
             Assert.IsTrue(meshEdge1.vertex1MeshEdgeLinks.nextMeshEdge == meshEdge1);

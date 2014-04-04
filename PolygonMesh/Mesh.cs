@@ -509,7 +509,7 @@ namespace MatterHackers.PolygonMesh
             }
             else
             {
-                throw new Exception("The edge that is being unsplit must be connected the vertexToDelete.");
+                throw new Exception("The edge that is being unsplit must be connected to the vertexToDelete.");
             }
             
             MeshEdgeLinks linksForVertex = edgeToJoin.GetMeshEdgeLinksContainingVertex(vertexToDelete);

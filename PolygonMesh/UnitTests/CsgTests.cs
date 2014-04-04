@@ -64,9 +64,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Assert.IsTrue(meshIntersect.Vertices.Count == 8);
                 foreach (Face face in meshIntersect.Faces)
                 {
-                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.vertex1.Position.x) == 3);
-                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.vertex1.Position.y) == 3);
-                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.vertex1.Position.z) == 3);
+                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.edgeEnds[0].vertex.Position.x) == 3);
+                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.edgeEnds[0].vertex.Position.y) == 3);
+                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.edgeEnds[0].vertex.Position.z) == 3);
                 }
             }
 
