@@ -118,11 +118,11 @@ namespace MatterHackers.PolygonMesh
             }
             else
             {
-                if (vertexToNotGetIndexOf == EdgeEnds[1].vertex)
+                if (vertexToNotGetIndexOf != EdgeEnds[1].vertex)
                 {
                     throw new Exception("You must only ask to get the edge links for a MeshEdge that is linked to the given vertex.");
                 }
-                return 2;
+                return 0;
             }
         }
 

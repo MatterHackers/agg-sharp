@@ -248,9 +248,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Assert.IsTrue(newFace.NumVertices == 3, "We have a 3 vertex face.");
                 Assert.IsTrue(newFace.FaceEdgeLoopIsGood());
 
-                MeshEdge edgeToSplit = testMesh.FindMeshEdge(rightVertex, topVertex);
-                Assert.IsTrue(edgeToSplit.EdgeEnds[0].vertex == rightVertex, "The edgeToSplit is connected the way we expect.");
-                Assert.IsTrue(edgeToSplit.EdgeEnds[1].vertex == topVertex, "The edgeToSplit is connected the way we expect.");
+                MeshEdge edgeToSplit = testMesh.FindMeshEdge(leftVertex, rightVertex);
+                Assert.IsTrue(edgeToSplit.EdgeEnds[0].vertex == leftVertex, "The edgeToSplit is connected the way we expect.");
+                Assert.IsTrue(edgeToSplit.EdgeEnds[1].vertex == rightVertex, "The edgeToSplit is connected the way we expect.");
 
                 MeshEdge edgeCreatedDurringSplit;
                 Vertex vertexCreatedDurringSplit;
@@ -267,11 +267,11 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
                 Assert.IsTrue(edgeCreatedDurringSplit.firstFaceEdge == null, "First face edge is disconnected.");
                 Assert.IsTrue(edgeCreatedDurringSplit.EdgeEnds[0].vertex == null && edgeCreatedDurringSplit.EdgeEnds[1].vertex == null, "The edgeCreatedDurringSplit is no longer connected to Vertices.");
-                Assert.IsTrue(edgeToSplit.EdgeEnds[0].vertex == rightVertex, "The unsplit edge is connected back the way it was.");
-                Assert.IsTrue(edgeToSplit.EdgeEnds[1].vertex == topVertex, "The unsplit edge is connected back the way it was.");
+                Assert.IsTrue(edgeToSplit.EdgeEnds[0].vertex == leftVertex, "The unsplit edge is connected back the way it was.");
+                Assert.IsTrue(edgeToSplit.EdgeEnds[1].vertex == rightVertex, "The unsplit edge is connected back the way it was.");
 
                 // split again then unsplit the created edge rather than the original edge
-                testMesh.SplitMeshEdge(edgeToSplit, out vertexCreatedDurringSplit, out edgeCreatedDurringSplit);
+               testMesh.SplitMeshEdge(edgeToSplit, out vertexCreatedDurringSplit, out edgeCreatedDurringSplit);
 
                 testMesh.UnsplitMeshEdge(edgeCreatedDurringSplit, vertexCreatedDurringSplit);
 
@@ -281,8 +281,8 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
                 Assert.IsTrue(edgeToSplit.firstFaceEdge == null, "First face edge is disconnected.");
                 Assert.IsTrue(edgeToSplit.EdgeEnds[0].vertex == null && edgeToSplit.EdgeEnds[1].vertex == null, "The edgeToSplit is no longer connected to Vertices.");
-                Assert.IsTrue(edgeCreatedDurringSplit.EdgeEnds[0].vertex == rightVertex, "The unsplit edge is connected back the way it was.");
-                Assert.IsTrue(edgeCreatedDurringSplit.EdgeEnds[1].vertex == topVertex, "The unsplit edge is connected back the way it was.");
+                Assert.IsTrue(edgeCreatedDurringSplit.EdgeEnds[0].vertex == leftVertex, "The unsplit edge is connected back the way it was.");
+                Assert.IsTrue(edgeCreatedDurringSplit.EdgeEnds[1].vertex == rightVertex, "The unsplit edge is connected back the way it was.");
             }
 
             // make sure that the data on FaceEdges is correct (split the center edge of an extruded plus).

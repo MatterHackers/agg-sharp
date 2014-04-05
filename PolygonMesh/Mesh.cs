@@ -481,8 +481,6 @@ namespace MatterHackers.PolygonMesh
             FaceEdge faceEdgeToSplit = meshEdgeToSplit.firstFaceEdge;
             if (faceEdgeToSplit != null)
             {
-            throw new NotImplementedException();
-#if false
                 foreach (FaceEdge faceEdge in meshEdgeToSplit.FaceEdgesSharingMeshEdgeIterator())
                 {
                     Face currentFace = faceEdge.containingFace;
@@ -494,7 +492,6 @@ namespace MatterHackers.PolygonMesh
                     faceEdge.nextFaceEdge.prevFaceEdge = newFaceEdge;
                     faceEdge.nextFaceEdge = newFaceEdge;
                 }
-#endif
             }
         }
 
@@ -522,8 +519,6 @@ namespace MatterHackers.PolygonMesh
             // if the MeshEdge is part of any faces than we have to fix the faces.
             if (edgeToJoin.firstFaceEdge != null)
             {
-            throw new NotImplementedException();
-#if false
                 // The edge we split was part of one or more faces, we need to fix the FaceEdge loops
                 foreach (FaceEdge faceEdge in edgeToJoin.FaceEdgesSharingMeshEdgeIterator())
                 {
@@ -562,7 +557,6 @@ namespace MatterHackers.PolygonMesh
                     faceEdgeToDelete.containingFace = null;
                     faceEdgeToDelete.firstVertex = null;
                 }
-#endif
             }
 
             // fix the MeshEdgeLinks on the edgeToJoin
