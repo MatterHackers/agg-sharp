@@ -79,7 +79,7 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        public virtual string Text
+        public override string Text
         {
             get
             {
