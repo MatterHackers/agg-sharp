@@ -77,20 +77,20 @@ namespace MatterHackers.RenderOpenGl
                 return;
             }
             Vector2 edegP0P1Vector = p1 - p0;
-            Vector2 edegeP0P1Normal = edegP0P1Vector;
-            edegeP0P1Normal.Normalize();
+            Vector2 edgeP0P1Normal = edegP0P1Vector;
+            edgeP0P1Normal.Normalize();
 
 #if AA_TIPS
             Vector2 edegP2P1Vector = p1 - p2;
-            Vector2 edegeP2P1Normal = edegP2P1Vector;
-            edegeP2P1Normal.Normalize();
+            Vector2 edgeP2P1Normal = edegP2P1Vector;
+            edgeP2P1Normal.Normalize();
 
             Vector2 edegP2P0Vector = p0 - p2;
-            Vector2 edegeP2P0Normal = edegP2P0Vector;
-            edegeP2P0Normal.Normalize();
+            Vector2 edgeP2P0Normal = edegP2P0Vector;
+            edgeP2P0Normal.Normalize();
 #endif
 
-            Vector2 Normal = edegeP0P1Normal.PerpendicularRight;
+            Vector2 Normal = edgeP0P1Normal.PerpendicularRight;
             double edgeDotP3 = Vector2.Dot(Normal, p2 - p0);
             if (edgeDotP3 < 0)
             {
@@ -112,7 +112,7 @@ namespace MatterHackers.RenderOpenGl
 #if AA_TIPS
                 // the new point
                 GL.TexCoord2(0, 1);
-                GL.Vertex2(p0.x + edegeP2P0Normal.x, p0.y + edegeP2P0Normal.y);
+                GL.Vertex2(p0.x + edgeP2P0Normal.x, p0.y + edgeP2P0Normal.y);
 #endif
 
                 GL.TexCoord2(0, .25);
@@ -140,7 +140,7 @@ namespace MatterHackers.RenderOpenGl
 
                 // the new point
                 GL.TexCoord2(0, 1);
-                GL.Vertex2(p0.x + edegeP2P1Normal.x, p0.y + edegeP2P1Normal.y);
+                GL.Vertex2(p0.x + edgeP2P1Normal.x, p0.y + edgeP2P1Normal.y);
             }
             GL.End();
 #endif

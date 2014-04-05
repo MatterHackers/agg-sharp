@@ -219,8 +219,11 @@ namespace MatterHackers.RenderOpenGl
                 {
                     GL.Color4(1.0, 1.0, 1.0, 1.0);
                 }
+            throw new NotImplementedException();
+#if false
                 GL.Vertex3(edge.vertex1.Position.x, edge.vertex1.Position.y, edge.vertex1.Position.z);
                 GL.Vertex3(edge.vertex2.Position.x, edge.vertex2.Position.y, edge.vertex2.Position.z);
+#endif
 #endif
             }
             GL.End();
