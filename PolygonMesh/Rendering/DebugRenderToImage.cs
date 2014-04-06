@@ -75,15 +75,18 @@ namespace MatterHackers.PolygonMesh
                 faceAverageCenter /= vertexCount;
 
                 bool isFirst = true;
-                int lastId = 0;
+                int lastFaceEdgeId = 0;
+                int lastMeshEdgeId = 0;
                 foreach (FaceEdge faceEdge in faceToRender.FaceEdgeIterator())
                 {
                     Vector2 currentVertexPosition = GetImagePosition(faceEdge.firstVertex.Position);
                     if (!isFirst)
                     {
-                        graphics.Line(currentVertexPosition, lastVertexPosition, RGBA_Bytes.Black);
-                        graphics.FillRectangle((currentVertexPosition + lastVertexPosition) / 2 - new Vector2(20, 7), (currentVertexPosition + lastVertexPosition) / 2 + new Vector2(20, 7), RGBA_Bytes.White);
-                        WriteNumber(graphics, lastId, new Vector2((currentVertexPosition.x + lastVertexPosition.x) / 2, (currentVertexPosition.y + lastVertexPosition.y) / 2));
+                        // draw the mesh edge
+                        DrawEdgeLine(lastVertexPosition, currentVertexPosition, lastMeshEdgeId);
+                        // draw the face edge
+                        DrawEdgeLine(MoveTowardsCenter(lastVertexPosition, faceAverageCenter), MoveTowardsCenter(currentVertexPosition, faceAverageCenter), lastFaceEdgeId);
+                        graphics.Circle(MoveTowardsCenter(lastVertexPosition, faceAverageCenter), 3, RGBA_Bytes.Black);
                     }
                     else
                     {
@@ -91,12 +94,16 @@ namespace MatterHackers.PolygonMesh
                         isFirst = false;
                     }
                     lastVertexPosition = currentVertexPosition;
-                    lastId = faceEdge.meshEdge.Data.ID;
+                    lastFaceEdgeId = faceEdge.Data.ID;
+                    lastMeshEdgeId = faceEdge.meshEdge.Data.ID;
                 }
 
-                graphics.Line(firstVertexPosition, lastVertexPosition, RGBA_Bytes.Black);
-                graphics.FillRectangle((firstVertexPosition + lastVertexPosition) / 2 - new Vector2(20, 7), (firstVertexPosition + lastVertexPosition) / 2 + new Vector2(20, 7), RGBA_Bytes.White);
-                WriteNumber(graphics, lastId, new Vector2((firstVertexPosition.x + lastVertexPosition.x) / 2, (firstVertexPosition.y + lastVertexPosition.y) / 2));
+                // draw mesh edge
+                // draw the mesh edge
+                DrawEdgeLine(lastVertexPosition, firstVertexPosition, lastMeshEdgeId);
+                // draw the face edge
+                DrawEdgeLine(MoveTowardsCenter(lastVertexPosition, faceAverageCenter), MoveTowardsCenter(firstVertexPosition, faceAverageCenter), lastFaceEdgeId);
+                graphics.Circle(MoveTowardsCenter(lastVertexPosition, faceAverageCenter), 3, RGBA_Bytes.Black);
 
                 // draw all the vertecies
                 foreach (Vertex vertex in faceToRender.VertexIterator())
@@ -112,6 +119,21 @@ namespace MatterHackers.PolygonMesh
             }
 
             return image;
+        }
+
+        private void DrawEdgeLine(Vector2 lastVertexPosition, Vector2 currentVertexPosition, int lastMeshEdgeId)
+        {
+            graphics.Line(currentVertexPosition, lastVertexPosition, RGBA_Bytes.Black);
+            graphics.FillRectangle((currentVertexPosition + lastVertexPosition) / 2 - new Vector2(20, 7), (currentVertexPosition + lastVertexPosition) / 2 + new Vector2(20, 7), RGBA_Bytes.White);
+            WriteNumber(graphics, lastMeshEdgeId, new Vector2((currentVertexPosition.x + lastVertexPosition.x) / 2, (currentVertexPosition.y + lastVertexPosition.y) / 2));
+        }
+
+        Vector2 MoveTowardsCenter(Vector2 position, Vector2 center)
+        {
+            Vector2 delta = position - center;
+            delta *= .8;
+            delta += center;
+            return delta;
         }
 
         Vector2 GetImagePosition(Vector3 originalPosition)
