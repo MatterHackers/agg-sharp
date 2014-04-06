@@ -243,7 +243,7 @@ namespace MatterHackers.PolygonMesh
             }
         }
 
-        internal Vertex GetOppositeVertex(Vertex vertexToGetOppositeFor)
+        public Vertex GetOppositeVertex(Vertex vertexToGetOppositeFor)
         {
             if (vertexToGetOppositeFor == VertexOnEnd[0])
             {
@@ -259,7 +259,23 @@ namespace MatterHackers.PolygonMesh
             }
         }
 
-        internal FaceEdge GetFaceEdge(Face faceToFindFaceEdgeFor)
+        public MeshEdge GetOppositeMeshEdge(Vertex vertexToGetOppositeFor)
+        {
+            if (vertexToGetOppositeFor == VertexOnEnd[0])
+            {
+                return NextMeshEdgeFromEnd[1];
+            }
+            else
+            {
+                if (vertexToGetOppositeFor != VertexOnEnd[1])
+                {
+                    throw new Exception("You must only ask to get the opposite vertex on a MeshEdge that is linked to the given vertexToGetOppositeFor.");
+                }
+                return NextMeshEdgeFromEnd[0];
+            }
+        }
+
+        public FaceEdge GetFaceEdge(Face faceToFindFaceEdgeFor)
         {
             foreach (FaceEdge faceEdge in faceToFindFaceEdgeFor.FaceEdgeIterator())
             {

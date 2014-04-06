@@ -112,7 +112,8 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Vertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
                 Vertex centerVertexTop = testMesh.CreateVertex(0, 0, 1);
                 Face originalFace = testMesh.CreateFace(new Vertex[] { leftVertexBottom, centerVertexBottom, rightVertexBottom, centerVertexTop });
-                DebugRenderToImage.RenderToTga("debug face 1 pre-split.tga", testMesh);
+                DebugRenderToImage debugRender = new DebugRenderToImage(testMesh);
+                debugRender.RenderToTga("debug face 1 pre-split.tga");
                 //       * 
                 //      / \ 
                 //     /   \
@@ -133,7 +134,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Face faceCreatedDurringSplit;
                 MeshEdge edgeCreatedDurringSplit;
                 testMesh.SplitFace(originalFace, centerVertexBottom, centerVertexTop, out edgeCreatedDurringSplit, out faceCreatedDurringSplit);
-                DebugRenderToImage.RenderToTga("debug face 2 post-split.tga", testMesh);
+                debugRender.RenderToTga("debug face 2 post-split.tga");
                 //       * 
                 //      /|\ 
                 //     / | \
@@ -144,7 +145,8 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 testMesh.Validate();
                 //Debug.Write(testMesh.GetConnectionInfoAsString());
 
-                Assert.IsTrue(originalFace.firstFaceEdge.meshEdge.Data.ID == 116);
+                Assert.IsTrue(originalFace.firstFaceEdge.meshEdge == edgeLeftCenter);
+                Assert.IsTrue(originalFace.firstFaceEdge.meshEdge.GetOppositeVertex(leftVertexBottom) == centerVertexBottom);
                 Assert.IsTrue(originalFace.NumVertices == 3, "The original face now has 3 vertices.");
                 Assert.IsTrue(centerVertexBottom.GetConnectedMeshEdgesCount() == 3);
                 Assert.IsTrue(edgeCreatedDurringSplit.GetNumFacesSharingEdge() == 2, "The edge we split on now has 2 faces attached to it.");
@@ -157,7 +159,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
                 // Unsplit the faces keeping the original face, and test the result.
                 testMesh.UnsplitFace(originalFace, faceCreatedDurringSplit, edgeCreatedDurringSplit);
-                DebugRenderToImage.RenderToTga("debug face 3 post-unsplit.tga", testMesh);
+                debugRender.RenderToTga("debug face 3 post-unsplit.tga");
                 //       * 
                 //      / \ 
                 //     /   \

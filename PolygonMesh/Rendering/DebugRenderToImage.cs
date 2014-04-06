@@ -11,26 +11,31 @@ using MatterHackers.Agg.Font;
 
 namespace MatterHackers.PolygonMesh
 {
-    public static class DebugRenderToImage
+    public class DebugRenderToImage
     {
-        static public void RenderToTga(string tgaFileName, Mesh meshToRender)
-        {
-            ImageTgaIO.Save(CreateImage(tgaFileName, meshToRender), tgaFileName);
-        }
+        int xAxis = 0;
+        int yAxis = 2;
 
-        static public ImageBuffer CreateImage(string tgaFileName, Mesh meshToRender)
+        int xResolution = 1024;
+        int yResolution = 1024;
+
+        Vector2 min = new Vector2(double.MaxValue, double.MaxValue);
+        Vector2 max = new Vector2(double.MinValue, double.MinValue);
+        ImageBuffer image;
+        Graphics2D graphics;
+
+        int padding = 20;
+        double scale;
+        Vector2 origin;
+        Mesh meshToRender;
+
+        public DebugRenderToImage(Mesh meshToRender)
         {
+            this.meshToRender = meshToRender;
+            image = new ImageBuffer(xResolution, yResolution, 32, new BlenderBGRA());
+            graphics = image.NewGraphics2D();
+
             // assume project on y for now
-            int xAxis = 0;
-            int yAxis = 2;
-
-            int xResolution = 1024;
-            int yResolution = 1024;
-
-            Vector2 min = new Vector2(double.MaxValue, double.MaxValue);
-            Vector2 max = new Vector2(double.MinValue, double.MinValue);
-            ImageBuffer image = new ImageBuffer(xResolution, yResolution, 32, new BlenderBGRA());
-            Graphics2D graphics = image.NewGraphics2D();
             graphics.Clear(RGBA_Bytes.White);
             foreach (Vertex vertex in meshToRender.Vertices)
             {
@@ -41,21 +46,39 @@ namespace MatterHackers.PolygonMesh
                 max.y = Math.Max(max.y, vertex.Position[yAxis]);
             }
 
-            int padding = 20;
-            double scale = Math.Min((image.Width - padding * 2) / (max.x - min.x), (image.Height - padding * 2) / (max.y - min.y));
-            Vector2 origin = new Vector2(min.x * scale, min.y * scale) - new Vector2(padding, padding);
+            scale = Math.Min((image.Width - padding * 2) / (max.x - min.x), (image.Height - padding * 2) / (max.y - min.y));
+            origin = new Vector2(min.x * scale, min.y * scale) - new Vector2(padding, padding);
+        }
 
+        public void RenderToTga(string tgaFileName)
+        {
+            ImageTgaIO.Save(CreateImage(tgaFileName), tgaFileName);
+        }
+
+        public ImageBuffer CreateImage(string tgaFileName)
+        {
             foreach (Face faceToRender in meshToRender.Faces)
             {
                 // draw all the mesh edges
                 Vector2 lastVertexPosition = new Vector2();
                 Vector2 firstVertexPosition = new Vector2();
+
+                Vector2 faceAverageCenter = new Vector2();
+                int vertexCount = 0;
+                // draw all the vertecies
+                foreach (Vertex vertex in faceToRender.VertexIterator())
+                {
+                    Vector2 imagePosition = GetImagePosition(vertex.Position);
+                    faceAverageCenter += imagePosition;
+                    vertexCount++;
+                }
+                faceAverageCenter /= vertexCount;
+
                 bool isFirst = true;
                 int lastId = 0;
-
                 foreach (FaceEdge faceEdge in faceToRender.FaceEdgeIterator())
                 {
-                    Vector2 currentVertexPosition = new Vector2(faceEdge.firstVertex.Position[xAxis] * scale - origin.x, faceEdge.firstVertex.Position[yAxis] * scale - origin.y);
+                    Vector2 currentVertexPosition = GetImagePosition(faceEdge.firstVertex.Position);
                     if (!isFirst)
                     {
                         graphics.Line(currentVertexPosition, lastVertexPosition, RGBA_Bytes.Black);
@@ -75,26 +98,25 @@ namespace MatterHackers.PolygonMesh
                 graphics.FillRectangle((firstVertexPosition + lastVertexPosition) / 2 - new Vector2(20, 7), (firstVertexPosition + lastVertexPosition) / 2 + new Vector2(20, 7), RGBA_Bytes.White);
                 WriteNumber(graphics, lastId, new Vector2((firstVertexPosition.x + lastVertexPosition.x) / 2, (firstVertexPosition.y + lastVertexPosition.y) / 2));
 
-                Vector2 faceAverageCenter = new Vector2();
-                int vertexCount = 0;
                 // draw all the vertecies
                 foreach (Vertex vertex in faceToRender.VertexIterator())
                 {
-                    Vector2 imagePosition = new Vector2(vertex.Position[xAxis] * scale - origin.x, vertex.Position[yAxis] * scale - origin.y);
+                    Vector2 imagePosition = GetImagePosition(vertex.Position);
 
                     DrawCircle(graphics, imagePosition);
                     WriteNumber(graphics, vertex.Data.ID, imagePosition);
-
-                    faceAverageCenter += imagePosition;
-                    vertexCount++;
                 }
-                faceAverageCenter /= vertexCount;
 
                 DrawRectangle(graphics, faceAverageCenter);
                 WriteNumber(graphics, faceToRender.Data.ID, faceAverageCenter);
             }
 
             return image;
+        }
+
+        Vector2 GetImagePosition(Vector3 originalPosition)
+        {
+            return new Vector2(originalPosition[xAxis] * scale - origin.x, originalPosition[yAxis] * scale - origin.y);
         }
 
         private static void DrawCircle(Graphics2D graphics, Vector2 imagePosition)
