@@ -254,6 +254,11 @@ namespace MatterHackers.Agg
             FillRectangle(rect.Left, rect.Bottom, rect.Right, rect.Top, fillColor);
         }
 
+        public void FillRectangle(Vector2 leftBottom, Vector2 rightTop, IColorType fillColor)
+        {
+            FillRectangle(leftBottom.x, leftBottom.y, rightTop.x, rightTop.y, fillColor);
+        }
+
         public void FillRectangle(double left, double bottom, double right, double top, IColorType fillColor)
         {
             if (right < left || top < bottom)

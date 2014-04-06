@@ -593,7 +593,7 @@ namespace MatterHackers.Agg
             }
         }
 
-        /* // for debuging only
+        /* // for debugging only
         public void render_path_index(IVertexSource vs,
                               RGBA_Bytes[] colors,
                               int[] path_id,

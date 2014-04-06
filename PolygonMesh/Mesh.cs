@@ -179,19 +179,21 @@ namespace MatterHackers.PolygonMesh
             }
 
             // we need to make sure that the vertecies are in the order of the winding.
-            FaceEdge faceEdge1 = null;
-            FaceEdge faceEdge2 = null;
+            FaceEdge[] faceEdges = new FaceEdge[2];
+            int count = 0;
             foreach(FaceEdge faceEdge in faceToSplit.FaceEdgeIterator())
             {
                 if(faceEdge.firstVertex == vertex1)
                 {
-                    faceEdge1 = faceEdge;
-                    if(faceEdge2 != null) break; // stop if we are done
+                    faceEdges[count++] = faceEdge;
                 }
                 else if(faceEdge.firstVertex == vertex2)
                 {
-                    faceEdge2 = faceEdge;
-                    if(faceEdge1 != null) break; // stop if we are done
+                    faceEdges[count++] = faceEdge;
+                }
+                if (count==2)
+                {
+                    break; // stop if we found both face edges
                 }
             }
 
@@ -200,25 +202,25 @@ namespace MatterHackers.PolygonMesh
 
             faces.Add(faceCreatedDurringSplit);
 
-            FaceEdge newFaceEdge1 = new FaceEdge(faceToSplit, meshEdgeCreatedDurringSplit, vertex1);
-            FaceEdge newFaceEdge2 = new FaceEdge(faceCreatedDurringSplit, meshEdgeCreatedDurringSplit, vertex2);
+            FaceEdge newFaceEdgeExistingFace = new FaceEdge(faceToSplit, meshEdgeCreatedDurringSplit, vertex1);
+            FaceEdge newFaceEdgeForNewFace = new FaceEdge(faceCreatedDurringSplit, meshEdgeCreatedDurringSplit, vertex2);
 
             // get the new edges injected into the existing loop, spliting it in two.
-            newFaceEdge1.prevFaceEdge = faceEdge2.prevFaceEdge;
-            newFaceEdge2.prevFaceEdge = faceEdge1.prevFaceEdge;
+            newFaceEdgeExistingFace.prevFaceEdge = faceEdges[1].prevFaceEdge;
+            newFaceEdgeForNewFace.prevFaceEdge = faceEdges[0].prevFaceEdge;
 
-            faceEdge1.prevFaceEdge.nextFaceEdge = newFaceEdge2;
-            faceEdge2.prevFaceEdge.nextFaceEdge = newFaceEdge1;
+            faceEdges[0].prevFaceEdge.nextFaceEdge = newFaceEdgeForNewFace;
+            faceEdges[1].prevFaceEdge.nextFaceEdge = newFaceEdgeExistingFace;
 
-            newFaceEdge1.nextFaceEdge = faceEdge1;
-            newFaceEdge2.nextFaceEdge = faceEdge2;
+            newFaceEdgeExistingFace.nextFaceEdge = faceEdges[0];
+            newFaceEdgeForNewFace.nextFaceEdge = faceEdges[1];
 
-            faceEdge1.prevFaceEdge = newFaceEdge1;
-            faceEdge2.prevFaceEdge = newFaceEdge2;
+            faceEdges[0].prevFaceEdge = newFaceEdgeExistingFace;
+            faceEdges[1].prevFaceEdge = newFaceEdgeForNewFace;
             
             // find out which loop the original face holds
             bool faceEdge1InFaceToSplit = false;
-            foreach(FaceEdge faceEdge in faceEdge1.NextFaceEdgeIterator())
+            foreach (FaceEdge faceEdge in faceEdges[0].NextFaceEdgeIterator())
             {
                 if(faceEdge == faceToSplit.firstFaceEdge)
                 {
@@ -228,32 +230,32 @@ namespace MatterHackers.PolygonMesh
 
             if (faceEdge1InFaceToSplit)
             {
-                if (faceToSplit.firstFaceEdge.prevFaceEdge == faceEdge1)
+                if (faceToSplit.firstFaceEdge.prevFaceEdge == faceEdges[0])
                 {
-                    faceCreatedDurringSplit.firstFaceEdge = faceEdge2.prevFaceEdge;
+                    faceCreatedDurringSplit.firstFaceEdge = faceEdges[1].prevFaceEdge;
                 }
-                else if (faceToSplit.firstFaceEdge.nextFaceEdge == faceEdge1)
+                else if (faceToSplit.firstFaceEdge.nextFaceEdge == faceEdges[0])
                 {
-                    faceCreatedDurringSplit.firstFaceEdge = faceEdge2.nextFaceEdge;
+                    faceCreatedDurringSplit.firstFaceEdge = faceEdges[1].nextFaceEdge;
                 }
                 else
                 {
-                    faceCreatedDurringSplit.firstFaceEdge = faceEdge2;
+                    faceCreatedDurringSplit.firstFaceEdge = faceEdges[1];
                 }
             }
             else
             {
-                if (faceToSplit.firstFaceEdge.prevFaceEdge == faceEdge2)
+                if (faceToSplit.firstFaceEdge.prevFaceEdge == faceEdges[1])
                 {
-                    faceCreatedDurringSplit.firstFaceEdge = faceEdge1.prevFaceEdge;
+                    faceCreatedDurringSplit.firstFaceEdge = faceEdges[0].prevFaceEdge;
                 }
-                else if (faceToSplit.firstFaceEdge.nextFaceEdge == faceEdge2)
+                else if (faceToSplit.firstFaceEdge.nextFaceEdge == faceEdges[1])
                 {
-                    faceCreatedDurringSplit.firstFaceEdge = faceEdge1.nextFaceEdge;
+                    faceCreatedDurringSplit.firstFaceEdge = faceEdges[0].nextFaceEdge;
                 }
                 else
                 {
-                    faceCreatedDurringSplit.firstFaceEdge = faceEdge1;
+                    faceCreatedDurringSplit.firstFaceEdge = faceEdges[0];
                 }
             }
 
@@ -263,8 +265,8 @@ namespace MatterHackers.PolygonMesh
                 faceEdge.containingFace = faceCreatedDurringSplit;
             }
 
-            newFaceEdge1.AddToRadialLoop(meshEdgeCreatedDurringSplit);
-            newFaceEdge2.AddToRadialLoop(meshEdgeCreatedDurringSplit);
+            newFaceEdgeExistingFace.AddToRadialLoop(meshEdgeCreatedDurringSplit);
+            newFaceEdgeForNewFace.AddToRadialLoop(meshEdgeCreatedDurringSplit);
         }
 
         public void UnsplitFace(Face faceToKeep, Face faceToDelete, MeshEdge meshEdgeToDelete)
@@ -290,6 +292,7 @@ namespace MatterHackers.PolygonMesh
             faceEdgeToDeleteOnFaceToKeep.nextFaceEdge.prevFaceEdge = faceEdgeToDeleteOnFaceToDelete.prevFaceEdge;
             faceEdgeToDeleteOnFaceToDelete.prevFaceEdge.nextFaceEdge = faceEdgeToDeleteOnFaceToKeep.nextFaceEdge;
 
+            // if the face we are deleting is the one that the face to keep was looking at as its starting face edge, move it to the next face edge
             if (faceToKeep.firstFaceEdge == faceEdgeToDeleteOnFaceToKeep)
             {
                 faceToKeep.firstFaceEdge = faceToKeep.firstFaceEdge.nextFaceEdge;
@@ -301,20 +304,19 @@ namespace MatterHackers.PolygonMesh
                 faceEdge.containingFace = faceToKeep;
             }
 
-            throw new NotImplementedException();
-#if false
-            faceEdgeToDeleteOnFaceToKeep.meshEdge.edgeEndVertex[0].RemoveMeshEdgeFromMeshEdgeLinks(faceEdgeToDeleteOnFaceToKeep.meshEdge);
-            faceEdgeToDeleteOnFaceToKeep.meshEdge.edgeEndVertex[1].RemoveMeshEdgeFromMeshEdgeLinks(faceEdgeToDeleteOnFaceToKeep.meshEdge);
-
+            // clear the data on the deleted face edge to help with debugging
+            faceEdgeToDeleteOnFaceToKeep.meshEdge.VertexOnEnd[0] = null;
+            faceEdgeToDeleteOnFaceToKeep.meshEdge.VertexOnEnd[1] = null;
             faceToDelete.firstFaceEdge = null;
+            // take the face out of the face list
             faces.Remove(faceToDelete);
 
+            // clear the data on the deleted mesh edge to help with debugging
             meshEdgeToDelete.firstFaceEdge = null;
-            meshEdgeToDelete.edgeEndVertex[0] = null;
-            meshEdgeToDelete.vertex1MeshEdgeLinks = null;
-            meshEdgeToDelete.edgeEndVertex[1] = null;
-            meshEdgeToDelete.vertex2MeshEdgeLinks = null;
-#endif
+            meshEdgeToDelete.VertexOnEnd[0] = null;
+            meshEdgeToDelete.NextMeshEdgeFromEnd[0] = null;
+            meshEdgeToDelete.VertexOnEnd[1] = null;
+            meshEdgeToDelete.NextMeshEdgeFromEnd[1] = null;
 
             meshEdges.Remove(meshEdgeToDelete);
         }
@@ -548,7 +550,7 @@ namespace MatterHackers.PolygonMesh
                         faceEdge.containingFace.firstFaceEdge = faceEdge;
                     }
 
-                    // and clear out the FaceEdge we are deleting to help debuging and other references to it.
+                    // and clear out the FaceEdge we are deleting to help debugging and other references to it.
                     faceEdgeToDelete.nextFaceEdge = null;
                     faceEdgeToDelete.prevFaceEdge = null;
                     faceEdgeToDelete.radialNextFaceEdge = null;

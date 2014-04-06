@@ -99,14 +99,33 @@ namespace MatterHackers.PolygonMesh.UnitTests
         public void MeshFaceSplitAndUnspiltTests()
         {
             {
+                //                              centerVertexTop (0, 0, 2)
+                //
+                //
+                //
+                //
+                // leftVertexBottom (-1, 0, 0)  centerVertexBottom (0, 0, 0)  rightVertexBottom (1, 0, 0)
+
                 Mesh testMesh = new Mesh();
                 Vertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
                 Vertex centerVertexBottom = testMesh.CreateVertex(0, 0, 0);
                 Vertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
-                Vertex centerVertexTop = testMesh.CreateVertex(0, 0, 2);
+                Vertex centerVertexTop = testMesh.CreateVertex(0, 0, 1);
                 Face originalFace = testMesh.CreateFace(new Vertex[] { leftVertexBottom, centerVertexBottom, rightVertexBottom, centerVertexTop });
+                DebugRenderToImage.RenderToTga("debug face 1 pre-split.tga", testMesh);
+                //       * 
+                //      / \ 
+                //     /   \
+                //    /     \
+                //   /       \
+                //  *----*----*
 
+                Assert.IsTrue(originalFace.firstFaceEdge.meshEdge.Data.ID == 116);
                 Assert.IsTrue(originalFace.NumVertices == 4, "The original face has 4 vertices.");
+                MeshEdge edgeLeftCenter = testMesh.FindMeshEdge(leftVertexBottom, centerVertexBottom);
+                MeshEdge edgeCenterRight = testMesh.FindMeshEdge(centerVertexBottom, rightVertexBottom);
+
+                Assert.IsTrue(centerVertexBottom.GetConnectedMeshEdgesCount() == 2);
 
                 string connectionInfoBeforeSplit = testMesh.GetConnectionInfoAsString();
 
@@ -114,35 +133,51 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Face faceCreatedDurringSplit;
                 MeshEdge edgeCreatedDurringSplit;
                 testMesh.SplitFace(originalFace, centerVertexBottom, centerVertexTop, out edgeCreatedDurringSplit, out faceCreatedDurringSplit);
+                DebugRenderToImage.RenderToTga("debug face 2 post-split.tga", testMesh);
+                //       * 
+                //      /|\ 
+                //     / | \
+                //    /  |  \
+                //   /   |   \
+                //  *----*----*
 
                 testMesh.Validate();
                 //Debug.Write(testMesh.GetConnectionInfoAsString());
 
-                Assert.IsTrue(edgeCreatedDurringSplit.GetNumFacesSharingEdge() == 2, "The edge we split on now has 2 faces attached to it.");
-                Assert.IsTrue(centerVertexBottom.GetNumConnectedMeshEdges() == 3, "The vertex we split on should now have 3 mesh edges attached to it.");
-                Assert.IsTrue(centerVertexTop.GetNumConnectedMeshEdges() == 3, "The vertex we split on should now have 3 mesh edges attached to it.");
-                Assert.IsTrue(leftVertexBottom.GetNumConnectedMeshEdges() == 2, "The original vertices should still have 2 mesh edges attached to them.");
-                Assert.IsTrue(rightVertexBottom.GetNumConnectedMeshEdges() == 2, "The original vertices should still have 2 mesh edges attached to them.");
+                Assert.IsTrue(originalFace.firstFaceEdge.meshEdge.Data.ID == 116);
                 Assert.IsTrue(originalFace.NumVertices == 3, "The original face now has 3 vertices.");
+                Assert.IsTrue(centerVertexBottom.GetConnectedMeshEdgesCount() == 3);
+                Assert.IsTrue(edgeCreatedDurringSplit.GetNumFacesSharingEdge() == 2, "The edge we split on now has 2 faces attached to it.");
+                Assert.IsTrue(centerVertexBottom.GetConnectedMeshEdgesCount() == 3, "The vertex we split on should now have 3 mesh edges attached to it.");
+                Assert.IsTrue(centerVertexTop.GetConnectedMeshEdgesCount() == 3, "The vertex we split on should now have 3 mesh edges attached to it.");
+                Assert.IsTrue(leftVertexBottom.GetConnectedMeshEdgesCount() == 2, "The original vertices should still have 2 mesh edges attached to them.");
+                Assert.IsTrue(rightVertexBottom.GetConnectedMeshEdgesCount() == 2, "The original vertices should still have 2 mesh edges attached to them.");
                 Assert.IsTrue(faceCreatedDurringSplit.NumVertices == 3, "The created now has 3 vertices.");
 
-                return;
-            }
-#if false // 2013 09 05 LBB
+
                 // Unsplit the faces keeping the original face, and test the result.
                 testMesh.UnsplitFace(originalFace, faceCreatedDurringSplit, edgeCreatedDurringSplit);
+                DebugRenderToImage.RenderToTga("debug face 3 post-unsplit.tga", testMesh);
+                //       * 
+                //      / \ 
+                //     /   \
+                //    /     \
+                //   /       \
+                //  *----*----*
                 string connectionInfoAfterUnsplit = testMesh.GetConnectionInfoAsString();
                 testMesh.Validate();
                 //Debug.Write(testMesh.GetConnectionInfoAsString());
-                Assert.IsTrue(originalFace.NumVertices == 4, "The original face still has 4 vertices.");
-                Assert.IsTrue(edgeCreatedDurringSplit.firstFaceEdge == null, "The data for the deleted edge is all null to help debuging.");
-                Assert.IsTrue(edgeCreatedDurringSplit.edgeEndVertex[0] == null, "The data for the deleted edge is all null to help debuging.");
-                Assert.IsTrue(edgeCreatedDurringSplit.vertex1MeshEdgeLinks == null, "The data for the deleted edge is all null to help debuging.");
-                Assert.IsTrue(edgeCreatedDurringSplit.edgeEndVertex[1] == null, "The data for the deleted edge is all null to help debuging.");
-                Assert.IsTrue(edgeCreatedDurringSplit.vertex2MeshEdgeLinks == null, "The data for the deleted edge is all null to help debuging.");
-                Assert.IsTrue(faceCreatedDurringSplit.firstFaceEdge == null, "The data for the deleted face is all null to help debuging.");
-                Assert.IsTrue(centerVertexBottom.GetNumConnectedMeshEdges() == 2, "The vertex we split on should now have 2 mesh edges attached to it.");
-                Assert.IsTrue(centerVertexTop.GetNumConnectedMeshEdges() == 2, "The vertex we split on should now have 2 mesh edges attached to it.");
+                Assert.IsTrue(originalFace.NumVertices == 4, "The original face is back to 4 vertices.");
+                
+                Assert.IsTrue(edgeCreatedDurringSplit.firstFaceEdge == null, "The data for the deleted edge is all null to help debugging.");
+                Assert.IsTrue(edgeCreatedDurringSplit.VertexOnEnd[0] == null, "The data for the deleted edge is all null to help debugging.");
+                Assert.IsTrue(edgeCreatedDurringSplit.NextMeshEdgeFromEnd[0] == null, "The data for the deleted edge is all null to help debugging.");
+                Assert.IsTrue(edgeCreatedDurringSplit.VertexOnEnd[1] == null, "The data for the deleted edge is all null to help debugging.");
+                Assert.IsTrue(edgeCreatedDurringSplit.NextMeshEdgeFromEnd[1] == null, "The data for the deleted edge is all null to help debugging.");
+                Assert.IsTrue(faceCreatedDurringSplit.firstFaceEdge == null, "The data for the deleted face is all null to help debugging.");
+                
+                Assert.IsTrue(centerVertexBottom.GetConnectedMeshEdgesCount() == 2, "The vertex we split on should now have 2 mesh edges attached to it.");
+                Assert.IsTrue(centerVertexTop.GetConnectedMeshEdgesCount() == 2, "The vertex we split on should now have 2 mesh edges attached to it.");
                 Assert.IsTrue(connectionInfoBeforeSplit == connectionInfoAfterUnsplit);
             }
 
@@ -155,6 +190,11 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Vertex leftVertexTop = testMesh.CreateVertex(-1, 0, 2);
                 Vertex rightVertexTop = testMesh.CreateVertex(1, 0, 2);
                 Face originalFace = testMesh.CreateFace(new Vertex[] { rightVertexBottom, rightVertexCenter, rightVertexTop, leftVertexTop, leftVertexCenter, leftVertexBottom });
+                // *-------*
+                // |       |
+                // *       *
+                // |       |
+                // *-------*
 
                 MeshEdge bottomEdge = testMesh.FindMeshEdge(leftVertexBottom, rightVertexBottom);
                 Assert.IsTrue(bottomEdge.GetNumFacesSharingEdge() == 1);
@@ -164,42 +204,51 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Face faceCreatedDurringSplit;
                 MeshEdge edgeCreatedDurringSplit;
                 testMesh.SplitFace(originalFace, rightVertexCenter, leftVertexCenter, out edgeCreatedDurringSplit, out faceCreatedDurringSplit);
+                // *-------*
+                // |       |
+                // *-------*
+                // |       |
+                // *-------*
 
                 Assert.IsTrue(edgeCreatedDurringSplit.GetNumFacesSharingEdge() == 2, "The edge we split on now has 2 faces attached to it.");
-                Assert.IsTrue(leftVertexCenter.GetNumConnectedMeshEdges() == 3, "The vertex we split on should now have 3 mesh edges attached to it.");
-                Assert.IsTrue(rightVertexCenter.GetNumConnectedMeshEdges() == 3, "The vertex we split on should now have 3 mesh edges attached to it.");
-                Assert.IsTrue(leftVertexBottom.GetNumConnectedMeshEdges() == 2, "The original vertices should still have 2 mesh edges attached to them.");
-                Assert.IsTrue(leftVertexTop.GetNumConnectedMeshEdges() == 2, "The original vertices should still have 2 mesh edges attached to them.");
-                Assert.IsTrue(rightVertexBottom.GetNumConnectedMeshEdges() == 2, "The original vertices should still have 2 mesh edges attached to them.");
-                Assert.IsTrue(rightVertexTop.GetNumConnectedMeshEdges() == 2, "The original vertices should still have 2 mesh edges attached to them.");
+                Assert.IsTrue(leftVertexCenter.GetConnectedMeshEdgesCount() == 3, "The vertex we split on should now have 3 mesh edges attached to it.");
+                Assert.IsTrue(rightVertexCenter.GetConnectedMeshEdgesCount() == 3, "The vertex we split on should now have 3 mesh edges attached to it.");
+                Assert.IsTrue(leftVertexBottom.GetConnectedMeshEdgesCount() == 2, "The original vertices should still have 2 mesh edges attached to them.");
+                Assert.IsTrue(leftVertexTop.GetConnectedMeshEdgesCount() == 2, "The original vertices should still have 2 mesh edges attached to them.");
+                Assert.IsTrue(rightVertexBottom.GetConnectedMeshEdgesCount() == 2, "The original vertices should still have 2 mesh edges attached to them.");
+                Assert.IsTrue(rightVertexTop.GetConnectedMeshEdgesCount() == 2, "The original vertices should still have 2 mesh edges attached to them.");
                 Assert.IsTrue(originalFace.NumVertices == 4, "The original face still has 4 vertices.");
                 Assert.IsTrue(faceCreatedDurringSplit.NumVertices == 4, "The created face has 4 vertices.");
 
                 // Unsplit the faces keeping the original face, and test the result.
                 testMesh.UnsplitFace(originalFace, faceCreatedDurringSplit, edgeCreatedDurringSplit);
+                // *-------*
+                // |       |
+                // *       *
+                // |       |
+                // *-------*
                 Assert.IsTrue(originalFace.NumVertices == 4, "The original face still has 4 vertices.");
-                Assert.IsTrue(edgeCreatedDurringSplit.firstFaceEdge == null, "The data for the deleted edge is all null to help debuging.");
-                Assert.IsTrue(edgeCreatedDurringSplit.edgeEndVertex[0] == null, "The data for the deleted edge is all null to help debuging.");
-                Assert.IsTrue(edgeCreatedDurringSplit.vertex1MeshEdgeLinks == null, "The data for the deleted edge is all null to help debuging.");
-                Assert.IsTrue(edgeCreatedDurringSplit.edgeEndVertex[1] == null, "The data for the deleted edge is all null to help debuging.");
-                Assert.IsTrue(edgeCreatedDurringSplit.vertex2MeshEdgeLinks == null, "The data for the deleted edge is all null to help debuging.");
-                Assert.IsTrue(faceCreatedDurringSplit.firstFaceEdge == null, "The data for the deleted face is all null to help debuging.");
-                Assert.IsTrue(leftVertexCenter.GetNumConnectedMeshEdges() == 2, "The vertex we split on should now have 2 mesh edges attached to it.");
-                Assert.IsTrue(rightVertexCenter.GetNumConnectedMeshEdges() == 2, "The vertex we split on should now have 2 mesh edges attached to it.");
+                Assert.IsTrue(edgeCreatedDurringSplit.firstFaceEdge == null, "The data for the deleted edge is all null to help debugging.");
+                Assert.IsTrue(edgeCreatedDurringSplit.VertexOnEnd[0] == null, "The data for the deleted edge is all null to help debugging.");
+                Assert.IsTrue(edgeCreatedDurringSplit.NextMeshEdgeFromEnd[0] == null, "The data for the deleted edge is all null to help debugging.");
+                Assert.IsTrue(edgeCreatedDurringSplit.VertexOnEnd[1] == null, "The data for the deleted edge is all null to help debugging.");
+                Assert.IsTrue(edgeCreatedDurringSplit.NextMeshEdgeFromEnd[1] == null, "The data for the deleted edge is all null to help debugging.");
+                Assert.IsTrue(faceCreatedDurringSplit.firstFaceEdge == null, "The data for the deleted face is all null to help debugging.");
+                Assert.IsTrue(leftVertexCenter.GetConnectedMeshEdgesCount() == 2, "The vertex we split on should now have 2 mesh edges attached to it.");
+                Assert.IsTrue(rightVertexCenter.GetConnectedMeshEdgesCount() == 2, "The vertex we split on should now have 2 mesh edges attached to it.");
 
                 // split the face again and test the result
                 testMesh.SplitFace(originalFace, rightVertexCenter, leftVertexCenter, out edgeCreatedDurringSplit, out faceCreatedDurringSplit);
                 Assert.IsTrue(edgeCreatedDurringSplit.GetNumFacesSharingEdge() == 2, "The edge we split on now has 2 faces attached to it.");
-                Assert.IsTrue(leftVertexCenter.GetNumConnectedMeshEdges() == 3, "The vertex we split on should now have 3 mesh edges attached to it.");
-                Assert.IsTrue(rightVertexCenter.GetNumConnectedMeshEdges() == 3, "The vertex we split on should now have 3 mesh edges attached to it.");
-                Assert.IsTrue(leftVertexCenter.GetNumConnectedMeshEdges() == 2, "The vertex we split on should now have 2 mesh edges attached to it.");
-                Assert.IsTrue(rightVertexCenter.GetNumConnectedMeshEdges() == 2, "The vertex we split on should now have 2 mesh edges attached to it.");
+                Assert.IsTrue(leftVertexCenter.GetConnectedMeshEdgesCount() == 3, "The vertex we split on should now have 3 mesh edges attached to it.");
+                Assert.IsTrue(rightVertexCenter.GetConnectedMeshEdgesCount() == 3, "The vertex we split on should now have 3 mesh edges attached to it.");
+                Assert.IsTrue(leftVertexCenter.GetConnectedMeshEdgesCount() == 2, "The vertex we split on should now have 2 mesh edges attached to it.");
+                Assert.IsTrue(rightVertexCenter.GetConnectedMeshEdgesCount() == 2, "The vertex we split on should now have 2 mesh edges attached to it.");
 
                 // unsplite the faces keeping the face we created and test the result
                 testMesh.UnsplitFace(faceCreatedDurringSplit, originalFace, edgeCreatedDurringSplit);
                 Assert.IsTrue(faceCreatedDurringSplit.NumVertices == 4, "The created face has 4 vertices.");
             }
-#endif
         }
 
         [Test]
