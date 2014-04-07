@@ -196,7 +196,7 @@ namespace MatterHackers.Agg.Font
                 switch (Baseline)
                 {
                     case Font.Baseline.BoundsCenter:
-                        bounds.Offset(0, -bounds.Height / 2);
+                        bounds.Offset(0, -typeFaceStyle.AscentInPixels / 2);
                         break;
 
                     default:
