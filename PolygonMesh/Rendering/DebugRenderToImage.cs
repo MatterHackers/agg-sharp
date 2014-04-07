@@ -75,36 +75,13 @@ namespace MatterHackers.PolygonMesh
                 }
                 faceAverageCenter /= vertexCount;
 
-                bool isFirst = true;
-                int lastFaceEdgeId = 0;
-                MeshEdge lastMeshEdge = null;
                 foreach (FaceEdge faceEdge in faceToRender.FaceEdgeIterator())
                 {
-                    Vector2 currentVertexPosition = GetImagePosition(faceEdge.firstVertex.Position);
-                    if (!isFirst)
-                    {
-                        // draw the mesh edge
-                        DrawMeshEdge(lastMeshEdge);
-                        // draw the face edge
-                        DrawEdgeLine(MoveTowardsCenter(lastVertexPosition, faceAverageCenter), MoveTowardsCenter(currentVertexPosition, faceAverageCenter), lastFaceEdgeId.ToString());
-                        graphics.Circle(MoveTowardsCenter(lastVertexPosition, faceAverageCenter), 3, RGBA_Bytes.Black);
-                    }
-                    else
-                    {
-                        firstVertexPosition = currentVertexPosition;
-                        isFirst = false;
-                    }
-                    lastVertexPosition = currentVertexPosition;
-                    lastFaceEdgeId = faceEdge.Data.ID;
-                    lastMeshEdge = faceEdge.meshEdge;
+                    // draw the mesh edge
+                    DrawMeshEdge(faceEdge.meshEdge);
+                    // draw the face edge
+                    DrawFaceEdge(faceEdge);
                 }
-
-                // draw mesh edge
-                // draw the mesh edge
-                DrawMeshEdge(lastMeshEdge);
-                // draw the face edge
-                DrawEdgeLine(MoveTowardsCenter(lastVertexPosition, faceAverageCenter), MoveTowardsCenter(firstVertexPosition, faceAverageCenter), lastFaceEdgeId.ToString());
-                graphics.Circle(MoveTowardsCenter(lastVertexPosition, faceAverageCenter), 3, RGBA_Bytes.Black);
 
                 // draw all the vertecies
                 foreach (Vertex vertex in faceToRender.VertexIterator())
@@ -123,22 +100,28 @@ namespace MatterHackers.PolygonMesh
             return image;
         }
 
-        private void DrawMeshEdge(MeshEdge lastMeshEdge)
+        void DrawFaceEdge(FaceEdge faceEdge)
         {
-            Vector2 start = GetImagePosition(lastMeshEdge.VertexOnEnd[0].Position);
-            Vector2 end = GetImagePosition(lastMeshEdge.VertexOnEnd[1].Position);
-            DrawEdgeLine(start, end, "{0}:{1}".FormatWith(lastMeshEdge.VertexOnEnd[0].Data.ID, lastMeshEdge.firstFaceEdge.Data.ID));
+            DrawEdgeLine(MoveTowardsCenter(lastVertexPosition, faceAverageCenter), MoveTowardsCenter(firstVertexPosition, faceAverageCenter), lastFaceEdgeId.ToString());
+            graphics.Circle(MoveTowardsCenter(lastVertexPosition, faceAverageCenter), 3, RGBA_Bytes.Black);
+        }
+
+        private void DrawMeshEdge(MeshEdge meshEdge)
+        {
+            Vector2 start = GetImagePosition(meshEdge.VertexOnEnd[0].Position);
+            Vector2 end = GetImagePosition(meshEdge.VertexOnEnd[1].Position);
+            DrawEdgeLine(start, end, "{0}:{1}".FormatWith(meshEdge.VertexOnEnd[0].Data.ID, meshEdge.firstFaceEdge.Data.ID));
 
             Vector2 delta = end - start;
             Vector2 normal = delta.GetNormal();
             double length = delta.Length;
             Vector2 left = normal.PerpendicularLeft;
 
-            WriteStringAtPos("{0}".FormatWith(lastMeshEdge.NextMeshEdgeFromEnd[0].Data.ID), start + normal * length * .40);
-            WriteStringAtPos("{0}".FormatWith(lastMeshEdge.VertexOnEnd[0].Data.ID), start + normal * length * .10);
+            WriteStringAtPos("{0}".FormatWith(meshEdge.NextMeshEdgeFromEnd[0].Data.ID), start + normal * length * .40);
+            WriteStringAtPos("{0}".FormatWith(meshEdge.VertexOnEnd[0].Data.ID), start + normal * length * .10);
 
-            WriteStringAtPos("{0}".FormatWith(lastMeshEdge.NextMeshEdgeFromEnd[1].Data.ID), start + normal * length * .60);
-            WriteStringAtPos("{0}".FormatWith(lastMeshEdge.VertexOnEnd[1].Data.ID), start + normal * length * .90);
+            WriteStringAtPos("{0}".FormatWith(meshEdge.NextMeshEdgeFromEnd[1].Data.ID), start + normal * length * .60);
+            WriteStringAtPos("{0}".FormatWith(meshEdge.VertexOnEnd[1].Data.ID), start + normal * length * .90);
         }
 
         private void DrawEdgeLine(Vector2 start, Vector2 end, string stringToWrite)
