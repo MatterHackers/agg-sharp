@@ -103,11 +103,12 @@ namespace MatterHackers.PolygonMesh
 
         void DrawFaceEdge(FaceEdge faceEdge, Vector2 faceAverageCenter)
         {
-            Vector2 start = GetImagePosition(faceEdge.firstVertex.Position);
-            Vector2 end = GetImagePosition(faceEdge.nextFaceEdge.firstVertex.Position);
+            Vector2 start = MoveTowardsCenter(GetImagePosition(faceEdge.firstVertex.Position),faceAverageCenter);
+            Vector2 end = MoveTowardsCenter(GetImagePosition(faceEdge.nextFaceEdge.firstVertex.Position), faceAverageCenter);
 
-            DrawEdgeLine(MoveTowardsCenter(start, faceAverageCenter), MoveTowardsCenter(end, faceAverageCenter), faceEdge.Data.ID.ToString(), faceEdgeColor);
-            graphics.Circle(MoveTowardsCenter(start, faceAverageCenter), 3, RGBA_Bytes.Black);
+            DrawEdgeLine(start, end, faceEdge.Data.ID.ToString(), faceEdgeColor);
+            graphics.Circle(start, 3, RGBA_Bytes.Black);
+            WriteStringAtPos("{0}".FormatWith(faceEdge.meshEdge.Data.ID), (start + end) / 2 + new Vector2(0, -12), meshEdgeColor);
         }
 
         private void DrawMeshEdge(MeshEdge meshEdge)
@@ -151,7 +152,7 @@ namespace MatterHackers.PolygonMesh
         Vector2 MoveTowardsCenter(Vector2 position, Vector2 center)
         {
             Vector2 delta = position - center;
-            delta *= .8;
+            delta *= .75;
             delta += center;
             return delta;
         }

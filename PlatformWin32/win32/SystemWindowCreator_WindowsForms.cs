@@ -29,21 +29,21 @@ namespace MatterHackers.Agg
                 }
             }
 
-            GuiHalWidget windowsFromsTopWindow;
+            GuiHalWidget windowsFormsTopWindow;
             switch (systemWindow.BitDepth)
             {
                 case SystemWindow.ValidDepthVaules.Depth24:
-                    windowsFromsTopWindow = GuiHalFactory.CreatePrimarySurface((int)systemWindow.Width, (int)systemWindow.Height,
+                    windowsFormsTopWindow = GuiHalFactory.CreatePrimarySurface((int)systemWindow.Width, (int)systemWindow.Height,
                         GuiHalWidget.CreateFlags.Resizable, GuiHalWidget.PixelFormat.PixelFormatBgr24, systemWindow.StencilBufferDepth);
                     break;
 
                 case SystemWindow.ValidDepthVaules.Depth32:
-                    windowsFromsTopWindow = GuiHalFactory.CreatePrimarySurface((int)systemWindow.Width, (int)systemWindow.Height,
+                    windowsFormsTopWindow = GuiHalFactory.CreatePrimarySurface((int)systemWindow.Width, (int)systemWindow.Height,
                         GuiHalWidget.CreateFlags.Resizable, GuiHalWidget.PixelFormat.PixelFormatBgra32, systemWindow.StencilBufferDepth);
                     break;
 
                 case SystemWindow.ValidDepthVaules.DepthFloat:
-                    windowsFromsTopWindow = GuiHalFactory.CreatePrimarySurface((int)systemWindow.Width, (int)systemWindow.Height,
+                    windowsFormsTopWindow = GuiHalFactory.CreatePrimarySurface((int)systemWindow.Width, (int)systemWindow.Height,
                         GuiHalWidget.CreateFlags.Resizable, GuiHalWidget.PixelFormat.PixelFormatRgbaFloat, systemWindow.StencilBufferDepth);
                     break;
 
@@ -51,8 +51,9 @@ namespace MatterHackers.Agg
                     throw new NotImplementedException();
             }
 
-            windowsFromsTopWindow.Caption = systemWindow.Title;
-            windowsFromsTopWindow.AddChild(systemWindow);
+            windowsFormsTopWindow.Caption = systemWindow.Title;
+            windowsFormsTopWindow.AddChild(systemWindow);
+            windowsFormsTopWindow.MinimumSize = systemWindow.MinimumSize;
             systemWindow.AnchorAll();
             systemWindow.TitleChanged += new EventHandler(TitelChangedEventHandler);
             // and make sure the title is correct right now
@@ -62,16 +63,16 @@ namespace MatterHackers.Agg
             {
                 if (systemWindow.IsModal)
                 {
-                    windowsFromsTopWindow.ShowModal();
+                    windowsFormsTopWindow.ShowModal();
                 }
                 else
                 {
-                    windowsFromsTopWindow.Show();
+                    windowsFormsTopWindow.Show();
                 }
             }
             else
             {
-                windowsFromsTopWindow.Run();
+                windowsFormsTopWindow.Run();
             }
         }
 

@@ -151,14 +151,11 @@ namespace MatterHackers.Agg.UI
             }
             set
             {
-                // If this throws an assert, you are calling MakeCurrent() before the glControl is done being constructed.
-                // Call this function you have called Show().
-                if (!doneLoading)
+                if (doneLoading)
                 {
-                    throw new Exception("You cannot call minimum size until you have shown the window");
+                    glControl.MakeCurrent();
                 }
 
-                glControl.MakeCurrent();
                 base.MinimumSize = value;
             }
         }

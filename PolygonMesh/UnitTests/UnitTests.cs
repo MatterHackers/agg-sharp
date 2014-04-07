@@ -148,6 +148,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 //  *----*----*
 
                 testMesh.Validate();
+                return;
                 //Debug.Write(testMesh.GetConnectionInfoAsString());
 
                 Assert.IsTrue(edgeCreatedDurringSplit.VertexOnEnd[0] == centerVertexBottom);
