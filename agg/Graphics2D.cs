@@ -185,12 +185,17 @@ namespace MatterHackers.Agg
 
         public void DrawString(string Text, double x, double y, double pointSize = 12,
             Justification justification = Justification.Left, Baseline baseline = Baseline.Text, 
-            RGBA_Bytes color = new RGBA_Bytes(), bool drawFromHintedCach = false)
+            RGBA_Bytes color = new RGBA_Bytes(), bool drawFromHintedCach = false, RGBA_Bytes backgroundColor = new RGBA_Bytes())
         {
             TypeFacePrinter stringPrinter = new TypeFacePrinter(Text, pointSize, new Vector2(x, y), justification, baseline);
             if (color.Alpha0To255 == 0)
             {
                 color = RGBA_Bytes.Black;
+            }
+
+            if(backgroundColor.Alpha0To255 != 0)
+            {
+                FillRectangle(stringPrinter.LocalBounds, backgroundColor);
             }
 
             stringPrinter.DrawFromHintedCache = drawFromHintedCach;

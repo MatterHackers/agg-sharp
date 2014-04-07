@@ -164,32 +164,34 @@ namespace MatterHackers.PolygonMesh
             return vertices.ContainsVertex(vertexToLookFor);
         }
 
-        public void SplitFace(Face faceToSplit, Vertex vertex1, Vertex vertex2, out MeshEdge meshEdgeCreatedDurringSplit, out Face faceCreatedDurringSplit)
+        public void SplitFace(Face faceToSplit, Vertex splitStartVertex, Vertex splitEndVertex, out MeshEdge meshEdgeCreatedDurringSplit, out Face faceCreatedDurringSplit)
         {
-            if (!ContainsVertex(vertex1) || !ContainsVertex(vertex2))
+            if (!ContainsVertex(splitStartVertex) || !ContainsVertex(splitEndVertex))
             {
                 throw new Exception("The mesh must contain the vertices you intend to split between.");
             }
 
             // we may want to be able to double up an edge for some operations (we'll have to see).
-            if (FindMeshEdge(vertex1, vertex2) != null)
+            if (FindMeshEdge(splitStartVertex, splitEndVertex) != null)
             {
                 // this also ensures that the face is more than 2 sided.
                 throw new Exception("You cannot split a face on an existing edge.");
             }
 
-            // we need to make sure that the vertecies are in the order of the winding.
-            FaceEdge[] faceEdges = new FaceEdge[2];
+            FaceEdge faceEdgeAfterSplitStart = null;
+            FaceEdge faceEdgeAfterSplitEnd = null;
             int count = 0;
             foreach(FaceEdge faceEdge in faceToSplit.FaceEdgeIterator())
             {
-                if(faceEdge.firstVertex == vertex1)
+                if(faceEdge.firstVertex == splitStartVertex)
                 {
-                    faceEdges[count++] = faceEdge;
+                    faceEdgeAfterSplitStart = faceEdge;
+                    count++;
                 }
-                else if(faceEdge.firstVertex == vertex2)
+                else if(faceEdge.firstVertex == splitEndVertex)
                 {
-                    faceEdges[count++] = faceEdge;
+                    faceEdgeAfterSplitEnd = faceEdge;
+                    count++;
                 }
                 if (count==2)
                 {
@@ -197,67 +199,30 @@ namespace MatterHackers.PolygonMesh
                 }
             }
 
-            meshEdgeCreatedDurringSplit = CreateMeshEdge(vertex1, vertex2);
+            meshEdgeCreatedDurringSplit = CreateMeshEdge(splitStartVertex, splitEndVertex);
             faceCreatedDurringSplit = new Face(faceToSplit);
 
             faces.Add(faceCreatedDurringSplit);
 
-            FaceEdge newFaceEdgeExistingFace = new FaceEdge(faceToSplit, meshEdgeCreatedDurringSplit, vertex1);
-            FaceEdge newFaceEdgeForNewFace = new FaceEdge(faceCreatedDurringSplit, meshEdgeCreatedDurringSplit, vertex2);
+            FaceEdge newFaceEdgeExistingFace = new FaceEdge(faceToSplit, meshEdgeCreatedDurringSplit, splitEndVertex);
+            FaceEdge newFaceEdgeForNewFace = new FaceEdge(faceCreatedDurringSplit, meshEdgeCreatedDurringSplit, splitStartVertex);
 
             // get the new edges injected into the existing loop, spliting it in two.
-            newFaceEdgeExistingFace.prevFaceEdge = faceEdges[1].prevFaceEdge;
-            newFaceEdgeForNewFace.prevFaceEdge = faceEdges[0].prevFaceEdge;
+            newFaceEdgeExistingFace.prevFaceEdge = faceEdgeAfterSplitStart.prevFaceEdge;
+            newFaceEdgeForNewFace.prevFaceEdge = faceEdgeAfterSplitEnd.prevFaceEdge;
 
-            faceEdges[0].prevFaceEdge.nextFaceEdge = newFaceEdgeForNewFace;
-            faceEdges[1].prevFaceEdge.nextFaceEdge = newFaceEdgeExistingFace;
+            faceEdgeAfterSplitStart.prevFaceEdge.nextFaceEdge = newFaceEdgeExistingFace;
+            faceEdgeAfterSplitEnd.prevFaceEdge.nextFaceEdge = newFaceEdgeForNewFace;
 
-            newFaceEdgeExistingFace.nextFaceEdge = faceEdges[0];
-            newFaceEdgeForNewFace.nextFaceEdge = faceEdges[1];
+            newFaceEdgeExistingFace.nextFaceEdge = faceEdgeAfterSplitEnd;
+            newFaceEdgeForNewFace.nextFaceEdge = faceEdgeAfterSplitStart;
 
-            faceEdges[0].prevFaceEdge = newFaceEdgeExistingFace;
-            faceEdges[1].prevFaceEdge = newFaceEdgeForNewFace;
-            
-            // find out which loop the original face holds
-            bool faceEdge1InFaceToSplit = false;
-            foreach (FaceEdge faceEdge in faceEdges[0].NextFaceEdgeIterator())
-            {
-                if(faceEdge == faceToSplit.firstFaceEdge)
-                {
-                    faceEdge1InFaceToSplit = true;
-                }
-            }
+            faceEdgeAfterSplitStart.prevFaceEdge = newFaceEdgeForNewFace;
+            faceEdgeAfterSplitEnd.prevFaceEdge = newFaceEdgeExistingFace;
 
-            if (faceEdge1InFaceToSplit)
-            {
-                if (faceToSplit.firstFaceEdge.prevFaceEdge == faceEdges[0])
-                {
-                    faceCreatedDurringSplit.firstFaceEdge = faceEdges[1].prevFaceEdge;
-                }
-                else if (faceToSplit.firstFaceEdge.nextFaceEdge == faceEdges[0])
-                {
-                    faceCreatedDurringSplit.firstFaceEdge = faceEdges[1].nextFaceEdge;
-                }
-                else
-                {
-                    faceCreatedDurringSplit.firstFaceEdge = faceEdges[1];
-                }
-            }
-            else
-            {
-                if (faceToSplit.firstFaceEdge.prevFaceEdge == faceEdges[1])
-                {
-                    faceCreatedDurringSplit.firstFaceEdge = faceEdges[0].prevFaceEdge;
-                }
-                else if (faceToSplit.firstFaceEdge.nextFaceEdge == faceEdges[1])
-                {
-                    faceCreatedDurringSplit.firstFaceEdge = faceEdges[0].nextFaceEdge;
-                }
-                else
-                {
-                    faceCreatedDurringSplit.firstFaceEdge = faceEdges[0];
-                }
-            }
+            // make sure the first face edeg of each face is valid
+            faceToSplit.firstFaceEdge = newFaceEdgeExistingFace;
+            faceCreatedDurringSplit.firstFaceEdge = newFaceEdgeForNewFace;
 
             // make sure the FaceEdges of the new face all point to the new face.
             foreach (FaceEdge faceEdge in faceCreatedDurringSplit.firstFaceEdge.NextFaceEdgeIterator())

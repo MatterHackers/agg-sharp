@@ -36,7 +36,6 @@ namespace MatterHackers.PolygonMesh
             graphics = image.NewGraphics2D();
 
             // assume project on y for now
-            graphics.Clear(RGBA_Bytes.White);
             foreach (Vertex vertex in meshToRender.Vertices)
             {
                 min.x = Math.Min(min.x, vertex.Position[xAxis]);
@@ -57,6 +56,8 @@ namespace MatterHackers.PolygonMesh
 
         public ImageBuffer CreateImage(string tgaFileName)
         {
+            graphics.Clear(RGBA_Bytes.White);
+
             foreach (Face faceToRender in meshToRender.Faces)
             {
                 // draw all the mesh edges
@@ -76,16 +77,16 @@ namespace MatterHackers.PolygonMesh
 
                 bool isFirst = true;
                 int lastFaceEdgeId = 0;
-                int lastMeshEdgeId = 0;
+                MeshEdge lastMeshEdge = null;
                 foreach (FaceEdge faceEdge in faceToRender.FaceEdgeIterator())
                 {
                     Vector2 currentVertexPosition = GetImagePosition(faceEdge.firstVertex.Position);
                     if (!isFirst)
                     {
                         // draw the mesh edge
-                        DrawEdgeLine(lastVertexPosition, currentVertexPosition, lastMeshEdgeId);
+                        DrawMeshEdge(lastMeshEdge);
                         // draw the face edge
-                        DrawEdgeLine(MoveTowardsCenter(lastVertexPosition, faceAverageCenter), MoveTowardsCenter(currentVertexPosition, faceAverageCenter), lastFaceEdgeId);
+                        DrawEdgeLine(MoveTowardsCenter(lastVertexPosition, faceAverageCenter), MoveTowardsCenter(currentVertexPosition, faceAverageCenter), lastFaceEdgeId.ToString());
                         graphics.Circle(MoveTowardsCenter(lastVertexPosition, faceAverageCenter), 3, RGBA_Bytes.Black);
                     }
                     else
@@ -95,14 +96,14 @@ namespace MatterHackers.PolygonMesh
                     }
                     lastVertexPosition = currentVertexPosition;
                     lastFaceEdgeId = faceEdge.Data.ID;
-                    lastMeshEdgeId = faceEdge.meshEdge.Data.ID;
+                    lastMeshEdge = faceEdge.meshEdge;
                 }
 
                 // draw mesh edge
                 // draw the mesh edge
-                DrawEdgeLine(lastVertexPosition, firstVertexPosition, lastMeshEdgeId);
+                DrawMeshEdge(lastMeshEdge);
                 // draw the face edge
-                DrawEdgeLine(MoveTowardsCenter(lastVertexPosition, faceAverageCenter), MoveTowardsCenter(firstVertexPosition, faceAverageCenter), lastFaceEdgeId);
+                DrawEdgeLine(MoveTowardsCenter(lastVertexPosition, faceAverageCenter), MoveTowardsCenter(firstVertexPosition, faceAverageCenter), lastFaceEdgeId.ToString());
                 graphics.Circle(MoveTowardsCenter(lastVertexPosition, faceAverageCenter), 3, RGBA_Bytes.Black);
 
                 // draw all the vertecies
@@ -110,22 +111,51 @@ namespace MatterHackers.PolygonMesh
                 {
                     Vector2 imagePosition = GetImagePosition(vertex.Position);
 
-                    DrawCircle(graphics, imagePosition);
-                    WriteNumber(graphics, vertex.Data.ID, imagePosition);
+                    DrawCircle(imagePosition);
+                    WriteStringAtPos(vertex.Data.ID.ToString(), imagePosition);
                 }
 
-                DrawRectangle(graphics, faceAverageCenter);
-                WriteNumber(graphics, faceToRender.Data.ID, faceAverageCenter);
+                DrawRectangle(faceAverageCenter);
+                WriteStringAtPos(faceToRender.Data.ID.ToString(), faceAverageCenter);
+                WriteStringAtPos(faceToRender.firstFaceEdge.Data.ID.ToString(), faceAverageCenter + new Vector2(0, -12));
             }
 
             return image;
         }
 
-        private void DrawEdgeLine(Vector2 lastVertexPosition, Vector2 currentVertexPosition, int lastMeshEdgeId)
+        private void DrawMeshEdge(MeshEdge lastMeshEdge)
         {
-            graphics.Line(currentVertexPosition, lastVertexPosition, RGBA_Bytes.Black);
-            graphics.FillRectangle((currentVertexPosition + lastVertexPosition) / 2 - new Vector2(20, 7), (currentVertexPosition + lastVertexPosition) / 2 + new Vector2(20, 7), RGBA_Bytes.White);
-            WriteNumber(graphics, lastMeshEdgeId, new Vector2((currentVertexPosition.x + lastVertexPosition.x) / 2, (currentVertexPosition.y + lastVertexPosition.y) / 2));
+            Vector2 start = GetImagePosition(lastMeshEdge.VertexOnEnd[0].Position);
+            Vector2 end = GetImagePosition(lastMeshEdge.VertexOnEnd[1].Position);
+            DrawEdgeLine(start, end, "{0}:{1}".FormatWith(lastMeshEdge.VertexOnEnd[0].Data.ID, lastMeshEdge.firstFaceEdge.Data.ID));
+
+            Vector2 delta = end - start;
+            Vector2 normal = delta.GetNormal();
+            double length = delta.Length;
+            Vector2 left = normal.PerpendicularLeft;
+
+            WriteStringAtPos("{0}".FormatWith(lastMeshEdge.NextMeshEdgeFromEnd[0].Data.ID), start + normal * length * .40);
+            WriteStringAtPos("{0}".FormatWith(lastMeshEdge.VertexOnEnd[0].Data.ID), start + normal * length * .10);
+
+            WriteStringAtPos("{0}".FormatWith(lastMeshEdge.NextMeshEdgeFromEnd[1].Data.ID), start + normal * length * .60);
+            WriteStringAtPos("{0}".FormatWith(lastMeshEdge.VertexOnEnd[1].Data.ID), start + normal * length * .90);
+        }
+
+        private void DrawEdgeLine(Vector2 start, Vector2 end, string stringToWrite)
+        {
+            graphics.Line(start, end, RGBA_Bytes.Black);
+            
+            Vector2 delta = end - start;
+            Vector2 normal = delta.GetNormal();
+            double length = delta.Length;
+            Vector2 left = normal.PerpendicularLeft;
+
+            Vector2 firstArrow = start + normal * length * .80;
+            graphics.Line(firstArrow, firstArrow + left * 5 - normal * 5, RGBA_Bytes.Black);
+            graphics.Line(firstArrow, firstArrow - left * 5 - normal * 5, RGBA_Bytes.Black);
+
+            graphics.FillRectangle((end + start) / 2 - new Vector2(20, 7), (end + start) / 2 + new Vector2(20, 7), RGBA_Bytes.White);
+            WriteStringAtPos(stringToWrite, new Vector2((end.x + start.x) / 2, (end.y + start.y) / 2));
         }
 
         Vector2 MoveTowardsCenter(Vector2 position, Vector2 center)
@@ -141,23 +171,23 @@ namespace MatterHackers.PolygonMesh
             return new Vector2(originalPosition[xAxis] * scale - origin.x, originalPosition[yAxis] * scale - origin.y);
         }
 
-        private static void DrawCircle(Graphics2D graphics, Vector2 imagePosition)
+        private void DrawCircle(Vector2 imagePosition)
         {
             Ellipse circle = new Ellipse(imagePosition, 14);
             graphics.Render(circle, RGBA_Bytes.White);
             graphics.Render(new Stroke(circle), RGBA_Bytes.Black);
         }
 
-        private static void DrawRectangle(Graphics2D graphics, Vector2 imagePosition)
+        private void DrawRectangle(Vector2 imagePosition)
         {
             RoundedRect rect = new RoundedRect(imagePosition.x - 20, imagePosition.y - 7, imagePosition.x + 20, imagePosition.y + 7, 3);
             graphics.Render(rect, RGBA_Bytes.White);
             graphics.Render(new Stroke(rect), RGBA_Bytes.Black);
         }
 
-        private static void WriteNumber(Graphics2D graphics, int number, Vector2 imagePosition)
+        private void WriteStringAtPos(string stringToWrite, Vector2 imagePosition)
         {
-            graphics.DrawString(number.ToString(), imagePosition.x, imagePosition.y, 10, justification: Justification.Center, baseline: Baseline.BoundsCenter, color: RGBA_Bytes.Black);
+            graphics.DrawString(stringToWrite, imagePosition.x, imagePosition.y, 10, justification: Justification.Center, baseline: Baseline.BoundsCenter, color: RGBA_Bytes.Black, backgroundColor: RGBA_Bytes.White);
         }
     }
 }

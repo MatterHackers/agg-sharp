@@ -193,6 +193,16 @@ namespace MatterHackers.Agg.Font
                         throw new NotImplementedException();
                 }
 
+                switch (Baseline)
+                {
+                    case Font.Baseline.BoundsCenter:
+                        bounds.Offset(0, -bounds.Height / 2);
+                        break;
+
+                    default:
+                        break;
+                }
+
                 bounds.Offset(Origin);
                 return bounds;
             }

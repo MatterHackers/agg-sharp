@@ -125,6 +125,11 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Assert.IsTrue(originalFace.NumVertices == 4, "The original face has 4 vertices.");
                 MeshEdge edgeLeftCenter = testMesh.FindMeshEdge(leftVertexBottom, centerVertexBottom);
                 MeshEdge edgeCenterRight = testMesh.FindMeshEdge(centerVertexBottom, rightVertexBottom);
+                MeshEdge edgeTopLeft = testMesh.FindMeshEdge(centerVertexTop, leftVertexBottom);
+                MeshEdge edgeRightTop = testMesh.FindMeshEdge(centerVertexTop, rightVertexBottom);
+
+                Assert.IsTrue(edgeTopLeft.NextMeshEdgeFromEnd[0] == edgeRightTop);
+                Assert.IsTrue(edgeTopLeft.NextMeshEdgeFromEnd[1] == edgeLeftCenter);
 
                 Assert.IsTrue(centerVertexBottom.GetConnectedMeshEdgesCount() == 2);
 
@@ -145,6 +150,11 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 testMesh.Validate();
                 //Debug.Write(testMesh.GetConnectionInfoAsString());
 
+                Assert.IsTrue(edgeCreatedDurringSplit.VertexOnEnd[0] == centerVertexBottom);
+                Assert.IsTrue(edgeCreatedDurringSplit.VertexOnEnd[1] == centerVertexTop);
+                Assert.IsTrue(edgeLeftCenter.NextMeshEdgeFromEnd[1] == edgeCreatedDurringSplit);
+                Assert.IsTrue(edgeTopLeft.NextMeshEdgeFromEnd[0] == edgeCreatedDurringSplit);
+                Assert.IsTrue(edgeTopLeft.NextMeshEdgeFromEnd[1] == edgeLeftCenter);
                 Assert.IsTrue(originalFace.firstFaceEdge.meshEdge == edgeLeftCenter);
                 Assert.IsTrue(originalFace.firstFaceEdge.meshEdge.GetOppositeVertex(leftVertexBottom) == centerVertexBottom);
                 Assert.IsTrue(originalFace.NumVertices == 3, "The original face now has 3 vertices.");
@@ -170,7 +180,6 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 testMesh.Validate();
                 //Debug.Write(testMesh.GetConnectionInfoAsString());
                 Assert.IsTrue(originalFace.NumVertices == 4, "The original face is back to 4 vertices.");
-                
                 Assert.IsTrue(edgeCreatedDurringSplit.firstFaceEdge == null, "The data for the deleted edge is all null to help debugging.");
                 Assert.IsTrue(edgeCreatedDurringSplit.VertexOnEnd[0] == null, "The data for the deleted edge is all null to help debugging.");
                 Assert.IsTrue(edgeCreatedDurringSplit.NextMeshEdgeFromEnd[0] == null, "The data for the deleted edge is all null to help debugging.");
