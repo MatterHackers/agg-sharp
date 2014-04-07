@@ -81,7 +81,7 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        public String SelectedValue
+        public String SelectedLabel
         {
             get 
             {
@@ -93,7 +93,7 @@ namespace MatterHackers.Agg.UI
             }
             set
             {
-                if (SelectedIndex == -1 || SelectedValue != value)
+                if (SelectedIndex == -1 || SelectedLabel != value)
                 {
                     int index = 0;
                     foreach (MenuItem item in MenuItems)
@@ -109,6 +109,37 @@ namespace MatterHackers.Agg.UI
                 }
             }
         }
+
+        public String SelectedValue
+        {
+            get
+            {
+                if (SelectedIndex < 0 || SelectedIndex >= MenuItems.Count)
+                {
+                    return "";
+                }
+                return GetValue(SelectedIndex);
+            }
+            set
+            {
+                if (SelectedIndex == -1 || SelectedValue != value)
+                {
+                    int index = 0;
+                    foreach (MenuItem item in MenuItems)
+                    {
+                        if (item.Value == value)
+                        {
+                            SelectedIndex = index;
+                            return;
+                        }
+                        index++;
+                    }
+                    throw new Exception("The value you specified is not in the drop down list.");
+                }
+            }
+        }
+
+
 
         public string GetValue(int itemIndex)
         {
