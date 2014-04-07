@@ -29,6 +29,11 @@ namespace MatterHackers.PolygonMesh
         Vector2 origin;
         Mesh meshToRender;
 
+        RGBA_Bytes vertexColor = RGBA_Bytes.Pink;
+        RGBA_Bytes meshEdgeColor = RGBA_Bytes.Green;
+        RGBA_Bytes faceEdgeColor = RGBA_Bytes.Orange;
+        RGBA_Bytes polygonColor = RGBA_Bytes.Yellow;
+
         public DebugRenderToImage(Mesh meshToRender)
         {
             this.meshToRender = meshToRender;
@@ -60,10 +65,6 @@ namespace MatterHackers.PolygonMesh
 
             foreach (Face faceToRender in meshToRender.Faces)
             {
-                // draw all the mesh edges
-                Vector2 lastVertexPosition = new Vector2();
-                Vector2 firstVertexPosition = new Vector2();
-
                 Vector2 faceAverageCenter = new Vector2();
                 int vertexCount = 0;
                 // draw all the vertecies
@@ -80,7 +81,7 @@ namespace MatterHackers.PolygonMesh
                     // draw the mesh edge
                     DrawMeshEdge(faceEdge.meshEdge);
                     // draw the face edge
-                    DrawFaceEdge(faceEdge);
+                    DrawFaceEdge(faceEdge, faceAverageCenter);
                 }
 
                 // draw all the vertecies
@@ -88,43 +89,47 @@ namespace MatterHackers.PolygonMesh
                 {
                     Vector2 imagePosition = GetImagePosition(vertex.Position);
 
-                    DrawCircle(imagePosition);
-                    WriteStringAtPos(vertex.Data.ID.ToString(), imagePosition);
+                    DrawCircle(imagePosition, vertexColor);
+                    WriteStringAtPos(vertex.Data.ID.ToString(), imagePosition, new RGBA_Bytes());
                 }
 
+                WriteStringAtPos(faceToRender.Data.ID.ToString(), faceAverageCenter, polygonColor);
                 DrawRectangle(faceAverageCenter);
-                WriteStringAtPos(faceToRender.Data.ID.ToString(), faceAverageCenter);
-                WriteStringAtPos(faceToRender.firstFaceEdge.Data.ID.ToString(), faceAverageCenter + new Vector2(0, -12));
+                WriteStringAtPos(faceToRender.firstFaceEdge.Data.ID.ToString(), faceAverageCenter + new Vector2(0, -12), faceEdgeColor);
             }
 
             return image;
         }
 
-        void DrawFaceEdge(FaceEdge faceEdge)
+        void DrawFaceEdge(FaceEdge faceEdge, Vector2 faceAverageCenter)
         {
-            DrawEdgeLine(MoveTowardsCenter(lastVertexPosition, faceAverageCenter), MoveTowardsCenter(firstVertexPosition, faceAverageCenter), lastFaceEdgeId.ToString());
-            graphics.Circle(MoveTowardsCenter(lastVertexPosition, faceAverageCenter), 3, RGBA_Bytes.Black);
+            Vector2 start = GetImagePosition(faceEdge.firstVertex.Position);
+            Vector2 end = GetImagePosition(faceEdge.nextFaceEdge.firstVertex.Position);
+
+            DrawEdgeLine(MoveTowardsCenter(start, faceAverageCenter), MoveTowardsCenter(end, faceAverageCenter), faceEdge.Data.ID.ToString(), faceEdgeColor);
+            graphics.Circle(MoveTowardsCenter(start, faceAverageCenter), 3, RGBA_Bytes.Black);
         }
 
         private void DrawMeshEdge(MeshEdge meshEdge)
         {
             Vector2 start = GetImagePosition(meshEdge.VertexOnEnd[0].Position);
             Vector2 end = GetImagePosition(meshEdge.VertexOnEnd[1].Position);
-            DrawEdgeLine(start, end, "{0}:{1}".FormatWith(meshEdge.VertexOnEnd[0].Data.ID, meshEdge.firstFaceEdge.Data.ID));
+            DrawEdgeLine(start, end, "{0}".FormatWith(meshEdge.Data.ID), meshEdgeColor);
+            WriteStringAtPos("{0}".FormatWith(meshEdge.firstFaceEdge.Data.ID), (start + end) / 2 + new Vector2(0, -12), faceEdgeColor);
 
             Vector2 delta = end - start;
             Vector2 normal = delta.GetNormal();
             double length = delta.Length;
             Vector2 left = normal.PerpendicularLeft;
 
-            WriteStringAtPos("{0}".FormatWith(meshEdge.NextMeshEdgeFromEnd[0].Data.ID), start + normal * length * .40);
-            WriteStringAtPos("{0}".FormatWith(meshEdge.VertexOnEnd[0].Data.ID), start + normal * length * .10);
+            WriteStringAtPos("{0}".FormatWith(meshEdge.NextMeshEdgeFromEnd[0].Data.ID), start + normal * length * .40, meshEdgeColor);
+            WriteStringAtPos("{0}".FormatWith(meshEdge.VertexOnEnd[0].Data.ID), start + normal * length * .10, vertexColor);
 
-            WriteStringAtPos("{0}".FormatWith(meshEdge.NextMeshEdgeFromEnd[1].Data.ID), start + normal * length * .60);
-            WriteStringAtPos("{0}".FormatWith(meshEdge.VertexOnEnd[1].Data.ID), start + normal * length * .90);
+            WriteStringAtPos("{0}".FormatWith(meshEdge.NextMeshEdgeFromEnd[1].Data.ID), start + normal * length * .60, meshEdgeColor);
+            WriteStringAtPos("{0}".FormatWith(meshEdge.VertexOnEnd[1].Data.ID), start + normal * length * .90, vertexColor);
         }
 
-        private void DrawEdgeLine(Vector2 start, Vector2 end, string stringToWrite)
+        private void DrawEdgeLine(Vector2 start, Vector2 end, string stringToWrite, RGBA_Bytes backgroundColor)
         {
             graphics.Line(start, end, RGBA_Bytes.Black);
             
@@ -138,7 +143,9 @@ namespace MatterHackers.PolygonMesh
             graphics.Line(firstArrow, firstArrow - left * 5 - normal * 5, RGBA_Bytes.Black);
 
             graphics.FillRectangle((end + start) / 2 - new Vector2(20, 7), (end + start) / 2 + new Vector2(20, 7), RGBA_Bytes.White);
-            WriteStringAtPos(stringToWrite, new Vector2((end.x + start.x) / 2, (end.y + start.y) / 2));
+            Vector2 stringCenter = new Vector2((end.x + start.x) / 2, (end.y + start.y) / 2);
+            DrawCircle(stringCenter, backgroundColor);
+            WriteStringAtPos(stringToWrite, stringCenter, backgroundColor);
         }
 
         Vector2 MoveTowardsCenter(Vector2 position, Vector2 center)
@@ -154,23 +161,22 @@ namespace MatterHackers.PolygonMesh
             return new Vector2(originalPosition[xAxis] * scale - origin.x, originalPosition[yAxis] * scale - origin.y);
         }
 
-        private void DrawCircle(Vector2 imagePosition)
+        private void DrawCircle(Vector2 imagePosition, RGBA_Bytes color)
         {
             Ellipse circle = new Ellipse(imagePosition, 14);
-            graphics.Render(circle, RGBA_Bytes.White);
+            graphics.Render(circle, color);
             graphics.Render(new Stroke(circle), RGBA_Bytes.Black);
         }
 
         private void DrawRectangle(Vector2 imagePosition)
         {
             RoundedRect rect = new RoundedRect(imagePosition.x - 20, imagePosition.y - 7, imagePosition.x + 20, imagePosition.y + 7, 3);
-            graphics.Render(rect, RGBA_Bytes.White);
             graphics.Render(new Stroke(rect), RGBA_Bytes.Black);
         }
 
-        private void WriteStringAtPos(string stringToWrite, Vector2 imagePosition)
+        private void WriteStringAtPos(string stringToWrite, Vector2 imagePosition, RGBA_Bytes backgroundColor)
         {
-            graphics.DrawString(stringToWrite, imagePosition.x, imagePosition.y, 10, justification: Justification.Center, baseline: Baseline.BoundsCenter, color: RGBA_Bytes.Black, backgroundColor: RGBA_Bytes.White);
+            graphics.DrawString(stringToWrite, imagePosition.x, imagePosition.y, 10, justification: Justification.Center, baseline: Baseline.BoundsCenter, color: RGBA_Bytes.Black, backgroundColor: backgroundColor);
         }
     }
 }
