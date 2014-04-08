@@ -173,7 +173,35 @@ namespace MatterHackers.PolygonMesh
             }
         }
 
-        void AppendThisEdgeToEdgeLinksOfVertex(Vertex vertexToAppendTo)
+        public void RemoveThisEdgeFromEdgeLinksOfVertex(Vertex vertexToRemoveFrom)
+        {
+            MeshEdge edgeWeAreConnectedTo = GetNextMeshEdge(vertexToRemoveFrom);
+            if (edgeWeAreConnectedTo == this)
+            {
+                throw new Exception("You can't disconect when you are the only mesh edge.");
+            }
+
+            MeshEdge edgeAfterEdgeWeAreConnectedTo = edgeWeAreConnectedTo.GetNextMeshEdge(vertexToRemoveFrom);
+            if (edgeAfterEdgeWeAreConnectedTo == this)
+            {
+                // if only 2 edges (this and other) then set the other one to a circular reference to itself
+                int indexOnEdgeWeAreConnectedTo = edgeWeAreConnectedTo.GetVertexEndIndex(vertexToRemoveFrom);
+                edgeWeAreConnectedTo.NextMeshEdgeFromEnd[indexOnEdgeWeAreConnectedTo] = edgeWeAreConnectedTo;
+            }
+            else
+            {
+                // we need to find the edge that has a reference to this one
+                MeshEdge edgeConnectedToThis = edgeAfterEdgeWeAreConnectedTo;
+                while (edgeConnectedToThis.GetNextMeshEdge(vertexToRemoveFrom) != this)
+                {
+                    edgeConnectedToThis = edgeConnectedToThis.GetNextMeshEdge(vertexToRemoveFrom);
+                }
+                int indexOfThisOnOther = edgeWeAreConnectedTo.GetOpositeVertexEndIndex(vertexToRemoveFrom);
+                edgeConnectedToThis.NextMeshEdgeFromEnd[indexOfThisOnOther] = edgeWeAreConnectedTo;
+            }
+        }
+
+        public void AppendThisEdgeToEdgeLinksOfVertex(Vertex vertexToAppendTo)
         {
             int endIndex = GetVertexEndIndex(vertexToAppendTo);
 
@@ -194,7 +222,7 @@ namespace MatterHackers.PolygonMesh
                 // point the one that is there at us
                 vertexToAppendTo.firstMeshEdge.NextMeshEdgeFromEnd[endIndexOnFirstMeshEdge] = this;
 
-                // and point the ones that are already there at this.
+                // and point the one that are already there at this.
                 this.NextMeshEdgeFromEnd[endIndex] = vertexCurrentNext;
             }
         }

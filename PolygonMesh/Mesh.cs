@@ -204,8 +204,8 @@ namespace MatterHackers.PolygonMesh
 
             faces.Add(faceCreatedDurringSplit);
 
-            FaceEdge newFaceEdgeExistingFace = new FaceEdge(faceToSplit, meshEdgeCreatedDurringSplit, splitEndVertex);
-            FaceEdge newFaceEdgeForNewFace = new FaceEdge(faceCreatedDurringSplit, meshEdgeCreatedDurringSplit, splitStartVertex);
+            FaceEdge newFaceEdgeExistingFace = new FaceEdge(faceToSplit, meshEdgeCreatedDurringSplit, splitStartVertex);
+            FaceEdge newFaceEdgeForNewFace = new FaceEdge(faceCreatedDurringSplit, meshEdgeCreatedDurringSplit, splitEndVertex);
 
             // get the new edges injected into the existing loop, spliting it in two.
             newFaceEdgeExistingFace.prevFaceEdge = faceEdgeAfterSplitStart.prevFaceEdge;
@@ -220,7 +220,7 @@ namespace MatterHackers.PolygonMesh
             faceEdgeAfterSplitStart.prevFaceEdge = newFaceEdgeForNewFace;
             faceEdgeAfterSplitEnd.prevFaceEdge = newFaceEdgeExistingFace;
 
-            // make sure the first face edeg of each face is valid
+            // make sure the first face edge of each face is valid
             faceToSplit.firstFaceEdge = newFaceEdgeExistingFace;
             faceCreatedDurringSplit.firstFaceEdge = newFaceEdgeForNewFace;
 
@@ -268,6 +268,10 @@ namespace MatterHackers.PolygonMesh
             {
                 faceEdge.containingFace = faceToKeep;
             }
+
+            // make sure we take the mesh edge out of the neighbors pointers
+            meshEdgeToDelete.RemoveThisEdgeFromEdgeLinksOfVertex(meshEdgeToDelete.VertexOnEnd[0]);
+            meshEdgeToDelete.RemoveThisEdgeFromEdgeLinksOfVertex(meshEdgeToDelete.VertexOnEnd[1]);
 
             // clear the data on the deleted face edge to help with debugging
             faceEdgeToDeleteOnFaceToKeep.meshEdge.VertexOnEnd[0] = null;
