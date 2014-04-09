@@ -173,7 +173,38 @@ namespace MatterHackers.PolygonMesh
             }
         }
 
-        void AppendThisEdgeToEdgeLinksOfVertex(Vertex vertexToAppendTo)
+        public void RemoveThisEdgeFromEdgeLinksOfVertex(Vertex vertexToRemoveFrom)
+        {
+            MeshEdge edgeWeAreConnectedTo = GetNextMeshEdge(vertexToRemoveFrom);
+            if (edgeWeAreConnectedTo == this)
+            {
+                throw new Exception("You can't disconect when you are the only mesh edge.");
+            }
+
+            MeshEdge edgeAfterEdgeWeAreConnectedTo = edgeWeAreConnectedTo.GetNextMeshEdge(vertexToRemoveFrom);
+            if (edgeAfterEdgeWeAreConnectedTo == this)
+            {
+                // if only 2 edges (this and other) then set the other one to a circular reference to itself
+                int indexOnEdgeWeAreConnectedTo = edgeWeAreConnectedTo.GetVertexEndIndex(vertexToRemoveFrom);
+                edgeWeAreConnectedTo.NextMeshEdgeFromEnd[indexOnEdgeWeAreConnectedTo] = edgeWeAreConnectedTo;
+
+                // and set this one to null (it has not vertexes)
+                VertexOnEnd[GetVertexEndIndex(vertexToRemoveFrom)] = null;
+            }
+            else
+            {
+                // we need to find the edge that has a reference to this one
+                MeshEdge edgeConnectedToThis = edgeAfterEdgeWeAreConnectedTo;
+                while (edgeConnectedToThis.GetNextMeshEdge(vertexToRemoveFrom) != this)
+                {
+                    edgeConnectedToThis = edgeConnectedToThis.GetNextMeshEdge(vertexToRemoveFrom);
+                }
+                int indexOfThisOnOther = edgeWeAreConnectedTo.GetOpositeVertexEndIndex(vertexToRemoveFrom);
+                edgeConnectedToThis.NextMeshEdgeFromEnd[indexOfThisOnOther] = edgeWeAreConnectedTo;
+            }
+        }
+
+        public void AppendThisEdgeToEdgeLinksOfVertex(Vertex vertexToAppendTo)
         {
             int endIndex = GetVertexEndIndex(vertexToAppendTo);
 
@@ -194,7 +225,7 @@ namespace MatterHackers.PolygonMesh
                 // point the one that is there at us
                 vertexToAppendTo.firstMeshEdge.NextMeshEdgeFromEnd[endIndexOnFirstMeshEdge] = this;
 
-                // and point the ones that are already there at this.
+                // and point the one that are already there at this.
                 this.NextMeshEdgeFromEnd[endIndex] = vertexCurrentNext;
             }
         }
@@ -243,7 +274,7 @@ namespace MatterHackers.PolygonMesh
             }
         }
 
-        internal Vertex GetOppositeVertex(Vertex vertexToGetOppositeFor)
+        public Vertex GetOppositeVertex(Vertex vertexToGetOppositeFor)
         {
             if (vertexToGetOppositeFor == VertexOnEnd[0])
             {
@@ -259,7 +290,23 @@ namespace MatterHackers.PolygonMesh
             }
         }
 
-        internal FaceEdge GetFaceEdge(Face faceToFindFaceEdgeFor)
+        public MeshEdge GetOppositeMeshEdge(Vertex vertexToGetOppositeFor)
+        {
+            if (vertexToGetOppositeFor == VertexOnEnd[0])
+            {
+                return NextMeshEdgeFromEnd[1];
+            }
+            else
+            {
+                if (vertexToGetOppositeFor != VertexOnEnd[1])
+                {
+                    throw new Exception("You must only ask to get the opposite vertex on a MeshEdge that is linked to the given vertexToGetOppositeFor.");
+                }
+                return NextMeshEdgeFromEnd[0];
+            }
+        }
+
+        public FaceEdge GetFaceEdge(Face faceToFindFaceEdgeFor)
         {
             foreach (FaceEdge faceEdge in faceToFindFaceEdgeFor.FaceEdgeIterator())
             {

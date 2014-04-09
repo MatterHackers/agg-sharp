@@ -50,22 +50,25 @@ namespace MatterHackers.Agg.UI
 
         public override void OnBoundsChanged(EventArgs e)
         {
-			GL.Viewport(0, 0, WindowsFormsWindow.ClientSize.Width, WindowsFormsWindow.ClientSize.Height);					// Reset The Current Viewport
+            if (initHasBeenCalled)
+            {
+                GL.Viewport(0, 0, WindowsFormsWindow.ClientSize.Width, WindowsFormsWindow.ClientSize.Height);					// Reset The Current Viewport
 
 
-            // The following lines set the screen up for a perspective view. Meaning things in the distance get smaller. 
-            // This creates a realistic looking scene. 
-            // The perspective is calculated with a 45 degree viewing angle based on the windows width and height. 
-            // The 0.1f, 100.0f is the starting point and ending point for how deep we can draw into the screen.
+                // The following lines set the screen up for a perspective view. Meaning things in the distance get smaller. 
+                // This creates a realistic looking scene. 
+                // The perspective is calculated with a 45 degree viewing angle based on the windows width and height. 
+                // The 0.1f, 100.0f is the starting point and ending point for how deep we can draw into the screen.
 
-            GL.MatrixMode(MatrixMode.Projection);
-            GL.LoadIdentity();
+                GL.MatrixMode(MatrixMode.Projection);
+                GL.LoadIdentity();
 
-            GL.MatrixMode(MatrixMode.Modelview);
-            GL.LoadIdentity();
-			GL.Scissor(0, 0, WindowsFormsWindow.ClientSize.Width, WindowsFormsWindow.ClientSize.Height);
+                GL.MatrixMode(MatrixMode.Modelview);
+                GL.LoadIdentity();
+                GL.Scissor(0, 0, WindowsFormsWindow.ClientSize.Width, WindowsFormsWindow.ClientSize.Height);
 
-            NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
+                NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
+            }
 
             base.OnBoundsChanged(e);
         }
@@ -80,6 +83,7 @@ namespace MatterHackers.Agg.UI
             return graphics2D;
         }
 
+        bool initHasBeenCalled = false;
         public void Init()
         {
             if (WindowsFormsWindow.systemImageFormat == GuiHalWidget.ImageFormats.pix_format_undefined)
@@ -108,6 +112,8 @@ namespace MatterHackers.Agg.UI
             WindowsFormsWindow.ClientSize = clientSize;
 
             OnInitialize();
+
+            initHasBeenCalled = true;
         }
 
         public override void OnInitialize()

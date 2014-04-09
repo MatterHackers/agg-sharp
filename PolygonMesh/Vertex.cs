@@ -123,7 +123,7 @@ namespace MatterHackers.PolygonMesh
             return null;
         }
 
-        public int GetNumConnectedMeshEdges()
+        public int GetConnectedMeshEdgesCount()
         {
             int numConnectedEdges = 0;
             foreach (MeshEdge edge in ConnectedMeshEdgesIterator())
