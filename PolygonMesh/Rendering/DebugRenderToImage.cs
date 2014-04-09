@@ -63,6 +63,22 @@ namespace MatterHackers.PolygonMesh
         {
             graphics.Clear(RGBA_Bytes.White);
 
+            // draw all the mesh edges
+            foreach (MeshEdge meshEdge in meshToRender.meshEdges)
+            {
+                // draw the mesh edge
+                DrawMeshEdge(meshEdge);
+            }
+
+            // draw all the vertecies
+            foreach (Vertex vertex in meshToRender.Vertices)
+            {
+                Vector2 imagePosition = GetImagePosition(vertex.Position);
+
+                DrawCircle(imagePosition, vertexColor);
+                WriteStringAtPos(vertex.Data.ID.ToString(), imagePosition, new RGBA_Bytes());
+            }
+
             foreach (Face faceToRender in meshToRender.Faces)
             {
                 Vector2 faceAverageCenter = new Vector2();
@@ -78,19 +94,8 @@ namespace MatterHackers.PolygonMesh
 
                 foreach (FaceEdge faceEdge in faceToRender.FaceEdgeIterator())
                 {
-                    // draw the mesh edge
-                    DrawMeshEdge(faceEdge.meshEdge);
                     // draw the face edge
                     DrawFaceEdge(faceEdge, faceAverageCenter);
-                }
-
-                // draw all the vertecies
-                foreach (Vertex vertex in faceToRender.VertexIterator())
-                {
-                    Vector2 imagePosition = GetImagePosition(vertex.Position);
-
-                    DrawCircle(imagePosition, vertexColor);
-                    WriteStringAtPos(vertex.Data.ID.ToString(), imagePosition, new RGBA_Bytes());
                 }
 
                 WriteStringAtPos(faceToRender.Data.ID.ToString(), faceAverageCenter, faceColor);
@@ -133,7 +138,14 @@ namespace MatterHackers.PolygonMesh
             Vector2 start = GetImagePosition(meshEdge.VertexOnEnd[0].Position);
             Vector2 end = GetImagePosition(meshEdge.VertexOnEnd[1].Position);
             DrawEdgeLine(start, end, "{0}".FormatWith(meshEdge.Data.ID), meshEdgeColor);
-            WriteStringAtPos("{0}".FormatWith(meshEdge.firstFaceEdge.Data.ID), (start + end) / 2 + new Vector2(0, 12), faceEdgeColor);
+            if (meshEdge.firstFaceEdge != null)
+            {
+                WriteStringAtPos("{0}".FormatWith(meshEdge.firstFaceEdge.Data.ID), (start + end) / 2 + new Vector2(0, 12), faceEdgeColor);
+            }
+            else
+            {
+                WriteStringAtPos("null", (start + end) / 2 + new Vector2(0, 12), faceEdgeColor);
+            }
 
             Vector2 delta = end - start;
             Vector2 normal = delta.GetNormal();

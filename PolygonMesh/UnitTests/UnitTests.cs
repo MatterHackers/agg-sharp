@@ -36,6 +36,7 @@ using System.Text;
 
 using NUnit.Framework;
 
+using MatterHackers.Agg;
 using MatterHackers.VectorMath;
 using MatterHackers.PolygonMesh.Csg;
 
@@ -44,6 +45,15 @@ namespace MatterHackers.PolygonMesh.UnitTests
     [TestFixture]
     public class MeshUnitTests
     {
+        static int meshSaveIndex = 0;
+        public void SaveDebugInfo(Mesh mesh)
+        {
+#if DEBUG_INTO_TGAS
+            DebugRenderToImage debugRender = new DebugRenderToImage(mesh);
+            debugRender.RenderToTga("debug face {0} pre-split.tga".FormatWith(meshSaveIndex++));
+#endif
+        }
+
         [Test]
         public void CreateWireFrameTriangle()
         {
@@ -94,6 +104,37 @@ namespace MatterHackers.PolygonMesh.UnitTests
             Assert.IsTrue(meshEdge2.firstFaceEdge == null);
             Assert.IsTrue(meshEdge2.NextMeshEdgeFromEnd[0] == meshEdge1);
             Assert.IsTrue(meshEdge2.NextMeshEdgeFromEnd[1] == meshEdge0);
+
+            SaveDebugInfo(testMesh);
+        }
+
+        [Test]
+        public void MergeMeshEdges()
+        {
+            return; // this is not working yet
+#if false
+            {
+                Mesh testMesh = new Mesh();
+                Vertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
+                Vertex centerVertexBottom = testMesh.CreateVertex(0, 0, 0);
+                Vertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
+                Vertex centerVertexTop = testMesh.CreateVertex(0, 0, 1);
+                Face leftFace = testMesh.CreateFace(new Vertex[] { leftVertexBottom, centerVertexBottom, centerVertexTop });
+                Face rightFace = testMesh.CreateFace(new Vertex[] { centerVertexBottom, rightVertexBottom, centerVertexTop }, createMeshEdgesEvenIfExist: true);
+
+                foreach (MeshEdge meshEdge in testMesh.meshEdges)
+                {
+                    Assert.IsTrue(meshEdge.firstFaceEdge != null);
+                }
+
+                SaveDebugInfo(testMesh);
+                Assert.IsTrue(testMesh.meshEdges.Count == 6);
+
+                testMesh.MergeMeshEdges();
+                SaveDebugInfo(testMesh);
+                Assert.IsTrue(testMesh.meshEdges.Count == 5);
+            }
+#endif
         }
 
         [Test]
@@ -113,10 +154,8 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Vertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
                 Vertex centerVertexTop = testMesh.CreateVertex(0, 0, 1);
                 Face originalFace = testMesh.CreateFace(new Vertex[] { leftVertexBottom, centerVertexBottom, rightVertexBottom, centerVertexTop });
-#if DEBUG_INTO_TGAS
-                DebugRenderToImage debugRender = new DebugRenderToImage(testMesh);
-                debugRender.RenderToTga("debug face 1 pre-split.tga");
-#endif
+                
+                SaveDebugInfo(testMesh);
                 //       * 
                 //      / \ 
                 //     /   \
@@ -142,9 +181,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Face faceCreatedDurringSplit;
                 MeshEdge meshEdgeCreatedDurringSplit;
                 testMesh.SplitFace(originalFace, centerVertexBottom, centerVertexTop, out meshEdgeCreatedDurringSplit, out faceCreatedDurringSplit);
-#if DEBUG_INTO_TGAS
-                debugRender.RenderToTga("debug face 2 post-split.tga");
-#endif
+                SaveDebugInfo(testMesh);
                 //       * 
                 //      /|\ 
                 //     / | \
@@ -172,9 +209,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
                 // Unsplit the faces keeping the original face, and test the result.
                 testMesh.UnsplitFace(originalFace, faceCreatedDurringSplit, meshEdgeCreatedDurringSplit);
-#if DEBUG_INTO_TGAS
-                debugRender.RenderToTga("debug face 3 post-unsplit.tga");
-#endif
+                SaveDebugInfo(testMesh);
                 //       * 
                 //      / \ 
                 //     /   \
@@ -212,10 +247,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Vertex leftVertexTop = testMesh.CreateVertex(-1, 0, 2);
                 Vertex rightVertexTop = testMesh.CreateVertex(1, 0, 2);
                 Face originalFace = testMesh.CreateFace(new Vertex[] { rightVertexBottom, rightVertexCenter, rightVertexTop, leftVertexTop, leftVertexCenter, leftVertexBottom });
-#if DEBUG_INTO_TGAS
-                DebugRenderToImage debugRender = new DebugRenderToImage(testMesh);
-                debugRender.RenderToTga("debug face 3 pre-split.tga");
-#endif
+                SaveDebugInfo(testMesh);
                 // *-------*
                 // |       |
                 // *       *
@@ -230,9 +262,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Face faceCreatedDurringSplit;
                 MeshEdge edgeCreatedDurringSplit;
                 testMesh.SplitFace(originalFace, rightVertexCenter, leftVertexCenter, out edgeCreatedDurringSplit, out faceCreatedDurringSplit);
-#if DEBUG_INTO_TGAS
-                debugRender.RenderToTga("debug face 4 pre-split.tga");
-#endif
+                SaveDebugInfo(testMesh);
                 // *-------*
                 // |       |
                 // *-------*
@@ -251,9 +281,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
                 // Unsplit the faces keeping the original face, and test the result.
                 testMesh.UnsplitFace(originalFace, faceCreatedDurringSplit, edgeCreatedDurringSplit);
-#if DEBUG_INTO_TGAS
-                debugRender.RenderToTga("debug face 5 pre-split.tga");
-#endif
+                SaveDebugInfo(testMesh);
                 // *-------*
                 // |       |
                 // *       *
@@ -416,7 +444,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
             }
         }
 
-        internal void DetectAndRemoveTJunctions()
+        public void DetectAndRemoveTJunctions()
         {
             //throw new NotImplementedException();
         }
@@ -439,6 +467,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 test.CreateWireFrameTriangle();
                 test.MeshEdgeSplitAndUnsplitTests();
                 test.MeshFaceSplitAndUnspiltTests();
+                test.MergeMeshEdges();
                 test.DetectAndRemoveTJunctions();
 
                 CsgTests csgTests = new CsgTests();

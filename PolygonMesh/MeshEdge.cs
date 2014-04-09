@@ -187,6 +187,9 @@ namespace MatterHackers.PolygonMesh
                 // if only 2 edges (this and other) then set the other one to a circular reference to itself
                 int indexOnEdgeWeAreConnectedTo = edgeWeAreConnectedTo.GetVertexEndIndex(vertexToRemoveFrom);
                 edgeWeAreConnectedTo.NextMeshEdgeFromEnd[indexOnEdgeWeAreConnectedTo] = edgeWeAreConnectedTo;
+
+                // and set this one to null (it has not vertexes)
+                VertexOnEnd[GetVertexEndIndex(vertexToRemoveFrom)] = null;
             }
             else
             {

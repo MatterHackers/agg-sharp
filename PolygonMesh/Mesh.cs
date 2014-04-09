@@ -384,7 +384,7 @@ namespace MatterHackers.PolygonMesh
             return vertex1.GetMeshEdgeConnectedToVertex(vertex2);
         }
 
-        public MeshEdge CreateMeshEdge(Vertex vertex1, Vertex vertex2, bool allowDuplicate = false)
+        public MeshEdge CreateMeshEdge(Vertex vertex1, Vertex vertex2, bool createEvenIfExists = false)
         {
             if (false)//!vertices.Contains(vertex1) || !vertices.Contains(vertex2))
             {
@@ -396,7 +396,7 @@ namespace MatterHackers.PolygonMesh
                 throw new ArgumentException("Your input vertices must not be the same vertex.");
             }
 
-            if (!allowDuplicate)
+            if (!createEvenIfExists)
             {
                 MeshEdge existingMeshEdge = vertex1.GetMeshEdgeConnectedToVertex(vertex2);
                 if (existingMeshEdge != null)
@@ -544,51 +544,84 @@ namespace MatterHackers.PolygonMesh
             edgeToDelete.VertexOnEnd[1] = null;
             edgeToDelete.NextMeshEdgeFromEnd[1] = null;
         }
+
+        public void MergeMeshEdges()
+        {
+            for (int i = 0; i < meshEdges.Count; i++)
+            {
+                MeshEdge currentMeshEdge = meshEdges[i];
+                Vertex vertex0 = currentMeshEdge.VertexOnEnd[0];
+                Vertex vertex1 = currentMeshEdge.VertexOnEnd[1];
+                
+                // find out if there is another edge attached to the same vertexes
+                List<MeshEdge> connectedMeshEdges = new List<MeshEdge>();
+                foreach (MeshEdge meshEdge in vertex0.ConnectedMeshEdgesIterator())
+                {
+                    connectedMeshEdges.Add(meshEdge);
+                }
+
+                for(int j=0; j<connectedMeshEdges.Count; j++)
+                {
+                    MeshEdge testMeshEdge = connectedMeshEdges[j];
+                    if (currentMeshEdge != testMeshEdge)
+                    {
+                        if(testMeshEdge.IsConnectedTo(vertex1))
+                        {
+                            // these mesh edges need to be merged get rid of the second one
+                            MergeMeshEdges(currentMeshEdge, testMeshEdge);
+                            // decrement i to test this edge again (in case there are many mesh edges needing merging)
+                            i--;
+                            // and get out of this foreach loop
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        void MergeMeshEdges(MeshEdge edgeToKeep, MeshEdge edgeToDelete)
+        {
+            edgeToDelete.RemoveThisEdgeFromEdgeLinksOfVertex(edgeToKeep.VertexOnEnd[0]);
+            edgeToDelete.RemoveThisEdgeFromEdgeLinksOfVertex(edgeToKeep.VertexOnEnd[1]);
+            // fix any face edges that are connected to this mesh edge
+            FaceEdge attachedFaceEdge = edgeToDelete.firstFaceEdge;
+            if (attachedFaceEdge != null)
+            {
+                while (attachedFaceEdge.meshEdge == edgeToDelete)
+                {
+                    // change it to point to the edge we are keeping
+                    attachedFaceEdge.meshEdge = edgeToKeep;
+                    // get the next edge around the radial loop (the loop of face edges attached to this face edge)
+                    attachedFaceEdge = attachedFaceEdge.radialNextFaceEdge;
+                }
+            }
+
+            meshEdges.Remove(edgeToDelete);
+        }
+
         #endregion // MeshEdge
 
         #region Face
-        /// <summary>
-        /// This version of CreateFace allows you to specify what MeshEdges to use.  You would need
-        /// this if you had allowed duplicate mesh edges and wanted to state which one to use.
-        /// </summary>
-        /// <param name="verticesToUse"></param>
-        /// <param name="edges"></param>
-        /// <param name="allowDuplicate"></param>
-        /// <returns></returns>
-        public Face CreateFace(Vertex[] verticesToUse, MeshEdge[] edges, bool allowDuplicate = false)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Face CreateFace(Vertex[] verticesToUse, bool allowDuplicate = false)
+        public Face CreateFace(Vertex[] verticesToUse, bool createMeshEdgesEvenIfExist = false)
         {
             if (verticesToUse.Length < 3)
             {
                 throw new ArgumentException("A face cannot have less than 3 vertices.");
             }
 
-            if (!allowDuplicate)
-            {
-                Face existingFace = FindFace(verticesToUse);
-                if (existingFace != null)
-                {
-                    return existingFace;
-                }
-            }
-
-            // make sure all the mesh edges exist (by trying to create them).
+            List<MeshEdge> edgesToUse = new List<MeshEdge>();
             for (int i = 0; i < verticesToUse.Length - 1; i++)
             {
-                CreateMeshEdge(verticesToUse[i], verticesToUse[i + 1], allowDuplicate);
+                edgesToUse.Add(CreateMeshEdge(verticesToUse[i], verticesToUse[i + 1], createMeshEdgesEvenIfExist));
             }
-            CreateMeshEdge(verticesToUse[verticesToUse.Length - 1], verticesToUse[0], allowDuplicate);
+            edgesToUse.Add(CreateMeshEdge(verticesToUse[verticesToUse.Length - 1], verticesToUse[0], createMeshEdgesEvenIfExist));
 
             // make the face and set it's data
             Face createdFace = new Face();
             FaceEdge prevFaceEdge = null;
             for (int i = 0; i < verticesToUse.Length - 1; i++)
             {
-                MeshEdge currentMeshEdge = FindMeshEdge(verticesToUse[i], verticesToUse[i + 1]);
+                MeshEdge currentMeshEdge = edgesToUse[i];
                 FaceEdge currentFaceEdge = new FaceEdge(createdFace, currentMeshEdge, verticesToUse[i]);
                 if (i == 0)
                 {
@@ -604,7 +637,7 @@ namespace MatterHackers.PolygonMesh
             }
             // make the last FaceEdge
             {
-                MeshEdge currentMeshEdge = FindMeshEdge(verticesToUse[verticesToUse.Length-1], verticesToUse[0]);
+                MeshEdge currentMeshEdge = edgesToUse[verticesToUse.Length-1];
                 FaceEdge currentFaceEdge = new FaceEdge(createdFace, currentMeshEdge, verticesToUse[verticesToUse.Length-1]);
                 prevFaceEdge.nextFaceEdge = currentFaceEdge;
                 currentFaceEdge.prevFaceEdge = prevFaceEdge;
