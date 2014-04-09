@@ -12,7 +12,7 @@ namespace MatterHackers.Agg.UI
     public class DropDownList : Menu
     {
         public event EventHandler SelectionChanged;
-        TextWidget mainControlText;
+        protected TextWidget mainControlText;
 
         public override RectangleDouble LocalBounds
         {
