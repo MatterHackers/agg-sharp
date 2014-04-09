@@ -1013,7 +1013,8 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
         {
             IFrostedSerialPort newPort = null;
             // if we can find a mac helper class (to get us 250k)
-			if(File.Exists("libFrostedSerialHelper"))
+			string appBundle = Path.GetDirectoryName (System.Reflection.Assembly.GetExecutingAssembly ().Location);
+			if(File.Exists(Path.Combine(appBundle, "libFrostedSerialHelper.dylib")))
             {
                 // use it
                 newPort = new FrostedSerialPort(serialPortName);
