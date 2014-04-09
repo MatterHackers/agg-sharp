@@ -767,7 +767,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
             return serial_ports.ToArray();
         }
 
-        static bool IsWindows
+        public static bool IsWindows
         {
             get
             {
@@ -781,18 +781,8 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
             if (is_open)
                 throw new InvalidOperationException("Port is already open");
 
-#if !TARGET_JVM
-            if (IsWindows) // Use windows kernel32 backend
-            {
-                stream = new WinSerialStream(port_name, baud_rate, data_bits, parity, stop_bits, dtr_enable,
-                    rts_enable, handshake, read_timeout, write_timeout, readBufferSize, writeBufferSize);
-            }
-            else // Use standard unix backend
-#endif
-            {
-                stream = new FrostedSerialPortStream(port_name, baud_rate, data_bits, parity, stop_bits, dtr_enable,
-                    rts_enable, handshake, read_timeout, write_timeout, readBufferSize, writeBufferSize);
-            }
+            stream = new FrostedSerialPortStream(port_name, baud_rate, data_bits, parity, stop_bits, dtr_enable,
+                rts_enable, handshake, read_timeout, write_timeout, readBufferSize, writeBufferSize);
 
             is_open = true;
         }
@@ -1022,8 +1012,10 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
         public static IFrostedSerialPort CreateAndOpen(string serialPortName, int baudRate, bool DtrEnableOnConnect)
         {
             IFrostedSerialPort newPort = null;
+            // if we can find a mac helper class (to get us 250k)
 			if(File.Exists("libFrostedSerialHelper"))
             {
+                // use it
                 newPort = new FrostedSerialPort(serialPortName);
                 newPort.BaudRate = baudRate;
                 if (DtrEnableOnConnect)
@@ -1037,7 +1029,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
                 newPort.Open();
             }
-			else
+			else // use the c# native serial port
             {
                 // If we can't get the serial port offered by FrostedSerialStream then give the C# wrapped one.
                 newPort = new CSharpSerialPortWrapper(serialPortName);
@@ -1065,6 +1057,10 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
         internal CSharpSerialPortWrapper(string serialPortName)
         {
+            if (FrostedSerialPort.IsWindows)
+            {
+                SerialPortFixer.Execute(serialPortName);
+            }
             port = new System.IO.Ports.SerialPort(serialPortName);
         }
 

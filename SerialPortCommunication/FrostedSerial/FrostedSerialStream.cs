@@ -390,7 +390,6 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
         public override void Close()
         {
             ((IDisposable)this).Dispose();
-			
         }
 
         void IDisposable.Dispose()
@@ -409,8 +408,6 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
             if (disposed)
                 throw new ObjectDisposedException(GetType().FullName);
         }
-
-        
 
         public void SetAttributes(int baud_rate, Parity parity, int data_bits, StopBits sb, Handshake hs)
         {
