@@ -95,12 +95,21 @@ namespace MatterHackers.PolygonMesh
                 List<Vertex> faceVertices = new List<Vertex>();
                 foreach (FaceEdge faceEdgeToAdd in face.FaceEdgeIterator())
                 {
-                    Vertex newVertex = CreateVertex(faceEdgeToAdd.firstVertex.Position, true);
+                    Vertex newVertex = CreateVertex(faceEdgeToAdd.firstVertex.Position, true, true);
                     faceVertices.Add(newVertex);
                 }
 
                 CreateFace(faceVertices.ToArray(), true);
             }
+
+            CleanAndMergMesh();
+        }
+
+        public void CleanAndMergMesh()
+        {
+            SortVertecies();
+            MergeVertecies();
+            MergeMeshEdges();
         }
 
         public List<Face> Faces
