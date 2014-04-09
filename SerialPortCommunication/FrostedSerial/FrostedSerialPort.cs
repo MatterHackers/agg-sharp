@@ -1059,7 +1059,13 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
         {
             if (FrostedSerialPort.IsWindows)
             {
-                SerialPortFixer.Execute(serialPortName);
+                try
+                {
+                    SerialPortFixer.Execute(serialPortName);
+                }
+                catch (Exception)
+                {
+                }
             }
             port = new System.IO.Ports.SerialPort(serialPortName);
         }
