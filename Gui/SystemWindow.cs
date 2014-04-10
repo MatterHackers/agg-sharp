@@ -10,6 +10,9 @@ namespace MatterHackers.Agg.UI
     public abstract class SystemWindowCreatorPlugin
     {
         public abstract void ShowSystemWindow(SystemWindow systemWindow);
+
+        public abstract Point2D GetDesktopPosition(SystemWindow systemWindow);
+        public abstract void SetDesktopPosition(SystemWindow systemWindow, Point2D position);
     }
 
     public class SystemWindow : GuiWidget
@@ -96,6 +99,19 @@ namespace MatterHackers.Agg.UI
                 throw new Exception("To be a system window you cannot be a child of another widget.");
             }
             globalSystemWindowCreator.ShowSystemWindow(this);
+        }
+
+        public Point2D DesktopPosition
+        {
+            get
+            {
+                return globalSystemWindowCreator.GetDesktopPosition(this);
+            }
+
+            set
+            {
+                globalSystemWindowCreator.SetDesktopPosition(this, value);
+            }
         }
 
         public static void AssertDebugNotDefined()

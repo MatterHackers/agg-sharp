@@ -76,6 +76,18 @@ namespace MatterHackers.Agg
             }
         }
 
+        public override Point2D GetDesktopPosition(SystemWindow systemWindow)
+        {
+            GuiHalWidget windowsFromsTopWindow = (GuiHalWidget)systemWindow.Parent;
+            return windowsFromsTopWindow.DesktopPosition;
+        }
+
+        public override void SetDesktopPosition(SystemWindow systemWindow, Point2D position)
+        {
+            GuiHalWidget windowsFromsTopWindow = (GuiHalWidget)systemWindow.Parent;
+            windowsFromsTopWindow.DesktopPosition = position;
+        }
+
         void TitelChangedEventHandler(object sender, EventArgs e)
         {
             SystemWindow systemWindow = ((SystemWindow)sender);

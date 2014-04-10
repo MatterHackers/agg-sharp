@@ -65,6 +65,20 @@ namespace MatterHackers.Agg.UI
             Focus();
         }
 
+        public override Point2D DesktopPosition
+        {
+            get
+            {
+                return new Point2D(mainWindowsFormsWindow.DesktopLocation.Y, mainWindowsFormsWindow.DesktopLocation.Y);
+            }
+
+            set
+            {
+                mainWindowsFormsWindow.DesktopLocation = new Point(value.x, value.y);
+            }
+        }
+
+
         public override Keys ModifierKeys
         {
             get

@@ -38,6 +38,8 @@ namespace MatterHackers.Agg.UI
         public abstract void ShowModal();
         public abstract void Show();
         public abstract void Run();
+
+        public abstract Point2D DesktopPosition { get; set; }
     
         protected ImageFormats m_format;
         protected int m_bpp;
