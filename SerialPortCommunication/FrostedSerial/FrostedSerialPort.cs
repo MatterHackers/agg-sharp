@@ -1104,7 +1104,13 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
         public void Close()
         {
-            port.Close();
+            try
+            {
+                port.Close();
+            }
+            catch (Exception)
+            { 
+            }
         }
 
         public int WriteTimeout
