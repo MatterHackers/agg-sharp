@@ -282,7 +282,7 @@ namespace MatterHackers.PolygonMesh.Processors
                 int currentPosition = 80;
                 uint numTriangles = System.BitConverter.ToUInt32(fileContents, currentPosition);
                 long bytesForNormals = numTriangles * 3 * 4;
-                long bytesForVertices = numTriangles * 3 * 4;
+                long bytesForVertices = numTriangles * 3 * 4 * 3;
                 long bytesForAttributs = numTriangles * 2;
                 currentPosition += 4;
                 long numBytesRequiredForVertexData = currentPosition + bytesForNormals + bytesForVertices + bytesForAttributs;
