@@ -9,7 +9,7 @@ namespace MatterHackers.Agg
 {
     public class SystemWindowCreator_WindowsForms : SystemWindowCreatorPlugin
     {
-        bool SetInitialDesktopPosition = false;
+        bool pendingSetInitialDesktopPosition = false;
         Point2D InitialDesktopPosition = new Point2D();
 
         public override void ShowSystemWindow(SystemWindow systemWindow)
@@ -38,8 +38,9 @@ namespace MatterHackers.Agg
             windowsFormsTopWindow.AddChild(systemWindow);
             windowsFormsTopWindow.MinimumSize = systemWindow.MinimumSize;
 
-            if (SetInitialDesktopPosition)
+            if (pendingSetInitialDesktopPosition)
             {
+                pendingSetInitialDesktopPosition = false;
                 systemWindow.DesktopPosition = InitialDesktopPosition;
             }
 
@@ -85,7 +86,7 @@ namespace MatterHackers.Agg
             }
             else
             {
-                SetInitialDesktopPosition = true;
+                pendingSetInitialDesktopPosition = true;
                 InitialDesktopPosition = position;
             }
         }
