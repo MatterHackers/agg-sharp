@@ -123,7 +123,7 @@ namespace MatterHackers.Agg.UI
             System.Diagnostics.Process.Start("explorer.exe", argument);
         }
 
-        protected void SetUpFormsWindow(GuiHalWidget app, SystemWindow windowWeAreHosting)
+        protected void SetUpFormsWindow(AbstractOsMappingWidget app, SystemWindow childSystemWindow)
         {
             aggAppWidget = (WidgetForWindowsFormsAbstract)app;
             this.AllowDrop = true;

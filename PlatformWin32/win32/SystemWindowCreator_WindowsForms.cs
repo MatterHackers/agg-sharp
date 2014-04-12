@@ -15,7 +15,7 @@ namespace MatterHackers.Agg
         public override void ShowSystemWindow(SystemWindow systemWindow)
         {
             bool haveInitializedMainWindow = false;
-            if (GuiHalFactory.PrimaryHalWidget != null)
+            if (OsMappingWidgetFactory.PrimaryOsMappingWidget != null)
             {
                 haveInitializedMainWindow = true;
             }
@@ -24,15 +24,15 @@ namespace MatterHackers.Agg
             {
                 if (systemWindow.UseOpenGL)
                 {
-                    GuiHalFactory.SetGuiBackend(new WindowsFormsOpenGLFactory());
+                    OsMappingWidgetFactory.SetFactory(new WindowsFormsOpenGLFactory());
                 }
                 else
                 {
-                    GuiHalFactory.SetGuiBackend(new WindowsFormsBitmapFactory());
+                    OsMappingWidgetFactory.SetFactory(new WindowsFormsBitmapFactory());
                 }
             }
 
-            GuiHalWidget windowsFormsTopWindow = GuiHalFactory.CreatePrimarySurface(systemWindow);
+            AbstractOsMappingWidget windowsFormsTopWindow = OsMappingWidgetFactory.CreateOsMappingWidget(systemWindow);
 
             windowsFormsTopWindow.Caption = systemWindow.Title;
             windowsFormsTopWindow.AddChild(systemWindow);
@@ -69,7 +69,7 @@ namespace MatterHackers.Agg
         {
             if (systemWindow.Parent != null)
             {
-                GuiHalWidget windowsFromsTopWindow = (GuiHalWidget)systemWindow.Parent;
+                AbstractOsMappingWidget windowsFromsTopWindow = (AbstractOsMappingWidget)systemWindow.Parent;
                 return windowsFromsTopWindow.DesktopPosition;
             }
 
@@ -80,7 +80,7 @@ namespace MatterHackers.Agg
         {
             if (systemWindow.Parent != null)
             {
-                GuiHalWidget windowsFromsTopWindow = (GuiHalWidget)systemWindow.Parent;
+                AbstractOsMappingWidget windowsFromsTopWindow = (AbstractOsMappingWidget)systemWindow.Parent;
                 windowsFromsTopWindow.DesktopPosition = position;
             }
             else
@@ -93,7 +93,7 @@ namespace MatterHackers.Agg
         void TitelChangedEventHandler(object sender, EventArgs e)
         {
             SystemWindow systemWindow = ((SystemWindow)sender);
-            GuiHalWidget windowsFromsTopWindow = (GuiHalWidget)systemWindow.Parent;
+            AbstractOsMappingWidget windowsFromsTopWindow = (AbstractOsMappingWidget)systemWindow.Parent;
             windowsFromsTopWindow.Caption = systemWindow.Title;
         }
     }

@@ -54,12 +54,12 @@ namespace MatterHackers.Agg.UI
     {
         MyGLControl glControl;
 
-        public WindowsFormsOpenGL(GuiHalWidget app, SystemWindow windowWeAreHosting)
+        public WindowsFormsOpenGL(AbstractOsMappingWidget app, SystemWindow childSystemWindow)
         {
-            switch (windowWeAreHosting.BitDepth)
+            switch (childSystemWindow.BitDepth)
             {
                 case 32:
-                    glControl = new MyGLControl(32, windowWeAreHosting.StencilBufferDepth);
+                    glControl = new MyGLControl(32, childSystemWindow.StencilBufferDepth);
                     break;
 
                 default:
@@ -68,7 +68,7 @@ namespace MatterHackers.Agg.UI
 
             Controls.Add(glControl);
 
-            SetUpFormsWindow(app, windowWeAreHosting);
+            SetUpFormsWindow(app, childSystemWindow);
 
             HookWindowsInputAndSendToWidget communication = new HookWindowsInputAndSendToWidget(glControl, aggAppWidget);
         }

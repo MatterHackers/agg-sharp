@@ -36,11 +36,11 @@ namespace MatterHackers.Agg.UI
 {
     public class WindowsFormsBitmapFactory : IGuiFactory
     {
-        public GuiHalWidget CreateSurface(SystemWindow windowWeAreHosting)
+        public AbstractOsMappingWidget CreateSurface(SystemWindow childSystemWindow)
         {
-            GuiHalWidget newSurface = new WidgetForWindowsFormsBitmap(windowWeAreHosting);
+            AbstractOsMappingWidget newSurface = new WidgetForWindowsFormsBitmap(childSystemWindow);
 
-            ((WidgetForWindowsFormsBitmap)newSurface).Init(windowWeAreHosting);
+            ((WidgetForWindowsFormsBitmap)newSurface).Init(childSystemWindow);
             return newSurface;
         }
     }

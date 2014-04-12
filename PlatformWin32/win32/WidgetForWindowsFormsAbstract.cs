@@ -32,7 +32,7 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
-    public abstract class WidgetForWindowsFormsAbstract : GuiHalWidget
+    public abstract class WidgetForWindowsFormsAbstract : AbstractOsMappingWidget
     {
         WindowsFormsAbstract windowsFormsWindow;
 
@@ -55,10 +55,10 @@ namespace MatterHackers.Agg.UI
             get { return mainWindowsFormsWindow; }
         }
 
-        public WidgetForWindowsFormsAbstract(SystemWindow windowWeAreHosting)
-            : base(windowWeAreHosting)
+        public WidgetForWindowsFormsAbstract(SystemWindow childSystemWindow)
+            : base(childSystemWindow)
         {
-            GuiHalWidget.SetClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText);
+            Clipboard.SetSystemClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText);
 
             Focus();
         }
@@ -130,8 +130,6 @@ namespace MatterHackers.Agg.UI
                 WindowsFormsWindow.Text = value;
             }
         }
-
-        public override void OnControlChanged() { }
 
         public Rectangle GetRectangleFromRectD(RectangleDouble rectD)
         {

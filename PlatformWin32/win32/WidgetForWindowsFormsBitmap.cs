@@ -42,16 +42,16 @@ namespace MatterHackers.Agg.UI
 
         public static Stopwatch copyTime = new Stopwatch();
 
-        public WidgetForWindowsFormsBitmap(SystemWindow windowWeAreHosting)
-            : base(windowWeAreHosting)
+        public WidgetForWindowsFormsBitmap(SystemWindow childSystemWindow)
+            : base(childSystemWindow)
         {
-            WindowsFormsWindow = new WindowsFormBitmap(this, windowWeAreHosting);
+            WindowsFormsWindow = new WindowsFormBitmap(this, childSystemWindow);
         }
 
         public override void OnBoundsChanged(EventArgs e)
         {
             System.Drawing.Imaging.PixelFormat format = System.Drawing.Imaging.PixelFormat.Undefined;
-            switch(windowWeAreHosting.BitDepth)
+            switch(childSystemWindow.BitDepth)
             {
                 case 24:
                     format = System.Drawing.Imaging.PixelFormat.Format24bppRgb;
@@ -90,21 +90,21 @@ namespace MatterHackers.Agg.UI
             return graphics2D;
         }
 
-        public void Init(SystemWindow windowWeAreHosting)
+        public void Init(SystemWindow childSystemWindow)
         {
             System.Drawing.Size clientSize = new System.Drawing.Size();
-            clientSize.Width = (int)windowWeAreHosting.Width;
-            clientSize.Height = (int)windowWeAreHosting.Height;
+            clientSize.Width = (int)childSystemWindow.Width;
+            clientSize.Height = (int)childSystemWindow.Height;
             WindowsFormsWindow.ClientSize = clientSize;
 
-            if (!windowWeAreHosting.Resizable)
+            if (!childSystemWindow.Resizable)
             {
                 WindowsFormsWindow.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
                 WindowsFormsWindow.MaximizeBox = false;
             }
 
-            clientSize.Width = (int)windowWeAreHosting.Width;
-            clientSize.Height = (int)windowWeAreHosting.Height;
+            clientSize.Width = (int)childSystemWindow.Width;
+            clientSize.Height = (int)childSystemWindow.Height;
             WindowsFormsWindow.ClientSize = clientSize;
 
             OnInitialize();
@@ -112,7 +112,7 @@ namespace MatterHackers.Agg.UI
 
         public override void OnInitialize()
         {
-            bitmapBackBuffer.Initialize((int)windowWeAreHosting.Width, (int)windowWeAreHosting.Height, windowWeAreHosting.BitDepth);
+            bitmapBackBuffer.Initialize((int)childSystemWindow.Width, (int)childSystemWindow.Height, childSystemWindow.BitDepth);
 
             NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
 

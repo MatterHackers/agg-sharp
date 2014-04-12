@@ -34,10 +34,10 @@ namespace MatterHackers.Agg.UI
 {
     public class WidgetForWindowsFormsOpenGL : WidgetForWindowsFormsAbstract
     {
-        public WidgetForWindowsFormsOpenGL(SystemWindow windowWeAreHosting)
-            : base(windowWeAreHosting)
+        public WidgetForWindowsFormsOpenGL(SystemWindow childSystemWindow)
+            : base(childSystemWindow)
         {
-            WindowsFormsWindow = new WindowsFormsOpenGL(this, windowWeAreHosting);
+            WindowsFormsWindow = new WindowsFormsOpenGL(this, childSystemWindow);
         }
 
         public override void OnBoundsChanged(EventArgs e)
@@ -90,18 +90,18 @@ namespace MatterHackers.Agg.UI
         public void Init()
         {
             System.Drawing.Size clientSize = new System.Drawing.Size();
-            clientSize.Width = (int)windowWeAreHosting.Width;
-            clientSize.Height = (int)windowWeAreHosting.Height;
+            clientSize.Width = (int)childSystemWindow.Width;
+            clientSize.Height = (int)childSystemWindow.Height;
             WindowsFormsWindow.ClientSize = clientSize;
 
-            if (!windowWeAreHosting.Resizable)
+            if (!childSystemWindow.Resizable)
             {
                 WindowsFormsWindow.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
                 WindowsFormsWindow.MaximizeBox = false;
             }
 
-            clientSize.Width = (int)windowWeAreHosting.Width;
-            clientSize.Height = (int)windowWeAreHosting.Height;
+            clientSize.Width = (int)childSystemWindow.Width;
+            clientSize.Height = (int)childSystemWindow.Height;
             WindowsFormsWindow.ClientSize = clientSize;
 
             OnInitialize();

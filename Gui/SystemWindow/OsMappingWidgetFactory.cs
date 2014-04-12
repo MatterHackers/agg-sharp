@@ -28,30 +28,54 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Reflection;
+using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
+using System.IO;
+
+using MatterHackers.Agg.Transform;
+using MatterHackers.Agg.Image;
 
 namespace MatterHackers.Agg.UI
 {
-    public class WindowsFormsOpenGLFactory : IGuiFactory
+    public abstract class AbstractOsMappingWidget : GuiWidget
     {
-        public AbstractOsMappingWidget CreateSurface(SystemWindow childSystemWindow)
+        public abstract string Caption
         {
-            AbstractOsMappingWidget newSurface;
-
-            switch (childSystemWindow.BitDepth)
-            {
-                case 24:
-                case 32:
-                    newSurface = new WidgetForWindowsFormsOpenGL(childSystemWindow);
-                    break;
-
-                default:
-                    throw new NotImplementedException();
-            }
-
-            return newSurface;
+            get;
+            set;
         }
+
+        public abstract void ShowModal();
+        public abstract void Show();
+        public abstract void Run();
+
+        public abstract Point2D DesktopPosition { get; set; }
+
+        public virtual void OnInitialize()
+        {
+        }
+
+        protected SystemWindow childSystemWindow;
+        // format - see enum pix_format_e {};
+        // flip_y - true if you want to have the Y-axis flipped vertically.
+        public AbstractOsMappingWidget(SystemWindow childSystemWindow)
+            : base(childSystemWindow.Width, childSystemWindow.Height, SizeLimitsToSet.None)
+        {
+            this.childSystemWindow = childSystemWindow;
+        }
+
+        public double width() { return BoundsRelativeToParent.Width; }
+        public double height() { return BoundsRelativeToParent.Height; }
+
+        // Get raw display handler depending on the system. 
+        // For win32 its an HDC, for other systems it can be a pointer to some
+        // structure. See the implementation files for detals.
+        // It's provided "as is", so, first you should check if it's not null.
+        // If it's null the raw_display_handler is not supported. Also, there's 
+        // no guarantee that this function is implemented, so, in some 
+        // implementations you may have simply an unresolved symbol when linking.
+        //public void* raw_display_handler();
     }
 }

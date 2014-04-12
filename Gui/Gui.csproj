@@ -71,6 +71,7 @@
     <Compile Include="CheckBox\CheckBox.cs" />
     <Compile Include="CheckBox\CheckBoxViewSates.cs" />
     <Compile Include="CheckBox\CheckBoxViewText.cs" />
+    <Compile Include="Clipboard\Clipboard.cs" />
     <Compile Include="DefaultViewFactory.cs" />
     <Compile Include="DiagnosticsWidget.cs" />
     <Compile Include="FileDialogs\FileDialog.cs" />
@@ -82,7 +83,7 @@
     <Compile Include="FlowLayoutWidget.cs" />
     <Compile Include="GridControl.cs" />
     <Compile Include="GroupBox.cs" />
-    <Compile Include="GuiHal.cs" />
+    <Compile Include="SystemWindow\AbstractOsMappingWidget.cs" />
     <Compile Include="GuiWidget.cs" />
     <Compile Include="ImageWidget.cs" />
     <Compile Include="KeyEventArgs.cs" />
@@ -109,6 +110,7 @@
     <Compile Include="RootedObjectEventHandler.cs" />
     <Compile Include="ImageSequenceWidget.cs" />
     <Compile Include="StringEventArgs.cs" />
+    <Compile Include="SystemWindow\OsMappingWidgetFactory.cs" />
     <Compile Include="Tests\MenuTests.cs" />
     <Compile Include="TextWidgets\InternalNumberEdit.cs" />
     <Compile Include="TextWidgets\NumberEdit.cs" />
@@ -123,7 +125,7 @@
     <Compile Include="SimpleVertexSourceWidget.cs" />
     <Compile Include="Slider\Slider.cs" />
     <Compile Include="Splitter.cs" />
-    <Compile Include="SystemWindow.cs" />
+    <Compile Include="SystemWindow\SystemWindow.cs" />
     <Compile Include="TabControl\Tab.cs" />
     <Compile Include="TabControl\TabBar.cs" />
     <Compile Include="TabControl\TabControl.cs" />

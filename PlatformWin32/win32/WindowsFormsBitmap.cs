@@ -55,9 +55,9 @@ namespace MatterHackers.Agg.UI
 {
     public class WindowsFormBitmap : WindowsFormsAbstract
     {
-        public WindowsFormBitmap(GuiHalWidget app, SystemWindow windowWeAreHosting)
+        public WindowsFormBitmap(AbstractOsMappingWidget app, SystemWindow childSystemWindow)
         {
-            SetUpFormsWindow(app, windowWeAreHosting);
+            SetUpFormsWindow(app, childSystemWindow);
 
             HookWindowsInputAndSendToWidget communication = new HookWindowsInputAndSendToWidget(this, aggAppWidget);
         }

@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
@@ -28,30 +28,59 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Reflection;
+using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
+using System.IO;
+
+using MatterHackers.Agg.Transform;
+using MatterHackers.Agg.Image;
 
 namespace MatterHackers.Agg.UI
 {
-    public class WindowsFormsOpenGLFactory : IGuiFactory
+    public interface IGuiFactory
     {
-        public AbstractOsMappingWidget CreateSurface(SystemWindow childSystemWindow)
+        AbstractOsMappingWidget CreateSurface(SystemWindow childSystemWindow);
+    }
+
+    public static class OsMappingWidgetFactory
+    {
+        static IGuiFactory factoryToUse;
+
+        public static void SetFactory(IGuiFactory factoryToUse)
         {
-            AbstractOsMappingWidget newSurface;
-
-            switch (childSystemWindow.BitDepth)
+            if (OsMappingWidgetFactory.factoryToUse != null)
             {
-                case 24:
-                case 32:
-                    newSurface = new WidgetForWindowsFormsOpenGL(childSystemWindow);
-                    break;
-
-                default:
-                    throw new NotImplementedException();
+                throw new NotSupportedException("You can only set the graphics target one time in an application.");
             }
 
-            return newSurface;
+            OsMappingWidgetFactory.factoryToUse = factoryToUse;
+        }
+
+        static AbstractOsMappingWidget primaryOsMappingWidget;
+        public static AbstractOsMappingWidget PrimaryOsMappingWidget
+        {
+            get
+            {
+                return primaryOsMappingWidget;
+            }
+        }
+
+        public static AbstractOsMappingWidget CreateOsMappingWidget(SystemWindow childSystemWindow)
+        {
+            if (factoryToUse == null)
+            {
+                throw new NotSupportedException("You must call 'SetGuiBackend' with a GuiFactory before you can create any surfaces");
+            }
+
+            AbstractOsMappingWidget osMappingWidget = factoryToUse.CreateSurface(childSystemWindow);
+            if (primaryOsMappingWidget == null)
+            {
+                primaryOsMappingWidget = osMappingWidget;
+            }
+
+            return osMappingWidget;
         }
     }
 }

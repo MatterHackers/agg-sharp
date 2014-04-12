@@ -871,7 +871,7 @@ namespace MatterHackers.Agg.UI
 #if SILVERLIGHT
                     throw new NotImplementedException();
 #else
-                    GuiHalWidget.ClipboardSetText(internalTextWidget.Text.Substring(CharIndexToInsertBefore, SelectionIndexToStartBefore - CharIndexToInsertBefore));
+                    Clipboard.SetText(internalTextWidget.Text.Substring(CharIndexToInsertBefore, SelectionIndexToStartBefore - CharIndexToInsertBefore));
 #endif
                 }
                 else
@@ -879,7 +879,7 @@ namespace MatterHackers.Agg.UI
 #if SILVERLIGHT
                     throw new NotImplementedException();
 #else
-                    GuiHalWidget.ClipboardSetText(internalTextWidget.Text.Substring(SelectionIndexToStartBefore, CharIndexToInsertBefore - SelectionIndexToStartBefore));
+                    Clipboard.SetText(internalTextWidget.Text.Substring(SelectionIndexToStartBefore, CharIndexToInsertBefore - SelectionIndexToStartBefore));
 #endif
                 }
             }
@@ -894,7 +894,7 @@ namespace MatterHackers.Agg.UI
 #if SILVERLIGHT
                     throw new NotImplementedException();
 #else
-            if (GuiHalWidget.ClipboardContainsText())
+            if (Clipboard.ContainsText())
             {
                 if (Selecting)
                 {
@@ -902,7 +902,7 @@ namespace MatterHackers.Agg.UI
                 }
 
                 StringBuilder stringBuilder = new StringBuilder(internalTextWidget.Text);
-                String stringOnClipboard = GuiHalWidget.ClipboardGetText();
+                String stringOnClipboard = Clipboard.GetText();
                 stringBuilder.Insert(CharIndexToInsertBefore, stringOnClipboard);
                 CharIndexToInsertBefore += stringOnClipboard.Length;
                 internalTextWidget.Text = stringBuilder.ToString();
