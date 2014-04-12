@@ -36,29 +36,11 @@ namespace MatterHackers.Agg.UI
 {
     public class WindowsFormsBitmapFactory : IGuiFactory
     {
-        public GuiHalWidget CreateSurface(int Width, int Height, GuiHalWidget.CreateFlags flags, GuiHalWidget.PixelFormat pixelFormat, int stencilDepth)
+        public GuiHalWidget CreateSurface(SystemWindow windowWeAreHosting)
         {
-            GuiHalWidget newSurface;
+            GuiHalWidget newSurface = new WidgetForWindowsFormsBitmap(windowWeAreHosting);
 
-            switch (pixelFormat)
-            {
-                case GuiHalWidget.PixelFormat.PixelFormatBgr24:
-                    newSurface = new WidgetForWindowsFormsBitmap(GuiHalWidget.ImageFormats.pix_format_bgr24);
-                    break;
-
-                case GuiHalWidget.PixelFormat.PixelFormatBgra32:
-                    newSurface = new WidgetForWindowsFormsBitmap(GuiHalWidget.ImageFormats.pix_format_bgra32);
-                    break;
-
-                case GuiHalWidget.PixelFormat.PixelFormatRgbaFloat:
-                    newSurface = new WidgetForWindowsFormsBitmap(GuiHalWidget.ImageFormats.pix_format_rgba_float);
-                    break;
-
-                default:
-                    throw new NotImplementedException();
-            }
-
-            ((WidgetForWindowsFormsBitmap)newSurface).Init(Width, Height, flags, pixelFormat);
+            ((WidgetForWindowsFormsBitmap)newSurface).Init(windowWeAreHosting);
             return newSurface;
         }
     }

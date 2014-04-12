@@ -42,15 +42,29 @@ namespace MatterHackers.Agg.UI
 
         public static Stopwatch copyTime = new Stopwatch();
 
-        public WidgetForWindowsFormsBitmap(ImageFormats format)
-            : base(format)
+        public WidgetForWindowsFormsBitmap(SystemWindow windowWeAreHosting)
+            : base(windowWeAreHosting)
         {
-            WindowsFormsWindow = new WindowsFormBitmap(this, format);
+            WindowsFormsWindow = new WindowsFormBitmap(this, windowWeAreHosting);
         }
 
         public override void OnBoundsChanged(EventArgs e)
         {
-            int bitDepth = GuiHalWidget.GetBitDepthForPixelFormat(m_format);
+            System.Drawing.Imaging.PixelFormat format = System.Drawing.Imaging.PixelFormat.Undefined;
+            switch(windowWeAreHosting.BitDepth)
+            {
+                case 24:
+                    format = System.Drawing.Imaging.PixelFormat.Format24bppRgb;
+                    break;
+
+                case 32:
+                    format = System.Drawing.Imaging.PixelFormat.Format32bppArgb;
+                    break;
+
+                default:
+                    throw new NotImplementedException();
+            }
+            int bitDepth = System.Drawing.Image.GetPixelFormatSize(format);
             bitmapBackBuffer.Initialize((int)Width, (int)Height, bitDepth);
             NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
             base.OnBoundsChanged(e);
@@ -76,31 +90,21 @@ namespace MatterHackers.Agg.UI
             return graphics2D;
         }
 
-        public void Init(int Width, int Height, GuiHalWidget.CreateFlags flags, GuiHalWidget.PixelFormat pixelFormat)
+        public void Init(SystemWindow windowWeAreHosting)
         {
-            if (WindowsFormsWindow.systemImageFormat == GuiHalWidget.ImageFormats.pix_format_undefined)
-            {
-                throw new InvalidDataException();
-            }
-
-            m_window_flags = flags;
-
             System.Drawing.Size clientSize = new System.Drawing.Size();
-            clientSize.Width = Width;
-            clientSize.Height = Height;
+            clientSize.Width = (int)windowWeAreHosting.Width;
+            clientSize.Height = (int)windowWeAreHosting.Height;
             WindowsFormsWindow.ClientSize = clientSize;
 
-            if ((m_window_flags & CreateFlags.Resizable) == 0)
+            if (!windowWeAreHosting.Resizable)
             {
                 WindowsFormsWindow.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
                 WindowsFormsWindow.MaximizeBox = false;
             }
 
-            initialWidth = Width;
-            initialHeight = Height;
-
-            clientSize.Width = Width;
-            clientSize.Height = Height;
+            clientSize.Width = (int)windowWeAreHosting.Width;
+            clientSize.Height = (int)windowWeAreHosting.Height;
             WindowsFormsWindow.ClientSize = clientSize;
 
             OnInitialize();
@@ -108,8 +112,7 @@ namespace MatterHackers.Agg.UI
 
         public override void OnInitialize()
         {
-            int bitDepth = GuiHalWidget.GetBitDepthForPixelFormat(m_format);
-            bitmapBackBuffer.Initialize(initialWidth, initialHeight, bitDepth);
+            bitmapBackBuffer.Initialize((int)windowWeAreHosting.Width, (int)windowWeAreHosting.Height, windowWeAreHosting.BitDepth);
 
             NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
 

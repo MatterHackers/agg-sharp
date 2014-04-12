@@ -29,11 +29,11 @@ namespace MatterHackers.Agg.UI
 		public abstract GuiWidget NewWidget();
 
 		public enum RenderSurface { Bitmap, OpenGL };
-        public void CreateWidgetAndRunInWindow(SystemWindow.ValidDepthVaules bitDepth = SystemWindow.ValidDepthVaules.Depth32, RenderSurface surfaceType = RenderSurface.Bitmap)
+        public void CreateWidgetAndRunInWindow(SystemWindow.PixelTypes bitDepth = SystemWindow.PixelTypes.Depth32, RenderSurface surfaceType = RenderSurface.Bitmap)
 		{
 			AppWidgetInfo appWidgetInfo = GetAppParameters();
             SystemWindow systemWindow = new SystemWindow(appWidgetInfo.width, appWidgetInfo.height);
-            systemWindow.BitDepth = bitDepth;
+            systemWindow.PixelType = bitDepth;
             systemWindow.Title = appWidgetInfo.title;
             if (surfaceType == RenderSurface.OpenGL)
             {

@@ -1094,6 +1094,12 @@ namespace MatterHackers.Agg.UI
             }
         }
 
+        // Place holder, this is not really implemented.
+        public bool Resizable
+        {
+            get { return true; }
+        }
+
         public virtual double Width
         {
             get

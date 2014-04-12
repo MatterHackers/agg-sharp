@@ -54,12 +54,12 @@ namespace MatterHackers.Agg.UI
     {
         MyGLControl glControl;
 
-        public WindowsFormsOpenGL(GuiHalWidget app, GuiHalWidget.ImageFormats format, int stencilDepth)
+        public WindowsFormsOpenGL(GuiHalWidget app, SystemWindow windowWeAreHosting)
         {
-            switch(format)
+            switch (windowWeAreHosting.BitDepth)
             {
-                case GuiHalWidget.ImageFormats.pix_format_bgra32:
-                    glControl = new MyGLControl(32, stencilDepth);
+                case 32:
+                    glControl = new MyGLControl(32, windowWeAreHosting.StencilBufferDepth);
                     break;
 
                 default:
@@ -68,7 +68,7 @@ namespace MatterHackers.Agg.UI
 
             Controls.Add(glControl);
 
-            SetUpFormsWindow(app, format);
+            SetUpFormsWindow(app, windowWeAreHosting);
 
             HookWindowsInputAndSendToWidget communication = new HookWindowsInputAndSendToWidget(glControl, aggAppWidget);
         }

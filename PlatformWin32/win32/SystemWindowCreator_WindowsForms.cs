@@ -9,6 +9,9 @@ namespace MatterHackers.Agg
 {
     public class SystemWindowCreator_WindowsForms : SystemWindowCreatorPlugin
     {
+        bool SetInitialDesktopPosition = false;
+        Point2D InitialDesktopPosition = new Point2D();
+
         public override void ShowSystemWindow(SystemWindow systemWindow)
         {
             bool haveInitializedMainWindow = false;
@@ -29,31 +32,17 @@ namespace MatterHackers.Agg
                 }
             }
 
-            GuiHalWidget windowsFormsTopWindow;
-            switch (systemWindow.BitDepth)
-            {
-                case SystemWindow.ValidDepthVaules.Depth24:
-                    windowsFormsTopWindow = GuiHalFactory.CreatePrimarySurface((int)systemWindow.Width, (int)systemWindow.Height,
-                        GuiHalWidget.CreateFlags.Resizable, GuiHalWidget.PixelFormat.PixelFormatBgr24, systemWindow.StencilBufferDepth);
-                    break;
-
-                case SystemWindow.ValidDepthVaules.Depth32:
-                    windowsFormsTopWindow = GuiHalFactory.CreatePrimarySurface((int)systemWindow.Width, (int)systemWindow.Height,
-                        GuiHalWidget.CreateFlags.Resizable, GuiHalWidget.PixelFormat.PixelFormatBgra32, systemWindow.StencilBufferDepth);
-                    break;
-
-                case SystemWindow.ValidDepthVaules.DepthFloat:
-                    windowsFormsTopWindow = GuiHalFactory.CreatePrimarySurface((int)systemWindow.Width, (int)systemWindow.Height,
-                        GuiHalWidget.CreateFlags.Resizable, GuiHalWidget.PixelFormat.PixelFormatRgbaFloat, systemWindow.StencilBufferDepth);
-                    break;
-
-                default:
-                    throw new NotImplementedException();
-            }
+            GuiHalWidget windowsFormsTopWindow = GuiHalFactory.CreatePrimarySurface(systemWindow);
 
             windowsFormsTopWindow.Caption = systemWindow.Title;
             windowsFormsTopWindow.AddChild(systemWindow);
             windowsFormsTopWindow.MinimumSize = systemWindow.MinimumSize;
+
+            if (SetInitialDesktopPosition)
+            {
+                systemWindow.DesktopPosition = InitialDesktopPosition;
+            }
+
             systemWindow.AnchorAll();
             systemWindow.TitleChanged += new EventHandler(TitelChangedEventHandler);
             // and make sure the title is correct right now
@@ -78,14 +67,27 @@ namespace MatterHackers.Agg
 
         public override Point2D GetDesktopPosition(SystemWindow systemWindow)
         {
-            GuiHalWidget windowsFromsTopWindow = (GuiHalWidget)systemWindow.Parent;
-            return windowsFromsTopWindow.DesktopPosition;
+            if (systemWindow.Parent != null)
+            {
+                GuiHalWidget windowsFromsTopWindow = (GuiHalWidget)systemWindow.Parent;
+                return windowsFromsTopWindow.DesktopPosition;
+            }
+
+            return new Point2D();
         }
 
         public override void SetDesktopPosition(SystemWindow systemWindow, Point2D position)
         {
-            GuiHalWidget windowsFromsTopWindow = (GuiHalWidget)systemWindow.Parent;
-            windowsFromsTopWindow.DesktopPosition = position;
+            if (systemWindow.Parent != null)
+            {
+                GuiHalWidget windowsFromsTopWindow = (GuiHalWidget)systemWindow.Parent;
+                windowsFromsTopWindow.DesktopPosition = position;
+            }
+            else
+            {
+                SetInitialDesktopPosition = true;
+                InitialDesktopPosition = position;
+            }
         }
 
         void TitelChangedEventHandler(object sender, EventArgs e)

@@ -40,8 +40,6 @@ namespace MatterHackers.Agg.UI
         [DllImport("Kernel32.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern bool GetProcessUserModeExceptionPolicy(ref int lpFlags);
 
-        public GuiHalWidget.ImageFormats m_format;
-        public GuiHalWidget.ImageFormats systemImageFormat;
         protected WidgetForWindowsFormsAbstract aggAppWidget;
 
         System.Windows.Forms.Timer tmrWindowsFormsTimer = new System.Windows.Forms.Timer();
@@ -125,80 +123,10 @@ namespace MatterHackers.Agg.UI
             System.Diagnostics.Process.Start("explorer.exe", argument);
         }
 
-        protected void SetUpFormsWindow(GuiHalWidget app, GuiHalWidget.ImageFormats format)
+        protected void SetUpFormsWindow(GuiHalWidget app, SystemWindow windowWeAreHosting)
         {
             aggAppWidget = (WidgetForWindowsFormsAbstract)app;
-            m_format = format;
-            systemImageFormat = GuiHalWidget.ImageFormats.pix_format_undefined;
-
             this.AllowDrop = true;
-
-            switch (m_format)
-            {
-                case GuiHalWidget.ImageFormats.pix_format_bw:
-                    systemImageFormat = GuiHalWidget.ImageFormats.pix_format_bw;
-                    break;
-
-                case GuiHalWidget.ImageFormats.pix_format_gray8:
-                    systemImageFormat = GuiHalWidget.ImageFormats.pix_format_gray8;
-                    break;
-
-                case GuiHalWidget.ImageFormats.pix_format_gray16:
-                    systemImageFormat = GuiHalWidget.ImageFormats.pix_format_gray8;
-                    break;
-
-                case GuiHalWidget.ImageFormats.pix_format_rgb565:
-                case GuiHalWidget.ImageFormats.pix_format_rgb555:
-                    systemImageFormat = GuiHalWidget.ImageFormats.pix_format_rgb555;
-                    break;
-
-                case GuiHalWidget.ImageFormats.pix_format_rgbAAA:
-                case GuiHalWidget.ImageFormats.pix_format_bgrAAA:
-                case GuiHalWidget.ImageFormats.pix_format_rgbBBA:
-                case GuiHalWidget.ImageFormats.pix_format_bgrABB:
-                    systemImageFormat = GuiHalWidget.ImageFormats.pix_format_bgr24;
-                    break;
-
-                case GuiHalWidget.ImageFormats.pix_format_rgb24:
-                    systemImageFormat = GuiHalWidget.ImageFormats.pix_format_rgb24;
-                    break;
-
-                case GuiHalWidget.ImageFormats.pix_format_bgr24:
-                    systemImageFormat = GuiHalWidget.ImageFormats.pix_format_bgr24;
-                    break;
-
-                case GuiHalWidget.ImageFormats.pix_format_rgb48:
-                case GuiHalWidget.ImageFormats.pix_format_bgr48:
-                    systemImageFormat = GuiHalWidget.ImageFormats.pix_format_bgr24;
-                    break;
-
-                case GuiHalWidget.ImageFormats.pix_format_bgra32:
-                    systemImageFormat = GuiHalWidget.ImageFormats.pix_format_bgra32;
-                    break;
-                case GuiHalWidget.ImageFormats.pix_format_abgr32:
-                    systemImageFormat = GuiHalWidget.ImageFormats.pix_format_abgr32;
-                    break;
-                case GuiHalWidget.ImageFormats.pix_format_argb32:
-                    systemImageFormat = GuiHalWidget.ImageFormats.pix_format_argb32;
-                    break;
-                case GuiHalWidget.ImageFormats.pix_format_rgba32:
-                    systemImageFormat = GuiHalWidget.ImageFormats.pix_format_rgba32;
-                    break;
-
-                case GuiHalWidget.ImageFormats.pix_format_bgra64:
-                case GuiHalWidget.ImageFormats.pix_format_abgr64:
-                case GuiHalWidget.ImageFormats.pix_format_argb64:
-                case GuiHalWidget.ImageFormats.pix_format_rgba64:
-                    systemImageFormat = GuiHalWidget.ImageFormats.pix_format_bgra32;
-                    break;
-
-                case GuiHalWidget.ImageFormats.pix_format_rgba_float:
-                    systemImageFormat = GuiHalWidget.ImageFormats.pix_format_bgra32;
-                    break;
-
-                default:
-                    throw new NotImplementedException("Please add this format");
-            }
 
             if (File.Exists("application.ico"))
             {

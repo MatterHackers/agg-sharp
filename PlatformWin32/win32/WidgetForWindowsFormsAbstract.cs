@@ -35,6 +35,7 @@ namespace MatterHackers.Agg.UI
     public abstract class WidgetForWindowsFormsAbstract : GuiHalWidget
     {
         WindowsFormsAbstract windowsFormsWindow;
+
         protected WindowsFormsAbstract WindowsFormsWindow
         {
             get { return windowsFormsWindow; }
@@ -54,13 +55,10 @@ namespace MatterHackers.Agg.UI
             get { return mainWindowsFormsWindow; }
         }
 
-        public WidgetForWindowsFormsAbstract(ImageFormats format)
-            : base(format)
+        public WidgetForWindowsFormsAbstract(SystemWindow windowWeAreHosting)
+            : base(windowWeAreHosting)
         {
             GuiHalWidget.SetClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText);
-
-            initialWidth = 10;
-            initialHeight = 10;
 
             Focus();
         }
@@ -74,6 +72,10 @@ namespace MatterHackers.Agg.UI
 
             set
             {
+                if (!mainWindowsFormsWindow.Visible)
+                {
+                    mainWindowsFormsWindow.StartPosition = FormStartPosition.Manual;
+                }
                 mainWindowsFormsWindow.DesktopLocation = new Point(value.x, value.y);
             }
         }
@@ -167,7 +169,10 @@ namespace MatterHackers.Agg.UI
             //rectToInvalidate = new rect_d(0, 0, Width, Height);
 
             Rectangle windowsRectToInvalidate = GetRectangleFromRectD(rectToInvalidate);
-            WindowsFormsWindow.RequestInvalidate(windowsRectToInvalidate);
+            if (WindowsFormsWindow != null)
+            {
+                WindowsFormsWindow.RequestInvalidate(windowsRectToInvalidate);
+            }
         }
 
         public override Vector2 MinimumSize

@@ -43,9 +43,16 @@ namespace MatterHackers.Agg.UI
             } 
         }
 
-        public enum ValidDepthVaules { Depth24, Depth32, DepthFloat };
-        ValidDepthVaules bitDepth = ValidDepthVaules.Depth32;
-        public ValidDepthVaules BitDepth { get { return bitDepth; } set { bitDepth = value; } }
+        public enum PixelTypes { Depth24 = 24, Depth32 = 32, DepthFloat = 128 };
+        PixelTypes pixelType = PixelTypes.Depth32;
+        public PixelTypes PixelType { get { return pixelType; } set { pixelType = value; } }
+        public int BitDepth
+        {
+            get
+            {
+                return (int)pixelType;
+            }
+        }
 
         public override void OnClosed(EventArgs e)
         {

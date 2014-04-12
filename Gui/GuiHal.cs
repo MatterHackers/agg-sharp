@@ -14,14 +14,6 @@ namespace MatterHackers.Agg.UI
     {
         public int milliSecondsToSleepEachIdle = 16;
 
-        [Flags]
-        public enum CreateFlags
-        {
-            None = 0,
-            Resizable = 1,
-            FullScreen = 2,
-        }
-
         public enum PixelFormat
         {
             PixelFormatBgr24,
@@ -41,12 +33,6 @@ namespace MatterHackers.Agg.UI
 
         public abstract Point2D DesktopPosition { get; set; }
     
-        protected ImageFormats m_format;
-        protected int m_bpp;
-        protected CreateFlags m_window_flags;
-        protected int initialWidth;
-        protected int initialHeight;
-
         [Flags]
         public enum WindowFlags
         {
@@ -60,84 +46,13 @@ namespace MatterHackers.Agg.UI
         {
         }
 
-        //-----------------------------------------------------------pix_format_e
-        // Possible formats of the rendering buffer. Initially I thought that it's
-        // reasonable to create the buffer and the rendering functions in 
-        // accordance with the native pixel format of the system because it 
-        // would have no overhead for pixel format conversion. 
-        // But eventually I came to a conclusion that having a possibility to 
-        // convert pixel formats on demand is a good idea. First, it was X11 where 
-        // there lots of different formats and visuals and it would be great to 
-        // render everything in, say, RGB-24 and display it automatically without
-        // any additional efforts. The second reason is to have a possibility to 
-        // debug renderers for different pixel formats and colorspaces having only 
-        // one computer and one system.
-        //
-        // This stuff is not included into the basic AGG functionality because the 
-        // number of supported pixel formats (and/or colorspaces) can be great and 
-        // if one needs to add new format it would be good only to add new 
-        // rendering files without having to modify any existing ones (a general 
-        // principle of incapsulation and isolation).
-        //
-        // Using a particular pixel format doesn't obligatory mean the necessity
-        // of software conversion. For example, win32 API can natively display 
-        // gray8, 15-bit RGB, 24-bit BGR, and 32-bit BGRA formats. 
-        // This list can be (and will be!) extended in future.
-        public enum ImageFormats
-        {
-            pix_format_undefined = 0,  // By default. No conversions are applied 
-            pix_format_bw,             // 1 bit per color B/W
-            pix_format_gray8,          // Simple 256 level grayscale
-            pix_format_gray16,         // Simple 65535 level grayscale
-            pix_format_rgb555,         // 15 bit rgb. Depends on the byte ordering!
-            pix_format_rgb565,         // 16 bit rgb. Depends on the byte ordering!
-            pix_format_rgbAAA,         // 30 bit rgb. Depends on the byte ordering!
-            pix_format_rgbBBA,         // 32 bit rgb. Depends on the byte ordering!
-            pix_format_bgrAAA,         // 30 bit bgr. Depends on the byte ordering!
-            pix_format_bgrABB,         // 32 bit bgr. Depends on the byte ordering!
-            pix_format_rgb24,          // R-G-B, one byte per color component
-            pix_format_bgr24,          // B-G-R, native win32 BMP format.
-            pix_format_rgba32,         // R-G-B-A, one byte per color component
-            pix_format_argb32,         // A-R-G-B, native MAC format
-            pix_format_abgr32,         // A-B-G-R, one byte per color component
-            pix_format_bgra32,         // B-G-R-A, native win32 BMP format
-            pix_format_rgb48,          // R-G-B, 16 bits per color component
-            pix_format_bgr48,          // B-G-R, native win32 BMP format.
-            pix_format_rgba64,         // R-G-B-A, 16 bits byte per color component
-            pix_format_argb64,         // A-R-G-B, native MAC format
-            pix_format_abgr64,         // A-B-G-R, one byte per color component
-            pix_format_bgra64,         // B-G-R-A, native win32 BMP format
-            pix_format_rgba_float,       // R-G-B-A, all values stored as floats
-
-            end_of_pix_formats
-        };
-
-        public static int GetBitDepthForPixelFormat(ImageFormats pixelFormat)
-        {
-            switch(pixelFormat)
-            {
-                case ImageFormats.pix_format_bgr24:
-                case ImageFormats.pix_format_rgb24:
-                    return 24;
-
-                case ImageFormats.pix_format_bgra32:
-                case ImageFormats.pix_format_rgba32:
-                    return 32;
-
-                case ImageFormats.pix_format_rgba_float:
-                    return 32 * 4;
-
-                default:
-                    throw new System.NotImplementedException();
-            }
-        }
-
+        protected SystemWindow windowWeAreHosting;
         // format - see enum pix_format_e {};
         // flip_y - true if you want to have the Y-axis flipped vertically.
-        public GuiHalWidget(ImageFormats format)
+        public GuiHalWidget(SystemWindow windowWeAreHosting)
+            : base(windowWeAreHosting.Width, windowWeAreHosting.Height, SizeLimitsToSet.None)
         {
-            m_format = format;
-            m_bpp = GetBitDepthForPixelFormat(format);
+            this.windowWeAreHosting = windowWeAreHosting;
         }
 
         public delegate String ClipboardGetTextDelegate();
@@ -193,18 +108,10 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        // The very same parameters that were used in the constructor
-        public ImageFormats format() { return m_format; }
-
-        public int bpp() { return m_bpp; }
-
         abstract public void OnControlChanged();
 
         public double width() { return BoundsRelativeToParent.Width; }
         public double height() { return BoundsRelativeToParent.Height; }
-        public double initial_width() { return initialWidth; }
-        public double initial_height() { return initialHeight; }
-        public CreateFlags window_flags() { return m_window_flags; }
 
         // Get raw display handler depending on the system. 
         // For win32 its an HDC, for other systems it can be a pointer to some
@@ -219,7 +126,7 @@ namespace MatterHackers.Agg.UI
     // interface for a GUI hardware abstraction layer
     public interface IGuiFactory
     {
-        GuiHalWidget CreateSurface(int Width, int Height, GuiHalWidget.CreateFlags flags, GuiHalWidget.PixelFormat pixelFormat, int stencilDepth);
+        GuiHalWidget CreateSurface(SystemWindow windowWeAreHosting);
     }
 
     // the static class used to 
@@ -246,14 +153,14 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        public static GuiHalWidget CreatePrimarySurface(int width, int height, GuiHalWidget.CreateFlags flags, GuiHalWidget.PixelFormat pixelFormat, int stencilDepth)
+        public static GuiHalWidget CreatePrimarySurface(SystemWindow windowWeAreHosting)
         {
             if (halGuiFactory == null)
             {
                 throw new NotSupportedException("You must call 'SetGuiBackend' with a GuiFactory before you can create any surfaces");
             }
 
-            GuiHalWidget createdSurface = halGuiFactory.CreateSurface(width, height, flags, pixelFormat, stencilDepth);
+            GuiHalWidget createdSurface = halGuiFactory.CreateSurface(windowWeAreHosting);
             if (primaryHalWidget == null)
             {
                 primaryHalWidget = createdSurface;
