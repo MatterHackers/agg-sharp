@@ -50,23 +50,26 @@ namespace MatterHackers.Agg.UI
 
         public override void OnBoundsChanged(EventArgs e)
         {
-            System.Drawing.Imaging.PixelFormat format = System.Drawing.Imaging.PixelFormat.Undefined;
-            switch(childSystemWindow.BitDepth)
+            if (childSystemWindow != null)
             {
-                case 24:
-                    format = System.Drawing.Imaging.PixelFormat.Format24bppRgb;
-                    break;
+                System.Drawing.Imaging.PixelFormat format = System.Drawing.Imaging.PixelFormat.Undefined;
+                switch (childSystemWindow.BitDepth)
+                {
+                    case 24:
+                        format = System.Drawing.Imaging.PixelFormat.Format24bppRgb;
+                        break;
 
-                case 32:
-                    format = System.Drawing.Imaging.PixelFormat.Format32bppArgb;
-                    break;
+                    case 32:
+                        format = System.Drawing.Imaging.PixelFormat.Format32bppArgb;
+                        break;
 
-                default:
-                    throw new NotImplementedException();
+                    default:
+                        throw new NotImplementedException();
+                }
+                int bitDepth = System.Drawing.Image.GetPixelFormatSize(format);
+                bitmapBackBuffer.Initialize((int)Width, (int)Height, bitDepth);
+                NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
             }
-            int bitDepth = System.Drawing.Image.GetPixelFormatSize(format);
-            bitmapBackBuffer.Initialize((int)Width, (int)Height, bitDepth);
-            NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
             base.OnBoundsChanged(e);
         }
 
