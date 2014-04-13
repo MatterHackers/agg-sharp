@@ -140,13 +140,13 @@ namespace MatterHackers.PolygonMesh
 
             for (int i = 0; i < icosahedronIndicies.Length/3; i++)
             {
-                Vertex[] triangleVertecies = new Vertex[] 
+                Vertex[] triangleVertices = new Vertex[] 
                 {
                     verts[icosahedronIndicies[i * 3 + 0]],
                     verts[icosahedronIndicies[i * 3 + 1]],
                     verts[icosahedronIndicies[i * 3 + 2]],
                 };
-                icosahedron.CreateFace(triangleVertecies);
+                icosahedron.CreateFace(triangleVertices);
             }
 
             icosahedron.Transform(Matrix4X4.CreateScale(scale));

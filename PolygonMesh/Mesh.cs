@@ -107,8 +107,8 @@ namespace MatterHackers.PolygonMesh
 
         public void CleanAndMergMesh()
         {
-            SortVertecies();
-            MergeVertecies();
+            SortVertices();
+            MergeVertices();
             MergeMeshEdges();
         }
 
@@ -364,14 +364,60 @@ namespace MatterHackers.PolygonMesh
             throw new NotImplementedException();
         }
 
-        public void SortVertecies()
+        public void SortVertices()
         {
             Vertices.Sort();
         }
 
-        public void MergeVertecies()
+        public void MergeVertices(double maxDistanceToConsiderVertexAsSame = 0)
         {
-            Debug.WriteLine("TODO: Implement MergeVertecies()");
+            for (int i = 0; i < Vertices.Count; i++)
+            {
+                Vertex vertexToCheck = Vertices[i];
+                List<Vertex> samePosition = Vertices.FindVertices(vertexToCheck.Position, maxDistanceToConsiderVertexAsSame);
+                foreach (Vertex vertexToDelete in samePosition)
+                {
+                    if (vertexToDelete != vertexToCheck)
+                    {
+                        MergeVertexes(vertexToCheck, vertexToDelete);
+                    }
+                }
+            }
+        }
+
+        void MergeVertexes(Vertex vertexToKeep, Vertex vertexToDelete)
+        {
+            if (!Vertices.ContainsVertex(vertexToKeep) || !Vertices.ContainsVertex(vertexToDelete))
+            {
+                throw new Exception("Both vertexes have to be part of this mesh to be merged.");
+            }
+
+            // fix up the mesh edges
+            List<MeshEdge> connectedMeshEdges = vertexToDelete.ConnectedMeshEdges();
+            foreach (MeshEdge vertexToDeleteMeshEdge in connectedMeshEdges)
+            {
+                // fix up the face edges
+                foreach (FaceEdge faceEdge in vertexToDeleteMeshEdge.FaceEdgesSharingMeshEdgeIterator())
+                {
+                    if (faceEdge.firstVertex == vertexToDelete)
+                    {
+                        faceEdge.firstVertex = vertexToKeep;
+                    }
+                }
+
+                // fix up the mesh edge
+                if (vertexToDeleteMeshEdge.VertexOnEnd[0] == vertexToDelete)
+                {
+                    vertexToDeleteMeshEdge.VertexOnEnd[0] = vertexToKeep;
+                }
+                else if (vertexToDeleteMeshEdge.VertexOnEnd[1] == vertexToDelete)
+                {
+                    vertexToDeleteMeshEdge.VertexOnEnd[1] = vertexToKeep;
+                }
+            }
+
+            // delete the vertex
+            Vertices.Remove(vertexToDelete);
         }
         #endregion
 

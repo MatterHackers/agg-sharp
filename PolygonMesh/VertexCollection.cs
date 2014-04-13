@@ -65,9 +65,15 @@ namespace MatterHackers.PolygonMesh
 
     public class VertexCollecton : IEnumerable
     {
-        List<Vertex> vertecies = new List<Vertex>();
+        List<Vertex> vertices = new List<Vertex>();
         //IComparer<Vertex> vertexSorter = new VertexXAxisSorter();
         IComparer<Vertex> vertexSorter = new VertexDistanceFromPointSorter();
+
+        bool isSorted = true;
+        public bool IsSorted
+        {
+            get { return isSorted; }
+        }
 
         public VertexCollecton()
         {
@@ -75,19 +81,19 @@ namespace MatterHackers.PolygonMesh
 
         public Vertex this[int index]
         {
-            get { return vertecies[index]; }
+            get { return vertices[index]; }
         }
 
         public IEnumerator GetEnumerator()
         {
-            return vertecies.GetEnumerator();
+            return vertices.GetEnumerator();
         }
 
         public List<Vertex> FindVertices(Vector3 position, double maxDistanceToConsiderVertexAsSame)
         {
 #if VALIDATE_SEARCH
             List<Vertex> testList = new List<Vertex>();
-            foreach (Vertex vertex in vertecies)
+            foreach (Vertex vertex in vertices)
             {
                 if ((vertex.Position - position).Length < maxDistanceToConsiderVertexAsSame)
                 {
@@ -95,34 +101,37 @@ namespace MatterHackers.PolygonMesh
                 }
             }
 #endif
-
-            List<Vertex> findList = new List<Vertex>();
+            if (!IsSorted)
+            {
+                throw new Exception("You can't Find a vertex in an unsorted VertexCollection. Sort it first (or add the vertexes without preventing sorting).");
+            }
+            List<Vertex> foundVertexes = new List<Vertex>();
 
             Vertex testPos = new Vertex(position);
-            int index = vertecies.BinarySearch(testPos, vertexSorter);
+            int index = vertices.BinarySearch(testPos, vertexSorter);
             if (index < 0)
             {
                 index = ~index;
             }
             // we have the starting index now get all the vertices that are close enough starting from here
             double maxDistanceToConsiderVertexAsSameSquared = maxDistanceToConsiderVertexAsSame * maxDistanceToConsiderVertexAsSame;
-            for (int i = index; i < vertecies.Count; i++)
+            for (int i = index; i < vertices.Count; i++)
             {
-                if (Math.Abs(vertecies[i].Position.x - position.x) > maxDistanceToConsiderVertexAsSame)
+                if (Math.Abs(vertices[i].Position.x - position.x) > maxDistanceToConsiderVertexAsSame)
                 {
                     // we are too far away in x, we are done with this direction
                     break;
                 }
-                position = FindIfSameEnough(position, findList, maxDistanceToConsiderVertexAsSameSquared, i);
+                AddToListIfSameEnough(position, foundVertexes, maxDistanceToConsiderVertexAsSameSquared, i);
             }
             for (int i = index - 1; i >= 0; i--)
             {
-                if (Math.Abs(vertecies[i].Position.x - position.x) > maxDistanceToConsiderVertexAsSame)
+                if (Math.Abs(vertices[i].Position.x - position.x) > maxDistanceToConsiderVertexAsSame)
                 {
                     // we are too far away in x, we are done with this direction
                     break;
                 }
-                position = FindIfSameEnough(position, findList, maxDistanceToConsiderVertexAsSameSquared, i);
+                AddToListIfSameEnough(position, foundVertexes, maxDistanceToConsiderVertexAsSameSquared, i);
             }
 
 #if VALIDATE_SEARCH
@@ -139,51 +148,80 @@ namespace MatterHackers.PolygonMesh
             }
 #endif
 
-            return findList;
+            return foundVertexes;
         }
 
-        private Vector3 FindIfSameEnough(Vector3 position, List<Vertex> findList, double maxDistanceToConsiderVertexAsSameSquared, int i)
+        private void AddToListIfSameEnough(Vector3 position, List<Vertex> findList, double maxDistanceToConsiderVertexAsSameSquared, int i)
         {
-            if (vertecies[i].Position == position)
+            if (vertices[i].Position == position)
             {
-                findList.Add(vertecies[i]);
+                findList.Add(vertices[i]);
             }
             else
             {
-                double distanceSquared = (vertecies[i].Position - position).LengthSquared;
+                double distanceSquared = (vertices[i].Position - position).LengthSquared;
                 if (distanceSquared <= maxDistanceToConsiderVertexAsSameSquared)
                 {
-                    findList.Add(vertecies[i]);
+                    findList.Add(vertices[i]);
                 }
             }
-            return position;
         }
 
         public void Sort()
         {
-            vertecies.Sort(vertexSorter);
+            if (!IsSorted)
+            {
+                vertices.Sort(vertexSorter);
+                isSorted = true;
+            }
         }
 
-        internal void Add(Vertex vertexToAdd, bool willSortLater = false)
+        public void Remove(Vertex vertexToRemove)
         {
-            if (willSortLater)
+            if (!IsSorted)
             {
-                vertecies.Add(vertexToAdd);
+                vertices.Remove(vertexToRemove);
             }
             else
             {
-                int index = vertecies.BinarySearch(vertexToAdd, vertexSorter);
+                int index = vertices.BinarySearch(vertexToRemove, vertexSorter);
+                if (index == -1)
+                {
+                    throw new Exception("This vertex is not in this collection.");
+                }
+                else
+                {
+                    vertices.RemoveAt(index);
+                }
+            }
+        }
+
+        public void Add(Vertex vertexToAdd, bool willSortLater = false)
+        {
+            if (willSortLater)
+            {
+                vertices.Add(vertexToAdd);
+                isSorted = false;
+            }
+            else
+            {
+                int index = vertices.BinarySearch(vertexToAdd, vertexSorter);
                 if (index < 0)
                 {
                     index = ~index;
                 }
-                vertecies.Insert(index, vertexToAdd);
+                vertices.Insert(index, vertexToAdd);
             }
         }
 
         internal bool ContainsVertex(Vertex vertexToLookFor)
         {
-            int index = vertecies.BinarySearch(vertexToLookFor, vertexSorter);
+            if (!IsSorted)
+            {
+                throw new Exception("You can't Find a vertex in an unsorted VertexCollection. Sort it first (or add the vertexes without preventing sorting).");
+            }
+
+            int index = vertices.BinarySearch(vertexToLookFor, vertexSorter);
             if (index < 0)
             {
                 return false;
@@ -191,10 +229,10 @@ namespace MatterHackers.PolygonMesh
 
             return true;
         }
- 
+
         public int Count
         {
-            get { return vertecies.Count; }
+            get { return vertices.Count; }
         }
     }
 }

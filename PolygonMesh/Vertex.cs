@@ -91,6 +91,17 @@ namespace MatterHackers.PolygonMesh
             }
         }
 
+        public List<MeshEdge> ConnectedMeshEdges()
+        {
+            List<MeshEdge> meshEdgeList = new List<MeshEdge>();
+            foreach (MeshEdge meshEdge in ConnectedMeshEdgesIterator())
+            {
+                meshEdgeList.Add(meshEdge);
+            }
+
+            return meshEdgeList;
+        }
+
         public IEnumerable<MeshEdge> ConnectedMeshEdgesIterator()
         {
             MeshEdge curMeshEdge = this.firstMeshEdge;

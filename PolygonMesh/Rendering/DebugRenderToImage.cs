@@ -29,10 +29,10 @@ namespace MatterHackers.PolygonMesh
         Vector2 origin;
         Mesh meshToRender;
 
-        RGBA_Bytes vertexColor = RGBA_Bytes.Pink;
-        RGBA_Bytes meshEdgeColor = RGBA_Bytes.Green;
-        RGBA_Bytes faceEdgeColor = RGBA_Bytes.Orange;
-        RGBA_Bytes faceColor = RGBA_Bytes.Yellow;
+        RGBA_Bytes vertexColor = RGBA_Bytes.Red;
+        RGBA_Bytes meshEdgeColor = RGBA_Bytes.Orange;
+        RGBA_Bytes faceEdgeColor = RGBA_Bytes.Yellow;
+        RGBA_Bytes faceColor = RGBA_Bytes.Green;
 
         public DebugRenderToImage(Mesh meshToRender)
         {
@@ -73,10 +73,7 @@ namespace MatterHackers.PolygonMesh
             // draw all the vertecies
             foreach (Vertex vertex in meshToRender.Vertices)
             {
-                Vector2 imagePosition = GetImagePosition(vertex.Position);
-
-                DrawCircle(imagePosition, vertexColor);
-                WriteStringAtPos(vertex.Data.ID.ToString(), imagePosition, new RGBA_Bytes());
+                DrawVertex(vertex);
             }
 
             foreach (Face faceToRender in meshToRender.Faces)
@@ -104,6 +101,15 @@ namespace MatterHackers.PolygonMesh
             }
 
             return image;
+        }
+
+        private void DrawVertex(Vertex vertex)
+        {
+            Vector2 imagePosition = GetImagePosition(vertex.Position);
+
+            DrawCircle(imagePosition, vertexColor);
+            WriteStringAtPos(vertex.Data.ID.ToString(), imagePosition, new RGBA_Bytes());
+            WriteStringAtPos("{0}".FormatWith(vertex.firstMeshEdge.Data.ID), imagePosition + new Vector2(0, -12), meshEdgeColor);
         }
 
         void DrawFaceEdge(FaceEdge faceEdge, Vector2 faceAverageCenter)

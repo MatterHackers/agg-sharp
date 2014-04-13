@@ -86,8 +86,8 @@ namespace MatterHackers.PolygonMesh.Csg
                     }
                 case PolyType.SPANNING:
                     {
-                        List<Vertex> frontVertecies = new List<Vertex>();
-                        List<Vertex> backVertecies = new List<Vertex>();
+                        List<Vertex> frontVertices = new List<Vertex>();
+                        List<Vertex> backVertices = new List<Vertex>();
                         for (int firstVertexIndex = 0; firstVertexIndex < polygon.vertices.Count; firstVertexIndex++)
                         {
                             int nextVertexIndex = (firstVertexIndex + 1) % polygon.vertices.Count;
@@ -97,12 +97,12 @@ namespace MatterHackers.PolygonMesh.Csg
                             Vertex nextVertex = polygon.vertices[nextVertexIndex];
                             if (firstPolyType != PolyType.BACK)
                             {
-                                frontVertecies.Add(firstVertex);
+                                frontVertices.Add(firstVertex);
                             }
 
                             if (firstPolyType != PolyType.FRONT)
                             {
-                                backVertecies.Add(firstVertex);
+                                backVertices.Add(firstVertex);
                             }
 
                             if ((firstPolyType | nextPolyType) == PolyType.SPANNING)
@@ -112,19 +112,19 @@ namespace MatterHackers.PolygonMesh.Csg
                                 Vector3 deltaFromFirstToNext = nextVertex.Position - firstVertex.Position;
                                 double t = firstDistToPlane / Vector3.Dot(this.normal, deltaFromFirstToNext);
                                 Vertex newVertex = firstVertex.CreateInterpolated(nextVertex, t);
-                                frontVertecies.Add(newVertex);
-                                backVertecies.Add(newVertex);
+                                frontVertices.Add(newVertex);
+                                backVertices.Add(newVertex);
                             }
                         }
 
-                        if (frontVertecies.Count >= 3)
+                        if (frontVertices.Count >= 3)
                         {
-                            front.Add(new CsgPolygon(frontVertecies));
+                            front.Add(new CsgPolygon(frontVertices));
                         }
 
-                        if (backVertecies.Count >= 3)
+                        if (backVertices.Count >= 3)
                         {
-                            back.Add(new CsgPolygon(backVertecies));
+                            back.Add(new CsgPolygon(backVertices));
                         }
                     }
                     break;

@@ -26,7 +26,7 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies, 
 either expressed or implied, of the FreeBSD Project.
 */
-//#define DEBUG_INTO_TGAS
+#define DEBUG_INTO_TGAS
 
 using System;
 using System.Diagnostics;
@@ -50,7 +50,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
         {
 #if DEBUG_INTO_TGAS
             DebugRenderToImage debugRender = new DebugRenderToImage(mesh);
-            debugRender.RenderToTga("debug face {0} pre-split.tga".FormatWith(meshSaveIndex++));
+            debugRender.RenderToTga("debug face {0}.tga".FormatWith(meshSaveIndex++));
 #endif
         }
 
@@ -109,6 +109,67 @@ namespace MatterHackers.PolygonMesh.UnitTests
         }
 
         [Test]
+        public void MergeVertices()
+        {
+            {
+                Mesh testMesh = new Mesh();
+                Vertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
+                Vertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
+                Vertex centerVertexMiddle1 = testMesh.CreateVertex(0, 0, 1);
+
+                MeshEdge meshEdgeBottomLeftRight = testMesh.CreateMeshEdge(leftVertexBottom, rightVertexBottom);
+                MeshEdge meshEdgeBottomRightCenter = testMesh.CreateMeshEdge(rightVertexBottom, centerVertexMiddle1);
+                MeshEdge meshEdgeBottomCenterLeft = testMesh.CreateMeshEdge(centerVertexMiddle1, leftVertexBottom);
+
+                Vertex leftVertexTop = testMesh.CreateVertex(-1, 0, 2);
+                Vertex centerVertexMiddle2 = testMesh.CreateVertex(0, 0, 1, true);
+                Vertex rightVertexTop = testMesh.CreateVertex(1, 0, 2);
+
+                MeshEdge meshEdgeTopLeftCenter = testMesh.CreateMeshEdge(leftVertexTop, centerVertexMiddle2);
+                MeshEdge meshEdgeTopCenterRight = testMesh.CreateMeshEdge(centerVertexMiddle2, rightVertexTop);
+                MeshEdge meshEdgeTopRightLeft = testMesh.CreateMeshEdge(rightVertexTop, leftVertexTop);
+
+                Assert.IsTrue(meshEdgeBottomRightCenter.VertexOnEnd[1] == centerVertexMiddle1);
+                Assert.IsTrue(meshEdgeTopLeftCenter.VertexOnEnd[1] == centerVertexMiddle2);
+
+                SaveDebugInfo(testMesh);
+
+                testMesh.MergeVertices();
+
+                Assert.IsTrue(meshEdgeBottomRightCenter.VertexOnEnd[1] == centerVertexMiddle2);
+                Assert.IsTrue(meshEdgeTopLeftCenter.VertexOnEnd[1] == centerVertexMiddle2);
+
+                SaveDebugInfo(testMesh);
+            }
+
+            {
+                Mesh testMesh = new Mesh();
+                Vertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
+                Vertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
+                Vertex centerVertexMiddle1 = testMesh.CreateVertex(0, 0, 1);
+
+                Face bottomFace = testMesh.CreateFace(new Vertex[] { leftVertexBottom, rightVertexBottom, centerVertexMiddle1 });
+
+                Vertex leftVertexTop = testMesh.CreateVertex(-1, 0, 2);
+                Vertex centerVertexMiddle2 = testMesh.CreateVertex(0, 0, 1, true);
+                Vertex rightVertexTop = testMesh.CreateVertex(1, 0, 2);
+
+                Face top = testMesh.CreateFace(new Vertex[] { leftVertexTop, centerVertexMiddle2, rightVertexTop });
+
+                MeshEdge meshEdgeBottomRightCenter = testMesh.FindMeshEdge(leftVertexBottom, centerVertexMiddle1);
+                MeshEdge meshEdgeTopLeftCenter = testMesh.FindMeshEdge(leftVertexTop, centerVertexMiddle2);
+                Assert.IsTrue(meshEdgeBottomRightCenter.VertexOnEnd[0] == centerVertexMiddle1);
+                Assert.IsTrue(meshEdgeTopLeftCenter.VertexOnEnd[1] == centerVertexMiddle2);
+
+                SaveDebugInfo(testMesh);
+
+                testMesh.MergeVertices();
+
+                SaveDebugInfo(testMesh);
+            }
+        }
+
+        [Test]
         public void MergeMeshEdges()
         {
             return; // this is not working yet
@@ -163,7 +224,8 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 //   /       \
                 //  *----*----*
 
-                Assert.IsTrue(originalFace.firstFaceEdge.meshEdge.Data.ID == 116);
+                MeshEdge firstFaceEdgeMeshEdge = testMesh.FindMeshEdge(leftVertexBottom, centerVertexBottom);
+                Assert.IsTrue(originalFace.firstFaceEdge.meshEdge == firstFaceEdgeMeshEdge);
                 Assert.IsTrue(originalFace.NumVertices == 4, "The original face has 4 vertices.");
                 MeshEdge edgeLeftCenter = testMesh.FindMeshEdge(leftVertexBottom, centerVertexBottom);
                 MeshEdge edgeCenterRight = testMesh.FindMeshEdge(centerVertexBottom, rightVertexBottom);
@@ -465,6 +527,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
                 MeshUnitTests test = new MeshUnitTests();
                 test.CreateWireFrameTriangle();
+                test.MergeVertices();
                 test.MeshEdgeSplitAndUnsplitTests();
                 test.MeshFaceSplitAndUnspiltTests();
                 test.MergeMeshEdges();
