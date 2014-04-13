@@ -200,7 +200,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
             Mesh meshFromStlFile = new Mesh();
             //meshFromStlFile.MaxDistanceToConsiderVertexAsSame = .0000005;
-            meshFromStlFile.MaxDistanceToConsiderVertexAsSame = 0; // only vertecies that are the exact same point will be merged.
+            meshFromStlFile.MaxDistanceToConsiderVertexAsSame = 0; // only vertices that are the exact same point will be merged.
             if (fileContents.Length <= 80)
             {
                 throw new IOException("The file you have passed is not a valid STL file.");
@@ -249,7 +249,7 @@ namespace MatterHackers.PolygonMesh.Processors
                         Vertex vertex3 = meshFromStlFile.CreateVertex(vector3);
                         if (vertex1.Data.ID == vertex2.Data.ID || vertex2.Data.ID == vertex3.Data.ID || vertex1.Data.ID == vertex3.Data.ID)
                         {
-                            //throw new Exception("All vertecies should be generated no matter what. Check that the STL loader is not colapsing faces.");
+                            //throw new Exception("All vertices should be generated no matter what. Check that the STL loader is not colapsing faces.");
                         }
                         else
                         {

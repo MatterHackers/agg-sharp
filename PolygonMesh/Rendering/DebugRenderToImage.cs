@@ -70,7 +70,7 @@ namespace MatterHackers.PolygonMesh
                 DrawMeshEdge(meshEdge);
             }
 
-            // draw all the vertecies
+            // draw all the vertices
             foreach (Vertex vertex in meshToRender.Vertices)
             {
                 DrawVertex(vertex);
@@ -80,7 +80,7 @@ namespace MatterHackers.PolygonMesh
             {
                 Vector2 faceAverageCenter = new Vector2();
                 int vertexCount = 0;
-                // draw all the vertecies
+                // draw all the vertices
                 foreach (Vertex vertex in faceToRender.VertexIterator())
                 {
                     Vector2 imagePosition = GetImagePosition(vertex.Position);

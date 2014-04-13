@@ -136,8 +136,8 @@ namespace MatterHackers.PolygonMesh
 
         public MeshEdge GetNextMeshEdge(Vertex vertex)
         {
-            int endVertecies = GetVertexEndIndex(vertex);
-            return NextMeshEdgeFromEnd[endVertecies];
+            int endVertices = GetVertexEndIndex(vertex);
+            return NextMeshEdgeFromEnd[endVertices];
         }
 
         public int GetVertexEndIndex(Vertex vertexToGetIndexOf)
