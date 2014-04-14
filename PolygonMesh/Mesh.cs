@@ -108,8 +108,9 @@ namespace MatterHackers.PolygonMesh
         public void CleanAndMergMesh()
         {
             SortVertices();
-            MergeVertices();
-            MergeMeshEdges();
+            // this is not fast yet
+            //MergeVertices();
+            //MergeMeshEdges();
         }
 
         public List<Face> Faces
