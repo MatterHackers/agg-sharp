@@ -109,7 +109,7 @@ namespace MatterHackers.Agg.VertexSource
             calc_num_steps();
         }
 
-        public IEnumerable<VertexData> VertexIterator()
+        public IEnumerable<VertexData> Vertices()
         {
             VertexData vertexData = new VertexData();
             vertexData.command = FlagsAndCommand.CommandMoveTo;

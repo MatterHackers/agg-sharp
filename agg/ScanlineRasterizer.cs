@@ -313,7 +313,7 @@ namespace MatterHackers.Agg
                 reset();
             }
 
-            foreach (VertexData vertexData in vs.VertexIterator())
+            foreach (VertexData vertexData in vs.Vertices())
             {
                 if(!ShapePath.is_stop(vertexData.command))
                 {

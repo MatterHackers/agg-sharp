@@ -74,10 +74,10 @@ namespace MatterHackers.PolygonMesh
             }
         }
 
-        public IEnumerable<Face> ConnectedFacesIterator()
+        public IEnumerable<Face> ConnectedFaces()
         {
             HashSet<Face> allFacesOfThisEdge = new HashSet<Face>();
-            foreach (MeshEdge meshEdge in ConnectedMeshEdgesIterator())
+            foreach (MeshEdge meshEdge in ConnectedMeshEdges())
             {
                 foreach (Face face in meshEdge.FacesSharingMeshEdgeIterator())
                 {
@@ -91,10 +91,10 @@ namespace MatterHackers.PolygonMesh
             }
         }
 
-        public List<MeshEdge> ConnectedMeshEdges()
+        public List<MeshEdge> GetConnectedMeshEdges()
         {
             List<MeshEdge> meshEdgeList = new List<MeshEdge>();
-            foreach (MeshEdge meshEdge in ConnectedMeshEdgesIterator())
+            foreach (MeshEdge meshEdge in ConnectedMeshEdges())
             {
                 meshEdgeList.Add(meshEdge);
             }
@@ -102,7 +102,7 @@ namespace MatterHackers.PolygonMesh
             return meshEdgeList;
         }
 
-        public IEnumerable<MeshEdge> ConnectedMeshEdgesIterator()
+        public IEnumerable<MeshEdge> ConnectedMeshEdges()
         {
             MeshEdge curMeshEdge = this.firstMeshEdge;
             if (curMeshEdge != null)
@@ -111,7 +111,7 @@ namespace MatterHackers.PolygonMesh
                 {
                     yield return curMeshEdge;
 
-                    curMeshEdge = curMeshEdge.GetNextMeshEdge(this);
+                    curMeshEdge = curMeshEdge.GetNextMeshEdgeConnectedTo(this);
                 } while (curMeshEdge != this.firstMeshEdge);
             }
         }
@@ -123,7 +123,7 @@ namespace MatterHackers.PolygonMesh
                 return null;
             }
 
-            foreach (MeshEdge meshEdge in ConnectedMeshEdgesIterator())
+            foreach (MeshEdge meshEdge in ConnectedMeshEdges())
             {
                 if (meshEdge.IsConnectedTo(vertexToFindConnectionTo))
                 {
@@ -137,7 +137,7 @@ namespace MatterHackers.PolygonMesh
         public int GetConnectedMeshEdgesCount()
         {
             int numConnectedEdges = 0;
-            foreach (MeshEdge edge in ConnectedMeshEdgesIterator())
+            foreach (MeshEdge edge in ConnectedMeshEdges())
             {
                 numConnectedEdges++;
             }

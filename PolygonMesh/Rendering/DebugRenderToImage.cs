@@ -81,7 +81,7 @@ namespace MatterHackers.PolygonMesh
                 Vector2 faceAverageCenter = new Vector2();
                 int vertexCount = 0;
                 // draw all the vertices
-                foreach (Vertex vertex in faceToRender.VertexIterator())
+                foreach (Vertex vertex in faceToRender.Vertices())
                 {
                     Vector2 imagePosition = GetImagePosition(vertex.Position);
                     faceAverageCenter += imagePosition;
@@ -89,7 +89,7 @@ namespace MatterHackers.PolygonMesh
                 }
                 faceAverageCenter /= vertexCount;
 
-                foreach (FaceEdge faceEdge in faceToRender.FaceEdgeIterator())
+                foreach (FaceEdge faceEdge in faceToRender.FaceEdges())
                 {
                     // draw the face edge
                     DrawFaceEdge(faceEdge, faceAverageCenter);

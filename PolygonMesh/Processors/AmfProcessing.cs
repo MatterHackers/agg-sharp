@@ -68,7 +68,7 @@ namespace MatterHackers.PolygonMesh.Processors
             foreach (Face face in meshToSave.Faces)
             {
                 List<Vector3> positionsCCW = new List<Vector3>();
-                foreach (FaceEdge faceEdge in face.FaceEdgeIterator())
+                foreach (FaceEdge faceEdge in face.FaceEdges())
                 {
                     positionsCCW.Add(faceEdge.vertex.Position);
                 }

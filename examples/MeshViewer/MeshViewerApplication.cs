@@ -38,6 +38,7 @@ using MatterHackers.Agg.Image;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.Font;
+using MatterHackers.RenderOpenGl;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.MeshVisualizer
@@ -126,11 +127,11 @@ namespace MatterHackers.MeshVisualizer
         {
             if (wireframeCheckBox.Checked)
             {
-                meshViewerWidget.RenderType = MeshVisualizer.MeshViewerWidget.RenderTypes.Polygons;
+                meshViewerWidget.RenderType = RenderTypes.Polygons;
             }
             else
             {
-                meshViewerWidget.RenderType = MeshVisualizer.MeshViewerWidget.RenderTypes.Shaded;
+                meshViewerWidget.RenderType = RenderTypes.Shaded;
             }
         }
 

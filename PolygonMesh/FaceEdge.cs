@@ -94,7 +94,7 @@ namespace MatterHackers.PolygonMesh
             if(printRecursive)
             {
                 bool afterFirst = false;
-                foreach (FaceEdge faceEdge in NextFaceEdgeIterator())
+                foreach (FaceEdge faceEdge in NextFaceEdges())
                 {
                     if (afterFirst)
                     {
@@ -105,10 +105,10 @@ namespace MatterHackers.PolygonMesh
                 }
             }
 
-            PrintFaceEdges(totalDebug, "Prev FaceEdge: ", numTabs, PrevFaceEdgeIterator());
+            PrintFaceEdges(totalDebug, "Prev FaceEdge: ", numTabs, PrevFaceEdges());
 
-            PrintFaceEdges(totalDebug, "Radial Next FaceEdge: ", numTabs, RadialNextFaceEdgeIterator());
-            PrintFaceEdges(totalDebug, "Radial Prev FaceEdge: ", numTabs, RadialPrevFaceEdgeIterator());
+            PrintFaceEdges(totalDebug, "Radial Next FaceEdge: ", numTabs, RadialNextFaceEdges());
+            PrintFaceEdges(totalDebug, "Radial Prev FaceEdge: ", numTabs, RadialPrevFaceEdges());
         }
 
         private static void PrintFaceEdges(StringBuilder totalDebug, string title, int numTabs, IEnumerable<FaceEdge> iterator)
@@ -150,7 +150,7 @@ namespace MatterHackers.PolygonMesh
             }
         }
 
-        public IEnumerable<FaceEdge> NextFaceEdgeIterator()
+        public IEnumerable<FaceEdge> NextFaceEdges()
         {
             FaceEdge curFaceEdge = this;
             do
@@ -161,7 +161,7 @@ namespace MatterHackers.PolygonMesh
             } while (curFaceEdge != this);
         }
 
-        public IEnumerable<FaceEdge> PrevFaceEdgeIterator()
+        public IEnumerable<FaceEdge> PrevFaceEdges()
         {
             FaceEdge curFaceEdge = this;
             do
@@ -172,7 +172,7 @@ namespace MatterHackers.PolygonMesh
             } while (curFaceEdge != this);
         }
 
-        public IEnumerable<FaceEdge> RadialNextFaceEdgeIterator()
+        public IEnumerable<FaceEdge> RadialNextFaceEdges()
         {
             FaceEdge curFaceEdge = this;
             do
@@ -183,7 +183,7 @@ namespace MatterHackers.PolygonMesh
             } while (curFaceEdge != this);
         }
 
-        public IEnumerable<FaceEdge> RadialPrevFaceEdgeIterator()
+        public IEnumerable<FaceEdge> RadialPrevFaceEdges()
         {
             FaceEdge curFaceEdge = this;
             do

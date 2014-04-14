@@ -202,7 +202,7 @@ namespace MatterHackers.Agg.Font
             }
         }
 
-        public IEnumerable<VertexData> VertexIterator()
+        public IEnumerable<VertexData> Vertices()
         {
             if (text != null && text.Length > 0)
             {
@@ -221,7 +221,7 @@ namespace MatterHackers.Agg.Font
 
                         if (currentGlyph != null)
                         {
-                            foreach (VertexData vertexData in currentGlyph.VertexIterator())
+                            foreach (VertexData vertexData in currentGlyph.Vertices())
                             {
                                 if (vertexData.command != ShapePath.FlagsAndCommand.CommandStop)
                                 {
@@ -302,7 +302,7 @@ namespace MatterHackers.Agg.Font
         IEnumerator<VertexData> currentEnumerator;
         public void rewind(int layerIndex)
         {
-            currentEnumerator = VertexIterator().GetEnumerator();
+            currentEnumerator = Vertices().GetEnumerator();
             currentEnumerator.MoveNext();
         }
 

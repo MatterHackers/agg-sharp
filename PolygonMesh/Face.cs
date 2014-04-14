@@ -150,17 +150,17 @@ namespace MatterHackers.PolygonMesh
             }
         }
 
-        public IEnumerable<Vertex> VertexIterator()
+        public IEnumerable<Vertex> Vertices()
         {
-            foreach (FaceEdge faceEdge in FaceEdgeIterator())
+            foreach (FaceEdge faceEdge in FaceEdges())
             {
                 yield return faceEdge.firstVertex;
             }
         }
 
-        public IEnumerable<FaceEdge> FaceEdgeIterator()
+        public IEnumerable<FaceEdge> FaceEdges()
         {
-            return firstFaceEdge.NextFaceEdgeIterator();
+            return firstFaceEdge.NextFaceEdges();
         }
 
         bool PointInPoly(double x, double y)
@@ -173,7 +173,7 @@ namespace MatterHackers.PolygonMesh
             int prevQuadrant = 0;
             Vector2 prevPosition = Vector2.Zero;
             bool foundFirst = false;
-            foreach (Vertex vertex in VertexIterator())
+            foreach (Vertex vertex in Vertices())
             {
                 Vector2 position = new Vector2(vertex.Position[xIndex], vertex.Position[yIndex]);
                 int quadrant = GetQuadrant(position, x, y);
@@ -218,7 +218,7 @@ namespace MatterHackers.PolygonMesh
 
         public bool FaceEdgeLoopIsGood()
         {
-            foreach (FaceEdge faceEdge in FaceEdgeIterator())
+            foreach (FaceEdge faceEdge in FaceEdges())
             {
                 if (faceEdge.nextFaceEdge.prevFaceEdge != faceEdge)
                 {
@@ -232,13 +232,13 @@ namespace MatterHackers.PolygonMesh
         public void Validate()
         {
             List<FaceEdge> nextList = new List<FaceEdge>();
-            foreach (FaceEdge faceEdge in firstFaceEdge.NextFaceEdgeIterator())
+            foreach (FaceEdge faceEdge in firstFaceEdge.NextFaceEdges())
             {
                 nextList.Add(faceEdge);
             }
 
             int index = nextList.Count;
-            foreach (FaceEdge faceEdge in firstFaceEdge.PrevFaceEdgeIterator())
+            foreach (FaceEdge faceEdge in firstFaceEdge.PrevFaceEdges())
             {
                 int validIndex = (index--) % nextList.Count;
                 if (faceEdge != nextList[validIndex])
@@ -248,13 +248,13 @@ namespace MatterHackers.PolygonMesh
             }
 
             nextList.Clear();
-            foreach (FaceEdge faceEdge in firstFaceEdge.RadialNextFaceEdgeIterator())
+            foreach (FaceEdge faceEdge in firstFaceEdge.RadialNextFaceEdges())
             {
                 nextList.Add(faceEdge);
             }
 
             index = nextList.Count;
-            foreach (FaceEdge faceEdge in firstFaceEdge.RadialPrevFaceEdgeIterator())
+            foreach (FaceEdge faceEdge in firstFaceEdge.RadialPrevFaceEdges())
             {
                 int validIndex = (index--) % nextList.Count;
                 if (faceEdge != nextList[validIndex])

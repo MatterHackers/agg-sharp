@@ -93,7 +93,7 @@ namespace MatterHackers.PolygonMesh
             foreach (Face face in meshToCopy.Faces)
             {
                 List<Vertex> faceVertices = new List<Vertex>();
-                foreach (FaceEdge faceEdgeToAdd in face.FaceEdgeIterator())
+                foreach (FaceEdge faceEdgeToAdd in face.FaceEdges())
                 {
                     Vertex newVertex = CreateVertex(faceEdgeToAdd.firstVertex.Position, true, true);
                     faceVertices.Add(newVertex);
@@ -181,7 +181,7 @@ namespace MatterHackers.PolygonMesh
             }
 
             // we may want to be able to double up an edge for some operations (we'll have to see).
-            if (FindMeshEdge(splitStartVertex, splitEndVertex) != null)
+            if (FindMeshEdges(splitStartVertex, splitEndVertex).Count > 0)
             {
                 // this also ensures that the face is more than 2 sided.
                 throw new Exception("You cannot split a face on an existing edge.");
@@ -190,7 +190,7 @@ namespace MatterHackers.PolygonMesh
             FaceEdge faceEdgeAfterSplitStart = null;
             FaceEdge faceEdgeAfterSplitEnd = null;
             int count = 0;
-            foreach(FaceEdge faceEdge in faceToSplit.FaceEdgeIterator())
+            foreach(FaceEdge faceEdge in faceToSplit.FaceEdges())
             {
                 if(faceEdge.firstVertex == splitStartVertex)
                 {
@@ -234,7 +234,7 @@ namespace MatterHackers.PolygonMesh
             faceCreatedDurringSplit.firstFaceEdge = newFaceEdgeForNewFace;
 
             // make sure the FaceEdges of the new face all point to the new face.
-            foreach (FaceEdge faceEdge in faceCreatedDurringSplit.firstFaceEdge.NextFaceEdgeIterator())
+            foreach (FaceEdge faceEdge in faceCreatedDurringSplit.firstFaceEdge.NextFaceEdges())
             {
                 faceEdge.containingFace = faceCreatedDurringSplit;
             }
@@ -273,14 +273,14 @@ namespace MatterHackers.PolygonMesh
             }
 
             // make sure the FaceEdges all point to the kept face.
-            foreach (FaceEdge faceEdge in faceToKeep.firstFaceEdge.NextFaceEdgeIterator())
+            foreach (FaceEdge faceEdge in faceToKeep.firstFaceEdge.NextFaceEdges())
             {
                 faceEdge.containingFace = faceToKeep;
             }
 
             // make sure we take the mesh edge out of the neighbors pointers
-            meshEdgeToDelete.RemoveThisEdgeFromEdgeLinksOfVertex(meshEdgeToDelete.VertexOnEnd[0]);
-            meshEdgeToDelete.RemoveThisEdgeFromEdgeLinksOfVertex(meshEdgeToDelete.VertexOnEnd[1]);
+            meshEdgeToDelete.RemoveFromMeshEdgeLinksOfVertex(meshEdgeToDelete.VertexOnEnd[0]);
+            meshEdgeToDelete.RemoveFromMeshEdgeLinksOfVertex(meshEdgeToDelete.VertexOnEnd[1]);
 
             // clear the data on the deleted face edge to help with debugging
             faceEdgeToDeleteOnFaceToKeep.meshEdge.VertexOnEnd[0] = null;
@@ -393,11 +393,11 @@ namespace MatterHackers.PolygonMesh
             }
 
             // fix up the mesh edges
-            List<MeshEdge> connectedMeshEdges = vertexToDelete.ConnectedMeshEdges();
+            List<MeshEdge> connectedMeshEdges = vertexToDelete.GetConnectedMeshEdges();
             foreach (MeshEdge vertexToDeleteMeshEdge in connectedMeshEdges)
             {
                 // fix up the face edges
-                foreach (FaceEdge faceEdge in vertexToDeleteMeshEdge.FaceEdgesSharingMeshEdgeIterator())
+                foreach (FaceEdge faceEdge in vertexToDeleteMeshEdge.FaceEdgesSharingMeshEdge())
                 {
                     if (faceEdge.firstVertex == vertexToDelete)
                     {
@@ -422,21 +422,19 @@ namespace MatterHackers.PolygonMesh
         #endregion
 
         #region MeshEdge
-        public MeshEdge FindMeshEdge(Vertex vertex1, Vertex vertex2)
+        public List<MeshEdge> FindMeshEdges(Vertex vertex1, Vertex vertex2)
         {
-#if false
-            if (!vertices.Contains(vertex1) || !vertices.Contains(vertex2))
-            {
-                return null;
-            }
-#endif
+            List<MeshEdge> meshEdges = new List<MeshEdge>();
 
-            if (vertex1 == vertex2)
+            foreach (MeshEdge meshEdge in vertex1.ConnectedMeshEdges())
             {
-                return null;
+                if(meshEdge.IsConnectedTo(vertex2))
+                {
+                    meshEdges.Add(meshEdge);
+                }
             }
 
-            return vertex1.GetMeshEdgeConnectedToVertex(vertex2);
+            return meshEdges;
         }
 
         public MeshEdge CreateMeshEdge(Vertex vertex1, Vertex vertex2, bool createEvenIfExists = false)
@@ -507,7 +505,7 @@ namespace MatterHackers.PolygonMesh
             FaceEdge faceEdgeToSplit = meshEdgeToSplit.firstFaceEdge;
             if (faceEdgeToSplit != null)
             {
-                foreach (FaceEdge faceEdge in meshEdgeToSplit.FaceEdgesSharingMeshEdgeIterator())
+                foreach (FaceEdge faceEdge in meshEdgeToSplit.FaceEdgesSharingMeshEdge())
                 {
                     Face currentFace = faceEdge.containingFace;
                     FaceEdge newFaceEdge = new FaceEdge(currentFace, meshEdgeCreatedDurringSplit, vertexCreatedDurringSplit);
@@ -532,8 +530,8 @@ namespace MatterHackers.PolygonMesh
         {
             int endToJoinIndex = edgeToJoin.GetVertexEndIndex(vertexToDelete);
 
-            MeshEdge edgeToDelete = edgeToJoin.GetNextMeshEdge(vertexToDelete);
-            if (edgeToDelete.GetNextMeshEdge(vertexToDelete) != edgeToJoin)
+            MeshEdge edgeToDelete = edgeToJoin.GetNextMeshEdgeConnectedTo(vertexToDelete);
+            if (edgeToDelete.GetNextMeshEdgeConnectedTo(vertexToDelete) != edgeToJoin)
             {
                 // make sure the edgeToJoin is a valid unsplit (only one connection)
                 throw new Exception("The edge that is being unsplit must be connected to only one other MeshEdge across the vertexToDelete.");
@@ -546,7 +544,7 @@ namespace MatterHackers.PolygonMesh
             if (edgeToJoin.firstFaceEdge != null)
             {
                 // The edge we split was part of one or more faces, we need to fix the FaceEdge loops
-                foreach (FaceEdge faceEdge in edgeToJoin.FaceEdgesSharingMeshEdgeIterator())
+                foreach (FaceEdge faceEdge in edgeToJoin.FaceEdgesSharingMeshEdge())
                 {
                     FaceEdge faceEdgeToDelete = null;
                     if (faceEdge.nextFaceEdge.meshEdge == edgeToDelete)
@@ -609,46 +607,45 @@ namespace MatterHackers.PolygonMesh
                 Vertex vertex1 = currentMeshEdge.VertexOnEnd[1];
                 
                 // find out if there is another edge attached to the same vertexes
-                List<MeshEdge> connectedMeshEdges = new List<MeshEdge>();
-                foreach (MeshEdge meshEdge in vertex0.ConnectedMeshEdgesIterator())
-                {
-                    connectedMeshEdges.Add(meshEdge);
-                }
+                List<MeshEdge> meshEdgesToDelete = FindMeshEdges(vertex0, vertex1);
 
-                for(int j=0; j<connectedMeshEdges.Count; j++)
+                foreach(MeshEdge meshEdgeToDelete in meshEdgesToDelete)
                 {
-                    MeshEdge testMeshEdge = connectedMeshEdges[j];
-                    if (currentMeshEdge != testMeshEdge)
+                    if (meshEdgeToDelete != currentMeshEdge)
                     {
-                        if(testMeshEdge.IsConnectedTo(vertex1))
-                        {
-                            // these mesh edges need to be merged get rid of the second one
-                            MergeMeshEdges(currentMeshEdge, testMeshEdge);
-                            // decrement i to test this edge again (in case there are many mesh edges needing merging)
-                            i--;
-                            // and get out of this foreach loop
-                            break;
-                        }
+                        MergeMeshEdges(currentMeshEdge, meshEdgeToDelete);
                     }
                 }
             }
         }
 
-        void MergeMeshEdges(MeshEdge edgeToKeep, MeshEdge edgeToDelete)
+        public void MergeMeshEdges(MeshEdge edgeToKeep, MeshEdge edgeToDelete)
         {
-            edgeToDelete.RemoveThisEdgeFromEdgeLinksOfVertex(edgeToKeep.VertexOnEnd[0]);
-            edgeToDelete.RemoveThisEdgeFromEdgeLinksOfVertex(edgeToKeep.VertexOnEnd[1]);
-            // fix any face edges that are connected to this mesh edge
-            FaceEdge attachedFaceEdge = edgeToDelete.firstFaceEdge;
-            if (attachedFaceEdge != null)
+            // make sure they sare vertexes (or they can't be merged)
+            if (!edgeToDelete.IsConnectedTo(edgeToKeep.VertexOnEnd[0]) 
+                || !edgeToDelete.IsConnectedTo(edgeToKeep.VertexOnEnd[1]))
             {
-                while (attachedFaceEdge.meshEdge == edgeToDelete)
-                {
-                    // change it to point to the edge we are keeping
-                    attachedFaceEdge.meshEdge = edgeToKeep;
-                    // get the next edge around the radial loop (the loop of face edges attached to this face edge)
-                    attachedFaceEdge = attachedFaceEdge.radialNextFaceEdge;
-                }
+                throw new Exception("These mesh edges do not share vertexes and can't be merged.");
+            }
+
+            edgeToDelete.RemoveFromMeshEdgeLinksOfVertex(edgeToKeep.VertexOnEnd[0]);
+            edgeToDelete.RemoveFromMeshEdgeLinksOfVertex(edgeToKeep.VertexOnEnd[1]);
+            
+            // fix any face edges that are referencing the edgeToDelete
+            foreach (FaceEdge attachedFaceEdge in edgeToDelete.firstFaceEdge.RadialNextFaceEdges())
+            {
+                attachedFaceEdge.meshEdge = edgeToKeep;
+            }
+
+            List<FaceEdge> radialLoopToMove = new List<FaceEdge>();
+            foreach (FaceEdge faceEdge in edgeToDelete.firstFaceEdge.RadialNextFaceEdges())
+            {
+                radialLoopToMove.Add(faceEdge);
+            }
+
+            foreach (FaceEdge faceEdge in radialLoopToMove)
+            {
+                faceEdge.AddToRadialLoop(edgeToKeep);
             }
 
             meshEdges.Remove(edgeToDelete);

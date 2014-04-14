@@ -114,8 +114,8 @@ namespace MatterHackers.PolygonMesh
             this.VertexOnEnd[0] = vertex1;
             this.VertexOnEnd[1] = vertex2;
 
-            AppendThisEdgeToEdgeLinksOfVertex(vertex1);
-            AppendThisEdgeToEdgeLinksOfVertex(vertex2);
+            AddToMeshEdgeLinksOfVertex(vertex1);
+            AddToMeshEdgeLinksOfVertex(vertex2);
         }
 
         public void AddDebugInfo(StringBuilder totalDebug, int numTabs)
@@ -134,7 +134,7 @@ namespace MatterHackers.PolygonMesh
             totalDebug.Append(new string('\t', numTabs) + String.Format("First FaceEdge: {0}\n", firstFaceEdgeID));
         }
 
-        public MeshEdge GetNextMeshEdge(Vertex vertex)
+        public MeshEdge GetNextMeshEdgeConnectedTo(Vertex vertex)
         {
             int endVertices = GetVertexEndIndex(vertex);
             return NextMeshEdgeFromEnd[endVertices];
@@ -173,20 +173,39 @@ namespace MatterHackers.PolygonMesh
             }
         }
 
-        public void RemoveThisEdgeFromEdgeLinksOfVertex(Vertex vertexToRemoveFrom)
+        public void RemoveFromMeshEdgeLinksOfVertex(Vertex vertexToRemoveFrom)
         {
-            MeshEdge edgeWeAreConnectedTo = GetNextMeshEdge(vertexToRemoveFrom);
-            if (edgeWeAreConnectedTo == this)
+            // lets first fix up the MeshEdge ponted to be the vertexToRemoveFrom
+            if (vertexToRemoveFrom.firstMeshEdge == this)
+            {
+                MeshEdge nextMeshEdgeConnectedToThisVertex = vertexToRemoveFrom.firstMeshEdge.GetNextMeshEdgeConnectedTo(vertexToRemoveFrom);
+                // if this is a radial loop
+                if (nextMeshEdgeConnectedToThisVertex == vertexToRemoveFrom.firstMeshEdge)
+                {
+                    // the vertex is connected to no edges
+                    vertexToRemoveFrom.firstMeshEdge = null;
+                    return;
+                }
+                else
+                {
+                    // hook it up to the next connected mesh edge
+                    vertexToRemoveFrom.firstMeshEdge = nextMeshEdgeConnectedToThisVertex;
+                }
+            }
+
+            // no lets clean up the edge links on the meshe edges that are stil connected to the vertexToRemoveFrom
+            MeshEdge nextEdgeThisConnectedTo = GetNextMeshEdgeConnectedTo(vertexToRemoveFrom);
+            if (nextEdgeThisConnectedTo == this)
             {
                 throw new Exception("You can't disconect when you are the only mesh edge.");
             }
 
-            MeshEdge edgeAfterEdgeWeAreConnectedTo = edgeWeAreConnectedTo.GetNextMeshEdge(vertexToRemoveFrom);
+            MeshEdge edgeAfterEdgeWeAreConnectedTo = nextEdgeThisConnectedTo.GetNextMeshEdgeConnectedTo(vertexToRemoveFrom);
             if (edgeAfterEdgeWeAreConnectedTo == this)
             {
                 // if only 2 edges (this and other) then set the other one to a circular reference to itself
-                int indexOnEdgeWeAreConnectedTo = edgeWeAreConnectedTo.GetVertexEndIndex(vertexToRemoveFrom);
-                edgeWeAreConnectedTo.NextMeshEdgeFromEnd[indexOnEdgeWeAreConnectedTo] = edgeWeAreConnectedTo;
+                int indexOnEdgeWeAreConnectedTo = nextEdgeThisConnectedTo.GetVertexEndIndex(vertexToRemoveFrom);
+                nextEdgeThisConnectedTo.NextMeshEdgeFromEnd[indexOnEdgeWeAreConnectedTo] = nextEdgeThisConnectedTo;
 
                 // and set this one to null (it has not vertexes)
                 VertexOnEnd[GetVertexEndIndex(vertexToRemoveFrom)] = null;
@@ -195,35 +214,35 @@ namespace MatterHackers.PolygonMesh
             {
                 // we need to find the edge that has a reference to this one
                 MeshEdge edgeConnectedToThis = edgeAfterEdgeWeAreConnectedTo;
-                while (edgeConnectedToThis.GetNextMeshEdge(vertexToRemoveFrom) != this)
+                while (edgeConnectedToThis.GetNextMeshEdgeConnectedTo(vertexToRemoveFrom) != this)
                 {
-                    edgeConnectedToThis = edgeConnectedToThis.GetNextMeshEdge(vertexToRemoveFrom);
+                    edgeConnectedToThis = edgeConnectedToThis.GetNextMeshEdgeConnectedTo(vertexToRemoveFrom);
                 }
-                int indexOfThisOnOther = edgeWeAreConnectedTo.GetOpositeVertexEndIndex(vertexToRemoveFrom);
-                edgeConnectedToThis.NextMeshEdgeFromEnd[indexOfThisOnOther] = edgeWeAreConnectedTo;
+                int indexOfThisOnOther = nextEdgeThisConnectedTo.GetOpositeVertexEndIndex(vertexToRemoveFrom);
+                edgeConnectedToThis.NextMeshEdgeFromEnd[indexOfThisOnOther] = nextEdgeThisConnectedTo;
             }
         }
 
-        public void AppendThisEdgeToEdgeLinksOfVertex(Vertex vertexToAppendTo)
+        public void AddToMeshEdgeLinksOfVertex(Vertex vertexToAddTo)
         {
-            int endIndex = GetVertexEndIndex(vertexToAppendTo);
+            int endIndex = GetVertexEndIndex(vertexToAddTo);
 
-            if (vertexToAppendTo.firstMeshEdge == null)
+            if (vertexToAddTo.firstMeshEdge == null)
             {
                 // the vertex is not currently part of any edge
                 // we are the only edge for this vertex so set its links all to this.
-                vertexToAppendTo.firstMeshEdge = this;
+                vertexToAddTo.firstMeshEdge = this;
                 NextMeshEdgeFromEnd[endIndex] = this;
             }
             else // the vertex is already part of an edge (or many)
             {
-                int endIndexOnFirstMeshEdge = vertexToAppendTo.firstMeshEdge.GetVertexEndIndex(vertexToAppendTo);
+                int endIndexOnFirstMeshEdge = vertexToAddTo.firstMeshEdge.GetVertexEndIndex(vertexToAddTo);
 
                 // remember what the one that is there is poiting at
-                MeshEdge vertexCurrentNext = vertexToAppendTo.firstMeshEdge.NextMeshEdgeFromEnd[endIndexOnFirstMeshEdge];
+                MeshEdge vertexCurrentNext = vertexToAddTo.firstMeshEdge.NextMeshEdgeFromEnd[endIndexOnFirstMeshEdge];
 
                 // point the one that is there at us
-                vertexToAppendTo.firstMeshEdge.NextMeshEdgeFromEnd[endIndexOnFirstMeshEdge] = this;
+                vertexToAddTo.firstMeshEdge.NextMeshEdgeFromEnd[endIndexOnFirstMeshEdge] = this;
 
                 // and point the one that are already there at this.
                 this.NextMeshEdgeFromEnd[endIndex] = vertexCurrentNext;
@@ -252,7 +271,7 @@ namespace MatterHackers.PolygonMesh
             return numFacesSharingEdge;
         }
 
-        public IEnumerable<FaceEdge> FaceEdgesSharingMeshEdgeIterator()
+        public IEnumerable<FaceEdge> FaceEdgesSharingMeshEdge()
         {
             FaceEdge curFaceEdge = this.firstFaceEdge;
             if (curFaceEdge != null)
@@ -268,7 +287,7 @@ namespace MatterHackers.PolygonMesh
 
         public IEnumerable<Face> FacesSharingMeshEdgeIterator()
         {
-            foreach (FaceEdge faceEdge in FaceEdgesSharingMeshEdgeIterator())
+            foreach (FaceEdge faceEdge in FaceEdgesSharingMeshEdge())
             {
                 yield return faceEdge.containingFace;
             }
@@ -308,7 +327,7 @@ namespace MatterHackers.PolygonMesh
 
         public FaceEdge GetFaceEdge(Face faceToFindFaceEdgeFor)
         {
-            foreach (FaceEdge faceEdge in faceToFindFaceEdgeFor.FaceEdgeIterator())
+            foreach (FaceEdge faceEdge in faceToFindFaceEdgeFor.FaceEdges())
             {
                 if (faceEdge.containingFace == faceToFindFaceEdgeFor)
                 {

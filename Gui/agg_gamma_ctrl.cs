@@ -304,7 +304,7 @@ namespace MatterHackers.Agg.UI
             base.OnDraw(graphics2D);
         }
 
-        public override IEnumerable<VertexData> VertexIterator()
+        public override IEnumerable<VertexData> Vertices()
         {
             throw new NotImplementedException();
         }

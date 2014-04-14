@@ -53,7 +53,7 @@ namespace MatterHackers.PolygonMesh.Rendering
                 {
                     polygonProjected.remove_all();
                     bool first = true;
-                    foreach (FaceEdge faceEdge in face.FaceEdgeIterator())
+                    foreach (FaceEdge faceEdge in face.FaceEdges())
                     {
                         Vector2 position = new Vector2(faceEdge.firstVertex.Position.x, faceEdge.firstVertex.Position.y);
                         position += offset;

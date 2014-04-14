@@ -36,10 +36,10 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.OpenGlGui;
 using MatterHackers.Agg.UI;
+using MatterHackers.RenderOpenGl;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Processors;
-using MatterHackers.RenderOpenGl;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.MeshVisualizer
@@ -60,7 +60,6 @@ namespace MatterHackers.MeshVisualizer
         public bool RenderBed { get; set; }
         public bool RenderBuildVolume { get; set; }
 
-        public enum RenderTypes { Shaded, Outlines, Polygons };
         RenderTypes renderType = RenderTypes.Shaded;
         public RenderTypes RenderType
         {
@@ -180,7 +179,7 @@ namespace MatterHackers.MeshVisualizer
                             FaceData faceData = new FaceData();
                             faceData.Textures.Add(bedCentimeterGridImage);
                             face.Data = faceData;
-                            foreach (FaceEdge faceEdge in face.FaceEdgeIterator())
+                            foreach (FaceEdge faceEdge in face.FaceEdges())
                             {
                                 FaceEdgeData edgeUV = new FaceEdgeData();
                                 edgeUV.TextureUV.Add(new Vector2((displayVolume.x / 2 + faceEdge.firstVertex.Position.x) / displayVolume.x,
@@ -215,7 +214,7 @@ namespace MatterHackers.MeshVisualizer
                                     FaceData faceData = new FaceData();
                                     faceData.Textures.Add(bedCentimeterGridImage);
                                     face.Data = faceData;
-                                    foreach (FaceEdge faceEdge in face.FaceEdgeIterator())
+                                    foreach (FaceEdge faceEdge in face.FaceEdges())
                                     {
                                         FaceEdgeData edgeUV = new FaceEdgeData();
                                         edgeUV.TextureUV.Add(new Vector2((displayVolume.x / 2 + faceEdge.firstVertex.Position.x) / displayVolume.x,
@@ -259,20 +258,7 @@ namespace MatterHackers.MeshVisualizer
                     drawColor = SelectedPartColor;
                 }
 
-                switch(RenderType)
-                {
-                    case RenderTypes.Shaded:
-                        RenderMeshToGl.Render(meshToRender, drawColor, MeshTransforms[i]);
-                        break;
-
-                    case RenderTypes.Polygons:
-                        RenderMeshToGl.Render(meshToRender, drawColor, MeshTransforms[i], true);
-                        break;
-
-                    case RenderTypes.Outlines:
-                        RenderMeshToGl.Render(meshToRender, drawColor, MeshTransforms[i]);
-                        break;
-                }
+                RenderMeshToGl.Render(meshToRender, drawColor, MeshTransforms[i], RenderType);
             }
 
             // we don't want to render the bed or bulid volume before we load a model.

@@ -103,7 +103,7 @@ namespace MatterHackers.CSGOpenGL
                 FaceData faceData = new FaceData();
                 faceData.Textures.Add(bedCentimeterGridImage);
                 face.Data = faceData;
-                foreach (FaceEdge faceEdge in face.FaceEdgeIterator())
+                foreach (FaceEdge faceEdge in face.FaceEdges())
                 {
                     FaceEdgeData edgeUV = new FaceEdgeData();
                     edgeUV.TextureUV.Add(new Vector2((bedXSize / 2 + faceEdge.firstVertex.Position.x) / bedXSize,
@@ -142,7 +142,7 @@ namespace MatterHackers.CSGOpenGL
             {
                 if (ShowWireFrame)
                 {
-                    RenderMeshToGl.Render(meshToRender, PartColor, true);
+                    RenderMeshToGl.Render(meshToRender, PartColor, RenderTypes.Polygons);
                 }
                 else
                 {

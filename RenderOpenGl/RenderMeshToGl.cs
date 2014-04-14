@@ -49,6 +49,8 @@ using OpenTK.Graphics.OpenGL;
 
 namespace MatterHackers.RenderOpenGl
 {
+    public enum RenderTypes { Shaded, Outlines, Polygons };
+
     public static class RenderMeshToGl
     {
 #if USE_GLES2
@@ -151,7 +153,7 @@ namespace MatterHackers.RenderOpenGl
             }
         }
 
-        static void DrawWithWireOverlay(Mesh meshToRender)
+        static void DrawWithWireOverlay(Mesh meshToRender, RenderTypes renderType)
         {
 #if USE_GLES2
             GLMeshWireframePlugin glMeshPlugin = GLMeshWireframePlugin.GetGLMeshWireframePlugin(meshToRender);
@@ -190,41 +192,42 @@ namespace MatterHackers.RenderOpenGl
             GL.Begin(BeginMode.Lines);
             foreach (MeshEdge edge in meshToRender.meshEdges)
             {
-#if false // a fun hack to show only the edges of the parts rather than all the polygon edges
-                if (edge.GetNumFacesSharingEdge() == 2)
+                if (renderType == RenderTypes.Outlines)
                 {
-                    FaceEdge firstFaceEdge = edge.firstFaceEdge;
-                    FaceEdge nextFaceEdge = edge.firstFaceEdge.radialNextFaceEdge;
-                    double angle = Vector3.CalculateAngle(firstFaceEdge.face.normal, nextFaceEdge.face.normal);
-                    if (angle > MathHelper.Tau * .1)
+                    if (edge.GetNumFacesSharingEdge() == 2)
                     {
-                    GL.Color4(0.0, 0.0, 0.0, 1.0);
-                    GL.Color4(1.0, 1.0, 1.0, 1.0);
-                    GL.Vertex3(edge.vertex1.Position.x, edge.vertex1.Position.y, edge.vertex1.Position.z);
-                    GL.Vertex3(edge.vertex2.Position.x, edge.vertex2.Position.y, edge.vertex2.Position.z);
+                        FaceEdge firstFaceEdge = edge.firstFaceEdge;
+                        FaceEdge nextFaceEdge = edge.firstFaceEdge.radialNextFaceEdge;
+                        double angle = Vector3.CalculateAngle(firstFaceEdge.containingFace.normal, nextFaceEdge.containingFace.normal);
+                        if (angle > MathHelper.Tau * .1)
+                        {
+                            GL.Color4(0.0, 0.0, 0.0, 1.0);
+                            GL.Color4(1.0, 1.0, 1.0, 1.0);
+                            GL.Vertex3(edge.VertexOnEnd[0].Position.x, edge.VertexOnEnd[0].Position.y, edge.VertexOnEnd[0].Position.z);
+                            GL.Vertex3(edge.VertexOnEnd[1].Position.x, edge.VertexOnEnd[1].Position.y, edge.VertexOnEnd[1].Position.z);
+                        }
+                    }
+                    else
+                    {
+                        GL.Color4(1.0, 1.0, 1.0, 1.0);
+                        GL.Vertex3(edge.VertexOnEnd[0].Position.x, edge.VertexOnEnd[0].Position.y, edge.VertexOnEnd[0].Position.z);
+                        GL.Vertex3(edge.VertexOnEnd[1].Position.x, edge.VertexOnEnd[1].Position.y, edge.VertexOnEnd[1].Position.z);
                     }
                 }
                 else
                 {
-                    GL.Color4(1.0, 1.0, 1.0, 1.0);
-                    GL.Vertex3(edge.vertex1.Position.x, edge.vertex1.Position.y, edge.vertex1.Position.z);
-                    GL.Vertex3(edge.vertex2.Position.x, edge.vertex2.Position.y, edge.vertex2.Position.z);
+                    if (edge.GetNumFacesSharingEdge() == 2)
+                    {
+                        GL.Color4(0.0, 0.0, 0.0, 1.0);
+                    }
+                    else
+                    {
+                        GL.Color4(1.0, 1.0, 1.0, 1.0);
+                    }
+
+                    GL.Vertex3(edge.VertexOnEnd[0].Position.x, edge.VertexOnEnd[0].Position.y, edge.VertexOnEnd[0].Position.z);
+                    GL.Vertex3(edge.VertexOnEnd[1].Position.x, edge.VertexOnEnd[1].Position.y, edge.VertexOnEnd[1].Position.z);
                 }
-#else
-                if (edge.GetNumFacesSharingEdge() == 2)
-                {
-                    GL.Color4(0.0, 0.0, 0.0, 1.0);
-                }
-                else
-                {
-                    GL.Color4(1.0, 1.0, 1.0, 1.0);
-                }
-            throw new NotImplementedException();
-#if false
-                GL.Vertex3(edge.vertex1.Position.x, edge.vertex1.Position.y, edge.vertex1.Position.z);
-                GL.Vertex3(edge.vertex2.Position.x, edge.vertex2.Position.y, edge.vertex2.Position.z);
-#endif
-#endif
             }
             GL.End();
 
@@ -232,12 +235,12 @@ namespace MatterHackers.RenderOpenGl
 #endif
         }
 
-        public static void Render(Mesh meshToRender, IColorType partColor, bool overlayWireFrame = false)
+        public static void Render(Mesh meshToRender, IColorType partColor, RenderTypes renderType = RenderTypes.Shaded)
         {
-            Render(meshToRender, partColor, Matrix4X4.Identity, overlayWireFrame);
+            Render(meshToRender, partColor, Matrix4X4.Identity, renderType);
         }
 
-        public static void Render(Mesh meshToRender, IColorType partColor, Matrix4X4 transform, bool overlayWireFrame = false)
+        public static void Render(Mesh meshToRender, IColorType partColor, Matrix4X4 transform, RenderTypes renderType)
         {
             if (meshToRender != null)
             {
@@ -256,13 +259,13 @@ namespace MatterHackers.RenderOpenGl
                 GL.PushMatrix();
                 GL.MultMatrix(transform.GetAsFloatArray());
 
-                if (overlayWireFrame)
+                if (renderType == RenderTypes.Shaded)
                 {
-                    DrawWithWireOverlay(meshToRender);
+                    DrawToGL(meshToRender);
                 }
                 else
                 {
-                    DrawToGL(meshToRender);
+                    DrawWithWireOverlay(meshToRender, renderType);
                 }
 
                 GL.PopMatrix();

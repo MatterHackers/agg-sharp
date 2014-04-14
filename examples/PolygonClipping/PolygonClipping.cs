@@ -60,7 +60,7 @@ namespace MatterHackers.Agg
             VertexData last = new VertexData();
             VertexData first = new VertexData();
             bool addedFirst = false;
-            foreach (VertexData vertexData in a.VertexIterator())
+            foreach (VertexData vertexData in a.Vertices())
             {
                 if (vertexData.IsLineTo)
                 {
@@ -240,104 +240,104 @@ namespace MatterHackers.Agg
                     }
                     break;
 
-            case 3:
-            {
-                //------------------------------------
-                // Great Britain and a Spiral
-                //
-                spiral sp = new spiral(m_x, m_y, 10, 150, 30, 0.0);
-                Stroke stroke = new Stroke(sp);
-                stroke.width(15.0);
+                case 3:
+                    {
+                        //------------------------------------
+                        // Great Britain and a Spiral
+                        //
+                        spiral sp = new spiral(m_x, m_y, 10, 150, 30, 0.0);
+                        Stroke stroke = new Stroke(sp);
+                        stroke.width(15.0);
 
-                PathStorage gb_poly = new PathStorage();
-                GreatBritanPathStorage.Make(gb_poly);
+                        PathStorage gb_poly = new PathStorage();
+                        GreatBritanPathStorage.Make(gb_poly);
 
-                Affine mtx = Affine.NewIdentity();;
-                mtx *= Affine.NewTranslation(-1150, -1150);
-                mtx *= Affine.NewScaling(2.0);
+                        Affine mtx = Affine.NewIdentity(); ;
+                        mtx *= Affine.NewTranslation(-1150, -1150);
+                        mtx *= Affine.NewScaling(2.0);
 
-                VertexSourceApplyTransform trans_gb_poly = new VertexSourceApplyTransform(gb_poly, mtx);
+                        VertexSourceApplyTransform trans_gb_poly = new VertexSourceApplyTransform(gb_poly, mtx);
 
-                graphics2D.Render(trans_gb_poly, new RGBA_Floats(0.5, 0.5, 0, 0.1).GetAsRGBA_Bytes());
+                        graphics2D.Render(trans_gb_poly, new RGBA_Floats(0.5, 0.5, 0, 0.1).GetAsRGBA_Bytes());
 
-                Stroke stroke_gb_poly = new Stroke(trans_gb_poly);
-                stroke_gb_poly.width(0.1);
-                graphics2D.Render(stroke_gb_poly, new RGBA_Floats(0, 0, 0).GetAsRGBA_Bytes());
-        
-                graphics2D.Render(stroke, new RGBA_Floats(0.0, 0.5, 0.5, 0.1).GetAsRGBA_Bytes());
+                        Stroke stroke_gb_poly = new Stroke(trans_gb_poly);
+                        stroke_gb_poly.width(0.1);
+                        graphics2D.Render(stroke_gb_poly, new RGBA_Floats(0, 0, 0).GetAsRGBA_Bytes());
 
-                CreateAndRenderCombined(graphics2D, trans_gb_poly, stroke);
-            }
-            break;
+                        graphics2D.Render(stroke, new RGBA_Floats(0.0, 0.5, 0.5, 0.1).GetAsRGBA_Bytes());
 
-            case 4:
-            {
-                //------------------------------------
-                // Spiral and glyph
-                //
-                spiral sp = new spiral(m_x, m_y, 10, 150, 30, 0.0);
-                Stroke stroke = new Stroke(sp);
-                stroke.width(15.0);
+                        CreateAndRenderCombined(graphics2D, trans_gb_poly, stroke);
+                    }
+                    break;
 
-                PathStorage glyph = new PathStorage();
-                glyph.MoveTo(28.47, 6.45);
-                glyph.curve3(21.58, 1.12, 19.82, 0.29);
-                glyph.curve3(17.19, -0.93, 14.21, -0.93);
-                glyph.curve3(9.57, -0.93, 6.57, 2.25);
-                glyph.curve3(3.56, 5.42, 3.56, 10.60);
-                glyph.curve3(3.56, 13.87, 5.03, 16.26);
-                glyph.curve3(7.03, 19.58, 11.99, 22.51);
-                glyph.curve3(16.94, 25.44, 28.47, 29.64);
-                glyph.LineTo(28.47, 31.40);
-                glyph.curve3(28.47, 38.09, 26.34, 40.58);
-                glyph.curve3(24.22, 43.07, 20.17, 43.07);
-                glyph.curve3(17.09, 43.07, 15.28, 41.41);
-                glyph.curve3(13.43, 39.75, 13.43, 37.60);
-                glyph.LineTo(13.53, 34.77);
-                glyph.curve3(13.53, 32.52, 12.38, 31.30);
-                glyph.curve3(11.23, 30.08, 9.38, 30.08);
-                glyph.curve3(7.57, 30.08, 6.42, 31.35);
-                glyph.curve3(5.27, 32.62, 5.27, 34.81);
-                glyph.curve3(5.27, 39.01, 9.57, 42.53);
-                glyph.curve3(13.87, 46.04, 21.63, 46.04);
-                glyph.curve3(27.59, 46.04, 31.40, 44.04);
-                glyph.curve3(34.28, 42.53, 35.64, 39.31);
-                glyph.curve3(36.52, 37.21, 36.52, 30.71);
-                glyph.LineTo(36.52, 15.53);
-                glyph.curve3(36.52, 9.13, 36.77, 7.69);
-                glyph.curve3(37.01, 6.25, 37.57, 5.76);
-                glyph.curve3(38.13, 5.27, 38.87, 5.27);
-                glyph.curve3(39.65, 5.27, 40.23, 5.62);
-                glyph.curve3(41.26, 6.25, 44.19, 9.18);
-                glyph.LineTo(44.19, 6.45);
-                glyph.curve3(38.72, -0.88, 33.74, -0.88);
-                glyph.curve3(31.35, -0.88, 29.93, 0.78);
-                glyph.curve3(28.52, 2.44, 28.47, 6.45);
-                glyph.ClosePolygon();
+                case 4:
+                    {
+                        //------------------------------------
+                        // Spiral and glyph
+                        //
+                        spiral sp = new spiral(m_x, m_y, 10, 150, 30, 0.0);
+                        Stroke stroke = new Stroke(sp);
+                        stroke.width(15.0);
 
-                glyph.MoveTo(28.47, 9.62);
-                glyph.LineTo(28.47, 26.66);
-                glyph.curve3(21.09, 23.73, 18.95, 22.51);
-                glyph.curve3(15.09, 20.36, 13.43, 18.02);
-                glyph.curve3(11.77, 15.67, 11.77, 12.89);
-                glyph.curve3(11.77, 9.38, 13.87, 7.06);
-                glyph.curve3(15.97, 4.74, 18.70, 4.74);
-                glyph.curve3(22.41, 4.74, 28.47, 9.62);
-                glyph.ClosePolygon();
+                        PathStorage glyph = new PathStorage();
+                        glyph.MoveTo(28.47, 6.45);
+                        glyph.curve3(21.58, 1.12, 19.82, 0.29);
+                        glyph.curve3(17.19, -0.93, 14.21, -0.93);
+                        glyph.curve3(9.57, -0.93, 6.57, 2.25);
+                        glyph.curve3(3.56, 5.42, 3.56, 10.60);
+                        glyph.curve3(3.56, 13.87, 5.03, 16.26);
+                        glyph.curve3(7.03, 19.58, 11.99, 22.51);
+                        glyph.curve3(16.94, 25.44, 28.47, 29.64);
+                        glyph.LineTo(28.47, 31.40);
+                        glyph.curve3(28.47, 38.09, 26.34, 40.58);
+                        glyph.curve3(24.22, 43.07, 20.17, 43.07);
+                        glyph.curve3(17.09, 43.07, 15.28, 41.41);
+                        glyph.curve3(13.43, 39.75, 13.43, 37.60);
+                        glyph.LineTo(13.53, 34.77);
+                        glyph.curve3(13.53, 32.52, 12.38, 31.30);
+                        glyph.curve3(11.23, 30.08, 9.38, 30.08);
+                        glyph.curve3(7.57, 30.08, 6.42, 31.35);
+                        glyph.curve3(5.27, 32.62, 5.27, 34.81);
+                        glyph.curve3(5.27, 39.01, 9.57, 42.53);
+                        glyph.curve3(13.87, 46.04, 21.63, 46.04);
+                        glyph.curve3(27.59, 46.04, 31.40, 44.04);
+                        glyph.curve3(34.28, 42.53, 35.64, 39.31);
+                        glyph.curve3(36.52, 37.21, 36.52, 30.71);
+                        glyph.LineTo(36.52, 15.53);
+                        glyph.curve3(36.52, 9.13, 36.77, 7.69);
+                        glyph.curve3(37.01, 6.25, 37.57, 5.76);
+                        glyph.curve3(38.13, 5.27, 38.87, 5.27);
+                        glyph.curve3(39.65, 5.27, 40.23, 5.62);
+                        glyph.curve3(41.26, 6.25, 44.19, 9.18);
+                        glyph.LineTo(44.19, 6.45);
+                        glyph.curve3(38.72, -0.88, 33.74, -0.88);
+                        glyph.curve3(31.35, -0.88, 29.93, 0.78);
+                        glyph.curve3(28.52, 2.44, 28.47, 6.45);
+                        glyph.ClosePolygon();
 
-                Affine mtx = Affine.NewIdentity();
-                mtx *= Affine.NewScaling(4.0);
-                mtx *= Affine.NewTranslation(220, 200);
-                VertexSourceApplyTransform trans = new VertexSourceApplyTransform(glyph, mtx);
-                FlattenCurves curve = new FlattenCurves(trans);
+                        glyph.MoveTo(28.47, 9.62);
+                        glyph.LineTo(28.47, 26.66);
+                        glyph.curve3(21.09, 23.73, 18.95, 22.51);
+                        glyph.curve3(15.09, 20.36, 13.43, 18.02);
+                        glyph.curve3(11.77, 15.67, 11.77, 12.89);
+                        glyph.curve3(11.77, 9.38, 13.87, 7.06);
+                        glyph.curve3(15.97, 4.74, 18.70, 4.74);
+                        glyph.curve3(22.41, 4.74, 28.47, 9.62);
+                        glyph.ClosePolygon();
 
-                CreateAndRenderCombined(graphics2D, stroke, curve);
+                        Affine mtx = Affine.NewIdentity();
+                        mtx *= Affine.NewScaling(4.0);
+                        mtx *= Affine.NewTranslation(220, 200);
+                        VertexSourceApplyTransform trans = new VertexSourceApplyTransform(glyph, mtx);
+                        FlattenCurves curve = new FlattenCurves(trans);
 
-                graphics2D.Render(stroke, new RGBA_Floats(0, 0, 0, 0.1).GetAsRGBA_Bytes());
+                        CreateAndRenderCombined(graphics2D, stroke, curve);
 
-                graphics2D.Render(curve, new RGBA_Floats(0, 0.6, 0, 0.1).GetAsRGBA_Bytes());
-            }
-            break;
+                        graphics2D.Render(stroke, new RGBA_Floats(0, 0, 0, 0.1).GetAsRGBA_Bytes());
+
+                        graphics2D.Render(curve, new RGBA_Floats(0, 0.6, 0, 0.1).GetAsRGBA_Bytes());
+                    }
+                    break;
             }
         }
 
@@ -505,7 +505,7 @@ namespace MatterHackers.Agg
             m_dr = m_step / 90.0;
         }
 
-        public IEnumerable<VertexData> VertexIterator()
+        public IEnumerable<VertexData> Vertices()
         {
             throw new NotImplementedException();
         }
@@ -543,20 +543,20 @@ namespace MatterHackers.Agg
     {
         int m_contours;
         int m_points;
-    
+
         conv_poly_counter(IVertexSource src)
         {
             m_contours = 0;
             m_points = 0;
 
-            foreach(VertexData vertexData in src.VertexIterator())
+            foreach (VertexData vertexData in src.Vertices())
             {
                 if (ShapePath.is_vertex(vertexData.command))
                 {
                     ++m_points;
                 }
 
-                if(ShapePath.is_move_to(vertexData.command))
+                if (ShapePath.is_move_to(vertexData.command))
                 {
                     ++m_contours;
                 }

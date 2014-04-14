@@ -130,10 +130,10 @@ namespace MatterHackers.Agg.VertexSource
         public void approximation_scale(double s) { currentProcessingArc.approximation_scale(s); }
         public double approximation_scale() { return currentProcessingArc.approximation_scale(); }
 
-        public IEnumerable<VertexData> VertexIterator()
+        public IEnumerable<VertexData> Vertices()
         {
             currentProcessingArc.init(bounds.Left + leftBottomRadius.x, bounds.Bottom + leftBottomRadius.y, leftBottomRadius.x, leftBottomRadius.y, Math.PI, Math.PI + Math.PI * 0.5);
-            foreach (VertexData vertexData in currentProcessingArc.VertexIterator())
+            foreach (VertexData vertexData in currentProcessingArc.Vertices())
             {
                 if (ShapePath.is_stop(vertexData.command))
                 {
@@ -142,7 +142,7 @@ namespace MatterHackers.Agg.VertexSource
                 yield return vertexData;
             }
             currentProcessingArc.init(bounds.Right - rightBottomRadius.x, bounds.Bottom + rightBottomRadius.y, rightBottomRadius.x, rightBottomRadius.y, Math.PI + Math.PI * 0.5, 0.0);
-            foreach (VertexData vertexData in currentProcessingArc.VertexIterator())
+            foreach (VertexData vertexData in currentProcessingArc.Vertices())
             {
                 if (ShapePath.is_move_to(vertexData.command))
                 {
@@ -157,7 +157,7 @@ namespace MatterHackers.Agg.VertexSource
             }
 
             currentProcessingArc.init(bounds.Right - rightTopRadius.x, bounds.Top - rightTopRadius.y, rightTopRadius.x, rightTopRadius.y, 0.0, Math.PI * 0.5);
-            foreach (VertexData vertexData in currentProcessingArc.VertexIterator())
+            foreach (VertexData vertexData in currentProcessingArc.Vertices())
             {
                 if (ShapePath.is_move_to(vertexData.command))
                 {
@@ -172,7 +172,7 @@ namespace MatterHackers.Agg.VertexSource
             }
 
             currentProcessingArc.init(bounds.Left + leftTopRadius.x, bounds.Top - leftTopRadius.y, leftTopRadius.x, leftTopRadius.y, Math.PI * 0.5, Math.PI);
-            foreach (VertexData vertexData in currentProcessingArc.VertexIterator())
+            foreach (VertexData vertexData in currentProcessingArc.Vertices())
             {
                 if (ShapePath.is_move_to(vertexData.command))
                 {

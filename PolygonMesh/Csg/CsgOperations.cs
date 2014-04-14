@@ -35,7 +35,7 @@ namespace MatterHackers.PolygonMesh.Csg
             foreach (Face face in model.Faces)
             {
                 List<Vertex> triangle = new List<Vertex>();
-                foreach (FaceEdge faceEdge in face.FaceEdgeIterator())
+                foreach (FaceEdge faceEdge in face.FaceEdges())
                 {
                     Vertex v = new Vertex(faceEdge.firstVertex.Position);
                     v.Normal = faceEdge.firstVertex.Normal;

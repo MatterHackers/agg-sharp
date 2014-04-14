@@ -85,7 +85,7 @@ namespace MatterHackers.Agg.UI
         }
 
         public abstract int num_paths();
-        public abstract IEnumerable<VertexData> VertexIterator();
+        public abstract IEnumerable<VertexData> Vertices();
         public abstract void rewind(int path_id);
         public abstract ShapePath.FlagsAndCommand vertex(out double x, out double y);
 

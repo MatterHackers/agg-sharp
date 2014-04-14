@@ -76,7 +76,7 @@ namespace MatterHackers.Agg.VertexSource
 
         IMarkers GetMarkers() { return markers; }
 
-        public IEnumerable<VertexData> VertexIterator()
+        public IEnumerable<VertexData> Vertices()
         {
             rewind(0);
             ShapePath.FlagsAndCommand command = ShapePath.FlagsAndCommand.CommandStop;

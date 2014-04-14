@@ -38,10 +38,10 @@ namespace MatterHackers.Agg.Font
             this.glyph = glyph;
         }
 
-        public IEnumerable<VertexData> VertexIterator()
+        public IEnumerable<VertexData> Vertices()
         {
             // return all the data for the glyph
-            foreach (VertexData vertexData in glyph.VertexIterator())
+            foreach (VertexData vertexData in glyph.Vertices())
             {
                 if (ShapePath.is_stop(vertexData.command))
                 {
@@ -51,7 +51,7 @@ namespace MatterHackers.Agg.Font
             }
 
             // then the underline
-            foreach (VertexData vertexData in underline.VertexIterator())
+            foreach (VertexData vertexData in underline.Vertices())
             {
                 yield return vertexData;
             }

@@ -205,7 +205,7 @@ namespace MatterHackers.RenderOpenGl
                 Vector2[] textureUV = new Vector2[2];
                 Vector3[] position = new Vector3[2];
                 int vertexIndex = 0;
-                foreach (FaceEdge faceEdge in face.FaceEdgeIterator())
+                foreach (FaceEdge faceEdge in face.FaceEdges())
                 {
                     if (vertexIndex < 2)
                     {
