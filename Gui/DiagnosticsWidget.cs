@@ -9,13 +9,13 @@ namespace MatterHackers.Agg.UI
     {
         internal class WidgetInList
         {
-            internal GuiWidget sizeLable;
-            internal GuiWidget boundsLable;
+            internal GuiWidget sizeLabel;
+            internal GuiWidget boundsLabel;
 
-            internal WidgetInList(GuiWidget sizeLable, GuiWidget boundsLable)
+            internal WidgetInList(GuiWidget sizeLabel, GuiWidget boundsLabel)
             {
-                this.sizeLable = sizeLable;
-                this.boundsLable = boundsLable;
+                this.sizeLabel = sizeLabel;
+                this.boundsLabel = boundsLabel;
             }
         }
 
@@ -100,8 +100,8 @@ namespace MatterHackers.Agg.UI
             GuiWidget widgetToAddInfoAbout = sender as GuiWidget;
             if (widgetToAddInfoAbout != null)
             {
-                widgetRefList[widgetToAddInfoAbout].sizeLable.Text = string.Format("  Size {0}, Position {1}", widgetToAddInfoAbout.LocalBounds, widgetToAddInfoAbout.OriginRelativeParent);
-                widgetRefList[widgetToAddInfoAbout].boundsLable.Text = string.Format("  Bounds {0}", widgetToAddInfoAbout.BoundsRelativeToParent);
+                widgetRefList[widgetToAddInfoAbout].sizeLabel.Text = string.Format("  Size {0}, Position {1}", widgetToAddInfoAbout.LocalBounds, widgetToAddInfoAbout.OriginRelativeParent);
+                widgetRefList[widgetToAddInfoAbout].boundsLabel.Text = string.Format("  Bounds {0}", widgetToAddInfoAbout.BoundsRelativeToParent);
             }
         }
 
