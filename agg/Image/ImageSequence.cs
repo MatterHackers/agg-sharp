@@ -105,7 +105,7 @@ namespace MatterHackers.Agg.Image
             foreach (String tgaFile in sortedTgaFiles)
             {
                 sequenceLoaded.AddImage(new ImageBuffer(new BlenderPreMultBGRA()));
-                Stream imageStream = File.Open(tgaFile, FileMode.Open);
+                Stream imageStream = File.Open(tgaFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 ImageTgaIO.LoadImageData(sequenceLoaded.imageList[imageIndex], imageStream, 32);
                 imageIndex++;
             }

@@ -133,39 +133,50 @@ namespace MatterHackers.RayTracer
             for (int y = viewport.Bottom; y < viewport.Height; y++)
 #endif
             {
-                int bufferOffset = destImage.GetBufferOffsetY(y);
-
                 for (int x = viewport.Left; x < viewport.Right; x++)
                 {
                     if (traceWithRayBundles)
                     {
-                        int count = Math.Min(8, viewport.Right - x);
-                        FrustumRayBundle rayBundle = new FrustumRayBundle(count);
-                        IntersectInfo[] intersectionsForBundle = new IntersectInfo[count];
-                        for (int i = 0; i < count; i++)
+                        int width = Math.Min(8, viewport.Right - x);
+                        int height = Math.Min(8, viewport.Top - y);
+                        FrustumRayBundle rayBundle = new FrustumRayBundle(width * height);
+                        IntersectInfo[] intersectionsForBundle = new IntersectInfo[width * height];
+                        for (int rayY = 0; rayY < height; rayY++)
                         {
-                            rayBundle.rayArray[i] = scene.camera.GetRay(x + i, y);
-                            intersectionsForBundle[i] = new IntersectInfo();
+                            for (int rayX = 0; rayX < width; rayX++)
+                            {
+                                rayBundle.rayArray[rayX + rayY * width] = scene.camera.GetRay(x + rayX, y + rayY);
+                                intersectionsForBundle[rayX + rayY * width] = new IntersectInfo();
+                            }
                         }
+
+                        rayBundle.CalculateFrustum(width, height,  scene.camera.Origin);
+                        
                         FullyTraceRayBundle(rayBundle, intersectionsForBundle, scene);
-                        for (int i = 0; i < count; i++)
+
+                        for (int rayY = 0; rayY < height; rayY++)
                         {
-                            rayBundle.rayArray[i] = scene.camera.GetRay(x + i, y);
-                            intersectionsForBundle[i] = new IntersectInfo();
+                            int bufferOffset = destImage.GetBufferOffsetY(y + rayY);
 
-                            imageBufferAsDoubles[x + i][y] = intersectionsForBundle[i].totalColor;
+                            for (int rayX = 0; rayX < width; rayX++)
+                            {
+                                imageBufferAsDoubles[x + rayX][y + rayY] = intersectionsForBundle[rayX + rayY * width].totalColor;
 
-                            // we don't need to set this if we are anti-aliased
-                            int totalOffset = bufferOffset + (x + i) * 4;
-                            destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x + i][y].Blue0To255;
-                            destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x + i][y].Green0To255;
-                            destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x + i][y].Red0To255;
-                            destBuffer[totalOffset] = 255;
+                                // we don't need to set this if we are anti-aliased
+                                int totalOffset = bufferOffset + (x + rayX) * 4;
+                                destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x + rayX][y + rayY].Blue0To255;
+                                destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x + rayX][y + rayY].Green0To255;
+                                destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x + rayX][y + rayY].Red0To255;
+                                destBuffer[totalOffset] = 255;
+                            }
                         }
-                        x += count - 1; // skip all the pixels we bundled
+                        x += width - 1; // skip all the pixels we bundled
+                        y += height - 1; // skip all the pixels we bundled
                     }
                     else
                     {
+                        int bufferOffset = destImage.GetBufferOffsetY(y);
+
                         Ray ray = scene.camera.GetRay(x, y);
 
                         imageBufferAsDoubles[x][y] = FullyTraceRay(ray, scene);
@@ -284,6 +295,31 @@ namespace MatterHackers.RayTracer
             }
         }
 
+        public IntersectInfo TracePrimaryRay(Ray ray, Scene scene)
+        {
+            IntersectInfo primaryRayIntersection = new IntersectInfo();
+
+            foreach (IRayTraceable shapeToTest in scene.shapes)
+            {
+                IntersectInfo info = shapeToTest.GetClosestIntersection(ray);
+                if (info != null && info.hitType != IntersectionType.None && info.distanceToHit < primaryRayIntersection.distanceToHit && info.distanceToHit >= 0)
+                {
+                    primaryRayIntersection = info;
+                }
+            }
+            return primaryRayIntersection;
+        }
+
+        public void TracePrimaryRayBundle(RayBundle rayBundle, IntersectInfo[] intersectionsForBundle, Scene scene)
+        {
+            if (scene.shapes.Count != 1)
+            {
+                throw new Exception("You can only trace a ray bundle into a sigle shape, usually a BoundingVolumeHierachy.");
+            }
+
+            scene.shapes[0].GetClosestIntersections(rayBundle, 0, intersectionsForBundle);
+        }
+
         public RGBA_Floats CreateAndTraceSecondaryRays(IntersectInfo info, Ray ray, Scene scene, int depth)
         {
             // calculate ambient light
@@ -397,31 +433,6 @@ namespace MatterHackers.RayTracer
 
             color.Clamp0To1();
             return color;
-        }
-
-        public IntersectInfo TracePrimaryRay(Ray ray, Scene scene)
-        {
-            IntersectInfo primaryRayIntersection = new IntersectInfo();
-
-            foreach (IRayTraceable shapeToTest in scene.shapes)
-            {
-                IntersectInfo info = shapeToTest.GetClosestIntersection(ray);
-                if (info != null && info.hitType != IntersectionType.None && info.distanceToHit < primaryRayIntersection.distanceToHit && info.distanceToHit >= 0)
-                {
-                    primaryRayIntersection = info;
-                }
-            }
-            return primaryRayIntersection;
-        }
-
-        public void TracePrimaryRayBundle(RayBundle rayBundle, IntersectInfo[] intersectionsForBundle, Scene scene)
-        {
-            if(scene.shapes.Count != 1)
-            {
-                throw new Exception("You can only trace a ray bundle into a sigle shape, usually a BoundingVolumeHierachy.");
-            }
-
-            scene.shapes[0].GetClosestIntersections(rayBundle, 0, intersectionsForBundle);
         }
 
         private Ray GetReflectionRay(Vector3 P, Vector3 N, Vector3 V)

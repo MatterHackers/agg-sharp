@@ -101,7 +101,7 @@ namespace MatterHackers.RayTracer
 
         public void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
         {
-            throw new NotImplementedException();
+            intersectionsForBundle[rayIndexToStartCheckingFrom] = GetClosestIntersection(rayBundle.rayArray[rayIndexToStartCheckingFrom]);
         }
 
         public IEnumerable IntersectionIterator(Ray ray)
@@ -290,7 +290,7 @@ namespace MatterHackers.RayTracer
             // check if all bundle misses
             if (!rayBundle.CheckIfBundleHitsAabb(Aabb))
             {
-                return count;
+                return -1;
             }
 
             // check each ray until one hits or all miss
@@ -302,24 +302,27 @@ namespace MatterHackers.RayTracer
                 }
             }
 
-            return count;
+            return -1;
         }
 
         public void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
         {
             int startRayIndex = FindFirstRay(rayBundle, rayIndexToStartCheckingFrom);
-            IRayTraceable checkFirst = nodeA;
-            IRayTraceable checkSecond = nodeB;
-            if (rayBundle.rayArray[startRayIndex].direction[splitingPlane] < 0)
+            if (startRayIndex != -1)
             {
-                checkFirst = nodeB;
-                checkSecond = nodeA;
-            }
+                IRayTraceable checkFirst = nodeA;
+                IRayTraceable checkSecond = nodeB;
+                if (rayBundle.rayArray[startRayIndex].direction[splitingPlane] < 0)
+                {
+                    checkFirst = nodeB;
+                    checkSecond = nodeA;
+                }
 
-            checkFirst.GetClosestIntersections(rayBundle, startRayIndex, intersectionsForBundle);
-            if (checkSecond != null)
-            {
-                checkSecond.GetClosestIntersections(rayBundle, startRayIndex, intersectionsForBundle);
+                checkFirst.GetClosestIntersections(rayBundle, startRayIndex, intersectionsForBundle);
+                if (checkSecond != null)
+                {
+                    checkSecond.GetClosestIntersections(rayBundle, startRayIndex, intersectionsForBundle);
+                }
             }
         }
 
