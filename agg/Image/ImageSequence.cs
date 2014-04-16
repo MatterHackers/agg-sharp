@@ -92,7 +92,7 @@ namespace MatterHackers.Agg.Image
         public static ImageSequence LoadFromTgas(String pathName)
         {
             // First we load up the Data In the Serialization file.
-            String gameDataObjectXMLPath = System.IO.Path.Combine(pathName, "ImageSequence");
+            String gameDataObjectXMLPath = Path.Combine(pathName, "ImageSequence");
             ImageSequence sequenceLoaded = new ImageSequence();
 
             // Now lets look for and load up any images that we find.

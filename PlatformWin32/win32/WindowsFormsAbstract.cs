@@ -94,7 +94,7 @@ namespace MatterHackers.Agg.UI
         {
             if (!foundOSType)
             {
-                if (System.IO.Path.DirectorySeparatorChar == '\\')
+                if (Path.DirectorySeparatorChar == '\\')
                 {
                     OperatingSysetm = OSType.Windows;
                 }

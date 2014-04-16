@@ -16,11 +16,11 @@ namespace MatterHackers.Agg
             string searchPath;
             if (searchDirectory == null)
             {
-                searchPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+                searchPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             }
             else
             {
-                searchPath = System.IO.Path.GetFullPath(searchDirectory);
+                searchPath = Path.GetFullPath(searchDirectory);
             }
             
             Plugins = FindAndAddPlugins(searchPath);

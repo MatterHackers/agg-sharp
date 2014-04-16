@@ -97,7 +97,7 @@ namespace MatterHackers.Agg.UI
         {
             if (globalSystemWindowCreator == null)
             {
-                string pluginPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+                string pluginPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
                 PluginFinder<SystemWindowCreatorPlugin> systemWindowCreatorFinder = new PluginFinder<SystemWindowCreatorPlugin>(pluginPath);
                 if (systemWindowCreatorFinder.Plugins.Count != 1)
                 {
