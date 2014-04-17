@@ -30,16 +30,15 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.OpenGlGui;
 using MatterHackers.Agg.UI;
-using MatterHackers.RenderOpenGl;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Processors;
+using MatterHackers.RenderOpenGl;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.MeshVisualizer
@@ -328,21 +327,12 @@ namespace MatterHackers.MeshVisualizer
                 }
                 else
                 {
-                    TextWidget no3DView = new TextWidget(string.Format("Sorry! No 3D view available for this file type '{0}'.", Path.GetExtension(meshPathAndFileName).ToUpper()));
-                    no3DView.Margin = new BorderDouble(0, 0, 0, 0);
-                    no3DView.VAnchor = Agg.UI.VAnchor.ParentCenter;
-                    no3DView.HAnchor = Agg.UI.HAnchor.ParentCenter;
-                    this.AddChild(no3DView);
+                    centeredInfoText.Text = string.Format("Sorry! No 3D view available for this file type '{0}'.", Path.GetExtension(meshPathAndFileName).ToUpper());
                 }
             }
             else
             {
-                string startingMessage = string.Format("{0}\n'{1}'", "File not found on disk.", Path.GetFileName(meshPathAndFileName));
-                TextWidget no3DView = new TextWidget(startingMessage);
-                no3DView.Margin = new BorderDouble(0, 0, 0, 0);
-                no3DView.VAnchor = Agg.UI.VAnchor.ParentCenter;
-                no3DView.HAnchor = Agg.UI.HAnchor.ParentCenter;
-                this.AddChild(no3DView);
+                centeredInfoText.Text = string.Format("{0}\n'{1}'", "File not found on disk.", Path.GetFileName(meshPathAndFileName));
             }
         }
 
@@ -352,11 +342,7 @@ namespace MatterHackers.MeshVisualizer
 
             if (loadedMesh == null)
             {
-                TextWidget no3DView = new TextWidget(string.Format("Sorry! No 3D view available for this file."));
-                no3DView.Margin = new BorderDouble(0, 0, 0, 0);
-                no3DView.VAnchor = Agg.UI.VAnchor.ParentCenter;
-                no3DView.HAnchor = Agg.UI.HAnchor.ParentCenter;
-                this.AddChild(no3DView);
+                centeredInfoText.Text = string.Format("Sorry! No 3D view available for this file.");
             }
             else
             {
