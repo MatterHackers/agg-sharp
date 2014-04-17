@@ -79,7 +79,7 @@ namespace MatterHackers.MeshVisualizer
 
         double partScale;
         ImageBuffer bedCentimeterGridImage;
-        TextWidget meshLoadingStateInfoText;
+        TextWidget centeredInfoText;
         TrackballTumbleWidget trackballTumbleWidget;
         public TrackballTumbleWidget TrackballTumbleWidget
         {
@@ -141,7 +141,7 @@ namespace MatterHackers.MeshVisualizer
         public enum BedShape { Rectangular, Circular };
         BedShape bedShape = BedShape.Rectangular;
 
-        public MeshViewerWidget(Vector3 displayVolume, double scale, BedShape bedShape)
+        public MeshViewerWidget(Vector3 displayVolume, double scale, BedShape bedShape, string startingTextMessage = "")
         {
             this.bedShape = bedShape;
             this.displayVolume = displayVolume;
@@ -236,6 +236,18 @@ namespace MatterHackers.MeshVisualizer
             }
 
             trackballTumbleWidget.AnchorAll();
+
+            centeredInfoText = new TextWidget(startingTextMessage);
+            centeredInfoText.HAnchor = HAnchor.ParentCenter;
+            centeredInfoText.VAnchor = VAnchor.ParentCenter;
+            centeredInfoText.AutoExpandBoundsToText = true;
+
+            GuiWidget labelContainer = new GuiWidget();
+            labelContainer.AnchorAll();
+            labelContainer.AddChild(centeredInfoText);
+            labelContainer.Selectable = false;
+
+            this.AddChild(labelContainer);
         }
 
         public override void OnClosed(EventArgs e)
@@ -312,17 +324,7 @@ namespace MatterHackers.MeshVisualizer
 
                 if (loadingMeshFile)
                 {
-                    meshLoadingStateInfoText = new TextWidget("Loading Mesh...");
-                    meshLoadingStateInfoText.HAnchor = HAnchor.ParentCenter;
-                    meshLoadingStateInfoText.VAnchor = VAnchor.ParentCenter;
-                    meshLoadingStateInfoText.AutoExpandBoundsToText = true;
-
-                    GuiWidget labelContainer = new GuiWidget();
-                    labelContainer.AnchorAll();
-                    labelContainer.AddChild(meshLoadingStateInfoText);
-                    labelContainer.Selectable = false;
-
-                    this.AddChild(labelContainer);
+                    centeredInfoText.Text = "Loading Mesh...";
                 }
                 else
                 {
@@ -387,7 +389,7 @@ namespace MatterHackers.MeshVisualizer
         void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             SetMeshAfterLoad((Mesh)e.Result);
-            meshLoadingStateInfoText.Text = "";
+            centeredInfoText.Text = "";
 
             if (LoadDone != null)
             {
@@ -397,7 +399,7 @@ namespace MatterHackers.MeshVisualizer
 
         void backgroundWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            meshLoadingStateInfoText.Text = string.Format("Loading Mesh {0}%...", e.ProgressPercentage);
+            centeredInfoText.Text = string.Format("Loading Mesh {0}%...", e.ProgressPercentage);
         }
 
         public override void OnMouseDown(MouseEventArgs mouseEvent)

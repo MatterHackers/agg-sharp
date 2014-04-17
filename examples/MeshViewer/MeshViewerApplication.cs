@@ -74,7 +74,7 @@ namespace MatterHackers.MeshVisualizer
 
             Vector3 viewerVolume = new Vector3(200, 200, 200);
             double scale = 1;
-            meshViewerWidget = new MeshViewerWidget(viewerVolume, scale, MeshViewerWidget.BedShape.Rectangular);
+            meshViewerWidget = new MeshViewerWidget(viewerVolume, scale, MeshViewerWidget.BedShape.Rectangular, "No Part Loaded");
 
             meshViewerWidget.AnchorAll();
 
