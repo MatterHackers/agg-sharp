@@ -27,7 +27,6 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-#define INTERLIEVED_VERTEX_DATA
 //#define USE_VBO
 
 using System;
@@ -46,8 +45,7 @@ using OpenTK.Graphics.OpenGL;
 
 namespace MatterHackers.RenderOpenGl
 {
-#if INTERLIEVED_VERTEX_DATA
-    public struct VertexData
+    public struct TriangleVertexData
     {
         public float textureU;
         public float textureV;
@@ -58,30 +56,21 @@ namespace MatterHackers.RenderOpenGl
         public float positionsY;
         public float positionsZ;
 
-        public static readonly int Stride = Marshal.SizeOf(default(VertexData));
+        public static readonly int Stride = Marshal.SizeOf(default(TriangleVertexData));
     }
 
-    public class SubMesh
+    public class SubTriangleMesh
     {
         public ImageBuffer texture = null;
 #if USE_VBO
         public int count;
         public int vboHandle;
 #else
-        public VectorPOD<VertexData> vertexDatas = new VectorPOD<VertexData>();
+        public VectorPOD<TriangleVertexData> vertexDatas = new VectorPOD<TriangleVertexData>();
 #endif
     }
-#else
-    public class SubMesh
-    {
-        public ImageBuffer texture = null;
-        public VectorPOD<float> textureUVs = new VectorPOD<float>();
-        public VectorPOD<float> positions = new VectorPOD<float>();
-        public VectorPOD<float> normals = new VectorPOD<float>();
-    }
-#endif
 
-    public class GLMeshPlugin
+    public class GLMeshTrianglePlugin
     {
         struct RemoveData
         {
@@ -95,11 +84,11 @@ namespace MatterHackers.RenderOpenGl
 
         public delegate void DrawToGL(Mesh meshToRender);
 
-        private static ConditionalWeakTable<Mesh, GLMeshPlugin> meshesWithCacheData = new ConditionalWeakTable<Mesh, GLMeshPlugin>();
+        private static ConditionalWeakTable<Mesh, GLMeshTrianglePlugin> meshesWithCacheData = new ConditionalWeakTable<Mesh, GLMeshTrianglePlugin>();
 
         private static List<RemoveData> glDataNeedingToBeDeleted = new List<RemoveData>();
 
-        public List<SubMesh> subMeshs;
+        public List<SubTriangleMesh> subMeshs;
 
         private int meshUpdateCount;
 
@@ -117,9 +106,9 @@ namespace MatterHackers.RenderOpenGl
             }
         }
 
-        static public GLMeshPlugin GetGLMeshPlugin(Mesh meshToGetDisplayListFor)
+        static public GLMeshTrianglePlugin Get(Mesh meshToGetDisplayListFor)
         {
-            GLMeshPlugin plugin;
+            GLMeshTrianglePlugin plugin;
             meshesWithCacheData.TryGetValue(meshToGetDisplayListFor, out plugin);
 
                 if (plugin != null && meshToGetDisplayListFor.ChangedCount != plugin.meshUpdateCount)
@@ -134,7 +123,7 @@ namespace MatterHackers.RenderOpenGl
 
             if (plugin == null)
             {
-                GLMeshPlugin newPlugin = new GLMeshPlugin();
+                GLMeshTrianglePlugin newPlugin = new GLMeshTrianglePlugin();
                 meshesWithCacheData.Add(meshToGetDisplayListFor, newPlugin);
                 newPlugin.CreateRenderData(meshToGetDisplayListFor);
                 newPlugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
@@ -145,7 +134,7 @@ namespace MatterHackers.RenderOpenGl
             return plugin;
         }
 
-        private GLMeshPlugin()
+        private GLMeshTrianglePlugin()
         {
             // This is private as you can't build one of these. You have to call GetImageGLDisplayListPlugin.
         }
@@ -163,16 +152,16 @@ namespace MatterHackers.RenderOpenGl
 #endif
         }
 
-        ~GLMeshPlugin()
+        ~GLMeshTrianglePlugin()
         {
             AddRemoveData();
         }
 
         private void CreateRenderData(Mesh meshToBuildListFor)
         {
-            subMeshs = new List<SubMesh>();
-            SubMesh currentSubMesh = null;
-            VectorPOD<VertexData> vertexDatas = new VectorPOD<VertexData>();
+            subMeshs = new List<SubTriangleMesh>();
+            SubTriangleMesh currentSubMesh = null;
+            VectorPOD<TriangleVertexData> vertexDatas = new VectorPOD<TriangleVertexData>();
             // first make sure all the textures are created
             foreach (Face face in meshToBuildListFor.Faces)
             {
@@ -185,7 +174,7 @@ namespace MatterHackers.RenderOpenGl
                 // don't compare the data of the texture but rather if they are just the same object
                 if (subMeshs.Count == 0 || (object)subMeshs[subMeshs.Count - 1].texture != (object)faceTexture)
                 {
-                    SubMesh newSubMesh = new SubMesh();
+                    SubTriangleMesh newSubMesh = new SubTriangleMesh();
                     newSubMesh.texture = faceTexture;
                     subMeshs.Add(newSubMesh);
 
@@ -214,8 +203,7 @@ namespace MatterHackers.RenderOpenGl
                     }
                     else
                     {
-#if INTERLIEVED_VERTEX_DATA
-                        VertexData tempVertex;
+                        TriangleVertexData tempVertex;
                         tempVertex.textureU = (float)textureUV[0].x; tempVertex.textureV = (float)textureUV[0].y;
                         tempVertex.positionsX = (float)position[0].x; tempVertex.positionsY = (float)position[0].y; tempVertex.positionsZ = (float)position[0].z;
                         tempVertex.normalsX = (float)face.normal.x; tempVertex.normalsY = (float)face.normal.y; tempVertex.normalsZ = (float)face.normal.z;
@@ -232,21 +220,6 @@ namespace MatterHackers.RenderOpenGl
                         tempVertex.positionsX = (float)position2.x; tempVertex.positionsY = (float)position2.y; tempVertex.positionsZ = (float)position2.z;
                         tempVertex.normalsX = (float)face.normal.x; tempVertex.normalsY = (float)face.normal.y; tempVertex.normalsZ = (float)face.normal.z;
                         vertexDatas.Add(tempVertex);
-#else
-                        currentSubMesh.textureUVs.Add((float)textureUV[0].x); currentSubMesh.textureUVs.Add((float)textureUV[0].y);
-                        currentSubMesh.positions.Add((float)position[0].x); currentSubMesh.positions.Add((float)position[0].y); currentSubMesh.positions.Add((float)position[0].z);
-                        currentSubMesh.normals.Add((float)face.normal.x); currentSubMesh.normals.Add((float)face.normal.y); currentSubMesh.normals.Add((float)face.normal.z);
-
-                        currentSubMesh.textureUVs.Add((float)textureUV[1].x); currentSubMesh.textureUVs.Add((float)textureUV[1].y);
-                        currentSubMesh.positions.Add((float)position[1].x); currentSubMesh.positions.Add((float)position[1].y); currentSubMesh.positions.Add((float)position[1].z);
-                        currentSubMesh.normals.Add((float)face.normal.x); currentSubMesh.normals.Add((float)face.normal.y); currentSubMesh.normals.Add((float)face.normal.z);
-
-                        Vector2 textureUV2 = faceEdge.GetUVs(0);
-                        Vector3 position2 = faceEdge.vertex.Position;
-                        currentSubMesh.textureUVs.Add((float)textureUV2.x); currentSubMesh.textureUVs.Add((float)textureUV2.y);
-                        currentSubMesh.positions.Add((float)position2.x); currentSubMesh.positions.Add((float)position2.y); currentSubMesh.positions.Add((float)position2.z);
-                        currentSubMesh.normals.Add((float)face.normal.x); currentSubMesh.normals.Add((float)face.normal.y); currentSubMesh.normals.Add((float)face.normal.z);
-#endif
 
                         textureUV[1] = faceEdge.GetUVs(0);
                         position[1] = faceEdge.firstVertex.Position;
@@ -259,7 +232,7 @@ namespace MatterHackers.RenderOpenGl
             CreateVBOForSubMesh(vertexDatas, currentSubMesh);
         }
 
-        private static void CreateVBOForSubMesh(VectorPOD<VertexData> vertexDatas, SubMesh currentSubMesh)
+        private static void CreateVBOForSubMesh(VectorPOD<TriangleVertexData> vertexDatas, SubTriangleMesh currentSubMesh)
         {
 #if USE_VBO
             currentSubMesh.count = vertexDatas.Count;

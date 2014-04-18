@@ -27,7 +27,6 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 //#define USE_GLES2
-#define INTERLIEVED_VERTEX_DATA
 //#define USE_VBO
 
 using System;
@@ -84,10 +83,10 @@ namespace MatterHackers.RenderOpenGl
             GL.UseProgram(vertexShader);
             GL.UseProgram(fragmentShader);
 #endif
-            GLMeshPlugin glMeshPlugin = GLMeshPlugin.GetGLMeshPlugin(meshToRender);
+            GLMeshTrianglePlugin glMeshPlugin = GLMeshTrianglePlugin.Get(meshToRender);
             for (int i = 0; i < glMeshPlugin.subMeshs.Count; i++)
             {
-                SubMesh subMesh = glMeshPlugin.subMeshs[i];
+                SubTriangleMesh subMesh = glMeshPlugin.subMeshs[i];
                 // Make sure the GLMeshPlugin has a reference to hold onto the image so it does not go away before this.
                 if (subMesh.texture != null)
                 {
@@ -100,21 +99,15 @@ namespace MatterHackers.RenderOpenGl
                     GL.Disable(EnableCap.Texture2D);
                 }
 
-#if INTERLIEVED_VERTEX_DATA
 #if USE_VBO
                 GL.BindBuffer(BufferTarget.ArrayBuffer, subMesh.vboHandle);
                 GL.InterleavedArrays(InterleavedArrayFormat.T2fN3fV3f, 0, new IntPtr());
 #else
                 GL.InterleavedArrays(InterleavedArrayFormat.T2fN3fV3f, 0, subMesh.vertexDatas.Array);
 #endif
-#endif
                 if (subMesh.texture != null)
                 {
-#if INTERLIEVED_VERTEX_DATA
                     //GL.TexCoordPointer(2, TexCoordPointerType.Float, VertexData.Stride, subMesh.vertexDatas.Array);
-#else
-                    GL.TexCoordPointer(2, TexCoordPointerType.Float, 0, subMesh.textureUVs.Array);
-#endif
                     //GL.EnableClientState(ArrayCap.TextureCoordArray);
                 }
                 else
@@ -122,25 +115,16 @@ namespace MatterHackers.RenderOpenGl
                     GL.DisableClientState(ArrayCap.TextureCoordArray);
                 }
 
-#if INTERLIEVED_VERTEX_DATA
                 //GL.VertexPointer(3, VertexPointerType.Float, VertexData.Stride, subMesh.vertexDatas.Array);
                 //GL.NormalPointer(NormalPointerType.Float, VertexData.Stride, subMesh.vertexDatas.Array);
-#else
-                GL.VertexPointer(3, VertexPointerType.Float, 0, subMesh.positions.Array);
-                GL.NormalPointer(NormalPointerType.Float, 0, subMesh.normals.Array);
-#endif
                 //GL.EnableClientState(ArrayCap.VertexArray);
                 //GL.EnableClientState(ArrayCap.NormalArray);
 
-#if INTERLIEVED_VERTEX_DATA
 #if USE_VBO
                 GL.DrawArrays(PrimitiveType.Triangles, 0, subMesh.count);
                 GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
 #else
                 GL.DrawArrays(BeginMode.Triangles, 0, subMesh.vertexDatas.Count);
-#endif
-#else
-                GL.DrawArrays(PrimitiveType.Triangles, 0, subMesh.positions.Count / 3);
 #endif
 
                 GL.DisableClientState(ArrayCap.NormalArray);
@@ -176,7 +160,7 @@ namespace MatterHackers.RenderOpenGl
             GL.DisableClientState(EnableCap.VertexArray);
             GL.Disable(EnableCap.Blend);
 #else
-            GLMeshPlugin glMeshPlugin = GLMeshPlugin.GetGLMeshPlugin(meshToRender);
+            GLMeshTrianglePlugin glMeshPlugin = GLMeshTrianglePlugin.Get(meshToRender);
 
             GL.Enable(EnableCap.PolygonOffsetFill);
             GL.PolygonOffset(1, 1);
@@ -188,7 +172,17 @@ namespace MatterHackers.RenderOpenGl
             GL.PolygonOffset(0, 0);
             GL.Disable(EnableCap.PolygonOffsetFill);
             GL.Disable(EnableCap.Lighting);
+#if true
+            GL.DisableClientState(ArrayCap.TextureCoordArray);
+            GLMeshWirePlugin glWireMeshPlugin = GLMeshWirePlugin.Get(meshToRender);
+            SubWireMesh subMesh = glWireMeshPlugin.subMesh;
+            GL.InterleavedArrays(InterleavedArrayFormat.V3f, 0, subMesh.vertexDatas.Array);
 
+            GL.DrawArrays(BeginMode.Lines, 0, subMesh.vertexDatas.Count);
+
+            GL.DisableClientState(ArrayCap.NormalArray);
+            GL.DisableClientState(ArrayCap.VertexArray);
+#else
             GL.Begin(BeginMode.Lines);
             foreach (MeshEdge edge in meshToRender.meshEdges)
             {
@@ -230,6 +224,7 @@ namespace MatterHackers.RenderOpenGl
                 }
             }
             GL.End();
+#endif
 
             GL.Enable(EnableCap.Lighting);
 #endif
