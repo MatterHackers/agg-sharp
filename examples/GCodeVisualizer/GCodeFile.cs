@@ -46,15 +46,18 @@ namespace MatterHackers.GCodeVisualizer
         List<int> indexOfChangeInZ = new List<int>();
         Vector2 center = Vector2.Zero;
         double parsingLastZ;
+        bool gcodeHasExplicitLayerChangeInfo = false;
 
         public List<PrinterMachineInstruction> GCodeCommandQueue = new List<PrinterMachineInstruction>();
 
-        public GCodeFile()
+        public GCodeFile(bool gcodeHasExplicitLayerChangeInfo = false)
         {
+            this.gcodeHasExplicitLayerChangeInfo = gcodeHasExplicitLayerChangeInfo;
         }
 
-        public GCodeFile(string pathAndFileName)
+        public GCodeFile(string pathAndFileName, bool gcodeHasExplicitLayerChangeInfo = false)
         {
+            this.gcodeHasExplicitLayerChangeInfo = gcodeHasExplicitLayerChangeInfo;
             this.Load(pathAndFileName);
         }
 
@@ -185,7 +188,14 @@ namespace MatterHackers.GCodeVisualizer
             Stopwatch maxProgressReport = new Stopwatch();
             maxProgressReport.Start();
             PrinterMachineInstruction machineInstructionForLine = new PrinterMachineInstruction("None");
-            GCodeFile loadedGCodeFile = new GCodeFile();
+
+            bool gcodeHasExplicitLayerChangeInfo = false;
+            if (gCodeString.Contains("; LAYER:"))
+            {
+                gcodeHasExplicitLayerChangeInfo = true;
+            }
+
+            GCodeFile loadedGCodeFile = new GCodeFile(gcodeHasExplicitLayerChangeInfo);
 
             int crCount = CountNumLines(gCodeString);
             int lineIndex = 0;
@@ -194,14 +204,6 @@ namespace MatterHackers.GCodeVisualizer
                 string lineString = outputString.Trim();
                 machineInstructionForLine = new PrinterMachineInstruction(lineString, machineInstructionForLine);
                 // take off any comments before we check its length
-                if (lineString.Contains(";"))
-                {
-                    int position = lineString.IndexOf(';');
-                    if (position > -1)
-                    {
-                        lineString = lineString.Substring(0, position);
-                    }
-                }
 
                 if (lineString.Length > 0)
                 {
@@ -213,6 +215,13 @@ namespace MatterHackers.GCodeVisualizer
 
                         case 'G':
                             loadedGCodeFile.ParseGLine(lineString, machineInstructionForLine);
+                            break;
+
+                        case ';':
+                            if (gcodeHasExplicitLayerChangeInfo && lineString.StartsWith("; LAYER:"))
+                            {
+                                loadedGCodeFile.IndexOfChangeInZ.Add(loadedGCodeFile.GCodeCommandQueue.Count);
+                            }
                             break;
 
                         default:
@@ -585,10 +594,13 @@ namespace MatterHackers.GCodeVisualizer
                         }
                     }
 
-                    if (processingMachineState.Z != parsingLastZ || indexOfChangeInZ.Count == 0)
+                    if (!gcodeHasExplicitLayerChangeInfo)
                     {
-                        // if we changed z or there is a movement and we have never started a layer index
-                        indexOfChangeInZ.Add(GCodeCommandQueue.Count);
+                        if (processingMachineState.Z != parsingLastZ || indexOfChangeInZ.Count == 0)
+                        {
+                            // if we changed z or there is a movement and we have never started a layer index
+                            indexOfChangeInZ.Add(GCodeCommandQueue.Count);
+                        }
                     }
                     parsingLastZ = processingMachineState.Position.z;
                     break;

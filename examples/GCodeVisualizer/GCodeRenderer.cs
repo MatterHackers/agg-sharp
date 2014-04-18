@@ -192,20 +192,20 @@ namespace MatterHackers.GCodeVisualizer
 
             List<RenderFeatureBase> renderFeaturesForLayer = renderFeatures[layerToCreate];
 
-            int currentVertexIndex = gCodeFileToDraw.IndexOfChangeInZ[layerToCreate];
-            double currentZ = gCodeFileToDraw.GCodeCommandQueue[currentVertexIndex].Position.z;
-
-            while (currentVertexIndex < gCodeFileToDraw.GCodeCommandQueue.Count)
+            int startRenderIndex = gCodeFileToDraw.IndexOfChangeInZ[layerToCreate];
+            int endRenderIndex = gCodeFileToDraw.GCodeCommandQueue.Count - 1;
+            if (layerToCreate < gCodeFileToDraw.IndexOfChangeInZ.Count - 1)
             {
-                PrinterMachineInstruction currentInstruction = gCodeFileToDraw.GCodeCommandQueue[currentVertexIndex];
+                endRenderIndex = gCodeFileToDraw.IndexOfChangeInZ[layerToCreate + 1];
+            }
+
+            for (int i = startRenderIndex; i < endRenderIndex; i++ )
+            {
+                PrinterMachineInstruction currentInstruction = gCodeFileToDraw.GCodeCommandQueue[i];
                 PrinterMachineInstruction previousInstruction = currentInstruction;
-                if (currentVertexIndex > 0)
+                if (i > 0)
                 {
-                    previousInstruction = gCodeFileToDraw.GCodeCommandQueue[currentVertexIndex - 1];
-                }
-                if (currentInstruction.Z != currentZ)
-                {
-                    break;
+                    previousInstruction = gCodeFileToDraw.GCodeCommandQueue[i - 1];
                 }
 
                 if (currentInstruction.Position == previousInstruction.Position)
@@ -226,7 +226,7 @@ namespace MatterHackers.GCodeVisualizer
                 }
                 else
                 {
-                    if (gCodeFileToDraw.IsExtruding(currentVertexIndex))
+                    if (gCodeFileToDraw.IsExtruding(i))
                     {
                         renderFeaturesForLayer.Add(new RenderFeatureExtrusion(previousInstruction.Position, currentInstruction.Position, currentInstruction.FeedRate, currentInstruction.EPosition - previousInstruction.EPosition));
                     }
@@ -235,8 +235,6 @@ namespace MatterHackers.GCodeVisualizer
                         renderFeaturesForLayer.Add(new RenderFeatureTravel(previousInstruction.Position, currentInstruction.Position, currentInstruction.FeedRate));
                     }
                 }
-
-                currentVertexIndex++;
             }
         }
 

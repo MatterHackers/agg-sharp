@@ -327,7 +327,7 @@ namespace MatterHackers.MeshVisualizer
                 }
                 else
                 {
-                    centeredInfoText.Text = string.Format("Sorry! No 3D view available for this file type '{0}'.", Path.GetExtension(meshPathAndFileName).ToUpper());
+                    centeredInfoText.Text = string.Format("Sorry! No 3D view available\nfor this file type '{0}'.", Path.GetExtension(meshPathAndFileName).ToUpper());
                 }
             }
             else
@@ -342,7 +342,7 @@ namespace MatterHackers.MeshVisualizer
 
             if (loadedMesh == null)
             {
-                centeredInfoText.Text = string.Format("Sorry! No 3D view available for this file.");
+                centeredInfoText.Text = string.Format("Sorry! No 3D view available\nfor this file.");
             }
             else
             {
