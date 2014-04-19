@@ -2252,11 +2252,11 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        public virtual void SendToChildren(EventArgs eventToRout)
+        public virtual void SendToChildren(object objectToRout)
         {
             foreach (GuiWidget child in Children)
             {
-                child.SendToChildren(eventToRout);
+                child.SendToChildren(objectToRout);
             }
         }
 
