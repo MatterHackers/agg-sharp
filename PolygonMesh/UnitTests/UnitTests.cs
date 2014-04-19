@@ -134,10 +134,63 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
                 SaveDebugInfo(testMesh);
 
-                testMesh.MergeVertices();
+                testMesh.MergeVertices(centerVertexMiddle1, centerVertexMiddle2);
+
+                Assert.IsTrue(!testMesh.Vertices.ContainsVertex(centerVertexMiddle2));
+
+                Assert.IsTrue(meshEdgeBottomRightCenter.VertexOnEnd[1] == centerVertexMiddle1);
+                Assert.IsTrue(meshEdgeBottomCenterLeft.VertexOnEnd[0] == centerVertexMiddle1);
+                Assert.IsTrue(meshEdgeTopLeftCenter.VertexOnEnd[1] == centerVertexMiddle1);
+                Assert.IsTrue(meshEdgeTopCenterRight.VertexOnEnd[0] == centerVertexMiddle1);
+
+                int connectedCount = 0;
+                foreach (MeshEdge meshEdge in centerVertexMiddle1.ConnectedMeshEdges())
+                {
+                    connectedCount++;
+                }
+                Assert.IsTrue(connectedCount == 4);
+
+                SaveDebugInfo(testMesh);
+            }
+
+            {
+                Mesh testMesh = new Mesh();
+                Vertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
+                Vertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
+                Vertex centerVertexMiddle1 = testMesh.CreateVertex(0, 0, 1);
+
+                MeshEdge meshEdgeBottomLeftRight = testMesh.CreateMeshEdge(leftVertexBottom, rightVertexBottom);
+                MeshEdge meshEdgeBottomRightCenter = testMesh.CreateMeshEdge(rightVertexBottom, centerVertexMiddle1);
+                MeshEdge meshEdgeBottomCenterLeft = testMesh.CreateMeshEdge(centerVertexMiddle1, leftVertexBottom);
+
+                Vertex leftVertexTop = testMesh.CreateVertex(-1, 0, 2);
+                Vertex centerVertexMiddle2 = testMesh.CreateVertex(0, 0, 1, true);
+                Vertex rightVertexTop = testMesh.CreateVertex(1, 0, 2);
+
+                MeshEdge meshEdgeTopLeftCenter = testMesh.CreateMeshEdge(leftVertexTop, centerVertexMiddle2);
+                MeshEdge meshEdgeTopCenterRight = testMesh.CreateMeshEdge(centerVertexMiddle2, rightVertexTop);
+                MeshEdge meshEdgeTopRightLeft = testMesh.CreateMeshEdge(rightVertexTop, leftVertexTop);
+
+                Assert.IsTrue(meshEdgeBottomRightCenter.VertexOnEnd[1] == centerVertexMiddle1);
+                Assert.IsTrue(meshEdgeTopLeftCenter.VertexOnEnd[1] == centerVertexMiddle2);
+
+                SaveDebugInfo(testMesh);
+
+                testMesh.MergeVertices(centerVertexMiddle2, centerVertexMiddle1);
+
+                Assert.IsTrue(testMesh.Vertices.ContainsVertex(centerVertexMiddle2));
 
                 Assert.IsTrue(meshEdgeBottomRightCenter.VertexOnEnd[1] == centerVertexMiddle2);
+                Assert.IsTrue(meshEdgeBottomCenterLeft.VertexOnEnd[0] == centerVertexMiddle2);
                 Assert.IsTrue(meshEdgeTopLeftCenter.VertexOnEnd[1] == centerVertexMiddle2);
+                Assert.IsTrue(meshEdgeTopCenterRight.VertexOnEnd[0] == centerVertexMiddle2);
+
+                int connectedCount = 0;
+                foreach (MeshEdge meshEdge in centerVertexMiddle2.ConnectedMeshEdges())
+                {
+                    connectedCount++;
+                }
+                Assert.IsTrue(connectedCount == 4);
 
                 SaveDebugInfo(testMesh);
             }

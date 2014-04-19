@@ -52,12 +52,6 @@ namespace MatterHackers.RenderOpenGl
         public static readonly int Stride = Marshal.SizeOf(default(WireVertexData));
     }
 
-    public class SubWireMesh
-    {
-        public ImageBuffer texture = null;
-        public VectorPOD<WireVertexData> vertexDatas = new VectorPOD<WireVertexData>();
-    }
-
     public class GLMeshWirePlugin
     {
         struct RemoveData
@@ -76,9 +70,10 @@ namespace MatterHackers.RenderOpenGl
 
         private static List<RemoveData> glDataNeedingToBeDeleted = new List<RemoveData>();
 
-        public SubWireMesh subMesh;
+        public VectorPOD<WireVertexData> manifoldData =new VectorPOD<WireVertexData>();
 
         private int meshUpdateCount;
+        private double nonPlanarAngleRequired;
 
         static public void DeleteUnusedGLResources()
         {
@@ -94,18 +89,21 @@ namespace MatterHackers.RenderOpenGl
             }
         }
 
-        static public GLMeshWirePlugin Get(Mesh meshToGetDisplayListFor)
+        static public GLMeshWirePlugin Get(Mesh meshToGetDisplayListFor, double nonPlanarAngleRequired = 0)
         {
             GLMeshWirePlugin plugin;
             meshesWithCacheData.TryGetValue(meshToGetDisplayListFor, out plugin);
 
-                if (plugin != null && meshToGetDisplayListFor.ChangedCount != plugin.meshUpdateCount)
-                {
-                    plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
-                    plugin.AddRemoveData();
-                    plugin.CreateRenderData(meshToGetDisplayListFor);
-                    plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
-                }
+            if (plugin != null 
+                && (meshToGetDisplayListFor.ChangedCount != plugin.meshUpdateCount
+                || nonPlanarAngleRequired != plugin.nonPlanarAngleRequired))
+            {
+                plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
+                plugin.AddRemoveData();
+                plugin.CreateRenderData(meshToGetDisplayListFor);
+                plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
+                plugin.nonPlanarAngleRequired = nonPlanarAngleRequired;
+            }
 
             DeleteUnusedGLResources();
 
@@ -138,23 +136,20 @@ namespace MatterHackers.RenderOpenGl
 
         private void CreateRenderData(Mesh meshToBuildListFor)
         {
-            subMesh = new SubWireMesh();
-            VectorPOD<WireVertexData> vertexDatas = new VectorPOD<WireVertexData>();
+            manifoldData = new VectorPOD<WireVertexData>();
             // first make sure all the textures are created
             foreach (MeshEdge meshEdge in meshToBuildListFor.meshEdges)
             {
-                vertexDatas = subMesh.vertexDatas;
-
                 WireVertexData tempVertex;
                 tempVertex.positionsX = (float)meshEdge.VertexOnEnd[0].Position.x;
                 tempVertex.positionsY = (float)meshEdge.VertexOnEnd[0].Position.y;
                 tempVertex.positionsZ = (float)meshEdge.VertexOnEnd[0].Position.z;
-                vertexDatas.Add(tempVertex);
+                manifoldData.Add(tempVertex);
 
                 tempVertex.positionsX = (float)meshEdge.VertexOnEnd[1].Position.x;
                 tempVertex.positionsY = (float)meshEdge.VertexOnEnd[1].Position.y;
                 tempVertex.positionsZ = (float)meshEdge.VertexOnEnd[1].Position.z;
-                vertexDatas.Add(tempVertex);
+                manifoldData.Add(tempVertex);
             }
         }
 

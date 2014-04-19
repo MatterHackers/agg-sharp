@@ -171,7 +171,7 @@ namespace MatterHackers.PolygonMesh
 
         public bool ContainsVertex(Vertex vertexToLookFor)
         {
-            return vertices.ContainsVertex(vertexToLookFor);
+            return vertices.ContainsAVertexAtPosition(vertexToLookFor);
         }
 
         public void SplitFace(Face faceToSplit, Vertex splitStartVertex, Vertex splitEndVertex, out MeshEdge meshEdgeCreatedDurringSplit, out Face faceCreatedDurringSplit)
@@ -380,25 +380,25 @@ namespace MatterHackers.PolygonMesh
                 {
                     if (vertexToDelete != vertexToCheck)
                     {
-                        MergeVertexes(vertexToCheck, vertexToDelete);
+                        MergeVertices(vertexToCheck, vertexToDelete);
                     }
                 }
             }
         }
 
-        void MergeVertexes(Vertex vertexToKeep, Vertex vertexToDelete)
+        public void MergeVertices(Vertex vertexToKeep, Vertex vertexToDelete)
         {
-            if (!Vertices.ContainsVertex(vertexToKeep) || !Vertices.ContainsVertex(vertexToDelete))
+            if (!Vertices.ContainsAVertexAtPosition(vertexToKeep) || !Vertices.ContainsAVertexAtPosition(vertexToDelete))
             {
                 throw new Exception("Both vertexes have to be part of this mesh to be merged.");
             }
 
             // fix up the mesh edges
             List<MeshEdge> connectedMeshEdges = vertexToDelete.GetConnectedMeshEdges();
-            foreach (MeshEdge vertexToDeleteMeshEdge in connectedMeshEdges)
+            foreach (MeshEdge meshEdgeToFix in connectedMeshEdges)
             {
                 // fix up the face edges
-                foreach (FaceEdge faceEdge in vertexToDeleteMeshEdge.FaceEdgesSharingMeshEdge())
+                foreach (FaceEdge faceEdge in meshEdgeToFix.FaceEdgesSharingMeshEdge())
                 {
                     if (faceEdge.firstVertex == vertexToDelete)
                     {
@@ -407,14 +407,17 @@ namespace MatterHackers.PolygonMesh
                 }
 
                 // fix up the mesh edge
-                if (vertexToDeleteMeshEdge.VertexOnEnd[0] == vertexToDelete)
+                if (meshEdgeToFix.VertexOnEnd[0] == vertexToDelete)
                 {
-                    vertexToDeleteMeshEdge.VertexOnEnd[0] = vertexToKeep;
+                    meshEdgeToFix.VertexOnEnd[0] = vertexToKeep;
                 }
-                else if (vertexToDeleteMeshEdge.VertexOnEnd[1] == vertexToDelete)
+                else if (meshEdgeToFix.VertexOnEnd[1] == vertexToDelete)
                 {
-                    vertexToDeleteMeshEdge.VertexOnEnd[1] = vertexToKeep;
+                    meshEdgeToFix.VertexOnEnd[1] = vertexToKeep;
                 }
+
+                // make sure it is in the vertex edge loop
+                meshEdgeToFix.AddToMeshEdgeLinksOfVertex(vertexToKeep);
             }
 
             // delete the vertex

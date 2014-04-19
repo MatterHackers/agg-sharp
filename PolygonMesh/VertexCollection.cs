@@ -185,14 +185,22 @@ namespace MatterHackers.PolygonMesh
             else
             {
                 int index = vertices.BinarySearch(vertexToRemove, vertexSorter);
-                if (index == -1)
+                if (index < 0)
                 {
                     throw new Exception("This vertex is not in this collection.");
                 }
-                else
+
+                while (index < vertices.Count && vertices[index].Position == vertexToRemove.Position)
                 {
-                    vertices.RemoveAt(index);
+                    if (vertices[index] == vertexToRemove)
+                    {
+                        vertices.RemoveAt(index);
+                        return;
+                    }
+                    index++;
                 }
+
+                throw new Exception("This vertex is not in this collection.");
             }
         }
 
@@ -214,7 +222,7 @@ namespace MatterHackers.PolygonMesh
             }
         }
 
-        internal bool ContainsVertex(Vertex vertexToLookFor)
+        public bool ContainsAVertexAtPosition(Vertex vertexToLookFor)
         {
             if (!IsSorted)
             {
@@ -228,6 +236,31 @@ namespace MatterHackers.PolygonMesh
             }
 
             return true;
+        }
+
+        public bool ContainsVertex(Vertex vertexToLookFor)
+        {
+            if (!IsSorted)
+            {
+                throw new Exception("You can't Find a vertex in an unsorted VertexCollection. Sort it first (or add the vertexes without preventing sorting).");
+            }
+
+            int index = vertices.BinarySearch(vertexToLookFor, vertexSorter);
+            if (index < 0)
+            {
+                return false;
+            }
+
+            while (index < vertices.Count && vertices[index].Position == vertexToLookFor.Position)
+            {
+                if (vertices[index] == vertexToLookFor)
+                {
+                    return true;
+                }
+                index++;
+            }
+
+            return false;
         }
 
         public int Count

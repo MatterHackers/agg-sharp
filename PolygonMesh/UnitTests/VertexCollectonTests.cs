@@ -48,7 +48,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
             Vector3 position1 = new Vector3(10, 11, 12);
             Vertex vertex1 = new Vertex(position1);
             collection.Add(vertex1);
-            Assert.IsTrue(collection.ContainsVertex(vertex1) == true);
+            Assert.IsTrue(collection.ContainsAVertexAtPosition(vertex1) == true);
             List<Vertex> found = collection.FindVertices(position1, .001);
             Assert.IsTrue(found.Count == 1);
             Assert.IsTrue(found[0] == vertex1);
@@ -56,7 +56,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
             Vector3 position2 = new Vector3(20, 21, 22);
             Vertex vertex2 = new Vertex(position2);
             collection.Add(vertex2);
-            Assert.IsTrue(collection.ContainsVertex(vertex1) == true);
+            Assert.IsTrue(collection.ContainsAVertexAtPosition(vertex1) == true);
             found = collection.FindVertices(position1, .001);
             Assert.IsTrue(found.Count == 1);
             Assert.IsTrue(found[0] == vertex1);
@@ -64,7 +64,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
             Vector3 position3 = new Vector3(10, 21, 22);
             Vertex vertex3 = new Vertex(position3);
             collection.Add(vertex3);
-            Assert.IsTrue(collection.ContainsVertex(vertex1) == true);
+            Assert.IsTrue(collection.ContainsAVertexAtPosition(vertex1) == true);
             found = collection.FindVertices(position1, .001);
             Assert.IsTrue(found.Count == 1);
             Assert.IsTrue(found[0] == vertex1);

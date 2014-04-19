@@ -174,11 +174,24 @@ namespace MatterHackers.RenderOpenGl
             GL.Disable(EnableCap.Lighting);
 #if true
             GL.DisableClientState(ArrayCap.TextureCoordArray);
-            GLMeshWirePlugin glWireMeshPlugin = GLMeshWirePlugin.Get(meshToRender);
-            SubWireMesh subMesh = glWireMeshPlugin.subMesh;
-            GL.InterleavedArrays(InterleavedArrayFormat.V3f, 0, subMesh.vertexDatas.Array);
+            GLMeshWirePlugin glWireMeshPlugin = null;
+            if (renderType == RenderTypes.Outlines)
+            {
+                glWireMeshPlugin = GLMeshWirePlugin.Get(meshToRender);
+            }
+            else
+            {
+                glWireMeshPlugin = GLMeshWirePlugin.Get(meshToRender, MathHelper.Tau / 8);
+            }
 
-            GL.DrawArrays(BeginMode.Lines, 0, subMesh.vertexDatas.Count);
+            VectorPOD<WireVertexData> manifoldEdges = glWireMeshPlugin.manifoldData;
+            GL.InterleavedArrays(InterleavedArrayFormat.V3f, 0, manifoldEdges.Array);
+            GL.DrawArrays(BeginMode.Lines, 0, manifoldEdges.Count);
+
+            //GL.Color4(1.0f, 1.0f, 1.0f, 1.0f);
+            //VectorPOD<WireVertexData> nonManifoldEdges = glWireMeshPlugin.nonManifoldData;
+            //GL.InterleavedArrays(InterleavedArrayFormat.V3f, 0, nonManifoldEdges.Array);
+            //GL.DrawArrays(BeginMode.Lines, 0, nonManifoldEdges.Count);
 
             GL.DisableClientState(ArrayCap.NormalArray);
             GL.DisableClientState(ArrayCap.VertexArray);
