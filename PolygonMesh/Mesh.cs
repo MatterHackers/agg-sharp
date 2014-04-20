@@ -109,7 +109,7 @@ namespace MatterHackers.PolygonMesh
         {
             SortVertices();
             // this is not fast yet
-            //MergeVertices();
+            MergeVertices();
             //MergeMeshEdges();
         }
 
@@ -375,23 +375,40 @@ namespace MatterHackers.PolygonMesh
             for (int i = 0; i < Vertices.Count; i++)
             {
                 Vertex vertexToCheck = Vertices[i];
-                List<Vertex> samePosition = Vertices.FindVertices(vertexToCheck.Position, maxDistanceToConsiderVertexAsSame);
-                foreach (Vertex vertexToDelete in samePosition)
+                if ((vertexToCheck.Flags & VertexFlags.MarkedForDeletion) != VertexFlags.MarkedForDeletion)
                 {
-                    if (vertexToDelete != vertexToCheck)
+                    List<Vertex> samePosition = Vertices.FindVertices(vertexToCheck.Position, maxDistanceToConsiderVertexAsSame);
+                    foreach (Vertex vertexToDelete in samePosition)
                     {
-                        MergeVertices(vertexToCheck, vertexToDelete);
+                        if (vertexToDelete != vertexToCheck)
+                        {
+                            MergeVertices(vertexToCheck, vertexToDelete, false);
+                        }
                     }
                 }
             }
+
+            VertexCollecton NonDeleteVertices = new VertexCollecton();
+            for (int i = 0; i < Vertices.Count; i++)
+            {
+                Vertex vertexToCheck = Vertices[i];
+                if ((vertexToCheck.Flags & VertexFlags.MarkedForDeletion) != VertexFlags.MarkedForDeletion)
+                {
+                    NonDeleteVertices.Add(vertexToCheck, true);
+                }
+            }
+
+            vertices = NonDeleteVertices;
         }
 
-        public void MergeVertices(Vertex vertexToKeep, Vertex vertexToDelete)
+        public void MergeVertices(Vertex vertexToKeep, Vertex vertexToDelete, bool doActualDeletion = true)
         {
+#if false
             if (!Vertices.ContainsAVertexAtPosition(vertexToKeep) || !Vertices.ContainsAVertexAtPosition(vertexToDelete))
             {
                 throw new Exception("Both vertexes have to be part of this mesh to be merged.");
             }
+#endif
 
             // fix up the mesh edges
             List<MeshEdge> connectedMeshEdges = vertexToDelete.GetConnectedMeshEdges();
@@ -421,7 +438,14 @@ namespace MatterHackers.PolygonMesh
             }
 
             // delete the vertex
-            Vertices.Remove(vertexToDelete);
+            if (doActualDeletion)
+            {
+                Vertices.Remove(vertexToDelete);
+            }
+            else
+            {
+                vertexToDelete.Flags |= VertexFlags.MarkedForDeletion;
+            }
         }
         #endregion
 

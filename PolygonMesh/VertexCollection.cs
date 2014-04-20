@@ -33,6 +33,7 @@ using MatterHackers.VectorMath;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using MatterHackers.Agg;
 
 namespace MatterHackers.PolygonMesh
 {
@@ -66,7 +67,6 @@ namespace MatterHackers.PolygonMesh
     public class VertexCollecton : IEnumerable
     {
         List<Vertex> vertices = new List<Vertex>();
-        //IComparer<Vertex> vertexSorter = new VertexXAxisSorter();
         IComparer<Vertex> vertexSorter = new VertexDistanceFromPointSorter();
 
         bool isSorted = true;
@@ -153,16 +153,19 @@ namespace MatterHackers.PolygonMesh
 
         private void AddToListIfSameEnough(Vector3 position, List<Vertex> findList, double maxDistanceToConsiderVertexAsSameSquared, int i)
         {
-            if (vertices[i].Position == position)
+            if ((vertices[i].Flags & VertexFlags.MarkedForDeletion) != VertexFlags.MarkedForDeletion)
             {
-                findList.Add(vertices[i]);
-            }
-            else
-            {
-                double distanceSquared = (vertices[i].Position - position).LengthSquared;
-                if (distanceSquared <= maxDistanceToConsiderVertexAsSameSquared)
+                if (vertices[i].Position == position)
                 {
                     findList.Add(vertices[i]);
+                }
+                else
+                {
+                    double distanceSquared = (vertices[i].Position - position).LengthSquared;
+                    if (distanceSquared <= maxDistanceToConsiderVertexAsSameSquared)
+                    {
+                        findList.Add(vertices[i]);
+                    }
                 }
             }
         }
@@ -188,6 +191,12 @@ namespace MatterHackers.PolygonMesh
                 if (index < 0)
                 {
                     throw new Exception("This vertex is not in this collection.");
+                }
+
+                // we have to get back to the first vertex at this position
+                while (index > 0 && vertices[index-1].Position == vertexToRemove.Position)
+                {
+                    index--;
                 }
 
                 while (index < vertices.Count && vertices[index].Position == vertexToRemove.Position)
@@ -251,9 +260,16 @@ namespace MatterHackers.PolygonMesh
                 return false;
             }
 
+            // we have to get back to the first vertex at this position
+            while (index > 0 && vertices[index - 1].Position == vertexToLookFor.Position)
+            {
+                index--;
+            }
+
             while (index < vertices.Count && vertices[index].Position == vertexToLookFor.Position)
             {
-                if (vertices[index] == vertexToLookFor)
+                if (vertices[index] == vertexToLookFor
+                    && ((vertices[index].Flags & VertexFlags.MarkedForDeletion) != VertexFlags.MarkedForDeletion))
                 {
                     return true;
                 }

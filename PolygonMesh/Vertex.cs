@@ -37,14 +37,56 @@ using System.Diagnostics;
 
 namespace MatterHackers.PolygonMesh
 {
+    [Flags]
+    public enum VertexFlags
+    {
+        None = 0,
+        MarkedForDeletion = 1,
+    };
+
     [DebuggerDisplay("ID = {Data.ID}")]
     public class Vertex
     {
+        public VertexFlags Flags = VertexFlags.None;
+
         MetaData data = new MetaData();
         public MetaData Data { get { return data; } }
 
+#if true
         public Vector3 Position { get; set; }
         public Vector3 Normal { get; set; }
+#else
+        // this is to save memory on each vertex (12 bytes per positon and 12 per normal rather than 24 and 24)
+        Vector3Float position;
+        public Vector3 Position 
+        {
+            get
+            {
+                return new Vector3(position.x, position.y, position.z); 
+            }
+            set
+            {
+                position.x = (float)value.x;
+                position.y = (float)value.y;
+                position.z = (float)value.z;
+            }
+        }
+
+        Vector3Float normal;
+        public Vector3 Normal
+        {
+            get
+            {
+                return new Vector3(normal.x, normal.y, normal.z);
+            }
+            set
+            {
+                normal.x = (float)value.x;
+                normal.y = (float)value.y;
+                normal.z = (float)value.z;
+            }
+        }
+#endif
 
         public MeshEdge firstMeshEdge;
 
