@@ -7,7 +7,29 @@ namespace MatterHackers.Agg.UI
 {
     public class RootedObjectEventHandler
     {
+#if DEBUG
+        private event EventHandler InternalEventForDebug;
+        private List<EventHandler> DebugEventDelegates = new List<EventHandler>();
+
+        private event EventHandler InternalEvent
+        {
+            //Wraps the PrivateClick event delegate so that we can track which events have been added and clear them if necessary            
+            add
+            {
+                InternalEventForDebug += value;
+                DebugEventDelegates.Add(value);
+            }
+
+            remove
+            {
+                InternalEventForDebug -= value;
+                DebugEventDelegates.Remove(value);
+            }
+        }
+#else
         EventHandler InternalEvent;
+#endif
+
         public void RegisterEvent(EventHandler functionToCallOnEvent, ref EventHandler functionThatWillBeCalledToUnregisterEvent)
         {
             InternalEvent += functionToCallOnEvent;
@@ -26,10 +48,17 @@ namespace MatterHackers.Agg.UI
 
         public void CallEvents(Object sender, EventArgs e)
         {
+#if DEBUG
+            if (InternalEventForDebug != null)
+            {
+                InternalEventForDebug(this, e);
+            }
+#else
             if (InternalEvent != null)
             {
                 InternalEvent(this, e);
             }
+#endif
         }
     }
 }
