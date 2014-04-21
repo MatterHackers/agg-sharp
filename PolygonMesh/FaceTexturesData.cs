@@ -33,30 +33,29 @@ using System.Runtime.CompilerServices;
 using System.Linq;
 using System.Text;
 
+using MatterHackers.VectorMath;
+using MatterHackers.Agg.Image;
+
 namespace MatterHackers.PolygonMesh
 {
-    public class MetaData
+    public class FaceTextureData
     {
-        static int numMetaDatas = 0;
+        public List<ImageBuffer> Textures = new List<ImageBuffer>();
 
-        int id;
-        public int ID { get { return id; } }
-
-        private MetaData()
+        private FaceTextureData()
         {
-            id = numMetaDatas++;
         }
 
-        private static ConditionalWeakTable<object, MetaData> objectsWithMetaData = new ConditionalWeakTable<object, MetaData>();
-        static public MetaData Get(Object objectToGetMataDataFor)
+        private static ConditionalWeakTable<Face, FaceTextureData> facesWithTextureData = new ConditionalWeakTable<Face, FaceTextureData>();
+        static public FaceTextureData Get(Face faceToGetTextureDataFor)
         {
-            MetaData plugin;
-            objectsWithMetaData.TryGetValue(objectToGetMataDataFor, out plugin);
+            FaceTextureData plugin;
+            facesWithTextureData.TryGetValue(faceToGetTextureDataFor, out plugin);
 
             if (plugin == null)
             {
-                MetaData newPlugin = new MetaData();
-                objectsWithMetaData.Add(objectToGetMataDataFor, newPlugin);
+                FaceTextureData newPlugin = new FaceTextureData();
+                facesWithTextureData.Add(faceToGetTextureDataFor, newPlugin);
 
                 return newPlugin;
             }

@@ -37,16 +37,16 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh
 {
-    public class FaceEdgeData : MetaData
-    {
-        public List<Vector2> TextureUV = new List<Vector2>();
-    }
-
     [DebuggerDisplay("ID = {Data.ID}")]
     public class FaceEdge
     {
-        MetaData data = new MetaData();
-        public MetaData Data { get { return data; } set { data = value; } }
+        public MetaData Data
+        {
+            get
+            {
+                return MetaData.Get(this);
+            }
+        }
 
         public Face containingFace;
         public Vertex firstVertex;
@@ -76,7 +76,7 @@ namespace MatterHackers.PolygonMesh
 
         public Vector2 GetUVs(int index)
         {
-            FaceEdgeData faceEdgeData = Data as FaceEdgeData;
+            FaceEdgeTextureUvData faceEdgeData = FaceEdgeTextureUvData.Get(this);
             if (faceEdgeData != null && index < faceEdgeData.TextureUV.Count)
             {
                 return faceEdgeData.TextureUV[index];

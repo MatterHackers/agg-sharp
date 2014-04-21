@@ -38,8 +38,13 @@ namespace MatterHackers.PolygonMesh
     [DebuggerDisplay("ID = {Data.ID}")]
     public class MeshEdge
     {
-        MetaData data = new MetaData();
-        public MetaData Data { get { return data; } }
+        public MetaData Data
+        {
+            get
+            {
+                return MetaData.Get(this);
+            }
+        }
 
         public struct NextMeshEdgesFromEnds
         {

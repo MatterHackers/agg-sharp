@@ -46,6 +46,8 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FaceTexturesData.cs" />
+    <Compile Include="FaceEdgeTextureUvData.cs" />
     <Compile Include="Csg\CsgNode.cs" />
     <Compile Include="Csg\CsgPlane.cs" />
     <Compile Include="Csg\CsgPolygon.cs" />

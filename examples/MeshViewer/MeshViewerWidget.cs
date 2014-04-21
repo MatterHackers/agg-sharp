@@ -175,15 +175,13 @@ namespace MatterHackers.MeshVisualizer
                     {
                         Face face = printerBed.Faces[0];
                         {
-                            FaceData faceData = new FaceData();
+                            FaceTextureData faceData = FaceTextureData.Get(face);
                             faceData.Textures.Add(bedCentimeterGridImage);
-                            face.Data = faceData;
                             foreach (FaceEdge faceEdge in face.FaceEdges())
                             {
-                                FaceEdgeData edgeUV = new FaceEdgeData();
+                                FaceEdgeTextureUvData edgeUV = FaceEdgeTextureUvData.Get(faceEdge);
                                 edgeUV.TextureUV.Add(new Vector2((displayVolume.x / 2 + faceEdge.firstVertex.Position.x) / displayVolume.x,
                                     (displayVolume.y / 2 + faceEdge.firstVertex.Position.y) / displayVolume.y));
-                                faceEdge.Data = edgeUV;
                             }
                         }
                     }
@@ -210,15 +208,13 @@ namespace MatterHackers.MeshVisualizer
                             {
                                 if (face.normal.z > 0)
                                 {
-                                    FaceData faceData = new FaceData();
+                                    FaceTextureData faceData = FaceTextureData.Get(face);
                                     faceData.Textures.Add(bedCentimeterGridImage);
-                                    face.Data = faceData;
                                     foreach (FaceEdge faceEdge in face.FaceEdges())
                                     {
-                                        FaceEdgeData edgeUV = new FaceEdgeData();
+                                        FaceEdgeTextureUvData edgeUV = FaceEdgeTextureUvData.Get(faceEdge);
                                         edgeUV.TextureUV.Add(new Vector2((displayVolume.x / 2 + faceEdge.firstVertex.Position.x) / displayVolume.x,
                                             (displayVolume.y / 2 + faceEdge.firstVertex.Position.y) / displayVolume.y));
-                                        faceEdge.Data = edgeUV;
                                     }
                                 }
                             }

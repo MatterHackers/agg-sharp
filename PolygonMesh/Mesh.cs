@@ -69,8 +69,13 @@ namespace MatterHackers.PolygonMesh
             }
         }
 
-        MetaData data = new MetaData();
-        public MetaData Data { get { return data; } }
+        public MetaData Data
+        {
+            get
+            {
+                return MetaData.Get(this);
+            }
+        }
 
         VertexCollecton vertices = new VertexCollecton();
         public VertexCollecton Vertices

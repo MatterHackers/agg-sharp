@@ -38,16 +38,16 @@ using MatterHackers.Agg.Image;
 
 namespace MatterHackers.PolygonMesh
 {
-    public class FaceData : MetaData
-    {
-        public List<ImageBuffer> Textures = new List<ImageBuffer>();
-    }
-
     [DebuggerDisplay("ID = {Data.ID}")]
     public class Face
     {
-        MetaData data = new MetaData();
-        public MetaData Data { get { return data; } set { data = value; } }
+        public MetaData Data
+        {
+            get
+            {
+                return MetaData.Get(this);
+            }
+        }
 
         public FaceEdge firstFaceEdge;
         public Vector3 normal;
@@ -65,7 +65,7 @@ namespace MatterHackers.PolygonMesh
 
         public ImageBuffer GetTexture(int index)
         {
-            FaceData faceData = Data as FaceData;
+            FaceTextureData faceData = FaceTextureData.Get(this);
             if (faceData != null && index < faceData.Textures.Count)
             {
                 return faceData.Textures[index];
