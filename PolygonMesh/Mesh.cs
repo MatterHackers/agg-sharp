@@ -388,6 +388,11 @@ namespace MatterHackers.PolygonMesh
                 }
             }
 
+            RemoveVerticesMarkedForDeletion();
+        }
+
+        private void RemoveVerticesMarkedForDeletion()
+        {
             VertexCollecton NonDeleteVertices = new VertexCollecton();
             for (int i = 0; i < Vertices.Count; i++)
             {
@@ -398,12 +403,14 @@ namespace MatterHackers.PolygonMesh
                 }
             }
 
+            // we put them in in the same order they were in, se we keep the state
+            NonDeleteVertices.IsSorted = vertices.IsSorted;
             vertices = NonDeleteVertices;
         }
 
         public void MergeVertices(Vertex vertexToKeep, Vertex vertexToDelete, bool doActualDeletion = true)
         {
-#if false
+#if false // this check is relatively slow
             if (!Vertices.ContainsAVertexAtPosition(vertexToKeep) || !Vertices.ContainsAVertexAtPosition(vertexToDelete))
             {
                 throw new Exception("Both vertexes have to be part of this mesh to be merged.");

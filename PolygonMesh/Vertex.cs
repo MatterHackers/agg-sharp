@@ -52,7 +52,7 @@ namespace MatterHackers.PolygonMesh
         MetaData data = new MetaData();
         public MetaData Data { get { return data; } }
 
-#if true
+#if false
         public Vector3 Position { get; set; }
         public Vector3 Normal { get; set; }
 #else

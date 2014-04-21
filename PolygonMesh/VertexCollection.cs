@@ -73,6 +73,7 @@ namespace MatterHackers.PolygonMesh
         public bool IsSorted
         {
             get { return isSorted; }
+            set { isSorted = value; }
         }
 
         public VertexCollecton()
