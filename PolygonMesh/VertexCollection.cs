@@ -154,19 +154,16 @@ namespace MatterHackers.PolygonMesh
 
         private void AddToListIfSameEnough(Vector3 position, List<Vertex> findList, double maxDistanceToConsiderVertexAsSameSquared, int i)
         {
-            if ((vertices[i].Flags & VertexFlags.MarkedForDeletion) != VertexFlags.MarkedForDeletion)
+            if (vertices[i].Position == position)
             {
-                if (vertices[i].Position == position)
+                findList.Add(vertices[i]);
+            }
+            else
+            {
+                double distanceSquared = (vertices[i].Position - position).LengthSquared;
+                if (distanceSquared <= maxDistanceToConsiderVertexAsSameSquared)
                 {
                     findList.Add(vertices[i]);
-                }
-                else
-                {
-                    double distanceSquared = (vertices[i].Position - position).LengthSquared;
-                    if (distanceSquared <= maxDistanceToConsiderVertexAsSameSquared)
-                    {
-                        findList.Add(vertices[i]);
-                    }
                 }
             }
         }
@@ -232,6 +229,18 @@ namespace MatterHackers.PolygonMesh
             }
         }
 
+        public int IndexOf(Vertex vertexToLookFor)
+        {
+            if(IsSorted)
+            {
+                return vertices.BinarySearch(vertexToLookFor, vertexSorter);
+            }
+            else
+            {
+                return vertices.IndexOf(vertexToLookFor);
+            }
+        }
+
         public bool ContainsAVertexAtPosition(Vertex vertexToLookFor)
         {
             if (!IsSorted)
@@ -269,8 +278,7 @@ namespace MatterHackers.PolygonMesh
 
             while (index < vertices.Count && vertices[index].Position == vertexToLookFor.Position)
             {
-                if (vertices[index] == vertexToLookFor
-                    && ((vertices[index].Flags & VertexFlags.MarkedForDeletion) != VertexFlags.MarkedForDeletion))
+                if (vertices[index] == vertexToLookFor)
                 {
                     return true;
                 }

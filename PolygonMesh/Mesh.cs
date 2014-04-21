@@ -377,32 +377,38 @@ namespace MatterHackers.PolygonMesh
 
         public void MergeVertices(double maxDistanceToConsiderVertexAsSame = 0)
         {
+            HashSet<Vertex> markedForDeletion = new HashSet<Vertex>();
+
             for (int i = 0; i < Vertices.Count; i++)
             {
                 Vertex vertexToCheck = Vertices[i];
-                if ((vertexToCheck.Flags & VertexFlags.MarkedForDeletion) != VertexFlags.MarkedForDeletion)
+                if (!markedForDeletion.Contains(vertexToCheck))
                 {
                     List<Vertex> samePosition = Vertices.FindVertices(vertexToCheck.Position, maxDistanceToConsiderVertexAsSame);
                     foreach (Vertex vertexToDelete in samePosition)
                     {
                         if (vertexToDelete != vertexToCheck)
                         {
-                            MergeVertices(vertexToCheck, vertexToDelete, false);
+                            if (!markedForDeletion.Contains(vertexToDelete))
+                            {
+                                MergeVertices(vertexToCheck, vertexToDelete, false);
+                                markedForDeletion.Add(vertexToDelete);
+                            }
                         }
                     }
                 }
             }
 
-            RemoveVerticesMarkedForDeletion();
+            RemoveVerticesMarkedForDeletion(markedForDeletion);
         }
 
-        private void RemoveVerticesMarkedForDeletion()
+        private void RemoveVerticesMarkedForDeletion(HashSet<Vertex> markedForDeletion)
         {
             VertexCollecton NonDeleteVertices = new VertexCollecton();
             for (int i = 0; i < Vertices.Count; i++)
             {
                 Vertex vertexToCheck = Vertices[i];
-                if ((vertexToCheck.Flags & VertexFlags.MarkedForDeletion) != VertexFlags.MarkedForDeletion)
+                if (!markedForDeletion.Contains(vertexToCheck))
                 {
                     NonDeleteVertices.Add(vertexToCheck, true);
                 }
@@ -453,10 +459,6 @@ namespace MatterHackers.PolygonMesh
             if (doActualDeletion)
             {
                 Vertices.Remove(vertexToDelete);
-            }
-            else
-            {
-                vertexToDelete.Flags |= VertexFlags.MarkedForDeletion;
             }
         }
         #endregion

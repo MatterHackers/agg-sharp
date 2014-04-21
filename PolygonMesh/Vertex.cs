@@ -37,18 +37,9 @@ using System.Diagnostics;
 
 namespace MatterHackers.PolygonMesh
 {
-    [Flags]
-    public enum VertexFlags
-    {
-        None = 0,
-        MarkedForDeletion = 1,
-    };
-
     [DebuggerDisplay("ID = {Data.ID}")]
     public class Vertex
     {
-        public VertexFlags Flags = VertexFlags.None;
-
         public MetaData Data 
         { 
             get 
