@@ -229,14 +229,14 @@ namespace MatterHackers.Agg.Image
             {
                 if (sourceImage.BitDepth == 32)
                 {
-                    Bitmap bitmapToSave = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format24bppRgb);
+                    Bitmap bitmapToSave = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format32bppArgb);
                     BitmapData bitmapData = bitmapToSave.LockBits(new Rectangle(0, 0, bitmapToSave.Width, bitmapToSave.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmapToSave.PixelFormat);
                     int destIndex = 0;
                     unsafe
                     {
                         byte[] sourceBuffer = sourceImage.GetBuffer();
                         byte* pDestBuffer = (byte*)bitmapData.Scan0;
-                        int scanlinePadding = bitmapData.Stride - bitmapData.Width * 3;
+                        int scanlinePadding = bitmapData.Stride - bitmapData.Width * 4;
                         for (int y = 0; y < sourceImage.Height; y++)
                         {
                             int sourceIndex = sourceImage.GetBufferOffsetXY(0, sourceImage.Height - 1 - y);
@@ -245,7 +245,7 @@ namespace MatterHackers.Agg.Image
                                 pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
                                 pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
                                 pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
-                                sourceIndex++;
+                                pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
                             }
                             destIndex += scanlinePadding;
                         }
