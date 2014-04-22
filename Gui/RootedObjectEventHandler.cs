@@ -51,12 +51,12 @@ namespace MatterHackers.Agg.UI
 #if DEBUG
             if (InternalEventForDebug != null)
             {
-                InternalEventForDebug(this, e);
+                InternalEventForDebug(sender, e);
             }
 #else
             if (InternalEvent != null)
             {
-                InternalEvent(this, e);
+                InternalEvent(sender, e);
             }
 #endif
         }
