@@ -743,6 +743,11 @@ namespace MatterHackers.Agg.Image
              */
         }
 
+        static public bool SaveImageData(String fileNameToSaveTo, ImageBuffer image)
+        {
+            return Save(image, fileNameToSaveTo);
+        }
+
         static public bool Save(ImageBuffer image, String fileNameToSaveTo)
         {
             Stream file = File.Open(fileNameToSaveTo, FileMode.Create);
@@ -899,20 +904,27 @@ namespace MatterHackers.Agg.Image
             return LowLevelReadTGABitsFromBuffer(image, WorkPtr, destBitDepth);
         }
 
-        static public void LoadImageData(ImageBuffer image, string fileName)
+        public static bool LoadImageData(string fileName, ImageBuffer image)
+        {
+            return LoadImageData(image, fileName);
+        }
+
+        static public bool LoadImageData(ImageBuffer image, string fileName)
         {
             if (System.IO.File.Exists(fileName))
             {
                 StreamReader streamReader = new StreamReader(fileName);
-                LoadImageData(image, streamReader.BaseStream, 32);
+                return LoadImageData(image, streamReader.BaseStream, 32);
             }
+
+            return false;
         }
 
-        static public void LoadImageData(ImageBuffer image, Stream streamToLoadImageDataFrom, int destBitDepth)
+        static public bool LoadImageData(ImageBuffer image, Stream streamToLoadImageDataFrom, int destBitDepth)
         {
             byte[] ImageData = new byte[streamToLoadImageDataFrom.Length];
             streamToLoadImageDataFrom.Read(ImageData, 0, (int)streamToLoadImageDataFrom.Length);
-            ImageTgaIO.ReadBitsFromBuffer(image, ImageData, destBitDepth);
+            return ReadBitsFromBuffer(image, ImageData, destBitDepth) > 0;
         }
 
         static public int GetBitDepth(Stream streamToReadFrom)
