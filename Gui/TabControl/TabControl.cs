@@ -90,7 +90,6 @@ namespace MatterHackers.Agg.UI
 
         public TabControl(Orientation orientation = Orientation.Horizontal)
         {
-            DebugShowBounds = false;
             AnchorAll();
 
             GuiWidget tabPageArea = new GuiWidget();
