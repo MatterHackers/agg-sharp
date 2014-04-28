@@ -154,6 +154,7 @@ namespace MatterHackers.Agg.Image
                                 byte* pSourceBuffer = (byte*)bitmapData.Scan0;
                                 for (int y = 0; y < destImage.Height; y++)
                                 {
+                                    sourceIndex = y * bitmapData.Stride;
                                     destIndex = destImage.GetBufferOffsetXY(0, destImage.Height - 1 - y);
                                     for (int x = 0; x < destImage.Width; x++)
                                     {

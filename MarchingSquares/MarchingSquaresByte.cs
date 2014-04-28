@@ -79,7 +79,7 @@ namespace MatterHackers.MarchingSquares
 
         public double Threshold(RGBA_Bytes color)
         {
-            if (color.Red0To255 > starting && color.Red0To255 < ending)
+            if (color.Red0To255 > starting && color.Red0To255 <= ending)
             {
                 double value = (double)(color.Red0To255 - starting) / (double)(ending - starting);
                 if (invert)
@@ -271,9 +271,11 @@ namespace MatterHackers.MarchingSquares
 
         private void AddSegmentForFlags(int x, int y, int flags, bool wasFlipped)
         {
-            RGBA_Bytes color = RGBA_Bytes.Red;
-            if (flags != debugColor)
-                color = RGBA_Bytes.Green;
+            RGBA_Bytes color = RGBA_Bytes.Green;
+            if (flags == debugColor)
+            {
+                color = RGBA_Bytes.Red;
+            }
 
             switch (flags)
             {
