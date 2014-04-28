@@ -527,6 +527,9 @@ namespace MatterHackers.Agg.UI
 
         private void DeleteIndexRange(int startIndexInclusive, int endIndexInclusive)
         {
+            // first make sure we are deleting something that exists
+            startIndexInclusive = Math.Max(0, Math.Min(startIndexInclusive, internalTextWidget.Text.Length));
+            endIndexInclusive = Math.Max(startIndexInclusive, Math.Min(endIndexInclusive, internalTextWidget.Text.Length));
             int LengthToDelete = (endIndexInclusive + 1) - startIndexInclusive;
             if (LengthToDelete > 0 && internalTextWidget.Text.Length >= LengthToDelete)
             {
@@ -536,12 +539,7 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        private void DeleteSelection()
-        {
-            DeleteSelection(true);
-        }
-
-        private void DeleteSelection(bool createUndoMarker)
+        private void DeleteSelection(bool createUndoMarker = true)
         {
             if (Selecting)
             {
