@@ -255,7 +255,7 @@ namespace MatterHackers.GCodeVisualizer
 
         void AnalyzeGCodeLines(BackgroundWorker backgroundWorker = null)
         {
-            double feedRate = 0;
+            double feedRateMmPerMin = 0;
             Vector3 lastPrinterPosition = new Vector3();
             double lastEPosition = 0;
 
@@ -266,15 +266,16 @@ namespace MatterHackers.GCodeVisualizer
             {
                 PrinterMachineInstruction instruction = GCodeCommandQueue[lineIndex];
                 string line = instruction.Line;
-                double maxDeltaThisLine = 0;
+                Vector3 deltaPositionThisLine = new Vector3();
+                double deltaEPositionThisLine = 0;
                 PrinterMachineInstruction newLine = GCodeCommandQueue[lineIndex];
                 string lineToParse = line.ToUpper().Trim();
                 if (lineToParse.StartsWith("G0") || lineToParse.StartsWith("G1"))
                 {
-                    double newFeedRate = 0;
-                    if (GetFirstNumberAfter("F", lineToParse, ref newFeedRate))
+                    double newFeedRateMmPerMin = 0;
+                    if (GetFirstNumberAfter("F", lineToParse, ref newFeedRateMmPerMin))
                     {
-                        feedRate = newFeedRate;
+                        feedRateMmPerMin = newFeedRateMmPerMin;
                     }
 
                     Vector3 attemptedDestination = lastPrinterPosition;
@@ -282,23 +283,14 @@ namespace MatterHackers.GCodeVisualizer
                     GetFirstNumberAfter("Y", lineToParse, ref attemptedDestination.y);
                     GetFirstNumberAfter("Z", lineToParse, ref attemptedDestination.z);
 
-                    Vector3 deltaPosition = attemptedDestination - lastPrinterPosition;
-
                     double ePosition = lastEPosition;
                     GetFirstNumberAfter("E", lineToParse, ref ePosition);
 
-                    //if (newLine.extrusionType == PrinterMachineState.MovementTypes.Absolute)
-                    {
-                        double deltaEPosition = Math.Abs(ePosition - lastEPosition);
-                        maxDeltaThisLine = Math.Max(deltaEPosition, deltaPosition.Length);
-                    }
-                    //else
-                    {
-                        //maxDeltaThisLine = Math.Max(ePosition, deltaPosition.Length);
-                    }
+                    deltaPositionThisLine = attemptedDestination - lastPrinterPosition;
+                    deltaEPositionThisLine = Math.Abs(ePosition - lastEPosition);
 
-                    lastEPosition = ePosition;
                     lastPrinterPosition = attemptedDestination;
+                    lastEPosition = ePosition;
                 }
                 else if (lineToParse.StartsWith("G92"))
                 {
@@ -309,9 +301,9 @@ namespace MatterHackers.GCodeVisualizer
                     }
                 }
 
-                if (feedRate > 0)
+                if (feedRateMmPerMin > 0)
                 {
-                    newLine.secondsThisLine = maxDeltaThisLine / (feedRate / 60);
+                    newLine.secondsThisLine = GetSecondsThisLine(lineIndex, deltaPositionThisLine, deltaEPositionThisLine, feedRateMmPerMin);
                 }
 
                 if (backgroundWorker != null)
@@ -337,6 +329,49 @@ namespace MatterHackers.GCodeVisualizer
                 accumulatedTime += line.secondsThisLine;
                 line.secondsToEndFromHere = accumulatedTime;
             }
+        }
+
+        public static Vector4 VelocitySameAsStopMmPerS = new Vector4(8, 8, .4, 5);
+        public static Vector4 MaxAccelerationMmPerS2 = new Vector4(2000, 2000, 100, 10000);
+        public static Vector4 MaxVelocityMmPerS = new Vector4(500, 500, 5, 25);
+        private double GetSecondsThisLine(int lineIndex, Vector3 deltaPositionThisLine, double deltaEPositionThisLine, double feedRateMmPerMin)
+        {
+            double startingVelocityMmPerS = VelocitySameAsStopMmPerS.x;
+            double endingVelocityMmPerS = VelocitySameAsStopMmPerS.x;
+            double maxVelocityMmPerS = Math.Min(feedRateMmPerMin / 60, MaxVelocityMmPerS.x);
+            double acceleration = MaxAccelerationMmPerS2.x;
+            double lengthOfThisMoveMm = Math.Max(deltaPositionThisLine.Length, deltaEPositionThisLine);
+
+            double distanceToMaxVelocity = GetDistanceToReachEndingVelocity(startingVelocityMmPerS, maxVelocityMmPerS, acceleration);
+            if (distanceToMaxVelocity <= lengthOfThisMoveMm / 2)
+            {
+                // we will reach max velocity then run at it and then decelerate
+                double accelerationTime = GetTimeToAccelerateDistance(startingVelocityMmPerS, distanceToMaxVelocity, acceleration) * 2;
+                double runningTime = (lengthOfThisMoveMm - (distanceToMaxVelocity * 2)) / maxVelocityMmPerS;
+                return accelerationTime + runningTime;
+            }
+            else
+            {
+                // we will accelerate to the center then decelerate
+                double accelerationTime = GetTimeToAccelerateDistance(startingVelocityMmPerS, lengthOfThisMoveMm/2, acceleration) * 2;
+                return accelerationTime;
+            }
+        }
+
+        double GetTimeToAccelerateDistance(double startingVelocityMmPerS, double distanceMm, double accelerationMmPerS2)
+        {
+            // d = vi * t + .5 * a * t^2;
+            // t = (√(vi^2+2ad)-vi)/a
+            double startingVelocityMmPerS2 = startingVelocityMmPerS * startingVelocityMmPerS;
+            double distanceAcceleration2 = 2 * accelerationMmPerS2 * distanceMm;
+            return (Math.Sqrt(startingVelocityMmPerS2 + distanceAcceleration2) - startingVelocityMmPerS) / accelerationMmPerS2;
+        }
+
+        double GetDistanceToReachEndingVelocity(double startingVelocityMmPerS, double endingVelocityMmPerS, double accelerationMmPerS2)
+        {
+            double endingVelocityMmPerS2 = endingVelocityMmPerS * endingVelocityMmPerS;
+            double startingVelocityMmPerS2 = startingVelocityMmPerS * startingVelocityMmPerS;
+            return (endingVelocityMmPerS2 - startingVelocityMmPerS2) / (2.0 * accelerationMmPerS2);
         }
 
         public static int CalculateChecksum(string commandToGetChecksumFor)
