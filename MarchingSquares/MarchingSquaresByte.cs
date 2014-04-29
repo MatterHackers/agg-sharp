@@ -103,9 +103,27 @@ namespace MatterHackers.MarchingSquares
         int debugColor;
 
         List<LineSegment> LineSegments = new List<LineSegment>();
+        double[] thersholdPerPixel = null;
 
         public MarchingSquaresByte(ImageBuffer imageToMarch, PositiveArea0to1 thresholdFunction, int debugColor)
         {
+            thersholdPerPixel = new double[imageToMarch.Width * imageToMarch.Height];
+            {
+                byte[] buffer = imageToMarch.GetBuffer();
+                int strideInBytes = imageToMarch.StrideInBytes();
+                for (int y = 0; y < imageToMarch.Height; y++)
+                {
+                    int imageBufferOffset = imageToMarch.GetBufferOffsetY(y);
+                    int thresholdBufferOffset = y * imageToMarch.Width;
+
+                    for (int x = 0; x < imageToMarch.Width; x++)
+                    {
+                        int imageBufferOffsetWithX = imageBufferOffset + x * 4;
+                        thersholdPerPixel[thresholdBufferOffset + x] = thresholdFunction(GetRGBA(buffer, imageBufferOffsetWithX));
+                    }
+                }
+            }
+
             this.thresholdFunction = thresholdFunction;
             this.imageToMarch = imageToMarch;
             this.debugColor = debugColor;
@@ -190,27 +208,16 @@ namespace MatterHackers.MarchingSquares
         public void CreateLineSegments()
         {
             LineSegments.Clear();
-            byte[] buffer = imageToMarch.GetBuffer();
-            int strideInBytes = imageToMarch.StrideInBytes();
+
             for (int y = 0; y < imageToMarch.Height - 1; y++)
             {
-                int offset = imageToMarch.GetBufferOffsetY(y);
-
                 for (int x = 0; x < imageToMarch.Width - 1; x++)
                 {
-                    int offsetWithX = offset + x * 4;
+                    double point0 = thersholdPerPixel[(x + 0) + (y + 1) * imageToMarch.Width];
+                    double point1 = thersholdPerPixel[(x + 1) + (y + 1) * imageToMarch.Width];
+                    double point2 = thersholdPerPixel[(x + 1) + (y + 0) * imageToMarch.Width];
+                    double point3 = thersholdPerPixel[(x + 0) + (y + 0) * imageToMarch.Width];
 
-#if true
-                    double point0 = thresholdFunction(imageToMarch.GetPixel(x, y+1));
-                    double point1 = thresholdFunction(imageToMarch.GetPixel(x+1, y+1));
-                    double point2 = thresholdFunction(imageToMarch.GetPixel(x+1, y));
-                    double point3 = thresholdFunction(imageToMarch.GetPixel(x,y));
-#else
-                    double point0 = thresholdFunction(GetRGBA(buffer, offsetWithX + strideInBytes));
-                    double point1 = thresholdFunction(GetRGBA(buffer, offsetWithX + 4 + strideInBytes));
-                    double point2 = thresholdFunction(GetRGBA(buffer, offsetWithX + 4));
-                    double point3 = thresholdFunction(GetRGBA(buffer, offsetWithX));
-#endif
                     int flags = (point0 > 0 ? 1 : 0);
                     flags = (flags << 1) | (point1 > 0 ? 1 : 0);
                     flags = (flags << 1) | (point2 > 0 ? 1 : 0);
@@ -238,24 +245,23 @@ namespace MatterHackers.MarchingSquares
 
                     AddSegmentForFlags(x, y, flags, wasFlipped);
                 }
-
             }
         }
 
         LineSegment GetInterpolatedSegment(LineSegment segmentA, LineSegment segmentB)
         {
-            RGBA_Bytes colorAStart = imageToMarch.GetPixel((int)segmentA.start.x, (int)segmentA.start.y);
-            RGBA_Bytes colorAEnd = imageToMarch.GetPixel((int)segmentA.end.x, (int)segmentA.end.y);
+            double colorAStartThreshold = thersholdPerPixel[((int)segmentA.start.x) + ((int)segmentA.start.y) * imageToMarch.Width];
+            double colorAEndThreshold = thersholdPerPixel[((int)segmentA.end.x) + ((int)segmentA.end.y) * imageToMarch.Width];
 
             Vector2 directionA = segmentA.end - segmentA.start;
-            double offsetA = 1 - (thresholdFunction(colorAEnd) + thresholdFunction(colorAStart)) / 2.0;
+            double offsetA = 1 - (colorAEndThreshold + colorAStartThreshold) / 2.0;
             directionA *= offsetA;
 
-            RGBA_Bytes colorBStart = imageToMarch.GetPixel((int)segmentB.start.x, (int)segmentB.start.y);
-            RGBA_Bytes colorBEnd = imageToMarch.GetPixel((int)segmentB.end.x, (int)segmentB.end.y);
+            double colorBStartThreshold = thersholdPerPixel[((int)segmentB.start.x) + ((int)segmentB.start.y) * imageToMarch.Width];
+            double colorBEndThreshold = thersholdPerPixel[((int)segmentB.end.x) + ((int)segmentB.end.y) * imageToMarch.Width];
 
             Vector2 directionB = segmentB.end - segmentB.start;
-            double ratioB = 1 - (thresholdFunction(colorBEnd) + thresholdFunction(colorBStart)) / 2.0;
+            double ratioB = 1 - (colorBEndThreshold + colorBStartThreshold) / 2.0;
             directionB *= ratioB;
 
             double offsetToPixelCenter = .5;
