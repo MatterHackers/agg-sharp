@@ -30,6 +30,29 @@ namespace MatterHackers.Agg
             //InternalTextEditWidget internalMultiLine = new InternalTextEditWidget("Line 1 - Multi Line Text Control\nLine 2 - Multi Line Text Control\nLine 3 - Multi Line Text Control\n", 12, true);
             topToBottom.AddChild(internalMultiLine);
 #endif
+            // show some masking for passwords
+            {
+                FlowLayoutWidget leftToRight = new FlowLayoutWidget();
+                leftToRight.Margin = new BorderDouble(3);
+                TextEditWidget passwordeTextEdit = new TextEditWidget("Password", tabIndex: tabIndex++);
+                //passwordeTextEdit.InternalTextEditWidget.MaskCharacter = '*';
+                passwordeTextEdit.Margin = new BorderDouble(4, 0);
+                leftToRight.AddChild(passwordeTextEdit);
+
+                TextWidget description = new TextWidget("Content:");
+                leftToRight.AddChild(description);
+
+                TextWidget passwordContent = new TextWidget("Password");
+                leftToRight.AddChild(passwordContent);
+
+                passwordeTextEdit.TextChanged += (sender, e) =>
+                {
+                    passwordContent.Text = passwordeTextEdit.Text;
+                };
+
+                topToBottom.AddChild(leftToRight);
+            }
+
             TextEditWidget singleLineTextEdit = new TextEditWidget("Single Line Edit Text Control", tabIndex: tabIndex++);
             topToBottom.AddChild(singleLineTextEdit);
 

@@ -35,10 +35,10 @@ namespace MatterHackers.Agg
         {
             mainNavigationTabControl = new TabControl(Orientation.Vertical);
 
-            mainNavigationTabControl.AddTab(new MenuPage());
-#if true
-            mainNavigationTabControl.AddTab(new SplitterPage());
             mainNavigationTabControl.AddTab(new TextEditPage());
+#if true
+            mainNavigationTabControl.AddTab(new MenuPage());
+            mainNavigationTabControl.AddTab(new SplitterPage());
             mainNavigationTabControl.AddTab(new LayoutPage());
             mainNavigationTabControl.AddTab(new ButtonsPage());
 
@@ -66,7 +66,7 @@ namespace MatterHackers.Agg
         {
             if (!putUpDiagnostics)
             {
-                DiagnosticWidget diagnosticView = new DiagnosticWidget(this);
+                //DiagnosticWidget diagnosticView = new DiagnosticWidget(this);
                 putUpDiagnostics = true;
             }
             this.NewGraphics2D().Clear(new RGBA_Bytes(255, 255, 255));
