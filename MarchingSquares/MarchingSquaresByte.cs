@@ -102,7 +102,7 @@ namespace MatterHackers.MarchingSquares
         PositiveArea0to1 thresholdFunction;
         int debugColor;
 
-        List<LineSegment> LineSegments = new List<LineSegment>();
+        public List<LineSegment> LineSegments = new List<LineSegment>();
         double[] thersholdPerPixel = null;
 
         public MarchingSquaresByte(ImageBuffer imageToMarch, PositiveArea0to1 thresholdFunction, int debugColor)
