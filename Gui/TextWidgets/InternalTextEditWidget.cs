@@ -531,7 +531,7 @@ namespace MatterHackers.Agg.UI
             startIndexInclusive = Math.Max(0, Math.Min(startIndexInclusive, internalTextWidget.Text.Length));
             endIndexInclusive = Math.Max(startIndexInclusive, Math.Min(endIndexInclusive, internalTextWidget.Text.Length));
             int LengthToDelete = (endIndexInclusive + 1) - startIndexInclusive;
-            if (LengthToDelete > 0 && internalTextWidget.Text.Length >= LengthToDelete)
+            if (LengthToDelete > 0 && internalTextWidget.Text.Length - startIndexInclusive >= LengthToDelete)
             {
                 StringBuilder stringBuilder = new StringBuilder(internalTextWidget.Text);
                 stringBuilder.Remove(startIndexInclusive, LengthToDelete);
