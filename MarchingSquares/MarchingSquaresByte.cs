@@ -64,33 +64,33 @@ namespace MatterHackers.MarchingSquares
         }
     }
 
-    public class SimpleThreshold
+    public class SimpleRange
     {
         int starting;
         int ending;
-        bool invert;
 
-        public SimpleThreshold(int starting, int ending = 255, bool invert = false)
+        public SimpleRange(int starting = 0, int ending = 255)
         {
-            this.starting = starting;
-            this.ending = ending;
-            this.invert = invert;
+            this.starting = Math.Min(starting, 254);
+            this.ending = Math.Max(ending, starting + 1);
         }
 
         public double Threshold(RGBA_Bytes color)
         {
-            if (color.Red0To255 > starting && color.Red0To255 <= ending)
+            if (color.Red0To255 < starting)
+            {
+                return 0;
+            }
+            else if (color.Red0To255 > ending)
+            {
+                return 1;
+            }
+            else
             {
                 double value = (double)(color.Red0To255 - starting) / (double)(ending - starting);
-                if (invert)
-                {
-                    value = 1 - value;
-                }
 
                 return value;
             }
-
-            return 0;
         }
     }
 
@@ -132,7 +132,7 @@ namespace MatterHackers.MarchingSquares
         }
 
         public MarchingSquaresByte(ImageBuffer imageToMarch, int thresholdFrom0, int debugColor)
-            : this(imageToMarch, new SimpleThreshold(thresholdFrom0).Threshold, debugColor)
+            : this(imageToMarch, new SimpleRange(thresholdFrom0).Threshold, debugColor)
         {
         }
 

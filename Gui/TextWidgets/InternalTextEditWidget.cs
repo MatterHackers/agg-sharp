@@ -739,7 +739,6 @@ namespace MatterHackers.Agg.UI
                         keyEvent.Handled = true;
                         keyEvent.SuppressKeyPress = true;
 
-                        // only call this on not multiline
                         if (EnterPressed != null)
                         {
                             EnterPressed(this, keyEvent);
