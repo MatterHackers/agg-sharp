@@ -186,7 +186,7 @@ namespace MatterHackers.Agg.Image
 
         private static void Copy8BitDataToImage(ImageBuffer destImage, Bitmap m_WidowsBitmap)
         {
-            destImage.Allocate(m_WidowsBitmap.Width, m_WidowsBitmap.Height, m_WidowsBitmap.Width, 8);
+            destImage.Allocate(m_WidowsBitmap.Width, m_WidowsBitmap.Height, m_WidowsBitmap.Width * 4, 32);
 
             BitmapData bitmapData = m_WidowsBitmap.LockBits(new Rectangle(0, 0, m_WidowsBitmap.Width, m_WidowsBitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, m_WidowsBitmap.PixelFormat);
             int sourceIndex = 0;
@@ -198,10 +198,15 @@ namespace MatterHackers.Agg.Image
                 byte* pSourceBuffer = (byte*)bitmapData.Scan0;
                 for (int y = 0; y < destImage.Height; y++)
                 {
-                    destIndex = destImage.GetBufferOffsetXY(0, destImage.Height - 1 - y);
+                    sourceIndex = y * bitmapData.Stride;
+                    destIndex = destImage.GetBufferOffsetY(y);
                     for (int x = 0; x < destImage.Width; x++)
                     {
-                        destBuffer[destIndex++] = pSourceBuffer[sourceIndex++];
+                        Color color = m_WidowsBitmap.Palette.Entries[pSourceBuffer[sourceIndex++]];
+                        destBuffer[destIndex++] = color.B;
+                        destBuffer[destIndex++] = color.G;
+                        destBuffer[destIndex++] = color.R;
+                        destBuffer[destIndex++] = color.A;
                     }
                 }
             }
