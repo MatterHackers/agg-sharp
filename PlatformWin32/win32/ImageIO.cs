@@ -196,13 +196,16 @@ namespace MatterHackers.Agg.Image
                 int offset;
                 byte[] destBuffer = destImage.GetBuffer(out offset);
                 byte* pSourceBuffer = (byte*)bitmapData.Scan0;
+                
+                Color[] colors = m_WidowsBitmap.Palette.Entries;
+
                 for (int y = 0; y < destImage.Height; y++)
                 {
                     sourceIndex = y * bitmapData.Stride;
-                    destIndex = destImage.GetBufferOffsetY(y);
+                    destIndex = destImage.GetBufferOffsetY(destImage.Height - 1 - y);
                     for (int x = 0; x < destImage.Width; x++)
                     {
-                        Color color = m_WidowsBitmap.Palette.Entries[pSourceBuffer[sourceIndex++]];
+                        Color color = colors[pSourceBuffer[sourceIndex++]];
                         destBuffer[destIndex++] = color.B;
                         destBuffer[destIndex++] = color.G;
                         destBuffer[destIndex++] = color.R;
