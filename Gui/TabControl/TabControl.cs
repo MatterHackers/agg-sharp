@@ -214,15 +214,17 @@ namespace MatterHackers.Agg.UI
         public void AddTab(Tab newTab)
         {
             TabPage tabPageWidget = newTab.TabPageControlledByTab;
-            tabPages.Add(tabPageWidget.Text, tabPageWidget);
+            tabPages.Add(tabPageWidget.Text, tabPageWidget);            
 
             switch (Orientation)
             {
                 case UI.Orientation.Horizontal:
+                    newTab.VAnchor = UI.VAnchor.ParentCenter;
                     break;
 
                 case UI.Orientation.Vertical:
                     newTab.HAnchor = UI.HAnchor.ParentLeft | UI.HAnchor.ParentRight;
+                    
                     break;
             }
             tabBar.AddChild(newTab);
