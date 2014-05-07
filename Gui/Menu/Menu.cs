@@ -16,6 +16,7 @@ namespace MatterHackers.Agg.UI
         bool menuIsOpen = false;
         public bool IsOpen { get { return menuIsOpen; } }
         Direction menuDirection;
+        double maxHeight;
         public ObservableCollection<MenuItem> MenuItems = new ObservableCollection<MenuItem>();
 
         public BorderDouble MenuItemsPadding { get; set; }
@@ -60,16 +61,19 @@ namespace MatterHackers.Agg.UI
         int borderWidth = 1;
         public int MenuItemsBorderWidth { get { return borderWidth; } set { borderWidth = value; } }
 
-        public Menu(Direction direction = Direction.Down)
+        // If max height is > 0 it will limit the height of the menu
+        public Menu(Direction direction = Direction.Down, double maxHeight = 0)
         {
+            this.maxHeight = maxHeight;
             this.menuDirection = direction;
             Click += new ButtonEventHandler(ListMenu_Click);
             VAnchor = UI.VAnchor.FitToChildren;
             HAnchor = UI.HAnchor.FitToChildren;
         }
 
-        public Menu(GuiWidget view, Direction direction = Direction.Down)
-            : this(direction)
+        // If max height is > 0 it will limit the height of the menu
+        public Menu(GuiWidget view, Direction direction = Direction.Down, double maxHeight = 0)
+            : this(direction, maxHeight)
         {
             AddChild(view);
         }
@@ -107,7 +111,7 @@ namespace MatterHackers.Agg.UI
                 throw new Exception("You cannot show the menu on a Menu unless it has a parent (has been added to a GuiWidegt).");
             }
 
-            OpenMenuContents dropListItems = new OpenMenuContents(MenuItems, this, OpenOffset, menuDirection, MenuItemsBackgroundColor, MenuItemsBorderColor, MenuItemsBorderWidth);
+            OpenMenuContents dropListItems = new OpenMenuContents(MenuItems, this, OpenOffset, menuDirection, MenuItemsBackgroundColor, MenuItemsBorderColor, MenuItemsBorderWidth, maxHeight);
             dropListItems.Closed += new EventHandler(dropListItems_Closed);
 
             dropListItems.Focus();

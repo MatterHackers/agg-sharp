@@ -35,9 +35,9 @@ namespace MatterHackers.Agg
         {
             mainNavigationTabControl = new TabControl(Orientation.Vertical);
 
-            mainNavigationTabControl.AddTab(new TextEditPage());
-#if true
             mainNavigationTabControl.AddTab(new MenuPage());
+#if true
+            mainNavigationTabControl.AddTab(new TextEditPage());
             mainNavigationTabControl.AddTab(new SplitterPage());
             mainNavigationTabControl.AddTab(new LayoutPage());
             mainNavigationTabControl.AddTab(new ButtonsPage());
@@ -86,7 +86,7 @@ namespace MatterHackers.Agg
             MatterHackers.Agg.Image.UnitTests.Run();
             MatterHackers.Agg.Font.UnitTests.Run();
             Agg.UI.Tests.UnitTests.Run();
-            MatterHackers.Agg.Tests.AggDrawingTests.RunAllTests();
+            MatterHackers.Agg.Tests.UnitTests.Run();
 
             AppWidgetFactory appWidget = new GuiTesterFactory();
             appWidget.CreateWidgetAndRunInWindow();

@@ -17,8 +17,9 @@ namespace MatterHackers.Agg.UI
         RGBA_Bytes borderColor;
         int borderWidth;
         Vector2 openOffset;
+        ScrollableWidget scrollingWindow;
 
-        internal OpenMenuContents(ObservableCollection<MenuItem> MenuItems, GuiWidget widgetRelativeTo, Vector2 openOffset, Direction direction, RGBA_Bytes backgroundColor, RGBA_Bytes borderColor, int borderWidth)
+        internal OpenMenuContents(ObservableCollection<MenuItem> MenuItems, GuiWidget widgetRelativeTo, Vector2 openOffset, Direction direction, RGBA_Bytes backgroundColor, RGBA_Bytes borderColor, int borderWidth, double maxHeight)
         {
             this.openOffset = openOffset;
             this.borderWidth = borderWidth;
@@ -27,16 +28,34 @@ namespace MatterHackers.Agg.UI
 
             this.direction = direction;
             this.widgetRelativeTo = widgetRelativeTo;
-            FlowLayoutWidget topToBottom = new FlowLayoutWidget(FlowDirection.TopToBottom);
-            foreach (MenuItem menu in MenuItems)
+            scrollingWindow = new ScrollableWidget(true);
             {
-                topToBottom.AddChild(menu);
+                FlowLayoutWidget topToBottom = new FlowLayoutWidget(FlowDirection.TopToBottom);
+                foreach (MenuItem menu in MenuItems)
+                {
+                    topToBottom.AddChild(menu);
+                }
+
+                topToBottom.HAnchor = UI.HAnchor.ParentLeft | UI.HAnchor.FitToChildren;
+                topToBottom.VAnchor = UI.VAnchor.ParentBottom;
+                Width = topToBottom.Width;
+                Height = topToBottom.Height;
+
+                scrollingWindow.AddChild(topToBottom);
             }
-            topToBottom.HAnchor = UI.HAnchor.ParentLeft | UI.HAnchor.FitToChildren;
-            topToBottom.VAnchor = UI.VAnchor.ParentBottom;
-            Width = topToBottom.Width;
-            Height = topToBottom.Height;
-            AddChild(topToBottom);
+
+            scrollingWindow.HAnchor = HAnchor.ParentLeftRight;
+            scrollingWindow.VAnchor = VAnchor.ParentBottomTop;
+            if (maxHeight > 0 && Height > maxHeight)
+            {
+                scrollingWindow.VAnchor = UI.VAnchor.None;
+                scrollingWindow.Height = maxHeight;
+                scrollingWindow.MinimumSize = new Vector2(Width + 15, 0);
+                Width = scrollingWindow.Width;
+                Height = maxHeight;
+                scrollingWindow.ScrollArea.VAnchor = UI.VAnchor.FitToChildren;
+            }
+            AddChild(scrollingWindow);
 
             LostFocus += new EventHandler(DropListItems_LostFocus);
 
@@ -108,7 +127,10 @@ namespace MatterHackers.Agg.UI
 
         public override void OnMouseUp(MouseEventArgs mouseEvent)
         {
-            UiThread.RunOnIdle(RemoveFromParent);
+            if (!scrollingWindow.VerticalScrollBar.ChildHasMouseCaptured)
+            {
+                UiThread.RunOnIdle(RemoveFromParent);
+            }
             base.OnMouseUp(mouseEvent);
         }
 
