@@ -229,11 +229,6 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        public override void RemoveAllChildren()
-        {
-            topToBottomItemList.RemoveAllChildren();
-        }
-
         void itemHolder_ParentChanged(object sender, EventArgs e)
         {
             FlowLayoutWidget itemHolder = (FlowLayoutWidget)sender;

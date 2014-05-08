@@ -817,7 +817,7 @@ namespace MatterHackers.Agg.UI
                     {
                         minSize.x = Math.Max(child.Width + child.Margin.Width, minSize.x);
                         minSize.y = Math.Max(child.Height + child.Margin.Height, minSize.y);
-                        
+
                         RectangleDouble childBoundsWithMargin = child.BoundsRelativeToParent;
                         childBoundsWithMargin.Inflate(child.Margin);
 
@@ -1204,7 +1204,7 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        public virtual void RemoveAllChildren()
+        public void RemoveAllChildren()
         {
             for (int i = Children.Count - 1; i >= 0; i--)
             {
