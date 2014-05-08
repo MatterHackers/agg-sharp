@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HellowWorld", "HellowWorld.csproj", "{3BEFA755-A647-4A16-A73C-0ACF18211EBD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HellowWorld", "HelloWorld.csproj", "{3BEFA755-A647-4A16-A73C-0ACF18211EBD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Agg", "..\..\agg\Agg.csproj", "{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}"
 EndProject

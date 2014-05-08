@@ -38,7 +38,7 @@ namespace MatterHackers.Agg
             : base(640, 480)
         {
             // add the text widget to show our message
-            AddChild(new TextWidget("Hellow World", 320, 240, justification: Font.Justification.Center));
+            AddChild(new TextWidget("Hello World", 320, 240, justification: Font.Justification.Center));
             ShowAsSystemWindow();
         }
 

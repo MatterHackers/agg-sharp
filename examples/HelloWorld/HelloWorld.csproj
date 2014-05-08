@@ -5,7 +5,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.50727</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{6944B672-ED03-4A8E-BA31-804EEB788507}</ProjectGuid>
+    <ProjectGuid>{3BEFA755-A647-4A16-A73C-0ACF18211EBD}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>HellowWorld</RootNamespace>
@@ -80,9 +80,6 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="HellowWorld.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\agg\Agg.csproj">
       <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
       <Name>Agg</Name>
@@ -99,5 +96,8 @@
       <Project>{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}</Project>
       <Name>VectorMath</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="HelloWorld.cs" />
   </ItemGroup>
 </Project>
