@@ -31,6 +31,15 @@ namespace MatterHackers.Agg
             dropListMenu.OriginRelativeParent = new Vector2(100, 200);
             AddChild(dropListMenu);
 
+            Menu longMenue = new Menu(new TextWidget("very long"), maxHeight: 50);
+            longMenue.Name = "ListMenu Down";
+            for (int i = 0; i < 30; i++)
+            {
+                AddMenu(longMenue, "menu {0}".FormatWith(i));
+            }
+            longMenue.OriginRelativeParent = new Vector2(100, 300);
+            AddChild(longMenue);
+
             Menu raiseListMenu = new Menu(new TextWidget("jAction ^"), Direction.Up);
             raiseListMenu.Name = "ListMenu Up";
             AddMenu(raiseListMenu, "Walk");

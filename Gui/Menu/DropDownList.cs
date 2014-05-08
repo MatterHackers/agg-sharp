@@ -146,8 +146,8 @@ namespace MatterHackers.Agg.UI
             return MenuItems[itemIndex].Value;
         }
 
-        public DropDownList(string noSelectionString, RGBA_Bytes normalColor, RGBA_Bytes hoverColor, Direction direction = Direction.Down)
-            : base(direction)
+        public DropDownList(string noSelectionString, RGBA_Bytes normalColor, RGBA_Bytes hoverColor, Direction direction = Direction.Down, double maxHeight = 0)
+            : base(direction, maxHeight)
         {
             MenuItems.CollectionChanged += new NotifyCollectionChangedEventHandler(MenuItems_CollectionChanged);
             mainControlText = new TextWidget(noSelectionString);
