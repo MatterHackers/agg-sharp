@@ -5,11 +5,11 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.50727</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{3BEFA755-A647-4A16-A73C-0ACF18211EBD}</ProjectGuid>
+    <ProjectGuid>{6944B672-ED03-4A8E-BA31-804EEB788507}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>HellowWorld</RootNamespace>
-    <AssemblyName>HellowWorld</AssemblyName>
+    <RootNamespace>HelloWorld</RootNamespace>
+    <AssemblyName>HelloWorld</AssemblyName>
     <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
     <NoStdLib>False</NoStdLib>
     <RegisterForComInterop>False</RegisterForComInterop>
