@@ -12,6 +12,7 @@ namespace MatterHackers.Agg.UI
 
     public class Menu : Button
     {
+        public bool AlignToRightEdge { get; set; }
         public Vector2 OpenOffset { get; set; }
         bool menuIsOpen = false;
         public bool IsOpen { get { return menuIsOpen; } }
@@ -111,7 +112,7 @@ namespace MatterHackers.Agg.UI
                 throw new Exception("You cannot show the menu on a Menu unless it has a parent (has been added to a GuiWidegt).");
             }
 
-            OpenMenuContents dropListItems = new OpenMenuContents(MenuItems, this, OpenOffset, menuDirection, MenuItemsBackgroundColor, MenuItemsBorderColor, MenuItemsBorderWidth, maxHeight);
+            OpenMenuContents dropListItems = new OpenMenuContents(MenuItems, this, OpenOffset, menuDirection, MenuItemsBackgroundColor, MenuItemsBorderColor, MenuItemsBorderWidth, maxHeight, AlignToRightEdge);
             dropListItems.Closed += new EventHandler(dropListItems_Closed);
 
             dropListItems.Focus();

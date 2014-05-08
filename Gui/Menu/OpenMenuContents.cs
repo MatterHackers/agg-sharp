@@ -12,6 +12,7 @@ namespace MatterHackers.Agg.UI
 {
     internal class OpenMenuContents : GuiWidget
     {
+        bool alignToRightEdge;
         Direction direction;
         GuiWidget widgetRelativeTo;
         RGBA_Bytes borderColor;
@@ -19,8 +20,9 @@ namespace MatterHackers.Agg.UI
         Vector2 openOffset;
         ScrollableWidget scrollingWindow;
 
-        internal OpenMenuContents(ObservableCollection<MenuItem> MenuItems, GuiWidget widgetRelativeTo, Vector2 openOffset, Direction direction, RGBA_Bytes backgroundColor, RGBA_Bytes borderColor, int borderWidth, double maxHeight)
+        internal OpenMenuContents(ObservableCollection<MenuItem> MenuItems, GuiWidget widgetRelativeTo, Vector2 openOffset, Direction direction, RGBA_Bytes backgroundColor, RGBA_Bytes borderColor, int borderWidth, double maxHeight, bool alignToRightEdge)
         {
+            this.alignToRightEdge = alignToRightEdge;
             this.openOffset = openOffset;
             this.borderWidth = borderWidth;
             this.borderColor = borderColor;
@@ -110,14 +112,20 @@ namespace MatterHackers.Agg.UI
                 topParent = topParent.Parent;
             }
 
+            double alignmentOffset = 0;
+            if (alignToRightEdge)
+            {
+                alignmentOffset = -Width + widgetRelativeTo.Width;
+            }
+
             switch (direction)
             {
                 case Direction.Down:
-                    this.OriginRelativeParent = zero + new Vector2(0, -Height) + openOffset;
+                    this.OriginRelativeParent = zero + new Vector2(alignmentOffset, -Height) + openOffset;
                     break;
 
                 case Direction.Up:
-                    this.OriginRelativeParent = zero + new Vector2(0, widgetRelativeTo.Height) + openOffset;
+                    this.OriginRelativeParent = zero + new Vector2(alignmentOffset, widgetRelativeTo.Height) + openOffset;
                     break;
 
                 default:
