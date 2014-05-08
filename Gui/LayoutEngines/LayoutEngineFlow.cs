@@ -30,8 +30,9 @@ namespace MatterHackers.Agg.UI
             {
                 parent.SuspendLayout();
 
-                foreach (GuiWidget child in parent.Children)
+                for (int i = 0; i < parent.Children.Count; i++)
                 {
+                    GuiWidget child = parent.Children[i];
                     ApplyHAnchorToChild(parent, child);
                     ApplyVAnchorToChild(parent, child);
                 }
