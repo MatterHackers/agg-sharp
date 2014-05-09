@@ -17,6 +17,7 @@
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
 using System;
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
@@ -222,6 +223,12 @@ namespace MatterHackers.Agg.UI
             }
         }
 
+        [ConditionalAttribute("DEBUG")]
+        public static void ThrowExceptionInDebug(string description)
+        {
+            throw new Exception(description);
+        }
+
         public virtual void OnMarginChanged()
         {
             if (MarginChanged != null)
@@ -267,7 +274,7 @@ namespace MatterHackers.Agg.UI
                 {
                     if (value == (HAnchor.ParentLeft | HAnchor.ParentCenter | HAnchor.ParentRight))
                     {
-                        throw new Exception("You cannot be anchored to all three positions.");
+                        ThrowExceptionInDebug("You cannot be anchored to all three positions.");
                     }
                     hAnchor = value;
                     if (this.Parent != null)
@@ -325,7 +332,7 @@ namespace MatterHackers.Agg.UI
                 {
                     if (value == (VAnchor.ParentBottom | VAnchor.ParentCenter | VAnchor.ParentTop))
                     {
-                        throw new Exception("You cannot be anchored to all three positions.");
+                        ThrowExceptionInDebug("You cannot be anchored to all three positions.");
                     }
                     vAnchor = value;
                     if (this.Parent != null)
@@ -464,9 +471,10 @@ namespace MatterHackers.Agg.UI
 
         void children_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
-#if DEBUG
-            if (childrenLockedCount != 0) throw new Exception("The mouse should not be locked when the child list changes.");
-#endif
+            if (childrenLockedCount != 0)
+            {
+                ThrowExceptionInDebug("The mouse should not be locked when the child list changes.");
+            }
         }
 
         public virtual bool InvokeRequired
@@ -619,7 +627,7 @@ namespace MatterHackers.Agg.UI
                 {
                     if (value.x < 0 || value.y < 0)
                     {
-                        throw new Exception("These have to be 0 or greater.");
+                        ThrowExceptionInDebug("These have to be 0 or greater.");
                     }
                     minimumSize = value;
 
@@ -664,7 +672,7 @@ namespace MatterHackers.Agg.UI
                 {
                     if (value.x < 0 || value.y < 0)
                     {
-                        throw new Exception("These have to be 0 or greater.");
+                        ThrowExceptionInDebug("These have to be 0 or greater.");
                     }
                     maximumSize = value;
                     
@@ -746,7 +754,7 @@ namespace MatterHackers.Agg.UI
                 {
                     if (!largestValidBounds.Contains(value))
                     {
-                        throw new Exception("The bounds you are passing seems like they are probably wrong.  Check it.");
+                        ThrowExceptionInDebug("The bounds you are passing seems like they are probably wrong.  Check it.");
                     }
 
                     localBounds = value;
@@ -1146,7 +1154,7 @@ namespace MatterHackers.Agg.UI
 
             if (childToAdd == this)
             {
-                throw new Exception("A GuiWidget cannot be a child of itself.");
+                ThrowExceptionInDebug("A GuiWidget cannot be a child of itself.");
             }
             if (indexInChildrenList > Children.Count)
             {
@@ -1171,7 +1179,8 @@ namespace MatterHackers.Agg.UI
                 }
             }
 
-            throw new Exception("You asked for the index of a child that is not a child of this widget.");
+            ThrowExceptionInDebug("You asked for the index of a child that is not a child of this widget.");
+            return -1;
         }
 
         public void SendToBack()
@@ -1319,7 +1328,7 @@ namespace MatterHackers.Agg.UI
                         {
                             if (childWithFocus != null)
                             {
-                                throw new Exception("Two children should never have focus.");
+                                ThrowExceptionInDebug("Two children should never have focus.");
                             }
                             childWithFocus = child;
                         }
@@ -1600,7 +1609,7 @@ namespace MatterHackers.Agg.UI
                             currentScreenClipping.Top = Math.Ceiling(currentScreenClipping.Top);
                             if (currentScreenClipping.Right < currentScreenClipping.Left || currentScreenClipping.Top < currentScreenClipping.Bottom)
                             {
-                                throw new Exception();
+                                ThrowExceptionInDebug("Right is less than Left or Top is less than Bottom");
                             }
 
                             graphics2D.SetClippingRect(currentScreenClipping);
@@ -1634,7 +1643,7 @@ namespace MatterHackers.Agg.UI
                                 if (offsetToRenderSurface.x - (int)offsetToRenderSurface.x != 0
                                     || offsetToRenderSurface.y - (int)offsetToRenderSurface.y != 0)
                                 {
-                                    throw new Exception("The transform for a back buffer must be integer to avoid aliasing.");
+                                    ThrowExceptionInDebug("The transform for a back buffer must be integer to avoid aliasing.");
                                 }
                                 graphics2D.SetTransform(Affine.NewTranslation(offsetToRenderSurface));
 
@@ -1731,9 +1740,10 @@ namespace MatterHackers.Agg.UI
         protected bool WidgetHasBeenClosed { get { return widgetHasBeenClosed; } }
         public void Close()
         {
-#if DEBUG
-            if (childrenLockedCount != 0) throw new Exception("You should put this close onto the UiThread.RunOnIdle so it can happen after the child list is unlocked.");
-#endif
+            if (childrenLockedCount != 0)
+            {
+                ThrowExceptionInDebug("You should put this close onto the UiThread.RunOnIdle so it can happen after the child list is unlocked.");
+            }
             // TODO: check OnClosing before we actuall close this window (need a test case before implementing). // LBB 2013/04/15
             if (!widgetHasBeenClosed)
             {
@@ -1975,14 +1985,14 @@ namespace MatterHackers.Agg.UI
 
                 if (countOfChildernThatThinkTheyHaveTheMouseCaptured < 1 || countOfChildernThatThinkTheyHaveTheMouseCaptured > 1)
                 {
-                    throw new Exception("One and only one child should ever have the mouse captured.");
+                    ThrowExceptionInDebug("One and only one child should ever have the mouse captured.");
                 }
             }
             else
             {
                 if (mouseCapturedState != MouseCapturedState.ThisHasMouseCaptured)
                 {
-                    throw new Exception("You should only ever get here if you have the mouse captured.");
+                    ThrowExceptionInDebug("You should only ever get here if you have the mouse captured.");
                 }
 
                 if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
@@ -2112,9 +2122,11 @@ namespace MatterHackers.Agg.UI
         int childrenLockedCount = 0;
         public virtual void OnMouseUp(MouseEventArgs mouseEvent)
         {
-#if DEBUG
-            if (childrenLockedCount != 0) throw new Exception("This should not be locked.");
-#endif
+            if (childrenLockedCount != 0) 
+            {
+                ThrowExceptionInDebug("This should not be locked.");
+            }
+
             childrenLockedCount++;
             if (mouseCapturedState == MouseCapturedState.NotCaptured)
             {
@@ -2164,15 +2176,19 @@ namespace MatterHackers.Agg.UI
             {
                 if (mouseCapturedState == MouseCapturedState.ChildHasMouseCaptured)
                 {
-#if DEBUG
-                    if (childrenLockedCount != 1) throw new Exception("The mouse should always be locked while in mouse up.");
-#endif
+                    if (childrenLockedCount != 1)
+                    {
+                        ThrowExceptionInDebug("The mouse should always be locked while in mouse up.");
+                    }
+
                     int countOfChildernThatThinkTheyHaveTheMouseCaptured = 0;
                     foreach (GuiWidget child in Children)
                     {
-#if DEBUG
-                        if (childrenLockedCount != 1) throw new Exception("The mouse should always be locked while in mouse up.");
-#endif
+                        if (childrenLockedCount != 1)
+                        {
+                            ThrowExceptionInDebug("The mouse should always be locked while in mouse up.");
+                        }
+
                         double childX = mouseEvent.X;
                         double childY = mouseEvent.Y;
                         child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
@@ -2181,7 +2197,7 @@ namespace MatterHackers.Agg.UI
                         {
                             if (countOfChildernThatThinkTheyHaveTheMouseCaptured > 0)
                             {
-                                throw new Exception("One and only one child should ever have the mouse captured.");
+                                ThrowExceptionInDebug("One and only one child should ever have the mouse captured.");
                             }
                             child.OnMouseUp(childMouseEvent);
                             countOfChildernThatThinkTheyHaveTheMouseCaptured++;
@@ -2192,7 +2208,7 @@ namespace MatterHackers.Agg.UI
                 {
                     if (mouseCapturedState != MouseCapturedState.ThisHasMouseCaptured)
                     {
-                        throw new Exception("You should only ever get here if you have the mouse captured.");
+                        ThrowExceptionInDebug("You should only ever get here if you have the mouse captured.");
                     }
                     if (MouseUp != null)
                     {
@@ -2222,9 +2238,11 @@ namespace MatterHackers.Agg.UI
                 ClearCapturedState();
             }
             childrenLockedCount--;
-#if DEBUG
-            if (childrenLockedCount != 0) throw new Exception("This should not be locked.");
-#endif
+
+            if (childrenLockedCount != 0)
+            {
+                ThrowExceptionInDebug("This should not be locked.");
+            }
         }
 
         protected virtual void SetCursorOnEnter(Cursors cursorToSet)
