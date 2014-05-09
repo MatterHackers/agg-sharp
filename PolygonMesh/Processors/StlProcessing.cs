@@ -36,6 +36,7 @@ using System.Text;
 using System.ComponentModel;
 using System.Threading;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 using MatterHackers.Agg;
 using MatterHackers.PolygonMesh;
@@ -219,8 +220,10 @@ namespace MatterHackers.PolygonMesh.Processors
                 Vector3 vector1 = new Vector3(0, 0, 0);
                 Vector3 vector2 = new Vector3(0, 0, 0);
                 string line = stlReader.ReadLine();
+                Regex onlySingleSpaces = new Regex("\\s+", RegexOptions.Compiled);
                 while (line != null)
                 {
+                    line = onlySingleSpaces.Replace(line, " ");
                     var parts = line.Trim().Split(' ');
                     if (parts[0].Trim() == "vertex")
                     {
