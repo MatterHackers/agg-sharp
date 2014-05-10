@@ -77,7 +77,7 @@ namespace MatterHackers.MeshVisualizer
         }
 
         double partScale;
-        ImageBuffer bedCentimeterGridImage;
+        public ImageBuffer BedImage;
         TextWidget centeredInfoText;
         TrackballTumbleWidget trackballTumbleWidget;
         public TrackballTumbleWidget TrackballTumbleWidget
@@ -176,7 +176,7 @@ namespace MatterHackers.MeshVisualizer
                         Face face = printerBed.Faces[0];
                         {
                             FaceTextureData faceData = FaceTextureData.Get(face);
-                            faceData.Textures.Add(bedCentimeterGridImage);
+                            faceData.Textures.Add(BedImage);
                             foreach (FaceEdge faceEdge in face.FaceEdges())
                             {
                                 FaceEdgeTextureUvData edgeUV = FaceEdgeTextureUvData.Get(faceEdge);
@@ -209,7 +209,7 @@ namespace MatterHackers.MeshVisualizer
                                 if (face.normal.z > 0)
                                 {
                                     FaceTextureData faceData = FaceTextureData.Get(face);
-                                    faceData.Textures.Add(bedCentimeterGridImage);
+                                    faceData.Textures.Add(BedImage);
                                     foreach (FaceEdge faceEdge in face.FaceEdges())
                                     {
                                         FaceEdgeTextureUvData edgeUV = FaceEdgeTextureUvData.Get(faceEdge);
@@ -408,33 +408,33 @@ namespace MatterHackers.MeshVisualizer
         void CreateRectangularBedGridImage(int linesInX, int linesInY)
         {
             Vector2 bedImageCentimeters = new Vector2(linesInX, linesInY);
-            bedCentimeterGridImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
-            Graphics2D graphics2D = bedCentimeterGridImage.NewGraphics2D();
+            BedImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
+            Graphics2D graphics2D = BedImage.NewGraphics2D();
             graphics2D.Clear(RGBA_Bytes.White);
             {
-                double lineDist = bedCentimeterGridImage.Width / (double)linesInX;
+                double lineDist = BedImage.Width / (double)linesInX;
 
                 int count = 1;
                 int pointSize = 20;
                 graphics2D.DrawString(count.ToString(), 0, 0, pointSize);
-                for (double linePos = lineDist; linePos < bedCentimeterGridImage.Width; linePos += lineDist)
+                for (double linePos = lineDist; linePos < BedImage.Width; linePos += lineDist)
                 {
                     count++;
                     int linePosInt = (int)linePos;
-                    graphics2D.Line(linePosInt, 0, linePosInt, bedCentimeterGridImage.Height, RGBA_Bytes.Black);
+                    graphics2D.Line(linePosInt, 0, linePosInt, BedImage.Height, RGBA_Bytes.Black);
                     graphics2D.DrawString(count.ToString(), linePos, 0, pointSize);
                 }
             }
             {
-                double lineDist = bedCentimeterGridImage.Height / (double)linesInY;
+                double lineDist = BedImage.Height / (double)linesInY;
 
                 int count = 1;
                 int pointSize = 20;
-                for (double linePos = lineDist; linePos < bedCentimeterGridImage.Height; linePos += lineDist)
+                for (double linePos = lineDist; linePos < BedImage.Height; linePos += lineDist)
                 {
                     count++;
                     int linePosInt = (int)linePos;
-                    graphics2D.Line(0, linePosInt, bedCentimeterGridImage.Height, linePosInt, RGBA_Bytes.Black);
+                    graphics2D.Line(0, linePosInt, BedImage.Height, linePosInt, RGBA_Bytes.Black);
                     graphics2D.DrawString(count.ToString(), 0, linePos, pointSize);
                 }
             }
@@ -443,22 +443,22 @@ namespace MatterHackers.MeshVisualizer
         void CreateCircularBedGridImage(int linesInX, int linesInY)
         {
             Vector2 bedImageCentimeters = new Vector2(linesInX, linesInY);
-            bedCentimeterGridImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
-            Graphics2D graphics2D = bedCentimeterGridImage.NewGraphics2D();
+            BedImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
+            Graphics2D graphics2D = BedImage.NewGraphics2D();
             graphics2D.Clear(RGBA_Bytes.White);
 #if true
             {
-                double lineDist = bedCentimeterGridImage.Width / (double)linesInX;
+                double lineDist = BedImage.Width / (double)linesInX;
 
                 int count = 1;
                 int pointSize = 20;
                 graphics2D.DrawString(count.ToString(), 0, 0, pointSize);
                 double currentRadius = lineDist;
-                Vector2 bedCenter = new Vector2(bedCentimeterGridImage.Width / 2, bedCentimeterGridImage.Height / 2);
-                for (double linePos = lineDist + bedCentimeterGridImage.Width / 2; linePos < bedCentimeterGridImage.Width; linePos += lineDist)
+                Vector2 bedCenter = new Vector2(BedImage.Width / 2, BedImage.Height / 2);
+                for (double linePos = lineDist + BedImage.Width / 2; linePos < BedImage.Width; linePos += lineDist)
                 {
                     int linePosInt = (int)linePos;
-                    graphics2D.DrawString(count.ToString(), linePos + 2, bedCentimeterGridImage.Height / 2, pointSize);
+                    graphics2D.DrawString(count.ToString(), linePos + 2, BedImage.Height / 2, pointSize);
 
                     Ellipse circle = new Ellipse(bedCenter, currentRadius);
                     Stroke outline = new Stroke(circle);
@@ -467,8 +467,8 @@ namespace MatterHackers.MeshVisualizer
                     count++;
                 }
 
-                graphics2D.Line(0, bedCentimeterGridImage.Height / 2, bedCentimeterGridImage.Width, bedCentimeterGridImage.Height / 2, RGBA_Bytes.Black);
-                graphics2D.Line(bedCentimeterGridImage.Width / 2, 0, bedCentimeterGridImage.Width/2, bedCentimeterGridImage.Height, RGBA_Bytes.Black);
+                graphics2D.Line(0, BedImage.Height / 2, BedImage.Width, BedImage.Height / 2, RGBA_Bytes.Black);
+                graphics2D.Line(BedImage.Width / 2, 0, BedImage.Width/2, BedImage.Height, RGBA_Bytes.Black);
             }
 #else
             {
