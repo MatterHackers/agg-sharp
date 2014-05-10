@@ -471,7 +471,7 @@ namespace MatterHackers.Agg.UI
 
         void children_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
-            if (childrenLockedCount != 0)
+            if (childrenLockedInMouseUpCount != 0)
             {
                 ThrowExceptionInDebug("The mouse should not be locked when the child list changes.");
             }
@@ -1740,7 +1740,7 @@ namespace MatterHackers.Agg.UI
         protected bool WidgetHasBeenClosed { get { return widgetHasBeenClosed; } }
         public void Close()
         {
-            if (childrenLockedCount != 0)
+            if (childrenLockedInMouseUpCount != 0)
             {
                 ThrowExceptionInDebug("You should put this close onto the UiThread.RunOnIdle so it can happen after the child list is unlocked.");
             }
@@ -2119,15 +2119,15 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        int childrenLockedCount = 0;
+        int childrenLockedInMouseUpCount = 0;
         public virtual void OnMouseUp(MouseEventArgs mouseEvent)
         {
-            if (childrenLockedCount != 0) 
+            if (childrenLockedInMouseUpCount != 0) 
             {
                 ThrowExceptionInDebug("This should not be locked.");
             }
 
-            childrenLockedCount++;
+            childrenLockedInMouseUpCount++;
             if (mouseCapturedState == MouseCapturedState.NotCaptured)
             {
                 if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
@@ -2176,7 +2176,7 @@ namespace MatterHackers.Agg.UI
             {
                 if (mouseCapturedState == MouseCapturedState.ChildHasMouseCaptured)
                 {
-                    if (childrenLockedCount != 1)
+                    if (childrenLockedInMouseUpCount != 1)
                     {
                         ThrowExceptionInDebug("The mouse should always be locked while in mouse up.");
                     }
@@ -2184,7 +2184,7 @@ namespace MatterHackers.Agg.UI
                     int countOfChildernThatThinkTheyHaveTheMouseCaptured = 0;
                     foreach (GuiWidget child in Children)
                     {
-                        if (childrenLockedCount != 1)
+                        if (childrenLockedInMouseUpCount != 1)
                         {
                             ThrowExceptionInDebug("The mouse should always be locked while in mouse up.");
                         }
@@ -2237,9 +2237,9 @@ namespace MatterHackers.Agg.UI
 
                 ClearCapturedState();
             }
-            childrenLockedCount--;
+            childrenLockedInMouseUpCount--;
 
-            if (childrenLockedCount != 0)
+            if (childrenLockedInMouseUpCount != 0)
             {
                 ThrowExceptionInDebug("This should not be locked.");
             }
