@@ -332,7 +332,7 @@ namespace MatterHackers.GCodeVisualizer
         }
 
         public static Vector4 VelocitySameAsStopMmPerS = new Vector4(8, 8, .4, 5);
-        public static Vector4 MaxAccelerationMmPerS2 = new Vector4(2000, 2000, 100, 10000);
+        public static Vector4 MaxAccelerationMmPerS2 = new Vector4(1000, 1000, 100, 5000);
         public static Vector4 MaxVelocityMmPerS = new Vector4(500, 500, 5, 25);
         private double GetSecondsThisLine(int lineIndex, Vector3 deltaPositionThisLine, double deltaEPositionThisLine, double feedRateMmPerMin)
         {
