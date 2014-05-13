@@ -524,6 +524,14 @@ namespace MatterHackers.GCodeVisualizer
                     // in Marlin: Display Message
                     break;
 
+                case "126":
+                    // enable fan (makerbot)
+                    break;
+
+                case "127":
+                    // disable fan (makerbot)
+                    break;
+
                 case "132":
                     // recall stored home offsets for axis xyzab
                     break;
@@ -554,6 +562,9 @@ namespace MatterHackers.GCodeVisualizer
                     break;
 
                 case "209": // M209: enable automatic retract
+                    break;
+
+                case "227": // Enable Automatic Reverse and Prime
                     break;
 
                 case "301":
