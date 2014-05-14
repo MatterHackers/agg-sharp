@@ -45,8 +45,8 @@ namespace MatterHackers.RayTracer
                 throw new Exception();
             }
 
-            double axisCenterA = a.GetAxisAlignedBoundingBox().GetCenter()[whichAxis];
-            double axisCenterB = b.GetAxisAlignedBoundingBox().GetCenter()[whichAxis];
+            double axisCenterA = a.GetCenter()[whichAxis];
+            double axisCenterB = b.GetCenter()[whichAxis];
 
             if (axisCenterA > axisCenterB)
             {
@@ -75,7 +75,7 @@ namespace MatterHackers.RayTracer
         /// <summary>
         /// Specifies the ambient and diffuse color of the element.
         /// </summary>
-        IMaterial Material { get; set; }
+        MaterialAbstract Material { get; set; }
 
         bool GetContained(List<IRayTraceable> results, AxisAlignedBoundingBox subRegion);
 
@@ -88,12 +88,13 @@ namespace MatterHackers.RayTracer
         IntersectInfo GetClosestIntersection(Ray ray);
 
         int FindFirstRay(RayBundle rayBundle, int rayIndexToStartCheckingFrom);
-        void GetClosestIntersections(RayBundle ray, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle);
+        void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle);
 
         IEnumerable IntersectionIterator(Ray ray);
 
         double GetSurfaceArea();
         AxisAlignedBoundingBox GetAxisAlignedBoundingBox();
+        Vector3 GetCenter();
 
         /// <summary>
         /// This is the computation cost of doing an intersection with the given type.

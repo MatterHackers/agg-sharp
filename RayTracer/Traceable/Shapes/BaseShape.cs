@@ -21,11 +21,11 @@ namespace MatterHackers.RayTracer
 {
     public abstract class BaseShape : IRayTraceable
     {
-        private IMaterial material;
+        private MaterialAbstract material;
 
         public abstract RGBA_Floats GetColor(IntersectInfo info);
 
-        public IMaterial Material
+        public MaterialAbstract Material
         {
             get { return material; }
             set { material = value; }
@@ -50,7 +50,7 @@ namespace MatterHackers.RayTracer
 
         public abstract IntersectInfo GetClosestIntersection(Ray ray);
         public abstract int FindFirstRay(RayBundle rayBundle, int rayIndexToStartCheckingFrom);
-        public virtual void GetClosestIntersections(RayBundle ray, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
+        public virtual void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
         {
             throw new NotImplementedException("Implement this for the class you want.");
         }
@@ -58,6 +58,11 @@ namespace MatterHackers.RayTracer
         public abstract IEnumerable IntersectionIterator(Ray ray);
 
         public abstract double GetSurfaceArea();
+        public virtual Vector3 GetCenter()
+        {
+            return GetAxisAlignedBoundingBox().GetCenter();
+        }
+
         public abstract AxisAlignedBoundingBox GetAxisAlignedBoundingBox();
         public abstract double GetIntersectCost();
     }

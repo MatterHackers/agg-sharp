@@ -12,14 +12,17 @@ namespace MatterHackers.Agg.UI
 {
     internal class OpenMenuContents : GuiWidget
     {
+        bool alignToRightEdge;
         Direction direction;
         GuiWidget widgetRelativeTo;
         RGBA_Bytes borderColor;
         int borderWidth;
         Vector2 openOffset;
+        ScrollableWidget scrollingWindow;
 
-        internal OpenMenuContents(ObservableCollection<MenuItem> MenuItems, GuiWidget widgetRelativeTo, Vector2 openOffset, Direction direction, RGBA_Bytes backgroundColor, RGBA_Bytes borderColor, int borderWidth)
+        internal OpenMenuContents(ObservableCollection<MenuItem> MenuItems, GuiWidget widgetRelativeTo, Vector2 openOffset, Direction direction, RGBA_Bytes backgroundColor, RGBA_Bytes borderColor, int borderWidth, double maxHeight, bool alignToRightEdge)
         {
+            this.alignToRightEdge = alignToRightEdge;
             this.openOffset = openOffset;
             this.borderWidth = borderWidth;
             this.borderColor = borderColor;
@@ -27,16 +30,34 @@ namespace MatterHackers.Agg.UI
 
             this.direction = direction;
             this.widgetRelativeTo = widgetRelativeTo;
-            FlowLayoutWidget topToBottom = new FlowLayoutWidget(FlowDirection.TopToBottom);
-            foreach (MenuItem menu in MenuItems)
+            scrollingWindow = new ScrollableWidget(true);
             {
-                topToBottom.AddChild(menu);
+                FlowLayoutWidget topToBottom = new FlowLayoutWidget(FlowDirection.TopToBottom);
+                foreach (MenuItem menu in MenuItems)
+                {
+                    topToBottom.AddChild(menu);
+                }
+
+                topToBottom.HAnchor = UI.HAnchor.ParentLeft | UI.HAnchor.FitToChildren;
+                topToBottom.VAnchor = UI.VAnchor.ParentBottom;
+                Width = topToBottom.Width;
+                Height = topToBottom.Height;
+
+                scrollingWindow.AddChild(topToBottom);
             }
-            topToBottom.HAnchor = UI.HAnchor.ParentLeft | UI.HAnchor.FitToChildren;
-            topToBottom.VAnchor = UI.VAnchor.ParentBottom;
-            Width = topToBottom.Width;
-            Height = topToBottom.Height;
-            AddChild(topToBottom);
+
+            scrollingWindow.HAnchor = HAnchor.ParentLeftRight;
+            scrollingWindow.VAnchor = VAnchor.ParentBottomTop;
+            if (maxHeight > 0 && Height > maxHeight)
+            {
+                scrollingWindow.VAnchor = UI.VAnchor.None;
+                scrollingWindow.Height = maxHeight;
+                scrollingWindow.MinimumSize = new Vector2(Width + 15, 0);
+                Width = scrollingWindow.Width;
+                Height = maxHeight;
+                scrollingWindow.ScrollArea.VAnchor = UI.VAnchor.FitToChildren;
+            }
+            AddChild(scrollingWindow);
 
             LostFocus += new EventHandler(DropListItems_LostFocus);
 
@@ -91,14 +112,20 @@ namespace MatterHackers.Agg.UI
                 topParent = topParent.Parent;
             }
 
+            double alignmentOffset = 0;
+            if (alignToRightEdge)
+            {
+                alignmentOffset = -Width + widgetRelativeTo.Width;
+            }
+
             switch (direction)
             {
                 case Direction.Down:
-                    this.OriginRelativeParent = zero + new Vector2(0, -Height) + openOffset;
+                    this.OriginRelativeParent = zero + new Vector2(alignmentOffset, -Height) + openOffset;
                     break;
 
                 case Direction.Up:
-                    this.OriginRelativeParent = zero + new Vector2(0, widgetRelativeTo.Height) + openOffset;
+                    this.OriginRelativeParent = zero + new Vector2(alignmentOffset, widgetRelativeTo.Height) + openOffset;
                     break;
 
                 default:
@@ -108,7 +135,10 @@ namespace MatterHackers.Agg.UI
 
         public override void OnMouseUp(MouseEventArgs mouseEvent)
         {
-            UiThread.RunOnIdle(RemoveFromParent);
+            if (!scrollingWindow.VerticalScrollBar.ChildHasMouseCaptured)
+            {
+                UiThread.RunOnIdle(RemoveFromParent);
+            }
             base.OnMouseUp(mouseEvent);
         }
 

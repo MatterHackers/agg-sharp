@@ -120,6 +120,14 @@ namespace MatterHackers.Agg
         {
             this = from_wavelength(wavelen, gamma);
         }
+
+        public RGBA_Floats(RGBA_Bytes color)
+        {
+            red = color.Red0To1;
+            green = color.Green0To1;
+            blue = color.Blue0To1;
+            alpha = color.Alpha0To1;
+        }
         #endregion Constructors
 
         #region HSL
@@ -645,6 +653,7 @@ namespace MatterHackers.Agg
         public static readonly RGBA_Bytes Black = new RGBA_Bytes(0, 0, 0, 255);
         public static readonly RGBA_Bytes Red = new RGBA_Bytes(255, 0, 0, 255);
         public static readonly RGBA_Bytes Orange = new RGBA_Bytes(255, 127, 0, 255);
+        public static readonly RGBA_Bytes Pink = new RGBA_Bytes(255, 192, 203, 255);
         public static readonly RGBA_Bytes Green = new RGBA_Bytes(0, 255, 0, 255);
         public static readonly RGBA_Bytes Blue = new RGBA_Bytes(0, 0, 255, 255);
         public static readonly RGBA_Bytes Indigo = new RGBA_Bytes(75, 0, 130, 255);

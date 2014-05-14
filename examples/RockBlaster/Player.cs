@@ -109,7 +109,7 @@ namespace RockBlaster
             fireKey = in_fireKey;
 
             int playerSequenceIndex = GetPlayerIndex();
-            ImageSequence playerShip = (ImageSequence)DataAssetCache.Instance.GetAsset(typeof(ImageSequence), "Player" + (playerSequenceIndex + 1).ToString() + "Ship");
+            GameImageSequence playerShip = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "Player" + (playerSequenceIndex + 1).ToString() + "Ship");
             m_Radius = playerShip.GetImageByIndex(0).Width/2;
             m_JoyStickIndex = joyStickIndex;
 			Position = new Vector2(GameWidth/2, GameHeight/2);
@@ -124,14 +124,14 @@ namespace RockBlaster
         protected override void DoDraw(Graphics2D destRenderer)
 		{
             int playerSequenceIndex = GetPlayerIndex();
-            ImageSequence playerShip = (ImageSequence)DataAssetCache.Instance.GetAsset(typeof(ImageSequence), "Player" + (playerSequenceIndex+1).ToString() + "Ship");
+            GameImageSequence playerShip = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "Player" + (playerSequenceIndex + 1).ToString() + "Ship");
             destRenderer.Render(playerShip.GetImageByRatio(m_Rotation / (2*Math.PI)), m_Position.x, m_Position.y);
         }
 
         internal void DrawBullets(Graphics2D destRenderer)
         {
             int playerSequenceIndex = GetPlayerIndex();
-            ImageSequence bulletImage = (ImageSequence)DataAssetCache.Instance.GetAsset(typeof(ImageSequence), "Player" + (playerSequenceIndex + 1).ToString() + "Bullet");
+            GameImageSequence bulletImage = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "Player" + (playerSequenceIndex + 1).ToString() + "Bullet");
             foreach (Bullet aBullet in m_BulletList)
             {
                 destRenderer.Render(bulletImage.GetImageByIndex(0), aBullet.Position.x, aBullet.Position.y, aBullet.Velocity.GetAngle0To2PI(), 1, 1);
@@ -141,7 +141,7 @@ namespace RockBlaster
         public void DrawScore(Graphics2D destRenderer)
         {
             int playerSequenceIndex = GetPlayerIndex();
-            ImageSequence scoreSequence = (ImageSequence)DataAssetCache.Instance.GetAsset(typeof(ImageSequence), "ScoreNumbers");
+            GameImageSequence scoreSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "ScoreNumbers");
             string score = m_Score.ToString();
             int x = 43;
             int y = 577;

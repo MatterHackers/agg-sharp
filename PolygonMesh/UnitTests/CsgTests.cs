@@ -64,9 +64,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Assert.IsTrue(meshIntersect.Vertices.Count == 8);
                 foreach (Face face in meshIntersect.Faces)
                 {
-                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.vertex1.Position.x) == 3);
-                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.vertex1.Position.y) == 3);
-                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.vertex1.Position.z) == 3);
+                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.x) == 3);
+                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.y) == 3);
+                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.z) == 3);
                 }
             }
 
@@ -105,9 +105,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Assert.IsTrue(meshIntersect.Vertices.Count == 16);
                 foreach (Face face in meshIntersect.Faces)
                 {
-                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.vertex1.Position.x) == 7 || Math.Abs(face.firstFaceEdge.meshEdge.vertex1.Position.x) == 3);
-                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.vertex1.Position.y) == 5);
-                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.vertex1.Position.z) == 5);
+                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.x) == 7 || Math.Abs(face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.x) == 3);
+                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.y) == 5);
+                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.z) == 5);
                 }
             }
         }
@@ -131,9 +131,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Assert.IsTrue(meshIntersect.Vertices.Count == 8);
                 foreach (Face face in meshIntersect.Faces)
                 {
-                    Assert.IsTrue(face.firstFaceEdge.meshEdge.vertex1.Position.x == -7 || face.firstFaceEdge.meshEdge.vertex1.Position.x == -3);
-                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.vertex1.Position.y) == 5);
-                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.vertex1.Position.z) == 5);
+                    Assert.IsTrue(face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.x == -7 || face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.x == -3);
+                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.y) == 5);
+                    Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.z) == 5);
                 }
             }
         }

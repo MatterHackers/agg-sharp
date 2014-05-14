@@ -111,7 +111,7 @@ namespace MatterHackers.Agg.VertexSource
             }
         }
 
-        public IEnumerable<VertexData> VertexIterator()
+        public IEnumerable<VertexData> Vertices()
         {
             throw new NotImplementedException();
         }

@@ -30,7 +30,6 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
@@ -60,15 +59,15 @@ namespace MatterHackers.MeshVisualizer
         public bool RenderBed { get; set; }
         public bool RenderBuildVolume { get; set; }
 
-        bool showWireFrame = false;
-        public bool ShowWireFrame
+        RenderTypes renderType = RenderTypes.Shaded;
+        public RenderTypes RenderType
         {
-            get { return showWireFrame; }
+            get { return renderType; }
             set
             {
-                if (showWireFrame != value)
+                if (renderType != value)
                 {
-                    showWireFrame = value;
+                    renderType = value;
                     foreach (Mesh mesh in Meshes)
                     {
                         mesh.MarkAsChanged();
@@ -78,8 +77,8 @@ namespace MatterHackers.MeshVisualizer
         }
 
         double partScale;
-        ImageBuffer bedCentimeterGridImage;
-        TextWidget meshLoadingStateInfoText;
+        public ImageBuffer BedImage;
+        TextWidget centeredInfoText;
         TrackballTumbleWidget trackballTumbleWidget;
         public TrackballTumbleWidget TrackballTumbleWidget
         {
@@ -141,11 +140,11 @@ namespace MatterHackers.MeshVisualizer
         public enum BedShape { Rectangular, Circular };
         BedShape bedShape = BedShape.Rectangular;
 
-        public MeshViewerWidget(Vector3 displayVolume, double scale, BedShape bedShape)
+        public MeshViewerWidget(Vector3 displayVolume, double scale, BedShape bedShape, string startingTextMessage = "")
         {
             this.bedShape = bedShape;
             this.displayVolume = displayVolume;
-            ShowWireFrame = false;
+            RenderType = RenderTypes.Shaded;
             RenderBed = true;
             RenderBuildVolume = false;
             PartColor = RGBA_Bytes.White;
@@ -176,15 +175,13 @@ namespace MatterHackers.MeshVisualizer
                     {
                         Face face = printerBed.Faces[0];
                         {
-                            FaceData faceData = new FaceData();
-                            faceData.Textures.Add(bedCentimeterGridImage);
-                            face.Data = faceData;
-                            foreach (FaceEdge faceEdge in face.FaceEdgeIterator())
+                            FaceTextureData faceData = FaceTextureData.Get(face);
+                            faceData.Textures.Add(BedImage);
+                            foreach (FaceEdge faceEdge in face.FaceEdges())
                             {
-                                FaceEdgeData edgeUV = new FaceEdgeData();
-                                edgeUV.TextureUV.Add(new Vector2((displayVolume.x / 2 + faceEdge.vertex.Position.x) / displayVolume.x,
-                                    (displayVolume.y / 2 + faceEdge.vertex.Position.y) / displayVolume.y));
-                                faceEdge.Data = edgeUV;
+                                FaceEdgeTextureUvData edgeUV = FaceEdgeTextureUvData.Get(faceEdge);
+                                edgeUV.TextureUV.Add(new Vector2((displayVolume.x / 2 + faceEdge.firstVertex.Position.x) / displayVolume.x,
+                                    (displayVolume.y / 2 + faceEdge.firstVertex.Position.y) / displayVolume.y));
                             }
                         }
                     }
@@ -211,15 +208,13 @@ namespace MatterHackers.MeshVisualizer
                             {
                                 if (face.normal.z > 0)
                                 {
-                                    FaceData faceData = new FaceData();
-                                    faceData.Textures.Add(bedCentimeterGridImage);
-                                    face.Data = faceData;
-                                    foreach (FaceEdge faceEdge in face.FaceEdgeIterator())
+                                    FaceTextureData faceData = FaceTextureData.Get(face);
+                                    faceData.Textures.Add(BedImage);
+                                    foreach (FaceEdge faceEdge in face.FaceEdges())
                                     {
-                                        FaceEdgeData edgeUV = new FaceEdgeData();
-                                        edgeUV.TextureUV.Add(new Vector2((displayVolume.x / 2 + faceEdge.vertex.Position.x) / displayVolume.x,
-                                            (displayVolume.y / 2 + faceEdge.vertex.Position.y) / displayVolume.y));
-                                        faceEdge.Data = edgeUV;
+                                        FaceEdgeTextureUvData edgeUV = FaceEdgeTextureUvData.Get(faceEdge);
+                                        edgeUV.TextureUV.Add(new Vector2((displayVolume.x / 2 + faceEdge.firstVertex.Position.x) / displayVolume.x,
+                                            (displayVolume.y / 2 + faceEdge.firstVertex.Position.y) / displayVolume.y));
                                     }
                                 }
                             }
@@ -236,6 +231,18 @@ namespace MatterHackers.MeshVisualizer
             }
 
             trackballTumbleWidget.AnchorAll();
+
+            centeredInfoText = new TextWidget(startingTextMessage);
+            centeredInfoText.HAnchor = HAnchor.ParentCenter;
+            centeredInfoText.VAnchor = VAnchor.ParentCenter;
+            centeredInfoText.AutoExpandBoundsToText = true;
+
+            GuiWidget labelContainer = new GuiWidget();
+            labelContainer.AnchorAll();
+            labelContainer.AddChild(centeredInfoText);
+            labelContainer.Selectable = false;
+
+            this.AddChild(labelContainer);
         }
 
         public override void OnClosed(EventArgs e)
@@ -268,14 +275,7 @@ namespace MatterHackers.MeshVisualizer
                     drawColor = SelectedPartColor;
                 }
 
-                if (ShowWireFrame)
-                {
-                    RenderMeshToGl.Render(meshToRender, drawColor, MeshTransforms[i], true);
-                }
-                else
-                {
-                    RenderMeshToGl.Render(meshToRender, drawColor, MeshTransforms[i]);
-                }
+                RenderMeshToGl.Render(meshToRender, drawColor, MeshTransforms[i], RenderType);
             }
 
             // we don't want to render the bed or bulid volume before we load a model.
@@ -297,57 +297,50 @@ namespace MatterHackers.MeshVisualizer
 
         public void LoadMesh(string meshPathAndFileName)
         {
-            backgroundWorker = new BackgroundWorker();
-            backgroundWorker.WorkerReportsProgress = true;
-            backgroundWorker.WorkerSupportsCancellation = true;
-
-            backgroundWorker.ProgressChanged += new ProgressChangedEventHandler(backgroundWorker_ProgressChanged);
-            backgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(backgroundWorker_RunWorkerCompleted);
-
-            bool loadingMeshFile = false;
-            switch(Path.GetExtension(meshPathAndFileName).ToUpper())
+            if (File.Exists(meshPathAndFileName))
             {
-                case ".STL":
-                    {
-                        StlProcessing.LoadInBackground(backgroundWorker, meshPathAndFileName);
-                        loadingMeshFile = true;
-                    }
-                    break;
+                backgroundWorker = new BackgroundWorker();
+                backgroundWorker.WorkerReportsProgress = true;
+                backgroundWorker.WorkerSupportsCancellation = true;
 
-                case ".AMF":
-                    {
-                        AmfProcessing amfLoader = new AmfProcessing();
-                        amfLoader.LoadInBackground(backgroundWorker, meshPathAndFileName);
-                        loadingMeshFile = true;
-                    }
-                    break;
+                backgroundWorker.ProgressChanged += new ProgressChangedEventHandler(backgroundWorker_ProgressChanged);
+                backgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(backgroundWorker_RunWorkerCompleted);
 
-                default:
-                    loadingMeshFile = false;
-                    break;
-            }
+                bool loadingMeshFile = false;
+                switch (Path.GetExtension(meshPathAndFileName).ToUpper())
+                {
+                    case ".STL":
+                        {
+                            StlProcessing.LoadInBackground(backgroundWorker, meshPathAndFileName);
+                            loadingMeshFile = true;
+                        }
+                        break;
 
-            if (loadingMeshFile)
-            {
-                meshLoadingStateInfoText = new TextWidget("Loading Mesh...");
-                meshLoadingStateInfoText.HAnchor = HAnchor.ParentCenter;
-                meshLoadingStateInfoText.VAnchor = VAnchor.ParentCenter;
-                meshLoadingStateInfoText.AutoExpandBoundsToText = true;
+                    case ".AMF":
+                        {
+                            AmfProcessing amfLoader = new AmfProcessing();
+                            amfLoader.LoadInBackground(backgroundWorker, meshPathAndFileName);
+                            loadingMeshFile = true;
+                        }
+                        break;
 
-                GuiWidget labelContainer = new GuiWidget();
-                labelContainer.AnchorAll();
-                labelContainer.AddChild(meshLoadingStateInfoText);
-                labelContainer.Selectable = false;
+                    default:
+                        loadingMeshFile = false;
+                        break;
+                }
 
-                this.AddChild(labelContainer);
+                if (loadingMeshFile)
+                {
+                    centeredInfoText.Text = "Loading Mesh...";
+                }
+                else
+                {
+                    centeredInfoText.Text = string.Format("Sorry! No 3D view available\nfor this file type '{0}'.", Path.GetExtension(meshPathAndFileName).ToUpper());
+                }
             }
             else
             {
-                TextWidget no3DView = new TextWidget(string.Format("Sorry! No 3D view available for this file type '{0}'.", Path.GetExtension(meshPathAndFileName).ToUpper()));
-                no3DView.Margin = new BorderDouble(0, 0, 0, 0);
-                no3DView.VAnchor = Agg.UI.VAnchor.ParentCenter;
-                no3DView.HAnchor = Agg.UI.HAnchor.ParentCenter;
-                this.AddChild(no3DView);
+                centeredInfoText.Text = string.Format("{0}\n'{1}'", "File not found on disk.", Path.GetFileName(meshPathAndFileName));
             }
         }
 
@@ -357,11 +350,7 @@ namespace MatterHackers.MeshVisualizer
 
             if (loadedMesh == null)
             {
-                TextWidget no3DView = new TextWidget(string.Format("Sorry! No 3D view available for this file."));
-                no3DView.Margin = new BorderDouble(0, 0, 0, 0);
-                no3DView.VAnchor = Agg.UI.VAnchor.ParentCenter;
-                no3DView.HAnchor = Agg.UI.HAnchor.ParentCenter;
-                this.AddChild(no3DView);
+                centeredInfoText.Text = string.Format("Sorry! No 3D view available\nfor this file.");
             }
             else
             {
@@ -394,7 +383,7 @@ namespace MatterHackers.MeshVisualizer
         void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             SetMeshAfterLoad((Mesh)e.Result);
-            meshLoadingStateInfoText.Text = "";
+            centeredInfoText.Text = "";
 
             if (LoadDone != null)
             {
@@ -404,7 +393,7 @@ namespace MatterHackers.MeshVisualizer
 
         void backgroundWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            meshLoadingStateInfoText.Text = string.Format("Loading Mesh {0}%...", e.ProgressPercentage);
+            centeredInfoText.Text = string.Format("Loading Mesh {0}%...", e.ProgressPercentage);
         }
 
         public override void OnMouseDown(MouseEventArgs mouseEvent)
@@ -431,33 +420,33 @@ namespace MatterHackers.MeshVisualizer
         void CreateRectangularBedGridImage(int linesInX, int linesInY)
         {
             Vector2 bedImageCentimeters = new Vector2(linesInX, linesInY);
-            bedCentimeterGridImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
-            Graphics2D graphics2D = bedCentimeterGridImage.NewGraphics2D();
+            BedImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
+            Graphics2D graphics2D = BedImage.NewGraphics2D();
             graphics2D.Clear(RGBA_Bytes.White);
             {
-                double lineDist = bedCentimeterGridImage.Width / (double)linesInX;
+                double lineDist = BedImage.Width / (double)linesInX;
 
                 int count = 1;
                 int pointSize = 20;
                 graphics2D.DrawString(count.ToString(), 0, 0, pointSize);
-                for (double linePos = lineDist; linePos < bedCentimeterGridImage.Width; linePos += lineDist)
+                for (double linePos = lineDist; linePos < BedImage.Width; linePos += lineDist)
                 {
                     count++;
                     int linePosInt = (int)linePos;
-                    graphics2D.Line(linePosInt, 0, linePosInt, bedCentimeterGridImage.Height, RGBA_Bytes.Black);
+                    graphics2D.Line(linePosInt, 0, linePosInt, BedImage.Height, RGBA_Bytes.Black);
                     graphics2D.DrawString(count.ToString(), linePos, 0, pointSize);
                 }
             }
             {
-                double lineDist = bedCentimeterGridImage.Height / (double)linesInY;
+                double lineDist = BedImage.Height / (double)linesInY;
 
                 int count = 1;
                 int pointSize = 20;
-                for (double linePos = lineDist; linePos < bedCentimeterGridImage.Height; linePos += lineDist)
+                for (double linePos = lineDist; linePos < BedImage.Height; linePos += lineDist)
                 {
                     count++;
                     int linePosInt = (int)linePos;
-                    graphics2D.Line(0, linePosInt, bedCentimeterGridImage.Height, linePosInt, RGBA_Bytes.Black);
+                    graphics2D.Line(0, linePosInt, BedImage.Height, linePosInt, RGBA_Bytes.Black);
                     graphics2D.DrawString(count.ToString(), 0, linePos, pointSize);
                 }
             }
@@ -466,22 +455,22 @@ namespace MatterHackers.MeshVisualizer
         void CreateCircularBedGridImage(int linesInX, int linesInY)
         {
             Vector2 bedImageCentimeters = new Vector2(linesInX, linesInY);
-            bedCentimeterGridImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
-            Graphics2D graphics2D = bedCentimeterGridImage.NewGraphics2D();
+            BedImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
+            Graphics2D graphics2D = BedImage.NewGraphics2D();
             graphics2D.Clear(RGBA_Bytes.White);
 #if true
             {
-                double lineDist = bedCentimeterGridImage.Width / (double)linesInX;
+                double lineDist = BedImage.Width / (double)linesInX;
 
                 int count = 1;
                 int pointSize = 20;
                 graphics2D.DrawString(count.ToString(), 0, 0, pointSize);
                 double currentRadius = lineDist;
-                Vector2 bedCenter = new Vector2(bedCentimeterGridImage.Width / 2, bedCentimeterGridImage.Height / 2);
-                for (double linePos = lineDist + bedCentimeterGridImage.Width / 2; linePos < bedCentimeterGridImage.Width; linePos += lineDist)
+                Vector2 bedCenter = new Vector2(BedImage.Width / 2, BedImage.Height / 2);
+                for (double linePos = lineDist + BedImage.Width / 2; linePos < BedImage.Width; linePos += lineDist)
                 {
                     int linePosInt = (int)linePos;
-                    graphics2D.DrawString(count.ToString(), linePos + 2, bedCentimeterGridImage.Height / 2, pointSize);
+                    graphics2D.DrawString(count.ToString(), linePos + 2, BedImage.Height / 2, pointSize);
 
                     Ellipse circle = new Ellipse(bedCenter, currentRadius);
                     Stroke outline = new Stroke(circle);
@@ -490,8 +479,8 @@ namespace MatterHackers.MeshVisualizer
                     count++;
                 }
 
-                graphics2D.Line(0, bedCentimeterGridImage.Height / 2, bedCentimeterGridImage.Width, bedCentimeterGridImage.Height / 2, RGBA_Bytes.Black);
-                graphics2D.Line(bedCentimeterGridImage.Width / 2, 0, bedCentimeterGridImage.Width/2, bedCentimeterGridImage.Height, RGBA_Bytes.Black);
+                graphics2D.Line(0, BedImage.Height / 2, BedImage.Width, BedImage.Height / 2, RGBA_Bytes.Black);
+                graphics2D.Line(BedImage.Width / 2, 0, BedImage.Width/2, BedImage.Height, RGBA_Bytes.Black);
             }
 #else
             {
@@ -521,6 +510,13 @@ namespace MatterHackers.MeshVisualizer
                     graphics2D.DrawString(count.ToString(), 0, linePos, pointSize);
                 }
             }
+#endif
+        }
+
+        public static void AssertDebugNotDefined()
+        {
+#if DEBUG
+            throw new Exception("DEBUG is defined and should not be!");
 #endif
         }
     }

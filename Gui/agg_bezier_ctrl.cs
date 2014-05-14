@@ -147,7 +147,7 @@ namespace MatterHackers.Agg.UI
 
         // Vertex source interface
         public override int num_paths() { return 7; }
-        public override IEnumerable<VertexData> VertexIterator()
+        public override IEnumerable<VertexData> Vertices()
         {
             throw new NotImplementedException();
         }
@@ -363,7 +363,7 @@ namespace MatterHackers.Agg.UI
         // Vertex source interface
         public override int num_paths() { return 6; }
 
-        public override IEnumerable<VertexData> VertexIterator()
+        public override IEnumerable<VertexData> Vertices()
         {
             throw new NotImplementedException();
         }

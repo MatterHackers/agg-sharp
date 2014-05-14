@@ -26,7 +26,6 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies, 
 either expressed or implied, of the FreeBSD Project.
 */
-//#define RUN_TIMING_TESTS
 
 using System;
 using System.Diagnostics;
@@ -37,6 +36,7 @@ using System.Text;
 using System.ComponentModel;
 using System.Threading;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 using MatterHackers.Agg;
 using MatterHackers.PolygonMesh;
@@ -63,9 +63,9 @@ namespace MatterHackers.PolygonMesh.Processors
             foreach(Face face in meshToSave.Faces)
             {
                 List<Vector3> positionsCCW = new List<Vector3>();
-                foreach (FaceEdge faceEdge in face.FaceEdgeIterator())
+                foreach (FaceEdge faceEdge in face.FaceEdges())
                 {
-                    positionsCCW.Add(faceEdge.vertex.Position);
+                    positionsCCW.Add(faceEdge.firstVertex.Position);
                 }
 
                 int numPolys = positionsCCW.Count - 2;
@@ -176,12 +176,10 @@ namespace MatterHackers.PolygonMesh.Processors
             }
         }
 
-#if RUN_TIMING_TESTS
-        static NamedExecutionTimer parseSTL = new NamedExecutionTimer("Parse STL");
-#endif
-
         public static void ParseFileContents(object sender, DoWorkEventArgs doWorkEventArgs)
         {
+            Stopwatch time = new Stopwatch();
+            time.Start();
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
             Stream stlStream = (Stream)doWorkEventArgs.Argument;
@@ -189,14 +187,15 @@ namespace MatterHackers.PolygonMesh.Processors
             {
                 return;
             }
-#if RUN_TIMING_TESTS
-            parseSTL.Start();
-#endif
+
+            //MemoryStream stlStream = new MemoryStream();
+            //stlStreamIn.CopyTo(stlStream);
+
             Stopwatch maxProgressReport = new Stopwatch();
             maxProgressReport.Start();
             Mesh meshFromStlFile = new Mesh();
             //meshFromStlFile.MaxDistanceToConsiderVertexAsSame = .0000005;
-            meshFromStlFile.MaxDistanceToConsiderVertexAsSame = 0; // only vertecies that are the exact same point will be merged.
+            meshFromStlFile.MaxDistanceToConsiderVertexAsSame = 0; // only vertices that are the exact same point will be merged.
             long bytesInFile = stlStream.Length;
             if (bytesInFile <= 80)
             {
@@ -216,70 +215,48 @@ namespace MatterHackers.PolygonMesh.Processors
             {
                 stlStream.Position = 0;
                 StreamReader stlReader = new StreamReader(stlStream);
-                int lineIndex = 0;
-                string currentLine = stlReader.ReadLine(); lineIndex++;
-                currentLine = stlReader.ReadLine(); lineIndex++;// move past solid
-                // ths is an ascii stl
-                do
+                int vectorIndex = 0;
+                Vector3 vector0 = new Vector3(0, 0, 0);
+                Vector3 vector1 = new Vector3(0, 0, 0);
+                Vector3 vector2 = new Vector3(0, 0, 0);
+                string line = stlReader.ReadLine();
+                Regex onlySingleSpaces = new Regex("\\s+", RegexOptions.Compiled);
+                while (line != null)
                 {
-                    if (currentLine == null) // found end of file
+                    line = onlySingleSpaces.Replace(line, " ");
+                    var parts = line.Trim().Split(' ');
+                    if (parts[0].Trim() == "vertex")
                     {
-                        break;
-                    }
-                    // skip blank lines
-                    while (currentLine.Trim() == "")
-                    {
-                        currentLine = stlReader.ReadLine(); lineIndex++;
-                    }
-                    if (currentLine.Trim().StartsWith("endsolid"))
-                    {
-                        break;
-                    }
-                    if (!currentLine.Trim().StartsWith("facet normal"))
-                    {
-                        // If there are more polygons they need to start with facet normal.
-                        // So if they didn't we stop loading and return whatever we have.
-                        break;
-                    }
-                    currentLine = stlReader.ReadLine(); lineIndex++;
-                    if (!currentLine.Trim().StartsWith("outer loop"))
-                    {
-                        throw new IOException("Error in STL file: expected 'outer loop'.");
-                    }
-                    currentLine = stlReader.ReadLine(); lineIndex++;
-
-                    Vector3 vector1; 
-                    bool goodPolygon = ParseLine(meshFromStlFile, currentLine, out vector1);
-                    currentLine = stlReader.ReadLine(); lineIndex++;
-                    
-                    Vector3 vector2; 
-                    goodPolygon &= ParseLine(meshFromStlFile, currentLine, out vector2);
-                    currentLine = stlReader.ReadLine(); lineIndex++;
-                    
-                    Vector3 vector3; 
-                    goodPolygon &= ParseLine(meshFromStlFile, currentLine, out vector3);
-                    currentLine = stlReader.ReadLine(); lineIndex++;
-
-                    if (currentLine == null)
-                    {
-                        return;
-                    }
-
-                    if (goodPolygon && !Vector3.Collinear(vector1, vector2, vector3))
-                    {
-                        Vertex vertex1 = meshFromStlFile.CreateVertex(vector1);
-                        Vertex vertex2 = meshFromStlFile.CreateVertex(vector2);
-                        Vertex vertex3 = meshFromStlFile.CreateVertex(vector3);
-                        if (vertex1.Data.ID == vertex2.Data.ID || vertex2.Data.ID == vertex3.Data.ID || vertex1.Data.ID == vertex3.Data.ID)
+                        vectorIndex++;
+                        switch (vectorIndex)
                         {
-                            //throw new Exception("All vertecies should be generated no matter what. Check that the STL loader is not colapsing faces.");
-                        }
-                        else
-                        {
-                            meshFromStlFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 });
+                            case 1:
+                                vector0.x = Convert.ToDouble(parts[1]);
+                                vector0.y = Convert.ToDouble(parts[2]);
+                                vector0.z = Convert.ToDouble(parts[3]);
+                                break;
+                            case 2:
+                                vector1.x = Convert.ToDouble(parts[1]);
+                                vector1.y = Convert.ToDouble(parts[2]);
+                                vector1.z = Convert.ToDouble(parts[3]);
+                                break;
+                            case 3:
+                                vector2.x = Convert.ToDouble(parts[1]);
+                                vector2.y = Convert.ToDouble(parts[2]);
+                                vector2.z = Convert.ToDouble(parts[3]);
+                                if (!Vector3.Collinear(vector0, vector1, vector2))
+                                {
+                                    Vertex vertex1 = meshFromStlFile.CreateVertex(vector0, true, true);
+                                    Vertex vertex2 = meshFromStlFile.CreateVertex(vector1, true, true);
+                                    Vertex vertex3 = meshFromStlFile.CreateVertex(vector2, true, true);
+                                    meshFromStlFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 }, true);
+                                }
+                                vectorIndex = 0;
+                                break;
                         }
                     }
-                    
+                    line = stlReader.ReadLine();
+
                     if (sender != null)
                     {
                         BackgroundWorker backgroundWorker = (BackgroundWorker)sender;
@@ -289,24 +266,13 @@ namespace MatterHackers.PolygonMesh.Processors
                             return;
                         }
 
-                        if(backgroundWorker.WorkerReportsProgress && maxProgressReport.ElapsedMilliseconds > 200)
+                        if (backgroundWorker.WorkerReportsProgress && maxProgressReport.ElapsedMilliseconds > 200)
                         {
-                            backgroundWorker.ReportProgress((int)(stlStream.Position * 100 / bytesInFile));
+                            backgroundWorker.ReportProgress((int)Math.Min((stlStream.Position * 100 / bytesInFile), 99));
                             maxProgressReport.Restart();
                         }
                     }
-
-                    if (!currentLine.Trim().StartsWith("endloop"))
-                    {
-                        throw new IOException("Error in STL file: expected 'endloop'.");
-                    }
-                    currentLine = stlReader.ReadLine(); lineIndex++;
-                    if (!currentLine.Trim().StartsWith("endfacet"))
-                    {
-                        throw new IOException("Error in STL file: expected 'endfacet'.");
-                    }
-                    currentLine = stlReader.ReadLine(); lineIndex++;
-                } while (true);
+                }
             }
             else
             {
@@ -319,7 +285,7 @@ namespace MatterHackers.PolygonMesh.Processors
                 int currentPosition = 80;
                 uint numTriangles = System.BitConverter.ToUInt32(fileContents, currentPosition);
                 long bytesForNormals = numTriangles * 3 * 4;
-                long bytesForVertices = numTriangles * 3 * 4;
+                long bytesForVertices = numTriangles * 3 * 4 * 3;
                 long bytesForAttributs = numTriangles * 2;
                 currentPosition += 4;
                 long numBytesRequiredForVertexData = currentPosition + bytesForNormals + bytesForVertices + bytesForAttributs;
@@ -361,21 +327,23 @@ namespace MatterHackers.PolygonMesh.Processors
 
                     if (!Vector3.Collinear(vector[0], vector[1], vector[2]))
                     {
-                        Vertex vertex1 = meshFromStlFile.CreateVertex(vector[0]);
-                        Vertex vertex2 = meshFromStlFile.CreateVertex(vector[1]);
-                        Vertex vertex3 = meshFromStlFile.CreateVertex(vector[2]);
-                        meshFromStlFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 });
+                        Vertex vertex1 = meshFromStlFile.CreateVertex(vector[0], true, true);
+                        Vertex vertex2 = meshFromStlFile.CreateVertex(vector[1], true, true);
+                        Vertex vertex3 = meshFromStlFile.CreateVertex(vector[2], true, true);
+                        meshFromStlFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 }, true);
                     }
                 }
                 //uint numTriangles = System.BitConverter.ToSingle(fileContents, 80);
-
             }
 
-#if RUN_TIMING_TESTS
-            parseSTL.Stop();
-#endif
+            // merge all the vetexes that are in the same place together
+            meshFromStlFile.CleanAndMergMesh();
 
             doWorkEventArgs.Result = meshFromStlFile;
+
+            time.Stop();
+            Debug.WriteLine(string.Format("STL Load in {0:0.00}s", time.Elapsed.TotalSeconds));
+
             stlStream.Close();
         }
 

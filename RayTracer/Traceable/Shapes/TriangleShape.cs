@@ -26,8 +26,9 @@ namespace MatterHackers.RayTracer
         int yForMajorAxis = 2;
         RectangleDouble boundsOnMajorAxis = new RectangleDouble(double.MaxValue, double.MaxValue, double.MinValue, double.MinValue);
         Vector3[] vertices = new Vector3[3];
+        Vector3 center;
 
-        public TriangleShape(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2, IMaterial material)
+        public TriangleShape(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2, MaterialAbstract material)
         {
             Vector3 planeNormal = Vector3.Cross(vertex1 - vertex0, vertex2 - vertex0).GetNormal();
             double distanceFromOrigin = Vector3.Dot(vertex0, planeNormal);
@@ -36,6 +37,7 @@ namespace MatterHackers.RayTracer
             vertices[0] = vertex0;
             vertices[1] = vertex1;
             vertices[2] = vertex2;
+            center = (vertex0 + vertex1 + vertex2) / 3;
             if (Math.Abs(planeNormal.x) > Math.Abs(planeNormal.y))
             {
                 if (Math.Abs(planeNormal.x) > Math.Abs(planeNormal.z))
@@ -89,11 +91,22 @@ namespace MatterHackers.RayTracer
             return accumulation.Length;
         }
 
+        public override Vector3 GetCenter()
+        {
+            return center;
+        }
+
+        AxisAlignedBoundingBox cachedAABB = new AxisAlignedBoundingBox(Vector3.NegativeInfinity, Vector3.NegativeInfinity);
         public override AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
         {
-            Vector3 minXYZ = Vector3.ComponentMin(Vector3.ComponentMin(vertices[0], vertices[1]), vertices[2]);
-            Vector3 maxXYZ = Vector3.ComponentMax(Vector3.ComponentMax(vertices[0], vertices[1]), vertices[2]);
-            return new AxisAlignedBoundingBox(minXYZ, maxXYZ);
+            if (cachedAABB.minXYZ.x == double.NegativeInfinity)
+            {
+                Vector3 minXYZ = Vector3.ComponentMin(Vector3.ComponentMin(vertices[0], vertices[1]), vertices[2]);
+                Vector3 maxXYZ = Vector3.ComponentMax(Vector3.ComponentMax(vertices[0], vertices[1]), vertices[2]);
+                cachedAABB = new AxisAlignedBoundingBox(minXYZ, maxXYZ);
+            }
+
+            return cachedAABB;
         }
 
         public override RGBA_Floats GetColor(IntersectInfo info)
@@ -198,7 +211,7 @@ namespace MatterHackers.RayTracer
             throw new NotImplementedException();
         }
 
-        public override void GetClosestIntersections(RayBundle ray, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
+        public override void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
         {
             throw new NotImplementedException();
         }

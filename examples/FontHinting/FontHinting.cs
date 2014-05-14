@@ -109,7 +109,7 @@ namespace MatterHackers.Agg
         {
             MatterHackers.Agg.UI.Tests.UnitTests.Run();
             AppWidgetFactory appWidget = new BlurFactory();
-            appWidget.CreateWidgetAndRunInWindow(SystemWindow.ValidDepthVaules.Depth24);
+            appWidget.CreateWidgetAndRunInWindow(SystemWindow.PixelTypes.Depth24);
         }
     }
 

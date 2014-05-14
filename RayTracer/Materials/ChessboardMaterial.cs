@@ -16,7 +16,7 @@ using MatterHackers.Agg.Image;
 
 namespace MatterHackers.RayTracer
 {
-    public class ChessboardMaterial : BaseMaterial
+    public class ChessboardMaterial : MaterialAbstract
     {
         /// <summary>
         /// E.g. the represents the black squares on the chessboard

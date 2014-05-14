@@ -207,7 +207,7 @@ namespace Tesselate
             }
         }
 
-        public void CallEdegFlag(bool edgeState)
+        public void CallEdgeFlag(bool edgeState)
         {
             if (callEdgeFlag != null)
             {
@@ -781,7 +781,7 @@ namespace Tesselate
                         {
                             sentFirstEdge = true;
                             edgeState = newState;
-                            this.CallEdegFlag(edgeState);
+                            this.CallEdgeFlag(edgeState);
                         }
                     }
 

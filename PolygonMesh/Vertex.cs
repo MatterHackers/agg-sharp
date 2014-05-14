@@ -33,16 +33,57 @@ using MatterHackers.VectorMath;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using System.Diagnostics;
 
 namespace MatterHackers.PolygonMesh
 {
+    [DebuggerDisplay("ID = {Data.ID}")]
     public class Vertex
     {
-        MetaData data = new MetaData();
-        public MetaData Data { get { return data; } }
+        public MetaData Data 
+        { 
+            get 
+            {
+                return MetaData.Get(this);
+            } 
+        }
 
+#if false
         public Vector3 Position { get; set; }
         public Vector3 Normal { get; set; }
+#else
+        // this is to save memory on each vertex (12 bytes per positon and 12 per normal rather than 24 and 24)
+        Vector3Float position;
+        public Vector3 Position 
+        {
+            get
+            {
+                return new Vector3(position.x, position.y, position.z); 
+            }
+            set
+            {
+                position.x = (float)value.x;
+                position.y = (float)value.y;
+                position.z = (float)value.z;
+            }
+        }
+
+        Vector3Float normal;
+        public Vector3 Normal
+        {
+            get
+            {
+                return new Vector3(normal.x, normal.y, normal.z);
+            }
+            set
+            {
+                normal.x = (float)value.x;
+                normal.y = (float)value.y;
+                normal.z = (float)value.z;
+            }
+        }
+#endif
+
         public MeshEdge firstMeshEdge;
 
         public Vertex(Vector3 position)
@@ -71,10 +112,10 @@ namespace MatterHackers.PolygonMesh
             }
         }
 
-        public IEnumerable<Face> ConnectedFacesIterator()
+        public IEnumerable<Face> ConnectedFaces()
         {
             HashSet<Face> allFacesOfThisEdge = new HashSet<Face>();
-            foreach (MeshEdge meshEdge in ConnectedMeshEdgesIterator())
+            foreach (MeshEdge meshEdge in ConnectedMeshEdges())
             {
                 foreach (Face face in meshEdge.FacesSharingMeshEdgeIterator())
                 {
@@ -88,7 +129,18 @@ namespace MatterHackers.PolygonMesh
             }
         }
 
-        public IEnumerable<MeshEdge> ConnectedMeshEdgesIterator()
+        public List<MeshEdge> GetConnectedMeshEdges()
+        {
+            List<MeshEdge> meshEdgeList = new List<MeshEdge>();
+            foreach (MeshEdge meshEdge in ConnectedMeshEdges())
+            {
+                meshEdgeList.Add(meshEdge);
+            }
+
+            return meshEdgeList;
+        }
+
+        public IEnumerable<MeshEdge> ConnectedMeshEdges()
         {
             MeshEdge curMeshEdge = this.firstMeshEdge;
             if (curMeshEdge != null)
@@ -97,15 +149,7 @@ namespace MatterHackers.PolygonMesh
                 {
                     yield return curMeshEdge;
 
-                    MeshEdgeLinks nextEdgeLink = curMeshEdge.GetMeshEdgeLinksContainingVertex(this);
-                    if (nextEdgeLink.nextMeshEdge == curMeshEdge)
-                    {
-                        curMeshEdge = nextEdgeLink.prevMeshEdge;
-                    }
-                    else
-                    {
-                        curMeshEdge = nextEdgeLink.nextMeshEdge;
-                    }
+                    curMeshEdge = curMeshEdge.GetNextMeshEdgeConnectedTo(this);
                 } while (curMeshEdge != this.firstMeshEdge);
             }
         }
@@ -117,7 +161,7 @@ namespace MatterHackers.PolygonMesh
                 return null;
             }
 
-            foreach (MeshEdge meshEdge in ConnectedMeshEdgesIterator())
+            foreach (MeshEdge meshEdge in ConnectedMeshEdges())
             {
                 if (meshEdge.IsConnectedTo(vertexToFindConnectionTo))
                 {
@@ -128,46 +172,15 @@ namespace MatterHackers.PolygonMesh
             return null;
         }
 
-        public int GetNumConnectedMeshEdges()
+        public int GetConnectedMeshEdgesCount()
         {
             int numConnectedEdges = 0;
-            foreach (MeshEdge edge in ConnectedMeshEdgesIterator())
+            foreach (MeshEdge edge in ConnectedMeshEdges())
             {
                 numConnectedEdges++;
             }
 
             return numConnectedEdges;
-        }
-
-        public void RemoveMeshEdgeFromMeshEdgeLinks(MeshEdge meshEdgeToRemove)
-        {
-            MeshEdgeLinks edgeLinksRemoveFrom1 = meshEdgeToRemove.GetMeshEdgeLinksContainingVertex(this);
-
-            if (edgeLinksRemoveFrom1.prevMeshEdge != null)
-            {
-                MeshEdgeLinks hold = edgeLinksRemoveFrom1.prevMeshEdge.GetMeshEdgeLinksContainingVertex(this);
-                hold.nextMeshEdge = edgeLinksRemoveFrom1.nextMeshEdge;
-            }
-
-            if (edgeLinksRemoveFrom1.nextMeshEdge != null)
-            {
-                MeshEdgeLinks hold = edgeLinksRemoveFrom1.nextMeshEdge.GetMeshEdgeLinksContainingVertex(this);
-                hold.prevMeshEdge = edgeLinksRemoveFrom1.prevMeshEdge;
-            }
-
-            if (firstMeshEdge == meshEdgeToRemove)
-            {
-                if (edgeLinksRemoveFrom1.nextMeshEdge == meshEdgeToRemove)
-                {
-                    firstMeshEdge = null;
-                }
-                else
-                {
-                    firstMeshEdge = edgeLinksRemoveFrom1.nextMeshEdge;
-                }
-            }
-
-            edgeLinksRemoveFrom1.nextMeshEdge = edgeLinksRemoveFrom1.prevMeshEdge = null;
         }
 
         public void Validate()

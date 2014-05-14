@@ -279,7 +279,7 @@ namespace MatterHackers.Agg.UI
         // Vertex soutce interface
         public override int num_paths() { return 5; }
 
-        public override IEnumerable<VertexData> VertexIterator()
+        public override IEnumerable<VertexData> Vertices()
         {
             throw new NotImplementedException();
         }

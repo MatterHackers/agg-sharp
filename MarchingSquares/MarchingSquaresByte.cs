@@ -64,21 +64,76 @@ namespace MatterHackers.MarchingSquares
         }
     }
 
+    public class SimpleRange
+    {
+        int starting;
+        int ending;
+
+        public SimpleRange(int starting = 0, int ending = 255)
+        {
+            this.starting = Math.Min(starting, 254);
+            this.ending = Math.Max(ending, starting + 1);
+        }
+
+        public double Threshold(RGBA_Bytes color)
+        {
+            if (color.Red0To255 < starting)
+            {
+                return 0;
+            }
+            else if (color.Red0To255 > ending)
+            {
+                return 1;
+            }
+            else
+            {
+                double value = (double)(color.Red0To255 - starting) / (double)(ending - starting);
+
+                return value;
+            }
+        }
+    }
+
     public class MarchingSquaresByte
     {
         ImageBuffer imageToMarch;
-        int threshold;
+
+        public delegate double PositiveArea0to1(RGBA_Bytes color);
+        PositiveArea0to1 thresholdFunction;
         int debugColor;
 
-        List<LineSegment> LineSegments = new List<LineSegment>();
+        public List<LineSegment> LineSegments = new List<LineSegment>();
+        double[] thersholdPerPixel = null;
 
-        public MarchingSquaresByte(ImageBuffer imageToMarch, int threshold, int debugColor)
+        public MarchingSquaresByte(ImageBuffer imageToMarch, PositiveArea0to1 thresholdFunction, int debugColor)
         {
-            this.threshold = threshold;
+            thersholdPerPixel = new double[imageToMarch.Width * imageToMarch.Height];
+            {
+                byte[] buffer = imageToMarch.GetBuffer();
+                int strideInBytes = imageToMarch.StrideInBytes();
+                for (int y = 0; y < imageToMarch.Height; y++)
+                {
+                    int imageBufferOffset = imageToMarch.GetBufferOffsetY(y);
+                    int thresholdBufferOffset = y * imageToMarch.Width;
+
+                    for (int x = 0; x < imageToMarch.Width; x++)
+                    {
+                        int imageBufferOffsetWithX = imageBufferOffset + x * 4;
+                        thersholdPerPixel[thresholdBufferOffset + x] = thresholdFunction(GetRGBA(buffer, imageBufferOffsetWithX));
+                    }
+                }
+            }
+
+            this.thresholdFunction = thresholdFunction;
             this.imageToMarch = imageToMarch;
             this.debugColor = debugColor;
 
             CreateLineSegments();
+        }
+
+        public MarchingSquaresByte(ImageBuffer imageToMarch, int thresholdFrom0, int debugColor)
+            : this(imageToMarch, new SimpleRange(thresholdFrom0).Threshold, debugColor)
+        {
         }
 
         public Polygons CreateLineLoops(int pixelsToIntPointsScale)
@@ -145,35 +200,34 @@ namespace MatterHackers.MarchingSquares
             return LineLoops;
         }
 
+        RGBA_Bytes GetRGBA(byte[] buffer, int offset)
+        {
+            return new RGBA_Bytes(buffer[offset + 2], buffer[offset + 1], buffer[offset + 0], buffer[offset + 3]);
+        }
+
         public void CreateLineSegments()
         {
             LineSegments.Clear();
-            byte[] buffer = imageToMarch.GetBuffer();
-            int strideInBytes = imageToMarch.StrideInBytes();
+
             for (int y = 0; y < imageToMarch.Height - 1; y++)
             {
-                int offset = imageToMarch.GetBufferOffsetY(y);
                 for (int x = 0; x < imageToMarch.Width - 1; x++)
                 {
-                    int offsetWithX = offset + x * 4;
-                    int point0 = buffer[offsetWithX+ strideInBytes];
-                    if (point0 > 0)
-                    {
-                        int a = 0;
-                    }
-                    int point1 = buffer[offsetWithX + 4 + strideInBytes];
-                    int point2 = buffer[offsetWithX + 4];
-                    int point3 = buffer[offsetWithX];
-                    int flags = (point0 > threshold) ? 1 : 0;
-                    flags = (flags << 1) | ((point1 > threshold) ? 1 : 0);
-                    flags = (flags << 1) | ((point2 > threshold) ? 1 : 0);
-                    flags = (flags << 1) | ((point3 > threshold) ? 1 : 0);
+                    double point0 = thersholdPerPixel[(x + 0) + (y + 1) * imageToMarch.Width];
+                    double point1 = thersholdPerPixel[(x + 1) + (y + 1) * imageToMarch.Width];
+                    double point2 = thersholdPerPixel[(x + 1) + (y + 0) * imageToMarch.Width];
+                    double point3 = thersholdPerPixel[(x + 0) + (y + 0) * imageToMarch.Width];
+
+                    int flags = (point0 > 0 ? 1 : 0);
+                    flags = (flags << 1) | (point1 > 0 ? 1 : 0);
+                    flags = (flags << 1) | (point2 > 0 ? 1 : 0);
+                    flags = (flags << 1) | (point3 > 0 ? 1 : 0);
 
                     bool wasFlipped = false;
                     if (flags == 5)
                     {
-                        int average = (point0 + point1 + point2 + point3) / 4;
-                        if (average < threshold)
+                        double average = (point0 + point1 + point2 + point3) / 4.0;
+                        if (average > .5)
                         {
                             flags = 10;
                             wasFlipped = true;
@@ -181,8 +235,8 @@ namespace MatterHackers.MarchingSquares
                     }
                     else if (flags == 10)
                     {
-                        int average = (point0 + point1 + point2 + point3) / 4;
-                        if (average < threshold)
+                        double average = (point0 + point1 + point2 + point3) / 4.0;
+                        if (average < .5)
                         {
                             flags = 5;
                             wasFlipped = true;
@@ -191,24 +245,23 @@ namespace MatterHackers.MarchingSquares
 
                     AddSegmentForFlags(x, y, flags, wasFlipped);
                 }
-
             }
         }
 
         LineSegment GetInterpolatedSegment(LineSegment segmentA, LineSegment segmentB)
         {
-            RGBA_Bytes colorAStart = imageToMarch.GetPixel((int)segmentA.start.x, (int)segmentA.start.y);
-            RGBA_Bytes colorAEnd = imageToMarch.GetPixel((int)segmentA.end.x, (int)segmentA.end.y);
+            double colorAStartThreshold = thersholdPerPixel[((int)segmentA.start.x) + ((int)segmentA.start.y) * imageToMarch.Width];
+            double colorAEndThreshold = thersholdPerPixel[((int)segmentA.end.x) + ((int)segmentA.end.y) * imageToMarch.Width];
 
             Vector2 directionA = segmentA.end - segmentA.start;
-            double offsetA = 1 - (colorAEnd.red / 255.0 + colorAStart.red / 255.0) / 2.0;
+            double offsetA = 1 - (colorAEndThreshold + colorAStartThreshold) / 2.0;
             directionA *= offsetA;
 
-            RGBA_Bytes colorBStart = imageToMarch.GetPixel((int)segmentB.start.x, (int)segmentB.start.y);
-            RGBA_Bytes colorBEnd = imageToMarch.GetPixel((int)segmentB.end.x, (int)segmentB.end.y);
+            double colorBStartThreshold = thersholdPerPixel[((int)segmentB.start.x) + ((int)segmentB.start.y) * imageToMarch.Width];
+            double colorBEndThreshold = thersholdPerPixel[((int)segmentB.end.x) + ((int)segmentB.end.y) * imageToMarch.Width];
 
             Vector2 directionB = segmentB.end - segmentB.start;
-            double ratioB = 1 - (colorBEnd.red / 255.0 + colorBStart.red / 255.0) / 2.0;
+            double ratioB = 1 - (colorBEndThreshold + colorBStartThreshold) / 2.0;
             directionB *= ratioB;
 
             double offsetToPixelCenter = .5;
@@ -224,9 +277,11 @@ namespace MatterHackers.MarchingSquares
 
         private void AddSegmentForFlags(int x, int y, int flags, bool wasFlipped)
         {
-            RGBA_Bytes color = RGBA_Bytes.Red;
-            if (flags != debugColor)
-                color = RGBA_Bytes.Green;
+            RGBA_Bytes color = RGBA_Bytes.Green;
+            if (flags == debugColor)
+            {
+                color = RGBA_Bytes.Red;
+            }
 
             switch (flags)
             {
@@ -317,6 +372,13 @@ namespace MatterHackers.MarchingSquares
                 Stroke StrockedLineToDraw = new Stroke(m_LinesToDraw, .25);
                 graphics2D.Render(StrockedLineToDraw, lineSegment.color);
             }
+        }
+
+        public static void AssertDebugNotDefined()
+        {
+#if DEBUG
+            throw new Exception("DEBUG is defined and should not be!");
+#endif
         }
     }
 }

@@ -40,7 +40,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -49,7 +49,21 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release64|AnyCPU'">
+    <OutputPath>bin\Release64\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <CodeAnalysisLogFile>bin\Release\MatterHackers.Agg.UI.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
+    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
+    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSetDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
+    <CodeAnalysisRuleDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="nunit.framework">
@@ -71,6 +85,7 @@
     <Compile Include="CheckBox\CheckBox.cs" />
     <Compile Include="CheckBox\CheckBoxViewSates.cs" />
     <Compile Include="CheckBox\CheckBoxViewText.cs" />
+    <Compile Include="Clipboard\Clipboard.cs" />
     <Compile Include="DefaultViewFactory.cs" />
     <Compile Include="DiagnosticsWidget.cs" />
     <Compile Include="FileDialogs\FileDialog.cs" />
@@ -82,7 +97,7 @@
     <Compile Include="FlowLayoutWidget.cs" />
     <Compile Include="GridControl.cs" />
     <Compile Include="GroupBox.cs" />
-    <Compile Include="GuiHal.cs" />
+    <Compile Include="SystemWindow\AbstractOsMappingWidget.cs" />
     <Compile Include="GuiWidget.cs" />
     <Compile Include="ImageWidget.cs" />
     <Compile Include="KeyEventArgs.cs" />
@@ -108,7 +123,9 @@
     <Compile Include="RadioButton\RadioButtonViewStates.cs" />
     <Compile Include="RadioButton\RadioButtonViewText.cs" />
     <Compile Include="RootedObjectEventHandler.cs" />
+    <Compile Include="ImageSequenceWidget.cs" />
     <Compile Include="StringEventArgs.cs" />
+    <Compile Include="SystemWindow\OsMappingWidgetFactory.cs" />
     <Compile Include="Tests\MenuTests.cs" />
     <Compile Include="TextWidgets\InternalNumberEdit.cs" />
     <Compile Include="TextWidgets\NumberEdit.cs" />
@@ -121,9 +138,9 @@
     <Compile Include="ScrollableWidget\ScrollBar.cs" />
     <Compile Include="ScrollableWidget\ScrollingArea.cs" />
     <Compile Include="SimpleVertexSourceWidget.cs" />
-    <Compile Include="Slider.cs" />
+    <Compile Include="Slider\Slider.cs" />
     <Compile Include="Splitter.cs" />
-    <Compile Include="SystemWindow.cs" />
+    <Compile Include="SystemWindow\SystemWindow.cs" />
     <Compile Include="TabControl\Tab.cs" />
     <Compile Include="TabControl\TabBar.cs" />
     <Compile Include="TabControl\TabControl.cs" />

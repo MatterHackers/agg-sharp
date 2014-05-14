@@ -192,7 +192,7 @@ namespace MatterHackers.Agg.VertexSource
             return v;
         }
 
-        public IEnumerable<VertexData> VertexIterator()
+        public IEnumerable<VertexData> Vertices()
         {
             throw new NotImplementedException();
         }

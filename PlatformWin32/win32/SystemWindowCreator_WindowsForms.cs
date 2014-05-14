@@ -9,10 +9,13 @@ namespace MatterHackers.Agg
 {
     public class SystemWindowCreator_WindowsForms : SystemWindowCreatorPlugin
     {
+        bool pendingSetInitialDesktopPosition = false;
+        Point2D InitialDesktopPosition = new Point2D();
+
         public override void ShowSystemWindow(SystemWindow systemWindow)
         {
             bool haveInitializedMainWindow = false;
-            if (GuiHalFactory.PrimaryHalWidget != null)
+            if (OsMappingWidgetFactory.PrimaryOsMappingWidget != null)
             {
                 haveInitializedMainWindow = true;
             }
@@ -21,38 +24,26 @@ namespace MatterHackers.Agg
             {
                 if (systemWindow.UseOpenGL)
                 {
-                    GuiHalFactory.SetGuiBackend(new WindowsFormsOpenGLFactory());
+                    OsMappingWidgetFactory.SetFactory(new WindowsFormsOpenGLFactory());
                 }
                 else
                 {
-                    GuiHalFactory.SetGuiBackend(new WindowsFormsBitmapFactory());
+                    OsMappingWidgetFactory.SetFactory(new WindowsFormsBitmapFactory());
                 }
             }
 
-            GuiHalWidget windowsFromsTopWindow;
-            switch (systemWindow.BitDepth)
+            AbstractOsMappingWidget windowsFormsTopWindow = OsMappingWidgetFactory.CreateOsMappingWidget(systemWindow);
+
+            windowsFormsTopWindow.Caption = systemWindow.Title;
+            windowsFormsTopWindow.AddChild(systemWindow);
+            windowsFormsTopWindow.MinimumSize = systemWindow.MinimumSize;
+
+            if (pendingSetInitialDesktopPosition)
             {
-                case SystemWindow.ValidDepthVaules.Depth24:
-                    windowsFromsTopWindow = GuiHalFactory.CreatePrimarySurface((int)systemWindow.Width, (int)systemWindow.Height,
-                        GuiHalWidget.CreateFlags.Resizable, GuiHalWidget.PixelFormat.PixelFormatBgr24, systemWindow.StencilBufferDepth);
-                    break;
-
-                case SystemWindow.ValidDepthVaules.Depth32:
-                    windowsFromsTopWindow = GuiHalFactory.CreatePrimarySurface((int)systemWindow.Width, (int)systemWindow.Height,
-                        GuiHalWidget.CreateFlags.Resizable, GuiHalWidget.PixelFormat.PixelFormatBgra32, systemWindow.StencilBufferDepth);
-                    break;
-
-                case SystemWindow.ValidDepthVaules.DepthFloat:
-                    windowsFromsTopWindow = GuiHalFactory.CreatePrimarySurface((int)systemWindow.Width, (int)systemWindow.Height,
-                        GuiHalWidget.CreateFlags.Resizable, GuiHalWidget.PixelFormat.PixelFormatRgbaFloat, systemWindow.StencilBufferDepth);
-                    break;
-
-                default:
-                    throw new NotImplementedException();
+                pendingSetInitialDesktopPosition = false;
+                systemWindow.DesktopPosition = InitialDesktopPosition;
             }
 
-            windowsFromsTopWindow.Caption = systemWindow.Title;
-            windowsFromsTopWindow.AddChild(systemWindow);
             systemWindow.AnchorAll();
             systemWindow.TitleChanged += new EventHandler(TitelChangedEventHandler);
             // and make sure the title is correct right now
@@ -62,23 +53,48 @@ namespace MatterHackers.Agg
             {
                 if (systemWindow.IsModal)
                 {
-                    windowsFromsTopWindow.ShowModal();
+                    windowsFormsTopWindow.ShowModal();
                 }
                 else
                 {
-                    windowsFromsTopWindow.Show();
+                    windowsFormsTopWindow.Show();
                 }
             }
             else
             {
-                windowsFromsTopWindow.Run();
+                windowsFormsTopWindow.Run();
+            }
+        }
+
+        public override Point2D GetDesktopPosition(SystemWindow systemWindow)
+        {
+            if (systemWindow.Parent != null)
+            {
+                AbstractOsMappingWidget windowsFromsTopWindow = (AbstractOsMappingWidget)systemWindow.Parent;
+                return windowsFromsTopWindow.DesktopPosition;
+            }
+
+            return new Point2D();
+        }
+
+        public override void SetDesktopPosition(SystemWindow systemWindow, Point2D position)
+        {
+            if (systemWindow.Parent != null)
+            {
+                AbstractOsMappingWidget windowsFromsTopWindow = (AbstractOsMappingWidget)systemWindow.Parent;
+                windowsFromsTopWindow.DesktopPosition = position;
+            }
+            else
+            {
+                pendingSetInitialDesktopPosition = true;
+                InitialDesktopPosition = position;
             }
         }
 
         void TitelChangedEventHandler(object sender, EventArgs e)
         {
             SystemWindow systemWindow = ((SystemWindow)sender);
-            GuiHalWidget windowsFromsTopWindow = (GuiHalWidget)systemWindow.Parent;
+            AbstractOsMappingWidget windowsFromsTopWindow = (AbstractOsMappingWidget)systemWindow.Parent;
             windowsFromsTopWindow.Caption = systemWindow.Title;
         }
     }

@@ -37,8 +37,8 @@ namespace MatterHackers.Agg
 
             mainNavigationTabControl.AddTab(new MenuPage());
 #if true
-            mainNavigationTabControl.AddTab(new SplitterPage());
             mainNavigationTabControl.AddTab(new TextEditPage());
+            mainNavigationTabControl.AddTab(new SplitterPage());
             mainNavigationTabControl.AddTab(new LayoutPage());
             mainNavigationTabControl.AddTab(new ButtonsPage());
 
@@ -66,7 +66,7 @@ namespace MatterHackers.Agg
         {
             if (!putUpDiagnostics)
             {
-                DiagnosticWidget diagnosticView = new DiagnosticWidget(this);
+                //DiagnosticWidget diagnosticView = new DiagnosticWidget(this);
                 putUpDiagnostics = true;
             }
             this.NewGraphics2D().Clear(new RGBA_Bytes(255, 255, 255));
@@ -82,11 +82,11 @@ namespace MatterHackers.Agg
         [STAThread]
         public static void Main(string[] args)
         {
-            GuiHalWidget.SetClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText); 
+            Clipboard.SetSystemClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText); 
             MatterHackers.Agg.Image.UnitTests.Run();
             MatterHackers.Agg.Font.UnitTests.Run();
             Agg.UI.Tests.UnitTests.Run();
-            MatterHackers.Agg.Tests.AggDrawingTests.RunAllTests();
+            MatterHackers.Agg.Tests.UnitTests.Run();
 
             AppWidgetFactory appWidget = new GuiTesterFactory();
             appWidget.CreateWidgetAndRunInWindow();

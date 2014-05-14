@@ -302,7 +302,7 @@ namespace MatterHackers.Agg.VertexSource
             ShapePath.FlagsAndCommand controlFlagsAndCommand = control.vertex(out controlX, out controlY);
 
             int index = 0;
-            foreach (VertexData vertexData in test.VertexIterator())
+            foreach (VertexData vertexData in test.Vertices())
             {
                 if (controlFlagsAndCommand != vertexData.command
                     || controlX < vertexData.position.x - maxError || controlX > vertexData.position.x + maxError
@@ -601,7 +601,7 @@ namespace MatterHackers.Agg.VertexSource
             vertices.modify_command(index, PathAndFlags);
         }
 
-        public IEnumerable<VertexData> VertexIterator()
+        public IEnumerable<VertexData> Vertices()
         {
             int count = vertices.total_vertices();
             for (int i = 0; i < count; i++)

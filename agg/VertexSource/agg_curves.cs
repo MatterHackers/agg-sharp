@@ -232,7 +232,7 @@ namespace MatterHackers.Agg.VertexSource
         public void cusp_limit(double limit) { }
         public double cusp_limit() { return 0.0; }
 
-        public IEnumerable<VertexData> VertexIterator()
+        public IEnumerable<VertexData> Vertices()
         {
             throw new NotImplementedException();
         }
@@ -337,7 +337,7 @@ namespace MatterHackers.Agg.VertexSource
         public void cusp_limit(double limit) { }
         public double cusp_limit() { return 0.0; }
 
-        public IEnumerable<VertexData> VertexIterator()
+        public IEnumerable<VertexData> Vertices()
         {
             for (int i = 0; i < m_points.size(); i++)
             {
@@ -640,7 +640,7 @@ namespace MatterHackers.Agg.VertexSource
         public void cusp_limit(double limit) { }
         public double cusp_limit() { return 0.0; }
 
-        public IEnumerable<VertexData> VertexIterator()
+        public IEnumerable<VertexData> Vertices()
         {
             throw new NotImplementedException();
         }
@@ -782,7 +782,7 @@ namespace MatterHackers.Agg.VertexSource
             return (m_cusp_limit == 0.0) ? 0.0 : Math.PI - m_cusp_limit;
         }
 
-        public IEnumerable<VertexData> VertexIterator()
+        public IEnumerable<VertexData> Vertices()
         {
             VertexData vertexData = new VertexData();
             vertexData.command = FlagsAndCommand.CommandMoveTo;
@@ -1134,18 +1134,18 @@ namespace MatterHackers.Agg.VertexSource
             return m_curve_div.cusp_limit();
         }
 
-        public IEnumerable<VertexData> VertexIterator()
+        public IEnumerable<VertexData> Vertices()
         {
             if (m_approximation_method == Curves.CurveApproximationMethod.curve_inc)
             {
-                foreach(VertexData vertexData in m_curve_inc.VertexIterator())
+                foreach (VertexData vertexData in m_curve_inc.Vertices())
                 {
                     yield return vertexData;
                 }
             }
             else
             {
-                foreach(VertexData vertexData in m_curve_div.VertexIterator())
+                foreach (VertexData vertexData in m_curve_div.Vertices())
                 {
                     yield return vertexData;
                 }
@@ -1265,15 +1265,15 @@ namespace MatterHackers.Agg.VertexSource
             return m_curve_div.cusp_limit();
         }
 
-        public IEnumerable<VertexData> VertexIterator()
+        public IEnumerable<VertexData> Vertices()
         {
             if (m_approximation_method == Curves.CurveApproximationMethod.curve_inc)
             {
-                return m_curve_inc.VertexIterator();
+                return m_curve_inc.Vertices();
             }
             else
             {
-                return m_curve_div.VertexIterator();
+                return m_curve_div.Vertices();
             }
         }
 

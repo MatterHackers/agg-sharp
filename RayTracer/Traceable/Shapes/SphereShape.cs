@@ -27,7 +27,7 @@ namespace MatterHackers.RayTracer
     {
         public double radius;
         public Vector3 position;
-        public SphereShape(Vector3 position, double radius, IMaterial material)
+        public SphereShape(Vector3 position, double radius, MaterialAbstract material)
         {
             this.radius = radius;
             this.position = position;

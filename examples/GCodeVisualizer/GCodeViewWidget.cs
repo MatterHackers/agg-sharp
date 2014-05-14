@@ -64,6 +64,8 @@ namespace MatterHackers.GCodeVisualizer
             }
         }
 
+        public double FeatureToStartOnRatio0To1 = 0;
+        public double FeatureToEndOnRatio0To1 = 1;
         public enum ETransformState { Move, Scale };
 
         public ETransformState TransformState { get; set; }
@@ -281,7 +283,8 @@ namespace MatterHackers.GCodeVisualizer
                     renderType |= RenderType.Retractions;
                 }
 
-                gCodeRenderer.Render(graphics2D, activeLayerIndex, transform, layerScale, renderType);
+                gCodeRenderer.Render(graphics2D, activeLayerIndex, transform, layerScale, renderType, 
+                    FeatureToStartOnRatio0To1, FeatureToEndOnRatio0To1);
             }
 
             base.OnDraw(graphics2D);

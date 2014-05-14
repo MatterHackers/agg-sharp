@@ -129,11 +129,11 @@ namespace MatterHackers.Agg.VertexSource
             }
         }
 
-        public IEnumerable<VertexData> VertexIterator()
+        public IEnumerable<VertexData> Vertices()
         {
             VertexData lastPosition = new VertexData();
 
-            IEnumerator<VertexData> vertexDataEnumerator = VertexSource.VertexIterator().GetEnumerator();
+            IEnumerator<VertexData> vertexDataEnumerator = VertexSource.Vertices().GetEnumerator();
             while (vertexDataEnumerator.MoveNext())
             {
                 VertexData vertexData = vertexDataEnumerator.Current;
@@ -144,7 +144,7 @@ namespace MatterHackers.Agg.VertexSource
                             vertexDataEnumerator.MoveNext();
                             VertexData vertexDataEnd = vertexDataEnumerator.Current;
                             m_curve3.init(lastPosition.position.x, lastPosition.position.y, vertexData.position.x, vertexData.position.y, vertexDataEnd.position.x, vertexDataEnd.position.y);
-                            IEnumerator<VertexData> curveIterator = m_curve3.VertexIterator().GetEnumerator();
+                            IEnumerator<VertexData> curveIterator = m_curve3.Vertices().GetEnumerator();
                             curveIterator.MoveNext(); // First call returns path_cmd_move_to
                             do
                             {
@@ -167,7 +167,7 @@ namespace MatterHackers.Agg.VertexSource
                             vertexDataEnumerator.MoveNext();
                             VertexData vertexDataEnd = vertexDataEnumerator.Current;
                             m_curve4.init(lastPosition.position.x, lastPosition.position.y, vertexData.position.x, vertexData.position.y, vertexDataControl.position.x, vertexDataControl.position.y, vertexDataEnd.position.x, vertexDataEnd.position.y);
-                            IEnumerator<VertexData> curveIterator = m_curve4.VertexIterator().GetEnumerator();
+                            IEnumerator<VertexData> curveIterator = m_curve4.Vertices().GetEnumerator();
                             curveIterator.MoveNext(); // First call returns path_cmd_move_to
                             while (!ShapePath.is_stop(vertexData.command))
                             {

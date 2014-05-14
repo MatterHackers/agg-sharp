@@ -56,15 +56,14 @@ namespace MatterHackers.GCodeVisualizer
 
     public class RenderFeatureRetract : RenderFeatureBase
     {
-        public static double RetractionDistance  = .5;
         public static double RetractionDrawRadius = 1;
 
-        double amount;
+        double extrusionAmount;
         double mmPerSecond;
         Vector3 position;
-        public RenderFeatureRetract(Vector3 position, double amount, double mmPerSecond)
+        public RenderFeatureRetract(Vector3 position, double extrusionAmount, double mmPerSecond)
         {
-            this.amount = amount;
+            this.extrusionAmount = extrusionAmount;
             this.mmPerSecond = mmPerSecond;
             this.position = position;
         }
@@ -75,17 +74,21 @@ namespace MatterHackers.GCodeVisualizer
             {
                 Vector2 position = new Vector2(this.position.x, this.position.y);
                 transform.transform(ref position);
-                Ellipse extrusion = new Ellipse(position, RetractionDrawRadius * layerScale);
+                double radius = RetractionDrawRadius * layerScale;
+                double area = Math.PI * radius * radius;
+                area *= Math.Abs(extrusionAmount);
+                radius = Math.Sqrt(area/Math.PI);
+                Ellipse extrusion = new Ellipse(position, radius);
 
-                if (amount > 0)
+                if (extrusionAmount > 0)
                 {
                     // unretraction
-                    graphics2D.Render(extrusion, RGBA_Bytes.Blue);
+                    graphics2D.Render(extrusion, new RGBA_Bytes(RGBA_Bytes.Blue, 200));
                 }
                 else
                 {
                     // retraction
-                    graphics2D.Render(extrusion, RGBA_Bytes.Red);
+                    graphics2D.Render(extrusion, new RGBA_Bytes(RGBA_Bytes.Red, 200));
                 }
             }
         }
@@ -119,8 +122,14 @@ namespace MatterHackers.GCodeVisualizer
                 stroke.line_join(LineJoin.Round);
 
                 pathStorage.Add(start.x, start.y, ShapePath.FlagsAndCommand.CommandMoveTo);
-                pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
-
+                if (end.x != start.x || end.y != start.y)
+                {
+                    pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
+                }
+                else
+                {
+                    pathStorage.Add(end.x + .01, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
+                }
                 graphics2D.Render(stroke, 0, movementColor);
             }
         }
@@ -174,24 +183,29 @@ namespace MatterHackers.GCodeVisualizer
             }
         }
 
-        void CreateFeaturesForLayer(int layerToCreate)
+        void CreateFeaturesForLayerIfRequired(int layerToCreate)
         {
+            if (renderFeatures[layerToCreate].Count > 0)
+            {
+                return;
+            }
+
             List<RenderFeatureBase> renderFeaturesForLayer = renderFeatures[layerToCreate];
 
-            int currentVertexIndex = gCodeFileToDraw.IndexOfChangeInZ[layerToCreate];
-            double currentZ = gCodeFileToDraw.GCodeCommandQueue[currentVertexIndex].Position.z;
-
-            while (currentVertexIndex < gCodeFileToDraw.GCodeCommandQueue.Count)
+            int startRenderIndex = gCodeFileToDraw.IndexOfChangeInZ[layerToCreate];
+            int endRenderIndex = gCodeFileToDraw.GCodeCommandQueue.Count - 1;
+            if (layerToCreate < gCodeFileToDraw.IndexOfChangeInZ.Count - 1)
             {
-                PrinterMachineInstruction currentInstruction = gCodeFileToDraw.GCodeCommandQueue[currentVertexIndex];
+                endRenderIndex = gCodeFileToDraw.IndexOfChangeInZ[layerToCreate + 1];
+            }
+
+            for (int i = startRenderIndex; i < endRenderIndex; i++ )
+            {
+                PrinterMachineInstruction currentInstruction = gCodeFileToDraw.GCodeCommandQueue[i];
                 PrinterMachineInstruction previousInstruction = currentInstruction;
-                if (currentVertexIndex > 0)
+                if (i > 0)
                 {
-                    previousInstruction = gCodeFileToDraw.GCodeCommandQueue[currentVertexIndex - 1];
-                }
-                if (currentInstruction.Z != currentZ)
-                {
-                    break;
+                    previousInstruction = gCodeFileToDraw.GCodeCommandQueue[i - 1];
                 }
 
                 if (currentInstruction.Position == previousInstruction.Position)
@@ -212,7 +226,7 @@ namespace MatterHackers.GCodeVisualizer
                 }
                 else
                 {
-                    if (gCodeFileToDraw.IsExtruding(currentVertexIndex))
+                    if (gCodeFileToDraw.IsExtruding(i))
                     {
                         renderFeaturesForLayer.Add(new RenderFeatureExtrusion(previousInstruction.Position, currentInstruction.Position, currentInstruction.FeedRate, currentInstruction.EPosition - previousInstruction.EPosition));
                     }
@@ -221,22 +235,44 @@ namespace MatterHackers.GCodeVisualizer
                         renderFeaturesForLayer.Add(new RenderFeatureTravel(previousInstruction.Position, currentInstruction.Position, currentInstruction.FeedRate));
                     }
                 }
-
-                currentVertexIndex++;
             }
         }
 
-        public void Render(Graphics2D graphics2D, int activeLayerIndex, Affine transform, double layerScale, RenderType renderType)
+        public int GetNumFeatures(int layerToCountFeaturesOn)
+        {
+            CreateFeaturesForLayerIfRequired(layerToCountFeaturesOn);
+            return renderFeatures[layerToCountFeaturesOn].Count;
+        }
+
+        public void Render(Graphics2D graphics2D, int activeLayerIndex, Affine transform, double layerScale, RenderType renderType,
+            double featureToStartOnRatio0To1, double featureToEndOnRatio0To1)
         {
             if (renderFeatures.Count > 0)
             {
-                if (renderFeatures[activeLayerIndex].Count == 0)
+                CreateFeaturesForLayerIfRequired(activeLayerIndex);
+
+                int featuresOnLayer = renderFeatures[activeLayerIndex].Count;
+                int endFeature = (int)(featuresOnLayer * featureToEndOnRatio0To1 + .5);
+                endFeature = Math.Max(0, Math.Min(endFeature, featuresOnLayer));
+
+                int startFeature = (int)(featuresOnLayer * featureToStartOnRatio0To1 + .5);
+                startFeature = Math.Max(0, Math.Min(startFeature, featuresOnLayer));
+
+                // try to make sure we always draw at least one feature
+                if (endFeature <= startFeature)
                 {
-                    CreateFeaturesForLayer(activeLayerIndex);
+                    endFeature = Math.Min(startFeature + 1, featuresOnLayer);
+                }
+                if (startFeature >= endFeature)
+                {
+                    // This can only happen if the sart and end are set to the last feature
+                    // Try to set the start feture to one from the end
+                    startFeature = Math.Max(endFeature - 1, 0);
                 }
 
-                foreach (RenderFeatureBase feature in renderFeatures[activeLayerIndex])
+                for(int i=startFeature; i<endFeature; i++)
                 {
+                    RenderFeatureBase feature = renderFeatures[activeLayerIndex][i];
                     feature.Render(graphics2D, transform, layerScale, renderType);
                 }
             }

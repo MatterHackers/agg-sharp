@@ -46,15 +46,18 @@ namespace MatterHackers.GCodeVisualizer
         List<int> indexOfChangeInZ = new List<int>();
         Vector2 center = Vector2.Zero;
         double parsingLastZ;
+        bool gcodeHasExplicitLayerChangeInfo = false;
 
         public List<PrinterMachineInstruction> GCodeCommandQueue = new List<PrinterMachineInstruction>();
 
-        public GCodeFile()
+        public GCodeFile(bool gcodeHasExplicitLayerChangeInfo = false)
         {
+            this.gcodeHasExplicitLayerChangeInfo = gcodeHasExplicitLayerChangeInfo;
         }
 
-        public GCodeFile(string pathAndFileName)
+        public GCodeFile(string pathAndFileName, bool gcodeHasExplicitLayerChangeInfo = false)
         {
+            this.gcodeHasExplicitLayerChangeInfo = gcodeHasExplicitLayerChangeInfo;
             this.Load(pathAndFileName);
         }
 
@@ -185,7 +188,14 @@ namespace MatterHackers.GCodeVisualizer
             Stopwatch maxProgressReport = new Stopwatch();
             maxProgressReport.Start();
             PrinterMachineInstruction machineInstructionForLine = new PrinterMachineInstruction("None");
-            GCodeFile loadedGCodeFile = new GCodeFile();
+
+            bool gcodeHasExplicitLayerChangeInfo = false;
+            if (gCodeString.Contains("; LAYER:"))
+            {
+                gcodeHasExplicitLayerChangeInfo = true;
+            }
+
+            GCodeFile loadedGCodeFile = new GCodeFile(gcodeHasExplicitLayerChangeInfo);
 
             int crCount = CountNumLines(gCodeString);
             int lineIndex = 0;
@@ -194,14 +204,6 @@ namespace MatterHackers.GCodeVisualizer
                 string lineString = outputString.Trim();
                 machineInstructionForLine = new PrinterMachineInstruction(lineString, machineInstructionForLine);
                 // take off any comments before we check its length
-                if (lineString.Contains(";"))
-                {
-                    int position = lineString.IndexOf(';');
-                    if (position > -1)
-                    {
-                        lineString = lineString.Substring(0, position);
-                    }
-                }
 
                 if (lineString.Length > 0)
                 {
@@ -213,6 +215,13 @@ namespace MatterHackers.GCodeVisualizer
 
                         case 'G':
                             loadedGCodeFile.ParseGLine(lineString, machineInstructionForLine);
+                            break;
+
+                        case ';':
+                            if (gcodeHasExplicitLayerChangeInfo && lineString.StartsWith("; LAYER:"))
+                            {
+                                loadedGCodeFile.IndexOfChangeInZ.Add(loadedGCodeFile.GCodeCommandQueue.Count);
+                            }
                             break;
 
                         default:
@@ -246,7 +255,7 @@ namespace MatterHackers.GCodeVisualizer
 
         void AnalyzeGCodeLines(BackgroundWorker backgroundWorker = null)
         {
-            double feedRate = 0;
+            double feedRateMmPerMin = 0;
             Vector3 lastPrinterPosition = new Vector3();
             double lastEPosition = 0;
 
@@ -257,15 +266,16 @@ namespace MatterHackers.GCodeVisualizer
             {
                 PrinterMachineInstruction instruction = GCodeCommandQueue[lineIndex];
                 string line = instruction.Line;
-                double maxDeltaThisLine = 0;
+                Vector3 deltaPositionThisLine = new Vector3();
+                double deltaEPositionThisLine = 0;
                 PrinterMachineInstruction newLine = GCodeCommandQueue[lineIndex];
                 string lineToParse = line.ToUpper().Trim();
                 if (lineToParse.StartsWith("G0") || lineToParse.StartsWith("G1"))
                 {
-                    double newFeedRate = 0;
-                    if (GetFirstNumberAfter("F", lineToParse, ref newFeedRate))
+                    double newFeedRateMmPerMin = 0;
+                    if (GetFirstNumberAfter("F", lineToParse, ref newFeedRateMmPerMin))
                     {
-                        feedRate = newFeedRate;
+                        feedRateMmPerMin = newFeedRateMmPerMin;
                     }
 
                     Vector3 attemptedDestination = lastPrinterPosition;
@@ -273,23 +283,14 @@ namespace MatterHackers.GCodeVisualizer
                     GetFirstNumberAfter("Y", lineToParse, ref attemptedDestination.y);
                     GetFirstNumberAfter("Z", lineToParse, ref attemptedDestination.z);
 
-                    Vector3 deltaPosition = attemptedDestination - lastPrinterPosition;
-
                     double ePosition = lastEPosition;
                     GetFirstNumberAfter("E", lineToParse, ref ePosition);
 
-                    //if (newLine.extrusionType == PrinterMachineState.MovementTypes.Absolute)
-                    {
-                        double deltaEPosition = Math.Abs(ePosition - lastEPosition);
-                        maxDeltaThisLine = Math.Max(deltaEPosition, deltaPosition.Length);
-                    }
-                    //else
-                    {
-                        //maxDeltaThisLine = Math.Max(ePosition, deltaPosition.Length);
-                    }
+                    deltaPositionThisLine = attemptedDestination - lastPrinterPosition;
+                    deltaEPositionThisLine = Math.Abs(ePosition - lastEPosition);
 
-                    lastEPosition = ePosition;
                     lastPrinterPosition = attemptedDestination;
+                    lastEPosition = ePosition;
                 }
                 else if (lineToParse.StartsWith("G92"))
                 {
@@ -300,9 +301,9 @@ namespace MatterHackers.GCodeVisualizer
                     }
                 }
 
-                if (feedRate > 0)
+                if (feedRateMmPerMin > 0)
                 {
-                    newLine.secondsThisLine = maxDeltaThisLine / (feedRate / 60);
+                    newLine.secondsThisLine = GetSecondsThisLine(lineIndex, deltaPositionThisLine, deltaEPositionThisLine, feedRateMmPerMin);
                 }
 
                 if (backgroundWorker != null)
@@ -328,6 +329,49 @@ namespace MatterHackers.GCodeVisualizer
                 accumulatedTime += line.secondsThisLine;
                 line.secondsToEndFromHere = accumulatedTime;
             }
+        }
+
+        public static Vector4 VelocitySameAsStopMmPerS = new Vector4(8, 8, .4, 5);
+        public static Vector4 MaxAccelerationMmPerS2 = new Vector4(1000, 1000, 100, 5000);
+        public static Vector4 MaxVelocityMmPerS = new Vector4(500, 500, 5, 25);
+        private double GetSecondsThisLine(int lineIndex, Vector3 deltaPositionThisLine, double deltaEPositionThisLine, double feedRateMmPerMin)
+        {
+            double startingVelocityMmPerS = VelocitySameAsStopMmPerS.x;
+            double endingVelocityMmPerS = VelocitySameAsStopMmPerS.x;
+            double maxVelocityMmPerS = Math.Min(feedRateMmPerMin / 60, MaxVelocityMmPerS.x);
+            double acceleration = MaxAccelerationMmPerS2.x;
+            double lengthOfThisMoveMm = Math.Max(deltaPositionThisLine.Length, deltaEPositionThisLine);
+
+            double distanceToMaxVelocity = GetDistanceToReachEndingVelocity(startingVelocityMmPerS, maxVelocityMmPerS, acceleration);
+            if (distanceToMaxVelocity <= lengthOfThisMoveMm / 2)
+            {
+                // we will reach max velocity then run at it and then decelerate
+                double accelerationTime = GetTimeToAccelerateDistance(startingVelocityMmPerS, distanceToMaxVelocity, acceleration) * 2;
+                double runningTime = (lengthOfThisMoveMm - (distanceToMaxVelocity * 2)) / maxVelocityMmPerS;
+                return accelerationTime + runningTime;
+            }
+            else
+            {
+                // we will accelerate to the center then decelerate
+                double accelerationTime = GetTimeToAccelerateDistance(startingVelocityMmPerS, lengthOfThisMoveMm/2, acceleration) * 2;
+                return accelerationTime;
+            }
+        }
+
+        double GetTimeToAccelerateDistance(double startingVelocityMmPerS, double distanceMm, double accelerationMmPerS2)
+        {
+            // d = vi * t + .5 * a * t^2;
+            // t = (√(vi^2+2ad)-vi)/a
+            double startingVelocityMmPerS2 = startingVelocityMmPerS * startingVelocityMmPerS;
+            double distanceAcceleration2 = 2 * accelerationMmPerS2 * distanceMm;
+            return (Math.Sqrt(startingVelocityMmPerS2 + distanceAcceleration2) - startingVelocityMmPerS) / accelerationMmPerS2;
+        }
+
+        double GetDistanceToReachEndingVelocity(double startingVelocityMmPerS, double endingVelocityMmPerS, double accelerationMmPerS2)
+        {
+            double endingVelocityMmPerS2 = endingVelocityMmPerS * endingVelocityMmPerS;
+            double startingVelocityMmPerS2 = startingVelocityMmPerS * startingVelocityMmPerS;
+            return (endingVelocityMmPerS2 - startingVelocityMmPerS2) / (2.0 * accelerationMmPerS2);
         }
 
         public static int CalculateChecksum(string commandToGetChecksumFor)
@@ -480,6 +524,14 @@ namespace MatterHackers.GCodeVisualizer
                     // in Marlin: Display Message
                     break;
 
+                case "126":
+                    // enable fan (makerbot)
+                    break;
+
+                case "127":
+                    // disable fan (makerbot)
+                    break;
+
                 case "132":
                     // recall stored home offsets for axis xyzab
                     break;
@@ -510,6 +562,9 @@ namespace MatterHackers.GCodeVisualizer
                     break;
 
                 case "209": // M209: enable automatic retract
+                    break;
+
+                case "227": // Enable Automatic Reverse and Prime
                     break;
 
                 case "301":
@@ -585,9 +640,13 @@ namespace MatterHackers.GCodeVisualizer
                         }
                     }
 
-                    if (processingMachineState.Z != parsingLastZ)
+                    if (!gcodeHasExplicitLayerChangeInfo)
                     {
-                        indexOfChangeInZ.Add(GCodeCommandQueue.Count);
+                        if (processingMachineState.Z != parsingLastZ || indexOfChangeInZ.Count == 0)
+                        {
+                            // if we changed z or there is a movement and we have never started a layer index
+                            indexOfChangeInZ.Add(GCodeCommandQueue.Count);
+                        }
                     }
                     parsingLastZ = processingMachineState.Position.z;
                     break;

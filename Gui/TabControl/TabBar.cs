@@ -178,7 +178,7 @@ namespace MatterHackers.Agg.UI
             int tabCount = 0;
             foreach (GuiWidget child in Children)
             {
-                Tab tab = Children[index] as Tab;
+                Tab tab = child as Tab;
                 if (tab != null)
                 {
                     if (index == tabCount)

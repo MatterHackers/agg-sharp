@@ -15,7 +15,7 @@ namespace MatterHackers.DataConverters3D
         public static IRayTraceable Convert(PolygonMesh.Mesh simpleMesh)
         {
             List<IRayTraceable> renderCollection = new List<IRayTraceable>();
-            
+
             //SolidMaterial redStuff = new SolidMaterial(new RGBA_Floats(.9, .2, .1), .01, 0.0, 2.0);
             SolidMaterial mhBlueStuff = new SolidMaterial(new RGBA_Floats(0, .32, .58), .01, 0.0, 2.0);
             int index = 0;
@@ -24,7 +24,7 @@ namespace MatterHackers.DataConverters3D
             //PolygonMesh.Mesh simpleMesh = PolygonMesh.Processors.StlProcessing.Load("Spider With Base.stl");
             foreach (PolygonMesh.Face face in simpleMesh.Faces)
             {
-                foreach (PolygonMesh.Vertex vertex in face.VertexIterator())
+                foreach (PolygonMesh.Vertex vertex in face.Vertices())
                 {
                     triangle[index++] = vertex.Position;
                     if (index == 3)
@@ -50,7 +50,7 @@ namespace MatterHackers.DataConverters3D
             //PolygonMesh.Mesh simpleMesh = PolygonMesh.Processors.StlProcessing.Load("Spider With Base.stl");
             foreach (PolygonMesh.Face face in simpleMesh.Faces)
             {
-                foreach (PolygonMesh.Vertex vertex in face.VertexIterator())
+                foreach (PolygonMesh.Vertex vertex in face.Vertices())
                 {
                     triangle[index++] = vertex.Position;
                     if (index == 3)

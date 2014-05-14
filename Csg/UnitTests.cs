@@ -82,6 +82,13 @@ namespace MatterHackers.Csg
                 Assert.IsTrue(union.GetAxisAlignedBoundingBox().maxXYZ == new Vector3(10, 40, 30), "MaxXYZ correct");
             }
         }
+
+        public static void AssertDebugNotDefined()
+        {
+#if DEBUG
+            throw new Exception("DEBUG is defined and should not be!");
+#endif
+        }
     }
 
     public static class UnitTests

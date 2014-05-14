@@ -60,7 +60,7 @@ namespace MatterHackers.RayTracer
 
     public class FrustumRayBundle : RayBundle
     {
-        Frustum frustumOfRays = new Frustum();
+        public Frustum frustumForRays = new Frustum();
 
         public FrustumRayBundle(int rayCount)
             : base(rayCount)
@@ -69,12 +69,38 @@ namespace MatterHackers.RayTracer
 
         public override bool CheckIfBundleHitsAabb(AxisAlignedBoundingBox aabbToCheck)
         {
-            if (frustumOfRays.IntersectFrustum(aabbToCheck) == Frustum.FrustumIntersectState.Outside)
+            if (frustumForRays.GetIntersect(aabbToCheck) == FrustumIntersection.Outside)
             {
                 return false;
             }
 
             return true;
+        }
+
+        public void CalculateFrustum(int width, int height, Vector3 origin)
+        {
+            frustumForRays.plane = new Plane[4];
+
+            Vector3 cornerRay0 = rayArray[0].direction;
+            Vector3 cornerRay1 = rayArray[width-1].direction;
+            Vector3 cornerRay2 = rayArray[(height - 1) * width].direction;
+            Vector3 cornerRay3 = rayArray[(height - 1) * width + (width - 1)].direction;
+            {
+                Vector3 normal = Vector3.Cross(cornerRay0, cornerRay1).GetNormal();
+                frustumForRays.plane[0] = new Plane(normal, Vector3.Dot(normal, origin));
+            }
+            {
+                Vector3 normal = Vector3.Cross(cornerRay1, cornerRay2).GetNormal();
+                frustumForRays.plane[1] = new Plane(normal, Vector3.Dot(normal, origin));
+            }
+            {
+                Vector3 normal = Vector3.Cross(cornerRay2, cornerRay3).GetNormal();
+                frustumForRays.plane[2] = new Plane(normal, Vector3.Dot(normal, origin));
+            }
+            {
+                Vector3 normal = Vector3.Cross(cornerRay3, cornerRay0).GetNormal();
+                frustumForRays.plane[3] = new Plane(normal, Vector3.Dot(normal, origin));
+            }
         }
     }
 }

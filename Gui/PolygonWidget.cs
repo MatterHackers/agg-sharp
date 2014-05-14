@@ -53,7 +53,7 @@ namespace MatterHackers.Agg.UI
         public void close(bool f) { m_close = f;    }
         public bool close() { return m_close; }
 
-        public IEnumerable<VertexData> VertexIterator()
+        public IEnumerable<VertexData> Vertices()
         {
             throw new NotImplementedException();
         }
@@ -161,7 +161,7 @@ namespace MatterHackers.Agg.UI
         public bool close() { return m_vs.close(); }
 
         // Vertex source interface
-        public override IEnumerable<VertexData> VertexIterator()
+        public override IEnumerable<VertexData> Vertices()
         {
             throw new NotImplementedException();
         }

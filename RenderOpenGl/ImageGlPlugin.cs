@@ -74,10 +74,8 @@ namespace MatterHackers.RenderOpenGl
             }
         }
 
-        static NamedExecutionTimer GetImageGlPluginTimer = new NamedExecutionTimer("GetImageGlPlugin");
-        static public ImageGlPlugin GetImageGlPlugin(ImageBuffer imageToGetDisplayListFor, bool createAndUseMipMaps)
+        static public ImageGlPlugin GetImageGlPlugin(ImageBuffer imageToGetDisplayListFor, bool createAndUseMipMaps, bool TextureMagFilterLinear = true)
         {
-            GetImageGlPluginTimer.Start();
             ImageGlPlugin plugin;
             imagesWithCacheData.TryGetValue(imageToGetDisplayListFor.GetBuffer(), out plugin);
 
@@ -108,7 +106,7 @@ namespace MatterHackers.RenderOpenGl
                 ImageGlPlugin newPlugin = new ImageGlPlugin();
                 imagesWithCacheData.Add(imageToGetDisplayListFor.GetBuffer(), newPlugin);
                 newPlugin.createdWithMipMaps = createAndUseMipMaps;
-                newPlugin.CreateGlDataForImage(imageToGetDisplayListFor);
+                newPlugin.CreateGlDataForImage(imageToGetDisplayListFor, TextureMagFilterLinear);
                 newPlugin.imageUpdateCount = imageToGetDisplayListFor.ChangedCount;
                 return newPlugin;
             }
@@ -188,7 +186,6 @@ namespace MatterHackers.RenderOpenGl
                 }
             }
 #endif
-            GetImageGlPluginTimer.Stop();
             return plugin;
         }
 
@@ -246,7 +243,7 @@ namespace MatterHackers.RenderOpenGl
             }
         }
 
-        private void CreateGlDataForImage(ImageBuffer bufferedImage)
+        private void CreateGlDataForImage(ImageBuffer bufferedImage, bool TextureMagFilterLinear)
         {
 	    	//Next we expand the image into an openGL texture
             int imageWidth = bufferedImage.Width;
@@ -298,7 +295,15 @@ namespace MatterHackers.RenderOpenGl
 
             // Set up some texture parameters for openGL
             GL.BindTexture(TextureTarget.Texture2D, glData.glTextureHandle);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+            if (TextureMagFilterLinear)
+            {
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+            }
+            else
+            {
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+            }
+
             if (createdWithMipMaps)
             {
                 GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.LinearMipmapLinear);
@@ -385,10 +390,8 @@ namespace MatterHackers.RenderOpenGl
             glData.textureUVs[6] = texCoordX; glData.textureUVs[7] = 0; glData.positions[6] = imageWidth - OffsetX; glData.positions[7] = 0 - OffsetY;
         }
 
-        static NamedExecutionTimer ImageGL_DrawToGL = new NamedExecutionTimer("ImageGL_DrawToGL");
         public void DrawToGL()
         {
-            ImageGL_DrawToGL.Start();
 
             GL.BindTexture(TextureTarget.Texture2D, GLTextureHandle);
 #if true
@@ -412,7 +415,6 @@ namespace MatterHackers.RenderOpenGl
             GL.DisableClientState(ArrayCap.TextureCoordArray);
             GL.DisableClientState(ArrayCap.VertexArray);
 #endif
-            ImageGL_DrawToGL.Stop();
         }
     }
 }

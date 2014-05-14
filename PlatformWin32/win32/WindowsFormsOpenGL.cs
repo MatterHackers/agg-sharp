@@ -54,12 +54,12 @@ namespace MatterHackers.Agg.UI
     {
         MyGLControl glControl;
 
-        public WindowsFormsOpenGL(GuiHalWidget app, GuiHalWidget.ImageFormats format, int stencilDepth)
+        public WindowsFormsOpenGL(AbstractOsMappingWidget app, SystemWindow childSystemWindow)
         {
-            switch(format)
+            switch (childSystemWindow.BitDepth)
             {
-                case GuiHalWidget.ImageFormats.pix_format_bgra32:
-                    glControl = new MyGLControl(32, stencilDepth);
+                case 32:
+                    glControl = new MyGLControl(32, childSystemWindow.StencilBufferDepth);
                     break;
 
                 default:
@@ -68,7 +68,7 @@ namespace MatterHackers.Agg.UI
 
             Controls.Add(glControl);
 
-            SetUpFormsWindow(app, format);
+            SetUpFormsWindow(app, childSystemWindow);
 
             HookWindowsInputAndSendToWidget communication = new HookWindowsInputAndSendToWidget(glControl, aggAppWidget);
         }
@@ -151,14 +151,11 @@ namespace MatterHackers.Agg.UI
             }
             set
             {
-                // If this throws an assert, you are calling MakeCurrent() before the glControl is done being constructed.
-                // Call this function you have called Show().
-                if (!doneLoading)
+                if (doneLoading)
                 {
-                    throw new Exception("You cannot call minimum size until you have shown the window");
+                    glControl.MakeCurrent();
                 }
 
-                glControl.MakeCurrent();
                 base.MinimumSize = value;
             }
         }

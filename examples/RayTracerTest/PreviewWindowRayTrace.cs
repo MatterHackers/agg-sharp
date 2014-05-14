@@ -110,8 +110,12 @@ namespace MatterHackers.RayTracer
         CameraData cameraData;
         TrackBallController trackBallController;
 
+        List<string> timingStrings = new List<string>();
+        Stopwatch totalTime = new Stopwatch();
+
         public PreviewWindowRayTrace(int width = 200, int height = 200)
         {
+            totalTime.Start();
             CreateScene();
             LocalBounds = new RectangleDouble(0, 0, width, height);
             cameraData.upVector3 = Vector3.UnitY;
@@ -180,7 +184,7 @@ namespace MatterHackers.RayTracer
 #endif
             //renderCollection.Add(new CylinderShape(.25, 1, new SolidMaterial(RGBA_Floats.Cyan, 0, 0, 0)));
 
-            AddSimpleStl();
+            AddTestStl();
             //AddPolygonTest();
             //AddSphereAndBox();
             //AddAxisMarker();
@@ -361,11 +365,28 @@ namespace MatterHackers.RayTracer
             renderCollection.Add(new TriangleShape(new Vector3(points[1]), new Vector3(points[3]), new Vector3(points[2]), redStuff));
         }
 
-        private void AddSimpleStl()
+        private void AddTestStl()
         {
+            Stopwatch loadTime = new Stopwatch();
+            loadTime.Start();
+            
             PolygonMesh.Mesh simpleMesh = StlProcessing.Load("Simple.stl");
+            //PolygonMesh.Mesh simpleMesh = StlProcessing.Load("Complex.stl");
+            //PolygonMesh.Mesh simpleMesh = StlProcessing.Load("bunny.stl");
+            //PolygonMesh.Mesh simpleMesh = StlProcessing.Load("bunny_binary.stl");
 
-            renderCollection.Add(MeshToBVH.Convert(simpleMesh));
+            loadTime.Stop();
+
+            timingStrings.Add("Time to load STL {0:0.0}s".FormatWith(loadTime.Elapsed.TotalSeconds));
+
+            Stopwatch bvhTime = new Stopwatch();
+            bvhTime.Start();
+            IRayTraceable bvhCollection = MeshToBVH.Convert(simpleMesh);
+            bvhTime.Stop();
+
+            timingStrings.Add("Time to create BVH {0:0.0}s".FormatWith(bvhTime.Elapsed.TotalSeconds));
+
+            renderCollection.Add(bvhCollection);
         }
 
         private void AddSphereAndBox()
@@ -417,18 +438,34 @@ namespace MatterHackers.RayTracer
         }
 
         public RGBA_Floats mouseOverColor = new RGBA_Floats();
+        bool SavedTimes = false;
         public override void OnDraw(Graphics2D graphics2D)
         {
             if(NeedRedraw)
             {
                 NeedRedraw = false;
+                
+                Stopwatch traceTime = new Stopwatch();
+                traceTime.Start();
                 rayTraceScene();
+                traceTime.Stop();
+
+                timingStrings.Add("Time to trace BVH {0:0.0}s".FormatWith(traceTime.Elapsed.TotalSeconds));
             }
             trackBallTransform.AxisToWorld = trackBallController.GetTransform4X4();
 
             graphics2D.FillRectangle(new RectangleDouble(0, 0, 1000, 1000), RGBA_Bytes.Red);
             graphics2D.Render(destImage, 0, 0);
             //trackBallController.DrawRadius(graphics2D);
+            totalTime.Stop();
+            timingStrings.Add("Total Time {0:0.0}s".FormatWith(totalTime.Elapsed.TotalSeconds));
+
+            if (!SavedTimes)
+            {
+                SavedTimes = true;
+                File.WriteAllLines("timing.txt", timingStrings.ToArray());
+            }
+
 
             graphics2D.DrawString("Ray Trace: " + renderTime.ElapsedMilliseconds.ToString(), 20, 10);
 

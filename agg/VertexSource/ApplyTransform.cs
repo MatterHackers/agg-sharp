@@ -44,9 +44,9 @@ namespace MatterHackers.Agg.VertexSource
 
         public void attach(IVertexSource vertexSource) { VertexSource = vertexSource; }
 
-        public IEnumerable<VertexData> VertexIterator()
+        public IEnumerable<VertexData> Vertices()
         {
-            foreach(VertexData vertexData in VertexSource.VertexIterator())
+            foreach (VertexData vertexData in VertexSource.Vertices())
             {
                 VertexData transformedVertex = vertexData;
                 if (ShapePath.is_vertex(transformedVertex.command))

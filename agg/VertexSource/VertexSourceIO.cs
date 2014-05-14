@@ -49,7 +49,7 @@ namespace MatterHackers.Agg.VertexSource
             {
                 using (StreamWriter outFile = new StreamWriter(pathAndFileName))
                 {
-                    foreach (VertexData vertexData in vertexSource.VertexIterator())
+                    foreach (VertexData vertexData in vertexSource.Vertices())
                     {
                         outFile.WriteLine("{0}, {1}, {2}", vertexData.position.x, vertexData.position.y, vertexData.command.ToString());
                     }

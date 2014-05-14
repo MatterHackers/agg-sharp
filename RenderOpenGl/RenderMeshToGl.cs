@@ -27,7 +27,6 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 //#define USE_GLES2
-#define INTERLIEVED_VERTEX_DATA
 //#define USE_VBO
 
 using System;
@@ -49,8 +48,11 @@ using OpenTK.Graphics.OpenGL;
 
 namespace MatterHackers.RenderOpenGl
 {
+    public enum RenderTypes { Shaded, Outlines, Polygons };
+
     public static class RenderMeshToGl
     {
+#if USE_GLES2
         private static String vertexShaderCode =
             "attribute vec4 vPosition;" +
             "void main() {" +
@@ -63,9 +65,8 @@ namespace MatterHackers.RenderOpenGl
             "void main() {" +
             "  gl_FragColor = vColor;" +
             "}";
+#endif
 
-        static NamedExecutionTimer RenderMeshToGL_DrawToGL = new NamedExecutionTimer("RenderMeshToGL_DrawToGL");
-        static NamedExecutionTimer RenderMeshToGL_DrawArrays = new NamedExecutionTimer("RenderMeshToGL_DrawArrays");
         static void DrawToGL(Mesh meshToRender)
         {
 #if USE_GLES2
@@ -82,11 +83,10 @@ namespace MatterHackers.RenderOpenGl
             GL.UseProgram(vertexShader);
             GL.UseProgram(fragmentShader);
 #endif
-            RenderMeshToGL_DrawToGL.Start();
-            GLMeshPlugin glMeshPlugin = GLMeshPlugin.GetGLMeshPlugin(meshToRender);
+            GLMeshTrianglePlugin glMeshPlugin = GLMeshTrianglePlugin.Get(meshToRender);
             for (int i = 0; i < glMeshPlugin.subMeshs.Count; i++)
             {
-                SubMesh subMesh = glMeshPlugin.subMeshs[i];
+                SubTriangleMesh subMesh = glMeshPlugin.subMeshs[i];
                 // Make sure the GLMeshPlugin has a reference to hold onto the image so it does not go away before this.
                 if (subMesh.texture != null)
                 {
@@ -99,21 +99,15 @@ namespace MatterHackers.RenderOpenGl
                     GL.Disable(EnableCap.Texture2D);
                 }
 
-#if INTERLIEVED_VERTEX_DATA
 #if USE_VBO
                 GL.BindBuffer(BufferTarget.ArrayBuffer, subMesh.vboHandle);
                 GL.InterleavedArrays(InterleavedArrayFormat.T2fN3fV3f, 0, new IntPtr());
 #else
                 GL.InterleavedArrays(InterleavedArrayFormat.T2fN3fV3f, 0, subMesh.vertexDatas.Array);
 #endif
-#endif
                 if (subMesh.texture != null)
                 {
-#if INTERLIEVED_VERTEX_DATA
                     //GL.TexCoordPointer(2, TexCoordPointerType.Float, VertexData.Stride, subMesh.vertexDatas.Array);
-#else
-                    GL.TexCoordPointer(2, TexCoordPointerType.Float, 0, subMesh.textureUVs.Array);
-#endif
                     //GL.EnableClientState(ArrayCap.TextureCoordArray);
                 }
                 else
@@ -121,28 +115,17 @@ namespace MatterHackers.RenderOpenGl
                     GL.DisableClientState(ArrayCap.TextureCoordArray);
                 }
 
-#if INTERLIEVED_VERTEX_DATA
                 //GL.VertexPointer(3, VertexPointerType.Float, VertexData.Stride, subMesh.vertexDatas.Array);
                 //GL.NormalPointer(NormalPointerType.Float, VertexData.Stride, subMesh.vertexDatas.Array);
-#else
-                GL.VertexPointer(3, VertexPointerType.Float, 0, subMesh.positions.Array);
-                GL.NormalPointer(NormalPointerType.Float, 0, subMesh.normals.Array);
-#endif
                 //GL.EnableClientState(ArrayCap.VertexArray);
                 //GL.EnableClientState(ArrayCap.NormalArray);
 
-                RenderMeshToGL_DrawArrays.Start();
-#if INTERLIEVED_VERTEX_DATA
 #if USE_VBO
                 GL.DrawArrays(PrimitiveType.Triangles, 0, subMesh.count);
                 GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
 #else
                 GL.DrawArrays(BeginMode.Triangles, 0, subMesh.vertexDatas.Count);
 #endif
-#else
-                GL.DrawArrays(PrimitiveType.Triangles, 0, subMesh.positions.Count / 3);
-#endif
-                RenderMeshToGL_DrawArrays.Stop();
 
                 GL.DisableClientState(ArrayCap.NormalArray);
                 GL.DisableClientState(ArrayCap.VertexArray);
@@ -152,10 +135,9 @@ namespace MatterHackers.RenderOpenGl
                     GL.DisableClientState(ArrayCap.TextureCoordArray);
                 }
             }
-            RenderMeshToGL_DrawToGL.Stop();
         }
 
-        static void DrawWithWireOverlay(Mesh meshToRender)
+        static void DrawWithWireOverlay(Mesh meshToRender, RenderTypes renderType)
         {
 #if USE_GLES2
             GLMeshWireframePlugin glMeshPlugin = GLMeshWireframePlugin.GetGLMeshWireframePlugin(meshToRender);
@@ -178,7 +160,7 @@ namespace MatterHackers.RenderOpenGl
             GL.DisableClientState(EnableCap.VertexArray);
             GL.Disable(EnableCap.Blend);
 #else
-            GLMeshPlugin glMeshPlugin = GLMeshPlugin.GetGLMeshPlugin(meshToRender);
+            GLMeshTrianglePlugin glMeshPlugin = GLMeshTrianglePlugin.Get(meshToRender);
 
             GL.Enable(EnableCap.PolygonOffsetFill);
             GL.PolygonOffset(1, 1);
@@ -190,58 +172,84 @@ namespace MatterHackers.RenderOpenGl
             GL.PolygonOffset(0, 0);
             GL.Disable(EnableCap.PolygonOffsetFill);
             GL.Disable(EnableCap.Lighting);
+#if true
+            GL.DisableClientState(ArrayCap.TextureCoordArray);
+            GLMeshWirePlugin glWireMeshPlugin = null;
+            if (renderType == RenderTypes.Outlines)
+            {
+                glWireMeshPlugin = GLMeshWirePlugin.Get(meshToRender);
+            }
+            else
+            {
+                glWireMeshPlugin = GLMeshWirePlugin.Get(meshToRender, MathHelper.Tau / 8);
+            }
 
+            VectorPOD<WireVertexData> manifoldEdges = glWireMeshPlugin.manifoldData;
+            GL.InterleavedArrays(InterleavedArrayFormat.V3f, 0, manifoldEdges.Array);
+            GL.DrawArrays(BeginMode.Lines, 0, manifoldEdges.Count);
+
+            //GL.Color4(1.0f, 1.0f, 1.0f, 1.0f);
+            //VectorPOD<WireVertexData> nonManifoldEdges = glWireMeshPlugin.nonManifoldData;
+            //GL.InterleavedArrays(InterleavedArrayFormat.V3f, 0, nonManifoldEdges.Array);
+            //GL.DrawArrays(BeginMode.Lines, 0, nonManifoldEdges.Count);
+
+            GL.DisableClientState(ArrayCap.NormalArray);
+            GL.DisableClientState(ArrayCap.VertexArray);
+#else
             GL.Begin(BeginMode.Lines);
             foreach (MeshEdge edge in meshToRender.meshEdges)
             {
-#if false // a fun hack to show only the edges of the parts rather than all the polygon edges
-                if (edge.GetNumFacesSharingEdge() == 2)
+                if (renderType == RenderTypes.Outlines)
                 {
-                    FaceEdge firstFaceEdge = edge.firstFaceEdge;
-                    FaceEdge nextFaceEdge = edge.firstFaceEdge.radialNextFaceEdge;
-                    double angle = Vector3.CalculateAngle(firstFaceEdge.face.normal, nextFaceEdge.face.normal);
-                    if (angle > MathHelper.Tau * .1)
+                    if (edge.GetNumFacesSharingEdge() == 2)
                     {
-                    GL.Color4(0.0, 0.0, 0.0, 1.0);
-                    GL.Color4(1.0, 1.0, 1.0, 1.0);
-                    GL.Vertex3(edge.vertex1.Position.x, edge.vertex1.Position.y, edge.vertex1.Position.z);
-                    GL.Vertex3(edge.vertex2.Position.x, edge.vertex2.Position.y, edge.vertex2.Position.z);
+                        FaceEdge firstFaceEdge = edge.firstFaceEdge;
+                        FaceEdge nextFaceEdge = edge.firstFaceEdge.radialNextFaceEdge;
+                        double angle = Vector3.CalculateAngle(firstFaceEdge.containingFace.normal, nextFaceEdge.containingFace.normal);
+                        if (angle > MathHelper.Tau * .1)
+                        {
+                            GL.Color4(0.0, 0.0, 0.0, 1.0);
+                            GL.Color4(1.0, 1.0, 1.0, 1.0);
+                            GL.Vertex3(edge.VertexOnEnd[0].Position.x, edge.VertexOnEnd[0].Position.y, edge.VertexOnEnd[0].Position.z);
+                            GL.Vertex3(edge.VertexOnEnd[1].Position.x, edge.VertexOnEnd[1].Position.y, edge.VertexOnEnd[1].Position.z);
+                        }
+                    }
+                    else
+                    {
+                        GL.Color4(1.0, 1.0, 1.0, 1.0);
+                        GL.Vertex3(edge.VertexOnEnd[0].Position.x, edge.VertexOnEnd[0].Position.y, edge.VertexOnEnd[0].Position.z);
+                        GL.Vertex3(edge.VertexOnEnd[1].Position.x, edge.VertexOnEnd[1].Position.y, edge.VertexOnEnd[1].Position.z);
                     }
                 }
                 else
                 {
-                    GL.Color4(1.0, 1.0, 1.0, 1.0);
-                    GL.Vertex3(edge.vertex1.Position.x, edge.vertex1.Position.y, edge.vertex1.Position.z);
-                    GL.Vertex3(edge.vertex2.Position.x, edge.vertex2.Position.y, edge.vertex2.Position.z);
+                    if (edge.GetNumFacesSharingEdge() == 2)
+                    {
+                        GL.Color4(0.0, 0.0, 0.0, 1.0);
+                    }
+                    else
+                    {
+                        GL.Color4(1.0, 1.0, 1.0, 1.0);
+                    }
+
+                    GL.Vertex3(edge.VertexOnEnd[0].Position.x, edge.VertexOnEnd[0].Position.y, edge.VertexOnEnd[0].Position.z);
+                    GL.Vertex3(edge.VertexOnEnd[1].Position.x, edge.VertexOnEnd[1].Position.y, edge.VertexOnEnd[1].Position.z);
                 }
-#else
-                if (edge.GetNumFacesSharingEdge() == 2)
-                {
-                    GL.Color4(0.0, 0.0, 0.0, 1.0);
-                }
-                else
-                {
-                    GL.Color4(1.0, 1.0, 1.0, 1.0);
-                }
-                GL.Vertex3(edge.vertex1.Position.x, edge.vertex1.Position.y, edge.vertex1.Position.z);
-                GL.Vertex3(edge.vertex2.Position.x, edge.vertex2.Position.y, edge.vertex2.Position.z);
-#endif
             }
             GL.End();
+#endif
 
             GL.Enable(EnableCap.Lighting);
 #endif
         }
 
-        public static void Render(Mesh meshToRender, IColorType partColor, bool overlayWireFrame = false)
+        public static void Render(Mesh meshToRender, IColorType partColor, RenderTypes renderType = RenderTypes.Shaded)
         {
-            Render(meshToRender, partColor, Matrix4X4.Identity, overlayWireFrame);
+            Render(meshToRender, partColor, Matrix4X4.Identity, renderType);
         }
 
-        static NamedExecutionTimer RenderMeshToGL_Render = new NamedExecutionTimer("RenderMeshToGL_Render");
-        public static void Render(Mesh meshToRender, IColorType partColor, Matrix4X4 transform, bool overlayWireFrame = false)
+        public static void Render(Mesh meshToRender, IColorType partColor, Matrix4X4 transform, RenderTypes renderType)
         {
-            RenderMeshToGL_Render.Start();
             if (meshToRender != null)
             {
                 GL.Color4(partColor.Red0To1, partColor.Green0To1, partColor.Blue0To1, partColor.Alpha0To1);
@@ -259,18 +267,17 @@ namespace MatterHackers.RenderOpenGl
                 GL.PushMatrix();
                 GL.MultMatrix(transform.GetAsFloatArray());
 
-                if (overlayWireFrame)
+                if (renderType == RenderTypes.Shaded)
                 {
-                    DrawWithWireOverlay(meshToRender);
+                    DrawToGL(meshToRender);
                 }
                 else
                 {
-                    DrawToGL(meshToRender);
+                    DrawWithWireOverlay(meshToRender, renderType);
                 }
 
                 GL.PopMatrix();
             }
-            RenderMeshToGL_Render.Stop();
         }
     }
 }

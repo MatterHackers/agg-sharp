@@ -16,7 +16,7 @@ using MatterHackers.Agg.Image;
 
 namespace MatterHackers.RayTracer
 {
-    public class TextureMaterial : BaseMaterial
+    public class TextureMaterial : MaterialAbstract
     {
         public ImageBuffer Texture;
         public Graphics2D textureGraphics2D;

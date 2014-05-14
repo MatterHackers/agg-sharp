@@ -37,6 +37,7 @@ using MatterHackers.Agg.Image;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.Font;
+using MatterHackers.RenderOpenGl;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.MeshVisualizer
@@ -71,7 +72,7 @@ namespace MatterHackers.MeshVisualizer
 
             Vector3 viewerVolume = new Vector3(200, 200, 200);
             double scale = 1;
-            meshViewerWidget = new MeshViewerWidget(viewerVolume, scale, MeshViewerWidget.BedShape.Rectangular);
+            meshViewerWidget = new MeshViewerWidget(viewerVolume, scale, MeshViewerWidget.BedShape.Rectangular, "No Part Loaded");
 
             meshViewerWidget.AnchorAll();
 
@@ -122,7 +123,14 @@ namespace MatterHackers.MeshVisualizer
 
         void wireframeCheckBox_CheckedStateChanged(object sender, EventArgs e)
         {
-            meshViewerWidget.ShowWireFrame = wireframeCheckBox.Checked;
+            if (wireframeCheckBox.Checked)
+            {
+                meshViewerWidget.RenderType = RenderTypes.Polygons;
+            }
+            else
+            {
+                meshViewerWidget.RenderType = RenderTypes.Shaded;
+            }
         }
 
         void bedCheckBox_CheckedStateChanged(object sender, EventArgs e)

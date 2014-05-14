@@ -36,15 +36,15 @@ namespace MatterHackers.Agg.UI
 {
     public class WindowsFormsOpenGLFactory : IGuiFactory
     {
-        public GuiHalWidget CreateSurface(int Width, int Height, GuiHalWidget.CreateFlags flags, GuiHalWidget.PixelFormat pixelFormat, int stencilDepth)
+        public AbstractOsMappingWidget CreateSurface(SystemWindow childSystemWindow)
         {
-            GuiHalWidget newSurface;
+            AbstractOsMappingWidget newSurface;
 
-            switch (pixelFormat)
+            switch (childSystemWindow.BitDepth)
             {
-                case GuiHalWidget.PixelFormat.PixelFormatBgr24:
-                case GuiHalWidget.PixelFormat.PixelFormatBgra32:
-                    newSurface = new WidgetForWindowsFormsOpenGL(Width, Height, flags, pixelFormat, stencilDepth);
+                case 24:
+                case 32:
+                    newSurface = new WidgetForWindowsFormsOpenGL(childSystemWindow);
                     break;
 
                 default:

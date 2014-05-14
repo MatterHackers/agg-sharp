@@ -121,7 +121,7 @@ namespace RockBlaster
                 aPlayer.Draw(currentRenderer);
             }
 
-            ImageSequence hud = (ImageSequence)DataAssetCache.Instance.GetAsset(typeof(ImageSequence), (m_PlayerList.Count).ToString() + "PlayerHUD");
+            GameImageSequence hud = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), (m_PlayerList.Count).ToString() + "PlayerHUD");
             currentRenderer.Render(hud.GetImageByIndex(0), 400, 300);
 
             foreach (Player aPlayer in m_PlayerList)

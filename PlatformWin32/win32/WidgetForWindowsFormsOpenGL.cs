@@ -34,24 +34,27 @@ namespace MatterHackers.Agg.UI
 {
     public class WidgetForWindowsFormsOpenGL : WidgetForWindowsFormsAbstract
     {
-        private int initWidth;
-        private int initHeight;
-        private CreateFlags initFlags;
-
-        public WidgetForWindowsFormsOpenGL(int initWidth, int initHeight, CreateFlags initFlags, PixelFormat pixelFormat, int stencilDepth = 0)
-            : base(GuiHalWidget.ImageFormats.pix_format_bgra32)
+        public WidgetForWindowsFormsOpenGL(SystemWindow childSystemWindow)
+            : base(childSystemWindow)
         {
-            this.initWidth = initWidth;
-            this.initHeight = initHeight;
-            this.initFlags = initFlags;
-
-            WindowsFormsWindow = new WindowsFormsOpenGL(this, GuiHalWidget.ImageFormats.pix_format_bgra32, stencilDepth);
+            WindowsFormsWindow = new WindowsFormsOpenGL(this, childSystemWindow);
         }
 
         public override void OnBoundsChanged(EventArgs e)
         {
-			GL.Viewport(0, 0, WindowsFormsWindow.ClientSize.Width, WindowsFormsWindow.ClientSize.Height);					// Reset The Current Viewport
+            if (initHasBeenCalled)
+            {
+                SetAndClearViewPort();
+            }
 
+            base.OnBoundsChanged(e);
+        }
+
+        bool viewPortHasBeenSet = false;
+        private void SetAndClearViewPort()
+        {
+            GL.Viewport(0, 0, WindowsFormsWindow.ClientSize.Width, WindowsFormsWindow.ClientSize.Height);					// Reset The Current Viewport
+            viewPortHasBeenSet = true;
 
             // The following lines set the screen up for a perspective view. Meaning things in the distance get smaller. 
             // This creates a realistic looking scene. 
@@ -63,15 +66,18 @@ namespace MatterHackers.Agg.UI
 
             GL.MatrixMode(MatrixMode.Modelview);
             GL.LoadIdentity();
-			GL.Scissor(0, 0, WindowsFormsWindow.ClientSize.Width, WindowsFormsWindow.ClientSize.Height);
+            GL.Scissor(0, 0, WindowsFormsWindow.ClientSize.Width, WindowsFormsWindow.ClientSize.Height);
 
             NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
-
-            base.OnBoundsChanged(e);
         }
 
         public override Graphics2D NewGraphics2D()
         {
+            if (!viewPortHasBeenSet)
+            {
+                SetAndClearViewPort();
+            }
+
             Graphics2D graphics2D;
 
 			graphics2D = new Graphics2DOpenGL(WindowsFormsWindow.ClientSize.Width, WindowsFormsWindow.ClientSize.Height);
@@ -80,34 +86,27 @@ namespace MatterHackers.Agg.UI
             return graphics2D;
         }
 
+        bool initHasBeenCalled = false;
         public void Init()
         {
-            if (WindowsFormsWindow.systemImageFormat == GuiHalWidget.ImageFormats.pix_format_undefined)
-            {
-                throw new InvalidDataException();
-            }
-
-            m_window_flags = initFlags;
-
             System.Drawing.Size clientSize = new System.Drawing.Size();
-            clientSize.Width = initWidth;
-            clientSize.Height = initHeight;
+            clientSize.Width = (int)childSystemWindow.Width;
+            clientSize.Height = (int)childSystemWindow.Height;
             WindowsFormsWindow.ClientSize = clientSize;
 
-            if ((m_window_flags & CreateFlags.Resizable) == 0)
+            if (!childSystemWindow.Resizable)
             {
                 WindowsFormsWindow.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
                 WindowsFormsWindow.MaximizeBox = false;
             }
 
-            initialWidth = initWidth;
-            initialHeight = initHeight;
-
-            clientSize.Width = initWidth;
-            clientSize.Height = initHeight;
+            clientSize.Width = (int)childSystemWindow.Width;
+            clientSize.Height = (int)childSystemWindow.Height;
             WindowsFormsWindow.ClientSize = clientSize;
 
             OnInitialize();
+
+            initHasBeenCalled = true;
         }
 
         public override void OnInitialize()

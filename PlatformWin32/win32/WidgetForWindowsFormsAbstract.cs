@@ -32,9 +32,10 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
-    public abstract class WidgetForWindowsFormsAbstract : GuiHalWidget
+    public abstract class WidgetForWindowsFormsAbstract : AbstractOsMappingWidget
     {
         WindowsFormsAbstract windowsFormsWindow;
+
         protected WindowsFormsAbstract WindowsFormsWindow
         {
             get { return windowsFormsWindow; }
@@ -54,16 +55,31 @@ namespace MatterHackers.Agg.UI
             get { return mainWindowsFormsWindow; }
         }
 
-        public WidgetForWindowsFormsAbstract(ImageFormats format)
-            : base(format)
+        public WidgetForWindowsFormsAbstract(SystemWindow childSystemWindow)
+            : base(childSystemWindow)
         {
-            GuiHalWidget.SetClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText);
-
-            initialWidth = 10;
-            initialHeight = 10;
+            Clipboard.SetSystemClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText);
 
             Focus();
         }
+
+        public override Point2D DesktopPosition
+        {
+            get
+            {
+                return new Point2D(mainWindowsFormsWindow.DesktopLocation.X, mainWindowsFormsWindow.DesktopLocation.Y);
+            }
+
+            set
+            {
+                if (!mainWindowsFormsWindow.Visible)
+                {
+                    mainWindowsFormsWindow.StartPosition = FormStartPosition.Manual;
+                }
+                mainWindowsFormsWindow.DesktopLocation = new Point(value.x, value.y);
+            }
+        }
+
 
         public override Keys ModifierKeys
         {
@@ -115,8 +131,6 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        public override void OnControlChanged() { }
-
         public Rectangle GetRectangleFromRectD(RectangleDouble rectD)
         {
             Rectangle windowsRect = new Rectangle(
@@ -153,7 +167,10 @@ namespace MatterHackers.Agg.UI
             //rectToInvalidate = new rect_d(0, 0, Width, Height);
 
             Rectangle windowsRectToInvalidate = GetRectangleFromRectD(rectToInvalidate);
-            WindowsFormsWindow.RequestInvalidate(windowsRectToInvalidate);
+            if (WindowsFormsWindow != null)
+            {
+                WindowsFormsWindow.RequestInvalidate(windowsRectToInvalidate);
+            }
         }
 
         public override Vector2 MinimumSize

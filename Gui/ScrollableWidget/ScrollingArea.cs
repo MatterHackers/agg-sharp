@@ -119,7 +119,7 @@ namespace MatterHackers.Agg.UI
                 {
                     newOrigin.y = Parent.LocalBounds.Top - Margin.Top - Padding.Top - LocalBounds.Top;
                 }
-                else if (LocalBounds.Height + Margin.Height > Parent.LocalBounds.Height)
+                else if (LocalBounds.Height + Margin.Height >= Parent.LocalBounds.Height)
                 {
                     if (BoundsRelativeToParent.Bottom - Margin.Bottom > Parent.LocalBounds.Bottom)
                     {

@@ -53,7 +53,7 @@ namespace MatterHackers.RayTracer
             throw new NotImplementedException("You should not get a color directly from a BoundingVolumeHierarchy.");
         }
 
-        public IMaterial Material
+        public MaterialAbstract Material
         {
             get
             {
@@ -99,9 +99,9 @@ namespace MatterHackers.RayTracer
             throw new NotImplementedException();
         }
 
-        public void GetClosestIntersections(RayBundle ray, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
+        public void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
         {
-            throw new NotImplementedException();
+            intersectionsForBundle[rayIndexToStartCheckingFrom] = GetClosestIntersection(rayBundle.rayArray[rayIndexToStartCheckingFrom]);
         }
 
         public IEnumerable IntersectionIterator(Ray ray)
@@ -126,15 +126,24 @@ namespace MatterHackers.RayTracer
             return totalSurfaceArea;
         }
 
+        public Vector3 GetCenter()
+        {
+            return GetAxisAlignedBoundingBox().GetCenter();
+        }
+
+        AxisAlignedBoundingBox cachedAABB = new AxisAlignedBoundingBox(Vector3.NegativeInfinity, Vector3.NegativeInfinity);
         public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
         {
-            AxisAlignedBoundingBox totalBounds = items[0].GetAxisAlignedBoundingBox();
-            for (int i = 1; i < items.Length; i++)
+            if (cachedAABB.minXYZ.x == double.NegativeInfinity)
             {
-                totalBounds += items[i].GetAxisAlignedBoundingBox();
+                cachedAABB = items[0].GetAxisAlignedBoundingBox();
+                for (int i = 1; i < items.Length; i++)
+                {
+                    cachedAABB += items[i].GetAxisAlignedBoundingBox();
+                }
             }
 
-            return totalBounds;
+            return cachedAABB;
         }
 
         /// <summary>
@@ -181,7 +190,7 @@ namespace MatterHackers.RayTracer
             throw new NotImplementedException("You should not get a color directly from a BoundingVolumeHierarchy.");
         }
 
-        public IMaterial Material
+        public MaterialAbstract Material
         {
             get
             {
@@ -281,7 +290,7 @@ namespace MatterHackers.RayTracer
             // check if all bundle misses
             if (!rayBundle.CheckIfBundleHitsAabb(Aabb))
             {
-                return count;
+                return -1;
             }
 
             // check each ray until one hits or all miss
@@ -293,24 +302,27 @@ namespace MatterHackers.RayTracer
                 }
             }
 
-            return count;
+            return -1;
         }
 
         public void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
         {
             int startRayIndex = FindFirstRay(rayBundle, rayIndexToStartCheckingFrom);
-            IRayTraceable checkFirst = nodeA;
-            IRayTraceable checkSecond = nodeB;
-            if (rayBundle.rayArray[startRayIndex].direction[splitingPlane] < 0)
+            if (startRayIndex != -1)
             {
-                checkFirst = nodeB;
-                checkSecond = nodeA;
-            }
+                IRayTraceable checkFirst = nodeA;
+                IRayTraceable checkSecond = nodeB;
+                if (rayBundle.rayArray[startRayIndex].direction[splitingPlane] < 0)
+                {
+                    checkFirst = nodeB;
+                    checkSecond = nodeA;
+                }
 
-            checkFirst.GetClosestIntersections(rayBundle, startRayIndex, intersectionsForBundle);
-            if (checkSecond != null)
-            {
-                checkSecond.GetClosestIntersections(rayBundle, startRayIndex, intersectionsForBundle);
+                checkFirst.GetClosestIntersections(rayBundle, startRayIndex, intersectionsForBundle);
+                if (checkSecond != null)
+                {
+                    checkSecond.GetClosestIntersections(rayBundle, startRayIndex, intersectionsForBundle);
+                }
             }
         }
 
@@ -352,12 +364,16 @@ namespace MatterHackers.RayTracer
             return Aabb.GetSurfaceArea();
         }
 
+        public Vector3 GetCenter()
+        {
+            return GetAxisAlignedBoundingBox().GetCenter();
+        }
+
         public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
         {
             return Aabb;
         }
 
-        static int nextAxisForBigGroups = 0;
         public static IRayTraceable CreateNewHierachy(List<IRayTraceable> traceableItems)
         {
             int numItems = traceableItems.Count;
@@ -375,13 +391,6 @@ namespace MatterHackers.RayTracer
             int bestAxis = -1;
             int bestIndexToSplitOn = -1;
             CompareCentersOnAxis axisSorter = new CompareCentersOnAxis(0);
-            if (numItems > 100)
-            {
-                bestAxis = nextAxisForBigGroups++;
-                if (nextAxisForBigGroups >= 3) nextAxisForBigGroups = 0;
-                bestIndexToSplitOn = numItems / 2;
-            }
-            else
             {
                 double totalIntersectCost = 0;
                 int skipInterval = 1;
@@ -415,12 +424,12 @@ namespace MatterHackers.RayTracer
                     // Get all left bounds
                     AxisAlignedBoundingBox currentLeftBounds = traceableItems[0].GetAxisAlignedBoundingBox();
                     surfaceArreaOfItem[0] = currentLeftBounds.GetSurfaceArea();
-                    for (int i = 1; i < numItems - 1; i += skipInterval)
+                    for (int itemIndex = 1; itemIndex < numItems - 1; itemIndex += skipInterval)
                     {
-                        currentLeftBounds += traceableItems[i].GetAxisAlignedBoundingBox();
-                        surfaceArreaOfItem[i] = currentLeftBounds.GetSurfaceArea();
+                        currentLeftBounds += traceableItems[itemIndex].GetAxisAlignedBoundingBox();
+                        surfaceArreaOfItem[itemIndex] = currentLeftBounds.GetSurfaceArea();
 
-                        totalDeviationOnAxis[axis] += Math.Abs(traceableItems[i].GetAxisAlignedBoundingBox().GetCenter()[axis] - traceableItems[i - 1].GetAxisAlignedBoundingBox().GetCenter()[axis]);
+                        totalDeviationOnAxis[axis] += Math.Abs(traceableItems[itemIndex].GetCenter()[axis] - traceableItems[itemIndex - 1].GetCenter()[axis]);
                     }
 
                     // Get all right bounds
@@ -428,15 +437,15 @@ namespace MatterHackers.RayTracer
                     {
                         AxisAlignedBoundingBox currentRightBounds = traceableItems[numItems - 1].GetAxisAlignedBoundingBox();
                         rightBoundsAtItem[numItems - 2] = currentRightBounds.GetSurfaceArea();
-                        for (int i = numItems - 1; i > 1; i -= skipInterval)
+                        for (int itemIndex = numItems - 1; itemIndex > 1; itemIndex -= skipInterval)
                         {
-                            currentRightBounds += traceableItems[i - 1].GetAxisAlignedBoundingBox();
-                            rightBoundsAtItem[i - 2] = currentRightBounds.GetSurfaceArea();
+                            currentRightBounds += traceableItems[itemIndex - 1].GetAxisAlignedBoundingBox();
+                            rightBoundsAtItem[itemIndex - 2] = currentRightBounds.GetSurfaceArea();
                         }
                     }
 
                     // Sweep from left
-                    for (int i = 0; i < numItems - 1; i += skipInterval)
+                    for (int itemIndex = 0; itemIndex < numItems - 1; itemIndex += skipInterval)
                     {
                         double thisCost = 0;
 
@@ -445,12 +454,12 @@ namespace MatterHackers.RayTracer
                             double costOfTwoAABB = 2 * AxisAlignedBoundingBox.GetIntersectCost(); // the cost of the two children AABB tests
 
                             // do the left cost
-                            intersectCostOnLeft += traceableItems[i].GetIntersectCost();
-                            double leftCost = (surfaceArreaOfItem[i] / areaOfTotalBounds) * intersectCostOnLeft;
+                            intersectCostOnLeft += traceableItems[itemIndex].GetIntersectCost();
+                            double leftCost = (surfaceArreaOfItem[itemIndex] / areaOfTotalBounds) * intersectCostOnLeft;
 
                             // do the right cost
                             double intersectCostOnRight = totalIntersectCost - intersectCostOnLeft;
-                            double rightCost = (rightBoundsAtItem[i] / areaOfTotalBounds) * intersectCostOnRight;
+                            double rightCost = (rightBoundsAtItem[itemIndex] / areaOfTotalBounds) * intersectCostOnRight;
 
                             thisCost = costOfTwoAABB + leftCost + rightCost;
                         }
@@ -466,7 +475,7 @@ namespace MatterHackers.RayTracer
                                     {
                                         // this new axis is better and we'll switch to it.  Otherwise don't switch.
                                         bestCost = thisCost;
-                                        bestIndexToSplitOn = i;
+                                        bestIndexToSplitOn = itemIndex;
                                         bestAxis = axis;
                                     }
                                 }
@@ -474,7 +483,7 @@ namespace MatterHackers.RayTracer
                             else // this is just better
                             {
                                 bestCost = thisCost;
-                                bestIndexToSplitOn = i;
+                                bestIndexToSplitOn = itemIndex;
                                 bestAxis = axis;
                             }
                         }
@@ -501,7 +510,9 @@ namespace MatterHackers.RayTracer
                 {
                     rightItems.Add(traceableItems[i]);
                 }
-                BoundingVolumeHierarchy newBVHNode = new BoundingVolumeHierarchy(CreateNewHierachy(leftItems), CreateNewHierachy(rightItems), bestAxis);
+                IRayTraceable leftGroup = CreateNewHierachy(leftItems);
+                IRayTraceable rightGroup = CreateNewHierachy(rightItems);
+                BoundingVolumeHierarchy newBVHNode = new BoundingVolumeHierarchy(leftGroup, rightGroup, bestAxis);
                 return newBVHNode;
             }
         }

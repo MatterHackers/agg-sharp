@@ -137,7 +137,7 @@ namespace MatterHackers.Agg.UI
         }
 
 
-        public override IEnumerable<VertexData> VertexIterator()
+        public override IEnumerable<VertexData> Vertices()
         {
             throw new NotImplementedException();
         }

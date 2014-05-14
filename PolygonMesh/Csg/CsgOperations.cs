@@ -35,10 +35,10 @@ namespace MatterHackers.PolygonMesh.Csg
             foreach (Face face in model.Faces)
             {
                 List<Vertex> triangle = new List<Vertex>();
-                foreach (FaceEdge faceEdge in face.FaceEdgeIterator())
+                foreach (FaceEdge faceEdge in face.FaceEdges())
                 {
-                    Vertex v = new Vertex(faceEdge.vertex.Position);
-                    v.Normal = faceEdge.vertex.Normal;
+                    Vertex v = new Vertex(faceEdge.firstVertex.Position);
+                    v.Normal = faceEdge.firstVertex.Normal;
                     triangle.Add(v);
                 }
 
@@ -52,7 +52,6 @@ namespace MatterHackers.PolygonMesh.Csg
         public static Mesh MeshFromPolygons(List<CsgPolygon> polygons)
         {
             Mesh model = new Mesh();
-            int p = 0;
             HashSet<PolygonMesh.Vertex> vertices = new HashSet<PolygonMesh.Vertex>();
             for (int polygonIndex = 0; polygonIndex < polygons.Count; polygonIndex++)
             {

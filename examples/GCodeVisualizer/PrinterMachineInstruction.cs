@@ -45,7 +45,8 @@ namespace MatterHackers.GCodeVisualizer
         double feedRate = 0;
 
         public enum MovementTypes { Absolute, Relative };
-        public MovementTypes movementType = MovementTypes.Relative;
+        // Absolute is the RepRap default
+        public MovementTypes movementType = MovementTypes.Absolute;
 
         public double secondsThisLine;
         public double secondsToEndFromHere;

@@ -9,12 +9,12 @@ namespace MatterHackers.Agg
     {
         public int Left, Bottom, Right, Top;
 
-        public RectangleInt(int x1_, int y1_, int x2_, int y2_)
+        public RectangleInt(int left, int bottom, int right, int top)
         {
-            Left = x1_;
-            Bottom = y1_;
-            Right = x2_;
-            Top = y2_;
+            Left = left;
+            Bottom = bottom;
+            Right = right;
+            Top = top;
         }
 
         public void SetRect(int left, int bottom, int right, int top)
@@ -54,6 +54,14 @@ namespace MatterHackers.Agg
             if (Left > Right) { t = Left; Left = Right; Right = t; }
             if (Bottom > Top) { t = Bottom; Bottom = Top; Top = t; }
             return this;
+        }
+
+        public void ExpandToInclude(RectangleInt rectToInclude)
+        {
+            if (Right < rectToInclude.Right) Right = rectToInclude.Right;
+            if (Top < rectToInclude.Top) Top = rectToInclude.Top;
+            if (Left > rectToInclude.Left) Left = rectToInclude.Left;
+            if (Bottom > rectToInclude.Bottom) Bottom = rectToInclude.Bottom;
         }
 
         public bool clip(RectangleInt r)

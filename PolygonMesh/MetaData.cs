@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Linq;
 using System.Text;
 
@@ -41,9 +42,26 @@ namespace MatterHackers.PolygonMesh
         int id;
         public int ID { get { return id; } }
 
-        public MetaData()
+        private MetaData()
         {
             id = numMetaDatas++;
+        }
+
+        private static ConditionalWeakTable<object, MetaData> objectsWithMetaData = new ConditionalWeakTable<object, MetaData>();
+        static public MetaData Get(Object objectToGetMataDataFor)
+        {
+            MetaData plugin;
+            objectsWithMetaData.TryGetValue(objectToGetMataDataFor, out plugin);
+
+            if (plugin == null)
+            {
+                MetaData newPlugin = new MetaData();
+                objectsWithMetaData.Add(objectToGetMataDataFor, newPlugin);
+
+                return newPlugin;
+            }
+
+            return plugin;
         }
     }
 }

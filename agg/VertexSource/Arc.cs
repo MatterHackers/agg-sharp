@@ -115,7 +115,7 @@ namespace MatterHackers.Agg.VertexSource
         
         public double approximation_scale() { return m_Scale;  }
 
-        public IEnumerable<VertexData> VertexIterator()
+        public IEnumerable<VertexData> Vertices()
         {
             // go to the start
             VertexData vertexData = new VertexData();
