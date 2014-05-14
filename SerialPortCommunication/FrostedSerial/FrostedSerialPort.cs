@@ -1009,44 +1009,40 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
             remove { Events.RemoveHandler(data_received, value); }
         }
 
-        public static IFrostedSerialPort CreateAndOpen(string serialPortName, int baudRate, bool DtrEnableOnConnect)
+        public static IFrostedSerialPort Create(string serialPortName)
         {
             IFrostedSerialPort newPort = null;
             // if we can find a mac helper class (to get us 250k)
-			string appBundle = Path.GetDirectoryName (System.Reflection.Assembly.GetExecutingAssembly ().Location);
-			if(File.Exists(Path.Combine(appBundle, "libFrostedSerialHelper.dylib")))
+            string appBundle = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            if (File.Exists(Path.Combine(appBundle, "libFrostedSerialHelper.dylib")))
             {
                 // use it
                 newPort = new FrostedSerialPort(serialPortName);
-                newPort.BaudRate = baudRate;
-                if (DtrEnableOnConnect)
-                {
-                    newPort.DtrEnable = true;
-                }
-
-                // Set the read/write timeouts
-                newPort.ReadTimeout = 500;
-                newPort.WriteTimeout = 500;
-
-                newPort.Open();
             }
-			else // use the c# native serial port
+            else // use the c# native serial port
             {
-                // If we can't get the serial port offered by FrostedSerialStream then give the C# wrapped one.
                 newPort = new CSharpSerialPortWrapper(serialPortName);
-
-                newPort.BaudRate = baudRate;
-                if (DtrEnableOnConnect)
-                {
-                    newPort.DtrEnable = true;
-                }
-
-                // Set the read/write timeouts
-                newPort.ReadTimeout = 500;
-                newPort.WriteTimeout = 500;
-
-                newPort.Open();
             }
+
+            return newPort;
+        }
+
+        public static IFrostedSerialPort CreateAndOpen(string serialPortName, int baudRate, bool DtrEnableOnConnect)
+        {
+            IFrostedSerialPort newPort = Create(serialPortName);
+            // if we can find a mac helper class (to get us 250k)
+
+            newPort.BaudRate = baudRate;
+            if (DtrEnableOnConnect)
+            {
+                newPort.DtrEnable = true;
+            }
+
+            // Set the read/write timeouts
+            newPort.ReadTimeout = 500;
+            newPort.WriteTimeout = 500;
+
+            newPort.Open();
 
             return newPort;
         }
