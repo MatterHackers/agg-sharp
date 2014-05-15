@@ -1586,10 +1586,8 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        //static NamedExecutionTimer guiWidgetOnDraw = new NamedExecutionTimer("guiWidgetOnDraw");
         public virtual void OnDraw(Graphics2D graphics2D)
         {
-            //guiWidgetOnDraw.Start();
             for (int i = 0; i < Children.Count; i++)
             {
                 GuiWidget child = Children[i];
@@ -1674,8 +1672,6 @@ namespace MatterHackers.Agg.UI
                 graphics2D.DrawString(string.Format("{4} {0}, {1} : {2}, {3}", (int)MinimumSize.x, (int)MinimumSize.y, (int)LocalBounds.Width, (int)LocalBounds.Height, Name),
                     Width / 2, Math.Max(Height - 16, Height / 2 - 16 * graphics2D.TransformStackCount), color: RGBA_Bytes.Magenta, justification: Font.Justification.Center);
             }
-
-            //guiWidgetOnDraw.Stop();
         }
 
         static bool showSize = false;

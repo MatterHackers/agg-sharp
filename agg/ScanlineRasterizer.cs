@@ -30,8 +30,6 @@
 // PostScript and PDF technology for software developers.
 // 
 //----------------------------------------------------------------------------
-//#define use_timers
-
 using System;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
@@ -408,22 +406,13 @@ namespace MatterHackers.Agg
             return (int)m_gamma[cover];
         }
 
-#if use_timers
-        static NamedExecutionTimer SweepSacanLine = new NamedExecutionTimer("SweepSacanLine");
-#endif
         //--------------------------------------------------------------------
         public bool sweep_scanline(IScanlineCache scanlineCache)
         {
-#if use_timers
-            SweepSacanLine.Start();
-#endif
             for(;;)
             {
                 if (m_scan_y > m_outline.max_y())
                 {
-#if use_timers
-                    SweepSacanLine.Stop();
-#endif
                     return false;
                 }
 
@@ -483,9 +472,6 @@ namespace MatterHackers.Agg
 
             scanlineCache.finalize(m_scan_y);
             ++m_scan_y;
-#if use_timers
-            SweepSacanLine.Stop();
-#endif
             return true;
         }
 

@@ -27,7 +27,6 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-#define use_timers
 //#define AA_TIPS
 
 using System;
@@ -106,12 +105,6 @@ namespace MatterHackers.RenderOpenGl
             GL.PopAttrib();
         }
 
-#if use_timers
-        static NamedExecutionTimer OpenGLShapeRender = new NamedExecutionTimer("OpenGLShapeRender");
-        static NamedExecutionTimer OpenGLClear = new NamedExecutionTimer("OpenGLClear");
-        static NamedExecutionTimer OpenGLPushOrtho = new NamedExecutionTimer("OpenGLPushOrtho");
-        static NamedExecutionTimer OpenGLEndPolygonTimer = new NamedExecutionTimer("OpenGLEndPolygonTimer");        
-#endif
         public static void SendShapeToTesselator(VertexTesselatorAbstract tesselator, IVertexSource vertexSource)
         {
             tesselator.BeginPolygon();
@@ -145,13 +138,7 @@ namespace MatterHackers.RenderOpenGl
                 tesselator.EndContour();
             }
 
-#if use_timers
-            OpenGLEndPolygonTimer.Start();
-#endif
             tesselator.EndPolygon();
-#if use_timers
-            OpenGLEndPolygonTimer.Stop();
-#endif
         }
 
         static int AATextureHandle = -1;
@@ -207,12 +194,7 @@ namespace MatterHackers.RenderOpenGl
 
         public override void Render(IVertexSource vertexSource, int pathIndexToRender, RGBA_Bytes colorBytes)
         {
-#if use_timers
-            OpenGLShapeRender.Start();
-#endif
-            OpenGLPushOrtho.Start();
             PushOrthoProjection();
-            OpenGLPushOrtho.Stop();
 
             GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
             GL.Enable(EnableCap.Blend);
@@ -239,24 +221,13 @@ namespace MatterHackers.RenderOpenGl
             }
 
             PopOrthoProjection();
-#if use_timers
-            OpenGLShapeRender.Stop();
-#endif
         }
 
-#if use_timers
-        static NamedExecutionTimer OpenGLImageRender = new NamedExecutionTimer("OpenGLImageRender");
-        static NamedExecutionTimer OpenGLImageRender1 = new NamedExecutionTimer("OpenGLImageRender1");
-        static NamedExecutionTimer OpenGLImageRender2 = new NamedExecutionTimer("OpenGLImageRender2");
-#endif
         public override void Render(IImageByte source,
             double x, double y,
             double angleRadians,
             double scaleX, double scaleY)
         {
-#if use_timers
-            OpenGLImageRender.Start();
-#endif
 #if true
             Affine transform = GetTransform();
             if (!transform.is_identity())
@@ -289,17 +260,8 @@ namespace MatterHackers.RenderOpenGl
 #endif
 
             ImageBuffer sourceAsImageBuffer = (ImageBuffer)source;
-#if use_timers
-            OpenGLImageRender1.Start();
-#endif
             ImageGlPlugin glPlugin = ImageGlPlugin.GetImageGlPlugin(sourceAsImageBuffer, false);
-#if use_timers
-            OpenGLImageRender1.Stop();
-#endif
 
-#if use_timers
-            OpenGLImageRender2.Start();
-#endif
             // Prepare openGL for rendering
             PushOrthoProjection();
             GL.Disable(EnableCap.Lighting);
@@ -315,18 +277,11 @@ namespace MatterHackers.RenderOpenGl
 
             RGBA_Bytes color = RGBA_Bytes.White;
             GL.Color4(color.Red0To1, color.Green0To1, color.Blue0To1, color.Alpha0To1);
-#if use_timers
-            OpenGLImageRender2.Stop();
-#endif
 
             glPlugin.DrawToGL();
 
             //Restore openGL state
             PopOrthoProjection();
-
-#if use_timers
-            OpenGLImageRender.Stop();
-#endif
         }
 
         public override void Render(IImageFloat imageSource,
@@ -339,18 +294,12 @@ namespace MatterHackers.RenderOpenGl
 
         public override void Clear(IColorType color)
         {
-#if use_timers
-            OpenGLClear.Start();
-#endif
             Affine transform = GetTransform();
 
             RoundedRect clearRect = new RoundedRect(new RectangleDouble(
                 0 - transform.tx, width - transform.ty,
                 0 - transform.tx, height - transform.ty), 0);
             Render(clearRect, color.GetAsRGBA_Bytes());
-#if use_timers
-            OpenGLClear.Stop();
-#endif
         }
     }
 }
