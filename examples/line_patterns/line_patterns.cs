@@ -62,7 +62,7 @@ namespace MatterHackers.Agg
         };
 
         public pattern_src_brightness_to_alpha_RGBA_Bytes(ImageBuffer rb)
-            : base(new ImageBuffer(rb, new BlenderBGR()))
+            : base(new ImageBuffer(rb, new BlenderBGRA()))
         {
         }
 

@@ -75,7 +75,8 @@ namespace MatterHackers.Agg.UI
             {
                 if (localBoundsComeFromPoints)
                 {
-                    throw new NotImplementedException();
+                    //throw new NotImplementedException();
+                    base.LocalBounds = value;
                 }
                 else
                 {

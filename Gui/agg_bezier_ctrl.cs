@@ -155,7 +155,6 @@ namespace MatterHackers.Agg.UI
         public override void rewind(int idx)
         {
             m_poly.rewind(0);
-            BoundsRelativeToParent = m_poly.BoundsRelativeToParent;
             m_idx = idx;
 
             m_curve.approximation_scale(base.scale());
