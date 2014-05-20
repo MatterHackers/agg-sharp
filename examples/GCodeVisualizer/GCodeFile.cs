@@ -570,6 +570,9 @@ namespace MatterHackers.GCodeVisualizer
                 case "301":
                     break;
 
+                case "565": // M565: Set Z probe offset
+                    break;
+
 #if DEBUG
                 default:
                     throw new NotImplementedException(lineString);
