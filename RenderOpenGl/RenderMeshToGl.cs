@@ -48,7 +48,7 @@ using OpenTK.Graphics.OpenGL;
 
 namespace MatterHackers.RenderOpenGl
 {
-    public enum RenderTypes { Shaded, Outlines, Polygons };
+    public enum RenderTypes { Hidden, Shaded, Outlines, Polygons };
 
     public static class RenderMeshToGl
     {
@@ -267,13 +267,19 @@ namespace MatterHackers.RenderOpenGl
                 GL.PushMatrix();
                 GL.MultMatrix(transform.GetAsFloatArray());
 
-                if (renderType == RenderTypes.Shaded)
+                switch (renderType)
                 {
-                    DrawToGL(meshToRender);
-                }
-                else
-                {
-                    DrawWithWireOverlay(meshToRender, renderType);
+                    case RenderTypes.Hidden:
+                        break;
+
+                    case RenderTypes.Shaded:
+                        DrawToGL(meshToRender);
+                        break;
+
+                    case RenderTypes.Polygons:
+                    case RenderTypes.Outlines:
+                        DrawWithWireOverlay(meshToRender, renderType);
+                        break;
                 }
 
                 GL.PopMatrix();
