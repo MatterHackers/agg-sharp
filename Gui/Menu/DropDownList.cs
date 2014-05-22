@@ -105,7 +105,7 @@ namespace MatterHackers.Agg.UI
                         }
                         index++;
                     }
-                    throw new Exception("The value you specified is not in the drop down list.");
+                    throw new Exception("The label you specified '{0}' is not in the drop down list.".FormatWith(value));
                 }
             }
         }
@@ -134,7 +134,7 @@ namespace MatterHackers.Agg.UI
                         }
                         index++;
                     }
-                    throw new Exception("The value you specified is not in the drop down list.");
+                    throw new Exception("The value you specified '{0}' is not in the drop down list.".FormatWith(value));
                 }
             }
         }
