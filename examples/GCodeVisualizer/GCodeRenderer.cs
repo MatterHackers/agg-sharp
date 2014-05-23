@@ -193,7 +193,7 @@ namespace MatterHackers.GCodeVisualizer
             List<RenderFeatureBase> renderFeaturesForLayer = renderFeatures[layerToCreate];
 
             int startRenderIndex = gCodeFileToDraw.IndexOfChangeInZ[layerToCreate];
-            int endRenderIndex = gCodeFileToDraw.GCodeCommandQueue.Count - 1;
+            int endRenderIndex = gCodeFileToDraw.Count - 1;
             if (layerToCreate < gCodeFileToDraw.IndexOfChangeInZ.Count - 1)
             {
                 endRenderIndex = gCodeFileToDraw.IndexOfChangeInZ[layerToCreate + 1];
@@ -201,11 +201,11 @@ namespace MatterHackers.GCodeVisualizer
 
             for (int i = startRenderIndex; i < endRenderIndex; i++ )
             {
-                PrinterMachineInstruction currentInstruction = gCodeFileToDraw.GCodeCommandQueue[i];
+                PrinterMachineInstruction currentInstruction = gCodeFileToDraw.Instruction(i);
                 PrinterMachineInstruction previousInstruction = currentInstruction;
                 if (i > 0)
                 {
-                    previousInstruction = gCodeFileToDraw.GCodeCommandQueue[i - 1];
+                    previousInstruction = gCodeFileToDraw.Instruction(i - 1);
                 }
 
                 if (currentInstruction.Position == previousInstruction.Position)

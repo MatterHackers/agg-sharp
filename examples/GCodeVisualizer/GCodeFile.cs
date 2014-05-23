@@ -48,7 +48,7 @@ namespace MatterHackers.GCodeVisualizer
         double parsingLastZ;
         bool gcodeHasExplicitLayerChangeInfo = false;
 
-        public List<PrinterMachineInstruction> GCodeCommandQueue = new List<PrinterMachineInstruction>();
+        List<PrinterMachineInstruction> GCodeCommandQueue = new List<PrinterMachineInstruction>();
 
         public GCodeFile(bool gcodeHasExplicitLayerChangeInfo = false)
         {
@@ -59,6 +59,40 @@ namespace MatterHackers.GCodeVisualizer
         {
             this.gcodeHasExplicitLayerChangeInfo = gcodeHasExplicitLayerChangeInfo;
             this.Load(pathAndFileName);
+        }
+
+        public PrinterMachineInstruction Instruction(int index)
+        {
+            return GCodeCommandQueue[index];
+        }
+
+        public int Count
+        {
+            get { return GCodeCommandQueue.Count; }
+        }
+
+        public void Clear()
+        {
+            indexOfChangeInZ.Clear();
+            GCodeCommandQueue.Clear();
+        }
+
+        public void Add(PrinterMachineInstruction printerMachineInstruction)
+        {
+            Insert(Count, printerMachineInstruction);
+        }
+
+        public void Insert(int insertIndex, PrinterMachineInstruction printerMachineInstruction)
+        {
+            for (int i = 0; i < indexOfChangeInZ.Count; i++)
+            {
+                if (insertIndex < indexOfChangeInZ[i])
+                {
+                    indexOfChangeInZ[i]++;
+                }
+            }
+
+            GCodeCommandQueue.Insert(insertIndex, printerMachineInstruction);
         }
 
         public static GCodeFile ParseGCodeString(string gcodeContents)

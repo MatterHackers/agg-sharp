@@ -206,15 +206,15 @@ namespace MatterHackers.GCodeVisualizer
         void SetInitalLayer()
         {
             activeLayerIndex = 0;
-            if (loadedGCode.GCodeCommandQueue.Count > 0)
+            if (loadedGCode.Count > 0)
             {
                 int firstExtrusionIndex = 0;
-                Vector3 lastPosition = loadedGCode.GCodeCommandQueue[0].Position;
-                double ePosition = loadedGCode.GCodeCommandQueue[0].EPosition;
+                Vector3 lastPosition = loadedGCode.Instruction(0).Position;
+                double ePosition = loadedGCode.Instruction(0).EPosition;
                 // let's find the first layer that has extrusion if possible and go to that
-                for (int i = 1; i < loadedGCode.GCodeCommandQueue.Count; i++)
+                for (int i = 1; i < loadedGCode.Count; i++)
                 {
-                    PrinterMachineInstruction currentInstruction = loadedGCode.GCodeCommandQueue[i];
+                    PrinterMachineInstruction currentInstruction = loadedGCode.Instruction(i);
                     if (currentInstruction.EPosition > ePosition && lastPosition != currentInstruction.Position)
                     {
                         firstExtrusionIndex = i;
