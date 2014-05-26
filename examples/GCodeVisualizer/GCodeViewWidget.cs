@@ -114,7 +114,7 @@ namespace MatterHackers.GCodeVisualizer
             }
         }
 
-        Affine TotalTransform
+        public Affine TotalTransform
         {
             get
             {

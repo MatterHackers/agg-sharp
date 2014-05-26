@@ -31,11 +31,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Runtime.InteropServices;
 
 using MatterHackers.VectorMath;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
+
+using OpenTK.Graphics.OpenGL;
 
 namespace MatterHackers.GCodeVisualizer
 {
@@ -52,6 +55,7 @@ namespace MatterHackers.GCodeVisualizer
     public abstract class RenderFeatureBase
     {
         public abstract void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType);
+        public abstract void Render3D(VectorPOD<ColorVertexData> colorVertexData, Affine transform, double layerScale, RenderType renderType);
     }
 
     public class RenderFeatureRetract : RenderFeatureBase
@@ -68,16 +72,43 @@ namespace MatterHackers.GCodeVisualizer
             this.position = position;
         }
 
+        private double Radius(double layerScale)
+        {
+            double radius = RetractionDrawRadius * layerScale;
+            double area = Math.PI * radius * radius;
+            area *= Math.Abs(extrusionAmount);
+            radius = Math.Sqrt(area / Math.PI);
+            return radius;
+        }
+
+        public override void Render3D(VectorPOD<ColorVertexData> colorVertexData, Affine transform, double layerScale, RenderType renderType)
+        {
+            ColorVertexData start;
+            ColorVertexData end;
+            if (extrusionAmount > 0)
+            {
+                // unretraction
+                start = new ColorVertexData(position + new Vector3(0, 0, Radius(1)), RGBA_Bytes.Blue);
+                end = new ColorVertexData(position + new Vector3(0, 0, Radius(1)), RGBA_Bytes.Blue);
+            }
+            else
+            {
+                // retraction
+                start = new ColorVertexData(position + new Vector3(0, 0, Radius(1)), RGBA_Bytes.Red);
+                end = new ColorVertexData(position + new Vector3(0, 0, Radius(1)), RGBA_Bytes.Red);
+            }
+
+            colorVertexData.Add(start);
+            colorVertexData.Add(end);
+        }
+
         public override void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType)
         {
             if ((renderType & RenderType.Retractions) == RenderType.Retractions)
             {
                 Vector2 position = new Vector2(this.position.x, this.position.y);
                 transform.transform(ref position);
-                double radius = RetractionDrawRadius * layerScale;
-                double area = Math.PI * radius * radius;
-                area *= Math.Abs(extrusionAmount);
-                radius = Math.Sqrt(area/Math.PI);
+                double radius = Radius(layerScale);
                 Ellipse extrusion = new Ellipse(position, radius);
 
                 if (extrusionAmount > 0)
@@ -105,6 +136,15 @@ namespace MatterHackers.GCodeVisualizer
             this.start = start;
             this.end = end;
             this.travelSpeed = travelSpeed;
+        }
+
+        public override void Render3D(VectorPOD<ColorVertexData> colorVertexData, Affine transform, double layerScale, RenderType renderType)
+        {
+            ColorVertexData startV = new ColorVertexData(start, RGBA_Bytes.Green);
+            ColorVertexData endV = new ColorVertexData(end, RGBA_Bytes.Green);
+
+            colorVertexData.Add(startV);
+            colorVertexData.Add(endV);
         }
 
         public override void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType)
@@ -145,6 +185,15 @@ namespace MatterHackers.GCodeVisualizer
             this.totalExtrusion = totalExtrusion;
         }
 
+        public override void Render3D(VectorPOD<ColorVertexData> colorVertexData, Affine transform, double layerScale, RenderType renderType)
+        {
+            ColorVertexData startV = new ColorVertexData(start, RGBA_Bytes.White);
+            ColorVertexData endV = new ColorVertexData(end, RGBA_Bytes.White);
+
+            colorVertexData.Add(startV);
+            colorVertexData.Add(endV);
+        }
+
         public override void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType)
         {
             if ((renderType & RenderType.Extrusions) == RenderType.Extrusions)
@@ -167,8 +216,36 @@ namespace MatterHackers.GCodeVisualizer
         }
     }
 
+    public struct ColorVertexData
+    {
+        public byte r;
+        public byte g;
+        public byte b;
+        public byte a;
+
+        public float x;
+        public float y;
+        public float z;
+
+        public static readonly int Stride = Marshal.SizeOf(default(ColorVertexData));
+
+        public ColorVertexData(Vector3 position, RGBA_Bytes color)
+        {
+            r = (Byte)color.Red0To255;
+            g = (Byte)color.Green0To255;
+            b = (Byte)color.Blue0To255;
+            a = (Byte)color.Alpha0To255;
+
+            x = (float)position.x;
+            y = (float)position.y;
+            z = (float)position.z;
+        }
+    }
+
     public class GCodeRenderer
     {
+        VectorPOD<ColorVertexData> colorVertexData = new VectorPOD<ColorVertexData>();
+        VectorPOD<int> featureStartIndex = new VectorPOD<int>();
         List<List<RenderFeatureBase>> renderFeatures = new List<List<RenderFeatureBase>>();
 
         GCodeFile gCodeFileToDraw;
@@ -242,6 +319,51 @@ namespace MatterHackers.GCodeVisualizer
         {
             CreateFeaturesForLayerIfRequired(layerToCountFeaturesOn);
             return renderFeatures[layerToCountFeaturesOn].Count;
+        }
+
+        public void Render3D(int activeLayerIndex, Affine transform, double layerScale, RenderType renderType,
+            double featureToStartOnRatio0To1, double featureToEndOnRatio0To1)
+        {
+            if (renderFeatures.Count > 0)
+            {
+                colorVertexData.Clear();
+
+                CreateFeaturesForLayerIfRequired(activeLayerIndex);
+
+                int featuresOnLayer = renderFeatures[activeLayerIndex].Count;
+                int endFeature = (int)(featuresOnLayer * featureToEndOnRatio0To1 + .5);
+                endFeature = Math.Max(0, Math.Min(endFeature, featuresOnLayer));
+
+                int startFeature = (int)(featuresOnLayer * featureToStartOnRatio0To1 + .5);
+                startFeature = Math.Max(0, Math.Min(startFeature, featuresOnLayer));
+
+                // try to make sure we always draw at least one feature
+                if (endFeature <= startFeature)
+                {
+                    endFeature = Math.Min(startFeature + 1, featuresOnLayer);
+                }
+                if (startFeature >= endFeature)
+                {
+                    // This can only happen if the sart and end are set to the last feature
+                    // Try to set the start feture to one from the end
+                    startFeature = Math.Max(endFeature - 1, 0);
+                }
+
+                for (int i = startFeature; i < endFeature; i++)
+                {
+                    RenderFeatureBase feature = renderFeatures[activeLayerIndex][i];
+                    feature.Render3D(colorVertexData, transform, layerScale, renderType);
+                }
+
+                GL.DisableClientState(ArrayCap.TextureCoordArray);
+
+                GL.InterleavedArrays(InterleavedArrayFormat.C4ubV3f, 0, colorVertexData.Array);
+                GL.DrawArrays(BeginMode.Lines, 0, colorVertexData.Count);
+
+                GL.DisableClientState(ArrayCap.NormalArray);
+                GL.DisableClientState(ArrayCap.VertexArray);
+
+            }
         }
 
         public void Render(Graphics2D graphics2D, int activeLayerIndex, Affine transform, double layerScale, RenderType renderType,
