@@ -728,6 +728,27 @@ namespace MatterHackers.VectorMath
             return Math.Abs(Cross(b - a, c - a).Length) < epsilon;
         }
 
+        public static Vector3 GetPerpendicular(Vector3 a, Vector3 b)
+        {
+            if (!Collinear(a, b, Zero))
+            {
+                return Vector3.Cross(a, b);
+            }
+            else
+            {
+                Vector3 zOne = new Vector3(0, 0, 100000);
+                if (!Collinear(a, b, zOne))
+                {
+                    return Vector3.Cross(a - zOne, b - zOne);
+                }
+                else
+                {
+                    Vector3 xOne = new Vector3(1000000, 0, 0);
+                    return Vector3.Cross(a - xOne, b - xOne);
+                }
+            }
+        }
+
         #endregion // Utility
 
         #region Lerp

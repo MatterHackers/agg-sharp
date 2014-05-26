@@ -52,10 +52,58 @@ namespace MatterHackers.GCodeVisualizer
         All = Extrusions | Moves | Retractions
     };
 
+    public struct ColorVertexData
+    {
+        public float r;
+        public float g;
+        public float b;
+        public float a;
+
+        public float normalX;
+        public float normalY;
+        public float normalZ;
+
+        public float positionX;
+        public float positionY;
+        public float positionZ;
+
+        public static readonly int Stride = Marshal.SizeOf(default(ColorVertexData));
+
+        public ColorVertexData(Vector3 position, Vector3 normal, RGBA_Bytes color)
+        {
+            r = (float)color.Red0To1;
+            g = (float)color.Green0To1;
+            b = (float)color.Blue0To1;
+            a = (float)color.Alpha0To1;
+
+            normalX = (float)normal.x;
+            normalY = (float)normal.y;
+            normalZ = (float)normal.z;
+
+            positionX = (float)position.x;
+            positionY = (float)position.y;
+            positionZ = (float)position.z;
+        }
+    }
+
     public abstract class RenderFeatureBase
     {
         public abstract void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType);
         public abstract void Render3D(VectorPOD<ColorVertexData> colorVertexData, Affine transform, double layerScale, RenderType renderType);
+
+        static public void CreateCylinder(VectorPOD<ColorVertexData> colorVertexData, Vector3 start, Vector3 end, double radius, RGBA_Bytes color)
+        {
+            Vector3 perpendicular = Vector3.GetPerpendicular(end, start);
+            Vector3 offset = perpendicular.GetNormal() * radius;
+
+            colorVertexData.Add(new ColorVertexData(start, Vector3.UnitZ, color));
+            colorVertexData.Add(new ColorVertexData(end, Vector3.UnitZ, color));
+            colorVertexData.Add(new ColorVertexData(end + offset, Vector3.UnitZ, color));
+
+            //colorVertexData.Add(new ColorVertexData(start, color));
+            //colorVertexData.Add(new ColorVertexData(end, color));
+            //colorVertexData.Add(new ColorVertexData(start + offset, color));
+        }
     }
 
     public class RenderFeatureRetract : RenderFeatureBase
@@ -83,23 +131,16 @@ namespace MatterHackers.GCodeVisualizer
 
         public override void Render3D(VectorPOD<ColorVertexData> colorVertexData, Affine transform, double layerScale, RenderType renderType)
         {
-            ColorVertexData start;
-            ColorVertexData end;
             if (extrusionAmount > 0)
             {
                 // unretraction
-                start = new ColorVertexData(position + new Vector3(0, 0, Radius(1)), RGBA_Bytes.Blue);
-                end = new ColorVertexData(position + new Vector3(0, 0, Radius(1)), RGBA_Bytes.Blue);
+                CreateCylinder(colorVertexData, position, position + new Vector3(0, 0, Radius(1)), Radius(layerScale), RGBA_Bytes.Blue);
             }
             else
             {
                 // retraction
-                start = new ColorVertexData(position + new Vector3(0, 0, Radius(1)), RGBA_Bytes.Red);
-                end = new ColorVertexData(position + new Vector3(0, 0, Radius(1)), RGBA_Bytes.Red);
+                CreateCylinder(colorVertexData, position, position + new Vector3(0, 0, Radius(1)), Radius(layerScale), RGBA_Bytes.Red);
             }
-
-            colorVertexData.Add(start);
-            colorVertexData.Add(end);
         }
 
         public override void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType)
@@ -140,11 +181,7 @@ namespace MatterHackers.GCodeVisualizer
 
         public override void Render3D(VectorPOD<ColorVertexData> colorVertexData, Affine transform, double layerScale, RenderType renderType)
         {
-            ColorVertexData startV = new ColorVertexData(start, RGBA_Bytes.Green);
-            ColorVertexData endV = new ColorVertexData(end, RGBA_Bytes.Green);
-
-            colorVertexData.Add(startV);
-            colorVertexData.Add(endV);
+            CreateCylinder(colorVertexData, start, end, 2, RGBA_Bytes.Green);
         }
 
         public override void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType)
@@ -187,11 +224,7 @@ namespace MatterHackers.GCodeVisualizer
 
         public override void Render3D(VectorPOD<ColorVertexData> colorVertexData, Affine transform, double layerScale, RenderType renderType)
         {
-            ColorVertexData startV = new ColorVertexData(start, RGBA_Bytes.White);
-            ColorVertexData endV = new ColorVertexData(end, RGBA_Bytes.White);
-
-            colorVertexData.Add(startV);
-            colorVertexData.Add(endV);
+            CreateCylinder(colorVertexData, start, end, 2, RGBA_Bytes.White);
         }
 
         public override void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType)
@@ -213,32 +246,6 @@ namespace MatterHackers.GCodeVisualizer
 
                 graphics2D.Render(stroke, 0, extrusionColor);
             }
-        }
-    }
-
-    public struct ColorVertexData
-    {
-        public byte r;
-        public byte g;
-        public byte b;
-        public byte a;
-
-        public float x;
-        public float y;
-        public float z;
-
-        public static readonly int Stride = Marshal.SizeOf(default(ColorVertexData));
-
-        public ColorVertexData(Vector3 position, RGBA_Bytes color)
-        {
-            r = (Byte)color.Red0To255;
-            g = (Byte)color.Green0To255;
-            b = (Byte)color.Blue0To255;
-            a = (Byte)color.Alpha0To255;
-
-            x = (float)position.x;
-            y = (float)position.y;
-            z = (float)position.z;
         }
     }
 
@@ -355,13 +362,13 @@ namespace MatterHackers.GCodeVisualizer
 
                 GL.DisableClientState(ArrayCap.TextureCoordArray);
 
-                GL.InterleavedArrays(InterleavedArrayFormat.C4ubV3f, 0, colorVertexData.Array);
+                GL.InterleavedArrays(InterleavedArrayFormat.C4fN3fV3f, 0, colorVertexData.Array);
 
                 // draw all the layers from start to end-2
-                if (endLayerIndex - 2 > startLayerIndex)
+                if (endLayerIndex - 1 > startLayerIndex)
                 {
-                    int ellementCount = layerStartIndex[startLayerIndex] - layerStartIndex[endLayerIndex - 2];
-                    GL.DrawArrays(BeginMode.Lines, layerStartIndex[startLayerIndex], ellementCount);
+                    int ellementCount = layerStartIndex[endLayerIndex - 1] - layerStartIndex[startLayerIndex];
+                    GL.DrawArrays(BeginMode.Triangles, layerStartIndex[startLayerIndex], ellementCount);
                 }
 
                 // draw the partial layer of end-1 from startratio to endratio
@@ -387,7 +394,7 @@ namespace MatterHackers.GCodeVisualizer
                     }
 
                     int ellementCount = featureStartIndex[layerIndex][endFeature - 1] - featureStartIndex[layerIndex][startFeature];
-                    GL.DrawArrays(BeginMode.Lines, featureStartIndex[layerIndex][startFeature], ellementCount);
+                    GL.DrawArrays(BeginMode.Triangles, featureStartIndex[layerIndex][startFeature], ellementCount);
                 }
 
                 GL.DisableClientState(ArrayCap.ColorArray);
