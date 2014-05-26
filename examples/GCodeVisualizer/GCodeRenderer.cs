@@ -245,7 +245,8 @@ namespace MatterHackers.GCodeVisualizer
     public class GCodeRenderer
     {
         VectorPOD<ColorVertexData> colorVertexData = new VectorPOD<ColorVertexData>();
-        VectorPOD<int> featureStartIndex = new VectorPOD<int>();
+        List<int> layerStartIndex = new List<int>();
+        List<List<int>> featureStartIndex = new List<List<int>>();
         List<List<RenderFeatureBase>> renderFeatures = new List<List<RenderFeatureBase>>();
 
         GCodeFile gCodeFileToDraw;
@@ -321,48 +322,77 @@ namespace MatterHackers.GCodeVisualizer
             return renderFeatures[layerToCountFeaturesOn].Count;
         }
 
-        public void Render3D(int activeLayerIndex, Affine transform, double layerScale, RenderType renderType,
+        void Create3DData(Affine transform, double layerScale, RenderType renderType)
+        {
+            colorVertexData.Clear();
+            layerStartIndex.Clear();
+            layerStartIndex.Capacity = gCodeFileToDraw.NumChangesInZ;
+            featureStartIndex.Clear();
+            layerStartIndex.Capacity = gCodeFileToDraw.NumChangesInZ;
+
+            for (int layerIndex = 0; layerIndex < gCodeFileToDraw.NumChangesInZ; layerIndex++)
+            {
+                CreateFeaturesForLayerIfRequired(layerIndex);
+
+                layerStartIndex.Add(colorVertexData.Count);
+                featureStartIndex.Add(new List<int>());
+
+                for (int i = 0; i < renderFeatures[layerIndex].Count; i++)
+                {
+                    featureStartIndex[layerIndex].Add(colorVertexData.Count);
+                    RenderFeatureBase feature = renderFeatures[layerIndex][i];
+                    feature.Render3D(colorVertexData, transform, layerScale, renderType);
+                }
+            }
+        }
+
+        public void Render3D(int startLayerIndex, int endLayerIndex, Affine transform, double layerScale, RenderType renderType,
             double featureToStartOnRatio0To1, double featureToEndOnRatio0To1)
         {
             if (renderFeatures.Count > 0)
             {
-                colorVertexData.Clear();
-
-                CreateFeaturesForLayerIfRequired(activeLayerIndex);
-
-                int featuresOnLayer = renderFeatures[activeLayerIndex].Count;
-                int endFeature = (int)(featuresOnLayer * featureToEndOnRatio0To1 + .5);
-                endFeature = Math.Max(0, Math.Min(endFeature, featuresOnLayer));
-
-                int startFeature = (int)(featuresOnLayer * featureToStartOnRatio0To1 + .5);
-                startFeature = Math.Max(0, Math.Min(startFeature, featuresOnLayer));
-
-                // try to make sure we always draw at least one feature
-                if (endFeature <= startFeature)
-                {
-                    endFeature = Math.Min(startFeature + 1, featuresOnLayer);
-                }
-                if (startFeature >= endFeature)
-                {
-                    // This can only happen if the sart and end are set to the last feature
-                    // Try to set the start feture to one from the end
-                    startFeature = Math.Max(endFeature - 1, 0);
-                }
-
-                for (int i = startFeature; i < endFeature; i++)
-                {
-                    RenderFeatureBase feature = renderFeatures[activeLayerIndex][i];
-                    feature.Render3D(colorVertexData, transform, layerScale, renderType);
-                }
+                Create3DData(transform, layerScale, renderType);
 
                 GL.DisableClientState(ArrayCap.TextureCoordArray);
 
                 GL.InterleavedArrays(InterleavedArrayFormat.C4ubV3f, 0, colorVertexData.Array);
-                GL.DrawArrays(BeginMode.Lines, 0, colorVertexData.Count);
 
+                // draw all the layers from start to end-2
+                if (endLayerIndex - 2 > startLayerIndex)
+                {
+                    int ellementCount = layerStartIndex[startLayerIndex] - layerStartIndex[endLayerIndex - 2];
+                    GL.DrawArrays(BeginMode.Lines, layerStartIndex[startLayerIndex], ellementCount);
+                }
+
+                // draw the partial layer of end-1 from startratio to endratio
+                {
+                    int layerIndex = endLayerIndex - 1;
+                    int featuresOnLayer = renderFeatures[layerIndex].Count;
+                    int startFeature = (int)(featuresOnLayer * featureToStartOnRatio0To1 + .5);
+                    startFeature = Math.Max(0, Math.Min(startFeature, featuresOnLayer));
+
+                    int endFeature = (int)(featuresOnLayer * featureToEndOnRatio0To1 + .5);
+                    endFeature = Math.Max(0, Math.Min(endFeature, featuresOnLayer));
+
+                    // try to make sure we always draw at least one feature
+                    if (endFeature <= startFeature)
+                    {
+                        endFeature = Math.Min(startFeature + 1, featuresOnLayer);
+                    }
+                    if (startFeature >= endFeature)
+                    {
+                        // This can only happen if the sart and end are set to the last feature
+                        // Try to set the start feture to one from the end
+                        startFeature = Math.Max(endFeature - 1, 0);
+                    }
+
+                    int ellementCount = featureStartIndex[layerIndex][endFeature - 1] - featureStartIndex[layerIndex][startFeature];
+                    GL.DrawArrays(BeginMode.Lines, featureStartIndex[layerIndex][startFeature], ellementCount);
+                }
+
+                GL.DisableClientState(ArrayCap.ColorArray);
                 GL.DisableClientState(ArrayCap.NormalArray);
                 GL.DisableClientState(ArrayCap.VertexArray);
-
             }
         }
 
