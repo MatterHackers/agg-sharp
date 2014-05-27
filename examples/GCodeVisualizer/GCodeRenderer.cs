@@ -95,11 +95,13 @@ namespace MatterHackers.GCodeVisualizer
         {
             Vector3 direction = endPos - startPos;
 
+            Vector3[] normal = new Vector3[steps];
             Vector3[] start = new Vector3[steps];
             Vector3[] end = new Vector3[steps];
 
             for (int i = 0; i < steps; i++)
             {
+                normal[i] = Vector3.Transform(Vector3.UnitZ, Matrix4X4.CreateRotation(direction, MathHelper.Tau / (steps * 2) + MathHelper.Tau / (steps) * i));
                 Vector3 offset = Vector3.Transform(Vector3.UnitZ * radius, Matrix4X4.CreateRotation(direction, MathHelper.Tau / (steps*2) + MathHelper.Tau / (steps) * i));
                 start[i] = startPos + offset;
                 end[i] = endPos + offset;
@@ -107,13 +109,13 @@ namespace MatterHackers.GCodeVisualizer
 
             for (int i = 0; i < steps; i++)
             {
-                colorVertexData.Add(new ColorVertexData(start[i], Vector3.UnitZ, color));
-                colorVertexData.Add(new ColorVertexData(end[i], Vector3.UnitZ, color));
-                colorVertexData.Add(new ColorVertexData(end[(i + 1) % steps], Vector3.UnitZ, color));
+                colorVertexData.Add(new ColorVertexData(start[i], normal[i], color));
+                colorVertexData.Add(new ColorVertexData(end[i], normal[i], color));
+                colorVertexData.Add(new ColorVertexData(end[(i + 1) % steps], normal[(i + 1) % steps], color));
 
-                colorVertexData.Add(new ColorVertexData(start[i], Vector3.UnitZ, color));
-                colorVertexData.Add(new ColorVertexData(end[(i + 1) % steps], Vector3.UnitZ, color));
-                colorVertexData.Add(new ColorVertexData(start[(i + 1) % steps], Vector3.UnitZ, color));
+                colorVertexData.Add(new ColorVertexData(start[i], normal[i], color));
+                colorVertexData.Add(new ColorVertexData(end[(i + 1) % steps], normal[(i + 1) % steps], color));
+                colorVertexData.Add(new ColorVertexData(start[(i + 1) % steps], normal[(i + 1) % steps], color));
             }
         }
     }
@@ -379,9 +381,14 @@ namespace MatterHackers.GCodeVisualizer
         {
             if (renderFeatures.Count > 0)
             {
-                Create3DData(transform, layerScale, renderType);
+                if (colorVertexData.Count == 0)
+                {
+                    Create3DData(transform, layerScale, renderType);
+                }
 
                 GL.DisableClientState(ArrayCap.TextureCoordArray);
+
+                GL.Enable(EnableCap.PolygonSmooth);
 
                 GL.InterleavedArrays(InterleavedArrayFormat.C4fN3fV3f, 0, colorVertexData.Array);
 
