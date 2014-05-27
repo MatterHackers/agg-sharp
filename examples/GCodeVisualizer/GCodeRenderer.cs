@@ -91,18 +91,30 @@ namespace MatterHackers.GCodeVisualizer
         public abstract void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType);
         public abstract void Render3D(VectorPOD<ColorVertexData> colorVertexData, Affine transform, double layerScale, RenderType renderType);
 
-        static public void CreateCylinder(VectorPOD<ColorVertexData> colorVertexData, Vector3 start, Vector3 end, double radius, RGBA_Bytes color)
+        static public void CreateCylinder(VectorPOD<ColorVertexData> colorVertexData, Vector3 startPos, Vector3 endPos, double radius, int steps, RGBA_Bytes color)
         {
-            Vector3 perpendicular = Vector3.GetPerpendicular(end, start);
-            Vector3 offset = perpendicular.GetNormal() * radius;
+            Vector3 direction = endPos - startPos;
 
-            colorVertexData.Add(new ColorVertexData(start, Vector3.UnitZ, color));
-            colorVertexData.Add(new ColorVertexData(end, Vector3.UnitZ, color));
-            colorVertexData.Add(new ColorVertexData(end + offset, Vector3.UnitZ, color));
+            Vector3[] start = new Vector3[steps];
+            Vector3[] end = new Vector3[steps];
 
-            //colorVertexData.Add(new ColorVertexData(start, color));
-            //colorVertexData.Add(new ColorVertexData(end, color));
-            //colorVertexData.Add(new ColorVertexData(start + offset, color));
+            for (int i = 0; i < steps; i++)
+            {
+                Vector3 offset = Vector3.Transform(Vector3.UnitZ * radius, Matrix4X4.CreateRotation(direction, MathHelper.Tau / (steps*2) + MathHelper.Tau / (steps) * i));
+                start[i] = startPos + offset;
+                end[i] = endPos + offset;
+            }
+
+            for (int i = 0; i < steps; i++)
+            {
+                colorVertexData.Add(new ColorVertexData(start[i], Vector3.UnitZ, color));
+                colorVertexData.Add(new ColorVertexData(end[i], Vector3.UnitZ, color));
+                colorVertexData.Add(new ColorVertexData(end[(i + 1) % steps], Vector3.UnitZ, color));
+
+                colorVertexData.Add(new ColorVertexData(start[i], Vector3.UnitZ, color));
+                colorVertexData.Add(new ColorVertexData(end[(i + 1) % steps], Vector3.UnitZ, color));
+                colorVertexData.Add(new ColorVertexData(start[(i + 1) % steps], Vector3.UnitZ, color));
+            }
         }
     }
 
@@ -131,15 +143,18 @@ namespace MatterHackers.GCodeVisualizer
 
         public override void Render3D(VectorPOD<ColorVertexData> colorVertexData, Affine transform, double layerScale, RenderType renderType)
         {
-            if (extrusionAmount > 0)
+            if ((renderType & RenderType.Retractions) == RenderType.Retractions)
             {
-                // unretraction
-                CreateCylinder(colorVertexData, position, position + new Vector3(0, 0, Radius(1)), Radius(layerScale), RGBA_Bytes.Blue);
-            }
-            else
-            {
-                // retraction
-                CreateCylinder(colorVertexData, position, position + new Vector3(0, 0, Radius(1)), Radius(layerScale), RGBA_Bytes.Red);
+                if (extrusionAmount > 0)
+                {
+                    // unretraction
+                    CreateCylinder(colorVertexData, position, position + new Vector3(0, 0, Radius(1)), Radius(layerScale), 10, RGBA_Bytes.Blue);
+                }
+                else
+                {
+                    // retraction
+                    CreateCylinder(colorVertexData, position, position + new Vector3(0, 0, Radius(1)), Radius(layerScale), 10, RGBA_Bytes.Red);
+                }
             }
         }
 
@@ -181,7 +196,10 @@ namespace MatterHackers.GCodeVisualizer
 
         public override void Render3D(VectorPOD<ColorVertexData> colorVertexData, Affine transform, double layerScale, RenderType renderType)
         {
-            CreateCylinder(colorVertexData, start, end, 2, RGBA_Bytes.Green);
+            if ((renderType & RenderType.Moves) == RenderType.Moves)
+            {
+                CreateCylinder(colorVertexData, start, end, .2, 6, RGBA_Bytes.Green);
+            }
         }
 
         public override void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType)
@@ -224,7 +242,10 @@ namespace MatterHackers.GCodeVisualizer
 
         public override void Render3D(VectorPOD<ColorVertexData> colorVertexData, Affine transform, double layerScale, RenderType renderType)
         {
-            CreateCylinder(colorVertexData, start, end, 2, RGBA_Bytes.White);
+            if ((renderType & RenderType.Extrusions) == RenderType.Extrusions)
+            {
+                CreateCylinder(colorVertexData, start, end, .25, 6, RGBA_Bytes.White);
+            }
         }
 
         public override void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType)
