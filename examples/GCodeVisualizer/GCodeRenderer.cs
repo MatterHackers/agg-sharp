@@ -324,6 +324,7 @@ namespace MatterHackers.GCodeVisualizer
     public class GCodeRenderer
     {
         VectorPOD<ColorVertexData> colorVertexData = new VectorPOD<ColorVertexData>();
+        VectorPOD<int> vertexIndexArray = new VectorPOD<int>();
         List<int> layerStartIndex = new List<int>();
         List<List<int>> featureStartIndex = new List<List<int>>();
         List<List<RenderFeatureBase>> renderFeatures = new List<List<RenderFeatureBase>>();
@@ -407,6 +408,7 @@ namespace MatterHackers.GCodeVisualizer
         void Create3DData(Affine transform, double layerScale, RenderType renderType)
         {
             colorVertexData.Clear();
+            vertexIndexArray.Clear();
             layerStartIndex.Clear();
             layerStartIndex.Capacity = gCodeFileToDraw.NumChangesInZ;
             featureStartIndex.Clear();
@@ -416,26 +418,29 @@ namespace MatterHackers.GCodeVisualizer
             {
                 CreateFeaturesForLayerIfRequired(layerIndex);
 
-                layerStartIndex.Add(colorVertexData.Count);
+                layerStartIndex.Add(vertexIndexArray.Count);
                 featureStartIndex.Add(new List<int>());
 
                 for (int i = 0; i < renderFeatures[layerIndex].Count; i++)
                 {
-                    featureStartIndex[layerIndex].Add(colorVertexData.Count);
+                    featureStartIndex[layerIndex].Add(vertexIndexArray.Count);
                     RenderFeatureBase feature = renderFeatures[layerIndex][i];
                     feature.Render3D(colorVertexData, transform, layerScale, renderType);
                 }
             }
         }
 
+        RenderType lastRenderType = RenderType.None;
         public void Render3D(int startLayerIndex, int endLayerIndex, Affine transform, double layerScale, RenderType renderType,
             double featureToStartOnRatio0To1, double featureToEndOnRatio0To1)
         {
             if (renderFeatures.Count > 0)
             {
-                if (colorVertexData.Count == 0)
+                // If its the first render or we change what we are trying to render then create vertex data.
+                if (colorVertexData.Count == 0 || lastRenderType != renderType)
                 {
                     Create3DData(transform, layerScale, renderType);
+                    lastRenderType = renderType;
                 }
 
                 GL.DisableClientState(ArrayCap.TextureCoordArray);
@@ -474,7 +479,19 @@ namespace MatterHackers.GCodeVisualizer
                     }
 
                     int ellementCount = featureStartIndex[layerIndex][endFeature - 1] - featureStartIndex[layerIndex][startFeature];
-                    GL.DrawArrays(BeginMode.Triangles, featureStartIndex[layerIndex][startFeature], ellementCount);
+
+                    //GL.DrawArrays(BeginMode.Triangles, featureStartIndex[layerIndex][startFeature], ellementCount);
+#if true
+                    int[] indices = new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29 };
+                    GL.EnableClientState(ArrayCap.IndexArray);
+                    GL.DrawRangeElements<int>(BeginMode.Triangles, 3, indices.Length, indices.Length - 3, DrawElementsType.UnsignedInt, indices);
+                    GL.Disable(EnableCap.IndexArray);
+#else
+                    GL.EnableClientState(ArrayCap.IndexArray);
+                    GL.DrawElementsBaseVertex<int>(BeginMode.Triangles, ellementCount, 
+                        DrawElementsType.UnsignedInt, vertexIndexArray.Array, featureStartIndex[layerIndex][endFeature-1]);
+                    GL.Disable(EnableCap.IndexArray);
+#endif
                 }
 
                 GL.DisableClientState(ArrayCap.ColorArray);
