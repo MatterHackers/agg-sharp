@@ -135,6 +135,7 @@ namespace MatterHackers.MeshVisualizer
         public event EventHandler LoadDone;
 
         Mesh printerBed = null;
+        public Mesh PrinterBed { get { return printerBed; } }
         Mesh buildVolume = null;
 
         public enum BedShape { Rectangular, Circular };
