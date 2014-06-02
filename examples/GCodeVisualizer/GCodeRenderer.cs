@@ -92,85 +92,87 @@ namespace MatterHackers.GCodeVisualizer
         public abstract void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType);
         public abstract void Render3D(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<uint> indexData, Affine transform, double layerScale, RenderType renderType);
 
-        static public void CreateCylinder(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<uint> indexData, Vector3 startPos, Vector3 endPos, double radius, int steps, RGBA_Bytes color)
+        static public void CreateCylinder(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<uint> indexData, Vector3 startPos, Vector3 endPos, Vector3 startSweepDirection, double radius, int steps, RGBA_Bytes color)
         {
             Vector3 direction = endPos - startPos;
             Vector3 directionNormal = direction.GetNormal();
-            
-            Vector3[] tubeNormal = new Vector3[steps];
-            Vector3[] tubeStart = new Vector3[steps];
-            Vector3[] tubeEnd = new Vector3[steps];
 
-            Vector3[] capStartNormal = new Vector3[steps];
-            Vector3[] capStart = new Vector3[steps];
-            Vector3[] capEndNormal = new Vector3[steps];
-            Vector3[] capEnd = new Vector3[steps];
+            uint[] tubeStartIndices = new uint[steps];
+            uint[] tubeEndIndices = new uint[steps];
 
-            Vector3 tipStart = startPos + (-directionNormal) * radius;
-            Vector3 tipEnd = endPos + (directionNormal) * radius;
+            uint[] capStartIndices = new uint[steps];
+            uint[] capEndIndices = new uint[steps];
 
             for (int i = 0; i < steps; i++)
             {
                 // create tube ends verts
-                tubeNormal[i] = Vector3.Transform(Vector3.UnitZ, Matrix4X4.CreateRotation(direction, MathHelper.Tau / (steps * 2) + MathHelper.Tau / (steps) * i));
-                Vector3 offset = Vector3.Transform(Vector3.UnitZ * radius, Matrix4X4.CreateRotation(direction, MathHelper.Tau / (steps*2) + MathHelper.Tau / (steps) * i));
-                tubeStart[i] = startPos + offset;
-                tubeEnd[i] = endPos + offset;
+                Vector3 tubeNormal = Vector3.Transform(startSweepDirection, Matrix4X4.CreateRotation(direction, MathHelper.Tau / (steps * 2) + MathHelper.Tau / (steps) * i));
+                Vector3 offset = Vector3.Transform(startSweepDirection * radius, Matrix4X4.CreateRotation(direction, MathHelper.Tau / (steps * 2) + MathHelper.Tau / (steps) * i));
+                Vector3 tubeStart = startPos + offset;
+                tubeStartIndices[i] = (uint)colorVertexData.Count;
+                colorVertexData.Add(new ColorVertexData(tubeStart, tubeNormal, color));
+                Vector3 tubeEnd = endPos + offset;
+                tubeEndIndices[i] = (uint)colorVertexData.Count;
+                colorVertexData.Add(new ColorVertexData(tubeEnd, tubeNormal, color));
 
                 // create cap verts
-                Vector3 rotateAngle = Vector3.Cross(direction, Vector3.UnitZ);
-                capStartNormal[i] = Vector3.Transform(Vector3.UnitZ, Matrix4X4.CreateRotation(rotateAngle, MathHelper.Tau / 8));
-                capStartNormal[i] = Vector3.Transform(capStartNormal[i], Matrix4X4.CreateRotation(direction, MathHelper.Tau / (steps * 2) + MathHelper.Tau / (steps) * i));
-                capStart[i] = startPos + capStartNormal[i] * radius;
+                Vector3 rotateAngle = Vector3.Cross(direction, startSweepDirection);
+                Vector3 capStartNormal = Vector3.Transform(startSweepDirection, Matrix4X4.CreateRotation(rotateAngle, MathHelper.Tau / 8));
+                capStartNormal = Vector3.Transform(capStartNormal, Matrix4X4.CreateRotation(direction, MathHelper.Tau / (steps * 2) + MathHelper.Tau / (steps) * i));
+                Vector3 capStart = startPos + capStartNormal * radius;
+                capStartIndices[i] = (uint)colorVertexData.Count;
+                colorVertexData.Add(new ColorVertexData(capStart, capStartNormal, color));
 
-                capEndNormal[i] = Vector3.Transform(Vector3.UnitZ, Matrix4X4.CreateRotation(-rotateAngle, MathHelper.Tau / 8));
-                capEndNormal[i] = Vector3.Transform(capEndNormal[i], Matrix4X4.CreateRotation(direction, MathHelper.Tau / (steps * 2) + MathHelper.Tau / (steps) * i));
-                capEnd[i] = endPos + capEndNormal[i] * radius;
+                Vector3 capEndNormal = Vector3.Transform(startSweepDirection, Matrix4X4.CreateRotation(-rotateAngle, MathHelper.Tau / 8));
+                capEndNormal = Vector3.Transform(capEndNormal, Matrix4X4.CreateRotation(direction, MathHelper.Tau / (steps * 2) + MathHelper.Tau / (steps) * i));
+                Vector3 capEnd = endPos + capEndNormal * radius;
+                capEndIndices[i] = (uint)colorVertexData.Count;
+                colorVertexData.Add(new ColorVertexData(capEnd, capEndNormal, color));
             }
+
+            uint tipStartIndex = (uint)colorVertexData.Count;
+            colorVertexData.Add(new ColorVertexData(startPos + (-directionNormal) * radius, -directionNormal, color));
+            uint tipEndIndex = (uint)colorVertexData.Count;
+            colorVertexData.Add(new ColorVertexData(endPos + (directionNormal) * radius, directionNormal, color));
 
             for (int i = 0; i < steps; i++)
             {
                 // create tube polys
-                colorVertexData.Add(new ColorVertexData(tubeStart[i], tubeNormal[i], color));
-                colorVertexData.Add(new ColorVertexData(tubeEnd[i], tubeNormal[i], color));
-                colorVertexData.Add(new ColorVertexData(tubeEnd[(i + 1) % steps], tubeNormal[(i + 1) % steps], color));
+                indexData.Add(tubeStartIndices[i]);
+                indexData.Add(tubeEndIndices[i]);
+                indexData.Add(tubeEndIndices[(i + 1) % steps]);
 
-                colorVertexData.Add(new ColorVertexData(tubeStart[i], tubeNormal[i], color));
-                colorVertexData.Add(new ColorVertexData(tubeEnd[(i + 1) % steps], tubeNormal[(i + 1) % steps], color));
-                colorVertexData.Add(new ColorVertexData(tubeStart[(i + 1) % steps], tubeNormal[(i + 1) % steps], color));
+                indexData.Add(tubeStartIndices[i]);
+                indexData.Add(tubeEndIndices[(i + 1) % steps]);
+                indexData.Add(tubeStartIndices[(i + 1) % steps]);
 
                 // create start cap polys
-                colorVertexData.Add(new ColorVertexData(tubeStart[i], tubeNormal[i], color));
-                colorVertexData.Add(new ColorVertexData(capStart[i], capStartNormal[i], color));
-                colorVertexData.Add(new ColorVertexData(capStart[(i + 1) % steps], capStartNormal[(i + 1) % steps], color));
+                indexData.Add(tubeStartIndices[i]);
+                indexData.Add(capStartIndices[i]);
+                indexData.Add(capStartIndices[(i + 1) % steps]);
 
-                colorVertexData.Add(new ColorVertexData(tubeStart[i], tubeNormal[i], color));
-                colorVertexData.Add(new ColorVertexData(capStart[(i + 1) % steps], capStartNormal[(i + 1) % steps], color));
-                colorVertexData.Add(new ColorVertexData(tubeStart[(i + 1) % steps], tubeNormal[(i + 1) % steps], color));
+                indexData.Add(tubeStartIndices[i]);
+                indexData.Add(capStartIndices[(i + 1) % steps]);
+                indexData.Add(tubeStartIndices[(i + 1) % steps]);
 
                 // create end cap polys
-                colorVertexData.Add(new ColorVertexData(tubeEnd[i], tubeNormal[i], color));
-                colorVertexData.Add(new ColorVertexData(capEnd[i], capEndNormal[i], color));
-                colorVertexData.Add(new ColorVertexData(capEnd[(i + 1) % steps], capEndNormal[(i + 1) % steps], color));
+                indexData.Add(tubeEndIndices[i]);
+                indexData.Add(capEndIndices[i]);
+                indexData.Add(capEndIndices[(i + 1) % steps]);
 
-                colorVertexData.Add(new ColorVertexData(tubeEnd[i], tubeNormal[i], color));
-                colorVertexData.Add(new ColorVertexData(capEnd[(i + 1) % steps], capEndNormal[(i + 1) % steps], color));
-                colorVertexData.Add(new ColorVertexData(tubeEnd[(i + 1) % steps], tubeNormal[(i + 1) % steps], color));
+                indexData.Add(tubeEndIndices[i]);
+                indexData.Add(capEndIndices[(i + 1) % steps]);
+                indexData.Add(tubeEndIndices[(i + 1) % steps]);
 
                 // create start tip polys
-                colorVertexData.Add(new ColorVertexData(tipStart, -directionNormal, color));
-                colorVertexData.Add(new ColorVertexData(capStart[i], capStartNormal[i], color));
-                colorVertexData.Add(new ColorVertexData(capStart[(i + 1) % steps], capStartNormal[(i + 1) % steps], color));
+                indexData.Add(tipStartIndex);
+                indexData.Add(capStartIndices[i]);
+                indexData.Add(capStartIndices[(i + 1) % steps]);
 
                 // create end tip polys
-                colorVertexData.Add(new ColorVertexData(tipEnd, -directionNormal, color));
-                colorVertexData.Add(new ColorVertexData(capEnd[i], capEndNormal[i], color));
-                colorVertexData.Add(new ColorVertexData(capEnd[(i + 1) % steps], capEndNormal[(i + 1) % steps], color));
-
-                for (int j = 0; j < 24; j++)
-                {
-                    indexData.Add((uint)indexData.Count);
-                }
+                indexData.Add(tipEndIndex);
+                indexData.Add(capEndIndices[i]);
+                indexData.Add(capEndIndices[(i + 1) % steps]);
             }
         }
     }
@@ -205,12 +207,12 @@ namespace MatterHackers.GCodeVisualizer
                 if (extrusionAmount > 0)
                 {
                     // unretraction
-                    CreateCylinder(colorVertexData, indexData, position, position + new Vector3(0, 0, Radius(1)), Radius(layerScale), 10, RGBA_Bytes.Blue);
+                    CreateCylinder(colorVertexData, indexData, position, position + new Vector3(0, 0, .2), Vector3.UnitX, Radius(1), 3, RGBA_Bytes.Blue);
                 }
                 else
                 {
                     // retraction
-                    CreateCylinder(colorVertexData, indexData, position, position + new Vector3(0, 0, Radius(1)), Radius(layerScale), 10, RGBA_Bytes.Red);
+                    CreateCylinder(colorVertexData, indexData, position, position + new Vector3(0, 0, .2), Vector3.UnitX, Radius(1), 3, RGBA_Bytes.Red);
                 }
             }
         }
@@ -255,7 +257,7 @@ namespace MatterHackers.GCodeVisualizer
         {
             if ((renderType & RenderType.Moves) == RenderType.Moves)
             {
-                CreateCylinder(colorVertexData, indexData, start, end, .2, 6, GCodeRenderer.TravelColor);
+                CreateCylinder(colorVertexData, indexData, start, end, Vector3.UnitZ, .2, 6, GCodeRenderer.TravelColor);
             }
         }
 
@@ -301,7 +303,7 @@ namespace MatterHackers.GCodeVisualizer
         {
             if ((renderType & RenderType.Extrusions) == RenderType.Extrusions)
             {
-                CreateCylinder(colorVertexData, indexData, start, end, .25, 6, GCodeRenderer.ExtrusionColor);
+                CreateCylinder(colorVertexData, indexData, start, end, Vector3.UnitZ, .25, 6, GCodeRenderer.ExtrusionColor);
             }
         }
 
