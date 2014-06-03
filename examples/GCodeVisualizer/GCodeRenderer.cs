@@ -325,19 +325,24 @@ namespace MatterHackers.GCodeVisualizer
 
     public class RenderFeatureExtrusion : RenderFeatureTravel
     {
-        double totalExtrusion;
+        double extrusionVolumeMm3;
 
-        public RenderFeatureExtrusion(Vector3 start, Vector3 end, double travelSpeed, double totalExtrusion)
+        public RenderFeatureExtrusion(Vector3 start, Vector3 end, double travelSpeed, double totalExtrusionMm, double filamentDiameterMm)
             : base(start, end, travelSpeed)
         {
-            this.totalExtrusion = totalExtrusion;
+            double fillamentRadius = filamentDiameterMm / 2;
+            double areaSquareMm = (fillamentRadius * fillamentRadius) * Math.PI;
+
+            this.extrusionVolumeMm3 = areaSquareMm * totalExtrusionMm;
         }
 
         public override void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<uint> indexData, Affine transform, double layerScale, RenderType renderType)
         {
             if ((renderType & RenderType.Extrusions) == RenderType.Extrusions)
             {
-                CreateCylinder(colorVertexData, indexData, start, end, .25, 6, GCodeRenderer.ExtrusionColor);
+                double area = extrusionVolumeMm3 / ((end - start).Length + 1);
+                double radius = Math.Sqrt(area / Math.PI);
+                CreateCylinder(colorVertexData, indexData, start, end, radius, 6, GCodeRenderer.ExtrusionColor);
             }
         }
 
@@ -432,7 +437,7 @@ namespace MatterHackers.GCodeVisualizer
                 {
                     if (gCodeFileToDraw.IsExtruding(i))
                     {
-                        renderFeaturesForLayer.Add(new RenderFeatureExtrusion(previousInstruction.Position, currentInstruction.Position, currentInstruction.FeedRate, currentInstruction.EPosition - previousInstruction.EPosition));
+                        renderFeaturesForLayer.Add(new RenderFeatureExtrusion(previousInstruction.Position, currentInstruction.Position, currentInstruction.FeedRate, currentInstruction.EPosition - previousInstruction.EPosition, gCodeFileToDraw.GetFilamentDiamter()));
                     }
                     else
                     {

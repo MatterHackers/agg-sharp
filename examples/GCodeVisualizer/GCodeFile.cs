@@ -828,8 +828,8 @@ namespace MatterHackers.GCodeVisualizer
         public double GetFilamentCubicMm(double filamentDiameterMm)
         {
             double filamentUsedMm = GetFilamentUsedMm(filamentDiameterMm);
-            double nozzleRadius = filamentDiameterMm / 2;
-            double areaSquareMm = (nozzleRadius * nozzleRadius) * Math.PI;
+            double fillamentRadius = filamentDiameterMm / 2;
+            double areaSquareMm = (fillamentRadius * fillamentRadius) * Math.PI;
 
             return areaSquareMm * filamentUsedMm;
         }
@@ -851,6 +851,11 @@ namespace MatterHackers.GCodeVisualizer
                     file.WriteLine(instruction.Line);
                 }
             }
+        }
+
+        public double GetFilamentDiamter()
+        {
+            return 3;
         }
     }
 }
