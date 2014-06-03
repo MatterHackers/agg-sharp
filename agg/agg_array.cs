@@ -257,7 +257,14 @@ namespace MatterHackers.Agg
         {
             if (internalArray == null || internalArray.Length < (currentSize + 1))
             {
-                Resize(currentSize + (currentSize / 2) + 16);
+                if (currentSize < 100000)
+                {
+                    Resize(currentSize + (currentSize / 2) + 16);
+                }
+                else
+                {
+                    Resize(currentSize + currentSize / 4);
+                }
             }
             internalArray[currentSize++] = v;
         }
