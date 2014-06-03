@@ -93,7 +93,7 @@ namespace MatterHackers.GCodeVisualizer
         public abstract void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType);
         public abstract void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<uint> indexData, Affine transform, double layerScale, RenderType renderType);
 
-        static public void CreateCylinder(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<uint> indexData, Vector3 startPos, Vector3 endPos, double radius, int steps, RGBA_Bytes color)
+        static public void CreateCylinder(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<uint> indexData, Vector3 startPos, Vector3 endPos, double radius, int steps, RGBA_Bytes color, double layerHeight)
         {
             Vector3 direction = endPos - startPos;
             Vector3 directionNormal = direction.GetNormal();
@@ -105,14 +105,24 @@ namespace MatterHackers.GCodeVisualizer
             uint[] capStartIndices = new uint[steps];
             uint[] capEndIndices = new uint[steps];
 
+            double halfHeight = layerHeight / 2 + (layerHeight * .1);
+            double halfWidth = (radius * radius) / halfHeight;
+            double zScale = halfHeight/radius;
+            double xScale = halfWidth/radius;
+
+            Vector3 scale = new Vector3(xScale, xScale, zScale);
+
             for (int i = 0; i < steps; i++)
             {
                 // create tube ends verts
                 Vector3 tubeNormal = Vector3.Transform(startSweepDirection, Matrix4X4.CreateRotation(direction, MathHelper.Tau / (steps * 2) + MathHelper.Tau / (steps) * i));
                 Vector3 offset = Vector3.Transform(startSweepDirection * radius, Matrix4X4.CreateRotation(direction, MathHelper.Tau / (steps * 2) + MathHelper.Tau / (steps) * i));
+                offset *= scale;
+                
                 Vector3 tubeStart = startPos + offset;
                 tubeStartIndices[i] = (uint)colorVertexData.Count;
                 colorVertexData.Add(new ColorVertexData(tubeStart, tubeNormal, color));
+                
                 Vector3 tubeEnd = endPos + offset;
                 tubeEndIndices[i] = (uint)colorVertexData.Count;
                 colorVertexData.Add(new ColorVertexData(tubeEnd, tubeNormal, color));
@@ -121,21 +131,29 @@ namespace MatterHackers.GCodeVisualizer
                 Vector3 rotateAngle = Vector3.Cross(direction, startSweepDirection);
                 Vector3 capStartNormal = Vector3.Transform(startSweepDirection, Matrix4X4.CreateRotation(rotateAngle, MathHelper.Tau / 8));
                 capStartNormal = Vector3.Transform(capStartNormal, Matrix4X4.CreateRotation(direction, MathHelper.Tau / (steps * 2) + MathHelper.Tau / (steps) * i));
-                Vector3 capStart = startPos + capStartNormal * radius;
+                capStartNormal = (capStartNormal * scale).GetNormal();
+                Vector3 capStartOffset = capStartNormal * radius;
+                capStartOffset *= scale;
+                Vector3 capStart = startPos + capStartOffset;
                 capStartIndices[i] = (uint)colorVertexData.Count;
                 colorVertexData.Add(new ColorVertexData(capStart, capStartNormal, color));
 
                 Vector3 capEndNormal = Vector3.Transform(startSweepDirection, Matrix4X4.CreateRotation(-rotateAngle, MathHelper.Tau / 8));
                 capEndNormal = Vector3.Transform(capEndNormal, Matrix4X4.CreateRotation(direction, MathHelper.Tau / (steps * 2) + MathHelper.Tau / (steps) * i));
-                Vector3 capEnd = endPos + capEndNormal * radius;
+                capEndNormal = (capEndNormal * scale).GetNormal();
+                Vector3 capEndOffset = capEndNormal * radius;
+                capEndOffset *= scale;
+                Vector3 capEnd = endPos + capEndOffset;
                 capEndIndices[i] = (uint)colorVertexData.Count;
                 colorVertexData.Add(new ColorVertexData(capEnd, capEndNormal, color));
             }
 
             uint tipStartIndex = (uint)colorVertexData.Count;
-            colorVertexData.Add(new ColorVertexData(startPos + (-directionNormal) * radius, -directionNormal, color));
+            Vector3 tipOffset = directionNormal * radius;
+            tipOffset *= scale;
+            colorVertexData.Add(new ColorVertexData(startPos - tipOffset, -directionNormal, color));
             uint tipEndIndex = (uint)colorVertexData.Count;
-            colorVertexData.Add(new ColorVertexData(endPos + (directionNormal) * radius, directionNormal, color));
+            colorVertexData.Add(new ColorVertexData(endPos + tipOffset, directionNormal, color));
 
             for (int i = 0; i < steps; i++)
             {
@@ -291,7 +309,7 @@ namespace MatterHackers.GCodeVisualizer
         {
             if ((renderType & RenderType.Moves) == RenderType.Moves)
             {
-                CreateCylinder(colorVertexData, indexData, start, end, .2, 6, GCodeRenderer.TravelColor);
+                CreateCylinder(colorVertexData, indexData, start, end, .1, 6, GCodeRenderer.TravelColor, .2);
             }
         }
 
@@ -325,24 +343,26 @@ namespace MatterHackers.GCodeVisualizer
 
     public class RenderFeatureExtrusion : RenderFeatureTravel
     {
-        double extrusionVolumeMm3;
+        float extrusionVolumeMm3;
+        float layerHeight;
 
-        public RenderFeatureExtrusion(Vector3 start, Vector3 end, double travelSpeed, double totalExtrusionMm, double filamentDiameterMm)
+        public RenderFeatureExtrusion(Vector3 start, Vector3 end, double travelSpeed, double totalExtrusionMm, double filamentDiameterMm, double layerHeight)
             : base(start, end, travelSpeed)
         {
             double fillamentRadius = filamentDiameterMm / 2;
             double areaSquareMm = (fillamentRadius * fillamentRadius) * Math.PI;
 
-            this.extrusionVolumeMm3 = areaSquareMm * totalExtrusionMm;
+            this.extrusionVolumeMm3 = (float)(areaSquareMm * totalExtrusionMm);
+            this.layerHeight = (float)layerHeight;
         }
 
         public override void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<uint> indexData, Affine transform, double layerScale, RenderType renderType)
         {
             if ((renderType & RenderType.Extrusions) == RenderType.Extrusions)
             {
-                double area = extrusionVolumeMm3 / ((end - start).Length + 1);
+                double area = extrusionVolumeMm3 / ((end - start).Length);
                 double radius = Math.Sqrt(area / Math.PI);
-                CreateCylinder(colorVertexData, indexData, start, end, radius, 6, GCodeRenderer.ExtrusionColor);
+                CreateCylinder(colorVertexData, indexData, start, end, radius, 6, GCodeRenderer.ExtrusionColor, layerHeight);
             }
         }
 
@@ -437,7 +457,12 @@ namespace MatterHackers.GCodeVisualizer
                 {
                     if (gCodeFileToDraw.IsExtruding(i))
                     {
-                        renderFeaturesForLayer.Add(new RenderFeatureExtrusion(previousInstruction.Position, currentInstruction.Position, currentInstruction.FeedRate, currentInstruction.EPosition - previousInstruction.EPosition, gCodeFileToDraw.GetFilamentDiamter()));
+                        double layerThickness = gCodeFileToDraw.GetLayerHeight();
+                        if (layerToCreate == 0)
+                        {
+                            layerThickness = gCodeFileToDraw.GetFirstLayerHeight();
+                        }
+                        renderFeaturesForLayer.Add(new RenderFeatureExtrusion(previousInstruction.Position, currentInstruction.Position, currentInstruction.FeedRate, currentInstruction.EPosition - previousInstruction.EPosition, gCodeFileToDraw.GetFilamentDiamter(), layerThickness));
                     }
                     else
                     {

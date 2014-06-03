@@ -47,6 +47,8 @@ namespace MatterHackers.GCodeVisualizer
         Vector2 center = Vector2.Zero;
         double parsingLastZ;
         bool gcodeHasExplicitLayerChangeInfo = false;
+        double firstLayerThickness;
+        double layerThickness;
 
         List<PrinterMachineInstruction> GCodeCommandQueue = new List<PrinterMachineInstruction>();
 
@@ -255,6 +257,14 @@ namespace MatterHackers.GCodeVisualizer
                             if (gcodeHasExplicitLayerChangeInfo && lineString.StartsWith("; LAYER:"))
                             {
                                 loadedGCodeFile.IndexOfChangeInZ.Add(loadedGCodeFile.GCodeCommandQueue.Count);
+                            }
+                            if(lineString.StartsWith("; layerThickness"))
+                            {
+                                loadedGCodeFile.layerThickness = double.Parse(lineString.Split('=')[1]);
+                            }
+                            else if(lineString.StartsWith("; firstLayerThickness"))
+                            {
+                                loadedGCodeFile.firstLayerThickness = double.Parse(lineString.Split('=')[1]);
                             }
                             break;
 
@@ -856,6 +866,36 @@ namespace MatterHackers.GCodeVisualizer
         public double GetFilamentDiamter()
         {
             return 3;
+        }
+
+        public double GetLayerHeight()
+        {
+            if (layerThickness > 0)
+            {
+                return layerThickness;
+            }
+
+            if (indexOfChangeInZ.Count > 2)
+            {
+                return GCodeCommandQueue[IndexOfChangeInZ[2]].Z - GCodeCommandQueue[IndexOfChangeInZ[1]].Z;
+            }
+
+            return .5;
+        }
+
+        public double GetFirstLayerHeight()
+        {
+            if (firstLayerThickness > 0)
+            {
+                return firstLayerThickness;
+            }
+
+            if (indexOfChangeInZ.Count > 1)
+            {
+                return GCodeCommandQueue[IndexOfChangeInZ[1]].Z - GCodeCommandQueue[IndexOfChangeInZ[0]].Z;
+            }
+
+            return .5;
         }
     }
 }
