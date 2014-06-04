@@ -90,6 +90,13 @@ namespace MatterHackers.VectorMath
             z = v.z;
         }
 
+        public Vector3(Vector3Float v)
+        {
+            x = v.x;
+            y = v.y;
+            z = v.z;
+        }
+
         public Vector3(double[] doubleArray)
         {
             x = doubleArray[0];

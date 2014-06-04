@@ -18,7 +18,6 @@ namespace MatterHackers.Agg.UI
         {
             this.x = x;
             this.y = y;
-            // TODO: Complete member initialization
             this.DroppedFiles = droppedFiles;
         }
 

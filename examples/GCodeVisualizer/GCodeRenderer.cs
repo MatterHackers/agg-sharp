@@ -233,14 +233,14 @@ namespace MatterHackers.GCodeVisualizer
     {
         public static double RetractionDrawRadius = 1;
 
-        double extrusionAmount;
-        double mmPerSecond;
-        Vector3 position;
+        float extrusionAmount;
+        float mmPerSecond;
+        Vector3Float position;
         public RenderFeatureRetract(Vector3 position, double extrusionAmount, double mmPerSecond)
         {
-            this.extrusionAmount = extrusionAmount;
-            this.mmPerSecond = mmPerSecond;
-            this.position = position;
+            this.extrusionAmount = (float)extrusionAmount;
+            this.mmPerSecond = (float)mmPerSecond;
+            this.position = new Vector3Float(position);
         }
 
         private double Radius(double layerScale)
@@ -256,6 +256,7 @@ namespace MatterHackers.GCodeVisualizer
         {
             if ((renderType & RenderType.Retractions) == RenderType.Retractions)
             {
+                Vector3 position = new Vector3(this.position);
                 if (extrusionAmount > 0)
                 {
                     // unretraction
@@ -294,22 +295,22 @@ namespace MatterHackers.GCodeVisualizer
 
     public class RenderFeatureTravel : RenderFeatureBase
     {
-        protected Vector3 start;
-        protected Vector3 end;
-        protected double travelSpeed;
+        protected Vector3Float start;
+        protected Vector3Float end;
+        protected float travelSpeed;
 
         public RenderFeatureTravel(Vector3 start, Vector3 end, double travelSpeed)
         {
-            this.start = start;
-            this.end = end;
-            this.travelSpeed = travelSpeed;
+            this.start = new Vector3Float(start);
+            this.end = new Vector3Float(end);
+            this.travelSpeed = (float)travelSpeed;
         }
 
         public override void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<uint> indexData, Affine transform, double layerScale, RenderType renderType)
         {
             if ((renderType & RenderType.Moves) == RenderType.Moves)
             {
-                CreateCylinder(colorVertexData, indexData, start, end, .1, 6, GCodeRenderer.TravelColor, .2);
+                CreateCylinder(colorVertexData, indexData, new Vector3(start), new Vector3(end), .1, 6, GCodeRenderer.TravelColor, .2);
             }
         }
 
@@ -343,12 +344,30 @@ namespace MatterHackers.GCodeVisualizer
 
     public class RenderFeatureExtrusion : RenderFeatureTravel
     {
+        float feedRate;
         float extrusionVolumeMm3;
         float layerHeight;
 
-        public RenderFeatureExtrusion(Vector3 start, Vector3 end, double travelSpeed, double totalExtrusionMm, double filamentDiameterMm, double layerHeight)
+        static Dictionary<double, RGBA_Bytes> speedColorLookup = new Dictionary<double, RGBA_Bytes>();
+        static RGBA_Bytes nextColor = RGBA_Bytes.White;
+
+        static RGBA_Bytes GetColorForSpeed(float speed)
+        {
+            if (!speedColorLookup.ContainsKey(speed))
+            {
+                nextColor.Red0To255 = (nextColor.Red0To255 + 7193) % 255;
+                nextColor.Green0To255 = (nextColor.Green0To255 + 7477) % 255;
+                nextColor.Blue0To255 = (nextColor.Blue0To255 + 7757) % 255;
+                speedColorLookup.Add(speed, nextColor);
+            }
+
+            return speedColorLookup[speed];
+        }
+
+        public RenderFeatureExtrusion(Vector3 start, Vector3 end, double travelSpeed, double totalExtrusionMm, double filamentDiameterMm, double layerHeight, double feedRate)
             : base(start, end, travelSpeed)
         {
+            this.feedRate = (float)feedRate;
             double fillamentRadius = filamentDiameterMm / 2;
             double areaSquareMm = (fillamentRadius * fillamentRadius) * Math.PI;
 
@@ -362,7 +381,11 @@ namespace MatterHackers.GCodeVisualizer
             {
                 double area = extrusionVolumeMm3 / ((end - start).Length);
                 double radius = Math.Sqrt(area / Math.PI);
-                CreateCylinder(colorVertexData, indexData, start, end, radius, 6, GCodeRenderer.ExtrusionColor, layerHeight);
+#if false
+                CreateCylinder(colorVertexData, indexData, new Vector3(start), new Vector3(end), radius, 6, GCodeRenderer.ExtrusionColor, layerHeight);
+#else
+                CreateCylinder(colorVertexData, indexData, new Vector3(start), new Vector3(end), radius, 6, GetColorForSpeed(this.travelSpeed), layerHeight);
+#endif
             }
         }
 
@@ -462,7 +485,7 @@ namespace MatterHackers.GCodeVisualizer
                         {
                             layerThickness = gCodeFileToDraw.GetFirstLayerHeight();
                         }
-                        renderFeaturesForLayer.Add(new RenderFeatureExtrusion(previousInstruction.Position, currentInstruction.Position, currentInstruction.FeedRate, currentInstruction.EPosition - previousInstruction.EPosition, gCodeFileToDraw.GetFilamentDiamter(), layerThickness));
+                        renderFeaturesForLayer.Add(new RenderFeatureExtrusion(previousInstruction.Position, currentInstruction.Position, currentInstruction.FeedRate, currentInstruction.EPosition - previousInstruction.EPosition, gCodeFileToDraw.GetFilamentDiamter(), layerThickness, currentInstruction.FeedRate));
                     }
                     else
                     {

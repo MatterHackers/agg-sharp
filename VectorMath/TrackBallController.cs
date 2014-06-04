@@ -71,7 +71,6 @@ namespace MatterHackers.VectorMath
 
         public TrackBallController(TrackBallController trackBallToCopy)
         {
-            // TODO: Complete member initialization
             this.screenCenter = trackBallToCopy.screenCenter;
             this.rotationTrackingRadius = trackBallToCopy.rotationTrackingRadius;
             this.currentRotationMatrix = trackBallToCopy.currentRotationMatrix;
