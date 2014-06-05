@@ -61,6 +61,8 @@ namespace MatterHackers.Agg.UI
 			}
             widgetToSendTo.OnKeyDown(aggKeyEvent);
 
+            Keyboard.SetKeyDownState(aggKeyEvent.KeyCode, true);
+
             windowsKeyEvent.Handled = aggKeyEvent.Handled;
             windowsKeyEvent.SuppressKeyPress = aggKeyEvent.SuppressKeyPress;
         }
@@ -69,6 +71,8 @@ namespace MatterHackers.Agg.UI
         {
             MatterHackers.Agg.UI.KeyEventArgs aggKeyEvent = new MatterHackers.Agg.UI.KeyEventArgs((MatterHackers.Agg.UI.Keys)windowsKeyEvent.KeyData);
             widgetToSendTo.OnKeyUp(aggKeyEvent);
+
+            Keyboard.SetKeyDownState(aggKeyEvent.KeyCode, false);
 
             windowsKeyEvent.Handled = aggKeyEvent.Handled;
             windowsKeyEvent.SuppressKeyPress = aggKeyEvent.SuppressKeyPress;

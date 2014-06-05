@@ -97,6 +97,7 @@
     <Compile Include="FlowLayoutWidget.cs" />
     <Compile Include="GridControl.cs" />
     <Compile Include="GroupBox.cs" />
+    <Compile Include="Keyboard.cs" />
     <Compile Include="SystemWindow\AbstractOsMappingWidget.cs" />
     <Compile Include="GuiWidget.cs" />
     <Compile Include="ImageWidget.cs" />
