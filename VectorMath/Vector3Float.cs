@@ -189,27 +189,6 @@ namespace MatterHackers.VectorMath
 
         #endregion
 
-        #region public float LengthFast
-
-        /// <summary>
-        /// Gets an approximation of the vector length (magnitude).
-        /// </summary>
-        /// <remarks>
-        /// This property uses an approximation of the square root function to calculate vector magnitude, with
-        /// an upper error bound of 0.001.
-        /// </remarks>
-        /// <see cref="Length"/>
-        /// <seealso cref="LengthSquared"/>
-        public float LengthFast
-        {
-            get
-            {
-                return 1.0f / (float)MathHelper.InverseSqrtFast(x * x + y * y + z * z);
-            }
-        }
-
-        #endregion
-
         #region public float LengthSquared
 
         /// <summary>
@@ -250,21 +229,6 @@ namespace MatterHackers.VectorMath
         public void Normalize()
         {
             float scale = 1.0f / this.Length;
-            x *= scale;
-            y *= scale;
-            z *= scale;
-        }
-
-        #endregion
-
-        #region public void NormalizeFast()
-
-        /// <summary>
-        /// Scales the Vector3Floatd to approximately unit length.
-        /// </summary>
-        public void NormalizeFast()
-        {
-            float scale = (float)MathHelper.InverseSqrtFast(x * x + y * y + z * z);
             x *= scale;
             y *= scale;
             z *= scale;
@@ -632,37 +596,6 @@ namespace MatterHackers.VectorMath
         public static void Normalize(ref Vector3Float vec, out Vector3Float result)
         {
             float scale = 1.0f / vec.Length;
-            result.x = vec.x * scale;
-            result.y = vec.y * scale;
-            result.z = vec.z * scale;
-        }
-
-        #endregion
-
-        #region NormalizeFast
-
-        /// <summary>
-        /// Scale a vector to approximately unit length
-        /// </summary>
-        /// <param name="vec">The input vector</param>
-        /// <returns>The normalized vector</returns>
-        public static Vector3Float NormalizeFast(Vector3Float vec)
-        {
-            float scale = (float)MathHelper.InverseSqrtFast(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
-            vec.x *= scale;
-            vec.y *= scale;
-            vec.z *= scale;
-            return vec;
-        }
-
-        /// <summary>
-        /// Scale a vector to approximately unit length
-        /// </summary>
-        /// <param name="vec">The input vector</param>
-        /// <param name="result">The normalized vector</param>
-        public static void NormalizeFast(ref Vector3Float vec, out Vector3Float result)
-        {
-            float scale = (float)MathHelper.InverseSqrtFast(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
             result.x = vec.x * scale;
             result.y = vec.y * scale;
             result.z = vec.z * scale;

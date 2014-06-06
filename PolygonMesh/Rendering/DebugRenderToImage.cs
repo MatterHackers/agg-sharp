@@ -125,7 +125,7 @@ namespace MatterHackers.PolygonMesh
             Vector2 delta = end - start;
             Vector2 normal = delta.GetNormal();
             double length = delta.Length;
-            Vector2 left = normal.PerpendicularLeft;
+            Vector2 left = normal.GetPerpendicularLeft();
 
             // draw the starting vertex info
             WriteStringAtPos("{0}".FormatWith(faceEdge.firstVertex.Data.ID), start + normal * length * .10, vertexColor);
@@ -156,7 +156,7 @@ namespace MatterHackers.PolygonMesh
             Vector2 delta = end - start;
             Vector2 normal = delta.GetNormal();
             double length = delta.Length;
-            Vector2 left = normal.PerpendicularLeft;
+            Vector2 left = normal.GetPerpendicularLeft();
 
             WriteStringAtPos("{0}".FormatWith(meshEdge.NextMeshEdgeFromEnd[0].Data.ID), start + normal * length * .40, meshEdgeColor);
             WriteStringAtPos("{0}".FormatWith(meshEdge.VertexOnEnd[0].Data.ID), start + normal * length * .10, vertexColor);
@@ -172,7 +172,7 @@ namespace MatterHackers.PolygonMesh
             Vector2 delta = end - start;
             Vector2 normal = delta.GetNormal();
             double length = delta.Length;
-            Vector2 left = normal.PerpendicularLeft;
+            Vector2 left = normal.GetPerpendicularLeft();
 
             Vector2 firstArrow = start + normal * length * .80;
             graphics.Line(firstArrow, firstArrow + left * 5 - normal * 5, RGBA_Bytes.Black);

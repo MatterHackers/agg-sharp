@@ -90,7 +90,7 @@ namespace MatterHackers.RenderOpenGl
             edgeP2P0Normal.Normalize();
 #endif
 
-            Vector2 Normal = edgeP0P1Normal.PerpendicularRight;
+            Vector2 Normal = edgeP0P1Normal.GetPerpendicularRight();
             double edgeDotP3 = Vector2.Dot(Normal, p2 - p0);
             if (edgeDotP3 < 0)
             {

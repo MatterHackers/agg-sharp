@@ -183,12 +183,9 @@ namespace MatterHackers.VectorMath
         /// <summary>
         /// Gets the perpendicular vector on the right side of this vector.
         /// </summary>
-        public Vector2 PerpendicularRight
+        public Vector2 GetPerpendicularRight()
         {
-            get
-            {
-                return new Vector2(y, -x);
-            }
+            return new Vector2(y, -x);
         }
 
         #endregion
@@ -198,12 +195,9 @@ namespace MatterHackers.VectorMath
         /// <summary>
         /// Gets the perpendicular vector on the left side of this vector.
         /// </summary>
-        public Vector2 PerpendicularLeft
+        public Vector2 GetPerpendicularLeft()
         {
-            get
-            {
-                return new Vector2(-y, x);
-            }
+            return new Vector2(-y, x);
         }
 
         #endregion
@@ -503,35 +497,6 @@ namespace MatterHackers.VectorMath
         public static void Normalize(ref Vector2 vec, out Vector2 result)
         {
             double scale = 1.0 / vec.Length;
-            result.x = vec.x * scale;
-            result.y = vec.y * scale;
-        }
-
-        #endregion
-
-        #region NormalizeFast
-
-        /// <summary>
-        /// Scale a vector to approximately unit length
-        /// </summary>
-        /// <param name="vec">The input vector</param>
-        /// <returns>The normalized vector</returns>
-        public static Vector2 NormalizeFast(Vector2 vec)
-        {
-            double scale = MathHelper.InverseSqrtFast(vec.x * vec.x + vec.y * vec.y);
-            vec.x *= scale;
-            vec.y *= scale;
-            return vec;
-        }
-
-        /// <summary>
-        /// Scale a vector to approximately unit length
-        /// </summary>
-        /// <param name="vec">The input vector</param>
-        /// <param name="result">The normalized vector</param>
-        public static void NormalizeFast(ref Vector2 vec, out Vector2 result)
-        {
-            double scale = MathHelper.InverseSqrtFast(vec.x * vec.x + vec.y * vec.y);
             result.x = vec.x * scale;
             result.y = vec.y * scale;
         }

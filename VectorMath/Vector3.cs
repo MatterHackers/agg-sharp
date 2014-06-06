@@ -24,6 +24,8 @@ SOFTWARE.
 
 using System;
 using System.Runtime.InteropServices;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace MatterHackers.VectorMath
 {
@@ -172,32 +174,12 @@ namespace MatterHackers.VectorMath
         /// </summary>
         /// <see cref="LengthFast"/>
         /// <seealso cref="LengthSquared"/>
+        [JsonIgnoreAttribute]
         public double Length
         {
             get
             {
                 return System.Math.Sqrt(x * x + y * y + z * z);
-            }
-        }
-
-        #endregion
-
-        #region public double LengthFast
-
-        /// <summary>
-        /// Gets an approximation of the vector length (magnitude).
-        /// </summary>
-        /// <remarks>
-        /// This property uses an approximation of the square root function to calculate vector magnitude, with
-        /// an upper error bound of 0.001.
-        /// </remarks>
-        /// <see cref="Length"/>
-        /// <seealso cref="LengthSquared"/>
-        public double LengthFast
-        {
-            get
-            {
-                return 1.0 / MathHelper.InverseSqrtFast(x * x + y * y + z * z);
             }
         }
 
@@ -214,6 +196,7 @@ namespace MatterHackers.VectorMath
         /// </remarks>
         /// <see cref="Length"/>
         /// <seealso cref="LengthFast"/>
+        [JsonIgnoreAttribute]
         public double LengthSquared
         {
             get
@@ -243,21 +226,6 @@ namespace MatterHackers.VectorMath
         public void Normalize()
         {
             double scale = 1.0 / this.Length;
-            x *= scale;
-            y *= scale;
-            z *= scale;
-        }
-
-        #endregion
-
-        #region public void NormalizeFast()
-
-        /// <summary>
-        /// Scales the Vector3d to approximately unit length.
-        /// </summary>
-        public void NormalizeFast()
-        {
-            double scale = MathHelper.InverseSqrtFast(x * x + y * y + z * z);
             x *= scale;
             y *= scale;
             z *= scale;
@@ -625,37 +593,6 @@ namespace MatterHackers.VectorMath
         public static void Normalize(ref Vector3 vec, out Vector3 result)
         {
             double scale = 1.0 / vec.Length;
-            result.x = vec.x * scale;
-            result.y = vec.y * scale;
-            result.z = vec.z * scale;
-        }
-
-        #endregion
-
-        #region NormalizeFast
-
-        /// <summary>
-        /// Scale a vector to approximately unit length
-        /// </summary>
-        /// <param name="vec">The input vector</param>
-        /// <returns>The normalized vector</returns>
-        public static Vector3 NormalizeFast(Vector3 vec)
-        {
-            double scale = MathHelper.InverseSqrtFast(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
-            vec.x *= scale;
-            vec.y *= scale;
-            vec.z *= scale;
-            return vec;
-        }
-
-        /// <summary>
-        /// Scale a vector to approximately unit length
-        /// </summary>
-        /// <param name="vec">The input vector</param>
-        /// <param name="result">The normalized vector</param>
-        public static void NormalizeFast(ref Vector3 vec, out Vector3 result)
-        {
-            double scale = MathHelper.InverseSqrtFast(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
             result.x = vec.x * scale;
             result.y = vec.y * scale;
             result.z = vec.z * scale;
@@ -1112,6 +1049,7 @@ namespace MatterHackers.VectorMath
         /// <summary>
         /// Gets or sets an OpenTK.Vector2d with the X and Y components of this instance.
         /// </summary>
+        [JsonIgnoreAttribute]
         public Vector2 Xy { get { return new Vector2(x, y); } set { x = value.x; y = value.y; } }
 
         #endregion

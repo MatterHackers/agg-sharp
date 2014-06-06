@@ -225,27 +225,6 @@ namespace MatterHackers.VectorMath
 
         #endregion
 
-        #region public double LengthFast
-
-        /// <summary>
-        /// Gets an approximation of the vector length (magnitude).
-        /// </summary>
-        /// <remarks>
-        /// This property uses an approximation of the square root function to calculate vector magnitude, with
-        /// an upper error bound of 0.001.
-        /// </remarks>
-        /// <see cref="Length"/>
-        /// <seealso cref="LengthSquared"/>
-        public double LengthFast
-        {
-            get
-            {
-                return 1.0 / MathHelper.InverseSqrtFast(x * x + y * y + z * z + w * w);
-            }
-        }
-
-        #endregion
-
         #region public double LengthSquared
 
         /// <summary>
@@ -274,22 +253,6 @@ namespace MatterHackers.VectorMath
         public void Normalize()
         {
             double scale = 1.0 / this.Length;
-            x *= scale;
-            y *= scale;
-            z *= scale;
-            w *= scale;
-        }
-
-        #endregion
-
-        #region public void NormalizeFast()
-
-        /// <summary>
-        /// Scales the Vector4d to approximately unit length.
-        /// </summary>
-        public void NormalizeFast()
-        {
-            double scale = MathHelper.InverseSqrtFast(x * x + y * y + z * z + w * w);
             x *= scale;
             y *= scale;
             z *= scale;
@@ -586,39 +549,6 @@ namespace MatterHackers.VectorMath
         public static void Normalize(ref Vector4 vec, out Vector4 result)
         {
             double scale = 1.0 / vec.Length;
-            result.x = vec.x * scale;
-            result.y = vec.y * scale;
-            result.z = vec.z * scale;
-            result.w = vec.w * scale;
-        }
-
-        #endregion
-
-        #region NormalizeFast
-
-        /// <summary>
-        /// Scale a vector to approximately unit length
-        /// </summary>
-        /// <param name="vec">The input vector</param>
-        /// <returns>The normalized vector</returns>
-        public static Vector4 NormalizeFast(Vector4 vec)
-        {
-            double scale = MathHelper.InverseSqrtFast(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z + vec.w * vec.w);
-            vec.x *= scale;
-            vec.y *= scale;
-            vec.z *= scale;
-            vec.w *= scale;
-            return vec;
-        }
-
-        /// <summary>
-        /// Scale a vector to approximately unit length
-        /// </summary>
-        /// <param name="vec">The input vector</param>
-        /// <param name="result">The normalized vector</param>
-        public static void NormalizeFast(ref Vector4 vec, out Vector4 result)
-        {
-            double scale = MathHelper.InverseSqrtFast(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z + vec.w * vec.w);
             result.x = vec.x * scale;
             result.y = vec.y * scale;
             result.z = vec.z * scale;
