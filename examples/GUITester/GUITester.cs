@@ -35,25 +35,25 @@ namespace MatterHackers.Agg
         {
             mainNavigationTabControl = new TabControl(Orientation.Vertical);
 
-            mainNavigationTabControl.AddTab(new MenuPage());
+            mainNavigationTabControl.AddTab(new MenuPage(), "MenuPage");
 #if true
-            mainNavigationTabControl.AddTab(new TextEditPage());
-            mainNavigationTabControl.AddTab(new SplitterPage());
-            mainNavigationTabControl.AddTab(new LayoutPage());
-            mainNavigationTabControl.AddTab(new ButtonsPage());
+            mainNavigationTabControl.AddTab(new TextEditPage(), "TextEditPage");
+            mainNavigationTabControl.AddTab(new SplitterPage(), "SplitterPage");
+            mainNavigationTabControl.AddTab(new LayoutPage(), "LayoutPage");
+            mainNavigationTabControl.AddTab(new ButtonsPage(), "ButtonsPage");
 
-            mainNavigationTabControl.AddTab(new ScrollableWidgetTestPage());
-            mainNavigationTabControl.AddTab(new AnchorCenterButtonsTestPAge());
-            mainNavigationTabControl.AddTab(new TabPagesPage());
-            mainNavigationTabControl.AddTab(new ListBoxPage());
-            mainNavigationTabControl.AddTab(new ButtonAnchorTestPage());
+            mainNavigationTabControl.AddTab(new ScrollableWidgetTestPage(), "ScrollableWidgetTestPage");
+            mainNavigationTabControl.AddTab(new AnchorCenterButtonsTestPAge(), "AnchorCenterButtonsTestPAge");
+            mainNavigationTabControl.AddTab(new TabPagesPage(), "TabPagesPage");
+            mainNavigationTabControl.AddTab(new ListBoxPage(), "ListBoxPage");
+            mainNavigationTabControl.AddTab(new ButtonAnchorTestPage(), "ButtonAnchorTestPage");
 
             
-            mainNavigationTabControl.AddTab(new AnchorTestsPage());
-            mainNavigationTabControl.AddTab(new WindowPage());
+            mainNavigationTabControl.AddTab(new AnchorTestsPage(), "AnchorTestsPage");
+            mainNavigationTabControl.AddTab(new WindowPage(), "WindowPage");
 
-            mainNavigationTabControl.AddTab(new SliderControlsPage());
-            mainNavigationTabControl.AddTab(new TabPage(new FontInfoWidget(), "Fonts"));
+            mainNavigationTabControl.AddTab(new SliderControlsPage(), "SliderControlsPage");
+            mainNavigationTabControl.AddTab(new TabPage(new FontInfoWidget(), "Fonts"), "Fonts");
 #endif
             this.AddChild(mainNavigationTabControl);
 

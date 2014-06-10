@@ -40,15 +40,15 @@ namespace MatterHackers.Agg.UI
 {
     public class SimpleTextTabWidget : Tab
     {
-        public SimpleTextTabWidget(TabPage tabPageControledByTab)
-            : this(tabPageControledByTab, 12, RGBA_Bytes.DarkGray, RGBA_Bytes.White, RGBA_Bytes.Black, RGBA_Bytes.White)
+        public SimpleTextTabWidget(TabPage tabPageControledByTab, string internalTabName)
+            : this(tabPageControledByTab, internalTabName, 12, RGBA_Bytes.DarkGray, RGBA_Bytes.White, RGBA_Bytes.Black, RGBA_Bytes.White)
         {
         }
 
-        public SimpleTextTabWidget(TabPage tabPageControledByTab, double pointSize, 
+        public SimpleTextTabWidget(TabPage tabPageControledByTab, string internalTabName, double pointSize, 
             RGBA_Bytes selectedTextColor, RGBA_Bytes selectedBackgroundColor,
             RGBA_Bytes normalTextColor, RGBA_Bytes normalBackgroundColor)
-            : base(tabPageControledByTab.Text, new GuiWidget(), new GuiWidget(), new GuiWidget(), tabPageControledByTab)
+            : base(internalTabName, new GuiWidget(), new GuiWidget(), new GuiWidget(), tabPageControledByTab)
         {
             AddText(tabPageControledByTab.Text, selectedWidget, selectedTextColor, selectedBackgroundColor, pointSize);
             AddText(tabPageControledByTab.Text, normalWidget, normalTextColor, normalBackgroundColor, pointSize);

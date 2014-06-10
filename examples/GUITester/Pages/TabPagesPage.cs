@@ -60,9 +60,9 @@ namespace MatterHackers.Agg
             {
                 TabPage page1 = new TabPage("Page 1");
                 page1.Padding = new BorderDouble(5);
-                tabControl.AddTab(page1);
-                tabControl.AddTab(new TabPage("Page 2"));
-                tabControl.AddTab(new TabPage("Page 3"));
+                tabControl.AddTab(page1, "Page 1");
+                tabControl.AddTab(new TabPage("Page 2"), "Page 2");
+                tabControl.AddTab(new TabPage("Page 3"), "Page 3");
             }
 
             return tabControl;

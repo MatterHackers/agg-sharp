@@ -205,9 +205,9 @@ namespace MatterHackers.Agg.UI
             tabBar.SwitchToPage(page);
         }
 
-        public void AddTab(TabPage tabPageWidget)
+        public void AddTab(TabPage tabPageWidget, string internalTabName)
         {
-            Tab newTab = new SimpleTextTabWidget(tabPageWidget);
+            Tab newTab = new SimpleTextTabWidget(tabPageWidget, internalTabName);
             AddTab(newTab);
         }
 
