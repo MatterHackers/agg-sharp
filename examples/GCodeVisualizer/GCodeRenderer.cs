@@ -578,7 +578,7 @@ namespace MatterHackers.GCodeVisualizer
                 }
 
                 GL.DisableClientState(ArrayCap.TextureCoordArray);
-
+                GL.PushAttrib(AttribMask.EnableBit);
                 GL.Enable(EnableCap.PolygonSmooth);
 
                 //GL.InterleavedArrays(InterleavedArrayFormat.C4fN3fV3f, 0, colorVertexData.Array);
@@ -620,6 +620,8 @@ namespace MatterHackers.GCodeVisualizer
                         vertexBuffer.renderRange(featureStartIndex[layerIndex][startFeature], ellementCount);
                     }
                 }
+
+                GL.PopAttrib();
             }
         }
 
