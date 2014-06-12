@@ -716,6 +716,10 @@ namespace MatterHackers.GCodeVisualizer
                     // G29 Probe the z-bed in 3 places
                     break;
 
+                case "30":
+                    // G30 Probe z in current position
+                    break;
+
                 case "90": // G90 is Absolute Distance Mode
                     processingMachineState.movementType = PrinterMachineInstruction.MovementTypes.Absolute;
                     break;
