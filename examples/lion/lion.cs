@@ -150,8 +150,8 @@ namespace MatterHackers.Agg
 		public static void Main(string[] args)
 		{
             AppWidgetFactory appWidget = new LionFactory();
-            //appWidget.CreateWidgetAndRunInWindow();
-            appWidget.CreateWidgetAndRunInWindow(surfaceType: AppWidgetFactory.RenderSurface.OpenGL);
+            appWidget.CreateWidgetAndRunInWindow();
+            //appWidget.CreateWidgetAndRunInWindow(surfaceType: AppWidgetFactory.RenderSurface.OpenGL);
         }
     }
 
