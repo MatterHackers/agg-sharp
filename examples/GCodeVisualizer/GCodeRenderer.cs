@@ -342,32 +342,53 @@ namespace MatterHackers.GCodeVisualizer
         }
     }
 
-    public class RenderFeatureExtrusion : RenderFeatureTravel
+    public class ExtrusionColors
     {
-        float feedRate;
-        float extrusionVolumeMm3;
-        float layerHeight;
+        SortedDictionary<float, RGBA_Bytes> speedColorLookup = new SortedDictionary<float, RGBA_Bytes>();
 
-        static Dictionary<double, RGBA_Bytes> speedColorLookup = new Dictionary<double, RGBA_Bytes>();
-        static RGBA_Bytes nextColor = RGBA_Bytes.White;
-
-        static RGBA_Bytes GetColorForSpeed(float speed)
+        public RGBA_Bytes GetColorForSpeed(float speed)
         {
-            if (!speedColorLookup.ContainsKey(speed))
+            if (speed > 0)
             {
-                nextColor.Red0To255 = (nextColor.Red0To255 + 7193) % 255;
-                nextColor.Green0To255 = (nextColor.Green0To255 + 7477) % 255;
-                nextColor.Blue0To255 = (nextColor.Blue0To255 + 7757) % 255;
-                speedColorLookup.Add(speed, nextColor);
+                double startColor = 223.0 / 360.0;
+                double endColor = 5.0 / 360.0;
+                double delta = startColor - endColor;
+
+                if (!speedColorLookup.ContainsKey(speed))
+                {
+                    RGBA_Bytes color = RGBA_Floats.FromHSL(startColor, .99, .49).GetAsRGBA_Bytes();
+                    speedColorLookup.Add(speed, color);
+
+                    if (speedColorLookup.Count > 1)
+                    {
+                        double step = delta / (speedColorLookup.Count - 1);
+                        for (int index = 0; index < speedColorLookup.Count; index++)
+                        {
+                            double offset = step * index;
+                            double fixedColor = startColor - offset;
+                            KeyValuePair<float, RGBA_Bytes> keyValue = speedColorLookup.ElementAt(index);
+                            speedColorLookup[keyValue.Key] = RGBA_Floats.FromHSL(fixedColor, .99, .49).GetAsRGBA_Bytes();
+                        }
+                    }
+                }
+
+                return speedColorLookup[speed];
             }
 
-            return speedColorLookup[speed];
+            return RGBA_Bytes.Black;
         }
+    }
 
-        public RenderFeatureExtrusion(Vector3 start, Vector3 end, double travelSpeed, double totalExtrusionMm, double filamentDiameterMm, double layerHeight, double feedRate)
+    public class RenderFeatureExtrusion : RenderFeatureTravel
+    {
+        float extrusionVolumeMm3;
+        float layerHeight;
+        RGBA_Bytes color;
+
+        public RenderFeatureExtrusion(Vector3 start, Vector3 end, double travelSpeed, double totalExtrusionMm, double filamentDiameterMm, double layerHeight, RGBA_Bytes color)
             : base(start, end, travelSpeed)
         {
-            this.feedRate = (float)feedRate;
+            this.color = color;
             double fillamentRadius = filamentDiameterMm / 2;
             double areaSquareMm = (fillamentRadius * fillamentRadius) * Math.PI;
 
@@ -384,7 +405,7 @@ namespace MatterHackers.GCodeVisualizer
 #if false
                 CreateCylinder(colorVertexData, indexData, new Vector3(start), new Vector3(end), radius, 6, GCodeRenderer.ExtrusionColor, layerHeight);
 #else
-                CreateCylinder(colorVertexData, indexData, new Vector3(start), new Vector3(end), radius, 6, GetColorForSpeed(this.travelSpeed), layerHeight);
+                CreateCylinder(colorVertexData, indexData, new Vector3(start), new Vector3(end), radius, 6, color, layerHeight);
 #endif
             }
         }
@@ -395,6 +416,7 @@ namespace MatterHackers.GCodeVisualizer
             {
                 double extrusionLineWidths = 0.2 * layerScale;
                 RGBA_Bytes extrusionColor = RGBA_Bytes.Black;
+                //extrusionColor = color;
 
                 PathStorage pathStorage = new PathStorage();
                 VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, transform);
@@ -425,6 +447,8 @@ namespace MatterHackers.GCodeVisualizer
 
         GCodeFile gCodeFileToDraw;
 
+        ExtrusionColors extrusionColors;
+
         public GCodeRenderer(GCodeFile gCodeFileToDraw)
         {
             this.gCodeFileToDraw = gCodeFileToDraw;
@@ -437,6 +461,23 @@ namespace MatterHackers.GCodeVisualizer
 
         void CreateFeaturesForLayerIfRequired(int layerToCreate)
         {
+            if (extrusionColors == null)
+            {
+                extrusionColors = new ExtrusionColors();
+                for (int layerIndex = 0; layerIndex < gCodeFileToDraw.NumChangesInZ; layerIndex++)
+                {
+                    for (int i = 1; i < gCodeFileToDraw.Count; i++)
+                    {
+                        PrinterMachineInstruction prevInstruction = gCodeFileToDraw.Instruction(i-1);
+                        PrinterMachineInstruction instruction = gCodeFileToDraw.Instruction(i);
+                        if (instruction.EPosition > prevInstruction.EPosition)
+                        {
+                            extrusionColors.GetColorForSpeed((float)instruction.FeedRate);
+                        }
+                    }
+                }
+            }
+
             if (renderFeatures[layerToCreate].Count > 0)
             {
                 return;
@@ -485,7 +526,7 @@ namespace MatterHackers.GCodeVisualizer
                         {
                             layerThickness = gCodeFileToDraw.GetFirstLayerHeight();
                         }
-                        renderFeaturesForLayer.Add(new RenderFeatureExtrusion(previousInstruction.Position, currentInstruction.Position, currentInstruction.FeedRate, currentInstruction.EPosition - previousInstruction.EPosition, gCodeFileToDraw.GetFilamentDiamter(), layerThickness, currentInstruction.FeedRate));
+                        renderFeaturesForLayer.Add(new RenderFeatureExtrusion(previousInstruction.Position, currentInstruction.Position, currentInstruction.FeedRate, currentInstruction.EPosition - previousInstruction.EPosition, gCodeFileToDraw.GetFilamentDiamter(), layerThickness, extrusionColors.GetColorForSpeed((float)currentInstruction.FeedRate)));
                     }
                     else
                     {
