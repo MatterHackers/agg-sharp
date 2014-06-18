@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
@@ -39,48 +39,43 @@ using MatterHackers.Agg.Image;
 
 namespace MatterHackers.Agg.UI
 {
-    public interface IGuiFactory
+    public abstract class AbstractOsMappingWidget : GuiWidget
     {
-        AbstractOsMappingWidget CreateSurface(SystemWindow childSystemWindow);
-    }
-
-    public static class OsMappingWidgetFactory
-    {
-        static IGuiFactory factoryToUse;
-
-        public static void SetFactory(IGuiFactory factoryToUse)
+        public abstract string Caption
         {
-            if (OsMappingWidgetFactory.factoryToUse != null)
-            {
-                throw new NotSupportedException("You can only set the graphics target one time in an application.");
-            }
-
-            OsMappingWidgetFactory.factoryToUse = factoryToUse;
+            get;
+            set;
         }
 
-        static AbstractOsMappingWidget primaryOsMappingWidget;
-        public static AbstractOsMappingWidget PrimaryOsMappingWidget
+        public abstract void ShowModal();
+        public abstract void Show();
+        public abstract void Run();
+
+        public abstract Point2D DesktopPosition { get; set; }
+
+        public virtual void OnInitialize()
         {
-            get
-            {
-                return primaryOsMappingWidget;
-            }
         }
 
-        public static AbstractOsMappingWidget CreateOsMappingWidget(SystemWindow childSystemWindow)
+        protected SystemWindow childSystemWindow;
+        // format - see enum pix_format_e {};
+        // flip_y - true if you want to have the Y-axis flipped vertically.
+        public AbstractOsMappingWidget(SystemWindow childSystemWindow)
+            : base(childSystemWindow.Width, childSystemWindow.Height, SizeLimitsToSet.None)
         {
-            if (factoryToUse == null)
-            {
-                throw new NotSupportedException("You must call 'SetGuiBackend' with a GuiFactory before you can create any surfaces");
-            }
-
-            AbstractOsMappingWidget osMappingWidget = factoryToUse.CreateSurface(childSystemWindow);
-            if (primaryOsMappingWidget == null)
-            {
-                primaryOsMappingWidget = osMappingWidget;
-            }
-
-            return osMappingWidget;
+            this.childSystemWindow = childSystemWindow;
         }
+
+        public double width() { return BoundsRelativeToParent.Width; }
+        public double height() { return BoundsRelativeToParent.Height; }
+
+        // Get raw display handler depending on the system. 
+        // For win32 its an HDC, for other systems it can be a pointer to some
+        // structure. See the implementation files for detals.
+        // It's provided "as is", so, first you should check if it's not null.
+        // If it's null the raw_display_handler is not supported. Also, there's 
+        // no guarantee that this function is implemented, so, in some 
+        // implementations you may have simply an unresolved symbol when linking.
+        //public void* raw_display_handler();
     }
 }

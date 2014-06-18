@@ -98,7 +98,7 @@
     <Compile Include="GridControl.cs" />
     <Compile Include="GroupBox.cs" />
     <Compile Include="Keyboard.cs" />
-    <Compile Include="SystemWindow\AbstractOsMappingWidget.cs" />
+    <Compile Include="SystemWindow\OsMappingWidgetFactory.cs" />
     <Compile Include="GuiWidget.cs" />
     <Compile Include="ImageWidget.cs" />
     <Compile Include="KeyEventArgs.cs" />
@@ -125,7 +125,7 @@
     <Compile Include="RootedObjectEventHandler.cs" />
     <Compile Include="ImageSequenceWidget.cs" />
     <Compile Include="StringEventArgs.cs" />
-    <Compile Include="SystemWindow\OsMappingWidgetFactory.cs" />
+    <Compile Include="SystemWindow\AbstractOsMappingWidget.cs" />
     <Compile Include="Tests\MenuTests.cs" />
     <Compile Include="TextWidgets\InternalNumberEdit.cs" />
     <Compile Include="TextWidgets\NumberEdit.cs" />
