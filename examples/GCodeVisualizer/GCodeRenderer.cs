@@ -359,12 +359,16 @@ namespace MatterHackers.GCodeVisualizer
                     RGBA_Bytes color = RGBA_Floats.FromHSL(startColor, .99, .49).GetAsRGBA_Bytes();
                     speedColorLookup.Add(speed, color);
 
-                    for (int index = 0; index < speedColorLookup.Count; index++)
+                    if (speedColorLookup.Count > 1)
                     {
-                        double step = delta / speedColorLookup.Count;
-                        double offset = step * index;
-                        double fixedColor = startColor - offset;
-                        speedColorLookup[speed] = RGBA_Floats.FromHSL(fixedColor, .99, .49).GetAsRGBA_Bytes();
+                        double step = delta / (speedColorLookup.Count - 1);
+                        for (int index = 0; index < speedColorLookup.Count; index++)
+                        {
+                            double offset = step * index;
+                            double fixedColor = startColor - offset;
+                            KeyValuePair<float, RGBA_Bytes> keyValue = speedColorLookup.ElementAt(index);
+                            speedColorLookup[keyValue.Key] = RGBA_Floats.FromHSL(fixedColor, .99, .49).GetAsRGBA_Bytes();
+                        }
                     }
                 }
 
@@ -412,6 +416,7 @@ namespace MatterHackers.GCodeVisualizer
             {
                 double extrusionLineWidths = 0.2 * layerScale;
                 RGBA_Bytes extrusionColor = RGBA_Bytes.Black;
+                //extrusionColor = color;
 
                 PathStorage pathStorage = new PathStorage();
                 VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, transform);
@@ -461,10 +466,14 @@ namespace MatterHackers.GCodeVisualizer
                 extrusionColors = new ExtrusionColors();
                 for (int layerIndex = 0; layerIndex < gCodeFileToDraw.NumChangesInZ; layerIndex++)
                 {
-                    for (int i = 0; i < gCodeFileToDraw.Count; i++)
+                    for (int i = 1; i < gCodeFileToDraw.Count; i++)
                     {
+                        PrinterMachineInstruction prevInstruction = gCodeFileToDraw.Instruction(i-1);
                         PrinterMachineInstruction instruction = gCodeFileToDraw.Instruction(i);
-                        extrusionColors.GetColorForSpeed((float)instruction.FeedRate);
+                        if (instruction.EPosition > prevInstruction.EPosition)
+                        {
+                            extrusionColors.GetColorForSpeed((float)instruction.FeedRate);
+                        }
                     }
                 }
             }
