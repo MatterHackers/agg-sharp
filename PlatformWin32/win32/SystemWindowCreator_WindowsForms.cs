@@ -12,7 +12,7 @@ namespace MatterHackers.Agg
         bool pendingSetInitialDesktopPosition = false;
         Point2D InitialDesktopPosition = new Point2D();
 
-        public override void ShowSystemWindow(SystemWindow systemWindow, object state)
+        public override void ShowSystemWindow(SystemWindow systemWindow)
         {
             bool haveInitializedMainWindow = false;
             if (OsMappingWidgetFactory.PrimaryOsMappingWidget != null)
