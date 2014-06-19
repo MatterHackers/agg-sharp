@@ -31,7 +31,7 @@ namespace MatterHackers.Agg.PlatformAbstract
 {
     public class OsInformation
     {
-        public enum OSType { Windows, Mac, X11, Other };
+        public enum OSType { Windows, Mac, X11, Other, Android };
         static OSType OperatingSysetm;
 
         public static void SetOSType(OSType osType)
