@@ -27,7 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-namespace MatterHackers.Agg.PlatfromAbstract
+namespace MatterHackers.Agg.PlatformAbstract
 {
     public class OsInformation
     {

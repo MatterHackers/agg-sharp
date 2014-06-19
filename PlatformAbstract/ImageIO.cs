@@ -32,7 +32,7 @@ using System.IO;
 
 using MatterHackers.Agg.Image;
 
-namespace MatterHackers.Agg.PlatfromAbstract
+namespace MatterHackers.Agg.PlatformAbstract
 {
     public static class ImageIO
     {

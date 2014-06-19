@@ -30,7 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using MatterHackers.Agg.Image;
 
-namespace MatterHackers.Agg.PlatfromAbstract
+namespace MatterHackers.Agg.PlatformAbstract
 {
     public class ImageIOPlugin
     {

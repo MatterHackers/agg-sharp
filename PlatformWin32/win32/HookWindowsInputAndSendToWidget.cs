@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
-using MatterHackers.Agg.PlatfromAbstract;
+using MatterHackers.Agg.PlatformAbstract;
 
 namespace MatterHackers.Agg.UI
 {

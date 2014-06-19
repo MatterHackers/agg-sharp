@@ -1,6 +1,6 @@
 using System;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.PlatfromAbstract;
+using MatterHackers.Agg.PlatformAbstract;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;

@@ -1,7 +1,7 @@
 using System;
 using System.Diagnostics;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.PlatfromAbstract;
+using MatterHackers.Agg.PlatformAbstract;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;

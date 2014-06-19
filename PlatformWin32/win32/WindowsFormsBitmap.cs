@@ -50,7 +50,7 @@ using MatterHackers.Agg;
 using MatterHackers.RenderOpenGl;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.RasterizerScanline;
-using MatterHackers.Agg.PlatfromAbstract;
+using MatterHackers.Agg.PlatformAbstract;
 
 namespace MatterHackers.Agg.UI
 {

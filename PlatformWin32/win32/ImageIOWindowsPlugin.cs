@@ -31,7 +31,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using MatterHackers.Agg.PlatfromAbstract;
+using MatterHackers.Agg.PlatformAbstract;
 
 namespace MatterHackers.Agg.Image
 {
