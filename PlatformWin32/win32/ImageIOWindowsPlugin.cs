@@ -28,17 +28,16 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.IO;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
+using MatterHackers.Agg.PlatfromAbstract;
 
 namespace MatterHackers.Agg.Image
 {
-    public static class ImageIO
+    public class ImageIOWindowsPlugin : ImageIOPlugin
     {
-        static public bool LoadImageData(String pathToGifFile, ImageSequence destImageSequence)
+        public override bool LoadImageData(String pathToGifFile, ImageSequence destImageSequence)
         {
             if (File.Exists(pathToGifFile) && Path.GetExtension(pathToGifFile).ToUpper() == ".GIF")
             {
@@ -76,7 +75,7 @@ namespace MatterHackers.Agg.Image
             return false;
         }
 
-        static public bool LoadImageData(String fileName, ImageBuffer destImage)
+        public override bool LoadImageData(String fileName, ImageBuffer destImage)
         {
             if (System.IO.File.Exists(fileName))
             {
@@ -217,7 +216,7 @@ namespace MatterHackers.Agg.Image
             m_WidowsBitmap.UnlockBits(bitmapData);
         }
 
-        static public bool SaveImageData(String filename, IImageByte sourceImage)
+        public override bool SaveImageData(String filename, IImageByte sourceImage)
         {
             if (File.Exists(filename))
             {
@@ -300,7 +299,7 @@ namespace MatterHackers.Agg.Image
             return false;
         }
 
-        static public bool LoadImageData(String filename, ImageBufferFloat destImage)
+        public override bool LoadImageData(String filename, ImageBufferFloat destImage)
         {
             if (System.IO.File.Exists(filename))
             {

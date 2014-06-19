@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using MatterHackers.Agg.PlatfromAbstract;
 
 namespace MatterHackers.Agg.UI
 {
@@ -49,7 +50,7 @@ namespace MatterHackers.Agg.UI
         void controlToHook_KeyDown(object sender, System.Windows.Forms.KeyEventArgs windowsKeyEvent)
         {
 			MatterHackers.Agg.UI.KeyEventArgs aggKeyEvent;
-			if (WindowsFormsAbstract.GetOSType () == WindowsFormsAbstract.OSType.Mac 
+			if (OsInformation.GetOSType () == OsInformation.OSType.Mac 
 				&& (windowsKeyEvent.KeyData & System.Windows.Forms.Keys.Alt) == System.Windows.Forms.Keys.Alt) 
 			{
 

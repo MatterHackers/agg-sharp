@@ -27,6 +27,7 @@ using System.IO;
 
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.RasterizerScanline;
+using MatterHackers.Agg.PlatfromAbstract;
 
 namespace MatterHackers.Agg.UI
 {
@@ -50,11 +51,10 @@ namespace MatterHackers.Agg.UI
             tmrWindowsFormsTimer.Interval = 10;
             tmrWindowsFormsTimer.Tick += new EventHandler(CallAppWidgetOnIdle);
             tmrWindowsFormsTimer.Start();
+
+            OsInformation.SetOSType(GetOSType());
         }
 
-        public enum OSType { Windows, Mac, X11, Other };
-        static OSType OperatingSysetm;
-        static bool foundOSType = false;
         //From Managed.Windows.Forms/XplatUI
         [DllImport("libc")]
         static extern int uname(IntPtr buf);
@@ -90,30 +90,24 @@ namespace MatterHackers.Agg.UI
             return false;
         }
 
-        public static OSType GetOSType()
+        OsInformation.OSType GetOSType()
         {
-            if (!foundOSType)
+            if (Path.DirectorySeparatorChar == '\\')
             {
-                if (Path.DirectorySeparatorChar == '\\')
-                {
-                    OperatingSysetm = OSType.Windows;
-                }
-                else if (IsRunningOnMac())
-                {
-                    OperatingSysetm = OSType.Mac;
-                }
-                else if (Environment.OSVersion.Platform == PlatformID.Unix)
-                {
-                    OperatingSysetm = OSType.X11;
-                }
-                else
-                {
-                    OperatingSysetm = OSType.Other;
-                }
-                foundOSType = true;
+                return OsInformation.OSType.Windows;
             }
-
-            return OperatingSysetm;
+            else if (IsRunningOnMac())
+            {
+                return OsInformation.OSType.Mac;
+            }
+            else if (Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                return OsInformation.OSType.X11;
+            }
+            else
+            {
+                return OsInformation.OSType.Other;
+            }
         }
 
         public static void ShowFileInFolder(string fileToShow)

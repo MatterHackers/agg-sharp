@@ -50,6 +50,7 @@ using MatterHackers.Agg;
 using MatterHackers.RenderOpenGl;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.RasterizerScanline;
+using MatterHackers.Agg.PlatfromAbstract;
 
 namespace MatterHackers.Agg.UI
 {
@@ -61,7 +62,7 @@ namespace MatterHackers.Agg.UI
 
             HookWindowsInputAndSendToWidget communication = new HookWindowsInputAndSendToWidget(this, aggAppWidget);
         }
-
+        
         [System.Runtime.InteropServices.DllImport("gdi32.dll")]
         public static extern bool DeleteObject(IntPtr hObject);
         
@@ -90,7 +91,7 @@ namespace MatterHackers.Agg.UI
 
             WidgetForWindowsFormsBitmap.copyTime.Restart();
 
-			if(GetOSType() != OSType.Windows)
+			if(OsInformation.GetOSType() != OsInformation.OSType.Windows)
 			{
 	            //displayGraphics.DrawImage(aggBitmapAppWidget.bitmapBackBuffer.windowsBitmap, windowsRect, windowsRect, GraphicsUnit.Pixel);  // around 250 ms for full screen
 	            displayGraphics.DrawImageUnscaled(aggBitmapAppWidget.bitmapBackBuffer.windowsBitmap, 0, 0); // around 200 ms for full screnn

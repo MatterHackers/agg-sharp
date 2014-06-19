@@ -1,9 +1,9 @@
 using System;
-using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
+using MatterHackers.Agg.PlatfromAbstract;
+using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
-using MatterHackers.Agg.RasterizerScanline;
 
 namespace MatterHackers.Agg
 {
