@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 9.00
-# Visual Studio 2005
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MomsSolitaire", "MomsSolitaire.csproj", "{4C81E7D6-CA91-4724-851D-2C6092E362C7}"
 	ProjectSection(ProjectDependencies) = postProject
 		{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B} = {657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}
