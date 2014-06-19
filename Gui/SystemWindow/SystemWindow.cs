@@ -38,7 +38,7 @@ namespace MatterHackers.Agg.UI
 {
     public abstract class SystemWindowCreatorPlugin
     {
-        public abstract void ShowSystemWindow(SystemWindow systemWindow);
+        public abstract void ShowSystemWindow(SystemWindow systemWindow, object state);
 
         public abstract Point2D GetDesktopPosition(SystemWindow systemWindow);
         public abstract void SetDesktopPosition(SystemWindow systemWindow, Point2D position);
@@ -134,7 +134,7 @@ namespace MatterHackers.Agg.UI
             {
                 throw new Exception("To be a system window you cannot be a child of another widget.");
             }
-            globalSystemWindowCreator.ShowSystemWindow(this);
+            globalSystemWindowCreator.ShowSystemWindow(this, null);
         }
 
         public Point2D DesktopPosition
