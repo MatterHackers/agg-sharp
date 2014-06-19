@@ -83,6 +83,8 @@ namespace MatterHackers.Agg.WindowsFileDialogs
             saveFileDialog1.Filter = saveParams.Filter;
             saveFileDialog1.FilterIndex = saveParams.FilterIndex;
             saveFileDialog1.RestoreDirectory = true;
+            saveFileDialog1.AddExtension = true;
+            saveFileDialog1.FileName = saveParams.FileName;
 
             saveFileDialog1.Title = saveParams.Title;
             saveFileDialog1.ShowHelp = false;
