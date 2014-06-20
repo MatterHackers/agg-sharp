@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <OutputType>Library</OutputType>
-    <RootNamespace>MatterHackers.Agg.PlatfromAbstract</RootNamespace>
+    <RootNamespace>MatterHackers.Agg.PlatformAbstract</RootNamespace>
     <AssemblyName>PlatfromAbstract</AssemblyName>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <NoStdLib>False</NoStdLib>
