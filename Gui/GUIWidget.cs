@@ -375,6 +375,8 @@ namespace MatterHackers.Agg.UI
     
         public event KeyPressEventHandler KeyPressed;
 
+        public event EventHandler Invalidated;
+
         public event KeyEventHandler KeyDown;
         public event KeyEventHandler KeyUp;
 
@@ -1300,6 +1302,11 @@ namespace MatterHackers.Agg.UI
             {
                 rectToInvalidate.Offset(OriginRelativeParent);
                 Parent.Invalidate(rectToInvalidate);
+            }
+
+            if (Invalidated != null)
+            {
+                Invalidated(this, new InvalidateEventArgs(rectToInvalidate));
             }
         }
 
