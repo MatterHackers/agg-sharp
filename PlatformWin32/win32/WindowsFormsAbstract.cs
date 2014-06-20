@@ -55,6 +55,11 @@ namespace MatterHackers.Agg.UI
             OsInformation.SetOSType(GetOSType());
         }
 
+        public static void SetOSTypeEarlyNow()
+        {
+            OsInformation.SetOSType(GetOSType());
+        }
+
         //From Managed.Windows.Forms/XplatUI
         [DllImport("libc")]
         static extern int uname(IntPtr buf);
@@ -90,7 +95,7 @@ namespace MatterHackers.Agg.UI
             return false;
         }
 
-        OsInformation.OSType GetOSType()
+        static OsInformation.OSType GetOSType()
         {
             if (Path.DirectorySeparatorChar == '\\')
             {
