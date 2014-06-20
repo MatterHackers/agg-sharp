@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
@@ -28,41 +28,67 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
+using MatterHackers.Agg.PlatformAbstract;
+using System.Runtime.InteropServices;
 
 namespace MatterHackers.Agg.PlatformAbstract
 {
-    public enum OSType { Unknown, Windows, Mac, X11, Other, Android };
-
-    public class OsInformation
+    public class OsInformationWindowsPlugin : OsInformationPlugin
     {
-        static OSType operatingSystem = OSType.Unknown;
-        public static OSType OperatingSystem
+        //From Managed.Windows.Forms/XplatUI
+        [DllImport("libc")]
+        static extern int uname(IntPtr buf);
+
+        static bool IsRunningOnMac()
         {
-            get
+            IntPtr buf = IntPtr.Zero;
+            try
             {
-                if (operatingSystem == OSType.Unknown)
+                buf = Marshal.AllocHGlobal(8192);
+                // This is a hacktastic way of getting sysname from uname ()
+                if (uname(buf) == 0)
                 {
-                    string pluginPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-                    PluginFinder<OsInformationPlugin> osInformationPlugins = new PluginFinder<OsInformationPlugin>(pluginPath);
-                    if (osInformationPlugins.Plugins.Count != 1)
+                    string os = Marshal.PtrToStringAnsi(buf);
+                    if (os == "Darwin")
                     {
-                        throw new Exception(string.Format("Did not find any OsInformationPlugins in Plugin path ({0}.", pluginPath));
+                        return true;
                     }
-
-                    operatingSystem = osInformationPlugins.Plugins[0].GetOSType();
                 }
-
-                return operatingSystem;
             }
+            catch
+            {
+            }
+            finally
+            {
+                if (buf != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(buf);
+                }
+            }
+            return false;
         }
-    }
 
-    public class OsInformationPlugin
-    {
-        public virtual OSType GetOSType()
+        public override OSType GetOSType()
         {
-            throw new Exception("You must implement this in an inherited class.");
+            if (Path.DirectorySeparatorChar == '\\')
+            {
+                return OSType.Windows;
+            }
+            else if (IsRunningOnMac())
+            {
+                return OSType.Mac;
+            }
+            else if (Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                return OSType.X11;
+            }
+            else
+            {
+                return OSType.Other;
+            }
         }
     }
 }

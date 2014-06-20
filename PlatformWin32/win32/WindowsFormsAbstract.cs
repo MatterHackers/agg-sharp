@@ -51,69 +51,10 @@ namespace MatterHackers.Agg.UI
             tmrWindowsFormsTimer.Interval = 10;
             tmrWindowsFormsTimer.Tick += new EventHandler(CallAppWidgetOnIdle);
             tmrWindowsFormsTimer.Start();
-
-            OsInformation.SetOSType(GetOSType());
         }
-
-        public static void SetOSTypeEarlyNow()
-        {
-            OsInformation.SetOSType(GetOSType());
-        }
-
-        //From Managed.Windows.Forms/XplatUI
-        [DllImport("libc")]
-        static extern int uname(IntPtr buf);
 
         bool hasBeenClosed = false;
         
-        static bool IsRunningOnMac()
-        {
-            IntPtr buf = IntPtr.Zero;
-            try
-            {
-                buf = Marshal.AllocHGlobal(8192);
-                // This is a hacktastic way of getting sysname from uname ()
-                if (uname(buf) == 0)
-                {
-                    string os = Marshal.PtrToStringAnsi(buf);
-                    if (os == "Darwin")
-                    {
-                        return true;
-                    }
-                }
-            }
-            catch
-            {
-            }
-            finally
-            {
-                if (buf != IntPtr.Zero)
-                {
-                    Marshal.FreeHGlobal(buf);
-                }
-            }
-            return false;
-        }
-
-        static OsInformation.OSType GetOSType()
-        {
-            if (Path.DirectorySeparatorChar == '\\')
-            {
-                return OsInformation.OSType.Windows;
-            }
-            else if (IsRunningOnMac())
-            {
-                return OsInformation.OSType.Mac;
-            }
-            else if (Environment.OSVersion.Platform == PlatformID.Unix)
-            {
-                return OsInformation.OSType.X11;
-            }
-            else
-            {
-                return OsInformation.OSType.Other;
-            }
-        }
 
         public static void ShowFileInFolder(string fileToShow)
         {

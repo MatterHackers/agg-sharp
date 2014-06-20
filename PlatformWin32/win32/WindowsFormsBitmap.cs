@@ -91,7 +91,7 @@ namespace MatterHackers.Agg.UI
 
             WidgetForWindowsFormsBitmap.copyTime.Restart();
 
-			if(OsInformation.GetOSType() != OsInformation.OSType.Windows)
+            if (OsInformation.OperatingSystem != OSType.Windows)
 			{
 	            //displayGraphics.DrawImage(aggBitmapAppWidget.bitmapBackBuffer.windowsBitmap, windowsRect, windowsRect, GraphicsUnit.Pixel);  // around 250 ms for full screen
 	            displayGraphics.DrawImageUnscaled(aggBitmapAppWidget.bitmapBackBuffer.windowsBitmap, 0, 0); // around 200 ms for full screnn
