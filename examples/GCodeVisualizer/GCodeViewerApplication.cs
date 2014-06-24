@@ -135,17 +135,20 @@ namespace MatterHackers.GCodeVisualizer
 
         void openFileButton_ButtonClick(object sender, MouseEventArgs mouseEvent)
         {
-            OpenFileDialogParams openParams = new OpenFileDialogParams("gcode files|*.gcode");
-            Stream streamToLoadFrom = FileDialog.OpenFileDialog(ref openParams);
+            UiThread.RunOnIdle((state) =>
+                {
+                    OpenFileDialogParams openParams = new OpenFileDialogParams("gcode files|*.gcode");
+                    Stream streamToLoadFrom = FileDialog.OpenFileDialog(ref openParams);
 
-            if (openParams.FileName != null && openParams.FileName != "")
-            {
-                gCodeViewWidget.Load(openParams.FileName);
-                currentLayerIndex.Value = 0;
-                currentLayerIndex.MaxValue = gCodeViewWidget.LoadedGCode.NumChangesInZ;
-            }
+                    if (openParams.FileName != null && openParams.FileName != "")
+                    {
+                        gCodeViewWidget.Load(openParams.FileName);
+                        currentLayerIndex.Value = 0;
+                        currentLayerIndex.MaxValue = gCodeViewWidget.LoadedGCode.NumChangesInZ;
+                    }
 
-            Invalidate();
+                    Invalidate();
+                });
         }
 
         public override void OnDraw(Graphics2D graphics2D)

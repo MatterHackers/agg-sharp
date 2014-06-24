@@ -564,6 +564,9 @@ namespace MatterHackers.GCodeVisualizer
                     // set heated platform temperature
                     break;
 
+                case "114":
+                    break;
+
                 case "117":
                     // in Marlin: Display Message
                     break;
