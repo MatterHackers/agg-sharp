@@ -26,6 +26,7 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies, 
 either expressed or implied, of the FreeBSD Project.
 */
+#define USE_OPENGL
 
 using System;
 using System.Collections.Generic;
@@ -39,7 +40,9 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.Agg.UI;
 
+#if USE_OPENGL
 using OpenTK.Graphics.OpenGL;
+#endif
 
 namespace MatterHackers.GCodeVisualizer
 {
@@ -544,6 +547,41 @@ namespace MatterHackers.GCodeVisualizer
             return renderFeatures[layerToCountFeaturesOn].Count;
         }
 
+        public void Render(Graphics2D graphics2D, int activeLayerIndex, Affine transform, double layerScale, RenderType renderType,
+            double featureToStartOnRatio0To1, double featureToEndOnRatio0To1)
+        {
+            if (renderFeatures.Count > 0)
+            {
+                CreateFeaturesForLayerIfRequired(activeLayerIndex);
+
+                int featuresOnLayer = renderFeatures[activeLayerIndex].Count;
+                int endFeature = (int)(featuresOnLayer * featureToEndOnRatio0To1 + .5);
+                endFeature = Math.Max(0, Math.Min(endFeature, featuresOnLayer));
+
+                int startFeature = (int)(featuresOnLayer * featureToStartOnRatio0To1 + .5);
+                startFeature = Math.Max(0, Math.Min(startFeature, featuresOnLayer));
+
+                // try to make sure we always draw at least one feature
+                if (endFeature <= startFeature)
+                {
+                    endFeature = Math.Min(startFeature + 1, featuresOnLayer);
+                }
+                if (startFeature >= endFeature)
+                {
+                    // This can only happen if the sart and end are set to the last feature
+                    // Try to set the start feture to one from the end
+                    startFeature = Math.Max(endFeature - 1, 0);
+                }
+
+                for (int i = startFeature; i < endFeature; i++)
+                {
+                    RenderFeatureBase feature = renderFeatures[activeLayerIndex][i];
+                    feature.Render(graphics2D, transform, layerScale, renderType);
+                }
+            }
+        }
+
+#if USE_OPENGL
         void Create3DData(Affine transform, double layerScale, RenderType renderType, int lastLayerIndex)
         {
             colorVertexData.Clear();
@@ -665,42 +703,10 @@ namespace MatterHackers.GCodeVisualizer
                 GL.PopAttrib();
             }
         }
-
-        public void Render(Graphics2D graphics2D, int activeLayerIndex, Affine transform, double layerScale, RenderType renderType,
-            double featureToStartOnRatio0To1, double featureToEndOnRatio0To1)
-        {
-            if (renderFeatures.Count > 0)
-            {
-                CreateFeaturesForLayerIfRequired(activeLayerIndex);
-
-                int featuresOnLayer = renderFeatures[activeLayerIndex].Count;
-                int endFeature = (int)(featuresOnLayer * featureToEndOnRatio0To1 + .5);
-                endFeature = Math.Max(0, Math.Min(endFeature, featuresOnLayer));
-
-                int startFeature = (int)(featuresOnLayer * featureToStartOnRatio0To1 + .5);
-                startFeature = Math.Max(0, Math.Min(startFeature, featuresOnLayer));
-
-                // try to make sure we always draw at least one feature
-                if (endFeature <= startFeature)
-                {
-                    endFeature = Math.Min(startFeature + 1, featuresOnLayer);
-                }
-                if (startFeature >= endFeature)
-                {
-                    // This can only happen if the sart and end are set to the last feature
-                    // Try to set the start feture to one from the end
-                    startFeature = Math.Max(endFeature - 1, 0);
-                }
-
-                for(int i=startFeature; i<endFeature; i++)
-                {
-                    RenderFeatureBase feature = renderFeatures[activeLayerIndex][i];
-                    feature.Render(graphics2D, transform, layerScale, renderType);
-                }
-            }
-        }
+#endif
     }
 
+#if USE_OPENGL
     public class VertexBuffer
     {
         public int myVertexId;
@@ -777,4 +783,5 @@ namespace MatterHackers.GCodeVisualizer
             GL.DisableClientState(ArrayCap.ColorArray);
         }
     }
+#endif
 }
