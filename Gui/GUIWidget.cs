@@ -711,10 +711,34 @@ namespace MatterHackers.Agg.UI
                     {
                         // when this object moves it requires that the parent re-layout this object (and maybe others)
                         this.Parent.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Position));
+#if false
+                        // and it also means the mouse moved realtive to this widget (so the parent and it's children)
+                        Vector2 parentMousePosition = new Vector2();
+                        if (Parent.GetMousePosition(ref parentMousePosition))
+                        {
+                            this.Parent.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, parentMousePosition.x, parentMousePosition.y, 0));
+                        }
+#endif
                     }
                     OnPositionChanged(null);
                 }
             }
+        }
+
+        public virtual bool GetMousePosition(ref Vector2 position)
+        {
+            if (Parent != null)
+            {
+                Vector2 parentMousePosition = new Vector2();
+                if (Parent.GetMousePosition(ref parentMousePosition))
+                {
+                    position = parentMousePosition;
+                    ParentToChildTransform.transform(ref position.x, ref position.y);
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public virtual RectangleDouble LocalBounds
@@ -802,6 +826,17 @@ namespace MatterHackers.Agg.UI
                 {
                     value.Offset(-OriginRelativeParent.x, -OriginRelativeParent.y);
                     LocalBounds = value;
+#if false
+                    if (Parent != null)
+                    {
+                        // and it also means the mouse moved realtive to this widget (so the parent and it's children)
+                        Vector2 parentMousePosition = new Vector2();
+                        if (Parent.GetMousePosition(ref parentMousePosition))
+                        {
+                            this.Parent.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, parentMousePosition.x, parentMousePosition.y, 0));
+                        }
+                    }
+#endif
                 }
             }
         }

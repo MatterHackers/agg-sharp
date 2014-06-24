@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using MatterHackers.VectorMath;
 using System.Reflection;
 
 namespace MatterHackers.Agg.UI
@@ -107,7 +108,7 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        public override VectorMath.Vector2 MinimumSize
+        public override Vector2 MinimumSize
         {
             get
             {
@@ -121,6 +122,29 @@ namespace MatterHackers.Agg.UI
                     Parent.MinimumSize = value;
                 }
             }
+        }
+
+        Vector2 lastMousePosition;
+        public override void OnMouseDown(MouseEventArgs mouseEvent)
+        {
+            lastMousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
+            base.OnMouseDown(mouseEvent);
+        }
+        public override void OnMouseMove(MouseEventArgs mouseEvent)
+        {
+            lastMousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
+            base.OnMouseMove(mouseEvent);
+        }
+        public override void OnMouseUp(MouseEventArgs mouseEvent)
+        {
+            lastMousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
+            base.OnMouseUp(mouseEvent);
+        }
+
+        public override bool GetMousePosition(ref Vector2 position)
+        {
+            position = lastMousePosition;
+            return true;
         }
 
         public override void BringToFront()

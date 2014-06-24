@@ -62,6 +62,12 @@ namespace MatterHackers.Agg.UI.Tests
                 mouseInteractionTests.ValidateEnterAndLeaveInOverlapArea();
                 mouseInteractionTests.MouseCapturedSpressesLeaveEvents();
                 mouseInteractionTests.MouseCapturedSpressesLeaveEventsInButtonsSameAsRectangles();
+                
+                // these tests don't pass yet (they tests pass but scroll bars when grabed are brocken)
+                //mouseInteractionTests.ValidateEnterLeaveOnWidgetMoves();
+                //mouseInteractionTests.ValidateEnterLeaveOnWidgetBoundsChange();
+                // these tests need to be writen
+                //mouseInteractionTests.ValidateEnterLeaveOnWidgetAddAndRemoveChild();
 
                 BackBufferTests backBufferTests = new BackBufferTests();
                 //backBufferTests.saveImagesForDebug = true;
