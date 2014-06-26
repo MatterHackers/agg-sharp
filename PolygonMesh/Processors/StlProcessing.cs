@@ -178,6 +178,8 @@ namespace MatterHackers.PolygonMesh.Processors
 
         public static void ParseFileContents(object sender, DoWorkEventArgs doWorkEventArgs)
         {
+            BackgroundWorker backgroundWorker = sender as BackgroundWorker;
+
             Stopwatch time = new Stopwatch();
             time.Start();
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
@@ -259,7 +261,6 @@ namespace MatterHackers.PolygonMesh.Processors
 
                     if (sender != null)
                     {
-                        BackgroundWorker backgroundWorker = (BackgroundWorker)sender;
                         if (backgroundWorker.CancellationPending)
                         {
                             stlStream.Close();
@@ -311,7 +312,6 @@ namespace MatterHackers.PolygonMesh.Processors
 
                     if (sender != null)
                     {
-                        BackgroundWorker backgroundWorker = (BackgroundWorker)sender;
                         if (backgroundWorker.CancellationPending)
                         {
                             stlStream.Close();
@@ -320,7 +320,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
                         if(backgroundWorker.WorkerReportsProgress && maxProgressReport.ElapsedMilliseconds > 200)
                         {
-                            backgroundWorker.ReportProgress(i * 100 / (int)numTriangles);
+                            backgroundWorker.ReportProgress(i * 91 / (int)numTriangles);
                             maxProgressReport.Restart();
                         }
                     }
@@ -337,7 +337,7 @@ namespace MatterHackers.PolygonMesh.Processors
             }
 
             // merge all the vetexes that are in the same place together
-            meshFromStlFile.CleanAndMergMesh();
+            meshFromStlFile.CleanAndMergMesh(backgroundWorker, 92, 100);
 
             doWorkEventArgs.Result = meshFromStlFile;
 

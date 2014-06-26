@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
@@ -110,11 +111,10 @@ namespace MatterHackers.PolygonMesh
             CleanAndMergMesh();
         }
 
-        public void CleanAndMergMesh()
+        public void CleanAndMergMesh(BackgroundWorker backgroundWorker = null, int startPercent = 0, int endPercent = 0)
         {
             SortVertices();
-            // this is not fast yet
-            MergeVertices();
+            MergeVertices(backgroundWorker, startPercent, endPercent);
             //MergeMeshEdges();
         }
 
@@ -375,9 +375,11 @@ namespace MatterHackers.PolygonMesh
             Vertices.Sort();
         }
 
-        public void MergeVertices(double maxDistanceToConsiderVertexAsSame = 0)
+        public void MergeVertices(BackgroundWorker backgroundWorker = null, int startPercent = 0, int endPercent = 0, double maxDistanceToConsiderVertexAsSame = 0)
         {
             HashSet<Vertex> markedForDeletion = new HashSet<Vertex>();
+            Stopwatch maxProgressReport = new Stopwatch();
+            maxProgressReport.Start();
 
             for (int i = 0; i < Vertices.Count; i++)
             {
@@ -394,6 +396,14 @@ namespace MatterHackers.PolygonMesh
                                 MergeVertices(vertexToCheck, vertexToDelete, false);
                                 markedForDeletion.Add(vertexToDelete);
                             }
+                        }
+                    }
+
+                    if (backgroundWorker != null)
+                    {
+                        if (backgroundWorker.WorkerReportsProgress && maxProgressReport.ElapsedMilliseconds > 200)
+                        {
+                            backgroundWorker.ReportProgress(startPercent + (endPercent - startPercent) * i / Vertices.Count);
                         }
                     }
                 }
