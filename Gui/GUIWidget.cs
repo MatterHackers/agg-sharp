@@ -713,8 +713,8 @@ namespace MatterHackers.Agg.UI
                         this.Parent.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Position));
 #if false
                         // and it also means the mouse moved realtive to this widget (so the parent and it's children)
-                        Vector2 parentMousePosition = new Vector2();
-                        if (Parent.GetMousePosition(ref parentMousePosition))
+                        Vector2 parentMousePosition;
+                        if (Parent.GetMousePosition(out parentMousePosition))
                         {
                             this.Parent.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, parentMousePosition.x, parentMousePosition.y, 0));
                         }
@@ -725,12 +725,13 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        public virtual bool GetMousePosition(ref Vector2 position)
+        public virtual bool GetMousePosition(out Vector2 position)
         {
+            position = new Vector2();
             if (Parent != null)
             {
-                Vector2 parentMousePosition = new Vector2();
-                if (Parent.GetMousePosition(ref parentMousePosition))
+                Vector2 parentMousePosition;
+                if (Parent.GetMousePosition(out parentMousePosition))
                 {
                     position = parentMousePosition;
                     ParentToChildTransform.transform(ref position.x, ref position.y);
@@ -830,8 +831,8 @@ namespace MatterHackers.Agg.UI
                     if (Parent != null)
                     {
                         // and it also means the mouse moved realtive to this widget (so the parent and it's children)
-                        Vector2 parentMousePosition = new Vector2();
-                        if (Parent.GetMousePosition(ref parentMousePosition))
+                        Vector2 parentMousePosition;
+                        if (Parent.GetMousePosition(out parentMousePosition))
                         {
                             this.Parent.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, parentMousePosition.x, parentMousePosition.y, 0));
                         }

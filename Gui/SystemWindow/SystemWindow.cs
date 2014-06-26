@@ -141,7 +141,7 @@ namespace MatterHackers.Agg.UI
             base.OnMouseUp(mouseEvent);
         }
 
-        public override bool GetMousePosition(ref Vector2 position)
+        public override bool GetMousePosition(out Vector2 position)
         {
             position = lastMousePosition;
             return true;
