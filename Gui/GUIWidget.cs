@@ -1198,6 +1198,10 @@ namespace MatterHackers.Agg.UI
             {
                 throw new IndexOutOfRangeException();
             }
+            if (Children.Contains(childToAdd))
+            {
+                throw new Exception("You cannot add the same child twice.");
+            }
             childToAdd.parent = this;
             Children.Insert(indexInChildrenList, childToAdd);
             OnChildAdded(new GuiWidgetEventArgs(childToAdd));
