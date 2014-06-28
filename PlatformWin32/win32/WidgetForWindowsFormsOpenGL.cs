@@ -34,22 +34,33 @@ namespace MatterHackers.Agg.UI
 {
     public class WidgetForWindowsFormsOpenGL : WidgetForWindowsFormsAbstract
     {
+        static int count;
+        int id;
         public WidgetForWindowsFormsOpenGL(SystemWindow childSystemWindow)
             : base(childSystemWindow)
         {
+            id = count++;
             WindowsFormsWindow = new WindowsFormsOpenGL(this, childSystemWindow);
+        }
+
+        public override string ToString()
+        {
+            return "{0}".FormatWith(id);
         }
 
         public override void OnBoundsChanged(EventArgs e)
         {
-            CheckGlControl();
             if (initHasBeenCalled)
             {
+                CheckGlControl();
                 SetAndClearViewPort();
+                base.OnBoundsChanged(e);
+                CheckGlControl();
             }
-
-            base.OnBoundsChanged(e);
-            CheckGlControl();
+            else
+            {
+                base.OnBoundsChanged(e);
+            }
         }
 
         bool viewPortHasBeenSet = false;
@@ -73,23 +84,28 @@ namespace MatterHackers.Agg.UI
             NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
         }
 
-        void CheckGlControl()
+        bool CheckGlControl()
         {
             if (firstGlControlSeen == null)
             {
                 firstGlControlSeen = MyGLControl.currentControl;
             }
 
-            if (firstGlControlSeen != MyGLControl.currentControl)
+            //if (firstGlControlSeen != MyGLControl.currentControl)
+                if (MyGLControl.currentControl.Id != this.id)
             {
-                throw new Exception("We have the wrong gl control realized.");
+                Debug.WriteLine("Is {0} Should be {1}".FormatWith(firstGlControlSeen.Id, MyGLControl.currentControl.Id));
+                //throw new Exception("We have the wrong gl control realized.");
+                return false;
             }
+
+            return true;
         }
 
         MyGLControl firstGlControlSeen = null;
         public override void OnDraw(Graphics2D graphics2D)
         {
-            CheckGlControl();
+            if(CheckGlControl())
             base.OnDraw(graphics2D);
             CheckGlControl();
         }
