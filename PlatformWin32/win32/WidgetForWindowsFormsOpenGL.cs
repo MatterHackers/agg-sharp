@@ -42,12 +42,14 @@ namespace MatterHackers.Agg.UI
 
         public override void OnBoundsChanged(EventArgs e)
         {
+            CheckGlControl();
             if (initHasBeenCalled)
             {
                 SetAndClearViewPort();
             }
 
             base.OnBoundsChanged(e);
+            CheckGlControl();
         }
 
         bool viewPortHasBeenSet = false;
@@ -69,6 +71,27 @@ namespace MatterHackers.Agg.UI
             GL.Scissor(0, 0, WindowsFormsWindow.ClientSize.Width, WindowsFormsWindow.ClientSize.Height);
 
             NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
+        }
+
+        void CheckGlControl()
+        {
+            if (firstGlControlSeen == null)
+            {
+                firstGlControlSeen = MyGLControl.currentControl;
+            }
+
+            if (firstGlControlSeen != MyGLControl.currentControl)
+            {
+                throw new Exception("We have the wrong gl control realized.");
+            }
+        }
+
+        MyGLControl firstGlControlSeen = null;
+        public override void OnDraw(Graphics2D graphics2D)
+        {
+            CheckGlControl();
+            base.OnDraw(graphics2D);
+            CheckGlControl();
         }
 
         public override Graphics2D NewGraphics2D()

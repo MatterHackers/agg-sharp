@@ -32,10 +32,22 @@ namespace MatterHackers.Agg.UI
 {
     public class MyGLControl : GLControl
     {
+        internal static MyGLControl currentControl;
+
+        static int nextId;
+        public int Id;
+
         // If you have an error here it is likely that you need to bulid your project with Platform Target x86.
         public MyGLControl(int bitDepth, int setencilDepth)
             : base(new GraphicsMode())
         {
+            Id = nextId++;
+        }
+
+        internal void MakeCurrent()
+        {
+            currentControl = this;
+            base.MakeCurrent();
         }
 
         protected override bool ProcessDialogKey(System.Windows.Forms.Keys keyData)
@@ -47,6 +59,11 @@ namespace MatterHackers.Agg.UI
         {
             Parent.Invalidate();
             base.OnPaint(e);
+        }
+
+        public override string ToString()
+        {
+            return "{0}".FormatWith(Id);
         }
     }
 
