@@ -239,8 +239,6 @@ namespace MatterHackers.Agg.UI
             {
                 tabPageWidget.Visible = false;
             }
-
-            tabPageWidget.OnTabIndexChanged();
         }
     }
 }

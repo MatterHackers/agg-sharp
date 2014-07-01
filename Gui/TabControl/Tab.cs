@@ -105,6 +105,30 @@ namespace MatterHackers.Agg.UI
             SetBoundsToEncloseChildren();
         }
 
+        public override void OnParentChanged(EventArgs e)
+        {
+            TabBarContaningTab.TabIndexChanged += SelectionChanged;
+            base.OnParentChanged(e);
+        }
+
+        public void SelectionChanged(object sender, EventArgs e)
+        {
+            bool selected = TabPageControlledByTab == TabBarContaningTab.GetActivePage();
+
+            if (selected)
+            {
+                normalWidget.Visible = false;
+                hoverWidget.Visible = false;
+                selectedWidget.Visible = true;
+            }
+            else
+            {
+                normalWidget.Visible = true;
+                hoverWidget.Visible = false;
+                selectedWidget.Visible = false;
+            }
+        }
+
         public TabBar TabBarContaningTab
         {
             get { return (TabBar)Parent; }
@@ -133,94 +157,6 @@ namespace MatterHackers.Agg.UI
             {
                 throw new Exception("You are probably looking for the Name not the text of a tab.");
             }
-        }
-
-        public override void OnDraw(Graphics2D graphics2D)
-        {
-            bool selected = TabPageControlledByTab == TabBarContaningTab.GetActivePage();
-
-#if true
-            if (selected)
-            {
-                normalWidget.Visible = false;
-                hoverWidget.Visible = false;
-                selectedWidget.Visible = true;
-            }
-            else
-            {
-                normalWidget.Visible = true;
-                hoverWidget.Visible = false;
-                selectedWidget.Visible = false;
-            }
-
-            base.OnDraw(graphics2D);
-#else
-            switch (TabBarContaningTab.FlowDirection)
-            {
-                case UI.FlowDirection.LeftToRight:
-                    if (selected)
-                    {
-                        graphics2D.Clear(RGBA_Bytes.White);
-                        tabTitle.OriginRelativeParent = tabTitle.OriginRelativeParent + new Vector2(0, 1);
-                        RectangleDouble screenIntBounds = LocalBounds;
-                        screenIntBounds.Bottom -= 2;
-                        RoundedRect rect = new RoundedRect(screenIntBounds, 3);
-                        rect.radius(0, 0, 3, 3);
-                        graphics2D.Render(new Stroke(rect, 1), RGBA_Bytes.Black);
-                    }
-                    else
-                    {
-                        graphics2D.Clear(backgroundColor);
-                        RectangleDouble screenIntBounds = LocalBounds;
-                        screenIntBounds.Top -= 2;
-                        RoundedRect rect = new RoundedRect(screenIntBounds, 3);
-                        rect.radius(0, 0, 3, 3);
-                        graphics2D.Render(new Stroke(rect, 1), RGBA_Bytes.Black);
-                    }
-                    break;
-
-                case UI.FlowDirection.TopToBottom:
-                    if (selected)
-                    {
-                        graphics2D.Clear(RGBA_Bytes.White);
-                        tabTitle.OriginRelativeParent = tabTitle.OriginRelativeParent + new Vector2(-1, 0);
-                        RectangleDouble screenIntBounds = LocalBounds;
-                        screenIntBounds.Right += 2;
-                        RoundedRect rect = new RoundedRect(screenIntBounds, 3);
-                        rect.radius(3, 0, 3, 0);
-                        graphics2D.Render(new Stroke(rect, 1), RGBA_Bytes.Black);
-                    }
-                    else
-                    {
-                        graphics2D.Clear(backgroundColor);
-                        RectangleDouble screenIntBounds = LocalBounds;
-                        screenIntBounds.Left += 2;
-                        RoundedRect rect = new RoundedRect(screenIntBounds, 3);
-                        rect.radius(3, 0, 0, 3);
-                        graphics2D.Render(new Stroke(rect, 1), RGBA_Bytes.Black);
-                    }
-                    break;
-
-                default:
-                    throw new NotImplementedException();
-            }
-
-            base.OnDraw(graphics2D);
-
-            if (selected)
-            {
-                switch (TabBarContaningTab.FlowDirection)
-                {
-                    case UI.FlowDirection.LeftToRight:
-                        tabTitle.OriginRelativeParent = tabTitle.OriginRelativeParent + new Vector2(0, -1);
-                        break;
-
-                    case UI.FlowDirection.TopToBottom:
-                        tabTitle.OriginRelativeParent = tabTitle.OriginRelativeParent + new Vector2(1, 0);
-                        break;
-                }
-            }
-#endif
         }
     }
 }

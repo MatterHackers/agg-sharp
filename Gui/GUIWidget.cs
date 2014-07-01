@@ -1202,6 +1202,10 @@ namespace MatterHackers.Agg.UI
             {
                 throw new Exception("You cannot add the same child twice.");
             }
+            if (childToAdd.Parent != null)
+            {
+                throw new Exception("This is alread the child of another widget.");
+            }
             childToAdd.parent = this;
             Children.Insert(indexInChildrenList, childToAdd);
             OnChildAdded(new GuiWidgetEventArgs(childToAdd));

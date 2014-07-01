@@ -35,9 +35,6 @@ namespace MatterHackers.Agg.UI
 {
     public class TabPage : GuiWidget
     {
-        public delegate void TabIndexChangedEventHandler(object sender, EventArgs e);
-        public event TabIndexChangedEventHandler TabIndexChanged;
-
         public TabPage(String tabTitle)
         {
             AnchorAll();
@@ -49,14 +46,6 @@ namespace MatterHackers.Agg.UI
         {
             widgetToAddToPage.AnchorAll();
             AddChild(widgetToAddToPage);
-        }
-
-        public virtual void OnTabIndexChanged()
-        {
-            if (TabIndexChanged != null)
-            {
-                TabIndexChanged(this, null);
-            }
         }
     }
 }

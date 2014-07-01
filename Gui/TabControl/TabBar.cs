@@ -107,15 +107,6 @@ namespace MatterHackers.Agg.UI
             {
                 TabIndexChanged(this, null);
             }
-
-            foreach (GuiWidget child in tabPageArea.Children)
-            {
-                TabPage tabPage = child as TabPage;
-                if (tabPage != null)
-                {
-                    tabPage.OnTabIndexChanged();
-                }
-            }
         }
 
         public int SelectedTabIndex
@@ -210,11 +201,14 @@ namespace MatterHackers.Agg.UI
 
         void SwitchToTab(object tabMouseDownOn, MouseEventArgs mouseEvent)
         {
-            Tab clickedTab = (Tab)tabMouseDownOn;
-            if (clickedTab != null)
-            {
-                SelectTab(clickedTab);
-            }
+            UiThread.RunOnIdle((satet) =>
+                {
+                    Tab clickedTab = (Tab)tabMouseDownOn;
+                    if (clickedTab != null)
+                    {
+                        SelectTab(clickedTab);
+                    }
+                });
         }
 
         public void SelectTab(Tab tabToSwitchTo)
@@ -223,7 +217,14 @@ namespace MatterHackers.Agg.UI
             {
                 foreach (GuiWidget tabPage in tabPageArea.Children)
                 {
-                    tabPage.Visible = false;
+                    if (tabToSwitchTo.TabPageControlledByTab != tabPage)
+                    {
+                        tabPage.Visible = false;
+                    }
+                    else
+                    {
+                        tabPage.Visible = true;
+                    }
                 }
 
                 tabToSwitchTo.TabPageControlledByTab.Visible = true;
