@@ -101,11 +101,12 @@ namespace MatterHackers.Agg.UI.Tests
             // click off menu to close
             container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 5, 299, 0));
             UiThread.DoRunAllPending();
+            Assert.IsTrue(!listMenu.IsOpen);
             container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 5, 299, 0));
             UiThread.DoRunAllPending();
             Assert.IsTrue(!listMenu.IsOpen);
 
-            // open the menu
+            // open the menu again
             container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
             UiThread.DoRunAllPending();
             Assert.IsTrue(!listMenu.IsOpen);
