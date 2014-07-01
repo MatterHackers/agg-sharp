@@ -1262,6 +1262,15 @@ namespace MatterHackers.Agg.UI
             }
         }
 
+        public void CloseAllChildren()
+        {
+            for (int i = Children.Count - 1; i >= 0; i--)
+            {
+                Children[i].Close();
+                RemoveChild(Children[i]);
+            }
+        }
+
         public void RemoveAllChildren()
         {
             for (int i = Children.Count - 1; i >= 0; i--)
