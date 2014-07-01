@@ -78,6 +78,8 @@ namespace MatterHackers.Agg.UI
         ImageBuffer backBuffer;
 
         bool debugShowBounds = false;
+        bool widgetHasBeenClosed = false;
+        protected bool WidgetHasBeenClosed { get { return widgetHasBeenClosed; } }
         public bool DebugShowBounds 
         {
             get
@@ -1207,6 +1209,7 @@ namespace MatterHackers.Agg.UI
                 throw new Exception("This is alread the child of another widget.");
             }
             childToAdd.parent = this;
+            childToAdd.widgetHasBeenClosed = false;
             Children.Insert(indexInChildrenList, childToAdd);
             OnChildAdded(new GuiWidgetEventArgs(childToAdd));
             childToAdd.OnParentChanged(null);
@@ -1279,11 +1282,9 @@ namespace MatterHackers.Agg.UI
                 throw new InvalidOperationException("You can only remove children that this control has.");
             }
             childToRemove.ClearCapturedState();
-            childToRemove.Close();
             childToRemove.parent = null;
             Children.Remove(childToRemove);
             OnChildRemoved(new GuiWidgetEventArgs(childToRemove));
-            childToRemove.OnParentChanged(null);
             OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.RemoveChild));
             Invalidate();
         }
@@ -1787,8 +1788,6 @@ namespace MatterHackers.Agg.UI
         /// <summary>
         /// Request a close
         /// </summary>
-        bool widgetHasBeenClosed = false;
-        protected bool WidgetHasBeenClosed { get { return widgetHasBeenClosed; } }
         public void Close()
         {
             if (childrenLockedInMouseUpCount != 0)
@@ -1805,6 +1804,7 @@ namespace MatterHackers.Agg.UI
                 }
 
                 OnClosed(null);
+                parent = null;
             }
         }
 

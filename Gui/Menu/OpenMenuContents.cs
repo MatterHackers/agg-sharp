@@ -20,8 +20,12 @@ namespace MatterHackers.Agg.UI
         Vector2 openOffset;
         ScrollableWidget scrollingWindow;
 
+        List<MenuItem> MenuItems;
+
         internal OpenMenuContents(ObservableCollection<MenuItem> MenuItems, GuiWidget widgetRelativeTo, Vector2 openOffset, Direction direction, RGBA_Bytes backgroundColor, RGBA_Bytes borderColor, int borderWidth, double maxHeight, bool alignToRightEdge)
         {
+            this.MenuItems = new List<MenuItem>();
+            this.MenuItems.AddRange(MenuItems);
             this.alignToRightEdge = alignToRightEdge;
             this.openOffset = openOffset;
             this.borderWidth = borderWidth;
@@ -146,7 +150,13 @@ namespace MatterHackers.Agg.UI
         {
             if (this.Parent != null)
             {
+                foreach (MenuItem item in MenuItems)
+                {
+                    item.Parent.RemoveChild(item);
+                }
+
                 this.Parent.RemoveChild(this);
+                this.Close();
             }
         }
 
