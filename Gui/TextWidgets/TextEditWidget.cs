@@ -66,6 +66,18 @@ namespace MatterHackers.Agg.UI
             }
         }
 
+        public override int TabIndex
+        {
+            get
+            {
+                return base.TabIndex;
+            }
+            set
+            {
+                internalTextEditWidget.TabIndex = value;
+            }
+        }
+
         public RGBA_Bytes CursorColor
         {
             get

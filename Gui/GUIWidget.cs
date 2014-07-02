@@ -150,7 +150,7 @@ namespace MatterHackers.Agg.UI
         private MouseCapturedState mouseCapturedState;
 
         public bool TabStop { get; set; }
-        public int TabIndex { get; set; }
+        public virtual int TabIndex { get; set; }
 
         RGBA_Bytes backgroundColor = new RGBA_Bytes();
         public RGBA_Bytes BackgroundColor 
