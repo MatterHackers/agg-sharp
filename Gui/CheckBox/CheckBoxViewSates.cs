@@ -121,6 +121,11 @@ namespace MatterHackers.Agg.UI
         public void PostUpdateSetCorrectVisibilityStates(object state)
         {
             CheckBox checkBox = (CheckBox)Parent;
+            if (checkBox == null)
+            {
+                // this can happen if the check box is closing.
+                return;
+            }
 
             // the check
             if (!checkBox.Enabled)
