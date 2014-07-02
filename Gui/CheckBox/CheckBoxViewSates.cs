@@ -82,6 +82,19 @@ namespace MatterHackers.Agg.UI
             base.OnParentChanged(e);
         }
 
+        public override void OnClosing(out bool cancelClose)
+        {
+
+            CheckBox parentButton = (CheckBox)Parent;
+
+            parentButton.MouseEnter -= SetCorrectVisibilityStates;
+            parentButton.MouseDown -= SetCorrectVisibilityStates;
+            parentButton.MouseUp -= SetCorrectVisibilityStates;
+            parentButton.MouseLeave -= SetCorrectVisibilityStates;
+            parentButton.CheckedStateChanged += SetCorrectVisibilityStates;
+            base.OnClosing(out cancelClose);
+        }        
+
         public override double Width
         {
             get

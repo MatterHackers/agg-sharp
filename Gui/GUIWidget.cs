@@ -139,7 +139,6 @@ namespace MatterHackers.Agg.UI
         private bool visible = true;
         private bool enabled = true;
 
-        private GuiWidget parent = null;
         bool selectable = true;
         public bool Selectable 
         {
@@ -1134,11 +1133,27 @@ namespace MatterHackers.Agg.UI
             }
         }
 
+        private GuiWidget parentBackingStore = null;
+        private GuiWidget parent
+        {
+            set
+            {
+                if (value == null && parentBackingStore != null)
+                {
+                    if (parentBackingStore.Children.Contains(this))
+                    {
+                        throw new Exception("Take this out of the parent before setting this to null.");
+                    }
+                }
+                parentBackingStore = value;
+            }
+        }
+
         public GuiWidget Parent
         {
             get
             {
-                return parent;
+                return parentBackingStore;
             }
         }
 
@@ -1267,7 +1282,6 @@ namespace MatterHackers.Agg.UI
             for (int i = Children.Count - 1; i >= 0; i--)
             {
                 Children[i].Close();
-                RemoveChild(Children[i]);
             }
         }
 
@@ -1291,8 +1305,8 @@ namespace MatterHackers.Agg.UI
                 throw new InvalidOperationException("You can only remove children that this control has.");
             }
             childToRemove.ClearCapturedState();
-            childToRemove.parent = null;
             Children.Remove(childToRemove);
+            childToRemove.parent = null;
             OnChildRemoved(new GuiWidgetEventArgs(childToRemove));
             OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.RemoveChild));
             Invalidate();
@@ -1313,10 +1327,10 @@ namespace MatterHackers.Agg.UI
                 return BackBuffer.NewGraphics2D();
             }
 
-            if (parent != null)
+            if (Parent != null)
             {
                 // call recursively to get the first parent that can return a Graphics2D
-                Graphics2D parentGraphics2D = parent.NewGraphics2D();
+                Graphics2D parentGraphics2D = Parent.NewGraphics2D();
                 if (parentGraphics2D != null)
                 {
                     Affine parentToLocalTransform = parentGraphics2D.GetTransform();
@@ -1807,13 +1821,21 @@ namespace MatterHackers.Agg.UI
             if (!widgetHasBeenClosed)
             {
                 widgetHasBeenClosed = true;
-                foreach (GuiWidget child in Children)
+                for(int i=Children.Count-1; i>=0; i--)
                 {
+                    GuiWidget child = Children[i];
+                    Children.RemoveAt(i);
+                    child.parent = null;
                     child.Close();
                 }
 
                 OnClosed(null);
-                parent = null;
+                if (Parent != null)
+                {
+                    // This code will only execute if this is the actual widget we called close on (not a chiled of the widget we called close on).
+                    Parent.RemoveChild(this);
+                    parent = null;
+                }
             }
         }
 

@@ -57,6 +57,11 @@ namespace MatterHackers.Agg.UI
 
         protected virtual void ApplyVAnchorToChild(GuiWidget parent, GuiWidget child)
         {
+            if (child.Parent != parent)
+            {
+                throw new Exception("All children should have their parent set the the parent they have.");
+            }
+
             Vector2 newOriginRelParent;
             double newHeight;
             if (GetOriginAndHeightForChild(parent, child, out newOriginRelParent, out newHeight))
@@ -160,6 +165,11 @@ namespace MatterHackers.Agg.UI
 
         protected virtual void ApplyHAnchorToChild(GuiWidget parent, GuiWidget child)
         {
+            if (child.Parent != parent)
+            {
+                throw new Exception("All children should have their parent set the the parent they have.");
+            }
+
             Vector2 newOriginRelParent;
             double newWidth;
             if (GetOriginAndWidthForChild(parent, child, out newOriginRelParent, out newWidth))

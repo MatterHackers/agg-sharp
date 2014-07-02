@@ -121,6 +121,7 @@ namespace MatterHackers.Agg.UI
             : base(width, height)
         {
             scrollArea = new ScrollingArea(this);
+            scrollArea.Closed += scrollArea_Closed;
             scrollArea.HAnchor = UI.HAnchor.FitToChildren;
             AutoScroll = autoScroll;
             ScrollArea.BoundsChanged += new EventHandler(ScrollArea_BoundsChanged);
@@ -140,6 +141,12 @@ namespace MatterHackers.Agg.UI
             scrollAreaAndScrollBarRisizer.AddChild(verticalScrollBar);
             base.AddChild(scrollAreaAndScrollBarRisizer);
 #endif
+        }
+
+        void scrollArea_Closed(object sender, EventArgs e)
+        {
+            scrollArea.Closed -= scrollArea_Closed;
+            scrollArea = null;
         }
 
         void ScrollArea_BoundsChanged(object sender, EventArgs e)
