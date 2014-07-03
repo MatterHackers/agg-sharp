@@ -72,36 +72,51 @@ namespace MatterHackers.Agg.Font
 
         public override string[] WrapSingleLineOnWidth(string originalTextToWrap, double maxPixelWidth)
         {
-            string textToWrap = originalTextToWrap;
             List<string> lines = new List<string>();
-            while (textToWrap.Length > 0)
+
+            if (maxPixelWidth > 0)
             {
-                TypeFacePrinter printer = new TypeFacePrinter(textToWrap);
-                int remainingLength = textToWrap.Length;
-                while (printer.GetSize().x > maxPixelWidth)
+                string textToWrap = originalTextToWrap;
+                while (textToWrap.Length > 0)
                 {
-                    remainingLength--;
-                    while (textToWrap.Substring(0, remainingLength).Contains(" ") && remainingLength > 1 && textToWrap[remainingLength] != ' ')
+                    TypeFacePrinter printer = new TypeFacePrinter(textToWrap);
+                    int remainingLength = textToWrap.Length;
+                    while (printer.GetSize().x > maxPixelWidth)
                     {
                         remainingLength--;
+                        while (remainingLength > 1
+                            && textToWrap.Substring(0, remainingLength).Contains(" ")
+                            && textToWrap[remainingLength] != ' ')
+                        {
+                            remainingLength--;
+                        }
+
+                        printer.Text = textToWrap.Substring(0, remainingLength);
                     }
-                    printer.Text = textToWrap.Substring(0, remainingLength);
-                }
 
-                lines.Add(textToWrap.Substring(0, remainingLength));
+                    if (remainingLength >= 0)
+                    {
+                        lines.Add(textToWrap.Substring(0, remainingLength));
+                    }
 
-                // check if we wrapped because of to long or a '\n'. If '\n' we only trim a leading space if to long.
-                if (remainingLength > 1 // we have more than 2 charecters left
-                    && textToWrap.Length > remainingLength // we are longer than the remaining text
-                    && textToWrap[remainingLength] == ' ' // the first new character is a space
-                    && textToWrap[remainingLength - 1] != '\n') // the character before the space was not a cr (wrapped because of length)
-                {
-                    textToWrap = textToWrap.Substring(remainingLength + 1);
+
+                    // check if we wrapped because of to long or a '\n'. If '\n' we only trim a leading space if to long.
+                    if (remainingLength > 1 // we have more than 2 charecters left
+                        && textToWrap.Length > remainingLength // we are longer than the remaining text
+                        && textToWrap[remainingLength] == ' ' // the first new character is a space
+                        && textToWrap[remainingLength - 1] != '\n') // the character before the space was not a cr (wrapped because of length)
+                    {
+                        textToWrap = textToWrap.Substring(remainingLength + 1);
+                    }
+                    else
+                    {
+                        textToWrap = textToWrap.Substring(remainingLength);
+                    }
                 }
-                else
-                {
-                    textToWrap = textToWrap.Substring(remainingLength);
-                }
+            }
+            else
+            {
+                lines.Add(originalTextToWrap);
             }
 
             return lines.ToArray();
