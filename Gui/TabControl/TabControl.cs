@@ -233,7 +233,7 @@ namespace MatterHackers.Agg.UI
 
             if (tabBar.TabPageArea.Children.Count == 1)
             {
-                tabBar.currentVisibleTab = newTab;
+                tabBar.SelectTab(newTab);
             }
             else
             {
