@@ -144,7 +144,7 @@ namespace MatterHackers.Agg
             "Other",
             "A Simple Ray Tracer test",
             "A sample application to show the current capabilities of the RayTracer.",
-            150,
+            300,
             100);
 
             return appWidgetInfo;

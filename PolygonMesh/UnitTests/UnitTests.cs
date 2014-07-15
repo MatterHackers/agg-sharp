@@ -209,10 +209,10 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
                 Face top = testMesh.CreateFace(new Vertex[] { leftVertexTop, centerVertexMiddle2, rightVertexTop });
 
-                //MeshEdge meshEdgeBottomRightCenter = testMesh.FindMeshEdge(leftVertexBottom, centerVertexMiddle1);
-                //MeshEdge meshEdgeTopLeftCenter = testMesh.FindMeshEdge(leftVertexTop, centerVertexMiddle2);
-                //Assert.IsTrue(meshEdgeBottomRightCenter.VertexOnEnd[0] == centerVertexMiddle1);
-                //Assert.IsTrue(meshEdgeTopLeftCenter.VertexOnEnd[1] == centerVertexMiddle2);
+                MeshEdge meshEdgeBottomRightCenter = testMesh.FindMeshEdges(leftVertexBottom, centerVertexMiddle1)[0];
+                MeshEdge meshEdgeTopLeftCenter = testMesh.FindMeshEdges(leftVertexTop, centerVertexMiddle2)[0];
+                Assert.IsTrue(meshEdgeBottomRightCenter.VertexOnEnd[0] == centerVertexMiddle1);
+                Assert.IsTrue(meshEdgeTopLeftCenter.VertexOnEnd[1] == centerVertexMiddle2);
 
                 SaveDebugInfo(testMesh);
 
