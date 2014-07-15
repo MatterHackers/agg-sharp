@@ -440,7 +440,7 @@ namespace MatterHackers.Agg.Image
             }
         }
 
-        public void InvertYLookupTabel()
+        public void InvertYLookupTable()
         {
             strideInBytes *= -1;
             bufferFirstPixel = bufferOffset;
