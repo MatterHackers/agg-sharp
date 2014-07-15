@@ -40,7 +40,7 @@ using MatterHackers.Agg.UI;
 
 #if USE_GLES
 using OpenTK.Graphics.ES11;
-#else
+#elif USE_OPENGL
 using OpenTK.Graphics.OpenGL;
 #endif
 
@@ -654,10 +654,11 @@ namespace MatterHackers.GCodeVisualizer
 
                     lastRenderType = renderType;
                 }
-
+				#if USE_OPENGL
                 GL.DisableClientState(ArrayCap.TextureCoordArray);
                 GL.PushAttrib(AttribMask.EnableBit);
                 GL.Enable(EnableCap.PolygonSmooth);
+				#endif
 
                 //GL.InterleavedArrays(InterleavedArrayFormat.C4fN3fV3f, 0, colorVertexData.Array);
 
@@ -698,8 +699,9 @@ namespace MatterHackers.GCodeVisualizer
                         vertexBuffer.renderRange(featureStartIndex[layerIndex][startFeature], ellementCount);
                     }
                 }
-
+				#if USE_OPENGL
                 GL.PopAttrib();
+				#endif
             }
         }
     }
@@ -708,13 +710,17 @@ namespace MatterHackers.GCodeVisualizer
     {
         public int myVertexId;
         public int myIndexId;
+		#if USE_OPENGL
         public BeginMode myMode = BeginMode.Triangles;
+		#endif
         public uint myVertexLength;
         public uint myIndexLength;
         public VertexBuffer()
         {
-            GL.GenBuffers(1, out myVertexId);
+			#if USE_OPENGL
+			GL.GenBuffers(1, out myVertexId);
             GL.GenBuffers(1, out myIndexId);
+			#endif
         }
 
         ~VertexBuffer()
@@ -725,8 +731,10 @@ namespace MatterHackers.GCodeVisualizer
                 int holdIndexId = myIndexId;
                 UiThread.RunOnIdle( (state) => 
                 {
-                    GL.DeleteBuffers(1, ref holdVertexId);
+						#if USE_OPENGL
+						GL.DeleteBuffers(1, ref holdVertexId);
                     GL.DeleteBuffers(1, ref holdIndexId);
+						#endif
                 } );
             }
         }
@@ -738,10 +746,12 @@ namespace MatterHackers.GCodeVisualizer
 
         public void SetVertexData(ColorVertexData[] data, uint count)
         {
-            myVertexLength = count;
+			#if USE_OPENGL
+			myVertexLength = count;
             GL.BindBuffer(BufferTarget.ArrayBuffer, myVertexId);
             GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(data.Length * ColorVertexData.Stride), data, BufferUsageHint.StaticDraw);
-        }
+			#endif
+		}
 
         public void SetIndexData(uint[] data)
         {
@@ -750,14 +760,18 @@ namespace MatterHackers.GCodeVisualizer
 
         public void SetIndexData(uint[] data, uint count)
         {
-            myIndexLength = count;
+			#if USE_OPENGL
+			myIndexLength = count;
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, myIndexId);
             GL.BufferData(BufferTarget.ElementArrayBuffer, new IntPtr(data.Length * sizeof(uint)), data, BufferUsageHint.DynamicDraw);
-        }
+			#endif
+			}
         
         public void renderRange(int offset, int count)
         {
-            GL.EnableClientState(ArrayCap.ColorArray);
+			#if USE_OPENGL
+
+			GL.EnableClientState(ArrayCap.ColorArray);
             GL.EnableClientState(ArrayCap.NormalArray);
             GL.EnableClientState(ArrayCap.VertexArray);
 
@@ -778,6 +792,8 @@ namespace MatterHackers.GCodeVisualizer
             GL.DisableClientState(ArrayCap.VertexArray);
             GL.DisableClientState(ArrayCap.NormalArray);
             GL.DisableClientState(ArrayCap.ColorArray);
+
+			#endif
         }
     }
 }
