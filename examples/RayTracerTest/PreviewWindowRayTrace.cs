@@ -95,8 +95,8 @@ namespace MatterHackers.RayTracer
 
         ImageBuffer destImage;
         //RayTracer raytracer = new RayTracer(AntiAliasing.None, true, true, true, true, true);
-        RayTracer raytracer = new RayTracer(AntiAliasing.Low, true, true, true, true, true);
-        //RayTracer raytracer = new RayTracer(AntiAliasing.Medium, true, true, true, true, true);
+        //RayTracer raytracer = new RayTracer(AntiAliasing.Low, true, true, true, true, true);
+        RayTracer raytracer = new RayTracer(AntiAliasing.Medium, true, true, true, true, true);
         private Vector2 lastMouseMovePoint;
         IRayTraceable focusedObject = null;
         Stopwatch renderTime = new Stopwatch();
@@ -152,10 +152,8 @@ namespace MatterHackers.RayTracer
 
             //rect_i rect = new rect_i(0, 0, (int)32, (int)32);
 
-            Graphics2D graphics2D = destImage.NewGraphics2D();
-
             renderTime.Restart();
-            raytracer.RayTraceScene(graphics2D, rect, scene);
+            raytracer.RayTraceScene(destImage, rect, scene);
             //raytracer.AntiAliasScene(graphics2D, rect, scene, raytracer.RayTraceColorBuffer, 13);
             renderTime.Stop();
 

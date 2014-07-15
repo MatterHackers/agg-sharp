@@ -100,7 +100,7 @@ namespace MatterHackers.RayTracer
         }
 
         public bool traceWithRayBundles = false;
-        public void RayTraceScene(Graphics2D graphics2D, RectangleInt viewport, Scene scene)
+        public void RayTraceScene(ImageBuffer destImage, RectangleInt viewport, Scene scene)
         {
             int maxsamples = (int)AntiAliasing;
 
@@ -114,8 +114,6 @@ namespace MatterHackers.RayTracer
                     imageBufferAsDoubles[i] = new RGBA_Floats[viewport.Height];
                 }
             }
-
-            IImageByte destImage = (IImageByte)graphics2D.DestImage;
 
             if (destImage.BitDepth != 32)
             {
@@ -162,12 +160,15 @@ namespace MatterHackers.RayTracer
                             {
                                 imageBufferAsDoubles[x + rayX][y + rayY] = intersectionsForBundle[rayX + rayY * width].totalColor;
 
-                                // we don't need to set this if we are anti-aliased
-                                int totalOffset = bufferOffset + (x + rayX) * 4;
-                                destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x + rayX][y + rayY].Blue0To255;
-                                destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x + rayX][y + rayY].Green0To255;
-                                destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x + rayX][y + rayY].Red0To255;
-                                destBuffer[totalOffset] = 255;
+                                if (AntiAliasing == AntiAliasing.None)
+                                {
+                                    // we don't need to set this if we are anti-aliased
+                                    int totalOffset = bufferOffset + (x + rayX) * 4;
+                                    destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x + rayX][y + rayY].Blue0To255;
+                                    destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x + rayX][y + rayY].Green0To255;
+                                    destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x + rayX][y + rayY].Red0To255;
+                                    destBuffer[totalOffset] = 255;
+                                }
                             }
                         }
                         x += width - 1; // skip all the pixels we bundled
@@ -195,16 +196,14 @@ namespace MatterHackers.RayTracer
 #endif
             if (AntiAliasing != AntiAliasing.None)
             {
-                AntiAliasScene(graphics2D, viewport, scene, imageBufferAsDoubles, (int)AntiAliasing);
+                AntiAliasScene(destImage, viewport, scene, imageBufferAsDoubles, (int)AntiAliasing);
             }
 
             destImage.MarkImageChanged();
         }
 
-        public void AntiAliasScene(Graphics2D graphics2D, RectangleInt viewport, Scene scene, RGBA_Floats[][] buffer, int maxSamples)
+        public void AntiAliasScene(ImageBuffer destImage, RectangleInt viewport, Scene scene, RGBA_Floats[][] imageBufferAsDoubles, int maxSamples)
         {
-            IImageByte destImage = (IImageByte)graphics2D.DestImage;
-
             if (destImage.BitDepth != 32)
             {
                 throw new Exception("We can only render to 32 bit dest at the moment.");
@@ -227,16 +226,16 @@ namespace MatterHackers.RayTracer
 
                 for (int x = 1; x < viewport.Width - 1; x++)
                 {
-                    RGBA_Floats avg = (buffer[x - 1][y - 1] + buffer[x][y - 1] + buffer[x + 1][y - 1] +
-                                 buffer[x - 1][y] + buffer[x][y] + buffer[x + 1][y] +
-                                 buffer[x - 1][y + 1] + buffer[x][y + 1] + buffer[x + 1][y + 1]) / 9;
+                    RGBA_Floats avg = (imageBufferAsDoubles[x - 1][y - 1] + imageBufferAsDoubles[x][y - 1] + imageBufferAsDoubles[x + 1][y - 1] +
+                                 imageBufferAsDoubles[x - 1][y] + imageBufferAsDoubles[x][y] + imageBufferAsDoubles[x + 1][y] +
+                                 imageBufferAsDoubles[x - 1][y + 1] + imageBufferAsDoubles[x][y + 1] + imageBufferAsDoubles[x + 1][y + 1]) / 9;
 
                     // use a more accurate antialasing method (MonteCarlo implementation)
                     // this will fire multiple rays per pixel
                     double sumOfDifferencesThreshold = .05; // TODO: figure out a good way to determin this.
-                    if (avg.SumOfDistances(buffer[x][y]) > sumOfDifferencesThreshold)
+                    if (avg.SumOfDistances(imageBufferAsDoubles[x][y]) > sumOfDifferencesThreshold)
                     {
-                        RGBA_Floats accumulatedColor = buffer[x][y];
+                        RGBA_Floats accumulatedColor = imageBufferAsDoubles[x][y];
                         for (int i = 0; i < maxSamples; i++)
                         {
                             // get some 'random' samples
@@ -249,15 +248,15 @@ namespace MatterHackers.RayTracer
                             Ray ray = scene.camera.GetRay(xp, yp);
                             accumulatedColor += FullyTraceRay(ray, scene);
                         }
-                        buffer[x][y] = accumulatedColor / (maxSamples + 1);
+                        imageBufferAsDoubles[x][y] = accumulatedColor / (maxSamples + 1);
 
                         // this is the slow part of the painting algorithm, it can be greatly speed up
                         // by directly accessing the bitmap data
                         int fillX = viewport.Left + x;
                         int totalOffset = bufferOffset + fillX * 4;
-                        destBuffer[totalOffset++] = (byte)buffer[x][y].Blue0To255;
-                        destBuffer[totalOffset++] = (byte)buffer[x][y].Green0To255;
-                        destBuffer[totalOffset++] = (byte)buffer[x][y].Red0To255;
+                        destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x][y].Blue0To255;
+                        destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x][y].Green0To255;
+                        destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x][y].Red0To255;
                         destBuffer[totalOffset] = 255;
                     }
                 }
