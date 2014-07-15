@@ -38,7 +38,11 @@ using MatterHackers.Agg.VertexSource;
 using MatterHackers.Agg.UI;
 using MatterHackers.VectorMath;
 
+#if USE_GLES
+using OpenTK.Graphics.ES11;
+#else
 using OpenTK.Graphics.OpenGL;
+#endif
 
 namespace MatterHackers.Agg.OpenGlGui
 {

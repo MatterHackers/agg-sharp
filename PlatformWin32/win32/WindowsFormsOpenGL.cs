@@ -26,7 +26,12 @@ using System.IO;
 
 using OpenTK;
 using OpenTK.Graphics;
+
+#if USE_GLES
+using OpenTK.Graphics.ES11;
+#else
 using OpenTK.Graphics.OpenGL;
+#endif
 
 namespace MatterHackers.Agg.UI
 {
@@ -105,7 +110,11 @@ namespace MatterHackers.Agg.UI
             glControl.MakeCurrent();
             int w = glControl.Width;
             int h = glControl.Height;
+#if USE_GLES
+            GL.MatrixMode(All.Projection);
+#else
             GL.MatrixMode(MatrixMode.Projection);
+#endif
             GL.LoadIdentity();
             GL.Ortho(0, w, 0, h, -1, 1); // Bottom-left corner pixel has coordinate (0, 0)
             GL.Viewport(0, 0, w, h); // Use all of the glControl painting area

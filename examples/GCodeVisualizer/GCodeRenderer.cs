@@ -26,8 +26,6 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies, 
 either expressed or implied, of the FreeBSD Project.
 */
-#define USE_OPENGL
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,7 +38,9 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.Agg.UI;
 
-#if USE_OPENGL
+#if USE_GLES
+using OpenTK.Graphics.ES11;
+#else
 using OpenTK.Graphics.OpenGL;
 #endif
 
@@ -581,7 +581,6 @@ namespace MatterHackers.GCodeVisualizer
             }
         }
 
-#if USE_OPENGL
         void Create3DData(Affine transform, double layerScale, RenderType renderType, int lastLayerIndex)
         {
             colorVertexData.Clear();
@@ -703,10 +702,8 @@ namespace MatterHackers.GCodeVisualizer
                 GL.PopAttrib();
             }
         }
-#endif
     }
 
-#if USE_OPENGL
     public class VertexBuffer
     {
         public int myVertexId;
@@ -783,5 +780,4 @@ namespace MatterHackers.GCodeVisualizer
             GL.DisableClientState(ArrayCap.ColorArray);
         }
     }
-#endif
 }

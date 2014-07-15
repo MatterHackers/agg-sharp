@@ -37,7 +37,11 @@ using MatterHackers.Csg.Solids;
 using MatterHackers.Csg.Operations;
 using MatterHackers.Csg.Transform;
 
+#if USE_GLES
+using OpenTK.Graphics.ES11;
+#else
 using OpenTK.Graphics.OpenGL;
+#endif
 
 namespace MatterHackers.RenderOpenGl
 {

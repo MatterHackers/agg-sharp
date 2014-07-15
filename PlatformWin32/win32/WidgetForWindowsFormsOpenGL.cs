@@ -28,7 +28,11 @@ using MatterHackers.RenderOpenGl;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.RasterizerScanline;
 
+#if USE_GLES
+using OpenTK.Graphics.ES11;
+#else
 using OpenTK.Graphics.OpenGL;
+#endif
 
 namespace MatterHackers.Agg.UI
 {
@@ -74,10 +78,18 @@ namespace MatterHackers.Agg.UI
             // The perspective is calculated with a 45 degree viewing angle based on the windows width and height. 
             // The 0.1f, 100.0f is the starting point and ending point for how deep we can draw into the screen.
 
+#if USE_GLES
+            GL.MatrixMode(All.Projection);
+#else
             GL.MatrixMode(MatrixMode.Projection);
+#endif
             GL.LoadIdentity();
 
+#if USE_GLES
+            GL.MatrixMode(All.Modelview);
+#else
             GL.MatrixMode(MatrixMode.Modelview);
+#endif
             GL.LoadIdentity();
             GL.Scissor(0, 0, WindowsFormsWindow.ClientSize.Width, WindowsFormsWindow.ClientSize.Height);
 
