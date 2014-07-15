@@ -442,15 +442,19 @@ namespace MatterHackers.Agg.Image
 
         public void FlipY()
         {
-            strideInBytes *= -1;
-            bufferFirstPixel = bufferOffset;
-            if (strideInBytes < 0)
+            byte[] buffer = GetBuffer();
+            for(int y=0; y<Height/2; y++)
             {
-                int addAmount = -((int)((int)height - 1) * strideInBytes);
-                bufferFirstPixel = addAmount + bufferOffset;
-            }
+                int bottomBuffer = GetBufferOffsetY(y);
+                int topBuffer = GetBufferOffsetY(Height-y-1);
+                for (int x = 0; x < StrideInBytes(); x++)
+                {
+                    byte hold = buffer[bottomBuffer + x];
+                    buffer[bottomBuffer + x] = buffer[topBuffer + x];
+                    buffer[topBuffer + x] = hold;
+                }
 
-            SetUpLookupTables();
+            }
         }
 
         public void SetBuffer(byte[] byteBuffer, int bufferOffset)
