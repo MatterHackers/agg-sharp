@@ -14,7 +14,6 @@
 
 using System;
 using System.IO;
-using System.IO.Ports;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -214,17 +213,5 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
         #endregion
 
         #endregion
-    }
-
-    internal class Program
-    {
-        private static void Main(string[] args)
-        {
-            SerialPortFixer.Execute("COM1");
-            using (SerialPort port = new SerialPort("COM1"))
-            {
-                port.Write("test");
-            }
-        }
-    }
+    }		
 }

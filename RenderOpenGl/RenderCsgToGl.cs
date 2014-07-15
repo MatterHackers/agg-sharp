@@ -39,7 +39,7 @@ using MatterHackers.Csg.Transform;
 
 #if USE_GLES
 using OpenTK.Graphics.ES11;
-#else
+#elif USE_OPENGL
 using OpenTK.Graphics.OpenGL;
 #endif
 
@@ -187,10 +187,12 @@ namespace MatterHackers.RenderOpenGl
         #region Transform
         public void RenderToGlRecursive(TransformBase objectToProcess)
         {
-            GL.PushMatrix();
+			#if USE_OPENGL
+			GL.PushMatrix();
             GL.MultMatrix(objectToProcess.transform.GetAsDoubleArray());
             RenderToGlRecursive((dynamic)objectToProcess.objectToTransform);
             GL.PopMatrix();
+			#endif
         }
         #endregion
 

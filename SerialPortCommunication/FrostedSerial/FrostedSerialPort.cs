@@ -777,7 +777,8 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
             }
             else
             {
-                using (RegistryKey subkey = Registry.LocalMachine.OpenSubKey("HARDWARE\\DEVICEMAP\\SERIALCOMM"))
+				#if USE_STANDARD_SERIAL
+				using (RegistryKey subkey = Registry.LocalMachine.OpenSubKey("HARDWARE\\DEVICEMAP\\SERIALCOMM"))
                 {
                     if (subkey != null)
                     {
@@ -790,6 +791,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
                         }
                     }
                 }
+				#endif
             }
             return serial_ports.ToArray();
         }
@@ -1048,7 +1050,9 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
             }
             else // use the c# native serial port
             {
-                newPort = new CSharpSerialPortWrapper(serialPortName);
+				#if USE_STANDARD_SERIAL
+				newPort = new CSharpSerialPortWrapper(serialPortName);
+				#endif
             }
 
             return newPort;
@@ -1074,10 +1078,11 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
             return newPort;
         }
     }
-
+	#if USE_STANDARD_SERIAL
     public class CSharpSerialPortWrapper : IFrostedSerialPort
     {
-        System.IO.Ports.SerialPort port;
+
+		System.IO.Ports.SerialPort port;
 
         internal CSharpSerialPortWrapper(string serialPortName)
         {
@@ -1189,6 +1194,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
             port.Write(str);
         }
     }
+	#endif
 
     public delegate void SerialDataReceivedEventHandler(object sender, SerialDataReceivedEventArgs e);
     public delegate void SerialPinChangedEventHandler(object sender, SerialPinChangedEventArgs e);

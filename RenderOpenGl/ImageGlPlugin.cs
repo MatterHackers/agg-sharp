@@ -40,7 +40,7 @@ using MatterHackers.VectorMath;
 
 #if USE_GLES
 using OpenTK.Graphics.ES11;
-#else
+#elif USE_OPENGL
 using OpenTK.Graphics.OpenGL;
 #endif
 
@@ -67,13 +67,14 @@ namespace MatterHackers.RenderOpenGl
         {
             get
             {
-                if (glMajorVersion == 0)
+				#if USE_OPENGL
+				if (glMajorVersion == 0)
                 {
                     string versionOpenGL = GL.GetString(StringName.Version);
                     glMajorVersion = int.Parse(versionOpenGL[0].ToString());
                     int minor = int.Parse(versionOpenGL[2].ToString());
                 }
-
+				#endif
                 return glMajorVersion;
             }
         }
@@ -90,7 +91,9 @@ namespace MatterHackers.RenderOpenGl
                 for (int i = glDataNeedingToBeDeleted.Count - 1; i >= 0; i-- )
                 {
                     int textureToDelete = glDataNeedingToBeDeleted[i].glTextureHandle;
-                    GL.DeleteTextures(1, ref textureToDelete);
+					#if USE_OPENGL
+					GL.DeleteTextures(1, ref textureToDelete);
+					#endif
                     glDataNeedingToBeDeleted.RemoveAt(i);
                 }
             }
@@ -99,7 +102,9 @@ namespace MatterHackers.RenderOpenGl
             if (plugin != null && imageToGetDisplayListFor.ChangedCount != plugin.imageUpdateCount)
             {
                 int textureToDelete = plugin.GLTextureHandle;
-                GL.DeleteTextures(1, ref textureToDelete);
+			#if USE_OPENGL
+				GL.DeleteTextures(1, ref textureToDelete);
+			#endif
                 plugin.glData.glTextureHandle = 0;
                 imagesWithCacheData.Remove(imageToGetDisplayListFor.GetBuffer());
                 plugin = null;
@@ -221,12 +226,14 @@ namespace MatterHackers.RenderOpenGl
             if (!checkedForHwSupportNonPowerOfTwoTextures)
             {
                 {
-                    // Compatible context (GL 1.0-2.1)
+					#if USE_OPENGL
+					// Compatible context (GL 1.0-2.1)
                     string extensions = GL.GetString(StringName.Extensions);
                     if (extensions.Contains("ARB_texture_non_power_of_two"))
                     {
                         hwSupportNonPowerOfTwoTextures = true;
                     }
+					#endif
                 }
 
                 checkedForHwSupportNonPowerOfTwoTextures = true;
@@ -294,7 +301,9 @@ namespace MatterHackers.RenderOpenGl
 
             // Create the texture handle and display list handle
             int[] glTextures = new int[1];
+			#if USE_OPENGL
             GL.GenTextures(1, glTextures);
+
             glData.glTextureHandle = glTextures[0];
 
             // Set up some texture parameters for openGL
@@ -378,6 +387,7 @@ namespace MatterHackers.RenderOpenGl
                     GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
                 }
             }
+			#endif
 
 			float texCoordX = imageWidth / (float)hardwareWidth;
             float texCoordY = imageHeight / (float)hardwareHeight;
@@ -396,7 +406,7 @@ namespace MatterHackers.RenderOpenGl
 
         public void DrawToGL()
         {
-
+			#if USE_OPENGL
             GL.BindTexture(TextureTarget.Texture2D, GLTextureHandle);
 #if true
             GL.Begin(BeginMode.TriangleFan);
@@ -419,6 +429,7 @@ namespace MatterHackers.RenderOpenGl
             GL.DisableClientState(ArrayCap.TextureCoordArray);
             GL.DisableClientState(ArrayCap.VertexArray);
 #endif
+			#endif
         }
     }
 }

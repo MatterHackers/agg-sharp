@@ -42,7 +42,7 @@ using Tesselate;
 
 #if USE_GLES
 using OpenTK.Graphics.ES11;
-#else
+#elif USE_OPENGL
 using OpenTK.Graphics.OpenGL;
 #endif
 
@@ -81,7 +81,8 @@ namespace MatterHackers.RenderOpenGl
 
         public void BeginCallBack(Tesselator.TriangleListType type)
         {
-            switch (type)
+			#if USE_OPENGL
+			switch (type)
             {
                 case Tesselator.TriangleListType.Triangles:
                     GL.Begin(BeginMode.Triangles);
@@ -95,21 +96,28 @@ namespace MatterHackers.RenderOpenGl
                     GL.Begin(BeginMode.TriangleStrip);
                     break;
             }
+			#endif
         }
 
         public void EndCallBack()
         {
-            GL.End();
+			#if USE_OPENGL
+			GL.End();
+			#endif
         }
 
         public void VertexCallBack(int index)
         {
-            GL.Vertex2(m_Vertices[index].m_X, m_Vertices[index].m_Y);
+			#if USE_OPENGL
+			GL.Vertex2(m_Vertices[index].m_X, m_Vertices[index].m_Y);
+			#endif
         }
 
         public void EdgeFlagCallBack(bool IsEdge)
         {
-            GL.EdgeFlag(IsEdge);
+			#if USE_OPENGL
+			GL.EdgeFlag(IsEdge);
+			#endif
         }
 
         public void CombineCallBack(double[] coords3, int[] data4,

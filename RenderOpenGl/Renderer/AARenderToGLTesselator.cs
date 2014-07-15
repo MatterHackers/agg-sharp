@@ -42,7 +42,7 @@ using Tesselate;
 
 #if USE_GLES
 using OpenTK.Graphics.ES11;
-#else
+#elif USE_OPENGL
 using OpenTK.Graphics.OpenGL;
 #endif
 
@@ -56,7 +56,8 @@ namespace MatterHackers.RenderOpenGl
 
         protected void DrawNonAATriangle(Vector2 p0, Vector2 p1, Vector2 p2)
         {
-            GL.Begin(BeginMode.Triangles);
+			#if USE_OPENGL
+			GL.Begin(BeginMode.Triangles);
             {
                 // P1
                 GL.TexCoord2(.2, .25);
@@ -71,6 +72,7 @@ namespace MatterHackers.RenderOpenGl
                 GL.Vertex2(p2.x, p2.y);
             }
             GL.End();
+			#endif
         }
 
         protected void Draw1EdgeTriangle(Vector2 p0, Vector2 p1, Vector2 p2)
@@ -107,7 +109,7 @@ namespace MatterHackers.RenderOpenGl
 
             Vector2 edgeP0Offset = p0 + Normal;
             Vector2 edgeP1Offset = p1 + Normal;
-
+			#if USE_OPENGL
             GL.Begin(BeginMode.TriangleFan);
             {
                 GL.TexCoord2(1 / 1023.0, .25);
@@ -147,7 +149,9 @@ namespace MatterHackers.RenderOpenGl
                 GL.Vertex2(p0.x + edgeP2P1Normal.x, p0.y + edgeP2P1Normal.y);
             }
             GL.End();
+
 #endif
+			#endif
         }
 
         protected void Draw2EdgeTriangle(Vector2 p0, Vector2 p1, Vector2 p2)

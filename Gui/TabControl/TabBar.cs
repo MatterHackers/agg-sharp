@@ -201,7 +201,7 @@ namespace MatterHackers.Agg.UI
 
         void SwitchToTab(object tabMouseDownOn, MouseEventArgs mouseEvent)
         {
-            UiThread.RunOnIdle((satet) =>
+            UiThread.RunOnIdle((state) =>
                 {
                     Tab clickedTab = (Tab)tabMouseDownOn;
                     if (clickedTab != null)

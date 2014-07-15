@@ -99,13 +99,13 @@ namespace MatterHackers.Csg
 
         public CsgObject(string name)
         {
-            UnitTests.Run();
+            //UnitTests.Run();
             this.name = name;
         }
 
         public CsgObject(Dictionary<string, string> properties)
         {
-            UnitTests.Run();
+            //UnitTests.Run();
             if (properties != null)
             {
                 this.properties = properties;

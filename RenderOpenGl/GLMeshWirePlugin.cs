@@ -39,9 +39,10 @@ using MatterHackers.Agg.Image;
 using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
 
+
 #if USE_GLES
 using OpenTK.Graphics.ES11;
-#else
+#elif USE_OPENGL
 using OpenTK.Graphics.OpenGL;
 #endif
 

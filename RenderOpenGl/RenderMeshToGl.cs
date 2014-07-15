@@ -42,7 +42,7 @@ using MatterHackers.VectorMath;
 
 #if USE_GLES2
 using OpenTK.Graphics.ES20;
-#else
+#elif USE_OPENGL
 using OpenTK.Graphics.OpenGL;
 #endif
 
@@ -69,6 +69,7 @@ namespace MatterHackers.RenderOpenGl
 
         static void DrawToGL(Mesh meshToRender)
         {
+			#if USE_OPENGL
 #if USE_GLES2
             int vertexShader = GL.CreateShader(ShaderType.VertexShader);
             GL.ShaderSource(vertexShader, vertexShaderCode);
@@ -86,7 +87,8 @@ namespace MatterHackers.RenderOpenGl
             GLMeshTrianglePlugin glMeshPlugin = GLMeshTrianglePlugin.Get(meshToRender);
             for (int i = 0; i < glMeshPlugin.subMeshs.Count; i++)
             {
-                SubTriangleMesh subMesh = glMeshPlugin.subMeshs[i];
+
+				SubTriangleMesh subMesh = glMeshPlugin.subMeshs[i];
                 // Make sure the GLMeshPlugin has a reference to hold onto the image so it does not go away before this.
                 if (subMesh.texture != null)
                 {
@@ -98,6 +100,7 @@ namespace MatterHackers.RenderOpenGl
                 {
                     GL.Disable(EnableCap.Texture2D);
                 }
+
 
 #if USE_VBO
                 GL.BindBuffer(BufferTarget.ArrayBuffer, subMesh.vboHandle);
@@ -135,11 +138,13 @@ namespace MatterHackers.RenderOpenGl
                     GL.DisableClientState(ArrayCap.TextureCoordArray);
                 }
             }
+			#endif
         }
 
         static void DrawWithWireOverlay(Mesh meshToRender, RenderTypes renderType)
         {
 #if USE_GLES2
+			#if USE_OPENGL
             GLMeshWireframePlugin glMeshPlugin = GLMeshWireframePlugin.GetGLMeshWireframePlugin(meshToRender);
 
             GL.Enable(EnableCap.Blend);
@@ -159,8 +164,10 @@ namespace MatterHackers.RenderOpenGl
             GL.DisableClientState(EnableCap.TextureCoordArray);
             GL.DisableClientState(EnableCap.VertexArray);
             GL.Disable(EnableCap.Blend);
+			#endif
 #else
-            GLMeshTrianglePlugin glMeshPlugin = GLMeshTrianglePlugin.Get(meshToRender);
+			#if USE_OPENGL
+			GLMeshTrianglePlugin glMeshPlugin = GLMeshTrianglePlugin.Get(meshToRender);
 
             GL.Enable(EnableCap.PolygonOffsetFill);
             GL.PolygonOffset(1, 1);
@@ -172,8 +179,10 @@ namespace MatterHackers.RenderOpenGl
             GL.PolygonOffset(0, 0);
             GL.Disable(EnableCap.PolygonOffsetFill);
             GL.Disable(EnableCap.Lighting);
+			#endif
 #if true
-            GL.DisableClientState(ArrayCap.TextureCoordArray);
+			#if USE_OPENGL
+			GL.DisableClientState(ArrayCap.TextureCoordArray);
             GLMeshWirePlugin glWireMeshPlugin = null;
             if (renderType == RenderTypes.Outlines)
             {
@@ -195,8 +204,10 @@ namespace MatterHackers.RenderOpenGl
 
             GL.DisableClientState(ArrayCap.NormalArray);
             GL.DisableClientState(ArrayCap.VertexArray);
+			#endif
 #else
-            GL.Begin(BeginMode.Lines);
+			#if USE_OPENGL
+			GL.Begin(BeginMode.Lines);
             foreach (MeshEdge edge in meshToRender.meshEdges)
             {
                 if (renderType == RenderTypes.Outlines)
@@ -237,9 +248,11 @@ namespace MatterHackers.RenderOpenGl
                 }
             }
             GL.End();
+			#endif
 #endif
-
+			#if USE_OPENGL
             GL.Enable(EnableCap.Lighting);
+			#endif
 #endif
         }
 
@@ -252,7 +265,8 @@ namespace MatterHackers.RenderOpenGl
         {
             if (meshToRender != null)
             {
-                GL.Color4(partColor.Red0To1, partColor.Green0To1, partColor.Blue0To1, partColor.Alpha0To1);
+				#if USE_OPENGL
+				GL.Color4(partColor.Red0To1, partColor.Green0To1, partColor.Blue0To1, partColor.Alpha0To1);
 
                 if (partColor.Alpha0To1 < 1)
                 {
@@ -283,6 +297,7 @@ namespace MatterHackers.RenderOpenGl
                 }
 
                 GL.PopMatrix();
+				#endif
             }
         }
     }
