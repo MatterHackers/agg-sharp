@@ -54,6 +54,9 @@ namespace MatterHackers.Agg.UI
         private int borderWidth = 0;
         private int borderRadius = 0;
 
+        public static EventHandler ShowSoftwareKeyboard = null;
+        public static EventHandler HideSoftwareKeyboard = null;
+
         public RGBA_Bytes TextColor
         {
             get
@@ -236,11 +239,19 @@ namespace MatterHackers.Agg.UI
 
         void internalTextEditWidget_GotFocus(object sender, EventArgs e)
         {
+            if (ShowSoftwareKeyboard != null)
+            {
+                ShowSoftwareKeyboard(this, null);
+            }
             OnGotFocus(e);
         }
 
         void internalTextEditWidget_LostFocus(object sender, EventArgs e)
         {
+            if (HideSoftwareKeyboard != null)
+            {
+                HideSoftwareKeyboard(this, null);
+            }
             OnLostFocus(e);
         }
 
