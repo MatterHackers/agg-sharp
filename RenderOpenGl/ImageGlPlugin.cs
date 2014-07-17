@@ -125,7 +125,7 @@ namespace MatterHackers.RenderOpenGl
                 ImageGlPlugin newPlugin = new ImageGlPlugin();
                 imagesWithCacheData.Add(imageToGetDisplayListFor.GetBuffer(), newPlugin);
                 newPlugin.createdWithMipMaps = createAndUseMipMaps;
-                newPlugin.CreateGlDataForImage(imageToGetDisplayListFor);
+                newPlugin.CreateGlDataForImage(imageToGetDisplayListFor, TextureMagFilterLinear);
                 newPlugin.imageUpdateCount = imageToGetDisplayListFor.ChangedCount;
                 return newPlugin;
             }
@@ -219,11 +219,11 @@ namespace MatterHackers.RenderOpenGl
             }
         }
 
-        bool hwSupportNonPowerOfTwoTextures = false;
-        bool checkedForHwSupportNonPowerOfTwoTextures = false;
+        bool hwSupportsOnlyPowerOfTwoTextures = true;
+        bool checkedForHwSupportsOnlyPowerOfTwoTextures = false;
         int SmallestHardwareCompatibleTextureSize(int size)
         {
-            if (!checkedForHwSupportNonPowerOfTwoTextures)
+            if (!checkedForHwSupportsOnlyPowerOfTwoTextures)
             {
                 {
 					#if USE_OPENGL
@@ -231,19 +231,15 @@ namespace MatterHackers.RenderOpenGl
                     string extensions = GL.GetString(StringName.Extensions);
                     if (extensions.Contains("ARB_texture_non_power_of_two"))
                     {
-                        hwSupportNonPowerOfTwoTextures = true;
+                        hwSupportsOnlyPowerOfTwoTextures = false;
                     }
 					#endif
                 }
 
-                checkedForHwSupportNonPowerOfTwoTextures = true;
+                checkedForHwSupportsOnlyPowerOfTwoTextures = true;
             }
 
-            if (hwSupportNonPowerOfTwoTextures)
-            {
-                return size;
-            }
-            else
+            if (hwSupportsOnlyPowerOfTwoTextures)
             {
                 int pow2Size = 1;
                 while (pow2Size < size)
@@ -251,6 +247,10 @@ namespace MatterHackers.RenderOpenGl
                     pow2Size <<= 1;
                 }
                 return pow2Size;
+            }
+            else
+            {
+                return size;
             }
         }
 
