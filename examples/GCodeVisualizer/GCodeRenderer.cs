@@ -347,7 +347,7 @@ namespace MatterHackers.GCodeVisualizer
 
     public class ExtrusionColors
     {
-        SortedDictionary<float, RGBA_Bytes> speedColorLookup = new SortedDictionary<float, RGBA_Bytes>();
+        SortedList<float, RGBA_Bytes> speedColorLookup = new SortedList<float, RGBA_Bytes>();
 
         public RGBA_Bytes GetColorForSpeed(float speed)
         {
@@ -462,22 +462,27 @@ namespace MatterHackers.GCodeVisualizer
             }
         }
 
-        void CreateFeaturesForLayerIfRequired(int layerToCreate)
+        public void CreateFeaturesForLayerIfRequired(int layerToCreate)
         {
             if (extrusionColors == null)
             {
                 extrusionColors = new ExtrusionColors();
-                for (int layerIndex = 0; layerIndex < gCodeFileToDraw.NumChangesInZ; layerIndex++)
+                HashSet<float> speeds = new HashSet<float>();
+                PrinterMachineInstruction prevInstruction = gCodeFileToDraw.Instruction(0);
+                for (int i = 1; i < gCodeFileToDraw.Count; i++)
                 {
-                    for (int i = 1; i < gCodeFileToDraw.Count; i++)
+                    PrinterMachineInstruction instruction = gCodeFileToDraw.Instruction(i);
+                    if (instruction.EPosition > prevInstruction.EPosition)
                     {
-                        PrinterMachineInstruction prevInstruction = gCodeFileToDraw.Instruction(i-1);
-                        PrinterMachineInstruction instruction = gCodeFileToDraw.Instruction(i);
-                        if (instruction.EPosition > prevInstruction.EPosition)
-                        {
-                            extrusionColors.GetColorForSpeed((float)instruction.FeedRate);
-                        }
+                        speeds.Add((float)instruction.FeedRate);
                     }
+
+                    prevInstruction = instruction;
+                }
+
+                foreach (float speed in speeds)
+                {
+                    extrusionColors.GetColorForSpeed(speed);
                 }
             }
 

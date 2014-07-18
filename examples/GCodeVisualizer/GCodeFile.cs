@@ -146,7 +146,6 @@ namespace MatterHackers.GCodeVisualizer
                         backgroundWorker.DoWork += new DoWorkEventHandler(ParseFileContents);
 
                         backgroundWorker.RunWorkerAsync(gCodeString);
-
                     }
                     else
                     {
