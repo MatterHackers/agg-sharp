@@ -193,33 +193,53 @@ namespace MatterHackers.RenderOpenGl
 
         static int AATextureHandle = -1;
         void CheckLineImageCache()
-		{
-			#if true //USE_OPENGL
+        {
+#if USE_OPENGL
+            if (AATextureHandle == -1)
+            {
+                // Create the texture handle and display list handle
+                int[] textureHandle = new int[1];
+                GL.GenTextures(1, textureHandle);
+                AATextureHandle = textureHandle[0];
+
+                // Set up some texture parameters for openGL
+                GL.BindTexture(TextureTarget.Texture2D, AATextureHandle);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+
+                byte[] hardwarePixelBuffer = CreateBufferForAATexture();
+
+                // Create the texture
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1024, 4,
+                0, PixelFormat.Rgba, PixelType.UnsignedByte, hardwarePixelBuffer);
+            }
+#elif USE_GLES
 			if (AATextureHandle == -1)
 			{
-				// Create the texture handle and display list handle
-				int[] textureHandle = new int[1];
-				GL.GenTextures(1, textureHandle);
-				AATextureHandle = textureHandle[0];
+			// Create the texture handle and display list handle
+			int[] textureHandle = new int[1];
+			GL.GenTextures(1, textureHandle);
+			AATextureHandle = textureHandle[0];
 
-				// Set up some texture parameters for openGL
-				GL.BindTexture(All.Texture2D, AATextureHandle);
-				GL.TexParameter(All.Texture2D, All.TextureMagFilter, (int)All.Linear);
-				GL.TexParameter(All.Texture2D, All.TextureMinFilter, (int)All.Linear);
+			// Set up some texture parameters for openGL
+			GL.BindTexture(All.Texture2D, AATextureHandle);
+			GL.TexParameter(All.Texture2D, All.TextureMagFilter, (int)All.Linear);
+			GL.TexParameter(All.Texture2D, All.TextureMinFilter, (int)All.Linear);
 
-				GL.TexParameter(All.Texture2D, All.TextureWrapS, (int)All.ClampToEdge);
-				GL.TexParameter(All.Texture2D, All.TextureWrapT, (int)All.ClampToEdge);
-				
-				byte[] hardwarePixelBuffer = CreateBufferForAATexture();
+			GL.TexParameter(All.Texture2D, All.TextureWrapS, (int)All.ClampToEdge);
+			GL.TexParameter(All.Texture2D, All.TextureWrapT, (int)All.ClampToEdge);
 
-				// Create the texture
-				GL.TexImage2D(All.Texture2D, 0, All.Rgba, 1024, 4,
-					0, All.Rgba, All.UnsignedByte, hardwarePixelBuffer);
+			byte[] hardwarePixelBuffer = CreateBufferForAATexture();
+
+			// Create the texture
+			GL.TexImage2D(All.Texture2D, 0, All.Rgba, 1024, 4,
+			0, All.Rgba, All.UnsignedByte, hardwarePixelBuffer);
 			}
-			#elif USE_GLES
-
-			#endif
-		}
+#endif
+        }
 
         void DrawAAShape(IVertexSource vertexSource)
         {
