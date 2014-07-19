@@ -150,6 +150,7 @@
     <Compile Include="PluginFinder.cs" />
     <Compile Include="RectangleDouble.cs" />
     <Compile Include="RectangleInt.cs" />
+    <Compile Include="RootedObjectEventHandler.cs" />
     <Compile Include="ScanlineRasterizer.cs" />
     <Compile Include="ShapePath.cs" />
     <Compile Include="StringHelper.cs" />

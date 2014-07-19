@@ -124,7 +124,6 @@
     <Compile Include="MouseEventArgs.cs" />
     <Compile Include="RadioButton\RadioButtonViewStates.cs" />
     <Compile Include="RadioButton\RadioButtonViewText.cs" />
-    <Compile Include="RootedObjectEventHandler.cs" />
     <Compile Include="ImageSequenceWidget.cs" />
     <Compile Include="StringEventArgs.cs" />
     <Compile Include="SystemWindow\AbstractOsMappingWidget.cs" />

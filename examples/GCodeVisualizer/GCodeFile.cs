@@ -26,6 +26,7 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies, 
 either expressed or implied, of the FreeBSD Project.
 */
+#define MULTI_THREAD
 
 using System;
 using System.Collections.Generic;
@@ -33,8 +34,10 @@ using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.ComponentModel;
+using System.Linq;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 
 using MatterHackers.Agg;
 using MatterHackers.VectorMath;
@@ -139,7 +142,10 @@ namespace MatterHackers.GCodeVisualizer
                         {
                             using (StreamReader gcodeStream = new StreamReader(fileStream))
                             {
-                                gCodeString = gcodeStream.ReadToEnd();
+                                long bytes = gcodeStream.BaseStream.Length;
+                                char[] content = new char[bytes];
+                                gcodeStream.Read(content, 0, (int)bytes);
+                                gCodeString = new string(content);
                             }
                         }
 
@@ -154,6 +160,7 @@ namespace MatterHackers.GCodeVisualizer
                 }
                 catch (IOException)
                 {
+                    int a = 0;
                 }
             }
             else
@@ -761,21 +768,36 @@ namespace MatterHackers.GCodeVisualizer
         public Vector2 GetWeightedCenter()
         {
             Vector2 total = new Vector2();
-            int count = 0;
-
+#if !MULTI_THREAD
             foreach (PrinterMachineInstruction state in GCodeCommandQueue)
             {
                 total += new Vector2(state.Position.x, state.Position.y);
-                count++;
             }
+#else
+            Parallel.For<Vector2>(
+                0,
+                GCodeCommandQueue.Count,
+                () => new Vector2(),
+                (int index, ParallelLoopState loop, Vector2 subtotal) =>
+                {
+                    PrinterMachineInstruction state = GCodeCommandQueue[index];
+                    subtotal += new Vector2(state.Position.x, state.Position.y);
+                    return subtotal;
+                },
+                    (x) =>
+                    {
+                        total += new Vector2(x.x, x.y);
+                    }
+            );
+#endif      
 
-            return total / count;
+            return total / GCodeCommandQueue.Count;
         }
 
         public RectangleDouble GetBounds()
         {
             RectangleDouble bounds = new RectangleDouble(double.MaxValue, double.MaxValue, double.MinValue, double.MinValue);
-
+#if !MULTI_THREAD
             foreach (PrinterMachineInstruction state in GCodeCommandQueue)
             {
                 bounds.Left = Math.Min(state.Position.x, bounds.Left);
@@ -783,7 +805,30 @@ namespace MatterHackers.GCodeVisualizer
                 bounds.Bottom = Math.Min(state.Position.y, bounds.Bottom);
                 bounds.Top = Math.Max(state.Position.y, bounds.Top);
             }
+#else
+            Parallel.For<RectangleDouble>(
+                0, 
+                GCodeCommandQueue.Count, 
+                () => new RectangleDouble(double.MaxValue, double.MaxValue, double.MinValue, double.MinValue), 
+                (int index, ParallelLoopState loop, RectangleDouble subtotal) =>
+                    {
+                        PrinterMachineInstruction state = GCodeCommandQueue[index];
+                        subtotal.Left = Math.Min(state.Position.x, subtotal.Left);
+                        subtotal.Right = Math.Max(state.Position.x, subtotal.Right);
+                        subtotal.Bottom = Math.Min(state.Position.y, subtotal.Bottom);
+                        subtotal.Top = Math.Max(state.Position.y, subtotal.Top);
 
+                        return subtotal;
+                    },
+                    (x) => 
+                        {
+                            bounds.Left = Math.Min(x.Left, bounds.Left);
+                            bounds.Right = Math.Max(x.Right, bounds.Right);
+                            bounds.Bottom = Math.Min(x.Bottom, bounds.Bottom);
+                            bounds.Top = Math.Max(x.Top, bounds.Top);
+                        }
+            );
+#endif      
             return bounds;
         }
 
