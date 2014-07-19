@@ -246,7 +246,6 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Assert.IsTrue(testMesh.meshEdges.Count == 6);
 
                 Assert.IsTrue(testMesh.FindMeshEdges(centerVertexTop, centerVertexBottom).Count == 2);
-                return;
                 testMesh.MergeMeshEdges();
                 SaveDebugInfo(testMesh);
                 Assert.IsTrue(testMesh.meshEdges.Count == 5);

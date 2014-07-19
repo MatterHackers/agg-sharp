@@ -661,11 +661,14 @@ namespace MatterHackers.PolygonMesh
                 // find out if there is another edge attached to the same vertexes
                 List<MeshEdge> meshEdgesToDelete = FindMeshEdges(vertex0, vertex1);
 
-                foreach(MeshEdge meshEdgeToDelete in meshEdgesToDelete)
+                if (meshEdgesToDelete.Count > 1)
                 {
-                    if (meshEdgeToDelete != currentMeshEdge)
+                    foreach (MeshEdge meshEdgeToDelete in meshEdgesToDelete)
                     {
-                        MergeMeshEdges(currentMeshEdge, meshEdgeToDelete);
+                        if (meshEdgeToDelete != currentMeshEdge)
+                        {
+                            MergeMeshEdges(currentMeshEdge, meshEdgeToDelete);
+                        }
                     }
                 }
             }

@@ -180,7 +180,7 @@ namespace MatterHackers.PolygonMesh
 
         public void RemoveFromMeshEdgeLinksOfVertex(Vertex vertexToRemoveFrom)
         {
-            // lets first fix up the MeshEdge ponted to be the vertexToRemoveFrom
+            // lets first fix up the MeshEdge ponted to by the vertexToRemoveFrom
             if (vertexToRemoveFrom.firstMeshEdge == this)
             {
                 MeshEdge nextMeshEdgeConnectedToThisVertex = vertexToRemoveFrom.firstMeshEdge.GetNextMeshEdgeConnectedTo(vertexToRemoveFrom);
@@ -198,7 +198,7 @@ namespace MatterHackers.PolygonMesh
                 }
             }
 
-            // no lets clean up the edge links on the meshe edges that are stil connected to the vertexToRemoveFrom
+            // now lets clean up the edge links on the mesh edges that are stil connected to the vertexToRemoveFrom
             MeshEdge nextEdgeThisConnectedTo = GetNextMeshEdgeConnectedTo(vertexToRemoveFrom);
             if (nextEdgeThisConnectedTo == this)
             {
@@ -211,9 +211,6 @@ namespace MatterHackers.PolygonMesh
                 // if only 2 edges (this and other) then set the other one to a circular reference to itself
                 int indexOnEdgeWeAreConnectedTo = nextEdgeThisConnectedTo.GetVertexEndIndex(vertexToRemoveFrom);
                 nextEdgeThisConnectedTo.NextMeshEdgeFromEnd[indexOnEdgeWeAreConnectedTo] = nextEdgeThisConnectedTo;
-
-                // and set this one to null (it has not vertexes)
-                VertexOnEnd[GetVertexEndIndex(vertexToRemoveFrom)] = null;
             }
             else
             {
@@ -223,9 +220,12 @@ namespace MatterHackers.PolygonMesh
                 {
                     edgeConnectedToThis = edgeConnectedToThis.GetNextMeshEdgeConnectedTo(vertexToRemoveFrom);
                 }
-                int indexOfThisOnOther = nextEdgeThisConnectedTo.GetOpositeVertexEndIndex(vertexToRemoveFrom);
+                int indexOfThisOnOther = edgeConnectedToThis.GetVertexEndIndex(vertexToRemoveFrom);
                 edgeConnectedToThis.NextMeshEdgeFromEnd[indexOfThisOnOther] = nextEdgeThisConnectedTo;
             }
+
+            // and set this one to null (it has no vertices)
+            VertexOnEnd[GetVertexEndIndex(vertexToRemoveFrom)] = null;
         }
 
         public void AddToMeshEdgeLinksOfVertex(Vertex vertexToAddTo)
