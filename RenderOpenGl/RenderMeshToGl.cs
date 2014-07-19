@@ -186,16 +186,16 @@ namespace MatterHackers.RenderOpenGl
             GLMeshWirePlugin glWireMeshPlugin = null;
             if (renderType == RenderTypes.Outlines)
             {
-                glWireMeshPlugin = GLMeshWirePlugin.Get(meshToRender);
+                glWireMeshPlugin = GLMeshWirePlugin.Get(meshToRender, MathHelper.Tau / 8);
             }
             else
             {
-                glWireMeshPlugin = GLMeshWirePlugin.Get(meshToRender, MathHelper.Tau / 8);
+                glWireMeshPlugin = GLMeshWirePlugin.Get(meshToRender);
             }
 
-            VectorPOD<WireVertexData> manifoldEdges = glWireMeshPlugin.manifoldData;
-            GL.InterleavedArrays(InterleavedArrayFormat.V3f, 0, manifoldEdges.Array);
-            GL.DrawArrays(BeginMode.Lines, 0, manifoldEdges.Count);
+            VectorPOD<WireVertexData> edegLines = glWireMeshPlugin.edgeLinesData;
+            GL.InterleavedArrays(InterleavedArrayFormat.V3f, 0, edegLines.Array);
+            GL.DrawArrays(BeginMode.Lines, 0, edegLines.Count);
 
             //GL.Color4(1.0f, 1.0f, 1.0f, 1.0f);
             //VectorPOD<WireVertexData> nonManifoldEdges = glWireMeshPlugin.nonManifoldData;

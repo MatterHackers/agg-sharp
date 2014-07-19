@@ -115,7 +115,7 @@ namespace MatterHackers.PolygonMesh
         {
             SortVertices();
             MergeVertices(backgroundWorker, startPercent, endPercent);
-            //MergeMeshEdges();
+            MergeMeshEdges();
         }
 
         public List<Face> Faces
@@ -424,7 +424,7 @@ namespace MatterHackers.PolygonMesh
                 }
             }
 
-            // we put them in in the same order they were in, se we keep the state
+            // we put them in in the same order they were in, so we keep the state
             NonDeleteVertices.IsSorted = vertices.IsSorted;
             vertices = NonDeleteVertices;
         }
@@ -437,7 +437,6 @@ namespace MatterHackers.PolygonMesh
                 throw new Exception("Both vertexes have to be part of this mesh to be merged.");
             }
 #endif
-
             // fix up the mesh edges
             List<MeshEdge> connectedMeshEdges = vertexToDelete.GetConnectedMeshEdges();
             foreach (MeshEdge meshEdgeToFix in connectedMeshEdges)
@@ -652,29 +651,55 @@ namespace MatterHackers.PolygonMesh
 
         public void MergeMeshEdges()
         {
+            HashSet<MeshEdge> markedForDeletion = new HashSet<MeshEdge>();
+
             for (int i = 0; i < meshEdges.Count; i++)
             {
                 MeshEdge currentMeshEdge = meshEdges[i];
-                Vertex vertex0 = currentMeshEdge.VertexOnEnd[0];
-                Vertex vertex1 = currentMeshEdge.VertexOnEnd[1];
-                
-                // find out if there is another edge attached to the same vertexes
-                List<MeshEdge> meshEdgesToDelete = FindMeshEdges(vertex0, vertex1);
-
-                if (meshEdgesToDelete.Count > 1)
+                if (!markedForDeletion.Contains(currentMeshEdge))
                 {
-                    foreach (MeshEdge meshEdgeToDelete in meshEdgesToDelete)
+                    Vertex vertex0 = currentMeshEdge.VertexOnEnd[0];
+                    Vertex vertex1 = currentMeshEdge.VertexOnEnd[1];
+
+                    // find out if there is another edge attached to the same vertexes
+                    List<MeshEdge> meshEdgesToDelete = FindMeshEdges(vertex0, vertex1);
+
+                    if (meshEdgesToDelete.Count > 1)
                     {
-                        if (meshEdgeToDelete != currentMeshEdge)
+                        foreach (MeshEdge meshEdgeToDelete in meshEdgesToDelete)
                         {
-                            MergeMeshEdges(currentMeshEdge, meshEdgeToDelete);
+                            if (meshEdgeToDelete != currentMeshEdge)
+                            {
+                                if (!markedForDeletion.Contains(meshEdgeToDelete))
+                                {
+                                    MergeMeshEdges(currentMeshEdge, meshEdgeToDelete, false);
+                                    markedForDeletion.Add(meshEdgeToDelete);
+                                }
+                            }
                         }
                     }
                 }
             }
+
+            RemoveMeshEdgesMarkedForDeletion(markedForDeletion);
         }
 
-        public void MergeMeshEdges(MeshEdge edgeToKeep, MeshEdge edgeToDelete)
+        private void RemoveMeshEdgesMarkedForDeletion(HashSet<MeshEdge> markedForDeletion)
+        {
+            List<MeshEdge> NonDeleteMeshEdges = new List<MeshEdge>();
+            for (int i = 0; i < meshEdges.Count; i++)
+            {
+                MeshEdge meshEdgeToCheck = meshEdges[i];
+                if (!markedForDeletion.Contains(meshEdgeToCheck))
+                {
+                    NonDeleteMeshEdges.Add(meshEdgeToCheck);
+                }
+            }
+
+            meshEdges = NonDeleteMeshEdges;
+        }
+
+        public void MergeMeshEdges(MeshEdge edgeToKeep, MeshEdge edgeToDelete, bool doActualDeletion = true)
         {
             // make sure they sare vertexes (or they can't be merged)
             if (!edgeToDelete.IsConnectedTo(edgeToKeep.VertexOnEnd[0]) 
@@ -703,7 +728,10 @@ namespace MatterHackers.PolygonMesh
                 faceEdge.AddToRadialLoop(edgeToKeep);
             }
 
-            meshEdges.Remove(edgeToDelete);
+            if (doActualDeletion)
+            {
+                meshEdges.Remove(edgeToDelete);
+            }
         }
 
         #endregion // MeshEdge
