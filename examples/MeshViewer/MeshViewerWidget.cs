@@ -81,12 +81,17 @@ namespace MatterHackers.MeshVisualizer
 
         internal class CenterInfo : FlowLayoutWidget
         {
+            internal ProgressControl progressControl;
             internal TextWidget centeredInfoText;
             internal TextWidget centeredInfoDescription;
 
             internal CenterInfo(string startingTextMessage)
                 : base(FlowDirection.TopToBottom)
             {
+                progressControl = new ProgressControl("", RGBA_Bytes.Black, RGBA_Bytes.Black);
+                progressControl.HAnchor = HAnchor.ParentCenter;
+                AddChild(progressControl);
+
                 centeredInfoText = new TextWidget(startingTextMessage);
                 centeredInfoText.HAnchor = HAnchor.ParentCenter;
                 centeredInfoText.AutoExpandBoundsToText = true;
@@ -398,8 +403,7 @@ namespace MatterHackers.MeshVisualizer
         void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             SetMeshAfterLoad((Mesh)e.Result);
-            centerInfo.centeredInfoText.Text = "";
-            centerInfo.centeredInfoDescription.Text = "";
+            centerInfo.Visible = false;
 
             if (LoadDone != null)
             {
@@ -409,8 +413,13 @@ namespace MatterHackers.MeshVisualizer
 
         bool backgroundWorker_ProgressChanged(double progress0To1, string processingState)
         {
-            centerInfo.centeredInfoText.Text = "Loading Mesh {0}%...".FormatWith((int)(progress0To1 * 100 + .5));
-            centerInfo.centeredInfoDescription.Text = processingState;
+            UiThread.RunOnIdle((object state) =>
+            {
+                int percentComplete = (int)(progress0To1 * 100 + .5);
+                centerInfo.centeredInfoText.Text = "Loading Mesh {0}%...".FormatWith(percentComplete);
+                centerInfo.progressControl.PercentComplete = percentComplete;
+                centerInfo.centeredInfoDescription.Text = processingState;
+            });
             return true;
         }
 
