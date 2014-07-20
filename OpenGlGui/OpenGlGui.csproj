@@ -32,7 +32,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>True</Optimize>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;USE_OPENGL</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>

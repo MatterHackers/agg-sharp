@@ -149,7 +149,7 @@ namespace MatterHackers.PolygonMesh.Processors
             time.Start();
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
-            double ratioOfPolygonLoad = .91;
+            double parsingFileRatio = .5;
 
             if (stlStream == null)
             {
@@ -227,7 +227,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
                     if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
                     {
-                        if (!reportProgress(Math.Min(stlStream.Position / (double)bytesInFile, ratioOfPolygonLoad), "Loading Polygons"))
+                        if (!reportProgress(stlStream.Position / (double)bytesInFile * parsingFileRatio, "Loading Polygons"))
                         {
                             stlStream.Close();
                             return null;
@@ -273,7 +273,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
                     if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
                     {
-                        if (!reportProgress(Math.Min(i / (double)numTriangles, ratioOfPolygonLoad), "Loading Polygons"))
+                        if (!reportProgress(i / (double)numTriangles * parsingFileRatio, "Loading Polygons"))
                         {
                             stlStream.Close();
                             return null;
@@ -296,7 +296,7 @@ namespace MatterHackers.PolygonMesh.Processors
             meshFromStlFile.CleanAndMergMesh(
                 (double progress0To1, string processingState) => 
                 {
-                    reportProgress(ratioOfPolygonLoad + progress0To1 * (1 - ratioOfPolygonLoad), processingState);
+                    reportProgress(parsingFileRatio + progress0To1 * (1-parsingFileRatio), processingState);
                     return true;
                 });
 

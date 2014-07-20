@@ -78,7 +78,32 @@ namespace MatterHackers.MeshVisualizer
 
         double partScale;
         public ImageBuffer BedImage;
-        TextWidget centeredInfoText;
+
+        internal class CenterInfo : FlowLayoutWidget
+        {
+            internal TextWidget centeredInfoText;
+            internal TextWidget centeredInfoDescription;
+
+            internal CenterInfo(string startingTextMessage)
+                : base(FlowDirection.TopToBottom)
+            {
+                centeredInfoText = new TextWidget(startingTextMessage);
+                centeredInfoText.HAnchor = HAnchor.ParentCenter;
+                centeredInfoText.AutoExpandBoundsToText = true;
+                AddChild(centeredInfoText);
+
+                centeredInfoDescription = new TextWidget("");
+                centeredInfoDescription.HAnchor = HAnchor.ParentCenter;
+                centeredInfoDescription.AutoExpandBoundsToText = true;
+                AddChild(centeredInfoDescription);
+
+                VAnchor = VAnchor.ParentCenter;
+                HAnchor = HAnchor.ParentCenter;
+            }
+        }
+
+        CenterInfo centerInfo;
+
         TrackballTumbleWidget trackballTumbleWidget;
         public TrackballTumbleWidget TrackballTumbleWidget
         {
@@ -233,14 +258,11 @@ namespace MatterHackers.MeshVisualizer
 
             trackballTumbleWidget.AnchorAll();
 
-            centeredInfoText = new TextWidget(startingTextMessage);
-            centeredInfoText.HAnchor = HAnchor.ParentCenter;
-            centeredInfoText.VAnchor = VAnchor.ParentCenter;
-            centeredInfoText.AutoExpandBoundsToText = true;
+            centerInfo = new CenterInfo(startingTextMessage);
 
             GuiWidget labelContainer = new GuiWidget();
             labelContainer.AnchorAll();
-            labelContainer.AddChild(centeredInfoText);
+            labelContainer.AddChild(centerInfo);
             labelContainer.Selectable = false;
 
             this.AddChild(labelContainer);
@@ -289,10 +311,8 @@ namespace MatterHackers.MeshVisualizer
             if (File.Exists(meshPathAndFileName))
             {
                 backgroundWorker = new BackgroundWorker();
-                backgroundWorker.WorkerReportsProgress = true;
                 backgroundWorker.WorkerSupportsCancellation = true;
 
-                backgroundWorker.ProgressChanged += new ProgressChangedEventHandler(backgroundWorker_ProgressChanged);
                 backgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(backgroundWorker_RunWorkerCompleted);
 
                 bool loadingMeshFile = false;
@@ -302,12 +322,7 @@ namespace MatterHackers.MeshVisualizer
                         {
                             backgroundWorker.DoWork += (object sender, DoWorkEventArgs e) =>
                             {
-                                Mesh loadedMesh = StlProcessing.Load(meshPathAndFileName,
-                                    (double progress0To1, string processingState) =>
-                                    {
-                                        backgroundWorker.ReportProgress((int)(progress0To1 * 100));
-                                        return true;
-                                    });
+                                Mesh loadedMesh = StlProcessing.Load(meshPathAndFileName, backgroundWorker_ProgressChanged);
 
                                 e.Result = loadedMesh;
                             };
@@ -331,16 +346,16 @@ namespace MatterHackers.MeshVisualizer
 
                 if (loadingMeshFile)
                 {
-                    centeredInfoText.Text = "Loading Mesh...";
+                    centerInfo.centeredInfoText.Text = "Loading Mesh...";
                 }
                 else
                 {
-                    centeredInfoText.Text = string.Format("Sorry! No 3D view available\nfor this file type '{0}'.", Path.GetExtension(meshPathAndFileName).ToUpper());
+                    centerInfo.centeredInfoText.Text = string.Format("Sorry! No 3D view available\nfor this file type '{0}'.", Path.GetExtension(meshPathAndFileName).ToUpper());
                 }
             }
             else
             {
-                centeredInfoText.Text = string.Format("{0}\n'{1}'", "File not found on disk.", Path.GetFileName(meshPathAndFileName));
+                centerInfo.centeredInfoText.Text = string.Format("{0}\n'{1}'", "File not found on disk.", Path.GetFileName(meshPathAndFileName));
             }
         }
 
@@ -350,7 +365,7 @@ namespace MatterHackers.MeshVisualizer
 
             if (loadedMesh == null)
             {
-                centeredInfoText.Text = string.Format("Sorry! No 3D view available\nfor this file.");
+                centerInfo.centeredInfoText.Text = string.Format("Sorry! No 3D view available\nfor this file.");
             }
             else
             {
@@ -383,7 +398,8 @@ namespace MatterHackers.MeshVisualizer
         void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             SetMeshAfterLoad((Mesh)e.Result);
-            centeredInfoText.Text = "";
+            centerInfo.centeredInfoText.Text = "";
+            centerInfo.centeredInfoDescription.Text = "";
 
             if (LoadDone != null)
             {
@@ -391,9 +407,11 @@ namespace MatterHackers.MeshVisualizer
             }
         }
 
-        void backgroundWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        bool backgroundWorker_ProgressChanged(double progress0To1, string processingState)
         {
-            centeredInfoText.Text = string.Format("Loading Mesh {0}%...", e.ProgressPercentage);
+            centerInfo.centeredInfoText.Text = "Loading Mesh {0}%...".FormatWith((int)(progress0To1 * 100 + .5));
+            centerInfo.centeredInfoDescription.Text = processingState;
+            return true;
         }
 
         public override void OnMouseDown(MouseEventArgs mouseEvent)
