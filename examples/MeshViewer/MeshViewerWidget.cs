@@ -300,7 +300,18 @@ namespace MatterHackers.MeshVisualizer
                 {
                     case ".STL":
                         {
-                            StlProcessing.LoadInBackground(backgroundWorker, meshPathAndFileName);
+                            backgroundWorker.DoWork += (object sender, DoWorkEventArgs e) =>
+                            {
+                                Mesh loadedMesh = StlProcessing.Load(meshPathAndFileName,
+                                    (double progress0To1, string processingState) =>
+                                    {
+                                        backgroundWorker.ReportProgress((int)(progress0To1 * 100));
+                                        return true;
+                                    });
+
+                                e.Result = loadedMesh;
+                            };
+                            backgroundWorker.RunWorkerAsync();
                             loadingMeshFile = true;
                         }
                         break;

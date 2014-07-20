@@ -91,7 +91,7 @@ namespace MatterHackers.PolygonMesh.Processors
             streamWriter.Close();
         }
 
-        public static Mesh Load(string fileName)
+        public static Mesh Load(string fileName, ReportProgress reportProgress = null)
         {
             Mesh loadedMesh = null;
             if (Path.GetExtension(fileName).ToUpper() == ".STL")
@@ -102,9 +102,7 @@ namespace MatterHackers.PolygonMesh.Processors
                     {
                         Stream fileStream = File.OpenRead(fileName);
 
-                        DoWorkEventArgs doWorkEventArgs = new DoWorkEventArgs(fileStream);
-                        ParseFileContents(null, doWorkEventArgs);
-                        loadedMesh = (Mesh)doWorkEventArgs.Result;
+                        loadedMesh = ParseFileContents(fileStream, reportProgress);
                     }
                 }
 #if DEBUG
@@ -123,14 +121,12 @@ namespace MatterHackers.PolygonMesh.Processors
             return loadedMesh;
         }
 
-        public static Mesh Load(Stream fileStream)
+        public static Mesh Load(Stream fileStream, ReportProgress reportProgress = null)
         {
             Mesh loadedMesh = null;
             try
             {
-                DoWorkEventArgs doWorkEventArgs = new DoWorkEventArgs(fileStream);
-                ParseFileContents(null, doWorkEventArgs);
-                loadedMesh = (Mesh)doWorkEventArgs.Result;
+                loadedMesh = ParseFileContents(fileStream, reportProgress);
             }
 #if DEBUG
             catch (IOException)
@@ -147,47 +143,17 @@ namespace MatterHackers.PolygonMesh.Processors
             return loadedMesh;
         }
 
-        public static void LoadInBackground(BackgroundWorker backgroundWorker, string fileName)
+        public static Mesh ParseFileContents(Stream stlStream, ReportProgress reportProgress)
         {
-            if (Path.GetExtension(fileName).ToUpper() == ".STL")
-            {
-                try
-                {
-                    if (File.Exists(fileName))
-                    {
-                        Stream fileStream = File.OpenRead(fileName);
-
-                        backgroundWorker.DoWork += new DoWorkEventHandler(ParseFileContents);
-
-                        backgroundWorker.RunWorkerAsync(fileStream);
-                    }
-                    else
-                    {
-                        backgroundWorker.RunWorkerAsync(null);
-                    }
-                }
-                catch (IOException)
-                {
-                }
-            }
-            else
-            {
-                backgroundWorker.RunWorkerAsync(null);
-            }
-        }
-
-        public static void ParseFileContents(object sender, DoWorkEventArgs doWorkEventArgs)
-        {
-            BackgroundWorker backgroundWorker = sender as BackgroundWorker;
-
             Stopwatch time = new Stopwatch();
             time.Start();
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
-            Stream stlStream = (Stream)doWorkEventArgs.Argument;
+            double ratioOfPolygonLoad = .91;
+
             if (stlStream == null)
             {
-                return;
+                return null;
             }
 
             //MemoryStream stlStream = new MemoryStream();
@@ -201,7 +167,7 @@ namespace MatterHackers.PolygonMesh.Processors
             long bytesInFile = stlStream.Length;
             if (bytesInFile <= 80)
             {
-                return;
+                return null;
             }
 
             byte[] first160Bytes = new byte[160];
@@ -259,19 +225,14 @@ namespace MatterHackers.PolygonMesh.Processors
                     }
                     line = stlReader.ReadLine();
 
-                    if (sender != null)
+                    if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
                     {
-                        if (backgroundWorker.CancellationPending)
+                        if (!reportProgress(Math.Min(stlStream.Position / (double)bytesInFile, ratioOfPolygonLoad), "Loading Polygons"))
                         {
                             stlStream.Close();
-                            return;
+                            return null;
                         }
-
-                        if (backgroundWorker.WorkerReportsProgress && maxProgressReport.ElapsedMilliseconds > 200)
-                        {
-                            backgroundWorker.ReportProgress((int)Math.Min((stlStream.Position * 100 / bytesInFile), 99));
-                            maxProgressReport.Restart();
-                        }
+                        maxProgressReport.Restart();
                     }
                 }
             }
@@ -293,7 +254,7 @@ namespace MatterHackers.PolygonMesh.Processors
                 if (fileContents.Length < numBytesRequiredForVertexData || numTriangles < 4)
                 {
                     stlStream.Close();
-                    return;
+                    return null;
                 }
                 Vector3[] vector = new Vector3[3];
                 for (int i = 0; i < numTriangles; i++)
@@ -310,19 +271,14 @@ namespace MatterHackers.PolygonMesh.Processors
                     }
                     currentPosition += 2; // skip the attribute
 
-                    if (sender != null)
+                    if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
                     {
-                        if (backgroundWorker.CancellationPending)
+                        if (!reportProgress(Math.Min(i / (double)numTriangles, ratioOfPolygonLoad), "Loading Polygons"))
                         {
                             stlStream.Close();
-                            return;
+                            return null;
                         }
-
-                        if(backgroundWorker.WorkerReportsProgress && maxProgressReport.ElapsedMilliseconds > 200)
-                        {
-                            backgroundWorker.ReportProgress(i * 91 / (int)numTriangles);
-                            maxProgressReport.Restart();
-                        }
+                        maxProgressReport.Restart();
                     }
 
                     if (!Vector3.Collinear(vector[0], vector[1], vector[2]))
@@ -337,14 +293,18 @@ namespace MatterHackers.PolygonMesh.Processors
             }
 
             // merge all the vetexes that are in the same place together
-            meshFromStlFile.CleanAndMergMesh(backgroundWorker, 92, 100);
-
-            doWorkEventArgs.Result = meshFromStlFile;
+            meshFromStlFile.CleanAndMergMesh(
+                (double progress0To1, string processingState) => 
+                {
+                    reportProgress(ratioOfPolygonLoad + progress0To1 * (1 - ratioOfPolygonLoad), processingState);
+                    return true;
+                });
 
             time.Stop();
             Debug.WriteLine(string.Format("STL Load in {0:0.00}s", time.Elapsed.TotalSeconds));
 
             stlStream.Close();
+            return meshFromStlFile;
         }
 
         public static string FormatForStl(Vector3 value)

@@ -39,6 +39,8 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh
 {
+    public delegate bool ReportProgress(double progress0To1, string processingState);
+
     [DebuggerDisplay("ID = {Data.ID}")]
     public class Mesh
     {
@@ -111,10 +113,10 @@ namespace MatterHackers.PolygonMesh
             CleanAndMergMesh();
         }
 
-        public void CleanAndMergMesh(BackgroundWorker backgroundWorker = null, int startPercent = 0, int endPercent = 0)
+        public void CleanAndMergMesh(ReportProgress reportProgress = null)
         {
             SortVertices();
-            MergeVertices(backgroundWorker, startPercent, endPercent);
+            MergeVertices(reportProgress);
             MergeMeshEdges();
         }
 
@@ -375,7 +377,7 @@ namespace MatterHackers.PolygonMesh
             Vertices.Sort();
         }
 
-        public void MergeVertices(BackgroundWorker backgroundWorker = null, int startPercent = 0, int endPercent = 0, double maxDistanceToConsiderVertexAsSame = 0)
+        public void MergeVertices(ReportProgress reportProgress = null, double maxDistanceToConsiderVertexAsSame = 0)
         {
             HashSet<Vertex> markedForDeletion = new HashSet<Vertex>();
             Stopwatch maxProgressReport = new Stopwatch();
@@ -399,16 +401,20 @@ namespace MatterHackers.PolygonMesh
                         }
                     }
 
-                    if (backgroundWorker != null)
+                    if (reportProgress != null)
                     {
-                        if (backgroundWorker.WorkerReportsProgress && maxProgressReport.ElapsedMilliseconds > 200)
+                        if (maxProgressReport.ElapsedMilliseconds > 200)
                         {
-                            backgroundWorker.ReportProgress(startPercent + (endPercent - startPercent) * i / Vertices.Count);
+                            reportProgress(i / (double)Vertices.Count, "Finding Vertices To Merge");
                         }
                     }
                 }
             }
 
+            if (reportProgress != null)
+            {
+                reportProgress(1, "Deleting Unused Vertices");
+            }
             RemoveVerticesMarkedForDeletion(markedForDeletion);
         }
 
