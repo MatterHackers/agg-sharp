@@ -69,31 +69,45 @@ namespace MatterHackers.Agg.UI
             normal.Visible = true;
         }
 
+        CheckBox widgetWithHooksToUs;
+        void RemoveLinks()
+        {
+            if (widgetWithHooksToUs != null)
+            {
+                widgetWithHooksToUs.MouseEnter -= SetCorrectVisibilityStates;
+                widgetWithHooksToUs.MouseDown -= SetCorrectVisibilityStates;
+                widgetWithHooksToUs.MouseUp -= SetCorrectVisibilityStates;
+                widgetWithHooksToUs.MouseLeave -= SetCorrectVisibilityStates;
+                widgetWithHooksToUs.CheckedStateChanged -= SetCorrectVisibilityStates;
+            }
+        }
+        
+        void CreateLinks(CheckBox parent)
+        {
+            RemoveLinks();
+            
+            widgetWithHooksToUs = parent;
+
+            widgetWithHooksToUs.MouseEnter += SetCorrectVisibilityStates;
+            widgetWithHooksToUs.MouseDown += SetCorrectVisibilityStates;
+            widgetWithHooksToUs.MouseUp += SetCorrectVisibilityStates;
+            widgetWithHooksToUs.MouseLeave += SetCorrectVisibilityStates;
+            widgetWithHooksToUs.CheckedStateChanged += SetCorrectVisibilityStates;
+        }
+
         public override void OnParentChanged(EventArgs e)
         {
-            CheckBox parentButton = (CheckBox)Parent;
-
-            parentButton.MouseEnter += SetCorrectVisibilityStates;
-            parentButton.MouseDown += SetCorrectVisibilityStates;
-            parentButton.MouseUp += SetCorrectVisibilityStates;
-            parentButton.MouseLeave += SetCorrectVisibilityStates;
-            parentButton.CheckedStateChanged += SetCorrectVisibilityStates;
+            CreateLinks((CheckBox)Parent);
 
             base.OnParentChanged(e);
         }
 
-        public override void OnClosing(out bool cancelClose)
+        public override void OnClosed(EventArgs e)
         {
+            RemoveLinks();
 
-            CheckBox parentButton = (CheckBox)Parent;
-
-            parentButton.MouseEnter -= SetCorrectVisibilityStates;
-            parentButton.MouseDown -= SetCorrectVisibilityStates;
-            parentButton.MouseUp -= SetCorrectVisibilityStates;
-            parentButton.MouseLeave -= SetCorrectVisibilityStates;
-            parentButton.CheckedStateChanged += SetCorrectVisibilityStates;
-            base.OnClosing(out cancelClose);
-        }        
+            base.OnClosed(e);
+        }
 
         public override double Width
         {
