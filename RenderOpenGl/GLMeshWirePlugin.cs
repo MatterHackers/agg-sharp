@@ -116,8 +116,9 @@ namespace MatterHackers.RenderOpenGl
             {
                 GLMeshWirePlugin newPlugin = new GLMeshWirePlugin();
                 meshesWithCacheData.Add(meshToGetDisplayListFor, newPlugin);
-                newPlugin.CreateRenderData(meshToGetDisplayListFor);
+                newPlugin.CreateRenderData(meshToGetDisplayListFor, nonPlanarAngleRequired);
                 newPlugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
+                newPlugin.nonPlanarAngleRequired = nonPlanarAngleRequired;
 
                 return newPlugin;
             }
