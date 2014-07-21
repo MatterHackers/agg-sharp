@@ -414,6 +414,7 @@ namespace MatterHackers.PolygonMesh
                         if (maxProgressReport.ElapsedMilliseconds > 200)
                         {
                             reportProgress(i / (double)Vertices.Count, "Merging Vertices");
+                            maxProgressReport.Restart();
                         }
                     }
                 }
@@ -701,6 +702,7 @@ namespace MatterHackers.PolygonMesh
                     if (maxProgressReport.ElapsedMilliseconds > 200)
                     {
                         reportProgress(i / (double)meshEdges.Count, "Merging Mesh Edges");
+                        maxProgressReport.Restart();
                     }
                 }
             }

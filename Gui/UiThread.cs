@@ -30,6 +30,14 @@ namespace MatterHackers.Agg.UI
             }
         }
 
+        public static int Count
+        {
+            get
+            {
+                return functionsToCallOnIdle.Count;
+            }
+        }
+
         public static void DoRunAllPending()
         {
             List<CallBackAndState> holdFunctionsToCallOnIdle = new List<CallBackAndState>();

@@ -1661,8 +1661,10 @@ namespace MatterHackers.Agg.UI
             }
         }
 
+        public static int DrawCount;
         public virtual void OnDraw(Graphics2D graphics2D)
         {
+            DrawCount++;
             for (int i = 0; i < Children.Count; i++)
             {
                 GuiWidget child = Children[i];
