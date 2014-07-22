@@ -91,6 +91,11 @@ namespace MatterHackers.MeshVisualizer
                 progressControl = new ProgressControl("", RGBA_Bytes.Black, RGBA_Bytes.Black);
                 progressControl.HAnchor = HAnchor.ParentCenter;
                 AddChild(progressControl);
+                progressControl.Visible = false;
+                progressControl.ProgressChanged += (sender, e) =>
+                {
+                    progressControl.Visible = true;
+                };
 
                 centeredInfoText = new TextWidget(startingTextMessage);
                 centeredInfoText.HAnchor = HAnchor.ParentCenter;

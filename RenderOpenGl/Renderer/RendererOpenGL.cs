@@ -201,9 +201,7 @@ namespace MatterHackers.RenderOpenGl
 
             vertexSource.rewind(pathIndexToRender);
 
-            RGBA_Floats color = colorBytes.GetAsRGBA_Floats();
-
-            GL.Color4(color.red, color.green, color.blue, color.alpha);
+            GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
             Affine transform = GetTransform();
             if (!transform.is_identity())
@@ -276,7 +274,7 @@ namespace MatterHackers.RenderOpenGl
             GL.Scale(scaleX, scaleY, 1);
 
             RGBA_Bytes color = RGBA_Bytes.White;
-            GL.Color4(color.Red0To1, color.Green0To1, color.Blue0To1, color.Alpha0To1);
+            GL.Color4((byte)color.Red0To255, (byte)color.Green0To255, (byte)color.Blue0To255, (byte)color.Alpha0To255);
 
             glPlugin.DrawToGL();
 

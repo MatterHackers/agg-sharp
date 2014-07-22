@@ -186,22 +186,22 @@ namespace MatterHackers.RenderOpenGl.OpenGl
             OpenTK.Graphics.OpenGL.GL.MatrixMode((OpenTK.Graphics.OpenGL.MatrixMode)mode);
         }
 
-        public static void Translate(double x, double y, int z)
+        public static void Translate(double x, double y, double z)
         {
             OpenTK.Graphics.OpenGL.GL.Translate(x, y, z);
         }
 
-        public static void Rotate(double angle, int x, int y, int z)
+        public static void Rotate(double angle, double x, double y, double z)
         {
             OpenTK.Graphics.OpenGL.GL.Rotate(angle, x, y, z);
         }
 
-        public static void Scale(double x, double y, int z)
+        public static void Scale(double x, double y, double z)
         {
             OpenTK.Graphics.OpenGL.GL.Scale(x, y, z);
         }
 
-        public static void Color4(float red, float green, float blue, float alpha)
+        public static void Color4(byte red, byte green, byte blue, byte alpha)
         {
             OpenTK.Graphics.OpenGL.GL.Color4(red, green, blue, alpha);
         }
@@ -296,6 +296,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
             OpenTK.Graphics.OpenGL.GL.Vertex2(x, y);
         }
 
+        public static void Vertex3(double x, double y, double z)
+        {
+            OpenTK.Graphics.OpenGL.GL.Vertex3(x, y, z);
+        }
+
         public static void DeleteTextures(int n, ref int textures)
         {
             OpenTK.Graphics.OpenGL.GL.DeleteTextures(n, ref textures);
@@ -355,6 +360,5 @@ namespace MatterHackers.RenderOpenGl.OpenGl
         {
             OpenTK.Graphics.OpenGL.GL.DrawRangeElements((OpenTK.Graphics.OpenGL.BeginMode)mode, start, end, count, (OpenTK.Graphics.OpenGL.DrawElementsType) type, indices);
         }
-
     }
 }

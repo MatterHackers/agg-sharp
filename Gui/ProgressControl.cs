@@ -46,6 +46,8 @@ namespace MatterHackers.Agg.UI
         public TextWidget textWidget;
         RGBA_Bytes fillColor;
 
+        public EventHandler ProgressChanged;
+
         int percentComplete;
         public int PercentComplete
         {
@@ -54,6 +56,10 @@ namespace MatterHackers.Agg.UI
             {
                 if (value != percentComplete)
                 {
+                    if (ProgressChanged != null)
+                    {
+                        ProgressChanged(this, null);
+                    }
                     percentComplete = value;
                     Invalidate();
                 }
