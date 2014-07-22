@@ -11,6 +11,49 @@ using OpenTK.Graphics.OpenGL;
 
 namespace MatterHackers.RenderOpenGl.OpenGl
 {
+    public enum TextureParameterName
+    {
+        TextureMagFilter = 10240,
+        TextureMinFilter = 10241,
+        TextureWrapS = 10242,
+        TextureWrapT = 10243,
+    }
+
+    public enum TextureMagFilter
+    {
+        Linear = 9729,
+    }
+
+    public enum TextureMinFilter
+    {
+        Linear = 9729,
+    }
+
+    public enum TextureWrapMode
+    {
+        ClampToEdge = 33071,
+    }
+
+    public enum PixelInternalFormat
+    {
+        Rgba = 6408,
+    }
+
+    public enum PixelFormat
+    {
+        Rgba = 6408,
+    }
+
+    public enum PixelType
+    {
+        UnsignedByte = 5121,
+    }
+
+    public enum TextureTarget
+    {
+        Texture2D = 3553,
+    }
+
     public enum BlendingFactorSrc
     {
         SrcAlpha = 770,
@@ -56,7 +99,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
         public static void Enable(EnableCap cap)
         {
+#if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Enable((OpenTK.Graphics.OpenGL.EnableCap)cap);
+#elif USE_GLES
+            OpenTK.Graphics.OpenGL.GL.Enable((OpenTK.Graphics.OpenGL.All)cap);
+#endif
         }
 
         public static void Disable(EnableCap cap)
@@ -123,5 +170,30 @@ namespace MatterHackers.RenderOpenGl.OpenGl
         {
             OpenTK.Graphics.OpenGL.GL.GenTextures(n, out textureHandle);
         }
+
+        public static void BindTexture(TextureTarget target, int texture)
+        {
+            OpenTK.Graphics.OpenGL.GL.BindTexture((OpenTK.Graphics.OpenGL.TextureTarget)target, texture);
+        }
+
+        public static void TexParameter(TextureTarget target, TextureParameterName pname, int param)
+        {
+            OpenTK.Graphics.OpenGL.GL.TexParameter((OpenTK.Graphics.OpenGL.TextureTarget)target, (OpenTK.Graphics.OpenGL.TextureParameterName)pname, param);
+        }
+
+        public static void TexImage2D(TextureTarget target, int level, 
+            PixelInternalFormat internalFormat, 
+            int width, int height, int border, 
+            PixelFormat format,
+            PixelType type,
+            Byte[] pixels)
+        {
+            OpenTK.Graphics.OpenGL.GL.TexImage2D(
+                (OpenTK.Graphics.OpenGL.TextureTarget) target, level, 
+                (OpenTK.Graphics.OpenGL.PixelInternalFormat) internalFormat,
+                width, height, border, 
+                (OpenTK.Graphics.OpenGL.PixelFormat) format, 
+                (OpenTK.Graphics.OpenGL.PixelType)type, pixels);
+        }        
     }
 }

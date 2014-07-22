@@ -29,16 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 //#define AA_TIPS
 
-using System;
-using System.Collections.Generic;
-
-using MatterHackers.Agg;
-using MatterHackers.Agg.Image;
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.Agg.Transform;
 using MatterHackers.VectorMath;
-
-using Tesselate;
 
 #if USE_GLES
 using OpenTK.Graphics.ES11;

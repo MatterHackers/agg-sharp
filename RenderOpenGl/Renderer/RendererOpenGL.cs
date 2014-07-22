@@ -28,28 +28,15 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 //#define AA_TIPS
-//#define USE_GLES
 
 using System;
-using System.Collections.Generic;
-
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.VertexSource;
 using MatterHackers.Agg.Transform;
-using MatterHackers.VectorMath;
-
-using Tesselate;
-
-#if USE_GLES
-using OpenTK.Graphics.ES11;
-#elif USE_OPENGL
-#if true
-using OpenTK.Graphics.OpenGL;
-#else
+using MatterHackers.Agg.VertexSource;
 using MatterHackers.RenderOpenGl.OpenGl;
-#endif
-#endif
+using MatterHackers.VectorMath;
+using Tesselate;
 
 namespace MatterHackers.RenderOpenGl
 {
@@ -80,15 +67,9 @@ namespace MatterHackers.RenderOpenGl
         public override void SetClippingRect(RectangleDouble clippingRect)
         {
 			cachedClipRect = clippingRect;
-			#if USE_OPENGL
             GL.Scissor((int)Math.Floor(Math.Max(clippingRect.Left, 0)), (int)Math.Floor(Math.Max(clippingRect.Bottom, 0)),
                 (int)Math.Ceiling(Math.Max(clippingRect.Width, 0)), (int)Math.Ceiling(Math.Max(clippingRect.Height, 0)));
 			GL.Enable(EnableCap.ScissorTest);
-			#elif USE_GLES
-			GL.Scissor((int)Math.Floor(Math.Max(clippingRect.Left, 0)), (int)Math.Floor(Math.Max(clippingRect.Bottom, 0)),
-				(int)Math.Ceiling(Math.Max(clippingRect.Width, 0)), (int)Math.Ceiling(Math.Max(clippingRect.Height, 0)));
-            GL.Enable(All.ScissorTest);
-			#endif
         }
 
         public override IScanlineCache ScanlineCache
@@ -99,7 +80,6 @@ namespace MatterHackers.RenderOpenGl
 
         public void PushOrthoProjection()
         {
-			#if USE_OPENGL
 			GL.PushAttrib(AttribMask.TransformBit | AttribMask.EnableBit);
 
             GL.MatrixMode(MatrixMode.Projection);
@@ -110,35 +90,15 @@ namespace MatterHackers.RenderOpenGl
             GL.MatrixMode(MatrixMode.Modelview);
             GL.PushMatrix();
             GL.LoadIdentity();
-			#elif USE_GLES
-			//GL.PushAttrib(All.TransformBit | All.EnableBit);
-
-			GL.MatrixMode(All.Projection);
-			GL.PushMatrix();
-			GL.LoadIdentity();
-			GL.Ortho(0, width, 0, height, 0, 1);
-
-			GL.MatrixMode(All.Modelview);
-			GL.PushMatrix();
-			GL.LoadIdentity();
-			#endif
         }
 
         public void PopOrthoProjection()
         {
-			#if USE_OPENGL
 			GL.MatrixMode(MatrixMode.Projection);
             GL.PopMatrix();
             GL.MatrixMode(MatrixMode.Modelview);
             GL.PopMatrix();
             GL.PopAttrib();
-			#elif USE_GLES
-			GL.MatrixMode(All.Projection);
-			GL.PopMatrix();
-			GL.MatrixMode(All.Modelview);
-			GL.PopMatrix();
-			//GL.PopAttrib();
-			#endif
         }
 
         public static void SendShapeToTesselator(VertexTesselatorAbstract tesselator, IVertexSource vertexSource)
@@ -198,7 +158,6 @@ namespace MatterHackers.RenderOpenGl
         static int AATextureHandle = -1;
         void CheckLineImageCache()
         {
-#if USE_OPENGL
             if (AATextureHandle == -1)
             {
                 // Create the texture handle and display list handle
@@ -218,34 +177,10 @@ namespace MatterHackers.RenderOpenGl
                 GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1024, 4,
                     0, PixelFormat.Rgba, PixelType.UnsignedByte, hardwarePixelBuffer);
             }
-#elif USE_GLES
-			if (AATextureHandle == -1)
-			{
-			// Create the texture handle and display list handle
-			int[] textureHandle = new int[1];
-			GL.GenTextures(1, textureHandle);
-			AATextureHandle = textureHandle[0];
-
-			// Set up some texture parameters for openGL
-			GL.BindTexture(All.Texture2D, AATextureHandle);
-			GL.TexParameter(All.Texture2D, All.TextureMagFilter, (int)All.Linear);
-			GL.TexParameter(All.Texture2D, All.TextureMinFilter, (int)All.Linear);
-
-			GL.TexParameter(All.Texture2D, All.TextureWrapS, (int)All.ClampToEdge);
-			GL.TexParameter(All.Texture2D, All.TextureWrapT, (int)All.ClampToEdge);
-
-			byte[] hardwarePixelBuffer = CreateBufferForAATexture();
-
-			// Create the texture
-			GL.TexImage2D(All.Texture2D, 0, All.Rgba, 1024, 4,
-			0, All.Rgba, All.UnsignedByte, hardwarePixelBuffer);
-			}
-#endif
         }
 
         void DrawAAShape(IVertexSource vertexSource)
         {
-			#if USE_OPENGL
 			CheckLineImageCache();
             GL.Enable(EnableCap.Texture2D);
             GL.BindTexture(TextureTarget.Texture2D, AATextureHandle);
@@ -255,12 +190,10 @@ namespace MatterHackers.RenderOpenGl
 
             // now render it
             triangleEddgeInfo.RenderLastToGL();
-			#endif
         }
 
         public override void Render(IVertexSource vertexSource, int pathIndexToRender, RGBA_Bytes colorBytes)
         {
-			#if USE_OPENGL
 			PushOrthoProjection();
 
             GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
@@ -288,7 +221,6 @@ namespace MatterHackers.RenderOpenGl
             }
 
             PopOrthoProjection();
-			#endif
         }
 
         public override void Render(IImageByte source,
@@ -332,7 +264,6 @@ namespace MatterHackers.RenderOpenGl
 
             // Prepare openGL for rendering
             PushOrthoProjection();
-			#if USE_OPENGL
 			GL.Disable(EnableCap.Lighting);
             GL.Enable(EnableCap.Texture2D);
             GL.Disable(EnableCap.DepthTest);
@@ -351,7 +282,6 @@ namespace MatterHackers.RenderOpenGl
 
             //Restore openGL state
             PopOrthoProjection();
-			#endif
         }
 
         public override void Render(IImageFloat imageSource,

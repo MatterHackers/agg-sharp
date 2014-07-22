@@ -31,7 +31,6 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -40,13 +39,6 @@ using MatterHackers.Agg.Image;
 
 using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
-
-
-#if USE_GLES
-using OpenTK.Graphics.ES11;
-#elif USE_OPENGL
-using OpenTK.Graphics.OpenGL;
-#endif
 
 namespace MatterHackers.RenderOpenGl
 {
