@@ -79,13 +79,13 @@ namespace MatterHackers.MeshVisualizer
         double partScale;
         public ImageBuffer BedImage;
 
-        internal class CenterInfo : FlowLayoutWidget
+        public class PartProcessingInfo : FlowLayoutWidget
         {
             internal ProgressControl progressControl;
             internal TextWidget centeredInfoText;
             internal TextWidget centeredInfoDescription;
 
-            internal CenterInfo(string startingTextMessage)
+            internal PartProcessingInfo(string startingTextMessage)
                 : base(FlowDirection.TopToBottom)
             {
                 progressControl = new ProgressControl("", RGBA_Bytes.Black, RGBA_Bytes.Black);
@@ -107,7 +107,7 @@ namespace MatterHackers.MeshVisualizer
             }
         }
 
-        CenterInfo centerInfo;
+        public PartProcessingInfo partProcessingInfo;
 
         TrackballTumbleWidget trackballTumbleWidget;
         public TrackballTumbleWidget TrackballTumbleWidget
@@ -263,11 +263,11 @@ namespace MatterHackers.MeshVisualizer
 
             trackballTumbleWidget.AnchorAll();
 
-            centerInfo = new CenterInfo(startingTextMessage);
+            partProcessingInfo = new PartProcessingInfo(startingTextMessage);
 
             GuiWidget labelContainer = new GuiWidget();
             labelContainer.AnchorAll();
-            labelContainer.AddChild(centerInfo);
+            labelContainer.AddChild(partProcessingInfo);
             labelContainer.Selectable = false;
 
             this.AddChild(labelContainer);
@@ -351,16 +351,16 @@ namespace MatterHackers.MeshVisualizer
 
                 if (loadingMeshFile)
                 {
-                    centerInfo.centeredInfoText.Text = "Loading Mesh...";
+                    partProcessingInfo.centeredInfoText.Text = "Loading Mesh...";
                 }
                 else
                 {
-                    centerInfo.centeredInfoText.Text = string.Format("Sorry! No 3D view available\nfor this file type '{0}'.", Path.GetExtension(meshPathAndFileName).ToUpper());
+                    partProcessingInfo.centeredInfoText.Text = string.Format("Sorry! No 3D view available\nfor this file type '{0}'.", Path.GetExtension(meshPathAndFileName).ToUpper());
                 }
             }
             else
             {
-                centerInfo.centeredInfoText.Text = string.Format("{0}\n'{1}'", "File not found on disk.", Path.GetFileName(meshPathAndFileName));
+                partProcessingInfo.centeredInfoText.Text = string.Format("{0}\n'{1}'", "File not found on disk.", Path.GetFileName(meshPathAndFileName));
             }
         }
 
@@ -370,7 +370,7 @@ namespace MatterHackers.MeshVisualizer
 
             if (loadedMesh == null)
             {
-                centerInfo.centeredInfoText.Text = string.Format("Sorry! No 3D view available\nfor this file.");
+                partProcessingInfo.centeredInfoText.Text = string.Format("Sorry! No 3D view available\nfor this file.");
             }
             else
             {
@@ -403,7 +403,7 @@ namespace MatterHackers.MeshVisualizer
         void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             SetMeshAfterLoad((Mesh)e.Result);
-            centerInfo.Visible = false;
+            partProcessingInfo.Visible = false;
 
             if (LoadDone != null)
             {
@@ -416,9 +416,9 @@ namespace MatterHackers.MeshVisualizer
             UiThread.RunOnIdle((object state) =>
             {
                 int percentComplete = (int)(progress0To1 * 100 + .5);
-                centerInfo.centeredInfoText.Text = "Loading Mesh {0}%...".FormatWith(percentComplete);
-                centerInfo.progressControl.PercentComplete = percentComplete;
-                centerInfo.centeredInfoDescription.Text = processingState;
+                partProcessingInfo.centeredInfoText.Text = "Loading Mesh {0}%...".FormatWith(percentComplete);
+                partProcessingInfo.progressControl.PercentComplete = percentComplete;
+                partProcessingInfo.centeredInfoDescription.Text = processingState;
             });
             return true;
         }

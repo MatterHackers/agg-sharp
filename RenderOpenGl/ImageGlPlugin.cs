@@ -25,24 +25,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies, 
 either expressed or implied, of the FreeBSD Project.
-
 */
+
 #define ON_IMAGE_CHANGED_ALWAYS_CREATE_IMAGE
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Runtime.CompilerServices;
 
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
-using MatterHackers.VectorMath;
 
-#if USE_GLES
-using OpenTK.Graphics.ES11;
-#elif USE_OPENGL
-using OpenTK.Graphics.OpenGL;
-#endif
+using MatterHackers.RenderOpenGl.OpenGl;
 
 namespace MatterHackers.RenderOpenGl
 {
@@ -61,23 +55,6 @@ namespace MatterHackers.RenderOpenGl
         glAllocatedData glData;
         private int imageUpdateCount;
         private bool createdWithMipMaps;
-
-        static int glMajorVersion = 0;
-        static public int GLMajorVersion 
-        {
-            get
-            {
-				#if USE_OPENGL
-				if (glMajorVersion == 0)
-                {
-                    string versionOpenGL = GL.GetString(StringName.Version);
-                    glMajorVersion = int.Parse(versionOpenGL[0].ToString());
-                    int minor = int.Parse(versionOpenGL[2].ToString());
-                }
-				#endif
-                return glMajorVersion;
-            }
-        }
 
         static public ImageGlPlugin GetImageGlPlugin(ImageBuffer imageToGetDisplayListFor, bool createAndUseMipMaps, bool TextureMagFilterLinear = true)
         {
@@ -300,11 +277,8 @@ namespace MatterHackers.RenderOpenGl
             }
 
             // Create the texture handle and display list handle
-            int[] glTextures = new int[1];
 			#if USE_OPENGL
-            GL.GenTextures(1, glTextures);
-
-            glData.glTextureHandle = glTextures[0];
+            GL.GenTextures(1, out glData.glTextureHandle);
 
             // Set up some texture parameters for openGL
             GL.BindTexture(TextureTarget.Texture2D, glData.glTextureHandle);
@@ -332,6 +306,7 @@ namespace MatterHackers.RenderOpenGl
 			// Create the texture
             switch (bufferedImage.BitDepth)
             {
+#if false // not implemented in our gl wrapper and never used in our current code
                 case 8:
                     GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Luminance, hardwareWidth, hardwareHeight,
                         0, PixelFormat.Luminance, PixelType.UnsignedByte, hardwareExpandedPixelBuffer);
@@ -341,6 +316,7 @@ namespace MatterHackers.RenderOpenGl
                     GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgb, hardwareWidth, hardwareHeight,
                         0, PixelFormat.Rgb, PixelType.UnsignedByte, hardwareExpandedPixelBuffer);
                     break;
+#endif
 
                 case 32:
                     GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, hardwareWidth, hardwareHeight,
@@ -354,37 +330,30 @@ namespace MatterHackers.RenderOpenGl
 
             if (createdWithMipMaps)
             {
-                if (GLMajorVersion < 3)
+                switch (bufferedImage.BitDepth)
                 {
-                    switch (bufferedImage.BitDepth)
-                    {
-                        case 32:
+                    case 32:
+                        {
+                            ImageBuffer sourceImage = new ImageBuffer(bufferedImage);
+                            ImageBuffer tempImage = new ImageBuffer(sourceImage.Width / 2, sourceImage.Height / 2, 32, new BlenderBGRA());
+                            tempImage.NewGraphics2D().Render(sourceImage, 0, 0, 0, .5, .5);
+                            int mipLevel = 1;
+                            while (sourceImage.Width > 1 && sourceImage.Height > 1)
                             {
-                                ImageBuffer sourceImage = new ImageBuffer(bufferedImage);
-                                ImageBuffer tempImage = new ImageBuffer(sourceImage.Width / 2, sourceImage.Height / 2, 32, new BlenderBGRA());
-                                tempImage.NewGraphics2D().Render(sourceImage, 0, 0, 0, .5, .5);
-                                int mipLevel = 1;
-                                while (sourceImage.Width > 1 && sourceImage.Height > 1)
-                                {
-                                    GL.TexImage2D(TextureTarget.Texture2D, mipLevel++, PixelInternalFormat.Rgba, tempImage.Width, tempImage.Height,
-                                        0, PixelFormat.Bgra, PixelType.UnsignedByte, tempImage.GetBuffer());
-                                    sourceImage = new ImageBuffer(tempImage);
-                                    tempImage = new ImageBuffer(Math.Max(1, sourceImage.Width / 2), Math.Max(1, sourceImage.Height / 2), 32, new BlenderBGRA());
-                                    tempImage.NewGraphics2D().Render(sourceImage, 0, 0,
-                                        0,
-                                        (double)tempImage.Width / (double)sourceImage.Width,
-                                        (double)tempImage.Height / (double)sourceImage.Height);
-                                }
+                                GL.TexImage2D(TextureTarget.Texture2D, mipLevel++, PixelInternalFormat.Rgba, tempImage.Width, tempImage.Height,
+                                    0, PixelFormat.Bgra, PixelType.UnsignedByte, tempImage.GetBuffer());
+                                sourceImage = new ImageBuffer(tempImage);
+                                tempImage = new ImageBuffer(Math.Max(1, sourceImage.Width / 2), Math.Max(1, sourceImage.Height / 2), 32, new BlenderBGRA());
+                                tempImage.NewGraphics2D().Render(sourceImage, 0, 0,
+                                    0,
+                                    (double)tempImage.Width / (double)sourceImage.Width,
+                                    (double)tempImage.Height / (double)sourceImage.Height);
                             }
-                            break;
+                        }
+                        break;
 
-                        default:
-                            throw new NotImplementedException();
-                    }
-                }
-                else
-                {
-                    GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+                    default:
+                        throw new NotImplementedException();
                 }
             }
 			#endif

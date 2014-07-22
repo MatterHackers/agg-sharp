@@ -98,9 +98,6 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="OpenTK">
-      <HintPath>..\..\PlatformWin32\OpenTK.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GCodeFile.cs" />
@@ -115,6 +112,10 @@
     <ProjectReference Include="..\..\agg\Agg.csproj">
       <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
       <Name>Agg</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\RenderOpenGl\RenderOpenGl.csproj">
+      <Project>{545B6912-77FF-4B34-BA76-6C3D6A32BE6A}</Project>
+      <Name>RenderOpenGl</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\VectorMath\VectorMath.csproj">
       <Project>{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}</Project>

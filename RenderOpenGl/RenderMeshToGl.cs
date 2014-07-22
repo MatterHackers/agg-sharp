@@ -29,22 +29,12 @@ either expressed or implied, of the FreeBSD Project.
 //#define USE_GLES2
 //#define USE_VBO
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Runtime.CompilerServices;
 
 using MatterHackers.Agg;
-using MatterHackers.Agg.Image;
-
 using MatterHackers.PolygonMesh;
-using MatterHackers.VectorMath;
-
-#if USE_GLES2
-using OpenTK.Graphics.ES20;
-#elif USE_OPENGL
+//using MatterHackers.RenderOpenGl.OpenGl;
 using OpenTK.Graphics.OpenGL;
-#endif
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.RenderOpenGl
 {

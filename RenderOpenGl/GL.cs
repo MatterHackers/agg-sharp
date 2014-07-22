@@ -11,11 +11,64 @@ using OpenTK.Graphics.OpenGL;
 
 namespace MatterHackers.RenderOpenGl.OpenGl
 {
+    public enum ColorPointerType
+    {
+        Float = 5126,
+    }
+
+    public enum NormalPointerType
+    {
+        Float = 5126,
+    }
+
+    public enum VertexPointerType
+    {
+        Float = 5126,
+    }
+
+    public enum DrawElementsType
+    {
+        UnsignedInt = 5125,
+    }
+
+    public enum BufferUsageHint
+    {
+        StaticDraw = 35044,
+        DynamicDraw = 35048,
+    }
+
     public enum BeginMode
     {
         Lines = 1,
         Triangles = 4,
         TriangleFan = 6,
+    }
+
+    public enum StringName
+    {
+        Extensions = 7939,
+    }
+
+    public enum BufferTarget
+    {
+        ArrayBuffer = 34962,
+        ElementArrayBuffer = 34963,
+        //PixelPackBuffer = 35051,
+        //PixelUnpackBuffer = 35052,
+        //UniformBuffer = 35345,
+        //TextureBuffer = 35882,
+        //TransformFeedbackBuffer = 35982,
+        //CopyReadBuffer = 36662,
+        //CopyWriteBuffer = 36663,
+    }
+
+    public enum ArrayCap
+    {
+        VertexArray = 32884,
+        NormalArray = 32885,
+        ColorArray = 32886,
+        IndexArray = 32887,
+        TextureCoordArray = 32888,
     }
 
     public enum TextureParameterName
@@ -28,12 +81,14 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
     public enum TextureMagFilter
     {
+        Nearest = 9728,
         Linear = 9729,
     }
 
     public enum TextureMinFilter
     {
         Linear = 9729,
+        LinearMipmapLinear = 9987,
     }
 
     public enum TextureWrapMode
@@ -48,6 +103,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
     public enum PixelFormat
     {
+        Bgra = 32993,
         Rgba = 6408,
     }
 
@@ -79,11 +135,13 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
     public enum EnableCap
     {
+        PolygonSmooth = 2881,
         DepthTest = 2929,
         Texture2D = 3553,
         ScissorTest = 3089,
         Lighting = 2896,
         Blend = 3042,
+        PolygonOffsetFill = 32823,
     }
 
     public enum MatrixMode
@@ -95,8 +153,8 @@ namespace MatterHackers.RenderOpenGl.OpenGl
     public static class GL
     {
         public static void BlendFunc(BlendingFactorSrc sfactor, BlendingFactorDest dfactor)
-        { 
-            OpenTK.Graphics.OpenGL.GL.BlendFunc((OpenTK.Graphics.OpenGL.BlendingFactorSrc)sfactor, (OpenTK.Graphics.OpenGL.BlendingFactorDest) dfactor);
+        {
+            OpenTK.Graphics.OpenGL.GL.BlendFunc((OpenTK.Graphics.OpenGL.BlendingFactorSrc)sfactor, (OpenTK.Graphics.OpenGL.BlendingFactorDest)dfactor);
         }
 
         public static void Scissor(int x, int y, int width, int height)
@@ -116,6 +174,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
         public static void Disable(EnableCap cap)
         {
             OpenTK.Graphics.OpenGL.GL.Disable((OpenTK.Graphics.OpenGL.EnableCap)cap);
+        }
+
+        public static void DisableClientState(ArrayCap array)
+        {
+            OpenTK.Graphics.OpenGL.GL.DisableClientState((OpenTK.Graphics.OpenGL.ArrayCap)array);
         }
 
         public static void MatrixMode(MatrixMode mode)
@@ -153,6 +216,16 @@ namespace MatterHackers.RenderOpenGl.OpenGl
             OpenTK.Graphics.OpenGL.GL.PushMatrix();
         }
 
+        public static void MultMatrix(float[] m)
+        {
+            OpenTK.Graphics.OpenGL.GL.MultMatrix(m);
+        }
+
+        public static void MultMatrix(double[] m)
+        {
+            OpenTK.Graphics.OpenGL.GL.MultMatrix(m);
+        }
+
         public static void PopMatrix()
         {
             OpenTK.Graphics.OpenGL.GL.PopMatrix();
@@ -188,18 +261,18 @@ namespace MatterHackers.RenderOpenGl.OpenGl
             OpenTK.Graphics.OpenGL.GL.TexParameter((OpenTK.Graphics.OpenGL.TextureTarget)target, (OpenTK.Graphics.OpenGL.TextureParameterName)pname, param);
         }
 
-        public static void TexImage2D(TextureTarget target, int level, 
-            PixelInternalFormat internalFormat, 
-            int width, int height, int border, 
+        public static void TexImage2D(TextureTarget target, int level,
+            PixelInternalFormat internalFormat,
+            int width, int height, int border,
             PixelFormat format,
             PixelType type,
             Byte[] pixels)
         {
             OpenTK.Graphics.OpenGL.GL.TexImage2D(
-                (OpenTK.Graphics.OpenGL.TextureTarget) target, level, 
-                (OpenTK.Graphics.OpenGL.PixelInternalFormat) internalFormat,
-                width, height, border, 
-                (OpenTK.Graphics.OpenGL.PixelFormat) format, 
+                (OpenTK.Graphics.OpenGL.TextureTarget)target, level,
+                (OpenTK.Graphics.OpenGL.PixelInternalFormat)internalFormat,
+                width, height, border,
+                (OpenTK.Graphics.OpenGL.PixelFormat)format,
                 (OpenTK.Graphics.OpenGL.PixelType)type, pixels);
         }
 
@@ -207,7 +280,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
         {
             OpenTK.Graphics.OpenGL.GL.Begin((OpenTK.Graphics.OpenGL.BeginMode)mode);
         }
-        
+
         public static void End()
         {
             OpenTK.Graphics.OpenGL.GL.End();
@@ -222,5 +295,66 @@ namespace MatterHackers.RenderOpenGl.OpenGl
         {
             OpenTK.Graphics.OpenGL.GL.Vertex2(x, y);
         }
+
+        public static void DeleteTextures(int n, ref int textures)
+        {
+            OpenTK.Graphics.OpenGL.GL.DeleteTextures(n, ref textures);
+        }
+
+        public static string GetString(StringName name)
+        {
+            return OpenTK.Graphics.OpenGL.GL.GetString((OpenTK.Graphics.OpenGL.StringName)name);
+        }
+
+        public static void BindBuffer(BufferTarget target, int buffer)
+        {
+            OpenTK.Graphics.OpenGL.GL.BindBuffer((OpenTK.Graphics.OpenGL.BufferTarget)target, buffer);
+        }
+
+        public static void BufferData(BufferTarget target, IntPtr size, IntPtr data, BufferUsageHint usage)
+        {
+            OpenTK.Graphics.OpenGL.GL.BufferData((OpenTK.Graphics.OpenGL.BufferTarget)target, size, data, (OpenTK.Graphics.OpenGL.BufferUsageHint)usage);
+        }
+
+        public static void BufferData<T2>(BufferTarget target, IntPtr size, T2[] data, BufferUsageHint usage) where T2 : struct
+        {
+            OpenTK.Graphics.OpenGL.GL.BufferData((OpenTK.Graphics.OpenGL.BufferTarget)target, size, data, (OpenTK.Graphics.OpenGL.BufferUsageHint)usage);
+        }
+
+        public static void EnableClientState(ArrayCap arrayCap)
+        {
+            OpenTK.Graphics.OpenGL.GL.EnableClientState((OpenTK.Graphics.OpenGL.ArrayCap)arrayCap);
+        }
+
+        public static void GenBuffers(int n, out int buffers)
+        {
+            OpenTK.Graphics.OpenGL.GL.GenBuffers(n, out buffers);
+        }
+
+        public static void DeleteBuffers(int n, ref int buffers)
+        {
+            OpenTK.Graphics.OpenGL.GL.DeleteBuffers(n, ref buffers);
+        }
+
+        public static void ColorPointer(int size, ColorPointerType type, int stride, IntPtr pointer)
+        {
+            OpenTK.Graphics.OpenGL.GL.ColorPointer(size, (OpenTK.Graphics.OpenGL.ColorPointerType)type, stride, pointer);
+        }
+
+        public static void NormalPointer(NormalPointerType type, int stride, IntPtr pointer)
+        {
+            OpenTK.Graphics.OpenGL.GL.NormalPointer((OpenTK.Graphics.OpenGL.NormalPointerType)type, stride, pointer);
+        }
+
+        public static void VertexPointer(int size, VertexPointerType type, int stride, IntPtr pointer)
+        {
+            OpenTK.Graphics.OpenGL.GL.VertexPointer(size, (OpenTK.Graphics.OpenGL.VertexPointerType) type, stride, pointer);
+        }
+
+        public static void DrawRangeElements(BeginMode mode, int start, int end, int count, DrawElementsType type, IntPtr indices)
+        {
+            OpenTK.Graphics.OpenGL.GL.DrawRangeElements((OpenTK.Graphics.OpenGL.BeginMode)mode, start, end, count, (OpenTK.Graphics.OpenGL.DrawElementsType) type, indices);
+        }
+
     }
 }

@@ -29,20 +29,13 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Runtime.InteropServices;
-
-using MatterHackers.VectorMath;
-using MatterHackers.Agg.Transform;
 using MatterHackers.Agg;
-using MatterHackers.Agg.VertexSource;
+using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
-
-#if USE_GLES
-using OpenTK.Graphics.ES11;
-#elif USE_OPENGL
-using OpenTK.Graphics.OpenGL;
-#endif
+using MatterHackers.Agg.VertexSource;
+using MatterHackers.RenderOpenGl.OpenGl;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.GCodeVisualizer
 {
@@ -94,19 +87,19 @@ namespace MatterHackers.GCodeVisualizer
     public abstract class RenderFeatureBase
     {
         public abstract void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType);
-        public abstract void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<uint> indexData, Affine transform, double layerScale, RenderType renderType);
+        public abstract void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<int> indexData, Affine transform, double layerScale, RenderType renderType);
 
-        static public void CreateCylinder(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<uint> indexData, Vector3 startPos, Vector3 endPos, double radius, int steps, RGBA_Bytes color, double layerHeight)
+        static public void CreateCylinder(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<int> indexData, Vector3 startPos, Vector3 endPos, double radius, int steps, RGBA_Bytes color, double layerHeight)
         {
             Vector3 direction = endPos - startPos;
             Vector3 directionNormal = direction.GetNormal();
             Vector3 startSweepDirection = Vector3.GetPerpendicular(startPos, endPos).GetNormal();
 
-            uint[] tubeStartIndices = new uint[steps];
-            uint[] tubeEndIndices = new uint[steps];
+            int[] tubeStartIndices = new int[steps];
+            int[] tubeEndIndices = new int[steps];
 
-            uint[] capStartIndices = new uint[steps];
-            uint[] capEndIndices = new uint[steps];
+            int[] capStartIndices = new int[steps];
+            int[] capEndIndices = new int[steps];
 
             double halfHeight = layerHeight / 2 + (layerHeight * .1);
             double halfWidth = (radius * radius) / halfHeight;
@@ -123,11 +116,11 @@ namespace MatterHackers.GCodeVisualizer
                 offset *= scale;
                 
                 Vector3 tubeStart = startPos + offset;
-                tubeStartIndices[i] = (uint)colorVertexData.Count;
+                tubeStartIndices[i] = colorVertexData.Count;
                 colorVertexData.Add(new ColorVertexData(tubeStart, tubeNormal, color));
                 
                 Vector3 tubeEnd = endPos + offset;
-                tubeEndIndices[i] = (uint)colorVertexData.Count;
+                tubeEndIndices[i] = colorVertexData.Count;
                 colorVertexData.Add(new ColorVertexData(tubeEnd, tubeNormal, color));
 
                 // create cap verts
@@ -138,7 +131,7 @@ namespace MatterHackers.GCodeVisualizer
                 Vector3 capStartOffset = capStartNormal * radius;
                 capStartOffset *= scale;
                 Vector3 capStart = startPos + capStartOffset;
-                capStartIndices[i] = (uint)colorVertexData.Count;
+                capStartIndices[i] = colorVertexData.Count;
                 colorVertexData.Add(new ColorVertexData(capStart, capStartNormal, color));
 
                 Vector3 capEndNormal = Vector3.Transform(startSweepDirection, Matrix4X4.CreateRotation(-rotateAngle, MathHelper.Tau / 8));
@@ -147,15 +140,15 @@ namespace MatterHackers.GCodeVisualizer
                 Vector3 capEndOffset = capEndNormal * radius;
                 capEndOffset *= scale;
                 Vector3 capEnd = endPos + capEndOffset;
-                capEndIndices[i] = (uint)colorVertexData.Count;
+                capEndIndices[i] = colorVertexData.Count;
                 colorVertexData.Add(new ColorVertexData(capEnd, capEndNormal, color));
             }
 
-            uint tipStartIndex = (uint)colorVertexData.Count;
+            int tipStartIndex = colorVertexData.Count;
             Vector3 tipOffset = directionNormal * radius;
             tipOffset *= scale;
             colorVertexData.Add(new ColorVertexData(startPos - tipOffset, -directionNormal, color));
-            uint tipEndIndex = (uint)colorVertexData.Count;
+            int tipEndIndex = colorVertexData.Count;
             colorVertexData.Add(new ColorVertexData(endPos + tipOffset, directionNormal, color));
 
             for (int i = 0; i < steps; i++)
@@ -199,13 +192,13 @@ namespace MatterHackers.GCodeVisualizer
             }
         }
 
-        static public void CreatePointer(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<uint> indexData, Vector3 startPos, Vector3 endPos, double radius, int steps, RGBA_Bytes color)
+        static public void CreatePointer(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<int> indexData, Vector3 startPos, Vector3 endPos, double radius, int steps, RGBA_Bytes color)
         {
             Vector3 direction = endPos - startPos;
             Vector3 directionNormal = direction.GetNormal();
             Vector3 startSweepDirection = Vector3.GetPerpendicular(startPos, endPos).GetNormal();
 
-            uint[] tubeStartIndices = new uint[steps];
+            int[] tubeStartIndices = new int[steps];
 
             for (int i = 0; i < steps; i++)
             {
@@ -213,12 +206,12 @@ namespace MatterHackers.GCodeVisualizer
                 Vector3 tubeNormal = Vector3.Transform(startSweepDirection, Matrix4X4.CreateRotation(direction, MathHelper.Tau / (steps * 2) + MathHelper.Tau / (steps) * i));
                 Vector3 offset = Vector3.Transform(startSweepDirection * radius, Matrix4X4.CreateRotation(direction, MathHelper.Tau / (steps * 2) + MathHelper.Tau / (steps) * i));
                 Vector3 tubeStart = startPos + offset;
-                tubeStartIndices[i] = (uint)colorVertexData.Count;
+                tubeStartIndices[i] = colorVertexData.Count;
                 colorVertexData.Add(new ColorVertexData(tubeStart, tubeNormal, color));
                 Vector3 tubeEnd = endPos + offset;
             }
 
-            uint tipEndIndex = (uint)colorVertexData.Count;
+            int tipEndIndex = colorVertexData.Count;
             colorVertexData.Add(new ColorVertexData(endPos, directionNormal, color));
 
             for (int i = 0; i < steps; i++)
@@ -255,7 +248,7 @@ namespace MatterHackers.GCodeVisualizer
             return radius;
         }
 
-        public override void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<uint> indexData, Affine transform, double layerScale, RenderType renderType)
+        public override void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<int> indexData, Affine transform, double layerScale, RenderType renderType)
         {
             if ((renderType & RenderType.Retractions) == RenderType.Retractions)
             {
@@ -309,7 +302,7 @@ namespace MatterHackers.GCodeVisualizer
             this.travelSpeed = (float)travelSpeed;
         }
 
-        public override void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<uint> indexData, Affine transform, double layerScale, RenderType renderType)
+        public override void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<int> indexData, Affine transform, double layerScale, RenderType renderType)
         {
             if ((renderType & RenderType.Moves) == RenderType.Moves)
             {
@@ -399,7 +392,7 @@ namespace MatterHackers.GCodeVisualizer
             this.layerHeight = (float)layerHeight;
         }
 
-        public override void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<uint> indexData, Affine transform, double layerScale, RenderType renderType)
+        public override void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<int> indexData, Affine transform, double layerScale, RenderType renderType)
         {
             if ((renderType & RenderType.Extrusions) == RenderType.Extrusions)
             {
@@ -439,7 +432,7 @@ namespace MatterHackers.GCodeVisualizer
     public class GCodeRenderer
     {
         VectorPOD<ColorVertexData> colorVertexData = new VectorPOD<ColorVertexData>();
-        VectorPOD<uint> vertexIndexArray = new VectorPOD<uint>();
+        VectorPOD<int> vertexIndexArray = new VectorPOD<int>();
         List<int> layerStartIndex = new List<int>();
         List<List<int>> featureStartIndex = new List<List<int>>();
         List<List<RenderFeatureBase>> renderFeatures = new List<List<RenderFeatureBase>>();
@@ -659,11 +652,10 @@ namespace MatterHackers.GCodeVisualizer
 
                     lastRenderType = renderType;
                 }
-				#if USE_OPENGL
+
                 GL.DisableClientState(ArrayCap.TextureCoordArray);
                 GL.PushAttrib(AttribMask.EnableBit);
                 GL.Enable(EnableCap.PolygonSmooth);
-				#endif
 
                 //GL.InterleavedArrays(InterleavedArrayFormat.C4fN3fV3f, 0, colorVertexData.Array);
 
@@ -704,9 +696,7 @@ namespace MatterHackers.GCodeVisualizer
                         vertexBuffer.renderRange(featureStartIndex[layerIndex][startFeature], ellementCount);
                     }
                 }
-				#if USE_OPENGL
                 GL.PopAttrib();
-				#endif
             }
         }
     }
@@ -715,17 +705,13 @@ namespace MatterHackers.GCodeVisualizer
     {
         public int myVertexId;
         public int myIndexId;
-		#if USE_OPENGL
         public BeginMode myMode = BeginMode.Triangles;
-		#endif
-        public uint myVertexLength;
-        public uint myIndexLength;
+        public int myVertexLength;
+        public int myIndexLength;
         public VertexBuffer()
         {
-			#if USE_OPENGL
 			GL.GenBuffers(1, out myVertexId);
             GL.GenBuffers(1, out myIndexId);
-			#endif
         }
 
         ~VertexBuffer()
@@ -736,46 +722,38 @@ namespace MatterHackers.GCodeVisualizer
                 int holdIndexId = myIndexId;
                 UiThread.RunOnIdle( (state) => 
                 {
-						#if USE_OPENGL
-						GL.DeleteBuffers(1, ref holdVertexId);
+                    GL.DeleteBuffers(1, ref holdVertexId);
                     GL.DeleteBuffers(1, ref holdIndexId);
-						#endif
                 } );
             }
         }
 
         public void SetVertexData(ColorVertexData[] data)
         {
-            SetVertexData(data, (uint)data.Length);
+            SetVertexData(data, data.Length);
         }
 
-        public void SetVertexData(ColorVertexData[] data, uint count)
+        public void SetVertexData(ColorVertexData[] data, int count)
         {
-			#if USE_OPENGL
 			myVertexLength = count;
             GL.BindBuffer(BufferTarget.ArrayBuffer, myVertexId);
             GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(data.Length * ColorVertexData.Stride), data, BufferUsageHint.StaticDraw);
-			#endif
 		}
 
-        public void SetIndexData(uint[] data)
+        public void SetIndexData(int[] data)
         {
             SetIndexData(data, (ushort)data.Length);
         }
 
-        public void SetIndexData(uint[] data, uint count)
+        public void SetIndexData(int[] data, int count)
         {
-			#if USE_OPENGL
 			myIndexLength = count;
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, myIndexId);
-            GL.BufferData(BufferTarget.ElementArrayBuffer, new IntPtr(data.Length * sizeof(uint)), data, BufferUsageHint.DynamicDraw);
-			#endif
-			}
+            GL.BufferData(BufferTarget.ElementArrayBuffer, new IntPtr(data.Length * sizeof(int)), data, BufferUsageHint.DynamicDraw);
+        }
         
         public void renderRange(int offset, int count)
         {
-			#if USE_OPENGL
-
 			GL.EnableClientState(ArrayCap.ColorArray);
             GL.EnableClientState(ArrayCap.NormalArray);
             GL.EnableClientState(ArrayCap.VertexArray);
@@ -797,8 +775,6 @@ namespace MatterHackers.GCodeVisualizer
             GL.DisableClientState(ArrayCap.VertexArray);
             GL.DisableClientState(ArrayCap.NormalArray);
             GL.DisableClientState(ArrayCap.ColorArray);
-
-			#endif
         }
     }
 }

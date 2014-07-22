@@ -31,17 +31,12 @@ using System;
 using System.Collections.Generic;
 using MatterHackers.Agg;
 using MatterHackers.Csg;
-using MatterHackers.PolygonMesh;
-using MatterHackers.VectorMath;
-using MatterHackers.Csg.Solids;
 using MatterHackers.Csg.Operations;
+using MatterHackers.Csg.Solids;
 using MatterHackers.Csg.Transform;
-
-#if USE_GLES
-using OpenTK.Graphics.ES11;
-#elif USE_OPENGL
-using OpenTK.Graphics.OpenGL;
-#endif
+using MatterHackers.PolygonMesh;
+using MatterHackers.RenderOpenGl.OpenGl;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.RenderOpenGl
 {
