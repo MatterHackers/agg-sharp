@@ -192,7 +192,7 @@ namespace MatterHackers.Agg.Image
             byte[] sourceCovers, int sourceCoversOffset, bool firstCoverForAll, int count);
     }
 
-    public class BlenderBaseBGRA
+    public class BlenderBase8888
     {
         public int NumPixelBits { get { return 32; } }
 
@@ -206,7 +206,7 @@ namespace MatterHackers.Agg.Image
         public const byte base_mask = 255;
     };
 
-    public sealed class BlenderBGRA : BlenderBaseBGRA, IRecieveBlenderByte
+    public sealed class BlenderBGRA : BlenderBase8888, IRecieveBlenderByte
     {
         public RGBA_Bytes PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
         {
@@ -248,6 +248,105 @@ namespace MatterHackers.Agg.Image
                         buffer[bufferOffset + ImageBuffer.OrderR] = (byte)(((sourceColor.red - r) * sourceColor.alpha + (r << (int)RGBA_Bytes.base_shift)) >> (int)RGBA_Bytes.base_shift);
                         buffer[bufferOffset + ImageBuffer.OrderG] = (byte)(((sourceColor.green - g) * sourceColor.alpha + (g << (int)RGBA_Bytes.base_shift)) >> (int)RGBA_Bytes.base_shift);
                         buffer[bufferOffset + ImageBuffer.OrderB] = (byte)(((sourceColor.blue - b) * sourceColor.alpha + (b << (int)RGBA_Bytes.base_shift)) >> (int)RGBA_Bytes.base_shift);
+                        buffer[bufferOffset + ImageBuffer.OrderA] = (byte)((sourceColor.alpha + a) - ((sourceColor.alpha * a + base_mask) >> (int)RGBA_Bytes.base_shift));
+                    }
+                }
+            }
+        }
+
+        public void BlendPixels(byte[] destBuffer, int bufferOffset,
+            RGBA_Bytes[] sourceColors, int sourceColorsOffset,
+            byte[] covers, int coversIndex, bool firstCoverForAll, int count)
+        {
+            if (firstCoverForAll)
+            {
+                int cover = covers[coversIndex];
+                if (cover == 255)
+                {
+                    do
+                    {
+                        BlendPixel(destBuffer, bufferOffset, sourceColors[sourceColorsOffset++]);
+                        bufferOffset += 4;
+                    }
+                    while (--count != 0);
+                }
+                else
+                {
+                    do
+                    {
+                        sourceColors[sourceColorsOffset].alpha = (byte)((sourceColors[sourceColorsOffset].alpha * cover + 255) >> 8);
+                        BlendPixel(destBuffer, bufferOffset, sourceColors[sourceColorsOffset]);
+                        bufferOffset += 4;
+                        ++sourceColorsOffset;
+                    }
+                    while (--count != 0);
+                }
+            }
+            else
+            {
+                do
+                {
+                    int cover = covers[coversIndex++];
+                    if (cover == 255)
+                    {
+                        BlendPixel(destBuffer, bufferOffset, sourceColors[sourceColorsOffset]);
+                    }
+                    else
+                    {
+                        RGBA_Bytes color = sourceColors[sourceColorsOffset];
+                        color.alpha = (byte)((color.alpha * (cover) + 255) >> 8);
+                        BlendPixel(destBuffer, bufferOffset, color);
+                    }
+                    bufferOffset += 4;
+                    ++sourceColorsOffset;
+                }
+                while (--count != 0);
+            }
+        }
+    }
+
+    public sealed class BlenderRGBA : BlenderBase8888, IRecieveBlenderByte
+    {
+        public RGBA_Bytes PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+        {
+            return new RGBA_Bytes(buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderA]);
+        }
+
+        public void CopyPixels(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor, int count)
+        {
+            do
+            {
+                buffer[bufferOffset + ImageBuffer.OrderB] = sourceColor.red;
+                buffer[bufferOffset + ImageBuffer.OrderG] = sourceColor.green;
+                buffer[bufferOffset + ImageBuffer.OrderR] = sourceColor.blue;
+                buffer[bufferOffset + ImageBuffer.OrderA] = sourceColor.alpha;
+                bufferOffset += 4;
+            }
+            while (--count != 0);
+        }
+
+        public void BlendPixel(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor)
+        {
+            //unsafe
+            {
+                unchecked
+                {
+                    if (sourceColor.alpha == 255)
+                    {
+                        buffer[bufferOffset + ImageBuffer.OrderB] = (byte)(sourceColor.red);
+                        buffer[bufferOffset + ImageBuffer.OrderG] = (byte)(sourceColor.green);
+                        buffer[bufferOffset + ImageBuffer.OrderR] = (byte)(sourceColor.blue);
+                        buffer[bufferOffset + ImageBuffer.OrderA] = (byte)(sourceColor.alpha);
+                    }
+                    else
+                    {
+                        int r = buffer[bufferOffset + ImageBuffer.OrderB];
+                        int g = buffer[bufferOffset + ImageBuffer.OrderG];
+                        int b = buffer[bufferOffset + ImageBuffer.OrderR];
+                        int a = buffer[bufferOffset + ImageBuffer.OrderA];
+                        buffer[bufferOffset + ImageBuffer.OrderB] = (byte)(((sourceColor.red - r) * sourceColor.alpha + (r << (int)RGBA_Bytes.base_shift)) >> (int)RGBA_Bytes.base_shift);
+                        buffer[bufferOffset + ImageBuffer.OrderG] = (byte)(((sourceColor.green - g) * sourceColor.alpha + (g << (int)RGBA_Bytes.base_shift)) >> (int)RGBA_Bytes.base_shift);
+                        buffer[bufferOffset + ImageBuffer.OrderR] = (byte)(((sourceColor.blue - b) * sourceColor.alpha + (b << (int)RGBA_Bytes.base_shift)) >> (int)RGBA_Bytes.base_shift);
                         buffer[bufferOffset + ImageBuffer.OrderA] = (byte)((sourceColor.alpha + a) - ((sourceColor.alpha * a + base_mask) >> (int)RGBA_Bytes.base_shift));
                     }
                 }
@@ -355,7 +454,7 @@ namespace MatterHackers.Agg.Image
         }
     };
 
-    public sealed class BlenderGammaBGRA : BlenderBaseBGRA, IRecieveBlenderByte
+    public sealed class BlenderGammaBGRA : BlenderBase8888, IRecieveBlenderByte
     {
         private GammaLookUpTable m_gamma;
 
@@ -415,7 +514,7 @@ namespace MatterHackers.Agg.Image
         }
     };
 
-    public sealed class BlenderPreMultBGRA : BlenderBaseBGRA, IRecieveBlenderByte
+    public sealed class BlenderPreMultBGRA : BlenderBase8888, IRecieveBlenderByte
     {
         static int[] m_Saturate9BitToByte = new int[1 << 9];
 
@@ -604,7 +703,7 @@ namespace MatterHackers.Agg.Image
         }
     }
 
-    public sealed class BlenderPolyColorPreMultBGRA : BlenderBaseBGRA, IRecieveBlenderByte
+    public sealed class BlenderPolyColorPreMultBGRA : BlenderBase8888, IRecieveBlenderByte
     {
         static int[] m_Saturate9BitToByte = new int[1 << 9];
         RGBA_Bytes polyColor;
