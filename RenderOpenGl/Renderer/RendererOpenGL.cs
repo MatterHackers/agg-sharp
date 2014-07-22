@@ -44,7 +44,11 @@ using Tesselate;
 #if USE_GLES
 using OpenTK.Graphics.ES11;
 #elif USE_OPENGL
+#if true
 using OpenTK.Graphics.OpenGL;
+#else
+using MatterHackers.RenderOpenGl.OpenGl;
+#endif
 #endif
 
 namespace MatterHackers.RenderOpenGl

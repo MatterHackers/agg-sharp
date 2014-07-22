@@ -86,6 +86,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GL.cs" />
     <Compile Include="GLMeshWirePlugin.cs" />
     <Compile Include="GLMeshTrianglePlugin.cs" />
     <Compile Include="ImageGlPlugin.cs" />
