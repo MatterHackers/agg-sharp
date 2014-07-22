@@ -202,9 +202,7 @@ namespace MatterHackers.RenderOpenGl
             if (AATextureHandle == -1)
             {
                 // Create the texture handle and display list handle
-                int[] textureHandle = new int[1];
-                GL.GenTextures(1, textureHandle);
-                AATextureHandle = textureHandle[0];
+                GL.GenTextures(1, out AATextureHandle);
 
                 // Set up some texture parameters for openGL
                 GL.BindTexture(TextureTarget.Texture2D, AATextureHandle);
@@ -218,7 +216,7 @@ namespace MatterHackers.RenderOpenGl
 
                 // Create the texture
                 GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1024, 4,
-                0, PixelFormat.Rgba, PixelType.UnsignedByte, hardwarePixelBuffer);
+                    0, PixelFormat.Rgba, PixelType.UnsignedByte, hardwarePixelBuffer);
             }
 #elif USE_GLES
 			if (AATextureHandle == -1)
