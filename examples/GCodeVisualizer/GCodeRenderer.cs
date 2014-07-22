@@ -52,10 +52,10 @@ namespace MatterHackers.GCodeVisualizer
     [StructLayout(LayoutKind.Sequential)]
     public struct ColorVertexData
     {
-        public float r;
-        public float g;
-        public float b;
-        public float a;
+        public byte r;
+        public byte g;
+        public byte b;
+        public byte a;
 
         public float normalX;
         public float normalY;
@@ -69,10 +69,10 @@ namespace MatterHackers.GCodeVisualizer
 
         public ColorVertexData(Vector3 position, Vector3 normal, RGBA_Bytes color)
         {
-            r = (float)color.Red0To1;
-            g = (float)color.Green0To1;
-            b = (float)color.Blue0To1;
-            a = (float)color.Alpha0To1;
+            r = (byte)color.Red0To255;
+            g = (byte)color.Green0To255;
+            b = (byte)color.Blue0To255;
+            a = (byte)color.Alpha0To255;
 
             normalX = (float)normal.x;
             normalY = (float)normal.y;
@@ -763,9 +763,9 @@ namespace MatterHackers.GCodeVisualizer
             GL.BindBuffer(BufferTarget.ArrayBuffer, myVertexId);
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, myIndexId);
             
-            GL.ColorPointer(4, ColorPointerType.Float, ColorVertexData.Stride, new IntPtr(0));
-            GL.NormalPointer(NormalPointerType.Float, ColorVertexData.Stride, new IntPtr(4 * 4));
-            GL.VertexPointer(3, VertexPointerType.Float, ColorVertexData.Stride, new IntPtr(4 * 4 + 3 * 4));
+            GL.ColorPointer(4, ColorPointerType.UnsignedByte, ColorVertexData.Stride, new IntPtr(0));
+            GL.NormalPointer(NormalPointerType.Float, ColorVertexData.Stride, new IntPtr(4));
+            GL.VertexPointer(3, VertexPointerType.Float, ColorVertexData.Stride, new IntPtr(4 + 3 * 4));
 
             GL.DrawRangeElements(myMode, 0, myIndexLength, count, DrawElementsType.UnsignedInt, new IntPtr(offset * 4));
             

@@ -13,7 +13,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 {
     public enum ColorPointerType
     {
-        Float = 5126,
+        UnsignedByte = 5121,
     }
 
     public enum NormalPointerType
