@@ -11,6 +11,13 @@ using OpenTK.Graphics.OpenGL;
 
 namespace MatterHackers.RenderOpenGl.OpenGl
 {
+    public enum BeginMode
+    {
+        Lines = 1,
+        Triangles = 4,
+        TriangleFan = 6,
+    }
+
     public enum TextureParameterName
     {
         TextureMagFilter = 10240,
@@ -194,6 +201,26 @@ namespace MatterHackers.RenderOpenGl.OpenGl
                 width, height, border, 
                 (OpenTK.Graphics.OpenGL.PixelFormat) format, 
                 (OpenTK.Graphics.OpenGL.PixelType)type, pixels);
-        }        
+        }
+
+        public static void Begin(BeginMode mode)
+        {
+            OpenTK.Graphics.OpenGL.GL.Begin((OpenTK.Graphics.OpenGL.BeginMode)mode);
+        }
+        
+        public static void End()
+        {
+            OpenTK.Graphics.OpenGL.GL.End();
+        }
+
+        public static void TexCoord2(double x, double y)
+        {
+            OpenTK.Graphics.OpenGL.GL.TexCoord2(x, y);
+        }
+
+        public static void Vertex2(double x, double y)
+        {
+            OpenTK.Graphics.OpenGL.GL.Vertex2(x, y);
+        }
     }
 }
