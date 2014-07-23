@@ -129,12 +129,17 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
     public enum AttribMask
     {
+        ViewportBit = 2048,
         TransformBit = 4096,
         EnableBit = 8192,
     }
 
     public enum EnableCap
     {
+        ColorMaterial = 2903,
+        Normalize = 2977,
+        Light0 = 16384,
+        Light1 = 16385,
         PolygonSmooth = 2881,
         DepthTest = 2929,
         Texture2D = 3553,

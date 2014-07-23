@@ -28,21 +28,13 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.Diagnostics;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
-using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.Agg.UI;
 using MatterHackers.VectorMath;
 
-#if USE_GLES
-using OpenTK.Graphics.ES11;
-#elif USE_OPENGL
+//using MatterHackers.RenderOpenGl.OpenGl;
 using OpenTK.Graphics.OpenGL;
-#endif
 
 namespace MatterHackers.Agg.OpenGlGui
 {
