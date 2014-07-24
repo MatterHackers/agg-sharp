@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
 using MatterHackers.VectorMath;
+using Newtonsoft.Json;
 
 namespace MatterHackers.Agg
 {
@@ -85,6 +82,7 @@ namespace MatterHackers.Agg
         }
 
         // This function assumes the rect is normalized
+        [JsonIgnoreAttribute]
         public double Width
         {
             get
@@ -94,6 +92,7 @@ namespace MatterHackers.Agg
         }
 
         // This function assumes the rect is normalized
+        [JsonIgnoreAttribute]
         public double Height
         {
             get
