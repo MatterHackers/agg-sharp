@@ -11,6 +11,12 @@ using OpenTK.Graphics.OpenGL;
 
 namespace MatterHackers.RenderOpenGl.OpenGl
 {
+    public enum InterleavedArrayFormat
+    {
+        V3f = 10785,
+        T2fN3fV3f = 10795,
+    }
+
     public enum FrontFaceDirection
     {
         Cw = 2304,
@@ -284,6 +290,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Scale(x, y, z);
 #endif
+        }
+
+        public static void Color4(int red, int green, int blue, int alpha)
+        {
+            Color4((byte)red, (byte)green, (byte)blue, (byte)alpha);
         }
 
         public static void Color4(byte red, byte green, byte blue, byte alpha)
@@ -572,6 +583,27 @@ namespace MatterHackers.RenderOpenGl.OpenGl
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.ColorMaterial((OpenTK.Graphics.OpenGL.MaterialFace) face, (OpenTK.Graphics.OpenGL.ColorMaterialParameter)mode);
+#endif
+        }
+
+        public static void InterleavedArrays<T2>(InterleavedArrayFormat format, int stride, T2[] pointer) where T2 : struct
+        {
+#if USE_OPENGL
+            OpenTK.Graphics.OpenGL.GL.InterleavedArrays((OpenTK.Graphics.OpenGL.InterleavedArrayFormat)format, stride, pointer);
+#endif
+        }
+
+        internal static void DrawArrays(BeginMode mode, int first, int count)
+        {
+#if USE_OPENGL
+            OpenTK.Graphics.OpenGL.GL.DrawArrays((OpenTK.Graphics.OpenGL.BeginMode)mode, first, count);
+#endif
+        }
+
+        public static void PolygonOffset(float factor, float units)
+        {
+#if USE_OPENGL
+            OpenTK.Graphics.OpenGL.GL.PolygonOffset(factor, units);
 #endif
         }
     }

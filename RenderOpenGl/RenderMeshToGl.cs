@@ -29,8 +29,8 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.Agg;
 using MatterHackers.PolygonMesh;
-//using MatterHackers.RenderOpenGl.OpenGl;
-using OpenTK.Graphics.OpenGL;
+using MatterHackers.RenderOpenGl.OpenGl;
+//using OpenTK.Graphics.OpenGL;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.RenderOpenGl
@@ -58,7 +58,6 @@ namespace MatterHackers.RenderOpenGl
                     GL.Disable(EnableCap.Texture2D);
                 }
 
-
                 GL.InterleavedArrays(InterleavedArrayFormat.T2fN3fV3f, 0, subMesh.vertexDatas.Array);
                 if (subMesh.texture != null)
                 {
@@ -69,11 +68,6 @@ namespace MatterHackers.RenderOpenGl
                 {
                     GL.DisableClientState(ArrayCap.TextureCoordArray);
                 }
-
-                //GL.VertexPointer(3, VertexPointerType.Float, VertexData.Stride, subMesh.vertexDatas.Array);
-                //GL.NormalPointer(NormalPointerType.Float, VertexData.Stride, subMesh.vertexDatas.Array);
-                //GL.EnableClientState(ArrayCap.VertexArray);
-                //GL.EnableClientState(ArrayCap.NormalArray);
 
                 GL.DrawArrays(BeginMode.Triangles, 0, subMesh.vertexDatas.Count);
 
@@ -96,7 +90,7 @@ namespace MatterHackers.RenderOpenGl
 
             DrawToGL(meshToRender);
 
-            GL.Color4(0.0f, 0.0f, 0.0f, 1.0f);
+            GL.Color4(0, 0, 0, 255);
 
             GL.PolygonOffset(0, 0);
             GL.Disable(EnableCap.PolygonOffsetFill);
@@ -117,11 +111,6 @@ namespace MatterHackers.RenderOpenGl
             GL.InterleavedArrays(InterleavedArrayFormat.V3f, 0, edegLines.Array);
             GL.DrawArrays(BeginMode.Lines, 0, edegLines.Count);
 
-            //GL.Color4(1.0f, 1.0f, 1.0f, 1.0f);
-            //VectorPOD<WireVertexData> nonManifoldEdges = glWireMeshPlugin.nonManifoldData;
-            //GL.InterleavedArrays(InterleavedArrayFormat.V3f, 0, nonManifoldEdges.Array);
-            //GL.DrawArrays(BeginMode.Lines, 0, nonManifoldEdges.Count);
-
             GL.DisableClientState(ArrayCap.NormalArray);
             GL.DisableClientState(ArrayCap.VertexArray);
         }
@@ -135,7 +124,7 @@ namespace MatterHackers.RenderOpenGl
         {
             if (meshToRender != null)
             {
-				GL.Color4(partColor.Red0To1, partColor.Green0To1, partColor.Blue0To1, partColor.Alpha0To1);
+                GL.Color4(partColor.Red0To255, partColor.Green0To255, partColor.Blue0To255, partColor.Alpha0To255);
 
                 if (partColor.Alpha0To1 < 1)
                 {

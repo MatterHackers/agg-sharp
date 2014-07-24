@@ -657,8 +657,6 @@ namespace MatterHackers.GCodeVisualizer
                 GL.PushAttrib(AttribMask.EnableBit);
                 GL.Enable(EnableCap.PolygonSmooth);
 
-                //GL.InterleavedArrays(InterleavedArrayFormat.C4fN3fV3f, 0, colorVertexData.Array);
-
                 // draw all the layers from start to end-2
                 if (endLayerIndex - 1 > startLayerIndex && !canOnlyShowOneLayer)
                 {

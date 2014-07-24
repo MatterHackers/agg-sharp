@@ -44,9 +44,11 @@ namespace MatterHackers.RenderOpenGl
     {
         public float textureU;
         public float textureV;
+
         public float normalsX;
         public float normalsY;
         public float normalsZ;
+
         public float positionsX;
         public float positionsY;
         public float positionsZ;
@@ -62,54 +64,26 @@ namespace MatterHackers.RenderOpenGl
 
     public class GLMeshTrianglePlugin
     {
-        struct RemoveData
-        {
-            internal int vboHandle;
-
-            public RemoveData(int vboHandle)
-            {
-                this.vboHandle = vboHandle;
-            }
-        }
-
         public delegate void DrawToGL(Mesh meshToRender);
 
         private static ConditionalWeakTable<Mesh, GLMeshTrianglePlugin> meshesWithCacheData = new ConditionalWeakTable<Mesh, GLMeshTrianglePlugin>();
 
-        private static List<RemoveData> glDataNeedingToBeDeleted = new List<RemoveData>();
-
         public List<SubTriangleMesh> subMeshs;
 
         private int meshUpdateCount;
-
-        static public void DeleteUnusedGLResources()
-        {
-            using (TimedLock.Lock(glDataNeedingToBeDeleted, "GLMeshPluginDeleteUnused"))
-            {
-                // We run this in here to ensure that we are on the correct thread and have the correct
-                // glcontext realized.
-                for (int i = glDataNeedingToBeDeleted.Count - 1; i >= 0; i--)
-                {
-                    //GL.DeleteBuffers(glDataNeedingToBeDeleted[i].vboHandle);
-                    glDataNeedingToBeDeleted.RemoveAt(i);
-                }
-            }
-        }
 
         static public GLMeshTrianglePlugin Get(Mesh meshToGetDisplayListFor)
         {
             GLMeshTrianglePlugin plugin;
             meshesWithCacheData.TryGetValue(meshToGetDisplayListFor, out plugin);
 
-                if (plugin != null && meshToGetDisplayListFor.ChangedCount != plugin.meshUpdateCount)
-                {
-                    plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
-                    plugin.AddRemoveData();
-                    plugin.CreateRenderData(meshToGetDisplayListFor);
-                    plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
-                }
-
-            DeleteUnusedGLResources();
+            if (plugin != null && meshToGetDisplayListFor.ChangedCount != plugin.meshUpdateCount)
+            {
+                plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
+                plugin.AddRemoveData();
+                plugin.CreateRenderData(meshToGetDisplayListFor);
+                plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
+            }
 
             if (plugin == null)
             {

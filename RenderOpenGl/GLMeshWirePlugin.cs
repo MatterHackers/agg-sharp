@@ -39,13 +39,6 @@ using MatterHackers.Agg.Image;
 using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
 
-
-#if USE_GLES
-using OpenTK.Graphics.ES11;
-#elif USE_OPENGL
-using OpenTK.Graphics.OpenGL;
-#endif
-
 namespace MatterHackers.RenderOpenGl
 {
     public struct WireVertexData
@@ -59,47 +52,21 @@ namespace MatterHackers.RenderOpenGl
 
     public class GLMeshWirePlugin
     {
-        struct RemoveData
-        {
-            internal int vboHandle;
-
-            public RemoveData(int vboHandle)
-            {
-                this.vboHandle = vboHandle;
-            }
-        }
-
         public delegate void DrawToGL(Mesh meshToRender);
 
         private static ConditionalWeakTable<Mesh, GLMeshWirePlugin> meshesWithCacheData = new ConditionalWeakTable<Mesh, GLMeshWirePlugin>();
 
-        private static List<RemoveData> glDataNeedingToBeDeleted = new List<RemoveData>();
-
-        public VectorPOD<WireVertexData> edgeLinesData =new VectorPOD<WireVertexData>();
+        public VectorPOD<WireVertexData> edgeLinesData = new VectorPOD<WireVertexData>();
 
         private int meshUpdateCount;
         private double nonPlanarAngleRequired;
-
-        static public void DeleteUnusedGLResources()
-        {
-            using (TimedLock.Lock(glDataNeedingToBeDeleted, "GLMeshPluginDeleteUnused"))
-            {
-                // We run this in here to ensure that we are on the correct thread and have the correct
-                // glcontext realized.
-                for (int i = glDataNeedingToBeDeleted.Count - 1; i >= 0; i--)
-                {
-                    //GL.DeleteBuffers(glDataNeedingToBeDeleted[i].vboHandle);
-                    glDataNeedingToBeDeleted.RemoveAt(i);
-                }
-            }
-        }
 
         static public GLMeshWirePlugin Get(Mesh meshToGetDisplayListFor, double nonPlanarAngleRequired = 0)
         {
             GLMeshWirePlugin plugin;
             meshesWithCacheData.TryGetValue(meshToGetDisplayListFor, out plugin);
 
-            if (plugin != null 
+            if (plugin != null
                 && (meshToGetDisplayListFor.ChangedCount != plugin.meshUpdateCount
                 || nonPlanarAngleRequired != plugin.nonPlanarAngleRequired))
             {
@@ -109,8 +76,6 @@ namespace MatterHackers.RenderOpenGl
                 plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
                 plugin.nonPlanarAngleRequired = nonPlanarAngleRequired;
             }
-
-            DeleteUnusedGLResources();
 
             if (plugin == null)
             {
