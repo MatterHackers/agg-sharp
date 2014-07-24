@@ -33,8 +33,7 @@ using MatterHackers.Agg.VertexSource;
 using MatterHackers.Agg.UI;
 using MatterHackers.VectorMath;
 
-//using MatterHackers.RenderOpenGl.OpenGl;
-using OpenTK.Graphics.OpenGL;
+using MatterHackers.RenderOpenGl.OpenGl;
 
 namespace MatterHackers.Agg.OpenGlGui
 {
@@ -281,7 +280,6 @@ namespace MatterHackers.Agg.OpenGlGui
             GL.CullFace(CullFaceMode.Back);
 
             GL.DepthFunc(DepthFunction.Lequal);
-            GL.Hint(HintTarget.PerspectiveCorrectionHint, HintMode.Nicest);
 
             GL.ColorMaterial(MaterialFace.FrontAndBack, ColorMaterialParameter.AmbientAndDiffuse);
 
