@@ -104,6 +104,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
     {
         Lines = 1,
         Triangles = 4,
+        TriangleStrip = 5,
         TriangleFan = 6,
     }
 
@@ -200,6 +201,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
     public enum EnableCap
     {
         ColorMaterial = 2903,
+        CullFace = 2884,
         Normalize = 2977,
         Light0 = 16384,
         Light1 = 16385,
@@ -495,6 +497,13 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #endif
         }
 
+        public static void ColorPointer(int size, ColorPointerType type, int stride, byte[] pointer)
+        {
+#if USE_OPENGL
+            OpenTK.Graphics.OpenGL.GL.ColorPointer(size, (OpenTK.Graphics.OpenGL.ColorPointerType)type, stride, pointer);
+#endif
+        }
+
         public static void ColorPointer(int size, ColorPointerType type, int stride, IntPtr pointer)
         {
 #if USE_OPENGL
@@ -502,10 +511,24 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #endif
         }
 
+        public static void NormalPointer(NormalPointerType type, int stride, float[] pointer)
+        {
+#if USE_OPENGL
+            OpenTK.Graphics.OpenGL.GL.NormalPointer((OpenTK.Graphics.OpenGL.NormalPointerType)type, stride, pointer);
+#endif
+        }
+
         public static void NormalPointer(NormalPointerType type, int stride, IntPtr pointer)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.NormalPointer((OpenTK.Graphics.OpenGL.NormalPointerType)type, stride, pointer);
+#endif
+        }
+
+        public static void VertexPointer(int size, VertexPointerType type, int stride, float[] pointer)
+        {
+#if USE_OPENGL
+            OpenTK.Graphics.OpenGL.GL.VertexPointer(size, (OpenTK.Graphics.OpenGL.VertexPointerType)type, stride, pointer);
 #endif
         }
 
@@ -593,7 +616,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #endif
         }
 
-        internal static void DrawArrays(BeginMode mode, int first, int count)
+        public static void DrawArrays(BeginMode mode, int first, int count)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.DrawArrays((OpenTK.Graphics.OpenGL.BeginMode)mode, first, count);

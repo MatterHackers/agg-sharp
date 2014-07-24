@@ -30,7 +30,6 @@ either expressed or implied, of the FreeBSD Project.
 using MatterHackers.Agg;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RenderOpenGl.OpenGl;
-//using OpenTK.Graphics.OpenGL;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.RenderOpenGl

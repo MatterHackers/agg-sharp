@@ -29,22 +29,9 @@ either expressed or implied, of the FreeBSD Project.
 
 //#define AA_TIPS
 
-using System;
 using System.Collections.Generic;
-
-using MatterHackers.Agg;
-using MatterHackers.Agg.Image;
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.Agg.Transform;
-using MatterHackers.VectorMath;
-
+using MatterHackers.RenderOpenGl.OpenGl;
 using Tesselate;
-
-#if USE_GLES
-using OpenTK.Graphics.ES11;
-#elif USE_OPENGL
-using OpenTK.Graphics.OpenGL;
-#endif
 
 namespace MatterHackers.RenderOpenGl
 {
@@ -116,7 +103,8 @@ namespace MatterHackers.RenderOpenGl
         public void EdgeFlagCallBack(bool IsEdge)
         {
 			#if USE_OPENGL
-			GL.EdgeFlag(IsEdge);
+            // this is not set as it is only used in GL_POLYGON_MODE and GL_POINT or GL_LINE (which we currenly don't use)
+			//GL.EdgeFlag(IsEdge);
 			#endif
         }
 
