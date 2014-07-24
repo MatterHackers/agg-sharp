@@ -27,8 +27,6 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-//#define USE_VBO
-
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -59,12 +57,7 @@ namespace MatterHackers.RenderOpenGl
     public class SubTriangleMesh
     {
         public ImageBuffer texture = null;
-#if USE_VBO
-        public int count;
-        public int vboHandle;
-#else
         public VectorPOD<TriangleVertexData> vertexDatas = new VectorPOD<TriangleVertexData>();
-#endif
     }
 
     public class GLMeshTrianglePlugin
@@ -138,15 +131,6 @@ namespace MatterHackers.RenderOpenGl
 
         void AddRemoveData()
         {
-#if USE_VBO
-            using (TimedLock.Lock(glDataNeedingToBeDeleted, "~GLMeshPlugin"))
-            {
-                foreach (SubMesh subMesh in subMeshs)
-                {
-                    glDataNeedingToBeDeleted.Add(new RemoveData(subMesh.vboHandle));
-                }
-            }
-#endif
         }
 
         ~GLMeshTrianglePlugin()
@@ -175,17 +159,8 @@ namespace MatterHackers.RenderOpenGl
                     newSubMesh.texture = faceTexture;
                     subMeshs.Add(newSubMesh);
 
-#if USE_VBO
-                    if (currentSubMesh != null)
-                    {
-                        CreateVBOForSubMesh(vertexDatas, currentSubMesh);
-                        vertexDatas.Clear();
-                    }
-                    currentSubMesh = subMeshs[subMeshs.Count - 1];
-#else
                     currentSubMesh = subMeshs[subMeshs.Count - 1];
                     vertexDatas = currentSubMesh.vertexDatas;
-#endif
                 }
 
                 Vector2[] textureUV = new Vector2[2];
@@ -225,19 +200,6 @@ namespace MatterHackers.RenderOpenGl
                     vertexIndex++;
                 }
             }
-
-            CreateVBOForSubMesh(vertexDatas, currentSubMesh);
-        }
-
-        private static void CreateVBOForSubMesh(VectorPOD<TriangleVertexData> vertexDatas, SubTriangleMesh currentSubMesh)
-        {
-#if USE_VBO
-            currentSubMesh.count = vertexDatas.Count;
-            currentSubMesh.vboHandle = GL.GenBuffer();
-            GL.BindBuffer(BufferTarget.ArrayBuffer, currentSubMesh.vboHandle);
-            GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(currentSubMesh.count * VertexData.Stride), vertexDatas.Array, BufferUsageHint.StaticDraw);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-#endif
         }
 
         public void Render()
