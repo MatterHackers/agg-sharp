@@ -296,9 +296,13 @@ namespace MatterHackers.PolygonMesh.Processors
             meshFromStlFile.CleanAndMergMesh(
                 (double progress0To1, string processingState) => 
                 {
-                    reportProgress(parsingFileRatio + progress0To1 * (1-parsingFileRatio), processingState);
+                    if (reportProgress != null)
+                    {
+                        reportProgress(parsingFileRatio + progress0To1 * (1 - parsingFileRatio), processingState);
+                    }
                     return true;
-                });
+                }
+            );
 
             time.Stop();
             Debug.WriteLine(string.Format("STL Load in {0:0.00}s", time.Elapsed.TotalSeconds));
