@@ -270,7 +270,7 @@ namespace MatterHackers.GCodeVisualizer
 
                 if (RenderGrid)
                 {
-                    graphics2D.Render(stroke, RGBA_Bytes.LightGray);
+                    graphics2D.Render(stroke, RGBA_Bytes.DarkGray);
                 }
 
                 RenderType renderType = RenderType.Extrusions;

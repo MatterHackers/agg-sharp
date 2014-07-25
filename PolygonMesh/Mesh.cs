@@ -115,9 +115,18 @@ namespace MatterHackers.PolygonMesh
 
         public void CleanAndMergMesh(ReportProgress reportProgress = null)
         {
-            SortVertices((double progress0To1, string processingState) => { return reportProgress(progress0To1 * .41, processingState); });
-            MergeVertices((double progress0To1, string processingState) => { return reportProgress(progress0To1 * .23 + .41, processingState); });
-            MergeMeshEdges((double progress0To1, string processingState) => { return reportProgress(progress0To1 * .36 + .64, processingState); });
+            if (reportProgress != null)
+            {
+                SortVertices((double progress0To1, string processingState) => { return reportProgress(progress0To1 * .41, processingState); });
+                MergeVertices((double progress0To1, string processingState) => { return reportProgress(progress0To1 * .23 + .41, processingState); });
+                MergeMeshEdges((double progress0To1, string processingState) => { return reportProgress(progress0To1 * .36 + .64, processingState); });
+            }
+            else
+            {
+                SortVertices();
+                MergeVertices();
+                MergeMeshEdges();
+            }
         }
 
         public List<Face> Faces
