@@ -79,6 +79,15 @@ namespace MatterHackers.MeshVisualizer
         double partScale;
         public ImageBuffer BedImage;
 
+        // need to know about (or just rebuild)
+        
+        // Bed Center Change
+        // Bed Size Change
+        // Part Centering
+        // Bed Rectange on Image
+        // Bed Image Change
+        // Bed Shape Change
+
         public class PartProcessingInfo : FlowLayoutWidget
         {
             internal ProgressControl progressControl;
