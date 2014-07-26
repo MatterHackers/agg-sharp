@@ -217,6 +217,13 @@ namespace MatterHackers.MeshVisualizer
 
         public void CreatePrintBed(Vector3 displayVolume, Vector2 bedCenter, BedShape bedShape)
         {
+            if(this.bedCenter == bedCenter 
+                && this.bedShape == bedShape
+                && this.displayVolume == displayVolume)
+            {
+                return;
+            }
+
             this.bedCenter = bedCenter;
             this.bedShape = bedShape;
             this.displayVolume = displayVolume;
