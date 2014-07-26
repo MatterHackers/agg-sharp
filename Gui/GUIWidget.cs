@@ -1307,6 +1307,7 @@ namespace MatterHackers.Agg.UI
             childToRemove.ClearCapturedState();
             Children.Remove(childToRemove);
             childToRemove.parent = null;
+            childToRemove.OnParentChanged(null);
             OnChildRemoved(new GuiWidgetEventArgs(childToRemove));
             OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.RemoveChild));
             Invalidate();

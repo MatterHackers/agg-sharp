@@ -76,7 +76,6 @@ namespace MatterHackers.MeshVisualizer
             }
         }
 
-        double partScale;
         public ImageBuffer BedImage;
 
         // need to know about (or just rebuild)
@@ -184,11 +183,10 @@ namespace MatterHackers.MeshVisualizer
 
         public enum BedShape { Rectangular, Circular };
         BedShape bedShape = BedShape.Rectangular;
+        Vector2 bedCenter;
 
-        public MeshViewerWidget(Vector3 displayVolume, double scale, BedShape bedShape, string startingTextMessage = "")
+        public MeshViewerWidget(Vector3 displayVolume, Vector2 bedCenter, BedShape bedShape, string startingTextMessage = "")
         {
-            this.bedShape = bedShape;
-            this.displayVolume = displayVolume;
             RenderType = RenderTypes.Shaded;
             RenderBed = true;
             RenderBuildVolume = false;
@@ -197,12 +195,31 @@ namespace MatterHackers.MeshVisualizer
             BedColor = new RGBA_Floats(.8, .8, .8, .5).GetAsRGBA_Bytes();
             BuildVolumeColor = new RGBA_Floats(.2, .8, .3, .2).GetAsRGBA_Bytes();
 
-            this.partScale = scale;
             trackballTumbleWidget = new TrackballTumbleWidget();
             trackballTumbleWidget.DrawRotationHelperCircle = false;
             trackballTumbleWidget.DrawGlContent += trackballTumbleWidget_DrawGlContent;
 
             AddChild(trackballTumbleWidget);
+
+            CreatePrintBed(displayVolume, bedCenter, bedShape);
+
+            trackballTumbleWidget.AnchorAll();
+
+            partProcessingInfo = new PartProcessingInfo(startingTextMessage);
+
+            GuiWidget labelContainer = new GuiWidget();
+            labelContainer.AnchorAll();
+            labelContainer.AddChild(partProcessingInfo);
+            labelContainer.Selectable = false;
+
+            this.AddChild(labelContainer);
+        }
+
+        public void CreatePrintBed(Vector3 displayVolume, Vector2 bedCenter, BedShape bedShape)
+        {
+            this.bedCenter = bedCenter;
+            this.bedShape = bedShape;
+            this.displayVolume = displayVolume;
 
             switch (bedShape)
             {
@@ -264,6 +281,7 @@ namespace MatterHackers.MeshVisualizer
                                 }
                             }
                         }
+                        
                         foreach (Vertex vertex in printerBed.Vertices)
                         {
                             vertex.Position = vertex.Position - new Vector3(0, 0, 2.2);
@@ -275,16 +293,7 @@ namespace MatterHackers.MeshVisualizer
                     throw new NotImplementedException();
             }
 
-            trackballTumbleWidget.AnchorAll();
-
-            partProcessingInfo = new PartProcessingInfo(startingTextMessage);
-
-            GuiWidget labelContainer = new GuiWidget();
-            labelContainer.AnchorAll();
-            labelContainer.AddChild(partProcessingInfo);
-            labelContainer.Selectable = false;
-
-            this.AddChild(labelContainer);
+            Invalidate();
         }
 
         public override void OnClosed(EventArgs e)
@@ -396,13 +405,6 @@ namespace MatterHackers.MeshVisualizer
                 trackballTumbleWidget.TrackBallController.Scale = .03;
                 trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, MathHelper.Tau / 16)));
                 trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
-                if (partScale != 1)
-                {
-                    foreach (Vertex vertex in Meshes[0].Vertices)
-                    {
-                        vertex.Position = vertex.Position * partScale;
-                    }
-                }
 
                 // make sure the mesh is centered and on the bed
                 {
