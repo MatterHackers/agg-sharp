@@ -1220,7 +1220,7 @@ namespace MatterHackers.VectorMath
         /// <returns></returns>
         public override string ToString()
         {
-            return String.Format("{0}\n{1}\n{2}\n{3}", Row0, Row1, Row2, Row3);
+            return String.Format("{0},  \n{1},  \n{2},  \n{3}", Row0, Row1, Row2, Row3);
         }
 
         #endregion

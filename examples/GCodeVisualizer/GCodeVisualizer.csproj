@@ -101,12 +101,19 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GCodeFile.cs" />
-    <Compile Include="GCodeRenderer.cs" />
+    <Compile Include="Renderer\ColorVertexData.cs" />
+    <Compile Include="Renderer\ExtrusionColors.cs" />
+    <Compile Include="Renderer\GCodeRenderer.cs" />
     <Compile Include="GCodeViewWidget.cs" />
     <Compile Include="GCodeViewerApplication.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="PrinterMachineInstruction.cs" />
+    <Compile Include="Renderer\RenderFeatures\RenderFeatureExtrusion.cs" />
+    <Compile Include="Renderer\RenderFeatures\RenderFeatureTravel.cs" />
+    <Compile Include="Renderer\RenderFeatures\RenderFeatureRetract.cs" />
+    <Compile Include="Renderer\RenderFeatures\RenderFeatureBase.cs" />
+    <Compile Include="Renderer\VertexBuffer.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\agg\Agg.csproj">
