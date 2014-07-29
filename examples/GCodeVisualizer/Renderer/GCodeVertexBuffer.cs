@@ -39,20 +39,20 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.GCodeVisualizer
 {
-    public class VertexBuffer
+    public class GCodeVertexBuffer
     {
         public int myVertexId;
         public int myIndexId;
         public BeginMode myMode = BeginMode.Triangles;
         public int myVertexLength;
         public int myIndexLength;
-        public VertexBuffer()
+        public GCodeVertexBuffer()
         {
             GL.GenBuffers(1, out myVertexId);
             GL.GenBuffers(1, out myIndexId);
         }
 
-        ~VertexBuffer()
+        ~GCodeVertexBuffer()
         {
             if (myVertexId != -1)
             {

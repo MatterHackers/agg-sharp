@@ -51,8 +51,6 @@ namespace MatterHackers.GCodeVisualizer
 
     public class GCodeRenderer
     {
-        VectorPOD<ColorVertexData> colorVertexData = new VectorPOD<ColorVertexData>();
-        VectorPOD<int> vertexIndexArray = new VectorPOD<int>();
         List<int> layerStartIndex = new List<int>();
         List<List<int>> featureStartIndex = new List<List<int>>();
         List<List<RenderFeatureBase>> renderFeatures = new List<List<RenderFeatureBase>>();
@@ -199,7 +197,9 @@ namespace MatterHackers.GCodeVisualizer
             }
         }
 
-        void Create3DData(Affine transform, double layerScale, RenderType renderType, int lastLayerIndex)
+        void Create3DData(Affine transform, double layerScale, RenderType renderType, int lastLayerIndex, 
+            VectorPOD<ColorVertexData> colorVertexData,
+            VectorPOD<int> vertexIndexArray)
         {
             colorVertexData.Clear();
             vertexIndexArray.Clear();
@@ -245,7 +245,7 @@ namespace MatterHackers.GCodeVisualizer
         }
 
         static readonly int MAX_RENDER_FEATURES_TO_ALLOW_3D = 250000;
-        VertexBuffer vertexBuffer;
+        GCodeVertexBuffer vertexBuffer;
         RenderType lastRenderType = RenderType.None;
         int singleLayerIndex = 0;
         public void Render3D(int startLayerIndex, int endLayerIndex, Affine transform, double layerScale, RenderType renderType,
@@ -261,12 +261,15 @@ namespace MatterHackers.GCodeVisualizer
                 bool canOnlyShowOneLayer = TotalRenderFeatures > MAX_RENDER_FEATURES_TO_ALLOW_3D;
 
                 // If its the first render or we change what we are trying to render then create vertex data.
-                if (colorVertexData.Count == 0 || lastRenderType != renderType
+                if (lastRenderType != renderType
                     || (canOnlyShowOneLayer && endLayerIndex-1 != singleLayerIndex))
                 {
-                    Create3DData(transform, layerScale, renderType, endLayerIndex-1);
+                    VectorPOD<ColorVertexData> colorVertexData = new VectorPOD<ColorVertexData>();
+                    VectorPOD<int> vertexIndexArray = new VectorPOD<int>();
+
+                    Create3DData(transform, layerScale, renderType, endLayerIndex - 1, colorVertexData, vertexIndexArray);
                     
-                    vertexBuffer = new VertexBuffer();
+                    vertexBuffer = new GCodeVertexBuffer();
                     vertexBuffer.SetVertexData(colorVertexData.Array);
                     vertexBuffer.SetIndexData(vertexIndexArray.Array);
 

@@ -226,6 +226,7 @@ namespace MatterHackers.MeshVisualizer
 
             this.bedCenter = bedCenter;
             this.bedShape = bedShape;
+            displayVolume = Vector3.ComponentMax(displayVolume, new Vector3(1,1,1));
             this.displayVolume = displayVolume;
 
             switch (bedShape)

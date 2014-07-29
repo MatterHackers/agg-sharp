@@ -367,7 +367,8 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.GenTextures(n, out textureHandle);
 #else
-			throw new NotImplementedException();
+			textureHandle = 0;
+			//throw new NotImplementedException();
 #endif
         }
 
@@ -449,7 +450,8 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             return OpenTK.Graphics.OpenGL.GL.GetString((OpenTK.Graphics.OpenGL.StringName)name);
 #else
-			throw new NotImplementedException();
+			return "";
+			//throw new NotImplementedException();
 #endif
         }
 
@@ -486,7 +488,8 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.GenBuffers(n, out buffers);
 #else
-			throw new NotImplementedException();
+			buffers = 0;
+			//throw new NotImplementedException();
 #endif
         }
 
