@@ -33,7 +33,7 @@ namespace MatterHackers.Agg.VertexSource
     //
     // See Implementation agg_arc.cpp 
     //
-    public class arc
+    public class arc : IVertexSource
     {
         double   originX;
         double   originY;
@@ -43,13 +43,14 @@ namespace MatterHackers.Agg.VertexSource
 
         double   startAngle;
         double   endAngle;
-        double   m_Scale;
+        double   m_Scale = 1.0;
+		bool     moveToStart=true;
         EDirection m_Direction;
 
         double m_CurrentFlatenAngle;
         double flatenDeltaAngle;
 
-        bool m_IsInitialized;
+        bool m_IsInitialized = false;
         ShapePath.FlagsAndCommand m_NextPathCommand;
 
         public enum EDirection
@@ -58,68 +59,51 @@ namespace MatterHackers.Agg.VertexSource
             CounterClockWise,
         }
 
-        public arc() 
-        {
-            m_Scale = 1.0;
-            m_IsInitialized = false;
-        }
+        public arc() { }
 
         public arc(double OriginX,  double OriginY, 
              double RadiusX, double RadiusY,
-             double Angle1, double Angle2)
-            : this(OriginX, OriginY, RadiusX, RadiusY, Angle1, Angle2, EDirection.CounterClockWise)
+             double Angle1, double Angle2, 
+			 EDirection Direction = EDirection.CounterClockWise,
+			 double Scale = 1.0, 
+			 bool moveToStart=true)            
         {
-
-        }
-
-        public arc(double OriginX,  double OriginY, 
-             double RadiusX, double RadiusY, 
-             double Angle1, double Angle2,
-             EDirection Direction)
-        {
-            originX=OriginX;
-            originY=OriginY;
-            radiusX=RadiusX;
-            radiusY=RadiusY;
-            m_Scale=1.0;
-            normalize(Angle1, Angle2, Direction);
-        }
-
-        public void init(double OriginX,  double OriginY, 
-                  double RadiusX, double RadiusY, 
-                  double Angle1, double Angle2)
-        {
-            init(OriginX, OriginY, RadiusX, RadiusY, Angle1, Angle2, EDirection.CounterClockWise);
+			init(OriginX, OriginY, RadiusX, RadiusY, Angle1, Angle2, Direction:Direction, Scale:Scale, moveToStart:moveToStart);
         }
 
         public void init(double OriginX,  double OriginY, 
                    double RadiusX, double RadiusY, 
                    double Angle1, double Angle2, 
-                   EDirection Direction)
+                   EDirection Direction = EDirection.CounterClockWise, 
+				   double Scale = 1.0,
+				   bool moveToStart = true  )
         {
             originX   = OriginX;  
             originY  = OriginY;
             radiusX  = RadiusX; 
             radiusY = RadiusY; 
+			m_Scale = Scale;
+			this.moveToStart = moveToStart;			
             normalize(Angle1, Angle2, Direction);
         }
 
         public void approximation_scale(double s)
         {
             m_Scale = s;
-            if(m_IsInitialized)
-            {
-                normalize(startAngle, endAngle, m_Direction);
-            }
+			m_IsInitialized = false; // force recalc
         }
         
         public double approximation_scale() { return m_Scale;  }
 
-        public IEnumerable<VertexData> Vertices()
-        {
+        public IEnumerable<VertexData> Vertices ()
+		{
+			if (!m_IsInitialized) {
+				normalize (startAngle, endAngle, m_Direction);
+			}
+
             // go to the start
             VertexData vertexData = new VertexData();
-            vertexData.command = FlagsAndCommand.CommandMoveTo;
+			vertexData.command = moveToStart ? FlagsAndCommand.CommandMoveTo : FlagsAndCommand.CommandLineTo;
             vertexData.position.x = originX + Math.Cos(startAngle) * radiusX;
             vertexData.position.y = originY + Math.Sin(startAngle) * radiusY;
             yield return vertexData;
