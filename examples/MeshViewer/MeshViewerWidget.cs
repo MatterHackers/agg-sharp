@@ -115,8 +115,8 @@ namespace MatterHackers.MeshVisualizer
                 centeredInfoDescription.AutoExpandBoundsToText = true;
                 AddChild(centeredInfoDescription);
 
-                VAnchor = VAnchor.ParentCenter;
-                HAnchor = HAnchor.ParentCenter;
+                VAnchor |= VAnchor.ParentCenter;
+                HAnchor |= HAnchor.ParentCenter;
             }
         }
 
@@ -198,6 +198,7 @@ namespace MatterHackers.MeshVisualizer
             trackballTumbleWidget = new TrackballTumbleWidget();
             trackballTumbleWidget.DrawRotationHelperCircle = false;
             trackballTumbleWidget.DrawGlContent += trackballTumbleWidget_DrawGlContent;
+            trackballTumbleWidget.TransformState = TrackBallController.MouseDownType.Rotation;
 
             AddChild(trackballTumbleWidget);
 
@@ -346,6 +347,9 @@ namespace MatterHackers.MeshVisualizer
         {
             if (File.Exists(meshPathAndFileName))
             {
+                partProcessingInfo.Visible = true;
+                partProcessingInfo.progressControl.PercentComplete = 0;
+
                 backgroundWorker = new BackgroundWorker();
                 backgroundWorker.WorkerSupportsCancellation = true;
 
