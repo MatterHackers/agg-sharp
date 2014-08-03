@@ -358,8 +358,6 @@ namespace MatterHackers.PolygonMesh.Processors
 
             stlStream.Close();
 
-            Save(meshFromStlFile, "test.stl");
-
             return meshFromStlFile;
         }
 
