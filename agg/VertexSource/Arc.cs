@@ -59,7 +59,9 @@ namespace MatterHackers.Agg.VertexSource
             CounterClockWise,
         }
 
-        public arc() { }
+        public arc() 
+        { 
+        }
 
         public arc(double OriginX,  double OriginY, 
              double RadiusX, double RadiusY,
@@ -97,7 +99,8 @@ namespace MatterHackers.Agg.VertexSource
 
         public IEnumerable<VertexData> Vertices ()
 		{
-			if (!m_IsInitialized) {
+			if (!m_IsInitialized) 
+            {
 				normalize (startAngle, endAngle, m_Direction);
 			}
 
