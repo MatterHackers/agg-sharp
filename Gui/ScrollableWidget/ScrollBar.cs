@@ -116,8 +116,7 @@ namespace MatterHackers.Agg.UI
             base.OnMouseMove(mouseEvent);
         }
     }
-
-
+		
     public class ScrollBar : GuiWidget
     {
         ScrollableWidget ParentScrollWidget;

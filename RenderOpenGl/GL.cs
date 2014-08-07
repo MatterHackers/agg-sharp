@@ -504,7 +504,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.DeleteTextures(n, ref textures);
 			#else
-			throw new NotImplementedException();
+			OpenTK.Graphics.ES11.GL.DeleteTextures(n, ref textures);
 			#endif
         }
 
