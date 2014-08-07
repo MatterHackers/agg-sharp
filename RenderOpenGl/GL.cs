@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-#if USE_GLES
-using OpenTK.Graphics.ES11;
-#elif USE_OPENGL
+#if USE_OPENGL
 using OpenTK.Graphics.OpenGL;
+#else
+using OpenTK.Graphics.ES11;
 #endif
 
 namespace MatterHackers.RenderOpenGl.OpenGl
@@ -88,6 +88,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
     {
         Float = 5126,
     }
+
+	public enum TexCordPointerType
+	{
+		Float = 5126,
+	}
 
     public enum DrawElementsType
     {
@@ -226,22 +231,26 @@ namespace MatterHackers.RenderOpenGl.OpenGl
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.BlendFunc((OpenTK.Graphics.OpenGL.BlendingFactorSrc)sfactor, (OpenTK.Graphics.OpenGL.BlendingFactorDest)dfactor);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void Scissor(int x, int y, int width, int height)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Scissor(x, y, width, height);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void Enable(EnableCap cap)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Enable((OpenTK.Graphics.OpenGL.EnableCap)cap);
-#elif USE_GLES
-            OpenTK.Graphics.OpenGL.GL.Enable((OpenTK.Graphics.OpenGL.All)cap);
+#else
+			OpenTK.Graphics.ES11.GL.Enable((OpenTK.Graphics.ES11.All)cap);
 #endif
         }
 
@@ -249,49 +258,63 @@ namespace MatterHackers.RenderOpenGl.OpenGl
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Disable((OpenTK.Graphics.OpenGL.EnableCap)cap);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void DisableClientState(ArrayCap array)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.DisableClientState((OpenTK.Graphics.OpenGL.ArrayCap)array);
-#endif
+			#else
+			OpenTK.Graphics.ES11.GL.DisableClientState((OpenTK.Graphics.ES11.All)array);
+			#endif
         }
 
         public static void LoadMatrix(double[] m)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.LoadMatrix(m);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void MatrixMode(MatrixMode mode)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.MatrixMode((OpenTK.Graphics.OpenGL.MatrixMode)mode);
-#endif
+			#else
+			OpenTK.Graphics.ES11.GL.MatrixMode((OpenTK.Graphics.ES11.All)mode);
+			#endif
         }
 
         public static void Translate(double x, double y, double z)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Translate(x, y, z);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void Rotate(double angle, double x, double y, double z)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Rotate(angle, x, y, z);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void Scale(double x, double y, double z)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Scale(x, y, z);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void Color4(int red, int green, int blue, int alpha)
@@ -303,63 +326,81 @@ namespace MatterHackers.RenderOpenGl.OpenGl
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Color4(red, green, blue, alpha);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void LoadIdentity()
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.LoadIdentity();
-#endif
+			#else
+			OpenTK.Graphics.ES11.GL.LoadIdentity();
+			#endif
         }
 
         public static void PushMatrix()
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.PushMatrix();
-#endif
+			#else
+			OpenTK.Graphics.ES11.GL.PushMatrix();
+			#endif
         }
 
         public static void MultMatrix(float[] m)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.MultMatrix(m);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void MultMatrix(double[] m)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.MultMatrix(m);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void PopMatrix()
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.PopMatrix();
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void Ortho(double left, double right, double bottom, double top, double zNear, double zFar)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Ortho(left, right, bottom, top, zNear, zFar);
-#endif
+			#else
+			OpenTK.Graphics.ES11.GL.Ortho((float)left, (float)right, (float)bottom, (float)top, (float)zNear, (float)zFar);
+			#endif
         }
 
         public static void PushAttrib(AttribMask mask)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.PushAttrib((OpenTK.Graphics.OpenGL.AttribMask)mask);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void PopAttrib()
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.PopAttrib();
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void GenTextures(int n, out int textureHandle)
@@ -367,8 +408,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.GenTextures(n, out textureHandle);
 #else
-			textureHandle = 0;
-			//throw new NotImplementedException();
+			OpenTK.Graphics.ES11.GL.GenTextures(n, out textureHandle);
 #endif
         }
 
@@ -376,14 +416,18 @@ namespace MatterHackers.RenderOpenGl.OpenGl
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.BindTexture((OpenTK.Graphics.OpenGL.TextureTarget)target, texture);
-#endif
+			#else
+			OpenTK.Graphics.ES11.GL.BindTexture((OpenTK.Graphics.ES11.All)target, texture);
+			#endif
         }
 
         public static void TexParameter(TextureTarget target, TextureParameterName pname, int param)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.TexParameter((OpenTK.Graphics.OpenGL.TextureTarget)target, (OpenTK.Graphics.OpenGL.TextureParameterName)pname, param);
-#endif
+			#else
+			OpenTK.Graphics.ES11.GL.TexParameterx ((OpenTK.Graphics.ES11.All)target,(OpenTK.Graphics.ES11.All)pname, param);
+			#endif
         }
 
         public static void TexImage2D(TextureTarget target, int level,
@@ -400,187 +444,247 @@ namespace MatterHackers.RenderOpenGl.OpenGl
                 width, height, border,
                 (OpenTK.Graphics.OpenGL.PixelFormat)format,
                 (OpenTK.Graphics.OpenGL.PixelType)type, pixels);
-#endif
+			#else
+			OpenTK.Graphics.ES11.GL.TexImage2D(
+				(OpenTK.Graphics.ES11.All)target, level,
+				(int)internalFormat,
+				width, height, border,
+				(OpenTK.Graphics.ES11.All)format,
+				(OpenTK.Graphics.ES11.All)type, pixels);
+			#endif
         }
 
         public static void Begin(BeginMode mode)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Begin((OpenTK.Graphics.OpenGL.BeginMode)mode);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void End()
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.End();
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void TexCoord2(double x, double y)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.TexCoord2(x, y);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void Vertex2(double x, double y)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Vertex2(x, y);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void Vertex3(double x, double y, double z)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Vertex3(x, y, z);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void DeleteTextures(int n, ref int textures)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.DeleteTextures(n, ref textures);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static string GetString(StringName name)
         {
 #if USE_OPENGL
             return OpenTK.Graphics.OpenGL.GL.GetString((OpenTK.Graphics.OpenGL.StringName)name);
-#else
-			return "";
-			//throw new NotImplementedException();
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void BindBuffer(BufferTarget target, int buffer)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.BindBuffer((OpenTK.Graphics.OpenGL.BufferTarget)target, buffer);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void BufferData(BufferTarget target, IntPtr size, IntPtr data, BufferUsageHint usage)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.BufferData((OpenTK.Graphics.OpenGL.BufferTarget)target, size, data, (OpenTK.Graphics.OpenGL.BufferUsageHint)usage);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void BufferData<T2>(BufferTarget target, IntPtr size, T2[] data, BufferUsageHint usage) where T2 : struct
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.BufferData((OpenTK.Graphics.OpenGL.BufferTarget)target, size, data, (OpenTK.Graphics.OpenGL.BufferUsageHint)usage);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void EnableClientState(ArrayCap arrayCap)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.EnableClientState((OpenTK.Graphics.OpenGL.ArrayCap)arrayCap);
-#endif
+			#else
+			OpenTK.Graphics.ES11.GL.EnableClientState((OpenTK.Graphics.ES11.All)arrayCap);
+			#endif
         }
 
         public static void GenBuffers(int n, out int buffers)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.GenBuffers(n, out buffers);
-#else
-			buffers = 0;
-			//throw new NotImplementedException();
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void DeleteBuffers(int n, ref int buffers)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.DeleteBuffers(n, ref buffers);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void ColorPointer(int size, ColorPointerType type, int stride, byte[] pointer)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.ColorPointer(size, (OpenTK.Graphics.OpenGL.ColorPointerType)type, stride, pointer);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void ColorPointer(int size, ColorPointerType type, int stride, IntPtr pointer)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.ColorPointer(size, (OpenTK.Graphics.OpenGL.ColorPointerType)type, stride, pointer);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void NormalPointer(NormalPointerType type, int stride, float[] pointer)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.NormalPointer((OpenTK.Graphics.OpenGL.NormalPointerType)type, stride, pointer);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void NormalPointer(NormalPointerType type, int stride, IntPtr pointer)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.NormalPointer((OpenTK.Graphics.OpenGL.NormalPointerType)type, stride, pointer);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void VertexPointer(int size, VertexPointerType type, int stride, float[] pointer)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.VertexPointer(size, (OpenTK.Graphics.OpenGL.VertexPointerType)type, stride, pointer);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void VertexPointer(int size, VertexPointerType type, int stride, IntPtr pointer)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.VertexPointer(size, (OpenTK.Graphics.OpenGL.VertexPointerType)type, stride, pointer);
-#endif
+			#else
+			OpenTK.Graphics.ES11.GL.VertexPointer(size, (OpenTK.Graphics.ES11.All)type, stride, pointer);
+			#endif
         }
+
+		public static void TexCoordPointer(int size, TexCordPointerType type, int stride, IntPtr pointer)
+		{
+			#if USE_OPENGL
+			throw new NotimplementedException();
+			#else
+			OpenTK.Graphics.ES11.GL.TexCoordPointer(size, (OpenTK.Graphics.ES11.All) type, stride, pointer);
+			#endif
+		}
 
         public static void DrawRangeElements(BeginMode mode, int start, int end, int count, DrawElementsType type, IntPtr indices)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.DrawRangeElements((OpenTK.Graphics.OpenGL.BeginMode)mode, start, end, count, (OpenTK.Graphics.OpenGL.DrawElementsType)type, indices);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void ClearDepth(double depth)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.ClearDepth(depth);
-#endif
+			#else
+			OpenTK.Graphics.ES11.GL.ClearDepth((float)depth);
+			#endif
         }
 
         public static void Viewport(int x, int y, int width, int height)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Viewport(x, y, width, height);
-#endif
+			#else
+			OpenTK.Graphics.ES11.GL.Viewport(x, y, width, height);
+			#endif
         }
 
         public static void Clear(ClearBufferMask mask)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Clear((OpenTK.Graphics.OpenGL.ClearBufferMask)mask);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void Light(LightName light, LightParameter pname, float[] param)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Light((OpenTK.Graphics.OpenGL.LightName)light, (OpenTK.Graphics.OpenGL.LightParameter)pname, param);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void ShadeModel(ShadingModel model)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.ShadeModel((OpenTK.Graphics.OpenGL.ShadingModel)model);
+#else
+			OpenTK.Graphics.ES11.GL.ShadeModel ((OpenTK.Graphics.ES11.All)model);
 #endif
         }
 
@@ -588,49 +692,63 @@ namespace MatterHackers.RenderOpenGl.OpenGl
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.FrontFace((OpenTK.Graphics.OpenGL.FrontFaceDirection)mode);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void CullFace(CullFaceMode mode)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.CullFace((OpenTK.Graphics.OpenGL.CullFaceMode)mode);
-#endif
+			#else
+			OpenTK.Graphics.ES11.GL.CullFace((OpenTK.Graphics.ES11.All)mode);
+			#endif
         }
 
         public static void DepthFunc(DepthFunction func)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.DepthFunc((OpenTK.Graphics.OpenGL.DepthFunction)func);
-#endif
+			#else
+			OpenTK.Graphics.ES11.GL.DepthFunc((OpenTK.Graphics.ES11.All)func);
+			#endif
         }
 
         public static void ColorMaterial(MaterialFace face, ColorMaterialParameter mode)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.ColorMaterial((OpenTK.Graphics.OpenGL.MaterialFace) face, (OpenTK.Graphics.OpenGL.ColorMaterialParameter)mode);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void InterleavedArrays<T2>(InterleavedArrayFormat format, int stride, T2[] pointer) where T2 : struct
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.InterleavedArrays((OpenTK.Graphics.OpenGL.InterleavedArrayFormat)format, stride, pointer);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
 
         public static void DrawArrays(BeginMode mode, int first, int count)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.DrawArrays((OpenTK.Graphics.OpenGL.BeginMode)mode, first, count);
-#endif
+			#else
+			OpenTK.Graphics.ES11.GL.DrawArrays((OpenTK.Graphics.ES11.All)mode, first, count);
+			#endif
         }
 
         public static void PolygonOffset(float factor, float units)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.PolygonOffset(factor, units);
-#endif
+			#else
+			throw new NotImplementedException();
+			#endif
         }
     }
 }

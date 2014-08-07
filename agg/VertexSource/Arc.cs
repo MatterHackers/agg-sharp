@@ -59,8 +59,8 @@ namespace MatterHackers.Agg.VertexSource
             CounterClockWise,
         }
 
-        public arc() 
-        { 
+        public arc()
+        {
         }
 
         public arc(double OriginX,  double OriginY, 
@@ -184,6 +184,7 @@ namespace MatterHackers.Agg.VertexSource
                 }
                 flatenDeltaAngle = -flatenDeltaAngle;
             }
+
             m_Direction   = Direction;
             startAngle = Angle1;
             endAngle   = Angle2;
