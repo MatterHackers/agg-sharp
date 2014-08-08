@@ -44,7 +44,7 @@ namespace MatterHackers.Agg.UI
     {
         GuiWidget bar;
         public TextWidget textWidget;
-        RGBA_Bytes fillColor;
+        public RGBA_Bytes fillColor { get; set; }
 
         public EventHandler ProgressChanged;
 

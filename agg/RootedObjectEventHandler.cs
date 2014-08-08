@@ -2,9 +2,43 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-
+using System.Runtime.CompilerServices;
 namespace MatterHackers.Agg
 {
+    public interface IReceiveRootedWeakEvent
+    {
+        void RootedEvent(string eventType, EventArgs e);
+    }
+
+    public class RootedObjectWeakEventHandler
+    {
+        List<WeakReference> classesToCall = new List<WeakReference>();
+        List<string> eventTypes = new List<string>();
+
+        public void Register(IReceiveRootedWeakEvent objectToCall, string eventType)
+        {
+            classesToCall.Add(new WeakReference(objectToCall));
+            eventTypes.Add(eventType);
+        }
+
+        public void CallEvents(Object sender, EventArgs e)
+        {
+            for(int i=classesToCall.Count-1; i>=0; i--)
+            {
+                IReceiveRootedWeakEvent reciever = classesToCall[i].Target as IReceiveRootedWeakEvent;
+                if (reciever == null)
+                {
+                    classesToCall.RemoveAt(i);
+                    eventTypes.RemoveAt(i);
+                }
+                else
+                {
+                    reciever.RootedEvent(eventTypes[i], e);
+                }
+            }
+        }
+    }
+
     public class RootedObjectEventHandler
     {
 #if DEBUG
