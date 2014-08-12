@@ -105,6 +105,7 @@ namespace MatterHackers.PolygonMesh.Processors
                         bw.Write(new Byte[80]);
                         // the number of tranigles
                         bw.Write(meshToSave.Faces.Count);
+                        int binaryPolyCount = 0;
                         foreach (Face face in meshToSave.Faces)
                         {
                             List<Vector3> positionsCCW = new List<Vector3>();
@@ -118,17 +119,16 @@ namespace MatterHackers.PolygonMesh.Processors
                             int thirdIndex = 2;
                             for (int polyIndex = 0; polyIndex < numPolys; polyIndex++)
                             {
-                                // save the normal (all 0 so it can compress bette)
+                                binaryPolyCount++;
+                                // save the normal (all 0 so it can compress better)
                                 bw.Write((float)0);
                                 bw.Write((float)0);
                                 bw.Write((float)0);
                                 // save the position
-                                for (int vertexIndex = 0; vertexIndex < 3; vertexIndex++)
-                                {
-                                    bw.Write((float)positionsCCW[vertexIndex].x);
-                                    bw.Write((float)positionsCCW[vertexIndex].y);
-                                    bw.Write((float)positionsCCW[vertexIndex].z);
-                                }
+                                bw.Write((float)positionsCCW[0].x); bw.Write((float)positionsCCW[0].y); bw.Write((float)positionsCCW[0].z);
+                                bw.Write((float)positionsCCW[secondIndex].x); bw.Write((float)positionsCCW[secondIndex].y); bw.Write((float)positionsCCW[secondIndex].z);
+                                bw.Write((float)positionsCCW[thirdIndex].x); bw.Write((float)positionsCCW[thirdIndex].y); bw.Write((float)positionsCCW[thirdIndex].z);
+
                                 // and the attribute
                                 bw.Write((ushort)0);
 
@@ -136,6 +136,9 @@ namespace MatterHackers.PolygonMesh.Processors
                                 thirdIndex++;
                             }
                         }
+                        bw.BaseStream.Position = 80;
+                        // the number of tranigles
+                        bw.Write(binaryPolyCount);
                     }
                     break;
             }
