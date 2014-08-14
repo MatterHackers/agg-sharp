@@ -192,7 +192,10 @@ namespace MatterHackers.GCodeVisualizer
                 for (int i = startFeature; i < endFeature; i++)
                 {
                     RenderFeatureBase feature = renderFeatures[activeLayerIndex][i];
-                    feature.Render(graphics2D, transform, layerScale, renderType);
+                    if (feature != null)
+                    {
+                        feature.Render(graphics2D, transform, layerScale, renderType);
+                    }
                 }
             }
         }
