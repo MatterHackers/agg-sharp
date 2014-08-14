@@ -138,6 +138,7 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ScaleRotateTranslate.cs" />
     <Compile Include="MeshViewerWidget.cs" />
     <Compile Include="MeshViewerApplication.cs">
       <SubType>Code</SubType>

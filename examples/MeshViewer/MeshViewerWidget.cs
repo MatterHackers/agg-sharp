@@ -151,7 +151,7 @@ namespace MatterHackers.MeshVisualizer
             }
         }
 
-        public Matrix4X4 SelectedMeshTransform 
+        public ScaleRotateTranslate SelectedMeshTransform 
         {
             get 
             {
@@ -160,7 +160,7 @@ namespace MatterHackers.MeshVisualizer
                     return MeshTransforms[selectedMeshIndex];
                 }
 
-                return Matrix4X4.Identity;
+                return ScaleRotateTranslate.Identity();
             }
 
             set
@@ -169,8 +169,8 @@ namespace MatterHackers.MeshVisualizer
             }
         }
 
-        List<Matrix4X4> meshTransforms = new List<Matrix4X4>();
-        public List<Matrix4X4> MeshTransforms { get { return meshTransforms; } }
+        List<ScaleRotateTranslate> meshTransforms = new List<ScaleRotateTranslate>();
+        public List<ScaleRotateTranslate> MeshTransforms { get { return meshTransforms; } }
 
         List<Mesh> meshesToRender = new List<Mesh>();
         public List<Mesh> Meshes { get { return meshesToRender; } }
@@ -325,7 +325,7 @@ namespace MatterHackers.MeshVisualizer
                     drawColor = SelectedPartColor;
                 }
 
-                RenderMeshToGl.Render(meshToRender, drawColor, MeshTransforms[i], RenderType);
+                RenderMeshToGl.Render(meshToRender, drawColor, MeshTransforms[i].TotalTransform, RenderType);
             }
 
             // we don't want to render the bed or bulid volume before we load a model.
@@ -363,6 +363,8 @@ namespace MatterHackers.MeshVisualizer
                             backgroundWorker.DoWork += (object sender, DoWorkEventArgs e) =>
                             {
                                 Mesh loadedMesh = StlProcessing.Load(meshPathAndFileName, backgroundWorker_ProgressChanged);
+
+                                SetMeshAfterLoad(loadedMesh);
 
                                 e.Result = loadedMesh;
                             };
@@ -410,7 +412,7 @@ namespace MatterHackers.MeshVisualizer
             else
             {
                 Meshes.Add(loadedMesh);
-                meshTransforms.Add(Matrix4X4.Identity);
+                meshTransforms.Add(ScaleRotateTranslate.Identity());
 
                 trackballTumbleWidget.TrackBallController = new TrackBallController();
                 trackballTumbleWidget.OnBoundsChanged(null);
@@ -418,19 +420,27 @@ namespace MatterHackers.MeshVisualizer
                 trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, MathHelper.Tau / 16)));
                 trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
 
+                int index = Meshes.Count - 1;
+                // get the ScaleRotateTranslate matrices set up
+                {
+                    AxisAlignedBoundingBox bounds = loadedMesh.GetAxisAlignedBoundingBox(meshTransforms[index].TotalTransform);
+                    Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
+                    loadedMesh.Translate(-boundsCenter);
+                }
+
                 // make sure the mesh is centered and on the bed
                 {
-                    int index = Meshes.Count - 1;
-                    AxisAlignedBoundingBox bounds = loadedMesh.GetAxisAlignedBoundingBox(meshTransforms[index]);
+                    AxisAlignedBoundingBox bounds = loadedMesh.GetAxisAlignedBoundingBox(meshTransforms[index].TotalTransform);
                     Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
-                    meshTransforms[index] *= Matrix4X4.CreateTranslation(-boundsCenter + new Vector3(0, 0, bounds.ZSize / 2));
+                    ScaleRotateTranslate moved = meshTransforms[index];
+                    moved.translation *= Matrix4X4.CreateTranslation(-boundsCenter + new Vector3(0, 0, bounds.ZSize / 2));
+                    meshTransforms[index] = moved;
                 }
             }
         }
 
         void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            SetMeshAfterLoad((Mesh)e.Result);
             partProcessingInfo.Visible = false;
 
             if (LoadDone != null)
