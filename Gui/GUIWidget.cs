@@ -404,6 +404,9 @@ namespace MatterHackers.Agg.UI
         public event MouseEventHandler MouseWheel;
         public event MouseEventHandler MouseMove;
 
+		public delegate void FlingEventHandler(object sender, FlingEventArgs eventArgs);
+		public event FlingEventHandler GestureFling;
+
         /// <summary>
         /// The mouse has entered the bounds of this widget.  It may also be over a child.
         /// </summary>
@@ -1935,6 +1938,37 @@ namespace MatterHackers.Agg.UI
             }
             underMouseState = UI.UnderMouseState.NotUnderMouse;
         }
+
+		public virtual void OnGestureFling(FlingEventArgs flingEvent)
+		{
+			if (PositionWithinLocalBounds(flingEvent.X, flingEvent.Y))
+			{
+				//bool childHasAcceptedThisEvent = false;
+				for (int i = Children.Count - 1; i >= 0; i--)
+				{
+					GuiWidget child = Children[i];
+					if (child.Visible & child.Enabled)
+					{
+						double childX = flingEvent.X;
+						double childY = flingEvent.Y;
+						child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
+						FlingEventArgs childFlingEvent = new FlingEventArgs(childX, childY, flingEvent.Direction);
+
+
+						if (child.PositionWithinLocalBounds(childFlingEvent.X, childFlingEvent.Y))
+						{
+							// recurse in
+							child.OnGestureFling(childFlingEvent);
+						}
+					}
+				}
+
+				if (GestureFling != null)
+				{
+					GestureFling(this, flingEvent);
+				}
+			}
+		}
 
         public virtual void OnMouseDown(MouseEventArgs mouseEvent)
         {

@@ -39,4 +39,31 @@ namespace MatterHackers.Agg.UI
         public double Y { get { return y; } set { y = value; } }
         public Vector2 Position { get { return new Vector2(x, y); } }
     }
+
+	public enum FlingDirection
+	{
+		Up,
+		Down,
+		Left,
+		Right
+	}
+
+	public class FlingEventArgs : EventArgs
+	{
+		private FlingDirection direction;
+		private double x;
+		private double y;
+
+		public FlingEventArgs(double originX, double originY, FlingDirection flingDirection)
+		{
+			this.direction = flingDirection;
+			this.x = originX;
+			this.y = originY;            
+		}
+
+		public FlingDirection Direction { get { return direction; } }
+		public double X { get { return x; } set { x = value; } }
+		public double Y { get { return y; } set { y = value; } }
+		public Vector2 Position { get { return new Vector2(x, y); } }
+	}
 }

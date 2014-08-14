@@ -168,6 +168,24 @@ namespace MatterHackers.Agg.UI
             throw new Exception("You asked to switch to a page that is not in the TabControl.");
         }
 
+		public int TabCount
+		{
+			get {
+				int tabCount = 0;
+				foreach (GuiWidget child in tabBar.Children)
+				{
+					Tab tab = child as Tab;
+					if (tab != null)
+					{
+						tabCount++;
+					}
+				}
+				return tabCount;
+			}
+
+		}
+
+
         public void SelectTab(int index)
         {
             Tab foundTab = null;
