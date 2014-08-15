@@ -160,7 +160,6 @@ namespace MatterHackers.GCodeVisualizer
                 }
                 catch (IOException)
                 {
-                    int a = 0;
                 }
             }
             else
