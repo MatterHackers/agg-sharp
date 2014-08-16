@@ -411,16 +411,9 @@ namespace MatterHackers.MeshVisualizer
             }
             else
             {
-                Meshes.Add(loadedMesh);
                 meshTransforms.Add(ScaleRotateTranslate.Identity());
 
-                trackballTumbleWidget.TrackBallController = new TrackBallController();
-                trackballTumbleWidget.OnBoundsChanged(null);
-                trackballTumbleWidget.TrackBallController.Scale = .03;
-                trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, MathHelper.Tau / 16)));
-                trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
-
-                int index = Meshes.Count - 1;
+                int index = meshTransforms.Count - 1;
                 // get the ScaleRotateTranslate matrices set up
                 {
                     AxisAlignedBoundingBox bounds = loadedMesh.GetAxisAlignedBoundingBox(meshTransforms[index].TotalTransform);
@@ -436,6 +429,14 @@ namespace MatterHackers.MeshVisualizer
                     moved.translation *= Matrix4X4.CreateTranslation(-boundsCenter + new Vector3(0, 0, bounds.ZSize / 2));
                     meshTransforms[index] = moved;
                 }
+
+                Meshes.Add(loadedMesh);
+
+                trackballTumbleWidget.TrackBallController = new TrackBallController();
+                trackballTumbleWidget.OnBoundsChanged(null);
+                trackballTumbleWidget.TrackBallController.Scale = .03;
+                trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, MathHelper.Tau / 16)));
+                trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
             }
         }
 
