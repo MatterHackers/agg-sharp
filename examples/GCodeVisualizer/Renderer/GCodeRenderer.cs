@@ -46,6 +46,8 @@ namespace MatterHackers.GCodeVisualizer
         Extrusions = 1,
         Moves = 2,
         Retractions = 4,
+        SpeedColors = 8,
+        SimulateExtrusion = 16,
         All = Extrusions | Moves | Retractions
     };
 

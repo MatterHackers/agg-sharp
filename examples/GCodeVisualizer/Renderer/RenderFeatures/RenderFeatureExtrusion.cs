@@ -56,17 +56,31 @@ namespace MatterHackers.GCodeVisualizer
             this.layerHeight = (float)layerHeight;
         }
 
+        double GetRadius(RenderType renderType)
+        {
+            double radius = .2;
+            if ((renderType & RenderType.SimulateExtrusion) == RenderType.SimulateExtrusion)
+            {
+                double area = extrusionVolumeMm3 / ((end - start).Length);
+                radius = Math.Sqrt(area / Math.PI);
+            }
+
+            return radius;
+        }
+
         public override void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<int> indexData, Affine transform, double layerScale, RenderType renderType)
         {
             if ((renderType & RenderType.Extrusions) == RenderType.Extrusions)
             {
-                double area = extrusionVolumeMm3 / ((end - start).Length);
-                double radius = Math.Sqrt(area / Math.PI);
-#if false
-                CreateCylinder(colorVertexData, indexData, new Vector3(start), new Vector3(end), radius, 6, GCodeRenderer.ExtrusionColor, layerHeight);
-#else
-                CreateCylinder(colorVertexData, indexData, new Vector3(start), new Vector3(end), radius, 6, color, layerHeight);
-#endif
+                double radius = GetRadius(renderType);
+                if ((renderType & RenderType.SpeedColors) == RenderType.SpeedColors)
+                {
+                    CreateCylinder(colorVertexData, indexData, new Vector3(start), new Vector3(end), radius, 6, color, layerHeight);
+                }
+                else
+                {
+                    CreateCylinder(colorVertexData, indexData, new Vector3(start), new Vector3(end), radius, 6, GCodeRenderer.ExtrusionColor, layerHeight);
+                }
             }
         }
 
@@ -74,9 +88,12 @@ namespace MatterHackers.GCodeVisualizer
         {
             if ((renderType & RenderType.Extrusions) == RenderType.Extrusions)
             {
-                double extrusionLineWidths = 0.2 * layerScale;
+                double extrusionLineWidths = GetRadius(renderType) * 2 * layerScale;
                 RGBA_Bytes extrusionColor = RGBA_Bytes.Black;
-                //extrusionColor = color;
+                if ((renderType & RenderType.SpeedColors) == RenderType.SpeedColors)
+                {
+                    extrusionColor = color;
+                }
 
                 PathStorage pathStorage = new PathStorage();
                 VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, transform);
