@@ -104,7 +104,7 @@ namespace MatterHackers.RenderOpenGl
             return cube;
         }
 
-        public void RenderToGlRecursive(Box.BoxPrimitive objectToProcess)
+        public void RenderToGlRecursive(BoxPrimitive objectToProcess)
         {
             if (objectToProcess.CreateCentered)
             {

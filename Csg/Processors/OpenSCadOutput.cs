@@ -83,7 +83,7 @@ namespace MatterHackers.Csg.Processors
         #endregion
 
         #region Box
-        public string GetScadOutputRecursive(Box.BoxPrimitive objectToProcess, int level = 0)
+        public string GetScadOutputRecursive(BoxPrimitive objectToProcess, int level = 0)
         {
             string info = AddRenderInfoIfReqired(objectToProcess);
             

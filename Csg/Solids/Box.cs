@@ -39,45 +39,6 @@ namespace MatterHackers.Csg.Solids
 {
     public class Box : CsgObjectWrapper
     {
-        Vector3 size;
-
-        public class BoxPrimitive : Solid
-        {
-            internal Vector3 size;
-
-            public new Vector3 Size { get { return size; } }
-            public bool CreateCentered { get; set; }
-
-            public BoxPrimitive(double sizeX, double sizeY, double sizeZ, string name = "", bool createCentered = true)
-                : this(new Vector3(sizeX, sizeY, sizeZ), name, createCentered)
-            {
-            }
-
-            public BoxPrimitive(BoxPrimitive objectToCopy)
-                : this(objectToCopy.size, objectToCopy.name, objectToCopy.CreateCentered)
-            {
-            }
-
-            public BoxPrimitive(Vector3 size, string name = "", bool createCentered = true)
-                : base(name)
-            {
-                this.CreateCentered = createCentered;
-                this.size = size;
-            }
-
-            public override AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
-            {
-                if (CreateCentered)
-                {
-                    return new AxisAlignedBoundingBox(-size / 2, size / 2);
-                }
-                else
-                {
-                    return new AxisAlignedBoundingBox(Vector3.Zero, size);
-                }
-            }
-        }
-
         public Box(double sizeX, double sizeY, double sizeZ, string name = "", bool createCentered = true)
             : this(new Vector3(sizeX, sizeY, sizeZ), name, createCentered)
         {
@@ -86,7 +47,6 @@ namespace MatterHackers.Csg.Solids
         public Box(Vector3 size, string name = "", bool createCentered = true)
             : base(name)
         {
-            this.size = size;
             root = new BoxPrimitive(size, name, createCentered);
         }
 

@@ -26,9 +26,6 @@ namespace MatterHackers.Agg.UI
             if (setClipboardText == null)
             {
                 throw new Exception("You need to 'Clipboard.SetSystemClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText);' from your main thread.");
-                // if this fails add 
-                // GuiHalWidget.SetClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText);
-                // before you call the unit tests
             }
 
             setClipboardText(text);

@@ -71,6 +71,7 @@
     <Compile Include="Operations\Intersection.cs" />
     <Compile Include="Operations\Union.cs" />
     <Compile Include="Solids\Box.cs" />
+    <Compile Include="Solids\BoxPrimitive.cs" />
     <Compile Include="Solids\LinearExtrude.cs" />
     <Compile Include="Solids\RotateExtrude.cs" />
     <Compile Include="Solids\Round.cs" />

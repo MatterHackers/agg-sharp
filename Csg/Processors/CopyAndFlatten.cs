@@ -65,9 +65,9 @@ namespace MatterHackers.Csg.Processors
         #endregion
 
         #region Box
-        public CsgObject DoCopyAndFlatten(Box.BoxPrimitive objectToProcess)
+        public CsgObject DoCopyAndFlatten(BoxPrimitive objectToProcess)
         {
-            return new Box.BoxPrimitive(objectToProcess);
+            return new BoxPrimitive(objectToProcess);
         }
         #endregion
 
