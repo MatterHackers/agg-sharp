@@ -5,6 +5,7 @@ using System.Text;
 using System.Runtime.CompilerServices;
 namespace MatterHackers.Agg
 {
+#if false
     public interface IReceiveRootedWeakEvent
     {
         void RootedEvent(string eventType, EventArgs e);
@@ -19,6 +20,17 @@ namespace MatterHackers.Agg
         {
             classesToCall.Add(new WeakReference(objectToCall));
             eventTypes.Add(eventType);
+        }
+
+        public void Unregister(IReceiveRootedWeakEvent objectToCall)
+        {
+            for (int i = classesToCall.Count - 1; i >= 0; i--)
+            {
+                if (classesToCall[i].Target == objectToCall)
+                {
+                    classesToCall.RemoveAt(i);
+                }
+            }
         }
 
         public void CallEvents(Object sender, EventArgs e)
@@ -38,6 +50,7 @@ namespace MatterHackers.Agg
             }
         }
     }
+#endif
 
     public class RootedObjectEventHandler
     {
