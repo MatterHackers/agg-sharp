@@ -7,11 +7,33 @@ using System.Text;
 using OpenTK.Graphics.OpenGL;
 #else
 using OpenTK.Graphics.ES11;
+using MatterHackers.VectorMath;
+using MatterHackers.Agg;
 #endif
 
 namespace MatterHackers.RenderOpenGl.OpenGl
 {
-    public enum InterleavedArrayFormat
+	#if !USE_OPENGL
+	internal class ImediateMode
+	{
+		BeginMode mode;
+		internal BeginMode Mode
+		{
+			get { return mode; }
+			set
+			{
+				mode = value;
+				positions3f.Clear();
+				textureCoords2f.Clear();
+			}
+		}
+
+		internal VectorPOD<float> positions3f = new VectorPOD<float>();
+		internal VectorPOD<float> textureCoords2f = new VectorPOD<float>();
+	}
+	#endif
+
+	public enum InterleavedArrayFormat
     {
         V3f = 10785,
         T2fN3fV3f = 10795,
@@ -227,12 +249,16 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
     public static class GL
     {
-        public static void BlendFunc(BlendingFactorSrc sfactor, BlendingFactorDest dfactor)
+		#if !USE_OPENGL
+		static ImediateMode currentImediateData = new ImediateMode();
+		#endif
+
+		public static void BlendFunc(BlendingFactorSrc sfactor, BlendingFactorDest dfactor)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.BlendFunc((OpenTK.Graphics.OpenGL.BlendingFactorSrc)sfactor, (OpenTK.Graphics.OpenGL.BlendingFactorDest)dfactor);
 #else
-			throw new NotImplementedException();
+			OpenTK.Graphics.ES11.GL.BlendFunc((OpenTK.Graphics.ES11.All)sfactor, (OpenTK.Graphics.ES11.All)dfactor);
 #endif
         }
 
@@ -241,7 +267,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Scissor(x, y, width, height);
 #else
-			throw new NotImplementedException();
+			OpenTK.Graphics.ES11.GL.Scissor(x, y, width, height);
 #endif
         }
 
@@ -259,7 +285,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Disable((OpenTK.Graphics.OpenGL.EnableCap)cap);
 #else
-			throw new NotImplementedException();
+			OpenTK.Graphics.ES11.GL.Disable((OpenTK.Graphics.ES11.All)cap);
 #endif
         }
 
@@ -295,7 +321,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Translate(x, y, z);
 #else
-			throw new NotImplementedException();
+			OpenTK.Graphics.ES11.GL.Translate((float)x, (float)y, (float)z);
 #endif
         }
 
@@ -304,7 +330,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Rotate(angle, x, y, z);
 #else
-			throw new NotImplementedException();
+			OpenTK.Graphics.ES11.GL.Rotate((float)angle, (float)x, (float)y, (float)z);
 #endif
         }
 
@@ -313,7 +339,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Scale(x, y, z);
 #else
-			throw new NotImplementedException();
+			OpenTK.Graphics.ES11.GL.Scale((float)x, (float)y, (float)z);
 #endif
         }
 
@@ -327,7 +353,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Color4(red, green, blue, alpha);
 #else
-			throw new NotImplementedException();
+			OpenTK.Graphics.ES11.GL.Color4(red, green, blue, alpha);
 #endif
         }
 
@@ -372,7 +398,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.PopMatrix();
 #else
-			throw new NotImplementedException();
+			OpenTK.Graphics.ES11.GL.PopMatrix();
 #endif
         }
 
@@ -390,7 +416,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.PushAttrib((OpenTK.Graphics.OpenGL.AttribMask)mask);
 #else
-			throw new NotImplementedException();
+			//throw new NotImplementedException();
 #endif
         }
 
@@ -399,7 +425,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.PopAttrib();
 #else
-			throw new NotImplementedException();
+			//throw new NotImplementedException();
 #endif
         }
 
@@ -420,6 +446,15 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			OpenTK.Graphics.ES11.GL.BindTexture((OpenTK.Graphics.ES11.All)target, texture);
 #endif
         }
+
+		public static void Finish()
+		{
+			#if USE_OPENGL
+			throw new NotImplementedException();
+			#else
+			OpenTK.Graphics.ES11.GL.Finish();
+			#endif
+		}
 
         public static void TexParameter(TextureTarget target, TextureParameterName pname, int param)
         {
@@ -459,25 +494,78 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Begin((OpenTK.Graphics.OpenGL.BeginMode)mode);
 #else
-			throw new NotImplementedException();
+			currentImediateData.Mode = mode;
 #endif
         }
 
         public static void End()
-        {
+		{
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.End();
 #else
-			throw new NotImplementedException();
+			switch (currentImediateData.Mode)
+			{
+				case BeginMode.TriangleFan:
+					{
+						GL.EnableClientState(ArrayCap.VertexArray);
+						GL.EnableClientState(ArrayCap.TextureCoordArray);
+
+						float[] v = currentImediateData.positions3f.Array;
+						float[] t = currentImediateData.textureCoords2f.Array;
+						// pin the data, so that GC doesn't move them, while used
+						// by native code
+						unsafe
+						{
+							fixed (float* pv = v, pt = t)
+							{
+								GL.VertexPointer(2, VertexPointerType.Float, 0, new IntPtr(pv));
+								GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(pt));
+								GL.DrawArrays(BeginMode.TriangleFan, 0, currentImediateData.positions3f.Count / 2);
+								//GL.Finish();
+							}
+						}
+						GL.DisableClientState(ArrayCap.VertexArray);
+						GL.DisableClientState(ArrayCap.TextureCoordArray);
+					}
+					break;
+
+				case BeginMode.Triangles:
+					{
+						GL.EnableClientState(ArrayCap.VertexArray);
+						GL.EnableClientState(ArrayCap.TextureCoordArray);
+
+						float[] v = currentImediateData.positions3f.Array;
+						float[] t = currentImediateData.textureCoords2f.Array;
+						// pin the data, so that GC doesn't move them, while used
+						// by native code
+						unsafe
+						{
+							fixed (float* pv = v, pt = t)
+							{
+								GL.VertexPointer(2, VertexPointerType.Float, 0, new IntPtr(pv));
+								GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(pt));
+								GL.DrawArrays(BeginMode.Triangles, 0, currentImediateData.positions3f.Count / 2);
+								//GL.Finish();
+							}
+						}
+						GL.DisableClientState(ArrayCap.VertexArray);
+						GL.DisableClientState(ArrayCap.TextureCoordArray);
+					}
+					break;
+
+				default:
+					throw new NotImplementedException();
+			}
 #endif
-        }
+		}
 
         public static void TexCoord2(double x, double y)
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.TexCoord2(x, y);
 #else
-			throw new NotImplementedException();
+			currentImediateData.textureCoords2f.Add((float)x);
+			currentImediateData.textureCoords2f.Add((float)y);
 #endif
         }
 
@@ -486,7 +574,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Vertex2(x, y);
 #else
-			throw new NotImplementedException();
+			currentImediateData.positions3f.Add((float)x);
+			currentImediateData.positions3f.Add((float)y);
+			//currentImediateData.positions3f.Add(0);
 #endif
         }
 
