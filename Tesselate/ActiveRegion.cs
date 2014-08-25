@@ -251,7 +251,7 @@ namespace Tesselate
                  */
                 if (reg.upperHalfEdge.winding != 0)
                 {
-                    throw new System.Exception();
+                    throw new System.Exception("half edeg winding is 0");
                 }
             }
             reg.upperHalfEdge.regionThisIsUpperEdgeOf = null;
@@ -267,7 +267,7 @@ namespace Tesselate
         {
             if (!reg.fixUpperEdge)
             {
-                throw new Exception();
+                throw new Exception("upper edge not fixed");
             }
             Mesh.DeleteHalfEdge(reg.upperHalfEdge);
             reg.fixUpperEdge = false;
@@ -460,7 +460,7 @@ namespace Tesselate
             {
                 if (!e.originVertex.VertLeq(e.directionVertex))
                 {
-                    throw new Exception();
+                    throw new Exception("Direction not leq to origin.");
                 }
                 AddRegionBelow(tess, regUp, e.otherHalfOfThisEdge);
                 e = e.nextEdgeCCWAroundOrigin;
@@ -509,7 +509,7 @@ namespace Tesselate
             regPrev.dirty = true;
             if (regPrev.windingNumber - e.winding != reg.windingNumber)
             {
-                throw new Exception();
+                throw new Exception("");
             }
 
             if (cleanUp)

@@ -103,38 +103,49 @@ namespace MatterHackers.RenderOpenGl
 
         public static void SendShapeToTesselator(VertexTesselatorAbstract tesselator, IVertexSource vertexSource)
         {
-            tesselator.BeginPolygon();
-
-            ShapePath.FlagsAndCommand PathAndFlags = 0;
-            double x, y;
-            bool haveBegunContour = false;
-            while (!ShapePath.is_stop(PathAndFlags = vertexSource.vertex(out x, out y)))
+            
+#if !DEBUG
+            try
+#endif
             {
-                if (ShapePath.is_close(PathAndFlags)
-                    || (haveBegunContour && ShapePath.is_move_to(PathAndFlags)))
-                {
-                    tesselator.EndContour();
-                    haveBegunContour = false;
-                }
+                tesselator.BeginPolygon();
 
-                if (!ShapePath.is_close(PathAndFlags))
+                ShapePath.FlagsAndCommand PathAndFlags = 0;
+                double x, y;
+                bool haveBegunContour = false;
+                while (!ShapePath.is_stop(PathAndFlags = vertexSource.vertex(out x, out y)))
                 {
-                    if (!haveBegunContour)
+                    if (ShapePath.is_close(PathAndFlags)
+                        || (haveBegunContour && ShapePath.is_move_to(PathAndFlags)))
                     {
-                        tesselator.BeginContour();
-                        haveBegunContour = true;
+                        tesselator.EndContour();
+                        haveBegunContour = false;
                     }
 
-                    tesselator.AddVertex(x, y);
+                    if (!ShapePath.is_close(PathAndFlags))
+                    {
+                        if (!haveBegunContour)
+                        {
+                            tesselator.BeginContour();
+                            haveBegunContour = true;
+                        }
+
+                        tesselator.AddVertex(x, y);
+                    }
                 }
-            }
 
-            if (haveBegunContour)
+                if (haveBegunContour)
+                {
+                    tesselator.EndContour();
+                }
+
+                tesselator.EndPolygon();
+            }
+#if !DEBUG
+            catch
             {
-                tesselator.EndContour();
             }
-
-            tesselator.EndPolygon();
+#endif
         }
 
 		static byte[] CreateBufferForAATexture()
