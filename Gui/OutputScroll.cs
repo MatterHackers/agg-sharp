@@ -44,13 +44,12 @@ namespace MatterHackers.Agg.UI
     {
         const int TOTOL_POW2 = 64;
         int lineCount = 0;
-        ImageBuffer[] lines = new ImageBuffer[TOTOL_POW2];
+        string[] lines = new string[TOTOL_POW2];
 
         public RGBA_Bytes BorderColor = new RGBA_Bytes(204, 204, 204);
         public RGBA_Bytes TextColor = new RGBA_Bytes( 102, 102, 102);
         public int BorderWidth = 5;
         public int BorderRadius = 0;
-
 
         public OutputScroll()
         {
@@ -74,9 +73,7 @@ namespace MatterHackers.Agg.UI
                     Vector2 stringSize = printer.GetSize();
 
                     int arrayIndex = (lineCount % TOTOL_POW2);
-                    lines[arrayIndex] = new ImageBuffer((int)Math.Ceiling(stringSize.x), (int)Math.Ceiling(stringSize.y),
-                        32, new BlenderBGRA());
-                    lines[arrayIndex].NewGraphics2D().DrawString(line, 0, -printer.TypeFaceStyle.DescentInPixels);
+                    lines[arrayIndex]= line;
 
                     lineCount++;
                 }
@@ -88,6 +85,7 @@ namespace MatterHackers.Agg.UI
         public override void OnDraw(Graphics2D graphics2D)
         {
             TypeFacePrinter printer = new TypeFacePrinter();
+            printer.DrawFromHintedCache = true;
 
             RectangleDouble Bounds = LocalBounds;
             RoundedRect rectBorder = new RoundedRect(Bounds, this.BorderRadius);
@@ -100,18 +98,38 @@ namespace MatterHackers.Agg.UI
 
             graphics2D.Render(rectInside, this.BackgroundColor);
 
-            double y = LocalBounds.Bottom + printer.TypeFaceStyle.EmSizeInPixels * (TOTOL_POW2-1) + 5;
+            double y = LocalBounds.Bottom + printer.TypeFaceStyle.EmSizeInPixels * (TOTOL_POW2-1);
             for(int index = lineCount; index < lineCount + TOTOL_POW2; index++)
             {
+                if (y > LocalBounds.Top)
+                {
+                    y -= printer.TypeFaceStyle.EmSizeInPixels;
+                    continue;
+                }
                 int arrayIndex = (index % TOTOL_POW2);
                 if (lines[arrayIndex] != null)
                 {
-                    graphics2D.Render(lines[arrayIndex], new Vector2(this.BorderWidth + 2, y));
+                    printer.Text = lines[arrayIndex];
+                    printer.Origin = new Vector2(this.BorderWidth + 2, y);
+                    printer.Render(graphics2D, RGBA_Bytes.Black);
                 }
                 y -= printer.TypeFaceStyle.EmSizeInPixels;
+                if (y < printer.TypeFaceStyle.EmSizeInPixels)
+                {
+                    break;
+                }
             }
 
             base.OnDraw(graphics2D);
+        }
+
+        public void Clear()
+        {
+            for (int index = 0; index < TOTOL_POW2; index++)
+            {
+                lines[index] = "";
+            }
+            lineCount = 0;
         }
     }
 }
