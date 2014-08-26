@@ -46,10 +46,7 @@ namespace MatterHackers.Agg.UI
         int lineCount = 0;
         string[] lines = new string[TOTOL_POW2];
 
-        public RGBA_Bytes BorderColor = new RGBA_Bytes(204, 204, 204);
         public RGBA_Bytes TextColor = new RGBA_Bytes( 102, 102, 102);
-        public int BorderWidth = 5;
-        public int BorderRadius = 0;
 
         public OutputScroll()
         {
@@ -88,15 +85,6 @@ namespace MatterHackers.Agg.UI
             printer.DrawFromHintedCache = true;
 
             RectangleDouble Bounds = LocalBounds;
-            RoundedRect rectBorder = new RoundedRect(Bounds, this.BorderRadius);
-
-            graphics2D.Render(rectBorder, BorderColor);
-
-            RectangleDouble insideBounds = Bounds;
-            insideBounds.Inflate(-this.BorderWidth);
-            RoundedRect rectInside = new RoundedRect(insideBounds, Math.Max(this.BorderRadius - this.BorderWidth, 0));
-
-            graphics2D.Render(rectInside, this.BackgroundColor);
 
             double y = LocalBounds.Bottom + printer.TypeFaceStyle.EmSizeInPixels * (TOTOL_POW2-1);
             for(int index = lineCount; index < lineCount + TOTOL_POW2; index++)
@@ -110,7 +98,7 @@ namespace MatterHackers.Agg.UI
                 if (lines[arrayIndex] != null)
                 {
                     printer.Text = lines[arrayIndex];
-                    printer.Origin = new Vector2(this.BorderWidth + 2, y);
+                    printer.Origin = new Vector2(Bounds.Left + 2, y);
                     printer.Render(graphics2D, RGBA_Bytes.Black);
                 }
                 y -= printer.TypeFaceStyle.EmSizeInPixels;
