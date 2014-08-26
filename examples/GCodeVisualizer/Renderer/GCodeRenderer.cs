@@ -77,7 +77,7 @@ namespace MatterHackers.GCodeVisualizer
 
         public void CreateFeaturesForLayerIfRequired(int layerToCreate)
         {
-            if (extrusionColors == null)
+            if (extrusionColors == null && gCodeFileToDraw.Count > 0)
             {
                 extrusionColors = new ExtrusionColors();
                 HashSet<float> speeds = new HashSet<float>();
