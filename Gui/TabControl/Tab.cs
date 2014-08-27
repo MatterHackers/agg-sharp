@@ -113,19 +113,22 @@ namespace MatterHackers.Agg.UI
 
         public void SelectionChanged(object sender, EventArgs e)
         {
-            bool selected = TabPageControlledByTab == TabBarContaningTab.GetActivePage();
+            if (TabBarContaningTab != null)
+            {
+                bool selected = TabPageControlledByTab == TabBarContaningTab.GetActivePage();
 
-            if (selected)
-            {
-                normalWidget.Visible = false;
-                hoverWidget.Visible = false;
-                selectedWidget.Visible = true;
-            }
-            else
-            {
-                normalWidget.Visible = true;
-                hoverWidget.Visible = false;
-                selectedWidget.Visible = false;
+                if (selected)
+                {
+                    normalWidget.Visible = false;
+                    hoverWidget.Visible = false;
+                    selectedWidget.Visible = true;
+                }
+                else
+                {
+                    normalWidget.Visible = true;
+                    hoverWidget.Visible = false;
+                    selectedWidget.Visible = false;
+                }
             }
         }
 
