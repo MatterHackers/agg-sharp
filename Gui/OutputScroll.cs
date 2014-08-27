@@ -86,7 +86,7 @@ namespace MatterHackers.Agg.UI
 
             RectangleDouble Bounds = LocalBounds;
 
-            double y = LocalBounds.Bottom + printer.TypeFaceStyle.EmSizeInPixels * (TOTOL_POW2-1);
+            double y = LocalBounds.Bottom + printer.TypeFaceStyle.EmSizeInPixels * (TOTOL_POW2-1) + 5;
             for(int index = lineCount; index < lineCount + TOTOL_POW2; index++)
             {
                 if (y > LocalBounds.Top)
@@ -102,7 +102,7 @@ namespace MatterHackers.Agg.UI
                     printer.Render(graphics2D, RGBA_Bytes.Black);
                 }
                 y -= printer.TypeFaceStyle.EmSizeInPixels;
-                if (y < printer.TypeFaceStyle.EmSizeInPixels)
+                if (y < -printer.TypeFaceStyle.EmSizeInPixels)
                 {
                     break;
                 }
