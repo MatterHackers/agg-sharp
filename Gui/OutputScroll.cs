@@ -99,7 +99,7 @@ namespace MatterHackers.Agg.UI
                 {
                     printer.Text = lines[arrayIndex];
                     printer.Origin = new Vector2(Bounds.Left + 2, y);
-                    printer.Render(graphics2D, RGBA_Bytes.Black);
+                    printer.Render(graphics2D, TextColor);
                 }
                 y -= printer.TypeFaceStyle.EmSizeInPixels;
                 if (y < -printer.TypeFaceStyle.EmSizeInPixels)
