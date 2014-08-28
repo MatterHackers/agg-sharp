@@ -529,6 +529,10 @@ namespace MatterHackers.GCodeVisualizer
                     // Stop on material exhausted / Switch I/O pin
                     break;
 
+                case "73":
+                    // makerbot, Manually set build percentage
+                    break;
+
                 case "82":
                     // set extruder to absolute mode
                     break;
