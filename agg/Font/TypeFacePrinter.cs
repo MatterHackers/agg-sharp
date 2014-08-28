@@ -176,7 +176,7 @@ namespace MatterHackers.Agg.Font
 
                     for (int currentChar = 0; currentChar < line.Length; currentChar++)
                     {
-                        ImageBuffer currentGlyphImage = typeFaceStyle.GetImageForCharacter(line[currentChar], 0, 0);
+                        ImageBuffer currentGlyphImage = typeFaceStyle.GetImageForCharacter(line[currentChar], 0, 0, color);
 
                         if (currentGlyphImage != null)
                         {
