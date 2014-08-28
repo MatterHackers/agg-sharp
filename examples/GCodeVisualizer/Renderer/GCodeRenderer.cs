@@ -67,17 +67,22 @@ namespace MatterHackers.GCodeVisualizer
 
         public GCodeRenderer(GCodeFile gCodeFileToDraw)
         {
-            this.gCodeFileToDraw = gCodeFileToDraw;
-
-            for (int i = 0; i < gCodeFileToDraw.NumChangesInZ; i++)
+            if (gCodeFileToDraw != null)
             {
-                renderFeatures.Add(new List<RenderFeatureBase>());
+                this.gCodeFileToDraw = gCodeFileToDraw;
+
+                for (int i = 0; i < gCodeFileToDraw.NumChangesInZ; i++)
+                {
+                    renderFeatures.Add(new List<RenderFeatureBase>());
+                }
             }
         }
 
         public void CreateFeaturesForLayerIfRequired(int layerToCreate)
         {
-            if (extrusionColors == null && gCodeFileToDraw.Count > 0)
+            if (extrusionColors == null 
+                && gCodeFileToDraw != null 
+                && gCodeFileToDraw.Count > 0)
             {
                 extrusionColors = new ExtrusionColors();
                 HashSet<float> speeds = new HashSet<float>();
@@ -99,7 +104,8 @@ namespace MatterHackers.GCodeVisualizer
                 }
             }
 
-            if (renderFeatures[layerToCreate].Count > 0)
+            if (renderFeatures.Count == 0 
+                || renderFeatures[layerToCreate].Count > 0)
             {
                 return;
             }
@@ -243,7 +249,10 @@ namespace MatterHackers.GCodeVisualizer
                     {
                         featureStartIndex[layerIndex].Add(vertexIndexArray.Count);
                         RenderFeatureBase feature = renderFeatures[layerIndex][i];
-                        feature.CreateRender3DData(colorVertexData, vertexIndexArray, transform, layerScale, renderType);
+                        if (feature != null)
+                        {
+                            feature.CreateRender3DData(colorVertexData, vertexIndexArray, transform, layerScale, renderType);
+                        }
                     }
                 }
             }
