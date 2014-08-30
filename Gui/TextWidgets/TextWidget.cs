@@ -36,6 +36,7 @@ namespace MatterHackers.Agg.UI
     {
         static bool debugIt = false;
         public static bool DoubleBufferDefault = true;
+        public static double GlobalPointSizeScaleRatio = 1;
 
         RGBA_Bytes textColor;
 
@@ -53,6 +54,7 @@ namespace MatterHackers.Agg.UI
 
         public TextWidget(string text, double x = 0, double y = 0, double pointSize = 12, Justification justification = Justification.Left, RGBA_Bytes textColor = new RGBA_Bytes(), bool ellipsisIfClipped = true, bool underline = false, RGBA_Bytes backgroundColor = new RGBA_Bytes())
         {
+            pointSize *= GlobalPointSizeScaleRatio;
             Selectable = false;
             DoubleBuffer = DoubleBufferDefault;
             AutoExpandBoundsToText = false;
