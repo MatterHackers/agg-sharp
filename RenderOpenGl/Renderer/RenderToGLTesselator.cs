@@ -68,7 +68,6 @@ namespace MatterHackers.RenderOpenGl
 
         public void BeginCallBack(Tesselator.TriangleListType type)
         {
-			#if USE_OPENGL
 			switch (type)
             {
                 case Tesselator.TriangleListType.Triangles:
@@ -83,29 +82,22 @@ namespace MatterHackers.RenderOpenGl
                     GL.Begin(BeginMode.TriangleStrip);
                     break;
             }
-			#endif
         }
 
         public void EndCallBack()
         {
-			#if USE_OPENGL
 			GL.End();
-			#endif
         }
 
         public void VertexCallBack(int index)
         {
-			#if USE_OPENGL
 			GL.Vertex2(m_Vertices[index].m_X, m_Vertices[index].m_Y);
-			#endif
         }
 
         public void EdgeFlagCallBack(bool IsEdge)
         {
-			#if USE_OPENGL
             // this is not set as it is only used in GL_POLYGON_MODE and GL_POINT or GL_LINE (which we currenly don't use)
 			//GL.EdgeFlag(IsEdge);
-			#endif
         }
 
         public void CombineCallBack(double[] coords3, int[] data4,

@@ -541,6 +541,10 @@ namespace MatterHackers.GCodeVisualizer
                     // lineString = "M84     ; disable motors\r"
                     break;
 
+                case "92":
+                    // set steps per mm
+                    break;
+
                 case "102":
                     // extrude on reverse
                     break;
@@ -618,6 +622,9 @@ namespace MatterHackers.GCodeVisualizer
                     break;
 
                 case "209": // M209: enable automatic retract
+                    break;
+
+                case "210": // Set homing rate
                     break;
 
                 case "227": // Enable Automatic Reverse and Prime
