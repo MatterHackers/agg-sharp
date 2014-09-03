@@ -52,13 +52,15 @@ namespace MatterHackers.RenderOpenGl
 
         int width;
         int height;
-        public Graphics2DOpenGL(int width, int height)
+		RectangleDouble cachedClipRect;
+
+		public Graphics2DOpenGL(int width, int height)
         {
             this.width = width;
             this.height = height;
+			cachedClipRect = new RectangleDouble(0, 0, width, height);
         }
 
-        RectangleDouble cachedClipRect;
         public override RectangleDouble GetClippingRect()
         {
             return cachedClipRect;
