@@ -82,6 +82,7 @@ namespace MatterHackers.RenderOpenGl
 
         public void PushOrthoProjection()
         {
+			GL.Disable(EnableCap.CullFace);
 			GL.PushAttrib(AttribMask.TransformBit | AttribMask.EnableBit);
 
             GL.MatrixMode(MatrixMode.Projection);

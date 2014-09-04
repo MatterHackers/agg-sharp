@@ -114,7 +114,7 @@ namespace MatterHackers.RenderOpenGl
         {
             int index = VerticesCache.Count;
             VerticesCache.Add(new AddedVertex(x, y));
-            double[] coords = new double[3];
+            double[] coords = new double[2];
             coords[0] = x;
             coords[1] = y;
             if (passOnToTesselator)

@@ -357,20 +357,16 @@ namespace Tesselate
             this.emptyCache = false;
         }
 
-        void CacheVertex(double[] coords3, int data)
+        void CacheVertex(double[] coords2, int data)
         {
             this.simpleVertexCache[this.cacheCount].vertexIndex = data;
-            this.simpleVertexCache[this.cacheCount].x = coords3[0];
-            this.simpleVertexCache[this.cacheCount].y = coords3[1];
+            this.simpleVertexCache[this.cacheCount].x = coords2[0];
+            this.simpleVertexCache[this.cacheCount].y = coords2[1];
             ++this.cacheCount;
         }
 
-        public void AddVertex(double[] coords3, int data)
+        public void AddVertex(double[] coords2, int data)
         {
-            int i;
-            double x;
-            double[] clamped = new double[3];
-
             RequireState(ProcessingState.InContour);
 
             if (emptyCache)
@@ -379,31 +375,17 @@ namespace Tesselate
                 lastHalfEdge = null;
             }
 
-            for (i = 0; i < 3; ++i)
-            {
-                x = coords3[i];
-                if (x < -MAX_COORD)
-                {
-                    throw new Exception("Your coordinate exceeded -" + MAX_COORD.ToString() + ".");
-                }
-                if (x > MAX_COORD)
-                {
-                    throw new Exception("Your coordinate exceeded " + MAX_COORD.ToString() + ".");
-                }
-                clamped[i] = x;
-            }
-
             if (mesh == null)
             {
                 if (cacheCount < MAX_CACHE_SIZE)
                 {
-                    CacheVertex(clamped, data);
+					CacheVertex(coords2, data);
                     return;
                 }
                 EmptyCache();
             }
 
-            AddVertex(clamped[0], clamped[1], data);
+			AddVertex(coords2[0], coords2[1], data);
         }
 
         public void EndContour()
@@ -515,7 +497,9 @@ namespace Tesselate
                 rc = this.mesh.TessellateInterior();
             }
 
+			#if DEBUG
             this.mesh.CheckMesh();
+			#endif
 
             if (this.callBegin != null || this.callEnd != null
                 || this.callVertex != null || this.callEdgeFlag != null)
