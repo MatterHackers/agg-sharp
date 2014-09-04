@@ -47,7 +47,7 @@ namespace MatterHackers.RenderOpenGl
 
     public class Graphics2DOpenGL : Graphics2D
     {
-        public bool ForceTexturedEdgeAntiAliasing = true;
+        public bool DoEdgeAntiAliasing = true;
         RenderToGLTesselator RenderNowTesselator = new RenderToGLTesselator();
 
         int width;
@@ -222,7 +222,7 @@ namespace MatterHackers.RenderOpenGl
                 vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
             }
 
-            if (ForceTexturedEdgeAntiAliasing)
+            if (DoEdgeAntiAliasing)
             {
                 DrawAAShape(vertexSource);
             }
