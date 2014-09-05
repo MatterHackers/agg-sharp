@@ -68,7 +68,7 @@ namespace MatterHackers.DataConverters3D
         #endregion
 
         #region Box
-        public IRayTraceable GetIRayTraceableRecursive(Box.BoxPrimitive objectToProcess)
+        public IRayTraceable GetIRayTraceableRecursive(BoxPrimitive objectToProcess)
         {
             return new BoxShape(Vector3.Zero, objectToProcess.Size, DefaultMaterial);
         }
