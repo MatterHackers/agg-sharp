@@ -65,12 +65,10 @@ namespace MatterHackers.RenderOpenGl
             {
                 // We run this in here to ensure that we are on the correct thread and have the correct
                 // glcontext realized.
-                for (int i = glDataNeedingToBeDeleted.Count - 1; i >= 0; i-- )
+                for (int i = glDataNeedingToBeDeleted.Count - 1; i >= 0; i--)
                 {
                     int textureToDelete = glDataNeedingToBeDeleted[i].glTextureHandle;
-					#if USE_OPENGL
-					GL.DeleteTextures(1, ref textureToDelete);
-					#endif
+                    GL.DeleteTextures(1, ref textureToDelete);
                     glDataNeedingToBeDeleted.RemoveAt(i);
                 }
             }
@@ -79,9 +77,7 @@ namespace MatterHackers.RenderOpenGl
             if (plugin != null && imageToGetDisplayListFor.ChangedCount != plugin.imageUpdateCount)
             {
                 int textureToDelete = plugin.GLTextureHandle;
-			#if USE_OPENGL
-				GL.DeleteTextures(1, ref textureToDelete);
-			#endif
+                GL.DeleteTextures(1, ref textureToDelete);
                 plugin.glData.glTextureHandle = 0;
                 imagesWithCacheData.Remove(imageToGetDisplayListFor.GetBuffer());
                 plugin = null;
@@ -203,14 +199,12 @@ namespace MatterHackers.RenderOpenGl
             if (!checkedForHwSupportsOnlyPowerOfTwoTextures)
             {
                 {
-					#if USE_OPENGL
-					// Compatible context (GL 1.0-2.1)
+                    // Compatible context (GL 1.0-2.1)
                     string extensions = GL.GetString(StringName.Extensions);
                     if (extensions.Contains("ARB_texture_non_power_of_two"))
                     {
                         hwSupportsOnlyPowerOfTwoTextures = false;
                     }
-					#endif
                 }
 
                 checkedForHwSupportsOnlyPowerOfTwoTextures = true;
@@ -233,7 +227,7 @@ namespace MatterHackers.RenderOpenGl
 
         private void CreateGlDataForImage(ImageBuffer bufferedImage, bool TextureMagFilterLinear)
         {
-	    	//Next we expand the image into an openGL texture
+            //Next we expand the image into an openGL texture
             int imageWidth = bufferedImage.Width;
             int imageHeight = bufferedImage.Height;
             int bufferOffset;
@@ -277,7 +271,6 @@ namespace MatterHackers.RenderOpenGl
             }
 
             // Create the texture handle and display list handle
-			#if USE_OPENGL
             GL.GenTextures(1, out glData.glTextureHandle);
 
             // Set up some texture parameters for openGL
@@ -300,10 +293,10 @@ namespace MatterHackers.RenderOpenGl
                 GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
             }
 
-	    	GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
 
-			// Create the texture
+            // Create the texture
             switch (bufferedImage.BitDepth)
             {
 #if false // not implemented in our gl wrapper and never used in our current code
@@ -326,7 +319,7 @@ namespace MatterHackers.RenderOpenGl
                 default:
                     throw new NotImplementedException();
             }
-			hardwareExpandedPixelBuffer=null;
+            hardwareExpandedPixelBuffer = null;
 
             if (createdWithMipMaps)
             {
@@ -356,9 +349,8 @@ namespace MatterHackers.RenderOpenGl
                         throw new NotImplementedException();
                 }
             }
-			#endif
 
-			float texCoordX = imageWidth / (float)hardwareWidth;
+            float texCoordX = imageWidth / (float)hardwareWidth;
             float texCoordY = imageHeight / (float)hardwareHeight;
 
             float OffsetX = (float)bufferedImage.OriginOffset.x;
@@ -375,7 +367,6 @@ namespace MatterHackers.RenderOpenGl
 
         public void DrawToGL()
         {
-			#if USE_OPENGL
             GL.BindTexture(TextureTarget.Texture2D, GLTextureHandle);
 #if true
             GL.Begin(BeginMode.TriangleFan);
@@ -398,7 +389,6 @@ namespace MatterHackers.RenderOpenGl
             GL.DisableClientState(ArrayCap.TextureCoordArray);
             GL.DisableClientState(ArrayCap.VertexArray);
 #endif
-			#endif
         }
     }
 }

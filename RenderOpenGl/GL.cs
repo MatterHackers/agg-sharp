@@ -380,7 +380,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.MultMatrix(m);
 #else
-			throw new NotImplementedException();
+			OpenTK.Graphics.ES11.GL.MultMatrix(m);
 #endif
         }
 
@@ -580,7 +580,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             return OpenTK.Graphics.OpenGL.GL.GetString((OpenTK.Graphics.OpenGL.StringName)name);
 #else
-			throw new NotImplementedException();
+			return "";
 #endif
         }
 
