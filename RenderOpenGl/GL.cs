@@ -695,7 +695,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
         public static void TexCoordPointer(int size, TexCordPointerType type, int stride, IntPtr pointer)
         {
 #if USE_OPENGL
-            throw new NotImplementedException();
+            OpenTK.Graphics.OpenGL.GL.TexCoordPointer(size, (OpenTK.Graphics.OpenGL.TexCoordPointerType) type, stride, pointer);
 #else
 			OpenTK.Graphics.ES11.GL.TexCoordPointer(size, (OpenTK.Graphics.ES11.All) type, stride, pointer);
 #endif
@@ -786,15 +786,6 @@ namespace MatterHackers.RenderOpenGl.OpenGl
         {
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.ColorMaterial((OpenTK.Graphics.OpenGL.MaterialFace)face, (OpenTK.Graphics.OpenGL.ColorMaterialParameter)mode);
-#else
-			throw new NotImplementedException();
-#endif
-        }
-
-        public static void InterleavedArrays<T2>(InterleavedArrayFormat format, int stride, T2[] pointer) where T2 : struct
-        {
-#if USE_OPENGL
-            OpenTK.Graphics.OpenGL.GL.InterleavedArrays((OpenTK.Graphics.OpenGL.InterleavedArrayFormat)format, stride, pointer);
 #else
 			throw new NotImplementedException();
 #endif

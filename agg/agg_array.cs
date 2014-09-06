@@ -22,13 +22,7 @@ using System.Collections;
 
 namespace MatterHackers.Agg
 {
-    public interface IDataContainer<T>
-    {
-        T[] Array { get; }
-        void RemoveLast();
-    }
-
-    public class ArrayPOD<T> : IDataContainer<T>
+    public class ArrayPOD<T> where T : struct
     {
         public ArrayPOD()
             : this(64)
@@ -91,7 +85,7 @@ namespace MatterHackers.Agg
     // A simple class template to store Plain Old Data, a vector
     // of a fixed size. The data is contiguous in memory
     //------------------------------------------------------------------------
-    public class VectorPOD<dataType> : IDataContainer<dataType>
+    public class VectorPOD<dataType> where dataType : struct
     {
         protected int currentSize;
         private dataType[] internalArray = new dataType[0];

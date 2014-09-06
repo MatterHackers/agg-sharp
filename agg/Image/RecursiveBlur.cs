@@ -28,6 +28,7 @@
 //
 //----------------------------------------------------------------------------
 using System;
+using System.Collections.Generic;
 using MatterHackers.Agg.Image;
 
 namespace MatterHackers.Agg.Image
@@ -1070,15 +1071,15 @@ namespace MatterHackers.Agg.Image
     //===========================================================recursive_blur
     public sealed class RecursiveBlur
     {
-        VectorPOD<RecursizeBlurCalculator> m_sum1;
-        VectorPOD<RecursizeBlurCalculator> m_sum2;
+        List<RecursizeBlurCalculator> m_sum1;
+        List<RecursizeBlurCalculator> m_sum2;
         VectorPOD<RGBA_Bytes> m_buf;
         RecursizeBlurCalculator m_RecursizeBlurCalculatorFactory;
 
         public RecursiveBlur(RecursizeBlurCalculator recursizeBluerCalculatorFactory)
         {
-            m_sum1 = new VectorPOD<RecursizeBlurCalculator>();
-            m_sum2 = new VectorPOD<RecursizeBlurCalculator>();
+            m_sum1 = new List<RecursizeBlurCalculator>();
+            m_sum2 = new List<RecursizeBlurCalculator>();
             m_buf = new VectorPOD<RGBA_Bytes>();
             m_RecursizeBlurCalculatorFactory = recursizeBluerCalculatorFactory;
         }
@@ -1121,13 +1122,13 @@ namespace MatterHackers.Agg.Image
             int wm = (int)w-1;
             int x, y;
 
-            int StartCreatingAt = (int)m_sum1.size();
-            m_sum1.Resize(w);
-            m_sum2.Resize(w);
+            int StartCreatingAt = (int)m_sum1.Count;
+            m_sum1.Capacity = w;
+            m_sum2.Capacity  = w;
             m_buf.Allocate(w);
 
-            RecursizeBlurCalculator[] Sum1Array = m_sum1.Array;
-            RecursizeBlurCalculator[] Sum2Array = m_sum2.Array;
+            List<RecursizeBlurCalculator> Sum1Array = m_sum1;
+            List<RecursizeBlurCalculator> Sum2Array = m_sum2;
             RGBA_Bytes[] BufferArray = m_buf.Array;
 
             for (int i = StartCreatingAt; i < w; i++)
