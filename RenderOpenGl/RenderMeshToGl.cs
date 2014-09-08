@@ -147,6 +147,7 @@ namespace MatterHackers.RenderOpenGl
             #endif
 
             GL.DisableClientState(ArrayCap.VertexArray);
+            GL.Enable(EnableCap.Lighting);
         }
 
         public static void Render(Mesh meshToRender, IColorType partColor, RenderTypes renderType = RenderTypes.Shaded)

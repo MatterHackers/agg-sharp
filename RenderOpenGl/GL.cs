@@ -1,19 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using MatterHackers.Agg;
 
 #if USE_OPENGL
-using OpenTK.Graphics.OpenGL;
+
 #else
 using OpenTK.Graphics.ES11;
 using MatterHackers.VectorMath;
-using MatterHackers.Agg;
 #endif
 
 namespace MatterHackers.RenderOpenGl.OpenGl
 {
-	#if !USE_OPENGL
+#if !USE_OPENGL
 	internal class ImediateMode
 	{
 		BeginMode mode;
@@ -32,12 +30,6 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		internal VectorPOD<float> textureCoords2f = new VectorPOD<float>();
 	}
 	#endif
-
-	public enum InterleavedArrayFormat
-    {
-        V3f = 10785,
-        T2fN3fV3f = 10795,
-    }
 
     public enum FrontFaceDirection
     {
@@ -249,7 +241,28 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
     public static class GL
     {
-		#if !USE_OPENGL
+        internal struct ViewPortData
+        {
+            internal int x;
+            internal int y;
+            internal int width;
+            internal int height;
+
+            public ViewPortData(int x, int y, int width, int height)
+            {
+                // TODO: Complete member initialization
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+            }                
+        }
+
+        static ViewPortData currentViewport = new ViewPortData();
+        static Stack<ViewPortData> viewportStack = new Stack<ViewPortData>();
+        static Stack<AttribMask> pushedAttributStack = new Stack<AttribMask>();
+
+#if !USE_OPENGL
 		static ImediateMode currentImediateData = new ImediateMode();
 		#endif
 
@@ -303,7 +316,13 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.LoadMatrix(m);
 #else
-			throw new NotImplementedException();
+			float[] asFloats = new float[m.Length];
+			for(int i=0; i<m.Length; i++)
+			{
+				asFloats[i] = (float)m[i];
+			}
+
+			OpenTK.Graphics.ES11.GL.LoadMatrix(asFloats);
 #endif
         }
 
@@ -416,7 +435,16 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.PushAttrib((OpenTK.Graphics.OpenGL.AttribMask)mask);
 #else
-			//throw new NotImplementedException();
+            pushedAttributStack.Push(mask);
+            if ((mask & AttribMask.ViewportBit) == AttribMask.ViewportBit)
+            {
+                viewportStack.Push(currentViewport);
+            }
+
+            if (mask != AttribMask.ViewportBit)
+            {
+                throw new Exception();
+            }
 #endif
         }
 
@@ -425,7 +453,16 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.PopAttrib();
 #else
-			//throw new NotImplementedException();
+            AttribMask mask = pushedAttributStack.Pop();
+            if ((mask & AttribMask.ViewportBit) == AttribMask.ViewportBit)
+            {
+                ViewPortData top = viewportStack.Pop();
+                Viewport(top.x, top.y, top.width, top.height);
+            }
+            if (mask != AttribMask.ViewportBit)
+            {
+                throw new Exception();
+            }
 #endif
         }
 
@@ -589,7 +626,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.BindBuffer((OpenTK.Graphics.OpenGL.BufferTarget)target, buffer);
 #else
-			throw new NotImplementedException();
+			OpenTK.Graphics.ES11.GL.BindBuffer((OpenTK.Graphics.ES11.All)target, buffer);
 #endif
         }
 
@@ -598,7 +635,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.BufferData((OpenTK.Graphics.OpenGL.BufferTarget)target, size, data, (OpenTK.Graphics.OpenGL.BufferUsageHint)usage);
 #else
-			throw new NotImplementedException();
+			OpenTK.Graphics.ES11.GL.BufferData((OpenTK.Graphics.ES11.All)target, size, data, (OpenTK.Graphics.ES11.All)usage);
 #endif
         }
 
@@ -607,7 +644,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.BufferData((OpenTK.Graphics.OpenGL.BufferTarget)target, size, data, (OpenTK.Graphics.OpenGL.BufferUsageHint)usage);
 #else
-			throw new NotImplementedException();
+			OpenTK.Graphics.ES11.GL.BufferData((OpenTK.Graphics.ES11.All)target, size, data, (OpenTK.Graphics.ES11.All)usage);
 #endif
         }
 
@@ -625,7 +662,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.GenBuffers(n, out buffers);
 #else
-			throw new NotImplementedException();
+			OpenTK.Graphics.ES11.GL.GenBuffers(n, out buffers);
 #endif
         }
 
@@ -634,7 +671,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.DeleteBuffers(n, ref buffers);
 #else
-			throw new NotImplementedException();
+			OpenTK.Graphics.ES11.GL.DeleteBuffers(n, ref buffers);
 #endif
         }
 
@@ -643,7 +680,13 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.ColorPointer(size, (OpenTK.Graphics.OpenGL.ColorPointerType)type, stride, pointer);
 #else
-			throw new NotImplementedException();
+			unsafe
+			{
+				fixed (byte* pArray = pointer)
+				{
+					ColorPointer(size, type, stride, new IntPtr(pArray));
+				}
+			}
 #endif
         }
 
@@ -652,7 +695,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.ColorPointer(size, (OpenTK.Graphics.OpenGL.ColorPointerType)type, stride, pointer);
 #else
-			throw new NotImplementedException();
+			OpenTK.Graphics.ES11.GL.ColorPointer(size, (OpenTK.Graphics.ES11.All)type, stride, pointer);
 #endif
         }
 
@@ -661,7 +704,13 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.NormalPointer((OpenTK.Graphics.OpenGL.NormalPointerType)type, stride, pointer);
 #else
-			throw new NotImplementedException();
+			unsafe
+			{
+				fixed (float* pArray = pointer)
+				{
+					NormalPointer(type, stride, new IntPtr(pArray));
+				}
+			}
 #endif
         }
 
@@ -670,17 +719,19 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.NormalPointer((OpenTK.Graphics.OpenGL.NormalPointerType)type, stride, pointer);
 #else
-			throw new NotImplementedException();
+            OpenTK.Graphics.ES11.GL.NormalPointer((OpenTK.Graphics.ES11.All)type, stride, pointer);
 #endif
         }
 
         public static void VertexPointer(int size, VertexPointerType type, int stride, float[] pointer)
         {
-#if USE_OPENGL
-            OpenTK.Graphics.OpenGL.GL.VertexPointer(size, (OpenTK.Graphics.OpenGL.VertexPointerType)type, stride, pointer);
-#else
-			throw new NotImplementedException();
-#endif
+            unsafe
+            {
+                fixed (float* pArray = pointer)
+                {
+                    VertexPointer(size, type, stride, new IntPtr(pArray));
+                }
+            }
         }
 
         public static void VertexPointer(int size, VertexPointerType type, int stride, IntPtr pointer)
@@ -721,6 +772,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
         public static void Viewport(int x, int y, int width, int height)
         {
+            currentViewport = new ViewPortData(x, y, width, height); 
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Viewport(x, y, width, height);
 #else
@@ -733,7 +785,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Clear((OpenTK.Graphics.OpenGL.ClearBufferMask)mask);
 #else
-			throw new NotImplementedException();
+			OpenTK.Graphics.ES11.GL.Clear((OpenTK.Graphics.ES11.ClearBufferMask)mask);
 #endif
         }
 
@@ -760,7 +812,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.FrontFace((OpenTK.Graphics.OpenGL.FrontFaceDirection)mode);
 #else
-			throw new NotImplementedException();
+			OpenTK.Graphics.ES11.GL.FrontFace((OpenTK.Graphics.ES11.All)mode);
 #endif
         }
 

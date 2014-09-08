@@ -28,7 +28,7 @@ using MatterHackers.RenderOpenGl;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.RasterizerScanline;
 
-using OpenTK.Graphics.OpenGL;
+using MatterHackers.RenderOpenGl.OpenGl;
 
 namespace MatterHackers.Agg.UI
 {

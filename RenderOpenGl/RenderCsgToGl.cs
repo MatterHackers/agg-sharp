@@ -182,12 +182,10 @@ namespace MatterHackers.RenderOpenGl
         #region Transform
         public void RenderToGlRecursive(TransformBase objectToProcess)
         {
-			#if USE_OPENGL
 			GL.PushMatrix();
             GL.MultMatrix(objectToProcess.transform.GetAsDoubleArray());
             RenderToGlRecursive((dynamic)objectToProcess.objectToTransform);
             GL.PopMatrix();
-			#endif
         }
         #endregion
 

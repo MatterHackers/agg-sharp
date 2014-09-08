@@ -83,7 +83,6 @@ namespace MatterHackers.RenderOpenGl
         public void PushOrthoProjection()
         {
 			GL.Disable(EnableCap.CullFace);
-			GL.PushAttrib(AttribMask.TransformBit | AttribMask.EnableBit);
 
             GL.MatrixMode(MatrixMode.Projection);
             GL.PushMatrix();
@@ -101,7 +100,6 @@ namespace MatterHackers.RenderOpenGl
             GL.PopMatrix();
             GL.MatrixMode(MatrixMode.Modelview);
             GL.PopMatrix();
-            GL.PopAttrib();
         }
 
         public static void SendShapeToTesselator(VertexTesselatorAbstract tesselator, IVertexSource vertexSource)
