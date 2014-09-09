@@ -179,6 +179,7 @@ namespace MatterHackers.RenderOpenGl
                     case RenderTypes.Hidden:
                         break;
 
+#if USE_OPENGL
                     case RenderTypes.Shaded:
                         DrawToGL(meshToRender);
                         break;
@@ -187,6 +188,13 @@ namespace MatterHackers.RenderOpenGl
                     case RenderTypes.Outlines:
                         DrawWithWireOverlay(meshToRender, renderType);
                         break;
+#else
+                    case RenderTypes.Shaded:
+                    case RenderTypes.Polygons:
+                    case RenderTypes.Outlines:
+                        DrawToGL(meshToRender);
+                        break;
+#endif
                 }
 
                 GL.PopMatrix();
