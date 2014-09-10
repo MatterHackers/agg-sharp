@@ -244,7 +244,6 @@ namespace MatterHackers.GCodeVisualizer
             {
                 string lineString = outputString.Trim();
                 machineInstructionForLine = new PrinterMachineInstruction(lineString, machineInstructionForLine);
-                // take off any comments before we check its length
 
                 if (lineString.Length > 0)
                 {
@@ -506,6 +505,13 @@ namespace MatterHackers.GCodeVisualizer
 
         void ParseMLine(string lineString, PrinterMachineInstruction processingMachineState)
         {
+            // take off any comments before we check its length
+            int commentIndex = lineString.IndexOf(';');
+            if (commentIndex != -1)
+            {
+                lineString = lineString.Substring(0, commentIndex);
+            }
+
             string[] splitOnSpace = lineString.Split(' ');
             switch (splitOnSpace[0].Substring(1).Trim())
             {
@@ -659,6 +665,13 @@ namespace MatterHackers.GCodeVisualizer
         double amountOfAccumulatedE = 0;
         void ParseGLine(string lineString, PrinterMachineInstruction processingMachineState)
         {
+            // take off any comments before we check its length
+            int commentIndex = lineString.IndexOf(';');
+            if (commentIndex != -1)
+            {
+                lineString = lineString.Substring(0, commentIndex);
+            }
+
             PrinterMachineInstruction machineStateForLine = new PrinterMachineInstruction(lineString, processingMachineState);
             string[] splitOnSpace = lineString.Split(' ');
             string onlyNumber = splitOnSpace[0].Substring(1).Trim();
