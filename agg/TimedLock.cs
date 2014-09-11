@@ -9,7 +9,7 @@ namespace MatterHackers.Agg
 public struct TimedLock : IDisposable
 #endif
     {
-        static readonly int secondsToTryToLock = 3;
+        static readonly int secondsToTryToLock = 30;
         private object target;
         string hint;
         bool gotLock;
