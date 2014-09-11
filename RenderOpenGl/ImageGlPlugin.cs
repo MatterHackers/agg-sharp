@@ -266,7 +266,7 @@ namespace MatterHackers.RenderOpenGl
                 }
             }
 
-            // Create the texture handle and display list handle
+            // Create the texture handle
             GL.GenTextures(1, out glData.glTextureHandle);
 
             // Set up some texture parameters for openGL
@@ -309,7 +309,7 @@ namespace MatterHackers.RenderOpenGl
 
                 case 32:
                     GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, hardwareWidth, hardwareHeight,
-                        0, PixelFormat.Bgra, PixelType.UnsignedByte, hardwareExpandedPixelBuffer);
+                        0, PixelFormat.Rgba, PixelType.UnsignedByte, hardwareExpandedPixelBuffer);
                     break;
 
                 default:
@@ -330,7 +330,7 @@ namespace MatterHackers.RenderOpenGl
                             while (sourceImage.Width > 1 && sourceImage.Height > 1)
                             {
                                 GL.TexImage2D(TextureTarget.Texture2D, mipLevel++, PixelInternalFormat.Rgba, tempImage.Width, tempImage.Height,
-                                    0, PixelFormat.Bgra, PixelType.UnsignedByte, tempImage.GetBuffer());
+									0, PixelFormat.Rgba, PixelType.UnsignedByte, tempImage.GetBuffer());
                                 sourceImage = new ImageBuffer(tempImage);
                                 tempImage = new ImageBuffer(Math.Max(1, sourceImage.Width / 2), Math.Max(1, sourceImage.Height / 2), 32, new BlenderBGRA());
                                 tempImage.NewGraphics2D().Render(sourceImage, 0, 0,
