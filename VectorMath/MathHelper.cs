@@ -106,6 +106,16 @@ namespace MatterHackers.VectorMath
 
         #region Public Members
 
+        public static int FirstPowerTowGreaterThanOrEqualTo(int n)
+        {
+            int pow2Size = 1;
+            while (pow2Size < n)
+            {
+                pow2Size <<= 1;
+            }
+            return pow2Size;
+        }
+
         #region NextPowerOfTwo
 
         /// <summary>

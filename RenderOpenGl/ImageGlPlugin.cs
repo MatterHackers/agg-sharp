@@ -37,6 +37,7 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 
 using MatterHackers.RenderOpenGl.OpenGl;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.RenderOpenGl
 {
@@ -212,12 +213,7 @@ namespace MatterHackers.RenderOpenGl
 
             if (hwSupportsOnlyPowerOfTwoTextures)
             {
-                int pow2Size = 1;
-                while (pow2Size < size)
-                {
-                    pow2Size <<= 1;
-                }
-                return pow2Size;
+                return MathHelper.FirstPowerTowGreaterThanOrEqualTo(size);
             }
             else
             {
