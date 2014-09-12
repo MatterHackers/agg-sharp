@@ -112,5 +112,20 @@ namespace MatterHackers.Agg.WindowsFileDialogs
             WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = false;
             return SaveFileDialogStreamToSaveTo;
         }
+
+        public override bool OpenFileDialog(OpenFileDialogParams openParams, OpenFileDialogDelegate callback)
+        {
+            throw new NotImplementedException("Async file dialog not implemented yet");
+        }
+
+        public override bool SelectFolderDialog(SelectFolderDialogParams folderParams, SelectFolderDialogDelegate callback)
+        {
+            throw new NotImplementedException("Async file dialog not implemented yet");
+        }
+
+        public override bool SaveFileDialog(SaveFileDialogParams saveParams, SaveFileDialogDelegate callback)
+        {
+            throw new NotImplementedException("Async file dialog not implemented yet");
+        }
     }
 }
