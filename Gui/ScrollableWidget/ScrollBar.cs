@@ -44,7 +44,7 @@ namespace MatterHackers.Agg.UI
         public RGBA_Bytes ThumbColor = RGBA_Bytes.DarkGray;
         public override void OnDraw(Graphics2D graphics2D)
         {
-            RoundedRect rect = new RoundedRect(LocalBounds, Math.Min(LocalBounds.Width, LocalBounds.Height) / 2);
+            RoundedRect rect = new RoundedRect(LocalBounds, 0);
             //RoundedRect rect = new RoundedRect(LocalBounds, 0);
             graphics2D.Render(rect, ThumbColor);
             base.OnDraw(graphics2D);
