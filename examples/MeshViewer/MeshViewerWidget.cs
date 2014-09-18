@@ -192,7 +192,7 @@ namespace MatterHackers.MeshVisualizer
             RenderBuildVolume = false;
             PartColor = RGBA_Bytes.White;
             SelectedPartColor = RGBA_Bytes.White;
-            BedColor = new RGBA_Floats(.8, .8, .8, .5).GetAsRGBA_Bytes();
+            BedColor = new RGBA_Floats(.8, .8, .8, .7).GetAsRGBA_Bytes();
             BuildVolumeColor = new RGBA_Floats(.2, .8, .3, .2).GetAsRGBA_Bytes();
 
             trackballTumbleWidget = new TrackballTumbleWidget();
@@ -242,7 +242,7 @@ namespace MatterHackers.MeshVisualizer
                         }
                     }
                     CreateRectangularBedGridImage((int)(displayVolume.x / 10), (int)(displayVolume.y / 10));
-                    printerBed = PlatonicSolids.CreateCube(displayVolume.x, displayVolume.y, 2);
+                    printerBed = PlatonicSolids.CreateCube(displayVolume.x, displayVolume.y, 4);
                     {
                         Face face = printerBed.Faces[0];
                         {
@@ -258,7 +258,7 @@ namespace MatterHackers.MeshVisualizer
                     }
                     foreach (Vertex vertex in printerBed.Vertices)
                     {
-                        vertex.Position = vertex.Position - new Vector3(0, 0, 1.2);
+                        vertex.Position = vertex.Position - new Vector3(0, 0, 2.2);
                     }
                     break;
 
@@ -483,70 +483,74 @@ namespace MatterHackers.MeshVisualizer
             base.OnMouseUp(mouseEvent);
         }
 
+        RGBA_Bytes bedMarkingsColor = RGBA_Bytes.Black;
+        RGBA_Bytes bedBaseColor = RGBA_Bytes.White;
         void CreateRectangularBedGridImage(int linesInX, int linesInY)
         {
             Vector2 bedImageCentimeters = new Vector2(linesInX, linesInY);
+            
             BedImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
             Graphics2D graphics2D = BedImage.NewGraphics2D();
-            graphics2D.Clear(RGBA_Bytes.White);
+            graphics2D.Clear(bedBaseColor);
             {
                 double lineDist = BedImage.Width / (double)linesInX;
 
                 int count = 1;
                 int pointSize = 20;
-                graphics2D.DrawString(count.ToString(), 0, 0, pointSize);
+                graphics2D.DrawString(count.ToString(), 4, 4, pointSize, color: bedMarkingsColor);
                 for (double linePos = lineDist; linePos < BedImage.Width; linePos += lineDist)
                 {
                     count++;
                     int linePosInt = (int)linePos;
-                    graphics2D.Line(linePosInt, 0, linePosInt, BedImage.Height, RGBA_Bytes.Black);
-                    graphics2D.DrawString(count.ToString(), linePos, 0, pointSize);
+                    graphics2D.Line(linePosInt, 0, linePosInt, BedImage.Height, bedMarkingsColor);
+                    graphics2D.DrawString(count.ToString(), linePos + 4, 4, pointSize, color: bedMarkingsColor);
                 }
             }
             {
                 double lineDist = BedImage.Height / (double)linesInY;
 
                 int count = 1;
-                int pointSize = 20;
+                int pointSize = 16;
                 for (double linePos = lineDist; linePos < BedImage.Height; linePos += lineDist)
                 {
                     count++;
                     int linePosInt = (int)linePos;
-                    graphics2D.Line(0, linePosInt, BedImage.Height, linePosInt, RGBA_Bytes.Black);
-                    graphics2D.DrawString(count.ToString(), 0, linePos, pointSize);
+                    graphics2D.Line(0, linePosInt, BedImage.Height, linePosInt, bedMarkingsColor);
+                    graphics2D.DrawString(count.ToString(), 4, linePos + 4, pointSize, color: bedMarkingsColor);
                 }
             }
         }
 
         void CreateCircularBedGridImage(int linesInX, int linesInY)
         {
+            
             Vector2 bedImageCentimeters = new Vector2(linesInX, linesInY);
             BedImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
             Graphics2D graphics2D = BedImage.NewGraphics2D();
-            graphics2D.Clear(RGBA_Bytes.White);
+            graphics2D.Clear(bedBaseColor);
 #if true
             {
                 double lineDist = BedImage.Width / (double)linesInX;
 
                 int count = 1;
-                int pointSize = 20;
-                graphics2D.DrawString(count.ToString(), 0, 0, pointSize);
+                int pointSize = 16;
+                graphics2D.DrawString(count.ToString(), 4, 4, pointSize, color: bedMarkingsColor);
                 double currentRadius = lineDist;
                 Vector2 bedCenter = new Vector2(BedImage.Width / 2, BedImage.Height / 2);
                 for (double linePos = lineDist + BedImage.Width / 2; linePos < BedImage.Width; linePos += lineDist)
                 {
                     int linePosInt = (int)linePos;
-                    graphics2D.DrawString(count.ToString(), linePos + 2, BedImage.Height / 2, pointSize);
+                    graphics2D.DrawString(count.ToString(), linePos + 2, BedImage.Height / 2, pointSize, color: bedMarkingsColor);
 
                     Ellipse circle = new Ellipse(bedCenter, currentRadius);
                     Stroke outline = new Stroke(circle);
-                    graphics2D.Render(outline, RGBA_Bytes.Black);
+                    graphics2D.Render(outline, bedMarkingsColor);
                     currentRadius += lineDist;
                     count++;
                 }
 
-                graphics2D.Line(0, BedImage.Height / 2, BedImage.Width, BedImage.Height / 2, RGBA_Bytes.Black);
-                graphics2D.Line(BedImage.Width / 2, 0, BedImage.Width/2, BedImage.Height, RGBA_Bytes.Black);
+                graphics2D.Line(0, BedImage.Height / 2, BedImage.Width, BedImage.Height / 2, bedMarkingsColor);
+                graphics2D.Line(BedImage.Width / 2, 0, BedImage.Width / 2, BedImage.Height, bedMarkingsColor);
             }
 #else
             {
