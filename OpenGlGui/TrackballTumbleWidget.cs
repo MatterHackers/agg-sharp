@@ -308,7 +308,6 @@ namespace MatterHackers.Agg.OpenGlGui
             GL.MatrixMode(MatrixMode.Modelview);
             GL.PushMatrix();
             GL.LoadMatrix(GetModelviewMatrix().GetAsDoubleArray());
-
         }
 
         void UnsetGlContext()

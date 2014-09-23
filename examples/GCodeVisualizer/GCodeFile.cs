@@ -249,12 +249,20 @@ namespace MatterHackers.GCodeVisualizer
                 {
                     switch (lineString[0])
                     {
+                        case 'G':
+                            loadedGCodeFile.ParseGLine(lineString, machineInstructionForLine);
+                            break;
+
                         case 'M':
                             loadedGCodeFile.ParseMLine(lineString, machineInstructionForLine);
                             break;
 
-                        case 'G':
-                            loadedGCodeFile.ParseGLine(lineString, machineInstructionForLine);
+                        case 'T':
+                            double extruderIndex = 0;
+                            if (GetFirstNumberAfter("T", lineString, ref extruderIndex))
+                            {
+                                machineInstructionForLine.ExtruderIndex = (int)extruderIndex;
+                            }
                             break;
 
                         case ';':
@@ -273,6 +281,9 @@ namespace MatterHackers.GCodeVisualizer
                             break;
 
                         default:
+#if DEBUG
+                            throw new NotImplementedException();
+#endif
                             break;
                     }
                 }
@@ -672,7 +683,6 @@ namespace MatterHackers.GCodeVisualizer
                 lineString = lineString.Substring(0, commentIndex);
             }
 
-            PrinterMachineInstruction machineStateForLine = new PrinterMachineInstruction(lineString, processingMachineState);
             string[] splitOnSpace = lineString.Split(' ');
             string onlyNumber = splitOnSpace[0].Substring(1).Trim();
             switch (onlyNumber)

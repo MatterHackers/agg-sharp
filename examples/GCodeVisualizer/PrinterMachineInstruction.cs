@@ -64,7 +64,10 @@ namespace MatterHackers.GCodeVisualizer
             ePosition = copy.ePosition;
             movementType = copy.movementType;
             secondsToEndFromHere = copy.secondsToEndFromHere;
+            ExtruderIndex = copy.ExtruderIndex;
         }
+
+        public int ExtruderIndex { get; set; }
 
         public Vector3 Position
         {

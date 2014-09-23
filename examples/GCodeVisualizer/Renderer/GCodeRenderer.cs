@@ -53,7 +53,6 @@ namespace MatterHackers.GCodeVisualizer
 
     public class GCodeRenderer
     {
-        List<int> layerStartIndex = new List<int>();
         List<List<int>> featureStartIndex = new List<List<int>>();
         List<List<RenderFeatureBase>> renderFeatures = new List<List<RenderFeatureBase>>();
         int TotalRenderFeatures = 0;
@@ -153,7 +152,7 @@ namespace MatterHackers.GCodeVisualizer
                         {
                             layerThickness = gCodeFileToDraw.GetFirstLayerHeight();
                         }
-                        renderFeaturesForLayer.Add(new RenderFeatureExtrusion(previousInstruction.Position, currentInstruction.Position, currentInstruction.FeedRate, currentInstruction.EPosition - previousInstruction.EPosition, gCodeFileToDraw.GetFilamentDiamter(), layerThickness, extrusionColors.GetColorForSpeed((float)currentInstruction.FeedRate)));
+                        renderFeaturesForLayer.Add(new RenderFeatureExtrusion(previousInstruction.Position, currentInstruction.Position, currentInstruction.ExtruderIndex, currentInstruction.FeedRate, currentInstruction.EPosition - previousInstruction.EPosition, gCodeFileToDraw.GetFilamentDiamter(), layerThickness, extrusionColors.GetColorForSpeed((float)currentInstruction.FeedRate)));
                     }
                     else
                     {
@@ -208,98 +207,84 @@ namespace MatterHackers.GCodeVisualizer
             }
         }
 
-        void Create3DData(Affine transform, double layerScale, RenderType renderType, int lastLayerIndex, 
+        void Create3DDataForLayer(Affine transform, double layerScale, RenderType renderType, int layerIndex, 
             VectorPOD<ColorVertexData> colorVertexData,
             VectorPOD<int> vertexIndexArray)
         {
             colorVertexData.Clear();
             vertexIndexArray.Clear();
-            layerStartIndex.Clear();
-            layerStartIndex.Capacity = gCodeFileToDraw.NumChangesInZ;
-            featureStartIndex.Clear();
-            layerStartIndex.Capacity = gCodeFileToDraw.NumChangesInZ;
+            featureStartIndex[layerIndex].Clear();
 
-            bool canOnlyShowOneLayer = TotalRenderFeatures > MAX_RENDER_FEATURES_TO_ALLOW_3D;
-            if (canOnlyShowOneLayer)
+            for (int i = 0; i < renderFeatures[layerIndex].Count; i++)
             {
-                layerStartIndex.Add(vertexIndexArray.Count);
-
-                for (int layerIndex = 0; layerIndex < lastLayerIndex+1; layerIndex++)
+                featureStartIndex[layerIndex].Add(vertexIndexArray.Count);
+                RenderFeatureBase feature = renderFeatures[layerIndex][i];
+                if (feature != null)
                 {
-                    featureStartIndex.Add(new List<int>());
-                }
-
-                for (int i = 0; i < renderFeatures[lastLayerIndex].Count; i++)
-                {
-                    featureStartIndex[lastLayerIndex].Add(vertexIndexArray.Count);
-                    RenderFeatureBase feature = renderFeatures[lastLayerIndex][i];
                     feature.CreateRender3DData(colorVertexData, vertexIndexArray, transform, layerScale, renderType);
-                }
-
-                singleLayerIndex = lastLayerIndex;
-            }
-            else
-            {
-                for (int layerIndex = 0; layerIndex < gCodeFileToDraw.NumChangesInZ; layerIndex++)
-                {
-                    layerStartIndex.Add(vertexIndexArray.Count);
-                    featureStartIndex.Add(new List<int>());
-
-                    for (int i = 0; i < renderFeatures[layerIndex].Count; i++)
-                    {
-                        featureStartIndex[layerIndex].Add(vertexIndexArray.Count);
-                        RenderFeatureBase feature = renderFeatures[layerIndex][i];
-                        if (feature != null)
-                        {
-                            feature.CreateRender3DData(colorVertexData, vertexIndexArray, transform, layerScale, renderType);
-                        }
-                    }
                 }
             }
         }
 
-        static readonly int MAX_RENDER_FEATURES_TO_ALLOW_3D = 250000;
-        GCodeVertexBuffer vertexBuffer;
+        List<GCodeVertexBuffer> layerVertexBuffer;
         RenderType lastRenderType = RenderType.None;
-        int singleLayerIndex = 0;
         public void Render3D(int startLayerIndex, int endLayerIndex, Affine transform, double layerScale, RenderType renderType,
             double featureToStartOnRatio0To1, double featureToEndOnRatio0To1)
         {
+            if (layerVertexBuffer == null)
+            {
+                layerVertexBuffer = new List<GCodeVertexBuffer>();
+                layerVertexBuffer.Capacity = gCodeFileToDraw.NumChangesInZ;
+                for (int layerIndex = 0; layerIndex < gCodeFileToDraw.NumChangesInZ; layerIndex++)
+                {
+                    layerVertexBuffer.Add(null);
+                    featureStartIndex.Add(new List<int>());
+                }
+            }
+
             for (int layerIndex = 0; layerIndex < gCodeFileToDraw.NumChangesInZ; layerIndex++)
             {
                 CreateFeaturesForLayerIfRequired(layerIndex);
             }
 
+            if (lastRenderType != renderType)
+            {
+                for (int i = startLayerIndex; i < endLayerIndex; i++)
+                {
+                    layerVertexBuffer[i] = null;
+                }
+                lastRenderType = renderType;
+            }
+
             if (renderFeatures.Count > 0)
             {
-                bool canOnlyShowOneLayer = TotalRenderFeatures > MAX_RENDER_FEATURES_TO_ALLOW_3D;
-
-                // If its the first render or we change what we are trying to render then create vertex data.
-                if (lastRenderType != renderType
-                    || (canOnlyShowOneLayer && endLayerIndex-1 != singleLayerIndex))
+                for (int i = startLayerIndex; i < endLayerIndex; i++)
                 {
-                    VectorPOD<ColorVertexData> colorVertexData = new VectorPOD<ColorVertexData>();
-                    VectorPOD<int> vertexIndexArray = new VectorPOD<int>();
+                    // If its the first render or we change what we are trying to render then create vertex data.
+                    if (layerVertexBuffer[i] == null)
+                    {
+                        VectorPOD<ColorVertexData> colorVertexData = new VectorPOD<ColorVertexData>();
+                        VectorPOD<int> vertexIndexArray = new VectorPOD<int>();
 
-                    Create3DData(transform, layerScale, renderType, endLayerIndex - 1, colorVertexData, vertexIndexArray);
-                    
-                    vertexBuffer = new GCodeVertexBuffer();
-                    vertexBuffer.SetVertexData(colorVertexData.Array);
-                    vertexBuffer.SetIndexData(vertexIndexArray.Array);
+                        Create3DDataForLayer(transform, layerScale, renderType, i, colorVertexData, vertexIndexArray);
 
-                    lastRenderType = renderType;
+                        layerVertexBuffer[i] = new GCodeVertexBuffer();
+                        layerVertexBuffer[i].SetVertexData(colorVertexData.Array);
+                        layerVertexBuffer[i].SetIndexData(vertexIndexArray.Array);
+                    }
                 }
 
                 GL.DisableClientState(ArrayCap.TextureCoordArray);
                 GL.PushAttrib(AttribMask.EnableBit);
                 GL.Enable(EnableCap.PolygonSmooth);
 
-                // draw all the layers from start to end-2
-                if (endLayerIndex - 1 > startLayerIndex && !canOnlyShowOneLayer)
+                if (endLayerIndex - 1 > startLayerIndex)
                 {
-                    int ellementCount = layerStartIndex[endLayerIndex - 1] - layerStartIndex[startLayerIndex];
-
-                    vertexBuffer.renderRange(layerStartIndex[startLayerIndex], ellementCount);
+                    for (int i = startLayerIndex; i < endLayerIndex-1; i++)
+                    {
+                        int featuresOnLayer = renderFeatures[i].Count;
+                        layerVertexBuffer[i].renderRange(0, featureStartIndex[i][featuresOnLayer-1]);
+                    }
                 }
 
                 // draw the partial layer of end-1 from startratio to endratio
@@ -328,7 +313,7 @@ namespace MatterHackers.GCodeVisualizer
                     {
                         int ellementCount = featureStartIndex[layerIndex][endFeature - 1] - featureStartIndex[layerIndex][startFeature];
 
-                        vertexBuffer.renderRange(featureStartIndex[layerIndex][startFeature], ellementCount);
+                        layerVertexBuffer[layerIndex].renderRange(featureStartIndex[layerIndex][startFeature], ellementCount);
                     }
                 }
                 GL.PopAttrib();
