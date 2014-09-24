@@ -68,9 +68,10 @@ namespace MatterHackers.Agg.UI
             SetBoundsToEncloseChildren();
         }
 
+        public TextWidget tabTitle;
         private void AddText(string tabText, GuiWidget widgetState, RGBA_Bytes textColor, RGBA_Bytes backgroundColor, double pointSize)
         {
-            TextWidget tabTitle = new TextWidget(tabText, pointSize: pointSize, textColor: textColor);
+            tabTitle = new TextWidget(tabText, pointSize: pointSize, textColor: textColor);
             tabTitle.AutoExpandBoundsToText = true;
             widgetState.AddChild(tabTitle);
             widgetState.Selectable = false;
