@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.UI;
@@ -271,7 +272,7 @@ namespace MatterHackers.Agg
 
         public class styles_gouraud : IStyleHandler
         {
-            VectorPOD<span_gouraud_rgba> m_triangles = new VectorPOD<span_gouraud_rgba>();
+            List<span_gouraud_rgba> m_triangles = new List<span_gouraud_rgba>();
 
             public styles_gouraud(mesh_ctrl mesh, GammaLookUpTable gamma)
             {
@@ -294,7 +295,7 @@ namespace MatterHackers.Agg
                                          p2.x, p2.y,
                                          p3.x, p3.y);
                     gouraud.prepare();
-                    m_triangles.add(gouraud);
+                    m_triangles.Add(gouraud);
                 }
             }
 
