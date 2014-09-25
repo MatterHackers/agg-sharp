@@ -41,13 +41,16 @@ namespace MatterHackers.GCodeVisualizer
 {
     public class RenderFeatureExtrusion : RenderFeatureTravel
     {
+        readonly RGBA_Bytes MultipleExtruderColor = RGBA_Bytes.Indigo;
         float extrusionVolumeMm3;
         float layerHeight;
+        int extruderIndex;
         RGBA_Bytes color;
 
-        public RenderFeatureExtrusion(Vector3 start, Vector3 end, double travelSpeed, double totalExtrusionMm, double filamentDiameterMm, double layerHeight, RGBA_Bytes color)
+        public RenderFeatureExtrusion(Vector3 start, Vector3 end, int extruderIndex, double travelSpeed, double totalExtrusionMm, double filamentDiameterMm, double layerHeight, RGBA_Bytes color)
             : base(start, end, travelSpeed)
         {
+            this.extruderIndex = extruderIndex;
             this.color = color;
             double fillamentRadius = filamentDiameterMm / 2;
             double areaSquareMm = (fillamentRadius * fillamentRadius) * Math.PI;
@@ -79,7 +82,14 @@ namespace MatterHackers.GCodeVisualizer
                 }
                 else
                 {
-                    CreateCylinder(colorVertexData, indexData, new Vector3(start), new Vector3(end), radius, 6, GCodeRenderer.ExtrusionColor, layerHeight);
+                    if (extruderIndex == 0)
+                    {
+                        CreateCylinder(colorVertexData, indexData, new Vector3(start), new Vector3(end), radius, 6, GCodeRenderer.ExtrusionColor, layerHeight);
+                    }
+                    else
+                    {
+                        CreateCylinder(colorVertexData, indexData, new Vector3(start), new Vector3(end), radius, 6, MultipleExtruderColor, layerHeight);
+                    }
                 }
             }
         }
@@ -89,7 +99,12 @@ namespace MatterHackers.GCodeVisualizer
             if ((renderType & RenderType.Extrusions) == RenderType.Extrusions)
             {
                 double extrusionLineWidths = GetRadius(renderType) * 2 * layerScale;
+
                 RGBA_Bytes extrusionColor = RGBA_Bytes.Black;
+                if (extruderIndex > 0)
+                {
+                    extrusionColor = MultipleExtruderColor;
+                }
                 if ((renderType & RenderType.SpeedColors) == RenderType.SpeedColors)
                 {
                     extrusionColor = color;

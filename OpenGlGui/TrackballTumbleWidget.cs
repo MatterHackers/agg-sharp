@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+#define DO_LIGHTING
 using System;
 
 using MatterHackers.Agg.VertexSource;
@@ -255,16 +256,21 @@ namespace MatterHackers.Agg.OpenGlGui
 
         void SetGlContext()
         {
-			#if USE_OPENGL
 			GL.ClearDepth(1.0);
-            //GL.ClearColor(1, 1, 1, 1);
             GL.Clear(ClearBufferMask.DepthBufferBit);	// Clear the Depth Buffer
-            //GL.Clear(GL._COLOR_BUFFER_BIT);	// Clear the Depth Buffer
 
             GL.PushAttrib(AttribMask.ViewportBit);
             RectangleDouble screenRect = this.TransformRectangleToScreenSpace(LocalBounds);
             GL.Viewport((int)screenRect.Left, (int)screenRect.Bottom, (int)screenRect.Width, (int)screenRect.Height);
 
+            GL.ShadeModel(ShadingModel.Smooth);
+
+            GL.FrontFace(FrontFaceDirection.Ccw);
+            GL.CullFace(CullFaceMode.Back);
+
+            GL.DepthFunc(DepthFunction.Lequal);
+
+#if DO_LIGHTING
             GL.Light(LightName.Light0, LightParameter.Ambient, ambientLight);
 
             GL.Light(LightName.Light0, LightParameter.Diffuse, diffuseLight0);
@@ -273,13 +279,6 @@ namespace MatterHackers.Agg.OpenGlGui
             GL.Light(LightName.Light0, LightParameter.Ambient, new float[] { 0, 0, 0, 0 });
             GL.Light(LightName.Light1, LightParameter.Diffuse, diffuseLight1);
             GL.Light(LightName.Light1, LightParameter.Specular, specularLight1);
-
-            GL.ShadeModel(ShadingModel.Smooth);
-
-            GL.FrontFace(FrontFaceDirection.Ccw);
-            GL.CullFace(CullFaceMode.Back);
-
-            GL.DepthFunc(DepthFunction.Lequal);
 
             GL.ColorMaterial(MaterialFace.FrontAndBack, ColorMaterialParameter.AmbientAndDiffuse);
 
@@ -291,6 +290,15 @@ namespace MatterHackers.Agg.OpenGlGui
             GL.Enable(EnableCap.Lighting);
             GL.Enable(EnableCap.ColorMaterial);
 
+            Vector3 lightDirectionVector = new Vector3(lightDirection0[0], lightDirection0[1], lightDirection0[2]);
+            lightDirectionVector.Normalize();
+            lightDirection0[0] = (float)lightDirectionVector.x;
+            lightDirection0[1] = (float)lightDirectionVector.y;
+            lightDirection0[2] = (float)lightDirectionVector.z;
+            GL.Light(LightName.Light0, LightParameter.Position, lightDirection0);
+            GL.Light(LightName.Light1, LightParameter.Position, lightDirection1);
+#endif
+
             // set the projection matrix
             GL.MatrixMode(MatrixMode.Projection);
             GL.PushMatrix();
@@ -300,36 +308,27 @@ namespace MatterHackers.Agg.OpenGlGui
             GL.MatrixMode(MatrixMode.Modelview);
             GL.PushMatrix();
             GL.LoadMatrix(GetModelviewMatrix().GetAsDoubleArray());
-
-            Vector3 lightDirectionVector = new Vector3(lightDirection0[0], lightDirection0[1], lightDirection0[2]);
-            lightDirectionVector.Normalize();
-            lightDirection0[0] = (float)lightDirectionVector.x;
-            lightDirection0[1] = (float)lightDirectionVector.y;
-            lightDirection0[2] = (float)lightDirectionVector.z;
-            GL.Light(LightName.Light0, LightParameter.Position, lightDirection0);
-            GL.Light(LightName.Light1, LightParameter.Position, lightDirection1);
-			#endif
         }
 
         void UnsetGlContext()
         {
-			#if USE_OPENGL
 			GL.MatrixMode(MatrixMode.Projection);
             GL.PopMatrix();
 
             GL.MatrixMode(MatrixMode.Modelview);
             GL.PopMatrix();
 
+#if DO_LIGHTING
             GL.Disable(EnableCap.ColorMaterial);
             GL.Disable(EnableCap.Lighting);
+            GL.Disable(EnableCap.Light0);
+            GL.Disable(EnableCap.Light1);
+#endif
             GL.Disable(EnableCap.Normalize);
             GL.Disable(EnableCap.Blend);
             GL.Disable(EnableCap.DepthTest);
-            GL.Disable(EnableCap.Light0);
-            GL.Disable(EnableCap.Light1);
 
             GL.PopAttrib();
-			#endif
         }
 
         public Matrix4X4 GetProjectionMatrix()
