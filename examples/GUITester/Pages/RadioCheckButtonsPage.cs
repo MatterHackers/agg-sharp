@@ -20,7 +20,11 @@ namespace MatterHackers.Agg
             FlowLayoutWidget topToBottom = new FlowLayoutWidget(FlowDirection.TopToBottom);
             topToBottom.AddChild(new CheckBox("Simple Check Box"));
 
-            CheckBoxViewStates fourStates = new CheckBoxViewStates(new TextWidget("normal"), new TextWidget("switch n->p"), new TextWidget("pressed"), new TextWidget("switch p->n"));
+            CheckBoxViewStates fourStates = new CheckBoxViewStates(new TextWidget("normal"), new TextWidget("normal"), 
+                new TextWidget("switch n->p"),
+                new TextWidget("pressed"), new TextWidget("pressed"), 
+                new TextWidget("switch p->n"),
+                new TextWidget("disabled"));
             topToBottom.AddChild(new CheckBox(fourStates));
 
             GuiWidget normalPressed = new TextWidget("0 4state");

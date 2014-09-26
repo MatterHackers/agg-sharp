@@ -30,13 +30,10 @@ namespace MatterHackers.Agg.UI
         private GuiWidget switchPressedToNormal;
         private GuiWidget disabled;
 
-        public CheckBoxViewStates(GuiWidget normal, GuiWidget switchNormalToPressed, GuiWidget pressed, GuiWidget switchPressedToNormal)
-            : this(normal, normal, switchNormalToPressed, pressed, pressed, switchPressedToNormal, normal)
-        {
-        }
-
-        public CheckBoxViewStates(GuiWidget normal, GuiWidget normalHover, GuiWidget switchNormalToPressed, 
-            GuiWidget pressed, GuiWidget pressedHover, GuiWidget switchPressedToNormal, 
+        public CheckBoxViewStates(GuiWidget normal, GuiWidget normalHover, 
+            GuiWidget switchNormalToPressed, 
+            GuiWidget pressed, GuiWidget pressedHover, 
+            GuiWidget switchPressedToNormal, 
             GuiWidget disabled)
         {
             this.normal = normal;

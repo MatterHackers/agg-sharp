@@ -1123,8 +1123,11 @@ namespace MatterHackers.Agg.Image
             int x, y;
 
             int StartCreatingAt = (int)m_sum1.Count;
-            m_sum1.Capacity = w;
-            m_sum2.Capacity  = w;
+            for (int i = StartCreatingAt; i < w; i++)
+            {
+                m_sum1.Add(null);
+                m_sum2.Add(null);
+            }
             m_buf.Allocate(w);
 
             List<RecursizeBlurCalculator> Sum1Array = m_sum1;
