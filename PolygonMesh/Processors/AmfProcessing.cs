@@ -34,8 +34,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.ComponentModel;
-using System.Globalization;
 using System.Threading;
+using System.Globalization;
+using System.Text.RegularExpressions;
 
 using MatterHackers.Agg;
 using MatterHackers.PolygonMesh;
@@ -43,58 +44,107 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Processors
 {
-    public class AmfProcessing
+    public static class AmfProcessing
     {
-        public enum DistanceUnits { meter, millimeter, micrometer, feet, inch };
+        public enum OutputType { Ascii, Binary };
 
-        //DistanceUnits FileDistanceUnits = DistanceUnits.millimeter;
-
-        public void Save(Mesh meshToSave, string fileName)
+        public static void Save(Mesh meshToSave, string fileName, OutputType outputType = OutputType.Binary)
         {
             FileStream file = new FileStream(fileName, FileMode.Create, FileAccess.Write);
 
-            Save(meshToSave, file);
+            Save(meshToSave, file, outputType);
             file.Close();
         }
 
-        public void Save(Mesh meshToSave, Stream stream)
+        public static void Save(Mesh meshToSave, Stream stream, OutputType outputType)
         {
-            throw new NotImplementedException("Copied from STL code. Needs to be writen for AMF.");
-#if false
-            StreamWriter streamWriter = new StreamWriter(stream);
-
-            streamWriter.WriteLine("solid Default");
-
-            foreach (Face face in meshToSave.Faces)
+            switch (outputType)
             {
-                List<Vector3> positionsCCW = new List<Vector3>();
-                foreach (FaceEdge faceEdge in face.FaceEdges())
-                {
-                    positionsCCW.Add(faceEdge.vertex.Position);
-                }
-                if (positionsCCW.Count == 3)
-                {
-                    streamWriter.WriteLine("  facet normal " + FormatForStl(face.normal));
-                    streamWriter.WriteLine("    outer loop");
-                    streamWriter.WriteLine("      vertex " + FormatForStl(positionsCCW[0]));
-                    streamWriter.WriteLine("      vertex " + FormatForStl(positionsCCW[1]));
-                    streamWriter.WriteLine("      vertex " + FormatForStl(positionsCCW[2]));
-                    streamWriter.WriteLine("    endloop");
-                    streamWriter.WriteLine("  endfacet");
-                }
-                else
-                {
-                    // feed this into a tesselator and get back the triangles to emit to the stl file
-                }
+                case OutputType.Ascii:
+                    {
+                        StreamWriter streamWriter = new StreamWriter(stream);
+
+                        streamWriter.WriteLine("solid Default");
+
+                        foreach (Face face in meshToSave.Faces)
+                        {
+                            List<Vector3> positionsCCW = new List<Vector3>();
+                            foreach (FaceEdge faceEdge in face.FaceEdges())
+                            {
+                                positionsCCW.Add(faceEdge.firstVertex.Position);
+                            }
+
+                            int numPolys = positionsCCW.Count - 2;
+                            int secondIndex = 1;
+                            int thirdIndex = 2;
+                            for (int polyIndex = 0; polyIndex < numPolys; polyIndex++)
+                            {
+                                streamWriter.WriteLine("  facet normal " + FormatForAmf(face.normal));
+                                streamWriter.WriteLine("    outer loop");
+                                streamWriter.WriteLine("      vertex " + FormatForAmf(positionsCCW[0]));
+                                streamWriter.WriteLine("      vertex " + FormatForAmf(positionsCCW[secondIndex]));
+                                streamWriter.WriteLine("      vertex " + FormatForAmf(positionsCCW[thirdIndex]));
+                                streamWriter.WriteLine("    endloop");
+                                streamWriter.WriteLine("  endfacet");
+
+                                secondIndex = thirdIndex;
+                                thirdIndex++;
+                            }
+                        }
+
+                        streamWriter.WriteLine("endsolid Default");
+
+                        streamWriter.Close();
+                    }
+                    break;
+
+                case OutputType.Binary:
+                    using (BinaryWriter bw = new BinaryWriter(stream))
+                    {
+                        // 80 bytes of nothing
+                        bw.Write(new Byte[80]);
+                        // the number of tranigles
+                        bw.Write(meshToSave.Faces.Count);
+                        int binaryPolyCount = 0;
+                        foreach (Face face in meshToSave.Faces)
+                        {
+                            List<Vector3> positionsCCW = new List<Vector3>();
+                            foreach (FaceEdge faceEdge in face.FaceEdges())
+                            {
+                                positionsCCW.Add(faceEdge.firstVertex.Position);
+                            }
+
+                            int numPolys = positionsCCW.Count - 2;
+                            int secondIndex = 1;
+                            int thirdIndex = 2;
+                            for (int polyIndex = 0; polyIndex < numPolys; polyIndex++)
+                            {
+                                binaryPolyCount++;
+                                // save the normal (all 0 so it can compress better)
+                                bw.Write((float)0);
+                                bw.Write((float)0);
+                                bw.Write((float)0);
+                                // save the position
+                                bw.Write((float)positionsCCW[0].x); bw.Write((float)positionsCCW[0].y); bw.Write((float)positionsCCW[0].z);
+                                bw.Write((float)positionsCCW[secondIndex].x); bw.Write((float)positionsCCW[secondIndex].y); bw.Write((float)positionsCCW[secondIndex].z);
+                                bw.Write((float)positionsCCW[thirdIndex].x); bw.Write((float)positionsCCW[thirdIndex].y); bw.Write((float)positionsCCW[thirdIndex].z);
+
+                                // and the attribute
+                                bw.Write((ushort)0);
+
+                                secondIndex = thirdIndex;
+                                thirdIndex++;
+                            }
+                        }
+                        bw.BaseStream.Position = 80;
+                        // the number of tranigles
+                        bw.Write(binaryPolyCount);
+                    }
+                    break;
             }
-
-            streamWriter.WriteLine("endsolid Default");
-
-            streamWriter.Close();
-#endif
         }
 
-        public Mesh Load(string fileName)
+        public static Mesh Load(string fileName, ReportProgress reportProgress = null)
         {
             Mesh loadedMesh = null;
             if (Path.GetExtension(fileName).ToUpper() == ".AMF")
@@ -103,193 +153,162 @@ namespace MatterHackers.PolygonMesh.Processors
                 {
                     if (File.Exists(fileName))
                     {
-                        FileStream fileStream = File.OpenRead(fileName);
+                        Stream fileStream = File.OpenRead(fileName);
 
-                        BinaryReader br = new BinaryReader(fileStream);
-                        byte[] fileContents = br.ReadBytes((int)fileStream.Length);
-
-                        DoWorkEventArgs doWorkEventArgs = new DoWorkEventArgs(fileContents);
-                        ParseFileContents(null, doWorkEventArgs);
-                        loadedMesh = (Mesh)doWorkEventArgs.Result;
-
-                        fileStream.Close();
+                        loadedMesh = ParseFileContents(fileStream, reportProgress);
                     }
                 }
+#if DEBUG
                 catch (IOException)
                 {
+                    return null;
                 }
+#else
+                catch (Exception)
+                {
+                    return null;
+                }
+#endif
             }
 
             return loadedMesh;
         }
 
-        public Mesh Load(Stream fileStream)
+        public static Mesh Load(Stream fileStream, ReportProgress reportProgress = null)
         {
             Mesh loadedMesh = null;
             try
             {
-                BinaryReader br = new BinaryReader(fileStream);
-                byte[] fileContents = br.ReadBytes((int)fileStream.Length);
-
-                DoWorkEventArgs doWorkEventArgs = new DoWorkEventArgs(fileContents);
-                ParseFileContents(null, doWorkEventArgs);
-                loadedMesh = (Mesh)doWorkEventArgs.Result;
-
-                fileStream.Close();
+                loadedMesh = ParseFileContents(fileStream, reportProgress);
             }
+#if DEBUG
             catch (IOException)
             {
+                return null;
             }
+#else
+            catch (Exception)
+            {
+                return null;
+            }
+#endif
 
             return loadedMesh;
         }
 
-        public void LoadInBackground(BackgroundWorker backgroundWorker, string fileName)
+        public static Mesh ParseFileContents(Stream amfStream, ReportProgress reportProgress)
         {
-            if (Path.GetExtension(fileName).ToUpper() == ".AMF")
-            {
-                try
-                {
-                    if (File.Exists(fileName))
-                    {
-                        FileStream fileStream = File.OpenRead(fileName);
-
-                        BinaryReader br = new BinaryReader(fileStream);
-                        byte[] fileContents = br.ReadBytes((int)fileStream.Length);
-
-                        backgroundWorker.DoWork += new DoWorkEventHandler(ParseFileContents);
-
-                        backgroundWorker.RunWorkerAsync(fileContents);
-
-                        fileStream.Close();
-                    }
-                    else
-                    {
-                        backgroundWorker.RunWorkerAsync(null);
-                    }
-                }
-                catch (IOException)
-                {
-                }
-            }
-            else
-            {
-                backgroundWorker.RunWorkerAsync(null);
-            }
-        }
-
-        //public Mesh ParseFileContents(byte[] fileContents)
-        public void ParseFileContents(object sender, DoWorkEventArgs e)
-        {
+            Stopwatch time = new Stopwatch();
+            time.Start();
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
-            throw new NotImplementedException("Copied from STL code. Needs to be writen for AMF.");
-#if false
-            byte[] fileContents = (byte[])e.Argument;
-            if (fileContents == null)
+
+            double parsingFileRatio = .5;
+
+            if (amfStream == null)
             {
-                return;
+                return null;
             }
+
+            //MemoryStream amfStream = new MemoryStream();
+            //amfStreamIn.CopyTo(amfStream);
+
             Stopwatch maxProgressReport = new Stopwatch();
             maxProgressReport.Start();
-            
-            string amfFileString = System.Text.Encoding.UTF8.GetString(fileContents, 0, fileContents.Length);
-            if (!amfFileString.StartsWith(@"<?xml version=""1.0"" encoding=""UTF-8""?>"""))
+            Mesh meshFromAmfFile = new Mesh();
+            //meshFromAmfFile.MaxDistanceToConsiderVertexAsSame = .0000005;
+            meshFromAmfFile.MaxDistanceToConsiderVertexAsSame = 0; // only vertices that are the exact same point will be merged.
+            long bytesInFile = amfStream.Length;
+            if (bytesInFile <= 80)
             {
-                throw new Exception(@"AMF files should start with '<?xml version=""1.0"" encoding=""UTF-8""?>""'");
+                return null;
             }
 
-            Mesh meshFromStlFile = new Mesh();
-            //meshFromStlFile.MaxDistanceToConsiderVertexAsSame = .0000005;
-            meshFromStlFile.MaxDistanceToConsiderVertexAsSame = 0; // only vertices that are the exact same point will be merged.
-            if (fileContents.Length <= 80)
+            byte[] first160Bytes = new byte[160];
+            amfStream.Read(first160Bytes, 0, 160);
+            byte[] ByteOredrMark = new byte[] { 0xEF, 0xBB, 0xBF };
+            int startOfString = 0;
+            if (first160Bytes[0] == ByteOredrMark[0] && first160Bytes[0] == ByteOredrMark[0] && first160Bytes[0] == ByteOredrMark[0])
             {
-                throw new IOException("The file you have passed is not a valid STL file.");
+                startOfString = 3;
             }
-            string first80BytesOfSTLFile = System.Text.Encoding.UTF8.GetString(fileContents, 0, 80);
-            if (first80BytesOfSTLFile.StartsWith("solid") && first80BytesOfSTLFile.Contains("facet normal"))
+            string first160BytesOfAmfFile = System.Text.Encoding.UTF8.GetString(first160Bytes, startOfString, first160Bytes.Length - startOfString);
+            if (first160BytesOfAmfFile.StartsWith("solid") && first160BytesOfAmfFile.Contains("facet"))
             {
-                string stlFileString = System.Text.Encoding.UTF8.GetString(fileContents, 0, fileContents.Length);
-                //stlFileString = new 
-                string[] splitOnLF = stlFileString.Split('\n');
-                stlFileString = stlFileString.Replace("\r\n", "\n");
-                stlFileString = stlFileString.Replace('\r', '\n');
-                int lineIndex = 1;
-                // ths is an ascii stl
-                do
+                amfStream.Position = 0;
+                StreamReader amfReader = new StreamReader(amfStream);
+                int vectorIndex = 0;
+                Vector3 vector0 = new Vector3(0, 0, 0);
+                Vector3 vector1 = new Vector3(0, 0, 0);
+                Vector3 vector2 = new Vector3(0, 0, 0);
+                string line = amfReader.ReadLine();
+                Regex onlySingleSpaces = new Regex("\\s+", RegexOptions.Compiled);
+                while (line != null)
                 {
-                    // skip blank lines
-                    while (splitOnLF[lineIndex].Trim() == "")
+                    line = onlySingleSpaces.Replace(line, " ");
+                    var parts = line.Trim().Split(' ');
+                    if (parts[0].Trim() == "vertex")
                     {
-                        lineIndex++;
-                        if (lineIndex == splitOnLF.Length)
+                        vectorIndex++;
+                        switch (vectorIndex)
                         {
-                            throw new IOException("Error in STL file: found no data.");
+                            case 1:
+                                vector0.x = Convert.ToDouble(parts[1]);
+                                vector0.y = Convert.ToDouble(parts[2]);
+                                vector0.z = Convert.ToDouble(parts[3]);
+                                break;
+                            case 2:
+                                vector1.x = Convert.ToDouble(parts[1]);
+                                vector1.y = Convert.ToDouble(parts[2]);
+                                vector1.z = Convert.ToDouble(parts[3]);
+                                break;
+                            case 3:
+                                vector2.x = Convert.ToDouble(parts[1]);
+                                vector2.y = Convert.ToDouble(parts[2]);
+                                vector2.z = Convert.ToDouble(parts[3]);
+                                if (!Vector3.Collinear(vector0, vector1, vector2))
+                                {
+                                    Vertex vertex1 = meshFromAmfFile.CreateVertex(vector0, true, true);
+                                    Vertex vertex2 = meshFromAmfFile.CreateVertex(vector1, true, true);
+                                    Vertex vertex3 = meshFromAmfFile.CreateVertex(vector2, true, true);
+                                    meshFromAmfFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 }, true);
+                                }
+                                vectorIndex = 0;
+                                break;
                         }
                     }
-                    if (splitOnLF[lineIndex].Trim().StartsWith("endsolid"))
-                    {
-                        break;
-                    }
-                    if (!splitOnLF[lineIndex++].Trim().StartsWith("facet normal"))
-                    {
-                        throw new IOException("Error in STL file: expected 'facet normal'.");
-                    }
-                    if (!splitOnLF[lineIndex++].Trim().StartsWith("outer loop"))
-                    {
-                        throw new IOException("Error in STL file: expected 'outer loop'.");
-                    }
+                    line = amfReader.ReadLine();
 
-                    Vector3 vector1 = ParseLine(meshFromStlFile, splitOnLF, lineIndex++);
-                    Vector3 vector2 = ParseLine(meshFromStlFile, splitOnLF, lineIndex++);
-                    Vector3 vector3 = ParseLine(meshFromStlFile, splitOnLF, lineIndex++);
-                    if (!Vector3.Collinear(vector1, vector2, vector3))
+                    if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
                     {
-                        Vertex vertex1 = meshFromStlFile.CreateVertex(vector1);
-                        Vertex vertex2 = meshFromStlFile.CreateVertex(vector2);
-                        Vertex vertex3 = meshFromStlFile.CreateVertex(vector3);
-                        if (vertex1.Data.ID == vertex2.Data.ID || vertex2.Data.ID == vertex3.Data.ID || vertex1.Data.ID == vertex3.Data.ID)
+                        if (!reportProgress(amfStream.Position / (double)bytesInFile * parsingFileRatio, "Loading Polygons"))
                         {
-                            //throw new Exception("All vertices should be generated no matter what. Check that the STL loader is not colapsing faces.");
+                            amfStream.Close();
+                            return null;
                         }
-                        else
-                        {
-                            meshFromStlFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 });
-                        }
+                        maxProgressReport.Restart();
                     }
-
-                    if (sender != null)
-                    {
-                        BackgroundWorker backgroundWorker = (BackgroundWorker)sender;
-                        if (backgroundWorker.CancellationPending)
-                        {
-                            return;
-                        }
-
-                        if (backgroundWorker.WorkerReportsProgress && maxProgressReport.ElapsedMilliseconds > 200)
-                        {
-                            backgroundWorker.ReportProgress(lineIndex * 100 / splitOnLF.Length);
-                            maxProgressReport.Restart();
-                        }
-                    }
-
-                    if (!splitOnLF[lineIndex++].Trim().StartsWith("endloop"))
-                    {
-                        throw new IOException("Error in STL file: expected 'endloop'.");
-                    }
-                    if (!splitOnLF[lineIndex++].Trim().StartsWith("endfacet"))
-                    {
-                        throw new IOException("Error in STL file: expected 'endfacet'.");
-                    }
-                } while (true);
+                }
             }
             else
             {
-                // load it as a binary stl
+                // load it as a binary amf
                 // skip the first 80 bytes
                 // read in the number of triangles
+                amfStream.Position = 0;
+                BinaryReader br = new BinaryReader(amfStream);
+                byte[] fileContents = br.ReadBytes((int)amfStream.Length);
                 int currentPosition = 80;
                 uint numTriangles = System.BitConverter.ToUInt32(fileContents, currentPosition);
+                long bytesForNormals = numTriangles * 3 * 4;
+                long bytesForVertices = numTriangles * 3 * 4 * 3;
+                long bytesForAttributs = numTriangles * 2;
                 currentPosition += 4;
+                long numBytesRequiredForVertexData = currentPosition + bytesForNormals + bytesForVertices + bytesForAttributs;
+                if (fileContents.Length < numBytesRequiredForVertexData || numTriangles < 4)
+                {
+                    amfStream.Close();
+                    return null;
+                }
                 Vector3[] vector = new Vector3[3];
                 for (int i = 0; i < numTriangles; i++)
                 {
@@ -305,52 +324,70 @@ namespace MatterHackers.PolygonMesh.Processors
                     }
                     currentPosition += 2; // skip the attribute
 
-                    if (sender != null)
+                    if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
                     {
-                        BackgroundWorker backgroundWorker = (BackgroundWorker)sender;
-                        if (backgroundWorker.CancellationPending)
+                        if (!reportProgress(i / (double)numTriangles * parsingFileRatio, "Loading Polygons"))
                         {
-                            return;
+                            amfStream.Close();
+                            return null;
                         }
-
-                        if (backgroundWorker.WorkerReportsProgress && maxProgressReport.ElapsedMilliseconds > 200)
-                        {
-                            backgroundWorker.ReportProgress(i * 100 / (int)numTriangles);
-                            maxProgressReport.Restart();
-                        }
+                        maxProgressReport.Restart();
                     }
 
                     if (!Vector3.Collinear(vector[0], vector[1], vector[2]))
                     {
-                        Vertex vertex1 = meshFromStlFile.CreateVertex(vector[0]);
-                        Vertex vertex2 = meshFromStlFile.CreateVertex(vector[1]);
-                        Vertex vertex3 = meshFromStlFile.CreateVertex(vector[2]);
-                        meshFromStlFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 });
+                        Vertex vertex1 = meshFromAmfFile.CreateVertex(vector[0], true, true);
+                        Vertex vertex2 = meshFromAmfFile.CreateVertex(vector[1], true, true);
+                        Vertex vertex3 = meshFromAmfFile.CreateVertex(vector[2], true, true);
+                        meshFromAmfFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 }, true);
                     }
                 }
                 //uint numTriangles = System.BitConverter.ToSingle(fileContents, 80);
-
             }
 
-            e.Result = meshFromStlFile;
-#endif
+            // merge all the vetexes that are in the same place together
+            meshFromAmfFile.CleanAndMergMesh(
+                (double progress0To1, string processingState) =>
+                {
+                    if (reportProgress != null)
+                    {
+                        reportProgress(parsingFileRatio + progress0To1 * (1 - parsingFileRatio), processingState);
+                    }
+                    return true;
+                }
+            );
+
+            time.Stop();
+            Debug.WriteLine(string.Format("AMF Load in {0:0.00}s", time.Elapsed.TotalSeconds));
+
+            amfStream.Close();
+            return meshFromAmfFile;
         }
 
-        public string FormatForStl(Vector3 value)
+        public static string FormatForAmf(Vector3 value)
         {
             return string.Format("{0:0.000000} {1:0.000000} {2:0.000000}", value.x, value.y, value.z);
         }
 
-        private Vector3 ParseLine(Mesh meshFromStlFile, string[] splitOnLF, int lineIndex)
+        private static bool ParseLine(Mesh meshFromAmfFile, string thisLine, out Vector3 vertexPosition)
         {
-            string thisLine = splitOnLF[lineIndex++].Trim();
+            if (thisLine == null)
+            {
+                vertexPosition = new Vector3();
+                return true;
+            }
+            thisLine = thisLine.Trim();
             string noDoubleSpaces = thisLine;
             while (noDoubleSpaces.Contains("  "))
             {
                 noDoubleSpaces = noDoubleSpaces.Replace("  ", " ");
             }
             string[] splitOnSpace = noDoubleSpaces.Split(' ');
-            return new Vector3(double.Parse(splitOnSpace[1]), double.Parse(splitOnSpace[2]), double.Parse(splitOnSpace[3]));
+            vertexPosition = new Vector3();
+            bool goodParse = double.TryParse(splitOnSpace[1], out vertexPosition.x);
+            goodParse &= double.TryParse(splitOnSpace[2], out vertexPosition.y);
+            goodParse &= double.TryParse(splitOnSpace[3], out vertexPosition.z);
+            return goodParse;
         }
     }
 }

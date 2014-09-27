@@ -363,9 +363,7 @@ namespace MatterHackers.MeshVisualizer
                             backgroundWorker.DoWork += (object sender, DoWorkEventArgs e) =>
                             {
                                 Mesh loadedMesh = StlProcessing.Load(meshPathAndFileName, backgroundWorker_ProgressChanged);
-
                                 SetMeshAfterLoad(loadedMesh);
-
                                 e.Result = loadedMesh;
                             };
                             backgroundWorker.RunWorkerAsync();
@@ -375,8 +373,13 @@ namespace MatterHackers.MeshVisualizer
 
                     case ".AMF":
                         {
-                            AmfProcessing amfLoader = new AmfProcessing();
-                            amfLoader.LoadInBackground(backgroundWorker, meshPathAndFileName);
+                            backgroundWorker.DoWork += (object sender, DoWorkEventArgs e) =>
+                            {
+                                Mesh loadedMesh = AmfProcessing.Load(meshPathAndFileName, backgroundWorker_ProgressChanged);
+                                SetMeshAfterLoad(loadedMesh);
+                                e.Result = loadedMesh;
+                            };
+                            backgroundWorker.RunWorkerAsync();
                             loadingMeshFile = true;
                         }
                         break;
