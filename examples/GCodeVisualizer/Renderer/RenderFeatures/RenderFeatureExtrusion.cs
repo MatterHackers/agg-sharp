@@ -44,13 +44,11 @@ namespace MatterHackers.GCodeVisualizer
         readonly RGBA_Bytes MultipleExtruderColor = RGBA_Bytes.Indigo;
         float extrusionVolumeMm3;
         float layerHeight;
-        int extruderIndex;
         RGBA_Bytes color;
 
         public RenderFeatureExtrusion(Vector3 start, Vector3 end, int extruderIndex, double travelSpeed, double totalExtrusionMm, double filamentDiameterMm, double layerHeight, RGBA_Bytes color)
-            : base(start, end, travelSpeed)
+            : base(start, end, extruderIndex, travelSpeed)
         {
-            this.extruderIndex = extruderIndex;
             this.color = color;
             double fillamentRadius = filamentDiameterMm / 2;
             double areaSquareMm = (fillamentRadius * fillamentRadius) * Math.PI;
@@ -71,12 +69,14 @@ namespace MatterHackers.GCodeVisualizer
             return radius;
         }
 
-        public override void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<int> indexData, Affine transform, double layerScale, RenderType renderType)
+        public override void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<int> indexData, GCodeRenderInfo renderInfo)
         {
-            if ((renderType & RenderType.Extrusions) == RenderType.Extrusions)
+            if ((renderInfo.CurrentRenderType & RenderType.Extrusions) == RenderType.Extrusions)
             {
-                double radius = GetRadius(renderType);
-                if ((renderType & RenderType.SpeedColors) == RenderType.SpeedColors)
+                Vector3Float start = this.GetStart(renderInfo);
+                Vector3Float end = this.GetEnd(renderInfo);
+                double radius = GetRadius(renderInfo.CurrentRenderType);
+                if ((renderInfo.CurrentRenderType & RenderType.SpeedColors) == RenderType.SpeedColors)
                 {
                     CreateCylinder(colorVertexData, indexData, new Vector3(start), new Vector3(end), radius, 6, color, layerHeight);
                 }
@@ -94,28 +94,31 @@ namespace MatterHackers.GCodeVisualizer
             }
         }
 
-        public override void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType)
+        public override void Render(Graphics2D graphics2D, GCodeRenderInfo renderInfo)
         {
-            if ((renderType & RenderType.Extrusions) == RenderType.Extrusions)
+            if ((renderInfo.CurrentRenderType & RenderType.Extrusions) == RenderType.Extrusions)
             {
-                double extrusionLineWidths = GetRadius(renderType) * 2 * layerScale;
+                double extrusionLineWidths = GetRadius(renderInfo.CurrentRenderType) * 2 * renderInfo.LayerScale;
 
                 RGBA_Bytes extrusionColor = RGBA_Bytes.Black;
                 if (extruderIndex > 0)
                 {
                     extrusionColor = MultipleExtruderColor;
                 }
-                if ((renderType & RenderType.SpeedColors) == RenderType.SpeedColors)
+                if ((renderInfo.CurrentRenderType & RenderType.SpeedColors) == RenderType.SpeedColors)
                 {
                     extrusionColor = color;
                 }
 
                 PathStorage pathStorage = new PathStorage();
-                VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, transform);
+                VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, renderInfo.Transform);
                 Stroke stroke = new Stroke(transformedPathStorage, extrusionLineWidths);
 
                 stroke.line_cap(LineCap.Round);
                 stroke.line_join(LineJoin.Round);
+
+                Vector3Float start = this.GetStart(renderInfo);
+                Vector3Float end = this.GetEnd(renderInfo);
 
                 pathStorage.Add(start.x, start.y, ShapePath.FlagsAndCommand.CommandMoveTo);
                 pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.CommandLineTo);

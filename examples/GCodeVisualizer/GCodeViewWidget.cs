@@ -283,8 +283,9 @@ namespace MatterHackers.GCodeVisualizer
                     renderType |= RenderType.Retractions;
                 }
 
-                gCodeRenderer.Render(graphics2D, activeLayerIndex, transform, layerScale, renderType, 
-                    FeatureToStartOnRatio0To1, FeatureToEndOnRatio0To1);
+                GCodeRenderInfo renderInfo = new GCodeRenderInfo(activeLayerIndex, activeLayerIndex, transform, layerScale, renderType, 
+                    FeatureToStartOnRatio0To1, FeatureToEndOnRatio0To1, null);
+                gCodeRenderer.Render(graphics2D, renderInfo);
             }
 
             base.OnDraw(graphics2D);

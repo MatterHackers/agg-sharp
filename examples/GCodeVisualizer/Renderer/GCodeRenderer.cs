@@ -48,7 +48,7 @@ namespace MatterHackers.GCodeVisualizer
         Retractions = 4,
         SpeedColors = 8,
         SimulateExtrusion = 16,
-        All = Extrusions | Moves | Retractions
+        DrawUsingExtruderOffsets = 32,
     };
 
     public class GCodeRenderer
@@ -156,7 +156,7 @@ namespace MatterHackers.GCodeVisualizer
                     }
                     else
                     {
-                        renderFeaturesForLayer.Add(new RenderFeatureTravel(previousInstruction.Position, currentInstruction.Position, currentInstruction.FeedRate));
+                        renderFeaturesForLayer.Add(new RenderFeatureTravel(previousInstruction.Position, currentInstruction.Position, currentInstruction.ExtruderIndex, currentInstruction.FeedRate));
                     }
                 }
             }
@@ -170,18 +170,17 @@ namespace MatterHackers.GCodeVisualizer
             return renderFeatures[layerToCountFeaturesOn].Count;
         }
 
-        public void Render(Graphics2D graphics2D, int activeLayerIndex, Affine transform, double layerScale, RenderType renderType,
-            double featureToStartOnRatio0To1, double featureToEndOnRatio0To1)
+        public void Render(Graphics2D graphics2D, GCodeRenderInfo renderInfo)
         {
             if (renderFeatures.Count > 0)
             {
-                CreateFeaturesForLayerIfRequired(activeLayerIndex);
+                CreateFeaturesForLayerIfRequired(renderInfo.EndLayerIndex);
 
-                int featuresOnLayer = renderFeatures[activeLayerIndex].Count;
-                int endFeature = (int)(featuresOnLayer * featureToEndOnRatio0To1 + .5);
+                int featuresOnLayer = renderFeatures[renderInfo.EndLayerIndex].Count;
+                int endFeature = (int)(featuresOnLayer * renderInfo.FeatureToEndOnRatio0To1 + .5);
                 endFeature = Math.Max(0, Math.Min(endFeature, featuresOnLayer));
 
-                int startFeature = (int)(featuresOnLayer * featureToStartOnRatio0To1 + .5);
+                int startFeature = (int)(featuresOnLayer * renderInfo.FeatureToStartOnRatio0To1 + .5);
                 startFeature = Math.Max(0, Math.Min(startFeature, featuresOnLayer));
 
                 // try to make sure we always draw at least one feature
@@ -198,18 +197,19 @@ namespace MatterHackers.GCodeVisualizer
 
                 for (int i = startFeature; i < endFeature; i++)
                 {
-                    RenderFeatureBase feature = renderFeatures[activeLayerIndex][i];
+                    RenderFeatureBase feature = renderFeatures[renderInfo.EndLayerIndex][i];
                     if (feature != null)
                     {
-                        feature.Render(graphics2D, transform, layerScale, renderType);
+                        feature.Render(graphics2D, renderInfo);
                     }
                 }
             }
         }
 
-        void Create3DDataForLayer(Affine transform, double layerScale, RenderType renderType, int layerIndex, 
+        void Create3DDataForLayer(int layerIndex,
             VectorPOD<ColorVertexData> colorVertexData,
-            VectorPOD<int> vertexIndexArray)
+            VectorPOD<int> vertexIndexArray,
+            GCodeRenderInfo renderInfo)
         {
             colorVertexData.Clear();
             vertexIndexArray.Clear();
@@ -221,15 +221,14 @@ namespace MatterHackers.GCodeVisualizer
                 RenderFeatureBase feature = renderFeatures[layerIndex][i];
                 if (feature != null)
                 {
-                    feature.CreateRender3DData(colorVertexData, vertexIndexArray, transform, layerScale, renderType);
+                    feature.CreateRender3DData(colorVertexData, vertexIndexArray, renderInfo);
                 }
             }
         }
 
         List<GCodeVertexBuffer> layerVertexBuffer;
         RenderType lastRenderType = RenderType.None;
-        public void Render3D(int startLayerIndex, int endLayerIndex, Affine transform, double layerScale, RenderType renderType,
-            double featureToStartOnRatio0To1, double featureToEndOnRatio0To1)
+        public void Render3D(GCodeRenderInfo renderInfo)
         {
             if (layerVertexBuffer == null)
             {
@@ -247,18 +246,18 @@ namespace MatterHackers.GCodeVisualizer
                 CreateFeaturesForLayerIfRequired(layerIndex);
             }
 
-            if (lastRenderType != renderType)
+            if (lastRenderType != renderInfo.CurrentRenderType)
             {
-                for (int i = startLayerIndex; i < endLayerIndex; i++)
+                for (int i = renderInfo.StartLayerIndex; i < renderInfo.EndLayerIndex; i++)
                 {
                     layerVertexBuffer[i] = null;
                 }
-                lastRenderType = renderType;
+                lastRenderType = renderInfo.CurrentRenderType;
             }
 
             if (renderFeatures.Count > 0)
             {
-                for (int i = startLayerIndex; i < endLayerIndex; i++)
+                for (int i = renderInfo.StartLayerIndex; i < renderInfo.EndLayerIndex; i++)
                 {
                     // If its the first render or we change what we are trying to render then create vertex data.
                     if (layerVertexBuffer[i] == null)
@@ -266,7 +265,7 @@ namespace MatterHackers.GCodeVisualizer
                         VectorPOD<ColorVertexData> colorVertexData = new VectorPOD<ColorVertexData>();
                         VectorPOD<int> vertexIndexArray = new VectorPOD<int>();
 
-                        Create3DDataForLayer(transform, layerScale, renderType, i, colorVertexData, vertexIndexArray);
+                        Create3DDataForLayer(i, colorVertexData, vertexIndexArray, renderInfo);
 
                         layerVertexBuffer[i] = new GCodeVertexBuffer();
                         layerVertexBuffer[i].SetVertexData(colorVertexData.Array);
@@ -278,9 +277,9 @@ namespace MatterHackers.GCodeVisualizer
                 GL.PushAttrib(AttribMask.EnableBit);
                 GL.Enable(EnableCap.PolygonSmooth);
 
-                if (endLayerIndex - 1 > startLayerIndex)
+                if (renderInfo.EndLayerIndex - 1 > renderInfo.StartLayerIndex)
                 {
-                    for (int i = startLayerIndex; i < endLayerIndex-1; i++)
+                    for (int i = renderInfo.StartLayerIndex; i < renderInfo.EndLayerIndex - 1; i++)
                     {
                         int featuresOnLayer = renderFeatures[i].Count;
                         layerVertexBuffer[i].renderRange(0, featureStartIndex[i][featuresOnLayer-1]);
@@ -289,12 +288,12 @@ namespace MatterHackers.GCodeVisualizer
 
                 // draw the partial layer of end-1 from startratio to endratio
                 {
-                    int layerIndex = endLayerIndex - 1;
+                    int layerIndex = renderInfo.EndLayerIndex - 1;
                     int featuresOnLayer = renderFeatures[layerIndex].Count;
-                    int startFeature = (int)(featuresOnLayer * featureToStartOnRatio0To1 + .5);
+                    int startFeature = (int)(featuresOnLayer * renderInfo.FeatureToStartOnRatio0To1 + .5);
                     startFeature = Math.Max(0, Math.Min(startFeature, featuresOnLayer));
 
-                    int endFeature = (int)(featuresOnLayer * featureToEndOnRatio0To1 + .5);
+                    int endFeature = (int)(featuresOnLayer * renderInfo.FeatureToEndOnRatio0To1 + .5);
                     endFeature = Math.Max(0, Math.Min(endFeature, featuresOnLayer));
 
                     // try to make sure we always draw at least one feature

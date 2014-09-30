@@ -41,38 +41,74 @@ namespace MatterHackers.GCodeVisualizer
 {
     public class RenderFeatureTravel : RenderFeatureBase
     {
+        protected int extruderIndex;
         protected Vector3Float start;
         protected Vector3Float end;
         protected float travelSpeed;
 
-        public RenderFeatureTravel(Vector3 start, Vector3 end, double travelSpeed)
+        protected Vector3Float GetStart(GCodeRenderInfo renderInfo)
         {
+            if ((renderInfo.CurrentRenderType & RenderType.DrawUsingExtruderOffsets) == RenderType.DrawUsingExtruderOffsets)
+            {
+                Vector3Float start = this.start;
+                Vector2 offset = renderInfo.GetExtruderOffset(extruderIndex);
+                start.x += (float)offset.x;
+                start.y += (float)offset.y;
+                return start;
+            }
+
+            return this.start;
+        }
+
+        protected Vector3Float GetEnd(GCodeRenderInfo renderInfo)
+        {
+            if ((renderInfo.CurrentRenderType & RenderType.DrawUsingExtruderOffsets) == RenderType.DrawUsingExtruderOffsets)
+            {
+                Vector3Float end = this.end;
+                Vector2 offset = renderInfo.GetExtruderOffset(extruderIndex);
+                end.x += (float)offset.x;
+                end.y += (float)offset.y;
+                return end;
+            }
+
+            return this.end;
+        }
+
+        public RenderFeatureTravel(Vector3 start, Vector3 end, int extruderIndex, double travelSpeed)
+        {
+            this.extruderIndex = extruderIndex;
             this.start = new Vector3Float(start);
             this.end = new Vector3Float(end);
             this.travelSpeed = (float)travelSpeed;
         }
 
-        public override void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<int> indexData, Affine transform, double layerScale, RenderType renderType)
+
+        public override void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<int> indexData, GCodeRenderInfo renderInfo)
         {
-            if ((renderType & RenderType.Moves) == RenderType.Moves)
+            if ((renderInfo.CurrentRenderType & RenderType.Moves) == RenderType.Moves)
             {
+                Vector3Float start = this.GetStart(renderInfo);
+                Vector3Float end = this.GetEnd(renderInfo);
                 CreateCylinder(colorVertexData, indexData, new Vector3(start), new Vector3(end), .1, 6, GCodeRenderer.TravelColor, .2);
             }
         }
 
-        public override void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType)
+        public override void Render(Graphics2D graphics2D, GCodeRenderInfo renderInfo)
         {
-            if ((renderType & RenderType.Moves) == RenderType.Moves)
+            if ((renderInfo.CurrentRenderType & RenderType.Moves) == RenderType.Moves)
             {
-                double movementLineWidth = 0.35 * layerScale;
+                double movementLineWidth = 0.35 * renderInfo.LayerScale;
                 RGBA_Bytes movementColor = new RGBA_Bytes(10, 190, 15);
 
                 PathStorage pathStorage = new PathStorage();
-                VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, transform);
+                VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, renderInfo.Transform);
                 Stroke stroke = new Stroke(transformedPathStorage, movementLineWidth);
 
                 stroke.line_cap(LineCap.Round);
                 stroke.line_join(LineJoin.Round);
+
+                Vector3Float start = this.GetStart(renderInfo);
+                Vector3Float end = this.GetEnd(renderInfo);
 
                 pathStorage.Add(start.x, start.y, ShapePath.FlagsAndCommand.CommandMoveTo);
                 if (end.x != start.x || end.y != start.y)

@@ -62,9 +62,9 @@ namespace MatterHackers.GCodeVisualizer
             return radius;
         }
 
-        public override void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<int> indexData, Affine transform, double layerScale, RenderType renderType)
+        public override void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<int> indexData, GCodeRenderInfo renderInfo)
         {
-            if ((renderType & RenderType.Retractions) == RenderType.Retractions)
+            if ((renderInfo.CurrentRenderType & RenderType.Retractions) == RenderType.Retractions)
             {
                 Vector3 position = new Vector3(this.position);
                 if (extrusionAmount > 0)
@@ -80,13 +80,13 @@ namespace MatterHackers.GCodeVisualizer
             }
         }
 
-        public override void Render(Graphics2D graphics2D, Affine transform, double layerScale, RenderType renderType)
+        public override void Render(Graphics2D graphics2D, GCodeRenderInfo renderInfo)
         {
-            if ((renderType & RenderType.Retractions) == RenderType.Retractions)
+            if ((renderInfo.CurrentRenderType & RenderType.Retractions) == RenderType.Retractions)
             {
                 Vector2 position = new Vector2(this.position.x, this.position.y);
-                transform.transform(ref position);
-                double radius = Radius(layerScale);
+                renderInfo.Transform.transform(ref position);
+                double radius = Radius(renderInfo.LayerScale);
                 Ellipse extrusion = new Ellipse(position, radius);
 
                 if (extrusionAmount > 0)
