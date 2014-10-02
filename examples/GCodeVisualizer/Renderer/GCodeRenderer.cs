@@ -226,6 +226,17 @@ namespace MatterHackers.GCodeVisualizer
             }
         }
 
+        public void Clear3DGCode()
+        {
+            if (layerVertexBuffer != null)
+            {
+                for (int i = 0; i < layerVertexBuffer.Count; i++)
+                {
+                    layerVertexBuffer[i] = null;
+                }
+            }
+        }
+
         List<GCodeVertexBuffer> layerVertexBuffer;
         RenderType lastRenderType = RenderType.None;
         public void Render3D(GCodeRenderInfo renderInfo)
@@ -248,10 +259,7 @@ namespace MatterHackers.GCodeVisualizer
 
             if (lastRenderType != renderInfo.CurrentRenderType)
             {
-                for (int i = renderInfo.StartLayerIndex; i < renderInfo.EndLayerIndex; i++)
-                {
-                    layerVertexBuffer[i] = null;
-                }
+                Clear3DGCode();
                 lastRenderType = renderInfo.CurrentRenderType;
             }
 
