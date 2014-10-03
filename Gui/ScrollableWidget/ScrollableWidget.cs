@@ -130,7 +130,7 @@ namespace MatterHackers.Agg.UI
 #if true
             base.AddChild(scrollArea);
             base.AddChild(verticalScrollBar);
-            scrollArea.Padding = new BorderDouble(0, 0, 15, 0);
+			scrollArea.Padding = new BorderDouble(0, 0, ScrollBar.ScrollBarWidth, 0);
             verticalScrollBar.HAnchor = UI.HAnchor.ParentRight;
 #else
             FlowLayoutWidget scrollAreaAndScrollBarRisizer = new FlowLayoutWidget();
