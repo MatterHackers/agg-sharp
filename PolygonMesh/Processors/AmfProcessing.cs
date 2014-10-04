@@ -242,6 +242,7 @@ namespace MatterHackers.PolygonMesh.Processors
                 {
                     foreach (XElement meshes in xmlTree.Descendants("mesh"))
                     {
+                        Mesh currentMesh = new Mesh();
                         foreach (XElement vertices in xmlTree.Descendants("vertices"))
                         {
                             foreach (XElement vertex in xmlTree.Descendants("vertex"))
@@ -272,6 +273,8 @@ namespace MatterHackers.PolygonMesh.Processors
                                             break;
 #endif
                                         }
+                                        position *= scale;
+                                        currentMesh.CreateVertex(position, true, true);
                                     }
                                 }
                             }
@@ -281,6 +284,32 @@ namespace MatterHackers.PolygonMesh.Processors
                         {
                             foreach (XElement triangles in xmlTree.Descendants("triangle"))
                             {
+                                int[] indices = new int[3];
+                                foreach (XElement index in triangles.Descendants())
+                                {
+                                    switch (index.Name.ToString())
+                                    {
+                                        case "v1":
+                                            indices[0] = int.Parse(index.Value);
+                                            break;
+
+                                        case "v2":
+                                            indices[1] = int.Parse(index.Value);
+                                            break;
+
+                                        case "v3":
+                                            indices[2] = int.Parse(index.Value);
+                                            break;
+
+                                        default:
+                                            #if DEBUG
+                                            throw new NotImplementedException();
+                                            #else
+                                            break;
+                                            #endif
+                                    }
+                                }
+                                currentMesh.CreateFace(indices, true);
                             }
                         }
                     }
@@ -343,29 +372,39 @@ namespace MatterHackers.PolygonMesh.Processors
 
         private static double GetScaling(XDocument xmlTree)
         {
-            switch (xmlTree.Root.Attribute("unit").Value.ToLower())
+            try
             {
-                case "millimeter":
-                    return 1;
+                switch (xmlTree.Root.Attribute("unit").Value.ToLower())
+                {
+                    case "millimeter":
+                        return 1;
 
-                case "meter":
-                    return 1000;
+                    case "centimeter":
+                        return 10;
 
-                case "inch":
-                    return 25.4;
+                    case "meter":
+                        return 1000;
 
-                case "feet":
-                    return 304.8;
+                    case "inch":
+                        return 25.4;
 
-                case "micron":
-                    return 0.001;
+                    case "feet":
+                        return 304.8;
 
-                default:
+                    case "micron":
+                        return 0.001;
+
+                    default:
 #if DEBUG
-                    throw new NotImplementedException();
+                        throw new NotImplementedException();
 #else
-                    return 1;
+                        return 1;
 #endif
+                }
+            }
+            catch(Exception)
+            {
+                return 1;
             }
         }
     }
