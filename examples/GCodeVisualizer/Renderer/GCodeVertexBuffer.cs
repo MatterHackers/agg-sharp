@@ -110,6 +110,8 @@ namespace MatterHackers.GCodeVisualizer
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
 
+            GL.DisableClientState(ArrayCap.IndexArray);
+
             GL.DisableClientState(ArrayCap.VertexArray);
             GL.DisableClientState(ArrayCap.NormalArray);
             GL.DisableClientState(ArrayCap.ColorArray);
