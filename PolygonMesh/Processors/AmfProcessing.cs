@@ -248,6 +248,31 @@ namespace MatterHackers.PolygonMesh.Processors
                             {
                                 foreach (XElement coordinates in xmlTree.Descendants("coordinates"))
                                 {
+                                    foreach (XElement coordinate in coordinates.Descendants())
+                                    {
+                                        Vector3 position = new Vector3();
+                                        switch (coordinate.Name.ToString())
+                                        {
+                                            case "x":
+                                                position.x = double.Parse(coordinate.Value);
+                                                break;
+
+                                            case "y":
+                                                position.y = double.Parse(coordinate.Value);
+                                                break;
+
+                                            case "z":
+                                                position.z = double.Parse(coordinate.Value);
+                                                break;
+
+                                            default:
+#if DEBUG
+                                                throw new NotImplementedException();
+#else
+                                            break;
+#endif
+                                        }
+                                    }
                                 }
                             }
                         }
