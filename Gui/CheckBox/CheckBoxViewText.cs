@@ -24,7 +24,7 @@ namespace MatterHackers.Agg.UI
     {
         public static BorderDouble DefaultPadding; //= new BorderDouble(5);
 
-        double boxWidth = 10;
+        public static double CheckBoxWidth = 10;
         private RGBA_Bytes inactiveColor;
         private RGBA_Bytes activeColor;
 
@@ -35,10 +35,10 @@ namespace MatterHackers.Agg.UI
         public CheckBoxViewText(string label, double textHeight = 12, RGBA_Bytes textColor = new RGBA_Bytes())
         {
             FlowLayoutWidget leftToRight = new FlowLayoutWidget();
-            GuiWidget boxSpace = new GuiWidget(boxWidth * 2, 1);
+            GuiWidget boxSpace = new GuiWidget(CheckBoxWidth * 2, 1);
             leftToRight.AddChild(boxSpace);
 
-            labelTextWidget = new TextWidget(label, boxWidth, 0, textHeight);
+            labelTextWidget = new TextWidget(label, CheckBoxWidth, 0, textHeight);
             leftToRight.AddChild(labelTextWidget);
 
             AddChild(leftToRight);
@@ -84,12 +84,12 @@ namespace MatterHackers.Agg.UI
             // the check
             if (checkBox.Checked)
             {
-                graphics2D.Line(new Vector2(1, boxWidth + bottom), new Vector2(1 + boxWidth, 0 + bottom), this.TextColor);
-                graphics2D.Line(new Vector2(1, 0 + bottom), new Vector2(1 + boxWidth, boxWidth + bottom), this.TextColor);
+                graphics2D.Line(new Vector2(1, CheckBoxWidth + bottom), new Vector2(1 + CheckBoxWidth, 0 + bottom), this.TextColor);
+                graphics2D.Line(new Vector2(1, 0 + bottom), new Vector2(1 + CheckBoxWidth, CheckBoxWidth + bottom), this.TextColor);
             }
 
             // the frame
-            RectangleDouble clampedRect = new RectangleDouble(1, Math.Floor(0 + bottom), 1 + Math.Ceiling(boxWidth), Math.Ceiling(boxWidth + bottom));
+            RectangleDouble clampedRect = new RectangleDouble(1, Math.Floor(0 + bottom), 1 + Math.Ceiling(CheckBoxWidth), Math.Ceiling(CheckBoxWidth + bottom));
             graphics2D.Rectangle(clampedRect, this.TextColor);
 
             // extra frame
