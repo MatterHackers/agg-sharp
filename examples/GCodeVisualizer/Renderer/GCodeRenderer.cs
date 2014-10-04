@@ -290,7 +290,10 @@ namespace MatterHackers.GCodeVisualizer
                     for (int i = renderInfo.StartLayerIndex; i < renderInfo.EndLayerIndex - 1; i++)
                     {
                         int featuresOnLayer = renderFeatures[i].Count;
-                        layerVertexBuffer[i].renderRange(0, featureStartIndex[i][featuresOnLayer-1]);
+                        if (featuresOnLayer > 1)
+                        {
+                            layerVertexBuffer[i].renderRange(0, featureStartIndex[i][featuresOnLayer - 1]);
+                        }
                     }
                 }
 
