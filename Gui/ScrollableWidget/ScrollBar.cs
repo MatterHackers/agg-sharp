@@ -117,12 +117,15 @@ namespace MatterHackers.Agg.UI
         }
     }
 		
+
+
     public class ScrollBar : GuiWidget
     {
         ScrollableWidget ParentScrollWidget;
-        protected double barSize = 15;
         GuiWidget background;
         ThumDragWidget thumb;
+
+		public static double ScrollBarWidth = 15;
 
         public enum ShowState { Never, WhenRequired, Always };
 
@@ -231,11 +234,11 @@ namespace MatterHackers.Agg.UI
                     // make sure we can see it
                     Visible = true;
                     // fix the bounds of the scroll bar background
-                    LocalBounds = new RectangleDouble(0, 0, barSize, ParentScrollWidget.Height);
+                    LocalBounds = new RectangleDouble(0, 0, ScrollBarWidth, ParentScrollWidget.Height);
                     background.LocalBounds = LocalBounds;
 
                     // this is for vertical scroll bar
-                    thumb.LocalBounds = new RectangleDouble(0, 0, barSize, ThumbHeight);
+                    thumb.LocalBounds = new RectangleDouble(0, 0, ScrollBarWidth, ThumbHeight);
 
                     Vector2 scrollRatioFromTop0To1 = ParentScrollWidget.ScrollRatioFromTop0To1;
                     double notThumbHeight = ParentScrollWidget.Height - ThumbHeight;
