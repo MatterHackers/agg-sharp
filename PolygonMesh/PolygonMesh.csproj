@@ -127,6 +127,7 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MeshGroup.cs" />
     <Compile Include="FaceTexturesData.cs" />
     <Compile Include="FaceEdgeTextureUvData.cs" />
     <Compile Include="Csg\CsgNode.cs" />

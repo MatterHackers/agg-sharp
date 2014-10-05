@@ -190,6 +190,9 @@ namespace MatterHackers.VectorMath
 
         public static AxisAlignedBoundingBox operator +(AxisAlignedBoundingBox A, AxisAlignedBoundingBox B)
         {
+#if true
+            return Union(A, B);
+#else
             Vector3 calcMinXYZ = new Vector3();
             calcMinXYZ.x = Math.Min(A.minXYZ.x, B.minXYZ.x);
             calcMinXYZ.y = Math.Min(A.minXYZ.y, B.minXYZ.y);
@@ -203,6 +206,7 @@ namespace MatterHackers.VectorMath
             AxisAlignedBoundingBox combinedBounds = new AxisAlignedBoundingBox(calcMinXYZ, calcMaxXYZ);
 
             return combinedBounds;
+#endif
         }
 
         public static AxisAlignedBoundingBox Union(AxisAlignedBoundingBox boundsA, AxisAlignedBoundingBox boundsB)

@@ -272,16 +272,17 @@ namespace MatterHackers.PolygonMesh.Processors
 
                 ProgressData progressData = new ProgressData(amfStream, reportProgress);
 
+                List<MeshGroup> meshGroups = new List<MeshGroup>();
+
                 while (xmlTree.Read())
                 {
                     if (xmlTree.Name == "object")
                     {
-                        List<Mesh> meshes;
                         using(XmlReader objectTree = xmlTree.ReadSubtree())
                         {
-                            meshes = ReadObject(objectTree, scale, progressData);
+                            meshGroups.Add(ReadObject(objectTree, scale, progressData));
                         }
-                        meshFromAmfFile = meshes[0];
+                        meshFromAmfFile = meshGroups[0].Meshes[0];
                     }
                 }
             }
@@ -307,26 +308,26 @@ namespace MatterHackers.PolygonMesh.Processors
             return meshFromAmfFile;
         }
 
-        private static List<Mesh> ReadObject(XmlReader xmlTree, double scale, ProgressData progressData)
+        private static MeshGroup ReadObject(XmlReader xmlTree, double scale, ProgressData progressData)
         {
-            List<Mesh> meshes = new List<Mesh>();
+            MeshGroup meshGroup = new MeshGroup();
             while (xmlTree.Read())
             {
                 if (xmlTree.Name == "mesh")
                 {
                     using (XmlReader meshTree = xmlTree.ReadSubtree())
                     {
-                        meshes.Add(ReadMesh(meshTree, scale, progressData));
+                        ReadMesh(meshTree, meshGroup, scale, progressData);
                     }
                 }
             }
 
-            return meshes;
+            return meshGroup;
         }
 
-        private static Mesh ReadMesh(XmlReader xmlTree, double scale, ProgressData progressData)
+        private static void ReadMesh(XmlReader xmlTree, MeshGroup meshGroup, double scale, ProgressData progressData)
         {
-            Mesh currentMesh = new Mesh();
+            List<Vector3> vertices = new List<Vector3>();
             while (xmlTree.Read())
             {
                 switch(xmlTree.Name)
@@ -334,23 +335,23 @@ namespace MatterHackers.PolygonMesh.Processors
                     case "vertices":
                         using (XmlReader verticesTree = xmlTree.ReadSubtree())
                         {
-                            ReadVertices(verticesTree, currentMesh, scale, progressData);
+                            ReadVertices(verticesTree, vertices, scale, progressData);
                         }
                         break;
 
                     case "volume":
                         using (XmlReader volumeTree = xmlTree.ReadSubtree())
                         {
-                            ReadVolume(volumeTree, currentMesh, progressData);
+                            meshGroup.Meshes.Add(ReadVolume(volumeTree, vertices, progressData));
                         }
                         break;
                 }
             }
-            return currentMesh;
         }
 
-        private static void ReadVolume(XmlReader xmlTree, Mesh currentMesh, ProgressData progressData)
+        private static Mesh ReadVolume(XmlReader xmlTree, List<Vector3> vertices, ProgressData progressData)
         {
+            Mesh newMesh = new Mesh();
             while (xmlTree.Read())
             {
                 if (xmlTree.Name == "triangle")
@@ -394,7 +395,13 @@ namespace MatterHackers.PolygonMesh.Processors
                                 && indices[0] != indices[2]
                                 && indices[1] != indices[2])
                             {
-                                currentMesh.CreateFace(indices);
+                                Vertex[] triangle = new Vertex[]
+                                {
+                                    newMesh.CreateVertex(vertices[indices[0]], true, true),
+                                    newMesh.CreateVertex(vertices[indices[1]], true, true),
+                                    newMesh.CreateVertex(vertices[indices[2]], true, true),
+                                };
+                                newMesh.CreateFace(triangle, true);
                             }
 
                             progressData.ReportProgress();
@@ -402,9 +409,10 @@ namespace MatterHackers.PolygonMesh.Processors
                     }
                 }
             }
+            return newMesh;
         }
 
-        private static void ReadVertices(XmlReader xmlTree, Mesh currentMesh, double scale, ProgressData progressData)
+        private static void ReadVertices(XmlReader xmlTree, List<Vector3> vertices, double scale, ProgressData progressData)
         {
             while (xmlTree.Read())
             {
@@ -449,7 +457,7 @@ namespace MatterHackers.PolygonMesh.Processors
                                                     }
                                                 }
                                                 position *= scale;
-                                                currentMesh.CreateVertex(position, true, true);
+                                                vertices.Add(position);
                                             }
                                             progressData.ReportProgress();
                                         }
