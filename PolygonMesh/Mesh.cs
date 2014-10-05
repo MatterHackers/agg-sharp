@@ -772,6 +772,17 @@ namespace MatterHackers.PolygonMesh
         #endregion // MeshEdge
 
         #region Face
+        public Face CreateFace(int[] vertexIndicesToUse, bool createMeshEdgesEvenIfExist = false)
+        {
+            Vertex[] verticesToUse = new Vertex[vertexIndicesToUse.Length];
+            for (int i = 0; i < vertexIndicesToUse.Length; i++)
+            {
+                verticesToUse[i] = Vertices[vertexIndicesToUse[i]];
+            }
+
+            return CreateFace(verticesToUse, createMeshEdgesEvenIfExist);
+        }
+
         public Face CreateFace(Vertex[] verticesToUse, bool createMeshEdgesEvenIfExist = false)
         {
             if (verticesToUse.Length < 3)

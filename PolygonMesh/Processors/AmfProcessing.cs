@@ -36,7 +36,6 @@ using System.Text;
 using System.ComponentModel;
 using System.Threading;
 using System.Xml;
-using System.Xml.Linq;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using ICSharpCode.SharpZipLib.Zip;
@@ -235,83 +234,26 @@ namespace MatterHackers.PolygonMesh.Processors
             {
                 string amfContent = LoadAmfIntoString(amfStream);
                 TextReader textReader = new StringReader(amfContent);
-                XDocument xmlTree = XDocument.Load(textReader);
+                XmlReader xmlTree = XmlReader.Create(textReader);
+                while (xmlTree.Read())
+                {
+                    if (xmlTree.Name == "amf")
+                    {
+                        break;
+                    }
+                }
                 double scale = GetScaling(xmlTree);
 
-                foreach (XElement objects in xmlTree.Descendants("object"))
+                while (xmlTree.Read())
                 {
-                    foreach (XElement meshes in xmlTree.Descendants("mesh"))
+                    if (xmlTree.Name == "object")
                     {
-                        Mesh currentMesh = new Mesh();
-                        foreach (XElement vertices in xmlTree.Descendants("vertices"))
+                        List<Mesh> meshes;
+                        using(XmlReader objectTree = xmlTree.ReadSubtree())
                         {
-                            foreach (XElement vertex in xmlTree.Descendants("vertex"))
-                            {
-                                foreach (XElement coordinates in xmlTree.Descendants("coordinates"))
-                                {
-                                    foreach (XElement coordinate in coordinates.Descendants())
-                                    {
-                                        Vector3 position = new Vector3();
-                                        switch (coordinate.Name.ToString())
-                                        {
-                                            case "x":
-                                                position.x = double.Parse(coordinate.Value);
-                                                break;
-
-                                            case "y":
-                                                position.y = double.Parse(coordinate.Value);
-                                                break;
-
-                                            case "z":
-                                                position.z = double.Parse(coordinate.Value);
-                                                break;
-
-                                            default:
-#if DEBUG
-                                                throw new NotImplementedException();
-#else
-                                            break;
-#endif
-                                        }
-                                        position *= scale;
-                                        currentMesh.CreateVertex(position, true, true);
-                                    }
-                                }
-                            }
+                            meshes = ReadObject(objectTree, scale);
                         }
-
-                        foreach (XElement volume in xmlTree.Descendants("volume"))
-                        {
-                            foreach (XElement triangles in xmlTree.Descendants("triangle"))
-                            {
-                                int[] indices = new int[3];
-                                foreach (XElement index in triangles.Descendants())
-                                {
-                                    switch (index.Name.ToString())
-                                    {
-                                        case "v1":
-                                            indices[0] = int.Parse(index.Value);
-                                            break;
-
-                                        case "v2":
-                                            indices[1] = int.Parse(index.Value);
-                                            break;
-
-                                        case "v3":
-                                            indices[2] = int.Parse(index.Value);
-                                            break;
-
-                                        default:
-                                            #if DEBUG
-                                            throw new NotImplementedException();
-                                            #else
-                                            break;
-                                            #endif
-                                    }
-                                }
-                                currentMesh.CreateFace(indices, true);
-                            }
-                        }
+                        meshFromAmfFile = meshes[0];
                     }
                 }
 
@@ -327,6 +269,7 @@ namespace MatterHackers.PolygonMesh.Processors
                 }
             }
 
+#if false
             // merge all the vetexes that are in the same place together
             meshFromAmfFile.CleanAndMergMesh(
                 (double progress0To1, string processingState) =>
@@ -338,12 +281,160 @@ namespace MatterHackers.PolygonMesh.Processors
                     return true;
                 }
             );
+#endif
 
             time.Stop();
             Debug.WriteLine(string.Format("AMF Load in {0:0.00}s", time.Elapsed.TotalSeconds));
 
             amfStream.Close();
             return meshFromAmfFile;
+        }
+
+        private static List<Mesh> ReadObject(XmlReader xmlTree, double scale)
+        {
+            List<Mesh> meshes = new List<Mesh>();
+            while (xmlTree.Read())
+            {
+                if (xmlTree.Name == "mesh")
+                {
+                    using (XmlReader meshTree = xmlTree.ReadSubtree())
+                    {
+                        meshes.Add(ReadMesh(meshTree, scale));
+                    }
+                }
+            }
+
+            return meshes;
+        }
+
+        private static Mesh ReadMesh(XmlReader xmlTree, double scale)
+        {
+            Mesh currentMesh = new Mesh();
+            while (xmlTree.Read())
+            {
+                switch(xmlTree.Name)
+                {
+                    case "vertices":
+                        using (XmlReader verticesTree = xmlTree.ReadSubtree())
+                        {
+                            ReadVertices(verticesTree, currentMesh, scale);
+                        }
+                        break;
+
+                    case "volume":
+                        using (XmlReader volumeTree = xmlTree.ReadSubtree())
+                        {
+                            ReadVolume(volumeTree, currentMesh);
+                        }
+                        break;
+                }
+            }
+            return currentMesh;
+        }
+
+        private static void ReadVolume(XmlReader xmlTree, Mesh currentMesh)
+        {
+            while (xmlTree.Read())
+            {
+                if (xmlTree.Name == "triangle")
+                {
+                    using (XmlReader triangleTree = xmlTree.ReadSubtree())
+                    {
+                        while (triangleTree.Read())
+                        {
+                            int[] indices = new int[3];
+                            while (triangleTree.Read())
+                            {
+                                switch (triangleTree.Name)
+                                {
+                                    case "v1":
+                                        string v1 = triangleTree.ReadString();
+                                        indices[0] = int.Parse(v1);
+                                        break;
+
+                                    case "v2":
+                                        string v2 = triangleTree.ReadString();
+                                        indices[1] = int.Parse(v2);
+                                        break;
+
+                                    case "v3":
+                                        string v3 = triangleTree.ReadString();
+                                        indices[2] = int.Parse(v3);
+                                        break;
+
+                                    case "map":
+                                        using (XmlReader mapTree = triangleTree.ReadSubtree())
+                                        {
+                                        }
+                                        // a texture map, has u1...un and v1...vn
+                                        break;
+
+                                    default:
+                                        break;
+                                }
+                            }
+                            currentMesh.CreateFace(indices, true);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static void ReadVertices(XmlReader xmlTree, Mesh currentMesh, double scale)
+        {
+            while (xmlTree.Read())
+            {
+                if (xmlTree.Name == "vertices")
+                {
+                    using (XmlReader verticesTree = xmlTree.ReadSubtree())
+                    {
+                        while (verticesTree.Read())
+                        {
+                            if (xmlTree.Name == "vertex")
+                            {
+                                using (XmlReader vertexTree = verticesTree.ReadSubtree())
+                                {
+                                    while (vertexTree.Read())
+                                    {
+                                        if (vertexTree.Name == "coordinates")
+                                        {
+                                            using (XmlReader coordinatesTree = vertexTree.ReadSubtree())
+                                            {
+                                                Vector3 position = new Vector3();
+                                                while (coordinatesTree.Read())
+                                                {
+                                                    switch (coordinatesTree.Name)
+                                                    {
+                                                        case "x":
+                                                            string x = coordinatesTree.ReadString();
+                                                            position.x = double.Parse(x);
+                                                            break;
+
+                                                        case "y":
+                                                            string y = coordinatesTree.ReadString();
+                                                            position.y = double.Parse(y);
+                                                            break;
+
+                                                        case "z":
+                                                            string z = coordinatesTree.ReadString();
+                                                            position.z = double.Parse(z);
+                                                            break;
+
+                                                        default:
+                                                            break;
+                                                    }
+                                                }
+                                                position *= scale;
+                                                currentMesh.CreateVertex(position, true, true);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         private static string LoadAmfIntoString(Stream amfStream)
@@ -370,41 +461,41 @@ namespace MatterHackers.PolygonMesh.Processors
             return amfContent;
         }
 
-        private static double GetScaling(XDocument xmlTree)
+        private static double GetScaling(XmlReader xmlTree)
         {
-            try
+            string units = xmlTree["unit"];
+            if (units == null)
             {
-                switch (xmlTree.Root.Attribute("unit").Value.ToLower())
-                {
-                    case "millimeter":
-                        return 1;
-
-                    case "centimeter":
-                        return 10;
-
-                    case "meter":
-                        return 1000;
-
-                    case "inch":
-                        return 25.4;
-
-                    case "feet":
-                        return 304.8;
-
-                    case "micron":
-                        return 0.001;
-
-                    default:
-#if DEBUG
-                        throw new NotImplementedException();
-#else
-                        return 1;
-#endif
-                }
-            }
-            catch(Exception)
-            {
+                // the amf does not specify any units
                 return 1;
+            }
+
+            switch (units.ToLower())
+            {
+                case "millimeter":
+                    return 1;
+
+                case "centimeter":
+                    return 10;
+
+                case "meter":
+                    return 1000;
+
+                case "inch":
+                    return 25.4;
+
+                case "feet":
+                    return 304.8;
+
+                case "micron":
+                    return 0.001;
+
+                default:
+#if DEBUG
+                    throw new NotImplementedException();
+#else
+                return 1;
+#endif
             }
         }
     }
