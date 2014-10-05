@@ -355,48 +355,14 @@ namespace MatterHackers.MeshVisualizer
 
                 backgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(backgroundWorker_RunWorkerCompleted);
 
-                bool loadingMeshFile = false;
-                switch (Path.GetExtension(meshPathAndFileName).ToUpper())
+                backgroundWorker.DoWork += (object sender, DoWorkEventArgs e) =>
                 {
-                    case ".STL":
-                        {
-                            backgroundWorker.DoWork += (object sender, DoWorkEventArgs e) =>
-                            {
-                                Mesh loadedMesh = StlProcessing.Load(meshPathAndFileName, backgroundWorker_ProgressChanged);
-                                SetMeshAfterLoad(loadedMesh);
-                                e.Result = loadedMesh;
-                            };
-                            backgroundWorker.RunWorkerAsync();
-                            loadingMeshFile = true;
-                        }
-                        break;
-
-                    case ".AMF":
-                        {
-                            backgroundWorker.DoWork += (object sender, DoWorkEventArgs e) =>
-                            {
-                                Mesh loadedMesh = AmfProcessing.Load(meshPathAndFileName, backgroundWorker_ProgressChanged);
-                                SetMeshAfterLoad(loadedMesh);
-                                e.Result = loadedMesh;
-                            };
-                            backgroundWorker.RunWorkerAsync();
-                            loadingMeshFile = true;
-                        }
-                        break;
-
-                    default:
-                        loadingMeshFile = false;
-                        break;
-                }
-
-                if (loadingMeshFile)
-                {
-                    partProcessingInfo.centeredInfoText.Text = "Loading Mesh...";
-                }
-                else
-                {
-                    partProcessingInfo.centeredInfoText.Text = string.Format("Sorry! No 3D view available\nfor this file type '{0}'.", Path.GetExtension(meshPathAndFileName).ToUpper());
-                }
+                    Mesh loadedMesh = MeshLoading.Load(meshPathAndFileName, backgroundWorker_ProgressChanged);
+                    SetMeshAfterLoad(loadedMesh);
+                    e.Result = loadedMesh;
+                };
+                backgroundWorker.RunWorkerAsync();
+                partProcessingInfo.centeredInfoText.Text = "Loading Mesh...";
             }
             else
             {

@@ -213,10 +213,39 @@ namespace MatterHackers.PolygonMesh.Processors
             return false;
         }
 
+        internal class ProgressData
+        {
+            ReportProgress reportProgress;
+            Stopwatch maxProgressReport = new Stopwatch();
+            Stream positionStream;
+            long bytesInFile;
+
+            internal ProgressData(Stream positionStream, ReportProgress reportProgress)
+            {
+                this.reportProgress = reportProgress;
+                this.positionStream = positionStream;
+                maxProgressReport.Start();
+                bytesInFile = (long)positionStream.Length;
+            }
+
+            internal bool ReportProgress()
+            {
+                if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
+                {
+                    bool continueProcessing = reportProgress(positionStream.Position / (double)bytesInFile * .5, "Loading Mesh");
+                    maxProgressReport.Restart();
+                    return continueProcessing;
+                }
+
+                return true;
+            }
+        }
+
         public static Mesh ParseFileContents(Stream amfStream, ReportProgress reportProgress)
         {
             Stopwatch time = new Stopwatch();
-            time.Start();
+            time.Start(); 
+            
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
             double parsingFileRatio = .5;
@@ -226,15 +255,12 @@ namespace MatterHackers.PolygonMesh.Processors
                 return null;
             }
 
-            Stopwatch maxProgressReport = new Stopwatch();
-            maxProgressReport.Start();
             Mesh meshFromAmfFile = new Mesh();
 
             // do the loading
             {
-                string amfContent = LoadAmfIntoString(amfStream);
-                TextReader textReader = new StringReader(amfContent);
-                XmlReader xmlTree = XmlReader.Create(textReader);
+                Stream amfCompressedStream = GetCompressedStreamIfRequired(amfStream);
+                XmlReader xmlTree = XmlReader.Create(amfCompressedStream);
                 while (xmlTree.Read())
                 {
                     if (xmlTree.Name == "amf")
@@ -244,6 +270,8 @@ namespace MatterHackers.PolygonMesh.Processors
                 }
                 double scale = GetScaling(xmlTree);
 
+                ProgressData progressData = new ProgressData(amfStream, reportProgress);
+
                 while (xmlTree.Read())
                 {
                     if (xmlTree.Name == "object")
@@ -251,25 +279,14 @@ namespace MatterHackers.PolygonMesh.Processors
                         List<Mesh> meshes;
                         using(XmlReader objectTree = xmlTree.ReadSubtree())
                         {
-                            meshes = ReadObject(objectTree, scale);
+                            meshes = ReadObject(objectTree, scale, progressData);
                         }
                         meshFromAmfFile = meshes[0];
                     }
                 }
-
-                if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
-                {
-                    int bytesInFile = 1000;
-                    if (!reportProgress(amfStream.Position / (double)bytesInFile * parsingFileRatio, "Loading Polygons"))
-                    {
-                        amfStream.Close();
-                        return null;
-                    }
-                    maxProgressReport.Restart();
-                }
             }
 
-#if false
+#if true
             // merge all the vetexes that are in the same place together
             meshFromAmfFile.CleanAndMergMesh(
                 (double progress0To1, string processingState) =>
@@ -290,7 +307,7 @@ namespace MatterHackers.PolygonMesh.Processors
             return meshFromAmfFile;
         }
 
-        private static List<Mesh> ReadObject(XmlReader xmlTree, double scale)
+        private static List<Mesh> ReadObject(XmlReader xmlTree, double scale, ProgressData progressData)
         {
             List<Mesh> meshes = new List<Mesh>();
             while (xmlTree.Read())
@@ -299,7 +316,7 @@ namespace MatterHackers.PolygonMesh.Processors
                 {
                     using (XmlReader meshTree = xmlTree.ReadSubtree())
                     {
-                        meshes.Add(ReadMesh(meshTree, scale));
+                        meshes.Add(ReadMesh(meshTree, scale, progressData));
                     }
                 }
             }
@@ -307,7 +324,7 @@ namespace MatterHackers.PolygonMesh.Processors
             return meshes;
         }
 
-        private static Mesh ReadMesh(XmlReader xmlTree, double scale)
+        private static Mesh ReadMesh(XmlReader xmlTree, double scale, ProgressData progressData)
         {
             Mesh currentMesh = new Mesh();
             while (xmlTree.Read())
@@ -317,14 +334,14 @@ namespace MatterHackers.PolygonMesh.Processors
                     case "vertices":
                         using (XmlReader verticesTree = xmlTree.ReadSubtree())
                         {
-                            ReadVertices(verticesTree, currentMesh, scale);
+                            ReadVertices(verticesTree, currentMesh, scale, progressData);
                         }
                         break;
 
                     case "volume":
                         using (XmlReader volumeTree = xmlTree.ReadSubtree())
                         {
-                            ReadVolume(volumeTree, currentMesh);
+                            ReadVolume(volumeTree, currentMesh, progressData);
                         }
                         break;
                 }
@@ -332,7 +349,7 @@ namespace MatterHackers.PolygonMesh.Processors
             return currentMesh;
         }
 
-        private static void ReadVolume(XmlReader xmlTree, Mesh currentMesh)
+        private static void ReadVolume(XmlReader xmlTree, Mesh currentMesh, ProgressData progressData)
         {
             while (xmlTree.Read())
             {
@@ -373,14 +390,21 @@ namespace MatterHackers.PolygonMesh.Processors
                                         break;
                                 }
                             }
-                            currentMesh.CreateFace(indices, true);
+                            if (indices[0] != indices[1]
+                                && indices[0] != indices[2]
+                                && indices[1] != indices[2])
+                            {
+                                currentMesh.CreateFace(indices);
+                            }
+
+                            progressData.ReportProgress();
                         }
                     }
                 }
             }
         }
 
-        private static void ReadVertices(XmlReader xmlTree, Mesh currentMesh, double scale)
+        private static void ReadVertices(XmlReader xmlTree, Mesh currentMesh, double scale, ProgressData progressData)
         {
             while (xmlTree.Read())
             {
@@ -427,6 +451,7 @@ namespace MatterHackers.PolygonMesh.Processors
                                                 position *= scale;
                                                 currentMesh.CreateVertex(position, true, true);
                                             }
+                                            progressData.ReportProgress();
                                         }
                                     }
                                 }
@@ -437,28 +462,21 @@ namespace MatterHackers.PolygonMesh.Processors
             }
         }
 
-        private static string LoadAmfIntoString(Stream amfStream)
+        private static Stream GetCompressedStreamIfRequired(Stream amfStream)
         {
-            string amfContent = "";
             if (IsZipFile(amfStream))
             {
                 ZipFile zip = new ZipFile(amfStream);
                 bool isValid = zip.TestArchive(false);
                 foreach (ZipEntry zipEntry in zip)
                 {
-                    Stream zipStream = zip.GetInputStream(zipEntry);
-                    StreamReader sr = new StreamReader(zipStream);
-                    amfContent = sr.ReadToEnd();
+                    return zip.GetInputStream(zipEntry);
                 }
             }
-            else
-            {
-                amfStream.Position = 0;
-                StreamReader sr = new StreamReader(amfStream);
-                amfContent = sr.ReadToEnd();
-            }
 
-            return amfContent;
+            amfStream.Position = 0;
+
+            return amfStream;
         }
 
         private static double GetScaling(XmlReader xmlTree)
