@@ -60,6 +60,46 @@ namespace MatterHackers.PolygonMesh.Processors
 
         public static void Save(Mesh meshToSave, Stream stream, OutputType outputType)
         {
+#if true
+            TextWriter amfFile = new StreamWriter(stream);
+            amfFile.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+            amfFile.WriteLine("<amf unit=\"millimeter\" version=\"1.1\">");
+            {
+                amfFile.WriteLine("<object id=\"{0}\">");
+                {
+                    amfFile.WriteLine("<mesh>");
+                    {
+                        amfFile.WriteLine("<vertices>");
+                        {
+                            amfFile.WriteLine("<vertex>");
+                            {
+                                amfFile.WriteLine("<coordinates>");
+                                amfFile.WriteLine("<x>{0}</x>");
+                                amfFile.WriteLine("<y>{0}</y>");
+                                amfFile.WriteLine("<z>{0}</z>");
+                                amfFile.WriteLine("<coordinates>");
+                            }
+                            amfFile.WriteLine("<vertex>");
+                        }
+                        amfFile.WriteLine("<vertices>");
+                        amfFile.WriteLine("<volume materialid=\"{0}\">");
+                        {
+                            amfFile.WriteLine("<triangle>");
+                            amfFile.WriteLine("<v1>0</v1>");
+                            amfFile.WriteLine("<v2>1</v2>");
+                            amfFile.WriteLine("<v3>2</v3>");
+                            amfFile.WriteLine("</triangle>");
+                        }
+                        amfFile.WriteLine("</volume>");
+                    }
+                    amfFile.WriteLine("</mesh>");
+                }
+                amfFile.WriteLine("</object>");
+                amfFile.WriteLine("<material id=\"{0}\">");
+                amfFile.WriteLine("</material");
+            }
+            amfFile.WriteLine("</amf>");
+#else
             switch (outputType)
             {
                 case OutputType.Ascii:
@@ -136,6 +176,7 @@ namespace MatterHackers.PolygonMesh.Processors
                     }
                     break;
             }
+#endif
         }
 
         public static Mesh Load(string fileName, ReportProgress reportProgress = null)
@@ -340,6 +381,7 @@ namespace MatterHackers.PolygonMesh.Processors
                         break;
 
                     case "volume":
+                        string materialId = xmlTree["materialid"];
                         using (XmlReader volumeTree = xmlTree.ReadSubtree())
                         {
                             meshGroup.Meshes.Add(ReadVolume(volumeTree, vertices, progressData));
