@@ -72,36 +72,72 @@ namespace MatterHackers.PolygonMesh.Processors
                 {
                     amfFile.WriteLine(Indent(1) + "<object id=\"{0}\">");
                     {
+                        int vertexCount = 0;
+                        List<int> meshVertexStart = new List<int>();
                         amfFile.WriteLine(Indent(2) + "<mesh>");
                         {
                             amfFile.WriteLine(Indent(3) + "<vertices>");
                             {
                                 foreach (Mesh mesh in meshGroup.Meshes)
                                 {
-                                    amfFile.WriteLine(Indent(4) + "<vertex>");
+                                    meshVertexStart.Add(vertexCount);
+                                    foreach (Vertex vertex in mesh.Vertices)
                                     {
-                                        amfFile.WriteLine(Indent(5) + "<coordinates>");
-                                        amfFile.WriteLine(Indent(6) + "<x>{0}</x>");
-                                        amfFile.WriteLine(Indent(6) + "<y>{0}</y>");
-                                        amfFile.WriteLine(Indent(6) + "<z>{0}</z>");
-                                        amfFile.WriteLine(Indent(5) + "<coordinates>");
+                                        Vector3 position = vertex.Position;
+                                        amfFile.WriteLine(Indent(4) + "<vertex>");
+                                        {
+                                            amfFile.WriteLine(Indent(5) + "<coordinates>");
+                                            amfFile.WriteLine(Indent(6) + "<x>{0}</x>".FormatWith(position.x));
+                                            amfFile.WriteLine(Indent(6) + "<y>{0}</y>".FormatWith(position.y));
+                                            amfFile.WriteLine(Indent(6) + "<z>{0}</z>".FormatWith(position.z));
+                                            amfFile.WriteLine(Indent(5) + "</coordinates>");
+                                        }
+                                        amfFile.WriteLine(Indent(4) + "</vertex>");
+                                        vertexCount++;
                                     }
-                                    amfFile.WriteLine(Indent(4) + "<vertex>");
                                 }
                             }
-                            amfFile.WriteLine(Indent(3) + "<vertices>");
-                            int vertexIndex = 0;
-                            for(int meshIndex = 0; meshIndex < meshGroup.Meshes.Count; meshIndex++)
+                            amfFile.WriteLine(Indent(3) + "</vertices>");
+                            for (int meshIndex = 0; meshIndex < meshGroup.Meshes.Count; meshIndex++)
                             {
+                                int firstVertexIndex = meshVertexStart[meshIndex];
                                 Mesh mesh = meshGroup.Meshes[meshIndex];
-                                amfFile.WriteLine(Indent(3) + "<volume materialid=\"{0}\">");
+                                MeshMaterialData material = MeshMaterialData.Get(mesh);
+                                if (material.MaterialIndex == -1)
                                 {
-                                    amfFile.WriteLine(Indent(4) + "<triangle>");
-                                    amfFile.WriteLine(Indent(5) + "<v1>0</v1>");
-                                    amfFile.WriteLine(Indent(5) + "<v2>1</v2>");
-                                    amfFile.WriteLine(Indent(5) + "<v3>2</v3>");
-                                    amfFile.WriteLine(Indent(4) + "</triangle>");
-                                    vertexIndex++;
+                                    amfFile.WriteLine(Indent(3) + "<volume>");
+                                }
+                                else
+                                {
+                                    amfFile.WriteLine(Indent(3) + "<volume materialid=\"{0}\">".FormatWith(material.MaterialIndex));
+                                }
+                                {
+                                    foreach (Face face in mesh.Faces)
+                                    {
+                                        List<Vertex> positionsCCW = new List<Vertex>();
+                                        foreach (FaceEdge faceEdge in face.FaceEdges())
+                                        {
+                                            positionsCCW.Add(faceEdge.firstVertex);
+                                        }
+
+                                        int numPolys = positionsCCW.Count - 2;
+                                        int secondIndex = 1;
+                                        int thirdIndex = 2;
+                                        for (int polyIndex = 0; polyIndex < numPolys; polyIndex++)
+                                        {
+                                            amfFile.WriteLine(Indent(4) + "<triangle>");
+                                            foreach (FaceEdge faceEdge in face.FaceEdges())
+                                            {
+                                                amfFile.WriteLine(Indent(5) + "<v1>{0}</v1>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[0])));
+                                                amfFile.WriteLine(Indent(5) + "<v2>{0}</v2>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[secondIndex])));
+                                                amfFile.WriteLine(Indent(5) + "<v3>{0}</v3>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[thirdIndex])));
+                                            }
+                                            amfFile.WriteLine(Indent(4) + "</triangle>");
+
+                                            secondIndex = thirdIndex;
+                                            thirdIndex++;
+                                        }
+                                    }
                                 }
                                 amfFile.WriteLine(Indent(3) + "</volume>");
                             }
@@ -110,10 +146,29 @@ namespace MatterHackers.PolygonMesh.Processors
                     }
                     amfFile.WriteLine(Indent(1) + "</object>");
                 }
-                amfFile.WriteLine(Indent(1) + "<material id=\"{0}\">");
-                amfFile.WriteLine(Indent(1) + "</material");
+
+                HashSet<int> materials = new HashSet<int>();
+                foreach (MeshGroup meshGroup in meshToSave)
+                {
+                    foreach(Mesh mesh in meshGroup.Meshes)
+                    {
+                        MeshMaterialData material = MeshMaterialData.Get(mesh);
+                        if (material.MaterialIndex != -1)
+                        {
+                            materials.Add(material.MaterialIndex);
+                        }
+                    }
+                }
+
+                foreach(int material in materials)
+                {
+                    amfFile.WriteLine(Indent(1) + "<material id=\"{0}\">".FormatWith(material));
+                    amfFile.WriteLine(Indent(2) + "<metadata type=\"Name\">Material {0}</metadata>".FormatWith(material));
+                    amfFile.WriteLine(Indent(1) + "</material>");
+                }
             }
             amfFile.WriteLine("</amf>");
+            amfFile.Flush();
 #else
             switch (outputType)
             {
@@ -412,9 +467,15 @@ namespace MatterHackers.PolygonMesh.Processors
 
                     case "volume":
                         string materialId = xmlTree["materialid"];
+                        Mesh loadedMesh = null;
                         using (XmlReader volumeTree = xmlTree.ReadSubtree())
                         {
-                            meshGroup.Meshes.Add(ReadVolume(volumeTree, vertices, progressData));
+                            loadedMesh = ReadVolume(volumeTree, vertices, progressData);
+                            meshGroup.Meshes.Add(loadedMesh);
+                        }
+                        if (loadedMesh != null && materialId != null)
+                        {
+                            MeshMaterialData.Get(loadedMesh).MaterialIndex = int.Parse(materialId);
                         }
                         break;
                 }
