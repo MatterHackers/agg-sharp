@@ -44,10 +44,10 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Processors
 {
-    public static class MeshLoading
-    {
-        public enum OutputType { Ascii, Binary };
+    public enum OutputType { Ascii, Binary };
 
+    public static class MeshFileIo
+    {
         public static string ValidFileExtensions()
         {
             return ".STL;.AMF";
@@ -65,6 +65,22 @@ namespace MatterHackers.PolygonMesh.Processors
 
                 default:
                     return null;
+            }
+        }
+
+        public static bool Save(List<MeshGroup> meshGroupsToSave, string meshPathAndFileName, OutputType outputType = OutputType.Binary)
+        {
+            switch (Path.GetExtension(meshPathAndFileName).ToUpper())
+            {
+                case ".STL":
+                    Mesh mesh = meshGroupsToSave[0].Meshes[0];
+                    return StlProcessing.Save(mesh, meshPathAndFileName, outputType);
+
+                case ".AMF":
+                    return AmfProcessing.Save(meshGroupsToSave, meshPathAndFileName, outputType);
+
+                default:
+                    return false;
             }
         }
     }

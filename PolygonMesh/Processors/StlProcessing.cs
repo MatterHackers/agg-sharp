@@ -46,17 +46,15 @@ namespace MatterHackers.PolygonMesh.Processors
 {
     public static class StlProcessing
     {
-        public enum OutputType { Ascii, Binary };
-
-        public static void Save(Mesh meshToSave, string fileName, OutputType outputType = OutputType.Binary)
+        public static bool Save(Mesh meshToSave, string fileName, OutputType outputType = OutputType.Binary)
         {
-            FileStream file = new FileStream(fileName, FileMode.Create, FileAccess.Write);
-
-            Save(meshToSave, file, outputType);
-            file.Close();
+            using (FileStream file = new FileStream(fileName, FileMode.Create, FileAccess.Write))
+            {
+                return Save(meshToSave, file, outputType);
+            }
         }
 
-        public static void Save(Mesh meshToSave, Stream stream, OutputType outputType)
+        public static bool Save(Mesh meshToSave, Stream stream, OutputType outputType)
         {
             switch (outputType)
             {
@@ -142,6 +140,7 @@ namespace MatterHackers.PolygonMesh.Processors
                     }
                     break;
             }
+            return true;
         }
 
         public static List<MeshGroup> Load(string fileName, ReportProgress reportProgress = null)

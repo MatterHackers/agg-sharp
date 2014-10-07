@@ -48,55 +48,70 @@ namespace MatterHackers.PolygonMesh.Processors
 {
     public static class AmfProcessing
     {
-        public enum OutputType { Ascii, Binary };
-
-        public static void Save(Mesh meshToSave, string fileName, OutputType outputType = OutputType.Binary)
+        public static bool Save(List<MeshGroup> meshToSave, string fileName, OutputType outputType = OutputType.Binary)
         {
-            FileStream file = new FileStream(fileName, FileMode.Create, FileAccess.Write);
-
-            Save(meshToSave, file, outputType);
-            file.Close();
+            using (FileStream file = new FileStream(fileName, FileMode.Create, FileAccess.Write))
+            {
+                return Save(meshToSave, file, outputType);
+            }
         }
 
-        public static void Save(Mesh meshToSave, Stream stream, OutputType outputType)
+        static string Indent(int index)
+        {
+            return new String(' ', index * 2);
+        }
+
+        public static bool Save(List<MeshGroup> meshToSave, Stream stream, OutputType outputType)
         {
 #if true
             TextWriter amfFile = new StreamWriter(stream);
             amfFile.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
             amfFile.WriteLine("<amf unit=\"millimeter\" version=\"1.1\">");
             {
-                amfFile.WriteLine("<object id=\"{0}\">");
+                foreach (MeshGroup meshGroup in meshToSave)
                 {
-                    amfFile.WriteLine("<mesh>");
+                    amfFile.WriteLine(Indent(1) + "<object id=\"{0}\">");
                     {
-                        amfFile.WriteLine("<vertices>");
+                        amfFile.WriteLine(Indent(2) + "<mesh>");
                         {
-                            amfFile.WriteLine("<vertex>");
+                            amfFile.WriteLine(Indent(3) + "<vertices>");
                             {
-                                amfFile.WriteLine("<coordinates>");
-                                amfFile.WriteLine("<x>{0}</x>");
-                                amfFile.WriteLine("<y>{0}</y>");
-                                amfFile.WriteLine("<z>{0}</z>");
-                                amfFile.WriteLine("<coordinates>");
+                                foreach (Mesh mesh in meshGroup.Meshes)
+                                {
+                                    amfFile.WriteLine(Indent(4) + "<vertex>");
+                                    {
+                                        amfFile.WriteLine(Indent(5) + "<coordinates>");
+                                        amfFile.WriteLine(Indent(6) + "<x>{0}</x>");
+                                        amfFile.WriteLine(Indent(6) + "<y>{0}</y>");
+                                        amfFile.WriteLine(Indent(6) + "<z>{0}</z>");
+                                        amfFile.WriteLine(Indent(5) + "<coordinates>");
+                                    }
+                                    amfFile.WriteLine(Indent(4) + "<vertex>");
+                                }
                             }
-                            amfFile.WriteLine("<vertex>");
+                            amfFile.WriteLine(Indent(3) + "<vertices>");
+                            int vertexIndex = 0;
+                            for(int meshIndex = 0; meshIndex < meshGroup.Meshes.Count; meshIndex++)
+                            {
+                                Mesh mesh = meshGroup.Meshes[meshIndex];
+                                amfFile.WriteLine(Indent(3) + "<volume materialid=\"{0}\">");
+                                {
+                                    amfFile.WriteLine(Indent(4) + "<triangle>");
+                                    amfFile.WriteLine(Indent(5) + "<v1>0</v1>");
+                                    amfFile.WriteLine(Indent(5) + "<v2>1</v2>");
+                                    amfFile.WriteLine(Indent(5) + "<v3>2</v3>");
+                                    amfFile.WriteLine(Indent(4) + "</triangle>");
+                                    vertexIndex++;
+                                }
+                                amfFile.WriteLine(Indent(3) + "</volume>");
+                            }
                         }
-                        amfFile.WriteLine("<vertices>");
-                        amfFile.WriteLine("<volume materialid=\"{0}\">");
-                        {
-                            amfFile.WriteLine("<triangle>");
-                            amfFile.WriteLine("<v1>0</v1>");
-                            amfFile.WriteLine("<v2>1</v2>");
-                            amfFile.WriteLine("<v3>2</v3>");
-                            amfFile.WriteLine("</triangle>");
-                        }
-                        amfFile.WriteLine("</volume>");
+                        amfFile.WriteLine(Indent(2) + "</mesh>");
                     }
-                    amfFile.WriteLine("</mesh>");
+                    amfFile.WriteLine(Indent(1) + "</object>");
                 }
-                amfFile.WriteLine("</object>");
-                amfFile.WriteLine("<material id=\"{0}\">");
-                amfFile.WriteLine("</material");
+                amfFile.WriteLine(Indent(1) + "<material id=\"{0}\">");
+                amfFile.WriteLine(Indent(1) + "</material");
             }
             amfFile.WriteLine("</amf>");
 #else
@@ -177,6 +192,7 @@ namespace MatterHackers.PolygonMesh.Processors
                     break;
             }
 #endif
+            return true;
         }
 
         public static List<MeshGroup> Load(string fileName, ReportProgress reportProgress = null)

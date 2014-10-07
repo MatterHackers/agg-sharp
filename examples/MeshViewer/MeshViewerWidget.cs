@@ -328,9 +328,23 @@ namespace MatterHackers.MeshVisualizer
                     drawColor = SelectedPartColor;
                 }
 
+                int part = 0;
                 foreach (Mesh meshToRender in meshGroupToRender.Meshes)
                 {
+                    if (part > 0)
+                    {
+                        switch (part)
+                        {
+                            case 1:
+                                drawColor = RGBA_Bytes.Cyan;
+                                break;
+                            case 2:
+                                drawColor = RGBA_Bytes.Yellow;
+                                break;
+                        }
+                    }
                     RenderMeshToGl.Render(meshToRender, drawColor, MeshGroupTransforms[i].TotalTransform, RenderType);
+                    part++;
                 }
             }
 
@@ -363,7 +377,7 @@ namespace MatterHackers.MeshVisualizer
 
                 backgroundWorker.DoWork += (object sender, DoWorkEventArgs e) =>
                 {
-                    List<MeshGroup> loadedMeshGroups = MeshLoading.Load(meshPathAndFileName, backgroundWorker_ProgressChanged);
+                    List<MeshGroup> loadedMeshGroups = MeshFileIo.Load(meshPathAndFileName, backgroundWorker_ProgressChanged);
                     SetMeshAfterLoad(loadedMeshGroups);
                     e.Result = loadedMeshGroups;
                 };
@@ -407,6 +421,10 @@ namespace MatterHackers.MeshVisualizer
                 trackballTumbleWidget.TrackBallController.Scale = .03;
                 trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, MathHelper.Tau / 16)));
                 trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
+
+#if false // a test of saving 
+                MeshFileIo.Save(loadedMeshGroups, "test.amf", OutputType.Ascii);
+#endif
             }
         }
 
