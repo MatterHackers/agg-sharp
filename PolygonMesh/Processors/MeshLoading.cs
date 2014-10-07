@@ -53,7 +53,7 @@ namespace MatterHackers.PolygonMesh.Processors
             return ".STL;.AMF";
         }
 
-        public static Mesh Load(string meshPathAndFileName, ReportProgress reportProgress = null)
+        public static List<MeshGroup> Load(string meshPathAndFileName, ReportProgress reportProgress = null)
         {
             switch (Path.GetExtension(meshPathAndFileName).ToUpper())
             {

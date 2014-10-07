@@ -179,9 +179,9 @@ namespace MatterHackers.PolygonMesh.Processors
 #endif
         }
 
-        public static Mesh Load(string fileName, ReportProgress reportProgress = null)
+        public static List<MeshGroup> Load(string fileName, ReportProgress reportProgress = null)
         {
-            Mesh loadedMesh = null;
+            List<MeshGroup> loadedMesh = null;
             if (Path.GetExtension(fileName).ToUpper() == ".AMF")
             {
                 try
@@ -209,12 +209,12 @@ namespace MatterHackers.PolygonMesh.Processors
             return loadedMesh;
         }
 
-        public static Mesh Load(Stream fileStream, ReportProgress reportProgress = null)
+        public static List<MeshGroup> Load(Stream fileStream, ReportProgress reportProgress = null)
         {
-            Mesh loadedMesh = null;
+            List<MeshGroup> loadedMeshes;
             try
             {
-                loadedMesh = ParseFileContents(fileStream, reportProgress);
+                loadedMeshes = ParseFileContents(fileStream, reportProgress);
             }
 #if DEBUG
             catch (IOException)
@@ -228,7 +228,7 @@ namespace MatterHackers.PolygonMesh.Processors
             }
 #endif
 
-            return loadedMesh;
+            return loadedMeshes;
         }
 
         static bool IsZipFile(Stream fs)
@@ -282,7 +282,7 @@ namespace MatterHackers.PolygonMesh.Processors
             }
         }
 
-        public static Mesh ParseFileContents(Stream amfStream, ReportProgress reportProgress)
+        public static List<MeshGroup> ParseFileContents(Stream amfStream, ReportProgress reportProgress)
         {
             Stopwatch time = new Stopwatch();
             time.Start(); 
@@ -296,7 +296,7 @@ namespace MatterHackers.PolygonMesh.Processors
                 return null;
             }
 
-            Mesh meshFromAmfFile = new Mesh();
+            List<MeshGroup> meshGroups = null;
 
             // do the loading
             {
@@ -313,7 +313,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
                 ProgressData progressData = new ProgressData(amfStream, reportProgress);
 
-                List<MeshGroup> meshGroups = new List<MeshGroup>();
+                meshGroups = new List<MeshGroup>();
 
                 while (xmlTree.Read())
                 {
@@ -323,30 +323,44 @@ namespace MatterHackers.PolygonMesh.Processors
                         {
                             meshGroups.Add(ReadObject(objectTree, scale, progressData));
                         }
-                        meshFromAmfFile = meshGroups[0].Meshes[0];
                     }
                 }
             }
 
 #if true
             // merge all the vetexes that are in the same place together
-            meshFromAmfFile.CleanAndMergMesh(
-                (double progress0To1, string processingState) =>
+            int totalMeshes = 0;
+            foreach (MeshGroup meshGroup in meshGroups)
+            {
+                foreach (Mesh mesh in meshGroup.Meshes)
                 {
-                    if (reportProgress != null)
-                    {
-                        reportProgress(parsingFileRatio + progress0To1 * (1 - parsingFileRatio), processingState);
-                    }
-                    return true;
+                    totalMeshes++;
                 }
-            );
+            }
+
+            foreach (MeshGroup meshGroup in meshGroups)
+            {
+                foreach (Mesh mesh in meshGroup.Meshes)
+                {
+                    mesh.CleanAndMergMesh(
+                        (double progress0To1, string processingState) =>
+                        {
+                            if (reportProgress != null)
+                            {
+                                reportProgress(parsingFileRatio + progress0To1 * (1 - parsingFileRatio), processingState);
+                            }
+                            return true;
+                        }
+                            );
+                }
+            }
 #endif
 
             time.Stop();
             Debug.WriteLine(string.Format("AMF Load in {0:0.00}s", time.Elapsed.TotalSeconds));
 
             amfStream.Close();
-            return meshFromAmfFile;
+            return meshGroups;
         }
 
         private static MeshGroup ReadObject(XmlReader xmlTree, double scale, ProgressData progressData)

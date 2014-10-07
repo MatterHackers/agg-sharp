@@ -144,7 +144,7 @@ namespace MatterHackers.PolygonMesh.Processors
             }
         }
 
-        public static Mesh Load(string fileName, ReportProgress reportProgress = null)
+        public static List<MeshGroup> Load(string fileName, ReportProgress reportProgress = null)
         {
             Mesh loadedMesh = null;
             if (Path.GetExtension(fileName).ToUpper() == ".STL")
@@ -171,7 +171,10 @@ namespace MatterHackers.PolygonMesh.Processors
 #endif
             }
 
-            return loadedMesh;
+            List<MeshGroup> meshGroups = new List<MeshGroup>();
+            meshGroups.Add(new MeshGroup());
+            meshGroups[0].Meshes.Add(loadedMesh);
+            return meshGroups;
         }
 
         public static Mesh Load(Stream fileStream, ReportProgress reportProgress = null)

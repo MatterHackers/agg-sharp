@@ -68,9 +68,12 @@ namespace MatterHackers.MeshVisualizer
                 if (renderType != value)
                 {
                     renderType = value;
-                    foreach (Mesh mesh in Meshes)
+                    foreach (MeshGroup meshGroup in MeshGroups)
                     {
-                        mesh.MarkAsChanged();
+                        foreach (Mesh mesh in meshGroup.Meshes)
+                        {
+                            mesh.MarkAsChanged();
+                        }
                     }
                 }
             }
@@ -131,33 +134,33 @@ namespace MatterHackers.MeshVisualizer
             }
         }
 
-        int selectedMeshIndex = 0;
-        public int SelectedMeshIndex
+        int selectedMeshGroupIndex = 0;
+        public int SelectedMeshGroupIndex
         {
-            get { return selectedMeshIndex; }
-            set { selectedMeshIndex = value; }
+            get { return selectedMeshGroupIndex; }
+            set { selectedMeshGroupIndex = value; }
         }
 
-        public Mesh SelectedMesh
+        public MeshGroup SelectedMeshGroup
         {
             get 
             {
-                if (Meshes.Count > 0)
+                if (MeshGroups.Count > 0)
                 {
-                    return Meshes[selectedMeshIndex];
+                    return MeshGroups[SelectedMeshGroupIndex];
                 }
 
                 return null;
             }
         }
 
-        public ScaleRotateTranslate SelectedMeshTransform 
+        public ScaleRotateTranslate SelectedMeshGroupTransform 
         {
             get 
             {
-                if (MeshTransforms.Count > 0)
+                if (MeshGroupTransforms.Count > 0)
                 {
-                    return MeshTransforms[selectedMeshIndex];
+                    return MeshGroupTransforms[selectedMeshGroupIndex];
                 }
 
                 return ScaleRotateTranslate.Identity();
@@ -165,15 +168,15 @@ namespace MatterHackers.MeshVisualizer
 
             set
             {
-                MeshTransforms[selectedMeshIndex] = value;
+                MeshGroupTransforms[selectedMeshGroupIndex] = value;
             }
         }
 
         List<ScaleRotateTranslate> meshTransforms = new List<ScaleRotateTranslate>();
-        public List<ScaleRotateTranslate> MeshTransforms { get { return meshTransforms; } }
+        public List<ScaleRotateTranslate> MeshGroupTransforms { get { return meshTransforms; } }
 
-        List<Mesh> meshesToRender = new List<Mesh>();
-        public List<Mesh> Meshes { get { return meshesToRender; } }
+        List<MeshGroup> meshesToRender = new List<MeshGroup>();
+        public List<MeshGroup> MeshGroups { get { return meshesToRender; } }
 
         public event EventHandler LoadDone;
 
@@ -316,20 +319,23 @@ namespace MatterHackers.MeshVisualizer
 
         void trackballTumbleWidget_DrawGlContent(object sender, EventArgs e)
         {
-            for (int i = 0; i < Meshes.Count; i++)
+            for (int i = 0; i < MeshGroups.Count; i++)
             {
-                Mesh meshToRender = Meshes[i];
+                MeshGroup meshGroupToRender = MeshGroups[i];
                 RGBA_Bytes drawColor = PartColor;
-                if (meshToRender == SelectedMesh)
+                if (meshGroupToRender == SelectedMeshGroup)
                 {
                     drawColor = SelectedPartColor;
                 }
 
-                RenderMeshToGl.Render(meshToRender, drawColor, MeshTransforms[i].TotalTransform, RenderType);
+                foreach (Mesh meshToRender in meshGroupToRender.Meshes)
+                {
+                    RenderMeshToGl.Render(meshToRender, drawColor, MeshGroupTransforms[i].TotalTransform, RenderType);
+                }
             }
 
             // we don't want to render the bed or bulid volume before we load a model.
-            if (Meshes.Count > 0 || AlwaysRenderBed)
+            if (MeshGroups.Count > 0 || AlwaysRenderBed)
             {
                 if (RenderBed)
                 {                    
@@ -357,9 +363,9 @@ namespace MatterHackers.MeshVisualizer
 
                 backgroundWorker.DoWork += (object sender, DoWorkEventArgs e) =>
                 {
-                    Mesh loadedMesh = MeshLoading.Load(meshPathAndFileName, backgroundWorker_ProgressChanged);
-                    SetMeshAfterLoad(loadedMesh);
-                    e.Result = loadedMesh;
+                    List<MeshGroup> loadedMeshGroups = MeshLoading.Load(meshPathAndFileName, backgroundWorker_ProgressChanged);
+                    SetMeshAfterLoad(loadedMeshGroups);
+                    e.Result = loadedMeshGroups;
                 };
                 backgroundWorker.RunWorkerAsync();
                 partProcessingInfo.centeredInfoText.Text = "Loading Mesh...";
@@ -370,11 +376,11 @@ namespace MatterHackers.MeshVisualizer
             }
         }
 
-        public void SetMeshAfterLoad(Mesh loadedMesh)
+        public void SetMeshAfterLoad(List<MeshGroup> loadedMeshGroups)
         {
-            Meshes.Clear();
+            MeshGroups.Clear();
 
-            if (loadedMesh == null)
+            if (loadedMeshGroups == null)
             {
                 partProcessingInfo.centeredInfoText.Text = string.Format("Sorry! No 3D view available\nfor this file.");
             }
@@ -382,14 +388,8 @@ namespace MatterHackers.MeshVisualizer
             {
                 meshTransforms.Add(ScaleRotateTranslate.Identity());
 
+#if false
                 int index = meshTransforms.Count - 1;
-                // get the ScaleRotateTranslate matrices set up
-                {
-                    AxisAlignedBoundingBox bounds = loadedMesh.GetAxisAlignedBoundingBox(meshTransforms[index].TotalTransform);
-                    Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
-                    loadedMesh.Translate(-boundsCenter);
-                }
-
                 // make sure the mesh is centered and on the bed
                 {
                     AxisAlignedBoundingBox bounds = loadedMesh.GetAxisAlignedBoundingBox(meshTransforms[index].TotalTransform);
@@ -398,8 +398,9 @@ namespace MatterHackers.MeshVisualizer
                     moved.translation *= Matrix4X4.CreateTranslation(-boundsCenter + new Vector3(0, 0, bounds.ZSize / 2));
                     meshTransforms[index] = moved;
                 }
+#endif
 
-                Meshes.Add(loadedMesh);
+                MeshGroups.AddRange(loadedMeshGroups);
 
                 trackballTumbleWidget.TrackBallController = new TrackBallController();
                 trackballTumbleWidget.OnBoundsChanged(null);
