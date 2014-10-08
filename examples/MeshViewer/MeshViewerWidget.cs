@@ -423,7 +423,7 @@ namespace MatterHackers.MeshVisualizer
                 trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
 
 #if false // a test of saving 
-                MeshFileIo.Save(loadedMeshGroups, "test.amf", OutputType.Ascii);
+                MeshFileIo.Save(loadedMeshGroups, "test.amf", new MeshOutputInfo(MeshOutputInfo.OutputType.Binary, new string[] {"Created By", "MatterHackers Mesh Viewer"}));
 #endif
             }
         }

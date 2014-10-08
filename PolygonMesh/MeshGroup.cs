@@ -105,6 +105,14 @@ namespace MatterHackers.PolygonMesh
             }
         }
 
+        public void ReverseFaceEdges()
+        {
+            foreach (Mesh mesh in Meshes)
+            {
+                mesh.ReverseFaceEdges();
+            }
+        }
+
         #endregion // Public Members
     }
 }

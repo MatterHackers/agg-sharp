@@ -48,11 +48,11 @@ namespace MatterHackers.PolygonMesh.Processors
 {
     public static class AmfProcessing
     {
-        public static bool Save(List<MeshGroup> meshToSave, string fileName, OutputType outputType = OutputType.Binary)
+        public static bool Save(List<MeshGroup> meshToSave, string fileName, MeshOutputInfo outputInfo = null)
         {
             using (FileStream file = new FileStream(fileName, FileMode.Create, FileAccess.Write))
             {
-                return Save(meshToSave, file, outputType);
+                return Save(meshToSave, file, outputInfo);
             }
         }
 
@@ -61,12 +61,19 @@ namespace MatterHackers.PolygonMesh.Processors
             return new String(' ', index * 2);
         }
 
-        public static bool Save(List<MeshGroup> meshToSave, Stream stream, OutputType outputType)
+        public static bool Save(List<MeshGroup> meshToSave, Stream stream, MeshOutputInfo outputInfo)
         {
 #if true
             TextWriter amfFile = new StreamWriter(stream);
             amfFile.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
             amfFile.WriteLine("<amf unit=\"millimeter\" version=\"1.1\">");
+            if(outputInfo != null)
+            {
+                foreach(KeyValuePair<string, string> metaData in outputInfo.MetaDataKeyValue)
+                {
+                    amfFile.WriteLine(Indent(1) + "<metadata type=\"{0}\">{1}</metadata>".FormatWith(metaData.Key, metaData.Value));
+                }
+            }
             {
                 foreach (MeshGroup meshGroup in meshToSave)
                 {

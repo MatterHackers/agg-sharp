@@ -44,7 +44,25 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Processors
 {
-    public enum OutputType { Ascii, Binary };
+    public class MeshOutputInfo
+    {
+        public enum OutputType { Ascii, Binary };
+        public OutputType OutputTypeSetting = OutputType.Binary;
+        public Dictionary<string, string> MetaDataKeyValue = new Dictionary<string, string>();
+
+        public MeshOutputInfo()
+        {
+        }
+
+        public MeshOutputInfo(OutputType outputTypeSetting, string[] metaDataKeyValuePairs)
+        {
+            this.OutputTypeSetting = outputTypeSetting;
+            for (int i = 0; i < metaDataKeyValuePairs.Length / 2; i++)
+            {
+                MetaDataKeyValue.Add(metaDataKeyValuePairs[i * 2], metaDataKeyValuePairs[i * 2 + 1]);
+            }
+        }
+    }
 
     public static class MeshFileIo
     {
@@ -68,16 +86,16 @@ namespace MatterHackers.PolygonMesh.Processors
             }
         }
 
-        public static bool Save(List<MeshGroup> meshGroupsToSave, string meshPathAndFileName, OutputType outputType = OutputType.Binary)
+        public static bool Save(List<MeshGroup> meshGroupsToSave, string meshPathAndFileName, MeshOutputInfo outputInfo = null)
         {
             switch (Path.GetExtension(meshPathAndFileName).ToUpper())
             {
                 case ".STL":
                     Mesh mesh = meshGroupsToSave[0].Meshes[0];
-                    return StlProcessing.Save(mesh, meshPathAndFileName, outputType);
+                    return StlProcessing.Save(mesh, meshPathAndFileName, outputInfo);
 
                 case ".AMF":
-                    return AmfProcessing.Save(meshGroupsToSave, meshPathAndFileName, outputType);
+                    return AmfProcessing.Save(meshGroupsToSave, meshPathAndFileName, outputInfo);
 
                 default:
                     return false;

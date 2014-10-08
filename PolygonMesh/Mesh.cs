@@ -96,21 +96,24 @@ namespace MatterHackers.PolygonMesh
         {
         }
 
-        public Mesh(Mesh meshToCopy)
+        public static Mesh Copy(Mesh meshToCopy, ReportProgress progress = null)
         {
+            Mesh newMesh = new Mesh();
             foreach (Face face in meshToCopy.Faces)
             {
                 List<Vertex> faceVertices = new List<Vertex>();
                 foreach (FaceEdge faceEdgeToAdd in face.FaceEdges())
                 {
-                    Vertex newVertex = CreateVertex(faceEdgeToAdd.firstVertex.Position, true, true);
+                    Vertex newVertex = newMesh.CreateVertex(faceEdgeToAdd.firstVertex.Position, true, true);
                     faceVertices.Add(newVertex);
                 }
 
-                CreateFace(faceVertices.ToArray(), true);
+                newMesh.CreateFace(faceVertices.ToArray(), true);
             }
 
-            CleanAndMergMesh();
+            newMesh.CleanAndMergMesh();
+
+            return newMesh;
         }
 
         public void CleanAndMergMesh(ReportProgress reportProgress = null)
