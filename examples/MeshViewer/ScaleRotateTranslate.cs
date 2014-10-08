@@ -45,13 +45,14 @@ namespace MatterHackers.MeshVisualizer
 {
     public struct ScaleRotateTranslate
     {
+        public Matrix4X4 centering;
         public Matrix4X4 scale;
         public Matrix4X4 rotation;
         public Matrix4X4 translation;
 
         public ScaleRotateTranslate(Matrix4X4 scale, Matrix4X4 rotation, Matrix4X4 translation)
         {
-            // TODO: Complete member initialization
+            centering = Matrix4X4.Identity;
             this.scale = scale;
             this.rotation = rotation;
             this.translation = translation;
@@ -61,13 +62,14 @@ namespace MatterHackers.MeshVisualizer
         {
             get
             {
-                return scale * rotation * translation;
+                return centering * scale * rotation * translation;
             }
         }
 
         public static ScaleRotateTranslate Identity()
         {
-            ScaleRotateTranslate identity;
+            ScaleRotateTranslate identity = new ScaleRotateTranslate();
+            identity.centering = Matrix4X4.Identity;
             identity.scale = Matrix4X4.Identity;
             identity.rotation = Matrix4X4.Identity;
             identity.translation = Matrix4X4.Identity;

@@ -400,21 +400,26 @@ namespace MatterHackers.MeshVisualizer
             }
             else
             {
-                meshTransforms.Add(ScaleRotateTranslate.Identity());
-
-#if false
-                int index = meshTransforms.Count - 1;
-                // make sure the mesh is centered and on the bed
+                foreach (MeshGroup meshGroup in loadedMeshGroups)
                 {
-                    AxisAlignedBoundingBox bounds = loadedMesh.GetAxisAlignedBoundingBox(meshTransforms[index].TotalTransform);
-                    Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
-                    ScaleRotateTranslate moved = meshTransforms[index];
-                    moved.translation *= Matrix4X4.CreateTranslation(-boundsCenter + new Vector3(0, 0, bounds.ZSize / 2));
-                    meshTransforms[index] = moved;
-                }
-#endif
+                    int newIndex = MeshGroups.Count;
 
-                MeshGroups.AddRange(loadedMeshGroups);
+                    AxisAlignedBoundingBox bounds = meshGroup.GetAxisAlignedBoundingBox();
+
+                    // make sure the mesh is centered about the origin so rotations will come from a reasonable place
+                    Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
+                    ScaleRotateTranslate centering = ScaleRotateTranslate.Identity();
+                    centering.centering = Matrix4X4.CreateTranslation(-boundsCenter);
+                    meshTransforms.Add(centering);
+                    MeshGroups.Add(meshGroup);
+
+                    // make sure the mesh is centered and on the bed
+                    bounds = meshGroup.GetAxisAlignedBoundingBox(meshTransforms[newIndex].TotalTransform);
+                    boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
+                    ScaleRotateTranslate moved = meshTransforms[newIndex];
+                    moved.translation *= Matrix4X4.CreateTranslation(-boundsCenter + new Vector3(0, 0, bounds.ZSize / 2));
+                    meshTransforms[newIndex] = moved;
+                }
 
                 trackballTumbleWidget.TrackBallController = new TrackBallController();
                 trackballTumbleWidget.OnBoundsChanged(null);
