@@ -11,6 +11,7 @@ namespace MatterHackers.Agg.UI
 
         public String Description { get; set; }
         public RootFolderTypes RootFolder { get; set; }
+		public String FolderPath { get; set; } 
         public bool ShowNewFolderButton { get; set; }
 
         /// <summary>
