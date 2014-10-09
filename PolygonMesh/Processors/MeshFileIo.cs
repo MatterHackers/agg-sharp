@@ -44,17 +44,17 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Processors
 {
-    public class MeshOutputInfo
+    public class MeshOutputSettings
     {
         public enum OutputType { Ascii, Binary };
         public OutputType OutputTypeSetting = OutputType.Binary;
         public Dictionary<string, string> MetaDataKeyValue = new Dictionary<string, string>();
 
-        public MeshOutputInfo()
+        public MeshOutputSettings()
         {
         }
 
-        public MeshOutputInfo(OutputType outputTypeSetting, string[] metaDataKeyValuePairs)
+        public MeshOutputSettings(OutputType outputTypeSetting, string[] metaDataKeyValuePairs)
         {
             this.OutputTypeSetting = outputTypeSetting;
             for (int i = 0; i < metaDataKeyValuePairs.Length / 2; i++)
@@ -86,7 +86,7 @@ namespace MatterHackers.PolygonMesh.Processors
             }
         }
 
-        public static bool Save(List<MeshGroup> meshGroupsToSave, string meshPathAndFileName, MeshOutputInfo outputInfo = null)
+        public static bool Save(List<MeshGroup> meshGroupsToSave, string meshPathAndFileName, MeshOutputSettings outputInfo = null)
         {
             switch (Path.GetExtension(meshPathAndFileName).ToUpper())
             {
