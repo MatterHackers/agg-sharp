@@ -82,6 +82,13 @@ namespace MatterHackers.MeshVisualizer
             translation.translation = Matrix4X4.CreateTranslation(x, y, z);
             return translation;
         }
+
+        public void SetCenteringForMeshGroup(MeshGroup meshGroup)
+        {
+            AxisAlignedBoundingBox bounds = meshGroup.GetAxisAlignedBoundingBox();
+            Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
+            centering = Matrix4X4.CreateTranslation(-boundsCenter);
+        }
     }
 }
 

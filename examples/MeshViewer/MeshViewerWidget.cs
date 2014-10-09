@@ -407,15 +407,14 @@ namespace MatterHackers.MeshVisualizer
                     AxisAlignedBoundingBox bounds = meshGroup.GetAxisAlignedBoundingBox();
 
                     // make sure the mesh is centered about the origin so rotations will come from a reasonable place
-                    Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
                     ScaleRotateTranslate centering = ScaleRotateTranslate.Identity();
-                    centering.centering = Matrix4X4.CreateTranslation(-boundsCenter);
+                    centering.SetCenteringForMeshGroup(meshGroup);
                     meshTransforms.Add(centering);
                     MeshGroups.Add(meshGroup);
 
                     // make sure the mesh is centered and on the bed
                     bounds = meshGroup.GetAxisAlignedBoundingBox(meshTransforms[newIndex].TotalTransform);
-                    boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
+                    Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
                     ScaleRotateTranslate moved = meshTransforms[newIndex];
                     moved.translation *= Matrix4X4.CreateTranslation(-boundsCenter + new Vector3(0, 0, bounds.ZSize / 2));
                     meshTransforms[newIndex] = moved;
