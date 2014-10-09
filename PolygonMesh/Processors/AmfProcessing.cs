@@ -48,7 +48,7 @@ namespace MatterHackers.PolygonMesh.Processors
 {
     public static class AmfProcessing
     {
-        public static bool Save(List<MeshGroup> meshToSave, string fileName, MeshOutputInfo outputInfo = null)
+        public static bool Save(List<MeshGroup> meshToSave, string fileName, MeshOutputSettings outputInfo = null)
         {
             using (FileStream file = new FileStream(fileName, FileMode.Create, FileAccess.Write))
             {
@@ -61,7 +61,7 @@ namespace MatterHackers.PolygonMesh.Processors
             return new String(' ', index * 2);
         }
 
-        public static bool Save(List<MeshGroup> meshToSave, Stream stream, MeshOutputInfo outputInfo)
+        public static bool Save(List<MeshGroup> meshToSave, Stream stream, MeshOutputSettings outputInfo)
         {
 #if true
             TextWriter amfFile = new StreamWriter(stream);
