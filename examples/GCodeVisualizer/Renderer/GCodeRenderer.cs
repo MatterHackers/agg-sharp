@@ -48,7 +48,7 @@ namespace MatterHackers.GCodeVisualizer
         Retractions = 4,
         SpeedColors = 8,
         SimulateExtrusion = 16,
-        DrawUsingExtruderOffsets = 32,
+        HideExtruderOffsets = 32,
     };
 
     public class GCodeRenderer
@@ -281,8 +281,8 @@ namespace MatterHackers.GCodeVisualizer
                     }
                 }
 
-                GL.DisableClientState(ArrayCap.TextureCoordArray);
                 GL.PushAttrib(AttribMask.EnableBit);
+                GL.DisableClientState(ArrayCap.TextureCoordArray);
                 GL.Enable(EnableCap.PolygonSmooth);
 
                 if (renderInfo.EndLayerIndex - 1 > renderInfo.StartLayerIndex)
