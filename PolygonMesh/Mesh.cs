@@ -508,6 +508,13 @@ namespace MatterHackers.PolygonMesh
             {
                 if(meshEdge.IsConnectedTo(vertex2))
                 {
+                    if (meshEdges.Contains(meshEdge))
+                    {
+                        // TODO: this should realy not be happening. We should only ever try to iterate to any mesh edge once.
+                        // We can get an infinite recursion with this and it needs to be debuged.
+                        return meshEdges;
+                    }
+
                     meshEdges.Add(meshEdge);
                 }
             }

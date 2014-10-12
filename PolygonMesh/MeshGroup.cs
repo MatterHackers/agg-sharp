@@ -45,6 +45,15 @@ namespace MatterHackers.PolygonMesh
         List<Mesh> meshes = new List<Mesh>();
         public List<Mesh> Meshes { get { return meshes; } }
 
+        public MeshGroup()
+        {
+        }
+
+        public MeshGroup(Mesh mesh)
+        {
+            Meshes.Add(mesh);
+        }
+
         #region Public Members
 
         public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
