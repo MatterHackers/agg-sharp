@@ -917,6 +917,7 @@ namespace MatterHackers.PolygonMesh
         {
             if (matrix != Matrix4X4.Identity)
             {
+                Vertices.IsSorted = false;
                 foreach (Vertex vertex in Vertices)
                 {
                     vertex.Position = Vector3.Transform(vertex.Position, matrix);
