@@ -40,6 +40,7 @@ using System.Text.RegularExpressions;
 
 using MatterHackers.Agg;
 using MatterHackers.PolygonMesh;
+using MatterHackers.PolygonMesh.Csg;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Processors
@@ -91,7 +92,7 @@ namespace MatterHackers.PolygonMesh.Processors
             switch (Path.GetExtension(meshPathAndFileName).ToUpper())
             {
                 case ".STL":
-                    Mesh mesh = meshGroupsToSave[0].Meshes[0];
+                    Mesh mesh = DoMerge(meshGroupsToSave, false);
                     return StlProcessing.Save(mesh, meshPathAndFileName, outputInfo);
 
                 case ".AMF":
@@ -100,6 +101,47 @@ namespace MatterHackers.PolygonMesh.Processors
                 default:
                     return false;
             }
+        }
+
+        public static Mesh DoMerge(List<MeshGroup> meshGroupsToMerge, bool doCSGMerge = false)
+        {
+            Mesh allPolygons = new Mesh();
+            if (doCSGMerge)
+            {
+                foreach (MeshGroup meshGroup in meshGroupsToMerge)
+                {
+                    foreach (Mesh mesh in meshGroup.Meshes)
+                    {
+                        allPolygons = CsgOperations.PerformOperation(allPolygons, mesh, CsgNode.Union);
+                    }
+                }
+            }
+            else
+            {
+                foreach (MeshGroup meshGroup in meshGroupsToMerge)
+                {
+                    foreach (Mesh mesh in meshGroup.Meshes)
+                    {
+                        foreach (Face face in mesh.Faces)
+                        {
+                            List<Vertex> faceVertices = new List<Vertex>();
+                            foreach (FaceEdge faceEdgeToAdd in face.FaceEdges())
+                            {
+                                // we allow duplicates (the true) to make sure we are not changing the loaded models acuracy.
+                                Vertex newVertex = allPolygons.CreateVertex(faceEdgeToAdd.firstVertex.Position, true, true);
+                                faceVertices.Add(newVertex);
+                            }
+
+                            // we allow duplicates (the true) to make sure we are not changing the loaded models acuracy.
+                            allPolygons.CreateFace(faceVertices.ToArray(), true);
+                        }
+                    }
+                }
+
+                allPolygons.CleanAndMergMesh();
+            }
+
+            return allPolygons;
         }
     }
 }
