@@ -50,6 +50,7 @@ namespace MatterHackers.PolygonMesh.Processors
         public enum OutputType { Ascii, Binary };
         public OutputType OutputTypeSetting = OutputType.Binary;
         public Dictionary<string, string> MetaDataKeyValue = new Dictionary<string, string>();
+        public int StlOnlySaveUseMaterialIndex = -1;
 
         public MeshOutputSettings()
         {
@@ -89,10 +90,14 @@ namespace MatterHackers.PolygonMesh.Processors
 
         public static bool Save(List<MeshGroup> meshGroupsToSave, string meshPathAndFileName, MeshOutputSettings outputInfo = null)
         {
+            if (outputInfo == null)
+            {
+                outputInfo = new MeshOutputSettings();
+            }
             switch (Path.GetExtension(meshPathAndFileName).ToUpper())
             {
                 case ".STL":
-                    Mesh mesh = DoMerge(meshGroupsToSave, false);
+                    Mesh mesh = DoMerge(meshGroupsToSave, outputInfo.StlOnlySaveUseMaterialIndex);
                     return StlProcessing.Save(mesh, meshPathAndFileName, outputInfo);
 
                 case ".AMF":
@@ -103,10 +108,11 @@ namespace MatterHackers.PolygonMesh.Processors
             }
         }
 
-        public static Mesh DoMerge(List<MeshGroup> meshGroupsToMerge, bool doCSGMerge = false)
+        public enum CsgOption { SimpleInsertVolumes, DoCsgMerge }
+        public static Mesh DoMerge(List<MeshGroup> meshGroupsToMerge, int saveOnlyMaterialIndex, CsgOption csgOption = CsgOption.SimpleInsertVolumes)
         {
             Mesh allPolygons = new Mesh();
-            if (doCSGMerge)
+            if (csgOption == CsgOption.DoCsgMerge)
             {
                 foreach (MeshGroup meshGroup in meshGroupsToMerge)
                 {
@@ -122,18 +128,22 @@ namespace MatterHackers.PolygonMesh.Processors
                 {
                     foreach (Mesh mesh in meshGroup.Meshes)
                     {
-                        foreach (Face face in mesh.Faces)
+                        int currentMeshMaterialIntdex = MeshMaterialData.Get(mesh).MaterialIndex;
+                        if (saveOnlyMaterialIndex == -1 || saveOnlyMaterialIndex == currentMeshMaterialIntdex)
                         {
-                            List<Vertex> faceVertices = new List<Vertex>();
-                            foreach (FaceEdge faceEdgeToAdd in face.FaceEdges())
+                            foreach (Face face in mesh.Faces)
                             {
-                                // we allow duplicates (the true) to make sure we are not changing the loaded models acuracy.
-                                Vertex newVertex = allPolygons.CreateVertex(faceEdgeToAdd.firstVertex.Position, true, true);
-                                faceVertices.Add(newVertex);
-                            }
+                                List<Vertex> faceVertices = new List<Vertex>();
+                                foreach (FaceEdge faceEdgeToAdd in face.FaceEdges())
+                                {
+                                    // we allow duplicates (the true) to make sure we are not changing the loaded models acuracy.
+                                    Vertex newVertex = allPolygons.CreateVertex(faceEdgeToAdd.firstVertex.Position, true, true);
+                                    faceVertices.Add(newVertex);
+                                }
 
-                            // we allow duplicates (the true) to make sure we are not changing the loaded models acuracy.
-                            allPolygons.CreateFace(faceVertices.ToArray(), true);
+                                // we allow duplicates (the true) to make sure we are not changing the loaded models acuracy.
+                                allPolygons.CreateFace(faceVertices.ToArray(), true);
+                            }
                         }
                     }
                 }

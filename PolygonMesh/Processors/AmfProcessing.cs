@@ -63,7 +63,6 @@ namespace MatterHackers.PolygonMesh.Processors
 
         public static bool Save(List<MeshGroup> meshToSave, Stream stream, MeshOutputSettings outputInfo)
         {
-#if true
             TextWriter amfFile = new StreamWriter(stream);
             amfFile.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
             amfFile.WriteLine("<amf unit=\"millimeter\" version=\"1.1\">");
@@ -177,84 +176,6 @@ namespace MatterHackers.PolygonMesh.Processors
             }
             amfFile.WriteLine("</amf>");
             amfFile.Flush();
-#else
-            switch (outputType)
-            {
-                case OutputType.Ascii:
-                    {
-                        StreamWriter streamWriter = new StreamWriter(stream);
-
-                        streamWriter.WriteLine("solid Default");
-
-                        foreach (Face face in meshToSave.Faces)
-                        {
-                            List<Vector3> positionsCCW = new List<Vector3>();
-                            foreach (FaceEdge faceEdge in face.FaceEdges())
-                            {
-                                positionsCCW.Add(faceEdge.firstVertex.Position);
-                            }
-
-                            int numPolys = positionsCCW.Count - 2;
-                            int secondIndex = 1;
-                            int thirdIndex = 2;
-                            for (int polyIndex = 0; polyIndex < numPolys; polyIndex++)
-                            {
-                                secondIndex = thirdIndex;
-                                thirdIndex++;
-                            }
-                        }
-
-                        streamWriter.WriteLine("endsolid Default");
-
-                        streamWriter.Close();
-                    }
-                    break;
-
-                case OutputType.Binary:
-                    using (BinaryWriter bw = new BinaryWriter(stream))
-                    {
-                        // 80 bytes of nothing
-                        bw.Write(new Byte[80]);
-                        // the number of tranigles
-                        bw.Write(meshToSave.Faces.Count);
-                        int binaryPolyCount = 0;
-                        foreach (Face face in meshToSave.Faces)
-                        {
-                            List<Vector3> positionsCCW = new List<Vector3>();
-                            foreach (FaceEdge faceEdge in face.FaceEdges())
-                            {
-                                positionsCCW.Add(faceEdge.firstVertex.Position);
-                            }
-
-                            int numPolys = positionsCCW.Count - 2;
-                            int secondIndex = 1;
-                            int thirdIndex = 2;
-                            for (int polyIndex = 0; polyIndex < numPolys; polyIndex++)
-                            {
-                                binaryPolyCount++;
-                                // save the normal (all 0 so it can compress better)
-                                bw.Write((float)0);
-                                bw.Write((float)0);
-                                bw.Write((float)0);
-                                // save the position
-                                bw.Write((float)positionsCCW[0].x); bw.Write((float)positionsCCW[0].y); bw.Write((float)positionsCCW[0].z);
-                                bw.Write((float)positionsCCW[secondIndex].x); bw.Write((float)positionsCCW[secondIndex].y); bw.Write((float)positionsCCW[secondIndex].z);
-                                bw.Write((float)positionsCCW[thirdIndex].x); bw.Write((float)positionsCCW[thirdIndex].y); bw.Write((float)positionsCCW[thirdIndex].z);
-
-                                // and the attribute
-                                bw.Write((ushort)0);
-
-                                secondIndex = thirdIndex;
-                                thirdIndex++;
-                            }
-                        }
-                        bw.BaseStream.Position = 80;
-                        // the number of tranigles
-                        bw.Write(binaryPolyCount);
-                    }
-                    break;
-            }
-#endif
             return true;
         }
 
