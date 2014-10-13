@@ -233,7 +233,15 @@ namespace MatterHackers.PolygonMesh
         {
             if(IsSorted)
             {
-                return vertices.BinarySearch(vertexToLookFor, vertexSorter);
+                int index = vertices.BinarySearch(vertexToLookFor, vertexSorter);
+#if DEBUG
+                int indexCheck = vertices.IndexOf(vertexToLookFor);
+                if (index != indexCheck)
+                {
+                    throw new Exception("Bad index from sort");
+                }
+#endif
+                return index;
             }
             else
             {

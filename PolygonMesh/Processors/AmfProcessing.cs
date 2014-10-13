@@ -75,9 +75,10 @@ namespace MatterHackers.PolygonMesh.Processors
                 }
             }
             {
+                int objectId = 1;
                 foreach (MeshGroup meshGroup in meshToSave)
                 {
-                    amfFile.WriteLine(Indent(1) + "<object id=\"{0}\">");
+                    amfFile.WriteLine(Indent(1) + "<object id=\"{0}\">".FormatWith(objectId++));
                     {
                         int vertexCount = 0;
                         List<int> meshVertexStart = new List<int>();
