@@ -46,7 +46,8 @@ namespace MatterHackers.GCodeVisualizer
         float extrusionAmount;
         float mmPerSecond;
         Vector3Float position;
-        public RenderFeatureRetract(Vector3 position, double extrusionAmount, double mmPerSecond)
+        public RenderFeatureRetract(Vector3 position, double extrusionAmount, int extruderIndex, double mmPerSecond)
+            : base(extruderIndex)
         {
             this.extrusionAmount = (float)extrusionAmount;
             this.mmPerSecond = (float)mmPerSecond;
@@ -67,15 +68,27 @@ namespace MatterHackers.GCodeVisualizer
             if ((renderInfo.CurrentRenderType & RenderType.Retractions) == RenderType.Retractions)
             {
                 Vector3 position = new Vector3(this.position);
+                RGBA_Bytes color = MultipleExtruderColor;
+                if (extruderIndex == 0)
+                {
+                    if (extrusionAmount > 0)
+                    {
+                        color = RGBA_Bytes.Blue;
+                    }
+                    else
+                    {
+                        color = RGBA_Bytes.Red;
+                    }
+                }
                 if (extrusionAmount > 0)
                 {
                     // unretraction
-                    CreatePointer(colorVertexData, indexData, position + new Vector3(0, 0, 1.3), position + new Vector3(0, 0, .3), Radius(1), 5, RGBA_Bytes.Blue);
+                    CreatePointer(colorVertexData, indexData, position + new Vector3(0, 0, 1.3), position + new Vector3(0, 0, .3), Radius(1), 5, color);
                 }
                 else
                 {
                     // retraction
-                    CreatePointer(colorVertexData, indexData, position + new Vector3(0, 0, .3), position + new Vector3(0, 0, 1.3), Radius(1), 5, RGBA_Bytes.Red);
+                    CreatePointer(colorVertexData, indexData, position + new Vector3(0, 0, .3), position + new Vector3(0, 0, 1.3), Radius(1), 5, color);
                 }
             }
         }

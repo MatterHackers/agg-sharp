@@ -41,7 +41,6 @@ namespace MatterHackers.GCodeVisualizer
 {
     public class RenderFeatureTravel : RenderFeatureBase
     {
-        protected int extruderIndex;
         protected Vector3Float start;
         protected Vector3Float end;
         protected float travelSpeed;
@@ -75,6 +74,7 @@ namespace MatterHackers.GCodeVisualizer
         }
 
         public RenderFeatureTravel(Vector3 start, Vector3 end, int extruderIndex, double travelSpeed)
+            : base(extruderIndex)
         {
             this.extruderIndex = extruderIndex;
             this.start = new Vector3Float(start);

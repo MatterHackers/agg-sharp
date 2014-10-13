@@ -41,7 +41,6 @@ namespace MatterHackers.GCodeVisualizer
 {
     public class RenderFeatureExtrusion : RenderFeatureTravel
     {
-        readonly RGBA_Bytes MultipleExtruderColor = RGBA_Bytes.Indigo;
         float extrusionVolumeMm3;
         float layerHeight;
         RGBA_Bytes color;

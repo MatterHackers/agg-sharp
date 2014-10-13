@@ -132,15 +132,15 @@ namespace MatterHackers.GCodeVisualizer
                     if (Math.Abs(currentInstruction.EPosition - previousInstruction.EPosition) > 0)
                     {
                         // this is a retraction
-                        renderFeaturesForLayer.Add(new RenderFeatureRetract(currentInstruction.Position, currentInstruction.EPosition - previousInstruction.EPosition, currentInstruction.FeedRate));
+                        renderFeaturesForLayer.Add(new RenderFeatureRetract(currentInstruction.Position, currentInstruction.EPosition - previousInstruction.EPosition, currentInstruction.ExtruderIndex, currentInstruction.FeedRate));
                     }
                     if (currentInstruction.Line.StartsWith("G10"))
                     {
-                        renderFeaturesForLayer.Add(new RenderFeatureRetract(currentInstruction.Position, -1, currentInstruction.FeedRate));
+                        renderFeaturesForLayer.Add(new RenderFeatureRetract(currentInstruction.Position, -1, currentInstruction.ExtruderIndex, currentInstruction.FeedRate));
                     }
                     else if (currentInstruction.Line.StartsWith("G11"))
                     {
-                        renderFeaturesForLayer.Add(new RenderFeatureRetract(currentInstruction.Position, 1, currentInstruction.FeedRate));
+                        renderFeaturesForLayer.Add(new RenderFeatureRetract(currentInstruction.Position, 1, currentInstruction.ExtruderIndex, currentInstruction.FeedRate));
                     }
                 }
                 else
