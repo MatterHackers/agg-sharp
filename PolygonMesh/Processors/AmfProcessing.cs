@@ -404,7 +404,8 @@ namespace MatterHackers.PolygonMesh.Processors
                         }
                         if (loadedMesh != null && materialId != null)
                         {
-                            MeshMaterialData.Get(loadedMesh).MaterialIndex = int.Parse(materialId);
+                            MeshMaterialData material = MeshMaterialData.Get(loadedMesh);
+                            material.MaterialIndex = int.Parse(materialId);
                         }
                         break;
                 }

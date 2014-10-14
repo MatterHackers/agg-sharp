@@ -113,6 +113,11 @@ namespace MatterHackers.PolygonMesh
 
             newMesh.CleanAndMergMesh();
 
+            MeshMaterialData materialDataToCopy = MeshMaterialData.Get(meshToCopy);
+            MeshMaterialData newMaterialData = MeshMaterialData.Get(newMesh);
+            newMaterialData.MaterialIndex = materialDataToCopy.MaterialIndex;
+
+
             return newMesh;
         }
 
