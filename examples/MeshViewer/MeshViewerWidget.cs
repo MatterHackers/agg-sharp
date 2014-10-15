@@ -400,24 +400,40 @@ namespace MatterHackers.MeshVisualizer
             }
             else
             {
+                AxisAlignedBoundingBox bounds = new AxisAlignedBoundingBox(Vector3.Zero, Vector3.Zero);
+                bool first = true;
                 foreach (MeshGroup meshGroup in loadedMeshGroups)
                 {
-                    int newIndex = MeshGroups.Count;
+                    if (first)
+                    {
+                        bounds = meshGroup.GetAxisAlignedBoundingBox();
+                        first = false;
+                    }
+                    else
+                    {
+                        bounds = AxisAlignedBoundingBox.Union(bounds, meshGroup.GetAxisAlignedBoundingBox());
+                    }
+                }
 
-                    AxisAlignedBoundingBox bounds = meshGroup.GetAxisAlignedBoundingBox();
+                foreach (MeshGroup meshGroup in loadedMeshGroups)
+                {
+                    foreach (Mesh mesh in meshGroup.Meshes)
+                    {
+                        // make sure the mesh is centered about the origin so rotations will come from a reasonable place
+                        ScaleRotateTranslate centering = ScaleRotateTranslate.Identity();
+                        centering.SetCenteringForMeshGroup(meshGroup);
+                        meshTransforms.Add(centering);
+                        MeshGroups.Add(meshGroup);
+                    }
+                }
 
-                    // make sure the mesh is centered about the origin so rotations will come from a reasonable place
-                    ScaleRotateTranslate centering = ScaleRotateTranslate.Identity();
-                    centering.SetCenteringForMeshGroup(meshGroup);
-                    meshTransforms.Add(centering);
-                    MeshGroups.Add(meshGroup);
-
-                    // make sure the mesh is centered and on the bed
-                    bounds = meshGroup.GetAxisAlignedBoundingBox(meshTransforms[newIndex].TotalTransform);
-                    Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
-                    ScaleRotateTranslate moved = meshTransforms[newIndex];
+                // make sure the entile load is centered and on the bed
+                Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
+                for (int i = 0; i < MeshGroups.Count; i++)
+                {
+                    ScaleRotateTranslate moved = meshTransforms[i];
                     moved.translation *= Matrix4X4.CreateTranslation(-boundsCenter + new Vector3(0, 0, bounds.ZSize / 2));
-                    meshTransforms[newIndex] = moved;
+                    meshTransforms[i] = moved;
                 }
 
                 trackballTumbleWidget.TrackBallController = new TrackBallController();

@@ -88,6 +88,8 @@ namespace MatterHackers.MeshVisualizer
             AxisAlignedBoundingBox bounds = meshGroup.GetAxisAlignedBoundingBox();
             Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
             centering = Matrix4X4.CreateTranslation(-boundsCenter);
+            // and move the translation back so the part does not move
+            translation *= Matrix4X4.CreateTranslation(boundsCenter);
         }
     }
 }
