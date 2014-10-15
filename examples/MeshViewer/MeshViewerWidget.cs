@@ -417,14 +417,11 @@ namespace MatterHackers.MeshVisualizer
 
                 foreach (MeshGroup meshGroup in loadedMeshGroups)
                 {
-                    foreach (Mesh mesh in meshGroup.Meshes)
-                    {
-                        // make sure the mesh is centered about the origin so rotations will come from a reasonable place
-                        ScaleRotateTranslate centering = ScaleRotateTranslate.Identity();
-                        centering.SetCenteringForMeshGroup(meshGroup);
-                        meshTransforms.Add(centering);
-                        MeshGroups.Add(meshGroup);
-                    }
+                    // make sure the mesh is centered about the origin so rotations will come from a reasonable place
+                    ScaleRotateTranslate centering = ScaleRotateTranslate.Identity();
+                    centering.SetCenteringForMeshGroup(meshGroup);
+                    meshTransforms.Add(centering);
+                    MeshGroups.Add(meshGroup);
                 }
 
                 // make sure the entile load is centered and on the bed
