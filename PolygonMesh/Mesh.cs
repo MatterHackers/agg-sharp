@@ -922,6 +922,7 @@ namespace MatterHackers.PolygonMesh
         {
             if (matrix != Matrix4X4.Identity)
             {
+                bool wasSorted = Vertices.IsSorted;
                 Vertices.IsSorted = false;
                 foreach (Vertex vertex in Vertices)
                 {
@@ -930,6 +931,10 @@ namespace MatterHackers.PolygonMesh
                 foreach(Face face in Faces)
                 {
                     face.CalculateNormal();
+                }
+                if (wasSorted)
+                {
+                    SortVertices();
                 }
                 MarkAsChanged();
             }
