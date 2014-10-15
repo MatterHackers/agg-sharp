@@ -119,8 +119,9 @@ namespace MatterHackers.PolygonMesh.Processors
                                     amfFile.WriteLine(Indent(3) + "<volume materialid=\"{0}\">".FormatWith(material.MaterialIndex));
                                 }
                                 {
-                                    foreach (Face face in mesh.Faces)
+                                    for(int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
                                     {
+                                        Face face = mesh.Faces[faceIndex];
                                         List<Vertex> positionsCCW = new List<Vertex>();
                                         foreach (FaceEdge faceEdge in face.FaceEdges())
                                         {
