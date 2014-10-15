@@ -39,7 +39,7 @@ namespace MatterHackers.PolygonMesh
 {
     public class MeshMaterialData
     {
-        public int MaterialIndex = -1;
+        public int MaterialIndex = 1;
 
         private MeshMaterialData()
         {
