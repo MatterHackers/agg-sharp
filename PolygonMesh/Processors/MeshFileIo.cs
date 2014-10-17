@@ -47,13 +47,21 @@ namespace MatterHackers.PolygonMesh.Processors
 {
     public class MeshOutputSettings
     {
+        public enum CsgOption { SimpleInsertVolumes, DoCsgMerge }
         public enum OutputType { Ascii, Binary };
+
         public OutputType OutputTypeSetting = OutputType.Binary;
         public Dictionary<string, string> MetaDataKeyValue = new Dictionary<string, string>();
-        public int StlOnlySaveUseMaterialIndex = -1;
+        public int OnlySaveMaterialIndex = -1;
+        public CsgOption CsgOptionState = CsgOption.SimpleInsertVolumes;
 
         public MeshOutputSettings()
         {
+        }
+
+        public MeshOutputSettings(CsgOption csgOption)
+        {
+            this.CsgOptionState = csgOption;
         }
 
         public MeshOutputSettings(OutputType outputTypeSetting, string[] metaDataKeyValuePairs)
@@ -97,7 +105,7 @@ namespace MatterHackers.PolygonMesh.Processors
             switch (Path.GetExtension(meshPathAndFileName).ToUpper())
             {
                 case ".STL":
-                    Mesh mesh = DoMerge(meshGroupsToSave, outputInfo.StlOnlySaveUseMaterialIndex);
+                    Mesh mesh = DoMerge(meshGroupsToSave, outputInfo);
                     return StlProcessing.Save(mesh, meshPathAndFileName, outputInfo);
 
                 case ".AMF":
@@ -108,11 +116,10 @@ namespace MatterHackers.PolygonMesh.Processors
             }
         }
 
-        public enum CsgOption { SimpleInsertVolumes, DoCsgMerge }
-        public static Mesh DoMerge(List<MeshGroup> meshGroupsToMerge, int saveOnlyMaterialIndex, CsgOption csgOption = CsgOption.SimpleInsertVolumes)
+        public static Mesh DoMerge(List<MeshGroup> meshGroupsToMerge, MeshOutputSettings outputInfo)
         {
             Mesh allPolygons = new Mesh();
-            if (csgOption == CsgOption.DoCsgMerge)
+            if (outputInfo.CsgOptionState == MeshOutputSettings.CsgOption.DoCsgMerge)
             {
                 foreach (MeshGroup meshGroup in meshGroupsToMerge)
                 {
@@ -129,7 +136,7 @@ namespace MatterHackers.PolygonMesh.Processors
                     foreach (Mesh mesh in meshGroup.Meshes)
                     {
                         int currentMeshMaterialIntdex = MeshMaterialData.Get(mesh).MaterialIndex;
-                        if (saveOnlyMaterialIndex == -1 || saveOnlyMaterialIndex == currentMeshMaterialIntdex)
+                        if (outputInfo.OnlySaveMaterialIndex == -1 || outputInfo.OnlySaveMaterialIndex == currentMeshMaterialIntdex)
                         {
                             foreach (Face face in mesh.Faces)
                             {
