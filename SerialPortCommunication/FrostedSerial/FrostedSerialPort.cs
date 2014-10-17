@@ -1079,14 +1079,13 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 			// Opening the serial port at this point will use the default baud rate of 9600
             newPort.Open();
 
-#ifdef __linux__
-
 			// Once mono has enforced its ANSI baud rate policy(in SerialPort.Open), reset the baud rate to the user specified 
-			// value by calling set_baud in libSetSerial.so
-            //
-			// TODO: Enable error handling and logging for response
-			set_baud (serialPortName, baudRate);
-#endif
+			// by calling set_baud in libSetSerial.so
+			if (!(newPort is FrostedSerialPort) && !IsWindows) 
+			{
+				// TODO: Enable error handling and logging for error response codes
+				set_baud (serialPortName, baudRate);
+			}
 
             return newPort;
         }

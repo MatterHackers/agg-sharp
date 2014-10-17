@@ -11,6 +11,11 @@ int set_baud (char *devfile, int baud);
 
 int set_baud(char *devfile, int baud)
 {
+
+#ifndef __linux__
+  return 0; 
+#endif
+
   struct termios2 t;
   int fd;
 
