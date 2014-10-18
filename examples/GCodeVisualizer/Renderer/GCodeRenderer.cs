@@ -54,6 +54,7 @@ namespace MatterHackers.GCodeVisualizer
     public class GCodeRenderer
     {
         List<List<int>> featureStartIndex = new List<List<int>>();
+        List<List<int>> featureEndIndex = new List<List<int>>();
         List<List<RenderFeatureBase>> renderFeatures = new List<List<RenderFeatureBase>>();
         int TotalRenderFeatures = 0;
 
@@ -214,6 +215,7 @@ namespace MatterHackers.GCodeVisualizer
             colorVertexData.Clear();
             vertexIndexArray.Clear();
             featureStartIndex[layerIndex].Clear();
+            featureEndIndex[layerIndex].Clear();
 
             for (int i = 0; i < renderFeatures[layerIndex].Count; i++)
             {
@@ -223,6 +225,7 @@ namespace MatterHackers.GCodeVisualizer
                 {
                     feature.CreateRender3DData(colorVertexData, vertexIndexArray, renderInfo);
                 }
+                featureEndIndex[layerIndex].Add(vertexIndexArray.Count);
             }
         }
 
@@ -249,6 +252,7 @@ namespace MatterHackers.GCodeVisualizer
                 {
                     layerVertexBuffer.Add(null);
                     featureStartIndex.Add(new List<int>());
+                    featureEndIndex.Add(new List<int>());
                 }
             }
 
@@ -292,7 +296,7 @@ namespace MatterHackers.GCodeVisualizer
                         int featuresOnLayer = renderFeatures[i].Count;
                         if (featuresOnLayer > 1)
                         {
-                            layerVertexBuffer[i].renderRange(0, featureStartIndex[i][featuresOnLayer - 1]);
+                            layerVertexBuffer[i].renderRange(0, featureEndIndex[i][featuresOnLayer - 1]);
                         }
                     }
                 }
@@ -321,7 +325,7 @@ namespace MatterHackers.GCodeVisualizer
 
                     if (endFeature > startFeature)
                     {
-                        int ellementCount = featureStartIndex[layerIndex][endFeature - 1] - featureStartIndex[layerIndex][startFeature];
+                        int ellementCount = featureEndIndex[layerIndex][endFeature - 1] - featureStartIndex[layerIndex][startFeature];
 
                         layerVertexBuffer[layerIndex].renderRange(featureStartIndex[layerIndex][startFeature], ellementCount);
                     }
