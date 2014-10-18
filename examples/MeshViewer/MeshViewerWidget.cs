@@ -47,8 +47,54 @@ namespace MatterHackers.MeshVisualizer
     {
         BackgroundWorker backgroundWorker = null;
 
-        public RGBA_Bytes PartColor { get; set; }
-        public RGBA_Bytes SelectedPartColor { get; set; }
+        internal class MaterialColors
+        {
+            internal RGBA_Bytes color;
+            internal RGBA_Bytes selectedColor;
+
+            internal MaterialColors(RGBA_Bytes color, RGBA_Bytes selectedColor)
+            {
+                this.color = color;
+                this.selectedColor = selectedColor;
+            }
+        }
+
+        Dictionary<int, MaterialColors> materialColors = new Dictionary<int, MaterialColors>();
+        public RGBA_Bytes GetMaterialColor(int materialIndexBase1)
+        {
+            if (materialColors.ContainsKey(materialIndexBase1))
+            {
+                return materialColors[materialIndexBase1].color;
+            }
+
+            // we sort of expect at most 4 extruders
+            return RGBA_Floats.FromHSL((materialIndexBase1 % 4) / 4.0, .5, .5).GetAsRGBA_Bytes();
+        }
+
+        public RGBA_Bytes GetSelectedMaterialColor(int materialIndexBase1)
+        {
+            if (materialColors.ContainsKey(materialIndexBase1))
+            {
+                return materialColors[materialIndexBase1].selectedColor;
+            }
+
+            // we sort of expect at most 4 extruders
+            return RGBA_Floats.FromHSL((materialIndexBase1 % 4) / 4.0, 1, .6).GetAsRGBA_Bytes();
+        }
+
+        public void SetMaterialColor(int materialIndexBase1, RGBA_Bytes color, RGBA_Bytes selectedColor)
+        {
+            MaterialColors newColors = new MaterialColors(color, selectedColor);
+            if (!materialColors.ContainsKey(materialIndexBase1))
+            {
+                materialColors.Add(materialIndexBase1, newColors);
+            }
+            else
+            {
+                materialColors[materialIndexBase1] = newColors;
+            }
+        }
+
         public RGBA_Bytes BedColor { get; set; }
         public RGBA_Bytes BuildVolumeColor { get; set; }
 
@@ -193,8 +239,7 @@ namespace MatterHackers.MeshVisualizer
             RenderType = RenderTypes.Shaded;
             RenderBed = true;
             RenderBuildVolume = false;
-            PartColor = RGBA_Bytes.White;
-            SelectedPartColor = RGBA_Bytes.White;
+            //SetMaterialColor(1, RGBA_Bytes.LightGray, RGBA_Bytes.White);
             BedColor = new RGBA_Floats(.8, .8, .8, .7).GetAsRGBA_Bytes();
             BuildVolumeColor = new RGBA_Floats(.2, .8, .3, .2).GetAsRGBA_Bytes();
 
@@ -322,15 +367,17 @@ namespace MatterHackers.MeshVisualizer
             for (int i = 0; i < MeshGroups.Count; i++)
             {
                 MeshGroup meshGroupToRender = MeshGroups[i];
-                RGBA_Bytes drawColor = PartColor;
-                if (meshGroupToRender == SelectedMeshGroup)
-                {
-                    drawColor = SelectedPartColor;
-                }
 
                 int part = 0;
                 foreach (Mesh meshToRender in meshGroupToRender.Meshes)
                 {
+                    MeshMaterialData meshData = MeshMaterialData.Get(meshToRender);
+                    RGBA_Bytes drawColor = GetMaterialColor(meshData.MaterialIndex);
+                    if (meshGroupToRender == SelectedMeshGroup)
+                    {
+                        drawColor = GetSelectedMaterialColor(meshData.MaterialIndex);
+                    }
+
                     if (part > 0)
                     {
                         switch (part)

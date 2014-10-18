@@ -5,10 +5,9 @@ using System.Text;
 
 namespace MatterHackers.Agg.UI
 {
-    public delegate void LayoutEventHandler(Object sender, LayoutEventArgs e);
     public enum PropertyCausingLayout { PerformLayout, LocalBounds, ChildLocalBounds, Position, AddChild, RemoveChild, Padding, Margin, HAnchor, VAnchor, Visible };
 
-    public class LayoutEventArgs
+    public class LayoutEventArgs : EventArgs
     {
         GuiWidget parentWidget;
         GuiWidget childWidget;

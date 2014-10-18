@@ -372,7 +372,8 @@ namespace MatterHackers.Agg.UI
         private bool containsFocus = false;
 
         private int layoutSuspendCount;
-        public event LayoutEventHandler Layout;
+        public event EventHandler Layout;
+        public event EventHandler Draw;
     
         public event KeyPressEventHandler KeyPressed;
 
@@ -1740,6 +1741,11 @@ namespace MatterHackers.Agg.UI
                     graphics2D.PopTransform();
                     graphics2D.SetClippingRect(oldClippingRect);
                 }
+            }
+
+            if (Draw != null)
+            {
+                Draw(this, new DrawEventArgs(graphics2D));
             }
 
             if (DebugShowBounds)
