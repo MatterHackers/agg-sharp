@@ -34,6 +34,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using Microsoft.Win32;
+using System.Runtime.InteropServices;
 
 namespace MatterHackers.SerialPortCommunication.FrostedSerial
 {
@@ -181,6 +182,9 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
     [System.ComponentModel.DesignerCategory("")]
     public class FrostedSerialPort : Component, IFrostedSerialPort
     {
+		[DllImport("SetSerial", SetLastError = true)]
+		static extern int set_baud(string portName, int baud_rate);
+
         public const int InfiniteTimeout = -1;
         const int DefaultReadBufferSize = 4096;
         const int DefaultWriteBufferSize = 2048;
@@ -1063,7 +1067,6 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
             IFrostedSerialPort newPort = Create(serialPortName);
             // if we can find a mac helper class (to get us 250k)
 
-            newPort.BaudRate = baudRate;
             if (DtrEnableOnConnect)
             {
                 newPort.DtrEnable = true;
@@ -1073,7 +1076,16 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
             newPort.ReadTimeout = 500;
             newPort.WriteTimeout = 500;
 
+			// Opening the serial port at this point will use the default baud rate of 9600
             newPort.Open();
+
+			// Once mono has enforced its ANSI baud rate policy(in SerialPort.Open), reset the baud rate to the user specified 
+			// by calling set_baud in libSetSerial.so
+			if (!(newPort is FrostedSerialPort) && !IsWindows) 
+			{
+				// TODO: Enable error handling and logging for error response codes
+				set_baud (serialPortName, baudRate);
+			}
 
             return newPort;
         }
