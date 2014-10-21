@@ -47,51 +47,42 @@ namespace MatterHackers.MeshVisualizer
     {
         BackgroundWorker backgroundWorker = null;
 
-        internal class MaterialColors
-        {
-            internal RGBA_Bytes color;
-            internal RGBA_Bytes selectedColor;
-
-            internal MaterialColors(RGBA_Bytes color, RGBA_Bytes selectedColor)
-            {
-                this.color = color;
-                this.selectedColor = selectedColor;
-            }
-        }
-
-        Dictionary<int, MaterialColors> materialColors = new Dictionary<int, MaterialColors>();
+        static Dictionary<int, RGBA_Bytes> materialColors = new Dictionary<int, RGBA_Bytes>();
         public RGBA_Bytes GetMaterialColor(int materialIndexBase1)
         {
             if (materialColors.ContainsKey(materialIndexBase1))
             {
-                return materialColors[materialIndexBase1].color;
+                return materialColors[materialIndexBase1];
             }
 
-            // we sort of expect at most 4 extruders
+            // we currently expect at most 4 extruders
             return RGBA_Floats.FromHSL((materialIndexBase1 % 4) / 4.0, .5, .5).GetAsRGBA_Bytes();
         }
 
         public RGBA_Bytes GetSelectedMaterialColor(int materialIndexBase1)
         {
-            if (materialColors.ContainsKey(materialIndexBase1))
-            {
-                return materialColors[materialIndexBase1].selectedColor;
-            }
+            double hue0To1;
+            double saturation0To1;
+            double lightness0To1;
+            GetMaterialColor(materialIndexBase1).GetAsRGBA_Floats().GetHSL(out hue0To1, out saturation0To1, out lightness0To1);
+
+            // now make it a bit lighter and less saturated
+            saturation0To1 = Math.Min(1, saturation0To1 * 2);
+            lightness0To1 = Math.Min(1, lightness0To1 * 1.2);
 
             // we sort of expect at most 4 extruders
-            return RGBA_Floats.FromHSL((materialIndexBase1 % 4) / 4.0, 1, .6).GetAsRGBA_Bytes();
+            return RGBA_Floats.FromHSL(hue0To1, saturation0To1, lightness0To1).GetAsRGBA_Bytes();
         }
 
-        public void SetMaterialColor(int materialIndexBase1, RGBA_Bytes color, RGBA_Bytes selectedColor)
+        public void SetMaterialColor(int materialIndexBase1, RGBA_Bytes color)
         {
-            MaterialColors newColors = new MaterialColors(color, selectedColor);
             if (!materialColors.ContainsKey(materialIndexBase1))
             {
-                materialColors.Add(materialIndexBase1, newColors);
+                materialColors.Add(materialIndexBase1, color);
             }
             else
             {
-                materialColors[materialIndexBase1] = newColors;
+                materialColors[materialIndexBase1] = color;
             }
         }
 
