@@ -81,7 +81,21 @@ namespace MatterHackers.Agg.UI
 						throw;
 					}
 				}
-            }
+			}
+			else if (File.Exists("../MonoBundle/StaticData/application.ico"))
+			{
+				try
+				{
+					this.Icon = new System.Drawing.Icon("../MonoBundle/StaticData/application.ico");
+				}
+				catch(System.ComponentModel.Win32Exception ex)
+				{
+					if (ex.NativeErrorCode != 0)
+					{
+						throw;
+					}
+				}
+			}
         }
 
         List<string> GetDroppedFiles(DragEventArgs drgevent)
