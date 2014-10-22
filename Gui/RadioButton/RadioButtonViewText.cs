@@ -16,7 +16,7 @@ namespace MatterHackers.Agg.UI
 
         TextWidget labelTextWidget;
 
-        double boxWidth = 10;
+        double boxWidth = 10 * TextWidget.GlobalPointSizeScaleRatio;
 
         public RadioButtonViewText(string label)
         {

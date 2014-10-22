@@ -24,7 +24,7 @@ namespace MatterHackers.Agg.UI
     {
         public static BorderDouble DefaultPadding; //= new BorderDouble(5);
 
-        public static double CheckBoxWidth = 10;
+        double CheckBoxWidth = 10 * TextWidget.GlobalPointSizeScaleRatio;
         private RGBA_Bytes inactiveColor;
         private RGBA_Bytes activeColor;
 
