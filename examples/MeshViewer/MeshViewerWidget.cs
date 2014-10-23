@@ -415,8 +415,14 @@ namespace MatterHackers.MeshVisualizer
 
                 backgroundWorker.DoWork += (object sender, DoWorkEventArgs e) =>
                 {
+                    // Controls if the part should be automattically centered. Ideally, we should autocenter any time a user has
+                    // not moved parts around on the bed (as we do now) but skip autocentering if the user has moved and placed
+                    // parts themselves. For now, simply mock that determination to allow testing of the proposed change and convey
+                    // when we would want to autocenter (i.e. autocenter when part was loaded outside of the new closed loop system)
+                    bool partLoadedExternally = false;
+
                     List<MeshGroup> loadedMeshGroups = MeshFileIo.Load(meshPathAndFileName, backgroundWorker_ProgressChanged);
-                    SetMeshAfterLoad(loadedMeshGroups);
+                    SetMeshAfterLoad(loadedMeshGroups, partLoadedExternally);
                     e.Result = loadedMeshGroups;
                 };
                 backgroundWorker.RunWorkerAsync();
@@ -428,7 +434,7 @@ namespace MatterHackers.MeshVisualizer
             }
         }
 
-        public void SetMeshAfterLoad(List<MeshGroup> loadedMeshGroups)
+        public void SetMeshAfterLoad(List<MeshGroup> loadedMeshGroups, bool centerPartOnBed)
         {
             MeshGroups.Clear();
 
@@ -462,13 +468,16 @@ namespace MatterHackers.MeshVisualizer
                     MeshGroups.Add(meshGroup);
                 }
 
-                // make sure the entile load is centered and on the bed
-                Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
-                for (int i = 0; i < MeshGroups.Count; i++)
+                if (centerPartOnBed)
                 {
-                    ScaleRotateTranslate moved = meshTransforms[i];
-                    moved.translation *= Matrix4X4.CreateTranslation(-boundsCenter + new Vector3(0, 0, bounds.ZSize / 2));
-                    meshTransforms[i] = moved;
+                    // make sure the entile load is centered and on the bed
+                    Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
+                    for (int i = 0; i < MeshGroups.Count; i++)
+                    {
+                        ScaleRotateTranslate moved = meshTransforms[i];
+                        moved.translation *= Matrix4X4.CreateTranslation(-boundsCenter + new Vector3(0, 0, bounds.ZSize / 2));
+                        meshTransforms[i] = moved;
+                    }
                 }
 
                 trackballTumbleWidget.TrackBallController = new TrackBallController();
