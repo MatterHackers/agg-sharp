@@ -23,6 +23,7 @@ using System.Runtime.InteropServices;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Collections.Generic;
+using System.Timers;
 using System.IO;
 
 using MatterHackers.Agg.Image;
@@ -43,18 +44,23 @@ namespace MatterHackers.Agg.UI
 
         protected WidgetForWindowsFormsAbstract aggAppWidget;
 
-        System.Windows.Forms.Timer tmrWindowsFormsTimer = new System.Windows.Forms.Timer();
+        static Form mainForm = null;
+        static System.Timers.Timer idleCallBackTimer = null;
 
         public WindowsFormsAbstract()
         {
-            // call up to 100 times a second
-            tmrWindowsFormsTimer.Interval = 10;
-            tmrWindowsFormsTimer.Tick += new EventHandler(CallAppWidgetOnIdle);
-            tmrWindowsFormsTimer.Start();
+            if (idleCallBackTimer == null)
+            {
+                idleCallBackTimer = new System.Timers.Timer();
+                mainForm = this;
+                // call up to 100 times a second
+                idleCallBackTimer.Interval = 10;
+                idleCallBackTimer.Elapsed += CallAppWidgetOnIdle;
+                idleCallBackTimer.Start();
+            }
         }
 
         bool hasBeenClosed = false;
-        
 
         public static void ShowFileInFolder(string fileToShow)
         {
@@ -70,32 +76,32 @@ namespace MatterHackers.Agg.UI
 
             if (File.Exists("application.ico"))
             {
-				try
-				{
-					this.Icon = new System.Drawing.Icon("application.ico");
-				}
-				catch(System.ComponentModel.Win32Exception ex)
-				{
-					if (ex.NativeErrorCode != 0)
-					{
-						throw;
-					}
-				}
-			}
-			else if (File.Exists("../MonoBundle/StaticData/application.ico"))
-			{
-				try
-				{
-					this.Icon = new System.Drawing.Icon("../MonoBundle/StaticData/application.ico");
-				}
-				catch(System.ComponentModel.Win32Exception ex)
-				{
-					if (ex.NativeErrorCode != 0)
-					{
-						throw;
-					}
-				}
-			}
+                try
+                {
+                    this.Icon = new System.Drawing.Icon("application.ico");
+                }
+                catch (System.ComponentModel.Win32Exception ex)
+                {
+                    if (ex.NativeErrorCode != 0)
+                    {
+                        throw;
+                    }
+                }
+            }
+            else if (File.Exists("../MonoBundle/StaticData/application.ico"))
+            {
+                try
+                {
+                    this.Icon = new System.Drawing.Icon("../MonoBundle/StaticData/application.ico");
+                }
+                catch (System.ComponentModel.Win32Exception ex)
+                {
+                    if (ex.NativeErrorCode != 0)
+                    {
+                        throw;
+                    }
+                }
+            }
         }
 
         List<string> GetDroppedFiles(DragEventArgs drgevent)
@@ -167,13 +173,27 @@ namespace MatterHackers.Agg.UI
             base.OnDragDrop(dragevent);
         }
 
-        void CallAppWidgetOnIdle(object sender, System.EventArgs e)
+        void CallAppWidgetOnIdle(object sender, ElapsedEventArgs e)
         {
             if (aggAppWidget != null && !hasBeenClosed)
             {
-                IdleCount++;
-                UiThread.DoRunAllPending();
+                if (InvokeRequired)
+                {
+                    // you are calling this from another thread and should not be
+                    //throw new Exception("You are calling this from another thread and should not be.");
+                    Invoke(new Action(DoCallAppWidgetOnIdle));
+                }
+                else
+                {
+                    DoCallAppWidgetOnIdle();
+                }
             }
+        }
+
+        void DoCallAppWidgetOnIdle()
+        {
+            IdleCount++;
+            UiThread.DoRunAllPending();
         }
 
         protected override void WndProc(ref Message m)
@@ -234,6 +254,7 @@ namespace MatterHackers.Agg.UI
             base.OnResize(e);
         }
 
+        bool waitingForIdleTimerToStop = false;
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
             // Call on closing and check if we can close (a "do you want to save" might cancel the close. :).
@@ -244,8 +265,26 @@ namespace MatterHackers.Agg.UI
             {
                 e.Cancel = true;
             }
+            else if (this == mainForm && !waitingForIdleTimerToStop)
+            {
+                waitingForIdleTimerToStop = true;
+                idleCallBackTimer.Stop();
+                idleCallBackTimer.Elapsed -= CallAppWidgetOnIdle;
+                e.Cancel = true;
+                // We just need to wait for this event to end so we can re-enter the idle loop with the time stoped
+                // If we close with the idle loop timer not stoped we throw and exception.
+                System.Windows.Forms.Timer delayedCloseTimer = new System.Windows.Forms.Timer();
+                delayedCloseTimer.Tick += DoDelayedClose;
+                delayedCloseTimer.Start();
+            }
 
             base.OnClosing(e);
+        }
+
+        void DoDelayedClose(object sender, EventArgs e)
+        {
+            ((System.Windows.Forms.Timer)sender).Stop();
+            this.Close();
         }
 
         protected override void OnClosed(EventArgs e)
@@ -253,7 +292,6 @@ namespace MatterHackers.Agg.UI
             if (!hasBeenClosed)
             {
                 hasBeenClosed = true;
-                tmrWindowsFormsTimer.Tick -= new EventHandler(CallAppWidgetOnIdle);
                 aggAppWidget.Close();
             }
 
