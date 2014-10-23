@@ -484,19 +484,6 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        public virtual bool InvokeRequired
-        {
-            get
-            {
-                if (Parent != null)
-                {
-                    return Parent.InvokeRequired;
-                }
-
-                return false;
-            }
-        }
-
         public virtual ObservableCollection<GuiWidget> Children
         {
             get

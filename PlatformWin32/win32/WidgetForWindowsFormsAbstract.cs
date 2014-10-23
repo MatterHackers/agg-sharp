@@ -90,14 +90,6 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        public override bool InvokeRequired
-        {
-            get
-            {
-                return WindowsFormsWindow.InvokeRequired;
-            }
-        }
-
         public override void OnBoundsChanged(EventArgs e)
         {
             Invalidate();
