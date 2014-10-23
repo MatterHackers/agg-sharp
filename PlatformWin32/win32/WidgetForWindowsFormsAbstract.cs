@@ -98,16 +98,6 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        public override object Invoke(Delegate method)
-        {
-            return WindowsFormsWindow.Invoke(method);
-        }
-
-        public override object Invoke(Delegate method, params object[] args)
-        {
-            return WindowsFormsWindow.Invoke(method, args);
-        }
-
         public override void OnBoundsChanged(EventArgs e)
         {
             Invalidate();
