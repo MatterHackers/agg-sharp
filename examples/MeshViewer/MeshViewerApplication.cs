@@ -93,7 +93,7 @@ namespace MatterHackers.MeshVisualizer
             else
             {
                 openFileButton = new Button("Open 3D File", 0, 0);
-                openFileButton.Click += new Button.ButtonEventHandler(openFileButton_ButtonClick);
+                openFileButton.Click += new EventHandler(openFileButton_ButtonClick);
                 buttonPanel.AddChild(openFileButton);
             }
 
@@ -139,7 +139,7 @@ namespace MatterHackers.MeshVisualizer
             meshViewerWidget.RenderBed = bedCheckBox.Checked;
         }
 
-        void openFileButton_ButtonClick(object sender, MouseEventArgs mouseEvent)
+        void openFileButton_ButtonClick(object sender, EventArgs mouseEvent)
         {
             UiThread.RunOnIdle(DoOpenFileButton_ButtonClick);
         }

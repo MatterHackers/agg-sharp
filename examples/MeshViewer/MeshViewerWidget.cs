@@ -401,6 +401,19 @@ namespace MatterHackers.MeshVisualizer
             }
         }
 
+        public void CreateGlDataForMeshes(List<MeshGroup> meshGroupsToPrepare)
+        {
+            for (int i = 0; i < meshGroupsToPrepare.Count; i++)
+            {
+                MeshGroup meshGroupToPrepare = meshGroupsToPrepare[i];
+
+                foreach (Mesh meshToPrepare in meshGroupToPrepare.Meshes)
+                {
+                    GLMeshTrianglePlugin glMeshPlugin = GLMeshTrianglePlugin.Get(meshToPrepare);
+                }
+            }
+        }
+
         public enum CenterPartAfterLoad { DO, DONT }
         public void LoadMesh(string meshPathAndFileName, CenterPartAfterLoad centerPart)
         {
@@ -416,7 +429,8 @@ namespace MatterHackers.MeshVisualizer
 
                 backgroundWorker.DoWork += (object sender, DoWorkEventArgs e) =>
                 {
-                    List<MeshGroup> loadedMeshGroups = MeshFileIo.Load(meshPathAndFileName, backgroundWorker_ProgressChanged);
+                    List<MeshGroup> loadedMeshGroups = MeshFileIo.Load(meshPathAndFileName, reportProgress0to100);
+                    CreateGlDataForMeshes(loadedMeshGroups);
                     SetMeshAfterLoad(loadedMeshGroups, centerPart);
                     e.Result = loadedMeshGroups;
                 };
@@ -493,11 +507,11 @@ namespace MatterHackers.MeshVisualizer
             }
         }
 
-        bool backgroundWorker_ProgressChanged(double progress0To1, string processingState)
+        bool reportProgress0to100(double progress0To1, string processingState)
         {
             UiThread.RunOnIdle((object state) =>
             {
-                int percentComplete = (int)(progress0To1 * 100 + .5);
+                int percentComplete = (int)(progress0To1 * 100);
                 partProcessingInfo.centeredInfoText.Text = "Loading Mesh {0}%...".FormatWith(percentComplete);
                 partProcessingInfo.progressControl.PercentComplete = percentComplete;
                 partProcessingInfo.centeredInfoDescription.Text = processingState;

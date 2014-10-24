@@ -30,10 +30,10 @@ namespace RockBlaster
             GameImageSequence menuButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "MenuButtonFromGame");
             Button menuButton = new Button(400, 12, new ButtonViewThreeImage(menuButtonSequence.GetImageByIndex(0), menuButtonSequence.GetImageByIndex(1), menuButtonSequence.GetImageByIndex(2)));
             AddChild(menuButton);
-            menuButton.Click += new Button.ButtonEventHandler(EscapeMenu);
+            menuButton.Click += new EventHandler(EscapeMenu);
         }
 
-        private void EscapeMenu(object sender, MouseEventArgs mouseEvent)
+        private void EscapeMenu(object sender, EventArgs mouseEvent)
         {
             if (Menu != null)
             {

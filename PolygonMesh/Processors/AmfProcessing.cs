@@ -270,7 +270,7 @@ namespace MatterHackers.PolygonMesh.Processors
                 bytesInFile = (long)positionStream.Length;
             }
 
-            internal bool ReportProgress()
+            internal bool ReportProgress0To50()
             {
                 if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
                 {
@@ -339,6 +339,9 @@ namespace MatterHackers.PolygonMesh.Processors
                 }
             }
 
+            double currentMeshProgress = 0;
+            double ratioLeftToUse = 1 - parsingFileRatio;
+            double progressPerMesh = 1.0 / totalMeshes * ratioLeftToUse;
             foreach (MeshGroup meshGroup in meshGroups)
             {
                 foreach (Mesh mesh in meshGroup.Meshes)
@@ -348,11 +351,13 @@ namespace MatterHackers.PolygonMesh.Processors
                         {
                             if (reportProgress != null)
                             {
-                                reportProgress(parsingFileRatio + progress0To1 * (1 - parsingFileRatio), processingState);
+                                double currentTotalProgress = parsingFileRatio + currentMeshProgress;
+                                reportProgress(currentTotalProgress + progress0To1 * progressPerMesh, processingState);
                             }
                             return true;
                         }
-                            );
+                        );
+                    currentMeshProgress += progressPerMesh;
                 }
             }
 #endif
@@ -468,7 +473,7 @@ namespace MatterHackers.PolygonMesh.Processors
                                 newMesh.CreateFace(triangle, true);
                             }
 
-                            progressData.ReportProgress();
+                            progressData.ReportProgress0To50();
                         }
                     }
                 }
@@ -523,7 +528,7 @@ namespace MatterHackers.PolygonMesh.Processors
                                                 position *= scale;
                                                 vertices.Add(position);
                                             }
-                                            progressData.ReportProgress();
+                                            progressData.ReportProgress0To50();
                                         }
                                     }
                                 }
