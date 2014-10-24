@@ -168,6 +168,22 @@ namespace MatterHackers.Agg.UI
                 {
                     Text = newValue.ToString();
                 }
+                else // lets make sure it has the same text as the value
+                {
+                    double currentValue;
+                    if (Double.TryParse(Text, out currentValue))
+                    {
+                        if (currentValue != newValue)
+                        {
+                            // the text does not match the value so set it
+                            Text = newValue.ToString();
+                        }
+                    }
+                    else // the text cannot be parsed so set it
+                    {
+                        Text = newValue.ToString();
+                    }
+                }
             }
         }
 
