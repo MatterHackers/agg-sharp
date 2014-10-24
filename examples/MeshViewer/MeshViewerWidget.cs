@@ -401,7 +401,8 @@ namespace MatterHackers.MeshVisualizer
             }
         }
 
-        public void LoadMesh(string meshPathAndFileName, bool partLoadedExternally)
+        public enum CenterPartAfterLoad { DO, DONT }
+        public void LoadMesh(string meshPathAndFileName, CenterPartAfterLoad centerPart)
         {
             if (File.Exists(meshPathAndFileName))
             {
@@ -416,7 +417,7 @@ namespace MatterHackers.MeshVisualizer
                 backgroundWorker.DoWork += (object sender, DoWorkEventArgs e) =>
                 {
                     List<MeshGroup> loadedMeshGroups = MeshFileIo.Load(meshPathAndFileName, backgroundWorker_ProgressChanged);
-                    SetMeshAfterLoad(loadedMeshGroups, partLoadedExternally);
+                    SetMeshAfterLoad(loadedMeshGroups, centerPart);
                     e.Result = loadedMeshGroups;
                 };
                 backgroundWorker.RunWorkerAsync();
@@ -428,7 +429,7 @@ namespace MatterHackers.MeshVisualizer
             }
         }
 
-        public void SetMeshAfterLoad(List<MeshGroup> loadedMeshGroups, bool centerPartOnBed)
+        public void SetMeshAfterLoad(List<MeshGroup> loadedMeshGroups, CenterPartAfterLoad centerPart)
         {
             MeshGroups.Clear();
 
@@ -462,7 +463,7 @@ namespace MatterHackers.MeshVisualizer
                     MeshGroups.Add(meshGroup);
                 }
 
-                if (centerPartOnBed)
+                if (centerPart == CenterPartAfterLoad.DO)
                 {
                     // make sure the entile load is centered and on the bed
                     Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
