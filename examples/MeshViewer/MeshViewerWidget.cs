@@ -401,7 +401,7 @@ namespace MatterHackers.MeshVisualizer
             }
         }
 
-        public void LoadMesh(string meshPathAndFileName)
+        public void LoadMesh(string meshPathAndFileName, bool partLoadedExternally)
         {
             if (File.Exists(meshPathAndFileName))
             {
@@ -415,12 +415,6 @@ namespace MatterHackers.MeshVisualizer
 
                 backgroundWorker.DoWork += (object sender, DoWorkEventArgs e) =>
                 {
-                    // Controls if the part should be automattically centered. Ideally, we should autocenter any time a user has
-                    // not moved parts around on the bed (as we do now) but skip autocentering if the user has moved and placed
-                    // parts themselves. For now, simply mock that determination to allow testing of the proposed change and convey
-                    // when we would want to autocenter (i.e. autocenter when part was loaded outside of the new closed loop system)
-                    bool partLoadedExternally = false;
-
                     List<MeshGroup> loadedMeshGroups = MeshFileIo.Load(meshPathAndFileName, backgroundWorker_ProgressChanged);
                     SetMeshAfterLoad(loadedMeshGroups, partLoadedExternally);
                     e.Result = loadedMeshGroups;

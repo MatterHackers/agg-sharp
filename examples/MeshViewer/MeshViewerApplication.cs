@@ -88,7 +88,7 @@ namespace MatterHackers.MeshVisualizer
 
             if (meshFileToLoad != "")
             {
-                meshViewerWidget.LoadMesh(meshFileToLoad);
+                meshViewerWidget.LoadMesh(meshFileToLoad, false);
             }
             else
             {
@@ -149,7 +149,7 @@ namespace MatterHackers.MeshVisualizer
             OpenFileDialogParams openParams = new OpenFileDialogParams("3D Mesh Files|*.stl;*.amf");
             Stream streamToLoadFrom = FileDialog.OpenFileDialog(ref openParams);
 
-            meshViewerWidget.LoadMesh(openParams.FileName);
+            meshViewerWidget.LoadMesh(openParams.FileName, false);
 
             Invalidate();
         }
