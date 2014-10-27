@@ -92,7 +92,7 @@ namespace MatterHackers.MeshVisualizer
         Vector3 displayVolume;
         public Vector3 DisplayVolume { get { return displayVolume; } }
 
-        public bool AlwaysRenderBed { get; set; }
+        public bool AllowBedRenderingWhenEmpty { get; set; }
         public bool RenderBed { get; set; }
         public bool RenderBuildVolume { get; set; }
 
@@ -387,10 +387,10 @@ namespace MatterHackers.MeshVisualizer
             }
 
             // we don't want to render the bed or bulid volume before we load a model.
-            if (MeshGroups.Count > 0 || AlwaysRenderBed)
+            if (MeshGroups.Count > 0 || AllowBedRenderingWhenEmpty)
             {
                 if (RenderBed)
-                {                    
+                {
                     RenderMeshToGl.Render(printerBed, this.BedColor);
                 }
 

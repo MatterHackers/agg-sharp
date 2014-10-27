@@ -400,6 +400,10 @@ namespace MatterHackers.PolygonMesh.Processors
                     using (XmlReader meshTree = xmlTree.ReadSubtree())
                     {
                         ReadMesh(meshTree, meshGroup, scale, progressData);
+                        if (progressData.LoadCanceled)
+                        {
+                            return null;
+                        }
                     }
                 }
             }
@@ -418,6 +422,10 @@ namespace MatterHackers.PolygonMesh.Processors
                         using (XmlReader verticesTree = xmlTree.ReadSubtree())
                         {
                             ReadVertices(verticesTree, vertices, scale, progressData);
+                            if (progressData.LoadCanceled)
+                            {
+                                return;
+                            }
                         }
                         break;
 
@@ -427,6 +435,10 @@ namespace MatterHackers.PolygonMesh.Processors
                         using (XmlReader volumeTree = xmlTree.ReadSubtree())
                         {
                             loadedMesh = ReadVolume(volumeTree, vertices, progressData);
+                            if (progressData.LoadCanceled)
+                            {
+                                return;
+                            }
                             meshGroup.Meshes.Add(loadedMesh);
                         }
                         if (loadedMesh != null && materialId != null)
@@ -499,7 +511,7 @@ namespace MatterHackers.PolygonMesh.Processors
                             if (!continueProcessing)
                             {
                                 // this is what we should do but it requires a bit more debugging.
-                                //return null;
+                                return null;
                             }
                         }
                     }
