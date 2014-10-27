@@ -430,7 +430,6 @@ namespace MatterHackers.MeshVisualizer
                 backgroundWorker.DoWork += (object sender, DoWorkEventArgs e) =>
                 {
                     List<MeshGroup> loadedMeshGroups = MeshFileIo.Load(meshPathAndFileName, reportProgress0to100);
-                    CreateGlDataForMeshes(loadedMeshGroups);
                     SetMeshAfterLoad(loadedMeshGroups, centerPart);
                     e.Result = loadedMeshGroups;
                 };
@@ -453,6 +452,8 @@ namespace MatterHackers.MeshVisualizer
             }
             else
             {
+                CreateGlDataForMeshes(loadedMeshGroups);
+
                 AxisAlignedBoundingBox bounds = new AxisAlignedBoundingBox(Vector3.Zero, Vector3.Zero);
                 bool first = true;
                 foreach (MeshGroup meshGroup in loadedMeshGroups)
@@ -507,8 +508,17 @@ namespace MatterHackers.MeshVisualizer
             }
         }
 
-        bool reportProgress0to100(double progress0To1, string processingState)
+        void reportProgress0to100(double progress0To1, string processingState, out bool continueProcessing)
         {
+            if (this.WidgetHasBeenClosed)
+            {
+                continueProcessing = false;
+            }
+            else
+            {
+                continueProcessing = true;
+            }
+
             UiThread.RunOnIdle((object state) =>
             {
                 int percentComplete = (int)(progress0To1 * 100);
@@ -516,7 +526,6 @@ namespace MatterHackers.MeshVisualizer
                 partProcessingInfo.progressControl.PercentComplete = percentComplete;
                 partProcessingInfo.centeredInfoDescription.Text = processingState;
             });
-            return true;
         }
 
         public override void OnMouseDown(MouseEventArgs mouseEvent)

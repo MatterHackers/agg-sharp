@@ -39,8 +39,6 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh
 {
-    public delegate bool ReportProgress(double progress0To1, string processingState);
-
     [DebuggerDisplay("ID = {Data.ID}")]
     public class Mesh
     {
@@ -96,7 +94,7 @@ namespace MatterHackers.PolygonMesh
         {
         }
 
-        public static Mesh Copy(Mesh meshToCopy, ReportProgress progress = null)
+        public static Mesh Copy(Mesh meshToCopy, ReportProgressRatio progress = null)
         {
             Mesh newMesh = new Mesh();
             foreach (Face face in meshToCopy.Faces)
@@ -121,13 +119,32 @@ namespace MatterHackers.PolygonMesh
             return newMesh;
         }
 
-        public void CleanAndMergMesh(ReportProgress reportProgress = null)
+        public void CleanAndMergMesh(ReportProgressRatio reportProgress = null)
         {
             if (reportProgress != null)
             {
-                SortVertices((double progress0To1, string processingState) => { return reportProgress(progress0To1 * .41, processingState); });
-                MergeVertices((double progress0To1, string processingState) => { return reportProgress(progress0To1 * .23 + .41, processingState); });
-                MergeMeshEdges((double progress0To1, string processingState) => { return reportProgress(progress0To1 * .36 + .64, processingState); });
+                bool keepProcessing = true;
+                SortVertices((double progress0To1, string processingState, out bool continueProcessing) => 
+                {
+                    reportProgress(progress0To1 * .41, processingState, out continueProcessing);
+                    keepProcessing = continueProcessing;
+                });
+                if (keepProcessing)
+                {
+                    MergeVertices((double progress0To1, string processingState, out bool continueProcessing) => 
+                    {
+                        reportProgress(progress0To1 * .23 + .41, processingState, out continueProcessing);
+                        keepProcessing = continueProcessing;
+                    });
+                }
+                if (keepProcessing)
+                {
+                    MergeMeshEdges((double progress0To1, string processingState, out bool continueProcessing) => 
+                    {
+                        reportProgress(progress0To1 * .36 + .64, processingState, out continueProcessing);
+                        keepProcessing = continueProcessing;
+                    });
+                }
             }
             else
             {
@@ -389,20 +406,21 @@ namespace MatterHackers.PolygonMesh
             throw new NotImplementedException();
         }
 
-        public void SortVertices(ReportProgress reportProgress = null)
+        public void SortVertices(ReportProgressRatio reportProgress = null)
         {
+            bool continueProcessing;
             if (reportProgress != null)
             {
-                reportProgress(0, "Sorting Vertices");
+                reportProgress(0, "Sorting Vertices", out continueProcessing);
             }
             Vertices.Sort();
             if (reportProgress != null)
             {
-                reportProgress(1, "Sorting Vertices");
+                reportProgress(1, "Sorting Vertices", out continueProcessing);
             }
         }
 
-        public void MergeVertices(ReportProgress reportProgress = null, double maxDistanceToConsiderVertexAsSame = 0)
+        public void MergeVertices(ReportProgressRatio reportProgress = null, double maxDistanceToConsiderVertexAsSame = 0)
         {
             HashSet<Vertex> markedForDeletion = new HashSet<Vertex>();
             Stopwatch maxProgressReport = new Stopwatch();
@@ -430,7 +448,12 @@ namespace MatterHackers.PolygonMesh
                     {
                         if (maxProgressReport.ElapsedMilliseconds > 200)
                         {
-                            reportProgress(i / (double)Vertices.Count, "Merging Vertices");
+                            bool continueProcessing;
+                            reportProgress(i / (double)Vertices.Count, "Merging Vertices", out continueProcessing);
+                            if (!continueProcessing)
+                            {
+                                return;
+                            }
                             maxProgressReport.Restart();
                         }
                     }
@@ -439,7 +462,8 @@ namespace MatterHackers.PolygonMesh
 
             if (reportProgress != null)
             {
-                reportProgress(1, "Deleting Unused Vertices");
+                bool continueProcessing;
+                reportProgress(1, "Deleting Unused Vertices", out continueProcessing);
             }
             RemoveVerticesMarkedForDeletion(markedForDeletion);
         }
@@ -688,7 +712,7 @@ namespace MatterHackers.PolygonMesh
             edgeToDelete.NextMeshEdgeFromEnd[1] = null;
         }
 
-        public void MergeMeshEdges(ReportProgress reportProgress = null)
+        public void MergeMeshEdges(ReportProgressRatio reportProgress = null)
         {
             HashSet<MeshEdge> markedForDeletion = new HashSet<MeshEdge>();
             Stopwatch maxProgressReport = new Stopwatch();
@@ -725,8 +749,13 @@ namespace MatterHackers.PolygonMesh
                 {
                     if (maxProgressReport.ElapsedMilliseconds > 200)
                     {
-                        reportProgress(i / (double)meshEdges.Count, "Merging Mesh Edges");
+                        bool continueProcessing;
+                        reportProgress(i / (double)meshEdges.Count, "Merging Mesh Edges", out continueProcessing);
                         maxProgressReport.Restart();
+                        if (!continueProcessing)
+                        {
+                            return;
+                        }
                     }
                 }
             }

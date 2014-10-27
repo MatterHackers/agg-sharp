@@ -147,7 +147,7 @@ namespace MatterHackers.PolygonMesh.Processors
             return true;
         }
 
-        public static List<MeshGroup> Load(string fileName, ReportProgress reportProgress = null)
+        public static List<MeshGroup> Load(string fileName, ReportProgressRatio reportProgress = null)
         {
             Mesh loadedMesh = null;
             if (Path.GetExtension(fileName).ToUpper() == ".STL")
@@ -176,11 +176,15 @@ namespace MatterHackers.PolygonMesh.Processors
 
             List<MeshGroup> meshGroups = new List<MeshGroup>();
             meshGroups.Add(new MeshGroup());
-            meshGroups[0].Meshes.Add(loadedMesh);
-            return meshGroups;
+            if (loadedMesh != null)
+            {
+                meshGroups[0].Meshes.Add(loadedMesh);
+                return meshGroups;
+            }
+            return null;
         }
 
-        public static Mesh Load(Stream fileStream, ReportProgress reportProgress = null)
+        public static Mesh Load(Stream fileStream, ReportProgressRatio reportProgress = null)
         {
             Mesh loadedMesh = null;
             try
@@ -202,7 +206,7 @@ namespace MatterHackers.PolygonMesh.Processors
             return loadedMesh;
         }
 
-        public static Mesh ParseFileContents(Stream stlStream, ReportProgress reportProgress)
+        public static Mesh ParseFileContents(Stream stlStream, ReportProgressRatio reportProgress)
         {
             Stopwatch time = new Stopwatch();
             time.Start();
@@ -286,7 +290,9 @@ namespace MatterHackers.PolygonMesh.Processors
 
                     if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
                     {
-                        if (!reportProgress(stlStream.Position / (double)bytesInFile * parsingFileRatio, "Loading Polygons"))
+                        bool continueProcessing;
+                        reportProgress(stlStream.Position / (double)bytesInFile * parsingFileRatio, "Loading Polygons", out continueProcessing);
+                        if (!continueProcessing)
                         {
                             stlStream.Close();
                             return null;
@@ -332,7 +338,9 @@ namespace MatterHackers.PolygonMesh.Processors
 
                     if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
                     {
-                        if (!reportProgress(i / (double)numTriangles * parsingFileRatio, "Loading Polygons"))
+                        bool continueProcessing;
+                        reportProgress(i / (double)numTriangles * parsingFileRatio, "Loading Polygons", out continueProcessing);
+                        if (!continueProcessing)
                         {
                             stlStream.Close();
                             return null;
@@ -352,16 +360,29 @@ namespace MatterHackers.PolygonMesh.Processors
             }
 
             // merge all the vetexes that are in the same place together
+            bool finishedCleanAndMerge = true;
             meshFromStlFile.CleanAndMergMesh(
-                (double progress0To1, string processingState) => 
+                (double progress0To1, string processingState, out bool continueProcessing) => 
                 {
                     if (reportProgress != null)
                     {
-                        reportProgress(parsingFileRatio + progress0To1 * (1 - parsingFileRatio), processingState);
+                        reportProgress(parsingFileRatio + progress0To1 * (1 - parsingFileRatio), processingState, out continueProcessing);
+                        if (!continueProcessing)
+                        {
+                            finishedCleanAndMerge = false;
+                        }
                     }
-                    return true;
+                    else
+                    {
+                        continueProcessing = true;
+                    }
                 }
             );
+
+            if (!finishedCleanAndMerge)
+            {
+                return null;
+            }
 
             time.Stop();
             Debug.WriteLine(string.Format("STL Load in {0:0.00}s", time.Elapsed.TotalSeconds));
