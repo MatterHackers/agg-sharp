@@ -261,6 +261,8 @@ namespace MatterHackers.PolygonMesh.Processors
             Stopwatch maxProgressReport = new Stopwatch();
             Stream positionStream;
             long bytesInFile;
+            bool loadCanceled;
+            internal bool LoadCanceled { get { return loadCanceled; } }
 
             internal ProgressData(Stream positionStream, ReportProgressRatio reportProgress)
             {
@@ -275,6 +277,10 @@ namespace MatterHackers.PolygonMesh.Processors
                 if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
                 {
                     reportProgress(positionStream.Position / (double)bytesInFile * .5, "Loading Mesh", out continueProcessing);
+                    if (!continueProcessing)
+                    {
+                        loadCanceled = true;
+                    }
                     maxProgressReport.Restart();
                 }
                 else
@@ -324,6 +330,10 @@ namespace MatterHackers.PolygonMesh.Processors
                         using(XmlReader objectTree = xmlTree.ReadSubtree())
                         {
                             meshGroups.Add(ReadObject(objectTree, scale, progressData));
+                            if (progressData.LoadCanceled)
+                            {
+                                return null;
+                            }
                         }
                     }
                 }
@@ -347,6 +357,7 @@ namespace MatterHackers.PolygonMesh.Processors
             {
                 foreach (Mesh mesh in meshGroup.Meshes)
                 {
+                    bool keepProcessing = true;
                     mesh.CleanAndMergMesh(
                         (double progress0To1, string processingState, out bool continueProcessing) =>
                         {
@@ -354,6 +365,7 @@ namespace MatterHackers.PolygonMesh.Processors
                             {
                                 double currentTotalProgress = parsingFileRatio + currentMeshProgress;
                                 reportProgress(currentTotalProgress + progress0To1 * progressPerMesh, processingState, out continueProcessing);
+                                keepProcessing = continueProcessing;
                             }
                             else
                             {
@@ -361,6 +373,11 @@ namespace MatterHackers.PolygonMesh.Processors
                             }
                         }
                         );
+                    if (!keepProcessing)
+                    {
+                        amfStream.Close();
+                        return null;
+                    }
                     currentMeshProgress += progressPerMesh;
                 }
             }
