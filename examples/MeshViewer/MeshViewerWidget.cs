@@ -369,18 +369,6 @@ namespace MatterHackers.MeshVisualizer
                         drawColor = GetSelectedMaterialColor(meshData.MaterialIndex);
                     }
 
-                    if (part > 0)
-                    {
-                        switch (part)
-                        {
-                            case 1:
-                                drawColor = RGBA_Bytes.Cyan;
-                                break;
-                            case 2:
-                                drawColor = RGBA_Bytes.Yellow;
-                                break;
-                        }
-                    }
                     RenderMeshToGl.Render(meshToRender, drawColor, MeshGroupTransforms[i].TotalTransform, RenderType);
                     part++;
                 }

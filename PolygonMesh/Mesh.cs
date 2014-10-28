@@ -115,7 +115,6 @@ namespace MatterHackers.PolygonMesh
             MeshMaterialData newMaterialData = MeshMaterialData.Get(newMesh);
             newMaterialData.MaterialIndex = materialDataToCopy.MaterialIndex;
 
-
             return newMesh;
         }
 
