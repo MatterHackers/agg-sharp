@@ -28,15 +28,15 @@ namespace MomsSolitaire
         public MomsSolitaire()
         {
             m_ShuffleButton = new Button("Shuffle", 20, 10);
-            m_ShuffleButton.Click += new Button.ButtonEventHandler(DoShuffle);
+            m_ShuffleButton.Click += new EventHandler(DoShuffle);
             AddChild(m_ShuffleButton);
 			
             m_UndoButton = new Button("Undo", 120, 10);
-            m_UndoButton.Click += new Button.ButtonEventHandler(DoUndo);
+            m_UndoButton.Click += new EventHandler(DoUndo);
             AddChild(m_UndoButton);
 			
             m_NewGameButton = new Button("New Game", 530, 350);
-            m_NewGameButton.Click += new Button.ButtonEventHandler(DoNewGame);
+            m_NewGameButton.Click += new EventHandler(DoNewGame);
             AddChild(m_NewGameButton);			
 
             String inputString = "M -4,0 L 0,6 L 4,0 L 0,-6 z";
@@ -440,19 +440,19 @@ namespace MomsSolitaire
             }
         }
 
-        public void DoShuffle(object sender, MouseEventArgs mouseEvent)
+        public void DoShuffle(object sender, EventArgs mouseEvent)
         {
             MomsGame.Shuffle();
             Invalidate();
         }
 
-        public void DoUndo(object sender, MouseEventArgs mouseEvent)
+        public void DoUndo(object sender, EventArgs mouseEvent)
         {
             MomsGame.UndoLastMove();
             Invalidate();
         }
 
-		public void DoNewGame(object sender, MouseEventArgs mouseEvent)
+		public void DoNewGame(object sender, EventArgs mouseEvent)
 		{
 			MomsGame.NewGame();
 			Invalidate();

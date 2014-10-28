@@ -482,6 +482,7 @@ namespace MatterHackers.Agg.UI
         {
             if (mouseIsDown)
             {
+                StartSelectionIfRequired(null);
                 CharIndexToInsertBefore = internalTextWidget.Printer.GetCharacterIndexToStartBefore(new Vector2(mouseEvent.X, mouseEvent.Y));
                 if (CharIndexToInsertBefore < 0)
                 {
@@ -563,29 +564,40 @@ namespace MatterHackers.Agg.UI
             }
         }
 
+        void StartSelectionIfRequired(KeyEventArgs keyEvent)
+        {
+            if (!Selecting && ShiftKeyIsDown(keyEvent))
+            {
+                Selecting = true;
+                SelectionIndexToStartBefore = CharIndexToInsertBefore;
+            }
+        }
+
+        bool ShiftKeyIsDown(KeyEventArgs keyEvent)
+        {
+            return Keyboard.IsKeyDown(Keys.Shift)
+                || (keyEvent != null && keyEvent.Shift);
+        }
+
         public override void OnKeyDown(KeyEventArgs keyEvent)
         {
             RestartBarFlash();
 
             bool SetDesiredBarPosition = true;
             bool turnOffSelection = false;
-            if (keyEvent.Shift)
+            
+            if (!ShiftKeyIsDown(keyEvent))
             {
-                if (!Selecting)
+                if (keyEvent.Control)
                 {
-                    Selecting = true;
-                    SelectionIndexToStartBefore = CharIndexToInsertBefore;
+                    // don't let control keys get into the stream
+                    keyEvent.SuppressKeyPress = true;
+                    keyEvent.Handled = true;
                 }
-            }
-            else if (keyEvent.Control)
-            {
-                // don't let control keys get into the stream
-                keyEvent.SuppressKeyPress = true;
-                keyEvent.Handled = true;
-            } 
-            else if (Selecting)
-            {
-                turnOffSelection = true;
+                else if (Selecting)
+                {
+                    turnOffSelection = true;
+                }
             }
 
             switch (keyEvent.KeyCode)
@@ -600,6 +612,7 @@ namespace MatterHackers.Agg.UI
                     break;
 
                 case Keys.Left:
+                    StartSelectionIfRequired(keyEvent);
                     if (keyEvent.Control)
                     {
                         GotoBeginingOfPreviousToken();
@@ -620,6 +633,7 @@ namespace MatterHackers.Agg.UI
                     break;
 
                 case Keys.Right:
+                    StartSelectionIfRequired(keyEvent);
                     if (keyEvent.Control)
                     {
                         GotoBeginingOfNextToken();
@@ -640,6 +654,7 @@ namespace MatterHackers.Agg.UI
                     break;
 
                 case Keys.Up:
+                    StartSelectionIfRequired(keyEvent);
                     if (turnOffSelection)
                     {
                         CharIndexToInsertBefore = Math.Min(CharIndexToInsertBefore, SelectionIndexToStartBefore);
@@ -651,6 +666,7 @@ namespace MatterHackers.Agg.UI
                     break;
 
                 case Keys.Down:
+                    StartSelectionIfRequired(keyEvent);
                     if (turnOffSelection)
                     {
                         CharIndexToInsertBefore = Math.Max(CharIndexToInsertBefore, SelectionIndexToStartBefore);
@@ -666,6 +682,7 @@ namespace MatterHackers.Agg.UI
                     break;
 
                 case Keys.End:
+                    StartSelectionIfRequired(keyEvent);
                     if (keyEvent.Control)
                     {
                         CharIndexToInsertBefore = internalTextWidget.Text.Length;
@@ -680,6 +697,7 @@ namespace MatterHackers.Agg.UI
                     break;
 
                 case Keys.Home:
+                    StartSelectionIfRequired(keyEvent);
                     if (keyEvent.Control)
                     {
                         CharIndexToInsertBefore = 0;
@@ -708,7 +726,7 @@ namespace MatterHackers.Agg.UI
                     break;
 
                 case Keys.Delete:
-                    if (keyEvent.Shift)
+                    if (ShiftKeyIsDown(keyEvent))
                     {
                         CopySelection();
                         DeleteSelection();
@@ -752,7 +770,7 @@ namespace MatterHackers.Agg.UI
                     break;
 
                 case Keys.Insert:
-                    if (keyEvent.Shift)
+                    if (ShiftKeyIsDown(keyEvent))
                     {
                         turnOffSelection = true;
                         PasteFromClipboard();

@@ -484,39 +484,6 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        public virtual bool InvokeRequired
-        {
-            get
-            {
-                if (Parent != null)
-                {
-                    return Parent.InvokeRequired;
-                }
-
-                return false;
-            }
-        }
-
-        public virtual object Invoke(Delegate method)
-        {
-            if (Parent != null)
-            {
-                return Parent.Invoke(method);
-            }
-
-            throw new InvalidOperationException("You can only check for this is your top level window in a form.");
-        }
-
-        public virtual object Invoke(Delegate method, params object[] args)
-        {
-            if (Parent != null)
-            {
-                return Parent.Invoke(method, args);
-            }
-
-            throw new InvalidOperationException("You can only check for this is your top level window in a form.");
-        }
-
         public virtual ObservableCollection<GuiWidget> Children
         {
             get

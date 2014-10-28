@@ -54,6 +54,7 @@ namespace MatterHackers.PolygonMesh.Processors
         public Dictionary<string, string> MetaDataKeyValue = new Dictionary<string, string>();
         public int OnlySaveMaterialIndex = -1;
         public CsgOption CsgOptionState = CsgOption.SimpleInsertVolumes;
+        ReportProgressRatio reportProgress = null;
 
         public MeshOutputSettings()
         {
@@ -64,8 +65,10 @@ namespace MatterHackers.PolygonMesh.Processors
             this.CsgOptionState = csgOption;
         }
 
-        public MeshOutputSettings(OutputType outputTypeSetting, string[] metaDataKeyValuePairs)
+        public MeshOutputSettings(OutputType outputTypeSetting, string[] metaDataKeyValuePairs, ReportProgressRatio reportProgress = null)
         {
+            this.reportProgress = reportProgress;
+
             this.OutputTypeSetting = outputTypeSetting;
             for (int i = 0; i < metaDataKeyValuePairs.Length / 2; i++)
             {
@@ -81,7 +84,7 @@ namespace MatterHackers.PolygonMesh.Processors
             return ".STL;.AMF";
         }
 
-        public static List<MeshGroup> Load(string meshPathAndFileName, ReportProgress reportProgress = null)
+        public static List<MeshGroup> Load(string meshPathAndFileName, ReportProgressRatio reportProgress = null)
         {
             switch (Path.GetExtension(meshPathAndFileName).ToUpper())
             {

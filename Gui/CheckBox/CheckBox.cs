@@ -72,7 +72,7 @@ namespace MatterHackers.Agg.UI
                 MinimumSize = new Vector2(Width, Height);
             }
 
-            Click += new ButtonEventHandler(CheckBox_Click);
+            Click += new EventHandler(CheckBox_Click);
         }
 
         public CheckBox(double x, double y, string label, double textSize = 12)
@@ -114,7 +114,7 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        void CheckBox_Click(object sender, MouseEventArgs mouseEvent)
+        void CheckBox_Click(object sender, EventArgs mouseEvent)
         {   
             Checked = !Checked;
         }

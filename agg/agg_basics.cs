@@ -24,6 +24,8 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg
 {
+    public delegate void ReportProgressRatio(double progress0To1, string processingState, out bool continueProcessing);
+
     static public class agg_basics
     {
         //----------------------------------------------------------filling_rule_e

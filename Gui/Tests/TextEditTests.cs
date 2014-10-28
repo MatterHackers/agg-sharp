@@ -302,8 +302,8 @@ namespace MatterHackers.Agg.UI.Tests
                 SendKey(Keys.A, 'a', container);
                 Assert.IsTrue(multiLine.Text == "a\n\n\na\na");
                 SendKey(Keys.Down, ' ', container);
-                SendKey(Keys.A, 'a', container);
-                Assert.IsTrue(multiLine.Text == "a\na\n\na\na");
+                SendKey(Keys.A | Keys.Shift, 'A', container);
+                Assert.IsTrue(multiLine.Text == "a\nA\n\na\na");
             }
 
             // make sure the insert position is correct when homed

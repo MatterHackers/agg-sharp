@@ -285,6 +285,7 @@ namespace MatterHackers.GCodeVisualizer
                     }
                 }
 
+                GL.Disable(EnableCap.Texture2D);
                 GL.PushAttrib(AttribMask.EnableBit);
                 GL.DisableClientState(ArrayCap.TextureCoordArray);
                 GL.Enable(EnableCap.PolygonSmooth);

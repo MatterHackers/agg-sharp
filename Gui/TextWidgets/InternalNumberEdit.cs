@@ -148,16 +148,17 @@ namespace MatterHackers.Agg.UI
         {
             get
             {
+                double errorReturn = Math.Max(minValue, Math.Min(0, maxValue));
                 if (Text == "" || Text == "." || Text == "-" || Text == "-.")
                 {
-                    return 0;
+                    return errorReturn;
                 }
-                double value = 0;
+                double value = minValue;
                 if (Double.TryParse(Text, out value))
                 {
                     return value;
                 }
-                throw new Exception("You should never be able to get a bad text into a number edit.");
+                return errorReturn;
             }
 
             set
@@ -166,6 +167,22 @@ namespace MatterHackers.Agg.UI
                 if (newValue != Value)
                 {
                     Text = newValue.ToString();
+                }
+                else // lets make sure it has the same text as the value
+                {
+                    double currentValue;
+                    if (Double.TryParse(Text, out currentValue))
+                    {
+                        if (currentValue != newValue)
+                        {
+                            // the text does not match the value so set it
+                            Text = newValue.ToString();
+                        }
+                    }
+                    else // the text cannot be parsed so set it
+                    {
+                        Text = newValue.ToString();
+                    }
                 }
             }
         }

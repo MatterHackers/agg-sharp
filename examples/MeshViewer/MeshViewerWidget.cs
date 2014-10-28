@@ -47,51 +47,42 @@ namespace MatterHackers.MeshVisualizer
     {
         BackgroundWorker backgroundWorker = null;
 
-        internal class MaterialColors
-        {
-            internal RGBA_Bytes color;
-            internal RGBA_Bytes selectedColor;
-
-            internal MaterialColors(RGBA_Bytes color, RGBA_Bytes selectedColor)
-            {
-                this.color = color;
-                this.selectedColor = selectedColor;
-            }
-        }
-
-        Dictionary<int, MaterialColors> materialColors = new Dictionary<int, MaterialColors>();
+        static Dictionary<int, RGBA_Bytes> materialColors = new Dictionary<int, RGBA_Bytes>();
         public RGBA_Bytes GetMaterialColor(int materialIndexBase1)
         {
             if (materialColors.ContainsKey(materialIndexBase1))
             {
-                return materialColors[materialIndexBase1].color;
+                return materialColors[materialIndexBase1];
             }
 
-            // we sort of expect at most 4 extruders
+            // we currently expect at most 4 extruders
             return RGBA_Floats.FromHSL((materialIndexBase1 % 4) / 4.0, .5, .5).GetAsRGBA_Bytes();
         }
 
         public RGBA_Bytes GetSelectedMaterialColor(int materialIndexBase1)
         {
-            if (materialColors.ContainsKey(materialIndexBase1))
-            {
-                return materialColors[materialIndexBase1].selectedColor;
-            }
+            double hue0To1;
+            double saturation0To1;
+            double lightness0To1;
+            GetMaterialColor(materialIndexBase1).GetAsRGBA_Floats().GetHSL(out hue0To1, out saturation0To1, out lightness0To1);
+
+            // now make it a bit lighter and less saturated
+            saturation0To1 = Math.Min(1, saturation0To1 * 2);
+            lightness0To1 = Math.Min(1, lightness0To1 * 1.2);
 
             // we sort of expect at most 4 extruders
-            return RGBA_Floats.FromHSL((materialIndexBase1 % 4) / 4.0, 1, .6).GetAsRGBA_Bytes();
+            return RGBA_Floats.FromHSL(hue0To1, saturation0To1, lightness0To1).GetAsRGBA_Bytes();
         }
 
-        public void SetMaterialColor(int materialIndexBase1, RGBA_Bytes color, RGBA_Bytes selectedColor)
+        public void SetMaterialColor(int materialIndexBase1, RGBA_Bytes color)
         {
-            MaterialColors newColors = new MaterialColors(color, selectedColor);
             if (!materialColors.ContainsKey(materialIndexBase1))
             {
-                materialColors.Add(materialIndexBase1, newColors);
+                materialColors.Add(materialIndexBase1, color);
             }
             else
             {
-                materialColors[materialIndexBase1] = newColors;
+                materialColors[materialIndexBase1] = color;
             }
         }
 
@@ -101,7 +92,7 @@ namespace MatterHackers.MeshVisualizer
         Vector3 displayVolume;
         public Vector3 DisplayVolume { get { return displayVolume; } }
 
-        public bool AlwaysRenderBed { get; set; }
+        public bool AllowBedRenderingWhenEmpty { get; set; }
         public bool RenderBed { get; set; }
         public bool RenderBuildVolume { get; set; }
 
@@ -396,10 +387,10 @@ namespace MatterHackers.MeshVisualizer
             }
 
             // we don't want to render the bed or bulid volume before we load a model.
-            if (MeshGroups.Count > 0 || AlwaysRenderBed)
+            if (MeshGroups.Count > 0 || AllowBedRenderingWhenEmpty)
             {
                 if (RenderBed)
-                {                    
+                {
                     RenderMeshToGl.Render(printerBed, this.BedColor);
                 }
 
@@ -410,7 +401,21 @@ namespace MatterHackers.MeshVisualizer
             }
         }
 
-        public void LoadMesh(string meshPathAndFileName)
+        public void CreateGlDataForMeshes(List<MeshGroup> meshGroupsToPrepare)
+        {
+            for (int i = 0; i < meshGroupsToPrepare.Count; i++)
+            {
+                MeshGroup meshGroupToPrepare = meshGroupsToPrepare[i];
+
+                foreach (Mesh meshToPrepare in meshGroupToPrepare.Meshes)
+                {
+                    GLMeshTrianglePlugin glMeshPlugin = GLMeshTrianglePlugin.Get(meshToPrepare);
+                }
+            }
+        }
+
+        public enum CenterPartAfterLoad { DO, DONT }
+        public void LoadMesh(string meshPathAndFileName, CenterPartAfterLoad centerPart)
         {
             if (File.Exists(meshPathAndFileName))
             {
@@ -424,8 +429,8 @@ namespace MatterHackers.MeshVisualizer
 
                 backgroundWorker.DoWork += (object sender, DoWorkEventArgs e) =>
                 {
-                    List<MeshGroup> loadedMeshGroups = MeshFileIo.Load(meshPathAndFileName, backgroundWorker_ProgressChanged);
-                    SetMeshAfterLoad(loadedMeshGroups);
+                    List<MeshGroup> loadedMeshGroups = MeshFileIo.Load(meshPathAndFileName, reportProgress0to100);
+                    SetMeshAfterLoad(loadedMeshGroups, centerPart);
                     e.Result = loadedMeshGroups;
                 };
                 backgroundWorker.RunWorkerAsync();
@@ -437,7 +442,7 @@ namespace MatterHackers.MeshVisualizer
             }
         }
 
-        public void SetMeshAfterLoad(List<MeshGroup> loadedMeshGroups)
+        public void SetMeshAfterLoad(List<MeshGroup> loadedMeshGroups, CenterPartAfterLoad centerPart)
         {
             MeshGroups.Clear();
 
@@ -447,6 +452,8 @@ namespace MatterHackers.MeshVisualizer
             }
             else
             {
+                CreateGlDataForMeshes(loadedMeshGroups);
+
                 AxisAlignedBoundingBox bounds = new AxisAlignedBoundingBox(Vector3.Zero, Vector3.Zero);
                 bool first = true;
                 foreach (MeshGroup meshGroup in loadedMeshGroups)
@@ -471,13 +478,16 @@ namespace MatterHackers.MeshVisualizer
                     MeshGroups.Add(meshGroup);
                 }
 
-                // make sure the entile load is centered and on the bed
-                Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
-                for (int i = 0; i < MeshGroups.Count; i++)
+                if (centerPart == CenterPartAfterLoad.DO)
                 {
-                    ScaleRotateTranslate moved = meshTransforms[i];
-                    moved.translation *= Matrix4X4.CreateTranslation(-boundsCenter + new Vector3(0, 0, bounds.ZSize / 2));
-                    meshTransforms[i] = moved;
+                    // make sure the entile load is centered and on the bed
+                    Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
+                    for (int i = 0; i < MeshGroups.Count; i++)
+                    {
+                        ScaleRotateTranslate moved = meshTransforms[i];
+                        moved.translation *= Matrix4X4.CreateTranslation(-boundsCenter + new Vector3(0, 0, bounds.ZSize / 2));
+                        meshTransforms[i] = moved;
+                    }
                 }
 
                 trackballTumbleWidget.TrackBallController = new TrackBallController();
@@ -485,10 +495,6 @@ namespace MatterHackers.MeshVisualizer
                 trackballTumbleWidget.TrackBallController.Scale = .03;
                 trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, MathHelper.Tau / 16)));
                 trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
-
-#if false // a test of saving 
-                MeshFileIo.Save(loadedMeshGroups, "test.amf", new MeshOutputInfo(MeshOutputInfo.OutputType.Binary, new string[] {"Created By", "MatterHackers Mesh Viewer"}));
-#endif
             }
         }
 
@@ -502,16 +508,24 @@ namespace MatterHackers.MeshVisualizer
             }
         }
 
-        bool backgroundWorker_ProgressChanged(double progress0To1, string processingState)
+        void reportProgress0to100(double progress0To1, string processingState, out bool continueProcessing)
         {
+            if (this.WidgetHasBeenClosed)
+            {
+                continueProcessing = false;
+            }
+            else
+            {
+                continueProcessing = true;
+            }
+
             UiThread.RunOnIdle((object state) =>
             {
-                int percentComplete = (int)(progress0To1 * 100 + .5);
+                int percentComplete = (int)(progress0To1 * 100);
                 partProcessingInfo.centeredInfoText.Text = "Loading Mesh {0}%...".FormatWith(percentComplete);
                 partProcessingInfo.progressControl.PercentComplete = percentComplete;
                 partProcessingInfo.centeredInfoDescription.Text = processingState;
             });
-            return true;
         }
 
         public override void OnMouseDown(MouseEventArgs mouseEvent)

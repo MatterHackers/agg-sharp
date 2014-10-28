@@ -67,7 +67,7 @@ namespace MatterHackers.Agg.UI
         {
             this.maxHeight = maxHeight;
             this.menuDirection = direction;
-            Click += new ButtonEventHandler(ListMenu_Click);
+            Click += new EventHandler(ListMenu_Click);
             VAnchor = UI.VAnchor.FitToChildren;
             HAnchor = UI.HAnchor.FitToChildren;
         }
@@ -93,7 +93,7 @@ namespace MatterHackers.Agg.UI
             base.OnMouseDown(mouseEvent);
         }
 
-        void ListMenu_Click(object sender, MouseEventArgs mouseEvent)
+        void ListMenu_Click(object sender, EventArgs mouseEvent)
         {
             if (mouseDownWhileOpen)
             {

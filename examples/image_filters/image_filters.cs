@@ -448,7 +448,7 @@ namespace MatterHackers.Agg
             }
         }
 
-        void SingleStep(object sender, MouseEventArgs mouseEvent)
+        void SingleStep(object sender, EventArgs mouseEvent)
         {
             m_cur_angle += m_step.Value;
             m_RotatedImage.CopyFrom(m_TempDestImage);
@@ -458,7 +458,7 @@ namespace MatterHackers.Agg
         }
 
         Stopwatch stopwatch = new Stopwatch();
-        void RunTest(object sender, MouseEventArgs mouseEvent)
+        void RunTest(object sender, EventArgs mouseEvent)
         {
             stopwatch.Restart();
             m_time1 = m_time2 = stopwatch.ElapsedMilliseconds;
@@ -466,7 +466,7 @@ namespace MatterHackers.Agg
             UiThread.RunOnIdle(OnIdle);
         }
 
-        void RefreshImage(object sender, MouseEventArgs mouseEvent)
+        void RefreshImage(object sender, EventArgs mouseEvent)
         {
             stopwatch.Restart();
             m_time1 = m_time2 = 0;

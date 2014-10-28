@@ -88,12 +88,12 @@ namespace MatterHackers.MeshVisualizer
 
             if (meshFileToLoad != "")
             {
-                meshViewerWidget.LoadMesh(meshFileToLoad);
+                meshViewerWidget.LoadMesh(meshFileToLoad, MeshVisualizer.MeshViewerWidget.CenterPartAfterLoad.DO);
             }
             else
             {
                 openFileButton = new Button("Open 3D File", 0, 0);
-                openFileButton.Click += new Button.ButtonEventHandler(openFileButton_ButtonClick);
+                openFileButton.Click += new EventHandler(openFileButton_ButtonClick);
                 buttonPanel.AddChild(openFileButton);
             }
 
@@ -139,7 +139,7 @@ namespace MatterHackers.MeshVisualizer
             meshViewerWidget.RenderBed = bedCheckBox.Checked;
         }
 
-        void openFileButton_ButtonClick(object sender, MouseEventArgs mouseEvent)
+        void openFileButton_ButtonClick(object sender, EventArgs mouseEvent)
         {
             UiThread.RunOnIdle(DoOpenFileButton_ButtonClick);
         }
@@ -149,7 +149,7 @@ namespace MatterHackers.MeshVisualizer
             OpenFileDialogParams openParams = new OpenFileDialogParams("3D Mesh Files|*.stl;*.amf");
             Stream streamToLoadFrom = FileDialog.OpenFileDialog(ref openParams);
 
-            meshViewerWidget.LoadMesh(openParams.FileName);
+            meshViewerWidget.LoadMesh(openParams.FileName, MeshVisualizer.MeshViewerWidget.CenterPartAfterLoad.DO);
 
             Invalidate();
         }

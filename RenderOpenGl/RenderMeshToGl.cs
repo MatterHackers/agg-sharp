@@ -96,6 +96,10 @@ namespace MatterHackers.RenderOpenGl
                 GL.DisableClientState(ArrayCap.VertexArray);
                 GL.DisableClientState(ArrayCap.TextureCoordArray);
 
+                GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(0));
+                GL.NormalPointer(NormalPointerType.Float, 0, new IntPtr(0));
+                GL.VertexPointer(3, VertexPointerType.Float, 0, new IntPtr(0));
+
                 if (subMesh.texture != null)
                 {
                     GL.DisableClientState(ArrayCap.TextureCoordArray);
@@ -179,7 +183,6 @@ namespace MatterHackers.RenderOpenGl
                     case RenderTypes.Hidden:
                         break;
 
-#if USE_OPENGL
                     case RenderTypes.Shaded:
                         DrawToGL(meshToRender);
                         break;
@@ -188,13 +191,6 @@ namespace MatterHackers.RenderOpenGl
                     case RenderTypes.Outlines:
                         DrawWithWireOverlay(meshToRender, renderType);
                         break;
-#else
-                    case RenderTypes.Shaded:
-                    case RenderTypes.Polygons:
-                    case RenderTypes.Outlines:
-                        DrawToGL(meshToRender);
-                        break;
-#endif
                 }
 
                 GL.PopMatrix();

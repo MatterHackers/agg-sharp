@@ -36,22 +36,22 @@ namespace RockBlaster
             GameImageSequence onePlayerButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "OnePlayerButton");
             Button onePlayerGameButton = new Button(270, 310, new ButtonViewThreeImage(onePlayerButtonSequence.GetImageByIndex(0), onePlayerButtonSequence.GetImageByIndex(1), onePlayerButtonSequence.GetImageByIndex(2)));
             AddChild(onePlayerGameButton);
-            onePlayerGameButton.Click += new Button.ButtonEventHandler(OnStartOnePlayerGameButton);
+            onePlayerGameButton.Click += new EventHandler(OnStartOnePlayerGameButton);
 
             GameImageSequence twoPlayerButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "TwoPlayerButton");
             Button twoPlayerGameButton = new Button(400, 310, new ButtonViewThreeImage(twoPlayerButtonSequence.GetImageByIndex(0), twoPlayerButtonSequence.GetImageByIndex(1), twoPlayerButtonSequence.GetImageByIndex(2)));
             AddChild(twoPlayerGameButton);
-            twoPlayerGameButton.Click += new Button.ButtonEventHandler(OnStartTwoPlayerGameButton);
+            twoPlayerGameButton.Click += new EventHandler(OnStartTwoPlayerGameButton);
 
             GameImageSequence fourPlayerButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "FourPlayerButton");
             Button fourPlayerGameButton = new Button(530, 310, new ButtonViewThreeImage(fourPlayerButtonSequence.GetImageByIndex(0), fourPlayerButtonSequence.GetImageByIndex(1), fourPlayerButtonSequence.GetImageByIndex(2)));
             AddChild(fourPlayerGameButton);
-            fourPlayerGameButton.Click += new Button.ButtonEventHandler(OnStartFourPlayerGameButton);
+            fourPlayerGameButton.Click += new EventHandler(OnStartFourPlayerGameButton);
 
             GameImageSequence cancelButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "NumPlayersCancelButton");
             Button cancelGameButton = new Button(400, 210, new ButtonViewThreeImage(cancelButtonSequence.GetImageByIndex(0), cancelButtonSequence.GetImageByIndex(1), cancelButtonSequence.GetImageByIndex(2)));
             AddChild(cancelGameButton);
-            cancelGameButton.Click += new Button.ButtonEventHandler(OnCancelMenuButton);
+            cancelGameButton.Click += new EventHandler(OnCancelMenuButton);
         }
 
         public override void OnDraw(Graphics2D graphics2D)
@@ -62,7 +62,7 @@ namespace RockBlaster
             base.OnDraw(graphics2D);
         }
 
-        private void OnStartOnePlayerGameButton(object sender, MouseEventArgs mouseEvent)
+        private void OnStartOnePlayerGameButton(object sender, EventArgs mouseEvent)
         {
             if (StartOnePlayerGame != null)
             {
@@ -70,7 +70,7 @@ namespace RockBlaster
             }
         }
 
-        private void OnStartTwoPlayerGameButton(object sender, MouseEventArgs mouseEvent)
+        private void OnStartTwoPlayerGameButton(object sender, EventArgs mouseEvent)
         {
             if (StartTwoPlayerGame != null)
             {
@@ -78,7 +78,7 @@ namespace RockBlaster
             }
         }
 
-        private void OnStartFourPlayerGameButton(object sender, MouseEventArgs mouseEvent)
+        private void OnStartFourPlayerGameButton(object sender, EventArgs mouseEvent)
         {
             if (StartFourPlayerGame != null)
             {
@@ -86,7 +86,7 @@ namespace RockBlaster
             }
         }
 
-        private void OnCancelMenuButton(object sender, MouseEventArgs mouseEvent)
+        private void OnCancelMenuButton(object sender, EventArgs mouseEvent)
         {
             if (CancelMenu != null)
             {
