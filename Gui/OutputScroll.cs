@@ -79,6 +79,11 @@ namespace MatterHackers.Agg.UI
             Invalidate();
         }
 
+		public void WriteToFile (string filePath)
+		{
+			System.IO.File.WriteAllLines (@filePath, lines);
+		}
+
         public override void OnDraw(Graphics2D graphics2D)
         {
             TypeFacePrinter printer = new TypeFacePrinter();
