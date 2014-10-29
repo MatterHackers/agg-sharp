@@ -579,6 +579,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 ranTests = true;
                 VertexCollectonTests vertexCollectionTests = new VertexCollectonTests();
                 vertexCollectionTests.PreventDuplicates();
+                vertexCollectionTests.SortAndQueryWork();
 
                 MeshUnitTests test = new MeshUnitTests();
                 test.CreateWireFrameTriangle();

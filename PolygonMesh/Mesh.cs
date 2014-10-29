@@ -42,22 +42,6 @@ namespace MatterHackers.PolygonMesh
     [DebuggerDisplay("ID = {Data.ID}")]
     public class Mesh
     {
-        static public readonly double DefaultMaxDistanceToConsiderVertexAsSame = .0000001;
-
-        double maxDistanceToConsiderVertexAsSame = DefaultMaxDistanceToConsiderVertexAsSame;
-        public double MaxDistanceToConsiderVertexAsSame
-        {
-            get
-            {
-                return maxDistanceToConsiderVertexAsSame;
-            }
-
-            set
-            {
-                maxDistanceToConsiderVertexAsSame = value;
-            }
-        }
-
         int changedCount = 0;
         public int ChangedCount { get { return changedCount; } }
 
@@ -379,9 +363,9 @@ namespace MatterHackers.PolygonMesh
             return CreateVertex(new Vector3(x, y, z), allowDuplicate, willSortLater);
         }
 
-        public List<Vertex> FindVertices(Vector3 position)
+        public List<Vertex> FindVertices(Vector3 position, double maxDistanceToConsiderVertexAsSame = 0)
         {
-            return vertices.FindVertices(position, MaxDistanceToConsiderVertexAsSame);
+            return vertices.FindVertices(position, maxDistanceToConsiderVertexAsSame);
         }
 
         public Vertex CreateVertex(Vector3 position, bool allowDuplicate = false, bool willSortLater = false)
@@ -405,6 +389,7 @@ namespace MatterHackers.PolygonMesh
             throw new NotImplementedException();
         }
 
+        Stopwatch timer = new Stopwatch();
         public void SortVertices(ReportProgressRatio reportProgress = null)
         {
             bool continueProcessing;
@@ -412,7 +397,10 @@ namespace MatterHackers.PolygonMesh
             {
                 reportProgress(0, "Sorting Vertices", out continueProcessing);
             }
+            timer.Restart();
             Vertices.Sort();
+            timer.Stop();
+            Debug.WriteLine(timer.ElapsedMilliseconds);
             if (reportProgress != null)
             {
                 reportProgress(1, "Sorting Vertices", out continueProcessing);
