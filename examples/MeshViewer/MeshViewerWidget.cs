@@ -48,7 +48,7 @@ namespace MatterHackers.MeshVisualizer
         BackgroundWorker backgroundWorker = null;
 
         static Dictionary<int, RGBA_Bytes> materialColors = new Dictionary<int, RGBA_Bytes>();
-        public RGBA_Bytes GetMaterialColor(int materialIndexBase1)
+        public static RGBA_Bytes GetMaterialColor(int materialIndexBase1)
         {
             if (materialColors.ContainsKey(materialIndexBase1))
             {
@@ -59,7 +59,7 @@ namespace MatterHackers.MeshVisualizer
             return RGBA_Floats.FromHSL((materialIndexBase1 % 4) / 4.0, .5, .5).GetAsRGBA_Bytes();
         }
 
-        public RGBA_Bytes GetSelectedMaterialColor(int materialIndexBase1)
+        public static RGBA_Bytes GetSelectedMaterialColor(int materialIndexBase1)
         {
             double hue0To1;
             double saturation0To1;
@@ -74,7 +74,7 @@ namespace MatterHackers.MeshVisualizer
             return RGBA_Floats.FromHSL(hue0To1, saturation0To1, lightness0To1).GetAsRGBA_Bytes();
         }
 
-        public void SetMaterialColor(int materialIndexBase1, RGBA_Bytes color)
+        public static void SetMaterialColor(int materialIndexBase1, RGBA_Bytes color)
         {
             if (!materialColors.ContainsKey(materialIndexBase1))
             {
