@@ -51,16 +51,46 @@ namespace MatterHackers.PolygonMesh
 
     public class VertexDistanceFromPointSorter : IComparer<Vertex>
     {
-        static Vector3 positionToMeasureFrom = new Vector3(.224374, .805696, .383724);
         public VertexDistanceFromPointSorter()
         {
         }
 
         public int Compare(Vertex a, Vertex b)
         {
-            double distToASquared = (a.Position - positionToMeasureFrom).LengthSquared;
-            double distToBSquared = (b.Position - positionToMeasureFrom).LengthSquared;
-            return distToASquared.CompareTo(distToBSquared);
+            if (a.Position.x < b.Position.x)
+            {
+                return -1;
+            }
+            else if (a.Position.x == b.Position.x)
+            {
+                if (a.Position.y < b.Position.y)
+                {
+                    return -1;
+                }
+                else if (a.Position.y == b.Position.y)
+                {
+                    if (a.Position.z < b.Position.z)
+                    {
+                        return -1;
+                    }
+                    else if (a.Position.z == b.Position.z)
+                    {
+                        return 0;
+                    }
+                    else
+                    {
+                        return 1;
+                    }
+                }
+                else
+                {
+                    return 1;
+                }
+            }
+            else
+            {
+                return 1;
+            }
         }
     }
 

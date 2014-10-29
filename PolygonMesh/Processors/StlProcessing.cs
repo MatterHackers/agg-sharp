@@ -226,7 +226,6 @@ namespace MatterHackers.PolygonMesh.Processors
             maxProgressReport.Start();
             Mesh meshFromStlFile = new Mesh();
             //meshFromStlFile.MaxDistanceToConsiderVertexAsSame = .0000005;
-            meshFromStlFile.MaxDistanceToConsiderVertexAsSame = 0; // only vertices that are the exact same point will be merged.
             long bytesInFile = stlStream.Length;
             if (bytesInFile <= 80)
             {

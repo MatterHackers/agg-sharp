@@ -69,5 +69,47 @@ namespace MatterHackers.PolygonMesh.UnitTests
             Assert.IsTrue(found.Count == 1);
             Assert.IsTrue(found[0] == vertex1);
         }
+
+        [Test]
+        public void SortAndQueryWork()
+        {
+            double size = 10;
+            double increment = 1;
+            Random positionRand = new Random();
+            Mesh mesh = new Mesh();
+            List<Vector3Float> positions = new List<Vector3Float>();
+            int numPosition = 50;
+            for (int i = 0; i < numPosition; i++)
+            {
+                positions.Add(new Vector3Float(positionRand.NextDouble() * size, positionRand.NextDouble() * size, positionRand.NextDouble() * size));
+                mesh.CreateVertex(new Vector3(positions[i].x, positions[i].y, positions[i].z), true, true);
+            }
+
+            mesh.SortVertices();
+
+            for (double distance = 0; distance < size; distance += increment)
+            {
+                for (int i = 0; i < numPosition; i++)
+                {
+                    List<Vertex> found1 = mesh.FindVertices(new Vector3(positions[i].x, positions[i].y, positions[i].z), distance);
+                    List<Vector3Float> found2 = FindWithinDist(positions, positions[i], distance);
+
+                    Assert.IsTrue(found1.Count == found2.Count);
+                }
+            }
+        }
+
+        private List<Vector3Float> FindWithinDist(List<Vector3Float> positions, Vector3Float position, double distance)
+        {
+            List<Vector3Float> found = new List<Vector3Float>();
+            for (int i = 0; i < positions.Count; i++)
+            {
+                if ((positions[i] - position).Length <= distance)
+                {
+                    found.Add(positions[i]);
+                }
+            }
+            return found;
+        }
     }
 }

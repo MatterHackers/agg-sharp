@@ -61,6 +61,11 @@ namespace MatterHackers.VectorMath
         /// <param name="x">The x component of the Vector3Float.</param>
         /// <param name="y">The y component of the Vector3Float.</param>
         /// <param name="z">The z component of the Vector3Float.</param>
+        public Vector3Float(double x, double y, double z)
+            : this((float)x, (float)y, (float)z)
+        {
+        }
+
         public Vector3Float(float x, float y, float z)
         {
             this.x = x;
