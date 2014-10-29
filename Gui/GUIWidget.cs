@@ -1024,7 +1024,7 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        public bool Enabled
+        public virtual bool Enabled
         {
             get
             {
@@ -1957,6 +1957,9 @@ namespace MatterHackers.Agg.UI
                     child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
 
                     MouseEventArgs childMouseEvent = new MouseEventArgs(mouseEvent, childX, childY);
+
+                    // If any previous child has accepted the MouseDown, then we won't continue propogating the event and 
+                    // will attempt to fire MovedOffWidget logic
                     if (childHasAcceptedThisEvent)
                     {
                         // another child already took the down so no one else can.
