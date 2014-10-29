@@ -47,29 +47,32 @@ namespace MatterHackers.GCodeVisualizer
         {
             if (speed > 0)
             {
-                double startColor = 223.0 / 360.0;
-                double endColor = 5.0 / 360.0;
-                double delta = startColor - endColor;
-
-                if (!speedColorLookup.ContainsKey(speed))
+                using (TimedLock.Lock(speedColorLookup, "Updating GCode Colors"))
                 {
-                    RGBA_Bytes color = RGBA_Floats.FromHSL(startColor, .99, .49).GetAsRGBA_Bytes();
-                    speedColorLookup.Add(speed, color);
+                    double startColor = 223.0 / 360.0;
+                    double endColor = 5.0 / 360.0;
+                    double delta = startColor - endColor;
 
-                    if (speedColorLookup.Count > 1)
+                    if (!speedColorLookup.ContainsKey(speed))
                     {
-                        double step = delta / (speedColorLookup.Count - 1);
-                        for (int index = 0; index < speedColorLookup.Count; index++)
+                        RGBA_Bytes color = RGBA_Floats.FromHSL(startColor, .99, .49).GetAsRGBA_Bytes();
+                        speedColorLookup.Add(speed, color);
+
+                        if (speedColorLookup.Count > 1)
                         {
-                            double offset = step * index;
-                            double fixedColor = startColor - offset;
-                            KeyValuePair<float, RGBA_Bytes> keyValue = speedColorLookup.ElementAt(index);
-                            speedColorLookup[keyValue.Key] = RGBA_Floats.FromHSL(fixedColor, .99, .49).GetAsRGBA_Bytes();
+                            double step = delta / (speedColorLookup.Count - 1);
+                            for (int index = 0; index < speedColorLookup.Count; index++)
+                            {
+                                double offset = step * index;
+                                double fixedColor = startColor - offset;
+                                KeyValuePair<float, RGBA_Bytes> keyValue = speedColorLookup.ElementAt(index);
+                                speedColorLookup[keyValue.Key] = RGBA_Floats.FromHSL(fixedColor, .99, .49).GetAsRGBA_Bytes();
+                            }
                         }
                     }
-                }
 
-                return speedColorLookup[speed];
+                    return speedColorLookup[speed];
+                }
             }
 
             return RGBA_Bytes.Black;
