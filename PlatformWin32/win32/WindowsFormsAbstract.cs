@@ -192,11 +192,8 @@ namespace MatterHackers.Agg.UI
 
         void DoCallAppWidgetOnIdle()
         {
-            if (!UiThread.CurrentlyRunning)
-            {
-                IdleCount++;
-                UiThread.DoRunAllPending();
-            }
+            IdleCount++;
+            UiThread.DoRunAllPending();
         }
 
         protected override void WndProc(ref Message m)

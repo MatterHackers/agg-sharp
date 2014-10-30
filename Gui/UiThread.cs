@@ -51,12 +51,8 @@ namespace MatterHackers.Agg.UI
             }
         }
         
-        static bool currentlyRunning = false;
-        public static bool CurrentlyRunning { get { return currentlyRunning; } }
-
         public static void DoRunAllPending()
         {
-            currentlyRunning = true;
             List<CallBackAndState> holdFunctionsToCallOnIdle = new List<CallBackAndState>();
             // make a copy so we don't keep this locked for long
             using (TimedLock.Lock(functionsToCallOnIdle, "PendingUiEvents AddAction()"))
@@ -78,8 +74,6 @@ namespace MatterHackers.Agg.UI
             {
                 callBackAndState.idleCallBack(callBackAndState.stateInfo);
             }
-
-            currentlyRunning = false;
         }
     }
 }
