@@ -260,7 +260,9 @@ namespace MatterHackers.Agg.UI
 
         public void OnIdle(object state)
         {
-            if (this.Focused && timeSinceTurnOn.ElapsedMilliseconds >= barOnTime * 1000)
+            if (this.Focused 
+                && timeSinceTurnOn.ElapsedMilliseconds >= barOnTime * 1000
+                && !WidgetHasBeenClosed)
             {
                 if (timeSinceTurnOn.ElapsedMilliseconds > (barOnTime + barOffTime) * 1000)
                 {
@@ -268,8 +270,8 @@ namespace MatterHackers.Agg.UI
                 }
                 else
                 {
-                    double timeUntileOn = (barOnTime + barOffTime) - timeSinceTurnOn.Elapsed.TotalSeconds;
-                    UiThread.RunOnIdle(OnIdle, barOnTime);
+                    UiThread.RunOnIdle(OnIdle, barOffTime);
+                    Invalidate();
                 }
             }
         }

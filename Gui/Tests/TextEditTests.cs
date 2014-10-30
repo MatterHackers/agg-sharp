@@ -112,6 +112,8 @@ namespace MatterHackers.Agg.UI.Tests
             container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
             SendKey(Keys.Back, ' ', container);
             Assert.IsTrue(editField1.Text == "", "It should have nothing in it.");
+
+            container.Close();
         }
 
         [Test]
@@ -170,6 +172,8 @@ namespace MatterHackers.Agg.UI.Tests
             container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 1, 1, 0));
             Assert.IsTrue(textField1LostFocus);
             Assert.IsFalse(textField1EditComplete, "The text did not change even though we lost focus we should not call textChanged.");
+
+            container.Close();
         }
 
         [Test]
@@ -220,6 +224,8 @@ namespace MatterHackers.Agg.UI.Tests
             SendKey(Keys.D, 'd', container);
             Assert.IsTrue(editField1.Text == "bc", "It should have a bc in it.");
             Assert.IsTrue(editField2.Text == "d", "It should have d in it.");
+
+            container.Close();
         }
 
         [Test]
@@ -304,6 +310,8 @@ namespace MatterHackers.Agg.UI.Tests
                 SendKey(Keys.Down, ' ', container);
                 SendKey(Keys.A | Keys.Shift, 'A', container);
                 Assert.IsTrue(multiLine.Text == "a\nA\n\na\na");
+
+                container.Close();
             }
 
             // make sure the insert position is correct when homed
@@ -325,6 +333,7 @@ namespace MatterHackers.Agg.UI.Tests
                 SendKey(Keys.Back, ' ', container);
                 Assert.IsTrue(multiLine.Text == "line1\nline2\nline3");
                 Assert.IsTrue(multiLine.InsertBarPosition.y == -32);
+                container.Close();
             }
 
             // make sure the insert position is correct when move left to end of line
@@ -348,6 +357,7 @@ namespace MatterHackers.Agg.UI.Tests
                 SendKey(Keys.Right, ' ', container);
                 Assert.IsTrue(multiLine.CharIndexToInsertBefore == 2);
                 Assert.IsTrue(multiLine.InsertBarPosition.x == leftOne * 2);
+                container.Close();
             }
 
             // make sure the cursor is at the right hight when it is after a \n that is on the first line
@@ -394,6 +404,7 @@ namespace MatterHackers.Agg.UI.Tests
                 SendKey(Keys.Right, ' ', container);
                 Assert.IsTrue(multiLine.CharIndexToInsertBefore == 6);
                 Assert.IsTrue(multiLine.InsertBarPosition.y == -64);
+                container.Close();
             }
         }
 
@@ -424,6 +435,8 @@ namespace MatterHackers.Agg.UI.Tests
                 Assert.IsTrue(numberEdit.Value == 0);
                 SendKey(Keys.A, 'A', container);
                 Assert.IsTrue(numberEdit.Value == 0);
+
+                container.Close();
             }
         }
 
@@ -473,6 +486,8 @@ namespace MatterHackers.Agg.UI.Tests
                 SendKeyDown(Keys.Right, container); // move to the right
                 SendKey(Keys.Control | Keys.V, 'v', container);
                 Assert.IsTrue(textEdit.Text == "starting starting text");
+
+                container.Close();
             }
         }
 
@@ -528,6 +543,8 @@ namespace MatterHackers.Agg.UI.Tests
             Assert.IsTrue(bestLeastSquares > 2000000);
             container.BackBuffer.FindLeastSquaresMatch(lastWordText.BackBuffer, out bestPosition, out bestLeastSquares);
             Assert.IsTrue(bestLeastSquares < 2000000);
+
+            container.Close();
         }
     }
 }

@@ -1583,6 +1583,8 @@ namespace MatterHackers.Agg.UI.Tests
                 searchPanel.AddChild(searchButton);
                 Assert.IsTrue(searchInput.BoundsRelativeToParent.Bottom - searchPanel.BoundsRelativeToParent.Bottom == searchPanel.BoundsRelativeToParent.Top - searchInput.BoundsRelativeToParent.Top);
             }
+
+            searchPanel.Close();
         }
     }
 }

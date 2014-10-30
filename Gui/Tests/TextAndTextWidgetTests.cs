@@ -75,6 +75,7 @@ namespace MatterHackers.Agg.UI.Tests
             }
 
             Assert.IsTrue(rectangleWidget.BackBuffer.FindLeastSquaresMatch(textOnly, 1), "TextWidgets need to be drawing.");
+            rectangleWidget.Close();
         }
     }
 }
