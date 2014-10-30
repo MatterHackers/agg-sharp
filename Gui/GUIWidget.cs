@@ -1784,7 +1784,10 @@ namespace MatterHackers.Agg.UI
 
         public void CloseOnIdle()
         {
-            UiThread.RunOnIdle((state) => { Close(); });
+            UiThread.RunOnIdle((state) => 
+            {
+                Close(); 
+            });
         }
 
         /// <summary>
