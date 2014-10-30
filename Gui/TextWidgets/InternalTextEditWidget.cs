@@ -216,8 +216,6 @@ namespace MatterHackers.Agg.UI
 
             internalTextWidget.TextChanged += new EventHandler(internalTextWidget_TextChanged);
             internalTextWidget.BoundsChanged += new EventHandler(internalTextWidget_BoundsChanged);
-
-            UiThread.RunOnIdle(OnIdle);
         }
 
         void UpdateLocalBounds()
@@ -254,36 +252,32 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        Stopwatch barFlasher = new Stopwatch();
+        Stopwatch timeSinceTurnOn = new Stopwatch();
         double barOnTime = .6;
         double barOffTime = .6;
-        bool barFlashIsOn = true;
+
+        bool BarIsShowing { get { return timeSinceTurnOn.ElapsedMilliseconds < barOnTime * 1000; }  }
+
         public void OnIdle(object state)
         {
-            if (this.Focused && barFlasher.ElapsedMilliseconds > barOnTime * 1000)
+            if (this.Focused && timeSinceTurnOn.ElapsedMilliseconds >= barOnTime * 1000)
             {
-                if (barFlashIsOn)
-                {
-                    barFlashIsOn = false;
-                    Invalidate();
-                }
-                if (barFlasher.ElapsedMilliseconds > (barOnTime + barOffTime) * 1000)
+                if (timeSinceTurnOn.ElapsedMilliseconds > (barOnTime + barOffTime) * 1000)
                 {
                     RestartBarFlash();
                 }
-            }
-
-            // Put this function back in so it will get called each update
-            if (!WidgetHasBeenClosed)
-            {
-                UiThread.RunOnIdle(OnIdle);
+                else
+                {
+                    double timeUntileOn = (barOnTime + barOffTime) - timeSinceTurnOn.Elapsed.TotalSeconds;
+                    UiThread.RunOnIdle(OnIdle, barOnTime);
+                }
             }
         }
 
         void RestartBarFlash()
         {
-            barFlashIsOn = true;
-            barFlasher.Restart();
+            timeSinceTurnOn.Restart();
+            UiThread.RunOnIdle(OnIdle, barOnTime);
             Invalidate();
         }
 
@@ -292,12 +286,8 @@ namespace MatterHackers.Agg.UI
         {
             RestartBarFlash();
             textWhenGotFocus = Text;
+            timeSinceTurnOn.Restart();
             base.OnFocus(e);
-        }
-
-        public bool TextHasChanged()
-        {
-            return textWhenGotFocus != Text;
         }
 
         public override void OnLostFocus(EventArgs e)
@@ -309,6 +299,11 @@ namespace MatterHackers.Agg.UI
                 OnEditComplete();
             }
             base.OnLostFocus(e);
+        }
+
+        public bool TextHasChanged()
+        {
+            return textWhenGotFocus != Text;
         }
 
         public RGBA_Bytes cursorColor = RGBA_Bytes.DarkGray;
@@ -424,7 +419,7 @@ namespace MatterHackers.Agg.UI
                 }
             }
 
-            if (this.Focused && barFlashIsOn)
+            if (this.Focused && BarIsShowing)
             {
                 double xFraction = graphics2D.GetTransform().tx;
                 xFraction = xFraction - (int)xFraction;
