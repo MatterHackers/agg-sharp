@@ -131,14 +131,21 @@ namespace MatterHackers.Agg.UI
 
         protected override void OnResize(EventArgs e)
         {
-            if (doneLoading)
+            Rectangle bounds = new Rectangle(0, 0, ClientSize.Width, ClientSize.Height);
+
+            // Suppress resize events on the Windows platform when the form is being minimized and/or when a Resize event has fired
+            // but the control dimensions remain the same. This prevents a bounds resize from the current dimensions to 0,0 and a
+            // subsequent resize on Restore to the origin dimensions. In addition, this guard prevents the loss of control state 
+            // due to cascading control regeneration and avoids the associated performance hit and visible rendering lag during Restore
+            if (doneLoading && this.WindowState != FormWindowState.Minimized && glControl.Bounds != bounds)
             {
                 // If this throws an assert, you are calling MakeCurrent() before the glControl is done being constructed.
                 // Call this function you have called Show().
                 glControl.MakeCurrent();
                 Invalidate();
                 //glSurface.Location = new Point(0, 0);
-                glControl.Bounds = new Rectangle(0, 0, ClientSize.Width, ClientSize.Height);
+                glControl.Bounds = bounds;
+
                 base.OnResize(e);
                 SetupViewport();
             }
