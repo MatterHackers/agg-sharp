@@ -373,6 +373,7 @@ namespace MatterHackers.Agg.UI
 
         private int layoutSuspendCount;
         public event EventHandler Layout;
+        // the event args will be a DrawEventArgs
         public event EventHandler Draw;
     
         public event KeyPressEventHandler KeyPressed;
