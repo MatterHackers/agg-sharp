@@ -22,7 +22,7 @@ namespace MatterHackers.Agg.WindowsFileDialogs
             return true;
         }
 
-        private Stream OpenFileDialog(ref OpenFileDialogParams openParams)
+        public override Stream OpenFileDialog(ref OpenFileDialogParams openParams)
         {
             WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = true;
             openParams.FileName = "";
@@ -71,7 +71,7 @@ namespace MatterHackers.Agg.WindowsFileDialogs
             return true;
         }
 
-        private string SelectFolderDialog(ref SelectFolderDialogParams folderParams)
+        public override string SelectFolderDialog(ref SelectFolderDialogParams folderParams)
         {
             WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = true;
 
@@ -110,7 +110,7 @@ namespace MatterHackers.Agg.WindowsFileDialogs
             return true;
         }
 
-        private Stream SaveFileDialog(ref SaveFileDialogParams saveParams)
+        public override Stream SaveFileDialog(ref SaveFileDialogParams saveParams)
         {
             WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = true;
             SaveFileDialogParams SaveFileDialogDialogParams;
