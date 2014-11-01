@@ -52,6 +52,7 @@ namespace MatterHackers.Agg.WindowsFileDialogs
                 }
                 catch (Exception ex)
                 {
+                    // TODO: Should use StyledMessageBox but can't take dependency against the MatterControl assembly
                     System.Windows.Forms.MessageBox.Show("Error: Could not read file from disk. Original error: " + ex.Message);
                 }
             }
@@ -145,6 +146,7 @@ namespace MatterHackers.Agg.WindowsFileDialogs
                 }
                 catch (Exception ex)
                 {
+                    // TODO: Should use StyledMessageBox but can't take dependency against the MatterControl assembly
                     System.Windows.Forms.MessageBox.Show("Error: Could not create file for saving. Original error: " + ex.Message);
                 }
             }

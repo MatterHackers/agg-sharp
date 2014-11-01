@@ -146,10 +146,12 @@ namespace MatterHackers.MeshVisualizer
 
         void DoOpenFileButton_ButtonClick(object state)
         {
-            OpenFileDialogParams openParams = new OpenFileDialogParams("3D Mesh Files|*.stl;*.amf");
-            Stream streamToLoadFrom = FileDialog.OpenFileDialog(ref openParams);
-
-            meshViewerWidget.LoadMesh(openParams.FileName, MeshVisualizer.MeshViewerWidget.CenterPartAfterLoad.DO);
+            FileDialog.OpenFileDialog(
+                new OpenFileDialogParams("3D Mesh Files|*.stl;*.amf"), 
+                (openParams) =>
+                {
+                    meshViewerWidget.LoadMesh(openParams.FileName, MeshVisualizer.MeshViewerWidget.CenterPartAfterLoad.DO);
+                });
 
             Invalidate();
         }
