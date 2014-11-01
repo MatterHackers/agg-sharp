@@ -52,7 +52,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
         public OutputType OutputTypeSetting = OutputType.Binary;
         public Dictionary<string, string> MetaDataKeyValue = new Dictionary<string, string>();
-        public int OnlySaveMaterialIndex = -1;
+        public List<int> MaterialIndexsToSave = null;
         public CsgOption CsgOptionState = CsgOption.SimpleInsertVolumes;
         ReportProgressRatio reportProgress = null;
 
@@ -99,6 +99,13 @@ namespace MatterHackers.PolygonMesh.Processors
             }
         }
 
+        public static bool Save(MeshGroup meshGroupToSave, string meshPathAndFileName, MeshOutputSettings outputInfo = null)
+        {
+            List<MeshGroup> meshGroupsToSave = new List<MeshGroup>();
+            meshGroupsToSave.Add(meshGroupToSave);
+            return Save(meshGroupsToSave, meshPathAndFileName, outputInfo);
+        }
+
         public static bool Save(List<MeshGroup> meshGroupsToSave, string meshPathAndFileName, MeshOutputSettings outputInfo = null)
         {
             if (outputInfo == null)
@@ -139,7 +146,7 @@ namespace MatterHackers.PolygonMesh.Processors
                     foreach (Mesh mesh in meshGroup.Meshes)
                     {
                         int currentMeshMaterialIntdex = MeshMaterialData.Get(mesh).MaterialIndex;
-                        if (outputInfo.OnlySaveMaterialIndex == -1 || outputInfo.OnlySaveMaterialIndex == currentMeshMaterialIntdex)
+                        if (outputInfo.MaterialIndexsToSave == null || outputInfo.MaterialIndexsToSave.Contains(currentMeshMaterialIntdex))
                         {
                             foreach (Face face in mesh.Faces)
                             {

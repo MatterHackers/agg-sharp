@@ -36,6 +36,7 @@ using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
+using MatterHackers.MeshVisualizer;
 
 namespace MatterHackers.GCodeVisualizer
 {
@@ -68,7 +69,7 @@ namespace MatterHackers.GCodeVisualizer
             if ((renderInfo.CurrentRenderType & RenderType.Retractions) == RenderType.Retractions)
             {
                 Vector3 position = new Vector3(this.position);
-                RGBA_Bytes color = MultipleExtruderColor;
+                RGBA_Bytes color = MeshViewerWidget.GetMaterialColor(extruderIndex + 1);
                 if (extruderIndex == 0)
                 {
                     if (extrusionAmount > 0)

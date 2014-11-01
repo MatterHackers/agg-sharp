@@ -43,8 +43,6 @@ namespace MatterHackers.GCodeVisualizer
     {
         protected int extruderIndex;
 
-        protected readonly RGBA_Bytes MultipleExtruderColor = RGBA_Bytes.Indigo;
-
         public abstract void Render(Graphics2D graphics2D, GCodeRenderInfo renderInfo);
         public abstract void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<int> indexData, GCodeRenderInfo renderInfo);
 

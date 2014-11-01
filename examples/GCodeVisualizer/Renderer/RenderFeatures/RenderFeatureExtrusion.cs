@@ -36,6 +36,7 @@ using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
+using MatterHackers.MeshVisualizer;
 
 namespace MatterHackers.GCodeVisualizer
 {
@@ -87,7 +88,7 @@ namespace MatterHackers.GCodeVisualizer
                     }
                     else
                     {
-                        CreateCylinder(colorVertexData, indexData, new Vector3(start), new Vector3(end), radius, 6, MultipleExtruderColor, layerHeight);
+                        CreateCylinder(colorVertexData, indexData, new Vector3(start), new Vector3(end), radius, 6, MeshViewerWidget.GetMaterialColor(extruderIndex + 1), layerHeight);
                     }
                 }
             }
@@ -102,7 +103,7 @@ namespace MatterHackers.GCodeVisualizer
                 RGBA_Bytes extrusionColor = RGBA_Bytes.Black;
                 if (extruderIndex > 0)
                 {
-                    extrusionColor = MultipleExtruderColor;
+                    extrusionColor = MeshViewerWidget.GetMaterialColor(extruderIndex + 1);
                 }
                 if ((renderInfo.CurrentRenderType & RenderType.SpeedColors) == RenderType.SpeedColors)
                 {
