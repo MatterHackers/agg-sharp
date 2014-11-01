@@ -22,7 +22,7 @@ namespace MatterHackers.Agg.WindowsFileDialogs
             return true;
         }
 
-        public override Stream OpenFileDialog(ref OpenFileDialogParams openParams)
+        private Stream OpenFileDialog(ref OpenFileDialogParams openParams)
         {
             WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = true;
             openParams.FileName = "";
@@ -52,6 +52,7 @@ namespace MatterHackers.Agg.WindowsFileDialogs
                 }
                 catch (Exception ex)
                 {
+                    // TODO: Should use StyledMessageBox but can't take dependency against the MatterControl assembly
                     System.Windows.Forms.MessageBox.Show("Error: Could not read file from disk. Original error: " + ex.Message);
                 }
             }
@@ -70,7 +71,7 @@ namespace MatterHackers.Agg.WindowsFileDialogs
             return true;
         }
 
-        public override string SelectFolderDialog(ref SelectFolderDialogParams folderParams)
+        private string SelectFolderDialog(ref SelectFolderDialogParams folderParams)
         {
             WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = true;
 
@@ -109,7 +110,7 @@ namespace MatterHackers.Agg.WindowsFileDialogs
             return true;
         }
 
-        public override Stream SaveFileDialog(ref SaveFileDialogParams saveParams)
+        private Stream SaveFileDialog(ref SaveFileDialogParams saveParams)
         {
             WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = true;
             SaveFileDialogParams SaveFileDialogDialogParams;
@@ -145,6 +146,7 @@ namespace MatterHackers.Agg.WindowsFileDialogs
                 }
                 catch (Exception ex)
                 {
+                    // TODO: Should use StyledMessageBox but can't take dependency against the MatterControl assembly
                     System.Windows.Forms.MessageBox.Show("Error: Could not create file for saving. Original error: " + ex.Message);
                 }
             }
