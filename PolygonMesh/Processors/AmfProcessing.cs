@@ -495,7 +495,10 @@ namespace MatterHackers.PolygonMesh.Processors
                             }
                             if (indices[0] != indices[1]
                                 && indices[0] != indices[2]
-                                && indices[1] != indices[2])
+                                && indices[1] != indices[2]
+                                && vertices[indices[0]] != vertices[indices[1]]
+                                && vertices[indices[1]] != vertices[indices[2]]
+                                && vertices[indices[2]] != vertices[indices[0]])
                             {
                                 Vertex[] triangle = new Vertex[]
                                 {

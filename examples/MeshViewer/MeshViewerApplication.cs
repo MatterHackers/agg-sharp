@@ -40,6 +40,7 @@ using MatterHackers.Agg.UI;
 using MatterHackers.Agg.Font;
 using MatterHackers.RenderOpenGl;
 using MatterHackers.VectorMath;
+using MatterHackers.PolygonMesh.Processors;
 
 namespace MatterHackers.MeshVisualizer
 {
@@ -154,6 +155,47 @@ namespace MatterHackers.MeshVisualizer
                 });
 
             Invalidate();
+        }
+
+        public override void OnDragEnter(FileDropEventArgs fileDropEventArgs)
+        {
+            foreach (string file in fileDropEventArgs.DroppedFiles)
+            {
+                string extension = Path.GetExtension(file).ToUpper();
+                if (MeshFileIo.ValidFileExtensions().Contains(extension))
+                {
+                    fileDropEventArgs.AcceptDrop = true;
+                }
+            }
+            base.OnDragEnter(fileDropEventArgs);
+        }
+
+        public override void OnDragOver(FileDropEventArgs fileDropEventArgs)
+        {
+            foreach (string file in fileDropEventArgs.DroppedFiles)
+            {
+                string extension = Path.GetExtension(file).ToUpper();
+                if (MeshFileIo.ValidFileExtensions().Contains(extension))
+                {
+                    fileDropEventArgs.AcceptDrop = true;
+                }
+            }
+            base.OnDragOver(fileDropEventArgs);
+        }
+
+        public override void OnDragDrop(FileDropEventArgs fileDropEventArgs)
+        {
+            foreach (string droppedFileName in fileDropEventArgs.DroppedFiles)
+            {
+                string extension = Path.GetExtension(droppedFileName).ToUpper();
+                if (MeshFileIo.ValidFileExtensions().Contains(extension))
+                {
+                    meshViewerWidget.LoadMesh(droppedFileName, MeshVisualizer.MeshViewerWidget.CenterPartAfterLoad.DO);
+                    break;
+                }
+            }
+
+            base.OnDragDrop(fileDropEventArgs);
         }
 
         Stopwatch totalDrawTime = new Stopwatch();

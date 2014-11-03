@@ -106,11 +106,14 @@ namespace MatterHackers.PolygonMesh
         {
             if (reportProgress != null)
             {
+                //Validate();
+
                 bool keepProcessing = true;
                 SortVertices((double progress0To1, string processingState, out bool continueProcessing) => 
                 {
                     reportProgress(progress0To1 * .41, processingState, out continueProcessing);
                     keepProcessing = continueProcessing;
+                    //Validate();
                 });
                 if (keepProcessing)
                 {
@@ -119,6 +122,7 @@ namespace MatterHackers.PolygonMesh
                         reportProgress(progress0To1 * .23 + .41, processingState, out continueProcessing);
                         keepProcessing = continueProcessing;
                     });
+                    //Validate();
                 }
                 if (keepProcessing)
                 {
@@ -127,6 +131,7 @@ namespace MatterHackers.PolygonMesh
                         reportProgress(progress0To1 * .36 + .64, processingState, out continueProcessing);
                         keepProcessing = continueProcessing;
                     });
+                    //Validate();
                 }
             }
             else
@@ -170,11 +175,24 @@ namespace MatterHackers.PolygonMesh
             return totalDebug.ToString();
         }
 
-        public void Validate()
+        public void Validate(HashSet<Vertex> vertexesToSkip = null)
         {
-            foreach (Vertex vertex in vertices)
+            if (vertexesToSkip != null)
             {
-                vertex.Validate();
+                foreach (Vertex vertex in vertices)
+                {
+                    if (!vertexesToSkip.Contains(vertex))
+                    {
+                        vertex.Validate();
+                    }
+                }
+            }
+            else
+            {
+                foreach (Vertex vertex in vertices)
+                {
+                    vertex.Validate();
+                }
             }
             foreach (MeshEdge meshEdge in meshEdges)
             {
@@ -415,18 +433,20 @@ namespace MatterHackers.PolygonMesh
 
             for (int i = 0; i < Vertices.Count; i++)
             {
-                Vertex vertexToCheck = Vertices[i];
-                if (!markedForDeletion.Contains(vertexToCheck))
+                Vertex vertexToKeep = Vertices[i];
+                if (!markedForDeletion.Contains(vertexToKeep))
                 {
-                    List<Vertex> samePosition = Vertices.FindVertices(vertexToCheck.Position, maxDistanceToConsiderVertexAsSame);
+                    List<Vertex> samePosition = Vertices.FindVertices(vertexToKeep.Position, maxDistanceToConsiderVertexAsSame);
                     foreach (Vertex vertexToDelete in samePosition)
                     {
-                        if (vertexToDelete != vertexToCheck)
+                        if (vertexToDelete != vertexToKeep)
                         {
                             if (!markedForDeletion.Contains(vertexToDelete))
                             {
-                                MergeVertices(vertexToCheck, vertexToDelete, false);
+                                //Validate(markedForDeletion);
+                                MergeVertices(vertexToKeep, vertexToDelete, false);
                                 markedForDeletion.Add(vertexToDelete);
+                                //Validate(markedForDeletion);
                             }
                         }
                     }
@@ -447,6 +467,7 @@ namespace MatterHackers.PolygonMesh
                 }
             }
 
+            //Validate(markedForDeletion);
             if (reportProgress != null)
             {
                 bool continueProcessing;
@@ -524,13 +545,6 @@ namespace MatterHackers.PolygonMesh
             {
                 if(meshEdge.IsConnectedTo(vertex2))
                 {
-                    if (meshEdges.Contains(meshEdge))
-                    {
-                        // TODO: this should realy not be happening. We should only ever try to iterate to any mesh edge once.
-                        // We can get an infinite recursion with this and it needs to be debuged.
-                        return meshEdges;
-                    }
-
                     meshEdges.Add(meshEdge);
                 }
             }
@@ -805,6 +819,13 @@ namespace MatterHackers.PolygonMesh
         #region Face
         public Face CreateFace(Vertex[] verticesToUse, bool createMeshEdgesEvenIfExist = false)
         {
+            if (verticesToUse.Length == 3
+                && (verticesToUse[0].Position == verticesToUse[1].Position
+                || verticesToUse[1].Position == verticesToUse[2].Position
+                || verticesToUse[2].Position == verticesToUse[0].Position))
+            {
+                return null;
+            }
             if (verticesToUse.Length < 3)
             {
                 throw new ArgumentException("A face cannot have less than 3 vertices.");

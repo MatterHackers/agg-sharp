@@ -48,7 +48,7 @@ namespace MatterHackers.PolygonMesh
             } 
         }
 
-#if false
+#if true
         public Vector3 Position { get; set; }
         public Vector3 Normal { get; set; }
 #else
@@ -142,9 +142,9 @@ namespace MatterHackers.PolygonMesh
 
         public IEnumerable<MeshEdge> ConnectedMeshEdges()
         {
-            MeshEdge curMeshEdge = this.firstMeshEdge;
-            if (curMeshEdge != null)
+            if (this.firstMeshEdge != null)
             {
+                MeshEdge curMeshEdge = this.firstMeshEdge;
                 do
                 {
                     yield return curMeshEdge;
@@ -174,17 +174,33 @@ namespace MatterHackers.PolygonMesh
 
         public int GetConnectedMeshEdgesCount()
         {
-            int numConnectedEdges = 0;
+            int numConnectedMeshEdges = 0;
             foreach (MeshEdge edge in ConnectedMeshEdges())
             {
-                numConnectedEdges++;
+                numConnectedMeshEdges++;
             }
 
-            return numConnectedEdges;
+            return numConnectedMeshEdges;
         }
 
         public void Validate()
         {
+            if (firstMeshEdge != null)
+            {
+                HashSet<MeshEdge> foundEdges = new HashSet<MeshEdge>();
+
+                foreach (MeshEdge meshEdge in this.ConnectedMeshEdges())
+                {
+                    if (foundEdges.Contains(meshEdge))
+                    {
+                        // TODO: this should realy not be happening. We should only ever try to iterate to any mesh edge once.
+                        // We can get an infinite recursion with this and it needs to be debuged.
+                        throw new Exception("Bad ConnectedMeshEdges");
+                    }
+
+                    foundEdges.Add(meshEdge);
+                }
+            }
         }
 
         public override string ToString()
