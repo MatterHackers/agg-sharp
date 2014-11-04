@@ -374,8 +374,30 @@ namespace MatterHackers.RayTracer
             return Aabb;
         }
 
-        public static IRayTraceable CreateNewHierachy(List<IRayTraceable> traceableItems)
+        public class SortingAccelerator
         {
+            public int nextAxisForBigGroups = 2;
+            public int NextAxis
+            { 
+                get 
+                {
+                    nextAxisForBigGroups = (nextAxisForBigGroups + 1) % 3;
+                    return nextAxisForBigGroups; 
+                }
+            }
+
+            public SortingAccelerator()
+            {
+            }
+        }
+        
+        public static IRayTraceable CreateNewHierachy(List<IRayTraceable> traceableItems, SortingAccelerator accelerator = null)
+        {
+            if (accelerator == null)
+            {
+                accelerator = new SortingAccelerator();
+            }
+
             int numItems = traceableItems.Count;
 
             if (numItems == 0)
@@ -391,6 +413,12 @@ namespace MatterHackers.RayTracer
             int bestAxis = -1;
             int bestIndexToSplitOn = -1;
             CompareCentersOnAxis axisSorter = new CompareCentersOnAxis(0);
+            if (numItems > 5000)
+            {
+                bestAxis = accelerator.NextAxis;
+                bestIndexToSplitOn = numItems / 2;
+            }
+            else
             {
                 double totalIntersectCost = 0;
                 int skipInterval = 1;
@@ -510,8 +538,8 @@ namespace MatterHackers.RayTracer
                 {
                     rightItems.Add(traceableItems[i]);
                 }
-                IRayTraceable leftGroup = CreateNewHierachy(leftItems);
-                IRayTraceable rightGroup = CreateNewHierachy(rightItems);
+                IRayTraceable leftGroup = CreateNewHierachy(leftItems, accelerator);
+                IRayTraceable rightGroup = CreateNewHierachy(rightItems, accelerator);
                 BoundingVolumeHierarchy newBVHNode = new BoundingVolumeHierarchy(leftGroup, rightGroup, bestAxis);
                 return newBVHNode;
             }
