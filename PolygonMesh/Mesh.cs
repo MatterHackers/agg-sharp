@@ -90,6 +90,7 @@ namespace MatterHackers.PolygonMesh
             {
                 Vertex vertexToCopy = meshToCopy.Vertices[vertexIndex];
                 vertexIndexMapping.Add(vertexToCopy, vertexIndex);
+                newMesh.Vertices.Add(new Vertex(vertexToCopy.Position));
             }
 
             Dictionary<MeshEdge, int> meshEdgeIndexMapping = new Dictionary<MeshEdge, int>(meshToCopy.MeshEdges.Capacity);
@@ -97,13 +98,13 @@ namespace MatterHackers.PolygonMesh
             {
                 MeshEdge edgeToCopy = meshToCopy.MeshEdges[edgeIndex];
                 meshEdgeIndexMapping.Add(edgeToCopy, edgeIndex);
-                MeshEdge edgeToAdd = new MeshEdge();
+                newMesh.MeshEdges.Add(new MeshEdge());
             }
 
             for (int faceIndex = 0; faceIndex < meshToCopy.Faces.Count; faceIndex++)
             {
                 Face faceToCopy = meshToCopy.Faces[faceIndex];
-                Face faceToAdd = new Face();
+                newMesh.Faces.Add(new Face());
             }
 
             // now set all the data for the new mesh
@@ -112,18 +113,16 @@ namespace MatterHackers.PolygonMesh
             {
                 Vertex vertexToCopy = meshToCopy.Vertices[vertexIndex];
                 int indexOfFirstMeshEdge = vertexIndexMapping[vertexToCopy];
-                Vertex newVertex = new Vertex(vertexToCopy.Position);
+                Vertex newVertex = newMesh.Vertices[vertexIndex];
                 newVertex.firstMeshEdge = newMesh.MeshEdges[indexOfFirstMeshEdge];
                 newVertex.Normal = vertexToCopy.Normal;
-                newMesh.Vertices.Add(newVertex);
             }
 
             newMesh.MeshEdges.Capacity = meshToCopy.MeshEdges.Capacity;
             for (int meshEdgeIndex = 0; meshEdgeIndex < meshToCopy.MeshEdges.Count; meshEdgeIndex++)
             {
                 MeshEdge meshEdgeToCopy = meshToCopy.MeshEdges[meshEdgeIndex];
-                MeshEdge newMeshEdge = new MeshEdge();
-
+                MeshEdge newMeshEdge = newMesh.MeshEdges[meshEdgeIndex];
 
                 newMeshEdge.NextMeshEdgeFromEnd[0] = newMesh.MeshEdges[meshEdgeIndexMapping[meshEdgeToCopy.NextMeshEdgeFromEnd[0]]];
                 newMeshEdge.NextMeshEdgeFromEnd[1] = newMesh.MeshEdges[meshEdgeIndexMapping[meshEdgeToCopy.NextMeshEdgeFromEnd[1]]];
@@ -131,7 +130,7 @@ namespace MatterHackers.PolygonMesh
                 newMeshEdge.VertexOnEnd[0] = newMesh.Vertices[vertexIndexMapping[meshEdgeToCopy.VertexOnEnd[0]]];
                 newMeshEdge.VertexOnEnd[1] = newMesh.Vertices[vertexIndexMapping[meshEdgeToCopy.VertexOnEnd[1]]];
                 
-                // TODO:
+                // This will get hooked up when we create radial loops in with the face edges below
                 //newMeshEdge.firstFaceEdge;
 
                 newMesh.MeshEdges.Add(newMeshEdge);
@@ -141,10 +140,34 @@ namespace MatterHackers.PolygonMesh
             for (int faceIndex = 0; faceIndex < meshToCopy.faces.Count; faceIndex++)
             {
                 Face faceToCopy = meshToCopy.faces[faceIndex];
-                Face newface = new Face();
+                Face newface = newMesh.faces[faceIndex];
 
-                //public FaceEdge firstFaceEdge;
                 newface.normal = faceToCopy.normal;
+
+                // hook up the face edges
+                //public FaceEdge firstFaceEdge;
+                List<Vertex> verticesFromCopy = new List<Vertex>();
+                List<Vertex> verticesForNew = new List<Vertex>();
+                foreach (Vertex vertex in faceToCopy.Vertices())
+                {
+                    verticesFromCopy.Add(vertex);
+                    verticesForNew.Add(newMesh.Vertices[vertexIndexMapping[vertex]]);
+                }
+
+
+                List<MeshEdge> edgesFromCopy = new List<MeshEdge>();
+                List<MeshEdge> edgesForNew = new List<MeshEdge>();
+                for (int i = 0; i < verticesForNew.Count - 1; i++)
+                {
+                    MeshEdge meshEdgeFromCopy = verticesFromCopy[i].GetMeshEdgeConnectedToVertex(verticesFromCopy[i + 1]);
+                    edgesFromCopy.Add(meshEdgeFromCopy);
+                    edgesForNew.Add(newMesh.MeshEdges[meshEdgeIndexMapping[meshEdgeFromCopy]]);
+                }
+                MeshEdge lastMeshEdgeFromCopy = verticesFromCopy[verticesFromCopy.Count - 1].GetMeshEdgeConnectedToVertex(verticesFromCopy[0]);
+                edgesFromCopy.Add(lastMeshEdgeFromCopy);
+                edgesForNew.Add(newMesh.MeshEdges[meshEdgeIndexMapping[lastMeshEdgeFromCopy]]);
+
+                CreateFaceEdges(verticesForNew.ToArray(), edgesForNew, newface);
 
                 newMesh.Faces.Add(newface);
             }
@@ -902,6 +925,18 @@ namespace MatterHackers.PolygonMesh
 
             // make the face and set it's data
             Face createdFace = new Face();
+
+            CreateFaceEdges(verticesToUse, edgesToUse, createdFace);
+
+            createdFace.CalculateNormal();
+
+            faces.Add(createdFace);
+
+            return createdFace;
+        }
+
+        private static void CreateFaceEdges(Vertex[] verticesToUse, List<MeshEdge> edgesToUse, Face createdFace)
+        {
             FaceEdge prevFaceEdge = null;
             for (int i = 0; i < verticesToUse.Length - 1; i++)
             {
@@ -921,20 +956,14 @@ namespace MatterHackers.PolygonMesh
             }
             // make the last FaceEdge
             {
-                MeshEdge currentMeshEdge = edgesToUse[verticesToUse.Length-1];
-                FaceEdge currentFaceEdge = new FaceEdge(createdFace, currentMeshEdge, verticesToUse[verticesToUse.Length-1]);
+                MeshEdge currentMeshEdge = edgesToUse[verticesToUse.Length - 1];
+                FaceEdge currentFaceEdge = new FaceEdge(createdFace, currentMeshEdge, verticesToUse[verticesToUse.Length - 1]);
                 prevFaceEdge.nextFaceEdge = currentFaceEdge;
                 currentFaceEdge.prevFaceEdge = prevFaceEdge;
                 currentFaceEdge.nextFaceEdge = createdFace.firstFaceEdge;
                 createdFace.firstFaceEdge.prevFaceEdge = currentFaceEdge;
                 currentFaceEdge.AddToRadialLoop(currentMeshEdge);
             }
-
-            createdFace.CalculateNormal();
-
-            faces.Add(createdFace);
-
-            return createdFace;
         }
 
         public List<MeshEdge> GetNonManifoldEdges()
