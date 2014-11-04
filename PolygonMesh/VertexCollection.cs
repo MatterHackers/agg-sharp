@@ -133,7 +133,7 @@ namespace MatterHackers.PolygonMesh
     public class VertexCollecton : IEnumerable
     {
         List<Vertex> vertices = new List<Vertex>();
-        IComparer<Vertex> vertexSorter = new VertexXYZAxisWithRotation();
+        IComparer<Vertex> vertexSorter = new VertexXAxisSorter();
 
         bool isSorted = true;
         public bool IsSorted
