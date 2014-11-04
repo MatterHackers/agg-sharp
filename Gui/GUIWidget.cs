@@ -67,6 +67,7 @@ namespace MatterHackers.Agg.UI
 
     public enum UnderMouseState { NotUnderMouse, UnderMouseNotFirst, FirstUnderMouse };
 
+    [DebuggerDisplay("Bounds = {LocalBounds}")]
     public class GuiWidget
     {
         // this should probably some type of dirty rects with the current invalid set stored.

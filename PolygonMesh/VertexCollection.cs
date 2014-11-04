@@ -115,6 +115,12 @@ namespace MatterHackers.PolygonMesh
             get { return vertices[index]; }
         }
 
+        public int Capacity
+        {
+            get { return vertices.Capacity; }
+            set { vertices.Capacity = value; }
+        }
+
         public IEnumerator GetEnumerator()
         {
             return vertices.GetEnumerator();

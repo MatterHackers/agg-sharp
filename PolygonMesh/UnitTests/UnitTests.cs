@@ -238,17 +238,17 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
                 SaveDebugInfo(testMesh);
 
-                foreach (MeshEdge meshEdge in testMesh.meshEdges)
+                foreach (MeshEdge meshEdge in testMesh.MeshEdges)
                 {
                     Assert.IsTrue(meshEdge.firstFaceEdge != null);
                 }
 
-                Assert.IsTrue(testMesh.meshEdges.Count == 6);
+                Assert.IsTrue(testMesh.MeshEdges.Count == 6);
 
                 Assert.IsTrue(testMesh.FindMeshEdges(centerVertexTop, centerVertexBottom).Count == 2);
                 testMesh.MergeMeshEdges();
                 SaveDebugInfo(testMesh);
-                Assert.IsTrue(testMesh.meshEdges.Count == 5);
+                Assert.IsTrue(testMesh.MeshEdges.Count == 5);
             }
         }
 

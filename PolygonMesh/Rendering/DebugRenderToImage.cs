@@ -64,7 +64,7 @@ namespace MatterHackers.PolygonMesh
             graphics.Clear(RGBA_Bytes.White);
 
             // draw all the mesh edges
-            foreach (MeshEdge meshEdge in meshToRender.meshEdges)
+            foreach (MeshEdge meshEdge in meshToRender.MeshEdges)
             {
                 // draw the mesh edge
                 DrawMeshEdge(meshEdge);

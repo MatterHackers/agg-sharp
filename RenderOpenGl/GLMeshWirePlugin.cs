@@ -109,7 +109,7 @@ namespace MatterHackers.RenderOpenGl
         {
             edgeLinesData = new VectorPOD<WireVertexData>();
             // first make sure all the textures are created
-            foreach (MeshEdge meshEdge in meshToBuildListFor.meshEdges)
+            foreach (MeshEdge meshEdge in meshToBuildListFor.MeshEdges)
             {
                 if (nonPlanarAngleRequired > 0)
                 {
