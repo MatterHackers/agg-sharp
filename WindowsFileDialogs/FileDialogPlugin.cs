@@ -91,6 +91,8 @@ namespace MatterHackers.Agg.WindowsFileDialogs
             folderBrowserDialog.ShowDialog();
 
             WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = false;
+            folderParams.FolderPath = folderBrowserDialog.SelectedPath;
+            
             return folderBrowserDialog.SelectedPath;
         }
 
