@@ -69,9 +69,10 @@ namespace MatterHackers.Agg.UI
                 }
             }
 
-            // now call all the functions
-            foreach (CallBackAndState callBackAndState in holdFunctionsToCallOnIdle)
+            // now call all the functions (we put them in backwards to make it easier to remove them as we went so run them backwards
+            for(int i=holdFunctionsToCallOnIdle.Count-1; i>=0; i--)
             {
+                CallBackAndState callBackAndState = holdFunctionsToCallOnIdle[i];
                 callBackAndState.idleCallBack(callBackAndState.stateInfo);
             }
         }

@@ -51,29 +51,65 @@ namespace MatterHackers.PolygonMesh
 
     public class VertexDistanceFromPointSorter : IComparer<Vertex>
     {
+        static Vector3 positionToMeasureFrom = new Vector3(.224374, .805696, .383724);
         public VertexDistanceFromPointSorter()
         {
         }
 
         public int Compare(Vertex a, Vertex b)
         {
-            if (a.Position.x < b.Position.x)
+            double distToASquared = (a.Position - positionToMeasureFrom).LengthSquared;
+            double distToBSquared = (b.Position - positionToMeasureFrom).LengthSquared;
+            return distToASquared.CompareTo(distToBSquared);
+        }
+    }
+
+    public class VertexXYZAxisWithRotation : IComparer<Vertex>
+    {
+        static Matrix4X4 rotationToUse = Matrix4X4.CreateRotation(new Vector3(.224374, .805696, .383724));
+
+        public VertexXYZAxisWithRotation()
+        {
+        }
+
+        static void TransformVector(Vector3 vec, ref Matrix4X4 mat, out Vector3 result)
+        {
+            result.x = vec.x * mat.Row0.x +
+                       vec.y * mat.Row1.x +
+                       vec.z * mat.Row2.x;
+
+            result.y = vec.x * mat.Row0.y +
+                       vec.y * mat.Row1.y +
+                       vec.z * mat.Row2.y;
+
+            result.z = vec.x * mat.Row0.z +
+                       vec.y * mat.Row1.z +
+                       vec.z * mat.Row2.z;
+        }
+
+        public int Compare(Vertex aVertex, Vertex bVertex)
+        {
+            Vector3 a;
+            TransformVector(aVertex.Position, ref rotationToUse, out a);
+            Vector3 b;
+            TransformVector(bVertex.Position, ref rotationToUse, out b);
+            if (a.x < b.x)
             {
                 return -1;
             }
-            else if (a.Position.x == b.Position.x)
+            else if (a.x == b.x)
             {
-                if (a.Position.y < b.Position.y)
+                if (a.y < b.y)
                 {
                     return -1;
                 }
-                else if (a.Position.y == b.Position.y)
+                else if (a.y == b.y)
                 {
-                    if (a.Position.z < b.Position.z)
+                    if (a.z < b.z)
                     {
                         return -1;
                     }
-                    else if (a.Position.z == b.Position.z)
+                    else if (a.z == b.z)
                     {
                         return 0;
                     }
@@ -97,7 +133,7 @@ namespace MatterHackers.PolygonMesh
     public class VertexCollecton : IEnumerable
     {
         List<Vertex> vertices = new List<Vertex>();
-        IComparer<Vertex> vertexSorter = new VertexDistanceFromPointSorter();
+        IComparer<Vertex> vertexSorter = new VertexXYZAxisWithRotation();
 
         bool isSorted = true;
         public bool IsSorted
