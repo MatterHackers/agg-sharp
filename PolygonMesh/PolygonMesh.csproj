@@ -154,6 +154,10 @@
     <Compile Include="Vertex.cs" />
     <Compile Include="VertexCollection.cs" />
     <Compile Include="UnitTests\VertexCollectonTests.cs" />
+    <Compile Include="VertexSorters\VertexSorterBase.cs" />
+    <Compile Include="VertexSorters\VertexXYZAxisWithRotation.cs" />
+    <Compile Include="VertexSorters\VertexDistanceFromPointSorter.cs" />
+    <Compile Include="VertexSorters\VertexXAxisSorter.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\VectorMath\VectorMath.csproj">

@@ -26,6 +26,7 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies, 
 either expressed or implied, of the FreeBSD Project.
 */
+#define AGRESSIVE_VALIDATING
 
 using System;
 using System.Collections.Generic;
@@ -199,14 +200,18 @@ namespace MatterHackers.PolygonMesh
         {
             if (reportProgress != null)
             {
-                //Validate();
+#if AGRESSIVE_VALIDATING
+                Validate();
+#endif
 
                 bool keepProcessing = true;
                 SortVertices((double progress0To1, string processingState, out bool continueProcessing) => 
                 {
                     reportProgress(progress0To1 * .41, processingState, out continueProcessing);
                     keepProcessing = continueProcessing;
-                    //Validate();
+#if AGRESSIVE_VALIDATING
+                    Validate();
+#endif
                 });
                 if (keepProcessing)
                 {
@@ -215,7 +220,6 @@ namespace MatterHackers.PolygonMesh
                         reportProgress(progress0To1 * .23 + .41, processingState, out continueProcessing);
                         keepProcessing = continueProcessing;
                     });
-                    //Validate();
                 }
                 if (keepProcessing)
                 {
@@ -224,7 +228,9 @@ namespace MatterHackers.PolygonMesh
                         reportProgress(progress0To1 * .36 + .64, processingState, out continueProcessing);
                         keepProcessing = continueProcessing;
                     });
-                    //Validate();
+#if AGRESSIVE_VALIDATING
+                    Validate();
+#endif
                 }
             }
             else
@@ -528,10 +534,14 @@ namespace MatterHackers.PolygonMesh
                         {
                             if (!markedForDeletion.Contains(vertexToDelete))
                             {
-                                //Validate(markedForDeletion);
+#if AGRESSIVE_VALIDATING
+                                Validate(markedForDeletion);
+#endif
                                 MergeVertices(vertexToKeep, vertexToDelete, false);
                                 markedForDeletion.Add(vertexToDelete);
-                                //Validate(markedForDeletion);
+#if AGRESSIVE_VALIDATING
+                                Validate(markedForDeletion);
+#endif
                             }
                         }
                     }
@@ -552,7 +562,9 @@ namespace MatterHackers.PolygonMesh
                 }
             }
 
-            //Validate(markedForDeletion);
+#if AGRESSIVE_VALIDATING
+            Validate(markedForDeletion);
+#endif
             if (reportProgress != null)
             {
                 bool continueProcessing;
