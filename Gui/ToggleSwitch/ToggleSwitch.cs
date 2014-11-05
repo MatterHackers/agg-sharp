@@ -106,8 +106,9 @@ namespace MatterHackers.Agg.UI
 			}
 			RectangleDouble border = getSwitchBounds ();
 			border.Inflate (-3);
-			graphics2D.Rectangle (border, ExteriorColor,2);
+			graphics2D.Rectangle (border, ExteriorColor,1);
 			graphics2D.FillRectangle (getThumbBounds(), ThumbColor);
+            graphics2D.Rectangle(getThumbBounds(), new RGBA_Bytes(255,255,255,90), 1);
 
 		}//end DrawAfterChildren
 
