@@ -96,43 +96,45 @@ namespace MatterHackers.Agg.UI
 
         public void redrawButtonIfRequired (object sender, EventArgs e)
 		{
-			Button parentButton = (Button)Parent;
-
-			if (!parentButton.Enabled) 
-			{
-				hoverWidget.Visible = false;
-				pressedWidget.Visible = false;
-				normalWidget.Visible = false;
-				disabledWidget.Visible = true;
-			} 
-			else 
-			{
-				if (parentButton.FirstWidgetUnderMouse)
-				{
-					if (parentButton.MouseDownOnButton)
-					{
-						hoverWidget.Visible = false;
-						pressedWidget.Visible = true;
-						normalWidget.Visible = false;
-						disabledWidget.Visible = false;
-					}
-					else
-					{
-						hoverWidget.Visible = true;
-						pressedWidget.Visible = false;
-						normalWidget.Visible = false;
-						disabledWidget.Visible = false;
-					}
-				}
-				else
-				{
-					hoverWidget.Visible = false;
-					pressedWidget.Visible = false;
-					normalWidget.Visible = true;
-					disabledWidget.Visible = false;
-				}
-			}
-			((GuiWidget)sender).Invalidate();
+			Button parentButton = Parent as Button;
+            if (parentButton != null)
+            {
+                if (!parentButton.Enabled)
+                {
+                    hoverWidget.Visible = false;
+                    pressedWidget.Visible = false;
+                    normalWidget.Visible = false;
+                    disabledWidget.Visible = true;
+                }
+                else
+                {
+                    if (parentButton.FirstWidgetUnderMouse)
+                    {
+                        if (parentButton.MouseDownOnButton)
+                        {
+                            hoverWidget.Visible = false;
+                            pressedWidget.Visible = true;
+                            normalWidget.Visible = false;
+                            disabledWidget.Visible = false;
+                        }
+                        else
+                        {
+                            hoverWidget.Visible = true;
+                            pressedWidget.Visible = false;
+                            normalWidget.Visible = false;
+                            disabledWidget.Visible = false;
+                        }
+                    }
+                    else
+                    {
+                        hoverWidget.Visible = false;
+                        pressedWidget.Visible = false;
+                        normalWidget.Visible = true;
+                        disabledWidget.Visible = false;
+                    }
+                }
+                ((GuiWidget)sender).Invalidate();
+            }
         }
     }
 }

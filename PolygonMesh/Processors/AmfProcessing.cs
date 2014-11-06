@@ -387,7 +387,25 @@ namespace MatterHackers.PolygonMesh.Processors
             Debug.WriteLine(string.Format("AMF Load in {0:0.00}s", time.Elapsed.TotalSeconds));
 
             amfStream.Close();
-            return meshGroups;
+            bool hasValidMesh = false;
+            foreach (MeshGroup meshGroup in meshGroups)
+            {
+                foreach(Mesh mesh in meshGroup.Meshes)
+                {
+                    if (mesh.Faces.Count > 0)
+                    {
+                        hasValidMesh = true;
+                    }
+                }
+            }
+            if (hasValidMesh)
+            {
+                return meshGroups;
+            }
+            else
+            {
+                return null;
+            }
         }
 
         private static MeshGroup ReadObject(XmlReader xmlTree, double scale, ProgressData progressData)
