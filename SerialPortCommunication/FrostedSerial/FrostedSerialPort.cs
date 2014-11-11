@@ -168,7 +168,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
         int WriteTimeout { get; set; }
 
         int ReadTimeout { get; set; }
-        int ReadChar();
+        string ReadExisting();
 
         bool IsOpen { get; }
 
@@ -1105,9 +1105,9 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
             set { port.ReadTimeout = value; }
         }
 
-        public int ReadChar()
+        public string ReadExisting()
         {
-            return port.ReadChar();
+            return port.ReadExisting();
         }
 
         public int BytesToRead
