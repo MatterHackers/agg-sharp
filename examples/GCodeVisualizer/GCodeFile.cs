@@ -280,6 +280,9 @@ namespace MatterHackers.GCodeVisualizer
                             }
                             break;
 
+                        case '@':
+                            break;
+
                         default:
 #if DEBUG
                             throw new NotImplementedException();
