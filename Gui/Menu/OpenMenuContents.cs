@@ -83,17 +83,31 @@ namespace MatterHackers.Agg.UI
             topParent.AddChild(this);
 
             widgetRelativeTo_PositionChanged(widgetRelativeTo, null);
+            widgetRelativeTo.Closed += widgetRelativeTo_Closed;
+        }
+
+        void widgetRelativeTo_Closed(object sender, EventArgs e)
+        {
+            widgetRelativeTo.Closed -= widgetRelativeTo_Closed;
+            widgetRelativeTo = null;
+            UnbindCallbacks();
+            DropListItems_LostFocus(null, null);
         }
 
         HashSet<GuiWidget> widgetRefList = new HashSet<GuiWidget>();
         public override void OnClosed(EventArgs e)
+        {
+            UnbindCallbacks();
+            base.OnClosed(e);
+        }
+
+        private void UnbindCallbacks()
         {
             foreach (GuiWidget widget in widgetRefList)
             {
                 widget.PositionChanged -= new EventHandler(widgetRelativeTo_PositionChanged);
                 widget.BoundsChanged -= new EventHandler(widgetRelativeTo_PositionChanged);
             }
-            base.OnClosed(e);
         }
 
         public override void OnDraw(Graphics2D graphics2D)
@@ -107,33 +121,36 @@ namespace MatterHackers.Agg.UI
 
         void widgetRelativeTo_PositionChanged(object sender, EventArgs e)
         {
-            GuiWidget topParent = widgetRelativeTo.Parent;
-            Vector2 zero = widgetRelativeTo.OriginRelativeParent;
-            zero += new Vector2(widgetRelativeTo.LocalBounds.Left, widgetRelativeTo.LocalBounds.Bottom);
-            while (topParent.Parent != null)
+            if (widgetRelativeTo != null)
             {
-                topParent.ParentToChildTransform.transform(ref zero);
-                topParent = topParent.Parent;
-            }
+                GuiWidget topParent = widgetRelativeTo.Parent;
+                Vector2 zero = widgetRelativeTo.OriginRelativeParent;
+                zero += new Vector2(widgetRelativeTo.LocalBounds.Left, widgetRelativeTo.LocalBounds.Bottom);
+                while (topParent.Parent != null)
+                {
+                    topParent.ParentToChildTransform.transform(ref zero);
+                    topParent = topParent.Parent;
+                }
 
-            double alignmentOffset = 0;
-            if (alignToRightEdge)
-            {
-                alignmentOffset = -Width + widgetRelativeTo.Width;
-            }
+                double alignmentOffset = 0;
+                if (alignToRightEdge)
+                {
+                    alignmentOffset = -Width + widgetRelativeTo.Width;
+                }
 
-            switch (direction)
-            {
-                case Direction.Down:
-                    this.OriginRelativeParent = zero + new Vector2(alignmentOffset, -Height) + openOffset;
-                    break;
+                switch (direction)
+                {
+                    case Direction.Down:
+                        this.OriginRelativeParent = zero + new Vector2(alignmentOffset, -Height) + openOffset;
+                        break;
 
-                case Direction.Up:
-                    this.OriginRelativeParent = zero + new Vector2(alignmentOffset, widgetRelativeTo.Height) + openOffset;
-                    break;
+                    case Direction.Up:
+                        this.OriginRelativeParent = zero + new Vector2(alignmentOffset, widgetRelativeTo.Height) + openOffset;
+                        break;
 
-                default:
-                    throw new NotImplementedException();
+                    default:
+                        throw new NotImplementedException();
+                }
             }
         }
 
