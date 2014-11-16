@@ -134,7 +134,7 @@ namespace MatterHackers.PolygonMesh
                 // This will get hooked up when we create radial loops in with the face edges below
                 //newMeshEdge.firstFaceEdge;
 
-                newMesh.MeshEdges.Add(newMeshEdge);
+                //newMesh.MeshEdges.Add(newMeshEdge);
             }
 
             newMesh.Faces.Capacity = meshToCopy.Faces.Capacity;
@@ -170,7 +170,14 @@ namespace MatterHackers.PolygonMesh
 
                 CreateFaceEdges(verticesForNew.ToArray(), edgesForNew, newface);
 
-                newMesh.Faces.Add(newface);
+                //newMesh.Faces.Add(newface);
+            }
+
+            if(newMesh.MeshEdges.Count != meshToCopy.MeshEdges.Count
+                || newMesh.Faces.Count != meshToCopy.Faces.Count
+                || newMesh.Vertices.Count != meshToCopy.Vertices.Count)
+            {
+                int a = 0;
             }
 #else
             foreach (Face face in meshToCopy.Faces)
