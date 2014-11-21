@@ -50,6 +50,7 @@ namespace MatterHackers.Agg
             }
         }
 
+#if __ANDROID__
 		private static List<Assembly> pluginAssemblies = null;
 
 		public List<BaseClassToFind> LoadPluginsFromConfig(IEnumerable<string> pluginAssemblyStrings)
@@ -151,6 +152,7 @@ namespace MatterHackers.Agg
 
 			return factoryList;
 		}
+#endif
 
 		public List<BaseClassToFind> FindAndAddPlugins(string searchDirectory)
         {

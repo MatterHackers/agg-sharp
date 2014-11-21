@@ -169,6 +169,33 @@ namespace MatterHackers.Agg.UI
             ScrollArea.AddChild(child, indexInChildrenList);
         }
 
+        bool mouseDownOnScrollArea = false;
+        double mouseDownY = 0;
+        double scrollOnDownY = 0;
+        public override void OnMouseDown(MouseEventArgs mouseEvent)
+        {
+            mouseDownY = mouseEvent.Y;
+            mouseDownOnScrollArea = true;
+            scrollOnDownY = ScrollPosition.y;
+            base.OnMouseDown(mouseEvent);
+        }
+
+        public override void OnMouseMove(MouseEventArgs mouseEvent)
+        {
+            if (mouseDownOnScrollArea)
+            {
+                ScrollPosition = new Vector2(ScrollPosition.x, scrollOnDownY - (mouseDownY - mouseEvent.Y));
+            }
+
+            base.OnMouseMove(mouseEvent);
+        }
+
+        public override void OnMouseUp(MouseEventArgs mouseEvent)
+        {
+            mouseDownOnScrollArea = false;
+            base.OnMouseUp(mouseEvent);
+        }
+
         public override void OnMouseWheel(MouseEventArgs mouseEvent)
         {
             // let children have at the data first. They may use up the scroll
