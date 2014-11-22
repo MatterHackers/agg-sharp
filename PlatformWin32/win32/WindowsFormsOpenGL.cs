@@ -49,7 +49,7 @@ namespace MatterHackers.Agg.UI
             Id = nextId++;
         }
 
-        internal void MakeCurrent()
+        public void MakeCurrent()
         {
             currentControl = this;
             base.MakeCurrent();
