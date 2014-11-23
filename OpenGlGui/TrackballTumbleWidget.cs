@@ -92,13 +92,18 @@ namespace MatterHackers.Agg.OpenGlGui
             base.OnBoundsChanged(e);
         }
 
-        Ray lastScreenRay = new Ray(Vector3.Zero, Vector3.UnitZ);
-        public Ray LastScreenRay
+        public Vector2 GetScreenPosition(Vector3 worldPosition)
         {
-            get { return lastScreenRay; }
+            Matrix4X4 modelviewMatrix = GetModelviewMatrix();
+            Vector3 viewPosition = Vector3.Transform(worldPosition, modelviewMatrix);
+
+            Matrix4X4 projectionMatrix = GetProjectionMatrix();
+            Vector3 screenPosition = Vector3.TransformPerspective(viewPosition, projectionMatrix);
+
+            return new Vector2(screenPosition.x * Width / 2 + Width / 2, screenPosition.y / screenPosition.z * Height / 2 + Height / 2);
         }
 
-        void GetRayFromScreen(Vector2 screenPosition)
+        public Ray GetRayFromScreen(Vector2 screenPosition)
         {
             GuiWidget topWidget = this;
             while (topWidget.Parent != null)
@@ -113,19 +118,18 @@ namespace MatterHackers.Agg.OpenGlGui
             rayClip.w = 1.0;
 
             Matrix4X4 projectionMatrix = GetProjectionMatrix();
-
-            Matrix4X4 modelviewMatrix = GetModelviewMatrix();
-
             Vector4 rayEye = Vector4.Transform(rayClip, Matrix4X4.Invert(projectionMatrix));
             rayEye.z = -1; rayEye.w = 0;
 
+            Matrix4X4 modelviewMatrix = GetModelviewMatrix();
             Vector4 rayWorld = Vector4.Transform(rayEye, Matrix4X4.Invert(modelviewMatrix));
 
             Vector3 finalRayWorld = new Vector3(rayWorld).GetNormal();
 
             Matrix4X4 invTransform = Matrix4X4.Invert(modelviewMatrix);
             Vector3 origin = Vector3.Transform(Vector3.Zero, invTransform);
-            lastScreenRay = new Ray(origin, finalRayWorld);
+
+            return new Ray(origin, finalRayWorld);
         }
 
         public override void OnDraw(MatterHackers.Agg.Graphics2D graphics2D)
@@ -151,8 +155,6 @@ namespace MatterHackers.Agg.OpenGlGui
 
         public override void OnMouseDown(MouseEventArgs mouseEvent)
         {
-            GetRayFromScreen(mouseEvent.Position);
-
             base.OnMouseDown(mouseEvent);
 
             if (!LockTrackBall && MouseCaptured)
@@ -204,7 +206,7 @@ namespace MatterHackers.Agg.OpenGlGui
                 {
                     if (mainTrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.None)
                     {
-                        mainTrackBallController.OnMouseDown(lastMouseMovePoint, Matrix4X4.Identity, TrackBallController.MouseDownType.Scale);
+                        mainTrackBallController.OnMouseDown(lastMouseMovePoint, Matrix4X4.Identity, TrackBallController.MouseDownType.Rotation);
                     }
                 }
             }
@@ -212,8 +214,6 @@ namespace MatterHackers.Agg.OpenGlGui
 
         public override void OnMouseMove(MouseEventArgs mouseEvent)
         {
-            GetRayFromScreen(mouseEvent.Position);
-
             base.OnMouseMove(mouseEvent);
 
             Vector2 lastMouseMovePoint;
@@ -260,7 +260,7 @@ namespace MatterHackers.Agg.OpenGlGui
             GL.Clear(ClearBufferMask.DepthBufferBit);	// Clear the Depth Buffer
 
             GL.PushAttrib(AttribMask.ViewportBit);
-            RectangleDouble screenRect = this.TransformRectangleToScreenSpace(LocalBounds);
+            RectangleDouble screenRect = this.TransformToScreenSpace(LocalBounds);
             GL.Viewport((int)screenRect.Left, (int)screenRect.Bottom, (int)screenRect.Width, (int)screenRect.Height);
 
             GL.ShadeModel(ShadingModel.Smooth);
@@ -344,6 +344,18 @@ namespace MatterHackers.Agg.OpenGlGui
             Matrix4X4 total = Matrix4X4.CreateTranslation(0, 0, -7);
             total = mainTrackBallController.GetTransform4X4() * total;
             return total;
+        }
+
+        public double GetWorldUnitsPerScreenPixelAtPosition(Vector3 centerTop)
+        {
+            Vector2 centerTopScreenPosition = GetScreenPosition(centerTop);
+            Ray centerTopScreenRay = GetRayFromScreen(centerTopScreenPosition);
+            double distToCenterTopPosition = (centerTop - centerTopScreenRay.origin).Length;
+
+            Ray rightOnePixelRay = GetRayFromScreen(new Vector2(centerTopScreenPosition.x + 1, centerTopScreenPosition.y));
+            Vector3 rightOnePixel = rightOnePixelRay.origin + rightOnePixelRay.direction * distToCenterTopPosition;
+            double distBetweenPixelsWorldSpace = (rightOnePixel - centerTop).Length;
+            return distBetweenPixelsWorldSpace;
         }
     }
 }

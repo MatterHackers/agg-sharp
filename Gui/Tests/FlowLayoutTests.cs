@@ -408,7 +408,7 @@ namespace MatterHackers.Agg.UI.Tests
             containerTest.AddChild(flowLayout);
 
             Vector2 controlButton1Pos = controlButton1.OriginRelativeParent;
-            Vector2 testButton1Pos = testButton1.TransformVector2ToScreenSpace(Vector2.Zero);
+            Vector2 testButton1Pos = testButton1.TransformToScreenSpace(Vector2.Zero);
 
             containerTest.OnDraw(containerTest.NewGraphics2D());
             OutputImages(containerControl, containerTest);

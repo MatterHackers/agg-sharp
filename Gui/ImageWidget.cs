@@ -69,7 +69,7 @@ namespace MatterHackers.Agg.UI
         {
             if (image != null)
             {
-                RectangleDouble screenBounds = TransformRectangleToScreenSpace(LocalBounds);
+                RectangleDouble screenBounds = TransformToScreenSpace(LocalBounds);
                 double pixelAlignXAdjust = 0;
                 double pixelAlignYAdjust = 0;
                 if (ForcePixelAlignment)

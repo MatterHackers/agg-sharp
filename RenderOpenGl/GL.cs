@@ -335,6 +335,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #endif
         }
 
+        public static void Translate(MatterHackers.VectorMath.Vector3 vector)
+        {
+            Translate(vector.x, vector.y, vector.z);
+        }
+
         public static void Translate(double x, double y, double z)
         {
 #if USE_OPENGL

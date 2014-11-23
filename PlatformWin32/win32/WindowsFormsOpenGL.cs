@@ -44,7 +44,7 @@ namespace MatterHackers.Agg.UI
 
         // If you have an error here it is likely that you need to bulid your project with Platform Target x86.
         public MyGLControl(int bitDepth, int setencilDepth)
-            : base(new GraphicsMode())
+            : base(new GraphicsMode(0, 0, 0, 4))
         {
             Id = nextId++;
         }

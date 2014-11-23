@@ -1734,7 +1734,7 @@ namespace MatterHackers.Agg.UI
 
         protected virtual bool CurrentScreenClipping(out RectangleDouble screenClipping)
         {
-            screenClipping = TransformRectangleToScreenSpace(LocalBounds);
+            screenClipping = TransformToScreenSpace(LocalBounds);
 
             if (Parent != null)
             {
@@ -1831,7 +1831,46 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        public Vector2 TransformVector2ToScreenSpace(Vector2 vectorToTransform)
+        public Vector2 TransformFromParentSpace(GuiWidget parentToGetRelativeTo, Vector2 position)
+        {
+            GuiWidget parent = Parent;
+            while (parent != null
+                && parent != parentToGetRelativeTo)
+            {
+                position -= new Vector2(parent.BoundsRelativeToParent.Left, parent.BoundsRelativeToParent.Bottom);
+                parent = parent.Parent;
+            }
+
+            return position;
+        }
+
+        public Vector2 TransformToParentSpace(GuiWidget parentToGetRelativeTo, Vector2 position)
+        {
+            GuiWidget parent = Parent;
+            while (parent != null
+                && parent != parentToGetRelativeTo)
+            {
+                position += new Vector2(parent.BoundsRelativeToParent.Left, parent.BoundsRelativeToParent.Bottom);
+                parent = parent.Parent;
+            }
+
+            return position;
+        }
+
+        public RectangleDouble TransformToParentSpace(GuiWidget parentToGetRelativeTo, RectangleDouble rectangleToTransform)
+        {
+            GuiWidget parent = Parent;
+            while (parent != null
+                && parent != parentToGetRelativeTo)
+            {
+                rectangleToTransform.Offset(parent.OriginRelativeParent);
+                parent = parent.Parent;
+            }
+
+            return rectangleToTransform;
+        }
+
+        public Vector2 TransformToScreenSpace(Vector2 vectorToTransform)
         {
             GuiWidget prevGUIWidget = this;
             while (prevGUIWidget != null)
@@ -1843,7 +1882,7 @@ namespace MatterHackers.Agg.UI
             return vectorToTransform;
         }
 
-        public RectangleDouble TransformRectangleToScreenSpace(RectangleDouble rectangleToTransform)
+        public RectangleDouble TransformToScreenSpace(RectangleDouble rectangleToTransform)
         {
             GuiWidget prevGUIWidget = this;
             while (prevGUIWidget != null)

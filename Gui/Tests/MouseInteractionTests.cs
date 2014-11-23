@@ -817,8 +817,8 @@ namespace MatterHackers.Agg.UI.Tests
 
             // move to just outside both widgets
             container.OnMouseMove(new MouseEventArgs(MouseButtons.Left, 1, 1, 25, 0));
-            Assert.IsTrue(bottomWidget.TransformRectangleToScreenSpace(bottomWidget.LocalBounds).Contains(1, 25) == false);
-            Assert.IsTrue(topWidget.TransformRectangleToScreenSpace(topWidget.LocalBounds).Contains(1, 25) == false);
+            Assert.IsTrue(bottomWidget.TransformToScreenSpace(bottomWidget.LocalBounds).Contains(1, 25) == false);
+            Assert.IsTrue(topWidget.TransformToScreenSpace(topWidget.LocalBounds).Contains(1, 25) == false);
             // clear our states
             bottomGotEnter = bottomGotLeave = bottomGotEnterBounds = bottomGotLeaveBounds = 0;
             topGotEnter = topGotLeave = topGotEnterBounds = topGotLeaveBounds = 0;
