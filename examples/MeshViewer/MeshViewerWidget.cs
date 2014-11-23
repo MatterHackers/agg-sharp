@@ -46,8 +46,24 @@ namespace MatterHackers.MeshVisualizer
     public class MeshViewerWidget : GuiWidget
     {
         BackgroundWorker backgroundWorker = null;
+        int selectedMeshGroupIndex = -1;
+        public RGBA_Bytes BedColor { get; set; }
+        public RGBA_Bytes BuildVolumeColor { get; set; }
+
+        Vector3 displayVolume;
+        public Vector3 DisplayVolume { get { return displayVolume; } }
+
+        public bool AllowBedRenderingWhenEmpty { get; set; }
+        public bool RenderBed { get; set; }
+        public bool RenderBuildVolume { get; set; }
+
+        RenderTypes renderType = RenderTypes.Shaded;
+
+        public ImageBuffer BedImage;
+        TrackballTumbleWidget trackballTumbleWidget;
 
         static Dictionary<int, RGBA_Bytes> materialColors = new Dictionary<int, RGBA_Bytes>();
+
         public static RGBA_Bytes GetMaterialColor(int materialIndexBase1)
         {
             if (materialColors.ContainsKey(materialIndexBase1))
@@ -86,17 +102,6 @@ namespace MatterHackers.MeshVisualizer
             }
         }
 
-        public RGBA_Bytes BedColor { get; set; }
-        public RGBA_Bytes BuildVolumeColor { get; set; }
-
-        Vector3 displayVolume;
-        public Vector3 DisplayVolume { get { return displayVolume; } }
-
-        public bool AllowBedRenderingWhenEmpty { get; set; }
-        public bool RenderBed { get; set; }
-        public bool RenderBuildVolume { get; set; }
-
-        RenderTypes renderType = RenderTypes.Shaded;
         public RenderTypes RenderType
         {
             get { return renderType; }
@@ -115,17 +120,6 @@ namespace MatterHackers.MeshVisualizer
                 }
             }
         }
-
-        public ImageBuffer BedImage;
-
-        // need to know about (or just rebuild)
-        
-        // Bed Center Change
-        // Bed Size Change
-        // Part Centering
-        // Bed Rectange on Image
-        // Bed Image Change
-        // Bed Shape Change
 
         public class PartProcessingInfo : FlowLayoutWidget
         {
@@ -162,7 +156,6 @@ namespace MatterHackers.MeshVisualizer
 
         public PartProcessingInfo partProcessingInfo;
 
-        TrackballTumbleWidget trackballTumbleWidget;
         public TrackballTumbleWidget TrackballTumbleWidget
         {
             get
@@ -171,7 +164,11 @@ namespace MatterHackers.MeshVisualizer
             }
         }
 
-        int selectedMeshGroupIndex = 0;
+        public bool HaveSelection
+        {
+            get { return MeshGroups.Count > 0 && SelectedMeshGroupIndex > -1; }
+        }
+
         public int SelectedMeshGroupIndex
         {
             get { return selectedMeshGroupIndex; }
@@ -182,7 +179,7 @@ namespace MatterHackers.MeshVisualizer
         {
             get 
             {
-                if (MeshGroups.Count > 0)
+                if (HaveSelection)
                 {
                     return MeshGroups[SelectedMeshGroupIndex];
                 }
@@ -195,7 +192,7 @@ namespace MatterHackers.MeshVisualizer
         {
             get 
             {
-                if (MeshGroupTransforms.Count > 0)
+                if (HaveSelection)
                 {
                     return MeshGroupTransforms[selectedMeshGroupIndex];
                 }
