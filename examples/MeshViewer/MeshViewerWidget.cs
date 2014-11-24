@@ -60,13 +60,40 @@ namespace MatterHackers.MeshVisualizer
 
     public class InteractionVolume
     {
+        MeshViewerWidget meshViewerToDrawWith;
+        public MeshViewerWidget MeshViewerToDrawWith { get { return meshViewerToDrawWith; } }
+        
+        bool mouseOver = false;
+
+        public bool MouseOver 
+        {
+            get
+            {
+                return mouseOver;
+            }
+            
+            set
+            {
+                if (mouseOver != value)
+                {
+                    mouseOver = value;
+                    Invalidate();
+                }
+            }
+        }
         IRayTraceable collisionVolume;
-        public IRayTraceable CollisionVolume { get { return collisionVolume; } }
+        public IRayTraceable CollisionVolume { get { return collisionVolume; } set { collisionVolume = value; } }
         public Matrix4X4 TotalTransform = Matrix4X4.Identity;
 
-        public InteractionVolume(IRayTraceable collisionVolume)
+        public void Invalidate()
+        {
+            MeshViewerToDrawWith.Invalidate();
+        }
+
+        public InteractionVolume(IRayTraceable collisionVolume, MeshViewerWidget meshViewerToDrawWith)
         {
             this.collisionVolume = collisionVolume;
+            this.meshViewerToDrawWith = meshViewerToDrawWith;
         }
 
         public virtual void DrawGlContent(EventArgs e)
@@ -564,7 +591,7 @@ namespace MatterHackers.MeshVisualizer
 
         private bool FindInteractionVolumeHit(Ray ray, out int interactionVolumeHitIndex)
         {
-            interactionVolumeHitIndex = 0;
+            interactionVolumeHitIndex = -1;
             if (interactionVolumes.Count == 0 || interactionVolumes[0].CollisionVolume == null)
             {
                 return false;
@@ -583,7 +610,7 @@ namespace MatterHackers.MeshVisualizer
             {
                 for (int i = 0; i < interactionVolumes.Count; i++ )
                 {
-                    InteractionVolume interactionVolume = interactionVolumes[i];
+                    IRayTraceable interactionVolume = interactionVolumes[i].CollisionVolume;
                     if (info.closestHitObject == interactionVolume)
                     {
                         interactionVolumeHitIndex = i;
@@ -595,6 +622,7 @@ namespace MatterHackers.MeshVisualizer
             return false;
         }
 
+        public bool MouseDownOnInteractionVolume = false;
         public override void OnMouseDown(MouseEventArgs mouseEvent)
         {
             base.OnMouseDown(mouseEvent);
@@ -613,6 +641,11 @@ namespace MatterHackers.MeshVisualizer
             {
                 MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray);
                 interactionVolumes[volumeHitIndex].OnMouseDown(mouseEvent3D);
+                MouseDownOnInteractionVolume = true;
+            }
+            else
+            {
+                MouseDownOnInteractionVolume = false;
             }
         }
 
@@ -626,6 +659,17 @@ namespace MatterHackers.MeshVisualizer
             {
                 MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray);
                 interactionVolumes[volumeHitIndex].OnMouseMove(mouseEvent3D);
+            }
+            for(int i=0; i<interactionVolumes.Count; i++)
+            {
+                if(i==volumeHitIndex)
+                {
+                    interactionVolumes[i].MouseOver = true;
+                }
+                else
+                {
+                    interactionVolumes[i].MouseOver = false;
+                }
             }
         }
 
