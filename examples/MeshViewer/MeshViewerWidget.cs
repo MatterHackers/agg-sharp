@@ -40,9 +40,47 @@ using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RenderOpenGl;
 using MatterHackers.VectorMath;
+using MatterHackers.RayTracer;
 
 namespace MatterHackers.MeshVisualizer
 {
+    public class MouseEvent3DArgs : EventArgs
+    {
+        public MouseEventArgs MouseEvent2D;
+        private Ray PositionRay;
+
+        public MouseEvent3DArgs(MouseEventArgs mouseEvent2D, Ray positionRay)
+        {
+            this.MouseEvent2D = mouseEvent2D;
+            this.PositionRay = positionRay;
+        }
+    }
+
+    public class InteractionVolume
+    {
+        IRayTraceable collisionVolume;
+
+        public InteractionVolume(IRayTraceable collisionVolume)
+        {
+        }
+
+        public virtual void DrawGlContent(EventArgs e)
+        {
+        }
+
+        public virtual void OnMouseDown(MouseEvent3DArgs mouseEvent3D)
+        {
+        }
+
+        public virtual void OnMouseMove(MouseEvent3DArgs mouseEvent3D)
+        {
+        }
+        
+        public virtual void OnMouseUp(MouseEvent3DArgs mouseEvent3D)
+        {
+        }
+    }
+
     public class MeshViewerWidget : GuiWidget
     {
         BackgroundWorker backgroundWorker = null;
@@ -350,6 +388,7 @@ namespace MatterHackers.MeshVisualizer
             base.OnClosed(e);
         }
 
+        public List<InteractionVolume> InteractionVolumes = new List<InteractionVolume>();
         void trackballTumbleWidget_DrawGlContent(object sender, EventArgs e)
         {
             for (int i = 0; i < MeshGroups.Count; i++)
@@ -369,6 +408,11 @@ namespace MatterHackers.MeshVisualizer
                     RenderMeshToGl.Render(meshToRender, drawColor, MeshGroupTransforms[i].TotalTransform, RenderType);
                     part++;
                 }
+            }
+
+            foreach (InteractionVolume interactionVolume in InteractionVolumes)
+            {
+                interactionVolume.DrawGlContent(e);
             }
 
             // we don't want to render the bed or bulid volume before we load a model.
@@ -524,6 +568,31 @@ namespace MatterHackers.MeshVisualizer
                     trackballTumbleWidget.DrawRotationHelperCircle = true;
                 }
             }
+
+            if (InteractionVolumes.Count > 0)
+            {
+                Ray ray = trackballTumbleWidget.GetRayFromScreen(mouseEvent.Position);
+                foreach (InteractionVolume volume in InteractionVolumes)
+                {
+                    MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray);
+                    volume.OnMouseDown(mouseEvent3D);
+                }
+            }
+        }
+
+        public override void OnMouseMove(MouseEventArgs mouseEvent)
+        {
+            base.OnMouseMove(mouseEvent);
+
+            if (InteractionVolumes.Count > 0)
+            {
+                Ray ray = trackballTumbleWidget.GetRayFromScreen(mouseEvent.Position);
+                foreach (InteractionVolume volume in InteractionVolumes)
+                {
+                    MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray);
+                    volume.OnMouseMove(mouseEvent3D);
+                }
+            }
         }
 
         public override void OnMouseUp(MouseEventArgs mouseEvent)
@@ -532,6 +601,16 @@ namespace MatterHackers.MeshVisualizer
             Invalidate();
 
             base.OnMouseUp(mouseEvent);
+
+            if (InteractionVolumes.Count > 0)
+            {
+                Ray ray = trackballTumbleWidget.GetRayFromScreen(mouseEvent.Position);
+                foreach (InteractionVolume volume in InteractionVolumes)
+                {
+                    MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray);
+                    volume.OnMouseUp(mouseEvent3D);
+                }
+            }
         }
 
         RGBA_Bytes bedMarkingsColor = RGBA_Bytes.Black;
