@@ -44,12 +44,12 @@ namespace MatterHackers.Agg.UI
 
         // If you have an error here it is likely that you need to bulid your project with Platform Target x86.
         public MyGLControl(int bitDepth, int setencilDepth)
-            : base(new GraphicsMode(0, 0, 0, 4))
+            //: base(new GraphicsMode(new ColorFormat(32), 32, 0, 4))
         {
             Id = nextId++;
         }
 
-        public void MakeCurrent()
+        public new void MakeCurrent()
         {
             currentControl = this;
             base.MakeCurrent();

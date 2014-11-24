@@ -346,15 +346,15 @@ namespace MatterHackers.Agg.OpenGlGui
             return total;
         }
 
-        public double GetWorldUnitsPerScreenPixelAtPosition(Vector3 centerTop)
+        public double GetWorldUnitsPerScreenPixelAtPosition(Vector3 worldPosition)
         {
-            Vector2 centerTopScreenPosition = GetScreenPosition(centerTop);
-            Ray centerTopScreenRay = GetRayFromScreen(centerTopScreenPosition);
-            double distToCenterTopPosition = (centerTop - centerTopScreenRay.origin).Length;
+            Vector2 screenPosition = GetScreenPosition(worldPosition);
+            Ray rayFromScreen = GetRayFromScreen(screenPosition);
+            double distanceFromScreenToWorldPos = (worldPosition - rayFromScreen.origin).Length;
 
-            Ray rightOnePixelRay = GetRayFromScreen(new Vector2(centerTopScreenPosition.x + 1, centerTopScreenPosition.y));
-            Vector3 rightOnePixel = rightOnePixelRay.origin + rightOnePixelRay.direction * distToCenterTopPosition;
-            double distBetweenPixelsWorldSpace = (rightOnePixel - centerTop).Length;
+            Ray rightOnePixelRay = GetRayFromScreen(new Vector2(screenPosition.x + 1, screenPosition.y));
+            Vector3 rightOnePixel = rightOnePixelRay.origin + rightOnePixelRay.direction * distanceFromScreenToWorldPos;
+            double distBetweenPixelsWorldSpace = (rightOnePixel - worldPosition).Length;
             return distBetweenPixelsWorldSpace;
         }
     }
