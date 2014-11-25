@@ -74,7 +74,7 @@ namespace MatterHackers.Agg.Image
         public ImageBuffer LoadImage(string path)
         {
             ImageBuffer temp = new ImageBuffer();
-            LoadImage(MapPath(path), temp);
+            LoadImage(path, temp);
 
             return temp;
         }
@@ -99,6 +99,25 @@ namespace MatterHackers.Agg.Image
             return Directory.GetFiles(MapPath(path)).Select(p => p.Substring(p.IndexOf("StaticData") + 11));
         }
 
+        /// <summary>
+        /// Loads the specified file from the StaticData/Icons path
+        /// </summary>
+        /// <param name="path">The file path to load</param>
+        /// <returns>An ImageBuffer initialized with data from the given file</returns>
+        public ImageBuffer LoadIcon(string path)
+        {
+            return LoadImage(Path.Combine("Icons", path));
+        }
+
+        /// <summary>
+        /// Loads the specified file from the StaticData/Icons path
+        /// </summary>
+        /// <param name="path">The file path to load</param>
+        /// <param name="buffer">The ImageBuffer to populate with data from the given file</param>
+        public void LoadIcon(string path, ImageBuffer buffer)
+        {
+            LoadImage(Path.Combine("Icons", path), buffer);
+        }
     }
 
     public class ImageIOWindowsPlugin : ImageIOPlugin
