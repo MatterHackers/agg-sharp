@@ -1066,7 +1066,12 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
         {
             IFrostedSerialPort newPort = Create(serialPortName);
             // if we can find a mac helper class (to get us 250k)
-
+            
+#if __LINUX
+#else
+            newPort.BaudRate = baudRate;
+#endif
+            
             if (DtrEnableOnConnect)
             {
                 newPort.DtrEnable = true;
