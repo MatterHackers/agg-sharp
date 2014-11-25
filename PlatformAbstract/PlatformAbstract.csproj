@@ -172,6 +172,7 @@
   <ItemGroup>
     <Compile Include="ImageIO.cs" />
     <Compile Include="ImageIOPlugin.cs" />
+    <Compile Include="IStaticData.cs" />
     <Compile Include="OsInformation.cs" />
   </ItemGroup>
   <ItemGroup>

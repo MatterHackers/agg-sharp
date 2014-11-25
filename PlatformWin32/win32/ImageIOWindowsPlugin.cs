@@ -31,10 +31,76 @@ using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
+
 using MatterHackers.Agg.PlatformAbstract;
+using System.Collections.Generic;
 
 namespace MatterHackers.Agg.Image
 {
+
+    public class SimpleStaticData : IStaticData
+    {
+        private string MapPath(string path)
+        {
+            string staticDataPath = Directory.Exists("StaticData") ? "StaticData" : Path.Combine("..", "..", "StaticData");
+            return Path.Combine(staticDataPath, path);
+        }
+
+        public string ReadAllText(string path)
+        {
+            return File.ReadAllText(MapPath(path));
+        }
+
+        public IEnumerable<string> ReadAllLines(string path)
+        {
+            return File.ReadLines(MapPath(path));
+        }
+
+        public Stream OpenSteam(string path)
+        {
+            return File.OpenRead(MapPath(path));
+        }
+
+        public void LoadImage(string path, ImageBuffer destImage)
+        {
+            using (var imageStream = OpenSteam(path))
+            {
+                var bitmap = new Bitmap(imageStream);
+                ImageIOWindowsPlugin.ConvertBitmapToImage(destImage, bitmap);
+            }
+        }
+
+        public ImageBuffer LoadImage(string path)
+        {
+            ImageBuffer temp = new ImageBuffer();
+            LoadImage(MapPath(path), temp);
+
+            return temp;
+        }
+
+        public bool FileExists(string path)
+        {
+            return File.Exists(MapPath(path));
+        }
+
+        public bool DirectoryExists(string path)
+        {
+            return Directory.Exists(MapPath(path));
+        }
+        
+        public IEnumerable<string> GetDirectories(string path)
+        {
+            return Directory.GetDirectories(MapPath(path));
+        }
+
+        public IEnumerable<string> GetFiles(string path)
+        {
+            return Directory.GetFiles(MapPath(path)).Select(p => p.Substring(p.IndexOf("StaticData") + 11));
+        }
+
+    }
+
     public class ImageIOWindowsPlugin : ImageIOPlugin
     {
         public override bool LoadImageData(String pathToGifFile, ImageSequence destImageSequence)
@@ -89,7 +155,7 @@ namespace MatterHackers.Agg.Image
             return false;
         }
 
-        private static bool ConvertBitmapToImage(ImageBuffer destImage, Bitmap m_WidowsBitmap)
+        internal static bool ConvertBitmapToImage(ImageBuffer destImage, Bitmap m_WidowsBitmap)
         {
             if (m_WidowsBitmap != null)
             {
@@ -304,6 +370,7 @@ namespace MatterHackers.Agg.Image
             if (System.IO.File.Exists(filename))
             {
                 Bitmap m_WidowsBitmap = new Bitmap(filename);
+
                 if (m_WidowsBitmap != null)
                 {
                     switch (m_WidowsBitmap.PixelFormat)
