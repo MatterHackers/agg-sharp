@@ -622,6 +622,7 @@ namespace MatterHackers.MeshVisualizer
             return false;
         }
 
+        int volumeIndexWithMouseDown = -1;
         public bool MouseDownOnInteractionVolume = false;
         public override void OnMouseDown(MouseEventArgs mouseEvent)
         {
@@ -640,6 +641,7 @@ namespace MatterHackers.MeshVisualizer
             if (FindInteractionVolumeHit(ray, out volumeHitIndex))
             {
                 MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray);
+                volumeIndexWithMouseDown = volumeHitIndex;
                 interactionVolumes[volumeHitIndex].OnMouseDown(mouseEvent3D);
                 MouseDownOnInteractionVolume = true;
             }
@@ -657,8 +659,11 @@ namespace MatterHackers.MeshVisualizer
             Ray ray = trackballTumbleWidget.GetRayFromScreen(mouseEvent.Position);
             if (FindInteractionVolumeHit(ray, out volumeHitIndex))
             {
-                MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray);
-                interactionVolumes[volumeHitIndex].OnMouseMove(mouseEvent3D);
+                if (volumeIndexWithMouseDown == volumeHitIndex)
+                {
+                    MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray);
+                    interactionVolumes[volumeHitIndex].OnMouseMove(mouseEvent3D);
+                }
             }
             for(int i=0; i<interactionVolumes.Count; i++)
             {
@@ -675,6 +680,7 @@ namespace MatterHackers.MeshVisualizer
 
         public override void OnMouseUp(MouseEventArgs mouseEvent)
         {
+            volumeIndexWithMouseDown = -1;
             trackballTumbleWidget.DrawRotationHelperCircle = false;
             Invalidate();
 
