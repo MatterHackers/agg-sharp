@@ -167,6 +167,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="win32\FileSystemStaticData.cs" />
     <Compile Include="win32\OsInformationWindowsPlugin.cs" />
     <Compile Include="win32\HookWindowsInputAndSendToWidget.cs" />
     <Compile Include="win32\WidgetForWindowsFormsBitmap.cs" />
