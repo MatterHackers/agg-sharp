@@ -47,14 +47,16 @@ namespace MatterHackers.MeshVisualizer
 {
     public class MouseEvent3DArgs : EventArgs
     {
+        public IntersectInfo info;
         public MouseEventArgs MouseEvent2D;
-        private Ray positionRay;
-        public Ray PositionRay { get { return positionRay; } }
+        private Ray mouseRay;
+        public Ray MouseRay { get { return mouseRay; } }
 
-        public MouseEvent3DArgs(MouseEventArgs mouseEvent2D, Ray positionRay)
+        public MouseEvent3DArgs(MouseEventArgs mouseEvent2D, Ray mouseRay, IntersectInfo info)
         {
+            this.info = info;
             this.MouseEvent2D = mouseEvent2D;
-            this.positionRay = positionRay;
+            this.mouseRay = mouseRay;
         }
     }
 
@@ -589,11 +591,12 @@ namespace MatterHackers.MeshVisualizer
             });
         }
 
-        private bool FindInteractionVolumeHit(Ray ray, out int interactionVolumeHitIndex)
+        private bool FindInteractionVolumeHit(Ray ray, out int interactionVolumeHitIndex, out IntersectInfo info)
         {
             interactionVolumeHitIndex = -1;
             if (interactionVolumes.Count == 0 || interactionVolumes[0].CollisionVolume == null)
             {
+                info = null;
                 return false;
             }
 
@@ -605,7 +608,7 @@ namespace MatterHackers.MeshVisualizer
             }
             IRayTraceable allObjects = BoundingVolumeHierarchy.CreateNewHierachy(mesheTraceables);
 
-            IntersectInfo info = allObjects.GetClosestIntersection(ray);
+            info = allObjects.GetClosestIntersection(ray);
             if (info != null)
             {
                 for (int i = 0; i < interactionVolumes.Count; i++ )
@@ -638,9 +641,10 @@ namespace MatterHackers.MeshVisualizer
 
             int volumeHitIndex;
             Ray ray = trackballTumbleWidget.GetRayFromScreen(mouseEvent.Position);
-            if (FindInteractionVolumeHit(ray, out volumeHitIndex))
+            IntersectInfo info;
+            if (FindInteractionVolumeHit(ray, out volumeHitIndex, out info))
             {
-                MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray);
+                MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray, info);
                 volumeIndexWithMouseDown = volumeHitIndex;
                 interactionVolumes[volumeHitIndex].OnMouseDown(mouseEvent3D);
                 MouseDownOnInteractionVolume = true;
@@ -655,31 +659,41 @@ namespace MatterHackers.MeshVisualizer
         {
             base.OnMouseMove(mouseEvent);
 
-            int volumeHitIndex;
             Ray ray = trackballTumbleWidget.GetRayFromScreen(mouseEvent.Position);
-            if (FindInteractionVolumeHit(ray, out volumeHitIndex))
+            IntersectInfo info = null;
+            if (MouseDownOnInteractionVolume && volumeIndexWithMouseDown != -1)
             {
-                if (volumeIndexWithMouseDown == volumeHitIndex)
-                {
-                    MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray);
-                    interactionVolumes[volumeHitIndex].OnMouseMove(mouseEvent3D);
-                }
+                MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray, info);
+                interactionVolumes[volumeIndexWithMouseDown].OnMouseMove(mouseEvent3D);
             }
-            for(int i=0; i<interactionVolumes.Count; i++)
+            else
             {
-                if(i==volumeHitIndex)
+                int volumeHitIndex;
+                if (FindInteractionVolumeHit(ray, out volumeHitIndex, out info))
                 {
-                    interactionVolumes[i].MouseOver = true;
+                    if (volumeIndexWithMouseDown == volumeHitIndex)
+                    {
+                        MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray, info);
+                        interactionVolumes[volumeHitIndex].OnMouseMove(mouseEvent3D);
+                    }
                 }
-                else
+                for (int i = 0; i < interactionVolumes.Count; i++)
                 {
-                    interactionVolumes[i].MouseOver = false;
+                    if (i == volumeHitIndex)
+                    {
+                        interactionVolumes[i].MouseOver = true;
+                    }
+                    else
+                    {
+                        interactionVolumes[i].MouseOver = false;
+                    }
                 }
             }
         }
 
         public override void OnMouseUp(MouseEventArgs mouseEvent)
         {
+            MouseDownOnInteractionVolume = false;
             volumeIndexWithMouseDown = -1;
             trackballTumbleWidget.DrawRotationHelperCircle = false;
             Invalidate();
@@ -688,9 +702,10 @@ namespace MatterHackers.MeshVisualizer
 
             int volumeHitIndex;
             Ray ray = trackballTumbleWidget.GetRayFromScreen(mouseEvent.Position);
-            if (FindInteractionVolumeHit(ray, out volumeHitIndex))
+            IntersectInfo info;
+            if (FindInteractionVolumeHit(ray, out volumeHitIndex, out info))
             {
-                MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray);
+                MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray, info);
                 interactionVolumes[volumeHitIndex].OnMouseUp(mouseEvent3D);
             }
         }
