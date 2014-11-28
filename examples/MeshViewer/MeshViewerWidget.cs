@@ -64,6 +64,9 @@ namespace MatterHackers.MeshVisualizer
     {
         MeshViewerWidget meshViewerToDrawWith;
         public MeshViewerWidget MeshViewerToDrawWith { get { return meshViewerToDrawWith; } }
+        IRayTraceable collisionVolume;
+        public IRayTraceable CollisionVolume { get { return collisionVolume; } set { collisionVolume = value; } }
+        public Matrix4X4 TotalTransform = Matrix4X4.Identity;
         
         bool mouseOver = false;
 
@@ -83,9 +86,6 @@ namespace MatterHackers.MeshVisualizer
                 }
             }
         }
-        IRayTraceable collisionVolume;
-        public IRayTraceable CollisionVolume { get { return collisionVolume; } set { collisionVolume = value; } }
-        public Matrix4X4 TotalTransform = Matrix4X4.Identity;
 
         public void Invalidate()
         {
