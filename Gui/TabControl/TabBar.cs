@@ -153,7 +153,7 @@ namespace MatterHackers.Agg.UI
             set
             {
                 throw new NotImplementedException();
-                SelectTab(value);
+                //SelectTab(value);
             }
         }
 

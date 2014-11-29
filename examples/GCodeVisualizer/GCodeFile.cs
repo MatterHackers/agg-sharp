@@ -286,8 +286,9 @@ namespace MatterHackers.GCodeVisualizer
                         default:
 #if DEBUG
                             throw new NotImplementedException();
-#endif
+#else
                             break;
+#endif
                     }
                 }
 
