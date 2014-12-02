@@ -84,18 +84,27 @@ namespace MatterHackers.PolygonMesh.Processors
             return ".STL;.AMF";
         }
 
-        public static List<MeshGroup> Load(string meshPathAndFileName, ReportProgressRatio reportProgress = null)
+
+        public static List<MeshGroup> Load(Stream fileStream, string fileExtension, ReportProgressRatio reportProgress = null)
         {
-            switch (Path.GetExtension(meshPathAndFileName).ToUpper())
+            switch (fileExtension.ToUpper())
             {
                 case ".STL":
-                    return StlProcessing.Load(meshPathAndFileName, reportProgress);
+                    return StlProcessing.Load(fileStream, reportProgress);
 
                 case ".AMF":
-                    return AmfProcessing.Load(meshPathAndFileName, reportProgress);
+                    return AmfProcessing.Load(fileStream, reportProgress);
 
                 default:
                     return null;
+            }
+        }
+
+        public static List<MeshGroup> Load(string meshPathAndFileName, ReportProgressRatio reportProgress = null)
+        {
+            using(Stream stream = File.OpenRead(meshPathAndFileName))
+            {
+                return Load(stream, Path.GetExtension(meshPathAndFileName), reportProgress);
             }
         }
 
