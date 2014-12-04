@@ -307,7 +307,6 @@ namespace MatterHackers.Agg.Image
             if (System.IO.File.Exists(filename))
             {
                 Bitmap m_WidowsBitmap = new Bitmap(filename);
-
                 if (m_WidowsBitmap != null)
                 {
                     switch (m_WidowsBitmap.PixelFormat)

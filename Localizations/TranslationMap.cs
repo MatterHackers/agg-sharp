@@ -40,7 +40,7 @@ namespace MatterHackers.Localizations
 
         void ReadIntoDictonary(Dictionary<string, string> dictionary, string pathAndFilename)
         {
-            string[] lines = StaticData.Instance.ReadAllLines(pathAndFilename).ToArray();
+            string[] lines = StaticData.Instance.ReadAllLines(pathAndFilename);
             bool lookingForEnglish = true;
             string englishString = "";
             for (int i = 0; i < lines.Length; i++)
