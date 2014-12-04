@@ -4,8 +4,10 @@ using System.Text;
 using System.Globalization;
 using System.Threading;
 using System.IO;
+using System.Linq;
 
 using MatterHackers.Agg;
+using MatterHackers.Agg.PlatformAbstract;
 
 namespace MatterHackers.Localizations
 {
@@ -26,19 +28,19 @@ namespace MatterHackers.Localizations
             get { return twoLetterIsoLanguageName; }
         }
 
-        public TranslationMap(string pathToTranslationsFolder, string twoLetterIsoLanguageName = "")
+        public TranslationMap(string outputDirectory, string twoLetterIsoLanguageName = "")
         {
             if (twoLetterIsoLanguageName == "")
             {
                 twoLetterIsoLanguageName = Thread.CurrentThread.CurrentUICulture.TwoLetterISOLanguageName;
             }
 
-            LoadTranslation(pathToTranslationsFolder, twoLetterIsoLanguageName);
+            LoadTranslation(outputDirectory, twoLetterIsoLanguageName);
         }
 
         void ReadIntoDictonary(Dictionary<string, string> dictionary, string pathAndFilename)
         {
-            string[] lines = File.ReadAllLines(pathAndFilename);
+            string[] lines = StaticData.Instance.ReadAllLines(pathAndFilename);
             bool lookingForEnglish = true;
             string englishString = "";
             for (int i = 0; i < lines.Length; i++)
@@ -80,15 +82,17 @@ namespace MatterHackers.Localizations
             }
         }
 
-        public void LoadTranslation(string pathToTranslationsFolder, string twoLetterIsoLanguageName)
+        public void LoadTranslation(string outputDirectory, string twoLetterIsoLanguageName)
         {
             this.twoLetterIsoLanguageName = twoLetterIsoLanguageName.ToLower();
 
-            this.pathToMasterFile = Path.Combine(pathToTranslationsFolder, "Master.txt");
-            ReadIntoDictonary(masterDictionary, pathToMasterFile);
+            ReadIntoDictonary(masterDictionary, Path.Combine("Translations", "Master.txt"));
 
-            this.pathToTranslationFile = Path.Combine(pathToTranslationsFolder, TwoLetterIsoLanguageName, "Translation.txt");
-            if (File.Exists(pathToTranslationFile))
+            this.pathToMasterFile = Path.Combine(outputDirectory, "Master.txt");
+            this.pathToTranslationFile = Path.Combine(outputDirectory, this.twoLetterIsoLanguageName, "Translation.txt");
+
+            string pathToTranslationFile = Path.Combine("Translations", "Translation.txt");
+            if (StaticData.Instance.FileExists(pathToTranslationFile))
             {
                 ReadIntoDictonary(translationDictionary, pathToTranslationFile);
             }

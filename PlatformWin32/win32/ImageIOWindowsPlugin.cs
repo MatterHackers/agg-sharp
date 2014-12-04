@@ -31,11 +31,14 @@ using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
+
 using MatterHackers.Agg.PlatformAbstract;
+using System.Collections.Generic;
 
 namespace MatterHackers.Agg.Image
 {
-    public class ImageIOWindowsPlugin : ImageIOPlugin
+       public class ImageIOWindowsPlugin : ImageIOPlugin
     {
         public override bool LoadImageData(String pathToGifFile, ImageSequence destImageSequence)
         {
@@ -89,7 +92,7 @@ namespace MatterHackers.Agg.Image
             return false;
         }
 
-        private static bool ConvertBitmapToImage(ImageBuffer destImage, Bitmap m_WidowsBitmap)
+        internal static bool ConvertBitmapToImage(ImageBuffer destImage, Bitmap m_WidowsBitmap)
         {
             if (m_WidowsBitmap != null)
             {

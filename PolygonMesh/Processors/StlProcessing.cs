@@ -149,47 +149,28 @@ namespace MatterHackers.PolygonMesh.Processors
 
         public static List<MeshGroup> Load(string fileName, ReportProgressRatio reportProgress = null)
         {
-            Mesh loadedMesh = null;
-            if (Path.GetExtension(fileName).ToUpper() == ".STL")
-            {
-                try
-                {
-                    if (File.Exists(fileName))
-                    {
-                        Stream fileStream = File.OpenRead(fileName);
+            // Early exit if not STL
+            if (Path.GetExtension(fileName).ToUpper() != ".STL") return null;
 
-                        loadedMesh = ParseFileContents(fileStream, reportProgress);
-                    }
-                }
-#if DEBUG
-                catch (IOException)
-                {
-                    return null;
-                }
-#else
-                catch (Exception)
-                {
-                    return null;
-                }
-#endif
-            }
-
-            List<MeshGroup> meshGroups = new List<MeshGroup>();
-            meshGroups.Add(new MeshGroup());
-            if (loadedMesh != null)
+            using(Stream fileStream = File.OpenRead(fileName))
             {
-                meshGroups[0].Meshes.Add(loadedMesh);
-                return meshGroups;
+                // Call the Load signature taking a stream and file extension
+                return Load(fileStream, reportProgress);
             }
-            return null;
         }
 
-        public static Mesh Load(Stream fileStream, ReportProgressRatio reportProgress = null)
+        // Note: Changing the Load(Stream) return type - this is a breaking change but methods with the same name should return the same type
+        public static List<MeshGroup> Load(Stream fileStream, ReportProgressRatio reportProgress = null)
         {
-            Mesh loadedMesh = null;
             try
             {
-                loadedMesh = ParseFileContents(fileStream, reportProgress);
+                // Parse STL
+                Mesh loadedMesh = ParseFileContents(fileStream, reportProgress);
+
+                // TODO: Sync with AMF processing and have ParseFileContents return List<MeshGroup>?
+                //
+                // Return the loaded mesh wrapped in a MeshGroup, wrapped in a List
+                return (loadedMesh == null) ? null : new List<MeshGroup>(new[] { new MeshGroup(loadedMesh) });
             }
 #if DEBUG
             catch (IOException)
@@ -197,13 +178,13 @@ namespace MatterHackers.PolygonMesh.Processors
                 return null;
             }
 #else
+            // TODO: Consider not supressing exceptions like this or at least logging them. Troubleshooting when this
+            // scenario occurs is impossible and likely results in an undiagnosable null reference error
             catch (Exception)
             {
                 return null;
             }
 #endif
-
-            return loadedMesh;
         }
 
         public static Mesh ParseFileContents(Stream stlStream, ReportProgressRatio reportProgress)

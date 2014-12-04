@@ -169,6 +169,14 @@ namespace MatterHackers.Agg.Font
             return GetIntValue(source, name, out outValue, ref startIndex);
         }
 
+        public static TypeFace LoadFrom(string content)
+        {
+            TypeFace fontUnderConstruction = new TypeFace();
+            fontUnderConstruction.ReadSVG(content);
+
+            return fontUnderConstruction;
+        }
+
         public static TypeFace LoadSVG(String filename)
         {
             TypeFace fontUnderConstruction = new TypeFace();

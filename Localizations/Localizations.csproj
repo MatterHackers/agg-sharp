@@ -161,5 +161,9 @@
       <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
       <Name>Agg</Name>
     </ProjectReference>
+    <ProjectReference Include="..\PlatformAbstract\PlatformAbstract.csproj">
+      <Project>{3e4aaba8-d85f-4922-88c6-5c1b2d2308fb}</Project>
+      <Name>PlatformAbstract</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>
