@@ -10,10 +10,7 @@ namespace MatterHackers.Agg.UI
 		public delegate void SaveFileDialogDelegate( SaveFileDialogParams saveParams );
 
 		public abstract bool OpenFileDialog(OpenFileDialogParams openParams, OpenFileDialogDelegate callback);
-
-        public abstract string SelectFolderDialog(ref SelectFolderDialogParams folderParams);
 		public abstract bool SelectFolderDialog(SelectFolderDialogParams folderParams, SelectFolderDialogDelegate callback);
-
 		public abstract bool SaveFileDialog(SaveFileDialogParams saveParams, SaveFileDialogDelegate callback);
     }
 
