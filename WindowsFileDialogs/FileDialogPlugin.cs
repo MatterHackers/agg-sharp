@@ -51,7 +51,7 @@ namespace MatterHackers.Agg.WindowsFileDialogs
             return true;
         }
 
-        public override string SelectFolderDialog(ref SelectFolderDialogParams folderParams)
+        string SelectFolderDialog(ref SelectFolderDialogParams folderParams)
         {
             WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = true;
 
