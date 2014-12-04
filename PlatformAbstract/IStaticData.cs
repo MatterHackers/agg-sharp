@@ -10,7 +10,7 @@ namespace MatterHackers.Agg.PlatformAbstract
     public interface IStaticData
     {
         string ReadAllText(string path);
-        IEnumerable<string> ReadAllLines(string path);
+		string[] ReadAllLines(string path);
         Stream OpenSteam(string path);
         void LoadImage(string path, ImageBuffer destImage);
         ImageBuffer LoadImage(string path);

@@ -23,9 +23,9 @@ namespace MatterHackers.Agg
             return File.ReadAllText(MapPath(path));
         }
 
-        public IEnumerable<string> ReadAllLines(string path)
+        public string[] ReadAllLines(string path)
         {
-            return File.ReadLines(MapPath(path));
+            return File.ReadLines(MapPath(path)).ToArray();
         }
 
         public Stream OpenSteam(string path)
