@@ -9,13 +9,11 @@ namespace MatterHackers.Agg.UI
 		public delegate void SelectFolderDialogDelegate( SelectFolderDialogParams folderParams );
 		public delegate void SaveFileDialogDelegate( SaveFileDialogParams saveParams );
 
-		public abstract Stream OpenFileDialog(ref OpenFileDialogParams openParams);
 		public abstract bool OpenFileDialog(OpenFileDialogParams openParams, OpenFileDialogDelegate callback);
 
         public abstract string SelectFolderDialog(ref SelectFolderDialogParams folderParams);
 		public abstract bool SelectFolderDialog(SelectFolderDialogParams folderParams, SelectFolderDialogDelegate callback);
 
-        public abstract Stream SaveFileDialog(ref SaveFileDialogParams saveParams);
 		public abstract bool SaveFileDialog(SaveFileDialogParams saveParams, SaveFileDialogDelegate callback);
     }
 
@@ -42,23 +40,11 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-
-
-        public static Stream OpenFileDialog(ref OpenFileDialogParams openParams)
-        {
-            return FileDialogCreatorPlugin.OpenFileDialog(ref openParams);
-        }
-
         public static string SelectFolderDialog(ref SelectFolderDialogParams folderParams)
         {
             return FileDialogCreatorPlugin.SelectFolderDialog(ref folderParams);
         }
-
-        public static Stream SaveFileDialog(ref SaveFileDialogParams saveParams)
-        {
-            return FileDialogCreatorPlugin.SaveFileDialog(ref saveParams);
-        }
-
+        
 		public static bool OpenFileDialog(OpenFileDialogParams openParams, FileDialogCreator.OpenFileDialogDelegate callback)
 		{
 			return FileDialogCreatorPlugin.OpenFileDialog(openParams, callback);
