@@ -39,11 +39,6 @@ namespace MatterHackers.Agg.UI
                 return fileDialogCreatorPlugin;
             }
         }
-
-        public static string SelectFolderDialog(ref SelectFolderDialogParams folderParams)
-        {
-            return FileDialogCreatorPlugin.SelectFolderDialog(ref folderParams);
-        }
         
 		public static bool OpenFileDialog(OpenFileDialogParams openParams, FileDialogCreator.OpenFileDialogDelegate callback)
 		{
