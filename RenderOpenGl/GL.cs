@@ -413,7 +413,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.MultMatrix(m);
 #else
-			throw new NotImplementedException();
+			OpenTK.Graphics.ES11.GL.MultMatrix(m);
 #endif
         }
 
