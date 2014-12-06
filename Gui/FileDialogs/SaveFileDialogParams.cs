@@ -22,6 +22,10 @@ namespace MatterHackers.Agg.UI
         public SaveFileDialogParams(String fileTypeFilter, String initialDirectory = "", string title = "", string actionButtonLabel = "")
             : base(fileTypeFilter, initialDirectory, title, actionButtonLabel)
         {
+            if (InitialDirectory == "")
+            {
+                InitialDirectory = FileDialog.LastDirectoryUsed;
+            }
         }
     }
 }

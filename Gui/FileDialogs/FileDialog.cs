@@ -16,6 +16,8 @@ namespace MatterHackers.Agg.UI
 
     public static class FileDialog
     {
+        static string lastDirectoryUsed = "";
+
         static FileDialogCreator fileDialogCreatorPlugin = null;
         static FileDialogCreator FileDialogCreatorPlugin
         {
@@ -39,7 +41,21 @@ namespace MatterHackers.Agg.UI
         
 		public static bool OpenFileDialog(OpenFileDialogParams openParams, FileDialogCreator.OpenFileDialogDelegate callback)
 		{
-			return FileDialogCreatorPlugin.OpenFileDialog(openParams, callback);
+            return FileDialogCreatorPlugin.OpenFileDialog(openParams, (OpenFileDialogParams outputOpenParams) =>
+                {
+                    try
+                    {
+                        if (outputOpenParams.FileName != "")
+                        {
+                            lastDirectoryUsed = Path.GetDirectoryName(outputOpenParams.FileName);
+                        }
+                    }
+                    catch(Exception)
+                    {
+                    }
+                    callback(outputOpenParams);
+                }
+            );
 		}
 
 		public static bool SelectFolderDialog(SelectFolderDialogParams folderParams, FileDialogCreator.SelectFolderDialogDelegate callback)
@@ -51,5 +67,25 @@ namespace MatterHackers.Agg.UI
 		{
 			return FileDialogCreatorPlugin.SaveFileDialog(saveParams, callback);
 		}
+
+        public static string LastDirectoryUsed
+        {
+            get
+            {
+                if (lastDirectoryUsed == null
+                    || lastDirectoryUsed == ""
+                    || !Directory.Exists(lastDirectoryUsed))
+                {
+                    return System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal);
+                }
+
+                return lastDirectoryUsed;
+            }
+
+            set
+            {
+                lastDirectoryUsed = value;
+            }
+        }
     }
 }
