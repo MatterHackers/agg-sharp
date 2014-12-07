@@ -543,8 +543,9 @@ namespace MatterHackers.MeshVisualizer
             {
                 for (int i = 0; i < interactionVolumes.Count; i++ )
                 {
-                    IRayTraceable interactionVolume = interactionVolumes[i].CollisionVolume;
-                    if (info.closestHitObject == interactionVolume)
+                    List<IRayTraceable> insideBounds = new List<IRayTraceable>();
+                    interactionVolumes[i].CollisionVolume.GetContained(insideBounds, info.closestHitObject.GetAxisAlignedBoundingBox());
+                    if (insideBounds.Contains(info.closestHitObject))
                     {
                         interactionVolumeHitIndex = i;
                         return true;
