@@ -47,7 +47,11 @@ namespace MatterHackers.Agg.UI
                     {
                         if (outputOpenParams.FileName != "")
                         {
-                            lastDirectoryUsed = Path.GetDirectoryName(outputOpenParams.FileName);
+                            string directory = Path.GetDirectoryName(outputOpenParams.FileName);
+                            if (directory != null && directory != "")
+                            {
+                                lastDirectoryUsed = directory;
+                            }
                         }
                     }
                     catch(Exception)
@@ -65,8 +69,26 @@ namespace MatterHackers.Agg.UI
 
 		public static bool SaveFileDialog(SaveFileDialogParams saveParams, FileDialogCreator.SaveFileDialogDelegate callback)
 		{
-			return FileDialogCreatorPlugin.SaveFileDialog(saveParams, callback);
-		}
+            return FileDialogCreatorPlugin.SaveFileDialog(saveParams, (SaveFileDialogParams outputSaveParams) =>
+                {
+                    try
+                    {
+                        if (outputSaveParams.FileName != "")
+                        {
+                            string directory = Path.GetDirectoryName(outputSaveParams.FileName);
+                            if(directory != null && directory != "")
+                            {
+                                lastDirectoryUsed = directory;
+                            }
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+                    callback(outputSaveParams);
+                }
+            );
+        }
 
         public static string LastDirectoryUsed
         {
