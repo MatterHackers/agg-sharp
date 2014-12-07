@@ -27,94 +27,24 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.OpenGlGui;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
-using MatterHackers.RayTracer.Traceable;
 using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Processors;
+using MatterHackers.RayTracer;
+using MatterHackers.RayTracer.Traceable;
 using MatterHackers.RenderOpenGl;
 using MatterHackers.VectorMath;
-using MatterHackers.RayTracer;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
 
 namespace MatterHackers.MeshVisualizer
 {
-    public class MouseEvent3DArgs : EventArgs
-    {
-        public IntersectInfo info;
-        public MouseEventArgs MouseEvent2D;
-        private Ray mouseRay;
-        public Ray MouseRay { get { return mouseRay; } }
-
-        public MouseEvent3DArgs(MouseEventArgs mouseEvent2D, Ray mouseRay, IntersectInfo info)
-        {
-            this.info = info;
-            this.MouseEvent2D = mouseEvent2D;
-            this.mouseRay = mouseRay;
-        }
-    }
-
-    public class InteractionVolume
-    {
-        MeshViewerWidget meshViewerToDrawWith;
-        public MeshViewerWidget MeshViewerToDrawWith { get { return meshViewerToDrawWith; } }
-        IRayTraceable collisionVolume;
-        public IRayTraceable CollisionVolume { get { return collisionVolume; } set { collisionVolume = value; } }
-        public Matrix4X4 TotalTransform = Matrix4X4.Identity;
-        
-        bool mouseOver = false;
-
-        public bool MouseOver 
-        {
-            get
-            {
-                return mouseOver;
-            }
-            
-            set
-            {
-                if (mouseOver != value)
-                {
-                    mouseOver = value;
-                    Invalidate();
-                }
-            }
-        }
-
-        public void Invalidate()
-        {
-            MeshViewerToDrawWith.Invalidate();
-        }
-
-        public InteractionVolume(IRayTraceable collisionVolume, MeshViewerWidget meshViewerToDrawWith)
-        {
-            this.collisionVolume = collisionVolume;
-            this.meshViewerToDrawWith = meshViewerToDrawWith;
-        }
-
-        public virtual void DrawGlContent(EventArgs e)
-        {
-        }
-
-        public virtual void OnMouseDown(MouseEvent3DArgs mouseEvent3D)
-        {
-        }
-
-        public virtual void OnMouseMove(MouseEvent3DArgs mouseEvent3D)
-        {
-        }
-        
-        public virtual void OnMouseUp(MouseEvent3DArgs mouseEvent3D)
-        {
-        }
-    }
-
     public class MeshViewerWidget : GuiWidget
     {
         BackgroundWorker backgroundWorker = null;
@@ -425,9 +355,9 @@ namespace MatterHackers.MeshVisualizer
         public List<InteractionVolume> interactionVolumes = new List<InteractionVolume>();
         void trackballTumbleWidget_DrawGlContent(object sender, EventArgs e)
         {
-            for (int i = 0; i < MeshGroups.Count; i++)
+            for (int groupIndex = 0; groupIndex < MeshGroups.Count; groupIndex++)
             {
-                MeshGroup meshGroupToRender = MeshGroups[i];
+                MeshGroup meshGroupToRender = MeshGroups[groupIndex];
 
                 int part = 0;
                 foreach (Mesh meshToRender in meshGroupToRender.Meshes)
@@ -439,7 +369,7 @@ namespace MatterHackers.MeshVisualizer
                         drawColor = GetSelectedMaterialColor(meshData.MaterialIndex);
                     }
 
-                    RenderMeshToGl.Render(meshToRender, drawColor, MeshGroupTransforms[i].TotalTransform, RenderType);
+                    RenderMeshToGl.Render(meshToRender, drawColor, MeshGroupTransforms[groupIndex].TotalTransform, RenderType);
                     part++;
                 }
             }

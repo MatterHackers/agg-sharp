@@ -408,19 +408,6 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #endif
         }
 
-        public static void MultMatrix(double[] m)
-        {
-#if USE_OPENGL
-            OpenTK.Graphics.OpenGL.GL.MultMatrix(m);
-#else
-			float[] f = new float[]{(float)m[0], (float)m[1], (float)m[2], (float)m[3],
-				(float)m[4], (float)m[5], (float)m[6], (float)m[7],
-				(float)m[8], (float)m[9], (float)m[10], (float)m[11], 
-				(float)m[12], (float)m[13], (float)m[14], (float)m[15]};
-			OpenTK.Graphics.ES11.GL.MultMatrix(f);
-#endif
-        }
-
         public static void PopMatrix()
         {
 #if USE_OPENGL

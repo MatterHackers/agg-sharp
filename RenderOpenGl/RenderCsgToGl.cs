@@ -183,7 +183,7 @@ namespace MatterHackers.RenderOpenGl
         public void RenderToGlRecursive(TransformBase objectToProcess)
         {
 			GL.PushMatrix();
-            GL.MultMatrix(objectToProcess.transform.GetAsDoubleArray());
+            GL.MultMatrix(objectToProcess.transform.GetAsFloatArray());
             RenderToGlRecursive((dynamic)objectToProcess.objectToTransform);
             GL.PopMatrix();
         }
