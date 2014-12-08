@@ -71,6 +71,10 @@ namespace MatterHackers.MeshVisualizer
             this.meshViewerToDrawWith = meshViewerToDrawWith;
         }
 
+        public virtual void Draw2DContent(Agg.Graphics2D graphics2D)
+        {
+        }
+
         public virtual void DrawGlContent(EventArgs e)
         {
         }

@@ -394,6 +394,16 @@ namespace MatterHackers.MeshVisualizer
             }
         }
 
+        public override void OnDraw(Graphics2D graphics2D)
+        {
+            base.OnDraw(graphics2D);
+
+            foreach (InteractionVolume interactionVolume in interactionVolumes)
+            {
+                interactionVolume.Draw2DContent(graphics2D);
+            }
+        }
+
         public void CreateGlDataForMeshes(List<MeshGroup> meshGroupsToPrepare)
         {
             for (int i = 0; i < meshGroupsToPrepare.Count; i++)
