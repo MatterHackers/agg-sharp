@@ -69,6 +69,7 @@ namespace MatterHackers.Agg.UI
 
         int percentComplete;
         public RGBA_Bytes fillColor;
+        public RGBA_Bytes borderColor = RGBA_Bytes.Black;
         public int PercentComplete
         {
             get { return percentComplete; }
@@ -113,7 +114,7 @@ namespace MatterHackers.Agg.UI
             if (widget != null && drawEvent != null && drawEvent.graphics2D != null)
             {
                 drawEvent.graphics2D.FillRectangle(0, 0, widget.Width * PercentComplete / 100.0, widget.Height, fillColor);
-                drawEvent.graphics2D.Rectangle(widget.LocalBounds, RGBA_Bytes.Black);
+                drawEvent.graphics2D.Rectangle(widget.LocalBounds, borderColor);
             }
         }
     }
