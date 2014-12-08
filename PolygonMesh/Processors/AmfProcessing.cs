@@ -338,6 +338,8 @@ namespace MatterHackers.PolygonMesh.Processors
                             }
                         }
                     }
+
+                    xmlTree.Dispose();
                 }
             }
 
