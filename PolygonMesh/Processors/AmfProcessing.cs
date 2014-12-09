@@ -155,12 +155,9 @@ namespace MatterHackers.PolygonMesh.Processors
                                         for (int polyIndex = 0; polyIndex < numPolys; polyIndex++)
                                         {
                                             amfFile.WriteLine(Indent(4) + "<triangle>");
-                                            foreach (FaceEdge faceEdge in face.FaceEdges())
-                                            {
-                                                amfFile.WriteLine(Indent(5) + "<v1>{0}</v1>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[0])));
-                                                amfFile.WriteLine(Indent(5) + "<v2>{0}</v2>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[secondIndex])));
-                                                amfFile.WriteLine(Indent(5) + "<v3>{0}</v3>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[thirdIndex])));
-                                            }
+                                            amfFile.WriteLine(Indent(5) + "<v1>{0}</v1>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[0])));
+                                            amfFile.WriteLine(Indent(5) + "<v2>{0}</v2>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[secondIndex])));
+                                            amfFile.WriteLine(Indent(5) + "<v3>{0}</v3>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[thirdIndex])));
                                             amfFile.WriteLine(Indent(4) + "</triangle>");
 
                                             secondIndex = thirdIndex;
