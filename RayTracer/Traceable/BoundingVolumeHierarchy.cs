@@ -41,10 +41,13 @@ namespace MatterHackers.RayTracer
 {
     public class UnboundCollection : IRayTraceable
     {
+        OptomizeOption optomizeOption;
         IRayTraceable[] items;
 
-        public UnboundCollection(IEnumerable<IRayTraceable> traceableItems)
+        public enum OptomizeOption { DoNotOptomize, OptomizeOnUse };
+        public UnboundCollection(IEnumerable<IRayTraceable> traceableItems, OptomizeOption optomizeOption = OptomizeOption.DoNotOptomize)
         {
+            this.optomizeOption = optomizeOption;
             items = traceableItems.ToArray();
         }
 
@@ -390,8 +393,8 @@ namespace MatterHackers.RayTracer
             {
             }
         }
-        
-        public static IRayTraceable CreateNewHierachy(List<IRayTraceable> traceableItems, SortingAccelerator accelerator = null)
+
+        public static IRayTraceable CreateNewHierachy(List<IRayTraceable> traceableItems, int maxRecursion = int.MaxValue, int recursionDepth = 0, SortingAccelerator accelerator = null)
         {
             if (accelerator == null)
             {
@@ -413,106 +416,110 @@ namespace MatterHackers.RayTracer
             int bestAxis = -1;
             int bestIndexToSplitOn = -1;
             CompareCentersOnAxis axisSorter = new CompareCentersOnAxis(0);
-            if (numItems > 5000)
+
+            if (recursionDepth < maxRecursion)
             {
-                bestAxis = accelerator.NextAxis;
-                bestIndexToSplitOn = numItems / 2;
-            }
-            else
-            {
-                double totalIntersectCost = 0;
-                int skipInterval = 1;
-                for (int i = 0; i < numItems; i += skipInterval)
+                if (numItems > 5000)
                 {
-                    IRayTraceable item = traceableItems[i];
-                    totalIntersectCost += item.GetIntersectCost();
+                    bestAxis = accelerator.NextAxis;
+                    bestIndexToSplitOn = numItems / 2;
                 }
-
-                // get the bounding box of all the items we are going to consider.
-                AxisAlignedBoundingBox OverallBox = traceableItems[0].GetAxisAlignedBoundingBox();
-                for (int i = skipInterval; i < numItems; i += skipInterval)
+                else
                 {
-                    OverallBox += traceableItems[i].GetAxisAlignedBoundingBox();
-                }
-                double areaOfTotalBounds = OverallBox.GetSurfaceArea();
-
-                double bestCost = totalIntersectCost;
-
-                Vector3 totalDeviationOnAxis = new Vector3();
-                double[] surfaceArreaOfItem = new double[numItems - 1];
-                double[] rightBoundsAtItem = new double[numItems - 1];
-
-                for (int axis = 0; axis < 3; axis++)
-                {
-                    double intersectCostOnLeft = 0;
-
-                    axisSorter.WhichAxis = axis;
-                    traceableItems.Sort(axisSorter);
-
-                    // Get all left bounds
-                    AxisAlignedBoundingBox currentLeftBounds = traceableItems[0].GetAxisAlignedBoundingBox();
-                    surfaceArreaOfItem[0] = currentLeftBounds.GetSurfaceArea();
-                    for (int itemIndex = 1; itemIndex < numItems - 1; itemIndex += skipInterval)
+                    double totalIntersectCost = 0;
+                    int skipInterval = 1;
+                    for (int i = 0; i < numItems; i += skipInterval)
                     {
-                        currentLeftBounds += traceableItems[itemIndex].GetAxisAlignedBoundingBox();
-                        surfaceArreaOfItem[itemIndex] = currentLeftBounds.GetSurfaceArea();
-
-                        totalDeviationOnAxis[axis] += Math.Abs(traceableItems[itemIndex].GetCenter()[axis] - traceableItems[itemIndex - 1].GetCenter()[axis]);
+                        IRayTraceable item = traceableItems[i];
+                        totalIntersectCost += item.GetIntersectCost();
                     }
 
-                    // Get all right bounds
-                    if (numItems > 1)
+                    // get the bounding box of all the items we are going to consider.
+                    AxisAlignedBoundingBox OverallBox = traceableItems[0].GetAxisAlignedBoundingBox();
+                    for (int i = skipInterval; i < numItems; i += skipInterval)
                     {
-                        AxisAlignedBoundingBox currentRightBounds = traceableItems[numItems - 1].GetAxisAlignedBoundingBox();
-                        rightBoundsAtItem[numItems - 2] = currentRightBounds.GetSurfaceArea();
-                        for (int itemIndex = numItems - 1; itemIndex > 1; itemIndex -= skipInterval)
-                        {
-                            currentRightBounds += traceableItems[itemIndex - 1].GetAxisAlignedBoundingBox();
-                            rightBoundsAtItem[itemIndex - 2] = currentRightBounds.GetSurfaceArea();
-                        }
+                        OverallBox += traceableItems[i].GetAxisAlignedBoundingBox();
                     }
+                    double areaOfTotalBounds = OverallBox.GetSurfaceArea();
 
-                    // Sweep from left
-                    for (int itemIndex = 0; itemIndex < numItems - 1; itemIndex += skipInterval)
+                    double bestCost = totalIntersectCost;
+
+                    Vector3 totalDeviationOnAxis = new Vector3();
+                    double[] surfaceArreaOfItem = new double[numItems - 1];
+                    double[] rightBoundsAtItem = new double[numItems - 1];
+
+                    for (int axis = 0; axis < 3; axis++)
                     {
-                        double thisCost = 0;
+                        double intersectCostOnLeft = 0;
 
+                        axisSorter.WhichAxis = axis;
+                        traceableItems.Sort(axisSorter);
+
+                        // Get all left bounds
+                        AxisAlignedBoundingBox currentLeftBounds = traceableItems[0].GetAxisAlignedBoundingBox();
+                        surfaceArreaOfItem[0] = currentLeftBounds.GetSurfaceArea();
+                        for (int itemIndex = 1; itemIndex < numItems - 1; itemIndex += skipInterval)
                         {
-                            // Evaluate Surface Cost Equation
-                            double costOfTwoAABB = 2 * AxisAlignedBoundingBox.GetIntersectCost(); // the cost of the two children AABB tests
+                            currentLeftBounds += traceableItems[itemIndex].GetAxisAlignedBoundingBox();
+                            surfaceArreaOfItem[itemIndex] = currentLeftBounds.GetSurfaceArea();
 
-                            // do the left cost
-                            intersectCostOnLeft += traceableItems[itemIndex].GetIntersectCost();
-                            double leftCost = (surfaceArreaOfItem[itemIndex] / areaOfTotalBounds) * intersectCostOnLeft;
-
-                            // do the right cost
-                            double intersectCostOnRight = totalIntersectCost - intersectCostOnLeft;
-                            double rightCost = (rightBoundsAtItem[itemIndex] / areaOfTotalBounds) * intersectCostOnRight;
-
-                            thisCost = costOfTwoAABB + leftCost + rightCost;
+                            totalDeviationOnAxis[axis] += Math.Abs(traceableItems[itemIndex].GetCenter()[axis] - traceableItems[itemIndex - 1].GetCenter()[axis]);
                         }
 
-                        if (thisCost < bestCost + .000000001) // if it is less within some tiny error
+                        // Get all right bounds
+                        if (numItems > 1)
                         {
-                            if (thisCost > bestCost - .000000001)
+                            AxisAlignedBoundingBox currentRightBounds = traceableItems[numItems - 1].GetAxisAlignedBoundingBox();
+                            rightBoundsAtItem[numItems - 2] = currentRightBounds.GetSurfaceArea();
+                            for (int itemIndex = numItems - 1; itemIndex > 1; itemIndex -= skipInterval)
                             {
-                                // they are the same within the error
-                                if (axis > 0 && bestAxis != axis) // we have changed axis since last best and we need to decide if this is better than the last axis best
+                                currentRightBounds += traceableItems[itemIndex - 1].GetAxisAlignedBoundingBox();
+                                rightBoundsAtItem[itemIndex - 2] = currentRightBounds.GetSurfaceArea();
+                            }
+                        }
+
+                        // Sweep from left
+                        for (int itemIndex = 0; itemIndex < numItems - 1; itemIndex += skipInterval)
+                        {
+                            double thisCost = 0;
+
+                            {
+                                // Evaluate Surface Cost Equation
+                                double costOfTwoAABB = 2 * AxisAlignedBoundingBox.GetIntersectCost(); // the cost of the two children AABB tests
+
+                                // do the left cost
+                                intersectCostOnLeft += traceableItems[itemIndex].GetIntersectCost();
+                                double leftCost = (surfaceArreaOfItem[itemIndex] / areaOfTotalBounds) * intersectCostOnLeft;
+
+                                // do the right cost
+                                double intersectCostOnRight = totalIntersectCost - intersectCostOnLeft;
+                                double rightCost = (rightBoundsAtItem[itemIndex] / areaOfTotalBounds) * intersectCostOnRight;
+
+                                thisCost = costOfTwoAABB + leftCost + rightCost;
+                            }
+
+                            if (thisCost < bestCost + .000000001) // if it is less within some tiny error
+                            {
+                                if (thisCost > bestCost - .000000001)
                                 {
-                                    if (totalDeviationOnAxis[axis] > totalDeviationOnAxis[axis - 1])
+                                    // they are the same within the error
+                                    if (axis > 0 && bestAxis != axis) // we have changed axis since last best and we need to decide if this is better than the last axis best
                                     {
-                                        // this new axis is better and we'll switch to it.  Otherwise don't switch.
-                                        bestCost = thisCost;
-                                        bestIndexToSplitOn = itemIndex;
-                                        bestAxis = axis;
+                                        if (totalDeviationOnAxis[axis] > totalDeviationOnAxis[axis - 1])
+                                        {
+                                            // this new axis is better and we'll switch to it.  Otherwise don't switch.
+                                            bestCost = thisCost;
+                                            bestIndexToSplitOn = itemIndex;
+                                            bestAxis = axis;
+                                        }
                                     }
                                 }
-                            }
-                            else // this is just better
-                            {
-                                bestCost = thisCost;
-                                bestIndexToSplitOn = itemIndex;
-                                bestAxis = axis;
+                                else // this is just better
+                                {
+                                    bestCost = thisCost;
+                                    bestIndexToSplitOn = itemIndex;
+                                    bestAxis = axis;
+                                }
                             }
                         }
                     }
@@ -538,8 +545,8 @@ namespace MatterHackers.RayTracer
                 {
                     rightItems.Add(traceableItems[i]);
                 }
-                IRayTraceable leftGroup = CreateNewHierachy(leftItems, accelerator);
-                IRayTraceable rightGroup = CreateNewHierachy(rightItems, accelerator);
+                IRayTraceable leftGroup = CreateNewHierachy(leftItems, maxRecursion, recursionDepth + 1, accelerator);
+                IRayTraceable rightGroup = CreateNewHierachy(rightItems, maxRecursion, recursionDepth + 1, accelerator);
                 BoundingVolumeHierarchy newBVHNode = new BoundingVolumeHierarchy(leftGroup, rightGroup, bestAxis);
                 return newBVHNode;
             }
