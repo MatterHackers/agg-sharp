@@ -48,7 +48,8 @@ namespace MatterHackers.PolygonMesh.Processors
 {
     public static class AmfProcessing
     {
-        public static bool Save(List<MeshGroup> meshToSave, string fileName, MeshOutputSettings outputInfo = null)
+
+        public static bool SaveUncompressed(List<MeshGroup> meshToSave, string fileName, MeshOutputSettings outputInfo = null)
         {
             using (FileStream file = new FileStream(fileName, FileMode.Create, FileAccess.Write))
             {
@@ -59,6 +60,26 @@ namespace MatterHackers.PolygonMesh.Processors
         static string Indent(int index)
         {
             return new String(' ', index * 2);
+        }
+
+        /// <summary>
+        /// Writes the mesh to disk in a zip container
+        /// </summary>
+        /// <param name="meshToSave">The mesh to save</param>
+        /// <param name="fileName">The file path to save at</param>
+        /// <param name="outputInfo">Extra meta data to store in the file</param>
+        /// <returns>The results of the save operation</returns>
+        public static bool Save(List<MeshGroup> meshToSave, string fileName, MeshOutputSettings outputInfo = null)
+        {
+            using (Stream stream = File.OpenWrite(fileName))
+            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Create))
+            {
+                ZipArchiveEntry zipEntry = archive.CreateEntry(Path.GetFileName(fileName));
+                using (var entryStream = zipEntry.Open())
+                {
+                    return Save(meshToSave, entryStream, outputInfo);
+                }
+            }
         }
 
         public static bool Save(List<MeshGroup> meshToSave, Stream stream, MeshOutputSettings outputInfo)
