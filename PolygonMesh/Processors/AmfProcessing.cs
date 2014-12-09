@@ -38,7 +38,7 @@ using System.Threading;
 using System.Xml;
 using System.Globalization;
 using System.Text.RegularExpressions;
-using ICSharpCode.SharpZipLib.Zip;
+using System.IO.Compression;
 
 using MatterHackers.Agg;
 using MatterHackers.PolygonMesh;
@@ -308,34 +308,38 @@ namespace MatterHackers.PolygonMesh.Processors
 
             // do the loading
             {
-                Stream amfCompressedStream = GetCompressedStreamIfRequired(amfStream);
-                XmlReader xmlTree = XmlReader.Create(amfCompressedStream);
-                while (xmlTree.Read())
+                using (Stream amfCompressedStream = GetCompressedStreamIfRequired(amfStream))
                 {
-                    if (xmlTree.Name == "amf")
+                    XmlReader xmlTree = XmlReader.Create(amfCompressedStream);
+                    while (xmlTree.Read())
                     {
-                        break;
-                    }
-                }
-                double scale = GetScaling(xmlTree);
-
-                ProgressData progressData = new ProgressData(amfStream, reportProgress);
-
-                meshGroups = new List<MeshGroup>();
-
-                while (xmlTree.Read())
-                {
-                    if (xmlTree.Name == "object")
-                    {
-                        using(XmlReader objectTree = xmlTree.ReadSubtree())
+                        if (xmlTree.Name == "amf")
                         {
-                            meshGroups.Add(ReadObject(objectTree, scale, progressData));
-                            if (progressData.LoadCanceled)
+                            break;
+                        }
+                    }
+                    double scale = GetScaling(xmlTree);
+
+                    ProgressData progressData = new ProgressData(amfStream, reportProgress);
+
+                    meshGroups = new List<MeshGroup>();
+
+                    while (xmlTree.Read())
+                    {
+                        if (xmlTree.Name == "object")
+                        {
+                            using (XmlReader objectTree = xmlTree.ReadSubtree())
                             {
-                                return null;
+                                meshGroups.Add(ReadObject(objectTree, scale, progressData));
+                                if (progressData.LoadCanceled)
+                                {
+                                    return null;
+                                }
                             }
                         }
                     }
+
+                    xmlTree.Dispose();
                 }
             }
 
@@ -604,12 +608,8 @@ namespace MatterHackers.PolygonMesh.Processors
         {
             if (IsZipFile(amfStream))
             {
-                ZipFile zip = new ZipFile(amfStream);
-                bool isValid = zip.TestArchive(false);
-                foreach (ZipEntry zipEntry in zip)
-                {
-                    return zip.GetInputStream(zipEntry);
-                }
+                ZipArchive archive = new ZipArchive(amfStream, ZipArchiveMode.Read);
+                return archive.Entries.First().Open();
             }
 
             amfStream.Position = 0;
