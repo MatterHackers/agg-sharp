@@ -89,7 +89,7 @@ namespace MatterHackers.PolygonMesh
         {
             Mesh newMesh = new Mesh();
 #if false
-            Dictionary<Vertex, int> vertexIndexMapping = new Dictionary<Vertex, int>(meshToCopy.Vertices.Capacity);
+            Dictionary<Vertex, int> vertexIndexMapping = new Dictionary<Vertex, int>(meshToCopy.Vertices.Count);
             for(int vertexIndex = 0; vertexIndex < meshToCopy.Vertices.Count; vertexIndex++)
             {
                 Vertex vertexToCopy = meshToCopy.Vertices[vertexIndex];
@@ -97,7 +97,7 @@ namespace MatterHackers.PolygonMesh
                 newMesh.Vertices.Add(new Vertex(vertexToCopy.Position));
             }
 
-            Dictionary<MeshEdge, int> meshEdgeIndexMapping = new Dictionary<MeshEdge, int>(meshToCopy.MeshEdges.Capacity);
+            Dictionary<MeshEdge, int> meshEdgeIndexMapping = new Dictionary<MeshEdge, int>(meshToCopy.MeshEdges.Count);
             for (int edgeIndex = 0; edgeIndex < meshToCopy.MeshEdges.Count; edgeIndex++)
             {
                 MeshEdge edgeToCopy = meshToCopy.MeshEdges[edgeIndex];
@@ -134,7 +134,7 @@ namespace MatterHackers.PolygonMesh
                 newMeshEdge.VertexOnEnd[0] = newMesh.Vertices[vertexIndexMapping[meshEdgeToCopy.VertexOnEnd[0]]];
                 newMeshEdge.VertexOnEnd[1] = newMesh.Vertices[vertexIndexMapping[meshEdgeToCopy.VertexOnEnd[1]]];
                 
-                // This will get hooked up when we create radial loops in with the face edges below
+                // This will get hooked up when we create radial loops with the face edges below
                 //newMeshEdge.firstFaceEdge;
 
                 //newMesh.MeshEdges.Add(newMeshEdge);
@@ -157,7 +157,6 @@ namespace MatterHackers.PolygonMesh
                     verticesFromCopy.Add(vertex);
                     verticesForNew.Add(newMesh.Vertices[vertexIndexMapping[vertex]]);
                 }
-
 
                 List<MeshEdge> edgesFromCopy = new List<MeshEdge>();
                 List<MeshEdge> edgesForNew = new List<MeshEdge>();

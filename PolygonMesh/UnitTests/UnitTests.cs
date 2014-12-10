@@ -52,11 +52,11 @@ namespace MatterHackers.PolygonMesh.UnitTests
             DebugRenderToImage debugRender = new DebugRenderToImage(mesh);
             if (testHint != "")
             {
-                debugRender.RenderToTga("debug face {0} - {1}.tga".FormatWith(meshSaveIndex++, testHint));
+                debugRender.RenderToPng("debug face {0} - {1}.png".FormatWith(meshSaveIndex++, testHint));
             }
             else
             {
-                debugRender.RenderToTga("debug face {0}.tga".FormatWith(meshSaveIndex++));
+                debugRender.RenderToPng("debug face {0}.png".FormatWith(meshSaveIndex++));
             }
 #endif
         }
@@ -578,22 +578,14 @@ namespace MatterHackers.PolygonMesh.UnitTests
         {
             {
                 Mesh testMesh = new Mesh();
-                Vertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
-                Vertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
-                Vertex centerVertexMiddle1 = testMesh.CreateVertex(0, 0, 1);
+                Vertex left = testMesh.CreateVertex(-1, 0, -1);
+                Vertex top = testMesh.CreateVertex(0, 0, 1);
+                Vertex right = testMesh.CreateVertex(1, 0, -1);
+                Vertex middle = testMesh.CreateVertex(0, 0, 0);
 
-                Face bottomFace = testMesh.CreateFace(new Vertex[] { leftVertexBottom, rightVertexBottom, centerVertexMiddle1 });
-
-                Vertex leftVertexTop = testMesh.CreateVertex(-1, 0, 2);
-                Vertex centerVertexMiddle2 = testMesh.CreateVertex(0, 0, 1, CreateOption.CreateNew);
-                Vertex rightVertexTop = testMesh.CreateVertex(1, 0, 2);
-
-                Face top = testMesh.CreateFace(new Vertex[] { leftVertexTop, centerVertexMiddle2, rightVertexTop });
-
-                MeshEdge meshEdgeBottomRightCenter = testMesh.FindMeshEdges(leftVertexBottom, centerVertexMiddle1)[0];
-                MeshEdge meshEdgeTopLeftCenter = testMesh.FindMeshEdges(leftVertexTop, centerVertexMiddle2)[0];
-                Assert.IsTrue(meshEdgeBottomRightCenter.VertexOnEnd[0] == centerVertexMiddle1);
-                Assert.IsTrue(meshEdgeTopLeftCenter.VertexOnEnd[1] == centerVertexMiddle2);
+                Face leftFace = testMesh.CreateFace(new Vertex[] { left, top, middle });
+                Face rightFace = testMesh.CreateFace(new Vertex[] { middle, right, top });
+                Face bottomFace = testMesh.CreateFace(new Vertex[] { left, right, middle });
 
                 testMesh.MergeVertices();
 

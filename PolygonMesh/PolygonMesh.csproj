@@ -169,6 +169,10 @@
     <Compile Include="VertexSorters\VertexXAxisSorter.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\PlatformAbstract\PlatformAbstract.csproj">
+      <Project>{3e4aaba8-d85f-4922-88c6-5c1b2d2308fb}</Project>
+      <Name>PlatformAbstract</Name>
+    </ProjectReference>
     <ProjectReference Include="..\VectorMath\VectorMath.csproj">
       <Project>{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}</Project>
       <Name>VectorMath</Name>

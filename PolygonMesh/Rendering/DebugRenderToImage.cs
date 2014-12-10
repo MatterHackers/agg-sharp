@@ -8,6 +8,7 @@ using MatterHackers.Agg.Image;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using MatterHackers.Agg.Font;
+using MatterHackers.Agg.PlatformAbstract;
 
 namespace MatterHackers.PolygonMesh
 {
@@ -54,12 +55,12 @@ namespace MatterHackers.PolygonMesh
             origin = new Vector2(min.x * scale, min.y * scale) - new Vector2(padding, padding);
         }
 
-        public void RenderToTga(string tgaFileName)
+        public void RenderToPng(string pngFileName)
         {
-            ImageTgaIO.Save(CreateImage(tgaFileName), tgaFileName);
+            ImageIO.SaveImageData(pngFileName, CreateImage(pngFileName));
         }
 
-        public ImageBuffer CreateImage(string tgaFileName)
+        public ImageBuffer CreateImage(string pngFileName)
         {
             graphics.Clear(RGBA_Bytes.White);
 

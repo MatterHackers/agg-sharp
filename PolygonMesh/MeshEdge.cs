@@ -35,7 +35,7 @@ using System.Diagnostics;
 
 namespace MatterHackers.PolygonMesh
 {
-    [DebuggerDisplay("ID = {Data.ID}")]
+    [DebuggerDisplay("ID = {Data.ID} | V1 = {VertexOnEnd[0].Data.ID} V2 = {VertexOnEnd[1].Data.ID}")]
     public class MeshEdge
     {
         public MetaData Data
