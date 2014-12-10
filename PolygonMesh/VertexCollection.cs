@@ -132,9 +132,9 @@ namespace MatterHackers.PolygonMesh
             }
         }
 
-        public void Add(Vertex vertexToAdd, bool willSortLater = false)
+        public void Add(Vertex vertexToAdd, SortOption sortOption = SortOption.SortNow)
         {
-            if (willSortLater)
+            if (sortOption == SortOption.WillSortLater)
             {
                 vertices.Add(vertexToAdd);
                 isSorted = false;

@@ -82,7 +82,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
             for (int i = 0; i < numPosition; i++)
             {
                 positions.Add(new Vector3Float(positionRand.NextDouble() * size, positionRand.NextDouble() * size, positionRand.NextDouble() * size));
-                mesh.CreateVertex(new Vector3(positions[i].x, positions[i].y, positions[i].z), true, true);
+                mesh.CreateVertex(new Vector3(positions[i].x, positions[i].y, positions[i].z), CreateOption.CreateNew, SortOption.WillSortLater);
             }
 
             mesh.SortVertices();

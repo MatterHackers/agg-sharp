@@ -100,7 +100,7 @@ namespace MatterHackers.Agg.UI
         TextWidget internalTextWidget;
         bool isMultiLine = true;
 
-        public bool MergeTypingDurringUndo { get; set; }
+        public bool MergeTypingDuringUndo { get; set; }
 
         public event EventHandler InsertBarPositionChanged;
         /// <summary>
@@ -196,7 +196,7 @@ namespace MatterHackers.Agg.UI
             TabIndex = tabIndex;
             TabStop = true;
             WordBreakChars = DefaultWordBreakChars;
-            MergeTypingDurringUndo = true;
+            MergeTypingDuringUndo = true;
 
             internalTextWidget = new TextWidget(text, pointSize: pointSize, ellipsisIfClipped: false, textColor: textColor);
             internalTextWidget.Selectable = false;
@@ -943,7 +943,7 @@ namespace MatterHackers.Agg.UI
             FixBarPosition(DesiredXPositionOnLine.Set);
 
             TextWidgetUndoData newUndoData = new TextWidgetUndoData(this);
-            if (MergeTypingDurringUndo
+            if (MergeTypingDuringUndo
                 && charIndexToAcceptAsMerging == CharIndexToInsertBefore - 1
                 && keyPressEvent.KeyChar != '\n')
             {

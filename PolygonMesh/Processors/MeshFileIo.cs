@@ -163,12 +163,12 @@ namespace MatterHackers.PolygonMesh.Processors
                                 foreach (FaceEdge faceEdgeToAdd in face.FaceEdges())
                                 {
                                     // we allow duplicates (the true) to make sure we are not changing the loaded models acuracy.
-                                    Vertex newVertex = allPolygons.CreateVertex(faceEdgeToAdd.firstVertex.Position, true, true);
+                                    Vertex newVertex = allPolygons.CreateVertex(faceEdgeToAdd.firstVertex.Position, CreateOption.CreateNew, SortOption.WillSortLater);
                                     faceVertices.Add(newVertex);
                                 }
 
                                 // we allow duplicates (the true) to make sure we are not changing the loaded models acuracy.
-                                allPolygons.CreateFace(faceVertices.ToArray(), true);
+                                allPolygons.CreateFace(faceVertices.ToArray(), CreateOption.CreateNew);
                             }
                         }
                     }

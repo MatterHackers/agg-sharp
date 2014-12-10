@@ -257,10 +257,10 @@ namespace MatterHackers.PolygonMesh.Processors
                                 vector2.z = Convert.ToDouble(parts[3]);
                                 if (!Vector3.Collinear(vector0, vector1, vector2))
                                 {
-                                    Vertex vertex1 = meshFromStlFile.CreateVertex(vector0, true, true);
-                                    Vertex vertex2 = meshFromStlFile.CreateVertex(vector1, true, true);
-                                    Vertex vertex3 = meshFromStlFile.CreateVertex(vector2, true, true);
-                                    meshFromStlFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 }, true);
+                                    Vertex vertex1 = meshFromStlFile.CreateVertex(vector0, CreateOption.CreateNew, SortOption.WillSortLater);
+                                    Vertex vertex2 = meshFromStlFile.CreateVertex(vector1, CreateOption.CreateNew, SortOption.WillSortLater);
+                                    Vertex vertex3 = meshFromStlFile.CreateVertex(vector2, CreateOption.CreateNew, SortOption.WillSortLater);
+                                    meshFromStlFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 }, CreateOption.CreateNew);
                                 }
                                 vectorIndex = 0;
                                 break;
@@ -330,10 +330,10 @@ namespace MatterHackers.PolygonMesh.Processors
 
                     if (!Vector3.Collinear(vector[0], vector[1], vector[2]))
                     {
-                        Vertex vertex1 = meshFromStlFile.CreateVertex(vector[0], true, true);
-                        Vertex vertex2 = meshFromStlFile.CreateVertex(vector[1], true, true);
-                        Vertex vertex3 = meshFromStlFile.CreateVertex(vector[2], true, true);
-                        meshFromStlFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 }, true);
+                        Vertex vertex1 = meshFromStlFile.CreateVertex(vector[0], CreateOption.CreateNew, SortOption.WillSortLater);
+                        Vertex vertex2 = meshFromStlFile.CreateVertex(vector[1], CreateOption.CreateNew, SortOption.WillSortLater);
+                        Vertex vertex3 = meshFromStlFile.CreateVertex(vector[2], CreateOption.CreateNew, SortOption.WillSortLater);
+                        meshFromStlFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 }, CreateOption.CreateNew);
                     }
                 }
                 //uint numTriangles = System.BitConverter.ToSingle(fileContents, 80);

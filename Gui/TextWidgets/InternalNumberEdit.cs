@@ -64,7 +64,7 @@ namespace MatterHackers.Agg.UI
             this.maxValue = maxValue;
             this.increment = increment;
 
-            MergeTypingDurringUndo = false;
+            MergeTypingDuringUndo = false;
 
             allowedChars = new HashSet<char>();
             allowedChars.Add('0');

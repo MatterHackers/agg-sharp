@@ -34,7 +34,7 @@ namespace MatterHackers.Agg.UI
 {
     public abstract class WindowsFormsAbstract : Form
     {
-        // These dll imports are so that we can set the PROCESS_CALLBACK_FILTER_ENABLED to allow us to get exceptions back into our app durring system calls such as on paint.
+        // These dll imports are so that we can set the PROCESS_CALLBACK_FILTER_ENABLED to allow us to get exceptions back into our app during system calls such as on paint.
         //[DllImport("Kernel32.dll", CallingConvention = CallingConvention.Cdecl)]
         [DllImport("Kernel32.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern bool SetProcessUserModeExceptionPolicy(int dwFlagss);

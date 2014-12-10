@@ -542,11 +542,11 @@ namespace MatterHackers.PolygonMesh.Processors
                             {
                                 Vertex[] triangle = new Vertex[]
                                 {
-                                    newMesh.CreateVertex(vertices[indices[0]], true, true),
-                                    newMesh.CreateVertex(vertices[indices[1]], true, true),
-                                    newMesh.CreateVertex(vertices[indices[2]], true, true),
+                                    newMesh.CreateVertex(vertices[indices[0]], CreateOption.CreateNew, SortOption.WillSortLater),
+                                    newMesh.CreateVertex(vertices[indices[1]], CreateOption.CreateNew, SortOption.WillSortLater),
+                                    newMesh.CreateVertex(vertices[indices[2]], CreateOption.CreateNew, SortOption.WillSortLater),
                                 };
-                                newMesh.CreateFace(triangle, true);
+                                newMesh.CreateFace(triangle, CreateOption.CreateNew);
                             }
 
                             bool continueProcessing;
