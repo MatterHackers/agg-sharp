@@ -46,11 +46,18 @@ namespace MatterHackers.PolygonMesh.UnitTests
     public class MeshUnitTests
     {
         static int meshSaveIndex = 0;
-        public void SaveDebugInfo(Mesh mesh)
+        public void SaveDebugInfo(Mesh mesh, string testHint = "")
         {
 #if DEBUG_INTO_TGAS
             DebugRenderToImage debugRender = new DebugRenderToImage(mesh);
-            debugRender.RenderToTga("debug face {0}.tga".FormatWith(meshSaveIndex++));
+            if (testHint != "")
+            {
+                debugRender.RenderToTga("debug face {0} - {1}.tga".FormatWith(meshSaveIndex++, testHint));
+            }
+            else
+            {
+                debugRender.RenderToTga("debug face {0}.tga".FormatWith(meshSaveIndex++));
+            }
 #endif
         }
 
@@ -588,11 +595,12 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Assert.IsTrue(meshEdgeBottomRightCenter.VertexOnEnd[0] == centerVertexMiddle1);
                 Assert.IsTrue(meshEdgeTopLeftCenter.VertexOnEnd[1] == centerVertexMiddle2);
 
-                SaveDebugInfo(testMesh);
-
                 testMesh.MergeVertices();
 
-                SaveDebugInfo(testMesh);
+                SaveDebugInfo(testMesh, "MeshCopy (orig)");
+
+                Mesh copyMesh = Mesh.Copy(testMesh);
+                SaveDebugInfo(copyMesh, "MeshCopy (copy)");
             }
         }
     }
