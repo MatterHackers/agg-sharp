@@ -41,14 +41,15 @@ namespace MatterHackers.RayTracer
 {
     public class UnboundCollection : IRayTraceable
     {
-        OptomizeOption optomizeOption;
-        IRayTraceable[] items;
+        internal List<IRayTraceable> items;
 
-        public enum OptomizeOption { DoNotOptomize, OptomizeOnUse };
-        public UnboundCollection(IEnumerable<IRayTraceable> traceableItems, OptomizeOption optomizeOption = OptomizeOption.DoNotOptomize)
+        public UnboundCollection(IList<IRayTraceable> traceableItems)
         {
-            this.optomizeOption = optomizeOption;
-            items = traceableItems.ToArray();
+            items = new List<IRayTraceable>(traceableItems.Count);
+            foreach (IRayTraceable traceable in traceableItems)
+            {
+                items.Add(traceable);
+            }
         }
 
         public RGBA_Floats GetColor(IntersectInfo info)
@@ -140,7 +141,7 @@ namespace MatterHackers.RayTracer
             if (cachedAABB.minXYZ.x == double.NegativeInfinity)
             {
                 cachedAABB = items[0].GetAxisAlignedBoundingBox();
-                for (int i = 1; i < items.Length; i++)
+                for (int i = 1; i < items.Count; i++)
                 {
                     cachedAABB += items[i].GetAxisAlignedBoundingBox();
                 }
