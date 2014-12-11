@@ -88,7 +88,7 @@ namespace MatterHackers.PolygonMesh
         public static Mesh Copy(Mesh meshToCopy, ReportProgressRatio progress = null)
         {
             Mesh newMesh = new Mesh();
-#if false
+#if true
             Dictionary<Vertex, int> vertexIndexMapping = new Dictionary<Vertex, int>(meshToCopy.Vertices.Count);
             for(int vertexIndex = 0; vertexIndex < meshToCopy.Vertices.Count; vertexIndex++)
             {
@@ -116,7 +116,7 @@ namespace MatterHackers.PolygonMesh
             for (int vertexIndex = 0; vertexIndex < meshToCopy.Vertices.Count; vertexIndex++)
             {
                 Vertex vertexToCopy = meshToCopy.Vertices[vertexIndex];
-                int indexOfFirstMeshEdge = vertexIndexMapping[vertexToCopy];
+                int indexOfFirstMeshEdge = meshEdgeIndexMapping[vertexToCopy.firstMeshEdge];
                 Vertex newVertex = newMesh.Vertices[vertexIndex];
                 newVertex.firstMeshEdge = newMesh.MeshEdges[indexOfFirstMeshEdge];
                 newVertex.Normal = vertexToCopy.Normal;

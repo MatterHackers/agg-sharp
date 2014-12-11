@@ -599,6 +599,11 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
                 MeshFileIo.Save(testMesh, "test.stl", new MeshOutputSettings(MeshOutputSettings.OutputType.Ascii));
                 SaveDebugInfo(copyMesh, "MeshCopy (copy)");
+
+                Mesh copyMesh2 = Mesh.Copy(copyMesh);
+
+                MeshFileIo.Save(copyMesh2, "test2.stl", new MeshOutputSettings(MeshOutputSettings.OutputType.Ascii));
+                SaveDebugInfo(copyMesh, "MeshCopy (copy2)");
             }
         }
     }
