@@ -65,14 +65,17 @@ namespace MatterHackers.PolygonMesh.Processors
             this.CsgOptionState = csgOption;
         }
 
-        public MeshOutputSettings(OutputType outputTypeSetting, string[] metaDataKeyValuePairs, ReportProgressRatio reportProgress = null)
+        public MeshOutputSettings(OutputType outputTypeSetting, string[] metaDataKeyValuePairs = null, ReportProgressRatio reportProgress = null)
         {
             this.reportProgress = reportProgress;
 
             this.OutputTypeSetting = outputTypeSetting;
-            for (int i = 0; i < metaDataKeyValuePairs.Length / 2; i++)
+            if (metaDataKeyValuePairs != null)
             {
-                MetaDataKeyValue.Add(metaDataKeyValuePairs[i * 2], metaDataKeyValuePairs[i * 2 + 1]);
+                for (int i = 0; i < metaDataKeyValuePairs.Length / 2; i++)
+                {
+                    MetaDataKeyValue.Add(metaDataKeyValuePairs[i * 2], metaDataKeyValuePairs[i * 2 + 1]);
+                }
             }
         }
     }
@@ -106,6 +109,11 @@ namespace MatterHackers.PolygonMesh.Processors
             {
                 return Load(stream, Path.GetExtension(meshPathAndFileName), reportProgress);
             }
+        }
+
+        public static bool Save(Mesh mesh, string meshPathAndFileName, MeshOutputSettings outputInfo = null)
+        {
+            return Save(new MeshGroup(mesh), meshPathAndFileName, outputInfo);
         }
 
         public static bool Save(MeshGroup meshGroupToSave, string meshPathAndFileName, MeshOutputSettings outputInfo = null)

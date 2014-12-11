@@ -39,6 +39,7 @@ using NUnit.Framework;
 using MatterHackers.Agg;
 using MatterHackers.VectorMath;
 using MatterHackers.PolygonMesh.Csg;
+using MatterHackers.PolygonMesh.Processors;
 
 namespace MatterHackers.PolygonMesh.UnitTests
 {
@@ -578,20 +579,25 @@ namespace MatterHackers.PolygonMesh.UnitTests
         {
             {
                 Mesh testMesh = new Mesh();
-                Vertex left = testMesh.CreateVertex(-1, 0, -1);
-                Vertex top = testMesh.CreateVertex(0, 0, 1);
-                Vertex right = testMesh.CreateVertex(1, 0, -1);
-                Vertex middle = testMesh.CreateVertex(0, 0, 0);
+                Vertex left = testMesh.CreateVertex(-1, -1, 0);
+                Vertex middle = testMesh.CreateVertex(0, 1, 0);
+                Vertex right = testMesh.CreateVertex(1, -1, 0);
 
-                Face leftFace = testMesh.CreateFace(new Vertex[] { left, top, middle });
-                Face rightFace = testMesh.CreateFace(new Vertex[] { middle, right, top });
-                Face bottomFace = testMesh.CreateFace(new Vertex[] { left, right, middle });
+                Vertex top = testMesh.CreateVertex(0, 0, 1);
+
+                testMesh.CreateFace(new Vertex[] { left, top, middle });
+                testMesh.CreateFace(new Vertex[] { left, right, top });
+                testMesh.CreateFace(new Vertex[] { right, middle, top });
+                testMesh.CreateFace(new Vertex[] { left, middle, right });
 
                 testMesh.MergeVertices();
 
+                MeshFileIo.Save(testMesh, "control.stl", new MeshOutputSettings(MeshOutputSettings.OutputType.Ascii));
                 SaveDebugInfo(testMesh, "MeshCopy (orig)");
 
                 Mesh copyMesh = Mesh.Copy(testMesh);
+
+                MeshFileIo.Save(testMesh, "test.stl", new MeshOutputSettings(MeshOutputSettings.OutputType.Ascii));
                 SaveDebugInfo(copyMesh, "MeshCopy (copy)");
             }
         }
