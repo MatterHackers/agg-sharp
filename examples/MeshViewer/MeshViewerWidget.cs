@@ -52,6 +52,13 @@ namespace MatterHackers.MeshVisualizer
         public RGBA_Bytes BedColor { get; set; }
         public RGBA_Bytes BuildVolumeColor { get; set; }
 
+        double snapGridDistance = 1;
+        public double SnapGridDistance
+        {
+            get { return snapGridDistance; }
+            set { snapGridDistance = value; }
+        }
+
         Vector3 displayVolume;
         public Vector3 DisplayVolume { get { return displayVolume; } }
 
