@@ -41,8 +41,9 @@ namespace MatterHackers.MeshVisualizer
         public IRayTraceable CollisionVolume { get { return collisionVolume; } set { collisionVolume = value; } }
         public Matrix4X4 TotalTransform = Matrix4X4.Identity;
 
-        bool mouseOver = false;
+        public bool MouseDownOnControl;
 
+        bool mouseOver = false;
         public bool MouseOver
         {
             get
@@ -81,6 +82,7 @@ namespace MatterHackers.MeshVisualizer
 
         public virtual void OnMouseDown(MouseEvent3DArgs mouseEvent3D)
         {
+            MouseDownOnControl = true;
         }
 
         public virtual void OnMouseMove(MouseEvent3DArgs mouseEvent3D)
@@ -89,6 +91,7 @@ namespace MatterHackers.MeshVisualizer
 
         public virtual void OnMouseUp(MouseEvent3DArgs mouseEvent3D)
         {
+            MouseDownOnControl = false;
         }
     }
 }
