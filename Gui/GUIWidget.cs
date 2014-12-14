@@ -375,7 +375,8 @@ namespace MatterHackers.Agg.UI
         private int layoutSuspendCount;
         public event EventHandler Layout;
         // the event args will be a DrawEventArgs
-        public event EventHandler Draw;
+        public event DrawEventHandler DrawBefore;
+        public event DrawEventHandler DrawAfter;
     
         public event KeyPressEventHandler KeyPressed;
 
@@ -1639,6 +1640,12 @@ namespace MatterHackers.Agg.UI
         public virtual void OnDraw(Graphics2D graphics2D)
         {
             DrawCount++;
+            
+            if (DrawBefore != null)
+            {
+                DrawBefore(this, new DrawEventArgs(graphics2D));
+            }
+
             for (int i = 0; i < Children.Count; i++)
             {
                 GuiWidget child = Children[i];
@@ -1712,9 +1719,9 @@ namespace MatterHackers.Agg.UI
                 }
             }
 
-            if (Draw != null)
+            if (DrawAfter != null)
             {
-                Draw(this, new DrawEventArgs(graphics2D));
+                DrawAfter(this, new DrawEventArgs(graphics2D));
             }
 
             if (DebugShowBounds)

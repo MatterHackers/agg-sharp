@@ -98,7 +98,7 @@ namespace MatterHackers.Agg.UI
 
             bar = new GuiWidget(80, 15);
             bar.VAnchor = VAnchor.ParentCenter;
-            bar.Draw += new EventHandler(bar_Draw);
+            bar.DrawAfter += new DrawEventHandler(bar_Draw);
             AddChild(bar);
             progressTextWidget = new TextWidget("", textColor: textColor, pointSize: 8);
             progressTextWidget.AutoExpandBoundsToText = true;
@@ -107,14 +107,12 @@ namespace MatterHackers.Agg.UI
             AddChild(progressTextWidget);
         }
 
-        void bar_Draw(object sender, EventArgs e)
+        void bar_Draw(GuiWidget drawingWidget, DrawEventArgs drawEvent)
         {
-            DrawEventArgs drawEvent = e as DrawEventArgs;
-            GuiWidget widget = sender as GuiWidget;
-            if (widget != null && drawEvent != null && drawEvent.graphics2D != null)
+            if (drawingWidget != null && drawEvent != null && drawEvent.graphics2D != null)
             {
-                drawEvent.graphics2D.FillRectangle(0, 0, widget.Width * PercentComplete / 100.0, widget.Height, fillColor);
-                drawEvent.graphics2D.Rectangle(widget.LocalBounds, borderColor);
+                drawEvent.graphics2D.FillRectangle(0, 0, drawingWidget.Width * PercentComplete / 100.0, drawingWidget.Height, fillColor);
+                drawEvent.graphics2D.Rectangle(drawingWidget.LocalBounds, borderColor);
             }
         }
     }

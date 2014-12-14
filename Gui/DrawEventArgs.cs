@@ -5,7 +5,7 @@ using System.Text;
 
 namespace MatterHackers.Agg.UI
 {
-    public delegate void DrawEventHandler(Object sender, DrawEventArgs e);
+    public delegate void DrawEventHandler(GuiWidget drawingWidget, DrawEventArgs e);
 
     public class DrawEventArgs : EventArgs
     {
