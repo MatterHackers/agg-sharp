@@ -764,6 +764,13 @@ namespace MatterHackers.MeshVisualizer
             throw new Exception("DEBUG is defined and should not be!");
 #endif
         }
+
+        public AxisAlignedBoundingBox GetBoundsForSelection()
+        {
+            Matrix4X4 selectedMeshTransform = SelectedMeshGroupTransform.TotalTransform;
+            AxisAlignedBoundingBox selectedBounds = SelectedMeshGroup.GetAxisAlignedBoundingBox(selectedMeshTransform);
+            return selectedBounds;
+        }
     }
 }
 
