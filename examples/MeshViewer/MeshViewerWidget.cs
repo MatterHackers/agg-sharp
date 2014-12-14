@@ -641,21 +641,34 @@ namespace MatterHackers.MeshVisualizer
 
         public override void OnMouseUp(MouseEventArgs mouseEvent)
         {
-            MouseDownOnInteractionVolume = false;
-            volumeIndexWithMouseDown = -1;
             trackballTumbleWidget.DrawRotationHelperCircle = false;
             Invalidate();
-
-            base.OnMouseUp(mouseEvent);
 
             int volumeHitIndex;
             Ray ray = trackballTumbleWidget.GetRayFromScreen(mouseEvent.Position);
             IntersectInfo info;
-            if (FindInteractionVolumeHit(ray, out volumeHitIndex, out info))
+            bool anyInteractionVolumeHit = FindInteractionVolumeHit(ray, out volumeHitIndex, out info);
+            MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray, info);
+            
+            if (MouseDownOnInteractionVolume && volumeIndexWithMouseDown != -1)
             {
-                MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray, info);
-                interactionVolumes[volumeHitIndex].OnMouseUp(mouseEvent3D);
+                MouseDownOnInteractionVolume = false;
+                interactionVolumes[volumeIndexWithMouseDown].OnMouseUp(mouseEvent3D);
+
+                volumeIndexWithMouseDown = -1;
             }
+            else
+            {
+                MouseDownOnInteractionVolume = false;
+                volumeIndexWithMouseDown = -1;
+
+                if (anyInteractionVolumeHit)
+                {
+                    interactionVolumes[volumeHitIndex].OnMouseUp(mouseEvent3D);
+                }
+            }
+
+            base.OnMouseUp(mouseEvent);
         }
 
         RGBA_Bytes bedMarkingsColor = RGBA_Bytes.Black;
