@@ -138,6 +138,9 @@ namespace MatterHackers.Agg.OpenGlGui
             OnDrawGlContent();
             UnsetGlContext();
 
+            RectangleDouble bounds = LocalBounds;
+            //graphics2D.Rectangle(bounds, RGBA_Bytes.Black);
+
             if (DrawRotationHelperCircle)
             {
                 DrawTrackballRadius(graphics2D);
@@ -254,6 +257,47 @@ namespace MatterHackers.Agg.OpenGlGui
             }
         }
 
+        void GradientBand(double startHeight, double endHeight, int startColor, int endColor)
+        {
+            // triangel 1
+            {
+                // top color
+                GL.Color4(startColor - 5, startColor - 5, startColor, 255);
+                GL.Vertex2(-1.0, startHeight);
+                // bottom color
+                GL.Color4(endColor - 5, endColor - 5, endColor, 255);
+                GL.Vertex2(1.0, endHeight);
+                GL.Vertex2(-1.0, endHeight);
+            }
+
+            // triangel 2
+            {
+                // top color
+                GL.Color4(startColor - 5, startColor - 5, startColor, 255);
+                GL.Vertex2(1.0, startHeight);
+                GL.Vertex2(-1.0, startHeight);
+                // bottom color
+                GL.Color4(endColor - 5, endColor - 5, endColor, 255);
+                GL.Vertex2(1.0, endHeight);
+            }
+        }
+
+        void ClearToGradient()
+        {
+            GL.MatrixMode(MatrixMode.Projection);
+            GL.LoadIdentity();
+
+            GL.MatrixMode(MatrixMode.Modelview);
+            GL.LoadIdentity();
+
+            GL.Begin(BeginMode.Triangles);
+
+            GradientBand(1, 0, 255, 245);
+            GradientBand(0, -1, 245, 220);
+
+            GL.End();
+        }
+
         void SetGlContext()
         {
 			GL.ClearDepth(1.0);
@@ -267,6 +311,11 @@ namespace MatterHackers.Agg.OpenGlGui
 
             GL.FrontFace(FrontFaceDirection.Ccw);
             GL.CullFace(CullFaceMode.Back);
+
+            GL.DepthFunc(DepthFunction.Lequal);
+
+            GL.Disable(EnableCap.DepthTest);
+            ClearToGradient();
 
             GL.DepthFunc(DepthFunction.Lequal);
 

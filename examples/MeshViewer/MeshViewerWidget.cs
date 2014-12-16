@@ -672,7 +672,7 @@ namespace MatterHackers.MeshVisualizer
         }
 
         RGBA_Bytes bedMarkingsColor = RGBA_Bytes.Black;
-        RGBA_Bytes bedBaseColor = RGBA_Bytes.White;
+        RGBA_Bytes bedBaseColor = new RGBA_Bytes(245, 245, 255);
         void CreateRectangularBedGridImage(int linesInX, int linesInY)
         {
             Vector2 bedImageCentimeters = new Vector2(linesInX, linesInY);
