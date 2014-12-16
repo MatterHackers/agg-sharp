@@ -185,7 +185,6 @@ namespace MatterHackers.Agg.UI
 
 		}
 
-
         public void SelectTab(int index)
         {
             Tab foundTab = null;
