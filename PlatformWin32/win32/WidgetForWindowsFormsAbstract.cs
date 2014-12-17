@@ -67,16 +67,16 @@ namespace MatterHackers.Agg.UI
         {
             get
             {
-                return new Point2D(mainWindowsFormsWindow.DesktopLocation.X, mainWindowsFormsWindow.DesktopLocation.Y);
+                return new Point2D(windowsFormsWindow.DesktopLocation.X, windowsFormsWindow.DesktopLocation.Y);
             }
 
             set
             {
-                if (!mainWindowsFormsWindow.Visible)
+                if (!windowsFormsWindow.Visible)
                 {
-                    mainWindowsFormsWindow.StartPosition = FormStartPosition.Manual;
+                    windowsFormsWindow.StartPosition = FormStartPosition.Manual;
                 }
-                mainWindowsFormsWindow.DesktopLocation = new Point(value.x, value.y);
+                windowsFormsWindow.DesktopLocation = new Point(value.x, value.y);
             }
         }
 
