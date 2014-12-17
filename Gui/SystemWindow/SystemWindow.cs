@@ -50,6 +50,7 @@ namespace MatterHackers.Agg.UI
         static SystemWindowCreatorPlugin globalSystemWindowCreator;
         public EventHandler TitleChanged;
 
+        public AbstractOsMappingWidget AbstractOsMappingWidget { get; set; }
         public bool AlwaysOnTopOfMain { get; set; }
         public bool IsModal { get; set; }
         public bool UseOpenGL { get; set; }

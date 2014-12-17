@@ -68,6 +68,8 @@ namespace MatterHackers.Agg
             windowsFormsTopWindow.AddChild(systemWindow);
             windowsFormsTopWindow.MinimumSize = systemWindow.MinimumSize;
 
+            systemWindow.AbstractOsMappingWidget = windowsFormsTopWindow;
+
             if (pendingSetInitialDesktopPosition)
             {
                 pendingSetInitialDesktopPosition = false;
@@ -98,10 +100,9 @@ namespace MatterHackers.Agg
 
         public override Point2D GetDesktopPosition(SystemWindow systemWindow)
         {
-            if (systemWindow.Parent != null)
+            if (systemWindow.AbstractOsMappingWidget != null)
             {
-                AbstractOsMappingWidget windowsFromsTopWindow = (AbstractOsMappingWidget)systemWindow.Parent;
-                return windowsFromsTopWindow.DesktopPosition;
+                return systemWindow.AbstractOsMappingWidget.DesktopPosition;
             }
 
             return new Point2D();
@@ -109,7 +110,7 @@ namespace MatterHackers.Agg
 
         public override void SetDesktopPosition(SystemWindow systemWindow, Point2D position)
         {
-            if (systemWindow.Parent != null)
+            if (systemWindow.AbstractOsMappingWidget != null)
             {
                 // Make sure the window is on screen (this logic should improve over time)
                 position.x = Math.Max(0, position.x);
@@ -121,8 +122,7 @@ namespace MatterHackers.Agg
                     position.y = Math.Max(5, position.y);
                 }
 
-                AbstractOsMappingWidget windowsFromsTopWindow = (AbstractOsMappingWidget)systemWindow.Parent;
-                windowsFromsTopWindow.DesktopPosition = position;
+                systemWindow.AbstractOsMappingWidget.DesktopPosition = position;
             }
             else
             {
@@ -134,8 +134,7 @@ namespace MatterHackers.Agg
         void TitelChangedEventHandler(object sender, EventArgs e)
         {
             SystemWindow systemWindow = ((SystemWindow)sender);
-            AbstractOsMappingWidget windowsFromsTopWindow = (AbstractOsMappingWidget)systemWindow.Parent;
-            windowsFromsTopWindow.Caption = systemWindow.Title;
+            systemWindow.AbstractOsMappingWidget.Caption = systemWindow.Title;
         }
     }
 }

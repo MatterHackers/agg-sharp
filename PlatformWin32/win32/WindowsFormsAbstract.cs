@@ -265,17 +265,26 @@ namespace MatterHackers.Agg.UI
             {
                 e.Cancel = true;
             }
-            else if (this == mainForm && !waitingForIdleTimerToStop)
+            else
             {
-                waitingForIdleTimerToStop = true;
-                idleCallBackTimer.Stop();
-                idleCallBackTimer.Elapsed -= CallAppWidgetOnIdle;
-                e.Cancel = true;
-                // We just need to wait for this event to end so we can re-enter the idle loop with the time stoped
-                // If we close with the idle loop timer not stoped we throw and exception.
-                System.Windows.Forms.Timer delayedCloseTimer = new System.Windows.Forms.Timer();
-                delayedCloseTimer.Tick += DoDelayedClose;
-                delayedCloseTimer.Start();
+                if (!hasBeenClosed)
+                {
+                    hasBeenClosed = true;
+                    aggAppWidget.Close();
+                }
+
+                if (this == mainForm && !waitingForIdleTimerToStop)
+                {
+                    waitingForIdleTimerToStop = true;
+                    idleCallBackTimer.Stop();
+                    idleCallBackTimer.Elapsed -= CallAppWidgetOnIdle;
+                    e.Cancel = true;
+                    // We just need to wait for this event to end so we can re-enter the idle loop with the time stoped
+                    // If we close with the idle loop timer not stoped we throw and exception.
+                    System.Windows.Forms.Timer delayedCloseTimer = new System.Windows.Forms.Timer();
+                    delayedCloseTimer.Tick += DoDelayedClose;
+                    delayedCloseTimer.Start();
+                }
             }
 
             base.OnClosing(e);
@@ -285,17 +294,6 @@ namespace MatterHackers.Agg.UI
         {
             ((System.Windows.Forms.Timer)sender).Stop();
             this.Close();
-        }
-
-        protected override void OnClosed(EventArgs e)
-        {
-            if (!hasBeenClosed)
-            {
-                hasBeenClosed = true;
-                aggAppWidget.Close();
-            }
-
-            base.OnClosed(e);
         }
 
         internal virtual void RequestInvalidate(Rectangle windowsRectToInvalidate)
