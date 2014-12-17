@@ -180,7 +180,15 @@ namespace MatterHackers.Agg.UI
 
         public override void Show()
         {
-            WindowsFormsWindow.Show();
+            if (mainWindowsFormsWindow != WindowsFormsWindow
+                && childSystemWindow.AlwaysOnTopOfMain)
+            {
+                WindowsFormsWindow.Show(mainWindowsFormsWindow);
+            }
+            else
+            {
+                WindowsFormsWindow.Show();
+            }
         }
 
         public override void ShowModal()
