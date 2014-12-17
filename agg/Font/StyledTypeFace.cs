@@ -297,8 +297,8 @@ namespace MatterHackers.Agg.Font
                 curCommand = glyphForCharacter.vertex(out x, out y);
             }
 
-            ImageBuffer charImage = new ImageBuffer(Math.Max((int)(bounds.Width + .5), 1), Math.Max((int)(bounds.Height + .5), 1), 32, new BlenderBGRA());
-            charImage.NewGraphics2D().Render(glyphForCharacter, xFraction, yFraction, color);
+            ImageBuffer charImage = new ImageBuffer(Math.Max((int)(bounds.Width + .5), 1) + 1, Math.Max((int)(EmSizeInPixels + .5), 1) + 1, 32, new BlenderBGRA());
+            charImage.NewGraphics2D().Render(glyphForCharacter, xFraction, yFraction - DescentInPixels, color);
             characterImageCache[character] = charImage;
 
             return charImage;
