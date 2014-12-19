@@ -9,10 +9,11 @@ namespace MatterHackers.Agg.UI
     public delegate void IdleCallback(object state);
     public static class UiThread
     {
-        static List<CallBackAndState> functionsToCallOnIdle = new List<CallBackAndState>();
+        static VectorPOD<CallBackAndState> holdFunctionsToCallOnIdle = new VectorPOD<CallBackAndState>();
+        static VectorPOD<CallBackAndState> functionsToCallOnIdle = new VectorPOD<CallBackAndState>();
         static Stopwatch timer = new Stopwatch();
 
-        class CallBackAndState
+        struct CallBackAndState
         {
             internal IdleCallback idleCallBack;
             internal object stateInfo;
@@ -37,9 +38,22 @@ namespace MatterHackers.Agg.UI
             {
                 timer.Start();
             }
+
+            long timeToRunAt = timer.ElapsedMilliseconds + (int)(delayInSeconds * 1000);
             using (TimedLock.Lock(functionsToCallOnIdle, "PendingUiEvents AddAction()"))
             {
-                functionsToCallOnIdle.Add(new CallBackAndState(callBack, state, timer.ElapsedMilliseconds + (int)(delayInSeconds * 1000)));
+                int count = functionsToCallOnIdle.Count;
+                if (functionsToCallOnIdle.Capacity() > count)
+                {
+                    functionsToCallOnIdle.Array[count].idleCallBack = callBack;
+                    functionsToCallOnIdle.Array[count].stateInfo = state;
+                    functionsToCallOnIdle.Array[count].absoluteMillisecondsToRunAt = timeToRunAt;
+                    functionsToCallOnIdle.inc_size(1);
+                }
+                else
+                {
+                    functionsToCallOnIdle.Add(new CallBackAndState(callBack, state, timeToRunAt));
+                }
             }
         }
 
@@ -50,20 +64,55 @@ namespace MatterHackers.Agg.UI
                 return functionsToCallOnIdle.Count;
             }
         }
+
+        public static int CountExpired
+        {
+            get
+            {
+                int count = 0;
+                // make a copy so we don't keep this locked for long
+                using (TimedLock.Lock(functionsToCallOnIdle, "PendingUiEvents AddAction()"))
+                {
+                    long currentMilliseconds = timer.ElapsedMilliseconds;
+                    for (int i = functionsToCallOnIdle.Count - 1; i >= 0; i--)
+                    {
+                        if (functionsToCallOnIdle.Array[i].absoluteMillisecondsToRunAt <= currentMilliseconds)
+                        {
+                            count++;
+                        }
+                    }
+                }
+
+                return count;
+            }
+        }
         
         public static void DoRunAllPending()
         {
-            List<CallBackAndState> holdFunctionsToCallOnIdle = new List<CallBackAndState>();
+            holdFunctionsToCallOnIdle.Clear();
             // make a copy so we don't keep this locked for long
             using (TimedLock.Lock(functionsToCallOnIdle, "PendingUiEvents AddAction()"))
             {
                 long currentMilliseconds = timer.ElapsedMilliseconds;
                 for(int i=functionsToCallOnIdle.Count-1; i>=0; i--)
                 {
-                    CallBackAndState callBackAndState = functionsToCallOnIdle[i];
-                    if (callBackAndState.absoluteMillisecondsToRunAt <= currentMilliseconds)
+                    if (functionsToCallOnIdle.Array[i].absoluteMillisecondsToRunAt <= currentMilliseconds)
                     {
-                        holdFunctionsToCallOnIdle.Add(new CallBackAndState(callBackAndState.idleCallBack, callBackAndState.stateInfo, callBackAndState.absoluteMillisecondsToRunAt));
+                        int count = holdFunctionsToCallOnIdle.Count;
+                        if (holdFunctionsToCallOnIdle.Capacity() > count)
+                        {
+                            holdFunctionsToCallOnIdle.Array[count].idleCallBack = functionsToCallOnIdle.Array[i].idleCallBack;
+                            holdFunctionsToCallOnIdle.Array[count].stateInfo = functionsToCallOnIdle.Array[i].stateInfo;
+                            holdFunctionsToCallOnIdle.Array[count].absoluteMillisecondsToRunAt = functionsToCallOnIdle.Array[i].absoluteMillisecondsToRunAt;
+                            holdFunctionsToCallOnIdle.inc_size(1);
+                        }
+                        else
+                        {
+                            holdFunctionsToCallOnIdle.Add(new CallBackAndState(functionsToCallOnIdle.Array[i].idleCallBack,
+                                functionsToCallOnIdle.Array[i].stateInfo,
+                                functionsToCallOnIdle.Array[i].absoluteMillisecondsToRunAt));
+                        }
+
                         functionsToCallOnIdle.RemoveAt(i);
                     }
                 }
@@ -72,8 +121,7 @@ namespace MatterHackers.Agg.UI
             // now call all the functions (we put them in backwards to make it easier to remove them as we went so run them backwards
             for(int i=holdFunctionsToCallOnIdle.Count-1; i>=0; i--)
             {
-                CallBackAndState callBackAndState = holdFunctionsToCallOnIdle[i];
-                callBackAndState.idleCallBack(callBackAndState.stateInfo);
+                holdFunctionsToCallOnIdle.Array[i].idleCallBack(holdFunctionsToCallOnIdle.Array[i].stateInfo);
             }
         }
     }

@@ -135,7 +135,12 @@ namespace MatterHackers.Agg
             Allocate(capacity, extraTail);
         }
 
-        public virtual void Remove(int indexToRemove)
+        public void RemoveAt(int indexToRemove)
+        {
+            Remove(indexToRemove);
+        }
+
+        public void Remove(int indexToRemove)
         {
             if (indexToRemove >= Length)
             {
@@ -150,7 +155,7 @@ namespace MatterHackers.Agg
             currentSize--;
         }
 
-        public virtual void RemoveLast()
+        public void RemoveLast()
         {
             if (currentSize != 0)
             {
