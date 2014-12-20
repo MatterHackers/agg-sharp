@@ -22,6 +22,7 @@ namespace MatterHackers.Agg
 			// assembly loader to resolve paths using the built in probing mechanisms
 			Plugins = LoadPluginsFromConfig(new string[]{
 				"PrintNotifications, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+				"CloudServicesAndroid, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
 				"MatterControlAuthAndroid, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
 				"PlatformAndroid, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
 				"AndroidFileDialogs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null"
