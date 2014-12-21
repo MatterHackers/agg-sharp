@@ -14,6 +14,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if !USE_OPENGL
 	internal class ImediateMode
 	{
+        public static byte[] currentColor = new byte[4];
 		BeginMode mode;
 		internal BeginMode Mode
 		{
@@ -21,15 +22,17 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			set
 			{
 				mode = value;
-				positions3f.Clear();
-				textureCoords2f.Clear();
+                positions3f.Clear();
+                color4i.Clear();
+                textureCoords2f.Clear();
 			}
 		}
 
-		internal VectorPOD<float> positions3f = new VectorPOD<float>();
+        internal VectorPOD<float> positions3f = new VectorPOD<float>();
+        internal VectorPOD<byte> color4i = new VectorPOD<byte>();
 		internal VectorPOD<float> textureCoords2f = new VectorPOD<float>();
 	}
-	#endif
+#endif
 
     public enum FrontFaceDirection
     {
@@ -369,7 +372,15 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
         public static void Color4(int red, int green, int blue, int alpha)
         {
+#if USE_OPENGL
             Color4((byte)red, (byte)green, (byte)blue, (byte)alpha);
+#else
+            ImediateMode.currentColor[0] = (byte)red;
+            ImediateMode.currentColor[1] = (byte)green;
+            ImediateMode.currentColor[2] = (byte)blue;
+            ImediateMode.currentColor[3] = (byte)alpha;
+            Color4(ImediateMode.currentColor[0], ImediateMode.currentColor[1], ImediateMode.currentColor[2], ImediateMode.currentColor[3]);
+#endif
         }
 
         public static void Color4(byte red, byte green, byte blue, byte alpha)
@@ -542,10 +553,12 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				case BeginMode.Triangles:
 				case BeginMode.TriangleStrip:
 					{
-						GL.EnableClientState(ArrayCap.VertexArray);
+                        GL.EnableClientState(ArrayCap.ColorArray);
+                        GL.EnableClientState(ArrayCap.VertexArray);
 						GL.EnableClientState(ArrayCap.TextureCoordArray);
 
 						float[] v = currentImediateData.positions3f.Array;
+                        byte[] c = currentImediateData.color4i.Array;
 						float[] t = currentImediateData.textureCoords2f.Array;
 						// pin the data, so that GC doesn't move them, while used
 						// by native code
@@ -553,9 +566,13 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 						{
 							fixed (float* pv = v, pt = t)
 							{
-								GL.VertexPointer(2, VertexPointerType.Float, 0, new IntPtr(pv));
-								GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(pt));
-								GL.DrawArrays(currentImediateData.Mode, 0, currentImediateData.positions3f.Count / 2);
+                                fixed (byte* pc = c)
+                                {
+                                    GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pc));
+                                    GL.VertexPointer(2, VertexPointerType.Float, 0, new IntPtr(pv));
+                                    GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(pt));
+                                    GL.DrawArrays(currentImediateData.Mode, 0, currentImediateData.positions3f.Count / 2);
+                                }
 							}
 						}
 						GL.DisableClientState(ArrayCap.VertexArray);
@@ -586,7 +603,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #else
 			currentImediateData.positions3f.Add((float)x);
 			currentImediateData.positions3f.Add((float)y);
-			//currentImediateData.positions3f.Add(0);
+
+            currentImediateData.color4i.add(ImediateMode.currentColor[0]);
+            currentImediateData.color4i.add(ImediateMode.currentColor[1]);
+            currentImediateData.color4i.add(ImediateMode.currentColor[2]);
+            currentImediateData.color4i.add(ImediateMode.currentColor[3]);
 #endif
         }
 

@@ -59,6 +59,13 @@ namespace MatterHackers.Agg.UI
             SetBoundsToEncloseChildren();
         }
 
+        public override void OnMouseDown(MouseEventArgs mouseEvent)
+        {
+            OnSelected(mouseEvent);
+
+            base.OnMouseDown(mouseEvent);
+        }
+
         void tabPageControledByTab_TextChanged(object sender, EventArgs e)
         {
             normalWidget.Children[0].Text = ((GuiWidget)sender).Text;
@@ -80,7 +87,7 @@ namespace MatterHackers.Agg.UI
         }
     }
 
-    public class Tab : GuiWidget
+    public abstract class Tab : GuiWidget
     {
         RGBA_Bytes backgroundColor = new RGBA_Bytes(230, 230, 230);
 
@@ -88,6 +95,8 @@ namespace MatterHackers.Agg.UI
         protected GuiWidget normalWidget;
         protected GuiWidget hoverWidget;
         protected GuiWidget selectedWidget;
+
+        public event EventHandler Selected;
 
         public Tab(string tabName, GuiWidget normalWidget, GuiWidget hoverWidget, GuiWidget pressedWidget,
             TabPage tabPageControledByTab)
@@ -110,6 +119,14 @@ namespace MatterHackers.Agg.UI
         {
             TabBarContaningTab.TabIndexChanged += SelectionChanged;
             base.OnParentChanged(e);
+        }
+
+        public virtual void OnSelected(EventArgs e)
+        {
+            if (Selected != null)
+            {
+                Selected(this, e);
+            }
         }
 
         public void SelectionChanged(object sender, EventArgs e)

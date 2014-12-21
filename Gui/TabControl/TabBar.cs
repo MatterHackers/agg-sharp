@@ -75,7 +75,7 @@ namespace MatterHackers.Agg.UI
             Tab newTab = child as Tab;
             if (newTab != null)
             {
-                newTab.MouseDown += new MouseEventHandler(SwitchToTab);
+                newTab.Selected += new EventHandler(SwitchToTab);
             }
             base.AddChild(child, indexInChildrenList);
         }
@@ -199,7 +199,7 @@ namespace MatterHackers.Agg.UI
             return false;
         }
 
-        void SwitchToTab(object tabMouseDownOn, MouseEventArgs mouseEvent)
+        void SwitchToTab(object tabMouseDownOn, EventArgs mouseEvent)
         {
             UiThread.RunOnIdle((state) =>
                 {
