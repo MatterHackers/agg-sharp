@@ -553,12 +553,12 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				case BeginMode.Triangles:
 				case BeginMode.TriangleStrip:
 					{
-                        GL.EnableClientState(ArrayCap.ColorArray);
+                        //GL.EnableClientState(ArrayCap.ColorArray);
                         GL.EnableClientState(ArrayCap.VertexArray);
 						GL.EnableClientState(ArrayCap.TextureCoordArray);
 
 						float[] v = currentImediateData.positions3f.Array;
-                        byte[] c = currentImediateData.color4i.Array;
+                        //byte[] c = currentImediateData.color4i.Array;
 						float[] t = currentImediateData.textureCoords2f.Array;
 						// pin the data, so that GC doesn't move them, while used
 						// by native code
@@ -566,9 +566,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 						{
 							fixed (float* pv = v, pt = t)
 							{
-                                fixed (byte* pc = c)
+                                //fixed (byte* pc = c)
                                 {
-                                    GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pc));
+                                    //GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pc));
                                     GL.VertexPointer(2, VertexPointerType.Float, 0, new IntPtr(pv));
                                     GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(pt));
                                     GL.DrawArrays(currentImediateData.Mode, 0, currentImediateData.positions3f.Count / 2);
@@ -577,6 +577,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 						}
 						GL.DisableClientState(ArrayCap.VertexArray);
 						GL.DisableClientState(ArrayCap.TextureCoordArray);
+                        //GL.DisableClientState(ArrayCap.TextureCoordArray);
 					}
 					break;
 
