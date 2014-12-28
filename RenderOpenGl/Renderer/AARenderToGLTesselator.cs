@@ -34,6 +34,11 @@ namespace MatterHackers.RenderOpenGl
 {
     public class AARenderToGLTesselator : CachedTesselator
     {
+        Vector2 fanPStart;
+        Vector2 fanTStart;
+        Vector2 fanPNext;
+        Vector2 fanTNext;
+
         public AARenderToGLTesselator()
         {
         }
@@ -90,10 +95,6 @@ namespace MatterHackers.RenderOpenGl
             FanDo(texP2, p2);
         }
 
-        Vector2 fanPStart;
-        Vector2 fanTStart;
-        Vector2 fanPNext;
-        Vector2 fanTNext;
         void FanStart(Vector2 fanTStart, Vector2 fanPStart, Vector2 fanTNext, Vector2 fanPNext)
         {
 			this.fanTStart = fanTStart;

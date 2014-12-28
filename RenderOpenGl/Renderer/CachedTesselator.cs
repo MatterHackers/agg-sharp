@@ -81,6 +81,13 @@ namespace MatterHackers.RenderOpenGl
             callCombine += CombineCallBack;
         }
 
+        public void Clear()
+        {
+            lastEdgeFlagSet = false;
+            VerticesCache.Clear();
+            IndicesCache.Clear();
+        }
+
         public override void BeginPolygon()
         {
             VerticesCache.Clear();

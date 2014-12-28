@@ -280,6 +280,12 @@ namespace MatterHackers.Agg
             }
         }
 
+        public override void FillRectangle(double left, double bottom, double right, double top, IColorType fillColor)
+        {
+            RoundedRect rect = new RoundedRect(left, bottom, right, top, 0);
+            Render(rect, fillColor.GetAsRGBA_Bytes());
+        }
+        
         public override void Render(IImageFloat source,
             double x, double y,
             double angleDegrees,

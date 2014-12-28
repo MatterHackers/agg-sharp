@@ -47,8 +47,13 @@ namespace MatterHackers.RenderOpenGl
 
     public class Graphics2DOpenGL : Graphics2D
     {
+        // We can have a single static instance because all gl rendering is required to happen on the ui thread so there can
+        // be no runtime contention for this object (no thread contention).
+        static AARenderToGLTesselator triangleEddgeInfo = new AARenderToGLTesselator();
+        static int AATextureHandle = -1;
+
         public bool DoEdgeAntiAliasing = true;
-        RenderToGLTesselator RenderNowTesselator = new RenderToGLTesselator();
+        static RenderToGLTesselator renderNowTesselator = new RenderToGLTesselator();
 
         int width;
         int height;
@@ -167,7 +172,6 @@ namespace MatterHackers.RenderOpenGl
 			return hardwarePixelBuffer;
 		}
 
-        static int AATextureHandle = -1;
         void CheckLineImageCache()
         {
             if (AATextureHandle == -1)
@@ -197,7 +201,7 @@ namespace MatterHackers.RenderOpenGl
             GL.Enable(EnableCap.Texture2D);
             GL.BindTexture(TextureTarget.Texture2D, AATextureHandle);
 
-            AARenderToGLTesselator triangleEddgeInfo = new AARenderToGLTesselator();
+            triangleEddgeInfo.Clear();
             Graphics2DOpenGL.SendShapeToTesselator(triangleEddgeInfo, vertexSource);
 
             // now render it
@@ -227,7 +231,8 @@ namespace MatterHackers.RenderOpenGl
             }
             else
             {
-                Graphics2DOpenGL.SendShapeToTesselator(RenderNowTesselator, vertexSource);
+                renderNowTesselator.Clear();
+                Graphics2DOpenGL.SendShapeToTesselator(renderNowTesselator, vertexSource);
             }
 
             PopOrthoProjection();
@@ -302,6 +307,12 @@ namespace MatterHackers.RenderOpenGl
             throw new NotImplementedException();
         }
 
+        public override void FillRectangle(double left, double bottom, double right, double top, IColorType fillColor)
+        {
+            RoundedRect rect = new RoundedRect(left, bottom, right, top, 0);
+            Render(rect, fillColor.GetAsRGBA_Bytes());
+        }
+        
         public override void Clear(IColorType color)
         {
             Affine transform = GetTransform();

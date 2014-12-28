@@ -264,24 +264,7 @@ namespace MatterHackers.Agg
             FillRectangle(leftBottom.x, leftBottom.y, rightTop.x, rightTop.y, fillColor);
         }
 
-        public void FillRectangle(double left, double bottom, double right, double top, IColorType fillColor)
-        {
-            if (right < left)
-            {
-                double temp = left;
-                left = right;
-                right = temp;
-            }
-            if (top < bottom)
-            {
-                double temp = bottom;
-                bottom = top;
-                top = temp;
-            }
-
-            RoundedRect rect = new RoundedRect(left, bottom, right, top, 0);
-            Render(rect, fillColor.GetAsRGBA_Bytes());
-        }
+        public abstract void FillRectangle(double left, double bottom, double right, double top, IColorType fillColor);
 
         public static void AssertDebugNotDefined()
         {

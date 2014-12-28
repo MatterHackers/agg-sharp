@@ -37,7 +37,7 @@ namespace MatterHackers.RenderOpenGl
 {
     public class RenderToGLTesselator : VertexTesselatorAbstract
     {
-        List<AddedVertex> m_Vertices = new List<AddedVertex>();
+        List<AddedVertex> verticesCache = new List<AddedVertex>();
 
         internal class AddedVertex
         {
@@ -61,7 +61,7 @@ namespace MatterHackers.RenderOpenGl
 
         public override void BeginPolygon()
         {
-            m_Vertices.Clear();
+            verticesCache.Clear();
 
             base.BeginPolygon();
         }
@@ -91,7 +91,7 @@ namespace MatterHackers.RenderOpenGl
 
         public void VertexCallBack(int index)
         {
-			GL.Vertex2(m_Vertices[index].m_X, m_Vertices[index].m_Y);
+			GL.Vertex2(verticesCache[index].m_X, verticesCache[index].m_Y);
         }
 
         public void EdgeFlagCallBack(bool IsEdge)
@@ -113,8 +113,8 @@ namespace MatterHackers.RenderOpenGl
 
         public int AddVertex(double x, double y, bool passOnToTesselator)
         {
-            int index = m_Vertices.Count;
-            m_Vertices.Add(new AddedVertex(x, y));
+            int index = verticesCache.Count;
+            verticesCache.Add(new AddedVertex(x, y));
             double[] coords = new double[3];
             coords[0] = x;
             coords[1] = y;
@@ -123,6 +123,11 @@ namespace MatterHackers.RenderOpenGl
                 AddVertex(coords, index);
             }
             return index;
+        }
+
+        public void Clear()
+        {
+            verticesCache.Clear();
         }
     }
 }
