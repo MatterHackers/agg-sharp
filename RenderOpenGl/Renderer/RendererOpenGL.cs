@@ -309,8 +309,47 @@ namespace MatterHackers.RenderOpenGl
 
         public override void FillRectangle(double left, double bottom, double right, double top, IColorType fillColor)
         {
-            RoundedRect rect = new RoundedRect(left, bottom, right, top, 0);
-            Render(rect, fillColor.GetAsRGBA_Bytes());
+            // This only works for translation. If we have a rotation or scale in the transform this will have some problems.
+            Affine transform = GetTransform();
+            transform.transform(ref left, ref bottom);
+            transform.transform(ref right, ref top);
+
+            if (left == (int)left
+                && bottom == (int)bottom
+                && right == (int)right
+                && top == (int)top)
+            {
+                PushOrthoProjection();
+
+                GL.Disable(EnableCap.Texture2D);
+                GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+                GL.Enable(EnableCap.Blend);
+
+                GL.Color4(fillColor.Red0To255, fillColor.Green0To255, fillColor.Blue0To255, fillColor.Alpha0To255);
+
+                GL.Begin(BeginMode.Triangles);
+                // triangel 1
+                {
+                    GL.Vertex2(left, bottom);
+                    GL.Vertex2(right, bottom);
+                    GL.Vertex2(right, top);
+                }
+
+                // triangel 2
+                {
+                    GL.Vertex2(left, bottom);
+                    GL.Vertex2(right, top);
+                    GL.Vertex2(left, top);
+                }
+                GL.End();
+
+                PopOrthoProjection();
+            }
+            else
+            {
+                RoundedRect rect = new RoundedRect(left, bottom, right, top, 0);
+                Render(rect, fillColor.GetAsRGBA_Bytes());
+            }
         }
         
         public override void Clear(IColorType color)
