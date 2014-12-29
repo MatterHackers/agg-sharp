@@ -231,13 +231,7 @@ namespace MatterHackers.Agg
         public abstract void SetClippingRect(RectangleDouble rect_d);
         public abstract RectangleDouble GetClippingRect();
 
-        public void Rectangle(double left, double bottom, double right, double top, RGBA_Bytes color, double strokeWidth = 1)
-        {
-            RoundedRect rect = new RoundedRect(left + .5, bottom + .5, right - .5, top - .5, 0);
-            Stroke rectOutline = new Stroke(rect, strokeWidth);
-
-            Render(rectOutline, color);
-        }
+        public abstract void Rectangle(double left, double bottom, double right, double top, RGBA_Bytes color, double strokeWidth = 1);
 
         public void Rectangle(RectangleDouble rect, RGBA_Bytes color, double strokeWidth = 1)
         {

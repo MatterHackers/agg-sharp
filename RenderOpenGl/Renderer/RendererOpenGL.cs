@@ -307,17 +307,57 @@ namespace MatterHackers.RenderOpenGl
             throw new NotImplementedException();
         }
 
+        public override void Rectangle(double left, double bottom, double right, double top, RGBA_Bytes color, double strokeWidth)
+        {
+#if true
+            // This only works for translation. If we have a rotation or scale in the transform this will have some problems.
+            Affine transform = GetTransform();
+            double fastLeft = left;
+            double fastBottom = bottom;
+            double fastRight = right;
+            double fastTop = top;
+
+            transform.transform(ref fastLeft, ref fastBottom);
+            transform.transform(ref fastRight, ref fastTop);
+
+            if (fastLeft == (int)fastLeft
+                && fastBottom == (int)fastBottom
+                && fastRight == (int)fastRight
+                && fastTop == (int)fastTop)
+            {
+                // FillRectangle will do the traslation so use the original variables
+                FillRectangle(left, bottom, right, bottom + 1, color);
+                FillRectangle(left, top, right, top - 1, color);
+
+                FillRectangle(left, bottom, left + 1, top, color);
+                FillRectangle(right - 1, bottom, right, top, color);
+            }
+            else
+#endif
+            {
+                RoundedRect rect = new RoundedRect(left + .5, bottom + .5, right - .5, top - .5, 0);
+                Stroke rectOutline = new Stroke(rect, strokeWidth);
+
+                Render(rectOutline, color);
+            }
+        }
+
         public override void FillRectangle(double left, double bottom, double right, double top, IColorType fillColor)
         {
             // This only works for translation. If we have a rotation or scale in the transform this will have some problems.
             Affine transform = GetTransform();
-            transform.transform(ref left, ref bottom);
-            transform.transform(ref right, ref top);
+            double fastLeft = left;
+            double fastBottom = bottom;
+            double fastRight = right;
+            double fastTop = top;
 
-            if (left == (int)left
-                && bottom == (int)bottom
-                && right == (int)right
-                && top == (int)top)
+            transform.transform(ref fastLeft, ref fastBottom);
+            transform.transform(ref fastRight, ref fastTop);
+
+            if (fastLeft == (int)fastLeft
+                && fastBottom == (int)fastBottom
+                && fastRight == (int)fastRight
+                && fastTop == (int)fastTop)
             {
                 PushOrthoProjection();
 
@@ -330,16 +370,16 @@ namespace MatterHackers.RenderOpenGl
                 GL.Begin(BeginMode.Triangles);
                 // triangel 1
                 {
-                    GL.Vertex2(left, bottom);
-                    GL.Vertex2(right, bottom);
-                    GL.Vertex2(right, top);
+                    GL.Vertex2(fastLeft, fastBottom);
+                    GL.Vertex2(fastRight, fastBottom);
+                    GL.Vertex2(fastRight, fastTop);
                 }
 
                 // triangel 2
                 {
-                    GL.Vertex2(left, bottom);
-                    GL.Vertex2(right, top);
-                    GL.Vertex2(left, top);
+                    GL.Vertex2(fastLeft, fastBottom);
+                    GL.Vertex2(fastRight, fastTop);
+                    GL.Vertex2(fastLeft, fastTop);
                 }
                 GL.End();
 

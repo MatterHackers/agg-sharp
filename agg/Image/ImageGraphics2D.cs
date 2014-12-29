@@ -280,6 +280,14 @@ namespace MatterHackers.Agg
             }
         }
 
+        public override void Rectangle(double left, double bottom, double right, double top, RGBA_Bytes color, double strokeWidth)
+        {
+            RoundedRect rect = new RoundedRect(left + .5, bottom + .5, right - .5, top - .5, 0);
+            Stroke rectOutline = new Stroke(rect, strokeWidth);
+
+            Render(rectOutline, color);
+        }
+
         public override void FillRectangle(double left, double bottom, double right, double top, IColorType fillColor)
         {
             RoundedRect rect = new RoundedRect(left, bottom, right, top, 0);
