@@ -16,21 +16,8 @@ namespace MatterHackers.Agg
 #if __ANDROID__
 			// Technique for loading directly form Android Assets (Requires you create and populate the Assets->StaticData->Plugins 
 			// folder with the actual plugins you want to laod
-			//Plugins = LoadPluginsFromAssets();
+			Plugins = LoadPluginsFromAssets();
 
-			// Load plugins directly from the APK by supplying the assembly's fully qualified name and allowing the
-			// assembly loader to resolve paths using the built in probing mechanisms
-			Plugins = LoadPluginsFromConfig(new string[]{
-				"PrintNotifications, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
-				"CloudServicesAndroid, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
-				"MatterControlAuthAndroid, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
-				"PlatformAndroid, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
-				"AndroidFileDialogs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null"
-				// TODO: Get PictureCreator and TextCreator working on Android
-				/*
-				"PictureCreator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
-				"TextCreator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null"  */
-			});
 #else
 			string searchPath;
 			if (searchDirectory == null)
@@ -83,7 +70,6 @@ namespace MatterHackers.Agg
 
 			return factoryList;
 		}
-
 
 		public List<BaseClassToFind> LoadPluginsFromAssets()
 		{
