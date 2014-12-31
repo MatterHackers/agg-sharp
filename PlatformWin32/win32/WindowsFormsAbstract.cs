@@ -173,14 +173,11 @@ namespace MatterHackers.Agg.UI
             base.OnDragDrop(dragevent);
         }
 
-        bool waitingForOnIdleToFinish = false;
         void CallAppWidgetOnIdle(object sender, ElapsedEventArgs e)
         {
             if (aggAppWidget != null 
-                && !hasBeenClosed
-                && !waitingForOnIdleToFinish)
+                && !hasBeenClosed)
             {
-                waitingForOnIdleToFinish = true;
                 if (InvokeRequired)
                 {
                     // you are calling this from another thread and should not be
@@ -198,7 +195,6 @@ namespace MatterHackers.Agg.UI
         {
             IdleCount++;
             UiThread.DoRunAllPending();
-            waitingForOnIdleToFinish = false;
         }
 
         protected override void WndProc(ref Message m)
