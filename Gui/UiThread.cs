@@ -119,7 +119,7 @@ namespace MatterHackers.Agg.UI
             }
 
             // now call all the functions (we put them in backwards to make it easier to remove them as we went so run them backwards
-            for(int i=holdFunctionsToCallOnIdle.Count-1; i>=0; i--)
+            for(int i=0; i < holdFunctionsToCallOnIdle.Count; i++)
             {
                 holdFunctionsToCallOnIdle.Array[i].idleCallBack(holdFunctionsToCallOnIdle.Array[i].stateInfo);
             }
