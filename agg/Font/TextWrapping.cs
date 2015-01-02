@@ -79,7 +79,7 @@ namespace MatterHackers.Agg.Font
                 string textToWrap = originalTextToWrap;
                 while (textToWrap.Length > 0)
                 {
-                    TypeFacePrinter printer = new TypeFacePrinter(textToWrap);
+                    TypeFacePrinter printer = new TypeFacePrinter(textToWrap, styledTypeFace);
                     int remainingLength = textToWrap.Length;
                     while (printer.GetSize().x > maxPixelWidth)
                     {
