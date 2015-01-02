@@ -23,13 +23,13 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				mode = value;
                 positions3f.Clear();
-                color4i.Clear();
+                color4b.Clear();
                 textureCoords2f.Clear();
 			}
 		}
 
         internal VectorPOD<float> positions3f = new VectorPOD<float>();
-        internal VectorPOD<byte> color4i = new VectorPOD<byte>();
+        internal VectorPOD<byte> color4b = new VectorPOD<byte>();
 		internal VectorPOD<float> textureCoords2f = new VectorPOD<float>();
 	}
 #endif
@@ -372,15 +372,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
         public static void Color4(int red, int green, int blue, int alpha)
         {
-#if USE_OPENGL
             Color4((byte)red, (byte)green, (byte)blue, (byte)alpha);
-#else
-            ImediateMode.currentColor[0] = (byte)red;
-            ImediateMode.currentColor[1] = (byte)green;
-            ImediateMode.currentColor[2] = (byte)blue;
-            ImediateMode.currentColor[3] = (byte)alpha;
-            Color4(ImediateMode.currentColor[0], ImediateMode.currentColor[1], ImediateMode.currentColor[2], ImediateMode.currentColor[3]);
-#endif
         }
 
         public static void Color4(byte red, byte green, byte blue, byte alpha)
@@ -388,7 +380,12 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Color4(red, green, blue, alpha);
 #else
-			OpenTK.Graphics.ES11.GL.Color4(red, green, blue, alpha);
+            ImediateMode.currentColor[0] = (byte)red;
+            ImediateMode.currentColor[1] = (byte)green;
+            ImediateMode.currentColor[2] = (byte)blue;
+            ImediateMode.currentColor[3] = (byte)alpha;
+
+            OpenTK.Graphics.ES11.GL.Color4(ImediateMode.currentColor[0], ImediateMode.currentColor[1], ImediateMode.currentColor[2], ImediateMode.currentColor[3]);
 #endif
         }
 
@@ -553,12 +550,12 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				case BeginMode.Triangles:
 				case BeginMode.TriangleStrip:
 					{
-                        //GL.EnableClientState(ArrayCap.ColorArray);
+                        GL.EnableClientState(ArrayCap.ColorArray);
                         GL.EnableClientState(ArrayCap.VertexArray);
 						GL.EnableClientState(ArrayCap.TextureCoordArray);
 
 						float[] v = currentImediateData.positions3f.Array;
-                        //byte[] c = currentImediateData.color4i.Array;
+                        byte[] c = currentImediateData.color4b.Array;
 						float[] t = currentImediateData.textureCoords2f.Array;
 						// pin the data, so that GC doesn't move them, while used
 						// by native code
@@ -566,9 +563,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 						{
 							fixed (float* pv = v, pt = t)
 							{
-                                //fixed (byte* pc = c)
+                                fixed (byte* pc = c)
                                 {
-                                    //GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pc));
+                                    GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pc));
                                     GL.VertexPointer(2, VertexPointerType.Float, 0, new IntPtr(pv));
                                     GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(pt));
                                     GL.DrawArrays(currentImediateData.Mode, 0, currentImediateData.positions3f.Count / 2);
@@ -577,7 +574,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 						}
 						GL.DisableClientState(ArrayCap.VertexArray);
 						GL.DisableClientState(ArrayCap.TextureCoordArray);
-                        //GL.DisableClientState(ArrayCap.TextureCoordArray);
+                        GL.DisableClientState(ArrayCap.ColorArray);
 					}
 					break;
 
@@ -605,10 +602,10 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			currentImediateData.positions3f.Add((float)x);
 			currentImediateData.positions3f.Add((float)y);
 
-            currentImediateData.color4i.add(ImediateMode.currentColor[0]);
-            currentImediateData.color4i.add(ImediateMode.currentColor[1]);
-            currentImediateData.color4i.add(ImediateMode.currentColor[2]);
-            currentImediateData.color4i.add(ImediateMode.currentColor[3]);
+            currentImediateData.color4b.add(ImediateMode.currentColor[0]);
+            currentImediateData.color4b.add(ImediateMode.currentColor[1]);
+            currentImediateData.color4b.add(ImediateMode.currentColor[2]);
+            currentImediateData.color4b.add(ImediateMode.currentColor[3]);
 #endif
         }
 
