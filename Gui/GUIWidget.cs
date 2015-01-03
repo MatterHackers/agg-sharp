@@ -70,6 +70,10 @@ namespace MatterHackers.Agg.UI
     [DebuggerDisplay("Bounds = {LocalBounds}")]
     public class GuiWidget
     {
+        static bool debugShowSize = false;
+
+        ScreenClipping screenClipping;
+
         // this should probably some type of dirty rects with the current invalid set stored.
         bool isCurrentlyInvalid = true;
 
@@ -460,6 +464,7 @@ namespace MatterHackers.Agg.UI
         public GuiWidget(double width, double height, SizeLimitsToSet sizeLimits = SizeLimitsToSet.Minimum)
             : this(HAnchor.None, VAnchor.None)
         {
+            screenClipping = new ScreenClipping(this);
             if ((sizeLimits & SizeLimitsToSet.Minimum) == SizeLimitsToSet.Minimum)
             {
                 MinimumSize = new Vector2(width, height);
@@ -473,6 +478,7 @@ namespace MatterHackers.Agg.UI
 
         public GuiWidget(HAnchor hAnchor = HAnchor.None, VAnchor vAnchor = VAnchor.None)
         {
+            screenClipping = new ScreenClipping(this);
             children.CollectionChanged += children_CollectionChanged;
             LayoutEngine = new LayoutEngineSimpleAlign();
             HAnchor = hAnchor;
@@ -492,6 +498,23 @@ namespace MatterHackers.Agg.UI
             get
             {
                 return children;
+            }
+        }
+
+        public Affine ParentToChildTransform
+        {
+            get
+            {
+                return parentToChildTransform;
+            }
+
+            set
+            {
+                //if (parentToChildTransform != value)
+                {
+                    parentToChildTransform = value;
+                    screenClipping.needRebuild = true;
+                }
             }
         }
 
@@ -678,6 +701,7 @@ namespace MatterHackers.Agg.UI
 
                 if (tempLocalToParentTransform.tx != value.x || tempLocalToParentTransform.ty != value.y)
                 {
+                    screenClipping.needRebuild = true;
                     tempLocalToParentTransform.tx = value.x;
                     tempLocalToParentTransform.ty = value.y;
                     ParentToChildTransform = tempLocalToParentTransform;
@@ -800,6 +824,7 @@ namespace MatterHackers.Agg.UI
                 }
                 if (value != BoundsRelativeToParent)
                 {
+                    screenClipping.needRebuild = true;
                     value.Offset(-OriginRelativeParent.x, -OriginRelativeParent.y);
                     LocalBounds = value;
 #if false
@@ -1730,38 +1755,77 @@ namespace MatterHackers.Agg.UI
                 graphics2D.Line(LocalBounds.Left, LocalBounds.Top, LocalBounds.Right, LocalBounds.Bottom, RGBA_Bytes.Green);
                 graphics2D.Rectangle(LocalBounds, RGBA_Bytes.Red);
             }
-            if (showSize)
+            if (debugShowSize)
             {
                 graphics2D.DrawString(string.Format("{4} {0}, {1} : {2}, {3}", (int)MinimumSize.x, (int)MinimumSize.y, (int)LocalBounds.Width, (int)LocalBounds.Height, Name),
                     Width / 2, Math.Max(Height - 16, Height / 2 - 16 * graphics2D.TransformStackCount), color: RGBA_Bytes.Magenta, justification: Font.Justification.Center);
             }
         }
 
-        static bool showSize = false;
-
-        protected virtual bool CurrentScreenClipping(out RectangleDouble screenClipping)
+        internal class ScreenClipping
         {
-            screenClipping = TransformToScreenSpace(LocalBounds);
-
-            if (Parent != null)
+            GuiWidget attachedTo;
+            internal bool needRebuild2 = true;
+            internal bool needRebuild
             {
-                RectangleDouble screenParentClipping;
-                if (!Parent.CurrentScreenClipping(out screenParentClipping))
+                get { return needRebuild2; }
+                set
                 {
-                    // the parent is completely clipped away, so this is too.
-                    return false;
-                }
+                    if (value)
+                    {
+                        foreach (GuiWidget child in attachedTo.Children)
+                        {
+                            child.screenClipping.needRebuild = true;
+                        }
+                    }
 
-                RectangleDouble intersectionRect = new RectangleDouble();
-                if (!intersectionRect.IntersectRectangles(screenClipping, screenParentClipping))
-                {
-                    // this rect is clipped away by the parent rect so return false.
-                    return false;
+                    needRebuild2 = value;
                 }
-                screenClipping = intersectionRect;
+            }
+            internal bool visibleAfterClipping = true;
+            internal RectangleDouble screenClippingRect;
+
+            internal ScreenClipping(GuiWidget attachedTo)
+            {
+                this.attachedTo = attachedTo;
+            }
+        }
+
+        protected virtual bool CurrentScreenClipping(out RectangleDouble screenClippingRect)
+        {
+            if (screenClipping.needRebuild)
+            {
+                //DrawCount++;
+                screenClipping.screenClippingRect = TransformToScreenSpace(LocalBounds);
+
+                if (Parent != null)
+                {
+                    RectangleDouble screenParentClipping;
+                    if (Parent.CurrentScreenClipping(out screenParentClipping))
+                    {
+                        RectangleDouble intersectionRect = new RectangleDouble();
+                        if (intersectionRect.IntersectRectangles(screenClipping.screenClippingRect, screenParentClipping))
+                        {
+                            screenClipping.screenClippingRect = intersectionRect;
+                            screenClipping.visibleAfterClipping = true;
+                        }
+                        else
+                        {
+                            // this rect is clipped away by the parent rect so return false.
+                            screenClipping.visibleAfterClipping = false;
+                        }
+                    }
+                    else
+                    {
+                        // the parent is completely clipped away, so this is too.
+                        screenClipping.visibleAfterClipping = false;
+                    }
+                }
+                screenClipping.needRebuild = false;
             }
 
-            return true;
+            screenClippingRect = screenClipping.screenClippingRect;
+            return screenClipping.visibleAfterClipping;
         }
 
         public virtual void OnClosing(out bool cancelClose)
@@ -2615,20 +2679,5 @@ namespace MatterHackers.Agg.UI
                 KeyUp(this, keyEvent);
             }
         }
-
-        public Affine ParentToChildTransform
-        {
-            get
-            {
-                return parentToChildTransform;
-            }
-
-            set
-            {
-                parentToChildTransform = value;
-            }
-        }
-
-        public double scale() { return ParentToChildTransform.GetScale(); }
     }
 }

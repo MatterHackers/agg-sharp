@@ -157,7 +157,7 @@ namespace MatterHackers.Agg.UI
             m_poly.rewind(0);
             m_idx = idx;
 
-            m_curve.approximation_scale(base.scale());
+            m_curve.approximation_scale(1);
             switch (idx)
             {
                 default:
