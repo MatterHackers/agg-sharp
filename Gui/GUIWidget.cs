@@ -513,8 +513,7 @@ namespace MatterHackers.Agg.UI
                 //if (parentToChildTransform != value)
                 {
                     parentToChildTransform = value;
-                    screenClipping.MarkChildrenNeedRebuild();
-                    screenClipping.MarkParentsNeedRebuild();
+                    screenClipping.MarkRecalculate();
                 }
             }
         }
@@ -702,8 +701,7 @@ namespace MatterHackers.Agg.UI
 
                 if (tempLocalToParentTransform.tx != value.x || tempLocalToParentTransform.ty != value.y)
                 {
-                    screenClipping.MarkChildrenNeedRebuild();
-                    screenClipping.MarkParentsNeedRebuild();
+                    screenClipping.MarkRecalculate();
                     tempLocalToParentTransform.tx = value.x;
                     tempLocalToParentTransform.ty = value.y;
                     ParentToChildTransform = tempLocalToParentTransform;
@@ -801,6 +799,8 @@ namespace MatterHackers.Agg.UI
                     {
                         AllocateBackBuffer();
                     }
+
+                    screenClipping.MarkRecalculate();
                 }
             }
         }
@@ -826,8 +826,6 @@ namespace MatterHackers.Agg.UI
                 }
                 if (value != BoundsRelativeToParent)
                 {
-                    screenClipping.MarkChildrenNeedRebuild();
-                    screenClipping.MarkParentsNeedRebuild();
                     value.Offset(-OriginRelativeParent.x, -OriginRelativeParent.y);
                     LocalBounds = value;
 #if false
@@ -1051,8 +1049,7 @@ namespace MatterHackers.Agg.UI
                     }
 
                     Invalidate();
-                    screenClipping.MarkChildrenNeedRebuild();
-                    screenClipping.MarkParentsNeedRebuild();
+                    screenClipping.MarkRecalculate();
                 }
             }
         }
@@ -1780,7 +1777,7 @@ namespace MatterHackers.Agg.UI
                 }
             }
 
-            internal void MarkParentsNeedRebuild()
+            internal void MarkRecalculate()
             {
                 GuiWidget nextParent = attachedTo.Parent;
                 while (nextParent != null)
@@ -1788,14 +1785,16 @@ namespace MatterHackers.Agg.UI
                     nextParent.screenClipping.NeedRebuild = true;
                     nextParent = nextParent.Parent;
                 }
+
+                MarkChildrenRecaculate();
             }
 
-            internal void MarkChildrenNeedRebuild()
+            void MarkChildrenRecaculate()
             {
                 NeedRebuild = true;
                 foreach (GuiWidget child in attachedTo.Children)
                 {
-                    child.screenClipping.MarkChildrenNeedRebuild();
+                    child.screenClipping.MarkChildrenRecaculate();
                 }
             }
 
