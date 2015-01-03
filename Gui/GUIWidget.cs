@@ -36,29 +36,29 @@ namespace MatterHackers.Agg.UI
     }
 
     [Flags]
-    public enum HAnchor 
+    public enum HAnchor
     {
         None = 0,
-        ParentLeft = 1, 
-        ParentCenter = 2, 
+        ParentLeft = 1,
+        ParentCenter = 2,
         ParentRight = 4,
         FitToChildren = 8,
-        ParentLeftRight = ParentLeft | ParentRight, 
-        ParentLeftCenter = ParentLeft | ParentCenter, 
+        ParentLeftRight = ParentLeft | ParentRight,
+        ParentLeftCenter = ParentLeft | ParentCenter,
         ParentCenterRight = ParentCenter | ParentRight,
         Max_FitToChildren_ParentWidth = FitToChildren | ParentLeftRight,
     };
 
     [Flags]
-    public enum VAnchor 
+    public enum VAnchor
     {
-        None = 0, 
-        ParentBottom = 1, 
-        ParentCenter = 2, 
+        None = 0,
+        ParentBottom = 1,
+        ParentCenter = 2,
         ParentTop = 4,
         FitToChildren = 8,
-        ParentBottomTop = ParentBottom | ParentTop, 
-        ParentBottomCenter = ParentBottom | ParentCenter, 
+        ParentBottomTop = ParentBottom | ParentTop,
+        ParentBottomCenter = ParentBottom | ParentCenter,
         ParentCenterTop = ParentCenter | ParentTop,
         Max_FitToChildren_ParentHeight = FitToChildren | ParentBottomTop,
     };
@@ -85,7 +85,7 @@ namespace MatterHackers.Agg.UI
         bool debugShowBounds = false;
         bool widgetHasBeenClosed = false;
         protected bool WidgetHasBeenClosed { get { return widgetHasBeenClosed; } }
-        public bool DebugShowBounds 
+        public bool DebugShowBounds
         {
             get
             {
@@ -97,7 +97,7 @@ namespace MatterHackers.Agg.UI
                     }
                 }
 
-                return debugShowBounds; 
+                return debugShowBounds;
             }
 
             set
@@ -127,7 +127,7 @@ namespace MatterHackers.Agg.UI
         }
 
         bool enforceIntegerBounds = DefaultEnforceIntegerBounds;
-        public bool EnforceIntegerBounds 
+        public bool EnforceIntegerBounds
         {
             get { return enforceIntegerBounds; }
 
@@ -145,10 +145,10 @@ namespace MatterHackers.Agg.UI
         private bool enabled = true;
 
         bool selectable = true;
-        public bool Selectable 
+        public bool Selectable
         {
-            get {return selectable; }
-            set { selectable = value; } 
+            get { return selectable; }
+            set { selectable = value; }
         }
 
         enum MouseCapturedState { NotCaptured, ChildHasMouseCaptured, ThisHasMouseCaptured };
@@ -158,7 +158,7 @@ namespace MatterHackers.Agg.UI
         public virtual int TabIndex { get; set; }
 
         RGBA_Bytes backgroundColor = new RGBA_Bytes();
-        public RGBA_Bytes BackgroundColor 
+        public RGBA_Bytes BackgroundColor
         {
             get { return backgroundColor; }
             set
@@ -176,7 +176,7 @@ namespace MatterHackers.Agg.UI
         /// <summary>
         /// The space between the Widget and it's contents (the inside border).
         /// </summary>
-        public virtual BorderDouble Padding 
+        public virtual BorderDouble Padding
         {
             get { return padding; }
             set
@@ -248,7 +248,7 @@ namespace MatterHackers.Agg.UI
             return (HAnchor & testFlags) == testFlags;
         }
 
-        public bool HAnchorIsFloating 
+        public bool HAnchorIsFloating
         {
             get
             {
@@ -381,7 +381,7 @@ namespace MatterHackers.Agg.UI
         // the event args will be a DrawEventArgs
         public event DrawEventHandler DrawBefore;
         public event DrawEventHandler DrawAfter;
-    
+
         public event KeyPressEventHandler KeyPressed;
 
         public event EventHandler Invalidated;
@@ -412,8 +412,8 @@ namespace MatterHackers.Agg.UI
         public event MouseEventHandler MouseWheel;
         public event MouseEventHandler MouseMove;
 
-		public delegate void FlingEventHandler(object sender, FlingEventArgs eventArgs);
-		public event FlingEventHandler GestureFling;
+        public delegate void FlingEventHandler(object sender, FlingEventArgs eventArgs);
+        public event FlingEventHandler GestureFling;
 
         /// <summary>
         /// The mouse has entered the bounds of this widget.  It may also be over a child.
@@ -438,7 +438,7 @@ namespace MatterHackers.Agg.UI
         public event EventHandler BoundsChanged;
 
         public event EventHandler MarginChanged;
-        
+
         public event EventHandler PaddingChanged;
 
         public event EventHandler MinimumSizeChanged;
@@ -513,7 +513,8 @@ namespace MatterHackers.Agg.UI
                 //if (parentToChildTransform != value)
                 {
                     parentToChildTransform = value;
-                    screenClipping.needRebuild = true;
+                    screenClipping.MarkChildrenNeedRebuild();
+                    screenClipping.MarkParentsNeedRebuild();
                 }
             }
         }
@@ -574,7 +575,7 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        public bool DoubleBuffer 
+        public bool DoubleBuffer
         {
             get
             {
@@ -675,7 +676,7 @@ namespace MatterHackers.Agg.UI
                         ThrowExceptionInDebug("These have to be 0 or greater.");
                     }
                     maximumSize = value;
-                    
+
                     minimumSize.x = Math.Min(minimumSize.x, maximumSize.x);
                     minimumSize.y = Math.Min(minimumSize.y, maximumSize.y);
                 }
@@ -701,7 +702,8 @@ namespace MatterHackers.Agg.UI
 
                 if (tempLocalToParentTransform.tx != value.x || tempLocalToParentTransform.ty != value.y)
                 {
-                    screenClipping.needRebuild = true;
+                    screenClipping.MarkChildrenNeedRebuild();
+                    screenClipping.MarkParentsNeedRebuild();
                     tempLocalToParentTransform.tx = value.x;
                     tempLocalToParentTransform.ty = value.y;
                     ParentToChildTransform = tempLocalToParentTransform;
@@ -767,7 +769,7 @@ namespace MatterHackers.Agg.UI
                 {
                     value.Top = value.Bottom + MaximumSize.y;
                 }
-                
+
                 if (EnforceIntegerBounds)
                 {
                     value.Left = Math.Floor(value.Left);
@@ -824,7 +826,8 @@ namespace MatterHackers.Agg.UI
                 }
                 if (value != BoundsRelativeToParent)
                 {
-                    screenClipping.needRebuild = true;
+                    screenClipping.MarkChildrenNeedRebuild();
+                    screenClipping.MarkParentsNeedRebuild();
                     value.Offset(-OriginRelativeParent.x, -OriginRelativeParent.y);
                     LocalBounds = value;
 #if false
@@ -1008,7 +1011,7 @@ namespace MatterHackers.Agg.UI
 
         public void SetBoundsRelativeToParent(RectangleInt newBounds)
         {
-            RectangleDouble bounds =  new RectangleDouble(newBounds.Left, newBounds.Bottom, newBounds.Right, newBounds.Top);
+            RectangleDouble bounds = new RectangleDouble(newBounds.Left, newBounds.Bottom, newBounds.Right, newBounds.Top);
 
             BoundsRelativeToParent = bounds;
         }
@@ -1040,7 +1043,7 @@ namespace MatterHackers.Agg.UI
                     }
 
                     OnVisibleChanged(null);
-                    
+
                     OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.Visible));
                     if (this.Parent != null)
                     {
@@ -1048,6 +1051,8 @@ namespace MatterHackers.Agg.UI
                     }
 
                     Invalidate();
+                    screenClipping.MarkChildrenNeedRebuild();
+                    screenClipping.MarkParentsNeedRebuild();
                 }
             }
         }
@@ -1392,7 +1397,7 @@ namespace MatterHackers.Agg.UI
                     widgetNeedingFocus = widgetNeedingFocus.Parent;
                 }
 
-                GuiWidget currentWithFocus = allWidgetsThatWillContainFocus[allWidgetsThatWillContainFocus.Count-1];
+                GuiWidget currentWithFocus = allWidgetsThatWillContainFocus[allWidgetsThatWillContainFocus.Count - 1];
                 while (currentWithFocus != null)
                 {
                     allWidgetsThatCurrentlyHaveFocus.Add(currentWithFocus);
@@ -1473,9 +1478,9 @@ namespace MatterHackers.Agg.UI
 
         public bool CanSelect
         {
-            get 
+            get
             {
-                if(Selectable && Parent != null && AllParentsVisibleAndEnabled())
+                if (Selectable && Parent != null && AllParentsVisibleAndEnabled())
                 {
                     return true;
                 }
@@ -1665,7 +1670,7 @@ namespace MatterHackers.Agg.UI
         public virtual void OnDraw(Graphics2D graphics2D)
         {
             DrawCount++;
-            
+
             if (DrawBefore != null)
             {
                 DrawBefore(this, new DrawEventArgs(graphics2D));
@@ -1765,23 +1770,35 @@ namespace MatterHackers.Agg.UI
         internal class ScreenClipping
         {
             GuiWidget attachedTo;
-            internal bool needRebuild2 = true;
-            internal bool needRebuild
+            internal bool needRebuild = true;
+            internal bool NeedRebuild
             {
-                get { return needRebuild2; }
+                get { return needRebuild; }
                 set
                 {
-                    if (value)
-                    {
-                        foreach (GuiWidget child in attachedTo.Children)
-                        {
-                            child.screenClipping.needRebuild = true;
-                        }
-                    }
-
-                    needRebuild2 = value;
+                    needRebuild = value;
                 }
             }
+
+            internal void MarkParentsNeedRebuild()
+            {
+                GuiWidget nextParent = attachedTo.Parent;
+                while (nextParent != null)
+                {
+                    nextParent.screenClipping.NeedRebuild = true;
+                    nextParent = nextParent.Parent;
+                }
+            }
+
+            internal void MarkChildrenNeedRebuild()
+            {
+                NeedRebuild = true;
+                foreach (GuiWidget child in attachedTo.Children)
+                {
+                    child.screenClipping.MarkChildrenNeedRebuild();
+                }
+            }
+
             internal bool visibleAfterClipping = true;
             internal RectangleDouble screenClippingRect;
 
@@ -1793,9 +1810,9 @@ namespace MatterHackers.Agg.UI
 
         protected virtual bool CurrentScreenClipping(out RectangleDouble screenClippingRect)
         {
-            if (screenClipping.needRebuild)
+            if (screenClipping.NeedRebuild)
             {
-                //DrawCount++;
+                DrawCount++;
                 screenClipping.screenClippingRect = TransformToScreenSpace(LocalBounds);
 
                 if (Parent != null)
@@ -1821,7 +1838,7 @@ namespace MatterHackers.Agg.UI
                         screenClipping.visibleAfterClipping = false;
                     }
                 }
-                screenClipping.needRebuild = false;
+                screenClipping.NeedRebuild = false;
             }
 
             screenClippingRect = screenClipping.screenClippingRect;
@@ -1857,9 +1874,9 @@ namespace MatterHackers.Agg.UI
 
         public void CloseOnIdle()
         {
-            UiThread.RunOnIdle((state) => 
+            UiThread.RunOnIdle((state) =>
             {
-                Close(); 
+                Close();
             });
         }
 
@@ -1876,7 +1893,7 @@ namespace MatterHackers.Agg.UI
             if (!widgetHasBeenClosed)
             {
                 widgetHasBeenClosed = true;
-                for(int i=Children.Count-1; i>=0; i--)
+                for (int i = Children.Count - 1; i >= 0; i--)
                 {
                     GuiWidget child = Children[i];
                     Children.RemoveAt(i);
@@ -2007,12 +2024,12 @@ namespace MatterHackers.Agg.UI
 
             underMouseState = UI.UnderMouseState.NotUnderMouse;
 
-            if(needToCallLeave)
+            if (needToCallLeave)
             {
                 OnMouseLeave(mouseEvent);
             }
 
-            if(needToCallLeaveBounds)
+            if (needToCallLeaveBounds)
             {
                 OnMouseLeaveBounds(mouseEvent);
             }
@@ -2027,36 +2044,36 @@ namespace MatterHackers.Agg.UI
             underMouseState = UI.UnderMouseState.NotUnderMouse;
         }
 
-		public virtual void OnGestureFling(FlingEventArgs flingEvent)
-		{
-			if (PositionWithinLocalBounds(flingEvent.X, flingEvent.Y))
-			{
-				//bool childHasAcceptedThisEvent = false;
-				for (int i = Children.Count - 1; i >= 0; i--)
-				{
-					GuiWidget child = Children[i];
-					if (child.Visible & child.Enabled)
-					{
-						double childX = flingEvent.X;
-						double childY = flingEvent.Y;
-						child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
-						FlingEventArgs childFlingEvent = new FlingEventArgs(childX, childY, flingEvent.Direction);
+        public virtual void OnGestureFling(FlingEventArgs flingEvent)
+        {
+            if (PositionWithinLocalBounds(flingEvent.X, flingEvent.Y))
+            {
+                //bool childHasAcceptedThisEvent = false;
+                for (int i = Children.Count - 1; i >= 0; i--)
+                {
+                    GuiWidget child = Children[i];
+                    if (child.Visible & child.Enabled)
+                    {
+                        double childX = flingEvent.X;
+                        double childY = flingEvent.Y;
+                        child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
+                        FlingEventArgs childFlingEvent = new FlingEventArgs(childX, childY, flingEvent.Direction);
 
 
-						if (child.PositionWithinLocalBounds(childFlingEvent.X, childFlingEvent.Y))
-						{
-							// recurse in
-							child.OnGestureFling(childFlingEvent);
-						}
-					}
-				}
+                        if (child.PositionWithinLocalBounds(childFlingEvent.X, childFlingEvent.Y))
+                        {
+                            // recurse in
+                            child.OnGestureFling(childFlingEvent);
+                        }
+                    }
+                }
 
-				if (GestureFling != null)
-				{
-					GestureFling(this, flingEvent);
-				}
-			}
-		}
+                if (GestureFling != null)
+                {
+                    GestureFling(this, flingEvent);
+                }
+            }
+        }
 
         public virtual void OnMouseDown(MouseEventArgs mouseEvent)
         {
@@ -2332,7 +2349,7 @@ namespace MatterHackers.Agg.UI
         int childrenLockedInMouseUpCount = 0;
         public virtual void OnMouseUp(MouseEventArgs mouseEvent)
         {
-            if (childrenLockedInMouseUpCount != 0) 
+            if (childrenLockedInMouseUpCount != 0)
             {
                 ThrowExceptionInDebug("This should not be locked.");
             }
