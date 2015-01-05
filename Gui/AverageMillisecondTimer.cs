@@ -59,9 +59,9 @@ namespace MatterHackers.Agg.UI
             return totalMsInArray / averageCount;
         }
 
-        public void DrawTopCenter(GuiWidget widgetToDrawOn, Graphics2D graphics2D)
+        public void Draw(Graphics2D graphics2D, double x, double y)
         {
-            graphics2D.DrawString("{0}ms".FormatWith(GetAverage()), widgetToDrawOn.Width / 2 - 15, widgetToDrawOn.Height - 40, 16, color: RGBA_Bytes.White, drawFromHintedCach: true);
+            graphics2D.DrawString("{0}ms".FormatWith(GetAverage()), x, y, 16, color: RGBA_Bytes.White, drawFromHintedCach: true);
         }
     }
 }
