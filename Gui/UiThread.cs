@@ -9,11 +9,10 @@ namespace MatterHackers.Agg.UI
     public delegate void IdleCallback(object state);
     public static class UiThread
     {
-        static VectorPOD<CallBackAndState> holdFunctionsToCallOnIdle = new VectorPOD<CallBackAndState>();
-        static VectorPOD<CallBackAndState> functionsToCallOnIdle = new VectorPOD<CallBackAndState>();
+        static List<CallBackAndState> functionsToCallOnIdle = new List<CallBackAndState>();
         static Stopwatch timer = new Stopwatch();
 
-        struct CallBackAndState
+        class CallBackAndState
         {
             internal IdleCallback idleCallBack;
             internal object stateInfo;
@@ -38,22 +37,9 @@ namespace MatterHackers.Agg.UI
             {
                 timer.Start();
             }
-
-            long timeToRunAt = timer.ElapsedMilliseconds + (int)(delayInSeconds * 1000);
             using (TimedLock.Lock(functionsToCallOnIdle, "PendingUiEvents AddAction()"))
             {
-                int newItemIndex = functionsToCallOnIdle.Count;
-                if (functionsToCallOnIdle.Capacity() > newItemIndex)
-                {
-                    functionsToCallOnIdle.Array[newItemIndex].idleCallBack = callBack;
-                    functionsToCallOnIdle.Array[newItemIndex].stateInfo = state;
-                    functionsToCallOnIdle.Array[newItemIndex].absoluteMillisecondsToRunAt = timeToRunAt;
-                    functionsToCallOnIdle.inc_size(1);
-                }
-                else
-                {
-                    functionsToCallOnIdle.Add(new CallBackAndState(callBack, state, timeToRunAt));
-                }
+                functionsToCallOnIdle.Add(new CallBackAndState(callBack, state, timer.ElapsedMilliseconds + (int)(delayInSeconds * 1000)));
             }
         }
 
@@ -70,59 +56,44 @@ namespace MatterHackers.Agg.UI
             get
             {
                 int count = 0;
-                // make a copy so we don't keep this locked for long
                 using (TimedLock.Lock(functionsToCallOnIdle, "PendingUiEvents AddAction()"))
                 {
                     long currentMilliseconds = timer.ElapsedMilliseconds;
-                    for (int i = 0; i < functionsToCallOnIdle.Count; i++)
+                    for (int i = 0; i < functionsToCallOnIdle.Count; i++ )
                     {
-                        if (functionsToCallOnIdle.Array[i].absoluteMillisecondsToRunAt <= currentMilliseconds)
+                        if (functionsToCallOnIdle[i].absoluteMillisecondsToRunAt <= currentMilliseconds)
                         {
                             count++;
                         }
                     }
                 }
-
                 return count;
             }
         }
         
         public static void DoRunAllPending()
         {
+            List<CallBackAndState> holdFunctionsToCallOnIdle = new List<CallBackAndState>();
+            // make a copy so we don't keep this locked for long
             using (TimedLock.Lock(functionsToCallOnIdle, "PendingUiEvents AddAction()"))
             {
-                holdFunctionsToCallOnIdle.Clear();
-                // make a copy so we don't keep this locked for long
                 long currentMilliseconds = timer.ElapsedMilliseconds;
-                // We go back to front so that it is easier to remove items, we don't have to change our indexer.
-                for(int functionToCallIndex=functionsToCallOnIdle.Count-1; functionToCallIndex>=0; functionToCallIndex--)
+                for(int i=functionsToCallOnIdle.Count-1; i>=0; i--)
                 {
-                    if (functionsToCallOnIdle.Array[functionToCallIndex].absoluteMillisecondsToRunAt <= currentMilliseconds)
+                    CallBackAndState callBackAndState = functionsToCallOnIdle[i];
+                    if (callBackAndState.absoluteMillisecondsToRunAt <= currentMilliseconds)
                     {
-                        int newHoldIndex = holdFunctionsToCallOnIdle.Count;
-                        if (holdFunctionsToCallOnIdle.Capacity() > newHoldIndex)
-                        {
-                            holdFunctionsToCallOnIdle.Array[newHoldIndex].idleCallBack = functionsToCallOnIdle.Array[functionToCallIndex].idleCallBack;
-                            holdFunctionsToCallOnIdle.Array[newHoldIndex].stateInfo = functionsToCallOnIdle.Array[functionToCallIndex].stateInfo;
-                            holdFunctionsToCallOnIdle.Array[newHoldIndex].absoluteMillisecondsToRunAt = functionsToCallOnIdle.Array[functionToCallIndex].absoluteMillisecondsToRunAt;
-                            holdFunctionsToCallOnIdle.inc_size(1);
-                        }
-                        else
-                        {
-                            holdFunctionsToCallOnIdle.Add(new CallBackAndState(functionsToCallOnIdle.Array[functionToCallIndex].idleCallBack,
-                                functionsToCallOnIdle.Array[functionToCallIndex].stateInfo,
-                                functionsToCallOnIdle.Array[functionToCallIndex].absoluteMillisecondsToRunAt));
-                        }
-
-                        functionsToCallOnIdle.RemoveAt(functionToCallIndex);
+                        holdFunctionsToCallOnIdle.Add(new CallBackAndState(callBackAndState.idleCallBack, callBackAndState.stateInfo, callBackAndState.absoluteMillisecondsToRunAt));
+                        functionsToCallOnIdle.RemoveAt(i);
                     }
                 }
             }
 
-            // now call all the functions (we put them in backwards to make it easier to remove them as we went so run them backwards)
-            for (int holdFunctionIndex = holdFunctionsToCallOnIdle.Count - 1; holdFunctionIndex >= 0; holdFunctionIndex--)
+            // now call all the functions (we put them in backwards to make it easier to remove them as we went so run them backwards
+            for(int i=holdFunctionsToCallOnIdle.Count-1; i>=0; i--)
             {
-                holdFunctionsToCallOnIdle.Array[holdFunctionIndex].idleCallBack(holdFunctionsToCallOnIdle.Array[holdFunctionIndex].stateInfo);
+                CallBackAndState callBackAndState = holdFunctionsToCallOnIdle[i];
+                callBackAndState.idleCallBack(callBackAndState.stateInfo);
             }
         }
     }
