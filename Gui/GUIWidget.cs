@@ -1438,7 +1438,7 @@ namespace MatterHackers.Agg.UI
                 } while (curWidget != null);
 
                 // finally call any delegates
-                OnFocus(null);
+                OnGotFocus(null);
 
                 return true;
             }
@@ -1462,14 +1462,6 @@ namespace MatterHackers.Agg.UI
                 {
                     child.Unfocus();
                 }
-            }
-        }
-
-        public virtual void OnFocus(EventArgs e)
-        {
-            if (GotFocus != null)
-            {
-                GotFocus(this, e);
             }
         }
 

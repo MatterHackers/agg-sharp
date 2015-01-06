@@ -283,13 +283,20 @@ namespace MatterHackers.Agg.UI
             Invalidate();
         }
 
+        public bool SelectAllOnFocus { get; set; }
+        bool selectAllOnMouseUpIfNoSelection = false;
+
         string textWhenGotFocus;
-        public override void OnFocus(EventArgs e)
+        public override void OnGotFocus(EventArgs e)
         {
             RestartBarFlash();
             textWhenGotFocus = Text;
             timeSinceTurnOn.Restart();
-            base.OnFocus(e);
+            if (SelectAllOnFocus)
+            {
+                selectAllOnMouseUpIfNoSelection = true;
+            }
+            base.OnGotFocus(e);
         }
 
         public override void OnLostFocus(EventArgs e)
@@ -499,6 +506,13 @@ namespace MatterHackers.Agg.UI
         public override void OnMouseUp(MouseEventArgs mouseEvent)
         {
             mouseIsDown = false;
+            if (SelectAllOnFocus
+                && selectAllOnMouseUpIfNoSelection
+                && Selecting == false)
+            {
+                SelectAll();
+            }
+            selectAllOnMouseUpIfNoSelection = false;
             base.OnMouseUp(mouseEvent);
         }
 
