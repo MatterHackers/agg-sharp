@@ -42,12 +42,12 @@ namespace MatterHackers.Agg.UI
             long timeToRunAt = timer.ElapsedMilliseconds + (int)(delayInSeconds * 1000);
             using (TimedLock.Lock(functionsToCallOnIdle, "PendingUiEvents AddAction()"))
             {
-                int count = functionsToCallOnIdle.Count;
-                if (functionsToCallOnIdle.Capacity() > count)
+                int newItemIndex = functionsToCallOnIdle.Count;
+                if (functionsToCallOnIdle.Capacity() > newItemIndex)
                 {
-                    functionsToCallOnIdle.Array[count].idleCallBack = callBack;
-                    functionsToCallOnIdle.Array[count].stateInfo = state;
-                    functionsToCallOnIdle.Array[count].absoluteMillisecondsToRunAt = timeToRunAt;
+                    functionsToCallOnIdle.Array[newItemIndex].idleCallBack = callBack;
+                    functionsToCallOnIdle.Array[newItemIndex].stateInfo = state;
+                    functionsToCallOnIdle.Array[newItemIndex].absoluteMillisecondsToRunAt = timeToRunAt;
                     functionsToCallOnIdle.inc_size(1);
                 }
                 else
@@ -74,7 +74,7 @@ namespace MatterHackers.Agg.UI
                 using (TimedLock.Lock(functionsToCallOnIdle, "PendingUiEvents AddAction()"))
                 {
                     long currentMilliseconds = timer.ElapsedMilliseconds;
-                    for (int i = functionsToCallOnIdle.Count - 1; i >= 0; i--)
+                    for (int i = 0; i < functionsToCallOnIdle.Count; i++)
                     {
                         if (functionsToCallOnIdle.Array[i].absoluteMillisecondsToRunAt <= currentMilliseconds)
                         {
@@ -89,39 +89,40 @@ namespace MatterHackers.Agg.UI
         
         public static void DoRunAllPending()
         {
-            holdFunctionsToCallOnIdle.Clear();
-            // make a copy so we don't keep this locked for long
             using (TimedLock.Lock(functionsToCallOnIdle, "PendingUiEvents AddAction()"))
             {
+                holdFunctionsToCallOnIdle.Clear();
+                // make a copy so we don't keep this locked for long
                 long currentMilliseconds = timer.ElapsedMilliseconds;
-                for(int i=functionsToCallOnIdle.Count-1; i>=0; i--)
+                // We go back to front so that it is easier to remove items, we don't have to change our indexer.
+                for(int functionToCallIndex=functionsToCallOnIdle.Count-1; functionToCallIndex>=0; functionToCallIndex--)
                 {
-                    if (functionsToCallOnIdle.Array[i].absoluteMillisecondsToRunAt <= currentMilliseconds)
+                    if (functionsToCallOnIdle.Array[functionToCallIndex].absoluteMillisecondsToRunAt <= currentMilliseconds)
                     {
-                        int count = holdFunctionsToCallOnIdle.Count;
-                        if (holdFunctionsToCallOnIdle.Capacity() > count)
+                        int newHoldIndex = holdFunctionsToCallOnIdle.Count;
+                        if (holdFunctionsToCallOnIdle.Capacity() > newHoldIndex)
                         {
-                            holdFunctionsToCallOnIdle.Array[count].idleCallBack = functionsToCallOnIdle.Array[i].idleCallBack;
-                            holdFunctionsToCallOnIdle.Array[count].stateInfo = functionsToCallOnIdle.Array[i].stateInfo;
-                            holdFunctionsToCallOnIdle.Array[count].absoluteMillisecondsToRunAt = functionsToCallOnIdle.Array[i].absoluteMillisecondsToRunAt;
+                            holdFunctionsToCallOnIdle.Array[newHoldIndex].idleCallBack = functionsToCallOnIdle.Array[functionToCallIndex].idleCallBack;
+                            holdFunctionsToCallOnIdle.Array[newHoldIndex].stateInfo = functionsToCallOnIdle.Array[functionToCallIndex].stateInfo;
+                            holdFunctionsToCallOnIdle.Array[newHoldIndex].absoluteMillisecondsToRunAt = functionsToCallOnIdle.Array[functionToCallIndex].absoluteMillisecondsToRunAt;
                             holdFunctionsToCallOnIdle.inc_size(1);
                         }
                         else
                         {
-                            holdFunctionsToCallOnIdle.Add(new CallBackAndState(functionsToCallOnIdle.Array[i].idleCallBack,
-                                functionsToCallOnIdle.Array[i].stateInfo,
-                                functionsToCallOnIdle.Array[i].absoluteMillisecondsToRunAt));
+                            holdFunctionsToCallOnIdle.Add(new CallBackAndState(functionsToCallOnIdle.Array[functionToCallIndex].idleCallBack,
+                                functionsToCallOnIdle.Array[functionToCallIndex].stateInfo,
+                                functionsToCallOnIdle.Array[functionToCallIndex].absoluteMillisecondsToRunAt));
                         }
 
-                        functionsToCallOnIdle.RemoveAt(i);
+                        functionsToCallOnIdle.RemoveAt(functionToCallIndex);
                     }
                 }
             }
 
-            // now call all the functions (we put them in backwards to make it easier to remove them as we went so run them backwards
-            for(int i=0; i < holdFunctionsToCallOnIdle.Count; i++)
+            // now call all the functions (we put them in backwards to make it easier to remove them as we went so run them backwards)
+            for (int holdFunctionIndex = holdFunctionsToCallOnIdle.Count - 1; holdFunctionIndex >= 0; holdFunctionIndex--)
             {
-                holdFunctionsToCallOnIdle.Array[i].idleCallBack(holdFunctionsToCallOnIdle.Array[i].stateInfo);
+                holdFunctionsToCallOnIdle.Array[holdFunctionIndex].idleCallBack(holdFunctionsToCallOnIdle.Array[holdFunctionIndex].stateInfo);
             }
         }
     }
