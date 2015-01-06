@@ -75,9 +75,12 @@ namespace MatterHackers.MeshVisualizer
 
         public static RGBA_Bytes GetMaterialColor(int materialIndexBase1)
         {
-            if (materialColors.ContainsKey(materialIndexBase1))
+            using (TimedLock.Lock(materialColors, "GettingMaterialColors"))
             {
-                return materialColors[materialIndexBase1];
+                if (materialColors.ContainsKey(materialIndexBase1))
+                {
+                    return materialColors[materialIndexBase1];
+                }
             }
 
             // we currently expect at most 4 extruders
@@ -101,13 +104,16 @@ namespace MatterHackers.MeshVisualizer
 
         public static void SetMaterialColor(int materialIndexBase1, RGBA_Bytes color)
         {
-            if (!materialColors.ContainsKey(materialIndexBase1))
+            using (TimedLock.Lock(materialColors, "SettingMaterialColors"))
             {
-                materialColors.Add(materialIndexBase1, color);
-            }
-            else
-            {
-                materialColors[materialIndexBase1] = color;
+                if (!materialColors.ContainsKey(materialIndexBase1))
+                {
+                    materialColors.Add(materialIndexBase1, color);
+                }
+                else
+                {
+                    materialColors[materialIndexBase1] = color;
+                }
             }
         }
 
