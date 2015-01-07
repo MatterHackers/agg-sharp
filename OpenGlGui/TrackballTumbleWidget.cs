@@ -383,7 +383,10 @@ namespace MatterHackers.Agg.OpenGlGui
         public Matrix4X4 GetProjectionMatrix()
         {
             Matrix4X4 projectionMatrix = Matrix4X4.Identity;
-            Matrix4X4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(45), Width / Height, 0.1f, 100.0f, out projectionMatrix);
+            if (Width > 0 && Height > 0)
+            {
+                Matrix4X4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(45), Width / Height, 0.1f, 100.0f, out projectionMatrix);
+            }
 
             return projectionMatrix;
         }
