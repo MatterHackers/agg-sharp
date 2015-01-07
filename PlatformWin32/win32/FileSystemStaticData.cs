@@ -12,7 +12,7 @@ namespace MatterHackers.Agg
 {
     public class FileSystemStaticData : IStaticData
     {
-        public string MapPath(string path)
+        private string MapPath(string path)
         {
             string staticDataPath = Directory.Exists("StaticData") ? "StaticData" : Path.Combine("..", "..", "StaticData");
             return Path.Combine(staticDataPath, path);

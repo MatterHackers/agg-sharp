@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Threading;
 using System.IO;
 
+using MatterHackers.Agg.PlatformAbstract;
 using MatterHackers.Agg;
 
 namespace MatterHackers.Localizations
@@ -38,7 +39,7 @@ namespace MatterHackers.Localizations
 
         void ReadIntoDictonary(Dictionary<string, string> dictionary, string pathAndFilename)
         {
-            string[] lines = File.ReadAllLines(pathAndFilename);
+            string[] lines = StaticData.Instance.ReadAllLines(pathAndFilename);
             bool lookingForEnglish = true;
             string englishString = "";
             for (int i = 0; i < lines.Length; i++)
@@ -91,7 +92,7 @@ namespace MatterHackers.Localizations
             ReadIntoDictonary(masterDictionary, pathToMasterFile);
 
             this.pathToTranslationFile = Path.Combine(pathToTranslationsFolder, TwoLetterIsoLanguageName, "Translation.txt");
-            if (File.Exists(pathToTranslationFile))
+            if (StaticData.Instance.FileExists(pathToTranslationFile))
             {
                 ReadIntoDictonary(translationDictionary, pathToTranslationFile);
             }
@@ -132,32 +133,37 @@ namespace MatterHackers.Localizations
             // We only ship release and this could cause a write to the ProgramFiles directory which is not allowed.
             // So we only write translation text while in debug (another solution in the future could be implemented). LBB
 #if DEBUG 
-            // TODO: make sure we don't throw an assertion when running from the ProgramFiles directory.
-            // Don't do saving when we are.
-            if (!dictionary.ContainsKey(englishString))
+            if (OsInformation.OperatingSystem == OSType.Windows)
             {
-                dictionary.Add(englishString, englishString);
-
-                using (TimedLock.Lock(this, "TranslationMap"))
+                // TODO: make sure we don't throw an assertion when running from the ProgramFiles directory.
+                // Don't do saving when we are.
+                if (!dictionary.ContainsKey(englishString))
                 {
-                    string pathName = Path.GetDirectoryName(pathAndFilename);
-                    if (!Directory.Exists(pathName))
+                    dictionary.Add(englishString, englishString);
+
+                    using (TimedLock.Lock(this, "TranslationMap"))
                     {
-                        Directory.CreateDirectory(pathName);
-                    }
-                    if (!File.Exists(pathAndFilename))
-                    {
-                        using (StreamWriter masterFileStream = File.CreateText(pathAndFilename))
+                        string staticDataPathAndFilename = Path.Combine("../../StaticData", pathAndFilename);
+                        string staticDataPath = Path.Combine("../../StaticData", staticDataPathAndFilename);
+                        string pathName = Path.GetDirectoryName(staticDataPath);
+                        if (!Directory.Exists(pathName))
                         {
+                            Directory.CreateDirectory(pathName);
                         }
-                    }
+                        if (!File.Exists(staticDataPathAndFilename))
+                        {
+                            using (StreamWriter masterFileStream = File.CreateText(staticDataPathAndFilename))
+                            {
+                            }
+                        }
 
-                    using (StreamWriter masterFileStream = File.AppendText(pathAndFilename))
-                    {
+                        using (StreamWriter masterFileStream = File.AppendText(staticDataPathAndFilename))
+                        {
 
-                        masterFileStream.WriteLine("{0}{1}".FormatWith(engishTag, EncodeForSaving(englishString)));
-                        masterFileStream.WriteLine("{0}{1}".FormatWith(translatedTag, EncodeForSaving(englishString)));
-                        masterFileStream.WriteLine("");
+                            masterFileStream.WriteLine("{0}{1}".FormatWith(engishTag, EncodeForSaving(englishString)));
+                            masterFileStream.WriteLine("{0}{1}".FormatWith(translatedTag, EncodeForSaving(englishString)));
+                            masterFileStream.WriteLine("");
+                        }
                     }
                 }
             }

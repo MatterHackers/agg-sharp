@@ -9,8 +9,6 @@ namespace MatterHackers.Agg.PlatformAbstract
 {
     public interface IStaticData
     {
-        string MapPath(string path);
-        
         string ReadAllText(string path);
 		string[] ReadAllLines(string path);
         Stream OpenSteam(string path);
