@@ -4,10 +4,8 @@ using System.Text;
 using System.Globalization;
 using System.Threading;
 using System.IO;
-using System.Linq;
 
 using MatterHackers.Agg;
-using MatterHackers.Agg.PlatformAbstract;
 
 namespace MatterHackers.Localizations
 {
@@ -28,19 +26,19 @@ namespace MatterHackers.Localizations
             get { return twoLetterIsoLanguageName; }
         }
 
-        public TranslationMap(string outputDirectory, string twoLetterIsoLanguageName = "")
+        public TranslationMap(string pathToTranslationsFolder, string twoLetterIsoLanguageName = "")
         {
             if (twoLetterIsoLanguageName == "")
             {
                 twoLetterIsoLanguageName = Thread.CurrentThread.CurrentUICulture.TwoLetterISOLanguageName;
             }
 
-            LoadTranslation(outputDirectory, twoLetterIsoLanguageName);
+            LoadTranslation(pathToTranslationsFolder, twoLetterIsoLanguageName);
         }
 
         void ReadIntoDictonary(Dictionary<string, string> dictionary, string pathAndFilename)
         {
-            string[] lines = StaticData.Instance.ReadAllLines(pathAndFilename);
+            string[] lines = File.ReadAllLines(pathAndFilename);
             bool lookingForEnglish = true;
             string englishString = "";
             for (int i = 0; i < lines.Length; i++)
@@ -74,7 +72,10 @@ namespace MatterHackers.Localizations
                     {
                         string translatedString = lines[i].Substring(translatedTag.Length);
                         // store the string
-                        dictionary.Add(DecodeWhileReading(englishString), DecodeWhileReading(translatedString));
+                        if (!dictionary.ContainsKey(DecodeWhileReading(englishString)))
+                        {
+                            dictionary.Add(DecodeWhileReading(englishString), DecodeWhileReading(translatedString));
+                        }
                         // go back to looking for english
                         lookingForEnglish = true;
                     }
@@ -82,17 +83,15 @@ namespace MatterHackers.Localizations
             }
         }
 
-        public void LoadTranslation(string outputDirectory, string twoLetterIsoLanguageName)
+        public void LoadTranslation(string pathToTranslationsFolder, string twoLetterIsoLanguageName)
         {
             this.twoLetterIsoLanguageName = twoLetterIsoLanguageName.ToLower();
 
-            ReadIntoDictonary(masterDictionary, Path.Combine("Translations", "Master.txt"));
+            this.pathToMasterFile = Path.Combine(pathToTranslationsFolder, "Master.txt");
+            ReadIntoDictonary(masterDictionary, pathToMasterFile);
 
-            this.pathToMasterFile = Path.Combine(outputDirectory, "Master.txt");
-            this.pathToTranslationFile = Path.Combine(outputDirectory, this.twoLetterIsoLanguageName, "Translation.txt");
-
-            string pathToTranslationFile = Path.Combine("Translations", "Translation.txt");
-            if (StaticData.Instance.FileExists(pathToTranslationFile))
+            this.pathToTranslationFile = Path.Combine(pathToTranslationsFolder, TwoLetterIsoLanguageName, "Translation.txt");
+            if (File.Exists(pathToTranslationFile))
             {
                 ReadIntoDictonary(translationDictionary, pathToTranslationFile);
             }
