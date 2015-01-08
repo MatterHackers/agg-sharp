@@ -366,7 +366,7 @@ namespace MatterHackers.GCodeVisualizer
 
                 if (feedRateMmPerMin > 0)
                 {
-                    newLine.secondsThisLine = GetSecondsThisLine(lineIndex, deltaPositionThisLine, deltaEPositionThisLine, feedRateMmPerMin);
+                    newLine.secondsThisLine = (float)GetSecondsThisLine(lineIndex, deltaPositionThisLine, deltaEPositionThisLine, feedRateMmPerMin);
                 }
 
                 if (backgroundWorker != null)
@@ -390,7 +390,7 @@ namespace MatterHackers.GCodeVisualizer
             {
                 PrinterMachineInstruction line = GCodeCommandQueue[i];
                 accumulatedTime += line.secondsThisLine;
-                line.secondsToEndFromHere = accumulatedTime;
+                line.secondsToEndFromHere = (float)accumulatedTime;
             }
         }
 

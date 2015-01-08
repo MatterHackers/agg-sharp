@@ -23,6 +23,7 @@ using System.Collections.ObjectModel;
 
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
+using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
@@ -1670,6 +1671,17 @@ namespace MatterHackers.Agg.UI
                 GuiWidget child = Children[i];
                 if (child.Visible)
                 {
+                    if (DebugShowBounds)
+                    {
+                        // draw the margin
+                        BorderDouble invertedMargin = child.Margin;
+                        invertedMargin.Left = -invertedMargin.Left;
+                        invertedMargin.Bottom = -invertedMargin.Bottom;
+                        invertedMargin.Right = -invertedMargin.Right;
+                        invertedMargin.Top = -invertedMargin.Top;
+                        DrawBorderBounds(graphics2D, child.BoundsRelativeToParent, invertedMargin, new RGBA_Bytes(RGBA_Bytes.Red, 128));
+                    }
+
                     RectangleDouble oldClippingRect = graphics2D.GetClippingRect();
                     graphics2D.PushTransform();
                     {
@@ -1745,6 +1757,10 @@ namespace MatterHackers.Agg.UI
 
             if (DebugShowBounds)
             {
+                // draw the padding
+                DrawBorderBounds(graphics2D, LocalBounds, Padding, new RGBA_Bytes(RGBA_Bytes.Cyan, 128));
+
+                // show the bounds and inside with an x
                 graphics2D.Line(LocalBounds.Left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, RGBA_Bytes.Green);
                 graphics2D.Line(LocalBounds.Left, LocalBounds.Top, LocalBounds.Right, LocalBounds.Bottom, RGBA_Bytes.Green);
                 graphics2D.Rectangle(LocalBounds, RGBA_Bytes.Red);
@@ -1753,6 +1769,27 @@ namespace MatterHackers.Agg.UI
             {
                 graphics2D.DrawString(string.Format("{4} {0}, {1} : {2}, {3}", (int)MinimumSize.x, (int)MinimumSize.y, (int)LocalBounds.Width, (int)LocalBounds.Height, Name),
                     Width / 2, Math.Max(Height - 16, Height / 2 - 16 * graphics2D.TransformStackCount), color: RGBA_Bytes.Magenta, justification: Font.Justification.Center);
+            }
+        }
+
+        private static void DrawBorderBounds(Graphics2D graphics2D, RectangleDouble bounds, BorderDouble border, RGBA_Bytes color)
+        {
+            if (border.Width != 0
+                || border.Height != 0)
+            {
+                PathStorage borderPath = new PathStorage();
+                borderPath.MoveTo(bounds.Left, bounds.Bottom);
+                borderPath.LineTo(bounds.Left, bounds.Top);
+                borderPath.LineTo(bounds.Right, bounds.Top);
+                borderPath.LineTo(bounds.Right, bounds.Bottom);
+                borderPath.LineTo(bounds.Left, bounds.Bottom);
+
+                borderPath.MoveTo(bounds.Left + border.Left, bounds.Bottom + border.Bottom);
+                borderPath.LineTo(bounds.Right - border.Right, bounds.Bottom + border.Bottom);
+                borderPath.LineTo(bounds.Right - border.Right, bounds.Top - border.Top);
+                borderPath.LineTo(bounds.Left + border.Left, bounds.Top - border.Top);
+                borderPath.LineTo(bounds.Left + border.Left, bounds.Bottom + border.Bottom);
+                graphics2D.Render(borderPath, color);
             }
         }
 
