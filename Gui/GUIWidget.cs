@@ -1671,7 +1671,7 @@ namespace MatterHackers.Agg.UI
                 GuiWidget child = Children[i];
                 if (child.Visible)
                 {
-                    if (DebugShowBounds)
+                    if (child.DebugShowBounds)
                     {
                         // draw the margin
                         BorderDouble invertedMargin = child.Margin;
