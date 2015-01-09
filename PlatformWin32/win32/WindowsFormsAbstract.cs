@@ -247,6 +247,18 @@ namespace MatterHackers.Agg.UI
             //base.OnPaintBackground(e);
         }
 
+        protected override void OnActivated(EventArgs e)
+        {
+            // focus the first child of the forms window (should be the system window)
+            if (aggAppWidget != null
+                && aggAppWidget.Children.Count > 0
+                && aggAppWidget.Children[0] != null)
+            {
+                aggAppWidget.Children[0].Focus();
+            }
+            base.OnActivated(e);
+        }
+
         protected override void OnResize(EventArgs e)
         {
             aggAppWidget.LocalBounds = new RectangleDouble(0, 0, ClientSize.Width, ClientSize.Height);
