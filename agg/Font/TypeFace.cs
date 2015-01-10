@@ -292,6 +292,9 @@ namespace MatterHackers.Agg.Font
 
         static double GetNextNumber(String source, ref int startIndex)
         {
+#if true
+            return GetNextNumberNew(source, ref startIndex);
+#else
             int startIndexNew = startIndex;
             double newNumber = GetNextNumberNew(source, ref startIndexNew);
             int startIndexOld = startIndex;
@@ -304,6 +307,7 @@ namespace MatterHackers.Agg.Font
 
             startIndex = startIndexOld;
             return oldNumber;
+#endif
         }
 
         Glyph CreateGlyphFromSVGGlyphData(String SVGGlyphData)
