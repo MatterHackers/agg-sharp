@@ -195,7 +195,7 @@ namespace MatterHackers.Agg.Font
         }
 
         static Regex numberRegex = new Regex(@"[-+]?[0-9]*\.?[0-9]+");
-        static double GetNextNumber(String source, ref int startIndex)
+        static double GetNextNumberOld(String source, ref int startIndex)
         {
             Match numberMatch = numberRegex.Match(source, startIndex);
             String returnString = numberMatch.Value;
@@ -203,6 +203,107 @@ namespace MatterHackers.Agg.Font
             double returnVal;
             double.TryParse(returnString, NumberStyles.Number, CultureInfo.InvariantCulture, out returnVal);
             return returnVal;
+        }
+
+        static double GetNextNumberNew(String source, ref int startIndex)
+        {
+            int length = source.Length;
+            bool negative = false;
+            long currentIntPart = 0;
+            int fractionDigits = 0;
+            long currentFractionPart = 0;
+
+            // find the number start
+            while (startIndex < length)
+            {
+                char next = source[startIndex];
+                if (next == '-' || next == '+' || (next >= '0' && next <= '9'))
+                {
+                    if (next == '-')
+                    {
+                        negative = true;
+                    }
+                    else if(next == '+')
+                    {
+                        // this does nothing but lets us get to the else for numbers
+                    }
+                    else
+                    {
+                        currentIntPart = next - '0';
+                    }
+                    startIndex++;
+                    break;
+                }
+                startIndex++;
+            }
+            // accumulate the int part
+            while (startIndex < length)
+            {
+                char next = source[startIndex];
+                if (next >= '0' && next <= '9')
+                {
+                    currentIntPart = (currentIntPart*10) + next - '0';
+                }
+                else if (next == '.')
+                {
+                    startIndex++;
+                    // parse out the fractional part
+                    while (startIndex < length)
+                    {
+                        char nextFraction = source[startIndex];
+                        if (nextFraction >= '0' && nextFraction <= '9')
+                        {
+                            fractionDigits++;
+                            currentFractionPart = (currentFractionPart * 10) + nextFraction - '0';
+                        }
+                        else // we are done
+                        {
+                            break;
+                        }
+                        startIndex++;
+                    }
+                    break;
+                }
+                else // we are done
+                {
+                    break;
+                }
+                startIndex++;
+            }
+
+            if (fractionDigits > 0)
+            {
+                double fractionNumber = currentIntPart + (currentFractionPart / (10.0 * fractionDigits));
+                if (negative)
+                {
+                    return -fractionNumber;
+                }
+                return fractionNumber;
+            }
+            else
+            {
+                if (negative)
+                {
+                    return -currentIntPart;
+                }
+                return currentIntPart;
+            }
+        }
+
+        static double GetNextNumber(String source, ref int startIndex)
+        {
+            int startIndexNew = startIndex;
+            double newNumber = GetNextNumberNew(source, ref startIndexNew);
+            int startIndexOld = startIndex;
+            double oldNumber = GetNextNumberOld(source, ref startIndexOld);
+            if (newNumber != oldNumber
+                || startIndexNew != startIndexOld)
+            {
+                int a = 0;
+            }
+
+            startIndex = startIndexOld;
+            return oldNumber;
         }
 
         Glyph CreateGlyphFromSVGGlyphData(String SVGGlyphData)
