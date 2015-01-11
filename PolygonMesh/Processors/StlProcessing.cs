@@ -396,5 +396,18 @@ namespace MatterHackers.PolygonMesh.Processors
             goodParse &= double.TryParse(splitOnSpace[3], out vertexPosition.z);
             return goodParse;
         }
-    }
+
+		public static bool CheckIfShouldWarnOn32Bit(string fileLocation)
+		{
+			using (Stream stream = new FileStream(fileLocation, FileMode.Open))
+			{
+				if (stream.Length > 2000000)
+				{
+					int a = 0;
+				}
+			}
+
+			return false;
+		}
+	}
 }

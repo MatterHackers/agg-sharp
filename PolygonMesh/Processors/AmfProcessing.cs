@@ -672,5 +672,18 @@ namespace MatterHackers.PolygonMesh.Processors
 #endif
             }
         }
-    }
+
+		public static bool CheckIfShouldWarnOn32Bit(string fileLocation)
+		{
+			using (Stream stream = new FileStream(fileLocation, FileMode.Open))
+			{
+				if (stream.Length > 2000000)
+				{
+					int a = 0;
+				}
+			}
+
+			return false;
+		}
+	}
 }
