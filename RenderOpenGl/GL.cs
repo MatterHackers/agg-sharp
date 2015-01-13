@@ -533,7 +533,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
         public static void Begin(BeginMode mode)
         {
 #if USE_OPENGL
-            OpenTK.Graphics.OpenGL.GL.Begin((OpenTK.Graphics.OpenGL.PrimitiveType)mode);
+            OpenTK.Graphics.OpenGL.GL.Begin((OpenTK.Graphics.OpenGL.BeginMode)mode);
 #else
 			currentImediateData.Mode = mode;
 #endif
@@ -770,7 +770,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
         public static void DrawRangeElements(BeginMode mode, int start, int end, int count, DrawElementsType type, IntPtr indices)
         {
 #if USE_OPENGL
-            OpenTK.Graphics.OpenGL.GL.DrawRangeElements((OpenTK.Graphics.OpenGL.PrimitiveType)mode, start, end, count, (OpenTK.Graphics.OpenGL.DrawElementsType)type, indices);
+            OpenTK.Graphics.OpenGL.GL.DrawRangeElements((OpenTK.Graphics.OpenGL.BeginMode)mode, start, end, count, (OpenTK.Graphics.OpenGL.DrawElementsType)type, indices);
 #else
 			throw new NotImplementedException();
 #endif
@@ -861,7 +861,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
         public static void DrawArrays(BeginMode mode, int first, int count)
         {
 #if USE_OPENGL
-            OpenTK.Graphics.OpenGL.GL.DrawArrays((OpenTK.Graphics.OpenGL.PrimitiveType)mode, first, count);
+            OpenTK.Graphics.OpenGL.GL.DrawArrays((OpenTK.Graphics.OpenGL.BeginMode)mode, first, count);
 #else
 			OpenTK.Graphics.ES11.GL.DrawArrays((OpenTK.Graphics.ES11.All)mode, first, count);
 #endif
