@@ -151,9 +151,9 @@
       <Project>{86F6AAF2-9B50-40B8-A427-1897D76471C5}</Project>
       <Name>PolygonMesh</Name>
     </ProjectReference>
-    <ProjectReference Include="..\agg\AGG.csproj">
+    <ProjectReference Include="..\agg\Agg.csproj">
       <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
-      <Name>AGG</Name>
+      <Name>Agg</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
