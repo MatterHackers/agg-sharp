@@ -45,9 +45,9 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\agg\Agg.csproj">
+    <ProjectReference Include="..\..\agg\AGG.csproj">
       <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
-      <Name>Agg</Name>
+      <Name>AGG</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Gui\Gui.csproj">
       <Project>{74F6BB6C-9D02-4512-A59A-21940E35C532}</Project>

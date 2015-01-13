@@ -8,8 +8,8 @@
     <ProjectGuid>{335A35BA-CDC2-43D6-B58C-6B91D40CD2A1}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>MatterCadApp</RootNamespace>
-    <AssemblyName>MatterCadApp</AssemblyName>
+    <RootNamespace>MatterHackers.CameraCalibration</RootNamespace>
+    <AssemblyName>MatterHackers.CameraCalibrationApp</AssemblyName>
     <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
     <NoStdLib>False</NoStdLib>
     <RegisterForComInterop>False</RegisterForComInterop>
@@ -60,9 +60,9 @@
   </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <ProjectReference Include="..\..\agg\Agg.csproj">
+    <ProjectReference Include="..\..\agg\AGG.csproj">
       <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
-      <Name>Agg</Name>
+      <Name>AGG</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Gui\Gui.csproj">
       <Project>{74F6BB6C-9D02-4512-A59A-21940E35C532}</Project>
@@ -76,18 +76,16 @@
       <Project>{AE37DE1F-22F7-49EE-8732-FC6BC8DC58D9}</Project>
       <Name>Tesselate</Name>
     </ProjectReference>
-    <ProjectReference Include="..\MatterCadWidget\MatterCadWidget.csproj">
+    <ProjectReference Include="..\CameraCalibrationWidget\CameraCalibrationWidget.csproj">
       <Project>{A20459AD-3006-402C-952C-F4A9D9969A87}</Project>
-      <Name>MatterCadWidget</Name>
+      <Name>CameraCalibrationWidget</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="MatterCadApp.cs" />
+    <Compile Include="CameraCalibrationApp.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">

@@ -37,7 +37,7 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.CameraCalibration
 {
-    public class MatterControlWidget : RectangleWidget
+    public class MatterControlWidget : GuiWidget
     {
         static PrinterComunication printerComunicationChannel = new PrinterComunication();
         Button connectButton;
