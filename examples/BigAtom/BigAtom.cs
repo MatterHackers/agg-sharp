@@ -2,31 +2,32 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-using AGG;
-using AGG.Transform;
-using AGG.Image;
-using AGG.VertexSource;
-using AGG.UI;
-using AGG.Font;
+using MatterHackers.Agg;
+using MatterHackers.Agg.Transform;
+using MatterHackers.Agg.Image;
+using MatterHackers.Agg.VertexSource;
+using MatterHackers.Agg.UI;
+using MatterHackers.Agg.Font;
+using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.VectorMath;
 
-using RayTracer;
+using MatterHackers.RayTracer;
 
 namespace BigAtom
 {
-    public class BigAtom_application : MatchParentBoundsWidget
+    public class BigAtom_application : SystemWindow
     {
         ImageBuffer marbleTexture;
         ImageBuffer woodTexture;
         ImageBuffer wallTexture;
-        GuiHalSurface guiSurface;
         
         Scene scene;
 		
-        public BigAtom_application(GuiHalSurface guiSurface)
+        public BigAtom_application()
+			: base(640, 480)
         {
-            this.guiSurface = guiSurface;
-
-            renderScene();
+			primaryWindow.Caption = "BigAtom - Voxel CSG Magic";
+			renderScene();
         }
 
         // marble balls scene
@@ -35,7 +36,7 @@ namespace BigAtom
             TextureMaterial texture = new TextureMaterial(marbleTexture, 0.0, 0.0, 2, .5);
 
             scene = new Scene();
-            scene.Camera = new Camera(new Vector(0, 0, -15), new Vector(-.2, 0, 5), new Vector(0, 1, 0));
+            scene.Camera = new Camera(new Vector3(0, 0, -15), new Vector3(-.2, 0, 5), new Vector3(0, 1, 0));
 
             // setup a solid reflecting sphere
             scene.Shapes.Add(new SphereShape(new Vector(-1.5, 0.5, 0), .5,
@@ -188,25 +189,11 @@ namespace BigAtom
             base.OnDraw(graphics2D);
         }
 
-        public static void StartDemo(bool useHWAcceleration)
-        {
-#if true
-            GuiHalFactory.SetGuiBackend(new WindowsFormsBitmapBackendGuiFactory());
-            GuiHalSurface primaryWindow = GuiHalFactory.CreatePrimarySurface(512, 512, GuiHalSurface.CreateFlags.Resizable, GuiHalSurface.PixelFormat.PixelFormatBgr24);
-#else
-            GuiHalFactory.SetGuiBackend(new WindowsFormsOpenGLBackendGuiFactory());
-            GuiHalSurface primaryWindow = GuiHalFactory.CreatePrimarySurface(512, 400, GuiHalSurface.CreateFlags.Resizable, GuiHalSurface.PixelFormat.PixelFormatBgra32);
-#endif
-            primaryWindow.Caption = "BigAtom - Voxel CSG Magic";
-
-            primaryWindow.AddChild(new BigAtom_application(primaryWindow));
-            primaryWindow.Run();
-        }
-
         [STAThread]
         public static void Main(string[] args)
         {
-        	StartDemo(false);
+			BigAtom_application app = new BigAtom_application();
+			app.ShowAsSystemWindow();
         }
     }
 }
