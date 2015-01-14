@@ -231,31 +231,29 @@ namespace MatterHackers.Agg.UI
 		void DoShowSoftwareKeyboard(object sender, EventArgs e)
 		{
 			CheckMouseCaptureStates();
-			if (!keyboard.Visible)
+
+			hadFocusWidget = sender as TextEditWidget;
+			// if we are not currently hooked up
+			if (contentOffsetHolder == null 
+				|| contentOffsetHolder.Children.Count == 0)
 			{
 				content.Invalidated += content_Invalidated;
 				RemoveChild(content);
 				contentOffsetHolder = new GuiWidget(Width, Height);
 				contentOffsetHolder.AddChild(content);
-				MouseEventArgs upMouseEvent = e as MouseEventArgs;
-				if (lastMouseDownEvent != null)
-				{
-					// the onfocus that put us here had a mouse down event that we want to unwind.
-					CheckMouseCaptureStates();
-					content.OnMouseUp(lastMouseDownEvent);
-					CheckMouseCaptureStates();
-				}
-				hadFocusWidget = sender as TextEditWidget;
-				keyboard.SetFocusWidget(hadFocusWidget);
+
+				// remember where we were
+				oldVAnchor = content.VAnchor;
+				oldOrigin = content.OriginRelativeParent;
 				if (hadFocusWidget != null)
 				{
-					// remember where we were
-					oldVAnchor = content.VAnchor;
-					oldOrigin = content.OriginRelativeParent;
-
 					// test if the text widget is visible
 					RectangleDouble textWidgetScreenBounds = TextWidgetScreenBounds();
-					double topOfKeyboard = keyboard.LocalBounds.Height;
+					int topOfKeyboard = deviceKeyboardHeight;
+					if (keyboard != null)
+					{
+						topOfKeyboard = (int)keyboard.LocalBounds.Height;
+					}
 					if (textWidgetScreenBounds.Bottom < topOfKeyboard)
 					{
 						// make sure the screen is not resizing vertically
@@ -264,6 +262,20 @@ namespace MatterHackers.Agg.UI
 						content.OriginRelativeParent = new Vector2(0, topOfKeyboard - textWidgetScreenBounds.Bottom + 3);
 					}
 				}
+			}
+
+			if (keyboard != null
+				&& !keyboard.Visible)
+			{
+				MouseEventArgs upMouseEvent = e as MouseEventArgs;
+				if (lastMouseDownEvent != null)
+				{
+					// The onfocus that put us here had a mouse down event that we want to unwind if using our soft keybeard.
+					CheckMouseCaptureStates();
+					content.OnMouseUp(lastMouseDownEvent);
+					CheckMouseCaptureStates();
+				}
+				keyboard.SetFocusWidget(hadFocusWidget);
 				CheckMouseCaptureStates();
 				keyboard.Visible = true;
 				CheckMouseCaptureStates();
@@ -278,20 +290,31 @@ namespace MatterHackers.Agg.UI
 			{
 				// the click that got rid of the softkeyboard should be clicked after we lower
 				// this code currently messes up
-				content.OnMouseDown(lastMouseDownEvent);
-				ValidateMouseCaptureRecursive();
+				contentOffsetHolder.OnMouseDown(lastMouseDownEvent);
 
+				CheckMouseCaptureStates();
+			}
+
+			if (contentOffsetHolder.Children.Count > 0)
+			{
 				content.Invalidated -= content_Invalidated;
+
 				contentOffsetHolder.RemoveChild(content);
 				AddChild(content, 0);
-				keyboard.Visible = false;
+
 				if (hadFocusWidget != null)
 				{
 					content.VAnchor = oldVAnchor;
 					content.OriginRelativeParent = oldOrigin;
 				}
+			}
+
+			if (keyboard.Visible)
+			{
+				keyboard.Visible = false;
 				CheckMouseCaptureStates();
 			}
+
 			CheckMouseCaptureStates();
 		}
 
