@@ -181,6 +181,7 @@
     <Compile Include="GroupBox.cs" />
     <Compile Include="Keyboard.cs" />
     <Compile Include="ProgressControl.cs" />
+    <Compile Include="SoftKeyboard.cs" />
     <Compile Include="SystemWindow\OsMappingWidgetFactory.cs" />
     <Compile Include="GuiWidget.cs" />
     <Compile Include="ImageWidget.cs" />

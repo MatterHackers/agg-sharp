@@ -2220,16 +2220,30 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-		public void ValidateMouseCaptureRecursive()
+		public void ValidateMouseCaptureRecursive(GuiWidget lastUpdatedParent = null)
 		{
 			int countOfChildernThatThinkTheyHaveTheMouseCaptured = 0;
 			foreach (GuiWidget child in Children)
 			{
 				if (child.mouseCapturedState != MouseCapturedState.NotCaptured)
 				{
-					child.ValidateMouseCaptureRecursive();
+					// keep a count
 					countOfChildernThatThinkTheyHaveTheMouseCaptured++;
+
+					// validate that every parent is marked as containing mouse capture
+					GuiWidget parent = this.Parent;
+					while (parent != null 
+						&& parent != lastUpdatedParent
+						&& this != lastUpdatedParent)
+					{
+						if (parent.mouseCapturedState != MouseCapturedState.ChildHasMouseCaptured)
+						{
+							ThrowExceptionInDebug("All parents must know a child has the mouse captured.");
+						}
+						parent = parent.Parent;
+					}
 				}
+				child.ValidateMouseCaptureRecursive(lastUpdatedParent);
 			}
 
 			switch (mouseCapturedState)
