@@ -38,7 +38,7 @@ namespace MatterHackers.Agg.UI
 {
 	public class SoftKeyboard : GuiWidget
 	{
-		public TextEditWidget hadFocusWidget = null;
+		TextEditWidget hadFocusWidget = null;
 
 		public SoftKeyboard(int width, int height)
 		{
@@ -98,23 +98,35 @@ namespace MatterHackers.Agg.UI
 				hadFocusWidget.OnKeyPress(new KeyPressEventArgs(((Button)sender).Children[0].Children[0].Text[0]));
 			}
 		}
+
+		public void SetFocusWidget(TextEditWidget hadFocusWidget)
+		{
+			this.hadFocusWidget = hadFocusWidget;
+		}
 	}
 
 	public class SoftKeyboardDisplayStateManager : GuiWidget
 	{
+		TextEditWidget hadFocusWidget = null;
 		GuiWidget content;
 		GuiWidget contentOffsetHolder;
 		SoftKeyboard keyboard;
-		public SoftKeyboardDisplayStateManager(GuiWidget content, RGBA_Bytes backgroundColor)
+		int deviceKeyboardHeight;
+
+		public SoftKeyboardDisplayStateManager(GuiWidget content, RGBA_Bytes backgroundColor, int deviceKeyboardHeight = 0)
 		{
+			this.deviceKeyboardHeight = deviceKeyboardHeight;
 			this.content = content;
 			AnchorAll();
 			AddChild(content);
 
-			keyboard = new SoftKeyboard(800, 300);
-			keyboard.BackgroundColor = backgroundColor;
-			AddChild(keyboard);
-			keyboard.Visible = false;
+			if (deviceKeyboardHeight == 0)
+			{
+				keyboard = new SoftKeyboard(800, 300);
+				keyboard.BackgroundColor = backgroundColor;
+				AddChild(keyboard);
+				keyboard.Visible = false;
+			}
 
 			TextEditWidget.ShowSoftwareKeyboard = DoShowSoftwareKeyboard;
 			TextEditWidget.HideSoftwareKeyboard = DoHideSoftwareKeyboard;
@@ -164,7 +176,8 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseMove(mouseEvent);
 			CheckMouseCaptureStates();
 
-			if (keyboard.Visible)
+			if (keyboard != null 
+				&& keyboard.Visible)
 			{
 				RectangleDouble textWidgetBounds = TextWidgetScreenBounds();
 				if (textWidgetBounds.Contains(mouseEvent.Position))
@@ -180,7 +193,8 @@ namespace MatterHackers.Agg.UI
 		{
 			CheckMouseCaptureStates();
 			base.OnMouseUp(mouseEvent);
-			if (keyboard.Visible)
+			if (keyboard != null
+				&& keyboard.Visible)
 			{
 				CheckMouseCaptureStates();
 
@@ -208,8 +222,8 @@ namespace MatterHackers.Agg.UI
 
 		RectangleDouble TextWidgetScreenBounds()
 		{
-			RectangleDouble textWidgetBounds = keyboard.hadFocusWidget.LocalBounds;
-			return keyboard.hadFocusWidget.TransformToScreenSpace(textWidgetBounds);
+			RectangleDouble textWidgetBounds = hadFocusWidget.LocalBounds;
+			return hadFocusWidget.TransformToScreenSpace(textWidgetBounds);
 		}
 
 		VAnchor oldVAnchor;
@@ -231,8 +245,9 @@ namespace MatterHackers.Agg.UI
 					content.OnMouseUp(lastMouseDownEvent);
 					CheckMouseCaptureStates();
 				}
-				keyboard.hadFocusWidget = sender as TextEditWidget;
-				if (keyboard.hadFocusWidget != null)
+				hadFocusWidget = sender as TextEditWidget;
+				keyboard.SetFocusWidget(hadFocusWidget);
+				if (hadFocusWidget != null)
 				{
 					// remember where we were
 					oldVAnchor = content.VAnchor;
@@ -270,7 +285,7 @@ namespace MatterHackers.Agg.UI
 				contentOffsetHolder.RemoveChild(content);
 				AddChild(content, 0);
 				keyboard.Visible = false;
-				if (keyboard.hadFocusWidget != null)
+				if (hadFocusWidget != null)
 				{
 					content.VAnchor = oldVAnchor;
 					content.OriginRelativeParent = oldOrigin;
