@@ -111,25 +111,20 @@ namespace MatterHackers.Agg.UI
 		GuiWidget content;
 		GuiWidget contentOffsetHolder;
 		SoftKeyboard keyboard;
-		int deviceKeyboardHeight;
 
-		public SoftKeyboardDisplayStateManager(GuiWidget content, RGBA_Bytes backgroundColor, int deviceKeyboardHeight = 0)
+		public SoftKeyboardDisplayStateManager(GuiWidget content, RGBA_Bytes backgroundColor)
 		{
-			this.deviceKeyboardHeight = deviceKeyboardHeight;
 			this.content = content;
 			AnchorAll();
 			AddChild(content);
 
-			if (deviceKeyboardHeight == 0)
-			{
-				keyboard = new SoftKeyboard(800, 300);
-				keyboard.BackgroundColor = backgroundColor;
-				AddChild(keyboard);
-				keyboard.Visible = false;
-			}
+			keyboard = new SoftKeyboard(800, 300);
+			keyboard.BackgroundColor = backgroundColor;
+			AddChild(keyboard);
+			keyboard.Visible = false;
 
-			TextEditWidget.ShowSoftwareKeyboard = DoShowSoftwareKeyboard;
-			TextEditWidget.HideSoftwareKeyboard = DoHideSoftwareKeyboard;
+			TextEditWidget.ShowSoftwareKeyboard += DoShowSoftwareKeyboard;
+			TextEditWidget.HideSoftwareKeyboard += DoHideSoftwareKeyboard;
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)
@@ -249,11 +244,7 @@ namespace MatterHackers.Agg.UI
 				{
 					// test if the text widget is visible
 					RectangleDouble textWidgetScreenBounds = TextWidgetScreenBounds();
-					int topOfKeyboard = deviceKeyboardHeight;
-					if (keyboard != null)
-					{
-						topOfKeyboard = (int)keyboard.LocalBounds.Height;
-					}
+					int topOfKeyboard = (int)keyboard.LocalBounds.Height;
 					if (textWidgetScreenBounds.Bottom < topOfKeyboard)
 					{
 						// make sure the screen is not resizing vertically
@@ -321,6 +312,75 @@ namespace MatterHackers.Agg.UI
 		void content_Invalidated(object sender, EventArgs e)
 		{
 			Invalidate();
+		}
+	}
+
+
+	public class SoftKeyboardContentOffset : GuiWidget
+	{
+		TextEditWidget hadFocusWidget = null;
+		GuiWidget content;
+		GuiWidget contentOffsetHolder;
+		int deviceKeyboardHeight;
+
+		public SoftKeyboardContentOffset(GuiWidget content, int deviceKeyboardHeight)
+		{
+			this.deviceKeyboardHeight = deviceKeyboardHeight;
+			this.content = content;
+			AnchorAll();
+			contentOffsetHolder = new GuiWidget(Width, Height);
+			contentOffsetHolder.AnchorAll();
+			contentOffsetHolder.AddChild(content);
+			AddChild(contentOffsetHolder);
+
+			TextEditWidget.ShowSoftwareKeyboard += EnsureEditControlIsVisible;
+			TextEditWidget.HideSoftwareKeyboard += MoveContentBackDown;
+		}
+
+		RectangleDouble TextWidgetScreenBounds()
+		{
+			RectangleDouble textWidgetBounds = hadFocusWidget.LocalBounds;
+			return hadFocusWidget.TransformToScreenSpace(textWidgetBounds);
+		}
+
+		public override void OnDraw(Graphics2D graphics2D)
+		{
+			base.OnDraw(graphics2D);
+			if (content.OriginRelativeParent.y != 0)
+			{
+				graphics2D.FillRectangle(0, 0, Width, deviceKeyboardHeight, RGBA_Bytes.Black);
+			}
+		}
+
+		VAnchor oldVAnchor;
+		Vector2 oldOrigin;
+		void EnsureEditControlIsVisible(object sender, EventArgs e)
+		{
+			hadFocusWidget = sender as TextEditWidget;
+			// remember where we were
+			oldVAnchor = content.VAnchor;
+			oldOrigin = content.OriginRelativeParent;
+
+			// test if the text widget is visible
+			RectangleDouble textWidgetScreenBounds = TextWidgetScreenBounds();
+			int topOfKeyboard = deviceKeyboardHeight;
+			if (textWidgetScreenBounds.Bottom < topOfKeyboard)
+			{
+				// make sure the screen is not resizing vertically
+				content.VAnchor = VAnchor.None;
+				// move the screen up so we can see the bottom of the text widget
+				content.OriginRelativeParent = new Vector2(0, topOfKeyboard - textWidgetScreenBounds.Bottom + 10);
+			}
+		}
+
+
+		void MoveContentBackDown(object sender, EventArgs e)
+		{
+			if (hadFocusWidget != null)
+			{
+				content.VAnchor = oldVAnchor;
+				content.OriginRelativeParent = oldOrigin;
+			}
 		}
 	}
 }

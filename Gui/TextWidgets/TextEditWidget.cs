@@ -54,8 +54,8 @@ namespace MatterHackers.Agg.UI
         private int borderWidth = 0;
         private int borderRadius = 0;
 
-        public static EventHandler ShowSoftwareKeyboard = null;
-        public static EventHandler HideSoftwareKeyboard = null;
+		public static event EventHandler ShowSoftwareKeyboard;
+		public static event EventHandler HideSoftwareKeyboard;
 
         public RGBA_Bytes TextColor
         {
