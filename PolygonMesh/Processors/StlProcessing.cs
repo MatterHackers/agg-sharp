@@ -147,7 +147,7 @@ namespace MatterHackers.PolygonMesh.Processors
             return true;
         }
 
-        public static List<MeshGroup> Load(string fileName, ReportProgressRatio reportProgress = null)
+        public static Mesh Load(string fileName, ReportProgressRatio reportProgress = null)
         {
             // Early exit if not STL
             if (Path.GetExtension(fileName).ToUpper() != ".STL") return null;
@@ -160,7 +160,7 @@ namespace MatterHackers.PolygonMesh.Processors
         }
 
         // Note: Changing the Load(Stream) return type - this is a breaking change but methods with the same name should return the same type
-        public static List<MeshGroup> Load(Stream fileStream, ReportProgressRatio reportProgress = null)
+        public static Mesh Load(Stream fileStream, ReportProgressRatio reportProgress = null)
         {
             try
             {
@@ -170,7 +170,7 @@ namespace MatterHackers.PolygonMesh.Processors
                 // TODO: Sync with AMF processing and have ParseFileContents return List<MeshGroup>?
                 //
                 // Return the loaded mesh wrapped in a MeshGroup, wrapped in a List
-                return (loadedMesh == null) ? null : new List<MeshGroup>(new[] { new MeshGroup(loadedMesh) });
+				return loadedMesh;
             }
 #if DEBUG
             catch (IOException)

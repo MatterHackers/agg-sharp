@@ -93,7 +93,8 @@ namespace MatterHackers.PolygonMesh.Processors
             switch (fileExtension.ToUpper())
             {
                 case ".STL":
-                    return StlProcessing.Load(fileStream, reportProgress);
+					Mesh loadedMesh = StlProcessing.Load(fileStream, reportProgress);
+					return (loadedMesh == null) ? null : new List<MeshGroup>(new[] { new MeshGroup(loadedMesh) });
 
                 case ".AMF":
                     return AmfProcessing.Load(fileStream, reportProgress);

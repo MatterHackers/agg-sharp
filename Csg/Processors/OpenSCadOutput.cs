@@ -166,6 +166,24 @@ namespace MatterHackers.Csg.Processors
         }
         #endregion
 
+		#region Mesh
+		/// <summary>
+		///  This is the function that generates the correct scad code for our Mesh
+		/// </summary>
+		/// <param name="objectToProcess"></param>
+		/// <param name="level"></param>
+		/// <returns></returns>
+		public string GetScadOutputRecursive(Mesh objectToProcess, int level = 0)
+		{
+			string info = AddRenderInfoIfReqired(objectToProcess);
+
+			string mesh_string = "import(\"{0}\");".FormatWith(objectToProcess.FilePath);
+
+			info += mesh_string + AddNameAsComment(objectToProcess);
+
+			return ApplyIndent(info, level);
+		}
+		#endregion
 
         #region NGonExtrusion
         public string GetScadOutputRecursive(NGonExtrusion.NGonExtrusionPrimitive objectToProcess, int level = 0)

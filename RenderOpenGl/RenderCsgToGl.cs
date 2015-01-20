@@ -66,9 +66,9 @@ namespace MatterHackers.RenderOpenGl
         #endregion
 
         #region Box
-        public static Mesh CreateBox(AxisAlignedBoundingBox aabb)
+		public static PolygonMesh.Mesh CreateBox(AxisAlignedBoundingBox aabb)
         {
-            Mesh cube = new Mesh();
+			PolygonMesh.Mesh cube = new PolygonMesh.Mesh();
             Vertex[] verts = new Vertex[8];
             //verts[0] = cube.CreateVertex(new Vector3(-1, -1, 1));
             //verts[1] = cube.CreateVertex(new Vector3(1, -1, 1));
@@ -120,9 +120,9 @@ namespace MatterHackers.RenderOpenGl
         #endregion
 
         #region Cylinder
-        public static Mesh CreateCylinder(Cylinder.CylinderPrimitive cylinderToMeasure)
+		public static PolygonMesh.Mesh CreateCylinder(Cylinder.CylinderPrimitive cylinderToMeasure)
         {
-            Mesh cylinder = new Mesh();
+			PolygonMesh.Mesh cylinder = new PolygonMesh.Mesh();
             List<Vertex> bottomVerts = new List<Vertex>();
             List<Vertex> topVerts = new List<Vertex>();
 

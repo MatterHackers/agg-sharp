@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
+using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using MatterHackers.Csg.Transform;
 
@@ -77,6 +78,10 @@ namespace MatterHackers.Csg.Solids
                 return new AxisAlignedBoundingBox(new Vector3(minX, minY, -height/2), new Vector3(maxX, maxY, height/2));
             }
         }
+
+		public LinearExtrude(IVertexSource vertexSource)
+		{
+		}
 
         /// <summary>
         /// The constructor takes an array of doubles as the input to the polygon to extrude.
