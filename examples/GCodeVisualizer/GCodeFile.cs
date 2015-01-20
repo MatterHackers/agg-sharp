@@ -46,7 +46,18 @@ namespace MatterHackers.GCodeVisualizer
 {
     public class GCodeFile
     {
-        List<int> indexOfChangeInZ = new List<int>();
+		const int Max32BitFileSize = 500000000;
+
+		const string matchDouble = @"^-*[0-9]*\.?[0-9]*";
+		private static readonly Regex matchDoubleRegex = new Regex(matchDouble, RegexOptions.Compiled);
+		
+		static readonly Vector4 VelocitySameAsStopMmPerS = new Vector4(8, 8, .4, 5);
+		static readonly Vector4 MaxAccelerationMmPerS2 = new Vector4(1000, 1000, 100, 5000);
+		static readonly Vector4 MaxVelocityMmPerS = new Vector4(500, 500, 5, 25);
+
+		double amountOfAccumulatedEWhileParsing = 0;
+		
+		List<int> indexOfChangeInZ = new List<int>();
         Vector2 center = Vector2.Zero;
         double parsingLastZ;
         bool gcodeHasExplicitLayerChangeInfo = false;
@@ -139,7 +150,6 @@ namespace MatterHackers.GCodeVisualizer
 			return false;
 		}
 
-		public static readonly int Max32BitFileSize = 500000000;
 		public static bool FileTooBigToLoad(string fileName)
 		{
 			if (File.Exists(fileName)
@@ -205,19 +215,22 @@ namespace MatterHackers.GCodeVisualizer
 
         public void Load(string gcodePathAndFileName)
         {
-            using (FileStream fileStream = new FileStream(gcodePathAndFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            {
-                using (StreamReader streamReader = new StreamReader(fileStream))
-                {
-                    GCodeFile loadedFile = GCodeFile.Load(streamReader.BaseStream);
+			if (!FileTooBigToLoad(gcodePathAndFileName))
+			{
+				using (FileStream fileStream = new FileStream(gcodePathAndFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+				{
+					using (StreamReader streamReader = new StreamReader(fileStream))
+					{
+						GCodeFile loadedFile = GCodeFile.Load(streamReader.BaseStream);
 
-                    this.indexOfChangeInZ = loadedFile.indexOfChangeInZ;
-                    this.center = loadedFile.center;
-                    this.parsingLastZ = loadedFile.parsingLastZ;
+						this.indexOfChangeInZ = loadedFile.indexOfChangeInZ;
+						this.center = loadedFile.center;
+						this.parsingLastZ = loadedFile.parsingLastZ;
 
-                    this.GCodeCommandQueue = loadedFile.GCodeCommandQueue;
-                }
-            }
+						this.GCodeCommandQueue = loadedFile.GCodeCommandQueue;
+					}
+				}
+			}
         }
 
         private static IEnumerable<string> CustomSplit(string newtext, char splitChar)
@@ -429,9 +442,6 @@ namespace MatterHackers.GCodeVisualizer
             }
         }
 
-        public static Vector4 VelocitySameAsStopMmPerS = new Vector4(8, 8, .4, 5);
-        public static Vector4 MaxAccelerationMmPerS2 = new Vector4(1000, 1000, 100, 5000);
-        public static Vector4 MaxVelocityMmPerS = new Vector4(500, 500, 5, 25);
         private double GetSecondsThisLine(int lineIndex, Vector3 deltaPositionThisLine, double deltaEPositionThisLine, double feedRateMmPerMin)
         {
             double startingVelocityMmPerS = VelocitySameAsStopMmPerS.x;
@@ -502,8 +512,6 @@ namespace MatterHackers.GCodeVisualizer
             return false;
         }
 
-        const string matchDouble = @"^-*[0-9]*\.?[0-9]*";
-        private static readonly Regex matchDoubleRegex = new Regex(matchDouble, RegexOptions.Compiled);
         public static bool GetFirstNumberAfter(string stringToCheckAfter, string stringWithNumber, ref double readValue, int startIndex = 0)
         {
             int stringPos = stringWithNumber.IndexOf(stringToCheckAfter, startIndex);
@@ -712,7 +720,6 @@ namespace MatterHackers.GCodeVisualizer
 #endif
         }
 
-        double amountOfAccumulatedE = 0;
         void ParseGLine(string lineString, PrinterMachineInstruction processingMachineState)
         {
             // take off any comments before we check its length
@@ -757,7 +764,7 @@ namespace MatterHackers.GCodeVisualizer
                         {
                             if (processingMachineState.movementType == PrinterMachineInstruction.MovementTypes.Absolute)
                             {
-                                processingMachineState.EPosition = valueE + amountOfAccumulatedE;
+                                processingMachineState.EPosition = valueE + amountOfAccumulatedEWhileParsing;
                             }
                             else
                             {
@@ -818,7 +825,7 @@ namespace MatterHackers.GCodeVisualizer
                     if (GetFirstNumberAfter("E", lineString, ref ePosition))
                     {
                         // remember how much e position we just gave up
-                        amountOfAccumulatedE = (processingMachineState.EPosition - ePosition);
+                        amountOfAccumulatedEWhileParsing = (processingMachineState.EPosition - ePosition);
                     }
                     break;
 
@@ -1023,5 +1030,48 @@ namespace MatterHackers.GCodeVisualizer
 
             return .5;
         }
-    }
+
+		public int GetLayerIndex(int instructionIndex)
+		{
+			if (instructionIndex >= 0
+				&& instructionIndex < Count)
+			{
+				for (int zIndex = 0; zIndex < NumChangesInZ; zIndex++)
+				{
+					if (instructionIndex < IndexOfChangeInZ[zIndex])
+					{
+						return zIndex;
+					}
+				}
+
+				return NumChangesInZ - 1;
+			}
+
+			return -1;
+		}
+
+		public double Ratio0to1IntoContainedLayer(int instructionIndex)
+		{
+			int currentLayer = GetLayerIndex(instructionIndex);
+
+			if (currentLayer > -1)
+			{
+				int startIndex = 0;
+				if (currentLayer > 0)
+				{
+					startIndex = IndexOfChangeInZ[currentLayer - 1];
+				}
+				int endIndex = Count - 1;
+				if (currentLayer < NumChangesInZ - 1)
+				{
+					endIndex = IndexOfChangeInZ[currentLayer];
+				}
+
+				int deltaFromStart = Math.Max(0, instructionIndex - startIndex);
+				return deltaFromStart / (double)(endIndex - startIndex);
+			}
+
+			return 0;
+		}
+	}
 }
