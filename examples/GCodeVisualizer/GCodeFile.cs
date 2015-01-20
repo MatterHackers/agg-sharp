@@ -129,7 +129,35 @@ namespace MatterHackers.GCodeVisualizer
             return loadedGCode;
         }
 
-        static public void LoadInBackground(BackgroundWorker backgroundWorker, string fileName)
+		static bool RunningIn32Bit()
+		{
+			if (IntPtr.Size == 4)
+			{
+				return true;
+			}
+
+			return false;
+		}
+
+		public static readonly int Max32BitFileSize = 500000000;
+		public static bool FileTooBigToLoad(string fileName)
+		{
+			if (File.Exists(fileName)
+				&& RunningIn32Bit())
+			{
+				FileInfo info = new FileInfo(fileName);
+				// Let's make sure we can load a file this big
+				if (info.Length > Max32BitFileSize)
+				{
+					// It is too big to load
+					return true;
+				}
+			}
+
+			return false;
+		}
+		
+		static public void LoadInBackground(BackgroundWorker backgroundWorker, string fileName)
         {
             if (Path.GetExtension(fileName).ToUpper() == ".GCODE")
             {
@@ -137,6 +165,13 @@ namespace MatterHackers.GCodeVisualizer
                 {
                     if (File.Exists(fileName))
                     {
+						if (FileTooBigToLoad(fileName))
+						{
+							// It is too big do the processing, report back no load.
+							backgroundWorker.RunWorkerAsync(null);
+							return;
+						}
+
                         string gCodeString = "";
                         using (FileStream fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                         {
