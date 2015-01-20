@@ -180,6 +180,8 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GCodeFileStreamed.cs" />
+    <Compile Include="GCodeFileLoaded.cs" />
     <Compile Include="GCodeFile.cs" />
     <Compile Include="Renderer\ColorVertexData.cs" />
     <Compile Include="Renderer\ExtrusionColors.cs" />

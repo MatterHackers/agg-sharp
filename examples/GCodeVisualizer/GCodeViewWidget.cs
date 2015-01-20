@@ -226,11 +226,11 @@ namespace MatterHackers.GCodeVisualizer
 
                 if (firstExtrusionIndex > 0)
                 {
-                    for (int i = 0; i < loadedGCode.NumChangesInZ; i++)
+                    for (int layerIndex = 0; layerIndex < loadedGCode.NumChangesInZ; layerIndex++)
                     {
-                        if (firstExtrusionIndex < loadedGCode.IndexOfChangeInZ[i])
+						if (firstExtrusionIndex < loadedGCode.GetInstructionIndexAtLayer(layerIndex))
                         {
-                            activeLayerIndex = Math.Max(0, i-1);
+                            activeLayerIndex = Math.Max(0, layerIndex-1);
                             break;
                         }
                     }
@@ -400,7 +400,7 @@ namespace MatterHackers.GCodeVisualizer
 
         public void Load(string gcodePathAndFileName)
         {
-            loadedGCode = new GCodeFile(gcodePathAndFileName);
+            loadedGCode = GCodeFile.Load(gcodePathAndFileName);
             SetInitalLayer();
             CenterPartInView();
         }
@@ -416,7 +416,7 @@ namespace MatterHackers.GCodeVisualizer
             backgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(backgroundWorker_RunWorkerCompleted);
 
             loadedGCode = null;
-            GCodeFile.LoadInBackground(backgroundWorker, gcodePathAndFileName);
+            GCodeFileLoaded.LoadInBackground(backgroundWorker, gcodePathAndFileName);
         }
 
         public override void OnClosed(EventArgs e)
