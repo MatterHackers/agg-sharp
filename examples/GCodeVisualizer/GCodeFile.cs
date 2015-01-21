@@ -48,7 +48,11 @@ namespace MatterHackers.GCodeVisualizer
     {
 		const string matchDouble = @"^-*[0-9]*\.?[0-9]*";
 		private static readonly Regex matchDoubleRegex = new Regex(matchDouble, RegexOptions.Compiled);
-		protected const int Max32BitFileSize = 200000000;
+#if	__ANDROID__
+		protected const int Max32BitFileSize = 10000000; // 10 megs
+#else
+		protected const int Max32BitFileSize = 50000000; // 50 megs
+#endif
 
 		static bool RunningIn32Bit()
 		{
