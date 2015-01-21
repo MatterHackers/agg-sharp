@@ -46,30 +46,174 @@ namespace MatterHackers.GCodeVisualizer
 {
 	public class GCodeFileStreamed : GCodeFile
 	{
-		string fileName;
+		StreamReader openGcodeStream;
+
+		bool readLastLineOfFile = false;
+		int readLineCount = 0;
+		const int MaxLinesToBuffer = 128;
+		PrinterMachineInstruction[] readLinesRingBuffer = new PrinterMachineInstruction[MaxLinesToBuffer];
 
 		public GCodeFileStreamed(string fileName)
 		{
-			this.fileName = fileName;
+			openGcodeStream = new StreamReader(fileName);
 		}
 
-		public override int Count { get { throw new NotImplementedException(); } }
-		public override void Insert(int indexToStartInjection, PrinterMachineInstruction printerMachineInstruction) { throw new NotImplementedException(); }
-		public override void Add(PrinterMachineInstruction printerMachineInstruction) { throw new NotImplementedException(); }
-		public override void Clear() { throw new NotImplementedException(); }
-		public override Vector2 GetWeightedCenter() { throw new NotImplementedException(); }
-		public override RectangleDouble GetBounds() { throw new NotImplementedException(); }
-		public override double GetFilamentCubicMm(double p) { throw new NotImplementedException(); }
-		public override bool IsExtruding(int i) { throw new NotImplementedException(); }
-		public override double GetLayerHeight() { throw new NotImplementedException(); }
-		public override double GetFirstLayerHeight() { throw new NotImplementedException(); }
-		public override double GetFilamentUsedMm(double p) { throw new NotImplementedException(); }
-		public override int GetInstructionIndexAtLayer(int layerIndex) { throw new NotImplementedException(); }
-		public override double GetFilamentDiamter() { throw new NotImplementedException(); }
-		public override double GetFilamentWeightGrams(double p, double density) { throw new NotImplementedException(); }
-		public override int GetLayerIndex(int instructionIndex) { throw new NotImplementedException(); }
-		public override int NumChangesInZ { get { throw new NotImplementedException(); } }
-		public override PrinterMachineInstruction Instruction(int i) { throw new NotImplementedException(); }
-		public override double Ratio0to1IntoContainedLayer(int instructionIndex) { throw new NotImplementedException(); }
+		~GCodeFileStreamed()
+		{
+			CloseStream();
+		}
+
+		void CloseStream()
+		{
+			if(openGcodeStream != null )
+			{
+				openGcodeStream.Close();
+				openGcodeStream = null;
+			}
+		}
+
+		public override int Count 
+		{
+			get
+			{
+				if (openGcodeStream != null
+					&& !readLastLineOfFile)
+				{
+					return Math.Max(readLineCount + 1, (int)(openGcodeStream.BaseStream.Length / 14));
+				}
+
+				return readLineCount;
+			}
+		}
+
+		public override double TotalSecondsInPrint
+		{
+			get
+			{
+				// We don't know, so we always return 0.
+				return 0;
+			}
+		}
+		
+		public override void Insert(int indexToStartInjection, PrinterMachineInstruction printerMachineInstruction) 
+		{
+			using (TimedLock.Lock(this, "Adding Instruction"))
+			{
+				if (indexToStartInjection < readLineCount - MaxLinesToBuffer)
+				{
+					throw new Exception("You are asking for a line we no longer have bufferd");
+				}
+
+				// Make room for the instruction we are inserting, push all the existing instructions up
+				for (int movingIndex = indexToStartInjection; movingIndex < readLineCount; movingIndex++)
+				{
+					readLinesRingBuffer[(movingIndex + 1) % MaxLinesToBuffer] = readLinesRingBuffer[movingIndex % MaxLinesToBuffer];
+				}
+
+				readLinesRingBuffer[indexToStartInjection % MaxLinesToBuffer] = printerMachineInstruction;
+				readLineCount++;
+			}
+		}
+		
+		public override void Add(PrinterMachineInstruction printerMachineInstruction) 
+		{
+			throw new NotImplementedException(); 
+		}
+		
+		public override void Clear() 
+		{
+			CloseStream();
+
+			readLastLineOfFile = false;
+			readLineCount = 0;
+		}
+		
+		public override Vector2 GetWeightedCenter() 
+		{
+			throw new NotImplementedException("A streamed GCode file should not need to do this. Please validate the code that is calling this.");
+		}
+		
+		public override RectangleDouble GetBounds() 
+		{
+			throw new NotImplementedException("A streamed GCode file should not need to do this. Please validate the code that is calling this.");
+		}
+		
+		public override double GetFilamentCubicMm(double p) 
+		{
+			throw new NotImplementedException("A streamed GCode file should not need to do this. Please validate the code that is calling this.");
+		}
+		
+		public override bool IsExtruding(int i) 
+		{
+			throw new NotImplementedException(); 
+		}
+		
+		public override double GetLayerHeight() 
+		{
+			throw new NotImplementedException(); 
+		}
+		
+		public override double GetFirstLayerHeight() 
+		{
+			throw new NotImplementedException(); 
+		}
+		
+		public override double GetFilamentUsedMm(double p) 
+		{
+			throw new NotImplementedException(); 
+		}
+		
+		public override int GetInstructionIndexAtLayer(int layerIndex) 
+		{
+			throw new NotImplementedException(); 
+		}
+		
+		public override double GetFilamentDiamter() 
+		{
+			throw new NotImplementedException(); 
+		}
+		
+		public override double GetFilamentWeightGrams(double p, double density) 
+		{
+			throw new NotImplementedException(); 
+		}
+		
+		public override int GetLayerIndex(int instructionIndex) 
+		{
+			throw new NotImplementedException(); 
+		}
+		
+		public override int NumChangesInZ 
+		{
+			get 
+			{
+				throw new NotImplementedException(); 
+			}
+		}
+		
+		public override PrinterMachineInstruction Instruction(int index) 
+		{
+			using (TimedLock.Lock(this, "Loading Instruction"))
+			{
+				if (index < readLineCount - MaxLinesToBuffer)
+				{
+					throw new Exception("You are asking for a line we no longer have bufferd");
+				}
+
+				while (index >= readLineCount)
+				{
+					string line = openGcodeStream.ReadLine();
+					readLinesRingBuffer[readLineCount % MaxLinesToBuffer] = new PrinterMachineInstruction(line);
+					readLineCount++;
+				}
+			}
+
+			return readLinesRingBuffer[index % MaxLinesToBuffer];
+		}
+		
+		public override double Ratio0to1IntoContainedLayer(int instructionIndex) 
+		{
+			throw new NotImplementedException(); 
+		}
 	}
 }

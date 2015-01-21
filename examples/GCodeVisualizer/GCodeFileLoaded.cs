@@ -88,6 +88,14 @@ namespace MatterHackers.GCodeVisualizer
             GCodeCommandQueue.Clear();
         }
 
+		public override double TotalSecondsInPrint 
+		{
+			get
+			{
+				return Instruction(0).secondsToEndFromHere;
+			}
+		}
+
         public override void Add(PrinterMachineInstruction printerMachineInstruction)
         {
             Insert(Count, printerMachineInstruction);

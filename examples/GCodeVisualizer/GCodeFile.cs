@@ -48,7 +48,7 @@ namespace MatterHackers.GCodeVisualizer
     {
 		const string matchDouble = @"^-*[0-9]*\.?[0-9]*";
 		private static readonly Regex matchDoubleRegex = new Regex(matchDouble, RegexOptions.Compiled);
-		protected const int Max32BitFileSize = 500000000;
+		protected const int Max32BitFileSize = 200000000;
 
 		static bool RunningIn32Bit()
 		{
@@ -67,6 +67,7 @@ namespace MatterHackers.GCodeVisualizer
 #endif
 		}
 
+		public abstract double TotalSecondsInPrint { get; }
 		public abstract int Count { get; }
 		public abstract void Insert(int indexToStartInjection, PrinterMachineInstruction printerMachineInstruction);
 		public abstract void Add(PrinterMachineInstruction printerMachineInstruction);
