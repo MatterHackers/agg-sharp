@@ -1065,12 +1065,14 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
         public static IFrostedSerialPort CreateAndOpen(string serialPortName, int baudRate, bool DtrEnableOnConnect)
         {
             IFrostedSerialPort newPort = Create(serialPortName);
-            // if we can find a mac helper class (to get us 250k)
-            
-#if __LINUX
-#else
-            newPort.BaudRate = baudRate;
-#endif
+
+            bool isLinux = !(newPort is FrostedSerialPort) && !IsWindows;
+
+            // Skip BaudRate assignment on Linux to avoid Invalid Baud exception - defaults to 9600
+            if (!isLinux)
+            {
+                newPort.BaudRate = baudRate;
+            }
             
             if (DtrEnableOnConnect)
             {
@@ -1081,16 +1083,14 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
             newPort.ReadTimeout = 500;
             newPort.WriteTimeout = 500;
 
-			// Opening the serial port at this point will use the default baud rate of 9600
             newPort.Open();
 
-			// Once mono has enforced its ANSI baud rate policy(in SerialPort.Open), reset the baud rate to the user specified 
-			// by calling set_baud in libSetSerial.so
-			if (!(newPort is FrostedSerialPort) && !IsWindows) 
-			{
-				// TODO: Enable error handling and logging for error response codes
-				set_baud (serialPortName, baudRate);
-			}
+            if (isLinux) 
+            {
+                // Once mono has enforced its ANSI baud rate policy(in SerialPort.Open), reset the baud rate to the user specified 
+                // value by calling set_baud in libSetSerial.so
+                set_baud (serialPortName, baudRate);
+            }
 
             return newPort;
         }
