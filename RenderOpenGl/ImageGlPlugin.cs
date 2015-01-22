@@ -41,58 +41,75 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.RenderOpenGl
 {
-    public class ImageGlPlugin
-    {
-        private static ConditionalWeakTable<Byte[], ImageGlPlugin> imagesWithCacheData = new ConditionalWeakTable<Byte[], ImageGlPlugin>();
+	public class ImageGlPlugin
+	{
+		private static ConditionalWeakTable<Byte[], ImageGlPlugin> imagesWithCacheData = new ConditionalWeakTable<Byte[], ImageGlPlugin>();
 
-        internal struct glAllocatedData
-        {
-            internal int glTextureHandle;
-            public float[] textureUVs;
-            public float[] positions;
-        }
-        private static List<glAllocatedData> glDataNeedingToBeDeleted = new List<glAllocatedData>();
+		internal struct glAllocatedData
+		{
+			internal int glTextureHandle;
+			internal int refreshCountCreatedOn;
+			public float[] textureUVs;
+			public float[] positions;
+		}
+		private static List<glAllocatedData> glDataNeedingToBeDeleted = new List<glAllocatedData>();
 
-        glAllocatedData glData;
-        private int imageUpdateCount;
-        private bool createdWithMipMaps;
+		glAllocatedData glData;
+		private int imageUpdateCount;
+		private bool createdWithMipMaps;
 
-        static public ImageGlPlugin GetImageGlPlugin(ImageBuffer imageToGetDisplayListFor, bool createAndUseMipMaps, bool TextureMagFilterLinear = true)
-        {
-            ImageGlPlugin plugin;
-            imagesWithCacheData.TryGetValue(imageToGetDisplayListFor.GetBuffer(), out plugin);
+		static int currentGlobalRefreshCount = 0;
 
-            using (TimedLock.Lock(glDataNeedingToBeDeleted, "GetImageGlPlugin"))
-            {
-                // We run this in here to ensure that we are on the correct thread and have the correct
-                // glcontext realized.
-                for (int i = glDataNeedingToBeDeleted.Count - 1; i >= 0; i--)
-                {
-                    int textureToDelete = glDataNeedingToBeDeleted[i].glTextureHandle;
-                    GL.DeleteTextures(1, ref textureToDelete);
-                    glDataNeedingToBeDeleted.RemoveAt(i);
-                }
-            }
+		static public void MarkAllImagesNeedRefresh()
+		{
+			currentGlobalRefreshCount++;
+		}
+
+		static public ImageGlPlugin GetImageGlPlugin(ImageBuffer imageToGetDisplayListFor, bool createAndUseMipMaps, bool TextureMagFilterLinear = true)
+		{
+			ImageGlPlugin plugin;
+			imagesWithCacheData.TryGetValue(imageToGetDisplayListFor.GetBuffer(), out plugin);
+
+			using (TimedLock.Lock(glDataNeedingToBeDeleted, "GetImageGlPlugin"))
+			{
+				// We run this in here to ensure that we are on the correct thread and have the correct
+				// glcontext realized.
+				for (int i = glDataNeedingToBeDeleted.Count - 1; i >= 0; i--)
+				{
+					int textureToDelete = glDataNeedingToBeDeleted[i].glTextureHandle;
+					if (glDataNeedingToBeDeleted[i].refreshCountCreatedOn == currentGlobalRefreshCount)
+					{
+						GL.DeleteTextures(1, ref textureToDelete);
+					}
+					glDataNeedingToBeDeleted.RemoveAt(i);
+				}
+			}
 
 #if ON_IMAGE_CHANGED_ALWAYS_CREATE_IMAGE
-            if (plugin != null && imageToGetDisplayListFor.ChangedCount != plugin.imageUpdateCount)
-            {
-                int textureToDelete = plugin.GLTextureHandle;
-                GL.DeleteTextures(1, ref textureToDelete);
-                plugin.glData.glTextureHandle = 0;
-                imagesWithCacheData.Remove(imageToGetDisplayListFor.GetBuffer());
-                plugin = null;
-            }
+			if (plugin != null
+				&& (imageToGetDisplayListFor.ChangedCount != plugin.imageUpdateCount
+				|| plugin.glData.refreshCountCreatedOn != currentGlobalRefreshCount))
+			{
+				int textureToDelete = plugin.GLTextureHandle;
+				if (plugin.glData.refreshCountCreatedOn == currentGlobalRefreshCount)
+				{
+					GL.DeleteTextures(1, ref textureToDelete);
+				}
+				plugin.glData.glTextureHandle = 0;
+				imagesWithCacheData.Remove(imageToGetDisplayListFor.GetBuffer());
+				plugin = null;
+			}
 
-            if (plugin == null)
-            {
-                ImageGlPlugin newPlugin = new ImageGlPlugin();
-                imagesWithCacheData.Add(imageToGetDisplayListFor.GetBuffer(), newPlugin);
-                newPlugin.createdWithMipMaps = createAndUseMipMaps;
-                newPlugin.CreateGlDataForImage(imageToGetDisplayListFor, TextureMagFilterLinear);
-                newPlugin.imageUpdateCount = imageToGetDisplayListFor.ChangedCount;
-                return newPlugin;
-            }
+			if (plugin == null)
+			{
+				ImageGlPlugin newPlugin = new ImageGlPlugin();
+				imagesWithCacheData.Add(imageToGetDisplayListFor.GetBuffer(), newPlugin);
+				newPlugin.createdWithMipMaps = createAndUseMipMaps;
+				newPlugin.CreateGlDataForImage(imageToGetDisplayListFor, TextureMagFilterLinear);
+				newPlugin.imageUpdateCount = imageToGetDisplayListFor.ChangedCount;
+				newPlugin.glData.refreshCountCreatedOn = currentGlobalRefreshCount;
+				return newPlugin;
+			}
 #else
             if (plugin == null)
             {
@@ -101,12 +118,15 @@ namespace MatterHackers.RenderOpenGl
                 newPlugin.createdWithMipMaps = createAndUseMipMaps;
                 newPlugin.CreateGlDataForImage(imageToGetDisplayListFor, TextureMagFilterLinear);
                 newPlugin.imageUpdateCount = imageToGetDisplayListFor.ChangedCount;
+				newPlugin.refreshCountCreatedOn = currentGlobalRefreshCount;
                 return newPlugin;
             }
 
-            if(imageToGetDisplayListFor.ChangedCount != plugin.imageUpdateCount)
+            if(imageToGetDisplayListFor.ChangedCount != plugin.imageUpdateCount
+				|| plugin.refreshCountCreatedOn != currentGlobalRefreshCount)
             {
                 plugin.imageUpdateCount = imageToGetDisplayListFor.ChangedCount;
+				plugin.refreshCountCreatedOn = currentGlobalRefreshCount;
                 GL.BindTexture(TextureTarget.Texture2D, plugin.GLTextureHandle);
                 // Create the texture
                 switch (imageToGetDisplayListFor.BitDepth)
@@ -169,132 +189,133 @@ namespace MatterHackers.RenderOpenGl
                 }
             }
 #endif
-            return plugin;
-        }
+			return plugin;
+		}
 
-        public int GLTextureHandle
-        {
-            get
-            {
-                return glData.glTextureHandle;
-            }
-        }
+		public int GLTextureHandle
+		{
+			get
+			{
+				return glData.glTextureHandle;
+			}
+		}
 
-        private ImageGlPlugin()
-        {
-            // This is private as you can't build one of these. You have to call GetImageGlPlugin.
-        }
+		private ImageGlPlugin()
+		{
+			// This is private as you can't build one of these. You have to call GetImageGlPlugin.
+		}
 
-        ~ImageGlPlugin()
-        {
-            using (TimedLock.Lock(glDataNeedingToBeDeleted, "~ImageGlPlugin()"))
-            {
-                glDataNeedingToBeDeleted.Add(glData);
-            }
-        }
+		~ImageGlPlugin()
+		{
+			using (TimedLock.Lock(glDataNeedingToBeDeleted, "~ImageGlPlugin()"))
+			{
+				glDataNeedingToBeDeleted.Add(glData);
+			}
+		}
 
-        bool hwSupportsOnlyPowerOfTwoTextures = true;
-        bool checkedForHwSupportsOnlyPowerOfTwoTextures = false;
-        int SmallestHardwareCompatibleTextureSize(int size)
-        {
-            if (!checkedForHwSupportsOnlyPowerOfTwoTextures)
-            {
-                {
-                    // Compatible context (GL 1.0-2.1)
-                    string extensions = GL.GetString(StringName.Extensions);
-                    if (extensions.Contains("ARB_texture_non_power_of_two"))
-                    {
-                        hwSupportsOnlyPowerOfTwoTextures = false;
-                    }
-                }
+		bool hwSupportsOnlyPowerOfTwoTextures = true;
+		bool checkedForHwSupportsOnlyPowerOfTwoTextures = false;
+		int SmallestHardwareCompatibleTextureSize(int size)
+		{
+			if (!checkedForHwSupportsOnlyPowerOfTwoTextures)
+			{
+				{
+					// Compatible context (GL 1.0-2.1)
+					string extensions = GL.GetString(StringName.Extensions);
+					if (extensions.Contains("ARB_texture_non_power_of_two"))
+					{
+						hwSupportsOnlyPowerOfTwoTextures = false;
+					}
+				}
 
-                checkedForHwSupportsOnlyPowerOfTwoTextures = true;
-            }
+				checkedForHwSupportsOnlyPowerOfTwoTextures = true;
+			}
 
-            if (hwSupportsOnlyPowerOfTwoTextures)
-            {
-                return MathHelper.FirstPowerTowGreaterThanOrEqualTo(size);
-            }
-            else
-            {
-                return size;
-            }
-        }
+			if (hwSupportsOnlyPowerOfTwoTextures)
+			{
+				return MathHelper.FirstPowerTowGreaterThanOrEqualTo(size);
+			}
+			else
+			{
+				return size;
+			}
+		}
 
-        private void CreateGlDataForImage(ImageBuffer bufferedImage, bool TextureMagFilterLinear)
-        {
-            //Next we expand the image into an openGL texture
-            int imageWidth = bufferedImage.Width;
-            int imageHeight = bufferedImage.Height;
-            int bufferOffset;
-            byte[] imageBuffer = bufferedImage.GetBuffer(out bufferOffset);
-            int hardwareWidth = SmallestHardwareCompatibleTextureSize(imageWidth);
-            int hardwareHeight = SmallestHardwareCompatibleTextureSize(imageHeight);
-            byte[] hardwareExpandedPixelBuffer = imageBuffer;
-            if (hardwareWidth != imageWidth || hardwareHeight != imageHeight)
-            {
-                // we have to put the data on a buffer that GL can handle.
-                hardwareExpandedPixelBuffer = new byte[4 * hardwareWidth * hardwareHeight];
-                switch (bufferedImage.BitDepth)
-                {
-                    case 32:
-                        for (int y = 0; y < hardwareHeight; y++)
-                        {
-                            for (int x = 0; x < hardwareWidth; x++)
-                            {
-                                int pixelIndex = 4 * (x + y * hardwareWidth);
-                                if (x >= imageWidth || y >= imageHeight)
-                                {
-                                    hardwareExpandedPixelBuffer[pixelIndex + 0] = 0;
-                                    hardwareExpandedPixelBuffer[pixelIndex + 1] = 0;
-                                    hardwareExpandedPixelBuffer[pixelIndex + 2] = 0;
-                                    hardwareExpandedPixelBuffer[pixelIndex + 3] = 0;
-                                }
-                                else
-                                {
-                                    hardwareExpandedPixelBuffer[pixelIndex + 0] = imageBuffer[4 * (x + y * imageWidth) + 2];
-                                    hardwareExpandedPixelBuffer[pixelIndex + 1] = imageBuffer[4 * (x + y * imageWidth) + 1];
-                                    hardwareExpandedPixelBuffer[pixelIndex + 2] = imageBuffer[4 * (x + y * imageWidth) + 0];
-                                    hardwareExpandedPixelBuffer[pixelIndex + 3] = imageBuffer[4 * (x + y * imageWidth) + 3];
-                                }
-                            }
-                        }
-                        break;
+		private void CreateGlDataForImage(ImageBuffer bufferedImage, bool TextureMagFilterLinear)
+		{
+			//Next we expand the image into an openGL texture
+			int imageWidth = bufferedImage.Width;
+			int imageHeight = bufferedImage.Height;
+			int bufferOffset;
+			byte[] imageBuffer = bufferedImage.GetBuffer(out bufferOffset);
+			int hardwareWidth = SmallestHardwareCompatibleTextureSize(imageWidth);
+			int hardwareHeight = SmallestHardwareCompatibleTextureSize(imageHeight);
+			byte[] hardwareExpandedPixelBuffer = imageBuffer;
+			if (hardwareWidth != imageWidth || hardwareHeight != imageHeight)
+			{
+				// we have to put the data on a buffer that GL can handle.
+				hardwareExpandedPixelBuffer = new byte[4 * hardwareWidth * hardwareHeight];
+				switch (bufferedImage.BitDepth)
+				{
+					case 32:
+						for (int y = 0; y < hardwareHeight; y++)
+						{
+							for (int x = 0; x < hardwareWidth; x++)
+							{
+								int pixelIndex = 4 * (x + y * hardwareWidth);
+								if (x >= imageWidth || y >= imageHeight)
+								{
+									hardwareExpandedPixelBuffer[pixelIndex + 0] = 0;
+									hardwareExpandedPixelBuffer[pixelIndex + 1] = 0;
+									hardwareExpandedPixelBuffer[pixelIndex + 2] = 0;
+									hardwareExpandedPixelBuffer[pixelIndex + 3] = 0;
+								}
+								else
+								{
+									hardwareExpandedPixelBuffer[pixelIndex + 0] = imageBuffer[4 * (x + y * imageWidth) + 2];
+									hardwareExpandedPixelBuffer[pixelIndex + 1] = imageBuffer[4 * (x + y * imageWidth) + 1];
+									hardwareExpandedPixelBuffer[pixelIndex + 2] = imageBuffer[4 * (x + y * imageWidth) + 0];
+									hardwareExpandedPixelBuffer[pixelIndex + 3] = imageBuffer[4 * (x + y * imageWidth) + 3];
+								}
+							}
+						}
+						break;
 
-                    default:
-                        throw new NotImplementedException();
-                }
-            }
+					default:
+						throw new NotImplementedException();
+				}
+			}
 
-            // Create the texture handle
-            GL.GenTextures(1, out glData.glTextureHandle);
+			GL.Enable(EnableCap.Texture2D);
+			// Create the texture handle
+			GL.GenTextures(1, out glData.glTextureHandle);
 
-            // Set up some texture parameters for openGL
-            GL.BindTexture(TextureTarget.Texture2D, glData.glTextureHandle);
-            if (TextureMagFilterLinear)
-            {
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-            }
-            else
-            {
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
-            }
+			// Set up some texture parameters for openGL
+			GL.BindTexture(TextureTarget.Texture2D, glData.glTextureHandle);
+			if (TextureMagFilterLinear)
+			{
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+			}
+			else
+			{
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+			}
 
-            if (createdWithMipMaps)
-            {
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.LinearMipmapLinear);
-            }
-            else
-            {
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-            }
+			if (createdWithMipMaps)
+			{
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.LinearMipmapLinear);
+			}
+			else
+			{
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+			}
 
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
 
-            // Create the texture
-            switch (bufferedImage.BitDepth)
-            {
+			// Create the texture
+			switch (bufferedImage.BitDepth)
+			{
 #if false // not implemented in our gl wrapper and never used in our current code
                 case 8:
                     GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Luminance, hardwareWidth, hardwareHeight,
@@ -307,71 +328,71 @@ namespace MatterHackers.RenderOpenGl
                     break;
 #endif
 
-                case 32:
-                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, hardwareWidth, hardwareHeight,
-                        0, PixelFormat.Bgra, PixelType.UnsignedByte, hardwareExpandedPixelBuffer);
-                    break;
+				case 32:
+					GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, hardwareWidth, hardwareHeight,
+						0, PixelFormat.Rgba, PixelType.UnsignedByte, hardwareExpandedPixelBuffer);
+					break;
 
-                default:
-                    throw new NotImplementedException();
-            }
-            hardwareExpandedPixelBuffer = null;
+				default:
+					throw new NotImplementedException();
+			}
+			hardwareExpandedPixelBuffer = null;
 
-            if (createdWithMipMaps)
-            {
-                switch (bufferedImage.BitDepth)
-                {
-                    case 32:
-                        {
-                            ImageBuffer sourceImage = new ImageBuffer(bufferedImage);
-                            ImageBuffer tempImage = new ImageBuffer(sourceImage.Width / 2, sourceImage.Height / 2, 32, new BlenderBGRA());
-                            tempImage.NewGraphics2D().Render(sourceImage, 0, 0, 0, .5, .5);
-                            int mipLevel = 1;
-                            while (sourceImage.Width > 1 && sourceImage.Height > 1)
-                            {
-                                GL.TexImage2D(TextureTarget.Texture2D, mipLevel++, PixelInternalFormat.Rgba, tempImage.Width, tempImage.Height,
-									0, PixelFormat.Bgra, PixelType.UnsignedByte, tempImage.GetBuffer());
-                                sourceImage = new ImageBuffer(tempImage);
-                                tempImage = new ImageBuffer(Math.Max(1, sourceImage.Width / 2), Math.Max(1, sourceImage.Height / 2), 32, new BlenderBGRA());
-                                tempImage.NewGraphics2D().Render(sourceImage, 0, 0,
-                                    0,
-                                    (double)tempImage.Width / (double)sourceImage.Width,
-                                    (double)tempImage.Height / (double)sourceImage.Height);
-                            }
-                        }
-                        break;
+			if (createdWithMipMaps)
+			{
+				switch (bufferedImage.BitDepth)
+				{
+					case 32:
+						{
+							ImageBuffer sourceImage = new ImageBuffer(bufferedImage);
+							ImageBuffer tempImage = new ImageBuffer(sourceImage.Width / 2, sourceImage.Height / 2, 32, new BlenderBGRA());
+							tempImage.NewGraphics2D().Render(sourceImage, 0, 0, 0, .5, .5);
+							int mipLevel = 1;
+							while (sourceImage.Width > 1 && sourceImage.Height > 1)
+							{
+								GL.TexImage2D(TextureTarget.Texture2D, mipLevel++, PixelInternalFormat.Rgba, tempImage.Width, tempImage.Height,
+									0, PixelFormat.Rgba, PixelType.UnsignedByte, tempImage.GetBuffer());
+								sourceImage = new ImageBuffer(tempImage);
+								tempImage = new ImageBuffer(Math.Max(1, sourceImage.Width / 2), Math.Max(1, sourceImage.Height / 2), 32, new BlenderBGRA());
+								tempImage.NewGraphics2D().Render(sourceImage, 0, 0,
+									0,
+									(double)tempImage.Width / (double)sourceImage.Width,
+									(double)tempImage.Height / (double)sourceImage.Height);
+							}
+						}
+						break;
 
-                    default:
-                        throw new NotImplementedException();
-                }
-            }
+					default:
+						throw new NotImplementedException();
+				}
+			}
 
-            float texCoordX = imageWidth / (float)hardwareWidth;
-            float texCoordY = imageHeight / (float)hardwareHeight;
+			float texCoordX = imageWidth / (float)hardwareWidth;
+			float texCoordY = imageHeight / (float)hardwareHeight;
 
-            float OffsetX = (float)bufferedImage.OriginOffset.x;
-            float OffsetY = (float)bufferedImage.OriginOffset.y;
+			float OffsetX = (float)bufferedImage.OriginOffset.x;
+			float OffsetY = (float)bufferedImage.OriginOffset.y;
 
-            glData.textureUVs = new float[8];
-            glData.positions = new float[8];
+			glData.textureUVs = new float[8];
+			glData.positions = new float[8];
 
-            glData.textureUVs[0] = 0; glData.textureUVs[1] = 0; glData.positions[0] = 0 - OffsetX; glData.positions[1] = 0 - OffsetY;
-            glData.textureUVs[2] = 0; glData.textureUVs[3] = texCoordY; glData.positions[2] = 0 - OffsetX; glData.positions[3] = imageHeight - OffsetY;
-            glData.textureUVs[4] = texCoordX; glData.textureUVs[5] = texCoordY; glData.positions[4] = imageWidth - OffsetX; glData.positions[5] = imageHeight - OffsetY;
-            glData.textureUVs[6] = texCoordX; glData.textureUVs[7] = 0; glData.positions[6] = imageWidth - OffsetX; glData.positions[7] = 0 - OffsetY;
-        }
+			glData.textureUVs[0] = 0; glData.textureUVs[1] = 0; glData.positions[0] = 0 - OffsetX; glData.positions[1] = 0 - OffsetY;
+			glData.textureUVs[2] = 0; glData.textureUVs[3] = texCoordY; glData.positions[2] = 0 - OffsetX; glData.positions[3] = imageHeight - OffsetY;
+			glData.textureUVs[4] = texCoordX; glData.textureUVs[5] = texCoordY; glData.positions[4] = imageWidth - OffsetX; glData.positions[5] = imageHeight - OffsetY;
+			glData.textureUVs[6] = texCoordX; glData.textureUVs[7] = 0; glData.positions[6] = imageWidth - OffsetX; glData.positions[7] = 0 - OffsetY;
+		}
 
-        public void DrawToGL()
-        {
-            GL.BindTexture(TextureTarget.Texture2D, GLTextureHandle);
+		public void DrawToGL()
+		{
+			GL.BindTexture(TextureTarget.Texture2D, GLTextureHandle);
 #if true
-            GL.Begin(BeginMode.TriangleFan);
-            GL.TexCoord2(glData.textureUVs[0], glData.textureUVs[1]); GL.Vertex2(glData.positions[0], glData.positions[1]);
-            GL.TexCoord2(glData.textureUVs[2], glData.textureUVs[3]); GL.Vertex2(glData.positions[2], glData.positions[3]);
-            GL.TexCoord2(glData.textureUVs[4], glData.textureUVs[5]); GL.Vertex2(glData.positions[4], glData.positions[5]);
-            GL.TexCoord2(glData.textureUVs[6], glData.textureUVs[7]); GL.Vertex2(glData.positions[6], glData.positions[7]);
+			GL.Begin(BeginMode.TriangleFan);
+			GL.TexCoord2(glData.textureUVs[0], glData.textureUVs[1]); GL.Vertex2(glData.positions[0], glData.positions[1]);
+			GL.TexCoord2(glData.textureUVs[2], glData.textureUVs[3]); GL.Vertex2(glData.positions[2], glData.positions[3]);
+			GL.TexCoord2(glData.textureUVs[4], glData.textureUVs[5]); GL.Vertex2(glData.positions[4], glData.positions[5]);
+			GL.TexCoord2(glData.textureUVs[6], glData.textureUVs[7]); GL.Vertex2(glData.positions[6], glData.positions[7]);
 
-            GL.End();
+			GL.End();
 #else
             GL.TexCoordPointer(2, TexCoordPointerType.Float, 0, glData.textureUVs);
             GL.EnableClientState(ArrayCap.TextureCoordArray);
@@ -385,6 +406,6 @@ namespace MatterHackers.RenderOpenGl
             GL.DisableClientState(ArrayCap.TextureCoordArray);
             GL.DisableClientState(ArrayCap.VertexArray);
 #endif
-        }
-    }
+		}
+	}
 }

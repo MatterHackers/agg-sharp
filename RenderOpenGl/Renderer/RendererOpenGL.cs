@@ -50,7 +50,7 @@ namespace MatterHackers.RenderOpenGl
         // We can have a single static instance because all gl rendering is required to happen on the ui thread so there can
         // be no runtime contention for this object (no thread contention).
         static AARenderToGLTesselator triangleEddgeInfo = new AARenderToGLTesselator();
-        static int AATextureHandle = -1;
+        static ImageBuffer AATextureImage = null;
 
         public bool DoEdgeAntiAliasing = true;
         static RenderToGLTesselator renderNowTesselator = new RenderToGLTesselator();
@@ -154,44 +154,24 @@ namespace MatterHackers.RenderOpenGl
 #endif
         }
 
-		static byte[] CreateBufferForAATexture()
-		{
-			byte[] hardwarePixelBuffer = new byte[1024 * 4 * 4];
-			for (int y = 0; y < 4; y++)
-			{
-				byte alpha = 0;
-				for (int x = 0; x < 1024; x++)
-				{
-					hardwarePixelBuffer[(y * 1024 + x) * 4 + 0] = 255;
-					hardwarePixelBuffer[(y * 1024 + x) * 4 + 1] = 255;
-					hardwarePixelBuffer[(y * 1024 + x) * 4 + 2] = 255;
-					hardwarePixelBuffer[(y * 1024 + x) * 4 + 3] = alpha;
-					alpha = 255;
-				}
-			}
-			return hardwarePixelBuffer;
-		}
-
         void CheckLineImageCache()
         {
-            if (AATextureHandle == -1)
+			if (AATextureImage == null)
             {
-                // Create the texture handle and display list handle
-                GL.GenTextures(1, out AATextureHandle);
-
-                // Set up some texture parameters for openGL
-                GL.BindTexture(TextureTarget.Texture2D, AATextureHandle);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
-
-                byte[] hardwarePixelBuffer = CreateBufferForAATexture();
-
-                // Create the texture
-                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1024, 4,
-                    0, PixelFormat.Rgba, PixelType.UnsignedByte, hardwarePixelBuffer);
+				AATextureImage = new ImageBuffer(1024, 4, 32, new BlenderBGRA());
+				byte[] hardwarePixelBuffer = AATextureImage.GetBuffer();
+				for (int y = 0; y < 4; y++)
+				{
+					byte alpha = 0;
+					for (int x = 0; x < 1024; x++)
+					{
+						hardwarePixelBuffer[(y * 1024 + x) * 4 + 0] = 255;
+						hardwarePixelBuffer[(y * 1024 + x) * 4 + 1] = 255;
+						hardwarePixelBuffer[(y * 1024 + x) * 4 + 2] = 255;
+						hardwarePixelBuffer[(y * 1024 + x) * 4 + 3] = alpha;
+						alpha = 255;
+					}
+				}
             }
         }
 
@@ -199,7 +179,7 @@ namespace MatterHackers.RenderOpenGl
         {
 			CheckLineImageCache();
             GL.Enable(EnableCap.Texture2D);
-            GL.BindTexture(TextureTarget.Texture2D, AATextureHandle);
+            GL.BindTexture(TextureTarget.Texture2D, RenderOpenGl.ImageGlPlugin.GetImageGlPlugin(AATextureImage, false).GLTextureHandle);
 
             triangleEddgeInfo.Clear();
             Graphics2DOpenGL.SendShapeToTesselator(triangleEddgeInfo, vertexSource);
