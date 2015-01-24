@@ -329,8 +329,13 @@ namespace MatterHackers.RenderOpenGl
 #endif
 
 				case 32:
+#if __ANDROID__
 					GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, hardwareWidth, hardwareHeight,
 						0, PixelFormat.Rgba, PixelType.UnsignedByte, hardwareExpandedPixelBuffer);
+#else
+					GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, hardwareWidth, hardwareHeight,
+						0, PixelFormat.Bgra, PixelType.UnsignedByte, hardwareExpandedPixelBuffer);
+#endif
 					break;
 
 				default:
@@ -350,8 +355,13 @@ namespace MatterHackers.RenderOpenGl
 							int mipLevel = 1;
 							while (sourceImage.Width > 1 && sourceImage.Height > 1)
 							{
-								GL.TexImage2D(TextureTarget.Texture2D, mipLevel++, PixelInternalFormat.Rgba, tempImage.Width, tempImage.Height,
-									0, PixelFormat.Rgba, PixelType.UnsignedByte, tempImage.GetBuffer());
+#if __ANDROID__
+								GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, hardwareWidth, hardwareHeight,
+									0, PixelFormat.Rgba, PixelType.UnsignedByte, hardwareExpandedPixelBuffer);
+#else
+								GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, hardwareWidth, hardwareHeight,
+									0, PixelFormat.Bgra, PixelType.UnsignedByte, hardwareExpandedPixelBuffer);
+#endif
 								sourceImage = new ImageBuffer(tempImage);
 								tempImage = new ImageBuffer(Math.Max(1, sourceImage.Width / 2), Math.Max(1, sourceImage.Height / 2), 32, new BlenderBGRA());
 								tempImage.NewGraphics2D().Render(sourceImage, 0, 0,
