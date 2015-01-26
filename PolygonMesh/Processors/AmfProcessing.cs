@@ -622,7 +622,7 @@ namespace MatterHackers.PolygonMesh.Processors
             }
         }
 
-        private static Stream GetCompressedStreamIfRequired(Stream amfStream)
+        public static Stream GetCompressedStreamIfRequired(Stream amfStream)
         {
             if (IsZipFile(amfStream))
             {
