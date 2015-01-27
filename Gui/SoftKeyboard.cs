@@ -322,6 +322,7 @@ namespace MatterHackers.Agg.UI
 		GuiWidget content;
 		GuiWidget contentOffsetHolder;
 		int deviceKeyboardHeight;
+		public static readonly int AndroidKeyboardOffset = 253;
 
 		public SoftKeyboardContentOffset(GuiWidget content, int deviceKeyboardHeight)
 		{
