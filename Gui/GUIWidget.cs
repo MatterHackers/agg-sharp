@@ -233,7 +233,9 @@ namespace MatterHackers.Agg.UI
         [ConditionalAttribute("DEBUG")]
         public static void ThrowExceptionInDebug(string description)
         {
-            throw new Exception(description);
+			#if DEBUG
+			throw new Exception(description);
+			#endif
         }
 
         public virtual void OnMarginChanged()
