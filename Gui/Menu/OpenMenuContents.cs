@@ -40,6 +40,7 @@ namespace MatterHackers.Agg.UI
                 foreach (MenuItem menu in MenuItems)
                 {
                     topToBottom.AddChild(menu);
+					menu.DoClickFunction = AllowClickingItems;
                 }
 
                 topToBottom.HAnchor = UI.HAnchor.ParentLeft | UI.HAnchor.FitToChildren;
@@ -154,9 +155,29 @@ namespace MatterHackers.Agg.UI
             }
         }
 
+		Vector2 positionAtMouseDown;
+		Vector2 positionAtMouseUp;
+		public override void OnMouseDown(MouseEventArgs mouseEvent)
+		{
+			positionAtMouseDown = scrollingWindow.ScrollPosition;
+			base.OnMouseDown(mouseEvent);
+		}
+
+		internal bool AllowClickingItems()
+		{
+			if ((positionAtMouseDown - positionAtMouseUp).Length > 10)
+			{
+				return false;
+			}
+
+			return true;
+		}
+
         public override void OnMouseUp(MouseEventArgs mouseEvent)
         {
-            if (!scrollingWindow.VerticalScrollBar.ChildHasMouseCaptured)
+			positionAtMouseUp = scrollingWindow.ScrollPosition;
+            if (!scrollingWindow.VerticalScrollBar.ChildHasMouseCaptured
+				&& AllowClickingItems())
             {
                 UiThread.RunOnIdle(RemoveFromParent);
             }

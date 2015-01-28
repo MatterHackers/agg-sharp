@@ -9,6 +9,10 @@ namespace MatterHackers.Agg.UI
     {
         public event EventHandler Selected;
 
+		public delegate bool CheckIfShouldClick();
+
+		public CheckIfShouldClick DoClickFunction;
+
         public string Value
         {
             get;
@@ -25,13 +29,17 @@ namespace MatterHackers.Agg.UI
 
         public override void OnMouseUp(MouseEventArgs mouseEvent)
         {
-            if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
-            {
-                if (Selected != null)
-                {
-                    Selected(this, mouseEvent);
-                }
-            }
+			if (DoClickFunction != null
+				&& DoClickFunction())
+			{
+				if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
+				{
+					if (Selected != null)
+					{
+						Selected(this, mouseEvent);
+					}
+				}
+			}
             base.OnMouseUp(mouseEvent);
         }
     }
