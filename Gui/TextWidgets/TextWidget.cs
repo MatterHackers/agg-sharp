@@ -157,8 +157,10 @@ namespace MatterHackers.Agg.UI
                 if (base.Text != convertedToNewline)
                 {
                     base.Text = convertedToNewline;
+					bool wasUsingHintedCache = printer.DrawFromHintedCache;
                     // Text may have been changed by a call back be sure to use what we really have set
                     printer = new TypeFacePrinter(base.Text, printer.TypeFaceStyle, justification: printer.Justification);
+					printer.DrawFromHintedCache = wasUsingHintedCache;
                     if (AutoExpandBoundsToText)
                     {
                         DoExpandBoundsToText();
@@ -209,6 +211,7 @@ namespace MatterHackers.Agg.UI
             if (EllipsisIfClipped && Printer.LocalBounds.Width > LocalBounds.Width) // only do this if it's static text
             {
                 TypeFacePrinter shortTextPrinter = Printer;
+				shortTextPrinter.DrawFromHintedCache = Printer.DrawFromHintedCache;
                 while (shortTextPrinter.LocalBounds.Width > LocalBounds.Width && shortTextPrinter.Text.Length > 4)
                 {
                     shortTextPrinter = new TypeFacePrinter(shortTextPrinter.Text.Substring(0, shortTextPrinter.Text.Length - 4).TrimEnd(spaceTrim) + "...", Printer);
