@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
@@ -12,6 +14,7 @@ namespace MatterHackers.Agg.UI
 		public abstract bool OpenFileDialog(OpenFileDialogParams openParams, OpenFileDialogDelegate callback);
 		public abstract bool SelectFolderDialog(SelectFolderDialogParams folderParams, SelectFolderDialogDelegate callback);
 		public abstract bool SaveFileDialog(SaveFileDialogParams saveParams, SaveFileDialogDelegate callback);
+		public abstract string ResolveFilePath(string path);
     }
 
     public static class FileDialog
@@ -38,7 +41,13 @@ namespace MatterHackers.Agg.UI
                 return fileDialogCreatorPlugin;
             }
         }
-        
+
+        public static IEnumerable<string> ResolveFilePaths(IEnumerable<string> filePaths)
+        {
+            // Only perform Mac file reference resoltion when the string starts with the expected token
+            return filePaths.Select(path => !path.StartsWith ("/.file") ? path : FileDialogCreatorPlugin.ResolveFilePath(path));
+        }
+
 		public static bool OpenFileDialog(OpenFileDialogParams openParams, FileDialogCreator.OpenFileDialogDelegate callback)
 		{
             return FileDialogCreatorPlugin.OpenFileDialog(openParams, (OpenFileDialogParams outputOpenParams) =>
