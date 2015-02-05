@@ -117,6 +117,13 @@ namespace MatterHackers.Csg.Solids
                     root = new Rotate(root, x: MathHelper.DegreesToRadians(90));
                     break;
 
+				case Alignment.z:
+					break;
+
+				case Alignment.negZ:
+                    root = new Rotate(root, x: MathHelper.DegreesToRadians(180));
+					break;
+
                 default:
                     throw new NotImplementedException();
             }

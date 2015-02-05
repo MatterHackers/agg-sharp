@@ -515,7 +515,7 @@ namespace MatterHackers.Csg.Solids
                 case Edge.RightBack:
                     centralAxis = 2; // z axis
                     break;
-            }
+			    }
 
             AxisAlignedBoundingBox boundsA = objectA.GetAxisAlignedBoundingBox();
             AxisAlignedBoundingBox boundsB = objectB.GetAxisAlignedBoundingBox();
@@ -541,7 +541,7 @@ namespace MatterHackers.Csg.Solids
             return newFillet;
         }
 
-        public static CsgObject CreateNegativeFillet(double innerRadius, double outerRadius, double height, Alignment alignment = Alignment.z, double extraDimension = defaultExtraRadialDimension, string name = "")
+        public static CsgObject CreateBevel(double innerRadius, double outerRadius, double height, Alignment alignment = Alignment.z, double extraDimension = defaultExtraRadialDimension, string name = "")
         {
             double width = outerRadius - innerRadius;
             List<Vector2> points = new List<Vector2>();
@@ -559,7 +559,38 @@ namespace MatterHackers.Csg.Solids
             return new RotateExtrude(points.ToArray(), innerRadius, alignment, name);
         }
 
-        public static CsgObject CreateFillet(double innerRadius, double outerRadius, double height, Alignment alignment = Alignment.z, double extraDimension = defaultExtraRadialDimension, string name = "")
+		public static CsgObject CreateNegativeBevel(double innerRadius, double outerRadius, double height, Alignment alignment = Alignment.z, double extraDimension = defaultExtraRadialDimension, string name = "")
+		{
+			double width = outerRadius - innerRadius;
+			List<Vector2> points = new List<Vector2>();
+
+			int numCurvePoints = 6;
+			for (int curvePoint = 0; curvePoint <= numCurvePoints; curvePoint++)
+			{
+				double x = width - Math.Cos((MathHelper.Tau / 4 * curvePoint / numCurvePoints)) * width;
+				double y = height - Math.Sin((MathHelper.Tau / 4 * curvePoint / numCurvePoints)) * height;
+				points.Add(new Vector2(x, y));
+			}
+			points.Add(new Vector2(width, 0));
+			points.Add(new Vector2(width, height));
+
+			CsgObject bevel = new RotateExtrude(points.ToArray(), innerRadius, alignment, name);
+
+			points.Clear();
+			points.Add(new Vector2(0, -extraDimension));
+			points.Add(new Vector2(width + extraDimension, -extraDimension));
+			points.Add(new Vector2(width + extraDimension, height + extraDimension));
+			points.Add(new Vector2(0, height+ extraDimension));
+
+			CsgObject cut = new RotateExtrude(points.ToArray(), innerRadius, alignment, name);
+			cut = new Align(cut, Face.Bottom, bevel, Face.Bottom, 0, 0, .1);
+			//return cut;
+			bevel = cut - bevel;
+
+			return bevel;
+		}
+
+		public static CsgObject CreateFillet(double innerRadius, double outerRadius, double height, Alignment alignment = Alignment.z, double extraDimension = defaultExtraRadialDimension, string name = "")
         {
             double width = outerRadius - innerRadius;
             List<Vector2> points = new List<Vector2>();

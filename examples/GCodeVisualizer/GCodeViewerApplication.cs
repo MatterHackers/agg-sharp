@@ -170,6 +170,9 @@ namespace MatterHackers.GCodeVisualizer
         public static void Main(string[] args)
         {
             GCodeViewerApplication app = new GCodeViewerApplication();
+			app.UseOpenGL = true;
+			app.DoubleBuffer = true;
+			app.BackBuffer.SetRecieveBlender(new BlenderPreMultBGRA());
             app.ShowAsSystemWindow();
         }
     }
