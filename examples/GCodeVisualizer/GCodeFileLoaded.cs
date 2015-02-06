@@ -462,6 +462,16 @@ namespace MatterHackers.GCodeVisualizer
         {
             get { return center; }
         }
+		
+		public override double PercentComplete(int instructionIndex)
+		{
+			if (GCodeCommandQueue.Count > 0)
+			{
+				return Math.Min(99.9, (double)instructionIndex / (double)GCodeCommandQueue.Count * 100);
+			}
+
+			return 100;
+		}
 
 		public override int GetInstructionIndexAtLayer(int layerIndex)
 		{

@@ -91,6 +91,7 @@ namespace MatterHackers.GCodeVisualizer
 		public abstract int NumChangesInZ { get; }
 		public abstract PrinterMachineInstruction Instruction(int i);
 		public abstract double Ratio0to1IntoContainedLayer(int instructionIndex);
+		public abstract double PercentComplete(int instructionIndex);
 		
 		public static bool FileTooBigToLoad(string fileName)
 		{

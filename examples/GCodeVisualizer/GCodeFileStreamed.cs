@@ -162,7 +162,21 @@ namespace MatterHackers.GCodeVisualizer
 		{
 			throw new NotImplementedException(); 
 		}
-		
+
+		public override double PercentComplete(int instructionIndex)
+		{
+			using (TimedLock.Lock(this, "Getting Percent Complete"))
+			{
+				if (openGcodeStream != null
+					&& openGcodeStream.BaseStream.Length > 0)
+				{
+					return (double)openGcodeStream.BaseStream.Position / (double)openGcodeStream.BaseStream.Length * 100.0;
+				}
+			}
+
+			return 100;
+		}
+
 		public override int GetInstructionIndexAtLayer(int layerIndex) 
 		{
 			throw new NotImplementedException(); 
