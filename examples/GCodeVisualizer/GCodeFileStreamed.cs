@@ -203,6 +203,12 @@ namespace MatterHackers.GCodeVisualizer
 				while (index >= readLineCount)
 				{
 					string line = openGcodeStream.ReadLine();
+					if (line == null)
+					{
+						readLastLineOfFile = true;
+						line = "";
+					}
+
 					readLinesRingBuffer[readLineCount % MaxLinesToBuffer] = new PrinterMachineInstruction(line);
 					readLineCount++;
 				}

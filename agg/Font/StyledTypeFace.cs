@@ -298,7 +298,7 @@ namespace MatterHackers.Agg.Font
             }
 
 			int descentExtraHeight = (int)(-DescentInPixels + .5);
-			ImageBuffer charImage = new ImageBuffer(Math.Max((int)(bounds.Width + .5), 1) + 1, Math.Max((int)(EmSizeInPixels + descentExtraHeight + .5), 1) + 1, 32, new BlenderBGRA());
+			ImageBuffer charImage = new ImageBuffer(Math.Max((int)(bounds.Width + .5), 1) + 1, Math.Max((int)(EmSizeInPixels + descentExtraHeight + .5), 1) + 1, 32, new BlenderPreMultBGRA());
 			charImage.OriginOffset = new VectorMath.Vector2(0, descentExtraHeight);
 			Graphics2D graphics = charImage.NewGraphics2D();
 			graphics.Render(glyphForCharacter, xFraction, yFraction + descentExtraHeight, color);

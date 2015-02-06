@@ -51,6 +51,7 @@ namespace MatterHackers.GCodeVisualizer
 #if	__ANDROID__
 		protected const int Max32BitFileSize = 10000000; // 10 megs
 #else
+		//protected const int Max32BitFileSize = 50; // 50 bytes
 		protected const int Max32BitFileSize = 50000000; // 50 megs
 #endif
 
@@ -110,7 +111,6 @@ namespace MatterHackers.GCodeVisualizer
 
 		public static GCodeFile Load(string fileName)
 		{
-			GCodeFile loadedGCode = null;
 			if (FileTooBigToLoad(fileName))
 			{
 				return new GCodeFileStreamed(fileName);
