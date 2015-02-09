@@ -742,7 +742,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
             stream.DiscardOutBuffer();
         }
 
-        public static string[] GetPortNames()
+        public static string[] GetPortNames(bool filter = false)
         {
             int p = (int)Environment.OSVersion.Platform;
             List<string> serial_ports = new List<string>();
@@ -751,31 +751,22 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
             if (p == 4 || p == 128 || p == 6)
             {
                 string[] ttys = Directory.GetFiles("/dev/", "tty*");
-                bool linux_style = false;
 
-                //
+                // If filtering was not requested, return the raw listing of /dev/tty* - (subsequent filtering happens in client code)
+                if (!filter) {
+                    return ttys;
+                }
+
                 // Probe for Linux-styled devices: /dev/ttyS* or /dev/ttyUSB*
-                // 
                 foreach (string dev in ttys)
                 {
                     if (dev.StartsWith("/dev/ttyS") || dev.StartsWith("/dev/ttyUSB") || dev.StartsWith("/dev/ttyACM"))
                     {
-                        linux_style = true;
-                        break;
+                        serial_ports.Add(dev);
                     }
-                }
-
-                foreach (string dev in ttys)
-                {
-                    if (linux_style)
+                    else if (dev != "/dev/tty" && dev.StartsWith("/dev/tty") && !dev.StartsWith("/dev/ttyC"))
                     {
-                        if (dev.StartsWith("/dev/ttyS") || dev.StartsWith("/dev/ttyUSB") || dev.StartsWith("/dev/ttyACM"))
-                            serial_ports.Add(dev);
-                    }
-                    else
-                    {
-                        if (dev != "/dev/tty" && dev.StartsWith("/dev/tty") && !dev.StartsWith("/dev/ttyC"))
-                            serial_ports.Add(dev);
+                        serial_ports.Add(dev);
                     }
                 }
             }
