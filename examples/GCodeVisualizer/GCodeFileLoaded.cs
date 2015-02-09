@@ -248,7 +248,8 @@ namespace MatterHackers.GCodeVisualizer
                 return;
             }
 
-            BackgroundWorker backgroundWorker = sender as BackgroundWorker;
+			Stopwatch loadTime = Stopwatch.StartNew();
+			BackgroundWorker backgroundWorker = sender as BackgroundWorker;
 
             Stopwatch maxProgressReport = new Stopwatch();
             maxProgressReport.Start();
@@ -338,6 +339,9 @@ namespace MatterHackers.GCodeVisualizer
             loadedGCodeFile.AnalyzeGCodeLines(backgroundWorker);
 
             doWorkEventArgs.Result = loadedGCodeFile;
+
+			loadTime.Stop();
+			Console.WriteLine("Time To Load Seconds: {0:0.00}".FormatWith(loadTime.Elapsed.TotalSeconds));
         }
 
         void AnalyzeGCodeLines(BackgroundWorker backgroundWorker = null)
