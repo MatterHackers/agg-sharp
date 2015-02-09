@@ -590,17 +590,17 @@ namespace MatterHackers.PolygonMesh.Processors
                                                     {
                                                         case "x":
                                                             string x = coordinatesTree.ReadString();
-															position.x = agg_basics.ParseDouble(x);
+                                                            position.x = double.Parse(x);
                                                             break;
 
                                                         case "y":
                                                             string y = coordinatesTree.ReadString();
-															position.y = agg_basics.ParseDouble(y);
+                                                            position.y = double.Parse(y);
                                                             break;
 
                                                         case "z":
                                                             string z = coordinatesTree.ReadString();
-                                                            position.z = agg_basics.ParseDouble(z);
+                                                            position.z = double.Parse(z);
                                                             break;
 
                                                         default:

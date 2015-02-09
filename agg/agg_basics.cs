@@ -54,7 +54,38 @@ namespace MatterHackers.Agg
 			return ParseDouble(source, ref startIndex);
 		}
 
+		static Regex numberRegex = new Regex(@"[-+]?[0-9]*\.?[0-9]+");
+		static double GetNextNumberOld(String source, ref int startIndex)
+		{
+			Match numberMatch = numberRegex.Match(source, startIndex);
+			String returnString = numberMatch.Value;
+			startIndex = numberMatch.Index + numberMatch.Length;
+			double returnVal;
+			double.TryParse(returnString, NumberStyles.Number, CultureInfo.InvariantCulture, out returnVal);
+			return returnVal;
+		}
+
 		public static double ParseDouble(String source, ref int startIndex)
+		{
+#if true
+			return ParseDoubleFast(source, ref startIndex);
+#else
+			int startIndexNew = startIndex;
+			double newNumber = agg_basics.ParseDoubleFast(source, ref startIndexNew);
+			int startIndexOld = startIndex;
+			double oldNumber = GetNextNumberOld(source, ref startIndexOld);
+			if (Math.Abs(newNumber - oldNumber) > .0001
+				|| startIndexNew != startIndexOld)
+			{
+				int a = 0;
+			}
+
+			startIndex = startIndexNew;
+			return newNumber;
+#endif
+		}
+
+		static double ParseDoubleFast(String source, ref int startIndex)
 		{
 			int length = source.Length;
 			bool negative = false;

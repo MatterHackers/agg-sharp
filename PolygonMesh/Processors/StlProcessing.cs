@@ -242,19 +242,19 @@ namespace MatterHackers.PolygonMesh.Processors
                         switch (vectorIndex)
                         {
                             case 1:
-                                vector0.x = agg_basics.ParseDouble(parts[1]);
-								vector0.y = agg_basics.ParseDouble(parts[2]);
-								vector0.z = agg_basics.ParseDouble(parts[3]);
+								vector0.x = Convert.ToDouble(parts[1]);
+                                vector0.y = Convert.ToDouble(parts[2]);
+                                vector0.z = Convert.ToDouble(parts[3]);
                                 break;
                             case 2:
-                                vector1.x = agg_basics.ParseDouble(parts[1]);
-								vector1.y = agg_basics.ParseDouble(parts[2]);
-								vector1.z = agg_basics.ParseDouble(parts[3]);
+                                vector1.x = Convert.ToDouble(parts[1]);
+                                vector1.y = Convert.ToDouble(parts[2]);
+                                vector1.z = Convert.ToDouble(parts[3]);
                                 break;
                             case 3:
-                                vector2.x = agg_basics.ParseDouble(parts[1]);
-								vector2.y = agg_basics.ParseDouble(parts[2]);
-								vector2.z = agg_basics.ParseDouble(parts[3]);
+                                vector2.x = Convert.ToDouble(parts[1]);
+                                vector2.y = Convert.ToDouble(parts[2]);
+                                vector2.z = Convert.ToDouble(parts[3]);
                                 if (!Vector3.Collinear(vector0, vector1, vector2))
                                 {
                                     Vertex vertex1 = meshFromStlFile.CreateVertex(vector0, CreateOption.CreateNew, SortOption.WillSortLater);
