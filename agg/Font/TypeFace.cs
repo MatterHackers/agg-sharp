@@ -273,7 +273,7 @@ namespace MatterHackers.Agg.Font
 
             if (fractionDigits > 0)
             {
-                double fractionNumber = currentIntPart + (currentFractionPart / (10.0 * fractionDigits));
+                double fractionNumber = currentIntPart + (currentFractionPart / (Math.Pow(10.0, fractionDigits)));
                 if (negative)
                 {
                     return -fractionNumber;
@@ -290,16 +290,16 @@ namespace MatterHackers.Agg.Font
             }
         }
 
-        static double GetNextNumber(String source, ref int startIndex)
+        public static double GetNextNumber(String source, ref int startIndex)
         {
-#if true
+#if true //!DEBUG
             return GetNextNumberNew(source, ref startIndex);
 #else
             int startIndexNew = startIndex;
             double newNumber = GetNextNumberNew(source, ref startIndexNew);
             int startIndexOld = startIndex;
             double oldNumber = GetNextNumberOld(source, ref startIndexOld);
-            if (newNumber != oldNumber
+            if (Math.Abs(newNumber - oldNumber) > .0001
                 || startIndexNew != startIndexOld)
             {
                 int a = 0;

@@ -46,8 +46,6 @@ namespace MatterHackers.GCodeVisualizer
 {
     public abstract class GCodeFile
     {
-		const string matchDouble = @"^-*[0-9]*\.?[0-9]*";
-		private static readonly Regex matchDoubleRegex = new Regex(matchDouble, RegexOptions.Compiled);
 #if	__ANDROID__
 		protected const int Max32BitFileSize = 10000000; // 10 megs
 #else
@@ -157,9 +155,10 @@ namespace MatterHackers.GCodeVisualizer
 			int stringPos = stringWithNumber.IndexOf(stringToCheckAfter, startIndex);
 			if (stringPos != -1)
 			{
-				string startingAfterCheckString = stringWithNumber.Substring(stringPos + stringToCheckAfter.Length).Trim();
-				string matchString = matchDoubleRegex.Match(startingAfterCheckString).Value;
-				return double.TryParse(matchString, out readValue);
+				stringPos += stringToCheckAfter.Length;
+				readValue = MatterHackers.Agg.Font.TypeFace.GetNextNumber(stringWithNumber, ref stringPos);
+
+				return true;
 			}
 
 			return false;

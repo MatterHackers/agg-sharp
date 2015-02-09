@@ -38,7 +38,19 @@ namespace MatterHackers.GCodeVisualizer
 {
     public class PrinterMachineInstruction
     {
-        public string Line;
+		public byte[] byteLine;
+		public string Line
+		{
+			get
+			{
+				return Encoding.Default.GetString(byteLine);
+			}
+
+			set
+			{
+				byteLine = Encoding.Default.GetBytes(value);
+			}
+		}
 
         Vector3Float xyzPosition = new Vector3Float();
         float ePosition = 0;
