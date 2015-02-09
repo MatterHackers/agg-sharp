@@ -17,9 +17,8 @@
 //----------------------------------------------------------------------------
 using System;
 using System.IO;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Text.RegularExpressions;
+using System.Collections.Generic;
 
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
@@ -194,122 +193,6 @@ namespace MatterHackers.Agg.Font
             return fontUnderConstruction;
         }
 
-        static Regex numberRegex = new Regex(@"[-+]?[0-9]*\.?[0-9]+");
-        static double GetNextNumberOld(String source, ref int startIndex)
-        {
-            Match numberMatch = numberRegex.Match(source, startIndex);
-            String returnString = numberMatch.Value;
-            startIndex = numberMatch.Index + numberMatch.Length;
-            double returnVal;
-            double.TryParse(returnString, NumberStyles.Number, CultureInfo.InvariantCulture, out returnVal);
-            return returnVal;
-        }
-
-        static double GetNextNumberNew(String source, ref int startIndex)
-        {
-            int length = source.Length;
-            bool negative = false;
-            long currentIntPart = 0;
-            int fractionDigits = 0;
-            long currentFractionPart = 0;
-
-            // find the number start
-            while (startIndex < length)
-            {
-                char next = source[startIndex];
-                if (next == '-' || next == '+' || (next >= '0' && next <= '9'))
-                {
-                    if (next == '-')
-                    {
-                        negative = true;
-                    }
-                    else if(next == '+')
-                    {
-                        // this does nothing but lets us get to the else for numbers
-                    }
-                    else
-                    {
-                        currentIntPart = next - '0';
-                    }
-                    startIndex++;
-                    break;
-                }
-                startIndex++;
-            }
-            // accumulate the int part
-            while (startIndex < length)
-            {
-                char next = source[startIndex];
-                if (next >= '0' && next <= '9')
-                {
-                    currentIntPart = (currentIntPart*10) + next - '0';
-                }
-                else if (next == '.')
-                {
-                    startIndex++;
-                    // parse out the fractional part
-                    while (startIndex < length)
-                    {
-                        char nextFraction = source[startIndex];
-                        if (nextFraction >= '0' && nextFraction <= '9')
-                        {
-                            fractionDigits++;
-                            currentFractionPart = (currentFractionPart * 10) + nextFraction - '0';
-                        }
-                        else // we are done
-                        {
-                            break;
-                        }
-                        startIndex++;
-                    }
-                    break;
-                }
-                else // we are done
-                {
-                    break;
-                }
-                startIndex++;
-            }
-
-            if (fractionDigits > 0)
-            {
-                double fractionNumber = currentIntPart + (currentFractionPart / (Math.Pow(10.0, fractionDigits)));
-                if (negative)
-                {
-                    return -fractionNumber;
-                }
-                return fractionNumber;
-            }
-            else
-            {
-                if (negative)
-                {
-                    return -currentIntPart;
-                }
-                return currentIntPart;
-            }
-        }
-
-        public static double GetNextNumber(String source, ref int startIndex)
-        {
-#if true //!DEBUG
-            return GetNextNumberNew(source, ref startIndex);
-#else
-            int startIndexNew = startIndex;
-            double newNumber = GetNextNumberNew(source, ref startIndexNew);
-            int startIndexOld = startIndex;
-            double oldNumber = GetNextNumberOld(source, ref startIndexOld);
-            if (Math.Abs(newNumber - oldNumber) > .0001
-                || startIndexNew != startIndexOld)
-            {
-                int a = 0;
-            }
-
-            startIndex = startIndexOld;
-            return oldNumber;
-#endif
-        }
-
         Glyph CreateGlyphFromSVGGlyphData(String SVGGlyphData)
         {
             Glyph newGlyph = new Glyph();
@@ -366,8 +249,8 @@ namespace MatterHackers.Agg.Font
                         // svg fonts are stored cw and agg expects its shapes to be ccw.  cw shapes are holes.
                         // so we store the position of the start of this polygon so we can flip it when we colse it.
                         polyStartVertexSourceIndex = newGlyph.glyphData.size();
-                        curXY.x = GetNextNumber(dString, ref parseIndex);
-                        curXY.y = GetNextNumber(dString, ref parseIndex);
+						curXY.x = agg_basics.ParseDouble(dString, ref parseIndex);
+						curXY.y = agg_basics.ParseDouble(dString, ref parseIndex);
 
                         newGlyph.glyphData.MoveTo(curXY.x, curXY.y);
                         polyStart = curXY;
@@ -377,7 +260,7 @@ namespace MatterHackers.Agg.Font
                     case 'V':
                         parseIndex++;
                         curXY.x = lastXY.x;
-                        curXY.y = GetNextNumber(dString, ref parseIndex);
+						curXY.y = agg_basics.ParseDouble(dString, ref parseIndex);
                         if (command == 'v')
                         {
                             curXY.y += lastXY.y;
@@ -390,7 +273,7 @@ namespace MatterHackers.Agg.Font
                     case 'H':
                         parseIndex++;
                         curXY.y = lastXY.y;
-                        curXY.x = GetNextNumber(dString, ref parseIndex);
+						curXY.x = agg_basics.ParseDouble(dString, ref parseIndex);
                         if (command == 'h')
                         {
                             curXY.x += lastXY.x;
@@ -402,8 +285,8 @@ namespace MatterHackers.Agg.Font
                     case 'l':
                     case 'L':
                         parseIndex++;
-                        curXY.x = GetNextNumber(dString, ref parseIndex);
-                        curXY.y = GetNextNumber(dString, ref parseIndex);
+						curXY.x = agg_basics.ParseDouble(dString, ref parseIndex);
+						curXY.y = agg_basics.ParseDouble(dString, ref parseIndex);
                         if (command == 'l')
                         {
                             curXY += lastXY;
@@ -417,10 +300,10 @@ namespace MatterHackers.Agg.Font
                         {
                             parseIndex++;
                             Vector2 controlPoint;
-                            controlPoint.x = GetNextNumber(dString, ref parseIndex);
-                            controlPoint.y = GetNextNumber(dString, ref parseIndex);
-                            curXY.x = GetNextNumber(dString, ref parseIndex);
-                            curXY.y = GetNextNumber(dString, ref parseIndex);
+							controlPoint.x = agg_basics.ParseDouble(dString, ref parseIndex);
+							controlPoint.y = agg_basics.ParseDouble(dString, ref parseIndex);
+							curXY.x = agg_basics.ParseDouble(dString, ref parseIndex);
+							curXY.y = agg_basics.ParseDouble(dString, ref parseIndex);
                             if (command == 'q')
                             {
                                 controlPoint += lastXY;
@@ -434,8 +317,8 @@ namespace MatterHackers.Agg.Font
                     case 't':
                     case 'T':
                         parseIndex++;
-                        curXY.x = GetNextNumber(dString, ref parseIndex);
-                        curXY.y = GetNextNumber(dString, ref parseIndex);
+						curXY.x = agg_basics.ParseDouble(dString, ref parseIndex);
+						curXY.y = agg_basics.ParseDouble(dString, ref parseIndex);
                         if (command == 't')
                         {
                             curXY += lastXY;

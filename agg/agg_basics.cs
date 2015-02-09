@@ -21,6 +21,8 @@
 using System;
 using System.IO;
 using MatterHackers.VectorMath;
+using System.Text.RegularExpressions;
+using System.Globalization;
 
 namespace MatterHackers.Agg
 {
@@ -46,7 +48,102 @@ namespace MatterHackers.Agg
 #endif
         }
 
-        public static int ComputeHash(byte[] data)
+		public static double ParseDouble(String source)
+		{
+			int startIndex = 0;
+			return ParseDouble(source, ref startIndex);
+		}
+
+		public static double ParseDouble(String source, ref int startIndex)
+		{
+			int length = source.Length;
+			bool negative = false;
+			long currentIntPart = 0;
+			int fractionDigits = 0;
+			long currentFractionPart = 0;
+
+			// find the number start
+			while (startIndex < length)
+			{
+				char next = source[startIndex];
+				if (next == '.' || next == '-' || next == '+' || (next >= '0' && next <= '9'))
+				{
+					if (next == '.')
+					{
+						break;
+					}
+					if (next == '-')
+					{
+						negative = true;
+					}
+					else if (next == '+')
+					{
+						// this does nothing but lets us get to the else for numbers
+					}
+					else
+					{
+						currentIntPart = next - '0';
+					}
+					startIndex++;
+					break;
+				}
+				startIndex++;
+			}
+			// accumulate the int part
+			while (startIndex < length)
+			{
+				char next = source[startIndex];
+				if (next >= '0' && next <= '9')
+				{
+					currentIntPart = (currentIntPart * 10) + next - '0';
+				}
+				else if (next == '.')
+				{
+					startIndex++;
+					// parse out the fractional part
+					while (startIndex < length)
+					{
+						char nextFraction = source[startIndex];
+						if (nextFraction >= '0' && nextFraction <= '9')
+						{
+							fractionDigits++;
+							currentFractionPart = (currentFractionPart * 10) + nextFraction - '0';
+						}
+						else // we are done
+						{
+							break;
+						}
+						startIndex++;
+					}
+					break;
+				}
+				else // we are done
+				{
+					break;
+				}
+				startIndex++;
+			}
+
+			if (fractionDigits > 0)
+			{
+				double fractionNumber = currentIntPart + (currentFractionPart / (Math.Pow(10.0, fractionDigits)));
+				if (negative)
+				{
+					return -fractionNumber;
+				}
+				return fractionNumber;
+			}
+			else
+			{
+				if (negative)
+				{
+					return -currentIntPart;
+				}
+				return currentIntPart;
+			}
+		}
+
+		public static int ComputeHash(byte[] data)
         {
             unchecked
             {
