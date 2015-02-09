@@ -742,7 +742,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
             stream.DiscardOutBuffer();
         }
 
-        public static string[] GetPortNames()
+        public static string[] GetPortNames(bool filter = false)
         {
             int p = (int)Environment.OSVersion.Platform;
             List<string> serial_ports = new List<string>();
@@ -751,6 +751,12 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
             if (p == 4 || p == 128 || p == 6)
             {
                 string[] ttys = Directory.GetFiles("/dev/", "tty*");
+
+                // If filtering was not requested, return the raw listing of /dev/tty* - (subsequent filtering happens in client code)
+                if (!filter) {
+                    return ttys;
+                }
+
                 bool linux_style = false;
 
                 //
