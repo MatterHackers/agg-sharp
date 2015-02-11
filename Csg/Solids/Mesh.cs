@@ -38,7 +38,7 @@ namespace MatterHackers.Csg.Solids
 {
 	public class Mesh : CsgObject
 	{
-		MatterHackers.PolygonMesh.Mesh polygonMesh;
+		PolygonMesh.Mesh polygonMesh;
 
 		string sourceFileName = null;
 		public string FilePath
@@ -51,8 +51,17 @@ namespace MatterHackers.Csg.Solids
 				}
 				else
 				{
-					throw new NotImplementedException();
-					// save to disk and return the path
+					if (polygonMesh != null)
+					{
+						// save to disk and return the path
+						sourceFileName = Path.ChangeExtension(Path.GetRandomFileName(), ".stl");
+						PolygonMesh.Processors.StlProcessing.Save(polygonMesh, sourceFileName);
+						return sourceFileName;
+					}
+					else
+					{
+						throw new Exception("You have to have a mesh or a valid mesh file.");
+					}
 				}
 			}
 		}
@@ -66,6 +75,7 @@ namespace MatterHackers.Csg.Solids
 		public Mesh(MatterHackers.PolygonMesh.Mesh polygonMesh, string name = "")
 			: base(name)
 		{
+			this.polygonMesh = polygonMesh;
 		}
 
 		public override AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
