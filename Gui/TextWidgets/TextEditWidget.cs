@@ -251,15 +251,29 @@ namespace MatterHackers.Agg.UI
 
         void internalTextEditWidget_LostFocus(object sender, EventArgs e)
         {
-            if (HideSoftwareKeyboard != null)
-            {
+			OnHideSoftwareKeyboard();
+            OnLostFocus(e);
+        }
+
+		public override void OnClosed(EventArgs e)
+		{
+			if (Focused)
+			{
+				OnHideSoftwareKeyboard();
+			}
+			base.OnClosed(e);
+		}
+
+		private void OnHideSoftwareKeyboard()
+		{
+			if (HideSoftwareKeyboard != null)
+			{
 				UiThread.RunOnIdle((state) =>
 				{
 					HideSoftwareKeyboard(this, null);
-				});				
-            }
-            OnLostFocus(e);
-        }
+				});
+			}
+		}
 
         void internalTextEditWidget_EnterPressed(object sender, KeyEventArgs keyEvent)
         {

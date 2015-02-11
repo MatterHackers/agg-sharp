@@ -242,7 +242,7 @@ namespace MatterHackers.PolygonMesh.Processors
                         switch (vectorIndex)
                         {
                             case 1:
-                                vector0.x = Convert.ToDouble(parts[1]);
+								vector0.x = Convert.ToDouble(parts[1]);
                                 vector0.y = Convert.ToDouble(parts[2]);
                                 vector0.z = Convert.ToDouble(parts[3]);
                                 break;

@@ -21,6 +21,8 @@
 using System;
 using System.IO;
 using MatterHackers.VectorMath;
+using System.Text.RegularExpressions;
+using System.Globalization;
 
 namespace MatterHackers.Agg
 {
@@ -46,7 +48,133 @@ namespace MatterHackers.Agg
 #endif
         }
 
-        public static int ComputeHash(byte[] data)
+		public static double ParseDouble(String source)
+		{
+			int startIndex = 0;
+			return ParseDouble(source, ref startIndex);
+		}
+
+		static Regex numberRegex = new Regex(@"[-+]?[0-9]*\.?[0-9]+");
+		static double GetNextNumberOld(String source, ref int startIndex)
+		{
+			Match numberMatch = numberRegex.Match(source, startIndex);
+			String returnString = numberMatch.Value;
+			startIndex = numberMatch.Index + numberMatch.Length;
+			double returnVal;
+			double.TryParse(returnString, NumberStyles.Number, CultureInfo.InvariantCulture, out returnVal);
+			return returnVal;
+		}
+
+		public static double ParseDouble(String source, ref int startIndex)
+		{
+#if true
+			return ParseDoubleFast(source, ref startIndex);
+#else
+			int startIndexNew = startIndex;
+			double newNumber = agg_basics.ParseDoubleFast(source, ref startIndexNew);
+			int startIndexOld = startIndex;
+			double oldNumber = GetNextNumberOld(source, ref startIndexOld);
+			if (Math.Abs(newNumber - oldNumber) > .0001
+				|| startIndexNew != startIndexOld)
+			{
+				int a = 0;
+			}
+
+			startIndex = startIndexNew;
+			return newNumber;
+#endif
+		}
+
+		static double ParseDoubleFast(String source, ref int startIndex)
+		{
+			int length = source.Length;
+			bool negative = false;
+			long currentIntPart = 0;
+			int fractionDigits = 0;
+			long currentFractionPart = 0;
+
+			// find the number start
+			while (startIndex < length)
+			{
+				char next = source[startIndex];
+				if (next == '.' || next == '-' || next == '+' || (next >= '0' && next <= '9'))
+				{
+					if (next == '.')
+					{
+						break;
+					}
+					if (next == '-')
+					{
+						negative = true;
+					}
+					else if (next == '+')
+					{
+						// this does nothing but lets us get to the else for numbers
+					}
+					else
+					{
+						currentIntPart = next - '0';
+					}
+					startIndex++;
+					break;
+				}
+				startIndex++;
+			}
+			// accumulate the int part
+			while (startIndex < length)
+			{
+				char next = source[startIndex];
+				if (next >= '0' && next <= '9')
+				{
+					currentIntPart = (currentIntPart * 10) + next - '0';
+				}
+				else if (next == '.')
+				{
+					startIndex++;
+					// parse out the fractional part
+					while (startIndex < length)
+					{
+						char nextFraction = source[startIndex];
+						if (nextFraction >= '0' && nextFraction <= '9')
+						{
+							fractionDigits++;
+							currentFractionPart = (currentFractionPart * 10) + nextFraction - '0';
+						}
+						else // we are done
+						{
+							break;
+						}
+						startIndex++;
+					}
+					break;
+				}
+				else // we are done
+				{
+					break;
+				}
+				startIndex++;
+			}
+
+			if (fractionDigits > 0)
+			{
+				double fractionNumber = currentIntPart + (currentFractionPart / (Math.Pow(10.0, fractionDigits)));
+				if (negative)
+				{
+					return -fractionNumber;
+				}
+				return fractionNumber;
+			}
+			else
+			{
+				if (negative)
+				{
+					return -currentIntPart;
+				}
+				return currentIntPart;
+			}
+		}
+
+		public static int ComputeHash(byte[] data)
         {
             unchecked
             {

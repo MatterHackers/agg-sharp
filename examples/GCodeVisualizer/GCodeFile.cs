@@ -156,7 +156,7 @@ namespace MatterHackers.GCodeVisualizer
 			if (stringPos != -1)
 			{
 				stringPos += stringToCheckAfter.Length;
-				readValue = MatterHackers.Agg.Font.TypeFace.GetNextNumber(stringWithNumber, ref stringPos);
+				readValue = agg_basics.ParseDouble(stringWithNumber, ref stringPos);
 
 				return true;
 			}

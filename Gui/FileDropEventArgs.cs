@@ -18,7 +18,7 @@ namespace MatterHackers.Agg.UI
         {
             this.x = x;
             this.y = y;
-            this.DroppedFiles = droppedFiles;
+            this.DroppedFiles = FileDialog.ResolveFilePaths(droppedFiles).ToList();
         }
 
         public bool AcceptDrop { get; set; }

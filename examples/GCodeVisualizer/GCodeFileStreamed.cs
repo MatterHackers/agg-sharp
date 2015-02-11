@@ -179,29 +179,29 @@ namespace MatterHackers.GCodeVisualizer
 
 		public override int GetInstructionIndexAtLayer(int layerIndex) 
 		{
-			throw new NotImplementedException(); 
+			return 0;
 		}
 		
 		public override double GetFilamentDiamter() 
 		{
-			throw new NotImplementedException(); 
+			return 0;
 		}
 		
 		public override double GetFilamentWeightGrams(double p, double density) 
 		{
-			throw new NotImplementedException(); 
+			return 0;
 		}
 		
 		public override int GetLayerIndex(int instructionIndex) 
 		{
-			throw new NotImplementedException(); 
+			return 0;
 		}
 		
 		public override int NumChangesInZ 
 		{
 			get 
 			{
-				throw new NotImplementedException(); 
+				return 0;
 			}
 		}
 		

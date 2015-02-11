@@ -29,6 +29,8 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 
@@ -42,6 +44,47 @@ namespace MatterHackers.Agg.Tests
     [TestFixture]
     public class SimpleTests
     {
+		static Regex numberRegex = new Regex(@"[-+]?[0-9]*\.?[0-9]+");
+		static double GetNextNumberOld(String source, ref int startIndex)
+		{
+			Match numberMatch = numberRegex.Match(source, startIndex);
+			String returnString = numberMatch.Value;
+			startIndex = numberMatch.Index + numberMatch.Length;
+			double returnVal;
+			double.TryParse(returnString, NumberStyles.Number, CultureInfo.InvariantCulture, out returnVal);
+			return returnVal;
+		}
+
+		public static bool GetNextNumberSameResult(String source, int startIndex, double expectedValue)
+		{
+            int startIndexNew = startIndex;
+            double newNumber = agg_basics.ParseDouble(source, ref startIndexNew);
+            int startIndexOld = startIndex;
+            double oldNumber = GetNextNumberOld(source, ref startIndexOld);
+            if (Math.Abs(newNumber - oldNumber) > .0001
+				|| Math.Abs(expectedValue - oldNumber) > .0001
+                || startIndexNew != startIndexOld)
+            {
+				return false;
+            }
+
+            return true;
+		}
+
+		[Test]
+		public void GetNextNumberWorks()
+		{
+			Assert.IsTrue(GetNextNumberSameResult("1234", 0, 1234));
+			Assert.IsTrue(GetNextNumberSameResult("1234 15", 5, 15));
+			Assert.IsTrue(GetNextNumberSameResult("-1234", 0, -1234));
+			Assert.IsTrue(GetNextNumberSameResult("+1234", 0, 1234));
+			Assert.IsTrue(GetNextNumberSameResult("1234.3", 0, 1234.3));
+			Assert.IsTrue(GetNextNumberSameResult("1234.354", 0, 1234.354));
+			Assert.IsTrue(GetNextNumberSameResult("1234.354212", 0, 1234.354212));
+			Assert.IsTrue(GetNextNumberSameResult("0.123", 0, .123));
+			Assert.IsTrue(GetNextNumberSameResult(".123", 0, .123));
+		}
+
         [Test]
         public void TestGetHashCode()
         {
@@ -89,6 +132,7 @@ namespace MatterHackers.Agg.Tests
             {
                 SimpleTests simpleTest = new SimpleTests();
                 simpleTest.TestGetHashCode();
+				simpleTest.GetNextNumberWorks();
 
                 ranTests = true;
             }
