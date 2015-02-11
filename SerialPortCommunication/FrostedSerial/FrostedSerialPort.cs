@@ -742,6 +742,12 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
             stream.DiscardOutBuffer();
         }
 
+        // On non-Android platforms simply return true as port access validation isn't applicable
+        public static bool EnsureDeviceAccess()
+        {
+            return true;
+        }
+
         public static string[] GetPortNames(bool filter = false)
         {
             int p = (int)Environment.OSVersion.Platform;
