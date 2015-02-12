@@ -146,6 +146,7 @@
     <Compile Include="Operations\Difference.cs" />
     <Compile Include="Operations\Intersection.cs" />
     <Compile Include="Operations\Union.cs" />
+    <Compile Include="Processors\CsgToMesh.cs" />
     <Compile Include="Solids\Box.cs" />
     <Compile Include="Solids\BoxPrimitive.cs" />
     <Compile Include="Solids\LinearExtrude.cs" />

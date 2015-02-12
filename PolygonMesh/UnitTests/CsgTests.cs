@@ -59,7 +59,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Mesh meshB = PlatonicSolids.CreateCube(new Vector3(10, 10, 10));
                 meshB.Translate(new Vector3(2, 2, 2));
 
-                Mesh meshIntersect = CsgOperations.PerformOperation(meshA, meshB, CsgNode.Intersect);
+				Mesh meshIntersect = CsgOperations.Intersect(meshA, meshB);
                 Assert.IsTrue(meshIntersect.Faces.Count == 6);
                 Assert.IsTrue(meshIntersect.Vertices.Count == 8);
                 foreach (Face face in meshIntersect.Faces)
@@ -81,7 +81,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Mesh meshB = PlatonicSolids.CreateCube(new Vector3(10, 10, 10));
                 meshB.Translate(new Vector3(5, 5, 5));
 
-                Mesh meshIntersect = CsgOperations.PerformOperation(meshA, meshB, CsgNode.Intersect);
+                Mesh meshIntersect = CsgOperations.Intersect(meshA, meshB);
                 Assert.IsTrue(meshIntersect.Faces.Count == 0);
             }
         }
@@ -100,7 +100,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Mesh meshB = PlatonicSolids.CreateCube(new Vector3(10, 10, 10));
                 meshB.Translate(new Vector3(2, 0, 0));
 
-                Mesh meshIntersect = CsgOperations.PerformOperation(meshA, meshB, CsgNode.Union);
+                Mesh meshIntersect = CsgOperations.Union(meshA, meshB);
                 Assert.IsTrue(meshIntersect.Faces.Count == 13);
                 Assert.IsTrue(meshIntersect.Vertices.Count == 16);
                 foreach (Face face in meshIntersect.Faces)
@@ -126,7 +126,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
                 Mesh meshB = PlatonicSolids.CreateCube(new Vector3(10, 10, 10));
                 meshB.Translate(new Vector3(2, 0, 0));
 
-                Mesh meshIntersect = CsgOperations.PerformOperation(meshA, meshB, CsgNode.Subtract);
+                Mesh meshIntersect = CsgOperations.Subtract(meshA, meshB);
                 Assert.IsTrue(meshIntersect.Faces.Count == 6);
                 Assert.IsTrue(meshIntersect.Vertices.Count == 8);
                 foreach (Face face in meshIntersect.Faces)

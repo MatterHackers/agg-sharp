@@ -78,14 +78,19 @@ namespace MatterHackers.Csg.Solids
 			this.polygonMesh = polygonMesh;
 		}
 
-		public override AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
+		public PolygonMesh.Mesh GetMesh()
 		{
 			if (polygonMesh == null)
 			{
 				polygonMesh = MatterHackers.PolygonMesh.Processors.StlProcessing.Load(sourceFileName);
 			}
 
-			return polygonMesh.GetAxisAlignedBoundingBox();
+			return polygonMesh;
+		}
+
+		public override AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
+		{
+			return GetMesh().GetAxisAlignedBoundingBox();
 		}
 	}
 }

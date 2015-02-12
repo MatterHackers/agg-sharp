@@ -153,7 +153,7 @@ namespace MatterHackers.PolygonMesh.Processors
                 {
                     foreach (Mesh mesh in meshGroup.Meshes)
                     {
-                        allPolygons = CsgOperations.PerformOperation(allPolygons, mesh, CsgNode.Union);
+                        allPolygons = CsgOperations.Union(allPolygons, mesh);
                     }
                 }
             }

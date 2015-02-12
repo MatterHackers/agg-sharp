@@ -72,7 +72,22 @@ namespace MatterHackers.PolygonMesh.Csg
             return model;
         }
 
-        public static Mesh PerformOperation(Mesh a, Mesh b, CsgFunctionHandler fun)
+		public static Mesh Union(Mesh a, Mesh b)
+		{
+			return PerformOperation(a, b, CsgNode.Union);
+		}
+
+		public static Mesh Subtract(Mesh a, Mesh b)
+		{
+			return PerformOperation(a, b, CsgNode.Subtract);
+		}
+
+		public static Mesh Intersect(Mesh a, Mesh b)
+		{
+			return PerformOperation(a, b, CsgNode.Intersect);
+		}
+		
+		static Mesh PerformOperation(Mesh a, Mesh b, CsgFunctionHandler fun)
         {
             CsgNode A = new CsgNode(PolygonsFromMesh(a));
             CsgNode B = new CsgNode(PolygonsFromMesh(b));
@@ -80,5 +95,5 @@ namespace MatterHackers.PolygonMesh.Csg
             List<CsgPolygon> polygons = AB.GetAllPolygons();
             return MeshFromPolygons(polygons);
         }
-    }
+	}
 }
