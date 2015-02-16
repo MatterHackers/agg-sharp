@@ -302,7 +302,7 @@ namespace MatterHackers.GCodeVisualizer
                     }
                 }
 
-                // draw the partial layer of end-1 from startratio to endratio
+                // draw the partial layer of end-1 from startRatio to endRatio
                 {
                     int layerIndex = renderInfo.EndLayerIndex - 1;
                     int featuresOnLayer = renderFeatures[layerIndex].Count;
