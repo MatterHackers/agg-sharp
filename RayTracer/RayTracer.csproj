@@ -148,7 +148,6 @@
     <Compile Include="Axis3D.cs" />
     <Compile Include="Background.cs" />
     <Compile Include="IntersectInfo.cs" />
-    <Compile Include="Plane.cs" />
     <Compile Include="RayBundle.cs" />
     <Compile Include="Traceable\BoundingVolumeHierarchy.cs" />
     <Compile Include="Camera.cs" />

@@ -100,7 +100,7 @@ namespace MatterHackers.RayTracer
             double radiusSquared = radius * radius;
 
             Vector3 deltaFromShpereCenterToRayOrigin = ray.origin - this.position;
-            double distanceFromSphereCenterToRayOrigin = Vector3.Dot(deltaFromShpereCenterToRayOrigin, ray.direction); // negative means the sphere is in front of the ray.
+            double distanceFromSphereCenterToRayOrigin = Vector3.Dot(deltaFromShpereCenterToRayOrigin, ray.directionNormal); // negative means the sphere is in front of the ray.
             double lengthFromRayOrginToSphereCenterSquared = Vector3.Dot(deltaFromShpereCenterToRayOrigin, deltaFromShpereCenterToRayOrigin);
             double lengthFromRayOrigintoNearEdgeOfSphereSquared = lengthFromRayOrginToSphereCenterSquared - radiusSquared;
             double distanceFromSphereCenterToRaySquared = distanceFromSphereCenterToRayOrigin * distanceFromSphereCenterToRayOrigin;
@@ -127,7 +127,7 @@ namespace MatterHackers.RayTracer
                         return null;
                     }
                     info.distanceToHit = distanceToFrontHit;
-                    info.hitPosition = ray.origin + ray.direction * info.distanceToHit;
+                    info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
                     info.normalAtHit = (info.hitPosition - position).GetNormal();
                 }
                 else // check back faces
@@ -139,7 +139,7 @@ namespace MatterHackers.RayTracer
                     }
                     info.hitType = IntersectionType.BackFace;
                     info.distanceToHit = distanceToBackHit;
-                    info.hitPosition = ray.origin + ray.direction * info.distanceToHit;
+                    info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
                     info.normalAtHit = -(info.hitPosition - position).GetNormal();
                 }
 
@@ -159,7 +159,7 @@ namespace MatterHackers.RayTracer
             double radiusSquared = radius * radius;
 
             Vector3 deltaFromShpereCenterToRayOrigin = ray.origin - this.position;
-            double distanceFromSphereCenterToRayOrigin = Vector3.Dot(deltaFromShpereCenterToRayOrigin, ray.direction); // negative means the sphere is in front of the ray.
+            double distanceFromSphereCenterToRayOrigin = Vector3.Dot(deltaFromShpereCenterToRayOrigin, ray.directionNormal); // negative means the sphere is in front of the ray.
             double lengthFromRayOrginToSphereCenterSquared = Vector3.Dot(deltaFromShpereCenterToRayOrigin, deltaFromShpereCenterToRayOrigin);
             double lengthFromRayOrigintoNearEdgeOfSphereSquared = lengthFromRayOrginToSphereCenterSquared - radiusSquared;
             double distanceFromSphereCenterToRaySquared = distanceFromSphereCenterToRayOrigin * distanceFromSphereCenterToRayOrigin;
@@ -178,7 +178,7 @@ namespace MatterHackers.RayTracer
                     double distanceToFrontHit = distanceFromRayOriginToSphereCenter - amountSphereCenterToRayIsGreaterThanRayOriginToEdge;
 
                     info.distanceToHit = distanceToFrontHit;
-                    info.hitPosition = ray.origin + ray.direction * info.distanceToHit;
+                    info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
                     info.normalAtHit = (info.hitPosition - position).GetNormal();
 
                     yield return info;
@@ -192,7 +192,7 @@ namespace MatterHackers.RayTracer
                     double distanceToBackHit = distanceFromRayOriginToSphereCenter + amountSphereCenterToRayIsGreaterThanRayOriginToEdge;
 
                     info.distanceToHit = distanceToBackHit;
-                    info.hitPosition = ray.origin + ray.direction * info.distanceToHit;
+                    info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
                     info.normalAtHit = -(info.hitPosition - position).GetNormal();
 
                     yield return info;

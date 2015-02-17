@@ -32,10 +32,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using MatterHackers.Agg;
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.RayTracer
+namespace MatterHackers.VectorMath
 {
     public class Plane
     {
@@ -61,7 +60,7 @@ namespace MatterHackers.RayTracer
             distanceToHit = double.PositiveInfinity;
             hitFrontOfPlane = false;
 
-            double normalDotRayDirection = Vector3.Dot(planeNormal, ray.direction);
+            double normalDotRayDirection = Vector3.Dot(planeNormal, ray.directionNormal);
             if (normalDotRayDirection < TreatAsZero && normalDotRayDirection > -TreatAsZero) // the ray is parallel to the plane
             {
                 return false;
@@ -91,7 +90,7 @@ namespace MatterHackers.RayTracer
         public double GetDistanceToIntersection(Ray ray, out bool inFront)
         {
             inFront = false;
-            double normalDotRayDirection = Vector3.Dot(planeNormal, ray.direction);
+            double normalDotRayDirection = Vector3.Dot(planeNormal, ray.directionNormal);
             if (normalDotRayDirection < TreatAsZero && normalDotRayDirection > -TreatAsZero) // the ray is parallel to the plane
             {
                 return double.PositiveInfinity;
@@ -116,5 +115,11 @@ namespace MatterHackers.RayTracer
             double planeNormalDotPointOnLine = Vector3.Dot(planeNormal, pointOnLine);
             return (distanceToPlaneFromOrigin - planeNormalDotPointOnLine) / normalDotRayDirection;
         }
-    }
+
+		public double GetDistanceFromPlane(Vector3 positionToCheck)
+		{
+			double distanceToPointFromOrigin = Vector3.Dot(positionToCheck, planeNormal);
+			return distanceToPointFromOrigin - distanceToPlaneFromOrigin;
+		}
+	}
 }

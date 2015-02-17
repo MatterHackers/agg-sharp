@@ -405,7 +405,7 @@ namespace MatterHackers.Agg.OpenGlGui
             double distanceFromScreenToWorldPos = (worldPosition - rayFromScreen.origin).Length;
 
             Ray rightOnePixelRay = GetRayFromScreen(new Vector2(screenPosition.x + 1, screenPosition.y));
-            Vector3 rightOnePixel = rightOnePixelRay.origin + rightOnePixelRay.direction * distanceFromScreenToWorldPos;
+            Vector3 rightOnePixel = rightOnePixelRay.origin + rightOnePixelRay.directionNormal * distanceFromScreenToWorldPos;
             double distBetweenPixelsWorldSpace = (rightOnePixel - worldPosition).Length;
             return distBetweenPixelsWorldSpace;
         }

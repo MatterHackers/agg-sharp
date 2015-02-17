@@ -150,7 +150,7 @@ namespace MatterHackers.RayTracer.Traceable
             // TODO: cache this.
             Matrix4X4 WorldToAxis = Matrix4X4.Invert(AxisToWorld);
             Vector3 transformedOrigin = Vector3.TransformPosition(ray.origin, WorldToAxis);
-            Vector3 transformedDirecton = Vector3.TransformVector(ray.direction, WorldToAxis);
+            Vector3 transformedDirecton = Vector3.TransformVector(ray.directionNormal, WorldToAxis);
             return new Ray(transformedOrigin, transformedDirecton, ray.minDistanceToConsider, ray.maxDistanceToConsider, ray.intersectionType);
         }
 

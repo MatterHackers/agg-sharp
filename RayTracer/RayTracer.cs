@@ -352,7 +352,7 @@ namespace MatterHackers.RayTracer
                     // calculate reflection ray
                     if (RenderReflection && info.closestHitObject.Material.Reflection > 0)
                     {
-                        Ray reflectionRay = GetReflectionRay(info.hitPosition, info.normalAtHit, ray.direction);
+                        Ray reflectionRay = GetReflectionRay(info.hitPosition, info.normalAtHit, ray.directionNormal);
                         IntersectInfo reflectionInfo = TracePrimaryRay(reflectionRay, scene);
                         RGBA_Floats reflectionColorAtHit;// = reflectionInfo.closestHitObject.GetColor(reflectionInfo);
                         if (reflectionInfo.hitType != IntersectionType.None && reflectionInfo.distanceToHit > 0)
@@ -371,7 +371,7 @@ namespace MatterHackers.RayTracer
                     //calculate refraction ray
                     if (RenderRefraction && info.closestHitObject.Material.Transparency > 0)
                     {
-                        Ray refractionRay = new Ray(info.hitPosition, ray.direction, Ray.sameSurfaceOffset, double.MaxValue);  // GetRefractionRay(info.hitPosition, info.normalAtHit, ray.direction, info.closestHit.Material.Refraction);
+                        Ray refractionRay = new Ray(info.hitPosition, ray.directionNormal, Ray.sameSurfaceOffset, double.MaxValue);  // GetRefractionRay(info.hitPosition, info.normalAtHit, ray.direction, info.closestHit.Material.Refraction);
                         IntersectInfo refractionInfo = TracePrimaryRay(refractionRay, scene);
                         RGBA_Floats refractionColorAtHit = refractionInfo.closestHitObject.GetColor(refractionInfo);
                         if (refractionInfo.hitType != IntersectionType.None && refractionInfo.distanceToHit > 0)

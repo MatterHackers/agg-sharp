@@ -110,7 +110,7 @@ namespace MatterHackers.RayTracer
             double radiusSquared = radius * radius;
 
             Vector2 rayOrigin = new Vector2(ray.origin);
-            Vector2 rayDirectionXY = new Vector2(ray.direction);
+            Vector2 rayDirectionXY = new Vector2(ray.directionNormal);
             Vector2 rayDirection = rayDirectionXY.GetNormal();
             Vector2 thisPosition = Vector2.Zero;
             Vector2 deltaFromShpereCenterToRayOrigin = rayOrigin - thisPosition;
@@ -129,7 +129,7 @@ namespace MatterHackers.RayTracer
                     bool wantBackAndInBack = (ray.intersectionType & IntersectionType.BackFace) == IntersectionType.BackFace && !inFrontOfTop;
                     if (wantFrontAndInFront || wantBackAndInBack)
                     {
-                        Vector3 topHitPosition = ray.origin + ray.direction * testDistanceToHit;
+                        Vector3 topHitPosition = ray.origin + ray.directionNormal * testDistanceToHit;
 
                         if (topHitPosition.x * topHitPosition.x + topHitPosition.y * topHitPosition.y < topRadius * topRadius)
                         {
@@ -159,7 +159,7 @@ namespace MatterHackers.RayTracer
                     if (ray.intersectionType == IntersectionType.FrontFace && inFrontOfBottom
                         || ray.intersectionType == IntersectionType.BackFace && !inFrontOfBottom)
                     {
-                        Vector3 bottomHitPosition = ray.origin + ray.direction * testDistanceToHit;
+                        Vector3 bottomHitPosition = ray.origin + ray.directionNormal * testDistanceToHit;
 
                         if (bottomHitPosition.x * bottomHitPosition.x + bottomHitPosition.y * bottomHitPosition.y < radius * radius)
                         {
@@ -194,7 +194,7 @@ namespace MatterHackers.RayTracer
 
                 double amountCircleCenterToRayIsGreaterThanRayOriginToEdge = Math.Sqrt(amountCircleCenterToRayIsGreaterThanRayOriginToEdgeSquared);
 
-                double scaleRatio = ray.direction.Length / rayDirectionXY.Length;
+                double scaleRatio = ray.directionNormal.Length / rayDirectionXY.Length;
 
                 if (ray.intersectionType == IntersectionType.FrontFace)
                 {
@@ -204,7 +204,7 @@ namespace MatterHackers.RayTracer
                         return null;
                     }
                     info.distanceToHit = distanceToFrontHit;
-                    info.hitPosition = ray.origin + ray.direction * info.distanceToHit;
+                    info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
                     if (info.hitPosition.z < -height / 2 || info.hitPosition.z > height / 2)
                     {
                         return null;
@@ -220,7 +220,7 @@ namespace MatterHackers.RayTracer
                     }
                     info.hitType = IntersectionType.BackFace;
                     info.distanceToHit = distanceToBackHit;
-                    info.hitPosition = ray.origin + ray.direction * info.distanceToHit;
+                    info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
                     if (info.hitPosition.z < height / 2 || info.hitPosition.z > height / 2)
                     {
                         return null;
@@ -244,7 +244,7 @@ namespace MatterHackers.RayTracer
             double radiusSquared = radius * radius;
 
             Vector2 rayOrigin = new Vector2(ray.origin);
-            Vector2 rayDirectionXY = new Vector2(ray.direction);
+            Vector2 rayDirectionXY = new Vector2(ray.directionNormal);
             Vector2 rayDirection = rayDirectionXY.GetNormal();
             Vector2 thisPosition = Vector2.Zero;
             Vector2 deltaFromShpereCenterToRayOrigin = rayOrigin - thisPosition;
@@ -258,7 +258,7 @@ namespace MatterHackers.RayTracer
             {
                 double distanceFromRayOriginToCircleCenter = -distanceFromCircleCenterToRayOrigin;
                 double amountCircleCenterToRayIsGreaterThanRayOriginToEdge = Math.Sqrt(amountCircleCenterToRayIsGreaterThanRayOriginToEdgeSquared);
-                double scaleRatio = ray.direction.Length / rayDirectionXY.Length;
+                double scaleRatio = ray.directionNormal.Length / rayDirectionXY.Length;
 
                 if ((ray.intersectionType & IntersectionType.FrontFace) == IntersectionType.FrontFace)
                 {
@@ -267,7 +267,7 @@ namespace MatterHackers.RayTracer
                     info.closestHitObject = this;
                     double distanceToFrontHit = (distanceFromRayOriginToCircleCenter - amountCircleCenterToRayIsGreaterThanRayOriginToEdge) * scaleRatio;
                     info.distanceToHit = distanceToFrontHit;
-                    info.hitPosition = ray.origin + ray.direction * info.distanceToHit;
+                    info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
                     if (info.hitPosition.z > -height / 2 && info.hitPosition.z < height / 2)
                     {
                         info.normalAtHit = new Vector3(info.hitPosition.x, info.hitPosition.y, 0).GetNormal();
@@ -283,7 +283,7 @@ namespace MatterHackers.RayTracer
                     info.closestHitObject = this;
                     double distanceToBackHit = (distanceFromRayOriginToCircleCenter + amountCircleCenterToRayIsGreaterThanRayOriginToEdge) * scaleRatio;
                     info.distanceToHit = distanceToBackHit;
-                    info.hitPosition = ray.origin + ray.direction * info.distanceToHit;
+                    info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
                     if (info.hitPosition.z > -height / 2 && info.hitPosition.z < height / 2)
                     {
                         info.normalAtHit = -(new Vector3(info.hitPosition.x, info.hitPosition.y, 0).GetNormal());
@@ -294,7 +294,7 @@ namespace MatterHackers.RayTracer
                 {
                     bool inFrontOfTopFace;
                     double testDistanceToHit = topPlane.GetDistanceToIntersection(ray, out inFrontOfTopFace);
-                    Vector3 topHitPosition = ray.origin + ray.direction * testDistanceToHit;
+                    Vector3 topHitPosition = ray.origin + ray.directionNormal * testDistanceToHit;
 
                     if (topHitPosition.x * topHitPosition.x + topHitPosition.y * topHitPosition.y < topRadius * topRadius)
                     {
@@ -327,7 +327,7 @@ namespace MatterHackers.RayTracer
                 {
                     bool inFrontOfBottomFace;
                     double testDistanceToHit = bottomPlane.GetDistanceToIntersection(ray, out inFrontOfBottomFace);
-                    Vector3 bottomHitPosition = ray.origin + ray.direction * testDistanceToHit;
+                    Vector3 bottomHitPosition = ray.origin + ray.directionNormal * testDistanceToHit;
 
                     if (bottomHitPosition.x * bottomHitPosition.x + bottomHitPosition.y * bottomHitPosition.y < radius * radius)
                     {

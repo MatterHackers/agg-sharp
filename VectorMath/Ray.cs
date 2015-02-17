@@ -53,7 +53,7 @@ namespace MatterHackers.VectorMath
         public static double sameSurfaceOffset = .00001;
 
         public Vector3 origin;
-        public Vector3 direction;
+        public Vector3 directionNormal;
         public double minDistanceToConsider;
         public double maxDistanceToConsider;
         public Vector3 oneOverDirection;
@@ -63,14 +63,14 @@ namespace MatterHackers.VectorMath
         public enum Sign { negative = 1, positive = 0 };
         public Sign[] sign = new Sign[3];
 
-        public Ray(Vector3 origin, Vector3 direction, double minDistanceToConsider = 0, double maxDistanceToConsider = double.PositiveInfinity, IntersectionType intersectionType = IntersectionType.FrontFace)
+        public Ray(Vector3 origin, Vector3 directionNormal, double minDistanceToConsider = 0, double maxDistanceToConsider = double.PositiveInfinity, IntersectionType intersectionType = IntersectionType.FrontFace)
         {
             this.origin = origin;
-            this.direction = direction;
+            this.directionNormal = directionNormal;
             this.minDistanceToConsider = minDistanceToConsider;
             this.maxDistanceToConsider = maxDistanceToConsider;
             this.intersectionType = intersectionType;
-            oneOverDirection = 1 / direction;
+            oneOverDirection = 1 / directionNormal;
 
             sign[0] = (oneOverDirection.x < 0) ? Sign.negative : Sign.positive;
             sign[1] = (oneOverDirection.y < 0) ? Sign.negative : Sign.positive;
@@ -80,7 +80,7 @@ namespace MatterHackers.VectorMath
         public Ray(Ray rayToCopy)
         {
             origin = rayToCopy.origin;
-            direction = rayToCopy.direction;
+            directionNormal = rayToCopy.directionNormal;
             minDistanceToConsider = rayToCopy.minDistanceToConsider;
             maxDistanceToConsider = rayToCopy.maxDistanceToConsider;
             oneOverDirection = rayToCopy.oneOverDirection;

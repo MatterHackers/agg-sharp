@@ -230,7 +230,7 @@ namespace MatterHackers.RayTracer
             {
                 IRayTraceable checkFirst = nodeA;
                 IRayTraceable checkSecond = nodeB;
-                if (ray.direction[splitingPlane] < 0)
+                if (ray.directionNormal[splitingPlane] < 0)
                 {
                     checkFirst = nodeB;
                     checkSecond = nodeA;
@@ -316,7 +316,7 @@ namespace MatterHackers.RayTracer
             {
                 IRayTraceable checkFirst = nodeA;
                 IRayTraceable checkSecond = nodeB;
-                if (rayBundle.rayArray[startRayIndex].direction[splitingPlane] < 0)
+                if (rayBundle.rayArray[startRayIndex].directionNormal[splitingPlane] < 0)
                 {
                     checkFirst = nodeB;
                     checkSecond = nodeA;
@@ -336,7 +336,7 @@ namespace MatterHackers.RayTracer
             {
                 IRayTraceable checkFirst = nodeA;
                 IRayTraceable checkSecond = nodeB;
-                if (ray.direction[splitingPlane] < 0)
+                if (ray.directionNormal[splitingPlane] < 0)
                 {
                     checkFirst = nodeB;
                     checkSecond = nodeA;

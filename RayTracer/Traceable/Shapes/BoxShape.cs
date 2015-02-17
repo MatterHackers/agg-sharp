@@ -187,7 +187,7 @@ bool Box::intersect(const Ray &r, float t0, float t1) const {
                     IntersectInfo info = new IntersectInfo();
                     info.hitType = IntersectionType.FrontFace;
                     info.closestHitObject = this;
-                    info.hitPosition = ray.origin + ray.direction * minDistFound;
+                    info.hitPosition = ray.origin + ray.directionNormal * minDistFound;
                     info.normalAtHit[minAxis] = ray.sign[minAxis] == Ray.Sign.negative ? 1 : -1; // you hit the side that is oposite your sign
                     info.distanceToHit = minDistFound;
                     yield return info;
@@ -198,7 +198,7 @@ bool Box::intersect(const Ray &r, float t0, float t1) const {
                     IntersectInfo info = new IntersectInfo();
                     info.hitType = IntersectionType.BackFace;
                     info.closestHitObject = this;
-                    info.hitPosition = ray.origin + ray.direction * maxDistFound;
+                    info.hitPosition = ray.origin + ray.directionNormal * maxDistFound;
                     info.normalAtHit[maxAxis] = ray.sign[maxAxis] == Ray.Sign.negative ? 1 : -1;
                     info.distanceToHit = maxDistFound;
                     yield return info;
@@ -232,7 +232,7 @@ bool Box::intersect(const Ray &r, float t0, float t1) const {
                             return info;
                         }
                         info.closestHitObject = this;
-                        info.hitPosition = ray.origin + ray.direction * minDistFound;
+                        info.hitPosition = ray.origin + ray.directionNormal * minDistFound;
                         info.normalAtHit[minAxis] = ray.sign[minAxis] == Ray.Sign.negative ? 1 : -1; // you hit the side that is oposite your sign
                         info.distanceToHit = minDistFound;
                     }
@@ -247,7 +247,7 @@ bool Box::intersect(const Ray &r, float t0, float t1) const {
                             return info;
                         }
                         info.closestHitObject = this;
-                        info.hitPosition = ray.origin + ray.direction * maxDistFound;
+                        info.hitPosition = ray.origin + ray.directionNormal * maxDistFound;
                         info.normalAtHit[maxAxis] = ray.sign[maxAxis] == Ray.Sign.negative ? 1 : -1;
                         info.distanceToHit = maxDistFound;
                     }

@@ -174,7 +174,7 @@ namespace MatterHackers.RayTracer
                 bool wantBackAndInBack = (ray.intersectionType & IntersectionType.BackFace) == IntersectionType.BackFace && !inFront;
                 if (wantFrontAndInFront || wantBackAndInBack)
                 {
-                    Vector3 hitPosition = ray.origin + ray.direction * distanceToHit;
+                    Vector3 hitPosition = ray.origin + ray.directionNormal * distanceToHit;
 
                     bool haveHitIn2D = false;
                     if (majorAxis == 0)

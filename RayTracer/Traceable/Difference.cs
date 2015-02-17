@@ -174,7 +174,7 @@ namespace MatterHackers.RayTracer.Traceable
             // get all the intersection for the object
             Ray currentRayCheckBackfaces = new Ray(ray);
             currentRayCheckBackfaces.intersectionType = intersectionType;
-            currentRayCheckBackfaces.minDistanceToConsider = ((info.hitPosition + ray.direction * Ray.sameSurfaceOffset) - ray.origin).Length;
+            currentRayCheckBackfaces.minDistanceToConsider = ((info.hitPosition + ray.directionNormal * Ray.sameSurfaceOffset) - ray.origin).Length;
             currentRayCheckBackfaces.maxDistanceToConsider = double.PositiveInfinity;
 
             return element.GetClosestIntersection(currentRayCheckBackfaces);

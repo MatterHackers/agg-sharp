@@ -82,7 +82,7 @@ namespace MatterHackers.RayTracer
                 IntersectInfo info = new IntersectInfo();
                 info.closestHitObject = this;
                 info.hitType = IntersectionType.FrontFace;
-                info.hitPosition = ray.origin + ray.direction * distanceToHit;
+                info.hitPosition = ray.origin + ray.directionNormal * distanceToHit;
                 info.normalAtHit = plane.planeNormal;
                 info.distanceToHit = distanceToHit;
 
