@@ -397,17 +397,60 @@ namespace MatterHackers.PolygonMesh.Processors
             return goodParse;
         }
 
-		public static bool CheckIfShouldWarnOn32Bit(string fileLocation)
+		public static bool IsBinary(string fileName)
 		{
-			using (Stream stream = new FileStream(fileLocation, FileMode.Open))
+			try
 			{
-				if (stream.Length > 2000000)
+				using (Stream stlStream = new FileStream(fileName, FileMode.Open))
 				{
-					int a = 0;
+					long bytesInFile = stlStream.Length;
+					if (bytesInFile <= 80)
+					{
+						return false;
+					}
+
+					byte[] first160Bytes = new byte[160];
+					stlStream.Read(first160Bytes, 0, 160);
+					byte[] ByteOredrMark = new byte[] { 0xEF, 0xBB, 0xBF };
+					int startOfString = 0;
+					if (first160Bytes[0] == ByteOredrMark[0] && first160Bytes[0] == ByteOredrMark[0] && first160Bytes[0] == ByteOredrMark[0])
+					{
+						startOfString = 3;
+					}
+					string first160BytesOfSTLFile = System.Text.Encoding.UTF8.GetString(first160Bytes, startOfString, first160Bytes.Length - startOfString);
+					if (first160BytesOfSTLFile.StartsWith("solid") && first160BytesOfSTLFile.Contains("facet"))
+					{
+						return false;
+					}
 				}
 			}
+			catch (Exception)
+			{
+			}
 
-			return false;
+			return true;
+		}
+
+		public static long GetEstimatedMemoryUse(string fileLocation)
+		{
+			try
+			{
+				using (Stream stream = new FileStream(fileLocation, FileMode.Open))
+				{
+					if (IsBinary(fileLocation))
+					{
+						return (long)(stream.Length * 13.5);
+					}
+					else
+					{
+						return (long)(stream.Length * 2.5);
+					}
+				}
+			}
+			catch (Exception)
+			{
+				return 0;
+			}
 		}
 	}
 }

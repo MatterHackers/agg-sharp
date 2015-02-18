@@ -673,17 +673,29 @@ namespace MatterHackers.PolygonMesh.Processors
             }
         }
 
-		public static bool CheckIfShouldWarnOn32Bit(string fileLocation)
+		public static long GetEstimatedMemoryUse(string fileLocation)
 		{
-			using (Stream stream = new FileStream(fileLocation, FileMode.Open))
+			try
 			{
-				if (stream.Length > 2000000)
+				using (Stream stream = new FileStream(fileLocation, FileMode.Open))
 				{
-					int a = 0;
+					using (Stream fileStream = File.OpenRead(fileLocation))
+					{
+						if (IsZipFile(fileStream))
+						{
+							return (long)(stream.Length * 57);
+						}
+						else
+						{
+							return (long)(stream.Length * 2.8);
+						}
+					}
 				}
 			}
-
-			return false;
+			catch (Exception)
+			{
+				return 0;
+			}
 		}
 	}
 }
