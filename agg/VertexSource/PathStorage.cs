@@ -556,6 +556,14 @@ namespace MatterHackers.Agg.VertexSource
             return vertices.total_vertices();
         }
 
+		public int Count
+		{
+			get
+			{
+				return vertices.total_vertices();
+			}
+		}
+
         public ShapePath.FlagsAndCommand last_vertex(out double x, out double y)
         {
             return vertices.last_vertex(out x, out y);
