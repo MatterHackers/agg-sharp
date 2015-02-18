@@ -687,7 +687,7 @@ namespace MatterHackers.PolygonMesh.Processors
 						}
 						else
 						{
-							return (long)(stream.Length * 2.8);
+							return (long)(stream.Length * 3.7);
 						}
 					}
 				}
