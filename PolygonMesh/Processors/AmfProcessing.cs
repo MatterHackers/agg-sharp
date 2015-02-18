@@ -679,16 +679,13 @@ namespace MatterHackers.PolygonMesh.Processors
 			{
 				using (Stream stream = new FileStream(fileLocation, FileMode.Open))
 				{
-					using (Stream fileStream = File.OpenRead(fileLocation))
+					if (IsZipFile(stream))
 					{
-						if (IsZipFile(fileStream))
-						{
-							return (long)(stream.Length * 57);
-						}
-						else
-						{
-							return (long)(stream.Length * 3.7);
-						}
+						return (long)(stream.Length * 57);
+					}
+					else
+					{
+						return (long)(stream.Length * 3.7);
 					}
 				}
 			}
