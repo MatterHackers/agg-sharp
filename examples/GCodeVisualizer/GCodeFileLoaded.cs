@@ -631,6 +631,9 @@ namespace MatterHackers.GCodeVisualizer
                 case "301":
                     break;
 
+				case "400": // Wait for current moves to finish
+					break;
+
                 case "565": // M565: Set Z probe offset
                     break;
 
