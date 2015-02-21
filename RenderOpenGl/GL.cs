@@ -28,6 +28,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			}
 		}
 
+		internal int vertexCount;
         internal VectorPOD<float> positions3f = new VectorPOD<float>();
         internal VectorPOD<byte> color4b = new VectorPOD<byte>();
 		internal VectorPOD<float> textureCoords2f = new VectorPOD<float>();
@@ -546,6 +547,32 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #else
 			switch (currentImediateData.Mode)
 			{
+				case BeginMode.Lines:
+					{
+						GL.EnableClientState(ArrayCap.ColorArray);
+						GL.EnableClientState(ArrayCap.VertexArray);
+
+						float[] v = currentImediateData.positions3f.Array;
+						byte[] c = currentImediateData.color4b.Array;
+						// pin the data, so that GC doesn't move them, while used
+						// by native code
+						unsafe
+						{
+							fixed (float* pv = v)
+							{
+								fixed (byte* pc = c)
+								{
+									GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pc));
+									GL.VertexPointer(currentImediateData.vertexCount, VertexPointerType.Float, 0, new IntPtr(pv));
+									GL.DrawArrays(currentImediateData.Mode, 0, currentImediateData.positions3f.Count / currentImediateData.vertexCount);
+								}
+							}
+						}
+						GL.DisableClientState(ArrayCap.VertexArray);
+						GL.DisableClientState(ArrayCap.ColorArray);
+					}
+					break;
+
 				case BeginMode.TriangleFan:
 				case BeginMode.Triangles:
 				case BeginMode.TriangleStrip:
@@ -566,9 +593,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
                                 fixed (byte* pc = c)
                                 {
                                     GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pc));
-                                    GL.VertexPointer(2, VertexPointerType.Float, 0, new IntPtr(pv));
+									GL.VertexPointer(currentImediateData.vertexCount, VertexPointerType.Float, 0, new IntPtr(pv));
                                     GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(pt));
-                                    GL.DrawArrays(currentImediateData.Mode, 0, currentImediateData.positions3f.Count / 2);
+                                    GL.DrawArrays(currentImediateData.Mode, 0, currentImediateData.positions3f.Count / currentImediateData.vertexCount);
                                 }
 							}
 						}
@@ -599,6 +626,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Vertex2(x, y);
 #else
+			currentImediateData.vertexCount = 2;
 			currentImediateData.positions3f.Add((float)x);
 			currentImediateData.positions3f.Add((float)y);
 
@@ -614,9 +642,17 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
             OpenTK.Graphics.OpenGL.GL.Vertex3(x, y, z);
 #else
-			throw new NotImplementedException();
+			currentImediateData.vertexCount = 3;
+			currentImediateData.positions3f.Add((float)x);
+			currentImediateData.positions3f.Add((float)y);
+			currentImediateData.positions3f.Add((float)z);
+
+            currentImediateData.color4b.add(ImediateMode.currentColor[0]);
+            currentImediateData.color4b.add(ImediateMode.currentColor[1]);
+            currentImediateData.color4b.add(ImediateMode.currentColor[2]);
+            currentImediateData.color4b.add(ImediateMode.currentColor[3]);
 #endif
-        }
+		}
 
         public static void DeleteTextures(int n, ref int textures)
         {
