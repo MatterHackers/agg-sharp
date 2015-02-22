@@ -46,6 +46,10 @@ namespace MatterHackers.GCodeVisualizer
 {
     public abstract class GCodeFile
     {
+		static readonly Vector4 VelocitySameAsStopMmPerS = new Vector4(8, 8, .4, 5);
+		static readonly Vector4 MaxAccelerationMmPerS2 = new Vector4(1000, 1000, 100, 5000);
+		static readonly Vector4 MaxVelocityMmPerS = new Vector4(500, 500, 5, 25);
+
 #if	__ANDROID__
 		protected const int Max32BitFileSize = 10000000; // 10 megs
 #else
@@ -106,6 +110,46 @@ namespace MatterHackers.GCodeVisualizer
 			}
 
 			return false;
+		}
+
+		protected static double GetSecondsThisLine(Vector3 deltaPositionThisLine, double deltaEPositionThisLine, double feedRateMmPerMin)
+		{
+			double startingVelocityMmPerS = VelocitySameAsStopMmPerS.x;
+			double endingVelocityMmPerS = VelocitySameAsStopMmPerS.x;
+			double maxVelocityMmPerS = Math.Min(feedRateMmPerMin / 60, MaxVelocityMmPerS.x);
+			double acceleration = MaxAccelerationMmPerS2.x;
+			double lengthOfThisMoveMm = Math.Max(deltaPositionThisLine.Length, deltaEPositionThisLine);
+
+			double distanceToMaxVelocity = GetDistanceToReachEndingVelocity(startingVelocityMmPerS, maxVelocityMmPerS, acceleration);
+			if (distanceToMaxVelocity <= lengthOfThisMoveMm / 2)
+			{
+				// we will reach max velocity then run at it and then decelerate
+				double accelerationTime = GetTimeToAccelerateDistance(startingVelocityMmPerS, distanceToMaxVelocity, acceleration) * 2;
+				double runningTime = (lengthOfThisMoveMm - (distanceToMaxVelocity * 2)) / maxVelocityMmPerS;
+				return accelerationTime + runningTime;
+			}
+			else
+			{
+				// we will accelerate to the center then decelerate
+				double accelerationTime = GetTimeToAccelerateDistance(startingVelocityMmPerS, lengthOfThisMoveMm / 2, acceleration) * 2;
+				return accelerationTime;
+			}
+		}
+
+		static double GetTimeToAccelerateDistance(double startingVelocityMmPerS, double distanceMm, double accelerationMmPerS2)
+		{
+			// d = vi * t + .5 * a * t^2;
+			// t = (√(vi^2+2ad)-vi)/a
+			double startingVelocityMmPerS2 = startingVelocityMmPerS * startingVelocityMmPerS;
+			double distanceAcceleration2 = 2 * accelerationMmPerS2 * distanceMm;
+			return (Math.Sqrt(startingVelocityMmPerS2 + distanceAcceleration2) - startingVelocityMmPerS) / accelerationMmPerS2;
+		}
+
+		static double GetDistanceToReachEndingVelocity(double startingVelocityMmPerS, double endingVelocityMmPerS, double accelerationMmPerS2)
+		{
+			double endingVelocityMmPerS2 = endingVelocityMmPerS * endingVelocityMmPerS;
+			double startingVelocityMmPerS2 = startingVelocityMmPerS * startingVelocityMmPerS;
+			return (endingVelocityMmPerS2 - startingVelocityMmPerS2) / (2.0 * accelerationMmPerS2);
 		}
 
 		public static GCodeFile Load(string fileName)

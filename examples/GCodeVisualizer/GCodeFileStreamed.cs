@@ -204,7 +204,11 @@ namespace MatterHackers.GCodeVisualizer
 				return 0;
 			}
 		}
-		
+
+		double feedRateMmPerMin = 0;
+		Vector3 lastPrinterPosition = new Vector3();
+		double lastEPosition = 0;
+
 		public override PrinterMachineInstruction Instruction(int index) 
 		{
 			using (TimedLock.Lock(this, "Loading Instruction"))
@@ -223,7 +227,49 @@ namespace MatterHackers.GCodeVisualizer
 						line = "";
 					}
 
-					readLinesRingBuffer[readLineCount % MaxLinesToBuffer] = new PrinterMachineInstruction(line);
+					int ringBufferIndex = readLineCount % MaxLinesToBuffer;
+					readLinesRingBuffer[ringBufferIndex] = new PrinterMachineInstruction(line);
+
+					PrinterMachineInstruction instruction = readLinesRingBuffer[ringBufferIndex];
+					Vector3 deltaPositionThisLine = new Vector3();
+					double deltaEPositionThisLine = 0;
+					string lineToParse = line.ToUpper().Trim();
+					if (lineToParse.StartsWith("G0") || lineToParse.StartsWith("G1"))
+					{
+						double newFeedRateMmPerMin = 0;
+						if (GetFirstNumberAfter("F", lineToParse, ref newFeedRateMmPerMin))
+						{
+							feedRateMmPerMin = newFeedRateMmPerMin;
+						}
+
+						Vector3 attemptedDestination = lastPrinterPosition;
+						GetFirstNumberAfter("X", lineToParse, ref attemptedDestination.x);
+						GetFirstNumberAfter("Y", lineToParse, ref attemptedDestination.y);
+						GetFirstNumberAfter("Z", lineToParse, ref attemptedDestination.z);
+
+						double ePosition = lastEPosition;
+						GetFirstNumberAfter("E", lineToParse, ref ePosition);
+
+						deltaPositionThisLine = attemptedDestination - lastPrinterPosition;
+						deltaEPositionThisLine = Math.Abs(ePosition - lastEPosition);
+
+						lastPrinterPosition = attemptedDestination;
+						lastEPosition = ePosition;
+					}
+					else if (lineToParse.StartsWith("G92"))
+					{
+						double ePosition = 0;
+						if (GetFirstNumberAfter("E", lineToParse, ref ePosition))
+						{
+							lastEPosition = ePosition;
+						}
+					}
+
+					if (feedRateMmPerMin > 0)
+					{
+						instruction.secondsThisLine = (float)GetSecondsThisLine(deltaPositionThisLine, deltaEPositionThisLine, feedRateMmPerMin);
+					}
+
 					readLineCount++;
 				}
 			}
