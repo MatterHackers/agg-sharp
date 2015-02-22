@@ -35,6 +35,17 @@ namespace MatterHackers.Agg.UI
             base.OnParentChanged(e);
         }
 
+		public override void SendToChildren(object objectToRout)
+		{
+			if (objectToRout as MenuItem.MenuClosedMessage != null)
+			{
+				overState.Visible = false;
+				normalState.Visible = true;
+			}
+
+			base.SendToChildren(objectToRout);
+		}
+
         void Parent_MouseLeave(object sender, EventArgs e)
         {
             overState.Visible = false;

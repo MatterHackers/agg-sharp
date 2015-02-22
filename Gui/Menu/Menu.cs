@@ -113,15 +113,15 @@ namespace MatterHackers.Agg.UI
             }
 
             OpenMenuContents dropListItems = new OpenMenuContents(MenuItems, this, OpenOffset, menuDirection, MenuItemsBackgroundColor, MenuItemsBorderColor, MenuItemsBorderWidth, maxHeight, AlignToRightEdge);
-            dropListItems.Closed += new EventHandler(dropListItems_Closed);
+            dropListItems.Closed += new EventHandler(DropListItems_Closed);
 
             dropListItems.Focus();
         }
 
-        void dropListItems_Closed(object sender, EventArgs e)
+        virtual protected void DropListItems_Closed(object sender, EventArgs e)
         {
             OpenMenuContents dropListItems = (OpenMenuContents)sender;
-            dropListItems.Closed -= new EventHandler(dropListItems_Closed);
+            dropListItems.Closed -= new EventHandler(DropListItems_Closed);
             menuIsOpen = false;
         }
     }

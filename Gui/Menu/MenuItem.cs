@@ -7,6 +7,10 @@ namespace MatterHackers.Agg.UI
 {
     public class MenuItem : GuiWidget
     {
+		public class MenuClosedMessage
+		{
+		}
+
         public event EventHandler Selected;
 
 		public delegate bool CheckIfShouldClick();

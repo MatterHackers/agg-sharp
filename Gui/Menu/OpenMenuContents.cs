@@ -98,6 +98,11 @@ namespace MatterHackers.Agg.UI
         HashSet<GuiWidget> widgetRefList = new HashSet<GuiWidget>();
         public override void OnClosed(EventArgs e)
         {
+			foreach (MenuItem menuItem in MenuItems)
+			{
+				menuItem.SendToChildren(new MenuItem.MenuClosedMessage());
+			}
+
             UnbindCallbacks();
             base.OnClosed(e);
         }
@@ -165,7 +170,7 @@ namespace MatterHackers.Agg.UI
 
 		internal bool AllowClickingItems()
 		{
-			if ((positionAtMouseDown - positionAtMouseUp).Length > 10)
+			if ((positionAtMouseDown - positionAtMouseUp).Length > 5)
 			{
 				return false;
 			}
