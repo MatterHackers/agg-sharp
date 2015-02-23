@@ -117,7 +117,8 @@ namespace MatterHackers.GCodeVisualizer
 		
 		public override void Add(PrinterMachineInstruction printerMachineInstruction) 
 		{
-			throw new NotImplementedException(); 
+			readLinesRingBuffer[readLineCount % MaxLinesToBuffer] = printerMachineInstruction;
+			readLineCount++;
 		}
 		
 		public override void Clear() 
