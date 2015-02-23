@@ -54,7 +54,7 @@ namespace MatterHackers.GCodeVisualizer
 		protected const int Max32BitFileSize = 10000000; // 10 megs
 #else
 		//protected const int Max32BitFileSize = 50; // 50 bytes
-		protected const int Max32BitFileSize = 50000000; // 50 megs
+		protected const int Max32BitFileSize = 100000000; // 100 megs
 #endif
 
 		static bool RunningIn32Bit()
