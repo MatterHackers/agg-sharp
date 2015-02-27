@@ -712,11 +712,12 @@ namespace MatterHackers.PolygonMesh
             // Set the new firstMeshEdge on the new Vertex
             vertexCreatedDuringSplit.firstMeshEdge = meshEdgeCreatedDuringSplit;
 
+			Vertex existingVertexToConectTo = meshEdgeToSplit.VertexOnEnd[1];
             // fix the Vertex references on the MeshEdges
             {
                 // and set the edges to point to this new one
                 meshEdgeCreatedDuringSplit.VertexOnEnd[0] = vertexCreatedDuringSplit;
-                meshEdgeCreatedDuringSplit.VertexOnEnd[1] = meshEdgeToSplit.VertexOnEnd[1];
+                meshEdgeCreatedDuringSplit.VertexOnEnd[1] = existingVertexToConectTo;
                 meshEdgeToSplit.VertexOnEnd[1] = vertexCreatedDuringSplit;
             }
 
@@ -724,7 +725,9 @@ namespace MatterHackers.PolygonMesh
             {
                 // set the created edge to be connected to the old edges other mesh edges
                 meshEdgeCreatedDuringSplit.NextMeshEdgeFromEnd[0] = meshEdgeToSplit;
-                // make their links point to eachother
+                
+				// make anything that pointed to the split edge point to the new mesh edge
+				
                 meshEdgeToSplit.NextMeshEdgeFromEnd[1] = meshEdgeCreatedDuringSplit;
             }
 
