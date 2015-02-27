@@ -58,7 +58,12 @@ namespace MatterHackers.Agg.UI
         public WidgetForWindowsFormsAbstract(SystemWindow childSystemWindow)
             : base(childSystemWindow)
         {
-            Clipboard.SetSystemClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText);
+            // If no platform specific Clipboard implementation has been initialized, fallback to the default
+            // WindowsForms implementation
+            if(!Clipboard.IsInitialized)
+            {
+                Clipboard.SetSystemClipboard(new WindowsFormsClipboard());
+            }
 
             Focus();
         }

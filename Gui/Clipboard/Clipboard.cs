@@ -5,56 +5,32 @@ using System.Text;
 
 namespace MatterHackers.Agg.UI
 {
-    public class Clipboard
-    {
-        public delegate String ClipboardGetTextDelegate();
-        static event ClipboardGetTextDelegate getClipboardText;
-        public static String GetText()
-        {
-            if (getClipboardText == null)
-            {
-                throw new Exception("You need to 'Clipboard.SetSystemClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText);' from your main thread.");
-            }
+	public static class Clipboard
+	{
+		private static ISystemClipboard clipboard { get; set; }
 
-            return getClipboardText();
-        }
+		public static bool IsInitialized {
+			get { return clipboard != null; }
+		}
 
-        public delegate void ClipboardSetTextDelegate(String text);
-        static event ClipboardSetTextDelegate setClipboardText;
-        public static void SetText(String text)
-        {
-            if (setClipboardText == null)
-            {
-                throw new Exception("You need to 'Clipboard.SetSystemClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText);' from your main thread.");
-            }
+		public static String GetText()
+		{
+			return clipboard.GetText();
+		}
 
-            setClipboardText(text);
-        }
+		public static void SetText(string text)
+		{
+			clipboard.SetText(text);
+		}
 
-        public delegate bool ClipboardContanisTextDelegate();
-        static event ClipboardContanisTextDelegate containsClipboardText;
-        public static bool ContainsText()
-        {
-            if (containsClipboardText == null)
-            {
-                throw new Exception("You need to 'GuiHalSurface.containsClipboardText += System.Windows.Forms.Clipboard.ContainsText;' from your main thread.");
-            }
+		public static bool ContainsText()
+		{
+			return clipboard.ContainsText();
+		}
 
-            return containsClipboardText();
-        }
-
-        static public void SetSystemClipboardFunctions(ClipboardGetTextDelegate getText, ClipboardSetTextDelegate setText, ClipboardContanisTextDelegate containsText)
-        {
-            if (getClipboardText == null)
-            {
-                if (getText == null || setText == null || containsText == null)
-                {
-                    throw new Exception("You must set all the clipboard functinos at once.  If we are going to use any we need them all.");
-                }
-                getClipboardText = getText;
-                setClipboardText = setText;
-                containsClipboardText = containsText;
-            }
-        }
-    }
+		public static void SetSystemClipboard(ISystemClipboard clipBoard)
+		{
+			clipboard = clipBoard;
+		}
+	}
 }
