@@ -191,6 +191,7 @@
     </Compile>
     <Compile Include="win32\WindowsFormsOpenGLFactory.cs" />
     <Compile Include="win32\SystemWindowCreator_WindowsForms.cs" />
+    <Compile Include="win32\WindowsFormsClipboard.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Gui\Gui.csproj">

@@ -248,6 +248,7 @@
     <Compile Include="WindowWidget\WindowWidget.cs" />
     <Compile Include="Button\ButtonViewStates.cs" />
     <Compile Include="ToggleSwitch\ToggleSwitch.cs" />
+    <Compile Include="Clipboard\ISystemClipboard.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
