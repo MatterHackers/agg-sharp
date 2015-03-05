@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -183,7 +183,6 @@
     <Compile Include="ProgressControl.cs" />
     <Compile Include="SoftKeyboard.cs" />
     <Compile Include="SystemWindow\OsMappingWidgetFactory.cs" />
-    <Compile Include="GuiWidget.cs" />
     <Compile Include="ImageWidget.cs" />
     <Compile Include="KeyEventArgs.cs" />
     <Compile Include="KeyPressEventArgs.cs" />
@@ -249,6 +248,7 @@
     <Compile Include="Button\ButtonViewStates.cs" />
     <Compile Include="ToggleSwitch\ToggleSwitch.cs" />
     <Compile Include="Clipboard\ISystemClipboard.cs" />
+    <Compile Include="GUIWidget.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
