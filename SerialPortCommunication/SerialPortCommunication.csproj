@@ -142,8 +142,8 @@
     <Compile Include="FrostedSerial\FrostedSerialStream.cs" />
     <Compile Include="FrostedSerial\IFrostedSerialPort.cs" />
     <Compile Include="FrostedSerial\IFrostedSerialStream.cs" />
-    <Compile Include="FrostedSerial\SerialPortFixer.cs" />
-    <Compile Include="FrostedSerial\TermiosH.cs" />
+    <Compile Include="SerialPortFixer.cs" />
+    <Compile Include="TermiosH.cs" />
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>
