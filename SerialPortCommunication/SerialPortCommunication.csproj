@@ -136,8 +136,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FoundStringCallBacks.cs" />
+    <Compile Include="FrostedSerial\CSharpSerialPortWrapper.cs" />
     <Compile Include="FrostedSerial\FrostedSerialPort.cs" />
+    <Compile Include="FrostedSerial\FrostedSerialPortFactory.cs" />
     <Compile Include="FrostedSerial\FrostedSerialStream.cs" />
+    <Compile Include="FrostedSerial\IFrostedSerialPort.cs" />
     <Compile Include="FrostedSerial\IFrostedSerialStream.cs" />
     <Compile Include="FrostedSerial\SerialPortFixer.cs" />
     <Compile Include="FrostedSerial\TermiosH.cs" />
