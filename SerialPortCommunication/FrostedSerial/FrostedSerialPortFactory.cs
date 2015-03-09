@@ -35,6 +35,7 @@ using System.IO;
 using System.Text;
 using Microsoft.Win32;
 using System.Runtime.InteropServices;
+using MatterHackers.Agg;
 
 namespace MatterHackers.SerialPortCommunication.FrostedSerial
 {
@@ -43,20 +44,42 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 		[DllImport("SetSerial", SetLastError = true)]
 		static extern int set_baud(string portName, int baud_rate);
 
-		static FrostedSerialPortFactory instance;
+		static bool allowPlugin = true;
+		public static void DoNotAllowPlugin()
+		{
+			allowPlugin = false;
+		}
+		static FrostedSerialPortFactory instance = null;
 		public static FrostedSerialPortFactory Instance
 		{
 			get
 			{
 				if(instance == null)
 				{
-					instance = new FrostedSerialPortFactory();
+					if (allowPlugin)
+					{
+						PluginFinder<FrostedSerialPortFactory> pluginFinder = new PluginFinder<FrostedSerialPortFactory>();
+
+						foreach (FrostedSerialPortFactory plugin in pluginFinder.Plugins)
+						{
+							if (plugin.GetType() != typeof(FrostedSerialPortFactory))
+							{
+								instance = plugin;
+							}
+						}
+					}
+					
+					if (instance == null)
+					{
+						instance = new FrostedSerialPortFactory();
+					}
 				}
+
 				return instance;
 			}
 		}
 
-		FrostedSerialPortFactory()
+		protected FrostedSerialPortFactory()
 		{
 		}
 
