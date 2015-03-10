@@ -101,7 +101,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 		}
 
 		// On non-Android platforms simply return true as port access validation isn't applicable
-		public bool EnsureDeviceAccess()
+		public virtual bool EnsureDeviceAccess()
 		{
 			return true;
 		}
@@ -165,7 +165,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 			}
 		}
 
-		public IFrostedSerialPort Create(string serialPortName)
+		public virtual IFrostedSerialPort Create(string serialPortName)
 		{
 			IFrostedSerialPort newPort = null;
 			// if we can find a mac helper class (to get us 250k)
@@ -185,7 +185,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 			return newPort;
 		}
 
-		public IFrostedSerialPort CreateAndOpen(string serialPortName, int baudRate, bool DtrEnableOnConnect)
+		public virtual IFrostedSerialPort CreateAndOpen(string serialPortName, int baudRate, bool DtrEnableOnConnect)
 		{
 			IFrostedSerialPort newPort = Create(serialPortName);
 
