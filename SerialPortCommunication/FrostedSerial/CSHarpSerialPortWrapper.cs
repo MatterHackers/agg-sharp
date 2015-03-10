@@ -72,7 +72,10 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
 		public int BytesToRead
 		{
-			get { return port.BytesToRead; }
+			get 
+			{
+				return port.BytesToRead; 
+			}
 		}
 
 		public void Dispose()
