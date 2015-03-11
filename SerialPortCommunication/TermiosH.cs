@@ -139,7 +139,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
             uint c_cflag = 0;
             uint c_lflag = 0;
             uint c_oflag = 0;
-            uint c_iflag = 0;
+            //uint c_iflag = 0;
             c_cflag |= (uint)(e_c_oflag.CLOCAL | e_c_oflag.CREAD);
             //c_lflag &= (uint)-(e_c_lflag.ICANON | e_c_lflag.ECHO | e_c_lflag.ECHOE | e_c_lflag.ECHOK | e_c_lflag.ECHOL | e_c_lflag.ECHONL | e_c_lflag.ISIG | e_c_lflag.IEXTEN);
             // not supported in docs I can find ECHOL
@@ -148,7 +148,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
                 c_lflag &= (uint)-(uint)(e_c_lflag.ICANON | e_c_lflag.ECHO | e_c_lflag.ECHOE | e_c_lflag.ECHOK | e_c_lflag.ECHONL | e_c_lflag.ISIG | e_c_lflag.IEXTEN);
             }
             c_oflag &= (uint)(e_c_oflag.OPOST);
-            c_iflag = (uint)e_c_iflag.IGNBRK;
+            //c_iflag = (uint)e_c_iflag.IGNBRK;
         }
     }
 }

@@ -72,7 +72,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
         object pin_changed = new object();
 
         public FrostedSerialPort() :
-            this(FrostedSerialPortFactory.Instance.GetDefaultPortName(), DefaultBaudRate, DefaultParity, DefaultDataBits, DefaultStopBits)
+            this(FrostedSerialPort.GetDefaultPortName(), DefaultBaudRate, DefaultParity, DefaultDataBits, DefaultStopBits)
         {
         }
 
@@ -110,6 +110,79 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
             stop_bits = stopBits;
             this.parity = parity;
         }
+
+		// On non-Android platforms simply return true as port access validation isn't applicable
+		public static bool EnsureDeviceAccess()
+		{
+			return true;
+		}
+
+		public static string[] GetPortNames(bool filter = false)
+		{
+			int p = (int)Environment.OSVersion.Platform;
+			List<string> serial_ports = new List<string>();
+
+			// Are we on Unix?
+			if (p == 4 || p == 128 || p == 6)
+			{
+				string[] ttys = Directory.GetFiles("/dev/", "tty*");
+
+				// If filtering was not requested, return the raw listing of /dev/tty* - (subsequent filtering happens in client code)
+				if (!filter)
+				{
+					return ttys;
+				}
+
+				// Probe for Linux-styled devices: /dev/ttyS* or /dev/ttyUSB*
+				foreach (string dev in ttys)
+				{
+					if (dev.StartsWith("/dev/ttyS") || dev.StartsWith("/dev/ttyUSB") || dev.StartsWith("/dev/ttyACM"))
+					{
+						serial_ports.Add(dev);
+					}
+					else if (dev != "/dev/tty" && dev.StartsWith("/dev/tty") && !dev.StartsWith("/dev/ttyC"))
+					{
+						serial_ports.Add(dev);
+					}
+				}
+			}
+			else
+			{
+#if USE_STANDARD_SERIAL
+				using (RegistryKey subkey = Registry.LocalMachine.OpenSubKey("HARDWARE\\DEVICEMAP\\SERIALCOMM"))
+				{
+					if (subkey != null)
+					{
+						string[] names = subkey.GetValueNames();
+						foreach (string value in names)
+						{
+							string port = subkey.GetValue(value, "").ToString();
+							if (port != "")
+								serial_ports.Add(port);
+						}
+					}
+				}
+#endif
+			}
+			return serial_ports.ToArray();
+		}
+
+		public static string GetDefaultPortName()
+		{
+			string[] ports = FrostedSerialPort.GetPortNames();
+			if (ports.Length > 0)
+			{
+				return ports[0];
+			}
+			else
+			{
+				int p = (int)Environment.OSVersion.Platform;
+				if (p == 4 || p == 128 || p == 6)
+					return "ttyS0"; // Default for Unix
+				else
+					return "COM1"; // Default for Windows
+			}
+		}
 
         [Browsable(false)]
         [DesignerSerializationVisibilityAttribute(DesignerSerializationVisibility.Hidden)]

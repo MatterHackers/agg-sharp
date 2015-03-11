@@ -83,79 +83,6 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 		{
 		}
 
-		internal string GetDefaultPortName()
-		{
-			string[] ports = FrostedSerialPortFactory.Instance.GetPortNames();
-			if (ports.Length > 0)
-			{
-				return ports[0];
-			}
-			else
-			{
-				int p = (int)Environment.OSVersion.Platform;
-				if (p == 4 || p == 128 || p == 6)
-					return "ttyS0"; // Default for Unix
-				else
-					return "COM1"; // Default for Windows
-			}
-		}
-
-		// On non-Android platforms simply return true as port access validation isn't applicable
-		public virtual bool EnsureDeviceAccess()
-		{
-			return true;
-		}
-
-		public string[] GetPortNames(bool filter = false)
-		{
-			int p = (int)Environment.OSVersion.Platform;
-			List<string> serial_ports = new List<string>();
-
-			// Are we on Unix?
-			if (p == 4 || p == 128 || p == 6)
-			{
-				string[] ttys = Directory.GetFiles("/dev/", "tty*");
-
-				// If filtering was not requested, return the raw listing of /dev/tty* - (subsequent filtering happens in client code)
-				if (!filter)
-				{
-					return ttys;
-				}
-
-				// Probe for Linux-styled devices: /dev/ttyS* or /dev/ttyUSB*
-				foreach (string dev in ttys)
-				{
-					if (dev.StartsWith("/dev/ttyS") || dev.StartsWith("/dev/ttyUSB") || dev.StartsWith("/dev/ttyACM"))
-					{
-						serial_ports.Add(dev);
-					}
-					else if (dev != "/dev/tty" && dev.StartsWith("/dev/tty") && !dev.StartsWith("/dev/ttyC"))
-					{
-						serial_ports.Add(dev);
-					}
-				}
-			}
-			else
-			{
-#if USE_STANDARD_SERIAL
-				using (RegistryKey subkey = Registry.LocalMachine.OpenSubKey("HARDWARE\\DEVICEMAP\\SERIALCOMM"))
-				{
-					if (subkey != null)
-					{
-						string[] names = subkey.GetValueNames();
-						foreach (string value in names)
-						{
-							string port = subkey.GetValue(value, "").ToString();
-							if (port != "")
-								serial_ports.Add(port);
-						}
-					}
-				}
-#endif
-			}
-			return serial_ports.ToArray();
-		}
-
 		public bool IsWindows
 		{
 			get
@@ -167,6 +94,12 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
 		public virtual IFrostedSerialPort Create(string serialPortName)
 		{
+#if __ANDROID__
+			//Create an instance of a FrostedSerialPort
+			IFrostedSerialPort newPort = null;
+			newPort = new FrostedSerialPort(serialPortName);
+			return newPort;
+#else
 			IFrostedSerialPort newPort = null;
 			// if we can find a mac helper class (to get us 250k)
 			string appBundle = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
@@ -183,10 +116,28 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 			}
 
 			return newPort;
+#endif // ANDROID
 		}
 
 		public virtual IFrostedSerialPort CreateAndOpen(string serialPortName, int baudRate, bool DtrEnableOnConnect)
 		{
+#if __ANDROID__
+			//Create an instance of a FrostedSerialPort and open it
+			IFrostedSerialPort newPort = Create(serialPortName);
+
+			newPort.BaudRate = baudRate;
+			if (DtrEnableOnConnect)
+			{
+				newPort.DtrEnable = true;
+			}
+
+			// Set the read/write timeouts
+			newPort.ReadTimeout = 500;
+			newPort.WriteTimeout = 500;
+			newPort.Open();
+
+			return newPort;
+#else
 			IFrostedSerialPort newPort = Create(serialPortName);
 
 			bool isLinux = !(newPort is FrostedSerialPort) && !IsWindows;
@@ -216,6 +167,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 			}
 
 			return newPort;
+#endif // ANDROID
 		}
 	}
 }
