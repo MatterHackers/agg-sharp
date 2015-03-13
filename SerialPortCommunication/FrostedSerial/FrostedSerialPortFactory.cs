@@ -36,6 +36,8 @@ using System.Text;
 using Microsoft.Win32;
 using System.Runtime.InteropServices;
 using MatterHackers.Agg;
+using MatterHackers.Agg.PlatformAbstract;
+using Microsoft.Win32.SafeHandles;
 
 namespace MatterHackers.SerialPortCommunication.FrostedSerial
 {
@@ -76,6 +78,31 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 				}
 
 				return instance;
+			}
+		}
+
+		[DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+		internal static extern SafeFileHandle CreateFile(string lpFileName, int dwDesiredAccess, int dwShareMode, IntPtr securityAttrs, int dwCreationDisposition, int dwFlagsAndAttributes, IntPtr hTemplateFile);
+
+		//Windows-only function
+		public virtual bool SerialPortAlreadyOpen(string portName)
+		{
+			if (OsInformation.OperatingSystem == OSType.Windows)
+			{
+				const int dwFlagsAndAttributes = 0x40000000;
+				const int GENERIC_READ = unchecked((int)0x80000000);
+				const int GENERIC_WRITE = 0x40000000;
+
+				//Borrowed from Microsoft's Serial Port Open Method :)
+				using (SafeFileHandle hFile = CreateFile(@"\\.\" + portName, GENERIC_READ | GENERIC_WRITE, 0, IntPtr.Zero, 3, dwFlagsAndAttributes, IntPtr.Zero))
+				{
+					hFile.Close();
+					return hFile.IsInvalid;
+				}
+			}
+			else
+			{
+				return false;
 			}
 		}
 
