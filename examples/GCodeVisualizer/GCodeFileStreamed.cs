@@ -55,7 +55,8 @@ namespace MatterHackers.GCodeVisualizer
 
 		public GCodeFileStreamed(string fileName)
 		{
-			openGcodeStream = new StreamReader(fileName);
+			var inStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+			openGcodeStream = new StreamReader(inStream);
 		}
 
 		~GCodeFileStreamed()
