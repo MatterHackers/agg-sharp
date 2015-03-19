@@ -154,7 +154,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public PolygonMesh.Mesh CsgToMeshRecursive(Cylinder.CylinderPrimitive objectToProcess)
         {
-			throw new NotImplementedException();
+			return CreateCylinder(objectToProcess);
         }
         #endregion
 
