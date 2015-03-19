@@ -317,8 +317,6 @@ namespace MatterHackers.Agg.OpenGlGui
             GL.Disable(EnableCap.DepthTest);
             ClearToGradient();
 
-            GL.DepthFunc(DepthFunction.Lequal);
-
 #if DO_LIGHTING
             GL.Light(LightName.Light0, LightParameter.Ambient, ambientLight);
 
