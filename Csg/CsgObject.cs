@@ -144,7 +144,7 @@ namespace MatterHackers.Csg
         }
 
         #region Size Functions
-        public Vector3 Size
+        public virtual Vector3 Size
         {
             get
             {
@@ -154,6 +154,11 @@ namespace MatterHackers.Csg
                     bounds.maxXYZ.y - bounds.minXYZ.y,
                     bounds.maxXYZ.z - bounds.minXYZ.z);
             }
+
+			set
+			{
+				throw new NotImplementedException("You have to implement this in the derived class.");
+			}
         }
 
         public double XSize { get { return Size.x; } }
