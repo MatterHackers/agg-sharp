@@ -64,6 +64,15 @@ namespace MatterHackers.Csg.Solids
 					}
 				}
 			}
+
+			set
+			{
+				if (sourceFileName != value)
+				{
+					sourceFileName = value;
+					polygonMesh = null;
+				}
+			}
 		}
 
 		public Mesh(string fileOnDisk, string name = "")

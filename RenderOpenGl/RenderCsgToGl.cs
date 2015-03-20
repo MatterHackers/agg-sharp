@@ -58,7 +58,15 @@ namespace MatterHackers.RenderOpenGl
             throw new Exception("You must wirte the specialized function for this type.");
         }
 
-        #region PrimitiveWrapper
+		#region Mesh
+		public void RenderToGlRecursive(Csg.Solids.Mesh objectToProcess)
+		{
+			RGBA_Floats partColor = new RGBA_Floats(.8, .8, 1);
+			RenderMeshToGl.Render(objectToProcess.GetMesh(), partColor);
+		}
+		#endregion
+		
+		#region PrimitiveWrapper
         public void RenderToGlRecursive(CsgObjectWrapper objectToProcess)
         {
             RenderToGlRecursive((dynamic)objectToProcess.Root);
