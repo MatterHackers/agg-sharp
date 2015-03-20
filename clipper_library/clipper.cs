@@ -4174,65 +4174,134 @@ namespace ClipperLib
       }
       //------------------------------------------------------------------------------
 
-      public static Path CleanPolygon(Path path, double distance = 1.415)
-      {
-        //distance = proximity in units/pixels below which vertices will be stripped. 
-        //Default ~= sqrt(2) so when adjacent vertices or semi-adjacent vertices have 
-        //both x & y coords within 1 unit, then the second vertex will be stripped.
+	  public static Path CleanPolygon(Path path, double distance = 1.415)
+	  {
+		  //distance = proximity in units/pixels below which vertices will be stripped. 
+		  //Default ~= sqrt(2) so when adjacent vertices or semi-adjacent vertices have 
+		  //both x & y coords within 1 unit, then the second vertex will be stripped.
 
-        int cnt = path.Count;
+		  int cnt = path.Count;
 
-        if (cnt == 0) return new Path();
+		  if (cnt == 0) return new Path();
 
-        OutPt [] outPts = new OutPt[cnt];
-        for (int i = 0; i < cnt; ++i) outPts[i] = new OutPt();
+		  OutPt[] outPts = new OutPt[cnt];
+		  for (int i = 0; i < cnt; ++i)
+		  {
+			  outPts[i] = new OutPt();
+		  }
 
-        for (int i = 0; i < cnt; ++i)
-        {
-          outPts[i].Pt = path[i];
-          outPts[i].Next = outPts[(i + 1) % cnt];
-          outPts[i].Next.Prev = outPts[i];
-          outPts[i].Idx = 0;
-        }
+		  for (int i = 0; i < cnt; ++i)
+		  {
+			  outPts[i].Pt = path[i];
+			  outPts[i].Next = outPts[(i + 1) % cnt];
+			  outPts[i].Next.Prev = outPts[i];
+			  outPts[i].Idx = 0;
+		  }
 
-        double distSqrd = distance * distance;
-        OutPt op = outPts[0];
-        while (op.Idx == 0 && op.Next != op.Prev)
-        {
-          if (PointsAreClose(op.Pt, op.Prev.Pt, distSqrd))
-          {
-            op = ExcludeOp(op);
-            cnt--;
-          }
-          else if (PointsAreClose(op.Prev.Pt, op.Next.Pt, distSqrd))
-          {
-            ExcludeOp(op.Next);
-            op = ExcludeOp(op);
-            cnt -= 2;
-          }
-          else if (SlopesNearCollinear(op.Prev.Pt, op.Pt, op.Next.Pt, distSqrd))
-          {
-            op = ExcludeOp(op);
-            cnt--;
-          }
-          else
-          {
-            op.Idx = 1;
-            op = op.Next;
-          }
-        }
+		  double distSqrd = distance * distance;
+		  OutPt currentOutPoint = outPts[0];
+		  while (currentOutPoint.Idx == 0 && currentOutPoint.Next != currentOutPoint.Prev)
+		  {
+			  if (PointsAreClose(currentOutPoint.Pt, currentOutPoint.Prev.Pt, distSqrd))
+			  {
+				  currentOutPoint = ExcludeOp(currentOutPoint);
+				  cnt--;
+			  }
+			  else if (PointsAreClose(currentOutPoint.Prev.Pt, currentOutPoint.Next.Pt, distSqrd))
+			  {
+				  ExcludeOp(currentOutPoint.Next);
+				  currentOutPoint = ExcludeOp(currentOutPoint);
+				  cnt -= 2;
+			  }
+			  else
+			  {
+				  currentOutPoint.Idx = 1;
+				  currentOutPoint = currentOutPoint.Next;
+			  }
+		  }
 
-        if (cnt < 3) cnt = 0;
-        Path result = new Path(cnt);
-        for (int i = 0; i < cnt; ++i)
-        {
-          result.Add(op.Pt);
-          op = op.Next;
-        }
-        outPts = null;
-        return result;
-      }
-      //------------------------------------------------------------------------------
+		  // reset the list to check again for collinear points
+		  while (currentOutPoint.Idx == 1 && currentOutPoint.Next != currentOutPoint.Prev)
+		  {
+			  currentOutPoint.Idx = 0;
+			  currentOutPoint = currentOutPoint.Next;
+		  }
+
+		  // We can't just merge each point in order or we can collapse curves that have small enough inter point deltas but large total curve.
+		  // Imagine a very tessellated circle. As we walk the edge each triple can be collinear within our error and so we remove the middle point and move on to
+		  // the next point. The new middle point is very close to the new third point and so we collapse and remove the second point. We can remove and create
+		  // a large flat on the edge of the circle.
+
+		  HashSet<OutPt> removePoints = new HashSet<OutPt>();
+		  while (currentOutPoint.Idx == 0 && currentOutPoint.Next != currentOutPoint.Prev)
+		  {
+			  if (SlopesNearCollinear(currentOutPoint.Prev.Pt, currentOutPoint.Pt, currentOutPoint.Next.Pt, distSqrd))
+			  {
+				  // we check if the new end point is collinear with all the points we already have accumulated.
+				  // and colapse all the points in between
+				  OutPt start = currentOutPoint.Prev; // -1
+				  OutPt firstCheck = currentOutPoint; // 0
+				  OutPt currentCheck = firstCheck; // 0
+				  OutPt endCheck = currentOutPoint.Next; // 1
+				  bool foundEnd = false;
+				  while (!foundEnd && endCheck != start)
+				  {
+					  while (currentCheck != endCheck)
+					  {
+						  bool collinear = SlopesNearCollinear(start.Pt, currentCheck.Pt, endCheck.Pt, distSqrd);
+						  if (collinear)
+						  {
+							  if (!removePoints.Contains(currentCheck))
+							  {
+								  removePoints.Add(currentCheck);
+								  currentCheck.Idx = 1;
+							  }
+							  currentCheck = currentCheck.Next;
+						  }
+						  else
+						  {
+							  // add all the points we found and we are done
+							  foundEnd = true;
+							  break;
+						  }
+					  }
+
+					  if (!foundEnd)
+					  {
+						  currentCheck = firstCheck;
+						  endCheck = endCheck.Next;
+					  }
+				  }
+
+				  currentOutPoint = endCheck;
+			  }
+			  else
+			  {
+				  currentOutPoint.Idx = 1;
+				  currentOutPoint = currentOutPoint.Next;
+			  }
+		  }
+
+		  // remove all the points that were collinear
+		  foreach (OutPt remove in removePoints)
+		  {
+			  currentOutPoint = ExcludeOp(remove);
+			  cnt--;
+		  }
+
+
+		  if (cnt < 3) cnt = 0;
+		  Path result = new Path(cnt);
+		  for (int i = 0; i < cnt; ++i)
+		  {
+			  result.Add(currentOutPoint.Pt);
+			  currentOutPoint = currentOutPoint.Next;
+		  }
+		  outPts = null;
+		  return result;
+	  }
+	  
+	  //------------------------------------------------------------------------------
 
       public static Paths CleanPolygons(Paths polys,
           double distance = 1.415)

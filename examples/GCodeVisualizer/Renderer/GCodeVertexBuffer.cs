@@ -95,6 +95,8 @@ namespace MatterHackers.GCodeVisualizer
             GL.EnableClientState(ArrayCap.ColorArray);
             GL.EnableClientState(ArrayCap.NormalArray);
             GL.EnableClientState(ArrayCap.VertexArray);
+			GL.DisableClientState(ArrayCap.TextureCoordArray);
+			GL.Disable(EnableCap.Texture2D);
 
             GL.EnableClientState(ArrayCap.IndexArray);
 
