@@ -4220,20 +4220,15 @@ namespace ClipperLib
 			  }
 		  }
 
-		  // reset the list to check again for collinear points
-		  while (currentOutPoint.Idx == 1 && currentOutPoint.Next != currentOutPoint.Prev)
-		  {
-			  currentOutPoint.Idx = 0;
-			  currentOutPoint = currentOutPoint.Next;
-		  }
-
 		  // We can't just merge each point in order or we can collapse curves that have small enough inter point deltas but large total curve.
 		  // Imagine a very tessellated circle. As we walk the edge each triple can be collinear within our error and so we remove the middle point and move on to
 		  // the next point. The new middle point is very close to the new third point and so we collapse and remove the second point. We can remove and create
 		  // a large flat on the edge of the circle.
-
 		  HashSet<OutPt> removePoints = new HashSet<OutPt>();
-		  while (currentOutPoint.Idx == 0 && currentOutPoint.Next != currentOutPoint.Prev)
+		  OutPt loopStart = currentOutPoint;
+		  bool first = true;
+		  while ((first || currentOutPoint != loopStart)
+			  && currentOutPoint.Next != currentOutPoint.Prev)
 		  {
 			  if (SlopesNearCollinear(currentOutPoint.Prev.Pt, currentOutPoint.Pt, currentOutPoint.Next.Pt, distSqrd))
 			  {
@@ -4244,17 +4239,18 @@ namespace ClipperLib
 				  OutPt currentCheck = firstCheck; // 0
 				  OutPt endCheck = currentOutPoint.Next; // 1
 				  bool foundEnd = false;
-				  while (!foundEnd && endCheck != start)
+				  while (!foundEnd
+					  && endCheck != start)
 				  {
-					  while (currentCheck != endCheck)
+					  while (currentCheck != endCheck
+						  && (first || currentCheck != loopStart))
 					  {
 						  bool collinear = SlopesNearCollinear(start.Pt, currentCheck.Pt, endCheck.Pt, distSqrd);
-						  if (collinear)
+						  if (collinear && endCheck != loopStart)
 						  {
 							  if (!removePoints.Contains(currentCheck))
 							  {
 								  removePoints.Add(currentCheck);
-								  currentCheck.Idx = 1;
 							  }
 							  currentCheck = currentCheck.Next;
 						  }
@@ -4277,9 +4273,10 @@ namespace ClipperLib
 			  }
 			  else
 			  {
-				  currentOutPoint.Idx = 1;
 				  currentOutPoint = currentOutPoint.Next;
 			  }
+
+			  first = false;
 		  }
 
 		  // remove all the points that were collinear
