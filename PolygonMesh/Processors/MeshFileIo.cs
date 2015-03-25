@@ -106,7 +106,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
         public static List<MeshGroup> Load(string meshPathAndFileName, ReportProgressRatio reportProgress = null)
         {
-            using(Stream stream = File.OpenRead(meshPathAndFileName))
+            using(Stream stream = new FileStream(meshPathAndFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 return Load(stream, Path.GetExtension(meshPathAndFileName), reportProgress);
             }
