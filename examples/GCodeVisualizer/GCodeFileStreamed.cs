@@ -73,7 +73,7 @@ namespace MatterHackers.GCodeVisualizer
 			}
 		}
 
-		public override int Count 
+		public override int LineCount
 		{
 			get
 			{
@@ -84,6 +84,34 @@ namespace MatterHackers.GCodeVisualizer
 				}
 
 				return readLineCount;
+			}
+		}
+
+		public long ByteCount
+		{
+			get
+			{
+				if (openGcodeStream != null
+					&& !readLastLineOfFile)
+				{
+					return openGcodeStream.BaseStream.Length;
+				}
+
+				return 0;
+			}
+		}
+
+		public long BytePosition
+		{
+			get
+			{
+				if (openGcodeStream != null
+					&& !readLastLineOfFile)
+				{
+					return openGcodeStream.BaseStream.Position;
+				}
+
+				return 0;
 			}
 		}
 

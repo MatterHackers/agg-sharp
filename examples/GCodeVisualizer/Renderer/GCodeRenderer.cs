@@ -82,12 +82,12 @@ namespace MatterHackers.GCodeVisualizer
         {
             if (extrusionColors == null 
                 && gCodeFileToDraw != null 
-                && gCodeFileToDraw.Count > 0)
+                && gCodeFileToDraw.LineCount > 0)
             {
                 extrusionColors = new ExtrusionColors();
                 HashSet<float> speeds = new HashSet<float>();
                 PrinterMachineInstruction prevInstruction = gCodeFileToDraw.Instruction(0);
-                for (int i = 1; i < gCodeFileToDraw.Count; i++)
+                for (int i = 1; i < gCodeFileToDraw.LineCount; i++)
                 {
                     PrinterMachineInstruction instruction = gCodeFileToDraw.Instruction(i);
                     if (instruction.EPosition > prevInstruction.EPosition)
@@ -113,7 +113,7 @@ namespace MatterHackers.GCodeVisualizer
             List<RenderFeatureBase> renderFeaturesForLayer = renderFeatures[layerToCreate];
 
             int startRenderIndex = gCodeFileToDraw.GetInstructionIndexAtLayer(layerToCreate);
-            int endRenderIndex = gCodeFileToDraw.Count - 1;
+            int endRenderIndex = gCodeFileToDraw.LineCount - 1;
             if (layerToCreate < gCodeFileToDraw.NumChangesInZ - 1)
             {
                 endRenderIndex = gCodeFileToDraw.GetInstructionIndexAtLayer(layerToCreate + 1);

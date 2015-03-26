@@ -75,7 +75,8 @@ namespace MatterHackers.GCodeVisualizer
 		}
 
 		public abstract double TotalSecondsInPrint { get; }
-		public abstract int Count { get; }
+		// the number of lines in the file
+		public abstract int LineCount { get; }
 		public abstract void Insert(int indexToStartInjection, PrinterMachineInstruction printerMachineInstruction);
 		public abstract void Add(PrinterMachineInstruction printerMachineInstruction);
 		public abstract void Clear();
