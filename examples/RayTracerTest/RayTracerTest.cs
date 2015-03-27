@@ -89,7 +89,7 @@ namespace MatterHackers.Agg
             timer.Start();
             for (int i = 0; i < numInterations; i++)
             {
-                accumulation += GetRandomIntersectingRay().direction;
+                accumulation += GetRandomIntersectingRay().directionNormal;
             }
             long notIntersectStuff = timer.ElapsedMilliseconds;
             timer.Restart();

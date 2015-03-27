@@ -368,7 +368,7 @@ namespace MatterHackers.RayTracer
             Stopwatch loadTime = new Stopwatch();
             loadTime.Start();
             
-            PolygonMesh.Mesh simpleMesh = StlProcessing.Load("Simple.stl")[0].Meshes[0];
+            PolygonMesh.Mesh simpleMesh = StlProcessing.Load("Simple.stl");
             //PolygonMesh.Mesh simpleMesh = StlProcessing.Load("Complex.stl");
             //PolygonMesh.Mesh simpleMesh = StlProcessing.Load("bunny.stl");
             //PolygonMesh.Mesh simpleMesh = StlProcessing.Load("bunny_binary.stl");
