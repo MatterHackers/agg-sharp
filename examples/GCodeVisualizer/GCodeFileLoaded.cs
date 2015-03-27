@@ -264,7 +264,7 @@ namespace MatterHackers.GCodeVisualizer
             foreach (string outputString in CustomSplit(gCodeString, '\n'))
             {
                 string lineString = outputString.Trim();
-                machineInstructionForLine = new PrinterMachineInstruction(lineString, machineInstructionForLine);
+                machineInstructionForLine = new PrinterMachineInstruction(lineString, machineInstructionForLine, false);
 
                 if (lineString.Length > 0)
                 {
