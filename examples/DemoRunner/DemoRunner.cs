@@ -80,7 +80,7 @@ namespace MatterHackers.Agg
         [STAThread]
         public static void Main(string[] args)
         {
-            Clipboard.SetSystemClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText); 
+			Clipboard.SetSystemClipboard(new WindowsFormsClipboard()); 
             
             MatterHackers.Agg.Tests.AggDrawingTests.RunAllTests();
             MatterHackers.VectorMath.Tests.UnitTests.Run();
