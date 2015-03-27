@@ -16,6 +16,8 @@
 //          mcseemagg@yahoo.com
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
+//#define DUMP_SLOW_TIMES
+
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -753,58 +755,64 @@ namespace MatterHackers.Agg.UI
 
             set
             {
-                if (value.Width < MinimumSize.x)
-                {
-                    value.Right = value.Left + MinimumSize.x;
-                }
-                else if (value.Width > MaximumSize.x)
-                {
-                    value.Right = value.Left + MaximumSize.x;
-                }
+#if DEBUG && DUMP_SLOW_TIMES
+				using (new DumpCallStackIfSlow(.2, "LocalBounds"))
+#endif
+				{
 
-                if (value.Height < MinimumSize.y)
-                {
-                    value.Top = value.Bottom + MinimumSize.y;
-                }
-                else if (value.Height > MaximumSize.y)
-                {
-                    value.Top = value.Bottom + MaximumSize.y;
-                }
+					if (value.Width < MinimumSize.x)
+					{
+						value.Right = value.Left + MinimumSize.x;
+					}
+					else if (value.Width > MaximumSize.x)
+					{
+						value.Right = value.Left + MaximumSize.x;
+					}
 
-                if (EnforceIntegerBounds)
-                {
-                    value.Left = Math.Floor(value.Left);
-                    value.Bottom = Math.Floor(value.Bottom);
-                    value.Right = Math.Ceiling(value.Right);
-                    value.Top = Math.Ceiling(value.Top);
-                }
+					if (value.Height < MinimumSize.y)
+					{
+						value.Top = value.Bottom + MinimumSize.y;
+					}
+					else if (value.Height > MaximumSize.y)
+					{
+						value.Top = value.Bottom + MaximumSize.y;
+					}
 
-                if (localBounds != value)
-                {
-                    if (!largestValidBounds.Contains(value))
-                    {
-                        ThrowExceptionInDebug("The bounds you are passing seems like they are probably wrong.  Check it.");
-                    }
+					if (EnforceIntegerBounds)
+					{
+						value.Left = Math.Floor(value.Left);
+						value.Bottom = Math.Floor(value.Bottom);
+						value.Right = Math.Ceiling(value.Right);
+						value.Top = Math.Ceiling(value.Top);
+					}
 
-                    localBounds = value;
+					if (localBounds != value)
+					{
+						if (!largestValidBounds.Contains(value))
+						{
+							ThrowExceptionInDebug("The bounds you are passing seems like they are probably wrong.  Check it.");
+						}
 
-                    OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.LocalBounds));
-                    if (this.Parent != null)
-                    {
-                        this.Parent.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.ChildLocalBounds));
-                    }
+						localBounds = value;
 
-                    Invalidate();
+						OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.LocalBounds));
+						if (this.Parent != null)
+						{
+							this.Parent.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.ChildLocalBounds));
+						}
 
-                    OnBoundsChanged(null);
+						Invalidate();
 
-                    if (DoubleBuffer)
-                    {
-                        AllocateBackBuffer();
-                    }
+						OnBoundsChanged(null);
 
-                    screenClipping.MarkRecalculate();
-                }
+						if (DoubleBuffer)
+						{
+							AllocateBackBuffer();
+						}
+
+						screenClipping.MarkRecalculate();
+					}
+				}
             }
         }
 
@@ -1620,21 +1628,26 @@ namespace MatterHackers.Agg.UI
         }
 
         public virtual void OnLayout(LayoutEventArgs layoutEventArgs)
-        {
-            if (Visible && layoutSuspendCount < 1)
-            {
-                if (LayoutEngine != null)
-                {
-                    SuspendLayout();
-                    LayoutEngine.Layout(layoutEventArgs);
-                    ResumeLayout();
-                }
+		{
+#if DEBUG && DUMP_SLOW_TIMES
+			using (new DumpCallStackIfSlow(.2, "OnLayout"))
+#endif
+			{
+				if (Visible && layoutSuspendCount < 1)
+				{
+					if (LayoutEngine != null)
+					{
+						SuspendLayout();
+						LayoutEngine.Layout(layoutEventArgs);
+						ResumeLayout();
+					}
 
-                if (Layout != null)
-                {
-                    Layout(this, layoutEventArgs);
-                }
-            }
+					if (Layout != null)
+					{
+						Layout(this, layoutEventArgs);
+					}
+				}
+			}
         }
 
         public virtual void OnParentChanged(EventArgs e)
@@ -1658,121 +1671,126 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        public static int DrawCount;
+		public static int DrawCount;
         public virtual void OnDraw(Graphics2D graphics2D)
-        {
-            DrawCount++;
+		{
+#if DEBUG && DUMP_SLOW_TIMES
+			using (new DumpCallStackIfSlow(.4, "OnDraw"))
+#endif
+			{
+				DrawCount++;
 
-            if (DrawBefore != null)
-            {
-                DrawBefore(this, new DrawEventArgs(graphics2D));
-            }
+				if (DrawBefore != null)
+				{
+					DrawBefore(this, new DrawEventArgs(graphics2D));
+				}
 
-            for (int i = 0; i < Children.Count; i++)
-            {
-                GuiWidget child = Children[i];
-                if (child.Visible)
-                {
-                    if (child.DebugShowBounds)
-                    {
-                        // draw the margin
-                        BorderDouble invertedMargin = child.Margin;
-                        invertedMargin.Left = -invertedMargin.Left;
-                        invertedMargin.Bottom = -invertedMargin.Bottom;
-                        invertedMargin.Right = -invertedMargin.Right;
-                        invertedMargin.Top = -invertedMargin.Top;
-                        DrawBorderBounds(graphics2D, child.BoundsRelativeToParent, invertedMargin, new RGBA_Bytes(RGBA_Bytes.Red, 128));
-                    }
+				for (int i = 0; i < Children.Count; i++)
+				{
+					GuiWidget child = Children[i];
+					if (child.Visible)
+					{
+						if (child.DebugShowBounds)
+						{
+							// draw the margin
+							BorderDouble invertedMargin = child.Margin;
+							invertedMargin.Left = -invertedMargin.Left;
+							invertedMargin.Bottom = -invertedMargin.Bottom;
+							invertedMargin.Right = -invertedMargin.Right;
+							invertedMargin.Top = -invertedMargin.Top;
+							DrawBorderBounds(graphics2D, child.BoundsRelativeToParent, invertedMargin, new RGBA_Bytes(RGBA_Bytes.Red, 128));
+						}
 
-                    RectangleDouble oldClippingRect = graphics2D.GetClippingRect();
-                    graphics2D.PushTransform();
-                    {
-                        Affine currentGraphics2DTransform = graphics2D.GetTransform();
-                        Affine accumulatedTransform = currentGraphics2DTransform * child.ParentToChildTransform;
-                        graphics2D.SetTransform(accumulatedTransform);
+						RectangleDouble oldClippingRect = graphics2D.GetClippingRect();
+						graphics2D.PushTransform();
+						{
+							Affine currentGraphics2DTransform = graphics2D.GetTransform();
+							Affine accumulatedTransform = currentGraphics2DTransform * child.ParentToChildTransform;
+							graphics2D.SetTransform(accumulatedTransform);
 
-                        RectangleDouble currentScreenClipping;
-                        if (child.CurrentScreenClipping(out currentScreenClipping))
-                        {
-                            currentScreenClipping.Left = Math.Floor(currentScreenClipping.Left);
-                            currentScreenClipping.Right = Math.Ceiling(currentScreenClipping.Right);
-                            currentScreenClipping.Bottom = Math.Floor(currentScreenClipping.Bottom);
-                            currentScreenClipping.Top = Math.Ceiling(currentScreenClipping.Top);
-                            if (currentScreenClipping.Right < currentScreenClipping.Left || currentScreenClipping.Top < currentScreenClipping.Bottom)
-                            {
-                                ThrowExceptionInDebug("Right is less than Left or Top is less than Bottom");
-                            }
+							RectangleDouble currentScreenClipping;
+							if (child.CurrentScreenClipping(out currentScreenClipping))
+							{
+								currentScreenClipping.Left = Math.Floor(currentScreenClipping.Left);
+								currentScreenClipping.Right = Math.Ceiling(currentScreenClipping.Right);
+								currentScreenClipping.Bottom = Math.Floor(currentScreenClipping.Bottom);
+								currentScreenClipping.Top = Math.Ceiling(currentScreenClipping.Top);
+								if (currentScreenClipping.Right < currentScreenClipping.Left || currentScreenClipping.Top < currentScreenClipping.Bottom)
+								{
+									ThrowExceptionInDebug("Right is less than Left or Top is less than Bottom");
+								}
 
-                            graphics2D.SetClippingRect(currentScreenClipping);
+								graphics2D.SetClippingRect(currentScreenClipping);
 
-                            if (child.DoubleBuffer)
-                            {
-                                Vector2 offsetToRenderSurface = new Vector2(currentGraphics2DTransform.tx, currentGraphics2DTransform.ty);
-                                offsetToRenderSurface += child.OriginRelativeParent;
+								if (child.DoubleBuffer)
+								{
+									Vector2 offsetToRenderSurface = new Vector2(currentGraphics2DTransform.tx, currentGraphics2DTransform.ty);
+									offsetToRenderSurface += child.OriginRelativeParent;
 
-                                double yFraction = offsetToRenderSurface.y - (int)offsetToRenderSurface.y;
-                                double xFraction = offsetToRenderSurface.x - (int)offsetToRenderSurface.x;
-                                int xOffset = (int)Math.Floor(child.LocalBounds.Left);
-                                int yOffset = (int)Math.Floor(child.LocalBounds.Bottom);
-                                if (child.isCurrentlyInvalid)
-                                {
-                                    Graphics2D childBackBufferGraphics2D = child.backBuffer.NewGraphics2D();
-                                    childBackBufferGraphics2D.Clear(new RGBA_Bytes(0, 0, 0, 0));
-                                    Affine transformToBuffer = Affine.NewTranslation(-xOffset + xFraction, -yOffset + yFraction);
-                                    childBackBufferGraphics2D.SetTransform(transformToBuffer);
-                                    child.OnDrawBackground(childBackBufferGraphics2D);
-                                    child.OnDraw(childBackBufferGraphics2D);
+									double yFraction = offsetToRenderSurface.y - (int)offsetToRenderSurface.y;
+									double xFraction = offsetToRenderSurface.x - (int)offsetToRenderSurface.x;
+									int xOffset = (int)Math.Floor(child.LocalBounds.Left);
+									int yOffset = (int)Math.Floor(child.LocalBounds.Bottom);
+									if (child.isCurrentlyInvalid)
+									{
+										Graphics2D childBackBufferGraphics2D = child.backBuffer.NewGraphics2D();
+										childBackBufferGraphics2D.Clear(new RGBA_Bytes(0, 0, 0, 0));
+										Affine transformToBuffer = Affine.NewTranslation(-xOffset + xFraction, -yOffset + yFraction);
+										childBackBufferGraphics2D.SetTransform(transformToBuffer);
+										child.OnDrawBackground(childBackBufferGraphics2D);
+										child.OnDraw(childBackBufferGraphics2D);
 
-                                    child.backBuffer.MarkImageChanged();
-                                    child.isCurrentlyInvalid = false;
-                                }
+										child.backBuffer.MarkImageChanged();
+										child.isCurrentlyInvalid = false;
+									}
 
-                                offsetToRenderSurface.x = (int)offsetToRenderSurface.x + xOffset;
-                                offsetToRenderSurface.y = (int)offsetToRenderSurface.y + yOffset;
-                                // The transform to draw the backbuffer to the graphics2D must not have a factional amount
-                                // or we will get aliasing in the image and we want our back buffer pixels to map 1:1 to the next buffer
-                                if (offsetToRenderSurface.x - (int)offsetToRenderSurface.x != 0
-                                    || offsetToRenderSurface.y - (int)offsetToRenderSurface.y != 0)
-                                {
-                                    ThrowExceptionInDebug("The transform for a back buffer must be integer to avoid aliasing.");
-                                }
-                                graphics2D.SetTransform(Affine.NewTranslation(offsetToRenderSurface));
+									offsetToRenderSurface.x = (int)offsetToRenderSurface.x + xOffset;
+									offsetToRenderSurface.y = (int)offsetToRenderSurface.y + yOffset;
+									// The transform to draw the backbuffer to the graphics2D must not have a factional amount
+									// or we will get aliasing in the image and we want our back buffer pixels to map 1:1 to the next buffer
+									if (offsetToRenderSurface.x - (int)offsetToRenderSurface.x != 0
+										|| offsetToRenderSurface.y - (int)offsetToRenderSurface.y != 0)
+									{
+										ThrowExceptionInDebug("The transform for a back buffer must be integer to avoid aliasing.");
+									}
+									graphics2D.SetTransform(Affine.NewTranslation(offsetToRenderSurface));
 
-                                graphics2D.Render(child.backBuffer, 0, 0);
-                            }
-                            else
-                            {
-                                child.OnDrawBackground(graphics2D);
-                                child.OnDraw(graphics2D);
-                            }
-                        }
-                    }
-                    graphics2D.PopTransform();
-                    graphics2D.SetClippingRect(oldClippingRect);
-                }
-            }
+									graphics2D.Render(child.backBuffer, 0, 0);
+								}
+								else
+								{
+									child.OnDrawBackground(graphics2D);
+									child.OnDraw(graphics2D);
+								}
+							}
+						}
+						graphics2D.PopTransform();
+						graphics2D.SetClippingRect(oldClippingRect);
+					}
+				}
 
-            if (DrawAfter != null)
-            {
-                DrawAfter(this, new DrawEventArgs(graphics2D));
-            }
+				if (DrawAfter != null)
+				{
+					DrawAfter(this, new DrawEventArgs(graphics2D));
+				}
 
-            if (DebugShowBounds)
-            {
-                // draw the padding
-                DrawBorderBounds(graphics2D, LocalBounds, Padding, new RGBA_Bytes(RGBA_Bytes.Cyan, 128));
+				if (DebugShowBounds)
+				{
+					// draw the padding
+					DrawBorderBounds(graphics2D, LocalBounds, Padding, new RGBA_Bytes(RGBA_Bytes.Cyan, 128));
 
-                // show the bounds and inside with an x
-                graphics2D.Line(LocalBounds.Left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, RGBA_Bytes.Green);
-                graphics2D.Line(LocalBounds.Left, LocalBounds.Top, LocalBounds.Right, LocalBounds.Bottom, RGBA_Bytes.Green);
-                graphics2D.Rectangle(LocalBounds, RGBA_Bytes.Red);
-            }
-            if (debugShowSize)
-            {
-                graphics2D.DrawString(string.Format("{4} {0}, {1} : {2}, {3}", (int)MinimumSize.x, (int)MinimumSize.y, (int)LocalBounds.Width, (int)LocalBounds.Height, Name),
-                    Width / 2, Math.Max(Height - 16, Height / 2 - 16 * graphics2D.TransformStackCount), color: RGBA_Bytes.Magenta, justification: Font.Justification.Center);
-            }
-        }
+					// show the bounds and inside with an x
+					graphics2D.Line(LocalBounds.Left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, RGBA_Bytes.Green);
+					graphics2D.Line(LocalBounds.Left, LocalBounds.Top, LocalBounds.Right, LocalBounds.Bottom, RGBA_Bytes.Green);
+					graphics2D.Rectangle(LocalBounds, RGBA_Bytes.Red);
+				}
+				if (debugShowSize)
+				{
+					graphics2D.DrawString(string.Format("{4} {0}, {1} : {2}, {3}", (int)MinimumSize.x, (int)MinimumSize.y, (int)LocalBounds.Width, (int)LocalBounds.Height, Name),
+						Width / 2, Math.Max(Height - 16, Height / 2 - 16 * graphics2D.TransformStackCount), color: RGBA_Bytes.Magenta, justification: Font.Justification.Center);
+				}
+			}
+		}
 
         private static void DrawBorderBounds(Graphics2D graphics2D, RectangleDouble bounds, BorderDouble border, RGBA_Bytes color)
         {
