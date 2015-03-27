@@ -73,7 +73,7 @@ namespace MatterHackers.GCodeVisualizer
             return GCodeCommandQueue[index];
         }
 
-		public override int Count
+		public override int LineCount
         {
             get { return GCodeCommandQueue.Count; }
         }
@@ -94,7 +94,7 @@ namespace MatterHackers.GCodeVisualizer
 
         public override void Add(PrinterMachineInstruction printerMachineInstruction)
         {
-            Insert(Count, printerMachineInstruction);
+            Insert(LineCount, printerMachineInstruction);
         }
 
 		public override void Insert(int insertIndex, PrinterMachineInstruction printerMachineInstruction)
@@ -264,7 +264,7 @@ namespace MatterHackers.GCodeVisualizer
             foreach (string outputString in CustomSplit(gCodeString, '\n'))
             {
                 string lineString = outputString.Trim();
-                machineInstructionForLine = new PrinterMachineInstruction(lineString, machineInstructionForLine);
+                machineInstructionForLine = new PrinterMachineInstruction(lineString, machineInstructionForLine, false);
 
                 if (lineString.Length > 0)
                 {
@@ -915,7 +915,7 @@ namespace MatterHackers.GCodeVisualizer
 		public override int GetLayerIndex(int instructionIndex)
 		{
 			if (instructionIndex >= 0
-				&& instructionIndex < Count)
+				&& instructionIndex < LineCount)
 			{
 				for (int zIndex = 0; zIndex < NumChangesInZ; zIndex++)
 				{
@@ -942,7 +942,7 @@ namespace MatterHackers.GCodeVisualizer
 				{
 					startIndex = IndexOfChangeInZ[currentLayer - 1];
 				}
-				int endIndex = Count - 1;
+				int endIndex = LineCount - 1;
 				if (currentLayer < NumChangesInZ - 1)
 				{
 					endIndex = IndexOfChangeInZ[currentLayer];

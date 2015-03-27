@@ -62,13 +62,14 @@ namespace MatterHackers.GCodeVisualizer
 
         public float secondsThisLine;
         public float secondsToEndFromHere;
+		public bool clientInsertion;
 
         public PrinterMachineInstruction(string Line)
         {
             this.Line = Line;
         }
 
-        public PrinterMachineInstruction(string Line, PrinterMachineInstruction copy)
+        public PrinterMachineInstruction(string Line, PrinterMachineInstruction copy, bool clientInsertion = false)
             : this(Line)
         {
             xyzPosition = copy.xyzPosition;
@@ -77,6 +78,7 @@ namespace MatterHackers.GCodeVisualizer
             movementType = copy.movementType;
             secondsToEndFromHere = copy.secondsToEndFromHere;
             ExtruderIndex = copy.ExtruderIndex;
+			this.clientInsertion = clientInsertion;
         }
 
         public int ExtruderIndex { get; set; }
