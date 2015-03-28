@@ -99,7 +99,8 @@ namespace MatterHackers.Agg.OpenGlGui
         {
             AnchorAll();
             DrawRotationHelperCircle = true;
-        }
+			mainTrackBallController.TransformChanged += TrackBallController_TransformChanged;
+		}
 
 		void TrackBallController_TransformChanged(object sender, EventArgs e)
 		{
