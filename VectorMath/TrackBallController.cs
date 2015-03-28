@@ -55,6 +55,7 @@ namespace MatterHackers.VectorMath
 
         Vector2 lastTranslationMousePosition = Vector2.Zero;
         Vector2 lastScaleMousePosition = Vector2.Zero;
+		public event EventHandler TransformChanged;
 
         public TrackBallController()
             : this(new Vector2(), 1)
@@ -77,7 +78,19 @@ namespace MatterHackers.VectorMath
             this.currentTranslationMatrix = trackBallToCopy.currentTranslationMatrix;
         }
 
-        public double Scale
+		public void Translate(Vector3 deltaPosition)
+		{
+			currentTranslationMatrix = Matrix4X4.CreateTranslation(deltaPosition) * currentTranslationMatrix;
+			OnTransformChanged(null);
+		}
+
+		public void Rotate(Quaternion rotation)
+		{
+			currentRotationMatrix = currentRotationMatrix * Matrix4X4.CreateRotation(rotation);
+			OnTransformChanged(null);
+		}
+
+		public double Scale
         {
             get
             {
@@ -90,13 +103,17 @@ namespace MatterHackers.VectorMath
                 double requiredChange = value / Scale;
 
                 currentTranslationMatrix *= Matrix4X4.CreateScale(requiredChange);
+				OnTransformChanged(null);
             }
         }
 
-        public void Translate(Vector3 deltaPosition)
-        {
-            currentTranslationMatrix = Matrix4X4.CreateTranslation(deltaPosition) * currentTranslationMatrix;
-        }
+		void OnTransformChanged(EventArgs e)
+		{
+			if (TransformChanged != null)
+			{
+				TransformChanged(this, e);
+			}
+		}
 
         public MouseDownType CurrentTrackingType
         {
@@ -250,11 +267,6 @@ namespace MatterHackers.VectorMath
             currentTrackingType = MouseDownType.None;
         }
 
-        public void Rotate(Quaternion rotation)
-        {
-            currentRotationMatrix = currentRotationMatrix * Matrix4X4.CreateRotation(rotation);
-        }
-
         public void OnMouseWheel(int wheelDelta)
         {
             double zoomDelta = 1;
@@ -288,7 +300,7 @@ namespace MatterHackers.VectorMath
             return currentTranslationMatrix * CurrentRotation;
         }
 
-        public Vector2 ScreenCenter
+		public Vector2 ScreenCenter
         {
             get
             {

@@ -94,7 +94,13 @@ namespace MatterHackers.Agg.OpenGlGui
         {
             AnchorAll();
             DrawRotationHelperCircle = true;
+			TrackBallController.TransformChanged += TrackBallController_TransformChanged;
         }
+
+		void TrackBallController_TransformChanged(object sender, EventArgs e)
+		{
+			CalculateModelviewMatrix();
+		}
 
         public override void OnBoundsChanged(EventArgs e)
         {
@@ -102,46 +108,36 @@ namespace MatterHackers.Agg.OpenGlGui
             double trackingRadius = Math.Min(Width * .45, Height * .45);
             mainTrackBallController.ScreenCenter = screenCenter;
             mainTrackBallController.TrackBallRadius = trackingRadius;
+			CalculateProjectionMatrix();
 
             base.OnBoundsChanged(e);
         }
 
         public Vector2 GetScreenPosition(Vector3 worldPosition)
         {
-            Matrix4X4 modelviewMatrix = GetModelviewMatrix();
-            Vector3 viewPosition = Vector3.Transform(worldPosition, modelviewMatrix);
+			Vector3 viewPosition = Vector3.Transform(worldPosition, ModelviewMatrix);
 
-            Matrix4X4 projectionMatrix = GetProjectionMatrix();
-            Vector3 screenPosition = Vector3.TransformPerspective(viewPosition, projectionMatrix);
+            Vector3 screenPosition = Vector3.TransformPerspective(viewPosition, ProjectionMatrix);
 
             return new Vector2(screenPosition.x * Width / 2 + Width / 2, screenPosition.y / screenPosition.z * Height / 2 + Height / 2);
         }
 
         public Ray GetRayFromScreen(Vector2 screenPosition)
         {
-            GuiWidget topWidget = this;
-            while (topWidget.Parent != null)
-            {
-                topWidget = topWidget.Parent;
-            }
-
             Vector4 rayClip = new Vector4();
             rayClip.x = (2.0 * screenPosition.x) / Width - 1.0;
             rayClip.y = (2.0 * screenPosition.y) / Height - 1.0;
             rayClip.z = -1.0;
             rayClip.w = 1.0;
 
-            Matrix4X4 projectionMatrix = GetProjectionMatrix();
-            Vector4 rayEye = Vector4.Transform(rayClip, Matrix4X4.Invert(projectionMatrix));
+            Vector4 rayEye = Vector4.Transform(rayClip, InverseProjectionMatrix);
             rayEye.z = -1; rayEye.w = 0;
 
-            Matrix4X4 modelviewMatrix = GetModelviewMatrix();
-            Vector4 rayWorld = Vector4.Transform(rayEye, Matrix4X4.Invert(modelviewMatrix));
+			Vector4 rayWorld = Vector4.Transform(rayEye, InverseModelviewMatrix);
 
             Vector3 finalRayWorld = new Vector3(rayWorld).GetNormal();
 
-            Matrix4X4 invTransform = Matrix4X4.Invert(modelviewMatrix);
-            Vector3 origin = Vector3.Transform(Vector3.Zero, invTransform);
+			Vector3 origin = Vector3.Transform(Vector3.Zero, InverseModelviewMatrix);
 
             return new Ray(origin, finalRayWorld);
         }
@@ -366,12 +362,12 @@ namespace MatterHackers.Agg.OpenGlGui
             // set the projection matrix
             GL.MatrixMode(MatrixMode.Projection);
             GL.PushMatrix();
-            GL.LoadMatrix(GetProjectionMatrix().GetAsDoubleArray());
+            GL.LoadMatrix(ProjectionMatrix.GetAsDoubleArray());
 
             // set the modelview matrix
             GL.MatrixMode(MatrixMode.Modelview);
             GL.PushMatrix();
-            GL.LoadMatrix(GetModelviewMatrix().GetAsDoubleArray());
+            GL.LoadMatrix(ModelviewMatrix.GetAsDoubleArray());
         }
 
         void UnsetGlContext()
@@ -395,22 +391,29 @@ namespace MatterHackers.Agg.OpenGlGui
             GL.PopAttrib();
         }
 
-        public Matrix4X4 GetProjectionMatrix()
+		Matrix4X4 projectionMatrix;
+		public Matrix4X4 ProjectionMatrix { get { return projectionMatrix; } }
+		Matrix4X4 inverseProjectionMatrix;
+		public Matrix4X4 InverseProjectionMatrix { get { return inverseProjectionMatrix; } }
+        public void CalculateProjectionMatrix()
         {
-            Matrix4X4 projectionMatrix = Matrix4X4.Identity;
+            projectionMatrix = Matrix4X4.Identity;
             if (Width > 0 && Height > 0)
             {
                 Matrix4X4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(45), Width / Height, 0.1f, 100.0f, out projectionMatrix);
+				inverseProjectionMatrix = Matrix4X4.Invert(ProjectionMatrix);
             }
-
-            return projectionMatrix;
         }
 
-        public Matrix4X4 GetModelviewMatrix()
+		Matrix4X4 modelviewMatrix;
+		public Matrix4X4 ModelviewMatrix { get { return modelviewMatrix; } }
+		Matrix4X4 inverseModelviewMatrix;
+		public Matrix4X4 InverseModelviewMatrix { get { return inverseModelviewMatrix; } }
+		public void CalculateModelviewMatrix()
         {
-            Matrix4X4 total = Matrix4X4.CreateTranslation(0, 0, -7);
-            total = mainTrackBallController.GetTransform4X4() * total;
-            return total;
+			modelviewMatrix = Matrix4X4.CreateTranslation(0, 0, -7);
+			modelviewMatrix = mainTrackBallController.GetTransform4X4() * modelviewMatrix;
+			inverseModelviewMatrix = Matrix4X4.Invert(modelviewMatrix);
         }
 
         public double GetWorldUnitsPerScreenPixelAtPosition(Vector3 worldPosition)
