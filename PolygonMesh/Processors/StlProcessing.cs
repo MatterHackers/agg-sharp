@@ -401,7 +401,7 @@ namespace MatterHackers.PolygonMesh.Processors
 		{
 			try
 			{
-				using (Stream stlStream = new FileStream(fileName, FileMode.Open))
+				using (Stream stlStream = new FileStream(fileName, FileMode.Open, FileAccess.Read))
 				{
 					long bytesInFile = stlStream.Length;
 					if (bytesInFile <= 80)
@@ -435,7 +435,7 @@ namespace MatterHackers.PolygonMesh.Processors
 		{
 			try
 			{
-				using (Stream stream = new FileStream(fileLocation, FileMode.Open))
+				using (Stream stream = new FileStream(fileLocation, FileMode.Open, FileAccess.Read))
 				{
 					if (IsBinary(fileLocation))
 					{
