@@ -49,90 +49,65 @@ using MatterHackers.RayTracer.Traceable;
 namespace MatterHackers.RayTracer
 {
     using AABB = MatterHackers.VectorMath.AxisAlignedBoundingBox;
-
-    public struct CameraData
-    {
-        public Vector3 upVector3;
-        public Vector3 lookAtPoint;
-        public Vector3 cameraPosition;
-        public Matrix4X4 cameraMatrix;
-
-        internal void Rotate(Quaternion rotation)
-        {
-            //rotation.W = -rotation.W;
-
-            Quaternion cameraRotation = cameraMatrix.GetRotation();
-            //rotation = rotation * cameraRotation;
-
-            //upVector3 = Vector3.TransformVector(upVector3, cameraMatrix);
-            upVector3 = Vector3.Transform(upVector3, rotation);
-            //upVector3 = Vector3.TransformVector(upVector3, Matrix4X4.Invert(cameraMatrix));
-
-            Vector3 camPosRelLookAt = cameraPosition - lookAtPoint;
-
-            //camPosRelLookAt = Vector3.TransformVector(camPosRelLookAt, cameraMatrix);
-            camPosRelLookAt = Vector3.Transform(camPosRelLookAt, rotation);
-            //camPosRelLookAt = Vector3.TransformVector(camPosRelLookAt, Matrix4X4.Invert(cameraMatrix));
-            
-            cameraPosition = camPosRelLookAt + lookAtPoint;
-        }
-    }
+	using MatterHackers.Agg.OpenGlGui;
 
     public class PreviewWindowRayTrace : GuiWidget
     {
-        bool needRedraw = true;
-        bool NeedRedraw 
-        {
-            get
-            {
-                return needRedraw;
-            }
-            set
-            {
-                needRedraw = value;
-            }
-        }
-
         ImageBuffer destImage;
         //RayTracer raytracer = new RayTracer(AntiAliasing.None, true, true, true, true, true);
         //RayTracer raytracer = new RayTracer(AntiAliasing.Low, true, true, true, true, true);
         RayTracer raytracer = new RayTracer(AntiAliasing.Medium, true, true, true, true, true);
-        private Vector2 lastMouseMovePoint;
         IRayTraceable focusedObject = null;
         Stopwatch renderTime = new Stopwatch();
         Scene scene;
 
-        Transform trackBallTransform;
+        Transform allObjectsHolder;
         IRayTraceable allObjects;
         List<IRayTraceable> renderCollection = new List<IRayTraceable>();
 
-        CameraData cameraDataAtStartOfMouseTracking;
-        CameraData cameraData;
-        TrackBallController trackBallController;
+		TrackballTumbleWidget trackballTumbleWidget;
 
         List<string> timingStrings = new List<string>();
         Stopwatch totalTime = new Stopwatch();
 
         public PreviewWindowRayTrace(int width = 200, int height = 200)
         {
-            totalTime.Start();
-            CreateScene();
+			trackballTumbleWidget = new TrackballTumbleWidget();
+			trackballTumbleWidget.DoOpenGlDrawing = false;
+			trackballTumbleWidget.DrawRotationHelperCircle = false;
+			//trackballTumbleWidget.DrawGlContent += trackballTumbleWidget_DrawGlContent;
+			trackballTumbleWidget.TransformState = TrackBallController.MouseDownType.Rotation;
+
+			AddChild(trackballTumbleWidget);
+			
+			totalTime.Start();
+
+			CreateScene();
             LocalBounds = new RectangleDouble(0, 0, width, height);
-            cameraData.upVector3 = Vector3.UnitY;
-            cameraData.cameraPosition = new Vector3(0, 0, 30);
-            cameraData.lookAtPoint = new Vector3();
-            OrientCamera();
-        }
+		
+			trackballTumbleWidget.TrackBallController.Scale = .03;
 
-        public override void OnBoundsChanged(EventArgs e)
-        {
-            scene.camera = new Camera((int)Width, (int)Height, MathHelper.DegreesToRadians(40));
-            trackBallController = new TrackBallController(new Vector2(Width / 2, Height / 2), Math.Min(Width * .45, Height * .45));
-            OrientCamera();
-            NeedRedraw = true;
+			trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, MathHelper.Tau / 16)));
+			trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
+			trackballTumbleWidget.AnchorAll();
+		}
 
-            base.OnBoundsChanged(e);
-        }
+		class TrackBallCamera : ICamera
+		{
+			private TrackballTumbleWidget trackballTumbleWidget;
+
+			public TrackBallCamera(TrackballTumbleWidget trackballTumbleWidget)
+			{
+				this.trackballTumbleWidget = trackballTumbleWidget;
+			}
+
+			public Vector3 Origin { get; set; }
+
+			public Ray GetRay(double screenX, double screenY)
+			{
+				return trackballTumbleWidget.GetRayFromScreen(new Vector2(screenX, screenY));
+			}
+		}
 
         Scene Scene
         {
@@ -160,17 +135,11 @@ namespace MatterHackers.RayTracer
             //graphics2D.Rect(new rect_d(bitmap.GetBoundingRect()), RGBA_Bytes.Black);
         }
 
-        void OrientCamera()
-        {
-            ((Camera)scene.camera).axisToWorld = Matrix4X4.LookAt(cameraData.cameraPosition, cameraData.lookAtPoint, cameraData.upVector3);
-			((Camera)scene.camera).axisToWorld.Invert();
-        }
-
         private void CreateScene()
         {
             scene = new Scene();
-            scene.camera = new Camera((int)Width, (int)Height, MathHelper.DegreesToRadians(40));
-            scene.background = new Background(new RGBA_Floats(0.5, .5, .5), 0.4);
+			scene.camera = new TrackBallCamera(trackballTumbleWidget);
+			scene.background = new Background(new RGBA_Floats(0.5, .5, .5), 0.4);
             
             //AddBoxAndSheresBooleanTest();
             //AddBoxAndBoxBooleanTest();
@@ -191,18 +160,16 @@ namespace MatterHackers.RayTracer
             //renderCollection.Add(MakerGearXCariage());
 
             allObjects = BoundingVolumeHierarchy.CreateNewHierachy(renderCollection);
-            trackBallTransform = new Transform(allObjects);
+            allObjectsHolder = new Transform(allObjects);
             //allObjects = root;
-            scene.shapes.Add(trackBallTransform);
+            scene.shapes.Add(allObjectsHolder);
 
             //AddAFloor();
 
             //add two lights for better lighting effects
-            scene.lights.Add(new Light(new Vector3(50, 10, 100), new RGBA_Floats(0.8, 0.8, 0.8)));
-            scene.lights.Add(new Light(new Vector3(-30, 150, 50), new RGBA_Floats(0.8, 0.8, 0.8)));
-
-            OrientCamera();
-        }
+			scene.lights.Add(new Light(new Vector3(5000, 5000, 5000), new RGBA_Floats(0.8, 0.8, 0.8)));
+			scene.lights.Add(new Light(new Vector3(-5000, -5000, 3000), new RGBA_Floats(0.5, 0.5, 0.5)));
+		}
 
         MatterHackers.Csg.CsgObject BooleanBoxBallThing()
         {
@@ -435,14 +402,14 @@ namespace MatterHackers.RayTracer
             }
         }
 
-        public RGBA_Floats mouseOverColor = new RGBA_Floats();
+		Matrix4X4 lastRenderedMatrix = new Matrix4X4();
+		public RGBA_Floats mouseOverColor = new RGBA_Floats();
         bool SavedTimes = false;
         public override void OnDraw(Graphics2D graphics2D)
         {
-            if(NeedRedraw)
-            {
-                NeedRedraw = false;
-                
+			Matrix4X4 currentRenderMatrix = trackballTumbleWidget.ModelviewMatrix;
+			if (lastRenderedMatrix != currentRenderMatrix)
+			{
                 Stopwatch traceTime = new Stopwatch();
                 traceTime.Start();
                 rayTraceScene();
@@ -450,7 +417,7 @@ namespace MatterHackers.RayTracer
 
                 timingStrings.Add("Time to trace BVH {0:0.0}s".FormatWith(traceTime.Elapsed.TotalSeconds));
             }
-            trackBallTransform.AxisToWorld = trackBallController.GetTransform4X4();
+            //allObjectsHolder.AxisToWorld = trackBallController.GetTransform4X4();
 
             graphics2D.FillRectangle(new RectangleDouble(0, 0, 1000, 1000), RGBA_Bytes.Red);
             graphics2D.Render(destImage, 0, 0);
@@ -468,122 +435,7 @@ namespace MatterHackers.RayTracer
             graphics2D.DrawString("Ray Trace: " + renderTime.ElapsedMilliseconds.ToString(), 20, 10);
 
             base.OnDraw(graphics2D);
-        }
-
-        public override void OnMouseWheel(MouseEventArgs mouseEvent)
-        {
-            if (PositionWithinLocalBounds(mouseEvent.Position.x, mouseEvent.Position.y))
-            {
-                // TODO: make the scalling from the track ball work (it should).
-                //trackBallController.OnMouseWheel(mouseEvent.WheelDelta);
-                Vector3 directionToCamera = (cameraData.cameraPosition - cameraData.lookAtPoint).GetNormal();
-                double distanceToCamera = (cameraData.lookAtPoint - cameraData.cameraPosition).Length;
-                if (mouseEvent.WheelDelta > 0)
-                {
-                    distanceToCamera *= .80;
-                }
-                else if (mouseEvent.WheelDelta < 0)
-                {
-                    distanceToCamera *= 1.2;
-                }
-
-                cameraData.cameraPosition = cameraData.lookAtPoint + directionToCamera * distanceToCamera;
-                OrientCamera();
-
-                NeedRedraw = true;
-                Invalidate();
-            }
-
-            base.OnMouseWheel(mouseEvent);
-        }
-
-        public override void OnMouseDown(MouseEventArgs mouseEvent)
-        {
-            base.OnMouseDown(mouseEvent);
-
-            lastMouseMovePoint.x = mouseEvent.X;
-            lastMouseMovePoint.y = mouseEvent.Y;
-
-            if (Focused && MouseCaptured)
-            {
-                if (trackBallController.CurrentTrackingType == TrackBallController.MouseDownType.None)
-                {
-                    if (Focused && MouseCaptured && mouseEvent.Button == MouseButtons.Left)
-                    {
-                        trackBallController.OnMouseDown(lastMouseMovePoint, Matrix4X4.Identity);
-                    }
-                    else if (mouseEvent.Button == MouseButtons.Middle)
-                    {
-                        trackBallController.OnMouseDown(lastMouseMovePoint, Matrix4X4.Identity, TrackBallController.MouseDownType.Translation);
-                    }
-                }
-
-                if (MouseCaptured)
-                {
-                    lastMouseMovePoint.x = mouseEvent.X;
-                    lastMouseMovePoint.y = mouseEvent.Y;
-                    cameraDataAtStartOfMouseTracking = cameraData;
-					cameraDataAtStartOfMouseTracking.cameraMatrix = ((Camera)scene.camera).axisToWorld;
-
-                    Ray rayAtPoint = scene.camera.GetRay(lastMouseMovePoint.x, lastMouseMovePoint.y);
-
-                    IntersectInfo info = raytracer.TracePrimaryRay(rayAtPoint, scene);
-                    if (info != null)
-                    {
-                        focusedObject = (BaseShape)info.closestHitObject;
-                        if (focusedObject != null && mouseEvent.Clicks == 2)
-                        {
-                            cameraData.lookAtPoint = focusedObject.GetAxisAlignedBoundingBox().Center;
-                            OrientCamera();
-                        }
-                    }
-                }
-            }
-        }
-
-        public override void OnMouseMove(MouseEventArgs mouseEvent)
-        {
-            base.OnMouseMove(mouseEvent);
-
-            if (trackBallController.CurrentTrackingType != TrackBallController.MouseDownType.None)
-            {
-                lastMouseMovePoint.x = mouseEvent.X;
-                lastMouseMovePoint.y = mouseEvent.Y;
-                trackBallController.OnMouseMove(lastMouseMovePoint);
-                NeedRedraw = true;
-                Invalidate();
-            }
-
-            if (Focused && MouseCaptured)
-            {
-                lastMouseMovePoint.x = mouseEvent.X;
-                lastMouseMovePoint.y = mouseEvent.Y;
-
-                cameraData = cameraDataAtStartOfMouseTracking;
-                //cameraData.Rotate(trackBallRotation);
-
-                //OrientCamera();
-            }
-            
-            lastMouseMovePoint.x = mouseEvent.X;
-            lastMouseMovePoint.y = mouseEvent.Y;
-
-            Ray rayAtPoint = scene.camera.GetRay(lastMouseMovePoint.x, lastMouseMovePoint.y);
-
-            IntersectInfo primaryInfo = raytracer.TracePrimaryRay(rayAtPoint, scene);
-            if (primaryInfo.hitType != IntersectionType.None)
-            {
-                mouseOverColor = raytracer.CreateAndTraceSecondaryRays(primaryInfo, rayAtPoint, scene, 0);
-            }
-        }
-
-        public override void OnMouseUp(MouseEventArgs mouseEvent)
-        {
-            if (trackBallController.CurrentTrackingType != TrackBallController.MouseDownType.None)
-            {
-                trackBallController.OnMouseUp();
-            }
-            base.OnMouseUp(mouseEvent);
-        }
+			currentRenderMatrix = lastRenderedMatrix;
+		}
     }
 }
