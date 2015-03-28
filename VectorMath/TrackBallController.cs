@@ -208,7 +208,8 @@ namespace MatterHackers.VectorMath
                         activeRotationQuaternion.Z = Perp.z;
                         //In the quaternion values, w is cosine (theta / 2), where theta is the rotation angle
                         activeRotationQuaternion.W = Vector3.Dot(rotationStart, rotationCurrent);
-                    }
+						OnTransformChanged(null);
+					}
                     break;
 
                 case MouseDownType.Translation:
@@ -220,7 +221,8 @@ namespace MatterHackers.VectorMath
                         offset = Vector3.TransformPosition(offset, localToScreenTransform);
                         currentTranslationMatrix = currentTranslationMatrix * Matrix4X4.CreateTranslation(offset);
                         lastTranslationMousePosition = mousePosition;
-                    }
+						OnTransformChanged(null);
+					}
                     break;
 
                 case MouseDownType.Scale:
@@ -237,7 +239,8 @@ namespace MatterHackers.VectorMath
                         }
                         currentTranslationMatrix *= Matrix4X4.CreateScale(zoomDelta);
                         lastScaleMousePosition = mousePosition;
-                    }
+						OnTransformChanged(null);
+					}
                     break;
 
                 default:
@@ -252,6 +255,7 @@ namespace MatterHackers.VectorMath
                 case MouseDownType.Rotation:
                     currentRotationMatrix = currentRotationMatrix * Matrix4X4.CreateRotation(activeRotationQuaternion);
                     activeRotationQuaternion = Quaternion.Identity;
+					OnTransformChanged(null);
                     break;
 
                 case MouseDownType.Translation:
@@ -280,6 +284,7 @@ namespace MatterHackers.VectorMath
             }
 
             currentTranslationMatrix *= Matrix4X4.CreateScale(zoomDelta);
+			OnTransformChanged(null);
         }
 
         public Matrix4X4 CurrentRotation
