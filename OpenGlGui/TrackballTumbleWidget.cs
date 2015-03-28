@@ -42,7 +42,21 @@ namespace MatterHackers.Agg.OpenGlGui
     {
         public event EventHandler DrawGlContent;
 
-        public TrackBallController.MouseDownType TransformState
+		bool doOpenGlDrawing = true;
+		public bool DoOpenGlDrawing
+		{
+			get
+			{
+				return doOpenGlDrawing;
+			}
+
+			set
+			{
+				doOpenGlDrawing = value;
+			}
+		}
+		
+		public TrackBallController.MouseDownType TransformState
         {
             get;
             set;
@@ -134,9 +148,12 @@ namespace MatterHackers.Agg.OpenGlGui
 
         public override void OnDraw(MatterHackers.Agg.Graphics2D graphics2D)
         {
-            SetGlContext();
-            OnDrawGlContent();
-            UnsetGlContext();
+			if (DoOpenGlDrawing)
+			{
+				SetGlContext();
+				OnDrawGlContent();
+				UnsetGlContext();
+			}
 
             RectangleDouble bounds = LocalBounds;
             //graphics2D.Rectangle(bounds, RGBA_Bytes.Black);
@@ -407,5 +424,5 @@ namespace MatterHackers.Agg.OpenGlGui
             double distBetweenPixelsWorldSpace = (rightOnePixel - worldPosition).Length;
             return distBetweenPixelsWorldSpace;
         }
-    }
+	}
 }

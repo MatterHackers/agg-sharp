@@ -56,15 +56,19 @@ namespace MatterHackers.RayTracer
     public class Scene 
     {
         public Background background;
-        public Camera camera;
+        public ICamera camera;
         public List<IRayTraceable> shapes;
         public List<Light> lights;
 
-        public Scene()
+        public Scene(ICamera camera = null)
         {
-            camera = new Camera(512, 512, MathHelper.DegreesToRadians(40));
-            camera.Origin = new Vector3(0, 0, -5);
-            shapes = new List<IRayTraceable>();
+			if (camera == null)
+			{
+				camera = new Camera(512, 512, MathHelper.DegreesToRadians(40));
+				camera.Origin = new Vector3(0, 0, -5);
+			}
+			this.camera = camera;
+			shapes = new List<IRayTraceable>();
             lights = new List<Light>();
             background = new Background(new RGBA_Floats(0, 0, .5), 0.2);
         }

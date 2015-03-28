@@ -37,7 +37,7 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.RayTracer
 {
-    public class Camera
+    public class Camera : ICamera
     {
         double cameraFOV = MathHelper.DegreesToRadians(56);
         double distanceToCameraPlane;
@@ -59,22 +59,6 @@ namespace MatterHackers.RayTracer
 
             this.widthInPixels = widthInPixels;
             this.heightInPixels = heightInPixels;
-        }
-
-        public Camera(Camera cameraToCopy)
-        {
-            this.cameraFOV = cameraToCopy.cameraFOV;
-            this.distanceToCameraPlane = cameraToCopy.distanceToCameraPlane;
-
-            this.axisToWorld = cameraToCopy.axisToWorld;
-
-            this.widthInPixels = cameraToCopy.widthInPixels;
-            this.heightInPixels = cameraToCopy.heightInPixels;
-        }
-
-        public override int GetHashCode()
-        {
-            throw new NotImplementedException();
         }
 
         public Vector3 Origin
@@ -119,69 +103,5 @@ namespace MatterHackers.RayTracer
             Ray ray = new Ray(origin, direction);
             return ray;
         }
-
-        #region Equality Functions
-        /// <summary>
-        /// Compares two instances for equality.
-        /// </summary>
-        /// <param name="left">The first instance.</param>
-        /// <param name="right">The second instance.</param>
-        /// <returns>True, if left equals right; false otherwise.</returns>
-        public static bool operator ==(Camera left, Camera right)
-        {
-            if ((object)left == null)
-            {
-                if ((object)right == null)
-                {
-                    return true;
-                }
-
-                return false;
-            }
-            return left.Equals(right);
-        }
-
-        /// <summary>
-        /// Compares two instances for inequality.
-        /// </summary>
-        /// <param name="left">The first instance.</param>
-        /// <param name="right">The second instance.</param>
-        /// <returns>True, if left does not equal right; false otherwise.</returns>
-        public static bool operator !=(Camera left, Camera right)
-        {
-            return !left.Equals(right);
-        }
-
-        /// <summary>
-        /// Indicates whether this instance and a specified object are equal.
-        /// </summary>
-        /// <param name="obj">The object to compare to.</param>
-        /// <returns>True if the instances are equal; false otherwise.</returns>
-        public override bool Equals(object obj)
-        {
-            if (!(obj is Camera))
-                return false;
-
-            return this.Equals((Camera)obj);
-        }
-
-        /// <summary>Indicates whether the current matrix is equal to another matrix.</summary>
-        /// <param name="other">An matrix to compare with this matrix.</param>
-        /// <returns>true if the current matrix is equal to the matrix parameter; otherwise, false.</returns>
-        public bool Equals(Camera other)
-        {
-            if ((object)other == null)
-            {
-                return false;
-            }
-
-            return cameraFOV == other.cameraFOV
-            && distanceToCameraPlane == other.distanceToCameraPlane
-            && axisToWorld == other.axisToWorld
-            && widthInPixels == other.widthInPixels
-            && heightInPixels == other.heightInPixels;
-        }
-
-        #endregion
     }
 }

@@ -162,8 +162,8 @@ namespace MatterHackers.RayTracer
 
         void OrientCamera()
         {
-            scene.camera.axisToWorld = Matrix4X4.LookAt(cameraData.cameraPosition, cameraData.lookAtPoint, cameraData.upVector3);
-            scene.camera.axisToWorld.Invert();
+            ((Camera)scene.camera).axisToWorld = Matrix4X4.LookAt(cameraData.cameraPosition, cameraData.lookAtPoint, cameraData.upVector3);
+			((Camera)scene.camera).axisToWorld.Invert();
         }
 
         private void CreateScene()
@@ -523,7 +523,7 @@ namespace MatterHackers.RayTracer
                     lastMouseMovePoint.x = mouseEvent.X;
                     lastMouseMovePoint.y = mouseEvent.Y;
                     cameraDataAtStartOfMouseTracking = cameraData;
-                    cameraDataAtStartOfMouseTracking.cameraMatrix = scene.camera.axisToWorld;
+					cameraDataAtStartOfMouseTracking.cameraMatrix = ((Camera)scene.camera).axisToWorld;
 
                     Ray rayAtPoint = scene.camera.GetRay(lastMouseMovePoint.x, lastMouseMovePoint.y);
 

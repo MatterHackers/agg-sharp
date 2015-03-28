@@ -147,6 +147,7 @@
   <ItemGroup>
     <Compile Include="Axis3D.cs" />
     <Compile Include="Background.cs" />
+    <Compile Include="ICamera.cs" />
     <Compile Include="IntersectInfo.cs" />
     <Compile Include="RayBundle.cs" />
     <Compile Include="Traceable\BoundingVolumeHierarchy.cs" />

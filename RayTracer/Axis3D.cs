@@ -72,7 +72,7 @@ namespace MatterHackers.RayTracer
             }
         }
 
-        public virtual void Render(Camera camera)
+        public virtual void Render(ICamera camera)
         {
             throw new NotImplementedException();
         }

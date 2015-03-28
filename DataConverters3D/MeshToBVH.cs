@@ -17,7 +17,8 @@ namespace MatterHackers.DataConverters3D
             List<IRayTraceable> renderCollection = new List<IRayTraceable>();
 
             //SolidMaterial redStuff = new SolidMaterial(new RGBA_Floats(.9, .2, .1), .01, 0.0, 2.0);
-            SolidMaterial mhBlueStuff = new SolidMaterial(new RGBA_Floats(0, .32, .58), .01, 0.0, 2.0);
+			RGBA_Bytes partColor = new RGBA_Bytes(0, 130, 153);
+			SolidMaterial mhBlueStuff = new SolidMaterial(partColor.GetAsRGBA_Floats(), .01, 0.0, 2.0);
             int index = 0;
             Vector3[] triangle = new Vector3[3];
             //PolygonMesh.Mesh simpleMesh = PolygonMesh.Processors.StlProcessing.Load("complex.stl");
