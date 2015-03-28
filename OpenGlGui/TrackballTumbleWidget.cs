@@ -85,7 +85,12 @@ namespace MatterHackers.Agg.OpenGlGui
         public TrackBallController TrackBallController
         {
             get { return mainTrackBallController; }
-            set { mainTrackBallController = value; }
+            set 
+			{
+				mainTrackBallController.TransformChanged -= TrackBallController_TransformChanged;
+				mainTrackBallController = value;
+				mainTrackBallController.TransformChanged += TrackBallController_TransformChanged;
+			}
         }
 
         public bool LockTrackBall { get; set; }
@@ -94,7 +99,6 @@ namespace MatterHackers.Agg.OpenGlGui
         {
             AnchorAll();
             DrawRotationHelperCircle = true;
-			TrackBallController.TransformChanged += TrackBallController_TransformChanged;
         }
 
 		void TrackBallController_TransformChanged(object sender, EventArgs e)
