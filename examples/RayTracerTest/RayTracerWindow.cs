@@ -15,11 +15,12 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg
 {
-    public class RayTracerTestWidget : GuiWidget
+    public class RayTracerWindow : SystemWindow
     {
-        PreviewWindowRayTrace previewWindowRayTrace;
+        RayTraceWidget previewWindowRayTrace;
 
-        public RayTracerTestWidget()
+        public RayTracerWindow(int width, int height)
+			: base(width, height)
         {
             //CalculateIntersectCostsAndSaveToFile();
 
@@ -27,8 +28,7 @@ namespace MatterHackers.Agg
             leftToRight.HAnchor |= HAnchor.ParentLeftRight;
             leftToRight.VAnchor |= VAnchor.ParentBottomTop;
             
-            SuspendLayout();
-            previewWindowRayTrace = new PreviewWindowRayTrace();
+            previewWindowRayTrace = new RayTraceWidget();
             AnchorAll();
             previewWindowRayTrace.AnchorAll();
 
@@ -40,14 +40,9 @@ namespace MatterHackers.Agg
 
             AddChild(leftToRight);
 
-            ResumeLayout();
-        }
+			BackgroundColor = RGBA_Bytes.Black;
 
-        public override void OnDraw(Graphics2D graphics2D)
-        {
-            this.NewGraphics2D().Clear(new RGBA_Bytes(255, 255, 255));
-
-            base.OnDraw(graphics2D);
+			ShowAsSystemWindow();
         }
 
         string GetStringForFile(string name, long timeMs, long overheadMs)
@@ -126,28 +121,7 @@ namespace MatterHackers.Agg
         {
             PolygonMesh.UnitTests.UnitTests.Run();
 
-            AppWidgetFactory appWidget = new RayTracerTestFactory();
-            appWidget.CreateWidgetAndRunInWindow();
-        }
-    }
-
-    public class RayTracerTestFactory : AppWidgetFactory
-    {
-		public override GuiWidget NewWidget()
-        {
-            return new RayTracerTestWidget();
-        }
-
-		public override AppWidgetInfo GetAppParameters()
-        {
-            AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-            "Other",
-            "A Simple Ray Tracer test",
-            "A sample application to show the current capabilities of the RayTracer.",
-            300,
-            100);
-
-            return appWidgetInfo;
+			new RayTracerWindow(300, 100);
         }
     }
 }

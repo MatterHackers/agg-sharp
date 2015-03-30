@@ -151,7 +151,7 @@
     <Compile Include="IntersectInfo.cs" />
     <Compile Include="RayBundle.cs" />
     <Compile Include="Traceable\BoundingVolumeHierarchy.cs" />
-    <Compile Include="Camera.cs" />
+    <Compile Include="SimpleCamera.cs" />
     <Compile Include="Frustum.cs" />
     <Compile Include="Light.cs" />
     <Compile Include="Materials\MaterialAbstract.cs" />

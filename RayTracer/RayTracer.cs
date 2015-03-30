@@ -66,7 +66,34 @@ namespace MatterHackers.RayTracer
         public bool RenderRefraction;
         public AntiAliasing AntiAliasing;
 
-        public RayTracer()
+		RGBA_Floats[][] colorBuffer;
+		public RGBA_Floats[][] ColorBuffer
+		{
+			get
+			{
+				return colorBuffer;
+			}
+		}
+
+		Vector3[][] normalBuffer;
+		public Vector3[][] NormalBuffer
+		{
+			get
+			{
+				return normalBuffer;
+			}
+		}
+
+		double[][] depthBuffer;
+		public double[][] DepthBuffer
+		{
+			get
+			{
+				return depthBuffer;
+			}
+		}
+
+		public RayTracer()
             : this(AntiAliasing.Medium, true, true, true, true, true)
         {
         }
@@ -90,40 +117,160 @@ namespace MatterHackers.RayTracer
             return (1.0 - ((x * (x * x * 15731 + 789221) + 1376312589) & 0x7fffffff) / (int.MaxValue / 2.0));
         }
 
-        RGBA_Floats[][] imageBufferAsDoubles;
-        public RGBA_Floats[][] RayTraceColorBuffer
-        {
-            get
-            {
-                return imageBufferAsDoubles;
-            }
-        }
+		public void CopyColorBufferToImage(ImageBuffer destImage, RectangleInt viewport)
+		{
+			if (destImage.BitDepth != 32)
+			{
+				throw new Exception("We can only render to 32 bit dest at the moment.");
+			}
 
-        public bool traceWithRayBundles = false;
-        public void RayTraceScene(ImageBuffer destImage, RectangleInt viewport, Scene scene)
+			Byte[] destBuffer = destImage.GetBuffer();
+
+			viewport.Bottom = Math.Max(0, Math.Min(destImage.Height, viewport.Bottom));
+			viewport.Top = Math.Max(0, Math.Min(destImage.Height, viewport.Top));
+
+#if MULTI_THREAD
+			System.Threading.Tasks.Parallel.For(viewport.Bottom, viewport.Height, y => //  
+#else
+            for (int y = viewport.Bottom; y < viewport.Height; y++)
+#endif
+			{
+				for (int x = viewport.Left; x < viewport.Right; x++)
+				{
+					int bufferOffset = destImage.GetBufferOffsetY(y);
+
+					// we don't need to set this if we are anti-aliased
+					int totalOffset = bufferOffset + x * 4;
+					destBuffer[totalOffset++] = (byte)colorBuffer[x][y].Blue0To255;
+					destBuffer[totalOffset++] = (byte)colorBuffer[x][y].Green0To255;
+					destBuffer[totalOffset++] = (byte)colorBuffer[x][y].Red0To255;
+					destBuffer[totalOffset] = 255;
+				}
+			}
+#if MULTI_THREAD
+);
+#endif
+			destImage.MarkImageChanged();
+		}
+
+		public void CopyDepthBufferToImage(ImageBuffer destImage, RectangleInt viewport)
+		{
+			if (destImage.BitDepth != 32)
+			{
+				throw new Exception("We can only render to 32 bit dest at the moment.");
+			}
+
+			Byte[] destBuffer = destImage.GetBuffer();
+
+			viewport.Bottom = Math.Max(0, Math.Min(destImage.Height, viewport.Bottom));
+			viewport.Top = Math.Max(0, Math.Min(destImage.Height, viewport.Top));
+
+			double minZ = 5000;
+			double maxZ = 0;
+			for (int y = viewport.Bottom; y < viewport.Height; y++)
+			{
+				for (int x = viewport.Left; x < viewport.Right; x++)
+				{
+					double depthAtXY = depthBuffer[x][y];
+					if (depthAtXY < 5000)
+					{
+						minZ = Math.Min(minZ, depthAtXY);
+						maxZ = Math.Max(maxZ, depthAtXY);
+					}
+				}
+			}
+
+			double divisor = maxZ - minZ;
+
+#if MULTI_THREAD
+			System.Threading.Tasks.Parallel.For(viewport.Bottom, viewport.Height, y => //  
+#else
+            for (int y = viewport.Bottom; y < viewport.Height; y++)
+#endif
+			{
+				for (int x = viewport.Left; x < viewport.Right; x++)
+				{
+					int bufferOffset = destImage.GetBufferOffsetY(y);
+
+					// we don't need to set this if we are anti-aliased
+					int totalOffset = bufferOffset + x * 4;
+					double depthXY = depthBuffer[x][y];
+					double rangedDepth = (depthXY - minZ) / divisor;
+					double clampedDepth = Math.Max(0, Math.Min(255, rangedDepth * 255));
+					byte depthColor = (byte)(clampedDepth);
+					destBuffer[totalOffset++] = depthColor;
+					destBuffer[totalOffset++] = depthColor;
+					destBuffer[totalOffset++] = depthColor;
+					destBuffer[totalOffset] = 255;
+				}
+			}
+#if MULTI_THREAD
+);
+#endif
+			destImage.MarkImageChanged();
+		}
+
+		public void CopyNoramlBufferToImage(ImageBuffer destImage, RectangleInt viewport)
+		{
+			if (destImage.BitDepth != 32)
+			{
+				throw new Exception("We can only render to 32 bit dest at the moment.");
+			}
+
+			Byte[] destBuffer = destImage.GetBuffer();
+
+			viewport.Bottom = Math.Max(0, Math.Min(destImage.Height, viewport.Bottom));
+			viewport.Top = Math.Max(0, Math.Min(destImage.Height, viewport.Top));
+
+#if MULTI_THREAD
+			System.Threading.Tasks.Parallel.For(viewport.Bottom, viewport.Height, y => //  
+#else
+			for (int y = viewport.Bottom; y < viewport.Height; y++)
+#endif
+			{
+				for (int x = viewport.Left; x < viewport.Right; x++)
+				{
+					int bufferOffset = destImage.GetBufferOffsetY(y);
+
+					// we don't need to set this if we are anti-aliased
+					int totalOffset = bufferOffset + x * 4;
+					destBuffer[totalOffset++] = (byte)((normalBuffer[x][y].x + 1) * 128);
+					destBuffer[totalOffset++] = (byte)((normalBuffer[x][y].y + 1) * 128); ;
+					destBuffer[totalOffset++] = (byte)((normalBuffer[x][y].z + 1) * 128); ;
+					destBuffer[totalOffset] = 255;
+				}
+			}
+#if MULTI_THREAD
+);
+#endif
+			destImage.MarkImageChanged();
+		}
+		
+		public bool traceWithRayBundles = false;
+        public void RayTraceScene(RectangleInt viewport, Scene scene)
         {
             int maxsamples = (int)AntiAliasing;
 
             //graphics2D.FillRectangle(viewport, RGBA_Floats.Black);
 
-            if (imageBufferAsDoubles == null || imageBufferAsDoubles.Length < viewport.Width || imageBufferAsDoubles[0].Length < viewport.Height)
+            if (colorBuffer == null || colorBuffer.Length < viewport.Width || colorBuffer[0].Length < viewport.Height)
             {
-                imageBufferAsDoubles = new RGBA_Floats[viewport.Width][];
-                for (int i = 0; i < viewport.Width; i++)
-                {
-                    imageBufferAsDoubles[i] = new RGBA_Floats[viewport.Height];
-                }
-            }
-
-            if (destImage.BitDepth != 32)
-            {
-                throw new Exception("We can only render to 32 bit dest at the moment.");
-            }
-
-            Byte[] destBuffer = destImage.GetBuffer();
-
-            viewport.Bottom = Math.Max(0, Math.Min(destImage.Height, viewport.Bottom));
-            viewport.Top = Math.Max(0, Math.Min(destImage.Height, viewport.Top));
+				colorBuffer = new RGBA_Floats[viewport.Width][];
+				for (int i = 0; i < viewport.Width; i++)
+				{
+					colorBuffer[i] = new RGBA_Floats[viewport.Height];
+				}
+				normalBuffer = new Vector3[viewport.Width][];
+				for (int i = 0; i < viewport.Width; i++)
+				{
+					normalBuffer[i] = new Vector3[viewport.Height];
+				}
+				depthBuffer = new double[viewport.Width][];
+				for (int i = 0; i < viewport.Width; i++)
+				{
+					depthBuffer[i] = new double[viewport.Height];
+				}
+			}
 
 #if MULTI_THREAD
             System.Threading.Tasks.Parallel.For(viewport.Bottom, viewport.Height, y => //  
@@ -148,27 +295,17 @@ namespace MatterHackers.RayTracer
                             }
                         }
 
-                        rayBundle.CalculateFrustum(width, height,  scene.camera.Origin);
+						// get a ray to find the origin (every ray comes from the camera and should have the same origin)
+						Ray screenRay =  scene.camera.GetRay(0, 0);
+						rayBundle.CalculateFrustum(width, height, screenRay.origin);
                         
                         FullyTraceRayBundle(rayBundle, intersectionsForBundle, scene);
 
                         for (int rayY = 0; rayY < height; rayY++)
                         {
-                            int bufferOffset = destImage.GetBufferOffsetY(y + rayY);
-
                             for (int rayX = 0; rayX < width; rayX++)
                             {
-                                imageBufferAsDoubles[x + rayX][y + rayY] = intersectionsForBundle[rayX + rayY * width].totalColor;
-
-                                if (AntiAliasing == AntiAliasing.None)
-                                {
-                                    // we don't need to set this if we are anti-aliased
-                                    int totalOffset = bufferOffset + (x + rayX) * 4;
-                                    destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x + rayX][y + rayY].Blue0To255;
-                                    destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x + rayX][y + rayY].Green0To255;
-                                    destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x + rayX][y + rayY].Red0To255;
-                                    destBuffer[totalOffset] = 255;
-                                }
+                                colorBuffer[x + rayX][y + rayY] = intersectionsForBundle[rayX + rayY * width].totalColor;
                             }
                         }
                         x += width - 1; // skip all the pixels we bundled
@@ -176,18 +313,24 @@ namespace MatterHackers.RayTracer
                     }
                     else
                     {
-                        int bufferOffset = destImage.GetBufferOffsetY(y);
-
                         Ray ray = scene.camera.GetRay(x, y);
 
-                        imageBufferAsDoubles[x][y] = FullyTraceRay(ray, scene);
+						IntersectInfo primaryInfo;
+                        colorBuffer[x][y] = FullyTraceRay(ray, scene, out primaryInfo);
 
-                        // we don't need to set this if we are anti-aliased
-                        int totalOffset = bufferOffset + x * 4;
-                        destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x][y].Blue0To255;
-                        destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x][y].Green0To255;
-                        destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x][y].Red0To255;
-                        destBuffer[totalOffset] = 255;
+						if (false)
+						{
+							if (primaryInfo != null)
+							{
+								normalBuffer[x][y] = primaryInfo.normalAtHit;
+								depthBuffer[x][y] = primaryInfo.distanceToHit;
+							}
+							else
+							{
+								normalBuffer[x][y] = Vector3.UnitZ;
+								depthBuffer[x][y] = double.PositiveInfinity;
+							}
+						}
                     }
                 }
             }
@@ -196,21 +339,12 @@ namespace MatterHackers.RayTracer
 #endif
             if (AntiAliasing != AntiAliasing.None)
             {
-                AntiAliasScene(destImage, viewport, scene, imageBufferAsDoubles, (int)AntiAliasing);
+                AntiAliasScene(viewport, scene, colorBuffer, (int)AntiAliasing);
             }
-
-            destImage.MarkImageChanged();
         }
 
-        public void AntiAliasScene(ImageBuffer destImage, RectangleInt viewport, Scene scene, RGBA_Floats[][] imageBufferAsDoubles, int maxSamples)
+        public void AntiAliasScene(RectangleInt viewport, Scene scene, RGBA_Floats[][] imageBufferAsDoubles, int maxSamples)
         {
-            if (destImage.BitDepth != 32)
-            {
-                throw new Exception("We can only render to 32 bit dest at the moment.");
-            }
-
-            Byte[] destBuffer = destImage.GetBuffer();
-
 #if MULTI_THREAD
             System.Threading.Tasks.Parallel.For(1, viewport.Height - 1, y => //  
 #else
@@ -218,11 +352,6 @@ namespace MatterHackers.RayTracer
 #endif
             {
                 int fillY = viewport.Top - (viewport.Bottom + y);
-                int bufferOffset = 0;
-                if (y > 0 && y < destImage.Height)
-                {
-                    bufferOffset = destImage.GetBufferOffsetY(y);
-                }
 
                 for (int x = 1; x < viewport.Width - 1; x++)
                 {
@@ -246,18 +375,11 @@ namespace MatterHackers.RayTracer
                             double yp = y + ry;
 
                             Ray ray = scene.camera.GetRay(xp, yp);
-                            accumulatedColor += FullyTraceRay(ray, scene);
+							IntersectInfo primaryInfo;
+
+                            accumulatedColor += FullyTraceRay(ray, scene, out primaryInfo);
                         }
                         imageBufferAsDoubles[x][y] = accumulatedColor / (maxSamples + 1);
-
-                        // this is the slow part of the painting algorithm, it can be greatly speed up
-                        // by directly accessing the bitmap data
-                        int fillX = viewport.Left + x;
-                        int totalOffset = bufferOffset + fillX * 4;
-                        destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x][y].Blue0To255;
-                        destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x][y].Green0To255;
-                        destBuffer[totalOffset++] = (byte)imageBufferAsDoubles[x][y].Red0To255;
-                        destBuffer[totalOffset] = 255;
                     }
                 }
             }
@@ -267,9 +389,9 @@ namespace MatterHackers.RayTracer
 
         }
 
-        public RGBA_Floats FullyTraceRay(Ray ray, Scene scene)
+        public RGBA_Floats FullyTraceRay(Ray ray, Scene scene, out IntersectInfo primaryInfo)
         {
-            IntersectInfo primaryInfo = TracePrimaryRay(ray, scene);
+            primaryInfo = TracePrimaryRay(ray, scene);
             if (primaryInfo.hitType != IntersectionType.None)
             {
                 RGBA_Floats totalColor = CreateAndTraceSecondaryRays(primaryInfo, ray, scene, 0);
@@ -421,7 +543,7 @@ namespace MatterHackers.RayTracer
                     // only show Gloss light if it is not in a shadow of another element.
                     // calculate Gloss lighting (Phong)
                     Vector3 Lv = (info.hitPosition - light.Transform.Position).GetNormal();
-                    Vector3 E = (scene.camera.Origin - info.hitPosition).GetNormal();
+                    Vector3 E = (ray.origin - info.hitPosition).GetNormal();
                     Vector3 H = (E - Lv).GetNormal();
 
                     double Glossweight = 0.0;

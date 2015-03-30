@@ -64,8 +64,8 @@ namespace MatterHackers.RayTracer
         {
 			if (camera == null)
 			{
-				camera = new Camera(512, 512, MathHelper.DegreesToRadians(40));
-				camera.Origin = new Vector3(0, 0, -5);
+				camera = new SimpleCamera(512, 512, MathHelper.DegreesToRadians(40));
+				((SimpleCamera)camera).Origin = new Vector3(0, 0, -5);
 			}
 			this.camera = camera;
 			shapes = new List<IRayTraceable>();

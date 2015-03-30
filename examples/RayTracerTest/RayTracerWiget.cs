@@ -51,7 +51,7 @@ namespace MatterHackers.RayTracer
     using AABB = MatterHackers.VectorMath.AxisAlignedBoundingBox;
 	using MatterHackers.Agg.OpenGlGui;
 
-    public class PreviewWindowRayTrace : GuiWidget
+    public class RayTraceWidget : GuiWidget
     {
         ImageBuffer destImage;
         //RayTracer raytracer = new RayTracer(AntiAliasing.None, true, true, true, true, true);
@@ -70,7 +70,7 @@ namespace MatterHackers.RayTracer
         List<string> timingStrings = new List<string>();
         Stopwatch totalTime = new Stopwatch();
 
-        public PreviewWindowRayTrace(int width = 200, int height = 200)
+        public RayTraceWidget(int width = 200, int height = 200)
         {
 			trackballTumbleWidget = new TrackballTumbleWidget();
 			trackballTumbleWidget.DoOpenGlDrawing = false;
@@ -128,8 +128,11 @@ namespace MatterHackers.RayTracer
             //rect_i rect = new rect_i(0, 0, (int)32, (int)32);
 
             renderTime.Restart();
-            raytracer.RayTraceScene(destImage, rect, scene);
-            //raytracer.AntiAliasScene(graphics2D, rect, scene, raytracer.RayTraceColorBuffer, 13);
+            raytracer.RayTraceScene(rect, scene);
+			//raytracer.CopyColorBufferToImage(destImage, rect);
+			//raytracer.CopyDepthBufferToImage(destImage, rect);
+			raytracer.CopyNoramlBufferToImage(destImage, rect);
+			//raytracer.AntiAliasScene(graphics2D, rect, scene, raytracer.RayTraceColorBuffer, 13);
             renderTime.Stop();
 
             //graphics2D.Rect(new rect_d(bitmap.GetBoundingRect()), RGBA_Bytes.Black);

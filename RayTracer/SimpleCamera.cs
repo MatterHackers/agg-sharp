@@ -37,7 +37,7 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.RayTracer
 {
-    public class Camera : ICamera
+    public class SimpleCamera : ICamera
     {
         double cameraFOV = MathHelper.DegreesToRadians(56);
         double distanceToCameraPlane;
@@ -47,7 +47,7 @@ namespace MatterHackers.RayTracer
         public int widthInPixels;
         public int heightInPixels;
 
-        public Camera(int widthInPixels, int heightInPixels, double fieldOfViewRad)
+        public SimpleCamera(int widthInPixels, int heightInPixels, double fieldOfViewRad)
         {
             if (fieldOfViewRad > 3.14)
             {

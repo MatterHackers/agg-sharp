@@ -227,15 +227,20 @@ namespace MatterHackers.Agg
             if (Bottom > rectToInclude.Bottom) Bottom = rectToInclude.Bottom;
         }
 
-        public void ExpandToInclude(double x, double y)
-        {
-            if (Right < x) Right = x;
-            if (Top < y) Top = y;
-            if (Left > x) Left = x;
-            if (Bottom > y) Bottom = y;
-        }
+		public void ExpandToInclude(Vector2 position)
+		{
+			ExpandToInclude(position.x, position.y);
+		}
 
-        public void Inflate(double inflateSize)
+		public void ExpandToInclude(double x, double y)
+		{
+			if (Right < x) Right = x;
+			if (Top < y) Top = y;
+			if (Left > x) Left = x;
+			if (Bottom > y) Bottom = y;
+		}
+
+		public void Inflate(double inflateSize)
         {
             Left = Left - inflateSize;
             Bottom = Bottom - inflateSize;

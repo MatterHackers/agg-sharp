@@ -39,8 +39,6 @@ namespace MatterHackers.RayTracer
 {
 	public interface ICamera
 	{
-		Vector3 Origin { get; set; }
-
 		Ray GetRay(double screenX, double screenY);
 	}
 }
