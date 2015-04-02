@@ -78,6 +78,12 @@ namespace MatterHackers.VectorMath
             this.currentTranslationMatrix = trackBallToCopy.currentTranslationMatrix;
         }
 
+		public void Reset()
+		{
+			currentRotationMatrix = Matrix4X4.Identity;
+			currentTranslationMatrix = Matrix4X4.Identity;
+		}
+
 		public void Translate(Vector3 deltaPosition)
 		{
 			currentTranslationMatrix = Matrix4X4.CreateTranslation(deltaPosition) * currentTranslationMatrix;
