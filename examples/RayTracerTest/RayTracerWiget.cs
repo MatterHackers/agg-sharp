@@ -130,9 +130,9 @@ namespace MatterHackers.RayTracer
 
             renderTime.Restart();
             raytracer.RayTraceScene(rect, scene);
-			//raytracer.CopyColorBufferToImage(destImage, rect);
+			raytracer.CopyColorBufferToImage(destImage, rect);
 			//raytracer.CopyDepthBufferToImage(destImage, rect);
-			raytracer.CopyNoramlBufferToImage(destImage, rect);
+			//raytracer.CopyNoramlBufferToImage(destImage, rect);
 			//raytracer.AntiAliasScene(graphics2D, rect, scene, raytracer.RayTraceColorBuffer, 13);
             renderTime.Stop();
 
