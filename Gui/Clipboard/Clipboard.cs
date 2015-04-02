@@ -20,7 +20,10 @@ namespace MatterHackers.Agg.UI
 
 		public static void SetText(string text)
 		{
-			clipboard.SetText(text);
+			if (text != null && text != "")
+			{
+				clipboard.SetText(text);
+			}
 		}
 
 		public static bool ContainsText()
