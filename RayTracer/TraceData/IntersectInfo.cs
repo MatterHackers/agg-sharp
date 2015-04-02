@@ -56,7 +56,7 @@ namespace MatterHackers.RayTracer
     public class IntersectInfo
     {
         public IntersectionType hitType;
-        public IRayTraceable closestHitObject;
+        public IPrimitive closestHitObject;
         public Vector3 hitPosition;
         public Vector3 normalAtHit;
         public double distanceToHit;

@@ -18,7 +18,7 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.RayTracer
 {
-    public class CompareCentersOnAxis : IComparer<IRayTraceable>
+    public class CompareCentersOnAxis : IComparer<IPrimitive>
     {
         int whichAxis;
         public int WhichAxis
@@ -38,7 +38,7 @@ namespace MatterHackers.RayTracer
             this.whichAxis = whichAxis % 3;
         }
 
-        public int Compare(IRayTraceable a, IRayTraceable b)
+        public int Compare(IPrimitive a, IPrimitive b)
         {
             if (a == null || b == null)
             {
@@ -63,7 +63,7 @@ namespace MatterHackers.RayTracer
     /// <summary>
     /// element in a scene
     /// </summary>
-    public interface IRayTraceable
+    public interface IPrimitive
     {
         /// <summary>
         /// Get the color for a primitive at the given info.
@@ -77,7 +77,7 @@ namespace MatterHackers.RayTracer
         /// </summary>
         MaterialAbstract Material { get; set; }
 
-        bool GetContained(List<IRayTraceable> results, AxisAlignedBoundingBox subRegion);
+        bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion);
 
         /// <summary>
         /// This method is to be implemented by each element seperately. This is the core

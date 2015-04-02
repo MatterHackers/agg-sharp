@@ -39,14 +39,14 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.RayTracer
 {
-    public class UnboundCollection : IRayTraceable
+    public class UnboundCollection : IPrimitive
     {
-        internal List<IRayTraceable> items;
+        internal List<IPrimitive> items;
 
-        public UnboundCollection(IList<IRayTraceable> traceableItems)
+        public UnboundCollection(IList<IPrimitive> traceableItems)
         {
-            items = new List<IRayTraceable>(traceableItems.Count);
-            foreach (IRayTraceable traceable in traceableItems)
+            items = new List<IPrimitive>(traceableItems.Count);
+            foreach (IPrimitive traceable in traceableItems)
             {
                 items.Add(traceable);
             }
@@ -72,7 +72,7 @@ namespace MatterHackers.RayTracer
         public IntersectInfo GetClosestIntersection(Ray ray)
         {
             IntersectInfo bestInfo = null;
-            foreach (IRayTraceable item in items)
+            foreach (IPrimitive item in items)
             {
                 IntersectInfo info = item.GetClosestIntersection(ray);
                 if (info != null && info.hitType != IntersectionType.None && info.distanceToHit >= 0)
@@ -87,10 +87,10 @@ namespace MatterHackers.RayTracer
             return bestInfo;
         }
 
-        public bool GetContained(List<IRayTraceable> results, AxisAlignedBoundingBox subRegion)
+        public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
         {
             bool foundItem = false;
-            foreach (IRayTraceable item in items)
+            foreach (IPrimitive item in items)
             {
                 foundItem |= item.GetContained(results, subRegion);
             }
@@ -110,7 +110,7 @@ namespace MatterHackers.RayTracer
 
         public IEnumerable IntersectionIterator(Ray ray)
         {
-            foreach (IRayTraceable item in items)
+            foreach (IPrimitive item in items)
             {
                 foreach (IntersectInfo info in item.IntersectionIterator(ray))
                 {
@@ -122,7 +122,7 @@ namespace MatterHackers.RayTracer
         public double GetSurfaceArea()
         {
             double totalSurfaceArea = 0;
-            foreach (IRayTraceable item in items)
+            foreach (IPrimitive item in items)
             {
                 totalSurfaceArea += item.GetSurfaceArea();
             }
@@ -161,7 +161,7 @@ namespace MatterHackers.RayTracer
         public double GetIntersectCost()
         {
             double totalIntersectCost = 0;
-            foreach (IRayTraceable item in items)
+            foreach (IPrimitive item in items)
             {
                 totalIntersectCost += item.GetIntersectCost();
             }
@@ -170,18 +170,18 @@ namespace MatterHackers.RayTracer
         }
     }
 
-    public class BoundingVolumeHierarchy : IRayTraceable
+    public class BoundingVolumeHierarchy : IPrimitive
     {
         internal AxisAlignedBoundingBox Aabb;
-        IRayTraceable nodeA;
-        IRayTraceable nodeB;
+        IPrimitive nodeA;
+        IPrimitive nodeB;
         int splitingPlane;
 
         public BoundingVolumeHierarchy()
         {
         }
 
-        public BoundingVolumeHierarchy(IRayTraceable nodeA, IRayTraceable nodeB, int splitingPlane)
+        public BoundingVolumeHierarchy(IPrimitive nodeA, IPrimitive nodeB, int splitingPlane)
         {
             this.splitingPlane = splitingPlane;
             this.nodeA = nodeA;
@@ -206,7 +206,7 @@ namespace MatterHackers.RayTracer
             }
         }
 
-        public bool GetContained(List<IRayTraceable> results, AxisAlignedBoundingBox subRegion)
+        public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
         {
             AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
             if (bounds.Contains(subRegion))
@@ -228,8 +228,8 @@ namespace MatterHackers.RayTracer
         {
             if (ray.Intersection(Aabb))
             {
-                IRayTraceable checkFirst = nodeA;
-                IRayTraceable checkSecond = nodeB;
+                IPrimitive checkFirst = nodeA;
+                IPrimitive checkSecond = nodeB;
                 if (ray.directionNormal[splitingPlane] < 0)
                 {
                     checkFirst = nodeB;
@@ -314,8 +314,8 @@ namespace MatterHackers.RayTracer
             int startRayIndex = FindFirstRay(rayBundle, rayIndexToStartCheckingFrom);
             if (startRayIndex != -1)
             {
-                IRayTraceable checkFirst = nodeA;
-                IRayTraceable checkSecond = nodeB;
+                IPrimitive checkFirst = nodeA;
+                IPrimitive checkSecond = nodeB;
                 if (rayBundle.rayArray[startRayIndex].directionNormal[splitingPlane] < 0)
                 {
                     checkFirst = nodeB;
@@ -334,8 +334,8 @@ namespace MatterHackers.RayTracer
         {
             if (ray.Intersection(Aabb))
             {
-                IRayTraceable checkFirst = nodeA;
-                IRayTraceable checkSecond = nodeB;
+                IPrimitive checkFirst = nodeA;
+                IPrimitive checkSecond = nodeB;
                 if (ray.directionNormal[splitingPlane] < 0)
                 {
                     checkFirst = nodeB;
@@ -395,7 +395,7 @@ namespace MatterHackers.RayTracer
             }
         }
 
-        public static IRayTraceable CreateNewHierachy(List<IRayTraceable> traceableItems, int maxRecursion = int.MaxValue, int recursionDepth = 0, SortingAccelerator accelerator = null)
+        public static IPrimitive CreateNewHierachy(List<IPrimitive> traceableItems, int maxRecursion = int.MaxValue, int recursionDepth = 0, SortingAccelerator accelerator = null)
         {
             if (accelerator == null)
             {
@@ -431,7 +431,7 @@ namespace MatterHackers.RayTracer
                     int skipInterval = 1;
                     for (int i = 0; i < numItems; i += skipInterval)
                     {
-                        IRayTraceable item = traceableItems[i];
+                        IPrimitive item = traceableItems[i];
                         totalIntersectCost += item.GetIntersectCost();
                     }
 
@@ -536,8 +536,8 @@ namespace MatterHackers.RayTracer
             {
                 axisSorter.WhichAxis = bestAxis;
                 traceableItems.Sort(axisSorter);
-                List<IRayTraceable> leftItems = new List<IRayTraceable>(bestIndexToSplitOn + 1);
-                List<IRayTraceable> rightItems = new List<IRayTraceable>(numItems - bestIndexToSplitOn + 1);
+                List<IPrimitive> leftItems = new List<IPrimitive>(bestIndexToSplitOn + 1);
+                List<IPrimitive> rightItems = new List<IPrimitive>(numItems - bestIndexToSplitOn + 1);
                 for (int i = 0; i <= bestIndexToSplitOn; i++)
                 {
                     leftItems.Add(traceableItems[i]);
@@ -546,8 +546,8 @@ namespace MatterHackers.RayTracer
                 {
                     rightItems.Add(traceableItems[i]);
                 }
-                IRayTraceable leftGroup = CreateNewHierachy(leftItems, maxRecursion, recursionDepth + 1, accelerator);
-                IRayTraceable rightGroup = CreateNewHierachy(rightItems, maxRecursion, recursionDepth + 1, accelerator);
+                IPrimitive leftGroup = CreateNewHierachy(leftItems, maxRecursion, recursionDepth + 1, accelerator);
+                IPrimitive rightGroup = CreateNewHierachy(rightItems, maxRecursion, recursionDepth + 1, accelerator);
                 BoundingVolumeHierarchy newBVHNode = new BoundingVolumeHierarchy(leftGroup, rightGroup, bestAxis);
                 return newBVHNode;
             }

@@ -19,7 +19,7 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.RayTracer
 {
-    public abstract class BaseShape : IRayTraceable
+    public abstract class BaseShape : IPrimitive
     {
         private MaterialAbstract material;
 
@@ -31,7 +31,7 @@ namespace MatterHackers.RayTracer
             set { material = value; }
         }
 
-        public bool GetContained(List<IRayTraceable> results, AxisAlignedBoundingBox subRegion)
+        public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
         {
             AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
             if (bounds.Contains(subRegion))

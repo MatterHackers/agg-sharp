@@ -57,8 +57,8 @@ namespace MatterHackers.RayTracer
     {
         public Background background;
         public ICamera camera;
-        public List<IRayTraceable> shapes;
-        public List<Light> lights;
+        public List<IPrimitive> shapes;
+        public List<PointLight> lights;
 
         public Scene(ICamera camera = null)
         {
@@ -68,8 +68,8 @@ namespace MatterHackers.RayTracer
 				((SimpleCamera)camera).Origin = new Vector3(0, 0, -5);
 			}
 			this.camera = camera;
-			shapes = new List<IRayTraceable>();
-            lights = new List<Light>();
+			shapes = new List<IPrimitive>();
+            lights = new List<PointLight>();
             background = new Background(new RGBA_Floats(0, 0, .5), 0.2);
         }
 
@@ -78,9 +78,9 @@ namespace MatterHackers.RayTracer
         /// to 'Shapes'.  You could also create a list of 'List<IRayTraceable>' and put that dirrectly into a BVH and then add that 
         /// to the Shapes list (there could be more than 1 BVH in the 'Shapes' list.
         /// </summary>
-        public IRayTraceable MoveShapesIntoBoundingVolumeHierachy()
+        public IPrimitive MoveShapesIntoBoundingVolumeHierachy()
         {
-            IRayTraceable rootObject = BoundingVolumeHierarchy.CreateNewHierachy(shapes);
+            IPrimitive rootObject = BoundingVolumeHierarchy.CreateNewHierachy(shapes);
             if (rootObject != null)
             {
                 shapes.Clear();

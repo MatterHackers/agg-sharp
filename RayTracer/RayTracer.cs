@@ -420,7 +420,7 @@ namespace MatterHackers.RayTracer
         {
             IntersectInfo primaryRayIntersection = new IntersectInfo();
 
-            foreach (IRayTraceable shapeToTest in scene.shapes)
+            foreach (IPrimitive shapeToTest in scene.shapes)
             {
                 IntersectInfo info = shapeToTest.GetClosestIntersection(ray);
                 if (info != null && info.hitType != IntersectionType.None && info.distanceToHit < primaryRayIntersection.distanceToHit && info.distanceToHit >= 0)
@@ -448,7 +448,7 @@ namespace MatterHackers.RayTracer
             RGBA_Floats color = infoColorAtHit * scene.background.Ambience;
             double shininess = Math.Pow(10, info.closestHitObject.Material.Gloss + 1);
 
-            foreach (Light light in scene.lights)
+            foreach (PointLight light in scene.lights)
             {
 
                 // calculate diffuse lighting

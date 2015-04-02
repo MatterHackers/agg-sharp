@@ -50,12 +50,12 @@ namespace MatterHackers.RayTracer
     /// <summary>
     /// a point light
     /// </summary>
-    public class Light : Axis3D
+    public class PointLight : Axis3D
     {
         public RGBA_Floats Color;
         public double strength;
 
-        public Light(Vector3 pos, RGBA_Floats color)
+        public PointLight(Vector3 pos, RGBA_Floats color)
             : base(pos)
         {
             Color = color;

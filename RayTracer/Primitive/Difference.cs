@@ -38,21 +38,21 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.RayTracer.Traceable
 {
-    public class Difference : IRayTraceable
+    public class Difference : IPrimitive
     {
-        IRayTraceable primary;
-        IRayTraceable subtract;
+        IPrimitive primary;
+        IPrimitive subtract;
 
-        public Difference(IRayTraceable primary, IRayTraceable subtract)
+        public Difference(IPrimitive primary, IPrimitive subtract)
         {
             this.primary = primary;
             this.subtract = subtract;
         }
 
-        public IRayTraceable Primary { get { return primary; } }
-        public IRayTraceable Subtract { get { return subtract; } }
+        public IPrimitive Primary { get { return primary; } }
+        public IPrimitive Subtract { get { return subtract; } }
 
-        public bool GetContained(List<IRayTraceable> results, AxisAlignedBoundingBox subRegion)
+        public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
         {
             throw new NotImplementedException();
         }
@@ -169,7 +169,7 @@ namespace MatterHackers.RayTracer.Traceable
             set { throw new NotImplementedException(); }
         }
 
-        private IntersectInfo FindNextIntersections(IRayTraceable element, Ray ray, IntersectInfo info, IntersectionType intersectionType)
+        private IntersectInfo FindNextIntersections(IPrimitive element, Ray ray, IntersectInfo info, IntersectionType intersectionType)
         {
             // get all the intersection for the object
             Ray currentRayCheckBackfaces = new Ray(ray);

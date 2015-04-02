@@ -38,16 +38,16 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.RayTracer.Traceable
 {
-    public class Transform : Axis3D, IRayTraceable
+    public class Transform : Axis3D, IPrimitive
     {
-        IRayTraceable child;
+        IPrimitive child;
 
-        public Transform(IRayTraceable root)
+        public Transform(IPrimitive root)
         {
             this.child = root;
         }
 
-        public Transform(IRayTraceable root, Matrix4X4 transform)
+        public Transform(IPrimitive root, Matrix4X4 transform)
         {
             this.child = root;
             WorldToAxis = transform;
@@ -56,7 +56,7 @@ namespace MatterHackers.RayTracer.Traceable
             WorldToAxis = Matrix4X4.Invert(AxisToWorld);
         }
 
-        public IRayTraceable Child
+        public IPrimitive Child
         {
             get
             {
@@ -81,7 +81,7 @@ namespace MatterHackers.RayTracer.Traceable
             }
         }
 
-        public bool GetContained(List<IRayTraceable> results, AxisAlignedBoundingBox subRegion)
+        public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
         {
             throw new NotImplementedException();
         }

@@ -553,20 +553,20 @@ namespace MatterHackers.MeshVisualizer
                 return false;
             }
 
-            List<IRayTraceable> mesheTraceables = new List<IRayTraceable>();
+            List<IPrimitive> mesheTraceables = new List<IPrimitive>();
             foreach (InteractionVolume interactionVolume in interactionVolumes)
             {
-                IRayTraceable traceData = interactionVolume.CollisionVolume;
+                IPrimitive traceData = interactionVolume.CollisionVolume;
                 mesheTraceables.Add(new Transform(traceData, interactionVolume.TotalTransform));
             }
-            IRayTraceable allObjects = BoundingVolumeHierarchy.CreateNewHierachy(mesheTraceables);
+            IPrimitive allObjects = BoundingVolumeHierarchy.CreateNewHierachy(mesheTraceables);
 
             info = allObjects.GetClosestIntersection(ray);
             if (info != null)
             {
                 for (int i = 0; i < interactionVolumes.Count; i++ )
                 {
-                    List<IRayTraceable> insideBounds = new List<IRayTraceable>();
+                    List<IPrimitive> insideBounds = new List<IPrimitive>();
                     interactionVolumes[i].CollisionVolume.GetContained(insideBounds, info.closestHitObject.GetAxisAlignedBoundingBox());
                     if (insideBounds.Contains(info.closestHitObject))
                     {

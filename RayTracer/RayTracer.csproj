@@ -145,30 +145,30 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Axis3D.cs" />
+    <Compile Include="TraceData\Axis3D.cs" />
     <Compile Include="Background.cs" />
-    <Compile Include="ICamera.cs" />
-    <Compile Include="IntersectInfo.cs" />
-    <Compile Include="RayBundle.cs" />
-    <Compile Include="Traceable\BoundingVolumeHierarchy.cs" />
-    <Compile Include="SimpleCamera.cs" />
-    <Compile Include="Frustum.cs" />
-    <Compile Include="Light.cs" />
+    <Compile Include="Camera\ICamera.cs" />
+    <Compile Include="TraceData\IntersectInfo.cs" />
+    <Compile Include="TraceData\RayBundle.cs" />
+    <Compile Include="Primitive\BoundingVolumeHierarchy.cs" />
+    <Compile Include="Camera\SimpleCamera.cs" />
+    <Compile Include="TraceData\Frustum.cs" />
+    <Compile Include="Light\Light.cs" />
     <Compile Include="Materials\MaterialAbstract.cs" />
     <Compile Include="Materials\ChessboardMaterial.cs" />
     <Compile Include="Materials\SolidMaterial.cs" />
     <Compile Include="Materials\TextureMaterial.cs" />
     <Compile Include="RayTracer.cs" />
     <Compile Include="Scene.cs" />
-    <Compile Include="Traceable\Difference.cs" />
-    <Compile Include="Traceable\IRayTraceable.cs" />
-    <Compile Include="Traceable\Shapes\BaseShape.cs" />
-    <Compile Include="Traceable\Shapes\BoxShape.cs" />
-    <Compile Include="Traceable\Shapes\Cylinder.cs" />
-    <Compile Include="Traceable\Shapes\PlaneShape.cs" />
-    <Compile Include="Traceable\Shapes\SphereShape.cs" />
-    <Compile Include="Traceable\Shapes\TriangleShape.cs" />
-    <Compile Include="Traceable\Transform.cs" />
+    <Compile Include="Primitive\Difference.cs" />
+    <Compile Include="Primitive\IPrimitive.cs" />
+    <Compile Include="Primitive\Shapes\BaseShape.cs" />
+    <Compile Include="Primitive\Shapes\BoxShape.cs" />
+    <Compile Include="Primitive\Shapes\Cylinder.cs" />
+    <Compile Include="Primitive\Shapes\PlaneShape.cs" />
+    <Compile Include="Primitive\Shapes\SphereShape.cs" />
+    <Compile Include="Primitive\Shapes\TriangleShape.cs" />
+    <Compile Include="Primitive\Transform.cs" />
     <Compile Include="UnitTests\BooleanTests.cs" />
     <Compile Include="UnitTests\FrustumTests.cs" />
     <Compile Include="UnitTests\PolygonTraceTests.cs" />
