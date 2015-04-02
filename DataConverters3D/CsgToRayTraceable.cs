@@ -55,34 +55,34 @@ namespace MatterHackers.DataConverters3D
         }
 
         #region Visitor Patern Functions
-        public IRayTraceable GetIRayTraceableRecursive(CsgObject objectToProcess)
+		public IPrimitive GetIPrimitiveRecursive(CsgObject objectToProcess)
         {
             throw new Exception("You must wirte the specialized function for this type.");
         }
 
         #region PrimitiveWrapper
-        public IRayTraceable GetIRayTraceableRecursive(CsgObjectWrapper objectToProcess)
+		public IPrimitive GetIPrimitiveRecursive(CsgObjectWrapper objectToProcess)
         {
-            return GetIRayTraceableRecursive((dynamic)objectToProcess.Root);
+			return GetIPrimitiveRecursive((dynamic)objectToProcess.Root);
         }
         #endregion
 
         #region Box
-        public IRayTraceable GetIRayTraceableRecursive(BoxPrimitive objectToProcess)
+		public IPrimitive GetIPrimitiveRecursive(BoxPrimitive objectToProcess)
         {
             return new BoxShape(Vector3.Zero, objectToProcess.Size, DefaultMaterial);
         }
         #endregion
 
         #region Cylinder
-        public IRayTraceable GetIRayTraceableRecursive(Cylinder.CylinderPrimitive objectToProcess)
+		public IPrimitive GetIPrimitiveRecursive(Cylinder.CylinderPrimitive objectToProcess)
         {
             return new CylinderShape(objectToProcess.Radius1, objectToProcess.Height, DefaultMaterial);
         }
         #endregion
 
         #region Sphere
-        public IRayTraceable GetIRayTraceableRecursive(Sphere objectToProcess)
+		public IPrimitive GetIPrimitiveRecursive(Sphere objectToProcess)
         {
             throw new NotImplementedException();
 #if false
@@ -99,19 +99,19 @@ namespace MatterHackers.DataConverters3D
         #endregion
 
         #region Transform
-        public IRayTraceable GetIRayTraceableRecursive(TransformBase objectToProcess)
+		public IPrimitive GetIPrimitiveRecursive(TransformBase objectToProcess)
         {
-            return new Transform(GetIRayTraceableRecursive((dynamic)objectToProcess.ObjectToTransform), objectToProcess.ActiveTransform);
+			return new Transform(GetIPrimitiveRecursive((dynamic)objectToProcess.ObjectToTransform), objectToProcess.ActiveTransform);
         }
         #endregion
 
         #region Union
-        public IRayTraceable GetIRayTraceableRecursive(Union objectToProcess)
+		public IPrimitive GetIPrimitiveRecursive(Union objectToProcess)
         {
-            List<IRayTraceable> items = new List<IRayTraceable>();
+			List<IPrimitive> items = new List<IPrimitive>();
             foreach (CsgObject copiedObject in objectToProcess.AllObjects)
             {
-                items.Add(GetIRayTraceableRecursive((dynamic)copiedObject));
+				items.Add(GetIPrimitiveRecursive((dynamic)copiedObject));
             }
 
             return BoundingVolumeHierarchy.CreateNewHierachy(items);
@@ -119,20 +119,20 @@ namespace MatterHackers.DataConverters3D
         #endregion
 
         #region Difference
-        public IRayTraceable GetIRayTraceableRecursive(MatterHackers.Csg.Operations.Difference objectToProcess)
+		public IPrimitive GetIPrimitiveRecursive(MatterHackers.Csg.Operations.Difference objectToProcess)
         {
-            List<IRayTraceable> subtractItems = new List<IRayTraceable>();
+			List<IPrimitive> subtractItems = new List<IPrimitive>();
             foreach (CsgObject copiedObject in objectToProcess.AllSubtracts)
             {
-                subtractItems.Add(GetIRayTraceableRecursive((dynamic)copiedObject));
+				subtractItems.Add(GetIPrimitiveRecursive((dynamic)copiedObject));
             }
 
-            return new MatterHackers.RayTracer.Traceable.Difference(GetIRayTraceableRecursive((dynamic)objectToProcess.Primary), BoundingVolumeHierarchy.CreateNewHierachy(subtractItems));
+			return new MatterHackers.RayTracer.Traceable.Difference(GetIPrimitiveRecursive((dynamic)objectToProcess.Primary), BoundingVolumeHierarchy.CreateNewHierachy(subtractItems));
         }
         #endregion
 
         #region Intersection
-        public IRayTraceable GetIRayTraceableRecursive(Intersection objectToProcess)
+		public IPrimitive GetIPrimitiveRecursive(Intersection objectToProcess)
         {
             throw new NotImplementedException();
             //return ApplyIndent("intersection()" + AddNameAsComment(objectToProcess) + "\n{\n" + GetRayTraceableRecursive((dynamic)objectToProcess.a, level + 1) + "\n" + GetRayTraceableRecursive((dynamic)objectToProcess.b, level + 1) + "\n}", level);

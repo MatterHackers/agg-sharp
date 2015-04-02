@@ -43,6 +43,7 @@ using System.Text;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.VectorMath;
+using MatterHackers.RayTracer.Light;
 
 namespace MatterHackers.RayTracer
 {
@@ -58,7 +59,7 @@ namespace MatterHackers.RayTracer
         public Background background;
         public ICamera camera;
         public List<IPrimitive> shapes;
-        public List<PointLight> lights;
+        public List<ILight> lights;
 
         public Scene(ICamera camera = null)
         {
@@ -69,13 +70,13 @@ namespace MatterHackers.RayTracer
 			}
 			this.camera = camera;
 			shapes = new List<IPrimitive>();
-            lights = new List<PointLight>();
+            lights = new List<ILight>();
             background = new Background(new RGBA_Floats(0, 0, .5), 0.2);
         }
 
         /// <summary>
         /// This will remove the shapes from 'Shapes' and add them to a Bounding Volume Hierarchy.  Then add that at a single element
-        /// to 'Shapes'.  You could also create a list of 'List<IRayTraceable>' and put that dirrectly into a BVH and then add that 
+        /// to 'Shapes'.  You could also create a list of 'List<IPrimitive>' and put that dirrectly into a BVH and then add that 
         /// to the Shapes list (there could be more than 1 BVH in the 'Shapes' list.
         /// </summary>
         public IPrimitive MoveShapesIntoBoundingVolumeHierachy()

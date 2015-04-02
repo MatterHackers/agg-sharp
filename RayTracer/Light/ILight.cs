@@ -1,14 +1,4 @@
-// Copyright 2006 Herre Kuijpers - <herre@xs4all.nl>
-//
-// This source file(s) may be redistributed, altered and customized
-// by any means PROVIDING the authors name and all copyright
-// notices remain intact.
-// THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED. USE IT AT YOUR OWN RISK. THE AUTHOR ACCEPTS NO
-// LIABILITY FOR ANY DATA DAMAGE/LOSS THAT THIS PRODUCT MAY CAUSE.
-//-----------------------------------------------------------------------
-
-/*
+﻿/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
@@ -37,47 +27,14 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 using MatterHackers.Agg;
-using MatterHackers.Agg.Image;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.RayTracer.Light
 {
-    /// <summary>
-    /// a point light
-    /// </summary>
-    public class PointLight : Axis3D, ILight
-    {
-        public RGBA_Floats Color;
-        public double strength;
-
-        public PointLight(Vector3 pos, RGBA_Floats color)
-            : base(pos)
-        {
-            Color = color;
-
-            strength = 10;
-        }
-
-		public RGBA_Floats Illumination()
-		{
-			return Color;
-		}
-
-        public double Strength(double distance)
-        {
-            if (distance >= strength) return 0;
-
-            return Math.Pow((strength - distance) / strength, .2);
-        }
-        
-        public override string ToString()
-        {
-            return string.Format("Light ({0})", Transform.ToString());
-        }
-    }
+	public interface ILight
+	{
+		Vector3 Origin { get; }
+		RGBA_Floats Illumination();
+	}
 }

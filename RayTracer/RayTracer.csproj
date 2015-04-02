@@ -145,6 +145,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Light\ILight.cs" />
     <Compile Include="TraceData\Axis3D.cs" />
     <Compile Include="Background.cs" />
     <Compile Include="Camera\ICamera.cs" />

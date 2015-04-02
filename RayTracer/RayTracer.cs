@@ -45,6 +45,7 @@ using System.Text;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.VectorMath;
+using MatterHackers.RayTracer.Light;
 
 namespace MatterHackers.RayTracer
 {
@@ -448,11 +449,11 @@ namespace MatterHackers.RayTracer
             RGBA_Floats color = infoColorAtHit * scene.background.Ambience;
             double shininess = Math.Pow(10, info.closestHitObject.Material.Gloss + 1);
 
-            foreach (PointLight light in scene.lights)
+            foreach (ILight light in scene.lights)
             {
 
                 // calculate diffuse lighting
-                Vector3 directiorFromHitToLight = light.Transform.Position - info.hitPosition;
+                Vector3 directiorFromHitToLight = light.Origin - info.hitPosition;
                 double distanceToLight = directiorFromHitToLight.Length;
                 Vector3 directiorFromHitToLightNormalized = directiorFromHitToLight.GetNormal();
 
@@ -461,7 +462,7 @@ namespace MatterHackers.RayTracer
                     double L = Vector3.Dot(directiorFromHitToLightNormalized, info.normalAtHit);
                     if (L > 0.0f)
                     {
-                        color += infoColorAtHit * light.Color * L;
+                        color += infoColorAtHit * light.Illumination() * L;
                     }
                 }
 
@@ -542,13 +543,13 @@ namespace MatterHackers.RayTracer
                 {
                     // only show Gloss light if it is not in a shadow of another element.
                     // calculate Gloss lighting (Phong)
-                    Vector3 Lv = (info.hitPosition - light.Transform.Position).GetNormal();
+                    Vector3 Lv = (info.hitPosition - light.Origin).GetNormal();
                     Vector3 E = (ray.origin - info.hitPosition).GetNormal();
                     Vector3 H = (E - Lv).GetNormal();
 
                     double Glossweight = 0.0;
                     Glossweight = Math.Pow(Math.Max(Vector3.Dot(info.normalAtHit, H), 0), shininess);
-                    color += light.Color * (Glossweight);
+                    color += light.Illumination() * (Glossweight);
                 }
             }
 

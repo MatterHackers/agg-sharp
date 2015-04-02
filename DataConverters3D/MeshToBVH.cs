@@ -12,9 +12,9 @@ namespace MatterHackers.DataConverters3D
 {
     public static class MeshToBVH
     {
-		public static IRayTraceable Convert(PolygonMesh.Mesh simpleMesh, MaterialAbstract partMaterial = null)
+		public static IPrimitive Convert(PolygonMesh.Mesh simpleMesh, MaterialAbstract partMaterial = null)
         {
-            List<IRayTraceable> renderCollection = new List<IRayTraceable>();
+			List<IPrimitive> renderCollection = new List<IPrimitive>();
 
 			if (partMaterial == null)
 			{
@@ -38,9 +38,9 @@ namespace MatterHackers.DataConverters3D
             return BoundingVolumeHierarchy.CreateNewHierachy(renderCollection);
         }
 
-        public static IRayTraceable ConvertUnoptomized(PolygonMesh.Mesh simpleMesh)
+		public static IPrimitive ConvertUnoptomized(PolygonMesh.Mesh simpleMesh)
         {
-            List<IRayTraceable> renderCollection = new List<IRayTraceable>();
+			List<IPrimitive> renderCollection = new List<IPrimitive>();
 
             //SolidMaterial redStuff = new SolidMaterial(new RGBA_Floats(.9, .2, .1), .01, 0.0, 2.0);
             SolidMaterial mhBlueStuff = new SolidMaterial(new RGBA_Floats(0, .32, .58), .01, 0.0, 2.0);

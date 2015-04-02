@@ -50,6 +50,7 @@ namespace MatterHackers.RayTracer
 {
     using AABB = MatterHackers.VectorMath.AxisAlignedBoundingBox;
 	using MatterHackers.Agg.OpenGlGui;
+	using MatterHackers.RayTracer.Light;
 
     public class RayTraceWidget : GuiWidget
     {
@@ -57,13 +58,13 @@ namespace MatterHackers.RayTracer
         //RayTracer raytracer = new RayTracer(AntiAliasing.None, true, true, true, true, true);
         //RayTracer raytracer = new RayTracer(AntiAliasing.Low, true, true, true, true, true);
         RayTracer raytracer = new RayTracer(AntiAliasing.Medium, true, true, true, true, true);
-        IRayTraceable focusedObject = null;
+        IPrimitive focusedObject = null;
         Stopwatch renderTime = new Stopwatch();
         Scene scene;
 
         Transform allObjectsHolder;
-        IRayTraceable allObjects;
-        List<IRayTraceable> renderCollection = new List<IRayTraceable>();
+        IPrimitive allObjects;
+        List<IPrimitive> renderCollection = new List<IPrimitive>();
 
 		TrackballTumbleWidget trackballTumbleWidget;
 
@@ -170,8 +171,8 @@ namespace MatterHackers.RayTracer
             //AddAFloor();
 
             //add two lights for better lighting effects
-			scene.lights.Add(new Light(new Vector3(5000, 5000, 5000), new RGBA_Floats(0.8, 0.8, 0.8)));
-			scene.lights.Add(new Light(new Vector3(-5000, -5000, 3000), new RGBA_Floats(0.5, 0.5, 0.5)));
+			scene.lights.Add(new PointLight(new Vector3(5000, 5000, 5000), new RGBA_Floats(0.8, 0.8, 0.8)));
+			scene.lights.Add(new PointLight(new Vector3(-5000, -5000, 3000), new RGBA_Floats(0.5, 0.5, 0.5)));
 		}
 
         MatterHackers.Csg.CsgObject BooleanBoxBallThing()
@@ -179,7 +180,7 @@ namespace MatterHackers.RayTracer
             return null;
         }
 
-        IRayTraceable MakerGearXCariage()
+        IPrimitive MakerGearXCariage()
         {
 #if false
             MatterHackers.Csg.ObjectCSG total = new MatterHackers.Csg.Box(30, 32, 65);
@@ -228,7 +229,7 @@ namespace MatterHackers.RayTracer
 
             CsgToRayTraceable visitor = new CsgToRayTraceable();
 
-            return visitor.GetIRayTraceableRecursive((dynamic)total);
+            return visitor.GetIPrimitiveRecursive((dynamic)total);
         }
 
         private void AddAFloor()
@@ -247,7 +248,7 @@ namespace MatterHackers.RayTracer
 
         private void AddCubeOfShperes()
         {
-            List<IRayTraceable> scanData1 = new List<IRayTraceable>();
+            List<IPrimitive> scanData1 = new List<IPrimitive>();
             Random rand = new Random(0);
             double dist = 2;
             for (int i = 0; i < 4000; i++)
@@ -266,7 +267,7 @@ namespace MatterHackers.RayTracer
             BoxShape box1 = new BoxShape(new Vector3(.5, .5, .5), new Vector3(1.5, 1.5, 1.5),
                                new SolidMaterial(RGBA_Floats.Green, 0, 0, 0));//.01, 0.0, 2.0));
 
-            List<IRayTraceable> subtractShapes = new List<IRayTraceable>();
+            List<IPrimitive> subtractShapes = new List<IPrimitive>();
             SolidMaterial material = new SolidMaterial(RGBA_Floats.Red, 0, 0, 0);
 
 #if true
@@ -294,7 +295,7 @@ namespace MatterHackers.RayTracer
 #endif
 
 
-            IRayTraceable subtractGroup = BoundingVolumeHierarchy.CreateNewHierachy(subtractShapes);
+            IPrimitive subtractGroup = BoundingVolumeHierarchy.CreateNewHierachy(subtractShapes);
             Difference merge = new Difference(box1, subtractGroup);
 
             renderCollection.Add(merge);
@@ -305,11 +306,11 @@ namespace MatterHackers.RayTracer
             BoxShape box1 = new BoxShape(new Vector3(.5, .5, .5), new Vector3(1.5, 1.5, 1.5),
                                new SolidMaterial(RGBA_Floats.Green, .01, 0.0, 2.0));
 
-            List<IRayTraceable> subtractShapes = new List<IRayTraceable>();
+            List<IPrimitive> subtractShapes = new List<IPrimitive>();
             SolidMaterial material = new SolidMaterial(RGBA_Floats.Red, 0, 0, 0);
             subtractShapes.Add(new BoxShape(new Vector3(), new Vector3(1, 1, 1), material));
 
-            IRayTraceable subtractGroup = BoundingVolumeHierarchy.CreateNewHierachy(subtractShapes);
+            IPrimitive subtractGroup = BoundingVolumeHierarchy.CreateNewHierachy(subtractShapes);
             Difference merge = new Difference(box1, subtractGroup);
 
             renderCollection.Add(merge);
@@ -349,7 +350,7 @@ namespace MatterHackers.RayTracer
 
             Stopwatch bvhTime = new Stopwatch();
             bvhTime.Start();
-            IRayTraceable bvhCollection = MeshToBVH.Convert(simpleMesh);
+            IPrimitive bvhCollection = MeshToBVH.Convert(simpleMesh);
             bvhTime.Stop();
 
             timingStrings.Add("Time to create BVH {0:0.0}s".FormatWith(bvhTime.Elapsed.TotalSeconds));
@@ -393,7 +394,7 @@ namespace MatterHackers.RayTracer
             }
         }
 
-        public IRayTraceable FocusedObject
+        public IPrimitive FocusedObject
         {
             get
             {

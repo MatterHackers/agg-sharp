@@ -63,7 +63,7 @@ namespace MatterHackers.Agg
             return randomRay;
         }
         
-        long CalculateIntersectCostsForItem(IRayTraceable item, int numInterations)
+        long CalculateIntersectCostsForItem(IPrimitive item, int numInterations)
         {
             Stopwatch timer = new Stopwatch();
             timer.Start();

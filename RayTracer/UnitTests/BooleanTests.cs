@@ -81,16 +81,16 @@ namespace MatterHackers.RayTracer
 #if false
             // An internal primary object that needs to be skipped over
             {
-                List<IRayTraceable> primaryShapes = new List<IRayTraceable>();
+                List<IPrimitive> primaryShapes = new List<IPrimitive>();
                 BoxShape insideBox = new BoxShape(new Vector3(-.1, -.1, -.1), new Vector3(.1, .1, .1), blueMaterial);
                 primaryShapes.Add(box1X1);
                 primaryShapes.Add(insideBox);
-                IRayTraceable primamryGroup = BoundingVolumeHierarchy.CreateNewHierachy(primaryShapes);
+                IPrimitive primamryGroup = BoundingVolumeHierarchy.CreateNewHierachy(primaryShapes);
 
-                List<IRayTraceable> subtractShapes = new List<IRayTraceable>();
+                List<IPrimitive> subtractShapes = new List<IPrimitive>();
                 subtractShapes.Add(new BoxShape(new Vector3(-.5, -.5, -.5), new Vector3(.5, .4, .5), redMaterial));
 
-                IRayTraceable subtractGroup = BoundingVolumeHierarchy.CreateNewHierachy(subtractShapes);
+                IPrimitive subtractGroup = BoundingVolumeHierarchy.CreateNewHierachy(subtractShapes);
                 Difference merge = new Difference(primamryGroup, subtractGroup);
 
                 IntersectInfo testInfo = merge.GetClosestIntersection(castRay);
@@ -104,14 +104,14 @@ namespace MatterHackers.RayTracer
 
             // Go through 5 subtract boxes to get to 1/2 way through the main box.
             {
-                List<IRayTraceable> subtractShapes = new List<IRayTraceable>();
+                List<IPrimitive> subtractShapes = new List<IPrimitive>();
 
                 for (int i = 0; i < 5; i++)
                 {
                     subtractShapes.Add(new BoxShape(new Vector3(-.5, -.5 + i * .1, -.5), new Vector3(.5, -.4 + i * .1, .5), redMaterial));
                 }
 
-                IRayTraceable subtractGroup = BoundingVolumeHierarchy.CreateNewHierachy(subtractShapes);
+                IPrimitive subtractGroup = BoundingVolumeHierarchy.CreateNewHierachy(subtractShapes);
                 Difference merge = new Difference(box1X1, subtractGroup);
 
                 IntersectInfo testInfo = merge.GetClosestIntersection(castRay);
