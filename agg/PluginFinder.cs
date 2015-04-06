@@ -39,36 +39,18 @@ namespace MatterHackers.Agg
         }
 
 #if __ANDROID__
-		private static List<Assembly> pluginAssemblies = null;
+		private string[] pluginsInAssetsFolder = null;
 
-		public List<BaseClassToFind> LoadPluginsFromConfig(IEnumerable<string> pluginAssemblyStrings)
+		private byte[] LoadBytesFromStream(string assetsPath, Android.Content.Res.AssetManager assets)
 		{
-			List<BaseClassToFind> factoryList = new List<BaseClassToFind>();
-
-			var assets = Android.App.Application.Context.Assets;
-
-			// Only load application plugin assemblies one time
-			if (pluginAssemblies == null) {
-				pluginAssemblies = pluginAssemblyStrings.Select(s => Assembly.Load(s)).ToList();
-			}
-
-			// Iterate plugin assemblies
-			foreach (Assembly assembly in pluginAssemblies)
-			{
-				// Iterate each type
-				foreach (Type type in assembly.GetTypes()) {
-					if (type == null || !type.IsClass || !type.IsPublic) {
-						continue;
-					}
-
-					// Add known/requested types to list
-					if (type.BaseType == typeof(BaseClassToFind)) {
-						factoryList.Add ((BaseClassToFind)Activator.CreateInstance (type));
-					}
+			byte[] bytes;
+			using (var assetStream = assets.Open(assetsPath)){
+				using (var memoryStream = new MemoryStream()){
+					assetStream.CopyTo (memoryStream);
+					bytes = memoryStream.ToArray();
 				}
 			}
-
-			return factoryList;
+			return bytes;
 		}
 
 		public List<BaseClassToFind> LoadPluginsFromAssets()
@@ -77,46 +59,50 @@ namespace MatterHackers.Agg
 
 			var assets = Android.App.Application.Context.Assets;
 
-			// Only load application plugin assemblies one time
-			if (pluginAssemblies == null) {
+			if(pluginsInAssetsFolder == null)
+			{
+				pluginsInAssetsFolder = assets.List("StaticData/Plugins");
+			}
 
-				pluginAssemblies = new List<Assembly> ();
-				string directory = Path.Combine("StaticData", "Plugins");
+			List<Assembly> pluginAssemblies = new List<Assembly> ();
+			string directory = Path.Combine("StaticData", "Plugins");
 
-				// Iterate the Android Assets in the StaticData/Plugins directory
-				foreach (string assemblyPath in assets.List(directory)) 
+			// Iterate the Android Assets in the StaticData/Plugins directory
+			foreach (string fileName in assets.List(directory)) 
+			{
+				if(Path.GetExtension(fileName) == ".dll")
 				{
-					if(Path.GetExtension(assemblyPath) == ".dll")
+					try
 					{
-						try
-						{
-							Byte[] bytes;
+						string assemblyAssetPath = Path.Combine (directory, fileName);
+						Byte[] bytes = LoadBytesFromStream(assemblyAssetPath, assets);
 
-							using (var assetStream =  assets.Open (Path.Combine(directory, assemblyPath))) {
-
-								// TODO: This is not the most optimized approach as it results in a duplicate, shortterm copy, however
-								// the longer form described by Jon Skeet in the ReadFully implementation seemed too verbose for a late
-								// night session
-								using (var memoryStream = new MemoryStream())
-								{
-									assetStream.CopyTo(memoryStream);
-									bytes = memoryStream.ToArray();
-								}
-							}
-
-							Assembly assembly = Assembly.Load(bytes);
-							pluginAssemblies.Add(assembly);
-						}
-						// TODO: All of these exceptions need to be logged!
-						catch (ReflectionTypeLoadException)
+						Assembly assembly;
+#if DEBUG
+						// If symbols exist for the assembly, load both together to support debug breakpoints
+						if(pluginsInAssetsFolder.Contains(fileName + ".mdb"))
 						{
+							byte[] symbolData = LoadBytesFromStream(assemblyAssetPath + ".mdb", assets);
+							assembly = Assembly.Load(bytes, symbolData);
 						}
-						catch (BadImageFormatException)
+						else
 						{
+							assembly = Assembly.Load(bytes);
 						}
-						catch (NotSupportedException)
-						{
-						}
+#else
+						assembly = Assembly.Load(bytes);
+#endif
+						pluginAssemblies.Add(assembly);
+					}
+					// TODO: All of these exceptions need to be logged!
+					catch (ReflectionTypeLoadException)
+					{
+					}
+					catch (BadImageFormatException)
+					{
+					}
+					catch (NotSupportedException)
+					{
 					}
 				}
 			}
