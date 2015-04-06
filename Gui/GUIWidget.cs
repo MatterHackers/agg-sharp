@@ -16,7 +16,7 @@
 //          mcseemagg@yahoo.com
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
-//#define DUMP_SLOW_TIMES
+#define DUMP_SLOW_TIMES
 
 using System;
 using System.Diagnostics;
@@ -73,6 +73,7 @@ namespace MatterHackers.Agg.UI
     [DebuggerDisplay("Bounds = {LocalBounds}")]
     public class GuiWidget
     {
+		const double dumpIfLongerThanTime = 1;
         static bool debugShowSize = false;
 
         ScreenClipping screenClipping;
@@ -756,7 +757,7 @@ namespace MatterHackers.Agg.UI
             set
             {
 #if DEBUG && DUMP_SLOW_TIMES
-				using (new DumpCallStackIfSlow(.2, "LocalBounds"))
+				using (new DumpCallStackIfSlow(dumpIfLongerThanTime, "LocalBounds"))
 #endif
 				{
 
@@ -1630,7 +1631,7 @@ namespace MatterHackers.Agg.UI
         public virtual void OnLayout(LayoutEventArgs layoutEventArgs)
 		{
 #if DEBUG && DUMP_SLOW_TIMES
-			using (new DumpCallStackIfSlow(.2, "OnLayout"))
+			using (new DumpCallStackIfSlow(dumpIfLongerThanTime, "OnLayout"))
 #endif
 			{
 				if (Visible && layoutSuspendCount < 1)
@@ -1675,7 +1676,7 @@ namespace MatterHackers.Agg.UI
         public virtual void OnDraw(Graphics2D graphics2D)
 		{
 #if DEBUG && DUMP_SLOW_TIMES
-			using (new DumpCallStackIfSlow(.4, "OnDraw"))
+			using (new DumpCallStackIfSlow(dumpIfLongerThanTime, "OnDraw"))
 #endif
 			{
 				DrawCount++;

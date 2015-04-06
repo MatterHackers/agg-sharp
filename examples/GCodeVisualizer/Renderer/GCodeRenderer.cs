@@ -61,7 +61,8 @@ namespace MatterHackers.GCodeVisualizer
         public static RGBA_Bytes ExtrusionColor = RGBA_Bytes.White;
         public static RGBA_Bytes TravelColor = RGBA_Bytes.Green;
 
-        GCodeFile gCodeFileToDraw;
+		GCodeFile gCodeFileToDraw;
+		public GCodeFile GCodeFileToDraw { get { return gCodeFileToDraw; } }
 
         ExtrusionColors extrusionColors;
 

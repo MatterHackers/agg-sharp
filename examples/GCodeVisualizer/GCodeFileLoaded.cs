@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 #define MULTI_THREAD
+#define DUMP_SLOW_TIMES
 
 using System;
 using System.Collections.Generic;
@@ -54,6 +55,7 @@ namespace MatterHackers.GCodeVisualizer
         bool gcodeHasExplicitLayerChangeInfo = false;
         double firstLayerThickness;
         double layerThickness;
+		double filamentUsedMmCache = 0;
 
         List<PrinterMachineInstruction> GCodeCommandQueue = new List<PrinterMachineInstruction>();
 
@@ -810,44 +812,49 @@ namespace MatterHackers.GCodeVisualizer
         }
 
 		public override double GetFilamentUsedMm(double nozzleDiameter)
-        {
-            double lastEPosition = 0;
-            double filamentMm = 0;
-            for (int i = 0; i < GCodeCommandQueue.Count; i++)
-            {
-                PrinterMachineInstruction instruction = GCodeCommandQueue[i];
-                //filamentMm += instruction.EPosition;
+		{
+			if (filamentUsedMmCache == 0)
+			{
+				double lastEPosition = 0;
+				double filamentMm = 0;
+				for (int i = 0; i < GCodeCommandQueue.Count; i++)
+				{
+					PrinterMachineInstruction instruction = GCodeCommandQueue[i];
+					//filamentMm += instruction.EPosition;
 
-                string lineToParse = instruction.Line;
-                if (lineToParse.StartsWith("G0") || lineToParse.StartsWith("G1"))
-                {
-                    double ePosition = lastEPosition;
-                    GetFirstNumberAfter("E", lineToParse, ref ePosition);
+					string lineToParse = instruction.Line;
+					if (lineToParse.StartsWith("G0") || lineToParse.StartsWith("G1"))
+					{
+						double ePosition = lastEPosition;
+						GetFirstNumberAfter("E", lineToParse, ref ePosition);
 
-                    if (instruction.movementType == PrinterMachineInstruction.MovementTypes.Absolute)
-                    {
-                        double deltaEPosition = ePosition - lastEPosition;
-                        filamentMm += deltaEPosition;
-                    }
-                    else
-                    {
-                        filamentMm += ePosition;
-                    }
+						if (instruction.movementType == PrinterMachineInstruction.MovementTypes.Absolute)
+						{
+							double deltaEPosition = ePosition - lastEPosition;
+							filamentMm += deltaEPosition;
+						}
+						else
+						{
+							filamentMm += ePosition;
+						}
 
-                    lastEPosition = ePosition;
-                }
-                else if (lineToParse.StartsWith("G92"))
-                {
-                    double ePosition = 0;
-                    if (GetFirstNumberAfter("E", lineToParse, ref ePosition))
-                    {
-                        lastEPosition = ePosition;
-                    }
-                }
-            }
+						lastEPosition = ePosition;
+					}
+					else if (lineToParse.StartsWith("G92"))
+					{
+						double ePosition = 0;
+						if (GetFirstNumberAfter("E", lineToParse, ref ePosition))
+						{
+							lastEPosition = ePosition;
+						}
+					}
+				}
 
-            return filamentMm;
-        }
+				filamentUsedMmCache = filamentMm;
+			}
+
+			return filamentUsedMmCache;
+		}
 
 		public override double GetFilamentCubicMm(double filamentDiameterMm)
         {
