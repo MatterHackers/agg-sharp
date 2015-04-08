@@ -100,36 +100,36 @@ namespace MatterHackers.Agg.Font
 
         public static Dictionary<char, ImageBuffer> GetCorrectCache(TypeFace typeFace, double emSizeInPoints, RGBA_Bytes color)
         {
-            // check if the cache is getting too big and if so prune it (or just delete it and start over).
+			using (TimedLock.Lock(typeFace, "GetCorrectCache"))
+			{
+				// check if the cache is getting too big and if so prune it (or just delete it and start over).
 
-            Dictionary<TypeFace, Dictionary<double, Dictionary<char, ImageBuffer>>> foundTypeFaceColor;
-            Instance.typeFaceImageCache.TryGetValue(color, out foundTypeFaceColor);
-            if (foundTypeFaceColor == null)
-            {
-                // add in the type face
-                foundTypeFaceColor = new Dictionary<TypeFace, Dictionary<double, Dictionary<char, ImageBuffer>>>();
-                Instance.typeFaceImageCache.Add(color, foundTypeFaceColor);
-            }
+				Dictionary<TypeFace, Dictionary<double, Dictionary<char, ImageBuffer>>> foundTypeFaceColor;
+				if (!Instance.typeFaceImageCache.TryGetValue(color, out foundTypeFaceColor))
+				{
+					// add in the type face
+					foundTypeFaceColor = new Dictionary<TypeFace, Dictionary<double, Dictionary<char, ImageBuffer>>>();
+					Instance.typeFaceImageCache.Add(color, foundTypeFaceColor);
+				}
 
-            Dictionary<double, Dictionary<char, ImageBuffer>> foundTypeFaceSizes;
-            foundTypeFaceColor.TryGetValue(typeFace, out foundTypeFaceSizes);
-            if (foundTypeFaceSizes == null)
-            {
-                // add in the type face
-                foundTypeFaceSizes = new Dictionary<double, Dictionary<char, ImageBuffer>>();
-                foundTypeFaceColor.Add(typeFace, foundTypeFaceSizes);
-            }
+				Dictionary<double, Dictionary<char, ImageBuffer>> foundTypeFaceSizes;
+				if (!foundTypeFaceColor.TryGetValue(typeFace, out foundTypeFaceSizes))
+				{
+					// add in the type face
+					foundTypeFaceSizes = new Dictionary<double, Dictionary<char, ImageBuffer>>();
+					foundTypeFaceColor.Add(typeFace, foundTypeFaceSizes);
+				}
 
-            Dictionary<char, ImageBuffer> foundTypeFaceSize;
-            foundTypeFaceSizes.TryGetValue(emSizeInPoints, out foundTypeFaceSize);
-            if (foundTypeFaceSize == null)
-            {
-                // add in the point size
-                foundTypeFaceSize = new Dictionary<char, ImageBuffer>();
-                foundTypeFaceSizes.Add(emSizeInPoints, foundTypeFaceSize);
-            }
+				Dictionary<char, ImageBuffer> foundTypeFaceSize;
+				if (!foundTypeFaceSizes.TryGetValue(emSizeInPoints, out foundTypeFaceSize))
+				{
+					// add in the point size
+					foundTypeFaceSize = new Dictionary<char, ImageBuffer>();
+					foundTypeFaceSizes.Add(emSizeInPoints, foundTypeFaceSize);
+				}
 
-            return foundTypeFaceSize;
+				return foundTypeFaceSize;
+			}
         }
 
         static StyledTypeFaceImageCache Instance
