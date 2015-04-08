@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,125 +23,116 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-using NUnit.Framework;
-using MatterHackers.Agg;
-using MatterHackers.Agg.Image;
-using MatterHackers.VectorMath;
-
 namespace MatterHackers.Agg.UI.Tests
 {
-    public static class UnitTests
-    {
-        static bool ranTests = false;
+	public static class UnitTests
+	{
+		private static bool ranTests = false;
 
-        public static bool RanTests { get { return ranTests; } }
-        public static void Run()
-        {
-            if (!ranTests)
-            {
-                // we depend on the graphics functions so make sure their tests succeed
-                MatterHackers.Agg.Image.UnitTests.Run();
+		public static bool RanTests { get { return ranTests; } }
 
-                MouseInteractionTests mouseInteractionTests = new MouseInteractionTests();
-                mouseInteractionTests.ValidateSimpleLeftClick();
-                mouseInteractionTests.ValidateOnlyTopWidgetGetsLeftClick();
-                mouseInteractionTests.ValidateSimpleMouseUpDown();
-                mouseInteractionTests.ValidateOnlyTopWidgetGetsMouseUp();
-                mouseInteractionTests.ValidateEnterAndLeaveEvents();
-                mouseInteractionTests.ValidateEnterAndLeaveEventsWhenNested();
-                mouseInteractionTests.ValidateEnterAndLeaveEventsWhenCoverd();
-                mouseInteractionTests.ValidateEnterAndLeaveInOverlapArea();
-                mouseInteractionTests.MouseCapturedSpressesLeaveEvents();
-                mouseInteractionTests.MouseCapturedSpressesLeaveEventsInButtonsSameAsRectangles();
-                
-                // these tests don't pass yet (they tests pass but scroll bars when grabed are brocken)
-                //mouseInteractionTests.ValidateEnterLeaveOnWidgetMoves();
-                //mouseInteractionTests.ValidateEnterLeaveOnWidgetBoundsChange();
-                // these tests need to be writen
-                //mouseInteractionTests.ValidateEnterLeaveOnWidgetAddAndRemoveChild();
+		public static void Run()
+		{
+			if (!ranTests)
+			{
+				// we depend on the graphics functions so make sure their tests succeed
+				MatterHackers.Agg.Image.UnitTests.Run();
 
-                BackBufferTests backBufferTests = new BackBufferTests();
-                //backBufferTests.saveImagesForDebug = true;
-                backBufferTests.DoubleBufferTests();
-                backBufferTests.BackBuffersAreScreenAligned();
+				MouseInteractionTests mouseInteractionTests = new MouseInteractionTests();
+				mouseInteractionTests.ValidateSimpleLeftClick();
+				mouseInteractionTests.ValidateOnlyTopWidgetGetsLeftClick();
+				mouseInteractionTests.ValidateSimpleMouseUpDown();
+				mouseInteractionTests.ValidateOnlyTopWidgetGetsMouseUp();
+				mouseInteractionTests.ValidateEnterAndLeaveEvents();
+				mouseInteractionTests.ValidateEnterAndLeaveEventsWhenNested();
+				mouseInteractionTests.ValidateEnterAndLeaveEventsWhenCoverd();
+				mouseInteractionTests.ValidateEnterAndLeaveInOverlapArea();
+				mouseInteractionTests.MouseCapturedSpressesLeaveEvents();
+				mouseInteractionTests.MouseCapturedSpressesLeaveEventsInButtonsSameAsRectangles();
 
-                TextAndTextWidgetTests textTests = new TextAndTextWidgetTests();
-                //textTests.saveImagesForDebug = true;
-                textTests.TextWidgetVisibleTest();
+				// these tests don't pass yet (they tests pass but scroll bars when grabed are brocken)
+				//mouseInteractionTests.ValidateEnterLeaveOnWidgetMoves();
+				//mouseInteractionTests.ValidateEnterLeaveOnWidgetBoundsChange();
+				// these tests need to be writen
+				//mouseInteractionTests.ValidateEnterLeaveOnWidgetAddAndRemoveChild();
 
-                TextEditTests textEditTests = new TextEditTests();
-                //TextEditTests.saveImagesForDebug = true;
-                textEditTests.TextEditGetsFocusTests();
-                textEditTests.TextEditTextSelectionTests();
-                textEditTests.TextChangedEventsTests();
-                textEditTests.NumEditHandlesNonNumberChars();
-                textEditTests.TextEditingSpecialKeysWork();
-                textEditTests.AddThenDeleteCausesNoVisualChange();
-                textEditTests.MiltiLineTests();
-                textEditTests.ScrollingToEndShowsEnd();
+				BackBufferTests backBufferTests = new BackBufferTests();
+				//backBufferTests.saveImagesForDebug = true;
+				backBufferTests.DoubleBufferTests();
+				backBufferTests.BackBuffersAreScreenAligned();
 
-                AnchorTests anchorTests = new AnchorTests();
-                //AnchorTests.saveImagesForDebug = true;
-                anchorTests.SimpleFitToChildren();
-                anchorTests.BottomAndTopSetAnchorBeforAddChild();
-                anchorTests.BottomAndTop();
-                anchorTests.CenterBothTests();
-                anchorTests.CenterBothOffsetBoundsTests();
-                anchorTests.AnchorLeftBottomTests();
-                anchorTests.AnchorRightBottomTests();
-                anchorTests.AnchorRightTopTests();
-                anchorTests.AnchorAllTests();
-                anchorTests.HCenterHRightAndVCenterVTopTests();
-                anchorTests.GroupBoxResizeThenLayoutBeforeMatchChildren();
+				TextAndTextWidgetTests textTests = new TextAndTextWidgetTests();
+				//textTests.saveImagesForDebug = true;
+				textTests.TextWidgetVisibleTest();
 
-                FlowLayoutTests flowLayoutTests = new FlowLayoutTests();
-                //FlowLayoutTests.saveImagesForDebug = true;
-                flowLayoutTests.LeftToRightTests();
-                flowLayoutTests.RightToLeftTests();
-                flowLayoutTests.LeftToRightAnchorLeftBottomTests();
-                flowLayoutTests.NestedLayoutTopToBottomTests();
-                flowLayoutTests.NestedLayoutTopToBottomWithResizeTests();
-                flowLayoutTests.AnchorLeftRightTests();
-                flowLayoutTests.NestedFlowWidgetsTopToBottomTests();
-                flowLayoutTests.NestedFlowWidgetsRightToLeftTests();
-                flowLayoutTests.NestedFlowWidgetsLeftToRightTests();
-                flowLayoutTests.LeftRightWithAnchorLeftRightChildTests();
-                flowLayoutTests.RightLeftWithAnchorLeftRightChildTests();
-                flowLayoutTests.BottomTopWithAnchorBottomTopChildTests();
-                flowLayoutTests.TopBottomWithAnchorBottomTopChildTests();
-                flowLayoutTests.EnsureFlowLayoutMinSizeFitsChildrenMinSize();
-                flowLayoutTests.ChildVisibilityChangeCauseResize();
-                flowLayoutTests.EnsureCorrectMinimumSize();
-                flowLayoutTests.EnsureNestedAreMinimumSize();
-                flowLayoutTests.EnsureCorrectSizeOnChildrenVisibleChange();
-                flowLayoutTests.ChildHAnchorPriority();
-                flowLayoutTests.TestVAnchorCenter();
+				TextEditTests textEditTests = new TextEditTests();
+				//TextEditTests.saveImagesForDebug = true;
+				textEditTests.TextEditGetsFocusTests();
+				textEditTests.TextEditTextSelectionTests();
+				textEditTests.TextChangedEventsTests();
+				textEditTests.NumEditHandlesNonNumberChars();
+				textEditTests.TextEditingSpecialKeysWork();
+				textEditTests.AddThenDeleteCausesNoVisualChange();
+				textEditTests.MiltiLineTests();
+				textEditTests.ScrollingToEndShowsEnd();
 
-                ScrollableWidgetTests scrollableWidgetTests = new ScrollableWidgetTests();
-                //ScrollableWidgetTests.saveImagesForDebug = true;
-                scrollableWidgetTests.LimitScrolToContetsTests();
+				AnchorTests anchorTests = new AnchorTests();
+				//AnchorTests.saveImagesForDebug = true;
+				anchorTests.SimpleFitToChildren();
+				anchorTests.BottomAndTopSetAnchorBeforAddChild();
+				anchorTests.BottomAndTop();
+				anchorTests.CenterBothTests();
+				anchorTests.CenterBothOffsetBoundsTests();
+				anchorTests.AnchorLeftBottomTests();
+				anchorTests.AnchorRightBottomTests();
+				anchorTests.AnchorRightTopTests();
+				anchorTests.AnchorAllTests();
+				anchorTests.HCenterHRightAndVCenterVTopTests();
+				anchorTests.GroupBoxResizeThenLayoutBeforeMatchChildren();
 
-                ListBoxTests listBoxTests = new ListBoxTests();
-                //ListBoxTests.saveImagesForDebug = true;
-                listBoxTests.SingleItemVisibleTest();
-                listBoxTests.ScrollPositionStartsCorrect();
+				FlowLayoutTests flowLayoutTests = new FlowLayoutTests();
+				//FlowLayoutTests.saveImagesForDebug = true;
+				flowLayoutTests.LeftToRightTests();
+				flowLayoutTests.RightToLeftTests();
+				flowLayoutTests.LeftToRightAnchorLeftBottomTests();
+				flowLayoutTests.NestedLayoutTopToBottomTests();
+				flowLayoutTests.NestedLayoutTopToBottomWithResizeTests();
+				flowLayoutTests.AnchorLeftRightTests();
+				flowLayoutTests.NestedFlowWidgetsTopToBottomTests();
+				flowLayoutTests.NestedFlowWidgetsRightToLeftTests();
+				flowLayoutTests.NestedFlowWidgetsLeftToRightTests();
+				flowLayoutTests.LeftRightWithAnchorLeftRightChildTests();
+				flowLayoutTests.RightLeftWithAnchorLeftRightChildTests();
+				flowLayoutTests.BottomTopWithAnchorBottomTopChildTests();
+				flowLayoutTests.TopBottomWithAnchorBottomTopChildTests();
+				flowLayoutTests.EnsureFlowLayoutMinSizeFitsChildrenMinSize();
+				flowLayoutTests.ChildVisibilityChangeCauseResize();
+				flowLayoutTests.EnsureCorrectMinimumSize();
+				flowLayoutTests.EnsureNestedAreMinimumSize();
+				flowLayoutTests.EnsureCorrectSizeOnChildrenVisibleChange();
+				flowLayoutTests.ChildHAnchorPriority();
+				flowLayoutTests.TestVAnchorCenter();
 
-                MenuTests menuTests = new MenuTests();
-                //MenuTests.saveImagesForDebug = true;
-                menuTests.ListMenuTests();
-                menuTests.DropDownListTests();
+				ScrollableWidgetTests scrollableWidgetTests = new ScrollableWidgetTests();
+				//ScrollableWidgetTests.saveImagesForDebug = true;
+				scrollableWidgetTests.LimitScrolToContetsTests();
 
-                ranTests = true;
-            }
-        }
-    }
+				ListBoxTests listBoxTests = new ListBoxTests();
+				//ListBoxTests.saveImagesForDebug = true;
+				listBoxTests.SingleItemVisibleTest();
+				listBoxTests.ScrollPositionStartsCorrect();
+
+				MenuTests menuTests = new MenuTests();
+				//MenuTests.saveImagesForDebug = true;
+				menuTests.ListMenuTests();
+				menuTests.DropDownListTests();
+
+				ranTests = true;
+			}
+		}
+	}
 }

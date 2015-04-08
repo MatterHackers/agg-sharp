@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace MatterHackers.Agg.UI
 {
@@ -9,7 +6,8 @@ namespace MatterHackers.Agg.UI
 	{
 		private static ISystemClipboard clipboard { get; set; }
 
-		public static bool IsInitialized {
+		public static bool IsInitialized
+		{
 			get { return clipboard != null; }
 		}
 

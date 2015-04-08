@@ -1,20 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.IO;
 using System.Reflection;
 
 namespace MatterHackers.Agg
 {
-    public class PluginFinder<BaseClassToFind>
-    {
-        public List<BaseClassToFind> Plugins;
+	public class PluginFinder<BaseClassToFind>
+	{
+		public List<BaseClassToFind> Plugins;
 
-        public PluginFinder(string searchDirectory = null, IComparer<BaseClassToFind> sorter = null)
-        {
+		public PluginFinder(string searchDirectory = null, IComparer<BaseClassToFind> sorter = null)
+		{
 #if __ANDROID__
-			// Technique for loading directly form Android Assets (Requires you create and populate the Assets->StaticData->Plugins 
+			// Technique for loading directly form Android Assets (Requires you create and populate the Assets->StaticData->Plugins
 			// folder with the actual plugins you want to laod
 			Plugins = LoadPluginsFromAssets();
 
@@ -29,14 +27,14 @@ namespace MatterHackers.Agg
 				searchPath = Path.GetFullPath(searchDirectory);
 			}
 
-            Plugins = FindAndAddPlugins(searchPath);
+			Plugins = FindAndAddPlugins(searchPath);
 #endif
 
-            if (sorter != null)
-            {
-                Plugins.Sort(sorter);
-            }
-        }
+			if (sorter != null)
+			{
+				Plugins.Sort(sorter);
+			}
+		}
 
 #if __ANDROID__
 		private string[] pluginsInAssetsFolder = null;
@@ -68,7 +66,7 @@ namespace MatterHackers.Agg
 			string directory = Path.Combine("StaticData", "Plugins");
 
 			// Iterate the Android Assets in the StaticData/Plugins directory
-			foreach (string fileName in assets.List(directory)) 
+			foreach (string fileName in assets.List(directory))
 			{
 				if(Path.GetExtension(fileName) == ".dll")
 				{
@@ -128,51 +126,51 @@ namespace MatterHackers.Agg
 #endif
 
 		public List<BaseClassToFind> FindAndAddPlugins(string searchDirectory)
-        {
-            List<BaseClassToFind> factoryList = new List<BaseClassToFind>();
-            if (Directory.Exists(searchDirectory))
-            {
-                //string[] files = Directory.GetFiles(searchDirectory, "*_HalFactory.dll");
-                string[] dllFiles = Directory.GetFiles(searchDirectory, "*.dll");
-                string[] exeFiles = Directory.GetFiles(searchDirectory, "*.exe");
+		{
+			List<BaseClassToFind> factoryList = new List<BaseClassToFind>();
+			if (Directory.Exists(searchDirectory))
+			{
+				//string[] files = Directory.GetFiles(searchDirectory, "*_HalFactory.dll");
+				string[] dllFiles = Directory.GetFiles(searchDirectory, "*.dll");
+				string[] exeFiles = Directory.GetFiles(searchDirectory, "*.exe");
 
-                List<string> allFiles = new List<string>();
-                allFiles.AddRange(dllFiles);
-                allFiles.AddRange(exeFiles);
-                string[] files = allFiles.ToArray();
+				List<string> allFiles = new List<string>();
+				allFiles.AddRange(dllFiles);
+				allFiles.AddRange(exeFiles);
+				string[] files = allFiles.ToArray();
 
-                foreach (string file in files)
-                {
-                    try
-                    {
-                        Assembly assembly = Assembly.LoadFile(file);
+				foreach (string file in files)
+				{
+					try
+					{
+						Assembly assembly = Assembly.LoadFile(file);
 
-                        foreach (Type type in assembly.GetTypes())
-                        {
-                            if (type == null || !type.IsClass || !type.IsPublic)
-                            {
-                                continue;
-                            }
+						foreach (Type type in assembly.GetTypes())
+						{
+							if (type == null || !type.IsClass || !type.IsPublic)
+							{
+								continue;
+							}
 
-                            if (type.BaseType == typeof(BaseClassToFind))
-                            {
-                                factoryList.Add((BaseClassToFind)Activator.CreateInstance(type));
-                            }
-                        }
-                    }
-                    catch (ReflectionTypeLoadException)
-                    {
-                    }
-                    catch (BadImageFormatException)
-                    {
-                    }
-                    catch (NotSupportedException)
-                    {
-                    }
-                }
-            }
+							if (type.BaseType == typeof(BaseClassToFind))
+							{
+								factoryList.Add((BaseClassToFind)Activator.CreateInstance(type));
+							}
+						}
+					}
+					catch (ReflectionTypeLoadException)
+					{
+					}
+					catch (BadImageFormatException)
+					{
+					}
+					catch (NotSupportedException)
+					{
+					}
+				}
+			}
 
-            return factoryList;
-        }
-    }
+			return factoryList;
+		}
+	}
 }

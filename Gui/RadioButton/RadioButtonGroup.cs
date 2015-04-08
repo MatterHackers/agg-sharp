@@ -1,9 +1,12 @@
+using MatterHackers.Agg.VertexSource;
+using MatterHackers.VectorMath;
+
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
-// Permission to copy, use, modify, sell and distribute this software 
-// is granted provided this copyright notice appears in all copies. 
+// Permission to copy, use, modify, sell and distribute this software
+// is granted provided this copyright notice appears in all copies.
 // This software is provided "as is" without express or implied
 // warranty, and with no claim as to its suitability for any purpose.
 //
@@ -19,136 +22,151 @@
 using System;
 using System.Collections.Generic;
 
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.VectorMath;
-
 namespace MatterHackers.Agg.UI
 {
-    public class RadioButtonGroup : GuiWidget
-    {
-        public event EventHandler SelectionChanged;
+	public class RadioButtonGroup : GuiWidget
+	{
+		public event EventHandler SelectionChanged;
 
-        FlowLayoutWidget topToBottomButtons = new FlowLayoutWidget(FlowDirection.TopToBottom);
-        List<RadioButton> radioButtons;
+		private FlowLayoutWidget topToBottomButtons = new FlowLayoutWidget(FlowDirection.TopToBottom);
+		private List<RadioButton> radioButtons;
 
-        IColorType backgroundColor;
-        IColorType borderColor;
-        IColorType textColor;
-        IColorType inactiveColor;
-        IColorType activeColor;
+		private IColorType backgroundColor;
+		private IColorType borderColor;
+		private IColorType textColor;
+		private IColorType inactiveColor;
+		private IColorType activeColor;
 
-        public RadioButtonGroup()
-            : this(new Vector2(), new Vector2())
-        {
-        }
+		public RadioButtonGroup()
+			: this(new Vector2(), new Vector2())
+		{
+		}
 
-        public RadioButtonGroup(Vector2 location, Vector2 size)
-        {
-            topToBottomButtons.Margin = new BorderDouble();
-            topToBottomButtons.Padding = new BorderDouble(5);
+		public RadioButtonGroup(Vector2 location, Vector2 size)
+		{
+			topToBottomButtons.Margin = new BorderDouble();
+			topToBottomButtons.Padding = new BorderDouble(5);
 
-            LocalBounds = new RectangleDouble(0, 0, size.x, size.y);
-            OriginRelativeParent = location;
-            radioButtons = new List<RadioButton>();
-            AddChild(topToBottomButtons);
+			LocalBounds = new RectangleDouble(0, 0, size.x, size.y);
+			OriginRelativeParent = location;
+			radioButtons = new List<RadioButton>();
+			AddChild(topToBottomButtons);
 
-            backgroundColor = (new RGBA_Floats(1.0, 1.0, 0.9));
-            borderColor = (new RGBA_Floats(0.0, 0.0, 0.0));
-            textColor = (new RGBA_Floats(0.0, 0.0, 0.0));
-            inactiveColor = (new RGBA_Floats(0.0, 0.0, 0.0));
-            activeColor = (new RGBA_Floats(0.4, 0.0, 0.0));
-        }
-          
+			backgroundColor = (new RGBA_Floats(1.0, 1.0, 0.9));
+			borderColor = (new RGBA_Floats(0.0, 0.0, 0.0));
+			textColor = (new RGBA_Floats(0.0, 0.0, 0.0));
+			inactiveColor = (new RGBA_Floats(0.0, 0.0, 0.0));
+			activeColor = (new RGBA_Floats(0.4, 0.0, 0.0));
+		}
 
-        public void background_color(IColorType c) { backgroundColor = c; }
-        public void border_color(IColorType c) { borderColor = c; }
-        public void text_color(IColorType c) { textColor = c; }
-        public void inactive_color(IColorType c) { inactiveColor = c; }
-        public void active_color(IColorType c) { activeColor = c; }
+		public void background_color(IColorType c)
+		{
+			backgroundColor = c;
+		}
 
-        public override void OnDraw(Graphics2D graphics2D)
-        {
-            RoundedRect backgroundRect = new RoundedRect(LocalBounds, 4);
-            graphics2D.Render(backgroundRect, backgroundColor.GetAsRGBA_Bytes());
+		public void border_color(IColorType c)
+		{
+			borderColor = c;
+		}
 
-            graphics2D.Render(new Stroke(backgroundRect), borderColor.GetAsRGBA_Bytes());
+		public void text_color(IColorType c)
+		{
+			textColor = c;
+		}
 
-            base.OnDraw(graphics2D);
-        }
+		public void inactive_color(IColorType c)
+		{
+			inactiveColor = c;
+		}
 
-        public RadioButton AddRadioButton(string text)
-        {
-            RadioButton newRadioButton = new RadioButton(text);
-            newRadioButton.Margin = new BorderDouble(2);
-            newRadioButton.HAnchor = UI.HAnchor.ParentLeft;
-            radioButtons.Add(newRadioButton);
-            topToBottomButtons.AddChild(newRadioButton);
+		public void active_color(IColorType c)
+		{
+			activeColor = c;
+		}
 
-            return newRadioButton;
-        }
+		public override void OnDraw(Graphics2D graphics2D)
+		{
+			RoundedRect backgroundRect = new RoundedRect(LocalBounds, 4);
+			graphics2D.Render(backgroundRect, backgroundColor.GetAsRGBA_Bytes());
 
-        [Obsolete("use AddRadioButton instead", false)]
-        public void add_item(string text)
-        {
-            AddRadioButton(text);
-        }
+			graphics2D.Render(new Stroke(backgroundRect), borderColor.GetAsRGBA_Bytes());
 
-        public int SelectedIndex
-        {
-            get
-            {
-                int curItem = 0;
-                foreach (RadioButton button in radioButtons)
-                {
-                    if (button.Checked)
-                    {
-                        return curItem;
-                    }
-                    curItem++;
-                }
+			base.OnDraw(graphics2D);
+		}
 
-                throw new Exception("no item checked");
-            }
+		public RadioButton AddRadioButton(string text)
+		{
+			RadioButton newRadioButton = new RadioButton(text);
+			newRadioButton.Margin = new BorderDouble(2);
+			newRadioButton.HAnchor = UI.HAnchor.ParentLeft;
+			radioButtons.Add(newRadioButton);
+			topToBottomButtons.AddChild(newRadioButton);
 
-            set
-            {
-                if (value >= radioButtons.Count)
-                {
-                    throw new IndexOutOfRangeException("you have to have an index within the group");
-                }
-                if (!radioButtons[value].Checked)
-                {
-                    radioButtons[value].Checked = true;
-                    if (SelectionChanged != null)
-                    {
-                        SelectionChanged(this, null);
-                    }
-                }
-            }
-        }
+			return newRadioButton;
+		}
 
-        public IColorType color(int i) 
-        {
-            switch(i)
-            {
-                case 0:
-                    return backgroundColor;
+		[Obsolete("use AddRadioButton instead", false)]
+		public void add_item(string text)
+		{
+			AddRadioButton(text);
+		}
 
-                case 1:
-                    return borderColor;
+		public int SelectedIndex
+		{
+			get
+			{
+				int curItem = 0;
+				foreach (RadioButton button in radioButtons)
+				{
+					if (button.Checked)
+					{
+						return curItem;
+					}
+					curItem++;
+				}
 
-                case 2:
-                    return textColor;
+				throw new Exception("no item checked");
+			}
 
-                case 3:
-                    return inactiveColor;
+			set
+			{
+				if (value >= radioButtons.Count)
+				{
+					throw new IndexOutOfRangeException("you have to have an index within the group");
+				}
+				if (!radioButtons[value].Checked)
+				{
+					radioButtons[value].Checked = true;
+					if (SelectionChanged != null)
+					{
+						SelectionChanged(this, null);
+					}
+				}
+			}
+		}
 
-                case 4:
-                    return activeColor;
+		public IColorType color(int i)
+		{
+			switch (i)
+			{
+				case 0:
+					return backgroundColor;
 
-                default:
-                    throw new System.IndexOutOfRangeException("There is not a color for this index");
-            }
-        }
-    }
+				case 1:
+					return borderColor;
+
+				case 2:
+					return textColor;
+
+				case 3:
+					return inactiveColor;
+
+				case 4:
+					return activeColor;
+
+				default:
+					throw new System.IndexOutOfRangeException("There is not a color for this index");
+			}
+		}
+	}
 }

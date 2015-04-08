@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,70 +23,67 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 #define MULTI_THREAD
 #define DUMP_SLOW_TIMES
 
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Text.RegularExpressions;
-using System.ComponentModel;
-using System.Linq;
-using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
-
 using MatterHackers.Agg;
 using MatterHackers.VectorMath;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MatterHackers.GCodeVisualizer
 {
 	public class GCodeFileLoaded : GCodeFile
 	{
-		double amountOfAccumulatedEWhileParsing = 0;
-		
-		List<int> indexOfChangeInZ = new List<int>();
-        Vector2 center = Vector2.Zero;
-        double parsingLastZ;
-        bool gcodeHasExplicitLayerChangeInfo = false;
-        double firstLayerThickness;
-        double layerThickness;
-		double filamentUsedMmCache = 0;
+		private double amountOfAccumulatedEWhileParsing = 0;
 
-        List<PrinterMachineInstruction> GCodeCommandQueue = new List<PrinterMachineInstruction>();
+		private List<int> indexOfChangeInZ = new List<int>();
+		private Vector2 center = Vector2.Zero;
+		private double parsingLastZ;
+		private bool gcodeHasExplicitLayerChangeInfo = false;
+		private double firstLayerThickness;
+		private double layerThickness;
+		private double filamentUsedMmCache = 0;
 
-        public GCodeFileLoaded(bool gcodeHasExplicitLayerChangeInfo = false)
-        {
-            this.gcodeHasExplicitLayerChangeInfo = gcodeHasExplicitLayerChangeInfo;
-        }
+		private List<PrinterMachineInstruction> GCodeCommandQueue = new List<PrinterMachineInstruction>();
+
+		public GCodeFileLoaded(bool gcodeHasExplicitLayerChangeInfo = false)
+		{
+			this.gcodeHasExplicitLayerChangeInfo = gcodeHasExplicitLayerChangeInfo;
+		}
 
 		public GCodeFileLoaded(string pathAndFileName, bool gcodeHasExplicitLayerChangeInfo = false)
-        {
-            this.gcodeHasExplicitLayerChangeInfo = gcodeHasExplicitLayerChangeInfo;
-            this.Load(pathAndFileName);
-        }
+		{
+			this.gcodeHasExplicitLayerChangeInfo = gcodeHasExplicitLayerChangeInfo;
+			this.Load(pathAndFileName);
+		}
 
-        public override PrinterMachineInstruction Instruction(int index)
-        {
-            return GCodeCommandQueue[index];
-        }
+		public override PrinterMachineInstruction Instruction(int index)
+		{
+			return GCodeCommandQueue[index];
+		}
 
 		public override int LineCount
-        {
-            get { return GCodeCommandQueue.Count; }
-        }
+		{
+			get { return GCodeCommandQueue.Count; }
+		}
 
 		public override void Clear()
-        {
-            indexOfChangeInZ.Clear();
-            GCodeCommandQueue.Clear();
-        }
+		{
+			indexOfChangeInZ.Clear();
+			GCodeCommandQueue.Clear();
+		}
 
-		public override double TotalSecondsInPrint 
+		public override double TotalSecondsInPrint
 		{
 			get
 			{
@@ -94,61 +91,61 @@ namespace MatterHackers.GCodeVisualizer
 			}
 		}
 
-        public override void Add(PrinterMachineInstruction printerMachineInstruction)
-        {
-            Insert(LineCount, printerMachineInstruction);
-        }
+		public override void Add(PrinterMachineInstruction printerMachineInstruction)
+		{
+			Insert(LineCount, printerMachineInstruction);
+		}
 
 		public override void Insert(int insertIndex, PrinterMachineInstruction printerMachineInstruction)
-        {
-            for (int i = 0; i < indexOfChangeInZ.Count; i++)
-            {
-                if (insertIndex < indexOfChangeInZ[i])
-                {
-                    indexOfChangeInZ[i]++;
-                }
-            }
+		{
+			for (int i = 0; i < indexOfChangeInZ.Count; i++)
+			{
+				if (insertIndex < indexOfChangeInZ[i])
+				{
+					indexOfChangeInZ[i]++;
+				}
+			}
 
-            GCodeCommandQueue.Insert(insertIndex, printerMachineInstruction);
-        }
+			GCodeCommandQueue.Insert(insertIndex, printerMachineInstruction);
+		}
 
-        public static GCodeFile ParseGCodeString(string gcodeContents)
-        {
-            DoWorkEventArgs doWorkEventArgs = new DoWorkEventArgs(gcodeContents);
-            ParseFileContents(null, doWorkEventArgs);
-            return (GCodeFile)doWorkEventArgs.Result;
-        }
+		public static GCodeFile ParseGCodeString(string gcodeContents)
+		{
+			DoWorkEventArgs doWorkEventArgs = new DoWorkEventArgs(gcodeContents);
+			ParseFileContents(null, doWorkEventArgs);
+			return (GCodeFile)doWorkEventArgs.Result;
+		}
 
 		public static GCodeFileLoaded Load(Stream fileStream)
-        {
+		{
 			GCodeFileLoaded loadedGCode = null;
-            try
-            {
-                string gCodeString = "";
-                using (StreamReader sr = new StreamReader(fileStream))
-                {
-                    gCodeString = sr.ReadToEnd();
-                }
+			try
+			{
+				string gCodeString = "";
+				using (StreamReader sr = new StreamReader(fileStream))
+				{
+					gCodeString = sr.ReadToEnd();
+				}
 
-                DoWorkEventArgs doWorkEventArgs = new DoWorkEventArgs(gCodeString);
-                ParseFileContents(null, doWorkEventArgs);
-                loadedGCode = (GCodeFileLoaded)doWorkEventArgs.Result;
-            }
-            catch (IOException)
-            {
-            }
+				DoWorkEventArgs doWorkEventArgs = new DoWorkEventArgs(gCodeString);
+				ParseFileContents(null, doWorkEventArgs);
+				loadedGCode = (GCodeFileLoaded)doWorkEventArgs.Result;
+			}
+			catch (IOException)
+			{
+			}
 
-            return loadedGCode;
-        }
+			return loadedGCode;
+		}
 
 		static public new void LoadInBackground(BackgroundWorker backgroundWorker, string fileName)
-        {
-            if (Path.GetExtension(fileName).ToUpper() == ".GCODE")
-            {
-                try
-                {
-                    if (File.Exists(fileName))
-                    {
+		{
+			if (Path.GetExtension(fileName).ToUpper() == ".GCODE")
+			{
+				try
+				{
+					if (File.Exists(fileName))
+					{
 						if (FileTooBigToLoad(fileName))
 						{
 							// It is too big do the processing, report back no load.
@@ -156,39 +153,39 @@ namespace MatterHackers.GCodeVisualizer
 							return;
 						}
 
-                        string gCodeString = "";
-                        using (FileStream fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                        {
-                            using (StreamReader gcodeStream = new StreamReader(fileStream))
-                            {
-                                long bytes = gcodeStream.BaseStream.Length;
-                                char[] content = new char[bytes];
-                                gcodeStream.Read(content, 0, (int)bytes);
-                                gCodeString = new string(content);
-                            }
-                        }
+						string gCodeString = "";
+						using (FileStream fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+						{
+							using (StreamReader gcodeStream = new StreamReader(fileStream))
+							{
+								long bytes = gcodeStream.BaseStream.Length;
+								char[] content = new char[bytes];
+								gcodeStream.Read(content, 0, (int)bytes);
+								gCodeString = new string(content);
+							}
+						}
 
-                        backgroundWorker.DoWork += new DoWorkEventHandler(ParseFileContents);
+						backgroundWorker.DoWork += new DoWorkEventHandler(ParseFileContents);
 
-                        backgroundWorker.RunWorkerAsync(gCodeString);
-                    }
-                    else
-                    {
-                        backgroundWorker.RunWorkerAsync(null);
-                    }
-                }
-                catch (IOException)
-                {
-                }
-            }
-            else
-            {
-                backgroundWorker.RunWorkerAsync(null);
-            }
-        }
+						backgroundWorker.RunWorkerAsync(gCodeString);
+					}
+					else
+					{
+						backgroundWorker.RunWorkerAsync(null);
+					}
+				}
+				catch (IOException)
+				{
+				}
+			}
+			else
+			{
+				backgroundWorker.RunWorkerAsync(null);
+			}
+		}
 
-        public void Load(string gcodePathAndFileName)
-        {
+		public void Load(string gcodePathAndFileName)
+		{
 			if (!FileTooBigToLoad(gcodePathAndFileName))
 			{
 				using (FileStream fileStream = new FileStream(gcodePathAndFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
@@ -205,224 +202,224 @@ namespace MatterHackers.GCodeVisualizer
 					}
 				}
 			}
-        }
+		}
 
-        private static IEnumerable<string> CustomSplit(string newtext, char splitChar)
-        {
-            int endOfLastFind = 0;
-            int positionOfSplitChar = newtext.IndexOf(splitChar);
-            while (positionOfSplitChar != -1)
-            {
-                string text = newtext.Substring(endOfLastFind, positionOfSplitChar - endOfLastFind).Trim();
-                yield return text;
-                endOfLastFind = positionOfSplitChar + 1;
-                positionOfSplitChar = newtext.IndexOf(splitChar, endOfLastFind);
-            }
+		private static IEnumerable<string> CustomSplit(string newtext, char splitChar)
+		{
+			int endOfLastFind = 0;
+			int positionOfSplitChar = newtext.IndexOf(splitChar);
+			while (positionOfSplitChar != -1)
+			{
+				string text = newtext.Substring(endOfLastFind, positionOfSplitChar - endOfLastFind).Trim();
+				yield return text;
+				endOfLastFind = positionOfSplitChar + 1;
+				positionOfSplitChar = newtext.IndexOf(splitChar, endOfLastFind);
+			}
 
-            string lastText = newtext.Substring(endOfLastFind);
-            yield return lastText;
-        }
+			string lastText = newtext.Substring(endOfLastFind);
+			yield return lastText;
+		}
 
-        private static int CountNumLines(string gCodeString)
-        {
-            int crCount = 0;
-            foreach (char testCharacter in gCodeString)
-            {
-                if (testCharacter == '\n')
-                {
-                    crCount++;
-                }
-            }
+		private static int CountNumLines(string gCodeString)
+		{
+			int crCount = 0;
+			foreach (char testCharacter in gCodeString)
+			{
+				if (testCharacter == '\n')
+				{
+					crCount++;
+				}
+			}
 
-            return crCount + 1;
-        }
+			return crCount + 1;
+		}
 
-        public static void ParseFileContents(object sender, DoWorkEventArgs doWorkEventArgs)
-        {
-            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
-            string gCodeString = (string)doWorkEventArgs.Argument;
-            if (gCodeString == null)
-            {
-                return;
-            }
+		public static void ParseFileContents(object sender, DoWorkEventArgs doWorkEventArgs)
+		{
+			Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+			string gCodeString = (string)doWorkEventArgs.Argument;
+			if (gCodeString == null)
+			{
+				return;
+			}
 
 			Stopwatch loadTime = Stopwatch.StartNew();
 			BackgroundWorker backgroundWorker = sender as BackgroundWorker;
 
-            Stopwatch maxProgressReport = new Stopwatch();
-            maxProgressReport.Start();
-            PrinterMachineInstruction machineInstructionForLine = new PrinterMachineInstruction("None");
+			Stopwatch maxProgressReport = new Stopwatch();
+			maxProgressReport.Start();
+			PrinterMachineInstruction machineInstructionForLine = new PrinterMachineInstruction("None");
 
-            bool gcodeHasExplicitLayerChangeInfo = false;
-            if (gCodeString.Contains("; LAYER:"))
-            {
-                gcodeHasExplicitLayerChangeInfo = true;
-            }
+			bool gcodeHasExplicitLayerChangeInfo = false;
+			if (gCodeString.Contains("; LAYER:"))
+			{
+				gcodeHasExplicitLayerChangeInfo = true;
+			}
 
 			GCodeFileLoaded loadedGCodeFile = new GCodeFileLoaded(gcodeHasExplicitLayerChangeInfo);
 
-            int crCount = CountNumLines(gCodeString);
-            int lineIndex = 0;
-            foreach (string outputString in CustomSplit(gCodeString, '\n'))
-            {
-                string lineString = outputString.Trim();
-                machineInstructionForLine = new PrinterMachineInstruction(lineString, machineInstructionForLine, false);
+			int crCount = CountNumLines(gCodeString);
+			int lineIndex = 0;
+			foreach (string outputString in CustomSplit(gCodeString, '\n'))
+			{
+				string lineString = outputString.Trim();
+				machineInstructionForLine = new PrinterMachineInstruction(lineString, machineInstructionForLine, false);
 
-                if (lineString.Length > 0)
-                {
-                    switch (lineString[0])
-                    {
-                        case 'G':
-                            loadedGCodeFile.ParseGLine(lineString, machineInstructionForLine);
-                            break;
+				if (lineString.Length > 0)
+				{
+					switch (lineString[0])
+					{
+						case 'G':
+							loadedGCodeFile.ParseGLine(lineString, machineInstructionForLine);
+							break;
 
-                        case 'M':
-                            loadedGCodeFile.ParseMLine(lineString, machineInstructionForLine);
-                            break;
+						case 'M':
+							loadedGCodeFile.ParseMLine(lineString, machineInstructionForLine);
+							break;
 
-                        case 'T':
-                            double extruderIndex = 0;
-                            if (GetFirstNumberAfter("T", lineString, ref extruderIndex))
-                            {
-                                machineInstructionForLine.ExtruderIndex = (int)extruderIndex;
-                            }
-                            break;
+						case 'T':
+							double extruderIndex = 0;
+							if (GetFirstNumberAfter("T", lineString, ref extruderIndex))
+							{
+								machineInstructionForLine.ExtruderIndex = (int)extruderIndex;
+							}
+							break;
 
-                        case ';':
-                            if (gcodeHasExplicitLayerChangeInfo && lineString.StartsWith("; LAYER:"))
-                            {
-                                loadedGCodeFile.IndexOfChangeInZ.Add(loadedGCodeFile.GCodeCommandQueue.Count);
-                            }
-                            if(lineString.StartsWith("; layerThickness"))
-                            {
-                                loadedGCodeFile.layerThickness = double.Parse(lineString.Split('=')[1]);
-                            }
-                            else if(lineString.StartsWith("; firstLayerThickness"))
-                            {
-                                loadedGCodeFile.firstLayerThickness = double.Parse(lineString.Split('=')[1]);
-                            }
-                            break;
+						case ';':
+							if (gcodeHasExplicitLayerChangeInfo && lineString.StartsWith("; LAYER:"))
+							{
+								loadedGCodeFile.IndexOfChangeInZ.Add(loadedGCodeFile.GCodeCommandQueue.Count);
+							}
+							if (lineString.StartsWith("; layerThickness"))
+							{
+								loadedGCodeFile.layerThickness = double.Parse(lineString.Split('=')[1]);
+							}
+							else if (lineString.StartsWith("; firstLayerThickness"))
+							{
+								loadedGCodeFile.firstLayerThickness = double.Parse(lineString.Split('=')[1]);
+							}
+							break;
 
-                        case '@':
-                            break;
+						case '@':
+							break;
 
-                        default:
+						default:
 #if DEBUG
-                            throw new NotImplementedException();
+							throw new NotImplementedException();
 #else
                             break;
 #endif
-                    }
-                }
+					}
+				}
 
-                loadedGCodeFile.GCodeCommandQueue.Add(machineInstructionForLine);
+				loadedGCodeFile.GCodeCommandQueue.Add(machineInstructionForLine);
 
-                if (backgroundWorker != null)
-                {
-                    if (backgroundWorker.CancellationPending)
-                    {
-                        return;
-                    }
+				if (backgroundWorker != null)
+				{
+					if (backgroundWorker.CancellationPending)
+					{
+						return;
+					}
 
-                    if (backgroundWorker.WorkerReportsProgress && maxProgressReport.ElapsedMilliseconds > 200)
-                    {
-                        backgroundWorker.ReportProgress(lineIndex * 100 / crCount / 2);
-                        maxProgressReport.Restart();
-                    }
-                }
+					if (backgroundWorker.WorkerReportsProgress && maxProgressReport.ElapsedMilliseconds > 200)
+					{
+						backgroundWorker.ReportProgress(lineIndex * 100 / crCount / 2);
+						maxProgressReport.Restart();
+					}
+				}
 
-                lineIndex++;
-            }
+				lineIndex++;
+			}
 
-            loadedGCodeFile.AnalyzeGCodeLines(backgroundWorker);
+			loadedGCodeFile.AnalyzeGCodeLines(backgroundWorker);
 
-            doWorkEventArgs.Result = loadedGCodeFile;
+			doWorkEventArgs.Result = loadedGCodeFile;
 
 			loadTime.Stop();
 			Console.WriteLine("Time To Load Seconds: {0:0.00}".FormatWith(loadTime.Elapsed.TotalSeconds));
-        }
+		}
 
-        void AnalyzeGCodeLines(BackgroundWorker backgroundWorker = null)
-        {
-            double feedRateMmPerMin = 0;
-            Vector3 lastPrinterPosition = new Vector3();
-            double lastEPosition = 0;
+		private void AnalyzeGCodeLines(BackgroundWorker backgroundWorker = null)
+		{
+			double feedRateMmPerMin = 0;
+			Vector3 lastPrinterPosition = new Vector3();
+			double lastEPosition = 0;
 
-            Stopwatch maxProgressReport = new Stopwatch();
-            maxProgressReport.Start();
+			Stopwatch maxProgressReport = new Stopwatch();
+			maxProgressReport.Start();
 
-            for (int lineIndex = 0; lineIndex < GCodeCommandQueue.Count; lineIndex++)
-            {
-                PrinterMachineInstruction instruction = GCodeCommandQueue[lineIndex];
-                string line = instruction.Line;
-                Vector3 deltaPositionThisLine = new Vector3();
-                double deltaEPositionThisLine = 0;
-                string lineToParse = line.ToUpper().Trim();
-                if (lineToParse.StartsWith("G0") || lineToParse.StartsWith("G1"))
-                {
-                    double newFeedRateMmPerMin = 0;
-                    if (GetFirstNumberAfter("F", lineToParse, ref newFeedRateMmPerMin))
-                    {
-                        feedRateMmPerMin = newFeedRateMmPerMin;
-                    }
+			for (int lineIndex = 0; lineIndex < GCodeCommandQueue.Count; lineIndex++)
+			{
+				PrinterMachineInstruction instruction = GCodeCommandQueue[lineIndex];
+				string line = instruction.Line;
+				Vector3 deltaPositionThisLine = new Vector3();
+				double deltaEPositionThisLine = 0;
+				string lineToParse = line.ToUpper().Trim();
+				if (lineToParse.StartsWith("G0") || lineToParse.StartsWith("G1"))
+				{
+					double newFeedRateMmPerMin = 0;
+					if (GetFirstNumberAfter("F", lineToParse, ref newFeedRateMmPerMin))
+					{
+						feedRateMmPerMin = newFeedRateMmPerMin;
+					}
 
-                    Vector3 attemptedDestination = lastPrinterPosition;
-                    GetFirstNumberAfter("X", lineToParse, ref attemptedDestination.x);
-                    GetFirstNumberAfter("Y", lineToParse, ref attemptedDestination.y);
-                    GetFirstNumberAfter("Z", lineToParse, ref attemptedDestination.z);
+					Vector3 attemptedDestination = lastPrinterPosition;
+					GetFirstNumberAfter("X", lineToParse, ref attemptedDestination.x);
+					GetFirstNumberAfter("Y", lineToParse, ref attemptedDestination.y);
+					GetFirstNumberAfter("Z", lineToParse, ref attemptedDestination.z);
 
-                    double ePosition = lastEPosition;
-                    GetFirstNumberAfter("E", lineToParse, ref ePosition);
+					double ePosition = lastEPosition;
+					GetFirstNumberAfter("E", lineToParse, ref ePosition);
 
-                    deltaPositionThisLine = attemptedDestination - lastPrinterPosition;
-                    deltaEPositionThisLine = Math.Abs(ePosition - lastEPosition);
+					deltaPositionThisLine = attemptedDestination - lastPrinterPosition;
+					deltaEPositionThisLine = Math.Abs(ePosition - lastEPosition);
 
-                    lastPrinterPosition = attemptedDestination;
-                    lastEPosition = ePosition;
-                }
-                else if (lineToParse.StartsWith("G92"))
-                {
-                    double ePosition = 0;
-                    if (GetFirstNumberAfter("E", lineToParse, ref ePosition))
-                    {
-                        lastEPosition = ePosition;
-                    }
-                }
+					lastPrinterPosition = attemptedDestination;
+					lastEPosition = ePosition;
+				}
+				else if (lineToParse.StartsWith("G92"))
+				{
+					double ePosition = 0;
+					if (GetFirstNumberAfter("E", lineToParse, ref ePosition))
+					{
+						lastEPosition = ePosition;
+					}
+				}
 
-                if (feedRateMmPerMin > 0)
-                {
+				if (feedRateMmPerMin > 0)
+				{
 					instruction.secondsThisLine = (float)GetSecondsThisLine(deltaPositionThisLine, deltaEPositionThisLine, feedRateMmPerMin);
-                }
+				}
 
-                if (backgroundWorker != null)
-                {
-                    if (backgroundWorker.CancellationPending)
-                    {
-                        return;
-                    }
+				if (backgroundWorker != null)
+				{
+					if (backgroundWorker.CancellationPending)
+					{
+						return;
+					}
 
-                    if (backgroundWorker.WorkerReportsProgress && maxProgressReport.ElapsedMilliseconds > 200)
-                    {
-                        backgroundWorker.ReportProgress(lineIndex * 100 / GCodeCommandQueue.Count / 2 + 50);
-                        maxProgressReport.Restart();
-                    }
-                }
-            }
+					if (backgroundWorker.WorkerReportsProgress && maxProgressReport.ElapsedMilliseconds > 200)
+					{
+						backgroundWorker.ReportProgress(lineIndex * 100 / GCodeCommandQueue.Count / 2 + 50);
+						maxProgressReport.Restart();
+					}
+				}
+			}
 
-            double accumulatedTime = 0;
-            for (int i = GCodeCommandQueue.Count - 1; i >= 0; i--)
-            {
-                PrinterMachineInstruction line = GCodeCommandQueue[i];
-                accumulatedTime += line.secondsThisLine;
-                line.secondsToEndFromHere = (float)accumulatedTime;
-            }
-        }
+			double accumulatedTime = 0;
+			for (int i = GCodeCommandQueue.Count - 1; i >= 0; i--)
+			{
+				PrinterMachineInstruction line = GCodeCommandQueue[i];
+				accumulatedTime += line.secondsThisLine;
+				line.secondsToEndFromHere = (float)accumulatedTime;
+			}
+		}
 
-        public Vector2 Center
-        {
-            get { return center; }
-        }
-		
+		public Vector2 Center
+		{
+			get { return center; }
+		}
+
 		public override double PercentComplete(int instructionIndex)
 		{
 			if (GCodeCommandQueue.Count > 0)
@@ -438,330 +435,330 @@ namespace MatterHackers.GCodeVisualizer
 			return IndexOfChangeInZ[layerIndex];
 		}
 
-        List<int> IndexOfChangeInZ
-        {
-            get { return indexOfChangeInZ; }
-        }
+		private List<int> IndexOfChangeInZ
+		{
+			get { return indexOfChangeInZ; }
+		}
 
 		public override int NumChangesInZ
-        {
-            get { return indexOfChangeInZ.Count; }
-        }
+		{
+			get { return indexOfChangeInZ.Count; }
+		}
 
-        void ParseMLine(string lineString, PrinterMachineInstruction processingMachineState)
-        {
-            // take off any comments before we check its length
-            int commentIndex = lineString.IndexOf(';');
-            if (commentIndex != -1)
-            {
-                lineString = lineString.Substring(0, commentIndex);
-            }
+		private void ParseMLine(string lineString, PrinterMachineInstruction processingMachineState)
+		{
+			// take off any comments before we check its length
+			int commentIndex = lineString.IndexOf(';');
+			if (commentIndex != -1)
+			{
+				lineString = lineString.Substring(0, commentIndex);
+			}
 
-            string[] splitOnSpace = lineString.Split(' ');
-            switch (splitOnSpace[0].Substring(1).Trim())
-            {
-                case "01":
-                    // show a message?
-                    break;
+			string[] splitOnSpace = lineString.Split(' ');
+			switch (splitOnSpace[0].Substring(1).Trim())
+			{
+				case "01":
+					// show a message?
+					break;
 
-                case "6":
-                    // wait for tool to heat up (wait for condition?)
-                    break;
+				case "6":
+					// wait for tool to heat up (wait for condition?)
+					break;
 
-                case "101":
-                    // extrude on, forward
-                    break;
+				case "101":
+					// extrude on, forward
+					break;
 
-                case "18":
-                    // turn off stepers
-                    break;
+				case "18":
+					// turn off stepers
+					break;
 
-                case "42":
-                    // Stop on material exhausted / Switch I/O pin
-                    break;
+				case "42":
+					// Stop on material exhausted / Switch I/O pin
+					break;
 
-                case "73":
-                    // makerbot, Manually set build percentage
-                    break;
+				case "73":
+					// makerbot, Manually set build percentage
+					break;
 
-                case "82":
-                    // set extruder to absolute mode
-                    break;
+				case "82":
+					// set extruder to absolute mode
+					break;
 
-                case "84":
-                    // lineString = "M84     ; disable motors\r"
-                    break;
+				case "84":
+					// lineString = "M84     ; disable motors\r"
+					break;
 
-                case "92":
-                    // set steps per mm
-                    break;
+				case "92":
+					// set steps per mm
+					break;
 
-                case "102":
-                    // extrude on reverse
-                    break;
+				case "102":
+					// extrude on reverse
+					break;
 
-                case "103":
-                    // extrude off
-                    break;
+				case "103":
+					// extrude off
+					break;
 
-                case "104":
-                    // set extruder tempreature
-                    break;
+				case "104":
+					// set extruder tempreature
+					break;
 
-                case "105":
-                    // M105 Custom code for temperature reading. (Not used)
-                    break;
+				case "105":
+					// M105 Custom code for temperature reading. (Not used)
+					break;
 
-                case "106":
-                    // turn fan on
-                    break;
+				case "106":
+					// turn fan on
+					break;
 
-                case "107":
-                    // turn fan off
-                    break;
+				case "107":
+					// turn fan off
+					break;
 
-                case "108":
-                    // set extruder speed
-                    break;
+				case "108":
+					// set extruder speed
+					break;
 
-                case "109":
-                    // set heated platform temperature
-                    break;
+				case "109":
+					// set heated platform temperature
+					break;
 
-                case "114":
-                    break;
+				case "114":
+					break;
 
-                case "117":
-                    // in Marlin: Display Message
-                    break;
+				case "117":
+					// in Marlin: Display Message
+					break;
 
-                case "126":
-                    // enable fan (makerbot)
-                    break;
+				case "126":
+					// enable fan (makerbot)
+					break;
 
-                case "127":
-                    // disable fan (makerbot)
-                    break;
+				case "127":
+					// disable fan (makerbot)
+					break;
 
-                case "132":
-                    // recall stored home offsets for axis xyzab
-                    break;
+				case "132":
+					// recall stored home offsets for axis xyzab
+					break;
 
-                case "140":
-                    // set bed temperature
-                    break;
+				case "140":
+					// set bed temperature
+					break;
 
-                case "190":
-                    // wait for bed temperature to be reached
-                    break;
+				case "190":
+					// wait for bed temperature to be reached
+					break;
 
-                case "200":
-                    // M200 sets the filament diameter.
-                    break;
+				case "200":
+					// M200 sets the filament diameter.
+					break;
 
-                case "201":
-                    // set axis acceleration
-                    break;
+				case "201":
+					// set axis acceleration
+					break;
 
-                case "204": // - Set default acceleration
-                    break;
+				case "204": // - Set default acceleration
+					break;
 
-                case "207": // M207: calibrate z axis by detecting z max length
-                    break;
+				case "207": // M207: calibrate z axis by detecting z max length
+					break;
 
-                case "208": // M208: set axis max travel
-                    break;
+				case "208": // M208: set axis max travel
+					break;
 
-                case "209": // M209: enable automatic retract
-                    break;
+				case "209": // M209: enable automatic retract
+					break;
 
-                case "210": // Set homing rate
-                    break;
+				case "210": // Set homing rate
+					break;
 
-                case "226": // user request pause
-                    break;
+				case "226": // user request pause
+					break;
 
-                case "227": // Enable Automatic Reverse and Prime
-                    break;
+				case "227": // Enable Automatic Reverse and Prime
+					break;
 
-                case "301":
-                    break;
+				case "301":
+					break;
 
 				case "400": // Wait for current moves to finish
 					break;
 
-                case "565": // M565: Set Z probe offset
-                    break;
+				case "565": // M565: Set Z probe offset
+					break;
 
 #if DEBUG
-                default:
-                    throw new NotImplementedException(lineString);
+				default:
+					throw new NotImplementedException(lineString);
 #else
                 default:
                     break;
 #endif
-            }
-        }
+			}
+		}
 
-        void ParseGLine(string lineString, PrinterMachineInstruction processingMachineState)
-        {
-            // take off any comments before we check its length
-            int commentIndex = lineString.IndexOf(';');
-            if (commentIndex != -1)
-            {
-                lineString = lineString.Substring(0, commentIndex);
-            }
+		private void ParseGLine(string lineString, PrinterMachineInstruction processingMachineState)
+		{
+			// take off any comments before we check its length
+			int commentIndex = lineString.IndexOf(';');
+			if (commentIndex != -1)
+			{
+				lineString = lineString.Substring(0, commentIndex);
+			}
 
-            string[] splitOnSpace = lineString.Split(' ');
-            string onlyNumber = splitOnSpace[0].Substring(1).Trim();
-            switch (onlyNumber)
-            {
-                case "0":
-                    goto case "1";
+			string[] splitOnSpace = lineString.Split(' ');
+			string onlyNumber = splitOnSpace[0].Substring(1).Trim();
+			switch (onlyNumber)
+			{
+				case "0":
+					goto case "1";
 
-                case "4":
-                case "04":
-                    // wait a given number of miliseconds
-                    break;
+				case "4":
+				case "04":
+					// wait a given number of miliseconds
+					break;
 
-                case "1":
-                    // get the x y z to move to
-                    {
-                        double valueX = 0;
-                        if (GCodeFile.GetFirstNumberAfter("X", lineString, ref valueX))
-                        {
-                            processingMachineState.X = valueX;
-                        }
-                        double valueY = 0;
-                        if (GCodeFile.GetFirstNumberAfter("Y", lineString, ref valueY))
-                        {
-                            processingMachineState.Y = valueY;
-                        }
-                        double valueZ = 0;
-                        if (GCodeFile.GetFirstNumberAfter("Z", lineString, ref valueZ))
-                        {
-                            processingMachineState.Z = valueZ;
-                        }
-                        double valueE = 0;
-                        if (GCodeFile.GetFirstNumberAfter("E", lineString, ref valueE))
-                        {
-                            if (processingMachineState.movementType == PrinterMachineInstruction.MovementTypes.Absolute)
-                            {
-                                processingMachineState.EPosition = valueE + amountOfAccumulatedEWhileParsing;
-                            }
-                            else
-                            {
-                                processingMachineState.EPosition += valueE;
-                            }
-                        }
-                        double valueF = 0;
-                        if (GCodeFile.GetFirstNumberAfter("F", lineString, ref valueF))
-                        {
-                            processingMachineState.FeedRate = valueF;
-                        }
-                    }
+				case "1":
+					// get the x y z to move to
+					{
+						double valueX = 0;
+						if (GCodeFile.GetFirstNumberAfter("X", lineString, ref valueX))
+						{
+							processingMachineState.X = valueX;
+						}
+						double valueY = 0;
+						if (GCodeFile.GetFirstNumberAfter("Y", lineString, ref valueY))
+						{
+							processingMachineState.Y = valueY;
+						}
+						double valueZ = 0;
+						if (GCodeFile.GetFirstNumberAfter("Z", lineString, ref valueZ))
+						{
+							processingMachineState.Z = valueZ;
+						}
+						double valueE = 0;
+						if (GCodeFile.GetFirstNumberAfter("E", lineString, ref valueE))
+						{
+							if (processingMachineState.movementType == PrinterMachineInstruction.MovementTypes.Absolute)
+							{
+								processingMachineState.EPosition = valueE + amountOfAccumulatedEWhileParsing;
+							}
+							else
+							{
+								processingMachineState.EPosition += valueE;
+							}
+						}
+						double valueF = 0;
+						if (GCodeFile.GetFirstNumberAfter("F", lineString, ref valueF))
+						{
+							processingMachineState.FeedRate = valueF;
+						}
+					}
 
-                    if (!gcodeHasExplicitLayerChangeInfo)
-                    {
-                        if (processingMachineState.Z != parsingLastZ || indexOfChangeInZ.Count == 0)
-                        {
-                            // if we changed z or there is a movement and we have never started a layer index
-                            indexOfChangeInZ.Add(GCodeCommandQueue.Count);
-                        }
-                    }
-                    parsingLastZ = processingMachineState.Position.z;
-                    break;
+					if (!gcodeHasExplicitLayerChangeInfo)
+					{
+						if (processingMachineState.Z != parsingLastZ || indexOfChangeInZ.Count == 0)
+						{
+							// if we changed z or there is a movement and we have never started a layer index
+							indexOfChangeInZ.Add(GCodeCommandQueue.Count);
+						}
+					}
+					parsingLastZ = processingMachineState.Position.z;
+					break;
 
-                case "10": // firmware retract
-                    break;
+				case "10": // firmware retract
+					break;
 
-                case "11": // firmware unretract
-                    break;
+				case "11": // firmware unretract
+					break;
 
-                case "21":
-                    // set to metric
-                    break;
+				case "21":
+					// set to metric
+					break;
 
-                case "28":
-                    // G28 	Return to home position (machine zero, aka machine reference point)
-                    break;
+				case "28":
+					// G28 	Return to home position (machine zero, aka machine reference point)
+					break;
 
-                case "29":
-                    // G29 Probe the z-bed in 3 places
-                    break;
+				case "29":
+					// G29 Probe the z-bed in 3 places
+					break;
 
-                case "30":
-                    // G30 Probe z in current position
-                    break;
+				case "30":
+					// G30 Probe z in current position
+					break;
 
-                case "90": // G90 is Absolute Distance Mode
-                    processingMachineState.movementType = PrinterMachineInstruction.MovementTypes.Absolute;
-                    break;
+				case "90": // G90 is Absolute Distance Mode
+					processingMachineState.movementType = PrinterMachineInstruction.MovementTypes.Absolute;
+					break;
 
-                case "91": // G91 is Incremental Distance Mode
-                    processingMachineState.movementType = PrinterMachineInstruction.MovementTypes.Relative;
-                    break;
+				case "91": // G91 is Incremental Distance Mode
+					processingMachineState.movementType = PrinterMachineInstruction.MovementTypes.Relative;
+					break;
 
-                case "92":
-                    // set current head position values (used to reset origin)
-                    double ePosition = 0;
-                    if (GetFirstNumberAfter("E", lineString, ref ePosition))
-                    {
-                        // remember how much e position we just gave up
-                        amountOfAccumulatedEWhileParsing = (processingMachineState.EPosition - ePosition);
-                    }
-                    break;
+				case "92":
+					// set current head position values (used to reset origin)
+					double ePosition = 0;
+					if (GetFirstNumberAfter("E", lineString, ref ePosition))
+					{
+						// remember how much e position we just gave up
+						amountOfAccumulatedEWhileParsing = (processingMachineState.EPosition - ePosition);
+					}
+					break;
 
-                case "161":
-                    // home x,y axis minimum
-                    break;
+				case "161":
+					// home x,y axis minimum
+					break;
 
-                case "162":
-                    // home z axis maximum
-                    break;
+				case "162":
+					// home z axis maximum
+					break;
 
 #if DEBUG
-                default:
-                    throw new NotImplementedException();
+				default:
+					throw new NotImplementedException();
 #else
                 default:
                     break;
 #endif
-            }
-        }
+			}
+		}
 
 		public override Vector2 GetWeightedCenter()
-        {
-            Vector2 total = new Vector2();
+		{
+			Vector2 total = new Vector2();
 #if !MULTI_THREAD
             foreach (PrinterMachineInstruction state in GCodeCommandQueue)
             {
                 total += new Vector2(state.Position.x, state.Position.y);
             }
 #else
-            Parallel.For<Vector2>(
-                0,
-                GCodeCommandQueue.Count,
-                () => new Vector2(),
-                (int index, ParallelLoopState loop, Vector2 subtotal) =>
-                {
-                    PrinterMachineInstruction state = GCodeCommandQueue[index];
-                    subtotal += new Vector2(state.Position.x, state.Position.y);
-                    return subtotal;
-                },
-                    (x) =>
-                    {
-                        total += new Vector2(x.x, x.y);
-                    }
-            );
-#endif      
+			Parallel.For<Vector2>(
+				0,
+				GCodeCommandQueue.Count,
+				() => new Vector2(),
+				(int index, ParallelLoopState loop, Vector2 subtotal) =>
+				{
+					PrinterMachineInstruction state = GCodeCommandQueue[index];
+					subtotal += new Vector2(state.Position.x, state.Position.y);
+					return subtotal;
+				},
+					(x) =>
+					{
+						total += new Vector2(x.x, x.y);
+					}
+			);
+#endif
 
-            return total / GCodeCommandQueue.Count;
-        }
+			return total / GCodeCommandQueue.Count;
+		}
 
-        public override RectangleDouble GetBounds()
-        {
-            RectangleDouble bounds = new RectangleDouble(double.MaxValue, double.MaxValue, double.MinValue, double.MinValue);
+		public override RectangleDouble GetBounds()
+		{
+			RectangleDouble bounds = new RectangleDouble(double.MaxValue, double.MaxValue, double.MinValue, double.MinValue);
 #if !MULTI_THREAD
             foreach (PrinterMachineInstruction state in GCodeCommandQueue)
             {
@@ -771,45 +768,45 @@ namespace MatterHackers.GCodeVisualizer
                 bounds.Top = Math.Max(state.Position.y, bounds.Top);
             }
 #else
-            Parallel.For<RectangleDouble>(
-                0, 
-                GCodeCommandQueue.Count, 
-                () => new RectangleDouble(double.MaxValue, double.MaxValue, double.MinValue, double.MinValue), 
-                (int index, ParallelLoopState loop, RectangleDouble subtotal) =>
-                    {
-                        PrinterMachineInstruction state = GCodeCommandQueue[index];
-                        subtotal.Left = Math.Min(state.Position.x, subtotal.Left);
-                        subtotal.Right = Math.Max(state.Position.x, subtotal.Right);
-                        subtotal.Bottom = Math.Min(state.Position.y, subtotal.Bottom);
-                        subtotal.Top = Math.Max(state.Position.y, subtotal.Top);
+			Parallel.For<RectangleDouble>(
+				0,
+				GCodeCommandQueue.Count,
+				() => new RectangleDouble(double.MaxValue, double.MaxValue, double.MinValue, double.MinValue),
+				(int index, ParallelLoopState loop, RectangleDouble subtotal) =>
+				{
+					PrinterMachineInstruction state = GCodeCommandQueue[index];
+					subtotal.Left = Math.Min(state.Position.x, subtotal.Left);
+					subtotal.Right = Math.Max(state.Position.x, subtotal.Right);
+					subtotal.Bottom = Math.Min(state.Position.y, subtotal.Bottom);
+					subtotal.Top = Math.Max(state.Position.y, subtotal.Top);
 
-                        return subtotal;
-                    },
-                    (x) => 
-                        {
-                            bounds.Left = Math.Min(x.Left, bounds.Left);
-                            bounds.Right = Math.Max(x.Right, bounds.Right);
-                            bounds.Bottom = Math.Min(x.Bottom, bounds.Bottom);
-                            bounds.Top = Math.Max(x.Top, bounds.Top);
-                        }
-            );
-#endif      
-            return bounds;
-        }
+					return subtotal;
+				},
+					(x) =>
+					{
+						bounds.Left = Math.Min(x.Left, bounds.Left);
+						bounds.Right = Math.Max(x.Right, bounds.Right);
+						bounds.Bottom = Math.Min(x.Bottom, bounds.Bottom);
+						bounds.Top = Math.Max(x.Top, bounds.Top);
+					}
+			);
+#endif
+			return bounds;
+		}
 
 		public override bool IsExtruding(int vertexIndexToCheck)
-        {
-            if (vertexIndexToCheck > 1 && vertexIndexToCheck < GCodeCommandQueue.Count)
-            {
-                double extrusionLengeth = GCodeCommandQueue[vertexIndexToCheck].EPosition - GCodeCommandQueue[vertexIndexToCheck - 1].EPosition;
-                if (extrusionLengeth > 0)
-                {
-                    return true;
-                }
-            }
+		{
+			if (vertexIndexToCheck > 1 && vertexIndexToCheck < GCodeCommandQueue.Count)
+			{
+				double extrusionLengeth = GCodeCommandQueue[vertexIndexToCheck].EPosition - GCodeCommandQueue[vertexIndexToCheck - 1].EPosition;
+				if (extrusionLengeth > 0)
+				{
+					return true;
+				}
+			}
 
-            return false;
-        }
+			return false;
+		}
 
 		public override double GetFilamentUsedMm(double nozzleDiameter)
 		{
@@ -857,67 +854,67 @@ namespace MatterHackers.GCodeVisualizer
 		}
 
 		public override double GetFilamentCubicMm(double filamentDiameterMm)
-        {
-            double filamentUsedMm = GetFilamentUsedMm(filamentDiameterMm);
-            double fillamentRadius = filamentDiameterMm / 2;
-            double areaSquareMm = (fillamentRadius * fillamentRadius) * Math.PI;
+		{
+			double filamentUsedMm = GetFilamentUsedMm(filamentDiameterMm);
+			double fillamentRadius = filamentDiameterMm / 2;
+			double areaSquareMm = (fillamentRadius * fillamentRadius) * Math.PI;
 
-            return areaSquareMm * filamentUsedMm;
-        }
+			return areaSquareMm * filamentUsedMm;
+		}
 
 		public override double GetFilamentWeightGrams(double filamentDiameterMm, double densityGramsPerCubicCm)
-        {
-            double cubicMmPerCubicCm = 1000;
-            double gramsPerCubicMm = densityGramsPerCubicCm / cubicMmPerCubicCm;
-            double cubicMms = GetFilamentCubicMm(filamentDiameterMm);
-            return cubicMms * gramsPerCubicMm;
-        }
+		{
+			double cubicMmPerCubicCm = 1000;
+			double gramsPerCubicMm = densityGramsPerCubicCm / cubicMmPerCubicCm;
+			double cubicMms = GetFilamentCubicMm(filamentDiameterMm);
+			return cubicMms * gramsPerCubicMm;
+		}
 
-        public void Save(string dest)
-        {
-            using (System.IO.StreamWriter file = new System.IO.StreamWriter(dest))
-            {
-                foreach (PrinterMachineInstruction instruction in GCodeCommandQueue)
-                {
-                    file.WriteLine(instruction.Line);
-                }
-            }
-        }
+		public void Save(string dest)
+		{
+			using (System.IO.StreamWriter file = new System.IO.StreamWriter(dest))
+			{
+				foreach (PrinterMachineInstruction instruction in GCodeCommandQueue)
+				{
+					file.WriteLine(instruction.Line);
+				}
+			}
+		}
 
 		public override double GetFilamentDiamter()
-        {
-            return 3;
-        }
+		{
+			return 3;
+		}
 
 		public override double GetLayerHeight()
-        {
-            if (layerThickness > 0)
-            {
-                return layerThickness;
-            }
+		{
+			if (layerThickness > 0)
+			{
+				return layerThickness;
+			}
 
-            if (indexOfChangeInZ.Count > 2)
-            {
-                return GCodeCommandQueue[IndexOfChangeInZ[2]].Z - GCodeCommandQueue[IndexOfChangeInZ[1]].Z;
-            }
+			if (indexOfChangeInZ.Count > 2)
+			{
+				return GCodeCommandQueue[IndexOfChangeInZ[2]].Z - GCodeCommandQueue[IndexOfChangeInZ[1]].Z;
+			}
 
-            return .5;
-        }
+			return .5;
+		}
 
 		public override double GetFirstLayerHeight()
-        {
-            if (firstLayerThickness > 0)
-            {
-                return firstLayerThickness;
-            }
+		{
+			if (firstLayerThickness > 0)
+			{
+				return firstLayerThickness;
+			}
 
-            if (indexOfChangeInZ.Count > 1)
-            {
-                return GCodeCommandQueue[IndexOfChangeInZ[1]].Z - GCodeCommandQueue[IndexOfChangeInZ[0]].Z;
-            }
+			if (indexOfChangeInZ.Count > 1)
+			{
+				return GCodeCommandQueue[IndexOfChangeInZ[1]].Z - GCodeCommandQueue[IndexOfChangeInZ[0]].Z;
+			}
 
-            return .5;
-        }
+			return .5;
+		}
 
 		public override int GetLayerIndex(int instructionIndex)
 		{

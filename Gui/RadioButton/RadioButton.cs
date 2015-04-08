@@ -1,4 +1,6 @@
-﻿//----------------------------------------------------------------------------
+﻿using MatterHackers.VectorMath;
+
+//----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
@@ -6,8 +8,8 @@
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 //
-// Permission to copy, use, modify, sell and distribute this software 
-// is granted provided this copyright notice appears in all copies. 
+// Permission to copy, use, modify, sell and distribute this software
+// is granted provided this copyright notice appears in all copies.
 // This software is provided "as is" without express or implied
 // warranty, and with no claim as to its suitability for any purpose.
 //
@@ -22,203 +24,199 @@
 //----------------------------------------------------------------------------
 using System;
 using System.Collections.ObjectModel;
-using System.Collections.Generic;
-
-using MatterHackers.Agg;
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
-    public class RadioButton : ButtonBase
-    {
-        public delegate void CheckedStateChangedEventHandler(object sender, EventArgs e);
-        public event CheckedStateChangedEventHandler CheckedStateChanged;
+	public class RadioButton : ButtonBase
+	{
+		public delegate void CheckedStateChangedEventHandler(object sender, EventArgs e);
 
-        private ObservableCollection<GuiWidget> siblingRadioButtonList = new ObservableCollection<GuiWidget>();
-        private bool isChecked = false;
+		public event CheckedStateChangedEventHandler CheckedStateChanged;
 
-        public static BorderDouble defaultMargin = new BorderDouble(5);
+		private ObservableCollection<GuiWidget> siblingRadioButtonList = new ObservableCollection<GuiWidget>();
+		private bool isChecked = false;
 
-        public ObservableCollection<GuiWidget> SiblingRadioButtonList
-        {
-            get
-            {
-                return this.siblingRadioButtonList;
-            }
-            set
-            {
-                this.siblingRadioButtonList = value;
-            }
-        }
+		public static BorderDouble defaultMargin = new BorderDouble(5);
 
-        public RadioButton(double x, double y, GuiWidget view)
-        {
-            Margin = defaultMargin;
+		public ObservableCollection<GuiWidget> SiblingRadioButtonList
+		{
+			get
+			{
+				return this.siblingRadioButtonList;
+			}
+			set
+			{
+				this.siblingRadioButtonList = value;
+			}
+		}
 
-            OriginRelativeParent = new Vector2(x, y);
+		public RadioButton(double x, double y, GuiWidget view)
+		{
+			Margin = defaultMargin;
 
-            if (view != null)
-            {
-                view.Selectable = false;
+			OriginRelativeParent = new Vector2(x, y);
 
-                SuspendLayout();
-                AddChild(view);
-                ResumeLayout();
+			if (view != null)
+			{
+				view.Selectable = false;
 
-                FixBoundsAndChildrenPositions();
+				SuspendLayout();
+				AddChild(view);
+				ResumeLayout();
 
-                MinimumSize = new Vector2(Width, Height);
-            }
+				FixBoundsAndChildrenPositions();
 
-            Click += new EventHandler(RadioButton_Click);
-        }
+				MinimumSize = new Vector2(Width, Height);
+			}
 
-        public RadioButton(GuiWidget view)
-            : this(0, 0, view)
-        {
-        }
+			Click += new EventHandler(RadioButton_Click);
+		}
 
-        public RadioButton(string label)
-            : this(0, 0, label)
-        {
-        }
+		public RadioButton(GuiWidget view)
+			: this(0, 0, view)
+		{
+		}
 
-        public RadioButton(string label, RGBA_Bytes textColor)
-            : this(0, 0, label)
-        {
-            this.TextColor = textColor;
-        }
+		public RadioButton(string label)
+			: this(0, 0, label)
+		{
+		}
 
-        public RadioButton(double x, double y, string label)
-            : this(x, y, new RadioButtonViewText(label))
-        {
-        }
+		public RadioButton(string label, RGBA_Bytes textColor)
+			: this(0, 0, label)
+		{
+			this.TextColor = textColor;
+		}
 
-        public override void OnParentChanged(EventArgs e)
-        {
-            if (this.SiblingRadioButtonList.Count == 0)
-            {
-                SiblingRadioButtonList = Parent.Children;
-            }
-            
-            base.OnParentChanged(e);
-        }
+		public RadioButton(double x, double y, string label)
+			: this(x, y, new RadioButtonViewText(label))
+		{
+		}
 
-        void RadioButton_Click(object sender, EventArgs mouseEvent)
-        {
-            Checked = true;
-        }
+		public override void OnParentChanged(EventArgs e)
+		{
+			if (this.SiblingRadioButtonList.Count == 0)
+			{
+				SiblingRadioButtonList = Parent.Children;
+			}
 
-        public void SetFontSize(double fontSize)
-        {
-            // TODO: Need to set the point size of the font and recalculate the bounds
-            throw new NotImplementedException("Warning: Need to set the point size of the font and recalculate the bounds");
-        }
+			base.OnParentChanged(e);
+		}
 
-        public override String Text
-        {
-            get
-            {
-                if (Children.Count > 0 && Children[0] is RadioButtonViewText)
-                {
-                    return ((RadioButtonViewText)Children[0]).Text;
-                }
+		private void RadioButton_Click(object sender, EventArgs mouseEvent)
+		{
+			Checked = true;
+		}
 
-                return base.Text;
-            }
+		public void SetFontSize(double fontSize)
+		{
+			// TODO: Need to set the point size of the font and recalculate the bounds
+			throw new NotImplementedException("Warning: Need to set the point size of the font and recalculate the bounds");
+		}
 
-            set
-            {
-                if (Children.Count > 0 && Children[0] is RadioButtonViewText)
-                {
-                    Children[0].Text = value;
-                }
+		public override String Text
+		{
+			get
+			{
+				if (Children.Count > 0 && Children[0] is RadioButtonViewText)
+				{
+					return ((RadioButtonViewText)Children[0]).Text;
+				}
 
-                base.Text = value;
-            }
-        }
+				return base.Text;
+			}
 
-        void UncheckAllOtherRadioButtons()
-        {
-            if (SiblingRadioButtonList != null)
-            {
-                foreach (GuiWidget child in SiblingRadioButtonList)
-                {
-                    RadioButton radioButton = child as RadioButton;
-                    if (radioButton != null && radioButton != this)
-                    {
-                        radioButton.Checked = false;
-                    }
-                }
-            }
-        }
+			set
+			{
+				if (Children.Count > 0 && Children[0] is RadioButtonViewText)
+				{
+					Children[0].Text = value;
+				}
 
-        public bool Checked
-        {
-            get
-            {
-                return isChecked;
-            }
+				base.Text = value;
+			}
+		}
 
-            set
-            {
-                if (isChecked != value)
-                {
-                    isChecked = value;
-                    if (isChecked)
-                    {
-                        UncheckAllOtherRadioButtons();
-                    }
-                    OnCheckStateChanged();
-                    Invalidate();
-                }
-            }
-        }
+		private void UncheckAllOtherRadioButtons()
+		{
+			if (SiblingRadioButtonList != null)
+			{
+				foreach (GuiWidget child in SiblingRadioButtonList)
+				{
+					RadioButton radioButton = child as RadioButton;
+					if (radioButton != null && radioButton != this)
+					{
+						radioButton.Checked = false;
+					}
+				}
+			}
+		}
 
-        public virtual void OnCheckStateChanged()
-        {
-            if (CheckedStateChanged != null)
-            {
-                CheckedStateChanged(this, null);
-            }
-        }
+		public bool Checked
+		{
+			get
+			{
+				return isChecked;
+			}
 
-        public void inactive_color(IColorType c) 
-        {
-            if (Children.Count > 0 && Children[0] is RadioButtonViewText)
-            {
-                ((RadioButtonViewText)Children[0]).inactive_color(c);
-            }
-        }
+			set
+			{
+				if (isChecked != value)
+				{
+					isChecked = value;
+					if (isChecked)
+					{
+						UncheckAllOtherRadioButtons();
+					}
+					OnCheckStateChanged();
+					Invalidate();
+				}
+			}
+		}
 
-        public void active_color(IColorType c) 
-        {
-            if (Children.Count > 0 && Children[0] is RadioButtonViewText)
-            {
-                ((RadioButtonViewText)Children[0]).active_color(c);
-            }
-        }
+		public virtual void OnCheckStateChanged()
+		{
+			if (CheckedStateChanged != null)
+			{
+				CheckedStateChanged(this, null);
+			}
+		}
 
-        public RGBA_Bytes TextColor 
-        { 
-            get
-            {
-                if (Children.Count > 0 && Children[0] is RadioButtonViewText)
-                {
-                    return ((RadioButtonViewText)Children[0]).TextColor;
-                }
+		public void inactive_color(IColorType c)
+		{
+			if (Children.Count > 0 && Children[0] is RadioButtonViewText)
+			{
+				((RadioButtonViewText)Children[0]).inactive_color(c);
+			}
+		}
 
-                return RGBA_Bytes.White;
-            }
+		public void active_color(IColorType c)
+		{
+			if (Children.Count > 0 && Children[0] is RadioButtonViewText)
+			{
+				((RadioButtonViewText)Children[0]).active_color(c);
+			}
+		}
 
-            set
-            {
-                if (Children.Count > 0 && Children[0] is RadioButtonViewText)
-                {
-                    ((RadioButtonViewText)Children[0]).TextColor = value;
-                }
-            }
-        }
-    }
+		public RGBA_Bytes TextColor
+		{
+			get
+			{
+				if (Children.Count > 0 && Children[0] is RadioButtonViewText)
+				{
+					return ((RadioButtonViewText)Children[0]).TextColor;
+				}
+
+				return RGBA_Bytes.White;
+			}
+
+			set
+			{
+				if (Children.Count > 0 && Children[0] is RadioButtonViewText)
+				{
+					((RadioButtonViewText)Children[0]).TextColor = value;
+				}
+			}
+		}
+	}
 }

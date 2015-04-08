@@ -3,13 +3,13 @@ Copyright (c) 2015, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,319 +23,321 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.Agg.VertexSource;
+using MatterHackers.VectorMath;
 using System;
 using System.Collections.Specialized;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-using MatterHackers.VectorMath;
-using MatterHackers.Agg.VertexSource;
 
 namespace MatterHackers.Agg.UI
 {
-    public class DropDownList : Menu
-    {
-        public event EventHandler SelectionChanged;
-        protected TextWidget mainControlText;
+	public class DropDownList : Menu
+	{
+		public event EventHandler SelectionChanged;
 
-        public override RectangleDouble LocalBounds
-        {
-            get
-            {
-                return base.LocalBounds;
-            }
-            set
-            {
-                base.LocalBounds = value;
-            }
-        }
+		protected TextWidget mainControlText;
 
-        RGBA_Bytes normalColor;
-        public RGBA_Bytes NormalColor
-        {
-            get { return normalColor; }
-            set { normalColor = value; }
-        }
+		public override RectangleDouble LocalBounds
+		{
+			get
+			{
+				return base.LocalBounds;
+			}
+			set
+			{
+				base.LocalBounds = value;
+			}
+		}
 
-        int borderWidth = 0;
-        public int BorderWidth
-        {
-            get { return borderWidth; }
-            set { borderWidth = value; }
-        }
+		private RGBA_Bytes normalColor;
 
-        RGBA_Bytes borderColor;
-        public RGBA_Bytes BorderColor
-        {
-            get { return borderColor; }
-            set { borderColor = value; }
-        }
+		public RGBA_Bytes NormalColor
+		{
+			get { return normalColor; }
+			set { normalColor = value; }
+		}
 
-        RGBA_Bytes hoverColor;
-        public RGBA_Bytes HoverColor
-        {
-            get { return hoverColor; }
-            set { hoverColor = value; }
-        }
+		private int borderWidth = 0;
 
-        RGBA_Bytes textColor = RGBA_Bytes.Black;
-        public RGBA_Bytes TextColor
-        {
-            get { return textColor; }
-            set 
-            {
-                textColor = value;
-                mainControlText.TextColor = TextColor;
-            }
-        }
+		public int BorderWidth
+		{
+			get { return borderWidth; }
+			set { borderWidth = value; }
+		}
 
-        int selectedIndex = -1;
-        public int SelectedIndex
-        {
-            get { return selectedIndex; }
-            set
-            {
-                if (SelectedIndex != value)
-                {
-                    selectedIndex = value;
-                    mainControlText.Text = MenuItems[SelectedIndex].Text;
-                    OnSelectionChanged(null);
-                    Invalidate();
-                }
-            }
-        }
+		private RGBA_Bytes borderColor;
 
-        public String SelectedLabel
-        {
-            get 
-            {
-                if (SelectedIndex < 0 || SelectedIndex >= MenuItems.Count)
-                {
-                    return "";
-                }
-                return GetValue(SelectedIndex); 
-            }
-            set
-            {
-                if (SelectedIndex == -1 || SelectedLabel != value)
-                {
-                    int index = 0;
-                    foreach (MenuItem item in MenuItems)
-                    {
-                        if (item.Text == value)
-                        {
-                            SelectedIndex = index;
-                            return;
-                        }
-                        index++;
-                    }
-                    throw new Exception("The label you specified '{0}' is not in the drop down list.".FormatWith(value));
-                }
-            }
-        }
+		public RGBA_Bytes BorderColor
+		{
+			get { return borderColor; }
+			set { borderColor = value; }
+		}
 
-        public String SelectedValue
-        {
-            get
-            {
-                if (SelectedIndex < 0 || SelectedIndex >= MenuItems.Count)
-                {
-                    return "";
-                }
-                return GetValue(SelectedIndex);
-            }
-            set
-            {
-                if (SelectedIndex == -1 || SelectedValue != value)
-                {
-                    int index = 0;
-                    foreach (MenuItem item in MenuItems)
-                    {
-                        if (item.Value == value)
-                        {
-                            SelectedIndex = index;
-                            return;
-                        }
-                        index++;
-                    }
-                    throw new Exception("The value you specified '{0}' is not in the drop down list.".FormatWith(value));
-                }
-            }
-        }
+		private RGBA_Bytes hoverColor;
 
-        public string GetValue(int itemIndex)
-        {
-            return MenuItems[itemIndex].Value;
-        }
+		public RGBA_Bytes HoverColor
+		{
+			get { return hoverColor; }
+			set { hoverColor = value; }
+		}
 
-        public DropDownList(string noSelectionString, RGBA_Bytes normalColor, RGBA_Bytes hoverColor, Direction direction = Direction.Down, double maxHeight = 0)
-            : base(direction, maxHeight)
-        {
-            MenuItems.CollectionChanged += new NotifyCollectionChangedEventHandler(MenuItems_CollectionChanged);
-            mainControlText = new TextWidget(noSelectionString);
-            mainControlText.AutoExpandBoundsToText = true;
-            mainControlText.VAnchor = UI.VAnchor.ParentBottom | UI.VAnchor.FitToChildren;
-            mainControlText.HAnchor = UI.HAnchor.ParentLeft | UI.HAnchor.FitToChildren;
-            mainControlText.Margin = new BorderDouble(right: 30);
-            AddChild(mainControlText);
+		private RGBA_Bytes textColor = RGBA_Bytes.Black;
 
-            MouseEnter += new EventHandler(DropDownList_MouseEnter);
-            MouseLeave += new EventHandler(DropDownList_MouseLeave);
+		public RGBA_Bytes TextColor
+		{
+			get { return textColor; }
+			set
+			{
+				textColor = value;
+				mainControlText.TextColor = TextColor;
+			}
+		}
 
-            NormalColor = normalColor;
-            HoverColor = hoverColor;
-            BackgroundColor = normalColor;
-            BorderColor = RGBA_Bytes.White;
-        }
+		private int selectedIndex = -1;
 
-        void DropDownList_MouseLeave(object sender, EventArgs e)
-        {
-            BackgroundColor = NormalColor;
-        }
+		public int SelectedIndex
+		{
+			get { return selectedIndex; }
+			set
+			{
+				if (SelectedIndex != value)
+				{
+					selectedIndex = value;
+					mainControlText.Text = MenuItems[SelectedIndex].Text;
+					OnSelectionChanged(null);
+					Invalidate();
+				}
+			}
+		}
 
-        void DropDownList_MouseEnter(object sender, EventArgs e)
-        {
-            BackgroundColor = HoverColor;
-        }
+		public String SelectedLabel
+		{
+			get
+			{
+				if (SelectedIndex < 0 || SelectedIndex >= MenuItems.Count)
+				{
+					return "";
+				}
+				return GetValue(SelectedIndex);
+			}
+			set
+			{
+				if (SelectedIndex == -1 || SelectedLabel != value)
+				{
+					int index = 0;
+					foreach (MenuItem item in MenuItems)
+					{
+						if (item.Text == value)
+						{
+							SelectedIndex = index;
+							return;
+						}
+						index++;
+					}
+					throw new Exception("The label you specified '{0}' is not in the drop down list.".FormatWith(value));
+				}
+			}
+		}
 
-        void OnSelectionChanged(EventArgs e)
-        {
-            if (SelectionChanged != null)
-            {
-                SelectionChanged(this, e);
-            }
-        }
+		public String SelectedValue
+		{
+			get
+			{
+				if (SelectedIndex < 0 || SelectedIndex >= MenuItems.Count)
+				{
+					return "";
+				}
+				return GetValue(SelectedIndex);
+			}
+			set
+			{
+				if (SelectedIndex == -1 || SelectedValue != value)
+				{
+					int index = 0;
+					foreach (MenuItem item in MenuItems)
+					{
+						if (item.Value == value)
+						{
+							SelectedIndex = index;
+							return;
+						}
+						index++;
+					}
+					throw new Exception("The value you specified '{0}' is not in the drop down list.".FormatWith(value));
+				}
+			}
+		}
 
-        void MenuItems_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-        {
-            Vector2 minSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
+		public string GetValue(int itemIndex)
+		{
+			return MenuItems[itemIndex].Value;
+		}
 
-            string startText = mainControlText.Text;
-            foreach (MenuItem item in MenuItems)
-            {
-                mainControlText.Text = item.Text;
+		public DropDownList(string noSelectionString, RGBA_Bytes normalColor, RGBA_Bytes hoverColor, Direction direction = Direction.Down, double maxHeight = 0)
+			: base(direction, maxHeight)
+		{
+			MenuItems.CollectionChanged += new NotifyCollectionChangedEventHandler(MenuItems_CollectionChanged);
+			mainControlText = new TextWidget(noSelectionString);
+			mainControlText.AutoExpandBoundsToText = true;
+			mainControlText.VAnchor = UI.VAnchor.ParentBottom | UI.VAnchor.FitToChildren;
+			mainControlText.HAnchor = UI.HAnchor.ParentLeft | UI.HAnchor.FitToChildren;
+			mainControlText.Margin = new BorderDouble(right: 30);
+			AddChild(mainControlText);
 
-                minSize.x = Math.Max(minSize.x, LocalBounds.Width);
-                minSize.y = Math.Max(minSize.y, LocalBounds.Height);
-            }
-            mainControlText.Text = startText;
+			MouseEnter += new EventHandler(DropDownList_MouseEnter);
+			MouseLeave += new EventHandler(DropDownList_MouseLeave);
 
-            this.MinimumSize = minSize;
+			NormalColor = normalColor;
+			HoverColor = hoverColor;
+			BackgroundColor = normalColor;
+			BorderColor = RGBA_Bytes.White;
+		}
 
-            foreach (MenuItem item in e.NewItems)
-            {
-                item.MinimumSize = minSize;
-                item.Selected -= new EventHandler(item_Selected);
-                item.Selected += new EventHandler(item_Selected);
-            }
-        }
+		private void DropDownList_MouseLeave(object sender, EventArgs e)
+		{
+			BackgroundColor = NormalColor;
+		}
 
-        void SetMenuItemsToNewMinSIze()
-        {
-            Vector2 minSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
+		private void DropDownList_MouseEnter(object sender, EventArgs e)
+		{
+			BackgroundColor = HoverColor;
+		}
 
-            foreach (MenuItem item in MenuItems)
-            {
-                item.MinimumSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
-            }
-        }
+		private void OnSelectionChanged(EventArgs e)
+		{
+			if (SelectionChanged != null)
+			{
+				SelectionChanged(this, e);
+			}
+		}
 
-        public override void OnBoundsChanged(EventArgs e)
-        {
-            SetMenuItemsToNewMinSIze();
-            base.OnBoundsChanged(e);
-        }
+		private void MenuItems_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+		{
+			Vector2 minSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
 
-        void item_Selected(object sender, EventArgs e)
-        {
-            int newSelectedIndex = 0;
-            foreach (MenuItem item in MenuItems)
-            {
-                if (item == sender)
-                {
-                    break;
-                }
-                newSelectedIndex++;
-            }
+			string startText = mainControlText.Text;
+			foreach (MenuItem item in MenuItems)
+			{
+				mainControlText.Text = item.Text;
 
-            SelectedIndex = newSelectedIndex;
-        }
+				minSize.x = Math.Max(minSize.x, LocalBounds.Width);
+				minSize.y = Math.Max(minSize.y, LocalBounds.Height);
+			}
+			mainControlText.Text = startText;
 
-        public override void OnDraw(Graphics2D graphics2D)
-        {
-            base.OnDraw(graphics2D);
-            this.DrawBorder(graphics2D);
-            this.DrawDirectionalArrow(graphics2D);
-        }
+			this.MinimumSize = minSize;
 
-        private void DrawDirectionalArrow(Graphics2D graphics2D)
-        {
-            PathStorage littleArrow = new PathStorage();
-            if (this.MenuDirection == Direction.Down)
-            {
-                littleArrow.MoveTo(-4, 0);
-                littleArrow.LineTo(4, 0);
-                littleArrow.LineTo(0, -5);
-            }
-            else if (this.MenuDirection == Direction.Up)
-            {
-                littleArrow.MoveTo(-4, -5);
-                littleArrow.LineTo(4, -5);
-                littleArrow.LineTo(0, 0);
-            }
-            else
-            {
-                throw new NotImplementedException("Pulldown direction has not been implemented");
-            }
-            graphics2D.Render(littleArrow, LocalBounds.Right - 8, LocalBounds.Top - 4, borderColor);
-        }
+			foreach (MenuItem item in e.NewItems)
+			{
+				item.MinimumSize = minSize;
+				item.Selected -= new EventHandler(item_Selected);
+				item.Selected += new EventHandler(item_Selected);
+			}
+		}
 
-        private void DrawBorder(Graphics2D graphics2D)
-        {
-            RectangleDouble Bounds = LocalBounds;
-            RoundedRect borderRect = new RoundedRect(this.LocalBounds, 0);
-            Stroke strokeRect = new Stroke(borderRect, borderWidth);
-            graphics2D.Render(strokeRect, borderColor);
-        }
+		private void SetMenuItemsToNewMinSIze()
+		{
+			Vector2 minSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
 
-        public MenuItem AddItem(string name, string value = null)
-        {
-            if (value == null)
-            {
-                value = name;
-            }
-            
-            mainControlText.Margin = MenuItemsPadding;
+			foreach (MenuItem item in MenuItems)
+			{
+				item.MinimumSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
+			}
+		}
 
-            GuiWidget normalTextWithMargin = new GuiWidget();
-            normalTextWithMargin.HAnchor = UI.HAnchor.ParentLeftRight | UI.HAnchor.FitToChildren;
-            normalTextWithMargin.VAnchor = UI.VAnchor.FitToChildren;
-            normalTextWithMargin.BackgroundColor = MenuItemsBackgroundColor;
-            TextWidget normal = new TextWidget(name);
-            normal.Margin = MenuItemsPadding;
-            normal.TextColor = MenuItemsTextColor;
-            normalTextWithMargin.AddChild(normal);
+		public override void OnBoundsChanged(EventArgs e)
+		{
+			SetMenuItemsToNewMinSIze();
+			base.OnBoundsChanged(e);
+		}
 
-            GuiWidget hoverTextWithMargin = new GuiWidget();
-            hoverTextWithMargin.HAnchor = UI.HAnchor.ParentLeftRight | UI.HAnchor.FitToChildren;
-            hoverTextWithMargin.VAnchor = UI.VAnchor.FitToChildren;
-            hoverTextWithMargin.BackgroundColor = MenuItemsBackgroundHoverColor;
-            TextWidget hover = new TextWidget(name);
-            hover.Margin = MenuItemsPadding;
-            hover.TextColor = MenuItemsTextHoverColor;
-            hoverTextWithMargin.AddChild(hover);
+		private void item_Selected(object sender, EventArgs e)
+		{
+			int newSelectedIndex = 0;
+			foreach (MenuItem item in MenuItems)
+			{
+				if (item == sender)
+				{
+					break;
+				}
+				newSelectedIndex++;
+			}
 
-            MenuItem menuItem = new MenuItem(new MenuItemStatesView(normalTextWithMargin, hoverTextWithMargin), value);
-            menuItem.Text = name;
-            MenuItems.Add(menuItem);
+			SelectedIndex = newSelectedIndex;
+		}
 
-            return menuItem;
-        }
-    }
+		public override void OnDraw(Graphics2D graphics2D)
+		{
+			base.OnDraw(graphics2D);
+			this.DrawBorder(graphics2D);
+			this.DrawDirectionalArrow(graphics2D);
+		}
+
+		private void DrawDirectionalArrow(Graphics2D graphics2D)
+		{
+			PathStorage littleArrow = new PathStorage();
+			if (this.MenuDirection == Direction.Down)
+			{
+				littleArrow.MoveTo(-4, 0);
+				littleArrow.LineTo(4, 0);
+				littleArrow.LineTo(0, -5);
+			}
+			else if (this.MenuDirection == Direction.Up)
+			{
+				littleArrow.MoveTo(-4, -5);
+				littleArrow.LineTo(4, -5);
+				littleArrow.LineTo(0, 0);
+			}
+			else
+			{
+				throw new NotImplementedException("Pulldown direction has not been implemented");
+			}
+			graphics2D.Render(littleArrow, LocalBounds.Right - 8, LocalBounds.Top - 4, borderColor);
+		}
+
+		private void DrawBorder(Graphics2D graphics2D)
+		{
+			RectangleDouble Bounds = LocalBounds;
+			RoundedRect borderRect = new RoundedRect(this.LocalBounds, 0);
+			Stroke strokeRect = new Stroke(borderRect, borderWidth);
+			graphics2D.Render(strokeRect, borderColor);
+		}
+
+		public MenuItem AddItem(string name, string value = null)
+		{
+			if (value == null)
+			{
+				value = name;
+			}
+
+			mainControlText.Margin = MenuItemsPadding;
+
+			GuiWidget normalTextWithMargin = new GuiWidget();
+			normalTextWithMargin.HAnchor = UI.HAnchor.ParentLeftRight | UI.HAnchor.FitToChildren;
+			normalTextWithMargin.VAnchor = UI.VAnchor.FitToChildren;
+			normalTextWithMargin.BackgroundColor = MenuItemsBackgroundColor;
+			TextWidget normal = new TextWidget(name);
+			normal.Margin = MenuItemsPadding;
+			normal.TextColor = MenuItemsTextColor;
+			normalTextWithMargin.AddChild(normal);
+
+			GuiWidget hoverTextWithMargin = new GuiWidget();
+			hoverTextWithMargin.HAnchor = UI.HAnchor.ParentLeftRight | UI.HAnchor.FitToChildren;
+			hoverTextWithMargin.VAnchor = UI.VAnchor.FitToChildren;
+			hoverTextWithMargin.BackgroundColor = MenuItemsBackgroundHoverColor;
+			TextWidget hover = new TextWidget(name);
+			hover.Margin = MenuItemsPadding;
+			hover.TextColor = MenuItemsTextHoverColor;
+			hoverTextWithMargin.AddChild(hover);
+
+			MenuItem menuItem = new MenuItem(new MenuItemStatesView(normalTextWithMargin, hoverTextWithMargin), value);
+			menuItem.Text = name;
+			MenuItems.Add(menuItem);
+
+			return menuItem;
+		}
+	}
 }
-

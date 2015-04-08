@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,54 +23,49 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-
-using MatterHackers.Csg.Operations;
-using MatterHackers.Csg.Transform;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Csg.Solids
 {
-    public class BoxPrimitive : Solid
-    {
-        internal Vector3 size;
+	public class BoxPrimitive : Solid
+	{
+		internal Vector3 size;
 
-        public new Vector3 Size { get { return size; } set { size = value; } }
-        public bool CreateCentered { get; set; }
+		public new Vector3 Size { get { return size; } set { size = value; } }
 
-        public BoxPrimitive(double sizeX, double sizeY, double sizeZ, string name = "", bool createCentered = true)
-            : this(new Vector3(sizeX, sizeY, sizeZ), name, createCentered)
-        {
-        }
+		public bool CreateCentered { get; set; }
 
-        public BoxPrimitive(BoxPrimitive objectToCopy)
-            : this(objectToCopy.size, objectToCopy.name, objectToCopy.CreateCentered)
-        {
-        }
+		public BoxPrimitive(double sizeX, double sizeY, double sizeZ, string name = "", bool createCentered = true)
+			: this(new Vector3(sizeX, sizeY, sizeZ), name, createCentered)
+		{
+		}
 
-        public BoxPrimitive(Vector3 size, string name = "", bool createCentered = true)
-            : base(name)
-        {
-            this.CreateCentered = createCentered;
-            this.size = size;
-        }
+		public BoxPrimitive(BoxPrimitive objectToCopy)
+			: this(objectToCopy.size, objectToCopy.name, objectToCopy.CreateCentered)
+		{
+		}
 
-        public override AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
-        {
-            if (CreateCentered)
-            {
-                return new AxisAlignedBoundingBox(-size / 2, size / 2);
-            }
-            else
-            {
-                return new AxisAlignedBoundingBox(Vector3.Zero, size);
-            }
-        }
-    }
+		public BoxPrimitive(Vector3 size, string name = "", bool createCentered = true)
+			: base(name)
+		{
+			this.CreateCentered = createCentered;
+			this.size = size;
+		}
+
+		public override AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
+		{
+			if (CreateCentered)
+			{
+				return new AxisAlignedBoundingBox(-size / 2, size / 2);
+			}
+			else
+			{
+				return new AxisAlignedBoundingBox(Vector3.Zero, size);
+			}
+		}
+	}
 }

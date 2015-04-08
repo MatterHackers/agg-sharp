@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,51 +23,45 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-using NUnit.Framework;
-using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
+using NUnit.Framework;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    public class ScrollableWidgetTests
-    {
-        public static bool saveImagesForDebug = false;
+	public class ScrollableWidgetTests
+	{
+		public static bool saveImagesForDebug = false;
 
-        void OutputImages(GuiWidget control, GuiWidget test)
-        {
-            if (saveImagesForDebug)
-            {
-                ImageTgaIO.Save(control.BackBuffer, "image-control.tga");
-                ImageTgaIO.Save(test.BackBuffer, "image-test.tga");
-            }
-        }
+		private void OutputImages(GuiWidget control, GuiWidget test)
+		{
+			if (saveImagesForDebug)
+			{
+				ImageTgaIO.Save(control.BackBuffer, "image-control.tga");
+				ImageTgaIO.Save(test.BackBuffer, "image-test.tga");
+			}
+		}
 
-        [Test]
-        public void LimitScrolToContetsTests()
-        {
-            GuiWidget containerControl = new GuiWidget(200, 200);
-            containerControl.DoubleBuffer = true;
-            containerControl.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
-            containerControl.OnDraw(containerControl.NewGraphics2D());
+		[Test]
+		public void LimitScrolToContetsTests()
+		{
+			GuiWidget containerControl = new GuiWidget(200, 200);
+			containerControl.DoubleBuffer = true;
+			containerControl.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			containerControl.OnDraw(containerControl.NewGraphics2D());
 
-            ScrollableWidget containerTest = new ScrollableWidget(200, 200);
-            containerTest.DoubleBuffer = true;
-            containerTest.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
-            containerTest.OnDraw(containerTest.NewGraphics2D());
+			ScrollableWidget containerTest = new ScrollableWidget(200, 200);
+			containerTest.DoubleBuffer = true;
+			containerTest.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			containerTest.OnDraw(containerTest.NewGraphics2D());
 
-            OutputImages(containerControl, containerTest);
+			OutputImages(containerControl, containerTest);
 
-            Assert.IsTrue(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
-            Assert.IsTrue(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
-        }
-    }
+			Assert.IsTrue(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			Assert.IsTrue(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
+		}
+	}
 }

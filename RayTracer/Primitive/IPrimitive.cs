@@ -1,4 +1,7 @@
-﻿// Copyright 2006 Herre Kuijpers - <herre@xs4all.nl>
+﻿using MatterHackers.Agg;
+using MatterHackers.VectorMath;
+
+// Copyright 2006 Herre Kuijpers - <herre@xs4all.nl>
 //
 // This source file(s) may be redistributed, altered and customized
 // by any means PROVIDING the authors name and all copyright
@@ -10,102 +13,101 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Text;
-
-using MatterHackers.Agg;
-using MatterHackers.Agg.Image;
-using MatterHackers.VectorMath;
 
 namespace MatterHackers.RayTracer
 {
-    public class CompareCentersOnAxis : IComparer<IPrimitive>
-    {
-        int whichAxis;
-        public int WhichAxis
-        {
-            get
-            {
-                return whichAxis;
-            }
-            set
-            {
-                whichAxis = value % 3;
-            }
-        }
+	public class CompareCentersOnAxis : IComparer<IPrimitive>
+	{
+		private int whichAxis;
 
-        public CompareCentersOnAxis(int whichAxis)
-        {
-            this.whichAxis = whichAxis % 3;
-        }
+		public int WhichAxis
+		{
+			get
+			{
+				return whichAxis;
+			}
+			set
+			{
+				whichAxis = value % 3;
+			}
+		}
 
-        public int Compare(IPrimitive a, IPrimitive b)
-        {
-            if (a == null || b == null)
-            {
-                throw new Exception();
-            }
+		public CompareCentersOnAxis(int whichAxis)
+		{
+			this.whichAxis = whichAxis % 3;
+		}
 
-            double axisCenterA = a.GetCenter()[whichAxis];
-            double axisCenterB = b.GetCenter()[whichAxis];
+		public int Compare(IPrimitive a, IPrimitive b)
+		{
+			if (a == null || b == null)
+			{
+				throw new Exception();
+			}
 
-            if (axisCenterA > axisCenterB)
-            {
-                return 1;
-            }
-            else if (axisCenterA < axisCenterB)
-            {
-                return -1;
-            }
-            return 0;
-        }
-    }
+			double axisCenterA = a.GetCenter()[whichAxis];
+			double axisCenterB = b.GetCenter()[whichAxis];
 
-    /// <summary>
-    /// element in a scene
-    /// </summary>
-    public interface IPrimitive
-    {
-        /// <summary>
-        /// Get the color for a primitive at the given info.
-        /// </summary>
-        /// <param name="info"></param>
-        /// <returns></returns>
-        RGBA_Floats GetColor(IntersectInfo info);
+			if (axisCenterA > axisCenterB)
+			{
+				return 1;
+			}
+			else if (axisCenterA < axisCenterB)
+			{
+				return -1;
+			}
+			return 0;
+		}
+	}
 
-        /// <summary>
-        /// Specifies the ambient and diffuse color of the element.
-        /// </summary>
-        MaterialAbstract Material { get; set; }
+	/// <summary>
+	/// element in a scene
+	/// </summary>
+	public interface IPrimitive
+	{
+		/// <summary>
+		/// Get the color for a primitive at the given info.
+		/// </summary>
+		/// <param name="info"></param>
+		/// <returns></returns>
+		RGBA_Floats GetColor(IntersectInfo info);
 
-        bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion);
+		/// <summary>
+		/// Specifies the ambient and diffuse color of the element.
+		/// </summary>
+		MaterialAbstract Material { get; set; }
 
-        /// <summary>
-        /// This method is to be implemented by each element seperately. This is the core
-        /// function of each element, to determine the intersection with a ray.
-        /// </summary>
-        /// <param name="ray">the ray that intersects with the element</param>
-        /// <returns></returns>
-        IntersectInfo GetClosestIntersection(Ray ray);
+		bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion);
 
-        int FindFirstRay(RayBundle rayBundle, int rayIndexToStartCheckingFrom);
-        void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle);
+		/// <summary>
+		/// This method is to be implemented by each element seperately. This is the core
+		/// function of each element, to determine the intersection with a ray.
+		/// </summary>
+		/// <param name="ray">the ray that intersects with the element</param>
+		/// <returns></returns>
+		IntersectInfo GetClosestIntersection(Ray ray);
 
-        IEnumerable IntersectionIterator(Ray ray);
+		int FindFirstRay(RayBundle rayBundle, int rayIndexToStartCheckingFrom);
 
-        double GetSurfaceArea();
-        AxisAlignedBoundingBox GetAxisAlignedBoundingBox();
-        Vector3 GetCenter();
+		void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle);
 
-        /// <summary>
-        /// This is the computation cost of doing an intersection with the given type.
-        /// This number is the number of milliseconds it takes to do some number of intersections.
-        /// It just needs to be the same number for every type as they only need to
-        /// be relative to each other.
-        /// It really does not need to be a member variable as it is fixed to a given
-        /// type of object.  But it needs to be virtual so we can get to the value
-        /// for a given class. (If only there were class virtual functions :) ).
-        /// </summary>
-        /// <returns></returns>
-        double GetIntersectCost();
-    }
+		IEnumerable IntersectionIterator(Ray ray);
+
+		double GetSurfaceArea();
+
+		AxisAlignedBoundingBox GetAxisAlignedBoundingBox();
+
+		Vector3 GetCenter();
+
+		/// <summary>
+		/// This is the computation cost of doing an intersection with the given type.
+		/// This number is the number of milliseconds it takes to do some number of intersections.
+		/// It just needs to be the same number for every type as they only need to
+		/// be relative to each other.
+		/// It really does not need to be a member variable as it is fixed to a given
+		/// type of object.  But it needs to be virtual so we can get to the value
+		/// for a given class. (If only there were class virtual functions :) ).
+		/// </summary>
+		/// <returns></returns>
+		double GetIntersectCost();
+	}
 }

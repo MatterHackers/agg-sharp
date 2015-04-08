@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,141 +23,141 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
 //#define AA_TIPS
 
-using System;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
+using System;
 using Tesselate;
 
 namespace MatterHackers.RenderOpenGl
 {
-    public abstract class VertexTesselatorAbstract : Tesselator
-    {
-        public abstract void AddVertex(double x, double y);
-    }
+	public abstract class VertexTesselatorAbstract : Tesselator
+	{
+		public abstract void AddVertex(double x, double y);
+	}
 
-    public class Graphics2DOpenGL : Graphics2D
-    {
-        // We can have a single static instance because all gl rendering is required to happen on the ui thread so there can
-        // be no runtime contention for this object (no thread contention).
-        static AARenderToGLTesselator triangleEddgeInfo = new AARenderToGLTesselator();
-        static ImageBuffer AATextureImage = null;
+	public class Graphics2DOpenGL : Graphics2D
+	{
+		// We can have a single static instance because all gl rendering is required to happen on the ui thread so there can
+		// be no runtime contention for this object (no thread contention).
+		private static AARenderToGLTesselator triangleEddgeInfo = new AARenderToGLTesselator();
 
-        public bool DoEdgeAntiAliasing = true;
-        static RenderToGLTesselator renderNowTesselator = new RenderToGLTesselator();
+		private static ImageBuffer AATextureImage = null;
 
-        int width;
-        int height;
-		RectangleDouble cachedClipRect;
+		public bool DoEdgeAntiAliasing = true;
+		private static RenderToGLTesselator renderNowTesselator = new RenderToGLTesselator();
+
+		private int width;
+		private int height;
+		private RectangleDouble cachedClipRect;
 
 		public Graphics2DOpenGL(int width, int height)
-        {
-            this.width = width;
-            this.height = height;
+		{
+			this.width = width;
+			this.height = height;
 			cachedClipRect = new RectangleDouble(0, 0, width, height);
-        }
+		}
 
-        public override RectangleDouble GetClippingRect()
-        {
-            return cachedClipRect;
-        }
+		public override RectangleDouble GetClippingRect()
+		{
+			return cachedClipRect;
+		}
 
-        public override void SetClippingRect(RectangleDouble clippingRect)
-        {
+		public override void SetClippingRect(RectangleDouble clippingRect)
+		{
 			cachedClipRect = clippingRect;
-            GL.Scissor((int)Math.Floor(Math.Max(clippingRect.Left, 0)), (int)Math.Floor(Math.Max(clippingRect.Bottom, 0)),
-                (int)Math.Ceiling(Math.Max(clippingRect.Width, 0)), (int)Math.Ceiling(Math.Max(clippingRect.Height, 0)));
+			GL.Scissor((int)Math.Floor(Math.Max(clippingRect.Left, 0)), (int)Math.Floor(Math.Max(clippingRect.Bottom, 0)),
+				(int)Math.Ceiling(Math.Max(clippingRect.Width, 0)), (int)Math.Ceiling(Math.Max(clippingRect.Height, 0)));
 			GL.Enable(EnableCap.ScissorTest);
-        }
+		}
 
-        public override IScanlineCache ScanlineCache
-        {
-            get { return null; }
-            set { throw new Exception("There is no scanline cache on a GL surface."); }
-        }
+		public override IScanlineCache ScanlineCache
+		{
+			get { return null; }
+			set { throw new Exception("There is no scanline cache on a GL surface."); }
+		}
 
-        public void PushOrthoProjection()
-        {
+		public void PushOrthoProjection()
+		{
 			GL.Disable(EnableCap.CullFace);
 
-            GL.MatrixMode(MatrixMode.Projection);
-            GL.PushMatrix();
-            GL.LoadIdentity();
-            GL.Ortho(0, width, 0, height, 0, 1);
-
-            GL.MatrixMode(MatrixMode.Modelview);
-            GL.PushMatrix();
-            GL.LoadIdentity();
-        }
-
-        public void PopOrthoProjection()
-        {
 			GL.MatrixMode(MatrixMode.Projection);
-            GL.PopMatrix();
-            GL.MatrixMode(MatrixMode.Modelview);
-            GL.PopMatrix();
-        }
+			GL.PushMatrix();
+			GL.LoadIdentity();
+			GL.Ortho(0, width, 0, height, 0, 1);
 
-        public static void SendShapeToTesselator(VertexTesselatorAbstract tesselator, IVertexSource vertexSource)
-        {
-            
+			GL.MatrixMode(MatrixMode.Modelview);
+			GL.PushMatrix();
+			GL.LoadIdentity();
+		}
+
+		public void PopOrthoProjection()
+		{
+			GL.MatrixMode(MatrixMode.Projection);
+			GL.PopMatrix();
+			GL.MatrixMode(MatrixMode.Modelview);
+			GL.PopMatrix();
+		}
+
+		public static void SendShapeToTesselator(VertexTesselatorAbstract tesselator, IVertexSource vertexSource)
+		{
 #if !DEBUG
             try
 #endif
-            {
-                tesselator.BeginPolygon();
+			{
+				tesselator.BeginPolygon();
 
-                ShapePath.FlagsAndCommand PathAndFlags = 0;
-                double x, y;
-                bool haveBegunContour = false;
-                while (!ShapePath.is_stop(PathAndFlags = vertexSource.vertex(out x, out y)))
-                {
-                    if (ShapePath.is_close(PathAndFlags)
-                        || (haveBegunContour && ShapePath.is_move_to(PathAndFlags)))
-                    {
-                        tesselator.EndContour();
-                        haveBegunContour = false;
-                    }
+				ShapePath.FlagsAndCommand PathAndFlags = 0;
+				double x, y;
+				bool haveBegunContour = false;
+				while (!ShapePath.is_stop(PathAndFlags = vertexSource.vertex(out x, out y)))
+				{
+					if (ShapePath.is_close(PathAndFlags)
+						|| (haveBegunContour && ShapePath.is_move_to(PathAndFlags)))
+					{
+						tesselator.EndContour();
+						haveBegunContour = false;
+					}
 
-                    if (!ShapePath.is_close(PathAndFlags))
-                    {
-                        if (!haveBegunContour)
-                        {
-                            tesselator.BeginContour();
-                            haveBegunContour = true;
-                        }
+					if (!ShapePath.is_close(PathAndFlags))
+					{
+						if (!haveBegunContour)
+						{
+							tesselator.BeginContour();
+							haveBegunContour = true;
+						}
 
-                        tesselator.AddVertex(x, y);
-                    }
-                }
+						tesselator.AddVertex(x, y);
+					}
+				}
 
-                if (haveBegunContour)
-                {
-                    tesselator.EndContour();
-                }
+				if (haveBegunContour)
+				{
+					tesselator.EndContour();
+				}
 
-                tesselator.EndPolygon();
-            }
+				tesselator.EndPolygon();
+			}
 #if !DEBUG
             catch
             {
             }
 #endif
-        }
+		}
 
-        void CheckLineImageCache()
-        {
+		private void CheckLineImageCache()
+		{
 			if (AATextureImage == null)
-            {
+			{
 				AATextureImage = new ImageBuffer(1024, 4, 32, new BlenderBGRA());
 				byte[] hardwarePixelBuffer = AATextureImage.GetBuffer();
 				for (int y = 0; y < 4; y++)
@@ -172,214 +172,214 @@ namespace MatterHackers.RenderOpenGl
 						alpha = 255;
 					}
 				}
-            }
-        }
+			}
+		}
 
-        void DrawAAShape(IVertexSource vertexSource)
-        {
+		private void DrawAAShape(IVertexSource vertexSource)
+		{
 			CheckLineImageCache();
-            GL.Enable(EnableCap.Texture2D);
-            GL.BindTexture(TextureTarget.Texture2D, RenderOpenGl.ImageGlPlugin.GetImageGlPlugin(AATextureImage, false).GLTextureHandle);
+			GL.Enable(EnableCap.Texture2D);
+			GL.BindTexture(TextureTarget.Texture2D, RenderOpenGl.ImageGlPlugin.GetImageGlPlugin(AATextureImage, false).GLTextureHandle);
 
-            triangleEddgeInfo.Clear();
-            Graphics2DOpenGL.SendShapeToTesselator(triangleEddgeInfo, vertexSource);
+			triangleEddgeInfo.Clear();
+			Graphics2DOpenGL.SendShapeToTesselator(triangleEddgeInfo, vertexSource);
 
-            // now render it
-            triangleEddgeInfo.RenderLastToGL();
-        }
+			// now render it
+			triangleEddgeInfo.RenderLastToGL();
+		}
 
-        public override void Render(IVertexSource vertexSource, int pathIndexToRender, RGBA_Bytes colorBytes)
-        {
+		public override void Render(IVertexSource vertexSource, int pathIndexToRender, RGBA_Bytes colorBytes)
+		{
 			PushOrthoProjection();
 
-            GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-            GL.Enable(EnableCap.Blend);
+			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+			GL.Enable(EnableCap.Blend);
 
-            vertexSource.rewind(pathIndexToRender);
+			vertexSource.rewind(pathIndexToRender);
 
-            GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
+			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
-            Affine transform = GetTransform();
-            if (!transform.is_identity())
-            {
-                vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
-            }
+			Affine transform = GetTransform();
+			if (!transform.is_identity())
+			{
+				vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
+			}
 
-            if (DoEdgeAntiAliasing)
-            {
-                DrawAAShape(vertexSource);
-            }
-            else
-            {
-                renderNowTesselator.Clear();
-                Graphics2DOpenGL.SendShapeToTesselator(renderNowTesselator, vertexSource);
-            }
+			if (DoEdgeAntiAliasing)
+			{
+				DrawAAShape(vertexSource);
+			}
+			else
+			{
+				renderNowTesselator.Clear();
+				Graphics2DOpenGL.SendShapeToTesselator(renderNowTesselator, vertexSource);
+			}
 
-            PopOrthoProjection();
-        }
+			PopOrthoProjection();
+		}
 
-        public override void Render(IImageByte source,
-            double x, double y,
-            double angleRadians,
-            double scaleX, double scaleY)
-        {
+		public override void Render(IImageByte source,
+			double x, double y,
+			double angleRadians,
+			double scaleX, double scaleY)
+		{
 #if true
-            Affine transform = GetTransform();
-            if (!transform.is_identity())
-            {
-                if (scaleX != 1 || scaleY != 1)// || angleDegrees != 0)
-                {
-                    throw new NotImplementedException();
-                }
-                // TODO: <BUG> make this do rotation and scalling
-                transform.transform(ref x, ref y);
-                scaleX *= transform.sx;
-                scaleY *= transform.sy;
-            }
+			Affine transform = GetTransform();
+			if (!transform.is_identity())
+			{
+				if (scaleX != 1 || scaleY != 1)// || angleDegrees != 0)
+				{
+					throw new NotImplementedException();
+				}
+				// TODO: <BUG> make this do rotation and scalling
+				transform.transform(ref x, ref y);
+				scaleX *= transform.sx;
+				scaleY *= transform.sy;
+			}
 #endif
 
 #if true
-            // TODO: <BUG> make this do rotation and scalling
-            RectangleInt sourceBounds = source.GetBounds();
-            sourceBounds.Offset((int)x, (int)y);
-            RectangleInt destBounds = new RectangleInt((int)cachedClipRect.Left, (int)cachedClipRect.Bottom, (int)cachedClipRect.Right, (int)cachedClipRect.Top);
+			// TODO: <BUG> make this do rotation and scalling
+			RectangleInt sourceBounds = source.GetBounds();
+			sourceBounds.Offset((int)x, (int)y);
+			RectangleInt destBounds = new RectangleInt((int)cachedClipRect.Left, (int)cachedClipRect.Bottom, (int)cachedClipRect.Right, (int)cachedClipRect.Top);
 
-            if (!RectangleInt.DoIntersect(sourceBounds, destBounds))
-            {
-                if (scaleX != 1 || scaleY != 1)// || angleDegrees != 0)
-                {
-                    //throw new NotImplementedException();
-                }
-                //return;
-            }
+			if (!RectangleInt.DoIntersect(sourceBounds, destBounds))
+			{
+				if (scaleX != 1 || scaleY != 1)// || angleDegrees != 0)
+				{
+					//throw new NotImplementedException();
+				}
+				//return;
+			}
 #endif
 
-            ImageBuffer sourceAsImageBuffer = (ImageBuffer)source;
-            ImageGlPlugin glPlugin = ImageGlPlugin.GetImageGlPlugin(sourceAsImageBuffer, false);
+			ImageBuffer sourceAsImageBuffer = (ImageBuffer)source;
+			ImageGlPlugin glPlugin = ImageGlPlugin.GetImageGlPlugin(sourceAsImageBuffer, false);
 
-            // Prepare openGL for rendering
-            PushOrthoProjection();
+			// Prepare openGL for rendering
+			PushOrthoProjection();
 			GL.Disable(EnableCap.Lighting);
-            GL.Enable(EnableCap.Texture2D);
-            GL.Disable(EnableCap.DepthTest);
-            
-            GL.Enable(EnableCap.Blend);
-            GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-            
-            GL.Translate(x, y, 0);
-            GL.Rotate(MathHelper.RadiansToDegrees(angleRadians), 0, 0, 1);
-            GL.Scale(scaleX, scaleY, 1);
+			GL.Enable(EnableCap.Texture2D);
+			GL.Disable(EnableCap.DepthTest);
 
-            RGBA_Bytes color = RGBA_Bytes.White;
-            GL.Color4((byte)color.Red0To255, (byte)color.Green0To255, (byte)color.Blue0To255, (byte)color.Alpha0To255);
+			GL.Enable(EnableCap.Blend);
+			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
 
-            glPlugin.DrawToGL();
+			GL.Translate(x, y, 0);
+			GL.Rotate(MathHelper.RadiansToDegrees(angleRadians), 0, 0, 1);
+			GL.Scale(scaleX, scaleY, 1);
 
-            //Restore openGL state
-            PopOrthoProjection();
-        }
+			RGBA_Bytes color = RGBA_Bytes.White;
+			GL.Color4((byte)color.Red0To255, (byte)color.Green0To255, (byte)color.Blue0To255, (byte)color.Alpha0To255);
 
-        public override void Render(IImageFloat imageSource,
-            double x, double y,
-            double angleDegrees,
-            double scaleX, double ScaleY)
-        {
-            throw new NotImplementedException();
-        }
+			glPlugin.DrawToGL();
 
-        public override void Rectangle(double left, double bottom, double right, double top, RGBA_Bytes color, double strokeWidth)
-        {
+			//Restore openGL state
+			PopOrthoProjection();
+		}
+
+		public override void Render(IImageFloat imageSource,
+			double x, double y,
+			double angleDegrees,
+			double scaleX, double ScaleY)
+		{
+			throw new NotImplementedException();
+		}
+
+		public override void Rectangle(double left, double bottom, double right, double top, RGBA_Bytes color, double strokeWidth)
+		{
 #if true
-            // This only works for translation. If we have a rotation or scale in the transform this will have some problems.
-            Affine transform = GetTransform();
-            double fastLeft = left;
-            double fastBottom = bottom;
-            double fastRight = right;
-            double fastTop = top;
+			// This only works for translation. If we have a rotation or scale in the transform this will have some problems.
+			Affine transform = GetTransform();
+			double fastLeft = left;
+			double fastBottom = bottom;
+			double fastRight = right;
+			double fastTop = top;
 
-            transform.transform(ref fastLeft, ref fastBottom);
-            transform.transform(ref fastRight, ref fastTop);
+			transform.transform(ref fastLeft, ref fastBottom);
+			transform.transform(ref fastRight, ref fastTop);
 
-            if (fastLeft == (int)fastLeft
-                && fastBottom == (int)fastBottom
-                && fastRight == (int)fastRight
-                && fastTop == (int)fastTop)
-            {
-                // FillRectangle will do the traslation so use the original variables
-                FillRectangle(left, bottom, right, bottom + 1, color);
-                FillRectangle(left, top, right, top - 1, color);
+			if (fastLeft == (int)fastLeft
+				&& fastBottom == (int)fastBottom
+				&& fastRight == (int)fastRight
+				&& fastTop == (int)fastTop)
+			{
+				// FillRectangle will do the traslation so use the original variables
+				FillRectangle(left, bottom, right, bottom + 1, color);
+				FillRectangle(left, top, right, top - 1, color);
 
-                FillRectangle(left, bottom, left + 1, top, color);
-                FillRectangle(right - 1, bottom, right, top, color);
-            }
-            else
+				FillRectangle(left, bottom, left + 1, top, color);
+				FillRectangle(right - 1, bottom, right, top, color);
+			}
+			else
 #endif
-            {
-                RoundedRect rect = new RoundedRect(left + .5, bottom + .5, right - .5, top - .5, 0);
-                Stroke rectOutline = new Stroke(rect, strokeWidth);
+			{
+				RoundedRect rect = new RoundedRect(left + .5, bottom + .5, right - .5, top - .5, 0);
+				Stroke rectOutline = new Stroke(rect, strokeWidth);
 
-                Render(rectOutline, color);
-            }
-        }
+				Render(rectOutline, color);
+			}
+		}
 
-        public override void FillRectangle(double left, double bottom, double right, double top, IColorType fillColor)
-        {
-            // This only works for translation. If we have a rotation or scale in the transform this will have some problems.
-            Affine transform = GetTransform();
-            double fastLeft = left;
-            double fastBottom = bottom;
-            double fastRight = right;
-            double fastTop = top;
+		public override void FillRectangle(double left, double bottom, double right, double top, IColorType fillColor)
+		{
+			// This only works for translation. If we have a rotation or scale in the transform this will have some problems.
+			Affine transform = GetTransform();
+			double fastLeft = left;
+			double fastBottom = bottom;
+			double fastRight = right;
+			double fastTop = top;
 
-            transform.transform(ref fastLeft, ref fastBottom);
-            transform.transform(ref fastRight, ref fastTop);
+			transform.transform(ref fastLeft, ref fastBottom);
+			transform.transform(ref fastRight, ref fastTop);
 
-            if (fastLeft == (int)fastLeft
-                && fastBottom == (int)fastBottom
-                && fastRight == (int)fastRight
-                && fastTop == (int)fastTop)
-            {
-                PushOrthoProjection();
+			if (fastLeft == (int)fastLeft
+				&& fastBottom == (int)fastBottom
+				&& fastRight == (int)fastRight
+				&& fastTop == (int)fastTop)
+			{
+				PushOrthoProjection();
 
-                GL.Disable(EnableCap.Texture2D);
-                GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-                GL.Enable(EnableCap.Blend);
+				GL.Disable(EnableCap.Texture2D);
+				GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+				GL.Enable(EnableCap.Blend);
 
-                GL.Color4(fillColor.Red0To255, fillColor.Green0To255, fillColor.Blue0To255, fillColor.Alpha0To255);
+				GL.Color4(fillColor.Red0To255, fillColor.Green0To255, fillColor.Blue0To255, fillColor.Alpha0To255);
 
-                GL.Begin(BeginMode.Triangles);
-                // triangel 1
-                {
-                    GL.Vertex2(fastLeft, fastBottom);
-                    GL.Vertex2(fastRight, fastBottom);
-                    GL.Vertex2(fastRight, fastTop);
-                }
+				GL.Begin(BeginMode.Triangles);
+				// triangel 1
+				{
+					GL.Vertex2(fastLeft, fastBottom);
+					GL.Vertex2(fastRight, fastBottom);
+					GL.Vertex2(fastRight, fastTop);
+				}
 
-                // triangel 2
-                {
-                    GL.Vertex2(fastLeft, fastBottom);
-                    GL.Vertex2(fastRight, fastTop);
-                    GL.Vertex2(fastLeft, fastTop);
-                }
-                GL.End();
+				// triangel 2
+				{
+					GL.Vertex2(fastLeft, fastBottom);
+					GL.Vertex2(fastRight, fastTop);
+					GL.Vertex2(fastLeft, fastTop);
+				}
+				GL.End();
 
-                PopOrthoProjection();
-            }
-            else
-            {
-                RoundedRect rect = new RoundedRect(left, bottom, right, top, 0);
-                Render(rect, fillColor.GetAsRGBA_Bytes());
-            }
-        }
-        
-        public override void Clear(IColorType color)
-        {
-            Affine transform = GetTransform();
+				PopOrthoProjection();
+			}
+			else
+			{
+				RoundedRect rect = new RoundedRect(left, bottom, right, top, 0);
+				Render(rect, fillColor.GetAsRGBA_Bytes());
+			}
+		}
 
-            RoundedRect clearRect = new RoundedRect(new RectangleDouble(
-                0 - transform.tx, width - transform.ty,
-                0 - transform.tx, height - transform.ty), 0);
-            Render(clearRect, color.GetAsRGBA_Bytes());
-        }
-    }
+		public override void Clear(IColorType color)
+		{
+			Affine transform = GetTransform();
+
+			RoundedRect clearRect = new RoundedRect(new RectangleDouble(
+				0 - transform.tx, width - transform.ty,
+				0 - transform.tx, height - transform.ty), 0);
+			Render(clearRect, color.GetAsRGBA_Bytes());
+		}
+	}
 }

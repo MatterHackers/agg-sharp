@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,164 +23,173 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.IO;
 using MatterHackers.VectorMath;
-using System.Reflection;
+using System;
+using System.IO;
 
 namespace MatterHackers.Agg.UI
 {
-    public abstract class SystemWindowCreatorPlugin
-    {
-        public abstract void ShowSystemWindow(SystemWindow systemWindow);
+	public abstract class SystemWindowCreatorPlugin
+	{
+		public abstract void ShowSystemWindow(SystemWindow systemWindow);
 
-        public abstract Point2D GetDesktopPosition(SystemWindow systemWindow);
-        public abstract void SetDesktopPosition(SystemWindow systemWindow, Point2D position);
-    }
+		public abstract Point2D GetDesktopPosition(SystemWindow systemWindow);
 
-    public class SystemWindow : GuiWidget
-    {
-        static SystemWindowCreatorPlugin globalSystemWindowCreator;
-        public EventHandler TitleChanged;
+		public abstract void SetDesktopPosition(SystemWindow systemWindow, Point2D position);
+	}
 
-        public AbstractOsMappingWidget AbstractOsMappingWidget { get; set; }
-        public bool AlwaysOnTopOfMain { get; set; }
-        public bool IsModal { get; set; }
-        public bool UseOpenGL { get; set; }
-        public int StencilBufferDepth { get; set; }
-        string title = "";
-        public string Title 
-        {
-            get 
-            { 
-                return title; 
-            } 
-            set 
-            {
-                if (title != value)
-                {
-                    title = value;
-                    if (TitleChanged != null)
-                    {
-                        TitleChanged(this, null);
-                    }
-                }
-            } 
-        }
+	public class SystemWindow : GuiWidget
+	{
+		private static SystemWindowCreatorPlugin globalSystemWindowCreator;
+		public EventHandler TitleChanged;
 
-        public enum PixelTypes { Depth24 = 24, Depth32 = 32, DepthFloat = 128 };
-        PixelTypes pixelType = PixelTypes.Depth32;
-        public PixelTypes PixelType { get { return pixelType; } set { pixelType = value; } }
-        public int BitDepth
-        {
-            get
-            {
-                return (int)pixelType;
-            }
-        }
+		public AbstractOsMappingWidget AbstractOsMappingWidget { get; set; }
 
-        public override void OnClosed(EventArgs e)
-        {
-            base.OnClosed(e);
-            if (Parent != null)
-            {
-                Parent.Close();
-            }
-        }
+		public bool AlwaysOnTopOfMain { get; set; }
 
-        public SystemWindow(double width, double height)
-            : base(width, height, SizeLimitsToSet.None)
-        {
-            if (globalSystemWindowCreator == null)
-            {
-                string pluginPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-                PluginFinder<SystemWindowCreatorPlugin> systemWindowCreatorFinder = new PluginFinder<SystemWindowCreatorPlugin>(pluginPath);
-                if (systemWindowCreatorFinder.Plugins.Count != 1)
-                {
+		public bool IsModal { get; set; }
+
+		public bool UseOpenGL { get; set; }
+
+		public int StencilBufferDepth { get; set; }
+
+		private string title = "";
+
+		public string Title
+		{
+			get
+			{
+				return title;
+			}
+			set
+			{
+				if (title != value)
+				{
+					title = value;
+					if (TitleChanged != null)
+					{
+						TitleChanged(this, null);
+					}
+				}
+			}
+		}
+
+		public enum PixelTypes { Depth24 = 24, Depth32 = 32, DepthFloat = 128 };
+
+		private PixelTypes pixelType = PixelTypes.Depth32;
+
+		public PixelTypes PixelType { get { return pixelType; } set { pixelType = value; } }
+
+		public int BitDepth
+		{
+			get
+			{
+				return (int)pixelType;
+			}
+		}
+
+		public override void OnClosed(EventArgs e)
+		{
+			base.OnClosed(e);
+			if (Parent != null)
+			{
+				Parent.Close();
+			}
+		}
+
+		public SystemWindow(double width, double height)
+			: base(width, height, SizeLimitsToSet.None)
+		{
+			if (globalSystemWindowCreator == null)
+			{
+				string pluginPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+				PluginFinder<SystemWindowCreatorPlugin> systemWindowCreatorFinder = new PluginFinder<SystemWindowCreatorPlugin>(pluginPath);
+				if (systemWindowCreatorFinder.Plugins.Count != 1)
+				{
 					throw new Exception(string.Format("Did not find any SystemWindowCreators in Plugin path ({0}.", pluginPath));
-                }
-                globalSystemWindowCreator = systemWindowCreatorFinder.Plugins[0];
-            }
-        }
+				}
+				globalSystemWindowCreator = systemWindowCreatorFinder.Plugins[0];
+			}
+		}
 
-        public override Vector2 MinimumSize
-        {
-            get
-            {
-                return base.MinimumSize;
-            }
-            set
-            {
-                base.MinimumSize = value;
-                if (Parent != null)
-                {
-                    Parent.MinimumSize = value;
-                }
-            }
-        }
+		public override Vector2 MinimumSize
+		{
+			get
+			{
+				return base.MinimumSize;
+			}
+			set
+			{
+				base.MinimumSize = value;
+				if (Parent != null)
+				{
+					Parent.MinimumSize = value;
+				}
+			}
+		}
 
-        Vector2 lastMousePosition;
-        public override void OnMouseDown(MouseEventArgs mouseEvent)
-        {
-            lastMousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
-            base.OnMouseDown(mouseEvent);
-        }
-        public override void OnMouseMove(MouseEventArgs mouseEvent)
-        {
-            lastMousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
-            base.OnMouseMove(mouseEvent);
-        }
-        public override void OnMouseUp(MouseEventArgs mouseEvent)
-        {
-            lastMousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
-            base.OnMouseUp(mouseEvent);
-        }
+		private Vector2 lastMousePosition;
 
-        public override bool GetMousePosition(out Vector2 position)
-        {
-            position = lastMousePosition;
-            return true;
-        }
+		public override void OnMouseDown(MouseEventArgs mouseEvent)
+		{
+			lastMousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
+			base.OnMouseDown(mouseEvent);
+		}
 
-        public override void BringToFront()
-        {
-            Parent.BringToFront();
-        }
+		public override void OnMouseMove(MouseEventArgs mouseEvent)
+		{
+			lastMousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
+			base.OnMouseMove(mouseEvent);
+		}
 
-        public void ShowAsSystemWindow()
-        {
-            if (Parent != null)
-            {
-                throw new Exception("To be a system window you cannot be a child of another widget.");
-            }
-            globalSystemWindowCreator.ShowSystemWindow(this);
-        }
+		public override void OnMouseUp(MouseEventArgs mouseEvent)
+		{
+			lastMousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
+			base.OnMouseUp(mouseEvent);
+		}
 
-        public Point2D DesktopPosition
-        {
-            get
-            {
-                return globalSystemWindowCreator.GetDesktopPosition(this);
-            }
+		public override bool GetMousePosition(out Vector2 position)
+		{
+			position = lastMousePosition;
+			return true;
+		}
 
-            set
-            {
-                globalSystemWindowCreator.SetDesktopPosition(this, value);
-            }
-        }
+		public override void BringToFront()
+		{
+			Parent.BringToFront();
+		}
 
-        public static void AssertDebugNotDefined()
-        {
+		public void ShowAsSystemWindow()
+		{
+			if (Parent != null)
+			{
+				throw new Exception("To be a system window you cannot be a child of another widget.");
+			}
+			globalSystemWindowCreator.ShowSystemWindow(this);
+		}
+
+		public Point2D DesktopPosition
+		{
+			get
+			{
+				return globalSystemWindowCreator.GetDesktopPosition(this);
+			}
+
+			set
+			{
+				globalSystemWindowCreator.SetDesktopPosition(this, value);
+			}
+		}
+
+		public static void AssertDebugNotDefined()
+		{
 #if DEBUG
-            throw new Exception("DEBUG is defined and should not be!");
+			throw new Exception("DEBUG is defined and should not be!");
 #endif
-        }
-    }
+		}
+	}
 }

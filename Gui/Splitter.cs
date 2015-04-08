@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,168 +23,165 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
+using System;
 
 namespace MatterHackers.Agg.UI
 {
-    public class Splitter : GuiWidget
-    {
-        class SplitterBar : GuiWidget
-        {
-            bool mouseDownOnBar = false;
-            Vector2 DownPosition;
+	public class Splitter : GuiWidget
+	{
+		private class SplitterBar : GuiWidget
+		{
+			private bool mouseDownOnBar = false;
+			private Vector2 DownPosition;
 
-            public SplitterBar()
-            {
-            }
+			public SplitterBar()
+			{
+			}
 
-            protected bool MouseDownOnBar
-            {
-                get { return mouseDownOnBar; }
-                set { mouseDownOnBar = value; }
-            }
+			protected bool MouseDownOnBar
+			{
+				get { return mouseDownOnBar; }
+				set { mouseDownOnBar = value; }
+			}
 
-            public override void OnDraw(Graphics2D graphics2D)
-            {
-                RoundedRect roundRect = new RoundedRect(new RectangleDouble(Width / 2 - Width / 3-1, Height / 2 - Height / 8, Width / 2 + Width / 3-1, Height / 2 + Height / 8), 2);
-                graphics2D.Render(roundRect, new RGBA_Bytes(0, 0, 0, 60));
-                base.OnDraw(graphics2D);
-            }
+			public override void OnDraw(Graphics2D graphics2D)
+			{
+				RoundedRect roundRect = new RoundedRect(new RectangleDouble(Width / 2 - Width / 3 - 1, Height / 2 - Height / 8, Width / 2 + Width / 3 - 1, Height / 2 + Height / 8), 2);
+				graphics2D.Render(roundRect, new RGBA_Bytes(0, 0, 0, 60));
+				base.OnDraw(graphics2D);
+			}
 
-            override public void OnMouseDown(MouseEventArgs mouseEvent)
-            {
-                if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
-                {
-                    MouseDownOnBar = true;
-                    DownPosition = new Vector2(mouseEvent.X, mouseEvent.Y);
-                    DownPosition += OriginRelativeParent;
-                }
-                else
-                {
-                    MouseDownOnBar = false;
-                }
-                base.OnMouseDown(mouseEvent);
-            }
+			override public void OnMouseDown(MouseEventArgs mouseEvent)
+			{
+				if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
+				{
+					MouseDownOnBar = true;
+					DownPosition = new Vector2(mouseEvent.X, mouseEvent.Y);
+					DownPosition += OriginRelativeParent;
+				}
+				else
+				{
+					MouseDownOnBar = false;
+				}
+				base.OnMouseDown(mouseEvent);
+			}
 
-            override public void OnMouseUp(MouseEventArgs mouseEvent)
-            {
-                MouseDownOnBar = false;
-                base.OnMouseUp(mouseEvent);
-            }
+			override public void OnMouseUp(MouseEventArgs mouseEvent)
+			{
+				MouseDownOnBar = false;
+				base.OnMouseUp(mouseEvent);
+			}
 
-            override public void OnMouseMove(MouseEventArgs mouseEvent)
-            {
-                if (MouseDownOnBar)
-                {
-                    Vector2 mousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
-                    mousePosition += OriginRelativeParent;
-                    double deltaX = mousePosition.x - DownPosition.x;
-                    double newSplitterPosition = ((Splitter)Parent).SplitterDistance + deltaX;
+			override public void OnMouseMove(MouseEventArgs mouseEvent)
+			{
+				if (MouseDownOnBar)
+				{
+					Vector2 mousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
+					mousePosition += OriginRelativeParent;
+					double deltaX = mousePosition.x - DownPosition.x;
+					double newSplitterPosition = ((Splitter)Parent).SplitterDistance + deltaX;
 
-                    if (newSplitterPosition < Parent.LocalBounds.Left + Parent.Padding.Left)
-                    {
-                        newSplitterPosition = Parent.LocalBounds.Left + Parent.Padding.Left;
-                    }
-                    else if (newSplitterPosition > Parent.LocalBounds.Right - Width - Parent.Padding.Right)
-                    {
-                        newSplitterPosition = Parent.LocalBounds.Right - Width - Parent.Padding.Right;
-                    }
+					if (newSplitterPosition < Parent.LocalBounds.Left + Parent.Padding.Left)
+					{
+						newSplitterPosition = Parent.LocalBounds.Left + Parent.Padding.Left;
+					}
+					else if (newSplitterPosition > Parent.LocalBounds.Right - Width - Parent.Padding.Right)
+					{
+						newSplitterPosition = Parent.LocalBounds.Right - Width - Parent.Padding.Right;
+					}
 
-                    ((Splitter)Parent).SplitterDistance = newSplitterPosition;
-                    DownPosition = mousePosition;
-                }
-                base.OnMouseMove(mouseEvent);
-            }
-        }
+					((Splitter)Parent).SplitterDistance = newSplitterPosition;
+					DownPosition = mousePosition;
+				}
+				base.OnMouseMove(mouseEvent);
+			}
+		}
 
-        GuiWidget panel1 = new GuiWidget();
-        GuiWidget panel2 = new GuiWidget();
+		private GuiWidget panel1 = new GuiWidget();
+		private GuiWidget panel2 = new GuiWidget();
 
-        public Orientation Orientation { get; set; }
+		public Orientation Orientation { get; set; }
 
-        SplitterBar splitterBar = new SplitterBar();
+		private SplitterBar splitterBar = new SplitterBar();
 
-        public Splitter()
-        {
-            splitterWidth = 6;
-            SplitterDistance = 120;
+		public Splitter()
+		{
+			splitterWidth = 6;
+			SplitterDistance = 120;
 
-            //Panel1.DebugShowBounds = true;
-            //Panel2.DebugShowBounds = true;
+			//Panel1.DebugShowBounds = true;
+			//Panel2.DebugShowBounds = true;
 
-            AddChild(Panel1);
-            AddChild(Panel2);
-            AddChild(splitterBar);
+			AddChild(Panel1);
+			AddChild(Panel2);
+			AddChild(splitterBar);
 
-            AnchorAll();
-        }
+			AnchorAll();
+		}
 
-        double splitterWidth;
-        public double SplitterWidth 
-        {
-            get
-            {
-                return splitterWidth;
-            }
+		private double splitterWidth;
 
-            set
-            {
-                throw new NotImplementedException();
-            }
-        }
+		public double SplitterWidth
+		{
+			get
+			{
+				return splitterWidth;
+			}
 
-        double splitterDistance;
-        public double SplitterDistance
-        {
-            get
-            {
-                return splitterDistance;
-            }
-            set
-            {
-                if (splitterDistance != value)
-                {
-                    splitterDistance = value;
-                    OnBoundsChanged(null);
-                }
-            }
-        }
+			set
+			{
+				throw new NotImplementedException();
+			}
+		}
 
-        public GuiWidget Panel1
-        {
-            get
-            {
-                return panel1;
-            }
-        }
+		private double splitterDistance;
 
-        public GuiWidget Panel2
-        {
-            get
-            {
-                return panel2;
-            }
-        }
+		public double SplitterDistance
+		{
+			get
+			{
+				return splitterDistance;
+			}
+			set
+			{
+				if (splitterDistance != value)
+				{
+					splitterDistance = value;
+					OnBoundsChanged(null);
+				}
+			}
+		}
 
-        public override void OnBoundsChanged(EventArgs e)
-        {
-            splitterBar.LocalBounds = new RectangleDouble(0, 0, 6, Height);
-            splitterBar.OriginRelativeParent = new Vector2(SplitterDistance, 0);
-            Panel1.LocalBounds = new RectangleDouble(0, 0, SplitterDistance - SplitterWidth / 2, LocalBounds.Height);
-            Panel2.LocalBounds = new RectangleDouble(0, 0, LocalBounds.Width - SplitterDistance - SplitterWidth / 2, LocalBounds.Height);
-            Panel2.OriginRelativeParent = new Vector2(SplitterDistance + SplitterWidth, 0);
-            base.OnBoundsChanged(e);
-        }
-    }
+		public GuiWidget Panel1
+		{
+			get
+			{
+				return panel1;
+			}
+		}
+
+		public GuiWidget Panel2
+		{
+			get
+			{
+				return panel2;
+			}
+		}
+
+		public override void OnBoundsChanged(EventArgs e)
+		{
+			splitterBar.LocalBounds = new RectangleDouble(0, 0, 6, Height);
+			splitterBar.OriginRelativeParent = new Vector2(SplitterDistance, 0);
+			Panel1.LocalBounds = new RectangleDouble(0, 0, SplitterDistance - SplitterWidth / 2, LocalBounds.Height);
+			Panel2.LocalBounds = new RectangleDouble(0, 0, LocalBounds.Width - SplitterDistance - SplitterWidth / 2, LocalBounds.Height);
+			Panel2.OriginRelativeParent = new Vector2(SplitterDistance + SplitterWidth, 0);
+			base.OnBoundsChanged(e);
+		}
+	}
 }

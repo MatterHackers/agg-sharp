@@ -1,189 +1,185 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.VertexSource;
 
 namespace MatterHackers.Agg
 {
-    public class ScanlineRenderer
-    {
-        VectorPOD<RGBA_Bytes> tempSpanColors = new VectorPOD<RGBA_Bytes>();
-        VectorPOD<RGBA_Floats> tempSpanColorsFloats = new VectorPOD<RGBA_Floats>();
+	public class ScanlineRenderer
+	{
+		private VectorPOD<RGBA_Bytes> tempSpanColors = new VectorPOD<RGBA_Bytes>();
+		private VectorPOD<RGBA_Floats> tempSpanColorsFloats = new VectorPOD<RGBA_Floats>();
 
-        public void render_scanlines_aa_solid(IImageByte destImage, IRasterizer rasterizer, IScanlineCache scanLine, RGBA_Bytes color)
-        {
-            if (rasterizer.rewind_scanlines())
-            {
-                scanLine.reset(rasterizer.min_x(), rasterizer.max_x());
-                while (rasterizer.sweep_scanline(scanLine))
-                {
-                    RenderSolidSingleScanLine(destImage, scanLine, color);
-                }
-            }
-        }
+		public void render_scanlines_aa_solid(IImageByte destImage, IRasterizer rasterizer, IScanlineCache scanLine, RGBA_Bytes color)
+		{
+			if (rasterizer.rewind_scanlines())
+			{
+				scanLine.reset(rasterizer.min_x(), rasterizer.max_x());
+				while (rasterizer.sweep_scanline(scanLine))
+				{
+					RenderSolidSingleScanLine(destImage, scanLine, color);
+				}
+			}
+		}
 
-        public void RenderSolid(IImageFloat destImage, IRasterizer rasterizer, IScanlineCache scanLine, RGBA_Floats color)
-        {
-            if (rasterizer.rewind_scanlines())
-            {
-                scanLine.reset(rasterizer.min_x(), rasterizer.max_x());
-                while (rasterizer.sweep_scanline(scanLine))
-                {
-                    RenderSolidSingleScanLine(destImage, scanLine, color);
-                }
-            }
-        }
+		public void RenderSolid(IImageFloat destImage, IRasterizer rasterizer, IScanlineCache scanLine, RGBA_Floats color)
+		{
+			if (rasterizer.rewind_scanlines())
+			{
+				scanLine.reset(rasterizer.min_x(), rasterizer.max_x());
+				while (rasterizer.sweep_scanline(scanLine))
+				{
+					RenderSolidSingleScanLine(destImage, scanLine, color);
+				}
+			}
+		}
 
-        protected virtual void RenderSolidSingleScanLine(IImageByte destImage, IScanlineCache scanLine, RGBA_Bytes color)
-        {
-            int y = scanLine.y();
-            int num_spans = scanLine.num_spans();
-            ScanlineSpan scanlineSpan = scanLine.begin();
+		protected virtual void RenderSolidSingleScanLine(IImageByte destImage, IScanlineCache scanLine, RGBA_Bytes color)
+		{
+			int y = scanLine.y();
+			int num_spans = scanLine.num_spans();
+			ScanlineSpan scanlineSpan = scanLine.begin();
 
-            byte[] ManagedCoversArray = scanLine.GetCovers();
-            for (; ; )
-            {
-                int x = scanlineSpan.x;
-                if (scanlineSpan.len > 0)
-                {
-                    destImage.blend_solid_hspan(x, y, scanlineSpan.len, color, ManagedCoversArray, scanlineSpan.cover_index);
-                }
-                else
-                {
-                    int x2 = (x - (int)scanlineSpan.len - 1);
-                    destImage.blend_hline(x, y, x2, color, ManagedCoversArray[scanlineSpan.cover_index]);
-                }
-                if (--num_spans == 0) break;
-                scanlineSpan = scanLine.GetNextScanlineSpan();
-            }
-        }
+			byte[] ManagedCoversArray = scanLine.GetCovers();
+			for (; ; )
+			{
+				int x = scanlineSpan.x;
+				if (scanlineSpan.len > 0)
+				{
+					destImage.blend_solid_hspan(x, y, scanlineSpan.len, color, ManagedCoversArray, scanlineSpan.cover_index);
+				}
+				else
+				{
+					int x2 = (x - (int)scanlineSpan.len - 1);
+					destImage.blend_hline(x, y, x2, color, ManagedCoversArray[scanlineSpan.cover_index]);
+				}
+				if (--num_spans == 0) break;
+				scanlineSpan = scanLine.GetNextScanlineSpan();
+			}
+		}
 
-        private void RenderSolidSingleScanLine(IImageFloat destImage, IScanlineCache scanLine, RGBA_Floats color)
-        {
-            int y = scanLine.y();
-            int num_spans = scanLine.num_spans();
-            ScanlineSpan scanlineSpan = scanLine.begin();
+		private void RenderSolidSingleScanLine(IImageFloat destImage, IScanlineCache scanLine, RGBA_Floats color)
+		{
+			int y = scanLine.y();
+			int num_spans = scanLine.num_spans();
+			ScanlineSpan scanlineSpan = scanLine.begin();
 
-            byte[] ManagedCoversArray = scanLine.GetCovers();
-            for (; ; )
-            {
-                int x = scanlineSpan.x;
-                if (scanlineSpan.len > 0)
-                {
-                    destImage.blend_solid_hspan(x, y, scanlineSpan.len, color, ManagedCoversArray, scanlineSpan.cover_index);
-                }
-                else
-                {
-                    int x2 = (x - (int)scanlineSpan.len - 1);
-                    destImage.blend_hline(x, y, x2, color, ManagedCoversArray[scanlineSpan.cover_index]);
-                }
-                if (--num_spans == 0) break;
-                scanlineSpan = scanLine.GetNextScanlineSpan();
-            }
-        }
+			byte[] ManagedCoversArray = scanLine.GetCovers();
+			for (; ; )
+			{
+				int x = scanlineSpan.x;
+				if (scanlineSpan.len > 0)
+				{
+					destImage.blend_solid_hspan(x, y, scanlineSpan.len, color, ManagedCoversArray, scanlineSpan.cover_index);
+				}
+				else
+				{
+					int x2 = (x - (int)scanlineSpan.len - 1);
+					destImage.blend_hline(x, y, x2, color, ManagedCoversArray[scanlineSpan.cover_index]);
+				}
+				if (--num_spans == 0) break;
+				scanlineSpan = scanLine.GetNextScanlineSpan();
+			}
+		}
 
-        public void RenderSolidAllPaths(IImageByte destImage,
-            IRasterizer ras,
-            IScanlineCache sl,
-            IVertexSource vs,
-            RGBA_Bytes[] color_storage,
-            int[] path_id,
-            int num_paths)
-        {
-            for (int i = 0; i < num_paths; i++)
-            {
-                ras.reset();
+		public void RenderSolidAllPaths(IImageByte destImage,
+			IRasterizer ras,
+			IScanlineCache sl,
+			IVertexSource vs,
+			RGBA_Bytes[] color_storage,
+			int[] path_id,
+			int num_paths)
+		{
+			for (int i = 0; i < num_paths; i++)
+			{
+				ras.reset();
 
-                ras.add_path(vs, path_id[i]);
+				ras.add_path(vs, path_id[i]);
 
-                render_scanlines_aa_solid(destImage, ras, sl, color_storage[i]);
-            }
-        }
+				render_scanlines_aa_solid(destImage, ras, sl, color_storage[i]);
+			}
+		}
 
-        private void GenerateAndRenderSingleScanline(IScanlineCache scanLineCache, IImageByte destImage, span_allocator alloc, ISpanGenerator span_gen)
-        {
-            int y = scanLineCache.y();
-            int num_spans = scanLineCache.num_spans();
-            ScanlineSpan scanlineSpan = scanLineCache.begin();
+		private void GenerateAndRenderSingleScanline(IScanlineCache scanLineCache, IImageByte destImage, span_allocator alloc, ISpanGenerator span_gen)
+		{
+			int y = scanLineCache.y();
+			int num_spans = scanLineCache.num_spans();
+			ScanlineSpan scanlineSpan = scanLineCache.begin();
 
-            byte[] ManagedCoversArray = scanLineCache.GetCovers();
-            for (; ; )
-            {
-                int x = scanlineSpan.x;
-                int len = scanlineSpan.len;
-                if (len < 0) len = -len;
+			byte[] ManagedCoversArray = scanLineCache.GetCovers();
+			for (; ; )
+			{
+				int x = scanlineSpan.x;
+				int len = scanlineSpan.len;
+				if (len < 0) len = -len;
 
-                if (tempSpanColors.Capacity() < len)
-                {
-                    tempSpanColors.Capacity(len);
-                }
+				if (tempSpanColors.Capacity() < len)
+				{
+					tempSpanColors.Capacity(len);
+				}
 
-                span_gen.generate(tempSpanColors.Array, 0, x, y, len);
-                bool useFirstCoverForAll = scanlineSpan.len < 0;
-                destImage.blend_color_hspan(x, y, len, tempSpanColors.Array, 0, ManagedCoversArray, scanlineSpan.cover_index, useFirstCoverForAll);
+				span_gen.generate(tempSpanColors.Array, 0, x, y, len);
+				bool useFirstCoverForAll = scanlineSpan.len < 0;
+				destImage.blend_color_hspan(x, y, len, tempSpanColors.Array, 0, ManagedCoversArray, scanlineSpan.cover_index, useFirstCoverForAll);
 
-                if (--num_spans == 0) break;
-                scanlineSpan = scanLineCache.GetNextScanlineSpan();
-            }
-        }
+				if (--num_spans == 0) break;
+				scanlineSpan = scanLineCache.GetNextScanlineSpan();
+			}
+		}
 
-        private void GenerateAndRenderSingleScanline(IScanlineCache scanLineCache, IImageFloat destImageFloat, span_allocator alloc, ISpanGeneratorFloat span_gen)
-        {
-            int y = scanLineCache.y();
-            int num_spans = scanLineCache.num_spans();
-            ScanlineSpan scanlineSpan = scanLineCache.begin();
+		private void GenerateAndRenderSingleScanline(IScanlineCache scanLineCache, IImageFloat destImageFloat, span_allocator alloc, ISpanGeneratorFloat span_gen)
+		{
+			int y = scanLineCache.y();
+			int num_spans = scanLineCache.num_spans();
+			ScanlineSpan scanlineSpan = scanLineCache.begin();
 
-            byte[] ManagedCoversArray = scanLineCache.GetCovers();
-            for (; ; )
-            {
-                int x = scanlineSpan.x;
-                int len = scanlineSpan.len;
-                if (len < 0) len = -len;
+			byte[] ManagedCoversArray = scanLineCache.GetCovers();
+			for (; ; )
+			{
+				int x = scanlineSpan.x;
+				int len = scanlineSpan.len;
+				if (len < 0) len = -len;
 
-                if (tempSpanColorsFloats.Capacity() < len)
-                {
-                    tempSpanColorsFloats.Capacity(len);
-                }
+				if (tempSpanColorsFloats.Capacity() < len)
+				{
+					tempSpanColorsFloats.Capacity(len);
+				}
 
-                span_gen.generate(tempSpanColorsFloats.Array, 0, x, y, len);
-                bool useFirstCoverForAll = scanlineSpan.len < 0;
-                destImageFloat.blend_color_hspan(x, y, len, tempSpanColorsFloats.Array, 0, ManagedCoversArray, scanlineSpan.cover_index, useFirstCoverForAll);
+				span_gen.generate(tempSpanColorsFloats.Array, 0, x, y, len);
+				bool useFirstCoverForAll = scanlineSpan.len < 0;
+				destImageFloat.blend_color_hspan(x, y, len, tempSpanColorsFloats.Array, 0, ManagedCoversArray, scanlineSpan.cover_index, useFirstCoverForAll);
 
-                if (--num_spans == 0) break;
-                scanlineSpan = scanLineCache.GetNextScanlineSpan();
-            }
-        }
+				if (--num_spans == 0) break;
+				scanlineSpan = scanLineCache.GetNextScanlineSpan();
+			}
+		}
 
-        public void GenerateAndRender(IRasterizer rasterizer, IScanlineCache scanlineCache, IImageByte destImage, span_allocator spanAllocator, ISpanGenerator spanGenerator)
-        {
-            if (rasterizer.rewind_scanlines())
-            {
-                scanlineCache.reset(rasterizer.min_x(), rasterizer.max_x());
-                spanGenerator.prepare();
-                while (rasterizer.sweep_scanline(scanlineCache))
-                {
-                    GenerateAndRenderSingleScanline(scanlineCache, destImage, spanAllocator, spanGenerator);
-                }
-            }
-        }
+		public void GenerateAndRender(IRasterizer rasterizer, IScanlineCache scanlineCache, IImageByte destImage, span_allocator spanAllocator, ISpanGenerator spanGenerator)
+		{
+			if (rasterizer.rewind_scanlines())
+			{
+				scanlineCache.reset(rasterizer.min_x(), rasterizer.max_x());
+				spanGenerator.prepare();
+				while (rasterizer.sweep_scanline(scanlineCache))
+				{
+					GenerateAndRenderSingleScanline(scanlineCache, destImage, spanAllocator, spanGenerator);
+				}
+			}
+		}
 
-        public void GenerateAndRender(IRasterizer rasterizer, IScanlineCache scanlineCache, IImageFloat destImage, span_allocator spanAllocator, ISpanGeneratorFloat spanGenerator)
-        {
-            if (rasterizer.rewind_scanlines())
-            {
-                scanlineCache.reset(rasterizer.min_x(), rasterizer.max_x());
-                spanGenerator.prepare();
-                while (rasterizer.sweep_scanline(scanlineCache))
-                {
-                    GenerateAndRenderSingleScanline(scanlineCache, destImage, spanAllocator, spanGenerator);
-                }
-            }
-        }
+		public void GenerateAndRender(IRasterizer rasterizer, IScanlineCache scanlineCache, IImageFloat destImage, span_allocator spanAllocator, ISpanGeneratorFloat spanGenerator)
+		{
+			if (rasterizer.rewind_scanlines())
+			{
+				scanlineCache.reset(rasterizer.min_x(), rasterizer.max_x());
+				spanGenerator.prepare();
+				while (rasterizer.sweep_scanline(scanlineCache))
+				{
+					GenerateAndRenderSingleScanline(scanlineCache, destImage, spanAllocator, spanGenerator);
+				}
+			}
+		}
 
-        public void RenderCompound(rasterizer_compound_aa ras, IScanlineCache sl_aa, IScanlineCache sl_bin, IImageByte imageFormat, span_allocator alloc, IStyleHandler sh)
-        {
+		public void RenderCompound(rasterizer_compound_aa ras, IScanlineCache sl_aa, IScanlineCache sl_bin, IImageByte imageFormat, span_allocator alloc, IStyleHandler sh)
+		{
 #if false
             unsafe
             {
@@ -365,6 +361,6 @@ namespace MatterHackers.Agg
                 } // if(ras.rewind_scanlines())
             }
 #endif
-        }
-    }
+		}
+	}
 }

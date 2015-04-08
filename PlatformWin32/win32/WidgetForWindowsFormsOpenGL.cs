@@ -1,4 +1,7 @@
-﻿//----------------------------------------------------------------------------
+﻿using MatterHackers.RenderOpenGl;
+using MatterHackers.RenderOpenGl.OpenGl;
+
+//----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
@@ -6,8 +9,8 @@
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 //
-// Permission to copy, use, modify, sell and distribute this software 
-// is granted provided this copyright notice appears in all copies. 
+// Permission to copy, use, modify, sell and distribute this software
+// is granted provided this copyright notice appears in all copies.
 // This software is provided "as is" without express or implied
 // warranty, and with no claim as to its suitability for any purpose.
 //
@@ -18,146 +21,139 @@
 //----------------------------------------------------------------------------
 using System;
 using System.Diagnostics;
-using System.Windows.Forms;
-using System.Runtime.InteropServices;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.IO;
-
-using MatterHackers.RenderOpenGl;
-using MatterHackers.Agg.Image;
-using MatterHackers.Agg.RasterizerScanline;
-
-using MatterHackers.RenderOpenGl.OpenGl;
 
 namespace MatterHackers.Agg.UI
 {
-    public class WidgetForWindowsFormsOpenGL : WidgetForWindowsFormsAbstract
-    {
-        static int count;
-        int id;
-        public WidgetForWindowsFormsOpenGL(SystemWindow childSystemWindow)
-            : base(childSystemWindow)
-        {
-            id = count++;
-            WindowsFormsWindow = new WindowsFormsOpenGL(this, childSystemWindow);
-        }
+	public class WidgetForWindowsFormsOpenGL : WidgetForWindowsFormsAbstract
+	{
+		private static int count;
+		private int id;
 
-        public override string ToString()
-        {
-            return "{0}".FormatWith(id);
-        }
+		public WidgetForWindowsFormsOpenGL(SystemWindow childSystemWindow)
+			: base(childSystemWindow)
+		{
+			id = count++;
+			WindowsFormsWindow = new WindowsFormsOpenGL(this, childSystemWindow);
+		}
 
-        public override void OnBoundsChanged(EventArgs e)
-        {
-            if (initHasBeenCalled)
-            {
-                CheckGlControl();
-                SetAndClearViewPort();
-                base.OnBoundsChanged(e);
-                CheckGlControl();
-            }
-            else
-            {
-                base.OnBoundsChanged(e);
-            }
-        }
+		public override string ToString()
+		{
+			return "{0}".FormatWith(id);
+		}
 
-        bool viewPortHasBeenSet = false;
-        private void SetAndClearViewPort()
-        {
-            GL.Viewport(0, 0, WindowsFormsWindow.ClientSize.Width, WindowsFormsWindow.ClientSize.Height);					// Reset The Current Viewport
-            viewPortHasBeenSet = true;
+		public override void OnBoundsChanged(EventArgs e)
+		{
+			if (initHasBeenCalled)
+			{
+				CheckGlControl();
+				SetAndClearViewPort();
+				base.OnBoundsChanged(e);
+				CheckGlControl();
+			}
+			else
+			{
+				base.OnBoundsChanged(e);
+			}
+		}
 
-            // The following lines set the screen up for a perspective view. Meaning things in the distance get smaller. 
-            // This creates a realistic looking scene. 
-            // The perspective is calculated with a 45 degree viewing angle based on the windows width and height. 
-            // The 0.1f, 100.0f is the starting point and ending point for how deep we can draw into the screen.
+		private bool viewPortHasBeenSet = false;
 
-            GL.MatrixMode(MatrixMode.Projection);
-            GL.LoadIdentity();
+		private void SetAndClearViewPort()
+		{
+			GL.Viewport(0, 0, WindowsFormsWindow.ClientSize.Width, WindowsFormsWindow.ClientSize.Height);					// Reset The Current Viewport
+			viewPortHasBeenSet = true;
 
-            GL.MatrixMode(MatrixMode.Modelview);
-            GL.LoadIdentity();
-            GL.Scissor(0, 0, WindowsFormsWindow.ClientSize.Width, WindowsFormsWindow.ClientSize.Height);
+			// The following lines set the screen up for a perspective view. Meaning things in the distance get smaller.
+			// This creates a realistic looking scene.
+			// The perspective is calculated with a 45 degree viewing angle based on the windows width and height.
+			// The 0.1f, 100.0f is the starting point and ending point for how deep we can draw into the screen.
 
-            NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
-        }
+			GL.MatrixMode(MatrixMode.Projection);
+			GL.LoadIdentity();
 
-        bool CheckGlControl()
-        {
-            if (firstGlControlSeen == null)
-            {
-                firstGlControlSeen = MyGLControl.currentControl;
-            }
+			GL.MatrixMode(MatrixMode.Modelview);
+			GL.LoadIdentity();
+			GL.Scissor(0, 0, WindowsFormsWindow.ClientSize.Width, WindowsFormsWindow.ClientSize.Height);
 
-            //if (firstGlControlSeen != MyGLControl.currentControl)
-                if (MyGLControl.currentControl.Id != this.id)
-            {
-                Debug.WriteLine("Is {0} Should be {1}".FormatWith(firstGlControlSeen.Id, MyGLControl.currentControl.Id));
-                //throw new Exception("We have the wrong gl control realized.");
-                return false;
-            }
+			NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
+		}
 
-            return true;
-        }
+		private bool CheckGlControl()
+		{
+			if (firstGlControlSeen == null)
+			{
+				firstGlControlSeen = MyGLControl.currentControl;
+			}
 
-        MyGLControl firstGlControlSeen = null;
-        public override void OnDraw(Graphics2D graphics2D)
-        {
-            if(CheckGlControl())
-            base.OnDraw(graphics2D);
-            CheckGlControl();
-        }
+			//if (firstGlControlSeen != MyGLControl.currentControl)
+			if (MyGLControl.currentControl.Id != this.id)
+			{
+				Debug.WriteLine("Is {0} Should be {1}".FormatWith(firstGlControlSeen.Id, MyGLControl.currentControl.Id));
+				//throw new Exception("We have the wrong gl control realized.");
+				return false;
+			}
 
-        public override Graphics2D NewGraphics2D()
-        {
-            if (!viewPortHasBeenSet)
-            {
-                SetAndClearViewPort();
-            }
+			return true;
+		}
 
-            Graphics2D graphics2D;
+		private MyGLControl firstGlControlSeen = null;
+
+		public override void OnDraw(Graphics2D graphics2D)
+		{
+			if (CheckGlControl())
+				base.OnDraw(graphics2D);
+			CheckGlControl();
+		}
+
+		public override Graphics2D NewGraphics2D()
+		{
+			if (!viewPortHasBeenSet)
+			{
+				SetAndClearViewPort();
+			}
+
+			Graphics2D graphics2D;
 
 			graphics2D = new Graphics2DOpenGL(WindowsFormsWindow.ClientSize.Width, WindowsFormsWindow.ClientSize.Height);
 
-            graphics2D.PushTransform();
-            return graphics2D;
-        }
+			graphics2D.PushTransform();
+			return graphics2D;
+		}
 
-        bool initHasBeenCalled = false;
-        public void Init()
-        {
-            System.Drawing.Size clientSize = new System.Drawing.Size();
-            clientSize.Width = (int)childSystemWindow.Width;
-            clientSize.Height = (int)childSystemWindow.Height;
-            WindowsFormsWindow.ClientSize = clientSize;
+		private bool initHasBeenCalled = false;
 
-            if (!childSystemWindow.Resizable)
-            {
-                WindowsFormsWindow.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-                WindowsFormsWindow.MaximizeBox = false;
-            }
+		public void Init()
+		{
+			System.Drawing.Size clientSize = new System.Drawing.Size();
+			clientSize.Width = (int)childSystemWindow.Width;
+			clientSize.Height = (int)childSystemWindow.Height;
+			WindowsFormsWindow.ClientSize = clientSize;
 
-            clientSize.Width = (int)childSystemWindow.Width;
-            clientSize.Height = (int)childSystemWindow.Height;
-            WindowsFormsWindow.ClientSize = clientSize;
+			if (!childSystemWindow.Resizable)
+			{
+				WindowsFormsWindow.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+				WindowsFormsWindow.MaximizeBox = false;
+			}
 
-            OnInitialize();
+			clientSize.Width = (int)childSystemWindow.Width;
+			clientSize.Height = (int)childSystemWindow.Height;
+			WindowsFormsWindow.ClientSize = clientSize;
 
-            initHasBeenCalled = true;
-        }
+			OnInitialize();
 
-        public override void OnInitialize()
-        {
-            NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
+			initHasBeenCalled = true;
+		}
 
-            base.OnInitialize();
-        }
+		public override void OnInitialize()
+		{
+			NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
 
-        public override void Run()
-        {
-            base.Run();
-        }
-    }
+			base.OnInitialize();
+		}
+
+		public override void Run()
+		{
+			base.Run();
+		}
+	}
 }

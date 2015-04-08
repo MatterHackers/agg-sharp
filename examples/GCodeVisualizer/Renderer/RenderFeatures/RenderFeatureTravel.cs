@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,104 +23,97 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
+
 using MatterHackers.Agg;
-using MatterHackers.Agg.Transform;
-using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
-using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.GCodeVisualizer
 {
-    public class RenderFeatureTravel : RenderFeatureBase
-    {
-        protected Vector3Float start;
-        protected Vector3Float end;
-        protected float travelSpeed;
+	public class RenderFeatureTravel : RenderFeatureBase
+	{
+		protected Vector3Float start;
+		protected Vector3Float end;
+		protected float travelSpeed;
 
-        protected Vector3Float GetStart(GCodeRenderInfo renderInfo)
-        {
-            if ((renderInfo.CurrentRenderType & RenderType.HideExtruderOffsets) == RenderType.HideExtruderOffsets)
-            {
-                Vector3Float start = this.start;
-                Vector2 offset = renderInfo.GetExtruderOffset(extruderIndex);
-                start.x += (float)offset.x;
-                start.y += (float)offset.y;
-                return start;
-            }
+		protected Vector3Float GetStart(GCodeRenderInfo renderInfo)
+		{
+			if ((renderInfo.CurrentRenderType & RenderType.HideExtruderOffsets) == RenderType.HideExtruderOffsets)
+			{
+				Vector3Float start = this.start;
+				Vector2 offset = renderInfo.GetExtruderOffset(extruderIndex);
+				start.x += (float)offset.x;
+				start.y += (float)offset.y;
+				return start;
+			}
 
-            return this.start;
-        }
+			return this.start;
+		}
 
-        protected Vector3Float GetEnd(GCodeRenderInfo renderInfo)
-        {
-            if ((renderInfo.CurrentRenderType & RenderType.HideExtruderOffsets) == RenderType.HideExtruderOffsets)
-            {
-                Vector3Float end = this.end;
-                Vector2 offset = renderInfo.GetExtruderOffset(extruderIndex);
-                end.x += (float)offset.x;
-                end.y += (float)offset.y;
-                return end;
-            }
+		protected Vector3Float GetEnd(GCodeRenderInfo renderInfo)
+		{
+			if ((renderInfo.CurrentRenderType & RenderType.HideExtruderOffsets) == RenderType.HideExtruderOffsets)
+			{
+				Vector3Float end = this.end;
+				Vector2 offset = renderInfo.GetExtruderOffset(extruderIndex);
+				end.x += (float)offset.x;
+				end.y += (float)offset.y;
+				return end;
+			}
 
-            return this.end;
-        }
+			return this.end;
+		}
 
-        public RenderFeatureTravel(Vector3 start, Vector3 end, int extruderIndex, double travelSpeed)
-            : base(extruderIndex)
-        {
-            this.extruderIndex = extruderIndex;
-            this.start = new Vector3Float(start);
-            this.end = new Vector3Float(end);
-            this.travelSpeed = (float)travelSpeed;
-        }
+		public RenderFeatureTravel(Vector3 start, Vector3 end, int extruderIndex, double travelSpeed)
+			: base(extruderIndex)
+		{
+			this.extruderIndex = extruderIndex;
+			this.start = new Vector3Float(start);
+			this.end = new Vector3Float(end);
+			this.travelSpeed = (float)travelSpeed;
+		}
 
+		public override void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<int> indexData, GCodeRenderInfo renderInfo)
+		{
+			if ((renderInfo.CurrentRenderType & RenderType.Moves) == RenderType.Moves)
+			{
+				Vector3Float start = this.GetStart(renderInfo);
+				Vector3Float end = this.GetEnd(renderInfo);
+				CreateCylinder(colorVertexData, indexData, new Vector3(start), new Vector3(end), .1, 6, GCodeRenderer.TravelColor, .2);
+			}
+		}
 
-        public override void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<int> indexData, GCodeRenderInfo renderInfo)
-        {
-            if ((renderInfo.CurrentRenderType & RenderType.Moves) == RenderType.Moves)
-            {
-                Vector3Float start = this.GetStart(renderInfo);
-                Vector3Float end = this.GetEnd(renderInfo);
-                CreateCylinder(colorVertexData, indexData, new Vector3(start), new Vector3(end), .1, 6, GCodeRenderer.TravelColor, .2);
-            }
-        }
+		public override void Render(Graphics2D graphics2D, GCodeRenderInfo renderInfo)
+		{
+			if ((renderInfo.CurrentRenderType & RenderType.Moves) == RenderType.Moves)
+			{
+				double movementLineWidth = 0.35 * renderInfo.LayerScale;
+				RGBA_Bytes movementColor = new RGBA_Bytes(10, 190, 15);
 
-        public override void Render(Graphics2D graphics2D, GCodeRenderInfo renderInfo)
-        {
-            if ((renderInfo.CurrentRenderType & RenderType.Moves) == RenderType.Moves)
-            {
-                double movementLineWidth = 0.35 * renderInfo.LayerScale;
-                RGBA_Bytes movementColor = new RGBA_Bytes(10, 190, 15);
+				PathStorage pathStorage = new PathStorage();
+				VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, renderInfo.Transform);
+				Stroke stroke = new Stroke(transformedPathStorage, movementLineWidth);
 
-                PathStorage pathStorage = new PathStorage();
-                VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, renderInfo.Transform);
-                Stroke stroke = new Stroke(transformedPathStorage, movementLineWidth);
+				stroke.line_cap(LineCap.Round);
+				stroke.line_join(LineJoin.Round);
 
-                stroke.line_cap(LineCap.Round);
-                stroke.line_join(LineJoin.Round);
+				Vector3Float start = this.GetStart(renderInfo);
+				Vector3Float end = this.GetEnd(renderInfo);
 
-                Vector3Float start = this.GetStart(renderInfo);
-                Vector3Float end = this.GetEnd(renderInfo);
-
-                pathStorage.Add(start.x, start.y, ShapePath.FlagsAndCommand.CommandMoveTo);
-                if (end.x != start.x || end.y != start.y)
-                {
-                    pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
-                }
-                else
-                {
-                    pathStorage.Add(end.x + .01, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
-                }
-                graphics2D.Render(stroke, 0, movementColor);
-            }
-        }
-    }
+				pathStorage.Add(start.x, start.y, ShapePath.FlagsAndCommand.CommandMoveTo);
+				if (end.x != start.x || end.y != start.y)
+				{
+					pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
+				}
+				else
+				{
+					pathStorage.Add(end.x + .01, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
+				}
+				graphics2D.Render(stroke, 0, movementColor);
+			}
+		}
+	}
 }

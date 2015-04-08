@@ -3,13 +3,13 @@ Copyright (c) 2014, Kevin Pope
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,49 +23,51 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
-using System.Text;
-using Microsoft.Win32;
-using System.Runtime.InteropServices;
 
 namespace MatterHackers.SerialPortCommunication.FrostedSerial
 {
 	public delegate void SerialDataReceivedEventHandler(object sender, SerialDataReceivedEventArgs e);
+
 	public delegate void SerialPinChangedEventHandler(object sender, SerialPinChangedEventArgs e);
+
 	public delegate void SerialErrorReceivedEventHandler(object sender, SerialErrorReceivedEventArgs e);
 
 	public interface IFrostedSerialPort
 	{
 		bool RtsEnable { get; set; }
+
 		bool DtrEnable { get; set; }
+
 		int BaudRate { get; set; }
+
 		int BytesToRead { get; }
 
 		void Write(string str);
+
 		int WriteTimeout { get; set; }
 
 		int ReadTimeout { get; set; }
+
 		string ReadExisting();
 
 		bool IsOpen { get; }
 
 		void Open();
+
 		void Close();
+
 		void Dispose();
 	}
 
-	enum SerialSignal
+	internal enum SerialSignal
 	{
 		None = 0,
-		Cd = 1, // Carrier detect 
+		Cd = 1, // Carrier detect
 		Cts = 2, // Clear to send
 		Dsr = 4, // Data set ready
 		Dtr = 8, // Data terminal ready
@@ -138,7 +140,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 			}
 		}
 
-		SerialData eventType;
+		private SerialData eventType;
 	}
 
 	public class SerialPinChangedEventArgs : EventArgs
@@ -158,12 +160,11 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 			}
 		}
 
-		SerialPinChange eventType;
+		private SerialPinChange eventType;
 	}
 
 	public class SerialErrorReceivedEventArgs : EventArgs
 	{
-
 		internal SerialErrorReceivedEventArgs(SerialError eventType)
 		{
 			this.eventType = eventType;
@@ -179,6 +180,6 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 			}
 		}
 
-		SerialError eventType;
+		private SerialError eventType;
 	}
 }

@@ -1,38 +1,35 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace MatterHackers.Agg.UI
 {
-    public class MenuItem : GuiWidget
-    {
+	public class MenuItem : GuiWidget
+	{
 		public class MenuClosedMessage
 		{
 		}
 
-        public event EventHandler Selected;
+		public event EventHandler Selected;
 
 		public delegate bool CheckIfShouldClick();
 
 		public CheckIfShouldClick DoClickFunction;
 
-        public string Value
-        {
-            get;
-            set;
-        }
+		public string Value
+		{
+			get;
+			set;
+		}
 
-        public MenuItem(GuiWidget viewItem, string value = null)
-        {
-            Value = value;
-            HAnchor = UI.HAnchor.ParentLeftRight | UI.HAnchor.FitToChildren;
-            VAnchor = UI.VAnchor.FitToChildren;
-            AddChild(viewItem);
-        }
+		public MenuItem(GuiWidget viewItem, string value = null)
+		{
+			Value = value;
+			HAnchor = UI.HAnchor.ParentLeftRight | UI.HAnchor.FitToChildren;
+			VAnchor = UI.VAnchor.FitToChildren;
+			AddChild(viewItem);
+		}
 
-        public override void OnMouseUp(MouseEventArgs mouseEvent)
-        {
+		public override void OnMouseUp(MouseEventArgs mouseEvent)
+		{
 			if (DoClickFunction != null
 				&& DoClickFunction())
 			{
@@ -44,7 +41,7 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 			}
-            base.OnMouseUp(mouseEvent);
-        }
-    }
+			base.OnMouseUp(mouseEvent);
+		}
+	}
 }

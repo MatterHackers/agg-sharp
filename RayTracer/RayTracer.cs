@@ -12,13 +12,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -32,42 +32,40 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
 #define MULTI_THREAD
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
-using MatterHackers.VectorMath;
 using MatterHackers.RayTracer.Light;
+using MatterHackers.VectorMath;
+using System;
 
 namespace MatterHackers.RayTracer
 {
-    public enum AntiAliasing
-    {
-        None = 0,
-        Low = 4,
-        Medium = 8,
-        High = 16,
-        VeryHigh = 32
-    }
+	public enum AntiAliasing
+	{
+		None = 0,
+		Low = 4,
+		Medium = 8,
+		High = 16,
+		VeryHigh = 32
+	}
 
-    public class RayTracer
-    {
-        public bool RenderDiffuse;
-        public bool RenderHighlights;
-        public bool RenderShadow;
-        public bool RenderReflection;
-        public bool RenderRefraction;
-        public AntiAliasing AntiAliasing;
+	public class RayTracer
+	{
+		public bool RenderDiffuse;
+		public bool RenderHighlights;
+		public bool RenderShadow;
+		public bool RenderReflection;
+		public bool RenderRefraction;
+		public AntiAliasing AntiAliasing;
 
-		RGBA_Floats[][] colorBuffer;
+		private RGBA_Floats[][] colorBuffer;
+
 		public RGBA_Floats[][] ColorBuffer
 		{
 			get
@@ -76,7 +74,8 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-		Vector3[][] normalBuffer;
+		private Vector3[][] normalBuffer;
+
 		public Vector3[][] NormalBuffer
 		{
 			get
@@ -85,7 +84,8 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-		double[][] depthBuffer;
+		private double[][] depthBuffer;
+
 		public double[][] DepthBuffer
 		{
 			get
@@ -95,28 +95,28 @@ namespace MatterHackers.RayTracer
 		}
 
 		public RayTracer()
-            : this(AntiAliasing.Medium, true, true, true, true, true)
-        {
-        }
+			: this(AntiAliasing.Medium, true, true, true, true, true)
+		{
+		}
 
-        public RayTracer(AntiAliasing antialiasing, bool renderDiffuse, bool renderHighlights, bool renderShadow, bool renderReflection, bool renderRefraction)
-        {
-            // run the ray trace unit tests.
-            UnitTests.Run();
+		public RayTracer(AntiAliasing antialiasing, bool renderDiffuse, bool renderHighlights, bool renderShadow, bool renderReflection, bool renderRefraction)
+		{
+			// run the ray trace unit tests.
+			UnitTests.Run();
 
-            RenderDiffuse = renderDiffuse;
-            RenderHighlights = renderHighlights;
-            RenderShadow = renderShadow;
-            RenderReflection = renderReflection;
-            RenderRefraction = renderRefraction;
-            AntiAliasing = antialiasing;
-        }
+			RenderDiffuse = renderDiffuse;
+			RenderHighlights = renderHighlights;
+			RenderShadow = renderShadow;
+			RenderReflection = renderReflection;
+			RenderRefraction = renderRefraction;
+			AntiAliasing = antialiasing;
+		}
 
-        private double IntNoise(int x)
-        {
-            x = (x << 13) ^ x;
-            return (1.0 - ((x * (x * x * 15731 + 789221) + 1376312589) & 0x7fffffff) / (int.MaxValue / 2.0));
-        }
+		private double IntNoise(int x)
+		{
+			x = (x << 13) ^ x;
+			return (1.0 - ((x * (x * x * 15731 + 789221) + 1376312589) & 0x7fffffff) / (int.MaxValue / 2.0));
+		}
 
 		public void CopyColorBufferToImage(ImageBuffer destImage, RectangleInt viewport)
 		{
@@ -131,7 +131,7 @@ namespace MatterHackers.RayTracer
 			viewport.Top = Math.Max(0, Math.Min(destImage.Height, viewport.Top));
 
 #if MULTI_THREAD
-			System.Threading.Tasks.Parallel.For(viewport.Bottom, viewport.Height, y => //  
+			System.Threading.Tasks.Parallel.For(viewport.Bottom, viewport.Height, y => //
 #else
             for (int y = viewport.Bottom; y < viewport.Height; y++)
 #endif
@@ -184,7 +184,7 @@ namespace MatterHackers.RayTracer
 			double divisor = maxZ - minZ;
 
 #if MULTI_THREAD
-			System.Threading.Tasks.Parallel.For(viewport.Bottom, viewport.Height, y => //  
+			System.Threading.Tasks.Parallel.For(viewport.Bottom, viewport.Height, y => //
 #else
             for (int y = viewport.Bottom; y < viewport.Height; y++)
 #endif
@@ -224,7 +224,7 @@ namespace MatterHackers.RayTracer
 			viewport.Top = Math.Max(0, Math.Min(destImage.Height, viewport.Top));
 
 #if MULTI_THREAD
-			System.Threading.Tasks.Parallel.For(viewport.Bottom, viewport.Height, y => //  
+			System.Threading.Tasks.Parallel.For(viewport.Bottom, viewport.Height, y => //
 #else
 			for (int y = viewport.Bottom; y < viewport.Height; y++)
 #endif
@@ -246,16 +246,17 @@ namespace MatterHackers.RayTracer
 #endif
 			destImage.MarkImageChanged();
 		}
-		
+
 		public bool traceWithRayBundles = false;
-        public void RayTraceScene(RectangleInt viewport, Scene scene)
-        {
-            int maxsamples = (int)AntiAliasing;
 
-            //graphics2D.FillRectangle(viewport, RGBA_Floats.Black);
+		public void RayTraceScene(RectangleInt viewport, Scene scene)
+		{
+			int maxsamples = (int)AntiAliasing;
 
-            if (colorBuffer == null || colorBuffer.Length < viewport.Width || colorBuffer[0].Length < viewport.Height)
-            {
+			//graphics2D.FillRectangle(viewport, RGBA_Floats.Black);
+
+			if (colorBuffer == null || colorBuffer.Length < viewport.Width || colorBuffer[0].Length < viewport.Height)
+			{
 				colorBuffer = new RGBA_Floats[viewport.Width][];
 				for (int i = 0; i < viewport.Width; i++)
 				{
@@ -274,50 +275,50 @@ namespace MatterHackers.RayTracer
 			}
 
 #if MULTI_THREAD
-            System.Threading.Tasks.Parallel.For(viewport.Bottom, viewport.Height, y => //  
+			System.Threading.Tasks.Parallel.For(viewport.Bottom, viewport.Height, y => //
 #else
             for (int y = viewport.Bottom; y < viewport.Height; y++)
 #endif
-            {
-                for (int x = viewport.Left; x < viewport.Right; x++)
-                {
-                    if (traceWithRayBundles)
-                    {
-                        int width = Math.Min(8, viewport.Right - x);
-                        int height = Math.Min(8, viewport.Top - y);
-                        FrustumRayBundle rayBundle = new FrustumRayBundle(width * height);
-                        IntersectInfo[] intersectionsForBundle = new IntersectInfo[width * height];
-                        for (int rayY = 0; rayY < height; rayY++)
-                        {
-                            for (int rayX = 0; rayX < width; rayX++)
-                            {
-                                rayBundle.rayArray[rayX + rayY * width] = scene.camera.GetRay(x + rayX, y + rayY);
-                                intersectionsForBundle[rayX + rayY * width] = new IntersectInfo();
-                            }
-                        }
+			{
+				for (int x = viewport.Left; x < viewport.Right; x++)
+				{
+					if (traceWithRayBundles)
+					{
+						int width = Math.Min(8, viewport.Right - x);
+						int height = Math.Min(8, viewport.Top - y);
+						FrustumRayBundle rayBundle = new FrustumRayBundle(width * height);
+						IntersectInfo[] intersectionsForBundle = new IntersectInfo[width * height];
+						for (int rayY = 0; rayY < height; rayY++)
+						{
+							for (int rayX = 0; rayX < width; rayX++)
+							{
+								rayBundle.rayArray[rayX + rayY * width] = scene.camera.GetRay(x + rayX, y + rayY);
+								intersectionsForBundle[rayX + rayY * width] = new IntersectInfo();
+							}
+						}
 
 						// get a ray to find the origin (every ray comes from the camera and should have the same origin)
-						Ray screenRay =  scene.camera.GetRay(0, 0);
+						Ray screenRay = scene.camera.GetRay(0, 0);
 						rayBundle.CalculateFrustum(width, height, screenRay.origin);
-                        
-                        FullyTraceRayBundle(rayBundle, intersectionsForBundle, scene);
 
-                        for (int rayY = 0; rayY < height; rayY++)
-                        {
-                            for (int rayX = 0; rayX < width; rayX++)
-                            {
-                                colorBuffer[x + rayX][y + rayY] = intersectionsForBundle[rayX + rayY * width].totalColor;
-                            }
-                        }
-                        x += width - 1; // skip all the pixels we bundled
-                        y += height - 1; // skip all the pixels we bundled
-                    }
-                    else
-                    {
-                        Ray ray = scene.camera.GetRay(x, y);
+						FullyTraceRayBundle(rayBundle, intersectionsForBundle, scene);
+
+						for (int rayY = 0; rayY < height; rayY++)
+						{
+							for (int rayX = 0; rayX < width; rayX++)
+							{
+								colorBuffer[x + rayX][y + rayY] = intersectionsForBundle[rayX + rayY * width].totalColor;
+							}
+						}
+						x += width - 1; // skip all the pixels we bundled
+						y += height - 1; // skip all the pixels we bundled
+					}
+					else
+					{
+						Ray ray = scene.camera.GetRay(x, y);
 
 						IntersectInfo primaryInfo;
-                        colorBuffer[x][y] = FullyTraceRay(ray, scene, out primaryInfo);
+						colorBuffer[x][y] = FullyTraceRay(ray, scene, out primaryInfo);
 
 						if (false)
 						{
@@ -332,242 +333,238 @@ namespace MatterHackers.RayTracer
 								depthBuffer[x][y] = double.PositiveInfinity;
 							}
 						}
-                    }
-                }
-            }
+					}
+				}
+			}
 #if MULTI_THREAD
 );
 #endif
-            if (AntiAliasing != AntiAliasing.None)
-            {
-                AntiAliasScene(viewport, scene, colorBuffer, (int)AntiAliasing);
-            }
-        }
+			if (AntiAliasing != AntiAliasing.None)
+			{
+				AntiAliasScene(viewport, scene, colorBuffer, (int)AntiAliasing);
+			}
+		}
 
-        public void AntiAliasScene(RectangleInt viewport, Scene scene, RGBA_Floats[][] imageBufferAsDoubles, int maxSamples)
-        {
+		public void AntiAliasScene(RectangleInt viewport, Scene scene, RGBA_Floats[][] imageBufferAsDoubles, int maxSamples)
+		{
 #if MULTI_THREAD
-            System.Threading.Tasks.Parallel.For(1, viewport.Height - 1, y => //  
+			System.Threading.Tasks.Parallel.For(1, viewport.Height - 1, y => //
 #else
             for (int y = 1; y < viewport.Height - 1; y++)
 #endif
-            {
-                int fillY = viewport.Top - (viewport.Bottom + y);
+			{
+				int fillY = viewport.Top - (viewport.Bottom + y);
 
-                for (int x = 1; x < viewport.Width - 1; x++)
-                {
-                    RGBA_Floats avg = (imageBufferAsDoubles[x - 1][y - 1] + imageBufferAsDoubles[x][y - 1] + imageBufferAsDoubles[x + 1][y - 1] +
-                                 imageBufferAsDoubles[x - 1][y] + imageBufferAsDoubles[x][y] + imageBufferAsDoubles[x + 1][y] +
-                                 imageBufferAsDoubles[x - 1][y + 1] + imageBufferAsDoubles[x][y + 1] + imageBufferAsDoubles[x + 1][y + 1]) / 9;
+				for (int x = 1; x < viewport.Width - 1; x++)
+				{
+					RGBA_Floats avg = (imageBufferAsDoubles[x - 1][y - 1] + imageBufferAsDoubles[x][y - 1] + imageBufferAsDoubles[x + 1][y - 1] +
+								 imageBufferAsDoubles[x - 1][y] + imageBufferAsDoubles[x][y] + imageBufferAsDoubles[x + 1][y] +
+								 imageBufferAsDoubles[x - 1][y + 1] + imageBufferAsDoubles[x][y + 1] + imageBufferAsDoubles[x + 1][y + 1]) / 9;
 
-                    // use a more accurate antialasing method (MonteCarlo implementation)
-                    // this will fire multiple rays per pixel
-                    double sumOfDifferencesThreshold = .05; // TODO: figure out a good way to determin this.
-                    if (avg.SumOfDistances(imageBufferAsDoubles[x][y]) > sumOfDifferencesThreshold)
-                    {
-                        RGBA_Floats accumulatedColor = imageBufferAsDoubles[x][y];
-                        for (int i = 0; i < maxSamples; i++)
-                        {
-                            // get some 'random' samples
-                            double rx = Math.Sign(i % 4 - 1.5) * (IntNoise(x + y * viewport.Width * maxSamples * 2 + i) + 1) / 4;
-                            double ry = Math.Sign(i % 2 - 0.5) * (IntNoise(x + y * viewport.Width * maxSamples * 2 + 1 + i) + 1) / 4;
+					// use a more accurate antialasing method (MonteCarlo implementation)
+					// this will fire multiple rays per pixel
+					double sumOfDifferencesThreshold = .05; // TODO: figure out a good way to determin this.
+					if (avg.SumOfDistances(imageBufferAsDoubles[x][y]) > sumOfDifferencesThreshold)
+					{
+						RGBA_Floats accumulatedColor = imageBufferAsDoubles[x][y];
+						for (int i = 0; i < maxSamples; i++)
+						{
+							// get some 'random' samples
+							double rx = Math.Sign(i % 4 - 1.5) * (IntNoise(x + y * viewport.Width * maxSamples * 2 + i) + 1) / 4;
+							double ry = Math.Sign(i % 2 - 0.5) * (IntNoise(x + y * viewport.Width * maxSamples * 2 + 1 + i) + 1) / 4;
 
-                            double xp = x + rx;
-                            double yp = y + ry;
+							double xp = x + rx;
+							double yp = y + ry;
 
-                            Ray ray = scene.camera.GetRay(xp, yp);
+							Ray ray = scene.camera.GetRay(xp, yp);
 							IntersectInfo primaryInfo;
 
-                            accumulatedColor += FullyTraceRay(ray, scene, out primaryInfo);
-                        }
-                        imageBufferAsDoubles[x][y] = accumulatedColor / (maxSamples + 1);
-                    }
-                }
-            }
+							accumulatedColor += FullyTraceRay(ray, scene, out primaryInfo);
+						}
+						imageBufferAsDoubles[x][y] = accumulatedColor / (maxSamples + 1);
+					}
+				}
+			}
 #if MULTI_THREAD
 );
 #endif
+		}
 
-        }
+		public RGBA_Floats FullyTraceRay(Ray ray, Scene scene, out IntersectInfo primaryInfo)
+		{
+			primaryInfo = TracePrimaryRay(ray, scene);
+			if (primaryInfo.hitType != IntersectionType.None)
+			{
+				RGBA_Floats totalColor = CreateAndTraceSecondaryRays(primaryInfo, ray, scene, 0);
+				return totalColor;
+			}
 
-        public RGBA_Floats FullyTraceRay(Ray ray, Scene scene, out IntersectInfo primaryInfo)
-        {
-            primaryInfo = TracePrimaryRay(ray, scene);
-            if (primaryInfo.hitType != IntersectionType.None)
-            {
-                RGBA_Floats totalColor = CreateAndTraceSecondaryRays(primaryInfo, ray, scene, 0);
-                return totalColor;
-            }
+			return scene.background.Color;
+		}
 
-            return scene.background.Color;
-        }
+		public void FullyTraceRayBundle(RayBundle rayBundle, IntersectInfo[] intersectionsForBundle, Scene scene)
+		{
+			TracePrimaryRayBundle(rayBundle, intersectionsForBundle, scene);
+			for (int i = 0; i < rayBundle.rayArray.Length; i++)
+			{
+				IntersectInfo primaryInfo = TracePrimaryRay(rayBundle.rayArray[i], scene);
+				if (intersectionsForBundle[i].hitType != IntersectionType.None)
+				{
+					intersectionsForBundle[i].totalColor = CreateAndTraceSecondaryRays(primaryInfo, rayBundle.rayArray[i], scene, 0);
+				}
 
-        public void FullyTraceRayBundle(RayBundle rayBundle, IntersectInfo[] intersectionsForBundle, Scene scene)
-        {
-            TracePrimaryRayBundle(rayBundle, intersectionsForBundle, scene);
-            for (int i = 0; i < rayBundle.rayArray.Length; i++)
-            {
-                IntersectInfo primaryInfo = TracePrimaryRay(rayBundle.rayArray[i], scene);
-                if (intersectionsForBundle[i].hitType != IntersectionType.None)
-                {
-                    intersectionsForBundle[i].totalColor = CreateAndTraceSecondaryRays(primaryInfo, rayBundle.rayArray[i], scene, 0);
-                }
+				intersectionsForBundle[i].totalColor = scene.background.Color;
+			}
+		}
 
-                intersectionsForBundle[i].totalColor = scene.background.Color;
-            }
-        }
+		public IntersectInfo TracePrimaryRay(Ray ray, Scene scene)
+		{
+			IntersectInfo primaryRayIntersection = new IntersectInfo();
 
-        public IntersectInfo TracePrimaryRay(Ray ray, Scene scene)
-        {
-            IntersectInfo primaryRayIntersection = new IntersectInfo();
+			foreach (IPrimitive shapeToTest in scene.shapes)
+			{
+				IntersectInfo info = shapeToTest.GetClosestIntersection(ray);
+				if (info != null && info.hitType != IntersectionType.None && info.distanceToHit < primaryRayIntersection.distanceToHit && info.distanceToHit >= 0)
+				{
+					primaryRayIntersection = info;
+				}
+			}
+			return primaryRayIntersection;
+		}
 
-            foreach (IPrimitive shapeToTest in scene.shapes)
-            {
-                IntersectInfo info = shapeToTest.GetClosestIntersection(ray);
-                if (info != null && info.hitType != IntersectionType.None && info.distanceToHit < primaryRayIntersection.distanceToHit && info.distanceToHit >= 0)
-                {
-                    primaryRayIntersection = info;
-                }
-            }
-            return primaryRayIntersection;
-        }
+		public void TracePrimaryRayBundle(RayBundle rayBundle, IntersectInfo[] intersectionsForBundle, Scene scene)
+		{
+			if (scene.shapes.Count != 1)
+			{
+				throw new Exception("You can only trace a ray bundle into a sigle shape, usually a BoundingVolumeHierachy.");
+			}
 
-        public void TracePrimaryRayBundle(RayBundle rayBundle, IntersectInfo[] intersectionsForBundle, Scene scene)
-        {
-            if (scene.shapes.Count != 1)
-            {
-                throw new Exception("You can only trace a ray bundle into a sigle shape, usually a BoundingVolumeHierachy.");
-            }
+			scene.shapes[0].GetClosestIntersections(rayBundle, 0, intersectionsForBundle);
+		}
 
-            scene.shapes[0].GetClosestIntersections(rayBundle, 0, intersectionsForBundle);
-        }
+		public RGBA_Floats CreateAndTraceSecondaryRays(IntersectInfo info, Ray ray, Scene scene, int depth)
+		{
+			// calculate ambient light
+			RGBA_Floats infoColorAtHit = info.closestHitObject.GetColor(info);
+			RGBA_Floats color = infoColorAtHit * scene.background.Ambience;
+			double shininess = Math.Pow(10, info.closestHitObject.Material.Gloss + 1);
 
-        public RGBA_Floats CreateAndTraceSecondaryRays(IntersectInfo info, Ray ray, Scene scene, int depth)
-        {
-            // calculate ambient light
-            RGBA_Floats infoColorAtHit = info.closestHitObject.GetColor(info);
-            RGBA_Floats color = infoColorAtHit * scene.background.Ambience;
-            double shininess = Math.Pow(10, info.closestHitObject.Material.Gloss + 1);
+			foreach (ILight light in scene.lights)
+			{
+				// calculate diffuse lighting
+				Vector3 directiorFromHitToLight = light.Origin - info.hitPosition;
+				double distanceToLight = directiorFromHitToLight.Length;
+				Vector3 directiorFromHitToLightNormalized = directiorFromHitToLight.GetNormal();
 
-            foreach (ILight light in scene.lights)
-            {
+				if (RenderDiffuse)
+				{
+					double L = Vector3.Dot(directiorFromHitToLightNormalized, info.normalAtHit);
+					if (L > 0.0f)
+					{
+						color += infoColorAtHit * light.Illumination() * L;
+					}
+				}
 
-                // calculate diffuse lighting
-                Vector3 directiorFromHitToLight = light.Origin - info.hitPosition;
-                double distanceToLight = directiorFromHitToLight.Length;
-                Vector3 directiorFromHitToLightNormalized = directiorFromHitToLight.GetNormal();
+				// this is the max depth of raytracing.
+				// increasing depth will calculate more accurate color, however it will
+				// also take longer (exponentially)
+				if (depth < 3)
+				{
+					// calculate reflection ray
+					if (RenderReflection && info.closestHitObject.Material.Reflection > 0)
+					{
+						Ray reflectionRay = GetReflectionRay(info.hitPosition, info.normalAtHit, ray.directionNormal);
+						IntersectInfo reflectionInfo = TracePrimaryRay(reflectionRay, scene);
+						RGBA_Floats reflectionColorAtHit;// = reflectionInfo.closestHitObject.GetColor(reflectionInfo);
+						if (reflectionInfo.hitType != IntersectionType.None && reflectionInfo.distanceToHit > 0)
+						{
+							// recursive call, this makes reflections expensive
+							reflectionColorAtHit = CreateAndTraceSecondaryRays(reflectionInfo, reflectionRay, scene, depth + 1);
+						}
+						else // does not reflect an object, then reflect background color
+						{
+							reflectionColorAtHit = scene.background.Color;
+						}
 
-                if (RenderDiffuse)
-                {
-                    double L = Vector3.Dot(directiorFromHitToLightNormalized, info.normalAtHit);
-                    if (L > 0.0f)
-                    {
-                        color += infoColorAtHit * light.Illumination() * L;
-                    }
-                }
+						color = color.Blend(reflectionColorAtHit, info.closestHitObject.Material.Reflection);
+					}
 
+					//calculate refraction ray
+					if (RenderRefraction && info.closestHitObject.Material.Transparency > 0)
+					{
+						Ray refractionRay = new Ray(info.hitPosition, ray.directionNormal, Ray.sameSurfaceOffset, double.MaxValue);  // GetRefractionRay(info.hitPosition, info.normalAtHit, ray.direction, info.closestHit.Material.Refraction);
+						IntersectInfo refractionInfo = TracePrimaryRay(refractionRay, scene);
+						RGBA_Floats refractionColorAtHit = refractionInfo.closestHitObject.GetColor(refractionInfo);
+						if (refractionInfo.hitType != IntersectionType.None && refractionInfo.distanceToHit > 0)
+						{
+							// recursive call, this makes refractions expensive
+							refractionColorAtHit = CreateAndTraceSecondaryRays(refractionInfo, refractionRay, scene, depth + 1);
+						}
+						else
+						{
+							refractionColorAtHit = scene.background.Color;
+						}
 
-                // this is the max depth of raytracing.
-                // increasing depth will calculate more accurate color, however it will
-                // also take longer (exponentially)
-                if (depth < 3)
-                {
-                    // calculate reflection ray
-                    if (RenderReflection && info.closestHitObject.Material.Reflection > 0)
-                    {
-                        Ray reflectionRay = GetReflectionRay(info.hitPosition, info.normalAtHit, ray.directionNormal);
-                        IntersectInfo reflectionInfo = TracePrimaryRay(reflectionRay, scene);
-                        RGBA_Floats reflectionColorAtHit;// = reflectionInfo.closestHitObject.GetColor(reflectionInfo);
-                        if (reflectionInfo.hitType != IntersectionType.None && reflectionInfo.distanceToHit > 0)
-                        {
-                            // recursive call, this makes reflections expensive
-                            reflectionColorAtHit = CreateAndTraceSecondaryRays(reflectionInfo, reflectionRay, scene, depth + 1);
-                        }
-                        else // does not reflect an object, then reflect background color
-                        {
-                            reflectionColorAtHit = scene.background.Color;
-                        }
+						color = refractionColorAtHit.Blend(color, info.closestHitObject.Material.Transparency);
+					}
+				}
 
-                        color = color.Blend(reflectionColorAtHit, info.closestHitObject.Material.Reflection);
-                    }
+				IntersectInfo shadow = new IntersectInfo();
+				if (RenderShadow)
+				{
+					// calculate shadow, create ray from intersection point to light
+					Ray shadowRay = new Ray(info.hitPosition, directiorFromHitToLightNormalized, Ray.sameSurfaceOffset, double.MaxValue); // it may be usefull to limit the legth to te dist to the camera (but I doubt it LBB).
+					shadowRay.isShadowRay = true;
 
-                    //calculate refraction ray
-                    if (RenderRefraction && info.closestHitObject.Material.Transparency > 0)
-                    {
-                        Ray refractionRay = new Ray(info.hitPosition, ray.directionNormal, Ray.sameSurfaceOffset, double.MaxValue);  // GetRefractionRay(info.hitPosition, info.normalAtHit, ray.direction, info.closestHit.Material.Refraction);
-                        IntersectInfo refractionInfo = TracePrimaryRay(refractionRay, scene);
-                        RGBA_Floats refractionColorAtHit = refractionInfo.closestHitObject.GetColor(refractionInfo);
-                        if (refractionInfo.hitType != IntersectionType.None && refractionInfo.distanceToHit > 0)
-                        {
-                            // recursive call, this makes refractions expensive
-                            refractionColorAtHit = CreateAndTraceSecondaryRays(refractionInfo, refractionRay, scene, depth + 1);
-                        }
-                        else
-                        {
-                            refractionColorAtHit = scene.background.Color;
-                        }
+					// if the normal at the closest hit is away from the shadow it is already it it's own shadow.
+					if (Vector3.Dot(info.normalAtHit, directiorFromHitToLightNormalized) < 0)
+					{
+						shadow.hitType = IntersectionType.FrontFace;
+						color *= 0.5;// +0.5 * Math.Pow(shadow.closestHit.Material.Transparency, 0.5); // Math.Pow(.5, shadow.HitCount);
+					}
+					else
+					{
+						// find any element in between intersection point and light
+						shadow = TracePrimaryRay(shadowRay, scene);
+						if (shadow.hitType != IntersectionType.None && shadow.closestHitObject != info.closestHitObject && shadow.distanceToHit < distanceToLight)
+						{
+							// only cast shadow if the found interesection is another
+							// element than the current element
+							color *= 0.5;// +0.5 * Math.Pow(shadow.closestHit.Material.Transparency, 0.5); // Math.Pow(.5, shadow.HitCount);
+						}
+					}
+				}
 
-                        color = refractionColorAtHit.Blend(color, info.closestHitObject.Material.Transparency);
-                    }
-                }
+				// only show highlights if it is not in the shadow of another object
+				if (RenderHighlights && shadow.hitType == IntersectionType.None && info.closestHitObject.Material.Gloss > 0)
+				{
+					// only show Gloss light if it is not in a shadow of another element.
+					// calculate Gloss lighting (Phong)
+					Vector3 Lv = (info.hitPosition - light.Origin).GetNormal();
+					Vector3 E = (ray.origin - info.hitPosition).GetNormal();
+					Vector3 H = (E - Lv).GetNormal();
 
+					double Glossweight = 0.0;
+					Glossweight = Math.Pow(Math.Max(Vector3.Dot(info.normalAtHit, H), 0), shininess);
+					color += light.Illumination() * (Glossweight);
+				}
+			}
 
-                IntersectInfo shadow = new IntersectInfo();
-                if (RenderShadow)
-                {
-                    // calculate shadow, create ray from intersection point to light
-                    Ray shadowRay = new Ray(info.hitPosition, directiorFromHitToLightNormalized, Ray.sameSurfaceOffset, double.MaxValue); // it may be usefull to limit the legth to te dist to the camera (but I doubt it LBB).
-                    shadowRay.isShadowRay = true;
+			color.Clamp0To1();
+			return color;
+		}
 
-                    // if the normal at the closest hit is away from the shadow it is already it it's own shadow.
-                    if (Vector3.Dot(info.normalAtHit, directiorFromHitToLightNormalized) < 0)
-                    {
-                        shadow.hitType = IntersectionType.FrontFace;
-                        color *= 0.5;// +0.5 * Math.Pow(shadow.closestHit.Material.Transparency, 0.5); // Math.Pow(.5, shadow.HitCount);
-                    }
-                    else
-                    {
-                        // find any element in between intersection point and light
-                        shadow = TracePrimaryRay(shadowRay, scene);
-                        if (shadow.hitType != IntersectionType.None && shadow.closestHitObject != info.closestHitObject && shadow.distanceToHit < distanceToLight)
-                        {
-                            // only cast shadow if the found interesection is another
-                            // element than the current element
-                            color *= 0.5;// +0.5 * Math.Pow(shadow.closestHit.Material.Transparency, 0.5); // Math.Pow(.5, shadow.HitCount);
-                        }
-                    }
-                }
+		private Ray GetReflectionRay(Vector3 P, Vector3 N, Vector3 V)
+		{
+			double c1 = -Vector3.Dot(N, V);
+			Vector3 Rl = V + (N * 2 * c1);
+			return new Ray(P, Rl, Ray.sameSurfaceOffset, double.MaxValue);
+		}
 
-                // only show highlights if it is not in the shadow of another object
-                if (RenderHighlights && shadow.hitType == IntersectionType.None && info.closestHitObject.Material.Gloss > 0)
-                {
-                    // only show Gloss light if it is not in a shadow of another element.
-                    // calculate Gloss lighting (Phong)
-                    Vector3 Lv = (info.hitPosition - light.Origin).GetNormal();
-                    Vector3 E = (ray.origin - info.hitPosition).GetNormal();
-                    Vector3 H = (E - Lv).GetNormal();
-
-                    double Glossweight = 0.0;
-                    Glossweight = Math.Pow(Math.Max(Vector3.Dot(info.normalAtHit, H), 0), shininess);
-                    color += light.Illumination() * (Glossweight);
-                }
-            }
-
-            color.Clamp0To1();
-            return color;
-        }
-
-        private Ray GetReflectionRay(Vector3 P, Vector3 N, Vector3 V)
-        {
-            double c1 = -Vector3.Dot(N, V);
-            Vector3 Rl = V + (N * 2 * c1);
-            return new Ray(P, Rl, Ray.sameSurfaceOffset, double.MaxValue);
-        }
-
-        private Ray GetRefractionRay(Vector3 P, Vector3 N, Vector3 V, double refraction)
-        {
+		private Ray GetRefractionRay(Vector3 P, Vector3 N, Vector3 V, double refraction)
+		{
 #if true
-            return new Ray(P, V, Ray.sameSurfaceOffset, double.MaxValue);
+			return new Ray(P, V, Ray.sameSurfaceOffset, double.MaxValue);
 #else
             //V = V * -1;
             //double n = -0.55; // refraction constant for now
@@ -577,13 +574,12 @@ namespace MatterHackers.RayTracer
             double c2 = 1 - refraction * refraction * (1 - c1 * c1);
             if (c2 < 0)
 
-
                 c2 = Math.Sqrt(c2);
             Vector3D T = (N * (refraction * c1 - c2) - V * refraction) * -1;
             T.Normalize();
 
             return new Ray(P, T); // no refraction
 #endif
-        }
-    }
+		}
+	}
 }

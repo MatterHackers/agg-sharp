@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,42 +23,39 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
-
-using System;
-using System.Collections.Generic;
-using System.IO;
 
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Csg.Transform
 {
-    public class TransformBase : CsgObject
-    {
-        public Matrix4X4 transform;
-        public CsgObject objectToTransform;
+	public class TransformBase : CsgObject
+	{
+		public Matrix4X4 transform;
+		public CsgObject objectToTransform;
 
-        public TransformBase(CsgObject objectToTransform, string name = "")
-            : this(objectToTransform, Matrix4X4.Identity, name)
-        {
-        }
+		public TransformBase(CsgObject objectToTransform, string name = "")
+			: this(objectToTransform, Matrix4X4.Identity, name)
+		{
+		}
 
-        public TransformBase(CsgObject objectToTransform, Matrix4X4 transform, string name = "")
-            : base(name)
-        {
-            this.transform = transform;
-            this.objectToTransform = objectToTransform;
-        }
+		public TransformBase(CsgObject objectToTransform, Matrix4X4 transform, string name = "")
+			: base(name)
+		{
+			this.transform = transform;
+			this.objectToTransform = objectToTransform;
+		}
 
-        public Matrix4X4 ActiveTransform { get { return transform; } }
-        public CsgObject ObjectToTransform { get { return objectToTransform; } }
+		public Matrix4X4 ActiveTransform { get { return transform; } }
 
-        public override AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
-        {
-            AxisAlignedBoundingBox childBounds = objectToTransform.GetAxisAlignedBoundingBox();
-            return childBounds.NewTransformed(transform);
-        }
-    }
+		public CsgObject ObjectToTransform { get { return objectToTransform; } }
+
+		public override AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
+		{
+			AxisAlignedBoundingBox childBounds = objectToTransform.GetAxisAlignedBoundingBox();
+			return childBounds.NewTransformed(transform);
+		}
+	}
 }

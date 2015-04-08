@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,131 +23,118 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.IO;
-
-using NUnit.Framework;
-
-using MatterHackers.Agg;
 using MatterHackers.VectorMath;
-
-using MatterHackers.RayTracer.Traceable;
+using NUnit.Framework;
 
 namespace MatterHackers.RayTracer
 {
-    [TestFixture]
-    public class FrustumTests
-    {
-        [Test]
-        public void RayBundleSameResultAsIndividualRays()
-        {
-        }
+	[TestFixture]
+	public class FrustumTests
+	{
+		[Test]
+		public void RayBundleSameResultAsIndividualRays()
+		{
+		}
 
-        [Test]
-        public void FrustumIntersetAABBTests()
-        {
-            {
-                Frustum frustum = new Frustum(
-                    new Plane(new Vector3(1, 0, 0), 20),
-                    new Plane(new Vector3(-1, 0, 0), 20),
-                    new Plane(new Vector3(0, 1, 0), 20),
-                    new Plane(new Vector3(0, -1, 0), 20),
-                    new Plane(new Vector3(0, 0, 1), 20),
-                    new Plane(new Vector3(0, 0, -1), 20));
+		[Test]
+		public void FrustumIntersetAABBTests()
+		{
+			{
+				Frustum frustum = new Frustum(
+					new Plane(new Vector3(1, 0, 0), 20),
+					new Plane(new Vector3(-1, 0, 0), 20),
+					new Plane(new Vector3(0, 1, 0), 20),
+					new Plane(new Vector3(0, -1, 0), 20),
+					new Plane(new Vector3(0, 0, 1), 20),
+					new Plane(new Vector3(0, 0, -1), 20));
 
-                // outside to left
-                {
-                    AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-30, -10, -10), new Vector3(-25, 10, 10));
-                    FrustumIntersection intersection = frustum.GetIntersect(aabb);
-                    Assert.IsTrue(intersection == FrustumIntersection.Outside);
-                }
+				// outside to left
+				{
+					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-30, -10, -10), new Vector3(-25, 10, 10));
+					FrustumIntersection intersection = frustum.GetIntersect(aabb);
+					Assert.IsTrue(intersection == FrustumIntersection.Outside);
+				}
 
+				// intersect
+				{
+					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-25, 0, -10), new Vector3(-15, 10, 10));
+					FrustumIntersection intersection = frustum.GetIntersect(aabb);
+					Assert.IsTrue(intersection == FrustumIntersection.Intersect);
+				}
 
-                // intersect 
-                {
-                    AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-25, 0, -10), new Vector3(-15, 10, 10));
-                    FrustumIntersection intersection = frustum.GetIntersect(aabb);
-                    Assert.IsTrue(intersection == FrustumIntersection.Intersect);
-                }
+				// inside
+				{
+					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-5, -5, -5), new Vector3(5, 5, 5));
+					FrustumIntersection intersection = frustum.GetIntersect(aabb);
+					Assert.IsTrue(intersection == FrustumIntersection.Inside);
+				}
+			}
 
-                // inside 
-                {
-                    AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-5, -5, -5), new Vector3(5, 5, 5));
-                    FrustumIntersection intersection = frustum.GetIntersect(aabb);
-                    Assert.IsTrue(intersection == FrustumIntersection.Inside);
-                }
-            }
+			{
+				Frustum frustum = new Frustum(
+					new Plane(new Vector3(-1, -1, 0), 0),
+					new Plane(new Vector3(1, -1, 0), 0),
+					new Plane(new Vector3(0, -1, -1), 0),
+					new Plane(new Vector3(0, -1, 1), 0),
+					new Plane(new Vector3(0, -1, 0), 0),
+					new Plane(new Vector3(0, 1, 0), 10000));
 
-            {
-                Frustum frustum = new Frustum(
-                    new Plane(new Vector3(-1, -1, 0), 0),
-                    new Plane(new Vector3(1, -1, 0), 0),
-                    new Plane(new Vector3(0, -1, -1), 0),
-                    new Plane(new Vector3(0, -1, 1), 0),
-                    new Plane(new Vector3(0, -1, 0), 0),
-                    new Plane(new Vector3(0, 1, 0), 10000));
+				// outside to left
+				{
+					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-110, 0, -10), new Vector3(-100, 10, 10));
+					FrustumIntersection intersection = frustum.GetIntersect(aabb);
+					Assert.IsTrue(intersection == FrustumIntersection.Outside);
+				}
 
-                // outside to left
-                {
-                    AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-110, 0, -10), new Vector3(-100, 10, 10));
-                    FrustumIntersection intersection = frustum.GetIntersect(aabb);
-                    Assert.IsTrue(intersection == FrustumIntersection.Outside);
-                }
+				// intersect with origin (front)
+				{
+					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-10, -10, -10), new Vector3(10, 10, 10));
+					FrustumIntersection intersection = frustum.GetIntersect(aabb);
+					Assert.IsTrue(intersection == FrustumIntersection.Intersect);
+				}
 
+				// inside
+				{
+					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-5, 100, -5), new Vector3(5, 110, 5));
+					FrustumIntersection intersection = frustum.GetIntersect(aabb);
+					Assert.IsTrue(intersection == FrustumIntersection.Inside);
+				}
+			}
 
-                // intersect with origin (front)
-                {
-                    AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-10, -10, -10), new Vector3(10, 10, 10));
-                    FrustumIntersection intersection = frustum.GetIntersect(aabb);
-                    Assert.IsTrue(intersection == FrustumIntersection.Intersect);
-                }
+			{
+				// looking down -z
+				Frustum frustum5PlaneNegZ = new Frustum(
+					new Vector3(-1, 0, 1),
+					new Vector3(-1, 0, 1),
+					new Vector3(0, 1, 1),
+					new Vector3(0, -1, 1),
+					new Vector3(0, 0, -1), 10000);
 
-                // inside 
-                {
-                    AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-5, 100, -5), new Vector3(5, 110, 5));
-                    FrustumIntersection intersection = frustum.GetIntersect(aabb);
-                    Assert.IsTrue(intersection == FrustumIntersection.Inside);
-                }
-            }
+				// outside to left
+				{
+					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-110, 0, -10), new Vector3(-100, 10, 10));
+					FrustumIntersection intersection = frustum5PlaneNegZ.GetIntersect(aabb);
+					Assert.IsTrue(intersection == FrustumIntersection.Outside);
+				}
 
-            {
-                // looking down -z
-                Frustum frustum5PlaneNegZ = new Frustum(
-                    new Vector3(-1, 0, 1),
-                    new Vector3(-1, 0, 1),
-                    new Vector3(0, 1, 1),
-                    new Vector3(0, -1, 1),
-                    new Vector3(0, 0, -1), 10000);
+				// intersect with origin (front)
+				{
+					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-10, -10, -10), new Vector3(10, 10, 10));
+					FrustumIntersection intersection = frustum5PlaneNegZ.GetIntersect(aabb);
+					Assert.IsTrue(intersection == FrustumIntersection.Intersect);
+				}
 
-                // outside to left
-                {
-                    AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-110, 0, -10), new Vector3(-100, 10, 10));
-                    FrustumIntersection intersection = frustum5PlaneNegZ.GetIntersect(aabb);
-                    Assert.IsTrue(intersection == FrustumIntersection.Outside);
-                }
-
-
-                // intersect with origin (front)
-                {
-                    AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-10, -10, -10), new Vector3(10, 10, 10));
-                    FrustumIntersection intersection = frustum5PlaneNegZ.GetIntersect(aabb);
-                    Assert.IsTrue(intersection == FrustumIntersection.Intersect);
-                }
-
-                // inside 
-                {
-                    AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-5, -5, -110), new Vector3(5, 5, -100));
-                    FrustumIntersection intersection = frustum5PlaneNegZ.GetIntersect(aabb);
-                    Assert.IsTrue(intersection == FrustumIntersection.Inside);
-                }
-            }
-        }
-    }
+				// inside
+				{
+					AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(new Vector3(-5, -5, -110), new Vector3(5, 5, -100));
+					FrustumIntersection intersection = frustum5PlaneNegZ.GetIntersect(aabb);
+					Assert.IsTrue(intersection == FrustumIntersection.Inside);
+				}
+			}
+		}
+	}
 }

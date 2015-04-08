@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,22 +23,18 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using MatterHackers.VectorMath;
+using System;
 
 namespace MatterHackers.Agg.UI
 {
 	public class SoftKeyboard : GuiWidget
 	{
-		TextEditWidget hadFocusWidget = null;
+		private TextEditWidget hadFocusWidget = null;
 
 		public SoftKeyboard(int width, int height)
 		{
@@ -91,7 +87,7 @@ namespace MatterHackers.Agg.UI
 			AddChild(inputButton);
 		}
 
-		void inputButton_Click(object sender, EventArgs e)
+		private void inputButton_Click(object sender, EventArgs e)
 		{
 			if (hadFocusWidget != null)
 			{
@@ -107,10 +103,10 @@ namespace MatterHackers.Agg.UI
 
 	public class SoftKeyboardDisplayStateManager : GuiWidget
 	{
-		TextEditWidget hadFocusWidget = null;
-		GuiWidget content;
-		GuiWidget contentOffsetHolder;
-		SoftKeyboard keyboard;
+		private TextEditWidget hadFocusWidget = null;
+		private GuiWidget content;
+		private GuiWidget contentOffsetHolder;
+		private SoftKeyboard keyboard;
 
 		public SoftKeyboardDisplayStateManager(GuiWidget content, RGBA_Bytes backgroundColor)
 		{
@@ -136,7 +132,8 @@ namespace MatterHackers.Agg.UI
 			base.OnDraw(graphics2D);
 		}
 
-		MouseEventArgs lastMouseDownEvent;
+		private MouseEventArgs lastMouseDownEvent;
+
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
 		{
 			CheckMouseCaptureStates();
@@ -171,7 +168,7 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseMove(mouseEvent);
 			CheckMouseCaptureStates();
 
-			if (keyboard != null 
+			if (keyboard != null
 				&& keyboard.Visible)
 			{
 				RectangleDouble textWidgetBounds = TextWidgetScreenBounds();
@@ -215,21 +212,22 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		RectangleDouble TextWidgetScreenBounds()
+		private RectangleDouble TextWidgetScreenBounds()
 		{
 			RectangleDouble textWidgetBounds = hadFocusWidget.LocalBounds;
 			return hadFocusWidget.TransformToScreenSpace(textWidgetBounds);
 		}
 
-		VAnchor oldVAnchor;
-		Vector2 oldOrigin;
-		void DoShowSoftwareKeyboard(object sender, EventArgs e)
+		private VAnchor oldVAnchor;
+		private Vector2 oldOrigin;
+
+		private void DoShowSoftwareKeyboard(object sender, EventArgs e)
 		{
 			CheckMouseCaptureStates();
 
 			hadFocusWidget = sender as TextEditWidget;
 			// if we are not currently hooked up
-			if (contentOffsetHolder == null 
+			if (contentOffsetHolder == null
 				|| contentOffsetHolder.Children.Count == 0)
 			{
 				content.Invalidated += content_Invalidated;
@@ -274,7 +272,7 @@ namespace MatterHackers.Agg.UI
 			CheckMouseCaptureStates();
 		}
 
-		void DoHideSoftwareKeyboard(object sender, EventArgs e)
+		private void DoHideSoftwareKeyboard(object sender, EventArgs e)
 		{
 			CheckMouseCaptureStates();
 			if (keyboard.Visible)
@@ -309,19 +307,18 @@ namespace MatterHackers.Agg.UI
 			CheckMouseCaptureStates();
 		}
 
-		void content_Invalidated(object sender, EventArgs e)
+		private void content_Invalidated(object sender, EventArgs e)
 		{
 			Invalidate();
 		}
 	}
 
-
 	public class SoftKeyboardContentOffset : GuiWidget
 	{
-		TextEditWidget hadFocusWidget = null;
-		GuiWidget content;
-		GuiWidget contentOffsetHolder;
-		int deviceKeyboardHeight;
+		private TextEditWidget hadFocusWidget = null;
+		private GuiWidget content;
+		private GuiWidget contentOffsetHolder;
+		private int deviceKeyboardHeight;
 		public static readonly int AndroidKeyboardOffset = 253;
 
 		public SoftKeyboardContentOffset(GuiWidget content, int deviceKeyboardHeight)
@@ -338,7 +335,7 @@ namespace MatterHackers.Agg.UI
 			TextEditWidget.HideSoftwareKeyboard += MoveContentBackDown;
 		}
 
-		RectangleDouble TextWidgetScreenBounds()
+		private RectangleDouble TextWidgetScreenBounds()
 		{
 			RectangleDouble textWidgetBounds = hadFocusWidget.LocalBounds;
 			return hadFocusWidget.TransformToScreenSpace(textWidgetBounds);
@@ -353,9 +350,10 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		VAnchor oldVAnchor;
-		Vector2 oldOrigin;
-		void EnsureEditControlIsVisible(object sender, EventArgs e)
+		private VAnchor oldVAnchor;
+		private Vector2 oldOrigin;
+
+		private void EnsureEditControlIsVisible(object sender, EventArgs e)
 		{
 			hadFocusWidget = sender as TextEditWidget;
 			// remember where we were
@@ -374,8 +372,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-
-		void MoveContentBackDown(object sender, EventArgs e)
+		private void MoveContentBackDown(object sender, EventArgs e)
 		{
 			if (hadFocusWidget != null)
 			{

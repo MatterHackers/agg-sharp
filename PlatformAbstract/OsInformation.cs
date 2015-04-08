@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,7 +23,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
@@ -32,37 +32,38 @@ using System.IO;
 
 namespace MatterHackers.Agg.PlatformAbstract
 {
-    public enum OSType { Unknown, Windows, Mac, X11, Other, Android };
+	public enum OSType { Unknown, Windows, Mac, X11, Other, Android };
 
-    public class OsInformation
-    {
-        static OSType operatingSystem = OSType.Unknown;
-        public static OSType OperatingSystem
-        {
-            get
-            {
-                if (operatingSystem == OSType.Unknown)
-                {
-                    string pluginPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-                    PluginFinder<OsInformationPlugin> osInformationPlugins = new PluginFinder<OsInformationPlugin>(pluginPath);
-                    if (osInformationPlugins.Plugins.Count != 1)
-                    {
-                        throw new Exception(string.Format("Did not find any OsInformationPlugins in Plugin path ({0}.", pluginPath));
-                    }
+	public class OsInformation
+	{
+		private static OSType operatingSystem = OSType.Unknown;
 
-                    operatingSystem = osInformationPlugins.Plugins[0].GetOSType();
-                }
+		public static OSType OperatingSystem
+		{
+			get
+			{
+				if (operatingSystem == OSType.Unknown)
+				{
+					string pluginPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+					PluginFinder<OsInformationPlugin> osInformationPlugins = new PluginFinder<OsInformationPlugin>(pluginPath);
+					if (osInformationPlugins.Plugins.Count != 1)
+					{
+						throw new Exception(string.Format("Did not find any OsInformationPlugins in Plugin path ({0}.", pluginPath));
+					}
 
-                return operatingSystem;
-            }
-        }
-    }
+					operatingSystem = osInformationPlugins.Plugins[0].GetOSType();
+				}
 
-    public class OsInformationPlugin
-    {
-        public virtual OSType GetOSType()
-        {
-            throw new Exception("You must implement this in an inherited class.");
-        }
-    }
+				return operatingSystem;
+			}
+		}
+	}
+
+	public class OsInformationPlugin
+	{
+		public virtual OSType GetOSType()
+		{
+			throw new Exception("You must implement this in an inherited class.");
+		}
+	}
 }

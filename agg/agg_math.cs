@@ -6,8 +6,8 @@
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 //
-// Permission to copy, use, modify, sell and distribute this software 
-// is granted provided this copyright notice appears in all copies. 
+// Permission to copy, use, modify, sell and distribute this software
+// is granted provided this copyright notice appears in all copies.
 // This software is provided "as is" without express or implied
 // warranty, and with no claim as to its suitability for any purpose.
 //
@@ -16,245 +16,244 @@
 //          mcseemagg@yahoo.com
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
-// Bessel function (besj) was adapted for use in AGG library by Andy Wilk 
+// Bessel function (besj) was adapted for use in AGG library by Andy Wilk
 // Contact: castor.vulgaris@gmail.com
 //----------------------------------------------------------------------------
 using System;
-using MatterHackers.Agg.VertexSource;
 
 namespace MatterHackers.Agg
 {
-    public static class agg_math
-    {
-        //------------------------------------------------------vertex_dist_epsilon
-        // Coinciding points maximal distance (Epsilon)
-        public const double vertex_dist_epsilon = 1e-14;
+	public static class agg_math
+	{
+		//------------------------------------------------------vertex_dist_epsilon
+		// Coinciding points maximal distance (Epsilon)
+		public const double vertex_dist_epsilon = 1e-14;
 
-        //-----------------------------------------------------intersection_epsilon
-        // See calc_intersection
-        public const double intersection_epsilon = 1.0e-30;
+		//-----------------------------------------------------intersection_epsilon
+		// See calc_intersection
+		public const double intersection_epsilon = 1.0e-30;
 
-        //------------------------------------------------------------cross_product
-        public static double cross_product(double x1, double y1, 
-                                        double x2, double y2, 
-                                        double x,  double y)
-        {
-            return (x - x2) * (y2 - y1) - (y - y2) * (x2 - x1);
-        }
+		//------------------------------------------------------------cross_product
+		public static double cross_product(double x1, double y1,
+										double x2, double y2,
+										double x, double y)
+		{
+			return (x - x2) * (y2 - y1) - (y - y2) * (x2 - x1);
+		}
 
-        //--------------------------------------------------------point_in_triangle
-        public static bool point_in_triangle(double x1, double y1, 
-                                          double x2, double y2, 
-                                          double x3, double y3, 
-                                          double x,  double y)
-        {
-            bool cp1 = cross_product(x1, y1, x2, y2, x, y) < 0.0;
-            bool cp2 = cross_product(x2, y2, x3, y3, x, y) < 0.0;
-            bool cp3 = cross_product(x3, y3, x1, y1, x, y) < 0.0;
-            return cp1 == cp2 && cp2 == cp3 && cp3 == cp1;
-        }
+		//--------------------------------------------------------point_in_triangle
+		public static bool point_in_triangle(double x1, double y1,
+										  double x2, double y2,
+										  double x3, double y3,
+										  double x, double y)
+		{
+			bool cp1 = cross_product(x1, y1, x2, y2, x, y) < 0.0;
+			bool cp2 = cross_product(x2, y2, x3, y3, x, y) < 0.0;
+			bool cp3 = cross_product(x3, y3, x1, y1, x, y) < 0.0;
+			return cp1 == cp2 && cp2 == cp3 && cp3 == cp1;
+		}
 
-        //-----------------------------------------------------------calc_distance
-        public static double calc_distance(double x1, double y1, double x2, double y2)
-        {
-            double dx = x2-x1;
-            double dy = y2-y1;
-            return Math.Sqrt(dx * dx + dy * dy);
-        }
+		//-----------------------------------------------------------calc_distance
+		public static double calc_distance(double x1, double y1, double x2, double y2)
+		{
+			double dx = x2 - x1;
+			double dy = y2 - y1;
+			return Math.Sqrt(dx * dx + dy * dy);
+		}
 
-        //--------------------------------------------------------calc_sq_distance
-        public static double calc_sq_distance(double x1, double y1, double x2, double y2)
-        {
-            double dx = x2-x1;
-            double dy = y2-y1;
-            return dx * dx + dy * dy;
-        }
+		//--------------------------------------------------------calc_sq_distance
+		public static double calc_sq_distance(double x1, double y1, double x2, double y2)
+		{
+			double dx = x2 - x1;
+			double dy = y2 - y1;
+			return dx * dx + dy * dy;
+		}
 
-        //------------------------------------------------calc_line_point_distance
-        public static double calc_line_point_distance(double x1, double y1, 
-                                                   double x2, double y2, 
-                                                   double x,  double y)
-        {
-            double dx = x2-x1;
-            double dy = y2-y1;
-            double d = Math.Sqrt(dx * dx + dy * dy);
-            if(d < vertex_dist_epsilon)
-            {
-                return calc_distance(x1, y1, x, y);
-            }
-            return ((x - x2) * dy - (y - y2) * dx) / d;
-        }
+		//------------------------------------------------calc_line_point_distance
+		public static double calc_line_point_distance(double x1, double y1,
+												   double x2, double y2,
+												   double x, double y)
+		{
+			double dx = x2 - x1;
+			double dy = y2 - y1;
+			double d = Math.Sqrt(dx * dx + dy * dy);
+			if (d < vertex_dist_epsilon)
+			{
+				return calc_distance(x1, y1, x, y);
+			}
+			return ((x - x2) * dy - (y - y2) * dx) / d;
+		}
 
-        //-------------------------------------------------------calc_line_point_u
-        public static double calc_segment_point_u(double x1, double y1, 
-                                               double x2, double y2, 
-                                               double x,  double y)
-        {
-            double dx = x2 - x1;
-            double dy = y2 - y1;
+		//-------------------------------------------------------calc_line_point_u
+		public static double calc_segment_point_u(double x1, double y1,
+											   double x2, double y2,
+											   double x, double y)
+		{
+			double dx = x2 - x1;
+			double dy = y2 - y1;
 
-            if(dx == 0 && dy == 0)
-            {
-	            return 0;
-            }
+			if (dx == 0 && dy == 0)
+			{
+				return 0;
+			}
 
-            double pdx = x - x1;
-            double pdy = y - y1;
+			double pdx = x - x1;
+			double pdy = y - y1;
 
-            return (pdx * dx + pdy * dy) / (dx * dx + dy * dy);
-        }
+			return (pdx * dx + pdy * dy) / (dx * dx + dy * dy);
+		}
 
-        //---------------------------------------------calc_line_point_sq_distance
-        public static double calc_segment_point_sq_distance(double x1, double y1, 
-                                                         double x2, double y2, 
-                                                         double x,  double y,
-                                                         double u)
-        {
-            if(u <= 0)
-            {
-	            return calc_sq_distance(x, y, x1, y1);
-            }
-            else 
-            if(u >= 1)
-            {
-	            return calc_sq_distance(x, y, x2, y2);
-            }
-            return calc_sq_distance(x, y, x1 + u * (x2 - x1), y1 + u * (y2 - y1));
-        }
+		//---------------------------------------------calc_line_point_sq_distance
+		public static double calc_segment_point_sq_distance(double x1, double y1,
+														 double x2, double y2,
+														 double x, double y,
+														 double u)
+		{
+			if (u <= 0)
+			{
+				return calc_sq_distance(x, y, x1, y1);
+			}
+			else
+				if (u >= 1)
+				{
+					return calc_sq_distance(x, y, x2, y2);
+				}
+			return calc_sq_distance(x, y, x1 + u * (x2 - x1), y1 + u * (y2 - y1));
+		}
 
-        //---------------------------------------------calc_line_point_sq_distance
-        public static double calc_segment_point_sq_distance(double x1, double y1, 
-                                                         double x2, double y2, 
-                                                         double x,  double y)
-        {
-            return 
-                calc_segment_point_sq_distance(
-                    x1, y1, x2, y2, x, y,
-                    calc_segment_point_u(x1, y1, x2, y2, x, y));
-        }
+		//---------------------------------------------calc_line_point_sq_distance
+		public static double calc_segment_point_sq_distance(double x1, double y1,
+														 double x2, double y2,
+														 double x, double y)
+		{
+			return
+				calc_segment_point_sq_distance(
+					x1, y1, x2, y2, x, y,
+					calc_segment_point_u(x1, y1, x2, y2, x, y));
+		}
 
-        //-------------------------------------------------------calc_intersection
-        public static bool calc_intersection(double aX1, double aY1, double aX2, double aY2,
-                                          double bX1, double bY1, double bX2, double bY2,
-                                          out double x, out double y)
-        {
-            double num = (aY1-bY1) * (bX2-bX1) - (aX1-bX1) * (bY2-bY1);
-            double den = (aX2-aX1) * (bY2-bY1) - (aY2-aY1) * (bX2-bX1);
-            if (Math.Abs(den) < intersection_epsilon)
-            {
-                x = 0;
-                y = 0;
-                return false;
-            }
-            double r = num / den;
-            x = aX1 + r * (aX2-aX1);
-            y = aY1 + r * (aY2-aY1);
-            return true;
-        }
+		//-------------------------------------------------------calc_intersection
+		public static bool calc_intersection(double aX1, double aY1, double aX2, double aY2,
+										  double bX1, double bY1, double bX2, double bY2,
+										  out double x, out double y)
+		{
+			double num = (aY1 - bY1) * (bX2 - bX1) - (aX1 - bX1) * (bY2 - bY1);
+			double den = (aX2 - aX1) * (bY2 - bY1) - (aY2 - aY1) * (bX2 - bX1);
+			if (Math.Abs(den) < intersection_epsilon)
+			{
+				x = 0;
+				y = 0;
+				return false;
+			}
+			double r = num / den;
+			x = aX1 + r * (aX2 - aX1);
+			y = aY1 + r * (aY2 - aY1);
+			return true;
+		}
 
-        //-----------------------------------------------------intersection_exists
-        public static bool intersection_exists(double x1, double y1, double x2, double y2,
-                                            double x3, double y3, double x4, double y4)
-        {
-            // It's less expensive but you can't control the 
-            // boundary conditions: Less or LessEqual
-            double dx1 = x2 - x1;
-            double dy1 = y2 - y1;
-            double dx2 = x4 - x3;
-            double dy2 = y4 - y3;
-            return ((x3 - x2) * dy1 - (y3 - y2) * dx1 < 0.0) != 
-                   ((x4 - x2) * dy1 - (y4 - y2) * dx1 < 0.0) &&
-                   ((x1 - x4) * dy2 - (y1 - y4) * dx2 < 0.0) !=
-                   ((x2 - x4) * dy2 - (y2 - y4) * dx2 < 0.0);
+		//-----------------------------------------------------intersection_exists
+		public static bool intersection_exists(double x1, double y1, double x2, double y2,
+											double x3, double y3, double x4, double y4)
+		{
+			// It's less expensive but you can't control the
+			// boundary conditions: Less or LessEqual
+			double dx1 = x2 - x1;
+			double dy1 = y2 - y1;
+			double dx2 = x4 - x3;
+			double dy2 = y4 - y3;
+			return ((x3 - x2) * dy1 - (y3 - y2) * dx1 < 0.0) !=
+				   ((x4 - x2) * dy1 - (y4 - y2) * dx1 < 0.0) &&
+				   ((x1 - x4) * dy2 - (y1 - y4) * dx2 < 0.0) !=
+				   ((x2 - x4) * dy2 - (y2 - y4) * dx2 < 0.0);
 
-            // It's is more expensive but more flexible 
-            // in terms of boundary conditions.
-            //--------------------
-            //double den  = (x2-x1) * (y4-y3) - (y2-y1) * (x4-x3);
-            //if(Math.Abs(den) < intersection_epsilon) return false;
-            //double nom1 = (x4-x3) * (y1-y3) - (y4-y3) * (x1-x3);
-            //double nom2 = (x2-x1) * (y1-y3) - (y2-y1) * (x1-x3);
-            //double ua = nom1 / den;
-            //double ub = nom2 / den;
-            //return ua >= 0.0 && ua <= 1.0 && ub >= 0.0 && ub <= 1.0;
-        }
+			// It's is more expensive but more flexible
+			// in terms of boundary conditions.
+			//--------------------
+			//double den  = (x2-x1) * (y4-y3) - (y2-y1) * (x4-x3);
+			//if(Math.Abs(den) < intersection_epsilon) return false;
+			//double nom1 = (x4-x3) * (y1-y3) - (y4-y3) * (x1-x3);
+			//double nom2 = (x2-x1) * (y1-y3) - (y2-y1) * (x1-x3);
+			//double ua = nom1 / den;
+			//double ub = nom2 / den;
+			//return ua >= 0.0 && ua <= 1.0 && ub >= 0.0 && ub <= 1.0;
+		}
 
-        //--------------------------------------------------------calc_orthogonal
-        public static void calc_orthogonal(double thickness,
-                                        double x1, double y1,
-                                        double x2, double y2,
-                                        out double x, out double y)
-        {
-            double dx = x2 - x1;
-            double dy = y2 - y1;
-            double d = Math.Sqrt(dx*dx + dy*dy); 
-            x =  thickness * dy / d;
-            y = -thickness * dx / d;
-        }
+		//--------------------------------------------------------calc_orthogonal
+		public static void calc_orthogonal(double thickness,
+										double x1, double y1,
+										double x2, double y2,
+										out double x, out double y)
+		{
+			double dx = x2 - x1;
+			double dy = y2 - y1;
+			double d = Math.Sqrt(dx * dx + dy * dy);
+			x = thickness * dy / d;
+			y = -thickness * dx / d;
+		}
 
-        //--------------------------------------------------------dilate_triangle
-        public static void dilate_triangle(double x1, double y1,
-                                        double x2, double y2,
-                                        double x3, double y3,
-                                        double[] x, double[] y,
-                                        double d)
-        {
-            double dx1=0.0;
-            double dy1=0.0; 
-            double dx2=0.0;
-            double dy2=0.0; 
-            double dx3=0.0;
-            double dy3=0.0; 
-            double loc = cross_product(x1, y1, x2, y2, x3, y3);
-            if(Math.Abs(loc) > intersection_epsilon)
-            {
-                if(cross_product(x1, y1, x2, y2, x3, y3) > 0.0) 
-                {
-                    d = -d;
-                }
-                calc_orthogonal(d, x1, y1, x2, y2, out dx1, out dy1);
-                calc_orthogonal(d, x2, y2, x3, y3, out dx2, out dy2);
-                calc_orthogonal(d, x3, y3, x1, y1, out dx3, out dy3);
-            }
-            x[0] = x1 + dx1; y[0] = y1 + dy1;
-            x[1] = x2 + dx1; y[1] = y2 + dy1;
-            x[2] = x2 + dx2; y[2] = y2 + dy2;
-            x[3] = x3 + dx2; y[3] = y3 + dy2;
-            x[4] = x3 + dx3; y[4] = y3 + dy3;
-            x[5] = x1 + dx3; y[5] = y1 + dy3;
-        }
+		//--------------------------------------------------------dilate_triangle
+		public static void dilate_triangle(double x1, double y1,
+										double x2, double y2,
+										double x3, double y3,
+										double[] x, double[] y,
+										double d)
+		{
+			double dx1 = 0.0;
+			double dy1 = 0.0;
+			double dx2 = 0.0;
+			double dy2 = 0.0;
+			double dx3 = 0.0;
+			double dy3 = 0.0;
+			double loc = cross_product(x1, y1, x2, y2, x3, y3);
+			if (Math.Abs(loc) > intersection_epsilon)
+			{
+				if (cross_product(x1, y1, x2, y2, x3, y3) > 0.0)
+				{
+					d = -d;
+				}
+				calc_orthogonal(d, x1, y1, x2, y2, out dx1, out dy1);
+				calc_orthogonal(d, x2, y2, x3, y3, out dx2, out dy2);
+				calc_orthogonal(d, x3, y3, x1, y1, out dx3, out dy3);
+			}
+			x[0] = x1 + dx1; y[0] = y1 + dy1;
+			x[1] = x2 + dx1; y[1] = y2 + dy1;
+			x[2] = x2 + dx2; y[2] = y2 + dy2;
+			x[3] = x3 + dx2; y[3] = y3 + dy2;
+			x[4] = x3 + dx3; y[4] = y3 + dy3;
+			x[5] = x1 + dx3; y[5] = y1 + dy3;
+		}
 
-        //------------------------------------------------------calc_triangle_area
-        public static double calc_triangle_area(double x1, double y1,
-                                             double x2, double y2,
-                                             double x3, double y3)
-        {
-            return (x1*y2 - x2*y1 + x2*y3 - x3*y2 + x3*y1 - x1*y3) * 0.5;
-        }
+		//------------------------------------------------------calc_triangle_area
+		public static double calc_triangle_area(double x1, double y1,
+											 double x2, double y2,
+											 double x3, double y3)
+		{
+			return (x1 * y2 - x2 * y1 + x2 * y3 - x3 * y2 + x3 * y1 - x1 * y3) * 0.5;
+		}
 
-        //-------------------------------------------------------calc_polygon_area
-        public static double calc_polygon_area(VertexSequence st)
-        {
-            int i;
-            double sum = 0.0;
-            double x  = st[0].x;
-            double y  = st[0].y;
-            double xs = x;
-            double ys = y;
+		//-------------------------------------------------------calc_polygon_area
+		public static double calc_polygon_area(VertexSequence st)
+		{
+			int i;
+			double sum = 0.0;
+			double x = st[0].x;
+			double y = st[0].y;
+			double xs = x;
+			double ys = y;
 
-            for(i = 1; i < st.size(); i++)
-            {
-                VertexDistance v = st[i];
-                sum += x * v.y - y * v.x;
-                x = v.x;
-                y = v.y;
-            }
-            return (sum + x * ys - y * xs) * 0.5;
-        }
+			for (i = 1; i < st.size(); i++)
+			{
+				VertexDistance v = st[i];
+				sum += x * v.y - y * v.x;
+				x = v.x;
+				y = v.y;
+			}
+			return (sum + x * ys - y * xs) * 0.5;
+		}
 
-        //------------------------------------------------------------------------
-        // Tables for fast sqrt
-        public static ushort[] g_sqrt_table =                       //----------g_sqrt_table
+		//------------------------------------------------------------------------
+		// Tables for fast sqrt
+		public static ushort[] g_sqrt_table =                       //----------g_sqrt_table
         {
             0,
             2048,2896,3547,4096,4579,5017,5418,5793,6144,6476,6792,7094,7384,7663,7932,8192,8444,
@@ -332,7 +331,7 @@ namespace MatterHackers.Agg
             65183,65215,65247,65279,65312,65344,65376,65408,65440,65472,65504
         };
 
-        public static byte[] g_elder_bit_table = //---------g_elder_bit_table
+		public static byte[] g_elder_bit_table = //---------g_elder_bit_table
         {
             0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
             5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
@@ -344,147 +343,147 @@ namespace MatterHackers.Agg
             7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7
         };
 
-        //---------------------------------------------------------------fast_sqrt
-        //Fast integer Sqrt - really fast: no cycles, divisions or multiplications
-        public static int fast_sqrt(int val)
-        {
-            //This code is actually pure C and portable to most 
-            //architectures including 64bit ones. 
-            int t = val;
-            int bit=0;
-            int shift = 11;
+		//---------------------------------------------------------------fast_sqrt
+		//Fast integer Sqrt - really fast: no cycles, divisions or multiplications
+		public static int fast_sqrt(int val)
+		{
+			//This code is actually pure C and portable to most
+			//architectures including 64bit ones.
+			int t = val;
+			int bit = 0;
+			int shift = 11;
 
-            //The following piece of code is just an emulation of the
-            //Ix86 assembler command "bsr" (see above). However on old
-            //Intels (like Intel MMX 233MHz) this code is about twice 
-            //as fast as just one "bsr". On PIII and PIV the
-            //bsr is optimized quite well.
-            bit = (int)t >> 24;
-            if(bit != 0)
-            {
-                bit = g_elder_bit_table[bit] + 24;
-            }
-            else
-            {
-                bit = ((int)t >> 16) & 0xFF;
-                if(bit != 0)
-                {
-                    bit = g_elder_bit_table[bit] + 16;
-                }
-                else
-                {
-                    bit = ((int)t >> 8) & 0xFF;
-                    if(bit != 0)
-                    {
-                        bit = g_elder_bit_table[bit] + 8;
-                    }
-                    else
-                    {
-                        bit = g_elder_bit_table[t];
-                    }
-                }
-            }
+			//The following piece of code is just an emulation of the
+			//Ix86 assembler command "bsr" (see above). However on old
+			//Intels (like Intel MMX 233MHz) this code is about twice
+			//as fast as just one "bsr". On PIII and PIV the
+			//bsr is optimized quite well.
+			bit = (int)t >> 24;
+			if (bit != 0)
+			{
+				bit = g_elder_bit_table[bit] + 24;
+			}
+			else
+			{
+				bit = ((int)t >> 16) & 0xFF;
+				if (bit != 0)
+				{
+					bit = g_elder_bit_table[bit] + 16;
+				}
+				else
+				{
+					bit = ((int)t >> 8) & 0xFF;
+					if (bit != 0)
+					{
+						bit = g_elder_bit_table[bit] + 8;
+					}
+					else
+					{
+						bit = g_elder_bit_table[t];
+					}
+				}
+			}
 
-            //This code calculates the sqrt.
-            bit -= 9;
-            if(bit > 0)
-            {
-                bit = (bit >> 1) + (bit & 1);
-                shift -= (int)bit;
-                val >>= (bit << 1);
-            }
-            return (int)((int)g_sqrt_table[val] >> (int)shift);
-        }
+			//This code calculates the sqrt.
+			bit -= 9;
+			if (bit > 0)
+			{
+				bit = (bit >> 1) + (bit & 1);
+				shift -= (int)bit;
+				val >>= (bit << 1);
+			}
+			return (int)((int)g_sqrt_table[val] >> (int)shift);
+		}
 
-        //--------------------------------------------------------------------besj
-        // Function BESJ calculates Bessel function of first kind of order n
-        // Arguments:
-        //     n - an integer (>=0), the order
-        //     x - value at which the Bessel function is required
-        //--------------------
-        // C++ Mathematical Library
-        // Converted from equivalent FORTRAN library
-        // Converted by Gareth Walker for use by course 392 computational project
-        // All functions tested and yield the same results as the corresponding
-        // FORTRAN versions.
-        //
-        // If you have any problems using these functions please report them to
-        // M.Muldoon@UMIST.ac.uk
-        //
-        // Documentation available on the web
-        // http://www.ma.umist.ac.uk/mrm/Teaching/392/libs/392.html
-        // Version 1.0   8/98
-        // 29 October, 1999
-        //--------------------
-        // Adapted for use in AGG library by Andy Wilk (castor.vulgaris@gmail.com)
-        //------------------------------------------------------------------------
-        public static double besj(double x, int n)
-        {
-            if(n < 0)
-            {
-                return 0;
-            }
-            double d = 1E-6;
-            double b = 0;
-            if (Math.Abs(x) <= d) 
-            {
-                if(n != 0) return 0;
-                return 1;
-            }
-            double b1 = 0; // b1 is the value from the previous iteration
-            // Set up a starting order for recurrence
-            int m1 = (int)Math.Abs(x) + 6;
-            if (Math.Abs(x) > 5) 
-            {
-                m1 = (int)(Math.Abs(1.4 * x + 60 / x));
-            }
-            int m2 = (int)(n + 2 + Math.Abs(x) / 4);
-            if (m1 > m2) 
-            {
-                m2 = m1;
-            }
-        
-            // Apply recurrence down from current max order
-            for(;;) 
-            {
-                double c3 = 0;
-                double c2 = 1E-30;
-                double c4 = 0;
-                int m8 = 1;
-                if (m2 / 2 * 2 == m2) 
-                {
-                    m8 = -1;
-                }
-                int imax = m2 - 2;
-                for (int i = 1; i <= imax; i++) 
-                {
-                    double c6t = 2 * (m2 - i) * c2 / x - c3;
-                    c3 = c2;
-                    c2 = c6t;
-                    if(m2 - i - 1 == n)
-                    {
-                        b = c6t;
-                    }
-                    m8 = -1 * m8;
-                    if (m8 > 0)
-                    {
-                        c4 = c4 + 2 * c6t;
-                    }
-                }
-                double c6 = 2 * c2 / x - c3;
-                if(n == 0)
-                {
-                    b = c6;
-                }
-                c4 += c6;
-                b /= c4;
-                if (Math.Abs(b - b1) < d)
-                {
-                    return b;
-                }
-                b1 = b;
-                m2 += 3;
-            }
-        }
-    }
+		//--------------------------------------------------------------------besj
+		// Function BESJ calculates Bessel function of first kind of order n
+		// Arguments:
+		//     n - an integer (>=0), the order
+		//     x - value at which the Bessel function is required
+		//--------------------
+		// C++ Mathematical Library
+		// Converted from equivalent FORTRAN library
+		// Converted by Gareth Walker for use by course 392 computational project
+		// All functions tested and yield the same results as the corresponding
+		// FORTRAN versions.
+		//
+		// If you have any problems using these functions please report them to
+		// M.Muldoon@UMIST.ac.uk
+		//
+		// Documentation available on the web
+		// http://www.ma.umist.ac.uk/mrm/Teaching/392/libs/392.html
+		// Version 1.0   8/98
+		// 29 October, 1999
+		//--------------------
+		// Adapted for use in AGG library by Andy Wilk (castor.vulgaris@gmail.com)
+		//------------------------------------------------------------------------
+		public static double besj(double x, int n)
+		{
+			if (n < 0)
+			{
+				return 0;
+			}
+			double d = 1E-6;
+			double b = 0;
+			if (Math.Abs(x) <= d)
+			{
+				if (n != 0) return 0;
+				return 1;
+			}
+			double b1 = 0; // b1 is the value from the previous iteration
+			// Set up a starting order for recurrence
+			int m1 = (int)Math.Abs(x) + 6;
+			if (Math.Abs(x) > 5)
+			{
+				m1 = (int)(Math.Abs(1.4 * x + 60 / x));
+			}
+			int m2 = (int)(n + 2 + Math.Abs(x) / 4);
+			if (m1 > m2)
+			{
+				m2 = m1;
+			}
+
+			// Apply recurrence down from current max order
+			for (; ; )
+			{
+				double c3 = 0;
+				double c2 = 1E-30;
+				double c4 = 0;
+				int m8 = 1;
+				if (m2 / 2 * 2 == m2)
+				{
+					m8 = -1;
+				}
+				int imax = m2 - 2;
+				for (int i = 1; i <= imax; i++)
+				{
+					double c6t = 2 * (m2 - i) * c2 / x - c3;
+					c3 = c2;
+					c2 = c6t;
+					if (m2 - i - 1 == n)
+					{
+						b = c6t;
+					}
+					m8 = -1 * m8;
+					if (m8 > 0)
+					{
+						c4 = c4 + 2 * c6t;
+					}
+				}
+				double c6 = 2 * c2 / x - c3;
+				if (n == 0)
+				{
+					b = c6;
+				}
+				c4 += c6;
+				b /= c4;
+				if (Math.Abs(b - b1) < d)
+				{
+					return b;
+				}
+				b1 = b;
+				m2 += 3;
+			}
+		}
+	}
 }

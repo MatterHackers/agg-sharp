@@ -3,13 +3,13 @@ Copyright (c) 2014, MatterHackers, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,65 +23,67 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-
 using MatterHackers.VectorMath;
+using System;
 
 namespace MatterHackers.Agg.UI
 {
 	public class ToggleSwitch : GuiWidget
 	{
-		TextWidget associatedToggleSwitchTextWidget;//points to optional text widget that can be passed in with associated T/F value
+		private TextWidget associatedToggleSwitchTextWidget;//points to optional text widget that can be passed in with associated T/F value
 		internal string trueText;           		 //Text associated with switch on true value
 		internal string falseText;					 //Text associated with switch on false value
 
-		public RGBA_Bytes InteriorColor{ get; set; }
-		public RGBA_Bytes ExteriorColor{ get; set; }
+		public RGBA_Bytes InteriorColor { get; set; }
+
+		public RGBA_Bytes ExteriorColor { get; set; }
+
 		public RGBA_Bytes ThumbColor { get; set; }
 
-		double switchHeight;
-		double switchWidth;
-		double thumbWidth;
-		double thumbHeight;
+		private double switchHeight;
+		private double switchWidth;
+		private double thumbWidth;
+		private double thumbHeight;
 
-        public event EventHandler SwitchStateChanged;
-        
-        bool switchState;
-        public bool SwitchState
-        {
-            get { return switchState; }
-            set
-            {
-                if (switchState != value)
-                {
-                    switchState = value;
-                    SetAssociatedTextWidgetText();
-                    OnSwitchStateChanged(null);
-                }
-            }
-        }
+		public event EventHandler SwitchStateChanged;
 
-		bool mouseDownOnToggle;
-		bool mouseMoveOnToggle;
+		private bool switchState;
 
-		public string TrueText 
+		public bool SwitchState
 		{
-			get{ return trueText; }
-			set{ trueText = value; }
+			get { return switchState; }
+			set
+			{
+				if (switchState != value)
+				{
+					switchState = value;
+					SetAssociatedTextWidgetText();
+					OnSwitchStateChanged(null);
+				}
+			}
+		}
+
+		private bool mouseDownOnToggle;
+		private bool mouseMoveOnToggle;
+
+		public string TrueText
+		{
+			get { return trueText; }
+			set { trueText = value; }
 		}
 
 		public string FalseText
 		{
-			get{ return falseText; }
-			set{ falseText = value; }
+			get { return falseText; }
+			set { falseText = value; }
 		}
 
-		public ToggleSwitch (double width = 50, double height = 20,bool startValue = false, RGBA_Bytes backgroundColor = new RGBA_Bytes(), RGBA_Bytes interiorColor = new RGBA_Bytes(), RGBA_Bytes thumbColor = new RGBA_Bytes(), RGBA_Bytes exteriorColor = new RGBA_Bytes())
-			:base(width,height)
+		public ToggleSwitch(double width = 50, double height = 20, bool startValue = false, RGBA_Bytes backgroundColor = new RGBA_Bytes(), RGBA_Bytes interiorColor = new RGBA_Bytes(), RGBA_Bytes thumbColor = new RGBA_Bytes(), RGBA_Bytes exteriorColor = new RGBA_Bytes())
+			: base(width, height)
 		{
 			switchWidth = width;
 			switchHeight = height;
@@ -95,44 +97,44 @@ namespace MatterHackers.Agg.UI
 			this.SwitchState = startValue;
 		}
 
-		public ToggleSwitch (TextWidget associatedToggleSwitchTextWidget,string trueText = "On", string falseText = "Off", double width = 60, double height = 24,bool startValue = false, RGBA_Bytes backgroundColor = new RGBA_Bytes(), RGBA_Bytes interiorColor = new RGBA_Bytes(), RGBA_Bytes thumbColor = new RGBA_Bytes(), RGBA_Bytes exteriorColor = new RGBA_Bytes())
-			:this(width,height,startValue,backgroundColor,interiorColor,thumbColor,exteriorColor)
+		public ToggleSwitch(TextWidget associatedToggleSwitchTextWidget, string trueText = "On", string falseText = "Off", double width = 60, double height = 24, bool startValue = false, RGBA_Bytes backgroundColor = new RGBA_Bytes(), RGBA_Bytes interiorColor = new RGBA_Bytes(), RGBA_Bytes thumbColor = new RGBA_Bytes(), RGBA_Bytes exteriorColor = new RGBA_Bytes())
+			: this(width, height, startValue, backgroundColor, interiorColor, thumbColor, exteriorColor)
 		{
 			this.associatedToggleSwitchTextWidget = associatedToggleSwitchTextWidget;
 			this.trueText = trueText;
 			this.falseText = falseText;
 		}
 
-		public ToggleSwitch ( ToggleSwitch toggleSwitch)
-			:this(toggleSwitch.associatedToggleSwitchTextWidget, toggleSwitch.trueText, toggleSwitch.falseText, toggleSwitch.switchWidth, toggleSwitch.switchHeight,toggleSwitch.SwitchState ,toggleSwitch.BackgroundColor, toggleSwitch.InteriorColor, toggleSwitch.ThumbColor, toggleSwitch.ExteriorColor)
+		public ToggleSwitch(ToggleSwitch toggleSwitch)
+			: this(toggleSwitch.associatedToggleSwitchTextWidget, toggleSwitch.trueText, toggleSwitch.falseText, toggleSwitch.switchWidth, toggleSwitch.switchHeight, toggleSwitch.SwitchState, toggleSwitch.BackgroundColor, toggleSwitch.InteriorColor, toggleSwitch.ThumbColor, toggleSwitch.ExteriorColor)
 		{
 		}
 
-        void OnSwitchStateChanged(EventArgs e)
-        {
-            if (SwitchStateChanged != null)
-            {
-                SwitchStateChanged(this, e);
-            }
-        }
+		private void OnSwitchStateChanged(EventArgs e)
+		{
+			if (SwitchStateChanged != null)
+			{
+				SwitchStateChanged(this, e);
+			}
+		}
 
-		RectangleDouble GetSwitchBounds()
+		private RectangleDouble GetSwitchBounds()
 		{
 			RectangleDouble switchBounds;
-			switchBounds = new RectangleDouble (0, 0, switchWidth, switchHeight);
+			switchBounds = new RectangleDouble(0, 0, switchWidth, switchHeight);
 			return switchBounds;
 		}
 
-		RectangleDouble GetThumbBounds()
+		private RectangleDouble GetThumbBounds()
 		{
 			RectangleDouble thumbBounds;
-			if (SwitchState) 
+			if (SwitchState)
 			{
-				thumbBounds = new RectangleDouble (switchWidth - thumbWidth,0,switchWidth,thumbHeight);
+				thumbBounds = new RectangleDouble(switchWidth - thumbWidth, 0, switchWidth, thumbHeight);
 			}
-			else 
+			else
 			{
-				thumbBounds = new RectangleDouble (0,0,thumbWidth,thumbHeight);
+				thumbBounds = new RectangleDouble(0, 0, thumbWidth, thumbHeight);
 			}
 
 			return thumbBounds;
@@ -140,69 +142,68 @@ namespace MatterHackers.Agg.UI
 
 		public void DrawBeforeChildren(Graphics2D graphics2D)
 		{
-			graphics2D.FillRectangle (GetSwitchBounds (), BackgroundColor);
+			graphics2D.FillRectangle(GetSwitchBounds(), BackgroundColor);
 		}
 
 		public void DrawAfterChildren(Graphics2D graphics2D)
 		{
-
-			if (SwitchState) 
+			if (SwitchState)
 			{
-				RectangleDouble interior = GetSwitchBounds ();
-				interior.Inflate (-6);			
-				graphics2D.FillRectangle (interior, InteriorColor);
+				RectangleDouble interior = GetSwitchBounds();
+				interior.Inflate(-6);
+				graphics2D.FillRectangle(interior, InteriorColor);
 			}
-			RectangleDouble border = GetSwitchBounds ();
-			border.Inflate (-3);
-			graphics2D.Rectangle (border, ExteriorColor,1);
-			graphics2D.FillRectangle (GetThumbBounds(), ThumbColor);
-            graphics2D.Rectangle(GetThumbBounds(), new RGBA_Bytes(255,255,255,90), 1);
-
+			RectangleDouble border = GetSwitchBounds();
+			border.Inflate(-3);
+			graphics2D.Rectangle(border, ExteriorColor, 1);
+			graphics2D.FillRectangle(GetThumbBounds(), ThumbColor);
+			graphics2D.Rectangle(GetThumbBounds(), new RGBA_Bytes(255, 255, 255, 90), 1);
 		}
 
-		public override void OnDraw (Graphics2D graphics2D)
+		public override void OnDraw(Graphics2D graphics2D)
 		{
-			base.OnDraw (graphics2D);
-			DrawAfterChildren (graphics2D);
+			base.OnDraw(graphics2D);
+			DrawAfterChildren(graphics2D);
 		}
 
-		void SetAssociatedTextWidgetText()
+		private void SetAssociatedTextWidgetText()
 		{
 			if (associatedToggleSwitchTextWidget != null)
 			{
-				if (SwitchState) 
+				if (SwitchState)
 				{
 					associatedToggleSwitchTextWidget.Text = trueText;
 				}
-				else 
+				else
 				{
 					associatedToggleSwitchTextWidget.Text = falseText;
 				}
 			}
 		}
 
-		public override void OnMouseDown (MouseEventArgs mouseEvent)
+		public override void OnMouseDown(MouseEventArgs mouseEvent)
 		{
 			RectangleDouble switchBounds = GetSwitchBounds();
 			Vector2 mousePosition = mouseEvent.Position;
 
-			if(switchBounds.Contains (mousePosition)) 
+			if (switchBounds.Contains(mousePosition))
 			{
 				mouseDownOnToggle = true;
 			}
 
-			base.OnMouseDown (mouseEvent);
+			base.OnMouseDown(mouseEvent);
 		}
 
-		public override void OnMouseMove (MouseEventArgs mouseEvent)
+		public override void OnMouseMove(MouseEventArgs mouseEvent)
 		{
 			bool oldValue = SwitchState;
-			if (mouseDownOnToggle) {
+			if (mouseDownOnToggle)
+			{
 				mouseMoveOnToggle = true;
 				RectangleDouble switchBounds = GetSwitchBounds();
 				Vector2 mousePosition = mouseEvent.Position;
 				SwitchState = switchBounds.XCenter < mousePosition.x;
-				if (oldValue != SwitchState) 
+				if (oldValue != SwitchState)
 				{
 					if (SwitchStateChanged != null)
 					{
@@ -211,12 +212,12 @@ namespace MatterHackers.Agg.UI
 					Invalidate();
 				}
 			}
-			base.OnMouseMove (mouseEvent);
+			base.OnMouseMove(mouseEvent);
 		}
 
-		public override void OnMouseUp (MouseEventArgs mouseEvent)
+		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
-			if (!mouseMoveOnToggle) 
+			if (!mouseMoveOnToggle)
 			{
 				SwitchState = !SwitchState;
 				if (SwitchStateChanged != null)
@@ -228,8 +229,7 @@ namespace MatterHackers.Agg.UI
 
 			mouseDownOnToggle = false;
 			mouseMoveOnToggle = false;
-			base.OnMouseUp (mouseEvent);
+			base.OnMouseUp(mouseEvent);
 		}
 	}
 }
-

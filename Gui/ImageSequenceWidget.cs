@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,102 +23,101 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.Agg.Image;
 using System;
 using System.Diagnostics;
 
-using MatterHackers.Agg.Image;
-
 namespace MatterHackers.Agg.UI
 {
-    public class ImageSequenceWidget : GuiWidget
-    {
-        Stopwatch runningTime = new Stopwatch();
-        ImageSequence imageSequence;
-        bool runAnimation = false;
-        double lastTimeUpdated = 0;
+	public class ImageSequenceWidget : GuiWidget
+	{
+		private Stopwatch runningTime = new Stopwatch();
+		private ImageSequence imageSequence;
+		private bool runAnimation = false;
+		private double lastTimeUpdated = 0;
 
-        public int CurrentFrame = 0;
+		public int CurrentFrame = 0;
 
-        public bool RunAnimation
-        {
-            get { return runAnimation; }
-            set
-            {
-                if (value != runAnimation)
-                {
-                    runAnimation = value;
-                    if (RunAnimation)
-                    {
-                        // we just turned it on so make sure the update is being called
-                        lastTimeUpdated = 0;
-                        runningTime.Restart();
-                        UiThread.RunOnIdle(UpdateGif);
-                    }
-                }
-            }
-        }
+		public bool RunAnimation
+		{
+			get { return runAnimation; }
+			set
+			{
+				if (value != runAnimation)
+				{
+					runAnimation = value;
+					if (RunAnimation)
+					{
+						// we just turned it on so make sure the update is being called
+						lastTimeUpdated = 0;
+						runningTime.Restart();
+						UiThread.RunOnIdle(UpdateGif);
+					}
+				}
+			}
+		}
 
-        public bool ForcePixelAlignment { get; set; }
+		public bool ForcePixelAlignment { get; set; }
 
-        public ImageSequenceWidget(int width, int height)
-        {
-            ForcePixelAlignment = true;
-            LocalBounds = new RectangleDouble(0, 0, width, height);
-            RunAnimation = true;
-        }
+		public ImageSequenceWidget(int width, int height)
+		{
+			ForcePixelAlignment = true;
+			LocalBounds = new RectangleDouble(0, 0, width, height);
+			RunAnimation = true;
+		}
 
-        public ImageSequenceWidget(ImageSequence initialImageSequence)
-            : this(initialImageSequence.Width, initialImageSequence.Height)
-        {
-            ImageSequence = initialImageSequence;
-        }
+		public ImageSequenceWidget(ImageSequence initialImageSequence)
+			: this(initialImageSequence.Width, initialImageSequence.Height)
+		{
+			ImageSequence = initialImageSequence;
+		}
 
-        public ImageSequence ImageSequence
-        {
-            get
-            {
-                return imageSequence;
-            }
+		public ImageSequence ImageSequence
+		{
+			get
+			{
+				return imageSequence;
+			}
 
-            set
-            {
-                imageSequence = value;
-                LocalBounds = new RectangleDouble(0, 0, imageSequence.Width, imageSequence.Height);
-            }
-        }
+			set
+			{
+				imageSequence = value;
+				LocalBounds = new RectangleDouble(0, 0, imageSequence.Width, imageSequence.Height);
+			}
+		}
 
-        public override void OnClosed(EventArgs e)
-        {
-            RunAnimation = false;
-            base.OnClosed(e);
-        }
+		public override void OnClosed(EventArgs e)
+		{
+			RunAnimation = false;
+			base.OnClosed(e);
+		}
 
-        void UpdateGif(object state)
-        {
-            if (runningTime.Elapsed.TotalSeconds - lastTimeUpdated > imageSequence.SecondsPerFrame)
-            {
-                lastTimeUpdated = runningTime.Elapsed.TotalSeconds;
-                CurrentFrame = (++CurrentFrame) % imageSequence.NumFrames;
-                Invalidate();
-            }
+		private void UpdateGif(object state)
+		{
+			if (runningTime.Elapsed.TotalSeconds - lastTimeUpdated > imageSequence.SecondsPerFrame)
+			{
+				lastTimeUpdated = runningTime.Elapsed.TotalSeconds;
+				CurrentFrame = (++CurrentFrame) % imageSequence.NumFrames;
+				Invalidate();
+			}
 
-            if (RunAnimation)
-            {
-                UiThread.RunOnIdle(UpdateGif);
-            }
-        }
+			if (RunAnimation)
+			{
+				UiThread.RunOnIdle(UpdateGif);
+			}
+		}
 
-        public override void OnDraw(Graphics2D graphics2D)
-        {
-            if (imageSequence != null)
-            {
-                graphics2D.Render(imageSequence.GetImageByIndex(CurrentFrame % imageSequence.NumFrames), 100, 100);
-            }
-            base.OnDraw(graphics2D);
-        }
-    }
+		public override void OnDraw(Graphics2D graphics2D)
+		{
+			if (imageSequence != null)
+			{
+				graphics2D.Render(imageSequence.GetImageByIndex(CurrentFrame % imageSequence.NumFrames), 100, 100);
+			}
+			base.OnDraw(graphics2D);
+		}
+	}
 }

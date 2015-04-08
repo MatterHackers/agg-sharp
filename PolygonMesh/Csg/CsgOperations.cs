@@ -1,10 +1,10 @@
 ﻿// Original CSG.JS library by Evan Wallace (http://madebyevan.com), under the MIT license.
 // GitHub: https://github.com/evanw/csg.js/
-// 
+//
 // C++ port by Tomasz Dabrowski (http://28byteslater.com), under the MIT license.
 // GitHub: https://github.com/dabroz/csgjs-cpp/
 // C# port by Lars Brubaker
-// 
+//
 // Constructive Solid Geometry (CSG) is a modeling technique that uses Boolean
 // operations like union and intersection to combine 3D solids. This library
 // implements CSG operations on meshes elegantly and concisely using BSP trees,
@@ -13,64 +13,59 @@
 // solids are correctly handled.
 //
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-
-using MatterHackers.VectorMath;
-using MatterHackers.PolygonMesh;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
-    public delegate CsgNode CsgFunctionHandler(CsgNode a, CsgNode b);
+	public delegate CsgNode CsgFunctionHandler(CsgNode a, CsgNode b);
 
-    // Public interface implementation
-    public static class CsgOperations
-    {
-        public static List<CsgPolygon> PolygonsFromMesh(Mesh model)
-        {
-            List<CsgPolygon> list = new List<CsgPolygon>();
+	// Public interface implementation
+	public static class CsgOperations
+	{
+		public static List<CsgPolygon> PolygonsFromMesh(Mesh model)
+		{
+			List<CsgPolygon> list = new List<CsgPolygon>();
 
-            foreach (Face face in model.Faces)
-            {
-                List<Vertex> triangle = new List<Vertex>();
-                foreach (FaceEdge faceEdge in face.FaceEdges())
-                {
-                    Vertex v = new Vertex(faceEdge.firstVertex.Position);
-                    v.Normal = faceEdge.firstVertex.Normal;
-                    triangle.Add(v);
-                }
+			foreach (Face face in model.Faces)
+			{
+				List<Vertex> triangle = new List<Vertex>();
+				foreach (FaceEdge faceEdge in face.FaceEdges())
+				{
+					Vertex v = new Vertex(faceEdge.firstVertex.Position);
+					v.Normal = faceEdge.firstVertex.Normal;
+					triangle.Add(v);
+				}
 
-                // TODO: make sure this polygon is convex
-                list.Add(new CsgPolygon(triangle));
-            }
-            
-            return list;
-        }
+				// TODO: make sure this polygon is convex
+				list.Add(new CsgPolygon(triangle));
+			}
 
-        public static Mesh MeshFromPolygons(List<CsgPolygon> polygons)
-        {
-            Mesh model = new Mesh();
-            HashSet<PolygonMesh.Vertex> vertices = new HashSet<PolygonMesh.Vertex>();
-            for (int polygonIndex = 0; polygonIndex < polygons.Count; polygonIndex++)
-            {
-                CsgPolygon poly = polygons[polygonIndex];
-                vertices.Clear();
+			return list;
+		}
 
-                for (int vertexIndex = 0; vertexIndex < poly.vertices.Count; vertexIndex++)
-                {
-                    vertices.Add(model.CreateVertex(poly.vertices[vertexIndex].Position));
-                }
+		public static Mesh MeshFromPolygons(List<CsgPolygon> polygons)
+		{
+			Mesh model = new Mesh();
+			HashSet<PolygonMesh.Vertex> vertices = new HashSet<PolygonMesh.Vertex>();
+			for (int polygonIndex = 0; polygonIndex < polygons.Count; polygonIndex++)
+			{
+				CsgPolygon poly = polygons[polygonIndex];
+				vertices.Clear();
 
-                if (vertices.Count > 2)
-                {
-                    model.CreateFace(vertices.ToArray());
-                }
-            }
+				for (int vertexIndex = 0; vertexIndex < poly.vertices.Count; vertexIndex++)
+				{
+					vertices.Add(model.CreateVertex(poly.vertices[vertexIndex].Position));
+				}
 
-            return model;
-        }
+				if (vertices.Count > 2)
+				{
+					model.CreateFace(vertices.ToArray());
+				}
+			}
+
+			return model;
+		}
 
 		public static Mesh Union(Mesh a, Mesh b)
 		{
@@ -86,14 +81,14 @@ namespace MatterHackers.PolygonMesh.Csg
 		{
 			return PerformOperation(a, b, CsgNode.Intersect);
 		}
-		
-		static Mesh PerformOperation(Mesh a, Mesh b, CsgFunctionHandler fun)
-        {
-            CsgNode A = new CsgNode(PolygonsFromMesh(a));
-            CsgNode B = new CsgNode(PolygonsFromMesh(b));
-            CsgNode AB = fun(A, B);
-            List<CsgPolygon> polygons = AB.GetAllPolygons();
-            return MeshFromPolygons(polygons);
-        }
+
+		private static Mesh PerformOperation(Mesh a, Mesh b, CsgFunctionHandler fun)
+		{
+			CsgNode A = new CsgNode(PolygonsFromMesh(a));
+			CsgNode B = new CsgNode(PolygonsFromMesh(b));
+			CsgNode AB = fun(A, B);
+			List<CsgPolygon> polygons = AB.GetAllPolygons();
+			return MeshFromPolygons(polygons);
+		}
 	}
 }

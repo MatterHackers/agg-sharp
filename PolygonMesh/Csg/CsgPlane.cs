@@ -1,137 +1,135 @@
-﻿using System;
+﻿using MatterHackers.VectorMath;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
-    // Represents a plane in 3D space.
-    public struct CsgPlane
-    {
-        public Vector3 normal;
-        public double w;
+	// Represents a plane in 3D space.
+	public struct CsgPlane
+	{
+		public Vector3 normal;
+		public double w;
 
-        public CsgPlane(Vector3 a, Vector3 b, Vector3 c)
-        {
-            this.normal = (Vector3.Cross(b - a, c - a)).GetNormal();
-            this.w = Vector3.Dot(this.normal, a);
-        }
-        public bool ok()
-        {
-            return this.normal.Length > 0.0;
-        }
+		public CsgPlane(Vector3 a, Vector3 b, Vector3 c)
+		{
+			this.normal = (Vector3.Cross(b - a, c - a)).GetNormal();
+			this.w = Vector3.Dot(this.normal, a);
+		}
 
-        public void flip()
-        {
-            this.normal = -this.normal;
-            this.w *= -1.0;
-        }
+		public bool ok()
+		{
+			return this.normal.Length > 0.0;
+		}
 
-        [Flags]
-        public enum PolyType
-        {
-            COPLANAR = 0,
-            FRONT = 1,
-            BACK = 2,
-            SPANNING = 3
-        };
+		public void flip()
+		{
+			this.normal = -this.normal;
+			this.w *= -1.0;
+		}
 
-        // Split `polygon` by this plane if needed, then put the polygon or polygon
-        // fragments in the appropriate lists. Coplanar polygons go into either
-        // `coplanarFront` or `coplanarBack` depending on their orientation with
-        // respect to this plane. Polygons in front or in back of this plane go into
-        // either `front` or `back`.
-        public void SplitPolygon(CsgPolygon polygon, List<CsgPolygon> coplanarFront, List<CsgPolygon> coplanarBack, List<CsgPolygon> front, List<CsgPolygon> back)
-        {
-            double splitTolerance = 0.00001;
-            // Classify each point as well as the entire polygon into one of the above
-            // four classes.
-            PolyType polygonType = PolyType.COPLANAR;
-            List<PolyType> types = new List<PolyType>();
+		[Flags]
+		public enum PolyType
+		{
+			COPLANAR = 0,
+			FRONT = 1,
+			BACK = 2,
+			SPANNING = 3
+		};
 
-            for (int i = 0; i < polygon.vertices.Count; i++)
-            {
-                double t = Vector3.Dot(this.normal, polygon.vertices[i].Position) - this.w;
-                PolyType type = (t < -splitTolerance) ? PolyType.BACK : ((t > splitTolerance) ? PolyType.FRONT : PolyType.COPLANAR);
-                polygonType |= type;
-                types.Add(type);
-            }
+		// Split `polygon` by this plane if needed, then put the polygon or polygon
+		// fragments in the appropriate lists. Coplanar polygons go into either
+		// `coplanarFront` or `coplanarBack` depending on their orientation with
+		// respect to this plane. Polygons in front or in back of this plane go into
+		// either `front` or `back`.
+		public void SplitPolygon(CsgPolygon polygon, List<CsgPolygon> coplanarFront, List<CsgPolygon> coplanarBack, List<CsgPolygon> front, List<CsgPolygon> back)
+		{
+			double splitTolerance = 0.00001;
+			// Classify each point as well as the entire polygon into one of the above
+			// four classes.
+			PolyType polygonType = PolyType.COPLANAR;
+			List<PolyType> types = new List<PolyType>();
 
-            // Put the polygon in the correct list, splitting it when necessary.
-            switch (polygonType)
-            {
-                case PolyType.COPLANAR:
-                    {
-                        if (Vector3.Dot(this.normal, polygon.plane.normal) > 0)
-                        {
-                            coplanarFront.Add(polygon);
-                        }
-                        else
-                        {
-                            coplanarBack.Add(polygon);
-                        }
-                        break;
-                    }
-                case PolyType.FRONT:
-                    {
-                        front.Add(polygon);
-                        break;
-                    }
-                case PolyType.BACK:
-                    {
-                        back.Add(polygon);
-                        break;
-                    }
-                case PolyType.SPANNING:
-                    {
-                        List<Vertex> frontVertices = new List<Vertex>();
-                        List<Vertex> backVertices = new List<Vertex>();
-                        for (int firstVertexIndex = 0; firstVertexIndex < polygon.vertices.Count; firstVertexIndex++)
-                        {
-                            int nextVertexIndex = (firstVertexIndex + 1) % polygon.vertices.Count;
-                            PolyType firstPolyType = types[firstVertexIndex];
-                            PolyType nextPolyType = types[nextVertexIndex];
-                            Vertex firstVertex = polygon.vertices[firstVertexIndex];
-                            Vertex nextVertex = polygon.vertices[nextVertexIndex];
-                            if (firstPolyType != PolyType.BACK)
-                            {
-                                frontVertices.Add(firstVertex);
-                            }
+			for (int i = 0; i < polygon.vertices.Count; i++)
+			{
+				double t = Vector3.Dot(this.normal, polygon.vertices[i].Position) - this.w;
+				PolyType type = (t < -splitTolerance) ? PolyType.BACK : ((t > splitTolerance) ? PolyType.FRONT : PolyType.COPLANAR);
+				polygonType |= type;
+				types.Add(type);
+			}
 
-                            if (firstPolyType != PolyType.FRONT)
-                            {
-                                backVertices.Add(firstVertex);
-                            }
+			// Put the polygon in the correct list, splitting it when necessary.
+			switch (polygonType)
+			{
+				case PolyType.COPLANAR:
+					{
+						if (Vector3.Dot(this.normal, polygon.plane.normal) > 0)
+						{
+							coplanarFront.Add(polygon);
+						}
+						else
+						{
+							coplanarBack.Add(polygon);
+						}
+						break;
+					}
+				case PolyType.FRONT:
+					{
+						front.Add(polygon);
+						break;
+					}
+				case PolyType.BACK:
+					{
+						back.Add(polygon);
+						break;
+					}
+				case PolyType.SPANNING:
+					{
+						List<Vertex> frontVertices = new List<Vertex>();
+						List<Vertex> backVertices = new List<Vertex>();
+						for (int firstVertexIndex = 0; firstVertexIndex < polygon.vertices.Count; firstVertexIndex++)
+						{
+							int nextVertexIndex = (firstVertexIndex + 1) % polygon.vertices.Count;
+							PolyType firstPolyType = types[firstVertexIndex];
+							PolyType nextPolyType = types[nextVertexIndex];
+							Vertex firstVertex = polygon.vertices[firstVertexIndex];
+							Vertex nextVertex = polygon.vertices[nextVertexIndex];
+							if (firstPolyType != PolyType.BACK)
+							{
+								frontVertices.Add(firstVertex);
+							}
 
-                            if ((firstPolyType | nextPolyType) == PolyType.SPANNING)
-                            {
-                                double planDotFirstVertex = Vector3.Dot(this.normal, firstVertex.Position);
-                                double firstDistToPlane = this.w - planDotFirstVertex;
-                                Vector3 deltaFromFirstToNext = nextVertex.Position - firstVertex.Position;
-                                double t = firstDistToPlane / Vector3.Dot(this.normal, deltaFromFirstToNext);
-                                Vertex newVertex = firstVertex.CreateInterpolated(nextVertex, t);
-                                frontVertices.Add(newVertex);
-                                backVertices.Add(newVertex);
-                            }
-                        }
+							if (firstPolyType != PolyType.FRONT)
+							{
+								backVertices.Add(firstVertex);
+							}
 
-                        if (frontVertices.Count >= 3)
-                        {
-                            front.Add(new CsgPolygon(frontVertices));
-                        }
+							if ((firstPolyType | nextPolyType) == PolyType.SPANNING)
+							{
+								double planDotFirstVertex = Vector3.Dot(this.normal, firstVertex.Position);
+								double firstDistToPlane = this.w - planDotFirstVertex;
+								Vector3 deltaFromFirstToNext = nextVertex.Position - firstVertex.Position;
+								double t = firstDistToPlane / Vector3.Dot(this.normal, deltaFromFirstToNext);
+								Vertex newVertex = firstVertex.CreateInterpolated(nextVertex, t);
+								frontVertices.Add(newVertex);
+								backVertices.Add(newVertex);
+							}
+						}
 
-                        if (backVertices.Count >= 3)
-                        {
-                            back.Add(new CsgPolygon(backVertices));
-                        }
-                    }
-                    break;
+						if (frontVertices.Count >= 3)
+						{
+							front.Add(new CsgPolygon(frontVertices));
+						}
 
-                default:
-                    throw new NotImplementedException();
-            }
-        }
-    }
+						if (backVertices.Count >= 3)
+						{
+							back.Add(new CsgPolygon(backVertices));
+						}
+					}
+					break;
+
+				default:
+					throw new NotImplementedException();
+			}
+		}
+	}
 }

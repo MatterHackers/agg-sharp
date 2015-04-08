@@ -1,3 +1,5 @@
+using MatterHackers.VectorMath;
+
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
@@ -6,8 +8,8 @@
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 //
-// Permission to copy, use, modify, sell and distribute this software 
-// is granted provided this copyright notice appears in all copies. 
+// Permission to copy, use, modify, sell and distribute this software
+// is granted provided this copyright notice appears in all copies.
 // This software is provided "as is" without express or implied
 // warranty, and with no claim as to its suitability for any purpose.
 //
@@ -22,127 +24,124 @@
 //----------------------------------------------------------------------------
 using System;
 
-using MatterHackers.Agg;
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.VectorMath;
-
 namespace MatterHackers.Agg.UI
 {
-    public class CheckBox : ButtonBase
-    {
-        public static BorderDouble DefaultMargin;// = new BorderDouble(3);
+	public class CheckBox : ButtonBase
+	{
+		public static BorderDouble DefaultMargin;// = new BorderDouble(3);
 
-        public delegate void CheckedStateChangedEventHandler(object sender, EventArgs e);
-        public event CheckedStateChangedEventHandler CheckedStateChanged;
+		public delegate void CheckedStateChangedEventHandler(object sender, EventArgs e);
 
-        private bool     isChecked = false;
+		public event CheckedStateChangedEventHandler CheckedStateChanged;
 
-        public CheckBox(GuiWidget buttonView)
-            : this(0, 0, buttonView)
-        {
-        }
+		private bool isChecked = false;
 
-        public CheckBox(double x, double y, GuiWidget checkBoxButtonView)
-            : base(x, y)
-        {
-            Margin = DefaultMargin;
+		public CheckBox(GuiWidget buttonView)
+			: this(0, 0, buttonView)
+		{
+		}
 
-            OriginRelativeParent = new Vector2(x, y);
+		public CheckBox(double x, double y, GuiWidget checkBoxButtonView)
+			: base(x, y)
+		{
+			Margin = DefaultMargin;
 
-            if (checkBoxButtonView != null)
-            {
-                checkBoxButtonView.Selectable = false;
+			OriginRelativeParent = new Vector2(x, y);
 
-                AddChild(checkBoxButtonView);
+			if (checkBoxButtonView != null)
+			{
+				checkBoxButtonView.Selectable = false;
 
-                SetBoundsToEncloseChildren();
+				AddChild(checkBoxButtonView);
 
-                if (LocalBounds.Left != 0 || LocalBounds.Bottom != 0)
-                {
-                    // let's make sure that a button has 0, 0 at the lower left
-                    // move the children so they will fit with 0, 0 at the lower left
-                    foreach (GuiWidget child in Children)
-                    {
-                        child.OriginRelativeParent = child.OriginRelativeParent + new Vector2(-LocalBounds.Left, -LocalBounds.Bottom);
-                    }
+				SetBoundsToEncloseChildren();
 
-                    SetBoundsToEncloseChildren();
-                }
+				if (LocalBounds.Left != 0 || LocalBounds.Bottom != 0)
+				{
+					// let's make sure that a button has 0, 0 at the lower left
+					// move the children so they will fit with 0, 0 at the lower left
+					foreach (GuiWidget child in Children)
+					{
+						child.OriginRelativeParent = child.OriginRelativeParent + new Vector2(-LocalBounds.Left, -LocalBounds.Bottom);
+					}
 
-                MinimumSize = new Vector2(Width, Height);
-            }
+					SetBoundsToEncloseChildren();
+				}
 
-            Click += new EventHandler(CheckBox_Click);
-        }
+				MinimumSize = new Vector2(Width, Height);
+			}
 
-        public CheckBox(double x, double y, string label, double textSize = 12)
-            : this(x, y, new CheckBoxViewText(label, textSize))
-        {
-        }
+			Click += new EventHandler(CheckBox_Click);
+		}
 
-        public CheckBox(string label)
-            : this(0, 0, label)
-        {
-        }
+		public CheckBox(double x, double y, string label, double textSize = 12)
+			: this(x, y, new CheckBoxViewText(label, textSize))
+		{
+		}
 
-        public CheckBox(string label, RGBA_Bytes textColor, double textSize = 12)
-            : this(0, 0, label, textSize)
-        {
-            TextColor = textColor;
-        }
+		public CheckBox(string label)
+			: this(0, 0, label)
+		{
+		}
 
-        public RGBA_Bytes TextColor
-        {
-            get
-            {
-                CheckBoxViewText child = Children[0] as CheckBoxViewText;
-                if (child != null)
-                {
-                    return child.TextColor;
-                }
+		public CheckBox(string label, RGBA_Bytes textColor, double textSize = 12)
+			: this(0, 0, label, textSize)
+		{
+			TextColor = textColor;
+		}
 
-                return RGBA_Bytes.Black;
-            }
+		public RGBA_Bytes TextColor
+		{
+			get
+			{
+				CheckBoxViewText child = Children[0] as CheckBoxViewText;
+				if (child != null)
+				{
+					return child.TextColor;
+				}
 
-            set
-            {
-                CheckBoxViewText child = Children[0] as CheckBoxViewText;
-                if (child != null)
-                {
-                    child.TextColor = value;
-                }
-            }
-        }
+				return RGBA_Bytes.Black;
+			}
 
-        void CheckBox_Click(object sender, EventArgs mouseEvent)
-        {   
-            Checked = !Checked;
-        }
+			set
+			{
+				CheckBoxViewText child = Children[0] as CheckBoxViewText;
+				if (child != null)
+				{
+					child.TextColor = value;
+				}
+			}
+		}
 
-        public bool Checked
-        {
-            get
-            {
-                return isChecked;
-            }
+		private void CheckBox_Click(object sender, EventArgs mouseEvent)
+		{
+			Checked = !Checked;
+		}
 
-            set
-            {
-                if (isChecked != value)
-                {
-                    isChecked = value;
-                    OnCheckStateChanged();
-                    Invalidate();
-                }
-            }
-        }
+		public bool Checked
+		{
+			get
+			{
+				return isChecked;
+			}
 
-        public virtual void OnCheckStateChanged()
-        {
-            if (CheckedStateChanged != null)
-            {
-                CheckedStateChanged(this, null);
-            }
-        }
-    }
+			set
+			{
+				if (isChecked != value)
+				{
+					isChecked = value;
+					OnCheckStateChanged();
+					Invalidate();
+				}
+			}
+		}
+
+		public virtual void OnCheckStateChanged()
+		{
+			if (CheckedStateChanged != null)
+			{
+				CheckedStateChanged(this, null);
+			}
+		}
+	}
 }

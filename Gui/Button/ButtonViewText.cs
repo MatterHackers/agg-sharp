@@ -1,10 +1,12 @@
-﻿//----------------------------------------------------------------------------
+﻿using MatterHackers.Agg.VertexSource;
+
+//----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2007 Lars Brubaker
 //                  larsbrubaker@gmail.com
 //
-// Permission to copy, use, modify, sell and distribute this software 
-// is granted provided this copyright notice appears in all copies. 
+// Permission to copy, use, modify, sell and distribute this software
+// is granted provided this copyright notice appears in all copies.
 // This software is provided "as is" without express or implied
 // warranty, and with no claim as to its suitability for any purpose.
 //
@@ -12,103 +14,99 @@
 //
 //----------------------------------------------------------------------------
 using System;
-using MatterHackers.Agg;
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.Agg.Transform;
-using MatterHackers.Agg.Image;
-using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
-    public class ButtonViewText : GuiWidget
-    {
-        protected double borderWidth;
-        protected double borderRadius;
+	public class ButtonViewText : GuiWidget
+	{
+		protected double borderWidth;
+		protected double borderRadius;
 
-        public double BorderWidth { get { return borderWidth; } set { borderWidth = value; } }
-        public double BorderRadius { get { return borderRadius; } set { borderRadius = value; } }
+		public double BorderWidth { get { return borderWidth; } set { borderWidth = value; } }
 
-        protected TextWidget buttonText;
+		public double BorderRadius { get { return borderRadius; } set { borderRadius = value; } }
 
-        public static BorderDouble DefaultPadding = new BorderDouble(5);
+		protected TextWidget buttonText;
 
-        public ButtonViewText(string label, double textHeight = 16, double borderWidth = 3, double borderRadius = 5)
-        {
-            BorderRadius = borderRadius;
-            this.borderWidth = borderWidth;
-            buttonText = new TextWidget(label, textHeight);
-            buttonText.VAnchor = VAnchor.ParentCenter;
-            buttonText.HAnchor = HAnchor.ParentCenter;
+		public static BorderDouble DefaultPadding = new BorderDouble(5);
 
-            AnchorAll();
+		public ButtonViewText(string label, double textHeight = 16, double borderWidth = 3, double borderRadius = 5)
+		{
+			BorderRadius = borderRadius;
+			this.borderWidth = borderWidth;
+			buttonText = new TextWidget(label, textHeight);
+			buttonText.VAnchor = VAnchor.ParentCenter;
+			buttonText.HAnchor = HAnchor.ParentCenter;
 
-            AddChild(buttonText);
+			AnchorAll();
 
-            Padding = DefaultPadding;
+			AddChild(buttonText);
 
-            SetBoundsToEncloseChildren();
-        }
+			Padding = DefaultPadding;
 
-        public override void OnParentChanged(EventArgs e)
-        {
-            GuiWidget parentButton = Parent;
+			SetBoundsToEncloseChildren();
+		}
 
-            parentButton.TextChanged += new EventHandler(parentButton_TextChanged);
+		public override void OnParentChanged(EventArgs e)
+		{
+			GuiWidget parentButton = Parent;
 
-            parentButton.MouseEnter += redrawButtonIfRequired;
-            parentButton.MouseDown += redrawButtonIfRequired;
-            parentButton.MouseUp += redrawButtonIfRequired;
-            parentButton.MouseLeave += redrawButtonIfRequired;
+			parentButton.TextChanged += new EventHandler(parentButton_TextChanged);
 
-            base.OnParentChanged(e);
-        }
+			parentButton.MouseEnter += redrawButtonIfRequired;
+			parentButton.MouseDown += redrawButtonIfRequired;
+			parentButton.MouseUp += redrawButtonIfRequired;
+			parentButton.MouseLeave += redrawButtonIfRequired;
 
-        void parentButton_TextChanged(object sender, EventArgs e)
-        {
-            buttonText.Text = ((GuiWidget)sender).Text;
+			base.OnParentChanged(e);
+		}
 
-            SetBoundsToEncloseChildren();
-        }
+		private void parentButton_TextChanged(object sender, EventArgs e)
+		{
+			buttonText.Text = ((GuiWidget)sender).Text;
 
-        public override void OnDraw(Graphics2D graphics2D)
-        {
-            Button parentButton = (Button)Parent;
+			SetBoundsToEncloseChildren();
+		}
 
-            RectangleDouble Bounds = LocalBounds;
+		public override void OnDraw(Graphics2D graphics2D)
+		{
+			Button parentButton = (Button)Parent;
 
-            RoundedRect rectBorder = new RoundedRect(Bounds, BorderRadius);
-            if (parentButton.Enabled == true)
-            {
-                graphics2D.Render(rectBorder, new RGBA_Bytes(0, 0, 0));
-            }
-            else
-            {
-                graphics2D.Render(rectBorder, new RGBA_Bytes(128, 128, 128));
-            }
-            RectangleDouble insideBounds = Bounds;
-            insideBounds.Inflate(-BorderWidth);
-            RoundedRect rectInside = new RoundedRect(insideBounds, Math.Max(BorderRadius - BorderWidth, 0));
-            RGBA_Bytes insideColor = new RGBA_Bytes(1.0, 1.0, 1.0);
-            if (parentButton.FirstWidgetUnderMouse)
-            {
-                if (parentButton.MouseDownOnButton)
-                {
-                    insideColor = DefaultViewFactory.DefaultBlue;
-                }
-                else
-                {
-                    insideColor = DefaultViewFactory.DefaultBlue.GetAsRGBA_Floats().Blend(RGBA_Floats.White, .75).GetAsRGBA_Bytes();
-                }
-            }
+			RectangleDouble Bounds = LocalBounds;
 
-            graphics2D.Render(rectInside, insideColor);
+			RoundedRect rectBorder = new RoundedRect(Bounds, BorderRadius);
+			if (parentButton.Enabled == true)
+			{
+				graphics2D.Render(rectBorder, new RGBA_Bytes(0, 0, 0));
+			}
+			else
+			{
+				graphics2D.Render(rectBorder, new RGBA_Bytes(128, 128, 128));
+			}
+			RectangleDouble insideBounds = Bounds;
+			insideBounds.Inflate(-BorderWidth);
+			RoundedRect rectInside = new RoundedRect(insideBounds, Math.Max(BorderRadius - BorderWidth, 0));
+			RGBA_Bytes insideColor = new RGBA_Bytes(1.0, 1.0, 1.0);
+			if (parentButton.FirstWidgetUnderMouse)
+			{
+				if (parentButton.MouseDownOnButton)
+				{
+					insideColor = DefaultViewFactory.DefaultBlue;
+				}
+				else
+				{
+					insideColor = DefaultViewFactory.DefaultBlue.GetAsRGBA_Floats().Blend(RGBA_Floats.White, .75).GetAsRGBA_Bytes();
+				}
+			}
 
-            base.OnDraw(graphics2D);
-        }
+			graphics2D.Render(rectInside, insideColor);
 
-        public void redrawButtonIfRequired(object sender, EventArgs e)
-        {
-            ((GuiWidget)sender).Invalidate();
-        }
-    }
+			base.OnDraw(graphics2D);
+		}
+
+		public void redrawButtonIfRequired(object sender, EventArgs e)
+		{
+			((GuiWidget)sender).Invalidate();
+		}
+	}
 }

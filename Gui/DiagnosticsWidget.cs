@@ -1,149 +1,148 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace MatterHackers.Agg.UI
 {
-    public class DiagnosticWidget : SystemWindow
-    {
-        internal class WidgetInList
-        {
-            internal GuiWidget sizeLabel;
-            internal GuiWidget boundsLabel;
+	public class DiagnosticWidget : SystemWindow
+	{
+		internal class WidgetInList
+		{
+			internal GuiWidget sizeLabel;
+			internal GuiWidget boundsLabel;
 
-            internal WidgetInList(GuiWidget sizeLabel, GuiWidget boundsLabel)
-            {
-                this.sizeLabel = sizeLabel;
-                this.boundsLabel = boundsLabel;
-            }
-        }
+			internal WidgetInList(GuiWidget sizeLabel, GuiWidget boundsLabel)
+			{
+				this.sizeLabel = sizeLabel;
+				this.boundsLabel = boundsLabel;
+			}
+		}
 
-        GuiWidget topLevelWindow;
-        FlowLayoutWidget topToBottomTotal;
+		private GuiWidget topLevelWindow;
+		private FlowLayoutWidget topToBottomTotal;
 
-        Dictionary<GuiWidget, WidgetInList> widgetRefList = new Dictionary<GuiWidget, WidgetInList>();
+		private Dictionary<GuiWidget, WidgetInList> widgetRefList = new Dictionary<GuiWidget, WidgetInList>();
 
-        public DiagnosticWidget(GuiWidget topLevelWindow)
-            : base(300, 600)
-        {
-            Title = "Widget Diagnostics";
+		public DiagnosticWidget(GuiWidget topLevelWindow)
+			: base(300, 600)
+		{
+			Title = "Widget Diagnostics";
 
-            this.topLevelWindow = topLevelWindow;
-            BackgroundColor = RGBA_Bytes.White;
-            topLevelWindow.MouseMove += new MouseEventHandler(topLevelWindow_MouseMove);
+			this.topLevelWindow = topLevelWindow;
+			BackgroundColor = RGBA_Bytes.White;
+			topLevelWindow.MouseMove += new MouseEventHandler(topLevelWindow_MouseMove);
 
-            ShowAsSystemWindow();
-        }
+			ShowAsSystemWindow();
+		}
 
-        public override void OnClosed(EventArgs e)
-        {
-            topLevelWindow.MouseMove -= new MouseEventHandler(topLevelWindow_MouseMove);
-            foreach (KeyValuePair<GuiWidget, WidgetInList> keyValue in widgetRefList)
-            {
-                keyValue.Key.PositionChanged -= new EventHandler(updateWidgetInfo);
-                keyValue.Key.BoundsChanged -= new EventHandler(updateWidgetInfo);
-            }
-            base.OnClosed(e);
-        }
+		public override void OnClosed(EventArgs e)
+		{
+			topLevelWindow.MouseMove -= new MouseEventHandler(topLevelWindow_MouseMove);
+			foreach (KeyValuePair<GuiWidget, WidgetInList> keyValue in widgetRefList)
+			{
+				keyValue.Key.PositionChanged -= new EventHandler(updateWidgetInfo);
+				keyValue.Key.BoundsChanged -= new EventHandler(updateWidgetInfo);
+			}
+			base.OnClosed(e);
+		}
 
-        void AddInfoRecursive(GuiWidget widgetToAddInfoAbout, FlowLayoutWidget layoutToAddInfoTo, int level = 0)
-        {
-            FlowLayoutWidget indented = new FlowLayoutWidget();
-            indented.AddChild(new LineWidget(15, 5));
+		private void AddInfoRecursive(GuiWidget widgetToAddInfoAbout, FlowLayoutWidget layoutToAddInfoTo, int level = 0)
+		{
+			FlowLayoutWidget indented = new FlowLayoutWidget();
+			indented.AddChild(new LineWidget(15, 5));
 
-            FlowLayoutWidget widgetInfo = new FlowLayoutWidget(FlowDirection.TopToBottom);
+			FlowLayoutWidget widgetInfo = new FlowLayoutWidget(FlowDirection.TopToBottom);
 
-            string info = widgetToAddInfoAbout.GetType().ToString();
-            if (widgetToAddInfoAbout.Name != null && widgetToAddInfoAbout.Name != "")
-            {
-                info += " " + widgetToAddInfoAbout.Name;
-            }
-            else if (widgetToAddInfoAbout.Text != null && widgetToAddInfoAbout.Text != "")
-            {
-                info += " " + widgetToAddInfoAbout.Text;
-            }
+			string info = widgetToAddInfoAbout.GetType().ToString();
+			if (widgetToAddInfoAbout.Name != null && widgetToAddInfoAbout.Name != "")
+			{
+				info += " " + widgetToAddInfoAbout.Name;
+			}
+			else if (widgetToAddInfoAbout.Text != null && widgetToAddInfoAbout.Text != "")
+			{
+				info += " " + widgetToAddInfoAbout.Text;
+			}
 
-            widgetInfo.AddChild(new TextWidget(info));
-            
-            TextWidget sizeAndPositon = new TextWidget(string.Format("  Size {0}, Position {1}", widgetToAddInfoAbout.LocalBounds, widgetToAddInfoAbout.OriginRelativeParent), pointSize: 8, textColor: RGBA_Bytes.Red);
-            sizeAndPositon.AutoExpandBoundsToText = true;
-            widgetInfo.AddChild(sizeAndPositon);
+			widgetInfo.AddChild(new TextWidget(info));
 
-            TextWidget boundsText = new TextWidget(string.Format("  Bounds {0}", widgetToAddInfoAbout.BoundsRelativeToParent), pointSize: 8, textColor: RGBA_Bytes.Red);
-            boundsText.AutoExpandBoundsToText = true;
-            widgetInfo.AddChild(boundsText);
+			TextWidget sizeAndPositon = new TextWidget(string.Format("  Size {0}, Position {1}", widgetToAddInfoAbout.LocalBounds, widgetToAddInfoAbout.OriginRelativeParent), pointSize: 8, textColor: RGBA_Bytes.Red);
+			sizeAndPositon.AutoExpandBoundsToText = true;
+			widgetInfo.AddChild(sizeAndPositon);
 
-            if (!widgetRefList.ContainsKey(widgetToAddInfoAbout))
-            {
-                widgetRefList.Add(widgetToAddInfoAbout, new WidgetInList(sizeAndPositon, boundsText));
-                widgetToAddInfoAbout.PositionChanged += new EventHandler(updateWidgetInfo);
-                widgetToAddInfoAbout.BoundsChanged += new EventHandler(updateWidgetInfo);
-            }
+			TextWidget boundsText = new TextWidget(string.Format("  Bounds {0}", widgetToAddInfoAbout.BoundsRelativeToParent), pointSize: 8, textColor: RGBA_Bytes.Red);
+			boundsText.AutoExpandBoundsToText = true;
+			widgetInfo.AddChild(boundsText);
 
-            FlowLayoutWidget childrenWidgetInfo = new FlowLayoutWidget(FlowDirection.TopToBottom);
+			if (!widgetRefList.ContainsKey(widgetToAddInfoAbout))
+			{
+				widgetRefList.Add(widgetToAddInfoAbout, new WidgetInList(sizeAndPositon, boundsText));
+				widgetToAddInfoAbout.PositionChanged += new EventHandler(updateWidgetInfo);
+				widgetToAddInfoAbout.BoundsChanged += new EventHandler(updateWidgetInfo);
+			}
 
-            indented.AddChild(childrenWidgetInfo);
+			FlowLayoutWidget childrenWidgetInfo = new FlowLayoutWidget(FlowDirection.TopToBottom);
 
-            widgetInfo.AddChild(indented);
+			indented.AddChild(childrenWidgetInfo);
 
-            foreach (GuiWidget child in widgetToAddInfoAbout.Children)
-            {
-                AddInfoRecursive(child, childrenWidgetInfo, level + 1);
-            }
+			widgetInfo.AddChild(indented);
 
-            layoutToAddInfoTo.AddChild(widgetInfo);
-        }
+			foreach (GuiWidget child in widgetToAddInfoAbout.Children)
+			{
+				AddInfoRecursive(child, childrenWidgetInfo, level + 1);
+			}
 
-        void updateWidgetInfo(object sender, EventArgs e)
-        {
-            GuiWidget widgetToAddInfoAbout = sender as GuiWidget;
-            if (widgetToAddInfoAbout != null)
-            {
-                widgetRefList[widgetToAddInfoAbout].sizeLabel.Text = string.Format("  Size {0}, Position {1}", widgetToAddInfoAbout.LocalBounds, widgetToAddInfoAbout.OriginRelativeParent);
-                widgetRefList[widgetToAddInfoAbout].boundsLabel.Text = string.Format("  Bounds {0}", widgetToAddInfoAbout.BoundsRelativeToParent);
-            }
-        }
+			layoutToAddInfoTo.AddChild(widgetInfo);
+		}
 
-        int count = 0;
-        void topLevelWindow_MouseMove(object sender, MouseEventArgs mouseEvent)
-        {
-            count++;
-            if (count == 20)
-            {
-                RemoveAllChildren();
+		private void updateWidgetInfo(object sender, EventArgs e)
+		{
+			GuiWidget widgetToAddInfoAbout = sender as GuiWidget;
+			if (widgetToAddInfoAbout != null)
+			{
+				widgetRefList[widgetToAddInfoAbout].sizeLabel.Text = string.Format("  Size {0}, Position {1}", widgetToAddInfoAbout.LocalBounds, widgetToAddInfoAbout.OriginRelativeParent);
+				widgetRefList[widgetToAddInfoAbout].boundsLabel.Text = string.Format("  Bounds {0}", widgetToAddInfoAbout.BoundsRelativeToParent);
+			}
+		}
 
-                ScrollableWidget allContainer = new ScrollableWidget(true);
-                topToBottomTotal = new FlowLayoutWidget(FlowDirection.TopToBottom);
+		private int count = 0;
 
-                topToBottomTotal.SuspendLayout();
-                GuiWidget.DefaultEnforceIntegerBounds = true;
-                AddInfoRecursive(topLevelWindow, topToBottomTotal);
-                GuiWidget.DefaultEnforceIntegerBounds = false;
-                topToBottomTotal.ResumeLayout();
-                topToBottomTotal.PerformLayout();
-                allContainer.AddChild(topToBottomTotal);
+		private void topLevelWindow_MouseMove(object sender, MouseEventArgs mouseEvent)
+		{
+			count++;
+			if (count == 20)
+			{
+				RemoveAllChildren();
 
-                AddChild(allContainer);
-                allContainer.AnchorAll();
-            }
-        }
-    }
+				ScrollableWidget allContainer = new ScrollableWidget(true);
+				topToBottomTotal = new FlowLayoutWidget(FlowDirection.TopToBottom);
 
-    public class LineWidget : GuiWidget
-    {
-        public LineWidget(double width, double height)
-            : base(width, height)
-        {
-            VAnchor = UI.VAnchor.ParentBottomTop;
-            VAnchor = UI.VAnchor.FitToChildren;
-            HAnchor = UI.HAnchor.FitToChildren;
-        }
+				topToBottomTotal.SuspendLayout();
+				GuiWidget.DefaultEnforceIntegerBounds = true;
+				AddInfoRecursive(topLevelWindow, topToBottomTotal);
+				GuiWidget.DefaultEnforceIntegerBounds = false;
+				topToBottomTotal.ResumeLayout();
+				topToBottomTotal.PerformLayout();
+				allContainer.AddChild(topToBottomTotal);
 
-        public override void OnDraw(Graphics2D graphics2D)
-        {
-            graphics2D.Line(Width / 2, 0, Width / 2, Height, RGBA_Bytes.Black);
-            base.OnDraw(graphics2D);
-        }
-    }
+				AddChild(allContainer);
+				allContainer.AnchorAll();
+			}
+		}
+	}
+
+	public class LineWidget : GuiWidget
+	{
+		public LineWidget(double width, double height)
+			: base(width, height)
+		{
+			VAnchor = UI.VAnchor.ParentBottomTop;
+			VAnchor = UI.VAnchor.FitToChildren;
+			HAnchor = UI.HAnchor.FitToChildren;
+		}
+
+		public override void OnDraw(Graphics2D graphics2D)
+		{
+			graphics2D.Line(Width / 2, 0, Width / 2, Height, RGBA_Bytes.Black);
+			base.OnDraw(graphics2D);
+		}
+	}
 }

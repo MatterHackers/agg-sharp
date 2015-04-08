@@ -1,3 +1,6 @@
+using MatterHackers.Agg;
+using MatterHackers.VectorMath;
+
 // Copyright 2006 Herre Kuijpers - <herre@xs4all.nl>
 //
 // This source file(s) may be redistributed, altered and customized
@@ -10,60 +13,58 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Text;
-
-using MatterHackers.Agg;
-using MatterHackers.Agg.Image;
-
-using MatterHackers.VectorMath;
 
 namespace MatterHackers.RayTracer
 {
-    public abstract class BaseShape : IPrimitive
-    {
-        private MaterialAbstract material;
+	public abstract class BaseShape : IPrimitive
+	{
+		private MaterialAbstract material;
 
-        public abstract RGBA_Floats GetColor(IntersectInfo info);
+		public abstract RGBA_Floats GetColor(IntersectInfo info);
 
-        public MaterialAbstract Material
-        {
-            get { return material; }
-            set { material = value; }
-        }
+		public MaterialAbstract Material
+		{
+			get { return material; }
+			set { material = value; }
+		}
 
-        public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
-        {
-            AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
-            if (bounds.Contains(subRegion))
-            {
-                results.Add(this);
-                return true;
-            }
+		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
+		{
+			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
+			if (bounds.Contains(subRegion))
+			{
+				results.Add(this);
+				return true;
+			}
 
-            return false;
-        }
+			return false;
+		}
 
-        public BaseShape()
-        {
-            Material = new SolidMaterial(new RGBA_Floats(1, 0, 1), 0, 0, 0);
-        }
+		public BaseShape()
+		{
+			Material = new SolidMaterial(new RGBA_Floats(1, 0, 1), 0, 0, 0);
+		}
 
-        public abstract IntersectInfo GetClosestIntersection(Ray ray);
-        public abstract int FindFirstRay(RayBundle rayBundle, int rayIndexToStartCheckingFrom);
-        public virtual void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
-        {
-            throw new NotImplementedException("Implement this for the class you want.");
-        }
+		public abstract IntersectInfo GetClosestIntersection(Ray ray);
 
-        public abstract IEnumerable IntersectionIterator(Ray ray);
+		public abstract int FindFirstRay(RayBundle rayBundle, int rayIndexToStartCheckingFrom);
 
-        public abstract double GetSurfaceArea();
-        public virtual Vector3 GetCenter()
-        {
-            return GetAxisAlignedBoundingBox().GetCenter();
-        }
+		public virtual void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
+		{
+			throw new NotImplementedException("Implement this for the class you want.");
+		}
 
-        public abstract AxisAlignedBoundingBox GetAxisAlignedBoundingBox();
-        public abstract double GetIntersectCost();
-    }
+		public abstract IEnumerable IntersectionIterator(Ray ray);
+
+		public abstract double GetSurfaceArea();
+
+		public virtual Vector3 GetCenter()
+		{
+			return GetAxisAlignedBoundingBox().GetCenter();
+		}
+
+		public abstract AxisAlignedBoundingBox GetAxisAlignedBoundingBox();
+
+		public abstract double GetIntersectCost();
+	}
 }

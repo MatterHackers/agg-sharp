@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,60 +23,55 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.IO;
-
-using NUnit.Framework;
-
 using MatterHackers.Agg;
-using MatterHackers.VectorMath;
-
 using MatterHackers.RayTracer.Traceable;
+using MatterHackers.VectorMath;
+using NUnit.Framework;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
 
 namespace MatterHackers.RayTracer
 {
-    [TestFixture]
-    public class BooleanTests
-    {
-        [Test]
-        public void DifferenceTestsForBox()
-        {
-            SolidMaterial redMaterial = new SolidMaterial(RGBA_Floats.Red, 0, 0, 0);
-            SolidMaterial blueMaterial = new SolidMaterial(RGBA_Floats.Blue, 0, 0, 0);
-            Ray castRay = new Ray(new Vector3(0, -1, 0), Vector3.UnitY);
+	[TestFixture]
+	public class BooleanTests
+	{
+		[Test]
+		public void DifferenceTestsForBox()
+		{
+			SolidMaterial redMaterial = new SolidMaterial(RGBA_Floats.Red, 0, 0, 0);
+			SolidMaterial blueMaterial = new SolidMaterial(RGBA_Floats.Blue, 0, 0, 0);
+			Ray castRay = new Ray(new Vector3(0, -1, 0), Vector3.UnitY);
 
-            BoxShape box1X1 = new BoxShape(new Vector3(-.5, -.5, -.5), new Vector3(.5, .5, .5), blueMaterial);
+			BoxShape box1X1 = new BoxShape(new Vector3(-.5, -.5, -.5), new Vector3(.5, .5, .5), blueMaterial);
 
-            // just a box all by itself
-            {
-                IntersectInfo testInfo = box1X1.GetClosestIntersection(castRay);
+			// just a box all by itself
+			{
+				IntersectInfo testInfo = box1X1.GetClosestIntersection(castRay);
 
-                Assert.IsTrue(testInfo.hitType == IntersectionType.FrontFace, "Found Hit : Box No CSG");
-                Assert.IsTrue(testInfo.closestHitObject == box1X1, "Found Hit : Box No CSG");
-                Assert.IsTrue(testInfo.hitPosition == new Vector3(0, -.5, 0), "Hit position y = -.5 : Box No CSG");
-                Assert.IsTrue(testInfo.distanceToHit == .5, "Hit length = .5 : Box No CSG");
-                Assert.IsTrue(testInfo.normalAtHit == -Vector3.UnitY, "Normal Correct : Box No CSG");
-            }
+				Assert.IsTrue(testInfo.hitType == IntersectionType.FrontFace, "Found Hit : Box No CSG");
+				Assert.IsTrue(testInfo.closestHitObject == box1X1, "Found Hit : Box No CSG");
+				Assert.IsTrue(testInfo.hitPosition == new Vector3(0, -.5, 0), "Hit position y = -.5 : Box No CSG");
+				Assert.IsTrue(testInfo.distanceToHit == .5, "Hit length = .5 : Box No CSG");
+				Assert.IsTrue(testInfo.normalAtHit == -Vector3.UnitY, "Normal Correct : Box No CSG");
+			}
 
-            // one subtract from the front of a box, the front faces are aligned
-            {
-                BoxShape subtractBox = new BoxShape(new Vector3(-.5, -.5, -.5), new Vector3(.5, 0, .5), redMaterial);
-                Difference merge = new Difference(box1X1, subtractBox);
-                IntersectInfo testInfo = merge.GetClosestIntersection(castRay);
+			// one subtract from the front of a box, the front faces are aligned
+			{
+				BoxShape subtractBox = new BoxShape(new Vector3(-.5, -.5, -.5), new Vector3(.5, 0, .5), redMaterial);
+				Difference merge = new Difference(box1X1, subtractBox);
+				IntersectInfo testInfo = merge.GetClosestIntersection(castRay);
 
-                Assert.IsTrue(testInfo.hitType == IntersectionType.FrontFace, "Found Hit : One Subtract");
-                Assert.IsTrue(testInfo.closestHitObject == subtractBox, "Found Hit : One Subtract");
-                Assert.IsTrue(testInfo.hitPosition == new Vector3(0, 0, 0), "Hit position y = 0 : One Subtract");
-                Assert.IsTrue(testInfo.distanceToHit == 1, "Hit length = 1 : One Subtract");
-                Assert.IsTrue(testInfo.normalAtHit == -Vector3.UnitY, "Normal Correct : One Subtract");
-            }
+				Assert.IsTrue(testInfo.hitType == IntersectionType.FrontFace, "Found Hit : One Subtract");
+				Assert.IsTrue(testInfo.closestHitObject == subtractBox, "Found Hit : One Subtract");
+				Assert.IsTrue(testInfo.hitPosition == new Vector3(0, 0, 0), "Hit position y = 0 : One Subtract");
+				Assert.IsTrue(testInfo.distanceToHit == 1, "Hit length = 1 : One Subtract");
+				Assert.IsTrue(testInfo.normalAtHit == -Vector3.UnitY, "Normal Correct : One Subtract");
+			}
 
 #if false
             // An internal primary object that needs to be skipped over
@@ -123,29 +118,29 @@ namespace MatterHackers.RayTracer
                 Assert.IsTrue(testInfo.normalAtHit == -Vector3.UnitY, "Normal Correct : 5 Subtracts");
             }
 #endif
-        }
+		}
 
-        [Test]
-        public void DiscoveredBadIntersectInfoListSubtraction()
-        {
-            string primaryString = @"2
+		[Test]
+		public void DiscoveredBadIntersectInfoListSubtraction()
+		{
+			string primaryString = @"2
 FrontFace, 6.55505298172777
 BackFace, 7.05554361306285";
-            string subtractString = @"4
+			string subtractString = @"4
 FrontFace, 7.05554387355765
 BackFace, 7.14478176419901
 FrontFace, 7.28926063619785
 BackFace, 7.36209329430552";
 
-            List<IntersectInfo> allPrimary = new List<IntersectInfo>();
-            IntersectInfo.ReadInList(allPrimary, new StreamReader(new MemoryStream(Encoding.ASCII.GetBytes(primaryString))));
+			List<IntersectInfo> allPrimary = new List<IntersectInfo>();
+			IntersectInfo.ReadInList(allPrimary, new StreamReader(new MemoryStream(Encoding.ASCII.GetBytes(primaryString))));
 
-            List<IntersectInfo> allSubtract = new List<IntersectInfo>();
-            IntersectInfo.ReadInList(allSubtract, new StreamReader(new MemoryStream(Encoding.ASCII.GetBytes(subtractString))));
+			List<IntersectInfo> allSubtract = new List<IntersectInfo>();
+			IntersectInfo.ReadInList(allSubtract, new StreamReader(new MemoryStream(Encoding.ASCII.GetBytes(subtractString))));
 
-            List<IntersectInfo> result = new List<IntersectInfo>();
+			List<IntersectInfo> result = new List<IntersectInfo>();
 
-            IntersectInfo.Subtract(allPrimary, allSubtract, result);
-        }
-    }
+			IntersectInfo.Subtract(allPrimary, allSubtract, result);
+		}
+	}
 }

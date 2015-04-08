@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,98 +23,91 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-using MatterHackers.VectorMath;
-
 namespace MatterHackers.VectorMath
 {
-    public class Plane
-    {
-        const double TreatAsZero = .000000001;
+	public class Plane
+	{
+		private const double TreatAsZero = .000000001;
 
-        public Vector3 planeNormal;
-        public double distanceToPlaneFromOrigin;
+		public Vector3 planeNormal;
+		public double distanceToPlaneFromOrigin;
 
-        public Plane(Vector3 planeNormal, double distanceFromOrigin)
-        {
-            this.planeNormal = planeNormal.GetNormal();
-            this.distanceToPlaneFromOrigin = distanceFromOrigin;
-        }
+		public Plane(Vector3 planeNormal, double distanceFromOrigin)
+		{
+			this.planeNormal = planeNormal.GetNormal();
+			this.distanceToPlaneFromOrigin = distanceFromOrigin;
+		}
 
-        public Plane(Vector3 point0, Vector3 point1, Vector3 point2)
-        {
-            this.planeNormal = Vector3.Cross((point1-point0), (point2-point0)).GetNormal();
-            this.distanceToPlaneFromOrigin = Vector3.Dot(planeNormal, point0);
-        }
+		public Plane(Vector3 point0, Vector3 point1, Vector3 point2)
+		{
+			this.planeNormal = Vector3.Cross((point1 - point0), (point2 - point0)).GetNormal();
+			this.distanceToPlaneFromOrigin = Vector3.Dot(planeNormal, point0);
+		}
 
-        public bool RayHitPlane(Ray ray, out double distanceToHit, out bool hitFrontOfPlane)
-        {
-            distanceToHit = double.PositiveInfinity;
-            hitFrontOfPlane = false;
+		public bool RayHitPlane(Ray ray, out double distanceToHit, out bool hitFrontOfPlane)
+		{
+			distanceToHit = double.PositiveInfinity;
+			hitFrontOfPlane = false;
 
-            double normalDotRayDirection = Vector3.Dot(planeNormal, ray.directionNormal);
-            if (normalDotRayDirection < TreatAsZero && normalDotRayDirection > -TreatAsZero) // the ray is parallel to the plane
-            {
-                return false;
-            }
+			double normalDotRayDirection = Vector3.Dot(planeNormal, ray.directionNormal);
+			if (normalDotRayDirection < TreatAsZero && normalDotRayDirection > -TreatAsZero) // the ray is parallel to the plane
+			{
+				return false;
+			}
 
-            if (normalDotRayDirection < 0)
-            {
-                hitFrontOfPlane = true;
-            }
+			if (normalDotRayDirection < 0)
+			{
+				hitFrontOfPlane = true;
+			}
 
-            double distanceToRayOriginFromOrigin = Vector3.Dot(planeNormal, ray.origin);
+			double distanceToRayOriginFromOrigin = Vector3.Dot(planeNormal, ray.origin);
 
-            double distanceToPlaneFromRayOrigin = distanceToPlaneFromOrigin - distanceToRayOriginFromOrigin;
+			double distanceToPlaneFromRayOrigin = distanceToPlaneFromOrigin - distanceToRayOriginFromOrigin;
 
-            bool originInFrontOfPlane = distanceToPlaneFromRayOrigin < 0;
+			bool originInFrontOfPlane = distanceToPlaneFromRayOrigin < 0;
 
-            bool originAndHitAreOnSameSide = originInFrontOfPlane == hitFrontOfPlane;
-            if (!originAndHitAreOnSameSide)
-            {
-                return false;
-            }
+			bool originAndHitAreOnSameSide = originInFrontOfPlane == hitFrontOfPlane;
+			if (!originAndHitAreOnSameSide)
+			{
+				return false;
+			}
 
-            distanceToHit = distanceToPlaneFromRayOrigin / normalDotRayDirection;
-            return true;
-        }
+			distanceToHit = distanceToPlaneFromRayOrigin / normalDotRayDirection;
+			return true;
+		}
 
-        public double GetDistanceToIntersection(Ray ray, out bool inFront)
-        {
-            inFront = false;
-            double normalDotRayDirection = Vector3.Dot(planeNormal, ray.directionNormal);
-            if (normalDotRayDirection < TreatAsZero && normalDotRayDirection > -TreatAsZero) // the ray is parallel to the plane
-            {
-                return double.PositiveInfinity;
-            }
+		public double GetDistanceToIntersection(Ray ray, out bool inFront)
+		{
+			inFront = false;
+			double normalDotRayDirection = Vector3.Dot(planeNormal, ray.directionNormal);
+			if (normalDotRayDirection < TreatAsZero && normalDotRayDirection > -TreatAsZero) // the ray is parallel to the plane
+			{
+				return double.PositiveInfinity;
+			}
 
-            if (normalDotRayDirection < 0)
-            {
-                inFront = true;
-            }
+			if (normalDotRayDirection < 0)
+			{
+				inFront = true;
+			}
 
-            return (distanceToPlaneFromOrigin - Vector3.Dot(planeNormal, ray.origin)) / normalDotRayDirection;
-        }
-        
-        public double GetDistanceToIntersection(Vector3 pointOnLine, Vector3 lineDirection)
-        {
-            double normalDotRayDirection = Vector3.Dot(planeNormal, lineDirection);
-            if (normalDotRayDirection < TreatAsZero && normalDotRayDirection > -TreatAsZero) // the ray is parallel to the plane
-            {
-                return double.PositiveInfinity;
-            }
+			return (distanceToPlaneFromOrigin - Vector3.Dot(planeNormal, ray.origin)) / normalDotRayDirection;
+		}
 
-            double planeNormalDotPointOnLine = Vector3.Dot(planeNormal, pointOnLine);
-            return (distanceToPlaneFromOrigin - planeNormalDotPointOnLine) / normalDotRayDirection;
-        }
+		public double GetDistanceToIntersection(Vector3 pointOnLine, Vector3 lineDirection)
+		{
+			double normalDotRayDirection = Vector3.Dot(planeNormal, lineDirection);
+			if (normalDotRayDirection < TreatAsZero && normalDotRayDirection > -TreatAsZero) // the ray is parallel to the plane
+			{
+				return double.PositiveInfinity;
+			}
+
+			double planeNormalDotPointOnLine = Vector3.Dot(planeNormal, pointOnLine);
+			return (distanceToPlaneFromOrigin - planeNormalDotPointOnLine) / normalDotRayDirection;
+		}
 
 		public double GetDistanceFromPlane(Vector3 positionToCheck)
 		{

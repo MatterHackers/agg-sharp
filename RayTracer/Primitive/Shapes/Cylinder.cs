@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,348 +23,343 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Text;
-
 using MatterHackers.Agg;
 using MatterHackers.VectorMath;
+using System;
+using System.Collections;
 
 namespace MatterHackers.RayTracer
 {
-    public class CylinderShape : BaseShape
-    {
-        public double radius;
-        public double topRadius;
-        public double height;
+	public class CylinderShape : BaseShape
+	{
+		public double radius;
+		public double topRadius;
+		public double height;
 
-        Plane topPlane;
-        Plane bottomPlane;
+		private Plane topPlane;
+		private Plane bottomPlane;
 
-        public CylinderShape(double bottomRadius, double topRadius, double height, MaterialAbstract material)
-        {
-            this.radius = bottomRadius;
-            this.topRadius = topRadius;
-            this.height = height;
-            this.Material = material;
+		public CylinderShape(double bottomRadius, double topRadius, double height, MaterialAbstract material)
+		{
+			this.radius = bottomRadius;
+			this.topRadius = topRadius;
+			this.height = height;
+			this.Material = material;
 
-            topPlane = new Plane(Vector3.UnitZ, height/2);
-            bottomPlane = new Plane(-Vector3.UnitZ, height/2);
-        }
+			topPlane = new Plane(Vector3.UnitZ, height / 2);
+			bottomPlane = new Plane(-Vector3.UnitZ, height / 2);
+		}
 
-        public CylinderShape(double radius, double height, MaterialAbstract material)
-            : this(radius, radius, height, material)
-        {
-        }
+		public CylinderShape(double radius, double height, MaterialAbstract material)
+			: this(radius, radius, height, material)
+		{
+		}
 
-        public override double GetSurfaceArea()
-        {
-            double bottomPerimeter = MathHelper.Tau * radius;
-            double topPerimeter = MathHelper.Tau * topRadius;
+		public override double GetSurfaceArea()
+		{
+			double bottomPerimeter = MathHelper.Tau * radius;
+			double topPerimeter = MathHelper.Tau * topRadius;
 
-            double areaOfCurvedSurface = (bottomPerimeter + topPerimeter) / 2 * height;
+			double areaOfCurvedSurface = (bottomPerimeter + topPerimeter) / 2 * height;
 
-            double areaOfBottom = MathHelper.Tau / 2 * radius * radius;
-            double areaOfTop = MathHelper.Tau / 2 * topRadius * topRadius;
+			double areaOfBottom = MathHelper.Tau / 2 * radius * radius;
+			double areaOfTop = MathHelper.Tau / 2 * topRadius * topRadius;
 
-            return areaOfCurvedSurface + areaOfBottom + areaOfTop;
-        }
+			return areaOfCurvedSurface + areaOfBottom + areaOfTop;
+		}
 
-        public override AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
-        {
-            double maxRadius = Math.Max(radius, topRadius);
-            return new AxisAlignedBoundingBox(new Vector3(-maxRadius, -maxRadius, -height / 2),
-                new Vector3(maxRadius, maxRadius, height / 2));
-        }
+		public override AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
+		{
+			double maxRadius = Math.Max(radius, topRadius);
+			return new AxisAlignedBoundingBox(new Vector3(-maxRadius, -maxRadius, -height / 2),
+				new Vector3(maxRadius, maxRadius, height / 2));
+		}
 
-        public override double GetIntersectCost()
-        {
-            return 1288;
-        }
+		public override double GetIntersectCost()
+		{
+			return 1288;
+		}
 
-        public override RGBA_Floats GetColor(IntersectInfo info)
-        {
-            if (Material.HasTexture)
-            {
-                throw new NotImplementedException();
-            }
-            else
-            {
-                // skip uv calculation, just get the color
-                return this.Material.GetColor(0, 0);
-            }
-        }
+		public override RGBA_Floats GetColor(IntersectInfo info)
+		{
+			if (Material.HasTexture)
+			{
+				throw new NotImplementedException();
+			}
+			else
+			{
+				// skip uv calculation, just get the color
+				return this.Material.GetColor(0, 0);
+			}
+		}
 
-        double GetRadiusAtHeight(double height)
-        {
-            return 0;
-        }
+		private double GetRadiusAtHeight(double height)
+		{
+			return 0;
+		}
 
-        public override IntersectInfo GetClosestIntersection(Ray ray)
-        {
-            double radiusSquared = radius * radius;
+		public override IntersectInfo GetClosestIntersection(Ray ray)
+		{
+			double radiusSquared = radius * radius;
 
-            Vector2 rayOrigin = new Vector2(ray.origin);
-            Vector2 rayDirectionXY = new Vector2(ray.directionNormal);
-            Vector2 rayDirection = rayDirectionXY.GetNormal();
-            Vector2 thisPosition = Vector2.Zero;
-            Vector2 deltaFromShpereCenterToRayOrigin = rayOrigin - thisPosition;
-            double distanceFromCircleCenterToRayOrigin = Vector2.Dot(deltaFromShpereCenterToRayOrigin, rayDirection); // negative means the Circle is in front of the ray.
-            double lengthFromRayOrginToCircleCenterSquared = Vector2.Dot(deltaFromShpereCenterToRayOrigin, deltaFromShpereCenterToRayOrigin);
-            double lengthFromRayOrigintoNearEdgeOfCircleSquared = lengthFromRayOrginToCircleCenterSquared - radiusSquared;
-            double distanceFromCircleCenterToRaySquared = distanceFromCircleCenterToRayOrigin * distanceFromCircleCenterToRayOrigin;
-            double amountCircleCenterToRayIsGreaterThanRayOriginToEdgeSquared = distanceFromCircleCenterToRaySquared - lengthFromRayOrigintoNearEdgeOfCircleSquared;
+			Vector2 rayOrigin = new Vector2(ray.origin);
+			Vector2 rayDirectionXY = new Vector2(ray.directionNormal);
+			Vector2 rayDirection = rayDirectionXY.GetNormal();
+			Vector2 thisPosition = Vector2.Zero;
+			Vector2 deltaFromShpereCenterToRayOrigin = rayOrigin - thisPosition;
+			double distanceFromCircleCenterToRayOrigin = Vector2.Dot(deltaFromShpereCenterToRayOrigin, rayDirection); // negative means the Circle is in front of the ray.
+			double lengthFromRayOrginToCircleCenterSquared = Vector2.Dot(deltaFromShpereCenterToRayOrigin, deltaFromShpereCenterToRayOrigin);
+			double lengthFromRayOrigintoNearEdgeOfCircleSquared = lengthFromRayOrginToCircleCenterSquared - radiusSquared;
+			double distanceFromCircleCenterToRaySquared = distanceFromCircleCenterToRayOrigin * distanceFromCircleCenterToRayOrigin;
+			double amountCircleCenterToRayIsGreaterThanRayOriginToEdgeSquared = distanceFromCircleCenterToRaySquared - lengthFromRayOrigintoNearEdgeOfCircleSquared;
 
-            if (amountCircleCenterToRayIsGreaterThanRayOriginToEdgeSquared > 0)
-            {
-                {
-                    bool inFrontOfTop;
-                    double testDistanceToHit = topPlane.GetDistanceToIntersection(ray, out inFrontOfTop);
-                    bool wantFrontAndInFront = (ray.intersectionType & IntersectionType.FrontFace) == IntersectionType.FrontFace && inFrontOfTop;
-                    bool wantBackAndInBack = (ray.intersectionType & IntersectionType.BackFace) == IntersectionType.BackFace && !inFrontOfTop;
-                    if (wantFrontAndInFront || wantBackAndInBack)
-                    {
-                        Vector3 topHitPosition = ray.origin + ray.directionNormal * testDistanceToHit;
+			if (amountCircleCenterToRayIsGreaterThanRayOriginToEdgeSquared > 0)
+			{
+				{
+					bool inFrontOfTop;
+					double testDistanceToHit = topPlane.GetDistanceToIntersection(ray, out inFrontOfTop);
+					bool wantFrontAndInFront = (ray.intersectionType & IntersectionType.FrontFace) == IntersectionType.FrontFace && inFrontOfTop;
+					bool wantBackAndInBack = (ray.intersectionType & IntersectionType.BackFace) == IntersectionType.BackFace && !inFrontOfTop;
+					if (wantFrontAndInFront || wantBackAndInBack)
+					{
+						Vector3 topHitPosition = ray.origin + ray.directionNormal * testDistanceToHit;
 
-                        if (topHitPosition.x * topHitPosition.x + topHitPosition.y * topHitPosition.y < topRadius * topRadius)
-                        {
-                            IntersectInfo topHitInfo = new IntersectInfo();
-                            topHitInfo.hitPosition = topHitPosition;
-                            topHitInfo.closestHitObject = this;
-                            if (ray.intersectionType == IntersectionType.FrontFace)
-                            {
-                                topHitInfo.hitType = IntersectionType.FrontFace;
-                                topHitInfo.normalAtHit = topPlane.planeNormal;
-                            }
-                            else
-                            {
-                                topHitInfo.hitType = IntersectionType.BackFace;
-                                topHitInfo.normalAtHit = -topPlane.planeNormal;
-                            }
-                            topHitInfo.distanceToHit = testDistanceToHit;
+						if (topHitPosition.x * topHitPosition.x + topHitPosition.y * topHitPosition.y < topRadius * topRadius)
+						{
+							IntersectInfo topHitInfo = new IntersectInfo();
+							topHitInfo.hitPosition = topHitPosition;
+							topHitInfo.closestHitObject = this;
+							if (ray.intersectionType == IntersectionType.FrontFace)
+							{
+								topHitInfo.hitType = IntersectionType.FrontFace;
+								topHitInfo.normalAtHit = topPlane.planeNormal;
+							}
+							else
+							{
+								topHitInfo.hitType = IntersectionType.BackFace;
+								topHitInfo.normalAtHit = -topPlane.planeNormal;
+							}
+							topHitInfo.distanceToHit = testDistanceToHit;
 
-                            return topHitInfo;
-                        }
-                    }
-                }
+							return topHitInfo;
+						}
+					}
+				}
 
-                {
-                    bool inFrontOfBottom;
-                    double testDistanceToHit = bottomPlane.GetDistanceToIntersection(ray, out inFrontOfBottom);
-                    if (ray.intersectionType == IntersectionType.FrontFace && inFrontOfBottom
-                        || ray.intersectionType == IntersectionType.BackFace && !inFrontOfBottom)
-                    {
-                        Vector3 bottomHitPosition = ray.origin + ray.directionNormal * testDistanceToHit;
+				{
+					bool inFrontOfBottom;
+					double testDistanceToHit = bottomPlane.GetDistanceToIntersection(ray, out inFrontOfBottom);
+					if (ray.intersectionType == IntersectionType.FrontFace && inFrontOfBottom
+						|| ray.intersectionType == IntersectionType.BackFace && !inFrontOfBottom)
+					{
+						Vector3 bottomHitPosition = ray.origin + ray.directionNormal * testDistanceToHit;
 
-                        if (bottomHitPosition.x * bottomHitPosition.x + bottomHitPosition.y * bottomHitPosition.y < radius * radius)
-                        {
-                            IntersectInfo bottomHitInfo = new IntersectInfo();
-                            bottomHitInfo.hitPosition = bottomHitPosition;
-                            bottomHitInfo.closestHitObject = this;
-                            if (ray.intersectionType == IntersectionType.FrontFace)
-                            {
-                                bottomHitInfo.hitType = IntersectionType.FrontFace;
-                                bottomHitInfo.normalAtHit = bottomPlane.planeNormal;
-                            }
-                            else
-                            {
-                                bottomHitInfo.hitType = IntersectionType.BackFace;
-                                bottomHitInfo.normalAtHit = -bottomPlane.planeNormal;
-                            }
-                            bottomHitInfo.distanceToHit = testDistanceToHit;
+						if (bottomHitPosition.x * bottomHitPosition.x + bottomHitPosition.y * bottomHitPosition.y < radius * radius)
+						{
+							IntersectInfo bottomHitInfo = new IntersectInfo();
+							bottomHitInfo.hitPosition = bottomHitPosition;
+							bottomHitInfo.closestHitObject = this;
+							if (ray.intersectionType == IntersectionType.FrontFace)
+							{
+								bottomHitInfo.hitType = IntersectionType.FrontFace;
+								bottomHitInfo.normalAtHit = bottomPlane.planeNormal;
+							}
+							else
+							{
+								bottomHitInfo.hitType = IntersectionType.BackFace;
+								bottomHitInfo.normalAtHit = -bottomPlane.planeNormal;
+							}
+							bottomHitInfo.distanceToHit = testDistanceToHit;
 
-                            return bottomHitInfo;
-                        }
-                    }
-                }
+							return bottomHitInfo;
+						}
+					}
+				}
 
-                IntersectInfo info = new IntersectInfo();
-                info.closestHitObject = this;
-                info.hitType = IntersectionType.FrontFace;
-                if (ray.isShadowRay)
-                {
-                    return info;
-                }
-                double distanceFromRayOriginToCircleCenter = -distanceFromCircleCenterToRayOrigin;
+				IntersectInfo info = new IntersectInfo();
+				info.closestHitObject = this;
+				info.hitType = IntersectionType.FrontFace;
+				if (ray.isShadowRay)
+				{
+					return info;
+				}
+				double distanceFromRayOriginToCircleCenter = -distanceFromCircleCenterToRayOrigin;
 
-                double amountCircleCenterToRayIsGreaterThanRayOriginToEdge = Math.Sqrt(amountCircleCenterToRayIsGreaterThanRayOriginToEdgeSquared);
+				double amountCircleCenterToRayIsGreaterThanRayOriginToEdge = Math.Sqrt(amountCircleCenterToRayIsGreaterThanRayOriginToEdgeSquared);
 
-                double scaleRatio = ray.directionNormal.Length / rayDirectionXY.Length;
+				double scaleRatio = ray.directionNormal.Length / rayDirectionXY.Length;
 
-                if (ray.intersectionType == IntersectionType.FrontFace)
-                {
-                    double distanceToFrontHit = (distanceFromRayOriginToCircleCenter - amountCircleCenterToRayIsGreaterThanRayOriginToEdge) * scaleRatio;
-                    if (distanceToFrontHit > ray.maxDistanceToConsider || distanceToFrontHit < ray.minDistanceToConsider)
-                    {
-                        return null;
-                    }
-                    info.distanceToHit = distanceToFrontHit;
-                    info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
-                    if (info.hitPosition.z < -height / 2 || info.hitPosition.z > height / 2)
-                    {
-                        return null;
-                    }
-                    info.normalAtHit = new Vector3(info.hitPosition.x, info.hitPosition.y, 0).GetNormal();
-                }
-                else if (ray.intersectionType == IntersectionType.BackFace)// check back faces
-                {
-                    double distanceToBackHit = (distanceFromRayOriginToCircleCenter + amountCircleCenterToRayIsGreaterThanRayOriginToEdge) * scaleRatio;
-                    if (distanceToBackHit > ray.maxDistanceToConsider || distanceToBackHit < ray.minDistanceToConsider)
-                    {
-                        return null;
-                    }
-                    info.hitType = IntersectionType.BackFace;
-                    info.distanceToHit = distanceToBackHit;
-                    info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
-                    if (info.hitPosition.z < height / 2 || info.hitPosition.z > height / 2)
-                    {
-                        return null;
-                    }
-                    info.normalAtHit = -(new Vector3(info.hitPosition.x, info.hitPosition.y, 0).GetNormal());
-                }
+				if (ray.intersectionType == IntersectionType.FrontFace)
+				{
+					double distanceToFrontHit = (distanceFromRayOriginToCircleCenter - amountCircleCenterToRayIsGreaterThanRayOriginToEdge) * scaleRatio;
+					if (distanceToFrontHit > ray.maxDistanceToConsider || distanceToFrontHit < ray.minDistanceToConsider)
+					{
+						return null;
+					}
+					info.distanceToHit = distanceToFrontHit;
+					info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
+					if (info.hitPosition.z < -height / 2 || info.hitPosition.z > height / 2)
+					{
+						return null;
+					}
+					info.normalAtHit = new Vector3(info.hitPosition.x, info.hitPosition.y, 0).GetNormal();
+				}
+				else if (ray.intersectionType == IntersectionType.BackFace)// check back faces
+				{
+					double distanceToBackHit = (distanceFromRayOriginToCircleCenter + amountCircleCenterToRayIsGreaterThanRayOriginToEdge) * scaleRatio;
+					if (distanceToBackHit > ray.maxDistanceToConsider || distanceToBackHit < ray.minDistanceToConsider)
+					{
+						return null;
+					}
+					info.hitType = IntersectionType.BackFace;
+					info.distanceToHit = distanceToBackHit;
+					info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
+					if (info.hitPosition.z < height / 2 || info.hitPosition.z > height / 2)
+					{
+						return null;
+					}
+					info.normalAtHit = -(new Vector3(info.hitPosition.x, info.hitPosition.y, 0).GetNormal());
+				}
 
-                return info;
-            }
+				return info;
+			}
 
-            return null;
-        }
+			return null;
+		}
 
-        public override int FindFirstRay(RayBundle rayBundle, int rayIndexToStartCheckingFrom)
-        {
-            throw new NotImplementedException();
-        }
+		public override int FindFirstRay(RayBundle rayBundle, int rayIndexToStartCheckingFrom)
+		{
+			throw new NotImplementedException();
+		}
 
-        public override IEnumerable IntersectionIterator(Ray ray)
-        {
-            double radiusSquared = radius * radius;
+		public override IEnumerable IntersectionIterator(Ray ray)
+		{
+			double radiusSquared = radius * radius;
 
-            Vector2 rayOrigin = new Vector2(ray.origin);
-            Vector2 rayDirectionXY = new Vector2(ray.directionNormal);
-            Vector2 rayDirection = rayDirectionXY.GetNormal();
-            Vector2 thisPosition = Vector2.Zero;
-            Vector2 deltaFromShpereCenterToRayOrigin = rayOrigin - thisPosition;
-            double distanceFromCircleCenterToRayOrigin = Vector2.Dot(deltaFromShpereCenterToRayOrigin, rayDirection);
-            double lengthFromRayOrginToCircleCenterSquared = Vector2.Dot(deltaFromShpereCenterToRayOrigin, deltaFromShpereCenterToRayOrigin);
-            double lengthFromRayOrigintoNearEdgeOfCircleSquared = lengthFromRayOrginToCircleCenterSquared - radiusSquared;
-            double distanceFromCircleCenterToRaySquared = distanceFromCircleCenterToRayOrigin * distanceFromCircleCenterToRayOrigin;
-            double amountCircleCenterToRayIsGreaterThanRayOriginToEdgeSquared = distanceFromCircleCenterToRaySquared - lengthFromRayOrigintoNearEdgeOfCircleSquared;
+			Vector2 rayOrigin = new Vector2(ray.origin);
+			Vector2 rayDirectionXY = new Vector2(ray.directionNormal);
+			Vector2 rayDirection = rayDirectionXY.GetNormal();
+			Vector2 thisPosition = Vector2.Zero;
+			Vector2 deltaFromShpereCenterToRayOrigin = rayOrigin - thisPosition;
+			double distanceFromCircleCenterToRayOrigin = Vector2.Dot(deltaFromShpereCenterToRayOrigin, rayDirection);
+			double lengthFromRayOrginToCircleCenterSquared = Vector2.Dot(deltaFromShpereCenterToRayOrigin, deltaFromShpereCenterToRayOrigin);
+			double lengthFromRayOrigintoNearEdgeOfCircleSquared = lengthFromRayOrginToCircleCenterSquared - radiusSquared;
+			double distanceFromCircleCenterToRaySquared = distanceFromCircleCenterToRayOrigin * distanceFromCircleCenterToRayOrigin;
+			double amountCircleCenterToRayIsGreaterThanRayOriginToEdgeSquared = distanceFromCircleCenterToRaySquared - lengthFromRayOrigintoNearEdgeOfCircleSquared;
 
-            if (amountCircleCenterToRayIsGreaterThanRayOriginToEdgeSquared > 0)
-            {
-                double distanceFromRayOriginToCircleCenter = -distanceFromCircleCenterToRayOrigin;
-                double amountCircleCenterToRayIsGreaterThanRayOriginToEdge = Math.Sqrt(amountCircleCenterToRayIsGreaterThanRayOriginToEdgeSquared);
-                double scaleRatio = ray.directionNormal.Length / rayDirectionXY.Length;
+			if (amountCircleCenterToRayIsGreaterThanRayOriginToEdgeSquared > 0)
+			{
+				double distanceFromRayOriginToCircleCenter = -distanceFromCircleCenterToRayOrigin;
+				double amountCircleCenterToRayIsGreaterThanRayOriginToEdge = Math.Sqrt(amountCircleCenterToRayIsGreaterThanRayOriginToEdgeSquared);
+				double scaleRatio = ray.directionNormal.Length / rayDirectionXY.Length;
 
-                if ((ray.intersectionType & IntersectionType.FrontFace) == IntersectionType.FrontFace)
-                {
-                    IntersectInfo info = new IntersectInfo();
-                    info.hitType = IntersectionType.FrontFace;
-                    info.closestHitObject = this;
-                    double distanceToFrontHit = (distanceFromRayOriginToCircleCenter - amountCircleCenterToRayIsGreaterThanRayOriginToEdge) * scaleRatio;
-                    info.distanceToHit = distanceToFrontHit;
-                    info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
-                    if (info.hitPosition.z > -height / 2 && info.hitPosition.z < height / 2)
-                    {
-                        info.normalAtHit = new Vector3(info.hitPosition.x, info.hitPosition.y, 0).GetNormal();
-                        yield return info;
-                    }
-                }
+				if ((ray.intersectionType & IntersectionType.FrontFace) == IntersectionType.FrontFace)
+				{
+					IntersectInfo info = new IntersectInfo();
+					info.hitType = IntersectionType.FrontFace;
+					info.closestHitObject = this;
+					double distanceToFrontHit = (distanceFromRayOriginToCircleCenter - amountCircleCenterToRayIsGreaterThanRayOriginToEdge) * scaleRatio;
+					info.distanceToHit = distanceToFrontHit;
+					info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
+					if (info.hitPosition.z > -height / 2 && info.hitPosition.z < height / 2)
+					{
+						info.normalAtHit = new Vector3(info.hitPosition.x, info.hitPosition.y, 0).GetNormal();
+						yield return info;
+					}
+				}
 
+				if ((ray.intersectionType & IntersectionType.BackFace) == IntersectionType.BackFace)
+				{
+					IntersectInfo info = new IntersectInfo();
+					info.hitType = IntersectionType.BackFace;
+					info.closestHitObject = this;
+					double distanceToBackHit = (distanceFromRayOriginToCircleCenter + amountCircleCenterToRayIsGreaterThanRayOriginToEdge) * scaleRatio;
+					info.distanceToHit = distanceToBackHit;
+					info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
+					if (info.hitPosition.z > -height / 2 && info.hitPosition.z < height / 2)
+					{
+						info.normalAtHit = -(new Vector3(info.hitPosition.x, info.hitPosition.y, 0).GetNormal());
+						yield return info;
+					}
+				}
 
-                if ((ray.intersectionType & IntersectionType.BackFace) == IntersectionType.BackFace)
-                {
-                    IntersectInfo info = new IntersectInfo();
-                    info.hitType = IntersectionType.BackFace;
-                    info.closestHitObject = this;
-                    double distanceToBackHit = (distanceFromRayOriginToCircleCenter + amountCircleCenterToRayIsGreaterThanRayOriginToEdge) * scaleRatio;
-                    info.distanceToHit = distanceToBackHit;
-                    info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
-                    if (info.hitPosition.z > -height / 2 && info.hitPosition.z < height / 2)
-                    {
-                        info.normalAtHit = -(new Vector3(info.hitPosition.x, info.hitPosition.y, 0).GetNormal());
-                        yield return info;
-                    }
-                }
+				{
+					bool inFrontOfTopFace;
+					double testDistanceToHit = topPlane.GetDistanceToIntersection(ray, out inFrontOfTopFace);
+					Vector3 topHitPosition = ray.origin + ray.directionNormal * testDistanceToHit;
 
-                {
-                    bool inFrontOfTopFace;
-                    double testDistanceToHit = topPlane.GetDistanceToIntersection(ray, out inFrontOfTopFace);
-                    Vector3 topHitPosition = ray.origin + ray.directionNormal * testDistanceToHit;
+					if (topHitPosition.x * topHitPosition.x + topHitPosition.y * topHitPosition.y < topRadius * topRadius)
+					{
+						if ((ray.intersectionType & IntersectionType.FrontFace) == IntersectionType.FrontFace && inFrontOfTopFace)
+						{
+							IntersectInfo topHitInfo = new IntersectInfo();
+							topHitInfo.hitPosition = topHitPosition;
+							topHitInfo.closestHitObject = this;
+							topHitInfo.hitType = IntersectionType.FrontFace;
+							topHitInfo.normalAtHit = topPlane.planeNormal;
+							topHitInfo.distanceToHit = testDistanceToHit;
 
-                    if (topHitPosition.x * topHitPosition.x + topHitPosition.y * topHitPosition.y < topRadius * topRadius)
-                    {
-                        if ((ray.intersectionType & IntersectionType.FrontFace) == IntersectionType.FrontFace && inFrontOfTopFace)
-                        {
-                            IntersectInfo topHitInfo = new IntersectInfo();
-                            topHitInfo.hitPosition = topHitPosition;
-                            topHitInfo.closestHitObject = this;
-                            topHitInfo.hitType = IntersectionType.FrontFace;
-                            topHitInfo.normalAtHit = topPlane.planeNormal;
-                            topHitInfo.distanceToHit = testDistanceToHit;
+							yield return topHitInfo;
+						}
 
-                            yield return topHitInfo;
-                        }
+						if ((ray.intersectionType & IntersectionType.BackFace) == IntersectionType.BackFace && !inFrontOfTopFace)
+						{
+							IntersectInfo topHitInfo = new IntersectInfo();
+							topHitInfo.hitPosition = topHitPosition;
+							topHitInfo.closestHitObject = this;
+							topHitInfo.hitType = IntersectionType.BackFace;
+							topHitInfo.normalAtHit = -topPlane.planeNormal;
+							topHitInfo.distanceToHit = testDistanceToHit;
 
-                        if ((ray.intersectionType & IntersectionType.BackFace) == IntersectionType.BackFace && !inFrontOfTopFace)
-                        {
-                            IntersectInfo topHitInfo = new IntersectInfo();
-                            topHitInfo.hitPosition = topHitPosition;
-                            topHitInfo.closestHitObject = this;
-                            topHitInfo.hitType = IntersectionType.BackFace;
-                            topHitInfo.normalAtHit = -topPlane.planeNormal;
-                            topHitInfo.distanceToHit = testDistanceToHit;
+							yield return topHitInfo;
+						}
+					}
+				}
 
-                            yield return topHitInfo;
-                        }
-                    }
-                }
+				{
+					bool inFrontOfBottomFace;
+					double testDistanceToHit = bottomPlane.GetDistanceToIntersection(ray, out inFrontOfBottomFace);
+					Vector3 bottomHitPosition = ray.origin + ray.directionNormal * testDistanceToHit;
 
-                {
-                    bool inFrontOfBottomFace;
-                    double testDistanceToHit = bottomPlane.GetDistanceToIntersection(ray, out inFrontOfBottomFace);
-                    Vector3 bottomHitPosition = ray.origin + ray.directionNormal * testDistanceToHit;
+					if (bottomHitPosition.x * bottomHitPosition.x + bottomHitPosition.y * bottomHitPosition.y < radius * radius)
+					{
+						if ((ray.intersectionType & IntersectionType.FrontFace) == IntersectionType.FrontFace && inFrontOfBottomFace)
+						{
+							IntersectInfo bottomHitInfo = new IntersectInfo();
+							bottomHitInfo.hitPosition = bottomHitPosition;
+							bottomHitInfo.closestHitObject = this;
+							bottomHitInfo.hitType = IntersectionType.FrontFace;
+							bottomHitInfo.normalAtHit = bottomPlane.planeNormal;
+							bottomHitInfo.distanceToHit = testDistanceToHit;
 
-                    if (bottomHitPosition.x * bottomHitPosition.x + bottomHitPosition.y * bottomHitPosition.y < radius * radius)
-                    {
-                        if ((ray.intersectionType & IntersectionType.FrontFace) == IntersectionType.FrontFace && inFrontOfBottomFace)
-                        {
-                            IntersectInfo bottomHitInfo = new IntersectInfo();
-                            bottomHitInfo.hitPosition = bottomHitPosition;
-                            bottomHitInfo.closestHitObject = this;
-                            bottomHitInfo.hitType = IntersectionType.FrontFace;
-                            bottomHitInfo.normalAtHit = bottomPlane.planeNormal;
-                            bottomHitInfo.distanceToHit = testDistanceToHit;
+							yield return bottomHitInfo;
+						}
 
-                            yield return bottomHitInfo;
-                        }
+						if ((ray.intersectionType & IntersectionType.BackFace) == IntersectionType.BackFace && !inFrontOfBottomFace)
+						{
+							IntersectInfo bottomHitInfo = new IntersectInfo();
+							bottomHitInfo.hitPosition = bottomHitPosition;
+							bottomHitInfo.closestHitObject = this;
+							bottomHitInfo.hitType = IntersectionType.BackFace;
+							bottomHitInfo.normalAtHit = -bottomPlane.planeNormal;
+							bottomHitInfo.distanceToHit = testDistanceToHit;
 
-                        if ((ray.intersectionType & IntersectionType.BackFace) == IntersectionType.BackFace && !inFrontOfBottomFace)
-                        {
-                            IntersectInfo bottomHitInfo = new IntersectInfo();
-                            bottomHitInfo.hitPosition = bottomHitPosition;
-                            bottomHitInfo.closestHitObject = this;
-                            bottomHitInfo.hitType = IntersectionType.BackFace;
-                            bottomHitInfo.normalAtHit = -bottomPlane.planeNormal;
-                            bottomHitInfo.distanceToHit = testDistanceToHit;
+							yield return bottomHitInfo;
+						}
+					}
+				}
+			}
+		}
 
-                            yield return bottomHitInfo;
-                        }
-                    }
-                }
-            }
-        }
-
-        public override string ToString()
-        {
-            return string.Format("Cylinder");
-        }
-    }
-
+		public override string ToString()
+		{
+			return string.Format("Cylinder");
+		}
+	}
 
 #if false
 /*
@@ -387,7 +382,7 @@ namespace MatterHackers.RayTracer
  *
  */
 
-public class ViewableCylinder 
+public class ViewableCylinder
 {
 	Vector3 CenterAxis;		// Unit vector up the center
 	Vector3 Center;			// Point on the central axis
@@ -417,9 +412,9 @@ public class ViewableCylinder
 	BaseMaterial BottomInnerMat;
 
     // Constructors
-	public ViewableCylinder() 
+	public ViewableCylinder()
     {
-        Reset(); 
+        Reset();
     }
 
 	public void Reset()
@@ -433,7 +428,6 @@ public class ViewableCylinder
         RadiusB = 1.0;
         SetMaterial(new SolidMaterial(RGBA_Floats.Cyan, 0, 0, 0));
     }
-
 
 	// Returns an intersection if found with distance maxDistance
 	// viewDir must be a unit vector.
@@ -449,43 +443,43 @@ public class ViewableCylinder
 	if ( IsRightCylinder() ) {
 		double pdotn = Vector3.Dot(viewPos, CenterAxis) - CenterDotAxis;
 		double udotn = Vector3.Dot(viewDir, CenterAxis);
-		if ( pdotn > HalfHeight ) 
+		if ( pdotn > HalfHeight )
         {
-			if ( udotn>=0.0 ) 
+			if ( udotn>=0.0 )
             {
 				return false;		// Above top plane pointing up
 			}
 			// Hits top from above
-			maxFrontDist = (HalfHeight-pdotn)/udotn;	
+			maxFrontDist = (HalfHeight-pdotn)/udotn;
 			frontType = 0;
 			minBackDist = -(HalfHeight+pdotn)/udotn;
 			backType = 1;
 		}
-		else if ( pdotn < -HalfHeight ) 
+		else if ( pdotn < -HalfHeight )
         {
-			if ( udotn<=0.0 ) 
+			if ( udotn<=0.0 )
             {
 				return false;		// Below bottom, pointing down
 			}
 			// Hits bottom plane from below
 			maxFrontDist = -(HalfHeight+pdotn)/udotn;
 			frontType = 1;
-			minBackDist = (HalfHeight-pdotn)/udotn;	
+			minBackDist = (HalfHeight-pdotn)/udotn;
 			backType = 0;
 		}
-		else if ( udotn<0.0 ) 
+		else if ( udotn<0.0 )
         {  // Inside, pointing down
 			minBackDist = -(HalfHeight+pdotn)/udotn;
 			backType = 1;
 		}
-		else if ( udotn>0.0 ) 
+		else if ( udotn>0.0 )
         {		// Inside, pointing up
 			minBackDist = (HalfHeight-pdotn)/udotn;
 			backType = 0;
 		}
 	}
-	else 
-    {	
+	else
+    {
 		// Has two bounding planes (not right cylinder)
 		// First handle the top plane
 		double pdotnCap = Vector3.Dot(TopNormal, viewPos);
@@ -500,49 +494,49 @@ public class ViewableCylinder
 		else if ( pdotnCap<TopPlaneCoef ) {
 			if ( udotnCap>0.0 ) {
 				// Below top plane, pointing up
-				minBackDist = (TopPlaneCoef-pdotnCap)/udotnCap;	
+				minBackDist = (TopPlaneCoef-pdotnCap)/udotnCap;
 				backType = 0;
 			}
 		}
 		// Second, handle the bottom plane
 		pdotnCap = Vector3.Dot(BottomNormal, viewPos);
 		udotnCap = Vector3.Dot(BottomNormal^viewDir);
-		if ( pdotnCap<BottomPlaneCoef ) 
+		if ( pdotnCap<BottomPlaneCoef )
         {
-			if ( udotnCap>0.0 ) 
+			if ( udotnCap>0.0 )
             {
 				double newBackDist = (BottomPlaneCoef-pdotnCap)/udotnCap;
-				if ( newBackDist<maxFrontDist ) 
+				if ( newBackDist<maxFrontDist )
                 {
 					return false;
 				}
-				if ( newBackDist<minBackDist ) 
+				if ( newBackDist<minBackDist )
                 {
 					minBackDist = newBackDist;
 					backType = 1;
 				}
 			}
 		}
-		else if ( pdotnCap>BottomPlaneCoef ) 
+		else if ( pdotnCap>BottomPlaneCoef )
         {
-			if ( udotnCap>=0.0 ) 
+			if ( udotnCap>=0.0 )
             {
 				return false;		// Above bottom plane, pointing up (away)
 			}
 			// Above bottom plane, pointing down
 			double newFrontDist = (BottomPlaneCoef-pdotnCap)/udotnCap;
-			if ( newFrontDist>minBackDist ) 
+			if ( newFrontDist>minBackDist )
             {
 				return false;
 			}
-			if ( newFrontDist>maxFrontDist ) 
+			if ( newFrontDist>maxFrontDist )
             {
-				maxFrontDist = newFrontDist;	
+				maxFrontDist = newFrontDist;
 				frontType = 1;
 			}
 		}
 	}
-	if ( maxFrontDist>maxDistance ) 
+	if ( maxFrontDist>maxDistance )
     {
 		return false;
 	}
@@ -558,7 +552,7 @@ public class ViewableCylinder
 	double C = pdotuA*pdotuA + pdotuB*pdotuB - 1.0;
 	double B = (pdotuA*udotuA + pdotuB*udotuB);
 
-	if ( C>=0.0 && B>0.0 ) 
+	if ( C>=0.0 && B>0.0 )
     {
 		return false;			// Pointing away from the cylinder
 	}
@@ -569,22 +563,22 @@ public class ViewableCylinder
 
 	double alpha1, alpha2;	// The roots, in order
 	int numRoots = QuadraticSolveRealSafe(A, B, C, out alpha1, out alpha2);
-	if ( numRoots==0 ) 
+	if ( numRoots==0 )
     {
 		return false;		// No intersection
 	}
-	if ( alpha1>maxFrontDist ) 
+	if ( alpha1>maxFrontDist )
     {
-		if ( alpha1>minBackDist ) 
+		if ( alpha1>minBackDist )
         {
 			return false;
 		}
 		maxFrontDist = alpha1;
 		frontType = 2;
 	}
-	if ( numRoots==2 && alpha2<minBackDist ) 
+	if ( numRoots==2 && alpha2<minBackDist )
     {
-		if ( alpha2<maxFrontDist ) 
+		if ( alpha2<maxFrontDist )
         {
 			return false;
 		}
@@ -596,20 +590,20 @@ public class ViewableCylinder
 
 	double alpha;
 	int hitSurface;
-	if ( maxFrontDist>0.0 ) 
+	if ( maxFrontDist>0.0 )
     {
 		returnedPoint.SetFrontFace();	// Hit from outside
 		alpha = maxFrontDist;
 		hitSurface = frontType;
 	}
-	else 
+	else
     {
 		returnedPoint.SetBackFace();	// Hit from inside
 		alpha = minBackDist;
 		hitSurface = backType;
 	}
 
-	if ( alpha >= maxDistance ) 
+	if ( alpha >= maxDistance )
     {
 		return false;
 	}
@@ -620,22 +614,21 @@ public class ViewableCylinder
 	v *= alpha;
 	v += viewPos;
 	returnedPoint.SetPosition( v );		// Intersection point
-	
+
 	// Now set v equal to returned position relative to the center
 	v -= Center;
 	double vdotuA = Vector3(v, AxisA);
 	double vdotuB = Vector3(v, AxisB);
 
-	switch ( hitSurface ) 
+	switch ( hitSurface )
     {
-
 	case 0:		// Top surface
 		returnedPoint.SetNormal( TopNormal );
-		if ( returnedPoint.IsFrontFacing() ) 
+		if ( returnedPoint.IsFrontFacing() )
         {
 			returnedPoint.SetMaterial(TopOuterMat );
 		}
-		else 
+		else
         {
 			returnedPoint.SetMaterial(TopInnerMat );
 		}
@@ -649,11 +642,11 @@ public class ViewableCylinder
 
 	case 1:		// Bottom face
 		returnedPoint.SetNormal( BottomNormal );
-		if ( returnedPoint.IsFrontFacing() ) 
+		if ( returnedPoint.IsFrontFacing() )
         {
 			returnedPoint.SetMaterial( *BottomOuterMat );
 		}
-		else 
+		else
         {
 			returnedPoint.SetMaterial( *BottomInnerMat );
 		}
@@ -671,11 +664,11 @@ public class ViewableCylinder
 		normal += vdotuB*AxisB;
 		normal.Normalize();
 		returnedPoint.SetNormal( normal );
-		if ( returnedPoint.IsFrontFacing() ) 
+		if ( returnedPoint.IsFrontFacing() )
         {
 			returnedPoint.SetMaterial( SideOuterMat );
 		}
-		else 
+		else
         {
 			returnedPoint.SetMaterial( SideInnerMat );
 		}
@@ -683,11 +676,11 @@ public class ViewableCylinder
 		// Calculate u-v coordinates for texture mapping (in range[0,1]x[0,1])
 		double uCoord = Math.Atan2( vdotuB, vdotuA )/ MathHelper.Tau + 0.5;
 		double vCoord;
-		if ( IsRightCylinder() ) 
+		if ( IsRightCylinder() )
         {
 			vCoord = (Vector3.Dot(v, CenterAxis)+HalfHeight)/Height;
 		}
-		else 
+		else
         {
 			Vector3 hitPos=returnedPoint.GetPosition();
 			double distUp = (TopPlaneCoef - Vector3.Dot(hitPos, TopNormal))/ Vector3.Dot(CenterAxis, TopNormal);
@@ -703,14 +696,13 @@ public class ViewableCylinder
 		returnedPoint.SetFaceNumber( SideFaceNum );
 	}
 	return true;
-
 }
 
 void CalcBoundingPlanes(Vector3 u, out double minDot, out double maxDot )
 {
 	double centerDot = Vector3.Dot(u, Center);
 	double AxisCdotU = Vector3.Dot(CenterAxis, u);
-	if ( IsRightCylinderFlag ) 
+	if ( IsRightCylinderFlag )
     {
 		double deltaDot = HalfHeight*Math.Abs(AxisCdotU)
 							+ Math.Sqrt(Square(RadiusA*RadiusA*Vector3.Dot(AxisA,u))+Square(RadiusB*RadiusB*Vector3.Dot(AxisB,u)));
@@ -725,11 +717,11 @@ void CalcBoundingPlanes(Vector3 u, out double minDot, out double maxDot )
 	perp *= u;
 	double alpha = Vector3.Dot(perp, AxisA)*RadiusA;
 	double beta = Vector3.Dot(perp, AxisB)*RadiusB;
-	if ( alpha==0.0 && beta==0.0 ) 
+	if ( alpha==0.0 && beta==0.0 )
     {	// If u perpindicular to top face
 		maxD = minD = TopPlaneCoef*Vector3.Dot(u,TopNormal);
 	}
-	else 
+	else
     {
 		double solnX = -beta*RadiusA*RadiusA;
 		double solnY = alpha*RadiusB*RadiusB;
@@ -753,11 +745,11 @@ void CalcBoundingPlanes(Vector3 u, out double minDot, out double maxDot )
 	perp *= u;
 	alpha = Vector3.Dot(perp, AxisA)*RadiusA;
 	beta = Vector3.Dot(perp, AxisB)*RadiusB;
-	if ( alpha==0.0 && beta==0.0 ) 
+	if ( alpha==0.0 && beta==0.0 )
     {			// If u perpindicular to bottom face
 		UpdateMinMax( BottomPlaneCoef*Vector3.Dot(u, BottomNormal), minD, maxD );
 	}
-	else 
+	else
     {
 		double solnX = -beta*RadiusA*RadiusA;
 		double solnY = alpha*RadiusB*RadiusB;
@@ -793,17 +785,17 @@ private double Square(double p)
 	void SetCenterAxis( const float* axisC );
 	void SetCenterAxis( const Vector3& axisC );
 
-	// You should call SetRadius() for circular cylinders; 
-	//		or call both SetRadii and SetRadialAxes for 
-	//		elliptical cross-section cylinders. 
-	void SetRadius( double radius ) { SetRadii(radius,radius);}	// Makes it a circular cylinder with that radius	
+	// You should call SetRadius() for circular cylinders;
+	//		or call both SetRadii and SetRadialAxes for
+	//		elliptical cross-section cylinders.
+	void SetRadius( double radius ) { SetRadii(radius,radius);}	// Makes it a circular cylinder with that radius
 	void SetRadii(double radiusA, double radiusB);  // Radii for the two radial axes
 
 	// SetRadialAxes should be called *after* SetCenterAxis
 	// The radial axes are also used for calculating u, v coordinates.
 	//    the u=0.5 line is in the direction of Axis A.
 	void SetRadialAxes( const Vector3& axisA, const Vector3& axisB );
-	
+
 	// For right cylinders, SetCenter is the center point.  For non-right
 	//	cylinders, the center is just any point on the central axis.
 void SetCenter( Vector3 center )
@@ -811,21 +803,20 @@ void SetCenter( Vector3 center )
 	this.Center = center;
 
 	CenterDotAxis = Vector3.Dot(Center, CenterAxis);
-	if ( IsRightCylinder() ) 
+	if ( IsRightCylinder() )
 {
 		TopPlaneCoef = CenterDotAxis+HalfHeight;
 		BottomPlaneCoef = -(CenterDotAxis-HalfHeight);
 	}
 }
 
-
-	// A "right cylinder" is a cylinder with the base and top faces 
+	// A "right cylinder" is a cylinder with the base and top faces
 	//  perpindicular to the center axis.
-	// Calling either SetHeight makes the cylinder 
+	// Calling either SetHeight makes the cylinder
 	//	into a right cylinder.  For right cylinders you should call SetHeight and
 	//	SetCenter().
 	void SetHeight( double height );
-	
+
 	// Here is an alternative to right cylinders.
 	// Cylinders can also be defined with arbitrary planes bounding the top and
 	//	and bottom of the cylinder.
@@ -921,7 +912,7 @@ inline void ViewableCylinder::SetRadii( double radiusA, double radiusB )
 	AxisB *= 1.0/(RadiusB*AxisB.Norm());
 }
 
-inline void ViewableCylinder::SetRadialAxes( const Vector3& axisA, 
+inline void ViewableCylinder::SetRadialAxes( const Vector3& axisA,
 											const Vector3& axisB )
 {
 	AxisA = axisA;
@@ -946,7 +937,7 @@ inline void ViewableCylinder::SetHeight( double height )
 	BottomPlaneCoef = -(CenterDotAxis-HalfHeight);
 }
 
-inline void ViewableCylinder::SetTopFace( const Vector3& planenormal, 
+inline void ViewableCylinder::SetTopFace( const Vector3& planenormal,
 											 double planeCoef )
 {
 	assert ( (CenterAxis^planenormal) > 0.0 );
@@ -956,7 +947,7 @@ inline void ViewableCylinder::SetTopFace( const Vector3& planenormal,
 	IsRightCylinderFlag = false;
 }
 
-inline void ViewableCylinder::SetBottomFace( const Vector3& planenormal, 
+inline void ViewableCylinder::SetBottomFace( const Vector3& planenormal,
 											 double planeCoef )
 {
 	assert ( (CenterAxis^planenormal) < 0.0 );

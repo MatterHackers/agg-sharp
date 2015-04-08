@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,223 +23,217 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.Agg;
+using MatterHackers.VectorMath;
 using System;
-using System.Diagnostics;
-using System.IO;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
-using System.Text;
-using System.ComponentModel;
 using System.Threading;
 using System.Xml;
-using System.Globalization;
-using System.Text.RegularExpressions;
-using System.IO.Compression;
-
-using MatterHackers.Agg;
-using MatterHackers.PolygonMesh;
-using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Processors
 {
-    public static class AmfProcessing
-    {
+	public static class AmfProcessing
+	{
+		public static bool SaveUncompressed(List<MeshGroup> meshToSave, string fileName, MeshOutputSettings outputInfo = null)
+		{
+			using (FileStream file = new FileStream(fileName, FileMode.Create, FileAccess.Write))
+			{
+				return Save(meshToSave, file, outputInfo);
+			}
+		}
 
-        public static bool SaveUncompressed(List<MeshGroup> meshToSave, string fileName, MeshOutputSettings outputInfo = null)
-        {
-            using (FileStream file = new FileStream(fileName, FileMode.Create, FileAccess.Write))
-            {
-                return Save(meshToSave, file, outputInfo);
-            }
-        }
+		private static string Indent(int index)
+		{
+			return new String(' ', index * 2);
+		}
 
-        static string Indent(int index)
-        {
-            return new String(' ', index * 2);
-        }
+		/// <summary>
+		/// Writes the mesh to disk in a zip container
+		/// </summary>
+		/// <param name="meshToSave">The mesh to save</param>
+		/// <param name="fileName">The file path to save at</param>
+		/// <param name="outputInfo">Extra meta data to store in the file</param>
+		/// <returns>The results of the save operation</returns>
+		public static bool Save(List<MeshGroup> meshToSave, string fileName, MeshOutputSettings outputInfo = null)
+		{
+			using (Stream stream = File.OpenWrite(fileName))
+			using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Create))
+			{
+				ZipArchiveEntry zipEntry = archive.CreateEntry(Path.GetFileName(fileName));
+				using (var entryStream = zipEntry.Open())
+				{
+					return Save(meshToSave, entryStream, outputInfo);
+				}
+			}
+		}
 
-        /// <summary>
-        /// Writes the mesh to disk in a zip container
-        /// </summary>
-        /// <param name="meshToSave">The mesh to save</param>
-        /// <param name="fileName">The file path to save at</param>
-        /// <param name="outputInfo">Extra meta data to store in the file</param>
-        /// <returns>The results of the save operation</returns>
-        public static bool Save(List<MeshGroup> meshToSave, string fileName, MeshOutputSettings outputInfo = null)
-        {
-            using (Stream stream = File.OpenWrite(fileName))
-            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Create))
-            {
-                ZipArchiveEntry zipEntry = archive.CreateEntry(Path.GetFileName(fileName));
-                using (var entryStream = zipEntry.Open())
-                {
-                    return Save(meshToSave, entryStream, outputInfo);
-                }
-            }
-        }
+		public static bool Save(List<MeshGroup> meshToSave, Stream stream, MeshOutputSettings outputInfo)
+		{
+			TextWriter amfFile = new StreamWriter(stream);
+			amfFile.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+			amfFile.WriteLine("<amf unit=\"millimeter\" version=\"1.1\">");
+			if (outputInfo != null)
+			{
+				foreach (KeyValuePair<string, string> metaData in outputInfo.MetaDataKeyValue)
+				{
+					amfFile.WriteLine(Indent(1) + "<metadata type=\"{0}\">{1}</metadata>".FormatWith(metaData.Key, metaData.Value));
+				}
+			}
+			{
+				int objectId = 1;
+				foreach (MeshGroup meshGroup in meshToSave)
+				{
+					amfFile.WriteLine(Indent(1) + "<object id=\"{0}\">".FormatWith(objectId++));
+					{
+						int vertexCount = 0;
+						List<int> meshVertexStart = new List<int>();
+						amfFile.WriteLine(Indent(2) + "<mesh>");
+						{
+							amfFile.WriteLine(Indent(3) + "<vertices>");
+							{
+								foreach (Mesh mesh in meshGroup.Meshes)
+								{
+									meshVertexStart.Add(vertexCount);
+									foreach (Vertex vertex in mesh.Vertices)
+									{
+										Vector3 position = vertex.Position;
+										amfFile.WriteLine(Indent(4) + "<vertex>");
+										{
+											amfFile.WriteLine(Indent(5) + "<coordinates>");
+											amfFile.WriteLine(Indent(6) + "<x>{0}</x>".FormatWith(position.x));
+											amfFile.WriteLine(Indent(6) + "<y>{0}</y>".FormatWith(position.y));
+											amfFile.WriteLine(Indent(6) + "<z>{0}</z>".FormatWith(position.z));
+											amfFile.WriteLine(Indent(5) + "</coordinates>");
+										}
+										amfFile.WriteLine(Indent(4) + "</vertex>");
+										vertexCount++;
+									}
+								}
+							}
+							amfFile.WriteLine(Indent(3) + "</vertices>");
+							for (int meshIndex = 0; meshIndex < meshGroup.Meshes.Count; meshIndex++)
+							{
+								int firstVertexIndex = meshVertexStart[meshIndex];
+								Mesh mesh = meshGroup.Meshes[meshIndex];
+								MeshMaterialData material = MeshMaterialData.Get(mesh);
+								if (material.MaterialIndex == -1)
+								{
+									amfFile.WriteLine(Indent(3) + "<volume>");
+								}
+								else
+								{
+									amfFile.WriteLine(Indent(3) + "<volume materialid=\"{0}\">".FormatWith(material.MaterialIndex));
+								}
+								{
+									for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
+									{
+										Face face = mesh.Faces[faceIndex];
+										List<Vertex> positionsCCW = new List<Vertex>();
+										foreach (FaceEdge faceEdge in face.FaceEdges())
+										{
+											positionsCCW.Add(faceEdge.firstVertex);
+										}
 
-        public static bool Save(List<MeshGroup> meshToSave, Stream stream, MeshOutputSettings outputInfo)
-        {
-            TextWriter amfFile = new StreamWriter(stream);
-            amfFile.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-            amfFile.WriteLine("<amf unit=\"millimeter\" version=\"1.1\">");
-            if(outputInfo != null)
-            {
-                foreach(KeyValuePair<string, string> metaData in outputInfo.MetaDataKeyValue)
-                {
-                    amfFile.WriteLine(Indent(1) + "<metadata type=\"{0}\">{1}</metadata>".FormatWith(metaData.Key, metaData.Value));
-                }
-            }
-            {
-                int objectId = 1;
-                foreach (MeshGroup meshGroup in meshToSave)
-                {
-                    amfFile.WriteLine(Indent(1) + "<object id=\"{0}\">".FormatWith(objectId++));
-                    {
-                        int vertexCount = 0;
-                        List<int> meshVertexStart = new List<int>();
-                        amfFile.WriteLine(Indent(2) + "<mesh>");
-                        {
-                            amfFile.WriteLine(Indent(3) + "<vertices>");
-                            {
-                                foreach (Mesh mesh in meshGroup.Meshes)
-                                {
-                                    meshVertexStart.Add(vertexCount);
-                                    foreach (Vertex vertex in mesh.Vertices)
-                                    {
-                                        Vector3 position = vertex.Position;
-                                        amfFile.WriteLine(Indent(4) + "<vertex>");
-                                        {
-                                            amfFile.WriteLine(Indent(5) + "<coordinates>");
-                                            amfFile.WriteLine(Indent(6) + "<x>{0}</x>".FormatWith(position.x));
-                                            amfFile.WriteLine(Indent(6) + "<y>{0}</y>".FormatWith(position.y));
-                                            amfFile.WriteLine(Indent(6) + "<z>{0}</z>".FormatWith(position.z));
-                                            amfFile.WriteLine(Indent(5) + "</coordinates>");
-                                        }
-                                        amfFile.WriteLine(Indent(4) + "</vertex>");
-                                        vertexCount++;
-                                    }
-                                }
-                            }
-                            amfFile.WriteLine(Indent(3) + "</vertices>");
-                            for (int meshIndex = 0; meshIndex < meshGroup.Meshes.Count; meshIndex++)
-                            {
-                                int firstVertexIndex = meshVertexStart[meshIndex];
-                                Mesh mesh = meshGroup.Meshes[meshIndex];
-                                MeshMaterialData material = MeshMaterialData.Get(mesh);
-                                if (material.MaterialIndex == -1)
-                                {
-                                    amfFile.WriteLine(Indent(3) + "<volume>");
-                                }
-                                else
-                                {
-                                    amfFile.WriteLine(Indent(3) + "<volume materialid=\"{0}\">".FormatWith(material.MaterialIndex));
-                                }
-                                {
-                                    for(int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
-                                    {
-                                        Face face = mesh.Faces[faceIndex];
-                                        List<Vertex> positionsCCW = new List<Vertex>();
-                                        foreach (FaceEdge faceEdge in face.FaceEdges())
-                                        {
-                                            positionsCCW.Add(faceEdge.firstVertex);
-                                        }
+										int numPolys = positionsCCW.Count - 2;
+										int secondIndex = 1;
+										int thirdIndex = 2;
+										for (int polyIndex = 0; polyIndex < numPolys; polyIndex++)
+										{
+											amfFile.WriteLine(Indent(4) + "<triangle>");
+											amfFile.WriteLine(Indent(5) + "<v1>{0}</v1>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[0])));
+											amfFile.WriteLine(Indent(5) + "<v2>{0}</v2>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[secondIndex])));
+											amfFile.WriteLine(Indent(5) + "<v3>{0}</v3>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[thirdIndex])));
+											amfFile.WriteLine(Indent(4) + "</triangle>");
 
-                                        int numPolys = positionsCCW.Count - 2;
-                                        int secondIndex = 1;
-                                        int thirdIndex = 2;
-                                        for (int polyIndex = 0; polyIndex < numPolys; polyIndex++)
-                                        {
-                                            amfFile.WriteLine(Indent(4) + "<triangle>");
-                                            amfFile.WriteLine(Indent(5) + "<v1>{0}</v1>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[0])));
-                                            amfFile.WriteLine(Indent(5) + "<v2>{0}</v2>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[secondIndex])));
-                                            amfFile.WriteLine(Indent(5) + "<v3>{0}</v3>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[thirdIndex])));
-                                            amfFile.WriteLine(Indent(4) + "</triangle>");
+											secondIndex = thirdIndex;
+											thirdIndex++;
+										}
+									}
+								}
+								amfFile.WriteLine(Indent(3) + "</volume>");
+							}
+						}
+						amfFile.WriteLine(Indent(2) + "</mesh>");
+					}
+					amfFile.WriteLine(Indent(1) + "</object>");
+				}
 
-                                            secondIndex = thirdIndex;
-                                            thirdIndex++;
-                                        }
-                                    }
-                                }
-                                amfFile.WriteLine(Indent(3) + "</volume>");
-                            }
-                        }
-                        amfFile.WriteLine(Indent(2) + "</mesh>");
-                    }
-                    amfFile.WriteLine(Indent(1) + "</object>");
-                }
+				HashSet<int> materials = new HashSet<int>();
+				foreach (MeshGroup meshGroup in meshToSave)
+				{
+					foreach (Mesh mesh in meshGroup.Meshes)
+					{
+						MeshMaterialData material = MeshMaterialData.Get(mesh);
+						if (material.MaterialIndex != -1)
+						{
+							materials.Add(material.MaterialIndex);
+						}
+					}
+				}
 
-                HashSet<int> materials = new HashSet<int>();
-                foreach (MeshGroup meshGroup in meshToSave)
-                {
-                    foreach(Mesh mesh in meshGroup.Meshes)
-                    {
-                        MeshMaterialData material = MeshMaterialData.Get(mesh);
-                        if (material.MaterialIndex != -1)
-                        {
-                            materials.Add(material.MaterialIndex);
-                        }
-                    }
-                }
+				foreach (int material in materials)
+				{
+					amfFile.WriteLine(Indent(1) + "<material id=\"{0}\">".FormatWith(material));
+					amfFile.WriteLine(Indent(2) + "<metadata type=\"Name\">Material {0}</metadata>".FormatWith(material));
+					amfFile.WriteLine(Indent(1) + "</material>");
+				}
+			}
+			amfFile.WriteLine("</amf>");
+			amfFile.Flush();
+			return true;
+		}
 
-                foreach(int material in materials)
-                {
-                    amfFile.WriteLine(Indent(1) + "<material id=\"{0}\">".FormatWith(material));
-                    amfFile.WriteLine(Indent(2) + "<metadata type=\"Name\">Material {0}</metadata>".FormatWith(material));
-                    amfFile.WriteLine(Indent(1) + "</material>");
-                }
-            }
-            amfFile.WriteLine("</amf>");
-            amfFile.Flush();
-            return true;
-        }
+		public static List<MeshGroup> Load(string fileName, ReportProgressRatio reportProgress = null)
+		{
+			List<MeshGroup> loadedMesh = null;
+			if (Path.GetExtension(fileName).ToUpper() == ".AMF")
+			{
+				try
+				{
+					if (File.Exists(fileName))
+					{
+						Stream fileStream = File.OpenRead(fileName);
 
-        public static List<MeshGroup> Load(string fileName, ReportProgressRatio reportProgress = null)
-        {
-            List<MeshGroup> loadedMesh = null;
-            if (Path.GetExtension(fileName).ToUpper() == ".AMF")
-            {
-                try
-                {
-                    if (File.Exists(fileName))
-                    {
-                        Stream fileStream = File.OpenRead(fileName);
-
-                        loadedMesh = ParseFileContents(fileStream, reportProgress);
-                    }
-                }
+						loadedMesh = ParseFileContents(fileStream, reportProgress);
+					}
+				}
 #if DEBUG
-                catch (IOException)
-                {
-                    return null;
-                }
+				catch (IOException)
+				{
+					return null;
+				}
 #else
                 catch (Exception)
                 {
                     return null;
                 }
 #endif
-            }
+			}
 
-            return loadedMesh;
-        }
+			return loadedMesh;
+		}
 
-        public static List<MeshGroup> Load(Stream fileStream, ReportProgressRatio reportProgress = null)
-        {
-            List<MeshGroup> loadedMeshes;
-            try
-            {
-                loadedMeshes = ParseFileContents(fileStream, reportProgress);
-            }
+		public static List<MeshGroup> Load(Stream fileStream, ReportProgressRatio reportProgress = null)
+		{
+			List<MeshGroup> loadedMeshes;
+			try
+			{
+				loadedMeshes = ParseFileContents(fileStream, reportProgress);
+			}
 #if DEBUG
-            catch (IOException)
-            {
-                return null;
-            }
+			catch (IOException)
+			{
+				return null;
+			}
 #else
             catch (Exception)
             {
@@ -247,431 +241,432 @@ namespace MatterHackers.PolygonMesh.Processors
             }
 #endif
 
-            return loadedMeshes;
-        }
+			return loadedMeshes;
+		}
 
-        static bool IsZipFile(Stream fs)
-        {
-            int elements = 4;
-            if (fs.Length < elements)
-            {
-                return false;
-            }
+		private static bool IsZipFile(Stream fs)
+		{
+			int elements = 4;
+			if (fs.Length < elements)
+			{
+				return false;
+			}
 
-            string zipToken = "50-4B-03-04";
-            byte[] fileToken = new byte[elements];
+			string zipToken = "50-4B-03-04";
+			byte[] fileToken = new byte[elements];
 
-            fs.Position = 0;
-            int bytesRead = fs.Read(fileToken, 0, elements);
-            fs.Position = 0;
+			fs.Position = 0;
+			int bytesRead = fs.Read(fileToken, 0, elements);
+			fs.Position = 0;
 
-            if (BitConverter.ToString(fileToken) == zipToken)
-            {
-                return true;
-            }
+			if (BitConverter.ToString(fileToken) == zipToken)
+			{
+				return true;
+			}
 
-            return false;
-        }
+			return false;
+		}
 
-        internal class ProgressData
-        {
-            ReportProgressRatio reportProgress;
-            Stopwatch maxProgressReport = new Stopwatch();
-            Stream positionStream;
-            long bytesInFile;
-            bool loadCanceled;
-            internal bool LoadCanceled { get { return loadCanceled; } }
+		internal class ProgressData
+		{
+			private ReportProgressRatio reportProgress;
+			private Stopwatch maxProgressReport = new Stopwatch();
+			private Stream positionStream;
+			private long bytesInFile;
+			private bool loadCanceled;
 
-            internal ProgressData(Stream positionStream, ReportProgressRatio reportProgress)
-            {
-                this.reportProgress = reportProgress;
-                this.positionStream = positionStream;
-                maxProgressReport.Start();
-                bytesInFile = (long)positionStream.Length;
-            }
+			internal bool LoadCanceled { get { return loadCanceled; } }
 
-            internal void ReportProgress0To50(out bool continueProcessing)
-            {
-                if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
-                {
-                    reportProgress(positionStream.Position / (double)bytesInFile * .5, "Loading Mesh", out continueProcessing);
-                    if (!continueProcessing)
-                    {
-                        loadCanceled = true;
-                    }
-                    maxProgressReport.Restart();
-                }
-                else
-                {
-                    continueProcessing = true;
-                }
-            }
-        }
+			internal ProgressData(Stream positionStream, ReportProgressRatio reportProgress)
+			{
+				this.reportProgress = reportProgress;
+				this.positionStream = positionStream;
+				maxProgressReport.Start();
+				bytesInFile = (long)positionStream.Length;
+			}
 
-        public static List<MeshGroup> ParseFileContents(Stream amfStream, ReportProgressRatio reportProgress)
-        {
-            Stopwatch time = new Stopwatch();
-            time.Start(); 
-            
-            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+			internal void ReportProgress0To50(out bool continueProcessing)
+			{
+				if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
+				{
+					reportProgress(positionStream.Position / (double)bytesInFile * .5, "Loading Mesh", out continueProcessing);
+					if (!continueProcessing)
+					{
+						loadCanceled = true;
+					}
+					maxProgressReport.Restart();
+				}
+				else
+				{
+					continueProcessing = true;
+				}
+			}
+		}
 
-            double parsingFileRatio = .5;
+		public static List<MeshGroup> ParseFileContents(Stream amfStream, ReportProgressRatio reportProgress)
+		{
+			Stopwatch time = new Stopwatch();
+			time.Start();
 
-            if (amfStream == null)
-            {
-                return null;
-            }
+			Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
-            List<MeshGroup> meshGroups = null;
+			double parsingFileRatio = .5;
 
-            // do the loading
-            {
-                using (Stream amfCompressedStream = GetCompressedStreamIfRequired(amfStream))
-                {
-                    XmlReader xmlTree = XmlReader.Create(amfCompressedStream);
-                    while (xmlTree.Read())
-                    {
-                        if (xmlTree.Name == "amf")
-                        {
-                            break;
-                        }
-                    }
-                    double scale = GetScaling(xmlTree);
+			if (amfStream == null)
+			{
+				return null;
+			}
 
-                    ProgressData progressData = new ProgressData(amfStream, reportProgress);
+			List<MeshGroup> meshGroups = null;
 
-                    meshGroups = new List<MeshGroup>();
+			// do the loading
+			{
+				using (Stream amfCompressedStream = GetCompressedStreamIfRequired(amfStream))
+				{
+					XmlReader xmlTree = XmlReader.Create(amfCompressedStream);
+					while (xmlTree.Read())
+					{
+						if (xmlTree.Name == "amf")
+						{
+							break;
+						}
+					}
+					double scale = GetScaling(xmlTree);
 
-                    while (xmlTree.Read())
-                    {
-                        if (xmlTree.Name == "object")
-                        {
-                            using (XmlReader objectTree = xmlTree.ReadSubtree())
-                            {
-                                meshGroups.Add(ReadObject(objectTree, scale, progressData));
-                                if (progressData.LoadCanceled)
-                                {
-                                    return null;
-                                }
-                            }
-                        }
-                    }
+					ProgressData progressData = new ProgressData(amfStream, reportProgress);
 
-                    xmlTree.Dispose();
-                }
-            }
+					meshGroups = new List<MeshGroup>();
+
+					while (xmlTree.Read())
+					{
+						if (xmlTree.Name == "object")
+						{
+							using (XmlReader objectTree = xmlTree.ReadSubtree())
+							{
+								meshGroups.Add(ReadObject(objectTree, scale, progressData));
+								if (progressData.LoadCanceled)
+								{
+									return null;
+								}
+							}
+						}
+					}
+
+					xmlTree.Dispose();
+				}
+			}
 
 #if true
-            // merge all the vetexes that are in the same place together
-            int totalMeshes = 0;
-            foreach (MeshGroup meshGroup in meshGroups)
-            {
-                foreach (Mesh mesh in meshGroup.Meshes)
-                {
-                    totalMeshes++;
-                }
-            }
+			// merge all the vetexes that are in the same place together
+			int totalMeshes = 0;
+			foreach (MeshGroup meshGroup in meshGroups)
+			{
+				foreach (Mesh mesh in meshGroup.Meshes)
+				{
+					totalMeshes++;
+				}
+			}
 
-            double currentMeshProgress = 0;
-            double ratioLeftToUse = 1 - parsingFileRatio;
-            double progressPerMesh = 1.0 / totalMeshes * ratioLeftToUse;
-            foreach (MeshGroup meshGroup in meshGroups)
-            {
-                foreach (Mesh mesh in meshGroup.Meshes)
-                {
-                    bool keepProcessing = true;
-                    mesh.CleanAndMergMesh(
-                        (double progress0To1, string processingState, out bool continueProcessing) =>
-                        {
-                            if (reportProgress != null)
-                            {
-                                double currentTotalProgress = parsingFileRatio + currentMeshProgress;
-                                reportProgress(currentTotalProgress + progress0To1 * progressPerMesh, processingState, out continueProcessing);
-                                keepProcessing = continueProcessing;
-                            }
-                            else
-                            {
-                                continueProcessing = true;
-                            }
-                        }
-                        );
-                    if (!keepProcessing)
-                    {
-                        amfStream.Close();
-                        return null;
-                    }
-                    currentMeshProgress += progressPerMesh;
-                }
-            }
+			double currentMeshProgress = 0;
+			double ratioLeftToUse = 1 - parsingFileRatio;
+			double progressPerMesh = 1.0 / totalMeshes * ratioLeftToUse;
+			foreach (MeshGroup meshGroup in meshGroups)
+			{
+				foreach (Mesh mesh in meshGroup.Meshes)
+				{
+					bool keepProcessing = true;
+					mesh.CleanAndMergMesh(
+						(double progress0To1, string processingState, out bool continueProcessing) =>
+						{
+							if (reportProgress != null)
+							{
+								double currentTotalProgress = parsingFileRatio + currentMeshProgress;
+								reportProgress(currentTotalProgress + progress0To1 * progressPerMesh, processingState, out continueProcessing);
+								keepProcessing = continueProcessing;
+							}
+							else
+							{
+								continueProcessing = true;
+							}
+						}
+						);
+					if (!keepProcessing)
+					{
+						amfStream.Close();
+						return null;
+					}
+					currentMeshProgress += progressPerMesh;
+				}
+			}
 #endif
 
-            time.Stop();
-            Debug.WriteLine(string.Format("AMF Load in {0:0.00}s", time.Elapsed.TotalSeconds));
+			time.Stop();
+			Debug.WriteLine(string.Format("AMF Load in {0:0.00}s", time.Elapsed.TotalSeconds));
 
-            amfStream.Close();
-            bool hasValidMesh = false;
-            foreach (MeshGroup meshGroup in meshGroups)
-            {
-                foreach(Mesh mesh in meshGroup.Meshes)
-                {
-                    if (mesh.Faces.Count > 0)
-                    {
-                        hasValidMesh = true;
-                    }
-                }
-            }
-            if (hasValidMesh)
-            {
-                return meshGroups;
-            }
-            else
-            {
-                return null;
-            }
-        }
+			amfStream.Close();
+			bool hasValidMesh = false;
+			foreach (MeshGroup meshGroup in meshGroups)
+			{
+				foreach (Mesh mesh in meshGroup.Meshes)
+				{
+					if (mesh.Faces.Count > 0)
+					{
+						hasValidMesh = true;
+					}
+				}
+			}
+			if (hasValidMesh)
+			{
+				return meshGroups;
+			}
+			else
+			{
+				return null;
+			}
+		}
 
-        private static MeshGroup ReadObject(XmlReader xmlTree, double scale, ProgressData progressData)
-        {
-            MeshGroup meshGroup = new MeshGroup();
-            while (xmlTree.Read())
-            {
-                if (xmlTree.Name == "mesh")
-                {
-                    using (XmlReader meshTree = xmlTree.ReadSubtree())
-                    {
-                        ReadMesh(meshTree, meshGroup, scale, progressData);
-                        if (progressData.LoadCanceled)
-                        {
-                            return null;
-                        }
-                    }
-                }
-            }
+		private static MeshGroup ReadObject(XmlReader xmlTree, double scale, ProgressData progressData)
+		{
+			MeshGroup meshGroup = new MeshGroup();
+			while (xmlTree.Read())
+			{
+				if (xmlTree.Name == "mesh")
+				{
+					using (XmlReader meshTree = xmlTree.ReadSubtree())
+					{
+						ReadMesh(meshTree, meshGroup, scale, progressData);
+						if (progressData.LoadCanceled)
+						{
+							return null;
+						}
+					}
+				}
+			}
 
-            return meshGroup;
-        }
+			return meshGroup;
+		}
 
-        private static void ReadMesh(XmlReader xmlTree, MeshGroup meshGroup, double scale, ProgressData progressData)
-        {
-            List<Vector3> vertices = new List<Vector3>();
-            while (xmlTree.Read())
-            {
-                switch(xmlTree.Name)
-                {
-                    case "vertices":
-                        using (XmlReader verticesTree = xmlTree.ReadSubtree())
-                        {
-                            ReadVertices(verticesTree, vertices, scale, progressData);
-                            if (progressData.LoadCanceled)
-                            {
-                                return;
-                            }
-                        }
-                        break;
+		private static void ReadMesh(XmlReader xmlTree, MeshGroup meshGroup, double scale, ProgressData progressData)
+		{
+			List<Vector3> vertices = new List<Vector3>();
+			while (xmlTree.Read())
+			{
+				switch (xmlTree.Name)
+				{
+					case "vertices":
+						using (XmlReader verticesTree = xmlTree.ReadSubtree())
+						{
+							ReadVertices(verticesTree, vertices, scale, progressData);
+							if (progressData.LoadCanceled)
+							{
+								return;
+							}
+						}
+						break;
 
-                    case "volume":
-                        string materialId = xmlTree["materialid"];
-                        Mesh loadedMesh = null;
-                        using (XmlReader volumeTree = xmlTree.ReadSubtree())
-                        {
-                            loadedMesh = ReadVolume(volumeTree, vertices, progressData);
-                            if (progressData.LoadCanceled)
-                            {
-                                return;
-                            }
-                            meshGroup.Meshes.Add(loadedMesh);
-                        }
-                        if (loadedMesh != null && materialId != null)
-                        {
-                            MeshMaterialData material = MeshMaterialData.Get(loadedMesh);
-                            material.MaterialIndex = int.Parse(materialId);
-                        }
-                        break;
-                }
-            }
-        }
+					case "volume":
+						string materialId = xmlTree["materialid"];
+						Mesh loadedMesh = null;
+						using (XmlReader volumeTree = xmlTree.ReadSubtree())
+						{
+							loadedMesh = ReadVolume(volumeTree, vertices, progressData);
+							if (progressData.LoadCanceled)
+							{
+								return;
+							}
+							meshGroup.Meshes.Add(loadedMesh);
+						}
+						if (loadedMesh != null && materialId != null)
+						{
+							MeshMaterialData material = MeshMaterialData.Get(loadedMesh);
+							material.MaterialIndex = int.Parse(materialId);
+						}
+						break;
+				}
+			}
+		}
 
-        private static Mesh ReadVolume(XmlReader xmlTree, List<Vector3> vertices, ProgressData progressData)
-        {
-            Mesh newMesh = new Mesh();
-            while (xmlTree.Read())
-            {
-                if (xmlTree.Name == "triangle")
-                {
-                    using (XmlReader triangleTree = xmlTree.ReadSubtree())
-                    {
-                        while (triangleTree.Read())
-                        {
-                            int[] indices = new int[3];
-                            while (triangleTree.Read())
-                            {
-                                switch (triangleTree.Name)
-                                {
-                                    case "v1":
-                                        string v1 = triangleTree.ReadString();
-                                        indices[0] = int.Parse(v1);
-                                        break;
+		private static Mesh ReadVolume(XmlReader xmlTree, List<Vector3> vertices, ProgressData progressData)
+		{
+			Mesh newMesh = new Mesh();
+			while (xmlTree.Read())
+			{
+				if (xmlTree.Name == "triangle")
+				{
+					using (XmlReader triangleTree = xmlTree.ReadSubtree())
+					{
+						while (triangleTree.Read())
+						{
+							int[] indices = new int[3];
+							while (triangleTree.Read())
+							{
+								switch (triangleTree.Name)
+								{
+									case "v1":
+										string v1 = triangleTree.ReadString();
+										indices[0] = int.Parse(v1);
+										break;
 
-                                    case "v2":
-                                        string v2 = triangleTree.ReadString();
-                                        indices[1] = int.Parse(v2);
-                                        break;
+									case "v2":
+										string v2 = triangleTree.ReadString();
+										indices[1] = int.Parse(v2);
+										break;
 
-                                    case "v3":
-                                        string v3 = triangleTree.ReadString();
-                                        indices[2] = int.Parse(v3);
-                                        break;
+									case "v3":
+										string v3 = triangleTree.ReadString();
+										indices[2] = int.Parse(v3);
+										break;
 
-                                    case "map":
-                                        using (XmlReader mapTree = triangleTree.ReadSubtree())
-                                        {
-                                        }
-                                        // a texture map, has u1...un and v1...vn
-                                        break;
+									case "map":
+										using (XmlReader mapTree = triangleTree.ReadSubtree())
+										{
+										}
+										// a texture map, has u1...un and v1...vn
+										break;
 
-                                    default:
-                                        break;
-                                }
-                            }
-                            if (indices[0] != indices[1]
-                                && indices[0] != indices[2]
-                                && indices[1] != indices[2]
-                                && vertices[indices[0]] != vertices[indices[1]]
-                                && vertices[indices[1]] != vertices[indices[2]]
-                                && vertices[indices[2]] != vertices[indices[0]])
-                            {
-                                Vertex[] triangle = new Vertex[]
+									default:
+										break;
+								}
+							}
+							if (indices[0] != indices[1]
+								&& indices[0] != indices[2]
+								&& indices[1] != indices[2]
+								&& vertices[indices[0]] != vertices[indices[1]]
+								&& vertices[indices[1]] != vertices[indices[2]]
+								&& vertices[indices[2]] != vertices[indices[0]])
+							{
+								Vertex[] triangle = new Vertex[]
                                 {
                                     newMesh.CreateVertex(vertices[indices[0]], CreateOption.CreateNew, SortOption.WillSortLater),
                                     newMesh.CreateVertex(vertices[indices[1]], CreateOption.CreateNew, SortOption.WillSortLater),
                                     newMesh.CreateVertex(vertices[indices[2]], CreateOption.CreateNew, SortOption.WillSortLater),
                                 };
-                                newMesh.CreateFace(triangle, CreateOption.CreateNew);
-                            }
+								newMesh.CreateFace(triangle, CreateOption.CreateNew);
+							}
 
-                            bool continueProcessing;
-                            progressData.ReportProgress0To50(out continueProcessing);
-                            if (!continueProcessing)
-                            {
-                                // this is what we should do but it requires a bit more debugging.
-                                return null;
-                            }
-                        }
-                    }
-                }
-            }
-            return newMesh;
-        }
+							bool continueProcessing;
+							progressData.ReportProgress0To50(out continueProcessing);
+							if (!continueProcessing)
+							{
+								// this is what we should do but it requires a bit more debugging.
+								return null;
+							}
+						}
+					}
+				}
+			}
+			return newMesh;
+		}
 
-        private static void ReadVertices(XmlReader xmlTree, List<Vector3> vertices, double scale, ProgressData progressData)
-        {
-            while (xmlTree.Read())
-            {
-                if (xmlTree.Name == "vertices")
-                {
-                    using (XmlReader verticesTree = xmlTree.ReadSubtree())
-                    {
-                        while (verticesTree.Read())
-                        {
-                            if (xmlTree.Name == "vertex")
-                            {
-                                using (XmlReader vertexTree = verticesTree.ReadSubtree())
-                                {
-                                    while (vertexTree.Read())
-                                    {
-                                        if (vertexTree.Name == "coordinates")
-                                        {
-                                            using (XmlReader coordinatesTree = vertexTree.ReadSubtree())
-                                            {
-                                                Vector3 position = new Vector3();
-                                                while (coordinatesTree.Read())
-                                                {
-                                                    switch (coordinatesTree.Name)
-                                                    {
-                                                        case "x":
-                                                            string x = coordinatesTree.ReadString();
-                                                            position.x = double.Parse(x);
-                                                            break;
+		private static void ReadVertices(XmlReader xmlTree, List<Vector3> vertices, double scale, ProgressData progressData)
+		{
+			while (xmlTree.Read())
+			{
+				if (xmlTree.Name == "vertices")
+				{
+					using (XmlReader verticesTree = xmlTree.ReadSubtree())
+					{
+						while (verticesTree.Read())
+						{
+							if (xmlTree.Name == "vertex")
+							{
+								using (XmlReader vertexTree = verticesTree.ReadSubtree())
+								{
+									while (vertexTree.Read())
+									{
+										if (vertexTree.Name == "coordinates")
+										{
+											using (XmlReader coordinatesTree = vertexTree.ReadSubtree())
+											{
+												Vector3 position = new Vector3();
+												while (coordinatesTree.Read())
+												{
+													switch (coordinatesTree.Name)
+													{
+														case "x":
+															string x = coordinatesTree.ReadString();
+															position.x = double.Parse(x);
+															break;
 
-                                                        case "y":
-                                                            string y = coordinatesTree.ReadString();
-                                                            position.y = double.Parse(y);
-                                                            break;
+														case "y":
+															string y = coordinatesTree.ReadString();
+															position.y = double.Parse(y);
+															break;
 
-                                                        case "z":
-                                                            string z = coordinatesTree.ReadString();
-                                                            position.z = double.Parse(z);
-                                                            break;
+														case "z":
+															string z = coordinatesTree.ReadString();
+															position.z = double.Parse(z);
+															break;
 
-                                                        default:
-                                                            break;
-                                                    }
-                                                }
-                                                position *= scale;
-                                                vertices.Add(position);
-                                            }
-                                            bool continueProcessing;
-                                            progressData.ReportProgress0To50(out continueProcessing);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+														default:
+															break;
+													}
+												}
+												position *= scale;
+												vertices.Add(position);
+											}
+											bool continueProcessing;
+											progressData.ReportProgress0To50(out continueProcessing);
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 
-        public static Stream GetCompressedStreamIfRequired(Stream amfStream)
-        {
-            if (IsZipFile(amfStream))
-            {
-                ZipArchive archive = new ZipArchive(amfStream, ZipArchiveMode.Read);
-                return archive.Entries.First().Open();
-            }
+		public static Stream GetCompressedStreamIfRequired(Stream amfStream)
+		{
+			if (IsZipFile(amfStream))
+			{
+				ZipArchive archive = new ZipArchive(amfStream, ZipArchiveMode.Read);
+				return archive.Entries.First().Open();
+			}
 
-            amfStream.Position = 0;
+			amfStream.Position = 0;
 
-            return amfStream;
-        }
+			return amfStream;
+		}
 
-        private static double GetScaling(XmlReader xmlTree)
-        {
-            string units = xmlTree["unit"];
-            if (units == null)
-            {
-                // the amf does not specify any units
-                return 1;
-            }
+		private static double GetScaling(XmlReader xmlTree)
+		{
+			string units = xmlTree["unit"];
+			if (units == null)
+			{
+				// the amf does not specify any units
+				return 1;
+			}
 
-            switch (units.ToLower())
-            {
-                case "millimeter":
-                    return 1;
+			switch (units.ToLower())
+			{
+				case "millimeter":
+					return 1;
 
-                case "centimeter":
-                    return 10;
+				case "centimeter":
+					return 10;
 
-                case "meter":
-                    return 1000;
+				case "meter":
+					return 1000;
 
-                case "inch":
-                    return 25.4;
+				case "inch":
+					return 25.4;
 
-                case "feet":
-                    return 304.8;
+				case "feet":
+					return 304.8;
 
-                case "micron":
-                    return 0.001;
+				case "micron":
+					return 0.001;
 
-                default:
+				default:
 #if DEBUG
-                    throw new NotImplementedException();
+					throw new NotImplementedException();
 #else
                 return 1;
 #endif
-            }
-        }
+			}
+		}
 
 		public static long GetEstimatedMemoryUse(string fileLocation)
 		{

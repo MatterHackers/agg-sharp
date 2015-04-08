@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,202 +23,197 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Diagnostics;
-
 using MatterHackers.Agg;
-using MatterHackers.Agg.Transform;
-using MatterHackers.Agg.Image;
-using MatterHackers.Agg.VertexSource;
 using MatterHackers.Agg.UI;
-using MatterHackers.Agg.Font;
+using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RenderOpenGl;
 using MatterHackers.VectorMath;
-using MatterHackers.PolygonMesh.Processors;
+using System;
+using System.Diagnostics;
+using System.IO;
 
 namespace MatterHackers.MeshVisualizer
 {
-    public class MeshViewerApplication : SystemWindow
-    {
-        protected MeshViewerWidget meshViewerWidget;
-        
-        Button openFileButton;
-        CheckBox bedCheckBox;
-        CheckBox wireframeCheckBox;
-        GuiWidget viewArea;
+	public class MeshViewerApplication : SystemWindow
+	{
+		protected MeshViewerWidget meshViewerWidget;
 
-        public MeshViewerWidget MeshViewerWidget
-        {
-            get { return meshViewerWidget; }
-        }
+		private Button openFileButton;
+		private CheckBox bedCheckBox;
+		private CheckBox wireframeCheckBox;
+		private GuiWidget viewArea;
 
-        public MeshViewerApplication(string meshFileToLoad = "")
-            : base(800, 600)
-        {
-            BackgroundColor = RGBA_Bytes.White;
-            MinimumSize = new VectorMath.Vector2(200, 200);
-            Title = "MatterHackers MeshViewr";
-            UseOpenGL = true;
+		public MeshViewerWidget MeshViewerWidget
+		{
+			get { return meshViewerWidget; }
+		}
 
-            FlowLayoutWidget mainContainer = new FlowLayoutWidget(FlowDirection.TopToBottom);
-            mainContainer.AnchorAll();
+		public MeshViewerApplication(string meshFileToLoad = "")
+			: base(800, 600)
+		{
+			BackgroundColor = RGBA_Bytes.White;
+			MinimumSize = new VectorMath.Vector2(200, 200);
+			Title = "MatterHackers MeshViewr";
+			UseOpenGL = true;
 
-            viewArea = new GuiWidget();
+			FlowLayoutWidget mainContainer = new FlowLayoutWidget(FlowDirection.TopToBottom);
+			mainContainer.AnchorAll();
 
-            viewArea.AnchorAll();
+			viewArea = new GuiWidget();
 
-            Vector3 viewerVolume = new Vector3(200, 200, 200);
-            meshViewerWidget = new MeshViewerWidget(viewerVolume, new Vector2(100, 100), MeshViewerWidget.BedShape.Rectangular, "No Part Loaded");
+			viewArea.AnchorAll();
 
-            meshViewerWidget.AnchorAll();
+			Vector3 viewerVolume = new Vector3(200, 200, 200);
+			meshViewerWidget = new MeshViewerWidget(viewerVolume, new Vector2(100, 100), MeshViewerWidget.BedShape.Rectangular, "No Part Loaded");
 
-            viewArea.AddChild(meshViewerWidget);
+			meshViewerWidget.AnchorAll();
 
-            mainContainer.AddChild(viewArea);
+			viewArea.AddChild(meshViewerWidget);
 
-            FlowLayoutWidget buttonPanel = new FlowLayoutWidget(FlowDirection.LeftToRight);
-            buttonPanel.HAnchor = HAnchor.ParentLeftRight;
-            buttonPanel.Padding = new BorderDouble(3, 3);
-            buttonPanel.BackgroundColor = RGBA_Bytes.DarkGray;
+			mainContainer.AddChild(viewArea);
 
-            if (meshFileToLoad != "")
-            {
-                meshViewerWidget.LoadMesh(meshFileToLoad, MeshVisualizer.MeshViewerWidget.CenterPartAfterLoad.DO);
-            }
-            else
-            {
-                openFileButton = new Button("Open 3D File", 0, 0);
-                openFileButton.Click += new EventHandler(openFileButton_ButtonClick);
-                buttonPanel.AddChild(openFileButton);
-            }
+			FlowLayoutWidget buttonPanel = new FlowLayoutWidget(FlowDirection.LeftToRight);
+			buttonPanel.HAnchor = HAnchor.ParentLeftRight;
+			buttonPanel.Padding = new BorderDouble(3, 3);
+			buttonPanel.BackgroundColor = RGBA_Bytes.DarkGray;
 
-            bedCheckBox = new CheckBox("Bed");
-            bedCheckBox.Checked = true;
-            buttonPanel.AddChild(bedCheckBox);
+			if (meshFileToLoad != "")
+			{
+				meshViewerWidget.LoadMesh(meshFileToLoad, MeshVisualizer.MeshViewerWidget.CenterPartAfterLoad.DO);
+			}
+			else
+			{
+				openFileButton = new Button("Open 3D File", 0, 0);
+				openFileButton.Click += new EventHandler(openFileButton_ButtonClick);
+				buttonPanel.AddChild(openFileButton);
+			}
 
-            wireframeCheckBox = new CheckBox("Wireframe");
-            buttonPanel.AddChild(wireframeCheckBox);
+			bedCheckBox = new CheckBox("Bed");
+			bedCheckBox.Checked = true;
+			buttonPanel.AddChild(bedCheckBox);
 
-            GuiWidget leftRightSpacer = new GuiWidget();
-            leftRightSpacer.HAnchor = HAnchor.ParentLeftRight;
-            buttonPanel.AddChild(leftRightSpacer);
+			wireframeCheckBox = new CheckBox("Wireframe");
+			buttonPanel.AddChild(wireframeCheckBox);
 
-            mainContainer.AddChild(buttonPanel);
+			GuiWidget leftRightSpacer = new GuiWidget();
+			leftRightSpacer.HAnchor = HAnchor.ParentLeftRight;
+			buttonPanel.AddChild(leftRightSpacer);
 
-            this.AddChild(mainContainer);
-            this.AnchorAll();
+			mainContainer.AddChild(buttonPanel);
 
-            AddHandlers();
-        }
+			this.AddChild(mainContainer);
+			this.AnchorAll();
 
-        private void AddHandlers()
-        {
-            bedCheckBox.CheckedStateChanged += new CheckBox.CheckedStateChangedEventHandler(bedCheckBox_CheckedStateChanged);
-            wireframeCheckBox.CheckedStateChanged += new CheckBox.CheckedStateChangedEventHandler(wireframeCheckBox_CheckedStateChanged);
-        }
+			AddHandlers();
+		}
 
-        void wireframeCheckBox_CheckedStateChanged(object sender, EventArgs e)
-        {
-            if (wireframeCheckBox.Checked)
-            {
-                meshViewerWidget.RenderType = RenderTypes.Polygons;
-            }
-            else
-            {
-                meshViewerWidget.RenderType = RenderTypes.Shaded;
-            }
-        }
+		private void AddHandlers()
+		{
+			bedCheckBox.CheckedStateChanged += new CheckBox.CheckedStateChangedEventHandler(bedCheckBox_CheckedStateChanged);
+			wireframeCheckBox.CheckedStateChanged += new CheckBox.CheckedStateChangedEventHandler(wireframeCheckBox_CheckedStateChanged);
+		}
 
-        void bedCheckBox_CheckedStateChanged(object sender, EventArgs e)
-        {
-            meshViewerWidget.RenderBed = bedCheckBox.Checked;
-        }
+		private void wireframeCheckBox_CheckedStateChanged(object sender, EventArgs e)
+		{
+			if (wireframeCheckBox.Checked)
+			{
+				meshViewerWidget.RenderType = RenderTypes.Polygons;
+			}
+			else
+			{
+				meshViewerWidget.RenderType = RenderTypes.Shaded;
+			}
+		}
 
-        void openFileButton_ButtonClick(object sender, EventArgs mouseEvent)
-        {
-            UiThread.RunOnIdle(DoOpenFileButton_ButtonClick);
-        }
+		private void bedCheckBox_CheckedStateChanged(object sender, EventArgs e)
+		{
+			meshViewerWidget.RenderBed = bedCheckBox.Checked;
+		}
 
-        void DoOpenFileButton_ButtonClick(object state)
-        {
-            FileDialog.OpenFileDialog(
-                new OpenFileDialogParams("3D Mesh Files|*.stl;*.amf"), 
-                (openParams) =>
-                {
-                    meshViewerWidget.LoadMesh(openParams.FileName, MeshVisualizer.MeshViewerWidget.CenterPartAfterLoad.DO);
-                });
+		private void openFileButton_ButtonClick(object sender, EventArgs mouseEvent)
+		{
+			UiThread.RunOnIdle(DoOpenFileButton_ButtonClick);
+		}
 
-            Invalidate();
-        }
+		private void DoOpenFileButton_ButtonClick(object state)
+		{
+			FileDialog.OpenFileDialog(
+				new OpenFileDialogParams("3D Mesh Files|*.stl;*.amf"),
+				(openParams) =>
+				{
+					meshViewerWidget.LoadMesh(openParams.FileName, MeshVisualizer.MeshViewerWidget.CenterPartAfterLoad.DO);
+				});
 
-        public override void OnDragEnter(FileDropEventArgs fileDropEventArgs)
-        {
-            foreach (string file in fileDropEventArgs.DroppedFiles)
-            {
-                string extension = Path.GetExtension(file).ToUpper();
-                if (MeshFileIo.ValidFileExtensions().Contains(extension))
-                {
-                    fileDropEventArgs.AcceptDrop = true;
-                }
-            }
-            base.OnDragEnter(fileDropEventArgs);
-        }
+			Invalidate();
+		}
 
-        public override void OnDragOver(FileDropEventArgs fileDropEventArgs)
-        {
-            foreach (string file in fileDropEventArgs.DroppedFiles)
-            {
-                string extension = Path.GetExtension(file).ToUpper();
-                if (MeshFileIo.ValidFileExtensions().Contains(extension))
-                {
-                    fileDropEventArgs.AcceptDrop = true;
-                }
-            }
-            base.OnDragOver(fileDropEventArgs);
-        }
+		public override void OnDragEnter(FileDropEventArgs fileDropEventArgs)
+		{
+			foreach (string file in fileDropEventArgs.DroppedFiles)
+			{
+				string extension = Path.GetExtension(file).ToUpper();
+				if (MeshFileIo.ValidFileExtensions().Contains(extension))
+				{
+					fileDropEventArgs.AcceptDrop = true;
+				}
+			}
+			base.OnDragEnter(fileDropEventArgs);
+		}
 
-        public override void OnDragDrop(FileDropEventArgs fileDropEventArgs)
-        {
-            foreach (string droppedFileName in fileDropEventArgs.DroppedFiles)
-            {
-                string extension = Path.GetExtension(droppedFileName).ToUpper();
-                if (MeshFileIo.ValidFileExtensions().Contains(extension))
-                {
-                    meshViewerWidget.LoadMesh(droppedFileName, MeshVisualizer.MeshViewerWidget.CenterPartAfterLoad.DO);
-                    break;
-                }
-            }
+		public override void OnDragOver(FileDropEventArgs fileDropEventArgs)
+		{
+			foreach (string file in fileDropEventArgs.DroppedFiles)
+			{
+				string extension = Path.GetExtension(file).ToUpper();
+				if (MeshFileIo.ValidFileExtensions().Contains(extension))
+				{
+					fileDropEventArgs.AcceptDrop = true;
+				}
+			}
+			base.OnDragOver(fileDropEventArgs);
+		}
 
-            base.OnDragDrop(fileDropEventArgs);
-        }
+		public override void OnDragDrop(FileDropEventArgs fileDropEventArgs)
+		{
+			foreach (string droppedFileName in fileDropEventArgs.DroppedFiles)
+			{
+				string extension = Path.GetExtension(droppedFileName).ToUpper();
+				if (MeshFileIo.ValidFileExtensions().Contains(extension))
+				{
+					meshViewerWidget.LoadMesh(droppedFileName, MeshVisualizer.MeshViewerWidget.CenterPartAfterLoad.DO);
+					break;
+				}
+			}
 
-        Stopwatch totalDrawTime = new Stopwatch();
-        int drawCount = 0;
-        public override void OnDraw(Graphics2D graphics2D)
-        {
-            totalDrawTime.Restart();
-            base.OnDraw(graphics2D);
-            totalDrawTime.Stop();
+			base.OnDragDrop(fileDropEventArgs);
+		}
 
-            if (true)
-            {
-                long memory = GC.GetTotalMemory(false);
-                this.Title = string.Format("Allocated = {0:n0} : {1}ms, d{2} Size = {3}x{4}", memory, totalDrawTime.ElapsedMilliseconds, drawCount++, this.Width, this.Height);
-                //GC.Collect();
-            }
-        }
+		private Stopwatch totalDrawTime = new Stopwatch();
+		private int drawCount = 0;
 
-        [STAThread]
-        public static void Main(string[] args)
-        {
-            MeshViewerApplication app = new MeshViewerApplication();
-            app.ShowAsSystemWindow();
-        }
-    }
+		public override void OnDraw(Graphics2D graphics2D)
+		{
+			totalDrawTime.Restart();
+			base.OnDraw(graphics2D);
+			totalDrawTime.Stop();
+
+			if (true)
+			{
+				long memory = GC.GetTotalMemory(false);
+				this.Title = string.Format("Allocated = {0:n0} : {1}ms, d{2} Size = {3}x{4}", memory, totalDrawTime.ElapsedMilliseconds, drawCount++, this.Width, this.Height);
+				//GC.Collect();
+			}
+		}
+
+		[STAThread]
+		public static void Main(string[] args)
+		{
+			MeshViewerApplication app = new MeshViewerApplication();
+			app.ShowAsSystemWindow();
+		}
+	}
 }

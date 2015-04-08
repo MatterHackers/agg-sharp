@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,175 +23,173 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Diagnostics;
-
-using MatterHackers.VectorMath;
+using System.Text;
 
 namespace MatterHackers.PolygonMesh
 {
-    [DebuggerDisplay("ID = {Data.ID}")]
-    public class FaceEdge
-    {
-        public MetaData Data
-        {
-            get
-            {
-                return MetaData.Get(this);
-            }
-        }
+	[DebuggerDisplay("ID = {Data.ID}")]
+	public class FaceEdge
+	{
+		public MetaData Data
+		{
+			get
+			{
+				return MetaData.Get(this);
+			}
+		}
 
-        public Face containingFace;
-        public Vertex firstVertex;
-        public MeshEdge meshEdge;
+		public Face containingFace;
+		public Vertex firstVertex;
+		public MeshEdge meshEdge;
 
-        public FaceEdge nextFaceEdge;
-        public FaceEdge prevFaceEdge;
+		public FaceEdge nextFaceEdge;
+		public FaceEdge prevFaceEdge;
 
-        public FaceEdge radialNextFaceEdge;
-        public FaceEdge radialPrevFaceEdge;
+		public FaceEdge radialNextFaceEdge;
+		public FaceEdge radialPrevFaceEdge;
 
-        public FaceEdge()
-        {
-        }
+		public FaceEdge()
+		{
+		}
 
-        public FaceEdge(Face face, MeshEdge meshEdge, Vertex vertex)
-        {
-            this.containingFace = face;
-            this.meshEdge = meshEdge;
-            this.firstVertex = vertex;
+		public FaceEdge(Face face, MeshEdge meshEdge, Vertex vertex)
+		{
+			this.containingFace = face;
+			this.meshEdge = meshEdge;
+			this.firstVertex = vertex;
 
-            nextFaceEdge = null;
-            prevFaceEdge = null;
+			nextFaceEdge = null;
+			prevFaceEdge = null;
 
-            radialNextFaceEdge = radialPrevFaceEdge = this;
-        }
+			radialNextFaceEdge = radialPrevFaceEdge = this;
+		}
 
-        public Vector2 GetUVs(int index)
-        {
-            FaceEdgeTextureUvData faceEdgeData = FaceEdgeTextureUvData.Get(this);
-            if (faceEdgeData != null && index < faceEdgeData.TextureUV.Count)
-            {
-                return faceEdgeData.TextureUV[index];
-            }
+		public Vector2 GetUVs(int index)
+		{
+			FaceEdgeTextureUvData faceEdgeData = FaceEdgeTextureUvData.Get(this);
+			if (faceEdgeData != null && index < faceEdgeData.TextureUV.Count)
+			{
+				return faceEdgeData.TextureUV[index];
+			}
 
-            return new Vector2();
-        }
+			return new Vector2();
+		}
 
-        public void AddDebugInfo(StringBuilder totalDebug, int numTabs, bool printRecursive = true)
-        {
-            totalDebug.Append(new string('\t', numTabs) + String.Format("Face: {0}\n", containingFace.Data.ID));
-            totalDebug.Append(new string('\t', numTabs) + String.Format("MeshEdge: {0}\n", meshEdge.Data.ID));
-            totalDebug.Append(new string('\t', numTabs) + String.Format("Vertex: {0}\n", firstVertex.Data.ID));
+		public void AddDebugInfo(StringBuilder totalDebug, int numTabs, bool printRecursive = true)
+		{
+			totalDebug.Append(new string('\t', numTabs) + String.Format("Face: {0}\n", containingFace.Data.ID));
+			totalDebug.Append(new string('\t', numTabs) + String.Format("MeshEdge: {0}\n", meshEdge.Data.ID));
+			totalDebug.Append(new string('\t', numTabs) + String.Format("Vertex: {0}\n", firstVertex.Data.ID));
 
-            if(printRecursive)
-            {
-                bool afterFirst = false;
-                foreach (FaceEdge faceEdge in NextFaceEdges())
-                {
-                    if (afterFirst)
-                    {
-                        totalDebug.Append(new string('\t', numTabs) + String.Format("Next FaceEdge: {0}\n", faceEdge.Data.ID));
-                        faceEdge.AddDebugInfo(totalDebug, numTabs + 1, false);
-                    }
-                    afterFirst = true;
-                }
-            }
+			if (printRecursive)
+			{
+				bool afterFirst = false;
+				foreach (FaceEdge faceEdge in NextFaceEdges())
+				{
+					if (afterFirst)
+					{
+						totalDebug.Append(new string('\t', numTabs) + String.Format("Next FaceEdge: {0}\n", faceEdge.Data.ID));
+						faceEdge.AddDebugInfo(totalDebug, numTabs + 1, false);
+					}
+					afterFirst = true;
+				}
+			}
 
-            PrintFaceEdges(totalDebug, "Prev FaceEdge: ", numTabs, PrevFaceEdges());
+			PrintFaceEdges(totalDebug, "Prev FaceEdge: ", numTabs, PrevFaceEdges());
 
-            PrintFaceEdges(totalDebug, "Radial Next FaceEdge: ", numTabs, RadialNextFaceEdges());
-            PrintFaceEdges(totalDebug, "Radial Prev FaceEdge: ", numTabs, RadialPrevFaceEdges());
-        }
+			PrintFaceEdges(totalDebug, "Radial Next FaceEdge: ", numTabs, RadialNextFaceEdges());
+			PrintFaceEdges(totalDebug, "Radial Prev FaceEdge: ", numTabs, RadialPrevFaceEdges());
+		}
 
-        private static void PrintFaceEdges(StringBuilder totalDebug, string title, int numTabs, IEnumerable<FaceEdge> iterator)
-        {
-            string first = null;
-            totalDebug.Append(new string('\t', numTabs) + String.Format(title));
-            foreach (FaceEdge faceEdge in iterator)
-            {
-                if (first == null)
-                {
-                    first = faceEdge.Data.ID.ToString();
-                }
-                else
-                {
-                    totalDebug.Append(faceEdge.Data.ID + ", ");
-                }
-            }
-            // show the first one last as it is the this and we want it to print as last.
-            totalDebug.Append(first + "\n");
-        }
+		private static void PrintFaceEdges(StringBuilder totalDebug, string title, int numTabs, IEnumerable<FaceEdge> iterator)
+		{
+			string first = null;
+			totalDebug.Append(new string('\t', numTabs) + String.Format(title));
+			foreach (FaceEdge faceEdge in iterator)
+			{
+				if (first == null)
+				{
+					first = faceEdge.Data.ID.ToString();
+				}
+				else
+				{
+					totalDebug.Append(faceEdge.Data.ID + ", ");
+				}
+			}
+			// show the first one last as it is the this and we want it to print as last.
+			totalDebug.Append(first + "\n");
+		}
 
-        public void AddToRadialLoop(MeshEdge currentMeshEdge)
-        {
-            if (currentMeshEdge.firstFaceEdge == null)
-            {
-                // This is the first face edge of this mesh edge.  Add it.
-                currentMeshEdge.firstFaceEdge = this;
-            }
-            else
-            {
-                // There was a face on this mesh edge so add this one in.
-                // First set the new face edge radias pointers
-                this.radialPrevFaceEdge = currentMeshEdge.firstFaceEdge;
-                this.radialNextFaceEdge = currentMeshEdge.firstFaceEdge.radialNextFaceEdge;
+		public void AddToRadialLoop(MeshEdge currentMeshEdge)
+		{
+			if (currentMeshEdge.firstFaceEdge == null)
+			{
+				// This is the first face edge of this mesh edge.  Add it.
+				currentMeshEdge.firstFaceEdge = this;
+			}
+			else
+			{
+				// There was a face on this mesh edge so add this one in.
+				// First set the new face edge radias pointers
+				this.radialPrevFaceEdge = currentMeshEdge.firstFaceEdge;
+				this.radialNextFaceEdge = currentMeshEdge.firstFaceEdge.radialNextFaceEdge;
 
-                // then fix the insertion point to point to this new face edge.
-                this.radialPrevFaceEdge.radialNextFaceEdge = this;
-                this.radialNextFaceEdge.radialPrevFaceEdge = this;
-            }
-        }
+				// then fix the insertion point to point to this new face edge.
+				this.radialPrevFaceEdge.radialNextFaceEdge = this;
+				this.radialNextFaceEdge.radialPrevFaceEdge = this;
+			}
+		}
 
-        public IEnumerable<FaceEdge> NextFaceEdges()
-        {
-            FaceEdge curFaceEdge = this;
-            do
-            {
-                yield return curFaceEdge;
+		public IEnumerable<FaceEdge> NextFaceEdges()
+		{
+			FaceEdge curFaceEdge = this;
+			do
+			{
+				yield return curFaceEdge;
 
-                curFaceEdge = curFaceEdge.nextFaceEdge;
-            } while (curFaceEdge != this);
-        }
+				curFaceEdge = curFaceEdge.nextFaceEdge;
+			} while (curFaceEdge != this);
+		}
 
-        public IEnumerable<FaceEdge> PrevFaceEdges()
-        {
-            FaceEdge curFaceEdge = this;
-            do
-            {
-                yield return curFaceEdge;
+		public IEnumerable<FaceEdge> PrevFaceEdges()
+		{
+			FaceEdge curFaceEdge = this;
+			do
+			{
+				yield return curFaceEdge;
 
-                curFaceEdge = curFaceEdge.prevFaceEdge;
-            } while (curFaceEdge != this);
-        }
+				curFaceEdge = curFaceEdge.prevFaceEdge;
+			} while (curFaceEdge != this);
+		}
 
-        public IEnumerable<FaceEdge> RadialNextFaceEdges()
-        {
-            FaceEdge curFaceEdge = this;
-            do
-            {
-                yield return curFaceEdge;
+		public IEnumerable<FaceEdge> RadialNextFaceEdges()
+		{
+			FaceEdge curFaceEdge = this;
+			do
+			{
+				yield return curFaceEdge;
 
-                curFaceEdge = curFaceEdge.radialNextFaceEdge;
-            } while (curFaceEdge != this);
-        }
+				curFaceEdge = curFaceEdge.radialNextFaceEdge;
+			} while (curFaceEdge != this);
+		}
 
-        public IEnumerable<FaceEdge> RadialPrevFaceEdges()
-        {
-            FaceEdge curFaceEdge = this;
-            do
-            {
-                yield return curFaceEdge;
+		public IEnumerable<FaceEdge> RadialPrevFaceEdges()
+		{
+			FaceEdge curFaceEdge = this;
+			do
+			{
+				yield return curFaceEdge;
 
-                curFaceEdge = curFaceEdge.radialPrevFaceEdge;
-            } while (curFaceEdge != this);
-        }
-    }
+				curFaceEdge = curFaceEdge.radialPrevFaceEdge;
+			} while (curFaceEdge != this);
+		}
+	}
 }

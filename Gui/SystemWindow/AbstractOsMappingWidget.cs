@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,59 +23,59 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.Reflection;
-using System.Collections;
-using System.Collections.Generic;
-using System.Text;
-using System.IO;
-
-using MatterHackers.Agg.Transform;
-using MatterHackers.Agg.Image;
-
 namespace MatterHackers.Agg.UI
 {
-    public abstract class AbstractOsMappingWidget : GuiWidget
-    {
-        public abstract string Caption
-        {
-            get;
-            set;
-        }
+	public abstract class AbstractOsMappingWidget : GuiWidget
+	{
+		public abstract string Caption
+		{
+			get;
+			set;
+		}
 
-        public abstract void ShowModal();
-        public abstract void Show();
-        public abstract void Run();
+		public abstract void ShowModal();
 
-        public abstract Point2D DesktopPosition { get; set; }
+		public abstract void Show();
 
-        public virtual void OnInitialize()
-        {
-        }
+		public abstract void Run();
 
-        protected SystemWindow childSystemWindow;
-        // format - see enum pix_format_e {};
-        // flip_y - true if you want to have the Y-axis flipped vertically.
-        public AbstractOsMappingWidget(SystemWindow childSystemWindow)
-            : base(childSystemWindow.Width, childSystemWindow.Height, SizeLimitsToSet.None)
-        {
-            this.childSystemWindow = childSystemWindow;
-        }
+		public abstract Point2D DesktopPosition { get; set; }
 
-        public double width() { return BoundsRelativeToParent.Width; }
-        public double height() { return BoundsRelativeToParent.Height; }
+		public virtual void OnInitialize()
+		{
+		}
 
-        // Get raw display handler depending on the system. 
-        // For win32 its an HDC, for other systems it can be a pointer to some
-        // structure. See the implementation files for detals.
-        // It's provided "as is", so, first you should check if it's not null.
-        // If it's null the raw_display_handler is not supported. Also, there's 
-        // no guarantee that this function is implemented, so, in some 
-        // implementations you may have simply an unresolved symbol when linking.
-        //public void* raw_display_handler();
-    }
+		protected SystemWindow childSystemWindow;
+
+		// format - see enum pix_format_e {};
+		// flip_y - true if you want to have the Y-axis flipped vertically.
+		public AbstractOsMappingWidget(SystemWindow childSystemWindow)
+			: base(childSystemWindow.Width, childSystemWindow.Height, SizeLimitsToSet.None)
+		{
+			this.childSystemWindow = childSystemWindow;
+		}
+
+		public double width()
+		{
+			return BoundsRelativeToParent.Width;
+		}
+
+		public double height()
+		{
+			return BoundsRelativeToParent.Height;
+		}
+
+		// Get raw display handler depending on the system.
+		// For win32 its an HDC, for other systems it can be a pointer to some
+		// structure. See the implementation files for detals.
+		// It's provided "as is", so, first you should check if it's not null.
+		// If it's null the raw_display_handler is not supported. Also, there's
+		// no guarantee that this function is implemented, so, in some
+		// implementations you may have simply an unresolved symbol when linking.
+		//public void* raw_display_handler();
+	}
 }

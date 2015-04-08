@@ -1,15 +1,18 @@
-﻿/*
+﻿using MatterHackers.Agg;
+using MatterHackers.VectorMath;
+
+/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,54 +26,46 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
-using System;
-using System.Collections.Generic;
-using System.Linq;
+
 using System.Runtime.InteropServices;
-using MatterHackers.Agg;
-using MatterHackers.Agg.Transform;
-using MatterHackers.Agg.UI;
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.RenderOpenGl.OpenGl;
-using MatterHackers.VectorMath;
 
 namespace MatterHackers.GCodeVisualizer
 {
-    [StructLayout(LayoutKind.Sequential)]
-    public struct ColorVertexData
-    {
-        public byte r;
-        public byte g;
-        public byte b;
-        public byte a;
+	[StructLayout(LayoutKind.Sequential)]
+	public struct ColorVertexData
+	{
+		public byte r;
+		public byte g;
+		public byte b;
+		public byte a;
 
-        public float normalX;
-        public float normalY;
-        public float normalZ;
+		public float normalX;
+		public float normalY;
+		public float normalZ;
 
-        public float positionX;
-        public float positionY;
-        public float positionZ;
+		public float positionX;
+		public float positionY;
+		public float positionZ;
 
-        public static readonly int Stride = Marshal.SizeOf(default(ColorVertexData));
+		public static readonly int Stride = Marshal.SizeOf(default(ColorVertexData));
 
-        public ColorVertexData(Vector3 position, Vector3 normal, RGBA_Bytes color)
-        {
-            r = (byte)color.Red0To255;
-            g = (byte)color.Green0To255;
-            b = (byte)color.Blue0To255;
-            a = (byte)color.Alpha0To255;
+		public ColorVertexData(Vector3 position, Vector3 normal, RGBA_Bytes color)
+		{
+			r = (byte)color.Red0To255;
+			g = (byte)color.Green0To255;
+			b = (byte)color.Blue0To255;
+			a = (byte)color.Alpha0To255;
 
-            normalX = (float)normal.x;
-            normalY = (float)normal.y;
-            normalZ = (float)normal.z;
+			normalX = (float)normal.x;
+			normalY = (float)normal.y;
+			normalZ = (float)normal.z;
 
-            positionX = (float)position.x;
-            positionY = (float)position.y;
-            positionZ = (float)position.z;
-        }
-    }
+			positionX = (float)position.x;
+			positionY = (float)position.y;
+			positionZ = (float)position.z;
+		}
+	}
 }

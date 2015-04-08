@@ -12,13 +12,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -32,37 +32,33 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 using MatterHackers.Agg;
-using MatterHackers.Agg.Image;
-using MatterHackers.VectorMath;
 using MatterHackers.RayTracer.Light;
+using MatterHackers.VectorMath;
+using System.Collections.Generic;
 
 namespace MatterHackers.RayTracer
 {
-    /// <summary>
-    /// a scene is defined by:
-    /// - lights
-    /// - a camera, of viewpoint from which the scene is observed
-    /// - a background
-    /// - the objects in the scene, called the shapes.
-    /// </summary>
-    public class Scene 
-    {
-        public Background background;
-        public ICamera camera;
-        public List<IPrimitive> shapes;
-        public List<ILight> lights;
+	/// <summary>
+	/// a scene is defined by:
+	/// - lights
+	/// - a camera, of viewpoint from which the scene is observed
+	/// - a background
+	/// - the objects in the scene, called the shapes.
+	/// </summary>
+	public class Scene
+	{
+		public Background background;
+		public ICamera camera;
+		public List<IPrimitive> shapes;
+		public List<ILight> lights;
 
-        public Scene(ICamera camera = null)
-        {
+		public Scene(ICamera camera = null)
+		{
 			if (camera == null)
 			{
 				camera = new SimpleCamera(512, 512, MathHelper.DegreesToRadians(40));
@@ -70,25 +66,25 @@ namespace MatterHackers.RayTracer
 			}
 			this.camera = camera;
 			shapes = new List<IPrimitive>();
-            lights = new List<ILight>();
-            background = new Background(new RGBA_Floats(0, 0, .5), 0.2);
-        }
+			lights = new List<ILight>();
+			background = new Background(new RGBA_Floats(0, 0, .5), 0.2);
+		}
 
-        /// <summary>
-        /// This will remove the shapes from 'Shapes' and add them to a Bounding Volume Hierarchy.  Then add that at a single element
-        /// to 'Shapes'.  You could also create a list of 'List<IPrimitive>' and put that dirrectly into a BVH and then add that 
-        /// to the Shapes list (there could be more than 1 BVH in the 'Shapes' list.
-        /// </summary>
-        public IPrimitive MoveShapesIntoBoundingVolumeHierachy()
-        {
-            IPrimitive rootObject = BoundingVolumeHierarchy.CreateNewHierachy(shapes);
-            if (rootObject != null)
-            {
-                shapes.Clear();
-                shapes.Add(rootObject);
-            }
+		/// <summary>
+		/// This will remove the shapes from 'Shapes' and add them to a Bounding Volume Hierarchy.  Then add that at a single element
+		/// to 'Shapes'.  You could also create a list of 'List<IPrimitive>' and put that dirrectly into a BVH and then add that
+		/// to the Shapes list (there could be more than 1 BVH in the 'Shapes' list.
+		/// </summary>
+		public IPrimitive MoveShapesIntoBoundingVolumeHierachy()
+		{
+			IPrimitive rootObject = BoundingVolumeHierarchy.CreateNewHierachy(shapes);
+			if (rootObject != null)
+			{
+				shapes.Clear();
+				shapes.Add(rootObject);
+			}
 
-            return rootObject;
-        }
-    }
+			return rootObject;
+		}
+	}
 }

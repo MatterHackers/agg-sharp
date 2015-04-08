@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,147 +23,144 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.Agg;
+using MatterHackers.VectorMath;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-using MatterHackers.Agg;
-using MatterHackers.VectorMath;
 
 namespace MatterHackers.RayTracer.Traceable
 {
-    public class Transform : Axis3D, IPrimitive
-    {
-        IPrimitive child;
+	public class Transform : Axis3D, IPrimitive
+	{
+		private IPrimitive child;
 
-        public Transform(IPrimitive root)
-        {
-            this.child = root;
-        }
+		public Transform(IPrimitive root)
+		{
+			this.child = root;
+		}
 
-        public Transform(IPrimitive root, Matrix4X4 transform)
-        {
-            this.child = root;
-            WorldToAxis = transform;
-            AxisToWorld = Matrix4X4.Invert(WorldToAxis);
-            AxisToWorld = transform;
-            WorldToAxis = Matrix4X4.Invert(AxisToWorld);
-        }
+		public Transform(IPrimitive root, Matrix4X4 transform)
+		{
+			this.child = root;
+			WorldToAxis = transform;
+			AxisToWorld = Matrix4X4.Invert(WorldToAxis);
+			AxisToWorld = transform;
+			WorldToAxis = Matrix4X4.Invert(AxisToWorld);
+		}
 
-        public IPrimitive Child
-        {
-            get
-            {
-                return child;
-            }
-        }
+		public IPrimitive Child
+		{
+			get
+			{
+				return child;
+			}
+		}
 
-        public RGBA_Floats GetColor(IntersectInfo info)
-        {
-            return child.GetColor(info);
-        }
+		public RGBA_Floats GetColor(IntersectInfo info)
+		{
+			return child.GetColor(info);
+		}
 
-        public MaterialAbstract Material
-        {
-            get
-            {
-                return child.Material;
-            }
-            set
-            {
-                child.Material = value;
-            }
-        }
+		public MaterialAbstract Material
+		{
+			get
+			{
+				return child.Material;
+			}
+			set
+			{
+				child.Material = value;
+			}
+		}
 
-        public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
-        {
-            throw new NotImplementedException();
-        }
+		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
+		{
+			throw new NotImplementedException();
+		}
 
-        public IntersectInfo GetClosestIntersection(Ray ray)
-        {
-            Ray localRay = GetLocalSpaceRay(ray);
-            IntersectInfo localIntersection = child.GetClosestIntersection(localRay);
-            IntersectInfo globalIntersection = GetGlobalSpaceInfo(localIntersection);
-            return globalIntersection;
-        }
+		public IntersectInfo GetClosestIntersection(Ray ray)
+		{
+			Ray localRay = GetLocalSpaceRay(ray);
+			IntersectInfo localIntersection = child.GetClosestIntersection(localRay);
+			IntersectInfo globalIntersection = GetGlobalSpaceInfo(localIntersection);
+			return globalIntersection;
+		}
 
-        public int FindFirstRay(RayBundle rayBundle, int rayIndexToStartCheckingFrom)
-        {
-            throw new NotImplementedException();
-        }
+		public int FindFirstRay(RayBundle rayBundle, int rayIndexToStartCheckingFrom)
+		{
+			throw new NotImplementedException();
+		}
 
-        public void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
-        {
-            for (int i = 0; i < rayBundle.rayArray.Length; i++)
-            {
-                rayBundle.rayArray[i] = GetLocalSpaceRay(rayBundle.rayArray[i]);
-            }
-            child.GetClosestIntersections(rayBundle, rayIndexToStartCheckingFrom, intersectionsForBundle);
-            for (int i = 0; i < rayBundle.rayArray.Length; i++)
-            {
-                intersectionsForBundle[i] = GetGlobalSpaceInfo(intersectionsForBundle[i]);
-            }
-        }
+		public void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
+		{
+			for (int i = 0; i < rayBundle.rayArray.Length; i++)
+			{
+				rayBundle.rayArray[i] = GetLocalSpaceRay(rayBundle.rayArray[i]);
+			}
+			child.GetClosestIntersections(rayBundle, rayIndexToStartCheckingFrom, intersectionsForBundle);
+			for (int i = 0; i < rayBundle.rayArray.Length; i++)
+			{
+				intersectionsForBundle[i] = GetGlobalSpaceInfo(intersectionsForBundle[i]);
+			}
+		}
 
-        public IEnumerable IntersectionIterator(Ray ray)
-        {
-            Ray localRay = GetLocalSpaceRay(ray);
-            foreach (IntersectInfo localInfo in child.IntersectionIterator(localRay))
-            {
-                IntersectInfo globalIntersection = GetGlobalSpaceInfo(localInfo);
-                yield return globalIntersection;
-            }
-        }
+		public IEnumerable IntersectionIterator(Ray ray)
+		{
+			Ray localRay = GetLocalSpaceRay(ray);
+			foreach (IntersectInfo localInfo in child.IntersectionIterator(localRay))
+			{
+				IntersectInfo globalIntersection = GetGlobalSpaceInfo(localInfo);
+				yield return globalIntersection;
+			}
+		}
 
-        public double GetSurfaceArea()
-        {
-            return child.GetSurfaceArea();
-        }
+		public double GetSurfaceArea()
+		{
+			return child.GetSurfaceArea();
+		}
 
-        public Vector3 GetCenter()
-        {
-            return GetAxisAlignedBoundingBox().GetCenter();
-        }
+		public Vector3 GetCenter()
+		{
+			return GetAxisAlignedBoundingBox().GetCenter();
+		}
 
-        public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
-        {
-            Vector3 localOrigin = Origin;
-            AxisAlignedBoundingBox localBounds = child.GetAxisAlignedBoundingBox();
-            AxisAlignedBoundingBox bounds = localBounds.NewTransformed(AxisToWorld);
-            return bounds;
-        }
-        
-        public double GetIntersectCost()
-        {
-            return child.GetIntersectCost();
-        }
+		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
+		{
+			Vector3 localOrigin = Origin;
+			AxisAlignedBoundingBox localBounds = child.GetAxisAlignedBoundingBox();
+			AxisAlignedBoundingBox bounds = localBounds.NewTransformed(AxisToWorld);
+			return bounds;
+		}
 
-        Ray GetLocalSpaceRay(Ray ray)
-        {
-            // TODO: cache this.
-            Matrix4X4 WorldToAxis = Matrix4X4.Invert(AxisToWorld);
-            Vector3 transformedOrigin = Vector3.TransformPosition(ray.origin, WorldToAxis);
-            Vector3 transformedDirecton = Vector3.TransformVector(ray.directionNormal, WorldToAxis);
-            return new Ray(transformedOrigin, transformedDirecton, ray.minDistanceToConsider, ray.maxDistanceToConsider, ray.intersectionType);
-        }
+		public double GetIntersectCost()
+		{
+			return child.GetIntersectCost();
+		}
 
-        private IntersectInfo GetGlobalSpaceInfo(IntersectInfo localInfo)
-        {
-            if (localInfo == null)
-            {
-                return null;
-            }
-            IntersectInfo globalInfo = new IntersectInfo(localInfo);
-            globalInfo.hitPosition = Vector3.TransformPosition(localInfo.hitPosition, this.AxisToWorld);
-            globalInfo.normalAtHit = Vector3.TransformVector(localInfo.normalAtHit, this.AxisToWorld);
-            return globalInfo;
-        }
-    }
+		private Ray GetLocalSpaceRay(Ray ray)
+		{
+			// TODO: cache this.
+			Matrix4X4 WorldToAxis = Matrix4X4.Invert(AxisToWorld);
+			Vector3 transformedOrigin = Vector3.TransformPosition(ray.origin, WorldToAxis);
+			Vector3 transformedDirecton = Vector3.TransformVector(ray.directionNormal, WorldToAxis);
+			return new Ray(transformedOrigin, transformedDirecton, ray.minDistanceToConsider, ray.maxDistanceToConsider, ray.intersectionType);
+		}
+
+		private IntersectInfo GetGlobalSpaceInfo(IntersectInfo localInfo)
+		{
+			if (localInfo == null)
+			{
+				return null;
+			}
+			IntersectInfo globalInfo = new IntersectInfo(localInfo);
+			globalInfo.hitPosition = Vector3.TransformPosition(localInfo.hitPosition, this.AxisToWorld);
+			globalInfo.normalAtHit = Vector3.TransformVector(localInfo.normalAtHit, this.AxisToWorld);
+			return globalInfo;
+		}
+	}
 }

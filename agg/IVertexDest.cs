@@ -6,8 +6,8 @@
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 //
-// Permission to copy, use, modify, sell and distribute this software 
-// is granted provided this copyright notice appears in all copies. 
+// Permission to copy, use, modify, sell and distribute this software
+// is granted provided this copyright notice appears in all copies.
 // This software is provided "as is" without express or implied
 // warranty, and with no claim as to its suitability for any purpose.
 //
@@ -20,16 +20,17 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg
 {
-    public interface IVertexDest
-    {
-        void remove_all();
+	public interface IVertexDest
+	{
+		void remove_all();
 
-        int size();
-        void add(Vector2 vertex);
+		int size();
 
-        Vector2 this[int i]
-        {
-            get;
-        }
-    };
+		void add(Vector2 vertex);
+
+		Vector2 this[int i]
+		{
+			get;
+		}
+	};
 }

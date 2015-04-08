@@ -1,15 +1,18 @@
-﻿/*
+﻿using MatterHackers.Agg;
+using MatterHackers.RenderOpenGl.OpenGl;
+
+/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,317 +26,312 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
+
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using MatterHackers.Agg;
-using MatterHackers.Agg.Transform;
-using MatterHackers.Agg.UI;
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.RenderOpenGl.OpenGl;
-using MatterHackers.VectorMath;
 
 namespace MatterHackers.GCodeVisualizer
 {
-    [Flags]
-    public enum RenderType
-    {
-        None = 0,
-        Extrusions = 1,
-        Moves = 2,
-        Retractions = 4,
-        SpeedColors = 8,
-        SimulateExtrusion = 16,
-        HideExtruderOffsets = 32,
-    };
+	[Flags]
+	public enum RenderType
+	{
+		None = 0,
+		Extrusions = 1,
+		Moves = 2,
+		Retractions = 4,
+		SpeedColors = 8,
+		SimulateExtrusion = 16,
+		HideExtruderOffsets = 32,
+	};
 
-    public class GCodeRenderer
-    {
-        List<List<int>> featureStartIndex = new List<List<int>>();
-        List<List<int>> featureEndIndex = new List<List<int>>();
-        List<List<RenderFeatureBase>> renderFeatures = new List<List<RenderFeatureBase>>();
-        int TotalRenderFeatures = 0;
+	public class GCodeRenderer
+	{
+		private List<List<int>> featureStartIndex = new List<List<int>>();
+		private List<List<int>> featureEndIndex = new List<List<int>>();
+		private List<List<RenderFeatureBase>> renderFeatures = new List<List<RenderFeatureBase>>();
+		private int TotalRenderFeatures = 0;
 
-        public static RGBA_Bytes ExtrusionColor = RGBA_Bytes.White;
-        public static RGBA_Bytes TravelColor = RGBA_Bytes.Green;
+		public static RGBA_Bytes ExtrusionColor = RGBA_Bytes.White;
+		public static RGBA_Bytes TravelColor = RGBA_Bytes.Green;
 
-		GCodeFile gCodeFileToDraw;
+		private GCodeFile gCodeFileToDraw;
+
 		public GCodeFile GCodeFileToDraw { get { return gCodeFileToDraw; } }
 
-        ExtrusionColors extrusionColors;
+		private ExtrusionColors extrusionColors;
 
-        public GCodeRenderer(GCodeFile gCodeFileToDraw)
-        {
-            if (gCodeFileToDraw != null)
-            {
-                this.gCodeFileToDraw = gCodeFileToDraw;
+		public GCodeRenderer(GCodeFile gCodeFileToDraw)
+		{
+			if (gCodeFileToDraw != null)
+			{
+				this.gCodeFileToDraw = gCodeFileToDraw;
 
-                for (int i = 0; i < gCodeFileToDraw.NumChangesInZ; i++)
-                {
-                    renderFeatures.Add(new List<RenderFeatureBase>());
-                }
-            }
-        }
+				for (int i = 0; i < gCodeFileToDraw.NumChangesInZ; i++)
+				{
+					renderFeatures.Add(new List<RenderFeatureBase>());
+				}
+			}
+		}
 
-        public void CreateFeaturesForLayerIfRequired(int layerToCreate)
-        {
-            if (extrusionColors == null 
-                && gCodeFileToDraw != null 
-                && gCodeFileToDraw.LineCount > 0)
-            {
-                extrusionColors = new ExtrusionColors();
-                HashSet<float> speeds = new HashSet<float>();
-                PrinterMachineInstruction prevInstruction = gCodeFileToDraw.Instruction(0);
-                for (int i = 1; i < gCodeFileToDraw.LineCount; i++)
-                {
-                    PrinterMachineInstruction instruction = gCodeFileToDraw.Instruction(i);
-                    if (instruction.EPosition > prevInstruction.EPosition)
-                    {
-                        speeds.Add((float)instruction.FeedRate);
-                    }
+		public void CreateFeaturesForLayerIfRequired(int layerToCreate)
+		{
+			if (extrusionColors == null
+				&& gCodeFileToDraw != null
+				&& gCodeFileToDraw.LineCount > 0)
+			{
+				extrusionColors = new ExtrusionColors();
+				HashSet<float> speeds = new HashSet<float>();
+				PrinterMachineInstruction prevInstruction = gCodeFileToDraw.Instruction(0);
+				for (int i = 1; i < gCodeFileToDraw.LineCount; i++)
+				{
+					PrinterMachineInstruction instruction = gCodeFileToDraw.Instruction(i);
+					if (instruction.EPosition > prevInstruction.EPosition)
+					{
+						speeds.Add((float)instruction.FeedRate);
+					}
 
-                    prevInstruction = instruction;
-                }
+					prevInstruction = instruction;
+				}
 
-                foreach (float speed in speeds)
-                {
-                    extrusionColors.GetColorForSpeed(speed);
-                }
-            }
+				foreach (float speed in speeds)
+				{
+					extrusionColors.GetColorForSpeed(speed);
+				}
+			}
 
-            if (renderFeatures.Count == 0 
-                || renderFeatures[layerToCreate].Count > 0)
-            {
-                return;
-            }
+			if (renderFeatures.Count == 0
+				|| renderFeatures[layerToCreate].Count > 0)
+			{
+				return;
+			}
 
-            List<RenderFeatureBase> renderFeaturesForLayer = renderFeatures[layerToCreate];
+			List<RenderFeatureBase> renderFeaturesForLayer = renderFeatures[layerToCreate];
 
-            int startRenderIndex = gCodeFileToDraw.GetInstructionIndexAtLayer(layerToCreate);
-            int endRenderIndex = gCodeFileToDraw.LineCount - 1;
-            if (layerToCreate < gCodeFileToDraw.NumChangesInZ - 1)
-            {
-                endRenderIndex = gCodeFileToDraw.GetInstructionIndexAtLayer(layerToCreate + 1);
-            }
+			int startRenderIndex = gCodeFileToDraw.GetInstructionIndexAtLayer(layerToCreate);
+			int endRenderIndex = gCodeFileToDraw.LineCount - 1;
+			if (layerToCreate < gCodeFileToDraw.NumChangesInZ - 1)
+			{
+				endRenderIndex = gCodeFileToDraw.GetInstructionIndexAtLayer(layerToCreate + 1);
+			}
 
-            for (int i = startRenderIndex; i < endRenderIndex; i++ )
-            {
-                PrinterMachineInstruction currentInstruction = gCodeFileToDraw.Instruction(i);
-                PrinterMachineInstruction previousInstruction = currentInstruction;
-                if (i > 0)
-                {
-                    previousInstruction = gCodeFileToDraw.Instruction(i - 1);
-                }
+			for (int i = startRenderIndex; i < endRenderIndex; i++)
+			{
+				PrinterMachineInstruction currentInstruction = gCodeFileToDraw.Instruction(i);
+				PrinterMachineInstruction previousInstruction = currentInstruction;
+				if (i > 0)
+				{
+					previousInstruction = gCodeFileToDraw.Instruction(i - 1);
+				}
 
-                if (currentInstruction.Position == previousInstruction.Position)
-                {
-                    if (Math.Abs(currentInstruction.EPosition - previousInstruction.EPosition) > 0)
-                    {
-                        // this is a retraction
-                        renderFeaturesForLayer.Add(new RenderFeatureRetract(currentInstruction.Position, currentInstruction.EPosition - previousInstruction.EPosition, currentInstruction.ExtruderIndex, currentInstruction.FeedRate));
-                    }
-                    if (currentInstruction.Line.StartsWith("G10"))
-                    {
-                        renderFeaturesForLayer.Add(new RenderFeatureRetract(currentInstruction.Position, -1, currentInstruction.ExtruderIndex, currentInstruction.FeedRate));
-                    }
-                    else if (currentInstruction.Line.StartsWith("G11"))
-                    {
-                        renderFeaturesForLayer.Add(new RenderFeatureRetract(currentInstruction.Position, 1, currentInstruction.ExtruderIndex, currentInstruction.FeedRate));
-                    }
-                }
-                else
-                {
-                    if (gCodeFileToDraw.IsExtruding(i))
-                    {
-                        double layerThickness = gCodeFileToDraw.GetLayerHeight();
-                        if (layerToCreate == 0)
-                        {
-                            layerThickness = gCodeFileToDraw.GetFirstLayerHeight();
-                        }
-                        renderFeaturesForLayer.Add(new RenderFeatureExtrusion(previousInstruction.Position, currentInstruction.Position, currentInstruction.ExtruderIndex, currentInstruction.FeedRate, currentInstruction.EPosition - previousInstruction.EPosition, gCodeFileToDraw.GetFilamentDiamter(), layerThickness, extrusionColors.GetColorForSpeed((float)currentInstruction.FeedRate)));
-                    }
-                    else
-                    {
-                        renderFeaturesForLayer.Add(new RenderFeatureTravel(previousInstruction.Position, currentInstruction.Position, currentInstruction.ExtruderIndex, currentInstruction.FeedRate));
-                    }
-                }
-            }
+				if (currentInstruction.Position == previousInstruction.Position)
+				{
+					if (Math.Abs(currentInstruction.EPosition - previousInstruction.EPosition) > 0)
+					{
+						// this is a retraction
+						renderFeaturesForLayer.Add(new RenderFeatureRetract(currentInstruction.Position, currentInstruction.EPosition - previousInstruction.EPosition, currentInstruction.ExtruderIndex, currentInstruction.FeedRate));
+					}
+					if (currentInstruction.Line.StartsWith("G10"))
+					{
+						renderFeaturesForLayer.Add(new RenderFeatureRetract(currentInstruction.Position, -1, currentInstruction.ExtruderIndex, currentInstruction.FeedRate));
+					}
+					else if (currentInstruction.Line.StartsWith("G11"))
+					{
+						renderFeaturesForLayer.Add(new RenderFeatureRetract(currentInstruction.Position, 1, currentInstruction.ExtruderIndex, currentInstruction.FeedRate));
+					}
+				}
+				else
+				{
+					if (gCodeFileToDraw.IsExtruding(i))
+					{
+						double layerThickness = gCodeFileToDraw.GetLayerHeight();
+						if (layerToCreate == 0)
+						{
+							layerThickness = gCodeFileToDraw.GetFirstLayerHeight();
+						}
+						renderFeaturesForLayer.Add(new RenderFeatureExtrusion(previousInstruction.Position, currentInstruction.Position, currentInstruction.ExtruderIndex, currentInstruction.FeedRate, currentInstruction.EPosition - previousInstruction.EPosition, gCodeFileToDraw.GetFilamentDiamter(), layerThickness, extrusionColors.GetColorForSpeed((float)currentInstruction.FeedRate)));
+					}
+					else
+					{
+						renderFeaturesForLayer.Add(new RenderFeatureTravel(previousInstruction.Position, currentInstruction.Position, currentInstruction.ExtruderIndex, currentInstruction.FeedRate));
+					}
+				}
+			}
 
-            TotalRenderFeatures += renderFeaturesForLayer.Count;
-        }
+			TotalRenderFeatures += renderFeaturesForLayer.Count;
+		}
 
-        public int GetNumFeatures(int layerToCountFeaturesOn)
-        {
-            CreateFeaturesForLayerIfRequired(layerToCountFeaturesOn);
-            return renderFeatures[layerToCountFeaturesOn].Count;
-        }
+		public int GetNumFeatures(int layerToCountFeaturesOn)
+		{
+			CreateFeaturesForLayerIfRequired(layerToCountFeaturesOn);
+			return renderFeatures[layerToCountFeaturesOn].Count;
+		}
 
-        public void Render(Graphics2D graphics2D, GCodeRenderInfo renderInfo)
-        {
-            if (renderFeatures.Count > 0)
-            {
-                CreateFeaturesForLayerIfRequired(renderInfo.EndLayerIndex);
+		public void Render(Graphics2D graphics2D, GCodeRenderInfo renderInfo)
+		{
+			if (renderFeatures.Count > 0)
+			{
+				CreateFeaturesForLayerIfRequired(renderInfo.EndLayerIndex);
 
-                int featuresOnLayer = renderFeatures[renderInfo.EndLayerIndex].Count;
-                int endFeature = (int)(featuresOnLayer * renderInfo.FeatureToEndOnRatio0To1 + .5);
-                endFeature = Math.Max(0, Math.Min(endFeature, featuresOnLayer));
+				int featuresOnLayer = renderFeatures[renderInfo.EndLayerIndex].Count;
+				int endFeature = (int)(featuresOnLayer * renderInfo.FeatureToEndOnRatio0To1 + .5);
+				endFeature = Math.Max(0, Math.Min(endFeature, featuresOnLayer));
 
-                int startFeature = (int)(featuresOnLayer * renderInfo.FeatureToStartOnRatio0To1 + .5);
-                startFeature = Math.Max(0, Math.Min(startFeature, featuresOnLayer));
+				int startFeature = (int)(featuresOnLayer * renderInfo.FeatureToStartOnRatio0To1 + .5);
+				startFeature = Math.Max(0, Math.Min(startFeature, featuresOnLayer));
 
-                // try to make sure we always draw at least one feature
-                if (endFeature <= startFeature)
-                {
-                    endFeature = Math.Min(startFeature + 1, featuresOnLayer);
-                }
-                if (startFeature >= endFeature)
-                {
-                    // This can only happen if the sart and end are set to the last feature
-                    // Try to set the start feture to one from the end
-                    startFeature = Math.Max(endFeature - 1, 0);
-                }
+				// try to make sure we always draw at least one feature
+				if (endFeature <= startFeature)
+				{
+					endFeature = Math.Min(startFeature + 1, featuresOnLayer);
+				}
+				if (startFeature >= endFeature)
+				{
+					// This can only happen if the sart and end are set to the last feature
+					// Try to set the start feture to one from the end
+					startFeature = Math.Max(endFeature - 1, 0);
+				}
 
-                for (int i = startFeature; i < endFeature; i++)
-                {
-                    RenderFeatureBase feature = renderFeatures[renderInfo.EndLayerIndex][i];
-                    if (feature != null)
-                    {
-                        feature.Render(graphics2D, renderInfo);
-                    }
-                }
-            }
-        }
+				for (int i = startFeature; i < endFeature; i++)
+				{
+					RenderFeatureBase feature = renderFeatures[renderInfo.EndLayerIndex][i];
+					if (feature != null)
+					{
+						feature.Render(graphics2D, renderInfo);
+					}
+				}
+			}
+		}
 
-        void Create3DDataForLayer(int layerIndex,
-            VectorPOD<ColorVertexData> colorVertexData,
-            VectorPOD<int> vertexIndexArray,
-            GCodeRenderInfo renderInfo)
-        {
-            colorVertexData.Clear();
-            vertexIndexArray.Clear();
-            featureStartIndex[layerIndex].Clear();
-            featureEndIndex[layerIndex].Clear();
+		private void Create3DDataForLayer(int layerIndex,
+			VectorPOD<ColorVertexData> colorVertexData,
+			VectorPOD<int> vertexIndexArray,
+			GCodeRenderInfo renderInfo)
+		{
+			colorVertexData.Clear();
+			vertexIndexArray.Clear();
+			featureStartIndex[layerIndex].Clear();
+			featureEndIndex[layerIndex].Clear();
 
-            for (int i = 0; i < renderFeatures[layerIndex].Count; i++)
-            {
-                featureStartIndex[layerIndex].Add(vertexIndexArray.Count);
-                RenderFeatureBase feature = renderFeatures[layerIndex][i];
-                if (feature != null)
-                {
-                    feature.CreateRender3DData(colorVertexData, vertexIndexArray, renderInfo);
-                }
-                featureEndIndex[layerIndex].Add(vertexIndexArray.Count);
-            }
-        }
+			for (int i = 0; i < renderFeatures[layerIndex].Count; i++)
+			{
+				featureStartIndex[layerIndex].Add(vertexIndexArray.Count);
+				RenderFeatureBase feature = renderFeatures[layerIndex][i];
+				if (feature != null)
+				{
+					feature.CreateRender3DData(colorVertexData, vertexIndexArray, renderInfo);
+				}
+				featureEndIndex[layerIndex].Add(vertexIndexArray.Count);
+			}
+		}
 
-        public void Clear3DGCode()
-        {
-            if (layerVertexBuffer != null)
-            {
-                for (int i = 0; i < layerVertexBuffer.Count; i++)
-                {
-                    layerVertexBuffer[i] = null;
-                }
-            }
-        }
+		public void Clear3DGCode()
+		{
+			if (layerVertexBuffer != null)
+			{
+				for (int i = 0; i < layerVertexBuffer.Count; i++)
+				{
+					layerVertexBuffer[i] = null;
+				}
+			}
+		}
 
-        List<GCodeVertexBuffer> layerVertexBuffer;
-        RenderType lastRenderType = RenderType.None;
-        public void Render3D(GCodeRenderInfo renderInfo)
-        {
-            if (layerVertexBuffer == null)
-            {
-                layerVertexBuffer = new List<GCodeVertexBuffer>();
-                layerVertexBuffer.Capacity = gCodeFileToDraw.NumChangesInZ;
-                for (int layerIndex = 0; layerIndex < gCodeFileToDraw.NumChangesInZ; layerIndex++)
-                {
-                    layerVertexBuffer.Add(null);
-                    featureStartIndex.Add(new List<int>());
-                    featureEndIndex.Add(new List<int>());
-                }
-            }
+		private List<GCodeVertexBuffer> layerVertexBuffer;
+		private RenderType lastRenderType = RenderType.None;
 
-            for (int layerIndex = 0; layerIndex < gCodeFileToDraw.NumChangesInZ; layerIndex++)
-            {
-                CreateFeaturesForLayerIfRequired(layerIndex);
-            }
+		public void Render3D(GCodeRenderInfo renderInfo)
+		{
+			if (layerVertexBuffer == null)
+			{
+				layerVertexBuffer = new List<GCodeVertexBuffer>();
+				layerVertexBuffer.Capacity = gCodeFileToDraw.NumChangesInZ;
+				for (int layerIndex = 0; layerIndex < gCodeFileToDraw.NumChangesInZ; layerIndex++)
+				{
+					layerVertexBuffer.Add(null);
+					featureStartIndex.Add(new List<int>());
+					featureEndIndex.Add(new List<int>());
+				}
+			}
 
-            if (lastRenderType != renderInfo.CurrentRenderType)
-            {
-                Clear3DGCode();
-                lastRenderType = renderInfo.CurrentRenderType;
-            }
+			for (int layerIndex = 0; layerIndex < gCodeFileToDraw.NumChangesInZ; layerIndex++)
+			{
+				CreateFeaturesForLayerIfRequired(layerIndex);
+			}
 
-            if (renderFeatures.Count > 0)
-            {
-                for (int i = renderInfo.StartLayerIndex; i < renderInfo.EndLayerIndex; i++)
-                {
-                    // If its the first render or we change what we are trying to render then create vertex data.
-                    if (layerVertexBuffer[i] == null)
-                    {
-                        VectorPOD<ColorVertexData> colorVertexData = new VectorPOD<ColorVertexData>();
-                        VectorPOD<int> vertexIndexArray = new VectorPOD<int>();
+			if (lastRenderType != renderInfo.CurrentRenderType)
+			{
+				Clear3DGCode();
+				lastRenderType = renderInfo.CurrentRenderType;
+			}
 
-                        Create3DDataForLayer(i, colorVertexData, vertexIndexArray, renderInfo);
+			if (renderFeatures.Count > 0)
+			{
+				for (int i = renderInfo.StartLayerIndex; i < renderInfo.EndLayerIndex; i++)
+				{
+					// If its the first render or we change what we are trying to render then create vertex data.
+					if (layerVertexBuffer[i] == null)
+					{
+						VectorPOD<ColorVertexData> colorVertexData = new VectorPOD<ColorVertexData>();
+						VectorPOD<int> vertexIndexArray = new VectorPOD<int>();
 
-                        layerVertexBuffer[i] = new GCodeVertexBuffer();
-                        layerVertexBuffer[i].SetVertexData(colorVertexData.Array);
-                        layerVertexBuffer[i].SetIndexData(vertexIndexArray.Array);
-                    }
-                }
+						Create3DDataForLayer(i, colorVertexData, vertexIndexArray, renderInfo);
 
-                GL.Disable(EnableCap.Texture2D);
-                GL.PushAttrib(AttribMask.EnableBit);
-                GL.DisableClientState(ArrayCap.TextureCoordArray);
-                GL.Enable(EnableCap.PolygonSmooth);
+						layerVertexBuffer[i] = new GCodeVertexBuffer();
+						layerVertexBuffer[i].SetVertexData(colorVertexData.Array);
+						layerVertexBuffer[i].SetIndexData(vertexIndexArray.Array);
+					}
+				}
 
-                if (renderInfo.EndLayerIndex - 1 > renderInfo.StartLayerIndex)
-                {
-                    for (int i = renderInfo.StartLayerIndex; i < renderInfo.EndLayerIndex - 1; i++)
-                    {
-                        int featuresOnLayer = renderFeatures[i].Count;
-                        if (featuresOnLayer > 1)
-                        {
-                            layerVertexBuffer[i].renderRange(0, featureEndIndex[i][featuresOnLayer - 1]);
-                        }
-                    }
-                }
+				GL.Disable(EnableCap.Texture2D);
+				GL.PushAttrib(AttribMask.EnableBit);
+				GL.DisableClientState(ArrayCap.TextureCoordArray);
+				GL.Enable(EnableCap.PolygonSmooth);
 
-                // draw the partial layer of end-1 from startRatio to endRatio
-                {
-                    int layerIndex = renderInfo.EndLayerIndex - 1;
-                    int featuresOnLayer = renderFeatures[layerIndex].Count;
-                    int startFeature = (int)(featuresOnLayer * renderInfo.FeatureToStartOnRatio0To1 + .5);
-                    startFeature = Math.Max(0, Math.Min(startFeature, featuresOnLayer));
+				if (renderInfo.EndLayerIndex - 1 > renderInfo.StartLayerIndex)
+				{
+					for (int i = renderInfo.StartLayerIndex; i < renderInfo.EndLayerIndex - 1; i++)
+					{
+						int featuresOnLayer = renderFeatures[i].Count;
+						if (featuresOnLayer > 1)
+						{
+							layerVertexBuffer[i].renderRange(0, featureEndIndex[i][featuresOnLayer - 1]);
+						}
+					}
+				}
 
-                    int endFeature = (int)(featuresOnLayer * renderInfo.FeatureToEndOnRatio0To1 + .5);
-                    endFeature = Math.Max(0, Math.Min(endFeature, featuresOnLayer));
+				// draw the partial layer of end-1 from startRatio to endRatio
+				{
+					int layerIndex = renderInfo.EndLayerIndex - 1;
+					int featuresOnLayer = renderFeatures[layerIndex].Count;
+					int startFeature = (int)(featuresOnLayer * renderInfo.FeatureToStartOnRatio0To1 + .5);
+					startFeature = Math.Max(0, Math.Min(startFeature, featuresOnLayer));
 
-                    // try to make sure we always draw at least one feature
-                    if (endFeature <= startFeature)
-                    {
-                        endFeature = Math.Min(startFeature + 1, featuresOnLayer);
-                    }
-                    if (startFeature >= endFeature)
-                    {
-                        // This can only happen if the sart and end are set to the last feature
-                        // Try to set the start feture to one from the end
-                        startFeature = Math.Max(endFeature - 1, 0);
-                    }
+					int endFeature = (int)(featuresOnLayer * renderInfo.FeatureToEndOnRatio0To1 + .5);
+					endFeature = Math.Max(0, Math.Min(endFeature, featuresOnLayer));
 
-                    if (endFeature > startFeature)
-                    {
-                        int ellementCount = featureEndIndex[layerIndex][endFeature - 1] - featureStartIndex[layerIndex][startFeature];
+					// try to make sure we always draw at least one feature
+					if (endFeature <= startFeature)
+					{
+						endFeature = Math.Min(startFeature + 1, featuresOnLayer);
+					}
+					if (startFeature >= endFeature)
+					{
+						// This can only happen if the sart and end are set to the last feature
+						// Try to set the start feture to one from the end
+						startFeature = Math.Max(endFeature - 1, 0);
+					}
 
-                        layerVertexBuffer[layerIndex].renderRange(featureStartIndex[layerIndex][startFeature], ellementCount);
-                    }
-                }
-                GL.PopAttrib();
-            }
-        }
-    }
+					if (endFeature > startFeature)
+					{
+						int ellementCount = featureEndIndex[layerIndex][endFeature - 1] - featureStartIndex[layerIndex][startFeature];
+
+						layerVertexBuffer[layerIndex].renderRange(featureStartIndex[layerIndex][startFeature], ellementCount);
+					}
+				}
+				GL.PopAttrib();
+			}
+		}
+	}
 }

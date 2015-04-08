@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,111 +23,112 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
 //#define AA_TIPS
 
-using System.Collections.Generic;
 using MatterHackers.RenderOpenGl.OpenGl;
+using System.Collections.Generic;
 using Tesselate;
 
 namespace MatterHackers.RenderOpenGl
 {
-    public class RenderToGLTesselator : VertexTesselatorAbstract
-    {
-        List<AddedVertex> verticesCache = new List<AddedVertex>();
+	public class RenderToGLTesselator : VertexTesselatorAbstract
+	{
+		private List<AddedVertex> verticesCache = new List<AddedVertex>();
 
-        internal class AddedVertex
-        {
-            internal AddedVertex(double x, double y)
-            {
-                m_X = x;
-                m_Y = y;
-            }
-            internal double m_X;
-            internal double m_Y;
-        };
+		internal class AddedVertex
+		{
+			internal AddedVertex(double x, double y)
+			{
+				m_X = x;
+				m_Y = y;
+			}
 
-        public RenderToGLTesselator()
-        {
-            callBegin += BeginCallBack;
-            callEnd += EndCallBack;
-            callVertex += VertexCallBack;
-            //callEdgeFlag += EdgeFlagCallBack;
-            callCombine += CombineCallBack;
-        }
+			internal double m_X;
+			internal double m_Y;
+		};
 
-        public override void BeginPolygon()
-        {
-            verticesCache.Clear();
+		public RenderToGLTesselator()
+		{
+			callBegin += BeginCallBack;
+			callEnd += EndCallBack;
+			callVertex += VertexCallBack;
+			//callEdgeFlag += EdgeFlagCallBack;
+			callCombine += CombineCallBack;
+		}
 
-            base.BeginPolygon();
-        }
+		public override void BeginPolygon()
+		{
+			verticesCache.Clear();
 
-        public void BeginCallBack(Tesselator.TriangleListType type)
-        {
+			base.BeginPolygon();
+		}
+
+		public void BeginCallBack(Tesselator.TriangleListType type)
+		{
 			switch (type)
-            {
-                case Tesselator.TriangleListType.Triangles:
-                    GL.Begin(BeginMode.Triangles);
-                    break;
+			{
+				case Tesselator.TriangleListType.Triangles:
+					GL.Begin(BeginMode.Triangles);
+					break;
 
-                case Tesselator.TriangleListType.TriangleFan:
-                    GL.Begin(BeginMode.TriangleFan);
-                    break;
+				case Tesselator.TriangleListType.TriangleFan:
+					GL.Begin(BeginMode.TriangleFan);
+					break;
 
-                case Tesselator.TriangleListType.TriangleStrip:
-                    GL.Begin(BeginMode.TriangleStrip);
-                    break;
-            }
-        }
+				case Tesselator.TriangleListType.TriangleStrip:
+					GL.Begin(BeginMode.TriangleStrip);
+					break;
+			}
+		}
 
-        public void EndCallBack()
-        {
+		public void EndCallBack()
+		{
 			GL.End();
-        }
+		}
 
-        public void VertexCallBack(int index)
-        {
+		public void VertexCallBack(int index)
+		{
 			GL.Vertex2(verticesCache[index].m_X, verticesCache[index].m_Y);
-        }
+		}
 
-        public void EdgeFlagCallBack(bool IsEdge)
-        {
-            // this is not set as it is only used in GL_POLYGON_MODE and GL_POINT or GL_LINE (which we currenly don't use)
+		public void EdgeFlagCallBack(bool IsEdge)
+		{
+			// this is not set as it is only used in GL_POLYGON_MODE and GL_POINT or GL_LINE (which we currenly don't use)
 			//GL.EdgeFlag(IsEdge);
-        }
+		}
 
-        public void CombineCallBack(double[] coords3, int[] data4,
-            double[] weight4, out int outData)
-        {
-            outData = AddVertex(coords3[0], coords3[1], false);
-        }
+		public void CombineCallBack(double[] coords3, int[] data4,
+			double[] weight4, out int outData)
+		{
+			outData = AddVertex(coords3[0], coords3[1], false);
+		}
 
-        public override void AddVertex(double x, double y)
-        {
-            AddVertex(x, y, true);
-        }
+		public override void AddVertex(double x, double y)
+		{
+			AddVertex(x, y, true);
+		}
 
-        public int AddVertex(double x, double y, bool passOnToTesselator)
-        {
-            int index = verticesCache.Count;
-            verticesCache.Add(new AddedVertex(x, y));
-            double[] coords = new double[3];
-            coords[0] = x;
-            coords[1] = y;
-            if (passOnToTesselator)
-            {
-                AddVertex(coords, index);
-            }
-            return index;
-        }
+		public int AddVertex(double x, double y, bool passOnToTesselator)
+		{
+			int index = verticesCache.Count;
+			verticesCache.Add(new AddedVertex(x, y));
+			double[] coords = new double[3];
+			coords[0] = x;
+			coords[1] = y;
+			if (passOnToTesselator)
+			{
+				AddVertex(coords, index);
+			}
+			return index;
+		}
 
-        public void Clear()
-        {
-            verticesCache.Clear();
-        }
-    }
+		public void Clear()
+		{
+			verticesCache.Clear();
+		}
+	}
 }

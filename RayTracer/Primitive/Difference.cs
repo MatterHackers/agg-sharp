@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,181 +23,179 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.Agg;
+using MatterHackers.VectorMath;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-using MatterHackers.Agg;
-using MatterHackers.VectorMath;
 
 namespace MatterHackers.RayTracer.Traceable
 {
-    public class Difference : IPrimitive
-    {
-        IPrimitive primary;
-        IPrimitive subtract;
+	public class Difference : IPrimitive
+	{
+		private IPrimitive primary;
+		private IPrimitive subtract;
 
-        public Difference(IPrimitive primary, IPrimitive subtract)
-        {
-            this.primary = primary;
-            this.subtract = subtract;
-        }
+		public Difference(IPrimitive primary, IPrimitive subtract)
+		{
+			this.primary = primary;
+			this.subtract = subtract;
+		}
 
-        public IPrimitive Primary { get { return primary; } }
-        public IPrimitive Subtract { get { return subtract; } }
+		public IPrimitive Primary { get { return primary; } }
 
-        public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
-        {
-            throw new NotImplementedException();
-        }
+		public IPrimitive Subtract { get { return subtract; } }
 
-        public IntersectInfo GetClosestIntersection(Ray ray)
-        {
-            List<IntersectInfo> allPrimary = new List<IntersectInfo>();
-            Ray checkFrontAndBacks = new Ray(ray);
-            checkFrontAndBacks.intersectionType = IntersectionType.Both;
-            foreach (IntersectInfo info in primary.IntersectionIterator(checkFrontAndBacks))
-            {
-                allPrimary.Add(info);
-            }
+		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
+		{
+			throw new NotImplementedException();
+		}
 
-            if (allPrimary.Count == 0)
-            {
-                // We did not hit the primary object.  We are done. The subtract object does not mater.
-                return null;
-            }
+		public IntersectInfo GetClosestIntersection(Ray ray)
+		{
+			List<IntersectInfo> allPrimary = new List<IntersectInfo>();
+			Ray checkFrontAndBacks = new Ray(ray);
+			checkFrontAndBacks.intersectionType = IntersectionType.Both;
+			foreach (IntersectInfo info in primary.IntersectionIterator(checkFrontAndBacks))
+			{
+				allPrimary.Add(info);
+			}
 
-            allPrimary.Sort(new CompareIntersectInfoOnDistance());
+			if (allPrimary.Count == 0)
+			{
+				// We did not hit the primary object.  We are done. The subtract object does not mater.
+				return null;
+			}
 
-            // we hit the primary object, did we hit the subtract object before (within error) hitting the primary.
-            List<IntersectInfo> allSubtract = new List<IntersectInfo>();
-            foreach (IntersectInfo info in subtract.IntersectionIterator(checkFrontAndBacks))
-            {
-                allSubtract.Add(info);
-            }
+			allPrimary.Sort(new CompareIntersectInfoOnDistance());
 
-            if (allSubtract.Count == 0)
-            {
-                // we did not hit the subtract so return the first primary
-                return allPrimary[0];
-            }
+			// we hit the primary object, did we hit the subtract object before (within error) hitting the primary.
+			List<IntersectInfo> allSubtract = new List<IntersectInfo>();
+			foreach (IntersectInfo info in subtract.IntersectionIterator(checkFrontAndBacks))
+			{
+				allSubtract.Add(info);
+			}
 
-            allSubtract.Sort(new CompareIntersectInfoOnDistance());
+			if (allSubtract.Count == 0)
+			{
+				// we did not hit the subtract so return the first primary
+				return allPrimary[0];
+			}
 
-            List<IntersectInfo> result = new List<IntersectInfo>();
-            IntersectInfo.Subtract(allPrimary, allSubtract, result);
+			allSubtract.Sort(new CompareIntersectInfoOnDistance());
 
-            if (result.Count > 0)
-            {
-                return result[0];
-            }
+			List<IntersectInfo> result = new List<IntersectInfo>();
+			IntersectInfo.Subtract(allPrimary, allSubtract, result);
 
-            return null;
-        }
+			if (result.Count > 0)
+			{
+				return result[0];
+			}
 
-        public int FindFirstRay(RayBundle rayBundle, int rayIndexToStartCheckingFrom)
-        {
-            throw new NotImplementedException();
-        }
+			return null;
+		}
 
-        public void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
-        {
-            throw new NotImplementedException();
-        }
+		public int FindFirstRay(RayBundle rayBundle, int rayIndexToStartCheckingFrom)
+		{
+			throw new NotImplementedException();
+		}
 
-        public IEnumerable IntersectionIterator(Ray ray)
-        {
-            List<IntersectInfo> allPrimary = new List<IntersectInfo>();
-            Ray checkFrontAndBacks = new Ray(ray);
-            checkFrontAndBacks.intersectionType = IntersectionType.Both;
-            foreach (IntersectInfo info in primary.IntersectionIterator(checkFrontAndBacks))
-            {
-                allPrimary.Add(info);
-            }
+		public void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
+		{
+			throw new NotImplementedException();
+		}
 
-            if (allPrimary.Count == 0)
-            {
-                // We did not hit the primary object.  We are done. The subtract object does not mater.
-                //yield break;
-            }
+		public IEnumerable IntersectionIterator(Ray ray)
+		{
+			List<IntersectInfo> allPrimary = new List<IntersectInfo>();
+			Ray checkFrontAndBacks = new Ray(ray);
+			checkFrontAndBacks.intersectionType = IntersectionType.Both;
+			foreach (IntersectInfo info in primary.IntersectionIterator(checkFrontAndBacks))
+			{
+				allPrimary.Add(info);
+			}
 
-            allPrimary.Sort(new CompareIntersectInfoOnDistance());
+			if (allPrimary.Count == 0)
+			{
+				// We did not hit the primary object.  We are done. The subtract object does not mater.
+				//yield break;
+			}
 
-            // we hit the primary object, did we hit the subtract object before (within error) hitting the primary.
-            List<IntersectInfo> allSubtract = new List<IntersectInfo>();
-            foreach (IntersectInfo info in subtract.IntersectionIterator(checkFrontAndBacks))
-            {
-                allSubtract.Add(info);
-            }
+			allPrimary.Sort(new CompareIntersectInfoOnDistance());
 
-            if (allSubtract.Count == 0)
-            {
-                // we did not hit the subtract so return the primary
-                foreach (IntersectInfo primaryInfo in allPrimary)
-                {
-                    yield return primaryInfo;
-                }
+			// we hit the primary object, did we hit the subtract object before (within error) hitting the primary.
+			List<IntersectInfo> allSubtract = new List<IntersectInfo>();
+			foreach (IntersectInfo info in subtract.IntersectionIterator(checkFrontAndBacks))
+			{
+				allSubtract.Add(info);
+			}
 
-                yield break;
-            }
+			if (allSubtract.Count == 0)
+			{
+				// we did not hit the subtract so return the primary
+				foreach (IntersectInfo primaryInfo in allPrimary)
+				{
+					yield return primaryInfo;
+				}
 
-            allSubtract.Sort(new CompareIntersectInfoOnDistance());
+				yield break;
+			}
 
-            List<IntersectInfo> results = new List<IntersectInfo>();
-            IntersectInfo.Subtract(allPrimary, allSubtract, results);
+			allSubtract.Sort(new CompareIntersectInfoOnDistance());
 
-            foreach (IntersectInfo resultInfo in results)
-            {
-                yield return resultInfo;
-            }
-        }
+			List<IntersectInfo> results = new List<IntersectInfo>();
+			IntersectInfo.Subtract(allPrimary, allSubtract, results);
 
-        public RGBA_Floats GetColor(IntersectInfo info)
-        {
-            throw new NotImplementedException("You should not get a color directly from a Difference.");
-        }
+			foreach (IntersectInfo resultInfo in results)
+			{
+				yield return resultInfo;
+			}
+		}
 
-        public MaterialAbstract Material
-        {
-            get { throw new NotImplementedException(); }
-            set { throw new NotImplementedException(); }
-        }
+		public RGBA_Floats GetColor(IntersectInfo info)
+		{
+			throw new NotImplementedException("You should not get a color directly from a Difference.");
+		}
 
-        private IntersectInfo FindNextIntersections(IPrimitive element, Ray ray, IntersectInfo info, IntersectionType intersectionType)
-        {
-            // get all the intersection for the object
-            Ray currentRayCheckBackfaces = new Ray(ray);
-            currentRayCheckBackfaces.intersectionType = intersectionType;
-            currentRayCheckBackfaces.minDistanceToConsider = ((info.hitPosition + ray.directionNormal * Ray.sameSurfaceOffset) - ray.origin).Length;
-            currentRayCheckBackfaces.maxDistanceToConsider = double.PositiveInfinity;
+		public MaterialAbstract Material
+		{
+			get { throw new NotImplementedException(); }
+			set { throw new NotImplementedException(); }
+		}
 
-            return element.GetClosestIntersection(currentRayCheckBackfaces);
-        }
+		private IntersectInfo FindNextIntersections(IPrimitive element, Ray ray, IntersectInfo info, IntersectionType intersectionType)
+		{
+			// get all the intersection for the object
+			Ray currentRayCheckBackfaces = new Ray(ray);
+			currentRayCheckBackfaces.intersectionType = intersectionType;
+			currentRayCheckBackfaces.minDistanceToConsider = ((info.hitPosition + ray.directionNormal * Ray.sameSurfaceOffset) - ray.origin).Length;
+			currentRayCheckBackfaces.maxDistanceToConsider = double.PositiveInfinity;
 
-        public double GetSurfaceArea()
-        {
-            return primary.GetSurfaceArea();
-        }
+			return element.GetClosestIntersection(currentRayCheckBackfaces);
+		}
 
-        public Vector3 GetCenter()
-        {
-            return GetAxisAlignedBoundingBox().GetCenter();
-        }
+		public double GetSurfaceArea()
+		{
+			return primary.GetSurfaceArea();
+		}
 
-        public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
-        {
-            return primary.GetAxisAlignedBoundingBox();
-        }
+		public Vector3 GetCenter()
+		{
+			return GetAxisAlignedBoundingBox().GetCenter();
+		}
 
-        public double GetIntersectCost()
-        {
-            return primary.GetIntersectCost() + subtract.GetIntersectCost() / 2;
-        }
-    }
+		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
+		{
+			return primary.GetAxisAlignedBoundingBox();
+		}
+
+		public double GetIntersectCost()
+		{
+			return primary.GetIntersectCost() + subtract.GetIntersectCost() / 2;
+		}
+	}
 }

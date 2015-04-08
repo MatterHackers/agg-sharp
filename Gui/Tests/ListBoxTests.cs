@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,137 +23,131 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-using NUnit.Framework;
-using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.VectorMath;
+using NUnit.Framework;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-    public class ListBoxTests
-    {
-        public static bool saveImagesForDebug = false;
+	public class ListBoxTests
+	{
+		public static bool saveImagesForDebug = false;
 
-        void OutputImage(ImageBuffer imageToOutput, string fileName)
-        {
-            if (saveImagesForDebug)
-            {
-                ImageTgaIO.Save(imageToOutput, fileName);
-            }
-        }
+		private void OutputImage(ImageBuffer imageToOutput, string fileName)
+		{
+			if (saveImagesForDebug)
+			{
+				ImageTgaIO.Save(imageToOutput, fileName);
+			}
+		}
 
-        void OutputImage(GuiWidget widgetToOutput, string fileName)
-        {
-            if (saveImagesForDebug)
-            {
-                OutputImage(widgetToOutput.BackBuffer, fileName);
-            }
-        }
+		private void OutputImage(GuiWidget widgetToOutput, string fileName)
+		{
+			if (saveImagesForDebug)
+			{
+				OutputImage(widgetToOutput.BackBuffer, fileName);
+			}
+		}
 
-        void OutputImages(GuiWidget control, GuiWidget test)
-        {
-            OutputImage(control, "image-control.tga");
-            OutputImage(test, "image-test.tga");
-        }
+		private void OutputImages(GuiWidget control, GuiWidget test)
+		{
+			OutputImage(control, "image-control.tga");
+			OutputImage(test, "image-test.tga");
+		}
 
-        [Test]
-        public void SingleItemVisibleTest()
-        {
-            {
-                ListBox containerListBox = new ListBox(new RectangleDouble(0, 0, 100, 100));
-                ListBoxTextItem itemToAddToList = new ListBoxTextItem("test Item", "test data for item");
-                itemToAddToList.Name = "list item";
-                containerListBox.AddChild(itemToAddToList);
-                containerListBox.DoubleBuffer = true;
-                containerListBox.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
-                containerListBox.OnDraw(containerListBox.BackBuffer.NewGraphics2D());
+		[Test]
+		public void SingleItemVisibleTest()
+		{
+			{
+				ListBox containerListBox = new ListBox(new RectangleDouble(0, 0, 100, 100));
+				ListBoxTextItem itemToAddToList = new ListBoxTextItem("test Item", "test data for item");
+				itemToAddToList.Name = "list item";
+				containerListBox.AddChild(itemToAddToList);
+				containerListBox.DoubleBuffer = true;
+				containerListBox.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+				containerListBox.OnDraw(containerListBox.BackBuffer.NewGraphics2D());
 
-                ImageBuffer textImage = new ImageBuffer(80, 16, 32, new BlenderBGRA());
-                textImage.NewGraphics2D().Clear(RGBA_Bytes.White);
-                textImage.NewGraphics2D().DrawString("test Item", 1, 1);
+				ImageBuffer textImage = new ImageBuffer(80, 16, 32, new BlenderBGRA());
+				textImage.NewGraphics2D().Clear(RGBA_Bytes.White);
+				textImage.NewGraphics2D().DrawString("test Item", 1, 1);
 
-                OutputImage(containerListBox.BackBuffer, "test.tga");
-                OutputImage(textImage, "control.tga");
+				OutputImage(containerListBox.BackBuffer, "test.tga");
+				OutputImage(textImage, "control.tga");
 
-                double maxError = 20000000;
-                Vector2 bestPosition;
-                double leastSquares;
-                containerListBox.BackBuffer.FindLeastSquaresMatch(textImage, out bestPosition, out leastSquares, maxError);
+				double maxError = 20000000;
+				Vector2 bestPosition;
+				double leastSquares;
+				containerListBox.BackBuffer.FindLeastSquaresMatch(textImage, out bestPosition, out leastSquares, maxError);
 
-                Assert.IsTrue(leastSquares < maxError, "The list box need to be showing the item we added to it.");
-            }
+				Assert.IsTrue(leastSquares < maxError, "The list box need to be showing the item we added to it.");
+			}
 
-            {
-                GuiWidget container = new GuiWidget(202, 302);
-                container.DoubleBuffer = true;
-                container.NewGraphics2D().Clear(RGBA_Bytes.White);
-                FlowLayoutWidget leftToRightLayout = new FlowLayoutWidget();
-                leftToRightLayout.AnchorAll();
-                {
-                    {
-                        ListBox listBox = new ListBox(new RectangleDouble(0, 0, 200, 300));
-                        //listBox.BackgroundColor = RGBA_Bytes.Red;
-                        listBox.Name = "listBox";
-                        listBox.VAnchor = UI.VAnchor.ParentTop;
-                        listBox.ScrollArea.Margin = new BorderDouble(15);
-                        leftToRightLayout.AddChild(listBox);
+			{
+				GuiWidget container = new GuiWidget(202, 302);
+				container.DoubleBuffer = true;
+				container.NewGraphics2D().Clear(RGBA_Bytes.White);
+				FlowLayoutWidget leftToRightLayout = new FlowLayoutWidget();
+				leftToRightLayout.AnchorAll();
+				{
+					{
+						ListBox listBox = new ListBox(new RectangleDouble(0, 0, 200, 300));
+						//listBox.BackgroundColor = RGBA_Bytes.Red;
+						listBox.Name = "listBox";
+						listBox.VAnchor = UI.VAnchor.ParentTop;
+						listBox.ScrollArea.Margin = new BorderDouble(15);
+						leftToRightLayout.AddChild(listBox);
 
-                        for (int i = 0; i < 1; i++)
-                        {
-                            ListBoxTextItem newItem = new ListBoxTextItem("hand" + i.ToString() + ".stl", "c:\\development\\hand" + i.ToString() + ".stl");
-                            newItem.Name = "ListBoxItem" + i.ToString();
-                            listBox.AddChild(newItem);
-                        }
-                    }
-                }
+						for (int i = 0; i < 1; i++)
+						{
+							ListBoxTextItem newItem = new ListBoxTextItem("hand" + i.ToString() + ".stl", "c:\\development\\hand" + i.ToString() + ".stl");
+							newItem.Name = "ListBoxItem" + i.ToString();
+							listBox.AddChild(newItem);
+						}
+					}
+				}
 
-                container.AddChild(leftToRightLayout);
-                container.OnDraw(container.NewGraphics2D());
+				container.AddChild(leftToRightLayout);
+				container.OnDraw(container.NewGraphics2D());
 
-                ImageBuffer textImage = new ImageBuffer(80, 16, 32, new BlenderBGRA());
-                textImage.NewGraphics2D().Clear(RGBA_Bytes.White);
-                textImage.NewGraphics2D().DrawString("hand0.stl", 1, 1);
+				ImageBuffer textImage = new ImageBuffer(80, 16, 32, new BlenderBGRA());
+				textImage.NewGraphics2D().Clear(RGBA_Bytes.White);
+				textImage.NewGraphics2D().DrawString("hand0.stl", 1, 1);
 
-                OutputImage(container.BackBuffer, "control.tga");
-                OutputImage(textImage, "test.tga");
+				OutputImage(container.BackBuffer, "control.tga");
+				OutputImage(textImage, "test.tga");
 
-                double maxError = 1000000;
-                Vector2 bestPosition;
-                double leastSquares;
-                container.BackBuffer.FindLeastSquaresMatch(textImage, out bestPosition, out leastSquares, maxError);
+				double maxError = 1000000;
+				Vector2 bestPosition;
+				double leastSquares;
+				container.BackBuffer.FindLeastSquaresMatch(textImage, out bestPosition, out leastSquares, maxError);
 
-                Assert.IsTrue(leastSquares < maxError, "The list box need to be showing the item we added to it.");
-            }
-        }
+				Assert.IsTrue(leastSquares < maxError, "The list box need to be showing the item we added to it.");
+			}
+		}
 
-        [Test]
-        public void ScrollPositionStartsCorrect()
-        {
-            GuiWidget contents = new GuiWidget(300, 300);
-            contents.DoubleBuffer = true;
-            ListBox container = new ListBox(new RectangleDouble(0, 0, 200, 300));
-            //container.BackgroundColor = RGBA_Bytes.Red;
-            container.Name = "containerListBox";
-            container.VAnchor = UI.VAnchor.ParentTop;
-            container.Margin = new BorderDouble(15);
-            
-            contents.AddChild(container);
+		[Test]
+		public void ScrollPositionStartsCorrect()
+		{
+			GuiWidget contents = new GuiWidget(300, 300);
+			contents.DoubleBuffer = true;
+			ListBox container = new ListBox(new RectangleDouble(0, 0, 200, 300));
+			//container.BackgroundColor = RGBA_Bytes.Red;
+			container.Name = "containerListBox";
+			container.VAnchor = UI.VAnchor.ParentTop;
+			container.Margin = new BorderDouble(15);
 
-            container.AddChild(new ListBoxTextItem("hand.stl", "c:\\development\\hand.stl"));
+			contents.AddChild(container);
 
-            contents.OnDraw(contents.NewGraphics2D());
+			container.AddChild(new ListBoxTextItem("hand.stl", "c:\\development\\hand.stl"));
 
-            Assert.IsTrue(container.TopLeftOffset.y == 0);
-        }
+			contents.OnDraw(contents.NewGraphics2D());
+
+			Assert.IsTrue(container.TopLeftOffset.y == 0);
+		}
 
 #if false
         [Test]
@@ -201,5 +195,5 @@ namespace MatterHackers.Agg.UI.Tests
             }
         }
 #endif
-    }
-}   
+	}
+}

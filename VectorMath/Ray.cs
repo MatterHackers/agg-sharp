@@ -12,13 +12,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -32,112 +32,111 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MatterHackers.VectorMath
 {
-    [Flags]
-    public enum IntersectionType { None = 0, FrontFace = 1, BackFace = 2, Both = FrontFace | BackFace };
+	[Flags]
+	public enum IntersectionType { None = 0, FrontFace = 1, BackFace = 2, Both = FrontFace | BackFace };
 
-    /// <summary>
-    /// a virtual ray that is casted from a begin Position in a certain Direction.
-    /// </summary>
-    public class Ray
-    {
-        public static double sameSurfaceOffset = .00001;
+	/// <summary>
+	/// a virtual ray that is casted from a begin Position in a certain Direction.
+	/// </summary>
+	public class Ray
+	{
+		public static double sameSurfaceOffset = .00001;
 
-        public Vector3 origin;
-        public Vector3 directionNormal;
-        public double minDistanceToConsider;
-        public double maxDistanceToConsider;
-        public Vector3 oneOverDirection;
-        public bool isShadowRay;
-        public IntersectionType intersectionType;
+		public Vector3 origin;
+		public Vector3 directionNormal;
+		public double minDistanceToConsider;
+		public double maxDistanceToConsider;
+		public Vector3 oneOverDirection;
+		public bool isShadowRay;
+		public IntersectionType intersectionType;
 
-        public enum Sign { negative = 1, positive = 0 };
-        public Sign[] sign = new Sign[3];
+		public enum Sign { negative = 1, positive = 0 };
 
-        public Ray(Vector3 origin, Vector3 directionNormal, double minDistanceToConsider = 0, double maxDistanceToConsider = double.PositiveInfinity, IntersectionType intersectionType = IntersectionType.FrontFace)
-        {
-            this.origin = origin;
-            this.directionNormal = directionNormal;
-            this.minDistanceToConsider = minDistanceToConsider;
-            this.maxDistanceToConsider = maxDistanceToConsider;
-            this.intersectionType = intersectionType;
-            oneOverDirection = 1 / directionNormal;
+		public Sign[] sign = new Sign[3];
 
-            sign[0] = (oneOverDirection.x < 0) ? Sign.negative : Sign.positive;
-            sign[1] = (oneOverDirection.y < 0) ? Sign.negative : Sign.positive;
-            sign[2] = (oneOverDirection.z < 0) ? Sign.negative : Sign.positive;
-        }
+		public Ray(Vector3 origin, Vector3 directionNormal, double minDistanceToConsider = 0, double maxDistanceToConsider = double.PositiveInfinity, IntersectionType intersectionType = IntersectionType.FrontFace)
+		{
+			this.origin = origin;
+			this.directionNormal = directionNormal;
+			this.minDistanceToConsider = minDistanceToConsider;
+			this.maxDistanceToConsider = maxDistanceToConsider;
+			this.intersectionType = intersectionType;
+			oneOverDirection = 1 / directionNormal;
 
-        public Ray(Ray rayToCopy)
-        {
-            origin = rayToCopy.origin;
-            directionNormal = rayToCopy.directionNormal;
-            minDistanceToConsider = rayToCopy.minDistanceToConsider;
-            maxDistanceToConsider = rayToCopy.maxDistanceToConsider;
-            oneOverDirection = rayToCopy.oneOverDirection;
-            isShadowRay = rayToCopy.isShadowRay;
-            intersectionType = rayToCopy.intersectionType;
-            sign[0] = rayToCopy.sign[0];
-            sign[1] = rayToCopy.sign[1];
-            sign[2] = rayToCopy.sign[2];
-        }
+			sign[0] = (oneOverDirection.x < 0) ? Sign.negative : Sign.positive;
+			sign[1] = (oneOverDirection.y < 0) ? Sign.negative : Sign.positive;
+			sign[2] = (oneOverDirection.z < 0) ? Sign.negative : Sign.positive;
+		}
 
-        public bool Intersection(AxisAlignedBoundingBox bounds)
-        {
-            Ray ray = this;
-            // we calculate distance to the intersection with the x planes of the box
-            double minDistFound = (bounds[(int)ray.sign[0]].x - ray.origin.x) * ray.oneOverDirection.x;
-            double maxDistFound = (bounds[1 - (int)ray.sign[0]].x - ray.origin.x) * ray.oneOverDirection.x;
+		public Ray(Ray rayToCopy)
+		{
+			origin = rayToCopy.origin;
+			directionNormal = rayToCopy.directionNormal;
+			minDistanceToConsider = rayToCopy.minDistanceToConsider;
+			maxDistanceToConsider = rayToCopy.maxDistanceToConsider;
+			oneOverDirection = rayToCopy.oneOverDirection;
+			isShadowRay = rayToCopy.isShadowRay;
+			intersectionType = rayToCopy.intersectionType;
+			sign[0] = rayToCopy.sign[0];
+			sign[1] = rayToCopy.sign[1];
+			sign[2] = rayToCopy.sign[2];
+		}
 
-            // now find the distance to the y planes of the box
-            double minDistToY = (bounds[(int)ray.sign[1]].y - ray.origin.y) * ray.oneOverDirection.y;
-            double maxDistToY = (bounds[1 - (int)ray.sign[1]].y - ray.origin.y) * ray.oneOverDirection.y;
+		public bool Intersection(AxisAlignedBoundingBox bounds)
+		{
+			Ray ray = this;
+			// we calculate distance to the intersection with the x planes of the box
+			double minDistFound = (bounds[(int)ray.sign[0]].x - ray.origin.x) * ray.oneOverDirection.x;
+			double maxDistFound = (bounds[1 - (int)ray.sign[0]].x - ray.origin.x) * ray.oneOverDirection.x;
 
-            if ((minDistFound > maxDistToY) || (minDistToY > maxDistFound))
-            {
-                return false;
-            }
+			// now find the distance to the y planes of the box
+			double minDistToY = (bounds[(int)ray.sign[1]].y - ray.origin.y) * ray.oneOverDirection.y;
+			double maxDistToY = (bounds[1 - (int)ray.sign[1]].y - ray.origin.y) * ray.oneOverDirection.y;
 
-            if (minDistToY > minDistFound)
-            {
-                minDistFound = minDistToY;
-            }
+			if ((minDistFound > maxDistToY) || (minDistToY > maxDistFound))
+			{
+				return false;
+			}
 
-            if (maxDistToY < maxDistFound)
-            {
-                maxDistFound = maxDistToY;
-            }
+			if (minDistToY > minDistFound)
+			{
+				minDistFound = minDistToY;
+			}
 
-            // and finaly the z planes
-            double minDistToZ = (bounds[(int)ray.sign[2]].z - ray.origin.z) * ray.oneOverDirection.z;
-            double maxDistToZ = (bounds[1 - (int)ray.sign[2]].z - ray.origin.z) * ray.oneOverDirection.z;
+			if (maxDistToY < maxDistFound)
+			{
+				maxDistFound = maxDistToY;
+			}
 
-            if ((minDistFound > maxDistToZ) || (minDistToZ > maxDistFound))
-            {
-                return false;
-            }
+			// and finaly the z planes
+			double minDistToZ = (bounds[(int)ray.sign[2]].z - ray.origin.z) * ray.oneOverDirection.z;
+			double maxDistToZ = (bounds[1 - (int)ray.sign[2]].z - ray.origin.z) * ray.oneOverDirection.z;
 
-            if (minDistToZ > minDistFound)
-            {
-                minDistFound = minDistToZ;
-            }
+			if ((minDistFound > maxDistToZ) || (minDistToZ > maxDistFound))
+			{
+				return false;
+			}
 
-            if (maxDistToZ < maxDistFound)
-            {
-                maxDistFound = maxDistToZ;
-            }
+			if (minDistToZ > minDistFound)
+			{
+				minDistFound = minDistToZ;
+			}
 
-            bool withinDistanceToConsider = (minDistFound < ray.maxDistanceToConsider) && (maxDistFound > ray.minDistanceToConsider);
-            return withinDistanceToConsider;
-        }
-    }
+			if (maxDistToZ < maxDistFound)
+			{
+				maxDistFound = maxDistToZ;
+			}
+
+			bool withinDistanceToConsider = (minDistFound < ray.maxDistanceToConsider) && (maxDistFound > ray.minDistanceToConsider);
+			return withinDistanceToConsider;
+		}
+	}
 }

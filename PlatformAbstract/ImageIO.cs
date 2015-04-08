@@ -3,13 +3,13 @@ Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,58 +23,58 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.Agg.Image;
 using System;
 using System.IO;
 
-using MatterHackers.Agg.Image;
-
 namespace MatterHackers.Agg.PlatformAbstract
 {
-    public static class ImageIO
-    {
-        static ImageIOPlugin imageIOPlugin = null;
-        static ImageIOPlugin AvailableImageIOPlugin
-        {
-            get
-            {
-                if (imageIOPlugin == null)
-                {
-                    string pluginPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-                    PluginFinder<ImageIOPlugin> imageIOPlugins = new PluginFinder<ImageIOPlugin>(pluginPath);
-                    if (imageIOPlugins.Plugins.Count != 1)
-                    {
-                        throw new Exception(string.Format("Did not find any ImageIOPlugins in Plugin path ({0}.", pluginPath));
-                    }
+	public static class ImageIO
+	{
+		private static ImageIOPlugin imageIOPlugin = null;
 
-                    imageIOPlugin = imageIOPlugins.Plugins[0];
-                }
+		private static ImageIOPlugin AvailableImageIOPlugin
+		{
+			get
+			{
+				if (imageIOPlugin == null)
+				{
+					string pluginPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+					PluginFinder<ImageIOPlugin> imageIOPlugins = new PluginFinder<ImageIOPlugin>(pluginPath);
+					if (imageIOPlugins.Plugins.Count != 1)
+					{
+						throw new Exception(string.Format("Did not find any ImageIOPlugins in Plugin path ({0}.", pluginPath));
+					}
 
-                return imageIOPlugin;
-            }
-        }
+					imageIOPlugin = imageIOPlugins.Plugins[0];
+				}
 
-        static public bool LoadImageData(String pathToGifFile, ImageSequence destImageSequence)
-        {
-            return AvailableImageIOPlugin.LoadImageData(pathToGifFile, destImageSequence);
-        }
+				return imageIOPlugin;
+			}
+		}
 
-        static public bool LoadImageData(String fileName, ImageBuffer destImage)
-        {
-            return AvailableImageIOPlugin.LoadImageData(fileName, destImage);
-        }
+		static public bool LoadImageData(String pathToGifFile, ImageSequence destImageSequence)
+		{
+			return AvailableImageIOPlugin.LoadImageData(pathToGifFile, destImageSequence);
+		}
 
-        static public bool LoadImageData(String filename, ImageBufferFloat destImage)
-        {
-            return AvailableImageIOPlugin.LoadImageData(filename, destImage);
-        }
+		static public bool LoadImageData(String fileName, ImageBuffer destImage)
+		{
+			return AvailableImageIOPlugin.LoadImageData(fileName, destImage);
+		}
 
-        static public bool SaveImageData(String filename, IImageByte sourceImage)
-        {
-            return AvailableImageIOPlugin.SaveImageData(filename, sourceImage);
-        }
-    }
+		static public bool LoadImageData(String filename, ImageBufferFloat destImage)
+		{
+			return AvailableImageIOPlugin.LoadImageData(filename, destImage);
+		}
+
+		static public bool SaveImageData(String filename, IImageByte sourceImage)
+		{
+			return AvailableImageIOPlugin.SaveImageData(filename, sourceImage);
+		}
+	}
 }

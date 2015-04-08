@@ -1,26 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace MatterHackers.Agg.UI
 {
-    public class FileDropEventArgs : EventArgs
-    {
-        public List<string> DroppedFiles;
-        double x;
-        double y;
+	public class FileDropEventArgs : EventArgs
+	{
+		public List<string> DroppedFiles;
+		private double x;
+		private double y;
 
-        public double X { get { return x; } }
-        public double Y { get { return y; } } 
+		public double X { get { return x; } }
 
-        public FileDropEventArgs(List<string> droppedFiles, double x, double y)
-        {
-            this.x = x;
-            this.y = y;
-            this.DroppedFiles = FileDialog.ResolveFilePaths(droppedFiles).ToList();
-        }
+		public double Y { get { return y; } }
 
-        public bool AcceptDrop { get; set; }
-    }
+		public FileDropEventArgs(List<string> droppedFiles, double x, double y)
+		{
+			this.x = x;
+			this.y = y;
+			this.DroppedFiles = FileDialog.ResolveFilePaths(droppedFiles).ToList();
+		}
+
+		public bool AcceptDrop { get; set; }
+	}
 }
