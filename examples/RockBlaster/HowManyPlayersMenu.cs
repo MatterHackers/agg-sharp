@@ -1,97 +1,94 @@
-using System;
-using System.Collections.Generic;
-using MatterHackers.Agg;
-using MatterHackers.Agg.Image;
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.Agg.UI;
-
-using MatterHackers.Agg.Transform;
-
-using Gaming.Math;
 using Gaming.Game;
 using Gaming.Graphics;
+using MatterHackers.Agg;
+using MatterHackers.Agg.UI;
+using System;
 
 namespace RockBlaster
 {
-    /// <summary>
-    /// Description of HowManyPlayersMenu.
-    /// </summary>
-    public class HowManyPlayersMenu : GuiWidget
-    {
-        public delegate void StartOnePlayerGameEventHandler(GuiWidget button);
-        public event StartOnePlayerGameEventHandler StartOnePlayerGame;
+	/// <summary>
+	/// Description of HowManyPlayersMenu.
+	/// </summary>
+	public class HowManyPlayersMenu : GuiWidget
+	{
+		public delegate void StartOnePlayerGameEventHandler(GuiWidget button);
 
-        public delegate void StartTwoPlayerGameEventHandler(GuiWidget button);
-        public event StartTwoPlayerGameEventHandler StartTwoPlayerGame;
+		public event StartOnePlayerGameEventHandler StartOnePlayerGame;
 
-        public delegate void StartFourPlayerGameEventHandler(GuiWidget button);
-        public event StartFourPlayerGameEventHandler StartFourPlayerGame;
+		public delegate void StartTwoPlayerGameEventHandler(GuiWidget button);
 
-        public delegate void CancelMenuEventHandler(GuiWidget button);
-        public event CancelMenuEventHandler CancelMenu;
+		public event StartTwoPlayerGameEventHandler StartTwoPlayerGame;
 
-        public HowManyPlayersMenu(RectangleDouble bounds)
-        {
-            BoundsRelativeToParent = bounds;
-            GameImageSequence onePlayerButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "OnePlayerButton");
-            Button onePlayerGameButton = new Button(270, 310, new ButtonViewThreeImage(onePlayerButtonSequence.GetImageByIndex(0), onePlayerButtonSequence.GetImageByIndex(1), onePlayerButtonSequence.GetImageByIndex(2)));
-            AddChild(onePlayerGameButton);
-            onePlayerGameButton.Click += new EventHandler(OnStartOnePlayerGameButton);
+		public delegate void StartFourPlayerGameEventHandler(GuiWidget button);
 
-            GameImageSequence twoPlayerButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "TwoPlayerButton");
-            Button twoPlayerGameButton = new Button(400, 310, new ButtonViewThreeImage(twoPlayerButtonSequence.GetImageByIndex(0), twoPlayerButtonSequence.GetImageByIndex(1), twoPlayerButtonSequence.GetImageByIndex(2)));
-            AddChild(twoPlayerGameButton);
-            twoPlayerGameButton.Click += new EventHandler(OnStartTwoPlayerGameButton);
+		public event StartFourPlayerGameEventHandler StartFourPlayerGame;
 
-            GameImageSequence fourPlayerButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "FourPlayerButton");
-            Button fourPlayerGameButton = new Button(530, 310, new ButtonViewThreeImage(fourPlayerButtonSequence.GetImageByIndex(0), fourPlayerButtonSequence.GetImageByIndex(1), fourPlayerButtonSequence.GetImageByIndex(2)));
-            AddChild(fourPlayerGameButton);
-            fourPlayerGameButton.Click += new EventHandler(OnStartFourPlayerGameButton);
+		public delegate void CancelMenuEventHandler(GuiWidget button);
 
-            GameImageSequence cancelButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "NumPlayersCancelButton");
-            Button cancelGameButton = new Button(400, 210, new ButtonViewThreeImage(cancelButtonSequence.GetImageByIndex(0), cancelButtonSequence.GetImageByIndex(1), cancelButtonSequence.GetImageByIndex(2)));
-            AddChild(cancelGameButton);
-            cancelGameButton.Click += new EventHandler(OnCancelMenuButton);
-        }
+		public event CancelMenuEventHandler CancelMenu;
 
-        public override void OnDraw(Graphics2D graphics2D)
-        {
-            GameImageSequence menuBackground = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "NumPlayersSelectBackground");
-            graphics2D.Render(menuBackground.GetImageByIndex(0), 0, 0);
+		public HowManyPlayersMenu(RectangleDouble bounds)
+		{
+			BoundsRelativeToParent = bounds;
+			GameImageSequence onePlayerButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "OnePlayerButton");
+			Button onePlayerGameButton = new Button(270, 310, new ButtonViewThreeImage(onePlayerButtonSequence.GetImageByIndex(0), onePlayerButtonSequence.GetImageByIndex(1), onePlayerButtonSequence.GetImageByIndex(2)));
+			AddChild(onePlayerGameButton);
+			onePlayerGameButton.Click += new EventHandler(OnStartOnePlayerGameButton);
 
-            base.OnDraw(graphics2D);
-        }
+			GameImageSequence twoPlayerButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "TwoPlayerButton");
+			Button twoPlayerGameButton = new Button(400, 310, new ButtonViewThreeImage(twoPlayerButtonSequence.GetImageByIndex(0), twoPlayerButtonSequence.GetImageByIndex(1), twoPlayerButtonSequence.GetImageByIndex(2)));
+			AddChild(twoPlayerGameButton);
+			twoPlayerGameButton.Click += new EventHandler(OnStartTwoPlayerGameButton);
 
-        private void OnStartOnePlayerGameButton(object sender, EventArgs mouseEvent)
-        {
-            if (StartOnePlayerGame != null)
-            {
-                StartOnePlayerGame(this);
-            }
-        }
+			GameImageSequence fourPlayerButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "FourPlayerButton");
+			Button fourPlayerGameButton = new Button(530, 310, new ButtonViewThreeImage(fourPlayerButtonSequence.GetImageByIndex(0), fourPlayerButtonSequence.GetImageByIndex(1), fourPlayerButtonSequence.GetImageByIndex(2)));
+			AddChild(fourPlayerGameButton);
+			fourPlayerGameButton.Click += new EventHandler(OnStartFourPlayerGameButton);
 
-        private void OnStartTwoPlayerGameButton(object sender, EventArgs mouseEvent)
-        {
-            if (StartTwoPlayerGame != null)
-            {
-                StartTwoPlayerGame(this);
-            }
-        }
+			GameImageSequence cancelButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "NumPlayersCancelButton");
+			Button cancelGameButton = new Button(400, 210, new ButtonViewThreeImage(cancelButtonSequence.GetImageByIndex(0), cancelButtonSequence.GetImageByIndex(1), cancelButtonSequence.GetImageByIndex(2)));
+			AddChild(cancelGameButton);
+			cancelGameButton.Click += new EventHandler(OnCancelMenuButton);
+		}
 
-        private void OnStartFourPlayerGameButton(object sender, EventArgs mouseEvent)
-        {
-            if (StartFourPlayerGame != null)
-            {
-                StartFourPlayerGame(this);
-            }
-        }
+		public override void OnDraw(Graphics2D graphics2D)
+		{
+			GameImageSequence menuBackground = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "NumPlayersSelectBackground");
+			graphics2D.Render(menuBackground.GetImageByIndex(0), 0, 0);
 
-        private void OnCancelMenuButton(object sender, EventArgs mouseEvent)
-        {
-            if (CancelMenu != null)
-            {
-                CancelMenu(this);
-            }
-        }
-    }
+			base.OnDraw(graphics2D);
+		}
+
+		private void OnStartOnePlayerGameButton(object sender, EventArgs mouseEvent)
+		{
+			if (StartOnePlayerGame != null)
+			{
+				StartOnePlayerGame(this);
+			}
+		}
+
+		private void OnStartTwoPlayerGameButton(object sender, EventArgs mouseEvent)
+		{
+			if (StartTwoPlayerGame != null)
+			{
+				StartTwoPlayerGame(this);
+			}
+		}
+
+		private void OnStartFourPlayerGameButton(object sender, EventArgs mouseEvent)
+		{
+			if (StartFourPlayerGame != null)
+			{
+				StartFourPlayerGame(this);
+			}
+		}
+
+		private void OnCancelMenuButton(object sender, EventArgs mouseEvent)
+		{
+			if (CancelMenu != null)
+			{
+				CancelMenu(this);
+			}
+		}
+	}
 }

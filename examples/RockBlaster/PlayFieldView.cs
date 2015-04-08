@@ -1,112 +1,103 @@
-using System;
-using System.Collections.Generic;
-using System.Xml;
-using System.Xml.Schema;
-using System.Xml.Serialization;
-
-using MatterHackers.Agg;
-using MatterHackers.Agg.Image;
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.Agg.Transform;
-using MatterHackers.Agg.UI;
-
-using Gaming.Math;
 using Gaming.Game;
 using Gaming.Graphics;
+using MatterHackers.Agg;
+using MatterHackers.Agg.UI;
+using System;
 
 namespace RockBlaster
 {
-    public class PlayfieldView : GuiWidget
-    {
-        Playfield m_Playfield;
+	public class PlayfieldView : GuiWidget
+	{
+		private Playfield m_Playfield;
 
-        public delegate void MenuEventHandler(GuiWidget button);
-        public event MenuEventHandler Menu;
+		public delegate void MenuEventHandler(GuiWidget button);
 
-        public PlayfieldView(RectangleDouble bounds)
-        {
-            BoundsRelativeToParent = bounds;
+		public event MenuEventHandler Menu;
 
-            GameImageSequence menuButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "MenuButtonFromGame");
-            Button menuButton = new Button(400, 12, new ButtonViewThreeImage(menuButtonSequence.GetImageByIndex(0), menuButtonSequence.GetImageByIndex(1), menuButtonSequence.GetImageByIndex(2)));
-            AddChild(menuButton);
-            menuButton.Click += new EventHandler(EscapeMenu);
-        }
+		public PlayfieldView(RectangleDouble bounds)
+		{
+			BoundsRelativeToParent = bounds;
 
-        private void EscapeMenu(object sender, EventArgs mouseEvent)
-        {
-            if (Menu != null)
-            {
-                Menu(this);
-            }
-        }
+			GameImageSequence menuButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "MenuButtonFromGame");
+			Button menuButton = new Button(400, 12, new ButtonViewThreeImage(menuButtonSequence.GetImageByIndex(0), menuButtonSequence.GetImageByIndex(1), menuButtonSequence.GetImageByIndex(2)));
+			AddChild(menuButton);
+			menuButton.Click += new EventHandler(EscapeMenu);
+		}
 
-        public void StartOnePlayerGame()
-        {
-            Focus();
+		private void EscapeMenu(object sender, EventArgs mouseEvent)
+		{
+			if (Menu != null)
+			{
+				Menu(this);
+			}
+		}
 
-            m_Playfield = new Playfield();
+		public void StartOnePlayerGame()
+		{
+			Focus();
 
-            m_Playfield.StartOnePlayerGame();
+			m_Playfield = new Playfield();
 
-            //m_Playfield.SaveXML("Test");
-        }
+			m_Playfield.StartOnePlayerGame();
 
-        internal void StartTwoPlayerGame()
-        {
-            Focus();
+			//m_Playfield.SaveXML("Test");
+		}
 
-            m_Playfield = new Playfield();
+		internal void StartTwoPlayerGame()
+		{
+			Focus();
 
-            m_Playfield.StartTwoPlayerGame();
-        }
+			m_Playfield = new Playfield();
 
-        internal void StartFourPlayerGame()
-        {
-            Focus();
+			m_Playfield.StartTwoPlayerGame();
+		}
 
-            m_Playfield = new Playfield();
+		internal void StartFourPlayerGame()
+		{
+			Focus();
 
-            m_Playfield.StartFourPlayerGame();
-        }
+			m_Playfield = new Playfield();
 
-        public override void OnDraw(Graphics2D graphics2D)
-        {
-            GameImageSequence background = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "GameBackground");
-            graphics2D.Render(background.GetImageByIndex(0), 0, 0);
+			m_Playfield.StartFourPlayerGame();
+		}
 
-            m_Playfield.Draw(graphics2D);
+		public override void OnDraw(Graphics2D graphics2D)
+		{
+			GameImageSequence background = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "GameBackground");
+			graphics2D.Render(background.GetImageByIndex(0), 0, 0);
 
-            base.OnDraw(graphics2D);
-        }
+			m_Playfield.Draw(graphics2D);
 
-        public override void OnKeyDown(MatterHackers.Agg.UI.KeyEventArgs keyEvent)
-        {
-            foreach (Player aPlayer in m_Playfield.PlayerList)
-            {
-                aPlayer.KeyDown(keyEvent);
-            }
+			base.OnDraw(graphics2D);
+		}
 
-            if (keyEvent.Control && keyEvent.KeyCode == Keys.S)
-            {
-                m_Playfield.SaveXML("TestSave");
-            }
+		public override void OnKeyDown(MatterHackers.Agg.UI.KeyEventArgs keyEvent)
+		{
+			foreach (Player aPlayer in m_Playfield.PlayerList)
+			{
+				aPlayer.KeyDown(keyEvent);
+			}
 
-            base.OnKeyDown(keyEvent);
-        }
+			if (keyEvent.Control && keyEvent.KeyCode == Keys.S)
+			{
+				m_Playfield.SaveXML("TestSave");
+			}
 
-        public override void OnKeyUp(MatterHackers.Agg.UI.KeyEventArgs keyEvent)
-        {
-            foreach (Player aPlayer in m_Playfield.PlayerList)
-            {
-                aPlayer.KeyUp(keyEvent);
-            }
-            base.OnKeyUp(keyEvent);
-        }
+			base.OnKeyDown(keyEvent);
+		}
 
-        public void OnUpdate(double NumSecondsPassed)
-        {
-            m_Playfield.Update(NumSecondsPassed);
-        }
-    }
+		public override void OnKeyUp(MatterHackers.Agg.UI.KeyEventArgs keyEvent)
+		{
+			foreach (Player aPlayer in m_Playfield.PlayerList)
+			{
+				aPlayer.KeyUp(keyEvent);
+			}
+			base.OnKeyUp(keyEvent);
+		}
+
+		public void OnUpdate(double NumSecondsPassed)
+		{
+			m_Playfield.Update(NumSecondsPassed);
+		}
+	}
 }

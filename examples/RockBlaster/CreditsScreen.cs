@@ -1,50 +1,44 @@
-using System;
-using System.Collections.Generic;
-using MatterHackers.Agg;
-using MatterHackers.Agg.Image;
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.Agg.UI;
-
-using MatterHackers.Agg.Transform;
-
-using Gaming.Math;
 using Gaming.Game;
 using Gaming.Graphics;
+using MatterHackers.Agg;
+using MatterHackers.Agg.UI;
+using System;
 
 namespace RockBlaster
 {
-    /// <summary>
-    /// Description of CreditsMenu.
-    /// </summary>
-    public class CreditsMenu : GuiWidget
-    {
-        public delegate void CancelMenuEventHandler(GuiWidget button);
-        public event CancelMenuEventHandler CancelMenu;
+	/// <summary>
+	/// Description of CreditsMenu.
+	/// </summary>
+	public class CreditsMenu : GuiWidget
+	{
+		public delegate void CancelMenuEventHandler(GuiWidget button);
 
-        public CreditsMenu(RectangleDouble bounds)
-        {
-            BoundsRelativeToParent = bounds;
+		public event CancelMenuEventHandler CancelMenu;
 
-            GameImageSequence cancelButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "NumPlayersCancelButton");
-            Button cancelGameButton = new Button(400, 200, new ButtonViewThreeImage(cancelButtonSequence.GetImageByIndex(0), cancelButtonSequence.GetImageByIndex(1), cancelButtonSequence.GetImageByIndex(2)));
-            AddChild(cancelGameButton);
-            cancelGameButton.Click += new EventHandler(OnCancelMenuButton);
-        }
+		public CreditsMenu(RectangleDouble bounds)
+		{
+			BoundsRelativeToParent = bounds;
 
-        public override void OnDraw(Graphics2D graphics2D)
-        {
-            GameImageSequence menuBackground = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "CreditsScreen");
-            graphics2D.Render(menuBackground.GetImageByIndex(0), 0, 0);
+			GameImageSequence cancelButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "NumPlayersCancelButton");
+			Button cancelGameButton = new Button(400, 200, new ButtonViewThreeImage(cancelButtonSequence.GetImageByIndex(0), cancelButtonSequence.GetImageByIndex(1), cancelButtonSequence.GetImageByIndex(2)));
+			AddChild(cancelGameButton);
+			cancelGameButton.Click += new EventHandler(OnCancelMenuButton);
+		}
 
-            base.OnDraw(graphics2D);
-        }
+		public override void OnDraw(Graphics2D graphics2D)
+		{
+			GameImageSequence menuBackground = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "CreditsScreen");
+			graphics2D.Render(menuBackground.GetImageByIndex(0), 0, 0);
 
-        private void OnCancelMenuButton(object sender, EventArgs mouseEvent)
-        {
-            if (CancelMenu != null)
-            {
-                CancelMenu(this);
-            }
-        }
-    }
+			base.OnDraw(graphics2D);
+		}
+
+		private void OnCancelMenuButton(object sender, EventArgs mouseEvent)
+		{
+			if (CancelMenu != null)
+			{
+				CancelMenu(this);
+			}
+		}
+	}
 }

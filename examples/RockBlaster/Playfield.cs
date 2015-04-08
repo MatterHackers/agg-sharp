@@ -1,133 +1,128 @@
-//#define USE_GLSL
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Xml;
-using System.Xml.Schema;
-using System.Xml.Serialization;
-
+using Gaming.Game;
+using Gaming.Graphics;
 using MatterHackers.Agg;
-using MatterHackers.Agg.Image;
-using MatterHackers.Agg.VertexSource;
 using MatterHackers.Agg.UI;
 using MatterHackers.VectorMath;
 
-using Gaming.Math;
-using Gaming.Game;
-using Gaming.Graphics;
+//#define USE_GLSL
+using System;
+using System.Collections.Generic;
 
 namespace RockBlaster
 {
-    public class Playfield : GameObject
-    {
-        [GameDataList("RockList")]
-        private List<Entity> m_RockList = new List<Entity>();
+	public class Playfield : GameObject
+	{
+		[GameDataList("RockList")]
+		private List<Entity> m_RockList = new List<Entity>();
 
-        private List<Entity> m_SequenceEntityList = new List<Entity>();
+		private List<Entity> m_SequenceEntityList = new List<Entity>();
 
-        [GameData("PlayerList")]
-        private List<Player> m_PlayerList = new List<Player>();
+		[GameData("PlayerList")]
+		private List<Player> m_PlayerList = new List<Player>();
 
-        //Model3D m_Ship = new Model3D("..\\..\\GameData\\ShipTris.dae");
+		//Model3D m_Ship = new Model3D("..\\..\\GameData\\ShipTris.dae");
 
-        #region GameObjectStuff
-        public Playfield()
-        {
-        }
-        public static new GameObject Load(String PathName)
-        {
-            return GameObject.Load(PathName);
-        }
-        #endregion
+		#region GameObjectStuff
 
-        public List<Entity> RockList
-        {
-            get
-            {
-                return m_RockList;
-            }
-        }
+		public Playfield()
+		{
+		}
 
-        public List<Player> PlayerList
-        {
-            get
-            {
-                return m_PlayerList;
-            }
-        }
+		public static new GameObject Load(String PathName)
+		{
+			return GameObject.Load(PathName);
+		}
 
-        public void StartOnePlayerGame()
-        {
-            m_SequenceEntityList.Add(new SequenceEntity(new Vector2(20, 20)));
-            m_RockList.Add(new Rock(m_RockList, 40));
-            m_RockList.Add(new Rock(m_RockList, 40));
-            m_PlayerList.Add(new Player(0, 0, Keys.Z, Keys.X, Keys.OemPeriod, Keys.OemQuestion));
-            m_PlayerList[0].Position = new Vector2(Entity.GameWidth / 2, Entity.GameHeight / 2);
-        }
+		#endregion GameObjectStuff
 
-        internal void StartTwoPlayerGame()
-        {
-            m_SequenceEntityList.Add(new SequenceEntity(new Vector2(20, 20)));
-            m_RockList.Add(new Rock(m_RockList, 0));
-            m_RockList.Add(new Rock(m_RockList, 0));
-            m_RockList.Add(new Rock(m_RockList, 0));
+		public List<Entity> RockList
+		{
+			get
+			{
+				return m_RockList;
+			}
+		}
 
-            m_PlayerList.Add(new Player(0, 0, Keys.Z, Keys.X, Keys.V, Keys.B));
-            m_PlayerList[0].Position = new Vector2(Entity.GameWidth / 4, Entity.GameHeight / 2);
+		public List<Player> PlayerList
+		{
+			get
+			{
+				return m_PlayerList;
+			}
+		}
 
-            m_PlayerList.Add(new Player(1, 1, Keys.N, Keys.M, Keys.OemPeriod, Keys.OemQuestion));
-            m_PlayerList[1].Position = new Vector2(Entity.GameWidth / 4 * 3, Entity.GameHeight / 2);
-        }
+		public void StartOnePlayerGame()
+		{
+			m_SequenceEntityList.Add(new SequenceEntity(new Vector2(20, 20)));
+			m_RockList.Add(new Rock(m_RockList, 40));
+			m_RockList.Add(new Rock(m_RockList, 40));
+			m_PlayerList.Add(new Player(0, 0, Keys.Z, Keys.X, Keys.OemPeriod, Keys.OemQuestion));
+			m_PlayerList[0].Position = new Vector2(Entity.GameWidth / 2, Entity.GameHeight / 2);
+		}
 
-        internal void StartFourPlayerGame()
-        {
-            m_SequenceEntityList.Add(new SequenceEntity(new Vector2(20, 20)));
-            m_RockList.Add(new Rock(m_RockList, 0));
-            m_RockList.Add(new Rock(m_RockList, 0));
-            m_RockList.Add(new Rock(m_RockList, 0));
+		internal void StartTwoPlayerGame()
+		{
+			m_SequenceEntityList.Add(new SequenceEntity(new Vector2(20, 20)));
+			m_RockList.Add(new Rock(m_RockList, 0));
+			m_RockList.Add(new Rock(m_RockList, 0));
+			m_RockList.Add(new Rock(m_RockList, 0));
 
-            m_PlayerList.Add(new Player(0, -1, Keys.Z, Keys.X, Keys.V, Keys.B));
-            m_PlayerList[0].Position = new Vector2(Entity.GameWidth / 4, Entity.GameHeight / 4 * 3);
+			m_PlayerList.Add(new Player(0, 0, Keys.Z, Keys.X, Keys.V, Keys.B));
+			m_PlayerList[0].Position = new Vector2(Entity.GameWidth / 4, Entity.GameHeight / 2);
 
-            m_PlayerList.Add(new Player(1, -1, Keys.N, Keys.M, Keys.OemPeriod, Keys.OemQuestion));
-            m_PlayerList[1].Position = new Vector2(Entity.GameWidth / 4 * 3, Entity.GameHeight / 4 * 3);
+			m_PlayerList.Add(new Player(1, 1, Keys.N, Keys.M, Keys.OemPeriod, Keys.OemQuestion));
+			m_PlayerList[1].Position = new Vector2(Entity.GameWidth / 4 * 3, Entity.GameHeight / 2);
+		}
 
-            m_PlayerList.Add(new Player(2, 0, Keys.Q, Keys.Q, Keys.Q, Keys.Q));
-            m_PlayerList[2].Position = new Vector2(Entity.GameWidth / 4, Entity.GameHeight / 4);
+		internal void StartFourPlayerGame()
+		{
+			m_SequenceEntityList.Add(new SequenceEntity(new Vector2(20, 20)));
+			m_RockList.Add(new Rock(m_RockList, 0));
+			m_RockList.Add(new Rock(m_RockList, 0));
+			m_RockList.Add(new Rock(m_RockList, 0));
 
-            m_PlayerList.Add(new Player(3, 1, Keys.Q, Keys.Q, Keys.Q, Keys.Q));
-            m_PlayerList[3].Position = new Vector2(Entity.GameWidth / 4 * 3, Entity.GameHeight / 4);
-        }
+			m_PlayerList.Add(new Player(0, -1, Keys.Z, Keys.X, Keys.V, Keys.B));
+			m_PlayerList[0].Position = new Vector2(Entity.GameWidth / 4, Entity.GameHeight / 4 * 3);
 
-        public void Draw(Graphics2D currentRenderer)
-        {
-            foreach (Rock aRock in m_RockList)
-            {
-                aRock.Draw(currentRenderer);
-            }
+			m_PlayerList.Add(new Player(1, -1, Keys.N, Keys.M, Keys.OemPeriod, Keys.OemQuestion));
+			m_PlayerList[1].Position = new Vector2(Entity.GameWidth / 4 * 3, Entity.GameHeight / 4 * 3);
 
-            foreach (Player aPlayer in m_PlayerList)
-            {
-                aPlayer.DrawBullets(currentRenderer);
-            }
+			m_PlayerList.Add(new Player(2, 0, Keys.Q, Keys.Q, Keys.Q, Keys.Q));
+			m_PlayerList[2].Position = new Vector2(Entity.GameWidth / 4, Entity.GameHeight / 4);
 
-            foreach (SequenceEntity aSequenceEntity in m_SequenceEntityList)
-            {
-                aSequenceEntity.Draw(currentRenderer);
-            }
+			m_PlayerList.Add(new Player(3, 1, Keys.Q, Keys.Q, Keys.Q, Keys.Q));
+			m_PlayerList[3].Position = new Vector2(Entity.GameWidth / 4 * 3, Entity.GameHeight / 4);
+		}
 
-            foreach (Player aPlayer in m_PlayerList)
-            {
-                aPlayer.Draw(currentRenderer);
-            }
+		public void Draw(Graphics2D currentRenderer)
+		{
+			foreach (Rock aRock in m_RockList)
+			{
+				aRock.Draw(currentRenderer);
+			}
 
-            GameImageSequence hud = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), (m_PlayerList.Count).ToString() + "PlayerHUD");
-            currentRenderer.Render(hud.GetImageByIndex(0), 400, 300);
+			foreach (Player aPlayer in m_PlayerList)
+			{
+				aPlayer.DrawBullets(currentRenderer);
+			}
 
-            foreach (Player aPlayer in m_PlayerList)
-            {
-                aPlayer.DrawScore(currentRenderer);
-            }
+			foreach (SequenceEntity aSequenceEntity in m_SequenceEntityList)
+			{
+				aSequenceEntity.Draw(currentRenderer);
+			}
+
+			foreach (Player aPlayer in m_PlayerList)
+			{
+				aPlayer.Draw(currentRenderer);
+			}
+
+			GameImageSequence hud = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), (m_PlayerList.Count).ToString() + "PlayerHUD");
+			currentRenderer.Render(hud.GetImageByIndex(0), 400, 300);
+
+			foreach (Player aPlayer in m_PlayerList)
+			{
+				aPlayer.DrawScore(currentRenderer);
+			}
 #if false
             Gl.glMatrixMode(Gl.GL_PROJECTION);                                  // Select The Projection Matrix
             Gl.glLoadIdentity();                                                // Reset The Projection Matrix
@@ -136,7 +131,7 @@ namespace RockBlaster
 
             float scale = .08f;
             Gl.glLoadIdentity();                                                // Reset The Current Modelview Matrix
-            
+
             Gl.glLightf(Gl.GL_LIGHT0, Gl.GL_CONSTANT_ATTENUATION, 0.0f);
             Gl.glLightf(Gl.GL_LIGHT0, Gl.GL_LINEAR_ATTENUATION, 0.0f);
             Gl.glLightf(Gl.GL_LIGHT0, Gl.GL_QUADRATIC_ATTENUATION, 0.0002f);
@@ -164,7 +159,7 @@ namespace RockBlaster
             int vertexShader = Gl.glCreateShader(Gl.GL_VERTEX_SHADER);
             Gl.glShaderSource(vertexShader, vertexSource.Length, vertexSource, null);
             Gl.glCompileShader(vertexShader);
-            
+
             int goodCompile;
             Gl.glGetShaderiv(vertexShader, Gl.GL_COMPILE_STATUS, out goodCompile);
 
@@ -191,7 +186,7 @@ namespace RockBlaster
 
             Gl.glUseProgram(shaderProgram);
 #endif
-            //m_Ship.Render();
+			//m_Ship.Render();
 
 #if USE_GLSL
             Gl.glUseProgram(0);
@@ -201,129 +196,128 @@ namespace RockBlaster
             Gl.glDeleteShader(vertexShader);
             Gl.glDeleteProgram(shaderProgram);
 #endif
+		}
 
-        }
+		public void CollidePlayersWithOtherPlayersBullets()
+		{
+			foreach (Player aPlayer in m_PlayerList)
+			{
+				foreach (Player bPlayer in m_PlayerList)
+				{
+					if (aPlayer != bPlayer)
+					{
+						foreach (Bullet aBullet in aPlayer.m_BulletList)
+						{
+							Vector2 BulletRelBPlayer = aBullet.Position - bPlayer.Position;
+							double BothRadius = bPlayer.Radius + aBullet.Radius;
+							double BothRadiusSqrd = BothRadius * BothRadius;
+							if (BulletRelBPlayer.LengthSquared < BothRadiusSqrd)
+							{
+								Vector2 addVelocity = aBullet.Velocity;
+								addVelocity *= .7;
+								bPlayer.Velocity = bPlayer.Velocity + addVelocity;
+								bPlayer.m_LastPlayerToShot = aPlayer;
+								aBullet.GiveDamage();
+							}
+						}
+					}
+				}
+			}
+		}
 
-        public void CollidePlayersWithOtherPlayersBullets()
-        {
-            foreach (Player aPlayer in m_PlayerList)
-            {
-                foreach (Player bPlayer in m_PlayerList)
-                {
-                    if (aPlayer != bPlayer)
-                    {
-                        foreach (Bullet aBullet in aPlayer.m_BulletList)
-                        {
-                            Vector2 BulletRelBPlayer = aBullet.Position - bPlayer.Position;
-                            double BothRadius = bPlayer.Radius + aBullet.Radius;
-                            double BothRadiusSqrd = BothRadius * BothRadius;
-                            if (BulletRelBPlayer.LengthSquared < BothRadiusSqrd)
-                            {
-                                Vector2 addVelocity = aBullet.Velocity;
-                                addVelocity *= .7;
-                                bPlayer.Velocity = bPlayer.Velocity + addVelocity;
-                                bPlayer.m_LastPlayerToShot = aPlayer;
-                                aBullet.GiveDamage();
-                            }
-                        }
-                    }
-                }
-            }
-        }
+		public void CollideRocksAndPlayersAndBullets()
+		{
+			foreach (Player aPlayer in m_PlayerList)
+			{
+				foreach (Rock aRock in m_RockList)
+				{
+					{
+						Vector2 playerRelRock = aPlayer.Position - aRock.Position;
+						double BothRadius = aRock.Radius + aPlayer.Radius;
+						double BothRadiusSqrd = BothRadius * BothRadius;
+						if (playerRelRock.LengthSquared < BothRadiusSqrd)
+						{
+							aRock.TakeDamage(aPlayer.GiveDamage(), aPlayer);
+							aPlayer.TakeDamage(20, null);
+						}
+					}
 
-        public void CollideRocksAndPlayersAndBullets()
-        {
-            foreach (Player aPlayer in m_PlayerList)
-            {
-                foreach (Rock aRock in m_RockList)
-                {
-                    {
-                        Vector2 playerRelRock = aPlayer.Position - aRock.Position;
-                        double BothRadius = aRock.Radius + aPlayer.Radius;
-                        double BothRadiusSqrd = BothRadius * BothRadius;
-                        if (playerRelRock.LengthSquared < BothRadiusSqrd)
-                        {
-                            aRock.TakeDamage(aPlayer.GiveDamage(), aPlayer);
-                            aPlayer.TakeDamage(20, null);
-                        }
-                    }
+					foreach (Bullet aBullet in aPlayer.m_BulletList)
+					{
+						Vector2 BulletRelRock = aBullet.Position - aRock.Position;
+						double BothRadius = aRock.Radius + aBullet.Radius;
+						double BothRadiusSqrd = BothRadius * BothRadius;
+						if (BulletRelRock.LengthSquared < BothRadiusSqrd)
+						{
+							aRock.TakeDamage(aBullet.GiveDamage(), aPlayer);
+							if (m_PlayerList.Count == 1)
+							{
+								aPlayer.m_Score += 2;
+							}
+						}
+					}
+				}
+			}
+		}
 
-                    foreach (Bullet aBullet in aPlayer.m_BulletList)
-                    {
-                        Vector2 BulletRelRock = aBullet.Position - aRock.Position;
-                        double BothRadius = aRock.Radius + aBullet.Radius;
-                        double BothRadiusSqrd = BothRadius * BothRadius;
-                        if (BulletRelRock.LengthSquared < BothRadiusSqrd)
-                        {
-                            aRock.TakeDamage(aBullet.GiveDamage(), aPlayer);
-                            if (m_PlayerList.Count == 1)
-                            {
-                                aPlayer.m_Score += 2;
-                            }
-                        }
-                    }
-                }
-            }
-        }
+		protected void RemoveDeadStuff(List<Entity> listToRemoveFrom)
+		{
+			List<Entity> RemoveList = new List<Entity>();
 
-        protected void RemoveDeadStuff(List<Entity> listToRemoveFrom)
-        {
-            List<Entity> RemoveList = new List<Entity>();
+			foreach (Entity aEntity in listToRemoveFrom)
+			{
+				if (aEntity.Damage >= aEntity.MaxDamage)
+				{
+					RemoveList.Add(aEntity);
+				}
+			}
 
-            foreach (Entity aEntity in listToRemoveFrom)
-            {
-                if (aEntity.Damage >= aEntity.MaxDamage)
-                {
-                    RemoveList.Add(aEntity);
-                }
-            }
+			foreach (Entity aEntity in RemoveList)
+			{
+				aEntity.Destroying();
+				listToRemoveFrom.Remove(aEntity);
+			}
+		}
 
-            foreach (Entity aEntity in RemoveList)
-            {
-                aEntity.Destroying();
-                listToRemoveFrom.Remove(aEntity);
-            }
-        }
+		public void Update(double NumSecondsPassed)
+		{
+			int numBigRocks = 0;
+			foreach (Rock aRock in m_RockList)
+			{
+				aRock.Update(NumSecondsPassed);
+				if (aRock.scaleRatio == 1)
+				{
+					numBigRocks++;
+				}
+			}
 
-        public void Update(double NumSecondsPassed)
-        {
-            int numBigRocks = 0;
-            foreach (Rock aRock in m_RockList)
-            {
-                aRock.Update(NumSecondsPassed);
-                if (aRock.scaleRatio == 1)
-                {
-                    numBigRocks++;
-                }
-            }
+			if (m_RockList.Count < 20 && numBigRocks < 1 && m_PlayerList.Count > 1)
+			{
+				m_RockList.Add(new Rock(m_RockList, 0));
+			}
 
-            if (m_RockList.Count < 20 && numBigRocks < 1 && m_PlayerList.Count > 1)
-            {
-                m_RockList.Add(new Rock(m_RockList, 0));
-            }
+			foreach (SequenceEntity aSequenceEntity in m_SequenceEntityList)
+			{
+				aSequenceEntity.Update(NumSecondsPassed);
+			}
 
-            foreach(SequenceEntity aSequenceEntity in m_SequenceEntityList)
-            {
-                aSequenceEntity.Update(NumSecondsPassed);
-            }
+			foreach (Player aPlayer in m_PlayerList)
+			{
+				aPlayer.Update(NumSecondsPassed);
+			}
 
-            foreach (Player aPlayer in m_PlayerList)
-            {
-                aPlayer.Update(NumSecondsPassed);
-            }
+			RemoveDeadStuff(m_RockList);
 
-            RemoveDeadStuff(m_RockList);
+			CollideRocksAndPlayersAndBullets();
 
-            CollideRocksAndPlayersAndBullets();
+			CollidePlayersWithOtherPlayersBullets();
 
-            CollidePlayersWithOtherPlayersBullets();
-
-            RemoveDeadStuff(m_RockList);
-            foreach (Player aPlayer in m_PlayerList)
-            {
-                RemoveDeadStuff(aPlayer.m_BulletList);
-            }
-            RemoveDeadStuff(m_SequenceEntityList);
-        }
-    }
+			RemoveDeadStuff(m_RockList);
+			foreach (Player aPlayer in m_PlayerList)
+			{
+				RemoveDeadStuff(aPlayer.m_BulletList);
+			}
+			RemoveDeadStuff(m_SequenceEntityList);
+		}
+	}
 }

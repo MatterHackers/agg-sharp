@@ -3,13 +3,13 @@ Copyright (c) 2013, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met: 
+modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer. 
+   list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution. 
+   and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -23,68 +23,71 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
-of the authors and should not be interpreted as representing official policies, 
+of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.IO;
-using System.Text;
-
 using MatterHackers.Agg;
-
 using MatterHackers.Csg;
+using MatterHackers.Csg.Operations;
 using MatterHackers.Csg.Solids;
 using MatterHackers.Csg.Transform;
-using MatterHackers.Csg.Operations;
-using MatterHackers.Csg.Processors;
-using MatterHackers.VectorMath;
 using MatterHackers.RayTracer;
 using MatterHackers.RayTracer.Traceable;
+using MatterHackers.VectorMath;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace MatterHackers.DataConverters3D
 {
-    public class CsgToRayTraceable
-    {
-        public static MaterialAbstract DefaultMaterial = new SolidMaterial(RGBA_Floats.Green, 0, 0, 0);
+	public class CsgToRayTraceable
+	{
+		public static MaterialAbstract DefaultMaterial = new SolidMaterial(RGBA_Floats.Green, 0, 0, 0);
 
-        public CsgToRayTraceable()
-        {
-        }
+		public CsgToRayTraceable()
+		{
+		}
 
-        #region Visitor Patern Functions
+		#region Visitor Patern Functions
+
 		public IPrimitive GetIPrimitiveRecursive(CsgObject objectToProcess)
-        {
-            throw new Exception("You must wirte the specialized function for this type.");
-        }
+		{
+			throw new Exception("You must wirte the specialized function for this type.");
+		}
 
-        #region PrimitiveWrapper
+		#region PrimitiveWrapper
+
 		public IPrimitive GetIPrimitiveRecursive(CsgObjectWrapper objectToProcess)
-        {
+		{
 			return GetIPrimitiveRecursive((dynamic)objectToProcess.Root);
-        }
-        #endregion
+		}
 
-        #region Box
+		#endregion PrimitiveWrapper
+
+		#region Box
+
 		public IPrimitive GetIPrimitiveRecursive(BoxPrimitive objectToProcess)
-        {
-            return new BoxShape(Vector3.Zero, objectToProcess.Size, DefaultMaterial);
-        }
-        #endregion
+		{
+			return new BoxShape(Vector3.Zero, objectToProcess.Size, DefaultMaterial);
+		}
 
-        #region Cylinder
+		#endregion Box
+
+		#region Cylinder
+
 		public IPrimitive GetIPrimitiveRecursive(Cylinder.CylinderPrimitive objectToProcess)
-        {
-            return new CylinderShape(objectToProcess.Radius1, objectToProcess.Height, DefaultMaterial);
-        }
-        #endregion
+		{
+			return new CylinderShape(objectToProcess.Radius1, objectToProcess.Height, DefaultMaterial);
+		}
 
-        #region Sphere
+		#endregion Cylinder
+
+		#region Sphere
+
 		public IPrimitive GetIPrimitiveRecursive(Sphere objectToProcess)
-        {
-            throw new NotImplementedException();
+		{
+			throw new NotImplementedException();
 #if false
             string info = "";
             if (objectToProcess.Name.Length > 0 && (objectToProcess.Name[0] == '#' || objectToProcess.Name[0] == '%'))
@@ -95,95 +98,107 @@ namespace MatterHackers.DataConverters3D
             info += "sphere(" + objectToProcess.Radius.ToString() + ");" + AddNameAsComment(objectToProcess);
             return ApplyIndent(info, level);
 #endif
-        }
-        #endregion
+		}
 
-        #region Transform
+		#endregion Sphere
+
+		#region Transform
+
 		public IPrimitive GetIPrimitiveRecursive(TransformBase objectToProcess)
-        {
+		{
 			return new Transform(GetIPrimitiveRecursive((dynamic)objectToProcess.ObjectToTransform), objectToProcess.ActiveTransform);
-        }
-        #endregion
+		}
 
-        #region Union
+		#endregion Transform
+
+		#region Union
+
 		public IPrimitive GetIPrimitiveRecursive(Union objectToProcess)
-        {
+		{
 			List<IPrimitive> items = new List<IPrimitive>();
-            foreach (CsgObject copiedObject in objectToProcess.AllObjects)
-            {
+			foreach (CsgObject copiedObject in objectToProcess.AllObjects)
+			{
 				items.Add(GetIPrimitiveRecursive((dynamic)copiedObject));
-            }
+			}
 
-            return BoundingVolumeHierarchy.CreateNewHierachy(items);
-        }
-        #endregion
+			return BoundingVolumeHierarchy.CreateNewHierachy(items);
+		}
 
-        #region Difference
+		#endregion Union
+
+		#region Difference
+
 		public IPrimitive GetIPrimitiveRecursive(MatterHackers.Csg.Operations.Difference objectToProcess)
-        {
+		{
 			List<IPrimitive> subtractItems = new List<IPrimitive>();
-            foreach (CsgObject copiedObject in objectToProcess.AllSubtracts)
-            {
+			foreach (CsgObject copiedObject in objectToProcess.AllSubtracts)
+			{
 				subtractItems.Add(GetIPrimitiveRecursive((dynamic)copiedObject));
-            }
+			}
 
 			return new MatterHackers.RayTracer.Traceable.Difference(GetIPrimitiveRecursive((dynamic)objectToProcess.Primary), BoundingVolumeHierarchy.CreateNewHierachy(subtractItems));
-        }
-        #endregion
+		}
 
-        #region Intersection
+		#endregion Difference
+
+		#region Intersection
+
 		public IPrimitive GetIPrimitiveRecursive(Intersection objectToProcess)
-        {
-            throw new NotImplementedException();
-            //return ApplyIndent("intersection()" + AddNameAsComment(objectToProcess) + "\n{\n" + GetRayTraceableRecursive((dynamic)objectToProcess.a, level + 1) + "\n" + GetRayTraceableRecursive((dynamic)objectToProcess.b, level + 1) + "\n}", level);
-        }
-        #endregion
-        #endregion
+		{
+			throw new NotImplementedException();
+			//return ApplyIndent("intersection()" + AddNameAsComment(objectToProcess) + "\n{\n" + GetRayTraceableRecursive((dynamic)objectToProcess.a, level + 1) + "\n" + GetRayTraceableRecursive((dynamic)objectToProcess.b, level + 1) + "\n}", level);
+		}
 
-        #region SCAD Formating Functions
-        protected string AddNameAsComment(CsgObject objectToProcess)
-        {
-            if (objectToProcess.Name != "")
-            {
-                return " // " + objectToProcess.Name;
-            }
+		#endregion Intersection
 
-            return "";
-        }
+		#endregion Visitor Patern Functions
 
-        protected string ApplyIndent(string source, int level)
-        {
-            if (level > 0)
-            {
-                StringBuilder final = new StringBuilder();
+		#region SCAD Formating Functions
 
-                string[] splitOnReturn = source.Split('\n');
-                for (int i = 0; i < splitOnReturn.Length; i++)
-                {
-                    final.Append(Spaces(4));
-                    final.Append(splitOnReturn[i]);
-                    if (i < splitOnReturn.Length - 1)
-                    {
-                        final.Append('\n');
-                    }
-                }
+		protected string AddNameAsComment(CsgObject objectToProcess)
+		{
+			if (objectToProcess.Name != "")
+			{
+				return " // " + objectToProcess.Name;
+			}
 
-                return final.ToString();
-            }
+			return "";
+		}
 
-            return source;
-        }
+		protected string ApplyIndent(string source, int level)
+		{
+			if (level > 0)
+			{
+				StringBuilder final = new StringBuilder();
 
-        string Spaces(int num)
-        {
-            StringBuilder spaces = new StringBuilder();
-            for (int i = 0; i < num; i++)
-            {
-                spaces.Append(" ");
-            }
+				string[] splitOnReturn = source.Split('\n');
+				for (int i = 0; i < splitOnReturn.Length; i++)
+				{
+					final.Append(Spaces(4));
+					final.Append(splitOnReturn[i]);
+					if (i < splitOnReturn.Length - 1)
+					{
+						final.Append('\n');
+					}
+				}
 
-            return spaces.ToString();
-        }
-        #endregion
-    }
+				return final.ToString();
+			}
+
+			return source;
+		}
+
+		private string Spaces(int num)
+		{
+			StringBuilder spaces = new StringBuilder();
+			for (int i = 0; i < num; i++)
+			{
+				spaces.Append(" ");
+			}
+
+			return spaces.ToString();
+		}
+
+		#endregion SCAD Formating Functions
+	}
 }

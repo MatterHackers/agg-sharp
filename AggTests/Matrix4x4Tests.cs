@@ -3,19 +3,17 @@
  * User: lbrubaker
  * Date: 3/26/2010
  * Time: 4:41 PM
- * 
+ *
  * To change this template use Tools | Options | Coding | Edit Standard Headers.
  */
-using System;
+
 using NUnit.Framework;
-using MatterHackers.Agg;
-using Gaming.Math;
 
 namespace MatterHackers.Agg.Tests
 {
-    [TestFixture]
+	[TestFixture]
 	public class Matrix4x4Tests
-    {
+	{
 #if false
         System.Random TempRand = new Random();
 
@@ -86,12 +84,12 @@ namespace MatterHackers.Agg.Tests
             ColumnMajorTransLationMatrix.Translate(.2342f, 234234.734f, 223.324f);
             Matrix4X4 ColumnMajorAccumulatedMatrix = Matrix4X4.Identity;
             ColumnMajorAccumulatedMatrix = ColumnMajorRotationMatrix * ColumnMajorTransLationMatrix;
-            double[] KnownMatrixFormFloats = 
+            double[] KnownMatrixFormFloats =
 	        {
-		        .972631f,	0.0f,		-.232357f, 0.0f, 
+		        .972631f,	0.0f,		-.232357f, 0.0f,
 		        0.0f,		1.0f,		0.0f,		0.0f,
-		        .232357f,	0.0f,		.972631f,	0.0f, 
-		        .2342f,		234234.73f,	223.324f,	1.0f 
+		        .232357f,	0.0f,		.972631f,	0.0f,
+		        .2342f,		234234.73f,	223.324f,	1.0f
 	        };
             Matrix4X4 KnownMatrixForm = Matrix4X4.Identity;
             KnownMatrixForm.SetElements(KnownMatrixFormFloats);
@@ -221,12 +219,12 @@ namespace MatterHackers.Agg.Tests
 	        // Test the PrepareMatrixFromPositionAndDirection function.
             Matrix4X4 TestA = Matrix4X4.Identity;
             TestA.PrepareMatrixFromPositionAndDirection(new Vector3(1.0f, 2.0f, 3.0f), new Vector3(1.0f, 0.0f, 1.0f));
-	        double[] TestACorrectResultFloats = 
+	        double[] TestACorrectResultFloats =
 	        {
-		        .7073f,		0.0f,		-.7073f,	0.0f, 
+		        .7073f,		0.0f,		-.7073f,	0.0f,
 		        .7072f,		0.0f,		.7072f,		0.0f,
-		        0.0f,		-1.0f,		0.0f,		0.0f, 
-		        1.0f,		2.0f,		3.0f,		1.0f 
+		        0.0f,		-1.0f,		0.0f,		0.0f,
+		        1.0f,		2.0f,		3.0f,		1.0f
 	        };
             Matrix4X4 TestACorrectResult = Matrix4X4.Identity;
 	        TestACorrectResult.SetElements(TestACorrectResultFloats);
@@ -234,17 +232,17 @@ namespace MatterHackers.Agg.Tests
 
             Matrix4X4 TestB = Matrix4X4.Identity;
             TestB.PrepareMatrixFromPositionAndDirection(new Vector3(1.0f, 2.0f, 3.0f), new Vector3(1.0f, 0.0f, 0.01f));
-	        double[] TestBCorrectResultFloats = 
+	        double[] TestBCorrectResultFloats =
 	        {
-		        0.0f,		1.0f,		0.0f,		0.0f, 
+		        0.0f,		1.0f,		0.0f,		0.0f,
 		        1.0f,		0.0f,		.0099f,		0.0f,
-		        0.0099f,	0.0f,		-1.0f,		0.0f, 
-		        1.0f,		2.0f,		3.0f,		1.0f 
+		        0.0099f,	0.0f,		-1.0f,		0.0f,
+		        1.0f,		2.0f,		3.0f,		1.0f
 	        };
             Matrix4X4 TestBCorrectResult = Matrix4X4.Identity;
 	        TestBCorrectResult.SetElements(TestBCorrectResultFloats);
 	        Assert.IsTrue(TestBCorrectResult.Equals(TestB, .01f));
         }
 #endif
-    }
+	}
 }
