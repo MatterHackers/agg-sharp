@@ -33,13 +33,11 @@ namespace MatterHackers.Agg
 	//===================================================================gray8
 	public struct gray8
 	{
-		private const int base_shift = 8;
-		private const uint base_scale = (uint)(1 << base_shift);
 		private const uint base_mask = base_scale - 1;
-
-		private byte v;
+		private const uint base_scale = (uint)(1 << base_shift);
+		private const int base_shift = 8;
 		private byte a;
-
+		private byte v;
 		//--------------------------------------------------------------------
 		public gray8(uint v_)
 			: this(v_, (uint)base_mask)
@@ -49,13 +47,6 @@ namespace MatterHackers.Agg
 		public gray8(uint v_, uint a_)
 		{
 			v = (byte)(v_);
-			a = (byte)(a_);
-		}
-
-		//--------------------------------------------------------------------
-		private gray8(gray8 c, uint a_)
-		{
-			v = (c.v);
 			a = (byte)(a_);
 		}
 
@@ -88,16 +79,39 @@ namespace MatterHackers.Agg
 		}
 
 		//--------------------------------------------------------------------
+		private gray8(gray8 c, uint a_)
+		{
+			v = (c.v);
+			a = (byte)(a_);
+		}
+		//--------------------------------------------------------------------
 		public void clear()
 		{
 			v = a = 0;
 		}
 
 		//--------------------------------------------------------------------
-		public gray8 transparent()
+		public gray8 demultiply()
 		{
-			a = 0;
+			if (a == (int)base_mask) return this;
+			if (a == 0)
+			{
+				v = 0;
+				return this;
+			}
+			int v_ = ((int)(v) * (int)base_mask) / a;
+			v = (byte)((v_ > (int)base_mask) ? (byte)base_mask : v_);
 			return this;
+		}
+
+		//--------------------------------------------------------------------
+		public gray8 gradient(gray8 c, double k)
+		{
+			gray8 ret;
+			int ik = agg_basics.uround(k * (int)base_scale);
+			ret.v = (byte)((int)(v) + ((((int)(c.v) - v) * ik) >> base_shift));
+			ret.a = (byte)((int)(a) + ((((int)(c.a) - a) * ik) >> base_shift));
+			return ret;
 		}
 
 		//--------------------------------------------------------------------
@@ -143,29 +157,11 @@ namespace MatterHackers.Agg
 		}
 
 		//--------------------------------------------------------------------
-		public gray8 demultiply()
+		public gray8 transparent()
 		{
-			if (a == (int)base_mask) return this;
-			if (a == 0)
-			{
-				v = 0;
-				return this;
-			}
-			int v_ = ((int)(v) * (int)base_mask) / a;
-			v = (byte)((v_ > (int)base_mask) ? (byte)base_mask : v_);
+			a = 0;
 			return this;
 		}
-
-		//--------------------------------------------------------------------
-		public gray8 gradient(gray8 c, double k)
-		{
-			gray8 ret;
-			int ik = agg_basics.uround(k * (int)base_scale);
-			ret.v = (byte)((int)(v) + ((((int)(c.v) - v) * ik) >> base_shift));
-			ret.a = (byte)((int)(a) + ((((int)(c.a) - a) * ik) >> base_shift));
-			return ret;
-		}
-
 		/*
 		//--------------------------------------------------------------------
 		void add(gray8 c, int cover)
