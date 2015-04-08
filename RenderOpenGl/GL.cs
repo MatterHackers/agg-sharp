@@ -6,6 +6,7 @@ using System.Collections.Generic;
 #else
 using OpenTK.Graphics.ES11;
 using MatterHackers.VectorMath;
+using MatterHackers.Agg;
 #endif
 
 namespace MatterHackers.RenderOpenGl.OpenGl
