@@ -110,8 +110,8 @@ namespace MatterHackers.GCodeVisualizer
 		{
 			get
 			{
-				// We don't know, so we always return 0.
-				return 0;
+				// We don't know, so we always return -1 used to identify as streaming.
+				return -1;
 			}
 		}
 
