@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.Agg.Image;
 using System;
+using System.IO;
 
 namespace MatterHackers.Agg.PlatformAbstract
 {
@@ -40,6 +41,11 @@ namespace MatterHackers.Agg.PlatformAbstract
 		}
 
 		public virtual bool LoadImageData(String filename, ImageBuffer destImage)
+		{
+			throw new Exception("You must implement this in an inherited class.");
+		}
+
+		public virtual bool LoadImageData(Stream stream, ImageBuffer destImage)
 		{
 			throw new Exception("You must implement this in an inherited class.");
 		}

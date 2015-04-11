@@ -75,6 +75,12 @@ namespace MatterHackers.Agg.Image
 			return false;
 		}
 
+		public override bool LoadImageData(Stream stream, ImageBuffer destImage)
+		{
+			Bitmap m_WidowsBitmap = new Bitmap(stream);
+			return ConvertBitmapToImage(destImage, m_WidowsBitmap);
+		}
+
 		public override bool LoadImageData(String fileName, ImageBuffer destImage)
 		{
 			if (System.IO.File.Exists(fileName))

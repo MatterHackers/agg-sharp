@@ -67,6 +67,11 @@ namespace MatterHackers.Agg.PlatformAbstract
 			return AvailableImageIOPlugin.LoadImageData(fileName, destImage);
 		}
 
+		static public bool LoadImageData(Stream stream, ImageBuffer destImage)
+		{
+			return AvailableImageIOPlugin.LoadImageData(stream, destImage);
+		}
+
 		static public bool LoadImageData(String filename, ImageBufferFloat destImage)
 		{
 			return AvailableImageIOPlugin.LoadImageData(filename, destImage);
