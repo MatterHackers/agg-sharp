@@ -127,18 +127,13 @@ namespace MatterHackers.Agg.UI
 		{
 			Invalidate(); // do it before and after in case it changes size.
 			LocalBounds = printer.LocalBounds;
-			if (Text == "")
+			if (Text == "" || LocalBounds.Width < 1)
 			{
 				printer.Text = " ";
 				LocalBounds = printer.LocalBounds;
 				printer.Text = "";
 			}
-			if (LocalBounds.Width < 1)
-			{
-				printer.Text = " ";
-				LocalBounds = printer.LocalBounds;
-				printer.Text = "";
-			}
+
 			Invalidate();
 		}
 
