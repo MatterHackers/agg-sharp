@@ -9,52 +9,16 @@ namespace MatterHackers.Agg
 {
 	public class FileSystemStaticData : IStaticData
 	{
-		private string MapPath(string path)
-		{
-			string staticDataPath = Directory.Exists("StaticData") ? "StaticData" : Path.Combine("..", "..", "StaticData");
-			return Path.Combine(staticDataPath, path);
-		}
+		private static Dictionary<string, ImageBuffer> cachedImages = new Dictionary<string, ImageBuffer>();
 
-		public string ReadAllText(string path)
+		public bool DirectoryExists(string path)
 		{
-			return File.ReadAllText(MapPath(path));
-		}
-
-		public string[] ReadAllLines(string path)
-		{
-			return File.ReadLines(MapPath(path)).ToArray();
-		}
-
-		public Stream OpenSteam(string path)
-		{
-			return File.OpenRead(MapPath(path));
-		}
-
-		public void LoadImage(string path, ImageBuffer destImage)
-		{
-			using (var imageStream = OpenSteam(path))
-			{
-				var bitmap = new Bitmap(imageStream);
-				ImageIOWindowsPlugin.ConvertBitmapToImage(destImage, bitmap);
-			}
-		}
-
-		public ImageBuffer LoadImage(string path)
-		{
-			ImageBuffer temp = new ImageBuffer();
-			LoadImage(path, temp);
-
-			return temp;
+			return Directory.Exists(MapPath(path));
 		}
 
 		public bool FileExists(string path)
 		{
 			return File.Exists(MapPath(path));
-		}
-
-		public bool DirectoryExists(string path)
-		{
-			return Directory.Exists(MapPath(path));
 		}
 
 		public IEnumerable<string> GetDirectories(string path)
@@ -85,6 +49,57 @@ namespace MatterHackers.Agg
 		public void LoadIcon(string path, ImageBuffer buffer)
 		{
 			LoadImage(Path.Combine("Icons", path), buffer);
+		}
+
+		public void LoadImage(string path, ImageBuffer destImage)
+		{
+			ImageBuffer cachedImage = null;
+			if (!cachedImages.TryGetValue(path, out cachedImage))
+			{
+				using (var imageStream = OpenSteam(path))
+				{
+					var bitmap = new Bitmap(imageStream);
+					cachedImage = new ImageBuffer();
+					ImageIOWindowsPlugin.ConvertBitmapToImage(cachedImage, bitmap);
+				}
+				if (cachedImage.Width < 200 && cachedImage.Height < 200)
+				{
+					// only cache relatively small images
+					cachedImages.Add(path, cachedImage);
+				}
+			}
+
+			destImage.Allocate(cachedImage.Width, cachedImage.Height, cachedImage.StrideInBytesAbs(), cachedImage.BitDepth);
+			destImage.CopyFrom(cachedImage);
+		}
+
+		public ImageBuffer LoadImage(string path)
+		{
+			ImageBuffer temp = new ImageBuffer();
+			LoadImage(path, temp);
+
+			return temp;
+		}
+
+		public Stream OpenSteam(string path)
+		{
+			return File.OpenRead(MapPath(path));
+		}
+
+		public string[] ReadAllLines(string path)
+		{
+			return File.ReadLines(MapPath(path)).ToArray();
+		}
+
+		public string ReadAllText(string path)
+		{
+			return File.ReadAllText(MapPath(path));
+		}
+
+		private string MapPath(string path)
+		{
+			string staticDataPath = Directory.Exists("StaticData") ? "StaticData" : Path.Combine("..", "..", "StaticData");
+			return Path.Combine(staticDataPath, path);
 		}
 	}
 }
