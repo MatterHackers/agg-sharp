@@ -70,6 +70,7 @@ namespace MatterHackers.Agg
 			}
 
 			destImage.Allocate(cachedImage.Width, cachedImage.Height, cachedImage.StrideInBytesAbs(), cachedImage.BitDepth);
+			destImage.SetRecieveBlender(cachedImage.GetRecieveBlender());
 			destImage.CopyFrom(cachedImage);
 		}
 
