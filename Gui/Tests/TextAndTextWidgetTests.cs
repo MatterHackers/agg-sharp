@@ -40,35 +40,85 @@ namespace MatterHackers.Agg.UI.Tests
 		public bool saveImagesForDebug;
 
 		[Test]
+		public void TextWidgetAutoSizeTest()
+		{
+			// resize works on text widgets
+			{
+				TextWidget textItem = new TextWidget("test Item", 10, 10);
+				textItem.AutoExpandBoundsToText = true;
+
+				double origWidth = textItem.Width;
+				textItem.Text = "test Items";
+				double newlineWidth = textItem.Width;
+				Assert.IsTrue(newlineWidth > origWidth);
+
+				textItem.Text = "test Item";
+				double backToOrignWidth = textItem.Width;
+				Assert.IsTrue(backToOrignWidth == origWidth);
+
+
+				double origHeight = textItem.Height;
+				textItem.Text = "test\nItem";
+				double newlineHeight = textItem.Height;
+				textItem.Text = "test Item";
+				double backToOrignHeight = textItem.Height;
+
+				Assert.IsTrue(backToOrignHeight == origHeight);
+			}
+		}
+
+		[Test]
 		public void TextWidgetVisibleTest()
 		{
-			GuiWidget rectangleWidget = new GuiWidget(100, 50);
-			TextEditWidget itemToAdd = new TextEditWidget("test Item", 10, 10);
-			rectangleWidget.AddChild(itemToAdd);
-			rectangleWidget.DoubleBuffer = true;
-			rectangleWidget.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
-			rectangleWidget.OnDraw(rectangleWidget.BackBuffer.NewGraphics2D());
-
-			ImageBuffer textOnly = new ImageBuffer(75, 20, 32, new BlenderBGRA());
-			textOnly.NewGraphics2D().Clear(RGBA_Bytes.White);
-
-#if true
-			TypeFacePrinter stringPrinter = new TypeFacePrinter("test Item", 12);
-			IVertexSource offsetText = new VertexSourceApplyTransform(stringPrinter, Affine.NewTranslation(1, -stringPrinter.LocalBounds.Bottom));
-			textOnly.NewGraphics2D().Render(offsetText, RGBA_Bytes.Black);
-#else
-            textOnly.NewGraphics2D().DrawString("test Item", 1, 1);
-#endif
-
-			if (saveImagesForDebug)
 			{
-				ImageTgaIO.Save(rectangleWidget.BackBuffer, "-rectangleWidget.tga");
-				//ImageTgaIO.Save(itemToAdd.Children[0].BackBuffer, "-internalTextWidget.tga");
-				ImageTgaIO.Save(textOnly, "-textOnly.tga");
+				GuiWidget rectangleWidget = new GuiWidget(100, 50);
+				TextWidget itemToAdd = new TextWidget("test Item", 10, 10);
+				rectangleWidget.AddChild(itemToAdd);
+				rectangleWidget.DoubleBuffer = true;
+				rectangleWidget.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+				rectangleWidget.OnDraw(rectangleWidget.BackBuffer.NewGraphics2D());
+
+				ImageBuffer textOnly = new ImageBuffer(75, 20, 32, new BlenderBGRA());
+				textOnly.NewGraphics2D().Clear(RGBA_Bytes.White);
+
+				textOnly.NewGraphics2D().DrawString("test Item", 1, 1);
+
+				if (saveImagesForDebug)
+				{
+					ImageTgaIO.Save(rectangleWidget.BackBuffer, "-rectangleWidget.tga");
+					//ImageTgaIO.Save(itemToAdd.Children[0].BackBuffer, "-internalTextWidget.tga");
+					ImageTgaIO.Save(textOnly, "-textOnly.tga");
+				}
+
+				Assert.IsTrue(rectangleWidget.BackBuffer.FindLeastSquaresMatch(textOnly, 1), "TextWidgets need to be drawing.");
+				rectangleWidget.Close();
 			}
 
-			Assert.IsTrue(rectangleWidget.BackBuffer.FindLeastSquaresMatch(textOnly, 1), "TextWidgets need to be drawing.");
-			rectangleWidget.Close();
+			{
+				GuiWidget rectangleWidget = new GuiWidget(100, 50);
+				TextEditWidget itemToAdd = new TextEditWidget("test Item", 10, 10);
+				rectangleWidget.AddChild(itemToAdd);
+				rectangleWidget.DoubleBuffer = true;
+				rectangleWidget.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+				rectangleWidget.OnDraw(rectangleWidget.BackBuffer.NewGraphics2D());
+
+				ImageBuffer textOnly = new ImageBuffer(75, 20, 32, new BlenderBGRA());
+				textOnly.NewGraphics2D().Clear(RGBA_Bytes.White);
+
+				TypeFacePrinter stringPrinter = new TypeFacePrinter("test Item", 12);
+				IVertexSource offsetText = new VertexSourceApplyTransform(stringPrinter, Affine.NewTranslation(1, -stringPrinter.LocalBounds.Bottom));
+				textOnly.NewGraphics2D().Render(offsetText, RGBA_Bytes.Black);
+
+				if (saveImagesForDebug)
+				{
+					ImageTgaIO.Save(rectangleWidget.BackBuffer, "-rectangleWidget.tga");
+					//ImageTgaIO.Save(itemToAdd.Children[0].BackBuffer, "-internalTextWidget.tga");
+					ImageTgaIO.Save(textOnly, "-textOnly.tga");
+				}
+
+				Assert.IsTrue(rectangleWidget.BackBuffer.FindLeastSquaresMatch(textOnly, 1), "TextWidgets need to be drawing.");
+				rectangleWidget.Close();
+			}
 		}
 	}
 }

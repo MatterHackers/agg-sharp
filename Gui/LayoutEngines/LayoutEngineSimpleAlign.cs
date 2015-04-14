@@ -67,15 +67,15 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public void DoFitToChildrenVertical(GuiWidget widgetToAdjust, ref bool sizeWasChanged)
+		public void DoFitToChildrenVertical(GuiWidget widgetToAdjustBounds, ref bool sizeWasChanged)
 		{
-			if (widgetToAdjust.VAnchorIsSet(VAnchor.FitToChildren))
+			if (widgetToAdjustBounds.VAnchorIsSet(VAnchor.FitToChildren))
 			{
 				double heightToMatchParent = 0;
-				if (widgetToAdjust.Parent != null)
+				if (widgetToAdjustBounds.Parent != null)
 				{
 					Vector2 newOriginRelParent;
-					if (!GetOriginAndHeightForChild(widgetToAdjust.Parent, widgetToAdjust, out newOriginRelParent, out heightToMatchParent))
+					if (!GetOriginAndHeightForChild(widgetToAdjustBounds.Parent, widgetToAdjustBounds, out newOriginRelParent, out heightToMatchParent))
 					{
 						// we don't need to adjust anything for the parent so make sure this is not applied below.
 						heightToMatchParent = 0;
@@ -83,17 +83,28 @@ namespace MatterHackers.Agg.UI
 				}
 
 				// get the bounds
-				RectangleDouble parentBounds = widgetToAdjust.LocalBounds;
+				RectangleDouble adjustBounds = widgetToAdjustBounds.LocalBounds;
 				// get the bounds to enclose its childern
-				RectangleDouble childrenEnclosingBounds = widgetToAdjust.GetMinimumBoundsToEncloseChildren(true);
+				RectangleDouble childrenEnclosingBounds = widgetToAdjustBounds.GetMinimumBoundsToEncloseChildren(true);
 				// fix the v size to enclose the children
-				parentBounds.Bottom = childrenEnclosingBounds.Bottom;
-				parentBounds.Top = Math.Max(childrenEnclosingBounds.Bottom + heightToMatchParent, childrenEnclosingBounds.Top);
-				if (widgetToAdjust.LocalBounds != parentBounds)
+				adjustBounds.Bottom = childrenEnclosingBounds.Bottom;
+				adjustBounds.Top = Math.Max(childrenEnclosingBounds.Bottom + heightToMatchParent, childrenEnclosingBounds.Top);
+				if (widgetToAdjustBounds.LocalBounds != adjustBounds)
 				{
-					// push the new size in
-					widgetToAdjust.LocalBounds = parentBounds;
-					sizeWasChanged = true;
+					if (widgetToAdjustBounds.VAnchorIsSet(VAnchor.ParentBottomTop))
+					{
+						if (widgetToAdjustBounds.LocalBounds.Height < adjustBounds.Height)
+						{
+							widgetToAdjustBounds.LocalBounds = adjustBounds;
+							sizeWasChanged = true; ;
+						}
+					}
+					else
+					{
+						// push the new size in
+						widgetToAdjustBounds.LocalBounds = adjustBounds;
+						sizeWasChanged = true;
+					}
 				}
 			}
 		}
@@ -200,9 +211,20 @@ namespace MatterHackers.Agg.UI
 				widgetToAdjustBounds.Right = Math.Max(childrenEnclosingBounds.Left + widthToMatchParent, childrenEnclosingBounds.Right);
 				if (widgetToAdjust.LocalBounds != widgetToAdjustBounds)
 				{
-					// push the new size in
-					widgetToAdjust.LocalBounds = widgetToAdjustBounds;
-					sizeWasChanged = true;
+					if (widgetToAdjust.VAnchorIsSet(VAnchor.ParentBottomTop))
+					{
+						if (widgetToAdjust.LocalBounds.Width < widgetToAdjustBounds.Width)
+						{
+							widgetToAdjust.LocalBounds = widgetToAdjustBounds;
+							sizeWasChanged = true; ;
+						}
+					}
+					else
+					{
+						// push the new size in
+						widgetToAdjust.LocalBounds = widgetToAdjustBounds;
+						sizeWasChanged = true;
+					}
 				}
 			}
 		}

@@ -142,6 +142,88 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		[Test]
+		public void ParentTopBottomAndFitToChildren()
+		{
+			// Make sure normal nested layouts works as expected. First inner added then outer
+			{
+				GuiWidget parent = new GuiWidget(100, 200);
+
+				GuiWidget childOuter = new GuiWidget(31, 32);
+				childOuter.VAnchor = VAnchor.FitToChildren | VAnchor.ParentBottomTop;
+				Assert.IsTrue(childOuter.LocalBounds == new RectangleDouble(0, 0, 31, 32));
+
+				GuiWidget childInner = new GuiWidget(41, 42);
+				childOuter.AddChild(childInner);
+
+				Assert.IsTrue(childOuter.LocalBounds == new RectangleDouble(0, 0, 31, 42));
+
+				parent.AddChild(childOuter);
+
+				Assert.IsTrue(childOuter.LocalBounds == new RectangleDouble(0, 0, 31, 200));
+			}
+
+			// Make sure vertical flow layout nested works with both top bottom and children
+			{
+				GuiWidget parent = new GuiWidget(100, 200);
+				parent.Name = "Parent";
+
+				FlowLayoutWidget childOuter = new FlowLayoutWidget(FlowDirection.TopToBottom);
+				childOuter.Name = "childOuter";
+				childOuter.VAnchor = VAnchor.FitToChildren | VAnchor.ParentBottomTop;
+				Assert.IsTrue(childOuter.LocalBounds == new RectangleDouble(0, 0, 0, 0));
+
+				GuiWidget childInner = new GuiWidget(41, 42);
+				childInner.Name = "childInner";
+				childOuter.AddChild(childInner);
+
+				Assert.IsTrue(childOuter.LocalBounds == new RectangleDouble(0, 0, 41, 42));
+
+				parent.AddChild(childOuter);
+
+				Assert.IsTrue(childOuter.LocalBounds == new RectangleDouble(0, 0, 41, 200));
+			}
+
+			// Make sure horizontal flow layout nested works with both top bottom and children
+			{
+				GuiWidget parent = new GuiWidget(100, 200);
+				parent.Name = "Parent";
+
+				FlowLayoutWidget childOuter = new FlowLayoutWidget(FlowDirection.TopToBottom);
+				childOuter.Name = "childOuter";
+				childOuter.HAnchor = HAnchor.FitToChildren | HAnchor.ParentLeftRight;
+				Assert.IsTrue(childOuter.LocalBounds == new RectangleDouble(0, 0, 0, 0));
+
+				GuiWidget childInner = new GuiWidget(41, 42);
+				childInner.Name = "childInner";
+				childOuter.AddChild(childInner);
+
+				Assert.IsTrue(childOuter.LocalBounds == new RectangleDouble(0, 0, 41, 42));
+
+				parent.AddChild(childOuter);
+
+				Assert.IsTrue(childOuter.LocalBounds == new RectangleDouble(0, 0, 100, 42));
+			}
+
+			// Make sure normal nested layouts works as expected. First outer than inner added
+			{
+				GuiWidget parent = new GuiWidget(100, 200);
+
+				GuiWidget childOuter = new GuiWidget(31, 32);
+				childOuter.VAnchor = VAnchor.FitToChildren | VAnchor.ParentBottomTop;
+				Assert.IsTrue(childOuter.LocalBounds == new RectangleDouble(0, 0, 31, 32));
+
+				parent.AddChild(childOuter);
+
+				Assert.IsTrue(childOuter.LocalBounds == new RectangleDouble(0, 0, 31, 200));
+
+				GuiWidget childInner = new GuiWidget(41, 42);
+				childOuter.AddChild(childInner);
+
+				Assert.IsTrue(childOuter.LocalBounds == new RectangleDouble(0, 0, 31, 200));
+			}
+		}
+
+		[Test]
 		public void SimpleFitToChildren()
 		{
 			// this is what will happen when the default of minimum size gets set on guiwidget construction
@@ -643,6 +725,32 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(groupBox.Height == 40);
 
 			GuiWidget.DefaultEnforceIntegerBounds = integerBounds;
+		}
+
+		private static bool ranTests = false;
+
+		public static bool RanTests { get { return ranTests; } }
+
+		public static void Run()
+		{
+			if (!ranTests)
+			{
+				AnchorTests anchorTests = new AnchorTests();
+				//AnchorTests.saveImagesForDebug = true;
+				anchorTests.SimpleFitToChildren();
+				anchorTests.ParentTopBottomAndFitToChildren();
+				anchorTests.BottomAndTopSetAnchorBeforAddChild();
+				anchorTests.BottomAndTop();
+				anchorTests.CenterBothTests();
+				anchorTests.CenterBothOffsetBoundsTests();
+				anchorTests.AnchorLeftBottomTests();
+				anchorTests.AnchorRightBottomTests();
+				anchorTests.AnchorRightTopTests();
+				anchorTests.AnchorAllTests();
+				anchorTests.HCenterHRightAndVCenterVTopTests();
+				anchorTests.GroupBoxResizeThenLayoutBeforeMatchChildren();
+				ranTests = true;
+			}
 		}
 	}
 }

@@ -68,6 +68,7 @@ namespace MatterHackers.Agg.UI.Tests
 				TextAndTextWidgetTests textTests = new TextAndTextWidgetTests();
 				//textTests.saveImagesForDebug = true;
 				textTests.TextWidgetVisibleTest();
+				textTests.TextWidgetAutoSizeTest();
 
 				TextEditTests textEditTests = new TextEditTests();
 				//TextEditTests.saveImagesForDebug = true;
@@ -80,19 +81,7 @@ namespace MatterHackers.Agg.UI.Tests
 				textEditTests.MiltiLineTests();
 				textEditTests.ScrollingToEndShowsEnd();
 
-				AnchorTests anchorTests = new AnchorTests();
-				//AnchorTests.saveImagesForDebug = true;
-				anchorTests.SimpleFitToChildren();
-				anchorTests.BottomAndTopSetAnchorBeforAddChild();
-				anchorTests.BottomAndTop();
-				anchorTests.CenterBothTests();
-				anchorTests.CenterBothOffsetBoundsTests();
-				anchorTests.AnchorLeftBottomTests();
-				anchorTests.AnchorRightBottomTests();
-				anchorTests.AnchorRightTopTests();
-				anchorTests.AnchorAllTests();
-				anchorTests.HCenterHRightAndVCenterVTopTests();
-				anchorTests.GroupBoxResizeThenLayoutBeforeMatchChildren();
+				AnchorTests.Run();
 
 				FlowLayoutTests flowLayoutTests = new FlowLayoutTests();
 				//FlowLayoutTests.saveImagesForDebug = true;

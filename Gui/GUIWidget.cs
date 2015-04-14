@@ -69,7 +69,7 @@ namespace MatterHackers.Agg.UI
 
 	public enum UnderMouseState { NotUnderMouse, UnderMouseNotFirst, FirstUnderMouse };
 
-	[DebuggerDisplay("Bounds = {LocalBounds}")]
+	[DebuggerDisplay("Name = {Name}, Bounds = {LocalBounds}")]
 	public class GuiWidget
 	{
 		private const double dumpIfLongerThanTime = 1;
