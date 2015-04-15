@@ -96,7 +96,7 @@ namespace MatterHackers.Agg.UI
 						if (widgetToAdjustBounds.LocalBounds.Height < adjustBounds.Height)
 						{
 							widgetToAdjustBounds.LocalBounds = adjustBounds;
-							sizeWasChanged = true; ;
+							sizeWasChanged = true;
 						}
 					}
 					else
@@ -211,12 +211,12 @@ namespace MatterHackers.Agg.UI
 				widgetToAdjustBounds.Right = Math.Max(childrenEnclosingBounds.Left + widthToMatchParent, childrenEnclosingBounds.Right);
 				if (widgetToAdjust.LocalBounds != widgetToAdjustBounds)
 				{
-					if (widgetToAdjust.VAnchorIsSet(VAnchor.ParentBottomTop))
+					if (widgetToAdjust.HAnchorIsSet(HAnchor.ParentLeftRight))
 					{
 						if (widgetToAdjust.LocalBounds.Width < widgetToAdjustBounds.Width)
 						{
 							widgetToAdjust.LocalBounds = widgetToAdjustBounds;
-							sizeWasChanged = true; ;
+							sizeWasChanged = true;
 						}
 					}
 					else

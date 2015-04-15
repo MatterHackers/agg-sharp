@@ -51,12 +51,7 @@ namespace MatterHackers.Agg.UI
 			scrollingWindow.VAnchor = VAnchor.ParentBottomTop;
 			if (maxHeight > 0 && Height > maxHeight)
 			{
-				scrollingWindow.VAnchor = UI.VAnchor.None;
-				scrollingWindow.Height = maxHeight;
-				scrollingWindow.MinimumSize = new Vector2(Width + 15, 0);
-				Width = scrollingWindow.Width;
-				Height = maxHeight;
-				scrollingWindow.ScrollArea.VAnchor = UI.VAnchor.FitToChildren;
+				MakeMenuHaveScroll(maxHeight);
 			}
 			AddChild(scrollingWindow);
 
@@ -81,6 +76,16 @@ namespace MatterHackers.Agg.UI
 
 			widgetRelativeTo_PositionChanged(widgetRelativeTo, null);
 			widgetRelativeTo.Closed += widgetRelativeTo_Closed;
+		}
+
+		private void MakeMenuHaveScroll(double maxHeight)
+		{
+			scrollingWindow.VAnchor = UI.VAnchor.None;
+			scrollingWindow.Height = maxHeight;
+			scrollingWindow.MinimumSize = new Vector2(Width + 15, 0);
+			Width = scrollingWindow.Width;
+			Height = maxHeight;
+			scrollingWindow.ScrollArea.VAnchor = UI.VAnchor.FitToChildren;
 		}
 
 		private void widgetRelativeTo_Closed(object sender, EventArgs e)
@@ -122,6 +127,7 @@ namespace MatterHackers.Agg.UI
 			graphics2D.Render(wideOutline, borderColor);
 		}
 
+		bool firstTimeSizing = true;
 		private void widgetRelativeTo_PositionChanged(object sender, EventArgs e)
 		{
 			if (widgetRelativeTo != null)
@@ -141,6 +147,24 @@ namespace MatterHackers.Agg.UI
 					alignmentOffset = -Width + widgetRelativeTo.Width;
 				}
 
+				if (firstTimeSizing)
+				{
+					double distanceToWindowBottom = zero.y - Height;
+					if (distanceToWindowBottom < 0)
+					{
+						if (MenuItems.Count > 0 
+							&& MenuItems[0].Height > 10
+							&& Height + distanceToWindowBottom > MenuItems[0].Height * 3)
+						{
+							MakeMenuHaveScroll(Height + distanceToWindowBottom - 5);
+						}
+						else
+						{
+							direction = Direction.Up;
+						}
+					}
+				}
+
 				switch (direction)
 				{
 					case Direction.Down:
@@ -155,6 +179,8 @@ namespace MatterHackers.Agg.UI
 						throw new NotImplementedException();
 				}
 			}
+
+			firstTimeSizing = false;
 		}
 
 		private Vector2 positionAtMouseDown;
