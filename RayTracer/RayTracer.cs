@@ -447,6 +447,7 @@ namespace MatterHackers.RayTracer
 			// calculate ambient light
 			RGBA_Floats infoColorAtHit = info.closestHitObject.GetColor(info);
 			RGBA_Floats color = infoColorAtHit * scene.background.Ambience;
+			color.alpha = 1;
 			double shininess = Math.Pow(10, info.closestHitObject.Material.Gloss + 1);
 
 			foreach (ILight light in scene.lights)
@@ -523,6 +524,7 @@ namespace MatterHackers.RayTracer
 					{
 						shadow.hitType = IntersectionType.FrontFace;
 						color *= 0.5;// +0.5 * Math.Pow(shadow.closestHit.Material.Transparency, 0.5); // Math.Pow(.5, shadow.HitCount);
+						color.Alpha0To1 = 1;
 					}
 					else
 					{
@@ -533,6 +535,7 @@ namespace MatterHackers.RayTracer
 							// only cast shadow if the found interesection is another
 							// element than the current element
 							color *= 0.5;// +0.5 * Math.Pow(shadow.closestHit.Material.Transparency, 0.5); // Math.Pow(.5, shadow.HitCount);
+							color.Alpha0To1 = 1;
 						}
 					}
 				}
