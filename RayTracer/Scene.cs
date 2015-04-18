@@ -67,7 +67,7 @@ namespace MatterHackers.RayTracer
 			this.camera = camera;
 			shapes = new List<IPrimitive>();
 			lights = new List<ILight>();
-			background = new Background(new RGBA_Floats(0, 0, .5), 0.2);
+			background = new Background(new RGBA_Floats(0, 0, 0, 0), 0.2);
 		}
 
 		/// <summary>

@@ -145,7 +145,7 @@ namespace MatterHackers.RayTracer
 					destBuffer[totalOffset++] = (byte)colorBuffer[x][y].Blue0To255;
 					destBuffer[totalOffset++] = (byte)colorBuffer[x][y].Green0To255;
 					destBuffer[totalOffset++] = (byte)colorBuffer[x][y].Red0To255;
-					destBuffer[totalOffset] = 255;
+					destBuffer[totalOffset] = (byte)colorBuffer[x][y].Alpha0To255;
 				}
 			}
 #if MULTI_THREAD
@@ -484,6 +484,7 @@ namespace MatterHackers.RayTracer
 						else // does not reflect an object, then reflect background color
 						{
 							reflectionColorAtHit = scene.background.Color;
+							reflectionColorAtHit.Alpha0To1 = 1;
 						}
 
 						color = color.Blend(reflectionColorAtHit, info.closestHitObject.Material.Reflection);
@@ -503,6 +504,7 @@ namespace MatterHackers.RayTracer
 						else
 						{
 							refractionColorAtHit = scene.background.Color;
+							refractionColorAtHit.Alpha0To1 = 1;
 						}
 
 						color = refractionColorAtHit.Blend(color, info.closestHitObject.Material.Transparency);
