@@ -1,4 +1,5 @@
 ﻿using MatterHackers.Agg;
+using MatterHackers.PolygonMesh;
 using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;
 using System.Collections.Generic;
@@ -26,6 +27,44 @@ namespace MatterHackers.DataConverters3D
 					{
 						index = 0;
 						renderCollection.Add(new TriangleShape(triangle[0], triangle[1], triangle[2], partMaterial));
+					}
+				}
+			}
+
+			return BoundingVolumeHierarchy.CreateNewHierachy(renderCollection);
+		}
+
+		public static IPrimitive Convert(PolygonMesh.MeshGroup meshGroup, MaterialAbstract partMaterial = null)
+		{
+			List<IPrimitive> renderCollection = new List<IPrimitive>();
+
+			SolidMaterial otherMaterial = new SolidMaterial(new RGBA_Floats(.1, .2, .9), .01, 0.0, 2.0);
+			if (partMaterial == null)
+			{
+				partMaterial = new SolidMaterial(new RGBA_Floats(.9, .2, .1), .01, 0.0, 2.0);
+			}
+			int index = 0;
+			Vector3[] triangle = new Vector3[3];
+			foreach (PolygonMesh.Mesh mesh in meshGroup.Meshes)
+			{
+				int materialIntdex = MeshMaterialData.Get(mesh).MaterialIndex;
+				foreach (PolygonMesh.Face face in mesh.Faces)
+				{
+					foreach (PolygonMesh.Vertex vertex in face.Vertices())
+					{
+						triangle[index++] = vertex.Position;
+						if (index == 3)
+						{
+							index = 0;
+							if (materialIntdex == 1)
+							{
+								renderCollection.Add(new TriangleShape(triangle[0], triangle[1], triangle[2], partMaterial));
+							}
+							else
+							{
+								renderCollection.Add(new TriangleShape(triangle[0], triangle[1], triangle[2], otherMaterial));
+							}
+						}
 					}
 				}
 			}
