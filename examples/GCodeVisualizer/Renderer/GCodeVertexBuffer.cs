@@ -36,12 +36,11 @@ namespace MatterHackers.GCodeVisualizer
 {
 	public class GCodeVertexBuffer
 	{
-		public int myVertexId;
 		public int myIndexId;
-		public BeginMode myMode = BeginMode.Triangles;
-		public int myVertexLength;
 		public int myIndexLength;
-
+		public BeginMode myMode = BeginMode.Triangles;
+		public int myVertexId;
+		public int myVertexLength;
 		public GCodeVertexBuffer()
 		{
 			GL.GenBuffers(1, out myVertexId);
@@ -60,30 +59,6 @@ namespace MatterHackers.GCodeVisualizer
 					GL.DeleteBuffers(1, ref holdIndexId);
 				});
 			}
-		}
-
-		public void SetVertexData(ColorVertexData[] data)
-		{
-			SetVertexData(data, data.Length);
-		}
-
-		public void SetVertexData(ColorVertexData[] data, int count)
-		{
-			myVertexLength = count;
-			GL.BindBuffer(BufferTarget.ArrayBuffer, myVertexId);
-			GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(data.Length * ColorVertexData.Stride), data, BufferUsageHint.StaticDraw);
-		}
-
-		public void SetIndexData(int[] data)
-		{
-			SetIndexData(data, (ushort)data.Length);
-		}
-
-		public void SetIndexData(int[] data, int count)
-		{
-			myIndexLength = count;
-			GL.BindBuffer(BufferTarget.ElementArrayBuffer, myIndexId);
-			GL.BufferData(BufferTarget.ElementArrayBuffer, new IntPtr(data.Length * sizeof(int)), data, BufferUsageHint.DynamicDraw);
 		}
 
 		public void renderRange(int offset, int count)
@@ -113,6 +88,42 @@ namespace MatterHackers.GCodeVisualizer
 			GL.DisableClientState(ArrayCap.VertexArray);
 			GL.DisableClientState(ArrayCap.NormalArray);
 			GL.DisableClientState(ArrayCap.ColorArray);
+		}
+
+		public void SetIndexData(int[] data)
+		{
+			SetIndexData(data, (ushort)data.Length);
+		}
+
+		public void SetIndexData(int[] data, int count)
+		{
+			myIndexLength = count;
+			GL.BindBuffer(BufferTarget.ElementArrayBuffer, myIndexId);
+			unsafe
+			{
+				fixed (int* dataPointer = data)
+				{
+					GL.BufferData(BufferTarget.ElementArrayBuffer, data.Length * sizeof(int), (IntPtr)dataPointer, BufferUsageHint.StaticDraw);
+				}
+			}
+		}
+
+		public void SetVertexData(ColorVertexData[] data)
+		{
+			SetVertexData(data, data.Length);
+		}
+
+		public void SetVertexData(ColorVertexData[] data, int count)
+		{
+			myVertexLength = count;
+			GL.BindBuffer(BufferTarget.ArrayBuffer, myVertexId);
+			unsafe
+			{
+				fixed (ColorVertexData* dataPointer = data)
+				{
+					GL.BufferData(BufferTarget.ArrayBuffer, data.Length * ColorVertexData.Stride, (IntPtr)dataPointer, BufferUsageHint.StaticDraw);
+				}
+			}
 		}
 	}
 }
