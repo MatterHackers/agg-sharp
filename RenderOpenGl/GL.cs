@@ -18,7 +18,10 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		BeginMode mode;
 		internal BeginMode Mode
 		{
-	 { return mode; }
+			get
+			{
+				return mode; 
+			}
 			set
 			{
 				mode = value;
@@ -847,7 +850,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				}
 			}
 #else
-			OpenTK.Graphics.ES11.GL.BufferData((OpenTK.Graphics.ES11.All)target, size, data, (OpenTK.Graphics.ES11.All)usage);
+			OpenTK.Graphics.ES11.GL.BufferData((OpenTK.Graphics.ES11.All)target, (IntPtr)size, data, (OpenTK.Graphics.ES11.All)usage);
 #endif
 		}
 
