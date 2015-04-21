@@ -18,7 +18,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		BeginMode mode;
 		internal BeginMode Mode
 		{
-			get { return mode; }
+	 { return mode; }
 			set
 			{
 				mode = value;
@@ -246,6 +246,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 	public static class GL
 	{
 		static bool openGlHardwareAvailable = true;
+		static bool glGenBuffersIsAvailble = true;
 
 		public static void ForceSoftwareRendering()
 		{
@@ -776,31 +777,74 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
 			if (openGlHardwareAvailable)
 			{
-				OpenTK.Graphics.OpenGL.GL.BindBuffer((OpenTK.Graphics.OpenGL.BufferTarget)target, buffer);
+				if (glGenBuffersIsAvailble)
+				{
+					OpenTK.Graphics.OpenGL.GL.BindBuffer((OpenTK.Graphics.OpenGL.BufferTarget)target, buffer);
+				}
+				else
+				{
+					switch (target)
+					{
+						case BufferTarget.ArrayBuffer:
+							currentArrayBufferIndex = buffer;
+							break;
+
+						case BufferTarget.ElementArrayBuffer:
+							currentElementArrayBufferIndex = buffer;
+							break;
+
+						default:
+							throw new NotImplementedException();
+					}
+				}
 			}
 #else
 			OpenTK.Graphics.ES11.GL.BindBuffer((OpenTK.Graphics.ES11.All)target, buffer);
 #endif
 		}
 
-		public static void BufferData(BufferTarget target, IntPtr size, IntPtr data, BufferUsageHint usage)
+		public static void BufferData(BufferTarget target, int size, IntPtr data, BufferUsageHint usage)
 		{
 #if USE_OPENGL
 			if (openGlHardwareAvailable)
 			{
-				OpenTK.Graphics.OpenGL.GL.BufferData((OpenTK.Graphics.OpenGL.BufferTarget)target, size, data, (OpenTK.Graphics.OpenGL.BufferUsageHint)usage);
-			}
-#else
-			OpenTK.Graphics.ES11.GL.BufferData((OpenTK.Graphics.ES11.All)target, size, data, (OpenTK.Graphics.ES11.All)usage);
-#endif
-		}
+				if(glGenBuffersIsAvailble)
+				{
+					OpenTK.Graphics.OpenGL.GL.BufferData((OpenTK.Graphics.OpenGL.BufferTarget)target, (IntPtr)size, data, (OpenTK.Graphics.OpenGL.BufferUsageHint)usage);
+				}
+				else
+				{
+					byte[] dataCopy = new byte[size];
+					unsafe
+					{
+						for (int i = 0; i < size; i++)
+						{
+							dataCopy[i] = ((byte*)data)[i];
+						}
+					}
 
-		public static void BufferData<T2>(BufferTarget target, IntPtr size, T2[] data, BufferUsageHint usage) where T2 : struct
-		{
-#if USE_OPENGL
-			if (openGlHardwareAvailable)
-			{
-				OpenTK.Graphics.OpenGL.GL.BufferData((OpenTK.Graphics.OpenGL.BufferTarget)target, size, data, (OpenTK.Graphics.OpenGL.BufferUsageHint)usage);
+					switch (target)
+					{
+						case BufferTarget.ArrayBuffer:
+							if(currentArrayBufferIndex == 0)
+							{
+								throw new Exception("You don't have a ArrayBuffer set.");
+							}
+							bufferData[currentArrayBufferIndex] = dataCopy;
+							break;
+
+						case BufferTarget.ElementArrayBuffer:
+							if(currentElementArrayBufferIndex == 0)
+							{
+								throw new Exception("You don't have an EllementArrayBuffer set.");
+							}
+							bufferData[currentElementArrayBufferIndex] = dataCopy;
+							break;
+
+						default:
+							throw new NotImplementedException();
+					}
+				}
 			}
 #else
 			OpenTK.Graphics.ES11.GL.BufferData((OpenTK.Graphics.ES11.All)target, size, data, (OpenTK.Graphics.ES11.All)usage);
@@ -819,13 +863,30 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #endif
 		}
 
+		static int currentArrayBufferIndex = 0;
+		static int currentElementArrayBufferIndex = 0;
+		static int genBuffersIndex = 1; // start at 1 so we can use 0 as a not initialize tell.
+		static Dictionary<int, byte[]> bufferData = new Dictionary<int, byte[]>();
+
 		public static void GenBuffers(int n, out int buffers)
 		{
 #if USE_OPENGL
 			buffers = 0;
 			if (openGlHardwareAvailable)
 			{
-				OpenTK.Graphics.OpenGL.GL.GenBuffers(n, out buffers);
+				if (glGenBuffersIsAvailble)
+				{
+					OpenTK.Graphics.OpenGL.GL.GenBuffers(n, out buffers);
+				}
+				else
+				{
+					if (n != 1)
+					{
+						throw new Exception("Can only handle 1 gen count at the moment.");
+					}
+					buffers = genBuffersIndex++;
+					bufferData.Add(buffers, new byte[1]);
+				}
 			}
 #else
 			OpenTK.Graphics.ES11.GL.GenBuffers(n, out buffers);
@@ -837,7 +898,18 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
 			if (openGlHardwareAvailable)
 			{
-				OpenTK.Graphics.OpenGL.GL.DeleteBuffers(n, ref buffers);
+				if (glGenBuffersIsAvailble)
+				{
+					OpenTK.Graphics.OpenGL.GL.DeleteBuffers(n, ref buffers);
+				}
+				else
+				{
+					if(n != 1)
+					{
+						throw new Exception("Can only handle 1 delete count at the moment.");
+					}
+					bufferData.Remove(buffers);
+				}
 			}
 #else
 			OpenTK.Graphics.ES11.GL.DeleteBuffers(n, ref buffers);
@@ -867,7 +939,21 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
 			if (openGlHardwareAvailable)
 			{
-				OpenTK.Graphics.OpenGL.GL.ColorPointer(size, (OpenTK.Graphics.OpenGL.ColorPointerType)type, stride, pointer);
+				if (glGenBuffersIsAvailble || currentArrayBufferIndex == 0)
+				{
+					// we are rending from memory so operate normaly
+					OpenTK.Graphics.OpenGL.GL.ColorPointer(size, (OpenTK.Graphics.OpenGL.ColorPointerType)type, stride, pointer);
+				}
+				else
+				{
+					unsafe
+					{
+						fixed (byte* buffer = bufferData[currentArrayBufferIndex])
+						{
+							OpenTK.Graphics.OpenGL.GL.ColorPointer(size, (OpenTK.Graphics.OpenGL.ColorPointerType)type, stride, new IntPtr(&buffer[(int)pointer]));
+						}
+					}
+				}
 			}
 #else
 			OpenTK.Graphics.ES11.GL.ColorPointer(size, (OpenTK.Graphics.ES11.All)type, stride, pointer);
@@ -897,7 +983,20 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
 			if (openGlHardwareAvailable)
 			{
-				OpenTK.Graphics.OpenGL.GL.NormalPointer((OpenTK.Graphics.OpenGL.NormalPointerType)type, stride, pointer);
+				if (glGenBuffersIsAvailble || currentArrayBufferIndex == 0)
+				{
+					OpenTK.Graphics.OpenGL.GL.NormalPointer((OpenTK.Graphics.OpenGL.NormalPointerType)type, stride, pointer);
+				}
+				else
+				{
+					unsafe
+					{
+						fixed (byte* buffer = bufferData[currentArrayBufferIndex])
+						{
+							OpenTK.Graphics.OpenGL.GL.NormalPointer((OpenTK.Graphics.OpenGL.NormalPointerType)type, stride, new IntPtr(&buffer[(int)pointer]));
+						}
+					}
+				}
 			}
 #else
             OpenTK.Graphics.ES11.GL.NormalPointer((OpenTK.Graphics.ES11.All)type, stride, pointer);
@@ -920,7 +1019,20 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
 			if (openGlHardwareAvailable)
 			{
-				OpenTK.Graphics.OpenGL.GL.VertexPointer(size, (OpenTK.Graphics.OpenGL.VertexPointerType)type, stride, pointer);
+				if (glGenBuffersIsAvailble || currentArrayBufferIndex == 0)
+				{
+					OpenTK.Graphics.OpenGL.GL.VertexPointer(size, (OpenTK.Graphics.OpenGL.VertexPointerType)type, stride, pointer);
+				}
+				else
+				{
+					unsafe
+					{
+						fixed (byte* buffer = bufferData[currentArrayBufferIndex])
+						{
+							OpenTK.Graphics.OpenGL.GL.VertexPointer(size, (OpenTK.Graphics.OpenGL.VertexPointerType)type, stride, new IntPtr(&buffer[(int)pointer]));
+						}
+					}
+				}
 			}
 #else
 			OpenTK.Graphics.ES11.GL.VertexPointer(size, (OpenTK.Graphics.ES11.All)type, stride, pointer);
@@ -944,7 +1056,21 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
 			if (openGlHardwareAvailable)
 			{
-				OpenTK.Graphics.OpenGL.GL.DrawRangeElements((OpenTK.Graphics.OpenGL.BeginMode)mode, start, end, count, (OpenTK.Graphics.OpenGL.DrawElementsType)type, indices);
+				if (glGenBuffersIsAvailble)
+				{
+					OpenTK.Graphics.OpenGL.GL.DrawRangeElements((OpenTK.Graphics.OpenGL.BeginMode)mode, start, end, count, (OpenTK.Graphics.OpenGL.DrawElementsType)type, indices);
+				}
+				else
+				{
+					unsafe
+					{
+						fixed (byte* buffer = bufferData[currentElementArrayBufferIndex])
+						{
+							byte* passedBuffer = &buffer[(int)indices];
+							OpenTK.Graphics.OpenGL.GL.DrawElements((OpenTK.Graphics.OpenGL.BeginMode)mode, count, (OpenTK.Graphics.OpenGL.DrawElementsType)type, new IntPtr(passedBuffer));
+						}
+					}
+				}
 			}
 #else
 			throw new NotImplementedException();
