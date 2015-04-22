@@ -256,6 +256,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			openGlHardwareAvailable = false;
 		}
 
+        public static void disableGlBuffers()
+        {
+            glHasBufferObjects = false;
+        }
+
 		internal struct ViewPortData
 		{
 			internal int x;
