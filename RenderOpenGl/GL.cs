@@ -249,7 +249,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 	public static class GL
 	{
 		static bool openGlHardwareAvailable = true;
-		static bool glGenBuffersIsAvailble = true;
+		static bool glHasBufferObjects = true;
 
 		public static void ForceSoftwareRendering()
 		{
@@ -780,7 +780,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
 			if (openGlHardwareAvailable)
 			{
-				if (glGenBuffersIsAvailble)
+				if (glHasBufferObjects)
 				{
 					OpenTK.Graphics.OpenGL.GL.BindBuffer((OpenTK.Graphics.OpenGL.BufferTarget)target, buffer);
 				}
@@ -811,7 +811,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
 			if (openGlHardwareAvailable)
 			{
-				if(glGenBuffersIsAvailble)
+				if(glHasBufferObjects)
 				{
 					OpenTK.Graphics.OpenGL.GL.BufferData((OpenTK.Graphics.OpenGL.BufferTarget)target, (IntPtr)size, data, (OpenTK.Graphics.OpenGL.BufferUsageHint)usage);
 				}
@@ -859,7 +859,10 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
 			if (openGlHardwareAvailable)
 			{
-				OpenTK.Graphics.OpenGL.GL.EnableClientState((OpenTK.Graphics.OpenGL.ArrayCap)arrayCap);
+				if (glHasBufferObjects || arrayCap != ArrayCap.IndexArray) // don't set index array if we don't have buffer objects (we will render through DrawElements instead).
+				{
+					OpenTK.Graphics.OpenGL.GL.EnableClientState((OpenTK.Graphics.OpenGL.ArrayCap)arrayCap);
+				}
 			}
 #else
 			OpenTK.Graphics.ES11.GL.EnableClientState((OpenTK.Graphics.ES11.All)arrayCap);
@@ -877,7 +880,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			buffers = 0;
 			if (openGlHardwareAvailable)
 			{
-				if (glGenBuffersIsAvailble)
+				if (glHasBufferObjects)
 				{
 					OpenTK.Graphics.OpenGL.GL.GenBuffers(n, out buffers);
 				}
@@ -901,7 +904,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
 			if (openGlHardwareAvailable)
 			{
-				if (glGenBuffersIsAvailble)
+				if (glHasBufferObjects)
 				{
 					OpenTK.Graphics.OpenGL.GL.DeleteBuffers(n, ref buffers);
 				}
@@ -942,7 +945,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
 			if (openGlHardwareAvailable)
 			{
-				if (glGenBuffersIsAvailble || currentArrayBufferIndex == 0)
+				if (glHasBufferObjects || currentArrayBufferIndex == 0)
 				{
 					// we are rending from memory so operate normaly
 					OpenTK.Graphics.OpenGL.GL.ColorPointer(size, (OpenTK.Graphics.OpenGL.ColorPointerType)type, stride, pointer);
@@ -986,7 +989,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
 			if (openGlHardwareAvailable)
 			{
-				if (glGenBuffersIsAvailble || currentArrayBufferIndex == 0)
+				if (glHasBufferObjects || currentArrayBufferIndex == 0)
 				{
 					OpenTK.Graphics.OpenGL.GL.NormalPointer((OpenTK.Graphics.OpenGL.NormalPointerType)type, stride, pointer);
 				}
@@ -1022,7 +1025,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
 			if (openGlHardwareAvailable)
 			{
-				if (glGenBuffersIsAvailble || currentArrayBufferIndex == 0)
+				if (glHasBufferObjects || currentArrayBufferIndex == 0)
 				{
 					OpenTK.Graphics.OpenGL.GL.VertexPointer(size, (OpenTK.Graphics.OpenGL.VertexPointerType)type, stride, pointer);
 				}
@@ -1059,7 +1062,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
 			if (openGlHardwareAvailable)
 			{
-				if (glGenBuffersIsAvailble)
+				if (glHasBufferObjects)
 				{
 					OpenTK.Graphics.OpenGL.GL.DrawRangeElements((OpenTK.Graphics.OpenGL.BeginMode)mode, start, end, count, (OpenTK.Graphics.OpenGL.DrawElementsType)type, indices);
 				}
