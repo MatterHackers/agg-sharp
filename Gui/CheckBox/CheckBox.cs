@@ -30,9 +30,7 @@ namespace MatterHackers.Agg.UI
 	{
 		public static BorderDouble DefaultMargin;// = new BorderDouble(3);
 
-		public delegate void CheckedStateChangedEventHandler(object sender, EventArgs e);
-
-		public event CheckedStateChangedEventHandler CheckedStateChanged;
+		public event EventHandler CheckedStateChanged;
 
 		private bool isChecked = false;
 

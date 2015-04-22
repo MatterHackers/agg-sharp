@@ -113,8 +113,8 @@ namespace MatterHackers.MeshVisualizer
 
 		private void AddHandlers()
 		{
-			bedCheckBox.CheckedStateChanged += new CheckBox.CheckedStateChangedEventHandler(bedCheckBox_CheckedStateChanged);
-			wireframeCheckBox.CheckedStateChanged += new CheckBox.CheckedStateChangedEventHandler(wireframeCheckBox_CheckedStateChanged);
+			bedCheckBox.CheckedStateChanged += bedCheckBox_CheckedStateChanged;
+			wireframeCheckBox.CheckedStateChanged += wireframeCheckBox_CheckedStateChanged;
 		}
 
 		private void wireframeCheckBox_CheckedStateChanged(object sender, EventArgs e)

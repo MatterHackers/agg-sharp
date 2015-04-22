@@ -31,6 +31,20 @@ namespace MatterHackers.Agg.UI
 		new public static BorderDouble DefaultPadding = new BorderDouble(0);
 		new public static BorderDouble DefaultMargin = new BorderDouble(0);
 
+		public FlowLayoutWidget(UI.FlowDirection dirrection, GuiWidget child1, GuiWidget child2 = null, GuiWidget child3 = null)
+			: this(dirrection, HAnchor.FitToChildren, VAnchor.FitToChildren)
+		{
+			AddChild(child1);
+			if (child2 != null)
+			{
+				AddChild(child2);
+			}
+			if (child3 != null)
+			{
+				AddChild(child3);
+			}
+		}
+
 		public FlowLayoutWidget(UI.FlowDirection dirrection = UI.FlowDirection.LeftToRight,
 			HAnchor hAnchor = HAnchor.FitToChildren, VAnchor vAnchor = VAnchor.FitToChildren)
 			: base(hAnchor, vAnchor)
