@@ -27,209 +27,104 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.VectorMath;
-using System;
-
 namespace MatterHackers.Agg.UI
 {
-	public class ToggleSwitch : GuiWidget
+	public class ToggleSwitchView : CheckBoxViewStates
 	{
-		private TextWidget associatedToggleSwitchTextWidget;//points to optional text widget that can be passed in with associated T/F value
-		internal string trueText;           		 //Text associated with switch on true value
-		internal string falseText;					 //Text associated with switch on false value
-
-		public RGBA_Bytes InteriorColor { get; set; }
-
-		public RGBA_Bytes ExteriorColor { get; set; }
-
-		public RGBA_Bytes ThumbColor { get; set; }
-
-		private double switchHeight;
-		private double switchWidth;
-		private double thumbWidth;
-		private double thumbHeight;
-
-		public event EventHandler SwitchStateChanged;
-
-		private bool switchState;
-
-		public bool SwitchState
+		public ToggleSwitchView(double width, double height,
+			RGBA_Bytes backgroundColor, RGBA_Bytes interiorColor, RGBA_Bytes thumbColor, RGBA_Bytes exteriorColor)
 		{
-			get { return switchState; }
-			set
+			GuiWidget normal = createState("Off", width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref exteriorColor);
+			GuiWidget normalHover = createState("Off", width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref exteriorColor);
+			GuiWidget switchNormalToPressed = createState("On", width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref exteriorColor);
+			GuiWidget pressed = createState("On", width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref exteriorColor);
+			GuiWidget pressedHover = createState("On", width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref exteriorColor);
+			GuiWidget switchPressedToNormal = createState("Off", width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref exteriorColor);
+			GuiWidget disabled = new TextWidget("disabled");
+			SetViewStates(normal, normalHover, switchNormalToPressed, pressed, pressedHover, switchPressedToNormal, disabled);
+			this.VAnchor = VAnchor.FitToChildren;
+		}
+
+		private static GuiWidget createState(string word, double width, double height, ref RGBA_Bytes backgroundColor, ref RGBA_Bytes interiorColor, ref RGBA_Bytes thumbColor, ref RGBA_Bytes exteriorColor)
+		{
+
+			TextWidget text = new TextWidget(word, pointSize: 10, textColor: RGBA_Bytes.White);
+			text.VAnchor = VAnchor.ParentCenter;
+			SwitchView switchGraphics = new SwitchView(width, height, word == "On", backgroundColor, interiorColor, thumbColor, exteriorColor);
+			switchGraphics.VAnchor = VAnchor.ParentCenter;
+			switchGraphics.Margin = new BorderDouble(5, 0, 0, 0);
+			GuiWidget switchNormalToPressed = new FlowLayoutWidget(FlowDirection.LeftToRight, text, switchGraphics);
+			return switchNormalToPressed;
+		}
+
+		internal class SwitchView : GuiWidget
+		{
+			private double switchHeight;
+
+			private double switchWidth;
+
+			private double thumbHeight;
+
+			private double thumbWidth;
+			bool startValue;
+
+			internal SwitchView(double width, double height, bool startValue, 
+				RGBA_Bytes backgroundColor, RGBA_Bytes interiorColor, RGBA_Bytes thumbColor, RGBA_Bytes exteriorColor)
 			{
-				if (switchState != value)
+				this.startValue = startValue;
+				switchWidth = width;
+				switchHeight = height;
+				thumbHeight = height;
+				thumbWidth = width / 4;
+				InteriorColor = interiorColor;
+				ExteriorColor = exteriorColor;
+				ThumbColor = thumbColor;
+				LocalBounds = new RectangleDouble(0, 0, width, height);
+			}
+
+			public RGBA_Bytes ExteriorColor { get; set; }
+
+			public RGBA_Bytes InteriorColor { get; set; }
+			public RGBA_Bytes ThumbColor { get; set; }
+
+			public override void OnDraw(Graphics2D graphics2D)
+			{
+				graphics2D.FillRectangle(GetSwitchBounds(), BackgroundColor);
+				base.OnDraw(graphics2D);
+				if (startValue)
 				{
-					switchState = value;
-					SetAssociatedTextWidgetText();
-					OnSwitchStateChanged(null);
+					RectangleDouble interior = GetSwitchBounds();
+					interior.Inflate(-6);
+					graphics2D.FillRectangle(interior, InteriorColor);
 				}
-			}
-		}
-
-		private bool mouseDownOnToggle;
-		private bool mouseMoveOnToggle;
-
-		public string TrueText
-		{
-			get { return trueText; }
-			set { trueText = value; }
-		}
-
-		public string FalseText
-		{
-			get { return falseText; }
-			set { falseText = value; }
-		}
-
-		public ToggleSwitch(double width = 50, double height = 20, bool startValue = false, RGBA_Bytes backgroundColor = new RGBA_Bytes(), RGBA_Bytes interiorColor = new RGBA_Bytes(), RGBA_Bytes thumbColor = new RGBA_Bytes(), RGBA_Bytes exteriorColor = new RGBA_Bytes())
-			: base(width, height)
-		{
-			switchWidth = width;
-			switchHeight = height;
-			thumbHeight = height;
-			thumbWidth = width / 4;
-			InteriorColor = interiorColor;
-			ExteriorColor = exteriorColor;
-			ThumbColor = thumbColor;
-			mouseDownOnToggle = false;
-			mouseMoveOnToggle = false;
-			this.SwitchState = startValue;
-		}
-
-		public ToggleSwitch(TextWidget associatedToggleSwitchTextWidget, string trueText = "On", string falseText = "Off", double width = 60, double height = 24, bool startValue = false, RGBA_Bytes backgroundColor = new RGBA_Bytes(), RGBA_Bytes interiorColor = new RGBA_Bytes(), RGBA_Bytes thumbColor = new RGBA_Bytes(), RGBA_Bytes exteriorColor = new RGBA_Bytes())
-			: this(width, height, startValue, backgroundColor, interiorColor, thumbColor, exteriorColor)
-		{
-			this.associatedToggleSwitchTextWidget = associatedToggleSwitchTextWidget;
-			this.trueText = trueText;
-			this.falseText = falseText;
-		}
-
-		public ToggleSwitch(ToggleSwitch toggleSwitch)
-			: this(toggleSwitch.associatedToggleSwitchTextWidget, toggleSwitch.trueText, toggleSwitch.falseText, toggleSwitch.switchWidth, toggleSwitch.switchHeight, toggleSwitch.SwitchState, toggleSwitch.BackgroundColor, toggleSwitch.InteriorColor, toggleSwitch.ThumbColor, toggleSwitch.ExteriorColor)
-		{
-		}
-
-		private void OnSwitchStateChanged(EventArgs e)
-		{
-			if (SwitchStateChanged != null)
-			{
-				SwitchStateChanged(this, e);
-			}
-		}
-
-		private RectangleDouble GetSwitchBounds()
-		{
-			RectangleDouble switchBounds;
-			switchBounds = new RectangleDouble(0, 0, switchWidth, switchHeight);
-			return switchBounds;
-		}
-
-		private RectangleDouble GetThumbBounds()
-		{
-			RectangleDouble thumbBounds;
-			if (SwitchState)
-			{
-				thumbBounds = new RectangleDouble(switchWidth - thumbWidth, 0, switchWidth, thumbHeight);
-			}
-			else
-			{
-				thumbBounds = new RectangleDouble(0, 0, thumbWidth, thumbHeight);
+				RectangleDouble border = GetSwitchBounds();
+				border.Inflate(-3);
+				graphics2D.Rectangle(border, ExteriorColor, 1);
+				graphics2D.FillRectangle(GetThumbBounds(), ThumbColor);
+				graphics2D.Rectangle(GetThumbBounds(), new RGBA_Bytes(255, 255, 255, 90), 1);
 			}
 
-			return thumbBounds;
-		}
-
-		public void DrawBeforeChildren(Graphics2D graphics2D)
-		{
-			graphics2D.FillRectangle(GetSwitchBounds(), BackgroundColor);
-		}
-
-		public void DrawAfterChildren(Graphics2D graphics2D)
-		{
-			if (SwitchState)
+			private RectangleDouble GetSwitchBounds()
 			{
-				RectangleDouble interior = GetSwitchBounds();
-				interior.Inflate(-6);
-				graphics2D.FillRectangle(interior, InteriorColor);
+				RectangleDouble switchBounds;
+				switchBounds = new RectangleDouble(0, 0, switchWidth, switchHeight);
+				return switchBounds;
 			}
-			RectangleDouble border = GetSwitchBounds();
-			border.Inflate(-3);
-			graphics2D.Rectangle(border, ExteriorColor, 1);
-			graphics2D.FillRectangle(GetThumbBounds(), ThumbColor);
-			graphics2D.Rectangle(GetThumbBounds(), new RGBA_Bytes(255, 255, 255, 90), 1);
-		}
 
-		public override void OnDraw(Graphics2D graphics2D)
-		{
-			base.OnDraw(graphics2D);
-			DrawAfterChildren(graphics2D);
-		}
-
-		private void SetAssociatedTextWidgetText()
-		{
-			if (associatedToggleSwitchTextWidget != null)
+			private RectangleDouble GetThumbBounds()
 			{
-				if (SwitchState)
+				RectangleDouble thumbBounds;
+				if (startValue)
 				{
-					associatedToggleSwitchTextWidget.Text = trueText;
+					thumbBounds = new RectangleDouble(switchWidth - thumbWidth, 0, switchWidth, thumbHeight);
 				}
 				else
 				{
-					associatedToggleSwitchTextWidget.Text = falseText;
+					thumbBounds = new RectangleDouble(0, 0, thumbWidth, thumbHeight);
 				}
+
+				return thumbBounds;
 			}
-		}
-
-		public override void OnMouseDown(MouseEventArgs mouseEvent)
-		{
-			RectangleDouble switchBounds = GetSwitchBounds();
-			Vector2 mousePosition = mouseEvent.Position;
-
-			if (switchBounds.Contains(mousePosition))
-			{
-				mouseDownOnToggle = true;
-			}
-
-			base.OnMouseDown(mouseEvent);
-		}
-
-		public override void OnMouseMove(MouseEventArgs mouseEvent)
-		{
-			bool oldValue = SwitchState;
-			if (mouseDownOnToggle)
-			{
-				mouseMoveOnToggle = true;
-				RectangleDouble switchBounds = GetSwitchBounds();
-				Vector2 mousePosition = mouseEvent.Position;
-				SwitchState = switchBounds.XCenter < mousePosition.x;
-				if (oldValue != SwitchState)
-				{
-					if (SwitchStateChanged != null)
-					{
-						SwitchStateChanged(this, mouseEvent);
-					}
-					Invalidate();
-				}
-			}
-			base.OnMouseMove(mouseEvent);
-		}
-
-		public override void OnMouseUp(MouseEventArgs mouseEvent)
-		{
-			if (!mouseMoveOnToggle)
-			{
-				SwitchState = !SwitchState;
-				if (SwitchStateChanged != null)
-				{
-					SwitchStateChanged(this, mouseEvent);
-				}
-				Invalidate();
-			}
-
-			mouseDownOnToggle = false;
-			mouseMoveOnToggle = false;
-			base.OnMouseUp(mouseEvent);
 		}
 	}
 }
