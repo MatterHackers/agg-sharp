@@ -256,7 +256,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			openGlHardwareAvailable = false;
 		}
 
-        public static void disableGlBuffers()
+        public static void DisableGlBuffers()
         {
             glHasBufferObjects = false;
         }
