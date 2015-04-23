@@ -48,6 +48,11 @@ namespace MatterHackers.Agg.UI
 
 		public new void MakeCurrent()
 		{
+            IntPtr address = (this.Context as OpenTK.Graphics.IGraphicsContextInternal).GetAddress("glGenBuffers");
+            if(address == IntPtr.Zero)
+            {
+                MatterHackers.RenderOpenGl.OpenGl.GL.disableGlBuffers();
+            }
 			currentControl = this;
 			base.MakeCurrent();
 		}
