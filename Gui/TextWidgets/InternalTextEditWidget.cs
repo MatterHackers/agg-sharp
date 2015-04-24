@@ -61,6 +61,8 @@ namespace MatterHackers.Agg.UI
 
 		public event KeyEventHandler EnterPressed;
 
+		public event EventHandler AllSelected;
+
 		private UndoBuffer undoBuffer = new UndoBuffer();
 
 		private bool mouseIsDown = false;
@@ -580,6 +582,17 @@ namespace MatterHackers.Agg.UI
 
 				Selecting = false;
 			}
+		}
+
+		public void SetSelection(int firstIndexSelected, int lastIndexSelected)
+		{
+			firstIndexSelected = Math.Max(0, Math.Min(firstIndexSelected, Text.Length - 1));
+			lastIndexSelected = Math.Max(0, Math.Min(lastIndexSelected, Text.Length));
+			
+			SelectionIndexToStartBefore = firstIndexSelected;
+			CharIndexToInsertBefore = lastIndexSelected + 1;
+			Selecting = true;
+			FixBarPosition(DesiredXPositionOnLine.Set);
 		}
 
 		private void StartSelectionIfRequired(KeyEventArgs keyEvent)
@@ -1165,6 +1178,10 @@ namespace MatterHackers.Agg.UI
 			SelectionIndexToStartBefore = 0;
 			Selecting = true;
 			FixBarPosition(DesiredXPositionOnLine.Set);
+			if (AllSelected != null)
+			{
+				AllSelected(this, null);
+			}
 		}
 
 		internal void GotoEndOfCurrentLine()
