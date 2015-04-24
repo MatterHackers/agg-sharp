@@ -35,6 +35,7 @@ namespace MatterHackers.Agg.UI
 	public class MyGLControl : GLControl
 	{
 		internal static MyGLControl currentControl;
+        static bool checkedCapabilities = false;
 
 		private static int nextId;
 		public int Id;
@@ -43,21 +44,21 @@ namespace MatterHackers.Agg.UI
 		public MyGLControl(int bitDepth, int setencilDepth)
 		//: base(new GraphicsMode(new ColorFormat(32), 32, 0, 4))
 		{
+            if (!checkedCapabilities)
+            {
+                IntPtr address = (this.Context as OpenTK.Graphics.IGraphicsContextInternal).GetAddress("glGenBuffers");
+                if (address == IntPtr.Zero)
+                {
+                    MatterHackers.RenderOpenGl.OpenGl.GL.DisableGlBuffers();
+                }
+                checkedCapabilities = true;
+            }
 			Id = nextId++;
 		}
 
-		static bool checkedCapabilities = false;
+		
 		public new void MakeCurrent()
 		{
-			if (!checkedCapabilities)
-			{
-				IntPtr address = (this.Context as OpenTK.Graphics.IGraphicsContextInternal).GetAddress("glGenBuffers");
-				if (address == IntPtr.Zero)
-				{
-					MatterHackers.RenderOpenGl.OpenGl.GL.DisableGlBuffers();
-				}
-				checkedCapabilities = true;
-			}
 			currentControl = this;
 			base.MakeCurrent();
 		}
