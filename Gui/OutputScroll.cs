@@ -75,7 +75,7 @@ namespace MatterHackers.Agg.UI
 
 		public void WriteToFile(string filePath)
 		{
-			System.IO.File.WriteAllLines(@filePath, lines);
+			System.IO.File.WriteAllLines(filePath, lines);
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)

@@ -46,13 +46,18 @@ namespace MatterHackers.Agg.UI
 			Id = nextId++;
 		}
 
+		static bool checkedCapabilities = false;
 		public new void MakeCurrent()
 		{
-            IntPtr address = (this.Context as OpenTK.Graphics.IGraphicsContextInternal).GetAddress("glGenBuffers");
-            if(address == IntPtr.Zero)
-            {
-                MatterHackers.RenderOpenGl.OpenGl.GL.DisableGlBuffers();
-            }
+			if (!checkedCapabilities)
+			{
+				IntPtr address = (this.Context as OpenTK.Graphics.IGraphicsContextInternal).GetAddress("glGenBuffers");
+				if (address == IntPtr.Zero)
+				{
+					MatterHackers.RenderOpenGl.OpenGl.GL.DisableGlBuffers();
+				}
+				checkedCapabilities = true;
+			}
 			currentControl = this;
 			base.MakeCurrent();
 		}
