@@ -249,7 +249,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 	public static class GL
 	{
 		static bool openGlHardwareAvailable = true;
+#if __ANDROID__
+		static bool glHasBufferObjects = false;
+#else
 		static bool glHasBufferObjects = true;
+#endif
 
 		public static void ForceSoftwareRendering()
 		{
@@ -518,7 +522,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
             if (mask != AttribMask.ViewportBit)
             {
-                throw new Exception();
+                //throw new Exception();
             }
 #endif
 		}
@@ -539,7 +543,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
             }
             if (mask != AttribMask.ViewportBit)
             {
-                throw new Exception();
+                //throw new Exception();
             }
 #endif
 		}
@@ -807,7 +811,26 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				}
 			}
 #else
-			OpenTK.Graphics.ES11.GL.BindBuffer((OpenTK.Graphics.ES11.All)target, buffer);
+			if (glHasBufferObjects)
+			{
+				OpenTK.Graphics.ES11.GL.BindBuffer((OpenTK.Graphics.ES11.All)target, buffer);
+			}
+			else
+			{
+				switch (target)
+				{
+					case BufferTarget.ArrayBuffer:
+						currentArrayBufferIndex = buffer;
+						break;
+
+					case BufferTarget.ElementArrayBuffer:
+						currentElementArrayBufferIndex = buffer;
+						break;
+
+					default:
+						throw new NotImplementedException();
+				}
+			}
 #endif
 		}
 
@@ -855,7 +878,43 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				}
 			}
 #else
-			OpenTK.Graphics.ES11.GL.BufferData((OpenTK.Graphics.ES11.All)target, (IntPtr)size, data, (OpenTK.Graphics.ES11.All)usage);
+			if (glHasBufferObjects)
+			{
+				OpenTK.Graphics.ES11.GL.BufferData((OpenTK.Graphics.ES11.All)target, (IntPtr)size, data, (OpenTK.Graphics.ES11.All)usage);
+			}
+			else
+			{
+				byte[] dataCopy = new byte[size];
+				unsafe
+				{
+					for (int i = 0; i < size; i++)
+					{
+						dataCopy[i] = ((byte*)data)[i];
+					}
+				}
+
+				switch (target)
+				{
+					case BufferTarget.ArrayBuffer:
+						if (currentArrayBufferIndex == 0)
+						{
+							throw new Exception("You don't have a ArrayBuffer set.");
+						}
+						bufferData[currentArrayBufferIndex] = dataCopy;
+						break;
+
+					case BufferTarget.ElementArrayBuffer:
+						if (currentElementArrayBufferIndex == 0)
+						{
+							throw new Exception("You don't have an EllementArrayBuffer set.");
+						}
+						bufferData[currentElementArrayBufferIndex] = dataCopy;
+						break;
+
+					default:
+						throw new NotImplementedException();
+				}
+			}
 #endif
 		}
 
@@ -870,7 +929,10 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				}
 			}
 #else
-			OpenTK.Graphics.ES11.GL.EnableClientState((OpenTK.Graphics.ES11.All)arrayCap);
+			if (glHasBufferObjects || arrayCap != ArrayCap.IndexArray) // don't set index array if we don't have buffer objects (we will render through DrawElements instead).
+			{
+				OpenTK.Graphics.ES11.GL.EnableClientState((OpenTK.Graphics.ES11.All)arrayCap);
+			}
 #endif
 		}
 
@@ -900,7 +962,19 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				}
 			}
 #else
-			OpenTK.Graphics.ES11.GL.GenBuffers(n, out buffers);
+			if (glHasBufferObjects)
+			{
+				OpenTK.Graphics.ES11.GL.GenBuffers(n, out buffers);
+			}
+			else
+			{
+				if (n != 1)
+				{
+					throw new Exception("Can only handle 1 gen count at the moment.");
+				}
+				buffers = genBuffersIndex++;
+				bufferData.Add(buffers, new byte[1]);
+			}
 #endif
 		}
 
@@ -923,7 +997,18 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				}
 			}
 #else
-			OpenTK.Graphics.ES11.GL.DeleteBuffers(n, ref buffers);
+			if (glHasBufferObjects)
+			{
+				OpenTK.Graphics.ES11.GL.DeleteBuffers(n, ref buffers);
+			}
+			else
+			{
+				if (n != 1)
+				{
+					throw new Exception("Can only handle 1 delete count at the moment.");
+				}
+				bufferData.Remove(buffers);
+			}
 #endif
 		}
 
@@ -967,7 +1052,20 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				}
 			}
 #else
-			OpenTK.Graphics.ES11.GL.ColorPointer(size, (OpenTK.Graphics.ES11.All)type, stride, pointer);
+			if (glHasBufferObjects || currentArrayBufferIndex == 0)
+			{
+				OpenTK.Graphics.ES11.GL.ColorPointer(size, (OpenTK.Graphics.ES11.All)type, stride, pointer);
+			}
+			else
+			{
+				unsafe
+				{
+					fixed (byte* buffer = bufferData[currentArrayBufferIndex])
+					{
+						OpenTK.Graphics.ES11.GL.ColorPointer(size, (OpenTK.Graphics.ES11.All)type, stride, new IntPtr(&buffer[(int)pointer]));
+					}
+				}
+			}
 #endif
 		}
 
@@ -1010,7 +1108,20 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				}
 			}
 #else
-            OpenTK.Graphics.ES11.GL.NormalPointer((OpenTK.Graphics.ES11.All)type, stride, pointer);
+			if (glHasBufferObjects || currentArrayBufferIndex == 0)
+			{
+				OpenTK.Graphics.ES11.GL.NormalPointer((OpenTK.Graphics.ES11.All)type, stride, pointer);
+			}
+			else
+			{
+				unsafe
+				{
+					fixed (byte* buffer = bufferData[currentArrayBufferIndex])
+					{
+						OpenTK.Graphics.ES11.GL.NormalPointer((OpenTK.Graphics.ES11.All)type, stride, new IntPtr(&buffer[(int)pointer]));
+					}
+				}
+			}
 #endif
 		}
 
@@ -1046,7 +1157,20 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				}
 			}
 #else
-			OpenTK.Graphics.ES11.GL.VertexPointer(size, (OpenTK.Graphics.ES11.All)type, stride, pointer);
+			if (glHasBufferObjects || currentArrayBufferIndex == 0)
+			{
+				OpenTK.Graphics.ES11.GL.VertexPointer(size, (OpenTK.Graphics.ES11.All)type, stride, pointer);
+			}
+			else
+			{
+				unsafe
+				{
+					fixed (byte* buffer = bufferData[currentArrayBufferIndex])
+					{
+						OpenTK.Graphics.ES11.GL.VertexPointer(size, (OpenTK.Graphics.ES11.All)type, stride, new IntPtr(&buffer[(int)pointer]));
+					}
+				}
+			}
 #endif
 		}
 
@@ -1084,7 +1208,21 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				}
 			}
 #else
-			throw new NotImplementedException();
+			if (glHasBufferObjects)
+			{
+				throw new NotImplementedException();
+			}
+			else
+			{
+				unsafe
+				{
+					fixed (byte* buffer = bufferData[currentElementArrayBufferIndex])
+					{
+						byte* passedBuffer = &buffer[(int)indices];
+						OpenTK.Graphics.ES11.GL.DrawElements((OpenTK.Graphics.ES11.All)mode, count, (OpenTK.Graphics.ES11.All)type, new IntPtr(passedBuffer));
+					}
+				}
+			}
 #endif
 		}
 
