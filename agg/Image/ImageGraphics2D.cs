@@ -129,8 +129,8 @@ namespace MatterHackers.Agg
 				destRectTransform *= Affine.NewTranslation(-destImageByte.OriginOffset.x, -destImageByte.OriginOffset.y);
 			}
 
-			VertexSourceApplyTransform transfromedRect = new VertexSourceApplyTransform(drawImageRectPath, destRectTransform);
-			Rasterizer.add_path(transfromedRect);
+			VertexSourceApplyTransform transformedRect = new VertexSourceApplyTransform(drawImageRectPath, destRectTransform);
+			Rasterizer.add_path(transformedRect);
 			{
 				ImageClippingProxy destImageWithClipping = new ImageClippingProxy(destImageByte);
 				scanlineRenderer.GenerateAndRender(Rasterizer, drawImageScanlineCache, destImageWithClipping, destImageSpanAllocatorCache, spanImageFilter);

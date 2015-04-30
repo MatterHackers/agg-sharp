@@ -92,7 +92,7 @@ namespace MatterHackers.GCodeVisualizer
 
 		public void SetIndexData(int[] data)
 		{
-			SetIndexData(data, (ushort)data.Length);
+			SetIndexData(data, data.Length);
 		}
 
 		public void SetIndexData(int[] data, int count)
