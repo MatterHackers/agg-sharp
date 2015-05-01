@@ -40,7 +40,7 @@ namespace MatterHackers.PolygonMesh
 	public enum CreateOption { CreateNew, ReuseExisting };
 
 	public enum SortOption { SortNow, WillSortLater };
-
+	
 	[DebuggerDisplay("ID = {Data.ID}")]
 	public class Mesh
 	{
@@ -48,11 +48,16 @@ namespace MatterHackers.PolygonMesh
 
 		public int ChangedCount { get { return changedCount; } }
 
+		Matrix4X4 fastAABBTransform = Matrix4X4.Identity;
+		AxisAlignedBoundingBox fastAABBCache;
+
 		public void MarkAsChanged()
 		{
 			// mark this unchecked as we don't want to throw an exception if this rolls over.
 			unchecked
 			{
+				fastAABBTransform = Matrix4X4.Identity;
+				fastAABBTransform[0, 0] = double.MinValue;
 				changedCount++;
 			}
 		}
@@ -1051,22 +1056,32 @@ namespace MatterHackers.PolygonMesh
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 transform)
 		{
-			Vector3 minXYZ = new Vector3(double.MaxValue, double.MaxValue, double.MaxValue);
-			Vector3 maxXYZ = new Vector3(double.MinValue, double.MinValue, double.MinValue);
-
-			foreach (Vertex vertex in vertices)
+			if (fastAABBTransform == transform && fastAABBCache != null)
 			{
-				Vector3 position = Vector3.Transform(vertex.Position, transform);
-				minXYZ.x = Math.Min(minXYZ.x, position.x);
-				minXYZ.y = Math.Min(minXYZ.y, position.y);
-				minXYZ.z = Math.Min(minXYZ.z, position.z);
+				return fastAABBCache;
+			}
+			else
+			{
+				Vector3 minXYZ = new Vector3(double.MaxValue, double.MaxValue, double.MaxValue);
+				Vector3 maxXYZ = new Vector3(double.MinValue, double.MinValue, double.MinValue);
 
-				maxXYZ.x = Math.Max(maxXYZ.x, position.x);
-				maxXYZ.y = Math.Max(maxXYZ.y, position.y);
-				maxXYZ.z = Math.Max(maxXYZ.z, position.z);
+				foreach (Vertex vertex in vertices)
+				{
+					Vector3 position = Vector3.Transform(vertex.Position, transform);
+					minXYZ.x = Math.Min(minXYZ.x, position.x);
+					minXYZ.y = Math.Min(minXYZ.y, position.y);
+					minXYZ.z = Math.Min(minXYZ.z, position.z);
+
+					maxXYZ.x = Math.Max(maxXYZ.x, position.x);
+					maxXYZ.y = Math.Max(maxXYZ.y, position.y);
+					maxXYZ.z = Math.Max(maxXYZ.z, position.z);
+				}
+
+				fastAABBTransform = transform;
+				fastAABBCache = new AxisAlignedBoundingBox(minXYZ, maxXYZ);
 			}
 
-			return new AxisAlignedBoundingBox(minXYZ, maxXYZ);
+			return fastAABBCache;
 		}
 
 		#endregion Public Members
