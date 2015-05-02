@@ -318,6 +318,11 @@ namespace MatterHackers.Agg.UI
 			base.OnLostFocus(e);
 		}
 
+		public void MarkAsStartingState()
+		{
+			textWhenGotFocus = Text;
+		}
+
 		public bool TextHasChanged()
 		{
 			return textWhenGotFocus != Text;
