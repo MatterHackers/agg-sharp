@@ -199,24 +199,24 @@ namespace MatterHackers.Agg.UI
 					keyEvent.SuppressKeyPress = true;
 					keyEvent.Handled = true;
 					Value = Value + increment;
-					OnEditComplete();
+					OnEditComplete(keyEvent);
 					break;
 
 				case Keys.Down:
 					keyEvent.SuppressKeyPress = true;
 					keyEvent.Handled = true;
 					Value = Value - increment;
-					OnEditComplete();
+					OnEditComplete(keyEvent);
 					break;
 			}
 
 			base.OnKeyDown(keyEvent);
 		}
 
-		public override void OnEditComplete()
+		public override void OnEditComplete(EventArgs e)
 		{
 			Value = Value;
-			base.OnEditComplete();
+			base.OnEditComplete(e);
 		}
 
 		public override void OnKeyPress(KeyPressEventArgs keyPressEvent)
