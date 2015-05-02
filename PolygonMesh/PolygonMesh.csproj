@@ -127,9 +127,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="nunit.framework">
-      <HintPath>..\AggTests\nunit.framework.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
@@ -158,11 +155,8 @@
     <Compile Include="Processors\RemoveTJunctions.cs" />
     <Compile Include="Processors\StlProcessing.cs" />
     <Compile Include="Solids\PlatonicSolids.cs" />
-    <Compile Include="UnitTests\CsgTests.cs" />
-    <Compile Include="UnitTests\UnitTests.cs" />
     <Compile Include="Vertex.cs" />
     <Compile Include="VertexCollection.cs" />
-    <Compile Include="UnitTests\VertexCollectonTests.cs" />
     <Compile Include="VertexSorters\VertexSorterBase.cs" />
     <Compile Include="VertexSorters\VertexXYZAxisWithRotation.cs" />
     <Compile Include="VertexSorters\VertexDistanceFromPointSorter.cs" />
@@ -182,5 +176,6 @@
       <Name>VectorMath</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

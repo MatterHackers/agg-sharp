@@ -135,9 +135,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="nunit.framework">
-      <HintPath>..\AggTests\nunit.framework.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
@@ -166,7 +163,6 @@
     <Compile Include="Transform\SetCenter.cs" />
     <Compile Include="Transform\TransformBase.cs" />
     <Compile Include="Transform\Translate.cs" />
-    <Compile Include="UnitTests.cs" />
     <Compile Include="Utilities.cs" />
   </ItemGroup>
   <ItemGroup>

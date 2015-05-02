@@ -28,7 +28,6 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.VectorMath;
-using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -114,8 +113,6 @@ namespace MatterHackers.Agg
 
 		public static KDTreeNode<StoredType> CreateTree(IEnumerable<StoredType> collectionToCreateFrom, int splitingDimension = 0)
 		{
-			KDTreeUnitTests.Run();
-
 			int count;
 			double medianOnDimension = FindMedianOnDimension(collectionToCreateFrom, splitingDimension, out count);
 
@@ -225,148 +222,6 @@ namespace MatterHackers.Agg
 		public void SetPositionForDimension(int dimension, double position)
 		{
 			this.position[dimension] = position;
-		}
-	}
-
-	[TestFixture]
-	public class KDTreeTests
-	{
-		[Test]
-		public void SamePointTest2D()
-		{
-			Vector2DLeafItem item1 = new Vector2DLeafItem(5, 5);
-			Vector2DLeafItem item2 = new Vector2DLeafItem(5, 5);
-			Vector2DLeafItem item3 = new Vector2DLeafItem(5, 5);
-			IEnumerable<Vector2DLeafItem> enumerable = new Vector2DLeafItem[] { item1, item2, item3 }.AsEnumerable<Vector2DLeafItem>();
-			KDTreeNode<Vector2DLeafItem> rootNode = KDTreeNode<Vector2DLeafItem>.CreateTree(enumerable);
-
-			KDTreeNode<Vector2DLeafItem> testNode = rootNode;
-			Assert.IsTrue(testNode.DimensionSplitIsOn == 0);
-			Assert.IsTrue(testNode.NodeLessThanSplit == null);
-			Assert.IsTrue(testNode.NodeGreaterThanOrEqualToSplit != null);
-			Assert.IsTrue(testNode.LeafItem == item1);
-
-			testNode = testNode.NodeGreaterThanOrEqualToSplit;
-			Assert.IsTrue(testNode.DimensionSplitIsOn == 1);
-			Assert.IsTrue(testNode.NodeLessThanSplit == null);
-			Assert.IsTrue(testNode.NodeGreaterThanOrEqualToSplit != null);
-			Assert.IsTrue(testNode.LeafItem == item2);
-
-			testNode = testNode.NodeGreaterThanOrEqualToSplit;
-			Assert.IsTrue(testNode.DimensionSplitIsOn == 0);
-			Assert.IsTrue(testNode.NodeLessThanSplit == null);
-			Assert.IsTrue(testNode.NodeGreaterThanOrEqualToSplit == null);
-			Assert.IsTrue(testNode.LeafItem == item3);
-		}
-
-		private static void RunTestOnNode3D(Vector3DLeafItem item1, Vector3DLeafItem item2, Vector3DLeafItem item3, KDTreeNode<Vector3DLeafItem> rootNode)
-		{
-			KDTreeNode<Vector3DLeafItem> testNode = rootNode;
-			Assert.IsTrue(testNode.DimensionSplitIsOn == 0);
-			Assert.IsTrue(testNode.NodeLessThanSplit == null);
-			Assert.IsTrue(testNode.NodeGreaterThanOrEqualToSplit != null);
-			Assert.IsTrue(testNode.LeafItem == item1);
-
-			testNode = testNode.NodeGreaterThanOrEqualToSplit;
-			Assert.IsTrue(testNode.DimensionSplitIsOn == 1);
-			Assert.IsTrue(testNode.NodeLessThanSplit == null);
-			Assert.IsTrue(testNode.NodeGreaterThanOrEqualToSplit != null);
-			Assert.IsTrue(testNode.LeafItem == item2);
-
-			testNode = testNode.NodeGreaterThanOrEqualToSplit;
-			Assert.IsTrue(testNode.DimensionSplitIsOn == 2);
-			Assert.IsTrue(testNode.NodeLessThanSplit == null);
-			Assert.IsTrue(testNode.NodeGreaterThanOrEqualToSplit == null);
-			Assert.IsTrue(testNode.LeafItem == item3);
-		}
-
-		[Test]
-		public void SamePointTest3D()
-		{
-			Vector3DLeafItem item1 = new Vector3DLeafItem(5, 5, 5);
-			Vector3DLeafItem item2 = new Vector3DLeafItem(5, 5, 5);
-			Vector3DLeafItem item3 = new Vector3DLeafItem(5, 5, 5);
-			IEnumerable<Vector3DLeafItem> enumerable = new Vector3DLeafItem[] { item1, item2, item3 }.AsEnumerable<Vector3DLeafItem>();
-			KDTreeNode<Vector3DLeafItem> rootNode = KDTreeNode<Vector3DLeafItem>.CreateTree(enumerable);
-
-			RunTestOnNode3D(item1, item2, item3, rootNode);
-		}
-
-		[Test]
-		public void CreateFromKDTree()
-		{
-			Vector3DLeafItem item1 = new Vector3DLeafItem(5, 5, 5);
-			Vector3DLeafItem item2 = new Vector3DLeafItem(5, 5, 5);
-			Vector3DLeafItem item3 = new Vector3DLeafItem(5, 5, 5);
-			IEnumerable<Vector3DLeafItem> enumerable = new Vector3DLeafItem[] { item1, item2, item3 }.AsEnumerable<Vector3DLeafItem>();
-			KDTreeNode<Vector3DLeafItem> rootNode = KDTreeNode<Vector3DLeafItem>.CreateTree(enumerable);
-			RunTestOnNode3D(item1, item2, item3, rootNode);
-
-			KDTreeNode<Vector3DLeafItem> fromRootNode = KDTreeNode<Vector3DLeafItem>.CreateTree(rootNode.UnorderedEnumerator());
-
-			KDTreeNode<Vector3DLeafItem> testNode = fromRootNode;
-			Assert.IsTrue(testNode.DimensionSplitIsOn == 0);
-			Assert.IsTrue(testNode.NodeLessThanSplit == null);
-			Assert.IsTrue(testNode.NodeGreaterThanOrEqualToSplit != null);
-
-			testNode = testNode.NodeGreaterThanOrEqualToSplit;
-			Assert.IsTrue(testNode.DimensionSplitIsOn == 1);
-			Assert.IsTrue(testNode.NodeLessThanSplit == null);
-			Assert.IsTrue(testNode.NodeGreaterThanOrEqualToSplit != null);
-
-			testNode = testNode.NodeGreaterThanOrEqualToSplit;
-			Assert.IsTrue(testNode.DimensionSplitIsOn == 2);
-			Assert.IsTrue(testNode.NodeLessThanSplit == null);
-			Assert.IsTrue(testNode.NodeGreaterThanOrEqualToSplit == null);
-		}
-
-		[Test]
-		public void EnumerateFromPoint()
-		{
-			Vector3DLeafItem item1 = new Vector3DLeafItem(1, 0, 0);
-			Vector3DLeafItem item2 = new Vector3DLeafItem(2, 0, 0);
-			Vector3DLeafItem item3 = new Vector3DLeafItem(3, 0, 0);
-			IEnumerable<Vector3DLeafItem> enumerable = new Vector3DLeafItem[] { item1, item2, item3 }.AsEnumerable<Vector3DLeafItem>();
-			KDTreeNode<Vector3DLeafItem> rootNode = KDTreeNode<Vector3DLeafItem>.CreateTree(enumerable);
-
-			int index = 0;
-			foreach (Vector3DLeafItem item in rootNode.GetDistanceEnumerator(new double[] { 2.1, 0, 0 }))
-			{
-				switch (index++)
-				{
-					case 0:
-						Assert.IsTrue(item == item2);
-						break;
-
-					case 1:
-						Assert.IsTrue(item == item3);
-						break;
-
-					case 2:
-						Assert.IsTrue(item == item1);
-						break;
-				}
-			}
-		}
-	}
-
-	public static class KDTreeUnitTests
-	{
-		private static bool ranTests = false;
-
-		public static bool RanTests { get { return ranTests; } }
-
-		public static void Run()
-		{
-			if (!ranTests)
-			{
-				ranTests = true;
-				KDTreeTests test = new KDTreeTests();
-				test.SamePointTest2D();
-				test.SamePointTest3D();
-				test.CreateFromKDTree();
-				test.EnumerateFromPoint();
-			}
 		}
 	}
 }

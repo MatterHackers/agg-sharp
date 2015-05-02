@@ -129,9 +129,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="nunit.framework">
-      <HintPath>..\AggTests\nunit.framework.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
@@ -170,11 +167,6 @@
     <Compile Include="Primitive\Shapes\SphereShape.cs" />
     <Compile Include="Primitive\Shapes\TriangleShape.cs" />
     <Compile Include="Primitive\Transform.cs" />
-    <Compile Include="UnitTests\BooleanTests.cs" />
-    <Compile Include="UnitTests\FrustumTests.cs" />
-    <Compile Include="UnitTests\PolygonTraceTests.cs" />
-    <Compile Include="UnitTests\TraceAPITests.cs" />
-    <Compile Include="UnitTests\UnitTests.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

@@ -145,9 +145,6 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="nunit.framework">
-      <HintPath>..\AggTests\nunit.framework.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
   </ItemGroup>
@@ -208,7 +205,6 @@
     <Compile Include="ImageSequenceWidget.cs" />
     <Compile Include="StringEventArgs.cs" />
     <Compile Include="SystemWindow\AbstractOsMappingWidget.cs" />
-    <Compile Include="Tests\MenuTests.cs" />
     <Compile Include="TextWidgets\InternalNumberEdit.cs" />
     <Compile Include="TextWidgets\NumberEdit.cs" />
     <Compile Include="LayoutPannel.cs" />
@@ -227,19 +223,10 @@
     <Compile Include="TabControl\TabBar.cs" />
     <Compile Include="TabControl\TabControl.cs" />
     <Compile Include="TabControl\TabPage.cs" />
-    <Compile Include="Tests\AnchorTests.cs" />
-    <Compile Include="Tests\BackBufferTests.cs" />
-    <Compile Include="Tests\FlowLayoutTests.cs" />
-    <Compile Include="Tests\ListBoxTests.cs" />
-    <Compile Include="Tests\MouseInteractionTests.cs" />
-    <Compile Include="Tests\ScrollableWidgetTests.cs" />
-    <Compile Include="Tests\TextAndTextWidgetTests.cs" />
-    <Compile Include="Tests\TextEditTests.cs" />
     <Compile Include="TextWidgets\InternalTextEditWidget.cs" />
     <Compile Include="TextWidgets\UndoBuffer.cs" />
     <Compile Include="TextWidgets\TextEditWidget.cs" />
     <Compile Include="TextWidgets\TextWidget.cs" />
-    <Compile Include="Tests\UnitTests.cs" />
     <Compile Include="TextWidgets\TextWidgetUndoData.cs" />
     <Compile Include="UiThread.cs" />
     <Compile Include="WidgetClosingEnventArgs.cs" />
