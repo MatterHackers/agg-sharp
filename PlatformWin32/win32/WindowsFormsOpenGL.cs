@@ -47,7 +47,7 @@ namespace MatterHackers.Agg.UI
             if (!checkedCapabilities)
             {
                 IntPtr address = (this.Context as OpenTK.Graphics.IGraphicsContextInternal).GetAddress("glGenBuffers");
-                if (address == IntPtr.Zero)
+                if (GL.GetString(StringName.Extensions).Contains("vertex_buffer_object"))
                 {
                     MatterHackers.RenderOpenGl.OpenGl.GL.DisableGlBuffers();
                 }
