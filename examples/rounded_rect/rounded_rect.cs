@@ -33,8 +33,8 @@ namespace MatterHackers.Agg
 			m_radius.ValueChanged += new EventHandler(NeedsRedraw);
 			m_gamma.ValueChanged += new EventHandler(NeedsRedraw);
 			m_offset.ValueChanged += new EventHandler(NeedsRedraw);
-			m_white_on_black.CheckedStateChanged += new CheckBox.CheckedStateChangedEventHandler(NeedsRedraw);
-			m_DrawAsOutlineCheckBox.CheckedStateChanged += new CheckBox.CheckedStateChangedEventHandler(NeedsRedraw);
+			m_white_on_black.CheckedStateChanged += NeedsRedraw;
+			m_DrawAsOutlineCheckBox.CheckedStateChanged += NeedsRedraw;
 
 			m_x[0] = 100; m_y[0] = 100;
 			m_x[1] = 500; m_y[1] = 350;
@@ -97,10 +97,10 @@ namespace MatterHackers.Agg
 			e.init(m_x[0], m_y[0], 3, 3, 16);
 			ras.add_path(e);
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
-			scanlineRenderer.render_scanlines_aa_solid(clippingProxyNormal, ras, sl, new RGBA_Bytes(127, 127, 127));
+			scanlineRenderer.RenderSolid(clippingProxyNormal, ras, sl, new RGBA_Bytes(127, 127, 127));
 			e.init(m_x[1], m_y[1], 3, 3, 16);
 			ras.add_path(e);
-			scanlineRenderer.render_scanlines_aa_solid(clippingProxyNormal, ras, sl, new RGBA_Bytes(127, 127, 127));
+			scanlineRenderer.RenderSolid(clippingProxyNormal, ras, sl, new RGBA_Bytes(127, 127, 127));
 
 			double d = m_offset.Value;
 
@@ -120,7 +120,7 @@ namespace MatterHackers.Agg
 				ras.add_path(r);
 			}
 
-			scanlineRenderer.render_scanlines_aa_solid(clippingProxyGamma, ras, sl, m_white_on_black.Checked ? new RGBA_Bytes(255, 255, 255) : new RGBA_Bytes(0, 0, 0));
+			scanlineRenderer.RenderSolid(clippingProxyGamma, ras, sl, m_white_on_black.Checked ? new RGBA_Bytes(255, 255, 255) : new RGBA_Bytes(0, 0, 0));
 
 			base.OnDraw(graphics2D);
 		}

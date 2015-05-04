@@ -46,7 +46,7 @@ namespace MatterHackers.Agg
 			AddChild(m_fixed_len);
 
 			m_animate = new CheckBox(460, 25, "Animate");
-			m_animate.CheckedStateChanged += new CheckBox.CheckedStateChangedEventHandler(m_animate_CheckedStateChanged);
+			m_animate.CheckedStateChanged += m_animate_CheckedStateChanged;
 			AddChild(m_animate);
 		}
 

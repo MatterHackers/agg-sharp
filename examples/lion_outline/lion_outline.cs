@@ -57,7 +57,7 @@ namespace MatterHackers.Agg
 			renderAsScanlineCheckBox = new MatterHackers.Agg.UI.CheckBox(160, 5, "Use Scanline Rasterizer");
 			renderAsScanlineCheckBox.Checked = false;
 			widthSlider.ValueChanged += new EventHandler(NeedsRedraw);
-			renderAsScanlineCheckBox.CheckedStateChanged += new CheckBox.CheckedStateChangedEventHandler(NeedsRedraw);
+			renderAsScanlineCheckBox.CheckedStateChanged += NeedsRedraw;
 			AddChild(widthSlider);
 			widthSlider.OriginRelativeParent = Vector2.Zero;
 			widthSlider.SetRange(0.0, 4.0);

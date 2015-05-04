@@ -117,10 +117,10 @@ namespace MatterHackers.Agg
 					VertexSourceApplyTransform trans_ell_stroke = new VertexSourceApplyTransform(ell_stroke, tr);
 
 					g_rasterizer.add_path(trans_ell);
-					scanlineRenderer.render_scanlines_aa_solid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0.5, 0.3, 0.0, 0.3));
+					scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0.5, 0.3, 0.0, 0.3));
 
 					g_rasterizer.add_path(trans_ell_stroke);
-					scanlineRenderer.render_scanlines_aa_solid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0.0, 0.3, 0.2, 1.0));
+					scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0.0, 0.3, 0.2, 1.0));
 				}
 			}
 			else
@@ -145,17 +145,17 @@ namespace MatterHackers.Agg
 					VertexSourceApplyTransform TransformedEllipesOutline = new VertexSourceApplyTransform(EllipseOutline, tr);
 
 					g_rasterizer.add_path(TransformedFilledEllipse);
-					scanlineRenderer.render_scanlines_aa_solid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0.5, 0.3, 0.0, 0.3));
+					scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0.5, 0.3, 0.0, 0.3));
 
 					g_rasterizer.add_path(TransformedEllipesOutline);
-					scanlineRenderer.render_scanlines_aa_solid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0.0, 0.3, 0.2, 1.0));
+					scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0.0, 0.3, 0.2, 1.0));
 				}
 			}
 
 			//--------------------------
 			// Render the "quad" tool and controls
 			g_rasterizer.add_path(quadPolygonControl);
-			scanlineRenderer.render_scanlines_aa_solid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0, 0.3, 0.5, 0.6));
+			scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0, 0.3, 0.5, 0.6));
 			//m_trans_type.Render(g_rasterizer, g_scanline, clippingProxy);
 			base.OnDraw(graphics2D);
 		}

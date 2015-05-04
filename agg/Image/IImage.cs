@@ -102,7 +102,7 @@ namespace MatterHackers.Agg.Image
 
 		IRecieveBlenderFloat GetBlender();
 
-		void SetBlender(IRecieveBlenderFloat value);
+		void SetRecieveBlender(IRecieveBlenderFloat value);
 
 		int GetFloatsBetweenPixelsInclusive();
 

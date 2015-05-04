@@ -188,7 +188,7 @@ namespace MatterHackers.RenderOpenGl
 			triangleEddgeInfo.RenderLastToGL();
 		}
 
-		public override void Render(IVertexSource vertexSource, int pathIndexToRender, RGBA_Bytes colorBytes)
+		public override void Render(IVertexSource vertexSource, int pathIndexToRender, IColorType colorIn)
 		{
 			PushOrthoProjection();
 
@@ -197,6 +197,7 @@ namespace MatterHackers.RenderOpenGl
 
 			vertexSource.rewind(pathIndexToRender);
 
+			RGBA_Bytes colorBytes = colorIn.GetAsRGBA_Bytes();
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 			Affine transform = GetTransform();

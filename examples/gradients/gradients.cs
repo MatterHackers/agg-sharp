@@ -206,7 +206,7 @@ namespace MatterHackers.Agg
 						rect.normalize_radius();
 
 						ras.add_path(rect);
-						scanlineRenderer.render_scanlines_aa_solid(clippingProxy, ras, sl, new RGBA_Bytes(.9, .9, .9));
+						scanlineRenderer.RenderSolid(clippingProxy, ras, sl, new RGBA_Bytes(.9, .9, .9));
 					}
 				}
 			}

@@ -8,7 +8,7 @@ namespace MatterHackers.Agg
 		private VectorPOD<RGBA_Bytes> tempSpanColors = new VectorPOD<RGBA_Bytes>();
 		private VectorPOD<RGBA_Floats> tempSpanColorsFloats = new VectorPOD<RGBA_Floats>();
 
-		public void render_scanlines_aa_solid(IImageByte destImage, IRasterizer rasterizer, IScanlineCache scanLine, RGBA_Bytes color)
+		public void RenderSolid(IImageByte destImage, IRasterizer rasterizer, IScanlineCache scanLine, RGBA_Bytes color)
 		{
 			if (rasterizer.rewind_scanlines())
 			{
@@ -94,7 +94,7 @@ namespace MatterHackers.Agg
 
 				ras.add_path(vs, path_id[i]);
 
-				render_scanlines_aa_solid(destImage, ras, sl, color_storage[i]);
+				RenderSolid(destImage, ras, sl, color_storage[i]);
 			}
 		}
 

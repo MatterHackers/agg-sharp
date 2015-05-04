@@ -130,7 +130,7 @@ namespace MatterHackers.Agg.Image
                 AttachBuffer(image.GetBuffer(), image.Width(), image.Height(), image.StrideInBytes(), image.BitDepth, image.GetDistanceBetweenPixelsInclusive());
             }
 
-            SetBlender(blender);
+            SetRecieveBlender(blender);
         }
 #endif
 
