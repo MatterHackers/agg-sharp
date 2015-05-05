@@ -19,11 +19,15 @@ namespace MatterHackers.RayTracer
 	{
 		private Plane plane;
 		private int majorAxis = 0;
-		private int xForMajorAxis = 1;
-		private int yForMajorAxis = 2;
 		private RectangleDouble boundsOnMajorAxis = new RectangleDouble(double.MaxValue, double.MaxValue, double.MinValue, double.MinValue);
-		private Vector3[] vertices = new Vector3[3];
-		private Vector3 center;
+		private Vector3Float[] vertices = new Vector3Float[3];
+		private Vector3Float center;
+
+		int[] xMapping = new int[] { 1, 0, 0 };
+		int xForMajorAxis { get { return xMapping[majorAxis]; } }
+
+		int[] yMapping = new int[] { 2, 2, 1 };
+		int yForMajorAxis { get { return yMapping[majorAxis]; } }
 
 		public TriangleShape(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2, MaterialAbstract material)
 		{
@@ -31,40 +35,32 @@ namespace MatterHackers.RayTracer
 			double distanceFromOrigin = Vector3.Dot(vertex0, planeNormal);
 			plane = new Plane(planeNormal, distanceFromOrigin);
 			Material = material;
-			vertices[0] = vertex0;
-			vertices[1] = vertex1;
-			vertices[2] = vertex2;
-			center = (vertex0 + vertex1 + vertex2) / 3;
+			vertices[0] = new Vector3Float(vertex0);
+			vertices[1] = new Vector3Float(vertex1);
+			vertices[2] = new Vector3Float(vertex2);
+			center = new Vector3Float((vertex0 + vertex1 + vertex2) / 3);
 			if (Math.Abs(planeNormal.x) > Math.Abs(planeNormal.y))
 			{
 				if (Math.Abs(planeNormal.x) > Math.Abs(planeNormal.z))
 				{
 					// mostly facing x axis
 					majorAxis = 0;
-					xForMajorAxis = 1;
-					yForMajorAxis = 2;
 				}
 				else if (Math.Abs(planeNormal.y) > Math.Abs(planeNormal.z))
 				{
 					// mostly facing z
 					majorAxis = 2;
-					xForMajorAxis = 0;
-					yForMajorAxis = 1;
 				}
 			}
 			else if (Math.Abs(planeNormal.y) > Math.Abs(planeNormal.z))
 			{
 				// mostly facing y
 				majorAxis = 1;
-				xForMajorAxis = 0;
-				yForMajorAxis = 2;
 			}
 			else
 			{
 				// mostly facing z
 				majorAxis = 2;
-				xForMajorAxis = 0;
-				yForMajorAxis = 1;
 			}
 			for (int i = 0; i < 3; i++)
 			{
@@ -82,7 +78,7 @@ namespace MatterHackers.RayTracer
 			for (int firstIndex = 0; firstIndex < 3; ++firstIndex)
 			{
 				int secondIndex = (firstIndex + 1) % 3;
-				accumulation += Vector3.Cross(vertices[firstIndex], vertices[secondIndex]);
+				accumulation += new Vector3(Vector3Float.Cross(vertices[firstIndex], vertices[secondIndex]));
 			}
 			accumulation /= 2;
 			return accumulation.Length;
@@ -90,7 +86,7 @@ namespace MatterHackers.RayTracer
 
 		public override Vector3 GetCenter()
 		{
-			return center;
+			return new Vector3(center);
 		}
 
 		private AxisAlignedBoundingBox cachedAABB = new AxisAlignedBoundingBox(Vector3.NegativeInfinity, Vector3.NegativeInfinity);
@@ -99,9 +95,9 @@ namespace MatterHackers.RayTracer
 		{
 			if (cachedAABB.minXYZ.x == double.NegativeInfinity)
 			{
-				Vector3 minXYZ = Vector3.ComponentMin(Vector3.ComponentMin(vertices[0], vertices[1]), vertices[2]);
-				Vector3 maxXYZ = Vector3.ComponentMax(Vector3.ComponentMax(vertices[0], vertices[1]), vertices[2]);
-				cachedAABB = new AxisAlignedBoundingBox(minXYZ, maxXYZ);
+				Vector3Float minXYZ = Vector3Float.ComponentMin(Vector3Float.ComponentMin(vertices[0], vertices[1]), vertices[2]);
+				Vector3Float maxXYZ = Vector3Float.ComponentMax(Vector3Float.ComponentMax(vertices[0], vertices[1]), vertices[2]);
+				cachedAABB = new AxisAlignedBoundingBox(new Vector3(minXYZ), new Vector3(maxXYZ));
 			}
 
 			return cachedAABB;
