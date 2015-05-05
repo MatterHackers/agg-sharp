@@ -25,7 +25,6 @@ namespace MatterHackers.RayTracer
 		private PlaneFloat plane;
 		private Vector3Float[] vertices = new Vector3Float[3];
 		private int[] xMapping = new int[] { 1, 0, 0 };
-
 		private int[] yMapping = new int[] { 2, 2, 1 };
 
 		public TriangleShape(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2, MaterialAbstract material)
