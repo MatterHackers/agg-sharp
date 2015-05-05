@@ -195,6 +195,7 @@
     <Compile Include="Font\UnitTests.cs" />
     <Compile Include="Image\ImageSequence.cs" />
     <Compile Include="PluginFinder.cs" />
+    <Compile Include="RectangleFloat.cs" />
     <Compile Include="RectangleDouble.cs" />
     <Compile Include="RectangleInt.cs" />
     <Compile Include="RootedObjectEventHandler.cs" />
