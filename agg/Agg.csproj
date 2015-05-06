@@ -239,7 +239,6 @@
     <Compile Include="Image\rgb.cs" />
     <Compile Include="Image\rgba.cs" />
     <Compile Include="Image\Transposer.cs" />
-    <Compile Include="KDTree.cs" />
     <Compile Include="Point2D.cs" />
     <Compile Include="quicksort.cs" />
     <Compile Include="RasterBufferAccessors.cs" />

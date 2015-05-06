@@ -322,7 +322,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(gotEnterBounds == 0);
 		}
 
-		[Test]
+		[Test, Ignore("Functinality needs to be implemented")]
 		public void ValidateEnterLeaveOnWidgetMoves()
 		{
 			GuiWidget container = new SystemWindow(200, 200);
@@ -387,7 +387,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(gotEnterBounds == 1);
 		}
 
-		[Test]
+		[Test, Ignore("Functinality needs to be implemented")]
 		public void ValidateEnterLeaveOnWidgetBoundsChange()
 		{
 			GuiWidget container = new SystemWindow(200, 200);

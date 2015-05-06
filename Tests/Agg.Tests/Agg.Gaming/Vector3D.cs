@@ -148,12 +148,12 @@ namespace Gaming.Math
             z = Temp.z;
         }
 
-        public void RotateAboutZ(double Radians)
+        public void RotateAboutZ(float Radians)
         {
             RotateAboutZ((double)Radians);
         }
 
-        public void RotateAboutZ(float Radians)
+        public void RotateAboutZ(double Radians)
         {
             Vector3D Temp;
 
@@ -562,9 +562,6 @@ namespace NUnitGaming
 			Assert.IsTrue(Test.Equals(new Vector3D(0, 0, 1), 0.001f));
 			Test.RotateAboutY(System.Math.PI / 2);
 			Assert.IsTrue(Test.Equals(new Vector3D(1, 0, 0), 0.001f));
-			
-			// TODO: Look into this failure
-			Assert.Fail("The statement below this line causes a stack overflow which crashes the test suite.");
 			
 			Test.RotateAboutZ(System.Math.PI / 2);
 			Assert.IsTrue(Test.Equals(new Vector3D(0, 1, 0), 0.001f));
