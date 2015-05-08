@@ -61,6 +61,48 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		[Test]
+		public void TopToBottomContainerAppliesExpectedMargin()
+		{
+			int marginSize = 40;
+			int dimensions = 300;
+
+			GuiWidget outerContainer = new GuiWidget(dimensions, dimensions);
+
+			FlowLayoutWidget topToBottomContainer = new FlowLayoutWidget(FlowDirection.TopToBottom)
+			{
+				HAnchor = HAnchor.ParentLeftRight,
+				VAnchor = UI.VAnchor.ParentBottomTop,
+			};
+			outerContainer.AddChild(topToBottomContainer);
+
+			GuiWidget childWidget = new GuiWidget()
+			{
+				HAnchor = HAnchor.ParentLeftRight,
+				VAnchor = VAnchor.ParentBottomTop,
+				Margin = new BorderDouble(marginSize),
+				BackgroundColor = RGBA_Bytes.Red,
+			};
+
+			topToBottomContainer.AddChild(childWidget);
+			topToBottomContainer.AnchorAll();
+			topToBottomContainer.PerformLayout();
+
+			outerContainer.DoubleBuffer = true;
+			outerContainer.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			outerContainer.OnDraw(outerContainer.NewGraphics2D());
+
+			// For troubleshooting or visual validation
+			//saveImagesForDebug = true;
+			//OutputImages(outerContainer, outerContainer);
+
+			var bounds = childWidget.BoundsRelativeToParent;
+			Assert.IsTrue(bounds.Left == marginSize, "Left margin is incorrect");
+			Assert.IsTrue(bounds.Right == dimensions - marginSize, "Right margin is incorrect");
+			Assert.IsTrue(bounds.Top == dimensions - marginSize, "Top margin is incorrect");
+			Assert.IsTrue(bounds.Bottom == marginSize, "Bottom margin is incorrect");
+		}
+
+		[Test]
 		public void NestedLayoutTopToBottomTests()
 		{
 			NestedLayoutTopToBottomTest(new BorderDouble(), new BorderDouble());
