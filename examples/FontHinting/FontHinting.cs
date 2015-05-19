@@ -104,7 +104,6 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			MatterHackers.Agg.UI.Tests.UnitTests.Run();
 			AppWidgetFactory appWidget = new BlurFactory();
 			appWidget.CreateWidgetAndRunInWindow(SystemWindow.PixelTypes.Depth24);
 		}

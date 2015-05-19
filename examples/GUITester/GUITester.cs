@@ -76,10 +76,6 @@ namespace MatterHackers.Agg
 		public static void Main(string[] args)
 		{
 			Clipboard.SetSystemClipboard(new WindowsFormsClipboard());
-			MatterHackers.Agg.Image.UnitTests.Run();
-			MatterHackers.Agg.Font.UnitTests.Run();
-			Agg.UI.Tests.UnitTests.Run();
-			MatterHackers.Agg.Tests.UnitTests.Run();
 
 			AppWidgetFactory appWidget = new GuiTesterFactory();
 			appWidget.CreateWidgetAndRunInWindow();
