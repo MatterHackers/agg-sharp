@@ -39,7 +39,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
 		internal CSharpSerialPortWrapper(string serialPortName)
 		{
-			if (FrostedSerialPortFactory.Instance.IsWindows)
+			if (FrostedSerialPortFactory.GetAppropriateFactory("RepRap").IsWindows)
 			{
 				try
 				{
