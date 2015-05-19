@@ -166,9 +166,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\packages\Newtonsoft.Json.6.0.6\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="nunit.framework">
-      <HintPath>..\AggTests\nunit.framework.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
   </ItemGroup>
@@ -192,9 +189,9 @@
     <Compile Include="BorderDouble.cs" />
     <Compile Include="DumpCallStackIfSlow.cs" />
     <Compile Include="Font\TextWrapping.cs" />
-    <Compile Include="Font\UnitTests.cs" />
     <Compile Include="Image\ImageSequence.cs" />
     <Compile Include="PluginFinder.cs" />
+    <Compile Include="RectangleFloat.cs" />
     <Compile Include="RectangleDouble.cs" />
     <Compile Include="RectangleInt.cs" />
     <Compile Include="RootedObjectEventHandler.cs" />
@@ -202,7 +199,6 @@
     <Compile Include="ShapePath.cs" />
     <Compile Include="StringHelper.cs" />
     <Compile Include="TimedLock.cs" />
-    <Compile Include="Tests\UnitTests.cs" />
     <Compile Include="VectorClipper.cs" />
     <Compile Include="OutlineRenderer.cs" />
     <Compile Include="ImageLineRenderer.cs" />
@@ -232,7 +228,6 @@
     <Compile Include="Image\ImageGraphics2D.cs" />
     <Compile Include="Image\ImageProxy.cs" />
     <Compile Include="Image\ImageTgaIO.cs" />
-    <Compile Include="Image\UnitTests.cs" />
     <Compile Include="IMarkers.cs" />
     <Compile Include="Image\RecursiveBlur.cs" />
     <Compile Include="IScanline.cs" />
@@ -244,7 +239,6 @@
     <Compile Include="Image\rgb.cs" />
     <Compile Include="Image\rgba.cs" />
     <Compile Include="Image\Transposer.cs" />
-    <Compile Include="KDTree.cs" />
     <Compile Include="Point2D.cs" />
     <Compile Include="quicksort.cs" />
     <Compile Include="RasterBufferAccessors.cs" />
@@ -303,6 +297,7 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

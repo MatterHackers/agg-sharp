@@ -486,6 +486,17 @@ namespace MatterHackers.Agg
 			return this;
 		}
 
+		public static RGBA_Floats ComponentMax(RGBA_Floats a, RGBA_Floats b)
+		{
+			RGBA_Floats result = a;
+			if (result.red < b.red) result.red = b.red;
+			if (result.green < b.green) result.green = b.green;
+			if (result.blue < b.blue) result.blue = b.blue;
+			if (result.alpha < b.alpha) result.alpha = b.alpha;
+
+			return result;
+		}
+
 		public RGBA_Floats demultiply()
 		{
 			if (alpha == 0)

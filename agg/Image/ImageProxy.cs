@@ -275,9 +275,9 @@ namespace MatterHackers.Agg.Image
 			return linkedImage.GetBlender();
 		}
 
-		public void SetBlender(IRecieveBlenderFloat value)
+		public void SetRecieveBlender(IRecieveBlenderFloat value)
 		{
-			linkedImage.SetBlender(value);
+			linkedImage.SetRecieveBlender(value);
 		}
 
 		public virtual RGBA_Floats GetPixel(int x, int y)

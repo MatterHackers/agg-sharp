@@ -81,7 +81,7 @@ namespace MatterHackers.Agg.Image
 
 		public ImageBufferFloat(IRecieveBlenderFloat blender)
 		{
-			SetBlender(blender);
+			SetRecieveBlender(blender);
 		}
 
 		public ImageBufferFloat(IImageFloat sourceImage, IRecieveBlenderFloat blender)
@@ -92,13 +92,13 @@ namespace MatterHackers.Agg.Image
 			float[] newBuffer = new float[buffer.Length];
 			agg_basics.memcpy(newBuffer, offset, buffer, offset, buffer.Length - offset);
 			SetBuffer(newBuffer, offset);
-			SetBlender(blender);
+			SetRecieveBlender(blender);
 		}
 
 		public ImageBufferFloat(int width, int height, int bitsPerPixel, IRecieveBlenderFloat blender)
 		{
 			Allocate(width, height, width * (bitsPerPixel / 32), bitsPerPixel);
-			SetBlender(blender);
+			SetRecieveBlender(blender);
 		}
 
 #if false
@@ -109,7 +109,7 @@ namespace MatterHackers.Agg.Image
                 AttachBuffer(image.GetBuffer(), image.Width, image.Height, image.StrideInBytes(), image.BitDepth, image.GetDistanceBetweenPixelsInclusive());
             }
 
-            SetBlender(blender);
+            SetRecieveBlender(blender);
         }
 #endif
 
@@ -122,7 +122,7 @@ namespace MatterHackers.Agg.Image
 			throw new NotImplementedException();
 			//agg_basics.memcpy(newBuffer, offset, buffer, offset, buffer.Length - offset);
 			//SetBuffer(newBuffer, offset + bufferOffset);
-			//SetBlender(blender);
+			//SetRecieveBlender(blender);
 		}
 
 		public void AttachBuffer(float[] buffer, int bufferOffset, int width, int height, int strideInBytes, int bitDepth, int distanceInBytesBetweenPixelsInclusive)
@@ -138,7 +138,7 @@ namespace MatterHackers.Agg.Image
 			int offset = sourceImage.GetBufferOffsetXY(0, 0);
 			float[] buffer = sourceImage.GetBuffer();
 			SetBuffer(buffer, offset + bufferOffset);
-			SetBlender(blender);
+			SetRecieveBlender(blender);
 		}
 
 		public void Attach(IImageFloat sourceImage, IRecieveBlenderFloat blender)
@@ -353,7 +353,7 @@ namespace MatterHackers.Agg.Image
 			return m_Blender;
 		}
 
-		public void SetBlender(IRecieveBlenderFloat value)
+		public void SetRecieveBlender(IRecieveBlenderFloat value)
 		{
 			if (value != null && value.NumPixelBits != BitDepth)
 			{
@@ -886,7 +886,7 @@ namespace MatterHackers.Agg.Image
 			}
 			Deallocate();
 			Allocate(boundsToCopyFrom.Width, boundsToCopyFrom.Height, boundsToCopyFrom.Width * sourceImage.BitDepth / 8, sourceImage.BitDepth);
-			SetBlender(sourceImage.GetBlender());
+			SetRecieveBlender(sourceImage.GetBlender());
 
 			if (m_Width != 0 && m_Height != 0)
 			{

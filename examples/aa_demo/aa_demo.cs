@@ -25,7 +25,7 @@ namespace MatterHackers.Agg
 			ras.line_to_d(x * m_size + m_size, y * m_size + m_size);
 			ras.line_to_d(x * m_size, y * m_size + m_size);
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
-			scanlineRenderer.render_scanlines_aa_solid(destImage, ras, sl, color);
+			scanlineRenderer.RenderSolid(destImage, ras, sl, color);
 		}
 	}
 
@@ -141,10 +141,10 @@ namespace MatterHackers.Agg
 			rasterizer.move_to_d(m_x[0] / size_mul, m_y[0] / size_mul);
 			rasterizer.line_to_d(m_x[1] / size_mul, m_y[1] / size_mul);
 			rasterizer.line_to_d(m_x[2] / size_mul, m_y[2] / size_mul);
-			ren_en.render_scanlines_aa_solid(clippingProxyGamma, rasterizer, sl, RGBA_Bytes.Black);
+			ren_en.RenderSolid(clippingProxyGamma, rasterizer, sl, RGBA_Bytes.Black);
 
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
-			scanlineRenderer.render_scanlines_aa_solid(clippingProxyGamma, rasterizer, sl, RGBA_Bytes.Black);
+			scanlineRenderer.RenderSolid(clippingProxyGamma, rasterizer, sl, RGBA_Bytes.Black);
 
 			rasterizer.gamma(new gamma_none());
 
@@ -158,7 +158,7 @@ namespace MatterHackers.Agg
 			ps.LineTo(m_x[2], m_y[2]);
 			ps.LineTo(m_x[0], m_y[0]);
 			rasterizer.add_path(pg);
-			scanlineRenderer.render_scanlines_aa_solid(clippingProxyNormal, rasterizer, sl, new RGBA_Bytes(0, 150, 160, 200));
+			scanlineRenderer.RenderSolid(clippingProxyNormal, rasterizer, sl, new RGBA_Bytes(0, 150, 160, 200));
 
 			base.OnDraw(graphics2D);
 		}

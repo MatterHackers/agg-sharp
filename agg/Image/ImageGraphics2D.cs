@@ -61,7 +61,7 @@ namespace MatterHackers.Agg
 			return Rasterizer.GetVectorClipBox();
 		}
 
-		public override void Render(IVertexSource vertexSource, int pathIndexToRender, RGBA_Bytes colorBytes)
+		public override void Render(IVertexSource vertexSource, int pathIndexToRender, IColorType colorBytes)
 		{
 			rasterizer.reset();
 			Affine transform = GetTransform();
@@ -72,7 +72,7 @@ namespace MatterHackers.Agg
 			rasterizer.add_path(vertexSource, pathIndexToRender);
 			if (destImageByte != null)
 			{
-				scanlineRenderer.render_scanlines_aa_solid(destImageByte, rasterizer, m_ScanlineCache, colorBytes);
+				scanlineRenderer.RenderSolid(destImageByte, rasterizer, m_ScanlineCache, colorBytes.GetAsRGBA_Bytes());
 				DestImage.MarkImageChanged();
 			}
 			else
@@ -129,8 +129,8 @@ namespace MatterHackers.Agg
 				destRectTransform *= Affine.NewTranslation(-destImageByte.OriginOffset.x, -destImageByte.OriginOffset.y);
 			}
 
-			VertexSourceApplyTransform transfromedRect = new VertexSourceApplyTransform(drawImageRectPath, destRectTransform);
-			Rasterizer.add_path(transfromedRect);
+			VertexSourceApplyTransform transformedRect = new VertexSourceApplyTransform(drawImageRectPath, destRectTransform);
+			Rasterizer.add_path(transformedRect);
 			{
 				ImageClippingProxy destImageWithClipping = new ImageClippingProxy(destImageByte);
 				scanlineRenderer.GenerateAndRender(Rasterizer, drawImageScanlineCache, destImageWithClipping, destImageSpanAllocatorCache, spanImageFilter);

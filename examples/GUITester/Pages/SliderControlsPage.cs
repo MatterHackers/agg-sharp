@@ -20,7 +20,7 @@ namespace MatterHackers.Agg
 			changeSliderText = new CheckBox(10, 200, "Show Text");
 			changeSliderText.Checked = true;
 			AddChild(changeSliderText);
-			changeSliderText.CheckedStateChanged += new CheckBox.CheckedStateChangedEventHandler(changeSliderText_CheckedStateChanged);
+			changeSliderText.CheckedStateChanged += changeSliderText_CheckedStateChanged;
 
 			verticalSlider = new Slider(new Vector2(320, 60), 100, orientation: Orientation.Vertical);
 			AddChild(verticalSlider);

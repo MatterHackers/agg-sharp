@@ -203,7 +203,7 @@ namespace MatterHackers.Agg
 						rect.normalize_radius();
 
 						g_rasterizer.add_path(rect);
-						scanlineRenderer.render_scanlines_aa_solid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(.2, .2, .2));
+						scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(.2, .2, .2));
 					}
 				}
 			}
@@ -211,7 +211,7 @@ namespace MatterHackers.Agg
 			//--------------------------
 			// Render the "quad" tool and controls
 			g_rasterizer.add_path(m_quad);
-			scanlineRenderer.render_scanlines_aa_solid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0, 0.3, 0.5, 0.1));
+			scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0, 0.3, 0.5, 0.1));
 
 			// Prepare the polygon to rasterize. Here we need to fill
 			// the destination (transformed) polygon.
@@ -366,7 +366,7 @@ namespace MatterHackers.Agg
 			t.text(buf);
 
 			g_rasterizer.add_path(pt);
-			scanlineRenderer.render_scanlines_aa_solid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0, 0, 0));
+			scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0, 0, 0));
 
 			//--------------------------
 			//m_trans_type.Render(g_rasterizer, g_scanline, clippingProxy);

@@ -133,7 +133,7 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public abstract void Render(IVertexSource vertexSource, int pathIndexToRender, RGBA_Bytes colorBytes);
+		public abstract void Render(IVertexSource vertexSource, int pathIndexToRender, IColorType colorType);
 
 		public void Render(IImageByte imageSource, Point2D position)
 		{
@@ -168,17 +168,17 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public void Render(IVertexSource vertexSource, RGBA_Bytes color)
+		public void Render(IVertexSource vertexSource, IColorType color)
 		{
 			Render(vertexSource, 0, color);
 		}
 
-		public void Render(IVertexSource vertexSource, double x, double y, RGBA_Bytes color)
+		public void Render(IVertexSource vertexSource, double x, double y, IColorType color)
 		{
 			Render(new VertexSourceApplyTransform(vertexSource, Affine.NewTranslation(x, y)), 0, color);
 		}
 
-		public void Render(IVertexSource vertexSource, Vector2 position, RGBA_Bytes color)
+		public void Render(IVertexSource vertexSource, Vector2 position, IColorType color)
 		{
 			Render(new VertexSourceApplyTransform(vertexSource, Affine.NewTranslation(position.x, position.y)), 0, color);
 		}

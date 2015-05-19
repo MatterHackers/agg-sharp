@@ -85,10 +85,15 @@ namespace MatterHackers.RayTracer.Traceable
 
 		public IntersectInfo GetClosestIntersection(Ray ray)
 		{
-			Ray localRay = GetLocalSpaceRay(ray);
-			IntersectInfo localIntersection = child.GetClosestIntersection(localRay);
-			IntersectInfo globalIntersection = GetGlobalSpaceInfo(localIntersection);
-			return globalIntersection;
+			if (child != null)
+			{
+				Ray localRay = GetLocalSpaceRay(ray);
+				IntersectInfo localIntersection = child.GetClosestIntersection(localRay);
+				IntersectInfo globalIntersection = GetGlobalSpaceInfo(localIntersection);
+				return globalIntersection;
+			}
+
+			return null;
 		}
 
 		public int FindFirstRay(RayBundle rayBundle, int rayIndexToStartCheckingFrom)

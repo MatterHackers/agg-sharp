@@ -124,7 +124,7 @@ namespace MatterHackers.Agg.UI
 				if (insertBarPosition != value)
 				{
 					insertBarPosition = value;
-					OnInsertBarPositionChanged();
+					OnInsertBarPositionChanged(null);
 				}
 			}
 		}
@@ -141,20 +141,20 @@ namespace MatterHackers.Agg.UI
 		/// This is called when the user has modified the text control.  It will
 		/// be triggered when the control looses focus or enter is pressed on non-multiline control.
 		/// </summary>
-		public virtual void OnEditComplete()
+		public virtual void OnEditComplete(EventArgs e)
 		{
 			if (EditComplete != null)
 			{
-				EditComplete(this, null);
+				EditComplete(this, e);
 			}
 			textWhenGotFocus = Text;
 		}
 
-		private void OnInsertBarPositionChanged()
+		private void OnInsertBarPositionChanged(EventArgs e)
 		{
 			if (InsertBarPositionChanged != null)
 			{
-				InsertBarPositionChanged(this, null);
+				InsertBarPositionChanged(this, e);
 			}
 		}
 
@@ -313,9 +313,14 @@ namespace MatterHackers.Agg.UI
 			Invalidate();
 			if (TextHasChanged())
 			{
-				OnEditComplete();
+				OnEditComplete(e);
 			}
 			base.OnLostFocus(e);
+		}
+
+		public void MarkAsStartingState()
+		{
+			textWhenGotFocus = Text;
 		}
 
 		public bool TextHasChanged()
@@ -795,7 +800,7 @@ namespace MatterHackers.Agg.UI
 
 						if (TextHasChanged())
 						{
-							OnEditComplete();
+							OnEditComplete(keyEvent);
 						}
 					}
 					break;

@@ -396,7 +396,7 @@ namespace MatterHackers.Agg
 			t.text(buf);
 
 			ras.add_path(pt);
-			scanlineRenderer.render_scanlines_aa_solid(clippingProxy, ras, sl, new RGBA_Bytes(255, 255, 255));
+			scanlineRenderer.RenderSolid(clippingProxy, ras, sl, new RGBA_Bytes(255, 255, 255));
 
 			if (m_gamma.GetGamma() != 1.0)
 			{

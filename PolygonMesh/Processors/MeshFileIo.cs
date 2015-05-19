@@ -177,5 +177,19 @@ namespace MatterHackers.PolygonMesh.Processors
 
 			return allPolygons;
 		}
+
+		public static long GetEstimatedMemoryUse(string fileLocation)
+		{
+			switch (Path.GetExtension(fileLocation).ToUpper())
+			{
+				case ".STL":
+					return StlProcessing.GetEstimatedMemoryUse(fileLocation);
+
+				case ".AMF":
+					return AmfProcessing.GetEstimatedMemoryUse(fileLocation);
+			}
+
+			return 0;
+		}
 	}
 }

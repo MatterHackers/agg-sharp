@@ -1,3 +1,35 @@
+/*
+Copyright (c) 2014, Lars Brubaker
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation are those
+of the authors and should not be interpreted as representing official policies,
+either expressed or implied, of the FreeBSD Project.
+*/
+
+//#define SourceDepthFloat
+//#define SourceDepth24
+
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.PlatformAbstract;
 using MatterHackers.Agg.RasterizerScanline;
@@ -128,22 +160,22 @@ namespace MatterHackers.Agg
 			else
 			{
 #if SourceDepth24
-                image_filters_application.m_TempDestImage = new ImageBuffer(tempImageToLoadInto, new BlenderBGR());
+                image_filters.m_TempDestImage = new ImageBuffer(tempImageToLoadInto, new BlenderBGR());
 
-                image_filters_application.m_RotatedImage = new ImageBuffer(image_filters_application.m_TempDestImage, new BlenderBGR());
-                image_filters_application.m_OriginalImage = new ImageBuffer(image_filters_application.m_TempDestImage, new BlenderBGR());
+                image_filters.m_RotatedImage = new ImageBuffer(image_filters.m_TempDestImage, new BlenderBGR());
+                image_filters.m_OriginalImage = new ImageBuffer(image_filters.m_TempDestImage, new BlenderBGR());
 
-                image_filters_application.m_TempDestImage.SetBlender(new BlenderPreMultBGR());
+				image_filters.m_TempDestImage.SetRecieveBlender(new BlenderPreMultBGR());
 #else
 #if SourceDepthFloat
-                image_filters_application.m_TempDestImage = new ImageBufferFloat(tempImageToLoadInto.Width(), tempImageToLoadInto.Height(), 128, new BlenderBGRAFloat());
-                image_filters_application.m_TempDestImage.CopyFrom(tempImageToLoadInto);
+				image_filters.m_TempDestImage = new ImageBufferFloat(tempImageToLoadInto.Width, tempImageToLoadInto.Height, 128, new BlenderBGRAFloat());
+				image_filters.m_TempDestImage.CopyFrom(tempImageToLoadInto);
 
-                image_filters_application.m_RotatedImage = new ImageBufferFloat(image_filters_application.m_TempDestImage, new BlenderBGRAFloat());
-                image_filters_application.m_OriginalImage = new ImageBufferFloat(image_filters_application.m_TempDestImage, new BlenderBGRAFloat());
+				image_filters.m_RotatedImage = new ImageBufferFloat(image_filters.m_TempDestImage, new BlenderBGRAFloat());
+				image_filters.m_OriginalImage = new ImageBufferFloat(image_filters.m_TempDestImage, new BlenderBGRAFloat());
 
-                //image_filters_application.m_TempDestImage.SetBlender(new BlenderBGRAFloat());
-                image_filters_application.m_TempDestImage.SetBlender(new BlenderPreMultBGRAFloat());
+				//image_filters.m_TempDestImage.SetRecieveBlender(new BlenderBGRAFloat());
+				image_filters.m_TempDestImage.SetRecieveBlender(new BlenderPreMultBGRAFloat());
 #else
 				image_filters.m_TempDestImage = new ImageBuffer(tempImageToLoadInto.Width, tempImageToLoadInto.Height, 32, new BlenderBGRA());
 				image_filters.m_TempDestImage.CopyFrom(tempImageToLoadInto);
@@ -177,7 +209,7 @@ namespace MatterHackers.Agg
             ImageClippingProxyFloat clippingProxy = new ImageClippingProxyFloat(graphics2D.DestImageFloat);
 
             clippingProxy.clear(new RGBA_Floats(1.0, 1.0, 1.0));
-            clippingProxy.CopyFrom(m_TempDestImage, new rect_i(0, 0, (int)Width, (int)Height), 110, 35);
+			clippingProxy.CopyFrom(m_TempDestImage, new RectangleInt(0, 0, (int)Width, (int)Height), 110, 35);
 #else
 			ImageClippingProxy clippingProxy = new ImageClippingProxy(widgetsSubImage);
 
@@ -201,7 +233,7 @@ namespace MatterHackers.Agg
 			RGBA_Bytes colorBlack = new RGBA_Bytes(0, 0, 0);
 #endif
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
-			scanlineRenderer.render_scanlines_aa_solid(clippingProxy, m_Rasterizer, m_ScanlinePacked, colorBlack);
+			scanlineRenderer.RenderSolid(clippingProxy, m_Rasterizer, m_ScanlinePacked, colorBlack);
 
 			if (m_time1 != m_time2 && m_num_pix > 0.0)
 			{
@@ -209,7 +241,7 @@ namespace MatterHackers.Agg
 				t.start_point(10.0, 310.0);
 				t.text(buf);
 				m_Rasterizer.add_path(pt);
-				scanlineRenderer.render_scanlines_aa_solid(clippingProxy, m_Rasterizer, m_ScanlinePacked, colorBlack);
+				scanlineRenderer.RenderSolid(clippingProxy, m_Rasterizer, m_ScanlinePacked, colorBlack);
 			}
 
 			if (filterSelectionButtons.SelectedIndex >= 14)

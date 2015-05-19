@@ -1,8 +1,9 @@
+using System;
 namespace MatterHackers.Agg.UI
 {
 	public delegate void KeyEventHandler(object sender, KeyEventArgs keyEvent);
 
-	public class KeyEventArgs// : EventArgs
+	public class KeyEventArgs : EventArgs
 	{
 		private Keys m_KeyData;
 		private bool m_SuppressKeyPress;

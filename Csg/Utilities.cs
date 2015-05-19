@@ -31,6 +31,7 @@ using MatterHackers.Csg.Operations;
 using MatterHackers.Csg.Solids;
 using MatterHackers.Csg.Transform;
 using MatterHackers.VectorMath;
+using System;
 
 namespace MatterHackers.Csg
 {
@@ -149,6 +150,13 @@ namespace MatterHackers.Csg
 							), "slot"
 						),
 						0, 0, 0);
+		}
+
+		public static void AssertDebugNotDefined()
+		{
+#if DEBUG
+			throw new Exception("DEBUG is defined and should not be!");
+#endif
 		}
 	}
 }

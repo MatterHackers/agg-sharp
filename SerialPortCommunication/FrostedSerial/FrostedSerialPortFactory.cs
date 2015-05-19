@@ -32,6 +32,7 @@ using MatterHackers.Agg.PlatformAbstract;
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace MatterHackers.SerialPortCommunication.FrostedSerial
@@ -41,42 +42,41 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 		[DllImport("SetSerial", SetLastError = true)]
 		private static extern int set_baud(string portName, int baud_rate);
 
-		private static bool allowPlugin = true;
+		static Dictionary<string, FrostedSerialPortFactory> availableFactories = new Dictionary<string,FrostedSerialPortFactory>();
 
-		public static void DoNotAllowPlugin()
+		public static FrostedSerialPortFactory GetAppropriateFactory(string driverType)
 		{
-			allowPlugin = false;
-		}
-
-		private static FrostedSerialPortFactory instance = null;
-
-		public static FrostedSerialPortFactory Instance
-		{
-			get
+			if (availableFactories.Count == 0)
 			{
-				if (instance == null)
+				// always add a serial port this is a raw port
+				availableFactories.Add("Raw", new FrostedSerialPortFactory());
+
+				// add in any plugins that we find with other factories.
+				PluginFinder<FrostedSerialPortFactory> pluginFinder = new PluginFinder<FrostedSerialPortFactory>();
+
+				foreach (FrostedSerialPortFactory plugin in pluginFinder.Plugins)
 				{
-					if (allowPlugin)
-					{
-						PluginFinder<FrostedSerialPortFactory> pluginFinder = new PluginFinder<FrostedSerialPortFactory>();
-
-						foreach (FrostedSerialPortFactory plugin in pluginFinder.Plugins)
-						{
-							if (plugin.GetType() != typeof(FrostedSerialPortFactory))
-							{
-								instance = plugin;
-							}
-						}
-					}
-
-					if (instance == null)
-					{
-						instance = new FrostedSerialPortFactory();
-					}
+					availableFactories.Add(plugin.GetDriverType(), plugin);
 				}
 
-				return instance;
+				// If we did not finde a RepRap driver add the default.
+				if (!availableFactories.ContainsKey("RepRap"))
+				{
+					availableFactories.Add("RepRap", new FrostedSerialPortFactory());
+				}
 			}
+
+			if (driverType != null && availableFactories.ContainsKey(driverType))
+			{
+				return availableFactories[driverType];
+			}
+
+			return availableFactories["RepRap"];
+		}
+
+		virtual protected string GetDriverType()
+		{
+			return "RepRap";
 		}
 
 		[DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]

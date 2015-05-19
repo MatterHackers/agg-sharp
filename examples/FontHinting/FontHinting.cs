@@ -63,10 +63,10 @@ namespace MatterHackers.Agg
 			character.rewind(0);
 			ras.reset();
 			ras.add_path(character);
-			ren_en.render_scanlines_aa_solid(clippingProxyGamma, ras, sl, RGBA_Bytes.Black);
+			ren_en.RenderSolid(clippingProxyGamma, ras, sl, RGBA_Bytes.Black);
 
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
-			scanlineRenderer.render_scanlines_aa_solid(clippingProxyGamma, ras, sl, RGBA_Bytes.Black);
+			scanlineRenderer.RenderSolid(clippingProxyGamma, ras, sl, RGBA_Bytes.Black);
 
 			ras.gamma(new gamma_none());
 
@@ -97,14 +97,13 @@ namespace MatterHackers.Agg
 #else
 			m_ras.add_path(scaleAndTranslate);
 			ImageClippingProxy clippingProxy = new ImageClippingProxy(graphics2D.DestImage);
-			scanlineRenderer.render_scanlines_aa_solid(clippingProxy, m_ras, m_sl, RGBA_Bytes.Black);
+			scanlineRenderer.RenderSolid(clippingProxy, m_ras, m_sl, RGBA_Bytes.Black);
 #endif
 		}
 
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			MatterHackers.Agg.UI.Tests.UnitTests.Run();
 			AppWidgetFactory appWidget = new BlurFactory();
 			appWidget.CreateWidgetAndRunInWindow(SystemWindow.PixelTypes.Depth24);
 		}
@@ -281,7 +280,7 @@ namespace MatterHackers.Agg
 			ras.line_to_d(x * m_size + m_size, y * m_size + m_size);
 			ras.line_to_d(x * m_size, y * m_size + m_size);
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
-			scanlineRenderer.render_scanlines_aa_solid(destImage, ras, sl, color);
+			scanlineRenderer.RenderSolid(destImage, ras, sl, color);
 		}
 	}
 

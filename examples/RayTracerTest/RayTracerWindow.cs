@@ -110,8 +110,6 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			PolygonMesh.UnitTests.UnitTests.Run();
-
 			new RayTracerWindow(300, 100);
 		}
 	}

@@ -34,6 +34,17 @@ namespace MatterHackers.DataConverters3D
 			return BoundingVolumeHierarchy.CreateNewHierachy(renderCollection);
 		}
 
+		public static IPrimitive Convert(List<PolygonMesh.MeshGroup> meshGroups, MaterialAbstract partMaterial = null)
+		{
+			List<IPrimitive> renderCollection = new List<IPrimitive>();
+			foreach (MeshGroup meshGroup in meshGroups)
+			{
+				renderCollection.Add(Convert(meshGroup, partMaterial));
+			}
+
+			return BoundingVolumeHierarchy.CreateNewHierachy(renderCollection);
+		}
+
 		public static IPrimitive Convert(PolygonMesh.MeshGroup meshGroup, MaterialAbstract partMaterial = null)
 		{
 			List<IPrimitive> renderCollection = new List<IPrimitive>();

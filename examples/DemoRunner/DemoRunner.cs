@@ -78,10 +78,6 @@ namespace MatterHackers.Agg
 			Clipboard.SetSystemClipboard(new WindowsFormsClipboard());
 
 			MatterHackers.Agg.Tests.AggDrawingTests.RunAllTests();
-			MatterHackers.VectorMath.Tests.UnitTests.Run();
-			MatterHackers.Agg.UI.Tests.UnitTests.Run();
-			MatterHackers.Agg.Image.UnitTests.Run();
-			MatterHackers.PolygonMesh.UnitTests.UnitTests.Run();
 			if (args.Length > 0)
 			{
 				bool foundADemo = false;
