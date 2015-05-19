@@ -158,7 +158,7 @@ namespace MatterHackers.Agg.UI
 				if (child.HAnchor == HAnchor.ParentLeftRight || child.HAnchorIsSet(HAnchor.FitToChildren))
 				{
 				}
-				else if (child.HAnchor != HAnchor.None)
+				else if (child.HAnchor != HAnchor.AbsolutePosition)
 				{
 					throw new Exception("HAnchor for a left right flow widget needs to be none or ParentLeftRight.");
 				}
@@ -176,7 +176,7 @@ namespace MatterHackers.Agg.UI
 				if (child.VAnchor == VAnchor.ParentBottomTop || child.VAnchorIsSet(VAnchor.FitToChildren))
 				{
 				}
-				else if (child.VAnchor != VAnchor.None)
+				else if (child.VAnchor != VAnchor.AbsolutePosition)
 				{
 					throw new Exception("VAnchor for a top bottom flow widget needs to be none or ParentTopBottom.");
 				}
@@ -230,7 +230,7 @@ namespace MatterHackers.Agg.UI
 							numItemsNeedingExpanding++;
 							totalWidthOfStaticItems += child.Margin.Width;
 						}
-						else if (child.HAnchor == HAnchor.None || child.HAnchorIsSet(HAnchor.FitToChildren))
+						else if (child.HAnchor == HAnchor.AbsolutePosition || child.HAnchorIsSet(HAnchor.FitToChildren))
 						{
 							totalWidthOfStaticItems += childBoundsWithMargin.Width;
 						}
@@ -249,7 +249,7 @@ namespace MatterHackers.Agg.UI
 							numItemsNeedingExpanding++;
 							totalHeightOfStaticItems += child.Margin.Height;
 						}
-						else if (child.VAnchor == VAnchor.None || child.VAnchorIsSet(VAnchor.FitToChildren))
+						else if (child.VAnchor == VAnchor.AbsolutePosition || child.VAnchorIsSet(VAnchor.FitToChildren))
 						{
 							totalHeightOfStaticItems += childBoundsWithMargin.Height;
 						}

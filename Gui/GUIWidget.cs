@@ -40,7 +40,7 @@ namespace MatterHackers.Agg.UI
 	[Flags]
 	public enum HAnchor
 	{
-		None = 0,
+		AbsolutePosition = 0,
 		ParentLeft = 1,
 		ParentCenter = 2,
 		ParentRight = 4,
@@ -54,7 +54,7 @@ namespace MatterHackers.Agg.UI
 	[Flags]
 	public enum VAnchor
 	{
-		None = 0,
+		AbsolutePosition = 0,
 		ParentBottom = 1,
 		ParentCenter = 2,
 		ParentTop = 4,
@@ -490,7 +490,7 @@ namespace MatterHackers.Agg.UI
 		private static readonly RectangleDouble largestValidBounds = new RectangleDouble(-1000000, -1000000, 1000000, 1000000);
 
 		public GuiWidget(double width, double height, SizeLimitsToSet sizeLimits = SizeLimitsToSet.Minimum)
-			: this(HAnchor.None, VAnchor.None)
+			: this(HAnchor.AbsolutePosition, VAnchor.AbsolutePosition)
 		{
 			screenClipping = new ScreenClipping(this);
 			if ((sizeLimits & SizeLimitsToSet.Minimum) == SizeLimitsToSet.Minimum)
@@ -504,7 +504,7 @@ namespace MatterHackers.Agg.UI
 			LocalBounds = new RectangleDouble(0, 0, width, height);
 		}
 
-		public GuiWidget(HAnchor hAnchor = HAnchor.None, VAnchor vAnchor = VAnchor.None)
+		public GuiWidget(HAnchor hAnchor = HAnchor.AbsolutePosition, VAnchor vAnchor = VAnchor.AbsolutePosition)
 		{
 			screenClipping = new ScreenClipping(this);
 			children.CollectionChanged += children_CollectionChanged;

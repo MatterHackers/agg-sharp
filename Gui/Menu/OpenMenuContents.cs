@@ -80,12 +80,12 @@ namespace MatterHackers.Agg.UI
 
 		private void MakeMenuHaveScroll(double maxHeight)
 		{
-			scrollingWindow.VAnchor = UI.VAnchor.None;
+			scrollingWindow.VAnchor = VAnchor.AbsolutePosition;
 			scrollingWindow.Height = maxHeight;
 			scrollingWindow.MinimumSize = new Vector2(Width + 15, 0);
 			Width = scrollingWindow.Width;
 			Height = maxHeight;
-			scrollingWindow.ScrollArea.VAnchor = UI.VAnchor.FitToChildren;
+			scrollingWindow.ScrollArea.VAnchor = VAnchor.FitToChildren;
 		}
 
 		private void widgetRelativeTo_Closed(object sender, EventArgs e)
