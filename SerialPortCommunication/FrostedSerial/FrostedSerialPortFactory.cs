@@ -46,32 +46,40 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
 		public static FrostedSerialPortFactory GetAppropriateFactory(string driverType)
 		{
-			if (availableFactories.Count == 0)
+			try
 			{
-				// always add a serial port this is a raw port
-				availableFactories.Add("Raw", new FrostedSerialPortFactory());
-
-				// add in any plugins that we find with other factories.
-				PluginFinder<FrostedSerialPortFactory> pluginFinder = new PluginFinder<FrostedSerialPortFactory>();
-
-				foreach (FrostedSerialPortFactory plugin in pluginFinder.Plugins)
+				if (availableFactories.Count == 0)
 				{
-					availableFactories.Add(plugin.GetDriverType(), plugin);
+					// always add a serial port this is a raw port
+					availableFactories.Add("Raw", new FrostedSerialPortFactory());
+
+					// add in any plugins that we find with other factories.
+					PluginFinder<FrostedSerialPortFactory> pluginFinder = new PluginFinder<FrostedSerialPortFactory>();
+
+					foreach (FrostedSerialPortFactory plugin in pluginFinder.Plugins)
+					{
+						availableFactories.Add(plugin.GetDriverType(), plugin);
+					}
+
+					// If we did not finde a RepRap driver add the default.
+					if (!availableFactories.ContainsKey("RepRap"))
+					{
+						availableFactories.Add("RepRap", new FrostedSerialPortFactory());
+					}
 				}
 
-				// If we did not finde a RepRap driver add the default.
-				if (!availableFactories.ContainsKey("RepRap"))
+				if (!string.IsNullOrEmpty(driverType)
+					&& availableFactories.ContainsKey(driverType))
 				{
-					availableFactories.Add("RepRap", new FrostedSerialPortFactory());
+					return availableFactories[driverType];
 				}
-			}
 
-			if (driverType != null && availableFactories.ContainsKey(driverType))
+				return availableFactories["RepRap"];
+			}
+			catch
 			{
-				return availableFactories[driverType];
+				return new FrostedSerialPortFactory();
 			}
-
-			return availableFactories["RepRap"];
 		}
 
 		virtual protected string GetDriverType()
