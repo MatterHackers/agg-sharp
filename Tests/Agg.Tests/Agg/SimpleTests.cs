@@ -52,7 +52,7 @@ namespace MatterHackers.Agg.Tests
 		public static bool GetNextNumberSameResult(String source, int startIndex, double expectedValue)
 		{
 			int startIndexNew = startIndex;
-			double newNumber = agg_basics.ParseDouble(source, ref startIndexNew);
+			double newNumber = agg_basics.ParseDouble(source, ref startIndexNew, true);
 			int startIndexOld = startIndex;
 			double oldNumber = GetNextNumberOld(source, ref startIndexOld);
 			if (Math.Abs(newNumber - oldNumber) > .0001

@@ -213,7 +213,7 @@ namespace MatterHackers.GCodeVisualizer
 			if (stringPos != -1)
 			{
 				stringPos += stringToCheckAfter.Length;
-				readValue = agg_basics.ParseDouble(stringWithNumber, ref stringPos);
+				readValue = agg_basics.ParseDouble(stringWithNumber, ref stringPos, true);
 
 				return true;
 			}

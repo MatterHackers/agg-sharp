@@ -271,6 +271,11 @@ namespace MatterHackers.Agg
 			return new RectangleDouble(a.Left * b, a.Bottom * b, a.Right * b, a.Top * b);
 		}
 
+		public Vector2 Center 
+		{
+			get { return new Vector2(XCenter, YCenter); }
+		}
+
 		public double XCenter
 		{
 			get { return (Right - Left) / 2; }

@@ -127,6 +127,9 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
+		bool lastMoveInsideRadius;
+		public bool LastMoveInsideRadius { get { return lastMoveInsideRadius; } }
+
 		private void MapToSphere(Vector2 screenPoint, out Vector3 vector)
 		{
 			Vector2 deltaFromCenter = screenPoint - screenCenter;
@@ -149,6 +152,7 @@ namespace MatterHackers.VectorMath
 				vector.x = deltaMinus1To1.x * normalizedLength;
 				vector.y = deltaMinus1To1.y * normalizedLength;
 				vector.z = 0.0;
+				lastMoveInsideRadius = false;
 			}
 			else //Else it's inside
 			{
@@ -156,6 +160,7 @@ namespace MatterHackers.VectorMath
 				vector.x = deltaMinus1To1.x;
 				vector.y = deltaMinus1To1.y;
 				vector.z = Math.Sqrt(1.0 - length);
+				lastMoveInsideRadius = true;
 			}
 
 			vector = Vector3.TransformVector(vector, localToScreenTransform);
