@@ -88,7 +88,7 @@ namespace MatterHackers.GCodeVisualizer
 				for (int i = 1; i < gCodeFileToDraw.LineCount; i++)
 				{
 					PrinterMachineInstruction instruction = gCodeFileToDraw.Instruction(i);
-					if (instruction.EPosition > prevInstruction.EPosition)
+					if (instruction.EPosition > prevInstruction.EPosition && (instruction.Line.IndexOf('X') != -1 || instruction.Line.IndexOf('Y') != -1))
 					{
 						speeds.Add((float)instruction.FeedRate);
 					}
