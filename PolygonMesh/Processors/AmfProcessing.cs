@@ -672,7 +672,7 @@ namespace MatterHackers.PolygonMesh.Processors
 		{
 			try
 			{
-				using (Stream stream = new FileStream(fileLocation, FileMode.Open))
+				using (Stream stream = new FileStream(fileLocation, FileMode.Open, FileAccess.Read, FileShare.Read))
 				{
 					if (IsZipFile(stream))
 					{
