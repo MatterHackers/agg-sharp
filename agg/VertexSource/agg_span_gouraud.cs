@@ -73,7 +73,7 @@ namespace MatterHackers.Agg.VertexSource
 		public void triangle(double x1, double y1,
 					  double x2, double y2,
 					  double x3, double y3,
-					  double d)
+					  double dilation = 0)
 		{
 			m_coord[0].x = m_x[0] = x1;
 			m_coord[0].y = m_y[0] = y1;
@@ -86,12 +86,12 @@ namespace MatterHackers.Agg.VertexSource
 			m_cmd[2] = ShapePath.FlagsAndCommand.CommandLineTo;
 			m_cmd[3] = ShapePath.FlagsAndCommand.CommandStop;
 
-			if (d != 0.0)
+			if (dilation != 0.0)
 			{
 				agg_math.dilate_triangle(m_coord[0].x, m_coord[0].y,
 								m_coord[1].x, m_coord[1].y,
 								m_coord[2].x, m_coord[2].y,
-								m_x, m_y, d);
+								m_x, m_y, dilation);
 
 				agg_math.calc_intersection(m_x[4], m_y[4], m_x[5], m_y[5],
 								  m_x[0], m_y[0], m_x[1], m_y[1],
