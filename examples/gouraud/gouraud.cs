@@ -58,8 +58,6 @@ namespace MatterHackers.Agg
 		{
 			double alpha = m_alpha.Value;
 			double brc = 1;
-			Graphics2D graphics2D = NewGraphics2D();
-
 #if SourceDepth24
             pixfmt_alpha_blend_rgb pf = new pixfmt_alpha_blend_rgb(backBuffer, new blender_bgr());
 #else
