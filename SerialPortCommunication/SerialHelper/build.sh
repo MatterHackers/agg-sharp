@@ -1,10 +1,10 @@
 # Build libSetSerial.so
-gcc -shared -fPIC SetSerial.c -o libSetSerial.so -v
+gcc -m32 -shared -fPIC SetSerial.c -o libSetSerial.so -v
 
 # Create path if needed
-mkdir -p ../../../MatterControl/bin/Debug/
-mkdir -p ../../../MatterControl/bin/Release/
+mkdir -p ../../../../bin/Debug/
+mkdir -p ../../../../bin/Release/
 
 # Copy to MatterControl build directories
-cp libSetSerial.so ../../../MatterControl/bin/Debug/
-cp libSetSerial.so ../../../MatterControl/bin/Release/
+cp libSetSerial.so ../../../../bin/Debug/
+cp libSetSerial.so ../../../../bin/Release/
