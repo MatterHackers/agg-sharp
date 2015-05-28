@@ -174,9 +174,10 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 			IFrostedSerialPort newPort = Create(serialPortName);
 
 			bool isLinux = !(newPort is FrostedSerialPort) && !IsWindows;
+			bool customBaudAssignment = isLinux && baudRate > 115200;
 
-			// Skip BaudRate assignment on Linux to avoid Invalid Baud exception - defaults to 9600
-			if (!isLinux)
+			// Only set serial port .BaudRate when not using Linux workaround
+			if (!customBaudAssignment)
 			{
 				newPort.BaudRate = baudRate;
 			}
@@ -192,7 +193,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
 			newPort.Open();
 
-			if (isLinux)
+			if (customBaudAssignment)
 			{
 				// Once mono has enforced its ANSI baud rate policy(in SerialPort.Open), reset the baud rate to the user specified
 				// value by calling set_baud in libSetSerial.so
