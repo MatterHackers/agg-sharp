@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.Agg;
 using MatterHackers.VectorMath;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -45,15 +46,18 @@ namespace MatterHackers.PolygonMesh
 
 		static public FaceEdgeTextureUvData Get(FaceEdge faceEdgeToGetTextureUvDataFor)
 		{
-			FaceEdgeTextureUvData plugin;
-			faceEdgesWithTextureUvData.TryGetValue(faceEdgeToGetTextureUvDataFor, out plugin);
-
-			if (plugin == null)
+			FaceEdgeTextureUvData plugin = null;
+			using (TimedLock.Lock(faceEdgesWithTextureUvData, "Get FaceEdgeTextureUvData"))
 			{
-				FaceEdgeTextureUvData newPlugin = new FaceEdgeTextureUvData();
-				faceEdgesWithTextureUvData.Add(faceEdgeToGetTextureUvDataFor, newPlugin);
+				faceEdgesWithTextureUvData.TryGetValue(faceEdgeToGetTextureUvDataFor, out plugin);
 
-				return newPlugin;
+				if (plugin == null)
+				{
+					FaceEdgeTextureUvData newPlugin = new FaceEdgeTextureUvData();
+					faceEdgesWithTextureUvData.Add(faceEdgeToGetTextureUvDataFor, newPlugin);
+
+					return newPlugin;
+				}
 			}
 
 			return plugin;
