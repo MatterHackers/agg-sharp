@@ -10,14 +10,14 @@ namespace MatterHackers.Agg
 public struct TimedLock : IDisposable
 #endif
 	{
-		private static readonly int secondsToTryToLock = 30;
+		private static readonly TimeSpan timeToLock = TimeSpan.FromSeconds(30);
 		private object target;
 		private string hint;
 		private bool gotLock;
 
 		public static TimedLock Lock(object o, string hint)
 		{
-			return Lock(o, TimeSpan.FromSeconds(secondsToTryToLock), hint);
+			return Lock(o, timeToLock, hint);
 		}
 
 		public static TimedLock Lock(object o, TimeSpan timeout, string hint)
