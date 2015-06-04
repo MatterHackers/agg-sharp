@@ -163,7 +163,6 @@
     <Compile Include="Transform\SetCenter.cs" />
     <Compile Include="Transform\TransformBase.cs" />
     <Compile Include="Transform\Translate.cs" />
-    <Compile Include="Utilities.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\agg\Agg.csproj">

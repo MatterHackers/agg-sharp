@@ -46,32 +46,40 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
 		public static FrostedSerialPortFactory GetAppropriateFactory(string driverType)
 		{
-			if (availableFactories.Count == 0)
+			try
 			{
-				// always add a serial port this is a raw port
-				availableFactories.Add("Raw", new FrostedSerialPortFactory());
-
-				// add in any plugins that we find with other factories.
-				PluginFinder<FrostedSerialPortFactory> pluginFinder = new PluginFinder<FrostedSerialPortFactory>();
-
-				foreach (FrostedSerialPortFactory plugin in pluginFinder.Plugins)
+				if (availableFactories.Count == 0)
 				{
-					availableFactories.Add(plugin.GetDriverType(), plugin);
+					// always add a serial port this is a raw port
+					availableFactories.Add("Raw", new FrostedSerialPortFactory());
+
+					// add in any plugins that we find with other factories.
+					PluginFinder<FrostedSerialPortFactory> pluginFinder = new PluginFinder<FrostedSerialPortFactory>();
+
+					foreach (FrostedSerialPortFactory plugin in pluginFinder.Plugins)
+					{
+						availableFactories.Add(plugin.GetDriverType(), plugin);
+					}
+
+					// If we did not finde a RepRap driver add the default.
+					if (!availableFactories.ContainsKey("RepRap"))
+					{
+						availableFactories.Add("RepRap", new FrostedSerialPortFactory());
+					}
 				}
 
-				// If we did not finde a RepRap driver add the default.
-				if (!availableFactories.ContainsKey("RepRap"))
+				if (!string.IsNullOrEmpty(driverType)
+					&& availableFactories.ContainsKey(driverType))
 				{
-					availableFactories.Add("RepRap", new FrostedSerialPortFactory());
+					return availableFactories[driverType];
 				}
-			}
 
-			if (driverType != null && availableFactories.ContainsKey(driverType))
+				return availableFactories["RepRap"];
+			}
+			catch
 			{
-				return availableFactories[driverType];
+				return new FrostedSerialPortFactory();
 			}
-
-			return availableFactories["RepRap"];
 		}
 
 		virtual protected string GetDriverType()
@@ -166,9 +174,10 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 			IFrostedSerialPort newPort = Create(serialPortName);
 
 			bool isLinux = !(newPort is FrostedSerialPort) && !IsWindows;
+			bool customBaudAssignment = isLinux && baudRate > 115200;
 
-			// Skip BaudRate assignment on Linux to avoid Invalid Baud exception - defaults to 9600
-			if (!isLinux)
+			// Only set serial port .BaudRate when not using Linux workaround
+			if (!customBaudAssignment)
 			{
 				newPort.BaudRate = baudRate;
 			}
@@ -184,7 +193,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
 			newPort.Open();
 
-			if (isLinux)
+			if (customBaudAssignment)
 			{
 				// Once mono has enforced its ANSI baud rate policy(in SerialPort.Open), reset the baud rate to the user specified
 				// value by calling set_baud in libSetSerial.so

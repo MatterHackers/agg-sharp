@@ -46,15 +46,16 @@ namespace MatterHackers.Agg
 #endif
 		}
 
-		public static double ParseDouble(String source)
+		public static double ParseDouble(String source, bool fastSimpleNumbers)
 		{
 			int startIndex = 0;
-			return ParseDouble(source, ref startIndex);
+			return ParseDouble(source, ref startIndex, fastSimpleNumbers);
 		}
 
-		private static Regex numberRegex = new Regex(@"[-+]?[0-9]*\.?[0-9]+");
+		//private static Regex numberRegex = new Regex(@"[-+]?[0-9]*\.?[0-9]+");
+		private static Regex numberRegex = new Regex(@"[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?");
 
-		private static double GetNextNumberOld(String source, ref int startIndex)
+		private static double GetNextNumber(String source, ref int startIndex)
 		{
 			Match numberMatch = numberRegex.Match(source, startIndex);
 			String returnString = numberMatch.Value;
@@ -64,15 +65,19 @@ namespace MatterHackers.Agg
 			return returnVal;
 		}
 
-		public static double ParseDouble(String source, ref int startIndex)
+		public static double ParseDouble(String source, ref int startIndex, bool fastSimpleNumbers)
 		{
 #if true
-			return ParseDoubleFast(source, ref startIndex);
+			if (fastSimpleNumbers)
+			{
+				return ParseDoubleFast(source, ref startIndex);
+			}
+			return GetNextNumber(source, ref startIndex);
 #else
 			int startIndexNew = startIndex;
 			double newNumber = agg_basics.ParseDoubleFast(source, ref startIndexNew);
 			int startIndexOld = startIndex;
-			double oldNumber = GetNextNumberOld(source, ref startIndexOld);
+			double oldNumber = GetNextNumber(source, ref startIndexOld);
 			if (Math.Abs(newNumber - oldNumber) > .0001
 				|| startIndexNew != startIndexOld)
 			{

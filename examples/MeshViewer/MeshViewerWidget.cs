@@ -601,7 +601,7 @@ namespace MatterHackers.MeshVisualizer
 
 			if (trackballTumbleWidget.MouseCaptured)
 			{
-				if (trackballTumbleWidget.TransformState == TrackBallController.MouseDownType.Rotation)
+				if (trackballTumbleWidget.TransformState == TrackBallController.MouseDownType.Rotation || mouseEvent.Button == MouseButtons.Right)
 				{
 					trackballTumbleWidget.DrawRotationHelperCircle = true;
 				}

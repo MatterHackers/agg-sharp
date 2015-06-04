@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.Agg;
 using MatterHackers.PolygonMesh.Csg;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -95,9 +96,16 @@ namespace MatterHackers.PolygonMesh.Processors
 
 		public static List<MeshGroup> Load(string meshPathAndFileName, ReportProgressRatio reportProgress = null)
 		{
-			using (Stream stream = new FileStream(meshPathAndFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+			try
 			{
-				return Load(stream, Path.GetExtension(meshPathAndFileName), reportProgress);
+				using (Stream stream = new FileStream(meshPathAndFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+				{
+					return Load(stream, Path.GetExtension(meshPathAndFileName), reportProgress);
+				}
+			}
+			catch(Exception)
+			{
+				return null;
 			}
 		}
 

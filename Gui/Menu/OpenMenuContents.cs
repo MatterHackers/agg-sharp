@@ -132,10 +132,11 @@ namespace MatterHackers.Agg.UI
 		{
 			if (widgetRelativeTo != null)
 			{
-				GuiWidget topParent = widgetRelativeTo.Parent;
 				Vector2 zero = widgetRelativeTo.OriginRelativeParent;
 				zero += new Vector2(widgetRelativeTo.LocalBounds.Left, widgetRelativeTo.LocalBounds.Bottom);
-				while (topParent.Parent != null)
+
+				GuiWidget topParent = widgetRelativeTo.Parent;
+				while (topParent != null && topParent.Parent != null)
 				{
 					topParent.ParentToChildTransform.transform(ref zero);
 					topParent = topParent.Parent;
