@@ -133,7 +133,7 @@ namespace MatterHackers.MarchingSquares
 		{
 		}
 
-		public Polygons CreateLineLoops(int pixelsToIntPointsScale)
+		public Polygons CreateLineLoops(int pixelsToIntPointsScale, int maxLineLoopsToAdd = int.MaxValue)
 		{
 			Polygons LineLoops = new Polygons();
 
@@ -191,6 +191,10 @@ namespace MatterHackers.MarchingSquares
 					} while (addedToLoop);
 
 					LineLoops.Add(loopToAdd);
+					if (LineLoops.Count > maxLineLoopsToAdd)
+					{
+						break;
+					}
 				}
 			}
 
