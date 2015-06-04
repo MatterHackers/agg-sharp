@@ -150,37 +150,6 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 			port.Write(str);
 		}
 
-        public void Write(byte[] buffer, int offset, int count)
-        {
-            
-            if (buffer == null)
-                throw new ArgumentNullException("buffer");
-
-            if (offset < 0 || count < 0)
-                throw new ArgumentOutOfRangeException();
-
-            if (buffer.Length - offset < count)
-                throw new ArgumentException("offset+count",
-                                 "The size of the buffer is less than offset + count.");
-
-            port.Write(buffer, offset, count);
-        }
-
-        public int Read(byte[] buffer, int offset, int count)
-        {
-            
-            if (buffer == null)
-                throw new ArgumentNullException("buffer");
-            if (offset < 0 || count < 0)
-                throw new ArgumentOutOfRangeException("offset or count less than zero.");
-
-            if (buffer.Length - offset < count)
-                throw new ArgumentException("offset+count",
-                                  "The size of the buffer is less than offset + count.");
-
-            return port.Read(buffer, offset, count);
-        }
-
 	}
 
 #endif

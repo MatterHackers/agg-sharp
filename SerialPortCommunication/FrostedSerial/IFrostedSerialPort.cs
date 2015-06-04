@@ -49,15 +49,11 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
 		void Write(string str);
 
-        void Write(byte[] buffer, int offset, int count);
-
 		int WriteTimeout { get; set; }
 
 		int ReadTimeout { get; set; }
 
 		string ReadExisting();
-
-        int Read(byte[] buffer, int offset, int count);
 
 		bool IsOpen { get; }
 
