@@ -149,6 +149,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 		{
 			port.Write(str);
 		}
+
 	}
 
 #endif
