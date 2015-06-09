@@ -11,6 +11,18 @@ namespace MatterHackers.Agg
 	{
 		private static Dictionary<string, ImageBuffer> cachedImages = new Dictionary<string, ImageBuffer>();
 
+		private string basePath;
+
+		public FileSystemStaticData()
+		{
+			this.basePath = string.Empty;
+		}
+
+		public FileSystemStaticData(string overridePath)
+		{
+			this.basePath = overridePath;
+		}
+
 		public bool DirectoryExists(string path)
 		{
 			return Directory.Exists(MapPath(path));
@@ -100,7 +112,7 @@ namespace MatterHackers.Agg
 		private string MapPath(string path)
 		{
 			string staticDataPath = Directory.Exists("StaticData") ? "StaticData" : Path.Combine("..", "..", "StaticData");
-			return Path.Combine(staticDataPath, path);
+			return Path.Combine(this.basePath, staticDataPath, path);
 		}
 	}
 }
