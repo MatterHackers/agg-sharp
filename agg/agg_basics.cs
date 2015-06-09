@@ -178,12 +178,12 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public static int ComputeHash(byte[] data)
+		public static long ComputeHash(byte[] data)
 		{
 			unchecked
 			{
-				const int p = 16777619;
-				int hash = (int)2166136261;
+				const long p = 1099511628211;
+				long hash = (long)14695981039346656037;
 
 				for (int i = 0; i < data.Length; i++)
 				{
