@@ -128,7 +128,7 @@ namespace MatterHackers.GCodeVisualizer
 
 		private void openFileButton_ButtonClick(object sender, EventArgs mouseEvent)
 		{
-			UiThread.RunOnIdle((state) =>
+			UiThread.RunOnIdle(() =>
 				{
 					OpenFileDialogParams openParams = new OpenFileDialogParams("gcode files|*.gcode");
 					FileDialog.OpenFileDialog(openParams, onFileSelected);

@@ -96,7 +96,7 @@ namespace MatterHackers.Agg.UI
 			base.OnClosed(e);
 		}
 
-		private void UpdateGif(object state)
+		private void UpdateGif()
 		{
 			if (runningTime.Elapsed.TotalSeconds - lastTimeUpdated > imageSequence.SecondsPerFrame)
 			{

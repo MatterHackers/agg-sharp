@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -36,7 +37,8 @@ namespace MatterHackers.Agg.UI
 
 	public static class UiThread
 	{
-		private static List<CallBackAndState> functionsToCallOnIdle = new List<CallBackAndState>();
+		private static List<CallBackAndState> functionsToCheckIfTimeToCall = new List<CallBackAndState>();
+		private static List<Action> callNextCycle = new List<Action>();
 		private static Stopwatch timer = new Stopwatch();
 
 		private class CallBackAndState
@@ -53,20 +55,28 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public static void RunOnIdle(IdleCallback callBack, double delayInSeconds)
+		public static void RunOnIdle(Action callBack)
 		{
-			RunOnIdle(callBack, null, delayInSeconds);
+			using (TimedLock.Lock(callNextCycle, "UiThread RunOnIdle(Action)"))
+            { 
+                callNextCycle.Add(callBack);
+            }
 		}
 
-		public static void RunOnIdle(IdleCallback callBack, object state = null, double delayInSeconds = 0)
+		public static void RunOnIdle(Action callBack, double delayInSeconds)
+		{
+			RunOnIdle((state) => callBack(), null, delayInSeconds);
+		}
+
+		public static void RunOnIdle(IdleCallback callBack, object state, double delayInSeconds = 0)
 		{
 			if (!timer.IsRunning)
 			{
 				timer.Start();
 			}
-			using (TimedLock.Lock(functionsToCallOnIdle, "PendingUiEvents AddAction()"))
+			using (TimedLock.Lock(functionsToCheckIfTimeToCall, "PendingUiEvents AddAction()"))
 			{
-				functionsToCallOnIdle.Add(new CallBackAndState(callBack, state, timer.ElapsedMilliseconds + (int)(delayInSeconds * 1000)));
+				functionsToCheckIfTimeToCall.Add(new CallBackAndState(callBack, state, timer.ElapsedMilliseconds + (int)(delayInSeconds * 1000)));
 			}
 		}
 
@@ -74,7 +84,7 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				return functionsToCallOnIdle.Count;
+				return functionsToCheckIfTimeToCall.Count;
 			}
 		}
 
@@ -83,12 +93,12 @@ namespace MatterHackers.Agg.UI
 			get
 			{
 				int count = 0;
-				using (TimedLock.Lock(functionsToCallOnIdle, "PendingUiEvents AddAction()"))
+				using (TimedLock.Lock(functionsToCheckIfTimeToCall, "PendingUiEvents AddAction()"))
 				{
 					long currentMilliseconds = timer.ElapsedMilliseconds;
-					for (int i = 0; i < functionsToCallOnIdle.Count; i++)
+					for (int i = 0; i < functionsToCheckIfTimeToCall.Count; i++)
 					{
-						if (functionsToCallOnIdle[i].absoluteMillisecondsToRunAt <= currentMilliseconds)
+						if (functionsToCheckIfTimeToCall[i].absoluteMillisecondsToRunAt <= currentMilliseconds)
 						{
 							count++;
 						}
@@ -100,21 +110,30 @@ namespace MatterHackers.Agg.UI
 
 		public static void DoRunAllPending()
 		{
+			List<Action> callThisCycle = callNextCycle;
+
 			List<CallBackAndState> holdFunctionsToCallOnIdle = new List<CallBackAndState>();
 			// make a copy so we don't keep this locked for long
-			using (TimedLock.Lock(functionsToCallOnIdle, "PendingUiEvents AddAction()"))
+			using (TimedLock.Lock(functionsToCheckIfTimeToCall, "PendingUiEvents AddAction()"))
 			{
+				callNextCycle = new List<Action>();
+
 				long currentMilliseconds = timer.ElapsedMilliseconds;
-				for (int i = functionsToCallOnIdle.Count - 1; i >= 0; i--)
+				for (int i = functionsToCheckIfTimeToCall.Count - 1; i >= 0; i--)
 				{
-					CallBackAndState callBackAndState = functionsToCallOnIdle[i];
+					CallBackAndState callBackAndState = functionsToCheckIfTimeToCall[i];
 					if (callBackAndState.absoluteMillisecondsToRunAt <= currentMilliseconds)
 					{
-						holdFunctionsToCallOnIdle.Add(new CallBackAndState(callBackAndState.idleCallBack, callBackAndState.stateInfo, callBackAndState.absoluteMillisecondsToRunAt));
-						functionsToCallOnIdle.RemoveAt(i);
+						holdFunctionsToCallOnIdle.Add(callBackAndState);
+						functionsToCheckIfTimeToCall.RemoveAt(i);
 					}
 				}
 			}
+
+			foreach(Action action in callThisCycle)
+            {
+                action();
+            }
 
 			// now call all the functions (we put them in backwards to make it easier to remove them as we went so run them backwards
 			for (int i = holdFunctionsToCallOnIdle.Count - 1; i >= 0; i--)

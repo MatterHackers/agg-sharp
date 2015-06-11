@@ -199,7 +199,7 @@ namespace MatterHackers.Agg.UI
 				{
 					if (FirstWidgetUnderMouse)
 					{
-						UiThread.RunOnIdle((state) =>
+						UiThread.RunOnIdle(() =>
 						{
 							CheckMouseCaptureStates();
 							DoHideSoftwareKeyboard(this, null);

@@ -548,7 +548,7 @@ namespace MatterHackers.MeshVisualizer
 				continueProcessing = true;
 			}
 
-			UiThread.RunOnIdle((object state) =>
+			UiThread.RunOnIdle(() =>
 			{
 				int percentComplete = (int)(progress0To1 * 100);
 				partProcessingInfo.centeredInfoText.Text = "Loading Mesh {0}%...".FormatWith(percentComplete);

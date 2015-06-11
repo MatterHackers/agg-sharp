@@ -214,7 +214,7 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseUp(mouseEvent);
 		}
 
-		private void RemoveFromParent(object state)
+		private void RemoveFromParent()
 		{
 			if (this.Parent != null)
 			{

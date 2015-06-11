@@ -238,7 +238,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (ShowSoftwareKeyboard != null)
 			{
-				UiThread.RunOnIdle((state) =>
+				UiThread.RunOnIdle(() =>
 				{
 					ShowSoftwareKeyboard(this, null);
 				});
@@ -265,7 +265,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (HideSoftwareKeyboard != null)
 			{
-				UiThread.RunOnIdle((state) =>
+				UiThread.RunOnIdle(() =>
 				{
 					HideSoftwareKeyboard(this, null);
 				});

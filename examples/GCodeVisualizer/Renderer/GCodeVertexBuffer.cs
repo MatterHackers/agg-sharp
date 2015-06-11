@@ -53,7 +53,7 @@ namespace MatterHackers.GCodeVisualizer
 			{
 				int holdVertexId = myVertexId;
 				int holdIndexId = myIndexId;
-				UiThread.RunOnIdle((state) =>
+				UiThread.RunOnIdle(() =>
 				{
 					GL.DeleteBuffers(1, ref holdVertexId);
 					GL.DeleteBuffers(1, ref holdIndexId);

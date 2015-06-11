@@ -112,7 +112,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private void ShowMenu(object state)
+		private void ShowMenu()
 		{
 			if (this.Parent == null)
 			{
