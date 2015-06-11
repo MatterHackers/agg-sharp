@@ -436,7 +436,7 @@ namespace MatterHackers.Agg
 			base.OnMouseUp(mouseEvent);
 		}
 
-		public void OnIdle(object state)
+		public void OnIdle()
 		{
 			m_mesh.randomize_points(1.0);
 			m_mesh.rotate_colors();

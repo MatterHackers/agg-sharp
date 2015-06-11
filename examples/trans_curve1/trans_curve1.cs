@@ -108,7 +108,7 @@ namespace MatterHackers.Agg
 			y += dy;
 		}
 
-		private void guiSurface_Idle(object state)
+		private void guiSurface_Idle()
 		{
 			int i;
 			for (i = 0; i < 6; i++)
