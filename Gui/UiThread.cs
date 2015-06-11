@@ -33,8 +33,6 @@ using System.Diagnostics;
 
 namespace MatterHackers.Agg.UI
 {
-	public delegate void IdleCallback(object state);
-
 	public static class UiThread
 	{
 		private static List<CallBackAndState> functionsToCheckIfTimeToCall = new List<CallBackAndState>();
@@ -43,11 +41,11 @@ namespace MatterHackers.Agg.UI
 
 		private class CallBackAndState
 		{
-			internal IdleCallback idleCallBack;
+			internal Action<object> idleCallBack;
 			internal object stateInfo;
 			internal long absoluteMillisecondsToRunAt;
 
-			internal CallBackAndState(IdleCallback idleCallBack, object stateInfo, long absoluteMillisecondsToRunAt)
+			internal CallBackAndState(Action<object> idleCallBack, object stateInfo, long absoluteMillisecondsToRunAt)
 			{
 				this.idleCallBack = idleCallBack;
 				this.stateInfo = stateInfo;
@@ -68,7 +66,7 @@ namespace MatterHackers.Agg.UI
 			RunOnIdle((state) => callBack(), null, delayInSeconds);
 		}
 
-		public static void RunOnIdle(IdleCallback callBack, object state, double delayInSeconds = 0)
+		public static void RunOnIdle(Action<object> callBack, object state, double delayInSeconds = 0)
 		{
 			if (!timer.IsRunning)
 			{
