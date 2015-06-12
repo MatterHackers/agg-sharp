@@ -160,7 +160,7 @@ namespace MatterHackers.Agg.UI
 		public override void AddChild(GuiWidget child, int indexInChildrenList = -1)
 		{
 			FlowLayoutWidget itemHolder = new FlowLayoutWidget();
-			itemHolder.Name = "LB item holder";
+			itemHolder.Name = "list item holder";
 			itemHolder.Margin = new BorderDouble(3, 0, 0, 0);
 			itemHolder.HAnchor = UI.HAnchor.ParentLeftRight | UI.HAnchor.FitToChildren;
 			itemHolder.AddChild(child);
