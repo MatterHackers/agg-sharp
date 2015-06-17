@@ -139,7 +139,7 @@ namespace MatterHackers.RayTracer
 			scene.camera = new TrackBallCamera(trackballTumbleWidget);
 			scene.background = new Background(new RGBA_Floats(0.5, .5, .5), 0.4);
 
-			//AddBoxAndSheresBooleanTest();
+			AddBoxAndSheresBooleanTest();
 			//AddBoxAndBoxBooleanTest();
 #if false
             renderCollection.Add(new BoxShape(new Vector3(), new Vector3(1, 1, 1),
@@ -149,7 +149,7 @@ namespace MatterHackers.RayTracer
 #endif
 			//renderCollection.Add(new CylinderShape(.25, 1, new SolidMaterial(RGBA_Floats.Cyan, 0, 0, 0)));
 
-			AddTestStl();
+			//AddTestStl();
 			//AddPolygonTest();
 			//AddSphereAndBox();
 			//AddAxisMarker();
@@ -264,7 +264,7 @@ namespace MatterHackers.RayTracer
 			List<IPrimitive> subtractShapes = new List<IPrimitive>();
 			SolidMaterial material = new SolidMaterial(RGBA_Floats.Red, 0, 0, 0);
 
-#if true
+#if false
 			// two big spheres.  Looks good.
 			subtractShapes.Add(new SphereShape(new Vector3(.5, .5, 1), .6, material));
 			subtractShapes.Add(new SphereShape(new Vector3(1.5, .5, 1), .6, material));

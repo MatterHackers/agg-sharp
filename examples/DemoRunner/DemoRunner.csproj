@@ -111,10 +111,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\AggTests\AggTests.csproj">
-      <Project>{F8441CFF-E5BF-4556-AF03-609087659B15}</Project>
-      <Name>AggTests</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\agg\Agg.csproj">
       <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
       <Name>Agg</Name>
