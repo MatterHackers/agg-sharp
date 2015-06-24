@@ -1,7 +1,5 @@
 namespace MatterHackers.Agg.UI
 {
-	public delegate void KeyPressEventHandler(object sender, KeyPressEventArgs keyEvent);
-
 	public class KeyPressEventArgs
 	{
 		private char m_KeyChar;

@@ -401,7 +401,7 @@ namespace MatterHackers.Agg.UI
 
 		public event DrawEventHandler DrawAfter;
 
-		public event KeyPressEventHandler KeyPressed;
+		public event EventHandler<KeyPressEventArgs> KeyPressed;
 
 		public event EventHandler Invalidated;
 
@@ -419,27 +419,23 @@ namespace MatterHackers.Agg.UI
 
 		public event EventHandler LostFocus;
 
-		public delegate void MouseEventHandler(object sender, MouseEventArgs mouseEvent);
-
 		/// <summary>
 		/// The mouse has gone down while in the bounds of this widget
 		/// </summary>
-		public event MouseEventHandler MouseDownInBounds;
+		public event EventHandler<MouseEventArgs> MouseDownInBounds;
 
 		/// <summary>
 		/// The mouse has gon down on this widget. This will not trigger if a child of this widget gets the down message.
 		/// </summary>
-		public event MouseEventHandler MouseDown;
+		public event EventHandler<MouseEventArgs> MouseDown;
 
-		public event MouseEventHandler MouseUp;
+		public event EventHandler<MouseEventArgs> MouseUp;
 
-		public event MouseEventHandler MouseWheel;
+		public event EventHandler<MouseEventArgs> MouseWheel;
 
-		public event MouseEventHandler MouseMove;
+		public event EventHandler<MouseEventArgs> MouseMove;
 
-		public delegate void FlingEventHandler(object sender, FlingEventArgs eventArgs);
-
-		public event FlingEventHandler GestureFling;
+		public event EventHandler<FlingEventArgs> GestureFling;
 
 		/// <summary>
 		/// The mouse has entered the bounds of this widget.  It may also be over a child.
