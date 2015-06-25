@@ -29,14 +29,14 @@ namespace MatterHackers.Agg.UI
 
 			this.topLevelWindow = topLevelWindow;
 			BackgroundColor = RGBA_Bytes.White;
-			topLevelWindow.MouseMove += new MouseEventHandler(topLevelWindow_MouseMove);
+			topLevelWindow.MouseMove += topLevelWindow_MouseMove;
 
 			ShowAsSystemWindow();
 		}
 
 		public override void OnClosed(EventArgs e)
 		{
-			topLevelWindow.MouseMove -= new MouseEventHandler(topLevelWindow_MouseMove);
+			topLevelWindow.MouseMove -= topLevelWindow_MouseMove;
 			foreach (KeyValuePair<GuiWidget, WidgetInList> keyValue in widgetRefList)
 			{
 				keyValue.Key.PositionChanged -= new EventHandler(updateWidgetInfo);

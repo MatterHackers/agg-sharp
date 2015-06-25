@@ -36,17 +36,21 @@ namespace MatterHackers.Agg.WindowsFileDialogs
 
 			WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = false;
 
-			UiThread.RunOnIdle((object state) =>
+			UiThread.RunOnIdle((state) =>
 			{
-				callback(openParams);
-			});
+				OpenFileDialogParams openParamsIn = state as OpenFileDialogParams;
+				if (openParamsIn != null)
+				{
+					callback(openParamsIn);
+				}
+			}, openParams);
 			return true;
 		}
 
 		public override bool SelectFolderDialog(SelectFolderDialogParams folderParams, SelectFolderDialogDelegate callback)
 		{
 			SelectFolderDialog(ref folderParams);
-			UiThread.RunOnIdle((object state) =>
+			UiThread.RunOnIdle(() =>
 			{
 				callback(folderParams);
 			});
@@ -106,7 +110,7 @@ namespace MatterHackers.Agg.WindowsFileDialogs
 
 			WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = false;
 
-			UiThread.RunOnIdle((object state) =>
+			UiThread.RunOnIdle(() =>
 			{
 				callback(saveParams);
 			});

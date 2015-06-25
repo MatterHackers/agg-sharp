@@ -512,7 +512,7 @@ namespace MatterHackers.Agg
 			Invalidate();
 		}
 
-		public void OnIdle(object state)
+		public void OnIdle()
 		{
 			if (m_cur_angle < 360.0)
 			{

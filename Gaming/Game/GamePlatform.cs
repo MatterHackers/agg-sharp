@@ -142,7 +142,7 @@ namespace Gaming.Game
 			}
 		}
 
-		public void OnIdle(object state)
+		public void OnIdle()
 		{
 			UiThread.RunOnIdle(OnIdle);
 

@@ -29,9 +29,7 @@ namespace MatterHackers.Agg.UI
 {
 	public class RadioButton : ButtonBase
 	{
-		public delegate void CheckedStateChangedEventHandler(object sender, EventArgs e);
-
-		public event CheckedStateChangedEventHandler CheckedStateChanged;
+		public event EventHandler CheckedStateChanged;
 
 		private ObservableCollection<GuiWidget> siblingRadioButtonList = new ObservableCollection<GuiWidget>();
 		private bool isChecked = false;

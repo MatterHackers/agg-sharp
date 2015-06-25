@@ -18,13 +18,9 @@ namespace MatterHackers.Agg.UI
 
 	public class ListBox : ScrollableWidget
 	{
-		public delegate void SelectedValueChangedEventHandler(object sender, EventArgs e);
+		public event EventHandler SelectedValueChanged;
 
-		public event SelectedValueChangedEventHandler SelectedValueChanged;
-
-		public delegate void HoverValueChangedEventHandler(object sender, EventArgs e);
-
-		public event HoverValueChangedEventHandler HoverValueChanged;
+		public event EventHandler HoverValueChanged;
 
 		protected FlowLayoutWidget topToBottomItemList;
 
@@ -160,17 +156,17 @@ namespace MatterHackers.Agg.UI
 		public override void AddChild(GuiWidget child, int indexInChildrenList = -1)
 		{
 			FlowLayoutWidget itemHolder = new FlowLayoutWidget();
-			itemHolder.Name = "LB item holder";
+			itemHolder.Name = "list item holder";
 			itemHolder.Margin = new BorderDouble(3, 0, 0, 0);
 			itemHolder.HAnchor = UI.HAnchor.ParentLeftRight | UI.HAnchor.FitToChildren;
 			itemHolder.AddChild(child);
 			//itemHolder.FitToChildren();
 			topToBottomItemList.AddChild(itemHolder, indexInChildrenList);
 
-			itemHolder.MouseEnterBounds += new EventHandler(itemToAdd_MouseEnterBounds);
-			itemHolder.MouseLeaveBounds += new EventHandler(itemToAdd_MouseLeaveBounds);
-			itemHolder.MouseDownInBounds += new MouseEventHandler(itemHolder_MouseDownInBounds);
-			itemHolder.ParentChanged += new EventHandler(itemHolder_ParentChanged);
+			itemHolder.MouseEnterBounds += itemToAdd_MouseEnterBounds;
+			itemHolder.MouseLeaveBounds += itemToAdd_MouseLeaveBounds;
+			itemHolder.MouseDownInBounds += itemHolder_MouseDownInBounds;
+			itemHolder.ParentChanged += itemHolder_ParentChanged;
 		}
 
 		private bool settingLocalBounds = false;
@@ -229,10 +225,10 @@ namespace MatterHackers.Agg.UI
 		private void itemHolder_ParentChanged(object sender, EventArgs e)
 		{
 			FlowLayoutWidget itemHolder = (FlowLayoutWidget)sender;
-			itemHolder.MouseEnterBounds -= new EventHandler(itemToAdd_MouseEnterBounds);
-			itemHolder.MouseLeaveBounds -= new EventHandler(itemToAdd_MouseLeaveBounds);
-			itemHolder.MouseDownInBounds -= new MouseEventHandler(itemHolder_MouseDownInBounds);
-			itemHolder.ParentChanged -= new EventHandler(itemHolder_ParentChanged);
+			itemHolder.MouseEnterBounds -= itemToAdd_MouseEnterBounds;
+			itemHolder.MouseLeaveBounds -= itemToAdd_MouseLeaveBounds;
+			itemHolder.MouseDownInBounds -= itemHolder_MouseDownInBounds;
+			itemHolder.ParentChanged -= itemHolder_ParentChanged;
 		}
 
 		private void itemHolder_MouseDownInBounds(object sender, MouseEventArgs mouseEvent)

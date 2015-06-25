@@ -139,7 +139,7 @@ namespace MatterHackers.MeshVisualizer
 			UiThread.RunOnIdle(DoOpenFileButton_ButtonClick);
 		}
 
-		private void DoOpenFileButton_ButtonClick(object state)
+		private void DoOpenFileButton_ButtonClick()
 		{
 			FileDialog.OpenFileDialog(
 				new OpenFileDialogParams("3D Mesh Files|*.stl;*.amf"),

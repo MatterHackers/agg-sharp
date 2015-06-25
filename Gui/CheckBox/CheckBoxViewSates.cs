@@ -135,7 +135,7 @@ namespace MatterHackers.Agg.UI
 			UiThread.RunOnIdle(PostUpdateSetCorrectVisibilityStates);
 		}
 
-		public void PostUpdateSetCorrectVisibilityStates(object state)
+		public void PostUpdateSetCorrectVisibilityStates()
 		{
 			CheckBox checkBox = (CheckBox)Parent;
 			if (checkBox == null)

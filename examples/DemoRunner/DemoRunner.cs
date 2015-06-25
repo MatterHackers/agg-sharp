@@ -77,7 +77,6 @@ namespace MatterHackers.Agg
 		{
 			Clipboard.SetSystemClipboard(new WindowsFormsClipboard());
 
-			MatterHackers.Agg.Tests.AggDrawingTests.RunAllTests();
 			if (args.Length > 0)
 			{
 				bool foundADemo = false;
