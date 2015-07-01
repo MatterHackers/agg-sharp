@@ -589,6 +589,12 @@ namespace MatterHackers.GCodeVisualizer
 
 				case "565": // M565: Set Z probe offset
 					break;
+                case "1200"://M1200 Makerbot Fake gCode command for start build notification
+                    break;
+                case "1201"://M1201 Makerbot Fake gCode command for end build notification
+                    break;
+                case "1202"://M1202 Makerbot Fake gCode command for reset board
+                    break;
 
 #if DEBUG
 				default:
