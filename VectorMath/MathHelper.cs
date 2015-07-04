@@ -232,7 +232,8 @@ namespace MatterHackers.VectorMath
 			return DeltaAngle;
 		}
 
-		#region DegreesToRadians
+		#region Conversions
+		#region Angles
 
 		/// <summary>
 		/// Convert degrees to radians
@@ -256,7 +257,14 @@ namespace MatterHackers.VectorMath
 			return radians * radToDeg;
 		}
 
-		#endregion DegreesToRadians
+		#endregion Angles
+		#region Lengths
+		public static double InchesToMm(double inches)
+		{
+			return inches * 25.4;
+		}
+		#endregion Lengths
+		#endregion Conversions
 
 		#region Swap
 
@@ -288,6 +296,7 @@ namespace MatterHackers.VectorMath
 
 		#endregion Public Members
 
+		#region Static Functions
 		public static bool AlmostEqual(double a, double b, double differenceAllowed)
 		{
 			if (a > b - differenceAllowed && a < b + differenceAllowed)
@@ -297,5 +306,6 @@ namespace MatterHackers.VectorMath
 
 			return false;
 		}
+		#endregion Static Functions
 	}
 }
