@@ -46,40 +46,43 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
 		public static FrostedSerialPortFactory GetAppropriateFactory(string driverType)
 		{
-			try
-			{
-				if (availableFactories.Count == 0)
-				{
-					// always add a serial port this is a raw port
-					availableFactories.Add("Raw", new FrostedSerialPortFactory());
+            using (TimedLock.Lock(availableFactories, "GetAppropriateFactory"))
+            {
+                try
+                {
+                    if (availableFactories.Count == 0)
+                    {
+                        // always add a serial port this is a raw port
+                        availableFactories.Add("Raw", new FrostedSerialPortFactory());
 
-					// add in any plugins that we find with other factories.
-					PluginFinder<FrostedSerialPortFactory> pluginFinder = new PluginFinder<FrostedSerialPortFactory>();
+                        // add in any plugins that we find with other factories.
+                        PluginFinder<FrostedSerialPortFactory> pluginFinder = new PluginFinder<FrostedSerialPortFactory>();
 
-					foreach (FrostedSerialPortFactory plugin in pluginFinder.Plugins)
-					{
-						availableFactories.Add(plugin.GetDriverType(), plugin);
-					}
+                        foreach (FrostedSerialPortFactory plugin in pluginFinder.Plugins)
+                        {
+                            availableFactories.Add(plugin.GetDriverType(), plugin);
+                        }
 
-					// If we did not finde a RepRap driver add the default.
-					if (!availableFactories.ContainsKey("RepRap"))
-					{
-						availableFactories.Add("RepRap", new FrostedSerialPortFactory());
-					}
-				}
+                        // If we did not finde a RepRap driver add the default.
+                        if (!availableFactories.ContainsKey("RepRap"))
+                        {
+                            availableFactories.Add("RepRap", new FrostedSerialPortFactory());
+                        }
+                    }
 
-				if (!string.IsNullOrEmpty(driverType)
-					&& availableFactories.ContainsKey(driverType))
-				{
-					return availableFactories[driverType];
-				}
+                    if (!string.IsNullOrEmpty(driverType)
+                        && availableFactories.ContainsKey(driverType))
+                    {
+                        return availableFactories[driverType];
+                    }
 
-				return availableFactories["RepRap"];
-			}
-			catch
-			{
-				return new FrostedSerialPortFactory();
-			}
+                    return availableFactories["RepRap"];
+                }
+                catch
+                {
+                    return new FrostedSerialPortFactory();
+                }
+            }
 		}
 
 		virtual protected string GetDriverType()

@@ -90,7 +90,7 @@ namespace MatterHackers.Agg.UI
 
 			bar = new GuiWidget(80, 15);
 			bar.VAnchor = VAnchor.ParentCenter;
-			bar.DrawAfter += new DrawEventHandler(bar_Draw);
+			bar.DrawAfter += bar_Draw;
 			AddChild(bar);
 			progressTextWidget = new TextWidget("", textColor: textColor, pointSize: 8);
 			progressTextWidget.AutoExpandBoundsToText = true;

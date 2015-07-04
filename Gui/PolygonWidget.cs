@@ -114,9 +114,7 @@ namespace MatterHackers.Agg.UI
 		private bool m_in_polygon_check;
 		private bool needToRecalculateBounds = true;
 
-		public delegate void ChangedHandler(object sender, EventArgs e);
-
-		public event ChangedHandler Changed;
+		public event EventHandler Changed;
 
 		public polygon_ctrl_impl(int np)
 			: this(np, 5)
