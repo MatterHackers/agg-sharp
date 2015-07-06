@@ -1237,6 +1237,11 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
 		{
+			if (childToAdd.hasBeenRemoved)
+			{
+				throw new Exception("You are adding a child that has previously been remove. You should probably be creating a new widget.");
+			}
+
 			if (indexInChildrenList == -1)
 			{
 				indexInChildrenList = Children.Count;
@@ -1333,6 +1338,8 @@ namespace MatterHackers.Agg.UI
 			RemoveChild(Children[index]);
 		}
 
+		private bool hasBeenRemoved = false;
+
 		public virtual void RemoveChild(GuiWidget childToRemove)
 		{
 			if (!Children.Contains(childToRemove))
@@ -1340,6 +1347,7 @@ namespace MatterHackers.Agg.UI
 				throw new InvalidOperationException("You can only remove children that this control has.");
 			}
 			childToRemove.ClearCapturedState();
+			childToRemove.hasBeenRemoved = true;
 			Children.Remove(childToRemove);
 			childToRemove.parent = null;
 			childToRemove.OnParentChanged(null);
