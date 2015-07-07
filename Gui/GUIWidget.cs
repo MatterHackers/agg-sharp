@@ -1242,10 +1242,12 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
 		{
+#if DEBUG
 			if (childToAdd.hasBeenRemoved)
 			{
-				throw new Exception("You are adding a child that has previously been remove. You should probably be creating a new widget.");
+				throw new Exception("You are adding a child that has previously been remove. You should probably be creating a new widget, or calling ClearRemovedFlag() before adding.");
 			}
+#endif
 
 			if (indexInChildrenList == -1)
 			{
