@@ -525,6 +525,11 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public void ClearRemovedFlag()
+		{
+			hasBeenRemoved = false;
+		}
+
 		public Affine ParentToChildTransform
 		{
 			get

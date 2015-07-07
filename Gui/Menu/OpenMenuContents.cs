@@ -35,6 +35,7 @@ namespace MatterHackers.Agg.UI
 				FlowLayoutWidget topToBottom = new FlowLayoutWidget(FlowDirection.TopToBottom);
 				foreach (MenuItem menu in MenuItems)
 				{
+					menu.ClearRemovedFlag();
 					topToBottom.AddChild(menu);
 					menu.DoClickFunction = AllowClickingItems;
 				}
