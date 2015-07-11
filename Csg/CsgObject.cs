@@ -184,6 +184,11 @@ namespace MatterHackers.Csg
 			return new Translate(new Scale(this, new Vector3(1, -1, 1)), new Vector3(0, offsetFromOrigin * 2, 0), name);
 		}
 
+		public CsgObject NewMirrorAccrossZ(double offsetFromOrigin = 0, string name = "")
+		{
+			return new Translate(new Scale(this, new Vector3(1, 1, -1)), new Vector3(0, 0, offsetFromOrigin * 2), name);
+		}
+
 		#endregion Mirror Functions
 
 		#endregion Member Functions

@@ -39,6 +39,7 @@ namespace MatterHackers.Csg.Processors
 {
 	public class OpenSCadOutput
 	{
+		public static int NumberOfCylinderSegments = 60;
 		public static void Save(CsgObject objectToProcess, string fileName, string prepend = "")
 		{
 			FileStream file = new FileStream(fileName, FileMode.Create, FileAccess.Write);
@@ -118,7 +119,7 @@ namespace MatterHackers.Csg.Processors
 		{
 			string info = AddRenderInfoIfReqired(objectToProcess);
 
-			info += "cylinder(r1=" + objectToProcess.Radius1.ToString() + ", r2=" + objectToProcess.Radius2.ToString() + ", h=" + objectToProcess.Height.ToString() + ", center=true, $fn=40);" + AddNameAsComment(objectToProcess);
+			info += "cylinder(r1=" + objectToProcess.Radius1.ToString() + ", r2=" + objectToProcess.Radius2.ToString() + ", h=" + objectToProcess.Height.ToString() + ", center=true, $fn={0});".FormatWith(NumberOfCylinderSegments) + AddNameAsComment(objectToProcess);
 
 			return ApplyIndent(info, level);
 		}
@@ -131,7 +132,7 @@ namespace MatterHackers.Csg.Processors
 		{
 			string info = AddRenderInfoIfReqired(objectToProcess);
 
-			string rotate_extrude = "rotate_extrude(convexity = 10, $fn = 40)";
+			string rotate_extrude = "rotate_extrude(convexity = 10, $fn = {0})".FormatWith(NumberOfCylinderSegments);
 			string translate = "translate([" + objectToProcess.AxisOffset.ToString() + ", 0, 0])";
 			string thingToRotate = "polygon( points=[";
 			foreach (Vector2 point in objectToProcess.Points)
@@ -214,7 +215,7 @@ namespace MatterHackers.Csg.Processors
 		{
 			string info = AddRenderInfoIfReqired(objectToProcess);
 
-			info += "sphere(" + objectToProcess.Radius.ToString() + ", $fn=40);" + AddNameAsComment(objectToProcess);
+			info += "sphere(" + objectToProcess.Radius.ToString() + ", $fn={0});".FormatWith(NumberOfCylinderSegments) + AddNameAsComment(objectToProcess);
 			return ApplyIndent(info, level);
 		}
 
