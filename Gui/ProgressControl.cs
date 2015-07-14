@@ -31,15 +31,123 @@ using System;
 
 namespace MatterHackers.Agg.UI
 {
-	public class ProgressControl : FlowLayoutWidget
+	public class ProgressBar : GuiWidget
 	{
-		private GuiWidget bar;
-		private TextWidget processTextWidget;
-		private TextWidget progressTextWidget;
+		public RGBA_Bytes BorderColor = RGBA_Bytes.Black;
+
+		public RGBA_Bytes FillColor { get; set; }
 
 		public EventHandler ProgressChanged;
 
-		public string ProcessType
+		private double ratioComplete;
+
+		public ProgressBar(RGBA_Bytes fillColor, int width, int height)
+			: base(width, height)
+		{
+			this.FillColor = fillColor;
+			DrawAfter += bar_Draw;
+		}
+
+		public int PercentComplete
+		{
+			get { return (int)(ratioComplete * 100 + .5); }
+			set
+			{
+				if (value != (int)(ratioComplete * ratioComplete + .5))
+				{
+					if (ProgressChanged != null)
+					{
+						ProgressChanged(this, null);
+					}
+					ratioComplete = value / 100;
+					Invalidate();
+				}
+			}
+		}
+
+		public double RatioComplete
+		{
+			get { return ratioComplete; }
+			set
+			{
+				if (value != ratioComplete)
+				{
+					if (ProgressChanged != null)
+					{
+						ProgressChanged(this, null);
+					}
+					ratioComplete = value;
+					Invalidate();
+				}
+			}
+		}
+
+		private void bar_Draw(GuiWidget drawingWidget, DrawEventArgs drawEvent)
+		{
+			if (drawingWidget != null && drawEvent != null && drawEvent.graphics2D != null)
+			{
+				drawEvent.graphics2D.FillRectangle(0, 0, drawingWidget.Width * RatioComplete, drawingWidget.Height, FillColor);
+				drawEvent.graphics2D.Rectangle(drawingWidget.LocalBounds, BorderColor);
+			}
+		}
+	}
+
+	public class ProgressControl : FlowLayoutWidget
+	{
+		private TextWidget processTextWidget;
+		private ProgressBar progressBar;
+		private TextWidget progressTextWidget;
+
+		public event EventHandler ProgressChanged
+		{
+			//Wraps the PrivateClick event delegate so that we can track which events have been added and clear them if necessary
+			add
+			{
+				progressBar.ProgressChanged += value;
+			}
+
+			remove
+			{
+				progressBar.ProgressChanged -= value;
+			}
+		}
+
+		public ProgressControl(string message, RGBA_Bytes textColor, RGBA_Bytes fillColor)
+		{
+			processTextWidget = new TextWidget(message, textColor: textColor);
+			processTextWidget.AutoExpandBoundsToText = true;
+			processTextWidget.Margin = new BorderDouble(5, 0);
+			AddChild(processTextWidget);
+
+			progressBar = new ProgressBar(fillColor, 80, 15);
+			progressBar.VAnchor = VAnchor.ParentCenter;
+			AddChild(progressBar);
+			progressTextWidget = new TextWidget("", textColor: textColor, pointSize: 8);
+			progressTextWidget.AutoExpandBoundsToText = true;
+			progressTextWidget.VAnchor = VAnchor.ParentCenter;
+			progressTextWidget.Margin = new BorderDouble(5, 0);
+			AddChild(progressTextWidget);
+		}
+
+		public RGBA_Bytes FillColor 
+		{
+			get { return progressBar.FillColor; }
+			set { progressBar.FillColor = value; }
+		}
+
+		public int PercentComplete
+		{
+			get { return progressBar.PercentComplete; }
+			set { progressBar.PercentComplete = value; }
+		}
+
+		public double RatioComplete
+		{
+			get { return progressBar.RatioComplete; }
+			set { progressBar.RatioComplete = value; }
+		}
+
+			public string ProcessType
 		{
 			get { return processTextWidget.Text; }
 			set
@@ -55,56 +163,6 @@ namespace MatterHackers.Agg.UI
 			set
 			{
 				progressTextWidget.Text = value;
-			}
-		}
-
-		private int percentComplete;
-		public RGBA_Bytes fillColor;
-		public RGBA_Bytes borderColor = RGBA_Bytes.Black;
-
-		public int PercentComplete
-		{
-			get { return percentComplete; }
-			set
-			{
-				if (value != percentComplete)
-				{
-					if (ProgressChanged != null)
-					{
-						ProgressChanged(this, null);
-					}
-					percentComplete = value;
-					Invalidate();
-				}
-			}
-		}
-
-		public ProgressControl(string message, RGBA_Bytes textColor, RGBA_Bytes fillColor)
-		{
-			this.fillColor = fillColor;
-
-			processTextWidget = new TextWidget(message, textColor: textColor);
-			processTextWidget.AutoExpandBoundsToText = true;
-			processTextWidget.Margin = new BorderDouble(5, 0);
-			AddChild(processTextWidget);
-
-			bar = new GuiWidget(80, 15);
-			bar.VAnchor = VAnchor.ParentCenter;
-			bar.DrawAfter += bar_Draw;
-			AddChild(bar);
-			progressTextWidget = new TextWidget("", textColor: textColor, pointSize: 8);
-			progressTextWidget.AutoExpandBoundsToText = true;
-			progressTextWidget.VAnchor = VAnchor.ParentCenter;
-			progressTextWidget.Margin = new BorderDouble(5, 0);
-			AddChild(progressTextWidget);
-		}
-
-		private void bar_Draw(GuiWidget drawingWidget, DrawEventArgs drawEvent)
-		{
-			if (drawingWidget != null && drawEvent != null && drawEvent.graphics2D != null)
-			{
-				drawEvent.graphics2D.FillRectangle(0, 0, drawingWidget.Width * PercentComplete / 100.0, drawingWidget.Height, fillColor);
-				drawEvent.graphics2D.Rectangle(drawingWidget.LocalBounds, borderColor);
 			}
 		}
 	}
