@@ -145,9 +145,19 @@ namespace MatterHackers.Agg
 			Render(imageSource, position.x, position.y);
 		}
 
+		public void Render(IImageByte imageSource, Vector2 position, double width, double height)
+		{
+			Render(imageSource, position.x, position.y, width, height);
+		}
+
 		public void Render(IImageByte imageSource, double x, double y)
 		{
 			Render(imageSource, x, y, 0, 1, 1);
+		}
+
+		public void Render(IImageByte imageSource, double x, double y, double width, double height)
+		{
+			Render(imageSource, x, y, 0, width / imageSource.Width, height / imageSource.Height);
 		}
 
 		public abstract void Render(IImageByte imageSource,
