@@ -103,6 +103,8 @@ namespace MatterHackers.Agg.UI
 
 	public class SoftKeyboardDisplayStateManager : GuiWidget
 	{
+		public static bool KeyboardActive { get; private set; }
+
 		private TextEditWidget hadFocusWidget = null;
 		private GuiWidget content;
 		private GuiWidget contentOffsetHolder;
@@ -270,6 +272,8 @@ namespace MatterHackers.Agg.UI
 				CheckMouseCaptureStates();
 			}
 			CheckMouseCaptureStates();
+
+			KeyboardActive = true;
 		}
 
 		private void DoHideSoftwareKeyboard(object sender, EventArgs e)
@@ -305,6 +309,8 @@ namespace MatterHackers.Agg.UI
 			}
 
 			CheckMouseCaptureStates();
+
+			KeyboardActive = false;
 		}
 
 		private void content_Invalidated(object sender, EventArgs e)
