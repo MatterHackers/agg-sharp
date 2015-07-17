@@ -42,7 +42,7 @@ using System.Diagnostics;
 
 namespace MatterHackers.Agg
 {
-	public class image_filters : GuiWidget
+	public class image_filters : FlowLayoutWidget
 	{
 #if SourceDepthFloat
         public static ImageBufferFloat m_TempDestImage = new ImageBufferFloat();
@@ -74,6 +74,7 @@ namespace MatterHackers.Agg
 		private double m_time2;
 
 		public image_filters()
+			: base(FlowDirection.BottomToTop)
 		{
 			m_step = new Slider(new Vector2(115, 5), new Vector2(285, 6));
 			m_radius = new Slider(new Vector2(115, 5 + 15), new Vector2(285, 6));
@@ -188,7 +189,7 @@ namespace MatterHackers.Agg
 #endif
 
 				int w = image_filters.m_TempDestImage.Width + 220;
-				int h = image_filters.m_TempDestImage.Height + 140;
+				int h = image_filters.m_TempDestImage.Height + 200;
 
 				if (w < 305) w = 305;
 				if (h < 325) h = 325;
@@ -219,7 +220,7 @@ namespace MatterHackers.Agg
 
 			string buf = string.Format("NSteps={0:F0}", m_num_steps);
 			gsv_text t = new gsv_text();
-			t.start_point(10.0, 295.0);
+			t.start_point(200.0, 430);
 			t.SetFontSize(10.0);
 			t.text(buf);
 
@@ -238,7 +239,7 @@ namespace MatterHackers.Agg
 			if (m_time1 != m_time2 && m_num_pix > 0.0)
 			{
 				buf = string.Format("{0:F2} Kpix/sec", m_num_pix / (m_time2 - m_time1));
-				t.start_point(10.0, 310.0);
+				t.start_point(200.0, 450);
 				t.text(buf);
 				m_Rasterizer.add_path(pt);
 				scanlineRenderer.RenderSolid(clippingProxy, m_Rasterizer, m_ScanlinePacked, colorBlack);

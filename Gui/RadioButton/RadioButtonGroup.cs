@@ -24,11 +24,10 @@ using System.Collections.Generic;
 
 namespace MatterHackers.Agg.UI
 {
-	public class RadioButtonGroup : GuiWidget
+	public class RadioButtonGroup : FlowLayoutWidget
 	{
 		public event EventHandler SelectionChanged;
 
-		private FlowLayoutWidget topToBottomButtons = new FlowLayoutWidget(FlowDirection.TopToBottom);
 		private List<RadioButton> radioButtons;
 
 		private IColorType backgroundColor;
@@ -43,14 +42,14 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public RadioButtonGroup(Vector2 location, Vector2 size)
+			: base(FlowDirection.TopToBottom)
 		{
-			topToBottomButtons.Margin = new BorderDouble();
-			topToBottomButtons.Padding = new BorderDouble(5);
+			Margin = new BorderDouble();
+			Padding = new BorderDouble(5);
 
 			LocalBounds = new RectangleDouble(0, 0, size.x, size.y);
 			OriginRelativeParent = location;
 			radioButtons = new List<RadioButton>();
-			AddChild(topToBottomButtons);
 
 			backgroundColor = (new RGBA_Floats(1.0, 1.0, 0.9));
 			borderColor = (new RGBA_Floats(0.0, 0.0, 0.0));
@@ -97,10 +96,10 @@ namespace MatterHackers.Agg.UI
 		public RadioButton AddRadioButton(string text)
 		{
 			RadioButton newRadioButton = new RadioButton(text);
-			newRadioButton.Margin = new BorderDouble(2);
+			newRadioButton.Margin = new BorderDouble(5, 0);
 			newRadioButton.HAnchor = UI.HAnchor.ParentLeft;
 			radioButtons.Add(newRadioButton);
-			topToBottomButtons.AddChild(newRadioButton);
+			AddChild(newRadioButton);
 
 			return newRadioButton;
 		}
