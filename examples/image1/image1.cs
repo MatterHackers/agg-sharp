@@ -148,7 +148,33 @@ namespace MatterHackers.Agg
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
 			scanlineRenderer.GenerateAndRender(ras, sl, clippingProxy_pre, sa, sg);
 
+			if (false) // this is test code to check different quality settings for scalling
+			{
+				Vector2 screenCenter = new Vector2(Width / 2, Height / 2);
+				Vector2 deltaToMouse = mousePosition - screenCenter;
+				double angleToMouse = Math.Atan2(deltaToMouse.y, deltaToMouse.x);
+				double diagonalSize = Math.Sqrt(sourceImage.Width * sourceImage.Width + sourceImage.Height * sourceImage.Height);
+				double distToMouse = deltaToMouse.Length;
+				double scalling = distToMouse / diagonalSize;
+				graphics2D.Render(sourceImage, Width / 2, Height / 2, angleToMouse - MathHelper.Tau / 8, scalling, scalling);
+			}
+
 			base.OnDraw(graphics2D);
+		}
+
+		Vector2 mousePosition;
+		public override void OnMouseMove(MouseEventArgs mouseEvent)
+		{
+			mousePosition = mouseEvent.Position;
+			base.OnMouseMove(mouseEvent);
+			Invalidate();
+		}
+
+		[STAThread]
+		public static void Main(string[] args)
+		{
+			AppWidgetFactory appWidget = new Image1Factory();
+			appWidget.CreateWidgetAndRunInWindow();
 		}
 	}
 
