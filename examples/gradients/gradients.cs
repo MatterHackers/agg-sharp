@@ -85,11 +85,11 @@ namespace MatterHackers.Agg
 			m_spline_g = new spline_ctrl(new Vector2(210, 10 + 40), new Vector2(250, 5 + 30), 6);
 			m_spline_b = new spline_ctrl(new Vector2(210, 10 + 80), new Vector2(250, 5 + 30), 6);
 			m_spline_a = new spline_ctrl(new Vector2(210, 10 + 120), new Vector2(250, 5 + 30), 6);
-			m_profile.MouseMove += new MouseEventHandler(NeedRedraw);
-			m_spline_r.MouseMove += new MouseEventHandler(NeedRedraw);
-			m_spline_g.MouseMove += new MouseEventHandler(NeedRedraw);
-			m_spline_b.MouseMove += new MouseEventHandler(NeedRedraw);
-			m_spline_a.MouseMove += new MouseEventHandler(NeedRedraw);
+			m_profile.MouseMove += NeedRedraw;
+			m_spline_r.MouseMove += NeedRedraw;
+			m_spline_g.MouseMove += NeedRedraw;
+			m_spline_b.MouseMove += NeedRedraw;
+			m_spline_a.MouseMove += NeedRedraw;
 			m_GradTypeRBox = new RadioButtonGroup(new Vector2(10.0, 180.0), new Vector2(190.0, 120.0));
 			m_GradWrapRBox = new RadioButtonGroup(new Vector2(10, 310), new Vector2(190, 65));
 
