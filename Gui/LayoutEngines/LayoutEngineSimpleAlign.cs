@@ -22,6 +22,11 @@ namespace MatterHackers.Agg.UI
 				{
 					foreach (GuiWidget child in parent.Children)
 					{
+						if (child.Visible == false)
+						{
+							continue;
+						}
+
 						ApplyHAnchorToChild(parent, child);
 						ApplyVAnchorToChild(parent, child);
 					}
@@ -42,6 +47,10 @@ namespace MatterHackers.Agg.UI
 				{
 					foreach (GuiWidget child in parent.Children)
 					{
+						if (child.Visible == false)
+						{
+							continue;
+						}
 						ApplyHAnchorToChild(parent, child);
 						ApplyVAnchorToChild(parent, child);
 					}

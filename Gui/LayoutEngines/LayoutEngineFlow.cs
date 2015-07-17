@@ -58,6 +58,10 @@ namespace MatterHackers.Agg.UI
 				for (int i = 0; i < parent.Children.Count; i++)
 				{
 					GuiWidget child = parent.Children[i];
+					if (child.Visible == false)
+					{
+						continue;
+					}
 					ApplyHAnchorToChild(parent, child);
 					ApplyVAnchorToChild(parent, child);
 				}
@@ -74,6 +78,10 @@ namespace MatterHackers.Agg.UI
 				{
 					foreach (GuiWidget child in parent.Children)
 					{
+						if (child.Visible == false)
+						{
+							continue;
+						}
 						ApplyHAnchorToChild(parent, child);
 						ApplyVAnchorToChild(parent, child);
 					}
