@@ -694,39 +694,52 @@ namespace MatterHackers.MeshVisualizer
 		private RGBA_Bytes bedMarkingsColor = RGBA_Bytes.Black;
 		private RGBA_Bytes bedBaseColor = new RGBA_Bytes(245, 245, 255);
 
+		static Point2D lastLinesCount;
+		static ImageBuffer lastCreatedBedImage = new ImageBuffer();
 		private void CreateRectangularBedGridImage(int linesInX, int linesInY)
 		{
-			Vector2 bedImageCentimeters = new Vector2(linesInX, linesInY);
-
-			BedImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
-			Graphics2D graphics2D = BedImage.NewGraphics2D();
-			graphics2D.Clear(bedBaseColor);
+			using (TimedLock.Lock(lastCreatedBedImage, "CreateRectangularBedGridImage"))
 			{
-				double lineDist = BedImage.Width / (double)linesInX;
-
-				int count = 1;
-				int pointSize = 20;
-				graphics2D.DrawString(count.ToString(), 4, 4, pointSize, color: bedMarkingsColor);
-				for (double linePos = lineDist; linePos < BedImage.Width; linePos += lineDist)
+				if (linesInX == lastLinesCount.x && linesInY == lastLinesCount.y)
 				{
-					count++;
-					int linePosInt = (int)linePos;
-					graphics2D.Line(linePosInt, 0, linePosInt, BedImage.Height, bedMarkingsColor);
-					graphics2D.DrawString(count.ToString(), linePos + 4, 4, pointSize, color: bedMarkingsColor);
+					BedImage = lastCreatedBedImage;
+					return;
 				}
-			}
-			{
-				double lineDist = BedImage.Height / (double)linesInY;
+				Vector2 bedImageCentimeters = new Vector2(linesInX, linesInY);
 
-				int count = 1;
-				int pointSize = 16;
-				for (double linePos = lineDist; linePos < BedImage.Height; linePos += lineDist)
+				BedImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
+				Graphics2D graphics2D = BedImage.NewGraphics2D();
+				graphics2D.Clear(bedBaseColor);
 				{
-					count++;
-					int linePosInt = (int)linePos;
-					graphics2D.Line(0, linePosInt, BedImage.Height, linePosInt, bedMarkingsColor);
-					graphics2D.DrawString(count.ToString(), 4, linePos + 4, pointSize, color: bedMarkingsColor);
+					double lineDist = BedImage.Width / (double)linesInX;
+
+					int count = 1;
+					int pointSize = 20;
+					graphics2D.DrawString(count.ToString(), 4, 4, pointSize, color: bedMarkingsColor);
+					for (double linePos = lineDist; linePos < BedImage.Width; linePos += lineDist)
+					{
+						count++;
+						int linePosInt = (int)linePos;
+						graphics2D.Line(linePosInt, 0, linePosInt, BedImage.Height, bedMarkingsColor);
+						graphics2D.DrawString(count.ToString(), linePos + 4, 4, pointSize, color: bedMarkingsColor);
+					}
 				}
+				{
+					double lineDist = BedImage.Height / (double)linesInY;
+
+					int count = 1;
+					int pointSize = 16;
+					for (double linePos = lineDist; linePos < BedImage.Height; linePos += lineDist)
+					{
+						count++;
+						int linePosInt = (int)linePos;
+						graphics2D.Line(0, linePosInt, BedImage.Height, linePosInt, bedMarkingsColor);
+						graphics2D.DrawString(count.ToString(), 4, linePos + 4, pointSize, color: bedMarkingsColor);
+					}
+				}
+
+				lastCreatedBedImage = BedImage;
+				lastLinesCount = new Point2D(linesInX, linesInY);
 			}
 		}
 
