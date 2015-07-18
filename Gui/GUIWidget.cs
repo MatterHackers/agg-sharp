@@ -38,16 +38,34 @@ namespace MatterHackers.Agg.UI
 	}
 
 	[Flags]
+	/// <summary>
+	/// Sets Horizontal alignment used for a widget, respecting widget margin and parent padding.
+	/// </summary>
 	public enum HAnchor
 	{
+		/// <summary>
+		/// The widget will not change width automaticaly and will be positions at the OriginRelative to parent in x.
+		/// </summary>
 		AbsolutePosition = 0,
+		/// <summary>
+		/// Hold the widget to the paretns left edge, respecting widget margin and parent padding.
+		/// </summary>
 		ParentLeft = 1,
 		ParentCenter = 2,
 		ParentRight = 4,
+		/// <summary>
+		/// Maintain a size that encloses all of its visible children.
+		/// </summary>
 		FitToChildren = 8,
+		/// <summary>
+		/// Maintin a width that is the same width as its parent.
+		/// </summary>
 		ParentLeftRight = ParentLeft | ParentRight,
 		ParentLeftCenter = ParentLeft | ParentCenter,
 		ParentCenterRight = ParentCenter | ParentRight,
+		/// <summary>
+		/// Take the larger of FitToCHildren or ParentLeftRight.
+		/// </summary>
 		Max_FitToChildren_ParentWidth = FitToChildren | ParentLeftRight,
 	};
 
