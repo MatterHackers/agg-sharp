@@ -54,7 +54,7 @@ namespace MatterHackers.Agg.UI
 		ParentCenter = 2,
 		ParentRight = 4,
 		/// <summary>
-		/// Maintain a size that encloses all of its visible children.
+		/// Maintain a size that horizontaly encloses all of its visible children.
 		/// </summary>
 		FitToChildren = 8,
 		/// <summary>
@@ -64,11 +64,14 @@ namespace MatterHackers.Agg.UI
 		ParentLeftCenter = ParentLeft | ParentCenter,
 		ParentCenterRight = ParentCenter | ParentRight,
 		/// <summary>
-		/// Take the larger of FitToCHildren or ParentLeftRight.
+		/// Take the larger of FitToChildren or ParentLeftRight.
 		/// </summary>
 		Max_FitToChildren_ParentWidth = FitToChildren | ParentLeftRight,
 	};
 
+	/// <summary>
+	/// Sets Vertical alignment used for a widget, respecting widget margin and parent padding.
+	/// </summary>
 	[Flags]
 	public enum VAnchor
 	{
@@ -76,16 +79,56 @@ namespace MatterHackers.Agg.UI
 		ParentBottom = 1,
 		ParentCenter = 2,
 		ParentTop = 4,
+		/// <summary>
+		/// Maintain a size that verticaly encloses all of its visible children.
+		/// </summary>
 		FitToChildren = 8,
 		ParentBottomTop = ParentBottom | ParentTop,
 		ParentBottomCenter = ParentBottom | ParentCenter,
 		ParentCenterTop = ParentCenter | ParentTop,
+		/// <summary>
+		/// Take the larger of FitToChildren or ParentBottomTop.
+		/// </summary>
 		Max_FitToChildren_ParentHeight = FitToChildren | ParentBottomTop,
 	};
 
-	public enum Cursors { Arrow, Cross, Default, Hand, Help, HSplit, IBeam, No, NoMove2D, NoMoveHoriz, NoMoveVert, PanEast, PanNE, PanNorth, PanNW, PanSE, PanSouth, PanSW, PanWest, SizeAll, SizeNESW, SizeNS, SizeNWSE, SizeWE, UpArrow, VSplit, WaitCursor };
+	public enum Cursors 
+	{ 
+		Arrow, 
+		Cross, 
+		Default, 
+		Hand, 
+		Help, 
+		HSplit, 
+		IBeam, 
+		No, 
+		NoMove2D, 
+		NoMoveHoriz, 
+		NoMoveVert, 
+		PanEast, 
+		PanNE, 
+		PanNorth, 
+		PanNW, 
+		PanSE, 
+		PanSouth, 
+		PanSW, 
+		PanWest, 
+		SizeAll, 
+		SizeNESW, 
+		SizeNS, 
+		SizeNWSE, 
+		SizeWE, 
+		UpArrow, 
+		VSplit, 
+		WaitCursor 
+	};
 
-	public enum UnderMouseState { NotUnderMouse, UnderMouseNotFirst, FirstUnderMouse };
+	public enum UnderMouseState 
+	{ 
+		NotUnderMouse, 
+		UnderMouseNotFirst, 
+		FirstUnderMouse 
+	};
 
 	[DebuggerDisplay("Name = {Name}, Bounds = {LocalBounds}")]
 	public class GuiWidget
