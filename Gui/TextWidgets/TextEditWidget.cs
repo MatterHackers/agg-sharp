@@ -234,6 +234,11 @@ namespace MatterHackers.Agg.UI
 			OnTextChanged(e);
 		}
 
+		public override bool Focus()
+		{
+			return internalTextEditWidget.Focus();
+		}
+
 		private void internalTextEditWidget_GotFocus(object sender, EventArgs e)
 		{
 			if (ShowSoftwareKeyboard != null)
