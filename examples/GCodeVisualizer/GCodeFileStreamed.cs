@@ -159,12 +159,12 @@ namespace MatterHackers.GCodeVisualizer
 			throw new NotImplementedException("A streamed GCode file should not need to do this. Please validate the code that is calling this.");
 		}
 
-		public override double GetFilamentCubicMm(double p)
+		public override double GetFilamentCubicMm(double filamentDiameter)
 		{
 			throw new NotImplementedException("A streamed GCode file should not need to do this. Please validate the code that is calling this.");
 		}
 
-		public override bool IsExtruding(int i)
+		public override bool IsExtruding(int instructionIndexToCheck)
 		{
 			throw new NotImplementedException();
 		}
@@ -179,7 +179,7 @@ namespace MatterHackers.GCodeVisualizer
 			throw new NotImplementedException();
 		}
 
-		public override double GetFilamentUsedMm(double p)
+		public override double GetFilamentUsedMm(double filamentDiameter)
 		{
 			throw new NotImplementedException();
 		}
@@ -208,7 +208,7 @@ namespace MatterHackers.GCodeVisualizer
 			return 0;
 		}
 
-		public override double GetFilamentWeightGrams(double p, double density)
+		public override double GetFilamentWeightGrams(double filamentDiameterMm, double density)
 		{
 			return 0;
 		}

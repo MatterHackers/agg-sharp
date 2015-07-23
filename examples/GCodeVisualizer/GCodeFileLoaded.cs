@@ -800,11 +800,11 @@ namespace MatterHackers.GCodeVisualizer
 			return bounds;
 		}
 
-		public override bool IsExtruding(int vertexIndexToCheck)
+		public override bool IsExtruding(int instructionIndexToCheck)
 		{
-			if (vertexIndexToCheck > 1 && vertexIndexToCheck < GCodeCommandQueue.Count)
+			if (instructionIndexToCheck > 1 && instructionIndexToCheck < GCodeCommandQueue.Count)
 			{
-				double extrusionLengeth = GCodeCommandQueue[vertexIndexToCheck].EPosition - GCodeCommandQueue[vertexIndexToCheck - 1].EPosition;
+				double extrusionLengeth = GCodeCommandQueue[instructionIndexToCheck].EPosition - GCodeCommandQueue[instructionIndexToCheck - 1].EPosition;
 				if (extrusionLengeth > 0)
 				{
 					return true;
@@ -814,7 +814,7 @@ namespace MatterHackers.GCodeVisualizer
 			return false;
 		}
 
-		public override double GetFilamentUsedMm(double nozzleDiameter)
+		public override double GetFilamentUsedMm(double filamentDiameter)
 		{
 			if (filamentUsedMmCache == 0)
 			{

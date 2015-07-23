@@ -117,13 +117,13 @@ namespace MatterHackers.GCodeVisualizer
 				endRenderIndex = gCodeFileToDraw.GetInstructionIndexAtLayer(layerToCreate + 1);
 			}
 
-			for (int i = startRenderIndex; i < endRenderIndex; i++)
+			for (int instructionIndex = startRenderIndex; instructionIndex < endRenderIndex; instructionIndex++)
 			{
-				PrinterMachineInstruction currentInstruction = gCodeFileToDraw.Instruction(i);
+				PrinterMachineInstruction currentInstruction = gCodeFileToDraw.Instruction(instructionIndex);
 				PrinterMachineInstruction previousInstruction = currentInstruction;
-				if (i > 0)
+				if (instructionIndex > 0)
 				{
-					previousInstruction = gCodeFileToDraw.Instruction(i - 1);
+					previousInstruction = gCodeFileToDraw.Instruction(instructionIndex - 1);
 				}
 
 				if (currentInstruction.Position == previousInstruction.Position)
@@ -144,7 +144,7 @@ namespace MatterHackers.GCodeVisualizer
 				}
 				else
 				{
-					if (gCodeFileToDraw.IsExtruding(i))
+					if (gCodeFileToDraw.IsExtruding(instructionIndex))
 					{
 						double layerThickness = gCodeFileToDraw.GetLayerHeight();
 						if (layerToCreate == 0)
