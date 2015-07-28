@@ -209,8 +209,10 @@ namespace MatterHackers.GCodeVisualizer
 			return false;
 		}
 
-		public static bool GetFirstNumberAfter(string stringToCheckAfter, string stringWithNumber, ref double readValue, int startIndex = 0)
+		public static bool GetFirstNumberAfter(string stringToCheckAfter, string stringWithNumber, out double readValue, int startIndex = 0)
 		{
+            readValue = 0;
+
 			int stringPos = stringWithNumber.IndexOf(stringToCheckAfter, startIndex);
 			if (stringPos != -1)
 			{

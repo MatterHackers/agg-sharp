@@ -258,18 +258,18 @@ namespace MatterHackers.GCodeVisualizer
 					if (lineToParse.StartsWith("G0") || lineToParse.StartsWith("G1"))
 					{
 						double newFeedRateMmPerMin = 0;
-						if (GetFirstNumberAfter("F", lineToParse, ref newFeedRateMmPerMin))
+						if (GetFirstNumberAfter("F", lineToParse, out newFeedRateMmPerMin))
 						{
 							feedRateMmPerMin = newFeedRateMmPerMin;
 						}
 
 						Vector3 attemptedDestination = lastPrinterPosition;
-						GetFirstNumberAfter("X", lineToParse, ref attemptedDestination.x);
-						GetFirstNumberAfter("Y", lineToParse, ref attemptedDestination.y);
-						GetFirstNumberAfter("Z", lineToParse, ref attemptedDestination.z);
+						GetFirstNumberAfter("X", lineToParse, out attemptedDestination.x);
+						GetFirstNumberAfter("Y", lineToParse, out attemptedDestination.y);
+						GetFirstNumberAfter("Z", lineToParse, out attemptedDestination.z);
 
 						double ePosition = lastEPosition;
-						GetFirstNumberAfter("E", lineToParse, ref ePosition);
+						GetFirstNumberAfter("E", lineToParse, out ePosition);
 
 						deltaPositionThisLine = attemptedDestination - lastPrinterPosition;
 						deltaEPositionThisLine = Math.Abs(ePosition - lastEPosition);
@@ -280,7 +280,7 @@ namespace MatterHackers.GCodeVisualizer
 					else if (lineToParse.StartsWith("G92"))
 					{
 						double ePosition = 0;
-						if (GetFirstNumberAfter("E", lineToParse, ref ePosition))
+						if (GetFirstNumberAfter("E", lineToParse, out ePosition))
 						{
 							lastEPosition = ePosition;
 						}
