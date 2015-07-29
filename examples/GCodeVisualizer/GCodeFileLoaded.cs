@@ -279,7 +279,7 @@ namespace MatterHackers.GCodeVisualizer
 
 						case 'T':
 							double extruderIndex = 0;
-							if (GetFirstNumberAfter("T", lineString, out extruderIndex))
+							if (GetFirstNumberAfter("T", lineString, ref extruderIndex))
 							{
 								machineInstructionForLine.ExtruderIndex = (int)extruderIndex;
 							}
@@ -358,18 +358,18 @@ namespace MatterHackers.GCodeVisualizer
 				if (lineToParse.StartsWith("G0") || lineToParse.StartsWith("G1"))
 				{
 					double newFeedRateMmPerMin = 0;
-					if (GetFirstNumberAfter("F", lineToParse, out newFeedRateMmPerMin))
+					if (GetFirstNumberAfter("F", lineToParse, ref newFeedRateMmPerMin))
 					{
 						feedRateMmPerMin = newFeedRateMmPerMin;
 					}
 
 					Vector3 attemptedDestination = lastPrinterPosition;
-					GetFirstNumberAfter("X", lineToParse, out attemptedDestination.x);
-					GetFirstNumberAfter("Y", lineToParse, out attemptedDestination.y);
-					GetFirstNumberAfter("Z", lineToParse, out attemptedDestination.z);
+					GetFirstNumberAfter("X", lineToParse, ref attemptedDestination.x);
+					GetFirstNumberAfter("Y", lineToParse, ref attemptedDestination.y);
+					GetFirstNumberAfter("Z", lineToParse, ref attemptedDestination.z);
 
 					double ePosition = lastEPosition;
-					GetFirstNumberAfter("E", lineToParse, out ePosition);
+					GetFirstNumberAfter("E", lineToParse, ref ePosition);
 
 					deltaPositionThisLine = attemptedDestination - lastPrinterPosition;
 					deltaEPositionThisLine = Math.Abs(ePosition - lastEPosition);
@@ -380,13 +380,13 @@ namespace MatterHackers.GCodeVisualizer
 				else if (lineToParse.StartsWith("G92"))
 				{
 					double ePosition = 0;
-					if (GetFirstNumberAfter("E", lineToParse, out ePosition))
+					if (GetFirstNumberAfter("E", lineToParse, ref ePosition))
 					{
 						lastEPosition = ePosition;
 					}
 				}
 
-				if (feedRateMmPerMin > 0)
+				if (feedRateMmPerMin > 0) 
 				{
 					instruction.secondsThisLine = (float)GetSecondsThisLine(deltaPositionThisLine, deltaEPositionThisLine, feedRateMmPerMin);
 				}
@@ -631,22 +631,22 @@ namespace MatterHackers.GCodeVisualizer
 					// get the x y z to move to
 					{
 						double valueX = 0;
-						if (GCodeFile.GetFirstNumberAfter("X", lineString, out valueX))
+						if (GCodeFile.GetFirstNumberAfter("X", lineString, ref valueX))
 						{
 							processingMachineState.X = valueX;
 						}
 						double valueY = 0;
-						if (GCodeFile.GetFirstNumberAfter("Y", lineString, out valueY))
+						if (GCodeFile.GetFirstNumberAfter("Y", lineString, ref valueY))
 						{
 							processingMachineState.Y = valueY;
 						}
 						double valueZ = 0;
-						if (GCodeFile.GetFirstNumberAfter("Z", lineString, out valueZ))
+						if (GCodeFile.GetFirstNumberAfter("Z", lineString, ref valueZ))
 						{
 							processingMachineState.Z = valueZ;
 						}
 						double valueE = 0;
-						if (GCodeFile.GetFirstNumberAfter("E", lineString, out valueE))
+						if (GCodeFile.GetFirstNumberAfter("E", lineString, ref valueE))
 						{
 							if (processingMachineState.movementType == PrinterMachineInstruction.MovementTypes.Absolute)
 							{
@@ -658,7 +658,7 @@ namespace MatterHackers.GCodeVisualizer
 							}
 						}
 						double valueF = 0;
-						if (GCodeFile.GetFirstNumberAfter("F", lineString, out valueF))
+						if (GCodeFile.GetFirstNumberAfter("F", lineString, ref valueF))
 						{
 							processingMachineState.FeedRate = valueF;
 						}
@@ -708,7 +708,7 @@ namespace MatterHackers.GCodeVisualizer
 				case "92":
 					// set current head position values (used to reset origin)
 					double ePosition = 0;
-					if (GetFirstNumberAfter("E", lineString, out ePosition))
+					if (GetFirstNumberAfter("E", lineString, ref ePosition))
 					{
 						// remember how much e position we just gave up
 						amountOfAccumulatedEWhileParsing = (processingMachineState.EPosition - ePosition);
@@ -816,7 +816,7 @@ namespace MatterHackers.GCodeVisualizer
 
 		public override double GetFilamentUsedMm(double filamentDiameter)
 		{
-			if (filamentUsedMmCache == 0)
+			//if (filamentUsedMmCache == 0)
 			{
 				double lastEPosition = 0;
 				double filamentMm = 0;
@@ -829,24 +829,25 @@ namespace MatterHackers.GCodeVisualizer
 					if (lineToParse.StartsWith("G0") || lineToParse.StartsWith("G1"))
 					{
 						double ePosition = lastEPosition;
-						GetFirstNumberAfter("E", lineToParse, out ePosition);
-
-						if (instruction.movementType == PrinterMachineInstruction.MovementTypes.Absolute)
+						if (GetFirstNumberAfter("E", lineToParse, ref ePosition))
 						{
-							double deltaEPosition = ePosition - lastEPosition;
-							filamentMm += deltaEPosition;
-						}
-						else
-						{
-							filamentMm += ePosition;
-						}
+							if (instruction.movementType == PrinterMachineInstruction.MovementTypes.Absolute)
+							{
+								double deltaEPosition = ePosition - lastEPosition;
+								filamentMm += deltaEPosition;
+							}
+							else
+							{
+								filamentMm += ePosition;
+							}
 
-						lastEPosition = ePosition;
+							lastEPosition = ePosition;
+						}
 					}
 					else if (lineToParse.StartsWith("G92"))
 					{
 						double ePosition = 0;
-						if (GetFirstNumberAfter("E", lineToParse, out ePosition))
+						if (GetFirstNumberAfter("E", lineToParse, ref ePosition))
 						{
 							lastEPosition = ePosition;
 						}
