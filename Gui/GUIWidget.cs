@@ -1490,9 +1490,9 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public virtual bool Focus()
+		public virtual void Focus()
 		{
-			if (CanFocus && CanSelect && !Focused)
+			if (CanFocus && CanSelect)// && !Focused)
 			{
 				List<GuiWidget> allWidgetsThatWillContainFocus = new List<GuiWidget>();
 				List<GuiWidget> allWidgetsThatCurrentlyHaveFocus = new List<GuiWidget>();
@@ -1549,11 +1549,7 @@ namespace MatterHackers.Agg.UI
 
 				// finally call any delegates
 				OnGotFocus(null);
-
-				return true;
 			}
-
-			return false;
 		}
 
 		public void Unfocus()

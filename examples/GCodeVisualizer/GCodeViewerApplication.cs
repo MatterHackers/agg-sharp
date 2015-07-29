@@ -100,7 +100,7 @@ namespace MatterHackers.GCodeVisualizer
 			AddChild(keepOnTop);
 
 			AnchorAll();
-			currentLayerIndex.Focus();
+			UiThread.RunOnIdle(currentLayerIndex.Focus);
 		}
 
 		private void SetActiveLayer(int layer)

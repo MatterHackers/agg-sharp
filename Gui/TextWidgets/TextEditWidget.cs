@@ -234,9 +234,20 @@ namespace MatterHackers.Agg.UI
 			OnTextChanged(e);
 		}
 
-		public override bool Focus()
+		/// <summary>
+		/// Make this widget the focus of keyboard input.
+		/// </summary>
+		/// <returns></returns>
+		public override void Focus()
 		{
-			return internalTextEditWidget.Focus();
+#if DEBUG
+			if (Parent == null)
+			{
+				throw new Exception("Don't call Focus() until you have a Parent.\nCalling focus without a parent will not result in the focus chain pointing to the widget, so it will not work.");
+			}
+#endif
+
+			internalTextEditWidget.Focus();
 		}
 
 		private void internalTextEditWidget_GotFocus(object sender, EventArgs e)
