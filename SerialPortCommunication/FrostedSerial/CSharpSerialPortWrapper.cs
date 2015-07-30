@@ -150,6 +150,15 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 			port.Write(str);
 		}
 
+        public void Write(byte[] buffer, int offset, int count)
+        {
+            port.Write(buffer, offset, count);
+        }
+
+        public int Read(byte[] buffer, int offset, int count)
+        {
+            return port.Read(buffer, offset, count);
+        }
 	}
 
 #endif
