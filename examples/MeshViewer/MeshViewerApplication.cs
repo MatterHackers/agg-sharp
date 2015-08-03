@@ -156,7 +156,7 @@ namespace MatterHackers.MeshVisualizer
 			foreach (string file in fileDropEventArgs.DroppedFiles)
 			{
 				string extension = Path.GetExtension(file).ToUpper();
-				if (MeshFileIo.ValidFileExtensions().Contains(extension))
+				if ((extension != "" && MeshFileIo.ValidFileExtensions().Contains(extension)))
 				{
 					fileDropEventArgs.AcceptDrop = true;
 				}
@@ -169,7 +169,7 @@ namespace MatterHackers.MeshVisualizer
 			foreach (string file in fileDropEventArgs.DroppedFiles)
 			{
 				string extension = Path.GetExtension(file).ToUpper();
-				if (MeshFileIo.ValidFileExtensions().Contains(extension))
+				if ((extension != "" && MeshFileIo.ValidFileExtensions().Contains(extension)))
 				{
 					fileDropEventArgs.AcceptDrop = true;
 				}
@@ -182,7 +182,7 @@ namespace MatterHackers.MeshVisualizer
 			foreach (string droppedFileName in fileDropEventArgs.DroppedFiles)
 			{
 				string extension = Path.GetExtension(droppedFileName).ToUpper();
-				if (MeshFileIo.ValidFileExtensions().Contains(extension))
+				if ((extension != "" && MeshFileIo.ValidFileExtensions().Contains(extension)))
 				{
 					meshViewerWidget.LoadMesh(droppedFileName, MeshVisualizer.MeshViewerWidget.CenterPartAfterLoad.DO);
 					break;
