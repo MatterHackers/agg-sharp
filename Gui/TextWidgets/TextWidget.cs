@@ -51,6 +51,13 @@ namespace MatterHackers.Agg.UI
             set
             {
                 printer.TypeFaceStyle = new StyledTypeFace(printer.TypeFaceStyle.TypeFace, value, printer.TypeFaceStyle.DoUnderline, printer.TypeFaceStyle.FlatenCurves);
+	
+				if (AutoExpandBoundsToText)
+				{
+					DoExpandBoundsToText();
+				}
+
+				this.Invalidate();
             }
         }
 
