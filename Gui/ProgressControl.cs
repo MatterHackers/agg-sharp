@@ -41,10 +41,9 @@ namespace MatterHackers.Agg.UI
 
 		private double ratioComplete;
 
-		public ProgressBar(RGBA_Bytes fillColor, int width, int height)
+		public ProgressBar(int width, int height)
 			: base(width, height)
 		{
-			this.FillColor = fillColor;
 			DrawAfter += bar_Draw;
 		}
 
@@ -112,14 +111,23 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public ProgressControl(string message, RGBA_Bytes textColor, RGBA_Bytes fillColor)
+        public double PointSize
+        {
+            get { return processTextWidget.PointSize; }
+            set { processTextWidget.PointSize = value; }
+        }
+
+		public ProgressControl(string message, RGBA_Bytes textColor, RGBA_Bytes fillColor, int barWidgth = 80, int barHeight = 15)
 		{
 			processTextWidget = new TextWidget(message, textColor: textColor);
 			processTextWidget.AutoExpandBoundsToText = true;
 			processTextWidget.Margin = new BorderDouble(5, 0);
 			AddChild(processTextWidget);
 
-			progressBar = new ProgressBar(fillColor, 80, 15);
+            progressBar = new ProgressBar(barWidgth, barHeight)
+            {
+                FillColor = fillColor,
+            };
 			progressBar.VAnchor = VAnchor.ParentCenter;
 			AddChild(progressBar);
 			progressTextWidget = new TextWidget("", textColor: textColor, pointSize: 8);

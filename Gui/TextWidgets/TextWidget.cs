@@ -34,12 +34,25 @@ namespace MatterHackers.Agg.UI
 		private static bool debugIt = false;
 		public static bool DoubleBufferDefault = true;
 		public static double GlobalPointSizeScaleRatio = 1;
-
+        
 		private RGBA_Bytes textColor;
 
 		private TypeFacePrinter printer;
 
 		public bool EllipsisIfClipped { get; set; }
+
+        public double PointSize
+        {
+            get
+            {
+                return printer.TypeFaceStyle.EmSizeInPoints;
+            }
+
+            set
+            {
+                printer.TypeFaceStyle = new StyledTypeFace(printer.TypeFaceStyle.TypeFace, value, printer.TypeFaceStyle.DoUnderline, printer.TypeFaceStyle.FlatenCurves);
+            }
+        }
 
 		public TypeFacePrinter Printer
 		{
