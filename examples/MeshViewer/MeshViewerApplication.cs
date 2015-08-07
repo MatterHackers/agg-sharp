@@ -83,7 +83,7 @@ namespace MatterHackers.MeshVisualizer
 
 			if (meshFileToLoad != "")
 			{
-				meshViewerWidget.LoadMesh(meshFileToLoad, MeshVisualizer.MeshViewerWidget.CenterPartAfterLoad.DO);
+				meshViewerWidget.LoadMesh(meshFileToLoad);
 			}
 			else
 			{
@@ -145,7 +145,7 @@ namespace MatterHackers.MeshVisualizer
 				new OpenFileDialogParams("3D Mesh Files|*.stl;*.amf"),
 				(openParams) =>
 				{
-					meshViewerWidget.LoadMesh(openParams.FileName, MeshVisualizer.MeshViewerWidget.CenterPartAfterLoad.DO);
+					meshViewerWidget.LoadMesh(openParams.FileName);
 				});
 
 			Invalidate();
@@ -184,7 +184,7 @@ namespace MatterHackers.MeshVisualizer
 				string extension = Path.GetExtension(droppedFileName).ToUpper();
 				if ((extension != "" && MeshFileIo.ValidFileExtensions().Contains(extension)))
 				{
-					meshViewerWidget.LoadMesh(droppedFileName, MeshVisualizer.MeshViewerWidget.CenterPartAfterLoad.DO);
+					meshViewerWidget.LoadMesh(droppedFileName);
 					break;
 				}
 			}
