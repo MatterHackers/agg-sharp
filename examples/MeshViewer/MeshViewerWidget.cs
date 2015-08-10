@@ -377,7 +377,9 @@ namespace MatterHackers.MeshVisualizer
 			return selectedBounds;
 		}
 
-		public void LoadMesh(string meshPathAndFileName)
+		public enum CenterPartAfterLoad { DO, DONT }
+		
+		public void LoadMesh(string meshPathAndFileName, CenterPartAfterLoad centerPart, Vector2 bedCenter = new Vector2())
 		{
 			if (File.Exists(meshPathAndFileName))
 			{
@@ -392,7 +394,7 @@ namespace MatterHackers.MeshVisualizer
 				backgroundWorker.DoWork += (object sender, DoWorkEventArgs e) =>
 				{
 					List<MeshGroup> loadedMeshGroups = MeshFileIo.Load(meshPathAndFileName, reportProgress0to100);
-					SetMeshAfterLoad(loadedMeshGroups);
+					SetMeshAfterLoad(loadedMeshGroups, centerPart, bedCenter);
 					e.Result = loadedMeshGroups;
 				};
 				backgroundWorker.RunWorkerAsync();
@@ -519,7 +521,7 @@ namespace MatterHackers.MeshVisualizer
 			base.OnMouseUp(mouseEvent);
 		}
 
-		public void SetMeshAfterLoad(List<MeshGroup> loadedMeshGroups)
+		public void SetMeshAfterLoad(List<MeshGroup> loadedMeshGroups, CenterPartAfterLoad centerPart, Vector2 bedCenter)
 		{
 			MeshGroups.Clear();
 
@@ -555,6 +557,18 @@ namespace MatterHackers.MeshVisualizer
 					MeshGroups.Add(meshGroup);
 				}
 
+				if (centerPart == CenterPartAfterLoad.DO)
+				{
+					// make sure the entire load is centered and on the bed
+					Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
+					for (int i = 0; i < MeshGroups.Count; i++)
+					{
+						ScaleRotateTranslate moved = meshTransforms[i];
+						moved.translation *= Matrix4X4.CreateTranslation(-boundsCenter + new Vector3(0, 0, bounds.ZSize / 2) + new Vector3(bedCenter));
+						meshTransforms[i] = moved;
+					}
+				}
+				
 				trackballTumbleWidget.TrackBallController = new TrackBallController();
 				trackballTumbleWidget.OnBoundsChanged(null);
 				trackballTumbleWidget.TrackBallController.Scale = .03;
