@@ -66,11 +66,6 @@ namespace MatterHackers.Agg.UI
                 timeSinceLastMouseMove.Restart();
                 UiThread.RunOnIdle(CheckIfNeedToDisplayToolTip, .1);
             };
-
-            owner.MouseDown += (sender, mouseEvent) =>
-            {
-                RemoveToolTip();
-            };
         }
 
         private void CheckIfNeedToDisplayToolTip()
@@ -147,7 +142,7 @@ namespace MatterHackers.Agg.UI
 
                     widgetShowing.MouseLeave += (sender, e) =>
                     {
-                        RemoveToolTip();
+                        UiThread.RunOnIdle(RemoveToolTip);
                     };
                 });
             }
@@ -155,13 +150,17 @@ namespace MatterHackers.Agg.UI
 
         private void RemoveToolTip()
         {
-            if (toolTipWidget != null
-                && toolTipWidget.Parent == owner)
-            {
-                owner.RemoveChild(toolTipWidget);
-                toolTipWidget = null;
-                widgetToShowToolTipFor = null;
-            }
+			if (toolTipWidget != null
+				&& toolTipWidget.Parent == owner)
+			{
+				timeSinceLastMouseMove.Stop();
+				timeSinceLastMouseMove.Reset();
+				timeSinceMouseOver.Stop();
+				timeSinceMouseOver.Reset();
+				owner.RemoveChild(toolTipWidget);
+				toolTipWidget = null;
+				widgetToShowToolTipFor = null;
+			}
         }
     }
 }
