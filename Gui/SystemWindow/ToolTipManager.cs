@@ -64,9 +64,11 @@ namespace MatterHackers.Agg.UI
             {
                 mousePosition = e.Position;
                 timeSinceLastMouseMove.Restart();
-                UiThread.RunOnIdle(CheckIfNeedToDisplayToolTip, .1);
             };
-        }
+		
+			// Get the an idle loop up and running
+			UiThread.RunOnIdle(CheckIfNeedToDisplayToolTip, .05);
+		}
 
         private void CheckIfNeedToDisplayToolTip()
         {
@@ -75,18 +77,32 @@ namespace MatterHackers.Agg.UI
             {
                 DoShowToolTip();
             }
-            else if (timeCurrentToolTipHasBeenShowing.Elapsed.TotalSeconds > AutoPopDelay)
+
+			if (timeCurrentToolTipHasBeenShowing.Elapsed.TotalSeconds > AutoPopDelay)
             {
                 RemoveToolTip();
+				widgetToShowToolTipFor = null;
+				timeCurrentToolTipHasBeenShowing.Stop();
+				timeCurrentToolTipHasBeenShowing.Reset();
             }
+			
+			if (widgetToShowToolTipFor != null)
+			{
+				RectangleDouble screenBounds = widgetToShowToolTipFor.TransformToScreenSpace(widgetToShowToolTipFor.LocalBounds);
+				if (!screenBounds.Contains(mousePosition))
+				{
+					RemoveToolTip();
+					widgetToShowToolTipFor = null;
+				}
+			}
 
-            // Call again in .1 s so that this is constantly being re-evaluated.
-            UiThread.RunOnIdle(CheckIfNeedToDisplayToolTip, .1);
+			// Call again in .1 s so that this is constantly being re-evaluated.
+            UiThread.RunOnIdle(CheckIfNeedToDisplayToolTip, .05);
         }
 
         public void SetHoveredWidget(GuiWidget widgetToShowToolTipFor)
         {
-            return;
+            //return;
             if (this.widgetToShowToolTipFor != widgetToShowToolTipFor)
             {
                 timeSinceMouseOver.Restart();
@@ -96,56 +112,55 @@ namespace MatterHackers.Agg.UI
 
         void DoShowToolTip()
         {
-            if (widgetToShowToolTipFor != null)
-            {
-                GuiWidget widgetShowing = widgetToShowToolTipFor;
-                UiThread.RunOnIdle(() =>
-                {
-                    RemoveToolTip();
+			if (widgetToShowToolTipFor != null)
+			{
+				RectangleDouble screenBounds = widgetToShowToolTipFor.TransformToScreenSpace(widgetToShowToolTipFor.LocalBounds);
+				if (screenBounds.Contains(mousePosition))
+				{
+					GuiWidget widgetShowing = widgetToShowToolTipFor;
+					UiThread.RunOnIdle(() =>
+					{
+						RemoveToolTip();
 
-                    toolTipWidget = new FlowLayoutWidget()
-                    {
-                        BackgroundColor = RGBA_Bytes.White,
-                        OriginRelativeParent = new Vector2((int)mousePosition.x, (int)mousePosition.y),
-                        Padding = new BorderDouble(3),
-                        Selectable = false,
-                    };
+						toolTipWidget = new FlowLayoutWidget()
+						{
+							BackgroundColor = RGBA_Bytes.White,
+							OriginRelativeParent = new Vector2((int)mousePosition.x, (int)mousePosition.y),
+							Padding = new BorderDouble(3),
+							Selectable = false,
+						};
 
-                    toolTipWidget.DrawAfter += (sender, drawEventHandler) =>
-                    {
-                        drawEventHandler.graphics2D.Rectangle(toolTipWidget.LocalBounds, RGBA_Bytes.Black);
-                    };
+						toolTipWidget.DrawAfter += (sender, drawEventHandler) =>
+						{
+							drawEventHandler.graphics2D.Rectangle(toolTipWidget.LocalBounds, RGBA_Bytes.Black);
+						};
 
-                    toolTipWidget.AddChild(new TextWidget(widgetShowing.ToolTipText));
-                    owner.AddChild(toolTipWidget);
-                    timeCurrentToolTipHasBeenShowing.Restart();
+						toolTipWidget.AddChild(new TextWidget(widgetShowing.ToolTipText));
+						owner.AddChild(toolTipWidget);
+						timeCurrentToolTipHasBeenShowing.Restart();
 
-                    RectangleDouble toolTipBounds = toolTipWidget.LocalBounds;
+						RectangleDouble toolTipBounds = toolTipWidget.LocalBounds;
 
-                    toolTipWidget.OriginRelativeParent = toolTipWidget.OriginRelativeParent + new Vector2(0, -toolTipBounds.Bottom - toolTipBounds.Height - 23);
+						toolTipWidget.OriginRelativeParent = toolTipWidget.OriginRelativeParent + new Vector2(0, -toolTipBounds.Bottom - toolTipBounds.Height - 23);
 
-                    Vector2 offset = Vector2.Zero;
-                    RectangleDouble ownerBounds = owner.LocalBounds;
-                    RectangleDouble toolTipBoundsRelativeToParent = toolTipWidget.BoundsRelativeToParent;
+						Vector2 offset = Vector2.Zero;
+						RectangleDouble ownerBounds = owner.LocalBounds;
+						RectangleDouble toolTipBoundsRelativeToParent = toolTipWidget.BoundsRelativeToParent;
 
-                    if (toolTipBoundsRelativeToParent.Right > ownerBounds.Right - 3)
-                    {
-                        offset.x = ownerBounds.Right - toolTipBoundsRelativeToParent.Right - 3;
-                    }
+						if (toolTipBoundsRelativeToParent.Right > ownerBounds.Right - 3)
+						{
+							offset.x = ownerBounds.Right - toolTipBoundsRelativeToParent.Right - 3;
+						}
 
-                    if (toolTipBoundsRelativeToParent.Bottom < ownerBounds.Bottom + 3)
-                    {
-                        offset.y = ownerBounds.Bottom - toolTipBoundsRelativeToParent.Bottom + 3;
-                    }
+						if (toolTipBoundsRelativeToParent.Bottom < ownerBounds.Bottom + 3)
+						{
+							offset.y = ownerBounds.Bottom - toolTipBoundsRelativeToParent.Bottom + 3;
+						}
 
-                    toolTipWidget.OriginRelativeParent = toolTipWidget.OriginRelativeParent + offset;
-
-                    widgetShowing.MouseLeave += (sender, e) =>
-                    {
-                        UiThread.RunOnIdle(RemoveToolTip);
-                    };
-                });
-            }
+						toolTipWidget.OriginRelativeParent = toolTipWidget.OriginRelativeParent + offset;
+					});
+				}
+			}
         }
 
         private void RemoveToolTip()
@@ -159,7 +174,6 @@ namespace MatterHackers.Agg.UI
 				timeSinceMouseOver.Reset();
 				owner.RemoveChild(toolTipWidget);
 				toolTipWidget = null;
-				widgetToShowToolTipFor = null;
 			}
         }
     }
