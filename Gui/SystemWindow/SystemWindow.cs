@@ -59,6 +59,8 @@ namespace MatterHackers.Agg.UI
 
 		private string title = "";
 
+        public ToolTipManager toolTipManager { get; private set; }
+
 		public string Title
 		{
 			get
@@ -104,6 +106,7 @@ namespace MatterHackers.Agg.UI
 		public SystemWindow(double width, double height)
 			: base(width, height, SizeLimitsToSet.None)
 		{
+            toolTipManager = new ToolTipManager(this);
 			if (globalSystemWindowCreator == null)
 			{
 				string pluginPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
@@ -191,5 +194,10 @@ namespace MatterHackers.Agg.UI
 			throw new Exception("DEBUG is defined and should not be!");
 #endif
 		}
-	}
+
+        public void SetHoveredWidget(GuiWidget widgetToShowToolTipFor)
+        {
+            toolTipManager.SetHoveredWidget(widgetToShowToolTipFor);
+        }
+    }
 }

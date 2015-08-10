@@ -174,8 +174,6 @@ namespace MatterHackers.Agg.UI
 
 		public LayoutEngine LayoutEngine { get; set; }
 
-		private string name;
-
 		private UnderMouseState underMouseState = UnderMouseState.NotUnderMouse;
 
 		public UnderMouseState UnderMouseState
@@ -1059,21 +1057,9 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public virtual string Name
-		{
-			get
-			{
-				return name;
-			}
-
-			set
-			{
-				name = value;
-			}
-		}
+		public virtual string Name { get; set; }
 
 		private string text = "";
-
 		public virtual string Text
 		{
 			get
@@ -1097,7 +1083,16 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public virtual void OnTextChanged(EventArgs e)
+        /// <summary>
+        /// If this is set the control will show tool tips on hover, if the platfrom specific SystemWindow implements tool tips.
+        /// You can change the settings for the tool tip delays in the containing SystemWindow.
+        /// </summary>
+        public string ToolTipText
+        {
+            get; set;
+        }
+
+        public virtual void OnTextChanged(EventArgs e)
 		{
 			if (TextChanged != null)
 			{
@@ -2264,8 +2259,8 @@ namespace MatterHackers.Agg.UI
 
 				if (childHasAcceptedThisEvent)
 				{
-					mouseCapturedState = MouseCapturedState.ChildHasMouseCaptured;
 					if (UnderMouseState == UI.UnderMouseState.FirstUnderMouse)
+					mouseCapturedState = MouseCapturedState.ChildHasMouseCaptured;
 					{
 						underMouseState = UI.UnderMouseState.NotUnderMouse;
 						OnMouseLeave(mouseEvent);
@@ -2319,7 +2314,26 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		internal bool mouseMoveEventHasBeenAcceptedByOther = false;
+        private void SetToolTipText(MouseEventArgs mouseEvent)
+        {
+            if (ToolTipText != null)
+            {
+                GuiWidget parent = this;
+                while (parent.Parent != null
+                    && parent as SystemWindow == null)
+                {
+                    parent = parent.Parent;
+                }
+
+                SystemWindow systemWindow = parent as SystemWindow;
+                if (systemWindow != null)
+                {
+                    systemWindow.SetHoveredWidget(this);
+                }
+            }
+        }
+
+        internal bool mouseMoveEventHasBeenAcceptedByOther = false;
 
 		public virtual void OnMouseMove(MouseEventArgs mouseEvent)
 		{
@@ -2501,7 +2515,8 @@ namespace MatterHackers.Agg.UI
 						else
 						{
 							underMouseState = UI.UnderMouseState.FirstUnderMouse;
-							OnMouseEnter(mouseEvent);
+                            SetToolTipText(mouseEvent);
+                            OnMouseEnter(mouseEvent);
 						}
 					}
 					else // we are the first under mouse
