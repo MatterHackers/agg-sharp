@@ -102,7 +102,9 @@ namespace MatterHackers.Agg.UI
 
         public void SetHoveredWidget(GuiWidget widgetToShowToolTipFor)
         {
-            //return;
+#if __ANDROID__
+            return;
+#endif
             if (this.widgetToShowToolTipFor != widgetToShowToolTipFor)
             {
                 timeSinceMouseOver.Restart();
