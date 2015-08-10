@@ -47,7 +47,8 @@ namespace MatterHackers.Agg.UI
         /// <summary>
         /// Gets or sets the period of time the ToolTip remains visible if the pointer is stationary on a control with specified ToolTip text.
         /// </summary>
-        public double AutoPopDelay = 5;
+		public double AutoPopDelay = 5;
+		private double CurrentAutoPopDelay = 5;
         /// <summary>
         /// Gets or sets the time that passes before the ToolTip appears.
         /// </summary>
@@ -78,7 +79,7 @@ namespace MatterHackers.Agg.UI
                 DoShowToolTip();
             }
 
-			if (timeCurrentToolTipHasBeenShowing.Elapsed.TotalSeconds > AutoPopDelay)
+			if (timeCurrentToolTipHasBeenShowing.Elapsed.TotalSeconds > CurrentAutoPopDelay)
             {
                 RemoveToolTip();
 				widgetToShowToolTipFor = null;
@@ -137,7 +138,18 @@ namespace MatterHackers.Agg.UI
 							drawEventHandler.graphics2D.Rectangle(toolTipWidget.LocalBounds, RGBA_Bytes.Black);
 						};
 
+#if true
+						toolTipWidget.AddChild(new WrappedTextWidget(widgetShowing.ToolTipText, 350)
+						{
+							HAnchor = HAnchor.FitToChildren,
+						});
+
+						double RatioOfExpectedText = Math.Max(1, (widgetShowing.ToolTipText.Length / 50.0));
+
+						CurrentAutoPopDelay = RatioOfExpectedText * AutoPopDelay;
+#else
 						toolTipWidget.AddChild(new TextWidget(widgetShowing.ToolTipText));
+#endif
 						owner.AddChild(toolTipWidget);
 						timeCurrentToolTipHasBeenShowing.Restart();
 

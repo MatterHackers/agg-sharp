@@ -225,6 +225,7 @@
     <Compile Include="TabControl\TabControl.cs" />
     <Compile Include="TabControl\TabPage.cs" />
     <Compile Include="TextWidgets\InternalTextEditWidget.cs" />
+    <Compile Include="TextWidgets\WrappedTextWidget.cs" />
     <Compile Include="TextWidgets\UndoBuffer.cs" />
     <Compile Include="TextWidgets\TextEditWidget.cs" />
     <Compile Include="TextWidgets\TextWidget.cs" />
