@@ -114,7 +114,11 @@ namespace MatterHackers.Agg.UI
         public double PointSize
         {
             get { return processTextWidget.PointSize; }
-            set { processTextWidget.PointSize = value; }
+            set 
+			{
+				processTextWidget.PointSize = value;
+				progressTextWidget.PointSize = value;
+			}
         }
 
 		public ProgressControl(string message, RGBA_Bytes textColor, RGBA_Bytes fillColor, int barWidgth = 80, int barHeight = 15)
@@ -122,12 +126,14 @@ namespace MatterHackers.Agg.UI
 			processTextWidget = new TextWidget(message, textColor: textColor);
 			processTextWidget.AutoExpandBoundsToText = true;
 			processTextWidget.Margin = new BorderDouble(5, 0);
+			processTextWidget.VAnchor = VAnchor.ParentCenter;
 			AddChild(processTextWidget);
 
             progressBar = new ProgressBar(barWidgth, barHeight)
             {
                 FillColor = fillColor,
             };
+
 			progressBar.VAnchor = VAnchor.ParentCenter;
 			AddChild(progressBar);
 			progressTextWidget = new TextWidget("", textColor: textColor, pointSize: 8);

@@ -33,7 +33,7 @@ namespace MatterHackers.Agg.Font
 	{
 		private String text = "";
 
-		private Vector2 totalSizeCach;
+		private Vector2 totalSizeCache;
 
 		public Justification Justification { get; set; }
 
@@ -41,9 +41,19 @@ namespace MatterHackers.Agg.Font
 
 		public bool DrawFromHintedCache { get; set; }
 
+		StyledTypeFace typeFaceStyle;
 		public StyledTypeFace TypeFaceStyle
 		{
-            get; set;
+			get { return typeFaceStyle; }
+			
+			set
+			{
+				if (value != typeFaceStyle)
+				{
+					typeFaceStyle = value;
+					totalSizeCache = new Vector2();
+				}
+			}
 		}
 
 		public String Text
@@ -56,7 +66,7 @@ namespace MatterHackers.Agg.Font
 			{
 				if (text != value)
 				{
-					totalSizeCach.x = 0;
+					totalSizeCache.x = 0;
 					text = value;
 				}
 			}
@@ -443,14 +453,14 @@ namespace MatterHackers.Agg.Font
 				return calculatedSize;
 			}
 
-			if (totalSizeCach.x == 0)
+			if (totalSizeCache.x == 0)
 			{
 				Vector2 calculatedSize;
 				GetSize(0, Math.Max(0, text.Length - 1), out calculatedSize, text);
-				totalSizeCach = calculatedSize;
+				totalSizeCache = calculatedSize;
 			}
 
-			return totalSizeCach;
+			return totalSizeCache;
 		}
 
 		public void GetSize(int characterToMeasureStartIndexInclusive, int characterToMeasureEndIndexInclusive, out Vector2 offset, string text = null)
