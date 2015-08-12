@@ -102,9 +102,9 @@ namespace MatterHackers.Agg.UI
 			get { return scrollArea; }
 		}
 
-		public void AddChildToBackground(GuiWidget widgetToAdd)
+		public void AddChildToBackground(GuiWidget widgetToAdd, int indexToAddAt = 0)
 		{
-			base.AddChild(widgetToAdd, 0);
+			base.AddChild(widgetToAdd, indexToAddAt);
 		}
 
 		public ScrollableWidget(bool autoScroll = false)
