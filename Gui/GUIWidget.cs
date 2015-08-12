@@ -2254,13 +2254,14 @@ namespace MatterHackers.Agg.UI
 						}
 					}
 				}
-
+				 
 				bool mouseEnteredBounds = underMouseState == UI.UnderMouseState.NotUnderMouse;
 
 				if (childHasAcceptedThisEvent)
 				{
-					if (UnderMouseState == UI.UnderMouseState.FirstUnderMouse)
 					mouseCapturedState = MouseCapturedState.ChildHasMouseCaptured;
+
+					if (UnderMouseState == UI.UnderMouseState.FirstUnderMouse)
 					{
 						underMouseState = UI.UnderMouseState.NotUnderMouse;
 						OnMouseLeave(mouseEvent);
