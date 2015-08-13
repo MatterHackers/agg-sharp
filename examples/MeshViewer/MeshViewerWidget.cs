@@ -47,7 +47,7 @@ namespace MatterHackers.MeshVisualizer
 {
 	public class MeshViewerWidget : GuiWidget
 	{
-		public ImageBuffer BedImage;
+		static public ImageBuffer BedImage = null;
 		public List<InteractionVolume> interactionVolumes = new List<InteractionVolume>();
 		public bool MouseDownOnInteractionVolume = false;
 		public PartProcessingInfo partProcessingInfo;
@@ -56,14 +56,14 @@ namespace MatterHackers.MeshVisualizer
 		private static Dictionary<int, RGBA_Bytes> materialColors = new Dictionary<int, RGBA_Bytes>();
 		private BackgroundWorker backgroundWorker = null;
 		private RGBA_Bytes bedBaseColor = new RGBA_Bytes(245, 245, 255);
-		public Vector2 BedCenter { get; private set; }
+		static public Vector2 BedCenter { get; private set; }
 		private RGBA_Bytes bedMarkingsColor = RGBA_Bytes.Black;
-		private BedShape bedShape = BedShape.Rectangular;
+		private static BedShape bedShape = BedShape.Rectangular;
 		private Mesh buildVolume = null;
-		private Vector3 displayVolume;
+		private static Vector3 displayVolume;
 		private List<MeshGroup> meshesToRender = new List<MeshGroup>();
 		private List<ScaleRotateTranslate> meshTransforms = new List<ScaleRotateTranslate>();
-		private Mesh printerBed = null;
+		private static Mesh printerBed = null;
 		private RenderTypes renderType = RenderTypes.Shaded;
 		private int selectedMeshGroupIndex = -1;
 
@@ -287,31 +287,31 @@ namespace MatterHackers.MeshVisualizer
 
 		public void CreatePrintBed(Vector3 displayVolume, Vector2 bedCenter, BedShape bedShape)
 		{
-			if (this.BedCenter == bedCenter
-				&& this.bedShape == bedShape
-				&& this.displayVolume == displayVolume)
+			if (MeshViewerWidget.BedCenter == bedCenter
+				&& MeshViewerWidget.bedShape == bedShape
+				&& MeshViewerWidget.displayVolume == displayVolume)
 			{
 				return;
 			}
 
-			this.BedCenter = bedCenter;
-			this.bedShape = bedShape;
-			displayVolume = Vector3.ComponentMax(displayVolume, new Vector3(1, 1, 1));
-			this.displayVolume = displayVolume;
+			MeshViewerWidget.BedCenter = bedCenter;
+			MeshViewerWidget.bedShape = bedShape;
+			MeshViewerWidget.displayVolume = displayVolume;
+			Vector3 displayVolumeToBuild = Vector3.ComponentMax(displayVolume, new Vector3(1, 1, 1));
 
 			switch (bedShape)
 			{
 				case BedShape.Rectangular:
-					if (displayVolume.z > 0)
+					if (displayVolumeToBuild.z > 0)
 					{
-						buildVolume = PlatonicSolids.CreateCube(displayVolume);
+						buildVolume = PlatonicSolids.CreateCube(displayVolumeToBuild);
 						foreach (Vertex vertex in buildVolume.Vertices)
 						{
-							vertex.Position = vertex.Position + new Vector3(0, 0, displayVolume.z / 2);
+							vertex.Position = vertex.Position + new Vector3(0, 0, displayVolumeToBuild.z / 2);
 						}
 					}
-					CreateRectangularBedGridImage((int)(displayVolume.x / 10), (int)(displayVolume.y / 10));
-					printerBed = PlatonicSolids.CreateCube(displayVolume.x, displayVolume.y, 4);
+					CreateRectangularBedGridImage((int)(displayVolumeToBuild.x / 10), (int)(displayVolumeToBuild.y / 10));
+					printerBed = PlatonicSolids.CreateCube(displayVolumeToBuild.x, displayVolumeToBuild.y, 4);
 					{
 						Face face = printerBed.Faces[0];
 						{
@@ -320,8 +320,8 @@ namespace MatterHackers.MeshVisualizer
 							foreach (FaceEdge faceEdge in face.FaceEdges())
 							{
 								FaceEdgeTextureUvData edgeUV = FaceEdgeTextureUvData.Get(faceEdge);
-								edgeUV.TextureUV.Add(new Vector2((displayVolume.x / 2 + faceEdge.firstVertex.Position.x) / displayVolume.x,
-									(displayVolume.y / 2 + faceEdge.firstVertex.Position.y) / displayVolume.y));
+								edgeUV.TextureUV.Add(new Vector2((displayVolumeToBuild.x / 2 + faceEdge.firstVertex.Position.x) / displayVolumeToBuild.x,
+									(displayVolumeToBuild.y / 2 + faceEdge.firstVertex.Position.y) / displayVolumeToBuild.y));
 							}
 						}
 					}
@@ -329,16 +329,16 @@ namespace MatterHackers.MeshVisualizer
 
 				case BedShape.Circular:
 					{
-						if (displayVolume.z > 0)
+						if (displayVolumeToBuild.z > 0)
 						{
-							buildVolume = VertexSourceToMesh.Extrude(new Ellipse(new Vector2(), displayVolume.x / 2, displayVolume.y / 2), displayVolume.z);
+							buildVolume = VertexSourceToMesh.Extrude(new Ellipse(new Vector2(), displayVolumeToBuild.x / 2, displayVolumeToBuild.y / 2), displayVolumeToBuild.z);
 							foreach (Vertex vertex in buildVolume.Vertices)
 							{
 								vertex.Position = vertex.Position + new Vector3(0, 0, .2);
 							}
 						}
-						CreateCircularBedGridImage((int)(displayVolume.x / 10), (int)(displayVolume.y / 10));
-						printerBed = VertexSourceToMesh.Extrude(new Ellipse(new Vector2(), displayVolume.x / 2, displayVolume.y / 2), 2);
+						CreateCircularBedGridImage((int)(displayVolumeToBuild.x / 10), (int)(displayVolumeToBuild.y / 10));
+						printerBed = VertexSourceToMesh.Extrude(new Ellipse(new Vector2(), displayVolumeToBuild.x / 2, displayVolumeToBuild.y / 2), 2);
 						{
 							foreach (Face face in printerBed.Faces)
 							{
@@ -349,8 +349,8 @@ namespace MatterHackers.MeshVisualizer
 									foreach (FaceEdge faceEdge in face.FaceEdges())
 									{
 										FaceEdgeTextureUvData edgeUV = FaceEdgeTextureUvData.Get(faceEdge);
-										edgeUV.TextureUV.Add(new Vector2((displayVolume.x / 2 + faceEdge.firstVertex.Position.x) / displayVolume.x,
-											(displayVolume.y / 2 + faceEdge.firstVertex.Position.y) / displayVolume.y));
+										edgeUV.TextureUV.Add(new Vector2((displayVolumeToBuild.x / 2 + faceEdge.firstVertex.Position.x) / displayVolumeToBuild.x,
+											(displayVolumeToBuild.y / 2 + faceEdge.firstVertex.Position.y) / displayVolumeToBuild.y));
 									}
 								}
 							}
