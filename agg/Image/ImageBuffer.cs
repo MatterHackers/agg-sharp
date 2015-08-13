@@ -280,9 +280,13 @@ namespace MatterHackers.Agg.Image
 		public void CopyFrom(IImageByte sourceImage)
 		{
 			Allocate(sourceImage.Width, sourceImage.Height, sourceImage.StrideInBytesAbs(), sourceImage.BitDepth);
-			SetRecieveBlender(sourceImage.GetRecieveBlender());
 
+			// make sure we make an exact copy
+			SetRecieveBlender(new BlenderBGRAExactCopy());
 			CopyFrom(sourceImage, sourceImage.GetBounds(), 0, 0);
+			
+			// then set the blender to what we expect
+			SetRecieveBlender(sourceImage.GetRecieveBlender());
 		}
 
 		protected void CopyFromNoClipping(IImageByte sourceImage, RectangleInt clippedSourceImageRect, int destXOffset, int destYOffset)
