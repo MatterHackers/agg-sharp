@@ -279,6 +279,9 @@ namespace MatterHackers.Agg.Image
 
 		public void CopyFrom(IImageByte sourceImage)
 		{
+			Allocate(sourceImage.Width, sourceImage.Height, sourceImage.StrideInBytesAbs(), sourceImage.BitDepth);
+			SetRecieveBlender(sourceImage.GetRecieveBlender());
+
 			CopyFrom(sourceImage, sourceImage.GetBounds(), 0, 0);
 		}
 
