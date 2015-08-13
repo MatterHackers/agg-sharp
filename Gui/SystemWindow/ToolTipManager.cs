@@ -29,104 +29,160 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.VectorMath;
 using System;
-using System.IO;
 using System.Diagnostics;
 
 namespace MatterHackers.Agg.UI
 {
-    public class ToolTipManager
-    {
-        GuiWidget toolTipWidget;
-        Vector2 mousePosition;
-        SystemWindow owner;
-		GuiWidget widgetThatIsShowingToolTip;
-		GuiWidget widgetThatWantsToShowToolTip;
-        Stopwatch timeSinceLastMouseMove = new Stopwatch();
-        Stopwatch timeCurrentToolTipHasBeenShowing = new Stopwatch();
-		Stopwatch timeSinceMouseOver = new Stopwatch();
-		Stopwatch timeSinceLastToolTipClose = new Stopwatch();
-
-        /// <summary>
-        /// Gets or sets the period of time the ToolTip remains visible if the pointer is stationary on a control with specified ToolTip text.
-        /// </summary>
+	public class ToolTipManager
+	{
+		/// <summary>
+		/// Gets or sets the period of time the ToolTip remains visible if the pointer is stationary on a control with specified ToolTip text.
+		/// </summary>
 		public double AutoPopDelay = 5;
+
+		/// <summary>
+		/// Gets or sets the time that passes before the ToolTip appears.
+		/// </summary>
+		public double InitialDelay = 1;
+
+		/// <summary>
+		/// Gets or sets the length of time that must transpire before subsequent ToolTip windows appear as the pointer moves from one control to another.
+		/// </summary>
+		public double ReshowDelay = .2;
+
+		private static int count = 0;
 		private double CurrentAutoPopDelay = 5;
-        /// <summary>
-        /// Gets or sets the time that passes before the ToolTip appears.
-        /// </summary>
-        public double InitialDelay = 1;
-        /// <summary>
-        /// Gets or sets the length of time that must transpire before subsequent ToolTip windows appear as the pointer moves from one control to another.
-        /// </summary>
-        public double ReshowDelay = .2;
+		private Vector2 mousePosition;
+		private SystemWindow owner;
+		private Stopwatch timeCurrentToolTipHasBeenShowing = new Stopwatch();
+		private bool timeCurrentToolTipHasBeenShowingWasRunning;
+		private Stopwatch timeSinceLastMouseMove = new Stopwatch();
+		private bool timeSinceLastMouseMoveWasRunning;
+		private Stopwatch timeSinceLastToolTipClose = new Stopwatch();
+		private bool timeSinceLastToolTipCloseWasRunning;
+		private Stopwatch timeSinceMouseOver = new Stopwatch();
+		private bool timeSinceMouseOverWasRunning;
+		private string toolTipText = "";
+		private GuiWidget toolTipWidget;
 
-        internal ToolTipManager(SystemWindow owner)
-        {
-            this.owner = owner;
-            owner.MouseMove += (sender, e) =>
-            {
-                mousePosition = e.Position;
-                timeSinceLastMouseMove.Restart();
-            };
+		private GuiWidget widgetThatIsShowingToolTip;
 
-			timeSinceLastToolTipClose.Start();
-		
+		private GuiWidget widgetThatWantsToShowToolTip;
+
+		internal ToolTipManager(SystemWindow owner)
+		{
+			this.owner = owner;
+			owner.MouseMove += (sender, e) =>
+			{
+				mousePosition = e.Position;
+				timeSinceLastMouseMove.Restart();
+			};
+
 			// Get the an idle loop up and running
 			UiThread.RunOnIdle(CheckIfNeedToDisplayToolTip, .02);
 		}
 
-        private void CheckIfNeedToDisplayToolTip()
-        {
+		public event EventHandler ToolTipPop;
+
+		public event EventHandler<StringEventArgs> ToolTipShown;
+
+		public string CurrentText { get { return toolTipText; } }
+
+		public void SetHoveredWidget(GuiWidget widgetToShowToolTipFor)
+		{
+#if __ANDROID__
+			return;
+#endif
+	
+			if (this.widgetThatWantsToShowToolTip != widgetToShowToolTipFor)
+			{
+				timeSinceMouseOver.Restart();
+				this.widgetThatWantsToShowToolTip = widgetToShowToolTipFor;
+			}
+		}
+
+		private void CheckIfNeedToDisplayToolTip()
+		{
+			//DebugStopTimers();
+
 			double showDelayTime = InitialDelay;
-			if (timeSinceLastToolTipClose.Elapsed.TotalSeconds < InitialDelay
+			if ((timeSinceLastToolTipClose.IsRunning || timeSinceLastToolTipCloseWasRunning)
+				&& timeSinceLastToolTipClose.Elapsed.TotalSeconds < InitialDelay
 				&& widgetThatWantsToShowToolTip != null
 				&& widgetThatIsShowingToolTip == null)
 			{
-				//showDelayTime = ReshowDelay;
+				showDelayTime = ReshowDelay;
 			}
 
+			bool didShow = false;
 			if (widgetThatWantsToShowToolTip != null
 				&& widgetThatWantsToShowToolTip != widgetThatIsShowingToolTip
 				&& timeSinceMouseOver.Elapsed.TotalSeconds > showDelayTime)
-            {
-                DoShowToolTip();
-            }
-
-			if (timeCurrentToolTipHasBeenShowing.Elapsed.TotalSeconds > CurrentAutoPopDelay)
-            {
-                RemoveToolTip();
-				widgetThatIsShowingToolTip = null;
-				timeCurrentToolTipHasBeenShowing.Stop();
-				timeCurrentToolTipHasBeenShowing.Reset();
-            }
-
-			if (widgetThatIsShowingToolTip != null)
 			{
-				RectangleDouble screenBounds = widgetThatIsShowingToolTip.TransformToScreenSpace(widgetThatIsShowingToolTip.LocalBounds);
-				if (!screenBounds.Contains(mousePosition))
+				// And lets make sure we are still over the widget
+				RectangleDouble screenBounds = widgetThatWantsToShowToolTip.TransformToScreenSpace(widgetThatWantsToShowToolTip.LocalBounds);
+				if (screenBounds.Contains(mousePosition))
+				{
+					DoShowToolTip();
+					didShow = true;
+				}
+			}
+
+			if (!didShow)
+			{
+				bool didRemove = false;
+				if (timeCurrentToolTipHasBeenShowing.Elapsed.TotalSeconds > CurrentAutoPopDelay)
 				{
 					RemoveToolTip();
 					widgetThatIsShowingToolTip = null;
+					timeCurrentToolTipHasBeenShowing.Stop();
+					timeCurrentToolTipHasBeenShowing.Reset();
+					didRemove = true;
+				}
+
+				if (!didRemove
+					&& widgetThatIsShowingToolTip != null)
+				{
+					RectangleDouble screenBounds = widgetThatIsShowingToolTip.TransformToScreenSpace(widgetThatIsShowingToolTip.LocalBounds);
+					if (!screenBounds.Contains(mousePosition))
+					{
+						RemoveToolTip();
+						widgetThatIsShowingToolTip = null;
+					}
 				}
 			}
 
 			// Call again in .1 s so that this is constantly being re-evaluated.
-            UiThread.RunOnIdle(CheckIfNeedToDisplayToolTip, .05);
-        }
+			UiThread.RunOnIdle(CheckIfNeedToDisplayToolTip, .05);
 
-        public void SetHoveredWidget(GuiWidget widgetToShowToolTipFor)
-        {
-#if __ANDROID__
-            return;
-#endif
-            if (this.widgetThatWantsToShowToolTip != widgetToShowToolTipFor)
-            {
-                timeSinceMouseOver.Restart();
-				this.widgetThatWantsToShowToolTip = widgetToShowToolTipFor;
-            }
-        }
+			//DebugStartTimers();
+		}
 
-		void DoShowToolTip()
+		private void DebugStartTimers()
+		{
+			if (timeSinceLastMouseMoveWasRunning)
+				timeSinceLastMouseMove.Start();
+			if (timeCurrentToolTipHasBeenShowingWasRunning)
+				timeCurrentToolTipHasBeenShowing.Start();
+			if (timeSinceMouseOverWasRunning)
+				timeSinceMouseOver.Start();
+			if (timeSinceLastToolTipCloseWasRunning)
+				timeSinceLastToolTipClose.Start();
+		}
+
+		private void DebugStopTimers()
+		{
+			timeSinceLastMouseMoveWasRunning = timeSinceLastMouseMove.IsRunning;
+			timeSinceLastMouseMove.Stop();
+			timeCurrentToolTipHasBeenShowingWasRunning = timeCurrentToolTipHasBeenShowing.IsRunning;
+			timeCurrentToolTipHasBeenShowing.Stop();
+			timeSinceMouseOverWasRunning = timeSinceMouseOver.IsRunning;
+			timeSinceMouseOver.Stop();
+			timeSinceLastToolTipCloseWasRunning = timeSinceLastToolTipClose.IsRunning;
+			timeSinceLastToolTipClose.Stop();
+		}
+
+		private void DoShowToolTip()
 		{
 			if (widgetThatWantsToShowToolTip != null
 				&& widgetThatWantsToShowToolTip != widgetThatIsShowingToolTip)
@@ -137,6 +193,7 @@ namespace MatterHackers.Agg.UI
 					RemoveToolTip();
 					widgetThatIsShowingToolTip = null;
 
+					toolTipText = widgetThatWantsToShowToolTip.ToolTipText;
 					toolTipWidget = new FlowLayoutWidget()
 					{
 						BackgroundColor = RGBA_Bytes.White,
@@ -151,7 +208,7 @@ namespace MatterHackers.Agg.UI
 					};
 
 					// Make sure we wrap long text
-					toolTipWidget.AddChild(new WrappedTextWidget(widgetThatWantsToShowToolTip.ToolTipText, 350)
+					toolTipWidget.AddChild(new WrappedTextWidget(toolTipText, 350)
 					{
 						HAnchor = HAnchor.FitToChildren,
 					});
@@ -161,6 +218,13 @@ namespace MatterHackers.Agg.UI
 					CurrentAutoPopDelay = RatioOfExpectedText * AutoPopDelay;
 
 					owner.AddChild(toolTipWidget);
+					if (ToolTipShown != null)
+					{
+						ToolTipShown(this, new StringEventArgs(CurrentText));
+					}
+
+					//timeCurrentToolTipHasBeenShowing.Reset();
+					//timeCurrentToolTipHasBeenShowingWasRunning = true;
 					timeCurrentToolTipHasBeenShowing.Restart();
 
 					RectangleDouble toolTipBounds = toolTipWidget.LocalBounds;
@@ -189,20 +253,28 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		static int count = 0;
-        private void RemoveToolTip()
-        {
+		private void RemoveToolTip()
+		{
 			if (toolTipWidget != null
 				&& toolTipWidget.Parent == owner)
 			{
-				widgetThatWantsToShowToolTip = null;
+				if (ToolTipPop != null)
+				{
+					ToolTipPop(this, null);
+				}
+				//widgetThatWantsToShowToolTip = null;
 				timeSinceLastMouseMove.Stop();
 				timeSinceLastMouseMove.Reset();
 				owner.RemoveChild(toolTipWidget);
 				toolTipWidget = null;
+				toolTipText = "";
+
+				//timeSinceLastToolTipClose.Reset();
+				//timeSinceLastToolTipCloseWasRunning = true;
 				timeSinceLastToolTipClose.Restart();
+
 				Debug.WriteLine("RemoveToolTip {0}".FormatWith(count++));
 			}
-        }
-    }
+		}
+	}
 }

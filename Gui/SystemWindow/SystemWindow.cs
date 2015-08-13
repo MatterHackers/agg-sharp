@@ -59,7 +59,7 @@ namespace MatterHackers.Agg.UI
 
 		private string title = "";
 
-        public ToolTipManager toolTipManager { get; private set; }
+        public ToolTipManager ToolTipManager { get; private set; }
 
 		public string Title
 		{
@@ -106,7 +106,7 @@ namespace MatterHackers.Agg.UI
 		public SystemWindow(double width, double height)
 			: base(width, height, SizeLimitsToSet.None)
 		{
-            toolTipManager = new ToolTipManager(this);
+            ToolTipManager = new ToolTipManager(this);
 			if (globalSystemWindowCreator == null)
 			{
 				string pluginPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
@@ -197,7 +197,7 @@ namespace MatterHackers.Agg.UI
 
         public void SetHoveredWidget(GuiWidget widgetToShowToolTipFor)
         {
-            toolTipManager.SetHoveredWidget(widgetToShowToolTipFor);
+            ToolTipManager.SetHoveredWidget(widgetToShowToolTipFor);
         }
     }
 }

@@ -30,33 +30,257 @@ either expressed or implied, of the FreeBSD Project.
 using MatterHackers.Agg.Image;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
+using System.Threading;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	[TestFixture, Category("Agg.UI")]
+	internal class TempData
+	{
+		internal string lastShownText;
+		internal int showCount;
+		internal int popCount;
+	}
+
+	[TestFixture, Category("Agg.UI.ToolTip")]
 	public class ToolTipTests
 	{
+		static string toolTip1Text = "toolTip1";
+		static string toolTip2Text = "toolTip2";
+
+		static readonly int minMsTimeToRespond = 60;
+		static readonly int minMsToBias = 80;
+
 		[Test]
 		public void ToolTipInitialOpenTests()
+		{
+			TempData tempData = new TempData();
+			// test simple open then wait for pop
+			SystemWindow systemWindow = CreateTwoChildWindow(tempData);
+
+			// move into the first widget 
+			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 11, 11, 0));
+			UiThread.DoRunAllPending();
+
+			// show that initialy we don't have a tooltip
+			Assert.IsTrue(systemWindow.Children.Count == 2);
+
+			// sleep 1/2 long enough to show the tool tip
+			Thread.Sleep((int)(systemWindow.ToolTipManager.InitialDelay / 2 * 1000 + minMsToBias));
+			UiThread.DoRunAllPending();
+
+			// make sure it is still not up
+			Assert.IsTrue(systemWindow.Children.Count == 2);
+			Assert.IsTrue(tempData.showCount == 0);
+			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
+
+			// sleep 1/2 long enough to show the tool tip
+			Thread.Sleep((int)(systemWindow.ToolTipManager.InitialDelay / 2 * 1000 + minMsToBias));
+			UiThread.DoRunAllPending();
+
+			// make sure the tool tip came up
+			Assert.IsTrue(systemWindow.Children.Count == 3);
+			Assert.IsTrue(tempData.showCount == 1);
+			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == toolTip1Text);
+
+			// wait 1/2 long enough for the tool tip to go away
+			Thread.Sleep((int)(systemWindow.ToolTipManager.AutoPopDelay * 1000 / 2 + minMsToBias));
+			UiThread.DoRunAllPending();
+
+			// make sure the tool did not go away
+			Assert.IsTrue(systemWindow.Children.Count == 3);
+			Assert.IsTrue(tempData.popCount == 0);
+			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == toolTip1Text);
+
+			// wait 1/2 long enough for the tool tip to go away
+			Thread.Sleep((int)(systemWindow.ToolTipManager.AutoPopDelay * 1000 / 2 + minMsToBias));
+			UiThread.DoRunAllPending();
+
+			// make sure the tool tip went away
+			Assert.IsTrue(systemWindow.Children.Count == 2);
+			Assert.IsTrue(tempData.popCount == 1);
+			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
+		}
+
+		[Test]
+		public void ToolTipCloseOnLeave()
+		{
+			TempData tempData = new TempData();
+			SystemWindow systemWindow = CreateTwoChildWindow(tempData);
+
+			// move into the first widget 
+			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 11, 11, 0));
+			UiThread.DoRunAllPending();
+
+			// sleep long enough to show the tool tip
+			Thread.Sleep((int)(systemWindow.ToolTipManager.InitialDelay * 1000 + minMsToBias));
+			UiThread.DoRunAllPending();
+
+			// make sure the tool tip came up
+			Assert.IsTrue(systemWindow.Children.Count == 3);
+			Assert.IsTrue(tempData.showCount == 1);
+			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == toolTip1Text);
+
+			// move off the first widget 
+			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 9, 9, 0));
+			Thread.Sleep(minMsTimeToRespond); // sleep enough for the tool tip to want to respond
+			UiThread.DoRunAllPending();
+
+			// make sure the tool tip went away
+			Assert.IsTrue(systemWindow.Children.Count == 2);
+			Assert.IsTrue(tempData.popCount == 1);
+			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
+		}
+
+		[Test]
+		public void MoveFromToolTipToToolTip()
+		{
+			TempData tempData = new TempData();
+			SystemWindow systemWindow = CreateTwoChildWindow(tempData);
+
+			// move into the first widget 
+			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 11, 11, 0));
+			UiThread.DoRunAllPending();
+
+			// sleep long enough to show the tool tip
+			Thread.Sleep((int)(systemWindow.ToolTipManager.InitialDelay * 1000 + minMsToBias));
+			UiThread.DoRunAllPending();
+
+			// make sure the tool tip came up
+			Assert.IsTrue(systemWindow.Children.Count == 3);
+			Assert.IsTrue(tempData.showCount == 1);
+			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == toolTip1Text);
+
+			// move off the first widget
+			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 29, 29, 0));
+			Thread.Sleep(minMsTimeToRespond); // sleep enough for the tool tip to want to respond
+			UiThread.DoRunAllPending();
+
+			// make sure the first tool tip went away 
+			Assert.IsTrue(systemWindow.Children.Count == 2);
+			Assert.IsTrue(tempData.popCount == 1);
+			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
+
+			// sleep long enough to clear the fast move time
+			Thread.Sleep((int)(systemWindow.ToolTipManager.ReshowDelay * 1000 * 2));
+			UiThread.DoRunAllPending();
+
+			// make sure the first tool still gone
+			Assert.IsTrue(systemWindow.Children.Count == 2);
+			Assert.IsTrue(tempData.popCount == 1);
+			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
+
+			// move onto the other widget
+			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 31, 31, 0));
+			Thread.Sleep(minMsTimeToRespond); // sleep enough for the tool tip to want to respond
+			UiThread.DoRunAllPending();
+
+			// make sure the first tool tip still gone
+			Assert.IsTrue(systemWindow.Children.Count == 2);
+			Assert.IsTrue(tempData.popCount == 1);
+			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
+
+			// wait 1/2 long enough for the second tool tip to come up
+			Thread.Sleep((int)(systemWindow.ToolTipManager.InitialDelay * 1000 / 2 + minMsToBias));
+			UiThread.DoRunAllPending();
+
+			// make sure the second tool tip not showing
+			Assert.IsTrue(systemWindow.Children.Count == 2);
+			Assert.IsTrue(tempData.popCount == 1);
+			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
+
+			// wait 1/2 long enough for the second tool tip to come up
+			Thread.Sleep((int)(systemWindow.ToolTipManager.AutoPopDelay * 1000 / 2 + minMsToBias));
+			UiThread.DoRunAllPending();
+
+			// make sure the tool tip 2 came up
+			Assert.IsTrue(systemWindow.Children.Count == 3);
+			Assert.IsTrue(tempData.showCount == 2);
+			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == toolTip2Text);
+		}
+
+		[Test]
+		public void MoveFastFromToolTipToToolTip()
+		{
+			TempData tempData = new TempData();
+			SystemWindow systemWindow = CreateTwoChildWindow(tempData);
+
+			// move into the first widget 
+			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 11, 11, 0));
+			UiThread.DoRunAllPending();
+
+			// sleep long enough to show the tool tip
+			Thread.Sleep((int)(systemWindow.ToolTipManager.InitialDelay * 1000 + minMsToBias));
+			UiThread.DoRunAllPending();
+
+			// make sure the tool tip came up
+			Assert.IsTrue(systemWindow.Children.Count == 3);
+			Assert.IsTrue(tempData.showCount == 1);
+			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == toolTip1Text);
+
+			// wait 1/2 long enough for the tool tip to go away
+			Thread.Sleep((int)(systemWindow.ToolTipManager.AutoPopDelay * 1000 / 2 + minMsToBias));
+			UiThread.DoRunAllPending();
+
+			// move onto the other widget
+			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 31, 31, 0));
+			Thread.Sleep(minMsTimeToRespond); // sleep enough for the tool tip to want to respond
+			UiThread.DoRunAllPending();
+
+			// make sure the first tool tip went away 
+			Assert.IsTrue(systemWindow.Children.Count == 2);
+			Assert.IsTrue(tempData.popCount == 1);
+			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
+
+			// wait long enough for the second tool tip to come up
+			Thread.Sleep((int)(systemWindow.ToolTipManager.ReshowDelay * 1000 + minMsToBias));
+			UiThread.DoRunAllPending();
+
+			// make sure the tool tip 2 came up
+			Assert.IsTrue(systemWindow.Children.Count == 3);
+			Assert.IsTrue(tempData.showCount == 2);
+			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == toolTip2Text);
+		}
+
+		private static SystemWindow CreateTwoChildWindow(TempData tempData)
 		{
 			SystemWindow systemWindow = new SystemWindow(200, 200);
 			GuiWidget toolTip1 = new GuiWidget()
 			{
-				Width = 10,
-				Height = 10,
-				OriginRelativeParent = new Vector2(10, 10),
-				ToolTipText = "toolTip1",
+				LocalBounds = new RectangleDouble(10, 10, 20, 20),
+				ToolTipText = toolTip1Text,
 			};
 			GuiWidget toolTip2 = new GuiWidget()
 			{
-				Width = 10,
-				Height = 10,
-				OriginRelativeParent = new Vector2(30, 10),
-				ToolTipText = "toolTip2",
+				LocalBounds = new RectangleDouble(30, 30, 40, 40),
+				ToolTipText = toolTip2Text,
+			};
+
+			systemWindow.ToolTipManager.ToolTipShown += (sender, stringEvent) =>
+			{
+				tempData.showCount++;
+				tempData.lastShownText = stringEvent.Data;
+			};
+
+			systemWindow.ToolTipManager.ToolTipPop += (sender, e) =>
+			{
+				tempData.popCount++;
 			};
 
 			systemWindow.AddChild(toolTip1);
 			systemWindow.AddChild(toolTip2);
+
+			Assert.IsTrue(systemWindow.Children.Count == 2);
+
+			// make sure we start out with only the widgets (no tool tip)
+			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 0, 0, 0));
+			UiThread.DoRunAllPending();
+			Assert.IsTrue(systemWindow.Children.Count == 2);
+
+			tempData.lastShownText = "";
+			tempData.showCount = 0;
+			tempData.popCount = 0;
+
+			return systemWindow;
 		}
 	}
 }
