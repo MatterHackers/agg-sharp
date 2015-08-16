@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.VectorMath;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace MatterHackers.Agg.UI
@@ -96,12 +97,22 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnClosed(EventArgs e)
 		{
+            openWindows.Remove(this);
 			base.OnClosed(e);
 			if (Parent != null)
 			{
 				Parent.Close();
 			}
 		}
+
+        static List<SystemWindow> openWindows = new List<SystemWindow>();
+        public static List<SystemWindow> OpenWindows
+        {
+            get
+            {
+                return new List<SystemWindow>(openWindows);
+            }
+        }
 
 		public SystemWindow(double width, double height)
 			: base(width, height, SizeLimitsToSet.None)
@@ -117,6 +128,8 @@ namespace MatterHackers.Agg.UI
 				}
 				globalSystemWindowCreator = systemWindowCreatorFinder.Plugins[0];
 			}
+
+            openWindows.Add(this);
 		}
 
 		public override Vector2 MinimumSize

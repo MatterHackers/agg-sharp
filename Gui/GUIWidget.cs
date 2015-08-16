@@ -2070,12 +2070,12 @@ namespace MatterHackers.Agg.UI
 
 		public Vector2 TransformToParentSpace(GuiWidget parentToGetRelativeTo, Vector2 position)
 		{
-			GuiWidget parent = Parent;
-			while (parent != null
-				&& parent != parentToGetRelativeTo)
+			GuiWidget widgetToTransformBy = this;
+			while (widgetToTransformBy != null
+				&& widgetToTransformBy != parentToGetRelativeTo)
 			{
-				position += new Vector2(parent.BoundsRelativeToParent.Left, parent.BoundsRelativeToParent.Bottom);
-				parent = parent.Parent;
+				position += new Vector2(widgetToTransformBy.BoundsRelativeToParent.Left, widgetToTransformBy.BoundsRelativeToParent.Bottom);
+				widgetToTransformBy = widgetToTransformBy.Parent;
 			}
 
 			return position;
@@ -2083,12 +2083,12 @@ namespace MatterHackers.Agg.UI
 
 		public RectangleDouble TransformToParentSpace(GuiWidget parentToGetRelativeTo, RectangleDouble rectangleToTransform)
 		{
-			GuiWidget parent = Parent;
-			while (parent != null
-				&& parent != parentToGetRelativeTo)
+			GuiWidget widgetToTransformBy = this;
+			while (widgetToTransformBy != null
+				&& widgetToTransformBy != parentToGetRelativeTo)
 			{
-				rectangleToTransform.Offset(parent.OriginRelativeParent);
-				parent = parent.Parent;
+				rectangleToTransform.Offset(widgetToTransformBy.OriginRelativeParent);
+				widgetToTransformBy = widgetToTransformBy.Parent;
 			}
 
 			return rectangleToTransform;
@@ -2711,7 +2711,26 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public virtual void OnMouseEnterBounds(MouseEventArgs mouseEvent)
+        public GuiWidget FindNamedChildRecursive(string nameToSearchFor)
+        {
+            if (Name == nameToSearchFor)
+            {
+                return this;
+            }
+
+            foreach (GuiWidget child in Children)
+            {
+                GuiWidget namedChild = child.FindNamedChildRecursive(nameToSearchFor);
+                if(namedChild != null)
+                {
+                    return namedChild;
+                }
+            }
+
+            return null;
+        }
+
+        public virtual void OnMouseEnterBounds(MouseEventArgs mouseEvent)
 		{
 			if (MouseEnterBounds != null)
 			{
