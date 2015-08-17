@@ -759,6 +759,18 @@ namespace MatterHackers.MeshVisualizer
 				{
 					RenderMeshToGl.Render(buildVolume, this.BuildVolumeColor);
 				}
+
+				if (false) // this is code to draw a small axis indicator
+				{
+					double big = 10;
+					double small = 1;
+					Mesh xAxis = PlatonicSolids.CreateCube(big, small, small);
+					RenderMeshToGl.Render(xAxis, RGBA_Bytes.Red);
+					Mesh yAxis = PlatonicSolids.CreateCube(small, big, small);
+					RenderMeshToGl.Render(yAxis, RGBA_Bytes.Green);
+					Mesh zAxis = PlatonicSolids.CreateCube(small, small, big);
+					RenderMeshToGl.Render(zAxis, RGBA_Bytes.Blue);
+				}
 			}
 		}
 
