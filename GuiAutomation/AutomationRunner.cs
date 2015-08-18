@@ -115,18 +115,18 @@ namespace MatterHackers.GuiAutomation
 			return null;
 		}
 
-		public bool ClickImage(string imageName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, ImageBuffer imageHaystack = null)
+		public bool ClickImage(string imageName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, SearchRegion searchRegion = null)
 		{
 			ImageBuffer imageToLookFor = LoadImageFromSourcFolder(imageName);
 			if (imageToLookFor != null)
 			{
-				return ClickImage(imageToLookFor, xOffset, yOffset, origin, imageHaystack);
+				return ClickImage(imageToLookFor, xOffset, yOffset, origin, searchRegion);
 			}
 
 			return false;
 		}
 
-		public bool ClickImage(ImageBuffer imageNeedle, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, ImageBuffer imageHaystack = null)
+		public bool ClickImage(ImageBuffer imageNeedle, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, SearchRegion searchRegion = null)
 		{
 			if (origin == ClickOrigin.Center)
 			{
@@ -134,17 +134,20 @@ namespace MatterHackers.GuiAutomation
 				yOffset += imageNeedle.Height / 2;
 			}
 
-			if (imageHaystack == null)
+			if (searchRegion == null)
 			{
-				imageHaystack = NativeMethods.GetCurrentScreen();
+				searchRegion = GetScreenRegion();
 			}
 
 			Vector2 matchPosition;
 			double bestMatch;
-			if (imageHaystack.FindLeastSquaresMatch(imageNeedle, out matchPosition, out bestMatch, 50))
+			if (searchRegion.Image.FindLeastSquaresMatch(imageNeedle, out matchPosition, out bestMatch, 50))
 			{
-				// TODO: figure out which window the position is in
-				Point2D screenPosition = new Point2D((int)matchPosition.x + xOffset, imageHaystack.Height - (int)(matchPosition.y + yOffset));
+				int screenHeight = NativeMethods.GetCurrentScreenHeight();
+				int clickY = (int)(searchRegion.ScreenRect.Bottom + matchPosition.y + yOffset);
+				int clickYOnScreen = screenHeight - clickY; // invert to put it on the screen
+
+				Point2D screenPosition = new Point2D((int)matchPosition.x + xOffset, clickYOnScreen);
 				SetCursorPosition(screenPosition.x, screenPosition.y);
 				NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 				Wait(upDelaySeconds);
@@ -156,22 +159,28 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool DoubleClickImage(string imageName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, ImageBuffer imageHaystack = null)
+		private SearchRegion GetScreenRegion()
+		{
+			ImageBuffer screenImage = NativeMethods.GetCurrentScreen();
+			return new SearchRegion(screenImage, new RectangleInt(0, 0, screenImage.Width, screenImage.Height));			
+		}
+
+		public bool DoubleClickImage(string imageName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, SearchRegion searchRegion = null)
 		{
 			throw new NotImplementedException();
 		}
 
-		public bool ImageExists(ImageBuffer image, ImageBuffer imageHaystack = null)
+		public bool ImageExists(ImageBuffer image, SearchRegion searchRegion = null)
 		{
 			return false;
 		}
 
-		public bool ImageExists(string imageFileName, ImageBuffer imageHaystack = null)
+		public bool ImageExists(string imageFileName, SearchRegion searchRegion = null)
 		{
 			return false;
 		}
 
-		public bool MoveToImage(string imageName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, ImageBuffer imageHaystack = null)
+		public bool MoveToImage(string imageName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, SearchRegion searchRegion = null)
 		{
 			throw new NotImplementedException();
 		}

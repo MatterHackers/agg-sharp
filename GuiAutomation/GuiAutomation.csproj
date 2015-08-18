@@ -132,6 +132,7 @@
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="SearchRegion.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="AutomationRunner.cs" />
   </ItemGroup>
