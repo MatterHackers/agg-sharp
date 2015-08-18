@@ -57,6 +57,7 @@ namespace MatterHackers.GuiAutomation
 
 		public enum InterpolationType { LINEAR, EASE_IN, EASE_OUT, EASE_IN_OUT };
 
+		#region Utility
 		public Point2D CurrentMousPosition()
 		{
 			Point2D mousePos = new Point2D(System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y);
@@ -95,25 +96,10 @@ namespace MatterHackers.GuiAutomation
 					throw new NotImplementedException();
 			}
 		}
+		#endregion Utility
 
+		#region Mouse Functions
 		#region Search By Image
-
-		ImageBuffer LoadImageFromSourcFolder(string imageName)
-		{
-			string pathToImage = Path.Combine(imageDirectory, imageName);
-
-			if (File.Exists(pathToImage))
-			{
-				ImageBuffer imageToLookFor = new ImageBuffer();
-
-				if(ImageIO.LoadImageData(pathToImage, imageToLookFor))
-				{
-					return imageToLookFor;
-				}
-			}
-
-			return null;
-		}
 
 		public bool ClickImage(string imageName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, SearchRegion searchRegion = null)
 		{
@@ -148,7 +134,7 @@ namespace MatterHackers.GuiAutomation
 				int clickYOnScreen = screenHeight - clickY; // invert to put it on the screen
 
 				Point2D screenPosition = new Point2D((int)matchPosition.x + xOffset, clickYOnScreen);
-				SetCursorPosition(screenPosition.x, screenPosition.y);
+				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
 				NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 				Wait(upDelaySeconds);
 				NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
@@ -159,15 +145,127 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		private SearchRegion GetScreenRegion()
-		{
-			ImageBuffer screenImage = NativeMethods.GetCurrentScreen();
-			return new SearchRegion(screenImage, new RectangleInt(0, 0, screenImage.Width, screenImage.Height));			
-		}
-
 		public bool DoubleClickImage(string imageName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, SearchRegion searchRegion = null)
 		{
 			throw new NotImplementedException();
+		}
+
+		public bool DragDropImage(ImageBuffer imageNeedleDrag, ImageBuffer imageNeedleDrop, int xOffsetDrag = 0, int yOffsetDrag = 0, ClickOrigin originDrag = ClickOrigin.Center,
+			int xOffsetDrop = 0, int yOffsetDrop = 0, ClickOrigin originDrop = ClickOrigin.Center,
+			SearchRegion searchRegion = null)
+		{
+			if (searchRegion == null)
+			{
+				searchRegion = GetScreenRegion();
+			}
+
+			if (DragImage(imageNeedleDrag, xOffsetDrag, yOffsetDrag, originDrag, searchRegion))
+			{
+				return DropImage(imageNeedleDrop, xOffsetDrop, yOffsetDrop, originDrop, searchRegion);
+			}
+
+			return false;
+		}
+
+		public bool DragImage(string imageNameDrag, string imageNameDrop, int xOffsetDrag = 0, int yOffsetDrag = 0, ClickOrigin originDrag = ClickOrigin.Center,
+			int xOffsetDrop = 0, int yOffsetDrop = 0, ClickOrigin originDrop = ClickOrigin.Center,
+			SearchRegion searchRegion = null)
+		{
+			ImageBuffer imageNeedleDrag = LoadImageFromSourcFolder(imageNameDrag);
+			if (imageNeedleDrag != null)
+			{
+				ImageBuffer imageNeedleDrop = LoadImageFromSourcFolder(imageNameDrop);
+				if (imageNeedleDrop != null)
+				{
+					return DragDropImage(imageNeedleDrag, imageNeedleDrop, xOffsetDrag, yOffsetDrag, originDrag, xOffsetDrop, yOffsetDrop, originDrop, searchRegion);
+				}
+			}
+
+			return false;
+		}
+
+		public bool DragImage(string imageName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, SearchRegion searchRegion = null)
+		{
+			ImageBuffer imageToLookFor = LoadImageFromSourcFolder(imageName);
+			if (imageToLookFor != null)
+			{
+				return DragImage(imageToLookFor, xOffset, yOffset, origin, searchRegion);
+			}
+
+			return false;
+		}
+
+		public bool DragImage(ImageBuffer imageNeedle, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, SearchRegion searchRegion = null)
+		{
+			if (origin == ClickOrigin.Center)
+			{
+				xOffset += imageNeedle.Width / 2;
+				yOffset += imageNeedle.Height / 2;
+			}
+
+			if (searchRegion == null)
+			{
+				searchRegion = GetScreenRegion();
+			}
+
+			Vector2 matchPosition;
+			double bestMatch;
+			if (searchRegion.Image.FindLeastSquaresMatch(imageNeedle, out matchPosition, out bestMatch, 50))
+			{
+				int screenHeight = NativeMethods.GetCurrentScreenHeight();
+				int clickY = (int)(searchRegion.ScreenRect.Bottom + matchPosition.y + yOffset);
+				int clickYOnScreen = screenHeight - clickY; // invert to put it on the screen
+
+				Point2D screenPosition = new Point2D((int)matchPosition.x + xOffset, clickYOnScreen);
+				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
+				NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+
+				return true;
+			}
+
+			return false;
+		}
+
+		public bool DropImage(string imageName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, SearchRegion searchRegion = null)
+		{
+			ImageBuffer imageToLookFor = LoadImageFromSourcFolder(imageName);
+			if (imageToLookFor != null)
+			{
+				return DropImage(imageToLookFor, xOffset, yOffset, origin, searchRegion);
+			}
+
+			return false;
+		}
+
+		public bool DropImage(ImageBuffer imageNeedle, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, SearchRegion searchRegion = null)
+		{
+			if (origin == ClickOrigin.Center)
+			{
+				xOffset += imageNeedle.Width / 2;
+				yOffset += imageNeedle.Height / 2;
+			}
+
+			if (searchRegion == null)
+			{
+				searchRegion = GetScreenRegion();
+			}
+
+			Vector2 matchPosition;
+			double bestMatch;
+			if (searchRegion.Image.FindLeastSquaresMatch(imageNeedle, out matchPosition, out bestMatch, 50))
+			{
+				int screenHeight = NativeMethods.GetCurrentScreenHeight();
+				int clickY = (int)(searchRegion.ScreenRect.Bottom + matchPosition.y + yOffset);
+				int clickYOnScreen = screenHeight - clickY; // invert to put it on the screen
+
+				Point2D screenPosition = new Point2D((int)matchPosition.x + xOffset, clickYOnScreen);
+				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
+				NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
+
+				return true;
+			}
+
+			return false;
 		}
 
 		public bool ImageExists(ImageBuffer image, SearchRegion searchRegion = null)
@@ -183,6 +281,29 @@ namespace MatterHackers.GuiAutomation
 		public bool MoveToImage(string imageName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, SearchRegion searchRegion = null)
 		{
 			throw new NotImplementedException();
+		}
+
+		private SearchRegion GetScreenRegion()
+		{
+			ImageBuffer screenImage = NativeMethods.GetCurrentScreen();
+			return new SearchRegion(screenImage, new RectangleInt(0, 0, screenImage.Width, screenImage.Height));
+		}
+
+		private ImageBuffer LoadImageFromSourcFolder(string imageName)
+		{
+			string pathToImage = Path.Combine(imageDirectory, imageName);
+
+			if (File.Exists(pathToImage))
+			{
+				ImageBuffer imageToLookFor = new ImageBuffer();
+
+				if (ImageIO.LoadImageData(pathToImage, imageToLookFor))
+				{
+					return imageToLookFor;
+				}
+			}
+
+			return null;
 		}
 
 		#endregion Search By Image
@@ -209,7 +330,7 @@ namespace MatterHackers.GuiAutomation
 					screenPosition.x += WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.Location.X;
 					screenPosition.y += WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.Location.Y + WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.TitleBarHeight;
 
-					SetCursorPosition(screenPosition.x, screenPosition.y);
+					SetMouseCursorPosition(screenPosition.x, screenPosition.y);
 					NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 
 					Wait(upDelaySeconds);
@@ -248,7 +369,7 @@ namespace MatterHackers.GuiAutomation
 
 		#endregion Search By Names
 
-		public void SetCursorPosition(int x, int y)
+		public void SetMouseCursorPosition(int x, int y)
 		{
 			Vector2 start = new Vector2(CurrentMousPosition().x, CurrentMousPosition().y);
 			Vector2 end = new Vector2(x, y);
@@ -265,15 +386,32 @@ namespace MatterHackers.GuiAutomation
 
 			NativeMethods.SetCursorPos((int)end.x, (int)end.y);
 		}
+		#endregion Mouse Functions
+
+		#region Keyboard Functions
+
+		public void KeyDown(KeyEventArgs keyEvent)
+		{
+			throw new NotImplementedException();
+		}
+
+		public void KeyUp(KeyEventArgs keyEvent)
+		{
+			throw new NotImplementedException();
+		}
 
 		public void Type(string textToType)
 		{
 			throw new NotImplementedException();
 		}
 
+		#endregion Keyboard Functions
+
+		#region Time
 		public void Wait(double timeInSeconds)
 		{
 			Thread.Sleep((int)(timeInSeconds * 1000));
 		}
+		#endregion Time
 	}
 }
