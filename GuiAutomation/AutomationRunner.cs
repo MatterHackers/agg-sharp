@@ -167,7 +167,7 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool DragImage(string imageNameDrag, string imageNameDrop, int xOffsetDrag = 0, int yOffsetDrag = 0, ClickOrigin originDrag = ClickOrigin.Center,
+		public bool DragDropImage(string imageNameDrag, string imageNameDrop, int xOffsetDrag = 0, int yOffsetDrag = 0, ClickOrigin originDrag = ClickOrigin.Center,
 			int xOffsetDrop = 0, int yOffsetDrop = 0, ClickOrigin originDrop = ClickOrigin.Center,
 			SearchRegion searchRegion = null)
 		{
