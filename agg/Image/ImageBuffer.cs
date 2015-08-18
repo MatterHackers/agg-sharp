@@ -1122,6 +1122,8 @@ namespace MatterHackers.Agg.Image
 					{
 						double currentLeastSquares = 0;
 
+#if false
+#else
 						for (int imageToFindY = 0; imageToFindY < imageToFind.Height; imageToFindY++)
 						{
 							int thisBufferOffset = GetBufferOffsetXY(matchX, matchY + imageToFindY);
@@ -1137,17 +1139,27 @@ namespace MatterHackers.Agg.Image
 								}
 								thisBufferOffset += aDistanceBetweenPixels;
 								imageToFindBufferOffset += bDistanceBetweenPixels;
-							}
-							if (currentLeastSquares > maxError)
-							{
-								// stop checking we have too much error.
-								imageToFindY = imageToFind.Height;
+								if (currentLeastSquares > maxError)
+								{
+									// stop checking we have too much error.
+									imageToFindX = imageToFind.Width;
+									imageToFindY = imageToFind.Height;
+								}
 							}
 						}
+#endif
 						if (currentLeastSquares < bestLeastSquares)
 						{
 							bestPosition = new Vector2(matchX, matchY);
 							bestLeastSquares = currentLeastSquares;
+							if (maxError > currentLeastSquares)
+							{
+								maxError = currentLeastSquares;
+								if (currentLeastSquares == 0)
+								{
+									return true;
+								}
+							}
 						}
 					}
 				}

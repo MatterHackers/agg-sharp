@@ -52,6 +52,8 @@ namespace MatterHackers.Agg.UI
 				idleCallBackTimer.Elapsed += CallAppWidgetOnIdle;
 				idleCallBackTimer.Start();
 			}
+
+			titleBarHeight = RectangleToScreen(ClientRectangle).Top - this.Top;
 		}
 
 		private bool hasBeenClosed = false;
@@ -62,6 +64,9 @@ namespace MatterHackers.Agg.UI
 
 			System.Diagnostics.Process.Start("explorer.exe", argument);
 		}
+
+		int titleBarHeight = 0;
+		public int TitleBarHeight { get { return titleBarHeight; } }
 
 		protected void SetUpFormsWindow(AbstractOsMappingWidget app, SystemWindow childSystemWindow)
 		{
