@@ -27,8 +27,10 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.GuiAutomation;
 using NUnit.Framework;
 using System;
+using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -71,6 +73,42 @@ namespace MatterHackers.Agg.UI.Tests
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 10, 10, 0));
 			Assert.IsTrue(gotClick == false);
 			Assert.IsTrue(button.Focused == false);
+		}
+
+		[Test]
+		[RequiresSTA]
+		public void DoClickButtonInWindow()
+		{
+			// Run a copy of MatterControl
+			SystemWindow buttonContainer = new SystemWindow(300, 200);
+			buttonContainer.DrawAfter += (sender, e) =>
+			{
+				Task.Run(() =>
+				{
+					AutomationRunner testRunner = new AutomationRunner("C:/TestImages");
+					testRunner.Wait(1);
+
+					// Now do the actions specific to this test. (replace this for new tests)
+					{
+						testRunner.ClickByName("left");
+						testRunner.Wait(.5);
+						testRunner.ClickByName("right");
+						testRunner.Wait(.5);
+					}
+
+					testRunner.Wait(10);
+					buttonContainer.CloseOnIdle();
+				});
+			};
+
+			Button leftButton = new Button("left", 10, 40);
+			leftButton.Name = "left";
+			buttonContainer.AddChild(leftButton);
+			Button rightButton = new Button("right", 110, 40);
+			rightButton.Name = "right";
+			buttonContainer.AddChild(rightButton);
+
+			buttonContainer.ShowAsSystemWindow();
 		}
 
 		[Test]

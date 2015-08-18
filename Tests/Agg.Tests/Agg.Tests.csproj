@@ -100,6 +100,10 @@
       <Project>{7e61a5bd-e78f-4b80-88c9-3821b4fa062e}</Project>
       <Name>Csg</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\GuiAutomation\GuiAutomation.csproj">
+      <Project>{e9102310-0029-4d8f-b1e9-88fba6147d45}</Project>
+      <Name>GuiAutomation</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\Gui\Gui.csproj">
       <Project>{74f6bb6c-9d02-4512-a59a-21940e35c532}</Project>
       <Name>Gui</Name>

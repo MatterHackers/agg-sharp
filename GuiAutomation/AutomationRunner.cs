@@ -33,8 +33,6 @@ using MatterHackers.Agg.PlatformAbstract;
 using MatterHackers.Agg.UI;
 using MatterHackers.VectorMath;
 using System;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Threading;
 
@@ -42,12 +40,13 @@ namespace MatterHackers.GuiAutomation
 {
 	public class AutomationRunner
 	{
-		private string imageDirectory;
+		/// <summary>
+		/// The number of seconds to move the mouse when going to a new position.
+		/// </summary>
+		public double TimeToMoveMouse = .5;
 
-        /// <summary>
-        /// The number of seconds to move the mouse when going to a new position.
-        /// </summary>
-        public double TimeToMoveMouse = .5;
+		private string imageDirectory;
+		private double upDelaySeconds = .2;
 
 		public AutomationRunner(string imageDirectory)
 		{
@@ -56,38 +55,7 @@ namespace MatterHackers.GuiAutomation
 
 		public enum ClickOrigin { LowerLeft, Center };
 
-		public bool ClickByName(string widgetName, int xOffset = 0, int yOffset = 0, double upDelaySeconds = .2, ClickOrigin origin = ClickOrigin.Center)
-		{
-			foreach (SystemWindow window in SystemWindow.OpenWindows)
-			{
-				GuiWidget widgetToClick = window.FindNamedChildRecursive(widgetName);
-				if (widgetToClick != null)
-				{
-					RectangleDouble childBounds = widgetToClick.TransformToParentSpace(window, widgetToClick.LocalBounds);
-
-					if (origin == ClickOrigin.Center)
-					{
-						xOffset += (int)childBounds.Width / 2;
-						yOffset += (int)childBounds.Height / 2;
-					}
-
-					Point2D screenPosition = new Point2D((int)childBounds.Left + xOffset, (int)window.Height - (int)(childBounds.Bottom + yOffset));
-
-					screenPosition.x += WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.Location.X;
-					screenPosition.y += WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.Location.Y + WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.TitleBarHeight;
-
-					SetCursorPos(screenPosition.x, screenPosition.y);
-					NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
-					
-					Wait(upDelaySeconds);
-		
-					NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
-
-					return true;
-				}
-			}
-			return false;
-		}
+		public enum InterpolationType { LINEAR, EASE_IN, EASE_OUT, EASE_IN_OUT };
 
 		public Point2D CurrentMousPosition()
 		{
@@ -95,7 +63,10 @@ namespace MatterHackers.GuiAutomation
 			return mousePos;
 		}
 
-		public enum InterpolationType { LINEAR, EASE_IN, EASE_OUT, EASE_IN_OUT };
+		public ImageBuffer GetCurrentScreen()
+		{
+			return NativeMethods.GetCurrentScreen();
+		}
 
 		public double GetInterpolatedValue(double compleatedRatio0To1, InterpolationType interpolationType)
 		{
@@ -125,7 +96,150 @@ namespace MatterHackers.GuiAutomation
 			}
 		}
 
-		public void SetCursorPos(int x, int y)
+		#region Search By Image
+
+		ImageBuffer LoadImageFromSourcFolder(string imageName)
+		{
+			string pathToImage = Path.Combine(imageDirectory, imageName);
+
+			if (File.Exists(pathToImage))
+			{
+				ImageBuffer imageToLookFor = new ImageBuffer();
+
+				if(ImageIO.LoadImageData(pathToImage, imageToLookFor))
+				{
+					return imageToLookFor;
+				}
+			}
+
+			return null;
+		}
+
+		public bool ClickImage(string imageName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, ImageBuffer imageHaystack = null)
+		{
+			ImageBuffer imageToLookFor = LoadImageFromSourcFolder(imageName);
+			if (imageToLookFor != null)
+			{
+				return ClickImage(imageToLookFor, xOffset, yOffset, origin, imageHaystack);
+			}
+
+			return false;
+		}
+
+		public bool ClickImage(ImageBuffer imageNeedle, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, ImageBuffer imageHaystack = null)
+		{
+			if (origin == ClickOrigin.Center)
+			{
+				xOffset += imageNeedle.Width / 2;
+				yOffset += imageNeedle.Height / 2;
+			}
+
+			if (imageHaystack == null)
+			{
+				imageHaystack = NativeMethods.GetCurrentScreen();
+			}
+
+			Vector2 matchPosition;
+			double bestMatch;
+			if (imageHaystack.FindLeastSquaresMatch(imageNeedle, out matchPosition, out bestMatch, 50))
+			{
+				// TODO: figure out which window the position is in
+				Point2D screenPosition = new Point2D((int)matchPosition.x + xOffset, imageHaystack.Height - (int)(matchPosition.y + yOffset));
+				SetCursorPosition(screenPosition.x, screenPosition.y);
+				NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+				Wait(upDelaySeconds);
+				NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
+
+				return true;
+			}
+
+			return false;
+		}
+
+		public bool DoubleClickImage(string imageName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, ImageBuffer imageHaystack = null)
+		{
+			throw new NotImplementedException();
+		}
+
+		public bool ImageExists(ImageBuffer image, ImageBuffer imageHaystack = null)
+		{
+			return false;
+		}
+
+		public bool ImageExists(string imageFileName, ImageBuffer imageHaystack = null)
+		{
+			return false;
+		}
+
+		public bool MoveToImage(string imageName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, ImageBuffer imageHaystack = null)
+		{
+			throw new NotImplementedException();
+		}
+
+		#endregion Search By Image
+
+		#region Search By Names
+
+		public bool ClickByName(string widgetName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center)
+		{
+			foreach (SystemWindow window in SystemWindow.OpenWindows)
+			{
+				GuiWidget widgetToClick = window.FindNamedChildRecursive(widgetName);
+				if (widgetToClick != null)
+				{
+					RectangleDouble childBounds = widgetToClick.TransformToParentSpace(window, widgetToClick.LocalBounds);
+
+					if (origin == ClickOrigin.Center)
+					{
+						xOffset += (int)childBounds.Width / 2;
+						yOffset += (int)childBounds.Height / 2;
+					}
+
+					Point2D screenPosition = new Point2D((int)childBounds.Left + xOffset, (int)window.Height - (int)(childBounds.Bottom + yOffset));
+
+					screenPosition.x += WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.Location.X;
+					screenPosition.y += WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.Location.Y + WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.TitleBarHeight;
+
+					SetCursorPosition(screenPosition.x, screenPosition.y);
+					NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+
+					Wait(upDelaySeconds);
+
+					NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
+
+					return true;
+				}
+			}
+			return false;
+		}
+
+		public bool DoubleClickByName(string widgetName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center)
+		{
+			throw new NotImplementedException();
+		}
+
+		public bool MoveToByName(string widgetName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center)
+		{
+			throw new NotImplementedException();
+		}
+
+		public bool NameExists(string widgetName)
+		{
+			foreach (SystemWindow window in SystemWindow.OpenWindows)
+			{
+				GuiWidget widgetToClick = window.FindNamedChildRecursive(widgetName);
+				if (widgetToClick != null)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		#endregion Search By Names
+
+		public void SetCursorPosition(int x, int y)
 		{
 			Vector2 start = new Vector2(CurrentMousPosition().x, CurrentMousPosition().y);
 			Vector2 end = new Vector2(x, y);
@@ -143,70 +257,9 @@ namespace MatterHackers.GuiAutomation
 			NativeMethods.SetCursorPos((int)end.x, (int)end.y);
 		}
 
-		public bool ClickImage(string imageName, int xOffset = 0, int yOffset = 0, double upDelaySeconds = .2, ClickOrigin origin = ClickOrigin.Center)
+		public void Type(string textToType)
 		{
-			string pathToImage = Path.Combine(imageDirectory, imageName);
-
-			if (File.Exists(pathToImage))
-			{
-				ImageBuffer imageToLookFor = new ImageBuffer();
-
-				if (ImageIO.LoadImageData(pathToImage, imageToLookFor))
-				{
-					if (origin == ClickOrigin.Center)
-					{
-						xOffset += imageToLookFor.Width / 2;
-						yOffset += imageToLookFor.Height / 2;
-					}
-
-					ImageBuffer currentScreen = NativeMethods.GetCurrentScreen();
-
-					Vector2 matchPosition;
-					double bestMatch;
-					if (currentScreen.FindLeastSquaresMatch(imageToLookFor, out matchPosition, out bestMatch, 50))
-					{
-						// TODO: figure out which window the position is in
-						Point2D screenPosition = new Point2D((int)matchPosition.x + xOffset, currentScreen.Height - (int)(matchPosition.y + yOffset));
-						SetCursorPos(screenPosition.x, screenPosition.y);
-						NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
-						Wait(upDelaySeconds);
-						NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
-
-						return true;
-					}
-				}
-			}
-
-			return false;
-		}
-
-		public ImageBuffer GetCurrentScreen()
-		{
-			return NativeMethods.GetCurrentScreen();
-		}
-
-		public bool ImageExists(ImageBuffer image)
-		{
-			return false;
-		}
-
-		public bool ImageExists(string imageFileName)
-		{
-			return false;
-		}
-
-		public bool NameExists(string widgetName)
-		{
-			foreach (SystemWindow window in SystemWindow.OpenWindows)
-			{
-				GuiWidget widgetToClick = window.FindNamedChildRecursive(widgetName);
-				if (widgetToClick != null)
-				{
-					return true;
-				}
-			}
-
-			return false;
+			throw new NotImplementedException();
 		}
 
 		public void Wait(double timeInSeconds)
