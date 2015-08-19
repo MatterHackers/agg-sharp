@@ -77,7 +77,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 		void TurnOffWorkRave(AutomationRunner testRunner)
 		{
-			testRunner.MatchLimit = 5000;
+			testRunner.MatchLimit = 50000;
 			if (testRunner.ImageExists("WorkRaveOn.png"))
 			{
 				testRunner.ClickImage("WorkRaveOn.png", mouseButtons: MouseButtons.Right);
@@ -91,7 +91,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 		void TurnOnWorkRave(AutomationRunner testRunner)
 		{
-			testRunner.MatchLimit = 5000;
+			testRunner.MatchLimit = 50000;
 			if (testRunner.ImageExists("WorkRaveOff.png"))
 			{
 				testRunner.ClickImage("WorkRaveOff.png", mouseButtons: MouseButtons.Right);
@@ -108,42 +108,44 @@ namespace MatterHackers.Agg.UI.Tests
 		public void DoClickButtonInWindow()
 		{
 			SystemWindow buttonContainer = new SystemWindow(300, 200);
-			DrawEventHandler testCode = null;
 			int leftClickCount = 0;
 			int rightClickCount = 0;
 
-			testCode = (sender, e) =>
+			bool firstDraw = true;
+			buttonContainer.DrawAfter += (sender, e) =>
 			{
-				buttonContainer.DrawAfter -= testCode;
-				Task.Run(() =>
+				if (firstDraw)
 				{
-					AutomationRunner testRunner = new AutomationRunner("C:/TestImages");
-					testRunner.Wait(1);
-
-					TurnOffWorkRave(testRunner);
-
-					// Now do the actions specific to this test. (replace this for new tests)
+					firstDraw = false;
+					Task.Run(() =>
 					{
-						testRunner.ClickByName("left");
-						testRunner.Wait(.5);
-						Assert.IsTrue(leftClickCount == 1);
-						testRunner.Wait(.5);
-						testRunner.ClickByName("right");
-						testRunner.Wait(.5);
-						Assert.IsTrue(rightClickCount == 1);
-						testRunner.Wait(.5);
-						testRunner.DragDropByName("left", "right");
-						testRunner.Wait(.5);
-						Assert.IsTrue(leftClickCount == 1);
-					}
+						AutomationRunner testRunner = new AutomationRunner("C:/TestImages");
+						testRunner.Wait(1);
 
-					TurnOnWorkRave(testRunner);
+						TurnOffWorkRave(testRunner);
 
-					testRunner.Wait(1);
-					buttonContainer.CloseOnIdle();
-				});
+						// Now do the actions specific to this test. (replace this for new tests)
+						{
+							testRunner.ClickByName("left");
+							testRunner.Wait(.5);
+							Assert.IsTrue(leftClickCount == 1);
+							testRunner.Wait(.5);
+							testRunner.ClickByName("right");
+							testRunner.Wait(.5);
+							Assert.IsTrue(rightClickCount == 1);
+							testRunner.Wait(.5);
+							testRunner.DragDropByName("left", "right");
+							testRunner.Wait(.5);
+							Assert.IsTrue(leftClickCount == 1);
+						}
+
+						TurnOnWorkRave(testRunner);
+
+						testRunner.Wait(1);
+						buttonContainer.CloseOnIdle();
+					});
+				}
 			};
-			buttonContainer.DrawAfter += testCode;
 
 			Button leftButton = new Button("left", 10, 40);
 			leftButton.Name = "left";
