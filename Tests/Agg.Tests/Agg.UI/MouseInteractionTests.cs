@@ -75,36 +75,82 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(button.Focused == false);
 		}
 
+		void TurnOffWorkRave(AutomationRunner testRunner)
+		{
+			testRunner.MatchLimit = 5000;
+			if (testRunner.ImageExists("WorkRaveOn.png"))
+			{
+				testRunner.ClickImage("WorkRaveOn.png", mouseButtons: MouseButtons.Right);
+				testRunner.Wait(.5);
+				testRunner.ClickImage("WorkRaveMode.png");
+				testRunner.Wait(.5);
+				testRunner.ClickImage("WorkRaveSuspended.png");
+			}
+			testRunner.MatchLimit = 50;
+		}
+
+		void TurnOnWorkRave(AutomationRunner testRunner)
+		{
+			testRunner.MatchLimit = 5000;
+			if (testRunner.ImageExists("WorkRaveOff.png"))
+			{
+				testRunner.ClickImage("WorkRaveOff.png", mouseButtons: MouseButtons.Right);
+				testRunner.Wait(.5);
+				testRunner.ClickImage("WorkRaveMode.png");
+				testRunner.Wait(.5);
+				testRunner.ClickImage("WorkRaveNormal.png");
+			}
+			testRunner.MatchLimit = 50;
+		}
+
 		[Test]
 		[RequiresSTA]
 		public void DoClickButtonInWindow()
 		{
-			// Run a copy of MatterControl
 			SystemWindow buttonContainer = new SystemWindow(300, 200);
-			buttonContainer.DrawAfter += (sender, e) =>
+			DrawEventHandler testCode = null;
+			int leftClickCount = 0;
+			int rightClickCount = 0;
+
+			testCode = (sender, e) =>
 			{
+				buttonContainer.DrawAfter -= testCode;
 				Task.Run(() =>
 				{
 					AutomationRunner testRunner = new AutomationRunner("C:/TestImages");
 					testRunner.Wait(1);
 
+					TurnOffWorkRave(testRunner);
+
 					// Now do the actions specific to this test. (replace this for new tests)
 					{
 						testRunner.ClickByName("left");
 						testRunner.Wait(.5);
+						Assert.IsTrue(leftClickCount == 1);
+						testRunner.Wait(.5);
 						testRunner.ClickByName("right");
 						testRunner.Wait(.5);
+						Assert.IsTrue(rightClickCount == 1);
+						testRunner.Wait(.5);
+						testRunner.DragDropByName("left", "right");
+						testRunner.Wait(.5);
+						Assert.IsTrue(leftClickCount == 1);
 					}
 
-					testRunner.Wait(10);
+					TurnOnWorkRave(testRunner);
+
+					testRunner.Wait(1);
 					buttonContainer.CloseOnIdle();
 				});
 			};
+			buttonContainer.DrawAfter += testCode;
 
 			Button leftButton = new Button("left", 10, 40);
 			leftButton.Name = "left";
+			leftButton.Click += (sender, e) => { leftClickCount++; };
 			buttonContainer.AddChild(leftButton);
 			Button rightButton = new Button("right", 110, 40);
+			rightButton.Click += (sender, e) => { rightClickCount++; };
 			rightButton.Name = "right";
 			buttonContainer.AddChild(rightButton);
 

@@ -76,6 +76,10 @@ namespace MatterHackers.GuiAutomation
 
 		public const int MOUSEEVENTF_LEFTDOWN = 0x02;
 		public const int MOUSEEVENTF_LEFTUP = 0x04;
+		public const int MOUSEEVENTF_RIGHTDOWN = 0x08;
+		public const int MOUSEEVENTF_RIGHTUP = 0x10;
+		public const int MOUSEEVENTF_MIDDLEDOWN = 0x20;
+		public const int MOUSEEVENTF_MIDDLEUP = 0x40;
 
 		public static int GetCurrentScreenHeight()
 		{
