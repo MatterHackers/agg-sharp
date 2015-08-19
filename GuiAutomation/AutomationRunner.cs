@@ -526,6 +526,22 @@ namespace MatterHackers.GuiAutomation
 		{
 			Thread.Sleep((int)(timeInSeconds * 1000));
 		}
+		public void WaitForImage(string imageName, double timeInSeconds, SearchRegion searchRegion = null)
+		{
+			throw new NotImplementedException();
+		}
+		public void WaitForImage(ImageBuffer imageNeedle, double timeInSeconds, SearchRegion searchRegion = null)
+		{
+			throw new NotImplementedException();
+		}
+		/// <summary>
+		/// Wait up to timeInSeconds for the named widget to exist and be visible.
+		/// </summary>
+		/// <param name="widgetName"></param>
+		public void WaitForName(string widgetName, double timeInSeconds)
+		{
+			throw new NotImplementedException();
+		}
 		#endregion Time
 	}
 }
