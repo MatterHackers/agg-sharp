@@ -149,6 +149,8 @@ namespace MatterHackers.Agg.UI
 		private bool debugShowBounds = false;
 		private bool widgetHasBeenClosed = false;
 
+		public bool HasBeenClosed { get { return widgetHasBeenClosed; } }
+
 		protected bool WidgetHasBeenClosed { get { return widgetHasBeenClosed; } }
 
 		public bool DebugShowBounds

@@ -38,6 +38,7 @@ namespace MatterHackers.Agg.UI
 
 	public static class OsMappingWidgetFactory
 	{
+		private static AbstractOsMappingWidget primaryOsMappingWidget;
 		private static IGuiFactory factoryToUse;
 
 		public static void SetFactory(IGuiFactory factoryToUse)
@@ -49,8 +50,6 @@ namespace MatterHackers.Agg.UI
 
 			OsMappingWidgetFactory.factoryToUse = factoryToUse;
 		}
-
-		private static AbstractOsMappingWidget primaryOsMappingWidget;
 
 		public static AbstractOsMappingWidget PrimaryOsMappingWidget
 		{
@@ -71,6 +70,11 @@ namespace MatterHackers.Agg.UI
 			if (primaryOsMappingWidget == null)
 			{
 				primaryOsMappingWidget = osMappingWidget;
+
+				childSystemWindow.Closed += (sender, e) =>
+				{
+					primaryOsMappingWidget = null;
+				};
 			}
 
 			return osMappingWidget;
