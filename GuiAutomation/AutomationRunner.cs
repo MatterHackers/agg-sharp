@@ -33,6 +33,7 @@ using MatterHackers.Agg.PlatformAbstract;
 using MatterHackers.Agg.UI;
 using MatterHackers.VectorMath;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 
@@ -369,8 +370,26 @@ namespace MatterHackers.GuiAutomation
 			return null;
 		}
 
-		public bool ClickByName(string widgetName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center)
+		/// <summary>
+		/// Look for a widget with the given name and click it. It and all its parents must be visible and enabled.
+		/// </summary>
+		/// <param name="widgetName"></param>
+		/// <param name="xOffset"></param>
+		/// <param name="yOffset"></param>
+		/// <param name="origin"></param>
+		/// <param name="secondsToWait">Total seconds to stay in this function waiting for the named widget to become visible.</param>
+		/// <returns></returns>
+		public bool ClickByName(string widgetName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, double secondsToWait = 0)
 		{
+			if (secondsToWait > 0)
+			{
+				bool foundWidget = WaitForName(widgetName, secondsToWait);
+				if (!foundWidget)
+				{
+					return false;
+				}
+			}
+
 			SystemWindow containingWindow;
 			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow);
 			if (widgetToClick != null)
@@ -474,7 +493,10 @@ namespace MatterHackers.GuiAutomation
 				GuiWidget widgetToClick = window.FindNamedChildRecursive(widgetName);
 				if (widgetToClick != null)
 				{
-					return true;
+					if (widgetToClick.AllParentsVisibleAndEnabled())
+					{
+						return true;
+					}
 				}
 			}
 
@@ -522,25 +544,37 @@ namespace MatterHackers.GuiAutomation
 		#endregion Keyboard Functions
 
 		#region Time
-		public void Wait(double timeInSeconds)
+		public void Wait(double secondsToWait)
 		{
-			Thread.Sleep((int)(timeInSeconds * 1000));
+			Thread.Sleep((int)(secondsToWait * 1000));
 		}
-		public void WaitForImage(string imageName, double timeInSeconds, SearchRegion searchRegion = null)
+		public void WaitForImage(string imageName, double secondsToWait, SearchRegion searchRegion = null)
 		{
 			throw new NotImplementedException();
 		}
-		public void WaitForImage(ImageBuffer imageNeedle, double timeInSeconds, SearchRegion searchRegion = null)
+		public void WaitForImage(ImageBuffer imageNeedle, double secondsToWait, SearchRegion searchRegion = null)
 		{
 			throw new NotImplementedException();
 		}
 		/// <summary>
-		/// Wait up to timeInSeconds for the named widget to exist and be visible.
+		/// Wait up to secondsToWait for the named widget to exist and be visible.
 		/// </summary>
 		/// <param name="widgetName"></param>
-		public void WaitForName(string widgetName, double timeInSeconds)
+		public bool WaitForName(string widgetName, double secondsToWait)
 		{
-			throw new NotImplementedException();
+			Stopwatch timeWaited = Stopwatch.StartNew();
+			while (!NameExists(widgetName)
+				&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
+			{
+				Wait(.05);
+			}
+
+			if (timeWaited.Elapsed.TotalSeconds > secondsToWait)
+			{
+				return false;
+			}
+
+			return true;
 		}
 		#endregion Time
 	}

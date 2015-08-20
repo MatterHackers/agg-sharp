@@ -6,19 +6,9 @@ namespace MatterHackers.Agg.PlatformAbstract
 {
 	public interface IStaticData
 	{
-		string ReadAllText(string path);
-
-		string[] ReadAllLines(string path);
-
-		Stream OpenSteam(string path);
-
-		void LoadImage(string path, ImageBuffer destImage);
-
-		ImageBuffer LoadImage(string path);
+		bool DirectoryExists(string pathToManufacturers);
 
 		bool FileExists(string path);
-
-		bool DirectoryExists(string pathToManufacturers);
 
 		IEnumerable<string> GetDirectories(string pathToManufacturers);
 
@@ -37,6 +27,18 @@ namespace MatterHackers.Agg.PlatformAbstract
 		/// <param name="path">The file path to load</param>
 		/// <param name="buffer">The ImageBuffer to populate with data from the given file</param>
 		void LoadIcon(string path, ImageBuffer buffer);
+
+		void LoadImage(string path, ImageBuffer destImage);
+
+		ImageBuffer LoadImage(string path);
+
+		string MapPath(string path);
+
+		Stream OpenSteam(string path);
+
+		string[] ReadAllLines(string path);
+
+		string ReadAllText(string path);
 	}
 
 	public static class StaticData

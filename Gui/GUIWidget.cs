@@ -1578,7 +1578,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private bool AllParentsVisibleAndEnabled()
+		public bool AllParentsVisibleAndEnabled()
 		{
 			GuiWidget curGUIWidget = this;
 			while (curGUIWidget != null)
@@ -2718,7 +2718,8 @@ namespace MatterHackers.Agg.UI
                 return this;
             }
 
-            foreach (GuiWidget child in Children)
+			List<GuiWidget> searchChildren = new List<GuiWidget>(Children);
+			foreach (GuiWidget child in searchChildren)
             {
                 GuiWidget namedChild = child.FindNamedChildRecursive(nameToSearchFor);
                 if(namedChild != null)

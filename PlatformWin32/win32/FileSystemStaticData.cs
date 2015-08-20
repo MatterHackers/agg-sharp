@@ -15,7 +15,7 @@ namespace MatterHackers.Agg
 
 		public FileSystemStaticData()
 		{
-			this.basePath = string.Empty;
+			this.basePath = Directory.Exists("StaticData") ? "StaticData" : Path.Combine("..", "..", "StaticData");
 		}
 
 		public FileSystemStaticData(string overridePath)
@@ -107,10 +107,10 @@ namespace MatterHackers.Agg
 			return File.ReadAllText(MapPath(path));
 		}
 
-		private string MapPath(string path)
+		public string MapPath(string path)
 		{
-			string staticDataPath = Directory.Exists("StaticData") ? "StaticData" : Path.Combine("..", "..", "StaticData");
-			return Path.Combine(this.basePath, staticDataPath, path);
+			string fullPath = Path.GetFullPath(Path.Combine(this.basePath, path));
+			return fullPath;
 		}
 	}
 }
