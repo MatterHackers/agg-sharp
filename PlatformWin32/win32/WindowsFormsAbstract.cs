@@ -40,6 +40,7 @@ namespace MatterHackers.Agg.UI
 
 		private static Form mainForm = null;
 		private static System.Timers.Timer idleCallBackTimer = null;
+		int titleBarHeight = 0;
 
 		public WindowsFormsAbstract()
 		{
@@ -65,7 +66,6 @@ namespace MatterHackers.Agg.UI
 			System.Diagnostics.Process.Start("explorer.exe", argument);
 		}
 
-		int titleBarHeight = 0;
 		public int TitleBarHeight { get { return titleBarHeight; } }
 
 		protected void SetUpFormsWindow(AbstractOsMappingWidget app, SystemWindow childSystemWindow)

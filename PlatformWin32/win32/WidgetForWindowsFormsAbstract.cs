@@ -28,7 +28,7 @@ namespace MatterHackers.Agg.UI
 	{
 		private WindowsFormsAbstract windowsFormsWindow;
 
-		protected WindowsFormsAbstract WindowsFormsWindow
+		public WindowsFormsAbstract WindowsFormsWindow
 		{
 			get { return windowsFormsWindow; }
 			set
@@ -37,6 +37,10 @@ namespace MatterHackers.Agg.UI
 				if (mainWindowsFormsWindow == null)
 				{
 					mainWindowsFormsWindow = windowsFormsWindow;
+					mainWindowsFormsWindow.FormClosed += (sender, e) =>
+					{
+						mainWindowsFormsWindow = null;
+					};
 				}
 			}
 		}

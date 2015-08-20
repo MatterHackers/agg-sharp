@@ -326,7 +326,8 @@ namespace MatterHackers.GuiAutomation
 		{
 			Point2D screenPosition = new Point2D((int)xInWindow, (int)containingWindow.Height - (int)yInWindow);
 
-			screenPosition.x += WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.Location.X;
+			WidgetForWindowsFormsAbstract mappingWidget = containingWindow.Parent as WidgetForWindowsFormsAbstract;
+			screenPosition.x += mappingWidget.WindowsFormsWindow.Location.X;
 			screenPosition.y += WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.Location.Y + WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.TitleBarHeight;
 			return screenPosition;
 		}
@@ -364,7 +365,11 @@ namespace MatterHackers.GuiAutomation
 			foreach (SystemWindow window in SystemWindow.OpenWindows)
 			{
 				containingWindow = window;
-				return window.FindNamedChildRecursive(widgetName);
+				GuiWidget foundWidget = window.FindNamedChildRecursive(widgetName);
+				if (foundWidget != null)
+				{
+					return foundWidget;
+				}
 			}
 
 			return null;

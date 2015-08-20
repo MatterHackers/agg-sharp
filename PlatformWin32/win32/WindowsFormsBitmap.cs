@@ -80,8 +80,6 @@ namespace MatterHackers.Agg.UI
 			RectangleInt intRect = new RectangleInt(0, 0, (int)aggAppWidget.Width, (int)aggAppWidget.Height);
 			aggBitmapAppWidget.bitmapBackBuffer.UpdateHardwareSurface(intRect);
 
-			WidgetForWindowsFormsBitmap.copyTime.Restart();
-
 			if (OsInformation.OperatingSystem != OSType.Windows)
 			{
 				//displayGraphics.DrawImage(aggBitmapAppWidget.bitmapBackBuffer.windowsBitmap, windowsRect, windowsRect, GraphicsUnit.Pixel);  // around 250 ms for full screen
@@ -109,7 +107,6 @@ namespace MatterHackers.Agg.UI
 					displayGraphics.ReleaseHdc(displayHDC);
 				}
 			}
-			WidgetForWindowsFormsBitmap.copyTime.Stop();
 		}
 	}
 }

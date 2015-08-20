@@ -35,49 +35,4 @@ namespace MatterHackers.Agg.UI
 	{
 		AbstractOsMappingWidget CreateSurface(SystemWindow childSystemWindow);
 	}
-
-	public static class OsMappingWidgetFactory
-	{
-		private static AbstractOsMappingWidget primaryOsMappingWidget;
-		private static IGuiFactory factoryToUse;
-
-		public static void SetFactory(IGuiFactory factoryToUse)
-		{
-			if (OsMappingWidgetFactory.factoryToUse != null)
-			{
-				throw new NotSupportedException("You can only set the graphics target one time in an application.");
-			}
-
-			OsMappingWidgetFactory.factoryToUse = factoryToUse;
-		}
-
-		public static AbstractOsMappingWidget PrimaryOsMappingWidget
-		{
-			get
-			{
-				return primaryOsMappingWidget;
-			}
-		}
-
-		public static AbstractOsMappingWidget CreateOsMappingWidget(SystemWindow childSystemWindow)
-		{
-			if (factoryToUse == null)
-			{
-				throw new NotSupportedException("You must call 'SetGuiBackend' with a GuiFactory before you can create any surfaces");
-			}
-
-			AbstractOsMappingWidget osMappingWidget = factoryToUse.CreateSurface(childSystemWindow);
-			if (primaryOsMappingWidget == null)
-			{
-				primaryOsMappingWidget = osMappingWidget;
-
-				childSystemWindow.Closed += (sender, e) =>
-				{
-					primaryOsMappingWidget = null;
-				};
-			}
-
-			return osMappingWidget;
-		}
-	}
 }
