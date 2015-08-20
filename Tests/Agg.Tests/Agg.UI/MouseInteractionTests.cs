@@ -75,7 +75,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(button.Focused == false);
 		}
 
-		void TurnOffWorkRave(AutomationRunner testRunner)
+		public static void TurnOffWorkRave(AutomationRunner testRunner)
 		{
 			testRunner.MatchLimit = 50000;
 			if (testRunner.ImageExists("WorkRaveOn.png"))
@@ -89,7 +89,7 @@ namespace MatterHackers.Agg.UI.Tests
 			testRunner.MatchLimit = 50;
 		}
 
-		void TurnOnWorkRave(AutomationRunner testRunner)
+		public static void TurnOnWorkRave(AutomationRunner testRunner)
 		{
 			testRunner.MatchLimit = 50000;
 			if (testRunner.ImageExists("WorkRaveOff.png"))

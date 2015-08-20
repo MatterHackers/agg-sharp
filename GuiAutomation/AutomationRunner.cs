@@ -483,7 +483,25 @@ namespace MatterHackers.GuiAutomation
 
 		public bool MoveToByName(string widgetName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center)
 		{
-			throw new NotImplementedException();
+			SystemWindow containingWindow;
+			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow);
+			if (widgetToClick != null)
+			{
+				RectangleDouble childBounds = widgetToClick.TransformToParentSpace(containingWindow, widgetToClick.LocalBounds);
+
+				if (origin == ClickOrigin.Center)
+				{
+					xOffset += (int)childBounds.Width / 2;
+					yOffset += (int)childBounds.Height / 2;
+				}
+
+				Point2D screenPosition = GetScreenPosition(childBounds.Left + xOffset, childBounds.Bottom + yOffset, containingWindow);
+				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
+
+				return true;
+			}
+
+			return false;
 		}
 
 		public bool NameExists(string widgetName)

@@ -28,9 +28,11 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg.Image;
+using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -99,6 +101,62 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(systemWindow.Children.Count == 2);
 			Assert.IsTrue(tempData.popCount == 1);
 			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
+		}
+
+		[Test]
+		[RequiresSTA]
+		public void ToolTipsShow()
+		{
+			SystemWindow buttonContainer = new SystemWindow(300, 200)
+			{
+				BackgroundColor = RGBA_Bytes.White,
+			};
+			int leftClickCount = 0;
+			int rightClickCount = 0;
+
+			bool firstDraw = true;
+			buttonContainer.DrawAfter += (sender, e) =>
+			{
+				if (firstDraw)
+				{
+					firstDraw = false;
+					Task.Run(() =>
+					{
+						AutomationRunner testRunner = new AutomationRunner("C:/TestImages");
+						testRunner.Wait(1);
+
+						MouseInteractionTests.TurnOffWorkRave(testRunner);
+
+						// Now do the actions specific to this test. (replace this for new tests)
+						{
+							testRunner.MoveToByName("ButtonWithToolTip");
+							testRunner.Wait(1.5);
+							GuiWidget toolTipWidget = buttonContainer.FindNamedChildRecursive("ToolTipWidget");
+							Assert.IsTrue(toolTipWidget != null);
+							testRunner.MoveToByName("right");
+							toolTipWidget = buttonContainer.FindNamedChildRecursive("ToolTipWidget");
+							Assert.IsTrue(toolTipWidget == null);
+						}
+
+						MouseInteractionTests.TurnOnWorkRave(testRunner);
+
+						testRunner.Wait(1);
+						buttonContainer.CloseOnIdle();
+					});
+				}
+			};
+
+			Button leftButton = new Button("left", 10, 40);
+			leftButton.Name = "ButtonWithToolTip";
+			leftButton.ToolTipText = "Left Tool Tip";
+			leftButton.Click += (sender, e) => { leftClickCount++; };
+			buttonContainer.AddChild(leftButton);
+			Button rightButton = new Button("right", 110, 40);
+			rightButton.Click += (sender, e) => { rightClickCount++; };
+			rightButton.Name = "right";
+			buttonContainer.AddChild(rightButton);
+
+			buttonContainer.ShowAsSystemWindow();
 		}
 
 		[Test]
