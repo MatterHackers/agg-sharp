@@ -27,7 +27,9 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+#if !__ANDROID__
 using MatterHackers.GuiAutomation;
+#endif
 using NUnit.Framework;
 using System;
 using System.Threading;
@@ -76,6 +78,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(button.Focused == false);
 		}
 
+#if !__ANDROID__
 		public static void TurnOffWorkRave(AutomationRunner testRunner)
 		{
 			testRunner.MatchLimit = 50000;
@@ -158,6 +161,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			buttonContainer.ShowAsSystemWindow();
 		}
+#endif
 
 		[Test]
 		public void ValidateOnlyTopWidgetGetsLeftClick()
