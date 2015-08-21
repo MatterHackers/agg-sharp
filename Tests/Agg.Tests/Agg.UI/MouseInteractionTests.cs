@@ -104,8 +104,7 @@ namespace MatterHackers.Agg.UI.Tests
 			testRunner.MatchLimit = 50;
 		}
 
-		[Test]
-		[RequiresSTA]
+		[Test, RequiresSTA, RunInApplicationDomain]
 		public void DoClickButtonInWindow()
 		{
 			SystemWindow buttonContainer = new SystemWindow(300, 200);

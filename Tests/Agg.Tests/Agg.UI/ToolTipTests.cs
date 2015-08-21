@@ -103,8 +103,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
 		}
 
-		[Test]
-		[RequiresSTA]
+		[Test, RequiresSTA, RunInApplicationDomain]
 		public void ToolTipsShow()
 		{
 			SystemWindow buttonContainer = new SystemWindow(300, 200)
