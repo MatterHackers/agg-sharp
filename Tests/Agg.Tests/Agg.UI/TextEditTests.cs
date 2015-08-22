@@ -28,7 +28,9 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg.Image;
+#if !__ANDROID__
 using MatterHackers.GuiAutomation;
+#endif
 using MatterHackers.VectorMath;
 using NUnit.Framework;
 using System;
@@ -37,7 +39,9 @@ using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI.Tests
 {
+#if !__ANDROID__
 	[TestFixture, RunInApplicationDomain, Category("Agg.UI")]
+#endif
 	public class TextEditTests
 	{
 		public static bool saveImagesForDebug = false;
