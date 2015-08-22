@@ -48,7 +48,7 @@ namespace MatterHackers.GuiAutomation
 {
     public static class NativeMethods
     {
-        // P/Invoke declarations
+		// P/Invoke declarations
         [DllImport("gdi32.dll")]
         static extern bool BitBlt(IntPtr hdcDest, int xDest, int yDest, int wDest, int hDest, IntPtr hdcSource, int xSrc, int ySrc, CopyPixelOperation rop);
         [DllImport("user32.dll")]

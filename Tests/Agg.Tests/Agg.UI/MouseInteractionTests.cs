@@ -79,34 +79,6 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 #if !__ANDROID__
-		public static void TurnOffWorkRave(AutomationRunner testRunner)
-		{
-			testRunner.MatchLimit = 50000;
-			if (testRunner.ImageExists("WorkRaveOn.png"))
-			{
-				testRunner.ClickImage("WorkRaveOn.png", mouseButtons: MouseButtons.Right);
-				testRunner.Wait(.5);
-				testRunner.ClickImage("WorkRaveMode.png");
-				testRunner.Wait(.5);
-				testRunner.ClickImage("WorkRaveSuspended.png");
-			}
-			testRunner.MatchLimit = 50;
-		}
-
-		public static void TurnOnWorkRave(AutomationRunner testRunner)
-		{
-			testRunner.MatchLimit = 50000;
-			if (testRunner.ImageExists("WorkRaveOff.png"))
-			{
-				testRunner.ClickImage("WorkRaveOff.png", mouseButtons: MouseButtons.Right);
-				testRunner.Wait(.5);
-				testRunner.ClickImage("WorkRaveMode.png");
-				testRunner.Wait(.5);
-				testRunner.ClickImage("WorkRaveNormal.png");
-			}
-			testRunner.MatchLimit = 50;
-		}
-
 		[Test, RequiresSTA, RunInApplicationDomain]
 		public void DoClickButtonInWindow()
 		{
@@ -125,8 +97,6 @@ namespace MatterHackers.Agg.UI.Tests
 						AutomationRunner testRunner = new AutomationRunner("C:/TestImages");
 						testRunner.Wait(1);
 
-						TurnOffWorkRave(testRunner);
-
 						// Now do the actions specific to this test. (replace this for new tests)
 						{
 							testRunner.ClickByName("left");
@@ -141,8 +111,6 @@ namespace MatterHackers.Agg.UI.Tests
 							testRunner.Wait(.5);
 							Assert.IsTrue(leftClickCount == 1);
 						}
-
-						TurnOnWorkRave(testRunner);
 
 						testRunner.Wait(1);
 						buttonContainer.CloseOnIdle();

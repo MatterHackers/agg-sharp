@@ -50,7 +50,7 @@ namespace MatterHackers.GuiAutomation
 		private string imageDirectory;
 		private double upDelaySeconds = .2;
 
-		public AutomationRunner(string imageDirectory)
+		public AutomationRunner(string imageDirectory = "")
 		{
 			this.imageDirectory = imageDirectory;
 		}
@@ -359,7 +359,7 @@ namespace MatterHackers.GuiAutomation
 
 		#region Search By Names
 
-		GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow)
+		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow)
 		{
 			containingWindow = null;
 			foreach (SystemWindow window in SystemWindow.OpenWindows)
@@ -561,7 +561,8 @@ namespace MatterHackers.GuiAutomation
 
 		public void Type(string textToType)
 		{
-			throw new NotImplementedException();
+			System.Windows.Forms.SendKeys.SendWait(textToType);
+			Wait(.2);
 		}
 
 		#endregion Keyboard Functions

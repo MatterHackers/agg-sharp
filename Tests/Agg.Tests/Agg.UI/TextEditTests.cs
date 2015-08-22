@@ -28,12 +28,16 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg.Image;
+using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
+using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	[TestFixture, Category("Agg.UI")]
+	[TestFixture, RunInApplicationDomain, Category("Agg.UI")]
 	public class TextEditTests
 	{
 		public static bool saveImagesForDebug = false;
@@ -110,6 +114,57 @@ namespace MatterHackers.Agg.UI.Tests
 
 			container.Close();
 		}
+
+#if !__ANDROID__
+		[Test, RequiresSTA, RunInApplicationDomain]
+		public void VerifyFocusMakesTextWidgetEditable()
+		{
+			TextEditWidget editField = null;
+			SystemWindow systemWindow = new SystemWindow(300, 200)
+			{
+				BackgroundColor = RGBA_Bytes.Black,
+			};
+
+			bool firstDraw = true;
+			Stopwatch testDiedTimer = Stopwatch.StartNew();
+			systemWindow.DrawAfter += (sender, e) =>
+			{
+				if (firstDraw)
+				{
+					firstDraw = false;
+					Task.Run(() =>
+					{
+						UiThread.RunOnIdle(editField.Focus);
+						AutomationRunner testRunner = new AutomationRunner();
+						testRunner.Wait(1);
+
+						// Now do the actions specific to this test. (replace this for new tests)
+						{
+							testRunner.Type("Test Text");
+							
+							Assert.IsTrue(editField.Text == "Test Text");
+						}
+
+						systemWindow.CloseOnIdle();
+					});
+				}
+
+				if(testDiedTimer.Elapsed.TotalSeconds > 20)
+				{
+					//systemWindow.CloseOnIdle();
+				}
+			};
+
+			editField = new TextEditWidget(pixelWidth: 200)
+			{
+				HAnchor = HAnchor.ParentCenter,
+				VAnchor = VAnchor.ParentCenter,
+			};
+			systemWindow.AddChild(editField);
+
+			systemWindow.ShowAsSystemWindow();
+		}
+#endif
 
 		[Test]
 		public void TextChangedEventsTests()

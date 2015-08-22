@@ -131,6 +131,10 @@ namespace MatterHackers.Agg.UI
 
 		protected override void OnPaint(PaintEventArgs paintEventArgs)
 		{
+			if (Focused)
+			{
+				glControl.Focus();
+			}
 			// We have to make current the gl for the window we are.
 			// If this throws an assert, you are calling MakeCurrent() before the glControl is done being constructed.
 			// Call this function after you have called Show().
