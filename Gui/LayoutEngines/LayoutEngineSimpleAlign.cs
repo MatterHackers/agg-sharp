@@ -217,7 +217,27 @@ namespace MatterHackers.Agg.UI
 				RectangleDouble childrenEnclosingBounds = widgetToAdjust.GetMinimumBoundsToEncloseChildren(true);
 				// fix the h size to enclose the children
 				widgetToAdjustBounds.Left = childrenEnclosingBounds.Left;
-				widgetToAdjustBounds.Right = Math.Max(childrenEnclosingBounds.Left + widthToMatchParent, childrenEnclosingBounds.Right);
+				if (widgetToAdjust.Parent != null
+					&& widgetToAdjust.Parent.LayoutEngine != null)
+				{
+					if(widgetToAdjust.Parent.LayoutEngine as LayoutEngineFlow != null)
+					{
+						// We make the assumption that the parent has set the size correctly assuming flow layout and this can only be made bigger if fit needs to.
+						widgetToAdjustBounds.Right = Math.Max(widgetToAdjustBounds.Right, childrenEnclosingBounds.Right);
+					}
+					else if ((widgetToAdjust.Parent.LayoutEngine as LayoutEngineSimpleAlign) != null)
+					{
+						widgetToAdjustBounds.Right = Math.Max(childrenEnclosingBounds.Left + widthToMatchParent, childrenEnclosingBounds.Right);
+					}
+					else
+					{
+							throw new NotImplementedException();
+					}
+				}
+				else
+				{
+					widgetToAdjustBounds.Right = Math.Max(childrenEnclosingBounds.Left + widthToMatchParent, childrenEnclosingBounds.Right);
+				}
 				if (widgetToAdjust.LocalBounds != widgetToAdjustBounds)
 				{
 					if (widgetToAdjust.HAnchorIsSet(HAnchor.ParentLeftRight))

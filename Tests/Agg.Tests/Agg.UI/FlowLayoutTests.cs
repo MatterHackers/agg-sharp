@@ -354,20 +354,20 @@ namespace MatterHackers.Agg.UI.Tests
 				//  |________________________________________|
 				//
 
-				GuiWidget containerControl = new GuiWidget(300, 200);
+				GuiWidget containerControl = new GuiWidget(300, 200); // containerControl = 0, 0, 300, 200
 				containerControl.DoubleBuffer = true;
 				FlowLayoutWidget flowWidget = new FlowLayoutWidget()
 				{
 					HAnchor = HAnchor.Max_FitToChildren_ParentWidth,
 				};
-				containerControl.AddChild(flowWidget);
+				containerControl.AddChild(flowWidget); // flowWidget = 0, 0, 300, 0
 				GuiWidget fitToChildrenOrParent = new GuiWidget(20, 20)
 				{
 					HAnchor = HAnchor.ParentLeftRight,
 				};
-				flowWidget.AddChild(fitToChildrenOrParent);
+				flowWidget.AddChild(fitToChildrenOrParent); // flowWidget = 0, 0, 300, 20  fitToChildrenOrParent = 0, 0, 300, 20
 				GuiWidget fixed10x10 = new GuiWidget(10, 10);
-				flowWidget.AddChild(fixed10x10);
+				flowWidget.AddChild(fixed10x10); // flowWidget = 0, 0, 300, 20  fitToChildrenOrParent = 0, 0, 290, 20
 				containerControl.OnDraw(containerControl.NewGraphics2D());
 
 				//OutputImage(containerControl, "countainer");
@@ -398,7 +398,7 @@ namespace MatterHackers.Agg.UI.Tests
 				//  |__________________________________________________|
 				//
 
-				GuiWidget containerControl = new GuiWidget(300, 200);
+				GuiWidget containerControl = new GuiWidget(300, 200); // containerControl = 0, 0, 300, 200
 				containerControl.DoubleBuffer = true;
 				FlowLayoutWidget flowWidget = new FlowLayoutWidget()
 				{
@@ -407,11 +407,12 @@ namespace MatterHackers.Agg.UI.Tests
 				containerControl.AddChild(flowWidget);
 				GuiWidget fitToChildrenOrParent = new GuiWidget(20, 20)
 				{
+					Name = "fitToChildrenOrParent",
 					HAnchor = HAnchor.Max_FitToChildren_ParentWidth,
 				};
-				flowWidget.AddChild(fitToChildrenOrParent);
+				flowWidget.AddChild(fitToChildrenOrParent); // flowWidget = 0, 0, 300, 20  fitToChildrenOrParent = 0, 0, 300, 20
 				GuiWidget fixed10x10 = new GuiWidget(10, 10);
-				flowWidget.AddChild(fixed10x10);
+				flowWidget.AddChild(fixed10x10); // flowWidget = 0, 0, 300, 20  fitToChildrenOrParent = 0, 0, 290, 20
 				containerControl.OnDraw(containerControl.NewGraphics2D());
 
 				//OutputImage(containerControl, "countainer");
