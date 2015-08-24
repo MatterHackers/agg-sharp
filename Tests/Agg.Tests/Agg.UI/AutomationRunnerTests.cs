@@ -28,28 +28,85 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg.Image;
+using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
+using System;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	[TestFixture, Category("Agg.UI")]
+	[TestFixture, Category("Agg.UI"), RequiresSTA, RunInApplicationDomain]
 	public class AutomationRunnerTests
 	{
-		[Test]
-		public void GetWidgetByNameTest()
+		[Test, RequiresSTA, RunInApplicationDomain]
+		public void GetWidgetByNameTestNoRegionSingleWindow()
 		{
 			// single system window
 			{
+				int leftClickCount = 0;
 
+				Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
+				{
+					AutomationRunner testRunner = new AutomationRunner();
+					testRunner.ClickByName("left");
+					testRunner.Wait(.5);
+
+					resultsHarness.AddTestResult(leftClickCount == 1, "Got left button click");
+				};
+
+				SystemWindow buttonContainer = new SystemWindow(300, 200);
+
+				Button leftButton = new Button("left", 10, 40);
+				leftButton.Name = "left";
+				leftButton.Click += (sender, e) => { leftClickCount++; };
+				buttonContainer.AddChild(leftButton);
+
+				AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExectueTests(buttonContainer, testToRun, 10);
+
+				Assert.IsTrue(testHarness.AllTestsPassed);
+				Assert.IsTrue(testHarness.TestCount == 1); // make sure we can all our tests
 			}
+		}
 
-			// no search region specified
-			// multiple system windows
+		[Test, RequiresSTA, RunInApplicationDomain]
+		public void GetWidgetByNameTestNoRegionMultipleWindow()
+		{
+		}
 
-			// constrained search region
-			// no search region specified
-			// multiple system windows
+		[Test, RequiresSTA, RunInApplicationDomain]
+		public void GetWidgetByNameTestRegionSingleWindow()
+		{
+			int leftClickCount = 0;
+
+			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
+			{
+				AutomationRunner testRunner = new AutomationRunner();
+				testRunner.ClickByName("left");
+				testRunner.Wait(.5);
+				resultsHarness.AddTestResult(leftClickCount == 1, "Got left button click");
+
+				SearchRegion rightButtonRegion = testRunner.GetRegionByName("right");
+
+				testRunner.ClickByName("left", searchRegion: rightButtonRegion);
+				testRunner.Wait(.5);
+
+				resultsHarness.AddTestResult(leftClickCount == 1, "Did not get left button click");
+			};
+
+			SystemWindow buttonContainer = new SystemWindow(300, 200);
+
+			Button leftButton = new Button("left", 10, 40);
+			leftButton.Name = "left";
+			leftButton.Click += (sender, e) => { leftClickCount++; };
+			buttonContainer.AddChild(leftButton);
+			Button rightButton = new Button("right", 110, 40);
+			rightButton.Name = "right";
+			buttonContainer.AddChild(rightButton);
+
+			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExectueTests(buttonContainer, testToRun, 10);
+
+			Assert.IsTrue(testHarness.AllTestsPassed);
+			Assert.IsTrue(testHarness.TestCount == 2); // make sure we can all our tests
 		}
 
 		[Test]

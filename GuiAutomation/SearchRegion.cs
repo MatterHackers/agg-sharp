@@ -38,16 +38,57 @@ using System.Threading;
 
 namespace MatterHackers.GuiAutomation
 {
+	/// <summary>
+	/// A clasic screen rect that is upper left 0,0 lower right Width, Height
+	/// </summary>
+	public struct ScreenRectangle
+	{
+		public int Left;
+		public int Top;
+		public int Right;
+		public int Bottom;
+
+		public static bool Intersection(ScreenRectangle rectA, ScreenRectangle rectB, out ScreenRectangle result)
+		{
+			result = rectA;
+			if (result.Left < rectB.Left) result.Left = rectB.Left;
+			if (result.Top < rectB.Top) result.Top = rectB.Top;
+			if (result.Right > rectB.Right) result.Right = rectB.Right;
+			if (result.Bottom > rectB.Bottom) result.Bottom = rectB.Bottom;
+
+			if (result.Left < result.Right && result.Top < result.Bottom)
+			{
+				return true;
+			}
+
+			return false;
+		}
+	}
+
 	public class SearchRegion
 	{
-		RectangleInt screenBounds;
-		public RectangleInt ScreenRect { get { return screenBounds; } }
+		public ScreenRectangle ScreenRect { get; set; }
 		ImageBuffer imageContents;
-		public ImageBuffer Image { get { return imageContents; } }
+		public ImageBuffer Image 
+		{ 
+			get 
+			{
+				if (imageContents == null)
+				{
+					imageContents = AutomationRunner.GetCurrentScreen();
+				}
 
-		public SearchRegion(ImageBuffer imageContents, RectangleInt screenBounds)
+				return imageContents; 
+			}
+		}
+
+		public SearchRegion()
 		{
-			this.screenBounds = screenBounds;
+		}
+
+		public SearchRegion(ImageBuffer imageContents, ScreenRectangle screenBounds)
+		{
+			this.ScreenRect = screenBounds;
 			this.imageContents = imageContents;
 		}
 	}

@@ -41,6 +41,12 @@ namespace MatterHackers.Agg
 			y = newY;
 		}
 
+		public Point2D(double newX, double newY)
+		{
+			x = (int)(newX + .5);
+			y = (int)(newY + .5);
+		}
+
 		public void Set(int inX, int inY)
 		{
 			x = inX;

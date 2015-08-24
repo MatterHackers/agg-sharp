@@ -51,27 +51,22 @@ namespace MatterHackers.Agg.UI.Tests
 			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
 			{
 				AutomationRunner testRunner = new AutomationRunner();
-				testRunner.Wait(1);
 
 				// Now do the actions specific to this test. (replace this for new tests)
-				{
-					testRunner.ClickByName("left");
-					testRunner.Wait(.5);
+				testRunner.ClickByName("left", secondsToWait: 1);
+				testRunner.Wait(.5);
 
-					resultsHarness.AddTestResult(leftClickCount == 1, "Got left button click");
+				resultsHarness.AddTestResult(leftClickCount == 1, "Got left button click");
 
-					testRunner.Wait(.5);
-					testRunner.ClickByName("right");
-					testRunner.Wait(.5);
+				testRunner.ClickByName("right", secondsToWait: 1);
+				testRunner.Wait(.5);
 
-					resultsHarness.AddTestResult(rightClickCount == 1, "Got right button click");
+				resultsHarness.AddTestResult(rightClickCount == 1, "Got right button click");
 
-					testRunner.Wait(.5);
-					testRunner.DragDropByName("left", "right");
-					testRunner.Wait(.5);
+				testRunner.DragDropByName("left", "right", 1);
+				testRunner.Wait(.5);
 
-					resultsHarness.AddTestResult(leftClickCount == 1, "Mouse down not a click");
-				}
+				resultsHarness.AddTestResult(leftClickCount == 1, "Mouse down not a click");
 			};
 
 			SystemWindow buttonContainer = new SystemWindow(300, 200);

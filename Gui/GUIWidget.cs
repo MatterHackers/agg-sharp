@@ -2724,7 +2724,21 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-        public GuiWidget FindNamedChildRecursive(string nameToSearchFor)
+		public void FindNamedChildrenRecursive(string nameToSearchFor, List<GuiWidget> foundChildren)
+		{
+			if (Name == nameToSearchFor)
+			{
+				foundChildren.Add(this);
+			}
+
+			List<GuiWidget> searchChildren = new List<GuiWidget>(Children);
+			foreach (GuiWidget child in searchChildren)
+			{
+				child.FindNamedChildrenRecursive(nameToSearchFor, foundChildren);
+			}
+		}
+		
+		public GuiWidget FindNamedChildRecursive(string nameToSearchFor)
         {
             if (Name == nameToSearchFor)
             {

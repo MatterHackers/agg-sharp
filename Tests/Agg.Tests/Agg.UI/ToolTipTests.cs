@@ -31,6 +31,7 @@ using MatterHackers.Agg.Image;
 using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -110,48 +111,39 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				BackgroundColor = RGBA_Bytes.White,
 			};
-			int leftClickCount = 0;
-			int rightClickCount = 0;
 
-			bool firstDraw = true;
-			buttonContainer.DrawAfter += (sender, e) =>
+			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
 			{
-				if (firstDraw)
+				AutomationRunner testRunner = new AutomationRunner("C:/TestImages");
+				testRunner.Wait(1);
+
+				// Now do the actions specific to this test. (replace this for new tests)
 				{
-					firstDraw = false;
-					Task.Run(() =>
-					{
-						AutomationRunner testRunner = new AutomationRunner("C:/TestImages");
-						testRunner.Wait(1);
-
-						// Now do the actions specific to this test. (replace this for new tests)
-						{
-							testRunner.MoveToByName("ButtonWithToolTip");
-							testRunner.Wait(1.5);
-							GuiWidget toolTipWidget = buttonContainer.FindNamedChildRecursive("ToolTipWidget");
-							Assert.IsTrue(toolTipWidget != null);
-							testRunner.MoveToByName("right");
-							toolTipWidget = buttonContainer.FindNamedChildRecursive("ToolTipWidget");
-							Assert.IsTrue(toolTipWidget == null);
-						}
-
-						testRunner.Wait(1);
-						buttonContainer.CloseOnIdle();
-					});
+					testRunner.MoveToByName("ButtonWithToolTip");
+					testRunner.Wait(1.5);
+					GuiWidget toolTipWidget = buttonContainer.FindNamedChildRecursive("ToolTipWidget");
+					resultsHarness.AddTestResult(toolTipWidget != null, "Tool tip is showing");
+					testRunner.MoveToByName("right");
+					toolTipWidget = buttonContainer.FindNamedChildRecursive("ToolTipWidget");
+					resultsHarness.AddTestResult(toolTipWidget == null, "Tool tip is not showing");
 				}
+
+				testRunner.Wait(1);
+				buttonContainer.CloseOnIdle();
 			};
 
 			Button leftButton = new Button("left", 10, 40);
 			leftButton.Name = "ButtonWithToolTip";
 			leftButton.ToolTipText = "Left Tool Tip";
-			leftButton.Click += (sender, e) => { leftClickCount++; };
 			buttonContainer.AddChild(leftButton);
 			Button rightButton = new Button("right", 110, 40);
-			rightButton.Click += (sender, e) => { rightClickCount++; };
 			rightButton.Name = "right";
 			buttonContainer.AddChild(rightButton);
 
-			buttonContainer.ShowAsSystemWindow();
+			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExectueTests(buttonContainer, testToRun, 10);
+
+			Assert.IsTrue(testHarness.AllTestsPassed);
+			Assert.IsTrue(testHarness.TestCount == 2); // make sure we can all our tests
 		}
 
 		[Test]
