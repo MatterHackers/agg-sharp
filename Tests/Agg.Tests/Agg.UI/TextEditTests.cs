@@ -131,32 +131,18 @@ namespace MatterHackers.Agg.UI.Tests
 
 			bool firstDraw = true;
 			Stopwatch testDiedTimer = Stopwatch.StartNew();
-			systemWindow.DrawAfter += (sender, e) =>
+			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
 			{
-				if (firstDraw)
-				{
-					firstDraw = false;
-					Task.Run(() =>
-					{
-						UiThread.RunOnIdle(editField.Focus);
-						AutomationRunner testRunner = new AutomationRunner();
-						testRunner.Wait(1);
+				UiThread.RunOnIdle(editField.Focus);
+				AutomationRunner testRunner = new AutomationRunner();
+				testRunner.Wait(1);
 
-						// Now do the actions specific to this test. (replace this for new tests)
-						{
-							testRunner.Type("Test Text");
-							
-							Assert.IsTrue(editField.Text == "Test Text");
-						}
+				// Now do the actions specific to this test. (replace this for new tests)
+				testRunner.Type("Test Text");
 
-						systemWindow.CloseOnIdle();
-					});
-				}
+				resultsHarness.AddTestResult(editField.Text == "Test Text", "validate text is typed");
 
-				if(testDiedTimer.Elapsed.TotalSeconds > 20)
-				{
-					//systemWindow.CloseOnIdle();
-				}
+				systemWindow.CloseOnIdle();
 			};
 
 			editField = new TextEditWidget(pixelWidth: 200)
@@ -166,7 +152,10 @@ namespace MatterHackers.Agg.UI.Tests
 			};
 			systemWindow.AddChild(editField);
 
-			systemWindow.ShowAsSystemWindow();
+			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExectueTests(systemWindow, testToRun, 10);
+
+			Assert.IsTrue(testHarness.AllTestsPassed);
+			Assert.IsTrue(testHarness.TestCount == 1); // make sure we can all our tests
 		}
 #endif
 

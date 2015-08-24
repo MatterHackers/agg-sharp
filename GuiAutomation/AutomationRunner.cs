@@ -359,39 +359,16 @@ namespace MatterHackers.GuiAutomation
 
 		#region Search By Names
 
-		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, GuiWidget containerWidget = null)
+		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, SearchRegion searchRegion = null)
 		{
 			containingWindow = null;
-
-			if (containerWidget == null)
+			foreach (SystemWindow window in SystemWindow.OpenWindows)
 			{
-				foreach (SystemWindow window in SystemWindow.OpenWindows)
-				{
-					containingWindow = window;
-					GuiWidget foundWidget = window.FindNamedChildRecursive(widgetName);
-					if (foundWidget != null)
-					{
-						return foundWidget;
-					}
-				}
-			}
-			else
-			{
-				GuiWidget foundWidget = containerWidget.FindNamedChildRecursive(widgetName);
+				containingWindow = window;
+				GuiWidget foundWidget = window.FindNamedChildRecursive(widgetName);
 				if (foundWidget != null)
 				{
-					GuiWidget parent = foundWidget;
-					while (parent.Parent != null
-						&& parent as SystemWindow == null)
-					{
-						parent = parent.Parent;
-					}
-
-					if (parent as SystemWindow != null)
-					{
-						containingWindow = parent as SystemWindow;
-						return foundWidget;
-					}
+					return foundWidget;
 				}
 			}
 
@@ -407,11 +384,11 @@ namespace MatterHackers.GuiAutomation
 		/// <param name="origin"></param>
 		/// <param name="secondsToWait">Total seconds to stay in this function waiting for the named widget to become visible.</param>
 		/// <returns></returns>
-		public bool ClickByName(string widgetName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, double secondsToWait = 0, GuiWidget containerWidget = null)
+		public bool ClickByName(string widgetName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, double secondsToWait = 0, SearchRegion searchRegion = null)
 		{
 			if (secondsToWait > 0)
 			{
-				bool foundWidget = WaitForName(widgetName, secondsToWait, containerWidget);
+				bool foundWidget = WaitForName(widgetName, secondsToWait);
 				if (!foundWidget)
 				{
 					return false;
@@ -419,7 +396,7 @@ namespace MatterHackers.GuiAutomation
 			}
 
 			SystemWindow containingWindow;
-			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, containerWidget);
+			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow);
 			if (widgetToClick != null)
 			{
 				RectangleDouble childBounds = widgetToClick.TransformToParentSpace(containingWindow, widgetToClick.LocalBounds);
@@ -446,7 +423,7 @@ namespace MatterHackers.GuiAutomation
 		}
 
 		public bool DragDropByName(string widgetNameDrag, string widgetNameDrop, int xOffsetDrag = 0, int yOffsetDrag = 0, ClickOrigin originDrag = ClickOrigin.Center,
-			int xOffsetDrop = 0, int yOffsetDrop = 0, ClickOrigin originDrop = ClickOrigin.Center)
+			int xOffsetDrop = 0, int yOffsetDrop = 0, ClickOrigin originDrop = ClickOrigin.Center, SearchRegion searchRegion = null)
 		{
 			if (DragByName(widgetNameDrag, xOffsetDrag, yOffsetDrag, originDrag))
 			{
@@ -456,7 +433,7 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool DragByName(string widgetName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center)
+		public bool DragByName(string widgetName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, SearchRegion searchRegion = null)
 		{
 			SystemWindow containingWindow;
 			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow);
@@ -480,7 +457,7 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool DropByName(string widgetName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center)
+		public bool DropByName(string widgetName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, SearchRegion searchRegion = null)
 		{
 			SystemWindow containingWindow;
 			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow);
@@ -504,16 +481,16 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool DoubleClickByName(string widgetName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center)
+		public bool DoubleClickByName(string widgetName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, SearchRegion searchRegion = null)
 		{
 			throw new NotImplementedException();
 		}
 
-		public bool MoveToByName(string widgetName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, double secondsToWait = 0, GuiWidget containerWidget = null)
+		public bool MoveToByName(string widgetName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, double secondsToWait = 0, SearchRegion searchRegion = null)
 		{
 			if (secondsToWait > 0)
 			{
-				bool foundWidget = WaitForName(widgetName, secondsToWait, containerWidget);
+				bool foundWidget = WaitForName(widgetName, secondsToWait);
 				if (!foundWidget)
 				{
 					return false;
@@ -521,7 +498,7 @@ namespace MatterHackers.GuiAutomation
 			}
 
 			SystemWindow containingWindow;
-			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, containerWidget);
+			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow);
 			if (widgetToClick != null)
 			{
 				RectangleDouble childBounds = widgetToClick.TransformToParentSpace(containingWindow, widgetToClick.LocalBounds);
@@ -541,30 +518,16 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool NameExists(string widgetName, GuiWidget containerWidget = null)
+		public bool NameExists(string widgetName, SearchRegion searchRegion = null)
 		{
-			if (containerWidget != null)
+			foreach (SystemWindow window in SystemWindow.OpenWindows)
 			{
-				GuiWidget widgetToClick = containerWidget.FindNamedChildRecursive(widgetName);
+				GuiWidget widgetToClick = window.FindNamedChildRecursive(widgetName);
 				if (widgetToClick != null)
 				{
 					if (widgetToClick.AllParentsVisibleAndEnabled())
 					{
 						return true;
-					}
-				}
-			}
-			else // look in all system windows
-			{
-				foreach (SystemWindow window in SystemWindow.OpenWindows)
-				{
-					GuiWidget widgetToClick = window.FindNamedChildRecursive(widgetName);
-					if (widgetToClick != null)
-					{
-						if (widgetToClick.AllParentsVisibleAndEnabled())
-						{
-							return true;
-						}
 					}
 				}
 			}
@@ -630,10 +593,10 @@ namespace MatterHackers.GuiAutomation
 		/// Wait up to secondsToWait for the named widget to exist and be visible.
 		/// </summary>
 		/// <param name="widgetName"></param>
-		public bool WaitForName(string widgetName, double secondsToWait, GuiWidget containerWidget = null)
+		public bool WaitForName(string widgetName, double secondsToWait)
 		{
 			Stopwatch timeWaited = Stopwatch.StartNew();
-			while (!NameExists(widgetName, containerWidget)
+			while (!NameExists(widgetName)
 				&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
 			{
 				Wait(.05);

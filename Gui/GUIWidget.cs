@@ -1583,13 +1583,24 @@ namespace MatterHackers.Agg.UI
 		public bool AllParentsVisibleAndEnabled()
 		{
 			GuiWidget curGUIWidget = this;
+			RectangleDouble visibleBounds = this.LocalBounds;
 			while (curGUIWidget != null)
 			{
-				if (!curGUIWidget.Visible || !curGUIWidget.Enabled)
+				if (!curGUIWidget.Visible || !curGUIWidget.Enabled
+					|| visibleBounds.Width <= 0
+					|| visibleBounds.Height <= 0)
 				{
 					return false;
 				}
-				curGUIWidget = curGUIWidget.Parent;
+
+				if (curGUIWidget.Parent != null)
+				{
+					// offset our bounds to the parent bounds
+					visibleBounds.Offset(curGUIWidget.OriginRelativeParent.x, curGUIWidget.OriginRelativeParent.y);
+					visibleBounds.IntersectWithRectangle(curGUIWidget.Parent.LocalBounds);
+				}
+
+				curGUIWidget = curGUIWidget.Parent;	
 			}
 
 			return true;
