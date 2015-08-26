@@ -298,19 +298,28 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool ImageExists(string imageName, SearchRegion searchRegion = null)
+		public bool ImageExists(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null)
 		{
 			ImageBuffer imageToLookFor = LoadImageFromSourcFolder(imageName);
 			if (imageToLookFor != null)
 			{
-				return ImageExists(imageToLookFor, searchRegion);
+				return ImageExists(imageToLookFor, secondsToWait, searchRegion);
 			}
 
 			return false;
 		}
 
-		public bool ImageExists(ImageBuffer imageNeedle, SearchRegion searchRegion = null)
+		public bool ImageExists(ImageBuffer imageNeedle, double secondsToWait = 0, SearchRegion searchRegion = null)
 		{
+			if (secondsToWait > 0)
+			{
+				bool foundImage = WaitForImage(imageNeedle, secondsToWait, searchRegion);
+				if (!foundImage)
+				{
+					return false;
+				}
+			}
+
 			if (searchRegion == null)
 			{
 				searchRegion = GetScreenRegion();
@@ -750,14 +759,32 @@ namespace MatterHackers.GuiAutomation
 			Thread.Sleep((int)(secondsToWait * 1000));
 		}
 
-		public void WaitForImage(string imageName, double secondsToWait, SearchRegion searchRegion = null)
+		public bool WaitForImage(string imageName, double secondsToWait, SearchRegion searchRegion = null)
 		{
-			throw new NotImplementedException();
+			ImageBuffer imageToLookFor = LoadImageFromSourcFolder(imageName);
+			if (imageToLookFor != null)
+			{
+				return WaitForImage(imageToLookFor, secondsToWait, searchRegion);
+			}
+
+			return false;
 		}
 
-		public void WaitForImage(ImageBuffer imageNeedle, double secondsToWait, SearchRegion searchRegion = null)
+		public bool WaitForImage(ImageBuffer imageNeedle, double secondsToWait, SearchRegion searchRegion = null)
 		{
-			throw new NotImplementedException();
+			Stopwatch timeWaited = Stopwatch.StartNew();
+			while (!ImageExists(imageNeedle)
+				&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
+			{
+				Wait(.05);
+			}
+
+			if (timeWaited.Elapsed.TotalSeconds > secondsToWait)
+			{
+				return false;
+			}
+
+			return true;
 		}
 
 		/// <summary>
