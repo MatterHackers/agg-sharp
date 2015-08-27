@@ -1580,7 +1580,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public bool AllParentsVisibleAndEnabled()
+		private bool AllParentsVisibleAndEnabled()
 		{
 			GuiWidget curGUIWidget = this;
 			RectangleDouble visibleBounds = this.LocalBounds;
@@ -1601,6 +1601,32 @@ namespace MatterHackers.Agg.UI
 				}
 
 				curGUIWidget = curGUIWidget.Parent;	
+			}
+
+			return true;
+		}
+
+		public bool ActuallyVisibleOnScreen()
+		{
+			GuiWidget curGUIWidget = this;
+			RectangleDouble visibleBounds = this.LocalBounds;
+			while (curGUIWidget != null)
+			{
+				if (!curGUIWidget.Visible
+					|| visibleBounds.Width <= 0
+					|| visibleBounds.Height <= 0)
+				{
+					return false;
+				}
+
+				if (curGUIWidget.Parent != null)
+				{
+					// offset our bounds to the parent bounds
+					visibleBounds.Offset(curGUIWidget.OriginRelativeParent.x, curGUIWidget.OriginRelativeParent.y);
+					visibleBounds.IntersectWithRectangle(curGUIWidget.Parent.LocalBounds);
+				}
+
+				curGUIWidget = curGUIWidget.Parent;
 			}
 
 			return true;
