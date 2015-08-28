@@ -63,6 +63,12 @@ namespace MatterHackers.Agg
 			LoadImage(Path.Combine("Icons", path), buffer);
 		}
 
+		public void LoadImageData(Stream imageStream, ImageBuffer destImage)
+		{
+			var bitmap = new Bitmap(imageStream);
+			ImageIOWindowsPlugin.ConvertBitmapToImage(destImage, bitmap);
+		}
+
 		public void LoadImage(string path, ImageBuffer destImage)
 		{
 			ImageBuffer cachedImage = null;

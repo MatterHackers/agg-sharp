@@ -39,6 +39,8 @@ namespace MatterHackers.Agg.PlatformAbstract
 		string[] ReadAllLines(string path);
 
 		string ReadAllText(string path);
+
+		void LoadImageData(Stream stream, ImageBuffer unScaledImage);
 	}
 
 	public static class StaticData
