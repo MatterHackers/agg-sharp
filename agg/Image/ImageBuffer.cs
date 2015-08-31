@@ -1122,8 +1122,6 @@ namespace MatterHackers.Agg.Image
 					{
 						double currentLeastSquares = 0;
 
-#if false
-#else
 						for (int imageToFindY = 0; imageToFindY < imageToFind.Height; imageToFindY++)
 						{
 							int thisBufferOffset = GetBufferOffsetXY(matchX, matchY + imageToFindY);
@@ -1147,7 +1145,7 @@ namespace MatterHackers.Agg.Image
 								}
 							}
 						}
-#endif
+
 						if (currentLeastSquares < bestLeastSquares)
 						{
 							bestPosition = new Vector2(matchX, matchY);

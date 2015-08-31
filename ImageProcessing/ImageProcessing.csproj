@@ -148,6 +148,7 @@
     <Compile Include="Dilate.cs" />
     <Compile Include="Erode.cs" />
     <Compile Include="Multiply.cs" />
+    <Compile Include="Match.cs" />
     <Compile Include="Subtract.cs" />
     <Compile Include="Threshold.cs" />
   </ItemGroup>
