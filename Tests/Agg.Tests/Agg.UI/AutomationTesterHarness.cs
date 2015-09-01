@@ -35,6 +35,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -76,13 +77,19 @@ namespace MatterHackers.Agg.UI.Tests
 			initialSystemWindow.ShowAsSystemWindow();
 		}
 
-		public void AddTestResult(bool pass, string resultDescription)
+		public void AddTestResult(bool pass, string resultDescription = "")
 		{
 			results.Add(new TestResult()
 			{
 				result = pass,
 				description = resultDescription,
 			});
+
+			if (!pass)
+			{
+				// let us look at this at the time durring test run under the debugger
+				Debugger.Break();
+			}
 		}
 
 		public static void CloseAfterTime(SystemWindow windowToClose, double timeInSeconds)
