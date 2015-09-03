@@ -46,66 +46,69 @@ namespace MatterHackers.Agg.UI
 
 		public void setCorrectVisibility(object sender, EventArgs e)
 		{
-			RadioButton radioButton = (RadioButton)this.Parent;
-			SuspendLayout();
-
-			if (Enabled)
+			RadioButton radioButton = this.Parent as RadioButton;
+			if (radioButton != null) // This can be null if the button has been closed.
 			{
-				if (radioButton.Checked)
-				{
-					uncheckedWidget.Visible = false;
-					uncheckedHoverWidget.Visible = false;
-					checkingWidget.Visible = false;
-					disabledWidget.Visible = false;
+				SuspendLayout();
 
-					checkedWidget.Visible = true;
-				}
-				else
+				if (Enabled)
 				{
-					if (radioButton.UnderMouseState != UI.UnderMouseState.FirstUnderMouse)
+					if (radioButton.Checked)
 					{
+						uncheckedWidget.Visible = false;
 						uncheckedHoverWidget.Visible = false;
-						checkedWidget.Visible = false;
 						checkingWidget.Visible = false;
 						disabledWidget.Visible = false;
 
-						uncheckedWidget.Visible = true;
+						checkedWidget.Visible = true;
 					}
 					else
 					{
-						if (radioButton.MouseDownOnButton)
+						if (radioButton.UnderMouseState != UI.UnderMouseState.FirstUnderMouse)
 						{
-							uncheckedWidget.Visible = false;
 							uncheckedHoverWidget.Visible = false;
-							checkedWidget.Visible = false;
-							disabledWidget.Visible = false;
-
-							checkingWidget.Visible = true;
-						}
-						else
-						{
-							uncheckedWidget.Visible = false;
 							checkedWidget.Visible = false;
 							checkingWidget.Visible = false;
 							disabledWidget.Visible = false;
 
-							uncheckedHoverWidget.Visible = true;
+							uncheckedWidget.Visible = true;
+						}
+						else
+						{
+							if (radioButton.MouseDownOnButton)
+							{
+								uncheckedWidget.Visible = false;
+								uncheckedHoverWidget.Visible = false;
+								checkedWidget.Visible = false;
+								disabledWidget.Visible = false;
+
+								checkingWidget.Visible = true;
+							}
+							else
+							{
+								uncheckedWidget.Visible = false;
+								checkedWidget.Visible = false;
+								checkingWidget.Visible = false;
+								disabledWidget.Visible = false;
+
+								uncheckedHoverWidget.Visible = true;
+							}
 						}
 					}
 				}
-			}
-			else
-			{
-				uncheckedWidget.Visible = false;
-				uncheckedHoverWidget.Visible = false;
-				checkedWidget.Visible = false;
-				checkingWidget.Visible = false;
+				else
+				{
+					uncheckedWidget.Visible = false;
+					uncheckedHoverWidget.Visible = false;
+					checkedWidget.Visible = false;
+					checkingWidget.Visible = false;
 
-				disabledWidget.Visible = true;
-			}
+					disabledWidget.Visible = true;
+				}
 
-			ResumeLayout();
-			Invalidate();
+				ResumeLayout();
+				Invalidate();
+			}
 		}
 	}
 }
