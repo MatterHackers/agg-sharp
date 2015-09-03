@@ -298,12 +298,6 @@ namespace MatterHackers.Agg
 			return Length;
 		}
 
-		public void Zero()
-		{
-			x = 0;
-			y = 0;
-		}
-
 		public void Negate()
 		{
 			x = -x;
