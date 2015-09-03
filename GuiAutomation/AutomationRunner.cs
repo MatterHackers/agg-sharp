@@ -552,7 +552,7 @@ namespace MatterHackers.GuiAutomation
 		/// <param name="origin"></param>
 		/// <param name="secondsToWait">Total seconds to stay in this function waiting for the named widget to become visible.</param>
 		/// <returns></returns>
-		public bool ClickByName(string widgetName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, double secondsToWait = 0, SearchRegion searchRegion = null)
+		public bool ClickByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center)
 		{
 			SystemWindow containingWindow;
 			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, secondsToWait, searchRegion);
@@ -581,18 +581,17 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool DragDropByName(string widgetNameDrag, string widgetNameDrop, int xOffsetDrag = 0, int yOffsetDrag = 0, ClickOrigin originDrag = ClickOrigin.Center,
-			int xOffsetDrop = 0, int yOffsetDrop = 0, ClickOrigin originDrop = ClickOrigin.Center, double secondsToWait = 0, SearchRegion searchRegion = null)
+		public bool DragDropByName(string widgetNameDrag, string widgetNameDrop, double secondsToWait = 0, SearchRegion searchRegion = null, int xOffsetDrag = 0, int yOffsetDrag = 0, ClickOrigin originDrag = ClickOrigin.Center, int xOffsetDrop = 0, int yOffsetDrop = 0, ClickOrigin originDrop = ClickOrigin.Center)
 		{
-			if (DragByName(widgetNameDrag, xOffsetDrag, yOffsetDrag, originDrag, secondsToWait, searchRegion))
+			if (DragByName(widgetNameDrag, secondsToWait, searchRegion, xOffsetDrag, yOffsetDrag, originDrag))
 			{
-				return DropByName(widgetNameDrop, xOffsetDrop, yOffsetDrop, originDrop, secondsToWait, searchRegion);
+				return DropByName(widgetNameDrop, secondsToWait, searchRegion, xOffsetDrop, yOffsetDrop, originDrop);
 			}
 
 			return false;
 		}
 
-		public bool DragByName(string widgetName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, double secondsToWait = 0, SearchRegion searchRegion = null)
+		public bool DragByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center)
 		{
 			SystemWindow containingWindow;
 			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, secondsToWait, searchRegion);
@@ -616,7 +615,7 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool DropByName(string widgetName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, double secondsToWait = 0, SearchRegion searchRegion = null)
+		public bool DropByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center)
 		{
 			SystemWindow containingWindow;
 			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, secondsToWait, searchRegion);
@@ -645,7 +644,7 @@ namespace MatterHackers.GuiAutomation
 			throw new NotImplementedException();
 		}
 
-		public bool MoveToByName(string widgetName, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center, double secondsToWait = 0, SearchRegion searchRegion = null)
+		public bool MoveToByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, int xOffset = 0, int yOffset = 0, ClickOrigin origin = ClickOrigin.Center)
 		{
 			SystemWindow containingWindow;
 			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, secondsToWait, searchRegion);
@@ -766,7 +765,7 @@ namespace MatterHackers.GuiAutomation
 		/// Wait up to secondsToWait for the named widget to exist and be visible.
 		/// </summary>
 		/// <param name="widgetName"></param>
-		public bool WaitForName(string widgetName, double secondsToWait)
+		public bool WaitForName(string widgetName, double secondsToWait) // TODO: should have a search region
 		{
 			Stopwatch timeWaited = Stopwatch.StartNew();
 			while (!NameExists(widgetName)
@@ -787,7 +786,7 @@ namespace MatterHackers.GuiAutomation
 		/// Wait up to secondsToWait for the named widget to vanish.
 		/// </summary>
 		/// <param name="widgetName"></param>
-		public bool WaitVanishForName(string widgetName, double secondsToWait)
+		public bool WaitVanishForName(string widgetName, double secondsToWait) // TODO: should have a search regoin
 		{
 			Stopwatch timeWaited = Stopwatch.StartNew();
 			while (NameExists(widgetName)

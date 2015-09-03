@@ -63,7 +63,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 				resultsHarness.AddTestResult(rightClickCount == 1, "Got right button click");
 
-				testRunner.DragDropByName("left", "right", 1);
+				testRunner.DragDropByName("left", "right", xOffsetDrag: 1);
 				testRunner.Wait(.5);
 
 				resultsHarness.AddTestResult(leftClickCount == 1, "Mouse down not a click");
