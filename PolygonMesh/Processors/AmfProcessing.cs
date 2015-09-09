@@ -65,14 +65,21 @@ namespace MatterHackers.PolygonMesh.Processors
 		/// <returns>The results of the save operation</returns>
 		public static bool Save(List<MeshGroup> meshToSave, string fileName, MeshOutputSettings outputInfo = null)
 		{
-			using (Stream stream = File.OpenWrite(fileName))
-			using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Create))
+			try
 			{
-				ZipArchiveEntry zipEntry = archive.CreateEntry(Path.GetFileName(fileName));
-				using (var entryStream = zipEntry.Open())
+				using (Stream stream = File.OpenWrite(fileName))
+				using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Create))
 				{
-					return Save(meshToSave, entryStream, outputInfo);
+					ZipArchiveEntry zipEntry = archive.CreateEntry(Path.GetFileName(fileName));
+					using (var entryStream = zipEntry.Open())
+					{
+						return Save(meshToSave, entryStream, outputInfo);
+					}
 				}
+			}
+			catch (Exception)
+			{
+				return false;
 			}
 		}
 
@@ -320,6 +327,7 @@ namespace MatterHackers.PolygonMesh.Processors
 			List<MeshGroup> meshGroups = null;
 
 			// do the loading
+			try
 			{
 				using (Stream amfCompressedStream = GetCompressedStreamIfRequired(amfStream))
 				{
@@ -354,6 +362,10 @@ namespace MatterHackers.PolygonMesh.Processors
 
 					xmlTree.Dispose();
 				}
+			}
+			catch (Exception)
+			{
+				return null;
 			}
 
 #if true
@@ -621,6 +633,7 @@ namespace MatterHackers.PolygonMesh.Processors
 		{
 			if (IsZipFile(amfStream))
 			{
+				Thread.Sleep(3000);
 				ZipArchive archive = new ZipArchive(amfStream, ZipArchiveMode.Read);
 				return archive.Entries.First().Open();
 			}
