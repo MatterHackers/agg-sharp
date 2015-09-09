@@ -633,7 +633,6 @@ namespace MatterHackers.PolygonMesh.Processors
 		{
 			if (IsZipFile(amfStream))
 			{
-				Thread.Sleep(3000);
 				ZipArchive archive = new ZipArchive(amfStream, ZipArchiveMode.Read);
 				return archive.Entries.First().Open();
 			}
