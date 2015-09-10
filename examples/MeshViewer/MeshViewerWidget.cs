@@ -59,7 +59,7 @@ namespace MatterHackers.MeshVisualizer
 		static public Vector2 BedCenter { get; private set; }
 		private RGBA_Bytes bedMarkingsColor = RGBA_Bytes.Black;
 		private static BedShape bedShape = BedShape.Rectangular;
-		private Mesh buildVolume = null;
+		private static Mesh buildVolume = null;
 		private static Vector3 displayVolume;
 		private List<MeshGroup> meshesToRender = new List<MeshGroup>();
 		private List<ScaleRotateTranslate> meshTransforms = new List<ScaleRotateTranslate>();
@@ -365,6 +365,14 @@ namespace MatterHackers.MeshVisualizer
 			foreach (Vertex vertex in printerBed.Vertices)
 			{
 				vertex.Position = vertex.Position - new Vector3(-bedCenter, 2.2);
+			}
+
+			if (buildVolume != null)
+			{
+				foreach (Vertex vertex in buildVolume.Vertices)
+				{
+					vertex.Position = vertex.Position - new Vector3(-bedCenter, 2.2);
+				}
 			}
 
 			Invalidate();
