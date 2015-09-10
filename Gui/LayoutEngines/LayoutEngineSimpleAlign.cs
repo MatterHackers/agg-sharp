@@ -222,8 +222,16 @@ namespace MatterHackers.Agg.UI
 				{
 					if(widgetToAdjust.Parent.LayoutEngine as LayoutEngineFlow != null)
 					{
-						// We make the assumption that the parent has set the size correctly assuming flow layout and this can only be made bigger if fit needs to.
-						widgetToAdjustBounds.Right = Math.Max(widgetToAdjustBounds.Right, childrenEnclosingBounds.Right);
+						// The parent is a flow layout widget but it will only adjust our size if we are HAnchor leftright
+						if (widgetToAdjust.HAnchorIsSet(HAnchor.ParentLeftRight))
+						{
+							// We make the assumption that the parent has set the size correctly assuming flow layout and this can only be made bigger if fit needs to.
+							widgetToAdjustBounds.Right = Math.Max(widgetToAdjustBounds.Right, childrenEnclosingBounds.Right);
+						}
+						else // we need to just do the fit to children
+						{
+							widgetToAdjustBounds.Right = Math.Max(childrenEnclosingBounds.Left + widthToMatchParent, childrenEnclosingBounds.Right);
+						}
 					}
 					else if ((widgetToAdjust.Parent.LayoutEngine as LayoutEngineSimpleAlign) != null)
 					{

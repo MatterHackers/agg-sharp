@@ -112,6 +112,140 @@ namespace MatterHackers.Agg.UI.Tests
 			NestedLayoutTopToBottomTest(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
+		[Test]
+		public void ChangingChildVisiblityUpdatesFlow()
+		{
+			//  ___________________________________________________
+			//  |       containerControl 300                      |
+			//  | _______________________________________________ |
+			//  | |     Flow1 ParentWidth  300                  | |
+			//  | | __________________________________________  | |
+			//  | | |   Flow2 FitToChildren 250              |  | |
+			//  | | | ____________________________ _________ |  | |
+			//  | | | | Size1 200                | |Size2  | |  | |
+			//  | | | |                          | |50     | |  | |
+			//  | | | |__________________________| |_______| |  | |
+			//  | | |________________________________________|  | |
+			//  | |_____________________________________________| |
+			//  |_________________________________________________|
+			//
+
+			GuiWidget containerControl = new GuiWidget(300, 200);
+			containerControl.Name = "containerControl";
+	
+			FlowLayoutWidget flow1 = new FlowLayoutWidget(FlowDirection.LeftToRight);
+			flow1.Name = "flow1";
+			flow1.HAnchor = HAnchor.ParentLeftRight;
+			flow1.Padding = new BorderDouble(3, 3);
+			containerControl.AddChild(flow1);
+
+			FlowLayoutWidget flow2 = new FlowLayoutWidget();
+			flow2.Name = "flow2";
+			flow1.AddChild(flow2);
+
+			GuiWidget size1 = new GuiWidget(200, 20);
+			size1.Name = "size2";
+			flow2.AddChild(size1);
+
+			GuiWidget size2 = new GuiWidget(50, 20);
+			size2.Name = "size1";
+			flow2.AddChild(size2);
+
+			Assert.IsTrue(flow1.Width == containerControl.Width);
+			Assert.IsTrue(flow2.Width == size2.Width + size1.Width);
+
+			size1.Visible = false;
+			//  ___________________________________________________
+			//  |       containerControl 300                      |
+			//  | _______________________________________________ |
+			//  | |   Flow1 ParentWidth  300                    | |
+			//  | | _____________                               | |
+			//  | | | Flow2 50  |                               | |
+			//  | | | _________ |                               | |
+			//  | | | |Size2  | |                               | |
+			//  | | | |50     | |                               | |
+			//  | | | |       | |                               | |
+			//  | | | |_______| |                               | |
+			//  | | |___________|                               | |
+			//  | |_____________________________________________| |
+			//  |_________________________________________________|
+			//
+
+			Assert.IsTrue(flow1.Width == containerControl.Width);
+			Assert.IsTrue(flow2.Width == size2.Width);
+		}
+
+		[Test]
+		public void ChangingChildFlowWidgetVisiblityUpdatesParentFlow()
+		{
+			//  ___________________________________________________
+			//  |       containerControl 300                      |
+			//  | _______________________________________________ |
+			//  | |     Flow1 ParentWidth  300                  | |
+			//  | | __________________________________________  | |
+			//  | | |   Flow2 FitToChildren 250              |  | |
+			//  | | | ____________________________ _________ |  | |
+			//  | | | | Flow 3 FitToChildren 200 | |Size2  | |  | |
+			//  | | | | ________________________ | |50     | |  | |
+			//  | | | | | Size1 200            | | |       | |  | |
+			//  | | | | |______________________| | |       | |  | |
+			//  | | | |__________________________| |_______| |  | |
+			//  | | |________________________________________|  | |
+			//  | |_____________________________________________| |
+			//  |_________________________________________________|
+			//
+
+			GuiWidget containerControl = new GuiWidget(300, 200);
+			containerControl.Name = "containerControl";
+
+			FlowLayoutWidget flow1 = new FlowLayoutWidget(FlowDirection.LeftToRight);
+			flow1.Name = "flow1";
+			flow1.HAnchor = HAnchor.ParentLeftRight;
+			flow1.Padding = new BorderDouble(3, 3);
+			containerControl.AddChild(flow1);
+
+			FlowLayoutWidget flow2 = new FlowLayoutWidget();
+			flow2.Name = "flow2";
+			flow1.AddChild(flow2);
+
+			GuiWidget flow3 = new FlowLayoutWidget();
+			flow3.Name = "flow3";
+			flow2.AddChild(flow3);
+
+			GuiWidget size1 = new GuiWidget(200, 20);
+			size1.Name = "size2";
+			flow3.AddChild(size1);
+
+			GuiWidget size2 = new GuiWidget(50, 20);
+			size2.Name = "size1";
+			flow2.AddChild(size2);
+
+
+			Assert.IsTrue(flow1.Width == containerControl.Width);
+			Assert.IsTrue(flow3.Width == size1.Width);
+			Assert.IsTrue(flow2.Width == size2.Width + flow3.Width);
+
+			size1.Visible = false;
+			//  ___________________________________________________
+			//  |       containerControl 300                      |
+			//  | _______________________________________________ |
+			//  | |   Flow1 ParentWidth  300                    | |
+			//  | | _____________                               | |
+			//  | | | Flow2 50  |                               | |
+			//  | | | _________ |                               | |
+			//  | | | |Size2  | |                               | |
+			//  | | | |50     | |                               | |
+			//  | | | |       | |                               | |
+			//  | | | |_______| |                               | |
+			//  | | |___________|                               | |
+			//  | |_____________________________________________| |
+			//  |_________________________________________________|
+			//
+
+			Assert.IsTrue(flow1.Width == containerControl.Width);
+			Assert.IsTrue(flow2.Width == size2.Width);
+		}
+
 		public void NestedLayoutTopToBottomTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			GuiWidget containerControl = new GuiWidget(300, 200);
