@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.Agg.PlatformAbstract;
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -63,8 +64,10 @@ namespace MatterHackers.Agg.Image
 						// Time is in 1/100th of a second
 						destImageSequence.SecondsPerFrame = (item.Value[0] + item.Value[1] * 256) / 100.0;
 					}
-					catch
+					catch(Exception e)
 					{
+						Debug.Print(e.Message);
+						Debugger.Break();
 						destImageSequence.SecondsPerFrame = 2;
 					}
 

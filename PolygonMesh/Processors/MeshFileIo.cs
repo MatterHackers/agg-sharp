@@ -31,6 +31,7 @@ using MatterHackers.Agg;
 using MatterHackers.PolygonMesh.Csg;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace MatterHackers.PolygonMesh.Processors
@@ -103,8 +104,10 @@ namespace MatterHackers.PolygonMesh.Processors
 					return Load(stream, Path.GetExtension(meshPathAndFileName), reportProgress);
 				}
 			}
-			catch(Exception)
+			catch(Exception e)
 			{
+				Debug.Print(e.Message);
+				Debugger.Break();
 				return null;
 			}
 		}

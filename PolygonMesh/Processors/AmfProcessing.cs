@@ -77,8 +77,10 @@ namespace MatterHackers.PolygonMesh.Processors
 					}
 				}
 			}
-			catch (Exception)
+			catch (Exception e)
 			{
+				Debug.Print(e.Message);
+				Debugger.Break();
 				return false;
 			}
 		}
@@ -214,12 +216,14 @@ namespace MatterHackers.PolygonMesh.Processors
 					}
 				}
 #if DEBUG
-				catch (IOException)
+				catch (IOException e)
 				{
+					Debug.Print(e.Message);
+					Debugger.Break();
 					return null;
 				}
 #else
-                catch (Exception)
+				catch (Exception)
                 {
                     return null;
                 }
@@ -237,8 +241,10 @@ namespace MatterHackers.PolygonMesh.Processors
 				loadedMeshes = ParseFileContents(fileStream, reportProgress);
 			}
 #if DEBUG
-			catch (IOException)
+			catch (IOException e)
 			{
+				Debug.Print(e.Message);
+				Debugger.Break();
 				return null;
 			}
 #else
@@ -363,8 +369,10 @@ namespace MatterHackers.PolygonMesh.Processors
 					xmlTree.Dispose();
 				}
 			}
-			catch (Exception)
+			catch (Exception e)
 			{
+				Debug.Print(e.Message);
+				Debugger.Break();
 				return null;
 			}
 
@@ -696,8 +704,10 @@ namespace MatterHackers.PolygonMesh.Processors
 					}
 				}
 			}
-			catch (Exception)
+			catch (Exception e)
 			{
+				Debug.Print(e.Message);
+				Debugger.Break();
 				return 0;
 			}
 		}

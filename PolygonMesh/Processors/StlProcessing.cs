@@ -168,8 +168,10 @@ namespace MatterHackers.PolygonMesh.Processors
 				return loadedMesh;
 			}
 #if DEBUG
-			catch (IOException)
+			catch (IOException e)
 			{
+				Debug.Print(e.Message);
+				Debugger.Break();
 				return null;
 			}
 #else
@@ -421,8 +423,10 @@ namespace MatterHackers.PolygonMesh.Processors
 					}
 				}
 			}
-			catch (Exception)
+			catch (Exception e) 
 			{
+				Debug.Print(e.Message);
+				Debugger.Break();
 			}
 
 			return true;
@@ -444,8 +448,10 @@ namespace MatterHackers.PolygonMesh.Processors
 					}
 				}
 			}
-			catch (Exception)
+			catch (Exception e)
 			{
+				Debug.Print(e.Message);
+				Debugger.Break();
 				return 0;
 			}
 		}

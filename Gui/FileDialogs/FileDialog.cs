@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -69,8 +70,10 @@ namespace MatterHackers.Agg.UI
 							}
 						}
 					}
-					catch (Exception)
+					catch (Exception e)
 					{
+						Debug.Print(e.Message);
+						Debugger.Break();
 					}
 					callback(outputOpenParams);
 				}
@@ -97,8 +100,10 @@ namespace MatterHackers.Agg.UI
 							}
 						}
 					}
-					catch (Exception)
+					catch (Exception e)
 					{
+						Debug.Print(e.Message);
+						Debugger.Break();
 					}
 					callback(outputSaveParams);
 				}

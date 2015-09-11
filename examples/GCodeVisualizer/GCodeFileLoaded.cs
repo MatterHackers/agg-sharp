@@ -131,8 +131,10 @@ namespace MatterHackers.GCodeVisualizer
 				ParseFileContents(null, doWorkEventArgs);
 				loadedGCode = (GCodeFileLoaded)doWorkEventArgs.Result;
 			}
-			catch (IOException)
+			catch (IOException e)
 			{
+				Debug.Print(e.Message);
+				Debugger.Break();
 			}
 
 			return loadedGCode;
@@ -174,8 +176,10 @@ namespace MatterHackers.GCodeVisualizer
 						backgroundWorker.RunWorkerAsync(null);
 					}
 				}
-				catch (IOException)
+				catch (IOException e)
 				{
+					Debug.Print(e.Message);
+					Debugger.Break();
 				}
 			}
 			else
