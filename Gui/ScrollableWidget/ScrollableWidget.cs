@@ -121,20 +121,9 @@ namespace MatterHackers.Agg.UI
 			ScrollArea.BoundsChanged += new EventHandler(ScrollArea_BoundsChanged);
 			verticalScrollBar = new ScrollBar(this);
 
-#if true
 			base.AddChild(scrollArea);
 			base.AddChild(verticalScrollBar);
-			scrollArea.Padding = new BorderDouble(0, 0, ScrollBar.ScrollBarWidth, 0);
 			verticalScrollBar.HAnchor = UI.HAnchor.ParentRight;
-#else
-            FlowLayoutWidget scrollAreaAndScrollBarRisizer = new FlowLayoutWidget();
-            scrollAreaAndScrollBarRisizer.HAnchor = UI.HAnchor.ParentLeftRight;
-            scrollAreaAndScrollBarRisizer.VAnchor = UI.VAnchor.ParentBottomTop;
-
-            scrollAreaAndScrollBarRisizer.AddChild(scrollArea);
-            scrollAreaAndScrollBarRisizer.AddChild(verticalScrollBar);
-            base.AddChild(scrollAreaAndScrollBarRisizer);
-#endif
 		}
 
 		private void ScrollArea_BoundsChanged(object sender, EventArgs e)

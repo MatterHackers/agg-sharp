@@ -237,10 +237,16 @@ namespace MatterHackers.Agg.UI
 					Vector2 scrollRatioFromTop0To1 = ParentScrollWidget.ScrollRatioFromTop0To1;
 					double notThumbHeight = ParentScrollWidget.Height - ThumbHeight;
 					thumb.OriginRelativeParent = new Vector2(0, notThumbHeight * scrollRatioFromTop0To1.y);
+
+					ParentScrollWidget.ScrollArea.Padding = new BorderDouble(0, 0, ScrollBar.ScrollBarWidth, 0);
+
 					break;
 
 				case ShowState.Never:
 					Visible = false;
+
+					ParentScrollWidget.ScrollArea.Padding = new BorderDouble(0, 0, 0, 0);
+
 					break;
 			}
 		}
