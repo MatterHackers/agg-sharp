@@ -241,6 +241,16 @@ namespace MatterHackers.GCodeVisualizer
 		private List<GCodeVertexBuffer> layerVertexBuffer;
 		private RenderType lastRenderType = RenderType.None;
 
+		private static bool Is32Bit()
+		{
+			if (IntPtr.Size == 4)
+			{
+				return true;
+			}
+
+			return false;
+		}
+
 		public void Render3D(GCodeRenderInfo renderInfo)
 		{
 			if (layerVertexBuffer == null)
