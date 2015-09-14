@@ -157,14 +157,6 @@ namespace MatterHackers.Agg.UI
 		private double mouseDownY = 0;
 		private double scrollOnDownY = 0;
 
-		public override void OnMouseDown(MouseEventArgs mouseEvent)
-		{
-			mouseDownY = mouseEvent.Y;
-			mouseDownOnScrollArea = true;
-			scrollOnDownY = ScrollPosition.y;
-			base.OnMouseDown(mouseEvent);
-		}
-
 		private static bool ScrollWithMouse(GuiWidget widgetToCheck)
 		{
 			if (widgetToCheck as TextEditWidget != null)
@@ -196,11 +188,28 @@ namespace MatterHackers.Agg.UI
 			return true;
 		}
 
+		bool haveScrolledTooFar = false;
+		public override void OnMouseDown(MouseEventArgs mouseEvent)
+		{
+			haveScrolledTooFar = false;
+			mouseDownY = mouseEvent.Y;
+			mouseDownOnScrollArea = true;
+			scrollOnDownY = ScrollPosition.y;
+			base.OnMouseDown(mouseEvent);
+		}
+
 		public override void OnMouseMove(MouseEventArgs mouseEvent)
 		{
 			if (mouseDownOnScrollArea && ScrollWithMouse(this))
 			{
 				ScrollPosition = new Vector2(ScrollPosition.x, scrollOnDownY - (mouseDownY - mouseEvent.Y));
+			}
+
+			if (mouseEvent.Y < mouseDownY - 10
+				|| mouseEvent.Y > mouseDownY + 10)
+			{
+				// If we have ever scrolled too far remember not to pass a valid up click
+				haveScrolledTooFar = true;
 			}
 
 			base.OnMouseMove(mouseEvent);
@@ -209,7 +218,14 @@ namespace MatterHackers.Agg.UI
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
 			mouseDownOnScrollArea = false;
-			base.OnMouseUp(mouseEvent);
+			if (haveScrolledTooFar)
+			{
+				base.OnMouseUp(new MouseEventArgs(mouseEvent, -10000, -10000));
+			}
+			else
+			{
+				base.OnMouseUp(mouseEvent);
+			}
 		}
 
 		public override void OnMouseWheel(MouseEventArgs mouseEvent)
