@@ -401,5 +401,11 @@ namespace MatterHackers.Agg.UI
 			}
 			TopLeftOffset = new VectorMath.Vector2(TopLeftOffset.x - requiredOffet.x, TopLeftOffset.y + requiredOffet.y);
 		}
+
+		public bool SelectAllOnFocus 
+		{
+			get { return InternalTextEditWidget.SelectAllOnFocus; }
+			set { InternalTextEditWidget.SelectAllOnFocus = value; }
+		}
 	}
 }
