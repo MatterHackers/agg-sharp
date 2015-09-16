@@ -115,7 +115,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (imageSequence != null)
 			{
-				graphics2D.Render(imageSequence.GetImageByIndex(CurrentFrame % imageSequence.NumFrames), 100, 100);
+				graphics2D.Render(imageSequence.GetImageByIndex(CurrentFrame % imageSequence.NumFrames), 0, 0);
 			}
 			base.OnDraw(graphics2D);
 		}
