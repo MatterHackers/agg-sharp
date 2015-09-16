@@ -1488,7 +1488,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void Focus()
 		{
-			if (CanFocus && CanSelect)// && !Focused)
+			if (CanFocus && CanSelect && !Focused)
 			{
 				List<GuiWidget> allWidgetsThatWillContainFocus = new List<GuiWidget>();
 				List<GuiWidget> allWidgetsThatCurrentlyHaveFocus = new List<GuiWidget>();
