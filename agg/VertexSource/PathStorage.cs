@@ -733,6 +733,9 @@ namespace MatterHackers.Agg.VertexSource
 			Vector2 lastXY = new Vector2();
 			Vector2 curXY = new Vector2();
 
+			bool foundSecondControlPoint = false;
+			Vector2 secondControlPoint = new Vector2();
+
 			while (parseIndex < dString.Length)
 			{
 				Char command = dString[parseIndex];
@@ -747,19 +750,19 @@ namespace MatterHackers.Agg.VertexSource
 								Vector2 controlPoint1;
 								controlPoint1.x = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
 								controlPoint1.y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-								Vector2 controlPoint2;
-								controlPoint2.x = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-								controlPoint2.y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+								foundSecondControlPoint = true;
+								secondControlPoint.x = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+								secondControlPoint.y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
 								curXY.x = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
 								curXY.y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
 								if (command == 'c')
 								{
 									controlPoint1 += lastXY;
-									controlPoint2 += lastXY;
+									secondControlPoint += lastXY;
 									curXY += lastXY;
 								}
 
-								this.curve4(controlPoint1.x, controlPoint1.y, controlPoint2.x, controlPoint2.y, curXY.x, curXY.y);
+								this.curve4(controlPoint1.x, controlPoint1.y, secondControlPoint.x, secondControlPoint.y, curXY.x, curXY.y);
 								
 								// if the next element is another coordinate than we just continue to add more curves.
 							} while(NextElementIsANumber(dString, parseIndex));
@@ -768,7 +771,45 @@ namespace MatterHackers.Agg.VertexSource
 
 					case 's': // shorthand/smooth curveto relative
 					case 'S': // shorthand/smooth curveto absolute
-						throw new NotImplementedException("Find def here http://www.w3.org/TR/SVG/paths.html#PathData");
+						{
+							do
+							{
+								parseIndex++;
+								Vector2 controlPoint1;
+								if (foundSecondControlPoint)
+								{
+									if (command == 's')
+									{
+										controlPoint1 = new Vector2();
+									}
+									else
+									{
+										controlPoint1 = curXY;
+									}
+								}
+								else
+								{
+									controlPoint1.x = curXY.x - (secondControlPoint.x - curXY.x);
+									controlPoint1.y = curXY.y - (secondControlPoint.y - curXY.y);
+								}
+								foundSecondControlPoint = true;
+								secondControlPoint.x = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+								secondControlPoint.y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+								curXY.x = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+								curXY.y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+								if (command == 's')
+								{
+									controlPoint1 += lastXY;
+									secondControlPoint += lastXY;
+									curXY += lastXY;
+								}
+
+								this.curve4(controlPoint1.x, controlPoint1.y, secondControlPoint.x, secondControlPoint.y, curXY.x, curXY.y);
+
+								// if the next element is another coordinate than we just continue to add more curves.
+							} while (NextElementIsANumber(dString, parseIndex));
+						}
+						break;
 
 					case 'h': // horizontal line to relative
 					case 'H': // horizontal line to absolute
