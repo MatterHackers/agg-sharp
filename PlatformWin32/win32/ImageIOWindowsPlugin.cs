@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.Agg.UI;
 using System;
 using System.Diagnostics;
 using System.Drawing;
@@ -67,7 +68,7 @@ namespace MatterHackers.Agg.Image
 					catch(Exception e)
 					{
 						Debug.Print(e.Message);
-						Debugger.Break();
+						GuiWidget.BreakInDebugger();
 						destImageSequence.SecondsPerFrame = 2;
 					}
 
@@ -105,7 +106,7 @@ namespace MatterHackers.Agg.Image
 				catch (Exception e)
 				{
 					Debug.Print(e.Message);
-					Debugger.Break();
+					GuiWidget.BreakInDebugger();
 					destImageSequence.SecondsPerFrame = 2;
 				}
 

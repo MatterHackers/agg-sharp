@@ -88,7 +88,7 @@ namespace MatterHackers.Agg.UI.Tests
 			if (!pass)
 			{
 				// let us look at this at the time durring test run under the debugger
-				Debugger.Break();
+				GuiWidget.BreakInDebugger();
 			}
 		}
 

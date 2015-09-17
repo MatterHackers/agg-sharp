@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 #define DUMP_SLOW_TIMES
 
 using MatterHackers.Agg;
+using MatterHackers.Agg.UI;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
@@ -134,7 +135,7 @@ namespace MatterHackers.GCodeVisualizer
 			catch (IOException e)
 			{
 				Debug.Print(e.Message);
-				Debugger.Break();
+				GuiWidget.BreakInDebugger();
 			}
 
 			return loadedGCode;
@@ -179,7 +180,7 @@ namespace MatterHackers.GCodeVisualizer
 				catch (IOException e)
 				{
 					Debug.Print(e.Message);
-					Debugger.Break();
+					GuiWidget.BreakInDebugger();
 				}
 			}
 			else

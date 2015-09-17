@@ -160,7 +160,7 @@ namespace MatterHackers.Agg.UI
 			set
 			{
 				// You should not change this it is required for the interface to this tab.
-				Debugger.Break();
+				GuiWidget.BreakInDebugger();
 			}
 		}
 

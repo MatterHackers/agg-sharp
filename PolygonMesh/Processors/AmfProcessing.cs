@@ -80,9 +80,16 @@ namespace MatterHackers.PolygonMesh.Processors
 			catch (Exception e)
 			{
 				Debug.Print(e.Message);
-				Debugger.Break();
+				BreakInDebugger();
 				return false;
 			}
+		}
+
+		[ConditionalAttribute("DEBUG")]
+		public static void BreakInDebugger(string description = "")
+		{
+			Debug.WriteLine(description);
+			Debugger.Break();
 		}
 
 		public static bool Save(List<MeshGroup> meshToSave, Stream stream, MeshOutputSettings outputInfo)
@@ -219,7 +226,7 @@ namespace MatterHackers.PolygonMesh.Processors
 				catch (IOException e)
 				{
 					Debug.Print(e.Message);
-					Debugger.Break();
+					BreakInDebugger();
 					return null;
 				}
 #else
@@ -244,7 +251,7 @@ namespace MatterHackers.PolygonMesh.Processors
 			catch (IOException e)
 			{
 				Debug.Print(e.Message);
-				Debugger.Break();
+				BreakInDebugger();
 				return null;
 			}
 #else
@@ -372,7 +379,7 @@ namespace MatterHackers.PolygonMesh.Processors
 			catch (Exception e)
 			{
 				Debug.Print(e.Message);
-				Debugger.Break();
+				BreakInDebugger();
 				return null;
 			}
 
@@ -707,7 +714,7 @@ namespace MatterHackers.PolygonMesh.Processors
 			catch (Exception e)
 			{
 				Debug.Print(e.Message);
-				Debugger.Break();
+				BreakInDebugger();
 				return 0;
 			}
 		}

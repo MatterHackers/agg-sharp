@@ -304,7 +304,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 		[ConditionalAttribute("DEBUG")]
-		public static void BreakInDebugger(string description)
+		public static void BreakInDebugger(string description = "")
 		{
 			Debug.WriteLine(description);
 			Debugger.Break();

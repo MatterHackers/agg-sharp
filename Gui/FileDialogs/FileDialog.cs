@@ -73,7 +73,7 @@ namespace MatterHackers.Agg.UI
 					catch (Exception e)
 					{
 						Debug.Print(e.Message);
-						Debugger.Break();
+						GuiWidget.BreakInDebugger();
 					}
 					callback(outputOpenParams);
 				}
@@ -103,7 +103,7 @@ namespace MatterHackers.Agg.UI
 					catch (Exception e)
 					{
 						Debug.Print(e.Message);
-						Debugger.Break();
+						GuiWidget.BreakInDebugger();
 					}
 					callback(outputSaveParams);
 				}

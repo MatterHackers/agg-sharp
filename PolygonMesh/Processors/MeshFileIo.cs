@@ -107,7 +107,6 @@ namespace MatterHackers.PolygonMesh.Processors
 			catch(Exception e)
 			{
 				Debug.Print(e.Message);
-				Debugger.Break();
 				return null;
 			}
 		}
