@@ -47,7 +47,7 @@ namespace MatterHackers.GCodeVisualizer
 		HideExtruderOffsets = 32,
 	};
 
-	public class GCodeRenderer
+	public class GCodeRenderer : IDisposable
 	{
 		private List<List<int>> featureStartIndex = new List<List<int>>();
 		private List<List<int>> featureEndIndex = new List<List<int>>();
@@ -227,13 +227,22 @@ namespace MatterHackers.GCodeVisualizer
 			}
 		}
 
+		public void Dispose()
+		{
+			Clear3DGCode();
+		}
+
 		public void Clear3DGCode()
 		{
 			if (layerVertexBuffer != null)
 			{
 				for (int i = 0; i < layerVertexBuffer.Count; i++)
 				{
-					layerVertexBuffer[i] = null;
+					if (layerVertexBuffer[i] != null)
+					{
+						layerVertexBuffer[i].Dispose();
+						layerVertexBuffer[i] = null;
+					}
 				}
 			}
 		}
@@ -282,6 +291,7 @@ namespace MatterHackers.GCodeVisualizer
 				{
 					int maxFeaturesForThisSystem = 125000;
 					int totalFeaturesToRunder = 0;
+					bool cleanUnusedLayers = false;
 					// if on 32 bit system make sure we don't run out of memory rendering too many features
 					for (int i = renderInfo.EndLayerIndex - 1; i >= renderInfo.StartLayerIndex; i--)
 					{
@@ -291,22 +301,25 @@ namespace MatterHackers.GCodeVisualizer
 						}
 						else // don't render any of the layers below this and in fact remove them from memory if possible
 						{
-							bool removedVertedBuffers = false;
-							renderInfo.startLayerIndex = i+1;
-							for (int removeIndex = i; removeIndex >= 0; removeIndex--)
+							renderInfo.startLayerIndex = i + 1;
+							cleanUnusedLayers = true; 
+							break;
+						}
+					}
+
+					if (cleanUnusedLayers)
+					{
+						// no remove any layers that are set that we are not going to render
+						for (int removeIndex = 0; removeIndex < layerVertexBuffer.Count; removeIndex++)
+						{
+							if (removeIndex < renderInfo.StartLayerIndex || removeIndex >= renderInfo.EndLayerIndex)
 							{
 								if (layerVertexBuffer[removeIndex] != null)
 								{
+									layerVertexBuffer[removeIndex].Dispose();
 									layerVertexBuffer[removeIndex] = null;
-									removedVertedBuffers = true;
 								}
 							}
-
-							if (removedVertedBuffers)
-							{
-								GC.Collect();
-							}
-							break;
 						}
 					}
 				}
