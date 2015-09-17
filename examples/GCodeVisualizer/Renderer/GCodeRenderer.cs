@@ -278,7 +278,40 @@ namespace MatterHackers.GCodeVisualizer
 
 			if (renderFeatures.Count > 0)
 			{
-				for (int i = renderInfo.StartLayerIndex; i < renderInfo.EndLayerIndex; i++)
+				if (Is32Bit() && !GL.GlHasBufferObjects)
+				{
+					int maxFeaturesForThisSystem = 125000;
+					int totalFeaturesToRunder = 0;
+					// if on 32 bit system make sure we don't run out of memory rendering too many features
+					for (int i = renderInfo.EndLayerIndex - 1; i >= renderInfo.StartLayerIndex; i--)
+					{
+						if (totalFeaturesToRunder + renderFeatures[i].Count < maxFeaturesForThisSystem)
+						{
+							totalFeaturesToRunder += renderFeatures[i].Count;
+						}
+						else // don't render any of the layers below this and in fact remove them from memory if possible
+						{
+							bool removedVertedBuffers = false;
+							renderInfo.startLayerIndex = i+1;
+							for (int removeIndex = i; removeIndex >= 0; removeIndex--)
+							{
+								if (layerVertexBuffer[removeIndex] != null)
+								{
+									layerVertexBuffer[removeIndex] = null;
+									removedVertedBuffers = true;
+								}
+							}
+
+							if (removedVertedBuffers)
+							{
+								GC.Collect();
+							}
+							break;
+						}
+					}
+				}
+
+				for (int i = renderInfo.EndLayerIndex - 1; i >= renderInfo.StartLayerIndex; i--)
 				{
 					// If its the first render or we change what we are trying to render then create vertex data.
 					if (layerVertexBuffer[i] == null)
