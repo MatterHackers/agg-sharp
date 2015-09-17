@@ -13,9 +13,9 @@ namespace MatterHackers.Agg.UI
 
 		private double boxWidth = 10 * TextWidget.GlobalPointSizeScaleRatio;
 
-		public RadioButtonViewText(string label)
+		public RadioButtonViewText(string label, int fontSize=12)
 		{
-			labelTextWidget = new TextWidget(label, 12);
+            labelTextWidget = new TextWidget(label, fontSize);
 			AddChild(labelTextWidget);
 
 			LocalBounds = GetLocalBounds();
