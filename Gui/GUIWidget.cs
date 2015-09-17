@@ -16,7 +16,8 @@
 //          mcseemagg@yahoo.com
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
-#define DUMP_SLOW_TIMES
+
+//#define DUMP_SLOW_TIMES
 
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
