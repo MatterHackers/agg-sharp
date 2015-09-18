@@ -42,7 +42,7 @@ namespace MatterHackers.Agg.PlatformAbstract
 
 		public virtual bool LoadImageData(Stream stream, ImageSequence destImageSequence)
 		{
-			throw new Exception("You must implement this in an inherited class.");
+			return false;
 		}
 
 		public virtual bool LoadImageData(String filename, ImageBuffer destImage)
