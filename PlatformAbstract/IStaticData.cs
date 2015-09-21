@@ -41,6 +41,8 @@ namespace MatterHackers.Agg.PlatformAbstract
 		string ReadAllText(string path);
 
 		void LoadImageData(Stream stream, ImageBuffer unScaledImage);
+
+		void LoadSequence(string path, ImageSequence sequence);
 	}
 
 	public static class StaticData

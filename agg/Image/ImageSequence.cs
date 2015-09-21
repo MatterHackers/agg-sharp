@@ -64,7 +64,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		private bool looping = false;
+		public bool Looping { get; set; }
 
 		private List<ImageBuffer> imageList = new List<ImageBuffer>();
 
@@ -148,7 +148,7 @@ namespace MatterHackers.Agg.Image
 
 		public ImageBuffer GetImageByIndex(int ImageIndex)
 		{
-			if (looping)
+			if (Looping)
 			{
 				return imageList[ImageIndex % NumFrames];
 			}
@@ -169,37 +169,6 @@ namespace MatterHackers.Agg.Image
 		{
 			public bool Looping = false;
 			public double FramePerFrame = 30;
-		}
-
-		public bool LoadFromFolder(string pathToImages, Func<String, ImageBuffer, bool> loadImageFunction)
-		{
-			if(Directory.Exists(pathToImages))
-			{
-				string propertiesPath = Path.Combine(pathToImages, "properties.json");
-				if(File.Exists(propertiesPath))
-				{
-					string jsonData = File.ReadAllText(propertiesPath);
-					Properties properties = JsonConvert.DeserializeObject<Properties>(jsonData);
-					this.FramePerSecond = properties.FramePerFrame;
-					this.looping = properties.Looping;
-				}
-
-				string[] pngFilesIn = Directory.GetFiles(pathToImages, "*.png");
-				List<string> pngFiles = new List<string>(pngFilesIn);
-				pngFiles.Sort();
-				foreach (string pngFile in pngFiles)
-				{
-					ImageBuffer image = new ImageBuffer();
-					if (loadImageFunction(pngFile, image))
-					{
-						this.AddImage(image);
-					}
-				}
-
-				return true;
-			}
-
-			return false;
 		}
 	}
 }

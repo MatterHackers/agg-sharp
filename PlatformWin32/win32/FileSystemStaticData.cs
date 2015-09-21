@@ -1,5 +1,6 @@
 ﻿using MatterHackers.Agg.Image;
 using MatterHackers.Agg.PlatformAbstract;
+using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -61,6 +62,31 @@ namespace MatterHackers.Agg
 		public void LoadIcon(string path, ImageBuffer buffer)
 		{
 			LoadImage(Path.Combine("Icons", path), buffer);
+		}
+
+		public void LoadSequence(string pathToImages, ImageSequence sequence)
+		{
+			if (DirectoryExists(pathToImages))
+			{
+				string propertiesPath = Path.Combine(pathToImages, "properties.json");
+				if (FileExists(propertiesPath))
+				{
+					string jsonData = ReadAllText(propertiesPath);
+					ImageSequence.Properties properties = JsonConvert.DeserializeObject<ImageSequence.Properties>(jsonData);
+					sequence.FramePerSecond = properties.FramePerFrame;
+					sequence.Looping = properties.Looping;
+				}
+
+				string[] pngFilesIn = GetFiles(pathToImages).Where(fileName => Path.GetExtension(fileName).ToUpper() == ".PNG").ToArray();
+				List<string> pngFiles = new List<string>(pngFilesIn);
+				pngFiles.Sort();
+				foreach (string pngFile in pngFiles)
+				{
+					ImageBuffer image = new ImageBuffer();
+					LoadImage(pngFile, image);
+					sequence.AddImage(image);
+				}
+			}
 		}
 
 		public void LoadImageData(Stream imageStream, ImageBuffer destImage)
