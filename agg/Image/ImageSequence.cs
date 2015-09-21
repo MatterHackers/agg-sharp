@@ -1,4 +1,5 @@
 ﻿using MatterHackers.VectorMath;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -153,6 +154,41 @@ namespace MatterHackers.Agg.Image
 			}
 
 			return imageList[ImageIndex];
+		}
+
+		public class Properties
+		{
+			public bool Looping = false;
+			public double FramePerFrame = 30;
+		}
+
+		public bool LoadFromFolder(string pathToImages, Func<String, ImageBuffer, bool> loadImageFunction)
+		{
+			if(Directory.Exists(pathToImages))
+			{
+				string propertiesPath = Path.Combine(pathToImages, "properties.json");
+				if(File.Exists(propertiesPath))
+				{
+					string jsonData = File.ReadAllText(propertiesPath);
+					Properties properties = JsonConvert.DeserializeObject<Properties>(jsonData);
+					this.FramePerSecond = properties.FramePerFrame;
+					this.looping = properties.Looping;
+				}
+
+				string[] pngFiles = Directory.GetFiles(pathToImages, "*.png");
+				foreach (string pngFile in pngFiles)
+				{
+					ImageBuffer image = new ImageBuffer();
+					if (loadImageFunction(pngFile, image))
+					{
+						this.AddImage(image);
+					}
+				}
+
+				return true;
+			}
+
+			return false;
 		}
 	}
 }

@@ -39,7 +39,7 @@ namespace MatterHackers.Agg.VertexSource
 		private Vector2 rightTopRadius;
 		private Vector2 leftTopRadius;
 		private int state;
-		private arc currentProcessingArc = new arc();
+		private Arc currentProcessingArc = new Arc();
 
 		public RoundedRect(double left, double bottom, double right, double top, double radius)
 		{

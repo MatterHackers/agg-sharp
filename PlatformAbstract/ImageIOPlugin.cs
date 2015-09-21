@@ -37,7 +37,15 @@ namespace MatterHackers.Agg.PlatformAbstract
 	{
 		public virtual bool LoadImageData(String pathToGifFile, ImageSequence destImageSequence)
 		{
-			throw new Exception("You must implement this in an inherited class.");
+			if (File.Exists(pathToGifFile))
+			{
+				using (Stream stream = new StreamReader(pathToGifFile).BaseStream)
+				{
+					return LoadImageData(stream, destImageSequence);
+				}
+			}
+
+			return false;
 		}
 
 		public virtual bool LoadImageData(Stream stream, ImageSequence destImageSequence)

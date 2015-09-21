@@ -31,7 +31,7 @@ namespace MatterHackers.Agg.VertexSource
 	//
 	// See Implementation agg_arc.cpp
 	//
-	public class arc : IVertexSource
+	public class Arc : IVertexSource
 	{
 		private double originX;
 		private double originY;
@@ -57,11 +57,11 @@ namespace MatterHackers.Agg.VertexSource
 			CounterClockWise,
 		}
 
-		public arc()
+		public Arc()
 		{
 		}
 
-		public arc(double OriginX, double OriginY,
+		public Arc(double OriginX, double OriginY,
 			 double RadiusX, double RadiusY,
 			 double Angle1, double Angle2,
 			 EDirection Direction = EDirection.CounterClockWise,
