@@ -31,13 +31,18 @@ namespace MatterHackers.Agg.Image
 		{
 			get
 			{
-				RectangleInt bounds = new RectangleInt(int.MaxValue, int.MaxValue, int.MinValue, int.MinValue);
-				foreach (ImageBuffer frame in imageList)
+				if (imageList.Count > 0)
 				{
-					bounds.ExpandToInclude(frame.GetBoundingRect());
+					RectangleInt bounds = new RectangleInt(int.MaxValue, int.MaxValue, int.MinValue, int.MinValue);
+					foreach (ImageBuffer frame in imageList)
+					{
+						bounds.ExpandToInclude(frame.GetBoundingRect());
+					}
+
+					return Math.Max(0, bounds.Width);
 				}
 
-				return Math.Max(0, bounds.Width);
+				return 0;
 			}
 		}
 
@@ -45,13 +50,17 @@ namespace MatterHackers.Agg.Image
 		{
 			get
 			{
-				RectangleInt bounds = new RectangleInt(int.MaxValue, int.MaxValue, int.MinValue, int.MinValue);
-				foreach (ImageBuffer frame in imageList)
+				if (imageList.Count > 0)
 				{
-					bounds.ExpandToInclude(frame.GetBoundingRect());
+					RectangleInt bounds = new RectangleInt(int.MaxValue, int.MaxValue, int.MinValue, int.MinValue);
+					foreach (ImageBuffer frame in imageList)
+					{
+						bounds.ExpandToInclude(frame.GetBoundingRect());
+					}
+					return Math.Max(0, bounds.Height);
 				}
 
-				return Math.Max(0, bounds.Height);
+				return 0;
 			}
 		}
 

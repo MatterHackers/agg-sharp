@@ -69,25 +69,29 @@ namespace MatterHackers.Agg
 			ImageIOWindowsPlugin.ConvertBitmapToImage(destImage, bitmap);
 		}
 
+		static object locker = new object();
 		public void LoadImage(string path, ImageBuffer destImage)
 		{
-			ImageBuffer cachedImage = null;
-			if (!cachedImages.TryGetValue(path, out cachedImage))
+			lock (locker)
 			{
-				using (var imageStream = OpenSteam(path))
+				ImageBuffer cachedImage = null;
+				if (!cachedImages.TryGetValue(path, out cachedImage))
 				{
-					var bitmap = new Bitmap(imageStream);
-					cachedImage = new ImageBuffer();
-					ImageIOWindowsPlugin.ConvertBitmapToImage(cachedImage, bitmap);
+					using (var imageStream = OpenSteam(path))
+					{
+						var bitmap = new Bitmap(imageStream);
+						cachedImage = new ImageBuffer();
+						ImageIOWindowsPlugin.ConvertBitmapToImage(cachedImage, bitmap);
+					}
+					if (cachedImage.Width < 200 && cachedImage.Height < 200)
+					{
+						// only cache relatively small images
+						cachedImages.Add(path, cachedImage);
+					}
 				}
-				if (cachedImage.Width < 200 && cachedImage.Height < 200)
-				{
-					// only cache relatively small images
-					cachedImages.Add(path, cachedImage);
-				}
-			}
 
-			destImage.CopyFrom(cachedImage);
+				destImage.CopyFrom(cachedImage);
+			}
 		}
 
 		public ImageBuffer LoadImage(string path)

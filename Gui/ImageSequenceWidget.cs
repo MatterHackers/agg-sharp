@@ -104,8 +104,13 @@ namespace MatterHackers.Agg.UI
 		{
 			if (runningTime.Elapsed.TotalSeconds - lastTimeUpdated > imageSequence.SecondsPerFrame)
 			{
+				if (imageSequence.NumFrames == 0)
+				{
+					return;
+				}
+				
 				lastTimeUpdated = runningTime.Elapsed.TotalSeconds;
-				currentFrame = (1+CurrentFrame) % imageSequence.NumFrames;
+				currentFrame = (1 + CurrentFrame) % imageSequence.NumFrames;
 				Invalidate();
 			}
 
