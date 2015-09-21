@@ -175,7 +175,9 @@ namespace MatterHackers.Agg.Image
 					this.looping = properties.Looping;
 				}
 
-				string[] pngFiles = Directory.GetFiles(pathToImages, "*.png");
+				string[] pngFilesIn = Directory.GetFiles(pathToImages, "*.png");
+				List<string> pngFiles = new List<string>(pngFilesIn);
+				pngFiles.Sort();
 				foreach (string pngFile in pngFiles)
 				{
 					ImageBuffer image = new ImageBuffer();
