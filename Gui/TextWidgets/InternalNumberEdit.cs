@@ -173,6 +173,7 @@ namespace MatterHackers.Agg.UI
 					else // the text cannot be parsed so set it
 					{
 						Text = newValue.ToString();
+						CharIndexToInsertBefore = Text.Length;
 					}
 				}
 			}
