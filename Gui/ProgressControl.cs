@@ -121,11 +121,11 @@ namespace MatterHackers.Agg.UI
 			}
         }
 
-		public ProgressControl(string message, RGBA_Bytes textColor, RGBA_Bytes fillColor, int barWidgth = 80, int barHeight = 15)
+		public ProgressControl(string message, RGBA_Bytes textColor, RGBA_Bytes fillColor, int barWidgth = 80, int barHeight = 15, int leftMargin = 5)
 		{
 			processTextWidget = new TextWidget(message, textColor: textColor);
 			processTextWidget.AutoExpandBoundsToText = true;
-			processTextWidget.Margin = new BorderDouble(5, 0);
+            processTextWidget.Margin = new BorderDouble(leftMargin, 0, 5, 0);
 			processTextWidget.VAnchor = VAnchor.ParentCenter;
 			AddChild(processTextWidget);
 
@@ -136,6 +136,7 @@ namespace MatterHackers.Agg.UI
 
 			progressBar.VAnchor = VAnchor.ParentCenter;
 			AddChild(progressBar);
+
 			progressTextWidget = new TextWidget("", textColor: textColor, pointSize: 8);
 			progressTextWidget.AutoExpandBoundsToText = true;
 			progressTextWidget.VAnchor = VAnchor.ParentCenter;
