@@ -125,21 +125,28 @@ namespace MatterHackers.PolygonMesh.Processors
 
 		public static bool Save(List<MeshGroup> meshGroupsToSave, string meshPathAndFileName, MeshOutputSettings outputInfo = null)
 		{
-			if (outputInfo == null)
+			try
 			{
-				outputInfo = new MeshOutputSettings();
+				if (outputInfo == null)
+				{
+					outputInfo = new MeshOutputSettings();
+				}
+				switch (Path.GetExtension(meshPathAndFileName).ToUpper())
+				{
+					case ".STL":
+						Mesh mesh = DoMerge(meshGroupsToSave, outputInfo);
+						return StlProcessing.Save(mesh, meshPathAndFileName, outputInfo);
+
+					case ".AMF":
+						return AmfProcessing.Save(meshGroupsToSave, meshPathAndFileName, outputInfo);
+
+					default:
+						return false;
+				}
 			}
-			switch (Path.GetExtension(meshPathAndFileName).ToUpper())
+			catch (Exception)
 			{
-				case ".STL":
-					Mesh mesh = DoMerge(meshGroupsToSave, outputInfo);
-					return StlProcessing.Save(mesh, meshPathAndFileName, outputInfo);
-
-				case ".AMF":
-					return AmfProcessing.Save(meshGroupsToSave, meshPathAndFileName, outputInfo);
-
-				default:
-					return false;
+				return false;
 			}
 		}
 

@@ -40,7 +40,11 @@ namespace MatterHackers.Agg.UI
 		private bool runAnimation = false;
 		private double lastTimeUpdated = 0;
 
-		public int CurrentFrame = 0;
+		public int currentFrame;
+		public int CurrentFrame
+		{
+			get { return currentFrame; }
+		}
 
 		public bool RunAnimation
 		{
@@ -55,7 +59,7 @@ namespace MatterHackers.Agg.UI
 						// we just turned it on so make sure the update is being called
 						lastTimeUpdated = 0;
 						runningTime.Restart();
-						UiThread.RunOnIdle(UpdateGif);
+						UiThread.RunOnIdle(UpdateAnimation);
 					}
 				}
 			}
@@ -96,18 +100,23 @@ namespace MatterHackers.Agg.UI
 			base.OnClosed(e);
 		}
 
-		private void UpdateGif()
+		private void UpdateAnimation()
 		{
 			if (runningTime.Elapsed.TotalSeconds - lastTimeUpdated > imageSequence.SecondsPerFrame)
 			{
+				if (imageSequence.NumFrames == 0)
+				{
+					return;
+				}
+				
 				lastTimeUpdated = runningTime.Elapsed.TotalSeconds;
-				CurrentFrame = (++CurrentFrame) % imageSequence.NumFrames;
+				currentFrame = (1 + CurrentFrame) % imageSequence.NumFrames;
 				Invalidate();
 			}
 
 			if (RunAnimation)
 			{
-				UiThread.RunOnIdle(UpdateGif);
+				UiThread.RunOnIdle(UpdateAnimation);
 			}
 		}
 

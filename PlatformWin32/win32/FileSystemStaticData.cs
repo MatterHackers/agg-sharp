@@ -1,5 +1,6 @@
 ﻿using MatterHackers.Agg.Image;
 using MatterHackers.Agg.PlatformAbstract;
+using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -63,31 +64,60 @@ namespace MatterHackers.Agg
 			LoadImage(Path.Combine("Icons", path), buffer);
 		}
 
+		public void LoadSequence(string pathToImages, ImageSequence sequence)
+		{
+			if (DirectoryExists(pathToImages))
+			{
+				string propertiesPath = Path.Combine(pathToImages, "properties.json");
+				if (FileExists(propertiesPath))
+				{
+					string jsonData = ReadAllText(propertiesPath);
+					ImageSequence.Properties properties = JsonConvert.DeserializeObject<ImageSequence.Properties>(jsonData);
+					sequence.FramePerSecond = properties.FramePerFrame;
+					sequence.Looping = properties.Looping;
+				}
+
+				string[] pngFilesIn = GetFiles(pathToImages).Where(fileName => Path.GetExtension(fileName).ToUpper() == ".PNG").ToArray();
+				List<string> pngFiles = new List<string>(pngFilesIn);
+				pngFiles.Sort();
+				foreach (string pngFile in pngFiles)
+				{
+					ImageBuffer image = new ImageBuffer();
+					LoadImage(pngFile, image);
+					sequence.AddImage(image);
+				}
+			}
+		}
+
 		public void LoadImageData(Stream imageStream, ImageBuffer destImage)
 		{
 			var bitmap = new Bitmap(imageStream);
 			ImageIOWindowsPlugin.ConvertBitmapToImage(destImage, bitmap);
 		}
 
+		static object locker = new object();
 		public void LoadImage(string path, ImageBuffer destImage)
 		{
-			ImageBuffer cachedImage = null;
-			if (!cachedImages.TryGetValue(path, out cachedImage))
+			lock (locker)
 			{
-				using (var imageStream = OpenSteam(path))
+				ImageBuffer cachedImage = null;
+				if (!cachedImages.TryGetValue(path, out cachedImage))
 				{
-					var bitmap = new Bitmap(imageStream);
-					cachedImage = new ImageBuffer();
-					ImageIOWindowsPlugin.ConvertBitmapToImage(cachedImage, bitmap);
+					using (var imageStream = OpenSteam(path))
+					{
+						var bitmap = new Bitmap(imageStream);
+						cachedImage = new ImageBuffer();
+						ImageIOWindowsPlugin.ConvertBitmapToImage(cachedImage, bitmap);
+					}
+					if (cachedImage.Width < 200 && cachedImage.Height < 200)
+					{
+						// only cache relatively small images
+						cachedImages.Add(path, cachedImage);
+					}
 				}
-				if (cachedImage.Width < 200 && cachedImage.Height < 200)
-				{
-					// only cache relatively small images
-					cachedImages.Add(path, cachedImage);
-				}
-			}
 
-			destImage.CopyFrom(cachedImage);
+				destImage.CopyFrom(cachedImage);
+			}
 		}
 
 		public ImageBuffer LoadImage(string path)

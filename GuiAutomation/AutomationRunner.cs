@@ -667,12 +667,16 @@ namespace MatterHackers.GuiAutomation
 		{
 			foreach (SystemWindow window in SystemWindow.OpenWindows)
 			{
-				GuiWidget widgetToClick = window.FindNamedChildRecursive(widgetName);
-				if (widgetToClick != null)
+				List<GuiWidget> foundChildren = new List<GuiWidget>();
+				window.FindNamedChildrenRecursive(widgetName, foundChildren);
+				if (foundChildren.Count > 0)
 				{
-					if (widgetToClick.ActuallyVisibleOnScreen())
+					foreach (GuiWidget foundChild in foundChildren)
 					{
-						return true;
+						if (foundChild.ActuallyVisibleOnScreen())
+						{
+							return true;
+						}
 					}
 				}
 			}

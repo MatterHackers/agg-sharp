@@ -39,46 +39,6 @@ namespace MatterHackers.Agg.Image
 {
 	public class ImageIOWindowsPlugin : ImageIOPlugin
 	{
-		public override bool LoadImageData(String pathToGifFile, ImageSequence destImageSequence)
-		{
-			if (File.Exists(pathToGifFile) && Path.GetExtension(pathToGifFile).ToUpper() == ".GIF")
-			{
-				System.Drawing.Image gifImg = System.Drawing.Image.FromFile(pathToGifFile);
-				if (gifImg != null)
-				{
-					FrameDimension dimension = new FrameDimension(gifImg.FrameDimensionsList[0]);
-					// Number of frames
-					int frameCount = gifImg.GetFrameCount(dimension);
-
-					for (int i = 0; i < frameCount; i++)
-					{
-						// Return an Image at a certain index
-						gifImg.SelectActiveFrame(dimension, i);
-						ImageBuffer frame = new ImageBuffer();
-						ConvertBitmapToImage(frame, new Bitmap(gifImg));
-						destImageSequence.AddImage(frame);
-					}
-
-					try
-					{
-						PropertyItem item = gifImg.GetPropertyItem(0x5100); // FrameDelay in libgdiplus
-						// Time is in 1/100th of a second
-						destImageSequence.SecondsPerFrame = (item.Value[0] + item.Value[1] * 256) / 100.0;
-					}
-					catch(Exception e)
-					{
-						Debug.Print(e.Message);
-						GuiWidget.BreakInDebugger();
-						destImageSequence.SecondsPerFrame = 2;
-					}
-
-					return true;
-				}
-			}
-
-			return false;
-		}
-
 		public override bool LoadImageData(Stream stream, ImageSequence destImageSequence)
 		{
 			System.Drawing.Image gifImg = System.Drawing.Image.FromStream(stream);
@@ -304,8 +264,9 @@ namespace MatterHackers.Agg.Image
 							destIndex += scanlinePadding;
 						}
 					}
-					bitmapToSave.Save(filename, format);
 					bitmapToSave.UnlockBits(bitmapData);
+					bitmapToSave.Save(filename, format);
+
 					return true;
 				}
 				else if (sourceImage.BitDepth == 8 && format == ImageFormat.Png)
