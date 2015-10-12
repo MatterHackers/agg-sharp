@@ -205,6 +205,7 @@
     <Compile Include="ImageSequenceWidget.cs" />
     <Compile Include="StringEventArgs.cs" />
     <Compile Include="SystemWindow\AbstractOsMappingWidget.cs" />
+    <Compile Include="SystemWindow\ToolTipManager.cs" />
     <Compile Include="TextWidgets\InternalNumberEdit.cs" />
     <Compile Include="TextWidgets\NumberEdit.cs" />
     <Compile Include="LayoutPannel.cs" />
@@ -224,6 +225,7 @@
     <Compile Include="TabControl\TabControl.cs" />
     <Compile Include="TabControl\TabPage.cs" />
     <Compile Include="TextWidgets\InternalTextEditWidget.cs" />
+    <Compile Include="TextWidgets\WrappedTextWidget.cs" />
     <Compile Include="TextWidgets\UndoBuffer.cs" />
     <Compile Include="TextWidgets\TextEditWidget.cs" />
     <Compile Include="TextWidgets\TextWidget.cs" />

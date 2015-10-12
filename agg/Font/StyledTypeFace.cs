@@ -144,9 +144,9 @@ namespace MatterHackers.Agg.Font
 		}
 	}
 
-	public class StyledTypeFace
-	{
-		private TypeFace typeFace;
+    public class StyledTypeFace
+    {
+        public TypeFace TypeFace { get; private set; }
 
 		private const int PointsPerInch = 72;
 		private const int PixelsPerInch = 96;
@@ -157,7 +157,7 @@ namespace MatterHackers.Agg.Font
 
 		public StyledTypeFace(TypeFace typeFace, double emSizeInPoints, bool underline = false, bool flatenCurves = true)
 		{
-			this.typeFace = typeFace;
+			this.TypeFace = typeFace;
 			emSizeInPixels = emSizeInPoints / PointsPerInch * PixelsPerInch;
 			currentEmScalling = emSizeInPixels / typeFace.UnitsPerEm;
 			DoUnderline = underline;
@@ -210,7 +210,7 @@ namespace MatterHackers.Agg.Font
 		{
 			get
 			{
-				return typeFace.Ascent * currentEmScalling;
+				return TypeFace.Ascent * currentEmScalling;
 			}
 		}
 
@@ -218,7 +218,7 @@ namespace MatterHackers.Agg.Font
 		{
 			get
 			{
-				return typeFace.Descent * currentEmScalling;
+				return TypeFace.Descent * currentEmScalling;
 			}
 		}
 
@@ -226,7 +226,7 @@ namespace MatterHackers.Agg.Font
 		{
 			get
 			{
-				return typeFace.X_height * currentEmScalling;
+				return TypeFace.X_height * currentEmScalling;
 			}
 		}
 
@@ -234,7 +234,7 @@ namespace MatterHackers.Agg.Font
 		{
 			get
 			{
-				return typeFace.Cap_height * currentEmScalling;
+				return TypeFace.Cap_height * currentEmScalling;
 			}
 		}
 
@@ -242,7 +242,7 @@ namespace MatterHackers.Agg.Font
 		{
 			get
 			{
-				RectangleDouble pixelBounds = new RectangleDouble(typeFace.BoundingBox);
+				RectangleDouble pixelBounds = new RectangleDouble(TypeFace.BoundingBox);
 				pixelBounds *= currentEmScalling;
 				return pixelBounds;
 			}
@@ -252,7 +252,7 @@ namespace MatterHackers.Agg.Font
 		{
 			get
 			{
-				return typeFace.Underline_thickness * currentEmScalling;
+				return TypeFace.Underline_thickness * currentEmScalling;
 			}
 		}
 
@@ -260,7 +260,7 @@ namespace MatterHackers.Agg.Font
 		{
 			get
 			{
-				return typeFace.Underline_position * currentEmScalling;
+				return TypeFace.Underline_position * currentEmScalling;
 			}
 		}
 
@@ -272,7 +272,7 @@ namespace MatterHackers.Agg.Font
 			}
 
 			ImageBuffer imageForCharacter;
-			Dictionary<char, ImageBuffer> characterImageCache = StyledTypeFaceImageCache.GetCorrectCache(this.typeFace, color, this.emSizeInPixels);
+			Dictionary<char, ImageBuffer> characterImageCache = StyledTypeFaceImageCache.GetCorrectCache(this.TypeFace, color, this.emSizeInPixels);
 			characterImageCache.TryGetValue(character, out imageForCharacter);
 			if (imageForCharacter != null)
 			{
@@ -308,12 +308,12 @@ namespace MatterHackers.Agg.Font
 		public IVertexSource GetGlyphForCharacter(char character)
 		{
 			// scale it to the correct size.
-			IVertexSource sourceGlyph = typeFace.GetGlyphForCharacter(character);
+			IVertexSource sourceGlyph = TypeFace.GetGlyphForCharacter(character);
 			if (sourceGlyph != null)
 			{
 				if (DoUnderline)
 				{
-					sourceGlyph = new GlyphWithUnderline(sourceGlyph, typeFace.GetAdvanceForCharacter(character), typeFace.Underline_position, typeFace.Underline_thickness);
+					sourceGlyph = new GlyphWithUnderline(sourceGlyph, TypeFace.GetAdvanceForCharacter(character), TypeFace.Underline_position, TypeFace.Underline_thickness);
 				}
 				Affine glyphTransform = Affine.NewIdentity();
 				glyphTransform *= Affine.NewScaling(currentEmScalling);
@@ -332,12 +332,12 @@ namespace MatterHackers.Agg.Font
 
 		public double GetAdvanceForCharacter(char character, char nextCharacterToKernWith)
 		{
-			return typeFace.GetAdvanceForCharacter(character, nextCharacterToKernWith) * currentEmScalling;
+			return TypeFace.GetAdvanceForCharacter(character, nextCharacterToKernWith) * currentEmScalling;
 		}
 
 		public double GetAdvanceForCharacter(char character)
 		{
-			return typeFace.GetAdvanceForCharacter(character) * currentEmScalling;
+			return TypeFace.GetAdvanceForCharacter(character) * currentEmScalling;
 		}
 	}
 }

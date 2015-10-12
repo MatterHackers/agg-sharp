@@ -141,21 +141,21 @@ namespace MatterHackers.Localizations
 
 					using (TimedLock.Lock(this, "TranslationMap"))
 					{
-						string staticDataPathAndFilename = Path.Combine("../../StaticData", pathAndFilename);
-						string staticDataPath = Path.Combine("../../StaticData", staticDataPathAndFilename);
+						
+						string staticDataPath = StaticData.Instance.MapPath(pathAndFilename);
 						string pathName = Path.GetDirectoryName(staticDataPath);
 						if (!Directory.Exists(pathName))
 						{
 							Directory.CreateDirectory(pathName);
 						}
-						if (!File.Exists(staticDataPathAndFilename))
+						if (!File.Exists(staticDataPath))
 						{
-							using (StreamWriter masterFileStream = File.CreateText(staticDataPathAndFilename))
+							using (StreamWriter masterFileStream = File.CreateText(staticDataPath))
 							{
 							}
 						}
 
-						using (StreamWriter masterFileStream = File.AppendText(staticDataPathAndFilename))
+						using (StreamWriter masterFileStream = File.AppendText(staticDataPath))
 						{
 							masterFileStream.WriteLine("{0}{1}".FormatWith(engishTag, EncodeForSaving(englishString)));
 							masterFileStream.WriteLine("{0}{1}".FormatWith(translatedTag, EncodeForSaving(englishString)));

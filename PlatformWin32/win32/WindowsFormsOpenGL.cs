@@ -47,11 +47,12 @@ namespace MatterHackers.Agg.UI
             if (!checkedCapabilities)
             {
                 IntPtr address = (this.Context as OpenTK.Graphics.IGraphicsContextInternal).GetAddress("glGenBuffers");
-                if (GL.GetString(StringName.Extensions).Contains("vertex_buffer_object") || address == IntPtr.Zero)
+                if (!GL.GetString(StringName.Extensions).Contains("vertex_buffer_object") || address == IntPtr.Zero)
                 {
                     MatterHackers.RenderOpenGl.OpenGl.GL.DisableGlBuffers();
                 }
-                checkedCapabilities = true;
+				//MatterHackers.RenderOpenGl.OpenGl.GL.DisableGlBuffers();
+				checkedCapabilities = true;
             }
 			Id = nextId++;
 		}
@@ -131,6 +132,10 @@ namespace MatterHackers.Agg.UI
 
 		protected override void OnPaint(PaintEventArgs paintEventArgs)
 		{
+			if (Focused)
+			{
+				glControl.Focus();
+			}
 			// We have to make current the gl for the window we are.
 			// If this throws an assert, you are calling MakeCurrent() before the glControl is done being constructed.
 			// Call this function after you have called Show().

@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.VectorMath;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace MatterHackers.Agg.UI
@@ -58,6 +59,8 @@ namespace MatterHackers.Agg.UI
 		public int StencilBufferDepth { get; set; }
 
 		private string title = "";
+
+        public ToolTipManager ToolTipManager { get; private set; }
 
 		public string Title
 		{
@@ -94,6 +97,7 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnClosed(EventArgs e)
 		{
+            openWindows.Remove(this);
 			base.OnClosed(e);
 			if (Parent != null)
 			{
@@ -101,9 +105,19 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+        static List<SystemWindow> openWindows = new List<SystemWindow>();
+        public static List<SystemWindow> OpenWindows
+        {
+            get
+            {
+                return new List<SystemWindow>(openWindows);
+            }
+        }
+
 		public SystemWindow(double width, double height)
 			: base(width, height, SizeLimitsToSet.None)
 		{
+            ToolTipManager = new ToolTipManager(this);
 			if (globalSystemWindowCreator == null)
 			{
 				string pluginPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
@@ -114,6 +128,8 @@ namespace MatterHackers.Agg.UI
 				}
 				globalSystemWindowCreator = systemWindowCreatorFinder.Plugins[0];
 			}
+
+            openWindows.Add(this);
 		}
 
 		public override Vector2 MinimumSize
@@ -191,5 +207,10 @@ namespace MatterHackers.Agg.UI
 			throw new Exception("DEBUG is defined and should not be!");
 #endif
 		}
-	}
+
+        public void SetHoveredWidget(GuiWidget widgetToShowToolTipFor)
+        {
+            ToolTipManager.SetHoveredWidget(widgetToShowToolTipFor);
+        }
+    }
 }

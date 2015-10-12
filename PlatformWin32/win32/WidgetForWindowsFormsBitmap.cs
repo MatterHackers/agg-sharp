@@ -36,8 +36,6 @@ namespace MatterHackers.Agg.UI
 	{
 		internal WindowsFormsBitmapBackBuffer bitmapBackBuffer = new WindowsFormsBitmapBackBuffer();
 
-		public static Stopwatch copyTime = new Stopwatch();
-
 		public WidgetForWindowsFormsBitmap(SystemWindow childSystemWindow)
 			: base(childSystemWindow)
 		{

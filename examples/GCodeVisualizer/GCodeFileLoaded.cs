@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 #define DUMP_SLOW_TIMES
 
 using MatterHackers.Agg;
+using MatterHackers.Agg.UI;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
@@ -131,8 +132,10 @@ namespace MatterHackers.GCodeVisualizer
 				ParseFileContents(null, doWorkEventArgs);
 				loadedGCode = (GCodeFileLoaded)doWorkEventArgs.Result;
 			}
-			catch (IOException)
+			catch (IOException e)
 			{
+				Debug.Print(e.Message);
+				GuiWidget.BreakInDebugger();
 			}
 
 			return loadedGCode;
@@ -174,8 +177,10 @@ namespace MatterHackers.GCodeVisualizer
 						backgroundWorker.RunWorkerAsync(null);
 					}
 				}
-				catch (IOException)
+				catch (IOException e)
 				{
+					Debug.Print(e.Message);
+					GuiWidget.BreakInDebugger();
 				}
 			}
 			else
@@ -386,7 +391,7 @@ namespace MatterHackers.GCodeVisualizer
 					}
 				}
 
-				if (feedRateMmPerMin > 0)
+				if (feedRateMmPerMin > 0) 
 				{
 					instruction.secondsThisLine = (float)GetSecondsThisLine(deltaPositionThisLine, deltaEPositionThisLine, feedRateMmPerMin);
 				}
@@ -800,11 +805,11 @@ namespace MatterHackers.GCodeVisualizer
 			return bounds;
 		}
 
-		public override bool IsExtruding(int vertexIndexToCheck)
+		public override bool IsExtruding(int instructionIndexToCheck)
 		{
-			if (vertexIndexToCheck > 1 && vertexIndexToCheck < GCodeCommandQueue.Count)
+			if (instructionIndexToCheck > 1 && instructionIndexToCheck < GCodeCommandQueue.Count)
 			{
-				double extrusionLengeth = GCodeCommandQueue[vertexIndexToCheck].EPosition - GCodeCommandQueue[vertexIndexToCheck - 1].EPosition;
+				double extrusionLengeth = GCodeCommandQueue[instructionIndexToCheck].EPosition - GCodeCommandQueue[instructionIndexToCheck - 1].EPosition;
 				if (extrusionLengeth > 0)
 				{
 					return true;
@@ -814,9 +819,9 @@ namespace MatterHackers.GCodeVisualizer
 			return false;
 		}
 
-		public override double GetFilamentUsedMm(double nozzleDiameter)
+		public override double GetFilamentUsedMm(double filamentDiameter)
 		{
-			if (filamentUsedMmCache == 0)
+			//if (filamentUsedMmCache == 0)
 			{
 				double lastEPosition = 0;
 				double filamentMm = 0;
@@ -829,19 +834,20 @@ namespace MatterHackers.GCodeVisualizer
 					if (lineToParse.StartsWith("G0") || lineToParse.StartsWith("G1"))
 					{
 						double ePosition = lastEPosition;
-						GetFirstNumberAfter("E", lineToParse, ref ePosition);
-
-						if (instruction.movementType == PrinterMachineInstruction.MovementTypes.Absolute)
+						if (GetFirstNumberAfter("E", lineToParse, ref ePosition))
 						{
-							double deltaEPosition = ePosition - lastEPosition;
-							filamentMm += deltaEPosition;
-						}
-						else
-						{
-							filamentMm += ePosition;
-						}
+							if (instruction.movementType == PrinterMachineInstruction.MovementTypes.Absolute)
+							{
+								double deltaEPosition = ePosition - lastEPosition;
+								filamentMm += deltaEPosition;
+							}
+							else
+							{
+								filamentMm += ePosition;
+							}
 
-						lastEPosition = ePosition;
+							lastEPosition = ePosition;
+						}
 					}
 					else if (lineToParse.StartsWith("G92"))
 					{

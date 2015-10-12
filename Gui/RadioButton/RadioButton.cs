@@ -75,19 +75,19 @@ namespace MatterHackers.Agg.UI
 		{
 		}
 
-		public RadioButton(string label)
-			: this(0, 0, label)
+		public RadioButton(string label, int fontSize=12)
+			: this(0, 0, label, fontSize)
 		{
 		}
 
-		public RadioButton(string label, RGBA_Bytes textColor)
-			: this(0, 0, label)
+		public RadioButton(string label, RGBA_Bytes textColor, int fontSize = 12)
+			: this(0, 0, label, fontSize)
 		{
 			this.TextColor = textColor;
 		}
 
-		public RadioButton(double x, double y, string label)
-			: this(x, y, new RadioButtonViewText(label))
+		public RadioButton(double x, double y, string label, int fontSize=12)
+			: this(x, y, new RadioButtonViewText(label, fontSize))
 		{
 		}
 

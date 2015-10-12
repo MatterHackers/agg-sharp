@@ -44,21 +44,8 @@ namespace MatterHackers.GCodeVisualizer
 #if	__ANDROID__
 		protected const int Max32BitFileSize = 10000000; // 10 megs
 #else
-
-		//protected const int Max32BitFileSize = 50; // 50 bytes
 		protected const int Max32BitFileSize = 100000000; // 100 megs
-
 #endif
-
-		private static bool RunningIn32Bit()
-		{
-			if (IntPtr.Size == 4)
-			{
-				return true;
-			}
-
-			return false;
-		}
 
 		public static void AssertDebugNotDefined()
 		{
@@ -67,7 +54,8 @@ namespace MatterHackers.GCodeVisualizer
 #endif
 		}
 
-		public abstract double TotalSecondsInPrint { get; }
+        #region Abstract Functions
+        public abstract double TotalSecondsInPrint { get; }
 
 		// the number of lines in the file
 		public abstract int LineCount { get; }
@@ -78,19 +66,19 @@ namespace MatterHackers.GCodeVisualizer
 
 		public abstract void Clear();
 
-		public abstract Vector2 GetWeightedCenter();
+        public abstract Vector2 GetWeightedCenter();
 
-		public abstract RectangleDouble GetBounds();
+        public abstract RectangleDouble GetBounds();
 
-		public abstract double GetFilamentCubicMm(double p);
+		public abstract double GetFilamentCubicMm(double filamentDiameter);
 
-		public abstract bool IsExtruding(int i);
+		public abstract bool IsExtruding(int instructionIndexToCheck);
 
 		public abstract double GetLayerHeight();
 
 		public abstract double GetFirstLayerHeight();
 
-		public abstract double GetFilamentUsedMm(double p);
+		public abstract double GetFilamentUsedMm(double filamentDiameter);
 
 		public abstract int GetInstructionIndexAtLayer(int layerIndex);
 
@@ -108,7 +96,21 @@ namespace MatterHackers.GCodeVisualizer
 
 		public abstract double PercentComplete(int instructionIndex);
 
-		public static bool FileTooBigToLoad(string fileName)
+        #endregion Abstract Functions
+
+        #region Static Functions
+
+        private static bool RunningIn32Bit()
+        {
+            if (IntPtr.Size == 4)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public static bool FileTooBigToLoad(string fileName)
 		{
 			if (File.Exists(fileName)
 				&& RunningIn32Bit())
@@ -241,5 +243,7 @@ namespace MatterHackers.GCodeVisualizer
 
 			return stringWithNumber;
 		}
-	}
+
+        #endregion Static Functions
+    }
 }

@@ -83,7 +83,7 @@ namespace MatterHackers.MeshVisualizer
 
 			if (meshFileToLoad != "")
 			{
-				meshViewerWidget.LoadMesh(meshFileToLoad, MeshVisualizer.MeshViewerWidget.CenterPartAfterLoad.DO);
+				meshViewerWidget.LoadMesh(meshFileToLoad, MeshViewerWidget.CenterPartAfterLoad.DO);
 			}
 			else
 			{
@@ -145,7 +145,7 @@ namespace MatterHackers.MeshVisualizer
 				new OpenFileDialogParams("3D Mesh Files|*.stl;*.amf"),
 				(openParams) =>
 				{
-					meshViewerWidget.LoadMesh(openParams.FileName, MeshVisualizer.MeshViewerWidget.CenterPartAfterLoad.DO);
+					meshViewerWidget.LoadMesh(openParams.FileName, MeshViewerWidget.CenterPartAfterLoad.DO);
 				});
 
 			Invalidate();
@@ -156,7 +156,7 @@ namespace MatterHackers.MeshVisualizer
 			foreach (string file in fileDropEventArgs.DroppedFiles)
 			{
 				string extension = Path.GetExtension(file).ToUpper();
-				if (MeshFileIo.ValidFileExtensions().Contains(extension))
+				if ((extension != "" && MeshFileIo.ValidFileExtensions().Contains(extension)))
 				{
 					fileDropEventArgs.AcceptDrop = true;
 				}
@@ -169,7 +169,7 @@ namespace MatterHackers.MeshVisualizer
 			foreach (string file in fileDropEventArgs.DroppedFiles)
 			{
 				string extension = Path.GetExtension(file).ToUpper();
-				if (MeshFileIo.ValidFileExtensions().Contains(extension))
+				if ((extension != "" && MeshFileIo.ValidFileExtensions().Contains(extension)))
 				{
 					fileDropEventArgs.AcceptDrop = true;
 				}
@@ -182,9 +182,9 @@ namespace MatterHackers.MeshVisualizer
 			foreach (string droppedFileName in fileDropEventArgs.DroppedFiles)
 			{
 				string extension = Path.GetExtension(droppedFileName).ToUpper();
-				if (MeshFileIo.ValidFileExtensions().Contains(extension))
+				if ((extension != "" && MeshFileIo.ValidFileExtensions().Contains(extension)))
 				{
-					meshViewerWidget.LoadMesh(droppedFileName, MeshVisualizer.MeshViewerWidget.CenterPartAfterLoad.DO);
+					meshViewerWidget.LoadMesh(droppedFileName, MeshViewerWidget.CenterPartAfterLoad.DO);
 					break;
 				}
 			}

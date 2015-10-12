@@ -102,9 +102,9 @@ namespace MatterHackers.Agg.UI
 			get { return scrollArea; }
 		}
 
-		public void AddChildToBackground(GuiWidget widgetToAdd)
+		public void AddChildToBackground(GuiWidget widgetToAdd, int indexToAddAt = 0)
 		{
-			base.AddChild(widgetToAdd, 0);
+			base.AddChild(widgetToAdd, indexToAddAt);
 		}
 
 		public ScrollableWidget(bool autoScroll = false)
@@ -121,20 +121,9 @@ namespace MatterHackers.Agg.UI
 			ScrollArea.BoundsChanged += new EventHandler(ScrollArea_BoundsChanged);
 			verticalScrollBar = new ScrollBar(this);
 
-#if true
 			base.AddChild(scrollArea);
 			base.AddChild(verticalScrollBar);
-			scrollArea.Padding = new BorderDouble(0, 0, ScrollBar.ScrollBarWidth, 0);
 			verticalScrollBar.HAnchor = UI.HAnchor.ParentRight;
-#else
-            FlowLayoutWidget scrollAreaAndScrollBarRisizer = new FlowLayoutWidget();
-            scrollAreaAndScrollBarRisizer.HAnchor = UI.HAnchor.ParentLeftRight;
-            scrollAreaAndScrollBarRisizer.VAnchor = UI.VAnchor.ParentBottomTop;
-
-            scrollAreaAndScrollBarRisizer.AddChild(scrollArea);
-            scrollAreaAndScrollBarRisizer.AddChild(verticalScrollBar);
-            base.AddChild(scrollAreaAndScrollBarRisizer);
-#endif
 		}
 
 		private void ScrollArea_BoundsChanged(object sender, EventArgs e)
@@ -168,14 +157,6 @@ namespace MatterHackers.Agg.UI
 		private double mouseDownY = 0;
 		private double scrollOnDownY = 0;
 
-		public override void OnMouseDown(MouseEventArgs mouseEvent)
-		{
-			mouseDownY = mouseEvent.Y;
-			mouseDownOnScrollArea = true;
-			scrollOnDownY = ScrollPosition.y;
-			base.OnMouseDown(mouseEvent);
-		}
-
 		private static bool ScrollWithMouse(GuiWidget widgetToCheck)
 		{
 			if (widgetToCheck as TextEditWidget != null)
@@ -207,11 +188,28 @@ namespace MatterHackers.Agg.UI
 			return true;
 		}
 
+		bool haveScrolledTooFar = false;
+		public override void OnMouseDown(MouseEventArgs mouseEvent)
+		{
+			haveScrolledTooFar = false;
+			mouseDownY = mouseEvent.Y;
+			mouseDownOnScrollArea = true;
+			scrollOnDownY = ScrollPosition.y;
+			base.OnMouseDown(mouseEvent);
+		}
+
 		public override void OnMouseMove(MouseEventArgs mouseEvent)
 		{
 			if (mouseDownOnScrollArea && ScrollWithMouse(this))
 			{
 				ScrollPosition = new Vector2(ScrollPosition.x, scrollOnDownY - (mouseDownY - mouseEvent.Y));
+			}
+
+			if (mouseEvent.Y < mouseDownY - 10
+				|| mouseEvent.Y > mouseDownY + 10)
+			{
+				// If we have ever scrolled too far remember not to pass a valid up click
+				haveScrolledTooFar = true;
 			}
 
 			base.OnMouseMove(mouseEvent);
@@ -220,7 +218,14 @@ namespace MatterHackers.Agg.UI
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
 			mouseDownOnScrollArea = false;
-			base.OnMouseUp(mouseEvent);
+			if (haveScrolledTooFar)
+			{
+				base.OnMouseUp(new MouseEventArgs(mouseEvent, -10000, -10000));
+			}
+			else
+			{
+				base.OnMouseUp(mouseEvent);
+			}
 		}
 
 		public override void OnMouseWheel(MouseEventArgs mouseEvent)

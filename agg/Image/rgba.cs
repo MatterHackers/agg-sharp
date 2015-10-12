@@ -307,6 +307,82 @@ namespace MatterHackers.Agg.Image
 		}
 	}
 
+	public sealed class BlenderBGRAExactCopy : BlenderBase8888, IRecieveBlenderByte
+	{
+		public RGBA_Bytes PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+		{
+			return new RGBA_Bytes(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
+		}
+
+		public void CopyPixels(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor, int count)
+		{
+			do
+			{
+				buffer[bufferOffset + ImageBuffer.OrderR] = sourceColor.red;
+				buffer[bufferOffset + ImageBuffer.OrderG] = sourceColor.green;
+				buffer[bufferOffset + ImageBuffer.OrderB] = sourceColor.blue;
+				buffer[bufferOffset + ImageBuffer.OrderA] = sourceColor.alpha;
+				bufferOffset += 4;
+			}
+			while (--count != 0);
+		}
+
+		public void BlendPixel(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor)
+		{
+			CopyPixels(buffer, bufferOffset, sourceColor, 1);
+		}
+
+		public void BlendPixels(byte[] destBuffer, int bufferOffset,
+			RGBA_Bytes[] sourceColors, int sourceColorsOffset,
+			byte[] covers, int coversIndex, bool firstCoverForAll, int count)
+		{
+			if (firstCoverForAll)
+			{
+				int cover = covers[coversIndex];
+				if (cover == 255)
+				{
+					do
+					{
+						BlendPixel(destBuffer, bufferOffset, sourceColors[sourceColorsOffset++]);
+						bufferOffset += 4;
+					}
+					while (--count != 0);
+				}
+				else
+				{
+					do
+					{
+						sourceColors[sourceColorsOffset].alpha = (byte)((sourceColors[sourceColorsOffset].alpha * cover + 255) >> 8);
+						BlendPixel(destBuffer, bufferOffset, sourceColors[sourceColorsOffset]);
+						bufferOffset += 4;
+						++sourceColorsOffset;
+					}
+					while (--count != 0);
+				}
+			}
+			else
+			{
+				do
+				{
+					int cover = covers[coversIndex++];
+					if (cover == 255)
+					{
+						BlendPixel(destBuffer, bufferOffset, sourceColors[sourceColorsOffset]);
+					}
+					else
+					{
+						RGBA_Bytes color = sourceColors[sourceColorsOffset];
+						color.alpha = (byte)((color.alpha * (cover) + 255) >> 8);
+						BlendPixel(destBuffer, bufferOffset, color);
+					}
+					bufferOffset += 4;
+					++sourceColorsOffset;
+				}
+				while (--count != 0);
+			}
+		}
+	}
+
 	public sealed class BlenderRGBA : BlenderBase8888, IRecieveBlenderByte
 	{
 		public RGBA_Bytes PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)

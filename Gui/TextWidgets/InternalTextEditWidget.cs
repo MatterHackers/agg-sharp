@@ -264,13 +264,13 @@ namespace MatterHackers.Agg.UI
 
 		private bool BarIsShowing { get { return timeSinceTurnOn.ElapsedMilliseconds < barOnTime * 1000; } }
 
-		public void OnIdle(object state)
+		public void OnIdle()
 		{
 			if (this.Focused
-				&& timeSinceTurnOn.ElapsedMilliseconds >= barOnTime * 1000
+				&& timeSinceTurnOn.ElapsedMilliseconds >= barOnTime * 950
 				&& !WidgetHasBeenClosed)
 			{
-				if (timeSinceTurnOn.ElapsedMilliseconds > (barOnTime + barOffTime) * 1000)
+				if (timeSinceTurnOn.ElapsedMilliseconds >= (barOnTime + barOffTime) * 950)
 				{
 					RestartBarFlash();
 				}
@@ -279,6 +279,11 @@ namespace MatterHackers.Agg.UI
 					UiThread.RunOnIdle(OnIdle, barOffTime);
 					Invalidate();
 				}
+			}
+			else
+			{
+				timeSinceTurnOn.Stop();
+				int a = 0;
 			}
 		}
 

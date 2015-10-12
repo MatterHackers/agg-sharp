@@ -260,6 +260,8 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			openGlHardwareAvailable = false;
 		}
 
+		public static bool GlHasBufferObjects { get { return glHasBufferObjects; } }
+
         public static void DisableGlBuffers()
         {
             glHasBufferObjects = false;

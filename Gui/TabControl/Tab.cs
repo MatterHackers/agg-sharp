@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Diagnostics;
 
 namespace MatterHackers.Agg.UI
 {
@@ -158,7 +159,8 @@ namespace MatterHackers.Agg.UI
 		{
 			set
 			{
-				throw new Exception("You should not change this it is required for the interface to this tab.");
+				// You should not change this it is required for the interface to this tab.
+				GuiWidget.BreakInDebugger();
 			}
 		}
 

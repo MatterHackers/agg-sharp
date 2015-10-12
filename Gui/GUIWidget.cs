@@ -16,7 +16,8 @@
 //          mcseemagg@yahoo.com
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
-#define DUMP_SLOW_TIMES
+
+//#define DUMP_SLOW_TIMES
 
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
@@ -38,19 +39,40 @@ namespace MatterHackers.Agg.UI
 	}
 
 	[Flags]
+	/// <summary>
+	/// Sets Horizontal alignment used for a widget, respecting widget margin and parent padding.
+	/// </summary>
 	public enum HAnchor
 	{
+		/// <summary>
+		/// The widget will not change width automaticaly and will be positions at the OriginRelative to parent in x.
+		/// </summary>
 		AbsolutePosition = 0,
+		/// <summary>
+		/// Hold the widget to the paretns left edge, respecting widget margin and parent padding.
+		/// </summary>
 		ParentLeft = 1,
 		ParentCenter = 2,
 		ParentRight = 4,
+		/// <summary>
+		/// Maintain a size that horizontaly encloses all of its visible children.
+		/// </summary>
 		FitToChildren = 8,
+		/// <summary>
+		/// Maintin a width that is the same width as its parent.
+		/// </summary>
 		ParentLeftRight = ParentLeft | ParentRight,
 		ParentLeftCenter = ParentLeft | ParentCenter,
 		ParentCenterRight = ParentCenter | ParentRight,
+		/// <summary>
+		/// Take the larger of FitToChildren or ParentLeftRight.
+		/// </summary>
 		Max_FitToChildren_ParentWidth = FitToChildren | ParentLeftRight,
 	};
 
+	/// <summary>
+	/// Sets Vertical alignment used for a widget, respecting widget margin and parent padding.
+	/// </summary>
 	[Flags]
 	public enum VAnchor
 	{
@@ -58,16 +80,56 @@ namespace MatterHackers.Agg.UI
 		ParentBottom = 1,
 		ParentCenter = 2,
 		ParentTop = 4,
+		/// <summary>
+		/// Maintain a size that verticaly encloses all of its visible children.
+		/// </summary>
 		FitToChildren = 8,
 		ParentBottomTop = ParentBottom | ParentTop,
 		ParentBottomCenter = ParentBottom | ParentCenter,
 		ParentCenterTop = ParentCenter | ParentTop,
+		/// <summary>
+		/// Take the larger of FitToChildren or ParentBottomTop.
+		/// </summary>
 		Max_FitToChildren_ParentHeight = FitToChildren | ParentBottomTop,
 	};
 
-	public enum Cursors { Arrow, Cross, Default, Hand, Help, HSplit, IBeam, No, NoMove2D, NoMoveHoriz, NoMoveVert, PanEast, PanNE, PanNorth, PanNW, PanSE, PanSouth, PanSW, PanWest, SizeAll, SizeNESW, SizeNS, SizeNWSE, SizeWE, UpArrow, VSplit, WaitCursor };
+	public enum Cursors 
+	{ 
+		Arrow, 
+		Cross, 
+		Default, 
+		Hand, 
+		Help, 
+		HSplit, 
+		IBeam, 
+		No, 
+		NoMove2D, 
+		NoMoveHoriz, 
+		NoMoveVert, 
+		PanEast, 
+		PanNE, 
+		PanNorth, 
+		PanNW, 
+		PanSE, 
+		PanSouth, 
+		PanSW, 
+		PanWest, 
+		SizeAll, 
+		SizeNESW, 
+		SizeNS, 
+		SizeNWSE, 
+		SizeWE, 
+		UpArrow, 
+		VSplit, 
+		WaitCursor 
+	};
 
-	public enum UnderMouseState { NotUnderMouse, UnderMouseNotFirst, FirstUnderMouse };
+	public enum UnderMouseState 
+	{ 
+		NotUnderMouse, 
+		UnderMouseNotFirst, 
+		FirstUnderMouse 
+	};
 
 	[DebuggerDisplay("Name = {Name}, Bounds = {LocalBounds}")]
 	public class GuiWidget
@@ -87,6 +149,8 @@ namespace MatterHackers.Agg.UI
 
 		private bool debugShowBounds = false;
 		private bool widgetHasBeenClosed = false;
+
+		public bool HasBeenClosed { get { return widgetHasBeenClosed; } }
 
 		protected bool WidgetHasBeenClosed { get { return widgetHasBeenClosed; } }
 
@@ -112,8 +176,6 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public LayoutEngine LayoutEngine { get; set; }
-
-		private string name;
 
 		private UnderMouseState underMouseState = UnderMouseState.NotUnderMouse;
 
@@ -242,11 +304,10 @@ namespace MatterHackers.Agg.UI
 		}
 
 		[ConditionalAttribute("DEBUG")]
-		public static void ThrowExceptionInDebug(string description)
+		public static void BreakInDebugger(string description = "")
 		{
-#if DEBUG
-			throw new Exception(description);
-#endif
+			Debug.WriteLine(description);
+			Debugger.Break();
 		}
 
 		public virtual void OnMarginChanged()
@@ -295,7 +356,7 @@ namespace MatterHackers.Agg.UI
 				{
 					if (value == (HAnchor.ParentLeft | HAnchor.ParentCenter | HAnchor.ParentRight))
 					{
-						ThrowExceptionInDebug("You cannot be anchored to all three positions.");
+						BreakInDebugger("You cannot be anchored to all three positions.");
 					}
 					hAnchor = value;
 					if (this.Parent != null)
@@ -354,7 +415,7 @@ namespace MatterHackers.Agg.UI
 				{
 					if (value == (VAnchor.ParentBottom | VAnchor.ParentCenter | VAnchor.ParentTop))
 					{
-						ThrowExceptionInDebug("You cannot be anchored to all three positions.");
+						BreakInDebugger("You cannot be anchored to all three positions.");
 					}
 					vAnchor = value;
 					if (this.Parent != null)
@@ -513,7 +574,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (childrenLockedInMouseUpCount != 0)
 			{
-				ThrowExceptionInDebug("The mouse should not be locked when the child list changes.");
+				BreakInDebugger("The mouse should not be locked when the child list changes.");
 			}
 		}
 
@@ -657,7 +718,7 @@ namespace MatterHackers.Agg.UI
 				{
 					if (value.x < 0 || value.y < 0)
 					{
-						ThrowExceptionInDebug("These have to be 0 or greater.");
+						BreakInDebugger("These have to be 0 or greater.");
 					}
 					minimumSize = value;
 
@@ -703,7 +764,7 @@ namespace MatterHackers.Agg.UI
 				{
 					if (value.x < 0 || value.y < 0)
 					{
-						ThrowExceptionInDebug("These have to be 0 or greater.");
+						BreakInDebugger("These have to be 0 or greater.");
 					}
 					maximumSize = value;
 
@@ -815,7 +876,7 @@ namespace MatterHackers.Agg.UI
 					{
 						if (!largestValidBounds.Contains(value))
 						{
-							ThrowExceptionInDebug("The bounds you are passing seems like they are probably wrong.  Check it.");
+							BreakInDebugger("The bounds you are passing seems like they are probably wrong.  Check it.");
 						}
 
 						localBounds = value;
@@ -998,21 +1059,9 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public virtual string Name
-		{
-			get
-			{
-				return name;
-			}
-
-			set
-			{
-				name = value;
-			}
-		}
+		public virtual string Name { get; set; }
 
 		private string text = "";
-
 		public virtual string Text
 		{
 			get
@@ -1036,7 +1085,16 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public virtual void OnTextChanged(EventArgs e)
+        /// <summary>
+        /// If this is set the control will show tool tips on hover, if the platfrom specific SystemWindow implements tool tips.
+        /// You can change the settings for the tool tip delays in the containing SystemWindow.
+        /// </summary>
+        public string ToolTipText
+        {
+            get; set;
+        }
+
+        public virtual void OnTextChanged(EventArgs e)
 		{
 			if (TextChanged != null)
 			{
@@ -1256,7 +1314,7 @@ namespace MatterHackers.Agg.UI
 
 			if (childToAdd == this)
 			{
-				ThrowExceptionInDebug("A GuiWidget cannot be a child of itself.");
+				BreakInDebugger("A GuiWidget cannot be a child of itself.");
 			}
 			if (indexInChildrenList > Children.Count)
 			{
@@ -1290,7 +1348,7 @@ namespace MatterHackers.Agg.UI
 				}
 			}
 
-			ThrowExceptionInDebug("You asked for the index of a child that is not a child of this widget.");
+			BreakInDebugger("You asked for the index of a child that is not a child of this widget.");
 			return -1;
 		}
 
@@ -1429,7 +1487,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public virtual bool Focus()
+		public virtual void Focus()
 		{
 			if (CanFocus && CanSelect && !Focused)
 			{
@@ -1454,7 +1512,7 @@ namespace MatterHackers.Agg.UI
 						{
 							if (childWithFocus != null)
 							{
-								ThrowExceptionInDebug("Two children should never have focus.");
+								BreakInDebugger("Two children should never have focus.");
 							}
 							childWithFocus = child;
 						}
@@ -1488,11 +1546,7 @@ namespace MatterHackers.Agg.UI
 
 				// finally call any delegates
 				OnGotFocus(null);
-
-				return true;
 			}
-
-			return false;
 		}
 
 		public void Unfocus()
@@ -1530,12 +1584,49 @@ namespace MatterHackers.Agg.UI
 		private bool AllParentsVisibleAndEnabled()
 		{
 			GuiWidget curGUIWidget = this;
+			RectangleDouble visibleBounds = this.LocalBounds;
 			while (curGUIWidget != null)
 			{
-				if (!curGUIWidget.Visible || !curGUIWidget.Enabled)
+				if (!curGUIWidget.Visible || !curGUIWidget.Enabled
+					|| visibleBounds.Width <= 0
+					|| visibleBounds.Height <= 0)
 				{
 					return false;
 				}
+
+				if (curGUIWidget.Parent != null)
+				{
+					// offset our bounds to the parent bounds
+					visibleBounds.Offset(curGUIWidget.OriginRelativeParent.x, curGUIWidget.OriginRelativeParent.y);
+					visibleBounds.IntersectWithRectangle(curGUIWidget.Parent.LocalBounds);
+				}
+
+				curGUIWidget = curGUIWidget.Parent;	
+			}
+
+			return true;
+		}
+
+		public bool ActuallyVisibleOnScreen()
+		{
+			GuiWidget curGUIWidget = this;
+			RectangleDouble visibleBounds = this.LocalBounds;
+			while (curGUIWidget != null)
+			{
+				if (!curGUIWidget.Visible
+					|| visibleBounds.Width <= 0
+					|| visibleBounds.Height <= 0)
+				{
+					return false;
+				}
+
+				if (curGUIWidget.Parent != null)
+				{
+					// offset our bounds to the parent bounds
+					visibleBounds.Offset(curGUIWidget.OriginRelativeParent.x, curGUIWidget.OriginRelativeParent.y);
+					visibleBounds.IntersectWithRectangle(curGUIWidget.Parent.LocalBounds);
+				}
+
 				curGUIWidget = curGUIWidget.Parent;
 			}
 
@@ -1756,7 +1847,7 @@ namespace MatterHackers.Agg.UI
 								currentScreenClipping.Top = Math.Ceiling(currentScreenClipping.Top);
 								if (currentScreenClipping.Right < currentScreenClipping.Left || currentScreenClipping.Top < currentScreenClipping.Bottom)
 								{
-									ThrowExceptionInDebug("Right is less than Left or Top is less than Bottom");
+									BreakInDebugger("Right is less than Left or Top is less than Bottom");
 								}
 
 								graphics2D.SetClippingRect(currentScreenClipping);
@@ -1790,7 +1881,7 @@ namespace MatterHackers.Agg.UI
 									if (offsetToRenderSurface.x - (int)offsetToRenderSurface.x != 0
 										|| offsetToRenderSurface.y - (int)offsetToRenderSurface.y != 0)
 									{
-										ThrowExceptionInDebug("The transform for a back buffer must be integer to avoid aliasing.");
+										BreakInDebugger("The transform for a back buffer must be integer to avoid aliasing.");
 									}
 									graphics2D.SetTransform(Affine.NewTranslation(offsetToRenderSurface));
 
@@ -1972,7 +2063,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (childrenLockedInMouseUpCount != 0)
 			{
-				ThrowExceptionInDebug("You should put this close onto the UiThread.RunOnIdle so it can happen after the child list is unlocked.");
+				BreakInDebugger("You should put this close onto the UiThread.RunOnIdle so it can happen after the child list is unlocked.");
 			}
 			// TODO: check OnClosing before we actuall close this window (need a test case before implementing). // LBB 2013/04/15
 			if (!widgetHasBeenClosed)
@@ -2019,12 +2110,12 @@ namespace MatterHackers.Agg.UI
 
 		public Vector2 TransformToParentSpace(GuiWidget parentToGetRelativeTo, Vector2 position)
 		{
-			GuiWidget parent = Parent;
-			while (parent != null
-				&& parent != parentToGetRelativeTo)
+			GuiWidget widgetToTransformBy = this;
+			while (widgetToTransformBy != null
+				&& widgetToTransformBy != parentToGetRelativeTo)
 			{
-				position += new Vector2(parent.BoundsRelativeToParent.Left, parent.BoundsRelativeToParent.Bottom);
-				parent = parent.Parent;
+				position += new Vector2(widgetToTransformBy.BoundsRelativeToParent.Left, widgetToTransformBy.BoundsRelativeToParent.Bottom);
+				widgetToTransformBy = widgetToTransformBy.Parent;
 			}
 
 			return position;
@@ -2032,12 +2123,12 @@ namespace MatterHackers.Agg.UI
 
 		public RectangleDouble TransformToParentSpace(GuiWidget parentToGetRelativeTo, RectangleDouble rectangleToTransform)
 		{
-			GuiWidget parent = Parent;
-			while (parent != null
-				&& parent != parentToGetRelativeTo)
+			GuiWidget widgetToTransformBy = this;
+			while (widgetToTransformBy != null
+				&& widgetToTransformBy != parentToGetRelativeTo)
 			{
-				rectangleToTransform.Offset(parent.OriginRelativeParent);
-				parent = parent.Parent;
+				rectangleToTransform.Offset(widgetToTransformBy.OriginRelativeParent);
+				widgetToTransformBy = widgetToTransformBy.Parent;
 			}
 
 			return rectangleToTransform;
@@ -2202,12 +2293,13 @@ namespace MatterHackers.Agg.UI
 						}
 					}
 				}
-
+				 
 				bool mouseEnteredBounds = underMouseState == UI.UnderMouseState.NotUnderMouse;
 
 				if (childHasAcceptedThisEvent)
 				{
 					mouseCapturedState = MouseCapturedState.ChildHasMouseCaptured;
+
 					if (UnderMouseState == UI.UnderMouseState.FirstUnderMouse)
 					{
 						underMouseState = UI.UnderMouseState.NotUnderMouse;
@@ -2262,7 +2354,26 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		internal bool mouseMoveEventHasBeenAcceptedByOther = false;
+        private void SetToolTipText(MouseEventArgs mouseEvent)
+        {
+            if (ToolTipText != null)
+            {
+                GuiWidget parent = this;
+                while (parent.Parent != null
+                    && parent as SystemWindow == null)
+                {
+                    parent = parent.Parent;
+                }
+
+                SystemWindow systemWindow = parent as SystemWindow;
+                if (systemWindow != null)
+                {
+                    systemWindow.SetHoveredWidget(this);
+                }
+            }
+        }
+
+        internal bool mouseMoveEventHasBeenAcceptedByOther = false;
 
 		public virtual void OnMouseMove(MouseEventArgs mouseEvent)
 		{
@@ -2295,7 +2406,7 @@ namespace MatterHackers.Agg.UI
 					{
 						if (parent.mouseCapturedState != MouseCapturedState.ChildHasMouseCaptured)
 						{
-							ThrowExceptionInDebug("All parents must know a child has the mouse captured.");
+							BreakInDebugger("All parents must know a child has the mouse captured.");
 						}
 						parent = parent.Parent;
 					}
@@ -2309,14 +2420,14 @@ namespace MatterHackers.Agg.UI
 				case MouseCapturedState.ThisHasMouseCaptured:
 					if (countOfChildernThatThinkTheyHaveTheMouseCaptured != 0)
 					{
-						ThrowExceptionInDebug("No child should have the mouse captured.");
+						BreakInDebugger("No child should have the mouse captured.");
 					}
 					break;
 
 				case MouseCapturedState.ChildHasMouseCaptured:
 					if (countOfChildernThatThinkTheyHaveTheMouseCaptured < 1 || countOfChildernThatThinkTheyHaveTheMouseCaptured > 1)
 					{
-						ThrowExceptionInDebug("One and only one child should ever have the mouse captured.");
+						BreakInDebugger("One and only one child should ever have the mouse captured.");
 					}
 					break;
 
@@ -2345,14 +2456,14 @@ namespace MatterHackers.Agg.UI
 
 				if (countOfChildernThatThinkTheyHaveTheMouseCaptured < 1 || countOfChildernThatThinkTheyHaveTheMouseCaptured > 1)
 				{
-					ThrowExceptionInDebug("One and only one child should ever have the mouse captured.");
+					BreakInDebugger("One and only one child should ever have the mouse captured.");
 				}
 			}
 			else
 			{
 				if (mouseCapturedState != MouseCapturedState.ThisHasMouseCaptured)
 				{
-					ThrowExceptionInDebug("You should only ever get here if you have the mouse captured.");
+					BreakInDebugger("You should only ever get here if you have the mouse captured.");
 				}
 
 				if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
@@ -2444,7 +2555,8 @@ namespace MatterHackers.Agg.UI
 						else
 						{
 							underMouseState = UI.UnderMouseState.FirstUnderMouse;
-							OnMouseEnter(mouseEvent);
+                            SetToolTipText(mouseEvent);
+                            OnMouseEnter(mouseEvent);
 						}
 					}
 					else // we are the first under mouse
@@ -2485,7 +2597,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (childrenLockedInMouseUpCount != 0)
 			{
-				ThrowExceptionInDebug("This should not be locked.");
+				BreakInDebugger("This should not be locked.");
 			}
 
 			childrenLockedInMouseUpCount++;
@@ -2539,7 +2651,7 @@ namespace MatterHackers.Agg.UI
 				{
 					if (childrenLockedInMouseUpCount != 1)
 					{
-						ThrowExceptionInDebug("The mouse should always be locked while in mouse up.");
+						BreakInDebugger("The mouse should always be locked while in mouse up.");
 					}
 
 					int countOfChildernThatThinkTheyHaveTheMouseCaptured = 0;
@@ -2547,7 +2659,7 @@ namespace MatterHackers.Agg.UI
 					{
 						if (childrenLockedInMouseUpCount != 1)
 						{
-							ThrowExceptionInDebug("The mouse should always be locked while in mouse up.");
+							BreakInDebugger("The mouse should always be locked while in mouse up.");
 						}
 
 						double childX = mouseEvent.X;
@@ -2558,7 +2670,7 @@ namespace MatterHackers.Agg.UI
 						{
 							if (countOfChildernThatThinkTheyHaveTheMouseCaptured > 0)
 							{
-								ThrowExceptionInDebug("One and only one child should ever have the mouse captured.");
+								BreakInDebugger("One and only one child should ever have the mouse captured.");
 							}
 							child.OnMouseUp(childMouseEvent);
 							countOfChildernThatThinkTheyHaveTheMouseCaptured++;
@@ -2569,7 +2681,7 @@ namespace MatterHackers.Agg.UI
 				{
 					if (mouseCapturedState != MouseCapturedState.ThisHasMouseCaptured)
 					{
-						ThrowExceptionInDebug("You should only ever get here if you have the mouse captured.");
+						BreakInDebugger("You should only ever get here if you have the mouse captured.");
 					}
 					if (MouseUp != null)
 					{
@@ -2602,7 +2714,7 @@ namespace MatterHackers.Agg.UI
 
 			if (childrenLockedInMouseUpCount != 0)
 			{
-				ThrowExceptionInDebug("This should not be locked.");
+				BreakInDebugger("This should not be locked.");
 			}
 		}
 
@@ -2639,7 +2751,41 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public virtual void OnMouseEnterBounds(MouseEventArgs mouseEvent)
+		public void FindNamedChildrenRecursive(string nameToSearchFor, List<GuiWidget> foundChildren)
+		{
+			if (Name == nameToSearchFor)
+			{
+				foundChildren.Add(this);
+			}
+
+			List<GuiWidget> searchChildren = new List<GuiWidget>(Children);
+			foreach (GuiWidget child in searchChildren)
+			{
+				child.FindNamedChildrenRecursive(nameToSearchFor, foundChildren);
+			}
+		}
+		
+		public GuiWidget FindNamedChildRecursive(string nameToSearchFor)
+        {
+            if (Name == nameToSearchFor)
+            {
+                return this;
+            }
+
+			List<GuiWidget> searchChildren = new List<GuiWidget>(Children);
+			foreach (GuiWidget child in searchChildren)
+            {
+                GuiWidget namedChild = child.FindNamedChildRecursive(nameToSearchFor);
+                if(namedChild != null)
+                {
+                    return namedChild;
+                }
+            }
+
+            return null;
+        }
+
+        public virtual void OnMouseEnterBounds(MouseEventArgs mouseEvent)
 		{
 			if (MouseEnterBounds != null)
 			{

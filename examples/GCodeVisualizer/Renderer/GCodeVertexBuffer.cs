@@ -34,7 +34,7 @@ using System;
 
 namespace MatterHackers.GCodeVisualizer
 {
-	public class GCodeVertexBuffer
+	public class GCodeVertexBuffer : IDisposable
 	{
 		public int myIndexId;
 		public int myIndexLength;
@@ -47,7 +47,7 @@ namespace MatterHackers.GCodeVisualizer
 			GL.GenBuffers(1, out myIndexId);
 		}
 
-		~GCodeVertexBuffer()
+		public void Dispose()
 		{
 			if (myVertexId != -1)
 			{
@@ -58,7 +58,14 @@ namespace MatterHackers.GCodeVisualizer
 					GL.DeleteBuffers(1, ref holdVertexId);
 					GL.DeleteBuffers(1, ref holdIndexId);
 				});
+
+				myVertexId = -1;
 			}
+		}
+
+		~GCodeVertexBuffer()
+		{
+			Dispose();
 		}
 
 		public void renderRange(int offset, int count)

@@ -279,7 +279,14 @@ namespace MatterHackers.Agg.Image
 
 		public void CopyFrom(IImageByte sourceImage)
 		{
+			Allocate(sourceImage.Width, sourceImage.Height, sourceImage.StrideInBytesAbs(), sourceImage.BitDepth);
+
+			// make sure we make an exact copy
+			SetRecieveBlender(new BlenderBGRAExactCopy());
 			CopyFrom(sourceImage, sourceImage.GetBounds(), 0, 0);
+			
+			// then set the blender to what we expect
+			SetRecieveBlender(sourceImage.GetRecieveBlender());
 		}
 
 		protected void CopyFromNoClipping(IImageByte sourceImage, RectangleInt clippedSourceImageRect, int destXOffset, int destYOffset)
@@ -1130,17 +1137,27 @@ namespace MatterHackers.Agg.Image
 								}
 								thisBufferOffset += aDistanceBetweenPixels;
 								imageToFindBufferOffset += bDistanceBetweenPixels;
-							}
-							if (currentLeastSquares > maxError)
-							{
-								// stop checking we have too much error.
-								imageToFindY = imageToFind.Height;
+								if (currentLeastSquares > maxError)
+								{
+									// stop checking we have too much error.
+									imageToFindX = imageToFind.Width;
+									imageToFindY = imageToFind.Height;
+								}
 							}
 						}
+
 						if (currentLeastSquares < bestLeastSquares)
 						{
 							bestPosition = new Vector2(matchX, matchY);
 							bestLeastSquares = currentLeastSquares;
+							if (maxError > currentLeastSquares)
+							{
+								maxError = currentLeastSquares;
+								if (currentLeastSquares == 0)
+								{
+									return true;
+								}
+							}
 						}
 					}
 				}

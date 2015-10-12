@@ -1,5 +1,6 @@
 ﻿using MatterHackers.Agg.Image;
 using MatterHackers.Agg.PlatformAbstract;
+using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -15,7 +16,7 @@ namespace MatterHackers.Agg
 
 		public FileSystemStaticData()
 		{
-			this.basePath = string.Empty;
+			this.basePath = Directory.Exists("StaticData") ? "StaticData" : Path.Combine("..", "..", "StaticData");
 		}
 
 		public FileSystemStaticData(string overridePath)
@@ -63,27 +64,60 @@ namespace MatterHackers.Agg
 			LoadImage(Path.Combine("Icons", path), buffer);
 		}
 
-		public void LoadImage(string path, ImageBuffer destImage)
+		public void LoadSequence(string pathToImages, ImageSequence sequence)
 		{
-			ImageBuffer cachedImage = null;
-			if (!cachedImages.TryGetValue(path, out cachedImage))
+			if (DirectoryExists(pathToImages))
 			{
-				using (var imageStream = OpenSteam(path))
+				string propertiesPath = Path.Combine(pathToImages, "properties.json");
+				if (FileExists(propertiesPath))
 				{
-					var bitmap = new Bitmap(imageStream);
-					cachedImage = new ImageBuffer();
-					ImageIOWindowsPlugin.ConvertBitmapToImage(cachedImage, bitmap);
+					string jsonData = ReadAllText(propertiesPath);
+					ImageSequence.Properties properties = JsonConvert.DeserializeObject<ImageSequence.Properties>(jsonData);
+					sequence.FramePerSecond = properties.FramePerFrame;
+					sequence.Looping = properties.Looping;
 				}
-				if (cachedImage.Width < 200 && cachedImage.Height < 200)
+
+				string[] pngFilesIn = GetFiles(pathToImages).Where(fileName => Path.GetExtension(fileName).ToUpper() == ".PNG").ToArray();
+				List<string> pngFiles = new List<string>(pngFilesIn);
+				pngFiles.Sort();
+				foreach (string pngFile in pngFiles)
 				{
-					// only cache relatively small images
-					cachedImages.Add(path, cachedImage);
+					ImageBuffer image = new ImageBuffer();
+					LoadImage(pngFile, image);
+					sequence.AddImage(image);
 				}
 			}
+		}
 
-			destImage.Allocate(cachedImage.Width, cachedImage.Height, cachedImage.StrideInBytesAbs(), cachedImage.BitDepth);
-			destImage.SetRecieveBlender(cachedImage.GetRecieveBlender());
-			destImage.CopyFrom(cachedImage);
+		public void LoadImageData(Stream imageStream, ImageBuffer destImage)
+		{
+			var bitmap = new Bitmap(imageStream);
+			ImageIOWindowsPlugin.ConvertBitmapToImage(destImage, bitmap);
+		}
+
+		static object locker = new object();
+		public void LoadImage(string path, ImageBuffer destImage)
+		{
+			lock (locker)
+			{
+				ImageBuffer cachedImage = null;
+				if (!cachedImages.TryGetValue(path, out cachedImage))
+				{
+					using (var imageStream = OpenSteam(path))
+					{
+						var bitmap = new Bitmap(imageStream);
+						cachedImage = new ImageBuffer();
+						ImageIOWindowsPlugin.ConvertBitmapToImage(cachedImage, bitmap);
+					}
+					if (cachedImage.Width < 200 && cachedImage.Height < 200)
+					{
+						// only cache relatively small images
+						cachedImages.Add(path, cachedImage);
+					}
+				}
+
+				destImage.CopyFrom(cachedImage);
+			}
 		}
 
 		public ImageBuffer LoadImage(string path)
@@ -109,10 +143,10 @@ namespace MatterHackers.Agg
 			return File.ReadAllText(MapPath(path));
 		}
 
-		private string MapPath(string path)
+		public string MapPath(string path)
 		{
-			string staticDataPath = Directory.Exists("StaticData") ? "StaticData" : Path.Combine("..", "..", "StaticData");
-			return Path.Combine(this.basePath, staticDataPath, path);
+			string fullPath = Path.GetFullPath(Path.Combine(this.basePath, path));
+			return fullPath;
 		}
 	}
 }

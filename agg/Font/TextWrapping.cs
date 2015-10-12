@@ -79,7 +79,8 @@ namespace MatterHackers.Agg.Font
 				{
 					TypeFacePrinter printer = new TypeFacePrinter(textToWrap, styledTypeFace);
 					int remainingLength = textToWrap.Length;
-					while (printer.GetSize().x > maxPixelWidth)
+					while (printer.GetSize().x > maxPixelWidth
+						&& printer.Text.Length > 1)
 					{
 						remainingLength--;
 						while (remainingLength > 1

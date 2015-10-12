@@ -88,17 +88,17 @@ namespace MatterHackers.Agg
 	// A simple class template to store Plain Old Data, a vector
 	// of a fixed size. The data is contiguous in memory
 	//------------------------------------------------------------------------
-	public class VectorPOD<dataType> where dataType : struct
+	public class VectorPOD<DataType> where DataType : struct
 	{
 		protected int currentSize;
-		private dataType[] internalArray = new dataType[0];
+		private DataType[] internalArray = new DataType[0];
 
 		public int Count
 		{
 			get { return currentSize; }
 		}
 
-		public IEnumerable<dataType> DataIterator()
+		public IEnumerable<DataType> DataIterator()
 		{
 			for (int index = 0; index < currentSize; index++)
 			{
@@ -167,13 +167,13 @@ namespace MatterHackers.Agg
 		}
 
 		// Copying
-		public VectorPOD(VectorPOD<dataType> vectorToCopy)
+		public VectorPOD(VectorPOD<DataType> vectorToCopy)
 		{
 			currentSize = vectorToCopy.currentSize;
-			internalArray = (dataType[])vectorToCopy.internalArray.Clone();
+			internalArray = (DataType[])vectorToCopy.internalArray.Clone();
 		}
 
-		public void CopyFrom(VectorPOD<dataType> vetorToCopy)
+		public void CopyFrom(VectorPOD<DataType> vetorToCopy)
 		{
 			Allocate(vetorToCopy.currentSize);
 			if (vetorToCopy.currentSize != 0)
@@ -197,7 +197,7 @@ namespace MatterHackers.Agg
 				int sizeToAllocate = newCapacity + extraTail;
 				if (sizeToAllocate != 0)
 				{
-					internalArray = new dataType[sizeToAllocate];
+					internalArray = new DataType[sizeToAllocate];
 				}
 			}
 		}
@@ -227,7 +227,7 @@ namespace MatterHackers.Agg
 			{
 				if (newSize > AllocatedSize)
 				{
-					var newArray = new dataType[newSize];
+					var newArray = new DataType[newSize];
 					if (internalArray != null)
 					{
 						for (int i = 0; i < internalArray.Length; i++)
@@ -241,7 +241,7 @@ namespace MatterHackers.Agg
 		}
 
 #pragma warning disable 649
-		private static dataType zeroed_object;
+		private static DataType zeroed_object;
 #pragma warning restore 649
 
 		public void zero()
@@ -253,12 +253,12 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public void Add(dataType v)
+		public void Add(DataType v)
 		{
 			add(v);
 		}
 
-		public virtual void add(dataType v)
+		public virtual void add(DataType v)
 		{
 			if (internalArray == null || internalArray.Length < (currentSize + 1))
 			{
@@ -274,17 +274,17 @@ namespace MatterHackers.Agg
 			internalArray[currentSize++] = v;
 		}
 
-		public void push_back(dataType v)
+		public void push_back(DataType v)
 		{
 			internalArray[currentSize++] = v;
 		}
 
-		public void Insert(int index, dataType value)
+		public void Insert(int index, DataType value)
 		{
 			insert_at(index, value);
 		}
 
-		public void insert_at(int pos, dataType val)
+		public void insert_at(int pos, DataType val)
 		{
 			if (pos >= currentSize)
 			{
@@ -311,7 +311,7 @@ namespace MatterHackers.Agg
 			return currentSize;
 		}
 
-		public dataType this[int i]
+		public DataType this[int i]
 		{
 			get
 			{
@@ -319,7 +319,7 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public dataType[] Array
+		public DataType[] Array
 		{
 			get
 			{
@@ -327,17 +327,17 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public dataType at(int i)
+		public DataType at(int i)
 		{
 			return internalArray[i];
 		}
 
-		public dataType value_at(int i)
+		public DataType value_at(int i)
 		{
 			return internalArray[i];
 		}
 
-		public dataType[] data()
+		public DataType[] data()
 		{
 			return internalArray;
 		}
@@ -370,7 +370,7 @@ namespace MatterHackers.Agg
 			currentSize = 0;
 		}
 
-		public void Remove(dataType itemToRemove)
+		public void Remove(DataType itemToRemove)
 		{
 			for (int i = 0; i < Length; i++)
 			{

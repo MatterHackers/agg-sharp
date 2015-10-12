@@ -28,12 +28,20 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg.Image;
+#if !__ANDROID__
+using MatterHackers.GuiAutomation;
+#endif
 using MatterHackers.VectorMath;
 using NUnit.Framework;
+using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	[TestFixture, Category("Agg.UI")]
+#if !__ANDROID__
+	[TestFixture, RunInApplicationDomain, Category("Agg.UI")]
+#endif
 	public class TextEditTests
 	{
 		public static bool saveImagesForDebug = false;
@@ -552,4 +560,93 @@ namespace MatterHackers.Agg.UI.Tests
 			container.Close();
 		}
 	}
+
+#if !__ANDROID__
+	[TestFixture, RunInApplicationDomain, Category("Agg.UI")]
+	public class VerifyFocusMakesTextWidgetEditableClass
+	{
+		[Test, RequiresSTA, RunInApplicationDomain]
+		public void VerifyFocusMakesTextWidgetEditable()
+		{
+			TextEditWidget editField = null;
+			SystemWindow systemWindow = new SystemWindow(300, 200)
+			{
+				BackgroundColor = RGBA_Bytes.Black,
+			};
+
+			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
+			{
+				UiThread.RunOnIdle(editField.Focus);
+				AutomationRunner testRunner = new AutomationRunner();
+				testRunner.Wait(1);
+
+				// Now do the actions specific to this test. (replace this for new tests)
+				testRunner.Type("Test Text");
+
+				resultsHarness.AddTestResult(editField.Text == "Test Text", "validate text is typed");
+
+				systemWindow.CloseOnIdle();
+			};
+
+			editField = new TextEditWidget(pixelWidth: 200)
+			{
+				HAnchor = HAnchor.ParentCenter,
+				VAnchor = VAnchor.ParentCenter,
+			};
+			systemWindow.AddChild(editField);
+
+			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExectueTests(systemWindow, testToRun, 10);
+
+			Assert.IsTrue(testHarness.AllTestsPassed);
+			Assert.IsTrue(testHarness.TestCount == 1); // make sure we can all our tests
+		}
+	}
+
+	[TestFixture, RunInApplicationDomain, Category("Agg.UI")]
+	public class SelectAllOnFocusCanStillClickAfterSelectionClass
+	{
+		[Test, RequiresSTA, RunInApplicationDomain]
+		public void SelectAllOnFocusCanStillClickAfterSelection()
+		{
+			TextEditWidget editField = null;
+			SystemWindow systemWindow = new SystemWindow(300, 200)
+			{
+				BackgroundColor = RGBA_Bytes.Black,
+			};
+
+			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
+			{
+				editField.SelectAllOnFocus = true;
+				AutomationRunner testRunner = new AutomationRunner();
+				testRunner.Wait(1);
+
+				resultsHarness.AddTestResult(testRunner.ClickByName(editField.Name, 1));
+
+				editField.SelectAllOnFocus = true;
+				testRunner.Type("123");
+				resultsHarness.AddTestResult(editField.Text == "123", "on enter we have selected all and replaced the text");
+
+				resultsHarness.AddTestResult(testRunner.ClickByName(editField.Name, 1));
+				testRunner.Type("123");
+				resultsHarness.AddTestResult(editField.Text == "123123", "we already have the contol selected so don't select all again.");
+
+				systemWindow.CloseOnIdle();
+			};
+
+			editField = new TextEditWidget(pixelWidth: 200)
+			{
+				Name = "editField",
+				Text = "Some Text",
+				HAnchor = HAnchor.ParentCenter,
+				VAnchor = VAnchor.ParentCenter,
+			};
+			systemWindow.AddChild(editField);
+
+			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExectueTests(systemWindow, testToRun, 15);
+
+			Assert.IsTrue(testHarness.AllTestsPassed);
+			Assert.IsTrue(testHarness.TestCount == 4); // make sure we can all our tests
+		}
+	}
+#endif
 }

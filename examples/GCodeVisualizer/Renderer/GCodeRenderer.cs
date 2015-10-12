@@ -47,7 +47,7 @@ namespace MatterHackers.GCodeVisualizer
 		HideExtruderOffsets = 32,
 	};
 
-	public class GCodeRenderer
+	public class GCodeRenderer : IDisposable
 	{
 		private List<List<int>> featureStartIndex = new List<List<int>>();
 		private List<List<int>> featureEndIndex = new List<List<int>>();
@@ -117,13 +117,13 @@ namespace MatterHackers.GCodeVisualizer
 				endRenderIndex = gCodeFileToDraw.GetInstructionIndexAtLayer(layerToCreate + 1);
 			}
 
-			for (int i = startRenderIndex; i < endRenderIndex; i++)
+			for (int instructionIndex = startRenderIndex; instructionIndex < endRenderIndex; instructionIndex++)
 			{
-				PrinterMachineInstruction currentInstruction = gCodeFileToDraw.Instruction(i);
+				PrinterMachineInstruction currentInstruction = gCodeFileToDraw.Instruction(instructionIndex);
 				PrinterMachineInstruction previousInstruction = currentInstruction;
-				if (i > 0)
+				if (instructionIndex > 0)
 				{
-					previousInstruction = gCodeFileToDraw.Instruction(i - 1);
+					previousInstruction = gCodeFileToDraw.Instruction(instructionIndex - 1);
 				}
 
 				if (currentInstruction.Position == previousInstruction.Position)
@@ -144,7 +144,7 @@ namespace MatterHackers.GCodeVisualizer
 				}
 				else
 				{
-					if (gCodeFileToDraw.IsExtruding(i))
+					if (gCodeFileToDraw.IsExtruding(instructionIndex))
 					{
 						double layerThickness = gCodeFileToDraw.GetLayerHeight();
 						if (layerToCreate == 0)
@@ -227,19 +227,38 @@ namespace MatterHackers.GCodeVisualizer
 			}
 		}
 
+		public void Dispose()
+		{
+			Clear3DGCode();
+		}
+
 		public void Clear3DGCode()
 		{
 			if (layerVertexBuffer != null)
 			{
 				for (int i = 0; i < layerVertexBuffer.Count; i++)
 				{
-					layerVertexBuffer[i] = null;
+					if (layerVertexBuffer[i] != null)
+					{
+						layerVertexBuffer[i].Dispose();
+						layerVertexBuffer[i] = null;
+					}
 				}
 			}
 		}
 
 		private List<GCodeVertexBuffer> layerVertexBuffer;
 		private RenderType lastRenderType = RenderType.None;
+
+		private static bool Is32Bit()
+		{
+			if (IntPtr.Size == 4)
+			{
+				return true;
+			}
+
+			return false;
+		}
 
 		public void Render3D(GCodeRenderInfo renderInfo)
 		{
@@ -268,7 +287,44 @@ namespace MatterHackers.GCodeVisualizer
 
 			if (renderFeatures.Count > 0)
 			{
-				for (int i = renderInfo.StartLayerIndex; i < renderInfo.EndLayerIndex; i++)
+				if (Is32Bit() && !GL.GlHasBufferObjects)
+				{
+					int maxFeaturesForThisSystem = 125000;
+					int totalFeaturesToRunder = 0;
+					bool cleanUnusedLayers = false;
+					// if on 32 bit system make sure we don't run out of memory rendering too many features
+					for (int i = renderInfo.EndLayerIndex - 1; i >= renderInfo.StartLayerIndex; i--)
+					{
+						if (totalFeaturesToRunder + renderFeatures[i].Count < maxFeaturesForThisSystem)
+						{
+							totalFeaturesToRunder += renderFeatures[i].Count;
+						}
+						else // don't render any of the layers below this and in fact remove them from memory if possible
+						{
+							renderInfo.startLayerIndex = i + 1;
+							cleanUnusedLayers = true; 
+							break;
+						}
+					}
+
+					if (cleanUnusedLayers)
+					{
+						// no remove any layers that are set that we are not going to render
+						for (int removeIndex = 0; removeIndex < layerVertexBuffer.Count; removeIndex++)
+						{
+							if (removeIndex < renderInfo.StartLayerIndex || removeIndex >= renderInfo.EndLayerIndex)
+							{
+								if (layerVertexBuffer[removeIndex] != null)
+								{
+									layerVertexBuffer[removeIndex].Dispose();
+									layerVertexBuffer[removeIndex] = null;
+								}
+							}
+						}
+					}
+				}
+
+				for (int i = renderInfo.EndLayerIndex - 1; i >= renderInfo.StartLayerIndex; i--)
 				{
 					// If its the first render or we change what we are trying to render then create vertex data.
 					if (layerVertexBuffer[i] == null)

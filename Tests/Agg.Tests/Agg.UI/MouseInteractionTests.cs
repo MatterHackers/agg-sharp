@@ -27,6 +27,12 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+#if !__ANDROID__
+
+using MatterHackers.GuiAutomation;
+
+#endif
+
 using NUnit.Framework;
 using System;
 
@@ -35,6 +41,53 @@ namespace MatterHackers.Agg.UI.Tests
 	[TestFixture, Category("Agg.UI")]
 	public class MouseInteractionTests
 	{
+#if !__ANDROID__
+		[Test, RequiresSTA, RunInApplicationDomain]
+		public void DoClickButtonInWindow()
+		{
+			int leftClickCount = 0;
+			int rightClickCount = 0;
+
+			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
+			{
+				AutomationRunner testRunner = new AutomationRunner();
+
+				// Now do the actions specific to this test. (replace this for new tests)
+				testRunner.ClickByName("left", 1);
+				testRunner.Wait(.5);
+
+				resultsHarness.AddTestResult(leftClickCount == 1, "Got left button click");
+
+				testRunner.ClickByName("right", 1);
+				testRunner.Wait(.5);
+
+				resultsHarness.AddTestResult(rightClickCount == 1, "Got right button click");
+
+				testRunner.DragDropByName("left", "right", offsetDrag: new Point2D(1, 0));
+				testRunner.Wait(.5);
+
+				resultsHarness.AddTestResult(leftClickCount == 1, "Mouse down not a click");
+			};
+
+			SystemWindow buttonContainer = new SystemWindow(300, 200);
+
+			Button leftButton = new Button("left", 10, 40);
+			leftButton.Name = "left";
+			leftButton.Click += (sender, e) => { leftClickCount++; };
+			buttonContainer.AddChild(leftButton);
+			Button rightButton = new Button("right", 110, 40);
+			rightButton.Click += (sender, e) => { rightClickCount++; };
+			rightButton.Name = "right";
+			buttonContainer.AddChild(rightButton);
+
+			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExectueTests(buttonContainer, testToRun, 10);
+
+			Assert.IsTrue(testHarness.AllTestsPassed);
+			Assert.IsTrue(testHarness.TestCount == 3); // make sure we can all our tests
+		}
+
+#endif
+
 		[Test]
 		public void ValidateSimpleLeftClick()
 		{

@@ -12,7 +12,6 @@
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\..\..\</SolutionDir>
-    <RestorePackages>true</RestorePackages>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -32,6 +31,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="NUnit.ApplicationDomain">
+      <HintPath>..\..\..\..\packages\NUnit.ApplicationDomain.5.0.1\lib\net40\NUnit.ApplicationDomain.dll</HintPath>
+    </Reference>
     <Reference Include="nunit.core, Version=2.6.4.14350, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
       <HintPath>..\..\..\..\packages\NUnitTestAdapter.2.0.0\lib\nunit.core.dll</HintPath>
       <Private>False</Private>
@@ -77,10 +79,13 @@
     <Compile Include="Agg.UI\BackBufferTests.cs" />
     <Compile Include="Agg.UI\FlowLayoutTests.cs" />
     <Compile Include="Agg.UI\ListBoxTests.cs" />
+    <Compile Include="Agg.UI\AutomationRunnerTests.cs" />
     <Compile Include="Agg.UI\MenuTests.cs" />
+    <Compile Include="Agg.UI\AutomationTesterHarness.cs" />
     <Compile Include="Agg.UI\MouseInteractionTests.cs" />
     <Compile Include="Agg.UI\ScrollableWidgetTests.cs" />
     <Compile Include="Agg.UI\TextAndTextWidgetTests.cs" />
+    <Compile Include="Agg.UI\ToolTipTests.cs" />
     <Compile Include="Agg.UI\TextEditTests.cs" />
     <Compile Include="Agg.VectorMath\VectorMathTests.cs" />
     <Compile Include="Agg\FontTests.cs" />
@@ -89,6 +94,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -99,6 +105,10 @@
     <ProjectReference Include="..\..\Csg\Csg.csproj">
       <Project>{7e61a5bd-e78f-4b80-88c9-3821b4fa062e}</Project>
       <Name>Csg</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\GuiAutomation\GuiAutomation.csproj">
+      <Project>{e9102310-0029-4d8f-b1e9-88fba6147d45}</Project>
+      <Name>GuiAutomation</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Gui\Gui.csproj">
       <Project>{74f6bb6c-9d02-4512-a59a-21940e35c532}</Project>
@@ -129,18 +139,4 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('$(SolutionDir)\.nuget\NuGet.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\.nuget\NuGet.targets'))" />
-  </Target>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>

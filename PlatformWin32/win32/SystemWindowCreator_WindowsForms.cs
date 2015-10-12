@@ -38,33 +38,37 @@ namespace MatterHackers.Agg
 		private bool pendingSetInitialDesktopPosition = false;
 		private Point2D InitialDesktopPosition = new Point2D();
 
+		IGuiFactory factoryToUse = null;
+
 		public override void ShowSystemWindow(SystemWindow systemWindow)
 		{
-			bool haveInitializedMainWindow = false;
-			if (OsMappingWidgetFactory.PrimaryOsMappingWidget != null)
-			{
-				haveInitializedMainWindow = true;
-			}
-
-			if (!haveInitializedMainWindow)
+			bool firstWindow = false;
+			if (factoryToUse == null)
 			{
 				if (systemWindow.UseOpenGL)
 				{
-					OsMappingWidgetFactory.SetFactory(new WindowsFormsOpenGLFactory());
+					factoryToUse = new WindowsFormsOpenGLFactory();
 				}
 				else
 				{
-					OsMappingWidgetFactory.SetFactory(new WindowsFormsBitmapFactory());
+					factoryToUse = new WindowsFormsBitmapFactory();
 				}
+				firstWindow = true;
+
+				// When our top most window closes reset this so we can make a window in the future.
+				systemWindow.Closed += (sender, e) =>
+				{
+					factoryToUse = null;
+				};
 			}
 
-			AbstractOsMappingWidget windowsFormsTopWindow = OsMappingWidgetFactory.CreateOsMappingWidget(systemWindow);
+			AbstractOsMappingWidget osMappingWindow = factoryToUse.CreateSurface(systemWindow);
 
-			windowsFormsTopWindow.Caption = systemWindow.Title;
-			windowsFormsTopWindow.AddChild(systemWindow);
-			windowsFormsTopWindow.MinimumSize = systemWindow.MinimumSize;
+			osMappingWindow.Caption = systemWindow.Title;
+			osMappingWindow.AddChild(systemWindow);
+			osMappingWindow.MinimumSize = systemWindow.MinimumSize;
 
-			systemWindow.AbstractOsMappingWidget = windowsFormsTopWindow;
+			systemWindow.AbstractOsMappingWidget = osMappingWindow;
 
 			if (pendingSetInitialDesktopPosition)
 			{
@@ -77,20 +81,21 @@ namespace MatterHackers.Agg
 			// and make sure the title is correct right now
 			TitelChangedEventHandler(systemWindow, null);
 
-			if (haveInitializedMainWindow)
+			if (firstWindow)
 			{
-				if (systemWindow.IsModal)
-				{
-					windowsFormsTopWindow.ShowModal();
-				}
-				else
-				{
-					windowsFormsTopWindow.Show();
-				}
+				osMappingWindow.Run();
 			}
 			else
 			{
-				windowsFormsTopWindow.Run();
+				if (systemWindow.IsModal)
+				{
+					osMappingWindow.ShowModal();
+				}
+				else
+				{
+					osMappingWindow.Show();
+					osMappingWindow.BringToFront();
+				}
 			}
 		}
 
