@@ -35,6 +35,37 @@ namespace MatterHackers.RenderOpenGl
 {
 	public static class VertexSourceToMesh
 	{
+		public static Mesh TriangulateFaces(IVertexSource vertexSource)
+		{
+			vertexSource.rewind();
+			CachedTesselator teselatedSource = new CachedTesselator();
+			Graphics2DOpenGL.SendShapeToTesselator(teselatedSource, vertexSource);
+
+			Mesh extrudedVertexSource = new Mesh();
+
+			int numIndicies = teselatedSource.IndicesCache.Count;
+
+			// build the top first so it will render first when we are translucent
+			for (int i = 0; i < numIndicies; i += 3)
+			{
+				Vector2 v0 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 0].Index].Position;
+				Vector2 v1 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 1].Index].Position;
+				Vector2 v2 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 2].Index].Position;
+				if (v0 == v1 || v1 == v2 || v2 == v0)
+				{
+					continue;
+				}
+
+				Vertex topVertex0 = extrudedVertexSource.CreateVertex(new Vector3(v0, 0));
+				Vertex topVertex1 = extrudedVertexSource.CreateVertex(new Vector3(v1, 0));
+				Vertex topVertex2 = extrudedVertexSource.CreateVertex(new Vector3(v2, 0));
+
+				extrudedVertexSource.CreateFace(new Vertex[] { topVertex0, topVertex1, topVertex2 });
+			}
+
+			return extrudedVertexSource;
+		}
+
 		public static Mesh Extrude(IVertexSource vertexSource, double zHeight)
 		{
 			vertexSource.rewind();
