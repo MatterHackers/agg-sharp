@@ -264,8 +264,9 @@ namespace MatterHackers.Agg.Image
 							destIndex += scanlinePadding;
 						}
 					}
-					bitmapToSave.Save(filename, format);
 					bitmapToSave.UnlockBits(bitmapData);
+					bitmapToSave.Save(filename, format);
+
 					return true;
 				}
 				else if (sourceImage.BitDepth == 8 && format == ImageFormat.Png)
