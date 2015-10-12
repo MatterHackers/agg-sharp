@@ -5,6 +5,7 @@ using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
+using MatterHackers.DataConverters2D;
 
 namespace MatterHackers.Agg
 {
@@ -12,8 +13,8 @@ namespace MatterHackers.Agg
 	{
 		private PathStorage CombinePaths(IVertexSource a, IVertexSource b, ClipType clipType)
 		{
-			List<List<IntPoint>> aPolys = CreatePolygons(a);
-			List<List<IntPoint>> bPolys = CreatePolygons(b);
+			List<List<IntPoint>> aPolys = VertexSourceToPolygon.CreatePolygons(a);
+			List<List<IntPoint>> bPolys = VertexSourceToPolygon.CreatePolygons(b);
 
 			Clipper clipper = new Clipper();
 
@@ -23,69 +24,11 @@ namespace MatterHackers.Agg
 			List<List<IntPoint>> intersectedPolys = new List<List<IntPoint>>();
 			clipper.Execute(clipType, intersectedPolys);
 
-			PathStorage output = new PathStorage();
-
-			foreach (List<IntPoint> polygon in intersectedPolys)
-			{
-				bool first = true;
-				foreach (IntPoint point in polygon)
-				{
-					if (first)
-					{
-						output.Add(point.X / 1000.0, point.Y / 1000.0, ShapePath.FlagsAndCommand.CommandMoveTo);
-						first = false;
-					}
-					else
-					{
-						output.Add(point.X / 1000.0, point.Y / 1000.0, ShapePath.FlagsAndCommand.CommandLineTo);
-					}
-				}
-
-				output.ClosePolygon();
-			}
+			PathStorage output = VertexSourceToPolygon.CreatePathStorage(intersectedPolys);
 
 			output.Add(0, 0, ShapePath.FlagsAndCommand.CommandStop);
 
 			return output;
-		}
-
-		private static List<List<IntPoint>> CreatePolygons(IVertexSource a)
-		{
-			List<List<IntPoint>> allPolys = new List<List<IntPoint>>();
-			List<IntPoint> currentPoly = null;
-			VertexData last = new VertexData();
-			VertexData first = new VertexData();
-			bool addedFirst = false;
-			foreach (VertexData vertexData in a.Vertices())
-			{
-				if (vertexData.IsLineTo)
-				{
-					if (!addedFirst)
-					{
-						currentPoly.Add(new IntPoint((long)(last.position.x * 1000), (long)(last.position.y * 1000)));
-						addedFirst = true;
-						first = last;
-					}
-					currentPoly.Add(new IntPoint((long)(vertexData.position.x * 1000), (long)(vertexData.position.y * 1000)));
-					last = vertexData;
-				}
-				else
-				{
-					addedFirst = false;
-					currentPoly = new List<IntPoint>();
-					allPolys.Add(currentPoly);
-					if (vertexData.IsMoveTo)
-					{
-						last = vertexData;
-					}
-					else
-					{
-						last = first;
-					}
-				}
-			}
-
-			return allPolys;
 		}
 
 		private double m_x;
