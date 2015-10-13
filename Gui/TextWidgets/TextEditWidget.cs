@@ -54,6 +54,8 @@ namespace MatterHackers.Agg.UI
 
 		public static event EventHandler HideSoftwareKeyboard;
 
+		public static event EventHandler KeyboardCollapsed;
+
 		public RGBA_Bytes TextColor
 		{
 			get
@@ -281,7 +283,18 @@ namespace MatterHackers.Agg.UI
 		{
 			if (HideSoftwareKeyboard != null)
 			{
-				UiThread.RunOnIdle(() => HideSoftwareKeyboard(this, null));
+				UiThread.RunOnIdle(() => {
+					HideSoftwareKeyboard(this, null);
+					KeyboardCollapsed(this, null);
+				});
+			}
+		}
+
+		public static void OnKeyboardCollapsed()
+		{
+			if(KeyboardCollapsed != null)
+			{
+				KeyboardCollapsed(null, null);
 			}
 		}
 

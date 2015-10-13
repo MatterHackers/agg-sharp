@@ -321,15 +321,17 @@ namespace MatterHackers.Agg.UI
 
 	public class SoftKeyboardContentOffset : GuiWidget
 	{
-		private TextEditWidget hadFocusWidget = null;
+		private static TextEditWidget hadFocusWidget = null;
 		private GuiWidget content;
 		private GuiWidget contentOffsetHolder;
-		private int deviceKeyboardHeight;
-		public static readonly int AndroidKeyboardOffset = 253;
 
-		public SoftKeyboardContentOffset(GuiWidget content, int deviceKeyboardHeight)
+		static SoftKeyboardContentOffset ()
 		{
-			this.deviceKeyboardHeight = deviceKeyboardHeight;
+			KeyboardHeight = 253;
+		}
+
+		public SoftKeyboardContentOffset(GuiWidget content)
+		{
 			this.content = content;
 			AnchorAll();
 			contentOffsetHolder = new GuiWidget(Width, Height);
@@ -338,7 +340,17 @@ namespace MatterHackers.Agg.UI
 			AddChild(contentOffsetHolder);
 
 			TextEditWidget.ShowSoftwareKeyboard += EnsureEditControlIsVisible;
-			TextEditWidget.HideSoftwareKeyboard += MoveContentBackDown;
+			TextEditWidget.KeyboardCollapsed += MoveContentBackDown;
+		}
+
+		public static int KeyboardHeight { get; set; }
+
+		public static bool IsActive 
+		{
+			get
+			{
+				return hadFocusWidget != null;
+			}
 		}
 
 		private RectangleDouble TextWidgetScreenBounds()
@@ -352,7 +364,7 @@ namespace MatterHackers.Agg.UI
 			base.OnDraw(graphics2D);
 			if (content.OriginRelativeParent.y != 0)
 			{
-				graphics2D.FillRectangle(0, 0, Width, deviceKeyboardHeight, RGBA_Bytes.Black);
+				graphics2D.FillRectangle(0, 0, Width, KeyboardHeight, RGBA_Bytes.Black);
 			}
 		}
 
@@ -368,7 +380,7 @@ namespace MatterHackers.Agg.UI
 
 			// test if the text widget is visible
 			RectangleDouble textWidgetScreenBounds = TextWidgetScreenBounds();
-			int topOfKeyboard = deviceKeyboardHeight;
+			int topOfKeyboard = KeyboardHeight;
 			if (textWidgetScreenBounds.Bottom < topOfKeyboard)
 			{
 				// make sure the screen is not resizing vertically
@@ -384,6 +396,10 @@ namespace MatterHackers.Agg.UI
 			{
 				content.VAnchor = oldVAnchor;
 				content.OriginRelativeParent = oldOrigin;
+
+				// Clear focus so that future clicks into the original control will fire focus events that restore the keyboard view
+				hadFocusWidget.Unfocus();
+				hadFocusWidget = null;
 			}
 		}
 	}
