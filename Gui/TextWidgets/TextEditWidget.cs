@@ -298,17 +298,6 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public static void EnsureKeyboardCollapsed()
-		{
-			if (SoftKeyboardDisplayStateManager.KeyboardActive)
-			{
-				if (HideSoftwareKeyboard != null)
-				{
-					UiThread.RunOnIdle(() => HideSoftwareKeyboard(null, null));
-				}
-			}
-		}
-
 		private void internalTextEditWidget_EnterPressed(object sender, KeyEventArgs keyEvent)
 		{
 			if (EnterPressed != null)
