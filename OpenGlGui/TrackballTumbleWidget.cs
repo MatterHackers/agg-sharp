@@ -215,13 +215,13 @@ namespace MatterHackers.Agg.OpenGlGui
 				RectangleDouble bounds = svg.GetBounds();
 				double arrowWidth = radius / 10;
 				var centered = Affine.NewTranslation(-bounds.Center);
-				var scalledTo1 = Affine.NewScaling(1 / bounds.Width);
+				var scaledTo1 = Affine.NewScaling(1 / bounds.Width);
 				var scaledToSize = Affine.NewScaling(arrowWidth);
 				var moveToRadius = Affine.NewTranslation(new Vector2(0, radius * 9 / 10));
 				var moveToScreenCenter = Affine.NewTranslation(center);
 				for (int i = 0; i < 4; i++)
 				{
-					var arrowLeftTransform = centered * scalledTo1 * scaledToSize * moveToRadius * Affine.NewRotation(MathHelper.Tau / 4 * i) * moveToScreenCenter;
+					var arrowLeftTransform = centered * scaledTo1 * scaledToSize * moveToRadius * Affine.NewRotation(MathHelper.Tau / 4 * i) * moveToScreenCenter;
 					insideArrows.Add(new VertexSourceApplyTransform(svg, arrowLeftTransform));
 				}
 			}
@@ -234,16 +234,16 @@ namespace MatterHackers.Agg.OpenGlGui
 				RectangleDouble bounds = svg.GetBounds();
 				double arrowWidth = radius / 15;
 				var centered = Affine.NewTranslation(-bounds.Center);
-				var scalledTo1 = Affine.NewScaling(1 / bounds.Width);
+				var scaledTo1 = Affine.NewScaling(1 / bounds.Width);
 				var scaledToSize = Affine.NewScaling(arrowWidth);
 				var moveToRadius = Affine.NewTranslation(new Vector2(0, radius * 16 / 15));
 				var moveToScreenCenter = Affine.NewTranslation(center);
 				for (int i = 0; i < 4; i++)
 				{
-					var arrowLeftTransform = centered * scalledTo1 * scaledToSize * Affine.NewRotation(MathHelper.Tau / 4) * moveToRadius * Affine.NewRotation(MathHelper.Tau / 8 + MathHelper.Tau / 4 * i + MathHelper.Tau / 80) * moveToScreenCenter;
+					var arrowLeftTransform = centered * scaledTo1 * scaledToSize * Affine.NewRotation(MathHelper.Tau / 4) * moveToRadius * Affine.NewRotation(MathHelper.Tau / 8 + MathHelper.Tau / 4 * i + MathHelper.Tau / 80) * moveToScreenCenter;
 					outsideArrows.Add(new VertexSourceApplyTransform(svg, arrowLeftTransform));
 
-					var arrowRightTransform = centered * scalledTo1 * scaledToSize * Affine.NewRotation(-MathHelper.Tau / 4) * moveToRadius * Affine.NewRotation(MathHelper.Tau / 8 + MathHelper.Tau / 4 * i - MathHelper.Tau / 80) * moveToScreenCenter;
+					var arrowRightTransform = centered * scaledTo1 * scaledToSize * Affine.NewRotation(-MathHelper.Tau / 4) * moveToRadius * Affine.NewRotation(MathHelper.Tau / 8 + MathHelper.Tau / 4 * i - MathHelper.Tau / 80) * moveToScreenCenter;
 					outsideArrows.Add(new VertexSourceApplyTransform(svg, arrowRightTransform));
 				}
 			}

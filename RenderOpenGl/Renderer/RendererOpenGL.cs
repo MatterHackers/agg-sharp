@@ -232,7 +232,7 @@ namespace MatterHackers.RenderOpenGl
 				{
 					throw new NotImplementedException();
 				}
-				// TODO: <BUG> make this do rotation and scalling
+				// TODO: <BUG> make this do rotation and scaling
 				transform.transform(ref x, ref y);
 				scaleX *= transform.sx;
 				scaleY *= transform.sy;
@@ -240,7 +240,7 @@ namespace MatterHackers.RenderOpenGl
 #endif
 
 #if true
-			// TODO: <BUG> make this do rotation and scalling
+			// TODO: <BUG> make this do rotation and scaling
 			RectangleInt sourceBounds = source.GetBounds();
 			sourceBounds.Offset((int)x, (int)y);
 			RectangleInt destBounds = new RectangleInt((int)cachedClipRect.Left, (int)cachedClipRect.Bottom, (int)cachedClipRect.Right, (int)cachedClipRect.Top);

@@ -224,8 +224,8 @@ namespace MatterHackers.VectorMath
 				case MouseDownType.Translation:
 					{
 						Vector2 mouseDelta = mousePosition - lastTranslationMousePosition;
-						Vector2 scalledDelta = mouseDelta / screenCenter.x * 4.75;
-						Vector3 offset = new Vector3(scalledDelta.x, scalledDelta.y, 0);
+						Vector2 scaledDelta = mouseDelta / screenCenter.x * 4.75;
+						Vector3 offset = new Vector3(scaledDelta.x, scaledDelta.y, 0);
 						offset = Vector3.TransformPosition(offset, Matrix4X4.Invert(CurrentRotation));
 						offset = Vector3.TransformPosition(offset, localToScreenTransform);
 						currentTranslationMatrix = currentTranslationMatrix * Matrix4X4.CreateTranslation(offset);

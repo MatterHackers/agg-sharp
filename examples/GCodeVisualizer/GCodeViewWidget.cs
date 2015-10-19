@@ -104,7 +104,7 @@ namespace MatterHackers.GCodeVisualizer
 		private Vector2 gridSizeMm;
 		private Vector2 gridCenterMm;
 
-		private Affine ScallingTransform
+		private Affine ScalingTransform
 		{
 			get
 			{
@@ -120,7 +120,7 @@ namespace MatterHackers.GCodeVisualizer
 				transform *= Affine.NewTranslation(unscaledRenderOffset);
 
 				// scale to view
-				transform *= ScallingTransform;
+				transform *= ScalingTransform;
 				transform *= Affine.NewTranslation(Width / 2, Height / 2);
 
 				return transform;
@@ -360,7 +360,7 @@ namespace MatterHackers.GCodeVisualizer
 				switch (TransformState)
 				{
 					case ETransformState.Move:
-						ScallingTransform.inverse_transform(ref mouseDelta);
+						ScalingTransform.inverse_transform(ref mouseDelta);
 
 						unscaledRenderOffset += mouseDelta;
 						break;

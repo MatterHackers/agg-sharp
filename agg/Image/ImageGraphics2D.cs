@@ -143,7 +143,7 @@ namespace MatterHackers.Agg
 			double inScaleX, double inScaleY)
 		{
 			{ // exit early if the dest and source bounds don't touch.
-				// TODO: <BUG> make this do rotation and scalling
+				// TODO: <BUG> make this do rotation and scaling
 				RectangleInt sourceBounds = source.GetBounds();
 				RectangleInt destBounds = this.destImageByte.GetBounds();
 				sourceBounds.Offset((int)destX, (int)destY);
@@ -202,7 +202,7 @@ namespace MatterHackers.Agg
 			// this is the fast drawing path
 			if (renderRequriesSourceSampling)
 			{
-#if false // if the scalling is small enough the results can be improved by using mip maps
+#if false // if the scaling is small enough the results can be improved by using mip maps
 	        if(CanUseMipMaps)
 	        {
 		        CMipMapFrameProperty* pMipMapFrameProperty = CMipMapFrameProperty::GetMipMapFrameProperty(source);

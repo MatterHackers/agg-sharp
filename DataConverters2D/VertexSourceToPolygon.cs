@@ -43,7 +43,7 @@ namespace MatterHackers.DataConverters2D
 {
 	public static class VertexSourceToPolygon
 	{
-		public static PathStorage CreatePathStorage(List<List<IntPoint>> intersectedPolys, double scalling = 1000)
+		public static PathStorage CreatePathStorage(List<List<IntPoint>> intersectedPolys, double scaling = 1000)
 		{
 			PathStorage output = new PathStorage();
 
@@ -54,12 +54,12 @@ namespace MatterHackers.DataConverters2D
 				{
 					if (first)
 					{
-						output.Add(point.X / scalling, point.Y / scalling, ShapePath.FlagsAndCommand.CommandMoveTo);
+						output.Add(point.X / scaling, point.Y / scaling, ShapePath.FlagsAndCommand.CommandMoveTo);
 						first = false;
 					}
 					else
 					{
-						output.Add(point.X / scalling, point.Y / scalling, ShapePath.FlagsAndCommand.CommandLineTo);
+						output.Add(point.X / scaling, point.Y / scaling, ShapePath.FlagsAndCommand.CommandLineTo);
 					}
 				}
 
@@ -68,7 +68,7 @@ namespace MatterHackers.DataConverters2D
 			return output;
 		}
 
-		public static List<List<IntPoint>> CreatePolygons(IVertexSource sourcePath, double scalling = 1000)
+		public static List<List<IntPoint>> CreatePolygons(IVertexSource sourcePath, double scaling = 1000)
 		{
 			List<List<IntPoint>> allPolys = new List<List<IntPoint>>();
 			List<IntPoint> currentPoly = null;
@@ -81,11 +81,11 @@ namespace MatterHackers.DataConverters2D
 				{
 					if (!addedFirst)
 					{
-						currentPoly.Add(new IntPoint((long)(last.position.x * scalling), (long)(last.position.y * scalling)));
+						currentPoly.Add(new IntPoint((long)(last.position.x * scaling), (long)(last.position.y * scaling)));
 						addedFirst = true;
 						first = last;
 					}
-					currentPoly.Add(new IntPoint((long)(vertexData.position.x * scalling), (long)(vertexData.position.y * scalling)));
+					currentPoly.Add(new IntPoint((long)(vertexData.position.x * scaling), (long)(vertexData.position.y * scaling)));
 					last = vertexData;
 				}
 				else

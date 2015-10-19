@@ -152,14 +152,14 @@ namespace MatterHackers.Agg.Font
 		private const int PixelsPerInch = 96;
 
 		private double emSizeInPixels;
-		private double currentEmScalling;
+		private double currentEmScaling;
 		private bool flatenCurves = true;
 
 		public StyledTypeFace(TypeFace typeFace, double emSizeInPoints, bool underline = false, bool flatenCurves = true)
 		{
 			this.TypeFace = typeFace;
 			emSizeInPixels = emSizeInPoints / PointsPerInch * PixelsPerInch;
-			currentEmScalling = emSizeInPixels / typeFace.UnitsPerEm;
+			currentEmScaling = emSizeInPixels / typeFace.UnitsPerEm;
 			DoUnderline = underline;
 			FlatenCurves = flatenCurves;
 		}
@@ -169,7 +169,7 @@ namespace MatterHackers.Agg.Font
 		/// <summary>
 		/// <para>If true the font will have it's curves flattened to the current point size when retrieved.</para>
 		/// <para>You may want to disable this so you can flaten the curve after other transforms have been applied,</para>
-		/// <para>such as skewing or scalling.  Rotation and Translation will not alter how a curve is flattened.</para>
+		/// <para>such as skewing or scaling.  Rotation and Translation will not alter how a curve is flattened.</para>
 		/// </summary>
 		public bool FlatenCurves
 		{
@@ -210,7 +210,7 @@ namespace MatterHackers.Agg.Font
 		{
 			get
 			{
-				return TypeFace.Ascent * currentEmScalling;
+				return TypeFace.Ascent * currentEmScaling;
 			}
 		}
 
@@ -218,7 +218,7 @@ namespace MatterHackers.Agg.Font
 		{
 			get
 			{
-				return TypeFace.Descent * currentEmScalling;
+				return TypeFace.Descent * currentEmScaling;
 			}
 		}
 
@@ -226,7 +226,7 @@ namespace MatterHackers.Agg.Font
 		{
 			get
 			{
-				return TypeFace.X_height * currentEmScalling;
+				return TypeFace.X_height * currentEmScaling;
 			}
 		}
 
@@ -234,7 +234,7 @@ namespace MatterHackers.Agg.Font
 		{
 			get
 			{
-				return TypeFace.Cap_height * currentEmScalling;
+				return TypeFace.Cap_height * currentEmScaling;
 			}
 		}
 
@@ -243,7 +243,7 @@ namespace MatterHackers.Agg.Font
 			get
 			{
 				RectangleDouble pixelBounds = new RectangleDouble(TypeFace.BoundingBox);
-				pixelBounds *= currentEmScalling;
+				pixelBounds *= currentEmScaling;
 				return pixelBounds;
 			}
 		}
@@ -252,7 +252,7 @@ namespace MatterHackers.Agg.Font
 		{
 			get
 			{
-				return TypeFace.Underline_thickness * currentEmScalling;
+				return TypeFace.Underline_thickness * currentEmScaling;
 			}
 		}
 
@@ -260,7 +260,7 @@ namespace MatterHackers.Agg.Font
 		{
 			get
 			{
-				return TypeFace.Underline_position * currentEmScalling;
+				return TypeFace.Underline_position * currentEmScaling;
 			}
 		}
 
@@ -316,7 +316,7 @@ namespace MatterHackers.Agg.Font
 					sourceGlyph = new GlyphWithUnderline(sourceGlyph, TypeFace.GetAdvanceForCharacter(character), TypeFace.Underline_position, TypeFace.Underline_thickness);
 				}
 				Affine glyphTransform = Affine.NewIdentity();
-				glyphTransform *= Affine.NewScaling(currentEmScalling);
+				glyphTransform *= Affine.NewScaling(currentEmScaling);
 				IVertexSource characterGlyph = new VertexSourceApplyTransform(sourceGlyph, glyphTransform);
 
 				if (FlatenCurves)
@@ -332,12 +332,12 @@ namespace MatterHackers.Agg.Font
 
 		public double GetAdvanceForCharacter(char character, char nextCharacterToKernWith)
 		{
-			return TypeFace.GetAdvanceForCharacter(character, nextCharacterToKernWith) * currentEmScalling;
+			return TypeFace.GetAdvanceForCharacter(character, nextCharacterToKernWith) * currentEmScaling;
 		}
 
 		public double GetAdvanceForCharacter(char character)
 		{
-			return TypeFace.GetAdvanceForCharacter(character) * currentEmScalling;
+			return TypeFace.GetAdvanceForCharacter(character) * currentEmScaling;
 		}
 	}
 }

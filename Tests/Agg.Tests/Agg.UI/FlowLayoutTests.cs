@@ -897,7 +897,7 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				double currentleft = controlPadding.Left + buttonMargin.Left;
 				double buttonHeightWithMargin = buttonSize + buttonMargin.Height;
-				double scalledWidth = (containerControl.Width - controlPadding.Width - buttonMargin.Width * 8 - buttonSize * 2) / 6;
+				double scaledWidth = (containerControl.Width - controlPadding.Width - buttonMargin.Width * 8 - buttonSize * 2) / 6;
 				// the left unsized rect
 				eightControlRectangles[0] = new RectangleDouble(
 						currentleft,
@@ -908,32 +908,32 @@ namespace MatterHackers.Agg.UI.Tests
 				// a bottom anchor
 				currentleft += buttonSize + buttonMargin.Width;
 				double bottomAnchorY = controlPadding.Bottom + buttonMargin.Bottom;
-				eightControlRectangles[1] = new RectangleDouble(currentleft, bottomAnchorY, currentleft + scalledWidth, bottomAnchorY + buttonSize);
+				eightControlRectangles[1] = new RectangleDouble(currentleft, bottomAnchorY, currentleft + scaledWidth, bottomAnchorY + buttonSize);
 
 				// center anchor
 				double centerYOfContainer = controlPadding.Bottom + (containerControl.Height - controlPadding.Height) / 2;
-				currentleft += scalledWidth + buttonMargin.Width;
-				eightControlRectangles[2] = new RectangleDouble(currentleft, centerYOfContainer - buttonHeightWithMargin / 2 + buttonMargin.Bottom, currentleft + scalledWidth, centerYOfContainer + buttonHeightWithMargin / 2 - buttonMargin.Top);
+				currentleft += scaledWidth + buttonMargin.Width;
+				eightControlRectangles[2] = new RectangleDouble(currentleft, centerYOfContainer - buttonHeightWithMargin / 2 + buttonMargin.Bottom, currentleft + scaledWidth, centerYOfContainer + buttonHeightWithMargin / 2 - buttonMargin.Top);
 
 				// top anchor
 				double topAnchorY = containerControl.Height - controlPadding.Top - buttonMargin.Top;
-				currentleft += scalledWidth + buttonMargin.Width;
-				eightControlRectangles[3] = new RectangleDouble(currentleft, topAnchorY - buttonSize, currentleft + scalledWidth, topAnchorY);
+				currentleft += scaledWidth + buttonMargin.Width;
+				eightControlRectangles[3] = new RectangleDouble(currentleft, topAnchorY - buttonSize, currentleft + scaledWidth, topAnchorY);
 
 				// bottom center anchor
-				currentleft += scalledWidth + buttonMargin.Width;
-				eightControlRectangles[4] = new RectangleDouble(currentleft, bottomAnchorY, currentleft + scalledWidth, centerYOfContainer - buttonMargin.Top);
+				currentleft += scaledWidth + buttonMargin.Width;
+				eightControlRectangles[4] = new RectangleDouble(currentleft, bottomAnchorY, currentleft + scaledWidth, centerYOfContainer - buttonMargin.Top);
 
 				// center top anchor
-				currentleft += scalledWidth + buttonMargin.Width;
-				eightControlRectangles[5] = new RectangleDouble(currentleft, centerYOfContainer + buttonMargin.Bottom, currentleft + scalledWidth, topAnchorY);
+				currentleft += scaledWidth + buttonMargin.Width;
+				eightControlRectangles[5] = new RectangleDouble(currentleft, centerYOfContainer + buttonMargin.Bottom, currentleft + scaledWidth, topAnchorY);
 
 				// bottom top anchor
-				currentleft += scalledWidth + buttonMargin.Width;
-				eightControlRectangles[6] = new RectangleDouble(currentleft, bottomAnchorY, currentleft + scalledWidth, topAnchorY);
+				currentleft += scaledWidth + buttonMargin.Width;
+				eightControlRectangles[6] = new RectangleDouble(currentleft, bottomAnchorY, currentleft + scaledWidth, topAnchorY);
 
 				// right anchor
-				currentleft += scalledWidth + buttonMargin.Width;
+				currentleft += scaledWidth + buttonMargin.Width;
 				eightControlRectangles[7] = new RectangleDouble(currentleft, 0, currentleft + buttonSize, buttonSize);
 
 				Graphics2D graphics = containerControl.NewGraphics2D();
@@ -1017,7 +1017,7 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				double currentLeft = containerControl.Width - controlPadding.Right - buttonMargin.Right - buttonSize;
 				double buttonHeightWithMargin = buttonSize + buttonMargin.Height;
-				double scalledWidth = (containerControl.Width - controlPadding.Width - buttonMargin.Width * 8 - buttonSize * 2) / 6;
+				double scaledWidth = (containerControl.Width - controlPadding.Width - buttonMargin.Width * 8 - buttonSize * 2) / 6;
 				// the left unsized rect
 				eightControlRectangles[0] = new RectangleDouble(
 						currentLeft,
@@ -1026,31 +1026,31 @@ namespace MatterHackers.Agg.UI.Tests
 						buttonSize);
 
 				// a bottom anchor
-				currentLeft -= scalledWidth + buttonMargin.Width;
+				currentLeft -= scaledWidth + buttonMargin.Width;
 				double bottomAnchorY = controlPadding.Bottom + buttonMargin.Bottom;
-				eightControlRectangles[1] = new RectangleDouble(currentLeft, bottomAnchorY, currentLeft + scalledWidth, bottomAnchorY + buttonSize);
+				eightControlRectangles[1] = new RectangleDouble(currentLeft, bottomAnchorY, currentLeft + scaledWidth, bottomAnchorY + buttonSize);
 
 				// center anchor
 				double centerYOfContainer = controlPadding.Bottom + (containerControl.Height - controlPadding.Height) / 2;
-				currentLeft -= scalledWidth + buttonMargin.Width;
-				eightControlRectangles[2] = new RectangleDouble(currentLeft, centerYOfContainer - buttonHeightWithMargin / 2 + buttonMargin.Bottom, currentLeft + scalledWidth, centerYOfContainer + buttonHeightWithMargin / 2 - buttonMargin.Top);
+				currentLeft -= scaledWidth + buttonMargin.Width;
+				eightControlRectangles[2] = new RectangleDouble(currentLeft, centerYOfContainer - buttonHeightWithMargin / 2 + buttonMargin.Bottom, currentLeft + scaledWidth, centerYOfContainer + buttonHeightWithMargin / 2 - buttonMargin.Top);
 
 				// top anchor
 				double topAnchorY = containerControl.Height - controlPadding.Top - buttonMargin.Top;
-				currentLeft -= scalledWidth + buttonMargin.Width;
-				eightControlRectangles[3] = new RectangleDouble(currentLeft, topAnchorY - buttonSize, currentLeft + scalledWidth, topAnchorY);
+				currentLeft -= scaledWidth + buttonMargin.Width;
+				eightControlRectangles[3] = new RectangleDouble(currentLeft, topAnchorY - buttonSize, currentLeft + scaledWidth, topAnchorY);
 
 				// bottom center anchor
-				currentLeft -= scalledWidth + buttonMargin.Width;
-				eightControlRectangles[4] = new RectangleDouble(currentLeft, bottomAnchorY, currentLeft + scalledWidth, centerYOfContainer - buttonMargin.Top);
+				currentLeft -= scaledWidth + buttonMargin.Width;
+				eightControlRectangles[4] = new RectangleDouble(currentLeft, bottomAnchorY, currentLeft + scaledWidth, centerYOfContainer - buttonMargin.Top);
 
 				// center top anchor
-				currentLeft -= scalledWidth + buttonMargin.Width;
-				eightControlRectangles[5] = new RectangleDouble(currentLeft, centerYOfContainer + buttonMargin.Bottom, currentLeft + scalledWidth, topAnchorY);
+				currentLeft -= scaledWidth + buttonMargin.Width;
+				eightControlRectangles[5] = new RectangleDouble(currentLeft, centerYOfContainer + buttonMargin.Bottom, currentLeft + scaledWidth, topAnchorY);
 
 				// bottom top anchor
-				currentLeft -= scalledWidth + buttonMargin.Width;
-				eightControlRectangles[6] = new RectangleDouble(currentLeft, bottomAnchorY, currentLeft + scalledWidth, topAnchorY);
+				currentLeft -= scaledWidth + buttonMargin.Width;
+				eightControlRectangles[6] = new RectangleDouble(currentLeft, bottomAnchorY, currentLeft + scaledWidth, topAnchorY);
 
 				// right anchor
 				currentLeft -= buttonSize + buttonMargin.Width;
@@ -1127,7 +1127,7 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				double currentBottom = controlPadding.Bottom + buttonMargin.Bottom;
 				double buttonWidthWithMargin = buttonSize + buttonMargin.Width;
-				double scalledHeight = (containerControl.Height - controlPadding.Height - buttonMargin.Height * 8 - buttonSize * 2) / 6;
+				double scaledHeight = (containerControl.Height - controlPadding.Height - buttonMargin.Height * 8 - buttonSize * 2) / 6;
 				// the bottom unsized rect
 				eightControlRectangles[0] = new RectangleDouble(
 						0,
@@ -1138,32 +1138,32 @@ namespace MatterHackers.Agg.UI.Tests
 				// left anchor
 				currentBottom += buttonSize + buttonMargin.Height;
 				double leftAnchorX = controlPadding.Left + buttonMargin.Left;
-				eightControlRectangles[1] = new RectangleDouble(leftAnchorX, currentBottom, leftAnchorX + buttonSize, currentBottom + scalledHeight);
+				eightControlRectangles[1] = new RectangleDouble(leftAnchorX, currentBottom, leftAnchorX + buttonSize, currentBottom + scaledHeight);
 
 				// center anchor
 				double centerXOfContainer = controlPadding.Left + (containerControl.Width - controlPadding.Width) / 2;
-				currentBottom += scalledHeight + buttonMargin.Height;
-				eightControlRectangles[2] = new RectangleDouble(centerXOfContainer - buttonWidthWithMargin / 2 + buttonMargin.Left, currentBottom, centerXOfContainer + buttonWidthWithMargin / 2 - buttonMargin.Right, currentBottom + scalledHeight);
+				currentBottom += scaledHeight + buttonMargin.Height;
+				eightControlRectangles[2] = new RectangleDouble(centerXOfContainer - buttonWidthWithMargin / 2 + buttonMargin.Left, currentBottom, centerXOfContainer + buttonWidthWithMargin / 2 - buttonMargin.Right, currentBottom + scaledHeight);
 
 				// right anchor
 				double rightAnchorX = containerControl.Width - controlPadding.Right - buttonMargin.Right;
-				currentBottom += scalledHeight + buttonMargin.Height;
-				eightControlRectangles[3] = new RectangleDouble(rightAnchorX - buttonSize, currentBottom, rightAnchorX, currentBottom + scalledHeight);
+				currentBottom += scaledHeight + buttonMargin.Height;
+				eightControlRectangles[3] = new RectangleDouble(rightAnchorX - buttonSize, currentBottom, rightAnchorX, currentBottom + scaledHeight);
 
 				// left center anchor
-				currentBottom += scalledHeight + buttonMargin.Height;
-				eightControlRectangles[4] = new RectangleDouble(leftAnchorX, currentBottom, centerXOfContainer - buttonMargin.Right, currentBottom + scalledHeight);
+				currentBottom += scaledHeight + buttonMargin.Height;
+				eightControlRectangles[4] = new RectangleDouble(leftAnchorX, currentBottom, centerXOfContainer - buttonMargin.Right, currentBottom + scaledHeight);
 
 				// center right anchor
-				currentBottom += scalledHeight + buttonMargin.Height;
-				eightControlRectangles[5] = new RectangleDouble(centerXOfContainer + buttonMargin.Left, currentBottom, rightAnchorX, currentBottom + scalledHeight);
+				currentBottom += scaledHeight + buttonMargin.Height;
+				eightControlRectangles[5] = new RectangleDouble(centerXOfContainer + buttonMargin.Left, currentBottom, rightAnchorX, currentBottom + scaledHeight);
 
 				// left right anchor
-				currentBottom += scalledHeight + buttonMargin.Height;
-				eightControlRectangles[6] = new RectangleDouble(leftAnchorX, currentBottom, rightAnchorX, currentBottom + scalledHeight);
+				currentBottom += scaledHeight + buttonMargin.Height;
+				eightControlRectangles[6] = new RectangleDouble(leftAnchorX, currentBottom, rightAnchorX, currentBottom + scaledHeight);
 
 				// top anchor
-				currentBottom += scalledHeight + buttonMargin.Height;
+				currentBottom += scaledHeight + buttonMargin.Height;
 				eightControlRectangles[7] = new RectangleDouble(0, currentBottom, buttonSize, currentBottom + buttonSize);
 
 				Graphics2D graphics = containerControl.NewGraphics2D();
@@ -1247,7 +1247,7 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				double currentBottom = containerControl.Height - controlPadding.Top - buttonMargin.Top - buttonSize;
 				double buttonWidthWithMargin = buttonSize + buttonMargin.Width;
-				double scalledHeight = (containerControl.Height - controlPadding.Height - buttonMargin.Height * 8 - buttonSize * 2) / 6;
+				double scaledHeight = (containerControl.Height - controlPadding.Height - buttonMargin.Height * 8 - buttonSize * 2) / 6;
 				// the bottom unsized rect
 				eightControlRectangles[0] = new RectangleDouble(
 						0,
@@ -1256,31 +1256,31 @@ namespace MatterHackers.Agg.UI.Tests
 						currentBottom + buttonSize);
 
 				// left anchor
-				currentBottom -= scalledHeight + buttonMargin.Height;
+				currentBottom -= scaledHeight + buttonMargin.Height;
 				double leftAnchorX = controlPadding.Left + buttonMargin.Left;
-				eightControlRectangles[1] = new RectangleDouble(leftAnchorX, currentBottom, leftAnchorX + buttonSize, currentBottom + scalledHeight);
+				eightControlRectangles[1] = new RectangleDouble(leftAnchorX, currentBottom, leftAnchorX + buttonSize, currentBottom + scaledHeight);
 
 				// center anchor
 				double centerXOfContainer = controlPadding.Left + (containerControl.Width - controlPadding.Width) / 2;
-				currentBottom -= scalledHeight + buttonMargin.Height;
-				eightControlRectangles[2] = new RectangleDouble(centerXOfContainer - buttonWidthWithMargin / 2 + buttonMargin.Left, currentBottom, centerXOfContainer + buttonWidthWithMargin / 2 - buttonMargin.Right, currentBottom + scalledHeight);
+				currentBottom -= scaledHeight + buttonMargin.Height;
+				eightControlRectangles[2] = new RectangleDouble(centerXOfContainer - buttonWidthWithMargin / 2 + buttonMargin.Left, currentBottom, centerXOfContainer + buttonWidthWithMargin / 2 - buttonMargin.Right, currentBottom + scaledHeight);
 
 				// right anchor
 				double rightAnchorX = containerControl.Width - controlPadding.Right - buttonMargin.Right;
-				currentBottom -= scalledHeight + buttonMargin.Height;
-				eightControlRectangles[3] = new RectangleDouble(rightAnchorX - buttonSize, currentBottom, rightAnchorX, currentBottom + scalledHeight);
+				currentBottom -= scaledHeight + buttonMargin.Height;
+				eightControlRectangles[3] = new RectangleDouble(rightAnchorX - buttonSize, currentBottom, rightAnchorX, currentBottom + scaledHeight);
 
 				// left center anchor
-				currentBottom -= scalledHeight + buttonMargin.Height;
-				eightControlRectangles[4] = new RectangleDouble(leftAnchorX, currentBottom, centerXOfContainer - buttonMargin.Right, currentBottom + scalledHeight);
+				currentBottom -= scaledHeight + buttonMargin.Height;
+				eightControlRectangles[4] = new RectangleDouble(leftAnchorX, currentBottom, centerXOfContainer - buttonMargin.Right, currentBottom + scaledHeight);
 
 				// center right anchor
-				currentBottom -= scalledHeight + buttonMargin.Height;
-				eightControlRectangles[5] = new RectangleDouble(centerXOfContainer + buttonMargin.Left, currentBottom, rightAnchorX, currentBottom + scalledHeight);
+				currentBottom -= scaledHeight + buttonMargin.Height;
+				eightControlRectangles[5] = new RectangleDouble(centerXOfContainer + buttonMargin.Left, currentBottom, rightAnchorX, currentBottom + scaledHeight);
 
 				// left right anchor
-				currentBottom -= scalledHeight + buttonMargin.Height;
-				eightControlRectangles[6] = new RectangleDouble(leftAnchorX, currentBottom, rightAnchorX, currentBottom + scalledHeight);
+				currentBottom -= scaledHeight + buttonMargin.Height;
+				eightControlRectangles[6] = new RectangleDouble(leftAnchorX, currentBottom, rightAnchorX, currentBottom + scaledHeight);
 
 				// top anchor
 				currentBottom -= buttonSize + buttonMargin.Height;
