@@ -183,7 +183,8 @@ namespace MatterHackers.Agg.Image
 						}
 
 					default:
-						throw new System.NotImplementedException();
+						// let this code fall through and return false
+						break;
 				}
 			}
 			return false;
