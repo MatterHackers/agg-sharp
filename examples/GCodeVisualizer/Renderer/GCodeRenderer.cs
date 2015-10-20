@@ -52,7 +52,6 @@ namespace MatterHackers.GCodeVisualizer
 		private List<List<int>> featureStartIndex = new List<List<int>>();
 		private List<List<int>> featureEndIndex = new List<List<int>>();
 		private List<List<RenderFeatureBase>> renderFeatures = new List<List<RenderFeatureBase>>();
-		private int TotalRenderFeatures = 0;
 
 		public static RGBA_Bytes ExtrusionColor = RGBA_Bytes.White;
 		public static RGBA_Bytes TravelColor = RGBA_Bytes.Green;
@@ -159,8 +158,6 @@ namespace MatterHackers.GCodeVisualizer
 					}
 				}
 			}
-
-			TotalRenderFeatures += renderFeaturesForLayer.Count;
 		}
 
 		public int GetNumFeatures(int layerToCountFeaturesOn)
