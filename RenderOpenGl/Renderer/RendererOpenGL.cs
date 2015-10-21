@@ -175,11 +175,18 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		private void DrawAAShape(IVertexSource vertexSource)
+		public void DrawAAShape(IVertexSource vertexSource, IColorType colorIn)
 		{
-			CheckLineImageCache();
-			GL.Enable(EnableCap.Texture2D);
-			GL.BindTexture(TextureTarget.Texture2D, RenderOpenGl.ImageGlPlugin.GetImageGlPlugin(AATextureImage, false).GLTextureHandle);
+			vertexSource.rewind(0);
+
+			Affine transform = GetTransform();
+			if (!transform.is_identity())
+			{
+				vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
+			}
+
+			RGBA_Bytes colorBytes = colorIn.GetAsRGBA_Bytes();
+			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 			triangleEddgeInfo.Clear();
 			Graphics2DOpenGL.SendShapeToTesselator(triangleEddgeInfo, vertexSource);
@@ -188,30 +195,92 @@ namespace MatterHackers.RenderOpenGl
 			triangleEddgeInfo.RenderLastToGL();
 		}
 
-		public override void Render(IVertexSource vertexSource, int pathIndexToRender, IColorType colorIn)
+		public void DrawAALine(Vector2 start, Vector2 end, double width, IColorType colorIn)
 		{
-			PushOrthoProjection();
-
-			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-			GL.Enable(EnableCap.Blend);
-
-			vertexSource.rewind(pathIndexToRender);
-
 			RGBA_Bytes colorBytes = colorIn.GetAsRGBA_Bytes();
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 			Affine transform = GetTransform();
 			if (!transform.is_identity())
 			{
-				vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
+				transform.transform(ref start);
+				transform.transform(ref end);
 			}
+
+			GL.Begin(BeginMode.Triangles);
+			Vector2 widthRightOffset = (end-start).GetPerpendicularRight().GetNormal() * width/2;
+			triangleEddgeInfo.Draw2EdgeTriangle(start - widthRightOffset, end - widthRightOffset, end + widthRightOffset);
+			triangleEddgeInfo.Draw2EdgeTriangle(end + widthRightOffset, start + widthRightOffset, start - widthRightOffset);
+			GL.End();
+		}
+
+		public void DrawAALineRounded(Vector2 start, Vector2 end, double width, IColorType colorIn)
+		{
+			RGBA_Bytes colorBytes = colorIn.GetAsRGBA_Bytes();
+			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
+
+			Affine transform = GetTransform();
+			if (!transform.is_identity())
+			{
+				transform.transform(ref start);
+				transform.transform(ref end);
+			}
+
+			GL.Begin(BeginMode.Triangles);
+			Vector2 widthRightOffset = (end - start).GetPerpendicularRight().GetNormal() * width / 2;
+			// draw the main line part
+			triangleEddgeInfo.Draw1EdgeTriangle(start - widthRightOffset, end - widthRightOffset, end + widthRightOffset);
+			triangleEddgeInfo.Draw1EdgeTriangle(end + widthRightOffset, start + widthRightOffset, start - widthRightOffset);
+			// now draw the end rounds
+			int numSegments = 5;
+			Vector2 endCurveStart = end + widthRightOffset;
+			Vector2 startCurveStart = start - widthRightOffset;
+			for (int i = 0; i < numSegments; i++)
+			{
+				Vector2 endCurveEnd = end + Vector2.Rotate(widthRightOffset, i * Math.PI / numSegments);
+				triangleEddgeInfo.Draw1EdgeTriangle(endCurveStart, endCurveEnd, end);
+				endCurveStart = endCurveEnd;
+
+				Vector2 startCurveEnd = start + Vector2.Rotate(widthRightOffset, i * Math.PI / numSegments);
+				triangleEddgeInfo.Draw1EdgeTriangle(startCurveStart, startCurveEnd, start);
+				startCurveStart = startCurveEnd;
+			}
+			GL.End();
+		}
+
+		public void PreRender()
+		{
+			CheckLineImageCache();
+			PushOrthoProjection();
+
+			GL.Enable(EnableCap.Texture2D);
+			GL.BindTexture(TextureTarget.Texture2D, RenderOpenGl.ImageGlPlugin.GetImageGlPlugin(AATextureImage, false).GLTextureHandle);
+
+			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+			GL.Enable(EnableCap.Blend);
+		}
+
+		public override void Render(IVertexSource vertexSource, int pathIndexToRender, IColorType colorIn)
+		{
+			PreRender();
 
 			if (DoEdgeAntiAliasing)
 			{
-				DrawAAShape(vertexSource);
+				DrawAAShape(vertexSource, colorIn);
 			}
 			else
 			{
+				vertexSource.rewind(pathIndexToRender);
+
+				Affine transform = GetTransform();
+				if (!transform.is_identity())
+				{
+					vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
+				}
+
+				RGBA_Bytes colorBytes = colorIn.GetAsRGBA_Bytes();
+				GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
+
 				renderNowTesselator.Clear();
 				Graphics2DOpenGL.SendShapeToTesselator(renderNowTesselator, vertexSource);
 			}

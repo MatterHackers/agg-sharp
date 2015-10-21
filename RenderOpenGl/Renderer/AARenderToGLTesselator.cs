@@ -58,19 +58,25 @@ namespace MatterHackers.RenderOpenGl
 			GL.Vertex2(p2.x, p2.y);
 		}
 
-		protected void Draw1EdgeTriangle(Vector2 p0, Vector2 p1, Vector2 p2)
+		/// <summary>
+		/// edge p0 -> p1 is Anti aliased the others are not
+		/// </summary>
+		/// <param name="aaEdgeP0"></param>
+		/// <param name="aaEdgeP1"></param>
+		/// <param name="nonAaPoint"></param>
+		public void Draw1EdgeTriangle(Vector2 aaEdgeP0, Vector2 aaEdgeP1, Vector2 nonAaPoint)
 		{
 			//return;
-			if (p0 == p1 || p1 == p2 || p2 == p0)
+			if (aaEdgeP0 == aaEdgeP1 || aaEdgeP1 == nonAaPoint || nonAaPoint == aaEdgeP0)
 			{
 				return;
 			}
-			Vector2 edegP0P1Vector = p1 - p0;
+			Vector2 edegP0P1Vector = aaEdgeP1 - aaEdgeP0;
 			Vector2 edgeP0P1Normal = edegP0P1Vector;
 			edgeP0P1Normal.Normalize();
 
 			Vector2 Normal = edgeP0P1Normal.GetPerpendicularRight();
-			double edgeDotP3 = Vector2.Dot(Normal, p2 - p0);
+			double edgeDotP3 = Vector2.Dot(Normal, nonAaPoint - aaEdgeP0);
 			if (edgeDotP3 < 0)
 			{
 				edgeDotP3 = -edgeDotP3;
@@ -80,8 +86,8 @@ namespace MatterHackers.RenderOpenGl
 				Normal = -Normal;
 			}
 
-			Vector2 edgeP0Offset = p0 + Normal;
-			Vector2 edgeP1Offset = p1 + Normal;
+			Vector2 edgeP0Offset = aaEdgeP0 + Normal;
+			Vector2 edgeP1Offset = aaEdgeP1 + Normal;
 
 			Vector2 texP0 = new Vector2(1 / 1023.0, .25);
 			Vector2 texP1 = new Vector2(1 / 1023.0, .75);
@@ -89,10 +95,10 @@ namespace MatterHackers.RenderOpenGl
 			Vector2 texEdgeP0Offset = new Vector2(0, .25);
 			Vector2 texEdgeP1Offset = new Vector2(0, .75);
 
-			FanStart(texP0, p0, texEdgeP0Offset, edgeP0Offset);
+			FanStart(texP0, aaEdgeP0, texEdgeP0Offset, edgeP0Offset);
 			FanDo(texEdgeP1Offset, edgeP1Offset);
-			FanDo(texP1, p1);
-			FanDo(texP2, p2);
+			FanDo(texP1, aaEdgeP1);
+			FanDo(texP2, nonAaPoint);
 		}
 
 		private void FanStart(Vector2 fanTStart, Vector2 fanPStart, Vector2 fanTNext, Vector2 fanPNext)
@@ -118,7 +124,13 @@ namespace MatterHackers.RenderOpenGl
 			fanPNext = fanPEnd;
 		}
 
-		protected void Draw2EdgeTriangle(Vector2 p0, Vector2 p1, Vector2 p2)
+		/// <summary>
+		/// Edge p0 -> p1 and p1 -> p2 are Anti Aliased. Edge p2 -> p0 is NOT.
+		/// </summary>
+		/// <param name="p0"></param>
+		/// <param name="p1"></param>
+		/// <param name="p2"></param>
+		public void Draw2EdgeTriangle(Vector2 p0, Vector2 p1, Vector2 p2)
 		{
 			//Draw3EdgeTriangle(p0, p1, p2);
 			Vector2 centerPoint = p0 + p1 + p2;

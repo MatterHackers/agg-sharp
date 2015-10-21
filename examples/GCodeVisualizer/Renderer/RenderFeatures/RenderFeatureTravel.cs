@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
+using MatterHackers.RenderOpenGl;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.GCodeVisualizer
@@ -93,26 +94,44 @@ namespace MatterHackers.GCodeVisualizer
 				double movementLineWidth = 0.35 * renderInfo.LayerScale;
 				RGBA_Bytes movementColor = new RGBA_Bytes(10, 190, 15);
 
-				PathStorage pathStorage = new PathStorage();
-				VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, renderInfo.Transform);
-				Stroke stroke = new Stroke(transformedPathStorage, movementLineWidth);
-
-				stroke.line_cap(LineCap.Round);
-				stroke.line_join(LineJoin.Round);
-
-				Vector3Float start = this.GetStart(renderInfo);
-				Vector3Float end = this.GetEnd(renderInfo);
-
-				pathStorage.Add(start.x, start.y, ShapePath.FlagsAndCommand.CommandMoveTo);
-				if (end.x != start.x || end.y != start.y)
+				// render the part using opengl
+				Graphics2DOpenGL graphics2DGl = graphics2D as Graphics2DOpenGL;
+				if (graphics2DGl != null)
 				{
-					pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
+					Vector3Float startF = this.GetStart(renderInfo);
+					Vector3Float endF = this.GetEnd(renderInfo);
+					Vector2 start = new Vector2(startF.x, startF.y);
+					renderInfo.Transform.transform(ref start);
+
+					Vector2 end = new Vector2(endF.x, endF.y);
+					renderInfo.Transform.transform(ref end);
+
+					graphics2DGl.DrawAALineRounded(start, end, movementLineWidth, movementColor);
 				}
 				else
 				{
-					pathStorage.Add(end.x + .01, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
+					PathStorage pathStorage = new PathStorage();
+					VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, renderInfo.Transform);
+					Stroke stroke = new Stroke(transformedPathStorage, movementLineWidth);
+
+					stroke.line_cap(LineCap.Round);
+					stroke.line_join(LineJoin.Round);
+
+					Vector3Float start = this.GetStart(renderInfo);
+					Vector3Float end = this.GetEnd(renderInfo);
+
+					pathStorage.Add(start.x, start.y, ShapePath.FlagsAndCommand.CommandMoveTo);
+					if (end.x != start.x || end.y != start.y)
+					{
+						pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
+					}
+					else
+					{
+						pathStorage.Add(end.x + .01, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
+					}
+
+					graphics2D.Render(stroke, 0, movementColor);
 				}
-				graphics2D.Render(stroke, 0, movementColor);
 			}
 		}
 	}

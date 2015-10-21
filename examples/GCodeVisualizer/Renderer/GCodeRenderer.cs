@@ -1,6 +1,6 @@
 ﻿using MatterHackers.Agg;
+using MatterHackers.RenderOpenGl;
 using MatterHackers.RenderOpenGl.OpenGl;
-
 /*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
@@ -191,12 +191,29 @@ namespace MatterHackers.GCodeVisualizer
 					startFeature = Math.Max(endFeature - 1, 0);
 				}
 
-				for (int i = startFeature; i < endFeature; i++)
+				Graphics2DOpenGL graphics2DGl = graphics2D as Graphics2DOpenGL;
+				if (graphics2DGl != null)
 				{
-					RenderFeatureBase feature = renderFeatures[renderInfo.EndLayerIndex][i];
-					if (feature != null)
+					graphics2DGl.PreRender();
+					for (int i = startFeature; i < endFeature; i++)
 					{
-						feature.Render(graphics2D, renderInfo);
+						RenderFeatureBase feature = renderFeatures[renderInfo.EndLayerIndex][i];
+						if (feature != null)
+						{
+							feature.Render(graphics2D, renderInfo);
+						}
+					}
+					graphics2DGl.PopOrthoProjection();
+				}
+				else
+				{
+					for (int i = startFeature; i < endFeature; i++)
+					{
+						RenderFeatureBase feature = renderFeatures[renderInfo.EndLayerIndex][i];
+						if (feature != null)
+						{
+							feature.Render(graphics2D, renderInfo);
+						}
 					}
 				}
 			}

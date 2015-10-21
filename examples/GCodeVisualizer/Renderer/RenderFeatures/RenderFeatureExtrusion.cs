@@ -1,8 +1,9 @@
 ﻿using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.MeshVisualizer;
+using MatterHackers.RenderOpenGl;
+using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
-
 /*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
@@ -106,20 +107,37 @@ namespace MatterHackers.GCodeVisualizer
 					extrusionColor = color;
 				}
 
-				PathStorage pathStorage = new PathStorage();
-				VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, renderInfo.Transform);
-				Stroke stroke = new Stroke(transformedPathStorage, extrusionLineWidths);
+				// render the part using opengl
+				Graphics2DOpenGL graphics2DGl = graphics2D as Graphics2DOpenGL;
+				if (graphics2DGl != null)
+				{
+					Vector3Float startF = this.GetStart(renderInfo);
+					Vector3Float endF = this.GetEnd(renderInfo);
+					Vector2 start = new Vector2(startF.x, startF.y);
+					renderInfo.Transform.transform(ref start);
 
-				stroke.line_cap(LineCap.Round);
-				stroke.line_join(LineJoin.Round);
+					Vector2 end = new Vector2(endF.x, endF.y);
+					renderInfo.Transform.transform(ref end);
 
-				Vector3Float start = this.GetStart(renderInfo);
-				Vector3Float end = this.GetEnd(renderInfo);
+					graphics2DGl.DrawAALineRounded(start, end, extrusionLineWidths, extrusionColor);
+				}
+				else
+				{
+					PathStorage pathStorage = new PathStorage();
+					VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, renderInfo.Transform);
+					Stroke stroke = new Stroke(transformedPathStorage, extrusionLineWidths);
 
-				pathStorage.Add(start.x, start.y, ShapePath.FlagsAndCommand.CommandMoveTo);
-				pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
+					stroke.line_cap(LineCap.Round);
+					stroke.line_join(LineJoin.Round);
 
-				graphics2D.Render(stroke, 0, extrusionColor);
+					Vector3Float start = this.GetStart(renderInfo);
+					Vector3Float end = this.GetEnd(renderInfo);
+
+					pathStorage.Add(start.x, start.y, ShapePath.FlagsAndCommand.CommandMoveTo);
+					pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
+
+					graphics2D.Render(stroke, 0, extrusionColor);
+				}
 			}
 		}
 	}
