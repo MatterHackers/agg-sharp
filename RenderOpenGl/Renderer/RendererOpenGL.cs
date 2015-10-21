@@ -234,14 +234,14 @@ namespace MatterHackers.RenderOpenGl
 			// now draw the end rounds
 			int numSegments = 5;
 			Vector2 endCurveStart = end + widthRightOffset;
-			Vector2 startCurveStart = start - widthRightOffset;
+			Vector2 startCurveStart = start + widthRightOffset;
 			for (int i = 0; i < numSegments+1; i++)
 			{
 				Vector2 endCurveEnd = end + Vector2.Rotate(widthRightOffset, i * Math.PI / numSegments);
 				triangleEddgeInfo.Draw1EdgeTriangle(endCurveStart, endCurveEnd, end);
 				endCurveStart = endCurveEnd;
 
-				Vector2 startCurveEnd = start + Vector2.Rotate(widthRightOffset, (numSegments-i) * Math.PI / numSegments);
+				Vector2 startCurveEnd = start + Vector2.Rotate(widthRightOffset, -i * Math.PI / numSegments);
 				triangleEddgeInfo.Draw1EdgeTriangle(startCurveStart, startCurveEnd, start);
 				startCurveStart = startCurveEnd;
 			}
