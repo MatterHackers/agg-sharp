@@ -632,7 +632,6 @@ namespace MatterHackers.Agg.UI
 				if (keyEvent.Control)
 				{
 					// don't let control keys get into the stream
-					keyEvent.SuppressKeyPress = true;
 					keyEvent.Handled = true;
 				}
 				else if (Selecting)
