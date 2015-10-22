@@ -87,7 +87,7 @@ namespace MatterHackers.Agg.UI
 			parentScrollableWidget.TopLeftOffset = topLeftOffset;
 		}
 
-		private int debugRucursionCount = 0;
+		private int debugRecursionCount = 0;
 
 		internal void ValidateScrollPosition()
 		{
@@ -99,12 +99,12 @@ namespace MatterHackers.Agg.UI
 			boundsWithMargin.Inflate(Margin);
 			if (boundsWithMargin.Height < parentScrollableWidget.LocalBounds.Height)
 			{
-				debugRucursionCount++;
-				if (debugRucursionCount < 20)
+				debugRecursionCount++;
+				if (debugRecursionCount < 20)
 				{
 					parentScrollableWidget.TopLeftOffset = new Vector2(parentScrollableWidget.TopLeftOffset.x, 0);
 				}
-				debugRucursionCount--;
+				debugRecursionCount--;
 				newOrigin.y = OriginRelativeParent.y;
 			}
 			else
