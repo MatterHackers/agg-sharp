@@ -316,13 +316,14 @@ namespace MatterHackers.Agg.UI
 
 	public class SoftKeyboardContentOffset : GuiWidget
 	{
-		private static TextEditWidget hadFocusWidget = null;
+		private TextEditWidget hadFocusWidget = null;
 		private GuiWidget content;
 		private GuiWidget contentOffsetHolder;
 
 		static SoftKeyboardContentOffset ()
 		{
 			KeyboardHeight = 253;
+			IsActive = false;
 		}
 
 		public SoftKeyboardContentOffset(GuiWidget content)
@@ -342,10 +343,8 @@ namespace MatterHackers.Agg.UI
 
 		public static bool IsActive 
 		{
-			get
-			{
-				return hadFocusWidget != null;
-			}
+			get;
+			private set;
 		}
 
 		private RectangleDouble TextWidgetScreenBounds()
@@ -378,6 +377,8 @@ namespace MatterHackers.Agg.UI
 			int topOfKeyboard = KeyboardHeight;
 			if (textWidgetScreenBounds.Bottom < topOfKeyboard)
 			{
+				IsActive = true;
+
 				// make sure the screen is not resizing vertically
 				content.VAnchor = VAnchor.AbsolutePosition;
 				// move the screen up so we can see the bottom of the text widget
@@ -391,6 +392,8 @@ namespace MatterHackers.Agg.UI
 			{
 				content.VAnchor = oldVAnchor;
 				content.OriginRelativeParent = oldOrigin;
+
+				IsActive = false;
 
 				// Clear focus so that future clicks into the original control will fire focus events that restore the keyboard view
 				hadFocusWidget.Unfocus();
