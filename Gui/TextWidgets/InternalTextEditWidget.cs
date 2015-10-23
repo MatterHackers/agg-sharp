@@ -480,7 +480,7 @@ namespace MatterHackers.Agg.UI
 				Selecting = false;
 				mouseIsDown = true;
 			}
-			else if (mouseEvent.Clicks == 2)
+			else if (IsDoubleClick(mouseEvent))
 			{
 				while (CharIndexToInsertBefore >= Text.Length || (CharIndexToInsertBefore > -1 && !WordBreakChars.Contains(Text[CharIndexToInsertBefore])))
 				{

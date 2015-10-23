@@ -279,6 +279,8 @@ namespace MatterHackers.Agg.UI
 
 		private BorderDouble margin;
 
+		public long LastMouseDownMs { get; private set; }
+
 		/// <summary>
 		/// The space between the Widget and it's parent (the outside border).
 		/// </summary>
@@ -2352,6 +2354,21 @@ namespace MatterHackers.Agg.UI
 				}
 				DoMouseMovedOffWidgetRecursive(mouseEvent);
 			}
+
+			LastMouseDownMs = UiThread.CurrentTimerMs;
+		}
+
+		public bool IsDoubleClick(MouseEventArgs mouseEvent)
+		{
+			// The os told up the mouse is 2 cilks (shot time beteewn clicks)
+			// but we also want to check if the original click happend on our control.
+			if(mouseEvent.Clicks == 2
+				&& LastMouseDownMs > UiThread.CurrentTimerMs - 550)
+			{
+				return true;
+			}
+
+			return false;
 		}
 
         private void SetToolTipText(MouseEventArgs mouseEvent)
