@@ -177,6 +177,9 @@
     <Compile Include="GridControl.cs" />
     <Compile Include="GroupBox.cs" />
     <Compile Include="Keyboard.cs" />
+    <Compile Include="PerformanceTimer\IPerformanceResults.cs" />
+    <Compile Include="PerformanceTimer\PerformanceResultsSystemWindow.cs" />
+    <Compile Include="PerformanceTimer\PerformanceTimer.cs" />
     <Compile Include="ProgressControl.cs" />
     <Compile Include="SoftKeyboard.cs" />
     <Compile Include="SystemWindow\OsMappingWidgetFactory.cs" />
