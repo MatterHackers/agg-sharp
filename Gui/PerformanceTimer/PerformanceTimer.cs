@@ -26,46 +26,31 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
-using MatterHackers.Agg;
-using MatterHackers.Agg.UI;
+
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 
 namespace MatterHackers.Agg.UI
 {
-	public class PerformanceTimer : IDisposable
-	{
-		static int recursionCount = 0;
-		static Dictionary<string, IPerformanceResults> resultsWindows = new Dictionary<string, IPerformanceResults>();
+    public class PerformanceTimer : IDisposable
+    {
+        public static Func<GuiWidget> GetParentWindowFunction = null;
 
-		private IPerformanceResults timingWindowToReportTo;
-		private string name;
-		Stopwatch timer;
+        private string name;
+        private Stopwatch timer;
+        private PerformancePannel timingPannelToReportTo;
 
-        public static Func<string, IPerformanceResults> ResultsCreatorFunction = PerformanceResultsSystemWindow.CreateResultsSystemWindow;
+        public PerformanceTimer(string pannelName, string name)
+        {
+            this.timingPannelToReportTo = PerformancePannel.GetNamedPannel(pannelName);
+            this.name = name;
+            timer = Stopwatch.StartNew();
+        }
 
-		public PerformanceTimer(string windowName, string name)
-		{
-			if(!resultsWindows.ContainsKey(windowName))
-			{
-				IPerformanceResults timingWindowToReportTo = ResultsCreatorFunction(windowName);
-				resultsWindows.Add(windowName, timingWindowToReportTo);
-			}
-
-			this.timingWindowToReportTo = resultsWindows[windowName];
-			this.name = name;
-			timer = Stopwatch.StartNew();
-			recursionCount++;
-		}
-
-		public void Dispose()
-		{
-			timer.Stop();
-			recursionCount--;
-			timingWindowToReportTo.SetTime(name, timer.Elapsed.TotalSeconds, recursionCount);
-		}
-	}
+        public void Dispose()
+        {
+            timer.Stop();
+            timingPannelToReportTo.SetTime(name, timer.Elapsed.TotalSeconds);
+        }
+    }
 }
