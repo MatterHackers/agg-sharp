@@ -34,7 +34,7 @@ namespace MatterHackers.Agg.UI
 {
     public class PerformancePannel : FlowLayoutWidget
     {
-        private static PannelsWidget pannels = null;
+        private static PerformanceGroup pannels = null;
         private static Dictionary<string, PerformancePannel> resultsPannels = new Dictionary<string, PerformancePannel>();
 
         private FlowLayoutWidget bottomToTop = new FlowLayoutWidget(FlowDirection.BottomToTop);
@@ -51,11 +51,11 @@ namespace MatterHackers.Agg.UI
 
             if (pannels == null)
             {
-                pannels = new PannelsWidget();
+                pannels = new PerformanceGroup();
                 pannels.Selectable = false;
                 pannels.HAnchor |= HAnchor.ParentLeft;
                 pannels.VAnchor |= VAnchor.ParentTop;
-                pannels.Visible = false; // start out not visible
+                //pannels.Visible = false; // start out not visible
                 UiThread.RunOnIdle(() =>
                 {
                     GuiWidget parentWindow = PerformanceTimer.GetParentWindowFunction();
@@ -155,7 +155,7 @@ namespace MatterHackers.Agg.UI
             }
         }
 
-        private class PannelsWidget : FlowLayoutWidget
+        private class PerformanceGroup : FlowLayoutWidget
         {
             public override void AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
             {
