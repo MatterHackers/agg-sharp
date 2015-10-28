@@ -24,6 +24,8 @@ using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using System;
+using static System.Math;
+using static MatterHackers.Agg.RGBA_Bytes;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -615,8 +617,8 @@ namespace MatterHackers.Agg.UI
 		private void AllocateBackBuffer()
 		{
 			RectangleDouble localBounds = LocalBounds;
-			int intWidth = Math.Max((int)(Math.Ceiling(localBounds.Right) - Math.Floor(localBounds.Left)) + 1, 1);
-			int intHeight = Math.Max((int)(Math.Ceiling(localBounds.Top) - Math.Floor(localBounds.Bottom)) + 1, 1);
+			int intWidth = Max((int)(Ceiling(localBounds.Right) - Floor(localBounds.Left)) + 1, 1);
+			int intHeight = Max((int)(Ceiling(localBounds.Top) - Floor(localBounds.Bottom)) + 1, 1);
 			if (backBuffer == null || backBuffer.Width != intWidth || backBuffer.Height != intHeight)
 			{
 				backBuffer = new ImageBuffer(intWidth, intHeight, 32, new BlenderPreMultBGRA());
@@ -697,8 +699,8 @@ namespace MatterHackers.Agg.UI
 					}
 					minimumSize = value;
 
-					maximumSize.x = Math.Max(minimumSize.x, maximumSize.x);
-					maximumSize.y = Math.Max(minimumSize.y, maximumSize.y);
+					maximumSize.x = Max(minimumSize.x, maximumSize.x);
+					maximumSize.y = Max(minimumSize.y, maximumSize.y);
 
 					RectangleDouble localBounds = LocalBounds;
 					if (localBounds.Width < MinimumSize.x)
@@ -740,8 +742,8 @@ namespace MatterHackers.Agg.UI
 					}
 					maximumSize = value;
 
-					minimumSize.x = Math.Min(minimumSize.x, maximumSize.x);
-					minimumSize.y = Math.Min(minimumSize.y, maximumSize.y);
+					minimumSize.x = Min(minimumSize.x, maximumSize.x);
+					minimumSize.y = Min(minimumSize.y, maximumSize.y);
 				}
 			}
 		}
@@ -759,8 +761,8 @@ namespace MatterHackers.Agg.UI
 				Affine tempLocalToParentTransform = ParentToChildTransform;
 				if (EnforceIntegerBounds)
 				{
-					value.x = Math.Floor(value.x);
-					value.y = Math.Floor(value.y);
+					value.x = Floor(value.x);
+					value.y = Floor(value.y);
 				}
 
 				if (tempLocalToParentTransform.tx != value.x || tempLocalToParentTransform.ty != value.y)
@@ -838,10 +840,10 @@ namespace MatterHackers.Agg.UI
 
 					if (EnforceIntegerBounds)
 					{
-						value.Left = Math.Floor(value.Left);
-						value.Bottom = Math.Floor(value.Bottom);
-						value.Right = Math.Ceiling(value.Right);
-						value.Top = Math.Ceiling(value.Top);
+						value.Left = Floor(value.Left);
+						value.Bottom = Floor(value.Bottom);
+						value.Right = Ceiling(value.Right);
+						value.Top = Ceiling(value.Top);
 					}
 
 					if (localBounds != value)
@@ -928,8 +930,8 @@ namespace MatterHackers.Agg.UI
 
 					if (considerChildAnchor)
 					{
-						minSize.x = Math.Max(child.Width + child.Margin.Width, minSize.x);
-						minSize.y = Math.Max(child.Height + child.Margin.Height, minSize.y);
+						minSize.x = Max(child.Width + child.Margin.Width, minSize.x);
+						minSize.y = Max(child.Height + child.Margin.Height, minSize.y);
 
 						RectangleDouble childBoundsWithMargin = child.BoundsRelativeToParent;
 						childBoundsWithMargin.Inflate(child.Margin);
@@ -976,7 +978,7 @@ namespace MatterHackers.Agg.UI
 				{
 					if (foundHBounds)
 					{
-						boundsOfAllChildrenIncludingMargin.Right = boundsOfAllChildrenIncludingMargin.Left + Math.Max(boundsOfAllChildrenIncludingMargin.Width, minSize.x);
+						boundsOfAllChildrenIncludingMargin.Right = boundsOfAllChildrenIncludingMargin.Left + Max(boundsOfAllChildrenIncludingMargin.Width, minSize.x);
 					}
 					else
 					{
@@ -986,7 +988,7 @@ namespace MatterHackers.Agg.UI
 
 					if (foundVBounds)
 					{
-						boundsOfAllChildrenIncludingMargin.Top = boundsOfAllChildrenIncludingMargin.Bottom + Math.Max(boundsOfAllChildrenIncludingMargin.Height, minSize.y);
+						boundsOfAllChildrenIncludingMargin.Top = boundsOfAllChildrenIncludingMargin.Bottom + Max(boundsOfAllChildrenIncludingMargin.Height, minSize.y);
 					}
 					else
 					{
@@ -1758,7 +1760,7 @@ namespace MatterHackers.Agg.UI
 							invertedMargin.Bottom = -invertedMargin.Bottom;
 							invertedMargin.Right = -invertedMargin.Right;
 							invertedMargin.Top = -invertedMargin.Top;
-							DrawBorderBounds(graphics2D, child.BoundsRelativeToParent, invertedMargin, new RGBA_Bytes(RGBA_Bytes.Red, 128));
+							DrawBorderBounds(graphics2D, child.BoundsRelativeToParent, invertedMargin, new RGBA_Bytes(Red, 128));
 						}
 
 						RectangleDouble oldClippingRect = graphics2D.GetClippingRect();
@@ -1771,10 +1773,10 @@ namespace MatterHackers.Agg.UI
 							RectangleDouble currentScreenClipping;
 							if (child.CurrentScreenClipping(out currentScreenClipping))
 							{
-								currentScreenClipping.Left = Math.Floor(currentScreenClipping.Left);
-								currentScreenClipping.Right = Math.Ceiling(currentScreenClipping.Right);
-								currentScreenClipping.Bottom = Math.Floor(currentScreenClipping.Bottom);
-								currentScreenClipping.Top = Math.Ceiling(currentScreenClipping.Top);
+								currentScreenClipping.Left = Floor(currentScreenClipping.Left);
+								currentScreenClipping.Right = Ceiling(currentScreenClipping.Right);
+								currentScreenClipping.Bottom = Floor(currentScreenClipping.Bottom);
+								currentScreenClipping.Top = Ceiling(currentScreenClipping.Top);
 								if (currentScreenClipping.Right < currentScreenClipping.Left || currentScreenClipping.Top < currentScreenClipping.Bottom)
 								{
 									BreakInDebugger("Right is less than Left or Top is less than Bottom");
@@ -1789,8 +1791,8 @@ namespace MatterHackers.Agg.UI
 
 									double yFraction = offsetToRenderSurface.y - (int)offsetToRenderSurface.y;
 									double xFraction = offsetToRenderSurface.x - (int)offsetToRenderSurface.x;
-									int xOffset = (int)Math.Floor(child.LocalBounds.Left);
-									int yOffset = (int)Math.Floor(child.LocalBounds.Bottom);
+									int xOffset = (int)Floor(child.LocalBounds.Left);
+									int yOffset = (int)Floor(child.LocalBounds.Bottom);
 									if (child.isCurrentlyInvalid)
 									{
 										Graphics2D childBackBufferGraphics2D = child.backBuffer.NewGraphics2D();
@@ -1834,17 +1836,17 @@ namespace MatterHackers.Agg.UI
 				if (DebugShowBounds)
 				{
 					// draw the padding
-					DrawBorderBounds(graphics2D, LocalBounds, Padding, new RGBA_Bytes(RGBA_Bytes.Cyan, 128));
+					DrawBorderBounds(graphics2D, LocalBounds, Padding, new RGBA_Bytes(Cyan, 128));
 
 					// show the bounds and inside with an x
-					graphics2D.Line(LocalBounds.Left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, RGBA_Bytes.Green);
-					graphics2D.Line(LocalBounds.Left, LocalBounds.Top, LocalBounds.Right, LocalBounds.Bottom, RGBA_Bytes.Green);
-					graphics2D.Rectangle(LocalBounds, RGBA_Bytes.Red);
+					graphics2D.Line(LocalBounds.Left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, Green);
+					graphics2D.Line(LocalBounds.Left, LocalBounds.Top, LocalBounds.Right, LocalBounds.Bottom, Green);
+					graphics2D.Rectangle(LocalBounds, Red);
 				}
 				if (debugShowSize)
 				{
 					graphics2D.DrawString(string.Format("{4} {0}, {1} : {2}, {3}", (int)MinimumSize.x, (int)MinimumSize.y, (int)LocalBounds.Width, (int)LocalBounds.Height, Name),
-						Width / 2, Math.Max(Height - 16, Height / 2 - 16 * graphics2D.TransformStackCount), color: RGBA_Bytes.Magenta, justification: Font.Justification.Center);
+						Width / 2, Max(Height - 16, Height / 2 - 16 * graphics2D.TransformStackCount), color: Magenta, justification: Font.Justification.Center);
 				}
 			}
 		}
