@@ -266,10 +266,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnPaddingChanged()
 		{
-			if (PaddingChanged != null)
-			{
-				PaddingChanged(this, null);
-			}
+			PaddingChanged?.Invoke(this, null);
 		}
 
 		/// <summary>
@@ -295,10 +292,7 @@ namespace MatterHackers.Agg.UI
 				if (margin != value)
 				{
 					margin = value;
-					if (this.Parent != null)
-					{
-						this.Parent.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Margin));
-					}
+                    this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Margin));
 					OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.Margin));
 					OnMarginChanged();
 				}
@@ -314,10 +308,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnMarginChanged()
 		{
-			if (MarginChanged != null)
-			{
-				MarginChanged(this, null);
-			}
+			MarginChanged?.Invoke(this, null);
 		}
 
 		public bool HAnchorIsSet(HAnchor testFlags)
@@ -361,20 +352,14 @@ namespace MatterHackers.Agg.UI
 						BreakInDebugger("You cannot be anchored to all three positions.");
 					}
 					hAnchor = value;
-					if (this.Parent != null)
-					{
-						this.Parent.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.HAnchor));
-					}
+					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.HAnchor));
 
 					if (HAnchorIsSet(HAnchor.FitToChildren))
 					{
 						OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.HAnchor));
 					}
 
-					if (HAnchorChanged != null)
-					{
-						HAnchorChanged(this, null);
-					}
+                    HAnchorChanged?.Invoke(this, null);
 				}
 			}
 		}
@@ -420,20 +405,14 @@ namespace MatterHackers.Agg.UI
 						BreakInDebugger("You cannot be anchored to all three positions.");
 					}
 					vAnchor = value;
-					if (this.Parent != null)
-					{
-						this.Parent.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.VAnchor));
-					}
+					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.VAnchor));
 
 					if (VAnchorIsSet(VAnchor.FitToChildren))
 					{
 						OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.VAnchor));
 					}
 
-					if (VAnchorChanged != null)
-					{
-						VAnchorChanged(this, null);
-					}
+					VAnchorChanged?.Invoke(this, null);
 				}
 			}
 		}
@@ -625,18 +604,12 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnLostFocus(EventArgs e)
 		{
-			if (LostFocus != null)
-			{
-				LostFocus(this, e);
-			}
+			LostFocus?.Invoke(this, e);
 		}
 
 		public virtual void OnGotFocus(EventArgs e)
 		{
-			if (GotFocus != null)
-			{
-				GotFocus(this, e);
-			}
+			GotFocus?.Invoke(this, e);
 		}
 
 		private void AllocateBackBuffer()
@@ -745,10 +718,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnMinimumSizeChanged(EventArgs e)
 		{
-			if (MinimumSizeChanged != null)
-			{
-				MinimumSizeChanged(this, e);
-			}
+			MinimumSizeChanged?.Invoke(this, e);
 		}
 
 		private Vector2 maximumSize = new Vector2(double.MaxValue, double.MaxValue);
@@ -884,10 +854,7 @@ namespace MatterHackers.Agg.UI
 						localBounds = value;
 
 						OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.LocalBounds));
-						if (this.Parent != null)
-						{
-							this.Parent.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.ChildLocalBounds));
-						}
+						this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.ChildLocalBounds));
 
 						Invalidate();
 
@@ -1047,18 +1014,12 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnBackgroundColorChanged(EventArgs e)
 		{
-			if (BackgroundColorChanged != null)
-			{
-				BackgroundColorChanged(this, e);
-			}
+			BackgroundColorChanged?.Invoke(this, e);
 		}
 
 		public virtual void OnBoundsChanged(EventArgs e)
 		{
-			if (BoundsChanged != null)
-			{
-				BoundsChanged(this, e);
-			}
+			BoundsChanged?.Invoke(this, e);
 		}
 
 		public virtual string Name { get; set; }
@@ -1098,10 +1059,7 @@ namespace MatterHackers.Agg.UI
 
         public virtual void OnTextChanged(EventArgs e)
 		{
-			if (TextChanged != null)
-			{
-				TextChanged(this, e);
-			}
+			TextChanged?.Invoke(this, e);
 		}
 
 		public void SetBoundsRelativeToParent(RectangleInt newBounds)
@@ -1140,10 +1098,7 @@ namespace MatterHackers.Agg.UI
 					OnVisibleChanged(null);
 
 					OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.Visible));
-					if (this.Parent != null)
-					{
-						this.Parent.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Visible));
-					}
+                    this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Visible));
 
 					Invalidate();
 					screenClipping.MarkRecalculate();
@@ -1184,10 +1139,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnVisibleChanged(EventArgs e)
 		{
-			if (VisibleChanged != null)
-			{
-				VisibleChanged(this, e);
-			}
+			VisibleChanged?.Invoke(this, e);
 		}
 
 		private void ClearMouseOverWidget()
@@ -1212,10 +1164,7 @@ namespace MatterHackers.Agg.UI
 			}
 
 			Invalidate();
-			if (EnabledChanged != null)
-			{
-				EnabledChanged(this, null);
-			}
+			EnabledChanged?.Invoke(this, null);
 
 			foreach (GuiWidget child in Children)
 			{
@@ -1225,10 +1174,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnParentEnabledChanged(EventArgs e)
 		{
-			if (EnabledChanged != null)
-			{
-				EnabledChanged(this, e);
-			}
+			EnabledChanged?.Invoke(this, e);
 		}
 
 		private GuiWidget parentBackingStore = null;
@@ -1378,10 +1324,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnChildAdded(EventArgs e)
 		{
-			if (ChildAdded != null)
-			{
-				ChildAdded(this, e);
-			}
+			ChildAdded?.Invoke(this, e);
 		}
 
 		public void CloseAndRemoveAllChildren()
@@ -1425,10 +1368,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnChildRemoved(EventArgs e)
 		{
-			if (ChildRemoved != null)
-			{
-				ChildRemoved(this, e);
-			}
+			ChildRemoved?.Invoke(this, e);
 		}
 
 		public virtual Graphics2D NewGraphics2D()
@@ -1483,10 +1423,7 @@ namespace MatterHackers.Agg.UI
 				Parent.Invalidate(rectToInvalidate);
 			}
 
-			if (Invalidated != null)
-			{
-				Invalidated(this, new InvalidateEventArgs(rectToInvalidate));
-			}
+			Invalidated?.Invoke(this, new InvalidateEventArgs(rectToInvalidate));
 		}
 
 		public virtual void Focus()
@@ -1773,20 +1710,14 @@ namespace MatterHackers.Agg.UI
 						ResumeLayout();
 					}
 
-					if (Layout != null)
-					{
-						Layout(this, layoutEventArgs);
-					}
+					Layout?.Invoke(this, layoutEventArgs);
 				}
 			}
 		}
 
 		public virtual void OnParentChanged(EventArgs e)
 		{
-			if (ParentChanged != null)
-			{
-				ParentChanged(this, e);
-			}
+			ParentChanged?.Invoke(this, e);
 		}
 
 		/// <summary>
@@ -1812,10 +1743,7 @@ namespace MatterHackers.Agg.UI
 			{
 				DrawCount++;
 
-				if (DrawBefore != null)
-				{
-					DrawBefore(this, new DrawEventArgs(graphics2D));
-				}
+				DrawBefore?.Invoke(this, new DrawEventArgs(graphics2D));
 
 				for (int i = 0; i < Children.Count; i++)
 				{
@@ -1901,10 +1829,7 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 
-				if (DrawAfter != null)
-				{
-					DrawAfter(this, new DrawEventArgs(graphics2D));
-				}
+				DrawAfter?.Invoke(this, new DrawEventArgs(graphics2D));
 
 				if (DebugShowBounds)
 				{
@@ -2091,10 +2016,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnClosed(EventArgs e)
 		{
-			if (Closed != null)
-			{
-				Closed(this, e);
-			}
+			Closed?.Invoke(this, e);
 		}
 
 		public Vector2 TransformFromParentSpace(GuiWidget parentToGetRelativeTo, Vector2 position)
@@ -2245,10 +2167,7 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 
-				if (GestureFling != null)
-				{
-					GestureFling(this, flingEvent);
-				}
+				GestureFling?.Invoke(this, flingEvent);
 			}
 		}
 
@@ -2318,10 +2237,7 @@ namespace MatterHackers.Agg.UI
 						OnMouseEnter(mouseEvent);
 					}
 
-					if (MouseDown != null)
-					{
-						MouseDown(this, mouseEvent);
-					}
+					MouseDown?.Invoke(this, mouseEvent);
 				}
 
 				if (mouseEnteredBounds)
@@ -2337,10 +2253,7 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 
-				if (MouseDownInBounds != null)
-				{
-					MouseDownInBounds(this, mouseEvent);
-				}
+				MouseDownInBounds?.Invoke(this, mouseEvent);
 			}
 			else if (UnderMouseState != UI.UnderMouseState.NotUnderMouse)
 			{
@@ -2383,10 +2296,7 @@ namespace MatterHackers.Agg.UI
                 }
 
                 SystemWindow systemWindow = parent as SystemWindow;
-                if (systemWindow != null)
-                {
-                    systemWindow.SetHoveredWidget(this);
-                }
+                systemWindow?.SetHoveredWidget(this);
             }
         }
 
@@ -2516,10 +2426,7 @@ namespace MatterHackers.Agg.UI
 					underMouseState = UI.UnderMouseState.NotUnderMouse;
 				}
 
-				if (MouseMove != null)
-				{
-					MouseMove(this, mouseEvent);
-				}
+				MouseMove?.Invoke(this, mouseEvent);
 			}
 		}
 
@@ -2591,10 +2498,7 @@ namespace MatterHackers.Agg.UI
 					OnMouseEnterBounds(mouseEvent);
 				}
 
-				if (MouseMove != null)
-				{
-					MouseMove(this, mouseEvent);
-				}
+				MouseMove?.Invoke(this, mouseEvent);
 			}
 			else if (UnderMouseState != UI.UnderMouseState.NotUnderMouse)
 			{
@@ -2655,10 +2559,7 @@ namespace MatterHackers.Agg.UI
 
 					if (!childHasAcceptedThisEvent)
 					{
-						if (MouseUp != null)
-						{
-							MouseUp(this, mouseEvent);
-						}
+						MouseUp?.Invoke(this, mouseEvent);
 					}
 				}
 			}
@@ -2700,10 +2601,8 @@ namespace MatterHackers.Agg.UI
 					{
 						BreakInDebugger("You should only ever get here if you have the mouse captured.");
 					}
-					if (MouseUp != null)
-					{
-						MouseUp(this, mouseEvent);
-					}
+
+                    MouseUp?.Invoke(this, mouseEvent);
 				}
 
 				if (!PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
@@ -2737,27 +2636,18 @@ namespace MatterHackers.Agg.UI
 
 		protected virtual void SetCursorOnEnter(Cursors cursorToSet)
 		{
-			if (Parent != null)
-			{
-				Parent.SetCursorOnEnter(cursorToSet);
-			}
+			Parent?.SetCursorOnEnter(cursorToSet);
 		}
 
 		public virtual void OnMouseEnter(MouseEventArgs mouseEvent)
 		{
 			SetCursorOnEnter(Cursor);
-			if (MouseEnter != null)
-			{
-				MouseEnter(this, mouseEvent);
-			}
+			MouseEnter?.Invoke(this, mouseEvent);
 		}
 
 		public virtual void OnMouseLeave(MouseEventArgs mouseEvent)
 		{
-			if (MouseLeave != null)
-			{
-				MouseLeave(this, mouseEvent);
-			}
+			MouseLeave?.Invoke(this, mouseEvent);
 		}
 
 		public virtual void SendToChildren(object objectToRout)
@@ -2804,18 +2694,12 @@ namespace MatterHackers.Agg.UI
 
         public virtual void OnMouseEnterBounds(MouseEventArgs mouseEvent)
 		{
-			if (MouseEnterBounds != null)
-			{
-				MouseEnterBounds(this, mouseEvent);
-			}
+			MouseEnterBounds?.Invoke(this, mouseEvent);
 		}
 
 		public virtual void OnMouseLeaveBounds(MouseEventArgs mouseEvent)
 		{
-			if (MouseLeaveBounds != null)
-			{
-				MouseLeaveBounds(this, mouseEvent);
-			}
+			MouseLeaveBounds?.Invoke(this, mouseEvent);
 		}
 
 		private void ClearCapturedState()
@@ -2859,10 +2743,7 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 
-				if (MouseWheel != null)
-				{
-					MouseWheel(this, mouseEvent);
-				}
+				MouseWheel?.Invoke(this, mouseEvent);
 			}
 		}
 
