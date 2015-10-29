@@ -16,9 +16,6 @@
 //          mcseemagg@yahoo.com
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
-
-//#define DUMP_SLOW_TIMES
-
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
@@ -256,12 +253,15 @@ namespace MatterHackers.Agg.UI
 			get { return padding; }
 			set
 			{
-				if (padding != value)
+				using (new PerformanceTimer("Draw Timer", "On Layout"))
 				{
-					padding = value;
-					// the padding affects the children so make sure they are layed out
-					OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.Padding));
-					OnPaddingChanged();
+					if (padding != value)
+					{
+						padding = value;
+						// the padding affects the children so make sure they are layed out
+						OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.Padding));
+						OnPaddingChanged();
+					}
 				}
 			}
 		}
@@ -816,59 +816,54 @@ namespace MatterHackers.Agg.UI
 
 			set
 			{
-#if DEBUG && DUMP_SLOW_TIMES
-				using (new DumpCallStackIfSlow(dumpIfLongerThanTime, "LocalBounds"))
-#endif
+				if (value.Width < MinimumSize.x)
 				{
-					if (value.Width < MinimumSize.x)
+					value.Right = value.Left + MinimumSize.x;
+				}
+				else if (value.Width > MaximumSize.x)
+				{
+					value.Right = value.Left + MaximumSize.x;
+				}
+
+				if (value.Height < MinimumSize.y)
+				{
+					value.Top = value.Bottom + MinimumSize.y;
+				}
+				else if (value.Height > MaximumSize.y)
+				{
+					value.Top = value.Bottom + MaximumSize.y;
+				}
+
+				if (EnforceIntegerBounds)
+				{
+					value.Left = Floor(value.Left);
+					value.Bottom = Floor(value.Bottom);
+					value.Right = Ceiling(value.Right);
+					value.Top = Ceiling(value.Top);
+				}
+
+				if (localBounds != value)
+				{
+					if (!largestValidBounds.Contains(value))
 					{
-						value.Right = value.Left + MinimumSize.x;
+						BreakInDebugger("The bounds you are passing seems like they are probably wrong.  Check it.");
 					}
-					else if (value.Width > MaximumSize.x)
+
+					localBounds = value;
+
+					OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.LocalBounds));
+					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.ChildLocalBounds));
+
+					Invalidate();
+
+					OnBoundsChanged(null);
+
+					if (DoubleBuffer)
 					{
-						value.Right = value.Left + MaximumSize.x;
+						AllocateBackBuffer();
 					}
 
-					if (value.Height < MinimumSize.y)
-					{
-						value.Top = value.Bottom + MinimumSize.y;
-					}
-					else if (value.Height > MaximumSize.y)
-					{
-						value.Top = value.Bottom + MaximumSize.y;
-					}
-
-					if (EnforceIntegerBounds)
-					{
-						value.Left = Floor(value.Left);
-						value.Bottom = Floor(value.Bottom);
-						value.Right = Ceiling(value.Right);
-						value.Top = Ceiling(value.Top);
-					}
-
-					if (localBounds != value)
-					{
-						if (!largestValidBounds.Contains(value))
-						{
-							BreakInDebugger("The bounds you are passing seems like they are probably wrong.  Check it.");
-						}
-
-						localBounds = value;
-
-						OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.LocalBounds));
-						this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.ChildLocalBounds));
-
-						Invalidate();
-
-						OnBoundsChanged(null);
-
-						if (DoubleBuffer)
-						{
-							AllocateBackBuffer();
-						}
-
-						screenClipping.MarkRecalculate();
-					}
+					screenClipping.MarkRecalculate();
 				}
 			}
 		}
@@ -1250,42 +1245,45 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
 		{
-#if DEBUG
-			if (childToAdd.hasBeenRemoved)
+			using (new PerformanceTimer("_LAST_", "Add Child"))
 			{
-				throw new Exception("You are adding a child that has previously been remove. You should probably be creating a new widget, or calling ClearRemovedFlag() before adding.");
-			}
+#if DEBUG
+				if (childToAdd.hasBeenRemoved)
+				{
+					throw new Exception("You are adding a child that has previously been remove. You should probably be creating a new widget, or calling ClearRemovedFlag() before adding.");
+				}
 #endif
 
-			if (indexInChildrenList == -1)
-			{
-				indexInChildrenList = Children.Count;
-			}
+				if (indexInChildrenList == -1)
+				{
+					indexInChildrenList = Children.Count;
+				}
 
-			if (childToAdd == this)
-			{
-				BreakInDebugger("A GuiWidget cannot be a child of itself.");
-			}
-			if (indexInChildrenList > Children.Count)
-			{
-				throw new IndexOutOfRangeException();
-			}
-			if (Children.Contains(childToAdd))
-			{
-				throw new Exception("You cannot add the same child twice.");
-			}
-			if (childToAdd.Parent != null)
-			{
-				throw new Exception("This is alread the child of another widget.");
-			}
-			childToAdd.parent = this;
-			childToAdd.widgetHasBeenClosed = false;
-			Children.Insert(indexInChildrenList, childToAdd);
-			OnChildAdded(new GuiWidgetEventArgs(childToAdd));
-			childToAdd.OnParentChanged(null);
+				if (childToAdd == this)
+				{
+					BreakInDebugger("A GuiWidget cannot be a child of itself.");
+				}
+				if (indexInChildrenList > Children.Count)
+				{
+					throw new IndexOutOfRangeException();
+				}
+				if (Children.Contains(childToAdd))
+				{
+					throw new Exception("You cannot add the same child twice.");
+				}
+				if (childToAdd.Parent != null)
+				{
+					throw new Exception("This is alread the child of another widget.");
+				}
+				childToAdd.parent = this;
+				childToAdd.widgetHasBeenClosed = false;
+				Children.Insert(indexInChildrenList, childToAdd);
+				OnChildAdded(new GuiWidgetEventArgs(childToAdd));
+				childToAdd.OnParentChanged(null);
 
-			childToAdd.InitLayout();
-			OnLayout(new LayoutEventArgs(this, childToAdd, PropertyCausingLayout.AddChild));
+				childToAdd.InitLayout();
+				OnLayout(new LayoutEventArgs(this, childToAdd, PropertyCausingLayout.AddChild));
+			}
 		}
 
 		public int GetChildIndex(GuiWidget child)
@@ -1699,9 +1697,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnLayout(LayoutEventArgs layoutEventArgs)
 		{
-#if DEBUG && DUMP_SLOW_TIMES
-			using (new DumpCallStackIfSlow(dumpIfLongerThanTime, "OnLayout"))
-#endif
+			using (new PerformanceTimer("Draw Timer", "Widget Draw"))
 			{
 				if (Visible && layoutSuspendCount < 1)
 				{
@@ -1739,9 +1735,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnDraw(Graphics2D graphics2D)
 		{
-#if DEBUG && DUMP_SLOW_TIMES
-			using (new DumpCallStackIfSlow(dumpIfLongerThanTime, "OnDraw"))
-#endif
+			using (new PerformanceTimer("Draw Timer", "Widget Draw"))
 			{
 				DrawCount++;
 

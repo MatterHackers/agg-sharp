@@ -183,7 +183,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (child.Parent != parent)
 			{
-				throw new Exception("All children should have their parent set the the parent they have.");
+				throw new Exception("All children should have their parent set to the parent they have.");
 			}
 
 			Vector2 newOriginRelParent;

@@ -101,7 +101,9 @@ namespace MatterHackers.Agg.UI
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			if (CheckGlControl())
+			{
 				base.OnDraw(graphics2D);
+			}
 			CheckGlControl();
 		}
 

@@ -35,22 +35,50 @@ namespace MatterHackers.Agg.UI
     public class PerformanceTimer : IDisposable
     {
         public static Func<GuiWidget> GetParentWindowFunction = null;
+		private static string lastPannelName = "";
 
-        private string name;
-        private Stopwatch timer;
+		public string Name
+		{
+			get; private set;
+		}
+
         private PerformancePannel timingPannelToReportTo;
 
+		static internal bool InPerformanceMeasuring = false;
+
+		static object locker = new object();
         public PerformanceTimer(string pannelName, string name)
         {
-            this.timingPannelToReportTo = PerformancePannel.GetNamedPannel(pannelName);
-            this.name = name;
-            timer = Stopwatch.StartNew();
-        }
+			lock(locker)
+			{
+				if (!InPerformanceMeasuring)
+				{
+					InPerformanceMeasuring = true;
+					if (pannelName == "_LAST_")
+					{
+						pannelName = lastPannelName;
+					}
+					this.timingPannelToReportTo = PerformancePannel.GetNamedPannel(pannelName);
+					this.Name = name;
+					this.timingPannelToReportTo.Start(this);
+					lastPannelName = pannelName;
+					InPerformanceMeasuring = false;
+				}
+			}
+		}
 
         public void Dispose()
         {
-            timer.Stop();
-            timingPannelToReportTo.SetTime(name, timer.Elapsed.TotalSeconds);
-        }
+			lock (locker)
+			{
+				// Check that we actually created a time (we don't when we find things that are happening while timing.
+				if (!InPerformanceMeasuring)
+				{
+					InPerformanceMeasuring = true;
+					timingPannelToReportTo.Stop(this);
+					InPerformanceMeasuring = false;
+				}
+			}
+		}
     }
 }
