@@ -305,7 +305,9 @@ namespace MatterHackers.Agg.UI
 		public static void BreakInDebugger(string description = "")
 		{
 			Debug.WriteLine(description);
+#if DEBUG && false
 			Debugger.Break();
+#endif
 		}
 
 		public virtual void OnMarginChanged()
