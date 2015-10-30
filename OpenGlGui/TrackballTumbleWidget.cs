@@ -277,7 +277,11 @@ namespace MatterHackers.Agg.OpenGlGui
 
 					if (TransformState != TrackBallController.MouseDownType.None)
 					{
-						mainTrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Rotation);
+						if (!LockTrackBall && mainTrackBallController.CurrentTrackingType != TrackBallController.MouseDownType.None)
+						{
+							mainTrackBallController.OnMouseUp();
+						}
+						mainTrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Translation);
 					}
 				}
 
@@ -343,11 +347,16 @@ namespace MatterHackers.Agg.OpenGlGui
 			{
 				currentMousePosition.x = mouseEvent.X;
 				currentMousePosition.y = mouseEvent.Y;
+				if (TransformState == TrackBallController.MouseDownType.Rotation)
+				{
+					DrawRotationHelperCircle = true;
+				}
 			}
 			else
 			{
 				Vector2 centerPosition = (mouseEvent.GetPosition(1) + mouseEvent.GetPosition(0)) / 2;
 				currentMousePosition = centerPosition;
+				DrawRotationHelperCircle = false;
 			}
 
 			if (!LockTrackBall && mainTrackBallController.CurrentTrackingType != TrackBallController.MouseDownType.None)
