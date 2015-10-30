@@ -167,9 +167,9 @@ namespace MatterHackers.VectorMath
 		}
 
 		//Mouse down
-		public virtual void OnMouseDown(Vector2 mousePosition, Matrix4X4 screenToLocal, MouseDownType trackType = MouseDownType.Rotation)
+		public void OnMouseDown(Vector2 mousePosition, Matrix4X4 screenToLocal, MouseDownType trackType = MouseDownType.Rotation)
 		{
-			if (currentTrackingType == MouseDownType.None)
+			//if (currentTrackingType == MouseDownType.None)
 			{
 				localToScreenTransform = Matrix4X4.Invert(screenToLocal);
 				currentTrackingType = trackType;

@@ -253,7 +253,7 @@ namespace MatterHackers.Agg.UI
 			get { return padding; }
 			set
 			{
-				using (new PerformanceTimer("Draw Timer", "On Layout"))
+				//using (new PerformanceTimer("Draw Timer", "On Layout"))
 				{
 					if (padding != value)
 					{
@@ -1247,7 +1247,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
 		{
-			using (new PerformanceTimer("_LAST_", "Add Child"))
+			//using (new PerformanceTimer("_LAST_", "Add Child"))
 			{
 #if DEBUG
 				if (childToAdd.hasBeenRemoved)
@@ -1699,7 +1699,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnLayout(LayoutEventArgs layoutEventArgs)
 		{
-			using (new PerformanceTimer("Draw Timer", "Widget Draw"))
+			//using (new PerformanceTimer("Draw Timer", "Widget Draw"))
 			{
 				if (Visible && layoutSuspendCount < 1)
 				{
@@ -1737,7 +1737,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnDraw(Graphics2D graphics2D)
 		{
-			using (new PerformanceTimer("Draw Timer", "Widget Draw"))
+			//using (new PerformanceTimer("Draw Timer", "Widget Draw"))
 			{
 				DrawCount++;
 

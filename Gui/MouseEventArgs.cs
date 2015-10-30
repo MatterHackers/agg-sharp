@@ -88,7 +88,7 @@ namespace MatterHackers.Agg.UI
 
 		public double Y { get { return positions[0].y; } set { positions[0] = new Vector2(positions[0].x, value); } }
 
-		private Vector2 GetPosition(int index)
+		public Vector2 GetPosition(int index)
 		{
 			if (index < positions.Count)
 			{

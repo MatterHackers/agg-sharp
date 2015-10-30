@@ -249,15 +249,38 @@ namespace MatterHackers.Agg.OpenGlGui
 			}
 		}
 
+		double startDistanceBetweenPoints = 1;
+		double pinchStartScale = 1;
+
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
 		{
 			base.OnMouseDown(mouseEvent);
 
 			if (!LockTrackBall && MouseCaptured)
 			{
-				Vector2 lastMouseMovePoint;
-				lastMouseMovePoint.x = mouseEvent.X;
-				lastMouseMovePoint.y = mouseEvent.Y;
+				Vector2 currentMousePosition;
+				if (mouseEvent.NumPositions == 1)
+				{
+					currentMousePosition.x = mouseEvent.X;
+					currentMousePosition.y = mouseEvent.Y;
+				}
+				else
+				{
+					Vector2 centerPosition = (mouseEvent.GetPosition(1) + mouseEvent.GetPosition(0)) / 2;
+					currentMousePosition = centerPosition;
+				}
+
+				if (mouseEvent.NumPositions > 1)
+				{
+					startDistanceBetweenPoints = (mouseEvent.GetPosition(1) - mouseEvent.GetPosition(0)).Length;
+					pinchStartScale = mainTrackBallController.Scale;
+
+					if (TransformState != TrackBallController.MouseDownType.None)
+					{
+						mainTrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Rotation);
+					}
+				}
+
 				if (mouseEvent.Button == MouseButtons.Left)
 				{
 					if (mainTrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.None)
@@ -265,44 +288,47 @@ namespace MatterHackers.Agg.OpenGlGui
 						Keys modifierKeys = ModifierKeys;
 						if (modifierKeys == Keys.Shift)
 						{
-							mainTrackBallController.OnMouseDown(lastMouseMovePoint, Matrix4X4.Identity, TrackBallController.MouseDownType.Translation);
+							mainTrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Translation);
 						}
 						else if (modifierKeys == Keys.Control)
 						{
-							mainTrackBallController.OnMouseDown(lastMouseMovePoint, Matrix4X4.Identity, TrackBallController.MouseDownType.Scale);
+							mainTrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Scale);
 						}
 						else if (modifierKeys == Keys.Alt)
 						{
-							mainTrackBallController.OnMouseDown(lastMouseMovePoint, Matrix4X4.Identity, TrackBallController.MouseDownType.Rotation);
+							mainTrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Rotation);
 						}
-						else switch (TransformState)
+						else
+						{
+							switch (TransformState)
 							{
 								case TrackBallController.MouseDownType.Rotation:
-									mainTrackBallController.OnMouseDown(lastMouseMovePoint, Matrix4X4.Identity, TrackBallController.MouseDownType.Rotation);
+									mainTrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Rotation);
 									break;
 
 								case TrackBallController.MouseDownType.Translation:
-									mainTrackBallController.OnMouseDown(lastMouseMovePoint, Matrix4X4.Identity, TrackBallController.MouseDownType.Translation);
+									mainTrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Translation);
 									break;
 
 								case TrackBallController.MouseDownType.Scale:
-									mainTrackBallController.OnMouseDown(lastMouseMovePoint, Matrix4X4.Identity, TrackBallController.MouseDownType.Scale);
+									mainTrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Scale);
 									break;
 							}
+						}
 					}
 				}
 				else if (mouseEvent.Button == MouseButtons.Middle)
 				{
 					if (mainTrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.None)
 					{
-						mainTrackBallController.OnMouseDown(lastMouseMovePoint, Matrix4X4.Identity, TrackBallController.MouseDownType.Translation);
+						mainTrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Translation);
 					}
 				}
 				else if (mouseEvent.Button == MouseButtons.Right)
 				{
 					if (mainTrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.None)
 					{
-						mainTrackBallController.OnMouseDown(lastMouseMovePoint, Matrix4X4.Identity, TrackBallController.MouseDownType.Rotation);
+						mainTrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Rotation);
 					}
 				}
 			}
@@ -312,13 +338,33 @@ namespace MatterHackers.Agg.OpenGlGui
 		{
 			base.OnMouseMove(mouseEvent);
 
-			Vector2 lastMouseMovePoint;
-			lastMouseMovePoint.x = mouseEvent.X;
-			lastMouseMovePoint.y = mouseEvent.Y;
+			Vector2 currentMousePosition;
+			if (mouseEvent.NumPositions == 1)
+			{
+				currentMousePosition.x = mouseEvent.X;
+				currentMousePosition.y = mouseEvent.Y;
+			}
+			else
+			{
+				Vector2 centerPosition = (mouseEvent.GetPosition(1) + mouseEvent.GetPosition(0)) / 2;
+				currentMousePosition = centerPosition;
+			}
+
 			if (!LockTrackBall && mainTrackBallController.CurrentTrackingType != TrackBallController.MouseDownType.None)
 			{
-				mainTrackBallController.OnMouseMove(lastMouseMovePoint);
+				mainTrackBallController.OnMouseMove(currentMousePosition);
 				Invalidate();
+			}
+
+			// check if we should do some scaling
+			if (TransformState != TrackBallController.MouseDownType.None
+				&& mouseEvent.NumPositions > 1
+				&& startDistanceBetweenPoints > 0)
+			{
+				double curDistanceBetweenPoints = (mouseEvent.GetPosition(1) - mouseEvent.GetPosition(0)).Length;
+
+				double scaleAmount = pinchStartScale * curDistanceBetweenPoints / startDistanceBetweenPoints;
+				mainTrackBallController.Scale = scaleAmount;
 			}
 		}
 
