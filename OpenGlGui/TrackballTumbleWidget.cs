@@ -249,7 +249,52 @@ namespace MatterHackers.Agg.OpenGlGui
 			}
 		}
 
-		double startDistanceBetweenPoints = 1;
+        internal class MotionQueue
+        {
+            internal struct TimeAndPosition
+            {
+                internal TimeAndPosition(Vector2 position, long timeMs)
+                {
+                    this.timeMs = timeMs;
+                    this.position = position;
+                }
+
+                internal long timeMs;
+                internal Vector2 position;
+            }
+
+            List<TimeAndPosition> motionQueue = new List<TimeAndPosition>();
+
+            internal void AddMoveToMotionQueue(Vector2 position, long timeMs)
+            {
+                if (motionQueue.Count > 4)
+                {
+                    // take off the last one
+                    motionQueue.RemoveAt(0);
+                }
+
+                motionQueue.Add(new TimeAndPosition(position, timeMs));
+            }
+
+            internal void Clear()
+            {
+                motionQueue.Clear();
+            }
+
+            internal Vector2 GetVelocity()
+            {
+                if(motionQueue.Count > 1)
+                {
+                    return motionQueue[motionQueue.Count - 1].position - motionQueue[motionQueue.Count - 2].position;
+                }
+
+                return Vector2.Zero;
+            }
+        }
+
+        MotionQueue motionQueue = new MotionQueue();
+
+        double startDistanceBetweenPoints = 1;
 		double pinchStartScale = 1;
 
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
@@ -270,7 +315,11 @@ namespace MatterHackers.Agg.OpenGlGui
 					currentMousePosition = centerPosition;
 				}
 
-				if (mouseEvent.NumPositions > 1)
+                currentVelocity = Vector2.Zero;
+                motionQueue.Clear();
+                motionQueue.AddMoveToMotionQueue(currentMousePosition, UiThread.CurrentTimerMs);
+
+                if (mouseEvent.NumPositions > 1)
 				{
 					startDistanceBetweenPoints = (mouseEvent.GetPosition(1) - mouseEvent.GetPosition(0)).Length;
 					pinchStartScale = mainTrackBallController.Scale;
@@ -347,11 +396,16 @@ namespace MatterHackers.Agg.OpenGlGui
 			{
 				currentMousePosition.x = mouseEvent.X;
 				currentMousePosition.y = mouseEvent.Y;
-				if (TransformState == TrackBallController.MouseDownType.Rotation)
+				if (MouseCaptured
+                    && TransformState == TrackBallController.MouseDownType.Rotation)
 				{
 					DrawRotationHelperCircle = true;
 				}
-			}
+                else
+                {
+                    DrawRotationHelperCircle = false;
+                }
+            }
 			else
 			{
 				Vector2 centerPosition = (mouseEvent.GetPosition(1) + mouseEvent.GetPosition(0)) / 2;
@@ -359,7 +413,9 @@ namespace MatterHackers.Agg.OpenGlGui
 				DrawRotationHelperCircle = false;
 			}
 
-			if (!LockTrackBall && mainTrackBallController.CurrentTrackingType != TrackBallController.MouseDownType.None)
+            motionQueue.AddMoveToMotionQueue(currentMousePosition, UiThread.CurrentTimerMs);
+            
+            if (!LockTrackBall && mainTrackBallController.CurrentTrackingType != TrackBallController.MouseDownType.None)
 			{
 				mainTrackBallController.OnMouseMove(currentMousePosition);
 				Invalidate();
@@ -377,17 +433,54 @@ namespace MatterHackers.Agg.OpenGlGui
 			}
 		}
 
+        Vector2 currentVelocity = new Vector2();
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
 			if (!LockTrackBall && mainTrackBallController.CurrentTrackingType != TrackBallController.MouseDownType.None)
 			{
-				mainTrackBallController.OnMouseUp();
-			}
+                if (mainTrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.Rotation)
+                {
+                    // try and preserve some of the velocity
+                    currentVelocity = motionQueue.GetVelocity();
+                    if (currentVelocity.LengthSquared > 0)
+                    {
+                        UiThread.RunOnIdle(ApplyVelocity);
+                    }
+                }
 
-			base.OnMouseUp(mouseEvent);
+                mainTrackBallController.OnMouseUp();
+            }
+
+            base.OnMouseUp(mouseEvent);
 		}
 
-		public override void OnMouseWheel(MouseEventArgs mouseEvent)
+        private void ApplyVelocity()
+        {
+            if (currentVelocity.LengthSquared > 0)
+            {
+                if (mainTrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.None)
+                {
+                    Vector2 center = LocalBounds.Center;
+                    mainTrackBallController.OnMouseDown(center, Matrix4X4.Identity, TrackBallController.MouseDownType.Rotation);
+                    mainTrackBallController.OnMouseMove(center + currentVelocity);
+                    mainTrackBallController.OnMouseUp();
+                    Invalidate();
+
+                    currentVelocity *= .90;
+                    if(currentVelocity.LengthSquared < .01)
+                    {
+                        currentVelocity = Vector2.Zero;
+                    }
+
+                    if (currentVelocity.LengthSquared > 0)
+                    {
+                        UiThread.RunOnIdle(ApplyVelocity, 1.0/30.0);
+                    }
+                }
+            }
+        }
+
+        public override void OnMouseWheel(MouseEventArgs mouseEvent)
 		{
 			if (!LockTrackBall)
 			{
