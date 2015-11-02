@@ -281,11 +281,13 @@ namespace MatterHackers.Agg.OpenGlGui
                 motionQueue.Clear();
             }
 
-            internal Vector2 GetVelocity()
+            internal Vector2 GetVelocityPixelsPerMs()
             {
                 if(motionQueue.Count > 1)
                 {
-                    return motionQueue[motionQueue.Count - 1].position - motionQueue[motionQueue.Count - 2].position;
+					Vector2 pixels = motionQueue[motionQueue.Count - 1].position - motionQueue[motionQueue.Count - 2].position;
+					double milliseconds = motionQueue[motionQueue.Count - 1].timeMs - motionQueue[motionQueue.Count - 2].timeMs;
+					return pixels / milliseconds;
                 }
 
                 return Vector2.Zero;
@@ -315,7 +317,7 @@ namespace MatterHackers.Agg.OpenGlGui
 					currentMousePosition = centerPosition;
 				}
 
-                currentVelocity = Vector2.Zero;
+                currentVelocityPPerMs = Vector2.Zero;
                 motionQueue.Clear();
                 motionQueue.AddMoveToMotionQueue(currentMousePosition, UiThread.CurrentTimerMs);
 
@@ -433,7 +435,7 @@ namespace MatterHackers.Agg.OpenGlGui
 			}
 		}
 
-        Vector2 currentVelocity = new Vector2();
+        Vector2 currentVelocityPPerMs = new Vector2();
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
 			if (!LockTrackBall && mainTrackBallController.CurrentTrackingType != TrackBallController.MouseDownType.None)
@@ -441,8 +443,8 @@ namespace MatterHackers.Agg.OpenGlGui
                 if (mainTrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.Rotation)
                 {
                     // try and preserve some of the velocity
-                    currentVelocity = motionQueue.GetVelocity();
-                    if (currentVelocity.LengthSquared > 0)
+                    currentVelocityPPerMs = motionQueue.GetVelocityPixelsPerMs();
+                    if (currentVelocityPPerMs.LengthSquared > 0)
                     {
                         UiThread.RunOnIdle(ApplyVelocity);
                     }
@@ -454,27 +456,29 @@ namespace MatterHackers.Agg.OpenGlGui
             base.OnMouseUp(mouseEvent);
 		}
 
+		int updatesPerSecond = 30;
         private void ApplyVelocity()
         {
-            if (currentVelocity.LengthSquared > 0)
+			double msPerUpdate = updatesPerSecond / 1000.0;
+            if (currentVelocityPPerMs.LengthSquared > 0)
             {
                 if (mainTrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.None)
                 {
                     Vector2 center = LocalBounds.Center;
                     mainTrackBallController.OnMouseDown(center, Matrix4X4.Identity, TrackBallController.MouseDownType.Rotation);
-                    mainTrackBallController.OnMouseMove(center + currentVelocity);
+                    mainTrackBallController.OnMouseMove(center + currentVelocityPPerMs * msPerUpdate);
                     mainTrackBallController.OnMouseUp();
                     Invalidate();
 
-                    currentVelocity *= .90;
-                    if(currentVelocity.LengthSquared < .01)
+                    currentVelocityPPerMs *= .85;
+                    if(currentVelocityPPerMs.LengthSquared < .01 / msPerUpdate)
                     {
-                        currentVelocity = Vector2.Zero;
+                        currentVelocityPPerMs = Vector2.Zero;
                     }
 
-                    if (currentVelocity.LengthSquared > 0)
+                    if (currentVelocityPPerMs.LengthSquared > 0)
                     {
-                        UiThread.RunOnIdle(ApplyVelocity, 1.0/30.0);
+						UiThread.RunOnIdle(ApplyVelocity, 1.0 / updatesPerSecond);
                     }
                 }
             }
