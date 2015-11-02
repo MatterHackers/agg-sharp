@@ -296,6 +296,7 @@ namespace MatterHackers.Agg.OpenGlGui
 
         MotionQueue motionQueue = new MotionQueue();
 
+		double startAngle = 0;
         double startDistanceBetweenPoints = 1;
 		double pinchStartScale = 1;
 
@@ -323,9 +324,13 @@ namespace MatterHackers.Agg.OpenGlGui
 
                 if (mouseEvent.NumPositions > 1)
 				{
-					startDistanceBetweenPoints = (mouseEvent.GetPosition(1) - mouseEvent.GetPosition(0)).Length;
+					Vector2 position0 = mouseEvent.GetPosition(0);
+					Vector2 position1 = mouseEvent.GetPosition(1);
+					startDistanceBetweenPoints = (position1 - position0).Length;
 					pinchStartScale = TrackBallController.Scale;
 
+					startAngle = Math.Atan2(position1.y - position0.y, position1.x - position0.x);
+					
 					if (TransformState != TrackBallController.MouseDownType.None)
 					{
 						if (!LockTrackBall && TrackBallController.CurrentTrackingType != TrackBallController.MouseDownType.None)
@@ -423,15 +428,19 @@ namespace MatterHackers.Agg.OpenGlGui
 				Invalidate();
 			}
 
-			// check if we should do some scaling
+			// check if we should do some scaling or rotation
 			if (TransformState != TrackBallController.MouseDownType.None
 				&& mouseEvent.NumPositions > 1
 				&& startDistanceBetweenPoints > 0)
 			{
-				double curDistanceBetweenPoints = (mouseEvent.GetPosition(1) - mouseEvent.GetPosition(0)).Length;
+				Vector2 position0 = mouseEvent.GetPosition(0);
+				Vector2 position1 = mouseEvent.GetPosition(1);
+                double curDistanceBetweenPoints = (position1 - position0).Length;
 
 				double scaleAmount = pinchStartScale * curDistanceBetweenPoints / startDistanceBetweenPoints;
 				TrackBallController.Scale = scaleAmount;
+
+				double angle = Math.Atan2(position1.y - position0.y, position1.x - position0.x);
 			}
 		}
 
