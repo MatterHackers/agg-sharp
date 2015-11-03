@@ -110,9 +110,12 @@ namespace MatterHackers.Agg.UI
                 pannels.Visible = false; // start out not visible
                 UiThread.RunOnIdle(() =>
                 {
-                    GuiWidget parentWindow = PerformanceTimer.GetParentWindowFunction();
-                    parentWindow.AddChild(pannels);
-                    parentWindow.KeyDown += ParentWindow_KeyDown;
+					if (PerformanceTimer.GetParentWindowFunction != null)
+					{
+						GuiWidget parentWindow = PerformanceTimer.GetParentWindowFunction();
+						parentWindow.AddChild(pannels);
+						parentWindow.KeyDown += ParentWindow_KeyDown;
+					}
                 });
             }
 
