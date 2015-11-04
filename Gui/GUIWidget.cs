@@ -1419,10 +1419,17 @@ namespace MatterHackers.Agg.UI
 		public virtual void Invalidate(RectangleDouble rectToInvalidate)
 		{
 			isCurrentlyInvalid = true;
-			if (Parent != null)
+
+			if (Parent != null && Parent.Visible)
 			{
 				rectToInvalidate.Offset(OriginRelativeParent);
-				Parent.Invalidate(rectToInvalidate);
+
+				// This code may be a good idea but it needs to be tested to make sure there are no subtle consequences
+				//rectToInvalidate.IntersectWithRectangle(Parent.LocalBounds);
+				//if (rectToInvalidate.Width > 0 && rectToInvalidate.Height > 0)
+				{
+					Parent.Invalidate(rectToInvalidate);
+				}
 			}
 
 			Invalidated?.Invoke(this, new InvalidateEventArgs(rectToInvalidate));
