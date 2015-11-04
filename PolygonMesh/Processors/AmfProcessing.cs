@@ -109,27 +109,41 @@ namespace MatterHackers.PolygonMesh.Processors
 
 				bool continueProcessing;
 
+				int totalMeshes = 0;
 				foreach (MeshGroup meshGroup in meshToSave)
 				{
-					amfFile.WriteLine(Indent(1) + "<object id=\"{0}\">".FormatWith(objectId++));
+					foreach (Mesh mesh in meshGroup.Meshes)
+					{
+						totalMeshes++;
+					}
+				}
+
+				double ratioPerMesh = 1 / totalMeshes;
+				double currentRation = 0;
+				for(int meshGroupIndex = 0; meshGroupIndex < meshToSave.Count; meshGroupIndex++)
+				{
+					MeshGroup meshGroup = meshToSave[meshGroupIndex];
+                    amfFile.WriteLine(Indent(1) + "<object id=\"{0}\">".FormatWith(objectId++));
 					{
 						int vertexCount = 0;
-						int totalMeshes = meshGroup.Meshes.Count;
 						List<int> meshVertexStart = new List<int>();
 						amfFile.WriteLine(Indent(2) + "<mesh>");
 						{
 							amfFile.WriteLine(Indent(3) + "<vertices>");
 							{
-								int meshIndex = 0;
-								foreach (Mesh mesh in meshGroup.Meshes)
+								for (int meshIndex = 0; meshIndex < meshGroup.Meshes.Count; meshIndex++)
 								{
-									double vertCount = (double) mesh.Vertices.Count;
-									
+									Mesh mesh = meshGroup.Meshes[meshIndex];
+									double vertCount = (double)mesh.Vertices.Count;
+
 									meshVertexStart.Add(vertexCount);
 									for (int vertexIndex = 0; vertexIndex < mesh.Vertices.Count; vertexIndex++)
 									{
 										Vertex vertex = mesh.Vertices[vertexIndex];
-										outputInfo.ReportProgress(vertexIndex / vertCount * (.5 * (meshIndex + 1) / totalMeshes), "", out continueProcessing);
+										if (outputInfo.ReportProgress != null)
+										{
+											outputInfo.ReportProgress(currentRation + vertexIndex / vertCount * ratioPerMesh * .5, "", out continueProcessing);
+										}
 
 										Vector3 position = vertex.Position;
 										amfFile.WriteLine(Indent(4) + "<vertex>");
@@ -143,14 +157,15 @@ namespace MatterHackers.PolygonMesh.Processors
 										amfFile.WriteLine(Indent(4) + "</vertex>");
 										vertexCount++;
 									}
-									meshIndex++;
+									currentRation += ratioPerMesh * .5;
 								}
 							}
+
 							amfFile.WriteLine(Indent(3) + "</vertices>");
 							for (int meshIndex = 0; meshIndex < meshGroup.Meshes.Count; meshIndex++)
 							{
-								int firstVertexIndex = meshVertexStart[meshIndex];
 								Mesh mesh = meshGroup.Meshes[meshIndex];
+								int firstVertexIndex = meshVertexStart[meshIndex];
 								MeshMaterialData material = MeshMaterialData.Get(mesh);
 								if (material.MaterialIndex == -1)
 								{
@@ -160,35 +175,39 @@ namespace MatterHackers.PolygonMesh.Processors
 								{
 									amfFile.WriteLine(Indent(3) + "<volume materialid=\"{0}\">".FormatWith(material.MaterialIndex));
 								}
+
+								double faceCount = (double)mesh.Faces.Count;
+								for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
 								{
-									double vertCount = (double)mesh.Faces.Count;
-									for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
+									if (outputInfo.ReportProgress != null)
 									{
-										outputInfo.ReportProgress(.5 + faceIndex / vertCount * (.5 * (meshIndex + 1) / totalMeshes), "", out continueProcessing);
+										outputInfo.ReportProgress(currentRation + faceIndex / faceCount * ratioPerMesh * .5, "", out continueProcessing);
+									}
 
-										Face face = mesh.Faces[faceIndex];
-										List<Vertex> positionsCCW = new List<Vertex>();
-										foreach (FaceEdge faceEdge in face.FaceEdges())
-										{
-											positionsCCW.Add(faceEdge.firstVertex);
-										}
+									Face face = mesh.Faces[faceIndex];
+									List<Vertex> positionsCCW = new List<Vertex>();
+									foreach (FaceEdge faceEdge in face.FaceEdges())
+									{
+										positionsCCW.Add(faceEdge.firstVertex);
+									}
 
-										int numPolys = positionsCCW.Count - 2;
-										int secondIndex = 1;
-										int thirdIndex = 2;
-										for (int polyIndex = 0; polyIndex < numPolys; polyIndex++)
-										{
-											amfFile.WriteLine(Indent(4) + "<triangle>");
-											amfFile.WriteLine(Indent(5) + "<v1>{0}</v1>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[0])));
-											amfFile.WriteLine(Indent(5) + "<v2>{0}</v2>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[secondIndex])));
-											amfFile.WriteLine(Indent(5) + "<v3>{0}</v3>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[thirdIndex])));
-											amfFile.WriteLine(Indent(4) + "</triangle>");
+									int numPolys = positionsCCW.Count - 2;
+									int secondIndex = 1;
+									int thirdIndex = 2;
+									for (int polyIndex = 0; polyIndex < numPolys; polyIndex++)
+									{
+										amfFile.WriteLine(Indent(4) + "<triangle>");
+										amfFile.WriteLine(Indent(5) + "<v1>{0}</v1>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[0])));
+										amfFile.WriteLine(Indent(5) + "<v2>{0}</v2>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[secondIndex])));
+										amfFile.WriteLine(Indent(5) + "<v3>{0}</v3>".FormatWith(firstVertexIndex + mesh.Vertices.IndexOf(positionsCCW[thirdIndex])));
+										amfFile.WriteLine(Indent(4) + "</triangle>");
 
-											secondIndex = thirdIndex;
-											thirdIndex++;
-										}
+										secondIndex = thirdIndex;
+										thirdIndex++;
 									}
 								}
+
+								currentRation += ratioPerMesh * .5;
 								amfFile.WriteLine(Indent(3) + "</volume>");
 							}
 						}

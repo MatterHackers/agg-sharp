@@ -108,7 +108,8 @@ namespace MatterHackers.Agg.UI
                 pannels.HAnchor |= HAnchor.ParentLeft;
                 pannels.VAnchor |= VAnchor.ParentTop;
                 pannels.Visible = false; // start out not visible
-                UiThread.RunOnIdle(() =>
+#if false // only add this when doing testing
+				UiThread.RunOnIdle(() =>
                 {
 					if (PerformanceTimer.GetParentWindowFunction != null)
 					{
@@ -117,6 +118,7 @@ namespace MatterHackers.Agg.UI
 						parentWindow.KeyDown += ParentWindow_KeyDown;
 					}
                 });
+#endif
             }
 
             // add in the column title
