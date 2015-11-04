@@ -118,12 +118,12 @@ namespace MatterHackers.PolygonMesh.Processors
 					}
 				}
 
-				double ratioPerMesh = 1 / totalMeshes;
+				double ratioPerMesh = 1d / totalMeshes;
 				double currentRation = 0;
 				for(int meshGroupIndex = 0; meshGroupIndex < meshToSave.Count; meshGroupIndex++)
 				{
 					MeshGroup meshGroup = meshToSave[meshGroupIndex];
-                    amfFile.WriteLine(Indent(1) + "<object id=\"{0}\">".FormatWith(objectId++));
+					amfFile.WriteLine(Indent(1) + "<object id=\"{0}\">".FormatWith(objectId++));
 					{
 						int vertexCount = 0;
 						List<int> meshVertexStart = new List<int>();
