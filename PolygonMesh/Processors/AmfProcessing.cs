@@ -106,21 +106,31 @@ namespace MatterHackers.PolygonMesh.Processors
 			}
 			{
 				int objectId = 1;
+
+				bool continueProcessing;
+
 				foreach (MeshGroup meshGroup in meshToSave)
 				{
 					amfFile.WriteLine(Indent(1) + "<object id=\"{0}\">".FormatWith(objectId++));
 					{
 						int vertexCount = 0;
+						int totalMeshes = meshGroup.Meshes.Count;
 						List<int> meshVertexStart = new List<int>();
 						amfFile.WriteLine(Indent(2) + "<mesh>");
 						{
 							amfFile.WriteLine(Indent(3) + "<vertices>");
 							{
+								int meshIndex = 0;
 								foreach (Mesh mesh in meshGroup.Meshes)
 								{
+									double vertCount = (double) mesh.Vertices.Count;
+									
 									meshVertexStart.Add(vertexCount);
-									foreach (Vertex vertex in mesh.Vertices)
+									for (int vertexIndex = 0; vertexIndex < mesh.Vertices.Count; vertexIndex++)
 									{
+										Vertex vertex = mesh.Vertices[vertexIndex];
+										outputInfo.ReportProgress(vertexIndex / vertCount * (.5 * (meshIndex + 1) / totalMeshes), "", out continueProcessing);
+
 										Vector3 position = vertex.Position;
 										amfFile.WriteLine(Indent(4) + "<vertex>");
 										{
@@ -133,6 +143,7 @@ namespace MatterHackers.PolygonMesh.Processors
 										amfFile.WriteLine(Indent(4) + "</vertex>");
 										vertexCount++;
 									}
+									meshIndex++;
 								}
 							}
 							amfFile.WriteLine(Indent(3) + "</vertices>");
@@ -150,8 +161,11 @@ namespace MatterHackers.PolygonMesh.Processors
 									amfFile.WriteLine(Indent(3) + "<volume materialid=\"{0}\">".FormatWith(material.MaterialIndex));
 								}
 								{
+									double vertCount = (double)mesh.Faces.Count;
 									for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
 									{
+										outputInfo.ReportProgress(.5 + faceIndex / vertCount * (.5 * (meshIndex + 1) / totalMeshes), "", out continueProcessing);
+
 										Face face = mesh.Faces[faceIndex];
 										List<Vertex> positionsCCW = new List<Vertex>();
 										foreach (FaceEdge faceEdge in face.FaceEdges())
