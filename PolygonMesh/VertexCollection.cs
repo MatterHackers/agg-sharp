@@ -186,7 +186,7 @@ namespace MatterHackers.PolygonMesh
 					return index;
 				}
 
-#if DEBUG
+#if false
 				int indexCheck = vertices.IndexOf(vertexToLookFor);
 				if (index != indexCheck)
 				{
