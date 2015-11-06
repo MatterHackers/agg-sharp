@@ -135,7 +135,7 @@ namespace MatterHackers.Agg.UI
 
 			foreach(Action action in callThisCycle)
             {
-                action();
+                action?.Invoke();
             }
 
 			// now call all the functions (we put them in backwards to make it easier to remove them as we went so run them backwards
