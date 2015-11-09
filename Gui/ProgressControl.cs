@@ -58,7 +58,7 @@ namespace MatterHackers.Agg.UI
 					{
 						ProgressChanged(this, null);
 					}
-					ratioComplete = value / 100;
+					ratioComplete = value / 100.0;
 					Invalidate();
 				}
 			}
