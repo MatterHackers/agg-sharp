@@ -34,10 +34,21 @@ namespace MatterHackers.Agg
 		private double m_x;
 		private double m_y;
 
-		private RadioButtonGroup m_operation = new RadioButtonGroup(new Vector2(555, 5), new Vector2(80, 130));
-		private RadioButtonGroup m_polygons = new RadioButtonGroup(new Vector2(5, 5), new Vector2(205, 110));
+        private RadioButtonGroup m_operation = new RadioButtonGroup(new Vector2(555, 5), new Vector2(80, 130))
+        {
+            HAnchor = HAnchor.ParentRight | HAnchor.FitToChildren,
+            VAnchor = VAnchor.ParentBottom | VAnchor.FitToChildren,
+            Margin = new BorderDouble(5),
+        };
+        private RadioButtonGroup m_polygons = new RadioButtonGroup(new Vector2(5, 5), new Vector2(205, 110))
+        {
+            HAnchor = HAnchor.ParentLeft | HAnchor.FitToChildren,
+            VAnchor = VAnchor.ParentBottom | VAnchor.FitToChildren,
+            Margin = new BorderDouble(5),
+        };
 
-		public PolygonClippingDemo()
+
+public PolygonClippingDemo()
 		{
 			BackgroundColor = RGBA_Bytes.White;
 
@@ -353,7 +364,7 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new FloodFillFactory();
+			AppWidgetFactory appWidget = new PolygonClippingFactory();
 			appWidget.CreateWidgetAndRunInWindow();
 		}
 
@@ -399,7 +410,7 @@ namespace MatterHackers.Agg
 		}
 	}
 
-	public class FloodFillFactory : AppWidgetFactory
+	public class PolygonClippingFactory : AppWidgetFactory
 	{
 		public override GuiWidget NewWidget()
 		{
