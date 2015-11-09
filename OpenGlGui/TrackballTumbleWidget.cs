@@ -249,55 +249,55 @@ namespace MatterHackers.Agg.OpenGlGui
 			}
 		}
 
-        internal class MotionQueue
-        {
-            internal struct TimeAndPosition
-            {
-                internal TimeAndPosition(Vector2 position, long timeMs)
-                {
-                    this.timeMs = timeMs;
-                    this.position = position;
-                }
+		internal class MotionQueue
+		{
+			internal struct TimeAndPosition
+			{
+				internal TimeAndPosition(Vector2 position, long timeMs)
+				{
+					this.timeMs = timeMs;
+					this.position = position;
+				}
 
-                internal long timeMs;
-                internal Vector2 position;
-            }
+				internal long timeMs;
+				internal Vector2 position;
+			}
 
-            List<TimeAndPosition> motionQueue = new List<TimeAndPosition>();
+			List<TimeAndPosition> motionQueue = new List<TimeAndPosition>();
 
-            internal void AddMoveToMotionQueue(Vector2 position, long timeMs)
-            {
-                if (motionQueue.Count > 4)
-                {
-                    // take off the last one
-                    motionQueue.RemoveAt(0);
-                }
+			internal void AddMoveToMotionQueue(Vector2 position, long timeMs)
+			{
+				if (motionQueue.Count > 4)
+				{
+					// take off the last one
+					motionQueue.RemoveAt(0);
+				}
 
-                motionQueue.Add(new TimeAndPosition(position, timeMs));
-            }
+				motionQueue.Add(new TimeAndPosition(position, timeMs));
+			}
 
-            internal void Clear()
-            {
-                motionQueue.Clear();
-            }
+			internal void Clear()
+			{
+				motionQueue.Clear();
+			}
 
-            internal Vector2 GetVelocityPixelsPerMs()
-            {
-                if(motionQueue.Count > 1)
-                {
+			internal Vector2 GetVelocityPixelsPerMs()
+			{
+				if (motionQueue.Count > 1)
+				{
 					Vector2 pixels = motionQueue[motionQueue.Count - 1].position - motionQueue[motionQueue.Count - 2].position;
 					double milliseconds = motionQueue[motionQueue.Count - 1].timeMs - motionQueue[motionQueue.Count - 2].timeMs;
 					return pixels / milliseconds;
-                }
+				}
 
-                return Vector2.Zero;
-            }
-        }
+				return Vector2.Zero;
+			}
+		}
 
-        MotionQueue motionQueue = new MotionQueue();
+		MotionQueue motionQueue = new MotionQueue();
 
 		double startAngle = 0;
-        double startDistanceBetweenPoints = 1;
+		double startDistanceBetweenPoints = 1;
 		double pinchStartScale = 1;
 
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
@@ -318,11 +318,11 @@ namespace MatterHackers.Agg.OpenGlGui
 					currentMousePosition = centerPosition;
 				}
 
-                currentVelocityPPerMs = Vector2.Zero;
-                motionQueue.Clear();
-                motionQueue.AddMoveToMotionQueue(currentMousePosition, UiThread.CurrentTimerMs);
+				currentVelocityPPerMs = Vector2.Zero;
+				motionQueue.Clear();
+				motionQueue.AddMoveToMotionQueue(currentMousePosition, UiThread.CurrentTimerMs);
 
-                if (mouseEvent.NumPositions > 1)
+				if (mouseEvent.NumPositions > 1)
 				{
 					Vector2 position0 = mouseEvent.GetPosition(0);
 					Vector2 position1 = mouseEvent.GetPosition(1);
@@ -330,7 +330,7 @@ namespace MatterHackers.Agg.OpenGlGui
 					pinchStartScale = TrackBallController.Scale;
 
 					startAngle = Math.Atan2(position1.y - position0.y, position1.x - position0.x);
-					
+
 					if (TransformState != TrackBallController.MouseDownType.None)
 					{
 						if (!LockTrackBall && TrackBallController.CurrentTrackingType != TrackBallController.MouseDownType.None)
@@ -404,15 +404,15 @@ namespace MatterHackers.Agg.OpenGlGui
 				currentMousePosition.x = mouseEvent.X;
 				currentMousePosition.y = mouseEvent.Y;
 				if (MouseCaptured
-                    && TransformState == TrackBallController.MouseDownType.Rotation)
+					&& TransformState == TrackBallController.MouseDownType.Rotation)
 				{
 					DrawRotationHelperCircle = true;
 				}
-                else
-                {
-                    DrawRotationHelperCircle = false;
-                }
-            }
+				else
+				{
+					DrawRotationHelperCircle = false;
+				}
+			}
 			else
 			{
 				Vector2 centerPosition = (mouseEvent.GetPosition(1) + mouseEvent.GetPosition(0)) / 2;
@@ -420,9 +420,9 @@ namespace MatterHackers.Agg.OpenGlGui
 				DrawRotationHelperCircle = false;
 			}
 
-            motionQueue.AddMoveToMotionQueue(currentMousePosition, UiThread.CurrentTimerMs);
-            
-            if (!LockTrackBall && TrackBallController.CurrentTrackingType != TrackBallController.MouseDownType.None)
+			motionQueue.AddMoveToMotionQueue(currentMousePosition, UiThread.CurrentTimerMs);
+
+			if (!LockTrackBall && TrackBallController.CurrentTrackingType != TrackBallController.MouseDownType.None)
 			{
 				TrackBallController.OnMouseMove(currentMousePosition);
 				Invalidate();
@@ -435,7 +435,7 @@ namespace MatterHackers.Agg.OpenGlGui
 			{
 				Vector2 position0 = mouseEvent.GetPosition(0);
 				Vector2 position1 = mouseEvent.GetPosition(1);
-                double curDistanceBetweenPoints = (position1 - position0).Length;
+				double curDistanceBetweenPoints = (position1 - position0).Length;
 
 				double scaleAmount = pinchStartScale * curDistanceBetweenPoints / startDistanceBetweenPoints;
 				TrackBallController.Scale = scaleAmount;
@@ -444,7 +444,12 @@ namespace MatterHackers.Agg.OpenGlGui
 			}
 		}
 
-        Vector2 currentVelocityPPerMs = new Vector2();
+		Vector2 currentVelocityPPerMs = new Vector2();
+		public void ZeroVelocity()
+		{
+			currentVelocityPPerMs = Vector2.Zero;
+		}
+
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
 			if (!LockTrackBall && TrackBallController.CurrentTrackingType != TrackBallController.MouseDownType.None)
@@ -494,7 +499,7 @@ namespace MatterHackers.Agg.OpenGlGui
             }
         }
 
-        public override void OnMouseWheel(MouseEventArgs mouseEvent)
+		public override void OnMouseWheel(MouseEventArgs mouseEvent)
 		{
 			if (!LockTrackBall)
 			{
