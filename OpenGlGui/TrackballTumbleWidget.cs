@@ -281,6 +281,8 @@ namespace MatterHackers.Agg.OpenGlGui
 				motionQueue.Clear();
 			}
 
+			double minFlingVelocityPixelsPerSecond = .5;
+
 			internal Vector2 GetVelocityPixelsPerMs()
 			{
 				if (motionQueue.Count > 1)
@@ -299,7 +301,12 @@ namespace MatterHackers.Agg.OpenGlGui
 					if (milliseconds > 0)
 					{
 						Vector2 pixels = lastTime.position - firstTime.position;
-						return pixels / milliseconds;
+						Vector2 pixelsPerSecond = pixels / milliseconds;
+
+						if (pixelsPerSecond.LengthSquared > minFlingVelocityPixelsPerSecond * minFlingVelocityPixelsPerSecond)
+						{
+							return pixelsPerSecond;
+						}
 					}
 				}
 
