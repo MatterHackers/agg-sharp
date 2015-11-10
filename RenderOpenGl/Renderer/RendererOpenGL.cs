@@ -226,7 +226,7 @@ namespace MatterHackers.RenderOpenGl
 				transform.transform(ref end);
 			}
 
-			GL.Begin(BeginMode.Triangles);
+			//GL.Begin(BeginMode.Triangles);
 			Vector2 widthRightOffset = (end - start).GetPerpendicularRight().GetNormal() * width / 2;
 			// draw the main line part
 			triangleEddgeInfo.Draw1EdgeTriangle(start - widthRightOffset, end - widthRightOffset, end + widthRightOffset);
@@ -245,7 +245,33 @@ namespace MatterHackers.RenderOpenGl
 				triangleEddgeInfo.Draw1EdgeTriangle(startCurveStart, startCurveEnd, start);
 				startCurveStart = startCurveEnd;
 			}
-			GL.End();
+			//GL.End();
+		}
+
+		public void DrawAACircle(Vector2 start, double radius, IColorType colorIn)
+		{
+			RGBA_Bytes colorBytes = colorIn.GetAsRGBA_Bytes();
+			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
+
+			Affine transform = GetTransform();
+			if (!transform.is_identity())
+			{
+				transform.transform(ref start);
+			}
+
+			// now draw the end rounds
+			int numSegments = 12;
+			double anglePerSegment = MathHelper.Tau / numSegments;
+			Vector2 currentOffset = new Vector2(0, radius);
+			Vector2 curveStart = start + currentOffset;
+			for (int i = 0; i < numSegments + 1; i++)
+			{
+				currentOffset.Rotate(anglePerSegment);
+				Vector2 curveEnd = start + currentOffset;
+
+				triangleEddgeInfo.Draw1EdgeTriangle(curveStart, curveEnd, start);
+				curveStart = curveEnd;
+			}
 		}
 
 		public void PreRender()

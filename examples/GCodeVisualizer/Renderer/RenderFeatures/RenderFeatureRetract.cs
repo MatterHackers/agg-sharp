@@ -1,6 +1,7 @@
 ﻿using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.MeshVisualizer;
+using MatterHackers.RenderOpenGl;
 using MatterHackers.VectorMath;
 
 /*
@@ -95,20 +96,27 @@ namespace MatterHackers.GCodeVisualizer
 		{
 			if ((renderInfo.CurrentRenderType & RenderType.Retractions) == RenderType.Retractions)
 			{
+				double radius = Radius(renderInfo.LayerScale);
 				Vector2 position = new Vector2(this.position.x, this.position.y);
 				renderInfo.Transform.transform(ref position);
-				double radius = Radius(renderInfo.LayerScale);
-				Ellipse extrusion = new Ellipse(position, radius);
 
+				RGBA_Bytes retractionColor = new RGBA_Bytes(RGBA_Bytes.Red, 200);
 				if (extrusionAmount > 0)
 				{
 					// unretraction
-					graphics2D.Render(extrusion, new RGBA_Bytes(RGBA_Bytes.Blue, 200));
+					retractionColor = new RGBA_Bytes(RGBA_Bytes.Blue, 200);
+				}
+
+				// render the part using opengl
+				Graphics2DOpenGL graphics2DGl = graphics2D as Graphics2DOpenGL;
+				if (graphics2DGl != null)
+				{
+					graphics2DGl.DrawAACircle(position, radius, retractionColor);
 				}
 				else
 				{
-					// retraction
-					graphics2D.Render(extrusion, new RGBA_Bytes(RGBA_Bytes.Red, 200));
+					Ellipse extrusion = new Ellipse(position, radius);
+					graphics2D.Render(extrusion, retractionColor);
 				}
 			}
 		}

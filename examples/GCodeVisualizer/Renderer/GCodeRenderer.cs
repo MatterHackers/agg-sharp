@@ -195,6 +195,7 @@ namespace MatterHackers.GCodeVisualizer
 				if (graphics2DGl != null)
 				{
 					graphics2DGl.PreRender();
+					GL.Begin(BeginMode.Triangles);
 					for (int i = startFeature; i < endFeature; i++)
 					{
 						RenderFeatureBase feature = renderFeatures[renderInfo.EndLayerIndex][i];
@@ -203,6 +204,7 @@ namespace MatterHackers.GCodeVisualizer
 							feature.Render(graphics2DGl, renderInfo);
 						}
 					}
+					GL.End();
 					graphics2DGl.PopOrthoProjection();
 				}
 				else
