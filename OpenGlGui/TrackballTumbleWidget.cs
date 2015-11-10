@@ -285,7 +285,7 @@ namespace MatterHackers.Agg.OpenGlGui
 			{
 				if (motionQueue.Count > 1)
 				{
-                    bool mouseWasStopedBeforeUp = mouseUpTime < motionQueue[motionQueue.Count - 1].timeMs + 200;
+                    bool mouseWasStopedBeforeUp = mouseUpTime > motionQueue[motionQueue.Count - 1].timeMs + 200;
 
                     if (!mouseWasStopedBeforeUp)
                     {
