@@ -281,18 +281,26 @@ namespace MatterHackers.Agg.OpenGlGui
 				motionQueue.Clear();
 			}
 
-			internal Vector2 GetVelocityPixelsPerMs(long mouseUpTime)
+			internal Vector2 GetVelocityPixelsPerMs()
 			{
 				if (motionQueue.Count > 1)
 				{
-                    bool mouseWasStopedBeforeUp = mouseUpTime < motionQueue[motionQueue.Count - 1].timeMs + 200;
+					// Get all the movement that is less 100 ms from the last time (the mouse up)
+					TimeAndPosition lastTime = motionQueue[motionQueue.Count - 1];
+					int firstTimeIndex = motionQueue.Count - 1;
+					while (firstTimeIndex > 0 && motionQueue[firstTimeIndex-1].timeMs + 100 > lastTime.timeMs)
+					{
+						firstTimeIndex--;
+					}
 
-                    if (!mouseWasStopedBeforeUp)
-                    {
-                        Vector2 pixels = motionQueue[motionQueue.Count - 1].position - motionQueue[motionQueue.Count - 2].position;
-                        double milliseconds = motionQueue[motionQueue.Count - 1].timeMs - motionQueue[motionQueue.Count - 2].timeMs;
-                        return pixels / milliseconds;
-                    }
+					TimeAndPosition firstTime = motionQueue[firstTimeIndex];
+
+					double milliseconds = lastTime.timeMs - firstTime.timeMs;
+					if (milliseconds > 0)
+					{
+						Vector2 pixels = lastTime.position - firstTime.position;
+						return pixels / milliseconds;
+					}
 				}
 
 				return Vector2.Zero;
@@ -462,8 +470,10 @@ namespace MatterHackers.Agg.OpenGlGui
                 if (TrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.Rotation
 					&& TrackBallController.LastMoveInsideRadius)
                 {
-                    // try and preserve some of the velocity
-                    currentVelocityPerMs = motionQueue.GetVelocityPixelsPerMs(UiThread.CurrentTimerMs);
+					// try and preserve some of the velocity
+					motionQueue.AddMoveToMotionQueue(mouseEvent.Position, UiThread.CurrentTimerMs);
+
+					currentVelocityPerMs = motionQueue.GetVelocityPixelsPerMs();
                     if (currentVelocityPerMs.LengthSquared > 0)
                     {
                         UiThread.RunOnIdle(ApplyVelocity);
