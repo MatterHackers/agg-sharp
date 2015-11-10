@@ -200,7 +200,7 @@ namespace MatterHackers.GCodeVisualizer
 						RenderFeatureBase feature = renderFeatures[renderInfo.EndLayerIndex][i];
 						if (feature != null)
 						{
-							feature.Render(graphics2D, renderInfo);
+							feature.Render(graphics2DGl, renderInfo);
 						}
 					}
 					graphics2DGl.PopOrthoProjection();
