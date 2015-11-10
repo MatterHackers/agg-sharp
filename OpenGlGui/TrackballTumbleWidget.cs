@@ -281,13 +281,18 @@ namespace MatterHackers.Agg.OpenGlGui
 				motionQueue.Clear();
 			}
 
-			internal Vector2 GetVelocityPixelsPerMs()
+			internal Vector2 GetVelocityPixelsPerMs(long mouseUpTime)
 			{
 				if (motionQueue.Count > 1)
 				{
-					Vector2 pixels = motionQueue[motionQueue.Count - 1].position - motionQueue[motionQueue.Count - 2].position;
-					double milliseconds = motionQueue[motionQueue.Count - 1].timeMs - motionQueue[motionQueue.Count - 2].timeMs;
-					return pixels / milliseconds;
+                    bool mouseWasStopedBeforeUp = mouseUpTime < motionQueue[motionQueue.Count - 1].timeMs + 200;
+
+                    if (!mouseWasStopedBeforeUp)
+                    {
+                        Vector2 pixels = motionQueue[motionQueue.Count - 1].position - motionQueue[motionQueue.Count - 2].position;
+                        double milliseconds = motionQueue[motionQueue.Count - 1].timeMs - motionQueue[motionQueue.Count - 2].timeMs;
+                        return pixels / milliseconds;
+                    }
 				}
 
 				return Vector2.Zero;
@@ -318,7 +323,7 @@ namespace MatterHackers.Agg.OpenGlGui
 					currentMousePosition = centerPosition;
 				}
 
-				currentVelocityPPerMs = Vector2.Zero;
+				currentVelocityPerMs = Vector2.Zero;
 				motionQueue.Clear();
 				motionQueue.AddMoveToMotionQueue(currentMousePosition, UiThread.CurrentTimerMs);
 
@@ -444,10 +449,10 @@ namespace MatterHackers.Agg.OpenGlGui
 			}
 		}
 
-		Vector2 currentVelocityPPerMs = new Vector2();
+		Vector2 currentVelocityPerMs = new Vector2();
 		public void ZeroVelocity()
 		{
-			currentVelocityPPerMs = Vector2.Zero;
+			currentVelocityPerMs = Vector2.Zero;
 		}
 
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
@@ -458,8 +463,8 @@ namespace MatterHackers.Agg.OpenGlGui
 					&& TrackBallController.LastMoveInsideRadius)
                 {
                     // try and preserve some of the velocity
-                    currentVelocityPPerMs = motionQueue.GetVelocityPixelsPerMs();
-                    if (currentVelocityPPerMs.LengthSquared > 0)
+                    currentVelocityPerMs = motionQueue.GetVelocityPixelsPerMs(UiThread.CurrentTimerMs);
+                    if (currentVelocityPerMs.LengthSquared > 0)
                     {
                         UiThread.RunOnIdle(ApplyVelocity);
                     }
@@ -475,23 +480,23 @@ namespace MatterHackers.Agg.OpenGlGui
         private void ApplyVelocity()
         {
 			double msPerUpdate = 1000.0 / updatesPerSecond;
-            if (currentVelocityPPerMs.LengthSquared > 0)
+            if (currentVelocityPerMs.LengthSquared > 0)
             {
                 if (TrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.None)
                 {
                     Vector2 center = LocalBounds.Center;
 					TrackBallController.OnMouseDown(center, Matrix4X4.Identity, TrackBallController.MouseDownType.Rotation);
-					TrackBallController.OnMouseMove(center + currentVelocityPPerMs * msPerUpdate);
+					TrackBallController.OnMouseMove(center + currentVelocityPerMs * msPerUpdate);
 					TrackBallController.OnMouseUp();
                     Invalidate();
 
-                    currentVelocityPPerMs *= .85;
-                    if(currentVelocityPPerMs.LengthSquared < .01 / msPerUpdate)
+                    currentVelocityPerMs *= .85;
+                    if(currentVelocityPerMs.LengthSquared < .01 / msPerUpdate)
                     {
-                        currentVelocityPPerMs = Vector2.Zero;
+                        currentVelocityPerMs = Vector2.Zero;
                     }
 
-                    if (currentVelocityPPerMs.LengthSquared > 0)
+                    if (currentVelocityPerMs.LengthSquared > 0)
                     {
 						UiThread.RunOnIdle(ApplyVelocity, 1.0 / updatesPerSecond);
                     }
