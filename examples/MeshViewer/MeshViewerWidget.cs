@@ -310,7 +310,7 @@ namespace MatterHackers.MeshVisualizer
 							vertex.Position = vertex.Position + new Vector3(0, 0, displayVolumeToBuild.z / 2);
 						}
 					}
-					CreateRectangularBedGridImage((int)(displayVolumeToBuild.x / 10), (int)(displayVolumeToBuild.y / 10));
+					CreateRectangularBedGridImage(displayVolumeToBuild, bedCenter);
 					printerBed = PlatonicSolids.CreateCube(displayVolumeToBuild.x, displayVolumeToBuild.y, 4);
 					{
 						Face face = printerBed.Faces[0];
@@ -627,45 +627,58 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
-		private void CreateRectangularBedGridImage(int linesInX, int linesInY)
+		private void CreateRectangularBedGridImage(Vector3 displayVolumeToBuild, Vector2 bedCenter)
 		{
+			int linesInX = (int)Math.Ceiling(displayVolumeToBuild.x / 10);
+			int linesInY = (int)Math.Ceiling(displayVolumeToBuild.y / 10);
+
 			using (TimedLock.Lock(lastCreatedBedImage, "CreateRectangularBedGridImage"))
 			{
-				if (linesInX == lastLinesCount.x && linesInY == lastLinesCount.y)
-				{
-					BedImage = lastCreatedBedImage;
-					return;
-				}
 				Vector2 bedImageCentimeters = new Vector2(linesInX, linesInY);
 
 				BedImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
 				Graphics2D graphics2D = BedImage.NewGraphics2D();
 				graphics2D.Clear(bedBaseColor);
 				{
-					double lineDist = BedImage.Width / (double)linesInX;
+					double lineDist = BedImage.Width / (displayVolumeToBuild.x / 10.0);
 
-					int count = 1;
+					double xPositionCm = (-(displayVolume.x / 2.0) + bedCenter.x) / 10.0;
+					int xPositionCmInt = (int)Math.Round(xPositionCm);
+					double fraction = xPositionCm - xPositionCmInt;
 					int pointSize = 20;
-					graphics2D.DrawString(count.ToString(), 4, 4, pointSize, color: bedMarkingsColor);
-					for (double linePos = lineDist; linePos < BedImage.Width; linePos += lineDist)
+					graphics2D.DrawString(xPositionCmInt.ToString(), 4, 4, pointSize, color: bedMarkingsColor);
+					for (double linePos = lineDist * (1 - fraction); linePos < BedImage.Width; linePos += lineDist)
 					{
-						count++;
+						xPositionCmInt++;
 						int linePosInt = (int)linePos;
-						graphics2D.Line(linePosInt, 0, linePosInt, BedImage.Height, bedMarkingsColor);
-						graphics2D.DrawString(count.ToString(), linePos + 4, 4, pointSize, color: bedMarkingsColor);
+						int lineWidth = 1;
+						if (xPositionCmInt == 0)
+						{
+							lineWidth = 2;
+						}
+						graphics2D.Line(linePosInt, 0, linePosInt, BedImage.Height, bedMarkingsColor, lineWidth);
+						graphics2D.DrawString(xPositionCmInt.ToString(), linePos + 4, 4, pointSize, color: bedMarkingsColor);
 					}
 				}
 				{
-					double lineDist = BedImage.Height / (double)linesInY;
+					double lineDist = BedImage.Height / (displayVolumeToBuild.y / 10.0);
 
-					int count = 1;
-					int pointSize = 16;
-					for (double linePos = lineDist; linePos < BedImage.Height; linePos += lineDist)
+					double yPositionCm = (-(displayVolume.y / 2.0) + bedCenter.y) / 10.0;
+					int yPositionCmInt = (int)Math.Round(yPositionCm);
+					double fraction = yPositionCm - yPositionCmInt;
+					int pointSize = 20;
+					for (double linePos = lineDist * (1 - fraction); linePos < BedImage.Height; linePos += lineDist)
 					{
-						count++;
+						yPositionCmInt++;
 						int linePosInt = (int)linePos;
-						graphics2D.Line(0, linePosInt, BedImage.Height, linePosInt, bedMarkingsColor);
-						graphics2D.DrawString(count.ToString(), 4, linePos + 4, pointSize, color: bedMarkingsColor);
+						int lineWidth = 1;
+						if (yPositionCmInt == 0)
+						{
+							lineWidth = 2;
+						}
+						graphics2D.Line(0, linePosInt, BedImage.Height, linePosInt, bedMarkingsColor, lineWidth);
+
+						graphics2D.DrawString(yPositionCmInt.ToString(), 4, linePos + 4, pointSize, color: bedMarkingsColor);
 					}
 				}
 

@@ -230,13 +230,13 @@ namespace MatterHackers.Agg
 			Line(start.x, start.y, end.x, end.y, color);
 		}
 
-		public void Line(double x1, double y1, double x2, double y2, RGBA_Bytes color)
+		public void Line(double x1, double y1, double x2, double y2, RGBA_Bytes color, double strokeWidth = 1)
 		{
 			PathStorage m_LinesToDraw = new PathStorage();
 			m_LinesToDraw.remove_all();
 			m_LinesToDraw.MoveTo(x1, y1);
 			m_LinesToDraw.LineTo(x2, y2);
-			Stroke StrockedLineToDraw = new Stroke(m_LinesToDraw);
+			Stroke StrockedLineToDraw = new Stroke(m_LinesToDraw, strokeWidth);
 			Render(StrockedLineToDraw, color);
 		}
 
