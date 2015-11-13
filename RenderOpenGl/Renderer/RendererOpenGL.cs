@@ -264,7 +264,7 @@ namespace MatterHackers.RenderOpenGl
 			double anglePerSegment = MathHelper.Tau / numSegments;
 			Vector2 currentOffset = new Vector2(0, radius);
 			Vector2 curveStart = start + currentOffset;
-			for (int i = 0; i < numSegments + 1; i++)
+			for (int i = 0; i < numSegments; i++)
 			{
 				currentOffset.Rotate(anglePerSegment);
 				Vector2 curveEnd = start + currentOffset;
