@@ -108,7 +108,8 @@ namespace MatterHackers.Agg.UI
                 pannels.HAnchor |= HAnchor.ParentLeft;
                 pannels.VAnchor |= VAnchor.ParentTop;
                 pannels.Visible = false; // start out not visible
-#if false // only add this when doing testing
+                //pannels.Visible = false; // start out not visible
+#if true // only add this when doing testing
 				UiThread.RunOnIdle(() =>
                 {
 					if (PerformanceTimer.GetParentWindowFunction != null)
@@ -116,6 +117,7 @@ namespace MatterHackers.Agg.UI
 						GuiWidget parentWindow = PerformanceTimer.GetParentWindowFunction();
 						parentWindow.AddChild(pannels);
 						parentWindow.KeyDown += ParentWindow_KeyDown;
+						parentWindow.MouseDownInBounds += ParentWindow_MouseDown;
 					}
                 });
 #endif
@@ -139,7 +141,7 @@ namespace MatterHackers.Agg.UI
             BackgroundColor = new RGBA_Bytes(RGBA_Bytes.White, 180);
         }
 
-        private event EventHandler unregisterEvents;
+		private event EventHandler unregisterEvents;
 
         public static PerformancePannel GetNamedPannel(string pannelName)
         {
@@ -232,7 +234,16 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-        private void ParentWindow_KeyDown(object sender, KeyEventArgs keyEvent)
+		private void ParentWindow_MouseDown(object sender, MouseEventArgs e)
+		{
+			if (e.NumPositions == 4)
+			{
+				pannels.Visible = !pannels.Visible;
+			}
+		}
+
+
+		private void ParentWindow_KeyDown(object sender, KeyEventArgs keyEvent)
         {
             if (keyEvent.KeyCode == Keys.Escape)
             {
