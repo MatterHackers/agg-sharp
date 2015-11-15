@@ -122,7 +122,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="VertexSourceToPolygon.cs" />
+    <Compile Include="CachedTesselator.cs" />
+    <Compile Include="VertexSourceToClipperPolygons.cs" />
+    <Compile Include="VertexSourceToTesselator.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

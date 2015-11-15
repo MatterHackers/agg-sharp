@@ -139,6 +139,10 @@
       <Project>{7E61A5BD-E78F-4B80-88C9-3821B4FA062E}</Project>
       <Name>Csg</Name>
     </ProjectReference>
+    <ProjectReference Include="..\DataConverters2D\DataConverters2D.csproj">
+      <Project>{94838988-523c-4b11-ad82-8b9b76f23a31}</Project>
+      <Name>DataConverters2D</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Tesselate\Tesselate.csproj">
       <Project>{AE37DE1F-22F7-49EE-8732-FC6BC8DC58D9}</Project>
       <Name>Tesselate</Name>
@@ -161,13 +165,11 @@
     <Compile Include="GLMeshWirePlugin.cs" />
     <Compile Include="GLMeshTrianglePlugin.cs" />
     <Compile Include="ImageGlPlugin.cs" />
-    <Compile Include="Renderer\CachedTesselator.cs" />
     <Compile Include="Renderer\RendererOpenGL.cs" />
     <Compile Include="RenderCsgToGl.cs" />
     <Compile Include="Renderer\AARenderToGLTesselator.cs" />
     <Compile Include="Renderer\RenderToGLTesselator.cs" />
     <Compile Include="RenderMeshToGl.cs" />
-    <Compile Include="VertexSourceToMesh.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

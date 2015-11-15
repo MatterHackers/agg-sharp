@@ -13,8 +13,8 @@ namespace MatterHackers.Agg
 	{
 		private PathStorage CombinePaths(IVertexSource a, IVertexSource b, ClipType clipType)
 		{
-			List<List<IntPoint>> aPolys = VertexSourceToPolygon.CreatePolygons(a);
-			List<List<IntPoint>> bPolys = VertexSourceToPolygon.CreatePolygons(b);
+			List<List<IntPoint>> aPolys = VertexSourceToClipperPolygons.CreatePolygons(a);
+			List<List<IntPoint>> bPolys = VertexSourceToClipperPolygons.CreatePolygons(b);
 
 			Clipper clipper = new Clipper();
 
@@ -24,7 +24,7 @@ namespace MatterHackers.Agg
 			List<List<IntPoint>> intersectedPolys = new List<List<IntPoint>>();
 			clipper.Execute(clipType, intersectedPolys);
 
-			PathStorage output = VertexSourceToPolygon.CreatePathStorage(intersectedPolys);
+			PathStorage output = VertexSourceToClipperPolygons.CreatePathStorage(intersectedPolys);
 
 			output.Add(0, 0, ShapePath.FlagsAndCommand.CommandStop);
 

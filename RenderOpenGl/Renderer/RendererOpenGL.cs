@@ -33,6 +33,7 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
+using MatterHackers.DataConverters2D;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
 using System;
@@ -40,11 +41,6 @@ using Tesselate;
 
 namespace MatterHackers.RenderOpenGl
 {
-	public abstract class VertexTesselatorAbstract : Tesselator
-	{
-		public abstract void AddVertex(double x, double y);
-	}
-
 	public class Graphics2DOpenGL : Graphics2D
 	{
 		// We can have a single static instance because all gl rendering is required to happen on the ui thread so there can
@@ -108,52 +104,6 @@ namespace MatterHackers.RenderOpenGl
 			GL.PopMatrix();
 		}
 
-		public static void SendShapeToTesselator(VertexTesselatorAbstract tesselator, IVertexSource vertexSource)
-		{
-#if !DEBUG
-            try
-#endif
-			{
-				tesselator.BeginPolygon();
-
-				ShapePath.FlagsAndCommand PathAndFlags = 0;
-				double x, y;
-				bool haveBegunContour = false;
-				while (!ShapePath.is_stop(PathAndFlags = vertexSource.vertex(out x, out y)))
-				{
-					if (ShapePath.is_close(PathAndFlags)
-						|| (haveBegunContour && ShapePath.is_move_to(PathAndFlags)))
-					{
-						tesselator.EndContour();
-						haveBegunContour = false;
-					}
-
-					if (!ShapePath.is_close(PathAndFlags))
-					{
-						if (!haveBegunContour)
-						{
-							tesselator.BeginContour();
-							haveBegunContour = true;
-						}
-
-						tesselator.AddVertex(x, y);
-					}
-				}
-
-				if (haveBegunContour)
-				{
-					tesselator.EndContour();
-				}
-
-				tesselator.EndPolygon();
-			}
-#if !DEBUG
-            catch
-            {
-            }
-#endif
-		}
-
 		private void CheckLineImageCache()
 		{
 			if (AATextureImage == null)
@@ -189,7 +139,7 @@ namespace MatterHackers.RenderOpenGl
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 			triangleEddgeInfo.Clear();
-			Graphics2DOpenGL.SendShapeToTesselator(triangleEddgeInfo, vertexSource);
+            VertexSourceToTesselator.SendShapeToTesselator(triangleEddgeInfo, vertexSource);
 
 			// now render it
 			triangleEddgeInfo.RenderLastToGL();
@@ -308,7 +258,7 @@ namespace MatterHackers.RenderOpenGl
 				GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 				renderNowTesselator.Clear();
-				Graphics2DOpenGL.SendShapeToTesselator(renderNowTesselator, vertexSource);
+                VertexSourceToTesselator.SendShapeToTesselator(renderNowTesselator, vertexSource);
 			}
 
 			PopOrthoProjection();

@@ -1,3 +1,32 @@
+/*
+Copyright (c) 2015, Lars Brubaker
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation are those
+of the authors and should not be interpreted as representing official policies,
+either expressed or implied, of the FreeBSD Project.
+*/
+
 using ClipperLib;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
@@ -7,8 +36,12 @@ using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 
-namespace MatterHackers.Agg
+namespace MatterHackers.PolygonPathing
 {
+    using Agg;
+    using Polygon = List<IntPoint>;
+    using Polygons = List<List<IntPoint>>;
+
     public class PolygonPathingDemo : SystemWindow
     {
         private Vector2 mousePosition;
@@ -48,7 +81,7 @@ namespace MatterHackers.Agg
             shapeTypeRadioGroup.AddRadioButton("Arrows");
             shapeTypeRadioGroup.AddRadioButton("Spiral");
             shapeTypeRadioGroup.AddRadioButton("Glyph");
-            shapeTypeRadioGroup.SelectedIndex = 3;
+            shapeTypeRadioGroup.SelectedIndex = 0;
             AddChild(shapeTypeRadioGroup);
 
             AnchorAll();
@@ -91,15 +124,8 @@ namespace MatterHackers.Agg
             base.OnMouseMove(mouseEvent);
         }
 
-        private PathStorage CreateTravelPath(IVertexSource polygonsToPathAround)
+        private Polygons CreateTravelPath(Polygons polygsToPathAround, Polygons travelPolysLine)
         {
-            PathStorage travelLine = new PathStorage();
-            travelLine.MoveTo(lineStart);
-            travelLine.LineTo(mousePosition);
-
-            List<List<IntPoint>> polygsToPathAround = VertexSourceToPolygon.CreatePolygons(polygonsToPathAround);
-            List<List<IntPoint>> travelPolysLine = VertexSourceToPolygon.CreatePolygons(travelLine);
-
             Clipper clipper = new Clipper();
 
             clipper.AddPaths(travelPolysLine, PolyType.ptSubject, false);
@@ -112,12 +138,7 @@ namespace MatterHackers.Agg
 
             clipper.Execute(ClipType.ctDifference, clippedLine);
 
-            List<List<IntPoint>> paths = Clipper.OpenPathsFromPolyTree(clippedLine);
-            PathStorage output = VertexSourceToPolygon.CreatePathStorage(paths);
-
-            output.Add(0, 0, ShapePath.FlagsAndCommand.CommandStop);
-
-            return output;
+            return Clipper.OpenPathsFromPolyTree(clippedLine);
         }
 
         private void make_arrows(PathStorage ps)
@@ -161,49 +182,77 @@ namespace MatterHackers.Agg
             ps.ClosePolygon();
         }
 
-        private void CreateAndRenderPathing(Graphics2D graphics2D, IVertexSource ps1)
+        private void CreateAndRenderPathing(Graphics2D graphics2D, Polygons polygsToPathAround, Polygons travelPolysLine)
         {
-            PathStorage travelPath = CreateTravelPath(ps1);
+            Polygons travelPolygons = CreateTravelPath(polygsToPathAround, travelPolysLine);
 
-            if (travelPath != null)
+            PathStorage travelPath = VertexSourceToClipperPolygons.CreatePathStorage(travelPolygons);
+
+            travelPath.Add(0, 0, ShapePath.FlagsAndCommand.CommandStop);
+
+            graphics2D.Render(new Stroke(travelPath), pathColor);
+
+            //graphics2D.Render(optomizedTravelPath, optomizedPpathColor);
+
+            foreach(Polygon polygon in polygsToPathAround)
             {
-                graphics2D.Render(new Stroke(travelPath), pathColor);
-
-                //graphics2D.Render(optomizedTravelPath, optomizedPpathColor);
+                for (int i = 0; i < polygon.Count; i++)
+                {
+                    if(!polygon.IsVertexConcave(i))
+                    {
+                        graphics2D.Circle(polygon[i].X, polygon[i].Y, 4, RGBA_Bytes.Green);
+                    }
+                }
             }
         }
 
         private void RenderPolygonToPathAgainst(Graphics2D graphics2D)
         {
+            IVertexSource pathToUse = null;
             switch (shapeTypeRadioGroup.SelectedIndex)
             {
                 case 0:// simple a
                     {
                         PathStorage ps1 = new PathStorage();
 
-                        double x = 0;
-                        double y = 0;
-                        ps1.MoveTo(x + 140, y + 145);
-                        ps1.LineTo(x + 225, y + 44);
-                        ps1.LineTo(x + 296, y + 219);
+#if false
+                        ps1.MoveTo(50, 50);
+                        ps1.LineTo(350, 50);
+                        ps1.LineTo(350, 350);
+                        ps1.LineTo(50, 350);
                         ps1.ClosePolygon();
 
-                        ps1.LineTo(x + 226, y + 289);
-                        ps1.LineTo(x + 82, y + 292);
+                        ps1.MoveTo(150, 150);
+                        ps1.LineTo(150, 250);
+                        ps1.LineTo(250, 250);
+                        ps1.LineTo(250, 150);
+                        ps1.ClosePolygon();
+#else
+                        ps1.MoveTo(85, 417);
+                        ps1.LineTo(338, 428);
+                        ps1.LineTo(344, 325);
+                        ps1.LineTo(399, 324);
+                        ps1.LineTo(400, 421);
+                        ps1.LineTo(644, 415);
+                        ps1.LineTo(664, 75);
+                        ps1.LineTo(98, 81);
+                        ps1.ClosePolygon();
 
-                        ps1.MoveTo(x + 220, y + 222);
-                        ps1.LineTo(x + 363, y + 249);
-                        ps1.LineTo(x + 265, y + 331);
+                        ps1.MoveTo(343, 290);
+                        ps1.LineTo(159, 235);
+                        ps1.LineTo(154, 162);
+                        ps1.LineTo(340, 114);
+                        ps1.ClosePolygon();
 
-                        ps1.MoveTo(x + 242, y + 243);
-                        ps1.LineTo(x + 268, y + 309);
-                        ps1.LineTo(x + 325, y + 261);
+                        ps1.MoveTo(406, 121);
+                        ps1.LineTo(587, 158);
+                        ps1.LineTo(591, 236);
+                        ps1.LineTo(404, 291);
+                        ps1.ClosePolygon();
+#endif
 
-                        ps1.MoveTo(x + 259, y + 259);
-                        ps1.LineTo(x + 273, y + 288);
-                        ps1.LineTo(x + 298, y + 266);
-
-                        graphics2D.Render(ps1, fillColor);
+                        pathToUse = ps1;
+                        //graphics2D.Render(new Stroke(ps1), RGBA_Bytes.Red);
                     }
                     break;
 
@@ -219,7 +268,7 @@ namespace MatterHackers.Agg
                         ps2.LineTo(100 + 351, 100 + 290);
                         ps2.LineTo(100 + 354, 100 + 374);
 
-                        graphics2D.Render(ps2, fillColor);
+                        pathToUse = ps2;
                     }
                     break;
 
@@ -239,13 +288,14 @@ namespace MatterHackers.Agg
 
                         ps1.LineTo(x + 226, y + 289);
                         ps1.LineTo(x + 82, y + 292);
+                        ps1.ClosePolygon();
 
                         ps1.MoveTo(x + 220 - 50, y + 222);
                         ps1.LineTo(x + 265 - 50, y + 331);
                         ps1.LineTo(x + 363 - 50, y + 249);
-                        ps1.close_polygon(ShapePath.FlagsAndCommand.FlagCCW);
+                        ps1.ClosePolygon();
 
-                        graphics2D.Render(ps1, fillColor);
+                        pathToUse = ps1;
                     }
                     break;
 
@@ -264,9 +314,7 @@ namespace MatterHackers.Agg
 
                         VertexSourceApplyTransform trans_gb_poly = new VertexSourceApplyTransform(gb_poly, mtx1);
 
-                        graphics2D.Render(trans_gb_poly, fillColor);
-
-                        CreateAndRenderPathing(graphics2D, trans_gb_poly);
+                        pathToUse = trans_gb_poly;
                     }
                     break;
 
@@ -281,13 +329,13 @@ namespace MatterHackers.Agg
 
                         VertexSourceApplyTransform trans_arrows = new VertexSourceApplyTransform(arrows, mtx1);
 
-                        graphics2D.Render(trans_arrows, fillColor);
+                        pathToUse = trans_arrows;
                     }
                     break;
 
                 case 5: // Spiral
                     {
-                        spiral sp = new spiral(Width/2, Height/2, 10, 150, 30, 0.0);
+                        spiral sp = new spiral(Width / 2, Height / 2, 10, 150, 30, 0.0);
                         Stroke stroke = new Stroke(sp);
                         stroke.width(15.0);
 
@@ -295,7 +343,7 @@ namespace MatterHackers.Agg
                         mtx *= Affine.NewTranslation(-1150, -1150);
                         mtx *= Affine.NewScaling(2.0);
 
-                        graphics2D.Render(stroke, fillColor);
+                        pathToUse = stroke;
                     }
                     break;
 
@@ -356,10 +404,21 @@ namespace MatterHackers.Agg
                         VertexSourceApplyTransform trans = new VertexSourceApplyTransform(glyph, mtx);
                         FlattenCurves curve = new FlattenCurves(trans);
 
-                        graphics2D.Render(curve, fillColor);
+                        pathToUse = curve;
                     }
                     break;
             }
+
+            graphics2D.Render(pathToUse, fillColor);
+
+            PathStorage travelLine = new PathStorage();
+            travelLine.MoveTo(lineStart);
+            travelLine.LineTo(mousePosition);
+
+            Polygons polygsToPathAround = VertexSourceToClipperPolygons.CreatePolygons(pathToUse, 1);
+            Polygons travelPolysLine = VertexSourceToClipperPolygons.CreatePolygons(travelLine, 1);
+
+            CreateAndRenderPathing(graphics2D, polygsToPathAround, travelPolysLine);
         }
     }
 

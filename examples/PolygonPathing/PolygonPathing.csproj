@@ -134,7 +134,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extra.cs" />
     <Compile Include="GreatBritanPathStorage.cs" />
+    <Compile Include="IntPointHelper.cs" />
+    <Compile Include="PolygonHelper.cs" />
     <Compile Include="PolygonPathing.cs" />
   </ItemGroup>
   <ItemGroup>

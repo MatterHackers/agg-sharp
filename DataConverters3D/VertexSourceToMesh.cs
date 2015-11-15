@@ -28,10 +28,11 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg.VertexSource;
+using MatterHackers.DataConverters2D;
 using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.RenderOpenGl
+namespace MatterHackers.DataConverters3D
 {
 	public static class VertexSourceToMesh
 	{
@@ -39,7 +40,7 @@ namespace MatterHackers.RenderOpenGl
 		{
 			vertexSource.rewind();
 			CachedTesselator teselatedSource = new CachedTesselator();
-			Graphics2DOpenGL.SendShapeToTesselator(teselatedSource, vertexSource);
+            VertexSourceToTesselator.SendShapeToTesselator(teselatedSource, vertexSource);
 
 			Mesh extrudedVertexSource = new Mesh();
 
@@ -70,7 +71,7 @@ namespace MatterHackers.RenderOpenGl
 		{
 			vertexSource.rewind();
 			CachedTesselator teselatedSource = new CachedTesselator();
-			Graphics2DOpenGL.SendShapeToTesselator(teselatedSource, vertexSource);
+            VertexSourceToTesselator.SendShapeToTesselator(teselatedSource, vertexSource);
 
 			Mesh extrudedVertexSource = new Mesh();
 

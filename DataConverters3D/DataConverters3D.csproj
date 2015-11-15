@@ -96,6 +96,10 @@
     <Reference Include="System.Data" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\DataConverters2D\DataConverters2D.csproj">
+      <Project>{94838988-523c-4b11-ad82-8b9b76f23a31}</Project>
+      <Name>DataConverters2D</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Gui\Gui.csproj">
       <Project>{74F6BB6C-9D02-4512-A59A-21940E35C532}</Project>
       <Name>Gui</Name>
@@ -128,6 +132,7 @@
   <ItemGroup>
     <Compile Include="CsgToRayTraceable.cs" />
     <Compile Include="MeshToBVH.cs" />
+    <Compile Include="VertexSourceToMesh.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

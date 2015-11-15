@@ -1,4 +1,5 @@
-﻿using MatterHackers.VectorMath;
+﻿using MatterHackers.DataConverters2D;
+using MatterHackers.VectorMath;
 
 /*
 Copyright (c) 2014, Lars Brubaker
@@ -31,15 +32,15 @@ either expressed or implied, of the FreeBSD Project.
 
 using System.Collections.Generic;
 
-namespace MatterHackers.RenderOpenGl
+namespace MatterHackers.DataConverters2D
 {
 	public class CachedTesselator : VertexTesselatorAbstract
 	{
 		internal bool lastEdgeFlagSet = false;
-		internal List<AddedVertex> VerticesCache = new List<AddedVertex>();
-		internal List<RenderIndices> IndicesCache = new List<RenderIndices>();
+        public List<AddedVertex> VerticesCache = new List<AddedVertex>();
+		public List<RenderIndices> IndicesCache = new List<RenderIndices>();
 
-		internal class AddedVertex
+        public class AddedVertex
 		{
 			private Vector2 position;
 

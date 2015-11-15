@@ -41,7 +41,7 @@ using System.Text;
 
 namespace MatterHackers.DataConverters2D
 {
-	public static class VertexSourceToPolygon
+	public static class VertexSourceToClipperPolygons
 	{
 		public static PathStorage CreatePathStorage(List<List<IntPoint>> intersectedPolys, double scaling = 1000)
 		{

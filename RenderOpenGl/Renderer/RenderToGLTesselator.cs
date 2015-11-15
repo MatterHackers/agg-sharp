@@ -31,6 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.RenderOpenGl.OpenGl;
 using System.Collections.Generic;
+using MatterHackers.DataConverters2D;
 using Tesselate;
 
 namespace MatterHackers.RenderOpenGl
