@@ -41,7 +41,17 @@ namespace MatterHackers.Agg.UI
 			internal TextWidget widget;
 			internal int ActiveCount;
 			internal int TotalCount;
-			internal Stopwatch timer;
+
+			internal long startTimeMs;
+			internal long endTimeMs;
+
+			internal long ElapsedMs
+			{
+				get
+				{
+					return endTimeMs - startTimeMs;
+				}
+			}
 		}
 
 		private static PerformanceGroup pannels = null;
@@ -84,7 +94,7 @@ namespace MatterHackers.Agg.UI
 
 			if (timerData.ActiveCount == 0)
 			{
-				timerData.timer = Stopwatch.StartNew();
+				timerData.startTimeMs = UiThread.CurrentTimerMs;
 				timerData.drawOrder = recursionCount;
 			}
 			timerData.ActiveCount++;
@@ -207,9 +217,9 @@ namespace MatterHackers.Agg.UI
 
 			if (timerData.ActiveCount == 0)
 			{
-				timerData.timer.Stop();
+				timerData.endTimeMs = UiThread.CurrentTimerMs;
 
-				string outputText = "{0:0.00} ms - {1}".FormatWith(timerData.timer.Elapsed.TotalSeconds * 1000, timer.Name);
+				string outputText = "{0:0.00} ms - {1}".FormatWith(timerData.ElapsedMs, timer.Name);
 				if (timerData.TotalCount > 1)
 				{
 					outputText += " ({0})".FormatWith(timerData.TotalCount);
