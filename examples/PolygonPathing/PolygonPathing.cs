@@ -44,8 +44,9 @@ namespace MatterHackers.PolygonPathing
 
     public class PolygonPathingDemo : SystemWindow
     {
-        private Vector2 mousePosition;
         private Vector2 lineStart = Vector2.Zero;
+        private Vector2 mousePosition;
+        private RGBA_Bytes pathColor = RGBA_Bytes.Green;
 
         private RadioButtonGroup pathTypeRadioGroup = new RadioButtonGroup(new Vector2(555, 5), new Vector2(80, 130))
         {
@@ -61,11 +62,8 @@ namespace MatterHackers.PolygonPathing
             Margin = new BorderDouble(5),
         };
 
-        RGBA_Bytes fillColor { get { return RGBA_Bytes.Pink; } }
-        RGBA_Bytes pathColor = RGBA_Bytes.Green;
-
         public PolygonPathingDemo()
-            : base(640, 520)
+            : base(740, 520)
         {
             BackgroundColor = RGBA_Bytes.White;
 
@@ -86,6 +84,9 @@ namespace MatterHackers.PolygonPathing
 
             AnchorAll();
         }
+
+        private RGBA_Bytes fillColor
+        { get { return RGBA_Bytes.Pink; } }
 
         [STAThread]
         public static void Main(string[] args)
@@ -124,12 +125,36 @@ namespace MatterHackers.PolygonPathing
             base.OnMouseMove(mouseEvent);
         }
 
-        private Polygons CreateTravelPath(Polygons polygsToPathAround, Polygons travelPolysLine)
+        private void CreateAndRenderPathing(Graphics2D graphics2D, Polygons polygonsToPathAround, Polygons travelPolysLine)
+        {
+            Polygons travelPolygons = CreateTravelPath(polygonsToPathAround, travelPolysLine);
+
+            PathStorage travelPath = VertexSourceToClipperPolygons.CreatePathStorage(travelPolygons);
+
+            travelPath.Add(0, 0, ShapePath.FlagsAndCommand.CommandStop);
+
+            graphics2D.Render(new Stroke(travelPath), pathColor);
+
+            //graphics2D.Render(optomizedTravelPath, optomizedPpathColor);
+
+            foreach (Polygon polygon in polygonsToPathAround)
+            {
+                for (int i = 0; i < polygon.Count; i++)
+                {
+                    if (!polygon.IsVertexConcave(i))
+                    {
+                        graphics2D.Circle(polygon[i].X, polygon[i].Y, 4, RGBA_Bytes.Green);
+                    }
+                }
+            }
+        }
+
+        private Polygons CreateTravelPath(Polygons polygonsToPathAround, Polygons travelPolysLine)
         {
             Clipper clipper = new Clipper();
 
             clipper.AddPaths(travelPolysLine, PolyType.ptSubject, false);
-            clipper.AddPaths(polygsToPathAround, PolyType.ptClip, true);
+            clipper.AddPaths(polygonsToPathAround, PolyType.ptClip, true);
 
             PolyTree clippedLine = new PolyTree();
 
@@ -145,13 +170,13 @@ namespace MatterHackers.PolygonPathing
         {
             ps.remove_all();
 
-            ps.MoveTo(1330.599999999999909, 1282.399999999999864);
-            ps.LineTo(1377.400000000000091, 1282.399999999999864);
-            ps.LineTo(1361.799999999999955, 1298.000000000000000);
-            ps.LineTo(1393.000000000000000, 1313.599999999999909);
-            ps.LineTo(1361.799999999999955, 1344.799999999999955);
-            ps.LineTo(1346.200000000000045, 1313.599999999999909);
-            ps.LineTo(1330.599999999999909, 1329.200000000000045);
+            ps.MoveTo(1330.6, 1282.4);
+            ps.LineTo(1377.4, 1282.4);
+            ps.LineTo(1361.8, 1298.0);
+            ps.LineTo(1393.0, 1313.6);
+            ps.LineTo(1361.8, 1344.8);
+            ps.LineTo(1346.2, 1313.6);
+            ps.LineTo(1330.6, 1329.2);
             ps.ClosePolygon();
 
             ps.MoveTo(1330.599999999999909, 1266.799999999999955);
@@ -182,30 +207,6 @@ namespace MatterHackers.PolygonPathing
             ps.ClosePolygon();
         }
 
-        private void CreateAndRenderPathing(Graphics2D graphics2D, Polygons polygsToPathAround, Polygons travelPolysLine)
-        {
-            Polygons travelPolygons = CreateTravelPath(polygsToPathAround, travelPolysLine);
-
-            PathStorage travelPath = VertexSourceToClipperPolygons.CreatePathStorage(travelPolygons);
-
-            travelPath.Add(0, 0, ShapePath.FlagsAndCommand.CommandStop);
-
-            graphics2D.Render(new Stroke(travelPath), pathColor);
-
-            //graphics2D.Render(optomizedTravelPath, optomizedPpathColor);
-
-            foreach(Polygon polygon in polygsToPathAround)
-            {
-                for (int i = 0; i < polygon.Count; i++)
-                {
-                    if(!polygon.IsVertexConcave(i))
-                    {
-                        graphics2D.Circle(polygon[i].X, polygon[i].Y, 4, RGBA_Bytes.Green);
-                    }
-                }
-            }
-        }
-
         private void RenderPolygonToPathAgainst(Graphics2D graphics2D)
         {
             IVertexSource pathToUse = null;
@@ -215,19 +216,6 @@ namespace MatterHackers.PolygonPathing
                     {
                         PathStorage ps1 = new PathStorage();
 
-#if false
-                        ps1.MoveTo(50, 50);
-                        ps1.LineTo(350, 50);
-                        ps1.LineTo(350, 350);
-                        ps1.LineTo(50, 350);
-                        ps1.ClosePolygon();
-
-                        ps1.MoveTo(150, 150);
-                        ps1.LineTo(150, 250);
-                        ps1.LineTo(250, 250);
-                        ps1.LineTo(250, 150);
-                        ps1.ClosePolygon();
-#else
                         ps1.MoveTo(85, 417);
                         ps1.LineTo(338, 428);
                         ps1.LineTo(344, 325);
@@ -249,7 +237,6 @@ namespace MatterHackers.PolygonPathing
                         ps1.LineTo(591, 236);
                         ps1.LineTo(404, 291);
                         ps1.ClosePolygon();
-#endif
 
                         pathToUse = ps1;
                         //graphics2D.Render(new Stroke(ps1), RGBA_Bytes.Red);
@@ -415,10 +402,41 @@ namespace MatterHackers.PolygonPathing
             travelLine.MoveTo(lineStart);
             travelLine.LineTo(mousePosition);
 
-            Polygons polygsToPathAround = VertexSourceToClipperPolygons.CreatePolygons(pathToUse, 1);
+            Polygons polygonsToPathAround = VertexSourceToClipperPolygons.CreatePolygons(pathToUse, 1);
+            polygonsToPathAround = FixWinding(polygonsToPathAround);
+
             Polygons travelPolysLine = VertexSourceToClipperPolygons.CreatePolygons(travelLine, 1);
 
-            CreateAndRenderPathing(graphics2D, polygsToPathAround, travelPolysLine);
+            CreateAndRenderPathing(graphics2D, polygonsToPathAround, travelPolysLine);
+        }
+
+        private Polygons FixWinding(Polygons polygonsToPathAround)
+        {
+            polygonsToPathAround = Clipper.CleanPolygons(polygonsToPathAround);
+            Polygon boundsPolygon = new Polygon();
+            IntRect bounds = Clipper.GetBounds(polygonsToPathAround);
+            bounds.left -= 10;
+            bounds.bottom += 10;
+            bounds.right += 10;
+            bounds.top -= 10;
+
+            boundsPolygon.Add(new IntPoint(bounds.left, bounds.top));
+            boundsPolygon.Add(new IntPoint(bounds.right, bounds.top));
+            boundsPolygon.Add(new IntPoint(bounds.right, bounds.bottom));
+            boundsPolygon.Add(new IntPoint(bounds.left, bounds.bottom));
+
+            Clipper clipper = new Clipper();
+
+            clipper.AddPaths(polygonsToPathAround, PolyType.ptSubject, true);
+            clipper.AddPath(boundsPolygon, PolyType.ptClip, true);
+
+            PolyTree intersectionResult = new PolyTree();
+            clipper.Execute(ClipType.ctIntersection, intersectionResult);
+
+            Polygons outputPolygons = Clipper.ClosedPathsFromPolyTree(intersectionResult);
+            Clipper.ReversePaths(outputPolygons);
+
+            return outputPolygons;
         }
     }
 

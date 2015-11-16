@@ -28,16 +28,12 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using ClipperLib;
-using MatterHackers.VectorMath;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PolygonPathing
 {
     using Polygon = List<IntPoint>;
+
     public class Extra
     {
         public static bool Inside(IList<IntPoint> polygon, IntPoint position, bool toleranceOnOutside = true)
@@ -89,30 +85,6 @@ namespace PolygonPathing
             return inside;
         }
 
-        bool InLineOfSight(Polygon polygon, IntPoint start, IntPoint end, long epsilon = 0)
-        {
-            // Not in LOS if any of the ends is outside the polygon
-            if (!Inside(polygon, start) || !Inside(polygon, end)) return false;
-
-            // In LOS if it’s the same start and end location
-            if ((start - end).Length() <= epsilon)
-            {
-                return true;
-            }
-
-            // Not in LOS if any edge is intersected by the start-end line segment
-            for (int i = 0; i < polygon.Count; i++)
-            {
-                if (LineSegmentsCross(start, end, polygon[i], polygon[(i + 1) % polygon.Count]))
-                {
-                    return false;
-                }
-            }
-
-            // Finally the middle point in the segment determines if in LOS or not
-            return Inside(polygon, (start + end) / 2);
-        }
-
         public static bool LineSegmentsCross(IntPoint a, IntPoint b, IntPoint c, IntPoint d)
         {
             float denominator = ((b.X - a.X) * (d.Y - c.Y)) - ((b.Y - a.Y) * (d.X - c.X));
@@ -137,5 +109,28 @@ namespace PolygonPathing
             return (r > 0 && r < 1) && (s > 0 && s < 1);
         }
 
+        private bool InLineOfSight(Polygon polygon, IntPoint start, IntPoint end, long epsilon = 0)
+        {
+            // Not in LOS if any of the ends is outside the polygon
+            if (!Inside(polygon, start) || !Inside(polygon, end)) return false;
+
+            // In LOS if it’s the same start and end location
+            if ((start - end).Length() <= epsilon)
+            {
+                return true;
+            }
+
+            // Not in LOS if any edge is intersected by the start-end line segment
+            for (int i = 0; i < polygon.Count; i++)
+            {
+                if (LineSegmentsCross(start, end, polygon[i], polygon[(i + 1) % polygon.Count]))
+                {
+                    return false;
+                }
+            }
+
+            // Finally the middle point in the segment determines if in LOS or not
+            return Inside(polygon, (start + end) / 2);
+        }
     }
 }
