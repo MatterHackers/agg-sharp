@@ -72,9 +72,9 @@ namespace MatterHackers.PolygonPathing
             pathTypeRadioGroup.SelectedIndex = 0;
             AddChild(pathTypeRadioGroup);
 
-            shapeTypeRadioGroup.AddRadioButton("Simple A");
-            shapeTypeRadioGroup.AddRadioButton("Simple B");
-            shapeTypeRadioGroup.AddRadioButton("Closed Stroke");
+            shapeTypeRadioGroup.AddRadioButton("Simple Map");
+            shapeTypeRadioGroup.AddRadioButton("Multiple Pegs");
+            shapeTypeRadioGroup.AddRadioButton("Circle Holes");
             shapeTypeRadioGroup.AddRadioButton("Great Britain");
             shapeTypeRadioGroup.AddRadioButton("Arrows");
             shapeTypeRadioGroup.AddRadioButton("Spiral");
@@ -212,7 +212,7 @@ namespace MatterHackers.PolygonPathing
             IVertexSource pathToUse = null;
             switch (shapeTypeRadioGroup.SelectedIndex)
             {
-                case 0:// simple a
+                case 0:// simple polygon map
                     {
                         PathStorage ps1 = new PathStorage();
 
@@ -239,11 +239,10 @@ namespace MatterHackers.PolygonPathing
                         ps1.ClosePolygon();
 
                         pathToUse = ps1;
-                        //graphics2D.Render(new Stroke(ps1), RGBA_Bytes.Red);
                     }
                     break;
 
-                case 1: // simple b
+                case 1: // multiple pegs
                     {
                         PathStorage ps2 = new PathStorage();
 
@@ -261,9 +260,7 @@ namespace MatterHackers.PolygonPathing
 
                 case 2:
                     {
-                        //------------------------------------
-                        // Closed stroke
-                        //
+                        // circle holes
                         PathStorage ps1 = new PathStorage();
 
                         double x = 0;
