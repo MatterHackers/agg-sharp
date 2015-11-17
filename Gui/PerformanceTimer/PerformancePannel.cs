@@ -35,27 +35,161 @@ namespace MatterHackers.Agg.UI
 {
     public class PerformancePannel : FlowLayoutWidget
     {
-		internal class PerformanceTimerDisplayData
+		private static PerformanceDisplayWidget pannels = null;
+
+		private static Dictionary<string, PerformancePannel> resultsPannels = new Dictionary<string, PerformancePannel>();
+
+		private int recursionCount = 0;
+
+		private Dictionary<string, PerformanceTimerDisplayData> timeDisplayData = new Dictionary<string, PerformanceTimerDisplayData>();
+
+		private FlowLayoutWidget topToBottom = new FlowLayoutWidget(FlowDirection.TopToBottom);
+
+		public PerformancePannel(string name)
+			: base(FlowDirection.TopToBottom)
 		{
-			internal int drawOrder;
-			internal TextWidget widget;
-			internal int ActiveCount;
-			internal int TotalCount;
-			internal Stopwatch timer;
+			this.Name = name;
+			Margin = new BorderDouble(5);
+			Padding = new BorderDouble(3);
+			VAnchor |= VAnchor.ParentTop;
+
+			if (pannels == null)
+			{
+				pannels = new PerformanceDisplayWidget();
+				pannels.Selectable = false;
+				pannels.HAnchor |= HAnchor.ParentLeft;
+				pannels.VAnchor |= VAnchor.ParentTop;
+				pannels.Visible = false; // start out not visible
+										 //pannels.Visible = false; // start out not visible
+
+				if (true) // only add this when doing testing
+				{
+					UiThread.RunOnIdle(() =>
+					{
+						if (PerformanceTimer.GetParentWindowFunction != null)
+						{
+							GuiWidget parentWindow = PerformanceTimer.GetParentWindowFunction();
+							parentWindow.AddChild(pannels);
+							parentWindow.KeyDown += ParentWindow_KeyDown;
+							parentWindow.MouseDownInBounds += ParentWindow_MouseDown;
+						}
+					});
+				}
+			}
+
+			// add in the column title
+			{
+				TextWidget titleWidget = new TextWidget(name, pointSize: 14)
+				{
+					BackgroundColor = new RGBA_Bytes(),
+					TextColor = new RGBA_Bytes(20, 120, 20),
+				};
+				titleWidget.Printer.DrawFromHintedCache = true;
+				AddChild(titleWidget);
+			}
+
+			AddChild(topToBottom);
+
+			pannels.AddChild(this);
+
+			BackgroundColor = new RGBA_Bytes(RGBA_Bytes.White, 180);
 		}
 
-		private static PerformanceGroup pannels = null;
-        private static Dictionary<string, PerformancePannel> resultsPannels = new Dictionary<string, PerformancePannel>();
+		private event EventHandler unregisterEvents;
 
-        private FlowLayoutWidget topToBottom = new FlowLayoutWidget(FlowDirection.TopToBottom);
-        private int recursionCount = 0;
-        private Dictionary<string, PerformanceTimerDisplayData> timeDisplayData = new Dictionary<string, PerformanceTimerDisplayData>();
+		public static PerformancePannel GetNamedPannel(string pannelName)
+		{
+			if (!resultsPannels.ContainsKey(pannelName))
+			{
+				PerformancePannel timingPannelToReportTo = new PerformancePannel(pannelName);
+				resultsPannels.Add(pannelName, timingPannelToReportTo);
+			}
+
+			return resultsPannels[pannelName];
+		}
+
+		public override void OnClosed(EventArgs e)
+		{
+			if (unregisterEvents != null)
+			{
+				unregisterEvents(this, null);
+			}
+			base.OnClosed(e);
+		}
+
+		public override void OnDraw(Graphics2D graphics2D)
+		{
+			// Make sure the children are in the right draw order for the way they were called
+			List<PerformanceTimerDisplayData> allRecords = new List<PerformanceTimerDisplayData>();
+
+			foreach (KeyValuePair<string, PerformanceTimerDisplayData> displayItemKeyValue in timeDisplayData)
+			{
+				allRecords.Add(displayItemKeyValue.Value);
+			}
+
+			allRecords.Sort(SortOnDrawOrder);
+
+			foreach (PerformanceTimerDisplayData timerData in allRecords)
+			{
+				int curIndex = topToBottom.Children.IndexOf(timerData.widget);
+				if (curIndex != -1)
+				{
+					if (timerData.drawOrder < int.MaxValue
+					&& curIndex != timerData.drawOrder)
+					{
+						topToBottom.Children.RemoveAt(curIndex);
+						topToBottom.Children.Insert(Math.Min(timerData.drawOrder, topToBottom.Children.Count), timerData.widget);
+					}
+				}
+
+				timerData.startTimeMs = 0;
+				timerData.TotalCount = 0;
+				timerData.ActiveCount = 0;
+			}
+
+			base.OnDraw(graphics2D);
+		}
+
+		public void Stop(PerformanceTimer timer)
+		{
+			recursionCount--;
+
+			PerformanceTimerDisplayData timerData = timeDisplayData[timer.Name];
+
+			timerData.ActiveCount--;
+
+			if (timerData.ActiveCount == 0)
+			{
+				timerData.endTimeMs = UiThread.CurrentTimerMs;
+
+				string outputText = "{0:0.00} ms - {1}".FormatWith(timerData.ElapsedMs, timer.Name);
+				if (timerData.TotalCount > 1)
+				{
+					outputText += " ({0})".FormatWith(timerData.TotalCount);
+				}
+				if (recursionCount > 0)
+				{
+					if (recursionCount == 1)
+					{
+						outputText = "|_" + outputText;
+					}
+					else
+					{
+						outputText = new string(' ', recursionCount - 1) + "|_" + outputText;
+					}
+				}
+
+				// TODO: put this is a pre-draw variable to set next time we are going to draw
+				// Doing it here causes an invalidate and endlelss drawing.
+				timerData.widget.Text = outputText;
+			}
+		}
 
 		internal void Start(PerformanceTimer timer)
 		{
 			if (!timeDisplayData.ContainsKey(timer.Name))
 			{
-				PerformanceTimerDisplayData newTimerData = new PerformanceTimerDisplayData()
+				PerformanceTimerDisplayData newTimerData = new PerformanceTimerDisplayData(timer.Name)
 				{
 					widget = new TextWidget("waiting")
 					{
@@ -77,14 +211,23 @@ namespace MatterHackers.Agg.UI
 				{
 					displayItemKeyValue.Value.drawOrder = int.MaxValue;
 				}
-            }
+			}
 
 
 			PerformanceTimerDisplayData timerData = timeDisplayData[timer.Name];
 
 			if (timerData.ActiveCount == 0)
 			{
-				timerData.timer = Stopwatch.StartNew();
+				if (timerData.startTimeMs == 0)
+				{
+					timerData.startTimeMs = UiThread.CurrentTimerMs;
+				}
+				else // Add on to the time we have tracked so far. We have not show any time yet.
+				{
+					long timeSoFar = timerData.endTimeMs - timerData.startTimeMs;
+					timerData.startTimeMs = UiThread.CurrentTimerMs - timeSoFar;
+				}
+
 				timerData.drawOrder = recursionCount;
 			}
 			timerData.ActiveCount++;
@@ -93,144 +236,16 @@ namespace MatterHackers.Agg.UI
 			recursionCount++;
 		}
 
-		public PerformancePannel(string name)
-            : base(FlowDirection.TopToBottom)
-        {
-            this.Name = name;
-            Margin = new BorderDouble(5);
-            Padding = new BorderDouble(3);
-            VAnchor |= VAnchor.ParentTop;
-
-            if (pannels == null)
-            {
-                pannels = new PerformanceGroup();
-                pannels.Selectable = false;
-                pannels.HAnchor |= HAnchor.ParentLeft;
-                pannels.VAnchor |= VAnchor.ParentTop;
-                pannels.Visible = false; // start out not visible
-                //pannels.Visible = false; // start out not visible
-#if true // only add this when doing testing
-				UiThread.RunOnIdle(() =>
-                {
-					if (PerformanceTimer.GetParentWindowFunction != null)
-					{
-						GuiWidget parentWindow = PerformanceTimer.GetParentWindowFunction();
-						parentWindow.AddChild(pannels);
-						parentWindow.KeyDown += ParentWindow_KeyDown;
-						parentWindow.MouseDownInBounds += ParentWindow_MouseDown;
-					}
-                });
-#endif
-            }
-
-            // add in the column title
-            {
-                TextWidget titleWidget = new TextWidget(name, pointSize: 14)
-                {
-                    BackgroundColor = new RGBA_Bytes(),
-                    TextColor = new RGBA_Bytes(20, 120, 20),
-                };
-                titleWidget.Printer.DrawFromHintedCache = true;
-                AddChild(titleWidget);
-            }
-
-            AddChild(topToBottom);
-
-            pannels.AddChild(this);
-
-            BackgroundColor = new RGBA_Bytes(RGBA_Bytes.White, 180);
-        }
-
-		private event EventHandler unregisterEvents;
-
-        public static PerformancePannel GetNamedPannel(string pannelName)
-        {
-			if (!resultsPannels.ContainsKey(pannelName))
-			{
-				PerformancePannel timingPannelToReportTo = new PerformancePannel(pannelName);
-				resultsPannels.Add(pannelName, timingPannelToReportTo);
-			}
-
-            return resultsPannels[pannelName];
-        }
-
-        public override void OnClosed(EventArgs e)
-        {
-            if (unregisterEvents != null)
-            {
-                unregisterEvents(this, null);
-            }
-            base.OnClosed(e);
-        }
-
 		static int SortOnDrawOrder(PerformanceTimerDisplayData x, PerformanceTimerDisplayData y)
 		{
 			return x.drawOrder.CompareTo(y.drawOrder);
 		}
 
-        public override void OnDraw(Graphics2D graphics2D)
-        {
-			// Make sure the children are in the right draw order for the way they were called
-			List<PerformanceTimerDisplayData> allRecords = new List<PerformanceTimerDisplayData>();
-
-			foreach (KeyValuePair<string, PerformanceTimerDisplayData> displayItemKeyValue in timeDisplayData)
-			{
-				allRecords.Add(displayItemKeyValue.Value);
-			}
-
-			allRecords.Sort(SortOnDrawOrder);
-
-			foreach (PerformanceTimerDisplayData record in allRecords)
-			{
-				int curIndex = topToBottom.Children.IndexOf(record.widget);
-				if (curIndex != -1)
-				{
-					if (record.drawOrder < int.MaxValue
-					&& curIndex != record.drawOrder)
-					{
-						topToBottom.Children.RemoveAt(curIndex);
-						topToBottom.Children.Insert(record.drawOrder, record.widget);
-					}
-				}
-			}
-
-			base.OnDraw(graphics2D);
-        }
-
-		public void Stop(PerformanceTimer timer)
+		private void ParentWindow_KeyDown(object sender, KeyEventArgs keyEvent)
 		{
-			recursionCount--;
-
-			PerformanceTimerDisplayData timerData = timeDisplayData[timer.Name];
-
-			timerData.ActiveCount--;
-
-			if (timerData.ActiveCount == 0)
+			if (keyEvent.KeyCode == Keys.Escape)
 			{
-				timerData.timer.Stop();
-
-				string outputText = "{0:0.00} ms - {1}".FormatWith(timerData.timer.Elapsed.TotalSeconds * 1000, timer.Name);
-				if (timerData.TotalCount > 1)
-				{
-					outputText += " ({0})".FormatWith(timerData.TotalCount);
-				}
-				if (recursionCount > 0)
-				{
-					if (recursionCount == 1)
-					{
-						outputText = "|_" + outputText;
-					}
-					else
-					{
-						outputText = new string(' ', recursionCount - 1) + "|_" + outputText;
-					}
-				}
-
-				// TODO: put this is a pre-draw variable to set next time we are going to draw
-				// Doing it here causes an invalidate and endlelss drawing.
-				timerData.widget.Text = outputText;
-
-				timerData.TotalCount = 0;
+				pannels.Visible = !pannels.Visible;
 			}
 		}
 
@@ -242,16 +257,35 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		internal class PerformanceTimerDisplayData
+		{
+			internal int ActiveCount;
+			internal int drawOrder;
+			internal long endTimeMs;
+			internal long startTimeMs;
+			internal int TotalCount;
+			internal TextWidget widget;
+			private string name;
 
-		private void ParentWindow_KeyDown(object sender, KeyEventArgs keyEvent)
-        {
-            if (keyEvent.KeyCode == Keys.Escape)
-            {
-                pannels.Visible = !pannels.Visible;
-            }
-        }
+			public PerformanceTimerDisplayData(string name)
+			{
+				this.name = name;
+			}
 
-        private class PerformanceGroup : FlowLayoutWidget
+			internal long ElapsedMs
+			{
+				get
+				{
+					return endTimeMs - startTimeMs;
+				}
+			}
+
+			public override string ToString()
+			{
+				return "{0}, {1}".FormatWith(name, TotalCount);
+			}
+		}
+        private class PerformanceDisplayWidget : FlowLayoutWidget
         {
             public override void AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
             {
