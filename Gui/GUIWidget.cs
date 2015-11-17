@@ -1706,7 +1706,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnLayout(LayoutEventArgs layoutEventArgs)
 		{
-			//using (new PerformanceTimer("Draw Timer", "Widget Draw"))
+			//using (new PerformanceTimer("_LAST_", "Widget OnLayout"))
 			{
 				if (Visible && layoutSuspendCount < 1)
 				{
