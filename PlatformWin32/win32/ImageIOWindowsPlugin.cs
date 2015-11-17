@@ -93,7 +93,6 @@ namespace MatterHackers.Agg.Image
 			{
 				throw new System.Exception(string.Format("Image file not found: {0}", fileName));
 			}
-			return false;
 		}
 
 		internal static bool ConvertBitmapToImage(ImageBuffer destImage, Bitmap m_WidowsBitmap)

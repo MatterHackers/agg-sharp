@@ -111,7 +111,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public static void DoRunAllPending()
+		public static void InvokePendingActions()
 		{
 			List<Action> callThisCycle = callNextCycle;
 
@@ -133,10 +133,10 @@ namespace MatterHackers.Agg.UI
 				}
 			}
 
-			foreach(Action action in callThisCycle)
-            {
-                action?.Invoke();
-            }
+			foreach (Action action in callThisCycle)
+			{
+				action?.Invoke();
+			}
 
 			// now call all the functions (we put them in backwards to make it easier to remove them as we went so run them backwards
 			for (int i = holdFunctionsToCallOnIdle.Count - 1; i >= 0; i--)

@@ -62,14 +62,14 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// move into the first widget 
 			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 11, 11, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 
 			// show that initialy we don't have a tooltip
 			Assert.IsTrue(systemWindow.Children.Count == 2);
 
 			// sleep 1/2 long enough to show the tool tip
 			Thread.Sleep((int)(systemWindow.ToolTipManager.InitialDelay / 2 * 1000 + minMsToBias));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 
 			// make sure it is still not up
 			Assert.IsTrue(systemWindow.Children.Count == 2);
@@ -78,7 +78,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// sleep 1/2 long enough to show the tool tip
 			Thread.Sleep((int)(systemWindow.ToolTipManager.InitialDelay / 2 * 1000 + minMsToBias));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 
 			// make sure the tool tip came up
 			Assert.IsTrue(systemWindow.Children.Count == 3);
@@ -87,7 +87,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// wait 1/2 long enough for the tool tip to go away
 			Thread.Sleep((int)(systemWindow.ToolTipManager.AutoPopDelay * 1000 / 2 + minMsToBias));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 
 			// make sure the tool did not go away
 			Assert.IsTrue(systemWindow.Children.Count == 3);
@@ -96,7 +96,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// wait 1/2 long enough for the tool tip to go away
 			Thread.Sleep((int)(systemWindow.ToolTipManager.AutoPopDelay * 1000 / 2 + minMsToBias));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 
 			// make sure the tool tip went away
 			Assert.IsTrue(systemWindow.Children.Count == 2);
@@ -154,11 +154,11 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// move into the first widget 
 			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 11, 11, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 
 			// sleep long enough to show the tool tip
 			Thread.Sleep((int)(systemWindow.ToolTipManager.InitialDelay * 1000 + minMsToBias));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 
 			// make sure the tool tip came up
 			Assert.IsTrue(systemWindow.Children.Count == 3);
@@ -168,7 +168,7 @@ namespace MatterHackers.Agg.UI.Tests
 			// move off the first widget 
 			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 9, 9, 0));
 			Thread.Sleep(minMsTimeToRespond); // sleep enough for the tool tip to want to respond
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 
 			// make sure the tool tip went away
 			Assert.IsTrue(systemWindow.Children.Count == 2);
@@ -184,11 +184,11 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// move into the first widget 
 			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 11, 11, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 
 			// sleep long enough to show the tool tip
 			Thread.Sleep((int)(systemWindow.ToolTipManager.InitialDelay * 1000 + minMsToBias));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 
 			// make sure the tool tip came up
 			Assert.IsTrue(systemWindow.Children.Count == 3);
@@ -198,7 +198,7 @@ namespace MatterHackers.Agg.UI.Tests
 			// move off the first widget
 			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 29, 29, 0));
 			Thread.Sleep(minMsTimeToRespond); // sleep enough for the tool tip to want to respond
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 
 			// make sure the first tool tip went away 
 			Assert.IsTrue(systemWindow.Children.Count == 2);
@@ -207,7 +207,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// sleep long enough to clear the fast move time
 			Thread.Sleep((int)(systemWindow.ToolTipManager.ReshowDelay * 1000 * 2));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 
 			// make sure the first tool still gone
 			Assert.IsTrue(systemWindow.Children.Count == 2);
@@ -217,7 +217,7 @@ namespace MatterHackers.Agg.UI.Tests
 			// move onto the other widget
 			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 31, 31, 0));
 			Thread.Sleep(minMsTimeToRespond); // sleep enough for the tool tip to want to respond
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 
 			// make sure the first tool tip still gone
 			Assert.IsTrue(systemWindow.Children.Count == 2);
@@ -226,7 +226,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// wait 1/2 long enough for the second tool tip to come up
 			Thread.Sleep((int)(systemWindow.ToolTipManager.InitialDelay * 1000 / 2 + minMsToBias));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 
 			// make sure the second tool tip not showing
 			Assert.IsTrue(systemWindow.Children.Count == 2);
@@ -235,7 +235,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// wait 1/2 long enough for the second tool tip to come up
 			Thread.Sleep((int)(systemWindow.ToolTipManager.AutoPopDelay * 1000 / 2 + minMsToBias));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 
 			// make sure the tool tip 2 came up
 			Assert.IsTrue(systemWindow.Children.Count == 3);
@@ -251,11 +251,11 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// move into the first widget 
 			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 11, 11, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 
 			// sleep long enough to show the tool tip
 			Thread.Sleep((int)(systemWindow.ToolTipManager.InitialDelay * 1000 + minMsToBias));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 
 			// make sure the tool tip came up
 			Assert.IsTrue(systemWindow.Children.Count == 3);
@@ -264,12 +264,12 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// wait 1/2 long enough for the tool tip to go away
 			Thread.Sleep((int)(systemWindow.ToolTipManager.AutoPopDelay * 1000 / 2 + minMsToBias));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 
 			// move onto the other widget
 			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 31, 31, 0));
 			Thread.Sleep(minMsTimeToRespond); // sleep enough for the tool tip to want to respond
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 
 			// make sure the first tool tip went away 
 			Assert.IsTrue(systemWindow.Children.Count == 2);
@@ -278,7 +278,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// wait long enough for the second tool tip to come up
 			Thread.Sleep((int)(systemWindow.ToolTipManager.ReshowDelay * 1000 + minMsToBias));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 
 			// make sure the tool tip 2 came up
 			Assert.IsTrue(systemWindow.Children.Count == 3);
@@ -318,7 +318,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// make sure we start out with only the widgets (no tool tip)
 			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 0, 0, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(systemWindow.Children.Count == 2);
 
 			tempData.lastShownText = "";
