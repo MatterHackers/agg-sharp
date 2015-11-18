@@ -150,7 +150,7 @@ namespace MatterHackers.GCodeVisualizer
 						{
 							layerThickness = gCodeFileToDraw.GetFirstLayerHeight();
 						}
-						renderFeaturesForLayer.Add(new RenderFeatureExtrusion(previousInstruction.Position, currentInstruction.Position, currentInstruction.ExtruderIndex, currentInstruction.FeedRate, currentInstruction.EPosition - previousInstruction.EPosition, gCodeFileToDraw.GetFilamentDiamter(), layerThickness, extrusionColors.GetColorForSpeed((float)currentInstruction.FeedRate)));
+						renderFeaturesForLayer.Add(new RenderFeatureExtrusion(previousInstruction.Position, currentInstruction.Position, currentInstruction.ExtruderIndex, currentInstruction.FeedRate, currentInstruction.EPosition - previousInstruction.EPosition, gCodeFileToDraw.GetFilamentDiameter(), layerThickness, extrusionColors.GetColorForSpeed((float)currentInstruction.FeedRate)));
 					}
 					else
 					{

@@ -203,7 +203,7 @@ namespace MatterHackers.GCodeVisualizer
 			return 0;
 		}
 
-		public override double GetFilamentDiamter()
+		public override double GetFilamentDiameter()
 		{
 			return 0;
 		}

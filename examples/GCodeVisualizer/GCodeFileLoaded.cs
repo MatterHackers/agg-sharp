@@ -893,7 +893,7 @@ namespace MatterHackers.GCodeVisualizer
 			}
 		}
 
-		public override double GetFilamentDiamter()
+		public override double GetFilamentDiameter()
 		{
 			return 3;
 		}

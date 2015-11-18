@@ -26,8 +26,6 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
-#define MULTI_THREAD
-
 using MatterHackers.Agg;
 using MatterHackers.VectorMath;
 using System;
@@ -37,11 +35,11 @@ namespace MatterHackers.GCodeVisualizer
 {
 	public abstract class GCodeFile
 	{
-		private static readonly Vector4 VelocitySameAsStopMmPerS = new Vector4(8, 8, .4, 5);
 		private static readonly Vector4 MaxAccelerationMmPerS2 = new Vector4(1000, 1000, 100, 5000);
 		private static readonly Vector4 MaxVelocityMmPerS = new Vector4(500, 500, 5, 25);
+		private static readonly Vector4 VelocitySameAsStopMmPerS = new Vector4(8, 8, .4, 5);
 
-#if	__ANDROID__
+#if __ANDROID__
 		protected const int Max32BitFileSize = 10000000; // 10 megs
 #else
 		protected const int Max32BitFileSize = 100000000; // 100 megs
@@ -54,63 +52,62 @@ namespace MatterHackers.GCodeVisualizer
 #endif
 		}
 
-        #region Abstract Functions
-        public abstract double TotalSecondsInPrint { get; }
-
+		#region Abstract Functions
 		// the number of lines in the file
 		public abstract int LineCount { get; }
 
-		public abstract void Insert(int indexToStartInjection, PrinterMachineInstruction printerMachineInstruction);
-
+		public abstract int NumChangesInZ { get; }
+		public abstract double TotalSecondsInPrint { get; }
 		public abstract void Add(PrinterMachineInstruction printerMachineInstruction);
 
 		public abstract void Clear();
 
-        public abstract Vector2 GetWeightedCenter();
-
-        public abstract RectangleDouble GetBounds();
+		public abstract RectangleDouble GetBounds();
 
 		public abstract double GetFilamentCubicMm(double filamentDiameter);
 
-		public abstract bool IsExtruding(int instructionIndexToCheck);
-
-		public abstract double GetLayerHeight();
-
-		public abstract double GetFirstLayerHeight();
+		public abstract double GetFilamentDiameter();
 
 		public abstract double GetFilamentUsedMm(double filamentDiameter);
 
+		public abstract double GetFilamentWeightGrams(double filamentDiameterMm, double density);
+
+		public abstract double GetFirstLayerHeight();
+
 		public abstract int GetInstructionIndexAtLayer(int layerIndex);
 
-		public abstract double GetFilamentDiamter();
-
-		public abstract double GetFilamentWeightGrams(double p, double density);
+		public abstract double GetLayerHeight();
 
 		public abstract int GetLayerIndex(int instructionIndex);
 
-		public abstract int NumChangesInZ { get; }
+		public abstract Vector2 GetWeightedCenter();
 
+		public abstract void Insert(int indexToStartInjection, PrinterMachineInstruction printerMachineInstruction);
 		public abstract PrinterMachineInstruction Instruction(int i);
 
-		public abstract double Ratio0to1IntoContainedLayer(int instructionIndex);
-
+		public abstract bool IsExtruding(int instructionIndexToCheck);
 		public abstract double PercentComplete(int instructionIndex);
 
-        #endregion Abstract Functions
+		public abstract double Ratio0to1IntoContainedLayer(int instructionIndex);
+		#endregion Abstract Functions
 
-        #region Static Functions
+		#region Static Functions
 
-        private static bool RunningIn32Bit()
-        {
-            if (IntPtr.Size == 4)
-            {
-                return true;
-            }
+		public static int CalculateChecksum(string commandToGetChecksumFor)
+		{
+			int checksum = 0;
+			if (commandToGetChecksumFor.Length > 0)
+			{
+				checksum = commandToGetChecksumFor[0];
+				for (int i = 1; i < commandToGetChecksumFor.Length; i++)
+				{
+					checksum ^= commandToGetChecksumFor[i];
+				}
+			}
+			return checksum;
+		}
 
-            return false;
-        }
-
-        public static bool FileTooBigToLoad(string fileName)
+		public static bool FileTooBigToLoad(string fileName)
 		{
 			if (File.Exists(fileName)
 				&& RunningIn32Bit())
@@ -125,6 +122,69 @@ namespace MatterHackers.GCodeVisualizer
 			}
 
 			return false;
+		}
+
+		public static bool GetFirstNumberAfter(string stringToCheckAfter, string stringWithNumber, ref double readValue, int startIndex = 0)
+		{
+			int stringPos = stringWithNumber.IndexOf(stringToCheckAfter, startIndex);
+			if (stringPos != -1)
+			{
+				stringPos += stringToCheckAfter.Length;
+				readValue = agg_basics.ParseDouble(stringWithNumber, ref stringPos, true);
+
+				return true;
+			}
+
+			return false;
+		}
+
+		public static bool GetFirstStringAfter(string stringToCheckAfter, string fullStringToLookIn, string separatorString, ref string nextString, int startIndex = 0)
+		{
+			int stringPos = fullStringToLookIn.IndexOf(stringToCheckAfter, startIndex);
+			if (stringPos != -1)
+			{
+				int separatorPos = fullStringToLookIn.IndexOf(separatorString, stringPos);
+				if (separatorPos != -1)
+				{
+					nextString = fullStringToLookIn.Substring(stringPos + stringToCheckAfter.Length, separatorPos - (stringPos + stringToCheckAfter.Length));
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		public static GCodeFile Load(string fileName)
+		{
+			if (FileTooBigToLoad(fileName))
+			{
+				return new GCodeFileStreamed(fileName);
+			}
+			else
+			{
+				return new GCodeFileLoaded(fileName);
+			}
+		}
+
+		public static string ReplaceNumberAfter(char charToReplaceAfter, string stringWithNumber, double numberToPutIn)
+		{
+			int charPos = stringWithNumber.IndexOf(charToReplaceAfter);
+			if (charPos != -1)
+			{
+				int spacePos = stringWithNumber.IndexOf(" ", charPos);
+				if (spacePos == -1)
+				{
+					string newString = string.Format("{0}{1:0.#####}", stringWithNumber.Substring(0, charPos + 1), numberToPutIn);
+					return newString;
+				}
+				else
+				{
+					string newString = string.Format("{0}{1:0.#####}{2}", stringWithNumber.Substring(0, charPos + 1), numberToPutIn, stringWithNumber.Substring(spacePos));
+					return newString;
+				}
+			}
+
+			return stringWithNumber;
 		}
 
 		protected static double GetSecondsThisLine(Vector3 deltaPositionThisLine, double deltaEPositionThisLine, double feedRateMmPerMin)
@@ -151,6 +211,13 @@ namespace MatterHackers.GCodeVisualizer
 			}
 		}
 
+		private static double GetDistanceToReachEndingVelocity(double startingVelocityMmPerS, double endingVelocityMmPerS, double accelerationMmPerS2)
+		{
+			double endingVelocityMmPerS2 = endingVelocityMmPerS * endingVelocityMmPerS;
+			double startingVelocityMmPerS2 = startingVelocityMmPerS * startingVelocityMmPerS;
+			return (endingVelocityMmPerS2 - startingVelocityMmPerS2) / (2.0 * accelerationMmPerS2);
+		}
+
 		private static double GetTimeToAccelerateDistance(double startingVelocityMmPerS, double distanceMm, double accelerationMmPerS2)
 		{
 			// d = vi * t + .5 * a * t^2;
@@ -160,90 +227,15 @@ namespace MatterHackers.GCodeVisualizer
 			return (Math.Sqrt(startingVelocityMmPerS2 + distanceAcceleration2) - startingVelocityMmPerS) / accelerationMmPerS2;
 		}
 
-		private static double GetDistanceToReachEndingVelocity(double startingVelocityMmPerS, double endingVelocityMmPerS, double accelerationMmPerS2)
+		private static bool RunningIn32Bit()
 		{
-			double endingVelocityMmPerS2 = endingVelocityMmPerS * endingVelocityMmPerS;
-			double startingVelocityMmPerS2 = startingVelocityMmPerS * startingVelocityMmPerS;
-			return (endingVelocityMmPerS2 - startingVelocityMmPerS2) / (2.0 * accelerationMmPerS2);
-		}
+            if (IntPtr.Size == 4)
+            {
+                return true;
+            }
 
-		public static GCodeFile Load(string fileName)
-		{
-			if (FileTooBigToLoad(fileName))
-			{
-				return new GCodeFileStreamed(fileName);
-			}
-			else
-			{
-				return new GCodeFileLoaded(fileName);
-			}
-		}
-
-		public static int CalculateChecksum(string commandToGetChecksumFor)
-		{
-			int checksum = 0;
-			if (commandToGetChecksumFor.Length > 0)
-			{
-				checksum = commandToGetChecksumFor[0];
-				for (int i = 1; i < commandToGetChecksumFor.Length; i++)
-				{
-					checksum ^= commandToGetChecksumFor[i];
-				}
-			}
-			return checksum;
-		}
-
-		public static bool GetFirstStringAfter(string stringToCheckAfter, string fullStringToLookIn, string separatorString, ref string nextString, int startIndex = 0)
-		{
-			int stringPos = fullStringToLookIn.IndexOf(stringToCheckAfter, startIndex);
-			if (stringPos != -1)
-			{
-				int separatorPos = fullStringToLookIn.IndexOf(separatorString, stringPos);
-				if (separatorPos != -1)
-				{
-					nextString = fullStringToLookIn.Substring(stringPos + stringToCheckAfter.Length, separatorPos - (stringPos + stringToCheckAfter.Length));
-					return true;
-				}
-			}
-
-			return false;
-		}
-
-		public static bool GetFirstNumberAfter(string stringToCheckAfter, string stringWithNumber, ref double readValue, int startIndex = 0)
-		{
-			int stringPos = stringWithNumber.IndexOf(stringToCheckAfter, startIndex);
-			if (stringPos != -1)
-			{
-				stringPos += stringToCheckAfter.Length;
-				readValue = agg_basics.ParseDouble(stringWithNumber, ref stringPos, true);
-
-				return true;
-			}
-
-			return false;
-		}
-
-		public static string ReplaceNumberAfter(char charToReplaceAfter, string stringWithNumber, double numberToPutIn)
-		{
-			int charPos = stringWithNumber.IndexOf(charToReplaceAfter);
-			if (charPos != -1)
-			{
-				int spacePos = stringWithNumber.IndexOf(" ", charPos);
-				if (spacePos == -1)
-				{
-					string newString = string.Format("{0}{1:0.#####}", stringWithNumber.Substring(0, charPos + 1), numberToPutIn);
-					return newString;
-				}
-				else
-				{
-					string newString = string.Format("{0}{1:0.#####}{2}", stringWithNumber.Substring(0, charPos + 1), numberToPutIn, stringWithNumber.Substring(spacePos));
-					return newString;
-				}
-			}
-
-			return stringWithNumber;
-		}
-
+            return false;
+        }
         #endregion Static Functions
     }
 }
