@@ -46,7 +46,7 @@ namespace MatterHackers.GCodeVisualizer
 		public override int LineCount { get { return proxiedGCode.LineCount; } }
 
 		public override int NumChangesInZ { get { return proxiedGCode.NumChangesInZ; } }
-		public override double TotalSecondsInPrint { get; }
+		public override double TotalSecondsInPrint { get { return proxiedGCode.TotalSecondsInPrint; } }
 		public override void Add(PrinterMachineInstruction printerMachineInstruction) { proxiedGCode.Add(printerMachineInstruction); }
 
 		public override void Clear() { proxiedGCode.Clear(); }
