@@ -29,11 +29,108 @@ either expressed or implied, of the FreeBSD Project.
 using MatterHackers.Agg;
 using MatterHackers.VectorMath;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace MatterHackers.GCodeVisualizer
 {
-	public abstract class GCodeFile
+    public abstract class GCodeStream
+    {
+        #region Abstract Functions
+        /// <summary>
+        /// returns null when there are no more lines
+        /// </summary>
+        /// <returns></returns>
+        public abstract string ReadLine();
+        #endregion
+    }
+
+    public class LoadedGCodeStream : GCodeStream
+    {
+        int printerCommandQueueLineIndex = -1;
+
+        public int LineIndex { get { return printerCommandQueueLineIndex; } }
+
+        GCodeFile fileStreaming;
+        public LoadedGCodeStream(GCodeFile fileStreaming, int startLine = 0)
+        {
+            this.fileStreaming = fileStreaming;
+            printerCommandQueueLineIndex = startLine;
+        }
+
+        public override string ReadLine()
+        {
+            if (printerCommandQueueLineIndex < fileStreaming.LineCount)
+            {
+                return fileStreaming.Instruction(printerCommandQueueLineIndex++).Line;
+            }
+
+            return null;
+        }
+    }
+
+    public class QueuedCommands : GCodeStream
+    {
+        List<string> commandQueue = new List<string>();
+        GCodeStream internalStream;
+
+        public QueuedCommands(GCodeStream internalStream)
+        {
+            this.internalStream = internalStream;
+        }
+
+        public void Add(string line)
+        {
+            // lock queue
+            using (TimedLock.Lock(this, "Add GCode Line"))
+            {
+                commandQueue.Add(line);
+            }
+        }
+
+        public override string ReadLine()
+        {
+            // lock queue
+            using (TimedLock.Lock(this, "Read GCode Line"))
+            {
+                if (commandQueue.Count > 0)
+                {
+                    string line = commandQueue[0];
+                    commandQueue.RemoveAt(0);
+                    return line;
+                }
+            }
+
+            return internalStream.ReadLine();
+        }
+    }
+
+    public class RequestTemperatures : GCodeStream
+    {
+        GCodeStream internalStream;
+        Stopwatch timeSinceLastTemp = new Stopwatch();
+
+        public RequestTemperatures(GCodeStream internalStream)
+        {
+            this.internalStream = internalStream;
+            timeSinceLastTemp.Restart();
+        }
+
+        public override string ReadLine()
+        {
+            if(timeSinceLastTemp.ElapsedMilliseconds > 5000)
+            {
+                timeSinceLastTemp.Restart();
+                return "M105";
+            }
+
+            return internalStream.ReadLine();
+        }
+    }
+
+    public abstract class GCodeFile
 	{
 		private static readonly Vector4 MaxAccelerationMmPerS2 = new Vector4(1000, 1000, 100, 5000);
 		private static readonly Vector4 MaxVelocityMmPerS = new Vector4(500, 500, 5, 25);
