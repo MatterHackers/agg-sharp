@@ -181,7 +181,6 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GCodeFileProxy.cs" />
     <Compile Include="GCodeFileStreamed.cs" />
     <Compile Include="GCodeFileLoaded.cs" />
     <Compile Include="GCodeFile.cs" />

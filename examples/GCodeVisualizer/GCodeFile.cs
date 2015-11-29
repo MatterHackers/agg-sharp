@@ -61,7 +61,6 @@ namespace MatterHackers.GCodeVisualizer
 
 		public abstract int NumChangesInZ { get; }
 		public abstract double TotalSecondsInPrint { get; }
-		public abstract void Add(PrinterMachineInstruction printerMachineInstruction);
 
 		public abstract void Clear();
 
@@ -85,7 +84,6 @@ namespace MatterHackers.GCodeVisualizer
 
 		public abstract Vector2 GetWeightedCenter();
 
-		public abstract void Insert(int indexToStartInjection, PrinterMachineInstruction printerMachineInstruction);
 		public abstract PrinterMachineInstruction Instruction(int i);
 
 		public abstract bool IsExtruding(int instructionIndexToCheck);
