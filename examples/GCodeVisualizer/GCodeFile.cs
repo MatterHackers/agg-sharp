@@ -29,11 +29,14 @@ either expressed or implied, of the FreeBSD Project.
 using MatterHackers.Agg;
 using MatterHackers.VectorMath;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace MatterHackers.GCodeVisualizer
 {
-	public abstract class GCodeFile
+    public abstract class GCodeFile
 	{
 		private static readonly Vector4 MaxAccelerationMmPerS2 = new Vector4(1000, 1000, 100, 5000);
 		private static readonly Vector4 MaxVelocityMmPerS = new Vector4(500, 500, 5, 25);
@@ -58,7 +61,6 @@ namespace MatterHackers.GCodeVisualizer
 
 		public abstract int NumChangesInZ { get; }
 		public abstract double TotalSecondsInPrint { get; }
-		public abstract void Add(PrinterMachineInstruction printerMachineInstruction);
 
 		public abstract void Clear();
 
@@ -82,7 +84,6 @@ namespace MatterHackers.GCodeVisualizer
 
 		public abstract Vector2 GetWeightedCenter();
 
-		public abstract void Insert(int indexToStartInjection, PrinterMachineInstruction printerMachineInstruction);
 		public abstract PrinterMachineInstruction Instruction(int i);
 
 		public abstract bool IsExtruding(int instructionIndexToCheck);

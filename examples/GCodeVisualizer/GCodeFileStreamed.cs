@@ -115,32 +115,6 @@ namespace MatterHackers.GCodeVisualizer
 			}
 		}
 
-		public override void Insert(int indexToStartInjection, PrinterMachineInstruction printerMachineInstruction)
-		{
-			using (TimedLock.Lock(this, "Adding Instruction"))
-			{
-				if (indexToStartInjection < readLineCount - MaxLinesToBuffer)
-				{
-					throw new Exception("You are asking for a line we no longer have bufferd");
-				}
-
-				// Make room for the instruction we are inserting, push all the existing instructions up
-				for (int movingIndex = indexToStartInjection; movingIndex < readLineCount; movingIndex++)
-				{
-					readLinesRingBuffer[(movingIndex + 1) % MaxLinesToBuffer] = readLinesRingBuffer[movingIndex % MaxLinesToBuffer];
-				}
-
-				readLinesRingBuffer[indexToStartInjection % MaxLinesToBuffer] = printerMachineInstruction;
-				readLineCount++;
-			}
-		}
-
-		public override void Add(PrinterMachineInstruction printerMachineInstruction)
-		{
-			readLinesRingBuffer[readLineCount % MaxLinesToBuffer] = printerMachineInstruction;
-			readLineCount++;
-		}
-
 		public override void Clear()
 		{
 			CloseStream();

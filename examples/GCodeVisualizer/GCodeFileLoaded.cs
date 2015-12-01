@@ -94,12 +94,12 @@ namespace MatterHackers.GCodeVisualizer
 			}
 		}
 
-		public override void Add(PrinterMachineInstruction printerMachineInstruction)
+		public void Add(PrinterMachineInstruction printerMachineInstruction)
 		{
 			Insert(LineCount, printerMachineInstruction);
 		}
 
-		public override void Insert(int insertIndex, PrinterMachineInstruction printerMachineInstruction)
+		public void Insert(int insertIndex, PrinterMachineInstruction printerMachineInstruction)
 		{
 			for (int i = 0; i < indexOfChangeInZ.Count; i++)
 			{
