@@ -97,7 +97,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DataConverters2D\DataConverters2D.csproj">
-      <Project>{94838988-523c-4b11-ad82-8b9b76f23a31}</Project>
+      <Project>{94838988-523C-4B11-AD82-8B9B76F23A31}</Project>
       <Name>DataConverters2D</Name>
     </ProjectReference>
     <ProjectReference Include="..\Gui\Gui.csproj">

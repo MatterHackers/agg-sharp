@@ -150,11 +150,11 @@
       <Name>ImageProcessing</Name>
     </ProjectReference>
     <ProjectReference Include="..\PlatformAbstract\PlatformAbstract.csproj">
-      <Project>{3e4aaba8-d85f-4922-88c6-5c1b2d2308fb}</Project>
+      <Project>{3E4AABA8-D85F-4922-88C6-5C1B2D2308FB}</Project>
       <Name>PlatformAbstract</Name>
     </ProjectReference>
     <ProjectReference Include="..\PlatformWin32\PlatformWin32.csproj">
-      <Project>{670bddff-927b-425d-9dd1-22acb14356eb}</Project>
+      <Project>{670BDDFF-927B-425D-9DD1-22ACB14356EB}</Project>
       <Name>PlatformWin32</Name>
     </ProjectReference>
     <ProjectReference Include="..\VectorMath\VectorMath.csproj">

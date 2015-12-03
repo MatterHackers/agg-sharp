@@ -144,11 +144,11 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\agg\Agg.csproj">
-      <Project>{657dbc6d-c3ea-4398-a3fa-ddb73c14f71b}</Project>
+      <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
       <Name>Agg</Name>
     </ProjectReference>
     <ProjectReference Include="..\PlatformAbstract\PlatformAbstract.csproj">
-      <Project>{3e4aaba8-d85f-4922-88c6-5c1b2d2308fb}</Project>
+      <Project>{3E4AABA8-D85F-4922-88C6-5C1B2D2308FB}</Project>
       <Name>PlatformAbstract</Name>
     </ProjectReference>
   </ItemGroup>
