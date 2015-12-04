@@ -46,7 +46,23 @@ using System.Threading.Tasks;
 
 namespace MatterHackers.GuiAutomation
 {
-    public static class NativeMethods
+    public abstract class NativeMethods
+    {
+        public const int MOUSEEVENTF_LEFTDOWN = 0x02;
+        public const int MOUSEEVENTF_LEFTUP = 0x04;
+        public const int MOUSEEVENTF_RIGHTDOWN = 0x08;
+        public const int MOUSEEVENTF_RIGHTUP = 0x10;
+        public const int MOUSEEVENTF_MIDDLEDOWN = 0x20;
+        public const int MOUSEEVENTF_MIDDLEUP = 0x40;
+
+        public abstract ImageBuffer GetCurrentScreen();
+        public abstract int GetCurrentScreenHeight();
+        public abstract void SetCursorPosition(int x, int y);
+
+        public abstract void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo);
+    }
+
+    public class WindowsInputMethods : NativeMethods
     {
 		// P/Invoke declarations
         [DllImport("gdi32.dll")]
@@ -74,20 +90,23 @@ namespace MatterHackers.GuiAutomation
 		[DllImport("user32.dll")]
 		public static extern void mouse_event(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo);
 
-		public const int MOUSEEVENTF_LEFTDOWN = 0x02;
-		public const int MOUSEEVENTF_LEFTUP = 0x04;
-		public const int MOUSEEVENTF_RIGHTDOWN = 0x08;
-		public const int MOUSEEVENTF_RIGHTUP = 0x10;
-		public const int MOUSEEVENTF_MIDDLEDOWN = 0x20;
-		public const int MOUSEEVENTF_MIDDLEUP = 0x40;
+        public override void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo)
+        {
+            mouse_event(dwFlags, dx, dy, cButtons, dwExtraInfo);
+        }
 
-		public static int GetCurrentScreenHeight()
+        public override void SetCursorPosition(int x, int y)
+        {
+            SetCursorPos(x, y);
+        }
+
+        public override int GetCurrentScreenHeight()
 		{
 			Size sz = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Size;
 			return sz.Height;
 		}
 
-		public static ImageBuffer GetCurrentScreen()
+		public override ImageBuffer GetCurrentScreen()
 		{
 			ImageBuffer screenCapture = new ImageBuffer();
 

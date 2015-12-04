@@ -44,10 +44,12 @@ namespace MatterHackers.GuiAutomation
 	{
 		public long MatchLimit = 50;
 
-		/// <summary>
-		/// The number of seconds to move the mouse when going to a new position.
-		/// </summary>
-		public double TimeToMoveMouse = .5;
+        static NativeMethods inputSystem = new WindowsInputMethods();
+
+        /// <summary>
+        /// The number of seconds to move the mouse when going to a new position.
+        /// </summary>
+        public double TimeToMoveMouse = .5;
 
 		private string imageDirectory;
 		private double upDelaySeconds = .2;
@@ -71,7 +73,7 @@ namespace MatterHackers.GuiAutomation
 
 		public static ImageBuffer GetCurrentScreen()
 		{
-			return NativeMethods.GetCurrentScreen();
+			return inputSystem.GetCurrentScreen();
 		}
 
 		public double GetInterpolatedValue(double compleatedRatio0To1, InterpolationType interpolationType)
@@ -136,7 +138,7 @@ namespace MatterHackers.GuiAutomation
 			double bestMatch;
 			if (searchRegion.Image.FindLeastSquaresMatch(imageNeedle, out matchPosition, out bestMatch, MatchLimit))
 			{
-				int screenHeight = NativeMethods.GetCurrentScreenHeight();
+				int screenHeight = inputSystem.GetCurrentScreenHeight();
 				int clickY = (int)(searchRegion.ScreenRect.Bottom + matchPosition.y + offset.y);
 				int clickYOnScreen = screenHeight - clickY; // invert to put it on the screen
 
@@ -148,21 +150,21 @@ namespace MatterHackers.GuiAutomation
 						break;
 
 					case MouseButtons.Left:
-						NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+                        inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 						Wait(upDelaySeconds);
-						NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
+                        inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
 						break;
 
 					case MouseButtons.Right:
-						NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_RIGHTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+                        inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_RIGHTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 						Wait(upDelaySeconds);
-						NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_RIGHTUP, screenPosition.x, screenPosition.y, 0, 0);
+                        inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_RIGHTUP, screenPosition.x, screenPosition.y, 0, 0);
 						break;
 
 					case MouseButtons.Middle:
-						NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_MIDDLEDOWN, screenPosition.x, screenPosition.y, 0, 0);
+                        inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_MIDDLEDOWN, screenPosition.x, screenPosition.y, 0, 0);
 						Wait(upDelaySeconds);
-						NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_MIDDLEUP, screenPosition.x, screenPosition.y, 0, 0);
+                        inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_MIDDLEUP, screenPosition.x, screenPosition.y, 0, 0);
 						break;
 
 					default:
@@ -240,13 +242,13 @@ namespace MatterHackers.GuiAutomation
 			double bestMatch;
 			if (searchRegion.Image.FindLeastSquaresMatch(imageNeedle, out matchPosition, out bestMatch, MatchLimit))
 			{
-				int screenHeight = NativeMethods.GetCurrentScreenHeight();
+				int screenHeight = inputSystem.GetCurrentScreenHeight();
 				int clickY = (int)(searchRegion.ScreenRect.Bottom + matchPosition.y + offset.y);
 				int clickYOnScreen = screenHeight - clickY; // invert to put it on the screen
 
 				Point2D screenPosition = new Point2D((int)matchPosition.x + offset.x, clickYOnScreen);
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
-				NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+                inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 
 				return true;
 			}
@@ -282,13 +284,13 @@ namespace MatterHackers.GuiAutomation
 			double bestMatch;
 			if (searchRegion.Image.FindLeastSquaresMatch(imageNeedle, out matchPosition, out bestMatch, MatchLimit))
 			{
-				int screenHeight = NativeMethods.GetCurrentScreenHeight();
+				int screenHeight = inputSystem.GetCurrentScreenHeight();
 				int clickY = (int)(searchRegion.ScreenRect.Bottom + matchPosition.y + offset.y);
 				int clickYOnScreen = screenHeight - clickY; // invert to put it on the screen
 
 				Point2D screenPosition = new Point2D((int)matchPosition.x + offset.x, clickYOnScreen);
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
-				NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
+                inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
 
 				return true;
 			}
@@ -411,7 +413,7 @@ namespace MatterHackers.GuiAutomation
 
 		private SearchRegion GetScreenRegion()
 		{
-			ImageBuffer screenImage = NativeMethods.GetCurrentScreen();
+			ImageBuffer screenImage = inputSystem.GetCurrentScreen();
 			return new SearchRegion(screenImage, new ScreenRectangle()
 			{
 				Left = 0,
@@ -565,11 +567,11 @@ namespace MatterHackers.GuiAutomation
 				Point2D screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
 
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
-				NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+                inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 
 				Wait(upDelaySeconds);
 
-				NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
+                inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
 
 				return true;
 			}
@@ -603,7 +605,7 @@ namespace MatterHackers.GuiAutomation
 
 				Point2D screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
-				NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+                inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 
 				return true;
 			}
@@ -627,7 +629,7 @@ namespace MatterHackers.GuiAutomation
 
 				Point2D screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
-				NativeMethods.mouse_event(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
+                inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
 
 				return true;
 			}
@@ -697,11 +699,11 @@ namespace MatterHackers.GuiAutomation
 				double ratio = i / (double)steps;
 				ratio = GetInterpolatedValue(ratio, InterpolationType.EASE_OUT);
 				Vector2 current = start + delta * ratio;
-				NativeMethods.SetCursorPos((int)current.x, (int)current.y);
+				inputSystem.SetCursorPosition((int)current.x, (int)current.y);
 				Thread.Sleep(20);
 			}
 
-			NativeMethods.SetCursorPos((int)end.x, (int)end.y);
+            inputSystem.SetCursorPosition((int)end.x, (int)end.y);
 		}
 
 		#endregion Mouse Functions
