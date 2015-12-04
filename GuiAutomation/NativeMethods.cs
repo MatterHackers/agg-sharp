@@ -56,10 +56,33 @@ namespace MatterHackers.GuiAutomation
         public const int MOUSEEVENTF_MIDDLEUP = 0x40;
 
         public abstract ImageBuffer GetCurrentScreen();
-        public abstract int GetCurrentScreenHeight();
+        public int GetCurrentScreenHeight()
+        {
+            Size sz = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Size;
+            return sz.Height;
+        }
         public abstract void SetCursorPosition(int x, int y);
 
         public abstract void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo);
+    }
+
+    public class AggInputMethods : NativeMethods
+    {
+        public override ImageBuffer GetCurrentScreen()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void SetCursorPosition(int x, int y)
+        {
+
+        }
+
+
+        public override void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo)
+        {
+
+        }
     }
 
     public class WindowsInputMethods : NativeMethods
@@ -99,12 +122,6 @@ namespace MatterHackers.GuiAutomation
         {
             SetCursorPos(x, y);
         }
-
-        public override int GetCurrentScreenHeight()
-		{
-			Size sz = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Size;
-			return sz.Height;
-		}
 
 		public override ImageBuffer GetCurrentScreen()
 		{
