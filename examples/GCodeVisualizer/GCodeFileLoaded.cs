@@ -496,13 +496,21 @@ namespace MatterHackers.GCodeVisualizer
 					// Stop on material exhausted / Switch I/O pin
 					break;
 
-				case "73":
+                case "72":
+                    // makerbot, Play tone or song
+                    break;
+
+                case "73":
 					// makerbot, Manually set build percentage
 					break;
 
 				case "82":
 					// set extruder to absolute mode
 					break;
+
+                case "83":
+                    //Set extruder to relative mode
+                    break;
 
 				case "84":
 					// lineString = "M84     ; disable motors\r"
@@ -563,7 +571,19 @@ namespace MatterHackers.GCodeVisualizer
 					// recall stored home offsets for axis xyzab
 					break;
 
-				case "140":
+                case "133":
+                    // MakerBot wait for toolhead to heat
+                    break;
+
+                case "134":
+                    // MakerBot wait for platform to reach target temp
+                    break;
+
+                case "135":
+                    // MakerBot change toolhead
+                    break;
+
+                case "140":
 					// set bed temperature
 					break;
 
@@ -733,6 +753,10 @@ namespace MatterHackers.GCodeVisualizer
 						amountOfAccumulatedEWhileParsing = (processingMachineState.EPosition - ePosition);
 					}
 					break;
+
+                case "130":
+                    //Set Digital Potentiometer value
+                    break;
 
 				case "161":
 					// home x,y axis minimum
