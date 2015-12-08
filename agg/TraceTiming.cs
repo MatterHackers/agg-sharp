@@ -55,7 +55,7 @@ namespace MatterHackers.Agg
 			Stopwatch timer;
 			if (timers.TryGetValue(section, out timer))
 			{
-				Trace.WriteLine($"TimerStopped: {section}.{task}:{timer.ElapsedMilliseconds}");
+				Trace.WriteLine($"TimerStopped: {section}.MsTo{task}:{timer.ElapsedMilliseconds}");
 				timers.Remove(section);
 				timer.Stop();
 			}
