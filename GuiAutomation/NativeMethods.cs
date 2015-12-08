@@ -50,6 +50,8 @@ namespace MatterHackers.GuiAutomation
 {
     public abstract class NativeMethods
     {
+        public bool LeftButtonDown { get; private set; }
+
         public const int MOUSEEVENTF_LEFTDOWN = 0x02;
         public const int MOUSEEVENTF_LEFTUP = 0x04;
         public const int MOUSEEVENTF_RIGHTDOWN = 0x08;
@@ -68,7 +70,18 @@ namespace MatterHackers.GuiAutomation
 
         public abstract void SetCursorPosition(int x, int y);
 
-        public abstract void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo);
+        public virtual void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo)
+        {
+            if (dwFlags == MOUSEEVENTF_LEFTDOWN)
+            {
+                // send it to the window
+                LeftButtonDown = true;
+            }
+            else if (dwFlags == MOUSEEVENTF_LEFTUP)
+            {
+                LeftButtonDown = false;
+            }
+        }
 
         public abstract void Type(string textToType);
     }
@@ -84,6 +97,7 @@ namespace MatterHackers.GuiAutomation
 
         public override Point2D CurrentMousPosition()
         {
+            SystemWindow.OpenWindows[0].Invalidate();
             return currentMousePosition;
         }
 
@@ -92,7 +106,6 @@ namespace MatterHackers.GuiAutomation
             currentMousePosition = new Point2D(x, y);
         }
 
-        bool leftButtonDown = false;
         public override void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo)
         {
             // figure out where this is on our agg windows
@@ -107,22 +120,20 @@ namespace MatterHackers.GuiAutomation
                     {
                         MouseEventArgs aggEvent = new MouseEventArgs(mouseButtons, 1, windowPosition.x, windowPosition.y, 0);
                         // send it to the window
-                        if (leftButtonDown)
+                        if (LeftButtonDown)
                         {
-                            systemWindow.OnMouseMove(aggEvent);
+                            UiThread.RunOnIdle(() => systemWindow.OnMouseMove(aggEvent));
                         }
                         else
                         {
-                            systemWindow.OnMouseDown(aggEvent);
+                            UiThread.RunOnIdle(() => systemWindow.OnMouseDown(aggEvent));
                         }
-                        leftButtonDown = true;
                     }
                     else if(dwFlags == MOUSEEVENTF_LEFTUP)
                     {
                         MouseEventArgs aggEvent = new MouseEventArgs(mouseButtons, 0, windowPosition.x, windowPosition.y, 0);
                         // send it to the window
-                        systemWindow.OnMouseUp(aggEvent);
-                        leftButtonDown = false;
+                        UiThread.RunOnIdle(() => systemWindow.OnMouseUp(aggEvent));
                     }
                     else if(dwFlags == MOUSEEVENTF_RIGHTDOWN)
                     {
@@ -142,6 +153,8 @@ namespace MatterHackers.GuiAutomation
                     }
                 }
             }
+
+            base.CreateMouseEvent(dwFlags, dx, dy, cButtons, dwExtraInfo);
         }
 
         private MouseButtons MapButtons(int cButtons)

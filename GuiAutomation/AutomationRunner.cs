@@ -31,6 +31,7 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.PlatformAbstract;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
@@ -46,6 +47,7 @@ namespace MatterHackers.GuiAutomation
 
 #if !__ANDROID__
         static NativeMethods inputSystem = new WindowsInputMethods();
+        //static NativeMethods inputSystem = new AggInputMethods();
 #else
         static NativeMethods inputSystem = new AggInputMethods();
 #endif
@@ -217,7 +219,29 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool DragImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
+        public void RenderMouse(GuiWidget targetWidget, Graphics2D graphics2D)
+        {
+            GuiWidget parentSystemWindow = targetWidget;
+            while(parentSystemWindow != null 
+                && parentSystemWindow as SystemWindow == null)
+            {
+                parentSystemWindow = parentSystemWindow.Parent;
+            }
+
+            if(parentSystemWindow != null)
+            {
+                Point2D mousePosOnWindow = ScreenToSystemWindow(inputSystem.CurrentMousPosition(), (SystemWindow)parentSystemWindow);
+                Ellipse circle = new Ellipse(new Vector2(mousePosOnWindow.x, mousePosOnWindow.y), 10);
+                if(inputSystem.LeftButtonDown)
+                {
+                    graphics2D.Render(circle, RGBA_Bytes.Green);
+                }
+                graphics2D.Render(new Stroke(circle, 3), RGBA_Bytes.Black);
+                graphics2D.Render(new Stroke(circle, 2), RGBA_Bytes.White);
+            }
+        }
+
+        public bool DragImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
 		{
 			ImageBuffer imageToLookFor = LoadImageFromSourcFolder(imageName);
 			if (imageToLookFor != null)
