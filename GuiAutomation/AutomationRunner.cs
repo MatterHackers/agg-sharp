@@ -44,7 +44,11 @@ namespace MatterHackers.GuiAutomation
 	{
 		public long MatchLimit = 50;
 
+#if !__ANDROID__
         static NativeMethods inputSystem = new WindowsInputMethods();
+#else
+        static NativeMethods inputSystem = new AggInputMethods();
+#endif
 
         /// <summary>
         /// The number of seconds to move the mouse when going to a new position.
@@ -63,12 +67,11 @@ namespace MatterHackers.GuiAutomation
 
 		public enum InterpolationType { LINEAR, EASE_IN, EASE_OUT, EASE_IN_OUT };
 
-		#region Utility
+#region Utility
 
 		public Point2D CurrentMousPosition()
 		{
-			Point2D mousePos = new Point2D(System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y);
-			return mousePos;
+            return inputSystem.CurrentMousPosition();
 		}
 
 		public static ImageBuffer GetCurrentScreen()
@@ -104,11 +107,11 @@ namespace MatterHackers.GuiAutomation
 			}
 		}
 
-		#endregion Utility
+#endregion Utility
 
-		#region Mouse Functions
+#region Mouse Functions
 
-		#region Search By Image
+#region Search By Image
 
 		public bool ClickImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
 		{
@@ -344,25 +347,26 @@ namespace MatterHackers.GuiAutomation
 		{
 			Point2D screenPosition = new Point2D(pointOnWindow.x, (int)containingWindow.Height - pointOnWindow.y);
 
-			WidgetForWindowsFormsAbstract mappingWidget = containingWindow.Parent as WidgetForWindowsFormsAbstract;
-			screenPosition.x += mappingWidget.WindowsFormsWindow.Location.X;
-			screenPosition.y += mappingWidget.WindowsFormsWindow.Location.Y + mappingWidget.WindowsFormsWindow.TitleBarHeight;
-			return screenPosition;
+            AbstractOsMappingWidget mappingWidget = containingWindow.Parent as AbstractOsMappingWidget;
+            screenPosition.x += mappingWidget.DesktopPosition.x;
+            screenPosition.y += mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight;
+
+            return screenPosition;
 		}
 
-		private static Point2D ScreenToSystemWindow(Point2D pointOnScreen, SystemWindow containingWindow)
+		public static Point2D ScreenToSystemWindow(Point2D pointOnScreen, SystemWindow containingWindow)
 		{
 			Point2D screenPosition = pointOnScreen;
-			WidgetForWindowsFormsAbstract mappingWidget = containingWindow.Parent as WidgetForWindowsFormsAbstract;
-			screenPosition.x -= mappingWidget.WindowsFormsWindow.Location.X;
-			screenPosition.y -= (mappingWidget.WindowsFormsWindow.Location.Y + mappingWidget.WindowsFormsWindow.TitleBarHeight);
+            AbstractOsMappingWidget mappingWidget = containingWindow.Parent as AbstractOsMappingWidget;
+			screenPosition.x -= mappingWidget.DesktopPosition.x;
+			screenPosition.y -= (mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight);
 
 			screenPosition.y = (int)containingWindow.Height - screenPosition.y;
 
 			return screenPosition;
 		}
 
-		private static ScreenRectangle SystemWindowToScreen(RectangleDouble rectOnScreen, SystemWindow containingWindow)
+        public static ScreenRectangle SystemWindowToScreen(RectangleDouble rectOnScreen, SystemWindow containingWindow)
 		{
 			ScreenRectangle screenPosition = new ScreenRectangle()
 			{
@@ -375,13 +379,13 @@ namespace MatterHackers.GuiAutomation
 			screenPosition.Top = (int)containingWindow.Height - screenPosition.Top;
 			screenPosition.Bottom = (int)containingWindow.Height - screenPosition.Bottom;
 
-			WidgetForWindowsFormsAbstract mappingWidget = containingWindow.Parent as WidgetForWindowsFormsAbstract;
-			screenPosition.Left += mappingWidget.WindowsFormsWindow.Location.X;
-			screenPosition.Top += (mappingWidget.WindowsFormsWindow.Location.Y + mappingWidget.WindowsFormsWindow.TitleBarHeight);
-			screenPosition.Right += mappingWidget.WindowsFormsWindow.Location.X;
-			screenPosition.Bottom += (mappingWidget.WindowsFormsWindow.Location.Y + mappingWidget.WindowsFormsWindow.TitleBarHeight);
+            AbstractOsMappingWidget mappingWidget = containingWindow.Parent as AbstractOsMappingWidget;
+            screenPosition.Left += mappingWidget.DesktopPosition.x;
+            screenPosition.Top += (mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight);
+            screenPosition.Right += mappingWidget.DesktopPosition.x;
+            screenPosition.Bottom += (mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight);
 
-			return screenPosition;
+            return screenPosition;
 		}
 
 		private static RectangleDouble ScreenToSystemWindow(ScreenRectangle rectOnScreen, SystemWindow containingWindow)
@@ -393,13 +397,14 @@ namespace MatterHackers.GuiAutomation
 				Right = (int)rectOnScreen.Right,
 				Bottom = (int)rectOnScreen.Bottom,
 			};
-			WidgetForWindowsFormsAbstract mappingWidget = containingWindow.Parent as WidgetForWindowsFormsAbstract;
-			screenPosition.Left -= mappingWidget.WindowsFormsWindow.Location.X;
-			screenPosition.Top -= (mappingWidget.WindowsFormsWindow.Location.Y + mappingWidget.WindowsFormsWindow.TitleBarHeight);
-			screenPosition.Left -= mappingWidget.WindowsFormsWindow.Location.X;
-			screenPosition.Bottom -= (mappingWidget.WindowsFormsWindow.Location.Y + mappingWidget.WindowsFormsWindow.TitleBarHeight);
 
-			screenPosition.Top = (int)containingWindow.Height - screenPosition.Top;
+            AbstractOsMappingWidget mappingWidget = containingWindow.Parent as AbstractOsMappingWidget;
+            screenPosition.Left -= mappingWidget.DesktopPosition.x;
+            screenPosition.Top -= (mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight);
+            screenPosition.Left -= mappingWidget.DesktopPosition.x;
+            screenPosition.Bottom -= (mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight);
+
+            screenPosition.Top = (int)containingWindow.Height - screenPosition.Top;
 			screenPosition.Bottom = (int)containingWindow.Height - screenPosition.Bottom;
 
 			return new RectangleDouble()
@@ -440,9 +445,9 @@ namespace MatterHackers.GuiAutomation
 			return null;
 		}
 
-		#endregion Search By Image
+#endregion Search By Image
 
-		#region Search By Names
+#region Search By Names
 
 		public SearchRegion GetRegionByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null)
 		{
@@ -686,7 +691,7 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		#endregion Search By Names
+#endregion Search By Names
 
 		public void SetMouseCursorPosition(int x, int y)
 		{
@@ -706,9 +711,9 @@ namespace MatterHackers.GuiAutomation
             inputSystem.SetCursorPosition((int)end.x, (int)end.y);
 		}
 
-		#endregion Mouse Functions
+#endregion Mouse Functions
 
-		#region Keyboard Functions
+#region Keyboard Functions
 
 		public void KeyDown(KeyEventArgs keyEvent)
 		{
@@ -722,13 +727,13 @@ namespace MatterHackers.GuiAutomation
 
 		public void Type(string textToType)
 		{
-			System.Windows.Forms.SendKeys.SendWait(textToType);
+            inputSystem.Type(textToType);
 			Wait(.2);
 		}
 
-		#endregion Keyboard Functions
+#endregion Keyboard Functions
 
-		#region Time
+#region Time
 
 		public void Wait(double secondsToWait)
 		{
@@ -805,6 +810,6 @@ namespace MatterHackers.GuiAutomation
 			return true;
 		}
 
-		#endregion Time
+#endregion Time
 	}
 }

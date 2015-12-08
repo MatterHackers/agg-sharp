@@ -167,12 +167,17 @@ namespace MatterHackers.Agg
 			return false;
 		}
 
-		public bool Contains(Vector2 position)
-		{
-			return Contains(position.x, position.y);
-		}
+        public bool Contains(Vector2 position)
+        {
+            return Contains(position.x, position.y);
+        }
 
-		public bool IntersectRectangles(RectangleDouble rectToCopy, RectangleDouble rectToIntersectWith)
+        public bool Contains(Point2D position)
+        {
+            return Contains(position.x, position.y);
+        }
+
+        public bool IntersectRectangles(RectangleDouble rectToCopy, RectangleDouble rectToIntersectWith)
 		{
 			Left = rectToCopy.Left;
 			Bottom = rectToCopy.Bottom;

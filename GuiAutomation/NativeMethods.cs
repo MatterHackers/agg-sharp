@@ -36,13 +36,15 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+#if !__ANDROID__
+using System.Drawing.Imaging;
+#endif
 
 namespace MatterHackers.GuiAutomation
 {
@@ -58,33 +60,116 @@ namespace MatterHackers.GuiAutomation
         public abstract ImageBuffer GetCurrentScreen();
         public int GetCurrentScreenHeight()
         {
-            Size sz = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Size;
+            Size sz = new Size();// System.Windows.Forms.Screen.PrimaryScreen.Bounds.Size;
             return sz.Height;
         }
+
+        public abstract Point2D CurrentMousPosition();
+
         public abstract void SetCursorPosition(int x, int y);
 
         public abstract void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo);
+
+        public abstract void Type(string textToType);
     }
 
     public class AggInputMethods : NativeMethods
     {
+        Point2D currentMousePosition;
+
         public override ImageBuffer GetCurrentScreen()
         {
             throw new NotImplementedException();
         }
 
-        public override void SetCursorPosition(int x, int y)
+        public override Point2D CurrentMousPosition()
         {
-
+            return currentMousePosition;
         }
 
+        public override void SetCursorPosition(int x, int y)
+        {
+            currentMousePosition = new Point2D(x, y);
+        }
 
+        bool leftButtonDown = false;
         public override void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo)
         {
+            // figure out where this is on our agg windows
+            foreach (SystemWindow systemWindow in SystemWindow.OpenWindows)
+            {
+                Point2D windowPosition = AutomationRunner.ScreenToSystemWindow(currentMousePosition, systemWindow);
+                if(systemWindow.LocalBounds.Contains(windowPosition))
+                {
+                    MouseButtons mouseButtons = MapButtons(cButtons);
+                    // create the agg event
+                    if (dwFlags == MOUSEEVENTF_LEFTDOWN)
+                    {
+                        MouseEventArgs aggEvent = new MouseEventArgs(mouseButtons, 1, windowPosition.x, windowPosition.y, 0);
+                        // send it to the window
+                        if (leftButtonDown)
+                        {
+                            systemWindow.OnMouseMove(aggEvent);
+                        }
+                        else
+                        {
+                            systemWindow.OnMouseDown(aggEvent);
+                        }
+                        leftButtonDown = true;
+                    }
+                    else if(dwFlags == MOUSEEVENTF_LEFTUP)
+                    {
+                        MouseEventArgs aggEvent = new MouseEventArgs(mouseButtons, 0, windowPosition.x, windowPosition.y, 0);
+                        // send it to the window
+                        systemWindow.OnMouseUp(aggEvent);
+                        leftButtonDown = false;
+                    }
+                    else if(dwFlags == MOUSEEVENTF_RIGHTDOWN)
+                    {
 
+                    }
+                    else if (dwFlags == MOUSEEVENTF_RIGHTUP)
+                    {
+
+                    }
+                    else if (dwFlags == MOUSEEVENTF_MIDDLEDOWN)
+                    {
+
+                    }
+                    else if (dwFlags == MOUSEEVENTF_MIDDLEUP)
+                    {
+
+                    }
+                }
+            }
+        }
+
+        private MouseButtons MapButtons(int cButtons)
+        {
+            switch (cButtons)
+            {
+                case MOUSEEVENTF_LEFTDOWN:
+                case MOUSEEVENTF_LEFTUP:
+                    return MouseButtons.Left;
+
+                case MOUSEEVENTF_RIGHTDOWN:
+                case MOUSEEVENTF_RIGHTUP:
+                    return MouseButtons.Left;
+
+                case MOUSEEVENTF_MIDDLEDOWN:
+                case MOUSEEVENTF_MIDDLEUP:
+                    return MouseButtons.Left;
+            }
+
+            return MouseButtons.Left;
+        }
+
+        public override void Type(string textToType)
+        {
         }
     }
 
+#if !__ANDROID__
     public class WindowsInputMethods : NativeMethods
     {
 		// P/Invoke declarations
@@ -123,7 +208,13 @@ namespace MatterHackers.GuiAutomation
             SetCursorPos(x, y);
         }
 
-		public override ImageBuffer GetCurrentScreen()
+        public override Point2D CurrentMousPosition()
+        {
+            Point2D mousePos = new Point2D(System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y);
+            return mousePos;
+        }
+
+        public override ImageBuffer GetCurrentScreen()
 		{
 			ImageBuffer screenCapture = new ImageBuffer();
 
@@ -181,5 +272,11 @@ namespace MatterHackers.GuiAutomation
 
 			return screenCapture;
 		}
+
+        public override void Type(string textToType)
+        {
+            System.Windows.Forms.SendKeys.SendWait(textToType);
+        }
     }
+#endif
 }

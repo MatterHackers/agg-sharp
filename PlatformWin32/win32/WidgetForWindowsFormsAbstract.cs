@@ -65,7 +65,15 @@ namespace MatterHackers.Agg.UI
 			Focus();
 		}
 
-		public override Point2D DesktopPosition
+        public override int TitleBarHeight
+        {
+            get
+            {
+                return windowsFormsWindow.TitleBarHeight;
+            }
+        }
+
+        public override Point2D DesktopPosition
 		{
 			get
 			{
