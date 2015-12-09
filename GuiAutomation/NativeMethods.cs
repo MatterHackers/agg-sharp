@@ -101,15 +101,48 @@ namespace MatterHackers.GuiAutomation
             return currentMousePosition;
         }
 
+        SystemWindow currentlyHookedWindow = null;
+
         public override void SetCursorPosition(int x, int y)
         {
+            SystemWindow systemWindow = SystemWindow.OpenWindows[SystemWindow.OpenWindows.Count - 1];
+            if(currentlyHookedWindow != systemWindow)
+            {
+                if (currentlyHookedWindow != null)
+                {
+                    currentlyHookedWindow.DrawAfter -= DrawMouse;
+                }
+                currentlyHookedWindow = systemWindow;
+                if (currentlyHookedWindow != null)
+                {
+                    currentlyHookedWindow.DrawAfter += DrawMouse;
+                }
+            }
             currentMousePosition = new Point2D(x, y);
+            Point2D windowPosition = AutomationRunner.ScreenToSystemWindow(currentMousePosition, systemWindow);
+            if (LeftButtonDown)
+            {
+                MouseEventArgs aggEvent = new MouseEventArgs(MouseButtons.Left, 1, windowPosition.x, windowPosition.y, 0);
+                UiThread.RunOnIdle(() => systemWindow.OnMouseMove(aggEvent));
+            }
+            else
+            {
+                MouseEventArgs aggEvent = new MouseEventArgs(MouseButtons.None, 1, windowPosition.x, windowPosition.y, 0);
+                UiThread.RunOnIdle(() => systemWindow.OnMouseMove(aggEvent));
+            }
+        }
+
+        private void DrawMouse(GuiWidget drawingWidget, DrawEventArgs e)
+        {
+            AutomationRunner.RenderMouse(currentlyHookedWindow, e.graphics2D);
         }
 
         public override void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo)
         {
             // figure out where this is on our agg windows
-            foreach (SystemWindow systemWindow in SystemWindow.OpenWindows)
+            // for now only send mouse events to the top most window
+            //foreach (SystemWindow systemWindow in SystemWindow.OpenWindows)
+            SystemWindow systemWindow = SystemWindow.OpenWindows[SystemWindow.OpenWindows.Count - 1];
             {
                 Point2D windowPosition = AutomationRunner.ScreenToSystemWindow(currentMousePosition, systemWindow);
                 if(systemWindow.LocalBounds.Contains(windowPosition))
@@ -179,6 +212,19 @@ namespace MatterHackers.GuiAutomation
 
         public override void Type(string textToType)
         {
+            SystemWindow systemWindow = SystemWindow.OpenWindows[SystemWindow.OpenWindows.Count - 1];
+
+            foreach (char character in textToType)
+            {
+                //UiThread.RunOnIdle(() => systemWindow.OnKeyDown(aggKeyEvent));
+                //Keyboard.SetKeyDownState(aggKeyEvent.KeyCode, true);
+
+                KeyPressEventArgs aggKeyPressEvent = new KeyPressEventArgs(character);
+                UiThread.RunOnIdle(() => systemWindow.OnKeyPress(aggKeyPressEvent));
+
+                //widgetToSendTo.OnKeyUp(aggKeyEvent);
+                //Keyboard.SetKeyDownState(aggKeyEvent.KeyCode, false);
+            }
         }
     }
 

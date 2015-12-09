@@ -219,7 +219,7 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-        public void RenderMouse(GuiWidget targetWidget, Graphics2D graphics2D)
+        public static void RenderMouse(GuiWidget targetWidget, Graphics2D graphics2D)
         {
             GuiWidget parentSystemWindow = targetWidget;
             while(parentSystemWindow != null 
