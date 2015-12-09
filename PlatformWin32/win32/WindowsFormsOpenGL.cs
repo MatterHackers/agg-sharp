@@ -21,6 +21,7 @@ using System.Windows.Forms;
 using System.Drawing;
 
 using OpenTK;
+using MatterHackers.RenderOpenGl;
 
 #if USE_GLES
 using OpenTK.Graphics.ES11;
@@ -40,8 +41,10 @@ namespace MatterHackers.Agg.UI
 		private static int nextId;
 		public int Id;
 
-		// If you have an error here it is likely that you need to bulid your project with Platform Target x86.
-		public MyGLControl(int bitDepth, int setencilDepth)
+        internal RemoveGlDataCallBackHolder releaseAllGlData = new RemoveGlDataCallBackHolder();
+
+        // If you have an error here it is likely that you need to bulid your project with Platform Target x86.
+        public MyGLControl(int bitDepth, int setencilDepth)
 		//: base(new GraphicsMode(new ColorFormat(32), 32, 0, 4))
 		{
             if (!checkedCapabilities)
@@ -62,7 +65,8 @@ namespace MatterHackers.Agg.UI
 		{
 			currentControl = this;
 			base.MakeCurrent();
-		}
+            ImageGlPlugin.SetCurrentContextData(Id, releaseAllGlData);
+        }
 
 		protected override bool ProcessDialogKey(System.Windows.Forms.Keys keyData)
 		{
@@ -106,7 +110,16 @@ namespace MatterHackers.Agg.UI
 
 		private bool doneLoading = false;
 
-		protected override void OnLoad(EventArgs e)
+        protected override void OnClosed(EventArgs e)
+        {
+            glControl.MakeCurrent();
+
+            glControl.releaseAllGlData.Release();
+
+            base.OnClosed(e);
+        }
+
+        protected override void OnLoad(EventArgs e)
 		{
 			base.OnLoad(e);
 			doneLoading = true;
@@ -190,7 +203,7 @@ namespace MatterHackers.Agg.UI
         }
 #endif
 
-		public override Size MinimumSize
+        public override Size MinimumSize
 		{
 			get
 			{
@@ -209,9 +222,9 @@ namespace MatterHackers.Agg.UI
 
 		public override void CopyBackBufferToScreen(Graphics displayGraphics)
 		{
-			// If this throws an assert, you are calling MakeCurrent() before the glControl is done being constructed.
-			// Call this function you have called Show().
-			glControl.SwapBuffers();
+            // If this throws an assert, you are calling MakeCurrent() before the glControl is done being constructed.
+            // Call this function you have called Show().
+            glControl.SwapBuffers();
 		}
 	}
 }
