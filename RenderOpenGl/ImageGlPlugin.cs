@@ -53,11 +53,11 @@ namespace MatterHackers.RenderOpenGl
     {
         private static ConditionalWeakTable<Byte[], ImageGlPlugin> imagesWithCacheData = new ConditionalWeakTable<Byte[], ImageGlPlugin>();
 
-        internal struct glAllocatedData
+        internal class glAllocatedData
         {
             internal int glTextureHandle;
             internal int refreshCountCreatedOn;
-            internal int glContentId;
+            internal int glContextId;
             public float[] textureUVs;
             public float[] positions;
 
@@ -70,7 +70,7 @@ namespace MatterHackers.RenderOpenGl
 
         private static List<glAllocatedData> glDataNeedingToBeDeleted = new List<glAllocatedData>();
 
-        private glAllocatedData glData;
+        private glAllocatedData glData = new glAllocatedData();
         private int imageUpdateCount;
         private bool createdWithMipMaps;
 
@@ -102,7 +102,7 @@ namespace MatterHackers.RenderOpenGl
 				{
 					int textureToDelete = glDataNeedingToBeDeleted[i].glTextureHandle;
 					if (textureToDelete != -1
-                        && glDataNeedingToBeDeleted[i].glContentId == contextId
+                        && glDataNeedingToBeDeleted[i].glContextId == contextId
                         && glDataNeedingToBeDeleted[i].refreshCountCreatedOn == currentGlobalRefreshCount) // this is to leak on purpose on android for some gl that kills textures
 					{
 						GL.DeleteTextures(1, ref textureToDelete);
@@ -115,14 +115,15 @@ namespace MatterHackers.RenderOpenGl
 #if ON_IMAGE_CHANGED_ALWAYS_CREATE_IMAGE
 			if (plugin != null
 				&& (imageToGetDisplayListFor.ChangedCount != plugin.imageUpdateCount
-				|| plugin.glData.refreshCountCreatedOn != currentGlobalRefreshCount))
+				|| plugin.glData.refreshCountCreatedOn != currentGlobalRefreshCount
+                || plugin.glData.glTextureHandle == -1))
 			{
 				int textureToDelete = plugin.GLTextureHandle;
 				if (plugin.glData.refreshCountCreatedOn == currentGlobalRefreshCount)
 				{
 					GL.DeleteTextures(1, ref textureToDelete);
 				}
-				plugin.glData.glTextureHandle = 0;
+				plugin.glData.glTextureHandle = -1;
 				imagesWithCacheData.Remove(imageToGetDisplayListFor.GetBuffer());
 				plugin = null;
 			}
@@ -132,7 +133,7 @@ namespace MatterHackers.RenderOpenGl
 				ImageGlPlugin newPlugin = new ImageGlPlugin();
 				imagesWithCacheData.Add(imageToGetDisplayListFor.GetBuffer(), newPlugin);
 				newPlugin.createdWithMipMaps = createAndUseMipMaps;
-                newPlugin.glData.glContentId = contextId;
+                newPlugin.glData.glContextId = contextId;
                 newPlugin.CreateGlDataForImage(imageToGetDisplayListFor, TextureMagFilterLinear);
 				newPlugin.imageUpdateCount = imageToGetDisplayListFor.ChangedCount;
 				newPlugin.glData.refreshCountCreatedOn = currentGlobalRefreshCount;
