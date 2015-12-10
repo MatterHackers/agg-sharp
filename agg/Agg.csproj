@@ -186,6 +186,7 @@
     <Compile Include="agg_rasterizer_compound_aa.cs" />
     <Compile Include="agg_rasterizer_outline_aa.cs" />
     <Compile Include="BorderDouble.cs" />
+    <Compile Include="StatisticsTracker.cs" />
     <Compile Include="TraceTiming.cs" />
     <Compile Include="DumpCallStackIfSlow.cs" />
     <Compile Include="Font\TextWrapping.cs" />
