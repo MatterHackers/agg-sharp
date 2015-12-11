@@ -115,6 +115,16 @@ namespace MatterHackers.Agg
         private double cachedVariance = 0;
         private int countVarianceCalculatedOn = 0;
 
+		public string Name
+		{
+			get; private set;
+		}
+
+		public StatisticsTracker(string name)
+		{
+			this.Name = name;
+		}
+
         public double Variance
         {
             get
