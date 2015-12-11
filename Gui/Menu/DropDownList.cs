@@ -334,7 +334,8 @@ namespace MatterHackers.Agg.UI
 			hoverTextWithMargin.AddChild(hover);
 
 			MenuItem menuItem = new MenuItem(new MenuItemStatesView(normalTextWithMargin, hoverTextWithMargin), value);
-			menuItem.Text = name;
+            menuItem.Name = name + " Menu Item";
+            menuItem.Text = name;
 			MenuItems.Add(menuItem);
 
 			return menuItem;
