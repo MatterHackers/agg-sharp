@@ -36,6 +36,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -51,6 +52,9 @@ namespace MatterHackers.Agg.UI.Tests
 
 		public static AutomationTesterHarness ShowWindowAndExectueTests(SystemWindow initialSystemWindow, Action<AutomationTesterHarness> functionContainingTests, double secondsToTestFailure)
 		{
+			StackTrace st = new StackTrace(false);
+			Console.WriteLine("\r\nRunning automation test: " + st.GetFrames().Skip(1).First().GetMethod().Name);
+
 			AutomationTesterHarness testHarness = new AutomationTesterHarness(initialSystemWindow, functionContainingTests, secondsToTestFailure);
 			return testHarness;
 		}
