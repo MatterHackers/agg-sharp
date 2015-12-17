@@ -47,7 +47,7 @@ namespace MatterHackers.GCodeVisualizer
 			: base(start, end, extruderIndex, travelSpeed)
 		{
 			this.color = color;
-			double fillamentRadius = filamentDiameterMm / 2;
+            double fillamentRadius = filamentDiameterMm / 2;
 			double areaSquareMm = (fillamentRadius * fillamentRadius) * Math.PI;
 
 			this.extrusionVolumeMm3 = (float)(areaSquareMm * totalExtrusionMm);
@@ -105,7 +105,7 @@ namespace MatterHackers.GCodeVisualizer
 
 		public override void Render(Graphics2D graphics2D, GCodeRenderInfo renderInfo)
 		{
-			if ((renderInfo.CurrentRenderType & RenderType.Extrusions) == RenderType.Extrusions)
+			if (renderInfo.CurrentRenderType.HasFlag(RenderType.Extrusions))
 			{
 				double extrusionLineWidths = GetExtrusionWidth(renderInfo.CurrentRenderType) * 2 * renderInfo.LayerScale;
 
@@ -114,15 +114,18 @@ namespace MatterHackers.GCodeVisualizer
 				{
 					extrusionColor = MeshViewerWidget.GetMaterialColor(extruderIndex + 1);
 				}
-				if ((renderInfo.CurrentRenderType & RenderType.SpeedColors) == RenderType.SpeedColors)
+				if (renderInfo.CurrentRenderType.HasFlag(RenderType.SpeedColors))
 				{
 					extrusionColor = color;
 				}
 
-                extrusionColor = new RGBA_Bytes(extrusionColor, 200);
+                if (renderInfo.CurrentRenderType.HasFlag(RenderType.TransparentExtrusion))
+                {
+                    extrusionColor = new RGBA_Bytes(extrusionColor, 200);
+                }
 
-				// render the part using opengl
-				Graphics2DOpenGL graphics2DGl = graphics2D as Graphics2DOpenGL;
+                // render the part using opengl
+                Graphics2DOpenGL graphics2DGl = graphics2D as Graphics2DOpenGL;
 				if (graphics2DGl != null)
 				{
 					Vector3Float startF = this.GetStart(renderInfo);
