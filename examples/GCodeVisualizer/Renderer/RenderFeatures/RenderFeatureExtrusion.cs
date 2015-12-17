@@ -66,7 +66,19 @@ namespace MatterHackers.GCodeVisualizer
 			return radius;
 		}
 
-		public override void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<int> indexData, GCodeRenderInfo renderInfo)
+        private double GetExtrusionWidth(RenderType renderType)
+        {
+            double width = .2;
+            if ((renderType & RenderType.SimulateExtrusion) == RenderType.SimulateExtrusion)
+            {
+                double area = extrusionVolumeMm3 / ((end - start).Length);
+                width = area / layerHeight;
+            }
+
+            return width;
+        }
+
+        public override void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<int> indexData, GCodeRenderInfo renderInfo)
 		{
 			if ((renderInfo.CurrentRenderType & RenderType.Extrusions) == RenderType.Extrusions)
 			{
@@ -95,7 +107,7 @@ namespace MatterHackers.GCodeVisualizer
 		{
 			if ((renderInfo.CurrentRenderType & RenderType.Extrusions) == RenderType.Extrusions)
 			{
-				double extrusionLineWidths = GetRadius(renderInfo.CurrentRenderType) * 2 * renderInfo.LayerScale;
+				double extrusionLineWidths = GetExtrusionWidth(renderInfo.CurrentRenderType) * 2 * renderInfo.LayerScale;
 
 				RGBA_Bytes extrusionColor = RGBA_Bytes.Black;
 				if (extruderIndex > 0)
@@ -106,6 +118,8 @@ namespace MatterHackers.GCodeVisualizer
 				{
 					extrusionColor = color;
 				}
+
+                extrusionColor = new RGBA_Bytes(extrusionColor, 200);
 
 				// render the part using opengl
 				Graphics2DOpenGL graphics2DGl = graphics2D as Graphics2DOpenGL;
