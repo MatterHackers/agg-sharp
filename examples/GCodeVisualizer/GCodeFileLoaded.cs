@@ -53,7 +53,9 @@ namespace MatterHackers.GCodeVisualizer
 		private bool gcodeHasExplicitLayerChangeInfo = false;
 		private double firstLayerThickness;
 		private double layerThickness;
-		private double filamentUsedMmCache = 0;
+
+        private double filamentUsedMmCache = 0;
+        private double diameterOfFilamentUsedMmCache = 0;
 
 		public static Func<string, bool> PauseOnLayerProcessor = null;
 
@@ -835,7 +837,7 @@ namespace MatterHackers.GCodeVisualizer
 
 		public override double GetFilamentUsedMm(double filamentDiameter)
 		{
-			//if (filamentUsedMmCache == 0)
+			if (filamentUsedMmCache == 0 || filamentDiameter != diameterOfFilamentUsedMmCache)
 			{
 				double lastEPosition = 0;
 				double filamentMm = 0;
@@ -874,7 +876,8 @@ namespace MatterHackers.GCodeVisualizer
 				}
 
 				filamentUsedMmCache = filamentMm;
-			}
+                diameterOfFilamentUsedMmCache = filamentDiameter;
+            }
 
 			return filamentUsedMmCache;
 		}
