@@ -8,71 +8,37 @@ namespace MatterHackers.Agg.UI
 
 	public class Menu : Button
 	{
+		private double maxHeight;
+
 		public bool AlignToRightEdge { get; set; }
 
 		public Vector2 OpenOffset { get; set; }
 
-		private bool menuIsOpen = false;
-
-		public bool IsOpen { get { return menuIsOpen; } }
-
-		private Direction menuDirection;
-		private double maxHeight;
-		public ObservableCollection<MenuItem> MenuItems = new ObservableCollection<MenuItem>();
+		public bool IsOpen { get; private set; } = false;
 
 		public BorderDouble MenuItemsPadding { get; set; }
 
-		private RGBA_Bytes menuItemsBackgroundColor = RGBA_Bytes.White;
+		public Direction MenuDirection { get; private set; }
 
-		public RGBA_Bytes MenuItemsBackgroundColor
-		{
-			get { return menuItemsBackgroundColor; }
-			set { menuItemsBackgroundColor = value; }
-		}
+		public RGBA_Bytes MenuItemsBorderColor { get; set; }
 
-		public Direction MenuDirection { get { return menuDirection; } }
+		public RGBA_Bytes MenuItemsBackgroundColor { get; set; } = RGBA_Bytes.White;
 
-		private RGBA_Bytes menuItemsHoverColor = RGBA_Bytes.Gray;
+		public RGBA_Bytes MenuItemsBackgroundHoverColor { get; set; } = RGBA_Bytes.Gray;
 
-		public RGBA_Bytes MenuItemsBackgroundHoverColor
-		{
-			get { return menuItemsHoverColor; }
-			set { menuItemsHoverColor = value; }
-		}
+		public RGBA_Bytes MenuItemsTextColor { get; set; } = RGBA_Bytes.Black;
 
-		private RGBA_Bytes menuItemsTextColor = RGBA_Bytes.Black;
+		public RGBA_Bytes MenuItemsTextHoverColor { get; set; } = RGBA_Bytes.Black;
 
-		public RGBA_Bytes MenuItemsTextColor
-		{
-			get { return menuItemsTextColor; }
-			set { menuItemsTextColor = value; }
-		}
+		public int MenuItemsBorderWidth { get; set; } = 1;
 
-		private RGBA_Bytes menuItemsTextHoverColor = RGBA_Bytes.Black;
-
-		public RGBA_Bytes MenuItemsTextHoverColor
-		{
-			get { return menuItemsTextHoverColor; }
-			set { menuItemsTextHoverColor = value; }
-		}
-
-		private RGBA_Bytes menuItemsBorderColor;
-
-		public RGBA_Bytes MenuItemsBorderColor
-		{
-			get { return menuItemsBorderColor; }
-			set { menuItemsBorderColor = value; }
-		}
-
-		private int borderWidth = 1;
-
-		public int MenuItemsBorderWidth { get { return borderWidth; } set { borderWidth = value; } }
+		public ObservableCollection<MenuItem> MenuItems = new ObservableCollection<MenuItem>();
 
 		// If max height is > 0 it will limit the height of the menu
 		public Menu(Direction direction = Direction.Down, double maxHeight = 0)
 		{
 			this.maxHeight = maxHeight;
-			this.menuDirection = direction;
+			this.MenuDirection = direction;
 			Click += new EventHandler(ListMenu_Click);
 			VAnchor = UI.VAnchor.FitToChildren;
 			HAnchor = UI.HAnchor.FitToChildren;
@@ -102,34 +68,34 @@ namespace MatterHackers.Agg.UI
 
 		private void ListMenu_Click(object sender, EventArgs mouseEvent)
 		{
-			if (mouseDownWhileOpen)
-			{
-			}
-			else
+			if (!mouseDownWhileOpen)
 			{
 				UiThread.RunOnIdle(ShowMenu);
-				menuIsOpen = true;
+				IsOpen = true;
 			}
 		}
 
-		private void ShowMenu()
+		internal OpenMenuContents DropDownContainer = null;
+
+		protected virtual void ShowMenu()
 		{
 			if (this.Parent == null)
 			{
 				throw new Exception("You cannot show the menu on a Menu unless it has a parent (has been added to a GuiWidegt).");
 			}
 
-			OpenMenuContents dropListItems = new OpenMenuContents(MenuItems, this, OpenOffset, menuDirection, MenuItemsBackgroundColor, MenuItemsBorderColor, MenuItemsBorderWidth, maxHeight, AlignToRightEdge);
-			dropListItems.Closed += new EventHandler(DropListItems_Closed);
-
-			dropListItems.Focus();
+			DropDownContainer = new OpenMenuContents(MenuItems, this, OpenOffset, MenuDirection, MenuItemsBackgroundColor, MenuItemsBorderColor, MenuItemsBorderWidth, maxHeight, AlignToRightEdge);
+			DropDownContainer.Closed += new EventHandler(DropListItems_Closed);
+			DropDownContainer.Focus();
 		}
 
 		virtual protected void DropListItems_Closed(object sender, EventArgs e)
 		{
 			OpenMenuContents dropListItems = (OpenMenuContents)sender;
 			dropListItems.Closed -= new EventHandler(DropListItems_Closed);
-			menuIsOpen = false;
+			IsOpen = false;
+
+			DropDownContainer = null;
 		}
 	}
 }

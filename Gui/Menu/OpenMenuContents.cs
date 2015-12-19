@@ -80,6 +80,14 @@ namespace MatterHackers.Agg.UI
 			widgetRelativeTo.Closed += widgetRelativeTo_Closed;
 		}
 
+		public void ScrollIntoView(GuiWidget widget)
+		{
+			if (scrollingWindow.VerticalScrollBar.Visible)
+			{
+				scrollingWindow.ScrollPosition = new Vector2(0, -widget.BoundsRelativeToParent.Bottom + this.Height /2);
+			}
+		}
+
 		private void MakeMenuHaveScroll(double maxHeight)
 		{
 			scrollingWindow.VAnchor = VAnchor.AbsolutePosition;

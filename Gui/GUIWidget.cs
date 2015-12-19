@@ -26,6 +26,7 @@ using static MatterHackers.Agg.RGBA_Bytes;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
@@ -2877,6 +2878,28 @@ namespace MatterHackers.Agg.UI
 			if (KeyUp != null)
 			{
 				KeyUp(this, keyEvent);
+			}
+		}
+	}
+
+	public static class ExtensionMethods
+	{
+		public static IEnumerable<T> Children<T>(this GuiWidget widget) where T : GuiWidget
+		{
+			return widget.Children.Where(w => w is T).Select(w => (T)w);
+		}
+
+		public static IEnumerable<T> Parents<T>(this GuiWidget widget) where T : GuiWidget
+		{
+			GuiWidget context = widget.Parent;
+			while (context.Parent != null)
+			{
+				if (context is T)
+				{
+					yield return (T)context;
+				}
+
+				context = context.Parent;
 			}
 		}
 	}

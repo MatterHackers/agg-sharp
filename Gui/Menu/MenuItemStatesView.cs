@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
@@ -22,42 +24,59 @@ namespace MatterHackers.Agg.UI
 			overState.Visible = false;
 		}
 
-		public override void OnParentChanged(EventArgs e)
+		public override void OnParentChanged(EventArgs ex)
 		{
 			// We don't need to remove these as the parent we are attached to is the held list that gets turned
 			// into the menu list when required and unhooking these breaks that list from working.
 			// This will get cleared when the list is no longer need and the menu (the parent) is removed)
-			Parent.MouseEnter += new EventHandler(Parent_MouseEnter);
-			Parent.MouseLeave += new EventHandler(Parent_MouseLeave);
-			base.OnParentChanged(e);
+			Parent.MouseLeave += (s, e) => this.Highlighted = false;
+			Parent.MouseEnter += (s, e) =>
+			{
+				ClearActiveHighlight();
+				this.Highlighted = true;
+			};
+
+			base.OnParentChanged(ex);
 		}
 
 		public override void SendToChildren(object objectToRout)
 		{
 			if (objectToRout as MenuItem.MenuClosedMessage != null)
 			{
-				overState.Visible = false;
-				normalState.Visible = true;
+				this.Highlighted = false;
 			}
 
 			base.SendToChildren(objectToRout);
 		}
 
-		private void Parent_MouseLeave(object sender, EventArgs e)
+		public bool Highlighted
 		{
-			overState.Visible = false;
-			normalState.Visible = true;
+			get
+			{
+				return overState.Visible;
+			}
+			set
+			{
+				overState.Visible = value;
+				normalState.Visible = !value;
+			}
 		}
 
-		private void Parent_MouseEnter(object sender, EventArgs e)
+		private void ClearActiveHighlight()
 		{
-			overState.Visible = true;
-			normalState.Visible = false;
-		}
+			// Find the FlowLayoutWidget containing this MenuItemStatesView  instance
+			var dropListContainer = this.Parents<FlowLayoutWidget>().FirstOrDefault();
 
-		public override void OnDraw(Graphics2D graphics2D)
-		{
-			base.OnDraw(graphics2D);
+			// Loop over any sibling MenuItem wigets
+			foreach (var menuItem in dropListContainer.Children<MenuItem>())
+			{
+				// Find the MenuItemStatesView instance that they contain and set highlighted to false
+				var statesView = menuItem.Children<MenuItemStatesView>().FirstOrDefault();
+				if (statesView != null)
+				{
+					statesView.Highlighted = false;
+				}
+			}
 		}
 	}
 }
