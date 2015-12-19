@@ -31,6 +31,7 @@ using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Specialized;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
@@ -40,49 +41,13 @@ namespace MatterHackers.Agg.UI
 
 		protected TextWidget mainControlText;
 
-		public override RectangleDouble LocalBounds
-		{
-			get
-			{
-				return base.LocalBounds;
-			}
-			set
-			{
-				base.LocalBounds = value;
-			}
-		}
+		public RGBA_Bytes NormalColor { get; set; }
 
-		private RGBA_Bytes normalColor;
+		public int BorderWidth { get; set; }
 
-		public RGBA_Bytes NormalColor
-		{
-			get { return normalColor; }
-			set { normalColor = value; }
-		}
+		public RGBA_Bytes BorderColor { get; set; }
 
-		private int borderWidth = 0;
-
-		public int BorderWidth
-		{
-			get { return borderWidth; }
-			set { borderWidth = value; }
-		}
-
-		private RGBA_Bytes borderColor;
-
-		public RGBA_Bytes BorderColor
-		{
-			get { return borderColor; }
-			set { borderColor = value; }
-		}
-
-		private RGBA_Bytes hoverColor;
-
-		public RGBA_Bytes HoverColor
-		{
-			get { return hoverColor; }
-			set { hoverColor = value; }
-		}
+		public RGBA_Bytes HoverColor { get; set; }
 
 		private RGBA_Bytes textColor = RGBA_Bytes.Black;
 
@@ -109,6 +74,26 @@ namespace MatterHackers.Agg.UI
 					mainControlText.Text = MenuItems[SelectedIndex].Text;
 					OnSelectionChanged(null);
 					Invalidate();
+				}
+			}
+		}
+
+		protected override void ShowMenu()
+		{
+			base.ShowMenu();
+
+			if (selectedIndex >= 0)
+			{
+				var selectedMenuItem = MenuItems[selectedIndex];
+
+				// Scroll the selected item into view
+				DropDownContainer.ScrollIntoView(selectedMenuItem);
+
+				// Highlight the selected item
+				var statesView = selectedMenuItem.Children<MenuItemStatesView>().FirstOrDefault();
+				if(statesView != null)
+				{
+					statesView.Highlighted = true;
 				}
 			}
 		}
@@ -295,15 +280,15 @@ namespace MatterHackers.Agg.UI
 			{
 				throw new NotImplementedException("Pulldown direction has not been implemented");
 			}
-			graphics2D.Render(littleArrow, LocalBounds.Right - 8, LocalBounds.Top - 4, borderColor);
+			graphics2D.Render(littleArrow, LocalBounds.Right - 8, LocalBounds.Top - 4, BorderColor);
 		}
 
 		private void DrawBorder(Graphics2D graphics2D)
 		{
 			RectangleDouble Bounds = LocalBounds;
 			RoundedRect borderRect = new RoundedRect(this.LocalBounds, 0);
-			Stroke strokeRect = new Stroke(borderRect, borderWidth);
-			graphics2D.Render(strokeRect, borderColor);
+			Stroke strokeRect = new Stroke(borderRect, BorderWidth);
+			graphics2D.Render(strokeRect, BorderColor);
 		}
 
 		public MenuItem AddItem(string name, string value = null)
