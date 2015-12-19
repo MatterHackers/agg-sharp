@@ -2884,11 +2884,23 @@ namespace MatterHackers.Agg.UI
 
 	public static class ExtensionMethods
 	{
+		/// <summary>
+		/// Returns all children of the current GuiWiget matching the given type
+		/// </summary>
+		/// <typeparam name="T">The type filter</typeparam>
+		/// <param name="widget">The context widget</param>
+		/// <returns>All matching child widgets</returns>
 		public static IEnumerable<T> Children<T>(this GuiWidget widget) where T : GuiWidget
 		{
 			return widget.Children.Where(w => w is T).Select(w => (T)w);
 		}
 
+		/// <summary>
+		/// Returns all ancestors of the current GuiWidget matching the given type
+		/// </summary>
+		/// <typeparam name="T">The type filter</typeparam>
+		/// <param name="widget">The context widget</param>
+		/// <returns>The matching ancestor widgets</returns>
 		public static IEnumerable<T> Parents<T>(this GuiWidget widget) where T : GuiWidget
 		{
 			GuiWidget context = widget.Parent;
