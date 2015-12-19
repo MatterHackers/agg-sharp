@@ -2892,7 +2892,7 @@ namespace MatterHackers.Agg.UI
 		public static IEnumerable<T> Parents<T>(this GuiWidget widget) where T : GuiWidget
 		{
 			GuiWidget context = widget.Parent;
-			while (context.Parent != null)
+			while (context != null)
 			{
 				if (context is T)
 				{

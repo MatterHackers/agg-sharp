@@ -35,6 +35,7 @@ using MatterHackers.GuiAutomation;
 
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -87,6 +88,45 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 #endif
+
+		[Test]
+		public void ExtensionMethodsTests()
+		{
+			GuiWidget level0 = new GuiWidget() { Name = "level0" };
+			GuiWidget level1 = new GuiWidget() { Name = "level1" };
+			level0.AddChild(level1);
+			GuiWidget level2 = new GuiWidget() { Name = "level2" };
+			level1.AddChild(level2);
+			GuiWidget level3 = new GuiWidget() { Name = "level3" };
+			level2.AddChild(level3);
+			List<GuiWidget> allWidgets = new List<GuiWidget>() { level0, level1, level2, level3 };
+
+			foreach (var child in level0.Children<GuiWidget>())
+			{
+				Assert.IsTrue(child == allWidgets[1]);
+			}
+			foreach (var child in level1.Children<GuiWidget>())
+			{
+				Assert.IsTrue(child == allWidgets[2]);
+			}
+			foreach (var child in level2.Children<GuiWidget>())
+			{
+				Assert.IsTrue(child == allWidgets[3]);
+			}
+			foreach (var child in level3.Children<GuiWidget>())
+			{
+				Assert.IsTrue(false); // there are no children we should not get here
+			}
+
+			int index = allWidgets.Count-1;
+			int parentCount = 0;
+			foreach (var parent in level3.Parents<GuiWidget>())
+			{
+				parentCount++;
+                Assert.IsTrue(parent == allWidgets[--index]);
+			}
+			Assert.IsTrue(parentCount == 3);
+		}
 
 		[Test]
 		public void ValidateSimpleLeftClick()
