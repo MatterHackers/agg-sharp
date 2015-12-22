@@ -38,7 +38,7 @@ namespace MatterHackers.PolygonMesh.Csg
 	public class CsgAcceleratedMesh
 	{
 		private Mesh mesh;
-		int internalIntegerScale = 1000;
+		int internalIntegerScale = 100;
 
 		public CsgAcceleratedMesh(Mesh source)
 		{
@@ -83,6 +83,7 @@ namespace MatterHackers.PolygonMesh.Csg
 						MeshEdge meshEdgeCreatedDuringSplit;
 						// split the ray at intersectionPosition
 						Mesh.SplitMeshEdge(meshEdge, out vertexCreatedDuringSplit, out meshEdgeCreatedDuringSplit);
+						vertexCreatedDuringSplit.Position = intersectionPosition;
 						// split the face at intersectionPosition
 						SplitFaceAtPosition(face, intersectionPosition);
 					}
@@ -96,6 +97,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			if(face.MeshEdgeIsIntersectedAt(intersectionPosition, out intersectedEdge))
 			{
 				// split the edge
+				throw new NotImplementedException();
 			}
 			else
 			{
@@ -106,6 +108,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				// remove the face
 				// add the Vertex to the mesh
 				// add the three new faces to the mesh
+				throw new NotImplementedException();
 			}
 		}
 
