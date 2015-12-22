@@ -186,6 +186,9 @@
     <Compile Include="agg_rasterizer_compound_aa.cs" />
     <Compile Include="agg_rasterizer_outline_aa.cs" />
     <Compile Include="BorderDouble.cs" />
+    <Compile Include="Collections\IBoundedItem.cs" />
+    <Compile Include="Collections\BoundingVolumeHierarchy.cs" />
+    <Compile Include="Collections\UnboundCollection.cs" />
     <Compile Include="StatisticsTracker.cs" />
     <Compile Include="TraceTiming.cs" />
     <Compile Include="DumpCallStackIfSlow.cs" />
