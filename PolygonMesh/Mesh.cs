@@ -222,7 +222,7 @@ namespace MatterHackers.PolygonMesh
 			if (reportProgress != null)
 			{
 #if AGRESSIVE_VALIDATING
-                Validate();
+				Validate();
 #endif
 
 				bool keepProcessing = true;
@@ -231,7 +231,7 @@ namespace MatterHackers.PolygonMesh
 					reportProgress(progress0To1 * .41, processingState, out continueProcessing);
 					keepProcessing = continueProcessing;
 #if AGRESSIVE_VALIDATING
-                    Validate();
+					Validate();
 #endif
 				});
 				if (keepProcessing)
@@ -250,7 +250,7 @@ namespace MatterHackers.PolygonMesh
 						keepProcessing = continueProcessing;
 					});
 #if AGRESSIVE_VALIDATING
-                    Validate();
+					Validate();
 #endif
 				}
 			}
@@ -546,12 +546,12 @@ namespace MatterHackers.PolygonMesh
 							if (!markedForDeletion.Contains(vertexToDelete))
 							{
 #if AGRESSIVE_VALIDATING
-                                Validate(markedForDeletion);
+								Validate(markedForDeletion);
 #endif
 								MergeVertices(vertexToKeep, vertexToDelete, false);
 								markedForDeletion.Add(vertexToDelete);
 #if AGRESSIVE_VALIDATING
-                                Validate(markedForDeletion);
+								Validate(markedForDeletion);
 #endif
 							}
 						}
@@ -574,7 +574,7 @@ namespace MatterHackers.PolygonMesh
 			}
 
 #if AGRESSIVE_VALIDATING
-            Validate(markedForDeletion);
+			Validate(markedForDeletion);
 #endif
 			if (reportProgress != null)
 			{
@@ -604,10 +604,10 @@ namespace MatterHackers.PolygonMesh
 		public void MergeVertices(Vertex vertexToKeep, Vertex vertexToDelete, bool doActualDeletion = true)
 		{
 #if false // this check is relatively slow
-            if (!Vertices.ContainsAVertexAtPosition(vertexToKeep) || !Vertices.ContainsAVertexAtPosition(vertexToDelete))
-            {
-                throw new Exception("Both vertexes have to be part of this mesh to be merged.");
-            }
+			if (!Vertices.ContainsAVertexAtPosition(vertexToKeep) || !Vertices.ContainsAVertexAtPosition(vertexToDelete))
+			{
+				throw new Exception("Both vertexes have to be part of this mesh to be merged.");
+			}
 #endif
 			// fix up the mesh edges
 			List<MeshEdge> connectedMeshEdges = vertexToDelete.GetConnectedMeshEdges();
@@ -1142,7 +1142,7 @@ namespace MatterHackers.PolygonMesh
 					{
 						MeshEdge createdEdge;
 						Face createdFace;
-                        this.SplitFace(face, positionsCCW[0], positionsCCW[splitIndex], out createdEdge, out createdFace);
+						this.SplitFace(face, positionsCCW[0], positionsCCW[splitIndex], out createdEdge, out createdFace);
 					}
 				}
 			}
