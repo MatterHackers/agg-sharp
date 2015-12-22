@@ -437,9 +437,7 @@ namespace MatterHackers.PolygonMesh
 				faceEdge.containingFace = faceToKeep;
 			}
 
-			// make sure we take the mesh edge out of the neighbors pointers
-			meshEdgeToDelete.RemoveFromMeshEdgeLinksOfVertex(meshEdgeToDelete.VertexOnEnd[0]);
-			meshEdgeToDelete.RemoveFromMeshEdgeLinksOfVertex(meshEdgeToDelete.VertexOnEnd[1]);
+			DeleteMeshEdge(meshEdgeToDelete);
 
 			// clear the data on the deleted face edge to help with debugging
 			faceEdgeToDeleteOnFaceToKeep.meshEdge.VertexOnEnd[0] = null;
@@ -447,20 +445,6 @@ namespace MatterHackers.PolygonMesh
 			faceToDelete.firstFaceEdge = null;
 			// take the face out of the face list
 			faces.Remove(faceToDelete);
-
-			// clear the data on the deleted mesh edge to help with debugging
-			meshEdgeToDelete.firstFaceEdge = null;
-			meshEdgeToDelete.VertexOnEnd[0] = null;
-			meshEdgeToDelete.NextMeshEdgeFromEnd[0] = null;
-			meshEdgeToDelete.VertexOnEnd[1] = null;
-			meshEdgeToDelete.NextMeshEdgeFromEnd[1] = null;
-
-			MeshEdges.Remove(meshEdgeToDelete);
-		}
-
-		public bool DeleteMeshEdgeFromFace(Face faceToDeleteEdgeFrom, MeshEdge meshEdgeToDelete)
-		{
-			throw new NotImplementedException();
 		}
 
 		public void ReverseFaceEdges()
@@ -708,6 +692,18 @@ namespace MatterHackers.PolygonMesh
 
 		public void DeleteMeshEdge(MeshEdge meshEdgeToDelete)
 		{
+			// make sure we take the mesh edge out of the neighbors pointers
+			meshEdgeToDelete.RemoveFromMeshEdgeLinksOfVertex(meshEdgeToDelete.VertexOnEnd[0]);
+			meshEdgeToDelete.RemoveFromMeshEdgeLinksOfVertex(meshEdgeToDelete.VertexOnEnd[1]);
+
+			// clear the data on the deleted mesh edge to help with debugging
+			meshEdgeToDelete.firstFaceEdge = null;
+			meshEdgeToDelete.VertexOnEnd[0] = null;
+			meshEdgeToDelete.NextMeshEdgeFromEnd[0] = null;
+			meshEdgeToDelete.VertexOnEnd[1] = null;
+			meshEdgeToDelete.NextMeshEdgeFromEnd[1] = null;
+
+			MeshEdges.Remove(meshEdgeToDelete);
 		}
 
 		public void SplitMeshEdge(MeshEdge meshEdgeToSplit, out Vertex vertexCreatedDuringSplit, out MeshEdge meshEdgeCreatedDuringSplit)
@@ -910,7 +906,7 @@ namespace MatterHackers.PolygonMesh
 
 		public void MergeMeshEdges(MeshEdge edgeToKeep, MeshEdge edgeToDelete, bool doActualDeletion = true)
 		{
-			// make sure they sare vertexes (or they can't be merged)
+			// make sure they share vertexes (or they can't be merged)
 			if (!edgeToDelete.IsConnectedTo(edgeToKeep.VertexOnEnd[0])
 				|| !edgeToDelete.IsConnectedTo(edgeToKeep.VertexOnEnd[1]))
 			{
@@ -978,6 +974,15 @@ namespace MatterHackers.PolygonMesh
 			faces.Add(createdFace);
 
 			return createdFace;
+		}
+
+		public Face DeleteFace(Face faceToDelete)
+		{
+			throw new NotImplementedException();
+		}
+
+		private static void DeleteFaceEdge(FaceEdge faceEdgeToDelete)
+		{
 		}
 
 		private static void CreateFaceEdges(Vertex[] verticesToUse, List<MeshEdge> edgesToUse, Face createdFace)
@@ -1117,6 +1122,29 @@ namespace MatterHackers.PolygonMesh
 					SortVertices();
 				}
 				MarkAsChanged();
+			}
+		}
+
+		public void Triangulate()
+		{
+			List<Face> tempFaceList = new List<Face>(Faces);
+			foreach (Face face in tempFaceList)
+			{
+				if (face.NumVertices != 3)
+				{
+					List<Vertex> positionsCCW = new List<Vertex>();
+					foreach (FaceEdge faceEdge in face.FaceEdges())
+					{
+						positionsCCW.Add(faceEdge.firstVertex);
+					}
+
+					for(int splitIndex = 2; splitIndex < positionsCCW.Count - 1; splitIndex++)
+					{
+						MeshEdge createdEdge;
+						Face createdFace;
+                        this.SplitFace(face, positionsCCW[0], positionsCCW[splitIndex], out createdEdge, out createdFace);
+					}
+				}
 			}
 		}
 	}
