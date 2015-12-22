@@ -46,9 +46,6 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			{
 				Mesh meshA = PlatonicSolids.CreateCube(new Vector3(10, 10, 10));
 
-				List<CsgPolygon> polygonsA = CsgOperations.PolygonsFromMesh(meshA);
-				Assert.IsTrue(polygonsA.Count == 6);
-
 				meshA.Translate(new Vector3(-2, -2, -2));
 				Mesh meshB = PlatonicSolids.CreateCube(new Vector3(10, 10, 10));
 				meshB.Translate(new Vector3(2, 2, 2));
@@ -68,9 +65,6 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			{
 				Mesh meshA = PlatonicSolids.CreateCube(new Vector3(10, 10, 10));
 
-				List<CsgPolygon> polygonsA = CsgOperations.PolygonsFromMesh(meshA);
-				Assert.IsTrue(polygonsA.Count == 6);
-
 				meshA.Translate(new Vector3(-5, -5, -5));
 				Mesh meshB = PlatonicSolids.CreateCube(new Vector3(10, 10, 10));
 				meshB.Translate(new Vector3(5, 5, 5));
@@ -86,9 +80,6 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			// the union of 2 cubes
 			{
 				Mesh meshA = PlatonicSolids.CreateCube(new Vector3(10, 10, 10));
-
-				List<CsgPolygon> polygonsA = CsgOperations.PolygonsFromMesh(meshA);
-				Assert.IsTrue(polygonsA.Count == 6);
 
 				meshA.Translate(new Vector3(-2, 0, 0));
 				Mesh meshB = PlatonicSolids.CreateCube(new Vector3(10, 10, 10));
@@ -112,9 +103,6 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			// the subtraction of 2 cubes
 			{
 				Mesh meshA = PlatonicSolids.CreateCube(new Vector3(10, 10, 10));
-
-				List<CsgPolygon> polygonsA = CsgOperations.PolygonsFromMesh(meshA);
-				Assert.IsTrue(polygonsA.Count == 6);
 
 				meshA.Translate(new Vector3(-2, 0, 0));
 				Mesh meshB = PlatonicSolids.CreateCube(new Vector3(10, 10, 10));

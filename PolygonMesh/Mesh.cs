@@ -1119,5 +1119,28 @@ namespace MatterHackers.PolygonMesh
 				MarkAsChanged();
 			}
 		}
+
+		public void Triangulate()
+		{
+			List<Face> tempFaceList = new List<Face>(Faces);
+			foreach (Face face in tempFaceList)
+			{
+				if (face.NumVertices != 3)
+				{
+					List<Vertex> positionsCCW = new List<Vertex>();
+					foreach (FaceEdge faceEdge in face.FaceEdges())
+					{
+						positionsCCW.Add(faceEdge.firstVertex);
+					}
+
+					for(int splitIndex = 2; splitIndex < positionsCCW.Count - 1; splitIndex++)
+					{
+						MeshEdge createdEdge;
+						Face createdFace;
+                        this.SplitFace(face, positionsCCW[0], positionsCCW[splitIndex], out createdEdge, out createdFace);
+					}
+				}
+			}
+		}
 	}
 }

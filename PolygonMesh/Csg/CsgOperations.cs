@@ -18,6 +18,92 @@ using System.Linq;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
+#if false
+	public static class CsgOperations
+	{
+		// Return a new CSG solid representing space in either this solid or in the
+		// solid `csg`. Neither this solid nor the solid `csg` are modified.
+		//
+		//     +-------+            +-------+
+		//     |       |            |       |
+		//     |   A   |            |       |
+		//     |    +--+----+   =   |       +----+
+		//     +----+--+    |       +----+       |
+		//          |   B   |            |       |
+		//          |       |            |       |
+		//          +-------+            +-------+
+		//
+		public static Mesh Union(Mesh a1, Mesh b1)
+		{
+			CsgAcceleratedMesh a = new CsgAcceleratedMesh(a1);
+			CsgAcceleratedMesh b = new CsgAcceleratedMesh(b1);
+			a.SplitOnAllEdgeIntersections(b);
+			b.SplitOnAllEdgeIntersections(a);
+
+			a.MarkInternalVertices(b);
+			b.MarkInternalVertices(a);
+
+			a.RemoveAllInternalEdges();
+			b.RemoveAllInternalEdges();
+
+			a.MergeWith(b);
+
+			return a.Mesh;
+		}
+
+		// Return a new CSG solid representing space in this solid but not in the
+		// solid `csg`. Neither this solid nor the solid `csg` are modified.
+		//
+		//     A.subtract(B)
+		//
+		//     +-------+            +-------+
+		//     |       |            |       |
+		//     |   A   |            |       |
+		//     |    +--+----+   =   |    +--+
+		//     +----+--+    |       +----+
+		//          |   B   |
+		//          |       |
+		//          +-------+
+		//
+		public static Mesh Subtract(Mesh a1, Mesh b1)
+		{
+			CsgAcceleratedMesh a = new CsgAcceleratedMesh(a1);
+			CsgAcceleratedMesh b = new CsgAcceleratedMesh(b1);
+			a.SplitOnAllEdgeIntersections(b);
+			a.MarkInternalVertices(b);
+
+			b.SplitOnAllEdgeIntersections(a);
+			b.MarkInternalVertices(a);
+
+			a.RemoveAllInternalEdges();
+			b.RemoveAllExternalEdges();
+			b.FlipFaces();
+
+			a.MergeWith(b);
+
+			return a.Mesh;
+		}
+
+		// Return a new CSG solid representing space both this solid and in the
+		// solid `csg`. Neither this solid nor the solid `csg` are modified.
+		//
+		//     A.intersect(B)
+		//
+		//     +-------+
+		//     |       |
+		//     |   A   |
+		//     |    +--+----+   =   +--+
+		//     +----+--+    |       +--+
+		//          |   B   |
+		//          |       |
+		//          +-------+
+		//
+		public static Mesh Intersect(Mesh a, Mesh b)
+		{
+			return null;//return PerformOperation(a, b, CsgNode.Intersect);
+		}
+	}
+#else
 	public delegate CsgNode CsgFunctionHandler(CsgNode a, CsgNode b);
 
 	// Public interface implementation
@@ -91,4 +177,5 @@ namespace MatterHackers.PolygonMesh.Csg
 			return MeshFromPolygons(polygons);
 		}
 	}
+#endif
 }
