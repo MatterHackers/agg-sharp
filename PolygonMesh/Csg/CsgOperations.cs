@@ -48,7 +48,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			a.MergeWith(b);
 
-			return a.Mesh;
+			return a.mesh;
 		}
 
 		// Return a new CSG solid representing space in this solid but not in the
@@ -81,7 +81,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			a.MergeWith(b);
 
-			return a.Mesh;
+			return a.mesh;
 		}
 
 		// Return a new CSG solid representing space both this solid and in the

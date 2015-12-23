@@ -22,22 +22,22 @@ namespace MatterHackers.PolygonMesh.Csg
 {
 	public static class FaceHelper
 	{
-		public static bool IsIntersectedBy(this Face face, Vector3 end0, Vector3 end1, out Vector3 intersectionPosition)
+		public enum IntersectionType { None, Vertex, MeshEdge, Face }
+		public static IntersectionType Intersection(this Face face, Vector3 end0, Vector3 end1, out Vector3 intersectionPosition)
 		{
 			intersectionPosition = Vector3.Zero;
-			return false;
+			return IntersectionType.None;
 		}
 
-		public static bool MeshEdgeIsIntersectedAt(this Face face, Vector3 intersectionPosition, out MeshEdge intersectedEdge)
+		public static MeshEdge GetIntersectedMeshEdge(this Face face, Vector3 intersectionPosition)
 		{
-			intersectedEdge = null;
-			return false;
+			MeshEdge intersectedEdge = null;
+			return intersectedEdge;
 		}
     }
 
 	public class CsgAcceleratedMesh
 	{
-		private Mesh mesh;
 		int internalIntegerScale = 100;
 
 		public CsgAcceleratedMesh(Mesh source)
@@ -61,7 +61,7 @@ namespace MatterHackers.PolygonMesh.Csg
             }
 		}
 
-		public Mesh Mesh { get; internal set; }
+		public Mesh mesh { get; internal set; }
 
 		public void SplitOnAllEdgeIntersections(CsgAcceleratedMesh meshWidthEdges)
 		{
@@ -73,49 +73,67 @@ namespace MatterHackers.PolygonMesh.Csg
 				Vector3 end1 = meshEdge.VertexOnEnd[1].Position;
 				AxisAlignedBoundingBox edgeBounds = new AxisAlignedBoundingBox(Vector3.ComponentMin(end0, end1), Vector3.ComponentMax(end0, end1));
 
-				foreach(Face face in GetFacesTouching(edgeBounds))
+				foreach (Face face in GetFacesTouching(edgeBounds))
 				{
 					Vector3 intersectionPosition;
 					// intersect the face with the edge
-					if(face.IsIntersectedBy(end0, end1, out intersectionPosition))
+					switch (face.Intersection(end0, end1, out intersectionPosition))
 					{
-						Vertex vertexCreatedDuringSplit;
-						MeshEdge meshEdgeCreatedDuringSplit;
-						// split the ray at intersectionPosition
-						Mesh.SplitMeshEdge(meshEdge, out vertexCreatedDuringSplit, out meshEdgeCreatedDuringSplit);
-						vertexCreatedDuringSplit.Position = intersectionPosition;
-						// split the face at intersectionPosition
-						SplitFaceAtPosition(face, intersectionPosition);
+						case FaceHelper.IntersectionType.Vertex:
+							break;
+
+						case FaceHelper.IntersectionType.MeshEdge:
+							{
+								SplitMeshEdgeIfRequired(meshEdge, intersectionPosition);
+								// split the face at intersectionPosition
+								SplitMeshEdgeAtPosition(face, intersectionPosition);
+							}
+							break;
+
+						case FaceHelper.IntersectionType.Face:
+							{
+								SplitMeshEdgeIfRequired(meshEdge, intersectionPosition);
+								// split the face at intersectionPosition
+								SplitFaceAtPosition(face, intersectionPosition);
+							}
+							break;
 					}
 				}
 			}
 		}
 
+		private void SplitMeshEdgeIfRequired(MeshEdge meshEdge, Vector3 intersectionPosition)
+		{
+			Vertex vertexCreatedDuringSplit;
+			MeshEdge meshEdgeCreatedDuringSplit;
+			// split the ray at intersectionPosition
+			mesh.SplitMeshEdge(meshEdge, out vertexCreatedDuringSplit, out meshEdgeCreatedDuringSplit);
+			vertexCreatedDuringSplit.Position = intersectionPosition;
+		}
+
+		private void SplitMeshEdgeAtPosition(Face face, Vector3 intersectionPosition)
+		{
+			MeshEdge intersectedEdge = face.GetIntersectedMeshEdge(intersectionPosition);
+			// split the edge
+			throw new NotImplementedException();
+		}
+
 		private void SplitFaceAtPosition(Face face, Vector3 intersectionPosition)
 		{
-			MeshEdge intersectedEdge;
-			if(face.MeshEdgeIsIntersectedAt(intersectionPosition, out intersectedEdge))
-			{
-				// split the edge
-				throw new NotImplementedException();
-			}
-			else
-			{
-				//    ^           ^
-				//   / \         /|\
-				//  /   \   =   / . \
-				// /_____\     /_/_\_\  // imagine the bottom lines are connected to the end points
-				// remove the face
-				// add the Vertex to the mesh
-				// add the three new faces to the mesh
-				throw new NotImplementedException();
-			}
+			//    ^           ^
+			//   / \         /|\
+			//  /   \   =   / . \
+			// /_____\     /_/_\_\  // imagine the bottom lines are connected to the end points
+			// remove the face
+			// add the Vertex to the mesh
+			// add the three new faces to the mesh
+			throw new NotImplementedException();
 		}
 
 		private IEnumerable<Face> GetFacesTouching(AxisAlignedBoundingBox edgeBounds)
 		{
 			// TODO: make this only get the right faces
-			foreach(var face in Mesh.Faces)
+			foreach(var face in mesh.Faces)
 			{
 				yield return face;
 			}
