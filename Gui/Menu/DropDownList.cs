@@ -91,7 +91,7 @@ namespace MatterHackers.Agg.UI
 
 				// Highlight the selected item
 				var statesView = selectedMenuItem.Children<MenuItemStatesView>().FirstOrDefault();
-				if(statesView != null)
+				if (statesView != null)
 				{
 					statesView.Highlighted = true;
 				}
@@ -319,8 +319,8 @@ namespace MatterHackers.Agg.UI
 			hoverTextWithMargin.AddChild(hover);
 
 			MenuItem menuItem = new MenuItem(new MenuItemStatesView(normalTextWithMargin, hoverTextWithMargin), value);
-            menuItem.Name = name + " Menu Item";
-            menuItem.Text = name;
+			menuItem.Name = name + " Menu Item";
+			menuItem.Text = name;
 			MenuItems.Add(menuItem);
 
 			return menuItem;

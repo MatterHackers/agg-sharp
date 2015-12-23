@@ -58,7 +58,7 @@ namespace MatterHackers.Agg.UI
 		{
 		}
 
-        public MouseEventArgs(MouseButtons button, int clicks, Vector2[] positions, int wheelDelta)
+		public MouseEventArgs(MouseButtons button, int clicks, Vector2[] positions, int wheelDelta)
 		{
 			mouseButtons = button;
 			numClicks = clicks;

@@ -93,42 +93,42 @@ namespace MatterHackers.Agg.UI
 		Max_FitToChildren_ParentHeight = FitToChildren | ParentBottomTop,
 	};
 
-	public enum Cursors 
-	{ 
-		Arrow, 
-		Cross, 
-		Default, 
-		Hand, 
-		Help, 
-		HSplit, 
-		IBeam, 
-		No, 
-		NoMove2D, 
-		NoMoveHoriz, 
-		NoMoveVert, 
-		PanEast, 
-		PanNE, 
-		PanNorth, 
-		PanNW, 
-		PanSE, 
-		PanSouth, 
-		PanSW, 
-		PanWest, 
-		SizeAll, 
-		SizeNESW, 
-		SizeNS, 
-		SizeNWSE, 
-		SizeWE, 
-		UpArrow, 
-		VSplit, 
-		WaitCursor 
+	public enum Cursors
+	{
+		Arrow,
+		Cross,
+		Default,
+		Hand,
+		Help,
+		HSplit,
+		IBeam,
+		No,
+		NoMove2D,
+		NoMoveHoriz,
+		NoMoveVert,
+		PanEast,
+		PanNE,
+		PanNorth,
+		PanNW,
+		PanSE,
+		PanSouth,
+		PanSW,
+		PanWest,
+		SizeAll,
+		SizeNESW,
+		SizeNS,
+		SizeNWSE,
+		SizeWE,
+		UpArrow,
+		VSplit,
+		WaitCursor
 	};
 
-	public enum UnderMouseState 
-	{ 
-		NotUnderMouse, 
-		UnderMouseNotFirst, 
-		FirstUnderMouse 
+	public enum UnderMouseState
+	{
+		NotUnderMouse,
+		UnderMouseNotFirst,
+		FirstUnderMouse
 	};
 
 	[DebuggerDisplay("Name = {Name}, Bounds = {LocalBounds}")]
@@ -295,7 +295,7 @@ namespace MatterHackers.Agg.UI
 				if (margin != value)
 				{
 					margin = value;
-                    this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Margin));
+					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Margin));
 					OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.Margin));
 					OnMarginChanged();
 				}
@@ -364,7 +364,7 @@ namespace MatterHackers.Agg.UI
 						OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.HAnchor));
 					}
 
-                    HAnchorChanged?.Invoke(this, null);
+					HAnchorChanged?.Invoke(this, null);
 				}
 			}
 		}
@@ -1048,16 +1048,16 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-        /// <summary>
-        /// If this is set the control will show tool tips on hover, if the platfrom specific SystemWindow implements tool tips.
-        /// You can change the settings for the tool tip delays in the containing SystemWindow.
-        /// </summary>
-        public string ToolTipText
-        {
-            get; set;
-        }
+		/// <summary>
+		/// If this is set the control will show tool tips on hover, if the platfrom specific SystemWindow implements tool tips.
+		/// You can change the settings for the tool tip delays in the containing SystemWindow.
+		/// </summary>
+		public string ToolTipText
+		{
+			get; set;
+		}
 
-        public virtual void OnTextChanged(EventArgs e)
+		public virtual void OnTextChanged(EventArgs e)
 		{
 			TextChanged?.Invoke(this, e);
 		}
@@ -1098,7 +1098,7 @@ namespace MatterHackers.Agg.UI
 					OnVisibleChanged(null);
 
 					OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.Visible));
-                    this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Visible));
+					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Visible));
 
 					Invalidate();
 					screenClipping.MarkRecalculate();
@@ -1550,7 +1550,7 @@ namespace MatterHackers.Agg.UI
 					visibleBounds.IntersectWithRectangle(curGUIWidget.Parent.LocalBounds);
 				}
 
-				curGUIWidget = curGUIWidget.Parent;	
+				curGUIWidget = curGUIWidget.Parent;
 			}
 
 			return true;
@@ -2220,7 +2220,7 @@ namespace MatterHackers.Agg.UI
 						}
 					}
 				}
-				 
+
 				bool mouseEnteredBounds = underMouseState == UI.UnderMouseState.NotUnderMouse;
 
 				if (childHasAcceptedThisEvent)
@@ -2281,7 +2281,7 @@ namespace MatterHackers.Agg.UI
 		{
 			// The os told up the mouse is 2 cilks (shot time beteewn clicks)
 			// but we also want to check if the original click happend on our control.
-			if(mouseEvent.Clicks == 2
+			if (mouseEvent.Clicks == 2
 				&& LastMouseDownMs > UiThread.CurrentTimerMs - 550)
 			{
 				return true;
@@ -2290,23 +2290,23 @@ namespace MatterHackers.Agg.UI
 			return false;
 		}
 
-        private void SetToolTipText(MouseEventArgs mouseEvent)
-        {
-            if (ToolTipText != null)
-            {
-                GuiWidget parent = this;
-                while (parent.Parent != null
-                    && parent as SystemWindow == null)
-                {
-                    parent = parent.Parent;
-                }
+		private void SetToolTipText(MouseEventArgs mouseEvent)
+		{
+			if (ToolTipText != null)
+			{
+				GuiWidget parent = this;
+				while (parent.Parent != null
+					&& parent as SystemWindow == null)
+				{
+					parent = parent.Parent;
+				}
 
-                SystemWindow systemWindow = parent as SystemWindow;
-                systemWindow?.SetHoveredWidget(this);
-            }
-        }
+				SystemWindow systemWindow = parent as SystemWindow;
+				systemWindow?.SetHoveredWidget(this);
+			}
+		}
 
-        internal bool mouseMoveEventHasBeenAcceptedByOther = false;
+		internal bool mouseMoveEventHasBeenAcceptedByOther = false;
 
 		public virtual void OnMouseMove(MouseEventArgs mouseEvent)
 		{
@@ -2485,8 +2485,8 @@ namespace MatterHackers.Agg.UI
 						else
 						{
 							underMouseState = UI.UnderMouseState.FirstUnderMouse;
-                            SetToolTipText(mouseEvent);
-                            OnMouseEnter(mouseEvent);
+							SetToolTipText(mouseEvent);
+							OnMouseEnter(mouseEvent);
 						}
 					}
 					else // we are the first under mouse
@@ -2608,7 +2608,7 @@ namespace MatterHackers.Agg.UI
 						BreakInDebugger("You should only ever get here if you have the mouse captured.");
 					}
 
-                    MouseUp?.Invoke(this, mouseEvent);
+					MouseUp?.Invoke(this, mouseEvent);
 				}
 
 				if (!PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
@@ -2677,28 +2677,28 @@ namespace MatterHackers.Agg.UI
 				child.FindNamedChildrenRecursive(nameToSearchFor, foundChildren);
 			}
 		}
-		
+
 		public GuiWidget FindNamedChildRecursive(string nameToSearchFor)
-        {
-            if (Name == nameToSearchFor)
-            {
-                return this;
-            }
+		{
+			if (Name == nameToSearchFor)
+			{
+				return this;
+			}
 
 			List<GuiWidget> searchChildren = new List<GuiWidget>(Children);
 			foreach (GuiWidget child in searchChildren)
-            {
-                GuiWidget namedChild = child.FindNamedChildRecursive(nameToSearchFor);
-                if(namedChild != null)
-                {
-                    return namedChild;
-                }
-            }
+			{
+				GuiWidget namedChild = child.FindNamedChildRecursive(nameToSearchFor);
+				if (namedChild != null)
+				{
+					return namedChild;
+				}
+			}
 
-            return null;
-        }
+			return null;
+		}
 
-        public virtual void OnMouseEnterBounds(MouseEventArgs mouseEvent)
+		public virtual void OnMouseEnterBounds(MouseEventArgs mouseEvent)
 		{
 			MouseEnterBounds?.Invoke(this, mouseEvent);
 		}
