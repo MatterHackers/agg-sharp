@@ -110,6 +110,27 @@ namespace MatterHackers.Agg.Image
 			SetRecieveBlender(sourceImage.GetRecieveBlender());
 		}
 
+		public static ImageBuffer CreateScaledImage(ImageBuffer unscaledSourceImage, int width, int height)
+		{
+			ImageBuffer destImage = new ImageBuffer(width, height, 32, new BlenderBGRA());
+			IRecieveBlenderByte scalingBlender = new BlenderBGRA();
+
+			// If the source image is more than twice as big as our dest image.
+			while (unscaledSourceImage.Width > destImage.Width * 2)
+			{
+				// The image sampler we use is a 2x2 filter so we need to scale by a max of 1/2 if we want to get good results.
+				// So we scale as many times as we need to to get the Image to be the right size.
+				// If this were going to be a non-uniform scale we could do the x and y separately to get better results.
+				ImageBuffer halfImage = new ImageBuffer(unscaledSourceImage.Width / 2, unscaledSourceImage.Height / 2, 32, scalingBlender);
+				halfImage.NewGraphics2D().Render(unscaledSourceImage, 0, 0, 0, halfImage.Width / (double)unscaledSourceImage.Width, halfImage.Height / (double)unscaledSourceImage.Height);
+				unscaledSourceImage = halfImage;
+			}
+			destImage.NewGraphics2D().Render(unscaledSourceImage, 0, 0, 0, destImage.Width / (double)unscaledSourceImage.Width, destImage.Height / (double)unscaledSourceImage.Height);
+			destImage.MarkImageChanged();
+
+			return destImage;
+        }
+
 		public ImageBuffer(int width, int height, int bitsPerPixel, IRecieveBlenderByte recieveBlender)
 		{
 			Allocate(width, height, width * (bitsPerPixel / 8), bitsPerPixel);
