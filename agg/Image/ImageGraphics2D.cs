@@ -221,20 +221,52 @@ namespace MatterHackers.Agg
 			    HotspotOffsetY *= (inScaleY / scaleY);
 	        }
 #endif
-				Affine destRectTransform;
-				DrawImageGetDestBounds(source, destX, destY, sourceOriginOffsetX, sourceOriginOffsetY, scaleX, scaleY, angleRadians, out destRectTransform);
+                switch (ImageRenderQuality)
+				{
+					case TransformQuality.Fastest:
+						{
+							Affine destRectTransform;
+							DrawImageGetDestBounds(source, destX, destY, sourceOriginOffsetX, sourceOriginOffsetY, scaleX, scaleY, angleRadians, out destRectTransform);
 
-				Affine sourceRectTransform = new Affine(destRectTransform);
-				// We invert it because it is the transform to make the image go to the same position as the polygon. LBB [2/24/2004]
-				sourceRectTransform.invert();
+							Affine sourceRectTransform = new Affine(destRectTransform);
+							// We invert it because it is the transform to make the image go to the same position as the polygon. LBB [2/24/2004]
+							sourceRectTransform.invert();
 
-				span_image_filter spanImageFilter;
-				span_interpolator_linear interpolator = new span_interpolator_linear(sourceRectTransform);
-				ImageBufferAccessorClip sourceAccessor = new ImageBufferAccessorClip(source, RGBA_Floats.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
+							span_image_filter spanImageFilter;
+							span_interpolator_linear interpolator = new span_interpolator_linear(sourceRectTransform);
+							ImageBufferAccessorClip sourceAccessor = new ImageBufferAccessorClip(source, RGBA_Floats.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
 
-				spanImageFilter = new span_image_filter_rgba_bilinear_clip(sourceAccessor, RGBA_Floats.rgba_pre(0, 0, 0, 0), interpolator);
+							spanImageFilter = new span_image_filter_rgba_bilinear_clip(sourceAccessor, RGBA_Floats.rgba_pre(0, 0, 0, 0), interpolator);
 
-				DrawImage(source, spanImageFilter, destRectTransform);
+							DrawImage(source, spanImageFilter, destRectTransform);
+						}
+						break;
+
+					case TransformQuality.Best:
+						{
+							Affine destRectTransform;
+							DrawImageGetDestBounds(source, destX, destY, sourceOriginOffsetX, sourceOriginOffsetY, scaleX, scaleY, angleRadians, out destRectTransform);
+
+							Affine sourceRectTransform = new Affine(destRectTransform);
+							// We invert it because it is the transform to make the image go to the same position as the polygon. LBB [2/24/2004]
+							sourceRectTransform.invert();
+
+							span_interpolator_linear interpolator = new span_interpolator_linear(sourceRectTransform);
+							ImageBufferAccessorClip sourceAccessor = new ImageBufferAccessorClip(source, RGBA_Floats.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
+
+							//spanImageFilter = new span_image_filter_rgba_bilinear_clip(sourceAccessor, RGBA_Floats.rgba_pre(0, 0, 0, 0), interpolator);
+
+							IImageFilterFunction filterFunction = null;
+							filterFunction = new image_filter_blackman(4);
+							ImageFilterLookUpTable filter = new ImageFilterLookUpTable();
+							filter.calculate(filterFunction, true);
+
+							span_image_filter spanGenerator = new span_image_filter_rgba(sourceAccessor, interpolator, filter);
+
+							DrawImage(source, spanGenerator, destRectTransform);
+						}
+						break;
+				}
 #if false // this is some debug you can enable to visualize the dest bounding box
 		        LineFloat(BoundingRect.left, BoundingRect.top, BoundingRect.right, BoundingRect.top, WHITE);
 		        LineFloat(BoundingRect.right, BoundingRect.top, BoundingRect.right, BoundingRect.bottom, WHITE);

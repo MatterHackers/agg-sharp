@@ -45,6 +45,9 @@ namespace MatterHackers.Agg
 		protected Stack<Affine> affineTransformStack = new Stack<Affine>();
 		protected ScanlineRasterizer rasterizer;
 
+		public enum TransformQuality { Fastest, Best };
+		public TransformQuality ImageRenderQuality { get; set; } = TransformQuality.Fastest;
+
 		public Graphics2D()
 		{
 			affineTransformStack.Push(Affine.NewIdentity());

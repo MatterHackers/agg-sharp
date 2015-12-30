@@ -523,7 +523,7 @@ namespace MatterHackers.Agg
 				transform_image(m_step.Value);
 				m_time2 += stopwatch.ElapsedMilliseconds;
 				m_num_steps++;
-				UiThread.RunOnIdle(OnIdle);
+				UiThread.RunOnIdle(OnIdle, .1);
 			}
 			else
 			{
