@@ -76,7 +76,7 @@ namespace MatterHackers.Agg.UI.Tests
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
 			Assert.IsTrue(!listMenu.IsOpen);
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(listMenu.IsOpen);
 
 			// all the menu itmes should be added to the open menu
@@ -86,7 +86,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// click on menu again to close
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 			// all the mune itmes should be removed from the closed menu
 			Assert.IsTrue(cutMenuItem.Parent == null);
@@ -94,7 +94,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(pastMenuItem.Parent == null);
 
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 
 			// all the menu itmes should be removed from the closed menu
@@ -104,10 +104,10 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// open the menu
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(listMenu.IsOpen);
 			// all the menu itmes should be added to the open menu
 			Assert.IsTrue(cutMenuItem.Parent != null);
@@ -116,48 +116,48 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// click off menu to close
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 5, 299, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 			// all the mune itmes should be removed from the closed menu
 			Assert.IsTrue(cutMenuItem.Parent == null);
 			Assert.IsTrue(copyMenuItem.Parent == null);
 			Assert.IsTrue(pastMenuItem.Parent == null);
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 5, 299, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 
 			// open the menu again
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(listMenu.IsOpen);
 
 			// select the first item
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 11, 290, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(listMenu.IsOpen);
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 11, 290, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 			Assert.IsTrue(menuSelected == "Cut");
 
 			// open the menu
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(listMenu.IsOpen);
 
 			// select the second item
 			menuSelected = "";
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 11, 275, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(listMenu.IsOpen);
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 11, 275, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 			Assert.IsTrue(menuSelected == "Copy");
 
@@ -165,21 +165,21 @@ namespace MatterHackers.Agg.UI.Tests
 			menuSelected = "";
 			// open the menu
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(listMenu.IsOpen);
 
 			// click down on the first item
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 11, 290, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(listMenu.IsOpen);
 			// move off of it
 			container.OnMouseMove(new MouseEventArgs(MouseButtons.None, 1, 5, 290, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 5, 290, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 			Assert.IsTrue(menuSelected == "");
 
@@ -215,64 +215,64 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// open the menu
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(listMenu.IsOpen);
 
 			// click on menu again to close
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 
 			// open the menu
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(listMenu.IsOpen);
 
 			// click off menu to close
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 5, 299, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 5, 299, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 
 			// open the menu
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(listMenu.IsOpen);
 
 			// select the first item
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 11, 290, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(listMenu.IsOpen);
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 11, 290, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 			Assert.IsTrue(menuSelected == "Cut");
 
 			// open the menu
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(listMenu.IsOpen);
 
 			// select the second item
 			menuSelected = "";
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 11, 275, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(listMenu.IsOpen);
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 11, 275, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 			Assert.IsTrue(menuSelected == "Copy");
 
@@ -280,20 +280,20 @@ namespace MatterHackers.Agg.UI.Tests
 			menuSelected = "";
 			// open the menu
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(listMenu.IsOpen);
 
 			// click down on the first item
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 11, 290, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(listMenu.IsOpen);
 			// move off of it
 			container.OnMouseMove(new MouseEventArgs(MouseButtons.None, 1, 5, 290, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 5, 290, 0));
-			UiThread.DoRunAllPending();
+			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 			Assert.IsTrue(menuSelected == "");
 
