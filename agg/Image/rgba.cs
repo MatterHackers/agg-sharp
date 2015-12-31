@@ -626,41 +626,17 @@ namespace MatterHackers.Agg.Image
 
 		public void BlendPixel(byte[] pDestBuffer, int bufferOffset, RGBA_Bytes sourceColor)
 		{
-			//unsafe
+			int oneOverAlpha = base_mask - sourceColor.alpha;
+			unchecked
 			{
-				int oneOverAlpha = base_mask - sourceColor.alpha;
-				unchecked
-				{
-#if false
-					Vector4i sourceColors = new Vector4i(sourceColor.m_B, sourceColor.m_G, sourceColor.m_R, sourceColor.m_A);
-					Vector4i destColors = new Vector4i(
-						pDestBuffer[bufferOffset + ImageBuffer.OrderB],
-					    pDestBuffer[bufferOffset + ImageBuffer.OrderG],
-					    pDestBuffer[bufferOffset + ImageBuffer.OrderB],
-					    pDestBuffer[bufferOffset + ImageBuffer.OrderA]);
-					Vector4i oneOverAlphaV = new Vector4i(oneOverAlpha, oneOverAlpha, oneOverAlpha, oneOverAlpha);
-					Vector4i rounding = new Vector4i(255, 255, 255, 255);
-					Vector4i temp = destColors * oneOverAlphaV + rounding;
-					temp = temp >> 8;
-					temp = temp + sourceColors;
-					Vector8us packed8Final = Vector4i.PackWithUnsignedSaturation(temp, temp);
-					Vector16b packed16Final = Vector8us.SignedPackWithUnsignedSaturation(packed8Final, packed8Final);
-					pDestBuffer[bufferOffset + ImageBuffer.OrderR] = packed16Final.V2;
-					pDestBuffer[bufferOffset + ImageBuffer.OrderG] = packed16Final.V1;
-					pDestBuffer[bufferOffset + ImageBuffer.OrderB] = packed16Final.V0;
-					pDestBuffer[bufferOffset + ImageBuffer.OrderA] = 255;
-
-#else
-					int r = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderR] * oneOverAlpha + 255) >> 8) + sourceColor.red];
-					int g = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderG] * oneOverAlpha + 255) >> 8) + sourceColor.green];
-					int b = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderB] * oneOverAlpha + 255) >> 8) + sourceColor.blue];
-					int a = pDestBuffer[bufferOffset + ImageBuffer.OrderA];
-					pDestBuffer[bufferOffset + ImageBuffer.OrderR] = (byte)r;
-					pDestBuffer[bufferOffset + ImageBuffer.OrderG] = (byte)g;
-					pDestBuffer[bufferOffset + ImageBuffer.OrderB] = (byte)b;
-					pDestBuffer[bufferOffset + ImageBuffer.OrderA] = (byte)(base_mask - m_Saturate9BitToByte[(oneOverAlpha * (base_mask - a) + 255) >> 8]);
-#endif
-				}
+				int r = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderR] * oneOverAlpha + 255) >> 8) + sourceColor.red];
+				int g = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderG] * oneOverAlpha + 255) >> 8) + sourceColor.green];
+				int b = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderB] * oneOverAlpha + 255) >> 8) + sourceColor.blue];
+				int a = pDestBuffer[bufferOffset + ImageBuffer.OrderA];
+				pDestBuffer[bufferOffset + ImageBuffer.OrderR] = (byte)r;
+				pDestBuffer[bufferOffset + ImageBuffer.OrderG] = (byte)g;
+				pDestBuffer[bufferOffset + ImageBuffer.OrderB] = (byte)b;
+				pDestBuffer[bufferOffset + ImageBuffer.OrderA] = (byte)(base_mask - m_Saturate9BitToByte[(oneOverAlpha * (base_mask - a) + 255) >> 8]);
 			}
 		}
 
@@ -670,78 +646,44 @@ namespace MatterHackers.Agg.Image
 		{
 			if (firstCoverForAll)
 			{
-				//unsafe
+				if (sourceCovers[sourceCoversOffset] == 255)
 				{
-					if (sourceCovers[sourceCoversOffset] == 255)
+					for (int i = 0; i < count; i++)
 					{
-						for (int i = 0; i < count; i++)
+						RGBA_Bytes sourceColor = sourceColors[sourceColorsOffset];
+						if (sourceColor.alpha == 255)
 						{
-#if false
-                                BlendPixel(pDestBuffer, bufferOffset, sourceColors[sourceColorsOffset]);
-#else
-							RGBA_Bytes sourceColor = sourceColors[sourceColorsOffset];
-							if (sourceColor.alpha == 255)
-							{
-								pDestBuffer[bufferOffset + ImageBuffer.OrderR] = (byte)sourceColor.red;
-								pDestBuffer[bufferOffset + ImageBuffer.OrderG] = (byte)sourceColor.green;
-								pDestBuffer[bufferOffset + ImageBuffer.OrderB] = (byte)sourceColor.blue;
-								pDestBuffer[bufferOffset + ImageBuffer.OrderA] = 255;
-							}
-							else
-							{
-								int OneOverAlpha = base_mask - sourceColor.alpha;
-								unchecked
-								{
-									int r = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderR] * OneOverAlpha + 255) >> 8) + sourceColor.red];
-									int g = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderG] * OneOverAlpha + 255) >> 8) + sourceColor.green];
-									int b = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderB] * OneOverAlpha + 255) >> 8) + sourceColor.blue];
-									int a = pDestBuffer[bufferOffset + ImageBuffer.OrderA];
-									pDestBuffer[bufferOffset + ImageBuffer.OrderR] = (byte)r;
-									pDestBuffer[bufferOffset + ImageBuffer.OrderG] = (byte)g;
-									pDestBuffer[bufferOffset + ImageBuffer.OrderB] = (byte)b;
-									pDestBuffer[bufferOffset + ImageBuffer.OrderA] = (byte)(base_mask - m_Saturate9BitToByte[(OneOverAlpha * (base_mask - a) + 255) >> 8]);
-								}
-							}
-#endif
-							sourceColorsOffset++;
-							bufferOffset += 4;
+							CopyOpaquePixel(pDestBuffer, bufferOffset, sourceColor);
 						}
+						else
+						{
+							BlendPixel(pDestBuffer, bufferOffset, sourceColor);
+						}
+
+						sourceColorsOffset++;
+						bufferOffset += 4;
 					}
-					else
+				}
+				else
+				{
+					for (int i = 0; i < count; i++)
 					{
-						for (int i = 0; i < count; i++)
+						RGBA_Bytes sourceColor = sourceColors[sourceColorsOffset];
+						int alpha = (sourceColor.alpha * sourceCovers[sourceCoversOffset] + 255) / 256;
+						if (alpha == 0)
 						{
-							RGBA_Bytes sourceColor = sourceColors[sourceColorsOffset];
-							int alpha = (sourceColor.alpha * sourceCovers[sourceCoversOffset] + 255) / 256;
-							if (alpha == 0)
-							{
-								continue;
-							}
-							else if (alpha == 255)
-							{
-								pDestBuffer[bufferOffset + ImageBuffer.OrderR] = (byte)sourceColor.red;
-								pDestBuffer[bufferOffset + ImageBuffer.OrderG] = (byte)sourceColor.green;
-								pDestBuffer[bufferOffset + ImageBuffer.OrderB] = (byte)sourceColor.blue;
-								pDestBuffer[bufferOffset + ImageBuffer.OrderA] = (byte)alpha;
-							}
-							else
-							{
-								int OneOverAlpha = base_mask - alpha;
-								unchecked
-								{
-									int r = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderR] * OneOverAlpha + 255) >> 8) + sourceColor.red];
-									int g = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderG] * OneOverAlpha + 255) >> 8) + sourceColor.green];
-									int b = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderB] * OneOverAlpha + 255) >> 8) + sourceColor.blue];
-									int a = pDestBuffer[bufferOffset + ImageBuffer.OrderA];
-									pDestBuffer[bufferOffset + ImageBuffer.OrderR] = (byte)r;
-									pDestBuffer[bufferOffset + ImageBuffer.OrderG] = (byte)g;
-									pDestBuffer[bufferOffset + ImageBuffer.OrderB] = (byte)b;
-									pDestBuffer[bufferOffset + ImageBuffer.OrderA] = (byte)(base_mask - m_Saturate9BitToByte[(OneOverAlpha * (base_mask - a) + 255) >> 8]);
-								}
-							}
-							sourceColorsOffset++;
-							bufferOffset += 4;
+							continue;
 						}
+						else if (alpha == 255)
+						{
+							CopyOpaquePixel(pDestBuffer, bufferOffset, sourceColor);
+						}
+						else
+						{
+							BlendPixel(pDestBuffer, bufferOffset, sourceColor);
+						}
+						sourceColorsOffset++;
+						bufferOffset += 4;
 					}
 				}
 			}
@@ -753,31 +695,25 @@ namespace MatterHackers.Agg.Image
 					int alpha = (sourceColor.alpha * sourceCovers[sourceCoversOffset] + 255) / 256;
 					if (alpha == 255)
 					{
-						pDestBuffer[bufferOffset + ImageBuffer.OrderR] = (byte)sourceColor.red;
-						pDestBuffer[bufferOffset + ImageBuffer.OrderG] = (byte)sourceColor.green;
-						pDestBuffer[bufferOffset + ImageBuffer.OrderB] = (byte)sourceColor.blue;
-						pDestBuffer[bufferOffset + ImageBuffer.OrderA] = (byte)alpha;
+						CopyOpaquePixel(pDestBuffer, bufferOffset, sourceColor);
 					}
 					else if (alpha > 0)
 					{
-						int OneOverAlpha = base_mask - alpha;
-						unchecked
-						{
-							int r = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderR] * OneOverAlpha + 255) >> 8) + sourceColor.red];
-							int g = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderG] * OneOverAlpha + 255) >> 8) + sourceColor.green];
-							int b = m_Saturate9BitToByte[((pDestBuffer[bufferOffset + ImageBuffer.OrderB] * OneOverAlpha + 255) >> 8) + sourceColor.blue];
-							int a = pDestBuffer[bufferOffset + ImageBuffer.OrderA];
-							pDestBuffer[bufferOffset + ImageBuffer.OrderR] = (byte)r;
-							pDestBuffer[bufferOffset + ImageBuffer.OrderG] = (byte)g;
-							pDestBuffer[bufferOffset + ImageBuffer.OrderB] = (byte)b;
-							pDestBuffer[bufferOffset + ImageBuffer.OrderA] = (byte)(base_mask - m_Saturate9BitToByte[(OneOverAlpha * (base_mask - a) + 255) >> 8]);
-						}
+						BlendPixel(pDestBuffer, bufferOffset, sourceColor);
 					}
 					sourceColorsOffset++;
 					sourceCoversOffset++;
 					bufferOffset += 4;
 				}
 			}
+		}
+
+		private static void CopyOpaquePixel(byte[] pDestBuffer, int bufferOffset, RGBA_Bytes sourceColor)
+		{
+			pDestBuffer[bufferOffset + ImageBuffer.OrderR] = (byte)sourceColor.red;
+			pDestBuffer[bufferOffset + ImageBuffer.OrderG] = (byte)sourceColor.green;
+			pDestBuffer[bufferOffset + ImageBuffer.OrderB] = (byte)sourceColor.blue;
+			pDestBuffer[bufferOffset + ImageBuffer.OrderA] = 255;
 		}
 	}
 
