@@ -70,8 +70,10 @@ namespace MatterHackers.Agg.UI
 						{
 							GuiWidget parentWindow = PerformanceTimer.GetParentWindowFunction();
 							parentWindow.AddChild(pannels);
+#if DEBUG
 							parentWindow.KeyDown += ParentWindow_KeyDown;
 							parentWindow.MouseDownInBounds += ParentWindow_MouseDown;
+#endif
 						}
 					});
 				}
