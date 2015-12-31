@@ -241,6 +241,7 @@ namespace MatterHackers.Agg.UI
 			return x.drawOrder.CompareTo(y.drawOrder);
 		}
 
+#if DEBUG
 		private void ParentWindow_KeyDown(object sender, KeyEventArgs keyEvent)
 		{
 			if (keyEvent.KeyCode == Keys.Escape)
@@ -256,6 +257,7 @@ namespace MatterHackers.Agg.UI
 				pannels.Visible = !pannels.Visible;
 			}
 		}
+#endif
 
 		internal class PerformanceTimerDisplayData
 		{

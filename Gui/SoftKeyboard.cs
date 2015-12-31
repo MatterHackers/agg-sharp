@@ -259,7 +259,7 @@ namespace MatterHackers.Agg.UI
 				MouseEventArgs upMouseEvent = e as MouseEventArgs;
 				if (lastMouseDownEvent != null)
 				{
-					// The onfocus that put us here had a mouse down event that we want to unwind if using our soft keybeard.
+					// The OnFocus that put us here had a mouse down event that we want to unwind if using our soft keyboard.
 					CheckMouseCaptureStates();
 					content.OnMouseUp(lastMouseDownEvent);
 					CheckMouseCaptureStates();
@@ -278,7 +278,7 @@ namespace MatterHackers.Agg.UI
 			CheckMouseCaptureStates();
 			if (keyboard.Visible)
 			{
-				// the click that got rid of the softkeyboard should be clicked after we lower
+				// the click that got rid of the soft keyboard should be clicked after we lower
 				// this code currently messes up
 				contentOffsetHolder.OnMouseDown(lastMouseDownEvent);
 

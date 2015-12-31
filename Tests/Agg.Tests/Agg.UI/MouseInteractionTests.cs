@@ -257,7 +257,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(topWidgetGotMouseDownInBounds == 0);
 			topWidgetGotMouseUp = topWidgetGotMouseDown = topWidgetGotMouseDownInBounds = 0;
 			containerGotMouseDown = containerGotMouseUp = containerGotMouseDownInBounds = 0;
-			// down on tontainer
+			// down on container
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 10, 10, 0));
 			Assert.IsTrue(containerGotMouseUp == 0);
 			Assert.IsTrue(topWidgetGotMouseUp == 0);
@@ -678,8 +678,8 @@ namespace MatterHackers.Agg.UI.Tests
 		public void ValidateEnterAndLeaveEventsWhenCoverd()
 		{
 			// A widget contains two children the second completely covering the first.
-			// When the mouse moves into the first it should not recieve an enter event only a bounds enter event.
-			// When the mouse move out of the first it should recieve only a bounds exit, not an exit.
+			// When the mouse moves into the first it should not receive an enter event only a bounds enter event.
+			// When the mouse move out of the first it should receive only a bounds exit, not an exit.
 			GuiWidget container = new GuiWidget();
 			container.Name = "continer";
 			container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
@@ -1098,7 +1098,7 @@ namespace MatterHackers.Agg.UI.Tests
 		public void MouseCapturedSpressesLeaveEventsInButtonsSameAsRectangles()
 		{
 			GuiWidget container = new GuiWidget();
-			container.Name = "continer";
+			container.Name = "container";
 			container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
 
 			Button buttonA = new Button();
@@ -1123,7 +1123,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(aGotLeave == false);
 			Assert.IsTrue(aGotMove == false);
 
-			// make sure we stay on top when internal moves occure
+			// make sure we stay on top when internal moves occur
 			aGotEnter = aGotLeave = aGotMove = false;
 			container.OnMouseMove(new MouseEventArgs(MouseButtons.Left, 0, 16, 16, 0));
 			Assert.IsTrue(buttonA.FirstWidgetUnderMouse == true);
