@@ -39,8 +39,14 @@ namespace MatterHackers.Agg.UI
 		protected WidgetForWindowsFormsAbstract aggAppWidget;
 
 		private static Form mainForm = null;
+
 		private static System.Timers.Timer idleCallBackTimer = null;
-		int titleBarHeight = 0;
+
+		private static bool processingOnIdle = false;
+
+		private static object singleInvokeLock = new object();
+
+		private bool hasBeenClosed = false;
 
 		public WindowsFormsAbstract()
 		{
@@ -50,14 +56,12 @@ namespace MatterHackers.Agg.UI
 				mainForm = this;
 				// call up to 100 times a second
 				idleCallBackTimer.Interval = 10;
-				idleCallBackTimer.Elapsed += CallAppWidgetOnIdle;
+				idleCallBackTimer.Elapsed += InvokePendingOnIdleActions;
 				idleCallBackTimer.Start();
 			}
 
-			titleBarHeight = RectangleToScreen(ClientRectangle).Top - this.Top;
+			this.TitleBarHeight = RectangleToScreen(ClientRectangle).Top - this.Top;
 		}
-
-		private bool hasBeenClosed = false;
 
 		public static void ShowFileInFolder(string fileToShow)
 		{
@@ -66,7 +70,7 @@ namespace MatterHackers.Agg.UI
 			System.Diagnostics.Process.Start("explorer.exe", argument);
 		}
 
-		public int TitleBarHeight { get { return titleBarHeight; } }
+		public int TitleBarHeight { get; private set; } = 0;
 
 		protected void SetUpFormsWindow(AbstractOsMappingWidget app, SystemWindow childSystemWindow)
 		{
@@ -172,28 +176,54 @@ namespace MatterHackers.Agg.UI
 			base.OnDragDrop(dragevent);
 		}
 
-		private void CallAppWidgetOnIdle(object sender, ElapsedEventArgs e)
+		public void ReleaseOnIdleGuard()
+		{
+			lock(singleInvokeLock)
+			{
+				processingOnIdle = false;
+			}
+		}
+
+		private void InvokePendingOnIdleActions(object sender, ElapsedEventArgs e)
 		{
 			if (aggAppWidget != null
 				&& !hasBeenClosed)
 			{
-				if (InvokeRequired)
+				lock(singleInvokeLock)
 				{
-					// you are calling this from another thread and should not be
-					//throw new Exception("You are calling this from another thread and should not be.");
-					Invoke(new Action(DoCallAppWidgetOnIdle));
+					if (processingOnIdle)
+					{
+						// If the pending invoke has not completed, skip the timer event
+						return;
+					}
+
+					processingOnIdle = true;
+				}
+
+				if ( InvokeRequired)
+				{
+					Invoke(new Action(() =>
+					{
+						try
+						{
+							UiThread.InvokePendingActions();
+						}
+						catch
+						{
+						}
+
+						lock (singleInvokeLock)
+						{
+							processingOnIdle = false;
+						}
+					}));
 				}
 				else
 				{
-					DoCallAppWidgetOnIdle();
+					UiThread.InvokePendingActions();
+					processingOnIdle = false;
 				}
 			}
-		}
-
-		private void DoCallAppWidgetOnIdle()
-		{
-			IdleCount++;
-			UiThread.DoRunAllPending();
 		}
 
 		protected override void WndProc(ref Message m)
@@ -236,7 +266,6 @@ namespace MatterHackers.Agg.UI
 		}
 
 		private int DrawCount = 0;
-		private int IdleCount = 0;
 		private int OnPaintCount;
 
 		public abstract void CopyBackBufferToScreen(Graphics displayGraphics);
@@ -291,7 +320,7 @@ namespace MatterHackers.Agg.UI
 				{
 					waitingForIdleTimerToStop = true;
 					idleCallBackTimer.Stop();
-					idleCallBackTimer.Elapsed -= CallAppWidgetOnIdle;
+					idleCallBackTimer.Elapsed -= InvokePendingOnIdleActions;
 					e.Cancel = true;
 					// We just need to wait for this event to end so we can re-enter the idle loop with the time stoped
 					// If we close with the idle loop timer not stoped we throw and exception.

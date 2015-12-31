@@ -20,6 +20,7 @@
 //----------------------------------------------------------------------------
 using System;
 using System.Drawing;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace MatterHackers.Agg.UI
@@ -202,6 +203,9 @@ namespace MatterHackers.Agg.UI
 
 		public override void ShowModal()
 		{
+			// Release the onidle guard so that the onidle pump continues processing while we block at ShowDialog below
+			Task.Run(() => windowsFormsWindow.ReleaseOnIdleGuard());
+
 			WindowsFormsWindow.ShowDialog();
 		}
 
