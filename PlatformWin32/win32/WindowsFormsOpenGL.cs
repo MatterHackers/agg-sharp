@@ -49,13 +49,19 @@ namespace MatterHackers.Agg.UI
 		{
             if (!checkedCapabilities)
             {
+
                 IntPtr address = (this.Context as OpenTK.Graphics.IGraphicsContextInternal).GetAddress("glGenBuffers");
-                if (!GL.GetString(StringName.Extensions).Contains("vertex_buffer_object") || address == IntPtr.Zero)
+
+                Version openGLVersion = new Version(GL.GetString(StringName.Version));
+                string glExtensionsString = GL.GetString(StringName.Extensions);                
+                bool extensionSupport = glExtensionsString.Contains("GL_ARB_vertex_attrib_binding");
+
+                if (openGLVersion.CompareTo(new Version(2, 1)) < 0 && !extensionSupport)
                 {
                     MatterHackers.RenderOpenGl.OpenGl.GL.DisableGlBuffers();
                 }
-				//MatterHackers.RenderOpenGl.OpenGl.GL.DisableGlBuffers();
-				checkedCapabilities = true;
+
+                checkedCapabilities = true;
             }
 			Id = nextId++;
 		}
