@@ -49,19 +49,32 @@ namespace MatterHackers.Agg.UI
 		{
             if (!checkedCapabilities)
             {
+				try
+				{
+					IntPtr address = (this.Context as OpenTK.Graphics.IGraphicsContextInternal).GetAddress("glGenBuffers");
 
-                IntPtr address = (this.Context as OpenTK.Graphics.IGraphicsContextInternal).GetAddress("glGenBuffers");
+					string versionString = GL.GetString(StringName.Version);
+					int firstSpace = versionString.IndexOf(' ');
+					if (firstSpace != -1)
+					{
+						versionString = versionString.Substring(0, firstSpace);
+					}
 
-                Version openGLVersion = new Version(GL.GetString(StringName.Version));
-                string glExtensionsString = GL.GetString(StringName.Extensions);                
-                bool extensionSupport = glExtensionsString.Contains("GL_ARB_vertex_attrib_binding");
+					Version openGLVersion = new Version(versionString);
+					string glExtensionsString = GL.GetString(StringName.Extensions);
+					bool extensionSupport = glExtensionsString.Contains("GL_ARB_vertex_attrib_binding");
 
-                if (openGLVersion.CompareTo(new Version(2, 1)) < 0 && !extensionSupport)
-                {
-                    MatterHackers.RenderOpenGl.OpenGl.GL.DisableGlBuffers();
-                }
+					if (openGLVersion.CompareTo(new Version(2, 1)) < 0 && !extensionSupport)
+					{
+						MatterHackers.RenderOpenGl.OpenGl.GL.DisableGlBuffers();
+					}
+				}
+				catch
+				{
+					MatterHackers.RenderOpenGl.OpenGl.GL.DisableGlBuffers();
+				}
 
-                checkedCapabilities = true;
+				checkedCapabilities = true;
             }
 			Id = nextId++;
 		}
