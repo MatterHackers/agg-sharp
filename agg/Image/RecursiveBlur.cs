@@ -2,7 +2,7 @@
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
-// C# Port port by: Lars Brubaker
+// C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 //
@@ -20,9 +20,9 @@
 // The Stack Blur Algorithm was invented by Mario Klingemann,
 // mario@quasimondo.com and described here:
 // http://incubator.quasimondo.com/processing/fast_blur_deluxe.php
-// (search phrase "Stackblur: Fast But Goodlooking").
+// (search phrase "Stackblur: Fast But Good looking").
 // The major improvement is that there's no more division table
-// that was very expensive to create for large blur radii. Insted,
+// that was very expensive to create for large blur radii. Instead,
 // for 8-bit per channel and radius not exceeding 254 the division is
 // replaced by multiplication and shift.
 //

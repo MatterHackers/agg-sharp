@@ -15,7 +15,7 @@ namespace MatterHackers.Agg
 		{
 #if __ANDROID__
 			// Technique for loading directly form Android Assets (Requires you create and populate the Assets->StaticData->Plugins
-			// folder with the actual plugins you want to laod
+			// folder with the actual plugins you want to load
 			Plugins = LoadPluginsFromAssets();
 
 #else

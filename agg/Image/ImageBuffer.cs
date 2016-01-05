@@ -5,7 +5,7 @@ using MatterHackers.VectorMath;
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
-// C# Port port by: Lars Brubaker
+// C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 //
@@ -46,7 +46,7 @@ namespace MatterHackers.Agg.Image
 		protected int[] yTableArray;
 		protected int[] xTableArray;
 		private byte[] m_ByteBuffer;
-		private int bufferOffset; // the beggining of the image in this buffer
+		private int bufferOffset; // the beginning of the image in this buffer
 		private int bufferFirstPixel; // Pointer to first pixel depending on strideInBytes and image position
 
 		private int width;  // Width in pixels
@@ -118,7 +118,7 @@ namespace MatterHackers.Agg.Image
 			while (unscaledSourceImage.Width > destImage.Width * 2)
 			{
 				// The image sampler we use is a 2x2 filter so we need to scale by a max of 1/2 if we want to get good results.
-				// So we scale as many times as we need to to get the Image to be the right size.
+				// So we scale as many times as we need to get the Image to be the right size.
 				// If this were going to be a non-uniform scale we could do the x and y separately to get better results.
 				ImageBuffer halfImage = new ImageBuffer(unscaledSourceImage.Width / 2, unscaledSourceImage.Height / 2, 32, unscaledSourceImage.GetRecieveBlender());
 				halfImage.NewGraphics2D().Render(unscaledSourceImage, 0, 0, 0, halfImage.Width / (double)unscaledSourceImage.Width, halfImage.Height / (double)unscaledSourceImage.Height);
@@ -289,7 +289,7 @@ namespace MatterHackers.Agg.Image
 			if (yTableArray.Length != inHeight
 				|| xTableArray.Length != inWidth)
 			{
-				throw new Exception("The yTable and xTable should be allocated correctly at this point. Figure out what happend."); // LBB, don't fix this if you don't understand what it's trying to do.
+				throw new Exception("The yTable and xTable should be allocated correctly at this point. Figure out what happened."); // LBB, don't fix this if you don't understand what it's trying to do.
 			}
 		}
 
@@ -516,7 +516,7 @@ namespace MatterHackers.Agg.Image
 		{
 			if (byteBuffer.Length < height * strideInBytes)
 			{
-				throw new Exception("Your buffer does not have enough room it it for your height and strideInBytes.");
+				throw new Exception("Your buffer does not have enough room for your height and strideInBytes.");
 			}
 			m_ByteBuffer = byteBuffer;
 			this.bufferOffset = bufferFirstPixel = bufferOffset;
@@ -1193,7 +1193,7 @@ namespace MatterHackers.Agg.Image
 
 		public override int GetHashCode()
 		{
-			// This might be hard to make fast and usefull.
+			// This might be hard to make fast and useful.
 			return m_ByteBuffer.GetHashCode() ^ bufferOffset.GetHashCode() ^ bufferFirstPixel.GetHashCode();
 		}
 
@@ -1256,7 +1256,7 @@ namespace MatterHackers.Agg.Image
 		{
 			//if (sourceColor.m_A != 0)
 			{
-#if false // we blend regardless of the alpha so that we can get Light Opacity working (used this way we have addative and faster blending in one blender) LBB
+#if false // we blend regardless of the alpha so that we can get Light Opacity working (used this way we have additive and faster blending in one blender) LBB
                 if (sourceColor.m_A == base_mask)
                 {
                     Blender.CopyPixel(pDestBuffer, sourceColor);
@@ -1280,7 +1280,7 @@ namespace MatterHackers.Agg.Image
 				//if (sourceColor.m_A != 0)
 				{
 					sourceColor.alpha = (byte)((sourceColor.alpha * (cover + 1)) >> 8);
-#if false // we blend regardless of the alpha so that we can get Light Opacity working (used this way we have addative and faster blending in one blender) LBB
+#if false // we blend regardless of the alpha so that we can get Light Opacity working (used this way we have additive and faster blending in one blender) LBB
                     if (sourceColor.m_A == base_mask)
                     {
                         Blender.CopyPixel(pDestBuffer, sourceColor);

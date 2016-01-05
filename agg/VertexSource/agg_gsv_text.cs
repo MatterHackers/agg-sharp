@@ -4,7 +4,7 @@ using MatterHackers.VectorMath;
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
-// C# Port port by: Lars Brubaker
+// C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 //
@@ -27,7 +27,7 @@ using System.Collections.Generic;
 
 namespace MatterHackers.Agg.VertexSource
 {
-	[Obsolete("All of these shoud use the new font stuff.  You probably want a StringPrinter or a TextWidget in this spot.")]
+	[Obsolete("All of these should use the new font stuff.  You probably want a StringPrinter or a TextWidget in this spot.")]
 	public sealed class gsv_text : IVertexSource
 	{
 		private enum status

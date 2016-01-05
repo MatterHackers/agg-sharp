@@ -8,7 +8,7 @@ using MatterHackers.VectorMath;
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
-// C# Port port by: Lars Brubaker
+// C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 //
@@ -92,7 +92,7 @@ namespace MatterHackers.Agg
 		{
 			if (affineTransformStack.Count > 1000)
 			{
-				throw new System.Exception("You seem to be leaking transforms.  You should be poping some of them at some point.");
+				throw new System.Exception("You seem to be leaking transforms.  You should be popping some of them at some point.");
 			}
 
 			affineTransformStack.Push(affineTransformStack.Peek());

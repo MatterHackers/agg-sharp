@@ -8,7 +8,7 @@ using MatterHackers.VectorMath;
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
-// C# Port port by: Lars Brubaker
+// C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 //
@@ -171,7 +171,7 @@ namespace MatterHackers.Agg
 				graphicsTransform.transform(ref destX, ref destY);
 			}
 
-#if false // this is an optomization that eliminates the drawing of images that have their alpha set to all 0 (happens with generated images like explosions).
+#if false // this is an optimization that eliminates the drawing of images that have their alpha set to all 0 (happens with generated images like explosions).
 	        MaxAlphaFrameProperty maxAlphaFrameProperty = MaxAlphaFrameProperty::GetMaxAlphaFrameProperty(source);
 
 	        if((maxAlphaFrameProperty.GetMaxAlpha() * color.A_Byte) / 256 <= ALPHA_CHANNEL_BITS_DIVISOR)
@@ -274,7 +274,7 @@ namespace MatterHackers.Agg
 		        LineFloat(BoundingRect.left, BoundingRect.bottom, BoundingRect.left, BoundingRect.top, WHITE);
 #endif
 			}
-			else // TODO: this can be even faster if we do not use an intermediat buffer
+			else // TODO: this can be even faster if we do not use an intermediate buffer
 			{
 				Affine destRectTransform;
 				DrawImageGetDestBounds(source, destX, destY, sourceOriginOffsetX, sourceOriginOffsetY, scaleX, scaleY, angleRadians, out destRectTransform);

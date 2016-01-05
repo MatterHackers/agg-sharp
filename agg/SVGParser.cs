@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
 //
-// C# Port port by: Lars Brubaker
+// C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007-2011
 //

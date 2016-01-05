@@ -223,8 +223,8 @@ namespace MatterHackers.Agg
 			// clip off the bottom
 			if (pDestRect.Bottom > pBoundingRect.Bottom)
 			{
-				// This type of clipping only works when we arenst scaling an image...
-				// If we are scaling an image, the source and desst sizes won't match
+				// This type of clipping only works when we aren't scaling an image...
+				// If we are scaling an image, the source and dest sizes won't match
 				if (pSourceRect.Height != pDestRect.Height)
 				{
 					throw new Exception("source and dest rects must have the same height");

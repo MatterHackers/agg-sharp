@@ -2,7 +2,7 @@
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
-// C# Port port by: Lars Brubaker
+// C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 //
@@ -111,9 +111,9 @@ namespace MatterHackers.Agg
 		//--------------------------------------------------------------------
 		public void create(IImageByte src)
 		{
-			// we are going to create a dialated image for filtering
+			// we are going to create a dilated image for filtering
 			// we add m_dilation pixels to every side of the image and then copy the image in the x
-			// dirrection into each end so that we can sample into this image to get filtering on x repeating
+			// direction into each end so that we can sample into this image to get filtering on x repeating
 			// if the original image look like this
 			//
 			// 123456
@@ -161,7 +161,7 @@ namespace MatterHackers.Agg
 				}
 			}
 
-			// copy the first two pixels form the end into the begining and from the begining into the end
+			// copy the first two pixels form the end into the beginning and from the beginning into the end
 			for (int y = 0; y < m_height; y++)
 			{
 				int s1Offset = src.GetBufferOffsetXY(0, y);

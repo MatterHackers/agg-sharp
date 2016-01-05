@@ -2,7 +2,7 @@
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
-// C# Port port by: Lars Brubaker
+// C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 //
@@ -60,7 +60,7 @@ namespace MatterHackers.Agg.RasterizerScanline
 	//
 	// scanline_u8::const_iterator span = sl.begin();
 	//
-	// unsigned char* row = m_rbuf->row(y); // The the address of the beginning
+	// unsigned char* row = m_rbuf->row(y); // The address of the beginning
 	//                                      // of the current row
 	//
 	// unsigned num_spans = sl.num_spans(); // Number of spans. It's guaranteed that
@@ -88,7 +88,7 @@ namespace MatterHackers.Agg.RasterizerScanline
 	//                                    // grayscale image 1-byte per pixel.
 	//     do
 	//     {
-	//         *dst++ = *covers++;        // Hypotetical rendering.
+	//         *dst++ = *covers++;        // Hypothetical rendering.
 	//     }
 	//     while(--num_pix);
 	//

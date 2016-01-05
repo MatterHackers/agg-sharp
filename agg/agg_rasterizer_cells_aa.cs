@@ -2,7 +2,7 @@
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
-// C# Port port by: Lars Brubaker
+// C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 //
@@ -13,9 +13,9 @@
 //
 //----------------------------------------------------------------------------
 //
-// The author gratefully acknowleges the support of David Turner,
+// The author gratefully acknowledges the support of David Turner,
 // Robert Wilhelm, and Werner Lemberg - the authors of the FreeType
-// libray - in producing this work. See http://www.freetype.org for details.
+// library - in producing this work. See http://www.freetype.org for details.
 //
 //----------------------------------------------------------------------------
 // Contact: mcseem@antigrain.com
@@ -36,7 +36,7 @@ using poly_subpixel_scale_e = MatterHackers.Agg.agg_basics.poly_subpixel_scale_e
 namespace MatterHackers.Agg
 {
 	//-----------------------------------------------------------------cell_aa
-	// A pixel cell. There're no constructors defined and it was done
+	// A pixel cell. There are no constructors defined and it was done
 	// intentionally in order to avoid extra overhead when allocating an
 	// array of cells.
 	public struct cell_aa

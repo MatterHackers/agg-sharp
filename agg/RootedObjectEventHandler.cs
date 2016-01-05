@@ -90,7 +90,7 @@ namespace MatterHackers.Agg
 		public void UnregisterEvent(EventHandler functionToCallOnEvent, ref EventHandler functionThatWillBeCalledToUnregisterEvent)
 		{
 			InternalEvent -= functionToCallOnEvent;
-			// After we remove it it will still be removed again in the functionThatWillBeCalledToUnregisterEvent
+			// After we remove it, it will still be removed again in the functionThatWillBeCalledToUnregisterEvent
 			// But it is valid to attempt remove more than once.
 		}
 
