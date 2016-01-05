@@ -13,17 +13,9 @@ namespace MatterHackers.Localizations
 		private const string translatedTag = "Translated:";
 
 		private Dictionary<string, string> translationDictionary = new Dictionary<string, string>();
-		private Dictionary<string, string> masterDictionary = new Dictionary<string, string>();
+		private string translationFilePath;
 
-		private string pathToTranslationFile;
-		private string pathToMasterFile;
-
-		private string twoLetterIsoLanguageName;
-
-		public string TwoLetterIsoLanguageName
-		{
-			get { return twoLetterIsoLanguageName; }
-		}
+		public string TwoLetterIsoLanguageName { get; private set; }
 
 		public TranslationMap(string pathToTranslationsFolder, string twoLetterIsoLanguageName = "")
 		{
@@ -75,7 +67,7 @@ namespace MatterHackers.Localizations
 						{
 							dictionary.Add(DecodeWhileReading(englishString), DecodeWhileReading(translatedString));
 						}
-						// go back to looking for english
+						// go back to looking for English
 						lookingForEnglish = true;
 					}
 				}
@@ -84,43 +76,26 @@ namespace MatterHackers.Localizations
 
 		public void LoadTranslation(string pathToTranslationsFolder, string twoLetterIsoLanguageName)
 		{
-			this.twoLetterIsoLanguageName = twoLetterIsoLanguageName.ToLower();
+			this.TwoLetterIsoLanguageName = twoLetterIsoLanguageName.ToLower();
 
-			this.pathToMasterFile = Path.Combine(pathToTranslationsFolder, "Master.txt");
-			ReadIntoDictonary(masterDictionary, pathToMasterFile);
-
-			this.pathToTranslationFile = Path.Combine(pathToTranslationsFolder, TwoLetterIsoLanguageName, "Translation.txt");
-			if (StaticData.Instance.FileExists(pathToTranslationFile))
+			this.translationFilePath = Path.Combine(pathToTranslationsFolder, TwoLetterIsoLanguageName, "Translation.txt");
+			if (StaticData.Instance.FileExists(translationFilePath))
 			{
-				ReadIntoDictonary(translationDictionary, pathToTranslationFile);
-			}
-
-			foreach (KeyValuePair<string, string> keyValue in translationDictionary)
-			{
-				if (!masterDictionary.ContainsKey(keyValue.Key))
-				{
-					AddNewString(masterDictionary, pathToMasterFile, keyValue.Key);
-				}
-			}
-
-			if (TwoLetterIsoLanguageName != "en")
-			{
-				foreach (KeyValuePair<string, string> keyValue in masterDictionary)
-				{
-					if (!translationDictionary.ContainsKey(keyValue.Key))
-					{
-						AddNewString(translationDictionary, pathToTranslationFile, keyValue.Key);
-					}
-				}
+				ReadIntoDictonary(translationDictionary, translationFilePath);
 			}
 		}
 
+		/// <summary>
+		/// Encodes for saving, escaping newlines
+		/// </summary>
 		private string EncodeForSaving(string stringToEncode)
 		{
-			// replace the cariage returns with '\n's
 			return stringToEncode.Replace("\n", "\\n");
 		}
 
+		/// <summary>
+		/// Decodes the while reading, unescaping newlines
+		/// </summary>
 		private string DecodeWhileReading(string stringToDecode)
 		{
 			return stringToDecode.Replace("\\n", "\n");
@@ -141,24 +116,17 @@ namespace MatterHackers.Localizations
 
 					using (TimedLock.Lock(this, "TranslationMap"))
 					{
-						
 						string staticDataPath = StaticData.Instance.MapPath(pathAndFilename);
 						string pathName = Path.GetDirectoryName(staticDataPath);
 						if (!Directory.Exists(pathName))
 						{
 							Directory.CreateDirectory(pathName);
 						}
-						if (!File.Exists(staticDataPath))
-						{
-							using (StreamWriter masterFileStream = File.CreateText(staticDataPath))
-							{
-							}
-						}
 
 						using (StreamWriter masterFileStream = File.AppendText(staticDataPath))
 						{
-							masterFileStream.WriteLine("{0}{1}".FormatWith(engishTag, EncodeForSaving(englishString)));
-							masterFileStream.WriteLine("{0}{1}".FormatWith(translatedTag, EncodeForSaving(englishString)));
+							masterFileStream.WriteLine("{0}{1}", engishTag, EncodeForSaving(englishString));
+							masterFileStream.WriteLine("{0}{1}", translatedTag, EncodeForSaving(englishString));
 							masterFileStream.WriteLine("");
 						}
 					}
@@ -172,11 +140,12 @@ namespace MatterHackers.Localizations
 			string tranlatedString;
 			if (!translationDictionary.TryGetValue(englishString, out tranlatedString))
 			{
-				if (TwoLetterIsoLanguageName != "en")
+#if DEBUG
+				if (TwoLetterIsoLanguageName == "en")
 				{
-					AddNewString(translationDictionary, pathToTranslationFile, englishString);
+					AddNewString(translationDictionary, translationFilePath, englishString);
 				}
-				AddNewString(masterDictionary, pathToMasterFile, englishString);
+#endif
 				return englishString;
 			}
 
