@@ -205,8 +205,8 @@ namespace MatterHackers.Agg.UI
 				ScrollPosition = new Vector2(ScrollPosition.x, scrollOnDownY - (mouseDownY - mouseEvent.Y));
 			}
 
-			if (mouseEvent.Y < mouseDownY - 10
-				|| mouseEvent.Y > mouseDownY + 10)
+			if (ScrollPosition.y < scrollOnDownY - 10
+				|| ScrollPosition.y > scrollOnDownY + 10)
 			{
 				// If we have ever scrolled too far remember not to pass a valid up click
 				haveScrolledTooFar = true;
