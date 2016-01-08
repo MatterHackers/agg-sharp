@@ -5,7 +5,7 @@ using MatterHackers.Agg.VertexSource;
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
 //
-// C# Port port by: Lars Brubaker
+// C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007-2011
 //
@@ -91,7 +91,7 @@ namespace MatterHackers.Agg.Font
 
 		private Dictionary<TypeFace, Dictionary<RGBA_Bytes, Dictionary<double, Dictionary<char, ImageBuffer>>>> typeFaceImageCache = new Dictionary<TypeFace, Dictionary<RGBA_Bytes, Dictionary<double, Dictionary<char, ImageBuffer>>>>();
 
-		// private so you can't use it by accident (it is a singlton)
+		// private so you can't use it by accident (it is a singleton)
 		private StyledTypeFaceImageCache()
 		{
 		}
@@ -168,7 +168,7 @@ namespace MatterHackers.Agg.Font
 
 		/// <summary>
 		/// <para>If true the font will have it's curves flattened to the current point size when retrieved.</para>
-		/// <para>You may want to disable this so you can flaten the curve after other transforms have been applied,</para>
+		/// <para>You may want to disable this so you can flatten the curve after other transforms have been applied,</para>
 		/// <para>such as skewing or scaling.  Rotation and Translation will not alter how a curve is flattened.</para>
 		/// </summary>
 		public bool FlatenCurves
