@@ -94,7 +94,7 @@ namespace MatterHackers.RenderOpenGl
 			ImageGlPlugin plugin;
 			imagesWithCacheData.TryGetValue(imageToGetDisplayListFor.GetBuffer(), out plugin);
 
-			using (TimedLock.Lock(glDataNeedingToBeDeleted, "GetImageGlPlugin"))
+			lock(glDataNeedingToBeDeleted)
 			{
 				// We run this in here to ensure that we are on the correct thread and have the correct
 				// glcontext realized.
@@ -238,7 +238,7 @@ namespace MatterHackers.RenderOpenGl
 
 		~ImageGlPlugin()
 		{
-			using (TimedLock.Lock(glDataNeedingToBeDeleted, "~ImageGlPlugin()"))
+			lock(glDataNeedingToBeDeleted)
 			{
 				glDataNeedingToBeDeleted.Add(glData);
 			}

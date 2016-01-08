@@ -55,7 +55,7 @@ namespace MatterHackers.Agg.UI
 
 		public static void RunOnIdle(Action callBack)
 		{
-			using (TimedLock.Lock(callNextCycle, "UiThread RunOnIdle(Action)"))
+			lock(callNextCycle)
             { 
                 callNextCycle.Add(callBack);
             }
@@ -72,7 +72,7 @@ namespace MatterHackers.Agg.UI
 			{
 				timer.Start();
 			}
-			using (TimedLock.Lock(functionsToCheckIfTimeToCall, "PendingUiEvents AddAction()"))
+			lock(functionsToCheckIfTimeToCall)
 			{
 				functionsToCheckIfTimeToCall.Add(new CallBackAndState(callBack, state, timer.ElapsedMilliseconds + (int)(delayInSeconds * 1000)));
 			}
@@ -96,7 +96,7 @@ namespace MatterHackers.Agg.UI
 			get
 			{
 				int count = 0;
-				using (TimedLock.Lock(functionsToCheckIfTimeToCall, "PendingUiEvents AddAction()"))
+				lock(functionsToCheckIfTimeToCall)
 				{
 					long currentMilliseconds = timer.ElapsedMilliseconds;
 					for (int i = 0; i < functionsToCheckIfTimeToCall.Count; i++)
@@ -117,7 +117,7 @@ namespace MatterHackers.Agg.UI
 
 			List<CallBackAndState> holdFunctionsToCallOnIdle = new List<CallBackAndState>();
 			// make a copy so we don't keep this locked for long
-			using (TimedLock.Lock(functionsToCheckIfTimeToCall, "PendingUiEvents AddAction()"))
+			lock(functionsToCheckIfTimeToCall)
 			{
 				callNextCycle = new List<Action>();
 

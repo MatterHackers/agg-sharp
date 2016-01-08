@@ -47,7 +47,7 @@ namespace MatterHackers.PolygonMesh
 		static public FaceEdgeTextureUvData Get(FaceEdge faceEdgeToGetTextureUvDataFor)
 		{
 			FaceEdgeTextureUvData plugin = null;
-			using (TimedLock.Lock(faceEdgesWithTextureUvData, "Get FaceEdgeTextureUvData"))
+			lock(faceEdgesWithTextureUvData)
 			{
 				faceEdgesWithTextureUvData.TryGetValue(faceEdgeToGetTextureUvDataFor, out plugin);
 

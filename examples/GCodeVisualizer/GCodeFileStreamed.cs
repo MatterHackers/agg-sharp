@@ -38,6 +38,7 @@ namespace MatterHackers.GCodeVisualizer
 	public class GCodeFileStreamed : GCodeFile
 	{
 		private StreamReader openGcodeStream;
+		object locker = new object();
 
 		private bool readLastLineOfFile = false;
 		private int readLineCount = 0;
@@ -160,7 +161,7 @@ namespace MatterHackers.GCodeVisualizer
 
 		public override double PercentComplete(int instructionIndex)
 		{
-			using (TimedLock.Lock(this, "Getting Percent Complete"))
+			lock(locker)
 			{
 				if (openGcodeStream != null
 					&& openGcodeStream.BaseStream.Length > 0)
@@ -206,7 +207,7 @@ namespace MatterHackers.GCodeVisualizer
 
 		public override PrinterMachineInstruction Instruction(int index)
 		{
-			using (TimedLock.Lock(this, "Loading Instruction"))
+			lock(locker)
 			{
 				if (index < readLineCount - MaxLinesToBuffer)
 				{

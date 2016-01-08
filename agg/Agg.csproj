@@ -202,7 +202,6 @@
     <Compile Include="ScanlineRasterizer.cs" />
     <Compile Include="ShapePath.cs" />
     <Compile Include="StringHelper.cs" />
-    <Compile Include="TimedLock.cs" />
     <Compile Include="VectorClipper.cs" />
     <Compile Include="OutlineRenderer.cs" />
     <Compile Include="ImageLineRenderer.cs" />

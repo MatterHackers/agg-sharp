@@ -9,6 +9,7 @@ namespace MatterHackers.Localizations
 {
 	public class TranslationMap
 	{
+		object locker = new object();
 		private const string engishTag = "English:";
 		private const string translatedTag = "Translated:";
 
@@ -114,7 +115,7 @@ namespace MatterHackers.Localizations
 				{
 					dictionary.Add(englishString, englishString);
 
-					using (TimedLock.Lock(this, "TranslationMap"))
+					lock(locker)
 					{
 						string staticDataPath = StaticData.Instance.MapPath(pathAndFilename);
 						string pathName = Path.GetDirectoryName(staticDataPath);

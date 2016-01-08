@@ -231,7 +231,7 @@ namespace MatterHackers.MeshVisualizer
 
 		public static RGBA_Bytes GetMaterialColor(int materialIndexBase1)
 		{
-			using (TimedLock.Lock(materialColors, "GettingMaterialColors"))
+			lock(materialColors)
 			{
 				if (materialColors.ContainsKey(materialIndexBase1))
 				{
@@ -260,7 +260,7 @@ namespace MatterHackers.MeshVisualizer
 
 		public static void SetMaterialColor(int materialIndexBase1, RGBA_Bytes color)
 		{
-			using (TimedLock.Lock(materialColors, "SettingMaterialColors"))
+			lock(materialColors)
 			{
 				if (!materialColors.ContainsKey(materialIndexBase1))
 				{
@@ -633,7 +633,7 @@ namespace MatterHackers.MeshVisualizer
 			int linesInX = (int)Math.Ceiling(displayVolumeToBuild.x / 10);
 			int linesInY = (int)Math.Ceiling(displayVolumeToBuild.y / 10);
 
-			using (TimedLock.Lock(lastCreatedBedImage, "CreateRectangularBedGridImage"))
+			lock(lastCreatedBedImage)
 			{
 				Vector2 bedImageCentimeters = new Vector2(linesInX, linesInY);
 

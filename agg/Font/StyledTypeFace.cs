@@ -98,7 +98,7 @@ namespace MatterHackers.Agg.Font
 
 		public static Dictionary<char, ImageBuffer> GetCorrectCache(TypeFace typeFace, RGBA_Bytes color, double emSizeInPoints)
 		{
-			using (TimedLock.Lock(typeFace, "GetCorrectCache"))
+			lock(typeFace)
 			{
 				// TODO: check if the cache is getting too big and if so prune it (or just delete it and start over).
 

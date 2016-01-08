@@ -46,7 +46,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
 		public static FrostedSerialPortFactory GetAppropriateFactory(string driverType)
 		{
-            using (TimedLock.Lock(availableFactories, "GetAppropriateFactory"))
+            lock(availableFactories)
             {
                 try
                 {

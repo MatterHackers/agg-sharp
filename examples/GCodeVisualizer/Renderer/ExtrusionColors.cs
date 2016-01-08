@@ -42,7 +42,7 @@ namespace MatterHackers.GCodeVisualizer
 		{
 			if (speed > 0)
 			{
-				using (TimedLock.Lock(speedColorLookup, "Updating GCode Colors"))
+				lock(speedColorLookup)
 				{
 					double startColor = 223.0 / 360.0;
 					double endColor = 5.0 / 360.0;
