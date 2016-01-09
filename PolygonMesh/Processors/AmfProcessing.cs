@@ -85,7 +85,7 @@ namespace MatterHackers.PolygonMesh.Processors
 			}
 		}
 
-		[ConditionalAttribute("DEBUG")]
+		[Conditional("DEBUG")]
 		public static void BreakInDebugger(string description = "")
 		{
 			Debug.WriteLine(description);
