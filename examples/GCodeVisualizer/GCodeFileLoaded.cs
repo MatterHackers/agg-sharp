@@ -934,9 +934,21 @@ namespace MatterHackers.GCodeVisualizer
 			}
 		}
 
+		double filamentDiameterCache = 0;
 		public override double GetFilamentDiameter()
 		{
-			return 3;
+			if (filamentDiameterCache == 0)
+			{
+				for (int i = 0; i < 20; i++)
+				{
+					if (GetFirstNumberAfter("filamentDiameter =", GCodeCommandQueue[i].Line, ref filamentDiameterCache))
+					{
+						break;
+					}
+				}
+			}
+
+			return filamentDiameterCache;
 		}
 
 		public override double GetLayerHeight()

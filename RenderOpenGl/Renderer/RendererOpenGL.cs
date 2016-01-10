@@ -145,7 +145,7 @@ namespace MatterHackers.RenderOpenGl
 			triangleEddgeInfo.RenderLastToGL();
 		}
 
-		public void DrawAALine(Vector2 start, Vector2 end, double width, IColorType colorIn)
+		public void DrawAALine(Vector2 start, Vector2 end, double halfWidth, IColorType colorIn)
 		{
 			RGBA_Bytes colorBytes = colorIn.GetAsRGBA_Bytes();
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
@@ -158,13 +158,13 @@ namespace MatterHackers.RenderOpenGl
 			}
 
 			GL.Begin(BeginMode.Triangles);
-			Vector2 widthRightOffset = (end-start).GetPerpendicularRight().GetNormal() * width/2;
+			Vector2 widthRightOffset = (end-start).GetPerpendicularRight().GetNormal() * halfWidth/2;
 			triangleEddgeInfo.Draw2EdgeTriangle(start - widthRightOffset, end - widthRightOffset, end + widthRightOffset);
 			triangleEddgeInfo.Draw2EdgeTriangle(end + widthRightOffset, start + widthRightOffset, start - widthRightOffset);
 			GL.End();
 		}
 
-		public void DrawAALineRounded(Vector2 start, Vector2 end, double width, IColorType colorIn)
+		public void DrawAALineRounded(Vector2 start, Vector2 end, double halfWidth, IColorType colorIn)
 		{
 			RGBA_Bytes colorBytes = colorIn.GetAsRGBA_Bytes();
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
@@ -177,7 +177,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 
 			//GL.Begin(BeginMode.Triangles);
-			Vector2 widthRightOffset = (end - start).GetPerpendicularRight().GetNormal() * width / 2;
+			Vector2 widthRightOffset = (end - start).GetPerpendicularRight().GetNormal() * halfWidth / 2;
 			// draw the main line part
 			triangleEddgeInfo.Draw1EdgeTriangle(start - widthRightOffset, end - widthRightOffset, end + widthRightOffset);
 			triangleEddgeInfo.Draw1EdgeTriangle(end + widthRightOffset, start + widthRightOffset, start - widthRightOffset);

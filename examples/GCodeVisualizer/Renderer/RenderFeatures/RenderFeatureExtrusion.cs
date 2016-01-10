@@ -68,7 +68,7 @@ namespace MatterHackers.GCodeVisualizer
 
         private double GetExtrusionWidth(RenderType renderType)
         {
-            double width = .2;
+            double width = .4;
             if ((renderType & RenderType.SimulateExtrusion) == RenderType.SimulateExtrusion)
             {
                 double area = extrusionVolumeMm3 / ((end - start).Length);
@@ -136,13 +136,13 @@ namespace MatterHackers.GCodeVisualizer
 					Vector2 end = new Vector2(endF.x, endF.y);
 					renderInfo.Transform.transform(ref end);
 
-					graphics2DGl.DrawAALineRounded(start, end, extrusionLineWidths, extrusionColor);
+					graphics2DGl.DrawAALineRounded(start, end, extrusionLineWidths/2, extrusionColor);
 				}
 				else
 				{
 					PathStorage pathStorage = new PathStorage();
 					VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, renderInfo.Transform);
-					Stroke stroke = new Stroke(transformedPathStorage, extrusionLineWidths);
+					Stroke stroke = new Stroke(transformedPathStorage, extrusionLineWidths/2);
 
 					stroke.line_cap(LineCap.Round);
 					stroke.line_join(LineJoin.Round);
