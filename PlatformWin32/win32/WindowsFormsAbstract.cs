@@ -301,8 +301,12 @@ namespace MatterHackers.Agg.UI
 		protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
 		{
 			// Call on closing and check if we can close (a "do you want to save" might cancel the close. :).
-			bool CancelClose;
-			aggAppWidget.OnClosing(out CancelClose);
+			bool CancelClose = false;
+
+			if(aggAppWidget.Children.Count > 0)
+			{
+				aggAppWidget.Children[0]?.OnClosing(out CancelClose);
+			}
 
 			if (CancelClose)
 			{

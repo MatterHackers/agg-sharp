@@ -1330,11 +1330,14 @@ namespace MatterHackers.Agg.UI
 			ChildAdded?.Invoke(this, e);
 		}
 
-		public void CloseAndRemoveAllChildren()
+		public void CloseAllChildren()
 		{
 			for (int i = Children.Count - 1; i >= 0; i--)
 			{
-				Children[i].Close();
+				GuiWidget child = Children[i];
+				Children.RemoveAt(i);
+				child.parent = null;
+				child.Close();
 			}
 		}
 
@@ -1485,7 +1488,7 @@ namespace MatterHackers.Agg.UI
 					childThatIsLosingFocus.Unfocus();
 				}
 
-				// and give focus to everything in our dirrect parent chain (including this).
+				// and give focus to everything in our direct parent chain (including this).
 				GuiWidget curWidget = this;
 				do
 				{
@@ -1972,16 +1975,6 @@ namespace MatterHackers.Agg.UI
 					return;
 				}
 			}
-
-			foreach (GuiWidget child in Children)
-			{
-				child.OnClosing(out cancelClose);
-				if (cancelClose)
-				{
-					// someone canceled it so stop checking.
-					return;
-				}
-			}
 		}
 
 		public void CloseOnIdle()
@@ -1998,22 +1991,26 @@ namespace MatterHackers.Agg.UI
 			{
 				BreakInDebugger("You should put this close onto the UiThread.RunOnIdle so it can happen after the child list is unlocked.");
 			}
-			// TODO: check OnClosing before we actuall close this window (need a test case before implementing). // LBB 2013/04/15
+
 			if (!widgetHasBeenClosed)
 			{
-				widgetHasBeenClosed = true;
-				for (int i = Children.Count - 1; i >= 0; i--)
+				bool cancelClose;
+				OnClosing(out cancelClose);
+
+				// If the close request was aborted by the control, abort the close attempt
+				if (cancelClose)
 				{
-					GuiWidget child = Children[i];
-					Children.RemoveAt(i);
-					child.parent = null;
-					child.Close();
+					return;
 				}
+
+				widgetHasBeenClosed = true;
+
+				this.CloseAllChildren();
 
 				OnClosed(null);
 				if (Parent != null)
 				{
-					// This code will only execute if this is the actual widget we called close on (not a chiled of the widget we called close on).
+					// This code will only execute if this is the actual widget we called close on (not a child of the widget we called close on).
 					Parent.RemoveChild(this);
 					parent = null;
 				}
