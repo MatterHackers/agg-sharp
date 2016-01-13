@@ -24,6 +24,7 @@
 //----------------------------------------------------------------------------
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
@@ -45,6 +46,12 @@ namespace MatterHackers.Agg.UI
 			set
 			{
 				this.siblingRadioButtonList = value;
+
+				// When assigned, add this instance to the list
+				if(!siblingRadioButtonList.Contains(this))
+				{
+					siblingRadioButtonList.Add(this);
+				}
 			}
 		}
 
@@ -139,7 +146,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (SiblingRadioButtonList != null)
 			{
-				foreach (GuiWidget child in SiblingRadioButtonList)
+				foreach (GuiWidget child in SiblingRadioButtonList.Distinct())
 				{
 					RadioButton radioButton = child as RadioButton;
 					if (radioButton != null && radioButton != this)
