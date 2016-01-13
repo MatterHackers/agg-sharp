@@ -2,7 +2,7 @@
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
-// C# Port port by: Lars Brubaker
+// C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 //
@@ -1030,7 +1030,7 @@ namespace MatterHackers.Agg.Image
 							float OneOverAlpha = 1.0f - alpha;
 							unchecked
 							{
-								// the color is already pre multiplied by the alpha but not by the cover value so we only need to multiply th ecolor by the cover
+								// the color is already pre multiplied by the alpha but not by the cover value so we only need to multiply the color by the cover
 								float r = (pDestBuffer[bufferOffset + ImageBuffer.OrderR] * OneOverAlpha) + sourceColor.red * coverFloat;
 								float g = (pDestBuffer[bufferOffset + ImageBuffer.OrderG] * OneOverAlpha) + sourceColor.green * coverFloat;
 								float b = (pDestBuffer[bufferOffset + ImageBuffer.OrderB] * OneOverAlpha) + sourceColor.blue * coverFloat;

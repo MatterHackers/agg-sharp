@@ -4,7 +4,7 @@ using MatterHackers.VectorMath;
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
-// C# Port port by: Lars Brubaker
+// C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 //
@@ -29,7 +29,7 @@ namespace MatterHackers.Agg.VertexSource
 {
 	//------------------------------------------------------------rounded_rect
 	//
-	// See Implemantation agg_rounded_rect.cpp
+	// See Implementation agg_rounded_rect.cpp
 	//
 	public class RoundedRect : IVertexSource
 	{

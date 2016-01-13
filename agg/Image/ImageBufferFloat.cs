@@ -5,7 +5,7 @@ using MatterHackers.VectorMath;
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
-// C# Port port by: Lars Brubaker
+// C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 //
@@ -50,7 +50,7 @@ namespace MatterHackers.Agg.Image
 		protected int[] m_yTable;
 		protected int[] m_xTable;
 		private float[] m_FloatBuffer;
-		private int m_BufferOffset; // the beggining of the image in this buffer
+		private int m_BufferOffset; // the beginning of the image in this buffer
 		private int m_BufferFirstPixel; // Pointer to first pixel depending on strideInFloats and image position
 
 		private int m_Width;  // Width in pixels
@@ -394,7 +394,7 @@ namespace MatterHackers.Agg.Image
 		{
 			if (floatBuffer.Length < m_Height * m_StrideInFloats)
 			{
-				throw new Exception("Your buffer does not have enough room it it for your height and strideInBytes.");
+				throw new Exception("Your buffer does not have enough room for your height and strideInBytes.");
 			}
 			m_FloatBuffer = floatBuffer;
 			m_BufferOffset = m_BufferFirstPixel = bufferOffset;
@@ -410,7 +410,7 @@ namespace MatterHackers.Agg.Image
 		{
 			if (m_FloatBuffer != null)
 			{
-				throw new Exception("You already have a buffer set. You need to set dimmensoins before the buffer.  You may need to clear the buffer first.");
+				throw new Exception("You already have a buffer set. You need to set dimensions before the buffer.  You may need to clear the buffer first.");
 			}
 			m_Width = width;
 			m_Height = height;
@@ -912,7 +912,7 @@ namespace MatterHackers.Agg.Image
 		{
 			//if (sourceColor.m_A != 0)
 			{
-#if false // we blend regardless of the alpha so that we can get Light Opacity working (used this way we have addative and faster blending in one blender) LBB
+#if false // we blend regardless of the alpha so that we can get Light Opacity working (used this way we have additive and faster blending in one blender) LBB
                 if (sourceColor.m_A == base_mask)
                 {
                     Blender.CopyPixel(pDestBuffer, sourceColor);
@@ -936,7 +936,7 @@ namespace MatterHackers.Agg.Image
 				//if (sourceColor.m_A != 0)
 				{
 					sourceColor.alpha = sourceColor.alpha * ((float)cover * (1 / 255));
-#if false // we blend regardless of the alpha so that we can get Light Opacity working (used this way we have addative and faster blending in one blender) LBB
+#if false // we blend regardless of the alpha so that we can get Light Opacity working (used this way we have additive and faster blending in one blender) LBB
                     if (sourceColor.m_A == base_mask)
                     {
                         Blender.CopyPixel(pDestBuffer, sourceColor);

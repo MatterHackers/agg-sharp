@@ -2,7 +2,7 @@
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
-// C# Port port by: Lars Brubaker
+// C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 //
@@ -26,7 +26,7 @@ namespace MatterHackers.Agg.VertexSource
 {
 	//---------------------------------------------------------------conv_curve
 	// Curve converter class. Any path storage can have Bezier curves defined
-	// by their control points. There're two types of curves supported: curve3
+	// by their control points. There are two types of curves supported: curve3
 	// and curve4. Curve3 is a conic Bezier curve with 2 endpoints and 1 control
 	// point. Curve4 has 2 control points (4 points in total) and can be used
 	// to interpolate more complicated curves. Curve4, unlike curve3 can be used

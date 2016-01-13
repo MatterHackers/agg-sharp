@@ -2,7 +2,7 @@
 // Anti-Grain Geometry - Version 2.3
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
-// C# Port port by: Lars Brubaker
+// C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 //
@@ -13,9 +13,9 @@
 //
 //----------------------------------------------------------------------------
 //
-// The author gratefully acknowleges the support of David Turner,
+// The author gratefully acknowledges the support of David Turner,
 // Robert Wilhelm, and Werner Lemberg - the authors of the FreeType
-// libray - in producing this work. See http://www.freetype.org for details.
+// library - in producing this work. See http://www.freetype.org for details.
 //
 //----------------------------------------------------------------------------
 // Contact: mcseem@antigrain.com

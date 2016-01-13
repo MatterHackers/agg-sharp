@@ -99,7 +99,7 @@ namespace MatterHackers.Agg.Font
 					}
 
 					// check if we wrapped because of to long or a '\n'. If '\n' we only trim a leading space if to long.
-					if (remainingLength > 1 // we have more than 2 charecters left
+					if (remainingLength > 1 // we have more than 2 characters left
 						&& textToWrap.Length > remainingLength // we are longer than the remaining text
 						&& textToWrap[remainingLength] == ' ' // the first new character is a space
 						&& textToWrap[remainingLength - 1] != '\n') // the character before the space was not a cr (wrapped because of length)

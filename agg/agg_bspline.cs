@@ -2,7 +2,7 @@
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
-// C# Port port by: Lars Brubaker
+// C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 //
@@ -271,7 +271,7 @@ namespace MatterHackers.Agg
 							   x >= m_am[m_xOffset + m_last_idx - 1] &&
 							   x <= m_am[m_xOffset + m_last_idx])
 							{
-								// x is between pevious points
+								// x is between previous points
 								--m_last_idx;
 							}
 							else

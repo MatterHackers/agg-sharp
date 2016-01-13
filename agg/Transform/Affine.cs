@@ -2,7 +2,7 @@
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
-// C# Port port by: Lars Brubaker
+// C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 //
@@ -56,7 +56,7 @@ namespace MatterHackers.Agg.Transform
 	//       * scale Y to 1.5,
 	//       * move to (100, 100).
 	//    The result will depend on the order of these transformations,
-	//    and the advantage of matrix is that the sequence of discret calls:
+	//    and the advantage of matrix is that the sequence of discrete calls:
 	//    rotate(30), scaleX(2.0), scaleY(1.5), move(100,100)
 	//    will have exactly the same result as the following matrix transformations:
 	//
@@ -83,7 +83,7 @@ namespace MatterHackers.Agg.Transform
 	//
 	// The affine matrix is all you need to perform any linear transformation,
 	// but all transformations have origin point (0,0). It means that we need to
-	// use 2 translations if we want to rotate someting around (100,100):
+	// use 2 translations if we want to rotate something around (100,100):
 	//
 	// m *= agg::trans_affine_translation(-100.0, -100.0);         // move to (0,0)
 	// m *= agg::trans_affine_rotation(30.0 * 3.1415926 / 180.0);  // rotate
@@ -266,7 +266,7 @@ namespace MatterHackers.Agg.Transform
 			parl_to_parl(src, dst);
 		}
 
-		//---------------------------------- Parellelogram transformations
+		//---------------------------------- Parallelogram transformations
 		// transform a parallelogram to another one. Src and dst are
 		// pointers to arrays of three points (double[6], x1,y1,...) that
 		// identify three corners of the parallelograms assuming implicit
@@ -468,7 +468,7 @@ namespace MatterHackers.Agg.Transform
 		 */
 
 		// Multiply the matrix by another one and return
-		// the result in a separete matrix.
+		// the result in a separate matrix.
 		public static Affine operator *(Affine a, Affine b)
 		{
 			Affine temp = new Affine(a);
@@ -487,7 +487,7 @@ namespace MatterHackers.Agg.Transform
 		/*
 
 		// Multiply the matrix by inverse of another one
-		// and return the result in a separete matrix.
+		// and return the result in a separate matrix.
 		static trans_affine operator / (trans_affine a, trans_affine b)
 		{
 			return new trans_affine(a).multiply_inv(b);
@@ -581,7 +581,7 @@ namespace MatterHackers.Agg.Transform
 
 		// Get the average scale (by X and Y).
 		// Basically used to calculate the approximation_scale when
-		// decomposinting curves into line segments.
+		// decomposing curves into line segments.
 		public double GetScale()
 		{
 			double x = 0.707106781 * sx + 0.707106781 * shx;

@@ -2,7 +2,7 @@
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
-// C# Port port by: Lars Brubaker
+// C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 //
@@ -33,7 +33,7 @@ namespace MatterHackers.Agg
 {
 	//=============================================================scanline_bin
 	//
-	// This is binary scaline container which supports the interface
+	// This is binary scanline container which supports the interface
 	// used in the rasterizer::render(). See description of agg_scanline_u8
 	// for details.
 	//
