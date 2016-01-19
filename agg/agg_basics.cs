@@ -96,6 +96,7 @@ namespace MatterHackers.Agg
 			long currentIntPart = 0;
 			int fractionDigits = 0;
 			long currentFractionPart = 0;
+			bool foundNumber = false;
 
 			// find the number start
 			while (startIndex < length)
@@ -105,7 +106,7 @@ namespace MatterHackers.Agg
 				{
 					if (next == '.')
 					{
-						break;
+                        break;
 					}
 					if (next == '-')
 					{
@@ -118,6 +119,7 @@ namespace MatterHackers.Agg
 					else
 					{
 						currentIntPart = next - '0';
+						foundNumber = true;
 					}
 					startIndex++;
 					break;
@@ -131,9 +133,11 @@ namespace MatterHackers.Agg
 				if (next >= '0' && next <= '9')
 				{
 					currentIntPart = (currentIntPart * 10) + next - '0';
+					foundNumber = true;
 				}
 				else if (next == '.')
 				{
+					foundNumber = true;
 					startIndex++;
 					// parse out the fractional part
 					while (startIndex < length)
@@ -151,6 +155,10 @@ namespace MatterHackers.Agg
 						startIndex++;
 					}
 					break;
+				}
+				else if(!foundNumber && next == ' ')
+				{
+					// happy to skip spaces
 				}
 				else // we are done
 				{

@@ -37,27 +37,14 @@ namespace MatterHackers.Agg.Tests
 	[TestFixture, Category("Agg.SimpleTests")]
 	public class SimpleTests
 	{
-		private static Regex numberRegex = new Regex(@"[-+]?[0-9]*\.?[0-9]+");
-
-		private static double GetNextNumberOld(String source, ref int startIndex)
-		{
-			Match numberMatch = numberRegex.Match(source, startIndex);
-			String returnString = numberMatch.Value;
-			startIndex = numberMatch.Index + numberMatch.Length;
-			double returnVal;
-			double.TryParse(returnString, NumberStyles.Number, CultureInfo.InvariantCulture, out returnVal);
-			return returnVal;
-		}
-
 		public static bool GetNextNumberSameResult(String source, int startIndex, double expectedValue)
 		{
 			int startIndexNew = startIndex;
 			double newNumber = agg_basics.ParseDouble(source, ref startIndexNew, true);
 			int startIndexOld = startIndex;
-			double oldNumber = GetNextNumberOld(source, ref startIndexOld);
+			double oldNumber = double.Parse(source.Substring(startIndexOld).Replace(" ", ""));
 			if (Math.Abs(newNumber - oldNumber) > .0001
-				|| Math.Abs(expectedValue - oldNumber) > .0001
-				|| startIndexNew != startIndexOld)
+				|| Math.Abs(expectedValue - oldNumber) > .0001)
 			{
 				return false;
 			}
@@ -71,6 +58,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.IsTrue(GetNextNumberSameResult("1234", 0, 1234));
 			Assert.IsTrue(GetNextNumberSameResult("1234 15", 5, 15));
 			Assert.IsTrue(GetNextNumberSameResult("-1234", 0, -1234));
+			Assert.IsTrue(GetNextNumberSameResult("- 1234", 0, -1234));
 			Assert.IsTrue(GetNextNumberSameResult("+1234", 0, 1234));
 			Assert.IsTrue(GetNextNumberSameResult("1234.3", 0, 1234.3));
 			Assert.IsTrue(GetNextNumberSameResult("1234.354", 0, 1234.354));
