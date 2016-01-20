@@ -57,8 +57,6 @@ namespace MatterHackers.GCodeVisualizer
         private double filamentUsedMmCache = 0;
         private double diameterOfFilamentUsedMmCache = 0;
 
-		public static Func<string, bool> PauseOnLayerProcessor = null;
-
 		private List<PrinterMachineInstruction> GCodeCommandQueue = new List<PrinterMachineInstruction>();
 
 		public GCodeFileLoaded(bool gcodeHasExplicitLayerChangeInfo = false)
@@ -298,16 +296,6 @@ namespace MatterHackers.GCodeVisualizer
 							if (gcodeHasExplicitLayerChangeInfo && lineString.StartsWith("; LAYER:"))
 							{
 								string layerNumber = lineString.Split(':')[1];
-
-								if(PauseOnLayerProcessor != null && PauseOnLayerProcessor(layerNumber))
-								{
-
-									// Push the current line into the command queue
-									loadedGCodeFile.GCodeCommandQueue.Add(machineInstructionForLine);
-
-									// Add a new logic entry for the pause
-									machineInstructionForLine = new PrinterMachineInstruction("M226", machineInstructionForLine, false);
-								}
 
 								loadedGCodeFile.IndexOfChangeInZ.Add(loadedGCodeFile.GCodeCommandQueue.Count);
 							}
