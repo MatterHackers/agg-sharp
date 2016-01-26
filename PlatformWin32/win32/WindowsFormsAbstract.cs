@@ -28,14 +28,6 @@ namespace MatterHackers.Agg.UI
 {
 	public abstract class WindowsFormsAbstract : Form
 	{
-		// These dll imports are so that we can set the PROCESS_CALLBACK_FILTER_ENABLED to allow us to get exceptions back into our app during system calls such as on paint.
-		//[DllImport("Kernel32.dll", CallingConvention = CallingConvention.Cdecl)]
-		[DllImport("Kernel32.dll", CallingConvention = CallingConvention.StdCall)]
-		public static extern bool SetProcessUserModeExceptionPolicy(int dwFlagss);
-
-		[DllImport("Kernel32.dll", CallingConvention = CallingConvention.StdCall)]
-		public static extern bool GetProcessUserModeExceptionPolicy(ref int lpFlags);
-
 		protected WidgetForWindowsFormsAbstract aggAppWidget;
 
 		private static Form mainForm = null;
@@ -224,16 +216,6 @@ namespace MatterHackers.Agg.UI
 					processingOnIdle = false;
 				}
 			}
-		}
-
-		protected override void WndProc(ref Message m)
-		{
-			if (InvokeRequired)
-			{
-				// you are calling this from another thread and should not be
-				throw new Exception("You are calling this from another thread and should not be.");
-			}
-			base.WndProc(ref m);
 		}
 
 		public bool ShowingSystemDialog = false;
