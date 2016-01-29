@@ -97,7 +97,7 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnClosed(EventArgs e)
 		{
-            openWindows.Remove(this);
+            allOpenSystemWindows.Remove(this);
 			base.OnClosed(e);
 			if (Parent != null)
 			{
@@ -105,12 +105,12 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-        static List<SystemWindow> openWindows = new List<SystemWindow>();
-        public static List<SystemWindow> OpenWindows
+        static List<SystemWindow> allOpenSystemWindows = new List<SystemWindow>();
+        public static List<SystemWindow> AllOpenSystemWindows
         {
             get
             {
-                return new List<SystemWindow>(openWindows);
+                return new List<SystemWindow>(allOpenSystemWindows);
             }
         }
 
@@ -129,7 +129,7 @@ namespace MatterHackers.Agg.UI
 				globalSystemWindowCreator = systemWindowCreatorFinder.Plugins[0];
 			}
 
-            openWindows.Add(this);
+            allOpenSystemWindows.Add(this);
 		}
 
 		public override Vector2 MinimumSize

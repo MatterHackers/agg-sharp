@@ -283,14 +283,14 @@ namespace MatterHackers.Agg.UI
 		protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
 		{
 			// Call on closing and check if we can close (a "do you want to save" might cancel the close. :).
-			bool CancelClose = false;
+			bool cancelClose = false;
 
 			if(aggAppWidget.Children.Count > 0)
 			{
-				aggAppWidget.Children[0]?.OnClosing(out CancelClose);
+				aggAppWidget.Children[0]?.OnClosing(out cancelClose);
 			}
 
-			if (CancelClose)
+			if (cancelClose)
 			{
 				e.Cancel = true;
 			}
@@ -308,8 +308,8 @@ namespace MatterHackers.Agg.UI
 					idleCallBackTimer.Stop();
 					idleCallBackTimer.Elapsed -= InvokePendingOnIdleActions;
 					e.Cancel = true;
-					// We just need to wait for this event to end so we can re-enter the idle loop with the time stoped
-					// If we close with the idle loop timer not stoped we throw and exception.
+					// We just need to wait for this event to end so we can re-enter the idle loop with the time stopped
+					// If we close with the idle loop timer not stopped we throw and exception.
 					System.Windows.Forms.Timer delayedCloseTimer = new System.Windows.Forms.Timer();
 					delayedCloseTimer.Tick += DoDelayedClose;
 					delayedCloseTimer.Start();

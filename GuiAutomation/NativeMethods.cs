@@ -97,7 +97,7 @@ namespace MatterHackers.GuiAutomation
 
         public override Point2D CurrentMousPosition()
         {
-            SystemWindow.OpenWindows[0].Invalidate();
+            SystemWindow.AllOpenSystemWindows[0].Invalidate();
             return currentMousePosition;
         }
 
@@ -105,7 +105,7 @@ namespace MatterHackers.GuiAutomation
 
         public override void SetCursorPosition(int x, int y)
         {
-            SystemWindow systemWindow = SystemWindow.OpenWindows[SystemWindow.OpenWindows.Count - 1];
+            SystemWindow systemWindow = SystemWindow.AllOpenSystemWindows[SystemWindow.AllOpenSystemWindows.Count - 1];
             if(currentlyHookedWindow != systemWindow)
             {
                 if (currentlyHookedWindow != null)
@@ -142,7 +142,7 @@ namespace MatterHackers.GuiAutomation
             // figure out where this is on our agg windows
             // for now only send mouse events to the top most window
             //foreach (SystemWindow systemWindow in SystemWindow.OpenWindows)
-            SystemWindow systemWindow = SystemWindow.OpenWindows[SystemWindow.OpenWindows.Count - 1];
+            SystemWindow systemWindow = SystemWindow.AllOpenSystemWindows[SystemWindow.AllOpenSystemWindows.Count - 1];
             {
                 Point2D windowPosition = AutomationRunner.ScreenToSystemWindow(currentMousePosition, systemWindow);
                 if(systemWindow.LocalBounds.Contains(windowPosition))
@@ -212,7 +212,7 @@ namespace MatterHackers.GuiAutomation
 
         public override void Type(string textToType)
         {
-            SystemWindow systemWindow = SystemWindow.OpenWindows[SystemWindow.OpenWindows.Count - 1];
+            SystemWindow systemWindow = SystemWindow.AllOpenSystemWindows[SystemWindow.AllOpenSystemWindows.Count - 1];
 
             foreach (char character in textToType)
             {
