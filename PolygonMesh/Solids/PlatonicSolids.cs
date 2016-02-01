@@ -34,7 +34,7 @@ namespace MatterHackers.PolygonMesh
 {
 	public static class PlatonicSolids
 	{
-		public static Mesh CreateTetrahedron()
+		public static Mesh CreateTetrahedron(double scale = 1)
 		{
 			Mesh tetrahedron = new Mesh();
 			Vector2 basePoint = new Vector2(1, 0);
@@ -49,6 +49,11 @@ namespace MatterHackers.PolygonMesh
 			tetrahedron.CreateFace(new Vertex[] { verts[0], verts[1], verts[3] });
 			tetrahedron.CreateFace(new Vertex[] { verts[1], verts[2], verts[3] });
 			tetrahedron.CreateFace(new Vertex[] { verts[2], verts[0], verts[3] });
+
+			if(scale != 1)
+			{
+				tetrahedron.Transform(Matrix4X4.CreateScale(scale));
+            }
 
 			return tetrahedron;
 		}
