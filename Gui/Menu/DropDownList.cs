@@ -106,7 +106,9 @@ namespace MatterHackers.Agg.UI
 				{
 					return "";
 				}
-				return GetValue(SelectedIndex);
+
+				// Return the text property of the selected MenuItem
+				return MenuItems[SelectedIndex].Text;
 			}
 			set
 			{
@@ -115,6 +117,7 @@ namespace MatterHackers.Agg.UI
 					int index = 0;
 					foreach (MenuItem item in MenuItems)
 					{
+						// If the items .Text property matches the passed in value, change the current SelectedIndex
 						if (item.Text == value)
 						{
 							SelectedIndex = index;
@@ -135,7 +138,9 @@ namespace MatterHackers.Agg.UI
 				{
 					return "";
 				}
-				return GetValue(SelectedIndex);
+
+				// Return the Value property of the selected MenuItem
+				return MenuItems[SelectedIndex].Value;
 			}
 			set
 			{
@@ -144,6 +149,7 @@ namespace MatterHackers.Agg.UI
 					int index = 0;
 					foreach (MenuItem item in MenuItems)
 					{
+						// If the items .Value property matches the passed in value, change the current SelectedIndex
 						if (item.Value == value)
 						{
 							SelectedIndex = index;
@@ -154,11 +160,6 @@ namespace MatterHackers.Agg.UI
 					throw new Exception("The value you specified '{0}' is not in the drop down list.".FormatWith(value));
 				}
 			}
-		}
-
-		public string GetValue(int itemIndex)
-		{
-			return MenuItems[itemIndex].Value;
 		}
 
 		public DropDownList(string noSelectionString, RGBA_Bytes normalColor, RGBA_Bytes hoverColor, Direction direction = Direction.Down, double maxHeight = 0)
@@ -291,20 +292,15 @@ namespace MatterHackers.Agg.UI
 			graphics2D.Render(strokeRect, BorderColor);
 		}
 
-		public MenuItem AddItem(string name, string value = null)
+		public MenuItem AddItem(string itemName, string itemValue = null)
 		{
-			if (value == null)
-			{
-				value = name;
-			}
-
 			mainControlText.Margin = MenuItemsPadding;
 
 			GuiWidget normalTextWithMargin = new GuiWidget();
 			normalTextWithMargin.HAnchor = UI.HAnchor.ParentLeftRight | UI.HAnchor.FitToChildren;
 			normalTextWithMargin.VAnchor = UI.VAnchor.FitToChildren;
 			normalTextWithMargin.BackgroundColor = MenuItemsBackgroundColor;
-			TextWidget normal = new TextWidget(name);
+			TextWidget normal = new TextWidget(itemName);
 			normal.Margin = MenuItemsPadding;
 			normal.TextColor = MenuItemsTextColor;
 			normalTextWithMargin.AddChild(normal);
@@ -313,14 +309,19 @@ namespace MatterHackers.Agg.UI
 			hoverTextWithMargin.HAnchor = UI.HAnchor.ParentLeftRight | UI.HAnchor.FitToChildren;
 			hoverTextWithMargin.VAnchor = UI.VAnchor.FitToChildren;
 			hoverTextWithMargin.BackgroundColor = MenuItemsBackgroundHoverColor;
-			TextWidget hover = new TextWidget(name);
+			TextWidget hover = new TextWidget(itemName);
 			hover.Margin = MenuItemsPadding;
 			hover.TextColor = MenuItemsTextHoverColor;
 			hoverTextWithMargin.AddChild(hover);
 
-			MenuItem menuItem = new MenuItem(new MenuItemStatesView(normalTextWithMargin, hoverTextWithMargin), value);
-			menuItem.Name = name + " Menu Item";
-			menuItem.Text = name;
+
+			MenuItem menuItem = new MenuItem(
+				new MenuItemStatesView(normalTextWithMargin, hoverTextWithMargin),
+				// If no itemValue is supplied, itemName will be used as the item value
+				itemValue ?? itemName);
+
+			menuItem.Name = itemName + " Menu Item";
+			menuItem.Text = itemName;
 			MenuItems.Add(menuItem);
 
 			return menuItem;
