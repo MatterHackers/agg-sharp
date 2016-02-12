@@ -200,8 +200,11 @@ namespace MatterHackers.Agg.UI
 						{
 							UiThread.InvokePendingActions();
 						}
-						catch
+						catch(Exception invokeException)
 						{
+#if DEBUG
+							throw (invokeException);
+#endif
 						}
 
 						lock (singleInvokeLock)
