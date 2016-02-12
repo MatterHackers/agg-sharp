@@ -137,7 +137,7 @@ namespace MatterHackers.GCodeVisualizer
 
 		private void onFileSelected(OpenFileDialogParams openParams)
 		{
-			if (openParams.FileName != null && openParams.FileName != "")
+			if (!string.IsNullOrEmpty(openParams.FileName))
 			{
 				gCodeViewWidget.Load(openParams.FileName);
 				currentLayerIndex.Value = 0;

@@ -43,7 +43,7 @@ namespace MatterHackers.Csg.Solids
 		{
 			get
 			{
-				if (sourceFileName != null)
+				if (!string.IsNullOrEmpty(sourceFileName))
 				{
 					return sourceFileName;
 				}
