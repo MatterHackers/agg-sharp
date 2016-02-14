@@ -68,17 +68,20 @@ namespace ClipperLib
 
 	public struct DoublePoint
 	{
-		public double X;
-		public double Y;
+		// Immutable public properties
+		public readonly double X;
+		public readonly double Y;
 
 		public DoublePoint(double x = 0, double y = 0)
 		{
 			this.X = x; this.Y = y;
 		}
+
 		public DoublePoint(DoublePoint dp)
 		{
 			this.X = dp.X; this.Y = dp.Y;
 		}
+
 		public DoublePoint(IntPoint ip)
 		{
 			this.X = ip.X; this.Y = ip.Y;
