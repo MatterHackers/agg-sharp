@@ -328,6 +328,20 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #endif
 		}
 
+		public static void ColorMask(bool red, bool green, bool blue, bool alpha)
+		{
+#if USE_OPENGL
+			if (openGlHardwareAvailable)
+			{
+				OpenTK.Graphics.OpenGL.GL.ColorMask(red, green, blue, alpha);
+			}
+#else
+			OpenTK.Graphics.ES11.GL.ColorMask(red, green, blue, alpha);
+#endif
+
+		}
+
+
 		public static void Disable(EnableCap cap)
 		{
 #if USE_OPENGL

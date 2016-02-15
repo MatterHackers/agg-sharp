@@ -38,6 +38,7 @@ using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RayTracer;
 using MatterHackers.RayTracer.Traceable;
 using MatterHackers.RenderOpenGl;
+using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
@@ -764,10 +765,7 @@ namespace MatterHackers.MeshVisualizer
 				}
 			}
 
-			foreach (InteractionVolume interactionVolume in interactionVolumes)
-			{
-				interactionVolume.DrawGlContent(e);
-			}
+			DrawInteractionVolumes(e);
 
 			// we don't want to render the bed or bulid volume before we load a model.
 			if (MeshGroups.Count > 0 || AllowBedRenderingWhenEmpty)
@@ -793,6 +791,23 @@ namespace MatterHackers.MeshVisualizer
 					Mesh zAxis = PlatonicSolids.CreateCube(small, small, big);
 					RenderMeshToGl.Render(zAxis, RGBA_Bytes.Blue);
 				}
+			}
+		}
+
+		private void DrawInteractionVolumes(EventArgs e)
+		{
+			// draw on top of anything that is alrady drawn
+			GL.Disable(EnableCap.DepthTest);
+			foreach (InteractionVolume interactionVolume in interactionVolumes)
+			{
+				interactionVolume.DrawGlContent(e);
+			}
+			GL.Enable(EnableCap.DepthTest);
+
+			// Draw again setting the depth buffer and ensuring that all the interaction objects are sorted as well as we can
+			foreach (InteractionVolume interactionVolume in interactionVolumes)
+			{
+				interactionVolume.DrawGlContent(e);
 			}
 		}
 
