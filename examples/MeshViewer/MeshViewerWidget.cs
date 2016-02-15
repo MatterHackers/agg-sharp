@@ -69,7 +69,7 @@ namespace MatterHackers.MeshVisualizer
 		private RenderTypes renderType = RenderTypes.Shaded;
 		private int selectedMeshGroupIndex = -1;
 
-		private double snapGridDistance = 1;
+		public double SnapGridDistance { get; set; } = 1;
 
 		private TrackballTumbleWidget trackballTumbleWidget;
 
@@ -207,12 +207,6 @@ namespace MatterHackers.MeshVisualizer
 			{
 				MeshGroupTransforms[selectedMeshGroupIndex] = value;
 			}
-		}
-
-		public double SnapGridDistance
-		{
-			get { return snapGridDistance; }
-			set { snapGridDistance = value; }
 		}
 
 		public TrackballTumbleWidget TrackballTumbleWidget
