@@ -66,6 +66,8 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
+		public bool DrawOnTop { get; protected set; }
+
 		public void Invalidate()
 		{
 			MeshViewerToDrawWith.Invalidate();
@@ -75,6 +77,10 @@ namespace MatterHackers.MeshVisualizer
 		{
 			this.collisionVolume = collisionVolume;
 			this.meshViewerToDrawWith = meshViewerToDrawWith;
+		}
+
+		public virtual void SetPosition()
+		{
 		}
 
 		public virtual void Draw2DContent(Agg.Graphics2D graphics2D)

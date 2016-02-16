@@ -38,6 +38,7 @@ using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RayTracer;
 using MatterHackers.RayTracer.Traceable;
 using MatterHackers.RenderOpenGl;
+using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
@@ -68,7 +69,7 @@ namespace MatterHackers.MeshVisualizer
 		private RenderTypes renderType = RenderTypes.Shaded;
 		private int selectedMeshGroupIndex = -1;
 
-		private double snapGridDistance = 1;
+		public double SnapGridDistance { get; set; } = 1;
 
 		private TrackballTumbleWidget trackballTumbleWidget;
 
@@ -206,12 +207,6 @@ namespace MatterHackers.MeshVisualizer
 			{
 				MeshGroupTransforms[selectedMeshGroupIndex] = value;
 			}
-		}
-
-		public double SnapGridDistance
-		{
-			get { return snapGridDistance; }
-			set { snapGridDistance = value; }
 		}
 
 		public TrackballTumbleWidget TrackballTumbleWidget
@@ -700,8 +695,11 @@ namespace MatterHackers.MeshVisualizer
 			List<IPrimitive> mesheTraceables = new List<IPrimitive>();
 			foreach (InteractionVolume interactionVolume in interactionVolumes)
 			{
-				IPrimitive traceData = interactionVolume.CollisionVolume;
-				mesheTraceables.Add(new Transform(traceData, interactionVolume.TotalTransform));
+				if (interactionVolume.CollisionVolume != null)
+				{
+					IPrimitive traceData = interactionVolume.CollisionVolume;
+					mesheTraceables.Add(new Transform(traceData, interactionVolume.TotalTransform));
+				}
 			}
 			IPrimitive allObjects = BoundingVolumeHierarchy.CreateNewHierachy(mesheTraceables);
 
@@ -711,11 +709,14 @@ namespace MatterHackers.MeshVisualizer
 				for (int i = 0; i < interactionVolumes.Count; i++)
 				{
 					List<IPrimitive> insideBounds = new List<IPrimitive>();
-					interactionVolumes[i].CollisionVolume.GetContained(insideBounds, info.closestHitObject.GetAxisAlignedBoundingBox());
-					if (insideBounds.Contains(info.closestHitObject))
+					if (interactionVolumes[i].CollisionVolume != null)
 					{
-						interactionVolumeHitIndex = i;
-						return true;
+						interactionVolumes[i].CollisionVolume.GetContained(insideBounds, info.closestHitObject.GetAxisAlignedBoundingBox());
+						if (insideBounds.Contains(info.closestHitObject))
+						{
+							interactionVolumeHitIndex = i;
+							return true;
+						}
 					}
 				}
 			}
@@ -764,11 +765,6 @@ namespace MatterHackers.MeshVisualizer
 				}
 			}
 
-			foreach (InteractionVolume interactionVolume in interactionVolumes)
-			{
-				interactionVolume.DrawGlContent(e);
-			}
-
 			// we don't want to render the bed or bulid volume before we load a model.
 			if (MeshGroups.Count > 0 || AllowBedRenderingWhenEmpty)
 			{
@@ -793,6 +789,28 @@ namespace MatterHackers.MeshVisualizer
 					Mesh zAxis = PlatonicSolids.CreateCube(small, small, big);
 					RenderMeshToGl.Render(zAxis, RGBA_Bytes.Blue);
 				}
+			}
+
+			DrawInteractionVolumes(e);
+		}
+
+		private void DrawInteractionVolumes(EventArgs e)
+		{
+			// draw on top of anything that is alrady drawn
+			foreach (InteractionVolume interactionVolume in interactionVolumes)
+			{
+				if (interactionVolume.DrawOnTop)
+				{
+					GL.Disable(EnableCap.DepthTest);
+					interactionVolume.DrawGlContent(e);
+					GL.Enable(EnableCap.DepthTest);
+				}
+			}
+
+			// Draw again setting the depth buffer and ensuring that all the interaction objects are sorted as well as we can
+			foreach (InteractionVolume interactionVolume in interactionVolumes)
+			{
+				interactionVolume.DrawGlContent(e);
 			}
 		}
 
