@@ -38,7 +38,7 @@ namespace MatterHackers.Agg.UI
 
 		private static object singleInvokeLock = new object();
 
-		private bool hasBeenClosed = false;
+		private bool aggWidgetHasBeenClosed = false;
 
 		public WindowsFormsAbstract()
 		{
@@ -179,7 +179,7 @@ namespace MatterHackers.Agg.UI
 		private void InvokePendingOnIdleActions(object sender, ElapsedEventArgs e)
 		{
 			if (aggAppWidget != null
-				&& !hasBeenClosed)
+				&& !aggWidgetHasBeenClosed)
 			{
 				lock(singleInvokeLock)
 				{
@@ -299,9 +299,9 @@ namespace MatterHackers.Agg.UI
 			}
 			else
 			{
-				if (!hasBeenClosed)
+				if (!aggWidgetHasBeenClosed)
 				{
-					hasBeenClosed = true;
+					aggWidgetHasBeenClosed = true;
 					aggAppWidget.Close();
 				}
 
@@ -346,7 +346,7 @@ namespace MatterHackers.Agg.UI
 
 		internal virtual void RequestClose()
 		{
-			if (!hasBeenClosed)
+			if (!aggWidgetHasBeenClosed)
 			{
 				Close();
 			}
