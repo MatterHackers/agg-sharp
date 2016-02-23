@@ -220,6 +220,7 @@
     <Compile Include="Array2D.cs" />
     <Compile Include="FloodFiller.cs" />
     <Compile Include="Font\LiberationSansFont.cs" />
+    <Compile Include="Font\LiberationMonoFont.cs" />
     <Compile Include="Font\TypeFacePrinter.cs" />
     <Compile Include="Font\TypeFace.cs" />
     <Compile Include="GammaLookUpTable.cs" />
