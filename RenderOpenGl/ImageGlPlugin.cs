@@ -137,7 +137,10 @@ namespace MatterHackers.RenderOpenGl
                 newPlugin.CreateGlDataForImage(imageToGetDisplayListFor, TextureMagFilterLinear);
 				newPlugin.imageUpdateCount = imageToGetDisplayListFor.ChangedCount;
 				newPlugin.glData.refreshCountCreatedOn = currentGlobalRefreshCount;
-                removeGlDataCallBackHolder.releaseAllGlData += newPlugin.glData.DeleteTextureData;
+				if(removeGlDataCallBackHolder != null)
+				{
+					removeGlDataCallBackHolder.releaseAllGlData += newPlugin.glData.DeleteTextureData;
+				}
 
                 return newPlugin;
 			}
