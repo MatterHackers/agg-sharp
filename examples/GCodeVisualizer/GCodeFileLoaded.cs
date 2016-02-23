@@ -180,7 +180,7 @@ namespace MatterHackers.GCodeVisualizer
 			}
 		}
 
-		public void Load(string gcodePathAndFileName)
+		public new void Load(string gcodePathAndFileName)
 		{
 			if (!FileTooBigToLoad(gcodePathAndFileName))
 			{
