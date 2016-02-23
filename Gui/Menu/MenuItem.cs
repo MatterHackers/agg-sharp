@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace MatterHackers.Agg.UI
 {
+	[DebuggerDisplay("{Text}:{Value}")]
 	public class MenuItem : GuiWidget
 	{
 		public class MenuClosedMessage

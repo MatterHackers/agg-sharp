@@ -158,21 +158,10 @@ namespace MatterHackers.GCodeVisualizer
 							return;
 						}
 
-						string gCodeString = "";
-						using (FileStream fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-						{
-							using (StreamReader gcodeStream = new StreamReader(fileStream))
-							{
-								long bytes = gcodeStream.BaseStream.Length;
-								char[] content = new char[bytes];
-								gcodeStream.Read(content, 0, (int)bytes);
-								gCodeString = new string(content);
-							}
-						}
+						backgroundWorker.DoWork += ParseFileContents;
 
-						backgroundWorker.DoWork += new DoWorkEventHandler(ParseFileContents);
-
-						backgroundWorker.RunWorkerAsync(gCodeString);
+						// Start async ParseFileContents worker,  passing all file contents
+						backgroundWorker.RunWorkerAsync(File.ReadAllText(fileName));
 					}
 					else
 					{
@@ -295,8 +284,6 @@ namespace MatterHackers.GCodeVisualizer
 						case ';':
 							if (gcodeHasExplicitLayerChangeInfo && lineString.StartsWith("; LAYER:"))
 							{
-								string layerNumber = lineString.Split(':')[1];
-
 								loadedGCodeFile.IndexOfChangeInZ.Add(loadedGCodeFile.GCodeCommandQueue.Count);
 							}
 							if (lineString.StartsWith("; layerThickness"))
@@ -927,12 +914,30 @@ namespace MatterHackers.GCodeVisualizer
 		{
 			if (filamentDiameterCache == 0)
 			{
-				for (int i = 0; i < 20; i++)
+				for (int i = 0; i < Math.Min(20, GCodeCommandQueue.Count); i++)
 				{
 					if (GetFirstNumberAfter("filamentDiameter =", GCodeCommandQueue[i].Line, ref filamentDiameterCache))
 					{
 						break;
 					}
+				}
+
+				if (filamentDiameterCache == 0)
+				{
+					// didn't find it, so look at the end of the file for filament_diameter =
+					string lookFor = "; filament_diameter =";// 2.85
+					for (int i = GCodeCommandQueue.Count - 1; i > Math.Max(0, GCodeCommandQueue.Count - 100); i--)
+					{
+						if (GetFirstNumberAfter(lookFor, GCodeCommandQueue[i].Line, ref filamentDiameterCache))
+						{
+						}
+					}
+				}
+
+				if(filamentDiameterCache == 0)
+				{
+					// it is still 0 so set it to something so we render
+					filamentDiameterCache = 1.75;
 				}
 			}
 

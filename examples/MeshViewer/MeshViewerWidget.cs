@@ -765,7 +765,7 @@ namespace MatterHackers.MeshVisualizer
 				}
 			}
 
-			// we don't want to render the bed or bulid volume before we load a model.
+			// we don't want to render the bed or build volume before we load a model.
 			if (MeshGroups.Count > 0 || AllowBedRenderingWhenEmpty)
 			{
 				if (RenderBed)
@@ -796,7 +796,7 @@ namespace MatterHackers.MeshVisualizer
 
 		private void DrawInteractionVolumes(EventArgs e)
 		{
-			// draw on top of anything that is alrady drawn
+			// draw on top of anything that is already drawn
 			foreach (InteractionVolume interactionVolume in interactionVolumes)
 			{
 				if (interactionVolume.DrawOnTop)
