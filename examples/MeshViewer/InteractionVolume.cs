@@ -30,6 +30,9 @@ either expressed or implied, of the FreeBSD Project.
 using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;
 using System;
+using MatterHackers.Agg;
+using MatterHackers.Agg.VertexSource;
+using MatterHackers.Agg.Transform;
 
 namespace MatterHackers.MeshVisualizer
 {
@@ -64,6 +67,38 @@ namespace MatterHackers.MeshVisualizer
 					Invalidate();
 				}
 			}
+		}
+
+		[Flags]
+		public enum LineArrows { None = 0, Start = 1, End = 2};
+		public static void DrawMeasureLine(Graphics2D graphics2D, Vector2 lineStart, Vector2 lineEnd, RGBA_Bytes black, LineArrows arrows)
+		{
+			graphics2D.Line(lineStart, lineEnd, RGBA_Bytes.Black);
+
+			Vector2 direction = lineEnd - lineStart;
+			if (direction.LengthSquared > 0
+				&& (arrows.HasFlag(LineArrows.Start) || arrows.HasFlag(LineArrows.End)))
+			{
+				PathStorage arrow = new PathStorage();
+				arrow.MoveTo(-3, -5);
+				arrow.LineTo(0, 0);
+				arrow.LineTo(3, -5);
+				if (arrows.HasFlag(LineArrows.End))
+				{
+					double rotation = Math.Atan2(direction.y, direction.x);
+					IVertexSource correctRotation = new VertexSourceApplyTransform(arrow, Affine.NewRotation(rotation - MathHelper.Tau / 4));
+					IVertexSource inPosition = new VertexSourceApplyTransform(correctRotation, Affine.NewTranslation(lineEnd));
+					graphics2D.Render(inPosition, RGBA_Bytes.Black);
+				}
+				if (arrows.HasFlag(LineArrows.Start))
+				{
+					double rotation = Math.Atan2(direction.y, direction.x) + MathHelper.Tau/2;
+					IVertexSource correctRotation = new VertexSourceApplyTransform(arrow, Affine.NewRotation(rotation - MathHelper.Tau / 4));
+					IVertexSource inPosition = new VertexSourceApplyTransform(correctRotation, Affine.NewTranslation(lineStart));
+					graphics2D.Render(inPosition, RGBA_Bytes.Black);
+				}
+			}
+
 		}
 
 		public bool DrawOnTop { get; protected set; }
