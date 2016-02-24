@@ -70,8 +70,8 @@ namespace MatterHackers.MeshVisualizer
 		}
 
 		[Flags]
-		public enum LineArrows { None = 0, Start = 1, End = 2};
-		public static void DrawMeasureLine(Graphics2D graphics2D, Vector2 lineStart, Vector2 lineEnd, RGBA_Bytes black, LineArrows arrows)
+		public enum LineArrows { None = 0, Start = 1, End = 2, Both = 3};
+		public static void DrawMeasureLine(Graphics2D graphics2D, Vector2 lineStart, Vector2 lineEnd, RGBA_Bytes color, LineArrows arrows)
 		{
 			graphics2D.Line(lineStart, lineEnd, RGBA_Bytes.Black);
 
