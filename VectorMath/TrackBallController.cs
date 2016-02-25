@@ -94,7 +94,8 @@ namespace MatterHackers.VectorMath
 			OnTransformChanged(null);
 		}
 
-		public double Scale
+		public double MinScale { get; set; } = 0.1;
+        public double Scale
 		{
 			get
 			{
@@ -104,6 +105,10 @@ namespace MatterHackers.VectorMath
 
 			set
 			{
+				if(value < MinScale)
+				{
+					value = MinScale;
+				}
 				double requiredChange = value / Scale;
 
 				currentTranslationMatrix *= Matrix4X4.CreateScale(requiredChange);
@@ -246,7 +251,7 @@ namespace MatterHackers.VectorMath
 						{
 							zoomDelta = 1 + (1 * mouseDelta.y / 100);
 						}
-						currentTranslationMatrix *= Matrix4X4.CreateScale(zoomDelta);
+						Scale = Scale * zoomDelta;
 						lastScaleMousePosition = mousePosition;
 						OnTransformChanged(null);
 					}
@@ -292,7 +297,7 @@ namespace MatterHackers.VectorMath
 				zoomDelta = .8;
 			}
 
-			currentTranslationMatrix *= Matrix4X4.CreateScale(zoomDelta);
+			Scale = Scale * zoomDelta;
 			OnTransformChanged(null);
 		}
 
