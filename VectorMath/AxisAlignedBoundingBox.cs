@@ -110,6 +110,30 @@ namespace MatterHackers.VectorMath
 			return new AxisAlignedBoundingBox(newMin, newMax);
 		}
 
+		/// <summary>
+		/// Geth the corners by quadrant of the bottom
+		/// </summary>
+		/// <param name="quadrantIndex"></param>
+		public Vector3 GetBottomCorner(int quadrantIndex)
+		{
+			switch(quadrantIndex)
+			{
+				case 0:
+					return new Vector3(maxXYZ.x, maxXYZ.y, minXYZ.z);
+
+				case 1:
+					return new Vector3(minXYZ.x, maxXYZ.y, minXYZ.z);
+
+				case 2:
+					return new Vector3(minXYZ.x, minXYZ.y, minXYZ.z);
+
+				case 3:
+					return new Vector3(maxXYZ.x, minXYZ.y, minXYZ.z);
+			}
+
+			return Vector3.Zero;
+		}
+
 		public Vector3 Center
 		{
 			get
