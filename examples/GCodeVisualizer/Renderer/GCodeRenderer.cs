@@ -189,8 +189,8 @@ namespace MatterHackers.GCodeVisualizer
 				}
 				if (startFeature >= endFeature)
 				{
-					// This can only happen if the sart and end are set to the last feature
-					// Try to set the start feture to one from the end
+					// This can only happen if the start and end are set to the last feature
+					// Try to set the start feature to one from the end
 					startFeature = Math.Max(endFeature - 1, 0);
 				}
 
@@ -393,8 +393,8 @@ namespace MatterHackers.GCodeVisualizer
 					}
 					if (startFeature >= endFeature)
 					{
-						// This can only happen if the sart and end are set to the last feature
-						// Try to set the start feture to one from the end
+						// This can only happen if the start and end are set to the last feature
+						// Try to set the start feature to one from the end
 						startFeature = Math.Max(endFeature - 1, 0);
 					}
 
