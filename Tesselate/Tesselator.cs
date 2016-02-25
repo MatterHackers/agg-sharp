@@ -34,7 +34,7 @@
 */
 /*
 ** Author: Eric Veach, July 1994.
-// C# Port port by: Lars Brubaker
+// C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
 // Copyright (C) 2007
 **
