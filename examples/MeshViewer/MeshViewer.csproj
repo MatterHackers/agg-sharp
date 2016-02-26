@@ -236,7 +236,6 @@
   <ItemGroup>
     <Compile Include="InteractionVolume.cs" />
     <Compile Include="MouseEvent3DArgs.cs" />
-    <Compile Include="ScaleRotateTranslate.cs" />
     <Compile Include="MeshViewerWidget.cs" />
     <Compile Include="MeshViewerApplication.cs">
       <SubType>Code</SubType>

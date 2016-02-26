@@ -64,7 +64,7 @@ namespace MatterHackers.MeshVisualizer
 		private static Mesh buildVolume = null;
 		private static Vector3 displayVolume;
 		private List<MeshGroup> meshesToRender = new List<MeshGroup>();
-		private List<ScaleRotateTranslate> meshTransforms = new List<ScaleRotateTranslate>();
+		private List<Matrix4X4> meshTransforms = new List<Matrix4X4>();
 		private static Mesh printerBed = null;
 		private RenderTypes renderType = RenderTypes.Shaded;
 		private int selectedMeshGroupIndex = -1;
@@ -145,7 +145,7 @@ namespace MatterHackers.MeshVisualizer
 
 		public List<MeshGroup> MeshGroups { get { return meshesToRender; } }
 
-		public List<ScaleRotateTranslate> MeshGroupTransforms { get { return meshTransforms; } }
+		public List<Matrix4X4> MeshGroupTransforms { get { return meshTransforms; } }
 
 		public Mesh PrinterBed { get { return printerBed; } }
 
@@ -191,7 +191,7 @@ namespace MatterHackers.MeshVisualizer
 			set { selectedMeshGroupIndex = value; }
 		}
 
-		public ScaleRotateTranslate SelectedMeshGroupTransform
+		public Matrix4X4 SelectedMeshGroupTransform
 		{
 			get
 			{
@@ -200,7 +200,7 @@ namespace MatterHackers.MeshVisualizer
 					return MeshGroupTransforms[selectedMeshGroupIndex];
 				}
 
-				return ScaleRotateTranslate.Identity();
+				return Matrix4X4.Identity;
 			}
 
 			set
@@ -376,7 +376,7 @@ namespace MatterHackers.MeshVisualizer
 
 		public AxisAlignedBoundingBox GetBoundsForSelection()
 		{
-			Matrix4X4 selectedMeshTransform = SelectedMeshGroupTransform.TotalTransform;
+			Matrix4X4 selectedMeshTransform = SelectedMeshGroupTransform;
 			AxisAlignedBoundingBox selectedBounds = SelectedMeshGroup.GetAxisAlignedBoundingBox(selectedMeshTransform);
 			return selectedBounds;
 		}
@@ -552,12 +552,10 @@ namespace MatterHackers.MeshVisualizer
 					}
 				}
 
+				// add all the loaded meshes
 				foreach (MeshGroup meshGroup in loadedMeshGroups)
 				{
-					// make sure the mesh is centered about the origin so rotations will come from a reasonable place
-					ScaleRotateTranslate centering = ScaleRotateTranslate.Identity();
-					centering.SetCenteringForMeshGroup(meshGroup);
-					meshTransforms.Add(centering);
+					meshTransforms.Add(Matrix4X4.Identity);
 					MeshGroups.Add(meshGroup);
 				}
 
@@ -567,9 +565,7 @@ namespace MatterHackers.MeshVisualizer
 					Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
 					for (int i = 0; i < MeshGroups.Count; i++)
 					{
-						ScaleRotateTranslate moved = meshTransforms[i];
-						moved.translation *= Matrix4X4.CreateTranslation(-boundsCenter + new Vector3(0, 0, bounds.ZSize / 2) + new Vector3(bedCenter));
-						meshTransforms[i] = moved;
+						meshTransforms[i] *= Matrix4X4.CreateTranslation(-boundsCenter + new Vector3(0, 0, bounds.ZSize / 2) + new Vector3(bedCenter));
 					}
 				}
 				
@@ -760,7 +756,7 @@ namespace MatterHackers.MeshVisualizer
 						drawColor = GetSelectedMaterialColor(meshData.MaterialIndex);
 					}
 
-					RenderMeshToGl.Render(meshToRender, drawColor, MeshGroupTransforms[groupIndex].TotalTransform, RenderType);
+					RenderMeshToGl.Render(meshToRender, drawColor, MeshGroupTransforms[groupIndex], RenderType);
 					part++;
 				}
 			}

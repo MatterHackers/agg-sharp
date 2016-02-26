@@ -33,8 +33,13 @@ using System.Diagnostics;
 
 namespace MatterHackers.PolygonMesh
 {
+	public interface IHasAABB
+	{
+		AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 transform);
+	}
+
 	[DebuggerDisplay("ID = {Meshes.Count}")]
-	public class MeshGroup
+	public class MeshGroup : IHasAABB
 	{
 		private List<Mesh> meshes = new List<Mesh>();
 
