@@ -215,7 +215,7 @@ namespace MatterHackers.Agg.UI
 
 			FixBarPosition(DesiredXPositionOnLine.Set);
 
-			TextWidgetUndoData newUndoData = new TextWidgetUndoData(this);
+			TextWidgetUndoCommand newUndoData = new TextWidgetUndoCommand(this);
 			undoBuffer.Add(newUndoData);
 
 			Cursor = Cursors.IBeam;
@@ -586,7 +586,7 @@ namespace MatterHackers.Agg.UI
 
 				if (createUndoMarker)
 				{
-					TextWidgetUndoData newUndoDeleteData = new TextWidgetUndoData(this);
+					TextWidgetUndoCommand newUndoDeleteData = new TextWidgetUndoCommand(this);
 					undoBuffer.Add(newUndoDeleteData);
 				}
 
@@ -954,8 +954,8 @@ namespace MatterHackers.Agg.UI
 				CharIndexToInsertBefore += stringOnClipboard.Length;
 				internalTextWidget.Text = stringBuilder.ToString();
 
-				TextWidgetUndoData newUndoData = new TextWidgetUndoData(this);
-				undoBuffer.Add(newUndoData);
+				TextWidgetUndoCommand newUndoCommand = new TextWidgetUndoCommand(this);
+				undoBuffer.Add(newUndoCommand);
 			}
 #endif
 		}
@@ -977,7 +977,7 @@ namespace MatterHackers.Agg.UI
 
 			FixBarPosition(DesiredXPositionOnLine.Set);
 
-			TextWidgetUndoData newUndoData = new TextWidgetUndoData(this);
+			TextWidgetUndoCommand newUndoData = new TextWidgetUndoCommand(this);
 			if (MergeTypingDuringUndo
 				&& charIndexToAcceptAsMerging == CharIndexToInsertBefore - 1
 				&& keyPressEvent.KeyChar != '\n' && keyPressEvent.KeyChar != '\r')

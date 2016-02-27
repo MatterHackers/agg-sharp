@@ -20,7 +20,7 @@ using System;
 
 namespace MatterHackers.Agg.UI
 {
-	public class TextWidgetUndoData : IUndoRedoCommand
+	public class TextWidgetUndoCommand : IUndoRedoCommand
 	{
 		private int charIndexToInsertBefore;
 		private bool selecting;
@@ -28,7 +28,7 @@ namespace MatterHackers.Agg.UI
 		private InternalTextEditWidget textEditWidget;
 		private String undoString;
 
-		internal TextWidgetUndoData(InternalTextEditWidget textEditWidget)
+		internal TextWidgetUndoCommand(InternalTextEditWidget textEditWidget)
 		{
 			this.textEditWidget = textEditWidget;
 			undoString = textEditWidget.Text;
