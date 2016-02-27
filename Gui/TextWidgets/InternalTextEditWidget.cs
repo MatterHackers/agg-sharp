@@ -216,7 +216,7 @@ namespace MatterHackers.Agg.UI
 			FixBarPosition(DesiredXPositionOnLine.Set);
 
 			TextWidgetUndoData newUndoData = new TextWidgetUndoData(this);
-			undoBuffer.Add(newUndoData, "Initial", UndoBuffer.MergeType.NotMergable);
+			undoBuffer.Add(newUndoData);
 
 			Cursor = Cursors.IBeam;
 
@@ -587,7 +587,7 @@ namespace MatterHackers.Agg.UI
 				if (createUndoMarker)
 				{
 					TextWidgetUndoData newUndoDeleteData = new TextWidgetUndoData(this);
-					undoBuffer.Add(newUndoDeleteData, "Delete", UndoBuffer.MergeType.NotMergable);
+					undoBuffer.Add(newUndoDeleteData);
 				}
 
 				Selecting = false;
@@ -876,11 +876,7 @@ namespace MatterHackers.Agg.UI
 				case Keys.Y:
 					if (keyEvent.Control)
 					{
-						TextWidgetUndoData undoData = (TextWidgetUndoData)undoBuffer.GetNextRedoObject();
-						if (undoData != null)
-						{
-							undoData.ExtractData(this);
-						}
+						undoBuffer.Redo();
 						keyEvent.Handled = true;
 						keyEvent.SuppressKeyPress = true;
 					}
@@ -909,12 +905,8 @@ namespace MatterHackers.Agg.UI
 
 		public void Undo()
 		{
-			TextWidgetUndoData undoData = (TextWidgetUndoData)undoBuffer.GetPrevUndoObject();
-			if (undoData != null)
-			{
-				undoData.ExtractData(this);
-				FixBarPosition(DesiredXPositionOnLine.Set);
-			}
+			undoBuffer.Undo();
+			FixBarPosition(DesiredXPositionOnLine.Set);
 		}
 
 		private void CopySelection()
@@ -963,7 +955,7 @@ namespace MatterHackers.Agg.UI
 				internalTextWidget.Text = stringBuilder.ToString();
 
 				TextWidgetUndoData newUndoData = new TextWidgetUndoData(this);
-				undoBuffer.Add(newUndoData, "Paste", UndoBuffer.MergeType.NotMergable);
+				undoBuffer.Add(newUndoData);
 			}
 #endif
 		}
@@ -988,13 +980,13 @@ namespace MatterHackers.Agg.UI
 			TextWidgetUndoData newUndoData = new TextWidgetUndoData(this);
 			if (MergeTypingDuringUndo
 				&& charIndexToAcceptAsMerging == CharIndexToInsertBefore - 1
-				&& keyPressEvent.KeyChar != '\n')
+				&& keyPressEvent.KeyChar != '\n' && keyPressEvent.KeyChar != '\r')
 			{
-				undoBuffer.Add(newUndoData, "Typing", UndoBuffer.MergeType.Mergable);
+				undoBuffer.Add(newUndoData);
 			}
 			else
 			{
-				undoBuffer.Add(newUndoData, "Typing", UndoBuffer.MergeType.NotMergable);
+				undoBuffer.Add(newUndoData);
 			}
 			charIndexToAcceptAsMerging = CharIndexToInsertBefore;
 		}

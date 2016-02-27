@@ -20,36 +20,34 @@ using System;
 
 namespace MatterHackers.Agg.UI
 {
-	public class TextWidgetUndoData : IUndoData
+	public class TextWidgetUndoData : IUndoRedoCommand
 	{
-		private TextWidgetUndoData(String undoString, int charIndexToInsertBefore, int selectionIndexToStartBefore, bool selecting)
-		{
-			this.undoString = undoString;
-			this.selecting = selecting;
-			this.selectionIndexToStartBefore = selectionIndexToStartBefore;
-			this.charIndexToInsertBefore = charIndexToInsertBefore;
-		}
+		private int charIndexToInsertBefore;
+		private bool selecting;
+		private int selectionIndexToStartBefore;
+		private InternalTextEditWidget textEditWidget;
+		private String undoString;
 
 		internal TextWidgetUndoData(InternalTextEditWidget textEditWidget)
 		{
+			this.textEditWidget = textEditWidget;
 			undoString = textEditWidget.Text;
 			charIndexToInsertBefore = textEditWidget.CharIndexToInsertBefore;
 			selectionIndexToStartBefore = textEditWidget.SelectionIndexToStartBefore;
 			selecting = textEditWidget.Selecting;
 		}
 
-		public IUndoData Clone()
+		public void Do()
 		{
-			TextWidgetUndoData clonedUndoData = new TextWidgetUndoData(undoString, charIndexToInsertBefore, selectionIndexToStartBefore, selecting);
-			return clonedUndoData;
+			ExtractData();
 		}
 
-		private String undoString;
-		private bool selecting;
-		private int selectionIndexToStartBefore;
-		private int charIndexToInsertBefore;
+		public void Undo()
+		{
+			ExtractData();
+		}
 
-		internal void ExtractData(InternalTextEditWidget textEditWidget)
+		internal void ExtractData()
 		{
 			textEditWidget.Text = undoString;
 			textEditWidget.CharIndexToInsertBefore = charIndexToInsertBefore;

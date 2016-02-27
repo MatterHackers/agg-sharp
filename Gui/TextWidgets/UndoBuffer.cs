@@ -20,89 +20,59 @@ using System.Collections.Generic;
 
 namespace MatterHackers.Agg.UI
 {
-	public interface IUndoData
-	{
-		IUndoData Clone();
-	}
-
 	public class UndoBuffer
 	{
-		public enum MergeType { Mergable, NotMergable };
+		private Stack<IUndoRedoCommand> redoBuffer = new Stack<IUndoRedoCommand>();
 
-		private class UndoCheckPoint
-		{
-			internal IUndoData objectToUndoTo;
-			internal string typeOfObject;
-			internal MergeType mergeType;
-
-			internal UndoCheckPoint(IUndoData objectToUndoTo, string typeOfObject, MergeType mergeType)
-			{
-				this.objectToUndoTo = objectToUndoTo;
-				this.typeOfObject = typeOfObject;
-				this.mergeType = mergeType;
-			}
-		}
-
-		private List<UndoCheckPoint> undoBuffer = new List<UndoCheckPoint>();
-		private int currentUndoIndex = -1;
-		private int lastValidUndoIndex = -1;
+		private Stack<IUndoRedoCommand> undoBuffer = new Stack<IUndoRedoCommand>();
 
 		public UndoBuffer()
 		{
 		}
 
-		public void Add(IUndoData objectToUndoTo, string typeOfObject, MergeType mergeType)
+		public void Add(IUndoRedoCommand command)
 		{
-			IUndoData cloneableObject = objectToUndoTo;
-			if (cloneableObject != null)
+			undoBuffer.Push(command);
+			redoBuffer.Clear();
+		}
+
+		public void Redo(int redoCount = 1)
+		{
+			for (int i = 1; i <= redoCount; i++)
 			{
-				if (currentUndoIndex <= 0
-					|| mergeType == MergeType.NotMergable
-					|| undoBuffer[currentUndoIndex].typeOfObject != typeOfObject)
+				if (redoBuffer.Count != 0)
 				{
-					currentUndoIndex++;
+					IUndoRedoCommand command = redoBuffer.Pop();
+					command.Do();
+					undoBuffer.Push(command);
 				}
-
-				UndoCheckPoint newUndoCheckPoint = new UndoCheckPoint(cloneableObject.Clone(), typeOfObject, mergeType);
-				if (currentUndoIndex < undoBuffer.Count)
-				{
-					undoBuffer[currentUndoIndex] = newUndoCheckPoint;
-				}
-				else
-				{
-					undoBuffer.Add(newUndoCheckPoint);
-				}
-
-				lastValidUndoIndex = currentUndoIndex;
 			}
 		}
 
-		public object GetPrevUndoObject()
+		public void Undo(int undoCount = 1)
 		{
-			if (currentUndoIndex > 0)
+			for (int i = 1; i <= undoCount; i++)
 			{
-				return undoBuffer[--currentUndoIndex].objectToUndoTo.Clone();
+				if (undoBuffer.Count != 0)
+				{
+					IUndoRedoCommand command = undoBuffer.Pop();
+					command.Undo();
+					redoBuffer.Push(command);
+				}
 			}
-
-			return null;
-		}
-
-		public object GetNextRedoObject()
-		{
-			if (lastValidUndoIndex > currentUndoIndex)
-			{
-				currentUndoIndex++;
-				return undoBuffer[currentUndoIndex].objectToUndoTo.Clone();
-			}
-
-			return null;
 		}
 
 		internal void ClearHistory()
 		{
 			undoBuffer.Clear();
-			currentUndoIndex = -1;
-			lastValidUndoIndex = -1;
+			redoBuffer.Clear();
 		}
+	}
+
+	public interface IUndoRedoCommand
+	{
+		void Do();
+
+		void Undo();
 	}
 }
