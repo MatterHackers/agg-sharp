@@ -16,6 +16,7 @@
 //          mcseemagg@yahoo.com
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
+using System;
 using System.Collections.Generic;
 
 namespace MatterHackers.Agg.UI
@@ -23,8 +24,12 @@ namespace MatterHackers.Agg.UI
 	public class UndoBuffer
 	{
 		private Stack<IUndoRedoCommand> redoBuffer = new Stack<IUndoRedoCommand>();
+		public int RedoCount { get { return redoBuffer.Count; } }
 
 		private Stack<IUndoRedoCommand> undoBuffer = new Stack<IUndoRedoCommand>();
+		public int UndoCount { get { return undoBuffer.Count; } }
+
+		public event EventHandler Changed;
 
 		public UndoBuffer()
 		{
@@ -34,7 +39,8 @@ namespace MatterHackers.Agg.UI
 		{
 			undoBuffer.Push(command);
 			redoBuffer.Clear();
-		}
+			Changed?.Invoke(this, null);
+        }
 
 		public void Redo(int redoCount = 1)
 		{
@@ -47,6 +53,7 @@ namespace MatterHackers.Agg.UI
 					undoBuffer.Push(command);
 				}
 			}
+			Changed?.Invoke(this, null);
 		}
 
 		public void Undo(int undoCount = 1)
@@ -60,12 +67,14 @@ namespace MatterHackers.Agg.UI
 					redoBuffer.Push(command);
 				}
 			}
+			Changed?.Invoke(this, null);
 		}
 
 		internal void ClearHistory()
 		{
 			undoBuffer.Clear();
 			redoBuffer.Clear();
+			Changed?.Invoke(this, null);
 		}
 	}
 
