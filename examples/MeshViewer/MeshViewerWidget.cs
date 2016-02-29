@@ -187,8 +187,19 @@ namespace MatterHackers.MeshVisualizer
 
 		public int SelectedMeshGroupIndex
 		{
-			get { return selectedMeshGroupIndex; }
-			set { selectedMeshGroupIndex = value; }
+			get
+			{
+				if (selectedMeshGroupIndex >= MeshGroups.Count)
+				{
+					selectedMeshGroupIndex = MeshGroups.Count - 1;
+				}
+
+				return selectedMeshGroupIndex;
+			}
+			set
+			{
+				selectedMeshGroupIndex = value;
+			}
 		}
 
 		public Matrix4X4 SelectedMeshGroupTransform
