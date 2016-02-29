@@ -571,11 +571,19 @@ namespace MatterHackers.MeshVisualizer
 				
 				trackballTumbleWidget.TrackBallController = new TrackBallController();
 				trackballTumbleWidget.OnBoundsChanged(null);
-				trackballTumbleWidget.TrackBallController.Translate(-new Vector3(BedCenter));
-				trackballTumbleWidget.TrackBallController.Scale = 3;
-				trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, MathHelper.Tau / 16)));
-				trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
+
+				ResetView();
 			}
+		}
+
+		public void ResetView()
+		{
+			trackballTumbleWidget.ZeroVelocity();
+			trackballTumbleWidget.TrackBallController.Reset();
+			trackballTumbleWidget.TrackBallController.Scale = .03;
+			trackballTumbleWidget.TrackBallController.Translate(-new Vector3(BedCenter));
+			trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, MathHelper.Tau / 16)));
+			trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
 		}
 
 		private void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)

@@ -94,7 +94,6 @@ namespace MatterHackers.VectorMath
 			OnTransformChanged(null);
 		}
 
-		public double MinScale { get; set; } = 0.1;
         public double Scale
 		{
 			get
@@ -105,14 +104,13 @@ namespace MatterHackers.VectorMath
 
 			set
 			{
-				if(value < MinScale)
+				if (Scale > 0)
 				{
-					value = MinScale;
-				}
-				double requiredChange = value / Scale;
+					double requiredChange = value / Scale;
 
-				currentTranslationMatrix *= Matrix4X4.CreateScale(requiredChange);
-				OnTransformChanged(null);
+					currentTranslationMatrix *= Matrix4X4.CreateScale(requiredChange);
+					OnTransformChanged(null);
+				}
 			}
 		}
 
