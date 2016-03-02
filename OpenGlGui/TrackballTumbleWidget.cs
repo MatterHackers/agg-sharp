@@ -132,6 +132,13 @@ namespace MatterHackers.Agg.OpenGlGui
 			return new Vector2(screenPosition.x * Width / 2 + Width / 2, screenPosition.y / screenPosition.z * Height / 2 + Height / 2);
 		}
 
+		public Vector3 GetScreenSpace(Vector3 worldPosition)
+		{
+			Vector3 viewPosition = Vector3.Transform(worldPosition, ModelviewMatrix);
+
+			return Vector3.Transform(viewPosition, ProjectionMatrix);
+		}
+
 		public Ray GetRayFromScreen(Vector2 screenPosition)
 		{
 			Vector4 rayClip = new Vector4();
