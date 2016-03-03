@@ -40,10 +40,14 @@ using MatterHackers.RayTracer.Traceable;
 using MatterHackers.RenderOpenGl;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace MatterHackers.MeshVisualizer
 {
@@ -74,18 +78,15 @@ namespace MatterHackers.MeshVisualizer
 		private static BedShape bedShape = BedShape.Rectangular;
 		private static Mesh buildVolume = null;
 		private static Vector3 displayVolume;
-		private List<MeshGroup> meshesToRender = new List<MeshGroup>();
-		private List<Matrix4X4> meshTransforms = new List<Matrix4X4>();
 		private static Mesh printerBed = null;
 		private RenderTypes renderType = RenderTypes.Shaded;
-		private int selectedMeshGroupIndex = -1;
 
 		public double SnapGridDistance { get; set; } = 1;
 
 		private TrackballTumbleWidget trackballTumbleWidget;
 
 		private int volumeIndexWithMouseDown = -1;
-
+		
 		public MeshViewerWidget(Vector3 displayVolume, Vector2 bedCenter, BedShape bedShape, string startingTextMessage = "")
 		{
 			RenderType = RenderTypes.Shaded;
@@ -149,14 +150,43 @@ namespace MatterHackers.MeshVisualizer
 			return totalMeshBounds;
 		}
 
-		public bool HaveSelection
+		public class SceneGraph : Object3D
 		{
-			get { return MeshGroups.Count > 0 && SelectedMeshGroupIndex > -1; }
+			public IObject3D SelectedItem { get; set; }
+
+			public bool HasItems => Children.Count > 0;
+
+			public bool HasSelection => HasItems && SelectedItem != null;
+
+			public bool IsSelected(Object3DTypes objectType) => HasSelection && SelectedItem.ItemType == objectType;
+
+			public void SetSelectionToLastItem()
+			{
+				if (Children.Count > 0)
+				{
+					SelectedItem = Children.Last();
+				}
+			}
+
+			public void SetSelectionToFirstItem()
+			{
+				if (Children.Count > 0)
+				{
+					SelectedItem = Children.First();
+				}
+			}
+
+			public void Modify(Action<List<IObject3D>> action)
+			{
+				var sceneGraph = new List<IObject3D>(Children);
+
+				action(sceneGraph);
+
+				Children = sceneGraph;
+			}
 		}
 
-		public List<MeshGroup> MeshGroups { get { return meshesToRender; } }
-
-		public List<Matrix4X4> MeshGroupTransforms { get { return meshTransforms; } }
+		public SceneGraph ActiveScene { get; } = new SceneGraph();
 
 		public Mesh PrinterBed { get { return printerBed; } }
 
@@ -172,7 +202,7 @@ namespace MatterHackers.MeshVisualizer
 				if (renderType != value)
 				{
 					renderType = value;
-					foreach (MeshGroup meshGroup in MeshGroups)
+					foreach (MeshGroup meshGroup in ActiveScene.Children.Select(object3D => object3D.MeshGroup))
 					{
 						foreach (Mesh mesh in meshGroup.Meshes)
 						{
@@ -180,54 +210,6 @@ namespace MatterHackers.MeshVisualizer
 						}
 					}
 				}
-			}
-		}
-
-		public MeshGroup SelectedMeshGroup
-		{
-			get
-			{
-				if (HaveSelection)
-				{
-					return MeshGroups[SelectedMeshGroupIndex];
-				}
-
-				return null;
-			}
-		}
-
-		public int SelectedMeshGroupIndex
-		{
-			get
-			{
-				if (selectedMeshGroupIndex >= MeshGroups.Count)
-				{
-					selectedMeshGroupIndex = MeshGroups.Count - 1;
-				}
-
-				return selectedMeshGroupIndex;
-			}
-			set
-			{
-				selectedMeshGroupIndex = value;
-			}
-		}
-
-		public Matrix4X4 SelectedMeshGroupTransform
-		{
-			get
-			{
-				if (HaveSelection)
-				{
-					return MeshGroupTransforms[selectedMeshGroupIndex];
-				}
-
-				return Matrix4X4.Identity;
-			}
-
-			set
-			{
-				MeshGroupTransforms[selectedMeshGroupIndex] = value;
 			}
 		}
 
@@ -290,15 +272,13 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
-		public void CreateGlDataForMeshes(List<MeshGroup> meshGroupsToPrepare)
+		public void CreateGlDataForMeshes(List<IObject3D> object3DList)
 		{
-			for (int i = 0; i < meshGroupsToPrepare.Count; i++)
+			foreach (IObject3D object3D in object3DList.Where(o => o.MeshGroup != null))
 			{
-				MeshGroup meshGroupToPrepare = meshGroupsToPrepare[i];
-
-				foreach (Mesh meshToPrepare in meshGroupToPrepare.Meshes)
+				foreach (Mesh meshToPrepare in object3D.MeshGroup.Meshes)
 				{
-					GLMeshTrianglePlugin glMeshPlugin = GLMeshTrianglePlugin.Get(meshToPrepare);
+					GLMeshTrianglePlugin.Get(meshToPrepare);
 				}
 			}
 		}
@@ -401,35 +381,145 @@ namespace MatterHackers.MeshVisualizer
 			Invalidate();
 		}
 
-		public AxisAlignedBoundingBox GetBoundsForSelection()
+		public enum CenterPartAfterLoad { DO, DONT }
+
+		private class Scene
 		{
-			Matrix4X4 selectedMeshTransform = SelectedMeshGroupTransform;
-			AxisAlignedBoundingBox selectedBounds = SelectedMeshGroup.GetAxisAlignedBoundingBox(selectedMeshTransform);
-			return selectedBounds;
+			public static Scene LoadedScene = null;
+
+			private static Dictionary<string, List<MeshGroup>> cachedMeshes = new Dictionary<string, List<MeshGroup>>();
+
+			private string activeScenePath;
+
+			public List<IObject3D> Items { get; private set; }
+
+			private XElement docRoot;
+
+			public static async Task<IObject3D> Load(string filePath, ReportProgressRatio reporter)
+			{
+				var scene = new Object3D();
+
+				var root = XElement.Load(filePath);
+
+				foreach (var elem in root.Elements())
+				{
+					await ProcessTree(elem, scene, reporter);
+				}
+
+				LoadedScene = new Scene {
+					Items = scene.Children,
+					activeScenePath = filePath,
+					docRoot = root
+				};
+
+				return scene;
+			}
+
+			private static Dictionary<string, string> ItemTypeRemapping = new Dictionary<string, string>
+			{
+				["model"] = "Model",
+				["group"] = "Group"
+			};
+
+			private static async Task ProcessTree(XElement elem, IObject3D context, ReportProgressRatio reporter)
+			{
+				Matrix4X4 modelTransform = Matrix4X4.Identity;
+
+				var transformElem = elem.Element("transform");
+				if (transformElem != null)
+				{
+					var doubleArray = JsonConvert.DeserializeObject<Double[]>(transformElem.Value);
+					modelTransform = new Matrix4X4(doubleArray);
+				}
+
+				List<MeshGroup> fileData = null;
+
+				if (elem.Name.LocalName == "model")
+				{
+					string meshPathAndFileName = (string)elem.Attribute("source");
+
+					if (!cachedMeshes.TryGetValue(meshPathAndFileName, out fileData))
+					{
+						// Await async load
+						fileData = await MeshFileIo.LoadAsync(meshPathAndFileName, reporter);
+						cachedMeshes[meshPathAndFileName] = fileData;
+					}
+				}
+
+				string itemType = null;
+
+				if(!ItemTypeRemapping.TryGetValue(elem.Name.LocalName, out itemType))
+				{
+					itemType = elem.Name.LocalName;
+				}
+
+				var newContext = new Object3D()
+				{
+					MeshGroup = fileData?.First() ?? new MeshGroup(),
+					Matrix = modelTransform,
+					SourceNode = elem,
+					ItemType = (Object3DTypes) Enum.Parse(typeof(Object3DTypes), itemType)
+				};
+
+				context.Children.Add(newContext);
+
+				foreach(XElement child in elem.Elements())
+				{
+					switch(child.Name.LocalName)
+					{
+						case "model":
+						case "group":
+							await ProcessTree(child, newContext, reporter);
+							break;
+					}
+				}
+			}
+
+			public XElement GetRoot()
+			{
+				return docRoot;
+			}
+
+			public void Save()
+			{
+				docRoot.Save(activeScenePath);
+			}
 		}
 
-		public enum CenterPartAfterLoad { DO, DONT }
-		
-		public void LoadMesh(string meshPathAndFileName, CenterPartAfterLoad centerPart, Vector2 bedCenter = new Vector2())
+		public async Task LoadMesh(string meshPathAndFileName, CenterPartAfterLoad centerPart, Vector2 bedCenter = new Vector2())
 		{
 			if (File.Exists(meshPathAndFileName))
 			{
+				//if(Path.GetExtension(meshPathAndFileName) != ".xml")
+				//{
+				//	return;
+				//}
+
 				partProcessingInfo.Visible = true;
 				partProcessingInfo.progressControl.PercentComplete = 0;
-
-				backgroundWorker = new BackgroundWorker();
-				backgroundWorker.WorkerSupportsCancellation = true;
-
-				backgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(backgroundWorker_RunWorkerCompleted);
-
-				backgroundWorker.DoWork += (object sender, DoWorkEventArgs e) =>
-				{
-					List<MeshGroup> loadedMeshGroups = MeshFileIo.Load(meshPathAndFileName, reportProgress0to100);
-					SetMeshAfterLoad(loadedMeshGroups, centerPart, bedCenter);
-					e.Result = loadedMeshGroups;
-				};
-				backgroundWorker.RunWorkerAsync();
 				partProcessingInfo.centeredInfoText.Text = "Loading Mesh...";
+
+				List<IObject3D> loadedItems = new List<IObject3D>();
+				
+				if (Path.GetExtension(meshPathAndFileName) == ".xml")
+				{
+					var scene = await Scene.Load(meshPathAndFileName, reportProgress0to100);
+					loadedItems = scene.Children;
+				}
+				else
+				{
+					// Await async load
+					List<MeshGroup> loadedMeshGroups = await MeshFileIo.LoadAsync(meshPathAndFileName, reportProgress0to100);
+					loadedItems.Add(new Object3D() { MeshGroup = loadedMeshGroups.First(), Matrix = Matrix4X4.Identity } as IObject3D);
+				}
+
+				// Update after load
+				SetMeshAfterLoad(loadedItems, centerPart, bedCenter);
+
+				partProcessingInfo.Visible = false;
+
+				// Invoke LoadDone event
+				LoadDone?.Invoke(this, null);
 			}
 			else
 			{
@@ -554,49 +644,38 @@ namespace MatterHackers.MeshVisualizer
 			base.OnMouseUp(mouseEvent);
 		}
 
-		public void SetMeshAfterLoad(List<MeshGroup> loadedMeshGroups, CenterPartAfterLoad centerPart, Vector2 bedCenter)
+		public void SetMeshAfterLoad(List<IObject3D> loadedItems, CenterPartAfterLoad centerPart, Vector2 bedCenter)
 		{
-			MeshGroups.Clear();
-
-			if (loadedMeshGroups == null)
+			ActiveScene.Modify((scene) =>
+			{
+				scene.AddRange(loadedItems);
+			});
+		
+			if (loadedItems == null)
 			{
 				partProcessingInfo.centeredInfoText.Text = string.Format("Sorry! No 3D view available\nfor this file.");
 			}
 			else
 			{
-				CreateGlDataForMeshes(loadedMeshGroups);
+				CreateGlDataForMeshes(loadedItems);
 
-				AxisAlignedBoundingBox bounds = new AxisAlignedBoundingBox(Vector3.Zero, Vector3.Zero);
-				bool first = true;
-				foreach (MeshGroup meshGroup in loadedMeshGroups)
+				AxisAlignedBoundingBox bounds = AxisAlignedBoundingBox.Empty;
+
+				foreach (IObject3D meshGroup in loadedItems)
 				{
-					if (first)
-					{
-						bounds = meshGroup.GetAxisAlignedBoundingBox();
-						first = false;
-					}
-					else
-					{
-						bounds = AxisAlignedBoundingBox.Union(bounds, meshGroup.GetAxisAlignedBoundingBox());
-					}
+					// TODO: CODE_REVIEW - Can't we just += these?
+					bounds = AxisAlignedBoundingBox.Union(bounds, meshGroup.GetAxisAlignedBoundingBox());
 				}
 
-				// add all the loaded meshes
-				foreach (MeshGroup meshGroup in loadedMeshGroups)
-				{
-					meshTransforms.Add(Matrix4X4.Identity);
-					MeshGroups.Add(meshGroup);
-				}
-
-				if (centerPart == CenterPartAfterLoad.DO)
-				{
-					// make sure the entire load is centered and on the bed
-					Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
-					for (int i = 0; i < MeshGroups.Count; i++)
-					{
-						meshTransforms[i] *= Matrix4X4.CreateTranslation(-boundsCenter + new Vector3(0, 0, bounds.ZSize / 2) + new Vector3(bedCenter));
-					}
-				}
+				//if (centerPart == CenterPartAfterLoad.DO)
+				//{
+				//	// make sure the entire load is centered and on the bed
+				//	Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
+				//	for (int i = 0; i < MeshGroups.Count; i++)
+				//	{
+				//		meshTransforms[i] *= Matrix4X4.CreateTranslation(-boundsCenter + new Vector3(0, 0, bounds.ZSize / 2) + new Vector3(bedCenter));
+				//	}
+				//}
 				
 				trackballTumbleWidget.TrackBallController = new TrackBallController();
 				trackballTumbleWidget.OnBoundsChanged(null);
@@ -613,16 +692,6 @@ namespace MatterHackers.MeshVisualizer
 			trackballTumbleWidget.TrackBallController.Translate(-new Vector3(BedCenter));
 			trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, MathHelper.Tau / 16)));
 			trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
-		}
-
-		private void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-		{
-			partProcessingInfo.Visible = false;
-
-			if (LoadDone != null)
-			{
-				LoadDone(this, null);
-			}
 		}
 
 		private void CreateCircularBedGridImage(int linesInX, int linesInY, int increment= 1)
@@ -719,18 +788,18 @@ namespace MatterHackers.MeshVisualizer
 				return false;
 			}
 
-			List<IPrimitive> mesheTraceables = new List<IPrimitive>();
+			List<IPrimitive> uiTraceables = new List<IPrimitive>();
 			foreach (InteractionVolume interactionVolume in interactionVolumes)
 			{
 				if (interactionVolume.CollisionVolume != null)
 				{
 					IPrimitive traceData = interactionVolume.CollisionVolume;
-					mesheTraceables.Add(new Transform(traceData, interactionVolume.TotalTransform));
+					uiTraceables.Add(new Transform(traceData, interactionVolume.TotalTransform));
 				}
 			}
-			IPrimitive allObjects = BoundingVolumeHierarchy.CreateNewHierachy(mesheTraceables);
+			IPrimitive allUiObjects = BoundingVolumeHierarchy.CreateNewHierachy(uiTraceables);
 
-			info = allObjects.GetClosestIntersection(ray);
+			info = allUiObjects.GetClosestIntersection(ray);
 			if (info != null)
 			{
 				for (int i = 0; i < interactionVolumes.Count; i++)
@@ -771,29 +840,38 @@ namespace MatterHackers.MeshVisualizer
 			});
 		}
 
-		private void trackballTumbleWidget_DrawGlContent(object sender, EventArgs e)
+		private void DrawObject(IObject3D object3D, Matrix4X4 transform)
 		{
-			for (int groupIndex = 0; groupIndex < MeshGroups.Count; groupIndex++)
-			{
-				MeshGroup meshGroupToRender = MeshGroups[groupIndex];
+			Matrix4X4 totalTransform = transform * object3D.Matrix;
 
-				int part = 0;
-				foreach (Mesh meshToRender in meshGroupToRender.Meshes)
+			if (object3D.MeshGroup != null)
+			{
+				bool isSelected = ActiveScene.HasSelection && (object3D == ActiveScene.SelectedItem || ActiveScene.SelectedItem.Children.Contains(object3D));
+
+				foreach (var meshToRender in object3D.MeshGroup.Meshes)
 				{
 					MeshMaterialData meshData = MeshMaterialData.Get(meshToRender);
-					RGBA_Bytes drawColor = GetMaterialColor(meshData.MaterialIndex);
-					if (meshGroupToRender == SelectedMeshGroup)
-					{
-						drawColor = GetSelectedMaterialColor(meshData.MaterialIndex);
-					}
+					RGBA_Bytes drawColor = isSelected ? GetSelectedMaterialColor(meshData.MaterialIndex) : GetMaterialColor(meshData.MaterialIndex);
 
-					RenderMeshToGl.Render(meshToRender, drawColor, MeshGroupTransforms[groupIndex], RenderType);
-					part++;
+					RenderMeshToGl.Render(meshToRender, drawColor, totalTransform, RenderType);
 				}
 			}
 
+			foreach (var child in object3D.Children)
+			{
+				DrawObject(child, totalTransform);
+			}
+		}
+
+		private void trackballTumbleWidget_DrawGlContent(object sender, EventArgs e)
+		{
+			foreach(var object3D in ActiveScene.Children)
+			{
+				DrawObject(object3D, Matrix4X4.Identity);
+			}
+
 			// we don't want to render the bed or build volume before we load a model.
-			if (MeshGroups.Count > 0 || AllowBedRenderingWhenEmpty)
+			if (ActiveScene.HasItems || AllowBedRenderingWhenEmpty)
 			{
 				if (RenderBed)
 				{
@@ -872,6 +950,34 @@ namespace MatterHackers.MeshVisualizer
 				VAnchor |= VAnchor.ParentCenter;
 				HAnchor |= HAnchor.ParentCenter;
 			}
+		}
+
+		public void SaveScene()
+		{
+			foreach(var object3D in ActiveScene.Children)
+			{
+				// HACK: IObject3D currently allows the model track its source element, allowing us to save back to it here. Long term this is not ideal and needs optimized
+				var modelElem = object3D.SourceNode as XElement;
+
+				if(modelElem == null)
+				{
+					modelElem = new XElement(object3D.ItemType.ToString());
+					Scene.LoadedScene.GetRoot().Add(modelElem);
+				}
+
+				var transformElem = modelElem.Element("transform");
+				if (transformElem == null)
+				{
+					transformElem = new XElement("transform");
+					modelElem.Add(transformElem);
+				}
+
+				// Serialize and store the transform
+				transformElem.Value = JsonConvert.SerializeObject(object3D.Matrix.GetAsDoubleArray());
+			}
+
+			// Update the printItemWrapper
+			Scene.LoadedScene.Save();
 		}
 	}
 }

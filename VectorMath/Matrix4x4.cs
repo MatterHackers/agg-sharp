@@ -91,7 +91,7 @@ namespace MatterHackers.VectorMath
 		/// <summary>
 		/// The identity matrix
 		/// </summary>
-		public static Matrix4X4 Identity = new Matrix4X4(Vector4.UnitX, Vector4.UnitY, Vector4.UnitZ, Vector4.UnitW);
+		public static readonly Matrix4X4 Identity = new Matrix4X4(Vector4.UnitX, Vector4.UnitY, Vector4.UnitZ, Vector4.UnitW);
 
 		#endregion Fields
 

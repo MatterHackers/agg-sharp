@@ -47,8 +47,6 @@ namespace MatterHackers.RayTracer.Traceable
 		public Transform(IPrimitive root, Matrix4X4 transform)
 		{
 			this.child = root;
-			WorldToAxis = transform;
-			AxisToWorld = Matrix4X4.Invert(WorldToAxis);
 			AxisToWorld = transform;
 			WorldToAxis = Matrix4X4.Invert(AxisToWorld);
 		}
@@ -80,7 +78,9 @@ namespace MatterHackers.RayTracer.Traceable
 
 		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
 		{
-			throw new NotImplementedException();
+			child.GetContained(results, subRegion);
+
+			return true;
 		}
 
 		public IntersectInfo GetClosestIntersection(Ray ray)

@@ -179,6 +179,8 @@ namespace MatterHackers.VectorMath
 
 		private double surfaceAreaCache = 0;
 
+		public static readonly AxisAlignedBoundingBox Empty = new AxisAlignedBoundingBox(Vector3.PositiveInfinity, Vector3.NegativeInfinity);
+
 		public double GetSurfaceArea()
 		{
 			if (surfaceAreaCache == 0)
