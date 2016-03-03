@@ -65,7 +65,7 @@ namespace MatterHackers.PolygonMesh
 
 		public static Mesh CreateCube(Vector3 scale)
 		{
-			scale *= .5; // the cube is -1 to 1 and I want it to be -.5 to .5 so it is a unit cube.
+			scale *= .5; // the cube is -1 to 1 and we want it to be -.5 to .5 so it is a unit cube.
 			Mesh cube = new Mesh();
 			Vertex[] verts = new Vertex[8];
 			verts[0] = cube.CreateVertex(new Vector3(-1, -1, 1) * scale);
