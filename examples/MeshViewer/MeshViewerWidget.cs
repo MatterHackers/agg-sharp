@@ -44,6 +44,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace MatterHackers.MeshVisualizer
 {
@@ -394,26 +395,24 @@ namespace MatterHackers.MeshVisualizer
 
 		public enum CenterPartAfterLoad { DO, DONT }
 		
-		public void LoadMesh(string meshPathAndFileName, CenterPartAfterLoad centerPart, Vector2 bedCenter = new Vector2())
+		public async Task LoadMesh(string meshPathAndFileName, CenterPartAfterLoad centerPart, Vector2 bedCenter = new Vector2())
 		{
 			if (File.Exists(meshPathAndFileName))
 			{
 				partProcessingInfo.Visible = true;
 				partProcessingInfo.progressControl.PercentComplete = 0;
-
-				backgroundWorker = new BackgroundWorker();
-				backgroundWorker.WorkerSupportsCancellation = true;
-
-				backgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(backgroundWorker_RunWorkerCompleted);
-
-				backgroundWorker.DoWork += (object sender, DoWorkEventArgs e) =>
-				{
-					List<MeshGroup> loadedMeshGroups = MeshFileIo.Load(meshPathAndFileName, reportProgress0to100);
-					SetMeshAfterLoad(loadedMeshGroups, centerPart, bedCenter);
-					e.Result = loadedMeshGroups;
-				};
-				backgroundWorker.RunWorkerAsync();
 				partProcessingInfo.centeredInfoText.Text = "Loading Mesh...";
+
+				// Await async load
+				List<MeshGroup> loadedMeshGroups = await MeshFileIo.LoadAsync(meshPathAndFileName, reportProgress0to100);
+
+				// Update after load
+				SetMeshAfterLoad(loadedMeshGroups, centerPart, bedCenter);
+
+				partProcessingInfo.Visible = false;
+
+				// Invoke LoadDone event
+				LoadDone?.Invoke(this, null);
 			}
 			else
 			{
@@ -595,16 +594,6 @@ namespace MatterHackers.MeshVisualizer
 			trackballTumbleWidget.TrackBallController.Translate(-new Vector3(BedCenter));
 			trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, MathHelper.Tau / 16)));
 			trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
-		}
-
-		private void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-		{
-			partProcessingInfo.Visible = false;
-
-			if (LoadDone != null)
-			{
-				LoadDone(this, null);
-			}
 		}
 
 		private void CreateCircularBedGridImage(int linesInX, int linesInY)

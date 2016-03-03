@@ -33,6 +33,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace MatterHackers.PolygonMesh.Processors
 {
@@ -112,6 +113,11 @@ namespace MatterHackers.PolygonMesh.Processors
 				Debug.Print(e.Message);
 				return null;
 			}
+		}
+
+		public static async Task<List<MeshGroup>> LoadAsync(string meshPathAndFileName, ReportProgressRatio reportProgress = null)
+		{
+			return await Task.Run(() => Load(meshPathAndFileName, reportProgress));
 		}
 
 		public static bool Save(Mesh mesh, string meshPathAndFileName, MeshOutputSettings outputInfo = null)
