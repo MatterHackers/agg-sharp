@@ -44,12 +44,12 @@ namespace MatterHackers.PolygonMesh
 	[DebuggerDisplay("ID = {Data.ID}")]
 	public class Mesh
 	{
-		private int changedCount = 0;
+		private Matrix4X4 fastAABBTransform = Matrix4X4.Identity;
+		private AxisAlignedBoundingBox fastAABBCache;
 
-		public int ChangedCount { get { return changedCount; } }
-
-		Matrix4X4 fastAABBTransform = Matrix4X4.Identity;
-		AxisAlignedBoundingBox fastAABBCache;
+		public Mesh()
+		{
+		}
 
 		public void MarkAsChanged()
 		{
@@ -58,9 +58,11 @@ namespace MatterHackers.PolygonMesh
 			{
 				fastAABBTransform = Matrix4X4.Identity;
 				fastAABBTransform[0, 0] = double.MinValue;
-				changedCount++;
+				ChangedCount++;
 			}
 		}
+
+		public int ChangedCount { get; private set; } = 0;
 
 		public MetaData Data
 		{
@@ -70,27 +72,11 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		private VertexCollecton vertices = new VertexCollecton();
+		public VertexCollecton Vertices { get; private set; } = new VertexCollecton();
 
-		public VertexCollecton Vertices
-		{
-			get
-			{
-				return vertices;
-			}
-		}
+		public List<MeshEdge> MeshEdges { get; private set; } = new List<MeshEdge>();
 
-		private List<MeshEdge> meshEdges = new List<MeshEdge>();
-
-		public List<MeshEdge> MeshEdges { get { return meshEdges; } }
-
-		private List<Face> faces = new List<Face>();
-
-		public List<Face> Faces { get { return faces; } }
-
-		public Mesh()
-		{
-		}
+		public List<Face> Faces { get; } = new List<Face>();
 
 		public static Mesh Copy(Mesh meshToCopy, ReportProgressRatio progress = null)
 		{
@@ -137,10 +123,10 @@ namespace MatterHackers.PolygonMesh
 				}
 
 				newMesh.Faces.Capacity = meshToCopy.Faces.Capacity;
-				for (int faceIndex = 0; faceIndex < meshToCopy.faces.Count; faceIndex++)
+				for (int faceIndex = 0; faceIndex < meshToCopy.Faces.Count; faceIndex++)
 				{
-					Face faceToCopy = meshToCopy.faces[faceIndex];
-					Face newface = newMesh.faces[faceIndex];
+					Face faceToCopy = meshToCopy.Faces[faceIndex];
+					Face newface = newMesh.Faces[faceIndex];
 
 					newface.normal = faceToCopy.normal;
 
@@ -270,7 +256,7 @@ namespace MatterHackers.PolygonMesh
 		{
 			StringBuilder totalDebug = new StringBuilder();
 			totalDebug.Append(String.Format("Mesh: {0}\n", Data.ID));
-			foreach (Vertex vertex in vertices)
+			foreach (Vertex vertex in Vertices)
 			{
 				totalDebug.Append(new string('\t', 1) + String.Format("Vertex: {0}\n", vertex.Data.ID));
 				vertex.AddDebugInfo(totalDebug, 2);
@@ -280,7 +266,7 @@ namespace MatterHackers.PolygonMesh
 				totalDebug.Append(new string('\t', 1) + String.Format("MeshEdge: {0}\n", meshEdge.Data.ID));
 				meshEdge.AddDebugInfo(totalDebug, 2);
 			}
-			foreach (Face face in faces)
+			foreach (Face face in Faces)
 			{
 				totalDebug.Append(new string('\t', 1) + String.Format("Face: {0}\n", face.Data.ID));
 				face.AddDebugInfo(totalDebug, 2);
@@ -293,7 +279,7 @@ namespace MatterHackers.PolygonMesh
 		{
 			if (vertexesToSkip != null)
 			{
-				foreach (Vertex vertex in vertices)
+				foreach (Vertex vertex in Vertices)
 				{
 					if (!vertexesToSkip.Contains(vertex))
 					{
@@ -303,7 +289,7 @@ namespace MatterHackers.PolygonMesh
 			}
 			else
 			{
-				foreach (Vertex vertex in vertices)
+				foreach (Vertex vertex in Vertices)
 				{
 					vertex.Validate();
 				}
@@ -312,7 +298,7 @@ namespace MatterHackers.PolygonMesh
 			{
 				meshEdge.Validate();
 			}
-			foreach (Face face in faces)
+			foreach (Face face in Faces)
 			{
 				face.Validate();
 			}
@@ -329,7 +315,7 @@ namespace MatterHackers.PolygonMesh
 
 		public bool ContainsVertex(Vertex vertexToLookFor)
 		{
-			return vertices.ContainsAVertexAtPosition(vertexToLookFor);
+			return Vertices.ContainsAVertexAtPosition(vertexToLookFor);
 		}
 
 		public void SplitFace(Face faceToSplit, Vertex splitStartVertex, Vertex splitEndVertex, out MeshEdge meshEdgeCreatedDuringSplit, out Face faceCreatedDuringSplit)
@@ -370,7 +356,7 @@ namespace MatterHackers.PolygonMesh
 			meshEdgeCreatedDuringSplit = CreateMeshEdge(splitStartVertex, splitEndVertex);
 			faceCreatedDuringSplit = new Face(faceToSplit);
 
-			faces.Add(faceCreatedDuringSplit);
+			Faces.Add(faceCreatedDuringSplit);
 
 			FaceEdge newFaceEdgeExistingFace = new FaceEdge(faceToSplit, meshEdgeCreatedDuringSplit, splitStartVertex);
 			FaceEdge newFaceEdgeForNewFace = new FaceEdge(faceCreatedDuringSplit, meshEdgeCreatedDuringSplit, splitEndVertex);
@@ -416,7 +402,7 @@ namespace MatterHackers.PolygonMesh
 
 			if (faceEdgeToDeleteOnFaceToKeep.firstVertex == faceEdgeToDeleteOnFaceToDelete.firstVertex)
 			{
-				throw new Exception("The faces have oposite windings and you cannot merge the edge");
+				throw new Exception("The faces have opposite windings and you cannot merge the edge");
 			}
 
 			faceEdgeToDeleteOnFaceToKeep.prevFaceEdge.nextFaceEdge = faceEdgeToDeleteOnFaceToDelete.nextFaceEdge;
@@ -444,7 +430,7 @@ namespace MatterHackers.PolygonMesh
 			faceEdgeToDeleteOnFaceToKeep.meshEdge.VertexOnEnd[1] = null;
 			faceToDelete.firstFaceEdge = null;
 			// take the face out of the face list
-			faces.Remove(faceToDelete);
+			Faces.Remove(faceToDelete);
 		}
 
 		public void ReverseFaceEdges()
@@ -484,7 +470,7 @@ namespace MatterHackers.PolygonMesh
 
 		public List<Vertex> FindVertices(Vector3 position, double maxDistanceToConsiderVertexAsSame = 0)
 		{
-			return vertices.FindVertices(position, maxDistanceToConsiderVertexAsSame);
+			return Vertices.FindVertices(position, maxDistanceToConsiderVertexAsSame);
 		}
 
 		public Vertex CreateVertex(Vector3 position, CreateOption createOption = CreateOption.ReuseExisting, SortOption sortOption = SortOption.SortNow)
@@ -499,7 +485,7 @@ namespace MatterHackers.PolygonMesh
 			}
 
 			Vertex createdVertex = new Vertex(position);
-			vertices.Add(createdVertex, sortOption);
+			Vertices.Add(createdVertex, sortOption);
 			return createdVertex;
 		}
 
@@ -597,8 +583,8 @@ namespace MatterHackers.PolygonMesh
 			}
 
 			// we put them in in the same order they were in, so we keep the state
-			NonDeleteVertices.IsSorted = vertices.IsSorted;
-			vertices = NonDeleteVertices;
+			NonDeleteVertices.IsSorted = Vertices.IsSorted;
+			Vertices = NonDeleteVertices;
 		}
 
 		public void MergeVertices(Vertex vertexToKeep, Vertex vertexToDelete, bool doActualDeletion = true)
@@ -901,7 +887,7 @@ namespace MatterHackers.PolygonMesh
 				}
 			}
 
-			meshEdges = NonDeleteMeshEdges;
+			MeshEdges = NonDeleteMeshEdges;
 		}
 
 		public void MergeMeshEdges(MeshEdge edgeToKeep, MeshEdge edgeToDelete, bool doActualDeletion = true)
@@ -971,7 +957,7 @@ namespace MatterHackers.PolygonMesh
 
 			createdFace.CalculateNormal();
 
-			faces.Add(createdFace);
+			Faces.Add(createdFace);
 
 			return createdFace;
 		}
@@ -1045,7 +1031,7 @@ namespace MatterHackers.PolygonMesh
 			Vector3 minXYZ = new Vector3(double.MaxValue, double.MaxValue, double.MaxValue);
 			Vector3 maxXYZ = new Vector3(double.MinValue, double.MinValue, double.MinValue);
 
-			foreach (Vertex vertex in vertices)
+			foreach (Vertex vertex in Vertices)
 			{
 				minXYZ.x = Math.Min(minXYZ.x, vertex.Position.x);
 				minXYZ.y = Math.Min(minXYZ.y, vertex.Position.y);
@@ -1070,7 +1056,7 @@ namespace MatterHackers.PolygonMesh
 				Vector3 minXYZ = new Vector3(double.MaxValue, double.MaxValue, double.MaxValue);
 				Vector3 maxXYZ = new Vector3(double.MinValue, double.MinValue, double.MinValue);
 
-				foreach (Vertex vertex in vertices)
+				foreach (Vertex vertex in Vertices)
 				{
 					Vector3 position = Vector3.Transform(vertex.Position, transform);
 					minXYZ.x = Math.Min(minXYZ.x, position.x);
