@@ -197,6 +197,13 @@ namespace MatterHackers.Agg
 			return false;
 		}
 
+		public bool IsTouching(RectangleDouble rectToIntersectWith)
+		{
+			RectangleDouble temp = this;
+
+			return temp.IntersectWithRectangle(rectToIntersectWith);
+        }
+
 		public bool IntersectWithRectangle(RectangleDouble rectToIntersectWith)
 		{
 			if (Left < rectToIntersectWith.Left) Left = rectToIntersectWith.Left;

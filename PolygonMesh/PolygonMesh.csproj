@@ -128,9 +128,6 @@
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
-    <Reference Include="System.IO.Compression" />
-    <Reference Include="System.IO.Compression.FileSystem" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Csg\CsgNode.cs" />
@@ -149,14 +146,13 @@
     <Compile Include="MetaData.cs" />
     <Compile Include="FaceEdge.cs" />
     <Compile Include="Mesh.cs" />
-    <Compile Include="Processors\AmfProcessing.cs" />
-    <Compile Include="Processors\MeshFileIo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Processors\MeshOutputSettings.cs" />
+    <Compile Include="Processors\MeshHelper.cs" />
     <Compile Include="Rendering\DebugRenderToImage.cs" />
     <Compile Include="Rendering\OrthographicZProjection.cs" />
     <Compile Include="Processors\RemoveTJunctions.cs" />
     <Compile Include="Processors\StlProcessing.cs" />
-    <Compile Include="Solids\CommonShapes.cs" />
     <Compile Include="Solids\PlatonicSolids.cs" />
     <Compile Include="Vertex.cs" />
     <Compile Include="VertexCollection.cs" />

@@ -47,10 +47,19 @@ namespace MatterHackers.RayTracer.Traceable
 		public Transform(IPrimitive root, Matrix4X4 transform)
 		{
 			this.Child = root;
-			WorldToAxis = transform;
-			AxisToWorld = Matrix4X4.Invert(WorldToAxis);
+
 			AxisToWorld = transform;
 			WorldToAxis = Matrix4X4.Invert(AxisToWorld);
+		}
+
+		public bool Contains(IBvhItem itemToCheckFor)
+		{
+			if (this == itemToCheckFor || Child.Contains(itemToCheckFor))
+			{
+				return true;
+			}
+
+			return false;
 		}
 
 		public RGBA_Floats GetColor(IntersectInfo info)
@@ -70,9 +79,11 @@ namespace MatterHackers.RayTracer.Traceable
 			}
 		}
 
-		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
+		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
 		{
-			throw new NotImplementedException();
+			Child.GetContained(results, subRegion);
+
+			return true;
 		}
 
 		public IntersectInfo GetClosestIntersection(Ray ray)

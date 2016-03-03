@@ -133,8 +133,10 @@ namespace MatterHackers.PolygonMesh.Processors
 								thirdIndex++;
 							}
 						}
+
 						bw.BaseStream.Position = 80;
-						// the number of tranigles
+
+						// the number of triangles
 						bw.Write(binaryPolyCount);
 					}
 					break;
@@ -175,7 +177,7 @@ namespace MatterHackers.PolygonMesh.Processors
 				return null;
 			}
 #else
-            // TODO: Consider not supressing exceptions like this or at least logging them. Troubleshooting when this
+            // TODO: Consider not suppressing exceptions like this or at least logging them. Troubleshooting when this
             // scenario occurs is impossible and likely results in an undiagnosable null reference error
             catch (Exception)
             {
@@ -385,6 +387,12 @@ namespace MatterHackers.PolygonMesh.Processors
 					}
 				}
 			);
+
+			if (reportProgress != null)
+			{
+				bool continueProcessingTemp;
+				reportProgress(1, "", out continueProcessingTemp);
+			}
 
 			if (!finishedCleanAndMerge)
 			{

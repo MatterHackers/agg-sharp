@@ -74,6 +74,10 @@ namespace MatterHackers.VectorMath
 		/// <param name="endingDirection"></param>
 		public Quaternion(Vector3 startingDirection, Vector3 endingDirection)
 		{
+			if((startingDirection + endingDirection).LengthSquared == 0)
+			{
+				startingDirection += new Vector3(.0000001, 0, 0);
+			}
 			this.xyz = Vector3.Cross(startingDirection, endingDirection);
 			this.w = Math.Sqrt(Math.Pow(startingDirection.Length, 2) * Math.Pow(endingDirection.Length, 2)) + Vector3.Dot(startingDirection, endingDirection);
 			Normalize();

@@ -50,9 +50,21 @@ namespace MatterHackers.RayTracer.Traceable
 
 		public IPrimitive Subtract { get { return subtract; } }
 
-		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
+		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
 		{
 			throw new NotImplementedException();
+		}
+
+		public bool Contains(IBvhItem itemToCheckFor)
+		{
+			if (this == itemToCheckFor 
+				|| primary.Contains(itemToCheckFor)
+				|| subtract.Contains(itemToCheckFor))
+			{
+				return true;
+			}
+
+			return false;
 		}
 
 		public IntersectInfo GetClosestIntersection(Ray ray)

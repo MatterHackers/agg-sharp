@@ -65,6 +65,25 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
+		public bool Contains(IBvhItem itemToCheckFor)
+		{
+			if(this == itemToCheckFor)
+			{
+				return true;
+			}
+
+			foreach (IPrimitive item in Items)
+			{
+				if(item.Contains(itemToCheckFor))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+
 		public IntersectInfo GetClosestIntersection(Ray ray)
 		{
 			IntersectInfo bestInfo = null;
@@ -83,7 +102,7 @@ namespace MatterHackers.RayTracer
 			return bestInfo;
 		}
 
-		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
+		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
 		{
 			bool foundItem = false;
 			foreach (IPrimitive item in Items)
@@ -190,6 +209,18 @@ namespace MatterHackers.RayTracer
 			this.Aabb = nodeA.GetAxisAlignedBoundingBox() + nodeB.GetAxisAlignedBoundingBox(); // we can cache this because it is not allowed to change.
 		}
 
+		public bool Contains(IBvhItem itemToCheckFor)
+		{
+			if (this == itemToCheckFor
+				|| nodeA.Contains(itemToCheckFor)
+				|| nodeB.Contains(itemToCheckFor))
+			{
+				return true;
+			}
+
+			return false;
+		}
+
 		public RGBA_Floats GetColor(IntersectInfo info)
 		{
 			throw new NotImplementedException("You should not get a color directly from a BoundingVolumeHierarchy.");
@@ -207,7 +238,7 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
+		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
 		{
 			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
 			if (bounds.Contains(subRegion))

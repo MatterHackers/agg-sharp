@@ -27,13 +27,13 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.VectorMath;
-using System;
+using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh
 {
-	public static class CommonShapes
+	public static class MeshHelper
 	{
 		public static Mesh CreatePlane(double xScale = 1, double yScale = 1)
 		{
@@ -56,44 +56,51 @@ namespace MatterHackers.PolygonMesh
 			return plane;
 		}
 
+		public static void PlaceTextureOnFace(Face face, ImageBuffer textureToUse)
+		{
+			// planer project along the normal of this face
+			Matrix4X4 textureCoordinateMapping = Matrix4X4.CreateRotation(new Quaternion(-Vector3.UnitZ, face.normal));
+			if (Vector3.UnitZ ==  face.normal
+				|| -Vector3.UnitZ == face.normal)
+			{
+				textureCoordinateMapping = Matrix4X4.CreateRotation(new Quaternion(Vector3.UnitZ, face.normal));
+			}
+
+			RectangleDouble bounds = RectangleDouble.ZeroIntersection;
+			foreach (FaceEdge faceEdge in face.FaceEdges())
+			{
+				FaceEdgeTextureUvData edgeUV = FaceEdgeTextureUvData.Get(faceEdge);
+				Vector3 edgeStartPosition = faceEdge.firstVertex.Position;
+				Vector3 textureUv = Vector3.Transform(edgeStartPosition, textureCoordinateMapping);
+				bounds.ExpandToInclude(new Vector2(textureUv));
+			}
+			Matrix4X4 centering = Matrix4X4.CreateTranslation(new Vector3(-bounds.Left, -bounds.Bottom, 0));
+			Matrix4X4 scaling = Matrix4X4.CreateScale(new Vector3(1 / bounds.Width, 1 / bounds.Height, 1));
+			PlaceTextureOnFace(face, textureToUse, textureCoordinateMapping * centering * scaling);
+		}
+
+		public static void PlaceTextureOnFace(Face face, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
+		{
+			FaceTextureData faceData = FaceTextureData.Get(face);
+			faceData.Textures.Add(textureToUse);
+			foreach (FaceEdge faceEdge in face.FaceEdges())
+			{
+				FaceEdgeTextureUvData edgeUV = FaceEdgeTextureUvData.Get(faceEdge);
+				Vector3 edgeStartPosition = faceEdge.firstVertex.Position;
+				Vector3 textureUv = Vector3.Transform(edgeStartPosition, textureCoordinateMapping);
+				edgeUV.TextureUV.Add(new Vector2(textureUv));
+			}
+		}
+
 		public static Mesh TexturedPlane(ImageBuffer textureToUse, double xScale = 1, double yScale = 1)
 		{
-			Mesh texturedPlane = CommonShapes.CreatePlane(xScale, yScale);
+			Mesh texturedPlane = MeshHelper.CreatePlane(xScale, yScale);
 			{
 				Face face = texturedPlane.Faces[0];
 				PlaceTextureOnFace(face, textureToUse);
 			}
 
 			return texturedPlane;
-		}
-
-		public static void PlaceTextureOnFace(Face face, ImageBuffer textureToUse)
-		{
-			FaceTextureData faceData = FaceTextureData.Get(face);
-			faceData.Textures.Add(textureToUse);
-			int count = 0;
-			foreach (FaceEdge faceEdge in face.FaceEdges())
-			{
-				FaceEdgeTextureUvData edgeUV = FaceEdgeTextureUvData.Get(faceEdge);
-				switch (count++)
-				{
-					case 0:
-						edgeUV.TextureUV.Add(new Vector2(0, 0));
-						break;
-
-					case 1:
-						edgeUV.TextureUV.Add(new Vector2(1, 0));
-						break;
-
-					case 2:
-						edgeUV.TextureUV.Add(new Vector2(1, 1));
-						break;
-
-					case 3:
-						edgeUV.TextureUV.Add(new Vector2(0, 1));
-						break;
-				}
-			}
 		}
 	}
 }

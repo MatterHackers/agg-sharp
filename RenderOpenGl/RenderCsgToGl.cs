@@ -64,7 +64,7 @@ namespace MatterHackers.RenderOpenGl
 		public void RenderToGlRecursive(Csg.Solids.Mesh objectToProcess)
 		{
 			RGBA_Floats partColor = new RGBA_Floats(.8, .8, 1);
-			RenderMeshToGl.Render(objectToProcess.GetMesh(), partColor);
+			GLHelper.Render(objectToProcess.GetMesh(), partColor);
 		}
 
 		#endregion Mesh
@@ -129,7 +129,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 
 			RGBA_Floats partColor = new RGBA_Floats(.8, .8, 1);
-			RenderMeshToGl.Render(CreateBox(objectToProcess.GetAxisAlignedBoundingBox()), partColor);
+			GLHelper.Render(CreateBox(objectToProcess.GetAxisAlignedBoundingBox()), partColor);
 		}
 
 		#endregion Box
@@ -168,7 +168,7 @@ namespace MatterHackers.RenderOpenGl
 		public void RenderToGlRecursive(Cylinder.CylinderPrimitive objectToProcess)
 		{
 			RGBA_Floats partColor = new RGBA_Floats(.8, .8, 1);
-			RenderMeshToGl.Render(CreateCylinder(objectToProcess), partColor);
+			GLHelper.Render(CreateCylinder(objectToProcess), partColor);
 		}
 
 		#endregion Cylinder

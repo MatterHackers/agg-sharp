@@ -28,6 +28,8 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg;
+using MatterHackers.PolygonMesh;
+using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
@@ -39,7 +41,7 @@ using System.Linq;
 using System.Threading;
 using System.Xml;
 
-namespace MatterHackers.PolygonMesh.Processors
+namespace MatterHackers.DataConverters3D
 {
 	public static class AmfProcessing
 	{
@@ -377,7 +379,13 @@ namespace MatterHackers.PolygonMesh.Processors
 			{
 				using (Stream amfCompressedStream = GetCompressedStreamIfRequired(amfStream))
 				{
-					XmlReader xmlTree = XmlReader.Create(amfCompressedStream);
+					var settings = new XmlReaderSettings()
+					{
+						ValidationType = ValidationType.None,
+						DtdProcessing = DtdProcessing.Ignore
+					};
+
+					XmlReader xmlTree = XmlReader.Create(amfCompressedStream, settings);
 					while (xmlTree.Read())
 					{
 						if (xmlTree.Name == "amf")
@@ -474,6 +482,12 @@ namespace MatterHackers.PolygonMesh.Processors
 						hasValidMesh = true;
 					}
 				}
+			}
+
+			if (reportProgress != null)
+			{
+				bool continueProcessingTemp;
+				reportProgress(1, "", out continueProcessingTemp);
 			}
 			if (hasValidMesh)
 			{
@@ -701,6 +715,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
 			switch (units.ToLower())
 			{
+				case "millimeters":
 				case "millimeter":
 					return 1;
 

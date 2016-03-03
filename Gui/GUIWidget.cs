@@ -2784,17 +2784,61 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public void FindNamedChildrenRecursive(string nameToSearchFor, List<GuiWidget> foundChildren)
+		public class WidgetAndPosition
 		{
-			if (Name == nameToSearchFor)
+			public Point2D position { get; private set; }
+			public GuiWidget widget { get; private set; }
+			public string name { get; private set; }
+
+			public WidgetAndPosition(GuiWidget widget, Point2D position, string name)
 			{
-				foundChildren.Add(this);
+				this.name = name;
+				this.widget = widget;
+				this.position = position;
+			}
+		}
+
+		public enum SearchType { Exact, Partial };
+
+		public void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren)
+		{
+			FindNamedChildrenRecursive(nameToSearchFor, foundChildren, new RectangleDouble(double.MinValue, double.MinValue, double.MaxValue, double.MaxValue), SearchType.Exact);
+		}
+
+        public virtual void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType seachType)
+		{
+			bool nameFound = false;
+
+			if (seachType == SearchType.Exact)
+			{
+				if (Name == nameToSearchFor)
+				{
+					nameFound = true;
+				}
+			}
+			else
+			{
+				if (nameToSearchFor == "" 
+					|| Name.Contains(nameToSearchFor))
+				{
+					nameFound = true;
+				}
+			}
+
+			if(nameFound)
+			{
+				if (touchingBounds.IntersectWithRectangle(this.LocalBounds))
+				{
+					foundChildren.Add(new WidgetAndPosition(this, new Point2D(Width / 2, Height / 2), Name));
+				}
 			}
 
 			List<GuiWidget> searchChildren = new List<GuiWidget>(Children);
 			foreach (GuiWidget child in searchChildren)
 			{
-				child.FindNamedChildrenRecursive(nameToSearchFor, foundChildren);
+				RectangleDouble touchingBoundsRelChild = touchingBounds;
+				touchingBoundsRelChild.Offset(-child.OriginRelativeParent);
+				child.FindNamedChildrenRecursive(nameToSearchFor, foundChildren, touchingBoundsRelChild, seachType);
 			}
 		}
 

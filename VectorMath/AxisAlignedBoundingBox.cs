@@ -137,7 +137,7 @@ namespace MatterHackers.VectorMath
 		}
 
 		/// <summary>
-		/// Geth the corners by quadrant of the top
+		/// Get the corners by quadrant of the top
 		/// </summary>
 		/// <param name="quadrantIndex"></param>
 		public Vector3 GetTopCorner(int quadrantIndex)

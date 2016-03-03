@@ -35,10 +35,97 @@ using System;
 
 namespace MatterHackers.RenderOpenGl
 {
-	public enum RenderTypes { Hidden, Shaded, Outlines, Polygons };
+	public enum RenderTypes { Hidden, Shaded, Outlines, Polygons, Overhang };
 
-	public static class RenderMeshToGl
+	public static class GLHelper
 	{
+		public static void Render(Mesh meshToRender, IColorType partColor, RenderTypes renderType = RenderTypes.Shaded)
+		{
+			Render(meshToRender, partColor, Matrix4X4.Identity, renderType);
+		}
+
+		public static void Render3DLine(Vector3 start, Vector3 end, double unitsPerPixelStart, double unitsPerPixelEnd, RGBA_Bytes color, bool doDepthTest = true)
+		{
+			GL.Disable(EnableCap.Texture2D);
+
+			GL.Enable(EnableCap.Blend);
+			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+			GL.Disable(EnableCap.Lighting);
+			if (doDepthTest)
+			{
+				GL.Enable(EnableCap.DepthTest);
+			}
+			else
+			{
+				GL.Disable(EnableCap.DepthTest);
+			}
+
+			Vector3 delta = start - end;
+			Matrix4X4 rotateTransform = Matrix4X4.CreateRotation(new Quaternion(Vector3.UnitX + new Vector3(.0001, -.00001, .00002), -delta.GetNormal()));
+			Matrix4X4 scaleTransform = Matrix4X4.CreateScale((end - start).Length, 1, 1);
+			Vector3 lineCenter = (start + end) / 2;
+			Matrix4X4 lineTransform = scaleTransform * rotateTransform * Matrix4X4.CreateTranslation(lineCenter);
+
+			for(int i=0; i<unscaledLineMesh.Vertices.Count; i++)
+			{
+				Vector3 vertexPosition = unscaledLineMesh.Vertices[i].Position;
+				if(vertexPosition.x < 0)
+				{
+					scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.x, vertexPosition.y * unitsPerPixelStart, vertexPosition.z * unitsPerPixelStart);
+				}
+				else
+				{
+					scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.x, vertexPosition.y * unitsPerPixelEnd, vertexPosition.z * unitsPerPixelEnd);
+				}
+			}
+
+			scaledLineMesh.MarkAsChanged();
+
+			GLHelper.Render(scaledLineMesh, color, lineTransform, RenderTypes.Shaded);
+		}
+
+		static Mesh scaledLineMesh = PlatonicSolids.CreateCube();
+		static Mesh unscaledLineMesh = PlatonicSolids.CreateCube();
+
+		public static void Render(Mesh meshToRender, IColorType partColor, Matrix4X4 transform, RenderTypes renderType)
+		{
+			if (meshToRender != null)
+			{
+				GL.Color4(partColor.Red0To255, partColor.Green0To255, partColor.Blue0To255, partColor.Alpha0To255);
+
+				if (partColor.Alpha0To1 < 1)
+				{
+					GL.Enable(EnableCap.Blend);
+				}
+				else
+				{
+					GL.Disable(EnableCap.Blend);
+				}
+
+				GL.MatrixMode(MatrixMode.Modelview);
+				GL.PushMatrix();
+				GL.MultMatrix(transform.GetAsFloatArray());
+
+				switch (renderType)
+				{
+					case RenderTypes.Hidden:
+						break;
+
+					case RenderTypes.Overhang:
+					case RenderTypes.Shaded:
+						DrawToGL(meshToRender);
+						break;
+
+					case RenderTypes.Polygons:
+					case RenderTypes.Outlines:
+						DrawWithWireOverlay(meshToRender, renderType);
+						break;
+				}
+
+				GL.PopMatrix();
+			}
+		}
+
 		private static void DrawToGL(Mesh meshToRender)
 		{
 			GLMeshTrianglePlugin glMeshPlugin = GLMeshTrianglePlugin.Get(meshToRender);
@@ -59,43 +146,44 @@ namespace MatterHackers.RenderOpenGl
 					GL.DisableClientState(ArrayCap.TextureCoordArray);
 				}
 
-#if true
+				if(subMesh.UseVertexColors)
+				{
+					GL.EnableClientState(ArrayCap.ColorArray);
+				}
+
 				GL.EnableClientState(ArrayCap.NormalArray);
 				GL.EnableClientState(ArrayCap.VertexArray);
 				unsafe
 				{
-					fixed (VertexTextureData* pTextureData = subMesh.textrueData.Array)
+					fixed (VertexTextureData* pTextureData = subMesh.textureData.Array)
 					{
-						fixed (VertexNormalData* pNormalData = subMesh.normalData.Array)
+						fixed(VertexColorData* pColorData = subMesh.colorData.Array)
 						{
-							fixed (VertexPositionData* pPosition = subMesh.positionData.Array)
+							fixed (VertexNormalData* pNormalData = subMesh.normalData.Array)
 							{
-								GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(pTextureData));
-								GL.NormalPointer(NormalPointerType.Float, 0, new IntPtr(pNormalData));
-								GL.VertexPointer(3, VertexPointerType.Float, 0, new IntPtr(pPosition));
-								GL.DrawArrays(BeginMode.Triangles, 0, subMesh.positionData.Count);
+								fixed (VertexPositionData* pPosition = subMesh.positionData.Array)
+								{
+									GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(pTextureData));
+									if (pColorData != null)
+									{
+										GL.ColorPointer(3, ColorPointerType.UnsignedByte, 0, new IntPtr(pColorData));
+									}
+									GL.NormalPointer(NormalPointerType.Float, 0, new IntPtr(pNormalData));
+									GL.VertexPointer(3, VertexPointerType.Float, 0, new IntPtr(pPosition));
+									GL.DrawArrays(BeginMode.Triangles, 0, subMesh.positionData.Count);
+								}
 							}
 						}
 					}
 				}
-#else
-                GL.InterleavedArrays(InterleavedArrayFormat.T2fN3fV3f, 0, subMesh.vertexDatas.Array);
-                if (subMesh.texture != null)
-                {
-                    //GL.TexCoordPointer(2, TexCoordPointerType.Float, VertexData.Stride, subMesh.vertexDatas.Array);
-                    //GL.EnableClientState(ArrayCap.TextureCoordArray);
-                }
-                else
-                {
-                    GL.DisableClientState(ArrayCap.TextureCoordArray);
-                }
-#endif
 
 				GL.DisableClientState(ArrayCap.NormalArray);
 				GL.DisableClientState(ArrayCap.VertexArray);
 				GL.DisableClientState(ArrayCap.TextureCoordArray);
+				GL.DisableClientState(ArrayCap.ColorArray);
 
 				GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(0));
+				GL.ColorPointer(3, ColorPointerType.UnsignedByte, 0, new IntPtr(0));
 				GL.NormalPointer(NormalPointerType.Float, 0, new IntPtr(0));
 				GL.VertexPointer(3, VertexPointerType.Float, 0, new IntPtr(0));
 
@@ -135,7 +223,6 @@ namespace MatterHackers.RenderOpenGl
 			VectorPOD<WireVertexData> edegLines = glWireMeshPlugin.edgeLinesData;
 			GL.EnableClientState(ArrayCap.VertexArray);
 
-#if true
 			unsafe
 			{
 				fixed (WireVertexData* pv = edegLines.Array)
@@ -144,56 +231,9 @@ namespace MatterHackers.RenderOpenGl
 					GL.DrawArrays(BeginMode.Lines, 0, edegLines.Count);
 				}
 			}
-#else
-            GL.InterleavedArrays(InterleavedArrayFormat.V3f, 0, edegLines.Array);
-            GL.DrawArrays(BeginMode.Lines, 0, edegLines.Count);
-#endif
 
 			GL.DisableClientState(ArrayCap.VertexArray);
 			GL.Enable(EnableCap.Lighting);
-		}
-
-		public static void Render(Mesh meshToRender, IColorType partColor, RenderTypes renderType = RenderTypes.Shaded)
-		{
-			Render(meshToRender, partColor, Matrix4X4.Identity, renderType);
-		}
-
-		public static void Render(Mesh meshToRender, IColorType partColor, Matrix4X4 transform, RenderTypes renderType)
-		{
-			if (meshToRender != null)
-			{
-				GL.Color4(partColor.Red0To255, partColor.Green0To255, partColor.Blue0To255, partColor.Alpha0To255);
-
-				if (partColor.Alpha0To1 < 1)
-				{
-					GL.Enable(EnableCap.Blend);
-				}
-				else
-				{
-					GL.Disable(EnableCap.Blend);
-				}
-
-				GL.MatrixMode(MatrixMode.Modelview);
-				GL.PushMatrix();
-				GL.MultMatrix(transform.GetAsFloatArray());
-
-				switch (renderType)
-				{
-					case RenderTypes.Hidden:
-						break;
-
-					case RenderTypes.Shaded:
-						DrawToGL(meshToRender);
-						break;
-
-					case RenderTypes.Polygons:
-					case RenderTypes.Outlines:
-						DrawWithWireOverlay(meshToRender, renderType);
-						break;
-				}
-
-				GL.PopMatrix();
-			}
 		}
 	}
 }

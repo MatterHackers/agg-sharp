@@ -26,10 +26,12 @@ SOFTWARE.
 
 using System;
 using System.Runtime.InteropServices;
+using Newtonsoft.Json;
 
 namespace MatterHackers.VectorMath
 {
 	/// <summary>Represents a 2D vector using two double-precision floating-point numbers.</summary>
+	[JsonObject]
 	[Serializable]
 	[StructLayout(LayoutKind.Sequential)]
 	public struct Vector2 : IEquatable<Vector2> , IConvertible

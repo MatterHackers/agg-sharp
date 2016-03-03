@@ -40,10 +40,14 @@ using MatterHackers.RayTracer.Traceable;
 using MatterHackers.RenderOpenGl;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace MatterHackers.MeshVisualizer
 {
@@ -69,27 +73,27 @@ namespace MatterHackers.MeshVisualizer
 		public PartProcessingInfo partProcessingInfo;
 		private static ImageBuffer lastCreatedBedImage = new ImageBuffer();
 		private static Dictionary<int, RGBA_Bytes> materialColors = new Dictionary<int, RGBA_Bytes>();
-		private BackgroundWorker backgroundWorker = null;
 		private RGBA_Bytes bedBaseColor = new RGBA_Bytes(245, 245, 255);
 		static public Vector2 BedCenter { get; private set; }
 		private RGBA_Bytes bedMarkingsColor = RGBA_Bytes.Black;
 		private static BedShape bedShape = BedShape.Rectangular;
 		private static Mesh buildVolume = null;
 		private static Vector3 displayVolume;
-		private List<MeshGroup> meshesToRender = new List<MeshGroup>();
-		private List<Matrix4X4> meshTransforms = new List<Matrix4X4>();
 		private static Mesh printerBed = null;
 		private RenderTypes renderType = RenderTypes.Shaded;
-		private int selectedMeshGroupIndex = -1;
 
 		public double SnapGridDistance { get; set; } = 1;
 
 		private TrackballTumbleWidget trackballTumbleWidget;
 
 		private int volumeIndexWithMouseDown = -1;
-
+		
 		public MeshViewerWidget(Vector3 displayVolume, Vector2 bedCenter, BedShape bedShape, string startingTextMessage = "")
 		{
+			Scene.SelectionChanged += (sender, e) =>
+			{
+				Invalidate();
+			};
 			RenderType = RenderTypes.Shaded;
 			RenderBed = true;
 			RenderBuildVolume = false;
@@ -116,7 +120,7 @@ namespace MatterHackers.MeshVisualizer
 			labelContainer.Selectable = false;
 
 			this.AddChild(labelContainer);
-		}
+	}
 
 		public event EventHandler LoadDone;
 
@@ -149,14 +153,85 @@ namespace MatterHackers.MeshVisualizer
 			return totalMeshBounds;
 		}
 
-		public bool HaveSelection
+		public override void OnLoad(EventArgs args)
 		{
-			get { return MeshGroups.Count > 0 && SelectedMeshGroupIndex > -1; }
+			// some debug code to be able to click on parts
+			if (false)
+			{
+				AfterDraw += (sender, e) =>
+				{
+					foreach (var child in Scene.Children)
+					{
+						TrackballTumbleWidget.RenderDebugAABB(e.graphics2D, child.TraceData().GetAxisAlignedBoundingBox());
+						TrackballTumbleWidget.RenderDebugAABB(e.graphics2D, child.GetAxisAlignedBoundingBox(Matrix4X4.Identity));
+					}
+				};
+			}
+
+			base.OnLoad(args);
 		}
 
-		public List<MeshGroup> MeshGroups { get { return meshesToRender; } }
+		public override void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType seachType)
+		{
+			List<GuiWidget> searchChildren = new List<GuiWidget>(Children);
+			foreach (GuiWidget child in searchChildren)
+			{
+				RectangleDouble touchingBoundsRelChild = touchingBounds;
+				touchingBoundsRelChild.Offset(-child.OriginRelativeParent);
+				child.FindNamedChildrenRecursive(nameToSearchFor, foundChildren, touchingBoundsRelChild, seachType);
+			}
 
-		public List<Matrix4X4> MeshGroupTransforms { get { return meshTransforms; } }
+			foreach (var child in Scene.Children)
+			{
+				string object3DName = "none_Object3D";
+				if (child.MeshPath != null)
+				{
+					object3DName = child.Name ?? Path.GetFileName(child.MeshPath);
+				}
+
+				bool nameFound = false;
+
+				if (seachType == SearchType.Exact)
+				{
+					if (object3DName == nameToSearchFor)
+					{
+						nameFound = true;
+					}
+				}
+				else
+				{
+					if (nameToSearchFor == ""
+						|| object3DName.Contains(nameToSearchFor))
+					{
+						nameFound = true;
+					}
+				}
+
+				if (nameFound)
+				{
+					AxisAlignedBoundingBox bounds = child.TraceData().GetAxisAlignedBoundingBox();
+
+					RectangleDouble screenBoundsOfObject3D = RectangleDouble.ZeroIntersection;
+					for(int i=0; i<4; i++)
+					{
+						screenBoundsOfObject3D.ExpandToInclude(TrackballTumbleWidget.GetScreenPosition(bounds.GetTopCorner(i)));
+						screenBoundsOfObject3D.ExpandToInclude(TrackballTumbleWidget.GetScreenPosition(bounds.GetBottomCorner(i)));
+					}
+
+					if (touchingBounds.IsTouching(screenBoundsOfObject3D))
+					{
+						Vector3 renderPosition = bounds.Center;
+						Vector2 objectCenterScreenSpace = TrackballTumbleWidget.GetScreenPosition(renderPosition);
+						Point2D screenPositionOfObject3D = new Point2D((int)objectCenterScreenSpace.x, (int)objectCenterScreenSpace.y);
+
+						foundChildren.Add(new WidgetAndPosition(this, screenPositionOfObject3D, object3DName));
+					}
+				}
+			}
+			base.FindNamedChildrenRecursive(nameToSearchFor, foundChildren, touchingBounds, seachType);
+		}
+
+		public InteractiveScene Scene { get; } = new InteractiveScene();
 
 		public Mesh PrinterBed { get { return printerBed; } }
 
@@ -172,62 +247,11 @@ namespace MatterHackers.MeshVisualizer
 				if (renderType != value)
 				{
 					renderType = value;
-					foreach (MeshGroup meshGroup in MeshGroups)
+					foreach(var renderTransfrom in Scene.VisibleMeshes(Matrix4X4.Identity))
 					{
-						foreach (Mesh mesh in meshGroup.Meshes)
-						{
-							mesh.MarkAsChanged();
-						}
+						renderTransfrom.MeshData.MarkAsChanged();
 					}
 				}
-			}
-		}
-
-		public MeshGroup SelectedMeshGroup
-		{
-			get
-			{
-				if (HaveSelection)
-				{
-					return MeshGroups[SelectedMeshGroupIndex];
-				}
-
-				return null;
-			}
-		}
-
-		public int SelectedMeshGroupIndex
-		{
-			get
-			{
-				if (selectedMeshGroupIndex >= MeshGroups.Count)
-				{
-					selectedMeshGroupIndex = MeshGroups.Count - 1;
-				}
-
-				return selectedMeshGroupIndex;
-			}
-			set
-			{
-				selectedMeshGroupIndex = value;
-			}
-		}
-
-		public Matrix4X4 SelectedMeshGroupTransform
-		{
-			get
-			{
-				if (HaveSelection)
-				{
-					return MeshGroupTransforms[selectedMeshGroupIndex];
-				}
-
-				return Matrix4X4.Identity;
-			}
-
-			set
-			{
-				MeshGroupTransforms[selectedMeshGroupIndex] = value;
 			}
 		}
 
@@ -290,16 +314,16 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
-		public void CreateGlDataForMeshes(List<MeshGroup> meshGroupsToPrepare)
+		public void CreateGlDataObject(IObject3D item)
 		{
-			for (int i = 0; i < meshGroupsToPrepare.Count; i++)
+			if(item.Mesh != null)
 			{
-				MeshGroup meshGroupToPrepare = meshGroupsToPrepare[i];
+				GLMeshTrianglePlugin.Get(item.Mesh);
+			}
 
-				foreach (Mesh meshToPrepare in meshGroupToPrepare.Meshes)
-				{
-					GLMeshTrianglePlugin glMeshPlugin = GLMeshTrianglePlugin.Get(meshToPrepare);
-				}
+			foreach (IObject3D child in item.Children.Where(o => o.Mesh != null))
+			{
+				GLMeshTrianglePlugin.Get(child.Mesh);
 			}
 		}
 
@@ -346,7 +370,7 @@ namespace MatterHackers.MeshVisualizer
 					printerBed = PlatonicSolids.CreateCube(displayVolumeToBuild.x, displayVolumeToBuild.y, 4);
 					{
 						Face face = printerBed.Faces[0];
-						CommonShapes.PlaceTextureOnFace(face, BedImage);
+						MeshHelper.PlaceTextureOnFace(face, BedImage);
 					}
 					break;
 
@@ -401,58 +425,69 @@ namespace MatterHackers.MeshVisualizer
 			Invalidate();
 		}
 
-		public AxisAlignedBoundingBox GetBoundsForSelection()
-		{
-			Matrix4X4 selectedMeshTransform = SelectedMeshGroupTransform;
-			AxisAlignedBoundingBox selectedBounds = SelectedMeshGroup.GetAxisAlignedBoundingBox(selectedMeshTransform);
-			return selectedBounds;
-		}
-
 		public enum CenterPartAfterLoad { DO, DONT }
 
-		public void LoadMesh(string meshPathAndFileName, CenterPartAfterLoad centerPart, Vector2 bedCenter = new Vector2())
+		public bool SuppressUiVolumes { get; set; } = false;
+
+		public async Task LoadItemIntoScene(string itemPath, CenterPartAfterLoad centerPart, Vector2 bedCenter = new Vector2(), string itemName = null)
 		{
-			if (File.Exists(meshPathAndFileName))
+			if (File.Exists(itemPath))
 			{
 				partProcessingInfo.Visible = true;
 				partProcessingInfo.progressControl.PercentComplete = 0;
-
-				backgroundWorker = new BackgroundWorker();
-				backgroundWorker.WorkerSupportsCancellation = true;
-
-				backgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(backgroundWorker_RunWorkerCompleted);
-
-				backgroundWorker.DoWork += (object sender, DoWorkEventArgs e) =>
-				{
-					List<MeshGroup> loadedMeshGroups = MeshFileIo.Load(meshPathAndFileName, reportProgress0to100);
-					SetMeshAfterLoad(loadedMeshGroups, centerPart, bedCenter);
-					e.Result = loadedMeshGroups;
-				};
-				backgroundWorker.RunWorkerAsync();
 				partProcessingInfo.centeredInfoText.Text = "Loading Mesh...";
+
+				// TODO: How to we handle mesh load errors? How do we report success?
+				IObject3D loadedItem = await Task.Run(() => Object3D.Load(itemPath, progress: ReportProgress0to100));
+				if (loadedItem != null)
+				{
+					if (itemName != null)
+					{
+						loadedItem.Name = itemName;
+					}
+
+					// SetMeshAfterLoad
+					Scene.ModifyChildren(children =>
+					{
+						if(loadedItem.Mesh != null)
+						{
+							// STLs currently load directly into the mesh rather than as a group like AMF
+							children.Add(loadedItem);
+						}
+						else
+						{
+							children.AddRange(loadedItem.Children);
+						}
+					});
+
+					CreateGlDataObject(loadedItem);
+				}
+				else
+				{
+					partProcessingInfo.centeredInfoText.Text = string.Format("Sorry! No 3D view available\nfor this file.");
+				}
+
+				partProcessingInfo.Visible = false;
+
+				// Invoke LoadDone event
+				LoadDone?.Invoke(this, null);
 			}
 			else
 			{
-				partProcessingInfo.centeredInfoText.Text = string.Format("{0}\n'{1}'", "File not found on disk.", Path.GetFileName(meshPathAndFileName));
+				partProcessingInfo.centeredInfoText.Text = string.Format("{0}\n'{1}'", "File not found on disk.", Path.GetFileName(itemPath));
 			}
-		}
-
-		public override void OnClosed(EventArgs e)
-		{
-			if (backgroundWorker != null)
-			{
-				backgroundWorker.CancelAsync();
-			}
-			base.OnClosed(e);
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			base.OnDraw(graphics2D);
 
-			foreach (InteractionVolume interactionVolume in interactionVolumes)
+			//if (!SuppressUiVolumes)
 			{
-				interactionVolume.Draw2DContent(graphics2D);
+				foreach (InteractionVolume interactionVolume in interactionVolumes)
+				{
+					interactionVolume.Draw2DContent(graphics2D);
+				}
 			}
 		}
 
@@ -469,9 +504,9 @@ namespace MatterHackers.MeshVisualizer
 			}
 
 			int volumeHitIndex;
-			Ray ray = trackballTumbleWidget.GetRayFromScreen(mouseEvent.Position);
+			Ray ray = trackballTumbleWidget.GetRayForLocalBounds(mouseEvent.Position);
 			IntersectInfo info;
-			if (FindInteractionVolumeHit(ray, out volumeHitIndex, out info))
+			if (!SuppressUiVolumes && FindInteractionVolumeHit(ray, out volumeHitIndex, out info))
 			{
 				MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray, info);
 				volumeIndexWithMouseDown = volumeHitIndex;
@@ -488,7 +523,12 @@ namespace MatterHackers.MeshVisualizer
 		{
 			base.OnMouseMove(mouseEvent);
 
-			Ray ray = trackballTumbleWidget.GetRayFromScreen(mouseEvent.Position);
+			if (SuppressUiVolumes)
+			{
+				return;
+			}
+
+			Ray ray = trackballTumbleWidget.GetRayForLocalBounds(mouseEvent.Position);
 			IntersectInfo info = null;
 			if (MouseDownOnInteractionVolume && volumeIndexWithMouseDown != -1)
 			{
@@ -506,6 +546,7 @@ namespace MatterHackers.MeshVisualizer
 						interactionVolumes[volumeHitIndex].OnMouseMove(mouseEvent3D);
 					}
 				}
+
 				for (int i = 0; i < interactionVolumes.Count; i++)
 				{
 					if (i == volumeHitIndex)
@@ -527,8 +568,13 @@ namespace MatterHackers.MeshVisualizer
 			trackballTumbleWidget.DrawRotationHelperCircle = false;
 			Invalidate();
 
+			if(SuppressUiVolumes)
+			{
+				return;
+			}
+
 			int volumeHitIndex;
-			Ray ray = trackballTumbleWidget.GetRayFromScreen(mouseEvent.Position);
+			Ray ray = trackballTumbleWidget.GetRayForLocalBounds(mouseEvent.Position);
 			IntersectInfo info;
 			bool anyInteractionVolumeHit = FindInteractionVolumeHit(ray, out volumeHitIndex, out info);
 			MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray, info);
@@ -554,57 +600,6 @@ namespace MatterHackers.MeshVisualizer
 			base.OnMouseUp(mouseEvent);
 		}
 
-		public void SetMeshAfterLoad(List<MeshGroup> loadedMeshGroups, CenterPartAfterLoad centerPart, Vector2 bedCenter)
-		{
-			MeshGroups.Clear();
-
-			if (loadedMeshGroups == null)
-			{
-				partProcessingInfo.centeredInfoText.Text = string.Format("Sorry! No 3D view available\nfor this file.");
-			}
-			else
-			{
-				CreateGlDataForMeshes(loadedMeshGroups);
-
-				AxisAlignedBoundingBox bounds = new AxisAlignedBoundingBox(Vector3.Zero, Vector3.Zero);
-				bool first = true;
-				foreach (MeshGroup meshGroup in loadedMeshGroups)
-				{
-					if (first)
-					{
-						bounds = meshGroup.GetAxisAlignedBoundingBox();
-						first = false;
-					}
-					else
-					{
-						bounds = AxisAlignedBoundingBox.Union(bounds, meshGroup.GetAxisAlignedBoundingBox());
-					}
-				}
-
-				// add all the loaded meshes
-				foreach (MeshGroup meshGroup in loadedMeshGroups)
-				{
-					meshTransforms.Add(Matrix4X4.Identity);
-					MeshGroups.Add(meshGroup);
-				}
-
-				if (centerPart == CenterPartAfterLoad.DO)
-				{
-					// make sure the entire load is centered and on the bed
-					Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
-					for (int i = 0; i < MeshGroups.Count; i++)
-					{
-						meshTransforms[i] *= Matrix4X4.CreateTranslation(-boundsCenter + new Vector3(0, 0, bounds.ZSize / 2) + new Vector3(bedCenter));
-					}
-				}
-
-				trackballTumbleWidget.TrackBallController = new TrackBallController();
-				trackballTumbleWidget.OnBoundsChanged(null);
-
-				ResetView();
-			}
-		}
-
 		public void ResetView()
 		{
 			trackballTumbleWidget.ZeroVelocity();
@@ -613,16 +608,6 @@ namespace MatterHackers.MeshVisualizer
 			trackballTumbleWidget.TrackBallController.Translate(-new Vector3(BedCenter));
 			trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, MathHelper.Tau / 16)));
 			trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
-		}
-
-		private void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-		{
-			partProcessingInfo.Visible = false;
-
-			if (LoadDone != null)
-			{
-				LoadDone(this, null);
-			}
 		}
 
 		private void CreateCircularBedGridImage(int linesInX, int linesInY, int increment = 1)
@@ -719,23 +704,23 @@ namespace MatterHackers.MeshVisualizer
 				return false;
 			}
 
-			List<IPrimitive> mesheTraceables = new List<IPrimitive>();
+			List<IPrimitive> uiTraceables = new List<IPrimitive>();
 			foreach (InteractionVolume interactionVolume in interactionVolumes)
 			{
 				if (interactionVolume.CollisionVolume != null)
 				{
 					IPrimitive traceData = interactionVolume.CollisionVolume;
-					mesheTraceables.Add(new Transform(traceData, interactionVolume.TotalTransform));
+					uiTraceables.Add(new Transform(traceData, interactionVolume.TotalTransform));
 				}
 			}
-			IPrimitive allObjects = BoundingVolumeHierarchy.CreateNewHierachy(mesheTraceables);
+			IPrimitive allUiObjects = BoundingVolumeHierarchy.CreateNewHierachy(uiTraceables);
 
-			info = allObjects.GetClosestIntersection(ray);
+			info = allUiObjects.GetClosestIntersection(ray);
 			if (info != null)
 			{
 				for (int i = 0; i < interactionVolumes.Count; i++)
 				{
-					List<IPrimitive> insideBounds = new List<IPrimitive>();
+					List<IBvhItem> insideBounds = new List<IBvhItem>();
 					if (interactionVolumes[i].CollisionVolume != null)
 					{
 						interactionVolumes[i].CollisionVolume.GetContained(insideBounds, info.closestHitObject.GetAxisAlignedBoundingBox());
@@ -751,7 +736,7 @@ namespace MatterHackers.MeshVisualizer
 			return false;
 		}
 
-		private void reportProgress0to100(double progress0To1, string processingState, out bool continueProcessing)
+		public void ReportProgress0to100(double progress0To1, string processingState, out bool continueProcessing)
 		{
 			if (this.HasBeenClosed)
 			{
@@ -771,50 +756,54 @@ namespace MatterHackers.MeshVisualizer
 			});
 		}
 
+		private void DrawObject(IObject3D object3D, Matrix4X4 transform, bool parentSelected)
+		{
+			foreach(MeshAndTransform meshAndTransform in object3D.VisibleMeshes(transform))
+			{
+				bool isSelected = parentSelected ||
+					Scene.HasSelection && (object3D == Scene.SelectedItem || Scene.SelectedItem.Children.Contains(object3D));
+
+				MeshMaterialData meshData = MeshMaterialData.Get(meshAndTransform.MeshData);
+				RGBA_Bytes drawColor = object3D.Color;
+				if (drawColor.Alpha0To1 == 0)
+				{
+					drawColor = isSelected ? GetSelectedMaterialColor(meshData.MaterialIndex) : GetMaterialColor(meshData.MaterialIndex);
+				}
+
+				GLHelper.Render(meshAndTransform.MeshData, drawColor, meshAndTransform.Matrix, RenderType);
+			}
+		}
+
 		private void trackballTumbleWidget_DrawGlContent(object sender, EventArgs e)
 		{
-			for (int groupIndex = 0; groupIndex < MeshGroups.Count; groupIndex++)
+			foreach(var object3D in Scene.Children)
 			{
-				MeshGroup meshGroupToRender = MeshGroups[groupIndex];
+				DrawObject(object3D, Matrix4X4.Identity, false);
+			}
 
-				int part = 0;
-				foreach (Mesh meshToRender in meshGroupToRender.Meshes)
-				{
-					MeshMaterialData meshData = MeshMaterialData.Get(meshToRender);
-					RGBA_Bytes drawColor = GetMaterialColor(meshData.MaterialIndex);
-					if (meshGroupToRender == SelectedMeshGroup)
-					{
-						drawColor = GetSelectedMaterialColor(meshData.MaterialIndex);
-					}
+			if (RenderBed)
+			{
+				GLHelper.Render(printerBed, this.BedColor);
+			}
 
-					RenderMeshToGl.Render(meshToRender, drawColor, MeshGroupTransforms[groupIndex], RenderType);
-					part++;
-				}
+			if (buildVolume != null && RenderBuildVolume)
+			{
+				GLHelper.Render(buildVolume, this.BuildVolumeColor);
 			}
 
 			// we don't want to render the bed or build volume before we load a model.
-			if (MeshGroups.Count > 0 || AllowBedRenderingWhenEmpty)
+			if (Scene.HasChildren || AllowBedRenderingWhenEmpty)
 			{
-				if (RenderBed)
-				{
-					RenderMeshToGl.Render(printerBed, this.BedColor);
-				}
-
-				if (buildVolume != null && RenderBuildVolume)
-				{
-					RenderMeshToGl.Render(buildVolume, this.BuildVolumeColor);
-				}
-
 				if (false) // this is code to draw a small axis indicator
 				{
 					double big = 10;
 					double small = 1;
 					Mesh xAxis = PlatonicSolids.CreateCube(big, small, small);
-					RenderMeshToGl.Render(xAxis, RGBA_Bytes.Red);
+					GLHelper.Render(xAxis, RGBA_Bytes.Red);
 					Mesh yAxis = PlatonicSolids.CreateCube(small, big, small);
-					RenderMeshToGl.Render(yAxis, RGBA_Bytes.Green);
+					GLHelper.Render(yAxis, RGBA_Bytes.Green);
 					Mesh zAxis = PlatonicSolids.CreateCube(small, small, big);
-					RenderMeshToGl.Render(zAxis, RGBA_Bytes.Blue);
+					GLHelper.Render(zAxis, RGBA_Bytes.Blue);
 				}
 			}
 
@@ -823,6 +812,11 @@ namespace MatterHackers.MeshVisualizer
 
 		private void DrawInteractionVolumes(EventArgs e)
 		{
+			if(SuppressUiVolumes)
+			{
+				return;
+			}
+
 			// draw on top of anything that is already drawn
 			foreach (InteractionVolume interactionVolume in interactionVolumes)
 			{
