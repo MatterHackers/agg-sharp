@@ -1242,6 +1242,18 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #endif
 		}
 
+		public static void DepthMask(bool flag)
+		{
+#if USE_OPENGL
+			if (openGlHardwareAvailable)
+			{
+				OpenTK.Graphics.OpenGL.GL.DepthMask(flag);
+			}
+#else
+			OpenTK.Graphics.ES11.GL.DepthMask(flag);
+#endif
+		}
+
 		public static void ClearDepth(double depth)
 		{
 #if USE_OPENGL
