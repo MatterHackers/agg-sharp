@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.VectorMath;
 using System;
+using MatterHackers.Agg.Image;
 
 namespace MatterHackers.PolygonMesh
 {
@@ -53,6 +54,26 @@ namespace MatterHackers.PolygonMesh
 			plane.CreateFace(new Vertex[] { verts[0], verts[1], verts[2], verts[3] });
 
 			return plane;
+		}
+
+		public static Mesh TexturedPlane(ImageBuffer rotationBackgroundImage, double x = 1, double y = 1)
+		{
+			Mesh texturedPlane = CommonShapes.CreatePlane(x, y);
+			{
+				Face face = texturedPlane.Faces[0];
+				{
+					FaceTextureData faceData = FaceTextureData.Get(face);
+					faceData.Textures.Add(rotationBackgroundImage);
+					foreach (FaceEdge faceEdge in face.FaceEdges())
+					{
+						FaceEdgeTextureUvData edgeUV = FaceEdgeTextureUvData.Get(faceEdge);
+						edgeUV.TextureUV.Add(new Vector2((x / 2 + faceEdge.firstVertex.Position.x) / x,
+							(y / 2 + faceEdge.firstVertex.Position.y) / y));
+					}
+				}
+			}
+
+			return texturedPlane;
 		}
 	}
 }

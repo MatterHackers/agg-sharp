@@ -56,6 +56,10 @@ namespace MatterHackers.RenderOpenGl
 		private int height;
 		private RectangleDouble cachedClipRect;
 
+		public Graphics2DOpenGL()
+		{
+		}
+
 		public Graphics2DOpenGL(int width, int height)
 		{
 			this.width = width;
