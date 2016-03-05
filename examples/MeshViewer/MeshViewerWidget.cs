@@ -51,7 +51,9 @@ namespace MatterHackers.MeshVisualizer
 	{
 		static public ImageBuffer BedImage = null;
 		public List<InteractionVolume> interactionVolumes = new List<InteractionVolume>();
-		public bool MouseDownOnInteractionVolume = false;
+		public InteractionVolume SelectedInteractionVolume = null;
+		public bool MouseDownOnInteractionVolume { get { return SelectedInteractionVolume != null; } }
+
 		public PartProcessingInfo partProcessingInfo;
 		private static ImageBuffer lastCreatedBedImage = new ImageBuffer();
 		private static Point2D lastLinesCount;
@@ -460,11 +462,11 @@ namespace MatterHackers.MeshVisualizer
 				MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray, info);
 				volumeIndexWithMouseDown = volumeHitIndex;
 				interactionVolumes[volumeHitIndex].OnMouseDown(mouseEvent3D);
-				MouseDownOnInteractionVolume = true;
-			}
+				SelectedInteractionVolume = interactionVolumes[volumeHitIndex];
+            }
 			else
 			{
-				MouseDownOnInteractionVolume = false;
+				SelectedInteractionVolume = null;
 			}
 		}
 
@@ -517,20 +519,20 @@ namespace MatterHackers.MeshVisualizer
 
 			if (MouseDownOnInteractionVolume && volumeIndexWithMouseDown != -1)
 			{
-				MouseDownOnInteractionVolume = false;
 				interactionVolumes[volumeIndexWithMouseDown].OnMouseUp(mouseEvent3D);
+				SelectedInteractionVolume = null;
 
 				volumeIndexWithMouseDown = -1;
 			}
 			else
 			{
-				MouseDownOnInteractionVolume = false;
 				volumeIndexWithMouseDown = -1;
 
 				if (anyInteractionVolumeHit)
 				{
 					interactionVolumes[volumeHitIndex].OnMouseUp(mouseEvent3D);
 				}
+				SelectedInteractionVolume = null;
 			}
 
 			base.OnMouseUp(mouseEvent);

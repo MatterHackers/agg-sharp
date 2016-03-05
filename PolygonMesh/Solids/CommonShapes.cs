@@ -56,14 +56,14 @@ namespace MatterHackers.PolygonMesh
 			return plane;
 		}
 
-		public static Mesh TexturedPlane(ImageBuffer rotationBackgroundImage, double x = 1, double y = 1)
+		public static Mesh TexturedPlane(ImageBuffer textureToUse, double x = 1, double y = 1)
 		{
 			Mesh texturedPlane = CommonShapes.CreatePlane(x, y);
 			{
 				Face face = texturedPlane.Faces[0];
 				{
 					FaceTextureData faceData = FaceTextureData.Get(face);
-					faceData.Textures.Add(rotationBackgroundImage);
+					faceData.Textures.Add(textureToUse);
 					foreach (FaceEdge faceEdge in face.FaceEdges())
 					{
 						FaceEdgeTextureUvData edgeUV = FaceEdgeTextureUvData.Get(faceEdge);
