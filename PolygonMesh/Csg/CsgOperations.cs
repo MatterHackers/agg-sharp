@@ -13,6 +13,8 @@
 // solids are correctly handled.
 //
 
+using MatterHackers.VectorMath;
+using Net3dBool;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -104,6 +106,135 @@ namespace MatterHackers.PolygonMesh.Csg
 		}
 	}
 #else
+#if false
+	// Public interface implementation
+	public static class CsgOperations
+	{
+		public static Solid SolidFromMesh(Mesh model)
+		{
+			var solid = new Solid();
+			List<Point3d> vertices = new List<Point3d>();
+			List<int> indices = new List<int>();
+
+			int nextIndex = 0;
+			foreach (Face face in model.Faces)
+			{
+				List<Vertex> triangle = new List<Vertex>();
+				Vector3 first = Vector3.Zero;
+				Vector3 last = Vector3.Zero;
+				bool isFirst = true;
+				int count = 0;
+				foreach (FaceEdge faceEdge in face.FaceEdges())
+				{
+					Vector3 position = faceEdge.firstVertex.Position;
+					if(isFirst)
+					{
+						first = position;
+						isFirst = false;
+					}
+					if (count < 3)
+					{
+						vertices.Add(new Point3d(position.x, position.y, position.z));
+						indices.Add(nextIndex++);
+					}
+					else // add an entire new polygon
+					{
+						vertices.Add(new Point3d(first.x, first.y, first.z));
+						indices.Add(nextIndex++);
+						vertices.Add(new Point3d(last.x, last.y, last.z));
+						indices.Add(nextIndex++);
+						vertices.Add(new Point3d(position.x, position.y, position.z));
+						indices.Add(nextIndex++);
+					}
+					count++;
+					last = position;
+				}
+			}
+
+			solid.setData(vertices.ToArray(), indices.ToArray(), new Color3f(1, 1, 1));
+
+			return solid;
+		}
+
+		public static Mesh MeshFromSolid(Solid solid)
+		{
+			Mesh model = new Mesh();
+			List<Vertex> vertices = new List<Vertex>();
+			var indices = solid.getIndices();
+			var solidVertices = solid.getVertices();
+			for (int vertexIndex = 0; vertexIndex < indices.Length; vertexIndex++)
+			{
+				var position = solidVertices[indices[vertexIndex]];
+				vertices.Add(model.CreateVertex(position.x, position.y, position.z));
+
+				if (vertices.Count > 2)
+				{
+					model.CreateFace(vertices.ToArray());
+					vertices.Clear();
+				}
+			}
+
+			return model;
+		}
+
+		public static Mesh Union(Mesh a, Mesh b)
+		{
+			if(a.Faces.Count == 0)
+			{
+				return b;
+			}
+			if(b.Faces.Count == 0)
+			{
+				return a;
+			}
+			var A = SolidFromMesh(a);
+			var B = SolidFromMesh(b);
+
+			var modeller = new BooleanModeller(A, B);
+			var result = modeller.getUnion();
+
+			return MeshFromSolid(result);
+		}
+
+		public static Mesh Subtract(Mesh a, Mesh b)
+		{
+			if (a.Faces.Count == 0)
+			{
+				return b;
+			}
+			if (b.Faces.Count == 0)
+			{
+				return a;
+			}
+			var A = SolidFromMesh(a);
+			var B = SolidFromMesh(b);
+
+			var modeller = new BooleanModeller(A, B);
+			var result = modeller.getDifference();
+
+			return MeshFromSolid(result);
+		}
+
+		public static Mesh Intersect(Mesh a, Mesh b)
+		{
+			if (a.Faces.Count == 0)
+			{
+				return b;
+			}
+			if (b.Faces.Count == 0)
+			{
+				return a;
+			}
+			var A = SolidFromMesh(a);
+			var B = SolidFromMesh(b);
+
+			var modeller = new BooleanModeller(A, B);
+			var result = modeller.getIntersection();
+
+			return MeshFromSolid(result);
+		}
+	}
+#else
 	public delegate CsgNode CsgFunctionHandler(CsgNode a, CsgNode b);
 
 	// Public interface implementation
@@ -177,5 +308,6 @@ namespace MatterHackers.PolygonMesh.Csg
 			return MeshFromPolygons(polygons);
 		}
 	}
+#endif
 #endif
 }

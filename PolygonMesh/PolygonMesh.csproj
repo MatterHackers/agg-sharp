@@ -133,14 +133,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Csg\CsgNode.cs" />
+    <Compile Include="Csg\CsgPlane.cs" />
+    <Compile Include="Csg\CsgPolygon.cs" />
     <Compile Include="Csg\CsgProcessing.cs" />
     <Compile Include="MeshMaterialData.cs" />
     <Compile Include="MeshGroup.cs" />
     <Compile Include="FaceTexturesData.cs" />
     <Compile Include="FaceEdgeTextureUvData.cs" />
-    <Compile Include="Csg\CsgNode.cs" />
-    <Compile Include="Csg\CsgPlane.cs" />
-    <Compile Include="Csg\CsgPolygon.cs" />
     <Compile Include="Csg\CsgOperations.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -176,6 +176,10 @@
     <ProjectReference Include="..\VectorMath\VectorMath.csproj">
       <Project>{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}</Project>
       <Name>VectorMath</Name>
+    </ProjectReference>
+    <ProjectReference Include="Net3dBool\Net3dBool.csproj">
+      <Project>{7ee4636d-8a92-4015-9562-7fcd6add0645}</Project>
+      <Name>Net3dBool</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup />
