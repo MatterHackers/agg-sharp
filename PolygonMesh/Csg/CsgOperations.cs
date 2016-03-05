@@ -106,7 +106,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		}
 	}
 #else
-#if false
+#if true
 	// Public interface implementation
 	public static class CsgOperations
 	{
@@ -151,7 +151,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				}
 			}
 
-			solid.setData(vertices.ToArray(), indices.ToArray(), new Color3f(1, 1, 1));
+			solid.setData(vertices.ToArray(), indices.ToArray());
 
 			return solid;
 		}

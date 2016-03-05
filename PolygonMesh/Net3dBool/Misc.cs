@@ -4,27 +4,6 @@ using System.Collections.Generic;
 
 namespace Net3dBool
 {
-
-    public class Color3f
-    {
-
-        public double r;
-        public double g;
-        public double b;
-
-        public Color3f(double r, double g, double b)
-        {
-            this.r = r;
-            this.g = g;
-            this.b = b;
-        }
-
-        public Color3f Clone()
-        {
-            return new Color3f(r, g, b);
-        }
-    }
-
     public class Shape3D
     {
 

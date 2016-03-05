@@ -137,11 +137,10 @@ namespace Net3dBool
         {
             var vertices = new List<Vertex>();
             var indices = new List<int>();
-            var colors = new List<Color3f>();
 
             //group the elements of the two solids whose faces fit with the desired status  
-            groupObjectComponents(object1, vertices, indices, colors, faceStatus1, faceStatus2);
-            groupObjectComponents(object2, vertices, indices, colors, faceStatus3, faceStatus3);
+            groupObjectComponents(object1, vertices, indices, faceStatus1, faceStatus2);
+            groupObjectComponents(object2, vertices, indices, faceStatus3, faceStatus3);
 
             //turn the arrayLists to arrays
             Point3d[] verticesArray = new Point3d[vertices.Count];
@@ -154,14 +153,9 @@ namespace Net3dBool
             {
                 indicesArray[i] = indices[i];
             }
-            Color3f[] colorsArray = new Color3f[colors.Count];
-            for (int i = 0; i < colors.Count; i++)
-            {
-                colorsArray[i] = colors[i].Clone();
-            }
 
             //returns the solid containing the grouped elements
-            return new Solid(verticesArray, indicesArray, colorsArray);
+            return new Solid(verticesArray, indicesArray);
         }
 
         /**
@@ -171,11 +165,10 @@ namespace Net3dBool
      * @param object3d solid object used to fill the arrays
      * @param vertices vertices array to be filled
      * @param indices indices array to be filled
-     * @param colors colors array to be filled
      * @param faceStatus1 a status expected for the faces used to to fill the data arrays
      * @param faceStatus2 a status expected for the faces used to to fill the data arrays
      */
-        private void groupObjectComponents(Object3D obj, List<Vertex> vertices, List<int> indices, List<Color3f> colors, int faceStatus1, int faceStatus2)
+        private void groupObjectComponents(Object3D obj, List<Vertex> vertices, List<int> indices, int faceStatus1, int faceStatus2)
         {
             Face face;
             //for each face..
@@ -197,7 +190,6 @@ namespace Net3dBool
                         {
                             indices.Add(vertices.Count);
                             vertices.Add(faceVerts[j]);
-                            colors.Add(faceVerts[j].getColor());
                         }
                     }
                 }

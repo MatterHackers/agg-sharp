@@ -30,8 +30,6 @@ namespace Net3dBool
         private List<Vertex> adjacentVertices;
         /** vertex status relative to other object */
         private int status;
-        /** vertex color */
-        private Color3f color;
 
         /** tolerance value to test equalities */
         private static  double TOL = 1e-5f;
@@ -51,12 +49,9 @@ namespace Net3dBool
      * Constructs a vertex with unknown status
      * 
      * @param position vertex position
-     * @param color vertex color
      */
-        public Vertex(Point3d position, Color3f color)
+        public Vertex(Point3d position)
         {
-            this.color = color.Clone();
-
             x = position.x;
             y = position.y;
             z = position.z;
@@ -71,12 +66,9 @@ namespace Net3dBool
      * @param x coordinate on the x axis
      * @param y coordinate on the y axis
      * @param z coordinate on the z axis
-     * @param color vertex color
      */
-        public Vertex(double x, double y, double z, Color3f color)
+        public Vertex(double x, double y, double z)
         {
-            this.color = color.Clone();
-
             this.x = x;
             this.y = y;
             this.z = z;
@@ -89,13 +81,10 @@ namespace Net3dBool
      * Constructs a vertex with definite status
      * 
      * @param position vertex position
-     * @param color vertex color
      * @param status vertex status - UNKNOWN, BOUNDARY, INSIDE or OUTSIDE
      */
-        public Vertex(Point3d position, Color3f color, int status)
+        public Vertex(Point3d position, int status)
         {
-            this.color = color.Clone();
-
             x = position.x;
             y = position.y;
             z = position.z;
@@ -110,13 +99,10 @@ namespace Net3dBool
      * @param x coordinate on the x axis
      * @param y coordinate on the y axis
      * @param z coordinate on the z axis
-     * @param color vertex color
      * @param status vertex status - UNKNOWN, BOUNDARY, INSIDE or OUTSIDE
      */
-        public Vertex(double x, double y, double z, Color3f color, int status)
+        public Vertex(double x, double y, double z, int status)
         {
-            this.color = color.Clone();
-
             this.x = x;
             this.y = y;
             this.z = z;
@@ -142,7 +128,6 @@ namespace Net3dBool
             clone.x = x;
             clone.y = y;
             clone.z = z;
-            clone.color = color.Clone();
             clone.status = status;
             clone.adjacentVertices = new List<Vertex>();
             for (int i = 0; i < adjacentVertices.Count; i++)
@@ -165,7 +150,7 @@ namespace Net3dBool
 
         /**
      * Checks if an vertex is equal to another. To be equal, they have to have the same
-     * coordinates(with some tolerance) and color
+     * coordinates(with some tolerance)
      * 
      * @param anObject the other vertex to be tested
      * @return true if they are equal, false otherwise. 
@@ -173,7 +158,7 @@ namespace Net3dBool
         public bool equals(Vertex vertex)
         {
             return  Math.Abs(x - vertex.x) < TOL && Math.Abs(y - vertex.y) < TOL
-            && Math.Abs(z - vertex.z) < TOL && color.Equals(vertex.color);          
+            && Math.Abs(z - vertex.z) < TOL;
         }
 
         //--------------------------------------SETS------------------------------------//
@@ -226,16 +211,6 @@ namespace Net3dBool
         public int getStatus()
         {
             return status;
-        }
-
-        /**
-     * Gets the vertex color
-     * 
-     * @return vertex color
-     */
-        public Color3f getColor()
-        {
-            return color.Clone();
         }
 
         //----------------------------------OTHERS--------------------------------------//

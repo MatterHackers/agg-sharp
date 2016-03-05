@@ -23,8 +23,6 @@ namespace Net3dBool
         protected int[] indices;
         /** array of points defining the solid's vertices */
         protected Point3d[] vertices;
-        /** array of color defining the vertices colors */
-        protected Color3f[] colors;
 
         //--------------------------------CONSTRUCTORS----------------------------------//
 
@@ -43,40 +41,16 @@ namespace Net3dBool
      * @param indices array of indices for a array of vertices
      * @param colors array of colors defining the vertices colors 
      */
-        public Solid(Point3d[] vertices, int[] indices, Color3f[] colors)
+        public Solid(Point3d[] vertices, int[] indices)
             : this()
         {
-            setData(vertices, indices, colors);     
-        }
-
-        /**
-     * Constructs a solid based on a coordinates file. It contains vertices and indices, 
-     * and its format is like this:
-     * 
-     * <br><br>4
-     * <br>0 -5.00000000000000E-0001 -5.00000000000000E-0001 -5.00000000000000E-0001
-     * <br>1  5.00000000000000E-0001 -5.00000000000000E-0001 -5.00000000000000E-0001
-     * <br>2 -5.00000000000000E-0001  5.00000000000000E-0001 -5.00000000000000E-0001
-     * <br>3  5.00000000000000E-0001  5.00000000000000E-0001 -5.00000000000000E-0001
-     * 
-     * <br><br>2
-     * <br>0 0 2 3
-     * <br>1 3 1 0 
-     * 
-     * @param solidFile file containing the solid coordinates
-     * @param color solid color
-     */
-        public Solid(FileInfo solidFile, Color3f color)
-            : this()
-        {
-            loadCoordinateFile(solidFile, color);
+            setData(vertices, indices);
         }
 
         /** Sets the initial features common to all constructors */
         protected void setInitialFeatures()
         {
             vertices = new Point3d[0];
-            colors = new Color3f[0];
             indices = new int[0];
 
 //            setCapability(Shape3D.ALLOW_GEOMETRY_WRITE);
@@ -112,20 +86,6 @@ namespace Net3dBool
             return newIndices;
         }
 
-        /** Gets the vertices colors
-     * 
-     * @return vertices colors
-     */
-        public Color3f[] getColors()
-        {
-            Color3f[] newColors = new Color3f[colors.Length];
-            for (int i = 0; i < newColors.Length; i++)
-            {
-                newColors[i] = colors[i];
-            }
-            return newColors;
-        }
-
         /**
      * Gets if the solid is empty (without any vertex)
      * 
@@ -154,38 +114,20 @@ namespace Net3dBool
      * @param indices array of indices for a array of vertices
      * @param colors array of colors defining the vertices colors 
      */
-        public void setData(Point3d[] vertices, int[] indices, Color3f[] colors)
+        public void setData(Point3d[] vertices, int[] indices)
         {
             this.vertices = new Point3d[vertices.Length];
-            this.colors = new Color3f[colors.Length];
             this.indices = new int[indices.Length];
             if (indices.Length != 0)
             {
                 for (int i = 0; i < vertices.Length; i++)
                 {
                     this.vertices[i] = vertices[i].Clone();
-                    this.colors[i] = colors[i].Clone();
                 }
                 Array.Copy(indices, 0, this.indices, 0, indices.Length);
 
                 defineGeometry();
             }
-        }
-
-        /**
-     * Sets the solid data. Defines the same color to all the vertices. An exception may 
-     * may occur in the case of abnormal arrays (e.g., indices making references to  
-     * inexistent vertices...)
-     * 
-     * @param vertices array of points defining the solid vertices
-     * @param indices array of indices for a array of vertices
-     * @param color the color of the vertices (the solid color) 
-     */
-        public void setData(Point3d[] vertices, int[] indices, Color3f color)
-        {
-            Color3f[] colors = new Color3f[vertices.Length];
-            colors.fill(color);
-            setData(vertices, indices, colors);
         }
 
         //-------------------------GEOMETRICAL_TRANSFORMATIONS-------------------------//
@@ -315,62 +257,6 @@ namespace Net3dBool
 //            gi.recomputeIndices();
 //
 //            setGeometry(gi.getIndexedGeometryArray());
-        }
-
-        /**
-     * Loads a coordinates file, setting vertices and indices 
-     * 
-     * @param solidFile file used to create the solid
-     * @param color solid color
-     */
-        protected void loadCoordinateFile(FileInfo solidFile, Color3f color)
-        {
-//            try
-//            {
-//                BufferedReader reader = new BufferedReader(new FileReader(solidFile));
-//
-//                String line = reader.readLine();
-//                int numVertices = Integer.parseInt(line);
-//                vertices = new Point3d[numVertices];
-//
-//                StringTokenizer tokens;
-//                String token;
-//
-//                for(int i=0;i<numVertices;i++)
-//                    {
-//                        line = reader.readLine();
-//                        tokens = new StringTokenizer(line);
-//                        tokens.nextToken();
-//                        vertices[i]= new Point3d(Double.parseDouble(tokens.nextToken()), Double.parseDouble(tokens.nextToken()), Double.parseDouble(tokens.nextToken()));
-//                    }
-//
-//                reader.readLine();
-//
-//                line = reader.readLine();
-//                int numTriangles = Integer.parseInt(line);
-//                indices = new int[numTriangles*3];
-//
-//                for(int i=0,j=0;i<numTriangles*3;i=i+3,j++)
-//                    {
-//                        line = reader.readLine();
-//                        tokens = new StringTokenizer(line);
-//                        tokens.nextToken();
-//                        indices[i] = Integer.parseInt(tokens.nextToken());
-//                        indices[i+1] = Integer.parseInt(tokens.nextToken());
-//                        indices[i+2] = Integer.parseInt(tokens.nextToken());
-//                    }
-//
-//                colors = new Color3f[vertices.Length];
-//                Arrays.fill(colors, color);
-//
-//                defineGeometry();
-//            }
-//
-//            catch(IOException e)
-//            {
-//                System.out.println("invalid file!");
-//                e.printStackTrace();
-//            }
         }
 
         /**
