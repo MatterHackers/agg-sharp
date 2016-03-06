@@ -172,29 +172,19 @@ namespace Net3dBool
 		/// <param name="normal">the plane normal</param>
 		/// <param name="planePoint">a plane point.</param>
 		/// <returns>intersection point.If they don't intersect, return null</returns>
-		public Vector3 ComputePlaneIntersection(Vector3 normal, Vector3 planePoint)
+		public Vector3 ComputePlaneIntersection(Plane plane)
 		{
-			//Ax + By + Cz + D = 0
-			//x = x0 + t(x1 � x0)
-			//y = y0 + t(y1 � y0)
-			//z = z0 + t(z1 � z0)
-			//(x1 - x0) = dx, (y1 - y0) = dy, (z1 - z0) = dz
-			//t = -(A*x0 + B*y0 + C*z0 )/(A*dx + B*dy + C*dz)
+			double distanceToStartFromOrigin = Vector3.Dot(plane.planeNormal, startPoint);
 
-			double A = normal.x;
-			double B = normal.y;
-			double C = normal.z;
-			double D = -(normal.x * planePoint.x + normal.y * planePoint.y + normal.z * planePoint.z);
+			double distanceFromPlane = distanceToStartFromOrigin - plane.distanceToPlaneFromOrigin;
+			double denominator = Vector3.Dot(plane.planeNormal, Direction);
 
-			double numerator = A * startPoint.x + B * startPoint.y + C * startPoint.z + D;
-			double denominator = A * Direction.x + B * Direction.y + C * Direction.z;
-
-			//if line is paralel to the plane...
 			if (Math.Abs(denominator) < EqualityTolerance)
 			{
-				//if line is contained in the plane...
-				if (Math.Abs(numerator) < EqualityTolerance)
+				//if line is paralel to the plane...
+				if (Math.Abs(distanceFromPlane) < EqualityTolerance)
 				{
+					//if line is contained in the plane...
 					return startPoint;
 				}
 				else
@@ -202,10 +192,9 @@ namespace Net3dBool
 					return Vector3.PositiveInfinity;
 				}
 			}
-			//if line intercepts the plane...
-			else
+			else // line intercepts the plane...
 			{
-				double t = -numerator / denominator;
+				double t = -distanceFromPlane / denominator;
 				Vector3 resultPoint = new Vector3();
 				resultPoint.x = startPoint.x + t * Direction.x;
 				resultPoint.y = startPoint.y + t * Direction.y;

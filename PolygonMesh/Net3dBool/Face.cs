@@ -43,7 +43,7 @@ namespace Net3dBool
 	/// <summary>
 	/// Representation of a 3D face (triangle).
 	/// </summary>
-	public class Face
+	public class Face //: IPrimitive
 	{
 		/** first vertex */
 		public Vertex v1;
@@ -52,16 +52,14 @@ namespace Net3dBool
 		/** third vertex */
 		public Vertex v3;
 
+		private Vector3 center;
+
 		/** face status relative to a solid  */
-		private static int DOWN = 7;
-		private static int NONE = 9;
-		private static int ON = 8;
 		private readonly static double EqualityTolerance = 1e-10f;
-		private static int UP = 6;
+		private enum Side { UP, DOWN, ON, NONE };
 		private Bound boundCache;
 		private bool cachedBounds = false;
-		private bool cachedNormal = false;
-		private Vector3 normalCache;
+		private Plane planeCache;
 		private Status status;
 
 		/** face status if it is still unknown */
@@ -76,41 +74,40 @@ namespace Net3dBool
 		/** tolerance value to test equalities */
 		//---------------------------------CONSTRUCTORS---------------------------------//
 
-		/**
-     * Constructs a face with unknown status.
-     *
-     * @param v1 a face vertex
-     * @param v2 a face vertex
-     * @param v3 a face vertex
-     */
+		/// <summary>
+		/// Default constructor
+		/// </summary>
+		private Face()
+		{
+		}
 
+		/// <summary>
+		/// * Constructs a face with unknown status.
+		/// </summary>
+		/// <param name="v1">a face vertex</param>
+		/// <param name="v2">a face vertex</param>
+		/// <param name="v3">a face vertex</param>
 		public Face(Vertex v1, Vertex v2, Vertex v3)
 		{
 			this.v1 = v1;
 			this.v2 = v2;
 			this.v3 = v3;
+			center = (v1.Position + v2.Position + v3.Position) / 3.0;
 
 			status = Status.UNKNOWN;
 		}
 
-		private Face()
-		{
-		}
-
-		//-----------------------------------OVERRIDES----------------------------------//
-
-		/**
-     * Clones the face object
-     *
-     * @return cloned face object
-     */
-
+		/// <summary>
+		/// Clones the face object
+		/// </summary>
+		/// <returns>cloned face object</returns>
 		public Face Clone()
 		{
 			Face clone = new Face();
 			clone.v1 = v1.Clone();
 			clone.v2 = v2.Clone();
 			clone.v3 = v3.Clone();
+			clone.center = center;
 			clone.status = status;
 			return clone;
 		}
@@ -128,6 +125,16 @@ namespace Net3dBool
 			bool cond3 = v1.Equals(face.v3) && v2.Equals(face.v1) && v3.Equals(face.v2);
 
 			return cond1 || cond2 || cond3;
+		}
+
+		public double GetIntersectCost()
+		{
+			return 350;
+		}
+
+		public Vector3 GetCenter()
+		{
+			return center;
 		}
 
 		public double GetArea()
@@ -157,26 +164,22 @@ namespace Net3dBool
 			return boundCache;
 		}
 
-		public Vector3 GetNormal()
+		public Plane GetPlane()
 		{
-			if (!cachedNormal)
+			if (planeCache == null)
 			{
 				Vector3 p1 = v1.GetPosition();
 				Vector3 p2 = v2.GetPosition();
 				Vector3 p3 = v3.GetPosition();
-				Vector3 xy, xz, normal;
-
-				xy = new Vector3(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z);
-				xz = new Vector3(p3.x - p1.x, p3.y - p1.y, p3.z - p1.z);
-
-				normal = Vector3.Cross(xy, xz);
-				normal.Normalize();
-
-				normalCache = normal;
-				cachedNormal = true;
+				planeCache = new Plane(p1, p2, p3);
 			}
 
-			return normalCache;
+			return planeCache;
+		}
+
+		public Vector3 GetNormal()
+		{
+			return GetPlane().planeNormal;
 		}
 
 		public Status GetStatus()
@@ -198,11 +201,9 @@ namespace Net3dBool
 		public void RayTraceClassify(Object3D obj)
 		{
 			//creating a ray starting at the face baricenter going to the normal direction
-			Vector3 p0 = (v1.Position + v2.Position + v3.Position) / 3.0;
-			Line ray = new Line(GetNormal(), p0);
+			Line ray = new Line(GetNormal(), center);
 
 			bool success;
-			double dotProduct;
 			double distance;
 			Vector3 intersectionPoint;
 			Face closestFace = null;
@@ -216,12 +217,12 @@ namespace Net3dBool
 				for (int faceIndex = 0; faceIndex < obj.GetNumFaces(); faceIndex++)
 				{
 					Face face = obj.GetFace(faceIndex);
-					dotProduct = Vector3.Dot(face.GetNormal(), ray.Direction);
-					intersectionPoint = ray.ComputePlaneIntersection(face.GetNormal(), face.v1.GetPosition());
+					intersectionPoint = ray.ComputePlaneIntersection(face.GetPlane());
 
 					//if ray intersects the plane...
 					if (intersectionPoint.x != double.PositiveInfinity)
 					{
+						double dotProduct = Vector3.Dot(face.GetNormal(), ray.Direction);
 						distance = ray.ComputePointToPointDistance(intersectionPoint);
 
 						//if ray lies in plane...
@@ -272,7 +273,7 @@ namespace Net3dBool
 			}
 			else //face found: test dot product
 			{
-				dotProduct = Vector3.Dot(closestFace.GetNormal(), ray.Direction);
+				double dotProduct = Vector3.Dot(closestFace.GetNormal(), ray.Direction);
 
 				//distance = 0: coplanar faces
 				if (Math.Abs(closestDistance) < EqualityTolerance)
@@ -370,14 +371,14 @@ namespace Net3dBool
 
 		//------------------------------------PRIVATES----------------------------------//
 
-		/**
-     * Checks if the the face contains a point
-     *
-     * @param point to be tested
-     * @param true if the face contains the point, false otherwise
-     */
-
-		private static int LinePositionInX(Vector3 point, Vector3 pointLine1, Vector3 pointLine2)
+		/// <summary>
+		/// Gets the position of a point relative to a line in the x plane
+		/// </summary>
+		/// <param name="point">point to be tested</param>
+		/// <param name="pointLine1">one of the line ends</param>
+		/// <param name="pointLine2">one of the line ends</param>
+		/// <returns>position of the point relative to the line - UP, DOWN, ON, NONE</returns>
+		private static Side LinePositionInX(Vector3 point, Vector3 pointLine1, Vector3 pointLine2)
 		{
 			double a, b, z;
 			if ((Math.Abs(pointLine1.y - pointLine2.y) > EqualityTolerance) && (((point.y >= pointLine1.y) && (point.y <= pointLine2.y)) || ((point.y <= pointLine1.y) && (point.y >= pointLine2.y))))
@@ -387,24 +388,31 @@ namespace Net3dBool
 				z = a * point.y + b;
 				if (z > point.z + EqualityTolerance)
 				{
-					return UP;
+					return Side.UP;
 				}
 				else if (z < point.z - EqualityTolerance)
 				{
-					return DOWN;
+					return Side.DOWN;
 				}
 				else
 				{
-					return ON;
+					return Side.ON;
 				}
 			}
 			else
 			{
-				return NONE;
+				return Side.NONE;
 			}
 		}
 
-		private static int LinePositionInY(Vector3 point, Vector3 pointLine1, Vector3 pointLine2)
+		/// <summary>
+		/// Gets the position of a point relative to a line in the y plane
+		/// </summary>
+		/// <param name="point">point to be tested</param>
+		/// <param name="pointLine1">one of the line ends</param>
+		/// <param name="pointLine2">one of the line ends</param>
+		/// <returns>position of the point relative to the line - UP, DOWN, ON, NONE</returns>
+		private static Side LinePositionInY(Vector3 point, Vector3 pointLine1, Vector3 pointLine2)
 		{
 			double a, b, z;
 			if ((Math.Abs(pointLine1.x - pointLine2.x) > EqualityTolerance) && (((point.x >= pointLine1.x) && (point.x <= pointLine2.x)) || ((point.x <= pointLine1.x) && (point.x >= pointLine2.x))))
@@ -414,24 +422,31 @@ namespace Net3dBool
 				z = a * point.x + b;
 				if (z > point.z + EqualityTolerance)
 				{
-					return UP;
+					return Side.UP;
 				}
 				else if (z < point.z - EqualityTolerance)
 				{
-					return DOWN;
+					return Side.DOWN;
 				}
 				else
 				{
-					return ON;
+					return Side.ON;
 				}
 			}
 			else
 			{
-				return NONE;
+				return Side.NONE;
 			}
 		}
 
-		private static int LinePositionInZ(Vector3 point, Vector3 pointLine1, Vector3 pointLine2)
+		/// <summary>
+		/// Gets the position of a point relative to a line in the z plane
+		/// </summary>
+		/// <param name="point">point to be tested</param>
+		/// <param name="pointLine1">one of the line ends</param>
+		/// <param name="pointLine2">one of the line ends</param>
+		/// <returns>position of the point relative to the line - UP, DOWN, ON, NONE</returns>
+		private static Side LinePositionInZ(Vector3 point, Vector3 pointLine1, Vector3 pointLine2)
 		{
 			double a, b, y;
 			if ((Math.Abs(pointLine1.x - pointLine2.x) > EqualityTolerance) && (((point.x >= pointLine1.x) && (point.x <= pointLine2.x)) || ((point.x <= pointLine1.x) && (point.x >= pointLine2.x))))
@@ -441,26 +456,33 @@ namespace Net3dBool
 				y = a * point.x + b;
 				if (y > point.y + EqualityTolerance)
 				{
-					return UP;
+					return Side.UP;
 				}
 				else if (y < point.y - EqualityTolerance)
 				{
-					return DOWN;
+					return Side.DOWN;
 				}
 				else
 				{
-					return ON;
+					return Side.ON;
 				}
 			}
 			else
 			{
-				return NONE;
+				return Side.NONE;
 			}
 		}
 
+		/// <summary>
+		/// Checks if the the face contains a point
+		/// </summary>
+		/// <param name="point">point to be tested</param>
+		/// <returns>true if the face contains the point, false otherwise</returns>
 		private bool ContainsPoint(Vector3 point)
 		{
-			int result1, result2, result3;
+			Side result1;
+			Side result2;
+			Side result3;
 			Vector3 normal = GetNormal();
 
 			//if x is constant...
@@ -489,12 +511,12 @@ namespace Net3dBool
 			}
 
 			//if the point is up and down two lines...
-			if (((result1 == UP) || (result2 == UP) || (result3 == UP)) && ((result1 == DOWN) || (result2 == DOWN) || (result3 == DOWN)))
+			if (((result1 == Side.UP) || (result2 == Side.UP) || (result3 == Side.UP)) && ((result1 == Side.DOWN) || (result2 == Side.DOWN) || (result3 == Side.DOWN)))
 			{
 				return true;
 			}
 			//if the point is on of the lines...
-			else if ((result1 == ON) || (result2 == ON) || (result3 == ON))
+			else if ((result1 == Side.ON) || (result2 == Side.ON) || (result3 == Side.ON))
 			{
 				return true;
 			}
@@ -503,30 +525,5 @@ namespace Net3dBool
 				return false;
 			}
 		}
-
-		/**
-     * Gets the position of a point relative to a line in the x plane
-     *
-     * @param point point to be tested
-     * @param pointLine1 one of the line ends
-     * @param pointLine2 one of the line ends
-     * @return position of the point relative to the line - UP, DOWN, ON, NONE
-     */
-		/**
-     * Gets the position of a point relative to a line in the y plane
-     *
-     * @param point point to be tested
-     * @param pointLine1 one of the line ends
-     * @param pointLine2 one of the line ends
-     * @return position of the point relative to the line - UP, DOWN, ON, NONE
-     */
-		/**
-     * Gets the position of a point relative to a line in the z plane
-     *
-     * @param point point to be tested
-     * @param pointLine1 one of the line ends
-     * @param pointLine2 one of the line ends
-     * @return position of the point relative to the line - UP, DOWN, ON, NONE
-     */
 	}
 }

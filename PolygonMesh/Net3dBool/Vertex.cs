@@ -116,18 +116,18 @@ namespace Net3dBool
             this.status = status;
         }
 
+		/// <summary>
+		/// Default constructor
+		/// </summary>
         private Vertex()
         {
-        }
+		}
 
-        //-----------------------------------OVERRIDES----------------------------------//
-
-        /**
-     * Clones the vertex object
-     * 
-     * @return cloned vertex object
-     */
-        public Vertex Clone()
+		/// <summary>
+		/// Clones the vertex object
+		/// </summary>
+		/// <returns>cloned vertex object</returns>
+		public Vertex Clone()
         {
             Vertex clone = new Vertex();
             clone.Position = Position;
