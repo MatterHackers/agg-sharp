@@ -324,7 +324,7 @@ namespace Net3dBool
 
 				//defining middle based on the starting point
 				//VERTEX-VERTEX-VERTEX
-				if (startVertex.equals(endVertex))
+				if (startVertex.Equals(endVertex))
 				{
 					middleType = VERTEX;
 				}

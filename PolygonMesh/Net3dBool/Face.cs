@@ -59,7 +59,7 @@ namespace Net3dBool
 		private static int DOWN = 7;
 		private static int NONE = 9;
 		private static int ON = 8;
-		private static double EqualityTolerance = 1e-10f;
+		private readonly static double EqualityTolerance = 1e-10f;
 		private static int UP = 6;
 		private Bound boundCache;
 		private bool cachedBounds = false;
@@ -126,9 +126,9 @@ namespace Net3dBool
 
 		public bool Equals(Face face)
 		{
-			bool cond1 = v1.equals(face.v1) && v2.equals(face.v2) && v3.equals(face.v3);
-			bool cond2 = v1.equals(face.v2) && v2.equals(face.v3) && v3.equals(face.v1);
-			bool cond3 = v1.equals(face.v3) && v2.equals(face.v1) && v3.equals(face.v2);
+			bool cond1 = v1.Equals(face.v1) && v2.Equals(face.v2) && v3.Equals(face.v3);
+			bool cond2 = v1.Equals(face.v2) && v2.Equals(face.v3) && v3.Equals(face.v1);
+			bool cond3 = v1.Equals(face.v3) && v2.Equals(face.v1) && v3.Equals(face.v2);
 
 			return cond1 || cond2 || cond3;
 		}
@@ -194,17 +194,19 @@ namespace Net3dBool
 			v1 = vertexTemp;
 		}
 
+		/// <summary>
+		/// Classifies the face based on the ray trace technique
+		/// </summary>
+		/// <param name="obj">object3d used to compute the face status</param>
 		public void RayTraceClassify(Object3D obj)
 		{
 			//creating a ray starting at the face baricenter going to the normal direction
-			Vector3 p0 = new Vector3();
-			p0.x = (v1.x + v2.x + v3.x) / 3d;
-			p0.y = (v1.y + v2.y + v3.y) / 3d;
-			p0.z = (v1.z + v2.z + v3.z) / 3d;
+			Vector3 p0 = (v1.Position + v2.Position + v3.Position) / 3.0;
 			Line ray = new Line(GetNormal(), p0);
 
 			bool success;
-			double dotProduct, distance;
+			double dotProduct;
+			double distance;
 			Vector3 intersectionPoint;
 			Face closestFace = null;
 			double closestDistance;
@@ -265,13 +267,13 @@ namespace Net3dBool
 				}
 			} while (success == false);
 
-			//none face found: outside face
+			
 			if (closestFace == null)
 			{
+				//none face found: outside face
 				status = OUTSIDE;
 			}
-			//face found: test dot product
-			else
+			else //face found: test dot product
 			{
 				dotProduct = Vector3.Dot(closestFace.GetNormal(), ray.Direction);
 
@@ -287,26 +289,28 @@ namespace Net3dBool
 						status = OPPOSITE;
 					}
 				}
-
-				//dot product > 0 (same direction): inside face
 				else if (dotProduct > EqualityTolerance)
 				{
+					//dot product > 0 (same direction): inside face
 					status = INSIDE;
 				}
-
-				//dot product < 0 (opposite direction): outside face
 				else if (dotProduct < -EqualityTolerance)
 				{
+					//dot product < 0 (opposite direction): outside face
 					status = OUTSIDE;
 				}
 			}
 		}
 
+		/// <summary>
+		/// Classifies the face if one of its vertices are classified as INSIDE or OUTSIDE
+		/// </summary>
+		/// <returns>true if the face could be classified, false otherwise</returns>
 		public bool SimpleClassify()
 		{
-			int status1 = v1.getStatus();
-			int status2 = v2.getStatus();
-			int status3 = v3.getStatus();
+			int status1 = v1.GetStatus();
+			int status2 = v2.GetStatus();
+			int status3 = v3.GetStatus();
 
 			if (status1 == Vertex.INSIDE || status1 == Vertex.OUTSIDE)
 			{
@@ -329,7 +333,7 @@ namespace Net3dBool
 			}
 		}
 
-		public String toString()
+		public override string ToString()
 		{
 			return v1.toString() + "\n" + v2.toString() + "\n" + v3.toString();
 		}
@@ -366,18 +370,7 @@ namespace Net3dBool
 		//-------------------------------------OTHERS-----------------------------------//
 
 		/** Invert face direction (normal direction) */
-		//------------------------------------CLASSIFIERS-------------------------------//
 
-		/**
-     * Classifies the face if one of its vertices are classified as INSIDE or OUTSIDE
-     *
-     * @return true if the face could be classified, false otherwise
-     */
-		/**
-     * Classifies the face based on the ray trace technique
-     *
-     * @param object object3d used to compute the face status
-     */
 		//------------------------------------PRIVATES----------------------------------//
 
 		/**
