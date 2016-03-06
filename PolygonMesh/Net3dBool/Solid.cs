@@ -18,7 +18,7 @@ namespace Net3dBool
 {
 
 
-    public class Solid : Shape3D
+    public class Solid
     {
         /** array of indices for the vertices from the 'vertices' attribute */
         protected int[] indices;

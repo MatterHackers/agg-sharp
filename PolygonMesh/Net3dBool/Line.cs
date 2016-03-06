@@ -294,11 +294,18 @@ namespace Net3dBool
 
 		/** Changes slightly the line direction */
 
+		private static Random rnd = new Random();
+
+		public static double random()
+		{
+			return rnd.NextDouble();
+		}
+
 		public void perturbDirection()
 		{
-			direction.x += 1e-5 * Helper.random();
-			direction.y += 1e-5 * Helper.random();
-			direction.z += 1e-5 * Helper.random();
+			direction.x += 1e-5 * random();
+			direction.y += 1e-5 * random();
+			direction.z += 1e-5 * random();
 		}
 	}
 }

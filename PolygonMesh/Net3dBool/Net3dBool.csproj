@@ -43,7 +43,6 @@
     <Compile Include="Segment.cs" />
     <Compile Include="Solid.cs" />
     <Compile Include="Vertex.cs" />
-    <Compile Include="Misc.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\VectorMath\VectorMath.csproj">
