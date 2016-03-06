@@ -80,7 +80,7 @@ namespace Net3dBool
 			vertices = new List<Vertex>();
 			for (int i = 0; i < verticesPoints.Length; i++)
 			{
-				vertex = AddVertex(verticesPoints[i], Vertex.UNKNOWN);
+				vertex = AddVertex(verticesPoints[i], Status.UNKNOWN);
 				verticesTemp.Add(vertex);
 			}
 
@@ -136,15 +136,15 @@ namespace Net3dBool
 					face.RayTraceClassify(otherObject);
 
 					//mark the vertices
-					if (face.v1.GetStatus() == Vertex.UNKNOWN)
+					if (face.v1.GetStatus() == Status.UNKNOWN)
 					{
 						face.v1.Mark(face.GetStatus());
 					}
-					if (face.v2.GetStatus() == Vertex.UNKNOWN)
+					if (face.v2.GetStatus() == Status.UNKNOWN)
 					{
 						face.v2.Mark(face.GetStatus());
 					}
-					if (face.v3.GetStatus() == Vertex.UNKNOWN)
+					if (face.v3.GetStatus() == Status.UNKNOWN)
 					{
 						face.v3.Mark(face.GetStatus());
 					}
@@ -218,7 +218,7 @@ namespace Net3dBool
 			for (int i = 0; i < GetNumFaces(); i++)
 			{
 				face = GetFace(i);
-				if (face.GetStatus() == Face.INSIDE)
+				if (face.GetStatus() == Status.INSIDE)
 				{
 					face.Invert();
 				}
@@ -379,7 +379,7 @@ namespace Net3dBool
 		/// <param name="pos">vertex position</param>
 		/// <param name="status">vertex status</param>
 		/// <returns>The vertex inserted (if a similar vertex already exists, this is returned).</returns>
-		private Vertex AddVertex(Vector3 pos, int status)
+		private Vertex AddVertex(Vector3 pos, Status status)
 		{
 			int i;
 			//if already there is an equal vertex, it is not inserted
@@ -414,8 +414,8 @@ namespace Net3dBool
 			Face face = faces[facePos];
 			faces.RemoveAt(facePos);
 
-			Vertex vertex1 = AddVertex(newPos1, Vertex.BOUNDARY);
-			Vertex vertex2 = AddVertex(newPos2, Vertex.BOUNDARY);
+			Vertex vertex1 = AddVertex(newPos1, Status.BOUNDARY);
+			Vertex vertex2 = AddVertex(newPos2, Status.BOUNDARY);
 
 			double cont = 0;
 			if (linedVertex == 1)
@@ -456,8 +456,8 @@ namespace Net3dBool
 			Face face = faces[facePos];
 			faces.RemoveAt(facePos);
 
-			Vertex vertex1 = AddVertex(newPos1, Vertex.BOUNDARY);
-			Vertex vertex2 = AddVertex(newPos2, Vertex.BOUNDARY);
+			Vertex vertex1 = AddVertex(newPos1, Status.BOUNDARY);
+			Vertex vertex2 = AddVertex(newPos2, Status.BOUNDARY);
 
 			if (endVertex.Equals(face.v1))
 			{
@@ -494,8 +494,8 @@ namespace Net3dBool
 			Face face = faces[facePos];
 			faces.RemoveAt(facePos);
 
-			Vertex vertex1 = AddVertex(newPos1, Vertex.BOUNDARY);
-			Vertex vertex2 = AddVertex(newPos2, Vertex.BOUNDARY);
+			Vertex vertex1 = AddVertex(newPos1, Status.BOUNDARY);
+			Vertex vertex2 = AddVertex(newPos2, Status.BOUNDARY);
 
 			if (splitEdge == 1)
 			{
@@ -528,7 +528,7 @@ namespace Net3dBool
 			Face face = faces[facePos];
 			faces.RemoveAt(facePos);
 
-			Vertex vertex = AddVertex(newPos, Vertex.BOUNDARY);
+			Vertex vertex = AddVertex(newPos, Status.BOUNDARY);
 
 			if (endVertex.Equals(face.v1))
 			{
@@ -563,8 +563,8 @@ namespace Net3dBool
 			Face face = faces[facePos];
 			faces.RemoveAt(facePos);
 
-			Vertex vertex1 = AddVertex(newPos1, Vertex.BOUNDARY);
-			Vertex vertex2 = AddVertex(newPos2, Vertex.BOUNDARY);
+			Vertex vertex1 = AddVertex(newPos1, Status.BOUNDARY);
+			Vertex vertex2 = AddVertex(newPos2, Status.BOUNDARY);
 
 			if (startVertex.Equals(face.v1) && endVertex.Equals(face.v2))
 			{
@@ -614,7 +614,7 @@ namespace Net3dBool
 			Face face = faces[facePos];
 			faces.RemoveAt(facePos);
 
-			Vertex vertex = AddVertex(newPos, Vertex.BOUNDARY);
+			Vertex vertex = AddVertex(newPos, Status.BOUNDARY);
 
 			AddFace(face.v1, face.v2, vertex);
 			AddFace(face.v2, face.v3, vertex);
@@ -632,7 +632,7 @@ namespace Net3dBool
 			Face face = faces[facePos];
 			faces.RemoveAt(facePos);
 
-			Vertex vertex = AddVertex(newPos, Vertex.BOUNDARY);
+			Vertex vertex = AddVertex(newPos, Status.BOUNDARY);
 
 			if (splitEdge == 1)
 			{
@@ -662,7 +662,7 @@ namespace Net3dBool
 			Face face = faces[facePos];
 			faces.RemoveAt(facePos);
 
-			Vertex vertex = AddVertex(newPos, Vertex.BOUNDARY);
+			Vertex vertex = AddVertex(newPos, Status.BOUNDARY);
 
 			if (endVertex.Equals(face.v1))
 			{
@@ -743,13 +743,13 @@ namespace Net3dBool
 			//set vertex to BOUNDARY if it is start type
 			if (startType == Segment.VERTEX)
 			{
-				startVertex.SetStatus(Vertex.BOUNDARY);
+				startVertex.SetStatus(Status.BOUNDARY);
 			}
 
 			//set vertex to BOUNDARY if it is end type
 			if (endType == Segment.VERTEX)
 			{
-				endVertex.SetStatus(Vertex.BOUNDARY);
+				endVertex.SetStatus(Status.BOUNDARY);
 			}
 
 			//VERTEX-_______-VERTEX

@@ -49,19 +49,10 @@ namespace Net3dBool
         /** references to vertices conected to it by an edge  */
         private List<Vertex> adjacentVertices;
         /** vertex status relative to other object */
-        private int status;
+        private Status status;
 
         /** tolerance value to test equalities */
         private readonly static double EqualityTolerance = 1e-5f;
-
-		/** vertex status if it is still unknown */
-		public static  int UNKNOWN = 1;
-        /** vertex status if it is inside a solid */
-        public static  int INSIDE = 2;
-        /** vertex status if it is outside a solid */
-        public static  int OUTSIDE = 3;
-        /** vertex status if it on the boundary of a solid */
-        public static int BOUNDARY = 4;
 
         //----------------------------------CONSTRUCTORS--------------------------------//
 
@@ -75,7 +66,7 @@ namespace Net3dBool
             this.Position = position;
 
             adjacentVertices = new List<Vertex>();
-            status = UNKNOWN;
+            status = Status.UNKNOWN;
         }
 
         /**
@@ -92,16 +83,15 @@ namespace Net3dBool
 			this.Position.z = z;
 
             adjacentVertices = new List<Vertex>();
-            status = UNKNOWN;
+            status = Status.UNKNOWN;
         }
 
-        /**
-     * Constructs a vertex with definite status
-     * 
-     * @param position vertex position
-     * @param status vertex status - UNKNOWN, BOUNDARY, INSIDE or OUTSIDE
-     */
-        public Vertex(Vector3 position, int status)
+		/// <summary>
+		/// Constructs a vertex with definite status
+		/// </summary>
+		/// <param name="position">vertex position</param>
+		/// <param name="status">vertex status - UNKNOWN, BOUNDARY, INSIDE or OUTSIDE</param>
+		public Vertex(Vector3 position, Status status)
         {
             Position.x = position.x;
 			Position.y = position.y;
@@ -111,15 +101,14 @@ namespace Net3dBool
             this.status = status;
         }
 
-        /**
-     * Constructs a vertex with a definite status
-     * 
-     * @param x coordinate on the x axis
-     * @param y coordinate on the y axis
-     * @param z coordinate on the z axis
-     * @param status vertex status - UNKNOWN, BOUNDARY, INSIDE or OUTSIDE
-     */
-        public Vertex(double x, double y, double z, int status)
+		/// <summary>
+		/// Constructs a vertex with a definite status
+		/// </summary>
+		/// <param name="x">coordinate on the x axis</param>
+		/// <param name="y">coordinate on the y axis</param>
+		/// <param name="z">coordinate on the z axis</param>
+		/// <param name="status">vertex status - UNKNOWN, BOUNDARY, INSIDE or OUTSIDE</param>
+		public Vertex(double x, double y, double z, Status status)
         {
 			this.Position = new Vector3(x, y, z);
 
@@ -174,20 +163,20 @@ namespace Net3dBool
 			return Position.Equals(vertex.Position, EqualityTolerance);
         }
 
-        //--------------------------------------SETS------------------------------------//
+		//--------------------------------------SETS------------------------------------//
 
-        /**
+		/**
      * Sets the vertex status
      * 
      * @param status vertex status - UNKNOWN, BOUNDARY, INSIDE or OUTSIDE
      */
-        public void SetStatus(int status)
-        {
-            if (status >= UNKNOWN && status <= BOUNDARY)
-            {
-                this.status = status;   
-            }
-        }
+		public void SetStatus(Status status)
+		{
+			if (status >= Status.UNKNOWN && status <= Status.BOUNDARY)
+			{
+				this.status = status;
+			}
+		}
 
         //--------------------------------------GETS------------------------------------//
 
@@ -221,7 +210,7 @@ namespace Net3dBool
      * 
      * @return vertex status - UNKNOWN, BOUNDARY, INSIDE or OUTSIDE
      */ 
-        public int GetStatus()
+        public Status GetStatus()
         {
             return status;
         }
@@ -246,7 +235,7 @@ namespace Net3dBool
      * 
      * @param status new status to be set
      */
-        public void Mark(int status)
+        public void Mark(Status status)
         {
             //mark vertex
             this.status = status;
@@ -255,7 +244,7 @@ namespace Net3dBool
             Vertex[] adjacentVerts = GetAdjacentVertices();
             for (int i = 0; i < adjacentVerts.Length; i++)
             {
-                if (adjacentVerts[i].GetStatus() == Vertex.UNKNOWN)
+                if (adjacentVerts[i].GetStatus() == Status.UNKNOWN)
                 {
                     adjacentVerts[i].Mark(status);
                 }

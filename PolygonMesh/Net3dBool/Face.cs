@@ -38,17 +38,14 @@ using System;
 
 namespace Net3dBool
 {
+	public enum Status { UNKNOWN, INSIDE, OUTSIDE, SAME, OPPOSITE, BOUNDARY };
+
 	/// <summary>
 	/// Representation of a 3D face (triangle).
 	/// </summary>
 	public class Face
 	{
 		/** first vertex */
-		public static int INSIDE = 2;
-		public static int OPPOSITE = 5;
-		public static int OUTSIDE = 3;
-		public static int SAME = 4;
-		public static int UNKNOWN = 1;
 		public Vertex v1;
 		/** second vertex */
 		public Vertex v2;
@@ -65,7 +62,7 @@ namespace Net3dBool
 		private bool cachedBounds = false;
 		private bool cachedNormal = false;
 		private Vector3 normalCache;
-		private int status;
+		private Status status;
 
 		/** face status if it is still unknown */
 		/** face status if it is inside a solid */
@@ -93,7 +90,7 @@ namespace Net3dBool
 			this.v2 = v2;
 			this.v3 = v3;
 
-			status = UNKNOWN;
+			status = Status.UNKNOWN;
 		}
 
 		private Face()
@@ -182,7 +179,7 @@ namespace Net3dBool
 			return normalCache;
 		}
 
-		public int GetStatus()
+		public Status GetStatus()
 		{
 			return status;
 		}
@@ -271,7 +268,7 @@ namespace Net3dBool
 			if (closestFace == null)
 			{
 				//none face found: outside face
-				status = OUTSIDE;
+				status = Status.OUTSIDE;
 			}
 			else //face found: test dot product
 			{
@@ -282,22 +279,22 @@ namespace Net3dBool
 				{
 					if (dotProduct > EqualityTolerance)
 					{
-						status = SAME;
+						status = Status.SAME;
 					}
 					else if (dotProduct < -EqualityTolerance)
 					{
-						status = OPPOSITE;
+						status = Status.OPPOSITE;
 					}
 				}
 				else if (dotProduct > EqualityTolerance)
 				{
 					//dot product > 0 (same direction): inside face
-					status = INSIDE;
+					status = Status.INSIDE;
 				}
 				else if (dotProduct < -EqualityTolerance)
 				{
 					//dot product < 0 (opposite direction): outside face
-					status = OUTSIDE;
+					status = Status.OUTSIDE;
 				}
 			}
 		}
@@ -308,21 +305,21 @@ namespace Net3dBool
 		/// <returns>true if the face could be classified, false otherwise</returns>
 		public bool SimpleClassify()
 		{
-			int status1 = v1.GetStatus();
-			int status2 = v2.GetStatus();
-			int status3 = v3.GetStatus();
+			Status status1 = v1.GetStatus();
+			Status status2 = v2.GetStatus();
+			Status status3 = v3.GetStatus();
 
-			if (status1 == Vertex.INSIDE || status1 == Vertex.OUTSIDE)
+			if (status1 == Status.INSIDE || status1 == Status.OUTSIDE)
 			{
 				this.status = status1;
 				return true;
 			}
-			else if (status2 == Vertex.INSIDE || status2 == Vertex.OUTSIDE)
+			else if (status2 == Status.INSIDE || status2 == Status.OUTSIDE)
 			{
 				this.status = status2;
 				return true;
 			}
-			else if (status3 == Vertex.INSIDE || status3 == Vertex.OUTSIDE)
+			else if (status3 == Status.INSIDE || status3 == Status.OUTSIDE)
 			{
 				this.status = status3;
 				return true;

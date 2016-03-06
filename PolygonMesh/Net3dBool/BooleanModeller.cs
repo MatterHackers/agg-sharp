@@ -106,7 +106,7 @@ namespace Net3dBool
 		public Solid GetDifference()
 		{
 			object2.InvertInsideFaces();
-			Solid result = ComposeSolid(Face.OUTSIDE, Face.OPPOSITE, Face.INSIDE);
+			Solid result = ComposeSolid(Status.OUTSIDE, Status.OPPOSITE, Status.INSIDE);
 			object2.InvertInsideFaces();
 
 			return result;
@@ -114,12 +114,12 @@ namespace Net3dBool
 
 		public Solid GetIntersection()
 		{
-			return ComposeSolid(Face.INSIDE, Face.SAME, Face.INSIDE);
+			return ComposeSolid(Status.INSIDE, Status.SAME, Status.INSIDE);
 		}
 
 		public Solid GetUnion()
 		{
-			return ComposeSolid(Face.OUTSIDE, Face.SAME, Face.OUTSIDE);
+			return ComposeSolid(Status.OUTSIDE, Status.SAME, Status.OUTSIDE);
 		}
 
 		/**
@@ -138,7 +138,7 @@ namespace Net3dBool
 
 		/**
      * Composes a solid based on the faces status of the two operators solids:
-     * Face.INSIDE, Face.OUTSIDE, Face.SAME, Face.OPPOSITE
+     * Status.INSIDE, Status.OUTSIDE, Status.SAME, Status.OPPOSITE
      *
      * @param faceStatus1 status expected for the first solid faces
      * @param faceStatus2 other status expected for the first solid faces
@@ -146,7 +146,7 @@ namespace Net3dBool
      * @param faceStatus3 status expected for the second solid faces
      */
 
-		private Solid ComposeSolid(int faceStatus1, int faceStatus2, int faceStatus3)
+		private Solid ComposeSolid(Status faceStatus1, Status faceStatus2, Status faceStatus3)
 		{
 			var vertices = new List<Vertex>();
 			var indices = new List<int>();
@@ -182,7 +182,7 @@ namespace Net3dBool
      * @param faceStatus2 a status expected for the faces used to to fill the data arrays
      */
 
-		private void GroupObjectComponents(Object3D obj, List<Vertex> vertices, List<int> indices, int faceStatus1, int faceStatus2)
+		private void GroupObjectComponents(Object3D obj, List<Vertex> vertices, List<int> indices, Status faceStatus1, Status faceStatus2)
 		{
 			Face face;
 			//for each face..
