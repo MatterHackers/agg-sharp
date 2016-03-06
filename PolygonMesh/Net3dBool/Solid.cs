@@ -1,11 +1,37 @@
-﻿/**
- * Class representing a 3D solid.
- *  
- * original author: Danilo Balby Silva Castanheira (danbalby@yahoo.com)
- * 
- * Ported from Java to C# by Sebastian Loncar, Web: http://loncar.de
- * Project: https://github.com/Arakis/Net3dBool
- */
+﻿/*
+The MIT License (MIT)
+
+Copyright (c) 2014 Sebastian Loncar
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+See:
+D. H. Laidlaw, W. B. Trumbore, and J. F. Hughes.
+"Constructive Solid Geometry for Polyhedral Objects"
+SIGGRAPH Proceedings, 1986, p.161.
+
+original author: Danilo Balby Silva Castanheira (danbalby@yahoo.com)
+
+Ported from Java to C# by Sebastian Loncar, Web: http://loncar.de
+Optomized and refactored by: Lars Brubaker (larsbrubaker@matterhackers.com)
+Project: https://github.com/MatterHackers/agg-sharp (an included library)
+*/
 
 using System;
 using System.IO;
@@ -16,9 +42,10 @@ using MatterHackers.VectorMath;
 
 namespace Net3dBool
 {
-
-
-    public class Solid
+	/// <summary>
+	/// Class representing a 3D solid.
+	/// </summary>
+	public class Solid
     {
         /** array of indices for the vertices from the 'vertices' attribute */
         protected int[] indices;

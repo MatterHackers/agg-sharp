@@ -1,29 +1,51 @@
-﻿using MatterHackers.VectorMath;
+﻿/*
+The MIT License (MIT)
 
-/**
-* Data structure about a 3d solid to apply boolean operations in it.
-*
-* <br><br>Tipically, two 'Object3d' objects are created to apply boolean operation. The
-* methods splitFaces() and classifyFaces() are called in this sequence for both objects,
-* always using the other one as parameter. Then the faces from both objects are collected
-* according their status.
-*
-* <br><br>See:
-* D. H. Laidlaw, W. B. Trumbore, and J. F. Hughes.
-* "Constructive Solid Geometry for Polyhedral Objects"
-* SIGGRAPH Proceedings, 1986, p.161.
-*
-* original author: Danilo Balby Silva Castanheira (danbalby@yahoo.com)
-*
-* Ported from Java to C# by Sebastian Loncar, Web: http://loncar.de
-* Project: https://github.com/Arakis/Net3dBool
+Copyright (c) 2014 Sebastian Loncar
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+See:
+D. H. Laidlaw, W. B. Trumbore, and J. F. Hughes.
+"Constructive Solid Geometry for Polyhedral Objects"
+SIGGRAPH Proceedings, 1986, p.161.
+
+original author: Danilo Balby Silva Castanheira (danbalby@yahoo.com)
+
+Ported from Java to C# by Sebastian Loncar, Web: http://loncar.de
+Optomized and refactored by: Lars Brubaker (larsbrubaker@matterhackers.com)
+Project: https://github.com/MatterHackers/agg-sharp (an included library)
 */
 
+using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 
 namespace Net3dBool
 {
+	/// <summary>
+	/// Data structure about a 3d solid to apply boolean operations in it.
+	/// Tipically, two 'Object3d' objects are created to apply boolean operation. The
+	/// methods splitFaces() and classifyFaces() are called in this sequence for both objects,
+	/// always using the other one as parameter.Then the faces from both objects are collected
+	/// according their status.
+	/// </summary>
 	public class Object3D
 	{
 		/** solid vertices  */
