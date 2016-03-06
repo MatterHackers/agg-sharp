@@ -48,22 +48,27 @@ namespace Net3dBool
 	/// </summary>
 	public class Object3D
 	{
-		/** solid vertices  */
+		/// <summary>
+		/// tolerance value to test equalities
+		/// </summary>
 		private readonly static double EqualityTolerance = 1e-10f;
+		/// <summary>
+		/// object representing the solid extremes
+		/// </summary>
 		private Bound bound;
+		/// <summary>
+		/// solid faces
+		/// </summary>
 		private List<Face> faces;
+		/// <summary>
+		/// solid vertices
+		/// </summary>
 		private List<Vertex> vertices;
-		/** solid faces */
-		/** object representing the solid extremes */
-		/** tolerance value to test equalities */
-		//----------------------------------CONSTRUCTOR---------------------------------//
 
-		/**
-     * Constructs a Object3d object based on a solid file.
-     *
-     * @param solid solid used to construct the Object3d object
-     */
-
+		/// <summary>
+		/// Constructs a Object3d object based on a solid file.
+		/// </summary>
+		/// <param name="solid">solid used to construct the Object3d object</param>
 		public Object3D(Solid solid)
 		{
 			Vertex v1, v2, v3, vertex;
@@ -93,6 +98,9 @@ namespace Net3dBool
 			bound = new Bound(verticesPoints);
 		}
 
+		/// <summary>
+		/// Default constructor
+		/// </summary>
 		private Object3D()
 		{
 		}
@@ -166,14 +174,10 @@ namespace Net3dBool
 			return clone;
 		}
 
-		//--------------------------------------GETS------------------------------------//
-
-		/**
-     * Gets the number of faces
-     *
-     * @return number of faces
-     */
-
+		/// <summary>
+		/// Gets the solid bound
+		/// </summary>
+		/// <returns>solid bound</returns>
 		public Bound GetBound()
 		{
 			return bound;
@@ -196,26 +200,18 @@ namespace Net3dBool
 			}
 		}
 
+		/// <summary>
+		/// Gets the number of faces
+		/// </summary>
+		/// <returns>number of faces</returns>
 		public int GetNumFaces()
 		{
 			return faces.Count;
 		}
 
-		/**
-     * Gets the solid bound
-     *
-     * @return solid bound
-     */
-		//------------------------------------ADDS----------------------------------------//
-
-		/**
-     * Method used to add a face properly for internal methods
-     *
-     * @param v1 a face vertex
-     * @param v2 a face vertex
-     * @param v3 a face vertex
-     */
-
+		/// <summary>
+		/// Inverts faces classified as INSIDE, making its normals point outside. Usually used into the second solid when the difference is applied.
+		/// </summary>
 		public void InvertInsideFaces()
 		{
 			Face face;
@@ -229,6 +225,10 @@ namespace Net3dBool
 			}
 		}
 
+		/// <summary>
+		/// Split faces so that none face is intercepted by a face of other object
+		/// </summary>
+		/// <param name="obj">the other object 3d used to make the split</param>
 		public void SplitFaces(Object3D obj)
 		{
 			Line line;
@@ -345,6 +345,13 @@ namespace Net3dBool
 			}
 		}
 
+		/// <summary>
+		/// Method used to add a face properly for internal methods
+		/// </summary>
+		/// <param name="v1">a face vertex</param>
+		/// <param name="v2">a face vertex</param>
+		/// <param name="v3">a face vertex</param>
+		/// <returns></returns>
 		private Face AddFace(Vertex v1, Vertex v2, Vertex v3)
 		{
 			if (!(v1.Equals(v2) || v1.Equals(v3) || v2.Equals(v3)))
@@ -366,14 +373,12 @@ namespace Net3dBool
 			}
 		}
 
-		/**
-     * Method used to add a vertex properly for internal methods
-     *
-     * @param pos vertex position
-     * @param status vertex status
-     * @return the vertex inserted (if a similar vertex already exists, this is returned)
-     */
-
+		/// <summary>
+		/// Method used to add a vertex properly for internal methods
+		/// </summary>
+		/// <param name="pos">vertex position</param>
+		/// <param name="status">vertex status</param>
+		/// <returns>The vertex inserted (if a similar vertex already exists, this is returned).</returns>
 		private Vertex AddVertex(Vector3 pos, int status)
 		{
 			int i;
@@ -397,21 +402,13 @@ namespace Net3dBool
 			}
 		}
 
-		//-------------------------FACES_SPLITTING_METHODS------------------------------//
-
-		/**
-     * Split faces so that none face is intercepted by a face of other object
-     *
-     * @param object the other object 3d used to make the split
-     */
-		/**
-     * Computes closest distance from a vertex to a plane
-     *
-     * @param vertex vertex used to compute the distance
-     * @param face face representing the plane where it is contained
-     * @return the closest distance from the vertex to the plane
-     */
-
+		/// <summary>
+		/// Face breaker for FACE-FACE-FACE
+		/// </summary>
+		/// <param name="facePos">face position on the faces array</param>
+		/// <param name="newPos1">new vertex position</param>
+		/// <param name="newPos2">new vertex position</param>
+		/// <param name="linedVertex">linedVertex what vertex is more lined with the interersection found</param>
 		private void BreakFaceInFive(int facePos, Vector3 newPos1, Vector3 newPos2, int linedVertex)
 		{
 			Face face = faces[facePos];
@@ -647,14 +644,18 @@ namespace Net3dBool
 			}
 		}
 
+		/// <summary>
+		/// Computes closest distance from a vertex to a plane
+		/// </summary>
+		/// <param name="vertex">vertex used to compute the distance</param>
+		/// <param name="face">face representing the plane where it is contained</param>
+		/// <returns>the closest distance from the vertex to the plane</returns>
 		private double ComputeDistance(Vertex vertex, Face face)
 		{
 			Vector3 normal = face.GetNormal();
-			double a = normal.x;
-			double b = normal.y;
-			double c = normal.z;
-			double d = -(a * face.v1.Position.x + b * face.v1.Position.y + c * face.v1.Position.z);
-			return a * vertex.Position.x + b * vertex.Position.y + c * vertex.Position.z + d;
+			double distToV1 = Vector3.Dot(normal, face.v1.Position);
+			double distToPositionMinusDistToV1 = Vector3.Dot(normal, vertex.Position) - distToV1;
+			return distToPositionMinusDistToV1;
 		}
 
 		/// <summary>
@@ -903,17 +904,5 @@ namespace Net3dBool
      * @param newPos2 new vertex position
      * @param endVertex vertex used for the split
      */
-		/**
-     * Face breaker for FACE-FACE-FACE
-     *
-     * @param facePos face position on the faces array
-     * @param newPos1 new vertex position
-     * @param newPos2 new vertex position
-     * @param linedVertex what vertex is more lined with the interersection found
-     */
-		//-----------------------------------OTHERS-------------------------------------//
-
-		/** Inverts faces classified as INSIDE, making its normals point outside. Usually
-     *  used into the second solid when the difference is applied. */
 	}
 }
