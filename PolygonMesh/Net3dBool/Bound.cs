@@ -35,8 +35,8 @@ namespace Net3dBool
         /** minimum from the z coordinate */
         private double zMin;
 
-        /** tolerance value to test equalities */
-        private static double TOL = 1e-10f;
+		/** tolerance value to test equalities */
+		private readonly static double EqualityTolerance = 1e-10f;
 
         //---------------------------------CONSTRUCTORS---------------------------------//
 
@@ -53,8 +53,8 @@ namespace Net3dBool
             yMax = yMin = p1.y;
             zMax = zMin = p1.z;
 
-            checkVertex(p2);
-            checkVertex(p3);
+            CheckVertex(p2);
+            CheckVertex(p3);
         }
 
         /**
@@ -70,7 +70,7 @@ namespace Net3dBool
 
             for (int i = 1; i < vertices.Length; i++)
             {
-                checkVertex(vertices[i]);
+                CheckVertex(vertices[i]);
             }
         }
 
@@ -94,9 +94,9 @@ namespace Net3dBool
      * @param bound other bound to make the comparison
      * @return true if they insersect, false otherwise
      */
-        public bool overlap(Bound bound)
+        public bool Overlap(Bound bound)
         {
-            if ((xMin > bound.xMax + TOL) || (xMax < bound.xMin - TOL) || (yMin > bound.yMax + TOL) || (yMax < bound.yMin - TOL) || (zMin > bound.zMax + TOL) || (zMax < bound.zMin - TOL))
+            if ((xMin > bound.xMax + EqualityTolerance) || (xMax < bound.xMin - EqualityTolerance) || (yMin > bound.yMax + EqualityTolerance) || (yMax < bound.yMin - EqualityTolerance) || (zMin > bound.zMax + EqualityTolerance) || (zMax < bound.zMin - EqualityTolerance))
             {
                 return false;
             }
@@ -113,7 +113,7 @@ namespace Net3dBool
      * 
      * @param vertex vertex to be tested
      */
-        private void checkVertex(Vector3 vertex)
+        private void CheckVertex(Vector3 vertex)
         {
             if (vertex.x > xMax)
             {

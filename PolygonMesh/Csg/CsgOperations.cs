@@ -191,7 +191,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			var B = SolidFromMesh(b);
 
 			var modeller = new BooleanModeller(A, B);
-			var result = modeller.getUnion();
+			var result = modeller.GetUnion();
 
 			return MeshFromSolid(result);
 		}
@@ -210,7 +210,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			var B = SolidFromMesh(b);
 
 			var modeller = new BooleanModeller(A, B);
-			var result = modeller.getDifference();
+			var result = modeller.GetDifference();
 
 			return MeshFromSolid(result);
 		}
@@ -229,7 +229,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			var B = SolidFromMesh(b);
 
 			var modeller = new BooleanModeller(A, B);
-			var result = modeller.getIntersection();
+			var result = modeller.GetIntersection();
 
 			return MeshFromSolid(result);
 		}

@@ -185,7 +185,7 @@ namespace Net3dBool
      * 
      * @return vertex position
      */
-        public Vector3 getPosition()
+        public Vector3 GetPosition()
         {
             return new Vector3(x, y, z);
         }
