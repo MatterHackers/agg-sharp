@@ -51,14 +51,13 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				meshB.Translate(new Vector3(2, 2, 2));
 
 				Mesh meshIntersect = CsgOperations.Intersect(meshA, meshB);
-				Assert.IsTrue(meshIntersect.Faces.Count == 6);
-				Assert.IsTrue(meshIntersect.Vertices.Count == 8);
-				foreach (Face face in meshIntersect.Faces)
-				{
-					Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.x) == 3);
-					Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.y) == 3);
-					Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.z) == 3);
-				}
+
+				AxisAlignedBoundingBox a_aabb = meshA.GetAxisAlignedBoundingBox();
+				AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
+				AxisAlignedBoundingBox intersect_aabb = meshIntersect.GetAxisAlignedBoundingBox();
+
+				Assert.IsTrue(a_aabb.XSize == 10 && a_aabb.YSize == 10 && a_aabb.ZSize == 10);
+				Assert.IsTrue(intersect_aabb.XSize == 6 && intersect_aabb.YSize == 6 && intersect_aabb.ZSize == 6);
 			}
 
 			// the intersection of 2 cubes that miss eachother
@@ -70,7 +69,13 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				meshB.Translate(new Vector3(5, 5, 5));
 
 				Mesh meshIntersect = CsgOperations.Intersect(meshA, meshB);
-				Assert.IsTrue(meshIntersect.Faces.Count == 0);
+
+				AxisAlignedBoundingBox a_aabb = meshA.GetAxisAlignedBoundingBox();
+				AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
+				AxisAlignedBoundingBox intersect_aabb = meshIntersect.GetAxisAlignedBoundingBox();
+
+				Assert.IsTrue(a_aabb.XSize == 10 && a_aabb.YSize == 10 && a_aabb.ZSize == 10);
+				Assert.IsTrue(intersect_aabb.XSize == 0 && intersect_aabb.YSize == 0 && intersect_aabb.ZSize == 0);
 			}
 		}
 
@@ -86,14 +91,13 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				meshB.Translate(new Vector3(2, 0, 0));
 
 				Mesh meshIntersect = CsgOperations.Union(meshA, meshB);
-				Assert.IsTrue(meshIntersect.Faces.Count == 13);
-				Assert.IsTrue(meshIntersect.Vertices.Count == 16);
-				foreach (Face face in meshIntersect.Faces)
-				{
-					Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.x) == 7 || Math.Abs(face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.x) == 3);
-					Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.y) == 5);
-					Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.z) == 5);
-				}
+
+				AxisAlignedBoundingBox a_aabb = meshA.GetAxisAlignedBoundingBox();
+				AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
+				AxisAlignedBoundingBox intersect_aabb = meshIntersect.GetAxisAlignedBoundingBox();
+
+				Assert.IsTrue(a_aabb.XSize == 10 && a_aabb.YSize == 10 && a_aabb.ZSize == 10);
+				Assert.IsTrue(intersect_aabb.XSize == 14 && intersect_aabb.YSize == 10 && intersect_aabb.ZSize == 10);
 			}
 		}
 
@@ -109,14 +113,13 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				meshB.Translate(new Vector3(2, 0, 0));
 
 				Mesh meshIntersect = CsgOperations.Subtract(meshA, meshB);
-				Assert.IsTrue(meshIntersect.Faces.Count == 6);
-				Assert.IsTrue(meshIntersect.Vertices.Count == 8);
-				foreach (Face face in meshIntersect.Faces)
-				{
-					Assert.IsTrue(face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.x == -7 || face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.x == -3);
-					Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.y) == 5);
-					Assert.IsTrue(Math.Abs(face.firstFaceEdge.meshEdge.VertexOnEnd[0].Position.z) == 5);
-				}
+
+				AxisAlignedBoundingBox a_aabb = meshA.GetAxisAlignedBoundingBox();
+				AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
+				AxisAlignedBoundingBox intersect_aabb = meshIntersect.GetAxisAlignedBoundingBox();
+
+				Assert.IsTrue(a_aabb.XSize == 10 && a_aabb.YSize == 10 && a_aabb.ZSize == 10);
+				Assert.IsTrue(intersect_aabb.XSize == 4 && intersect_aabb.YSize == 10 && intersect_aabb.ZSize == 10);
 			}
 		}
 	}

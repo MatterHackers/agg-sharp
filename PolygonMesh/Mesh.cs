@@ -1028,6 +1028,10 @@ namespace MatterHackers.PolygonMesh
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{
+			if(Vertices.Count == 0)
+			{
+				return new AxisAlignedBoundingBox(Vector3.Zero, Vector3.Zero);
+			}
 			Vector3 minXYZ = new Vector3(double.MaxValue, double.MaxValue, double.MaxValue);
 			Vector3 maxXYZ = new Vector3(double.MinValue, double.MinValue, double.MinValue);
 
