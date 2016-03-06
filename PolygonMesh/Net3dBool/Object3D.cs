@@ -444,6 +444,13 @@ namespace Net3dBool
 			}
 		}
 
+		/// <summary>
+		/// Face breaker for EDGE-FACE-FACE / FACE-FACE-EDGE
+		/// </summary>
+		/// <param name="facePos">face position on the faces array</param>
+		/// <param name="newPos1">new vertex position</param>
+		/// <param name="newPos2">new vertex position</param>
+		/// <param name="endVertex">vertex used for the split</param>
 		private void BreakFaceInFour(int facePos, Vector3 newPos1, Vector3 newPos2, Vertex endVertex)
 		{
 			Face face = faces[facePos];
@@ -475,6 +482,13 @@ namespace Net3dBool
 			}
 		}
 
+		/// <summary>
+		/// Face breaker for EDGE-EDGE-EDGE
+		/// </summary>
+		/// <param name="facePos">face position on the faces array</param>
+		/// <param name="newPos1">new vertex position</param>
+		/// <param name="newPos2">new vertex position</param>
+		/// <param name="splitEdge">edge that will be split</param>
 		private void BreakFaceInThree(int facePos, Vector3 newPos1, Vector3 newPos2, int splitEdge)
 		{
 			Face face = faces[facePos];
@@ -503,6 +517,12 @@ namespace Net3dBool
 			}
 		}
 
+		/// <summary>
+		/// Face breaker for VERTEX-FACE-FACE / FACE-FACE-VERTEX
+		/// </summary>
+		/// <param name="facePos">face position on the faces array</param>
+		/// <param name="newPos">new vertex position</param>
+		/// <param name="endVertex">vertex used for the split</param>
 		private void BreakFaceInThree(int facePos, Vector3 newPos, Vertex endVertex)
 		{
 			Face face = faces[facePos];
@@ -584,6 +604,11 @@ namespace Net3dBool
 			}
 		}
 
+		/// <summary>
+		/// Face breaker for FACE-FACE-FACE (a point only)
+		/// </summary>
+		/// <param name="facePos">face position on the faces array</param>
+		/// <param name="newPos">new vertex position</param>
 		private void BreakFaceInThree(int facePos, Vector3 newPos)
 		{
 			Face face = faces[facePos];
@@ -596,6 +621,12 @@ namespace Net3dBool
 			AddFace(face.v3, face.v1, vertex);
 		}
 
+		/// <summary>
+		/// Face breaker for VERTEX-EDGE-EDGE / EDGE-EDGE-VERTEX
+		/// </summary>
+		/// <param name="facePos">face position on the faces array</param>
+		/// <param name="newPos">new vertex position</param>
+		/// <param name="splitEdge">edge that will be split</param>
 		private void BreakFaceInTwo(int facePos, Vector3 newPos, int splitEdge)
 		{
 			Face face = faces[facePos];
@@ -620,6 +651,12 @@ namespace Net3dBool
 			}
 		}
 
+		/// <summary>
+		/// Face breaker for VERTEX-FACE-EDGE / EDGE-FACE-VERTEX
+		/// </summary>
+		/// <param name="facePos">face position on the faces array</param>
+		/// <param name="newPos">new vertex position</param>
+		/// <param name="endVertex">vertex used for splitting</param>
 		private void BreakFaceInTwo(int facePos, Vector3 newPos, Vertex endVertex)
 		{
 			Face face = faces[facePos];
@@ -860,49 +897,5 @@ namespace Net3dBool
 				}
 			}
 		}
-
-		/**
-     * Face breaker for VERTEX-EDGE-EDGE / EDGE-EDGE-VERTEX
-     *
-     * @param facePos face position on the faces array
-     * @param newPos new vertex position
-     * @param edge that will be split
-     */
-		/**
-     * Face breaker for VERTEX-FACE-EDGE / EDGE-FACE-VERTEX
-     *
-     * @param facePos face position on the faces array
-     * @param newPos new vertex position
-     * @param endVertex vertex used for splitting
-     */
-		/**
-     * Face breaker for EDGE-EDGE-EDGE
-     *
-     * @param facePos face position on the faces array
-     * @param newPos1 new vertex position
-     * @param newPos2 new vertex position
-     * @param splitEdge edge that will be split
-     */
-		/**
-     * Face breaker for VERTEX-FACE-FACE / FACE-FACE-VERTEX
-     *
-     * @param facePos face position on the faces array
-     * @param newPos new vertex position
-     * @param endVertex vertex used for the split
-     */
-		/**
-     * Face breaker for FACE-FACE-FACE (a point only)
-     *
-     * @param facePos face position on the faces array
-     * @param newPos new vertex position
-     */
-		/**
-     * Face breaker for EDGE-FACE-FACE / FACE-FACE-EDGE
-     *
-     * @param facePos face position on the faces array
-     * @param newPos1 new vertex position
-     * @param newPos2 new vertex position
-     * @param endVertex vertex used for the split
-     */
 	}
 }
