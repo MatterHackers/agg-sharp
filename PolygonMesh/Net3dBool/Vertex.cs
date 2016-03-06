@@ -1,17 +1,19 @@
-﻿/** 
- * Represents of a 3d face vertex.
- * 
- * <br><br>See: 
- * D. H. Laidlaw, W. B. Trumbore, and J. F. Hughes.  
- * "Constructive Solid Geometry for Polyhedral Objects" 
- * SIGGRAPH Proceedings, 1986, p.161. 
- * 
- * original author: Danilo Balby Silva Castanheira (danbalby@yahoo.com)
- * 
- * Ported from Java to C# by Sebastian Loncar, Web: http://loncar.de
- * Project: https://github.com/Arakis/Net3dBool
- */
+﻿
 
+using MatterHackers.VectorMath;
+/** 
+* Represents of a 3d face vertex.
+* 
+* <br><br>See: 
+* D. H. Laidlaw, W. B. Trumbore, and J. F. Hughes.  
+* "Constructive Solid Geometry for Polyhedral Objects" 
+* SIGGRAPH Proceedings, 1986, p.161. 
+* 
+* original author: Danilo Balby Silva Castanheira (danbalby@yahoo.com)
+* 
+* Ported from Java to C# by Sebastian Loncar, Web: http://loncar.de
+* Project: https://github.com/Arakis/Net3dBool
+*/
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -50,7 +52,7 @@ namespace Net3dBool
      * 
      * @param position vertex position
      */
-        public Vertex(Point3d position)
+        public Vertex(Vector3 position)
         {
             x = position.x;
             y = position.y;
@@ -83,7 +85,7 @@ namespace Net3dBool
      * @param position vertex position
      * @param status vertex status - UNKNOWN, BOUNDARY, INSIDE or OUTSIDE
      */
-        public Vertex(Point3d position, int status)
+        public Vertex(Vector3 position, int status)
         {
             x = position.x;
             y = position.y;
@@ -183,9 +185,9 @@ namespace Net3dBool
      * 
      * @return vertex position
      */
-        public Point3d getPosition()
+        public Vector3 getPosition()
         {
-            return new Point3d(x, y, z);
+            return new Vector3(x, y, z);
         }
 
         /**

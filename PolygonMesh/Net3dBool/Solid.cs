@@ -12,6 +12,7 @@ using System.IO;
 using System.Collections;
 using System.Linq;
 using System.Collections.Generic;
+using MatterHackers.VectorMath;
 
 namespace Net3dBool
 {
@@ -22,7 +23,7 @@ namespace Net3dBool
         /** array of indices for the vertices from the 'vertices' attribute */
         protected int[] indices;
         /** array of points defining the solid's vertices */
-        protected Point3d[] vertices;
+        protected Vector3[] vertices;
 
         //--------------------------------CONSTRUCTORS----------------------------------//
 
@@ -41,7 +42,7 @@ namespace Net3dBool
      * @param indices array of indices for a array of vertices
      * @param colors array of colors defining the vertices colors 
      */
-        public Solid(Point3d[] vertices, int[] indices)
+        public Solid(Vector3[] vertices, int[] indices)
             : this()
         {
             setData(vertices, indices);
@@ -50,7 +51,7 @@ namespace Net3dBool
         /** Sets the initial features common to all constructors */
         protected void setInitialFeatures()
         {
-            vertices = new Point3d[0];
+            vertices = new Vector3[0];
             indices = new int[0];
 
 //            setCapability(Shape3D.ALLOW_GEOMETRY_WRITE);
@@ -65,9 +66,9 @@ namespace Net3dBool
      * 
      * @return solid vertices
      */ 
-        public Point3d[] getVertices()
+        public Vector3[] getVertices()
         {
-            Point3d[] newVertices = new Point3d[vertices.Length];
+            Vector3[] newVertices = new Vector3[vertices.Length];
             for (int i = 0; i < newVertices.Length; i++)
             {
                 newVertices[i] = vertices[i];
@@ -114,15 +115,15 @@ namespace Net3dBool
      * @param indices array of indices for a array of vertices
      * @param colors array of colors defining the vertices colors 
      */
-        public void setData(Point3d[] vertices, int[] indices)
+        public void setData(Vector3[] vertices, int[] indices)
         {
-            this.vertices = new Point3d[vertices.Length];
+            this.vertices = new Vector3[vertices.Length];
             this.indices = new int[indices.Length];
             if (indices.Length != 0)
             {
                 for (int i = 0; i < vertices.Length; i++)
                 {
-                    this.vertices[i] = vertices[i].Clone();
+                    this.vertices[i] = vertices[i];
                 }
                 Array.Copy(indices, 0, this.indices, 0, indices.Length);
 
@@ -168,7 +169,7 @@ namespace Net3dBool
             if (dx != 0 || dy != 0)
             {
                 //get mean
-                Point3d mean = getMean();
+                Vector3 mean = getMean();
 
                 double newX, newY, newZ;
                 for (int i = 0; i < vertices.Length; i++)
@@ -264,9 +265,9 @@ namespace Net3dBool
      * 
      * @return point representing the mean
      */
-        protected Point3d getMean()
+        protected Vector3 getMean()
         {
-            Point3d mean = new Point3d();
+            Vector3 mean = new Vector3();
             for (int i = 0; i < vertices.Length; i++)
             {
                 mean.x += vertices[i].x;

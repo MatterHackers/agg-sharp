@@ -1,17 +1,19 @@
-﻿/**
- * Representation of a 3D face (triangle).
- *
- * <br><br>See:
- * D. H. Laidlaw, W. B. Trumbore, and J. F. Hughes.
- * "Constructive Solid Geometry for Polyhedral Objects"
- * SIGGRAPH Proceedings, 1986, p.161.
- *
- * original author: Danilo Balby Silva Castanheira (danbalby@yahoo.com)
- *
- * Ported from Java to C# by Sebastian Loncar, Web: http://loncar.de
- * Project: https://github.com/Arakis/Net3dBool
- */
+﻿
 
+using MatterHackers.VectorMath;
+/**
+* Representation of a 3D face (triangle).
+*
+* <br><br>See:
+* D. H. Laidlaw, W. B. Trumbore, and J. F. Hughes.
+* "Constructive Solid Geometry for Polyhedral Objects"
+* SIGGRAPH Proceedings, 1986, p.161.
+*
+* original author: Danilo Balby Silva Castanheira (danbalby@yahoo.com)
+*
+* Ported from Java to C# by Sebastian Loncar, Web: http://loncar.de
+* Project: https://github.com/Arakis/Net3dBool
+*/
 using System;
 
 namespace Net3dBool
@@ -147,24 +149,23 @@ namespace Net3dBool
      * @return face normal
      */
 
-		private Vector3d normalCache;
+		private Vector3 normalCache;
 		private bool cachedNormal = false;
 
-		public Vector3d getNormal()
+		public Vector3 getNormal()
 		{
 			if (!cachedNormal)
 			{
-				Point3d p1 = v1.getPosition();
-				Point3d p2 = v2.getPosition();
-				Point3d p3 = v3.getPosition();
-				Vector3d xy, xz, normal;
+				Vector3 p1 = v1.getPosition();
+				Vector3 p2 = v2.getPosition();
+				Vector3 p3 = v3.getPosition();
+				Vector3 xy, xz, normal;
 
-				xy = new Vector3d(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z);
-				xz = new Vector3d(p3.x - p1.x, p3.y - p1.y, p3.z - p1.z);
+				xy = new Vector3(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z);
+				xz = new Vector3(p3.x - p1.x, p3.y - p1.y, p3.z - p1.z);
 
-				normal = new Vector3d();
-				normal.cross(xy, xz);
-				normal.normalize();
+				normal = Vector3.Cross(xy, xz);
+				normal.Normalize();
 
 				normalCache = normal;
 				cachedNormal = true;
@@ -193,15 +194,15 @@ namespace Net3dBool
 		public double getArea()
 		{
 			//area = (a * c * sen(B))/2
-			Point3d p1 = v1.getPosition();
-			Point3d p2 = v2.getPosition();
-			Point3d p3 = v3.getPosition();
-			Vector3d xy = new Vector3d(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z);
-			Vector3d xz = new Vector3d(p3.x - p1.x, p3.y - p1.y, p3.z - p1.z);
+			Vector3 p1 = v1.getPosition();
+			Vector3 p2 = v2.getPosition();
+			Vector3 p3 = v3.getPosition();
+			Vector3 xy = new Vector3(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z);
+			Vector3 xz = new Vector3(p3.x - p1.x, p3.y - p1.y, p3.z - p1.z);
 
-			double a = p1.distance(p2);
-			double c = p1.distance(p3);
-			double B = xy.angle(xz);
+			double a = (p1 - p2).Length;
+			double c = (p1 - p3).Length;
+			double B = Vector3.CalculateAngle(xy, xz);
 
 			return (a * c * Math.Sin(B)) / 2d;
 		}
@@ -261,7 +262,7 @@ namespace Net3dBool
 		public void rayTraceClassify(Object3D obj)
 		{
 			//creating a ray starting starting at the face baricenter going to the normal direction
-			Point3d p0 = new Point3d();
+			Vector3 p0 = new Vector3();
 			p0.x = (v1.x + v2.x + v3.x) / 3d;
 			p0.y = (v1.y + v2.y + v3.y) / 3d;
 			p0.z = (v1.z + v2.z + v3.z) / 3d;
@@ -269,7 +270,7 @@ namespace Net3dBool
 
 			bool success;
 			double dotProduct, distance;
-			Point3d intersectionPoint;
+			Vector3 intersectionPoint;
 			Face closestFace = null;
 			double closestDistance;
 
@@ -281,11 +282,11 @@ namespace Net3dBool
 				for (int i = 0; i < obj.getNumFaces(); i++)
 				{
 					Face face = obj.getFace(i);
-					dotProduct = face.getNormal().dot(ray.getDirection());
+					dotProduct = Vector3.Dot(face.getNormal(), ray.getDirection());
 					intersectionPoint = ray.computePlaneIntersection(face.getNormal(), face.v1.getPosition());
 
 					//if ray intersects the plane...
-					if (intersectionPoint != null)
+					if (intersectionPoint.x != double.PositiveInfinity)
 					{
 						distance = ray.computePointToPointDistance(intersectionPoint);
 
@@ -337,7 +338,7 @@ namespace Net3dBool
 			//face found: test dot product
 			else
 			{
-				dotProduct = closestFace.getNormal().dot(ray.getDirection());
+				dotProduct = Vector3.Dot(closestFace.getNormal(), ray.getDirection());
 
 				//distance = 0: coplanar faces
 				if (Math.Abs(closestDistance) < TOL)
@@ -375,10 +376,10 @@ namespace Net3dBool
      * @param true if the face contains the point, false otherwise
      */
 
-		private bool hasPoint(Point3d point)
+		private bool hasPoint(Vector3 point)
 		{
 			int result1, result2, result3;
-			Vector3d normal = getNormal();
+			Vector3 normal = getNormal();
 
 			//if x is constant...
 			if (Math.Abs(normal.x) > TOL)
@@ -430,7 +431,7 @@ namespace Net3dBool
      * @return position of the point relative to the line - UP, DOWN, ON, NONE
      */
 
-		private static int linePositionInX(Point3d point, Point3d pointLine1, Point3d pointLine2)
+		private static int linePositionInX(Vector3 point, Vector3 pointLine1, Vector3 pointLine2)
 		{
 			double a, b, z;
 			if ((Math.Abs(pointLine1.y - pointLine2.y) > TOL) && (((point.y >= pointLine1.y) && (point.y <= pointLine2.y)) || ((point.y <= pointLine1.y) && (point.y >= pointLine2.y))))
@@ -466,7 +467,7 @@ namespace Net3dBool
      * @return position of the point relative to the line - UP, DOWN, ON, NONE
      */
 
-		private static int linePositionInY(Point3d point, Point3d pointLine1, Point3d pointLine2)
+		private static int linePositionInY(Vector3 point, Vector3 pointLine1, Vector3 pointLine2)
 		{
 			double a, b, z;
 			if ((Math.Abs(pointLine1.x - pointLine2.x) > TOL) && (((point.x >= pointLine1.x) && (point.x <= pointLine2.x)) || ((point.x <= pointLine1.x) && (point.x >= pointLine2.x))))
@@ -502,7 +503,7 @@ namespace Net3dBool
      * @return position of the point relative to the line - UP, DOWN, ON, NONE
      */
 
-		private static int linePositionInZ(Point3d point, Point3d pointLine1, Point3d pointLine2)
+		private static int linePositionInZ(Vector3 point, Vector3 pointLine1, Vector3 pointLine2)
 		{
 			double a, b, y;
 			if ((Math.Abs(pointLine1.x - pointLine2.x) > TOL) && (((point.x >= pointLine1.x) && (point.x <= pointLine2.x)) || ((point.x <= pointLine1.x) && (point.x >= pointLine2.x))))

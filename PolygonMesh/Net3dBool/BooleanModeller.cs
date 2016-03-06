@@ -1,20 +1,22 @@
-﻿/**
- * Class used to apply boolean operations on solids.
- * 
- * <br><br>Two 'Solid' objects are submitted to this class constructor. There is a methods for 
- * each boolean operation. Each of these return a 'Solid' resulting from the application
- * of its operation into the submitted solids. 
- *  
- * <br><br>See: D. H. Laidlaw, W. B. Trumbore, and J. F. Hughes.  
- * "Constructive Solid Geometry for Polyhedral Objects" 
- * SIGGRAPH Proceedings, 1986, p.161.
- *  
- * original author: Danilo Balby Silva Castanheira (danbalby@yahoo.com)
- * 
- * Ported from Java to C# by Sebastian Loncar, Web: http://loncar.de
- * Project: https://github.com/Arakis/Net3dBool
- */
+﻿
 
+using MatterHackers.VectorMath;
+/**
+* Class used to apply boolean operations on solids.
+* 
+* <br><br>Two 'Solid' objects are submitted to this class constructor. There is a methods for 
+* each boolean operation. Each of these return a 'Solid' resulting from the application
+* of its operation into the submitted solids. 
+*  
+* <br><br>See: D. H. Laidlaw, W. B. Trumbore, and J. F. Hughes.  
+* "Constructive Solid Geometry for Polyhedral Objects" 
+* SIGGRAPH Proceedings, 1986, p.161.
+*  
+* original author: Danilo Balby Silva Castanheira (danbalby@yahoo.com)
+* 
+* Ported from Java to C# by Sebastian Loncar, Web: http://loncar.de
+* Project: https://github.com/Arakis/Net3dBool
+*/
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -143,7 +145,7 @@ namespace Net3dBool
             groupObjectComponents(object2, vertices, indices, faceStatus3, faceStatus3);
 
             //turn the arrayLists to arrays
-            Point3d[] verticesArray = new Point3d[vertices.Count];
+            Vector3[] verticesArray = new Vector3[vertices.Count];
             for (int i = 0; i < vertices.Count; i++)
             {
                 verticesArray[i] = vertices[i].getPosition();

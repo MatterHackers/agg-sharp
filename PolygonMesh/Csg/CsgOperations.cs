@@ -113,20 +113,20 @@ namespace MatterHackers.PolygonMesh.Csg
 		public static Solid SolidFromMesh(Mesh model)
 		{
 			var solid = new Solid();
-			List<Point3d> vertices = new List<Point3d>();
+			List<Vector3> vertices = new List<Vector3>();
 			List<int> indices = new List<int>();
 
 			int nextIndex = 0;
 			foreach (Face face in model.Faces)
 			{
 				List<Vertex> triangle = new List<Vertex>();
-				Vector3 first = Vector3.Zero;
-				Vector3 last = Vector3.Zero;
+				VectorMath.Vector3 first = VectorMath.Vector3.Zero;
+				VectorMath.Vector3 last = VectorMath.Vector3.Zero;
 				bool isFirst = true;
 				int count = 0;
 				foreach (FaceEdge faceEdge in face.FaceEdges())
 				{
-					Vector3 position = faceEdge.firstVertex.Position;
+					VectorMath.Vector3 position = faceEdge.firstVertex.Position;
 					if(isFirst)
 					{
 						first = position;
@@ -134,16 +134,16 @@ namespace MatterHackers.PolygonMesh.Csg
 					}
 					if (count < 3)
 					{
-						vertices.Add(new Point3d(position.x, position.y, position.z));
+						vertices.Add(new Vector3(position.x, position.y, position.z));
 						indices.Add(nextIndex++);
 					}
 					else // add an entire new polygon
 					{
-						vertices.Add(new Point3d(first.x, first.y, first.z));
+						vertices.Add(new Vector3(first.x, first.y, first.z));
 						indices.Add(nextIndex++);
-						vertices.Add(new Point3d(last.x, last.y, last.z));
+						vertices.Add(new Vector3(last.x, last.y, last.z));
 						indices.Add(nextIndex++);
-						vertices.Add(new Point3d(position.x, position.y, position.z));
+						vertices.Add(new Vector3(position.x, position.y, position.z));
 						indices.Add(nextIndex++);
 					}
 					count++;

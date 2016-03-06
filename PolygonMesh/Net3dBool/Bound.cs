@@ -1,17 +1,19 @@
-﻿/**
- * Representation of a bound - the extremes of a 3d component for each coordinate.
- *
- * <br><br>See: 
- * D. H. Laidlaw, W. B. Trumbore, and J. F. Hughes.  
- * "Constructive Solid Geometry for Polyhedral Objects" 
- * SIGGRAPH Proceedings, 1986, p.161. 
- *  
- * original author: Danilo Balby Silva Castanheira (danbalby@yahoo.com)
- * 
- * Ported from Java to C# by Sebastian Loncar, Web: http://loncar.de
- * Project: https://github.com/Arakis/Net3dBool
- */
+﻿
 
+using MatterHackers.VectorMath;
+/**
+* Representation of a bound - the extremes of a 3d component for each coordinate.
+*
+* <br><br>See: 
+* D. H. Laidlaw, W. B. Trumbore, and J. F. Hughes.  
+* "Constructive Solid Geometry for Polyhedral Objects" 
+* SIGGRAPH Proceedings, 1986, p.161. 
+*  
+* original author: Danilo Balby Silva Castanheira (danbalby@yahoo.com)
+* 
+* Ported from Java to C# by Sebastian Loncar, Web: http://loncar.de
+* Project: https://github.com/Arakis/Net3dBool
+*/
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -45,7 +47,7 @@ namespace Net3dBool
      * @param p2 point relative to the second vertex
      * @param p3 point relative to the third vertex
      */ 
-        public Bound(Point3d p1, Point3d p2, Point3d p3)
+        public Bound(Vector3 p1, Vector3 p2, Vector3 p3)
         {
             xMax = xMin = p1.x;
             yMax = yMin = p1.y;
@@ -60,7 +62,7 @@ namespace Net3dBool
      * 
      * @param vertices the object vertices
      */
-        public Bound(Point3d[] vertices)
+        public Bound(Vector3[] vertices)
         {
             xMax = xMin = vertices[0].x;
             yMax = yMin = vertices[0].y;
@@ -111,7 +113,7 @@ namespace Net3dBool
      * 
      * @param vertex vertex to be tested
      */
-        private void checkVertex(Point3d vertex)
+        private void checkVertex(Vector3 vertex)
         {
             if (vertex.x > xMax)
             {
