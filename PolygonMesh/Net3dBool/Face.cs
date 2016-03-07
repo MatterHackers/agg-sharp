@@ -255,7 +255,7 @@ namespace Net3dBool
 								//if ray intersects the face;
 								if (face.ContainsPoint(intersectionPoint))
 								{
-									//this face is the closest face untill now
+									//this face is the closest face until now
 									closestDistance = distance;
 									closestFace = face;
 								}

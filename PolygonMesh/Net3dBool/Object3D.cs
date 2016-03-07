@@ -305,11 +305,11 @@ namespace Net3dBool
 											this.SplitFace(i, segment1, segment2);
 
 											//prevent from infinite loop (with a loss of faces...)
-											//if(numFacesStart*20<getNumFaces())
-											//{
-											//  System.out.println("possible infinite loop situation: terminating faces split");
-											//  return;
-											//}
+											if(numFacesStart*20<getNumFaces())
+											{
+												//System.out.println("possible infinite loop situation: terminating faces split");
+												return;
+											}
 
 											//if the face in the position isn't the same, there was a break
 											if (face1 != GetFace(i))
