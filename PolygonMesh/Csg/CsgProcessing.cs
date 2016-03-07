@@ -23,9 +23,17 @@ namespace MatterHackers.PolygonMesh.Csg
 	public static class FaceHelper
 	{
 		public enum IntersectionType { None, Vertex, MeshEdge, Face }
-		public static IntersectionType Intersection(this Face face, Vector3 end0, Vector3 end1, out Vector3 intersectionPosition)
+		public static IntersectionType Intersection(this Face face, Ray ray, out Vector3 intersectionPosition)
 		{
-			intersectionPosition = Vector3.Zero;
+			Plane facePlane = new Plane(face.normal, face.firstFaceEdge.firstVertex.Position);
+			double distanceToHit;
+			bool hitFrontOfPlane;
+			if (facePlane.RayHitPlane(ray, out distanceToHit, out hitFrontOfPlane))
+			{
+				intersectionPosition = ray.origin + ray.directionNormal * distanceToHit;
+				return IntersectionType.Face;
+			}
+			intersectionPosition = Vector3.PositiveInfinity;
 			return IntersectionType.None;
 		}
 
@@ -65,26 +73,31 @@ namespace MatterHackers.PolygonMesh.Csg
 
 		public void SplitOnAllEdgeIntersections(CsgAcceleratedMesh meshWidthEdges)
 		{
-			foreach (var meshEdge in meshWidthEdges.mesh.MeshEdges)
+			AxisAlignedBoundingBox boundsForFaces = this.mesh.GetAxisAlignedBoundingBox();
+			AxisAlignedBoundingBox boundsForEdges = meshWidthEdges.mesh.GetAxisAlignedBoundingBox();
+			AxisAlignedBoundingBox faceEdgeBoundsIntersection = AxisAlignedBoundingBox.Intersection(boundsForEdges, boundsForFaces);
+
+			foreach (var meshEdge in meshWidthEdges.GetMeshEdgesTouching(faceEdgeBoundsIntersection))
 			{
 				// Check the mesh edge bounds agains all polygons. If there is an intersection
 				// subdivide the mesh edge and if the face that is hit. If hit face on an edge only split the edge.
 				Vector3 end0 = meshEdge.VertexOnEnd[0].Position;
 				Vector3 end1 = meshEdge.VertexOnEnd[1].Position;
+				Ray ray = new Ray(end0, (end1 - end0).GetNormal());
 				AxisAlignedBoundingBox edgeBounds = new AxisAlignedBoundingBox(Vector3.ComponentMin(end0, end1), Vector3.ComponentMax(end0, end1));
 
 				foreach (Face face in GetFacesTouching(edgeBounds))
 				{
 					Vector3 intersectionPosition;
 					// intersect the face with the edge
-					switch (face.Intersection(end0, end1, out intersectionPosition))
+					switch (face.Intersection(ray, out intersectionPosition))
 					{
 						case FaceHelper.IntersectionType.Vertex:
 							break;
 
 						case FaceHelper.IntersectionType.MeshEdge:
 							{
-								SplitMeshEdgeIfRequired(meshEdge, intersectionPosition);
+								SplitMeshEdge(meshEdge, intersectionPosition);
 								// split the face at intersectionPosition
 								SplitMeshEdgeAtPosition(face, intersectionPosition);
 							}
@@ -92,7 +105,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 						case FaceHelper.IntersectionType.Face:
 							{
-								SplitMeshEdgeIfRequired(meshEdge, intersectionPosition);
+								SplitMeshEdge(meshEdge, intersectionPosition);
 								// split the face at intersectionPosition
 								SplitFaceAtPosition(face, intersectionPosition);
 							}
@@ -102,7 +115,16 @@ namespace MatterHackers.PolygonMesh.Csg
 			}
 		}
 
-		private void SplitMeshEdgeIfRequired(MeshEdge meshEdge, Vector3 intersectionPosition)
+		private IEnumerable<MeshEdge> GetMeshEdgesTouching(AxisAlignedBoundingBox faceEdgeBoundsIntersection)
+		{
+			// TODO: make this only get the right mesh edges
+			foreach (var meshEdge in mesh.MeshEdges)
+			{
+				yield return meshEdge;
+			}
+		}
+
+		private void SplitMeshEdge(MeshEdge meshEdge, Vector3 intersectionPosition)
 		{
 			Vertex vertexCreatedDuringSplit;
 			MeshEdge meshEdgeCreatedDuringSplit;
@@ -124,10 +146,29 @@ namespace MatterHackers.PolygonMesh.Csg
 			//   / \         /|\
 			//  /   \   =   / . \
 			// /_____\     /_/_\_\  // imagine the bottom lines are connected to the end points
+
+			// get the center and all the vertices this face was connected to
+			List<Vertex> faceVertices = new List<Vertex>();
+			Vector3 center = Vector3.Zero;
+			foreach(var vertex in face.Vertices())
+			{
+				faceVertices.Add(vertex);
+				center += vertex.Position;
+			}
+
+			center /= faceVertices.Count;
+
 			// remove the face
+			mesh.DeleteFace(face);
+
 			// add the Vertex to the mesh
-			// add the three new faces to the mesh
-			throw new NotImplementedException();
+			Vertex centerVertex = mesh.CreateVertex(center);
+
+			// put in the new faces
+			for(int i=0; i<faceVertices.Count; i++)
+			{
+				mesh.CreateFace(new Vertex[] { centerVertex, faceVertices[i], faceVertices[(i+1) % faceVertices.Count] });
+			}
 		}
 
 		private IEnumerable<Face> GetFacesTouching(AxisAlignedBoundingBox edgeBounds)

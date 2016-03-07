@@ -27,6 +27,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
+
 namespace MatterHackers.VectorMath
 {
 	public class Plane
@@ -44,6 +46,12 @@ namespace MatterHackers.VectorMath
 		{
 			this.planeNormal = Vector3.Cross((point1 - point0), (point2 - point0)).GetNormal();
 			this.distanceToPlaneFromOrigin = Vector3.Dot(planeNormal, point0);
+		}
+
+		public Plane(Vector3 planeNormal, Vector3 pointOnPlane)
+		{
+			this.planeNormal = planeNormal.GetNormal();
+			this.distanceToPlaneFromOrigin = Vector3.Dot(planeNormal, pointOnPlane);
 		}
 
 		public double GetDistanceFromPlane(Vector3 positionToCheck)
@@ -111,6 +119,41 @@ namespace MatterHackers.VectorMath
 
 			distanceToHit = distanceToPlaneFromRayOrigin / normalDotRayDirection;
 			return true;
+		}
+
+		public bool LineHitPlane(Vector3 start, Vector3 end, out Vector3 intersectionPosition)
+		{
+			double distanceToStartFromOrigin = Vector3.Dot(planeNormal, start);
+			if (distanceToStartFromOrigin == 0)
+			{
+				intersectionPosition = start;
+				return true;
+			}
+
+			double distanceToEndFromOrigin = Vector3.Dot(planeNormal, end);
+			if (distanceToEndFromOrigin == 0)
+			{
+				intersectionPosition = end;
+				return true;
+			}
+
+			if((distanceToStartFromOrigin < 0 && distanceToEndFromOrigin > 0)
+				|| (distanceToStartFromOrigin > 0 && distanceToEndFromOrigin < 0))
+			{
+				Vector3 direction = (end - start).GetNormal();
+
+				double startDistanceFromPlane = distanceToStartFromOrigin - distanceToPlaneFromOrigin;
+				double endDistanceFromPlane = distanceToEndFromOrigin - distanceToPlaneFromOrigin;
+				double lengthAlongPlanNormal = endDistanceFromPlane - startDistanceFromPlane;
+
+				double ratioToPlanFromStart = startDistanceFromPlane / lengthAlongPlanNormal;
+				intersectionPosition = start + direction * ratioToPlanFromStart;
+
+				return true;
+			}
+
+			intersectionPosition = Vector3.PositiveInfinity;
+			return false;
 		}
 	}
 }
