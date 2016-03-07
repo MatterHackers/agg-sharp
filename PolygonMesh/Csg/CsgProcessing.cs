@@ -149,20 +149,16 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			// get the center and all the vertices this face was connected to
 			List<Vertex> faceVertices = new List<Vertex>();
-			Vector3 center = Vector3.Zero;
 			foreach(var vertex in face.Vertices())
 			{
 				faceVertices.Add(vertex);
-				center += vertex.Position;
 			}
-
-			center /= faceVertices.Count;
 
 			// remove the face
 			mesh.DeleteFace(face);
 
 			// add the Vertex to the mesh
-			Vertex centerVertex = mesh.CreateVertex(center);
+			Vertex centerVertex = mesh.CreateVertex(intersectionPosition);
 
 			// put in the new faces
 			for(int i=0; i<faceVertices.Count; i++)

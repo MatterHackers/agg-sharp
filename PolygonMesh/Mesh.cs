@@ -962,9 +962,34 @@ namespace MatterHackers.PolygonMesh
 			return createdFace;
 		}
 
-		public Face DeleteFace(Face faceToDelete)
+		public void DeleteFace(Face faceToDelete)
 		{
-			throw new NotImplementedException();
+			// fix the radial face edges and the mesh edeges
+			List<FaceEdge> faceEdgesToDelete = new List<FaceEdge>(faceToDelete.FaceEdges());
+			foreach(var faceEdgeToDelete in faceEdgesToDelete)
+			{
+				if(faceEdgeToDelete.meshEdge.firstFaceEdge == faceEdgeToDelete)
+				{
+					// make sure the mesh edge is not pointing to this face edeg
+					if (faceEdgeToDelete.radialNextFaceEdge == faceEdgeToDelete)
+					{
+						// it point to itself, so the edge will point to nothing
+						faceEdgeToDelete.meshEdge.firstFaceEdge = null;
+					}
+					else
+					{
+						faceEdgeToDelete.meshEdge.firstFaceEdge = faceEdgeToDelete.radialNextFaceEdge;
+					}
+				}
+				FaceEdge temp = faceEdgeToDelete.radialNextFaceEdge.radialPrevFaceEdge;
+				faceEdgeToDelete.radialPrevFaceEdge.radialNextFaceEdge = faceEdgeToDelete.radialPrevFaceEdge;
+				faceEdgeToDelete.radialNextFaceEdge.radialPrevFaceEdge = faceEdgeToDelete.nextFaceEdge;
+			}
+
+			// clear the data on the deleted face edge to help with debugging
+			faceToDelete.firstFaceEdge = null;
+			// take the face out of the face list
+			Faces.Remove(faceToDelete);
 		}
 
 		private static void DeleteFaceEdge(FaceEdge faceEdgeToDelete)
