@@ -38,8 +38,14 @@ namespace MatterHackers.DataConverters3D
 	{
 		public static Mesh TriangulateFaces(IVertexSource vertexSource)
 		{
-			vertexSource.rewind();
 			CachedTesselator teselatedSource = new CachedTesselator();
+			return TriangulateFaces(vertexSource, teselatedSource);
+        }
+
+        private static Mesh TriangulateFaces(IVertexSource vertexSource, CachedTesselator teselatedSource)
+		{
+			vertexSource.rewind();
+			
             VertexSourceToTesselator.SendShapeToTesselator(teselatedSource, vertexSource);
 
 			Mesh extrudedVertexSource = new Mesh();
@@ -69,31 +75,11 @@ namespace MatterHackers.DataConverters3D
 
 		public static Mesh Extrude(IVertexSource vertexSource, double zHeight)
 		{
-			vertexSource.rewind();
 			CachedTesselator teselatedSource = new CachedTesselator();
-            VertexSourceToTesselator.SendShapeToTesselator(teselatedSource, vertexSource);
-
-			Mesh extrudedVertexSource = new Mesh();
-
+			Mesh extrudedVertexSource = TriangulateFaces(vertexSource, teselatedSource);
 			int numIndicies = teselatedSource.IndicesCache.Count;
 
-			// build the top first so it will render first when we are translucent
-			for (int i = 0; i < numIndicies; i += 3)
-			{
-				Vector2 v0 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 0].Index].Position;
-				Vector2 v1 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 1].Index].Position;
-				Vector2 v2 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 2].Index].Position;
-				if (v0 == v1 || v1 == v2 || v2 == v0)
-				{
-					continue;
-				}
-
-				Vertex topVertex0 = extrudedVertexSource.CreateVertex(new Vector3(v0, zHeight));
-				Vertex topVertex1 = extrudedVertexSource.CreateVertex(new Vector3(v1, zHeight));
-				Vertex topVertex2 = extrudedVertexSource.CreateVertex(new Vector3(v2, zHeight));
-
-				extrudedVertexSource.CreateFace(new Vertex[] { topVertex0, topVertex1, topVertex2 });
-			}
+			extrudedVertexSource.Translate(new Vector3(0, 0, zHeight));
 
 			// then the outside edge
 			for (int i = 0; i < numIndicies; i += 3)
@@ -147,6 +133,8 @@ namespace MatterHackers.DataConverters3D
 
 				extrudedVertexSource.CreateFace(new Vertex[] { bottomVertex2, bottomVertex1, bottomVertex0 });
 			}
+
+			extrudedVertexSource.CleanAndMergMesh();
 
 			return extrudedVertexSource;
 		}

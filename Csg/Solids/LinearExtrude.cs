@@ -42,7 +42,7 @@ namespace MatterHackers.Csg.Solids
 	public class LinearExtrude : CsgObjectWrapper
 	{
 		/// <summary>
-		/// This is the internral class for LinearEtrude.  You should not create this directly.
+		/// This is the internal class for LinearEtrude.  You should not create this directly.
 		/// </summary>
 		public class LinearExtrudePrimitive : Solid
 		{
