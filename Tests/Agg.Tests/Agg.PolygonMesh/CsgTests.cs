@@ -40,6 +40,46 @@ namespace MatterHackers.PolygonMesh.UnitTests
 	public class MeshCsgTests
 	{
 		[Test]
+		public void PlaneSubtractPlane()
+		{
+			Mesh meshA = new Mesh();
+			Vertex[] verts = new Vertex[3];
+			verts[0] = meshA.CreateVertex(new Vector3(-1, -1, 0));
+			verts[1] = meshA.CreateVertex(new Vector3(1, -1, 0));
+			verts[2] = meshA.CreateVertex(new Vector3(1, 1, 0));
+
+			meshA.CreateFace(new Vertex[] { verts[0], verts[1], verts[2] });
+
+
+			meshA.Translate(new Vector3(-2, -2, -2));
+			Mesh meshB = PlatonicSolids.CreateCube(new Vector3(10, 10, 10));
+			meshB.Translate(new Vector3(2, 2, 2));
+
+			Mesh meshIntersect = CsgOperations.Intersect(meshA, meshB);
+
+			AxisAlignedBoundingBox a_aabb = meshA.GetAxisAlignedBoundingBox();
+			AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
+			AxisAlignedBoundingBox intersect_aabb = meshIntersect.GetAxisAlignedBoundingBox();
+
+			Assert.IsTrue(a_aabb.XSize == 10 && a_aabb.YSize == 10 && a_aabb.ZSize == 10);
+			Assert.IsTrue(intersect_aabb.XSize == 6 && intersect_aabb.YSize == 6 && intersect_aabb.ZSize == 6);
+		}
+
+		[Test]
+		public void SubtractWorks()
+		{
+			Vector3 centering = new Vector3(100, 100, 20);
+			Mesh boxA = PlatonicSolids.CreateCube(40, 40, 40);
+			boxA.Translate(centering);
+			Mesh boxB = PlatonicSolids.CreateCube(40, 40, 40);
+
+			Vector3 finalTransform = new Vector3(99.999927784394, 102.400700290798, 16.3588316937214);
+			boxB.Translate(finalTransform);
+
+			Mesh meshToAdd = CsgOperations.Subtract(boxA, boxB);
+		}
+
+		[Test]
 		public void EnsureSimpleCubeIntersection()
 		{
 			// the intersection of 2 cubes

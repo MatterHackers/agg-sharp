@@ -228,46 +228,46 @@ namespace Net3dBool
 		/// <summary>
 		/// Split faces so that none face is intercepted by a face of other object
 		/// </summary>
-		/// <param name="obj">the other object 3d used to make the split</param>
-		public void SplitFaces(Object3D obj)
+		/// <param name="compareObject">the other object 3d used to make the split</param>
+		public void SplitFaces(Object3D compareObject)
 		{
 			Line line;
-			Face face1, face2;
+			Face thisFace, compareFace;
 			Segment segment1;
 			Segment segment2;
-			double distFace1Vert1, distFace1Vert2, distFace1Vert3, distFace2Vert1, distFace2Vert2, distFace2Vert3;
+			double v1DistToCompareFace, distFace1Vert2, distFace1Vert3, distFace2Vert1, distFace2Vert2, distFace2Vert3;
 			int signFace1Vert1, signFace1Vert2, signFace1Vert3, signFace2Vert1, signFace2Vert2, signFace2Vert3;
-			int numFacesBefore = GetNumFaces();
-			int numFacesStart = GetNumFaces();
+			int numFacesBefore = this.GetNumFaces();
+			int numFacesStart = this.GetNumFaces();
 
 			//if the objects bounds overlap...
-			if (GetBound().Overlap(obj.GetBound()))
+			if (this.GetBound().Overlap(compareObject.GetBound()))
 			{
 				//for each object1 face...
-				for (int i = 0; i < GetNumFaces(); i++)
+				for (int thisFaceIndex = 0; thisFaceIndex < this.GetNumFaces(); thisFaceIndex++)
 				{
 					//if object1 face bound and object2 bound overlap ...
-					face1 = GetFace(i);
+					thisFace = GetFace(thisFaceIndex);
 
-					if (face1.GetBound().Overlap(obj.GetBound()))
+					if (thisFace.GetBound().Overlap(compareObject.GetBound()))
 					{
 						//for each object2 face...
-						for (int j = 0; j < obj.GetNumFaces(); j++)
+						for (int compareFaceIndex = 0; compareFaceIndex < compareObject.GetNumFaces(); compareFaceIndex++)
 						{
 							//if object1 face bound and object2 face bound overlap...
-							face2 = obj.GetFace(j);
-							if (face1.GetBound().Overlap(face2.GetBound()))
+							compareFace = compareObject.GetFace(compareFaceIndex);
+							if (thisFace.GetBound().Overlap(compareFace.GetBound()))
 							{
 								//PART I - DO TWO POLIGONS INTERSECT?
 								//POSSIBLE RESULTS: INTERSECT, NOT_INTERSECT, COPLANAR
 
 								//distance from the face1 vertices to the face2 plane
-								distFace1Vert1 = ComputeDistance(face1.v1, face2);
-								distFace1Vert2 = ComputeDistance(face1.v2, face2);
-								distFace1Vert3 = ComputeDistance(face1.v3, face2);
+								v1DistToCompareFace = ComputeDistance(thisFace.v1, compareFace);
+								distFace1Vert2 = ComputeDistance(thisFace.v2, compareFace);
+								distFace1Vert3 = ComputeDistance(thisFace.v3, compareFace);
 
 								//distances signs from the face1 vertices to the face2 plane
-								signFace1Vert1 = (distFace1Vert1 > EqualityTolerance ? 1 : (distFace1Vert1 < -EqualityTolerance ? -1 : 0));
+								signFace1Vert1 = (v1DistToCompareFace > EqualityTolerance ? 1 : (v1DistToCompareFace < -EqualityTolerance ? -1 : 0));
 								signFace1Vert2 = (distFace1Vert2 > EqualityTolerance ? 1 : (distFace1Vert2 < -EqualityTolerance ? -1 : 0));
 								signFace1Vert3 = (distFace1Vert3 > EqualityTolerance ? 1 : (distFace1Vert3 < -EqualityTolerance ? -1 : 0));
 
@@ -277,9 +277,9 @@ namespace Net3dBool
 								if (!(signFace1Vert1 == signFace1Vert2 && signFace1Vert2 == signFace1Vert3))
 								{
 									//distance from the face2 vertices to the face1 plane
-									distFace2Vert1 = ComputeDistance(face2.v1, face1);
-									distFace2Vert2 = ComputeDistance(face2.v2, face1);
-									distFace2Vert3 = ComputeDistance(face2.v3, face1);
+									distFace2Vert1 = ComputeDistance(compareFace.v1, thisFace);
+									distFace2Vert2 = ComputeDistance(compareFace.v2, thisFace);
+									distFace2Vert3 = ComputeDistance(compareFace.v3, thisFace);
 
 									//distances signs from the face2 vertices to the face1 plane
 									signFace2Vert1 = (distFace2Vert1 > EqualityTolerance ? 1 : (distFace2Vert1 < -EqualityTolerance ? -1 : 0));
@@ -289,39 +289,39 @@ namespace Net3dBool
 									//if the signs are not equal...
 									if (!(signFace2Vert1 == signFace2Vert2 && signFace2Vert2 == signFace2Vert3))
 									{
-										line = new Line(face1, face2);
+										line = new Line(thisFace, compareFace);
 
 										//intersection of the face1 and the plane of face2
-										segment1 = new Segment(line, face1, signFace1Vert1, signFace1Vert2, signFace1Vert3);
+										segment1 = new Segment(line, thisFace, signFace1Vert1, signFace1Vert2, signFace1Vert3);
 
 										//intersection of the face2 and the plane of face1
-										segment2 = new Segment(line, face2, signFace2Vert1, signFace2Vert2, signFace2Vert3);
+										segment2 = new Segment(line, compareFace, signFace2Vert1, signFace2Vert2, signFace2Vert3);
 
 										//if the two segments intersect...
 										if (segment1.Intersect(segment2))
 										{
 											//PART II - SUBDIVIDING NON-COPLANAR POLYGONS
 											int lastNumFaces = GetNumFaces();
-											this.SplitFace(i, segment1, segment2);
+											this.SplitFace(thisFaceIndex, segment1, segment2);
 
 											//prevent from infinite loop (with a loss of faces...)
 											if (GetNumFaces() > numFacesStart * 100)
 											{
 												//System.out.println("possible infinite loop situation: terminating faces split");
-												//return;
+												return;
 											}
 
 											//if the face in the position isn't the same, there was a break
-											if (face1 != GetFace(i))
+											if (thisFace != GetFace(thisFaceIndex))
 											{
 												//if the generated solid is equal the origin...
-												if (face1.Equals(GetFace(GetNumFaces() - 1)))
+												if (thisFace.Equals(GetFace(GetNumFaces() - 1)))
 												{
 													//return it to its position and jump it
-													if (i != (GetNumFaces() - 1))
+													if (thisFaceIndex != (GetNumFaces() - 1))
 													{
 														faces.RemoveAt(GetNumFaces() - 1);
-														faces.Insert(i, face1);
+														faces.Insert(thisFaceIndex, thisFace);
 													}
 													else
 													{
@@ -331,7 +331,7 @@ namespace Net3dBool
 												//else: test next face
 												else
 												{
-													i--;
+													thisFaceIndex--;
 													break;
 												}
 											}
@@ -690,9 +690,10 @@ namespace Net3dBool
 		private double ComputeDistance(Vertex vertex, Face face)
 		{
 			Vector3 normal = face.GetNormal();
-			double distToV1 = Vector3.Dot(normal, face.v1.Position);
-			double distToPositionMinusDistToV1 = Vector3.Dot(normal, vertex.Position) - distToV1;
-			return distToPositionMinusDistToV1;
+			double distToV1 = face.GetPlane().distanceToPlaneFromOrigin;
+			double distToVertex = Vector3.Dot(normal, vertex.Position);
+			double distFromFacePlane = distToVertex - distToV1;
+			return distFromFacePlane;
 		}
 
 		/// <summary>
