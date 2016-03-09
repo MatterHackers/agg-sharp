@@ -31,6 +31,7 @@ using MatterHackers.Agg.VertexSource;
 using MatterHackers.DataConverters2D;
 using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
+using System;
 
 namespace MatterHackers.DataConverters3D
 {
@@ -40,13 +41,11 @@ namespace MatterHackers.DataConverters3D
 		{
 			CachedTesselator teselatedSource = new CachedTesselator();
 			return TriangulateFaces(vertexSource, teselatedSource);
-        }
+		}
 
-        private static Mesh TriangulateFaces(IVertexSource vertexSource, CachedTesselator teselatedSource)
+		private static Mesh TriangulateFaces(IVertexSource vertexSource, CachedTesselator teselatedSource)
 		{
-			vertexSource.rewind();
-			
-            VertexSourceToTesselator.SendShapeToTesselator(teselatedSource, vertexSource);
+			VertexSourceToTesselator.SendShapeToTesselator(teselatedSource, vertexSource);
 
 			Mesh extrudedVertexSource = new Mesh();
 
@@ -71,6 +70,24 @@ namespace MatterHackers.DataConverters3D
 			}
 
 			return extrudedVertexSource;
+		}
+
+		public static Mesh Revolve(Arc arc, int angleStart = 0, double angleEnd = MathHelper.Tau)
+		{
+			// convert to clipper polygons and scale so we can ensure good shapes
+			// ensure good winding and consistent shapes
+			// convert the data back to double
+
+			// check if we need to make closing faces
+			if (angleStart != 0 || angleEnd != MathHelper.Tau)
+			{
+				// make a face for the start and end
+			}
+
+			// make the outside shell
+
+			// return the completed mesh
+			throw new NotImplementedException();
 		}
 
 		public static Mesh Extrude(IVertexSource vertexSource, double zHeight)

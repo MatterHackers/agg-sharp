@@ -42,6 +42,13 @@ namespace MatterHackers.Agg.VertexSource
 		{
 			get { return ShapePath.is_line_to(command); }
 		}
+
+		public bool IsClose
+		{
+			get { return ShapePath.is_close(command); }
+		}
+
+		public bool IsStop { get { return ShapePath.is_stop(command); } }
 	}
 
 	public interface IVertexSource

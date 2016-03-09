@@ -24,31 +24,33 @@ namespace MatterHackers.DataConverters2D
             {
                 tesselator.BeginPolygon();
 
-                ShapePath.FlagsAndCommand PathAndFlags = 0;
-                double x, y;
                 bool haveBegunContour = false;
-                while (!ShapePath.is_stop(PathAndFlags = vertexSource.vertex(out x, out y)))
-                {
-                    if (ShapePath.is_close(PathAndFlags)
-                        || (haveBegunContour && ShapePath.is_move_to(PathAndFlags)))
-                    {
-                        tesselator.EndContour();
-                        haveBegunContour = false;
-                    }
+				foreach(var vertexData in vertexSource.Vertices())
+				{
+					if(vertexData.IsStop)
+					{
+						break;
+					}
+					if (vertexData.IsClose
+						|| (haveBegunContour && vertexData.IsMoveTo))
+					{
+						tesselator.EndContour();
+						haveBegunContour = false;
+					}
 
-                    if (!ShapePath.is_close(PathAndFlags))
-                    {
-                        if (!haveBegunContour)
-                        {
-                            tesselator.BeginContour();
-                            haveBegunContour = true;
-                        }
+					if (!vertexData.IsClose)
+					{
+						if (!haveBegunContour)
+						{
+							tesselator.BeginContour();
+							haveBegunContour = true;
+						}
 
-                        tesselator.AddVertex(x, y);
-                    }
-                }
+						tesselator.AddVertex(vertexData.position.x, vertexData.position.y);
+					}
+				}
 
-                if (haveBegunContour)
+				if (haveBegunContour)
                 {
                     tesselator.EndContour();
                 }
