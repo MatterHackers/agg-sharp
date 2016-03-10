@@ -78,14 +78,14 @@ namespace MatterHackers.PolygonMesh
 
 		public List<Face> Faces { get; } = new List<Face>();
 
-		public static Mesh Copy(Mesh meshToCopy, ReportProgressRatio progress = null)
+		public static Mesh Copy(Mesh meshToCopy, ReportProgressRatio progress = null, bool allowFastCopy = true)
 		{
 			Mesh newMesh = new Mesh();
 
-			if (meshToCopy.Vertices.IsSorted)
+			if (allowFastCopy && meshToCopy.Vertices.IsSorted)
 			{
-				Dictionary<Vertex, int> vertexIndexDictionary = GetVertexToIndexDictionary(meshToCopy, newMesh);
-				Dictionary<MeshEdge, int> meshEdgeIndexDictionary = GetMeshEdgeToIndexDictionary(meshToCopy, newMesh);
+				Dictionary<int, int> vertexIndexDictionary = GetVertexToIndexDictionary(meshToCopy, newMesh);
+				Dictionary<int, int> meshEdgeIndexDictionary = GetMeshEdgeToIndexDictionary(meshToCopy, newMesh);
 
 				for (int faceIndex = 0; faceIndex < meshToCopy.Faces.Count; faceIndex++)
 				{
@@ -99,7 +99,7 @@ namespace MatterHackers.PolygonMesh
 				{
 					Vertex vertexToCopy = meshToCopy.Vertices[vertexIndex];
 					// !!!! ON ERROR !!!!! If this throws an error, you likely need to CleanAndMergMesh the mesh before copying
-					int indexOfFirstMeshEdge = meshEdgeIndexDictionary[vertexToCopy.firstMeshEdge];
+					int indexOfFirstMeshEdge = meshEdgeIndexDictionary[vertexToCopy.firstMeshEdge.Data.ID];
 					Vertex newVertex = newMesh.Vertices[vertexIndex];
 					newVertex.firstMeshEdge = newMesh.MeshEdges[indexOfFirstMeshEdge];
 					newVertex.Normal = vertexToCopy.Normal;
@@ -111,11 +111,11 @@ namespace MatterHackers.PolygonMesh
 					MeshEdge meshEdgeToCopy = meshToCopy.MeshEdges[meshEdgeIndex];
 					MeshEdge newMeshEdge = newMesh.MeshEdges[meshEdgeIndex];
 
-					newMeshEdge.NextMeshEdgeFromEnd[0] = newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeToCopy.NextMeshEdgeFromEnd[0]]];
-					newMeshEdge.NextMeshEdgeFromEnd[1] = newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeToCopy.NextMeshEdgeFromEnd[1]]];
+					newMeshEdge.NextMeshEdgeFromEnd[0] = newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeToCopy.NextMeshEdgeFromEnd[0].Data.ID]];
+					newMeshEdge.NextMeshEdgeFromEnd[1] = newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeToCopy.NextMeshEdgeFromEnd[1].Data.ID]];
 
-					newMeshEdge.VertexOnEnd[0] = newMesh.Vertices[vertexIndexDictionary[meshEdgeToCopy.VertexOnEnd[0]]];
-					newMeshEdge.VertexOnEnd[1] = newMesh.Vertices[vertexIndexDictionary[meshEdgeToCopy.VertexOnEnd[1]]];
+					newMeshEdge.VertexOnEnd[0] = newMesh.Vertices[vertexIndexDictionary[meshEdgeToCopy.VertexOnEnd[0].Data.ID]];
+					newMeshEdge.VertexOnEnd[1] = newMesh.Vertices[vertexIndexDictionary[meshEdgeToCopy.VertexOnEnd[1].Data.ID]];
 
 					// This will get hooked up when we create radial loops with the face edges below
 					//newMeshEdge.firstFaceEdge;
@@ -137,7 +137,7 @@ namespace MatterHackers.PolygonMesh
 					foreach (Vertex vertex in faceToCopy.Vertices())
 					{
 						verticesFromCopy.Add(vertex);
-						verticesForNew.Add(newMesh.Vertices[vertexIndexDictionary[vertex]]);
+						verticesForNew.Add(newMesh.Vertices[vertexIndexDictionary[vertex.Data.ID]]);
 					}
 
 					List<MeshEdge> edgesFromCopy = new List<MeshEdge>();
@@ -146,11 +146,11 @@ namespace MatterHackers.PolygonMesh
 					{
 						MeshEdge meshEdgeFromCopy = verticesFromCopy[i].GetMeshEdgeConnectedToVertex(verticesFromCopy[i + 1]);
 						edgesFromCopy.Add(meshEdgeFromCopy);
-						edgesForNew.Add(newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeFromCopy]]);
+						edgesForNew.Add(newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeFromCopy.Data.ID]]);
 					}
 					MeshEdge lastMeshEdgeFromCopy = verticesFromCopy[verticesFromCopy.Count - 1].GetMeshEdgeConnectedToVertex(verticesFromCopy[0]);
 					edgesFromCopy.Add(lastMeshEdgeFromCopy);
-					edgesForNew.Add(newMesh.MeshEdges[meshEdgeIndexDictionary[lastMeshEdgeFromCopy]]);
+					edgesForNew.Add(newMesh.MeshEdges[meshEdgeIndexDictionary[lastMeshEdgeFromCopy.Data.ID]]);
 
 					CreateFaceEdges(verticesForNew.ToArray(), edgesForNew, newface);
 				}
@@ -179,25 +179,25 @@ namespace MatterHackers.PolygonMesh
 			return newMesh;
 		}
 
-		private static Dictionary<MeshEdge, int> GetMeshEdgeToIndexDictionary(Mesh meshToCopy, Mesh newMesh)
+		private static Dictionary<int, int> GetMeshEdgeToIndexDictionary(Mesh meshToCopy, Mesh newMesh)
 		{
-			Dictionary<MeshEdge, int> meshEdgeIndexDictionary = new Dictionary<MeshEdge, int>(meshToCopy.MeshEdges.Count);
+			Dictionary<int, int> meshEdgeIndexDictionary = new Dictionary<int, int>(meshToCopy.MeshEdges.Count);
 			for (int edgeIndex = 0; edgeIndex < meshToCopy.MeshEdges.Count; edgeIndex++)
 			{
 				MeshEdge edgeToCopy = meshToCopy.MeshEdges[edgeIndex];
-				meshEdgeIndexDictionary.Add(edgeToCopy, edgeIndex);
+				meshEdgeIndexDictionary.Add(edgeToCopy.Data.ID, edgeIndex);
 				newMesh.MeshEdges.Add(new MeshEdge());
 			}
 			return meshEdgeIndexDictionary;
 		}
 
-		private static Dictionary<Vertex, int> GetVertexToIndexDictionary(Mesh meshToCopy, Mesh newMesh)
+		private static Dictionary<int, int> GetVertexToIndexDictionary(Mesh meshToCopy, Mesh newMesh)
 		{
-			Dictionary<Vertex, int> vertexIndexMapping = new Dictionary<Vertex, int>(meshToCopy.Vertices.Count);
+			Dictionary<int, int> vertexIndexMapping = new Dictionary<int, int>(meshToCopy.Vertices.Count);
 			for (int vertexIndex = 0; vertexIndex < meshToCopy.Vertices.Count; vertexIndex++)
 			{
 				Vertex vertexToCopy = meshToCopy.Vertices[vertexIndex];
-				vertexIndexMapping.Add(vertexToCopy, vertexIndex);
+				vertexIndexMapping.Add(vertexToCopy.Data.ID, vertexIndex);
 				newMesh.Vertices.Add(new Vertex(vertexToCopy.Position));
 			}
 			return vertexIndexMapping;
@@ -1043,9 +1043,47 @@ namespace MatterHackers.PolygonMesh
 			return nonManifoldEdges;
 		}
 
-		public Face FindFace(Vertex[] vertices)
+		public List<Face> FindFacesAtPosition(Vertex[] vertices)
 		{
-			//throw new NotImplementedException();
+			if (vertices.Length > 0)
+			{
+				List<Vector3> positions = new List<Vector3>();
+				foreach(Vertex vertex in vertices)
+				{
+					positions.Add(vertex.Position);
+				}
+
+				List<Face> sharedFaces = new List<Face>();
+				List<Vertex> sharedVertices = FindVertices(vertices[0].Position);
+				if(sharedVertices.Count > 0)
+				{
+					// we have found 1 or more shared vertexes (with the first vertex)
+					// let's get all the faces that also share the rest of the vertices
+					foreach(Vertex sharedVertex in sharedVertices)
+					{
+						foreach(Face connectedFace in sharedVertex.ConnectedFaces())
+						{
+							bool allShared = true;
+							foreach(Vertex checkVertex in connectedFace.Vertices())
+							{
+								if(!positions.Contains(checkVertex.Position))
+								{
+									allShared = false;
+									break;
+								}
+							}
+
+							if(allShared)
+							{
+								sharedFaces.Add(connectedFace);
+							}
+						}
+					}
+
+					return sharedFaces;
+				}
+			}
+
 			return null;
 		}
 
@@ -1138,6 +1176,59 @@ namespace MatterHackers.PolygonMesh
 				}
 				MarkAsChanged();
 			}
+		}
+
+		public override bool Equals(object obj)
+		{
+			if (!(obj is Mesh))
+				return false;
+
+			return this.Equals((Matrix4X4)obj);
+		}
+
+		public bool Equals(Mesh other)
+		{
+			if (this.Vertices.Count == other.Vertices.Count
+				&& this.MeshEdges.Count == other.MeshEdges.Count
+				&& this.Faces.Count == other.Faces.Count)
+			{
+				foreach (Vertex vertex in Vertices)
+				{
+					List<Vertex> foundVertices = other.FindVertices(vertex.Position);
+					if (foundVertices.Count < 1)
+					{
+						return false;
+					}
+				}
+
+				foreach (MeshEdge meshEdge in MeshEdges)
+				{
+					List<MeshEdge> foundEdges = other.FindMeshEdges(meshEdge.VertexOnEnd[0], meshEdge.VertexOnEnd[1]);
+					if (foundEdges.Count < 1)
+					{
+						return false;
+					}
+				}
+
+				foreach (Face face in Faces)
+				{
+					List<Vertex> faceVerices = new List<Vertex>();
+					foreach (FaceEdge faceEdge in face.FaceEdges())
+					{
+						faceVerices.Add(faceEdge.firstVertex);
+					}
+
+					List<Face> foundFaces = other.FindFacesAtPosition(faceVerices.ToArray());
+					if(foundFaces.Count < 1)
+					{
+						return false;
+					}
+				}
+
+				return true;
+			}
+
+			return false;
 		}
 
 		public void Triangulate()
