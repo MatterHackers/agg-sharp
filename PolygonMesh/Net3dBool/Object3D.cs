@@ -302,7 +302,7 @@ namespace Net3dBool
 										{
 											//PART II - SUBDIVIDING NON-COPLANAR POLYGONS
 											int lastNumFaces = GetNumFaces();
-											this.SplitFace(thisFaceIndex, segment1, segment2);
+											bool splitOccured = this.SplitFace(thisFaceIndex, segment1, segment2);
 
 											//prevent from infinite loop (with a loss of faces...)
 											if (GetNumFaces() > numFacesStart * 100)
@@ -641,7 +641,10 @@ namespace Net3dBool
 			}
 			else if (splitEdge == 2)
 			{
-				AddFace(face.v2, vertex, face.v1);
+				if (!face.v3.Equals(vertex))
+				{
+					AddFace(face.v2, vertex, face.v1);
+				}
 				AddFace(vertex, face.v3, face.v1);
 			}
 			else
@@ -702,7 +705,7 @@ namespace Net3dBool
 		/// <param name="facePos">face position on the array of faces</param>
 		/// <param name="segment1">segment representing the intersection of the face with the plane</param>
 		/// <param name="segment2">segment representing the intersection of other face with the plane of the current face plane</param>
-		private void SplitFace(int facePos, Segment segment1, Segment segment2)
+		private bool SplitFace(int facePos, Segment segment1, Segment segment2)
 		{
 			Vector3 startPos, endPos;
 			int startType, endType, middleType;
@@ -756,7 +759,7 @@ namespace Net3dBool
 			//VERTEX-_______-VERTEX
 			if (startType == Segment.VERTEX && endType == Segment.VERTEX)
 			{
-				return;
+				return false;
 			}
 
 			//______-EDGE-______
@@ -781,14 +784,14 @@ namespace Net3dBool
 				if (startType == Segment.VERTEX)
 				{
 					BreakFaceInTwo(facePos, endPos, splitEdge);
-					return;
+					return true;
 				}
 
 				//EDGE-EDGE-VERTEX
 				else if (endType == Segment.VERTEX)
 				{
 					BreakFaceInTwo(facePos, startPos, splitEdge);
-					return;
+					return true;
 				}
 
 				// EDGE-EDGE-EDGE
@@ -807,7 +810,7 @@ namespace Net3dBool
 						BreakFaceInThree(facePos, endPos, startPos, splitEdge);
 					}
 				}
-				return;
+				return true;
 			}
 
 			//______-FACE-______
@@ -856,7 +859,7 @@ namespace Net3dBool
 				if (Math.Abs(segmentVector.x) < EqualityTolerance && Math.Abs(segmentVector.y) < EqualityTolerance && Math.Abs(segmentVector.z) < EqualityTolerance)
 				{
 					BreakFaceInThree(facePos, startPos);
-					return;
+					return true;
 				}
 
 				//gets the vertex more lined with the intersection segment
@@ -897,6 +900,8 @@ namespace Net3dBool
 					BreakFaceInFive(facePos, endPos, startPos, linedVertex);
 				}
 			}
+
+			return true;
 		}
 	}
 }
