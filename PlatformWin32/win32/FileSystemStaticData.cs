@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 namespace MatterHackers.Agg
 {
@@ -16,7 +17,19 @@ namespace MatterHackers.Agg
 
 		public FileSystemStaticData()
 		{
-			this.basePath = Directory.Exists("StaticData") ? "StaticData" : Path.Combine("..", "..", "StaticData");
+			string appPathAndFile = Assembly.GetExecutingAssembly().Location;
+			string pathToAppFolder = Path.GetDirectoryName(appPathAndFile);
+			string localStaticDataPath = Path.Combine(pathToAppFolder, "StaticData");
+
+			this.basePath = localStaticDataPath;
+
+#if DEBUG
+			// In debug builds, use the StaticData folder up two directories from bin\debug, which should be MatterControl\StaticData
+			if (!Directory.Exists(this.basePath))
+			{
+				this.basePath = Path.GetFullPath(Path.Combine(pathToAppFolder, "..", "..", "StaticData"));
+			}
+#endif
 		}
 
 		public FileSystemStaticData(string overridePath)
