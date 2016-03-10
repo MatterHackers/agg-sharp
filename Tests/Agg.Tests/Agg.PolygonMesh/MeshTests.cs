@@ -28,10 +28,13 @@ either expressed or implied, of the FreeBSD Project.
 */
 #define DEBUG_INTO_TGAS
 
+using System;
 using MatterHackers.Agg;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
+using System.IO;
+using System.Collections.Generic;
 
 namespace MatterHackers.PolygonMesh.UnitTests
 {
@@ -653,18 +656,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 				testMesh.MergeVertices();
 
-				MeshFileIo.Save(testMesh, "control.stl", new MeshOutputSettings(MeshOutputSettings.OutputType.Ascii));
-				SaveDebugInfo(testMesh, "MeshCopy (orig)");
-
 				Mesh copyMesh = Mesh.Copy(testMesh);
 
-				MeshFileIo.Save(testMesh, "test.stl", new MeshOutputSettings(MeshOutputSettings.OutputType.Ascii));
-				SaveDebugInfo(copyMesh, "MeshCopy (copy)");
-
-				Mesh copyMesh2 = Mesh.Copy(copyMesh);
-
-				MeshFileIo.Save(copyMesh2, "test2.stl", new MeshOutputSettings(MeshOutputSettings.OutputType.Ascii));
-				SaveDebugInfo(copyMesh, "MeshCopy (copy2)");
+				Assert.IsTrue(testMesh.Equals(copyMesh));
 			}
 		}
 	}
