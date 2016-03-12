@@ -69,14 +69,37 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		public void SubtractWorks()
 		{
 			Vector3 centering = new Vector3(100, 100, 20);
-			Mesh boxA = PlatonicSolids.CreateCube(40, 40, 40);
-			boxA.Translate(centering);
-			Mesh boxB = PlatonicSolids.CreateCube(40, 40, 40);
+			Mesh meshA = PlatonicSolids.CreateCube(40, 40, 40);
+			meshA.Translate(centering);
+			Mesh meshB = PlatonicSolids.CreateCube(40, 40, 40);
 
 			Vector3 finalTransform = new Vector3(99.999927784394, 102.400700290798, 16.3588316937214);
-			boxB.Translate(finalTransform);
+			meshB.Translate(finalTransform);
 
-			Mesh meshToAdd = CsgOperations.Subtract(boxA, boxB);
+			Mesh meshToAdd = CsgOperations.Subtract(meshA, meshB);
+
+			AxisAlignedBoundingBox a_aabb = meshA.GetAxisAlignedBoundingBox();
+			AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
+			AxisAlignedBoundingBox intersect_aabb = meshToAdd.GetAxisAlignedBoundingBox();
+
+			Assert.IsTrue(a_aabb.XSize == 40 && a_aabb.YSize == 40 && a_aabb.ZSize == 40);
+			Assert.IsTrue(intersect_aabb.XSize == 40 && intersect_aabb.YSize == 40 && intersect_aabb.ZSize == 40);
+		}
+
+		[Test]
+		public void UnionExactlyOnWorks()
+		{
+			Mesh meshA = PlatonicSolids.CreateCube(40, 40, 40);
+			Mesh meshB = PlatonicSolids.CreateCube(40, 40, 40);
+
+			Mesh meshToAdd = CsgOperations.Union(meshA, meshB);
+
+			AxisAlignedBoundingBox a_aabb = meshA.GetAxisAlignedBoundingBox();
+			AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
+			AxisAlignedBoundingBox intersect_aabb = meshToAdd.GetAxisAlignedBoundingBox();
+
+			Assert.IsTrue(a_aabb.XSize == 40 && a_aabb.YSize == 40 && a_aabb.ZSize == 40);
+			Assert.IsTrue(intersect_aabb.XSize == 40 && intersect_aabb.YSize == 40 && intersect_aabb.ZSize == 40);
 		}
 
 		[Test]
