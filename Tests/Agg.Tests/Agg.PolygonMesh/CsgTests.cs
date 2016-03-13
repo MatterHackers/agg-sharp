@@ -40,32 +40,6 @@ namespace MatterHackers.PolygonMesh.UnitTests
 	public class MeshCsgTests
 	{
 		[Test]
-		public void PlaneSubtractPlane()
-		{
-			Mesh meshA = new Mesh();
-			Vertex[] verts = new Vertex[3];
-			verts[0] = meshA.CreateVertex(new Vector3(-1, -1, 0));
-			verts[1] = meshA.CreateVertex(new Vector3(1, -1, 0));
-			verts[2] = meshA.CreateVertex(new Vector3(1, 1, 0));
-
-			meshA.CreateFace(new Vertex[] { verts[0], verts[1], verts[2] });
-
-
-			meshA.Translate(new Vector3(-2, -2, -2));
-			Mesh meshB = PlatonicSolids.CreateCube(new Vector3(10, 10, 10));
-			meshB.Translate(new Vector3(2, 2, 2));
-
-			Mesh meshIntersect = CsgOperations.Intersect(meshA, meshB);
-
-			AxisAlignedBoundingBox a_aabb = meshA.GetAxisAlignedBoundingBox();
-			AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
-			AxisAlignedBoundingBox intersect_aabb = meshIntersect.GetAxisAlignedBoundingBox();
-
-			Assert.IsTrue(a_aabb.XSize == 10 && a_aabb.YSize == 10 && a_aabb.ZSize == 10);
-			Assert.IsTrue(intersect_aabb.XSize == 6 && intersect_aabb.YSize == 6 && intersect_aabb.ZSize == 6);
-		}
-
-		[Test]
 		public void SubtractWorks()
 		{
 			Vector3 centering = new Vector3(100, 100, 20);
@@ -75,6 +49,30 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 			Vector3 finalTransform = new Vector3(99.999927784394, 102.400700290798, 16.3588316937214);
 			meshB.Translate(finalTransform);
+
+			Mesh meshToAdd = CsgOperations.Subtract(meshA, meshB);
+
+			AxisAlignedBoundingBox a_aabb = meshA.GetAxisAlignedBoundingBox();
+			AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
+			AxisAlignedBoundingBox intersect_aabb = meshToAdd.GetAxisAlignedBoundingBox();
+
+			Assert.IsTrue(a_aabb.XSize == 40 && a_aabb.YSize == 40 && a_aabb.ZSize == 40);
+			Assert.IsTrue(intersect_aabb.XSize == 40 && intersect_aabb.YSize == 40 && intersect_aabb.ZSize == 40);
+		}
+
+		[Test]
+		public void SubtractIcosahedronsWorks()
+		{
+			Vector3 centering = new Vector3(100, 100, 20);
+			Mesh meshA = PlatonicSolids.CreateIcosahedron(35);
+			meshA.Translate(centering);
+			Mesh meshB = PlatonicSolids.CreateIcosahedron(35);
+
+			Vector3 finalTransform = new Vector3(105.240172225344, 92.9716306394062, 18.4619570261172);
+			Vector3 rotCurrent = new Vector3(4.56890223673623, -2.67874102322035, 1.02768848238523);
+			Vector3 scaleCurrent = new Vector3(1.07853517569753, 0.964980885267323, 1.09290934544604);
+			Matrix4X4 transformB = Matrix4X4.CreateScale(scaleCurrent) * Matrix4X4.CreateRotation(rotCurrent) * Matrix4X4.CreateTranslation(finalTransform);
+			meshB.Transform(transformB);
 
 			Mesh meshToAdd = CsgOperations.Subtract(meshA, meshB);
 

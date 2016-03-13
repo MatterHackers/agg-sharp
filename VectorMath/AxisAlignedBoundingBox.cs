@@ -79,6 +79,11 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
+		public bool Equals(AxisAlignedBoundingBox bounds, double equalityTolerance = 0)
+		{
+			return this.minXYZ.Equals(bounds.minXYZ, equalityTolerance) && this.maxXYZ.Equals(bounds.maxXYZ, equalityTolerance);
+		}
+
 		public AxisAlignedBoundingBox NewTransformed(Matrix4X4 transform)
 		{
 			Vector3[] boundsVerts = new Vector3[8];

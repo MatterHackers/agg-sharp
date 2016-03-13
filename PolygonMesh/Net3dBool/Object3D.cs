@@ -403,47 +403,57 @@ namespace Net3dBool
 		/// Face breaker for FACE-FACE-FACE
 		/// </summary>
 		/// <param name="faceIndex">face index in the faces array</param>
-		/// <param name="newPos1">new vertex position</param>
-		/// <param name="newPos2">new vertex position</param>
+		/// <param name="facePos1">new vertex position</param>
+		/// <param name="facePos2">new vertex position</param>
 		/// <param name="linedVertex">linedVertex what vertex is more lined with the interersection found</param>
-		private bool BreakFaceInFive(int faceIndex, Vector3 newPos1, Vector3 newPos2, int linedVertex)
+		private bool BreakFaceInFive(int faceIndex, Vector3 facePos1, Vector3 facePos2, int linedVertex)
 		{
 			//       O
 			//      - -
 			//     -   -
 			//    -     -
-			//   -       -
-			//  -         -
+			//   -    X  -
+			//  -  X      -
 			// O-----------O
 			Face face = faces[faceIndex];
 			faces.RemoveAt(faceIndex);
 
-			Vertex vertex1 = AddVertex(newPos1, Status.BOUNDARY);
-			Vertex vertex2 = AddVertex(newPos2, Status.BOUNDARY);
+			Vertex faceVertex1 = AddVertex(facePos1, Status.BOUNDARY);
+			bool faceVertex1Exists = faceVertex1 != vertices[vertices.Count - 1];
+
+			Vertex faceVertex2 = AddVertex(facePos2, Status.BOUNDARY);
+			bool faceVertex2Exists = faceVertex2 != vertices[vertices.Count - 1];
+
+			if (faceVertex1Exists && faceVertex2Exists)
+			{
+				vertices.RemoveAt(vertices.Count - 1);
+				vertices.RemoveAt(vertices.Count - 1);
+				return false;
+			}
 
 			if (linedVertex == 1)
 			{
-				AddFace(face.v2, face.v3, vertex1);
-				AddFace(face.v2, vertex1, vertex2);
-				AddFace(face.v3, vertex2, vertex1);
-				AddFace(face.v2, vertex2, face.v1);
-				AddFace(face.v3, face.v1, vertex2);
+				AddFace(face.v2, face.v3, faceVertex1);
+				AddFace(face.v2, faceVertex1, faceVertex2);
+				AddFace(face.v3, faceVertex2, faceVertex1);
+				AddFace(face.v2, faceVertex2, face.v1);
+				AddFace(face.v3, face.v1, faceVertex2);
 			}
 			else if (linedVertex == 2)
 			{
-				AddFace(face.v3, face.v1, vertex1);
-				AddFace(face.v3, vertex1, vertex2);
-				AddFace(face.v1, vertex2, vertex1);
-				AddFace(face.v3, vertex2, face.v2);
-				AddFace(face.v1, face.v2, vertex2);
+				AddFace(face.v3, face.v1, faceVertex1);
+				AddFace(face.v3, faceVertex1, faceVertex2);
+				AddFace(face.v1, faceVertex2, faceVertex1);
+				AddFace(face.v3, faceVertex2, face.v2);
+				AddFace(face.v1, face.v2, faceVertex2);
 			}
 			else
 			{
-				AddFace(face.v1, face.v2, vertex1);
-				AddFace(face.v1, vertex1, vertex2);
-				AddFace(face.v2, vertex2, vertex1);
-				AddFace(face.v1, vertex2, face.v3);
-				AddFace(face.v2, face.v3, vertex2);
+				AddFace(face.v1, face.v2, faceVertex1);
+				AddFace(face.v1, faceVertex1, faceVertex2);
+				AddFace(face.v2, faceVertex2, faceVertex1);
+				AddFace(face.v1, faceVertex2, face.v3);
+				AddFace(face.v2, face.v3, faceVertex2);
 			}
 
 			return true;
@@ -470,12 +480,11 @@ namespace Net3dBool
 			Face face = faces[faceIndex];
 
 			Vertex edgeVertex = AddVertex(edgePos, Status.BOUNDARY);
+			bool edgeExists = edgeVertex != vertices[vertices.Count - 1];
 			Vertex faceVertex = AddVertex(facePos, Status.BOUNDARY);
+			bool faceExists = faceVertex != vertices[vertices.Count - 1];
 
-			bool faceIsOnVertex = faceVertex == face.v1 || faceVertex == face.v2 || faceVertex == face.v3;
-			bool edgeIsOnVertex = edgeVertex == face.v1 || edgeVertex == face.v2 || edgeVertex == face.v3;
-
-			if (faceIsOnVertex && edgeIsOnVertex)
+			if (faceExists && edgeExists)
 			{
 				vertices.RemoveAt(vertices.Count - 1);
 				vertices.RemoveAt(vertices.Count - 1);
