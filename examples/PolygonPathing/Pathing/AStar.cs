@@ -40,7 +40,7 @@ using System.Collections.Generic;
 
 namespace MatterHackers.Pathing
 {
-#if true
+#if fales
     public class CPathLineSegment
     {
 
@@ -780,4 +780,5 @@ AssertNoLostNodes;
 	return true;
 }
 */
+#endif
 }

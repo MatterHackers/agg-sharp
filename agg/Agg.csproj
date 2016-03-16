@@ -254,6 +254,7 @@
     <Compile Include="Transform\Viewport.cs" />
     <Compile Include="VertexSource\Contour.cs" />
     <Compile Include="VertexSource\ContourGenerator.cs" />
+    <Compile Include="VertexSource\ConnectedPaths.cs" />
     <Compile Include="VertexSource\VertexSourceAdapter.cs" />
     <Compile Include="VertexSource\Stroke.cs" />
     <Compile Include="VertexSource\agg_curves.cs" />

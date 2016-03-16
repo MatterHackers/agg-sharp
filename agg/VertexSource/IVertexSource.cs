@@ -65,6 +65,10 @@ namespace MatterHackers.Agg.VertexSource
 
 		public ShapePath.FlagsAndCommand vertex(out double x, out double y)
 		{
+			if(currentEnumerator == null)
+			{
+				rewind(0);
+			}
 			x = currentEnumerator.Current.position.x;
 			y = currentEnumerator.Current.position.y;
 			ShapePath.FlagsAndCommand command = currentEnumerator.Current.command;

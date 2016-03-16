@@ -48,7 +48,7 @@ namespace MatterHackers.Agg.VertexSource
 	// Class conv_curve recognizes commands path_cmd_curve3 and path_cmd_curve4
 	// and converts these vertices into a move_to/line_to sequence.
 	//-----------------------------------------------------------------------
-	public class FlattenCurves : IVertexSourceProxy
+	public class FlattenCurves : VertexSourceLegacySupport
 	{
 		private double lastX;
 		private double lastY;
@@ -131,7 +131,7 @@ namespace MatterHackers.Agg.VertexSource
 			}
 		}
 
-		public IEnumerable<VertexData> Vertices()
+		override public IEnumerable<VertexData> Vertices()
 		{
 			VertexData lastPosition = new VertexData();
 
@@ -191,65 +191,6 @@ namespace MatterHackers.Agg.VertexSource
 						break;
 				}
 			}
-		}
-
-		public void rewind(int path_id)
-		{
-			VertexSource.rewind(path_id);
-			lastX = 0.0;
-			lastY = 0.0;
-			m_curve3.reset();
-			m_curve4.reset();
-		}
-
-		public ShapePath.FlagsAndCommand vertex(out double x, out double y)
-		{
-			if (!ShapePath.is_stop(m_curve3.vertex(out x, out y)))
-			{
-				lastX = x;
-				lastY = y;
-				return ShapePath.FlagsAndCommand.CommandLineTo;
-			}
-
-			if (!ShapePath.is_stop(m_curve4.vertex(out x, out y)))
-			{
-				lastX = x;
-				lastY = y;
-				return ShapePath.FlagsAndCommand.CommandLineTo;
-			}
-
-			double ct2_x;
-			double ct2_y;
-			double end_x;
-			double end_y;
-
-			ShapePath.FlagsAndCommand cmd = VertexSource.vertex(out x, out y);
-			switch (cmd)
-			{
-				case ShapePath.FlagsAndCommand.CommandCurve3:
-					VertexSource.vertex(out end_x, out end_y);
-
-					m_curve3.init(lastX, lastY, x, y, end_x, end_y);
-
-					m_curve3.vertex(out x, out y);    // First call returns path_cmd_move_to
-					m_curve3.vertex(out x, out y);    // This is the first vertex of the curve
-					cmd = ShapePath.FlagsAndCommand.CommandLineTo;
-					break;
-
-				case ShapePath.FlagsAndCommand.CommandCurve4:
-					VertexSource.vertex(out ct2_x, out ct2_y);
-					VertexSource.vertex(out end_x, out end_y);
-
-					m_curve4.init(lastX, lastY, x, y, ct2_x, ct2_y, end_x, end_y);
-
-					m_curve4.vertex(out x, out y);    // First call returns path_cmd_move_to
-					m_curve4.vertex(out x, out y);    // This is the first vertex of the curve
-					cmd = ShapePath.FlagsAndCommand.CommandLineTo;
-					break;
-			}
-			lastX = x;
-			lastY = y;
-			return cmd;
 		}
 	}
 }

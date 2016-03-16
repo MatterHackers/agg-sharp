@@ -24,7 +24,7 @@ using System.Collections.Generic;
 
 namespace MatterHackers.Agg.Font
 {
-	public class GlyphWithUnderline : IVertexSource
+	public class GlyphWithUnderline : VertexSourceLegacySupport
 	{
 		private int state = 0;
 		private IVertexSource underline;
@@ -36,7 +36,7 @@ namespace MatterHackers.Agg.Font
 			this.glyph = glyph;
 		}
 
-		public IEnumerable<VertexData> Vertices()
+		override public IEnumerable<VertexData> Vertices()
 		{
 			// return all the data for the glyph
 			foreach (VertexData vertexData in glyph.Vertices())
@@ -53,35 +53,6 @@ namespace MatterHackers.Agg.Font
 			{
 				yield return vertexData;
 			}
-		}
-
-		public void rewind(int path_id)
-		{
-			underline.rewind(0);
-			glyph.rewind(path_id);
-		}
-
-		public ShapePath.FlagsAndCommand vertex(out double x, out double y)
-		{
-			x = 0;
-			y = 0;
-			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.CommandStop;
-			switch (state)
-			{
-				case 0:
-					cmd = glyph.vertex(out x, out y);
-					if (ShapePath.is_stop(cmd))
-					{
-						state++;
-						goto case 1;
-					}
-					return cmd;
-
-				case 1:
-					cmd = underline.vertex(out x, out y);
-					break;
-			}
-			return cmd;
 		}
 	}
 
