@@ -51,6 +51,31 @@ namespace MatterHackers.Agg.VertexSource
 		public bool IsStop { get { return ShapePath.is_stop(command); } }
 	}
 
+	abstract public class VertexSourceLegacySupport : IVertexSource
+	{
+		private IEnumerator<VertexData> currentEnumerator;
+
+		abstract public IEnumerable<VertexData> Vertices();
+
+		public void rewind(int layerIndex)
+		{
+			currentEnumerator = Vertices().GetEnumerator();
+			currentEnumerator.MoveNext();
+		}
+
+		public ShapePath.FlagsAndCommand vertex(out double x, out double y)
+		{
+			x = currentEnumerator.Current.position.x;
+			y = currentEnumerator.Current.position.y;
+			ShapePath.FlagsAndCommand command = currentEnumerator.Current.command;
+
+			currentEnumerator.MoveNext();
+
+			return command;
+		}
+
+	}
+
 	public interface IVertexSource
 	{
 		IEnumerable<VertexData> Vertices();

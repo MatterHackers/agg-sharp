@@ -29,7 +29,7 @@ namespace MatterHackers.Agg.Font
 
 	public enum Baseline { BoundsTop, BoundsCenter, TextCenter, Text, BoundsBottom };
 
-	public class TypeFacePrinter : IVertexSource
+	public class TypeFacePrinter : VertexSourceLegacySupport
 	{
 		private String text = "";
 
@@ -204,7 +204,7 @@ namespace MatterHackers.Agg.Font
 			}
 		}
 
-		public IEnumerable<VertexData> Vertices()
+		public override IEnumerable<VertexData> Vertices()
 		{
 			if (text != null && text.Length > 0)
 			{
@@ -299,145 +299,6 @@ namespace MatterHackers.Agg.Font
 			}
 			return currentOffset;
 		}
-
-#if true
-		private IEnumerator<VertexData> currentEnumerator;
-
-		public void rewind(int layerIndex)
-		{
-			currentEnumerator = Vertices().GetEnumerator();
-			currentEnumerator.MoveNext();
-		}
-
-		public ShapePath.FlagsAndCommand vertex(out double x, out double y)
-		{
-			x = currentEnumerator.Current.position.x;
-			y = currentEnumerator.Current.position.y;
-			ShapePath.FlagsAndCommand command = currentEnumerator.Current.command;
-
-			currentEnumerator.MoveNext();
-
-			return command;
-		}
-
-#else
-        public void rewind(int pathId)
-        {
-            currentChar = 0;
-            currentOffset = new Vector2(0, 0);
-            if (text != null && text.Length > 0)
-            {
-                currentGlyph = typeFaceStyle.GetGlyphForCharacter(text[currentChar]);
-                if (currentGlyph != null)
-                {
-                    currentGlyph.rewind(0);
-                }
-            }
-        }
-
-        public ShapePath.FlagsAndCommand vertex(out double x, out double y)
-        {
-            x = 0;
-            y = 0;
-            if (text != null && text.Length > 0)
-            {
-                ShapePath.FlagsAndCommand curCommand = ShapePath.FlagsAndCommand.CommandStop;
-                if (currentGlyph != null)
-                {
-                    curCommand = currentGlyph.vertex(out x, out y);
-                }
-
-                double xAlignOffset = 0;
-                Vector2 size = GetSize();
-                switch (Justification)
-                {
-                    case Justification.Left:
-                        xAlignOffset = 0;
-                        break;
-
-                    case Justification.Center:
-                        xAlignOffset = -size.x / 2;
-                        break;
-
-                    case Justification.Right:
-                        xAlignOffset = -size.x;
-                        break;
-
-                    default:
-                        throw new NotImplementedException();
-                }
-
-                double yAlignOffset = 0;
-                switch (Baseline)
-                {
-                    case Baseline.Text:
-                        //yAlignOffset = -typeFaceStyle.DescentInPixels;
-                        yAlignOffset = 0;
-                        break;
-
-                    case Baseline.BoundsTop:
-                        yAlignOffset = -typeFaceStyle.AscentInPixels;
-                        break;
-
-                    case Baseline.BoundsCenter:
-                        yAlignOffset = -typeFaceStyle.AscentInPixels / 2;
-                        break;
-
-                    default:
-                        throw new NotImplementedException();
-                }
-
-                while (curCommand == ShapePath.FlagsAndCommand.CommandStop
-                    && currentChar < text.Length - 1)
-                {
-                    if (currentChar == 0 && text[currentChar] == '\n')
-                    {
-                        currentOffset.x = 0;
-                        currentOffset.y -= typeFaceStyle.EmSizeInPixels;
-                    }
-                    else
-                    {
-                        if (currentChar < text.Length)
-                        {
-                            // pass the next char so the typeFaceStyle can do kerning if it needs to.
-                            currentOffset.x += typeFaceStyle.GetAdvanceForCharacter(text[currentChar], text[currentChar + 1]);
-                        }
-                        else
-                        {
-                            currentOffset.x += typeFaceStyle.GetAdvanceForCharacter(text[currentChar]);
-                        }
-                    }
-
-                    currentChar++;
-                    currentGlyph = typeFaceStyle.GetGlyphForCharacter(text[currentChar]);
-                    if (currentGlyph != null)
-                    {
-                        currentGlyph.rewind(0);
-                        curCommand = currentGlyph.vertex(out x, out y);
-                    }
-                    else if (text[currentChar] == '\n')
-                    {
-                        if (currentChar + 1 < text.Length - 1 && (text[currentChar + 1] == '\n') && text[currentChar] != text[currentChar + 1])
-                        {
-                            currentChar++;
-                        }
-                        currentOffset.x = 0;
-                        currentOffset.y -= typeFaceStyle.EmSizeInPixels;
-                    }
-                }
-
-                if (ShapePath.is_vertex(curCommand))
-                {
-                    x += currentOffset.x + xAlignOffset + Origin.x;
-                    y += currentOffset.y + yAlignOffset + Origin.y;
-                }
-
-                return curCommand;
-            }
-
-            return ShapePath.FlagsAndCommand.CommandStop;
-        }
-#endif
 
 		public Vector2 GetSize(string text = null)
 		{
