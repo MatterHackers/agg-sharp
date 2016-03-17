@@ -283,12 +283,12 @@ namespace MatterHackers.Agg
 
 		public double XCenter
 		{
-			get { return (Right - Left) / 2; }
+			get { return Right / 2 + Left / 2; }
 		}
 
 		public double YCenter
 		{
-			get { return (Top - Bottom) / 2; }
+			get { return Top / 2 + Bottom / 2; }
 		}
 
 		public void Inflate(BorderDouble borderDouble)

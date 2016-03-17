@@ -1230,7 +1230,10 @@ namespace MatterHackers.Agg.VertexSource
 			RectangleDouble bounds = RectangleDouble.ZeroIntersection;
 			foreach (VertexData vertexData in Vertices())
 			{
-				bounds.ExpandToInclude(vertexData.position);
+				if (!vertexData.IsClose && !vertexData.IsStop)
+				{
+					bounds.ExpandToInclude(vertexData.position);
+				}
 			}
 
 			return bounds;

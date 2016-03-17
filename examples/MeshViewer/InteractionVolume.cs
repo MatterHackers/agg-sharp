@@ -27,30 +27,38 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.Agg;
+using MatterHackers.Agg.Transform;
+using MatterHackers.Agg.VertexSource;
 using MatterHackers.RayTracer;
+using MatterHackers.RenderOpenGl;
+using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
 using System;
-using MatterHackers.Agg;
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.Agg.Transform;
 
 namespace MatterHackers.MeshVisualizer
 {
 	public class InteractionVolume
 	{
+		public bool MouseDownOnControl;
+		public Matrix4X4 TotalTransform = Matrix4X4.Identity;
+		private IPrimitive collisionVolume;
 		private MeshViewerWidget meshViewerToDrawWith;
 
-		public MeshViewerWidget MeshViewerToDrawWith { get { return meshViewerToDrawWith; } }
+		private bool mouseOver = false;
 
-		private IPrimitive collisionVolume;
+		public InteractionVolume(IPrimitive collisionVolume, MeshViewerWidget meshViewerToDrawWith)
+		{
+			this.collisionVolume = collisionVolume;
+			this.meshViewerToDrawWith = meshViewerToDrawWith;
+		}
+
+		[Flags]
+		public enum LineArrows { None = 0, Start = 1, End = 2, Both = 3 };
 
 		public IPrimitive CollisionVolume { get { return collisionVolume; } set { collisionVolume = value; } }
-
-		public Matrix4X4 TotalTransform = Matrix4X4.Identity;
-
-		public bool MouseDownOnControl;
-
-		private bool mouseOver = false;
+		public bool DrawOnTop { get; protected set; }
+		public MeshViewerWidget MeshViewerToDrawWith { get { return meshViewerToDrawWith; } }
 
 		public bool MouseOver
 		{
@@ -69,8 +77,6 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
-		[Flags]
-		public enum LineArrows { None = 0, Start = 1, End = 2, Both = 3};
 		public static void DrawMeasureLine(Graphics2D graphics2D, Vector2 lineStart, Vector2 lineEnd, RGBA_Bytes color, LineArrows arrows)
 		{
 			graphics2D.Line(lineStart, lineEnd, RGBA_Bytes.Black);
@@ -92,30 +98,12 @@ namespace MatterHackers.MeshVisualizer
 				}
 				if (arrows.HasFlag(LineArrows.Start))
 				{
-					double rotation = Math.Atan2(direction.y, direction.x) + MathHelper.Tau/2;
+					double rotation = Math.Atan2(direction.y, direction.x) + MathHelper.Tau / 2;
 					IVertexSource correctRotation = new VertexSourceApplyTransform(arrow, Affine.NewRotation(rotation - MathHelper.Tau / 4));
 					IVertexSource inPosition = new VertexSourceApplyTransform(correctRotation, Affine.NewTranslation(lineStart));
 					graphics2D.Render(inPosition, RGBA_Bytes.Black);
 				}
 			}
-
-		}
-
-		public bool DrawOnTop { get; protected set; }
-
-		public void Invalidate()
-		{
-			MeshViewerToDrawWith.Invalidate();
-		}
-
-		public InteractionVolume(IPrimitive collisionVolume, MeshViewerWidget meshViewerToDrawWith)
-		{
-			this.collisionVolume = collisionVolume;
-			this.meshViewerToDrawWith = meshViewerToDrawWith;
-		}
-
-		public virtual void SetPosition()
-		{
 		}
 
 		public virtual void Draw2DContent(Agg.Graphics2D graphics2D)
@@ -126,9 +114,15 @@ namespace MatterHackers.MeshVisualizer
 		{
 		}
 
+		public void Invalidate()
+		{
+			MeshViewerToDrawWith.Invalidate();
+		}
+
 		public virtual void OnMouseDown(MouseEvent3DArgs mouseEvent3D)
 		{
 			MouseDownOnControl = true;
+			MeshViewerToDrawWith.Invalidate();
 		}
 
 		public virtual void OnMouseMove(MouseEvent3DArgs mouseEvent3D)
@@ -138,6 +132,28 @@ namespace MatterHackers.MeshVisualizer
 		public virtual void OnMouseUp(MouseEvent3DArgs mouseEvent3D)
 		{
 			MouseDownOnControl = false;
+		}
+
+		public virtual void SetPosition()
+		{
+		}
+
+		public static void RenderTransformedPath(Matrix4X4 transform, IVertexSource path, RGBA_Bytes color)
+		{
+			GL.MatrixMode(MatrixMode.Modelview);
+			GL.PushMatrix();
+			GL.MultMatrix(transform.GetAsFloatArray());
+			//GL.DepthMask(false);
+			GL.Enable(EnableCap.Blend);
+			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+			GL.Disable(EnableCap.Lighting);
+			GL.Disable(EnableCap.DepthTest);
+
+			Graphics2DOpenGL openGlRender = new Graphics2DOpenGL();
+			openGlRender.DrawAAShape(path, color);
+
+			//GL.DepthMask(true);
+			GL.PopMatrix();
 		}
 	}
 }
