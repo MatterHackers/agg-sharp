@@ -56,24 +56,44 @@ namespace MatterHackers.PolygonMesh
 			return plane;
 		}
 
-		public static Mesh TexturedPlane(ImageBuffer textureToUse, double x = 1, double y = 1)
+		public static Mesh TexturedPlane(ImageBuffer textureToUse, double xScale = 1, double yScale = 1)
 		{
-			Mesh texturedPlane = CommonShapes.CreatePlane(x, y);
+			Mesh texturedPlane = CommonShapes.CreatePlane(xScale, yScale);
 			{
 				Face face = texturedPlane.Faces[0];
-				{
-					FaceTextureData faceData = FaceTextureData.Get(face);
-					faceData.Textures.Add(textureToUse);
-					foreach (FaceEdge faceEdge in face.FaceEdges())
-					{
-						FaceEdgeTextureUvData edgeUV = FaceEdgeTextureUvData.Get(faceEdge);
-						edgeUV.TextureUV.Add(new Vector2((x / 2 + faceEdge.firstVertex.Position.x) / x,
-							(y / 2 + faceEdge.firstVertex.Position.y) / y));
-					}
-				}
+				PlaceTextureOnFace(face, textureToUse);
 			}
 
 			return texturedPlane;
+		}
+
+		public static void PlaceTextureOnFace(Face face, ImageBuffer textureToUse)
+		{
+			FaceTextureData faceData = FaceTextureData.Get(face);
+			faceData.Textures.Add(textureToUse);
+			int count = 0;
+			foreach (FaceEdge faceEdge in face.FaceEdges())
+			{
+				FaceEdgeTextureUvData edgeUV = FaceEdgeTextureUvData.Get(faceEdge);
+				switch (count++)
+				{
+					case 0:
+						edgeUV.TextureUV.Add(new Vector2(0, 0));
+						break;
+
+					case 1:
+						edgeUV.TextureUV.Add(new Vector2(0, 1));
+						break;
+
+					case 2:
+						edgeUV.TextureUV.Add(new Vector2(1, 1));
+						break;
+
+					case 3:
+						edgeUV.TextureUV.Add(new Vector2(1, 0));
+						break;
+				}
+			}
 		}
 	}
 }
