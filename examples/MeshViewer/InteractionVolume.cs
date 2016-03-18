@@ -140,6 +140,8 @@ namespace MatterHackers.MeshVisualizer
 
 		public static void RenderTransformedPath(Matrix4X4 transform, IVertexSource path, RGBA_Bytes color)
 		{
+			GL.Disable(EnableCap.Texture2D);
+
 			GL.MatrixMode(MatrixMode.Modelview);
 			GL.PushMatrix();
 			GL.MultMatrix(transform.GetAsFloatArray());

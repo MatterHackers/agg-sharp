@@ -82,7 +82,7 @@ namespace MatterHackers.PolygonMesh
 						break;
 
 					case 1:
-						edgeUV.TextureUV.Add(new Vector2(0, 1));
+						edgeUV.TextureUV.Add(new Vector2(1, 0));
 						break;
 
 					case 2:
@@ -90,7 +90,7 @@ namespace MatterHackers.PolygonMesh
 						break;
 
 					case 3:
-						edgeUV.TextureUV.Add(new Vector2(1, 0));
+						edgeUV.TextureUV.Add(new Vector2(0, 1));
 						break;
 				}
 			}

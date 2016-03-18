@@ -323,16 +323,7 @@ namespace MatterHackers.MeshVisualizer
 					printerBed = PlatonicSolids.CreateCube(displayVolumeToBuild.x, displayVolumeToBuild.y, 4);
 					{
 						Face face = printerBed.Faces[0];
-						{
-							FaceTextureData faceData = FaceTextureData.Get(face);
-							faceData.Textures.Add(BedImage);
-							foreach (FaceEdge faceEdge in face.FaceEdges())
-							{
-								FaceEdgeTextureUvData edgeUV = FaceEdgeTextureUvData.Get(faceEdge);
-								edgeUV.TextureUV.Add(new Vector2((displayVolumeToBuild.x / 2 + faceEdge.firstVertex.Position.x) / displayVolumeToBuild.x,
-									(displayVolumeToBuild.y / 2 + faceEdge.firstVertex.Position.y) / displayVolumeToBuild.y));
-							}
-						}
+						CommonShapes.PlaceTextureOnFace(face, BedImage);
 					}
 					break;
 
