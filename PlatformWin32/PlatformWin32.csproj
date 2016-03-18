@@ -68,6 +68,7 @@
     <Optimize>true</Optimize>
     <PlatformTarget>x86</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
+    <OutputPath>bin\Release\</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release64|AnyCPU'">
     <OutputPath>bin\Release64\</OutputPath>
