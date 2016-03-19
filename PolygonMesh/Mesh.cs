@@ -203,7 +203,7 @@ namespace MatterHackers.PolygonMesh
 			return vertexIndexMapping;
 		}
 
-		public void CleanAndMergMesh(ReportProgressRatio reportProgress = null)
+		public void CleanAndMergMesh(double maxDistanceToConsiderVertexAsSame = 0, ReportProgressRatio reportProgress = null)
 		{
 			if (reportProgress != null)
 			{
@@ -222,7 +222,7 @@ namespace MatterHackers.PolygonMesh
 				});
 				if (keepProcessing)
 				{
-					MergeVertices((double progress0To1, string processingState, out bool continueProcessing) =>
+					MergeVertices(maxDistanceToConsiderVertexAsSame, (double progress0To1, string processingState, out bool continueProcessing) =>
 					{
 						reportProgress(progress0To1 * .23 + .41, processingState, out continueProcessing);
 						keepProcessing = continueProcessing;
@@ -243,7 +243,7 @@ namespace MatterHackers.PolygonMesh
 			else
 			{
 				SortVertices();
-				MergeVertices();
+				MergeVertices(maxDistanceToConsiderVertexAsSame);
 				MergeMeshEdges();
 			}
 		}
@@ -513,7 +513,7 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public void MergeVertices(ReportProgressRatio reportProgress = null, double maxDistanceToConsiderVertexAsSame = 0)
+		public void MergeVertices(double maxDistanceToConsiderVertexAsSame = 0, ReportProgressRatio reportProgress = null)
 		{
 			HashSet<Vertex> markedForDeletion = new HashSet<Vertex>();
 			Stopwatch maxProgressReport = new Stopwatch();

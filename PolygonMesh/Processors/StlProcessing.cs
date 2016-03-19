@@ -340,7 +340,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
 			// merge all the vetexes that are in the same place together
 			bool finishedCleanAndMerge = true;
-			meshFromStlFile.CleanAndMergMesh(
+			meshFromStlFile.CleanAndMergMesh(reportProgress:
 				(double progress0To1, string processingState, out bool continueProcessing) =>
 				{
 					if (reportProgress != null)

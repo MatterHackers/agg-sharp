@@ -435,7 +435,7 @@ namespace MatterHackers.PolygonMesh.Processors
 				foreach (Mesh mesh in meshGroup.Meshes)
 				{
 					bool keepProcessing = true;
-					mesh.CleanAndMergMesh(
+					mesh.CleanAndMergMesh(reportProgress:
 						(double progress0To1, string processingState, out bool continueProcessing) =>
 						{
 							if (reportProgress != null)
