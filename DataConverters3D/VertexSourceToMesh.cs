@@ -27,14 +27,18 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using ClipperLib;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.DataConverters2D;
 using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
 using System;
+using System.Collections.Generic;
 
 namespace MatterHackers.DataConverters3D
 {
+	using Polygons = List<List<IntPoint>>;
+
 	public static class VertexSourceToMesh
 	{
 		public static Mesh TriangulateFaces(IVertexSource vertexSource)
@@ -72,11 +76,20 @@ namespace MatterHackers.DataConverters3D
 			return extrudedVertexSource;
 		}
 
-		public static Mesh Revolve(Arc arc, int angleStart = 0, double angleEnd = MathHelper.Tau)
+		private readonly static double EqualityTolerance = 1e-5f;
+
+		public static Mesh Revolve(IVertexSource source, int angleSteps = 30, double angleStart = 0, double angleEnd = MathHelper.Tau)
 		{
 			// convert to clipper polygons and scale so we can ensure good shapes
+			Polygons polygons = VertexSourceToClipperPolygons.CreatePolygons(source);
 			// ensure good winding and consistent shapes
-			// convert the data back to double
+			// clip against x=0 left and right
+			// mirror left material across the origin
+			// union mirrored left with right material
+			// convert the data back to PathStorage
+			PathStorage cleanedPath = VertexSourceToClipperPolygons.CreatePathStorage(polygons);
+
+			Mesh mesh = new Mesh();
 
 			// check if we need to make closing faces
 			if (angleStart != 0 || angleEnd != MathHelper.Tau)
@@ -85,9 +98,51 @@ namespace MatterHackers.DataConverters3D
 			}
 
 			// make the outside shell
+			double angleDelta = (angleEnd - angleStart) / angleSteps;
+			double currentAngle = 0;
+            for (currentAngle = angleStart; currentAngle < angleEnd - angleDelta - EqualityTolerance; currentAngle += angleDelta)
+			{
+				AddRevolveStrip(cleanedPath, mesh, currentAngle, currentAngle + angleDelta);
+            }
+
+			AddRevolveStrip(cleanedPath, mesh, currentAngle, currentAngle + angleDelta);
+
+			// TODO: get this working.
+			//mesh.CleanAndMergMesh(.01);
 
 			// return the completed mesh
-			throw new NotImplementedException();
+			return mesh;
+		}
+
+		static void AddRevolveStrip(IVertexSource vertexSource, Mesh mesh, double startAngle, double endAngle)
+		{
+			Vector3 lastPosition = Vector3.Zero;
+			foreach (var vertexData in vertexSource.Vertices())
+			{
+				if (vertexData.IsStop)
+				{
+					break;
+				}
+				if (vertexData.IsMoveTo)
+				{
+					lastPosition = new Vector3(vertexData.position.x, 0, vertexData.position.y);
+                }
+
+				if (vertexData.IsLineTo)
+				{
+					Vector3 currentPosition = new Vector3(vertexData.position.x, 0, vertexData.position.y);
+
+					Vertex lastStart = mesh.CreateVertex(Vector3.Transform(lastPosition, Matrix4X4.CreateRotationZ(startAngle)), CreateOption.CreateNew, SortOption.WillSortLater);
+					Vertex lastEnd = mesh.CreateVertex(Vector3.Transform(lastPosition, Matrix4X4.CreateRotationZ(endAngle)), CreateOption.CreateNew, SortOption.WillSortLater);
+
+					Vertex currentStart = mesh.CreateVertex(Vector3.Transform(currentPosition, Matrix4X4.CreateRotationZ(startAngle)), CreateOption.CreateNew, SortOption.WillSortLater);
+					Vertex currentEnd = mesh.CreateVertex(Vector3.Transform(currentPosition, Matrix4X4.CreateRotationZ(endAngle)), CreateOption.CreateNew, SortOption.WillSortLater);
+
+					mesh.CreateFace(new Vertex[] { lastStart, lastEnd, currentEnd, currentStart }, CreateOption.CreateNew);
+
+					lastPosition = currentPosition;
+                }
+			}
 		}
 
 		public static Mesh Extrude(IVertexSource vertexSource, double zHeight)
