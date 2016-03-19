@@ -106,6 +106,26 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
+		public static void RenderTransformedPath(Matrix4X4 transform, IVertexSource path, RGBA_Bytes color)
+		{
+			GL.Disable(EnableCap.Texture2D);
+
+			GL.MatrixMode(MatrixMode.Modelview);
+			GL.PushMatrix();
+			GL.MultMatrix(transform.GetAsFloatArray());
+			//GL.DepthMask(false);
+			GL.Enable(EnableCap.Blend);
+			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+			GL.Disable(EnableCap.Lighting);
+			GL.Disable(EnableCap.DepthTest);
+
+			Graphics2DOpenGL openGlRender = new Graphics2DOpenGL();
+			openGlRender.DrawAAShape(path, color);
+
+			//GL.DepthMask(true);
+			GL.PopMatrix();
+		}
+
 		public virtual void Draw2DContent(Agg.Graphics2D graphics2D)
 		{
 		}
@@ -138,24 +158,21 @@ namespace MatterHackers.MeshVisualizer
 		{
 		}
 
-		public static void RenderTransformedPath(Matrix4X4 transform, IVertexSource path, RGBA_Bytes color)
+		public static Vector3 SetBottomControlHeight(AxisAlignedBoundingBox originalSelectedBounds, Vector3 cornerPosition)
 		{
-			GL.Disable(EnableCap.Texture2D);
+			if (originalSelectedBounds.minXYZ.z < 0)
+			{
+				if (originalSelectedBounds.maxXYZ.z < 0)
+				{
+					cornerPosition.z = originalSelectedBounds.maxXYZ.z;
+				}
+				else
+				{
+					cornerPosition.z = 0;
+				}
+			}
 
-			GL.MatrixMode(MatrixMode.Modelview);
-			GL.PushMatrix();
-			GL.MultMatrix(transform.GetAsFloatArray());
-			//GL.DepthMask(false);
-			GL.Enable(EnableCap.Blend);
-			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-			GL.Disable(EnableCap.Lighting);
-			GL.Disable(EnableCap.DepthTest);
-
-			Graphics2DOpenGL openGlRender = new Graphics2DOpenGL();
-			openGlRender.DrawAAShape(path, color);
-
-			//GL.DepthMask(true);
-			GL.PopMatrix();
+			return cornerPosition;
 		}
 	}
 }

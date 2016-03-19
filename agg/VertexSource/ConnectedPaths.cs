@@ -22,7 +22,6 @@ using MatterHackers.VectorMath;
 // Rounded rectangle vertex generator
 //
 //----------------------------------------------------------------------------
-using System;
 using System.Collections.Generic;
 
 namespace MatterHackers.Agg.VertexSource
@@ -33,8 +32,6 @@ namespace MatterHackers.Agg.VertexSource
 	//
 	public class ConnectedPaths : VertexSourceLegacySupport
 	{
-		List<IVertexSource> SourcPaths { get; } = new List<IVertexSource>();
-
 		public ConnectedPaths()
 		{
 		}
@@ -44,16 +41,18 @@ namespace MatterHackers.Agg.VertexSource
 			SourcPaths.AddRange(paths);
 		}
 
+		private List<IVertexSource> SourcPaths { get; } = new List<IVertexSource>();
+
 		override public IEnumerable<VertexData> Vertices()
 		{
-			for(int i=0; i<SourcPaths.Count; i++)
+			for (int i = 0; i < SourcPaths.Count; i++)
 			{
 				IVertexSource sourcePath = SourcPaths[i];
 				bool firstMove = true;
 				foreach (VertexData vertexData in sourcePath.Vertices())
 				{
 					// skip the initial command if it is not the first path and is a moveto.
-					if (i > 0 
+					if (i > 0
 						&& firstMove
 						&& ShapePath.is_move_to(vertexData.command))
 					{
