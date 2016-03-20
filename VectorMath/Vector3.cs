@@ -228,10 +228,14 @@ namespace MatterHackers.VectorMath
 		/// </summary>
 		public void Normalize()
 		{
-			double scale = 1.0 / this.Length;
-			x *= scale;
-			y *= scale;
-			z *= scale;
+			double length = this.Length;
+			if (length != 0)
+			{
+				double scale = 1.0 / this.Length;
+				x *= scale;
+				y *= scale;
+				z *= scale;
+			}
 		}
 
 		#endregion public void Normalize()

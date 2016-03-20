@@ -535,10 +535,7 @@ namespace MatterHackers.Agg.OpenGlGui
 
 		private void OnDrawGlContent()
 		{
-			if (DrawGlContent != null)
-			{
-				DrawGlContent(this, null);
-			}
+			DrawGlContent?.Invoke(this, null);
 		}
 
 		private void GradientBand(double startHeight, double endHeight, int startColor, int endColor)

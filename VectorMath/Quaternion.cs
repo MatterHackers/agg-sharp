@@ -196,9 +196,13 @@ namespace MatterHackers.VectorMath
 		/// </summary>
 		public void Normalize()
 		{
-			double scale = 1.0f / this.Length;
-			Xyz *= scale;
-			W *= scale;
+			double length = this.Length;
+			if (length != 0)
+			{
+				double scale = 1.0f / length;
+				Xyz *= scale;
+				W *= scale;
+			}
 		}
 
 		#endregion public void Normalize()

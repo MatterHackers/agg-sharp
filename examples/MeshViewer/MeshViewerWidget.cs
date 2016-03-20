@@ -47,6 +47,16 @@ using System.IO;
 
 namespace MatterHackers.MeshVisualizer
 {
+	public class DrawGlContentEventArgs : EventArgs
+	{
+		public bool ZBuffered { get; }
+
+		public DrawGlContentEventArgs(bool zBuffered)
+		{
+			ZBuffered = zBuffered;
+		}
+	}
+
 	public class MeshViewerWidget : GuiWidget
 	{
 		static public ImageBuffer BedImage = null;
@@ -810,7 +820,7 @@ namespace MatterHackers.MeshVisualizer
 				if (interactionVolume.DrawOnTop)
 				{
 					GL.Disable(EnableCap.DepthTest);
-					interactionVolume.DrawGlContent(e);
+					interactionVolume.DrawGlContent(new DrawGlContentEventArgs(false));
 					GL.Enable(EnableCap.DepthTest);
 				}
 			}
@@ -818,7 +828,7 @@ namespace MatterHackers.MeshVisualizer
 			// Draw again setting the depth buffer and ensuring that all the interaction objects are sorted as well as we can
 			foreach (InteractionVolume interactionVolume in interactionVolumes)
 			{
-				interactionVolume.DrawGlContent(e);
+				interactionVolume.DrawGlContent(new DrawGlContentEventArgs(true));
 			}
 		}
 
