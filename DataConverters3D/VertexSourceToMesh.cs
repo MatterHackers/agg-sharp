@@ -108,7 +108,7 @@ namespace MatterHackers.DataConverters3D
 			AddRevolveStrip(cleanedPath, mesh, currentAngle, currentAngle + angleDelta);
 
 			// TODO: get this working.
-			//mesh.CleanAndMergMesh(.01);
+			mesh.CleanAndMergMesh(.0001);
 
 			// return the completed mesh
 			return mesh;
@@ -116,7 +116,11 @@ namespace MatterHackers.DataConverters3D
 
 		static void AddRevolveStrip(IVertexSource vertexSource, Mesh mesh, double startAngle, double endAngle)
 		{
+			CreateOption createOption = CreateOption.CreateNew;
+			SortOption sortOption = SortOption.WillSortLater;
+
 			Vector3 lastPosition = Vector3.Zero;
+
 			foreach (var vertexData in vertexSource.Vertices())
 			{
 				if (vertexData.IsStop)
@@ -126,22 +130,22 @@ namespace MatterHackers.DataConverters3D
 				if (vertexData.IsMoveTo)
 				{
 					lastPosition = new Vector3(vertexData.position.x, 0, vertexData.position.y);
-                }
+				}
 
 				if (vertexData.IsLineTo)
 				{
 					Vector3 currentPosition = new Vector3(vertexData.position.x, 0, vertexData.position.y);
 
-					Vertex lastStart = mesh.CreateVertex(Vector3.Transform(lastPosition, Matrix4X4.CreateRotationZ(startAngle)), CreateOption.CreateNew, SortOption.WillSortLater);
-					Vertex lastEnd = mesh.CreateVertex(Vector3.Transform(lastPosition, Matrix4X4.CreateRotationZ(endAngle)), CreateOption.CreateNew, SortOption.WillSortLater);
+					Vertex lastStart = mesh.CreateVertex(Vector3.Transform(lastPosition, Matrix4X4.CreateRotationZ(startAngle)), createOption, sortOption);
+					Vertex lastEnd = mesh.CreateVertex(Vector3.Transform(lastPosition, Matrix4X4.CreateRotationZ(endAngle)), createOption, sortOption);
 
-					Vertex currentStart = mesh.CreateVertex(Vector3.Transform(currentPosition, Matrix4X4.CreateRotationZ(startAngle)), CreateOption.CreateNew, SortOption.WillSortLater);
-					Vertex currentEnd = mesh.CreateVertex(Vector3.Transform(currentPosition, Matrix4X4.CreateRotationZ(endAngle)), CreateOption.CreateNew, SortOption.WillSortLater);
+					Vertex currentStart = mesh.CreateVertex(Vector3.Transform(currentPosition, Matrix4X4.CreateRotationZ(startAngle)), createOption, sortOption);
+					Vertex currentEnd = mesh.CreateVertex(Vector3.Transform(currentPosition, Matrix4X4.CreateRotationZ(endAngle)), createOption, sortOption);
 
-					mesh.CreateFace(new Vertex[] { lastStart, lastEnd, currentEnd, currentStart }, CreateOption.CreateNew);
+					mesh.CreateFace(new Vertex[] { lastStart, lastEnd, currentEnd, currentStart }, createOption);
 
 					lastPosition = currentPosition;
-                }
+				}
 			}
 		}
 

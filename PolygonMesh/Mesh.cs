@@ -473,11 +473,11 @@ namespace MatterHackers.PolygonMesh
 			return Vertices.FindVertices(position, maxDistanceToConsiderVertexAsSame);
 		}
 
-		public Vertex CreateVertex(Vector3 position, CreateOption createOption = CreateOption.ReuseExisting, SortOption sortOption = SortOption.SortNow)
+		public Vertex CreateVertex(Vector3 position, CreateOption createOption = CreateOption.ReuseExisting, SortOption sortOption = SortOption.SortNow, double maxDistanceToConsiderVertexAsSame = 0)
 		{
 			if (createOption == CreateOption.ReuseExisting)
 			{
-				List<Vertex> existingVertices = FindVertices(position);
+				List<Vertex> existingVertices = FindVertices(position, maxDistanceToConsiderVertexAsSame);
 				if (existingVertices != null && existingVertices.Count > 0)
 				{
 					return existingVertices[0];
@@ -931,29 +931,36 @@ namespace MatterHackers.PolygonMesh
 
 		public Face CreateFace(Vertex[] verticesToUse, CreateOption createOption = CreateOption.ReuseExisting)
 		{
-			if (verticesToUse.Length == 3
-				&& (verticesToUse[0].Position == verticesToUse[1].Position
-				|| verticesToUse[1].Position == verticesToUse[2].Position
-				|| verticesToUse[2].Position == verticesToUse[0].Position))
+			List<Vertex> nonRepeatingSet = new List<Vertex>(verticesToUse);
+			for (int i = nonRepeatingSet.Count - 1; i > 0; i--)
+			{
+				if (nonRepeatingSet[i] == nonRepeatingSet[i - 1]
+					|| nonRepeatingSet[i].Position == nonRepeatingSet[i-1].Position)
+				{
+					nonRepeatingSet.RemoveAt(i);
+				}
+			}
+
+			if (nonRepeatingSet.Count < 3
+				|| (nonRepeatingSet.Count == 3
+				&& (nonRepeatingSet[0].Position == nonRepeatingSet[1].Position
+				|| nonRepeatingSet[1].Position == nonRepeatingSet[2].Position
+				|| nonRepeatingSet[2].Position == nonRepeatingSet[0].Position)))
 			{
 				return null;
 			}
-			if (verticesToUse.Length < 3)
-			{
-				throw new ArgumentException("A face cannot have less than 3 vertices.");
-			}
 
 			List<MeshEdge> edgesToUse = new List<MeshEdge>();
-			for (int i = 0; i < verticesToUse.Length - 1; i++)
+			for (int i = 0; i < nonRepeatingSet.Count - 1; i++)
 			{
-				edgesToUse.Add(CreateMeshEdge(verticesToUse[i], verticesToUse[i + 1], createOption));
+				edgesToUse.Add(CreateMeshEdge(nonRepeatingSet[i], nonRepeatingSet[i + 1], createOption));
 			}
-			edgesToUse.Add(CreateMeshEdge(verticesToUse[verticesToUse.Length - 1], verticesToUse[0], createOption));
+			edgesToUse.Add(CreateMeshEdge(nonRepeatingSet[nonRepeatingSet.Count - 1], nonRepeatingSet[0], createOption));
 
 			// make the face and set it's data
 			Face createdFace = new Face();
 
-			CreateFaceEdges(verticesToUse, edgesToUse, createdFace);
+			CreateFaceEdges(nonRepeatingSet.ToArray(), edgesToUse, createdFace);
 
 			createdFace.CalculateNormal();
 
