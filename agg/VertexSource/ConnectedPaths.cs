@@ -36,6 +36,11 @@ namespace MatterHackers.Agg.VertexSource
 		{
 		}
 
+		public ConnectedPaths(IVertexSource a, IVertexSource b)
+			: this(new IVertexSource[] { a, b })
+		{
+		}
+
 		public ConnectedPaths(IEnumerable<IVertexSource> paths)
 		{
 			SourcPaths.AddRange(paths);
