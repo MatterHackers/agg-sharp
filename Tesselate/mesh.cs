@@ -547,26 +547,26 @@ namespace Tesselate
 		* eOrg and eNew will have the same left face.
 		*/
 
-		private static HalfEdge meshAddEdgeVertex(HalfEdge eOrg)
+		private static HalfEdge meshAddEdgeVertex(HalfEdge originalEdge)
 		{
-			HalfEdge eNewSym;
-			HalfEdge eNew = MakeEdge(eOrg);
+			HalfEdge newEdgeOtherHalf;
+			HalfEdge newEdge = MakeEdge(originalEdge);
 
-			eNewSym = eNew.otherHalfOfThisEdge;
+			newEdgeOtherHalf = newEdge.otherHalfOfThisEdge;
 
 			/* Connect the new edge appropriately */
-			Splice(eNew, eOrg.nextEdgeCCWAroundLeftFace);
+			Splice(newEdge, originalEdge.nextEdgeCCWAroundLeftFace);
 
 			/* Set the vertex and face information */
-			eNew.originVertex = eOrg.directionVertex;
+			newEdge.originVertex = originalEdge.directionVertex;
 			{
 				ContourVertex newVertex = new ContourVertex();
 
-				MakeVertex(newVertex, eNewSym, eNew.originVertex);
+				MakeVertex(newVertex, newEdgeOtherHalf, newEdge.originVertex);
 			}
-			eNew.leftFace = eNewSym.leftFace = eOrg.leftFace;
+			newEdge.leftFace = newEdgeOtherHalf.leftFace = originalEdge.leftFace;
 
-			return eNew;
+			return newEdge;
 		}
 
 		/* __gl_meshSplitEdge( eOrg ) splits eOrg into two edges eOrg and eNew,
@@ -574,23 +574,23 @@ namespace Tesselate
 		* eOrg and eNew will have the same left face.
 		*/
 
-		public static HalfEdge meshSplitEdge(HalfEdge eOrg)
+		public static HalfEdge meshSplitEdge(HalfEdge originalEdge)
 		{
 			HalfEdge eNew;
-			HalfEdge tempHalfEdge = meshAddEdgeVertex(eOrg);
+			HalfEdge tempHalfEdge = meshAddEdgeVertex(originalEdge);
 
 			eNew = tempHalfEdge.otherHalfOfThisEdge;
 
 			/* Disconnect eOrg from eOrg.Dst and connect it to eNew.Org */
-			Splice(eOrg.otherHalfOfThisEdge, eOrg.otherHalfOfThisEdge.Oprev);
-			Splice(eOrg.otherHalfOfThisEdge, eNew);
+			Splice(originalEdge.otherHalfOfThisEdge, originalEdge.otherHalfOfThisEdge.Oprev);
+			Splice(originalEdge.otherHalfOfThisEdge, eNew);
 
 			/* Set the vertex and face information */
-			eOrg.directionVertex = eNew.originVertex;
+			originalEdge.directionVertex = eNew.originVertex;
 			eNew.directionVertex.edgeThisIsOriginOf = eNew.otherHalfOfThisEdge;	/* may have pointed to eOrg.Sym */
-			eNew.rightFace = eOrg.rightFace;
-			eNew.winding = eOrg.winding;	/* copy old winding information */
-			eNew.otherHalfOfThisEdge.winding = eOrg.otherHalfOfThisEdge.winding;
+			eNew.rightFace = originalEdge.rightFace;
+			eNew.winding = originalEdge.winding;	/* copy old winding information */
+			eNew.otherHalfOfThisEdge.winding = originalEdge.otherHalfOfThisEdge.winding;
 
 			return eNew;
 		}
