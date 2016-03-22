@@ -498,10 +498,12 @@ namespace MatterHackers.MeshVisualizer
 					if (i == volumeHitIndex)
 					{
 						interactionVolumes[i].MouseOver = true;
-					}
+						interactionVolumes[i].MouseMoveInfo = info;
+                    }
 					else
 					{
 						interactionVolumes[i].MouseOver = false;
+						interactionVolumes[i].MouseMoveInfo = null;
 					}
 				}
 			}
