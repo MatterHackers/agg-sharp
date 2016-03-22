@@ -44,15 +44,23 @@ namespace MatterHackers.MeshVisualizer
 	{
 		private string measureDisplayedString = "";
 		private ImageBuffer measureDisplayImage = null;
+		string formatString;
+		string unitsString;
+
+		public ValueDisplayInfo(string formatString = "{0:0.00}", string unitsString = "mm")
+		{
+			this.formatString = formatString;
+			this.unitsString = unitsString;
+		}
 
 		public void DisplaySizeInfo(Graphics2D graphics2D, Vector2 widthDisplayCenter, double size)
 		{
-			string displayString = "{0:0.00}".FormatWith(size);
+			string displayString = formatString.FormatWith(size);
 			if (measureDisplayImage == null || measureDisplayedString != displayString)
 			{
 				measureDisplayedString = displayString;
 				TypeFacePrinter printer = new TypeFacePrinter(measureDisplayedString, 16);
-				TypeFacePrinter unitPrinter = new TypeFacePrinter("mm", 10);
+				TypeFacePrinter unitPrinter = new TypeFacePrinter(unitsString, 10);
 				Double unitPrinterOffset = 1;
 
 				BorderDouble margin = new BorderDouble(5);
@@ -115,6 +123,8 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
+		public IntersectInfo MouseMoveInfo { get; set; }
+
 		public static void DrawMeasureLine(Graphics2D graphics2D, Vector2 lineStart, Vector2 lineEnd, RGBA_Bytes color, LineArrows arrows)
 		{
 			graphics2D.Line(lineStart, lineEnd, RGBA_Bytes.Black);
@@ -144,7 +154,7 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
-		public static void RenderTransformedPath(Matrix4X4 transform, IVertexSource path, RGBA_Bytes color)
+		public static void RenderTransformedPath(Matrix4X4 transform, IVertexSource path, RGBA_Bytes color, bool doDepthTest)
 		{
 			GL.Disable(EnableCap.Texture2D);
 
@@ -155,12 +165,18 @@ namespace MatterHackers.MeshVisualizer
 			GL.Enable(EnableCap.Blend);
 			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
 			GL.Disable(EnableCap.Lighting);
-			GL.Disable(EnableCap.DepthTest);
+			if (doDepthTest)
+			{
+				GL.Enable(EnableCap.DepthTest);
+			}
+			else
+			{
+				GL.Disable(EnableCap.DepthTest);
+			}
 
 			Graphics2DOpenGL openGlRender = new Graphics2DOpenGL();
 			openGlRender.DrawAAShape(path, color);
 
-			//GL.DepthMask(true);
 			GL.PopMatrix();
 		}
 

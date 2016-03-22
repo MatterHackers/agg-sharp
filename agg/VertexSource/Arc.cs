@@ -40,8 +40,6 @@ namespace MatterHackers.Agg.VertexSource
 
 		private double flatenDeltaAngle;
 
-		private bool isInitialized = false;
-
 		private Vector2 origin;
 
 		private Vector2 radius;
@@ -81,7 +79,6 @@ namespace MatterHackers.Agg.VertexSource
 		public void approximation_scale(double s)
 		{
 			scale = s;
-			isInitialized = false; // force recalc
 		}
 
 		public double approximation_scale()
@@ -110,14 +107,15 @@ namespace MatterHackers.Agg.VertexSource
 			this.endAngle = endAngle;
 			this.direction = direction;
 			this.scale = scale;
-			normalize(startAngle, endAngle);
 		}
 
 		override public IEnumerable<VertexData> Vertices()
 		{
-			if (!isInitialized)
+			double averageRadius = (Math.Abs(radius.x) + Math.Abs(radius.y)) / 2;
+			flatenDeltaAngle = Math.Acos(averageRadius / (averageRadius + 0.125 / scale)) * 2;
+			while (endAngle < startAngle)
 			{
-				normalize(startAngle, endAngle);
+				endAngle += Math.PI * 2.0;
 			}
 
 			VertexData vertexData = new VertexData();
@@ -130,7 +128,8 @@ namespace MatterHackers.Agg.VertexSource
 
 				vertexData.command = FlagsAndCommand.CommandLineTo;
 				double angle = startAngle;
-				while (angle < endAngle - flatenDeltaAngle / 4)
+				int numSteps = (int)((endAngle - startAngle) / flatenDeltaAngle);
+                for (int i=0; i<=numSteps; i++)
 				{
 					vertexData.position.x = origin.x + Math.Cos(angle) * radius.x;
 					vertexData.position.y = origin.y + Math.Sin(angle) * radius.y;
@@ -151,7 +150,8 @@ namespace MatterHackers.Agg.VertexSource
 
 				vertexData.command = FlagsAndCommand.CommandLineTo;
 				double angle = endAngle;
-				while (angle > startAngle + flatenDeltaAngle / 4)
+				int numSteps = (int)((endAngle - startAngle) / flatenDeltaAngle);
+				for (int i = 0; i <= numSteps; i++)
 				{
 					vertexData.position.x = origin.x + Math.Cos(angle) * radius.x;
 					vertexData.position.y = origin.y + Math.Sin(angle) * radius.y;
@@ -167,20 +167,6 @@ namespace MatterHackers.Agg.VertexSource
 
 			vertexData.command = FlagsAndCommand.CommandStop;
 			yield return vertexData;
-		}
-
-		private void normalize(double startAngle, double endAngle)
-		{
-			double averageRadius = (Math.Abs(radius.x) + Math.Abs(radius.y)) / 2;
-			flatenDeltaAngle = Math.Acos(averageRadius / (averageRadius + 0.125 / scale)) * 2;
-			while (endAngle < startAngle)
-			{
-				endAngle += Math.PI * 2.0;
-			}
-
-			this.startAngle = startAngle;
-			this.endAngle = endAngle;
-			isInitialized = true;
 		}
 	}
 }
