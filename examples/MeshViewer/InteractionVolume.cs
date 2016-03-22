@@ -28,6 +28,8 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg;
+using MatterHackers.Agg.Font;
+using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.RayTracer;
@@ -38,6 +40,42 @@ using System;
 
 namespace MatterHackers.MeshVisualizer
 {
+	public class ValueDisplayInfo
+	{
+		private string measureDisplayedString = "";
+		private ImageBuffer measureDisplayImage = null;
+
+		public void DisplaySizeInfo(Graphics2D graphics2D, Vector2 widthDisplayCenter, double size)
+		{
+			string displayString = "{0:0.00}".FormatWith(size);
+			if (measureDisplayImage == null || measureDisplayedString != displayString)
+			{
+				measureDisplayedString = displayString;
+				TypeFacePrinter printer = new TypeFacePrinter(measureDisplayedString, 16);
+				TypeFacePrinter unitPrinter = new TypeFacePrinter("mm", 10);
+				Double unitPrinterOffset = 1;
+
+				BorderDouble margin = new BorderDouble(5);
+				printer.Origin = new Vector2(margin.Left, margin.Bottom);
+				RectangleDouble bounds = printer.LocalBounds;
+
+				unitPrinter.Origin = new Vector2(bounds.Right + unitPrinterOffset, margin.Bottom);
+				RectangleDouble unitPrinterBounds = unitPrinter.LocalBounds;
+
+				measureDisplayImage = new ImageBuffer((int)(bounds.Width + margin.Width + unitPrinterBounds.Width + unitPrinterOffset), (int)(bounds.Height + margin.Height), 32, new BlenderBGRA());
+				// make sure the texture has mipmaps (so it can reduce well)
+				ImageGlPlugin glPlugin = ImageGlPlugin.GetImageGlPlugin(measureDisplayImage, true);
+				Graphics2D widthGraphics = measureDisplayImage.NewGraphics2D();
+				widthGraphics.Clear(new RGBA_Bytes(RGBA_Bytes.White, 128));
+				printer.Render(widthGraphics, RGBA_Bytes.Black);
+				unitPrinter.Render(widthGraphics, RGBA_Bytes.Black);
+			}
+
+			widthDisplayCenter -= new Vector2(measureDisplayImage.Width / 2, measureDisplayImage.Height / 2);
+			graphics2D.Render(measureDisplayImage, widthDisplayCenter);
+		}
+	}
+
 	public class InteractionVolume
 	{
 		public bool MouseDownOnControl;
