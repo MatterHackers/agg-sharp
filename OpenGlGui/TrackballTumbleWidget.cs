@@ -692,7 +692,7 @@ namespace MatterHackers.Agg.OpenGlGui
 			inverseModelviewMatrix = Matrix4X4.Invert(modelviewMatrix);
 		}
 
-		public double GetWorldUnitsPerScreenPixelAtPosition(Vector3 worldPosition)
+		public double GetWorldUnitsPerScreenPixelAtPosition(Vector3 worldPosition, double maxRatio = 5)
 		{
 			Vector2 screenPosition = GetScreenPosition(worldPosition);
 			Ray rayFromScreen = GetRayFromScreen(screenPosition);
@@ -701,6 +701,10 @@ namespace MatterHackers.Agg.OpenGlGui
 			Ray rightOnePixelRay = GetRayFromScreen(new Vector2(screenPosition.x + 1, screenPosition.y));
 			Vector3 rightOnePixel = rightOnePixelRay.origin + rightOnePixelRay.directionNormal * distanceFromScreenToWorldPos;
 			double distBetweenPixelsWorldSpace = (rightOnePixel - worldPosition).Length;
+			if(distBetweenPixelsWorldSpace > maxRatio)
+			{
+				return maxRatio;
+			}
 			return distBetweenPixelsWorldSpace;
 		}
 	}

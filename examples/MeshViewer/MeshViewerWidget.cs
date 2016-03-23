@@ -66,7 +66,6 @@ namespace MatterHackers.MeshVisualizer
 
 		public PartProcessingInfo partProcessingInfo;
 		private static ImageBuffer lastCreatedBedImage = new ImageBuffer();
-		private static Point2D lastLinesCount;
 		private static Dictionary<int, RGBA_Bytes> materialColors = new Dictionary<int, RGBA_Bytes>();
 		private BackgroundWorker backgroundWorker = null;
 		private RGBA_Bytes bedBaseColor = new RGBA_Bytes(245, 245, 255);
@@ -318,6 +317,20 @@ namespace MatterHackers.MeshVisualizer
 			MeshViewerWidget.displayVolume = displayVolume;
 			Vector3 displayVolumeToBuild = Vector3.ComponentMax(displayVolume, new Vector3(1, 1, 1));
 
+			double sizeForMarking = Math.Max(displayVolumeToBuild.x, displayVolumeToBuild.y);
+			double divisor = 10;
+			int skip = 1;
+			if (sizeForMarking > 1000)
+			{
+				divisor = 100;
+				skip = 10;
+			}
+			else if (sizeForMarking > 300)
+			{
+				divisor = 50;
+				skip = 5;
+			}
+
 			switch (bedShape)
 			{
 				case BedShape.Rectangular:
@@ -329,7 +342,7 @@ namespace MatterHackers.MeshVisualizer
 							vertex.Position = vertex.Position + new Vector3(0, 0, displayVolumeToBuild.z / 2);
 						}
 					}
-					CreateRectangularBedGridImage(displayVolumeToBuild, bedCenter);
+					CreateRectangularBedGridImage(displayVolumeToBuild, bedCenter, divisor, skip);
 					printerBed = PlatonicSolids.CreateCube(displayVolumeToBuild.x, displayVolumeToBuild.y, 4);
 					{
 						Face face = printerBed.Faces[0];
@@ -347,7 +360,7 @@ namespace MatterHackers.MeshVisualizer
 								vertex.Position = vertex.Position + new Vector3(0, 0, .2);
 							}
 						}
-						CreateCircularBedGridImage((int)(displayVolumeToBuild.x / 10), (int)(displayVolumeToBuild.y / 10));
+						CreateCircularBedGridImage((int)(displayVolumeToBuild.x / divisor), (int)(displayVolumeToBuild.y / divisor), skip);
 						printerBed = VertexSourceToMesh.Extrude(new Ellipse(new Vector2(), displayVolumeToBuild.x / 2, displayVolumeToBuild.y / 2), 2);
 						{
 							foreach (Face face in printerBed.Faces)
@@ -612,7 +625,7 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
-		private void CreateCircularBedGridImage(int linesInX, int linesInY)
+		private void CreateCircularBedGridImage(int linesInX, int linesInY, int increment= 1)
 		{
 			Vector2 bedImageCentimeters = new Vector2(linesInX, linesInY);
 			BedImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
@@ -629,7 +642,7 @@ namespace MatterHackers.MeshVisualizer
 				for (double linePos = lineDist + BedImage.Width / 2; linePos < BedImage.Width; linePos += lineDist)
 				{
 					int linePosInt = (int)linePos;
-					graphics2D.DrawString(count.ToString(), linePos + 2, BedImage.Height / 2, pointSize, color: bedMarkingsColor);
+					graphics2D.DrawString((count * increment).ToString(), linePos + 2, BedImage.Height / 2, pointSize, color: bedMarkingsColor);
 
 					Ellipse circle = new Ellipse(bedCenter, currentRadius);
 					Stroke outline = new Stroke(circle);
@@ -643,26 +656,21 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
-		private void CreateRectangularBedGridImage(Vector3 displayVolumeToBuild, Vector2 bedCenter)
+		private void CreateRectangularBedGridImage(Vector3 displayVolumeToBuild, Vector2 bedCenter, double divisor, double skip)
 		{
-			int linesInX = (int)Math.Ceiling(displayVolumeToBuild.x / 10);
-			int linesInY = (int)Math.Ceiling(displayVolumeToBuild.y / 10);
-
 			lock(lastCreatedBedImage)
 			{
-				Vector2 bedImageCentimeters = new Vector2(linesInX, linesInY);
-
 				BedImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
 				Graphics2D graphics2D = BedImage.NewGraphics2D();
 				graphics2D.Clear(bedBaseColor);
 				{
-					double lineDist = BedImage.Width / (displayVolumeToBuild.x / 10.0);
+					double lineDist = BedImage.Width / (displayVolumeToBuild.x / divisor);
 
-					double xPositionCm = (-(displayVolume.x / 2.0) + bedCenter.x) / 10.0;
+					double xPositionCm = (-(displayVolume.x / 2.0) + bedCenter.x) / divisor;
 					int xPositionCmInt = (int)Math.Round(xPositionCm);
 					double fraction = xPositionCm - xPositionCmInt;
 					int pointSize = 20;
-					graphics2D.DrawString(xPositionCmInt.ToString(), 4, 4, pointSize, color: bedMarkingsColor);
+					graphics2D.DrawString((xPositionCmInt * skip).ToString(), 4, 4, pointSize, color: bedMarkingsColor);
 					for (double linePos = lineDist * (1 - fraction); linePos < BedImage.Width; linePos += lineDist)
 					{
 						xPositionCmInt++;
@@ -673,13 +681,13 @@ namespace MatterHackers.MeshVisualizer
 							lineWidth = 2;
 						}
 						graphics2D.Line(linePosInt, 0, linePosInt, BedImage.Height, bedMarkingsColor, lineWidth);
-						graphics2D.DrawString(xPositionCmInt.ToString(), linePos + 4, 4, pointSize, color: bedMarkingsColor);
+						graphics2D.DrawString((xPositionCmInt * skip).ToString(), linePos + 4, 4, pointSize, color: bedMarkingsColor);
 					}
 				}
 				{
-					double lineDist = BedImage.Height / (displayVolumeToBuild.y / 10.0);
+					double lineDist = BedImage.Height / (displayVolumeToBuild.y / divisor);
 
-					double yPositionCm = (-(displayVolume.y / 2.0) + bedCenter.y) / 10.0;
+					double yPositionCm = (-(displayVolume.y / 2.0) + bedCenter.y) / divisor;
 					int yPositionCmInt = (int)Math.Round(yPositionCm);
 					double fraction = yPositionCm - yPositionCmInt;
 					int pointSize = 20;
@@ -694,12 +702,11 @@ namespace MatterHackers.MeshVisualizer
 						}
 						graphics2D.Line(0, linePosInt, BedImage.Height, linePosInt, bedMarkingsColor, lineWidth);
 
-						graphics2D.DrawString(yPositionCmInt.ToString(), 4, linePos + 4, pointSize, color: bedMarkingsColor);
+						graphics2D.DrawString((yPositionCmInt * skip).ToString(), 4, linePos + 4, pointSize, color: bedMarkingsColor);
 					}
 				}
 
 				lastCreatedBedImage = BedImage;
-				lastLinesCount = new Point2D(linesInX, linesInY);
 			}
 		}
 
