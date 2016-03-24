@@ -130,7 +130,7 @@ namespace MatterHackers.MeshVisualizer
 
 		public static AxisAlignedBoundingBox GetAxisAlignedBoundingBox(List<MeshGroup> meshGroups)
 		{
-			AxisAlignedBoundingBox totalMeshBounds = new AxisAlignedBoundingBox(Vector3.NegativeInfinity, Vector3.NegativeInfinity);
+			AxisAlignedBoundingBox totalMeshBounds = AxisAlignedBoundingBox.Empty;
 			bool first = true;
 			foreach (MeshGroup meshGroup in meshGroups)
 			{

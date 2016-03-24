@@ -161,20 +161,69 @@ namespace MatterHackers.PolygonMesh
 			return firstFaceEdge.NextFaceEdges();
 		}
 
-		private bool PointInPoly(double x, double y)
+		/// <summary>
+		/// Check if a point is inside the face at a given position.
+		/// </summary>
+		/// <param name="polyPlaneIntersection"></param>
+		/// <returns></returns>
+		public bool PointInPoly(Vector3 polyPlaneIntersection)
 		{
-			// set these for the major axis of projection.
-			int xIndex = 0;
-			int yIndex = 1;
+			int axisOfProjection = GetMajorAxis();
+
+			int xIndex, yIndex;
+			GetAxisIndices(axisOfProjection, out xIndex, out yIndex);
+
+			// calculate the major axis of this face
+			return PointInPoly(polyPlaneIntersection[xIndex], polyPlaneIntersection[yIndex], axisOfProjection);
+        }
+
+		private int GetMajorAxis()
+		{
+			if (firstFaceEdge?.firstVertex != null
+                && firstFaceEdge?.nextFaceEdge?.firstVertex != null)
+			{
+				Vector3 position0 = firstFaceEdge.firstVertex.Position;
+				Vector3 position1 = firstFaceEdge.nextFaceEdge.firstVertex.Position;
+				Vector3 delta = position1 - position0;
+				delta.x = Math.Abs(delta.x);
+				delta.y = Math.Abs(delta.y);
+				delta.z = Math.Abs(delta.z);
+				if (delta.x < delta.y && delta.x < delta.z)
+				{
+					// x smallest
+					return 0;
+				}
+				else if(delta.y < delta.x && delta.y < delta.z)
+				{
+					return 1;
+				}
+			}
+
+			return 2;
+        }
+
+		/// <summary>
+		/// Check if a point is inside the face at a given position in x, y or z
+		/// </summary>
+		/// <param name="x"></param>
+		/// <param name="y"></param>
+		/// <param name="axisOfProjection"></param>
+		/// <returns></returns>
+		public bool PointInPoly(double x, double y, int axisOfProjection)
+		{
+			int xIndex, yIndex;
+			GetAxisIndices(axisOfProjection, out xIndex, out yIndex);
 
 			int accumulatedQuadrantAngle = 0;
 			int prevQuadrant = 0;
 			Vector2 prevPosition = Vector2.Zero;
 			bool foundFirst = false;
-			foreach (Vertex vertex in Vertices())
+			Vector2 firstPosition = Vector2.Zero;
+			int quadrant = 0;
+            foreach (Vertex vertex in Vertices())
 			{
 				Vector2 position = new Vector2(vertex.Position[xIndex], vertex.Position[yIndex]);
-				int quadrant = GetQuadrant(position, x, y);
+				quadrant = GetQuadrant(position, x, y);
 
 				if (foundFirst)
 				{
@@ -182,12 +231,16 @@ namespace MatterHackers.PolygonMesh
 				}
 				else
 				{
+					firstPosition = position;
 					foundFirst = true;
 				}
 
 				prevPosition = position;
 				prevQuadrant = quadrant;
 			}
+
+			quadrant = GetQuadrant(firstPosition, x, y);
+			accumulatedQuadrantAngle += WrapQuadrantDelta(quadrant - prevQuadrant, prevPosition, firstPosition, x, y);
 
 			// complete 360 degrees (angle of + 4 or -4 ) means inside
 			if ((accumulatedQuadrantAngle == 4) || (accumulatedQuadrantAngle == -4))
@@ -196,6 +249,23 @@ namespace MatterHackers.PolygonMesh
 			}
 
 			return false;
+		}
+
+		private static void GetAxisIndices(int axisOfProjection, out int xIndex, out int yIndex)
+		{
+			// set the major axis of projection (defaults to z)
+			xIndex = 0;
+			yIndex = 1;
+			if (axisOfProjection == 0) // x
+			{
+				xIndex = 1;
+				yIndex = 2;
+			}
+			else if (axisOfProjection == 1) // y
+			{
+				xIndex = 0;
+				yIndex = 2;
+			}
 		}
 
 		public void CalculateNormal()
@@ -337,6 +407,39 @@ namespace MatterHackers.PolygonMesh
 			}
 
 			return false;
+		}
+
+		public Vector3 GetCenter()
+		{
+			bool first = true;
+			Vector3 accumulatedPosition = Vector3.Zero;
+			int count = 0;
+			foreach (FaceEdge faceEdge in FaceEdges())
+			{
+				count++;
+				if (first)
+				{
+					accumulatedPosition = faceEdge.firstVertex.Position;
+					first = false;
+				}
+				else
+				{
+					accumulatedPosition += faceEdge.firstVertex.Position;
+				}
+			}
+
+			return accumulatedPosition / count;
+		}
+
+		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
+		{
+			AxisAlignedBoundingBox aabb = AxisAlignedBoundingBox.Empty;
+			foreach (FaceEdge faceEdge in FaceEdges())
+			{
+				aabb = AxisAlignedBoundingBox.Union(aabb, faceEdge.firstVertex.Position);
+            }
+
+			return aabb;
 		}
 	}
 }

@@ -33,16 +33,13 @@ namespace MatterHackers.VectorMath
 {
 	public class AxisAlignedBoundingBox
 	{
+		public static AxisAlignedBoundingBox Empty { get; } = new AxisAlignedBoundingBox(Vector3.PositiveInfinity, Vector3.NegativeInfinity);
+
 		public Vector3 minXYZ;
 		public Vector3 maxXYZ;
 
 		public AxisAlignedBoundingBox(Vector3 minXYZ, Vector3 maxXYZ)
 		{
-			if (maxXYZ.x < minXYZ.x || maxXYZ.y < minXYZ.y || maxXYZ.z < minXYZ.z)
-			{
-				throw new ArgumentException("All values of min must be less than all values in max.");
-			}
-
 			this.minXYZ = minXYZ;
 			this.maxXYZ = maxXYZ;
 		}
@@ -149,7 +146,7 @@ namespace MatterHackers.VectorMath
 
 		/// <summary>
 		/// This is the computation cost of doing an intersection with the given type.
-		/// Attempt to give it in average CPU cycles for the intersecton.
+		/// Attempt to give it in average CPU cycles for the intersection.
 		/// </summary>
 		/// <returns></returns>
 		public static double GetIntersectCost()
@@ -216,51 +213,56 @@ namespace MatterHackers.VectorMath
 
 		public static AxisAlignedBoundingBox operator +(AxisAlignedBoundingBox A, AxisAlignedBoundingBox B)
 		{
-#if true
 			return Union(A, B);
-#else
-            Vector3 calcMinXYZ = new Vector3();
-            calcMinXYZ.x = Math.Min(A.minXYZ.x, B.minXYZ.x);
-            calcMinXYZ.y = Math.Min(A.minXYZ.y, B.minXYZ.y);
-            calcMinXYZ.z = Math.Min(A.minXYZ.z, B.minXYZ.z);
-
-            Vector3 calcMaxXYZ = new Vector3();
-            calcMaxXYZ.x = Math.Max(A.maxXYZ.x, B.maxXYZ.x);
-            calcMaxXYZ.y = Math.Max(A.maxXYZ.y, B.maxXYZ.y);
-            calcMaxXYZ.z = Math.Max(A.maxXYZ.z, B.maxXYZ.z);
-
-            AxisAlignedBoundingBox combinedBounds = new AxisAlignedBoundingBox(calcMinXYZ, calcMaxXYZ);
-
-            return combinedBounds;
-#endif
 		}
 
 		public static AxisAlignedBoundingBox Union(AxisAlignedBoundingBox boundsA, AxisAlignedBoundingBox boundsB)
 		{
-			Vector3 minXYZ = Vector3.Zero;
-			minXYZ.x = Math.Min(boundsA.minXYZ.x, boundsB.minXYZ.x);
-			minXYZ.y = Math.Min(boundsA.minXYZ.y, boundsB.minXYZ.y);
-			minXYZ.z = Math.Min(boundsA.minXYZ.z, boundsB.minXYZ.z);
+			Vector3 minXYZ = new Vector3(
+				Math.Min(boundsA.minXYZ.x, boundsB.minXYZ.x),
+				Math.Min(boundsA.minXYZ.y, boundsB.minXYZ.y),
+				Math.Min(boundsA.minXYZ.z, boundsB.minXYZ.z));
 
-			Vector3 maxXYZ = Vector3.Zero;
-			maxXYZ.x = Math.Max(boundsA.maxXYZ.x, boundsB.maxXYZ.x);
-			maxXYZ.y = Math.Max(boundsA.maxXYZ.y, boundsB.maxXYZ.y);
-			maxXYZ.z = Math.Max(boundsA.maxXYZ.z, boundsB.maxXYZ.z);
+			Vector3 maxXYZ = new Vector3(
+				Math.Max(boundsA.maxXYZ.x, boundsB.maxXYZ.x),
+				Math.Max(boundsA.maxXYZ.y, boundsB.maxXYZ.y),
+				Math.Max(boundsA.maxXYZ.z, boundsB.maxXYZ.z));
 
 			return new AxisAlignedBoundingBox(minXYZ, maxXYZ);
 		}
 
+		public bool Intersects(AxisAlignedBoundingBox bounds)
+		{
+			Vector3 intersectMinXYZ = new Vector3(
+				Math.Max(minXYZ.x, bounds.minXYZ.x),
+				Math.Max(minXYZ.y, bounds.minXYZ.y),
+				Math.Max(minXYZ.z, bounds.minXYZ.z));
+
+			Vector3 intersectMaxXYZ = new Vector3(
+				Math.Max(minXYZ.x, Math.Min(maxXYZ.x, bounds.maxXYZ.x)),
+				Math.Max(minXYZ.y, Math.Min(maxXYZ.y, bounds.maxXYZ.y)),
+				Math.Max(minXYZ.z, Math.Min(maxXYZ.z, bounds.maxXYZ.z)));
+
+			Vector3 delta = intersectMaxXYZ - intersectMinXYZ;
+			if (delta.x > 0 && delta.y > 0 && delta.z > 0)
+			{
+				return true;
+			}
+
+			return false;
+		}
+
 		public static AxisAlignedBoundingBox Intersection(AxisAlignedBoundingBox boundsA, AxisAlignedBoundingBox boundsB)
 		{
-			Vector3 minXYZ = Vector3.Zero;
-			minXYZ.x = Math.Max(boundsA.minXYZ.x, boundsB.minXYZ.x);
-			minXYZ.y = Math.Max(boundsA.minXYZ.y, boundsB.minXYZ.y);
-			minXYZ.z = Math.Max(boundsA.minXYZ.z, boundsB.minXYZ.z);
+			Vector3 minXYZ = new Vector3(
+				Math.Max(boundsA.minXYZ.x, boundsB.minXYZ.x),
+				Math.Max(boundsA.minXYZ.y, boundsB.minXYZ.y),
+				Math.Max(boundsA.minXYZ.z, boundsB.minXYZ.z));
 
-			Vector3 maxXYZ = Vector3.Zero;
-			maxXYZ.x = Math.Max(minXYZ.x, Math.Min(boundsA.maxXYZ.x, boundsB.maxXYZ.x));
-			maxXYZ.y = Math.Max(minXYZ.y, Math.Min(boundsA.maxXYZ.y, boundsB.maxXYZ.y));
-			maxXYZ.z = Math.Max(minXYZ.z, Math.Min(boundsA.maxXYZ.z, boundsB.maxXYZ.z));
+			Vector3 maxXYZ = new Vector3(
+				Math.Max(minXYZ.x, Math.Min(boundsA.maxXYZ.x, boundsB.maxXYZ.x)),
+				Math.Max(minXYZ.y, Math.Min(boundsA.maxXYZ.y, boundsB.maxXYZ.y)),
+				Math.Max(minXYZ.z, Math.Min(boundsA.maxXYZ.z, boundsB.maxXYZ.z)));
 
 			return new AxisAlignedBoundingBox(minXYZ, maxXYZ);
 		}

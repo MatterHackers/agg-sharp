@@ -184,6 +184,7 @@ namespace MatterHackers.RayTracer
 			accumulation /= 2;
 			return accumulation.Length;
 		}
+
 		public override IEnumerable IntersectionIterator(Ray ray)
 		{
 			throw new NotImplementedException();

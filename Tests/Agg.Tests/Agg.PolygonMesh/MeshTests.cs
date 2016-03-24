@@ -70,6 +70,18 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		[Test]
+		public void FacePointInPolyTest()
+		{
+			Mesh testMesh = new Mesh();
+			Vertex vertex0 = testMesh.CreateVertex(0, 0, 0);
+			Vertex vertex1 = testMesh.CreateVertex(5, 10, 0);
+			Vertex vertex2 = testMesh.CreateVertex(10, 0, 0);
+			Face face = testMesh.CreateFace(new Vertex[] { vertex0, vertex1, vertex2 });
+
+			Assert.IsTrue(face.PointInPoly(new Vector3(5, 5, 0)));
+		}
+
+		[Test]
 		public void CreateWireFrameTriangle()
 		{
 			Mesh testMesh = new Mesh();

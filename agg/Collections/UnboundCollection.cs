@@ -75,7 +75,7 @@ namespace MatterHackers.Agg.Collections
 			return GetAxisAlignedBoundingBox().GetCenter();
 		}
 
-		private AxisAlignedBoundingBox cachedAABB = new AxisAlignedBoundingBox(Vector3.NegativeInfinity, Vector3.NegativeInfinity);
+		private AxisAlignedBoundingBox cachedAABB = AxisAlignedBoundingBox.Empty;
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{

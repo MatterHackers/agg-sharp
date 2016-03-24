@@ -76,10 +76,17 @@ namespace MatterHackers.RayTracer
 		/// </summary>
 		MaterialAbstract Material { get; set; }
 
+		/// <summary>
+		/// If this primitive is a collection of other primitives this will return the elements that are
+		/// in the sub-region. If it is the actual element of it will return itself (like a sphere or a box).
+		/// </summary>
+		/// <param name="results"></param>
+		/// <param name="subRegion"></param>
+		/// <returns></returns>
 		bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion);
 
 		/// <summary>
-		/// This method is to be implemented by each element seperately. This is the core
+		/// This method is to be implemented by each element separately. This is the core
 		/// function of each element, to determine the intersection with a ray.
 		/// </summary>
 		/// <param name="ray">the ray that intersects with the element</param>
@@ -90,12 +97,31 @@ namespace MatterHackers.RayTracer
 
 		void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle);
 
+		/// <summary>
+		/// This is used for things like view space csg. All intersections along the ray
+		/// are returned in order.
+		/// </summary>
+		/// <param name="ray"></param>
+		/// <returns></returns>
 		IEnumerable IntersectionIterator(Ray ray);
 
+		/// <summary>
+		/// The actual surface area of the surface that this primitive is defining (a sphere, or a box, or a triangle, etc...)
+		/// </summary>
+		/// <returns></returns>
 		double GetSurfaceArea();
 
+		/// <summary>
+		/// Return the bounds of all of the elements of this primitive
+		/// </summary>
+		/// <returns></returns>
 		AxisAlignedBoundingBox GetAxisAlignedBoundingBox();
 
+		/// <summary>
+		/// The center of the axis aligned bounds. Represented as a separate function
+		/// for possible optimization depending on the underlying data.
+		/// </summary>
+		/// <returns></returns>
 		Vector3 GetCenter();
 
 		/// <summary>

@@ -149,7 +149,7 @@ namespace MatterHackers.RayTracer
 
 		/// <summary>
 		/// This is the computation cost of doing an intersection with the given type.
-		/// Attempt to give it in average CPU cycles for the intersecton.
+		/// Attempt to give it in average CPU cycles for the intersection.
 		/// It really does not need to be a member variable as it is fixed to a given
 		/// type of object.  But it needs to be virtual so we can get to the value
 		/// for a given class. (If only there were class virtual functions :) ).
