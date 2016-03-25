@@ -433,7 +433,7 @@ namespace MatterHackers.RayTracer
 		{
 			if (scene.shapes.Count != 1)
 			{
-				throw new Exception("You can only trace a ray bundle into a sigle shape, usually a BoundingVolumeHierachy.");
+				throw new Exception("You can only trace a ray bundle into a single shape, usually a BoundingVolumeHierachy.");
 			}
 
 			scene.shapes[0].GetClosestIntersections(rayBundle, 0, intersectionsForBundle);
