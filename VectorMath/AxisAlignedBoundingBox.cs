@@ -136,6 +136,30 @@ namespace MatterHackers.VectorMath
 			return Vector3.Zero;
 		}
 
+		/// <summary>
+		/// Geth the corners by quadrant of the top
+		/// </summary>
+		/// <param name="quadrantIndex"></param>
+		public Vector3 GetTopCorner(int quadrantIndex)
+		{
+			switch (quadrantIndex)
+			{
+				case 0:
+					return new Vector3(maxXYZ.x, maxXYZ.y, maxXYZ.z);
+
+				case 1:
+					return new Vector3(minXYZ.x, maxXYZ.y, maxXYZ.z);
+
+				case 2:
+					return new Vector3(minXYZ.x, minXYZ.y, maxXYZ.z);
+
+				case 3:
+					return new Vector3(maxXYZ.x, minXYZ.y, maxXYZ.z);
+			}
+
+			return Vector3.Zero;
+		}
+
 		public Vector3 Center
 		{
 			get

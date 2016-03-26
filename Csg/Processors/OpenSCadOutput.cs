@@ -67,11 +67,11 @@ namespace MatterHackers.Csg.Processors
 		{
 		}
 
-		#region Visitor Patern Functions
+		#region Visitor Paten Functions
 
 		public string GetScadOutputRecursive(CsgObject objectToProcess, int level = 0)
 		{
-			throw new Exception("You must wirte the specialized function for this type.");
+			throw new Exception("You must write the specialized function for this type.");
 		}
 
 		#region PrimitiveWrapper
