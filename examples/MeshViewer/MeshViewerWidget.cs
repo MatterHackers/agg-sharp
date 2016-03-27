@@ -150,42 +150,6 @@ namespace MatterHackers.MeshVisualizer
 			return totalMeshBounds;
 		}
 
-		public class SceneGraph : Object3D
-		{
-			public IObject3D SelectedItem { get; set; }
-
-			public bool HasItems => Children.Count > 0;
-
-			public bool HasSelection => HasItems && SelectedItem != null;
-
-			public bool IsSelected(Object3DTypes objectType) => HasSelection && SelectedItem.ItemType == objectType;
-
-			public void SetSelectionToLastItem()
-			{
-				if (Children.Count > 0)
-				{
-					SelectedItem = Children.Last();
-				}
-			}
-
-			public void SetSelectionToFirstItem()
-			{
-				if (Children.Count > 0)
-				{
-					SelectedItem = Children.First();
-				}
-			}
-
-			public void Modify(Action<List<IObject3D>> action)
-			{
-				var sceneGraph = new List<IObject3D>(Children);
-
-				action(sceneGraph);
-
-				Children = sceneGraph;
-			}
-		}
-
 		public SceneGraph ActiveScene { get; } = new SceneGraph();
 
 		public Mesh PrinterBed { get { return printerBed; } }
@@ -980,4 +944,39 @@ namespace MatterHackers.MeshVisualizer
 			Scene.LoadedScene.Save();
 		}
 	}
+
+	public class SceneGraph : Object3D
+	{
+		public IObject3D SelectedItem { get; set; }
+
+		public bool HasSelection => HasItems && SelectedItem != null;
+
+		public bool IsSelected(Object3DTypes objectType) => HasSelection && SelectedItem.ItemType == objectType;
+
+		public void SetSelectionToLastItem()
+		{
+			if (Children.Count > 0)
+			{
+				SelectedItem = Children.Last();
+			}
+		}
+
+		public void SetSelectionToFirstItem()
+		{
+			if (Children.Count > 0)
+			{
+				SelectedItem = Children.First();
+			}
+		}
+
+		public void Modify(Action<List<IObject3D>> action)
+		{
+			var sceneGraph = new List<IObject3D>(Children);
+
+			action(sceneGraph);
+
+			Children = sceneGraph;
+		}
+	}
+
 }

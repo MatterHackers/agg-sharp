@@ -223,6 +223,7 @@ namespace MatterHackers.PolygonMesh
 {
 	public class PlatingMeshGroupData
 	{
+		public Vector2 Spacing;
 		public Vector3 CurrentScale = new Vector3(1, 1, 1);
 		public List<IPrimitive> MeshTraceables = new List<IPrimitive>();
 	}
@@ -234,12 +235,15 @@ namespace MatterHackers.PolygonMesh
 		MeshGroup MeshGroup { get; set; }
 		Matrix4X4 Matrix { get; set; }
 		bool Visible { get; set; }
+		bool HasItems { get; }
+
 		List<IObject3D> Children { get; set; }
 		AxisAlignedBoundingBox GetAxisAlignedBoundingBox();
 		AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 offet);
 		
 		double DistanceToHit(Ray ray, ref IntersectInfo info);
 
+		
 		PlatingMeshGroupData ExtraData { get; }
 
 		void CreateTraceables();
@@ -250,7 +254,10 @@ namespace MatterHackers.PolygonMesh
 
 	public class Object3D : IObject3D
 	{
-		public Object3DTypes ItemType { get; set; }
+		public bool HasItems => Children.Count > 0;
+
+		public Object3DTypes ItemType { get; set; } = Object3DTypes.Model;
+
 		public object SourceNode { get; set; }
 
 		/// <summary>
