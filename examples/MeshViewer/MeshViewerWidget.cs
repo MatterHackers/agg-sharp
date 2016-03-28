@@ -474,7 +474,24 @@ namespace MatterHackers.MeshVisualizer
 				{
 					// Await async load
 					List<MeshGroup> loadedMeshGroups = await MeshFileIo.LoadAsync(meshPathAndFileName, reportProgress0to100);
-					loadedItems.Add(new Object3D() { MeshGroup = loadedMeshGroups.First(), Matrix = Matrix4X4.Identity } as IObject3D);
+					if (loadedMeshGroups.Count > 1)
+					{
+						var loadedGroup = new Object3D
+						{
+							MeshGroup = new MeshGroup(),
+							ItemType = Object3DTypes.Group
+						};
+
+						foreach (var meshGroup in loadedMeshGroups)
+						{
+							loadedGroup.Children.Add(new Object3D() { MeshGroup = meshGroup });
+						}
+						loadedItems.Add(loadedGroup);
+                    }
+					else
+					{
+						loadedItems.Add(new Object3D() { MeshGroup = loadedMeshGroups.First(), Matrix = Matrix4X4.Identity } as IObject3D);
+					}
 				}
 
 				// Update after load
