@@ -150,7 +150,7 @@ namespace MatterHackers.MeshVisualizer
 			return totalMeshBounds;
 		}
 
-		public SceneGraph ActiveScene { get; } = new SceneGraph();
+		public SceneGraph Scene { get; } = new SceneGraph();
 
 		public Mesh PrinterBed { get { return printerBed; } }
 
@@ -166,7 +166,7 @@ namespace MatterHackers.MeshVisualizer
 				if (renderType != value)
 				{
 					renderType = value;
-					foreach (MeshGroup meshGroup in ActiveScene.Children.Select(object3D => object3D.MeshGroup))
+					foreach (MeshGroup meshGroup in Scene.Children.Select(object3D => object3D.MeshGroup))
 					{
 						foreach (Mesh mesh in meshGroup.Meshes)
 						{
@@ -347,9 +347,9 @@ namespace MatterHackers.MeshVisualizer
 
 		public enum CenterPartAfterLoad { DO, DONT }
 
-		private class Scene
+		private class XmlSceneToDepricate
 		{
-			public static Scene LoadedScene = null;
+			public static XmlSceneToDepricate LoadedScene = null;
 
 			private static Dictionary<string, List<MeshGroup>> cachedMeshes = new Dictionary<string, List<MeshGroup>>();
 
@@ -370,7 +370,7 @@ namespace MatterHackers.MeshVisualizer
 					await ProcessTree(elem, scene, reporter);
 				}
 
-				LoadedScene = new Scene {
+				LoadedScene = new XmlSceneToDepricate {
 					Items = scene.Children,
 					activeScenePath = filePath,
 					docRoot = root
@@ -467,7 +467,7 @@ namespace MatterHackers.MeshVisualizer
 				
 				if (Path.GetExtension(meshPathAndFileName) == ".xml")
 				{
-					var scene = await Scene.Load(meshPathAndFileName, reportProgress0to100);
+					var scene = await XmlSceneToDepricate.Load(meshPathAndFileName, reportProgress0to100);
 					loadedItems = scene.Children;
 				}
 				else
@@ -610,7 +610,7 @@ namespace MatterHackers.MeshVisualizer
 
 		public void SetMeshAfterLoad(List<IObject3D> loadedItems, CenterPartAfterLoad centerPart, Vector2 bedCenter)
 		{
-			ActiveScene.Modify((scene) =>
+			Scene.Modify((scene) =>
 			{
 				scene.AddRange(loadedItems);
 			});
@@ -810,7 +810,7 @@ namespace MatterHackers.MeshVisualizer
 
 			if (object3D.MeshGroup != null)
 			{
-				bool isSelected = ActiveScene.HasSelection && (object3D == ActiveScene.SelectedItem || ActiveScene.SelectedItem.Children.Contains(object3D));
+				bool isSelected = Scene.HasSelection && (object3D == Scene.SelectedItem || Scene.SelectedItem.Children.Contains(object3D));
 
 				foreach (var meshToRender in object3D.MeshGroup.Meshes)
 				{
@@ -829,13 +829,13 @@ namespace MatterHackers.MeshVisualizer
 
 		private void trackballTumbleWidget_DrawGlContent(object sender, EventArgs e)
 		{
-			foreach(var object3D in ActiveScene.Children)
+			foreach(var object3D in Scene.Children)
 			{
 				DrawObject(object3D, Matrix4X4.Identity);
 			}
 
 			// we don't want to render the bed or build volume before we load a model.
-			if (ActiveScene.HasItems || AllowBedRenderingWhenEmpty)
+			if (Scene.HasItems || AllowBedRenderingWhenEmpty)
 			{
 				if (RenderBed)
 				{
@@ -918,7 +918,7 @@ namespace MatterHackers.MeshVisualizer
 
 		public void SaveScene()
 		{
-			foreach(var object3D in ActiveScene.Children)
+			foreach(var object3D in Scene.Children)
 			{
 				// HACK: IObject3D currently allows the model track its source element, allowing us to save back to it here. Long term this is not ideal and needs optimized
 				var modelElem = object3D.SourceNode as XElement;
@@ -926,7 +926,7 @@ namespace MatterHackers.MeshVisualizer
 				if(modelElem == null)
 				{
 					modelElem = new XElement(object3D.ItemType.ToString());
-					Scene.LoadedScene.GetRoot().Add(modelElem);
+					XmlSceneToDepricate.LoadedScene.GetRoot().Add(modelElem);
 				}
 
 				var transformElem = modelElem.Element("transform");
@@ -941,7 +941,7 @@ namespace MatterHackers.MeshVisualizer
 			}
 
 			// Update the printItemWrapper
-			Scene.LoadedScene.Save();
+			XmlSceneToDepricate.LoadedScene.Save();
 		}
 	}
 
