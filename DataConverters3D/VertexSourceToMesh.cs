@@ -252,6 +252,21 @@ namespace MatterHackers.PolygonMesh
 		object SourceNode { get; set; }
 	}
 
+	public static class Object3DExtensions
+	{
+		public static AxisAlignedBoundingBox GetUnionedAxisAlignedBoundingBox(this List<IObject3D> items)
+		{
+			// first find the bounds of what is already here.
+			AxisAlignedBoundingBox totalBounds = AxisAlignedBoundingBox.Empty;
+			foreach (var object3D in items)
+			{
+				totalBounds = AxisAlignedBoundingBox.Union(totalBounds, object3D.GetAxisAlignedBoundingBox());
+			}
+
+			return totalBounds;
+		}
+	}
+
 	public class Object3D : IObject3D
 	{
 		public bool HasItems => Children.Count > 0;

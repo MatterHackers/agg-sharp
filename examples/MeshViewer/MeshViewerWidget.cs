@@ -953,7 +953,7 @@ namespace MatterHackers.MeshVisualizer
 
 		public bool IsSelected(Object3DTypes objectType) => HasSelection && SelectedItem.ItemType == objectType;
 
-		public void SetSelectionToLastItem()
+		public void SelectLastChild()
 		{
 			if (Children.Count > 0)
 			{
@@ -961,7 +961,7 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
-		public void SetSelectionToFirstItem()
+		public void SelectFirstChild()
 		{
 			if (Children.Count > 0)
 			{
