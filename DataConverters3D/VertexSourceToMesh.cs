@@ -271,7 +271,7 @@ namespace MatterHackers.PolygonMesh
 		private IPrimitive createTraceables()
 		{
 			// Get the trace data for the local mesh
-			var meshTraceables = MeshGroup.Meshes.SelectMany(meshGroup => AddTraceDataForMesh(meshGroup)).ToList();
+			List<IPrimitive> meshTraceables = (MeshGroup == null) ? new List<IPrimitive>() : MeshGroup.Meshes.SelectMany(meshGroup => AddTraceDataForMesh(meshGroup)).ToList();
 
 			// Get the trace data for all children
 			foreach (Object3D child in Children)
