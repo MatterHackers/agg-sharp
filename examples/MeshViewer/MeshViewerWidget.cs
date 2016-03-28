@@ -806,7 +806,7 @@ namespace MatterHackers.MeshVisualizer
 
 		private void DrawObject(IObject3D object3D, Matrix4X4 transform)
 		{
-			Matrix4X4 totalTransform = transform * object3D.Matrix;
+			Matrix4X4 totalTransform = object3D.Matrix * transform;
 
 			if (object3D.MeshGroup != null)
 			{

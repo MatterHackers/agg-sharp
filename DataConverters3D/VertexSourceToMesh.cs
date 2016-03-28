@@ -276,7 +276,7 @@ namespace MatterHackers.PolygonMesh
 		public object SourceNode { get; set; }
 
 		/// <summary>
-		/// Initializes trace data, stored in a transformed BHV, for this items mesh and all its children.
+		/// Initializes trace data, stored in a transformed BVH, for this items mesh and all its children.
 		/// </summary>
 		public void CreateTraceables()
 		{
@@ -358,7 +358,7 @@ namespace MatterHackers.PolygonMesh
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix)
 		{
-			var totalTransorm = matrix * this.Matrix;
+			var totalTransorm = this.Matrix * matrix;
 
 			// Set the initial bounding box to empty or the bounds of the objects MeshGroup
 			bool meshIsEmpty = this.MeshGroup == null || this.MeshGroup.Meshes.Count == 0;
