@@ -237,6 +237,8 @@ namespace MatterHackers.PolygonMesh
 		bool Visible { get; set; }
 		bool HasItems { get; }
 
+		IObject3D Clone();
+
 		List<IObject3D> Children { get; set; }
 		AxisAlignedBoundingBox GetAxisAlignedBoundingBox();
 		AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 offet);
@@ -281,6 +283,18 @@ namespace MatterHackers.PolygonMesh
 		public void CreateTraceables()
 		{
 			this.ExtraData.MeshTraceables = new List<IPrimitive> { createTraceables() };
+		}
+
+		// TODO - first attempt at deep clone
+		public IObject3D Clone()
+		{
+			return new Object3D()
+			{
+				ItemType = this.ItemType,
+				MeshGroup = this.MeshGroup,
+				Children = new List<IObject3D>(this.Children.Select(child => child.Clone())),
+				Matrix = this.Matrix
+			};
 		}
 
 		private IPrimitive createTraceables()
