@@ -150,7 +150,7 @@ namespace MatterHackers.MeshVisualizer
 			return totalMeshBounds;
 		}
 
-		public SceneGraph Scene { get; } = new SceneGraph();
+		public InteractiveScene Scene { get; } = new InteractiveScene();
 
 		public Mesh PrinterBed { get { return printerBed; } }
 
@@ -962,7 +962,7 @@ namespace MatterHackers.MeshVisualizer
 		}
 	}
 
-	public class SceneGraph : Object3D
+	public class InteractiveScene : Object3D
 	{
 		public IObject3D SelectedItem { get; set; }
 
