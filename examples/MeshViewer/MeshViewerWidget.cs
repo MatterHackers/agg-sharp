@@ -627,9 +627,9 @@ namespace MatterHackers.MeshVisualizer
 
 		public void SetMeshAfterLoad(List<IObject3D> loadedItems, CenterPartAfterLoad centerPart, Vector2 bedCenter)
 		{
-			Scene.Modify((scene) =>
+			Scene.ModifyChildren(children =>
 			{
-				scene.AddRange(loadedItems);
+				children.AddRange(loadedItems);
 			});
 		
 			if (loadedItems == null)
@@ -986,14 +986,16 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
-		public void Modify(Action<List<IObject3D>> action)
+		public void ModifyChildren(Action<List<IObject3D>> modifier)
 		{
-			var sceneGraph = new List<IObject3D>(Children);
+			// Copy the child items
+			var clonedChildren = new List<IObject3D>(Children);
 
-			action(sceneGraph);
+			// Pass them to the action
+			modifier(clonedChildren);
 
-			Children = sceneGraph;
+			// Swap the modified list into place
+			Children = clonedChildren;
 		}
 	}
-
 }
