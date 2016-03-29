@@ -40,7 +40,7 @@ using System.Linq;
 
 namespace MatterHackers.PolygonMesh
 {
-	public class PlatingMeshGroupData
+	public class PlatingData
 	{
 		public Vector2 Spacing;
 		public Vector3 CurrentScale = new Vector3(1, 1, 1);
@@ -65,7 +65,7 @@ namespace MatterHackers.PolygonMesh
 
 		IObject3D Clone();
 
-		PlatingMeshGroupData ExtraData { get; }
+		PlatingData ExtraData { get; }
 
 		void CreateTraceables();
 
@@ -179,7 +179,7 @@ namespace MatterHackers.PolygonMesh
 		}
 
 		
-		public PlatingMeshGroupData ExtraData { get; } = new PlatingMeshGroupData();
+		public PlatingData ExtraData { get; } = new PlatingData();
 		
 		public List<IObject3D> Children { get; set; } = new List<IObject3D>();
 
