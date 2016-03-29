@@ -997,5 +997,13 @@ namespace MatterHackers.MeshVisualizer
 			// Swap the modified list into place
 			Children = clonedChildren;
 		}
+
+		public void ClearSelection()
+		{
+			if(HasSelection)
+			{
+				SelectedItem = null;
+			}
+		}
 	}
 }
