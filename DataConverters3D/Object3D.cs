@@ -55,7 +55,7 @@ namespace MatterHackers.PolygonMesh
 		MeshGroup MeshGroup { get; set; }
 		Matrix4X4 Matrix { get; set; }
 		bool Visible { get; set; }
-		bool HasItems { get; }
+		bool HasChildren { get; }
 
 		List<IObject3D> Children { get; set; }
 		AxisAlignedBoundingBox GetAxisAlignedBoundingBox();
@@ -90,7 +90,7 @@ namespace MatterHackers.PolygonMesh
 
 	public class Object3D : IObject3D
 	{
-		public bool HasItems => Children.Count > 0;
+		public bool HasChildren => Children.Count > 0;
 
 		public Object3DTypes ItemType { get; set; } = Object3DTypes.Model;
 

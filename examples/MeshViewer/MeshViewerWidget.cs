@@ -852,7 +852,7 @@ namespace MatterHackers.MeshVisualizer
 			}
 
 			// we don't want to render the bed or build volume before we load a model.
-			if (Scene.HasItems || AllowBedRenderingWhenEmpty)
+			if (Scene.HasChildren || AllowBedRenderingWhenEmpty)
 			{
 				if (RenderBed)
 				{
@@ -966,7 +966,7 @@ namespace MatterHackers.MeshVisualizer
 	{
 		public IObject3D SelectedItem { get; set; }
 
-		public bool HasSelection => HasItems && SelectedItem != null;
+		public bool HasSelection => HasChildren && SelectedItem != null;
 
 		public bool IsSelected(Object3DTypes objectType) => HasSelection && SelectedItem.ItemType == objectType;
 
