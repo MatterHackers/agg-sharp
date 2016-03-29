@@ -959,7 +959,7 @@ namespace MatterHackers.MeshVisualizer
 			XmlSceneToDepricate.LoadedScene.Save();
 		}
 	}
-
+	
 	public class InteractiveScene : Object3D
 	{
 		public IObject3D SelectedItem { get; set; }
@@ -982,6 +982,11 @@ namespace MatterHackers.MeshVisualizer
 			{
 				SelectedItem = Children.First();
 			}
+		}
+
+		public void Select(IObject3D item)
+		{
+			SelectedItem = item;
 		}
 
 		public void ModifyChildren(Action<List<IObject3D>> modifier)
