@@ -474,6 +474,14 @@ namespace MatterHackers.MeshVisualizer
 				{
 					// Await async load
 					List<MeshGroup> loadedMeshGroups = await MeshFileIo.LoadAsync(meshPathAndFileName, reportProgress0to100);
+
+					// During startup we load and reload the main control multiple times. When this occurs, sometimes the reportProgress0to100 will set
+					// continueProcessing to false and MeshFileIo.LoadAsync will return null. In those cases, we need to exit rather than process the loaded MeshGroup
+					if (loadedMeshGroups == null)
+					{
+						return;
+					}
+
 					if (loadedMeshGroups.Count > 1)
 					{
 						var loadedGroup = new Object3D
@@ -487,7 +495,7 @@ namespace MatterHackers.MeshVisualizer
 							loadedGroup.Children.Add(new Object3D() { MeshGroup = meshGroup });
 						}
 						loadedItems.Add(loadedGroup);
-                    }
+					}
 					else
 					{
 						loadedItems.Add(new Object3D() { MeshGroup = loadedMeshGroups.First(), Matrix = Matrix4X4.Identity } as IObject3D);
