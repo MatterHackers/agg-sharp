@@ -482,24 +482,14 @@ namespace MatterHackers.MeshVisualizer
 						return;
 					}
 
-					if (loadedMeshGroups.Count > 1)
-					{
-						var loadedGroup = new Object3D
-						{
-							MeshGroup = new MeshGroup(),
-							ItemType = Object3DTypes.Group
-						};
+					var loadedGroup = new Object3D { MeshGroup = new MeshGroup() };
 
-						foreach (var meshGroup in loadedMeshGroups)
-						{
-							loadedGroup.Children.Add(new Object3D() { MeshGroup = meshGroup });
-						}
-						loadedItems.Add(loadedGroup);
-					}
-					else
+					foreach (var meshGroup in loadedMeshGroups)
 					{
-						loadedItems.Add(new Object3D() { MeshGroup = loadedMeshGroups.First(), Matrix = Matrix4X4.Identity } as IObject3D);
+						loadedGroup.Children.Add(new Object3D() { MeshGroup = meshGroup });
 					}
+
+					loadedItems.Add(loadedGroup);
 				}
 
 				// Update after load
