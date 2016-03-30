@@ -89,6 +89,10 @@ namespace MatterHackers.MeshVisualizer
 		
 		public MeshViewerWidget(Vector3 displayVolume, Vector2 bedCenter, BedShape bedShape, string startingTextMessage = "")
 		{
+			Scene.SelectionChanged += (sender, e) =>
+			{
+				Invalidate();
+			};
 			RenderType = RenderTypes.Shaded;
 			RenderBed = true;
 			RenderBuildVolume = false;
@@ -962,7 +966,25 @@ namespace MatterHackers.MeshVisualizer
 	
 	public class InteractiveScene : Object3D
 	{
-		public IObject3D SelectedItem { get; set; }
+		public event EventHandler SelectionChanged;
+
+		IObject3D selectedItem;
+        public IObject3D SelectedItem
+		{
+			get
+			{
+				return selectedItem;
+			}
+
+			set
+			{
+				if (selectedItem != value)
+				{
+					selectedItem = value;
+					SelectionChanged?.Invoke(this, null);
+				}
+            }
+		}
 
 		public bool HasSelection => HasChildren && SelectedItem != null;
 

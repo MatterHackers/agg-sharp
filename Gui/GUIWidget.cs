@@ -212,13 +212,7 @@ namespace MatterHackers.Agg.UI
 		private bool visible = true;
 		private bool enabled = true;
 
-		private bool selectable = true;
-
-		public bool Selectable
-		{
-			get { return selectable; }
-			set { selectable = value; }
-		}
+		public bool Selectable { get; set; } = true;
 
 		private enum MouseCapturedState { NotCaptured, ChildHasMouseCaptured, ThisHasMouseCaptured };
 
