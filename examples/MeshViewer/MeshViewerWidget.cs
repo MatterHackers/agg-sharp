@@ -351,131 +351,104 @@ namespace MatterHackers.MeshVisualizer
 
 		public enum CenterPartAfterLoad { DO, DONT }
 
-		private class XmlSceneToDepricate
+		// Recursively process the tree loading each mesh file as needed
+		public async void LoadObject(IObject3D object3D)
 		{
-			public static XmlSceneToDepricate LoadedScene = null;
-
-			private static Dictionary<string, List<MeshGroup>> cachedMeshes = new Dictionary<string, List<MeshGroup>>();
-
-			private string activeScenePath;
-
-			public List<IObject3D> Items { get; private set; }
-
-			private XElement docRoot;
-
-			public static async Task<IObject3D> Load(string filePath, ReportProgressRatio reporter)
+			await LoadMeshFile(object3D);
+			
+			foreach(var child in object3D.Children)
 			{
-				var scene = new Object3D();
+				LoadObject(child);
+			}
+		}
 
-				var root = XElement.Load(filePath);
+		private Dictionary<string, List<MeshGroup>> cachedMeshes = new Dictionary<string, List<MeshGroup>>();
 
-				foreach (var elem in root.Elements())
-				{
-					await ProcessTree(elem, scene, reporter);
-				}
-
-				LoadedScene = new XmlSceneToDepricate {
-					Items = scene.Children,
-					activeScenePath = filePath,
-					docRoot = root
-				};
-
-				return scene;
+		public async Task LoadMeshFile(IObject3D sceneItem)
+		{
+			if (string.IsNullOrEmpty(sceneItem.MeshPath) || !File.Exists(sceneItem.MeshPath))
+			{
+				return;
 			}
 
-			private static Dictionary<string, string> ItemTypeRemapping = new Dictionary<string, string>
-			{
-				["model"] = "Model",
-				["group"] = "Group"
-			};
-
-			private static async Task ProcessTree(XElement elem, IObject3D context, ReportProgressRatio reporter)
-			{
-				Matrix4X4 modelTransform = Matrix4X4.Identity;
-
-				var transformElem = elem.Element("transform");
-				if (transformElem != null)
-				{
-					var doubleArray = JsonConvert.DeserializeObject<Double[]>(transformElem.Value);
-					modelTransform = new Matrix4X4(doubleArray);
-				}
-
-				List<MeshGroup> fileData = null;
-
-				if (elem.Name.LocalName == "model")
-				{
-					string meshPathAndFileName = (string)elem.Attribute("source");
-
-					if (!cachedMeshes.TryGetValue(meshPathAndFileName, out fileData))
-					{
-						// Await async load
-						fileData = await MeshFileIo.LoadAsync(meshPathAndFileName, reporter);
-						cachedMeshes[meshPathAndFileName] = fileData;
-					}
-				}
-
-				string itemType = null;
-
-				if(!ItemTypeRemapping.TryGetValue(elem.Name.LocalName, out itemType))
-				{
-					itemType = elem.Name.LocalName;
-				}
-
-				var newContext = new Object3D()
-				{
-					MeshGroup = fileData?.First() ?? new MeshGroup(),
-					Matrix = modelTransform,
-					SourceNode = elem,
-					ItemType = (Object3DTypes) Enum.Parse(typeof(Object3DTypes), itemType)
-				};
-
-				context.Children.Add(newContext);
-
-				foreach(XElement child in elem.Elements())
-				{
-					switch(child.Name.LocalName)
-					{
-						case "model":
-						case "group":
-							await ProcessTree(child, newContext, reporter);
-							break;
-					}
-				}
-			}
-
-			public XElement GetRoot()
-			{
-				return docRoot;
-			}
-
-			public void Save()
-			{
-				docRoot.Save(activeScenePath);
-			}
+			
 		}
 
 		public async Task LoadMesh(string meshPathAndFileName, CenterPartAfterLoad centerPart, Vector2 bedCenter = new Vector2())
 		{
 			if (File.Exists(meshPathAndFileName))
 			{
-				//if(Path.GetExtension(meshPathAndFileName) != ".xml")
-				//{
-				//	return;
-				//}
-
 				partProcessingInfo.Visible = true;
 				partProcessingInfo.progressControl.PercentComplete = 0;
 				partProcessingInfo.centeredInfoText.Text = "Loading Mesh...";
 
-				List<IObject3D> loadedItems = new List<IObject3D>();
-				
-				if (Path.GetExtension(meshPathAndFileName) == ".xml")
+				IObject3D tempScene;
+
+				string extension = Path.GetExtension(meshPathAndFileName);
+				if (extension == ".mcx")
 				{
-					var scene = await XmlSceneToDepricate.Load(meshPathAndFileName, reportProgress0to100);
-					loadedItems = scene.Children;
+					// Load the meta file
+					tempScene = JsonConvert.DeserializeObject<Object3D>(File.ReadAllText(meshPathAndFileName));
+
+					var itemsToLoad = (from object3D in tempScene.Descendants()
+									   where !string.IsNullOrEmpty(object3D.MeshPath) &&
+											 File.Exists(object3D.MeshPath)
+									   select object3D).ToList();
+
+					int itemCount = itemsToLoad.Count;
+
+					List<MeshGroup> loadedMeshGroups;
+
+					foreach (IObject3D object3D in itemsToLoad)
+					{
+						// TODO: Make cacheKey based on a SHA1 hash of the mesh data so that duplicate content, remote or local, can pull from the same file. This
+						// is especially true for dynamic content in the scene that comes from generators or is duplicated. If that data is hashed, we'll save only
+						// a single mesh file rather than n number of duplicates
+						//
+						// Pull from cache or load
+						if (!cachedMeshes.TryGetValue(object3D.MeshPath, out loadedMeshGroups))
+						{
+							// TODO: calc the actual progress
+							loadedMeshGroups = await MeshFileIo.LoadAsync(object3D.MeshPath, reportProgress0to100);
+							cachedMeshes[object3D.MeshPath] = loadedMeshGroups;
+						}
+
+						// During startup we reload the main control multiple times. When this occurs, sometimes the reportProgress0to100 will set
+						// continueProcessing to false and MeshFileIo.LoadAsync will return null. In those cases, we need to exit rather than process the loaded MeshGroup
+						if (loadedMeshGroups == null && WidgetHasBeenClosed)
+						{
+							return;
+						}
+						else if (loadedMeshGroups == null)
+						{
+							// TODO: Someday handle load errors by placing something in the scene that notes the lack of a source file and guides the user to fix
+							// Load error for file, skip
+							continue;
+						}
+
+						if (loadedMeshGroups.Count == 1)
+						{
+							object3D.MeshGroup = loadedMeshGroups.First();
+							object3D.ItemType = Object3DTypes.Model;
+						}
+						else
+						{
+							foreach (var meshGroup in loadedMeshGroups)
+							{
+								object3D.Children.Add(new Object3D()
+								{
+									ItemType = Object3DTypes.Model,
+									MeshGroup = meshGroup,
+									PersistNode = false
+								});
+							}
+						}
+					}
 				}
 				else
 				{
+					tempScene = new Object3D();
+
 					// Await async load
 					List<MeshGroup> loadedMeshGroups = await MeshFileIo.LoadAsync(meshPathAndFileName, reportProgress0to100);
 
@@ -493,11 +466,11 @@ namespace MatterHackers.MeshVisualizer
 						loadedGroup.Children.Add(new Object3D() { MeshGroup = meshGroup });
 					}
 
-					loadedItems.Add(loadedGroup);
+					tempScene.Children.Add(loadedGroup);
 				}
 
 				// Update after load
-				SetMeshAfterLoad(loadedItems, centerPart, bedCenter);
+				SetMeshAfterLoad(tempScene.Children, centerPart, bedCenter);
 
 				partProcessingInfo.Visible = false;
 
@@ -934,34 +907,6 @@ namespace MatterHackers.MeshVisualizer
 				HAnchor |= HAnchor.ParentCenter;
 			}
 		}
-
-		public void SaveScene()
-		{
-			foreach(var object3D in Scene.Children)
-			{
-				// HACK: IObject3D currently allows the model track its source element, allowing us to save back to it here. Long term this is not ideal and needs optimized
-				var modelElem = object3D.SourceNode as XElement;
-
-				if(modelElem == null)
-				{
-					modelElem = new XElement(object3D.ItemType.ToString());
-					XmlSceneToDepricate.LoadedScene.GetRoot().Add(modelElem);
-				}
-
-				var transformElem = modelElem.Element("transform");
-				if (transformElem == null)
-				{
-					transformElem = new XElement("transform");
-					modelElem.Add(transformElem);
-				}
-
-				// Serialize and store the transform
-				transformElem.Value = JsonConvert.SerializeObject(object3D.Matrix.GetAsDoubleArray());
-			}
-
-			// Update the printItemWrapper
-			XmlSceneToDepricate.LoadedScene.Save();
-		}
 	}
 	
 	public class InteractiveScene : Object3D
@@ -969,7 +914,7 @@ namespace MatterHackers.MeshVisualizer
 		public event EventHandler SelectionChanged;
 
 		IObject3D selectedItem;
-        public IObject3D SelectedItem
+		public IObject3D SelectedItem
 		{
 			get
 			{
@@ -983,7 +928,7 @@ namespace MatterHackers.MeshVisualizer
 					selectedItem = value;
 					SelectionChanged?.Invoke(this, null);
 				}
-            }
+			}
 		}
 
 		public bool HasSelection => HasChildren && SelectedItem != null;

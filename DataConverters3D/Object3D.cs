@@ -30,6 +30,9 @@ either expressed or implied, of the FreeBSD Project.
 using MatterHackers.RayTracer;
 using MatterHackers.RayTracer.Traceable;
 using MatterHackers.VectorMath;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -39,13 +42,20 @@ namespace MatterHackers.PolygonMesh
 
 	public interface IObject3D
 	{
+		[JsonConverter(typeof(Object3DConverter))]
 		List<IObject3D> Children { get; set; }
 		PlatingData ExtraData { get; }
 		bool HasChildren { get; }
 		Object3DTypes ItemType { get; set; }
+
+		[JsonConverter(typeof(MatrixConverter))]
 		Matrix4X4 Matrix { get; set; }
+
 		MeshGroup MeshGroup { get; set; }
-		object SourceNode { get; set; } // HACK: For time's sake, stuffing this in for easy persistence
+		string MeshPath { get; set; }
+
+		bool PersistNode { get; set; }
+
 		bool Visible { get; set; }
 
 		IObject3D Clone();
@@ -72,22 +82,42 @@ namespace MatterHackers.PolygonMesh
 
 			return totalBounds;
 		}
+
+		public static IEnumerable<IObject3D> Descendants(this IObject3D root)
+		{
+			var nodes = new Stack<IObject3D>(new[] { root });
+			while (nodes.Any())
+			{
+				IObject3D node = nodes.Pop();
+				yield return node;
+				foreach (var n in node.Children) nodes.Push(n);
+			}
+		}
 	}
 
 	public class Object3D : IObject3D
 	{
 		public List<IObject3D> Children { get; set; } = new List<IObject3D>();
 		public PlatingData ExtraData { get; } = new PlatingData();
+
 		public bool HasChildren => Children.Count > 0;
 
 		public Object3DTypes ItemType { get; set; } = Object3DTypes.Model;
 
 		public Matrix4X4 Matrix { get; set; } = Matrix4X4.Identity;
+
+		[JsonIgnore]
 		public MeshGroup MeshGroup { get; set; }
+
+		public string MeshPath { get; set; }
+
+		public bool PersistNode { get; set; } = true;
+
+		[JsonIgnore]
 		public object SourceNode { get; set; }
 
 		public bool Visible { get; set; }
-
+		
 		public static IPrimitive CreateTraceDataForMesh(Mesh mesh)
 		{
 			List<IPrimitive> allPolys = AddTraceDataForMesh(mesh);
@@ -206,7 +236,55 @@ namespace MatterHackers.PolygonMesh
 	public class PlatingData
 	{
 		public Vector3 CurrentScale = new Vector3(1, 1, 1);
+
+		[JsonIgnore]
 		public List<IPrimitive> MeshTraceables = new List<IPrimitive>();
 		public Vector2 Spacing;
+	}
+
+	public class Object3DConverter : JsonConverter
+	{
+		public override bool CanConvert(Type objectType)
+		{
+			return objectType is IObject3D;
+		}
+
+		public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+		{
+			JArray jo = JArray.Load(reader);
+			return new List<IObject3D>(jo.ToObject<List<Object3D>>(serializer));
+		}
+
+		public override bool CanWrite
+		{
+			get { return false; }
+		}
+
+		public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+		{
+			throw new NotImplementedException();
+		}
+	}
+
+	public class MatrixConverter : JsonConverter
+	{
+		public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+		{
+			var matrix = (Matrix4X4) value;
+
+			// TODO: It seems likely that the serializer supports this without the extra call to the converter but it's not obvious and this works in the short term
+			serializer.Serialize(writer, JsonConvert.SerializeObject(matrix.GetAsDoubleArray()));
+		}
+
+		public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+		{
+			var xxx = reader.Value.ToString();
+			return new Matrix4X4(JsonConvert.DeserializeObject<double[]>(xxx));
+		}
+
+		public override bool CanConvert(Type objectType)
+		{
+			return objectType == typeof(Matrix4X4);
+		}
 	}
 }
