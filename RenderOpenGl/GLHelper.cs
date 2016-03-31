@@ -81,7 +81,7 @@ namespace MatterHackers.RenderOpenGl
 
 			scaledLineMesh.MarkAsChanged();
 
-			GLHelper.Render(scaledLineMesh, RGBA_Bytes.Black, lineTransform, RenderTypes.Shaded);
+			GLHelper.Render(scaledLineMesh, color, lineTransform, RenderTypes.Shaded);
 		}
 
 		static Mesh scaledLineMesh = PlatonicSolids.CreateCube();
