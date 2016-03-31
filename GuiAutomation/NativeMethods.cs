@@ -110,12 +110,12 @@ namespace MatterHackers.GuiAutomation
             {
                 if (currentlyHookedWindow != null)
                 {
-                    currentlyHookedWindow.DrawAfter -= DrawMouse;
+                    currentlyHookedWindow.AfterDraw -= DrawMouse;
                 }
                 currentlyHookedWindow = systemWindow;
                 if (currentlyHookedWindow != null)
                 {
-                    currentlyHookedWindow.DrawAfter += DrawMouse;
+                    currentlyHookedWindow.AfterDraw += DrawMouse;
                 }
             }
             currentMousePosition = new Point2D(x, y);

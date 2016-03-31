@@ -438,9 +438,9 @@ namespace MatterHackers.Agg.UI
 		public event EventHandler Layout;
 
 		// the event args will be a DrawEventArgs
-		public event DrawEventHandler DrawBefore;
+		public event DrawEventHandler BeforeDraw;
 
-		public event DrawEventHandler DrawAfter;
+		public event DrawEventHandler AfterDraw;
 
 		public event EventHandler<KeyPressEventArgs> KeyPressed;
 
@@ -1739,6 +1739,14 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public static int DrawCount;
+		bool firstDraw = true;
+
+		public event DrawEventHandler FirstDraw;
+
+		public virtual void OnFirstDraw(Graphics2D graphics2D)
+		{
+			FirstDraw?.Invoke(this, new DrawEventArgs(graphics2D));
+		}
 
 		public virtual void OnDraw(Graphics2D graphics2D)
 		{
@@ -1746,7 +1754,13 @@ namespace MatterHackers.Agg.UI
 			{
 				DrawCount++;
 
-				DrawBefore?.Invoke(this, new DrawEventArgs(graphics2D));
+				BeforeDraw?.Invoke(this, new DrawEventArgs(graphics2D));
+
+				if(!firstDraw)
+				{
+					OnFirstDraw(graphics2D);
+					firstDraw = false;
+				}
 
 				for (int i = 0; i < Children.Count; i++)
 				{
@@ -1832,7 +1846,7 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 
-				DrawAfter?.Invoke(this, new DrawEventArgs(graphics2D));
+				AfterDraw?.Invoke(this, new DrawEventArgs(graphics2D));
 
 				if (DebugShowBounds)
 				{
@@ -1850,6 +1864,8 @@ namespace MatterHackers.Agg.UI
 						Width / 2, Max(Height - 16, Height / 2 - 16 * graphics2D.TransformStackCount), color: Magenta, justification: Font.Justification.Center);
 				}
 			}
+
+			firstDraw = false;
 		}
 
 		private static void DrawBorderBounds(Graphics2D graphics2D, RectangleDouble bounds, BorderDouble border, RGBA_Bytes color)

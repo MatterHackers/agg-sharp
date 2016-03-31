@@ -44,7 +44,7 @@ namespace MatterHackers.Agg.UI
 		public ProgressBar(int width, int height)
 			: base(width, height)
 		{
-			DrawAfter += bar_Draw;
+			AfterDraw += bar_Draw;
 		}
 
 		public int PercentComplete

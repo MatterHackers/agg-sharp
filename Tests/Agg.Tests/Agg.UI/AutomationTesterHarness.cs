@@ -61,21 +61,16 @@ namespace MatterHackers.Agg.UI.Tests
 
 		private AutomationTesterHarness(SystemWindow initialSystemWindow, Action<AutomationTesterHarness> functionContainingTests, double secondsToTestFailure)
 		{
-			bool firstDraw = true;
-			initialSystemWindow.DrawAfter += (sender, e) =>
+			initialSystemWindow.FirstDraw += (sender, e) =>
 			{
-				if (firstDraw)
+				Task.Run(() => CloseAfterTime(initialSystemWindow, secondsToTestFailure));
+
+				Task.Run(() =>
 				{
-					Task.Run(() => CloseAfterTime(initialSystemWindow, secondsToTestFailure));
+					functionContainingTests(this);
 
-					firstDraw = false;
-					Task.Run(() =>
-					{
-						functionContainingTests(this);
-
-						initialSystemWindow.CloseOnIdle();
-					});
-				}
+					initialSystemWindow.CloseOnIdle();
+				});
 			};
 
 			initialSystemWindow.ShowAsSystemWindow();
