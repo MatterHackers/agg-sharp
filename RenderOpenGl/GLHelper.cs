@@ -44,20 +44,37 @@ namespace MatterHackers.RenderOpenGl
 			Render(meshToRender, partColor, Matrix4X4.Identity, renderType);
 		}
 
-		public static void Render3DLine(Vector3 start, Vector3 end, double unitsPerPixelStart, double unitsPerPixelEnd, RGBA_Bytes color)
+		public static void Render3DLine(Vector3 start, Vector3 end, double unitsPerPixelStart, double unitsPerPixelEnd, RGBA_Bytes color, bool doDepthTest = true)
 		{
-			Vector3 lineCenter = (start + end) / 2;
+			Render3DLine(Matrix4X4.Identity, start, end, unitsPerPixelStart, unitsPerPixelEnd, color, doDepthTest);
+        }
 
-			// render with z-buffer full black
+        public static void Render3DLine(Matrix4X4 transform, Vector3 start, Vector3 end, double unitsPerPixelStart, double unitsPerPixelEnd, RGBA_Bytes color, bool doDepthTest = true)
+		{
+			GL.Disable(EnableCap.Texture2D);
+
+			GL.Enable(EnableCap.Blend);
+			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+			GL.Disable(EnableCap.Lighting);
+			if (doDepthTest)
+			{
+				GL.Enable(EnableCap.DepthTest);
+			}
+			else
+			{
+				GL.Disable(EnableCap.DepthTest);
+			}
+
 			Vector3 delta = start - end;
 			Matrix4X4 rotateTransform = Matrix4X4.CreateRotation(new Quaternion(Vector3.UnitX + new Vector3(.0001, -.00001, .00002), delta.GetNormal()));
 			Matrix4X4 scaleTransform = Matrix4X4.CreateScale((end - start).Length, unitsPerPixelStart, unitsPerPixelStart);
-			Matrix4X4 lineTransform = scaleTransform * rotateTransform * Matrix4X4.CreateTranslation(lineCenter);
+			Vector3 lineCenter = (start + end) / 2;
+			Matrix4X4 lineTransform = scaleTransform * rotateTransform * Matrix4X4.CreateTranslation(lineCenter) * transform;
 
-			Mesh renderDashLine = PlatonicSolids.CreateCube();
-
-			GLHelper.Render(renderDashLine, RGBA_Bytes.Black, lineTransform, RenderTypes.Shaded);
+			GLHelper.Render(lineMesh, RGBA_Bytes.Black, lineTransform, RenderTypes.Shaded);
 		}
+
+		static Mesh lineMesh = PlatonicSolids.CreateCube();
 
 		public static void Render(Mesh meshToRender, IColorType partColor, Matrix4X4 transform, RenderTypes renderType)
 		{
