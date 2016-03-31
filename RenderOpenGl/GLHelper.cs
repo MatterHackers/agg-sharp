@@ -46,11 +46,6 @@ namespace MatterHackers.RenderOpenGl
 
 		public static void Render3DLine(Vector3 start, Vector3 end, double unitsPerPixelStart, double unitsPerPixelEnd, RGBA_Bytes color, bool doDepthTest = true)
 		{
-			Render3DLine(Matrix4X4.Identity, start, end, unitsPerPixelStart, unitsPerPixelEnd, color, doDepthTest);
-        }
-
-        public static void Render3DLine(Matrix4X4 transform, Vector3 start, Vector3 end, double unitsPerPixelStart, double unitsPerPixelEnd, RGBA_Bytes color, bool doDepthTest = true)
-		{
 			GL.Disable(EnableCap.Texture2D);
 
 			GL.Enable(EnableCap.Blend);
@@ -66,15 +61,31 @@ namespace MatterHackers.RenderOpenGl
 			}
 
 			Vector3 delta = start - end;
-			Matrix4X4 rotateTransform = Matrix4X4.CreateRotation(new Quaternion(Vector3.UnitX + new Vector3(.0001, -.00001, .00002), delta.GetNormal()));
-			Matrix4X4 scaleTransform = Matrix4X4.CreateScale((end - start).Length, unitsPerPixelStart, unitsPerPixelStart);
+			Matrix4X4 rotateTransform = Matrix4X4.CreateRotation(new Quaternion(Vector3.UnitX + new Vector3(.0001, -.00001, .00002), -delta.GetNormal()));
+			Matrix4X4 scaleTransform = Matrix4X4.CreateScale((end - start).Length, 1, 1);
 			Vector3 lineCenter = (start + end) / 2;
-			Matrix4X4 lineTransform = scaleTransform * rotateTransform * Matrix4X4.CreateTranslation(lineCenter) * transform;
+			Matrix4X4 lineTransform = scaleTransform * rotateTransform * Matrix4X4.CreateTranslation(lineCenter);
 
-			GLHelper.Render(lineMesh, RGBA_Bytes.Black, lineTransform, RenderTypes.Shaded);
+			for(int i=0; i<unscaledLineMesh.Vertices.Count; i++)
+			{
+				Vector3 vertexPosition = unscaledLineMesh.Vertices[i].Position;
+				if(vertexPosition.x < 0)
+				{
+					scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.x, vertexPosition.y * unitsPerPixelStart, vertexPosition.z * unitsPerPixelStart);
+				}
+				else
+				{
+					scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.x, vertexPosition.y * unitsPerPixelEnd, vertexPosition.z * unitsPerPixelEnd);
+				}
+			}
+
+			scaledLineMesh.MarkAsChanged();
+
+			GLHelper.Render(scaledLineMesh, RGBA_Bytes.Black, lineTransform, RenderTypes.Shaded);
 		}
 
-		static Mesh lineMesh = PlatonicSolids.CreateCube();
+		static Mesh scaledLineMesh = PlatonicSolids.CreateCube();
+		static Mesh unscaledLineMesh = PlatonicSolids.CreateCube();
 
 		public static void Render(Mesh meshToRender, IColorType partColor, Matrix4X4 transform, RenderTypes renderType)
 		{

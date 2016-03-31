@@ -123,13 +123,35 @@ namespace MatterHackers.Agg.OpenGlGui
 			base.OnBoundsChanged(e);
 		}
 
+		public Vector3 GetWorldPosition(Vector2 screenPosition)
+		{
+			Vector4 homoginizedScreenSpace = new Vector4((2.0f * (screenPosition.x / Width)) - 1,
+				1 - (2 * (screenPosition.y / Height)),
+				1,
+				1);
+
+			Matrix4X4 viewProjection = ModelviewMatrix * ProjectionMatrix;
+			Matrix4X4 viewProjectionInverse = Matrix4X4.Invert(viewProjection);
+			Vector4 woldSpace = Vector4.Transform(homoginizedScreenSpace, viewProjectionInverse);
+
+			double perspectiveDivide = 1 / woldSpace.w;
+
+			woldSpace.x *= perspectiveDivide;
+			woldSpace.y *= perspectiveDivide;
+			woldSpace.z *= perspectiveDivide;
+
+			return new Vector3(woldSpace);
+		}
+
 		public Vector2 GetScreenPosition(Vector3 worldPosition)
 		{
-			Vector3 viewPosition = Vector3.Transform(worldPosition, ModelviewMatrix);
+			Vector3 homoginizedViewPosition = Vector3.Transform(worldPosition, ModelviewMatrix);
 
-			Vector3 screenPosition = Vector3.TransformPerspective(viewPosition, ProjectionMatrix);
+			Vector3 homoginizedScreenPosition = Vector3.TransformPerspective(homoginizedViewPosition, ProjectionMatrix);
 
-			return new Vector2(screenPosition.x * Width / 2 + Width / 2, screenPosition.y / screenPosition.z * Height / 2 + Height / 2);
+			Vector2 screenPosition = new Vector2(homoginizedScreenPosition.x * Width / 2 + Width / 2, homoginizedScreenPosition.y * Height / 2 + Height / 2);
+
+			return screenPosition; 
 		}
 
 		public Vector3 GetScreenSpace(Vector3 worldPosition)
@@ -695,11 +717,12 @@ namespace MatterHackers.Agg.OpenGlGui
 		public double GetWorldUnitsPerScreenPixelAtPosition(Vector3 worldPosition, double maxRatio = 5)
 		{
 			Vector2 screenPosition = GetScreenPosition(worldPosition);
-			Ray rayFromScreen = GetRayFromScreen(screenPosition);
-			double distanceFromScreenToWorldPos = (worldPosition - rayFromScreen.origin).Length;
+
+            Ray rayFromScreen = GetRayFromScreen(screenPosition);
+			double distanceFromOriginToWorldPos = (worldPosition - rayFromScreen.origin).Length;
 
 			Ray rightOnePixelRay = GetRayFromScreen(new Vector2(screenPosition.x + 1, screenPosition.y));
-			Vector3 rightOnePixel = rightOnePixelRay.origin + rightOnePixelRay.directionNormal * distanceFromScreenToWorldPos;
+			Vector3 rightOnePixel = rightOnePixelRay.origin + rightOnePixelRay.directionNormal * distanceFromOriginToWorldPos;
 			double distBetweenPixelsWorldSpace = (rightOnePixel - worldPosition).Length;
 			if(distBetweenPixelsWorldSpace > maxRatio)
 			{
