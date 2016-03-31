@@ -143,6 +143,10 @@
       <Project>{94838988-523C-4B11-AD82-8B9B76F23A31}</Project>
       <Name>DataConverters2D</Name>
     </ProjectReference>
+    <ProjectReference Include="..\RayTracer\RayTracer.csproj">
+      <Project>{1e01abe0-b494-4fe4-b0d6-540133286887}</Project>
+      <Name>RayTracer</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Tesselate\Tesselate.csproj">
       <Project>{AE37DE1F-22F7-49EE-8732-FC6BC8DC58D9}</Project>
       <Name>Tesselate</Name>
@@ -161,6 +165,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DebugBvh.cs" />
     <Compile Include="GL.cs" />
     <Compile Include="GLMeshWirePlugin.cs" />
     <Compile Include="GLMeshTrianglePlugin.cs" />
@@ -169,7 +174,7 @@
     <Compile Include="RenderCsgToGl.cs" />
     <Compile Include="Renderer\AARenderToGLTesselator.cs" />
     <Compile Include="Renderer\RenderToGLTesselator.cs" />
-    <Compile Include="RenderMeshToGl.cs" />
+    <Compile Include="GLHelper.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

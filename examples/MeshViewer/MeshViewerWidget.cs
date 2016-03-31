@@ -809,7 +809,7 @@ namespace MatterHackers.MeshVisualizer
 					MeshMaterialData meshData = MeshMaterialData.Get(meshToRender);
 					RGBA_Bytes drawColor = isSelected ? GetSelectedMaterialColor(meshData.MaterialIndex) : GetMaterialColor(meshData.MaterialIndex);
 
-					RenderMeshToGl.Render(meshToRender, drawColor, totalTransform, RenderType);
+					GLHelper.Render(meshToRender, drawColor, totalTransform, RenderType);
 				}
 			}
 
@@ -831,12 +831,12 @@ namespace MatterHackers.MeshVisualizer
 			{
 				if (RenderBed)
 				{
-					RenderMeshToGl.Render(printerBed, this.BedColor);
+					GLHelper.Render(printerBed, this.BedColor);
 				}
 
 				if (buildVolume != null && RenderBuildVolume)
 				{
-					RenderMeshToGl.Render(buildVolume, this.BuildVolumeColor);
+					GLHelper.Render(buildVolume, this.BuildVolumeColor);
 				}
 
 				if (false) // this is code to draw a small axis indicator
@@ -844,11 +844,11 @@ namespace MatterHackers.MeshVisualizer
 					double big = 10;
 					double small = 1;
 					Mesh xAxis = PlatonicSolids.CreateCube(big, small, small);
-					RenderMeshToGl.Render(xAxis, RGBA_Bytes.Red);
+					GLHelper.Render(xAxis, RGBA_Bytes.Red);
 					Mesh yAxis = PlatonicSolids.CreateCube(small, big, small);
-					RenderMeshToGl.Render(yAxis, RGBA_Bytes.Green);
+					GLHelper.Render(yAxis, RGBA_Bytes.Green);
 					Mesh zAxis = PlatonicSolids.CreateCube(small, small, big);
-					RenderMeshToGl.Render(zAxis, RGBA_Bytes.Blue);
+					GLHelper.Render(zAxis, RGBA_Bytes.Blue);
 				}
 			}
 

@@ -37,14 +37,14 @@ namespace MatterHackers.RayTracer
 {
 	public class UnboundCollection : IPrimitive
 	{
-		internal List<IPrimitive> items;
+		public List<IPrimitive> Items { get; }
 
 		public UnboundCollection(IList<IPrimitive> traceableItems)
 		{
-			items = new List<IPrimitive>(traceableItems.Count);
+			Items = new List<IPrimitive>(traceableItems.Count);
 			foreach (IPrimitive traceable in traceableItems)
 			{
-				items.Add(traceable);
+				Items.Add(traceable);
 			}
 		}
 
@@ -68,7 +68,7 @@ namespace MatterHackers.RayTracer
 		public IntersectInfo GetClosestIntersection(Ray ray)
 		{
 			IntersectInfo bestInfo = null;
-			foreach (IPrimitive item in items)
+			foreach (IPrimitive item in Items)
 			{
 				IntersectInfo info = item.GetClosestIntersection(ray);
 				if (info != null && info.hitType != IntersectionType.None && info.distanceToHit >= 0)
@@ -86,7 +86,7 @@ namespace MatterHackers.RayTracer
 		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
 		{
 			bool foundItem = false;
-			foreach (IPrimitive item in items)
+			foreach (IPrimitive item in Items)
 			{
 				foundItem |= item.GetContained(results, subRegion);
 			}
@@ -106,7 +106,7 @@ namespace MatterHackers.RayTracer
 
 		public IEnumerable IntersectionIterator(Ray ray)
 		{
-			foreach (IPrimitive item in items)
+			foreach (IPrimitive item in Items)
 			{
 				foreach (IntersectInfo info in item.IntersectionIterator(ray))
 				{
@@ -118,7 +118,7 @@ namespace MatterHackers.RayTracer
 		public double GetSurfaceArea()
 		{
 			double totalSurfaceArea = 0;
-			foreach (IPrimitive item in items)
+			foreach (IPrimitive item in Items)
 			{
 				totalSurfaceArea += item.GetSurfaceArea();
 			}
@@ -137,10 +137,10 @@ namespace MatterHackers.RayTracer
 		{
 			if (cachedAABB.minXYZ.x == double.NegativeInfinity)
 			{
-				cachedAABB = items[0].GetAxisAlignedBoundingBox();
-				for (int i = 1; i < items.Count; i++)
+				cachedAABB = Items[0].GetAxisAlignedBoundingBox();
+				for (int i = 1; i < Items.Count; i++)
 				{
-					cachedAABB += items[i].GetAxisAlignedBoundingBox();
+					cachedAABB += Items[i].GetAxisAlignedBoundingBox();
 				}
 			}
 
@@ -158,7 +158,7 @@ namespace MatterHackers.RayTracer
 		public double GetIntersectCost()
 		{
 			double totalIntersectCost = 0;
-			foreach (IPrimitive item in items)
+			foreach (IPrimitive item in Items)
 			{
 				totalIntersectCost += item.GetIntersectCost();
 			}

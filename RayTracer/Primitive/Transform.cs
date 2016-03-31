@@ -37,58 +37,51 @@ namespace MatterHackers.RayTracer.Traceable
 {
 	public class Transform : Axis3D, IPrimitive
 	{
-		private IPrimitive child;
+		public IPrimitive Child { get; }
 
 		public Transform(IPrimitive root)
 		{
-			this.child = root;
+			this.Child = root;
 		}
 
 		public Transform(IPrimitive root, Matrix4X4 transform)
 		{
-			this.child = root;
+			this.Child = root;
+
 			AxisToWorld = transform;
 			WorldToAxis = Matrix4X4.Invert(AxisToWorld);
 		}
 
-		public IPrimitive Child
-		{
-			get
-			{
-				return child;
-			}
-		}
-
 		public RGBA_Floats GetColor(IntersectInfo info)
 		{
-			return child.GetColor(info);
+			return Child.GetColor(info);
 		}
 
 		public MaterialAbstract Material
 		{
 			get
 			{
-				return child.Material;
+				return Child.Material;
 			}
 			set
 			{
-				child.Material = value;
+				Child.Material = value;
 			}
 		}
 
 		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
 		{
-			child.GetContained(results, subRegion);
+			Child.GetContained(results, subRegion);
 
 			return true;
 		}
 
 		public IntersectInfo GetClosestIntersection(Ray ray)
 		{
-			if (child != null)
+			if (Child != null)
 			{
 				Ray localRay = GetLocalSpaceRay(ray);
-				IntersectInfo localIntersection = child.GetClosestIntersection(localRay);
+				IntersectInfo localIntersection = Child.GetClosestIntersection(localRay);
 				IntersectInfo globalIntersection = GetGlobalSpaceInfo(localIntersection);
 				return globalIntersection;
 			}
@@ -107,7 +100,7 @@ namespace MatterHackers.RayTracer.Traceable
 			{
 				rayBundle.rayArray[i] = GetLocalSpaceRay(rayBundle.rayArray[i]);
 			}
-			child.GetClosestIntersections(rayBundle, rayIndexToStartCheckingFrom, intersectionsForBundle);
+			Child.GetClosestIntersections(rayBundle, rayIndexToStartCheckingFrom, intersectionsForBundle);
 			for (int i = 0; i < rayBundle.rayArray.Length; i++)
 			{
 				intersectionsForBundle[i] = GetGlobalSpaceInfo(intersectionsForBundle[i]);
@@ -117,7 +110,7 @@ namespace MatterHackers.RayTracer.Traceable
 		public IEnumerable IntersectionIterator(Ray ray)
 		{
 			Ray localRay = GetLocalSpaceRay(ray);
-			foreach (IntersectInfo localInfo in child.IntersectionIterator(localRay))
+			foreach (IntersectInfo localInfo in Child.IntersectionIterator(localRay))
 			{
 				IntersectInfo globalIntersection = GetGlobalSpaceInfo(localInfo);
 				yield return globalIntersection;
@@ -126,7 +119,7 @@ namespace MatterHackers.RayTracer.Traceable
 
 		public double GetSurfaceArea()
 		{
-			return child.GetSurfaceArea();
+			return Child.GetSurfaceArea();
 		}
 
 		public Vector3 GetCenter()
@@ -137,14 +130,14 @@ namespace MatterHackers.RayTracer.Traceable
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{
 			Vector3 localOrigin = Origin;
-			AxisAlignedBoundingBox localBounds = child.GetAxisAlignedBoundingBox();
+			AxisAlignedBoundingBox localBounds = Child.GetAxisAlignedBoundingBox();
 			AxisAlignedBoundingBox bounds = localBounds.NewTransformed(AxisToWorld);
 			return bounds;
 		}
 
 		public double GetIntersectCost()
 		{
-			return child.GetIntersectCost();
+			return Child.GetIntersectCost();
 		}
 
 		private Ray GetLocalSpaceRay(Ray ray)

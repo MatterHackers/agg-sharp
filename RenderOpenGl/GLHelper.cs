@@ -37,8 +37,66 @@ namespace MatterHackers.RenderOpenGl
 {
 	public enum RenderTypes { Hidden, Shaded, Outlines, Polygons };
 
-	public static class RenderMeshToGl
+	public static class GLHelper
 	{
+		public static void Render(Mesh meshToRender, IColorType partColor, RenderTypes renderType = RenderTypes.Shaded)
+		{
+			Render(meshToRender, partColor, Matrix4X4.Identity, renderType);
+		}
+
+		public static void Render3DLine(Vector3 start, Vector3 end, double unitsPerPixelStart, double unitsPerPixelEnd, RGBA_Bytes color)
+		{
+			Vector3 lineCenter = (start + end) / 2;
+
+			// render with z-buffer full black
+			Vector3 delta = start - end;
+			Matrix4X4 rotateTransform = Matrix4X4.CreateRotation(new Quaternion(Vector3.UnitX + new Vector3(.0001, -.00001, .00002), delta.GetNormal()));
+			Matrix4X4 scaleTransform = Matrix4X4.CreateScale((end - start).Length, unitsPerPixelStart, unitsPerPixelStart);
+			Matrix4X4 lineTransform = scaleTransform * rotateTransform * Matrix4X4.CreateTranslation(lineCenter);
+
+			Mesh renderDashLine = PlatonicSolids.CreateCube();
+
+			GLHelper.Render(renderDashLine, RGBA_Bytes.Black, lineTransform, RenderTypes.Shaded);
+		}
+
+		public static void Render(Mesh meshToRender, IColorType partColor, Matrix4X4 transform, RenderTypes renderType)
+		{
+			if (meshToRender != null)
+			{
+				GL.Color4(partColor.Red0To255, partColor.Green0To255, partColor.Blue0To255, partColor.Alpha0To255);
+
+				if (partColor.Alpha0To1 < 1)
+				{
+					GL.Enable(EnableCap.Blend);
+				}
+				else
+				{
+					GL.Disable(EnableCap.Blend);
+				}
+
+				GL.MatrixMode(MatrixMode.Modelview);
+				GL.PushMatrix();
+				GL.MultMatrix(transform.GetAsFloatArray());
+
+				switch (renderType)
+				{
+					case RenderTypes.Hidden:
+						break;
+
+					case RenderTypes.Shaded:
+						DrawToGL(meshToRender);
+						break;
+
+					case RenderTypes.Polygons:
+					case RenderTypes.Outlines:
+						DrawWithWireOverlay(meshToRender, renderType);
+						break;
+				}
+
+				GL.PopMatrix();
+			}
+		}
+
 		private static void DrawToGL(Mesh meshToRender)
 		{
 			GLMeshTrianglePlugin glMeshPlugin = GLMeshTrianglePlugin.Get(meshToRender);
@@ -59,7 +117,6 @@ namespace MatterHackers.RenderOpenGl
 					GL.DisableClientState(ArrayCap.TextureCoordArray);
 				}
 
-#if true
 				GL.EnableClientState(ArrayCap.NormalArray);
 				GL.EnableClientState(ArrayCap.VertexArray);
 				unsafe
@@ -78,18 +135,6 @@ namespace MatterHackers.RenderOpenGl
 						}
 					}
 				}
-#else
-                GL.InterleavedArrays(InterleavedArrayFormat.T2fN3fV3f, 0, subMesh.vertexDatas.Array);
-                if (subMesh.texture != null)
-                {
-                    //GL.TexCoordPointer(2, TexCoordPointerType.Float, VertexData.Stride, subMesh.vertexDatas.Array);
-                    //GL.EnableClientState(ArrayCap.TextureCoordArray);
-                }
-                else
-                {
-                    GL.DisableClientState(ArrayCap.TextureCoordArray);
-                }
-#endif
 
 				GL.DisableClientState(ArrayCap.NormalArray);
 				GL.DisableClientState(ArrayCap.VertexArray);
@@ -135,7 +180,6 @@ namespace MatterHackers.RenderOpenGl
 			VectorPOD<WireVertexData> edegLines = glWireMeshPlugin.edgeLinesData;
 			GL.EnableClientState(ArrayCap.VertexArray);
 
-#if true
 			unsafe
 			{
 				fixed (WireVertexData* pv = edegLines.Array)
@@ -144,56 +188,9 @@ namespace MatterHackers.RenderOpenGl
 					GL.DrawArrays(BeginMode.Lines, 0, edegLines.Count);
 				}
 			}
-#else
-            GL.InterleavedArrays(InterleavedArrayFormat.V3f, 0, edegLines.Array);
-            GL.DrawArrays(BeginMode.Lines, 0, edegLines.Count);
-#endif
 
 			GL.DisableClientState(ArrayCap.VertexArray);
 			GL.Enable(EnableCap.Lighting);
-		}
-
-		public static void Render(Mesh meshToRender, IColorType partColor, RenderTypes renderType = RenderTypes.Shaded)
-		{
-			Render(meshToRender, partColor, Matrix4X4.Identity, renderType);
-		}
-
-		public static void Render(Mesh meshToRender, IColorType partColor, Matrix4X4 transform, RenderTypes renderType)
-		{
-			if (meshToRender != null)
-			{
-				GL.Color4(partColor.Red0To255, partColor.Green0To255, partColor.Blue0To255, partColor.Alpha0To255);
-
-				if (partColor.Alpha0To1 < 1)
-				{
-					GL.Enable(EnableCap.Blend);
-				}
-				else
-				{
-					GL.Disable(EnableCap.Blend);
-				}
-
-				GL.MatrixMode(MatrixMode.Modelview);
-				GL.PushMatrix();
-				GL.MultMatrix(transform.GetAsFloatArray());
-
-				switch (renderType)
-				{
-					case RenderTypes.Hidden:
-						break;
-
-					case RenderTypes.Shaded:
-						DrawToGL(meshToRender);
-						break;
-
-					case RenderTypes.Polygons:
-					case RenderTypes.Outlines:
-						DrawWithWireOverlay(meshToRender, renderType);
-						break;
-				}
-
-				GL.PopMatrix();
-			}
 		}
 	}
 }
