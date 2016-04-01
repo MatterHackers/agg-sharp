@@ -27,6 +27,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.Agg;
+using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RayTracer;
 using MatterHackers.RayTracer.Traceable;
 using MatterHackers.VectorMath;
@@ -34,67 +36,11 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace MatterHackers.PolygonMesh
 {
-	public enum Object3DTypes { Model, Group, SelectionGroup, GenericObject };
-
-	public interface IObject3D
-	{
-		[JsonConverter(typeof(Object3DConverter))]
-		List<IObject3D> Children { get; set; }
-		PlatingData ExtraData { get; }
-		bool HasChildren { get; }
-		Object3DTypes ItemType { get; set; }
-
-		[JsonConverter(typeof(MatrixConverter))]
-		Matrix4X4 Matrix { get; set; }
-
-		MeshGroup MeshGroup { get; set; }
-		string MeshPath { get; set; }
-
-		bool PersistNode { get; set; }
-
-		bool Visible { get; set; }
-
-		IObject3D Clone();
-
-		void CreateTraceables();
-
-		double DistanceToHit(Ray ray, ref IntersectInfo info);
-
-		AxisAlignedBoundingBox GetAxisAlignedBoundingBox();
-
-		AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 offet);
-	}
-
-	public static class Object3DExtensions
-	{
-		public static AxisAlignedBoundingBox GetUnionedAxisAlignedBoundingBox(this List<IObject3D> items)
-		{
-			// first find the bounds of what is already here.
-			AxisAlignedBoundingBox totalBounds = AxisAlignedBoundingBox.Empty;
-			foreach (var object3D in items)
-			{
-				totalBounds = AxisAlignedBoundingBox.Union(totalBounds, object3D.GetAxisAlignedBoundingBox());
-			}
-
-			return totalBounds;
-		}
-
-		public static IEnumerable<IObject3D> Descendants(this IObject3D root)
-		{
-			var nodes = new Stack<IObject3D>(new[] { root });
-			while (nodes.Any())
-			{
-				IObject3D node = nodes.Pop();
-				yield return node;
-				foreach (var n in node.Children) nodes.Push(n);
-			}
-		}
-	}
-
 	public class Object3D : IObject3D
 	{
 		public List<IObject3D> Children { get; set; } = new List<IObject3D>();
@@ -123,6 +69,46 @@ namespace MatterHackers.PolygonMesh
 			List<IPrimitive> allPolys = AddTraceDataForMesh(mesh);
 
 			return BoundingVolumeHierarchy.CreateNewHierachy(allPolys);
+		}
+
+		public static IObject3D Load(string meshPathAndFileName, Dictionary<string, List<MeshGroup>> cachedMeshes, ReportProgressRatio progress)
+		{
+			string extension = Path.GetExtension(meshPathAndFileName);
+
+			if (extension == ".mcx")
+			{
+				// Load the meta file
+				IObject3D loadedItem = JsonConvert.DeserializeObject<Object3D>(File.ReadAllText(meshPathAndFileName));
+
+				// Load all mesh links in the file definition
+				loadedItem.LoadMeshLinks(cachedMeshes, progress);
+
+				return loadedItem;
+			}
+			else
+			{
+				List<MeshGroup> loadedMeshGroups = MeshFileIo.Load(meshPathAndFileName, progress);
+
+				// During startup we load and reload the main control multiple times. When this occurs, sometimes the reportProgress0to100 will set
+				// continueProcessing to false and MeshFileIo.LoadAsync will return null. In those cases, we need to exit rather than process the loaded MeshGroup
+				if (loadedMeshGroups == null)
+				{
+					return null;
+				}
+
+				IObject3D loadedItem = new Object3D()
+				{
+					MeshGroup = new MeshGroup(),
+					ItemType = Object3DTypes.Group
+				};
+
+				foreach (var meshGroup in loadedMeshGroups)
+				{
+					loadedItem.Children.Add(new Object3D() { MeshGroup = meshGroup });
+				}
+
+				return loadedItem;
+			}
 		}
 
 		// TODO - first attempt at deep clone
@@ -230,61 +216,6 @@ namespace MatterHackers.PolygonMesh
 
 			// Wrap with transform and BVH
 			return new Transform(BoundingVolumeHierarchy.CreateNewHierachy(meshTraceables, 0), Matrix);
-		}
-	}
-
-	public class PlatingData
-	{
-		public Vector3 CurrentScale = new Vector3(1, 1, 1);
-
-		[JsonIgnore]
-		public List<IPrimitive> MeshTraceables = new List<IPrimitive>();
-		public Vector2 Spacing;
-	}
-
-	public class Object3DConverter : JsonConverter
-	{
-		public override bool CanConvert(Type objectType)
-		{
-			return objectType is IObject3D;
-		}
-
-		public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-		{
-			JArray jo = JArray.Load(reader);
-			return new List<IObject3D>(jo.ToObject<List<Object3D>>(serializer));
-		}
-
-		public override bool CanWrite
-		{
-			get { return false; }
-		}
-
-		public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-		{
-			throw new NotImplementedException();
-		}
-	}
-
-	public class MatrixConverter : JsonConverter
-	{
-		public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-		{
-			var matrix = (Matrix4X4) value;
-
-			// TODO: It seems likely that the serializer supports this without the extra call to the converter but it's not obvious and this works in the short term
-			serializer.Serialize(writer, JsonConvert.SerializeObject(matrix.GetAsDoubleArray()));
-		}
-
-		public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-		{
-			var xxx = reader.Value.ToString();
-			return new Matrix4X4(JsonConvert.DeserializeObject<double[]>(xxx));
-		}
-
-		public override bool CanConvert(Type objectType)
-		{
-			return objectType == typeof(Matrix4X4);
 		}
 	}
 }

@@ -351,126 +351,23 @@ namespace MatterHackers.MeshVisualizer
 
 		public enum CenterPartAfterLoad { DO, DONT }
 
-		// Recursively process the tree loading each mesh file as needed
-		public async void LoadObject(IObject3D object3D)
+		public Dictionary<string, List<MeshGroup>> CachedMeshes { get; } = new Dictionary<string, List<MeshGroup>>();
+		
+		public async Task LoadMesh(string meshPath, CenterPartAfterLoad centerPart, Vector2 bedCenter = new Vector2())
 		{
-			await LoadMeshFile(object3D);
-			
-			foreach(var child in object3D.Children)
-			{
-				LoadObject(child);
-			}
-		}
-
-		private Dictionary<string, List<MeshGroup>> cachedMeshes = new Dictionary<string, List<MeshGroup>>();
-
-		public async Task LoadMeshFile(IObject3D sceneItem)
-		{
-			if (string.IsNullOrEmpty(sceneItem.MeshPath) || !File.Exists(sceneItem.MeshPath))
-			{
-				return;
-			}
-
-			
-		}
-
-		public async Task LoadMesh(string meshPathAndFileName, CenterPartAfterLoad centerPart, Vector2 bedCenter = new Vector2())
-		{
-			if (File.Exists(meshPathAndFileName))
+			if (File.Exists(meshPath))
 			{
 				partProcessingInfo.Visible = true;
 				partProcessingInfo.progressControl.PercentComplete = 0;
 				partProcessingInfo.centeredInfoText.Text = "Loading Mesh...";
 
-				IObject3D tempScene;
-
-				string extension = Path.GetExtension(meshPathAndFileName);
-				if (extension == ".mcx")
+				// TODO: How to we handle mesh load errors? How do we report success?
+				IObject3D loadedItem = await Task.Run(() => Object3D.Load(meshPath, CachedMeshes, ReportProgress0to100));
+				if(loadedItem != null)
 				{
-					// Load the meta file
-					tempScene = JsonConvert.DeserializeObject<Object3D>(File.ReadAllText(meshPathAndFileName));
-
-					var itemsToLoad = (from object3D in tempScene.Descendants()
-									   where !string.IsNullOrEmpty(object3D.MeshPath) &&
-											 File.Exists(object3D.MeshPath)
-									   select object3D).ToList();
-
-					int itemCount = itemsToLoad.Count;
-
-					List<MeshGroup> loadedMeshGroups;
-
-					foreach (IObject3D object3D in itemsToLoad)
-					{
-						// TODO: Make cacheKey based on a SHA1 hash of the mesh data so that duplicate content, remote or local, can pull from the same file. This
-						// is especially true for dynamic content in the scene that comes from generators or is duplicated. If that data is hashed, we'll save only
-						// a single mesh file rather than n number of duplicates
-						//
-						// Pull from cache or load
-						if (!cachedMeshes.TryGetValue(object3D.MeshPath, out loadedMeshGroups))
-						{
-							// TODO: calc the actual progress
-							loadedMeshGroups = await MeshFileIo.LoadAsync(object3D.MeshPath, reportProgress0to100);
-							cachedMeshes[object3D.MeshPath] = loadedMeshGroups;
-						}
-
-						// During startup we reload the main control multiple times. When this occurs, sometimes the reportProgress0to100 will set
-						// continueProcessing to false and MeshFileIo.LoadAsync will return null. In those cases, we need to exit rather than process the loaded MeshGroup
-						if (loadedMeshGroups == null && WidgetHasBeenClosed)
-						{
-							return;
-						}
-						else if (loadedMeshGroups == null)
-						{
-							// TODO: Someday handle load errors by placing something in the scene that notes the lack of a source file and guides the user to fix
-							// Load error for file, skip
-							continue;
-						}
-
-						if (loadedMeshGroups.Count == 1)
-						{
-							object3D.MeshGroup = loadedMeshGroups.First();
-							object3D.ItemType = Object3DTypes.Model;
-						}
-						else
-						{
-							foreach (var meshGroup in loadedMeshGroups)
-							{
-								object3D.Children.Add(new Object3D()
-								{
-									ItemType = Object3DTypes.Model,
-									MeshGroup = meshGroup,
-									PersistNode = false
-								});
-							}
-						}
-					}
+					// Update after load
+					SetMeshAfterLoad(loadedItem.Children, centerPart, bedCenter);
 				}
-				else
-				{
-					tempScene = new Object3D();
-
-					// Await async load
-					List<MeshGroup> loadedMeshGroups = await MeshFileIo.LoadAsync(meshPathAndFileName, reportProgress0to100);
-
-					// During startup we load and reload the main control multiple times. When this occurs, sometimes the reportProgress0to100 will set
-					// continueProcessing to false and MeshFileIo.LoadAsync will return null. In those cases, we need to exit rather than process the loaded MeshGroup
-					if (loadedMeshGroups == null)
-					{
-						return;
-					}
-
-					var loadedGroup = new Object3D { MeshGroup = new MeshGroup() };
-
-					foreach (var meshGroup in loadedMeshGroups)
-					{
-						loadedGroup.Children.Add(new Object3D() { MeshGroup = meshGroup });
-					}
-
-					tempScene.Children.Add(loadedGroup);
-				}
-
-				// Update after load
-				SetMeshAfterLoad(tempScene.Children, centerPart, bedCenter);
 
 				partProcessingInfo.Visible = false;
 
@@ -479,7 +376,7 @@ namespace MatterHackers.MeshVisualizer
 			}
 			else
 			{
-				partProcessingInfo.centeredInfoText.Text = string.Format("{0}\n'{1}'", "File not found on disk.", Path.GetFileName(meshPathAndFileName));
+				partProcessingInfo.centeredInfoText.Text = string.Format("{0}\n'{1}'", "File not found on disk.", Path.GetFileName(meshPath));
 			}
 		}
 
@@ -776,7 +673,7 @@ namespace MatterHackers.MeshVisualizer
 			return false;
 		}
 
-		private void reportProgress0to100(double progress0To1, string processingState, out bool continueProcessing)
+		public void ReportProgress0to100(double progress0To1, string processingState, out bool continueProcessing)
 		{
 			if (this.WidgetHasBeenClosed)
 			{
@@ -905,74 +802,6 @@ namespace MatterHackers.MeshVisualizer
 
 				VAnchor |= VAnchor.ParentCenter;
 				HAnchor |= HAnchor.ParentCenter;
-			}
-		}
-	}
-	
-	public class InteractiveScene : Object3D
-	{
-		public event EventHandler SelectionChanged;
-
-		IObject3D selectedItem;
-		public IObject3D SelectedItem
-		{
-			get
-			{
-				return selectedItem;
-			}
-
-			set
-			{
-				if (selectedItem != value)
-				{
-					selectedItem = value;
-					SelectionChanged?.Invoke(this, null);
-				}
-			}
-		}
-
-		public bool HasSelection => HasChildren && SelectedItem != null;
-
-		public bool IsSelected(Object3DTypes objectType) => HasSelection && SelectedItem.ItemType == objectType;
-
-		public void SelectLastChild()
-		{
-			if (Children.Count > 0)
-			{
-				SelectedItem = Children.Last();
-			}
-		}
-
-		public void SelectFirstChild()
-		{
-			if (Children.Count > 0)
-			{
-				SelectedItem = Children.First();
-			}
-		}
-
-		public void Select(IObject3D item)
-		{
-			SelectedItem = item;
-		}
-
-		public void ModifyChildren(Action<List<IObject3D>> modifier)
-		{
-			// Copy the child items
-			var clonedChildren = new List<IObject3D>(Children);
-
-			// Pass them to the action
-			modifier(clonedChildren);
-
-			// Swap the modified list into place
-			Children = clonedChildren;
-		}
-
-		public void ClearSelection()
-		{
-			if(HasSelection)
-			{
-				SelectedItem = null;
 			}
 		}
 	}
