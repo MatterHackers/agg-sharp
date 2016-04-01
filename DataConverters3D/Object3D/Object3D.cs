@@ -112,7 +112,8 @@ namespace MatterHackers.PolygonMesh
 				ItemType = this.ItemType,
 				MeshGroup = this.MeshGroup,
 				Children = new List<IObject3D>(this.Children.Select(child => child.Clone())),
-				Matrix = this.Matrix
+				Matrix = this.Matrix,
+				traceData = this.traceData
 			};
 		}
 
