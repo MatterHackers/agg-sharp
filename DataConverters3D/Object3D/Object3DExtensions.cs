@@ -149,7 +149,7 @@ namespace MatterHackers.PolygonMesh
 				}
 			}
 
-			return BoundingVolumeHierarchy.CreateNewHierachy(allPolys);
+			return BoundingVolumeHierarchy.CreateNewHierachy(allPolys, 0);
 		}
 	}
 }
