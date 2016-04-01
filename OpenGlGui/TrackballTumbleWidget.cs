@@ -161,11 +161,11 @@ namespace MatterHackers.Agg.OpenGlGui
 			return Vector3.Transform(viewPosition, ProjectionMatrix);
 		}
 
-		public Ray GetRayFromScreen(Vector2 screenPosition)
+		public Ray GetRayForLocalBounds(Vector2 localPosition)
 		{
 			Vector4 rayClip = new Vector4();
-			rayClip.x = (2.0 * screenPosition.x) / Width - 1.0;
-			rayClip.y = (2.0 * screenPosition.y) / Height - 1.0;
+			rayClip.x = (2.0 * localPosition.x) / Width - 1.0;
+			rayClip.y = (2.0 * localPosition.y) / Height - 1.0;
 			rayClip.z = -1.0;
 			rayClip.w = 1.0;
 
@@ -718,10 +718,10 @@ namespace MatterHackers.Agg.OpenGlGui
 		{
 			Vector2 screenPosition = GetScreenPosition(worldPosition);
 
-            Ray rayFromScreen = GetRayFromScreen(screenPosition);
+            Ray rayFromScreen = GetRayForLocalBounds(screenPosition);
 			double distanceFromOriginToWorldPos = (worldPosition - rayFromScreen.origin).Length;
 
-			Ray rightOnePixelRay = GetRayFromScreen(new Vector2(screenPosition.x + 1, screenPosition.y));
+			Ray rightOnePixelRay = GetRayForLocalBounds(new Vector2(screenPosition.x + 1, screenPosition.y));
 			Vector3 rightOnePixel = rightOnePixelRay.origin + rightOnePixelRay.directionNormal * distanceFromOriginToWorldPos;
 			double distBetweenPixelsWorldSpace = (rightOnePixel - worldPosition).Length;
 			if(distBetweenPixelsWorldSpace > maxRatio)
