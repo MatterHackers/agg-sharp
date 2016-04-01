@@ -28,11 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg;
-using MatterHackers.Csg;
-using MatterHackers.Csg.Operations;
-using MatterHackers.Csg.Solids;
-using MatterHackers.Csg.Transform;
-using MatterHackers.PolygonMesh;
+using MatterHackers.DataConverters3D;
 using MatterHackers.RayTracer;
 using MatterHackers.RayTracer.Traceable;
 using MatterHackers.VectorMath;
@@ -41,56 +37,70 @@ using System.Collections.Generic;
 
 namespace MatterHackers.RenderOpenGl
 {
-	public class DebugBvh
+	public static class DebugBvhEntensions
 	{
-		public static void Render(IPrimitive objectToProcess, Matrix4X4 startingMatrix, int start = 0, int end = int.MaxValue)
+		public static void RenderBvhRecursive(this IPrimitive bvhToRender, Matrix4X4 startingTransform, int startRenderLevel = 0, int endRenderLevel = int.MaxValue)
 		{
-			DebugBvh visitor = new DebugBvh();
-			visitor.RenderRecursive((dynamic)objectToProcess, start, end, 0, startingMatrix);
+			DebugBvh visitor = new DebugBvh(startRenderLevel, endRenderLevel);
+			visitor.transform.Push(startingTransform);
+			visitor.RenderRecursive((dynamic)bvhToRender, 0);
+		}
+	}
+
+	internal class DebugBvh
+	{
+		private int endRenderLevel;
+		private int startRenderLevel;
+		internal Stack<Matrix4X4> transform = new Stack<Matrix4X4>();
+
+		public DebugBvh(int startRenderLevel = 0, int endRenderLevel = int.MaxValue)
+		{
+			this.startRenderLevel = startRenderLevel;
+			this.endRenderLevel = endRenderLevel;
 		}
 
-		public DebugBvh()
-		{
-		}
-
-		public void RenderRecursive(IPrimitive objectToProcess, int start, int end, int currentRecursion, Matrix4X4 parentSpace)
+		public void RenderRecursive(IPrimitive objectToProcess, int currentRecursion)
 		{
 			throw new Exception("You must write the specialized function for this type.");
 		}
 
-		public void RenderRecursive(TriangleShape objectToProcess, int start, int end, int currentRecursion, Matrix4X4 parentSpace)
+		public void RenderRecursive(MeshFaceTraceable objectToProcess, int currentRecursion)
 		{
-			RenderBounds(objectToProcess.GetAxisAlignedBoundingBox(), parentSpace, currentRecursion);
+			RenderBounds(objectToProcess.GetAxisAlignedBoundingBox(), currentRecursion);
 		}
 
-		public void RenderRecursive(UnboundCollection objectToProcess, int start, int end, int currentRecursion, Matrix4X4 parentSpace)
+		public void RenderRecursive(TriangleShape objectToProcess, int currentRecursion)
 		{
-			RenderBounds(objectToProcess.GetAxisAlignedBoundingBox(), parentSpace, currentRecursion);
-			currentRecursion++;
-			foreach (var item in objectToProcess.Items)
+			RenderBounds(objectToProcess.GetAxisAlignedBoundingBox(), currentRecursion);
+		}
+
+		public void RenderRecursive(UnboundCollection objectToProcess, int currentRecursion)
+		{
+			RenderBounds(objectToProcess.GetAxisAlignedBoundingBox(), currentRecursion);
+			foreach (var child in objectToProcess.Items)
 			{
-				RenderRecursive((dynamic)item, start, end, currentRecursion, parentSpace);
+				RenderRecursive((dynamic)child, currentRecursion + 1);
 			}
 		}
 
-		public void RenderRecursive(Transform objectToProcess, int start, int end, int currentRecursion, Matrix4X4 parentSpace)
+		public void RenderRecursive(Transform objectToProcess, int level = 0)
 		{
-			RenderBounds(objectToProcess.GetAxisAlignedBoundingBox(), parentSpace, currentRecursion);
-			currentRecursion++;
-			parentSpace = objectToProcess.WorldToAxis * parentSpace;
-			RenderRecursive((dynamic)objectToProcess.Child, start, end, currentRecursion, parentSpace);
+			RenderBounds(objectToProcess.GetAxisAlignedBoundingBox(), level);
+			transform.Push(objectToProcess.Transform * transform.Peek());
+			RenderRecursive((dynamic)objectToProcess.Child, level + 1);
+			transform.Pop();
 		}
 
-		private void RenderBounds(AxisAlignedBoundingBox axisAlignedBoundingBox, Matrix4X4 parentSpace, int recursion)
+		private void RenderBounds(AxisAlignedBoundingBox axisAlignedBoundingBox, int recursion)
 		{
 			for (int i = 0; i < 4; i++)
 			{
-				Vector3 bottomStartPosition = Vector3.Transform(axisAlignedBoundingBox.GetBottomCorner(i), parentSpace);
-				Vector3 bottomEndPosition = Vector3.Transform(axisAlignedBoundingBox.GetBottomCorner((i + 1) % 4), parentSpace);
+				Vector3 bottomStartPosition = Vector3.Transform(axisAlignedBoundingBox.GetBottomCorner(i), transform.Peek());
+				Vector3 bottomEndPosition = Vector3.Transform(axisAlignedBoundingBox.GetBottomCorner((i + 1) % 4), transform.Peek());
 				GLHelper.Render3DLine(bottomStartPosition, bottomEndPosition, 1, 1, RGBA_Bytes.Black);
 
-				Vector3 topStartPosition = Vector3.Transform(axisAlignedBoundingBox.GetTopCorner(i), parentSpace);
-				Vector3 topEndPosition = Vector3.Transform(axisAlignedBoundingBox.GetTopCorner((i + 1) % 4), parentSpace);
+				Vector3 topStartPosition = Vector3.Transform(axisAlignedBoundingBox.GetTopCorner(i), transform.Peek());
+				Vector3 topEndPosition = Vector3.Transform(axisAlignedBoundingBox.GetTopCorner((i + 1) % 4), transform.Peek());
 				GLHelper.Render3DLine(topStartPosition, topEndPosition, 1, 1, RGBA_Bytes.Black);
 
 				GLHelper.Render3DLine(topStartPosition, bottomStartPosition, 1, 1, RGBA_Bytes.Black);

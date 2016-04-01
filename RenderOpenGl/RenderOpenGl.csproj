@@ -143,6 +143,10 @@
       <Project>{94838988-523C-4B11-AD82-8B9B76F23A31}</Project>
       <Name>DataConverters2D</Name>
     </ProjectReference>
+    <ProjectReference Include="..\DataConverters3D\DataConverters3D.csproj">
+      <Project>{04667764-dc7b-4b95-aef6-b4e6c87a54e9}</Project>
+      <Name>DataConverters3D</Name>
+    </ProjectReference>
     <ProjectReference Include="..\RayTracer\RayTracer.csproj">
       <Project>{1e01abe0-b494-4fe4-b0d6-540133286887}</Project>
       <Name>RayTracer</Name>

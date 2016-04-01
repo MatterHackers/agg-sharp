@@ -139,6 +139,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CsgToRayTraceable.cs" />
+    <Compile Include="MeshFaceTraceable.cs" />
     <Compile Include="Object3D\InteractiveScene.cs" />
     <Compile Include="Object3D\Json\MatrixConverter.cs" />
     <Compile Include="Object3D\Json\Object3DConverter.cs" />
