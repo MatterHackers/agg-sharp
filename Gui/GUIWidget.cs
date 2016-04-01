@@ -1756,7 +1756,7 @@ namespace MatterHackers.Agg.UI
 
 				BeforeDraw?.Invoke(this, new DrawEventArgs(graphics2D));
 
-				if(!firstDraw)
+				if(firstDraw)
 				{
 					OnFirstDraw(graphics2D);
 					firstDraw = false;
