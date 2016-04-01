@@ -2083,6 +2083,12 @@ namespace MatterHackers.Agg.UI
 			return vectorToTransform;
 		}
 
+		public Vector2 TransformFromScreenSpace(Vector2 vectorToTransform)
+		{
+			var topmostParent = this.Parents<SystemWindow>().FirstOrDefault() ?? this.Parents<GuiWidget>().Last();
+			return this.TransformFromParentSpace(topmostParent, vectorToTransform);
+		}
+
 		public RectangleDouble TransformToScreenSpace(RectangleDouble rectangleToTransform)
 		{
 			GuiWidget prevGUIWidget = this;
