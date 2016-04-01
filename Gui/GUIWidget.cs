@@ -1739,7 +1739,8 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public static int DrawCount;
-		bool formLoaded = false;
+
+		protected bool formHasLoaded = false;
 
 		public event EventHandler Load;
 
@@ -1752,15 +1753,15 @@ namespace MatterHackers.Agg.UI
 		{
 			//using (new PerformanceTimer("Draw Timer", "Widget Draw"))
 			{
+				if (!formHasLoaded)
+				{
+					OnLoad(null);
+					formHasLoaded = true;
+				}
+
 				DrawCount++;
 
 				BeforeDraw?.Invoke(this, new DrawEventArgs(graphics2D));
-
-				if(!formLoaded)
-				{
-					OnLoad(null);
-					formLoaded = true;
-				}
 
 				for (int i = 0; i < Children.Count; i++)
 				{
