@@ -1270,7 +1270,7 @@ namespace MatterHackers.Agg.UI
 				}
 				if (childToAdd.Parent != null)
 				{
-					throw new Exception("This is alread the child of another widget.");
+					throw new Exception("This is already the child of another widget.");
 				}
 				childToAdd.parent = this;
 				childToAdd.widgetHasBeenClosed = false;
@@ -2083,10 +2083,14 @@ namespace MatterHackers.Agg.UI
 			return vectorToTransform;
 		}
 
+		public GuiWidget TopmostParent()
+		{
+			return this.Parents<SystemWindow>().FirstOrDefault() ?? this.Parents<GuiWidget>().Last();
+		}
+
 		public Vector2 TransformFromScreenSpace(Vector2 vectorToTransform)
 		{
-			var topmostParent = this.Parents<SystemWindow>().FirstOrDefault() ?? this.Parents<GuiWidget>().Last();
-			return this.TransformFromParentSpace(topmostParent, vectorToTransform);
+			return this.TransformFromParentSpace(TopmostParent(), vectorToTransform);
 		}
 
 		public RectangleDouble TransformToScreenSpace(RectangleDouble rectangleToTransform)
