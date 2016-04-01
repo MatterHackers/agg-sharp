@@ -125,5 +125,31 @@ namespace MatterHackers.PolygonMesh
 				foreach (var n in node.Children) nodes.Push(n);
 			}
 		}
+
+		public static IPrimitive CreateTraceData(this Mesh mesh)
+		{
+			List<IPrimitive> allPolys = new List<IPrimitive>();
+			List<Vector3> positions = new List<Vector3>();
+
+			foreach (Face face in mesh.Faces)
+			{
+				positions.Clear();
+				foreach (Vertex vertex in face.Vertices())
+				{
+					positions.Add(vertex.Position);
+				}
+
+				// We should use the tessellator for this if it is greater than 3.
+				Vector3 next = positions[1];
+				for (int positionIndex = 2; positionIndex < positions.Count; positionIndex++)
+				{
+					TriangleShape triangel = new TriangleShape(positions[0], next, positions[positionIndex], null);
+					allPolys.Add(triangel);
+					next = positions[positionIndex];
+				}
+			}
+
+			return BoundingVolumeHierarchy.CreateNewHierachy(allPolys, 0);
+		}
 	}
 }
