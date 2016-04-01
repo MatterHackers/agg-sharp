@@ -69,7 +69,7 @@ namespace MatterHackers.PolygonMesh
 
 		IObject3D Clone();
 
-		void CreateTraceables();
+		IPrimitive TraceData();
 
 		double DistanceToHit(Ray ray, ref IntersectInfo info);
 

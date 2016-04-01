@@ -45,8 +45,6 @@ namespace MatterHackers.PolygonMesh
 	{
 		public Vector3 CurrentScale = new Vector3(1, 1, 1);
 
-		[JsonIgnore]
-		public List<IPrimitive> MeshTraceables = new List<IPrimitive>();
 		public Vector2 Spacing;
 	}
 }

@@ -64,13 +64,6 @@ namespace MatterHackers.PolygonMesh
 
 		public bool Visible { get; set; }
 		
-		public static IPrimitive CreateTraceDataForMesh(Mesh mesh)
-		{
-			List<IPrimitive> allPolys = AddTraceDataForMesh(mesh);
-
-			return BoundingVolumeHierarchy.CreateNewHierachy(allPolys);
-		}
-
 		public static IObject3D Load(string meshPathAndFileName, Dictionary<string, List<MeshGroup>> cachedMeshes, ReportProgressRatio progress)
 		{
 			string extension = Path.GetExtension(meshPathAndFileName);
@@ -123,19 +116,9 @@ namespace MatterHackers.PolygonMesh
 			};
 		}
 
-		/// <summary>
-		/// Initializes trace data, stored in a transformed BVH, for this items mesh and all its children.
-		/// </summary>
-		public void CreateTraceables()
-		{
-			this.ExtraData.MeshTraceables = new List<IPrimitive> { createTraceables() };
-		}
-
 		public double DistanceToHit(Ray ray, ref IntersectInfo info)
 		{
-			var meshTraceables = this.ExtraData.MeshTraceables;
-
-			IntersectInfo infoMesh = createTraceables().GetClosestIntersection(ray);
+			IntersectInfo infoMesh = TraceData().GetClosestIntersection(ray);
 			if (infoMesh != null)
 			{
 				info = infoMesh;
@@ -143,6 +126,21 @@ namespace MatterHackers.PolygonMesh
 			}
 
 			return double.PositiveInfinity;
+		}
+
+		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
+		{
+			// Set the initial bounding box to empty or the bounds of the objects MeshGroup
+			bool meshIsEmpty = this.MeshGroup == null || this.MeshGroup.Meshes.Count == 0;
+			AxisAlignedBoundingBox totalBounds = meshIsEmpty ? AxisAlignedBoundingBox.Empty : this.MeshGroup.GetAxisAlignedBoundingBox(this.Matrix);
+
+			// Add the bounds of each child object
+			foreach (IObject3D child in Children)
+			{
+				totalBounds += child.GetAxisAlignedBoundingBox(this.Matrix);
+			}
+
+			return totalBounds;
 		}
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix)
@@ -154,68 +152,35 @@ namespace MatterHackers.PolygonMesh
 			AxisAlignedBoundingBox totalBounds = meshIsEmpty ? AxisAlignedBoundingBox.Empty : this.MeshGroup.GetAxisAlignedBoundingBox(totalTransorm);
 
 			// Add the bounds of each child object
-			foreach (IObject3D object3D in Children)
+			foreach (IObject3D child in Children)
 			{
-				totalBounds += object3D.GetAxisAlignedBoundingBox(totalTransorm);
+				totalBounds += child.GetAxisAlignedBoundingBox(totalTransorm);
 			}
 
 			return totalBounds;
 		}
 
-		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
+		private IPrimitive traceData;
+
+		public IPrimitive TraceData()
 		{
-			// Set the initial bounding box to empty or the bounds of the objects MeshGroup
-			bool meshIsEmpty = this.MeshGroup == null || this.MeshGroup.Meshes.Count == 0;
-			AxisAlignedBoundingBox totalBounds = meshIsEmpty ? AxisAlignedBoundingBox.Empty : this.MeshGroup.GetAxisAlignedBoundingBox(this.Matrix);
-
-			// Add the bounds of each child object
-			foreach (IObject3D object3D in Children)
+			if (traceData == null)
 			{
-				totalBounds += object3D.GetAxisAlignedBoundingBox(this.Matrix);
-			}
+				// Get the trace data for the local mesh
+				List<IPrimitive> traceables = (MeshGroup == null) ? new List<IPrimitive>() : MeshGroup.Meshes.Select(mesh => mesh.CreateTraceData()).ToList();
 
-			return totalBounds;
-		}
-
-		private static List<IPrimitive> AddTraceDataForMesh(Mesh mesh)
-		{
-			List<IPrimitive> allPolys = new List<IPrimitive>();
-			List<Vector3> positions = new List<Vector3>();
-
-			foreach (Face face in mesh.Faces)
-			{
-				positions.Clear();
-				foreach (Vertex vertex in face.Vertices())
+				// Get the trace data for all children
+				foreach (Object3D child in Children)
 				{
-					positions.Add(vertex.Position);
+					traceables.Add(child.TraceData());
 				}
 
-				// We should use the tessellator for this if it is greater than 3.
-				Vector3 next = positions[1];
-				for (int positionIndex = 2; positionIndex < positions.Count; positionIndex++)
-				{
-					TriangleShape triangel = new TriangleShape(positions[0], next, positions[positionIndex], null);
-					allPolys.Add(triangel);
-					next = positions[positionIndex];
-				}
+				// Wrap with a BVH
+				traceData = BoundingVolumeHierarchy.CreateNewHierachy(traceables, 0);
 			}
 
-			return allPolys;
-		}
-
-		private IPrimitive createTraceables()
-		{
-			// Get the trace data for the local mesh
-			List<IPrimitive> meshTraceables = (MeshGroup == null) ? new List<IPrimitive>() : MeshGroup.Meshes.SelectMany(meshGroup => AddTraceDataForMesh(meshGroup)).ToList();
-
-			// Get the trace data for all children
-			foreach (Object3D child in Children)
-			{
-				meshTraceables.Add(child.createTraceables());
-			}
-
-			// Wrap with transform and BVH
-			return new Transform(BoundingVolumeHierarchy.CreateNewHierachy(meshTraceables, 0), Matrix);
+			// Wrap with the local transform
+			return new Transform(traceData, Matrix);
 		}
 	}
 }
