@@ -14,6 +14,7 @@
 //
 
 using MatterHackers.VectorMath;
+using Net3dBool;
 //using Net3dBool;
 using System.Collections.Generic;
 using System.Linq;
