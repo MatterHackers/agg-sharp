@@ -85,10 +85,13 @@ namespace MatterHackers.RenderOpenGl
 
 		public void RenderRecursive(Transform objectToProcess, int level = 0)
 		{
-			RenderBounds(objectToProcess.GetAxisAlignedBoundingBox(), level);
-			transform.Push(objectToProcess.Transform * transform.Peek());
-			RenderRecursive((dynamic)objectToProcess.Child, level + 1);
-			transform.Pop();
+			if (objectToProcess.Child != null)
+			{
+				RenderBounds(objectToProcess.GetAxisAlignedBoundingBox(), level);
+				transform.Push(objectToProcess.Transform * transform.Peek());
+				RenderRecursive((dynamic)objectToProcess.Child, level + 1);
+				transform.Pop();
+			}
 		}
 
 		private void RenderBounds(AxisAlignedBoundingBox axisAlignedBoundingBox, int recursion)
