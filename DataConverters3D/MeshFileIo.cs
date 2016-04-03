@@ -28,54 +28,17 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg;
+using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Csg;
+using MatterHackers.PolygonMesh.Processors;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace MatterHackers.PolygonMesh.Processors
+namespace MatterHackers.DataConverters3D
 {
-	public class MeshOutputSettings
-	{
-		public enum CsgOption { SimpleInsertVolumes, DoCsgMerge }
-
-		public enum OutputType { Ascii, Binary };
-
-		public OutputType OutputTypeSetting = OutputType.Binary;
-		public Dictionary<string, string> MetaDataKeyValue = new Dictionary<string, string>();
-		public List<int> MaterialIndexsToSave = null;
-		public CsgOption CsgOptionState = CsgOption.SimpleInsertVolumes;
-
-		public ReportProgressRatio ReportProgress {
-			get; set;
-		}
-
-		public MeshOutputSettings()
-		{
-		}
-
-		public MeshOutputSettings(CsgOption csgOption)
-		{
-			this.CsgOptionState = csgOption;
-		}
-
-		public MeshOutputSettings(OutputType outputTypeSetting, string[] metaDataKeyValuePairs = null, ReportProgressRatio reportProgress = null)
-		{
-			this.ReportProgress = reportProgress;
-
-			this.OutputTypeSetting = outputTypeSetting;
-			if (metaDataKeyValuePairs != null)
-			{
-				for (int i = 0; i < metaDataKeyValuePairs.Length / 2; i++)
-				{
-					MetaDataKeyValue.Add(metaDataKeyValuePairs[i * 2], metaDataKeyValuePairs[i * 2 + 1]);
-				}
-			}
-		}
-	}
-
 	public static class MeshFileIo
 	{
 		public static string ValidFileExtensions()

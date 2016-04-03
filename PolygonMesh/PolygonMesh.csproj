@@ -150,7 +150,7 @@
     <Compile Include="FaceEdge.cs" />
     <Compile Include="Mesh.cs" />
     <Compile Include="Processors\AmfProcessing.cs" />
-    <Compile Include="Processors\MeshFileIo.cs" />
+    <Compile Include="Processors\MeshOutputSettings.cs" />
     <Compile Include="Rendering\DebugRenderToImage.cs" />
     <Compile Include="Rendering\OrthographicZProjection.cs" />
     <Compile Include="Processors\RemoveTJunctions.cs" />
