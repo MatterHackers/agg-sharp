@@ -83,7 +83,7 @@ namespace MatterHackers.RayTracer
 			return bestInfo;
 		}
 
-		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
+		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
 		{
 			bool foundItem = false;
 			foreach (IPrimitive item in Items)
@@ -203,7 +203,7 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
+		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
 		{
 			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
 			if (bounds.Contains(subRegion))

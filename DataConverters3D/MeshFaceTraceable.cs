@@ -20,7 +20,7 @@ namespace MatterHackers.DataConverters3D
 
 		public MaterialAbstract Material { get { return null; } set { } }
 
-		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
+		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
 		{
 			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
 			if (bounds.Contains(subRegion))

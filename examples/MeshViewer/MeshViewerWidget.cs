@@ -657,7 +657,7 @@ namespace MatterHackers.MeshVisualizer
 			{
 				for (int i = 0; i < interactionVolumes.Count; i++)
 				{
-					List<IPrimitive> insideBounds = new List<IPrimitive>();
+					List<IBvhItem> insideBounds = new List<IBvhItem>();
 					if (interactionVolumes[i].CollisionVolume != null)
 					{
 						interactionVolumes[i].CollisionVolume.GetContained(insideBounds, info.closestHitObject.GetAxisAlignedBoundingBox());

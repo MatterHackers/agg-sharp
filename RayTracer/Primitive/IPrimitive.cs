@@ -82,12 +82,12 @@ namespace MatterHackers.RayTracer
 
 		/// <summary>
 		/// If this bvh item is a collection of other bvh items this will return the elements that are
-		/// in the sub-region. If it is the actual element of it will return itself (like a sphere or a box).
+		/// in the sub-region. If it is the actual element it will return itself (like a sphere or a box).
 		/// </summary>
 		/// <param name="results"></param>
 		/// <param name="subRegion"></param>
 		/// <returns></returns>
-		bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion);
+		bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion);
 	}
 
 	public interface ITraceable : IBvhItem

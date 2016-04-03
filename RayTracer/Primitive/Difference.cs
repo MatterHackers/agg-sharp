@@ -50,7 +50,7 @@ namespace MatterHackers.RayTracer.Traceable
 
 		public IPrimitive Subtract { get { return subtract; } }
 
-		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
+		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
 		{
 			throw new NotImplementedException();
 		}

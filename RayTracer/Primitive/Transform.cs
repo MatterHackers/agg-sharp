@@ -69,7 +69,7 @@ namespace MatterHackers.RayTracer.Traceable
 			}
 		}
 
-		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
+		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
 		{
 			Child.GetContained(results, subRegion);
 

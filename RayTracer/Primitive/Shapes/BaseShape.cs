@@ -28,7 +28,7 @@ namespace MatterHackers.RayTracer
 			set { material = value; }
 		}
 
-		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
+		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
 		{
 			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
 			if (bounds.Contains(subRegion))
