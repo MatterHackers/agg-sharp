@@ -59,32 +59,39 @@ namespace MatterHackers.RayTracer
 		}
 	}
 
-	/// <summary>
-	/// element in a scene
-	/// </summary>
-	public interface IPrimitive
+	public interface IBvhItem
 	{
 		/// <summary>
-		/// Get the color for a primitive at the given info.
+		/// The actual surface area of the surface that this bvh item is defining (a sphere, or a box, or a triangle, etc...)
 		/// </summary>
-		/// <param name="info"></param>
 		/// <returns></returns>
-		RGBA_Floats GetColor(IntersectInfo info);
+		double GetSurfaceArea();
 
 		/// <summary>
-		/// Specifies the ambient and diffuse color of the element.
+		/// Return the bounds of all of the elements of this bvh item
 		/// </summary>
-		MaterialAbstract Material { get; set; }
+		/// <returns></returns>
+		AxisAlignedBoundingBox GetAxisAlignedBoundingBox();
 
 		/// <summary>
-		/// If this primitive is a collection of other primitives this will return the elements that are
+		/// The center of the axis aligned bounds. Represented as a separate function
+		/// for possible optimization depending on the underlying data.
+		/// </summary>
+		/// <returns></returns>
+		Vector3 GetCenter();
+
+		/// <summary>
+		/// If this bvh item is a collection of other bvh items this will return the elements that are
 		/// in the sub-region. If it is the actual element of it will return itself (like a sphere or a box).
 		/// </summary>
 		/// <param name="results"></param>
 		/// <param name="subRegion"></param>
 		/// <returns></returns>
 		bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion);
+	}
 
+	public interface ITraceable : IBvhItem
+	{
 		/// <summary>
 		/// This method is to be implemented by each element separately. This is the core
 		/// function of each element, to determine the intersection with a ray.
@@ -106,25 +113,6 @@ namespace MatterHackers.RayTracer
 		IEnumerable IntersectionIterator(Ray ray);
 
 		/// <summary>
-		/// The actual surface area of the surface that this primitive is defining (a sphere, or a box, or a triangle, etc...)
-		/// </summary>
-		/// <returns></returns>
-		double GetSurfaceArea();
-
-		/// <summary>
-		/// Return the bounds of all of the elements of this primitive
-		/// </summary>
-		/// <returns></returns>
-		AxisAlignedBoundingBox GetAxisAlignedBoundingBox();
-
-		/// <summary>
-		/// The center of the axis aligned bounds. Represented as a separate function
-		/// for possible optimization depending on the underlying data.
-		/// </summary>
-		/// <returns></returns>
-		Vector3 GetCenter();
-
-		/// <summary>
 		/// This is the computation cost of doing an intersection with the given type.
 		/// This number is the number of milliseconds it takes to do some number of intersections.
 		/// It just needs to be the same number for every type as they only need to
@@ -135,5 +123,23 @@ namespace MatterHackers.RayTracer
 		/// </summary>
 		/// <returns></returns>
 		double GetIntersectCost();
+	}
+
+	/// <summary>
+	/// element in a scene
+	/// </summary>
+	public interface IPrimitive : ITraceable
+	{
+		/// <summary>
+		/// Get the color for a primitive at the given info.
+		/// </summary>
+		/// <param name="info"></param>
+		/// <returns></returns>
+		RGBA_Floats GetColor(IntersectInfo info);
+
+		/// <summary>
+		/// Specifies the ambient and diffuse color of the element.
+		/// </summary>
+		MaterialAbstract Material { get; set; }
 	}
 }
