@@ -151,7 +151,7 @@
     <Compile Include="Rendering\OrthographicZProjection.cs" />
     <Compile Include="Processors\RemoveTJunctions.cs" />
     <Compile Include="Processors\StlProcessing.cs" />
-    <Compile Include="Solids\CommonShapes.cs" />
+    <Compile Include="Processors\MeshHelper.cs" />
     <Compile Include="Solids\PlatonicSolids.cs" />
     <Compile Include="Vertex.cs" />
     <Compile Include="VertexCollection.cs" />

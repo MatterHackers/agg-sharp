@@ -112,7 +112,6 @@ namespace MatterHackers.RenderOpenGl
 				}
 			}
 
-#if ON_IMAGE_CHANGED_ALWAYS_CREATE_IMAGE
 			if (plugin != null
 				&& (imageToGetDisplayListFor.ChangedCount != plugin.imageUpdateCount
 				|| plugin.glData.refreshCountCreatedOn != currentGlobalRefreshCount
@@ -144,85 +143,7 @@ namespace MatterHackers.RenderOpenGl
 
                 return newPlugin;
 			}
-#else
-            if (plugin == null)
-            {
-                ImageGlPlugin newPlugin = new ImageGlPlugin();
-                imagesWithCacheData.Add(imageToGetDisplayListFor.GetBuffer(), newPlugin);
-                newPlugin.createdWithMipMaps = createAndUseMipMaps;
-                newPlugin.CreateGlDataForImage(imageToGetDisplayListFor, TextureMagFilterLinear);
-                newPlugin.imageUpdateCount = imageToGetDisplayListFor.ChangedCount;
-				newPlugin.refreshCountCreatedOn = currentGlobalRefreshCount;
-                return newPlugin;
-            }
 
-            if(imageToGetDisplayListFor.ChangedCount != plugin.imageUpdateCount
-				|| plugin.refreshCountCreatedOn != currentGlobalRefreshCount)
-            {
-                plugin.imageUpdateCount = imageToGetDisplayListFor.ChangedCount;
-				plugin.refreshCountCreatedOn = currentGlobalRefreshCount;
-                GL.BindTexture(TextureTarget.Texture2D, plugin.GLTextureHandle);
-                // Create the texture
-                switch (imageToGetDisplayListFor.BitDepth)
-                {
-                    case 8:
-                        GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, imageToGetDisplayListFor.Width, imageToGetDisplayListFor.Height,
-                            PixelFormat.Luminance, PixelType.UnsignedByte, imageToGetDisplayListFor.GetBuffer());
-                        break;
-
-                    case 24:
-                        // our bitmaps are not padded and GL is having a problem with them so don't use 24 bit unless you fix this.
-                        GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, imageToGetDisplayListFor.Width, imageToGetDisplayListFor.Height,
-                            PixelFormat.Bgr, PixelType.UnsignedByte, imageToGetDisplayListFor.GetBuffer());
-                        break;
-
-                    case 32:
-                        GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, imageToGetDisplayListFor.Width, imageToGetDisplayListFor.Height,
-                            PixelFormat.Bgra, PixelType.UnsignedByte, imageToGetDisplayListFor.GetBuffer());
-                        break;
-
-                    default:
-                        throw new NotImplementedException();
-                }
-
-                if (plugin.createdWithMipMaps)
-                {
-                    if (GLMajorVersion < 3)
-                    {
-                        switch (imageToGetDisplayListFor.BitDepth)
-                        {
-                            case 32:
-                                {
-                                    ImageBuffer sourceImage = new ImageBuffer(imageToGetDisplayListFor);
-                                    ImageBuffer tempImage = new ImageBuffer(sourceImage.Width / 2, sourceImage.Height / 2, 32, new BlenderBGRA());
-                                    tempImage.NewGraphics2D().Render(sourceImage, 0, 0, 0, .5, .5);
-                                    int mipLevel = 1;
-                                    while (sourceImage.Width > 1 && sourceImage.Height > 1)
-                                    {
-                                        GL.TexSubImage2D(TextureTarget.Texture2D, mipLevel++, 0, 0, tempImage.Width, tempImage.Height,
-                                            PixelFormat.Bgra, PixelType.UnsignedByte, tempImage.GetBuffer());
-
-                                        sourceImage = new ImageBuffer(tempImage);
-                                        tempImage = new ImageBuffer(Math.Max(1, sourceImage.Width / 2), Math.Max(1, sourceImage.Height / 2), 32, new BlenderBGRA());
-                                        tempImage.NewGraphics2D().Render(sourceImage, 0, 0,
-                                            0,
-                                            (double)tempImage.Width / (double)sourceImage.Width,
-                                            (double)tempImage.Height / (double)sourceImage.Height);
-                                    }
-                                }
-                                break;
-
-                            default:
-                                throw new NotImplementedException();
-                        }
-                    }
-                    else
-                    {
-                        GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-                    }
-                }
-            }
-#endif
 			return plugin;
 		}
 
@@ -278,48 +199,13 @@ namespace MatterHackers.RenderOpenGl
 
 		private void CreateGlDataForImage(ImageBuffer bufferedImage, bool TextureMagFilterLinear)
 		{
-			//Next we expand the image into an openGL texture
 			int imageWidth = bufferedImage.Width;
 			int imageHeight = bufferedImage.Height;
-			int bufferOffset;
-			byte[] imageBuffer = bufferedImage.GetBuffer(out bufferOffset);
 			int hardwareWidth = SmallestHardwareCompatibleTextureSize(imageWidth);
 			int hardwareHeight = SmallestHardwareCompatibleTextureSize(imageHeight);
-			byte[] hardwareExpandedPixelBuffer = imageBuffer;
-			if (hardwareWidth != imageWidth || hardwareHeight != imageHeight)
-			{
-				// we have to put the data on a buffer that GL can handle.
-				hardwareExpandedPixelBuffer = new byte[4 * hardwareWidth * hardwareHeight];
-				switch (bufferedImage.BitDepth)
-				{
-					case 32:
-						for (int y = 0; y < hardwareHeight; y++)
-						{
-							for (int x = 0; x < hardwareWidth; x++)
-							{
-								int pixelIndex = 4 * (x + y * hardwareWidth);
-								if (x >= imageWidth || y >= imageHeight)
-								{
-									hardwareExpandedPixelBuffer[pixelIndex + 0] = 0;
-									hardwareExpandedPixelBuffer[pixelIndex + 1] = 0;
-									hardwareExpandedPixelBuffer[pixelIndex + 2] = 0;
-									hardwareExpandedPixelBuffer[pixelIndex + 3] = 0;
-								}
-								else
-								{
-									hardwareExpandedPixelBuffer[pixelIndex + 0] = imageBuffer[4 * (x + y * imageWidth) + 2];
-									hardwareExpandedPixelBuffer[pixelIndex + 1] = imageBuffer[4 * (x + y * imageWidth) + 1];
-									hardwareExpandedPixelBuffer[pixelIndex + 2] = imageBuffer[4 * (x + y * imageWidth) + 0];
-									hardwareExpandedPixelBuffer[pixelIndex + 3] = imageBuffer[4 * (x + y * imageWidth) + 3];
-								}
-							}
-						}
-						break;
 
-					default:
-						throw new NotImplementedException();
-				}
-			}
+			bufferedImage = FixImageSizePower2IfRequired(bufferedImage);
+			FixImageColors(bufferedImage);
 
 			GL.Enable(EnableCap.Texture2D);
 			// Create the texture handle
@@ -351,32 +237,14 @@ namespace MatterHackers.RenderOpenGl
 			// Create the texture
 			switch (bufferedImage.BitDepth)
 			{
-#if false // not implemented in our gl wrapper and never used in our current code
-                case 8:
-                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Luminance, hardwareWidth, hardwareHeight,
-                        0, PixelFormat.Luminance, PixelType.UnsignedByte, hardwareExpandedPixelBuffer);
-                    break;
-
-                case 24:
-                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgb, hardwareWidth, hardwareHeight,
-                        0, PixelFormat.Rgb, PixelType.UnsignedByte, hardwareExpandedPixelBuffer);
-                    break;
-#endif
-
 				case 32:
-#if __ANDROID__
 					GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, hardwareWidth, hardwareHeight,
-						0, PixelFormat.Rgba, PixelType.UnsignedByte, hardwareExpandedPixelBuffer);
-#else
-					GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, hardwareWidth, hardwareHeight,
-						0, PixelFormat.Bgra, PixelType.UnsignedByte, hardwareExpandedPixelBuffer);
-#endif
+						0, PixelFormat.Rgba, PixelType.UnsignedByte, bufferedImage.GetBuffer());
 					break;
 
 				default:
 					throw new NotImplementedException();
 			}
-			hardwareExpandedPixelBuffer = null;
 
 			if (createdWithMipMaps)
 			{
@@ -390,13 +258,9 @@ namespace MatterHackers.RenderOpenGl
 							int mipLevel = 1;
 							while (sourceImage.Width > 1 && sourceImage.Height > 1)
 							{
-#if __ANDROID__
-                                GL.TexImage2D(TextureTarget.Texture2D, mipLevel++, PixelInternalFormat.Rgba, tempImage.Width, tempImage.Height,
-									0, PixelFormat.Rgba, PixelType.UnsignedByte, tempImage.GetBuffer());
-#else
 								GL.TexImage2D(TextureTarget.Texture2D, mipLevel++, PixelInternalFormat.Rgba, tempImage.Width, tempImage.Height,
-									0, PixelFormat.Bgra, PixelType.UnsignedByte, tempImage.GetBuffer());
-#endif
+									0, PixelFormat.Rgba, PixelType.UnsignedByte, tempImage.GetBuffer());
+
 								sourceImage = new ImageBuffer(tempImage);
 								tempImage = new ImageBuffer(Math.Max(1, sourceImage.Width / 2), Math.Max(1, sourceImage.Height / 2), 32, new BlenderBGRA());
 								tempImage.NewGraphics2D().Render(sourceImage, 0, 0,
@@ -427,10 +291,62 @@ namespace MatterHackers.RenderOpenGl
 			glData.textureUVs[6] = texCoordX; glData.textureUVs[7] = 0; glData.positions[6] = imageWidth - OffsetX; glData.positions[7] = 0 - OffsetY;
 		}
 
+		private void FixImageColors(ImageBuffer bufferedImage)
+		{
+			//Next we expand the image into an openGL texture
+			int imageWidth = bufferedImage.Width;
+			int imageHeight = bufferedImage.Height;
+			int bufferOffset;
+			byte[] imageBuffer = bufferedImage.GetBuffer(out bufferOffset);
+
+			switch (bufferedImage.BitDepth)
+			{
+				case 32:
+					for (int y = 0; y < imageHeight; y++)
+					{
+						for (int x = 0; x < imageWidth; x++)
+						{
+							int pixelIndex = 4 * (x + y * imageWidth);
+
+							byte r = imageBuffer[pixelIndex + 2];
+							byte g = imageBuffer[pixelIndex + 1];
+							byte b = imageBuffer[pixelIndex + 0];
+							byte a = imageBuffer[pixelIndex + 3];
+
+							imageBuffer[pixelIndex + 0] = r;
+							imageBuffer[pixelIndex + 1] = g;
+							imageBuffer[pixelIndex + 2] = b;
+							imageBuffer[pixelIndex + 3] = a;
+						}
+					}
+					break;
+
+				default:
+					throw new NotImplementedException();
+			}
+		}
+
+		private ImageBuffer FixImageSizePower2IfRequired(ImageBuffer bufferedImage)
+		{
+			//Next we expand the image into an openGL texture
+			int imageWidth = bufferedImage.Width;
+			int imageHeight = bufferedImage.Height;
+			int bufferOffset;
+			byte[] imageBuffer = bufferedImage.GetBuffer(out bufferOffset);
+			int hardwareWidth = SmallestHardwareCompatibleTextureSize(imageWidth);
+			int hardwareHeight = SmallestHardwareCompatibleTextureSize(imageHeight);
+			byte[] hardwareExpandedPixelBuffer = imageBuffer;
+
+			ImageBuffer pow2BufferedImage = new ImageBuffer(hardwareWidth, hardwareHeight, 32, bufferedImage.GetRecieveBlender());
+			pow2BufferedImage.NewGraphics2D().Render(bufferedImage, 0, 0);
+
+			// always return a new image because we are going to modify its colors and don't want to change the original image
+			return pow2BufferedImage;
+		}
+
 		public void DrawToGL()
 		{
 			GL.BindTexture(TextureTarget.Texture2D, GLTextureHandle);
-#if true
 			GL.Begin(BeginMode.TriangleFan);
 			GL.TexCoord2(glData.textureUVs[0], glData.textureUVs[1]); GL.Vertex2(glData.positions[0], glData.positions[1]);
 			GL.TexCoord2(glData.textureUVs[2], glData.textureUVs[3]); GL.Vertex2(glData.positions[2], glData.positions[3]);
@@ -438,19 +354,6 @@ namespace MatterHackers.RenderOpenGl
 			GL.TexCoord2(glData.textureUVs[6], glData.textureUVs[7]); GL.Vertex2(glData.positions[6], glData.positions[7]);
 
 			GL.End();
-#else
-            GL.TexCoordPointer(2, TexCoordPointerType.Float, 0, glData.textureUVs);
-            GL.EnableClientState(ArrayCap.TextureCoordArray);
-
-            GL.VertexPointer(2, VertexPointerType.Float, 0, glData.positions);
-            GL.EnableClientState(ArrayCap.VertexArray);
-
-            GL.DrawArrays(PrimitiveType.TriangleFan, 0, 4);
-
-            GL.Disable(EnableCap.Texture2D);
-            GL.DisableClientState(ArrayCap.TextureCoordArray);
-            GL.DisableClientState(ArrayCap.VertexArray);
-#endif
 		}
 	}
 }
