@@ -37,10 +37,7 @@ namespace MatterHackers.Agg.UI
 			{
 				if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
 				{
-					if (Selected != null)
-					{
-						Selected(this, mouseEvent);
-					}
+					Selected?.Invoke(this, mouseEvent);
 				}
 			}
 			base.OnMouseUp(mouseEvent);

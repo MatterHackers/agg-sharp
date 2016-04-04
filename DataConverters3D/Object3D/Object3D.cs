@@ -41,6 +41,7 @@ namespace MatterHackers.DataConverters3D
 {
 	public class Object3D : IObject3D
 	{
+		public string ActiveEditor { get; set; }
 		public List<IObject3D> Children { get; set; } = new List<IObject3D>();
 		public PlatingData ExtraData { get; } = new PlatingData();
 
@@ -161,9 +162,15 @@ namespace MatterHackers.DataConverters3D
 
 		private IPrimitive traceData;
 
+		// Cache busting on child nodes
+		private int tracedChildren = int.MinValue;
+
 		public IPrimitive TraceData()
 		{
-			if (traceData == null)
+			// Cache busting on child nodes
+			int hashCode = GetChildrenHashCode();
+
+			if (traceData == null || tracedChildren != hashCode)
 			{
 				// Get the trace data for the local mesh
 				List<IPrimitive> traceables = (MeshGroup == null) ? new List<IPrimitive>() : MeshGroup.Meshes.Select(mesh => mesh.CreateTraceData()).ToList();
@@ -176,10 +183,29 @@ namespace MatterHackers.DataConverters3D
 
 				// Wrap with a BVH
 				traceData = BoundingVolumeHierarchy.CreateNewHierachy(traceables, 0);
+
+				tracedChildren = hashCode;
 			}
 
 			// Wrap with the local transform
 			return new Transform(traceData, Matrix);
+		}
+
+		// Hashcode for lists as proposed by Jon Skeet
+		//
+		// http://stackoverflow.com/questions/8094867/good-gethashcode-override-for-list-of-foo-objects-respecting-the-order
+		public int GetChildrenHashCode()
+		{
+			unchecked
+			{
+				int hash = 19;
+				foreach (var child in Children)
+				{
+					hash = hash * 31 + child.GetHashCode();
+				}
+
+				return hash;
+			}
 		}
 	}
 }
