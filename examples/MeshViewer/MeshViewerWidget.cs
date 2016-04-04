@@ -294,7 +294,7 @@ namespace MatterHackers.MeshVisualizer
 					printerBed = PlatonicSolids.CreateCube(displayVolumeToBuild.x, displayVolumeToBuild.y, 4);
 					{
 						Face face = printerBed.Faces[0];
-						CommonShapes.PlaceTextureOnFace(face, BedImage);
+						MeshHelper.PlaceTextureOnFace(face, BedImage);
 					}
 					break;
 
