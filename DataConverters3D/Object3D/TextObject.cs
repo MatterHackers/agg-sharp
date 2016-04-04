@@ -27,55 +27,14 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg;
-using MatterHackers.PolygonMesh;
-using MatterHackers.PolygonMesh.Processors;
-using MatterHackers.RayTracer;
-using MatterHackers.RayTracer.Traceable;
-using MatterHackers.VectorMath;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+using MatterHackers.DataConverters3D;
 
-namespace MatterHackers.DataConverters3D
+namespace MatterHackers.PolygonMesh
 {
-	public enum Object3DTypes
+	public class TextObject : Object3D
 	{
-		Model,
-		Group,
-		SelectionGroup,
-		GenericObject
-	};
-
-	public interface IObject3D
-	{
-		[JsonConverter(typeof(Object3DConverter))]
-		List<IObject3D> Children { get; set; }
-		PlatingData ExtraData { get; }
-		bool HasChildren { get; }
-		Object3DTypes ItemType { get; set; }
-
-		[JsonConverter(typeof(MatrixConverter))]
-		Matrix4X4 Matrix { get; set; }
-
-		MeshGroup MeshGroup { get; set; }
-		string MeshPath { get; set; }
-
-		bool PersistNode { get; set; }
-
-		bool Visible { get; set; }
-
-		IObject3D Clone();
-
-		IPrimitive TraceData();
-
-		double DistanceToHit(Ray ray, ref IntersectInfo info);
-
-		AxisAlignedBoundingBox GetAxisAlignedBoundingBox();
-
-		AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 offet);
+		public string Text { get; set; }
+		public double Spacing { get; set; }
+		public bool Underline { get; set; }
 	}
 }

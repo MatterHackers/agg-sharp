@@ -148,6 +148,7 @@
     <Compile Include="Object3D\InteractiveScene.cs" />
     <Compile Include="Object3D\Json\MatrixConverter.cs" />
     <Compile Include="Object3D\Json\Object3DConverter.cs" />
+    <Compile Include="Object3D\TextObject.cs" />
     <Compile Include="Object3D\PlatingData.cs" />
     <Compile Include="Object3D\Object3DExtensions.cs" />
     <Compile Include="Object3D\IObject3D.cs" />

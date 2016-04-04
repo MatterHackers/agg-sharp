@@ -141,6 +141,8 @@ namespace MatterHackers.Agg
 				allFiles.AddRange(exeFiles);
 				string[] files = allFiles.ToArray();
 
+				Type targetType = typeof(BaseClassToFind);
+
 				foreach (string file in files)
 				{
 					try
@@ -154,7 +156,10 @@ namespace MatterHackers.Agg
 								continue;
 							}
 
-							if (type.BaseType == typeof(BaseClassToFind))
+							string typeName = type.Name;
+
+							if (targetType.IsInterface && targetType.IsAssignableFrom(type) ||
+								type.BaseType == typeof(BaseClassToFind))
 							{
 								factoryList.Add((BaseClassToFind)Activator.CreateInstance(type));
 							}
