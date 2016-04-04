@@ -28,6 +28,8 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg;
+using MatterHackers.PolygonMesh;
+using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
@@ -39,7 +41,7 @@ using System.Linq;
 using System.Threading;
 using System.Xml;
 
-namespace MatterHackers.PolygonMesh.Processors
+namespace MatterHackers.DataConverters3D
 {
 	public static class AmfProcessing
 	{

@@ -98,6 +98,9 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\clipper_library\clipper_library.csproj">
@@ -138,6 +141,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AmfProcessing.cs" />
     <Compile Include="CsgToRayTraceable.cs" />
     <Compile Include="MeshFaceTraceable.cs" />
     <Compile Include="MeshFileIo.cs" />

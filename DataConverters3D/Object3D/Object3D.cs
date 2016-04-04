@@ -28,19 +28,16 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg;
-using MatterHackers.DataConverters3D;
-using MatterHackers.PolygonMesh.Processors;
+using MatterHackers.PolygonMesh;
 using MatterHackers.RayTracer;
 using MatterHackers.RayTracer.Traceable;
 using MatterHackers.VectorMath;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace MatterHackers.PolygonMesh
+namespace MatterHackers.DataConverters3D
 {
 	public class Object3D : IObject3D
 	{

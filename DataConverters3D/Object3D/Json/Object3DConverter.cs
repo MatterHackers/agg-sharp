@@ -39,7 +39,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace MatterHackers.PolygonMesh
+namespace MatterHackers.DataConverters3D
 {
 	public class Object3DConverter : JsonConverter
 	{

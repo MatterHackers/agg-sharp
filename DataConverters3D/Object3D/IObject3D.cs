@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg;
+using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RayTracer;
 using MatterHackers.RayTracer.Traceable;
@@ -39,7 +40,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace MatterHackers.PolygonMesh
+namespace MatterHackers.DataConverters3D
 {
 	public enum Object3DTypes
 	{
