@@ -77,6 +77,11 @@ namespace MatterHackers.MeshVisualizer
 
 		public void AddToSelection(IObject3D itemToAdd)
 		{
+			if (itemToAdd == SelectedItem || SelectedItem?.Children?.Contains(itemToAdd) == true)
+			{
+				return;
+			}
+
 			if (HasSelection)
 			{
 				ModifyChildren(children =>
@@ -107,7 +112,7 @@ namespace MatterHackers.MeshVisualizer
 			}
 			else
 			{
-				throw new Exception("Unable to select external object. Item must be in the scene be selected.");
+				throw new Exception("Unable to select external object. Item must be in the scene to be selected.");
 			}
 		}
 	}
