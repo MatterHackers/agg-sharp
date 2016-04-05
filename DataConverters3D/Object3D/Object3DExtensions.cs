@@ -152,5 +152,28 @@ namespace MatterHackers.PolygonMesh
 
 			return BoundingVolumeHierarchy.CreateNewHierachy(allPolys, 0);
 		}
+
+		public static void CollapseInto(this IObject3D objectToCollapse, List<IObject3D> collapseInto, Object3DTypes typeFilter = Object3DTypes.SelectionGroup, int depth = int.MaxValue)
+		{
+			if (objectToCollapse != null && objectToCollapse.ItemType == typeFilter)
+			{
+				collapseInto.Remove(objectToCollapse);
+
+				// Move each child from objectToRemove into the scene, applying the parent transform to each
+				foreach (var child in objectToCollapse.Children)
+				{
+					child.Matrix *= objectToCollapse.Matrix;
+
+					if (child.ItemType == Object3DTypes.SelectionGroup && depth > 0)
+					{
+						child.CollapseInto(collapseInto, typeFilter, depth - 1);
+					}
+					else
+					{
+						collapseInto.Add(child);
+					}
+				}
+			}
+		}
 	}
 }

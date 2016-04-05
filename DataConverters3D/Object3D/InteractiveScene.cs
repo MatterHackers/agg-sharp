@@ -74,5 +74,46 @@ namespace MatterHackers.MeshVisualizer
 				SelectedItem = null;
 			}
 		}
+
+		public void AddToSelection(IObject3D itemToAdd)
+		{
+			if (itemToAdd == SelectedItem || SelectedItem?.Children?.Contains(itemToAdd) == true)
+			{
+				return;
+			}
+
+			if (HasSelection)
+			{
+				ModifyChildren(children =>
+				{
+					// We're adding a new item to the selection. To do so we wrap the selected item
+					// in a new group and with the new item. The selection will continue to grow in this
+					// way until it's applied, due to a loss of focus or until a group operation occurs
+					var newSelectionGroup = new Object3D
+					{
+						ItemType = Object3DTypes.SelectionGroup,
+						MeshGroup = new MeshGroup()
+					};
+
+					newSelectionGroup.Children.Add(SelectedItem);
+					newSelectionGroup.Children.Add(itemToAdd);
+
+					// Swap items
+					children.Remove(SelectedItem);
+					children.Remove(itemToAdd);
+					children.Add(newSelectionGroup);
+
+					this.Select(newSelectionGroup);
+				});
+			}
+			else if (Children.Contains(itemToAdd))
+			{
+				SelectedItem = itemToAdd;
+			}
+			else
+			{
+				throw new Exception("Unable to select external object. Item must be in the scene to be selected.");
+			}
+		}
 	}
 }
