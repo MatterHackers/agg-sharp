@@ -50,8 +50,23 @@ namespace MatterHackers.DataConverters3D
 
 		public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
 		{
-			JArray jo = JArray.Load(reader);
-			return new List<IObject3D>(jo.ToObject<List<Object3D>>(serializer));
+			JArray jArray = JArray.Load(reader);
+
+			var items = new List<IObject3D>();
+
+			foreach(var item in jArray)
+			{
+				// TODO: Hookup mechanism to both serialize and deserialize Object3D type via string property
+				string itemType = item["ItemType"].ToString();
+				switch (itemType)
+				{
+					default:
+						items.Add(item.ToObject<Object3D>(serializer));
+						break;
+				}
+			}
+
+			return items;
 		}
 
 		public override bool CanWrite
