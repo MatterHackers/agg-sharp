@@ -352,7 +352,9 @@ namespace MatterHackers.MeshVisualizer
 		public enum CenterPartAfterLoad { DO, DONT }
 
 		public Dictionary<string, List<MeshGroup>> CachedMeshes { get; } = new Dictionary<string, List<MeshGroup>>();
-		
+
+		public bool SuppressUiVolumes { get; set; } = false;
+
 		public async Task LoadMesh(string meshPath, CenterPartAfterLoad centerPart, Vector2 bedCenter = new Vector2())
 		{
 			if (File.Exists(meshPath))
@@ -393,9 +395,12 @@ namespace MatterHackers.MeshVisualizer
 		{
 			base.OnDraw(graphics2D);
 
-			foreach (InteractionVolume interactionVolume in interactionVolumes)
+			//if (!SuppressUiVolumes)
 			{
-				interactionVolume.Draw2DContent(graphics2D);
+				foreach (InteractionVolume interactionVolume in interactionVolumes)
+				{
+					interactionVolume.Draw2DContent(graphics2D);
+				}
 			}
 		}
 
@@ -414,13 +419,13 @@ namespace MatterHackers.MeshVisualizer
 			int volumeHitIndex;
 			Ray ray = trackballTumbleWidget.GetRayForLocalBounds(mouseEvent.Position);
 			IntersectInfo info;
-			if (FindInteractionVolumeHit(ray, out volumeHitIndex, out info))
+			if (!SuppressUiVolumes && FindInteractionVolumeHit(ray, out volumeHitIndex, out info))
 			{
 				MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray, info);
 				volumeIndexWithMouseDown = volumeHitIndex;
 				interactionVolumes[volumeHitIndex].OnMouseDown(mouseEvent3D);
 				SelectedInteractionVolume = interactionVolumes[volumeHitIndex];
-            }
+			}
 			else
 			{
 				SelectedInteractionVolume = null;
@@ -430,6 +435,11 @@ namespace MatterHackers.MeshVisualizer
 		public override void OnMouseMove(MouseEventArgs mouseEvent)
 		{
 			base.OnMouseMove(mouseEvent);
+
+			if (SuppressUiVolumes)
+			{
+				return;
+			}
 
 			Ray ray = trackballTumbleWidget.GetRayForLocalBounds(mouseEvent.Position);
 			IntersectInfo info = null;
@@ -449,13 +459,14 @@ namespace MatterHackers.MeshVisualizer
 						interactionVolumes[volumeHitIndex].OnMouseMove(mouseEvent3D);
 					}
 				}
+
 				for (int i = 0; i < interactionVolumes.Count; i++)
 				{
 					if (i == volumeHitIndex)
 					{
 						interactionVolumes[i].MouseOver = true;
 						interactionVolumes[i].MouseMoveInfo = info;
-                    }
+					}
 					else
 					{
 						interactionVolumes[i].MouseOver = false;
@@ -469,6 +480,11 @@ namespace MatterHackers.MeshVisualizer
 		{
 			trackballTumbleWidget.DrawRotationHelperCircle = false;
 			Invalidate();
+
+			if(SuppressUiVolumes)
+			{
+				return;
+			}
 
 			int volumeHitIndex;
 			Ray ray = trackballTumbleWidget.GetRayForLocalBounds(mouseEvent.Position);
@@ -693,13 +709,15 @@ namespace MatterHackers.MeshVisualizer
 			});
 		}
 
-		private void DrawObject(IObject3D object3D, Matrix4X4 transform)
+		private void DrawObject(IObject3D object3D, Matrix4X4 transform, bool parentSelected)
 		{
 			Matrix4X4 totalTransform = object3D.Matrix * transform;
 
+			bool isSelected = parentSelected;
+
 			if (object3D.MeshGroup != null)
 			{
-				bool isSelected = Scene.HasSelection && (object3D == Scene.SelectedItem || Scene.SelectedItem.Children.Contains(object3D));
+				isSelected = parentSelected || Scene.HasSelection && (object3D == Scene.SelectedItem || Scene.SelectedItem.Children.Contains(object3D));
 
 				foreach (var meshToRender in object3D.MeshGroup.Meshes)
 				{
@@ -712,7 +730,7 @@ namespace MatterHackers.MeshVisualizer
 
 			foreach (var child in object3D.Children)
 			{
-				DrawObject(child, totalTransform);
+				DrawObject(child, totalTransform,  isSelected);
 			}
 		}
 
@@ -720,7 +738,7 @@ namespace MatterHackers.MeshVisualizer
 		{
 			foreach(var object3D in Scene.Children)
 			{
-				DrawObject(object3D, Matrix4X4.Identity);
+				DrawObject(object3D, Matrix4X4.Identity, false);
 			}
 
 			// we don't want to render the bed or build volume before we load a model.
@@ -754,6 +772,11 @@ namespace MatterHackers.MeshVisualizer
 
 		private void DrawInteractionVolumes(EventArgs e)
 		{
+			if(SuppressUiVolumes)
+			{
+				return;
+			}
+
 			// draw on top of anything that is already drawn
 			foreach (InteractionVolume interactionVolume in interactionVolumes)
 			{

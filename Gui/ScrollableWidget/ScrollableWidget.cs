@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2016, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -38,14 +38,9 @@ namespace MatterHackers.Agg.UI
 
 		public bool AutoScroll { get; set; }
 
-		private ScrollingArea scrollArea;
+		public bool SuppressScroll { get; set; }
 
-		private ScrollBar verticalScrollBar;
-
-		public ScrollBar VerticalScrollBar
-		{
-			get { return verticalScrollBar; }
-		}
+		public ScrollBar VerticalScrollBar { get; private set; }
 
 		public Vector2 TopLeftOffset
 		{
@@ -91,10 +86,7 @@ namespace MatterHackers.Agg.UI
 
 		private void OnScrollPositionChanged()
 		{
-			if (ScrollPositionChanged != null)
-			{
-				ScrollPositionChanged(this, null);
-			}
+			ScrollPositionChanged?.Invoke(this, null);
 		}
 
 		public ScrollingArea ScrollArea
@@ -106,6 +98,8 @@ namespace MatterHackers.Agg.UI
 		{
 			base.AddChild(widgetToAdd, indexToAddAt);
 		}
+
+		private ScrollingArea scrollArea;
 
 		public ScrollableWidget(bool autoScroll = false)
 			: this(0, 0, autoScroll)
@@ -119,11 +113,11 @@ namespace MatterHackers.Agg.UI
 			scrollArea.HAnchor = UI.HAnchor.FitToChildren;
 			AutoScroll = autoScroll;
 			ScrollArea.BoundsChanged += new EventHandler(ScrollArea_BoundsChanged);
-			verticalScrollBar = new ScrollBar(this);
+			VerticalScrollBar = new ScrollBar(this);
 
 			base.AddChild(scrollArea);
-			base.AddChild(verticalScrollBar);
-			verticalScrollBar.HAnchor = UI.HAnchor.ParentRight;
+			base.AddChild(VerticalScrollBar);
+			VerticalScrollBar.HAnchor = UI.HAnchor.ParentRight;
 		}
 
 		private void ScrollArea_BoundsChanged(object sender, EventArgs e)
@@ -200,6 +194,11 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnMouseMove(MouseEventArgs mouseEvent)
 		{
+			if(SuppressScroll)
+			{
+				return;
+			}
+
 			if (mouseDownOnScrollArea && ScrollWithMouse(this))
 			{
 				ScrollPosition = new Vector2(ScrollPosition.x, scrollOnDownY - (mouseDownY - mouseEvent.Y));
