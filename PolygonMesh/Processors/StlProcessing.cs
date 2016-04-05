@@ -175,7 +175,7 @@ namespace MatterHackers.PolygonMesh.Processors
 				return null;
 			}
 #else
-            // TODO: Consider not supressing exceptions like this or at least logging them. Troubleshooting when this
+            // TODO: Consider not suppressing exceptions like this or at least logging them. Troubleshooting when this
             // scenario occurs is impossible and likely results in an undiagnosable null reference error
             catch (Exception)
             {
