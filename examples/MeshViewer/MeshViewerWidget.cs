@@ -693,13 +693,15 @@ namespace MatterHackers.MeshVisualizer
 			});
 		}
 
-		private void DrawObject(IObject3D object3D, Matrix4X4 transform)
+		private void DrawObject(IObject3D object3D, Matrix4X4 transform, bool parentSelected)
 		{
 			Matrix4X4 totalTransform = object3D.Matrix * transform;
 
+			bool isSelected = parentSelected;
+
 			if (object3D.MeshGroup != null)
 			{
-				bool isSelected = Scene.HasSelection && (object3D == Scene.SelectedItem || Scene.SelectedItem.Children.Contains(object3D));
+				isSelected = parentSelected || Scene.HasSelection && (object3D == Scene.SelectedItem || Scene.SelectedItem.Children.Contains(object3D));
 
 				foreach (var meshToRender in object3D.MeshGroup.Meshes)
 				{
@@ -712,7 +714,7 @@ namespace MatterHackers.MeshVisualizer
 
 			foreach (var child in object3D.Children)
 			{
-				DrawObject(child, totalTransform);
+				DrawObject(child, totalTransform,  isSelected);
 			}
 		}
 
@@ -720,7 +722,7 @@ namespace MatterHackers.MeshVisualizer
 		{
 			foreach(var object3D in Scene.Children)
 			{
-				DrawObject(object3D, Matrix4X4.Identity);
+				DrawObject(object3D, Matrix4X4.Identity, false);
 			}
 
 			// we don't want to render the bed or build volume before we load a model.
