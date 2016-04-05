@@ -358,6 +358,12 @@ namespace MatterHackers.PolygonMesh.Processors
 				}
 			);
 
+			if (reportProgress != null)
+			{
+				bool continueProcessingTemp;
+				reportProgress(1, "", out continueProcessingTemp);
+			}
+
 			if (!finishedCleanAndMerge)
 			{
 				return null;

@@ -477,6 +477,12 @@ namespace MatterHackers.DataConverters3D
 					}
 				}
 			}
+
+			if (reportProgress != null)
+			{
+				bool continueProcessingTemp;
+				reportProgress(1, "", out continueProcessingTemp);
+			}
 			if (hasValidMesh)
 			{
 				return meshGroups;
