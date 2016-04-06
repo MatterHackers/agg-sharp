@@ -170,12 +170,9 @@ namespace MatterHackers.MeshVisualizer
 				if (renderType != value)
 				{
 					renderType = value;
-					foreach (MeshGroup meshGroup in Scene.Children.Select(object3D => object3D.MeshGroup))
+					foreach (Mesh mesh in Scene.Children.Select(object3D => object3D.Mesh))
 					{
-						foreach (Mesh mesh in meshGroup.Meshes)
-						{
-							mesh.MarkAsChanged();
-						}
+						mesh.MarkAsChanged();
 					}
 				}
 			}
@@ -242,12 +239,9 @@ namespace MatterHackers.MeshVisualizer
 
 		public void CreateGlDataForMeshes(List<IObject3D> object3DList)
 		{
-			foreach (IObject3D object3D in object3DList.Where(o => o.MeshGroup != null))
+			foreach (IObject3D object3D in object3DList.Where(o => o.Mesh != null))
 			{
-				foreach (Mesh meshToPrepare in object3D.MeshGroup.Meshes)
-				{
-					GLMeshTrianglePlugin.Get(meshToPrepare);
-				}
+				GLMeshTrianglePlugin.Get(object3D.Mesh);
 			}
 		}
 
@@ -713,19 +707,15 @@ namespace MatterHackers.MeshVisualizer
 		{
 			Matrix4X4 totalTransform = object3D.Matrix * transform;
 
-			bool isSelected = parentSelected;
+			bool isSelected = parentSelected || 
+				Scene.HasSelection && (object3D == Scene.SelectedItem || Scene.SelectedItem.Children.Contains(object3D));
 
-			if (object3D.MeshGroup != null)
+			Mesh meshToRender = object3D.Mesh;
+			if (meshToRender != null)
 			{
-				isSelected = parentSelected || Scene.HasSelection && (object3D == Scene.SelectedItem || Scene.SelectedItem.Children.Contains(object3D));
-
-				foreach (var meshToRender in object3D.MeshGroup.Meshes)
-				{
-					MeshMaterialData meshData = MeshMaterialData.Get(meshToRender);
-					RGBA_Bytes drawColor = isSelected ? GetSelectedMaterialColor(meshData.MaterialIndex) : GetMaterialColor(meshData.MaterialIndex);
-
-					GLHelper.Render(meshToRender, drawColor, totalTransform, RenderType);
-				}
+				MeshMaterialData meshData = MeshMaterialData.Get(meshToRender);
+				RGBA_Bytes drawColor = isSelected ? GetSelectedMaterialColor(meshData.MaterialIndex) : GetMaterialColor(meshData.MaterialIndex);
+				GLHelper.Render(meshToRender, drawColor, totalTransform, RenderType);
 			}
 
 			foreach (var child in object3D.Children)

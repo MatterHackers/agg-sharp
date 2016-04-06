@@ -84,19 +84,22 @@ namespace MatterHackers.PolygonMesh
 
 				if (loadedMeshGroups.Count == 1)
 				{
-					object3D.MeshGroup = loadedMeshGroups.First();
+					object3D.Mesh = loadedMeshGroups?.First().Meshes?.First();
 					object3D.ItemType = Object3DTypes.Model;
 				}
 				else
 				{
 					foreach (var meshGroup in loadedMeshGroups)
 					{
-						object3D.Children.Add(new Object3D()
+						foreach (var mesh in meshGroup.Meshes)
 						{
-							ItemType = Object3DTypes.Model,
-							MeshGroup = meshGroup,
-							PersistNode = false
-						});
+							object3D.Children.Add(new Object3D()
+							{
+								ItemType = Object3DTypes.Model,
+								Mesh = mesh,
+								PersistNode = false
+							});
+						}
 					}
 				}
 			}

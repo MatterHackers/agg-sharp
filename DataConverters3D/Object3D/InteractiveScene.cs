@@ -92,7 +92,6 @@ namespace MatterHackers.MeshVisualizer
 					var newSelectionGroup = new Object3D
 					{
 						ItemType = Object3DTypes.SelectionGroup,
-						MeshGroup = new MeshGroup()
 					};
 
 					newSelectionGroup.Children.Add(SelectedItem);

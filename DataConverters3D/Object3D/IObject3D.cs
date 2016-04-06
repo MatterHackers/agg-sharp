@@ -63,7 +63,7 @@ namespace MatterHackers.DataConverters3D
 		[JsonConverter(typeof(MatrixConverter))]
 		Matrix4X4 Matrix { get; set; }
 
-		MeshGroup MeshGroup { get; set; }
+		Mesh Mesh { get; set; }
 		string MeshPath { get; set; }
 
 		bool PersistNode { get; set; }
