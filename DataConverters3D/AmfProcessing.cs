@@ -379,7 +379,13 @@ namespace MatterHackers.DataConverters3D
 			{
 				using (Stream amfCompressedStream = GetCompressedStreamIfRequired(amfStream))
 				{
-					XmlReader xmlTree = XmlReader.Create(amfCompressedStream);
+					var settings = new XmlReaderSettings()
+					{
+						ValidationType = ValidationType.None,
+						DtdProcessing = DtdProcessing.Ignore
+					};
+
+					XmlReader xmlTree = XmlReader.Create(amfCompressedStream, settings);
 					while (xmlTree.Read())
 					{
 						if (xmlTree.Name == "amf")
@@ -709,6 +715,7 @@ namespace MatterHackers.DataConverters3D
 
 			switch (units.ToLower())
 			{
+				case "millimeters":
 				case "millimeter":
 					return 1;
 
