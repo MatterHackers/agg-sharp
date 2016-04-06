@@ -52,7 +52,7 @@ namespace MatterHackers.DataConverters3D
 		public Matrix4X4 Matrix { get; set; } = Matrix4X4.Identity;
 
 		[JsonIgnore]
-		public MeshGroup MeshGroup { get; set; }
+		public Mesh Mesh { get; set; }
 
 		public string MeshPath { get; set; }
 
@@ -90,13 +90,15 @@ namespace MatterHackers.DataConverters3D
 
 				IObject3D loadedItem = new Object3D()
 				{
-					MeshGroup = new MeshGroup(),
 					ItemType = Object3DTypes.Group
 				};
 
 				foreach (var meshGroup in loadedMeshGroups)
 				{
-					loadedItem.Children.Add(new Object3D() { MeshGroup = meshGroup });
+					foreach(var mesh in meshGroup.Meshes)
+					{
+						loadedItem.Children.Add(new Object3D() { Mesh = mesh });
+					}
 				}
 
 				return loadedItem;
@@ -109,7 +111,7 @@ namespace MatterHackers.DataConverters3D
 			return new Object3D()
 			{
 				ItemType = this.ItemType,
-				MeshGroup = this.MeshGroup,
+				Mesh = this.Mesh,
 				Children = new List<IObject3D>(this.Children.Select(child => child.Clone())),
 				Matrix = this.Matrix,
 				traceData = this.traceData
@@ -131,8 +133,8 @@ namespace MatterHackers.DataConverters3D
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{
 			// Set the initial bounding box to empty or the bounds of the objects MeshGroup
-			bool meshIsEmpty = this.MeshGroup == null || this.MeshGroup.Meshes.Count == 0;
-			AxisAlignedBoundingBox totalBounds = meshIsEmpty ? AxisAlignedBoundingBox.Empty : this.MeshGroup.GetAxisAlignedBoundingBox(this.Matrix);
+			bool meshIsEmpty = this.Mesh == null;
+			AxisAlignedBoundingBox totalBounds = meshIsEmpty ? AxisAlignedBoundingBox.Empty : this.Mesh.GetAxisAlignedBoundingBox(this.Matrix);
 
 			// Add the bounds of each child object
 			foreach (IObject3D child in Children)
@@ -148,8 +150,8 @@ namespace MatterHackers.DataConverters3D
 			var totalTransorm = this.Matrix * matrix;
 
 			// Set the initial bounding box to empty or the bounds of the objects MeshGroup
-			bool meshIsEmpty = this.MeshGroup == null || this.MeshGroup.Meshes.Count == 0;
-			AxisAlignedBoundingBox totalBounds = meshIsEmpty ? AxisAlignedBoundingBox.Empty : this.MeshGroup.GetAxisAlignedBoundingBox(totalTransorm);
+			bool meshIsEmpty = this.Mesh == null;
+			AxisAlignedBoundingBox totalBounds = meshIsEmpty ? AxisAlignedBoundingBox.Empty : this.Mesh.GetAxisAlignedBoundingBox(totalTransorm);
 
 			// Add the bounds of each child object
 			foreach (IObject3D child in Children)
@@ -173,7 +175,7 @@ namespace MatterHackers.DataConverters3D
 			if (traceData == null || tracedChildren != hashCode)
 			{
 				// Get the trace data for the local mesh
-				List<IPrimitive> traceables = (MeshGroup == null) ? new List<IPrimitive>() : MeshGroup.Meshes.Select(mesh => mesh.CreateTraceData()).ToList();
+				List<IPrimitive> traceables = (Mesh == null) ? new List<IPrimitive>() : new List<IPrimitive> { Mesh.CreateTraceData() };
 
 				// Get the trace data for all children
 				foreach (Object3D child in Children)
