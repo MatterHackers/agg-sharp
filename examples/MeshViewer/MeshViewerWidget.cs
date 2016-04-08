@@ -527,7 +527,7 @@ namespace MatterHackers.MeshVisualizer
 				foreach (IObject3D meshGroup in loadedItems)
 				{
 					// TODO: CODE_REVIEW - Can't we just += these?
-					bounds = AxisAlignedBoundingBox.Union(bounds, meshGroup.GetAxisAlignedBoundingBox());
+					bounds = AxisAlignedBoundingBox.Union(bounds, meshGroup.GetAxisAlignedBoundingBox(Matrix4X4.Identity));
 				}
 
 				//if (centerPart == CenterPartAfterLoad.DO)
@@ -705,22 +705,14 @@ namespace MatterHackers.MeshVisualizer
 
 		private void DrawObject(IObject3D object3D, Matrix4X4 transform, bool parentSelected)
 		{
-			Matrix4X4 totalTransform = object3D.Matrix * transform;
-
-			bool isSelected = parentSelected || 
-				Scene.HasSelection && (object3D == Scene.SelectedItem || Scene.SelectedItem.Children.Contains(object3D));
-
-			Mesh meshToRender = object3D.Mesh;
-			if (meshToRender != null)
+			foreach(Tuple<Mesh, Matrix4X4> meshAndTransform in object3D.TransformedMeshes(transform))
 			{
-				MeshMaterialData meshData = MeshMaterialData.Get(meshToRender);
+				bool isSelected = parentSelected ||
+					Scene.HasSelection && (object3D == Scene.SelectedItem || Scene.SelectedItem.Children.Contains(object3D));
+
+				MeshMaterialData meshData = MeshMaterialData.Get(meshAndTransform.Item1);
 				RGBA_Bytes drawColor = isSelected ? GetSelectedMaterialColor(meshData.MaterialIndex) : GetMaterialColor(meshData.MaterialIndex);
-				GLHelper.Render(meshToRender, drawColor, totalTransform, RenderType);
-			}
-
-			foreach (var child in object3D.Children)
-			{
-				DrawObject(child, totalTransform,  isSelected);
+				GLHelper.Render(meshAndTransform.Item1, drawColor, meshAndTransform.Item2, RenderType);
 			}
 		}
 
