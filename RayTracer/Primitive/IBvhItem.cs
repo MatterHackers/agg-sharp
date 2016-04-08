@@ -88,5 +88,12 @@ namespace MatterHackers.RayTracer
 		/// <param name="subRegion"></param>
 		/// <returns></returns>
 		bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion);
+
+		/// <summary>
+		/// Check if the give contains the item to check for as part of its collection or proxy
+		/// </summary>
+		/// <param name="itemToCheckFor"></param>
+		/// <returns></returns>
+		bool Contains(IBvhItem itemToCheckFor);
 	}
 }

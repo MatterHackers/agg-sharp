@@ -52,6 +52,16 @@ namespace MatterHackers.RayTracer.Traceable
 			WorldToAxis = Matrix4X4.Invert(AxisToWorld);
 		}
 
+		public bool Contains(IBvhItem itemToCheckFor)
+		{
+			if (this == itemToCheckFor || Child.Contains(itemToCheckFor))
+			{
+				return true;
+			}
+
+			return false;
+		}
+
 		public RGBA_Floats GetColor(IntersectInfo info)
 		{
 			return Child.GetColor(info);

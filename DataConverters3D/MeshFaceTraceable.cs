@@ -32,6 +32,16 @@ namespace MatterHackers.DataConverters3D
 			return false;
 		}
 
+		public bool Contains(IBvhItem itemToCheckFor)
+		{
+			if (this == itemToCheckFor)
+			{
+				return true;
+			}
+
+			return false;
+		}
+
 		public IntersectInfo GetClosestIntersection(Ray ray)
 		{
 			// find the point on the plane

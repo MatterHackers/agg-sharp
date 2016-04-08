@@ -40,6 +40,16 @@ namespace MatterHackers.RayTracer
 			return false;
 		}
 
+		public bool Contains(IBvhItem itemToCheckFor)
+		{
+			if (this == itemToCheckFor)
+			{
+				return true;
+			}
+
+			return false;
+		}
+
 		public BaseShape()
 		{
 			Material = new SolidMaterial(new RGBA_Floats(1, 0, 1), 0, 0, 0);

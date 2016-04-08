@@ -27,18 +27,12 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg;
 using MatterHackers.PolygonMesh;
-using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RayTracer;
-using MatterHackers.RayTracer.Traceable;
 using MatterHackers.VectorMath;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 
 namespace MatterHackers.DataConverters3D
 {
@@ -56,6 +50,7 @@ namespace MatterHackers.DataConverters3D
 
 		[JsonConverter(typeof(Object3DConverter))]
 		List<IObject3D> Children { get; set; }
+
 		PlatingData ExtraData { get; }
 		bool HasChildren { get; }
 		Object3DTypes ItemType { get; set; }
@@ -70,14 +65,21 @@ namespace MatterHackers.DataConverters3D
 
 		bool Visible { get; set; }
 
+		/// <summary>
+		/// Create a deep copy of the IObject3D objects
+		/// </summary>
+		/// <returns></returns>
 		IObject3D Clone();
+
+		/// <summary>
+		/// Get the Axis Aligned Bounding Box transformed by the given offest
+		/// </summary>
+		/// <param name="offet">The initial offset to use for the bounds</param>
+		/// <returns></returns>
+		AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 offet);
 
 		IPrimitive TraceData();
 
-		double DistanceToHit(Ray ray, ref IntersectInfo info);
-
-		AxisAlignedBoundingBox GetAxisAlignedBoundingBox();
-
-		AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 offet);
+		IEnumerable<Tuple<Mesh, Matrix4X4>> TransformedMeshes(Matrix4X4 transform);
 	}
 }

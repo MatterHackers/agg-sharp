@@ -65,6 +65,25 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
+		public bool Contains(IBvhItem itemToCheckFor)
+		{
+			if(this == itemToCheckFor)
+			{
+				return true;
+			}
+
+			foreach (IPrimitive item in Items)
+			{
+				if(item.Contains(itemToCheckFor))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+
 		public IntersectInfo GetClosestIntersection(Ray ray)
 		{
 			IntersectInfo bestInfo = null;
@@ -184,6 +203,18 @@ namespace MatterHackers.RayTracer
 			this.nodeA = nodeA;
 			this.nodeB = nodeB;
 			this.Aabb = nodeA.GetAxisAlignedBoundingBox() + nodeB.GetAxisAlignedBoundingBox(); // we can cache this because it is not allowed to change.
+		}
+
+		public bool Contains(IBvhItem itemToCheckFor)
+		{
+			if (this == itemToCheckFor
+				|| nodeA.Contains(itemToCheckFor)
+				|| nodeB.Contains(itemToCheckFor))
+			{
+				return true;
+			}
+
+			return false;
 		}
 
 		public RGBA_Floats GetColor(IntersectInfo info)

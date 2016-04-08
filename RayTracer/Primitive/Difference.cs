@@ -55,6 +55,18 @@ namespace MatterHackers.RayTracer.Traceable
 			throw new NotImplementedException();
 		}
 
+		public bool Contains(IBvhItem itemToCheckFor)
+		{
+			if (this == itemToCheckFor 
+				|| primary.Contains(itemToCheckFor)
+				|| subtract.Contains(itemToCheckFor))
+			{
+				return true;
+			}
+
+			return false;
+		}
+
 		public IntersectInfo GetClosestIntersection(Ray ray)
 		{
 			List<IntersectInfo> allPrimary = new List<IntersectInfo>();

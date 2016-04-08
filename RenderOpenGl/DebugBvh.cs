@@ -96,6 +96,11 @@ namespace MatterHackers.RenderOpenGl
 
 		private void RenderBounds(AxisAlignedBoundingBox axisAlignedBoundingBox, int recursion)
 		{
+			if (recursion < startRenderLevel || recursion >= endRenderLevel)
+			{
+				return;
+			}
+
 			for (int i = 0; i < 4; i++)
 			{
 				Vector3 bottomStartPosition = Vector3.Transform(axisAlignedBoundingBox.GetBottomCorner(i), transform.Peek());

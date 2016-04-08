@@ -33,6 +33,7 @@ using MatterHackers.RayTracer;
 using MatterHackers.RayTracer.Traceable;
 using MatterHackers.VectorMath;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -62,7 +63,7 @@ namespace MatterHackers.DataConverters3D
 		public object SourceNode { get; set; }
 
 		public bool Visible { get; set; }
-		
+
 		public static IObject3D Load(string meshPathAndFileName, Dictionary<string, List<MeshGroup>> cachedMeshes, ReportProgressRatio progress)
 		{
 			string extension = Path.GetExtension(meshPathAndFileName);
@@ -95,7 +96,7 @@ namespace MatterHackers.DataConverters3D
 
 				foreach (var meshGroup in loadedMeshGroups)
 				{
-					foreach(var mesh in meshGroup.Meshes)
+					foreach (var mesh in meshGroup.Meshes)
 					{
 						loadedItem.Children.Add(new Object3D() { Mesh = mesh });
 					}
@@ -116,33 +117,6 @@ namespace MatterHackers.DataConverters3D
 				Matrix = this.Matrix,
 				traceData = this.traceData
 			};
-		}
-
-		public double DistanceToHit(Ray ray, ref IntersectInfo info)
-		{
-			IntersectInfo infoMesh = TraceData().GetClosestIntersection(ray);
-			if (infoMesh != null)
-			{
-				info = infoMesh;
-				return info.distanceToHit;
-			}
-
-			return double.PositiveInfinity;
-		}
-
-		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
-		{
-			// Set the initial bounding box to empty or the bounds of the objects MeshGroup
-			bool meshIsEmpty = this.Mesh == null;
-			AxisAlignedBoundingBox totalBounds = meshIsEmpty ? AxisAlignedBoundingBox.Empty : this.Mesh.GetAxisAlignedBoundingBox(this.Matrix);
-
-			// Add the bounds of each child object
-			foreach (IObject3D child in Children)
-			{
-				totalBounds += child.GetAxisAlignedBoundingBox(this.Matrix);
-			}
-
-			return totalBounds;
 		}
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix)
@@ -193,6 +167,25 @@ namespace MatterHackers.DataConverters3D
 			return new Transform(traceData, Matrix);
 		}
 
+		public IEnumerable<Tuple<Mesh, Matrix4X4>> TransformedMeshes(Matrix4X4 transform)
+		{
+			Matrix4X4 totalTransform = this.Matrix * transform;
+
+			foreach (var child in Children)
+			{
+				foreach (var meshTransform in child.TransformedMeshes(totalTransform))
+				{
+					yield return meshTransform;
+				}
+			}
+
+			if (this.Mesh != null)
+			{
+				yield return new Tuple<Mesh, Matrix4X4>(this.Mesh, totalTransform);
+			}
+		}
+
+
 		// Hashcode for lists as proposed by Jon Skeet
 		//
 		// http://stackoverflow.com/questions/8094867/good-gethashcode-override-for-list-of-foo-objects-respecting-the-order
@@ -204,6 +197,7 @@ namespace MatterHackers.DataConverters3D
 				foreach (var child in Children)
 				{
 					hash = hash * 31 + child.GetHashCode();
+					hash = hash * 31 + child.Matrix.GetHashCode();
 				}
 
 				return hash;
