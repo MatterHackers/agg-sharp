@@ -45,6 +45,18 @@ namespace MatterHackers.DataConverters3D
 		GenericObject
 	};
 
+	public class MeshAndTransform
+	{
+		public Mesh MeshData { get; }
+		public Matrix4X4 Matrix { get; }
+
+		public MeshAndTransform(Mesh meshData, Matrix4X4 matrix)
+		{
+			MeshData = meshData;
+			Matrix = matrix;
+		}
+	}
+
 	public interface IObject3D
 	{
 		string ActiveEditor { get; set; }
@@ -79,8 +91,21 @@ namespace MatterHackers.DataConverters3D
 		/// <returns></returns>
 		AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 offet);
 
+		/// <summary>
+		/// Return ray tracing data for the current data. This is used
+		/// for intersections (mouse hit) and possibly rendering.
+		/// </summary>
+		/// <returns></returns>
 		IPrimitive TraceData();
 
-		IEnumerable<Tuple<Mesh, Matrix4X4>> TransformedMeshes(Matrix4X4 transform);
+		/// <summary>
+		/// Enumerator to get the currently visble set of meshes for rendering.
+		/// The returned set may include placeholder or proxy data while
+		/// long operations are happening such as loading or mesh processing.
+		/// </summary>
+		/// <param name="transform">The final transform to apply to the returend 
+		/// transforms as the tree is decended. Often passed as Matrix4X4.Identity.</param>
+		/// <returns></returns>
+		IEnumerable<MeshAndTransform> VisibleMeshes(Matrix4X4 transform);
 	}
 }

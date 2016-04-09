@@ -705,19 +705,19 @@ namespace MatterHackers.MeshVisualizer
 
 		private void DrawObject(IObject3D object3D, Matrix4X4 transform, bool parentSelected)
 		{
-			foreach(Tuple<Mesh, Matrix4X4> meshAndTransform in object3D.TransformedMeshes(transform))
+			foreach(MeshAndTransform meshAndTransform in object3D.VisibleMeshes(transform))
 			{
 				bool isSelected = parentSelected ||
 					Scene.HasSelection && (object3D == Scene.SelectedItem || Scene.SelectedItem.Children.Contains(object3D));
 
-				MeshMaterialData meshData = MeshMaterialData.Get(meshAndTransform.Item1);
+				MeshMaterialData meshData = MeshMaterialData.Get(meshAndTransform.MeshData);
 				RGBA_Bytes drawColor = object3D.Color;
 				if (drawColor.Alpha0To1 == 0)
 				{
 					drawColor = isSelected ? GetSelectedMaterialColor(meshData.MaterialIndex) : GetMaterialColor(meshData.MaterialIndex);
 				}
 
-				GLHelper.Render(meshAndTransform.Item1, drawColor, meshAndTransform.Item2, RenderType);
+				GLHelper.Render(meshAndTransform.MeshData, drawColor, meshAndTransform.Matrix, RenderType);
 			}
 		}
 

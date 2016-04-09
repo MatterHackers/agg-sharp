@@ -169,13 +169,13 @@ namespace MatterHackers.DataConverters3D
 			return new Transform(traceData, Matrix);
 		}
 
-		public IEnumerable<Tuple<Mesh, Matrix4X4>> TransformedMeshes(Matrix4X4 transform)
+		public IEnumerable<MeshAndTransform> VisibleMeshes(Matrix4X4 transform)
 		{
 			Matrix4X4 totalTransform = this.Matrix * transform;
 
 			foreach (var child in Children)
 			{
-				foreach (var meshTransform in child.TransformedMeshes(totalTransform))
+				foreach (var meshTransform in child.VisibleMeshes(totalTransform))
 				{
 					yield return meshTransform;
 				}
@@ -183,7 +183,7 @@ namespace MatterHackers.DataConverters3D
 
 			if (this.Mesh != null)
 			{
-				yield return new Tuple<Mesh, Matrix4X4>(this.Mesh, totalTransform);
+				yield return new MeshAndTransform(this.Mesh, totalTransform);
 			}
 		}
 
