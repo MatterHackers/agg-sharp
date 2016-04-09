@@ -237,11 +237,16 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
-		public void CreateGlDataForMeshes(List<IObject3D> object3DList)
+		public void CreateGlDataObject(IObject3D item)
 		{
-			foreach (IObject3D object3D in object3DList.Where(o => o.Mesh != null))
+			if(item.Mesh != null)
 			{
-				GLMeshTrianglePlugin.Get(object3D.Mesh);
+				GLMeshTrianglePlugin.Get(item.Mesh);
+			}
+
+			foreach (IObject3D child in item.Children.Where(o => o.Mesh != null))
+			{
+				GLMeshTrianglePlugin.Get(child.Mesh);
 			}
 		}
 
@@ -345,7 +350,7 @@ namespace MatterHackers.MeshVisualizer
 
 		public enum CenterPartAfterLoad { DO, DONT }
 
-		public Dictionary<string, List<MeshGroup>> CachedMeshes { get; } = new Dictionary<string, List<MeshGroup>>();
+		public Dictionary<string, IObject3D> ItemCache { get; } = new Dictionary<string, IObject3D>();
 
 		public bool SuppressUiVolumes { get; set; } = false;
 
@@ -358,11 +363,27 @@ namespace MatterHackers.MeshVisualizer
 				partProcessingInfo.centeredInfoText.Text = "Loading Mesh...";
 
 				// TODO: How to we handle mesh load errors? How do we report success?
-				IObject3D loadedItem = await Task.Run(() => Object3D.Load(meshPath, CachedMeshes, ReportProgress0to100));
-				if(loadedItem != null)
+				IObject3D loadedItem = await Task.Run(() => Object3D.Load(meshPath, ItemCache, ReportProgress0to100));
+				if (loadedItem != null)
 				{
-					// Update after load
-					SetMeshAfterLoad(loadedItem.Children, centerPart, bedCenter);
+					// SetMeshAfterLoad
+					Scene.ModifyChildren(children =>
+					{
+						children.Add(loadedItem);
+					});
+
+					CreateGlDataObject(loadedItem);
+
+					// TODO: Why is this necessary? 
+					trackballTumbleWidget.TrackBallController = new TrackBallController();
+					trackballTumbleWidget.OnBoundsChanged(null);
+
+					// TODO: Likewise, we should preserve the user's view before the part change, anything else is jarring in unexpected.
+					ResetView();
+				}
+				else
+				{
+					partProcessingInfo.centeredInfoText.Text = string.Format("Sorry! No 3D view available\nfor this file.");
 				}
 
 				partProcessingInfo.Visible = false;
@@ -505,46 +526,6 @@ namespace MatterHackers.MeshVisualizer
 			}
 
 			base.OnMouseUp(mouseEvent);
-		}
-
-		public void SetMeshAfterLoad(List<IObject3D> loadedItems, CenterPartAfterLoad centerPart, Vector2 bedCenter)
-		{
-			Scene.ModifyChildren(children =>
-			{
-				children.AddRange(loadedItems);
-			});
-		
-			if (loadedItems == null)
-			{
-				partProcessingInfo.centeredInfoText.Text = string.Format("Sorry! No 3D view available\nfor this file.");
-			}
-			else
-			{
-				CreateGlDataForMeshes(loadedItems);
-
-				AxisAlignedBoundingBox bounds = AxisAlignedBoundingBox.Empty;
-
-				foreach (IObject3D meshGroup in loadedItems)
-				{
-					// TODO: CODE_REVIEW - Can't we just += these?
-					bounds = AxisAlignedBoundingBox.Union(bounds, meshGroup.GetAxisAlignedBoundingBox(Matrix4X4.Identity));
-				}
-
-				//if (centerPart == CenterPartAfterLoad.DO)
-				//{
-				//	// make sure the entire load is centered and on the bed
-				//	Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
-				//	for (int i = 0; i < MeshGroups.Count; i++)
-				//	{
-				//		meshTransforms[i] *= Matrix4X4.CreateTranslation(-boundsCenter + new Vector3(0, 0, bounds.ZSize / 2) + new Vector3(bedCenter));
-				//	}
-				//}
-				
-				trackballTumbleWidget.TrackBallController = new TrackBallController();
-				trackballTumbleWidget.OnBoundsChanged(null);
-
-				ResetView();
-			}
 		}
 
 		public void ResetView()

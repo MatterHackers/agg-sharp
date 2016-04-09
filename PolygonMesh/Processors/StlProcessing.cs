@@ -133,8 +133,10 @@ namespace MatterHackers.PolygonMesh.Processors
 								thirdIndex++;
 							}
 						}
+
 						bw.BaseStream.Position = 80;
-						// the number of tranigles
+
+						// the number of triangles
 						bw.Write(binaryPolyCount);
 					}
 					break;

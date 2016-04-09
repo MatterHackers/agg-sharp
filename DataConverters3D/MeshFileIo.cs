@@ -46,29 +46,32 @@ namespace MatterHackers.DataConverters3D
 			return ".STL;.AMF";
 		}
 
-		public static List<MeshGroup> Load(Stream fileStream, string fileExtension, ReportProgressRatio reportProgress = null)
+		public static IObject3D Load(Stream fileStream, string fileExtension, ReportProgressRatio reportProgress = null, IObject3D source = null)
 		{
 			switch (fileExtension.ToUpper())
 			{
 				case ".STL":
-					Mesh loadedMesh = StlProcessing.Load(fileStream, reportProgress);
-					return (loadedMesh == null) ? null : new List<MeshGroup>(new[] { new MeshGroup(loadedMesh) });
+
+					var result = source ?? new Object3D { ItemType = Object3DTypes.Model };
+					result.Mesh = StlProcessing.Load(fileStream, reportProgress);
+					return result;
 
 				case ".AMF":
-					return AmfProcessing.Load(fileStream, reportProgress);
+					//return AmfProcessing.Load(fileStream, reportProgress);
+					return AmfDocument.Load(fileStream, reportProgress, source);
 
 				default:
 					return null;
 			}
 		}
 
-		public static List<MeshGroup> Load(string meshPathAndFileName, ReportProgressRatio reportProgress = null)
+		public static IObject3D Load(string meshPathAndFileName, ReportProgressRatio reportProgress = null, IObject3D source = null)
 		{
 			try
 			{
 				using (Stream stream = new FileStream(meshPathAndFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
 				{
-					return Load(stream, Path.GetExtension(meshPathAndFileName), reportProgress);
+					return Load(stream, Path.GetExtension(meshPathAndFileName), reportProgress, source);
 				}
 			}
 			catch(Exception e)
@@ -78,9 +81,16 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static async Task<List<MeshGroup>> LoadAsync(string meshPathAndFileName, ReportProgressRatio reportProgress = null)
+		public static async Task<IObject3D> LoadAsync(string meshPathAndFileName, ReportProgressRatio reportProgress = null)
 		{
 			return await Task.Run(() => Load(meshPathAndFileName, reportProgress));
+		}
+
+		public static bool Save(IObject3D context, string meshPathAndFileName, MeshOutputSettings outputInfo = null, ReportProgressRatio reportProgress = null)
+		{
+			// TODO: Seems conceptually correct but needs validation and refinements
+			var meshGroups = new List<MeshGroup> { context.Flatten() };
+			return Save(meshGroups, meshPathAndFileName, outputInfo, reportProgress);
 		}
 
 		public static bool Save(Mesh mesh, string meshPathAndFileName, MeshOutputSettings outputInfo = null)
@@ -94,7 +104,6 @@ namespace MatterHackers.DataConverters3D
 			meshGroupsToSave.Add(meshGroupToSave);
 			return Save(meshGroupsToSave, meshPathAndFileName, outputInfo);
 		}
-
 
 		public static bool Save(List<MeshGroup> meshGroupsToSave, string meshPathAndFileName, MeshOutputSettings outputInfo = null, ReportProgressRatio reportProgress = null)
 		{
