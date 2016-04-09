@@ -79,6 +79,10 @@ namespace MatterHackers.PolygonMesh
 
 				itemCache[item.MeshPath] = loadedItem;
 			}
+			else
+			{
+				loadedItem = loadedItem.Clone();
+			}
 
 			// TODO: Consider refactoring progress reporting to use an instance with state and the original delegate reference to allow anyone along the chain
 			// to determine if continueProcessing has been set to false and allow for more clear aborting (rather than checking for null as we have to do below) 
