@@ -46,6 +46,28 @@ namespace MatterHackers.DataConverters3D
 		public List<IObject3D> Children { get; set; } = new List<IObject3D>();
 		public PlatingData ExtraData { get; } = new PlatingData();
 
+		public MeshGroup Flatten()
+		{
+			var meshGroup = new MeshGroup();
+			Flatten(meshGroup, Matrix4X4.Identity);
+
+			return meshGroup;
+		}
+
+		private void Flatten(MeshGroup meshGroup, Matrix4X4 totalTransform, ReportProgressRatio progress = null)
+		{
+			totalTransform *= this.Matrix;
+
+			if (this.Mesh  != null)
+			{
+				var mesh = Mesh.Copy(this.Mesh, progress);
+
+				mesh.Transform(totalTransform);
+
+				meshGroup.Meshes.Add(mesh);
+			}
+		}
+
 		public bool HasChildren => Children.Count > 0;
 
 		public Object3DTypes ItemType { get; set; } = Object3DTypes.Model;
@@ -66,46 +88,12 @@ namespace MatterHackers.DataConverters3D
 
 		public bool Visible { get; set; }
 
-		public static IObject3D Load(string meshPathAndFileName, Dictionary<string, List<MeshGroup>> cachedMeshes, ReportProgressRatio progress)
+		public static IObject3D Load(string meshPath, Dictionary<string, IObject3D> itemCache, ReportProgressRatio progress)
 		{
-			string extension = Path.GetExtension(meshPathAndFileName);
+			var newItem = new Object3D { MeshPath = meshPath };
+			newItem.Load(itemCache, progress);
 
-			if (extension == ".mcx")
-			{
-				// Load the meta file
-				IObject3D loadedItem = JsonConvert.DeserializeObject<Object3D>(File.ReadAllText(meshPathAndFileName));
-
-				// Load all mesh links in the file definition
-				loadedItem.LoadMeshLinks(cachedMeshes, progress);
-
-				return loadedItem;
-			}
-			else
-			{
-				List<MeshGroup> loadedMeshGroups = MeshFileIo.Load(meshPathAndFileName, progress);
-
-				// During startup we load and reload the main control multiple times. When this occurs, sometimes the reportProgress0to100 will set
-				// continueProcessing to false and MeshFileIo.LoadAsync will return null. In those cases, we need to exit rather than process the loaded MeshGroup
-				if (loadedMeshGroups == null)
-				{
-					return null;
-				}
-
-				IObject3D loadedItem = new Object3D()
-				{
-					ItemType = Object3DTypes.Group
-				};
-
-				foreach (var meshGroup in loadedMeshGroups)
-				{
-					foreach (var mesh in meshGroup.Meshes)
-					{
-						loadedItem.Children.Add(new Object3D() { Mesh = mesh });
-					}
-				}
-
-				return loadedItem;
-			}
+			return newItem;
 		}
 
 		// TODO - first attempt at deep clone

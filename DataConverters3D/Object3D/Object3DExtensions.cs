@@ -44,67 +44,53 @@ namespace MatterHackers.PolygonMesh
 {
 	public static class Object3DExtensions
 	{
-		public static bool LoadMeshLinks(this IObject3D tempScene, Dictionary<string, List<MeshGroup>> cachedMeshes, ReportProgressRatio progress)
+		private static void LoadMeshLinks(this IObject3D tempScene, Dictionary<string, IObject3D> itemCache, ReportProgressRatio progress)
 		{
 			var itemsToLoad = (from object3D in tempScene.Descendants()
 							   where !string.IsNullOrEmpty(object3D.MeshPath) &&
 									 File.Exists(object3D.MeshPath)
 							   select object3D).ToList();
 
-			int itemCount = itemsToLoad.Count;
-
-			List<MeshGroup> loadedMeshGroups;
-
 			foreach (IObject3D object3D in itemsToLoad)
 			{
-				// TODO: Make cacheKey based on a SHA1 hash of the mesh data so that duplicate content, remote or local, can pull from the same file. This
-				// is especially true for dynamic content in the scene that comes from generators or is duplicated. If that data is hashed, we'll save only
-				// a single mesh file rather than n number of duplicates
-				//
-				// Pull from cache or load
-				if (!cachedMeshes.TryGetValue(object3D.MeshPath, out loadedMeshGroups))
-				{
-					// TODO: calc the actual progress
-					loadedMeshGroups = MeshFileIo.Load(object3D.MeshPath, progress);
-					cachedMeshes[object3D.MeshPath] = loadedMeshGroups;
-				}
+				object3D.Load(itemCache, progress);
+			}
+		}
 
-				// During startup we reload the main control multiple times. When this occurs, sometimes the reportProgress0to100 will set
-				// continueProcessing to false and MeshFileIo.LoadAsync will return null. In those cases, we need to exit rather than process the loaded MeshGroup
-				if (loadedMeshGroups == null)
-				{
-					return false;
-				}
-				else if (loadedMeshGroups == null)
-				{
-					// TODO: Someday handle load errors by placing something in the scene that notes the lack of a source file and guides the user to fix
-					// Load error for file, skip
-					continue;
-				}
+		public static void Load(this IObject3D item, Dictionary<string, IObject3D> itemCache, ReportProgressRatio progress)
+		{
+			IObject3D loadedItem;
 
-				if (loadedMeshGroups.Count == 1)
+			// Try to pull the item from cache
+			if (!itemCache.TryGetValue(item.MeshPath, out loadedItem))
+			{
+				// Otherwise, load it up
+				string extension = Path.GetExtension(item.MeshPath);
+				if (extension == ".mcx")
 				{
-					object3D.Mesh = loadedMeshGroups?.First().Meshes?.First();
-					object3D.ItemType = Object3DTypes.Model;
+					// Load the meta file and convert MeshPath links into objects
+					loadedItem = JsonConvert.DeserializeObject<Object3D>(File.ReadAllText(item.MeshPath));
+					loadedItem.LoadMeshLinks(itemCache, progress);
 				}
 				else
 				{
-					foreach (var meshGroup in loadedMeshGroups)
-					{
-						foreach (var mesh in meshGroup.Meshes)
-						{
-							object3D.Children.Add(new Object3D()
-							{
-								ItemType = Object3DTypes.Model,
-								Mesh = mesh,
-								PersistNode = false
-							});
-						}
-					}
+					loadedItem = MeshFileIo.Load(item.MeshPath, progress, item);
 				}
+
+				itemCache[item.MeshPath] = loadedItem;
 			}
 
-			return true;
+			// TODO: Consider refactoring progress reporting to use an instance with state and the original delegate reference to allow anyone along the chain
+			// to determine if continueProcessing has been set to false and allow for more clear aborting (rather than checking for null as we have to do below) 
+			//
+			// During startup we reload the main control multiple times. When the timing is right, reportProgress0to100 may set continueProcessing 
+			// on the reporter to false and MeshFileIo.Load will return null. In those cases, we need to exit rather than continue processing
+			if (loadedItem != null)
+			{
+				item.Mesh = loadedItem.Mesh;
+				item.ItemType = loadedItem.ItemType;
+				item.Children = loadedItem.Children;
+			}
 		}
 
 		public static AxisAlignedBoundingBox GetUnionedAxisAlignedBoundingBox(this List<IObject3D> items)

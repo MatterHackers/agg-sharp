@@ -65,6 +65,7 @@ namespace MatterHackers.DataConverters3D
 		List<IObject3D> Children { get; set; }
 		RGBA_Bytes Color { get; set; }
 		PlatingData ExtraData { get; }
+		MeshGroup Flatten();
 		bool HasChildren { get; }
 		Object3DTypes ItemType { get; set; }
 

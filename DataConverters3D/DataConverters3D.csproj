@@ -141,6 +141,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AmfDocument.cs" />
     <Compile Include="AmfProcessing.cs" />
     <Compile Include="CsgToRayTraceable.cs" />
     <Compile Include="MeshFaceTraceable.cs" />
