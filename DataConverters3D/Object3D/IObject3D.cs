@@ -33,6 +33,7 @@ using MatterHackers.VectorMath;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using MatterHackers.Agg;
 
 namespace MatterHackers.DataConverters3D
 {
@@ -50,7 +51,7 @@ namespace MatterHackers.DataConverters3D
 
 		[JsonConverter(typeof(Object3DConverter))]
 		List<IObject3D> Children { get; set; }
-
+		RGBA_Bytes Color { get; set; }
 		PlatingData ExtraData { get; }
 		bool HasChildren { get; }
 		Object3DTypes ItemType { get; set; }

@@ -52,6 +52,8 @@ namespace MatterHackers.DataConverters3D
 
 		public Matrix4X4 Matrix { get; set; } = Matrix4X4.Identity;
 
+		public RGBA_Bytes Color { get; set; }
+
 		[JsonIgnore]
 		public Mesh Mesh { get; set; }
 
