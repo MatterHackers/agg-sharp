@@ -33,6 +33,10 @@
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\packages\Newtonsoft.Json.6.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="NUnit.ApplicationDomain">
       <HintPath>..\..\..\..\packages\NUnit.ApplicationDomain.5.0.1\lib\net40\NUnit.ApplicationDomain.dll</HintPath>
     </Reference>
@@ -72,6 +76,7 @@
     <Compile Include="Agg.Gaming\Vector3D.cs" />
     <Compile Include="Agg.PolygonMesh\CsgTests.cs" />
     <Compile Include="Agg.PolygonMesh\MeshTests.cs" />
+    <Compile Include="Agg.PolygonMesh\SceneTests.cs" />
     <Compile Include="Agg.PolygonMesh\VertexCollectonTests.cs" />
     <Compile Include="Agg.RayTracer\BooleanTests.cs" />
     <Compile Include="Agg.RayTracer\FrustumTests.cs" />
@@ -107,6 +112,10 @@
     <ProjectReference Include="..\..\Csg\Csg.csproj">
       <Project>{7E61A5BD-E78F-4B80-88C9-3821B4FA062E}</Project>
       <Name>Csg</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\DataConverters3D\DataConverters3D.csproj">
+      <Project>{04667764-dc7b-4b95-aef6-b4e6c87a54e9}</Project>
+      <Name>DataConverters3D</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\GuiAutomation\GuiAutomation.csproj">
       <Project>{E9102310-0029-4D8F-B1E9-88FBA6147D45}</Project>

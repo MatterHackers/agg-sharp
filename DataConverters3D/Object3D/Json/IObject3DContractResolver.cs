@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2016, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,56 +27,29 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg;
-using MatterHackers.PolygonMesh.Processors;
-using MatterHackers.RayTracer;
-using MatterHackers.RayTracer.Traceable;
-using MatterHackers.VectorMath;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+using System.Reflection;
 
 namespace MatterHackers.DataConverters3D
 {
-	public class Object3DConverter : JsonConverter
+	public class IObject3DContractResolver : DefaultContractResolver
 	{
-		public override bool CanConvert(Type objectType)
+		private static Type IObject3DType = typeof(IObject3D);
+
+		protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
 		{
-			return objectType is IObject3D;
-		}
-
-		public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-		{
-			JArray jArray = JArray.Load(reader);
-
-			var items = new List<IObject3D>();
-
-			foreach(var item in jArray)
+			JsonProperty property = base.CreateProperty(member, memberSerialization);
+			if (property.PropertyName == "Children" && IObject3DType.IsAssignableFrom(property.DeclaringType))
 			{
-				// TODO: Hookup mechanism to both serialize and deserialize Object3D type via string property
-				string itemType = item["ItemType"].ToString();
-				switch (itemType)
-				{
-					default:
-						items.Add(item.ToObject<Object3D>(serializer));
-						break;
-				}
+				property.ShouldSerialize = instance => {
+					IObject3D item = (IObject3D)instance;
+					return string.IsNullOrEmpty(item.MeshPath);
+				};
 			}
 
-			return items;
-		}
-
-		public override bool CanWrite
-		{
-			get { return false; }
-		}
-
-		public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-		{
-			throw new NotImplementedException();
+			return property;
 		}
 	}
 }

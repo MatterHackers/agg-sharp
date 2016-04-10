@@ -27,28 +27,42 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.VectorMath;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 
-namespace MatterHackers.PolygonMesh
+namespace MatterHackers.DataConverters3D
 {
-	public class MatrixConverter : JsonConverter
+	public class IObject3DChildrenConverter : JsonConverter
 	{
-		public override bool CanConvert(Type objectType) => objectType == typeof(Matrix4X4);
+		public override bool CanWrite { get; } = false;
+
+		public override bool CanConvert(Type objectType) => objectType is IObject3D;
 
 		public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
 		{
-			string doubleArrayAsString = reader.Value.ToString();
-			return new Matrix4X4(JsonConvert.DeserializeObject<double[]>(doubleArrayAsString));
-		}
+			JArray jArray = JArray.Load(reader);
 
+			var items = new List<IObject3D>();
+
+			foreach(var item in jArray)
+			{
+				// TODO: Hookup mechanism to both serialize and deserialize Object3D type via string property
+				string itemType = item["ItemType"].ToString();
+				switch (itemType)
+				{
+					default:
+						items.Add(item.ToObject<Object3D>(serializer));
+						break;
+				}
+			}
+
+			return items;
+		}
+		
 		public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
 		{
-			var matrix = (Matrix4X4)value;
-
-			// TODO: It seems likely that the serializer supports this without the extra call to the converter but it's not obvious and this works in the short term
-			serializer.Serialize(writer, JsonConvert.SerializeObject(matrix.GetAsDoubleArray()));
 		}
 	}
 }

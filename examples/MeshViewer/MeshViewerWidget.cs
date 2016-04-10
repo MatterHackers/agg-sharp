@@ -71,7 +71,6 @@ namespace MatterHackers.MeshVisualizer
 		public PartProcessingInfo partProcessingInfo;
 		private static ImageBuffer lastCreatedBedImage = new ImageBuffer();
 		private static Dictionary<int, RGBA_Bytes> materialColors = new Dictionary<int, RGBA_Bytes>();
-		private BackgroundWorker backgroundWorker = null;
 		private RGBA_Bytes bedBaseColor = new RGBA_Bytes(245, 245, 255);
 		static public Vector2 BedCenter { get; private set; }
 		private RGBA_Bytes bedMarkingsColor = RGBA_Bytes.Black;
@@ -119,7 +118,7 @@ namespace MatterHackers.MeshVisualizer
 			labelContainer.Selectable = false;
 
 			this.AddChild(labelContainer);
-		}
+	}
 
 		public event EventHandler LoadDone;
 
@@ -369,17 +368,18 @@ namespace MatterHackers.MeshVisualizer
 					// SetMeshAfterLoad
 					Scene.ModifyChildren(children =>
 					{
-						children.Add(loadedItem);
+						if(loadedItem.Mesh != null)
+						{
+							// STLs currently load directly into the mesh rather than as a group like AMF
+							children.Add(loadedItem);
+						}
+						else
+						{
+							children.AddRange(loadedItem.Children);
+						}
 					});
 
 					CreateGlDataObject(loadedItem);
-
-					// TODO: Why is this necessary? 
-					trackballTumbleWidget.TrackBallController = new TrackBallController();
-					trackballTumbleWidget.OnBoundsChanged(null);
-
-					// TODO: Likewise, we should preserve the user's view before the part change, anything else is jarring in unexpected.
-					ResetView();
 				}
 				else
 				{
@@ -395,15 +395,6 @@ namespace MatterHackers.MeshVisualizer
 			{
 				partProcessingInfo.centeredInfoText.Text = string.Format("{0}\n'{1}'", "File not found on disk.", Path.GetFileName(meshPath));
 			}
-		}
-
-		public override void OnClosed(EventArgs e)
-		{
-			if (backgroundWorker != null)
-			{
-				backgroundWorker.CancelAsync();
-			}
-			base.OnClosed(e);
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)
@@ -709,19 +700,19 @@ namespace MatterHackers.MeshVisualizer
 				DrawObject(object3D, Matrix4X4.Identity, false);
 			}
 
+			if (RenderBed)
+			{
+				GLHelper.Render(printerBed, this.BedColor);
+			}
+
+			if (buildVolume != null && RenderBuildVolume)
+			{
+				GLHelper.Render(buildVolume, this.BuildVolumeColor);
+			}
+
 			// we don't want to render the bed or build volume before we load a model.
 			if (Scene.HasChildren || AllowBedRenderingWhenEmpty)
 			{
-				if (RenderBed)
-				{
-					GLHelper.Render(printerBed, this.BedColor);
-				}
-
-				if (buildVolume != null && RenderBuildVolume)
-				{
-					GLHelper.Render(buildVolume, this.BuildVolumeColor);
-				}
-
 				if (false) // this is code to draw a small axis indicator
 				{
 					double big = 10;

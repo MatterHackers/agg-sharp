@@ -44,7 +44,7 @@ namespace MatterHackers.PolygonMesh
 {
 	public static class Object3DExtensions
 	{
-		private static void LoadMeshLinks(this IObject3D tempScene, Dictionary<string, IObject3D> itemCache, ReportProgressRatio progress)
+		internal static void LoadMeshLinks(this IObject3D tempScene, Dictionary<string, IObject3D> itemCache, ReportProgressRatio progress)
 		{
 			var itemsToLoad = (from object3D in tempScene.Descendants()
 							   where !string.IsNullOrEmpty(object3D.MeshPath) &&
@@ -59,30 +59,7 @@ namespace MatterHackers.PolygonMesh
 
 		public static void Load(this IObject3D item, Dictionary<string, IObject3D> itemCache, ReportProgressRatio progress)
 		{
-			IObject3D loadedItem;
-
-			// Try to pull the item from cache
-			if (!itemCache.TryGetValue(item.MeshPath, out loadedItem))
-			{
-				// Otherwise, load it up
-				string extension = Path.GetExtension(item.MeshPath);
-				if (extension == ".mcx")
-				{
-					// Load the meta file and convert MeshPath links into objects
-					loadedItem = JsonConvert.DeserializeObject<Object3D>(File.ReadAllText(item.MeshPath));
-					loadedItem.LoadMeshLinks(itemCache, progress);
-				}
-				else
-				{
-					loadedItem = MeshFileIo.Load(item.MeshPath, progress, item);
-				}
-
-				itemCache[item.MeshPath] = loadedItem;
-			}
-			else
-			{
-				loadedItem = loadedItem.Clone();
-			}
+			var loadedItem = Object3D.Load(item.MeshPath, itemCache, progress);
 
 			// TODO: Consider refactoring progress reporting to use an instance with state and the original delegate reference to allow anyone along the chain
 			// to determine if continueProcessing has been set to false and allow for more clear aborting (rather than checking for null as we have to do below) 

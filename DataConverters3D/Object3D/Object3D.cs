@@ -68,6 +68,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
+		[JsonIgnore]
 		public bool HasChildren => Children.Count > 0;
 
 		public Object3DTypes ItemType { get; set; } = Object3DTypes.Model;
@@ -83,18 +84,42 @@ namespace MatterHackers.DataConverters3D
 
 		public bool PersistNode { get; set; } = true;
 
-		[JsonIgnore]
-		public object SourceNode { get; set; }
-
 		public bool Visible { get; set; }
 
-		public static IObject3D Load(string meshPath, Dictionary<string, IObject3D> itemCache, ReportProgressRatio progress)
+		public static IObject3D Load(string meshPath, Dictionary<string, IObject3D> itemCache = null, ReportProgressRatio progress = null)
 		{
-			var newItem = new Object3D { MeshPath = meshPath };
-			newItem.Load(itemCache, progress);
+			IObject3D loadedItem;
 
-			return newItem;
+			// Try to pull the item from cache
+			if (itemCache == null || !itemCache.TryGetValue(meshPath, out loadedItem))
+			{
+				// Otherwise, load it up
+				string extension = Path.GetExtension(meshPath);
+				if (extension == ".mcx")
+				{
+					// Load the meta file and convert MeshPath links into objects
+					loadedItem = JsonConvert.DeserializeObject<Object3D>(File.ReadAllText(meshPath));
+					loadedItem.LoadMeshLinks(itemCache, progress);
+				}
+				else
+				{
+					loadedItem = MeshFileIo.Load(meshPath, progress);
+				}
+
+				if (itemCache != null)
+				{
+					itemCache[meshPath] = loadedItem;
+				}
+			}
+			else
+			{
+				// TODO: Clone might be unnecessary... What about just invalidating the TraceData!!!!!
+				loadedItem = loadedItem.Clone();
+			}
+
+			return loadedItem;
 		}
+
 
 		// TODO - first attempt at deep clone
 		public IObject3D Clone()
@@ -103,6 +128,9 @@ namespace MatterHackers.DataConverters3D
 			{
 				ItemType = this.ItemType,
 				Mesh = this.Mesh,
+				Color = this.Color,
+				ActiveEditor = this.ActiveEditor,
+				MeshPath = this.MeshPath,
 				Children = new List<IObject3D>(this.Children.Select(child => child.Clone())),
 				Matrix = this.Matrix,
 				traceData = this.traceData

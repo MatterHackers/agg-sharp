@@ -1,7 +1,12 @@
-﻿using MatterHackers.DataConverters3D;
+﻿using MatterHackers.Agg;
+using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh;
+using MatterHackers.PolygonMesh.Processors;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,6 +18,8 @@ namespace MatterHackers.MeshVisualizer
 		public event EventHandler SelectionChanged;
 
 		IObject3D selectedItem;
+
+		[JsonIgnore]
 		public IObject3D SelectedItem
 		{
 			get
@@ -30,9 +37,65 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
+		[JsonIgnore]
 		public bool HasSelection => HasChildren && SelectedItem != null;
 
 		public bool IsSelected(Object3DTypes objectType) => HasSelection && SelectedItem.ItemType == objectType;
+
+		public void Save(string filePath, string assetsPath, ReportProgressRatio progress = null)
+		{
+			var itemsWithUnsavedMeshes = from object3D in this.Descendants()
+							  where object3D.MeshPath == null &&
+									object3D.Mesh != null
+							  select object3D;
+
+			try
+			{
+				// Save each unpersisted mesh
+				foreach (IObject3D item in itemsWithUnsavedMeshes)
+				{
+					// Get an open filename
+					string amfPath = GetOpenAmfPath(assetsPath);
+
+					// Save the embedded asset to disk
+					bool savedSuccessfully = MeshFileIo.Save(
+						new List<MeshGroup> { new MeshGroup(item.Mesh) },
+						amfPath,
+						new MeshOutputSettings(
+							MeshOutputSettings.OutputType.Binary,
+							new string[] { "Created By", "MatterControl", "BedPosition", "Absolute" }),
+						progress);
+
+					if (savedSuccessfully && File.Exists(amfPath))
+					{
+						item.MeshPath = amfPath;
+					}
+				}
+
+				// Serialize the scene to disk using a modified Json.net pipeline with custom ContractResolvers and JsonConverters
+				File.WriteAllText(
+					filePath, 
+					JsonConvert.SerializeObject(
+						this, 
+						Formatting.Indented, 
+						new JsonSerializerSettings { ContractResolver = new IObject3DContractResolver() }));
+			}
+			catch (Exception ex)
+			{
+				Trace.WriteLine("Error saving file: ", ex.Message);
+			}
+		}
+
+		private string GetOpenAmfPath(string assetsPath)
+		{
+			string filePath;
+			do
+			{
+				filePath = Path.Combine(assetsPath, Path.ChangeExtension(Path.GetRandomFileName(), ".amf"));
+			} while (File.Exists(filePath));
+
+			return filePath;
+		}
 
 		public void SelectLastChild()
 		{
