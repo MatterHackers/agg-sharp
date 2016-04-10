@@ -35,7 +35,7 @@ using System;
 
 namespace MatterHackers.RenderOpenGl
 {
-	public enum RenderTypes { Hidden, Shaded, Outlines, Polygons };
+	public enum RenderTypes { Hidden, Shaded, Outlines, Polygons, Overhang };
 
 	public static class GLHelper
 	{
@@ -111,6 +111,7 @@ namespace MatterHackers.RenderOpenGl
 					case RenderTypes.Hidden:
 						break;
 
+					case RenderTypes.Overhang:
 					case RenderTypes.Shaded:
 						DrawToGL(meshToRender);
 						break;
@@ -145,20 +146,32 @@ namespace MatterHackers.RenderOpenGl
 					GL.DisableClientState(ArrayCap.TextureCoordArray);
 				}
 
+				if(subMesh.UseVertexColors)
+				{
+					GL.EnableClientState(ArrayCap.ColorArray);
+				}
+
 				GL.EnableClientState(ArrayCap.NormalArray);
 				GL.EnableClientState(ArrayCap.VertexArray);
 				unsafe
 				{
-					fixed (VertexTextureData* pTextureData = subMesh.textrueData.Array)
+					fixed (VertexTextureData* pTextureData = subMesh.textureData.Array)
 					{
-						fixed (VertexNormalData* pNormalData = subMesh.normalData.Array)
+						fixed(VertexColorData* pColorData = subMesh.colorData.Array)
 						{
-							fixed (VertexPositionData* pPosition = subMesh.positionData.Array)
+							fixed (VertexNormalData* pNormalData = subMesh.normalData.Array)
 							{
-								GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(pTextureData));
-								GL.NormalPointer(NormalPointerType.Float, 0, new IntPtr(pNormalData));
-								GL.VertexPointer(3, VertexPointerType.Float, 0, new IntPtr(pPosition));
-								GL.DrawArrays(BeginMode.Triangles, 0, subMesh.positionData.Count);
+								fixed (VertexPositionData* pPosition = subMesh.positionData.Array)
+								{
+									GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(pTextureData));
+									if (pColorData != null)
+									{
+										GL.ColorPointer(3, ColorPointerType.UnsignedByte, 0, new IntPtr(pColorData));
+									}
+									GL.NormalPointer(NormalPointerType.Float, 0, new IntPtr(pNormalData));
+									GL.VertexPointer(3, VertexPointerType.Float, 0, new IntPtr(pPosition));
+									GL.DrawArrays(BeginMode.Triangles, 0, subMesh.positionData.Count);
+								}
 							}
 						}
 					}
@@ -167,8 +180,10 @@ namespace MatterHackers.RenderOpenGl
 				GL.DisableClientState(ArrayCap.NormalArray);
 				GL.DisableClientState(ArrayCap.VertexArray);
 				GL.DisableClientState(ArrayCap.TextureCoordArray);
+				GL.DisableClientState(ArrayCap.ColorArray);
 
 				GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(0));
+				GL.ColorPointer(3, ColorPointerType.UnsignedByte, 0, new IntPtr(0));
 				GL.NormalPointer(NormalPointerType.Float, 0, new IntPtr(0));
 				GL.VertexPointer(3, VertexPointerType.Float, 0, new IntPtr(0));
 

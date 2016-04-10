@@ -170,9 +170,9 @@ namespace MatterHackers.MeshVisualizer
 				if (renderType != value)
 				{
 					renderType = value;
-					foreach (Mesh mesh in Scene.Children.Select(object3D => object3D.Mesh))
+					foreach(var renderTransfrom in Scene.VisibleMeshes(Matrix4X4.Identity))
 					{
-						mesh.MarkAsChanged();
+						renderTransfrom.MeshData.MarkAsChanged();
 					}
 				}
 			}
