@@ -48,24 +48,26 @@ namespace MatterHackers.DataConverters3D
 
 		public MeshGroup Flatten()
 		{
-			var meshGroup = new MeshGroup();
-			Flatten(meshGroup, Matrix4X4.Identity);
-
-			return meshGroup;
+			return Flatten(this, new MeshGroup(), Matrix4X4.Identity);
 		}
 
-		private void Flatten(MeshGroup meshGroup, Matrix4X4 totalTransform, ReportProgressRatio progress = null)
+		private MeshGroup Flatten(IObject3D item, MeshGroup meshGroup, Matrix4X4 totalTransform, ReportProgressRatio progress = null)
 		{
-			totalTransform *= this.Matrix;
+			totalTransform *= item.Matrix;
 
-			if (this.Mesh  != null)
+			if (item.Mesh  != null)
 			{
-				var mesh = Mesh.Copy(this.Mesh, progress);
-
+				var mesh = Mesh.Copy(item.Mesh, progress);
 				mesh.Transform(totalTransform);
-
 				meshGroup.Meshes.Add(mesh);
 			}
+
+			foreach(IObject3D child in item.Children.Where(child => child.Visible))
+			{
+				Flatten(child, meshGroup, totalTransform, progress);
+			}
+
+			return meshGroup;
 		}
 
 		[JsonIgnore]
@@ -84,7 +86,7 @@ namespace MatterHackers.DataConverters3D
 
 		public bool PersistNode { get; set; } = true;
 
-		public bool Visible { get; set; }
+		public bool Visible { get; set; } = true;
 
 		public static IObject3D Load(string meshPath, Dictionary<string, IObject3D> itemCache = null, ReportProgressRatio progress = null)
 		{
