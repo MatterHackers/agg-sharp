@@ -46,7 +46,8 @@ namespace MatterHackers.MeshVisualizer
 		{
 			var itemsWithUnsavedMeshes = from object3D in this.Descendants()
 							  where object3D.MeshPath == null &&
-									object3D.Mesh != null
+									object3D.Mesh != null &&
+									object3D.PersistNode == true
 							  select object3D;
 
 			try
