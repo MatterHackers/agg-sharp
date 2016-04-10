@@ -53,7 +53,11 @@ namespace MatterHackers.DataConverters3D
 						{
 							case "object":
 								// Move context to a new MeshGroup
-								context = new Object3D() { ItemType = Object3DTypes.Model };
+								context = new Object3D()
+								{
+									ItemType = Object3DTypes.Model,
+									PersistNode = false
+								};
 								root.Children.Add(context);
 								break;
 

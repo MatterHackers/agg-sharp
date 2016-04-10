@@ -148,7 +148,8 @@
     <Compile Include="MeshFileIo.cs" />
     <Compile Include="Object3D\InteractiveScene.cs" />
     <Compile Include="Object3D\Json\MatrixConverter.cs" />
-    <Compile Include="Object3D\Json\Object3DConverter.cs" />
+    <Compile Include="Object3D\Json\IObject3DContractResolver.cs" />
+    <Compile Include="Object3D\Json\IObject3DChildrenConverter.cs" />
     <Compile Include="Object3D\TextObject.cs" />
     <Compile Include="Object3D\PlatingData.cs" />
     <Compile Include="Object3D\Object3DExtensions.cs" />

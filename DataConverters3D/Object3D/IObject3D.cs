@@ -61,7 +61,7 @@ namespace MatterHackers.DataConverters3D
 	{
 		string ActiveEditor { get; set; }
 
-		[JsonConverter(typeof(Object3DConverter))]
+		[JsonConverter(typeof(IObject3DChildrenConverter))]
 		List<IObject3D> Children { get; set; }
 		RGBA_Bytes Color { get; set; }
 		PlatingData ExtraData { get; }

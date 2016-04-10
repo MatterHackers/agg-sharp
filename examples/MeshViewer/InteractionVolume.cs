@@ -32,6 +32,7 @@ using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
+using MatterHackers.DataConverters3D;
 using MatterHackers.RayTracer;
 using MatterHackers.RenderOpenGl;
 using MatterHackers.RenderOpenGl.OpenGl;
@@ -208,7 +209,7 @@ namespace MatterHackers.MeshVisualizer
 			MouseDownOnControl = false;
 		}
 
-		public virtual void SetPosition()
+		public virtual void SetPosition(IObject3D selectedItem)
 		{
 		}
 
