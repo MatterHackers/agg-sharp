@@ -32,72 +32,70 @@ using System.Diagnostics;
 
 namespace MatterHackers.Agg.UI
 {
-    public class PerformanceTimer : IDisposable
-    {
-        public static Func<GuiWidget> GetParentWindowFunction = null;
-		private static string lastPannelName = "";
+	public class PerformanceTimer : IDisposable
+	{
+		public static Func<GuiWidget> GetParentWindowFunction = null;
+		private static string lastPanelName = "";
 
-		public string Name
-		{
-			get; private set;
-		}
+		public string Name { get; }
 
-        private PerformancePannel timingPannelToReportTo;
+		private PerformancePanel timingPanelToReportTo;
 
 		static internal bool InPerformanceMeasuring = false;
 
 		static object locker = new object();
-        public PerformanceTimer(string pannelName, string name)
-        {
-			lock(locker)
+
+		public PerformanceTimer(string panelName, string name)
+		{
+			lock (locker)
 			{
 				if (!InPerformanceMeasuring)
 				{
 					InPerformanceMeasuring = true;
-					if (pannelName == "_LAST_")
+					if (panelName == "_LAST_")
 					{
-						pannelName = lastPannelName;
+						panelName = lastPanelName;
 					}
-					this.timingPannelToReportTo = PerformancePannel.GetNamedPannel(pannelName);
+
+					this.timingPanelToReportTo = PerformancePanel.GetNamedPanel(panelName);
 					this.Name = name;
-					this.timingPannelToReportTo.Start(this);
-					lastPannelName = pannelName;
+					this.timingPanelToReportTo.Start(this);
+
+					lastPanelName = panelName;
 					InPerformanceMeasuring = false;
 				}
 			}
 		}
 
-        public void Dispose()
-        {
+		public void Dispose()
+		{
 			lock (locker)
 			{
 				// Check that we actually created a time (we don't when we find things that are happening while timing.
 				if (!InPerformanceMeasuring)
 				{
 					InPerformanceMeasuring = true;
-					timingPannelToReportTo.Stop(this);
+					timingPanelToReportTo.Stop(this);
 					InPerformanceMeasuring = false;
 				}
 			}
 		}
-    }
+	}
 
 	public class QuickTimer : IDisposable
 	{
-		Stopwatch quickTimerTime = Stopwatch.StartNew();
+		Stopwatch timer;
 		string name;
-		double startTime;
 
-        public QuickTimer(string name)
+		public QuickTimer(string name)
 		{
 			this.name = name;
-			startTime = quickTimerTime.Elapsed.TotalMilliseconds;
+			timer = Stopwatch.StartNew();
 		}
 
 		public void Dispose()
 		{
-			double totalTime = quickTimerTime.Elapsed.TotalMilliseconds - startTime;
-			Debug.WriteLine(name + ": {0:0.0}ms".FormatWith(totalTime));
+			Debug.WriteLine("{0}: {1:0.0}ms", name, timer.ElapsedMilliseconds);
 		}
 	}
 }
