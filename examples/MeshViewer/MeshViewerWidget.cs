@@ -153,6 +153,24 @@ namespace MatterHackers.MeshVisualizer
 			return totalMeshBounds;
 		}
 
+		public override void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren)
+		{
+			foreach (var child in Scene.Children)
+			{
+				if ("SkeletonArm_Med_IObject3D" == nameToSearchFor)
+				//if (child.MeshPath != null && Path.GetFileName(child.MeshPath) == nameToSearchFor)
+				{
+					AxisAlignedBoundingBox bounds = Scene.GetAxisAlignedBoundingBox(Matrix4X4.Identity);
+					Vector3 renderPosition = bounds.Center;
+					Vector2 objectCenterScreenSpace = TrackballTumbleWidget.GetScreenPosition(renderPosition);
+					Point2D screenPositionOfObject3D = new Point2D((int)objectCenterScreenSpace.x, (int)objectCenterScreenSpace.y);
+
+					foundChildren.Add(new WidgetAndPosition(this, screenPositionOfObject3D));
+				}
+			}
+			base.FindNamedChildrenRecursive(nameToSearchFor, foundChildren);
+		}
+
 		public InteractiveScene Scene { get; } = new InteractiveScene();
 
 		public Mesh PrinterBed { get { return printerBed; } }
