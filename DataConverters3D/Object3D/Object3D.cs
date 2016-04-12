@@ -93,7 +93,7 @@ namespace MatterHackers.DataConverters3D
 			IObject3D loadedItem;
 
 			// Try to pull the item from cache
-			if (itemCache == null || !itemCache.TryGetValue(meshPath, out loadedItem))
+			if (itemCache == null || !itemCache.TryGetValue(meshPath, out loadedItem) || loadedItem == null)
 			{
 				// Otherwise, load it up
 				string extension = Path.GetExtension(meshPath);
@@ -116,7 +116,7 @@ namespace MatterHackers.DataConverters3D
 			else
 			{
 				// TODO: Clone might be unnecessary... What about just invalidating the TraceData!!!!!
-				loadedItem = loadedItem.Clone();
+				loadedItem = loadedItem?.Clone();
 			}
 
 			return loadedItem;
