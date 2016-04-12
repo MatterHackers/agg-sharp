@@ -2680,11 +2680,23 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public void FindNamedChildrenRecursive(string nameToSearchFor, List<GuiWidget> foundChildren)
+		public class WidgetAndPosition
+		{
+			public Point2D position;
+			public GuiWidget widget;
+
+			public WidgetAndPosition(GuiWidget widget, Point2D position)
+			{
+				this.widget = widget;
+				this.position = position;
+			}
+		}
+
+		public virtual void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren)
 		{
 			if (Name == nameToSearchFor)
 			{
-				foundChildren.Add(this);
+				foundChildren.Add(new WidgetAndPosition(this, new Point2D(Width/2, Height/2) ));
 			}
 
 			List<GuiWidget> searchChildren = new List<GuiWidget>(Children);
