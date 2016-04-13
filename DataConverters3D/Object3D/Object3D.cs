@@ -90,6 +90,11 @@ namespace MatterHackers.DataConverters3D
 
 		public static IObject3D Load(string meshPath, Dictionary<string, IObject3D> itemCache = null, ReportProgressRatio progress = null)
 		{
+			if(string.IsNullOrEmpty(meshPath) || !File.Exists(meshPath))
+			{
+				return null;
+			}
+
 			IObject3D loadedItem;
 
 			// Try to pull the item from cache
