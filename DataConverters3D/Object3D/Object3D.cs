@@ -127,7 +127,6 @@ namespace MatterHackers.DataConverters3D
 			return loadedItem;
 		}
 
-
 		// TODO - first attempt at deep clone
 		public IObject3D Clone()
 		{

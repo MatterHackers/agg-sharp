@@ -52,6 +52,8 @@ namespace MatterHackers.Agg.UI
 
 		public bool AlwaysOnTopOfMain { get; set; }
 
+		public bool CenterInParent { get; set; } = true;
+
 		public bool IsModal { get; set; }
 
 		public bool UseOpenGL { get; set; }
@@ -60,7 +62,7 @@ namespace MatterHackers.Agg.UI
 
 		private string title = "";
 
-        public ToolTipManager ToolTipManager { get; private set; }
+		public ToolTipManager ToolTipManager { get; private set; }
 
 		public string Title
 		{
