@@ -153,22 +153,64 @@ namespace MatterHackers.MeshVisualizer
 			return totalMeshBounds;
 		}
 
-		public override void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren)
+		public override void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType seachType)
 		{
+			List<GuiWidget> searchChildren = new List<GuiWidget>(Children);
+			foreach (GuiWidget child in searchChildren)
+			{
+				RectangleDouble touchingBoundsRelChild = touchingBounds;
+				touchingBoundsRelChild.Offset(-child.OriginRelativeParent);
+				child.FindNamedChildrenRecursive(nameToSearchFor, foundChildren, touchingBoundsRelChild, seachType);
+			}
+
 			foreach (var child in Scene.Children)
 			{
-				if ("SkeletonArm_Med_IObject3D" == nameToSearchFor)
-				//if (child.MeshPath != null && Path.GetFileName(child.MeshPath) == nameToSearchFor)
+				string object3DName = "none_Object3D";
+				if (child.MeshPath != null)
 				{
-					AxisAlignedBoundingBox bounds = Scene.GetAxisAlignedBoundingBox(Matrix4X4.Identity);
-					Vector3 renderPosition = bounds.Center;
-					Vector2 objectCenterScreenSpace = TrackballTumbleWidget.GetScreenPosition(renderPosition);
-					Point2D screenPositionOfObject3D = new Point2D((int)objectCenterScreenSpace.x, (int)objectCenterScreenSpace.y);
+					object3DName = child.Name ?? Path.GetFileName(child.MeshPath);
+				}
 
-					foundChildren.Add(new WidgetAndPosition(this, screenPositionOfObject3D));
+				bool nameFound = false;
+
+				if (seachType == SearchType.Exact)
+				{
+					if (object3DName == nameToSearchFor)
+					{
+						nameFound = true;
+					}
+				}
+				else
+				{
+					if (nameToSearchFor == ""
+						|| object3DName.Contains(nameToSearchFor))
+					{
+						nameFound = true;
+					}
+				}
+
+				if (nameFound)
+				{
+					AxisAlignedBoundingBox bounds = child.GetAxisAlignedBoundingBox(Matrix4X4.Identity);
+
+					RectangleDouble screenBoundsOfObject3D = RectangleDouble.ZeroIntersection;
+					for(int i=0; i<4; i++)
+					{
+						screenBoundsOfObject3D.ExpandToInclude(TrackballTumbleWidget.GetScreenPosition(bounds.GetTopCorner(i)));
+						screenBoundsOfObject3D.ExpandToInclude(TrackballTumbleWidget.GetScreenPosition(bounds.GetBottomCorner(i)));
+					}
+
+					if (touchingBounds.IntersectWithRectangle(screenBoundsOfObject3D))
+					{
+						Vector3 renderPosition = bounds.Center;
+						Vector2 objectCenterScreenSpace = TrackballTumbleWidget.GetScreenPosition(renderPosition);
+						Point2D screenPositionOfObject3D = new Point2D((int)objectCenterScreenSpace.x, (int)objectCenterScreenSpace.y);
+
+						foundChildren.Add(new WidgetAndPosition(this, screenPositionOfObject3D, object3DName));
+					}
 				}
 			}
-			base.FindNamedChildrenRecursive(nameToSearchFor, foundChildren);
+			base.FindNamedChildrenRecursive(nameToSearchFor, foundChildren, touchingBounds, seachType);
 		}
 
 		public InteractiveScene Scene { get; } = new InteractiveScene();
@@ -371,7 +413,7 @@ namespace MatterHackers.MeshVisualizer
 
 		public bool SuppressUiVolumes { get; set; } = false;
 
-		public async Task LoadMesh(string meshPath, CenterPartAfterLoad centerPart, Vector2 bedCenter = new Vector2())
+		public async Task LoadMesh(string meshPath, CenterPartAfterLoad centerPart, Vector2 bedCenter = new Vector2(), string itemName = null)
 		{
 			if (File.Exists(meshPath))
 			{
@@ -383,6 +425,11 @@ namespace MatterHackers.MeshVisualizer
 				IObject3D loadedItem = await Task.Run(() => Object3D.Load(meshPath, ItemCache, ReportProgress0to100));
 				if (loadedItem != null)
 				{
+					if (itemName != null)
+					{
+						loadedItem.Name = itemName;
+					}
+
 					// SetMeshAfterLoad
 					Scene.ModifyChildren(children =>
 					{
