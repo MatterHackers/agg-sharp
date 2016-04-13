@@ -153,6 +153,24 @@ namespace MatterHackers.MeshVisualizer
 			return totalMeshBounds;
 		}
 
+		public override void OnLoad(EventArgs args)
+		{
+			// some debug code to be able to click on parts
+			if (false)
+			{
+				AfterDraw += (sender, e) =>
+				{
+					foreach (var child in Scene.Children)
+					{
+						TrackballTumbleWidget.RenderDebugAABB(e.graphics2D, child.TraceData().GetAxisAlignedBoundingBox());
+						TrackballTumbleWidget.RenderDebugAABB(e.graphics2D, child.GetAxisAlignedBoundingBox(Matrix4X4.Identity));
+					}
+				};
+			}
+
+			base.OnLoad(args);
+		}
+
 		public override void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType seachType)
 		{
 			List<GuiWidget> searchChildren = new List<GuiWidget>(Children);
@@ -191,7 +209,7 @@ namespace MatterHackers.MeshVisualizer
 
 				if (nameFound)
 				{
-					AxisAlignedBoundingBox bounds = child.GetAxisAlignedBoundingBox(Matrix4X4.Identity);
+					AxisAlignedBoundingBox bounds = child.TraceData().GetAxisAlignedBoundingBox();
 
 					RectangleDouble screenBoundsOfObject3D = RectangleDouble.ZeroIntersection;
 					for(int i=0; i<4; i++)
@@ -200,7 +218,7 @@ namespace MatterHackers.MeshVisualizer
 						screenBoundsOfObject3D.ExpandToInclude(TrackballTumbleWidget.GetScreenPosition(bounds.GetBottomCorner(i)));
 					}
 
-					if (touchingBounds.IntersectWithRectangle(screenBoundsOfObject3D))
+					if (touchingBounds.IsTouching(screenBoundsOfObject3D))
 					{
 						Vector3 renderPosition = bounds.Center;
 						Vector2 objectCenterScreenSpace = TrackballTumbleWidget.GetScreenPosition(renderPosition);
