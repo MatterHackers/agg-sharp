@@ -190,6 +190,16 @@ namespace MatterHackers.Agg.UI
 
 		public override void Show()
 		{
+			// Center the window if specified on the SystemWindow
+			if (mainWindowsFormsWindow != WindowsFormsWindow && childSystemWindow.CenterInParent)
+			{
+				Rectangle mainBounds = mainWindowsFormsWindow.DesktopBounds;
+				RectangleDouble newItemBounds = childSystemWindow.LocalBounds;
+
+				windowsFormsWindow.Left = mainBounds.X + mainBounds.Width / 2 - (int) newItemBounds.Width / 2;
+				windowsFormsWindow.Top = mainBounds.Y + mainBounds.Height / 2 - (int) newItemBounds.Height / 2;
+			}
+
 			if (mainWindowsFormsWindow != WindowsFormsWindow
 				&& childSystemWindow.AlwaysOnTopOfMain)
 			{
