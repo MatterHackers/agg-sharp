@@ -89,22 +89,23 @@ namespace MatterHackers.MeshVisualizer
 	{
 		public bool MouseDownOnControl;
 		public Matrix4X4 TotalTransform = Matrix4X4.Identity;
-		private IPrimitive collisionVolume;
 		private MeshViewerWidget meshViewerToDrawWith;
 
 		private bool mouseOver = false;
 
 		public InteractionVolume(IPrimitive collisionVolume, MeshViewerWidget meshViewerToDrawWith)
 		{
-			this.collisionVolume = collisionVolume;
+			this.CollisionVolume = collisionVolume;
 			this.meshViewerToDrawWith = meshViewerToDrawWith;
 		}
 
 		[Flags]
 		public enum LineArrows { None = 0, Start = 1, End = 2, Both = 3 };
 
-		public IPrimitive CollisionVolume { get { return collisionVolume; } set { collisionVolume = value; } }
+		public IPrimitive CollisionVolume { get; set; }
+
 		public bool DrawOnTop { get; protected set; }
+
 		public MeshViewerWidget MeshViewerToDrawWith { get { return meshViewerToDrawWith; } }
 
 		public bool MouseOver

@@ -75,6 +75,8 @@ namespace MatterHackers.DataConverters3D
 		Mesh Mesh { get; set; }
 		string MeshPath { get; set; }
 
+		string Name { get; set; }
+
 		bool PersistNode { get; set; }
 
 		bool Visible { get; set; }

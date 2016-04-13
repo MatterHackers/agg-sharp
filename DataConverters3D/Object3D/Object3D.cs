@@ -70,6 +70,8 @@ namespace MatterHackers.DataConverters3D
 			return meshGroup;
 		}
 
+		public RGBA_Bytes Color { get; set; }
+
 		[JsonIgnore]
 		public bool HasChildren => Children.Count > 0;
 
@@ -77,12 +79,12 @@ namespace MatterHackers.DataConverters3D
 
 		public Matrix4X4 Matrix { get; set; } = Matrix4X4.Identity;
 
-		public RGBA_Bytes Color { get; set; }
-
 		[JsonIgnore]
 		public Mesh Mesh { get; set; }
 
 		public string MeshPath { get; set; }
+
+		public string Name { get; set; }
 
 		public bool PersistNode { get; set; } = true;
 

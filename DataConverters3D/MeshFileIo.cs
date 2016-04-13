@@ -71,7 +71,10 @@ namespace MatterHackers.DataConverters3D
 			{
 				using (Stream stream = new FileStream(meshPathAndFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
 				{
-					return Load(stream, Path.GetExtension(meshPathAndFileName), reportProgress, source);
+					var loadedItem = Load(stream, Path.GetExtension(meshPathAndFileName), reportProgress, source);
+					loadedItem.MeshPath = meshPathAndFileName;
+
+					return loadedItem;
 				}
 			}
 			catch(Exception e)
