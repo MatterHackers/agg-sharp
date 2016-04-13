@@ -36,25 +36,34 @@ namespace MatterHackers.DataConverters3D
 {
 	public class IObject3DChildrenConverter : JsonConverter
 	{
+		private Dictionary<string, string> mappingTypes = new Dictionary<string, string>()
+		{
+			["TextObject"] = "MatterHackers.PolygonMesh.TextObject,MatterHackers.DataConverters3D"
+		};
+
 		public override bool CanWrite { get; } = false;
 
 		public override bool CanConvert(Type objectType) => objectType is IObject3D;
 
 		public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
 		{
-			JArray jArray = JArray.Load(reader);
-
 			var items = new List<IObject3D>();
 
-			foreach(var item in jArray)
+			JArray jArray = JArray.Load(reader);
+			foreach (var item in jArray)
 			{
-				// TODO: Hookup mechanism to both serialize and deserialize Object3D type via string property
-				string itemType = item["ItemType"].ToString();
-				switch (itemType)
+				string typeName = item["TypeName"]?.ToString();
+				string fullTypeName;
+				if (string.IsNullOrEmpty(typeName) || typeName == "Object3D" || !mappingTypes.TryGetValue(typeName, out fullTypeName))
 				{
-					default:
-						items.Add(item.ToObject<Object3D>(serializer));
-						break;
+					// Use a normal Object3D type if the TypeName field is missing, invalid or has no mapping entry
+					items.Add(item.ToObject<Object3D>(serializer));
+				}
+				else
+				{
+					// If a mapping entry exists, try to find the type for the given entry falling back to Object3D if that fails
+					Type type = Type.GetType(fullTypeName) ?? typeof(Object3D);
+					items.Add((IObject3D)item.ToObject(type, serializer));
 				}
 			}
 
