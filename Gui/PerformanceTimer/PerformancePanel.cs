@@ -33,11 +33,11 @@ using System.Diagnostics;
 
 namespace MatterHackers.Agg.UI
 {
-    public class PerformancePannel : FlowLayoutWidget
-    {
-		private static PerformanceDisplayWidget pannels = null;
+	public class PerformancePanel : FlowLayoutWidget
+	{
+		private static PerformanceDisplayWidget panels = null;
 
-		private static Dictionary<string, PerformancePannel> resultsPannels = new Dictionary<string, PerformancePannel>();
+		private static Dictionary<string, PerformancePanel> resultsPanels = new Dictionary<string, PerformancePanel>();
 
 		private int recursionCount = 0;
 
@@ -45,7 +45,7 @@ namespace MatterHackers.Agg.UI
 
 		private FlowLayoutWidget topToBottom = new FlowLayoutWidget(FlowDirection.TopToBottom);
 
-		public PerformancePannel(string name)
+		public PerformancePanel(string name)
 			: base(FlowDirection.TopToBottom)
 		{
 			this.Name = name;
@@ -53,14 +53,13 @@ namespace MatterHackers.Agg.UI
 			Padding = new BorderDouble(3);
 			VAnchor |= VAnchor.ParentTop;
 
-			if (pannels == null)
+			if (panels == null)
 			{
-				pannels = new PerformanceDisplayWidget();
-				pannels.Selectable = false;
-				pannels.HAnchor |= HAnchor.ParentLeft;
-				pannels.VAnchor |= VAnchor.ParentTop;
-				pannels.Visible = false; // start out not visible
-										 //pannels.Visible = false; // start out not visible
+				panels = new PerformanceDisplayWidget();
+				panels.Selectable = false;
+				panels.HAnchor |= HAnchor.ParentLeft;
+				panels.VAnchor |= VAnchor.ParentTop;
+				panels.Visible = false; // start out not visible
 
 				if (true) // only add this when doing testing
 				{
@@ -69,7 +68,7 @@ namespace MatterHackers.Agg.UI
 						if (PerformanceTimer.GetParentWindowFunction != null)
 						{
 							GuiWidget parentWindow = PerformanceTimer.GetParentWindowFunction();
-							parentWindow.AddChild(pannels);
+							parentWindow.AddChild(panels);
 #if DEBUG
 							parentWindow.KeyDown += ParentWindow_KeyDown;
 							parentWindow.MouseDownInBounds += ParentWindow_MouseDown;
@@ -92,22 +91,22 @@ namespace MatterHackers.Agg.UI
 
 			AddChild(topToBottom);
 
-			pannels.AddChild(this);
+			panels.AddChild(this);
 
 			BackgroundColor = new RGBA_Bytes(RGBA_Bytes.White, 180);
 		}
 
 		private event EventHandler unregisterEvents;
 
-		public static PerformancePannel GetNamedPannel(string pannelName)
+		public static PerformancePanel GetNamedPanel(string panelName)
 		{
-			if (!resultsPannels.ContainsKey(pannelName))
+			if (!resultsPanels.ContainsKey(panelName))
 			{
-				PerformancePannel timingPannelToReportTo = new PerformancePannel(pannelName);
-				resultsPannels.Add(pannelName, timingPannelToReportTo);
+				PerformancePanel timingPanelToReportTo = new PerformancePanel(panelName);
+				resultsPanels.Add(panelName, timingPanelToReportTo);
 			}
 
-			return resultsPannels[pannelName];
+			return resultsPanels[panelName];
 		}
 
 		public override void OnClosed(EventArgs e)
@@ -248,7 +247,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (keyEvent.KeyCode == Keys.Escape)
 			{
-				pannels.Visible = !pannels.Visible;
+				panels.Visible = !panels.Visible;
 			}
 		}
 
@@ -256,7 +255,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (e.NumPositions == 4)
 			{
-				pannels.Visible = !pannels.Visible;
+				panels.Visible = !panels.Visible;
 			}
 		}
 #endif
@@ -289,21 +288,22 @@ namespace MatterHackers.Agg.UI
 				return "{0}, {1}".FormatWith(name, TotalCount);
 			}
 		}
-        private class PerformanceDisplayWidget : FlowLayoutWidget
-        {
-            public override void AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
-            {
-                childToAdd.BoundsChanged += (sender, e) =>
-                {
-                    GuiWidget child = sender as GuiWidget;
-                    if (child != null)
-                    {
-                        child.MinimumSize = new VectorMath.Vector2(Math.Max(child.MinimumSize.x, child.Width), 0);
-                    }
-                };
 
-                base.AddChild(childToAdd, indexInChildrenList);
-            }
-        }
-    }
+		private class PerformanceDisplayWidget : FlowLayoutWidget
+		{
+			public override void AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
+			{
+				childToAdd.BoundsChanged += (sender, e) =>
+				{
+					GuiWidget child = sender as GuiWidget;
+					if (child != null)
+					{
+						child.MinimumSize = new VectorMath.Vector2(Math.Max(child.MinimumSize.x, child.Width), 0);
+					}
+				};
+
+				base.AddChild(childToAdd, indexInChildrenList);
+			}
+		}
+	}
 }
