@@ -39,6 +39,36 @@ using System.Collections.Generic;
 
 namespace MatterHackers.Agg.OpenGlGui
 {
+	public static class ExtensionMethods
+    {
+		public static void RenderDebugAABB(this TrackballTumbleWidget trackBall, Graphics2D graphics2D, AxisAlignedBoundingBox bounds)
+		{
+			Vector3 renderPosition = bounds.Center;
+			Vector2 objectCenterScreenSpace = trackBall.GetScreenPosition(renderPosition);
+			Point2D screenPositionOfObject3D = new Point2D((int)objectCenterScreenSpace.x, (int)objectCenterScreenSpace.y);
+
+			graphics2D.Circle(objectCenterScreenSpace, 5, RGBA_Bytes.Magenta);
+
+			for (int i = 0; i < 4; i++)
+			{
+				graphics2D.Circle(trackBall.GetScreenPosition(bounds.GetTopCorner(i)), 5, RGBA_Bytes.Magenta);
+				graphics2D.Circle(trackBall.GetScreenPosition(bounds.GetBottomCorner(i)), 5, RGBA_Bytes.Magenta);
+			}
+
+			RectangleDouble screenBoundsOfObject3D = RectangleDouble.ZeroIntersection;
+			for (int i = 0; i < 4; i++)
+			{
+				screenBoundsOfObject3D.ExpandToInclude(trackBall.GetScreenPosition(bounds.GetTopCorner(i)));
+				screenBoundsOfObject3D.ExpandToInclude(trackBall.GetScreenPosition(bounds.GetBottomCorner(i)));
+			}
+
+			graphics2D.Circle(screenBoundsOfObject3D.Left, screenBoundsOfObject3D.Bottom, 5, RGBA_Bytes.Cyan);
+			graphics2D.Circle(screenBoundsOfObject3D.Left, screenBoundsOfObject3D.Top, 5, RGBA_Bytes.Cyan);
+			graphics2D.Circle(screenBoundsOfObject3D.Right, screenBoundsOfObject3D.Bottom, 5, RGBA_Bytes.Cyan);
+			graphics2D.Circle(screenBoundsOfObject3D.Right, screenBoundsOfObject3D.Top, 5, RGBA_Bytes.Cyan);
+		}
+	}
+
 	public class TrackballTumbleWidget : GuiWidget
 	{
 		public event EventHandler DrawGlContent;
