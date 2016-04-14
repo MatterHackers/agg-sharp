@@ -29,12 +29,8 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.Agg;
 using MatterHackers.DataConverters3D;
-using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RayTracer;
-using MatterHackers.RayTracer.Traceable;
 using MatterHackers.VectorMath;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
