@@ -177,7 +177,7 @@
     <Compile Include="GridControl.cs" />
     <Compile Include="GroupBox.cs" />
     <Compile Include="Keyboard.cs" />
-    <Compile Include="PerformanceTimer\PerformancePannel.cs" />
+    <Compile Include="PerformanceTimer\PerformancePanel.cs" />
     <Compile Include="PerformanceTimer\PerformanceTimer.cs" />
     <Compile Include="ProgressControl.cs" />
     <Compile Include="SoftKeyboard.cs" />
@@ -210,7 +210,7 @@
     <Compile Include="SystemWindow\ToolTipManager.cs" />
     <Compile Include="TextWidgets\InternalNumberEdit.cs" />
     <Compile Include="TextWidgets\NumberEdit.cs" />
-    <Compile Include="LayoutPannel.cs" />
+    <Compile Include="LayoutPanel.cs" />
     <Compile Include="OutputScroll.cs" />
     <Compile Include="PolygonWidget.cs" />
     <Compile Include="RadioButton\RadioButtonGroup.cs" />
