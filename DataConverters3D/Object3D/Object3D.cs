@@ -97,14 +97,19 @@ namespace MatterHackers.DataConverters3D
 				return null;
 			}
 
+			if(itemCache == null)
+			{
+				itemCache = new Dictionary<string, IObject3D>();
+			}
+
 			IObject3D loadedItem;
 
 			// Try to pull the item from cache
 			if (itemCache == null || !itemCache.TryGetValue(meshPath, out loadedItem) || loadedItem == null)
 			{
 				// Otherwise, load it up
-				string extension = Path.GetExtension(meshPath);
-				if (extension == ".mcx")
+				bool isMcxFile = Path.GetExtension(meshPath) == ".mcx";
+				if (isMcxFile)
 				{
 					// Load the meta file and convert MeshPath links into objects
 					loadedItem = JsonConvert.DeserializeObject<Object3D>(File.ReadAllText(meshPath));
@@ -115,7 +120,7 @@ namespace MatterHackers.DataConverters3D
 					loadedItem = MeshFileIo.Load(meshPath, progress);
 				}
 
-				if (itemCache != null)
+				if (itemCache != null && !isMcxFile)
 				{
 					itemCache[meshPath] = loadedItem;
 				}
@@ -211,15 +216,19 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-
 		// Hashcode for lists as proposed by Jon Skeet
-		//
 		// http://stackoverflow.com/questions/8094867/good-gethashcode-override-for-list-of-foo-objects-respecting-the-order
 		public int GetChildrenHashCode()
 		{
 			unchecked
 			{
 				int hash = 19;
+
+				//if (Mesh != null)
+				//{
+				//	hash = hash * 31 + Mesh.GetHashCode();
+				//}
+
 				foreach (var child in Children)
 				{
 					hash = hash * 31 + child.GetHashCode();

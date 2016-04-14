@@ -427,20 +427,18 @@ namespace MatterHackers.MeshVisualizer
 
 		public enum CenterPartAfterLoad { DO, DONT }
 
-		public Dictionary<string, IObject3D> ItemCache { get; } = new Dictionary<string, IObject3D>();
-
 		public bool SuppressUiVolumes { get; set; } = false;
 
-		public async Task LoadMesh(string meshPath, CenterPartAfterLoad centerPart, Vector2 bedCenter = new Vector2(), string itemName = null)
+		public async Task LoadItemIntoScene(string itemPath, CenterPartAfterLoad centerPart, Vector2 bedCenter = new Vector2(), string itemName = null)
 		{
-			if (File.Exists(meshPath))
+			if (File.Exists(itemPath))
 			{
 				partProcessingInfo.Visible = true;
 				partProcessingInfo.progressControl.PercentComplete = 0;
 				partProcessingInfo.centeredInfoText.Text = "Loading Mesh...";
 
 				// TODO: How to we handle mesh load errors? How do we report success?
-				IObject3D loadedItem = await Task.Run(() => Object3D.Load(meshPath, ItemCache, ReportProgress0to100));
+				IObject3D loadedItem = await Task.Run(() => Object3D.Load(itemPath, progress: ReportProgress0to100));
 				if (loadedItem != null)
 				{
 					if (itemName != null)
@@ -476,7 +474,7 @@ namespace MatterHackers.MeshVisualizer
 			}
 			else
 			{
-				partProcessingInfo.centeredInfoText.Text = string.Format("{0}\n'{1}'", "File not found on disk.", Path.GetFileName(meshPath));
+				partProcessingInfo.centeredInfoText.Text = string.Format("{0}\n'{1}'", "File not found on disk.", Path.GetFileName(itemPath));
 			}
 		}
 

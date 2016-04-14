@@ -1260,5 +1260,24 @@ namespace MatterHackers.PolygonMesh
 				}
 			}
 		}
+
+		public int GetHash()
+		{
+			unchecked
+			{
+				int hash = 19;
+
+				hash = hash * 31 + MeshEdges.Count;
+				hash = hash * 31 + Faces.Count;
+				hash = hash * 31 + Vertices.Count;
+
+				foreach (var vertex in Vertices)
+				{
+					hash = hash * 31 + vertex.Position.GetHashCode();
+				}
+
+				return hash;
+			}
+		}
 	}
 }
