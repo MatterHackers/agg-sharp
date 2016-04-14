@@ -97,15 +97,9 @@ namespace MatterHackers.Agg
 		public void CallEvents(Object sender, EventArgs e)
 		{
 #if DEBUG
-			if (InternalEventForDebug != null)
-			{
-				InternalEventForDebug(sender, e);
-			}
+			InternalEventForDebug?.Invoke(sender, e);
 #else
-            if (InternalEvent != null)
-            {
-                InternalEvent(sender, e);
-            }
+			InternalEvent?.Invoke(sender, e);
 #endif
 		}
 	}
