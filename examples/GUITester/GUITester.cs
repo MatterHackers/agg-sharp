@@ -28,8 +28,10 @@ namespace MatterHackers.Agg
 		{
 			mainNavigationTabControl = new TabControl(Orientation.Vertical);
 
-			mainNavigationTabControl.AddTab(new MenuPage(), "MenuPage");
+			
+			mainNavigationTabControl.AddTab(new GridControlPage(), "GridControl");
 #if true
+			mainNavigationTabControl.AddTab(new MenuPage(), "MenuPage");
 			mainNavigationTabControl.AddTab(new TextEditPage(), "TextEditPage");
 			mainNavigationTabControl.AddTab(new SplitterPage(), "SplitterPage");
 			mainNavigationTabControl.AddTab(new LayoutPage(), "LayoutPage");
