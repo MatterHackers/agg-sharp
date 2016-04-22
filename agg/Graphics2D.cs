@@ -228,9 +228,9 @@ namespace MatterHackers.Agg
 			Render(elipse, color);
 		}
 
-		public void Line(Vector2 start, Vector2 end, RGBA_Bytes color)
+		public void Line(Vector2 start, Vector2 end, RGBA_Bytes color, double strokeWidth = 1)
 		{
-			Line(start.x, start.y, end.x, end.y, color);
+			Line(start.x, start.y, end.x, end.y, color, strokeWidth);
 		}
 
 		public void Line(double x1, double y1, double x2, double y2, RGBA_Bytes color, double strokeWidth = 1)

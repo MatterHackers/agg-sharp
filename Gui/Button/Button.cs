@@ -26,6 +26,11 @@ namespace MatterHackers.Agg.UI
 		{
 		}
 
+		public Button(GuiWidget buttonView)
+			: this(0, 0, buttonView)
+		{
+		}
+
 		public Button(double x, double y, GuiWidget buttonView)
 			: base(x, y)
 		{
