@@ -143,19 +143,13 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		public virtual void OnEditComplete(EventArgs e)
 		{
-			if (EditComplete != null)
-			{
-				EditComplete(this, e);
-			}
+			EditComplete?.Invoke(this, e);
 			textWhenGotFocus = Text;
 		}
 
 		private void OnInsertBarPositionChanged(EventArgs e)
 		{
-			if (InsertBarPositionChanged != null)
-			{
-				InsertBarPositionChanged(this, e);
-			}
+			InsertBarPositionChanged?.Invoke(this, e);
 		}
 
 		public string Selection
@@ -283,7 +277,6 @@ namespace MatterHackers.Agg.UI
 			else
 			{
 				timeSinceTurnOn.Stop();
-				int a = 0;
 			}
 		}
 

@@ -283,7 +283,8 @@ namespace MatterHackers.Agg.UI
 		{
 			if (HideSoftwareKeyboard != null)
 			{
-				UiThread.RunOnIdle(() => {
+				UiThread.RunOnIdle(() => 
+				{
 					HideSoftwareKeyboard(this, null);
 					KeyboardCollapsed(this, null);
 				});
@@ -292,18 +293,12 @@ namespace MatterHackers.Agg.UI
 
 		public static void OnKeyboardCollapsed()
 		{
-			if(KeyboardCollapsed != null)
-			{
-				KeyboardCollapsed(null, null);
-			}
+			KeyboardCollapsed?.Invoke(null, null);
 		}
 
 		private void internalTextEditWidget_EnterPressed(object sender, KeyEventArgs keyEvent)
 		{
-			if (EnterPressed != null)
-			{
-				EnterPressed(this, keyEvent);
-			}
+			EnterPressed?.Invoke(this, keyEvent);
 		}
 
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
@@ -349,10 +344,7 @@ namespace MatterHackers.Agg.UI
 
 		private void internalTextEditWidget_EditComplete(object sender, EventArgs e)
 		{
-			if (EditComplete != null)
-			{
-				EditComplete(this, null);
-			}
+			EditComplete?.Invoke(this, null);
 		}
 
 		public TypeFacePrinter Printer
