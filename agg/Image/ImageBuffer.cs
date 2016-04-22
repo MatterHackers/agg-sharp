@@ -133,7 +133,7 @@ namespace MatterHackers.Agg.Image
 			destImage.MarkImageChanged();
 
 			return destImage;
-        }
+		}
 
 		public ImageBuffer(int width, int height, int bitsPerPixel, IRecieveBlenderByte recieveBlender)
 		{

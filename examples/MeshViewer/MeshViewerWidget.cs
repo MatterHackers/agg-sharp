@@ -753,7 +753,7 @@ namespace MatterHackers.MeshVisualizer
 
 		private void reportProgress0to100(double progress0To1, string processingState, out bool continueProcessing)
 		{
-			if (this.WidgetHasBeenClosed)
+			if (this.HasBeenClosed)
 			{
 				continueProcessing = false;
 			}

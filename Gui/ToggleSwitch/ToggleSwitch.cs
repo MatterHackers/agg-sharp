@@ -50,13 +50,17 @@ namespace MatterHackers.Agg.UI
 
 		private GuiWidget createState(string word, double width, double height, ref RGBA_Bytes backgroundColor, ref RGBA_Bytes interiorColor, ref RGBA_Bytes thumbColor, ref RGBA_Bytes textColor)
 		{
-
 			TextWidget text = new TextWidget(word, pointSize: 10, textColor: textColor);
 			text.VAnchor = VAnchor.ParentCenter;
+
 			SwitchView switchGraphics = new SwitchView(width, height, word == onText, backgroundColor, interiorColor, thumbColor, textColor);
 			switchGraphics.VAnchor = VAnchor.ParentCenter;
 			switchGraphics.Margin = new BorderDouble(5, 0, 0, 0);
-			GuiWidget switchNormalToPressed = new FlowLayoutWidget(FlowDirection.LeftToRight, text, switchGraphics);
+
+			GuiWidget switchNormalToPressed = new FlowLayoutWidget(FlowDirection.LeftToRight);
+			switchNormalToPressed.AddChild(text);
+			switchNormalToPressed.AddChild(switchGraphics);
+
 			return switchNormalToPressed;
 		}
 

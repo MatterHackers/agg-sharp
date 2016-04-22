@@ -157,7 +157,9 @@ namespace MatterHackers.Agg.UI
 						}
 						index++;
 					}
-					throw new Exception("The value you specified '{0}' is not in the drop down list.".FormatWith(value));
+
+					// Not found, reset to "-Default-"
+					index = 0;
 				}
 			}
 		}

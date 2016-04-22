@@ -262,7 +262,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (this.Focused
 				&& timeSinceTurnOn.ElapsedMilliseconds >= barOnTime * 950
-				&& !WidgetHasBeenClosed)
+				&& !HasBeenClosed)
 			{
 				if (timeSinceTurnOn.ElapsedMilliseconds >= (barOnTime + barOffTime) * 950)
 				{
