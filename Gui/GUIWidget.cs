@@ -1513,7 +1513,7 @@ namespace MatterHackers.Agg.UI
 				}
 
 				containsFocus = false;
-				foreach (GuiWidget child in Children)
+				foreach (GuiWidget child in Children.ToArray())
 				{
 					child.Unfocus();
 				}
