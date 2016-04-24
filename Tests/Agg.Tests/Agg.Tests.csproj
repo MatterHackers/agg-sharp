@@ -92,6 +92,7 @@
     <Compile Include="Agg.VectorMath\VectorMathTests.cs" />
     <Compile Include="Agg\FontTests.cs" />
     <Compile Include="Agg\ImageTests.cs" />
+    <Compile Include="Agg\WidgetClickTests.cs" />
     <Compile Include="Agg\SimpleTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

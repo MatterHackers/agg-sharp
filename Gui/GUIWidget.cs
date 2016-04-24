@@ -149,7 +149,6 @@ namespace MatterHackers.Agg.UI
 
 		private bool debugShowBounds = false;
 		private bool widgetHasBeenClosed = false;
-		private bool mouseDownOnWidget = false;
 
 		public bool HasBeenClosed { get { return widgetHasBeenClosed; } }
 
@@ -2179,7 +2178,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnMouseDown(MouseEventArgs mouseEvent)
 		{
-			mouseDownOnWidget = PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y);
+			bool mouseDownOnWidget = PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y);
 			if (mouseDownOnWidget)
 			{
 				bool childHasAcceptedThisEvent = false;
@@ -2614,8 +2613,7 @@ namespace MatterHackers.Agg.UI
 
 					MouseUp?.Invoke(this, mouseEvent);
 
-					// Fire click event when mouseDown and mouseUp occur in bounds
-					if (mouseDownOnWidget && mouseUpOnWidget)
+					if (mouseUpOnWidget)
 					{
 						OnClick(mouseEvent);
 					}
@@ -2648,8 +2646,6 @@ namespace MatterHackers.Agg.UI
 			{
 				BreakInDebugger("This should not be locked.");
 			}
-
-			mouseDownOnWidget = false;
 		}
 
 		public virtual void OnClick(MouseEventArgs mouseEvent)
