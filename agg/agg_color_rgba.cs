@@ -288,29 +288,6 @@ namespace MatterHackers.Agg
 			}
 			hue0To1 /= 6.0;
 		}
-
-		public static RGBA_Floats AdjustSaturation(RGBA_Floats original, double saturationMultiplier)
-		{
-			double hue0To1;
-			double saturation0To1;
-			double lightness0To1;
-			original.GetHSL(out hue0To1, out saturation0To1, out lightness0To1);
-			saturation0To1 *= saturationMultiplier;
-
-			return FromHSL(hue0To1, saturation0To1, lightness0To1);
-		}
-
-		public static RGBA_Floats AdjustLightness(RGBA_Floats original, double lightnessMultiplier)
-		{
-			double hue0To1;
-			double saturation0To1;
-			double lightness0To1;
-			original.GetHSL(out hue0To1, out saturation0To1, out lightness0To1);
-			lightness0To1 *= lightnessMultiplier;
-
-			return FromHSL(hue0To1, saturation0To1, lightness0To1);
-		}
-
 		#endregion HSL
 
 		public static bool operator ==(RGBA_Floats a, RGBA_Floats b)
@@ -927,6 +904,37 @@ namespace MatterHackers.Agg
 			RGBA_Bytes result = new RGBA_Bytes(this);
 			result = this * (1 - weight) + other * weight;
 			return result;
+		}
+	}
+
+	public static class ColorExtensionMethods
+	{
+		public static IColorType AdjustSaturation(this IColorType original, double saturationMultiplier)
+		{
+			double hue0To1;
+			double saturation0To1;
+			double lightness0To1;
+
+			RGBA_Floats colorF = original is RGBA_Floats ? (RGBA_Floats) original : original.GetAsRGBA_Floats();
+
+			colorF.GetHSL(out hue0To1, out saturation0To1, out lightness0To1);
+			saturation0To1 *= saturationMultiplier;
+
+			return RGBA_Floats.FromHSL(hue0To1, saturation0To1, lightness0To1);
+		}
+
+		public static IColorType AdjustLightness(this IColorType original, double lightnessMultiplier)
+		{
+			double hue0To1;
+			double saturation0To1;
+			double lightness0To1;
+
+			RGBA_Floats colorF = original is RGBA_Floats ? (RGBA_Floats)original : original.GetAsRGBA_Floats();
+
+			colorF.GetHSL(out hue0To1, out saturation0To1, out lightness0To1);
+			lightness0To1 *= lightnessMultiplier;
+
+			return RGBA_Floats.FromHSL(hue0To1, saturation0To1, lightness0To1);
 		}
 	}
 }
