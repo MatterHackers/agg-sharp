@@ -44,8 +44,9 @@ namespace MatterHackers.Agg.Tests
 		[Test, RequiresSTA, RunInApplicationDomain]
 		public void ClickFiresOnCorrectWidgets()
 		{
-			int rootClickCount = 0;
-			int childClickCount = 0;
+			int blueClickCount = 0;
+			int orangeClickCount = 0;
+			int purpleClickCount = 0;
 
 			lastClicked = null;
 
@@ -54,17 +55,33 @@ namespace MatterHackers.Agg.Tests
 				AutomationRunner testRunner = new AutomationRunner();
 				testRunner.ClickByName("rootClickable");
 				testRunner.Wait(1.5);
-				resultsHarness.AddTestResult(rootClickCount == 1, "Expected 1 click on root widget");
-				resultsHarness.AddTestResult(childClickCount == 0, "Expected 0 clicks on child widget");
+				resultsHarness.AddTestResult(blueClickCount == 1, "Expected 1 click on blue widget");
+				resultsHarness.AddTestResult(orangeClickCount == 0, "Expected 0 clicks on orange widget");
+				resultsHarness.AddTestResult(purpleClickCount == 0, "Expected 1 click on purple widget");
 
-				testRunner.ClickByName("childClickable");
+				testRunner.ClickByName("orangeClickable");
 				testRunner.Wait(1.5);
-				resultsHarness.AddTestResult(childClickCount == 1, "Expected 1 click on child widget");
+				resultsHarness.AddTestResult(blueClickCount == 1, "Expected 1 click on blue widget");
+				resultsHarness.AddTestResult(orangeClickCount == 1, "Expected 1 clicks on orange widget");
+				resultsHarness.AddTestResult(purpleClickCount == 0, "Expected 0 click on purple widget");
 
-				testRunner.ClickByName("childClickable");
+				testRunner.ClickByName("rootClickable");
 				testRunner.Wait(1.5);
-				resultsHarness.AddTestResult(childClickCount == 2, "Expected 2 clicks on child widget");
-				resultsHarness.AddTestResult(rootClickCount == 1, "Expected 1 click on root widget");
+				resultsHarness.AddTestResult(blueClickCount == 2, "Expected 1 click on blue widget");
+				resultsHarness.AddTestResult(orangeClickCount == 1, "Expected 0 clicks on orange widget");
+				resultsHarness.AddTestResult(purpleClickCount == 0, "Expected 1 click on purple widget");
+
+				testRunner.ClickByName("orangeClickable");
+				testRunner.Wait(1.5);
+				resultsHarness.AddTestResult(blueClickCount == 2, "Expected 1 click on root widget");
+				resultsHarness.AddTestResult(orangeClickCount == 2, "Expected 2 clicks on orange widget");
+				resultsHarness.AddTestResult(purpleClickCount == 0, "Expected 0 click on purple widget");
+
+				testRunner.ClickByName("purpleClickable");
+				testRunner.Wait(1.5);
+				resultsHarness.AddTestResult(blueClickCount == 2, "Expected 1 click on blue widget");
+				resultsHarness.AddTestResult(orangeClickCount == 2, "Expected 2 clicks on orange widget");
+				resultsHarness.AddTestResult(purpleClickCount == 1, "Expected 1 click on purple widget");
 			};
 
 			SystemWindow systemWindow = new SystemWindow(300, 200)
@@ -81,41 +98,66 @@ namespace MatterHackers.Agg.Tests
 				Name = "rootClickable",
 				BackgroundColor = RGBA_Bytes.Blue
 			};
-			rootClickable.Click += (s, e) =>
+			rootClickable.Click += (sender, e) =>
 			{
-				rootClickCount += 1;
-				var color = rootClickable.BackgroundColor.AdjustSaturation(0.5);
+				var widget = sender as GuiWidget;
+				blueClickCount += 1;
+				var color = rootClickable.BackgroundColor.AdjustSaturation(0.4);
 				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
 				lastClicked = rootClickable;
 			};
 			rootClickable.DrawAfter += widget_DrawSelection;
 
-			var childClickable = new GuiWidget()
+			var orangeClickable = new GuiWidget()
 			{
 				Width = 35,
 				Height = 25,
 				OriginRelativeParent = new VectorMath.Vector2(10, 10),
-				Name = "childClickable",
+				Name = "orangeClickable",
 				Margin = new BorderDouble(10),
-				BackgroundColor = RGBA_Bytes.Green
+				BackgroundColor = RGBA_Bytes.Orange
 			};
-			childClickable.Click += (s, e) =>
+			orangeClickable.Click += (sender, e) =>
 			{
-				childClickCount += 1;
+				var widget = sender as GuiWidget;
+				orangeClickCount += 1;
 
-				var color = childClickable.BackgroundColor.AdjustSaturation(0.5);
+				var color = widget.BackgroundColor.AdjustSaturation(0.4);
 				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
-				lastClicked = childClickable;
+				lastClicked = widget;
 			};
-			childClickable.DrawAfter += widget_DrawSelection;
+			orangeClickable.DrawAfter += widget_DrawSelection;
+			rootClickable.AddChild(orangeClickable);
 
-			rootClickable.AddChild(childClickable);
+			var purpleClickable = new GuiWidget()
+			{
+				Width = 35,
+				Height = 25,
+				OriginRelativeParent = new VectorMath.Vector2(0, 10),
+				HAnchor = HAnchor.ParentRight,
+				Name = "purpleClickable",
+				Margin = new BorderDouble(10),
+				BackgroundColor = new RGBA_Bytes(141, 0, 206)
+			};
+			purpleClickable.Click += (sender, e) =>
+			{
+				var widget = sender as GuiWidget;
+
+				purpleClickCount += 1;
+
+				var color = widget.BackgroundColor.AdjustSaturation(0.4);
+				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
+				lastClicked = widget;
+			};
+			purpleClickable.DrawAfter += widget_DrawSelection;
+			rootClickable.AddChild(purpleClickable);
+
 			systemWindow.AddChild(rootClickable);
 
 			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExectueTests(systemWindow, testToRun, 10);
 
 			Assert.IsTrue(testHarness.AllTestsPassed);
-			Assert.IsTrue(testHarness.TestCount == 5);
+			Assert.IsTrue(testHarness.TestCount == 12);
 		}
 
 		[Test, RequiresSTA]
@@ -141,12 +183,14 @@ namespace MatterHackers.Agg.Tests
 				Name = "rootClickable",
 				BackgroundColor = RGBA_Bytes.Blue
 			};
-			rootClickable.Click += (s, e) =>
+			rootClickable.Click += (sender, e) =>
 			{
+				var widget = sender as GuiWidget;
+
 				rootClickCount += 1;
-				var color = rootClickable.BackgroundColor.AdjustSaturation(0.5);
+				var color = widget.BackgroundColor.AdjustSaturation(0.4);
 				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
-				lastClicked = rootClickable;
+				lastClicked = widget;
 
 			};
 			rootClickable.DrawAfter += widget_DrawSelection;
@@ -158,15 +202,16 @@ namespace MatterHackers.Agg.Tests
 				OriginRelativeParent = new VectorMath.Vector2(20, 15),
 				Name = "childClickable",
 				Margin = new BorderDouble(10),
-				BackgroundColor = RGBA_Bytes.Green
+				BackgroundColor = RGBA_Bytes.Orange
 			};
-			childClickable.Click += (s, e) =>
+			childClickable.Click += (sender, e) =>
 			{
+				var widget = sender as GuiWidget;
 				childClickCount += 1;
 
-				var color = childClickable.BackgroundColor.AdjustSaturation(0.5);
+				var color = widget.BackgroundColor.AdjustSaturation(0.4);
 				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
-				lastClicked = childClickable;
+				lastClicked = widget;
 			};
 			childClickable.DrawAfter += widget_DrawSelection;
 
