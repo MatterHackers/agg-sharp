@@ -149,6 +149,7 @@ namespace MatterHackers.Agg.UI
 
 		private bool debugShowBounds = false;
 		private bool widgetHasBeenClosed = false;
+		private bool mouseDownOnWidget = false;
 
 		public bool HasBeenClosed { get { return widgetHasBeenClosed; } }
 
@@ -477,6 +478,8 @@ namespace MatterHackers.Agg.UI
 		public event EventHandler<MouseEventArgs> MouseDown;
 
 		public event EventHandler<MouseEventArgs> MouseUp;
+
+		public event EventHandler<MouseEventArgs> Click;
 
 		public event EventHandler<MouseEventArgs> MouseWheel;
 
@@ -2176,7 +2179,8 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnMouseDown(MouseEventArgs mouseEvent)
 		{
-			if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
+			mouseDownOnWidget = PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y);
+			if (mouseDownOnWidget)
 			{
 				bool childHasAcceptedThisEvent = false;
 				bool childHasTakenFocus = false;
@@ -2189,7 +2193,7 @@ namespace MatterHackers.Agg.UI
 
 					MouseEventArgs childMouseEvent = new MouseEventArgs(mouseEvent, childX, childY);
 
-					// If any previous child has accepted the MouseDown, then we won't continue propogating the event and
+					// If any previous child has accepted the MouseDown, then we won't continue propagating the event and
 					// will attempt to fire MovedOffWidget logic
 					if (childHasAcceptedThisEvent)
 					{
@@ -2276,8 +2280,8 @@ namespace MatterHackers.Agg.UI
 
 		public bool IsDoubleClick(MouseEventArgs mouseEvent)
 		{
-			// The os told up the mouse is 2 cilks (shot time beteewn clicks)
-			// but we also want to check if the original click happend on our control.
+			// The OS told up the mouse is 2 clicks (shot time between clicks)
+			// but we also want to check if the original click happened on our control.
 			if (mouseEvent.Clicks == 2
 				&& LastMouseDownMs > UiThread.CurrentTimerMs - 550)
 			{
@@ -2525,11 +2529,14 @@ namespace MatterHackers.Agg.UI
 			}
 
 			childrenLockedInMouseUpCount++;
+
+			bool mouseUpOnWidget = PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y);
+			bool childHasAcceptedThisEvent = false;
+
 			if (mouseCapturedState == MouseCapturedState.NotCaptured)
 			{
-				if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
+				if (mouseUpOnWidget)
 				{
-					bool childHasAcceptedThisEvent = false;
 					for (int i = Children.Count - 1; i >= 0; i--)
 					{
 						GuiWidget child = Children[i];
@@ -2606,9 +2613,15 @@ namespace MatterHackers.Agg.UI
 					}
 
 					MouseUp?.Invoke(this, mouseEvent);
+
+					// Fire click event when mouseDown and mouseUp occur in bounds
+					if (mouseDownOnWidget && mouseUpOnWidget)
+					{
+						OnClick(mouseEvent);
+					}
 				}
 
-				if (!PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
+				if (!mouseUpOnWidget)
 				{
 					if (UnderMouseState != UI.UnderMouseState.NotUnderMouse)
 					{
@@ -2635,6 +2648,13 @@ namespace MatterHackers.Agg.UI
 			{
 				BreakInDebugger("This should not be locked.");
 			}
+
+			mouseDownOnWidget = false;
+		}
+
+		public virtual void OnClick(MouseEventArgs mouseEvent)
+		{
+			Click?.Invoke(this, mouseEvent);
 		}
 
 		protected virtual void SetCursorOnEnter(Cursors cursorToSet)
