@@ -281,6 +281,18 @@ namespace MatterHackers.Agg.UI
 			base.OnResize(e);
 		}
 
+		protected override void SetVisibleCore(bool value)
+		{
+			// Force Activation/BringToFront behavior when Visibility enabled. This ensures Agg forms 
+			// always come to front after ShowSystemWindow()
+			if (value)
+			{
+				this.Activate();
+			}
+
+			base.SetVisibleCore(value);
+		}
+
 		private bool waitingForIdleTimerToStop = false;
 
 		protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
