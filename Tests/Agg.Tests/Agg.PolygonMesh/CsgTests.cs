@@ -36,7 +36,7 @@ using System.Collections.Generic;
 
 namespace MatterHackers.PolygonMesh.UnitTests
 {
-	[TestFixture, Category("Agg.PolygonMesh")]
+	[TestFixture, Category("Agg.PolygonMesh.CSG")]
 	public class MeshCsgTests
 	{
 		[Test]
@@ -60,7 +60,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			Assert.IsTrue(intersect_aabb.XSize == 40 && intersect_aabb.YSize == 40 && intersect_aabb.ZSize == 40);
 		}
 
-		[Test]
+		[Test, Ignore("Crashes NUnit on build servers with an unrecoverable StackOverflow error")]
 		public void SubtractIcosahedronsWorks()
 		{
 			Vector3 centering = new Vector3(100, 100, 20);
