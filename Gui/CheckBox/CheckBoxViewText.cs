@@ -33,7 +33,10 @@ namespace MatterHackers.Agg.UI
 		public CheckBoxViewText(string label, double textHeight = 12, RGBA_Bytes textColor = new RGBA_Bytes())
 		{
 			FlowLayoutWidget leftToRight = new FlowLayoutWidget();
-			GuiWidget boxSpace = new GuiWidget(CheckBoxWidth * 2, 1);
+			GuiWidget boxSpace = new GuiWidget(CheckBoxWidth * 2, 1)
+			{ 
+				VAnchor = VAnchor.ParentCenter,
+			};
 			leftToRight.AddChild(boxSpace);
 
 			labelTextWidget = new TextWidget(label, CheckBoxWidth, 0, textHeight);
@@ -77,7 +80,7 @@ namespace MatterHackers.Agg.UI
 		{
 			CheckBox checkBox = (CheckBox)Parent;
 
-			double bottom = 0;
+			double bottom = Height / 2 - CheckBoxWidth;
 
 			// the check
 			if (checkBox.Checked)

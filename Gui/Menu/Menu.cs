@@ -39,9 +39,9 @@ namespace MatterHackers.Agg.UI
 		{
 			this.maxHeight = maxHeight;
 			this.MenuDirection = direction;
-			Click += new EventHandler(ListMenu_Click);
-			VAnchor = UI.VAnchor.FitToChildren;
-			HAnchor = UI.HAnchor.FitToChildren;
+			Click += ListMenu_Click;
+			VAnchor = VAnchor.FitToChildren;
+			HAnchor = HAnchor.FitToChildren;
 		}
 
 		// If max height is > 0 it will limit the height of the menu
@@ -92,7 +92,7 @@ namespace MatterHackers.Agg.UI
 		virtual protected void DropListItems_Closed(object sender, EventArgs e)
 		{
 			OpenMenuContents dropListItems = (OpenMenuContents)sender;
-			dropListItems.Closed -= new EventHandler(DropListItems_Closed);
+			dropListItems.Closed -= DropListItems_Closed;
 			IsOpen = false;
 
 			DropDownContainer = null;
