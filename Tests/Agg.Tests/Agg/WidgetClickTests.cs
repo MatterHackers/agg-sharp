@@ -33,6 +33,7 @@ using MatterHackers.Agg.UI;
 using MatterHackers.Agg.UI.Tests;
 using MatterHackers.GuiAutomation;
 using NUnit.Framework;
+using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.Tests
 {
@@ -160,7 +161,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.IsTrue(testHarness.TestCount == 12);
 		}
 
-		[Test, RequiresSTA]
+		[Test, RequiresSTA, RunInApplicationDomain]
 		public void ClickSuppressedOnExternalMouseUp()
 		{
 			int rootClickCount = 0;
@@ -168,7 +169,7 @@ namespace MatterHackers.Agg.Tests
 
 			lastClicked = null;
 
-			SystemWindow systemWindow = new SystemWindow(300, 200)
+			var systemWindow = new TestHostWindow(300, 200)
 			{
 				Padding = new BorderDouble(20),
 				BackgroundColor = RGBA_Bytes.Gray
@@ -219,36 +220,204 @@ namespace MatterHackers.Agg.Tests
 			systemWindow.AddChild(rootClickable);
 
 			var bounds = rootClickable.BoundsRelativeToParent;
-			double x = bounds.Left + 2;
-			double y = bounds.Bottom + 2;
+			double x = bounds.Left + 25;
+			double y = bounds.Bottom + 8;
 
-			UiThread.RunOnIdle(() =>
+			UiThread.RunOnIdle((Action)(async () =>
 			{
-				systemWindow.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, x, y, 0));
-				systemWindow.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, x + 5, y + 5, 0));
-
-				// Click should occur on mouse[down/up] within the controls bounds
-				Assert.IsTrue(rootClickCount == 1, "Expected 1 click on root widget");
-				systemWindow.Invalidate();
-
-				UiThread.RunOnIdle(() =>
+				try
 				{
-					System.Threading.Thread.Sleep(1200);
+					MouseEventArgs mouseEvent;
+					AutomationRunner testRunner = new AutomationRunner();
+
+					// Click should occur on mouse[down/up] within the controls bounds
+					{
+						// Move to a position within rootClickable for mousedown
+						mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, x, y, 0);
+						testRunner.SetMouseCursorPosition(systemWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
+						systemWindow.OnMouseDown(mouseEvent);
+						await Task.Delay(1000);
+
+						// Move to a position within rootClickable for mouseup
+						mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, x + 119, y + 40, 0);
+						testRunner.SetMouseCursorPosition(systemWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
+						systemWindow.OnMouseUp(mouseEvent);
+						await Task.Delay(1000);
+
+						Assert.IsTrue(rootClickCount == 1, "Expected 1 click on root widget");
+					}
 
 					lastClicked = null;
 					systemWindow.BackgroundColor = RGBA_Bytes.Gray;
-
-					systemWindow.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, x, y, 0));
-					systemWindow.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
+					await Task.Delay(1000);
 
 					// Click should not occur when mouse up is outside of the control bounds
-					Assert.IsTrue(rootClickCount == 1, "Expected 1 click on root widget");
+					{
+						// Move to a position within rootClickable for mousedown
+						mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, x, y, 0);
+						testRunner.SetMouseCursorPosition(systemWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
+						systemWindow.OnMouseDown(mouseEvent);
+						await Task.Delay(1000);
 
-					UiThread.RunOnIdle(systemWindow.Close, 1);
-				}, 1);
+						// Move to a position **outside** of rootClickable for mouseup
+						mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, 50, 50, 0);
+						testRunner.SetMouseCursorPosition(systemWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
+						systemWindow.OnMouseUp(mouseEvent);
+						await Task.Delay(1000);
 
-			}, 1);
+						// There should be no increment in the click count
+						Assert.IsTrue(rootClickCount == 1, "Expected 1 click on root widget");
+					}
+				}
+				catch (Exception ex)
+				{
+					systemWindow.ErrorMessage = ex.Message;
+					systemWindow.TestsPassed = false;
+				}
+
+				UiThread.RunOnIdle(systemWindow.Close, 1);
+
+			}), 1);
 			systemWindow.ShowAsSystemWindow();
+
+			Assert.IsTrue(systemWindow.TestsPassed, systemWindow.ErrorMessage);
+		}
+
+		[Test, RequiresSTA, RunInApplicationDomain, Category("KnownIssues")]
+		public void ClickSuppressedOnMouseUpWithinChild()
+		{
+			int rootClickCount = 0;
+			int childClickCount = 0;
+
+			lastClicked = null;
+
+			var systemWindow = new TestHostWindow(300, 200)
+			{
+				Padding = new BorderDouble(20),
+				BackgroundColor = RGBA_Bytes.Gray
+			};
+
+			var rootClickable = new GuiWidget()
+			{
+				Width = 50,
+				HAnchor = HAnchor.ParentLeftRight,
+				VAnchor = VAnchor.ParentBottomTop,
+				Margin = new BorderDouble(50),
+				Name = "rootClickable",
+				BackgroundColor = RGBA_Bytes.Blue
+			};
+			rootClickable.Click += (sender, e) =>
+			{
+				var widget = sender as GuiWidget;
+
+				rootClickCount += 1;
+				var color = widget.BackgroundColor.AdjustSaturation(0.4);
+				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
+				lastClicked = widget;
+
+			};
+			rootClickable.DrawAfter += widget_DrawSelection;
+
+			var childClickable = new GuiWidget()
+			{
+				Width = 35,
+				Height = 25,
+				OriginRelativeParent = new VectorMath.Vector2(20, 15),
+				Name = "childClickable",
+				Margin = new BorderDouble(10),
+				BackgroundColor = RGBA_Bytes.Orange
+			};
+			childClickable.Click += (sender, e) =>
+			{
+				var widget = sender as GuiWidget;
+				childClickCount += 1;
+
+				var color = widget.BackgroundColor.AdjustSaturation(0.4);
+				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
+				lastClicked = widget;
+			};
+			childClickable.DrawAfter += widget_DrawSelection;
+
+			rootClickable.AddChild(childClickable);
+			systemWindow.AddChild(rootClickable);
+
+			var bounds = rootClickable.BoundsRelativeToParent;
+			double x = bounds.Left + 25;
+			double y = bounds.Bottom + 8;
+
+			var childBounds = childClickable.BoundsRelativeToParent;
+			double childX = bounds.Left + childBounds.Left + 16;
+			double childY = bounds.Bottom + childBounds.Bottom + 10;
+
+			UiThread.RunOnIdle((Action)(async () =>
+			{
+				try
+				{
+					MouseEventArgs mouseEvent;
+					AutomationRunner testRunner = new AutomationRunner();
+
+					// Click should occur on mouse[down/up] within the controls bounds
+					{
+						// Move to a position within rootClickable for mousedown
+						mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, x, y, 0);
+						testRunner.SetMouseCursorPosition(systemWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
+						systemWindow.OnMouseDown(mouseEvent);
+						await Task.Delay(1000);
+
+						// Move to a position within rootClickable for mouseup
+						mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, x + 119, y + 40, 0);
+						testRunner.SetMouseCursorPosition(systemWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
+						systemWindow.OnMouseUp(mouseEvent);
+						await Task.Delay(1000);
+
+						Assert.IsTrue(rootClickCount == 1, "Expected 1 click on root widget");
+					}
+
+					lastClicked = null;
+					systemWindow.BackgroundColor = RGBA_Bytes.Gray;
+					await Task.Delay(1000);
+
+					// Click should not occur when mouse up occurs on child controls
+					{
+						// Move to a position within rootClickable for mousedown
+						mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, x, y, 0);
+						testRunner.SetMouseCursorPosition(systemWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
+						systemWindow.OnMouseDown(mouseEvent);
+						await Task.Delay(1000);
+
+						// Move to a position with the childClickable for mouseup
+						mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, childX, childY, 0);
+						testRunner.SetMouseCursorPosition(systemWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
+						systemWindow.OnMouseUp(mouseEvent);
+						await Task.Delay(1000);
+
+						// There should be no increment in the click count
+						Assert.IsTrue(rootClickCount == 1, "Expected click count to not increment on mouse up within child control");
+					}
+				}
+				catch(Exception ex)
+				{
+					systemWindow.ErrorMessage = ex.Message;
+					systemWindow.TestsPassed = false;
+				}
+
+				UiThread.RunOnIdle(systemWindow.Close, 1);
+
+			}), 1);
+			systemWindow.ShowAsSystemWindow();
+
+			Assert.IsTrue(systemWindow.TestsPassed, systemWindow.ErrorMessage);
+
+		}
+
+		private class TestHostWindow : SystemWindow
+		{
+			public TestHostWindow(double width, double height) : base (width, height)
+			{
+			}
+
+			public bool TestsPassed { get; set; } = true;
+			public string ErrorMessage { get; set; }
 		}
 
 		private void widget_DrawSelection(GuiWidget drawingWidget, DrawEventArgs e)
