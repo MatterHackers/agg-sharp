@@ -174,7 +174,6 @@
     <Compile Include="FileDialogs\SelectFolderDialogParams.cs" />
     <Compile Include="FileDropEventArgs.cs" />
     <Compile Include="FlowLayoutWidget.cs" />
-    <Compile Include="GridControl.cs" />
     <Compile Include="GroupBox.cs" />
     <Compile Include="Keyboard.cs" />
     <Compile Include="PerformanceTimer\PerformancePanel.cs" />
@@ -193,12 +192,10 @@
     <Compile Include="ListBox.cs" />
     <Compile Include="Menu\DropDownList.cs" />
     <Compile Include="Menu\Menu.cs" />
-    <Compile Include="Menu\MenuBar.cs" />
     <Compile Include="Menu\MenuItem.cs" />
     <Compile Include="Menu\MenuItemStatesView.cs" />
     <Compile Include="Menu\MenuStatesView.cs" />
     <Compile Include="Menu\OpenMenuContents.cs" />
-    <Compile Include="Menu\PopupMenu.cs" />
     <Compile Include="MessageBox.cs" />
     <Compile Include="MouseButtons.cs" />
     <Compile Include="MouseEventArgs.cs" />
@@ -210,7 +207,6 @@
     <Compile Include="SystemWindow\ToolTipManager.cs" />
     <Compile Include="TextWidgets\InternalNumberEdit.cs" />
     <Compile Include="TextWidgets\NumberEdit.cs" />
-    <Compile Include="LayoutPanel.cs" />
     <Compile Include="OutputScroll.cs" />
     <Compile Include="PolygonWidget.cs" />
     <Compile Include="RadioButton\RadioButtonGroup.cs" />
@@ -268,7 +264,6 @@
       <Name>Agg</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup />
 </Project>

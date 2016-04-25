@@ -148,11 +148,8 @@ namespace MatterHackers.Agg.UI
 		private ImageBuffer backBuffer;
 
 		private bool debugShowBounds = false;
-		private bool widgetHasBeenClosed = false;
-
-		public bool HasBeenClosed { get { return widgetHasBeenClosed; } }
-
-		protected bool WidgetHasBeenClosed { get { return widgetHasBeenClosed; } }
+		
+		public bool HasBeenClosed { get; private set; }
 
 		public bool DebugShowBounds
 		{
@@ -175,7 +172,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public LayoutEngine LayoutEngine { get; set; }
+		public LayoutEngine LayoutEngine { get; protected set; }
 
 		private UnderMouseState underMouseState = UnderMouseState.NotUnderMouse;
 
@@ -472,7 +469,7 @@ namespace MatterHackers.Agg.UI
 		public event EventHandler<MouseEventArgs> MouseDownInBounds;
 
 		/// <summary>
-		/// The mouse has gon down on this widget. This will not trigger if a child of this widget gets the down message.
+		/// The mouse has gone down on this widget. This will not trigger if a child of this widget gets the down message.
 		/// </summary>
 		public event EventHandler<MouseEventArgs> MouseDown;
 
@@ -1281,7 +1278,7 @@ namespace MatterHackers.Agg.UI
 					throw new Exception("This is alread the child of another widget.");
 				}
 				childToAdd.parent = this;
-				childToAdd.widgetHasBeenClosed = false;
+				childToAdd.HasBeenClosed = false;
 				Children.Insert(indexInChildrenList, childToAdd);
 				OnChildAdded(new GuiWidgetEventArgs(childToAdd));
 				childToAdd.OnParentChanged(null);
@@ -1994,7 +1991,7 @@ namespace MatterHackers.Agg.UI
 				BreakInDebugger("You should put this close onto the UiThread.RunOnIdle so it can happen after the child list is unlocked.");
 			}
 
-			if (!widgetHasBeenClosed)
+			if (!HasBeenClosed)
 			{
 				bool cancelClose;
 				OnClosing(out cancelClose);
@@ -2005,7 +2002,7 @@ namespace MatterHackers.Agg.UI
 					return;
 				}
 
-				widgetHasBeenClosed = true;
+				HasBeenClosed = true;
 
 				this.CloseAllChildren();
 
