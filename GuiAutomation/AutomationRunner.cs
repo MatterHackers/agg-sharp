@@ -37,6 +37,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 
 namespace MatterHackers.GuiAutomation
@@ -732,12 +733,18 @@ namespace MatterHackers.GuiAutomation
 				Thread.Sleep(20);
 			}
 
-            inputSystem.SetCursorPosition((int)end.x, (int)end.y);
+			inputSystem.SetCursorPosition((int)end.x, (int)end.y);
 		}
 
-#endregion Mouse Functions
+		public void SetMouseCursorPosition(SystemWindow systemWindow, int x, int y)
+		{
+			Point2D screenPosition = SystemWindowToScreen(new Point2D(x, y), systemWindow);
+			SetMouseCursorPosition(screenPosition.x, screenPosition.y);
+		}
 
-#region Keyboard Functions
+		#endregion Mouse Functions
+
+		#region Keyboard Functions
 
 		public void KeyDown(KeyEventArgs keyEvent)
 		{
