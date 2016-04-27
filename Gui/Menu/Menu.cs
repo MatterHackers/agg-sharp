@@ -39,9 +39,16 @@ namespace MatterHackers.Agg.UI
 		{
 			this.maxHeight = maxHeight;
 			this.MenuDirection = direction;
-			Click += ListMenu_Click;
-			VAnchor = VAnchor.FitToChildren;
-			HAnchor = HAnchor.FitToChildren;
+			this.VAnchor = VAnchor.FitToChildren;
+			this.HAnchor = HAnchor.FitToChildren;
+			this.Click += (s, e) =>
+			{
+				if (!mouseDownWhileOpen)
+				{
+					UiThread.RunOnIdle(ShowMenu);
+					IsOpen = true;
+				}
+			};
 		}
 
 		// If max height is > 0 it will limit the height of the menu
@@ -66,22 +73,13 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseDown(mouseEvent);
 		}
 
-		private void ListMenu_Click(object sender, EventArgs mouseEvent)
-		{
-			if (!mouseDownWhileOpen)
-			{
-				UiThread.RunOnIdle(ShowMenu);
-				IsOpen = true;
-			}
-		}
-
 		internal OpenMenuContents DropDownContainer = null;
 
 		protected virtual void ShowMenu()
 		{
 			if (this.Parent == null)
 			{
-				throw new Exception("You cannot show the menu on a Menu unless it has a parent (has been added to a GuiWidegt).");
+				throw new Exception("You cannot show the menu on a Menu unless it has a parent (has been added to a GuiWidget).");
 			}
 
 			DropDownContainer = new OpenMenuContents(MenuItems, this, OpenOffset, MenuDirection, MenuItemsBackgroundColor, MenuItemsBorderColor, MenuItemsBorderWidth, maxHeight, AlignToRightEdge);

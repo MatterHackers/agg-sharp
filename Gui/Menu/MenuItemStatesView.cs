@@ -11,10 +11,10 @@ namespace MatterHackers.Agg.UI
 
 		public MenuItemStatesView(GuiWidget normalState, GuiWidget overState)
 		{
-			overState.HAnchor |= UI.HAnchor.ParentLeftRight;
-			normalState.HAnchor |= UI.HAnchor.ParentLeftRight;
-			HAnchor = UI.HAnchor.ParentLeftRight | UI.HAnchor.FitToChildren;
-			VAnchor = UI.VAnchor.FitToChildren;
+			overState.HAnchor |= HAnchor.ParentLeftRight;
+			normalState.HAnchor |= HAnchor.ParentLeftRight;
+			HAnchor = HAnchor.ParentLeftRight | HAnchor.FitToChildren;
+			VAnchor = VAnchor.FitToChildren;
 			Selectable = false;
 			this.normalState = normalState;
 			this.overState = overState;
