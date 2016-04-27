@@ -62,7 +62,7 @@ namespace MatterHackers.Agg.UI
 			while (topParent.Parent != null
 				&& topParent as SystemWindow == null)
 			{
-				// Regretably we don't know who it is that is the window that will actually think it is moving relative to its parent
+				// Regrettably we don't know who it is that is the window that will actually think it is moving relative to its parent
 				// but we need to know anytime our widgetRelativeTo has been moved by any change, so we hook them all.
 
 				if (!widgetRefList.Contains(topParent))
