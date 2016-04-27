@@ -44,9 +44,10 @@ namespace MatterHackers.Agg.ImageProcessing
 			return false;
 		}
 
-		public static void DoInvertLightness(ImageBuffer sourceImageAndDest)
+		public static ImageBuffer DoInvertLightness(ImageBuffer sourceImageAndDest)
 		{
 			DoInvertLightness(sourceImageAndDest, sourceImageAndDest);
+			return sourceImageAndDest;
 		}
 
 		public static void DoInvertLightness(ImageBuffer result, ImageBuffer sourceImage)

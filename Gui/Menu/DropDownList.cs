@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.Agg.Image;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using System;
@@ -294,28 +295,15 @@ namespace MatterHackers.Agg.UI
 			graphics2D.Render(strokeRect, BorderColor);
 		}
 
-		public MenuItem AddItem(string itemName, string itemValue = null)
+		public bool UseLeftIcons { get; set; } = true;
+
+		public MenuItem AddItem(string itemName, string itemValue = null, ImageBuffer leftImage = null)
 		{
 			mainControlText.Margin = MenuItemsPadding;
 
-			GuiWidget normalTextWithMargin = new GuiWidget();
-			normalTextWithMargin.HAnchor = UI.HAnchor.ParentLeftRight | UI.HAnchor.FitToChildren;
-			normalTextWithMargin.VAnchor = UI.VAnchor.FitToChildren;
-			normalTextWithMargin.BackgroundColor = MenuItemsBackgroundColor;
-			TextWidget normal = new TextWidget(itemName);
-			normal.Margin = MenuItemsPadding;
-			normal.TextColor = MenuItemsTextColor;
-			normalTextWithMargin.AddChild(normal);
+			GuiWidget normalTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundColor);
 
-			GuiWidget hoverTextWithMargin = new GuiWidget();
-			hoverTextWithMargin.HAnchor = UI.HAnchor.ParentLeftRight | UI.HAnchor.FitToChildren;
-			hoverTextWithMargin.VAnchor = UI.VAnchor.FitToChildren;
-			hoverTextWithMargin.BackgroundColor = MenuItemsBackgroundHoverColor;
-			TextWidget hover = new TextWidget(itemName);
-			hover.Margin = MenuItemsPadding;
-			hover.TextColor = MenuItemsTextHoverColor;
-			hoverTextWithMargin.AddChild(hover);
-
+			GuiWidget hoverTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundHoverColor);
 
 			MenuItem menuItem = new MenuItem(
 				new MenuItemStatesView(normalTextWithMargin, hoverTextWithMargin),
@@ -327,6 +315,36 @@ namespace MatterHackers.Agg.UI
 			MenuItems.Add(menuItem);
 
 			return menuItem;
+		}
+
+		private GuiWidget GetMenuContent(string itemName, ImageBuffer leftImage, RGBA_Bytes color)
+		{
+			GuiWidget normalTextWithMargin = new FlowLayoutWidget();
+			normalTextWithMargin.HAnchor = UI.HAnchor.ParentLeftRight | UI.HAnchor.FitToChildren;
+			normalTextWithMargin.VAnchor = UI.VAnchor.FitToChildren;
+			normalTextWithMargin.BackgroundColor = color;
+			TextWidget normal = new TextWidget(itemName);
+			normal.Margin = MenuItemsPadding;
+			normal.TextColor = MenuItemsTextColor;
+			if (UseLeftIcons)
+			{
+				if (leftImage != null)
+				{
+					ImageBuffer scaledImage = ImageBuffer.CreateScaledImage(leftImage, 20, 20);
+					normalTextWithMargin.AddChild(new ImageWidget(scaledImage)
+					{
+						VAnchor = VAnchor.ParentCenter,
+						Margin = new BorderDouble(MenuItemsPadding.Left, MenuItemsPadding.Bottom, 3, MenuItemsPadding.Top),
+					});
+					normal.Margin = new BorderDouble(0, MenuItemsPadding.Bottom, MenuItemsPadding.Right, MenuItemsPadding.Top);
+				}
+				else
+				{
+					normal.Margin = new BorderDouble(MenuItemsPadding.Left + 20 + 3, MenuItemsPadding.Bottom, MenuItemsPadding.Right, MenuItemsPadding.Top);
+				}
+			}
+			normalTextWithMargin.AddChild(normal);
+			return normalTextWithMargin;
 		}
 	}
 }
