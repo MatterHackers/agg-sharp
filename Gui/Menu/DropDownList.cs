@@ -281,7 +281,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public bool UseLeftIcons { get; set; } = true;
+		public bool UseLeftIcons { get; set; } = false;
 
 		public MenuItem AddItem(string itemName, string itemValue = null, ImageBuffer leftImage = null)
 		{
