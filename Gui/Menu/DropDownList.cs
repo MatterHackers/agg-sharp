@@ -234,6 +234,8 @@ namespace MatterHackers.Agg.UI
 			foreach (MenuItem item in e.NewItems)
 			{
 				item.MinimumSize = minSize;
+				item.Selected -= new EventHandler(item_Selected);
+				item.Selected += new EventHandler(item_Selected);
 			}
 		}
 
@@ -247,6 +249,21 @@ namespace MatterHackers.Agg.UI
 			}
 
 			base.OnBoundsChanged(e);
+		}
+
+		private void item_Selected(object sender, EventArgs e)
+		{
+			int newSelectedIndex = 0;
+			foreach (MenuItem item in MenuItems)
+			{
+				if (item == sender)
+				{
+					break;
+				}
+				newSelectedIndex++;
+			}
+
+			SelectedIndex = newSelectedIndex;
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)
