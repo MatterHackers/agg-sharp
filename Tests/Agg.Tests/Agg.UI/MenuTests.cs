@@ -28,8 +28,10 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg.Image;
+using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
+using System;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -186,6 +188,53 @@ namespace MatterHackers.Agg.UI.Tests
 			// make sure click down and then move to new items selects the new item.
 
 			// click and draw down to item should work as well
+		}
+
+		[Test, RequiresSTA, RunInApplicationDomain]
+		public void MenuDisabledItemsWorkCorrectly()
+		{
+			SystemWindow menuTestContainer = new SystemWindow(300, 200)
+			{
+				BackgroundColor = RGBA_Bytes.White,
+			};
+
+			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
+			{
+				AutomationRunner testRunner = new AutomationRunner("C:/TestImages");
+				testRunner.Wait(1);
+
+				// Now do the actions specific to this test. (replace this for new tests)
+				{
+					testRunner.ClickByName("menu1", 5);
+					testRunner.ClickByName("item2", 5);
+					testRunner.ClickByName("menu1", 5);
+					testRunner.ClickByName("item1", 5);
+					testRunner.ClickByName("menu1", 5);
+					testRunner.ClickByName("item3", 5);
+					testRunner.ClickByName("item2", 5);
+				}
+
+				testRunner.Wait(1);
+				menuTestContainer.CloseOnIdle();
+			};
+
+			DropDownList testList = new DropDownList("no selection", RGBA_Bytes.Blue, RGBA_Bytes.Green)
+			{
+				MenuItemsBackgroundColor = RGBA_Bytes.White,
+				MenuItemsBackgroundHoverColor = RGBA_Bytes.LightGray,
+				Name = "menu1",
+			};
+			testList.AddItem("item1").Name = "item1";
+			testList.AddItem("item2").Name = "item2";
+			var item3 = testList.AddItem("item3");
+			item3.Name = "item3";
+			item3.Enabled = false;
+			menuTestContainer.AddChild(testList);
+
+			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExectueTests(menuTestContainer, testToRun, 10000);
+
+			//Assert.IsTrue(testHarness.AllTestsPassed);
+			//Assert.IsTrue(testHarness.TestCount == 2); // make sure we can all our tests
 		}
 
 		[Test]

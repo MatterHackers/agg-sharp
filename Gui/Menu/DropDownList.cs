@@ -62,10 +62,9 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private int selectedIndex = -1;
-
 		private PathStorage directionArrow = null;
 
+		private int selectedIndex = -1;
 		public int SelectedIndex
 		{
 			get { return selectedIndex; }
@@ -133,18 +132,20 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public string GetValue(int itemIndex)
+		{
+			if (itemIndex < 0 || itemIndex >= MenuItems.Count)
+			{
+				return "";
+			}
+
+			// Return the Value property of the selected MenuItem
+			return MenuItems[itemIndex].Value;
+		}
+
 		public string SelectedValue
 		{
-			get
-			{
-				if (SelectedIndex < 0 || SelectedIndex >= MenuItems.Count)
-				{
-					return "";
-				}
-
-				// Return the Value property of the selected MenuItem
-				return MenuItems[SelectedIndex].Value;
-			}
+			get { return GetValue(SelectedIndex); }
 			set
 			{
 				if (SelectedIndex == -1 || SelectedValue != value)
@@ -272,7 +273,35 @@ namespace MatterHackers.Agg.UI
 
 		public bool UseLeftIcons { get; set; } = false;
 
-		public MenuItem AddItem(string itemName, string itemValue = null, ImageBuffer leftImage = null)
+		public MenuItem AddItem(string itemName, string itemValue = null, double pointSize = 12)
+		{
+			if (itemValue == null)
+			{
+				itemValue = itemName;
+			}
+			if (mainControlText.Text != "")
+			{
+				mainControlText.Margin = MenuItemsPadding;
+			}
+
+			MenuItem menuItem = new MenuItem(new MenuItemColorStatesView(itemName)
+			{
+				NormalBackgroundColor = MenuItemsBackgroundColor,
+				NormalTextColor = mainControlText.TextColor,
+				OverBackgroundColor = MenuItemsBackgroundHoverColor,
+				OverTextColor = mainControlText.TextColor,
+				DisabledTextColor = RGBA_Bytes.Gray,
+				PointSize = pointSize,
+				Padding = MenuItemsPadding,
+			}, itemValue);
+			menuItem.Text = itemName;
+			menuItem.Name = itemName + " Menu Item";
+			MenuItems.Add(menuItem);
+
+			return menuItem;
+		}
+
+		public MenuItem AddItem(ImageBuffer leftImage, string itemName, string itemValue = null, double pointSize = 12)
 		{
 			mainControlText.Margin = MenuItemsPadding;
 

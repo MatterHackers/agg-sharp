@@ -56,7 +56,7 @@ namespace MatterHackers.Agg.UI
 			}
 			AddChild(scrollingWindow);
 
-			LostFocus += new EventHandler(DropListItems_LostFocus);
+			LostFocus += DropListItems_LostFocus;
 
 			GuiWidget topParent = widgetRelativeTo.Parent;
 			while (topParent.Parent != null
@@ -215,16 +215,22 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
+			bool clickWasOnValidMenuItem = true;
+			if(scrollingWindow?.ScrollArea?.Children?[0]?.ChildHasMouseCaptured == false)
+			{
+				clickWasOnValidMenuItem = false;
+			}
 			positionAtMouseUp = scrollingWindow.ScrollPosition;
 			if (!scrollingWindow.VerticalScrollBar.ChildHasMouseCaptured
-				&& AllowClickingItems())
+				&& AllowClickingItems()
+				&& clickWasOnValidMenuItem)
 			{
-				UiThread.RunOnIdle(RemoveFromParent);
+				UiThread.RunOnIdle(CloseMenu);
 			}
 			base.OnMouseUp(mouseEvent);
 		}
 
-		private void RemoveFromParent()
+		private void CloseMenu()
 		{
 			if (this.Parent != null)
 			{
@@ -240,7 +246,7 @@ namespace MatterHackers.Agg.UI
 
 		internal void DropListItems_LostFocus(object sender, EventArgs e)
 		{
-			UiThread.RunOnIdle(RemoveFromParent);
+			UiThread.RunOnIdle(CloseMenu);
 		}
 	}
 }

@@ -114,7 +114,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
 			{
-				AutomationRunner testRunner = new AutomationRunner("C:/TestImages");
+				AutomationRunner testRunner = new AutomationRunner();
 				testRunner.Wait(1);
 
 				// Now do the actions specific to this test. (replace this for new tests)
