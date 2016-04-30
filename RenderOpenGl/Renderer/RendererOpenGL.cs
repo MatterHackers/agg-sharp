@@ -427,8 +427,8 @@ namespace MatterHackers.RenderOpenGl
 			Affine transform = GetTransform();
 
 			RoundedRect clearRect = new RoundedRect(new RectangleDouble(
-				0 - transform.tx, width - transform.ty,
-				0 - transform.tx, height - transform.ty), 0);
+				cachedClipRect.Left - transform.tx, cachedClipRect.Bottom - transform.ty,
+				cachedClipRect.Right - transform.tx, cachedClipRect.Top - transform.ty), 0);
 			Render(clearRect, color.GetAsRGBA_Bytes());
 		}
 	}
