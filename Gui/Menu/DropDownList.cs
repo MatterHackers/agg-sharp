@@ -234,8 +234,6 @@ namespace MatterHackers.Agg.UI
 			foreach (MenuItem item in e.NewItems)
 			{
 				item.MinimumSize = minSize;
-				item.Selected -= new EventHandler(item_Selected);
-				item.Selected += new EventHandler(item_Selected);
 			}
 		}
 
@@ -251,19 +249,10 @@ namespace MatterHackers.Agg.UI
 			base.OnBoundsChanged(e);
 		}
 
-		private void item_Selected(object sender, EventArgs e)
+		private void MenuItem_Clicked(object sender, EventArgs e)
 		{
-			int newSelectedIndex = 0;
-			foreach (MenuItem item in MenuItems)
-			{
-				if (item == sender)
-				{
-					break;
-				}
-				newSelectedIndex++;
-			}
-
-			SelectedIndex = newSelectedIndex;
+			int newSelectedIndex = MenuItems.IndexOf(sender as MenuItem);
+			SelectedIndex = newSelectedIndex == -1 ? 0 : newSelectedIndex;
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)
@@ -294,6 +283,11 @@ namespace MatterHackers.Agg.UI
 				new MenuItemStatesView(normalTextWithMargin, hoverTextWithMargin),
 				// If no itemValue is supplied, itemName will be used as the item value
 				itemValue ?? itemName);
+
+			// MenuItem is a long lived object that is added and removed to new containers whenever the
+			// menu is shown. To ensure that event registration is not duplicated, always remove before add
+			menuItem.Selected -= MenuItem_Clicked;
+			menuItem.Selected += MenuItem_Clicked;
 
 			menuItem.Name = itemName + " Menu Item";
 			menuItem.Text = itemName;

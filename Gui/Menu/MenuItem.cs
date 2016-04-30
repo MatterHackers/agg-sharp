@@ -1,4 +1,33 @@
-﻿using System;
+﻿/*
+Copyright (c) 2016, Lars Brubaker, John Lewin
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation are those
+of the authors and should not be interpreted as representing official policies,
+either expressed or implied, of the FreeBSD Project.
+*/
+
+using System;
 using System.Diagnostics;
 
 namespace MatterHackers.Agg.UI
@@ -12,37 +41,28 @@ namespace MatterHackers.Agg.UI
 
 		public event EventHandler Selected;
 
-		public delegate bool CheckIfShouldClick();
+		public Func<bool> AllowClicks;
 
-		public CheckIfShouldClick DoClickFunction;
-
-		public string Value
-		{
-			get;
-			set;
-		}
+		public string Value { get; set; }
 
 		public MenuItem(GuiWidget viewItem, string value = null)
 		{
 			Value = value;
-			HAnchor = UI.HAnchor.ParentLeftRight | UI.HAnchor.FitToChildren;
-			VAnchor = UI.VAnchor.FitToChildren;
+			HAnchor = HAnchor.ParentLeftRight | HAnchor.FitToChildren;
+			VAnchor = VAnchor.FitToChildren;
 			AddChild(viewItem);
 		}
 
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
-			if (DoClickFunction != null
-				&& DoClickFunction())
+			if (AllowClicks?.Invoke() == true)
 			{
 				if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
 				{
-					if (Selected != null)
-					{
-						Selected(this, mouseEvent);
-					}
+					Selected?.Invoke(this, mouseEvent);
 				}
 			}
+
 			base.OnMouseUp(mouseEvent);
 		}
 	}
