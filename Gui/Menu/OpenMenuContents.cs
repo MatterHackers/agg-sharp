@@ -37,7 +37,7 @@ namespace MatterHackers.Agg.UI
 				{
 					menu.ClearRemovedFlag();
 					topToBottom.AddChild(menu);
-					menu.DoClickFunction = AllowClickingItems;
+					menu.AllowClicks = AllowClickingItems;
 				}
 
 				topToBottom.HAnchor = UI.HAnchor.ParentLeft | UI.HAnchor.FitToChildren;
