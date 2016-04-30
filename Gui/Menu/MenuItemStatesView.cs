@@ -162,12 +162,26 @@ namespace MatterHackers.Agg.UI
 				if(value)
 				{
 					BackgroundColor = OverBackgroundColor;
-					textWidget.TextColor = OverTextColor;
+					if (Parent.Enabled)
+					{
+						textWidget.TextColor = OverTextColor;
+					}
+					else
+					{
+						textWidget.TextColor = DisabledTextColor;
+					}
 				}
 				else
 				{
 					BackgroundColor = NormalBackgroundColor;
-					textWidget.TextColor = NormalTextColor;
+					if (Parent.Enabled)
+					{
+						textWidget.TextColor = NormalTextColor;
+					}
+					else
+					{
+						textWidget.TextColor = DisabledTextColor;
+					}
 				}
 			}
 		}
