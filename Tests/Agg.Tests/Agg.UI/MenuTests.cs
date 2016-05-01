@@ -191,7 +191,7 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		[Test, RequiresSTA, RunInApplicationDomain]
-		public void MenuDisabledItemsWorkCorrectly()
+		public void MenuDisabledItemsWorkCorrectlyActual()
 		{
 			int item1ClickCount = 0;
 			int item2ClickCount = 0;
@@ -199,6 +199,7 @@ namespace MatterHackers.Agg.UI.Tests
 			SystemWindow menuTestContainer = new SystemWindow(300, 200)
 			{
 				BackgroundColor = RGBA_Bytes.White,
+				Name = "SystemWindow",
 			};
 
 			DropDownList testList = new DropDownList("no selection", RGBA_Bytes.Blue, RGBA_Bytes.Green)
@@ -210,7 +211,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
 			{
-				AutomationRunner testRunner = new AutomationRunner("C:/TestImages");
+				AutomationRunner testRunner = new AutomationRunner();
 				testRunner.Wait(1);
 
 				// Now do the actions specific to this test. (replace this for new tests)
@@ -219,44 +220,47 @@ namespace MatterHackers.Agg.UI.Tests
 					Assert.IsTrue(item2ClickCount == 0);
 					Assert.IsTrue(item3ClickCount == 0);
 
-					testRunner.ClickByName("menu1", 5);
-					testRunner.ClickByName("item1", 5);
-					testRunner.Wait(.1);
-					Assert.IsTrue(!testList.IsOpen);
-					Assert.IsTrue(item1ClickCount == 1);
-					Assert.IsTrue(item2ClickCount == 0);
-					Assert.IsTrue(item3ClickCount == 0);
+					if (true)
+					{
+						testRunner.ClickByName("menu1", 5);
+						testRunner.ClickByName("item1", 5);
+						testRunner.Wait(.1);
+						Assert.IsTrue(!testList.IsOpen);
+						Assert.IsTrue(item1ClickCount == 1);
+						Assert.IsTrue(item2ClickCount == 0);
+						Assert.IsTrue(item3ClickCount == 0);
 
-					testRunner.ClickByName("menu1", 5);
-					testRunner.ClickByName("item2", 5);
-					testRunner.Wait(.1);
-					Assert.IsTrue(!testList.IsOpen);
-					Assert.IsTrue(item1ClickCount == 1);
-					Assert.IsTrue(item2ClickCount == 1);
-					Assert.IsTrue(item3ClickCount == 0);
+						testRunner.ClickByName("menu1", 5);
+						testRunner.ClickByName("item2", 5);
+						testRunner.Wait(.1);
+						Assert.IsTrue(!testList.IsOpen);
+						Assert.IsTrue(item1ClickCount == 1);
+						Assert.IsTrue(item2ClickCount == 1);
+						Assert.IsTrue(item3ClickCount == 0);
 
+						testRunner.ClickByName("menu1", 5);
+						testRunner.ClickByName("item3", 5);
+						testRunner.Wait(.1);
+						Assert.IsTrue(testList.IsOpen, "It should remain open when clicking on a disabled item.");
+						Assert.IsTrue(item1ClickCount == 1);
+						Assert.IsTrue(item2ClickCount == 1);
+						Assert.IsTrue(item3ClickCount == 0);
+						testRunner.ClickByName("item2", 5);
+						testRunner.Wait(.1);
+						Assert.IsTrue(!testList.IsOpen);
+						Assert.IsTrue(item1ClickCount == 1);
+						Assert.IsTrue(item2ClickCount == 2);
+						Assert.IsTrue(item3ClickCount == 0);
+
+						testRunner.ClickByName("menu1", 5);
+						testRunner.ClickByName("OffMenu", 5);
+						testRunner.Wait(.1);
+						Assert.IsTrue(!testList.IsOpen);
+					}
 					testRunner.ClickByName("menu1", 5);
 					testRunner.ClickByName("item3", 5);
-					testRunner.Wait(.1);
-					Assert.IsTrue(testList.IsOpen);
-					Assert.IsTrue(item1ClickCount == 1);
-					Assert.IsTrue(item2ClickCount == 1);
-					Assert.IsTrue(item3ClickCount == 0);
-					testRunner.ClickByName("item2", 5);
-					testRunner.Wait(.1);
-					Assert.IsTrue(!testList.IsOpen);
-					Assert.IsTrue(item1ClickCount == 1);
-					Assert.IsTrue(item2ClickCount == 2);
-					Assert.IsTrue(item3ClickCount == 0);
-
-					testRunner.ClickByName("menu1", 5);
 					testRunner.ClickByName("OffMenu", 5);
-					testRunner.Wait(.1);
-					Assert.IsTrue(!testList.IsOpen);
-					testRunner.ClickByName("menu1", 5);
-					testRunner.ClickByName("item3", 5);
-					testRunner.ClickByName("OffMenu", 5);
-					Assert.IsTrue(!testList.IsOpen);
+					Assert.IsTrue(!testList.IsOpen, "had a bug where after clicking a disabled item would not close clicking outside");
 				}
 
 				testRunner.Wait(1);
@@ -290,6 +294,145 @@ namespace MatterHackers.Agg.UI.Tests
 
 			//Assert.IsTrue(testHarness.AllTestsPassed);
 			//Assert.IsTrue(testHarness.TestCount == 2); // make sure we can all our tests
+		}
+
+		[Test]
+		public void MenuDisabledItemsWorkCorrectly()
+		{
+			int item1ClickCount = 0;
+			int item2ClickCount = 0;
+			int item3ClickCount = 0;
+			GuiWidget fakeSystemWindow = new GuiWidget(300, 200)
+			{
+				Name = "SystemWindowBase",
+			};
+
+			GuiWidget menuTestContainer = new GuiWidget(300, 200)
+			{
+				BackgroundColor = RGBA_Bytes.White,
+				Name = "SystemWindow",
+			};
+			fakeSystemWindow.AddChild(menuTestContainer);
+
+			DropDownList testList = new DropDownList("no selection", RGBA_Bytes.Blue, RGBA_Bytes.Green)
+			{
+				MenuItemsBackgroundColor = RGBA_Bytes.White,
+				MenuItemsBackgroundHoverColor = RGBA_Bytes.LightGray,
+				Name = "menu1",
+			};
+
+			testList.AddItem("item1", clickAction: (s, e) =>
+			{
+				item1ClickCount++;
+			}).Name = "item1";
+			testList.AddItem("item2", clickAction: (s, e) =>
+			{
+				item2ClickCount++;
+			}).Name = "item2";
+			var item3 = testList.AddItem("item3", clickAction: (s, e) =>
+			{
+				item3ClickCount++;
+			});
+			item3.Name = "item3";
+			item3.Enabled = false;
+			menuTestContainer.AddChild(testList);
+
+			menuTestContainer.AddChild(new GuiWidget(20, 20)
+			{
+				OriginRelativeParent = new Vector2(160, 150),
+				BackgroundColor = RGBA_Bytes.Cyan,
+				Name = "OffMenu",
+			});
+
+			int itemHeight = 14;
+			// Now do the actions specific to this test. (replace this for new tests)
+			{
+				Assert.IsTrue(item1ClickCount == 0);
+				Assert.IsTrue(item2ClickCount == 0);
+				Assert.IsTrue(item3ClickCount == 0);
+
+				// "menu1"
+				fakeSystemWindow.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 10, itemHeight / 2 + itemHeight * 0, 0));
+				fakeSystemWindow.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 10, itemHeight /2 + itemHeight * 0, 0));
+				UiThread.InvokePendingActions();
+				Assert.IsTrue(testList.IsOpen);
+				// "item1"
+				fakeSystemWindow.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 10, itemHeight / 2 + itemHeight * 3, 0));
+				fakeSystemWindow.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 10, itemHeight / 2 + itemHeight * 3, 0));
+				UiThread.InvokePendingActions();
+				Assert.IsTrue(!testList.IsOpen);
+				Assert.IsTrue(item1ClickCount == 1);
+				Assert.IsTrue(item2ClickCount == 0);
+				Assert.IsTrue(item3ClickCount == 0);
+
+				//testRunner.ClickByName("menu1", 5);
+				fakeSystemWindow.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 10, itemHeight / 2 + itemHeight * 0, 0));
+				fakeSystemWindow.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 10, itemHeight / 2 + itemHeight * 0, 0));
+				UiThread.InvokePendingActions();
+				Assert.IsTrue(testList.IsOpen);
+				//testRunner.ClickByName("item2", 5);
+				fakeSystemWindow.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 10, itemHeight / 2 + itemHeight * 2, 0));
+				fakeSystemWindow.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 10, itemHeight / 2 + itemHeight * 2, 0));
+				UiThread.InvokePendingActions();
+				//testRunner.Wait(.1);
+				Assert.IsTrue(!testList.IsOpen);
+				Assert.IsTrue(item1ClickCount == 1);
+				Assert.IsTrue(item2ClickCount == 1);
+				Assert.IsTrue(item3ClickCount == 0);
+
+				//testRunner.ClickByName("menu1", 5);
+				fakeSystemWindow.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 10, itemHeight / 2 + itemHeight * 0, 0));
+				fakeSystemWindow.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 10, itemHeight / 2 + itemHeight * 0, 0));
+				UiThread.InvokePendingActions();
+				Assert.IsTrue(testList.IsOpen);
+				//testRunner.ClickByName("item3", 5);
+				fakeSystemWindow.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 10, itemHeight / 2 + itemHeight * 1, 0));
+				fakeSystemWindow.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 10, itemHeight / 2 + itemHeight * 1, 0));
+				UiThread.InvokePendingActions();
+				//testRunner.Wait(.1);
+				Assert.IsTrue(testList.IsOpen, "It should remain open when clicking on a disabled item.");
+				Assert.IsTrue(item1ClickCount == 1);
+				Assert.IsTrue(item2ClickCount == 1);
+				Assert.IsTrue(item3ClickCount == 0);
+				//testRunner.ClickByName("item2", 5);
+				fakeSystemWindow.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 10, itemHeight / 2 + itemHeight * 2, 0));
+				fakeSystemWindow.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 10, itemHeight / 2 + itemHeight * 2, 0));
+				UiThread.InvokePendingActions();
+				//testRunner.Wait(.1);
+				Assert.IsTrue(!testList.IsOpen);
+				Assert.IsTrue(item1ClickCount == 1);
+				Assert.IsTrue(item2ClickCount == 2);
+				Assert.IsTrue(item3ClickCount == 0);
+
+				//testRunner.ClickByName("menu1", 5);
+				fakeSystemWindow.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 10, itemHeight / 2 + itemHeight * 0, 0));
+				fakeSystemWindow.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 10, itemHeight / 2 + itemHeight * 0, 0));
+				UiThread.InvokePendingActions();
+				Assert.IsTrue(testList.IsOpen);
+				//testRunner.ClickByName("OffMenu", 5);
+				fakeSystemWindow.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 200, itemHeight / 2 + itemHeight * 3, 0));
+				fakeSystemWindow.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 200, itemHeight / 2 + itemHeight * 3, 0));
+				UiThread.InvokePendingActions();
+				//testRunner.Wait(.1);
+				Assert.IsTrue(!testList.IsOpen);
+
+				//testRunner.ClickByName("menu1", 5);
+				fakeSystemWindow.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 10, itemHeight / 2 + itemHeight * 0, 0));
+				fakeSystemWindow.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 10, itemHeight / 2 + itemHeight * 0, 0));
+				UiThread.InvokePendingActions();
+				Assert.IsTrue(testList.IsOpen);
+				//testRunner.ClickByName("item3", 5);
+				fakeSystemWindow.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 10, itemHeight / 2 + itemHeight * 1, 0));
+				fakeSystemWindow.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 10, itemHeight / 2 + itemHeight * 1, 0));
+				UiThread.InvokePendingActions();
+				//testRunner.ClickByName("OffMenu", 5);
+				fakeSystemWindow.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 200, itemHeight / 2 + itemHeight * 3, 0));
+				fakeSystemWindow.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 200, itemHeight / 2 + itemHeight * 3, 0));
+				UiThread.InvokePendingActions();
+				Assert.IsTrue(!testList.IsOpen, "had a bug where after clicking a disabled item would not close clicking outside");
+			}
+
+			//testRunner.Wait(1);
 		}
 
 		[Test]
