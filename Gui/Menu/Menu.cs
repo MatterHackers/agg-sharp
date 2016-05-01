@@ -87,6 +87,18 @@ namespace MatterHackers.Agg.UI
 			DropDownContainer.Focus();
 		}
 
+		public void AddHorizontalLine()
+		{
+			MenuItem menuItem = new MenuItem(new GuiWidget(HAnchor.ParentLeftRight, VAnchor.AbsolutePosition)
+			{
+				Height = 2,
+				BackgroundColor = RGBA_Bytes.Gray,
+				Margin = new BorderDouble(3, 1),
+				VAnchor = VAnchor.ParentCenter,
+			}, "HorizontalLine");
+			MenuItems.Add(menuItem);
+		}
+
 		virtual protected void DropListItems_Closed(object sender, EventArgs e)
 		{
 			OpenMenuContents dropListItems = (OpenMenuContents)sender;

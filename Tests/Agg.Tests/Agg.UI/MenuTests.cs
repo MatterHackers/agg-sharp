@@ -193,9 +193,19 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test, RequiresSTA, RunInApplicationDomain]
 		public void MenuDisabledItemsWorkCorrectly()
 		{
+			int item1ClickCount = 0;
+			int item2ClickCount = 0;
+			int item3ClickCount = 0;
 			SystemWindow menuTestContainer = new SystemWindow(300, 200)
 			{
 				BackgroundColor = RGBA_Bytes.White,
+			};
+
+			DropDownList testList = new DropDownList("no selection", RGBA_Bytes.Blue, RGBA_Bytes.Green)
+			{
+				MenuItemsBackgroundColor = RGBA_Bytes.White,
+				MenuItemsBackgroundHoverColor = RGBA_Bytes.LightGray,
+				Name = "menu1",
 			};
 
 			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
@@ -205,31 +215,76 @@ namespace MatterHackers.Agg.UI.Tests
 
 				// Now do the actions specific to this test. (replace this for new tests)
 				{
-					testRunner.ClickByName("menu1", 5);
-					testRunner.ClickByName("item2", 5);
+					Assert.IsTrue(item1ClickCount == 0);
+					Assert.IsTrue(item2ClickCount == 0);
+					Assert.IsTrue(item3ClickCount == 0);
+
 					testRunner.ClickByName("menu1", 5);
 					testRunner.ClickByName("item1", 5);
+					testRunner.Wait(.1);
+					Assert.IsTrue(!testList.IsOpen);
+					Assert.IsTrue(item1ClickCount == 1);
+					Assert.IsTrue(item2ClickCount == 0);
+					Assert.IsTrue(item3ClickCount == 0);
+
+					testRunner.ClickByName("menu1", 5);
+					testRunner.ClickByName("item2", 5);
+					testRunner.Wait(.1);
+					Assert.IsTrue(!testList.IsOpen);
+					Assert.IsTrue(item1ClickCount == 1);
+					Assert.IsTrue(item2ClickCount == 1);
+					Assert.IsTrue(item3ClickCount == 0);
+
 					testRunner.ClickByName("menu1", 5);
 					testRunner.ClickByName("item3", 5);
+					testRunner.Wait(.1);
+					Assert.IsTrue(testList.IsOpen);
+					Assert.IsTrue(item1ClickCount == 1);
+					Assert.IsTrue(item2ClickCount == 1);
+					Assert.IsTrue(item3ClickCount == 0);
 					testRunner.ClickByName("item2", 5);
+					testRunner.Wait(.1);
+					Assert.IsTrue(!testList.IsOpen);
+					Assert.IsTrue(item1ClickCount == 1);
+					Assert.IsTrue(item2ClickCount == 2);
+					Assert.IsTrue(item3ClickCount == 0);
+
+					testRunner.ClickByName("menu1", 5);
+					testRunner.ClickByName("OffMenu", 5);
+					testRunner.Wait(.1);
+					Assert.IsTrue(!testList.IsOpen);
+					testRunner.ClickByName("menu1", 5);
+					testRunner.ClickByName("item3", 5);
+					testRunner.ClickByName("OffMenu", 5);
+					Assert.IsTrue(!testList.IsOpen);
 				}
 
 				testRunner.Wait(1);
 				menuTestContainer.CloseOnIdle();
 			};
 
-			DropDownList testList = new DropDownList("no selection", RGBA_Bytes.Blue, RGBA_Bytes.Green)
+			testList.AddItem("item1", clickAction: (s,e) =>
 			{
-				MenuItemsBackgroundColor = RGBA_Bytes.White,
-				MenuItemsBackgroundHoverColor = RGBA_Bytes.LightGray,
-				Name = "menu1",
-			};
-			testList.AddItem("item1").Name = "item1";
-			testList.AddItem("item2").Name = "item2";
-			var item3 = testList.AddItem("item3");
+				item1ClickCount++;
+			}).Name = "item1";
+			testList.AddItem("item2", clickAction: (s, e) =>
+			{
+				item2ClickCount++;
+			}).Name = "item2";
+			var item3 = testList.AddItem("item3", clickAction: (s, e) =>
+			{
+				item3ClickCount++;
+			});
 			item3.Name = "item3";
 			item3.Enabled = false;
 			menuTestContainer.AddChild(testList);
+
+			menuTestContainer.AddChild(new GuiWidget(20, 20)
+			{
+				OriginRelativeParent = new Vector2(160, 150),
+				BackgroundColor = RGBA_Bytes.Cyan,
+				Name = "OffMenu",
+			});
 
 			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExectueTests(menuTestContainer, testToRun, 10000);
 

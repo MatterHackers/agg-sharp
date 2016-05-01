@@ -273,7 +273,7 @@ namespace MatterHackers.Agg.UI
 
 		public bool UseLeftIcons { get; set; } = false;
 
-		public MenuItem AddItem(string itemName, string itemValue = null, double pointSize = 12)
+		public MenuItem AddItem(string itemName, string itemValue = null, double pointSize = 12, EventHandler clickAction = null)
 		{
 			if (itemValue == null)
 			{
@@ -296,6 +296,10 @@ namespace MatterHackers.Agg.UI
 			}, itemValue);
 			menuItem.Text = itemName;
 			menuItem.Name = itemName + " Menu Item";
+			if(clickAction != null)
+			{
+				menuItem.Selected += clickAction;
+			}
 			MenuItems.Add(menuItem);
 
 			return menuItem;
