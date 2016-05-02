@@ -127,7 +127,7 @@ namespace MatterHackers.Agg.UI
 						}
 						index++;
 					}
-					throw new Exception("The label you specified '{0}' is not in the drop down list.".FormatWith(value));
+					selectedIndex = 0;
 				}
 			}
 		}
