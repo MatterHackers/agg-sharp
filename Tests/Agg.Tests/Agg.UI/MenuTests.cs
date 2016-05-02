@@ -293,7 +293,7 @@ namespace MatterHackers.Agg.UI.Tests
 			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExectueTests(menuTestContainer, testToRun, 10000);
 
 			Assert.IsTrue(testHarness.AllTestsPassed);
-			Assert.IsTrue(testHarness.TestCount == 2); // make sure we can all our tests
+			Assert.IsTrue(testHarness.TestCount == 21); // make sure we can all our tests
 		}
 
 		[Test]
