@@ -128,17 +128,17 @@ namespace MatterHackers.Agg.UI
 				if (isChecked != value)
 				{
 					isChecked = value;
-					OnCheckStateChanged();
+					OnCheckStateChanged(null);
 					Invalidate();
 				}
 			}
 		}
 
-		public virtual void OnCheckStateChanged()
+		public virtual void OnCheckStateChanged(EventArgs e)
 		{
 			if (CheckedStateChanged != null)
 			{
-				CheckedStateChanged(this, null);
+				CheckedStateChanged(this, e);
 			}
 		}
 	}
