@@ -295,6 +295,12 @@ namespace MatterHackers.Agg.UI
 				Padding = MenuItemsPadding,
 			}, itemValue);
 			menuItem.Text = itemName;
+
+			// MenuItem is a long lived object that is added and removed to new containers whenever the
+			// menu is shown. To ensure that event registration is not duplicated, always remove before add
+			menuItem.Selected -= MenuItem_Clicked;
+			menuItem.Selected += MenuItem_Clicked;
+
 			menuItem.Name = itemName + " Menu Item";
 			if(clickAction != null)
 			{
