@@ -251,8 +251,8 @@ namespace MatterHackers.Agg.UI
 		internal void DropListItems_ContainsFocusChanged(object sender, EventArgs e)
 		{
 			var widget = sender as GuiWidget;
-			if (widget != null
-				&& widget.Focused)
+			if (widget == null
+				|| !widget.Focused)
 			{
 				UiThread.RunOnIdle(CloseMenu);
 			}
