@@ -131,9 +131,19 @@ namespace MatterHackers.Agg.UI.Tests
 			bool textField1EditComplete = false;
 			editField1.EditComplete += (sender, e) => { textField1EditComplete = true; };
 			bool textField1LostFocus = false;
-			editField1.LostFocus += (sender, e) => { textField1LostFocus = true; };
 			bool textField1GotFocus = false;
-			editField1.GotFocus += (sender, e) => { textField1GotFocus = true; };
+			editField1.FocusChanged += (sender, e) =>
+			{
+				if ((sender as GuiWidget) != null
+					&& (sender as GuiWidget).Focused)
+				{
+					textField1GotFocus = true;
+				}
+				else
+				{
+					textField1LostFocus = true;
+				}
+			};
 			container.AddChild(editField1);
 
 			TextEditWidget editField2 = new TextEditWidget("", 0, 40, pixelWidth: 20);

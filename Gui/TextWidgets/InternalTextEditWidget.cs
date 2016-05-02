@@ -293,27 +293,28 @@ namespace MatterHackers.Agg.UI
 
 		private string textWhenGotFocus;
 
-		public override void OnGotFocus(EventArgs e)
+		public override void OnFocusChanged(EventArgs e)
 		{
-			RestartBarFlash();
-			textWhenGotFocus = Text;
-			timeSinceTurnOn.Restart();
-			if (SelectAllOnFocus)
+			if (Focused)
 			{
-				selectAllOnMouseUpIfNoSelection = true;
+				RestartBarFlash();
+				textWhenGotFocus = Text;
+				timeSinceTurnOn.Restart();
+				if (SelectAllOnFocus)
+				{
+					selectAllOnMouseUpIfNoSelection = true;
+				}
 			}
-			base.OnGotFocus(e);
-		}
-
-		public override void OnLostFocus(EventArgs e)
-		{
-			Selecting = false;
-			Invalidate();
-			if (TextHasChanged())
+			else
 			{
-				OnEditComplete(e);
+				Selecting = false;
+				Invalidate();
+				if (TextHasChanged())
+				{
+					OnEditComplete(e);
+				}
 			}
-			base.OnLostFocus(e);
+			base.OnFocusChanged(e);
 		}
 
 		public void MarkAsStartingState()

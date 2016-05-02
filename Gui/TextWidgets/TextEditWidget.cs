@@ -225,8 +225,7 @@ namespace MatterHackers.Agg.UI
 			}
 			this.LocalBounds = new RectangleDouble(0, 0, pixelWidth, pixelHeight);
 			internalTextEditWidget.InsertBarPositionChanged += new EventHandler(internalTextEditWidget_InsertBarPositionChanged);
-			internalTextEditWidget.GotFocus += new EventHandler(internalTextEditWidget_GotFocus);
-			internalTextEditWidget.LostFocus += new EventHandler(internalTextEditWidget_LostFocus);
+			internalTextEditWidget.FocusChanged += new EventHandler(internalTextEditWidget_FocusChanged);
 			internalTextEditWidget.TextChanged += new EventHandler(internalTextEditWidget_TextChanged);
 			base.AddChild(internalTextEditWidget);
 		}
@@ -252,22 +251,23 @@ namespace MatterHackers.Agg.UI
 			internalTextEditWidget.Focus();
 		}
 
-		private void internalTextEditWidget_GotFocus(object sender, EventArgs e)
+		private void internalTextEditWidget_FocusChanged(object sender, EventArgs e)
 		{
-			if (ShowSoftwareKeyboard != null)
+			if (Focused)
 			{
-				UiThread.RunOnIdle(() =>
+				if (ShowSoftwareKeyboard != null)
 				{
-					ShowSoftwareKeyboard(this, null);
-				});
+					UiThread.RunOnIdle(() =>
+					{
+						ShowSoftwareKeyboard(this, null);
+					});
+				}
 			}
-			OnGotFocus(e);
-		}
-
-		private void internalTextEditWidget_LostFocus(object sender, EventArgs e)
-		{
-			OnHideSoftwareKeyboard();
-			OnLostFocus(e);
+			else
+			{
+				OnHideSoftwareKeyboard();
+			}
+			OnFocusChanged(e);
 		}
 
 		public override void OnClosed(EventArgs e)

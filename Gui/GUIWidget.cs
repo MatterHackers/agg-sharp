@@ -457,11 +457,11 @@ namespace MatterHackers.Agg.UI
 
 		public event EventHandler Closed;
 
-		public event EventHandler GotFocus;
-
 		public event EventHandler ParentChanged;
 
-		public event EventHandler LostFocus;
+		public event EventHandler FocusChanged;
+
+		public event EventHandler ContainsFocusChanged;
 
 		/// <summary>
 		/// The mouse has gone down while in the bounds of this widget
@@ -606,14 +606,14 @@ namespace MatterHackers.Agg.UI
 			return count;
 		}
 
-		public virtual void OnLostFocus(EventArgs e)
+		public virtual void OnFocusChanged(EventArgs e)
 		{
-			LostFocus?.Invoke(this, e);
+			FocusChanged?.Invoke(this, e);
 		}
 
-		public virtual void OnGotFocus(EventArgs e)
+		public virtual void OnContainsFocusChanged(EventArgs e)
 		{
-			GotFocus?.Invoke(this, e);
+			ContainsFocusChanged?.Invoke(this, e);
 		}
 
 		private void AllocateBackBuffer()
@@ -1496,7 +1496,7 @@ namespace MatterHackers.Agg.UI
 				} while (curWidget != null);
 
 				// finally call any delegates
-				OnGotFocus(null);
+				OnFocusChanged(null);
 			}
 		}
 
@@ -1507,14 +1507,20 @@ namespace MatterHackers.Agg.UI
 				if (Focused)
 				{
 					containsFocus = false;
-					OnLostFocus(null);
+					OnContainsFocusChanged(null);
+					OnFocusChanged(null);
 					return;
 				}
 
-				containsFocus = false;
-				foreach (GuiWidget child in Children.ToArray())
+				// If it is still focused it was not the primary widget one of its children was
+				if (containsFocus)
 				{
-					child.Unfocus();
+					containsFocus = false;
+					OnContainsFocusChanged(null);
+					foreach (GuiWidget child in Children.ToArray())
+					{
+						child.Unfocus();
+					}
 				}
 			}
 		}
@@ -2175,6 +2181,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnMouseDown(MouseEventArgs mouseEvent)
 		{
+			bool focusStateBeforeProcessing = containsFocus;
 			bool mouseDownOnWidget = PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y);
 			if (mouseDownOnWidget)
 			{
@@ -2272,6 +2279,11 @@ namespace MatterHackers.Agg.UI
 			}
 
 			LastMouseDownMs = UiThread.CurrentTimerMs;
+
+			if(focusStateBeforeProcessing != containsFocus)
+			{
+				OnContainsFocusChanged(null);
+			}
 		}
 
 		public bool IsDoubleClick(MouseEventArgs mouseEvent)

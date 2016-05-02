@@ -20,6 +20,7 @@ namespace MatterHackers.Agg.UI
 
 		internal OpenMenuContents(ObservableCollection<MenuItem> MenuItems, GuiWidget widgetRelativeTo, Vector2 openOffset, Direction direction, RGBA_Bytes backgroundColor, RGBA_Bytes borderColor, int borderWidth, double maxHeight, bool alignToRightEdge)
 		{
+			this.Name = "_OpenMenuContents";
 			this.MenuItems = new List<MenuItem>();
 			this.MenuItems.AddRange(MenuItems);
 			this.alignToRightEdge = alignToRightEdge;
@@ -32,7 +33,10 @@ namespace MatterHackers.Agg.UI
 			this.widgetRelativeTo = widgetRelativeTo;
 			scrollingWindow = new ScrollableWidget(true);
 			{
-				FlowLayoutWidget topToBottom = new FlowLayoutWidget(FlowDirection.TopToBottom);
+				FlowLayoutWidget topToBottom = new FlowLayoutWidget(FlowDirection.TopToBottom)
+				{
+					Name = "_topToBottom",
+				};
 				foreach (MenuItem menu in MenuItems)
 				{
 					menu.ClearRemovedFlag();
@@ -56,7 +60,7 @@ namespace MatterHackers.Agg.UI
 			}
 			AddChild(scrollingWindow);
 
-			LostFocus += DropListItems_LostFocus;
+			ContainsFocusChanged += DropListItems_ContainsFocusChanged;
 
 			GuiWidget topParent = widgetRelativeTo.Parent;
 			while (topParent.Parent != null
@@ -103,7 +107,7 @@ namespace MatterHackers.Agg.UI
 			widgetRelativeTo.Closed -= widgetRelativeTo_Closed;
 			widgetRelativeTo = null;
 			UnbindCallbacks();
-			DropListItems_LostFocus(null, null);
+			DropListItems_ContainsFocusChanged(null, null);
 		}
 
 		private HashSet<GuiWidget> widgetRefList = new HashSet<GuiWidget>();
@@ -244,9 +248,12 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		internal void DropListItems_LostFocus(object sender, EventArgs e)
+		internal void DropListItems_ContainsFocusChanged(object sender, EventArgs e)
 		{
-			UiThread.RunOnIdle(CloseMenu);
+			if (!(sender as GuiWidget).Focused)
+			{
+				UiThread.RunOnIdle(CloseMenu);
+			}
 		}
 	}
 }
