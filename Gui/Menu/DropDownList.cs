@@ -287,10 +287,12 @@ namespace MatterHackers.Agg.UI
 			MenuItem menuItem = new MenuItem(new MenuItemColorStatesView(itemName)
 			{
 				NormalBackgroundColor = MenuItemsBackgroundColor,
-				NormalTextColor = mainControlText.TextColor,
 				OverBackgroundColor = MenuItemsBackgroundHoverColor,
-				OverTextColor = mainControlText.TextColor,
+
+				NormalTextColor = MenuItemsTextColor,
+				OverTextColor = MenuItemsTextHoverColor,
 				DisabledTextColor = RGBA_Bytes.Gray,
+
 				PointSize = pointSize,
 				Padding = MenuItemsPadding,
 			}, itemValue);
