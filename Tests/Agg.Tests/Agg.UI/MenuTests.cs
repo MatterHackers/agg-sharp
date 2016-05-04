@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+#if !__ANDROID__
 using MatterHackers.Agg.Image;
 using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
@@ -567,3 +568,4 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 	}
 }
+#endif
