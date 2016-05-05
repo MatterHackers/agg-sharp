@@ -184,6 +184,23 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public bool ContainsFirstUnderMouseRecursive()
+		{
+			if(underMouseState == UnderMouseState.FirstUnderMouse)
+			{
+				return true;
+			}
+			foreach(var child in Children)
+			{
+				if(child.ContainsFirstUnderMouseRecursive())
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		static public bool DefaultEnforceIntegerBounds
 		{
 			get;
