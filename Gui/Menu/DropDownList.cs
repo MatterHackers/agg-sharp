@@ -168,9 +168,10 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public DropDownList(string noSelectionString, RGBA_Bytes normalColor, RGBA_Bytes hoverColor, Direction direction = Direction.Down, double maxHeight = 0)
+		public DropDownList(string noSelectionString, RGBA_Bytes normalColor, RGBA_Bytes hoverColor, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false)
 			: base(direction, maxHeight)
 		{
+			UseLeftIcons = useLeftIcons;
 			if (this.MenuDirection == Direction.Down)
 			{
 				directionArrow = new PathStorage();
@@ -271,7 +272,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public bool UseLeftIcons { get; set; } = false;
+		public bool UseLeftIcons { get; private set; } = false;
 
 		public MenuItem AddItem(string itemName, string itemValue = null, double pointSize = 12, EventHandler clickAction = null)
 		{
@@ -284,6 +285,12 @@ namespace MatterHackers.Agg.UI
 				mainControlText.Margin = MenuItemsPadding;
 			}
 
+			BorderDouble currentPadding = MenuItemsPadding;
+			if (UseLeftIcons)
+			{
+				currentPadding = new BorderDouble(MenuItemsPadding.Left + 20 + 3, MenuItemsPadding.Bottom, MenuItemsPadding.Right, MenuItemsPadding.Top);
+			}
+
 			MenuItem menuItem = new MenuItem(new MenuItemColorStatesView(itemName)
 			{
 				NormalBackgroundColor = MenuItemsBackgroundColor,
@@ -294,7 +301,7 @@ namespace MatterHackers.Agg.UI
 				DisabledTextColor = RGBA_Bytes.Gray,
 
 				PointSize = pointSize,
-				Padding = MenuItemsPadding,
+				Padding = currentPadding,
 			}, itemValue);
 			menuItem.Text = itemName;
 

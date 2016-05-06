@@ -45,12 +45,12 @@ namespace MatterHackers.Agg.UI
         {
             get
             {
-                return printer.TypeFaceStyle.EmSizeInPoints;
+                return printer.TypeFaceStyle.EmSizeInPoints / GlobalPointSizeScaleRatio;
             }
 
             set
             {
-                printer.TypeFaceStyle = new StyledTypeFace(printer.TypeFaceStyle.TypeFace, value, printer.TypeFaceStyle.DoUnderline, printer.TypeFaceStyle.FlatenCurves);
+                printer.TypeFaceStyle = new StyledTypeFace(printer.TypeFaceStyle.TypeFace, value * GlobalPointSizeScaleRatio, printer.TypeFaceStyle.DoUnderline, printer.TypeFaceStyle.FlatenCurves);
 	
 				if (AutoExpandBoundsToText)
 				{
