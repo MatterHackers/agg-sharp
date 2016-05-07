@@ -1,5 +1,6 @@
 ﻿using MatterHackers.Agg.Image;
 using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.Agg.UI;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Drawing;
@@ -65,6 +66,25 @@ namespace MatterHackers.Agg
 		public ImageBuffer LoadIcon(string path)
 		{
 			return LoadImage(Path.Combine("Icons", path));
+		}
+
+		/// <summary>
+		/// Load the specified file from the StaticData/Icons path and scale it to the given size,
+		/// adjusting for the device scale in GuiWidget
+		/// </summary>
+		/// <param name="path">The file path to load</param>
+		/// <param name="width"></param>
+		/// <param name="height"></param>
+		/// <returns></returns>
+		public ImageBuffer LoadIcon(string path, int width, int height)
+		{
+			int deviceWidth = (int)(width * GuiWidget.DeviceScale);
+			int deviceHeight = (int)(height * GuiWidget.DeviceScale);
+			ImageBuffer scaledImage = LoadIcon(path);
+			scaledImage.SetRecieveBlender(new BlenderPreMultBGRA());
+			scaledImage = ImageBuffer.CreateScaledImage(scaledImage, deviceWidth, deviceHeight);
+
+			return scaledImage;
 		}
 
 		/// <summary>

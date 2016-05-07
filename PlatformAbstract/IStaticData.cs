@@ -21,6 +21,8 @@ namespace MatterHackers.Agg.PlatformAbstract
 		/// <returns>An ImageBuffer initialized with data from the given file</returns>
 		ImageBuffer LoadIcon(string path);
 
+		ImageBuffer LoadIcon(string path, int width, int height);
+
 		/// <summary>
 		/// Loads the specified file from the StaticData/Icons path
 		/// </summary>
