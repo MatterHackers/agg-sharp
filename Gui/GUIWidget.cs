@@ -134,6 +134,8 @@ namespace MatterHackers.Agg.UI
 	[DebuggerDisplay("Name = {Name}, Bounds = {LocalBounds}")]
 	public class GuiWidget
 	{
+		public static double DeviceScale { get; set; } = 1;
+
 		private const double dumpIfLongerThanTime = 1;
 		private static bool debugShowSize = false;
 
@@ -258,7 +260,16 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		private BorderDouble devicePadding;
 		private BorderDouble padding;
+
+		/// <summary>
+		/// The padding scaled by the DeviceScale
+		/// </summary>
+		public BorderDouble DevicePadding
+		{
+			get { return devicePadding; }
+		}
 
 		/// <summary>
 		/// The space between the Widget and it's contents (the inside border).
@@ -273,7 +284,12 @@ namespace MatterHackers.Agg.UI
 					if (padding != value)
 					{
 						padding = value;
-						// the padding affects the children so make sure they are layed out
+						devicePadding = new BorderDouble(
+						(int)(Padding.Left * GuiWidget.DeviceScale + .5),
+						(int)(Padding.Bottom * GuiWidget.DeviceScale + .5),
+						(int)(Padding.Right * GuiWidget.DeviceScale + .5),
+						(int)(Padding.Top * GuiWidget.DeviceScale + .5));
+						// the padding affects the children so make sure they are laid out
 						OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.Padding));
 						OnPaddingChanged();
 					}
@@ -292,8 +308,17 @@ namespace MatterHackers.Agg.UI
 		public Cursors Cursor { get; set; }
 
 		private BorderDouble margin;
+		private BorderDouble deviceMargin;
 
 		public long LastMouseDownMs { get; private set; }
+
+		/// <summary>
+		/// The Margin scaled by the DeviceScale
+		/// </summary>
+		public BorderDouble DeviceMargin
+		{
+			get { return deviceMargin; }
+		}
 
 		/// <summary>
 		/// The space between the Widget and it's parent (the outside border).
@@ -309,6 +334,11 @@ namespace MatterHackers.Agg.UI
 				if (margin != value)
 				{
 					margin = value;
+					deviceMargin = new BorderDouble(
+						(int)(Margin.Left * GuiWidget.DeviceScale + .5),
+						(int)(Margin.Bottom * GuiWidget.DeviceScale + .5),
+						(int)(Margin.Right * GuiWidget.DeviceScale + .5),
+						(int)(Margin.Top * GuiWidget.DeviceScale + .5));
 					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Margin));
 					OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.Margin));
 					OnMarginChanged();
@@ -944,11 +974,11 @@ namespace MatterHackers.Agg.UI
 
 					if (considerChildAnchor)
 					{
-						minSize.x = Max(child.Width + child.Margin.Width, minSize.x);
-						minSize.y = Max(child.Height + child.Margin.Height, minSize.y);
+						minSize.x = Max(child.Width + child.DeviceMargin.Width, minSize.x);
+						minSize.y = Max(child.Height + child.DeviceMargin.Height, minSize.y);
 
 						RectangleDouble childBoundsWithMargin = child.BoundsRelativeToParent;
-						childBoundsWithMargin.Inflate(child.Margin);
+						childBoundsWithMargin.Inflate(child.DeviceMargin);
 
 						if (!child.HAnchorIsFloating)
 						{
@@ -1018,7 +1048,7 @@ namespace MatterHackers.Agg.UI
 		public RectangleDouble GetMinimumBoundsToEncloseChildren(bool considerChildAnchor = false)
 		{
 			RectangleDouble minimumSizeToEncloseChildren = GetChildrenBoundsIncludingMargins(considerChildAnchor);
-			minimumSizeToEncloseChildren.Inflate(Padding);
+			minimumSizeToEncloseChildren.Inflate(DevicePadding);
 			return minimumSizeToEncloseChildren;
 		}
 
@@ -1784,7 +1814,7 @@ namespace MatterHackers.Agg.UI
 						if (child.DebugShowBounds)
 						{
 							// draw the margin
-							BorderDouble invertedMargin = child.Margin;
+							BorderDouble invertedMargin = child.DeviceMargin;
 							invertedMargin.Left = -invertedMargin.Left;
 							invertedMargin.Bottom = -invertedMargin.Bottom;
 							invertedMargin.Right = -invertedMargin.Right;
@@ -1865,7 +1895,7 @@ namespace MatterHackers.Agg.UI
 				if (DebugShowBounds)
 				{
 					// draw the padding
-					DrawBorderBounds(graphics2D, LocalBounds, Padding, new RGBA_Bytes(Cyan, 128));
+					DrawBorderBounds(graphics2D, LocalBounds, DevicePadding, new RGBA_Bytes(Cyan, 128));
 
 					// show the bounds and inside with an x
 					graphics2D.Line(LocalBounds.Left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, Green);

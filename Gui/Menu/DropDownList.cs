@@ -363,7 +363,8 @@ namespace MatterHackers.Agg.UI
 			{
 				if (leftImage != null)
 				{
-					ImageBuffer scaledImage = ImageBuffer.CreateScaledImage(leftImage, 20, 20);
+					int size = (int)(20 * GuiWidget.DeviceScale + .5);
+					ImageBuffer scaledImage = ImageBuffer.CreateScaledImage(leftImage, size, size);
 					rowContainer.AddChild(new ImageWidget(scaledImage)
 					{
 						VAnchor = VAnchor.ParentCenter,

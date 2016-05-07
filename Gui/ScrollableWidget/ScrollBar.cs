@@ -118,7 +118,7 @@ namespace MatterHackers.Agg.UI
 		private GuiWidget background;
 		private ThumDragWidget thumb;
 
-		public static double ScrollBarWidth = 15;
+		public static double ScrollBarWidth = 15 * GuiWidget.DeviceScale;
 
 		public enum ShowState { Never, WhenRequired, Always };
 

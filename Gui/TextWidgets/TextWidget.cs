@@ -31,9 +31,7 @@ namespace MatterHackers.Agg.UI
 	//------------------------------------------------------------------------
 	public class TextWidget : GuiWidget
 	{
-		private static bool debugIt = false;
 		public static bool DoubleBufferDefault = true;
-		public static double GlobalPointSizeScaleRatio = 1;
         
 		private RGBA_Bytes textColor;
 
@@ -45,12 +43,12 @@ namespace MatterHackers.Agg.UI
         {
             get
             {
-                return printer.TypeFaceStyle.EmSizeInPoints / GlobalPointSizeScaleRatio;
+                return printer.TypeFaceStyle.EmSizeInPoints / GuiWidget.DeviceScale;
             }
 
             set
             {
-                printer.TypeFaceStyle = new StyledTypeFace(printer.TypeFaceStyle.TypeFace, value * GlobalPointSizeScaleRatio, printer.TypeFaceStyle.DoUnderline, printer.TypeFaceStyle.FlatenCurves);
+                printer.TypeFaceStyle = new StyledTypeFace(printer.TypeFaceStyle.TypeFace, value * GuiWidget.DeviceScale, printer.TypeFaceStyle.DoUnderline, printer.TypeFaceStyle.FlatenCurves);
 	
 				if (AutoExpandBoundsToText)
 				{
@@ -71,7 +69,6 @@ namespace MatterHackers.Agg.UI
 
 		public TextWidget(string text, double x = 0, double y = 0, double pointSize = 12, Justification justification = Justification.Left, RGBA_Bytes textColor = new RGBA_Bytes(), bool ellipsisIfClipped = true, bool underline = false, RGBA_Bytes backgroundColor = new RGBA_Bytes())
 		{
-			pointSize *= GlobalPointSizeScaleRatio;
 			Selectable = false;
 			DoubleBuffer = DoubleBufferDefault;
 			AutoExpandBoundsToText = false;
@@ -89,7 +86,7 @@ namespace MatterHackers.Agg.UI
 			}
 
 			base.Text = text;
-			StyledTypeFace typeFaceStyle = new StyledTypeFace(LiberationSansFont.Instance, pointSize, underline);
+			StyledTypeFace typeFaceStyle = new StyledTypeFace(LiberationSansFont.Instance, pointSize * GuiWidget.DeviceScale, underline);
 			printer = new TypeFacePrinter(text, typeFaceStyle, justification: justification);
 
 			LocalBounds = printer.LocalBounds;
@@ -236,19 +233,7 @@ namespace MatterHackers.Agg.UI
 				Printer.Render(graphics2D, currentColor);
 			}
 
-			if (debugIt)
-			{
-				graphics2D.Line(-5, 0, 5, 0, RGBA_Bytes.Blue);
-				graphics2D.Line(0, -5, 0, 5, RGBA_Bytes.Blue);
-			}
-
 			graphics2D.PopTransform();
-
-			if (debugIt)
-			{
-				graphics2D.Line(-5, 0, 5, 0, RGBA_Bytes.Red);
-				graphics2D.Line(0, -5, 0, 5, RGBA_Bytes.Red);
-			}
 
 			base.OnDraw(graphics2D);
 		}
