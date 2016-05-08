@@ -115,7 +115,7 @@ namespace MatterHackers.Agg.Image
 			ImageBuffer destImage = new ImageBuffer(width, height, 32, unscaledSourceImage.GetRecieveBlender());
 
 			// If the source image is more than twice as big as our dest image.
-			while (unscaledSourceImage.Width > destImage.Width * 2)
+			while (unscaledSourceImage.Width >= destImage.Width * 2)
 			{
 				// The image sampler we use is a 2x2 filter so we need to scale by a max of 1/2 if we want to get good results.
 				// So we scale as many times as we need to get the Image to be the right size.
@@ -123,14 +123,17 @@ namespace MatterHackers.Agg.Image
 				ImageBuffer halfImage = new ImageBuffer(unscaledSourceImage.Width / 2, unscaledSourceImage.Height / 2, 32, unscaledSourceImage.GetRecieveBlender());
 				halfImage.NewGraphics2D().Render(unscaledSourceImage, 0, 0, 0, halfImage.Width / (double)unscaledSourceImage.Width, halfImage.Height / (double)unscaledSourceImage.Height);
 				unscaledSourceImage = halfImage;
+
+				if (unscaledSourceImage.Width == width)
+				{
+					return unscaledSourceImage;
+				}
 			}
 
 			Graphics2D renderGraphics = destImage.NewGraphics2D();
 			renderGraphics.ImageRenderQuality = Graphics2D.TransformQuality.Best;
 
 			renderGraphics.Render(unscaledSourceImage, 0, 0, 0, destImage.Width / (double)unscaledSourceImage.Width, destImage.Height / (double)unscaledSourceImage.Height);
-
-			destImage.MarkImageChanged();
 
 			return destImage;
 		}
