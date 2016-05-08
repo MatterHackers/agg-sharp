@@ -69,10 +69,10 @@ namespace MatterHackers.ImageProcessing
 							for (int x = 0; x < width; x++)
 							{
 								resultBuffer[offsetResult++] = (byte)(color.blue * amoutOfWhite / 255); offsetA++;
-                                resultBuffer[offsetResult++] = (byte)(color.green * amoutOfWhite / 255); offsetA++;
+								resultBuffer[offsetResult++] = (byte)(color.green * amoutOfWhite / 255); offsetA++;
 								resultBuffer[offsetResult++] = (byte)(color.red * amoutOfWhite / 255); offsetA++;
 								resultBuffer[offsetResult++] = imageABuffer[offsetA++];
-                            }
+							}
 						}
 					}
 					break;
@@ -87,6 +87,63 @@ namespace MatterHackers.ImageProcessing
 			ImageBuffer destImage = new ImageBuffer(normalImage.Width, normalImage.Height, 32, new BlenderBGRA());
 
 			DoWhiteToColor(destImage, normalImage, color);
+
+			return destImage;
+		}
+	}
+
+	public class SetToColor
+	{
+		public static void DoSetToColor(ImageBuffer sourceImageAndDest, RGBA_Bytes color)
+		{
+			DoSetToColor(sourceImageAndDest, sourceImageAndDest, color);
+		}
+
+		public static void DoSetToColor(ImageBuffer result, ImageBuffer imageA, RGBA_Bytes color)
+		{
+			if (imageA.BitDepth != result.BitDepth)
+			{
+				throw new NotImplementedException("All the images have to be the same bit depth.");
+			}
+			if (imageA.Width != result.Width || imageA.Height != result.Height)
+			{
+				throw new Exception("All images must be the same size.");
+			}
+
+			switch (imageA.BitDepth)
+			{
+				case 32:
+					{
+						int height = imageA.Height;
+						int width = imageA.Width;
+						byte[] resultBuffer = result.GetBuffer();
+						byte[] imageABuffer = imageA.GetBuffer();
+						for (int y = 0; y < height; y++)
+						{
+							int offsetA = imageA.GetBufferOffsetY(y);
+							int offsetResult = result.GetBufferOffsetY(y);
+
+							for (int x = 0; x < width; x++)
+							{
+								resultBuffer[offsetResult++] = (byte)(color.blue); offsetA++;
+								resultBuffer[offsetResult++] = (byte)(color.green); offsetA++;
+								resultBuffer[offsetResult++] = (byte)(color.red); offsetA++;
+								resultBuffer[offsetResult++] = imageABuffer[offsetA++];
+							}
+						}
+					}
+					break;
+
+				default:
+					throw new NotImplementedException();
+			}
+		}
+
+		public static ImageBuffer CreateSetToColor(ImageBuffer normalImage, RGBA_Bytes color)
+		{
+			ImageBuffer destImage = new ImageBuffer(normalImage.Width, normalImage.Height, 32, new BlenderBGRA());
+
+			DoSetToColor(destImage, normalImage, color);
 
 			return destImage;
 		}
