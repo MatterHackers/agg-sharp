@@ -84,6 +84,11 @@ namespace MatterHackers.Agg.UI
 		{
 			base.ShowMenu();
 
+			if(selectedIndex >= MenuItems.Count-1)
+			{
+				selectedIndex = MenuItems.Count - 1;
+			}
+
 			if (selectedIndex >= 0)
 			{
 				var selectedMenuItem = MenuItems[selectedIndex];
@@ -219,23 +224,26 @@ namespace MatterHackers.Agg.UI
 
 		private void MenuItems_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
 		{
-			Vector2 minSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
-
-			string startText = mainControlText.Text;
-			foreach (MenuItem item in MenuItems)
+			if (e.NewItems != null)
 			{
-				mainControlText.Text = item.Text;
+				Vector2 minSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
 
-				minSize.x = Math.Max(minSize.x, LocalBounds.Width);
-				minSize.y = Math.Max(minSize.y, LocalBounds.Height);
-			}
-			mainControlText.Text = startText;
+				string startText = mainControlText.Text;
+				foreach (MenuItem item in MenuItems)
+				{
+					mainControlText.Text = item.Text;
 
-			this.MinimumSize = minSize;
+					minSize.x = Math.Max(minSize.x, LocalBounds.Width);
+					minSize.y = Math.Max(minSize.y, LocalBounds.Height);
+				}
+				mainControlText.Text = startText;
 
-			foreach (MenuItem item in e.NewItems)
-			{
-				item.MinimumSize = minSize;
+				this.MinimumSize = minSize;
+
+				foreach (MenuItem item in e.NewItems)
+				{
+					item.MinimumSize = minSize;
+				}
 			}
 		}
 
