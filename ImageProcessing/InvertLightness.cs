@@ -32,6 +32,14 @@ using System;
 
 namespace MatterHackers.Agg.ImageProcessing
 {
+	public static class ExtensionMethods
+	{
+		public static ImageBuffer InvertLightness(this ImageBuffer imageBuffer)
+		{
+			return MatterHackers.Agg.ImageProcessing.InvertLightness.DoInvertLightness(imageBuffer);
+		}
+	}
+
 	public static class InvertLightness
 	{
 		public static bool MaxRGB32(byte[] buffer, int offset, int threshold)
