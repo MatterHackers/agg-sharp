@@ -56,6 +56,11 @@ namespace MatterHackers.GCodeVisualizer
 
 		private double GetRadius(RenderType renderType)
 		{
+			if (extrusionVolumeMm3 < .01)
+			{
+				// the amount of extruded material is tiny and we are getting rounding errors that make it look like it has a significant radius (it doesn't). Return 0.
+				return 0;
+			}
 			double radius = .2;
 			if ((renderType & RenderType.SimulateExtrusion) == RenderType.SimulateExtrusion)
 			{
@@ -68,6 +73,11 @@ namespace MatterHackers.GCodeVisualizer
 
         private double GetExtrusionWidth(RenderType renderType)
         {
+			if(extrusionVolumeMm3 < .01)
+			{
+				// the amount of extruded material is tiny and we are getting rounding errors that make it look like it has a significant radius (it doesn't). Return 0.
+				return 0;
+			}
             double width = .4;
             if ((renderType & RenderType.SimulateExtrusion) == RenderType.SimulateExtrusion)
             {
