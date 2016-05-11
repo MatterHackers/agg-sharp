@@ -92,11 +92,11 @@ namespace MatterHackers.PolygonMesh
 		{
 		}
 
-		public static Mesh Copy(Mesh meshToCopy, ReportProgressRatio progress = null)
+		public static Mesh Copy(Mesh meshToCopy, ReportProgressRatio progress = null, bool fastCopy = true)
 		{
 			Mesh newMesh = new Mesh();
 
-			if (meshToCopy.Vertices.IsSorted)
+			if (meshToCopy.Vertices.IsSorted && fastCopy)
 			{
 				Dictionary<Vertex, int> vertexIndexDictionary = GetVertexToIndexDictionary(meshToCopy, newMesh);
 				Dictionary<MeshEdge, int> meshEdgeIndexDictionary = GetMeshEdgeToIndexDictionary(meshToCopy, newMesh);
