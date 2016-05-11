@@ -2,6 +2,7 @@
 using MatterHackers.Agg.PlatformAbstract;
 using MatterHackers.Agg.UI;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -35,6 +36,7 @@ namespace MatterHackers.Agg
 
 		public FileSystemStaticData(string overridePath)
 		{
+			Console.WriteLine("Overriding StaticData: " + Path.GetFullPath(overridePath));
 			this.basePath = overridePath;
 		}
 
