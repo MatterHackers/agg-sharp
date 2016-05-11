@@ -43,8 +43,8 @@ namespace MatterHackers.Agg
 
 		public Point2D(double newX, double newY)
 		{
-			x = (int)(newX + .5);
-			y = (int)(newY + .5);
+			x = Convert.ToInt32(newX);
+			y = Convert.ToInt32(newY);
 		}
 
 		public void Set(int inX, int inY)
@@ -265,8 +265,8 @@ namespace MatterHackers.Agg
 			if (Length != 0.0f)
 			{
 				double InversLength = 1.0f / Length;
-				x = (int)(x * InversLength + .5);
-				y = (int)(y * InversLength + .5);
+				x = Convert.ToInt32(x * InversLength);
+				y = Convert.ToInt32(y * InversLength);
 			}
 		}
 
@@ -277,8 +277,8 @@ namespace MatterHackers.Agg
 			if (Length != 0.0f)
 			{
 				double InversLength = 1.0f / Length;
-				x = (int)(x * InversLength + .5);
-				y = (int)(y * InversLength + .5);
+				x = Convert.ToInt32(x * InversLength);
+				y = Convert.ToInt32(y * InversLength);
 			}
 		}
 
@@ -291,8 +291,8 @@ namespace MatterHackers.Agg
 			if (Length != 0.0f)
 			{
 				double InversLength = 1.0f / Length;
-				x = (int)(x * InversLength + .5);
-				y = (int)(y * InversLength + .5);
+				x = Convert.ToInt32(x * InversLength);
+				y = Convert.ToInt32(y * InversLength);
 			}
 
 			return Length;

@@ -1,4 +1,6 @@
-﻿namespace MatterHackers.Agg
+﻿using System;
+
+namespace MatterHackers.Agg
 {
 	/// <summary>
 	/// BorderDouble is used to represent the border around (Margin) on inside (Padding) of a rectangular area.
@@ -98,6 +100,14 @@
 		public override string ToString()
 		{
 			return string.Format("L:{0}, B:{1}, R:{2}, T:{3}", Left, Bottom, Right, Top);
+		}
+
+		public void Round()
+		{
+			this.Left = Math.Round(this.Left);
+			this.Bottom = Math.Round(this.Bottom);
+			this.Right = Math.Round(this.Right);
+			this.Top = Math.Round(this.Top);
 		}
 	}
 }

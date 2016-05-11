@@ -284,11 +284,11 @@ namespace MatterHackers.Agg.UI
 					if (padding != value)
 					{
 						padding = value;
-						devicePadding = new BorderDouble(
-						(int)(Padding.Left * GuiWidget.DeviceScale + .5),
-						(int)(Padding.Bottom * GuiWidget.DeviceScale + .5),
-						(int)(Padding.Right * GuiWidget.DeviceScale + .5),
-						(int)(Padding.Top * GuiWidget.DeviceScale + .5));
+						devicePadding = Padding * GuiWidget.DeviceScale;
+						if(EnforceIntegerBounds)
+						{
+							devicePadding.Round();
+						}
 						// the padding affects the children so make sure they are laid out
 						OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.Padding));
 						OnPaddingChanged();
@@ -334,11 +334,12 @@ namespace MatterHackers.Agg.UI
 				if (margin != value)
 				{
 					margin = value;
-					deviceMargin = new BorderDouble(
-						(int)(Margin.Left * GuiWidget.DeviceScale + .5),
-						(int)(Margin.Bottom * GuiWidget.DeviceScale + .5),
-						(int)(Margin.Right * GuiWidget.DeviceScale + .5),
-						(int)(Margin.Top * GuiWidget.DeviceScale + .5));
+					deviceMargin = Margin * GuiWidget.DeviceScale;
+
+					if(EnforceIntegerBounds)
+					{
+						deviceMargin.Round();
+					}
 					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Margin));
 					OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.Margin));
 					OnMarginChanged();
