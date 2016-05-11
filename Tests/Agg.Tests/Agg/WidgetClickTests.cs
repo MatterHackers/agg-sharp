@@ -283,9 +283,14 @@ namespace MatterHackers.Agg.Tests
 			Assert.IsTrue(systemWindow.TestsPassed, systemWindow.ErrorMessage);
 		}
 
-		[Test, RequiresSTA, RunInApplicationDomain, Category("KnownIssues")]
+
+		[Test, RequiresSTA, RunInApplicationDomain, Category("FixNeeded")]
 		public void ClickSuppressedOnMouseUpWithinChild()
 		{
+			// FixNeeded - Agg currently fires mouse up events in child controls when the parent has the mouse captured
+			// and is performing drag like operations. If the mouse goes down the in the parent and comes up on the child
+			// neither control should get a click event
+
 			int rootClickCount = 0;
 			int childClickCount = 0;
 
