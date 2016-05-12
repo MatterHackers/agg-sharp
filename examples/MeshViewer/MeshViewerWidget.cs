@@ -325,7 +325,7 @@ namespace MatterHackers.MeshVisualizer
 				divisor = 100;
 				skip = 10;
 			}
-			else if (sizeForMarking > 250)
+			else if (sizeForMarking > 300)
 			{
 				divisor = 50;
 				skip = 5;
