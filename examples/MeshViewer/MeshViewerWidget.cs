@@ -241,14 +241,14 @@ namespace MatterHackers.MeshVisualizer
 
 		public static void AssertDebugNotDefined()
 		{
-			#if DEBUG
+#if DEBUG
 			throw new Exception("DEBUG is defined and should not be!");
-			#endif
+#endif
 		}
 
 		public static RGBA_Bytes GetMaterialColor(int materialIndexBase1)
 		{
-			lock(materialColors)
+			lock (materialColors)
 			{
 				if (materialColors.ContainsKey(materialIndexBase1))
 				{
@@ -277,7 +277,7 @@ namespace MatterHackers.MeshVisualizer
 
 		public static void SetMaterialColor(int materialIndexBase1, RGBA_Bytes color)
 		{
-			lock(materialColors)
+			lock (materialColors)
 			{
 				if (!materialColors.ContainsKey(materialIndexBase1))
 				{
@@ -325,7 +325,7 @@ namespace MatterHackers.MeshVisualizer
 				divisor = 100;
 				skip = 10;
 			}
-			else if (sizeForMarking > 250)
+			else if (sizeForMarking > 300)
 			{
 				divisor = 50;
 				skip = 5;
@@ -409,7 +409,7 @@ namespace MatterHackers.MeshVisualizer
 		}
 
 		public enum CenterPartAfterLoad { DO, DONT }
-		
+
 		public void LoadMesh(string meshPathAndFileName, CenterPartAfterLoad centerPart, Vector2 bedCenter = new Vector2())
 		{
 			if (File.Exists(meshPathAndFileName))
@@ -477,7 +477,7 @@ namespace MatterHackers.MeshVisualizer
 				volumeIndexWithMouseDown = volumeHitIndex;
 				interactionVolumes[volumeHitIndex].OnMouseDown(mouseEvent3D);
 				SelectedInteractionVolume = interactionVolumes[volumeHitIndex];
-            }
+			}
 			else
 			{
 				SelectedInteractionVolume = null;
@@ -512,7 +512,7 @@ namespace MatterHackers.MeshVisualizer
 					{
 						interactionVolumes[i].MouseOver = true;
 						interactionVolumes[i].MouseMoveInfo = info;
-                    }
+					}
 					else
 					{
 						interactionVolumes[i].MouseOver = false;
@@ -597,7 +597,7 @@ namespace MatterHackers.MeshVisualizer
 						meshTransforms[i] *= Matrix4X4.CreateTranslation(-boundsCenter + new Vector3(0, 0, bounds.ZSize / 2) + new Vector3(bedCenter));
 					}
 				}
-				
+
 				trackballTumbleWidget.TrackBallController = new TrackBallController();
 				trackballTumbleWidget.OnBoundsChanged(null);
 
@@ -625,7 +625,7 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
-		private void CreateCircularBedGridImage(int linesInX, int linesInY, int increment= 1)
+		private void CreateCircularBedGridImage(int linesInX, int linesInY, int increment = 1)
 		{
 			Vector2 bedImageCentimeters = new Vector2(linesInX, linesInY);
 			BedImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
@@ -658,7 +658,7 @@ namespace MatterHackers.MeshVisualizer
 
 		private void CreateRectangularBedGridImage(Vector3 displayVolumeToBuild, Vector2 bedCenter, double divisor, double skip)
 		{
-			lock(lastCreatedBedImage)
+			lock (lastCreatedBedImage)
 			{
 				BedImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
 				Graphics2D graphics2D = BedImage.NewGraphics2D();
