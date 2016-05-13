@@ -48,7 +48,7 @@ using System.Drawing.Imaging;
 
 namespace MatterHackers.GuiAutomation
 {
-    public abstract class NativeMethods
+    public abstract class NativeMethods : IDisposable
     {
         public bool LeftButtonDown { get; private set; }
 
@@ -66,7 +66,9 @@ namespace MatterHackers.GuiAutomation
             return sz.Height;
         }
 
-        public abstract Point2D CurrentMousPosition();
+		public abstract void Dispose();
+
+		public abstract Point2D CurrentMousPosition();
 
         public abstract void SetCursorPosition(int x, int y);
 
@@ -89,13 +91,19 @@ namespace MatterHackers.GuiAutomation
     public class AggInputMethods : NativeMethods
     {
         Point2D currentMousePosition;
+		AutomationRunner automationRunner;
 
-        public override ImageBuffer GetCurrentScreen()
+		public override ImageBuffer GetCurrentScreen()
         {
             throw new NotImplementedException();
         }
 
-        public override Point2D CurrentMousPosition()
+		public  AggInputMethods(AutomationRunner automationRunner)
+		{
+			this.automationRunner = automationRunner;
+		}
+
+		public override Point2D CurrentMousPosition()
         {
             SystemWindow.AllOpenSystemWindows[0].Invalidate();
             return currentMousePosition;
@@ -103,7 +111,15 @@ namespace MatterHackers.GuiAutomation
 
         SystemWindow currentlyHookedWindow = null;
 
-        public override void SetCursorPosition(int x, int y)
+		public override void Dispose()
+		{
+			if (currentlyHookedWindow != null)
+			{
+				currentlyHookedWindow.DrawAfter -= DrawMouse;
+			}
+		}
+
+		public override void SetCursorPosition(int x, int y)
         {
             SystemWindow systemWindow = SystemWindow.AllOpenSystemWindows[SystemWindow.AllOpenSystemWindows.Count - 1];
             if(currentlyHookedWindow != systemWindow)
@@ -134,7 +150,7 @@ namespace MatterHackers.GuiAutomation
 
         private void DrawMouse(GuiWidget drawingWidget, DrawEventArgs e)
         {
-            AutomationRunner.RenderMouse(currentlyHookedWindow, e.graphics2D);
+			automationRunner.RenderMouse(currentlyHookedWindow, e.graphics2D);
         }
 
         public override void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo)
@@ -273,7 +289,11 @@ namespace MatterHackers.GuiAutomation
             return mousePos;
         }
 
-        public override ImageBuffer GetCurrentScreen()
+		public override void Dispose()
+		{
+		}
+
+		public override ImageBuffer GetCurrentScreen()
 		{
 			ImageBuffer screenCapture = new ImageBuffer();
 

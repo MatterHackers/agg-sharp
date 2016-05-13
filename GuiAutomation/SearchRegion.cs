@@ -67,6 +67,7 @@ namespace MatterHackers.GuiAutomation
 
 	public class SearchRegion
 	{
+		AutomationRunner automationRunner;
 		public ScreenRectangle ScreenRect { get; set; }
 		ImageBuffer imageContents;
 		public ImageBuffer Image 
@@ -75,18 +76,20 @@ namespace MatterHackers.GuiAutomation
 			{
 				if (imageContents == null)
 				{
-					imageContents = AutomationRunner.GetCurrentScreen();
+					imageContents = automationRunner.GetCurrentScreen();
 				}
 
 				return imageContents; 
 			}
 		}
 
-		public SearchRegion()
+		public SearchRegion(AutomationRunner automationRunner)
 		{
+			this.automationRunner = automationRunner;
 		}
 
-		public SearchRegion(ImageBuffer imageContents, ScreenRectangle screenBounds)
+		public SearchRegion(ImageBuffer imageContents, ScreenRectangle screenBounds, AutomationRunner automationRunner)
+			: this(automationRunner)
 		{
 			this.ScreenRect = screenBounds;
 			this.imageContents = imageContents;
