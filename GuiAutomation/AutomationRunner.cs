@@ -46,12 +46,7 @@ namespace MatterHackers.GuiAutomation
 	{
 		public long MatchLimit = 50;
 
-#if !__ANDROID__
-        static NativeMethods inputSystem = new WindowsInputMethods();
-        //static NativeMethods inputSystem = new AggInputMethods();
-#else
-        static NativeMethods inputSystem = new AggInputMethods();
-#endif
+		NativeMethods inputSystem;
 
         /// <summary>
         /// The number of seconds to move the mouse when going to a new position.
@@ -61,8 +56,22 @@ namespace MatterHackers.GuiAutomation
 		private string imageDirectory;
 		private double upDelaySeconds = .2;
 
-		public AutomationRunner(string imageDirectory = "")
+		public enum InputType {  Native, Simulated };
+		public AutomationRunner(string imageDirectory = "", InputType inputType = InputType.Native)
 		{
+#if !__ANDROID__
+			if (inputType == InputType.Native)
+			{
+				inputSystem = new WindowsInputMethods();
+			}
+			else
+			{
+				inputSystem = new AggInputMethods(this);
+			}
+#else
+				inputSystem = new AggInputMethods();
+#endif
+
 			this.imageDirectory = imageDirectory;
 		}
 
@@ -77,7 +86,7 @@ namespace MatterHackers.GuiAutomation
             return inputSystem.CurrentMousPosition();
 		}
 
-		public static ImageBuffer GetCurrentScreen()
+		public ImageBuffer GetCurrentScreen()
 		{
 			return inputSystem.GetCurrentScreen();
 		}
@@ -220,7 +229,7 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-        public static void RenderMouse(GuiWidget targetWidget, Graphics2D graphics2D)
+        public void RenderMouse(GuiWidget targetWidget, Graphics2D graphics2D)
         {
             GuiWidget parentSystemWindow = targetWidget;
             while(parentSystemWindow != null 
@@ -450,7 +459,7 @@ namespace MatterHackers.GuiAutomation
 				Top = 0,
 				Right = screenImage.Width,
 				Bottom = screenImage.Height
-			});
+			}, this);
 		}
 
 		private ImageBuffer LoadImageFromSourcFolder(string imageName)
@@ -485,7 +494,7 @@ namespace MatterHackers.GuiAutomation
 
 				ScreenRectangle screenPosition = SystemWindowToScreen(childBounds, containingWindow);
 
-				return new SearchRegion()
+				return new SearchRegion(this)
 				{
 					ScreenRect = screenPosition,
 				};
@@ -734,6 +743,12 @@ namespace MatterHackers.GuiAutomation
 			}
 
 			inputSystem.SetCursorPosition((int)end.x, (int)end.y);
+		}
+
+		public void Dispose()
+		{
+			inputSystem.Dispose();
+			inputSystem = null;
 		}
 
 		public void SetMouseCursorPosition(SystemWindow systemWindow, int x, int y)
