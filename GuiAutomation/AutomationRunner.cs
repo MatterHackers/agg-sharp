@@ -54,10 +54,10 @@ namespace MatterHackers.GuiAutomation
         public double TimeToMoveMouse = .5;
 
 		private string imageDirectory;
-		private double upDelaySeconds = .2;
+		public double UpDelaySeconds = .2;
 
 		public enum InputType {  Native, Simulated };
-		public AutomationRunner(string imageDirectory = "", InputType inputType = InputType.Native)
+		public AutomationRunner(string imageDirectory = "", InputType inputType = InputType.Native, bool drawSimulatedMouse = true)
 		{
 #if !__ANDROID__
 			if (inputType == InputType.Native)
@@ -66,7 +66,7 @@ namespace MatterHackers.GuiAutomation
 			}
 			else
 			{
-				inputSystem = new AggInputMethods(this);
+				inputSystem = new AggInputMethods(this, drawSimulatedMouse);
 			}
 #else
 				inputSystem = new AggInputMethods();
@@ -166,19 +166,19 @@ namespace MatterHackers.GuiAutomation
 
 					case MouseButtons.Left:
                         inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
-						Wait(upDelaySeconds);
+						Wait(UpDelaySeconds);
                         inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
 						break;
 
 					case MouseButtons.Right:
                         inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_RIGHTDOWN, screenPosition.x, screenPosition.y, 0, 0);
-						Wait(upDelaySeconds);
+						Wait(UpDelaySeconds);
                         inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_RIGHTUP, screenPosition.x, screenPosition.y, 0, 0);
 						break;
 
 					case MouseButtons.Middle:
                         inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_MIDDLEDOWN, screenPosition.x, screenPosition.y, 0, 0);
-						Wait(upDelaySeconds);
+						Wait(UpDelaySeconds);
                         inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_MIDDLEUP, screenPosition.x, screenPosition.y, 0, 0);
 						break;
 
@@ -608,7 +608,7 @@ namespace MatterHackers.GuiAutomation
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
                 inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 
-				Wait(upDelaySeconds);
+				Wait(UpDelaySeconds);
 
                 inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
 

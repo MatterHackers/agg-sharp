@@ -92,14 +92,16 @@ namespace MatterHackers.GuiAutomation
     {
         Point2D currentMousePosition;
 		AutomationRunner automationRunner;
+		public bool DrawSimulatedMouse = true;
 
 		public override ImageBuffer GetCurrentScreen()
         {
             throw new NotImplementedException();
         }
 
-		public  AggInputMethods(AutomationRunner automationRunner)
+		public  AggInputMethods(AutomationRunner automationRunner, bool drawSimulatedMouse)
 		{
+			this.DrawSimulatedMouse = drawSimulatedMouse;
 			this.automationRunner = automationRunner;
 		}
 
@@ -129,7 +131,7 @@ namespace MatterHackers.GuiAutomation
                     currentlyHookedWindow.DrawAfter -= DrawMouse;
                 }
                 currentlyHookedWindow = systemWindow;
-                if (currentlyHookedWindow != null)
+                if (currentlyHookedWindow != null && DrawSimulatedMouse)
                 {
                     currentlyHookedWindow.DrawAfter += DrawMouse;
                 }
