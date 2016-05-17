@@ -33,7 +33,7 @@ using System.Collections.Generic;
 
 namespace MatterHackers.Agg.UI
 {
-	// TODO: break this up into a model-controler and a view. LBB
+	// TODO: break this up into a model-controller and a view. LBB
 	public class TabControl : FlowLayoutWidget
 	{
 		internal class TabPageCollection : Dictionary<String, TabPage>
