@@ -69,7 +69,7 @@ namespace MatterHackers.GuiAutomation
 				inputSystem = new AggInputMethods(this, drawSimulatedMouse);
 			}
 #else
-				inputSystem = new AggInputMethods();
+				inputSystem = new AggInputMethods(this, drawSimulatedMouse);
 #endif
 
 			this.imageDirectory = imageDirectory;
