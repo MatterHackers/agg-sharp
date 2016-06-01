@@ -73,7 +73,8 @@ namespace MatterHackers.Agg.UI
 				if (SelectedIndex != value)
 				{
 					selectedIndex = value;
-					mainControlText.Text = MenuItems[SelectedIndex].Text;
+
+					mainControlText.Text = selectedIndex == -1 ? this.noSelectionString : MenuItems[SelectedIndex].Text;
 					OnSelectionChanged(null);
 					Invalidate();
 				}
@@ -173,6 +174,8 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		private string noSelectionString;
+
 		public DropDownList(string noSelectionString, RGBA_Bytes normalColor, RGBA_Bytes hoverColor, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false)
 			: base(direction, maxHeight)
 		{
@@ -197,6 +200,8 @@ namespace MatterHackers.Agg.UI
 			}
 
 			MenuItems.CollectionChanged += MenuItems_CollectionChanged;
+
+			this.noSelectionString = noSelectionString;
 
 			mainControlText = new TextWidget(noSelectionString)
 			{
