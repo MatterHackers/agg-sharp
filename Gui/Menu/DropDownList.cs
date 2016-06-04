@@ -64,6 +64,19 @@ namespace MatterHackers.Agg.UI
 
 		private PathStorage directionArrow = null;
 
+		public override BorderDouble MenuItemsPadding
+		{
+			get
+			{
+				return mainControlText.Margin;
+			}
+
+			set
+			{
+				mainControlText.Margin = value;
+			}
+		}
+
 		private int selectedIndex = -1;
 		public int SelectedIndex
 		{
@@ -335,8 +348,6 @@ namespace MatterHackers.Agg.UI
 
 		public MenuItem AddItem(ImageBuffer leftImage, string itemName, string itemValue = null, double pointSize = 12)
 		{
-			mainControlText.Margin = MenuItemsPadding;
-
 			GuiWidget normalTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundColor);
 			GuiWidget hoverTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundHoverColor);
 
