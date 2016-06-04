@@ -42,10 +42,10 @@ namespace MatterHackers.Agg
 			raiseListMenu.OriginRelativeParent = new Vector2(200, 200);
 			AddChild(raiseListMenu);
 
-			MenuBar mainMenu = new MenuBar();
-			mainMenu.VAnchor = UI.VAnchor.ParentTop;
+			FlowLayoutWidget mainMenuBar = new FlowLayoutWidget();
+			mainMenuBar.VAnchor = UI.VAnchor.ParentTop;
 
-			PopupMenu popupMenu = new PopupMenu(new TextWidget("Simple Menu"));
+			GuiWidget popupMenu = new TextWidget("Simple Menu");
 			popupMenu.OriginRelativeParent = new Vector2(100, 100);
 			//AddChild(popupMenu);
 
