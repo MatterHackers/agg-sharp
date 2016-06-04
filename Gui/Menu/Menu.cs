@@ -16,7 +16,7 @@ namespace MatterHackers.Agg.UI
 
 		public bool IsOpen { get; private set; } = false;
 
-		public BorderDouble MenuItemsPadding { get; set; }
+		public virtual BorderDouble MenuItemsPadding { get; set; }
 
 		public Direction MenuDirection { get; private set; }
 
@@ -45,8 +45,11 @@ namespace MatterHackers.Agg.UI
 			{
 				if (!mouseDownWhileOpen)
 				{
-					UiThread.RunOnIdle(ShowMenu);
-					IsOpen = true;
+					if (MenuItems.Count > 0)
+					{
+						UiThread.RunOnIdle(ShowMenu);
+						IsOpen = true;
+					}
 				}
 			};
 		}
