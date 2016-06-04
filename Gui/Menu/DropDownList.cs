@@ -189,6 +189,26 @@ namespace MatterHackers.Agg.UI
 
 		private string noSelectionString;
 
+		private static RGBA_Bytes whiteSemiTransparent = new RGBA_Bytes(255, 255, 255, 100);
+		private static RGBA_Bytes whiteTransparent = new RGBA_Bytes(255, 255, 255, 0);
+
+		public DropDownList(string noSelectionString, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false)
+			: this(noSelectionString, whiteTransparent, whiteSemiTransparent, direction, maxHeight, useLeftIcons)
+		{
+			this.TextColor = ActiveTheme.Instance.PrimaryTextColor;
+			this.MenuItemsBorderWidth = 1;
+			this.MenuItemsBackgroundColor = RGBA_Bytes.White;
+			this.MenuItemsBorderColor = ActiveTheme.Instance.SecondaryTextColor;
+			this.MenuItemsPadding = new BorderDouble(10, 8, 10, 12);
+			this.MenuItemsBackgroundHoverColor = ActiveTheme.Instance.PrimaryAccentColor;
+			this.MenuItemsTextHoverColor = RGBA_Bytes.Black;
+			this.MenuItemsTextColor = RGBA_Bytes.Black;
+			this.BorderWidth = 1;
+			this.BorderColor = ActiveTheme.Instance.SecondaryTextColor;
+			this.HoverColor = whiteSemiTransparent;
+			this.BackgroundColor = new RGBA_Bytes(255, 255, 255, 0);
+		}
+
 		public DropDownList(string noSelectionString, RGBA_Bytes normalColor, RGBA_Bytes hoverColor, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false)
 			: base(direction, maxHeight)
 		{
