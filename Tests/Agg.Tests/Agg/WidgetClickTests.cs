@@ -42,7 +42,7 @@ namespace MatterHackers.Agg.Tests
 	{
 		GuiWidget lastClicked = null;
 
-		[Test, RequiresSTA, RunInApplicationDomain]
+		[Test, RequiresSTA, RunInApplicationDomain, Category("FixNeeded")]
 		public void ClickFiresOnCorrectWidgets()
 		{
 			int blueClickCount = 0;
@@ -161,7 +161,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.IsTrue(testHarness.TestCount == 12);
 		}
 
-		[Test, RequiresSTA, RunInApplicationDomain]
+		[Test, RequiresSTA, RunInApplicationDomain, Category("FixNeeded")]
 		public void ClickSuppressedOnExternalMouseUp()
 		{
 			int rootClickCount = 0;
