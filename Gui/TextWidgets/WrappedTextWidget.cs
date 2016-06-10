@@ -55,6 +55,18 @@ namespace MatterHackers.Agg.UI
 			Width = startingWidth;
 		}
 
+		public bool DrawFromHintedCache
+		{
+			get
+			{
+				return textWidget.Printer.DrawFromHintedCache;
+			}
+			set
+			{
+				textWidget.Printer.DrawFromHintedCache = value;
+			}
+		}
+
 		public override void OnBoundsChanged(EventArgs e)
 		{
 			AdjustTextWrap();
