@@ -55,6 +55,12 @@ namespace MatterHackers.Agg.UI
 			Width = startingWidth;
 		}
 
+		public RGBA_Bytes TextColor
+		{
+			get { return textWidget.TextColor; }
+			set { textWidget.TextColor = value; }
+		}
+
 		public bool DrawFromHintedCache
 		{
 			get
