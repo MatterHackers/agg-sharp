@@ -253,7 +253,7 @@ namespace MatterHackers.Agg.UI
 
 		private void internalTextEditWidget_FocusChanged(object sender, EventArgs e)
 		{
-			if (Focused)
+			if (ContainsFocus)
 			{
 				if (ShowSoftwareKeyboard != null)
 				{
