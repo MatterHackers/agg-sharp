@@ -47,6 +47,8 @@ using System.IO;
 
 namespace MatterHackers.MeshVisualizer
 {
+	public enum BedShape { Rectangular, Circular };
+
 	public class DrawGlContentEventArgs : EventArgs
 	{
 		public bool ZBuffered { get; }
@@ -117,8 +119,6 @@ namespace MatterHackers.MeshVisualizer
 		}
 
 		public event EventHandler LoadDone;
-
-		public enum BedShape { Rectangular, Circular };
 
 		public bool AllowBedRenderingWhenEmpty { get; set; }
 
