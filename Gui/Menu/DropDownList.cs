@@ -96,6 +96,10 @@ namespace MatterHackers.Agg.UI
 
 		protected override void ShowMenu()
 		{
+			if(this.Parent == null)
+			{
+				return;
+			}
 			base.ShowMenu();
 
 			if(selectedIndex >= MenuItems.Count-1)
