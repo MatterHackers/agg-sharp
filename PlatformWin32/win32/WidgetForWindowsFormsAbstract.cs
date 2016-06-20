@@ -216,6 +216,15 @@ namespace MatterHackers.Agg.UI
 			// Release the onidle guard so that the onidle pump continues processing while we block at ShowDialog below
 			Task.Run(() => windowsFormsWindow.ReleaseOnIdleGuard());
 
+			if (mainWindowsFormsWindow != WindowsFormsWindow && childSystemWindow.CenterInParent)
+			{
+				Rectangle mainBounds = mainWindowsFormsWindow.DesktopBounds;
+				RectangleDouble newItemBounds = childSystemWindow.LocalBounds;
+
+				windowsFormsWindow.Left = mainBounds.X + mainBounds.Width / 2 - (int)newItemBounds.Width / 2;
+				windowsFormsWindow.Top = mainBounds.Y + mainBounds.Height / 2 - (int)newItemBounds.Height / 2;
+			}
+
 			WindowsFormsWindow.ShowDialog();
 		}
 
