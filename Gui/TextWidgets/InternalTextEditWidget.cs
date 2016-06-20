@@ -956,6 +956,12 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnKeyPress(KeyPressEventArgs keyPressEvent)
 		{
+			if(keyPressEvent.KeyChar < 32
+				&& keyPressEvent.KeyChar != 13
+				&& keyPressEvent.KeyChar != 9)
+			{
+				return;
+			}
 			if (Selecting)
 			{
 				DeleteSelection();
