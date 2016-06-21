@@ -2962,7 +2962,7 @@ namespace MatterHackers.Agg.UI
 		/// <returns>All matching child widgets</returns>
 		public static IEnumerable<T> Children<T>(this GuiWidget widget) where T : GuiWidget
 		{
-			return widget.Children.Where(w => w is T).Select(w => (T)w);
+			return widget.Children.OfType<T>();
 		}
 
 		/// <summary>
