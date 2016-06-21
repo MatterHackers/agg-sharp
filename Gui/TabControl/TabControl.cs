@@ -144,7 +144,7 @@ namespace MatterHackers.Agg.UI
 			Tab tab = (Tab)tabBar.Children[index];
 			if (tab != null)
 			{
-				return tab.TabPageControlledByTab;
+				return tab.TabPage;
 			}
 
 			throw new Exception("Somehow there is an object in the tabBar that is not a Tab.");
@@ -157,7 +157,7 @@ namespace MatterHackers.Agg.UI
 				Tab tab = (Tab)child;
 				if (tab != null && tab.Text == tabName)
 				{
-					return tab.TabPageControlledByTab;
+					return tab.TabPage;
 				}
 			}
 
@@ -213,11 +213,6 @@ namespace MatterHackers.Agg.UI
 			return tabBar.SelectTab(tabName);
 		}
 
-		public void SwitchToPage(TabPage page)
-		{
-			tabBar.SwitchToPage(page);
-		}
-
 		public void AddTab(TabPage tabPageWidget, string internalTabName)
 		{
 			Tab newTab = new SimpleTextTabWidget(tabPageWidget, internalTabName);
@@ -226,7 +221,7 @@ namespace MatterHackers.Agg.UI
 
 		public void AddTab(Tab newTab)
 		{
-			TabPage tabPageWidget = newTab.TabPageControlledByTab;
+			TabPage tabPageWidget = newTab.TabPage;
 			tabPages.Add(tabPageWidget.Text, tabPageWidget);
 
 			switch (Orientation)

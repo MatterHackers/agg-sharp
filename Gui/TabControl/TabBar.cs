@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
@@ -35,39 +36,24 @@ namespace MatterHackers.Agg.UI
 	{
 		public event EventHandler TabIndexChanged;
 
-		private GuiWidget tabPageArea;
-		private RGBA_Bytes borderColor = new RGBA_Bytes(0, 0, 0, 255);
 		internal Tab currentVisibleTab;
 
-		public RGBA_Bytes BorderColor
-		{
-			get
-			{
-				return borderColor;
-			}
-			set
-			{
-				this.borderColor = value;
-			}
-		}
+		public RGBA_Bytes BorderColor { get; set; } = new RGBA_Bytes(0, 0, 0, 255);
 
 		public TabBar(FlowDirection direction, GuiWidget tabPageArea)
 			: base(direction)
 		{
-			this.tabPageArea = tabPageArea;
+			this.TabPageArea = tabPageArea;
 		}
 
-		public GuiWidget TabPageArea
-		{
-			get { return tabPageArea; }
-		}
+		public GuiWidget TabPageArea { get; }
 
 		public override void AddChild(GuiWidget child, int indexInChildrenList = -1)
 		{
 			Tab newTab = child as Tab;
 			if (newTab != null)
 			{
-				newTab.Selected += new EventHandler(SwitchToTab);
+				newTab.Selected += SwitchToTab;
 			}
 			base.AddChild(child, indexInChildrenList);
 		}
@@ -95,30 +81,14 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnTabIndexChanged()
 		{
-			if (TabIndexChanged != null)
-			{
-				TabIndexChanged(this, null);
-			}
+			TabIndexChanged?.Invoke(this, null);
 		}
 
 		public int SelectedTabIndex
 		{
 			get
 			{
-				int selectedIndex = 0;
-				for (int childIndex = 0; childIndex < Children.Count; childIndex++)
-				{
-					Tab tab = Children[childIndex] as Tab;
-					if (tab != null)
-					{
-						if (tab == currentVisibleTab)
-						{
-							return selectedIndex;
-						}
-						selectedIndex++;
-					}
-				}
-				throw new Exception("Somehow there is no tab currently selected.");
+				return Children.IndexOf(currentVisibleTab);
 			}
 
 			set
@@ -131,21 +101,7 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				for (int index = 0; index < Children.Count; index++)
-				{
-					Tab tab = Children[index] as Tab;
-					if (tab == currentVisibleTab)
-					{
-						return tab.Name;
-					}
-				}
-				throw new Exception("Somehow there is no tab currently selected.");
-			}
-
-			set
-			{
-				throw new NotImplementedException();
-				//SelectTab(value);
+				return currentVisibleTab?.Name;
 			}
 		}
 
@@ -178,10 +134,9 @@ namespace MatterHackers.Agg.UI
 
 		public bool SelectTab(string tabName)
 		{
-			foreach (GuiWidget child in Children)
+			foreach (var tab in this.Children<Tab>())
 			{
-				Tab tab = child as Tab;
-				if (tab != null && tab.Name == tabName)
+				if (tab.Name == tabName)
 				{
 					SelectTab(tab);
 					return true;
@@ -191,25 +146,25 @@ namespace MatterHackers.Agg.UI
 			return false;
 		}
 
-		private void SwitchToTab(object tabMouseDownOn, EventArgs mouseEvent)
+		private void SwitchToTab(object sender, EventArgs e)
 		{
 			UiThread.RunOnIdle(() =>
+			{
+				Tab clickedTab = (Tab) sender;
+				if (clickedTab != null)
 				{
-					Tab clickedTab = (Tab)tabMouseDownOn;
-					if (clickedTab != null)
-					{
-						SelectTab(clickedTab);
-					}
-				});
+					SelectTab(clickedTab);
+				}
+			});
 		}
 
 		public void SelectTab(Tab tabToSwitchTo)
 		{
 			if (currentVisibleTab != tabToSwitchTo)
 			{
-				foreach (GuiWidget tabPage in tabPageArea.Children)
+				foreach (GuiWidget tabPage in TabPageArea.Children)
 				{
-					if (tabToSwitchTo.TabPageControlledByTab != tabPage)
+					if (tabToSwitchTo.TabPage != tabPage)
 					{
 						tabPage.Visible = false;
 					}
@@ -219,7 +174,6 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 
-				tabToSwitchTo.TabPageControlledByTab.Visible = true;
 				currentVisibleTab = tabToSwitchTo;
 
 				OnTabIndexChanged();
@@ -230,22 +184,7 @@ namespace MatterHackers.Agg.UI
 
 		public TabPage GetActivePage()
 		{
-			return currentVisibleTab.TabPageControlledByTab;
-		}
-
-		public void SwitchToPage(TabPage page)
-		{
-			foreach (GuiWidget child in Children)
-			{
-				Tab tab = (Tab)child;
-				if (tab != null && tab.TabPageControlledByTab == page)
-				{
-					SelectTab(tab);
-					return;
-				}
-			}
-
-			throw new Exception("You asked to switch to a page that is not in the TabControl.");
+			return currentVisibleTab.TabPage;
 		}
 	}
 }
