@@ -128,7 +128,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (TabBarContaningTab != null)
 			{
-				bool selected = TabPageControlledByTab == TabBarContaningTab.GetActivePage();
+				bool selected = TabPage == TabBarContaningTab.GetActivePage();
 
 				if (selected)
 				{
@@ -150,7 +150,7 @@ namespace MatterHackers.Agg.UI
 			get { return (TabBar)Parent; }
 		}
 
-		public TabPage TabPageControlledByTab
+		public TabPage TabPage
 		{
 			get { return tabPageControledByTab; }
 		}
