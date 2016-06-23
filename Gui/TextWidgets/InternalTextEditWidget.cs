@@ -944,6 +944,10 @@ namespace MatterHackers.Agg.UI
 
 				StringBuilder stringBuilder = new StringBuilder(internalTextWidget.Text);
 				String stringOnClipboard = Clipboard.GetText();
+				if(!Multiline)
+				{
+					stringOnClipboard = Regex.Replace(stringOnClipboard, @"\r\n?|\n", " ");
+				}
 				stringBuilder.Insert(CharIndexToInsertBefore, stringOnClipboard);
 				CharIndexToInsertBefore += stringOnClipboard.Length;
 				internalTextWidget.Text = stringBuilder.ToString();
