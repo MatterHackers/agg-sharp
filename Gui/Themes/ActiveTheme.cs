@@ -93,6 +93,7 @@ namespace MatterHackers.Agg.UI
 				ThemeColors.Create("Pink - Dark", new RGBA_Bytes(220, 79, 173), new RGBA_Bytes(233, 143, 203)),
 				ThemeColors.Create("Grey - Dark", new RGBA_Bytes(88, 88, 88), new RGBA_Bytes(114, 114, 114)),
 				ThemeColors.Create("Pink - Dark", new RGBA_Bytes(140, 0, 149), new RGBA_Bytes(188, 0, 200)),
+				ThemeColors.Create("Lulzbot - Dark", new RGBA_Bytes(155, 172, 51), new RGBA_Bytes(193, 214, 47)),
 
 				//Light themes
 				ThemeColors.Create("Blue - Light", new RGBA_Bytes(0, 75, 139), new RGBA_Bytes(0, 103, 190), false),
@@ -104,7 +105,8 @@ namespace MatterHackers.Agg.UI
 				ThemeColors.Create("Red - Light", new RGBA_Bytes(172, 25, 61), new RGBA_Bytes(217, 31, 77), false),
 				ThemeColors.Create("Pink - Light", new RGBA_Bytes(220, 79, 173), new RGBA_Bytes(233, 143, 203), false),
 				ThemeColors.Create("Grey - Light", new RGBA_Bytes(88, 88, 88), new RGBA_Bytes(114, 114, 114), false),
-				ThemeColors.Create("Pink - Light", new RGBA_Bytes(140, 0, 149), new RGBA_Bytes(188, 0, 200), false)
+				ThemeColors.Create("Pink - Light", new RGBA_Bytes(140, 0, 149), new RGBA_Bytes(188, 0, 200), false),
+				ThemeColors.Create("Lulzbot - Light", new RGBA_Bytes(155, 172, 51), new RGBA_Bytes(193, 214, 47), false)
 			};
 		}
 	}
