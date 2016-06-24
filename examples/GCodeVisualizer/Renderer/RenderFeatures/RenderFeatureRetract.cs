@@ -68,6 +68,13 @@ namespace MatterHackers.GCodeVisualizer
 			if ((renderInfo.CurrentRenderType & RenderType.Retractions) == RenderType.Retractions)
 			{
 				Vector3 position = new Vector3(this.position);
+
+				if (renderInfo.CurrentRenderType.HasFlag(RenderType.HideExtruderOffsets))
+				{
+					Vector2 offset = renderInfo.GetExtruderOffset(extruderIndex);
+					position = position + new Vector3(offset);
+				}
+
 				RGBA_Bytes color = MeshViewerWidget.GetMaterialColor(extruderIndex + 1);
 				if (extruderIndex == 0)
 				{
@@ -100,13 +107,13 @@ namespace MatterHackers.GCodeVisualizer
 				double radius = Radius(renderInfo.LayerScale);
 				Vector2 position = new Vector2(this.position.x, this.position.y);
 
-				renderInfo.Transform.transform(ref position);
-
 				if (renderInfo.CurrentRenderType.HasFlag(RenderType.HideExtruderOffsets))
 				{
 					Vector2 offset = renderInfo.GetExtruderOffset(extruderIndex);
 					position = position + offset;
 				}
+
+				renderInfo.Transform.transform(ref position);
 
 				RGBA_Bytes retractionColor = new RGBA_Bytes(RGBA_Bytes.Red, 200);
 				if (extrusionAmount > 0)
