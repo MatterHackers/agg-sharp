@@ -50,6 +50,7 @@ namespace MatterHackers.GCodeVisualizer
 		{
 			this.extrusionAmount = (float)extrusionAmount;
 			this.mmPerSecond = (float)mmPerSecond;
+
 			this.position = new Vector3Float(position);
 		}
 
@@ -98,7 +99,14 @@ namespace MatterHackers.GCodeVisualizer
 			{
 				double radius = Radius(renderInfo.LayerScale);
 				Vector2 position = new Vector2(this.position.x, this.position.y);
+
 				renderInfo.Transform.transform(ref position);
+
+				if (renderInfo.CurrentRenderType.HasFlag(RenderType.HideExtruderOffsets))
+				{
+					Vector2 offset = renderInfo.GetExtruderOffset(extruderIndex);
+					position = position + offset;
+				}
 
 				RGBA_Bytes retractionColor = new RGBA_Bytes(RGBA_Bytes.Red, 200);
 				if (extrusionAmount > 0)

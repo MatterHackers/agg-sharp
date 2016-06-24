@@ -42,7 +42,7 @@ namespace MatterHackers.GCodeVisualizer
 
 		protected Vector3Float GetStart(GCodeRenderInfo renderInfo)
 		{
-			if ((renderInfo.CurrentRenderType & RenderType.HideExtruderOffsets) == RenderType.HideExtruderOffsets)
+			if (renderInfo.CurrentRenderType.HasFlag(RenderType.HideExtruderOffsets))
 			{
 				Vector3Float start = this.start;
 				Vector2 offset = renderInfo.GetExtruderOffset(extruderIndex);
@@ -56,7 +56,7 @@ namespace MatterHackers.GCodeVisualizer
 
 		protected Vector3Float GetEnd(GCodeRenderInfo renderInfo)
 		{
-			if ((renderInfo.CurrentRenderType & RenderType.HideExtruderOffsets) == RenderType.HideExtruderOffsets)
+			if (renderInfo.CurrentRenderType.HasFlag(RenderType.HideExtruderOffsets))
 			{
 				Vector3Float end = this.end;
 				Vector2 offset = renderInfo.GetExtruderOffset(extruderIndex);
