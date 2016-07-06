@@ -141,6 +141,7 @@
   <ItemGroup>
     <Compile Include="Pages\ButtonAnchorTest.cs" />
     <Compile Include="Pages\GridControl.cs" />
+    <Compile Include="Pages\FontHintPage.cs" />
     <Compile Include="Pages\SplitterPage.cs" />
     <Compile Include="Pages\MenuPage.cs" />
     <Compile Include="Pages\RadioCheckButtonsPage.cs" />
