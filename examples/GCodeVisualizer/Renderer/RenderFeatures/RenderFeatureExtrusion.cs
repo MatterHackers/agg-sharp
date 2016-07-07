@@ -73,19 +73,19 @@ namespace MatterHackers.GCodeVisualizer
 
         private double GetExtrusionWidth(RenderType renderType)
         {
-			if(extrusionVolumeMm3 < .01)
-			{
-				// the amount of extruded material is tiny and we are getting rounding errors that make it look like it has a significant radius (it doesn't). Return 0.
-				return 0;
-			}
-            double width = .4;
+			double width = .4;
             if ((renderType & RenderType.SimulateExtrusion) == RenderType.SimulateExtrusion)
             {
-                double area = extrusionVolumeMm3 / ((end - start).Length);
-                width = area / layerHeight;
+				double moveLength = (end - start).Length;
+
+				if (moveLength > .05) // we get truncation errors from the slice engine when the length is very small, so don't do them
+				{
+					double area = extrusionVolumeMm3 / moveLength;
+					width = area / layerHeight;
+				}
             }
 
-            return width;
+			return width;
         }
 
         public override void CreateRender3DData(VectorPOD<ColorVertexData> colorVertexData, VectorPOD<int> indexData, GCodeRenderInfo renderInfo)
