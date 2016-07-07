@@ -40,10 +40,13 @@ namespace MatterHackers.Agg.UI
 
 		public WrappedTextWidget(string text, double startingWidth,
 			double pointSize = 12, Justification justification = Justification.Left,
-			RGBA_Bytes textColor = new RGBA_Bytes(), bool ellipsisIfClipped = true, bool underline = false, RGBA_Bytes backgroundColor = new RGBA_Bytes())
+			RGBA_Bytes textColor = new RGBA_Bytes(), bool ellipsisIfClipped = true, bool underline = false, RGBA_Bytes backgroundColor = new RGBA_Bytes(), bool doubleBufferText = true)
 		{
 			this.pointSize = pointSize;
-			textWidget = new TextWidget(text, 0, 0, pointSize, justification, textColor, ellipsisIfClipped, underline, backgroundColor);
+			textWidget = new TextWidget(text, 0, 0, pointSize, justification, textColor, ellipsisIfClipped, underline, backgroundColor)
+			{
+				DoubleBuffer = doubleBufferText,
+			};
 			textWidget.AutoExpandBoundsToText = true;
 			textWidget.HAnchor = HAnchor.ParentLeft;
 			textWidget.VAnchor = VAnchor.ParentCenter;
