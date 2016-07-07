@@ -142,11 +142,13 @@ namespace MatterHackers.Agg
 			double angleRadians,
 			double inScaleX, double inScaleY)
 		{
+			Affine graphicsTransform = GetTransform();
+
 			{ // exit early if the dest and source bounds don't touch.
-				// TODO: <BUG> make this do rotation and scaling
+			  // TODO: <BUG> make this do rotation and scaling
 				RectangleInt sourceBounds = source.GetBounds();
 				RectangleInt destBounds = this.destImageByte.GetBounds();
-				sourceBounds.Offset((int)destX, (int)destY);
+				sourceBounds.Offset((int)(destX + graphicsTransform.tx), (int)(destY + graphicsTransform.ty));
 
 				if (!RectangleInt.DoIntersect(sourceBounds, destBounds))
 				{
@@ -161,7 +163,6 @@ namespace MatterHackers.Agg
 			double scaleX = inScaleX;
 			double scaleY = inScaleY;
 
-			Affine graphicsTransform = GetTransform();
 			if (!graphicsTransform.is_identity())
 			{
 				if (scaleX != 1 || scaleY != 1 || angleRadians != 0)
