@@ -150,13 +150,13 @@ namespace MatterHackers.Agg.Font
 
 		public void Render(Graphics2D graphics2D, RGBA_Bytes color)
 		{
-			rewind(0);
 			if (DrawFromHintedCache)
 			{
 				RenderFromCache(graphics2D, color);
 			}
 			else
 			{
+				rewind(0);
 				graphics2D.Render(this, color);
 			}
 		}

@@ -16,44 +16,38 @@ namespace MatterHackers.Agg.Font
 		public string InsertCRs(string textToWrap, double maxPixelWidth)
 		{
 			StringBuilder textWithCRs = new StringBuilder();
-			string[] lines = WrapText(textToWrap, maxPixelWidth);
-			for (int i = 0; i < lines.Length; i++)
+			List<string> lines = WrapText(textToWrap, maxPixelWidth);
+			for (int i = 0; i < lines.Count; i++)
 			{
 				string line = lines[i];
-				if (i == 0)
+				if (i > 0)
 				{
-					textWithCRs.Append(line);
+					textWithCRs.Append("\n");
 				}
-				else
-				{
-					textWithCRs.Append("\n" + line);
-				}
+
+				textWithCRs.Append(line);
 			}
 
 			return textWithCRs.ToString();
 		}
 
-		public string[] WrapText(string textToWrap, double maxPixelWidth)
+		public List<string> WrapText(string textToWrap, double maxPixelWidth)
 		{
 			List<string> finalLines = new List<string>();
 			string[] splitOnNL = textToWrap.Split('\n');
 			foreach (string line in splitOnNL)
 			{
-				string[] linesFromWidth = WrapSingleLineOnWidth(line, maxPixelWidth);
-				if (linesFromWidth.Length == 0)
-				{
-					finalLines.Add("");
-				}
-				else
+				List<string> linesFromWidth = WrapSingleLineOnWidth(line, maxPixelWidth);
+				if (linesFromWidth.Count > 0)
 				{
 					finalLines.AddRange(linesFromWidth);
 				}
 			}
 
-			return finalLines.ToArray();
+			return finalLines;
 		}
 
-		abstract public string[] WrapSingleLineOnWidth(string originalTextToWrap, double maxPixelWidth);
+		abstract public List<string> WrapSingleLineOnWidth(string originalTextToWrap, double maxPixelWidth);
 	}
 
 	public class EnglishTextWrapping : TextWrapping
@@ -68,7 +62,7 @@ namespace MatterHackers.Agg.Font
 		{
 		}
 
-		public override string[] WrapSingleLineOnWidth(string originalTextToWrap, double maxPixelWidth)
+		public override List<string> WrapSingleLineOnWidth(string originalTextToWrap, double maxPixelWidth)
 		{
 			List<string> lines = new List<string>();
 
@@ -117,7 +111,7 @@ namespace MatterHackers.Agg.Font
 				lines.Add(originalTextToWrap);
 			}
 
-			return lines.ToArray();
+			return lines;
 		}
 	}
 }
