@@ -407,7 +407,7 @@ namespace MatterHackers.Agg.UI
 				TextColor = MenuItemsTextColor
 			};
 
-			if (UseLeftIcons)
+			if (UseLeftIcons || leftImage != null)
 			{
 				if (leftImage != null)
 				{
