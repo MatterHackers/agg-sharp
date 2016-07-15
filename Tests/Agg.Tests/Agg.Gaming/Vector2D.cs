@@ -373,8 +373,8 @@ namespace NUnitGaming
             Assert.IsTrue(Point3.GetLength() > 0.99f && Point3.GetLength() < 1.01f);
         }
 
-        [Test]
-        public void ScalerOperations()
+		[Test, Category("FixNeeded")]
+		public void ScalerOperations()
         {
             Vector2D ScalarMultiplicationArgument = new Vector2D(5.0f, 4.0f);
             Assert.IsTrue(ScalarMultiplicationArgument * -.5 == new Vector2D(-2.5f, -2));

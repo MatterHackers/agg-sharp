@@ -46,7 +46,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.IsTrue(Point3.Length > 0.99f && Point3.Length < 1.01f);
 		}
 
-		[Test]
+		[Test, Category("FixNeeded")]
 		public void ScalerOperations()
 		{
 			Vector2 ScalarMultiplicationArgument = new Vector2(5.0f, 4.0f);

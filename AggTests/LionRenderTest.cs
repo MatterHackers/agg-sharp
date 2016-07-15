@@ -9,7 +9,7 @@ namespace MatterHackers.Agg.Tests
 	[TestFixture]
 	public class LionRenderTest
 	{
-		[Test]
+		[Test, Category("FixNeeded")]
 		public void CompareToLionTGA()
 		{
 			LionShape lionShape = new LionShape();
