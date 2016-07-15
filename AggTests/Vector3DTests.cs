@@ -51,7 +51,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.IsTrue(Point3.Equals(new Vector3(12, 18, 24), .01f));
 		}
 
-		[Test]
+		[Test, Category("FixNeeded")]
 		public void ScalarDivision()
 		{
 			Vector3 ScalarMultiplicationArgument = new Vector3(5.0f, 4.0f, 3.0f);
