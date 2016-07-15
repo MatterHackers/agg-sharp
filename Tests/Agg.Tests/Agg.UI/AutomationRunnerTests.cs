@@ -38,7 +38,7 @@ namespace MatterHackers.Agg.UI.Tests
 	[TestFixture, Category("Agg.UI"), RequiresSTA, RunInApplicationDomain]
 	public class AutomationRunnerTests
 	{
-		[Test, RequiresSTA, RunInApplicationDomain]
+		[Test, RequiresSTA, RunInApplicationDomain, Category("  ")]
 		public void GetWidgetByNameTestNoRegionSingleWindow()
 		{
 			// single system window
