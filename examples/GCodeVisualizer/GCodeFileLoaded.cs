@@ -743,13 +743,8 @@ namespace MatterHackers.GCodeVisualizer
 					// home z axis maximum
 					break;
 
-#if DEBUG
-				default:
-					throw new NotImplementedException();
-#else
                 default:
                     break;
-#endif
 			}
 		}
 
