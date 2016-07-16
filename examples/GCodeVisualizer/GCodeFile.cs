@@ -108,6 +108,12 @@ namespace MatterHackers.GCodeVisualizer
 			return checksum;
 		}
 
+		public static bool IsLayerChange(string lineString)
+		{
+			return lineString.StartsWith("; LAYER:")
+				|| lineString.StartsWith(";LAYER:");
+		}
+
 		public static bool FileTooBigToLoad(string fileName)
 		{
 			if (File.Exists(fileName)

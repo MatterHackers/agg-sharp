@@ -247,7 +247,7 @@ namespace MatterHackers.GCodeVisualizer
 			PrinterMachineInstruction machineInstructionForLine = new PrinterMachineInstruction("None");
 
 			bool gcodeHasExplicitLayerChangeInfo = false;
-			if (gCodeString.Contains("; LAYER:"))
+			if (gCodeString.Contains("LAYER:"))
 			{
 				gcodeHasExplicitLayerChangeInfo = true;
 			}
@@ -282,7 +282,7 @@ namespace MatterHackers.GCodeVisualizer
 							break;
 
 						case ';':
-							if (gcodeHasExplicitLayerChangeInfo && lineString.StartsWith("; LAYER:"))
+							if (gcodeHasExplicitLayerChangeInfo && IsLayerChange(lineString))
 							{
 								loadedGCodeFile.IndexOfChangeInZ.Add(loadedGCodeFile.GCodeCommandQueue.Count);
 							}
