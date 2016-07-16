@@ -171,6 +171,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="win32\FileSystemStaticData.cs" />
     <Compile Include="win32\OsInformationWindowsPlugin.cs" />
     <Compile Include="win32\HookWindowsInputAndSendToWidget.cs" />

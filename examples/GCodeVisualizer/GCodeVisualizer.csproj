@@ -184,6 +184,7 @@
     <Compile Include="GCodeFileStreamed.cs" />
     <Compile Include="GCodeFileLoaded.cs" />
     <Compile Include="GCodeFile.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Renderer\ColorVertexData.cs" />
     <Compile Include="Renderer\ExtrusionColors.cs" />
     <Compile Include="Renderer\GCodeRenderer.cs" />
