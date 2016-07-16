@@ -136,6 +136,7 @@
   <ItemGroup>
     <Compile Include="CsgToRayTraceable.cs" />
     <Compile Include="MeshToBVH.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VertexSourceToMesh.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

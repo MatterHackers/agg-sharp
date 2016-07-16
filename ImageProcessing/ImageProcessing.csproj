@@ -147,6 +147,7 @@
     <Compile Include="InvertLightness.cs" />
     <Compile Include="Dilate.cs" />
     <Compile Include="Erode.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="WhiteToColor.cs" />
     <Compile Include="Multiply.cs" />
     <Compile Include="Match.cs" />

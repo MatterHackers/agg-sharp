@@ -112,6 +112,7 @@
     <Compile Include="PlayerSaveInfo.cs" />
     <Compile Include="Playfield.cs" />
     <Compile Include="PlayFieldView.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Rock.cs" />
     <Compile Include="SequenceEntity.cs" />
     <Compile Include="RockBlasterGame.cs" />
