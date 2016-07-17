@@ -156,6 +156,7 @@
   <ItemGroup>
     <Compile Include="MarchingSquaresByte.cs" />
     <Compile Include="MarchingSquaresFloat.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\clipper_library\clipper_library.csproj">

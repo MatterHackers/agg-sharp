@@ -189,6 +189,7 @@
     <Compile Include="Collections\IBoundedItem.cs" />
     <Compile Include="Collections\BoundingVolumeHierarchy.cs" />
     <Compile Include="Collections\UnboundCollection.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StatisticsTracker.cs" />
     <Compile Include="TraceTiming.cs" />
     <Compile Include="DumpCallStackIfSlow.cs" />
