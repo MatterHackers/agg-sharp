@@ -103,6 +103,11 @@ namespace MatterHackers.Agg.UI
 		{
 			TimeBlock timeBlock = GetTimeBlock(now, timeToDescribe);
 
+			return GetDetail(timeBlock, timeToDescribe);
+		}
+
+		public static string GetDetail(TimeBlock timeBlock, DateTime timeToDescribe)
+		{
 			switch (timeBlock)
 			{
 				case TimeBlock.Future:
@@ -122,6 +127,31 @@ namespace MatterHackers.Agg.UI
 				default:
 					return "Unknown Data";
 			}
+		}
+
+		/// <summary>
+		/// Get all the times sorted for display into TimeBlock groups
+		/// </summary>
+		/// <param name="nowTime"></param>
+		/// <param name="allTimes"></param>
+		/// <returns>A dictionary of TimeBlocks containing Dictionaries of the original index and the string to display.</returns>
+		public static Dictionary<TimeBlock, Dictionary<int, string>> GroupTimes(DateTime nowTime, List<DateTime> allTimes)
+		{
+			Dictionary<TimeBlock, Dictionary<int, string>> groupedTimes = new Dictionary<TimeBlock, Dictionary<int, string>>();
+			for (int i=0; i<allTimes.Count; i++)
+			{
+				TimeBlock timeBlock = GetTimeBlock(nowTime, allTimes[i]);
+				string displayString = GetDetail(timeBlock, allTimes[i]);
+
+				if(!groupedTimes.ContainsKey(timeBlock))
+				{
+					groupedTimes.Add(timeBlock, new Dictionary<int, string>());
+				}
+
+				groupedTimes[timeBlock].Add(i, displayString);
+			}
+
+			return groupedTimes;
 		}
 	}
 }
