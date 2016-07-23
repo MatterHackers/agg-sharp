@@ -49,7 +49,7 @@ namespace MatterHackers.Agg.UI
 
 		public static TimeBlock GetTimeBlock(DateTime now, DateTime timeToDescribe)
 		{
-			if (timeToDescribe < now)
+			if (timeToDescribe < now.AddMinutes(10))
 			{
 				// in the past
 				if (timeToDescribe.Year == now.Year)
