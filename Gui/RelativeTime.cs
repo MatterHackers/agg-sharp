@@ -40,11 +40,11 @@ namespace MatterHackers.Agg.UI
 		{
 			[TimeBlock.Future] = "Future",
 			[TimeBlock.Today] = "Today",
-			[TimeBlock.Today] = "Yesterday",
-			[TimeBlock.Today] = "This Week",
-			[TimeBlock.Today] = "This Month",
-			[TimeBlock.Today] = "This Year",
-			[TimeBlock.Today] = "Previous Year",
+			[TimeBlock.Yesterday] = "Yesterday",
+			[TimeBlock.SameWeek] = "This Week",
+			[TimeBlock.SameMonth] = "This Month",
+			[TimeBlock.SameYear] = "This Year",
+			[TimeBlock.PastYear] = "Previous Year",
 		};
 
 		public static TimeBlock GetTimeBlock(DateTime now, DateTime timeToDescribe)
@@ -108,22 +108,23 @@ namespace MatterHackers.Agg.UI
 
 		public static string GetDetail(TimeBlock timeBlock, DateTime timeToDescribe)
 		{
+			string time = timeToDescribe.ToString("h:mm tt");
 			switch (timeBlock)
 			{
 				case TimeBlock.Future:
 					return "Future Date";
 				case TimeBlock.Today:
-					return timeToDescribe.ToString("t"); // just the time 5:00 pm
+					return time; // just the time 5:00 pm
 				case TimeBlock.Yesterday:
-					return timeToDescribe.ToString("t"); // just the time 5:00 pm
+					return time; // just the time 5:00 pm
 				case TimeBlock.SameWeek:
-					return timeToDescribe.ToString("dddd ") + timeToDescribe.ToString("t"); // day of the week and time, Monday 5:00 pm
+					return timeToDescribe.ToString("dddd ") + time; // day of the week and time, Monday 5:00 pm
 				case TimeBlock.SameMonth:
-					return timeToDescribe.ToString("d, ") + timeToDescribe.ToString("t"); // day of the month and time, 25, 5:00 pm
+					return timeToDescribe.ToString("MMMM d, ") + time; // month, day of the month and time, May 25, 5:00 pm
 				case TimeBlock.SameYear:
-					return timeToDescribe.ToString("MMMM d, ") + timeToDescribe.ToString("t"); // month, day of the month and time, May 25, 5:00 pm
+					return timeToDescribe.ToString("MMMM d, ") + time; // month, day of the month and time, May 25, 5:00 pm
 				case TimeBlock.PastYear:
-					return timeToDescribe.ToString("yyyy MMMM d, ") + timeToDescribe.ToString("t");// Year, month, day of the month and time, 2009 May 25, 5:00 pm
+					return timeToDescribe.ToString("yyyy MMMM d, ") + time;// Year, month, day of the month and time, 2009 May 25, 5:00 pm
 				default:
 					return "Unknown Data";
 			}
