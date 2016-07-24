@@ -107,7 +107,7 @@ namespace MatterHackers.Agg.Tests
 				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
 				lastClicked = rootClickable;
 			};
-			rootClickable.DrawAfter += widget_DrawSelection;
+			rootClickable.AfterDraw += widget_DrawSelection;
 
 			var orangeClickable = new GuiWidget()
 			{
@@ -127,7 +127,7 @@ namespace MatterHackers.Agg.Tests
 				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
 				lastClicked = widget;
 			};
-			orangeClickable.DrawAfter += widget_DrawSelection;
+			orangeClickable.AfterDraw += widget_DrawSelection;
 			rootClickable.AddChild(orangeClickable);
 
 			var purpleClickable = new GuiWidget()
@@ -150,7 +150,7 @@ namespace MatterHackers.Agg.Tests
 				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
 				lastClicked = widget;
 			};
-			purpleClickable.DrawAfter += widget_DrawSelection;
+			purpleClickable.AfterDraw += widget_DrawSelection;
 			rootClickable.AddChild(purpleClickable);
 
 			systemWindow.AddChild(rootClickable);
@@ -194,7 +194,7 @@ namespace MatterHackers.Agg.Tests
 				lastClicked = widget;
 
 			};
-			rootClickable.DrawAfter += widget_DrawSelection;
+			rootClickable.AfterDraw += widget_DrawSelection;
 
 			var childClickable = new GuiWidget()
 			{
@@ -214,7 +214,7 @@ namespace MatterHackers.Agg.Tests
 				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
 				lastClicked = widget;
 			};
-			childClickable.DrawAfter += widget_DrawSelection;
+			childClickable.AfterDraw += widget_DrawSelection;
 
 			rootClickable.AddChild(childClickable);
 			systemWindow.AddChild(rootClickable);
@@ -321,7 +321,7 @@ namespace MatterHackers.Agg.Tests
 				lastClicked = widget;
 
 			};
-			rootClickable.DrawAfter += widget_DrawSelection;
+			rootClickable.AfterDraw += widget_DrawSelection;
 
 			var childClickable = new GuiWidget()
 			{
@@ -341,7 +341,7 @@ namespace MatterHackers.Agg.Tests
 				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
 				lastClicked = widget;
 			};
-			childClickable.DrawAfter += widget_DrawSelection;
+			childClickable.AfterDraw += widget_DrawSelection;
 
 			rootClickable.AddChild(childClickable);
 			systemWindow.AddChild(rootClickable);

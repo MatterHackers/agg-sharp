@@ -489,9 +489,9 @@ namespace MatterHackers.Agg.UI
 		public event EventHandler Layout;
 
 		// the event args will be a DrawEventArgs
-		public event DrawEventHandler DrawBefore;
+		public event DrawEventHandler BeforeDraw;
 
-		public event DrawEventHandler DrawAfter;
+		public event DrawEventHandler AfterDraw;
 
 		public event EventHandler<KeyPressEventArgs> KeyPressed;
 
@@ -1805,7 +1805,7 @@ namespace MatterHackers.Agg.UI
 			{
 				DrawCount++;
 
-				DrawBefore?.Invoke(this, new DrawEventArgs(graphics2D));
+				BeforeDraw?.Invoke(this, new DrawEventArgs(graphics2D));
 
 				for (int i = 0; i < Children.Count; i++)
 				{
@@ -1891,7 +1891,7 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 
-				DrawAfter?.Invoke(this, new DrawEventArgs(graphics2D));
+				AfterDraw?.Invoke(this, new DrawEventArgs(graphics2D));
 
 				if (DebugShowBounds)
 				{
