@@ -228,13 +228,7 @@ namespace MatterHackers.Agg.UI
 		private bool visible = true;
 		private bool enabled = true;
 
-		private bool selectable = true;
-
-		public bool Selectable
-		{
-			get { return selectable; }
-			set { selectable = value; }
-		}
+		public bool Selectable { get; set; } = true;
 
 		private enum MouseCapturedState { NotCaptured, ChildHasMouseCaptured, ThisHasMouseCaptured };
 
@@ -1323,7 +1317,7 @@ namespace MatterHackers.Agg.UI
 				}
 				if (childToAdd.Parent != null)
 				{
-					throw new Exception("This is alread the child of another widget.");
+					throw new Exception("This is already the child of another widget.");
 				}
 				childToAdd.parent = this;
 				childToAdd.HasBeenClosed = false;
@@ -1799,10 +1793,25 @@ namespace MatterHackers.Agg.UI
 
 		public static int DrawCount;
 
+		protected bool formHasLoaded = false;
+
+		public event EventHandler Load;
+
+		public virtual void OnLoad(EventArgs args)
+		{
+			Load?.Invoke(this, args);
+		}
+
 		public virtual void OnDraw(Graphics2D graphics2D)
 		{
 			//using (new PerformanceTimer("Draw Timer", "Widget Draw"))
 			{
+				if (!formHasLoaded)
+				{
+					OnLoad(null);
+					formHasLoaded = true;
+				}
+
 				DrawCount++;
 
 				BeforeDraw?.Invoke(this, new DrawEventArgs(graphics2D));
@@ -2124,6 +2133,16 @@ namespace MatterHackers.Agg.UI
 			}
 
 			return vectorToTransform;
+		}
+
+		public GuiWidget TopmostParent()
+		{
+			return this.Parents<SystemWindow>().FirstOrDefault() ?? this.Parents<GuiWidget>().Last();
+		}
+
+		public Vector2 TransformFromScreenSpace(Vector2 vectorToTransform)
+		{
+			return this.TransformFromParentSpace(TopmostParent(), vectorToTransform);
 		}
 
 		public RectangleDouble TransformToScreenSpace(RectangleDouble rectangleToTransform)
