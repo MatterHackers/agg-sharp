@@ -62,7 +62,7 @@ namespace MatterHackers.Agg.UI.Tests
 		private AutomationTesterHarness(SystemWindow initialSystemWindow, Action<AutomationTesterHarness> functionContainingTests, double secondsToTestFailure)
 		{
 			bool firstDraw = true;
-			initialSystemWindow.DrawAfter += (sender, e) =>
+			initialSystemWindow.AfterDraw += (sender, e) =>
 			{
 				if (firstDraw)
 				{

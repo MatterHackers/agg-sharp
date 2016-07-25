@@ -76,7 +76,7 @@ namespace MatterHackers.GuiAutomation
 		{
 			if (windowToDrawSimpulatedMouseOn != null)
 			{
-				windowToDrawSimpulatedMouseOn.DrawAfter -= DrawMouse;
+				windowToDrawSimpulatedMouseOn.AfterDraw -= DrawMouse;
 			}
 		}
 
@@ -87,12 +87,12 @@ namespace MatterHackers.GuiAutomation
 			{
 				if (windowToDrawSimpulatedMouseOn != null)
 				{
-					windowToDrawSimpulatedMouseOn.DrawAfter -= DrawMouse;
+					windowToDrawSimpulatedMouseOn.AfterDraw -= DrawMouse;
 				}
 				windowToDrawSimpulatedMouseOn = topSystemWindow;
 				if (windowToDrawSimpulatedMouseOn != null && DrawSimulatedMouse)
 				{
-					windowToDrawSimpulatedMouseOn.DrawAfter += DrawMouse;
+					windowToDrawSimpulatedMouseOn.AfterDraw += DrawMouse;
 				}
 			}
 

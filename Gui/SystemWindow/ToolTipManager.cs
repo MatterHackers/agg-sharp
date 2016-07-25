@@ -204,7 +204,7 @@ namespace MatterHackers.Agg.UI
 
 					toolTipWidget.Name = "ToolTipWidget";
 
-					toolTipWidget.DrawAfter += (sender, drawEventHandler) =>
+					toolTipWidget.AfterDraw += (sender, drawEventHandler) =>
 					{
 						drawEventHandler.graphics2D.Rectangle(toolTipWidget.LocalBounds, RGBA_Bytes.Black);
 					};
