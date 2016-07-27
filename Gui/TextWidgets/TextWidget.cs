@@ -162,10 +162,19 @@ namespace MatterHackers.Agg.UI
 			}
 			set
 			{
-				string convertedToNewline = value.Replace('\r', '\n');
-				if (base.Text != convertedToNewline)
+				string convertedText = value;
+				if (value != null)
 				{
-					base.Text = convertedToNewline;
+					convertedText = value.Replace('\r', '\n');
+					if (Text.Contains("\r"))
+					{
+						throw new Exception("These should have be converted to \n.");
+					}
+				}
+
+				if (base.Text != convertedText)
+				{
+					base.Text = convertedText;
 					bool wasUsingHintedCache = printer.DrawFromHintedCache;
 					// Text may have been changed by a call back be sure to use what we really have set
 					printer = new TypeFacePrinter(base.Text, printer.TypeFaceStyle, justification: printer.Justification);
@@ -175,10 +184,6 @@ namespace MatterHackers.Agg.UI
 						DoExpandBoundsToText();
 					}
 					Invalidate();
-				}
-				if (Text.Contains("\r"))
-				{
-					throw new Exception("These should have be converted to \n.");
 				}
 			}
 		}

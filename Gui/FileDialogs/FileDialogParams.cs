@@ -7,7 +7,6 @@ namespace MatterHackers.Agg.UI
 		private String fileTypeFilter; // standard winforms format
 		private String initialDirectory;
 
-		private String fileName;
 		private String[] fileNames = null;
 
 		public int FilterIndex
@@ -57,9 +56,9 @@ namespace MatterHackers.Agg.UI
 
 		public String FileName
 		{
-			get { return fileName; }
-			set { fileName = value; }
-		}
+			get;
+			set;
+		} = "";
 
 		public String[] FileNames
 		{
