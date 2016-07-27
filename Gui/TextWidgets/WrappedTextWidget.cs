@@ -37,6 +37,7 @@ namespace MatterHackers.Agg.UI
 		private String unwrappedText;
 		private TextWidget textWidget;
 		private double pointSize;
+		private double wrappedWidth = -1;
 
 		public WrappedTextWidget(string text, double startingWidth,
 			double pointSize = 12, Justification justification = Justification.Left,
@@ -78,7 +79,10 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnBoundsChanged(EventArgs e)
 		{
-			AdjustTextWrap();
+			if (wrappedWidth != Width)
+			{
+				AdjustTextWrap();
+			}
 			base.OnBoundsChanged(e);
 		}
 
@@ -88,8 +92,13 @@ namespace MatterHackers.Agg.UI
 			{
 				if (Width > 0)
 				{
+					if(Name == "LicenseAgreementPage")
+					{
+						int a = 0;
+					}
 					EnglishTextWrapping wrapper = new EnglishTextWrapping(textWidget.Printer.TypeFaceStyle.EmSizeInPoints);
 					string wrappedMessage = wrapper.InsertCRs(unwrappedText, Width);
+					wrappedWidth = Width;
 					textWidget.Text = wrappedMessage;
 				}
 			}
