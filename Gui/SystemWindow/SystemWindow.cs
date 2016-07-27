@@ -178,7 +178,7 @@ namespace MatterHackers.Agg.UI
 
 		public override void BringToFront()
 		{
-			Parent.BringToFront();
+			Parent?.BringToFront();
 		}
 
 		public void ShowAsSystemWindow()
