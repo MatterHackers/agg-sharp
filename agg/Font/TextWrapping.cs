@@ -62,6 +62,19 @@ namespace MatterHackers.Agg.Font
 		{
 		}
 
+		bool HasSpaceBeforeIndex(string stringToCheck, int endOfChecking)
+		{
+			for (int i = stringToCheck.Length - 1; i >= 0; i--)
+			{
+				if (stringToCheck[i] == ' ')
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		public override List<string> WrapSingleLineOnWidth(string originalTextToWrap, double maxPixelWidth)
 		{
 			List<string> lines = new List<string>();
@@ -72,13 +85,21 @@ namespace MatterHackers.Agg.Font
 				while (textToWrap.Length > 0)
 				{
 					TypeFacePrinter printer = new TypeFacePrinter(textToWrap, styledTypeFace);
-					int remainingLength = textToWrap.Length;
+					int remainingLength = 1;
+					while (printer.GetOffsetLeftOfCharacterIndex(remainingLength).x < maxPixelWidth
+						&& remainingLength < printer.Text.Length)
+					{
+						// gett all the characters we can up to the end of the wrap
+						remainingLength++;
+					}
+
 					while (printer.GetSize().x > maxPixelWidth
 						&& printer.Text.Length > 1)
 					{
+						// now trim back to the last break
 						remainingLength--;
 						while (remainingLength > 1
-							&& textToWrap.Substring(0, remainingLength).Contains(" ")
+							&& HasSpaceBeforeIndex(textToWrap, remainingLength)
 							&& textToWrap[remainingLength] != ' ')
 						{
 							remainingLength--;
