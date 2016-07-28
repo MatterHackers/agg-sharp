@@ -210,7 +210,7 @@ namespace MatterHackers.Agg.UI
 					};
 
 					// Make sure we wrap long text
-					toolTipWidget.AddChild(new WrappedTextWidget(toolTipText, 350)
+					toolTipWidget.AddChild(new WrappedTextWidget(toolTipText)
 					{
 						HAnchor = HAnchor.FitToChildren,
 					});
