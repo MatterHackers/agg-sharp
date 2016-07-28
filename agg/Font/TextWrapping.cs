@@ -82,19 +82,20 @@ namespace MatterHackers.Agg.Font
 			if (maxPixelWidth > 0)
 			{
 				string textToWrap = originalTextToWrap;
+				TypeFacePrinter printer = new TypeFacePrinter(textToWrap, styledTypeFace);
 				while (textToWrap.Length > 0)
 				{
-					TypeFacePrinter printer = new TypeFacePrinter(textToWrap, styledTypeFace);
+					printer.Text = textToWrap;
 					int remainingLength = 1;
 					while (printer.GetOffsetLeftOfCharacterIndex(remainingLength).x < maxPixelWidth
 						&& remainingLength < printer.Text.Length)
 					{
-						// gett all the characters we can up to the end of the wrap
+						// get all the characters we can up to the end of the wrap
 						remainingLength++;
 					}
 
-					while (printer.GetSize().x > maxPixelWidth
-						&& printer.Text.Length > 1)
+					while (printer.GetOffsetLeftOfCharacterIndex(remainingLength).x > maxPixelWidth
+						&& remainingLength > 1)
 					{
 						// now trim back to the last break
 						remainingLength--;
@@ -104,8 +105,6 @@ namespace MatterHackers.Agg.Font
 						{
 							remainingLength--;
 						}
-
-						printer.Text = textToWrap.Substring(0, remainingLength);
 					}
 
 					if (remainingLength >= 0)

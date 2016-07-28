@@ -39,12 +39,11 @@ namespace MatterHackers.Agg.UI
 		private double pointSize;
 		private double wrappedWidth = -1;
 
-		public WrappedTextWidget(string text, double startingWidth,
-			double pointSize = 12, Justification justification = Justification.Left,
+		public WrappedTextWidget(string text, double pointSize = 12, Justification justification = Justification.Left,
 			RGBA_Bytes textColor = new RGBA_Bytes(), bool ellipsisIfClipped = true, bool underline = false, RGBA_Bytes backgroundColor = new RGBA_Bytes(), bool doubleBufferText = true)
 		{
 			this.pointSize = pointSize;
-			textWidget = new TextWidget(text, 0, 0, pointSize, justification, textColor, ellipsisIfClipped, underline, backgroundColor)
+			textWidget = new TextWidget("", 0, 0, pointSize, justification, textColor, ellipsisIfClipped, underline, backgroundColor)
 			{
 				DoubleBuffer = doubleBufferText,
 			};
@@ -55,8 +54,6 @@ namespace MatterHackers.Agg.UI
 			HAnchor = HAnchor.ParentLeftRight;
 			VAnchor = VAnchor.FitToChildren;
 			AddChild(textWidget);
-
-			Width = startingWidth;
 		}
 
 		public RGBA_Bytes TextColor
@@ -92,12 +89,13 @@ namespace MatterHackers.Agg.UI
 			{
 				if (Width > 0)
 				{
-					if(Name == "LicenseAgreementPage")
-					{
-						int a = 0;
-					}
 					EnglishTextWrapping wrapper = new EnglishTextWrapping(textWidget.Printer.TypeFaceStyle.EmSizeInPoints);
-					string wrappedMessage = wrapper.InsertCRs(unwrappedText, Width);
+					double extraSpaceForScrollBar = 0;
+					if(textWidget.Text == "")
+					{
+						extraSpaceForScrollBar = 15 * GuiWidget.DeviceScale;
+					}
+					string wrappedMessage = wrapper.InsertCRs(unwrappedText, Width - extraSpaceForScrollBar);
 					wrappedWidth = Width;
 					textWidget.Text = wrappedMessage;
 				}
