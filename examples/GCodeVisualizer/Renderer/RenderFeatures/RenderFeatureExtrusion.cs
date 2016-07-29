@@ -61,12 +61,12 @@ namespace MatterHackers.GCodeVisualizer
 
         private double GetExtrusionWidth(RenderType renderType)
         {
-			double width = .4;
+			double width = GCodeRenderer.ExtruderWidth;
             if ((renderType & RenderType.SimulateExtrusion) == RenderType.SimulateExtrusion)
             {
 				double moveLength = (end - start).Length;
 
-				if (moveLength > .05) // we get truncation errors from the slice engine when the length is very small, so don't do them
+				if (moveLength > .1) // we get truncation errors from the slice engine when the length is very small, so don't do them
 				{
 					double area = extrusionVolumeMm3 / moveLength;
 					width = area / layerHeight;

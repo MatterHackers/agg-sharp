@@ -50,6 +50,8 @@ namespace MatterHackers.GCodeVisualizer
 
 	public class GCodeRenderer : IDisposable
 	{
+		public static double ExtruderWidth { get; set; } = .4;
+
 		private List<List<int>> featureStartIndex = new List<List<int>>();
 		private List<List<int>> featureEndIndex = new List<List<int>>();
 		private List<List<RenderFeatureBase>> renderFeatures = new List<List<RenderFeatureBase>>();
