@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace MatterHackers.Agg.Font
@@ -79,50 +80,55 @@ namespace MatterHackers.Agg.Font
 		{
 			List<string> lines = new List<string>();
 
-			if (maxPixelWidth > 0)
+			if (maxPixelWidth > 0
+				&& originalTextToWrap.Length > 0)
 			{
 				string textToWrap = originalTextToWrap;
 				TypeFacePrinter printer = new TypeFacePrinter(textToWrap, styledTypeFace);
 				while (textToWrap.Length > 0)
 				{
 					printer.Text = textToWrap;
-					int remainingLength = 1;
-					while (printer.GetOffsetLeftOfCharacterIndex(remainingLength).x < maxPixelWidth
-						&& remainingLength < printer.Text.Length)
+					int countBeforeWrap;
+
+					double currentLength = 0;
+					for (countBeforeWrap = 0; countBeforeWrap < printer.Text.Length; countBeforeWrap++)
 					{
-						// get all the characters we can up to the end of the wrap
-						remainingLength++;
+						if (currentLength > maxPixelWidth)
+						{
+							break;
+						}
+						currentLength += printer.TypeFaceStyle.GetAdvanceForCharacter(textToWrap, countBeforeWrap);
 					}
 
-					while (printer.GetOffsetLeftOfCharacterIndex(remainingLength).x > maxPixelWidth
-						&& remainingLength > 1)
+					while (printer.GetOffsetLeftOfCharacterIndex(countBeforeWrap).x > maxPixelWidth
+						&& countBeforeWrap > 1)
 					{
 						// now trim back to the last break
-						remainingLength--;
-						while (remainingLength > 1
-							&& HasSpaceBeforeIndex(textToWrap, remainingLength)
-							&& textToWrap[remainingLength] != ' ')
+						countBeforeWrap--;
+						while (countBeforeWrap > 1
+							&& HasSpaceBeforeIndex(textToWrap, countBeforeWrap)
+							&& textToWrap[countBeforeWrap] != ' ')
 						{
-							remainingLength--;
+							countBeforeWrap--;
 						}
 					}
 
-					if (remainingLength >= 0)
+					if (countBeforeWrap >= 0)
 					{
-						lines.Add(textToWrap.Substring(0, remainingLength));
+						lines.Add(textToWrap.Substring(0, countBeforeWrap));
 					}
 
 					// check if we wrapped because of to long or a '\n'. If '\n' we only trim a leading space if to long.
-					if (remainingLength > 1 // we have more than 2 characters left
-						&& textToWrap.Length > remainingLength // we are longer than the remaining text
-						&& textToWrap[remainingLength] == ' ' // the first new character is a space
-						&& textToWrap[remainingLength - 1] != '\n') // the character before the space was not a cr (wrapped because of length)
+					if (countBeforeWrap > 1 // we have more than 2 characters left
+						&& textToWrap.Length > countBeforeWrap // we are longer than the remaining text
+						&& textToWrap[countBeforeWrap] == ' ' // the first new character is a space
+						&& textToWrap[countBeforeWrap - 1] != '\n') // the character before the space was not a cr (wrapped because of length)
 					{
-						textToWrap = textToWrap.Substring(remainingLength + 1);
+						textToWrap = textToWrap.Substring(countBeforeWrap + 1);
 					}
 					else
 					{
-						textToWrap = textToWrap.Substring(remainingLength);
+						textToWrap = textToWrap.Substring(countBeforeWrap);
 					}
 				}
 			}

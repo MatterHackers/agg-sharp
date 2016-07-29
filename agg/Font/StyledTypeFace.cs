@@ -301,6 +301,19 @@ namespace MatterHackers.Agg.Font
 			return null;
 		}
 
+		public double GetAdvanceForCharacter(string line, int characterIndex)
+		{
+			if (characterIndex < line.Length - 1)
+			{
+				// pass the next char so the typeFaceStyle can do kerning if it needs to.
+				return GetAdvanceForCharacter(line[characterIndex], line[characterIndex + 1]);
+			}
+			else
+			{
+				return GetAdvanceForCharacter(line[characterIndex]);
+			}
+		}
+
 		public double GetAdvanceForCharacter(char character, char nextCharacterToKernWith)
 		{
 			return TypeFace.GetAdvanceForCharacter(character, nextCharacterToKernWith) * currentEmScaling;

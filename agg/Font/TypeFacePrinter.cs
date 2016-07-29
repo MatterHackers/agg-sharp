@@ -186,15 +186,7 @@ namespace MatterHackers.Agg.Font
 						}
 
 						// get the advance for the next character
-						if (currentChar < line.Length - 1)
-						{
-							// pass the next char so the typeFaceStyle can do kerning if it needs to.
-							currentOffset.x += TypeFaceStyle.GetAdvanceForCharacter(line[currentChar], line[currentChar + 1]);
-						}
-						else
-						{
-							currentOffset.x += TypeFaceStyle.GetAdvanceForCharacter(line[currentChar]);
-						}
+						currentOffset.x += TypeFaceStyle.GetAdvanceForCharacter(line, currentChar);
 					}
 
 					// before we go onto the next line we need to move down a line
@@ -234,15 +226,7 @@ namespace MatterHackers.Agg.Font
 						}
 
 						// get the advance for the next character
-						if (currentChar < line.Length - 1)
-						{
-							// pass the next char so the typeFaceStyle can do kerning if it needs to.
-							currentOffset.x += TypeFaceStyle.GetAdvanceForCharacter(line[currentChar], line[currentChar + 1]);
-						}
-						else
-						{
-							currentOffset.x += TypeFaceStyle.GetAdvanceForCharacter(line[currentChar]);
-						}
+						currentOffset.x += TypeFaceStyle.GetAdvanceForCharacter(line, currentChar);
 					}
 
 					// before we go onto the next line we need to move down a line
@@ -349,14 +333,8 @@ namespace MatterHackers.Agg.Font
 				}
 				else
 				{
-					if (i + 1 < text.Length)
-					{
-						currentLineX += TypeFaceStyle.GetAdvanceForCharacter(text[i], text[i + 1]);
-					}
-					else
-					{
-						currentLineX += TypeFaceStyle.GetAdvanceForCharacter(text[i]);
-					}
+					currentLineX += TypeFaceStyle.GetAdvanceForCharacter(text, i);
+
 					if (currentLineX > offset.x)
 					{
 						offset.x = currentLineX;
@@ -373,7 +351,7 @@ namespace MatterHackers.Agg.Font
 				}
 				else
 				{
-					offset.x += TypeFaceStyle.GetAdvanceForCharacter(text[characterToMeasureEndIndexInclusive]);
+					offset.x += TypeFaceStyle.GetAdvanceForCharacter(text, characterToMeasureEndIndexInclusive);
 				}
 			}
 		}
@@ -421,14 +399,7 @@ namespace MatterHackers.Agg.Font
 				}
 				else
 				{
-					if (index < text.Length - 1)
-					{
-						offset.x += TypeFaceStyle.GetAdvanceForCharacter(text[index], text[index + 1]);
-					}
-					else
-					{
-						offset.x += TypeFaceStyle.GetAdvanceForCharacter(text[index]);
-					}
+					offset.x += TypeFaceStyle.GetAdvanceForCharacter(text, index);
 				}
 			}
 		}
