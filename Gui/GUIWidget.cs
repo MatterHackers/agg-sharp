@@ -2687,11 +2687,32 @@ namespace MatterHackers.Agg.UI
 						BreakInDebugger("You should only ever get here if you have the mouse captured.");
 					}
 
-					MouseUp?.Invoke(this, mouseEvent);
-
-					if (mouseUpOnWidget)
+					bool upHappenedAboveChild = false;
+					for (int i = Children.Count - 1; i >= 0; i--)
 					{
-						OnClick(mouseEvent);
+						GuiWidget child = Children[i];
+						double childX = mouseEvent.X;
+						double childY = mouseEvent.Y;
+						child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
+						MouseEventArgs childMouseEvent = new MouseEventArgs(mouseEvent, childX, childY);
+						if (child.Visible && child.Enabled && child.CanSelect)
+						{
+							if (child.PositionWithinLocalBounds(childX, childY))
+							{
+								upHappenedAboveChild = true;
+								break;
+							}
+						}
+					}
+
+					if (!upHappenedAboveChild)
+					{
+						MouseUp?.Invoke(this, mouseEvent);
+
+						if (mouseUpOnWidget)
+						{
+							OnClick(mouseEvent);
+						}
 					}
 				}
 

@@ -42,7 +42,7 @@ namespace MatterHackers.Agg.Tests
 	{
 		GuiWidget lastClicked = null;
 
-		[Test, RequiresSTA, RunInApplicationDomain, Category("FixNeeded")]
+		[Test, RequiresSTA, RunInApplicationDomain]
 		public void ClickFiresOnCorrectWidgets()
 		{
 			int blueClickCount = 0;
@@ -51,35 +51,38 @@ namespace MatterHackers.Agg.Tests
 
 			lastClicked = null;
 
+			double waitTime = .1;
+
 			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
 			{
 				AutomationRunner testRunner = new AutomationRunner();
-				testRunner.ClickByName("rootClickable");
-				testRunner.Wait(1.5);
+				testRunner.TimeToMoveMouse = .1;
+				testRunner.ClickByName("rootClickable", 1);
+				testRunner.Wait(waitTime);
 				resultsHarness.AddTestResult(blueClickCount == 1, "Expected 1 click on blue widget");
 				resultsHarness.AddTestResult(orangeClickCount == 0, "Expected 0 clicks on orange widget");
 				resultsHarness.AddTestResult(purpleClickCount == 0, "Expected 1 click on purple widget");
 
-				testRunner.ClickByName("orangeClickable");
-				testRunner.Wait(1.5);
+				testRunner.ClickByName("orangeClickable", 1);
+				testRunner.Wait(waitTime);
 				resultsHarness.AddTestResult(blueClickCount == 1, "Expected 1 click on blue widget");
 				resultsHarness.AddTestResult(orangeClickCount == 1, "Expected 1 clicks on orange widget");
 				resultsHarness.AddTestResult(purpleClickCount == 0, "Expected 0 click on purple widget");
 
-				testRunner.ClickByName("rootClickable");
-				testRunner.Wait(1.5);
+				testRunner.ClickByName("rootClickable", 1);
+				testRunner.Wait(waitTime);
 				resultsHarness.AddTestResult(blueClickCount == 2, "Expected 1 click on blue widget");
 				resultsHarness.AddTestResult(orangeClickCount == 1, "Expected 0 clicks on orange widget");
 				resultsHarness.AddTestResult(purpleClickCount == 0, "Expected 1 click on purple widget");
 
-				testRunner.ClickByName("orangeClickable");
-				testRunner.Wait(1.5);
+				testRunner.ClickByName("orangeClickable", 1);
+				testRunner.Wait(waitTime);
 				resultsHarness.AddTestResult(blueClickCount == 2, "Expected 1 click on root widget");
 				resultsHarness.AddTestResult(orangeClickCount == 2, "Expected 2 clicks on orange widget");
 				resultsHarness.AddTestResult(purpleClickCount == 0, "Expected 0 click on purple widget");
 
-				testRunner.ClickByName("purpleClickable");
-				testRunner.Wait(1.5);
+				testRunner.ClickByName("purpleClickable", 1);
+				testRunner.Wait(waitTime);
 				resultsHarness.AddTestResult(blueClickCount == 2, "Expected 1 click on blue widget");
 				resultsHarness.AddTestResult(orangeClickCount == 2, "Expected 2 clicks on orange widget");
 				resultsHarness.AddTestResult(purpleClickCount == 1, "Expected 1 click on purple widget");
@@ -158,7 +161,7 @@ namespace MatterHackers.Agg.Tests
 			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExectueTests(systemWindow, testToRun, 10);
 
 			Assert.IsTrue(testHarness.AllTestsPassed);
-			Assert.IsTrue(testHarness.TestCount == 12);
+			Assert.IsTrue(testHarness.TestCount == 15);
 		}
 
 		[Test, RequiresSTA, RunInApplicationDomain, Category("FixNeeded")]
@@ -284,11 +287,11 @@ namespace MatterHackers.Agg.Tests
 		}
 
 
-		[Test, RequiresSTA, RunInApplicationDomain, Category("FixNeeded")]
+		[Test, RequiresSTA, RunInApplicationDomain]
 		public void ClickSuppressedOnMouseUpWithinChild()
 		{
 			// FixNeeded - Agg currently fires mouse up events in child controls when the parent has the mouse captured
-			// and is performing drag like operations. If the mouse goes down the in the parent and comes up on the child
+			// and is performing drag like operations. If the mouse goes down in the parent and comes up on the child
 			// neither control should get a click event
 
 			int rootClickCount = 0;
@@ -299,7 +302,8 @@ namespace MatterHackers.Agg.Tests
 			var systemWindow = new TestHostWindow(300, 200)
 			{
 				Padding = new BorderDouble(20),
-				BackgroundColor = RGBA_Bytes.Gray
+				BackgroundColor = RGBA_Bytes.Gray,
+				Name = "System Window",
 			};
 
 			var rootClickable = new GuiWidget()
