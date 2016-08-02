@@ -668,12 +668,18 @@ namespace MatterHackers.GuiAutomation
 
 				Point2D screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
-                inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
+				Drop();
 
 				return true;
 			}
 
 			return false;
+		}
+
+		public void Drop(Point2D offset = default(Point2D))
+		{
+			Point2D screenPosition = CurrentMousPosition() + offset;
+			inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
 		}
 
 		public bool DoubleClickByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
