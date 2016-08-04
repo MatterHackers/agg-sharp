@@ -21,8 +21,8 @@ namespace MatterHackers.Agg.Font
 			EnglishTextWrapping englishWrapping = new EnglishTextWrapping(8);
 			List<string> wrappedLines = englishWrapping.WrapSingleLineOnWidth("Layers or MM", 30);
 			Assert.IsTrue(wrappedLines.Count == 3);
-			Assert.IsTrue(wrappedLines[0] == "Laye");
-			Assert.IsTrue(wrappedLines[1] == "rs or");
+			Assert.IsTrue(wrappedLines[0] == "Layer");
+			Assert.IsTrue(wrappedLines[1] == "s or");
 			Assert.IsTrue(wrappedLines[2] == "MM");
 		}
 	}
