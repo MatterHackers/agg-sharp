@@ -90,12 +90,7 @@ namespace MatterHackers.Agg.UI
 				if (Width > 0)
 				{
 					EnglishTextWrapping wrapper = new EnglishTextWrapping(textWidget.Printer.TypeFaceStyle.EmSizeInPoints);
-					double extraSpaceForScrollBar = 0;
-					if(textWidget.Text == "")
-					{
-						extraSpaceForScrollBar = 15 * GuiWidget.DeviceScale;
-					}
-					string wrappedMessage = wrapper.InsertCRs(unwrappedText, Width - extraSpaceForScrollBar);
+					string wrappedMessage = wrapper.InsertCRs(unwrappedText, Width);
 					wrappedWidth = Width;
 					textWidget.Text = wrappedMessage;
 				}
