@@ -56,9 +56,9 @@ namespace MatterHackers.Agg.Tests
 			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
 			{
 				AutomationRunner testRunner = new AutomationRunner();
-				//testRunner.TimeToMoveMouse = .1;
 				testRunner.Wait(2);
 				testRunner.ClickByName("rootClickable", 5);
+				testRunner.Wait(waitTime);
 				resultsHarness.AddTestResult(blueClickCount == 1, "Expected 1 click on blue widget");
 				resultsHarness.AddTestResult(orangeClickCount == 0, "Expected 0 clicks on orange widget");
 				resultsHarness.AddTestResult(purpleClickCount == 0, "Expected 1 click on purple widget");
