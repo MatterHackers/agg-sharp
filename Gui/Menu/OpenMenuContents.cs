@@ -147,7 +147,10 @@ namespace MatterHackers.Agg.UI
 			if (widgetRelativeTo != null)
 			{
 				Vector2 zero = widgetRelativeTo.OriginRelativeParent;
-				zero += new Vector2(widgetRelativeTo.LocalBounds.Left, widgetRelativeTo.LocalBounds.Bottom);
+				if (alignToRightEdge)
+				{
+					zero += new Vector2(widgetRelativeTo.LocalBounds.Left, widgetRelativeTo.LocalBounds.Bottom);
+				}
 
 				GuiWidget topParent = widgetRelativeTo.Parent;
 				while (topParent != null && topParent.Parent != null)

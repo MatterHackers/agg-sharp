@@ -82,16 +82,16 @@ namespace MatterHackers.Agg.UI.Tests
 			UiThread.InvokePendingActions();
 			Assert.IsTrue(listMenu.IsOpen);
 
-			// all the menu itmes should be added to the open menu
+			// all the menu items should be added to the open menu
 			Assert.IsTrue(cutMenuItem.Parent != null);
 			Assert.IsTrue(copyMenuItem.Parent != null);
 			Assert.IsTrue(pastMenuItem.Parent != null);
 
 			// click on menu again to close
-			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 11, 304, 0));
 			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
-			// all the mune itmes should be removed from the closed menu
+			// all the menu items should be removed from the closed menu
 			Assert.IsTrue(cutMenuItem.Parent == null);
 			Assert.IsTrue(copyMenuItem.Parent == null);
 			Assert.IsTrue(pastMenuItem.Parent == null);
@@ -100,7 +100,7 @@ namespace MatterHackers.Agg.UI.Tests
 			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
 
-			// all the menu itmes should be removed from the closed menu
+			// all the menu items should be removed from the closed menu
 			Assert.IsTrue(cutMenuItem.Parent == null);
 			Assert.IsTrue(copyMenuItem.Parent == null);
 			Assert.IsTrue(pastMenuItem.Parent == null);
@@ -112,7 +112,7 @@ namespace MatterHackers.Agg.UI.Tests
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 11, 300, 0));
 			UiThread.InvokePendingActions();
 			Assert.IsTrue(listMenu.IsOpen);
-			// all the menu itmes should be added to the open menu
+			// all the menu items should be added to the open menu
 			Assert.IsTrue(cutMenuItem.Parent != null);
 			Assert.IsTrue(copyMenuItem.Parent != null);
 			Assert.IsTrue(pastMenuItem.Parent != null);
@@ -121,7 +121,7 @@ namespace MatterHackers.Agg.UI.Tests
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 5, 299, 0));
 			UiThread.InvokePendingActions();
 			Assert.IsTrue(!listMenu.IsOpen);
-			// all the mune itmes should be removed from the closed menu
+			// all the menu items should be removed from the closed menu
 			Assert.IsTrue(cutMenuItem.Parent == null);
 			Assert.IsTrue(copyMenuItem.Parent == null);
 			Assert.IsTrue(pastMenuItem.Parent == null);
