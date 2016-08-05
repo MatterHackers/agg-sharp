@@ -65,7 +65,7 @@ namespace MatterHackers.Agg.Font
 
 		bool HasSpaceBeforeIndex(string stringToCheck, int endOfChecking)
 		{
-			for (int i = stringToCheck.Length - 1; i >= 0; i--)
+			for (int i = Math.Min(endOfChecking, stringToCheck.Length - 1); i >= 0; i--)
 			{
 				if (stringToCheck[i] == ' ')
 				{
