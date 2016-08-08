@@ -58,7 +58,7 @@ namespace MatterHackers.GCodeVisualizer
 			int[] capEndIndices = new int[steps];
 
 			double halfHeight = layerHeight / 2 + (layerHeight * .1);
-			double halfWidth = (radius * radius) / halfHeight;
+			double halfWidth = radius;
 			double zScale = halfHeight / radius;
 			double xScale = halfWidth / radius;
 
