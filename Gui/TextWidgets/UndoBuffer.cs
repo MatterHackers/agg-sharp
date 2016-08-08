@@ -40,7 +40,16 @@ namespace MatterHackers.Agg.UI
 			undoBuffer.Push(command);
 			redoBuffer.Clear();
 			Changed?.Invoke(this, null);
-        }
+		}
+
+		public void AddAndDo(IUndoRedoCommand command)
+		{
+			undoBuffer.Push(command);
+			redoBuffer.Clear();
+			Changed?.Invoke(this, null);
+
+			command.Do();
+		}
 
 		public void Redo(int redoCount = 1)
 		{
@@ -70,7 +79,7 @@ namespace MatterHackers.Agg.UI
 			Changed?.Invoke(this, null);
 		}
 
-		internal void ClearHistory()
+		public void ClearHistory()
 		{
 			undoBuffer.Clear();
 			redoBuffer.Clear();
@@ -83,5 +92,20 @@ namespace MatterHackers.Agg.UI
 		void Do();
 
 		void Undo();
+	}
+
+	public class UndoRedoActions : IUndoRedoCommand
+	{
+		Action undoAction;
+		Action doAction;
+		public UndoRedoActions(Action undoAction, Action doAction)
+		{
+			this.doAction = doAction;
+			this.undoAction = undoAction;
+		}
+
+		public void Do() { doAction?.Invoke(); }
+
+		public void Undo() { undoAction?.Invoke(); }
 	}
 }
