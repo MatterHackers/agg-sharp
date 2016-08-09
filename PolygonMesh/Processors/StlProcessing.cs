@@ -460,7 +460,7 @@ namespace MatterHackers.PolygonMesh.Processors
 		public static void BreakInDebugger(string description = "")
 		{
 			Debug.WriteLine(description);
-			BreakInDebugger();
+			Debugger.Break();
 		}
 	}
 }
