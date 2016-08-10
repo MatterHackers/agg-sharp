@@ -191,14 +191,14 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public InternalTextEditWidget(string text, double pointSize, bool multiLine, int tabIndex)
+		public InternalTextEditWidget(string text, double pointSize, bool multiLine, int tabIndex, TypeFace typeFace = null)
 		{
 			TabIndex = tabIndex;
 			TabStop = true;
 			WordBreakChars = DefaultWordBreakChars;
 			MergeTypingDuringUndo = true;
 
-			internalTextWidget = new TextWidget(text, pointSize: pointSize, ellipsisIfClipped: false, textColor: textColor);
+			internalTextWidget = new TextWidget(text, pointSize: pointSize, ellipsisIfClipped: false, textColor: textColor, typeFace: typeFace);
 			internalTextWidget.Selectable = false;
 			internalTextWidget.AutoExpandBoundsToText = true;
 			AddChild(internalTextWidget);
