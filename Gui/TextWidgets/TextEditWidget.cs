@@ -195,9 +195,9 @@ namespace MatterHackers.Agg.UI
 		{
 		}
 
-		public TextEditWidget(string text = "", double x = 0, double y = 0, double pointSize = 12, double pixelWidth = 0, double pixelHeight = 0, bool multiLine = false, int tabIndex = 0)
+		public TextEditWidget(string text = "", double x = 0, double y = 0, double pointSize = 12, double pixelWidth = 0, double pixelHeight = 0, bool multiLine = false, int tabIndex = 0, TypeFace typeFace = null)
 		{
-			internalTextEditWidget = new InternalTextEditWidget(text, pointSize, multiLine, tabIndex);
+			internalTextEditWidget = new InternalTextEditWidget(text, pointSize, multiLine, tabIndex, typeFace: typeFace);
 			HookUpToInternalWidget(pixelWidth, pixelHeight);
 			OriginRelativeParent = new Vector2(x, y);
 
