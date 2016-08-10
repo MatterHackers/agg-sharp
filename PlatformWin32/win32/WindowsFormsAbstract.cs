@@ -203,6 +203,11 @@ namespace MatterHackers.Agg.UI
 						catch(Exception invokeException)
 						{
 #if DEBUG
+							lock (singleInvokeLock)
+							{
+								processingOnIdle = false;
+							}
+
 							throw (invokeException);
 #endif
 						}
