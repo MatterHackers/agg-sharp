@@ -67,6 +67,7 @@ namespace MatterHackers.GuiAutomation
 			else
 			{
 				inputSystem = new AggInputMethods(this, drawSimulatedMouse);
+				HookWindowsInputAndSendToWidget.EnableInputHook = false;
 			}
 #else
 				inputSystem = new AggInputMethods(this, drawSimulatedMouse);
