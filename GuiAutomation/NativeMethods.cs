@@ -27,64 +27,55 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
+using System.Drawing;
+using System.Runtime.InteropServices;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.PlatformAbstract;
-using MatterHackers.Agg.UI;
-using MatterHackers.VectorMath;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.Globalization;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
-#if !__ANDROID__
-using System.Drawing.Imaging;
-#endif
 
 namespace MatterHackers.GuiAutomation
 {
-    public abstract class NativeMethods : IDisposable
-    {
-        public bool LeftButtonDown { get; private set; }
+	public static class NativeMethods
+	{
+		public const int MOUSEEVENTF_LEFTDOWN = 0x02;
+		public const int MOUSEEVENTF_LEFTUP = 0x04;
+		public const int MOUSEEVENTF_RIGHTDOWN = 0x08;
+		public const int MOUSEEVENTF_RIGHTUP = 0x10;
+		public const int MOUSEEVENTF_MIDDLEDOWN = 0x20;
+		public const int MOUSEEVENTF_MIDDLEUP = 0x40;
 
-        public const int MOUSEEVENTF_LEFTDOWN = 0x02;
-        public const int MOUSEEVENTF_LEFTUP = 0x04;
-        public const int MOUSEEVENTF_RIGHTDOWN = 0x08;
-        public const int MOUSEEVENTF_RIGHTUP = 0x10;
-        public const int MOUSEEVENTF_MIDDLEDOWN = 0x20;
-        public const int MOUSEEVENTF_MIDDLEUP = 0x40;
+		// P/Invoke declarations
+		[DllImport("gdi32.dll")]
+		internal static extern bool BitBlt(IntPtr hdcDest, int xDest, int yDest, int wDest, int hDest, IntPtr hdcSource, int xSrc, int ySrc, CopyPixelOperation rop);
 
-        public abstract ImageBuffer GetCurrentScreen();
-        public int GetCurrentScreenHeight()
-        {
-            Size sz = new Size();// System.Windows.Forms.Screen.PrimaryScreen.Bounds.Size;
-            return sz.Height;
-        }
+		[DllImport("user32.dll")]
+		internal static extern bool ReleaseDC(IntPtr hWnd, IntPtr hDc);
 
-		public abstract void Dispose();
+		[DllImport("gdi32.dll")]
+		internal static extern IntPtr DeleteDC(IntPtr hDc);
 
-		public abstract Point2D CurrentMousPosition();
+		[DllImport("gdi32.dll")]
+		internal static extern IntPtr DeleteObject(IntPtr hDc);
 
-        public abstract void SetCursorPosition(int x, int y);
+		[DllImport("gdi32.dll")]
+		internal static extern IntPtr CreateCompatibleBitmap(IntPtr hdc, int nWidth, int nHeight);
 
-        public virtual void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo)
-        {
-            if (dwFlags == MOUSEEVENTF_LEFTDOWN)
-            {
-                // send it to the window
-                LeftButtonDown = true;
-            }
-            else if (dwFlags == MOUSEEVENTF_LEFTUP)
-            {
-                LeftButtonDown = false;
-            }
-        }
+		[DllImport("gdi32.dll")]
+		internal static extern IntPtr CreateCompatibleDC(IntPtr hdc);
 
-        public abstract void Type(string textToType);
-    }
+		[DllImport("gdi32.dll")]
+		internal static extern IntPtr SelectObject(IntPtr hdc, IntPtr bmp);
+
+		[DllImport("user32.dll")]
+		internal static extern IntPtr GetDesktopWindow();
+
+		[DllImport("user32.dll")]
+		internal static extern IntPtr GetWindowDC(IntPtr ptr);
+
+		[DllImport("User32.Dll")]
+		internal static extern long SetCursorPos(int x, int y);
+
+		[DllImport("user32.dll")]
+		internal static extern void mouse_event(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo);
+	}
 }

@@ -46,7 +46,7 @@ namespace MatterHackers.GuiAutomation
 	{
 		public long MatchLimit = 50;
 
-		NativeMethods inputSystem;
+		private IInputMethod inputSystem;
 
         /// <summary>
         /// The number of seconds to move the mouse when going to a new position.
@@ -81,9 +81,9 @@ namespace MatterHackers.GuiAutomation
 
 #region Utility
 
-		public Point2D CurrentMousPosition()
+		public Point2D CurrentMousePosition()
 		{
-            return inputSystem.CurrentMousPosition();
+			return inputSystem.CurrentMousePosition();
 		}
 
 		public ImageBuffer GetCurrentScreen()
@@ -240,7 +240,7 @@ namespace MatterHackers.GuiAutomation
 
             if(parentSystemWindow != null)
             {
-                Point2D mousePosOnWindow = ScreenToSystemWindow(inputSystem.CurrentMousPosition(), (SystemWindow)parentSystemWindow);
+                Point2D mousePosOnWindow = ScreenToSystemWindow(inputSystem.CurrentMousePosition(), (SystemWindow)parentSystemWindow);
                 Ellipse circle = new Ellipse(new Vector2(mousePosOnWindow.x, mousePosOnWindow.y), 10);
                 if(inputSystem.LeftButtonDown)
                 {
@@ -678,7 +678,7 @@ namespace MatterHackers.GuiAutomation
 
 		public void Drop(Point2D offset = default(Point2D))
 		{
-			Point2D screenPosition = CurrentMousPosition() + offset;
+			Point2D screenPosition = CurrentMousePosition() + offset;
 			inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
 		}
 
@@ -735,7 +735,7 @@ namespace MatterHackers.GuiAutomation
 
 		public void SetMouseCursorPosition(int x, int y)
 		{
-			Vector2 start = new Vector2(CurrentMousPosition().x, CurrentMousPosition().y);
+			Vector2 start = new Vector2(CurrentMousePosition().x, CurrentMousePosition().y);
 			Vector2 end = new Vector2(x, y);
 			Vector2 delta = end - start;
 			int steps = (int)((TimeToMoveMouse * 1000) / 20);
