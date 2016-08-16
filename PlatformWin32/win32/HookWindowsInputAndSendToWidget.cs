@@ -7,6 +7,7 @@ namespace MatterHackers.Agg.UI
 	public class HookWindowsInputAndSendToWidget
 	{
 		protected WidgetForWindowsFormsAbstract widgetToSendTo;
+		public static bool EnableInputHook = true;
 
 		public HookWindowsInputAndSendToWidget(ContainerControl controlToHook, WidgetForWindowsFormsAbstract widgetToSendTo)
 		{
@@ -98,6 +99,12 @@ namespace MatterHackers.Agg.UI
 
 		private void formToHook_MouseMove(object sender, System.Windows.Forms.MouseEventArgs windowsMouseEvent)
 		{
+			// TODO: Remove short term workaround for automation issues where mouse events fire differently if mouse is within window region
+			if (!EnableInputHook)
+			{
+				return;
+			}
+
 			widgetToSendTo.OnMouseMove(ConvertWindowsMouseEventToAggMouseEvent(windowsMouseEvent));
 		}
 

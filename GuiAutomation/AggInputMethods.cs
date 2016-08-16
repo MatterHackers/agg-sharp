@@ -48,15 +48,34 @@ using System.Drawing.Imaging;
 
 namespace MatterHackers.GuiAutomation
 {
-	public class AggInputMethods : NativeMethods
+	public interface IInputMethod : IDisposable
 	{
-		Point2D currentMousePosition;
-		AutomationRunner automationRunner;
+		ImageBuffer GetCurrentScreen();
+		Point2D CurrentMousePosition();
+		bool LeftButtonDown { get; }
+		int GetCurrentScreenHeight();
+		void SetCursorPosition(int x, int y);
+		void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo);
+		void Type(string textToType);
+	}
+
+	public class AggInputMethods : IInputMethod
+	{
+		private Point2D currentMousePosition;
+		private AutomationRunner automationRunner;
 		public bool DrawSimulatedMouse = true;
 
-		public override ImageBuffer GetCurrentScreen()
+		private SystemWindow windowToDrawSimpulatedMouseOn = null;
+
+		public ImageBuffer GetCurrentScreen()
 		{
 			throw new NotImplementedException();
+		}
+
+		public int GetCurrentScreenHeight()
+		{
+			Size sz = new Size();
+			return sz.Height;
 		}
 
 		public AggInputMethods(AutomationRunner automationRunner, bool drawSimulatedMouse)
@@ -65,22 +84,12 @@ namespace MatterHackers.GuiAutomation
 			this.automationRunner = automationRunner;
 		}
 
-		public override Point2D CurrentMousPosition()
+		public Point2D CurrentMousePosition()
 		{
 			return currentMousePosition;
 		}
 
-		SystemWindow windowToDrawSimpulatedMouseOn = null;
-
-		public override void Dispose()
-		{
-			if (windowToDrawSimpulatedMouseOn != null)
-			{
-				windowToDrawSimpulatedMouseOn.AfterDraw -= DrawMouse;
-			}
-		}
-
-		public override void SetCursorPosition(int x, int y)
+		public void SetCursorPosition(int x, int y)
 		{
 			SystemWindow topSystemWindow = SystemWindow.AllOpenSystemWindows[SystemWindow.AllOpenSystemWindows.Count - 1];
 			if (windowToDrawSimpulatedMouseOn != topSystemWindow)
@@ -102,13 +111,21 @@ namespace MatterHackers.GuiAutomation
 				Point2D windowPosition = AutomationRunner.ScreenToSystemWindow(currentMousePosition, systemWindow);
 				if (LeftButtonDown)
 				{
-					MouseEventArgs aggEvent = new MouseEventArgs(MouseButtons.Left, 1, windowPosition.x, windowPosition.y, 0);
-					UiThread.RunOnIdle(() => systemWindow.OnMouseMove(aggEvent));
+					MouseEventArgs aggEvent = new MouseEventArgs(MouseButtons.Left, 0, windowPosition.x, windowPosition.y, 0);
+					UiThread.RunOnIdle(() =>
+					{
+						systemWindow.OnMouseMove(aggEvent);
+						systemWindow.Invalidate();
+					});
 				}
 				else
 				{
-					MouseEventArgs aggEvent = new MouseEventArgs(MouseButtons.None, 1, windowPosition.x, windowPosition.y, 0);
-					UiThread.RunOnIdle(() => systemWindow.OnMouseMove(aggEvent));
+					MouseEventArgs aggEvent = new MouseEventArgs(MouseButtons.None, 0, windowPosition.x, windowPosition.y, 0);
+					UiThread.RunOnIdle(() =>
+					{
+						systemWindow.OnMouseMove(aggEvent);
+						systemWindow.Invalidate();
+					});
 				}
 			}
 		}
@@ -118,7 +135,9 @@ namespace MatterHackers.GuiAutomation
 			automationRunner.RenderMouse(windowToDrawSimpulatedMouseOn, e.graphics2D);
 		}
 
-		public override void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo)
+		public bool LeftButtonDown { get; private set; }
+
+		public void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo)
 		{
 			// figure out where this is on our agg windows
 			// for now only send mouse events to the top most window
@@ -129,81 +148,84 @@ namespace MatterHackers.GuiAutomation
 				{
 					MouseButtons mouseButtons = MapButtons(cButtons);
 					// create the agg event
-					if (dwFlags == MOUSEEVENTF_LEFTDOWN)
+					if (dwFlags == NativeMethods.MOUSEEVENTF_LEFTDOWN)
 					{
-						MouseEventArgs aggEvent = new MouseEventArgs(mouseButtons, 1, windowPosition.x, windowPosition.y, 0);
 						// send it to the window
 						if (LeftButtonDown)
 						{
+							MouseEventArgs aggEvent = new MouseEventArgs(mouseButtons, 0, windowPosition.x, windowPosition.y, 0);
 							UiThread.RunOnIdle(() => systemWindow.OnMouseMove(aggEvent));
 						}
 						else
 						{
+							MouseEventArgs aggEvent = new MouseEventArgs(mouseButtons, 1, windowPosition.x, windowPosition.y, 0);
 							UiThread.RunOnIdle(() => systemWindow.OnMouseDown(aggEvent));
 						}
 					}
-					else if (dwFlags == MOUSEEVENTF_LEFTUP)
+					else if (dwFlags == NativeMethods.MOUSEEVENTF_LEFTUP)
 					{
 						MouseEventArgs aggEvent = new MouseEventArgs(mouseButtons, 0, windowPosition.x, windowPosition.y, 0);
 						// send it to the window
 						UiThread.RunOnIdle(() => systemWindow.OnMouseUp(aggEvent));
 					}
-					else if (dwFlags == MOUSEEVENTF_RIGHTDOWN)
+					else if (dwFlags == NativeMethods.MOUSEEVENTF_RIGHTDOWN)
 					{
 
 					}
-					else if (dwFlags == MOUSEEVENTF_RIGHTUP)
+					else if (dwFlags == NativeMethods.MOUSEEVENTF_RIGHTUP)
 					{
 
 					}
-					else if (dwFlags == MOUSEEVENTF_MIDDLEDOWN)
+					else if (dwFlags == NativeMethods.MOUSEEVENTF_MIDDLEDOWN)
 					{
 
 					}
-					else if (dwFlags == MOUSEEVENTF_MIDDLEUP)
+					else if (dwFlags == NativeMethods.MOUSEEVENTF_MIDDLEUP)
 					{
 
 					}
 				}
 			}
 
-			base.CreateMouseEvent(dwFlags, dx, dy, cButtons, dwExtraInfo);
+			this.LeftButtonDown = (dwFlags == NativeMethods.MOUSEEVENTF_LEFTDOWN);
 		}
 
 		private MouseButtons MapButtons(int cButtons)
 		{
 			switch (cButtons)
 			{
-				case MOUSEEVENTF_LEFTDOWN:
-				case MOUSEEVENTF_LEFTUP:
+				case NativeMethods.MOUSEEVENTF_LEFTDOWN:
+				case NativeMethods.MOUSEEVENTF_LEFTUP:
 					return MouseButtons.Left;
 
-				case MOUSEEVENTF_RIGHTDOWN:
-				case MOUSEEVENTF_RIGHTUP:
+				case NativeMethods.MOUSEEVENTF_RIGHTDOWN:
+				case NativeMethods.MOUSEEVENTF_RIGHTUP:
 					return MouseButtons.Left;
 
-				case MOUSEEVENTF_MIDDLEDOWN:
-				case MOUSEEVENTF_MIDDLEUP:
+				case NativeMethods.MOUSEEVENTF_MIDDLEDOWN:
+				case NativeMethods.MOUSEEVENTF_MIDDLEUP:
 					return MouseButtons.Left;
 			}
 
 			return MouseButtons.Left;
 		}
 
-		public override void Type(string textToType)
+		public void Type(string textToType)
 		{
 			SystemWindow systemWindow = SystemWindow.AllOpenSystemWindows[SystemWindow.AllOpenSystemWindows.Count - 1];
 
 			foreach (char character in textToType)
 			{
-				//UiThread.RunOnIdle(() => systemWindow.OnKeyDown(aggKeyEvent));
-				//Keyboard.SetKeyDownState(aggKeyEvent.KeyCode, true);
-
 				KeyPressEventArgs aggKeyPressEvent = new KeyPressEventArgs(character);
 				UiThread.RunOnIdle(() => systemWindow.OnKeyPress(aggKeyPressEvent));
+			}
+		}
 
-				//widgetToSendTo.OnKeyUp(aggKeyEvent);
-				//Keyboard.SetKeyDownState(aggKeyEvent.KeyCode, false);
+		public void Dispose()
+		{
+			if (windowToDrawSimpulatedMouseOn != null)
+			{
+				windowToDrawSimpulatedMouseOn.AfterDraw -= DrawMouse;
 			}
 		}
 	}

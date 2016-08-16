@@ -29,19 +29,8 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.PlatformAbstract;
-using MatterHackers.Agg.UI;
-using MatterHackers.VectorMath;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
-using System.Globalization;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 #if !__ANDROID__
 using System.Drawing.Imaging;
 #endif
@@ -49,70 +38,54 @@ using System.Drawing.Imaging;
 namespace MatterHackers.GuiAutomation
 {
 #if !__ANDROID__
-    public class WindowsInputMethods : NativeMethods
-    {
-		// P/Invoke declarations
-        [DllImport("gdi32.dll")]
-        static extern bool BitBlt(IntPtr hdcDest, int xDest, int yDest, int wDest, int hDest, IntPtr hdcSource, int xSrc, int ySrc, CopyPixelOperation rop);
-        [DllImport("user32.dll")]
-        static extern bool ReleaseDC(IntPtr hWnd, IntPtr hDc);
-        [DllImport("gdi32.dll")]
-        static extern IntPtr DeleteDC(IntPtr hDc);
-        [DllImport("gdi32.dll")]
-        static extern IntPtr DeleteObject(IntPtr hDc);
-        [DllImport("gdi32.dll")]
-        static extern IntPtr CreateCompatibleBitmap(IntPtr hdc, int nWidth, int nHeight);
-        [DllImport("gdi32.dll")]
-        static extern IntPtr CreateCompatibleDC(IntPtr hdc);
-        [DllImport("gdi32.dll")]
-        static extern IntPtr SelectObject(IntPtr hdc, IntPtr bmp);
-        [DllImport("user32.dll")]
-        public static extern IntPtr GetDesktopWindow();
-        [DllImport("user32.dll")]
-        public static extern IntPtr GetWindowDC(IntPtr ptr);
+	public class WindowsInputMethods : IInputMethod
+	{
+		public bool LeftButtonDown { get; private set; }
 
-		[DllImport("User32.Dll")]
-		public static extern long SetCursorPos(int x, int y); 
+		public void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo)
+		{
+			this.LeftButtonDown = (dwFlags == NativeMethods.MOUSEEVENTF_LEFTDOWN);
 
-		[DllImport("user32.dll")]
-		public static extern void mouse_event(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo);
+			NativeMethods.mouse_event(dwFlags, dx, dy, cButtons, dwExtraInfo);
+		}
 
-        public override void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo)
-        {
-            mouse_event(dwFlags, dx, dy, cButtons, dwExtraInfo);
-        }
+		public void SetCursorPosition(int x, int y)
+		{
+			NativeMethods.SetCursorPos(x, y);
+		}
 
-        public override void SetCursorPosition(int x, int y)
-        {
-            SetCursorPos(x, y);
-        }
+		public Point2D CurrentMousePosition()
+		{
+			Point2D mousePos = new Point2D(System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y);
+			return mousePos;
+		}
 
-        public override Point2D CurrentMousPosition()
-        {
-            Point2D mousePos = new Point2D(System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y);
-            return mousePos;
-        }
-
-		public override void Dispose()
+		public void Dispose()
 		{
 		}
 
-		public override ImageBuffer GetCurrentScreen()
+		public int GetCurrentScreenHeight()
+		{
+			Size sz = new Size();
+			return sz.Height;
+		}
+
+		public ImageBuffer GetCurrentScreen()
 		{
 			ImageBuffer screenCapture = new ImageBuffer();
 
 			Size sz = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Size;
-			IntPtr hDesk = GetDesktopWindow();
-			IntPtr hSrce = GetWindowDC(hDesk);
-			IntPtr hDest = CreateCompatibleDC(hSrce);
-			IntPtr hBmp = CreateCompatibleBitmap(hSrce, sz.Width, sz.Height);
-			IntPtr hOldBmp = SelectObject(hDest, hBmp);
-			bool b = BitBlt(hDest, 0, 0, sz.Width, sz.Height, hSrce, 0, 0, CopyPixelOperation.SourceCopy | CopyPixelOperation.CaptureBlt);
+			IntPtr hDesk = NativeMethods.GetDesktopWindow();
+			IntPtr hSrce = NativeMethods.GetWindowDC(hDesk);
+			IntPtr hDest = NativeMethods.CreateCompatibleDC(hSrce);
+			IntPtr hBmp = NativeMethods.CreateCompatibleBitmap(hSrce, sz.Width, sz.Height);
+			IntPtr hOldBmp = NativeMethods.SelectObject(hDest, hBmp);
+			bool b = NativeMethods.BitBlt(hDest, 0, 0, sz.Width, sz.Height, hSrce, 0, 0, CopyPixelOperation.SourceCopy | CopyPixelOperation.CaptureBlt);
 			Bitmap bmpScreenCapture = Bitmap.FromHbitmap(hBmp);
-			SelectObject(hDest, hOldBmp);
-			DeleteObject(hBmp);
-			DeleteDC(hDest);
-			ReleaseDC(hDesk, hSrce);
+			NativeMethods.SelectObject(hDest, hOldBmp);
+			NativeMethods.DeleteObject(hBmp);
+			NativeMethods.DeleteDC(hDest);
+			NativeMethods.ReleaseDC(hDesk, hSrce);
 
 			//bmpScreenCapture.Save("bitmapsave.png");
 
@@ -156,10 +129,10 @@ namespace MatterHackers.GuiAutomation
 			return screenCapture;
 		}
 
-        public override void Type(string textToType)
-        {
-            System.Windows.Forms.SendKeys.SendWait(textToType);
-        }
-    }
+		public void Type(string textToType)
+		{
+			System.Windows.Forms.SendKeys.SendWait(textToType);
+		}
+	}
 #endif
 }
