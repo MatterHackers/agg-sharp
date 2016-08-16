@@ -295,7 +295,7 @@ namespace MatterHackers.Agg.UI.Tests
 				Name = "OffMenu",
 			});
 
-			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExectueTests(menuTestContainer, testToRun, 20);
+			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExecuteTests(menuTestContainer, testToRun, 20);
 
 			Assert.IsTrue(testHarness.AllTestsPassed);
 			Assert.IsTrue(testHarness.TestCount == 21); // make sure we can all our tests

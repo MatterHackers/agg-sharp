@@ -50,7 +50,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 		List<TestResult> results = new List<TestResult>();
 
-		public static AutomationTesterHarness ShowWindowAndExectueTests(SystemWindow initialSystemWindow, Action<AutomationTesterHarness> functionContainingTests, double secondsToTestFailure)
+		public static AutomationTesterHarness ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, Action<AutomationTesterHarness> functionContainingTests, double secondsToTestFailure)
 		{
 			StackTrace st = new StackTrace(false);
 			Console.WriteLine("\r\nRunning automation test: " + st.GetFrames().Skip(1).First().GetMethod().Name);

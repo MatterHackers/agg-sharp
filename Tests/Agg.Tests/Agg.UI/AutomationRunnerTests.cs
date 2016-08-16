@@ -61,7 +61,7 @@ namespace MatterHackers.Agg.UI.Tests
 				leftButton.Click += (sender, e) => { leftClickCount++; };
 				buttonContainer.AddChild(leftButton);
 
-				AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExectueTests(buttonContainer, testToRun, 10);
+				AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
 
 				Assert.IsTrue(testHarness.AllTestsPassed);
 				Assert.IsTrue(testHarness.TestCount == 1); // make sure we can all our tests
@@ -103,7 +103,7 @@ namespace MatterHackers.Agg.UI.Tests
 			rightButton.Name = "right";
 			buttonContainer.AddChild(rightButton);
 
-			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExectueTests(buttonContainer, testToRun, 10);
+			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
 
 			Assert.IsTrue(testHarness.AllTestsPassed);
 			Assert.IsTrue(testHarness.TestCount == 2); // make sure we can all our tests
