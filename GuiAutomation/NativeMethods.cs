@@ -44,6 +44,7 @@ namespace MatterHackers.GuiAutomation
 		public const int MOUSEEVENTF_MIDDLEDOWN = 0x20;
 		public const int MOUSEEVENTF_MIDDLEUP = 0x40;
 
+#if !__ANDROID__
 		// P/Invoke declarations
 		[DllImport("gdi32.dll")]
 		internal static extern bool BitBlt(IntPtr hdcDest, int xDest, int yDest, int wDest, int hDest, IntPtr hdcSource, int xSrc, int ySrc, CopyPixelOperation rop);
@@ -77,5 +78,6 @@ namespace MatterHackers.GuiAutomation
 
 		[DllImport("user32.dll")]
 		internal static extern void mouse_event(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo);
+#endif
 	}
 }
