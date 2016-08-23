@@ -612,13 +612,8 @@ namespace MatterHackers.GCodeVisualizer
                 case "1202"://M1202 Makerbot Fake gCode command for reset board
                     break;
 
-#if DEBUG
-				default:
-					throw new NotImplementedException(lineString);
-#else
                 default:
                     break;
-#endif
 			}
 		}
 
