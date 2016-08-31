@@ -199,16 +199,16 @@ namespace MatterHackers.Agg.UI
 		public DropDownList(string noSelectionString, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false)
 			: this(noSelectionString, whiteTransparent, whiteSemiTransparent, direction, maxHeight, useLeftIcons)
 		{
-			this.TextColor = ActiveTheme.Current.PrimaryTextColor;
+			this.TextColor = ActiveTheme.Instance.PrimaryTextColor;
 			this.MenuItemsBorderWidth = 1;
 			this.MenuItemsBackgroundColor = RGBA_Bytes.White;
-			this.MenuItemsBorderColor = ActiveTheme.Current.SecondaryTextColor;
+			this.MenuItemsBorderColor = ActiveTheme.Instance.SecondaryTextColor;
 			this.MenuItemsPadding = new BorderDouble(10, 8, 10, 12);
-			this.MenuItemsBackgroundHoverColor = ActiveTheme.Current.PrimaryAccentColor;
+			this.MenuItemsBackgroundHoverColor = ActiveTheme.Instance.PrimaryAccentColor;
 			this.MenuItemsTextHoverColor = RGBA_Bytes.Black;
 			this.MenuItemsTextColor = RGBA_Bytes.Black;
 			this.BorderWidth = 1;
-			this.BorderColor = ActiveTheme.Current.SecondaryTextColor;
+			this.BorderColor = ActiveTheme.Instance.SecondaryTextColor;
 			this.HoverColor = whiteSemiTransparent;
 			this.BackgroundColor = new RGBA_Bytes(255, 255, 255, 0);
 		}

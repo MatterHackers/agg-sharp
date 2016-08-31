@@ -76,7 +76,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public static IThemeColors Current
+		public static IThemeColors Instance
 		{
 			get
 			{
