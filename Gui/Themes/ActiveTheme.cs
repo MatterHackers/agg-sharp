@@ -77,6 +77,25 @@ namespace MatterHackers.Agg.UI
 				ThemeChanged?.CallEvents(null, null);
 			}
 		}
+
+		public static int GetThemeIndex(string name)
+		{
+			int index = 0;
+
+			int count = 0;
+			foreach(var colors in GetAvailableThemes())
+			{
+				if(colors.Name == name)
+				{
+					return count; 
+				}
+
+				count++;
+			}
+
+			return index;
+		}
+
 		// Generate themes
 		private static List<IThemeColors> GetAvailableThemes()
 		{

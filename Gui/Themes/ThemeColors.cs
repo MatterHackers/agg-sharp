@@ -66,6 +66,7 @@ namespace MatterHackers.Agg.UI
 			var colors = new ThemeColors
 			{
 				IsDarkTheme = darkTheme,
+				Name = name,
 			};
 
 			if (darkTheme)
