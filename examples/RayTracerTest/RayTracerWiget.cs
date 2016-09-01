@@ -48,9 +48,13 @@ namespace MatterHackers.RayTracer
 	{
 		private ImageBuffer destImage;
 
-		//RayTracer raytracer = new RayTracer(AntiAliasing.None, true, true, true, true, true);
-		//RayTracer raytracer = new RayTracer(AntiAliasing.Low, true, true, true, true, true);
-		private RayTracer raytracer = new RayTracer(AntiAliasing.Medium, true, true, true, true, true);
+		private RayTracer raytracer = new RayTracer()
+		{
+			//AntiAliasing = AntiAliasing.None,
+			//AntiAliasing = AntiAliasing.Low,
+			AntiAliasing = AntiAliasing.Medium,
+			//MultiThreaded = false,
+		};
 
 		private IPrimitive focusedObject = null;
 		private Stopwatch renderTime = new Stopwatch();
@@ -139,7 +143,7 @@ namespace MatterHackers.RayTracer
 			scene.camera = new TrackBallCamera(trackballTumbleWidget);
 			scene.background = new Background(new RGBA_Floats(0.5, .5, .5), 0.4);
 
-			AddBoxAndSheresBooleanTest();
+			//AddBoxAndSheresBooleanTest();
 			//AddBoxAndBoxBooleanTest();
 #if false
             renderCollection.Add(new BoxShape(new Vector3(), new Vector3(1, 1, 1),
@@ -149,7 +153,7 @@ namespace MatterHackers.RayTracer
 #endif
 			//renderCollection.Add(new CylinderShape(.25, 1, new SolidMaterial(RGBA_Floats.Cyan, 0, 0, 0)));
 
-			//AddTestStl();
+			AddTestStl();
 			//AddPolygonTest();
 			//AddSphereAndBox();
 			//AddAxisMarker();
