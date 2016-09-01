@@ -68,6 +68,12 @@ namespace MatterHackers.Agg.PlatformAbstract
 			return false;
 		}
 
+		public override Point2D GetDesktopSize()
+		{
+			System.Drawing.Size sz = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Size;
+			return new Point2D(sz.Width, sz.Height);
+		}
+
 		public override OSType GetOSType()
 		{
 			if (Path.DirectorySeparatorChar == '\\')
