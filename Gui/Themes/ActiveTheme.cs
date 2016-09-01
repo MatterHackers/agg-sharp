@@ -48,28 +48,28 @@ namespace MatterHackers.Agg.UI
 					themeColors = new List<IThemeColors>()
 					{
 						//Dark themes
-						ThemeColors.Create("Blue - Dark", new RGBA_Bytes(0, 75, 139), new RGBA_Bytes(0, 103, 190)),
-						ThemeColors.Create("Teal - Dark", new RGBA_Bytes(0, 130, 153), new RGBA_Bytes(0, 173, 204)),
-						ThemeColors.Create("Green - Dark", new RGBA_Bytes(0, 138, 23), new RGBA_Bytes(0, 189, 32)),
-						ThemeColors.Create("Light Blue - Dark", new RGBA_Bytes(93, 178, 255), new RGBA_Bytes(144, 202, 255)),
-						ThemeColors.Create("Orange - Dark", new RGBA_Bytes(255, 129, 25), new RGBA_Bytes(255, 157, 76)),
-						ThemeColors.Create("Purple - Dark", new RGBA_Bytes(70, 23, 180), new RGBA_Bytes(104, 51, 229)),
 						ThemeColors.Create("Red - Dark", new RGBA_Bytes(172, 25, 61), new RGBA_Bytes(217, 31, 77)),
 						ThemeColors.Create("Pink - Dark", new RGBA_Bytes(220, 79, 173), new RGBA_Bytes(233, 143, 203)),
-						ThemeColors.Create("Grey - Dark", new RGBA_Bytes(88, 88, 88), new RGBA_Bytes(114, 114, 114)),
+						ThemeColors.Create("Orange - Dark", new RGBA_Bytes(255, 129, 25), new RGBA_Bytes(255, 157, 76)),
+						ThemeColors.Create("Green - Dark", new RGBA_Bytes(0, 138, 23), new RGBA_Bytes(0, 189, 32)),
+						ThemeColors.Create("Blue - Dark", new RGBA_Bytes(0, 75, 139), new RGBA_Bytes(0, 103, 190)),
+						ThemeColors.Create("Teal - Dark", new RGBA_Bytes(0, 130, 153), new RGBA_Bytes(0, 173, 204)),
+						ThemeColors.Create("Light Blue - Dark", new RGBA_Bytes(93, 178, 255), new RGBA_Bytes(144, 202, 255)),
+						ThemeColors.Create("Purple - Dark", new RGBA_Bytes(70, 23, 180), new RGBA_Bytes(104, 51, 229)),
 						ThemeColors.Create("Pink - Dark", new RGBA_Bytes(140, 0, 149), new RGBA_Bytes(188, 0, 200)),
+						ThemeColors.Create("Grey - Dark", new RGBA_Bytes(88, 88, 88), new RGBA_Bytes(114, 114, 114)),
 
 						//Light themes
-						ThemeColors.Create("Blue - Light", new RGBA_Bytes(0, 75, 139), new RGBA_Bytes(0, 103, 190), false),
-						ThemeColors.Create("Teal - Light", new RGBA_Bytes(0, 130, 153), new RGBA_Bytes(0, 173, 204), false),
-						ThemeColors.Create("Green - Light", new RGBA_Bytes(0, 138, 23), new RGBA_Bytes(0, 189, 32), false),
-						ThemeColors.Create("Light Blue - Light", new RGBA_Bytes(93, 178, 255), new RGBA_Bytes(144, 202, 255), false),
-						ThemeColors.Create("Orange - Light", new RGBA_Bytes(255, 129, 25), new RGBA_Bytes(255, 157, 76), false),
-						ThemeColors.Create("Purple - Light", new RGBA_Bytes(70, 23, 180), new RGBA_Bytes(104, 51, 229), false),
 						ThemeColors.Create("Red - Light", new RGBA_Bytes(172, 25, 61), new RGBA_Bytes(217, 31, 77), false),
 						ThemeColors.Create("Pink - Light", new RGBA_Bytes(220, 79, 173), new RGBA_Bytes(233, 143, 203), false),
+						ThemeColors.Create("Orange - Light", new RGBA_Bytes(255, 129, 25), new RGBA_Bytes(255, 157, 76), false),
+						ThemeColors.Create("Green - Light", new RGBA_Bytes(0, 138, 23), new RGBA_Bytes(0, 189, 32), false),
+						ThemeColors.Create("Blue - Light", new RGBA_Bytes(0, 75, 139), new RGBA_Bytes(0, 103, 190), false),
+						ThemeColors.Create("Teal - Light", new RGBA_Bytes(0, 130, 153), new RGBA_Bytes(0, 173, 204), false),
+						ThemeColors.Create("Light Blue - Light", new RGBA_Bytes(93, 178, 255), new RGBA_Bytes(144, 202, 255), false),
+						ThemeColors.Create("Purple - Light", new RGBA_Bytes(70, 23, 180), new RGBA_Bytes(104, 51, 229), false),
+						ThemeColors.Create("Pink - Light", new RGBA_Bytes(140, 0, 149), new RGBA_Bytes(188, 0, 200), false),
 						ThemeColors.Create("Grey - Light", new RGBA_Bytes(88, 88, 88), new RGBA_Bytes(114, 114, 114), false),
-						ThemeColors.Create("Pink - Light", new RGBA_Bytes(140, 0, 149), new RGBA_Bytes(188, 0, 200), false)
 					};
 				}
 				return themeColors;
