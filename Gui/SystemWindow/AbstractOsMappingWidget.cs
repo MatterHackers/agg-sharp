@@ -27,6 +27,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
+
 namespace MatterHackers.Agg.UI
 {
 	public abstract class AbstractOsMappingWidget : GuiWidget
@@ -72,7 +74,7 @@ namespace MatterHackers.Agg.UI
 
 		// Get raw display handler depending on the system.
 		// For win32 its an HDC, for other systems it can be a pointer to some
-		// structure. See the implementation files for detals.
+		// structure. See the implementation files for details.
 		// It's provided "as is", so, first you should check if it's not null.
 		// If it's null the raw_display_handler is not supported. Also, there's
 		// no guarantee that this function is implemented, so, in some

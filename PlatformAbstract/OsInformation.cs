@@ -37,6 +37,7 @@ namespace MatterHackers.Agg.PlatformAbstract
 	public class OsInformation
 	{
 		private static OSType operatingSystem = OSType.Unknown;
+		private static Point2D desktopSize = new Point2D();
 
 		public static OSType OperatingSystem
 		{
@@ -57,10 +58,35 @@ namespace MatterHackers.Agg.PlatformAbstract
 				return operatingSystem;
 			}
 		}
+
+		public static Point2D DesktopSize
+		{
+			get
+			{
+				if (desktopSize.GetLength() == 0)
+				{
+					string pluginPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+					PluginFinder<OsInformationPlugin> osInformationPlugins = new PluginFinder<OsInformationPlugin>(pluginPath);
+					if (osInformationPlugins.Plugins.Count != 1)
+					{
+						throw new Exception(string.Format("Did not find any OsInformationPlugins in Plugin path ({0}.", pluginPath));
+					}
+
+					desktopSize = osInformationPlugins.Plugins[0].GetDesktopSize();
+				}
+
+				return desktopSize;
+			}
+		}
 	}
 
 	public class OsInformationPlugin
 	{
+		public virtual Point2D GetDesktopSize()
+		{
+			return new Point2D();
+		}
+
 		public virtual OSType GetOSType()
 		{
 			throw new Exception("You must implement this in an inherited class.");

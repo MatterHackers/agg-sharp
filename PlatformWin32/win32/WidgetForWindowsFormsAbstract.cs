@@ -66,7 +66,7 @@ namespace MatterHackers.Agg.UI
 			Focus();
 		}
 
-        public override int TitleBarHeight
+		public override int TitleBarHeight
         {
             get
             {
