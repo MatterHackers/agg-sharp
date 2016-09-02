@@ -184,6 +184,20 @@ namespace MatterHackers.PolygonMesh.Processors
 #endif
 		}
 
+		static NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint;
+		static CultureInfo culture = System.Globalization.CultureInfo.InvariantCulture;
+		private static Vector3 Convert(string[] parts)
+		{
+			Vector3 vector0;
+			double.TryParse(parts[1], style, culture, out vector0.x);
+			double.TryParse(parts[2], style, culture, out vector0.y);
+			double.TryParse(parts[3], style, culture, out vector0.z);
+			//vector0.x = System.Convert.ToDouble(parts[1]);
+			//vector0.y = System.Convert.ToDouble(parts[2]);
+			//vector0.z = System.Convert.ToDouble(parts[3]);
+			return vector0;
+		}
+
 		public static Mesh ParseFileContents(Stream stlStream, ReportProgressRatio reportProgress)
 		{
 			Stopwatch time = new Stopwatch();
@@ -229,56 +243,52 @@ namespace MatterHackers.PolygonMesh.Processors
 				Vector3 vector2 = new Vector3(0, 0, 0);
 				string line = stlReader.ReadLine();
 				Regex onlySingleSpaces = new Regex("\\s+", RegexOptions.Compiled);
-				while (line != null)
-				{
-					line = onlySingleSpaces.Replace(line, " ");
-					var parts = line.Trim().Split(' ');
-					if (parts[0].Trim() == "vertex")
+
+				using (new QuickTimer("LoadMesh"))
+					while (line != null)
 					{
-						vectorIndex++;
-						switch (vectorIndex)
+						line = onlySingleSpaces.Replace(line, " ");
+						var parts = line.Trim().Split(' ');
+						if (parts[0].Trim() == "vertex")
 						{
-							case 1:
-								vector0.x = Convert.ToDouble(parts[1]);
-								vector0.y = Convert.ToDouble(parts[2]);
-								vector0.z = Convert.ToDouble(parts[3]);
-								break;
+							vectorIndex++;
+							switch (vectorIndex)
+							{
+								case 1:
+									vector0 = Convert(parts);
+									break;
 
-							case 2:
-								vector1.x = Convert.ToDouble(parts[1]);
-								vector1.y = Convert.ToDouble(parts[2]);
-								vector1.z = Convert.ToDouble(parts[3]);
-								break;
+								case 2:
+									vector1 = Convert(parts);
+									break;
 
-							case 3:
-								vector2.x = Convert.ToDouble(parts[1]);
-								vector2.y = Convert.ToDouble(parts[2]);
-								vector2.z = Convert.ToDouble(parts[3]);
-								if (!Vector3.Collinear(vector0, vector1, vector2))
-								{
-									Vertex vertex1 = meshFromStlFile.CreateVertex(vector0, CreateOption.CreateNew, SortOption.WillSortLater);
-									Vertex vertex2 = meshFromStlFile.CreateVertex(vector1, CreateOption.CreateNew, SortOption.WillSortLater);
-									Vertex vertex3 = meshFromStlFile.CreateVertex(vector2, CreateOption.CreateNew, SortOption.WillSortLater);
-									meshFromStlFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 }, CreateOption.CreateNew);
-								}
-								vectorIndex = 0;
-								break;
+								case 3:
+									vector2 = Convert(parts);
+									if (!Vector3.Collinear(vector0, vector1, vector2))
+									{
+										Vertex vertex1 = meshFromStlFile.CreateVertex(vector0, CreateOption.CreateNew, SortOption.WillSortLater);
+										Vertex vertex2 = meshFromStlFile.CreateVertex(vector1, CreateOption.CreateNew, SortOption.WillSortLater);
+										Vertex vertex3 = meshFromStlFile.CreateVertex(vector2, CreateOption.CreateNew, SortOption.WillSortLater);
+										meshFromStlFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 }, CreateOption.CreateNew);
+									}
+									vectorIndex = 0;
+									break;
+							}
+						}
+						line = stlReader.ReadLine();
+
+						if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
+						{
+							bool continueProcessing;
+							reportProgress(stlStream.Position / (double)bytesInFile * parsingFileRatio, "Loading Polygons", out continueProcessing);
+							if (!continueProcessing)
+							{
+								stlStream.Close();
+								return null;
+							}
+							maxProgressReport.Restart();
 						}
 					}
-					line = stlReader.ReadLine();
-
-					if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
-					{
-						bool continueProcessing;
-						reportProgress(stlStream.Position / (double)bytesInFile * parsingFileRatio, "Loading Polygons", out continueProcessing);
-						if (!continueProcessing)
-						{
-							stlStream.Close();
-							return null;
-						}
-						maxProgressReport.Restart();
-					}
-				}
 			}
 			else
 			{
