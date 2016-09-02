@@ -106,6 +106,11 @@ namespace MatterHackers.Agg
 				return systemWindow.AbstractOsMappingWidget.DesktopPosition;
 			}
 
+			if(pendingSetInitialDesktopPosition)
+			{
+				return InitialDesktopPosition;
+			}
+
 			return new Point2D();
 		}
 
