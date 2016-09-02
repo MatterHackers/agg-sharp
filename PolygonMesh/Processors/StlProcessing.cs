@@ -264,50 +264,49 @@ namespace MatterHackers.PolygonMesh.Processors
 				Vector3 vector2 = new Vector3(0, 0, 0);
 				string line = stlReader.ReadLine();
 
-				using (new QuickTimer("LoadMesh"))
-					while (line != null)
+				while (line != null)
+				{
+					line = line.Trim();
+					if (line.StartsWith("vertex"))
 					{
-						line = line.Trim();
-						if (line.StartsWith("vertex"))
+						vectorIndex++;
+						switch (vectorIndex)
 						{
-							vectorIndex++;
-							switch (vectorIndex)
-							{
-								case 1:
-									vector0 = Convert(line);
-									break;
+							case 1:
+								vector0 = Convert(line);
+								break;
 
-								case 2:
-									vector1 = Convert(line);
-									break;
+							case 2:
+								vector1 = Convert(line);
+								break;
 
-								case 3:
-									vector2 = Convert(line);
-									if (!Vector3.Collinear(vector0, vector1, vector2))
-									{
-										Vertex vertex1 = meshFromStlFile.CreateVertex(vector0, CreateOption.CreateNew, SortOption.WillSortLater);
-										Vertex vertex2 = meshFromStlFile.CreateVertex(vector1, CreateOption.CreateNew, SortOption.WillSortLater);
-										Vertex vertex3 = meshFromStlFile.CreateVertex(vector2, CreateOption.CreateNew, SortOption.WillSortLater);
-										meshFromStlFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 }, CreateOption.CreateNew);
-									}
-									vectorIndex = 0;
-									break;
-							}
-						}
-						line = stlReader.ReadLine();
-
-						if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
-						{
-							bool continueProcessing;
-							reportProgress(stlStream.Position / (double)bytesInFile * parsingFileRatio, "Loading Polygons", out continueProcessing);
-							if (!continueProcessing)
-							{
-								stlStream.Close();
-								return null;
-							}
-							maxProgressReport.Restart();
+							case 3:
+								vector2 = Convert(line);
+								if (!Vector3.Collinear(vector0, vector1, vector2))
+								{
+									Vertex vertex1 = meshFromStlFile.CreateVertex(vector0, CreateOption.CreateNew, SortOption.WillSortLater);
+									Vertex vertex2 = meshFromStlFile.CreateVertex(vector1, CreateOption.CreateNew, SortOption.WillSortLater);
+									Vertex vertex3 = meshFromStlFile.CreateVertex(vector2, CreateOption.CreateNew, SortOption.WillSortLater);
+									meshFromStlFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 }, CreateOption.CreateNew);
+								}
+								vectorIndex = 0;
+								break;
 						}
 					}
+					line = stlReader.ReadLine();
+
+					if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
+					{
+						bool continueProcessing;
+						reportProgress(stlStream.Position / (double)bytesInFile * parsingFileRatio, "Loading Polygons", out continueProcessing);
+						if (!continueProcessing)
+						{
+							stlStream.Close();
+							return null;
+						}
+						maxProgressReport.Restart();
+					}
+				}
 			}
 			else
 			{
