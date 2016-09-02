@@ -184,18 +184,39 @@ namespace MatterHackers.PolygonMesh.Processors
 #endif
 		}
 
-		static NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint;
-		static CultureInfo culture = System.Globalization.CultureInfo.InvariantCulture;
-		private static Vector3 Convert(string[] parts)
+		static NumberStyles style = NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent | NumberStyles.AllowLeadingSign;
+		static CultureInfo culture = CultureInfo.InvariantCulture;
+		private static Vector3 Convert(string line)
 		{
 			Vector3 vector0;
-			double.TryParse(parts[1], style, culture, out vector0.x);
-			double.TryParse(parts[2], style, culture, out vector0.y);
-			double.TryParse(parts[3], style, culture, out vector0.z);
-			//vector0.x = System.Convert.ToDouble(parts[1]);
-			//vector0.y = System.Convert.ToDouble(parts[2]);
-			//vector0.z = System.Convert.ToDouble(parts[3]);
+			int currentPosition = "vertex".Length;
+			string number = GetNumber(line, ref currentPosition);
+			double.TryParse(number, style, culture, out vector0.x);
+
+			number = GetNumber(line, ref currentPosition);
+			double.TryParse(number, style, culture, out vector0.y);
+
+			number = GetNumber(line, ref currentPosition);
+			double.TryParse(number, style, culture, out vector0.z);
+
 			return vector0;
+		}
+
+		private static string GetNumber(string line, ref int currentPosition)
+		{
+			while(line[currentPosition] == ' ')
+			{
+				currentPosition++;
+			}
+
+			int numberLength = 0;
+			while(currentPosition < line.Length && line[currentPosition] != ' ')
+			{
+				currentPosition++;
+				numberLength++;
+			}
+
+			return line.Substring(currentPosition-numberLength, numberLength);
 		}
 
 		public static Mesh ParseFileContents(Stream stlStream, ReportProgressRatio reportProgress)
@@ -242,28 +263,26 @@ namespace MatterHackers.PolygonMesh.Processors
 				Vector3 vector1 = new Vector3(0, 0, 0);
 				Vector3 vector2 = new Vector3(0, 0, 0);
 				string line = stlReader.ReadLine();
-				Regex onlySingleSpaces = new Regex("\\s+", RegexOptions.Compiled);
 
 				using (new QuickTimer("LoadMesh"))
 					while (line != null)
 					{
-						line = onlySingleSpaces.Replace(line, " ");
-						var parts = line.Trim().Split(' ');
-						if (parts[0].Trim() == "vertex")
+						line = line.Trim();
+						if (line.StartsWith("vertex"))
 						{
 							vectorIndex++;
 							switch (vectorIndex)
 							{
 								case 1:
-									vector0 = Convert(parts);
+									vector0 = Convert(line);
 									break;
 
 								case 2:
-									vector1 = Convert(parts);
+									vector1 = Convert(line);
 									break;
 
 								case 3:
-									vector2 = Convert(parts);
+									vector2 = Convert(line);
 									if (!Vector3.Collinear(vector0, vector1, vector2))
 									{
 										Vertex vertex1 = meshFromStlFile.CreateVertex(vector0, CreateOption.CreateNew, SortOption.WillSortLater);
