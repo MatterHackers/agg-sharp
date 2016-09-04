@@ -119,41 +119,34 @@ namespace MatterHackers.RayTracer
 			if (MultiThreaded)
 			{
 				System.Threading.Tasks.Parallel.For(viewport.Bottom, viewport.Height, y =>
-								{
-									for (int x = viewport.Left; x < viewport.Right; x++)
-									{
-										int bufferOffset = destImage.GetBufferOffsetY(y);
-
-										// we don't need to set this if we are anti-aliased
-										int totalOffset = bufferOffset + x * 4;
-										destBuffer[totalOffset++] = (byte)colorBuffer[x][y].Blue0To255;
-										destBuffer[totalOffset++] = (byte)colorBuffer[x][y].Green0To255;
-										destBuffer[totalOffset++] = (byte)colorBuffer[x][y].Red0To255;
-										destBuffer[totalOffset] = (byte)colorBuffer[x][y].Alpha0To255;
-									}
-								}
-				);
+				{
+					CopyColorXSpan(destImage, viewport, y, destBuffer);
+				});
 			}
 			else
 			{
 				for (int y = viewport.Bottom; y < viewport.Height; y++)
 				{
-					for (int x = viewport.Left; x < viewport.Right; x++)
-					{
-						int bufferOffset = destImage.GetBufferOffsetY(y);
-
-						// we don't need to set this if we are anti-aliased
-						int totalOffset = bufferOffset + x * 4;
-						destBuffer[totalOffset++] = (byte)colorBuffer[x][y].Blue0To255;
-						destBuffer[totalOffset++] = (byte)colorBuffer[x][y].Green0To255;
-						destBuffer[totalOffset++] = (byte)colorBuffer[x][y].Red0To255;
-						destBuffer[totalOffset] = (byte)colorBuffer[x][y].Alpha0To255;
-					}
+					CopyColorXSpan(destImage, viewport, y, destBuffer);
 				}
-
 			}
 
 			destImage.MarkImageChanged();
+		}
+
+		private void CopyColorXSpan(ImageBuffer destImage, RectangleInt viewport, int y, byte[] destBuffer)
+		{
+			for (int x = viewport.Left; x < viewport.Right; x++)
+			{
+				int bufferOffset = destImage.GetBufferOffsetY(y);
+
+				// we don't need to set this if we are anti-aliased
+				int totalOffset = bufferOffset + x * 4;
+				destBuffer[totalOffset++] = (byte)colorBuffer[x][y].Blue0To255;
+				destBuffer[totalOffset++] = (byte)colorBuffer[x][y].Green0To255;
+				destBuffer[totalOffset++] = (byte)colorBuffer[x][y].Red0To255;
+				destBuffer[totalOffset] = (byte)colorBuffer[x][y].Alpha0To255;
+			}
 		}
 
 		public void CopyDepthBufferToImage(ImageBuffer destImage, RectangleInt viewport)
@@ -189,45 +182,35 @@ namespace MatterHackers.RayTracer
 			{
 				System.Threading.Tasks.Parallel.For(viewport.Bottom, viewport.Height, y => //
 				{
-					for (int x = viewport.Left; x < viewport.Right; x++)
-					{
-						int bufferOffset = destImage.GetBufferOffsetY(y);
-
-						// we don't need to set this if we are anti-aliased
-						int totalOffset = bufferOffset + x * 4;
-						double depthXY = depthBuffer[x][y];
-						double rangedDepth = (depthXY - minZ) / divisor;
-						double clampedDepth = Math.Max(0, Math.Min(255, rangedDepth * 255));
-						byte depthColor = (byte)(clampedDepth);
-						destBuffer[totalOffset++] = depthColor;
-						destBuffer[totalOffset++] = depthColor;
-						destBuffer[totalOffset++] = depthColor;
-						destBuffer[totalOffset] = 255;
-					}
-				}
-				);
+					CopyDepthXSpan(destImage, viewport, y, destBuffer, minZ, divisor);
+				});
 			}
 			else
 			{
 				for (int y = viewport.Bottom; y < viewport.Height; y++)
 				{
-					for (int x = viewport.Left; x < viewport.Right; x++)
-					{
-						int bufferOffset = destImage.GetBufferOffsetY(y);
-
-						// we don't need to set this if we are anti-aliased
-						int totalOffset = bufferOffset + x * 4;
-						double depthXY = depthBuffer[x][y];
-						double rangedDepth = (depthXY - minZ) / divisor;
-						double clampedDepth = Math.Max(0, Math.Min(255, rangedDepth * 255));
-						byte depthColor = (byte)(clampedDepth);
-						destBuffer[totalOffset++] = depthColor;
-						destBuffer[totalOffset++] = depthColor;
-						destBuffer[totalOffset++] = depthColor;
-						destBuffer[totalOffset] = 255;
-					}
+					CopyDepthXSpan(destImage, viewport, y, destBuffer, minZ, divisor);
 				}
 				destImage.MarkImageChanged();
+			}
+		}
+
+		private void CopyDepthXSpan(ImageBuffer destImage, RectangleInt viewport, int y, byte[] destBuffer, double minZ, double divisor)
+		{
+			for (int x = viewport.Left; x < viewport.Right; x++)
+			{
+				int bufferOffset = destImage.GetBufferOffsetY(y);
+
+				// we don't need to set this if we are anti-aliased
+				int totalOffset = bufferOffset + x * 4;
+				double depthXY = depthBuffer[x][y];
+				double rangedDepth = (depthXY - minZ) / divisor;
+				double clampedDepth = Math.Max(0, Math.Min(255, rangedDepth * 255));
+				byte depthColor = (byte)(clampedDepth);
+				destBuffer[totalOffset++] = depthColor;
+				destBuffer[totalOffset++] = depthColor;
+				destBuffer[totalOffset++] = depthColor;
+				destBuffer[totalOffset] = 255;
 			}
 		}
 
@@ -292,122 +275,14 @@ namespace MatterHackers.RayTracer
 			{
 				System.Threading.Tasks.Parallel.For(viewport.Bottom, viewport.Height, y =>
 				{
-					for (int x = viewport.Left; x < viewport.Right; x++)
-					{
-						if (traceWithRayBundles)
-						{
-							int width = Math.Min(8, viewport.Right - x);
-							int height = Math.Min(8, viewport.Top - y);
-							FrustumRayBundle rayBundle = new FrustumRayBundle(width * height);
-							IntersectInfo[] intersectionsForBundle = new IntersectInfo[width * height];
-							for (int rayY = 0; rayY < height; rayY++)
-							{
-								for (int rayX = 0; rayX < width; rayX++)
-								{
-									rayBundle.rayArray[rayX + rayY * width] = scene.camera.GetRay(x + rayX, y + rayY);
-									intersectionsForBundle[rayX + rayY * width] = new IntersectInfo();
-								}
-							}
-
-							// get a ray to find the origin (every ray comes from the camera and should have the same origin)
-							Ray screenRay = scene.camera.GetRay(0, 0);
-							rayBundle.CalculateFrustum(width, height, screenRay.origin);
-
-							FullyTraceRayBundle(rayBundle, intersectionsForBundle, scene);
-
-							for (int rayY = 0; rayY < height; rayY++)
-							{
-								for (int rayX = 0; rayX < width; rayX++)
-								{
-									colorBuffer[x + rayX][y + rayY] = intersectionsForBundle[rayX + rayY * width].totalColor;
-								}
-							}
-							x += width - 1; // skip all the pixels we bundled
-							y += height - 1; // skip all the pixels we bundled
-						}
-						else
-						{
-							Ray ray = scene.camera.GetRay(x, y);
-
-							IntersectInfo primaryInfo;
-							colorBuffer[x][y] = FullyTraceRay(ray, scene, out primaryInfo);
-
-							if (false)
-							{
-								if (primaryInfo != null)
-								{
-									normalBuffer[x][y] = primaryInfo.normalAtHit;
-									depthBuffer[x][y] = primaryInfo.distanceToHit;
-								}
-								else
-								{
-									normalBuffer[x][y] = Vector3.UnitZ;
-									depthBuffer[x][y] = double.PositiveInfinity;
-								}
-							}
-						}
-					}
+					TraceXSpan(viewport, scene, y);
 				});
 			}
 			else
 			{
 				for (int y = viewport.Bottom; y < viewport.Height; y++)
 				{
-					for (int x = viewport.Left; x < viewport.Right; x++)
-					{
-						if (traceWithRayBundles)
-						{
-							int width = Math.Min(8, viewport.Right - x);
-							int height = Math.Min(8, viewport.Top - y);
-							FrustumRayBundle rayBundle = new FrustumRayBundle(width * height);
-							IntersectInfo[] intersectionsForBundle = new IntersectInfo[width * height];
-							for (int rayY = 0; rayY < height; rayY++)
-							{
-								for (int rayX = 0; rayX < width; rayX++)
-								{
-									rayBundle.rayArray[rayX + rayY * width] = scene.camera.GetRay(x + rayX, y + rayY);
-									intersectionsForBundle[rayX + rayY * width] = new IntersectInfo();
-								}
-							}
-
-							// get a ray to find the origin (every ray comes from the camera and should have the same origin)
-							Ray screenRay = scene.camera.GetRay(0, 0);
-							rayBundle.CalculateFrustum(width, height, screenRay.origin);
-
-							FullyTraceRayBundle(rayBundle, intersectionsForBundle, scene);
-
-							for (int rayY = 0; rayY < height; rayY++)
-							{
-								for (int rayX = 0; rayX < width; rayX++)
-								{
-									colorBuffer[x + rayX][y + rayY] = intersectionsForBundle[rayX + rayY * width].totalColor;
-								}
-							}
-							x += width - 1; // skip all the pixels we bundled
-							y += height - 1; // skip all the pixels we bundled
-						}
-						else
-						{
-							Ray ray = scene.camera.GetRay(x, y);
-
-							IntersectInfo primaryInfo;
-							colorBuffer[x][y] = FullyTraceRay(ray, scene, out primaryInfo);
-
-							if (false)
-							{
-								if (primaryInfo != null)
-								{
-									normalBuffer[x][y] = primaryInfo.normalAtHit;
-									depthBuffer[x][y] = primaryInfo.distanceToHit;
-								}
-								else
-								{
-									normalBuffer[x][y] = Vector3.UnitZ;
-									depthBuffer[x][y] = double.PositiveInfinity;
-								}
-							}
-						}
-					}
+					TraceXSpan(viewport, scene, y);
 				}
 			}		
 
@@ -417,80 +292,114 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
+		private void TraceXSpan(RectangleInt viewport, Scene scene, int y)
+		{
+			for (int x = viewport.Left; x < viewport.Right; x++)
+			{
+				if (traceWithRayBundles)
+				{
+					int width = Math.Min(8, viewport.Right - x);
+					int height = Math.Min(8, viewport.Top - y);
+					FrustumRayBundle rayBundle = new FrustumRayBundle(width * height);
+					IntersectInfo[] intersectionsForBundle = new IntersectInfo[width * height];
+					for (int rayY = 0; rayY < height; rayY++)
+					{
+						for (int rayX = 0; rayX < width; rayX++)
+						{
+							rayBundle.rayArray[rayX + rayY * width] = scene.camera.GetRay(x + rayX, y + rayY);
+							intersectionsForBundle[rayX + rayY * width] = new IntersectInfo();
+						}
+					}
+
+					// get a ray to find the origin (every ray comes from the camera and should have the same origin)
+					Ray screenRay = scene.camera.GetRay(0, 0);
+					rayBundle.CalculateFrustum(width, height, screenRay.origin);
+
+					FullyTraceRayBundle(rayBundle, intersectionsForBundle, scene);
+
+					for (int rayY = 0; rayY < height; rayY++)
+					{
+						for (int rayX = 0; rayX < width; rayX++)
+						{
+							colorBuffer[x + rayX][y + rayY] = intersectionsForBundle[rayX + rayY * width].totalColor;
+						}
+					}
+					x += width - 1; // skip all the pixels we bundled
+					y += height - 1; // skip all the pixels we bundled
+				}
+				else
+				{
+					Ray ray = scene.camera.GetRay(x, y);
+
+					IntersectInfo primaryInfo;
+					colorBuffer[x][y] = FullyTraceRay(ray, scene, out primaryInfo);
+
+					if (false)
+					{
+						if (primaryInfo != null)
+						{
+							normalBuffer[x][y] = primaryInfo.normalAtHit;
+							depthBuffer[x][y] = primaryInfo.distanceToHit;
+						}
+						else
+						{
+							normalBuffer[x][y] = Vector3.UnitZ;
+							depthBuffer[x][y] = double.PositiveInfinity;
+						}
+					}
+				}
+			}
+		}
+
 		public void AntiAliasScene(RectangleInt viewport, Scene scene, RGBA_Floats[][] imageBufferAsDoubles, int maxSamples)
 		{
 			if (MultiThreaded)
 			{
 				System.Threading.Tasks.Parallel.For(1, viewport.Height - 1, y => //
 				{
-					int fillY = viewport.Top - (viewport.Bottom + y);
-
-					for (int x = 1; x < viewport.Width - 1; x++)
-					{
-						RGBA_Floats avg = (imageBufferAsDoubles[x - 1][y - 1] + imageBufferAsDoubles[x][y - 1] + imageBufferAsDoubles[x + 1][y - 1] +
-									 imageBufferAsDoubles[x - 1][y] + imageBufferAsDoubles[x][y] + imageBufferAsDoubles[x + 1][y] +
-									 imageBufferAsDoubles[x - 1][y + 1] + imageBufferAsDoubles[x][y + 1] + imageBufferAsDoubles[x + 1][y + 1]) / 9;
-
-						// use a more accurate antialasing method (MonteCarlo implementation)
-						// this will fire multiple rays per pixel
-						double sumOfDifferencesThreshold = .05; // TODO: figure out a good way to determine this.
-						if (avg.SumOfDistances(imageBufferAsDoubles[x][y]) > sumOfDifferencesThreshold)
-						{
-							RGBA_Floats accumulatedColor = imageBufferAsDoubles[x][y];
-							for (int i = 0; i < maxSamples; i++)
-							{
-								// get some 'random' samples
-								double rx = Math.Sign(i % 4 - 1.5) * (IntNoise(x + y * viewport.Width * maxSamples * 2 + i) + 1) / 4;
-								double ry = Math.Sign(i % 2 - 0.5) * (IntNoise(x + y * viewport.Width * maxSamples * 2 + 1 + i) + 1) / 4;
-
-								double xp = x + rx;
-								double yp = y + ry;
-
-								Ray ray = scene.camera.GetRay(xp, yp);
-								IntersectInfo primaryInfo;
-
-								accumulatedColor += FullyTraceRay(ray, scene, out primaryInfo);
-							}
-							imageBufferAsDoubles[x][y] = accumulatedColor / (maxSamples + 1);
-						}
-					}
+					AntiAliasXSpan(viewport, scene, imageBufferAsDoubles, maxSamples, y);
 				});
 			}
 			else
 			{
 				for (int y = 1; y < viewport.Height - 1; y++)
 				{
-					int fillY = viewport.Top - (viewport.Bottom + y);
+					AntiAliasXSpan(viewport, scene, imageBufferAsDoubles, maxSamples, y);
+				}
+			}
+		}
 
-					for (int x = 1; x < viewport.Width - 1; x++)
+		private void AntiAliasXSpan(RectangleInt viewport, Scene scene, RGBA_Floats[][] imageBufferAsDoubles, int maxSamples, int y)
+		{
+			int fillY = viewport.Top - (viewport.Bottom + y);
+
+			for (int x = 1; x < viewport.Width - 1; x++)
+			{
+				RGBA_Floats avg = (imageBufferAsDoubles[x - 1][y - 1] + imageBufferAsDoubles[x][y - 1] + imageBufferAsDoubles[x + 1][y - 1] +
+							 imageBufferAsDoubles[x - 1][y] + imageBufferAsDoubles[x][y] + imageBufferAsDoubles[x + 1][y] +
+							 imageBufferAsDoubles[x - 1][y + 1] + imageBufferAsDoubles[x][y + 1] + imageBufferAsDoubles[x + 1][y + 1]) / 9;
+
+				// use a more accurate antialasing method (MonteCarlo implementation)
+				// this will fire multiple rays per pixel
+				double sumOfDifferencesThreshold = .05; // TODO: figure out a good way to determine this.
+				if (avg.SumOfDistances(imageBufferAsDoubles[x][y]) > sumOfDifferencesThreshold)
+				{
+					RGBA_Floats accumulatedColor = imageBufferAsDoubles[x][y];
+					for (int i = 0; i < maxSamples; i++)
 					{
-						RGBA_Floats avg = (imageBufferAsDoubles[x - 1][y - 1] + imageBufferAsDoubles[x][y - 1] + imageBufferAsDoubles[x + 1][y - 1] +
-									 imageBufferAsDoubles[x - 1][y] + imageBufferAsDoubles[x][y] + imageBufferAsDoubles[x + 1][y] +
-									 imageBufferAsDoubles[x - 1][y + 1] + imageBufferAsDoubles[x][y + 1] + imageBufferAsDoubles[x + 1][y + 1]) / 9;
+						// get some 'random' samples
+						double rx = Math.Sign(i % 4 - 1.5) * (IntNoise(x + y * viewport.Width * maxSamples * 2 + i) + 1) / 4;
+						double ry = Math.Sign(i % 2 - 0.5) * (IntNoise(x + y * viewport.Width * maxSamples * 2 + 1 + i) + 1) / 4;
 
-						// use a more accurate antialasing method (MonteCarlo implementation)
-						// this will fire multiple rays per pixel
-						double sumOfDifferencesThreshold = .05; // TODO: figure out a good way to determine this.
-						if (avg.SumOfDistances(imageBufferAsDoubles[x][y]) > sumOfDifferencesThreshold)
-						{
-							RGBA_Floats accumulatedColor = imageBufferAsDoubles[x][y];
-							for (int i = 0; i < maxSamples; i++)
-							{
-								// get some 'random' samples
-								double rx = Math.Sign(i % 4 - 1.5) * (IntNoise(x + y * viewport.Width * maxSamples * 2 + i) + 1) / 4;
-								double ry = Math.Sign(i % 2 - 0.5) * (IntNoise(x + y * viewport.Width * maxSamples * 2 + 1 + i) + 1) / 4;
+						double xp = x + rx;
+						double yp = y + ry;
 
-								double xp = x + rx;
-								double yp = y + ry;
+						Ray ray = scene.camera.GetRay(xp, yp);
+						IntersectInfo primaryInfo;
 
-								Ray ray = scene.camera.GetRay(xp, yp);
-								IntersectInfo primaryInfo;
-
-								accumulatedColor += FullyTraceRay(ray, scene, out primaryInfo);
-							}
-							imageBufferAsDoubles[x][y] = accumulatedColor / (maxSamples + 1);
-						}
+						accumulatedColor += FullyTraceRay(ray, scene, out primaryInfo);
 					}
+					imageBufferAsDoubles[x][y] = accumulatedColor / (maxSamples + 1);
 				}
 			}
 		}
