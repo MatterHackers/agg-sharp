@@ -21,6 +21,7 @@
 using System;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace MatterHackers.Agg
 {
@@ -251,6 +252,20 @@ namespace MatterHackers.Agg
 					dest[destIndex + i] = source[sourceIndex + i];
 				}
 				 */
+			}
+		}
+
+		public static void FireAndForget(this Task task)
+		{
+			try
+			{
+				task.ConfigureAwait(false);
+			}
+			catch (Exception ex)
+			{
+#if DEBUG
+				throw ex;
+#endif
 			}
 		}
 
