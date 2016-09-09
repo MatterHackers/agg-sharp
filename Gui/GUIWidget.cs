@@ -1795,8 +1795,15 @@ namespace MatterHackers.Agg.UI
 
 		protected bool formHasLoaded = false;
 
+		/// <summary>
+		/// Called before the very first draw of this widget
+		/// </summary>
 		public event EventHandler Load;
 
+		/// <summary>
+		/// Called before the very first draw of this widget
+		/// </summary>
+		/// <param name="args"></param>
 		public virtual void OnLoad(EventArgs args)
 		{
 			Load?.Invoke(this, args);

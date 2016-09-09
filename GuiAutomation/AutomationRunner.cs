@@ -193,6 +193,19 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
+		public void WaitUntil(Func<bool> checkIfDone, double seconds)
+		{
+			Stopwatch timer = Stopwatch.StartNew();
+			// assert that the new printer is synced to this client
+			while (timer.Elapsed.Seconds < seconds)
+			{
+				if (checkIfDone())
+				{
+					break;
+				}
+			}
+		}
+
 		public bool DoubleClickImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
 		{
 			throw new NotImplementedException();
