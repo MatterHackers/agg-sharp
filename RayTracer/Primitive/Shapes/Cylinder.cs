@@ -136,12 +136,12 @@ namespace MatterHackers.RayTracer
 							if (ray.intersectionType == IntersectionType.FrontFace)
 							{
 								topHitInfo.hitType = IntersectionType.FrontFace;
-								topHitInfo.normalAtHit = topPlane.planeNormal;
+								topHitInfo.normalAtHit = topPlane.PlaneNormal;
 							}
 							else
 							{
 								topHitInfo.hitType = IntersectionType.BackFace;
-								topHitInfo.normalAtHit = -topPlane.planeNormal;
+								topHitInfo.normalAtHit = -topPlane.PlaneNormal;
 							}
 							topHitInfo.distanceToHit = testDistanceToHit;
 
@@ -166,12 +166,12 @@ namespace MatterHackers.RayTracer
 							if (ray.intersectionType == IntersectionType.FrontFace)
 							{
 								bottomHitInfo.hitType = IntersectionType.FrontFace;
-								bottomHitInfo.normalAtHit = bottomPlane.planeNormal;
+								bottomHitInfo.normalAtHit = bottomPlane.PlaneNormal;
 							}
 							else
 							{
 								bottomHitInfo.hitType = IntersectionType.BackFace;
-								bottomHitInfo.normalAtHit = -bottomPlane.planeNormal;
+								bottomHitInfo.normalAtHit = -bottomPlane.PlaneNormal;
 							}
 							bottomHitInfo.distanceToHit = testDistanceToHit;
 
@@ -300,7 +300,7 @@ namespace MatterHackers.RayTracer
 							topHitInfo.hitPosition = topHitPosition;
 							topHitInfo.closestHitObject = this;
 							topHitInfo.hitType = IntersectionType.FrontFace;
-							topHitInfo.normalAtHit = topPlane.planeNormal;
+							topHitInfo.normalAtHit = topPlane.PlaneNormal;
 							topHitInfo.distanceToHit = testDistanceToHit;
 
 							yield return topHitInfo;
@@ -312,7 +312,7 @@ namespace MatterHackers.RayTracer
 							topHitInfo.hitPosition = topHitPosition;
 							topHitInfo.closestHitObject = this;
 							topHitInfo.hitType = IntersectionType.BackFace;
-							topHitInfo.normalAtHit = -topPlane.planeNormal;
+							topHitInfo.normalAtHit = -topPlane.PlaneNormal;
 							topHitInfo.distanceToHit = testDistanceToHit;
 
 							yield return topHitInfo;
@@ -333,7 +333,7 @@ namespace MatterHackers.RayTracer
 							bottomHitInfo.hitPosition = bottomHitPosition;
 							bottomHitInfo.closestHitObject = this;
 							bottomHitInfo.hitType = IntersectionType.FrontFace;
-							bottomHitInfo.normalAtHit = bottomPlane.planeNormal;
+							bottomHitInfo.normalAtHit = bottomPlane.PlaneNormal;
 							bottomHitInfo.distanceToHit = testDistanceToHit;
 
 							yield return bottomHitInfo;
@@ -345,7 +345,7 @@ namespace MatterHackers.RayTracer
 							bottomHitInfo.hitPosition = bottomHitPosition;
 							bottomHitInfo.closestHitObject = this;
 							bottomHitInfo.hitType = IntersectionType.BackFace;
-							bottomHitInfo.normalAtHit = -bottomPlane.planeNormal;
+							bottomHitInfo.normalAtHit = -bottomPlane.PlaneNormal;
 							bottomHitInfo.distanceToHit = testDistanceToHit;
 
 							yield return bottomHitInfo;

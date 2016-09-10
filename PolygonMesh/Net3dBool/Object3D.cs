@@ -797,7 +797,7 @@ namespace Net3dBool
 		private double ComputeDistance(Vertex vertex, Face face)
 		{
 			Vector3 normal = face.GetNormal();
-			double distToV1 = face.GetPlane().distanceToPlaneFromOrigin;
+			double distToV1 = face.GetPlane().DistanceToPlaneFromOrigin;
 			double distToVertex = Vector3.Dot(normal, vertex.Position);
 			double distFromFacePlane = distToVertex - distToV1;
 			return distFromFacePlane;

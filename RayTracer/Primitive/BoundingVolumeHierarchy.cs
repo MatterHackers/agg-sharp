@@ -101,7 +101,11 @@ namespace MatterHackers.RayTracer
 
 		public void GetClosestIntersections(RayBundle rayBundle, int rayIndexToStartCheckingFrom, IntersectInfo[] intersectionsForBundle)
 		{
-			intersectionsForBundle[rayIndexToStartCheckingFrom] = GetClosestIntersection(rayBundle.rayArray[rayIndexToStartCheckingFrom]);
+			var intersection = GetClosestIntersection(rayBundle.rayArray[rayIndexToStartCheckingFrom]);
+			if(intersection == null)
+			{
+				intersectionsForBundle[rayIndexToStartCheckingFrom].hitType = IntersectionType.None;
+			}
 		}
 
 		public IEnumerable IntersectionIterator(Ray ray)

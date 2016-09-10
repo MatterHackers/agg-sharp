@@ -28,8 +28,8 @@ namespace MatterHackers.RayTracer
 
 		public PlaneShape(Vector3 planeNormal, double distanceFromOrigin, RGBA_Floats color, RGBA_Floats oddcolor, double reflection, double transparency)
 		{
-			plane.planeNormal = planeNormal;
-			plane.distanceToPlaneFromOrigin = distanceFromOrigin;
+			plane.PlaneNormal = planeNormal;
+			plane.DistanceToPlaneFromOrigin = distanceFromOrigin;
 			//Color = color;
 			OddColor = oddcolor;
 			//Transparency = transparency;
@@ -50,9 +50,9 @@ namespace MatterHackers.RayTracer
 		{
 			if (Material.HasTexture)
 			{
-				Vector3 Position = plane.planeNormal;
+				Vector3 Position = plane.PlaneNormal;
 				Vector3 vecU = new Vector3(Position.y, Position.z, -Position.x);
-				Vector3 vecV = Vector3.Cross(vecU, plane.planeNormal);
+				Vector3 vecV = Vector3.Cross(vecU, plane.PlaneNormal);
 
 				double u = Vector3.Dot(info.hitPosition, vecU);
 				double v = Vector3.Dot(info.hitPosition, vecV);
@@ -79,7 +79,7 @@ namespace MatterHackers.RayTracer
 				info.closestHitObject = this;
 				info.hitType = IntersectionType.FrontFace;
 				info.hitPosition = ray.origin + ray.directionNormal * distanceToHit;
-				info.normalAtHit = plane.planeNormal;
+				info.normalAtHit = plane.PlaneNormal;
 				info.distanceToHit = distanceToHit;
 
 				return info;
@@ -100,7 +100,7 @@ namespace MatterHackers.RayTracer
 
 		public override string ToString()
 		{
-			return string.Format("Sphere {0}x+{1}y+{2}z+{3}=0)", plane.planeNormal.x, plane.planeNormal.y, plane.planeNormal.z, plane.distanceToPlaneFromOrigin);
+			return string.Format("Sphere {0}x+{1}y+{2}z+{3}=0)", plane.PlaneNormal.x, plane.PlaneNormal.y, plane.PlaneNormal.z, plane.DistanceToPlaneFromOrigin);
 		}
 	}
 }
