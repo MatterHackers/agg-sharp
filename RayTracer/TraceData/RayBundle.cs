@@ -73,7 +73,7 @@ namespace MatterHackers.RayTracer
 
 		public void CalculateFrustum(int width, int height, Vector3 origin)
 		{
-			frustumForRays.plane = new Plane[4];
+			frustumForRays.Planes = new Plane[4];
 
 			Vector3 cornerRay0 = rayArray[0].directionNormal;
 			Vector3 cornerRay1 = rayArray[width - 1].directionNormal;
@@ -81,19 +81,19 @@ namespace MatterHackers.RayTracer
 			Vector3 cornerRay3 = rayArray[(height - 1) * width + (width - 1)].directionNormal;
 			{
 				Vector3 normal = Vector3.Cross(cornerRay0, cornerRay1).GetNormal();
-				frustumForRays.plane[0] = new Plane(normal, Vector3.Dot(normal, origin));
+				frustumForRays.Planes[0] = new Plane(normal, Vector3.Dot(normal, origin));
 			}
 			{
 				Vector3 normal = Vector3.Cross(cornerRay1, cornerRay2).GetNormal();
-				frustumForRays.plane[1] = new Plane(normal, Vector3.Dot(normal, origin));
+				frustumForRays.Planes[1] = new Plane(normal, Vector3.Dot(normal, origin));
 			}
 			{
 				Vector3 normal = Vector3.Cross(cornerRay2, cornerRay3).GetNormal();
-				frustumForRays.plane[2] = new Plane(normal, Vector3.Dot(normal, origin));
+				frustumForRays.Planes[2] = new Plane(normal, Vector3.Dot(normal, origin));
 			}
 			{
 				Vector3 normal = Vector3.Cross(cornerRay3, cornerRay0).GetNormal();
-				frustumForRays.plane[3] = new Plane(normal, Vector3.Dot(normal, origin));
+				frustumForRays.Planes[3] = new Plane(normal, Vector3.Dot(normal, origin));
 			}
 		}
 	}

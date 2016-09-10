@@ -179,7 +179,7 @@ namespace Net3dBool
 
 		public Vector3 GetNormal()
 		{
-			return GetPlane().planeNormal;
+			return GetPlane().PlaneNormal;
 		}
 
 		public Status GetStatus()

@@ -37,11 +37,11 @@ namespace MatterHackers.RayTracer
 	public class Frustum
 	{
 		// Plane normals should point out
-		public Plane[] plane = null;
+		public Plane[] Planes { get; set; } = new Plane[6];
 
 		public Frustum()
 		{
-			plane = new Plane[6];
+			Planes = new Plane[6];
 		}
 
 		// The front plan is at 0 (the intersection of the 4 side planes). Plane normals should point out.
@@ -49,39 +49,34 @@ namespace MatterHackers.RayTracer
 			Vector3 bottomNormal, Vector3 topNormal,
 			Vector3 backNormal, double distanceToBack)
 		{
-			plane = new Plane[5];
-			plane[0] = new Plane(leftNormal.GetNormal(), 0);
-			plane[1] = new Plane(rightNormal.GetNormal(), 0);
-			plane[2] = new Plane(bottomNormal.GetNormal(), 0);
-			plane[3] = new Plane(topNormal.GetNormal(), 0);
-			plane[4] = new Plane(backNormal.GetNormal(), distanceToBack);
+			Planes = new Plane[5];
+			Planes[0] = new Plane(leftNormal.GetNormal(), 0);
+			Planes[1] = new Plane(rightNormal.GetNormal(), 0);
+			Planes[2] = new Plane(bottomNormal.GetNormal(), 0);
+			Planes[3] = new Plane(topNormal.GetNormal(), 0);
+			Planes[4] = new Plane(backNormal.GetNormal(), distanceToBack);
 		}
 
 		// Plane normals should point out.
 		public Frustum(Plane left, Plane right, Plane bottom, Plane top, Plane front, Plane back)
 		{
-			plane = new Plane[6];
+			Planes = new Plane[6];
 
-			plane[0] = left;
-			plane[1] = right;
-			plane[2] = bottom;
-			plane[3] = top;
-			plane[4] = front;
-			plane[5] = back;
+			Planes[0] = left;
+			Planes[1] = right;
+			Planes[2] = bottom;
+			Planes[3] = top;
+			Planes[4] = front;
+			Planes[5] = back;
 		}
 
 		static public Frustum Transform(Frustum frustum, Matrix4X4 matrix)
 		{
 			Frustum transformedFrustum = new Frustum();
-			transformedFrustum.plane = new Plane[frustum.plane.Length];
-			for (int i = 0; i < frustum.plane.Length; ++i)
+			transformedFrustum.Planes = new Plane[frustum.Planes.Length];
+			for (int i = 0; i < frustum.Planes.Length; ++i)
 			{
-				Vector3 planeNormal = frustum.plane[i].planeNormal;
-				double distanceToPlane = frustum.plane[i].distanceToPlaneFromOrigin;
-				transformedFrustum.plane[i].planeNormal = Vector3.TransformNormal(planeNormal, matrix);
-				Vector3 pointOnPlane = planeNormal * distanceToPlane;
-				Vector3 pointOnTransformedPlane = Vector3.TransformNormal(pointOnPlane, matrix);
-				transformedFrustum.plane[i].distanceToPlaneFromOrigin = Vector3.Dot(transformedFrustum.plane[i].planeNormal, pointOnTransformedPlane);
+				transformedFrustum.Planes[i] = Plane.Transform(frustum.Planes[i], matrix);
 			}
 
 			return transformedFrustum;
@@ -89,7 +84,7 @@ namespace MatterHackers.RayTracer
 
 		public Frustum(Plane[] sixPlanes)
 		{
-			plane = new Plane[6];
+			Planes = new Plane[6];
 
 			if (sixPlanes.Length != 6)
 			{
@@ -98,7 +93,7 @@ namespace MatterHackers.RayTracer
 
 			for (int i = 0; i < 6; i++)
 			{
-				plane[i] = sixPlanes[i];
+				Planes[i] = sixPlanes[i];
 			}
 		}
 
@@ -107,10 +102,10 @@ namespace MatterHackers.RayTracer
 			FrustumIntersection returnValue = FrustumIntersection.Inside;
 			Vector3 vmin, vmax;
 
-			for (int i = 0; i < plane.Length; ++i)
+			for (int i = 0; i < Planes.Length; ++i)
 			{
 				// X axis
-				if (plane[i].planeNormal.x > 0)
+				if (Planes[i].PlaneNormal.x > 0)
 				{
 					vmin.x = boundingBox.minXYZ.x;
 					vmax.x = boundingBox.maxXYZ.x;
@@ -122,7 +117,7 @@ namespace MatterHackers.RayTracer
 				}
 
 				// Y axis
-				if (plane[i].planeNormal.y > 0)
+				if (Planes[i].PlaneNormal.y > 0)
 				{
 					vmin.y = boundingBox.minXYZ.y;
 					vmax.y = boundingBox.maxXYZ.y;
@@ -134,7 +129,7 @@ namespace MatterHackers.RayTracer
 				}
 
 				// Z axis
-				if (plane[i].planeNormal.z > 0)
+				if (Planes[i].PlaneNormal.z > 0)
 				{
 					vmin.z = boundingBox.minXYZ.z;
 					vmax.z = boundingBox.maxXYZ.z;
@@ -145,15 +140,15 @@ namespace MatterHackers.RayTracer
 					vmax.z = boundingBox.minXYZ.z;
 				}
 
-				if (Vector3.Dot(plane[i].planeNormal, vmin) - plane[i].distanceToPlaneFromOrigin > 0)
+				if (Vector3.Dot(Planes[i].PlaneNormal, vmin) - Planes[i].DistanceToPlaneFromOrigin > 0)
 				{
-					if (Vector3.Dot(plane[i].planeNormal, vmax) - plane[i].distanceToPlaneFromOrigin >= 0)
+					if (Vector3.Dot(Planes[i].PlaneNormal, vmax) - Planes[i].DistanceToPlaneFromOrigin >= 0)
 					{
 						return FrustumIntersection.Outside;
 					}
 				}
 
-				if (Vector3.Dot(plane[i].planeNormal, vmax) - plane[i].distanceToPlaneFromOrigin >= 0)
+				if (Vector3.Dot(Planes[i].PlaneNormal, vmax) - Planes[i].DistanceToPlaneFromOrigin >= 0)
 				{
 					returnValue = FrustumIntersection.Intersect;
 				}
