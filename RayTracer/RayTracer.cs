@@ -72,7 +72,7 @@ namespace MatterHackers.RayTracer
 		public bool RenderReflection { get; set; } = true;
 		public bool RenderRefraction { get; set; } = true;
 		public bool RenderShadow { get; set; } = true;
-		public bool TraceWithRayBundles { get; set; } = true;
+		public bool TraceWithRayBundles { get; set; } = false;
 
 		public void AntiAliasScene(RectangleInt viewport, Scene scene, RGBA_Floats[][] imageBufferAsDoubles, int maxSamples)
 		{
