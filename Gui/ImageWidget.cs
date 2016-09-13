@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg.Image;
+using System;
 
 namespace MatterHackers.Agg.UI
 {
@@ -47,6 +48,17 @@ namespace MatterHackers.Agg.UI
 			: this(initialImage.Width, initialImage.Height)
 		{
 			Image = initialImage;
+			if (image != null)
+			{
+				Image.ImageChanged += ImageChanged;
+			}
+		}
+
+		private void ImageChanged(object s, EventArgs e)
+		{
+			this.Width = image.Width;
+			this.Height = image.Height;
+			Invalidate();
 		}
 
 		public ImageBuffer Image
@@ -58,7 +70,12 @@ namespace MatterHackers.Agg.UI
 
 			set
 			{
+				if(image != null)
+				{
+					image.ImageChanged -= ImageChanged;
+				}
 				image = value;
+				image.ImageChanged += ImageChanged;
 				LocalBounds = new RectangleDouble(0, 0, image.Width, image.Height);
 			}
 		}

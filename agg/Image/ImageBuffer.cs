@@ -268,11 +268,6 @@ namespace MatterHackers.Agg.Image
 
 		public void Allocate(int inWidth, int inHeight, int inScanWidthInBytes, int bitsPerPixel)
 		{
-			if (inWidth < 1 || inHeight < 1)
-			{
-				throw new ArgumentOutOfRangeException("You must have a width and height > than 0.");
-			}
-
 			if (bitsPerPixel != 32 && bitsPerPixel != 24 && bitsPerPixel != 8)
 			{
 				throw new Exception("Unsupported bits per pixel.");
