@@ -203,6 +203,7 @@ namespace MatterHackers.GuiAutomation
 				{
 					break;
 				}
+				Thread.Sleep(200);
 			}
 		}
 
