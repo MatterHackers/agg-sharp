@@ -107,6 +107,10 @@ namespace MatterHackers.Agg.WindowsFileDialogs
 			{
 				SaveFileDialogDialogParams.FileName = saveFileDialog1.FileName;
 			}
+			else
+			{
+				SaveFileDialogDialogParams.FileName = null;
+			}
 
 			WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = false;
 

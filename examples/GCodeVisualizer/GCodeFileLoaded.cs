@@ -890,7 +890,7 @@ namespace MatterHackers.GCodeVisualizer
 
 		public void Save(string dest)
 		{
-			using (System.IO.StreamWriter file = new System.IO.StreamWriter(dest))
+			using (StreamWriter file = new StreamWriter(dest))
 			{
 				foreach (PrinterMachineInstruction instruction in GCodeCommandQueue)
 				{
