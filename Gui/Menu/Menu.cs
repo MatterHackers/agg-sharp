@@ -16,8 +16,6 @@ namespace MatterHackers.Agg.UI
 
 		public bool IsOpen { get; private set; } = false;
 
-		public virtual BorderDouble MenuItemsPadding { get; set; }
-
 		public Direction MenuDirection { get; private set; }
 
 		public RGBA_Bytes MenuItemsBorderColor { get; set; }

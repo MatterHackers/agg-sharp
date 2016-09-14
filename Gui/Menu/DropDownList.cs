@@ -64,7 +64,7 @@ namespace MatterHackers.Agg.UI
 
 		private PathStorage directionArrow = null;
 
-		public override BorderDouble MenuItemsPadding
+		public BorderDouble MenuItemsPadding
 		{
 			get
 			{
