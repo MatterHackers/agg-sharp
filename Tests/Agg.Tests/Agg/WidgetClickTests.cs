@@ -160,8 +160,7 @@ namespace MatterHackers.Agg.Tests
 
 			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
 
-			Assert.IsTrue(testHarness.AllTestsPassed);
-			Assert.IsTrue(testHarness.TestCount == 15);
+			Assert.IsTrue(testHarness.AllTestsPassed(15));
 		}
 
 		[Test, RequiresSTA, RunInApplicationDomain, Category("FixNeeded")]
