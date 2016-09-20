@@ -102,25 +102,22 @@ namespace MatterHackers.Agg.UI.Tests
 			windowToClose.CloseOnIdle();
 		}
 
-		public int TestCount
+		public bool AllTestsPassed(int expectedCount)
 		{
-			get { return results.Count; }
-		}
-
-		public bool AllTestsPassed 
-		{ 
-			get
+			if( expectedCount != results.Count)
 			{
-				foreach (TestResult testResult in results)
-				{
-					if (!testResult.result)
-					{
-						return false;
-					}
-				}
-
-				return true;
+				return false;
 			}
+
+			foreach (TestResult testResult in results)
+			{
+				if (!testResult.result)
+				{
+					return false;
+				}
+			}
+
+			return true;
 		}
 	}
 }

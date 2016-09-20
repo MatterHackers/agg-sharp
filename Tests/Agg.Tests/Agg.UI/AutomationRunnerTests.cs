@@ -63,8 +63,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 				AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
 
-				Assert.IsTrue(testHarness.AllTestsPassed);
-				Assert.IsTrue(testHarness.TestCount == 1); // make sure we can all our tests
+				Assert.IsTrue(testHarness.AllTestsPassed(1));
 			}
 		}
 
@@ -105,8 +104,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
 
-			Assert.IsTrue(testHarness.AllTestsPassed);
-			Assert.IsTrue(testHarness.TestCount == 2); // make sure we can all our tests
+			Assert.IsTrue(testHarness.AllTestsPassed(2));
 		}
 
 		[Test]

@@ -83,8 +83,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
 
-			Assert.IsTrue(testHarness.AllTestsPassed);
-			Assert.IsTrue(testHarness.TestCount == 3); // make sure we can all our tests
+			Assert.IsTrue(testHarness.AllTestsPassed(3));
 		}
 
 #endif
