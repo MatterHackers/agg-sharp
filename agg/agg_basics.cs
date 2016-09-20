@@ -255,20 +255,6 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public static void FireAndForget(this Task task)
-		{
-			try
-			{
-				task.ConfigureAwait(false);
-			}
-			catch (Exception ex)
-			{
-#if DEBUG
-				throw ex;
-#endif
-			}
-		}
-
 		public static void memmove(int[] dest, int destIndex, int[] source, int sourceIndex, int Count)
 		{
 			if (source != dest
