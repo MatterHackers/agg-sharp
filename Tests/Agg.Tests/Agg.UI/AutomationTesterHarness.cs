@@ -71,7 +71,14 @@ namespace MatterHackers.Agg.UI.Tests
 					firstDraw = false;
 					Task.Run(() =>
 					{
-						functionContainingTests(this);
+						try
+						{
+							functionContainingTests(this);
+						}
+						catch(Exception ex)
+						{
+							Console.WriteLine("Unhandled exception in automation tests: \r\n\t{0}", ex.ToString());
+						}
 
 						initialSystemWindow.CloseOnIdle();
 					});
