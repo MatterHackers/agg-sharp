@@ -36,6 +36,7 @@ using MatterHackers.GuiAutomation;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -43,7 +44,7 @@ namespace MatterHackers.Agg.UI.Tests
 	public class MouseInteractionTests
 	{
 #if !__ANDROID__
-		[Test, RequiresSTA, RunInApplicationDomain]
+		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
 		public void DoClickButtonInWindow()
 		{
 			int leftClickCount = 0;
