@@ -84,6 +84,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		[Test]
 		public void CreateWireFrameTriangle()
 		{
+			// Test needs writable directory
+			Environment.CurrentDirectory = TestContext.CurrentContext.WorkDirectory;
+
 			Mesh testMesh = new Mesh();
 			Vertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
 			Vertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
@@ -139,6 +142,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		public void MergeVertices()
 		{
 			{
+				// Test needs writable directory
+				Environment.CurrentDirectory = TestContext.CurrentContext.WorkDirectory;
+
 				Mesh testMesh = new Mesh();
 				Vertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
 				Vertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
@@ -253,6 +259,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		public void MergeMeshEdges()
 		{
 			{
+				// Test needs writable directory
+				Environment.CurrentDirectory = TestContext.CurrentContext.WorkDirectory;
+
 				Mesh testMesh = new Mesh();
 				Vertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
 				Vertex centerVertexBottom = testMesh.CreateVertex(0, 0, 0);
@@ -289,6 +298,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				//
 				//
 				// leftVertexBottom (-1, 0, 0)  centerVertexBottom (0, 0, 0)  rightVertexBottom (1, 0, 0)
+
+				// Test needs writable directory
+				Environment.CurrentDirectory = TestContext.CurrentContext.WorkDirectory;
 
 				Mesh testMesh = new Mesh();
 				Vertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
@@ -459,6 +471,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		{
 			// split edge and create vert (not part of a polygon, just a wire mesh)
 			{
+				// Test needs writable directory
+				Environment.CurrentDirectory = TestContext.CurrentContext.WorkDirectory;
+
 				Mesh testMesh = new Mesh();
 				Vertex leftVertex = testMesh.CreateVertex(-1, 0, 0);
 				Vertex rightVertex = testMesh.CreateVertex(1, 0, 0);

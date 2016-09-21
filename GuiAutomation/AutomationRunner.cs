@@ -57,6 +57,7 @@ namespace MatterHackers.GuiAutomation
 		public double UpDelaySeconds = .2;
 
 		public enum InputType {  Native, Simulated };
+
 		public AutomationRunner(string imageDirectory = "", InputType inputType = InputType.Native, bool drawSimulatedMouse = true)
 		{
 #if !__ANDROID__
@@ -193,17 +194,18 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public void WaitUntil(Func<bool> checkIfDone, double seconds)
+		public void WaitUntil(Func<bool> checkConditionSatisfied, double seconds, int interval = 200)
 		{
 			Stopwatch timer = Stopwatch.StartNew();
-			// assert that the new printer is synced to this client
+
 			while (timer.Elapsed.Seconds < seconds)
 			{
-				if (checkIfDone())
+				if (checkConditionSatisfied())
 				{
 					break;
 				}
-				Thread.Sleep(200);
+
+				Thread.Sleep(interval);
 			}
 		}
 
