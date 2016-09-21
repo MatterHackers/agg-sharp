@@ -576,7 +576,7 @@ namespace MatterHackers.Agg.UI.Tests
 	[TestFixture, RunInApplicationDomain, Category("Agg.UI")]
 	public class VerifyFocusMakesTextWidgetEditableClass
 	{
-		[Test, RequiresSTA, RunInApplicationDomain]
+		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
 		public void VerifyFocusMakesTextWidgetEditable()
 		{
 			TextEditWidget editField = null;
@@ -615,7 +615,7 @@ namespace MatterHackers.Agg.UI.Tests
 	[TestFixture, RunInApplicationDomain, Category("Agg.UI")]
 	public class SelectAllOnFocusCanStillClickAfterSelectionClass
 	{
-		[Test, RequiresSTA, RunInApplicationDomain]
+		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
 		public void SelectAllOnFocusCanStillClickAfterSelection()
 		{
 			TextEditWidget editField = null;

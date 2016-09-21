@@ -28,12 +28,12 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-
+using System.Threading;
+using System.Threading.Tasks;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.UI.Tests;
 using MatterHackers.GuiAutomation;
 using NUnit.Framework;
-using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.Tests
 {
@@ -42,7 +42,7 @@ namespace MatterHackers.Agg.Tests
 	{
 		GuiWidget lastClicked = null;
 
-		[Test, RequiresSTA, RunInApplicationDomain]
+		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
 		public void ClickFiresOnCorrectWidgets()
 		{
 			int blueClickCount = 0;
@@ -163,7 +163,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.IsTrue(testHarness.AllTestsPassed(15));
 		}
 
-		[Test, RequiresSTA, RunInApplicationDomain, Category("FixNeeded")]
+		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain, Category("FixNeeded")]
 		public void ClickSuppressedOnExternalMouseUp()
 		{
 			int rootClickCount = 0;
@@ -286,7 +286,7 @@ namespace MatterHackers.Agg.Tests
 		}
 
 
-		[Test, RequiresSTA, RunInApplicationDomain]
+		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
 		public void ClickSuppressedOnMouseUpWithinChild()
 		{
 			// FixNeeded - Agg currently fires mouse up events in child controls when the parent has the mouse captured

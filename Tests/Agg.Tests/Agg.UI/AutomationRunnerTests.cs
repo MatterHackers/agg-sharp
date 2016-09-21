@@ -27,18 +27,17 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.Image;
-using MatterHackers.GuiAutomation;
-using MatterHackers.VectorMath;
-using NUnit.Framework;
 using System;
+using System.Threading;
+using MatterHackers.GuiAutomation;
+using NUnit.Framework;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	[TestFixture, Category("Agg.UI"), RequiresSTA, RunInApplicationDomain]
+	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
 	public class AutomationRunnerTests
 	{
-		[Test, RequiresSTA, RunInApplicationDomain, Category("FixNeeded")]
+		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain, Category("FixNeeded")]
 		public void GetWidgetByNameTestNoRegionSingleWindow()
 		{
 			// single system window
@@ -67,12 +66,12 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-		[Test, RequiresSTA, RunInApplicationDomain]
+		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
 		public void GetWidgetByNameTestNoRegionMultipleWindow()
 		{
 		}
 
-		[Test, RequiresSTA, RunInApplicationDomain]
+		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
 		public void GetWidgetByNameTestRegionSingleWindow()
 		{
 			int leftClickCount = 0;
