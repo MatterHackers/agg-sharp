@@ -36,6 +36,7 @@ using NUnit.Framework;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -456,7 +457,7 @@ namespace MatterHackers.Agg.UI.Tests
 #if(__ANDROID__)
 		[Test]
 #else
-		[Test, RequiresSTA]
+		[Test, Apartment(ApartmentState.STA)]
 #endif
 		public void TextEditingSpecialKeysWork()
 		{

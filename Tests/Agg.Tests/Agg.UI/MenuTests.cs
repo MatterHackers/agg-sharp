@@ -33,6 +33,7 @@ using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
 using System;
+using System.Threading;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -191,7 +192,7 @@ namespace MatterHackers.Agg.UI.Tests
 			// click and draw down to item should work as well
 		}
 
-		[Test, RequiresSTA, RunInApplicationDomain]
+		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
 		public void MenuDisabledItemsWorkCorrectlyActual()
 		{
 			int item1ClickCount = 0;
