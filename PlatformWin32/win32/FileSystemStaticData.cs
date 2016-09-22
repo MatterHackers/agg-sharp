@@ -36,7 +36,7 @@ namespace MatterHackers.Agg
 
 		public FileSystemStaticData(string overridePath)
 		{
-			Console.WriteLine("Overriding StaticData: " + Path.GetFullPath(overridePath));
+			Console.WriteLine("    Overriding StaticData: " + Path.GetFullPath(overridePath));
 			this.basePath = overridePath;
 		}
 
