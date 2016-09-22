@@ -115,6 +115,9 @@
     <OutputPath>bin\x64\Release64\</OutputPath>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>MatterHackers.Agg.HelloWorld</StartupObject>
+  </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
