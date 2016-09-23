@@ -194,7 +194,7 @@ namespace MatterHackers.RenderOpenGl
                             case 32:
                                 {
                                     ImageBuffer sourceImage = new ImageBuffer(imageToGetDisplayListFor);
-                                    ImageBuffer tempImage = new ImageBuffer(sourceImage.Width / 2, sourceImage.Height / 2, 32, new BlenderBGRA());
+                                    ImageBuffer tempImage = new ImageBuffer(sourceImage.Width / 2, sourceImage.Height / 2);
                                     tempImage.NewGraphics2D().Render(sourceImage, 0, 0, 0, .5, .5);
                                     int mipLevel = 1;
                                     while (sourceImage.Width > 1 && sourceImage.Height > 1)
@@ -203,7 +203,7 @@ namespace MatterHackers.RenderOpenGl
                                             PixelFormat.Bgra, PixelType.UnsignedByte, tempImage.GetBuffer());
 
                                         sourceImage = new ImageBuffer(tempImage);
-                                        tempImage = new ImageBuffer(Math.Max(1, sourceImage.Width / 2), Math.Max(1, sourceImage.Height / 2), 32, new BlenderBGRA());
+                                        tempImage = new ImageBuffer(Math.Max(1, sourceImage.Width / 2), Math.Max(1, sourceImage.Height / 2));
                                         tempImage.NewGraphics2D().Render(sourceImage, 0, 0,
                                             0,
                                             (double)tempImage.Width / (double)sourceImage.Width,
@@ -385,7 +385,7 @@ namespace MatterHackers.RenderOpenGl
 					case 32:
 						{
 							ImageBuffer sourceImage = new ImageBuffer(bufferedImage);
-							ImageBuffer tempImage = new ImageBuffer(sourceImage.Width / 2, sourceImage.Height / 2, 32, new BlenderBGRA());
+							ImageBuffer tempImage = new ImageBuffer(sourceImage.Width / 2, sourceImage.Height / 2);
 							tempImage.NewGraphics2D().Render(sourceImage, 0, 0, 0, .5, .5);
 							int mipLevel = 1;
 							while (sourceImage.Width > 1 && sourceImage.Height > 1)
@@ -398,7 +398,7 @@ namespace MatterHackers.RenderOpenGl
 									0, PixelFormat.Bgra, PixelType.UnsignedByte, tempImage.GetBuffer());
 #endif
 								sourceImage = new ImageBuffer(tempImage);
-								tempImage = new ImageBuffer(Math.Max(1, sourceImage.Width / 2), Math.Max(1, sourceImage.Height / 2), 32, new BlenderBGRA());
+								tempImage = new ImageBuffer(Math.Max(1, sourceImage.Width / 2), Math.Max(1, sourceImage.Height / 2));
 								tempImage.NewGraphics2D().Render(sourceImage, 0, 0,
 									0,
 									(double)tempImage.Width / (double)sourceImage.Width,

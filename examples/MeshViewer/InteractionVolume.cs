@@ -70,7 +70,7 @@ namespace MatterHackers.MeshVisualizer
 				unitPrinter.Origin = new Vector2(bounds.Right + unitPrinterOffset, margin.Bottom);
 				RectangleDouble unitPrinterBounds = unitPrinter.LocalBounds;
 
-				measureDisplayImage = new ImageBuffer((int)(bounds.Width + margin.Width + unitPrinterBounds.Width + unitPrinterOffset), (int)(bounds.Height + margin.Height), 32, new BlenderBGRA());
+				measureDisplayImage = new ImageBuffer((int)(bounds.Width + margin.Width + unitPrinterBounds.Width + unitPrinterOffset), (int)(bounds.Height + margin.Height));
 				// make sure the texture has mipmaps (so it can reduce well)
 				ImageGlPlugin glPlugin = ImageGlPlugin.GetImageGlPlugin(measureDisplayImage, true);
 				Graphics2D widthGraphics = measureDisplayImage.NewGraphics2D();

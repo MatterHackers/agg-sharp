@@ -89,7 +89,7 @@ namespace MatterHackers.GuiAutomation
 
 			//bmpScreenCapture.Save("bitmapsave.png");
 
-			screenCapture = new ImageBuffer(bmpScreenCapture.Width, bmpScreenCapture.Height, 32, new BlenderBGRA());
+			screenCapture = new ImageBuffer(bmpScreenCapture.Width, bmpScreenCapture.Height);
 			BitmapData bitmapData = bmpScreenCapture.LockBits(new Rectangle(0, 0, bmpScreenCapture.Width, bmpScreenCapture.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bmpScreenCapture.PixelFormat);
 
 			int offset;

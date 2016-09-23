@@ -103,7 +103,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// make sure that a back buffer is always trying to draw 1:1 pixels to the buffer above
 			{
-				ImageBuffer drawStringOffsetImage = new ImageBuffer(100, 20, 32, new BlenderBGRA());
+				ImageBuffer drawStringOffsetImage = new ImageBuffer(100, 20);
 				{
 					Graphics2D drawStringGraphics = drawStringOffsetImage.NewGraphics2D();
 					drawStringGraphics.Clear(RGBA_Bytes.White);
@@ -129,7 +129,7 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 
 			{
-				ImageBuffer drawStringOffsetImage = new ImageBuffer(100, 20, 32, new BlenderBGRA());
+				ImageBuffer drawStringOffsetImage = new ImageBuffer(100, 20);
 				{
 					Graphics2D drawStringGraphics = drawStringOffsetImage.NewGraphics2D();
 					drawStringGraphics.Clear(RGBA_Bytes.White);

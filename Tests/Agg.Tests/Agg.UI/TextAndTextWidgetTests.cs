@@ -79,7 +79,7 @@ namespace MatterHackers.Agg.UI.Tests
 				rectangleWidget.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
 				rectangleWidget.OnDraw(rectangleWidget.BackBuffer.NewGraphics2D());
 
-				ImageBuffer textOnly = new ImageBuffer(75, 20, 32, new BlenderBGRA());
+				ImageBuffer textOnly = new ImageBuffer(75, 20);
 				textOnly.NewGraphics2D().Clear(RGBA_Bytes.White);
 
 				textOnly.NewGraphics2D().DrawString("test Item", 1, 1);
@@ -103,7 +103,7 @@ namespace MatterHackers.Agg.UI.Tests
 				rectangleWidget.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
 				rectangleWidget.OnDraw(rectangleWidget.BackBuffer.NewGraphics2D());
 
-				ImageBuffer textOnly = new ImageBuffer(75, 20, 32, new BlenderBGRA());
+				ImageBuffer textOnly = new ImageBuffer(75, 20);
 				textOnly.NewGraphics2D().Clear(RGBA_Bytes.White);
 
 				TypeFacePrinter stringPrinter = new TypeFacePrinter("test Item", 12);

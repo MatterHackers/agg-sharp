@@ -209,7 +209,7 @@ namespace MatterHackers.Agg.UI
 						//widowsBitmap = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
 						//widowsBitmap = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 						//32bppPArgb
-						backingImageBufferByte = new ImageBuffer(width, height, 32, new BlenderBGRA());
+						backingImageBufferByte = new ImageBuffer(width, height);
 						break;
 
 					case 128:

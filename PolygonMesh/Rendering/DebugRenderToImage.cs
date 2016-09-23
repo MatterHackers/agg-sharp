@@ -34,7 +34,7 @@ namespace MatterHackers.PolygonMesh
 		public DebugRenderToImage(Mesh meshToRender)
 		{
 			this.meshToRender = meshToRender;
-			image = new ImageBuffer(xResolution, yResolution, 32, new BlenderBGRA());
+			image = new ImageBuffer(xResolution, yResolution);
 			graphics = image.NewGraphics2D();
 
 			// assume project on y for now
