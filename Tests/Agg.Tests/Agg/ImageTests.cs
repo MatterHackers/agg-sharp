@@ -60,7 +60,7 @@ namespace MatterHackers.Agg.Image
 				Assert.IsTrue(ClearAndCheckImage(clearSurface24, RGBA_Bytes.White), "Clear 24 to white");
 				Assert.IsTrue(ClearAndCheckImage(clearSurface24, RGBA_Bytes.Black), "Clear 24 to black");
 
-				ImageBuffer clearSurface32 = new ImageBuffer(50, 50, 32, new BlenderBGRA());
+				ImageBuffer clearSurface32 = new ImageBuffer(50, 50);
 				Assert.IsTrue(ClearAndCheckImage(clearSurface32, RGBA_Bytes.White), "Clear 32 to white");
 				Assert.IsTrue(ClearAndCheckImage(clearSurface32, RGBA_Bytes.Black), "Clear 32 to black");
 				Assert.IsTrue(ClearAndCheckImage(clearSurface32, new RGBA_Bytes(0, 0, 0, 0)), "Clear 32 to nothing");
@@ -89,13 +89,13 @@ namespace MatterHackers.Agg.Image
 
 			// look for 32 bit
 			{
-				ImageBuffer imageToSearch = new ImageBuffer(150, 150, 32, new BlenderBGRA());
+				ImageBuffer imageToSearch = new ImageBuffer(150, 150);
 				imageToSearch.NewGraphics2D().Circle(new Vector2(100, 100), 3, RGBA_Bytes.Red);
-				ImageBuffer circleToFind = new ImageBuffer(10, 10, 32, new BlenderBGRA());
+				ImageBuffer circleToFind = new ImageBuffer(10, 10);
 				circleToFind.NewGraphics2D().Circle(new Vector2(5, 5), 3, RGBA_Bytes.Red);
 				Assert.IsTrue(imageToSearch.Contains(circleToFind), "We should be able to find the circle.");
 
-				ImageBuffer squareToFind = new ImageBuffer(10, 10, 32, new BlenderBGRA());
+				ImageBuffer squareToFind = new ImageBuffer(10, 10);
 				squareToFind.NewGraphics2D().FillRectangle(4, 4, 8, 8, RGBA_Bytes.Red);
 				Assert.IsTrue(!imageToSearch.Contains(squareToFind), "We should be not find a square.");
 			}

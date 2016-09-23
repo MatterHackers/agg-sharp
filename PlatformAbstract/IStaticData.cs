@@ -74,7 +74,7 @@ namespace MatterHackers.Agg.PlatformAbstract
 					// scale the loaded image to the size of the target image
 					byte[] raw = e.Result;
 					Stream stream = new MemoryStream(raw);
-					ImageBuffer unScaledImage = new ImageBuffer(10, 10, 32, new BlenderBGRA());
+					ImageBuffer unScaledImage = new ImageBuffer(10, 10);
 					if (!sizeToDownloadedImage)
 					{
 						StaticData.Instance.LoadImageData(stream, unScaledImage);

@@ -72,7 +72,7 @@ namespace MatterHackers.Agg.UI.Tests
 				containerListBox.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
 				containerListBox.OnDraw(containerListBox.BackBuffer.NewGraphics2D());
 
-				ImageBuffer textImage = new ImageBuffer(80, 16, 32, new BlenderBGRA());
+				ImageBuffer textImage = new ImageBuffer(80, 16);
 				textImage.NewGraphics2D().Clear(RGBA_Bytes.White);
 				textImage.NewGraphics2D().DrawString("test Item", 1, 1);
 
@@ -114,7 +114,7 @@ namespace MatterHackers.Agg.UI.Tests
 				container.AddChild(leftToRightLayout);
 				container.OnDraw(container.NewGraphics2D());
 
-				ImageBuffer textImage = new ImageBuffer(80, 16, 32, new BlenderBGRA());
+				ImageBuffer textImage = new ImageBuffer(80, 16);
 				textImage.NewGraphics2D().Clear(RGBA_Bytes.White);
 				textImage.NewGraphics2D().DrawString("hand0.stl", 1, 1);
 

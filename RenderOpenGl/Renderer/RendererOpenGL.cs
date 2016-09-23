@@ -112,7 +112,7 @@ namespace MatterHackers.RenderOpenGl
 		{
 			if (AATextureImage == null)
 			{
-				AATextureImage = new ImageBuffer(1024, 4, 32, new BlenderBGRA());
+				AATextureImage = new ImageBuffer(1024, 4);
 				byte[] hardwarePixelBuffer = AATextureImage.GetBuffer();
 				for (int y = 0; y < 4; y++)
 				{

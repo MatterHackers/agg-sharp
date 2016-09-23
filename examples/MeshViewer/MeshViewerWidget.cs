@@ -628,7 +628,7 @@ namespace MatterHackers.MeshVisualizer
 		private void CreateCircularBedGridImage(int linesInX, int linesInY, int increment = 1)
 		{
 			Vector2 bedImageCentimeters = new Vector2(linesInX, linesInY);
-			BedImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
+			BedImage = new ImageBuffer(1024, 1024);
 			Graphics2D graphics2D = BedImage.NewGraphics2D();
 			graphics2D.Clear(bedBaseColor);
 			{
@@ -660,7 +660,7 @@ namespace MatterHackers.MeshVisualizer
 		{
 			lock (lastCreatedBedImage)
 			{
-				BedImage = new ImageBuffer(1024, 1024, 32, new BlenderBGRA());
+				BedImage = new ImageBuffer(1024, 1024);
 				Graphics2D graphics2D = BedImage.NewGraphics2D();
 				graphics2D.Clear(bedBaseColor);
 				{

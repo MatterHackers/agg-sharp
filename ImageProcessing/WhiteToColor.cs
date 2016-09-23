@@ -84,7 +84,7 @@ namespace MatterHackers.ImageProcessing
 
 		public static ImageBuffer CreateWhiteToColor(ImageBuffer normalImage, RGBA_Bytes color)
 		{
-			ImageBuffer destImage = new ImageBuffer(normalImage.Width, normalImage.Height, 32, new BlenderBGRA());
+			ImageBuffer destImage = new ImageBuffer(normalImage.Width, normalImage.Height);
 
 			DoWhiteToColor(destImage, normalImage, color);
 
@@ -141,7 +141,7 @@ namespace MatterHackers.ImageProcessing
 
 		public static ImageBuffer CreateSetToColor(ImageBuffer normalImage, RGBA_Bytes color)
 		{
-			ImageBuffer destImage = new ImageBuffer(normalImage.Width, normalImage.Height, 32, new BlenderBGRA());
+			ImageBuffer destImage = new ImageBuffer(normalImage.Width, normalImage.Height);
 
 			DoSetToColor(destImage, normalImage, color);
 

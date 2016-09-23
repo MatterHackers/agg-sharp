@@ -10,7 +10,7 @@ namespace MatterHackers.Agg.Font
 		[Test]
 		public void CanPrintTests()
 		{
-			ImageBuffer testImage = new ImageBuffer(300, 300, 32, new BlenderBGRA());
+			ImageBuffer testImage = new ImageBuffer(300, 300);
 			testImage.NewGraphics2D().DrawString("\r", 30, 30);
 			Assert.IsTrue(true, "We can print only a \\r");
 		}
