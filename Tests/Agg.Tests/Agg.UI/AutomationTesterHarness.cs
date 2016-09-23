@@ -44,11 +44,17 @@ namespace MatterHackers.Agg.UI.Tests
 	{
 		internal class TestResult
 		{
-			internal bool result;
-			internal string description;
+			internal bool Passed { get; set; }
+			internal string Description { get; set; }
+
+			public override string ToString()
+			{
+				string status = Passed ? "Passed" : "Failed";
+				return $"Test {status}: {Description}";
+			}
 		}
 
-		List<TestResult> results = new List<TestResult>();
+		private List<TestResult> results = new List<TestResult>();
 
 		public static AutomationTesterHarness ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, Action<AutomationTesterHarness> functionContainingTests, double secondsToTestFailure)
 		{
@@ -88,19 +94,17 @@ namespace MatterHackers.Agg.UI.Tests
 			initialSystemWindow.ShowAsSystemWindow();
 		}
 
-		public void AddTestResult(bool pass, string resultDescription = "")
+		public void AddTestResult(bool passed, string resultDescription = "")
 		{
-			results.Add(new TestResult()
+			var testResult = new TestResult()
 			{
-				result = pass,
-				description = resultDescription,
-			});
+				Passed = passed,
+				Description = resultDescription,
+			};
 
-			if (!pass)
-			{
-				// let us look at this at the time durring test run under the debugger
-				GuiWidget.BreakInDebugger(resultDescription);
-			}
+			results.Add(testResult);
+
+			Console.WriteLine(" - " + testResult.ToString());
 		}
 
 		public static void CloseAfterTime(SystemWindow windowToClose, double timeInSeconds)
@@ -111,20 +115,8 @@ namespace MatterHackers.Agg.UI.Tests
 
 		public bool AllTestsPassed(int expectedCount)
 		{
-			if( expectedCount != results.Count)
-			{
-				return false;
-			}
-
-			foreach (TestResult testResult in results)
-			{
-				if (!testResult.result)
-				{
-					return false;
-				}
-			}
-
-			return true;
+			return expectedCount == results.Count 
+				&& results.TrueForAll(testResult => testResult.Passed);
 		}
 	}
 }

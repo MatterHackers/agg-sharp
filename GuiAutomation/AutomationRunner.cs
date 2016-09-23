@@ -194,18 +194,18 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public void WaitUntil(Func<bool> checkConditionSatisfied, double seconds, int interval = 200)
+		public void WaitUntil(Func<bool> checkConditionSatisfied, double maxSeconds, int checkInterval = 200)
 		{
 			Stopwatch timer = Stopwatch.StartNew();
 
-			while (timer.Elapsed.Seconds < seconds)
+			while (timer.Elapsed.Seconds < maxSeconds)
 			{
 				if (checkConditionSatisfied())
 				{
 					break;
 				}
 
-				Thread.Sleep(interval);
+				Thread.Sleep(checkInterval);
 			}
 		}
 
@@ -841,7 +841,7 @@ namespace MatterHackers.GuiAutomation
 		/// Wait up to secondsToWait for the named widget to exist and be visible.
 		/// </summary>
 		/// <param name="widgetName"></param>
-		public bool WaitForName(string widgetName, double secondsToWait) // TODO: should have a search region
+		public bool WaitForName(string widgetName, double secondsToWait = 1) // TODO: should have a search region
 		{
 			Stopwatch timeWaited = Stopwatch.StartNew();
 			while (!NameExists(widgetName)
