@@ -27,42 +27,25 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+
 #if !__ANDROID__
 using MatterHackers.GuiAutomation;
 #endif
-using NUnit.Framework;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 
 namespace MatterHackers.Agg.UI.Tests
 {
 	public class AutomationTesterHarness
 	{
-		internal class TestResult
-		{
-			internal bool Passed { get; set; }
-			internal string Description { get; set; }
-
-			public override string ToString()
-			{
-				string status = Passed ? "Passed" : "Failed";
-				return $"Test {status}: {Description}";
-			}
-		}
-
 		private List<TestResult> results = new List<TestResult>();
 
 		public static AutomationTesterHarness ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, Action<AutomationTesterHarness> functionContainingTests, double secondsToTestFailure)
 		{
-			StackTrace st = new StackTrace(false);
-			Console.WriteLine("\r\nRunning automation test: " + st.GetFrames().Skip(1).First().GetMethod().Name);
-
-			AutomationTesterHarness testHarness = new AutomationTesterHarness(initialSystemWindow, functionContainingTests, secondsToTestFailure);
-			return testHarness;
+			return new AutomationTesterHarness(initialSystemWindow, functionContainingTests, secondsToTestFailure);
 		}
 
 		private AutomationTesterHarness(SystemWindow initialSystemWindow, Action<AutomationTesterHarness> functionContainingTests, double secondsToTestFailure)
@@ -117,6 +100,18 @@ namespace MatterHackers.Agg.UI.Tests
 		{
 			return expectedCount == results.Count 
 				&& results.TrueForAll(testResult => testResult.Passed);
+		}
+
+		internal class TestResult
+		{
+			internal bool Passed { get; set; }
+			internal string Description { get; set; }
+
+			public override string ToString()
+			{
+				string status = Passed ? "Passed" : "Failed";
+				return $"Test {status}: {Description}";
+			}
 		}
 	}
 }
