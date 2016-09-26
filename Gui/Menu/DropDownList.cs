@@ -33,12 +33,23 @@ using MatterHackers.VectorMath;
 using System;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Text;
 
 namespace MatterHackers.Agg.UI
 {
 	public class DropDownList : Menu
 	{
 		public event EventHandler SelectionChanged;
+
+		/// <summary>
+		/// Filter text captured while the droplist is open. Cleared when the menu is closed
+		/// </summary>
+		private StringBuilder listFilterText = null;
+
+		/// <summary>
+		/// The currently highlighted item matching the listFilterText
+		/// </summary>
+		private MenuItem highlightedItem;
 
 		protected TextWidget mainControlText;
 
@@ -96,13 +107,13 @@ namespace MatterHackers.Agg.UI
 
 		protected override void ShowMenu()
 		{
-			if(this.Parent == null)
+			if (this.Parent == null)
 			{
 				return;
 			}
 			base.ShowMenu();
 
-			if(selectedIndex >= MenuItems.Count-1)
+			if (selectedIndex >= MenuItems.Count - 1)
 			{
 				selectedIndex = MenuItems.Count - 1;
 			}
@@ -115,11 +126,92 @@ namespace MatterHackers.Agg.UI
 				DropDownContainer.ScrollIntoView(selectedMenuItem);
 
 				// Highlight the selected item
-				var statesView = selectedMenuItem.Children<MenuItemStatesView>().FirstOrDefault();
+				var statesView = selectedMenuItem.Children<MenuItemColorStatesView>().FirstOrDefault();
 				if (statesView != null)
 				{
 					statesView.Highlighted = true;
 				}
+			}
+
+			listFilterText = new StringBuilder();
+
+			DropDownContainer.KeyPressed += (s, e) =>
+			{
+				listFilterText.Append(e.KeyChar);
+				ApplyFilter();
+			};
+
+			DropDownContainer.KeyDown += (s, keyEvent) =>
+			{
+				switch (keyEvent.KeyCode)
+				{
+					case Keys.Escape:
+						listFilterText = new StringBuilder();
+						DropDownContainer.CloseMenu();
+						break;
+
+					case Keys.Enter:
+
+						if (highlightedItem != null)
+						{
+							SelectedIndex = MenuItems.IndexOf(highlightedItem);
+							DropDownContainer.CloseMenu();
+							listFilterText = null;
+						}
+
+						break;
+
+					case Keys.Back:
+						if (listFilterText != null && listFilterText.Length > 0)
+						{
+							listFilterText.Length -= 1;
+						}
+
+						keyEvent.Handled = true;
+						keyEvent.SuppressKeyPress = true;
+
+						ApplyFilter();
+
+						break;
+				}
+			};
+
+			DropDownContainer.Closed += (s, e) => mainControlText.Text = selectedIndex == -1 ? this.noSelectionString : MenuItems[SelectedIndex].Text;
+		}
+
+		private void ApplyFilter()
+		{
+			string text = listFilterText.ToString();
+
+			mainControlText.Text = text;
+
+			MenuItemColorStatesView statesView;
+
+			// Remove existing highlight
+			if (highlightedItem != null)
+			{
+				statesView = highlightedItem.Children<MenuItemColorStatesView>().FirstOrDefault();
+				if (statesView != null)
+				{
+					statesView.Highlighted = false;
+				}
+			}
+
+			// Find menu items starting with the given filter text
+			var firstMatchedItem = MenuItems.Where(m => m.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) == 0).FirstOrDefault();
+			if (firstMatchedItem != null)
+			{
+				// Highlight our new match
+				highlightedItem = firstMatchedItem;
+				statesView = highlightedItem.Children<MenuItemColorStatesView>().FirstOrDefault();
+				if (statesView != null)
+				{
+					statesView.Highlighted = true;
+					statesView.Invalidate();
+				}
+
+				// and scroll into view
+				DropDownContainer.ScrollIntoView(highlightedItem);
 			}
 		}
 
