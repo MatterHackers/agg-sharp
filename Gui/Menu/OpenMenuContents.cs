@@ -237,7 +237,7 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseUp(mouseEvent);
 		}
 
-		private void CloseMenu()
+		internal void CloseMenu()
 		{
 			if (this.Parent != null)
 			{
