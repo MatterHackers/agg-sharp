@@ -81,23 +81,4 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 	}
-
-	public class QuickTimer : IDisposable
-	{
-		Stopwatch quickTimerTime = Stopwatch.StartNew();
-		string name;
-		double startTime;
-
-        public QuickTimer(string name)
-		{
-			this.name = name;
-			startTime = quickTimerTime.Elapsed.TotalMilliseconds;
-		}
-
-		public void Dispose()
-		{
-			double totalTime = quickTimerTime.Elapsed.TotalMilliseconds - startTime;
-			Debug.WriteLine(name + ": {0:0.0}ms".FormatWith(totalTime));
-		}
-	}
 }
