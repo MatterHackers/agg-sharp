@@ -448,6 +448,22 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public override void OnKeyUp(KeyEventArgs keyEvent)
+		{
+			if (keyEvent.KeyCode == Keys.Down)
+			{
+				ShowMenu();
+			}
+
+			base.OnKeyUp(keyEvent);
+		}
+
+		public override void OnFocusChanged(EventArgs e)
+		{
+			this.Invalidate();
+			base.OnFocusChanged(e);
+		}
+
 		public bool UseLeftIcons { get; private set; } = false;
 
 		public MenuItem AddItem(string itemName, string itemValue = null, double pointSize = 12, EventHandler clickAction = null)
