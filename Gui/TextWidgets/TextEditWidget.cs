@@ -281,14 +281,11 @@ namespace MatterHackers.Agg.UI
 
 		private void OnHideSoftwareKeyboard()
 		{
-			if (HideSoftwareKeyboard != null)
+			UiThread.RunOnIdle(() =>
 			{
-				UiThread.RunOnIdle(() => 
-				{
-					HideSoftwareKeyboard(this, null);
-					KeyboardCollapsed(this, null);
-				});
-			}
+				HideSoftwareKeyboard?.Invoke(this, null);
+				KeyboardCollapsed?.Invoke(this, null);
+			});
 		}
 
 		public static void OnKeyboardCollapsed()
