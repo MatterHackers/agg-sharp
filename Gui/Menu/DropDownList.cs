@@ -51,6 +51,11 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		private MenuItem highlightedItem;
 
+		/// <summary>
+		/// The MenuItems Index of the highlighted item
+		/// </summary>
+		private int highLightedIndex = 0;
+
 		protected TextWidget mainControlText;
 
 		public RGBA_Bytes NormalColor { get; set; }
@@ -118,6 +123,7 @@ namespace MatterHackers.Agg.UI
 				selectedIndex = MenuItems.Count - 1;
 			}
 
+			// Show and highlight the previously selected or the first item
 			if (selectedIndex >= 0)
 			{
 				var selectedMenuItem = MenuItems[selectedIndex];
@@ -126,11 +132,13 @@ namespace MatterHackers.Agg.UI
 				DropDownContainer.ScrollIntoView(selectedMenuItem);
 
 				// Highlight the selected item
-				var statesView = selectedMenuItem.Children<MenuItemColorStatesView>().FirstOrDefault();
-				if (statesView != null)
-				{
-					statesView.Highlighted = true;
-				}
+				highlightedItem = selectedMenuItem;
+				highlightedItem.ModifyStatesView(showHighlight: true);
+			}
+			else if (MenuItems.Count > 0)
+			{
+				highlightedItem = MenuItems[0];
+				highlightedItem?.ModifyStatesView(showHighlight: true);
 			}
 
 			listFilterText = new StringBuilder();
@@ -139,6 +147,41 @@ namespace MatterHackers.Agg.UI
 			{
 				listFilterText.Append(e.KeyChar);
 				ApplyFilter();
+			};
+
+			DropDownContainer.KeyUp += (s, e) =>
+			{
+				switch (e.KeyCode)
+				{
+					case Keys.Up:
+						if (highLightedIndex > 0)
+						{
+							highLightedIndex--;
+						}
+
+						break;
+
+					case Keys.Down:
+						if (highLightedIndex < this.MenuItems.Count - 1)
+						{
+							highLightedIndex++;
+						}
+
+						break;
+				}
+
+				// Remove existing
+				highlightedItem?.ModifyStatesView(showHighlight: false);
+
+				highlightedItem = this.MenuItems[highLightedIndex];
+				highlightedItem?.ModifyStatesView(showHighlight: true);
+
+				// if (!highlightedItem.Visible) // only scroll if clipped
+				{
+					DropDownContainer.ScrollIntoView(highlightedItem);
+				}
+
+				this.Invalidate();
 			};
 
 			DropDownContainer.KeyDown += (s, keyEvent) =>
@@ -176,7 +219,11 @@ namespace MatterHackers.Agg.UI
 				}
 			};
 
-			DropDownContainer.Closed += (s, e) => mainControlText.Text = selectedIndex == -1 ? this.noSelectionString : MenuItems[SelectedIndex].Text;
+			DropDownContainer.Closed += (s, e) =>
+			{
+				mainControlText.Text = selectedIndex == -1 ? this.noSelectionString : MenuItems[SelectedIndex].Text;
+				this.Focus();
+			};
 		}
 
 		private void ApplyFilter()
@@ -185,17 +232,8 @@ namespace MatterHackers.Agg.UI
 
 			mainControlText.Text = text;
 
-			MenuItemColorStatesView statesView;
-
 			// Remove existing highlight
-			if (highlightedItem != null)
-			{
-				statesView = highlightedItem.Children<MenuItemColorStatesView>().FirstOrDefault();
-				if (statesView != null)
-				{
-					statesView.Highlighted = false;
-				}
-			}
+			highlightedItem?.ModifyStatesView(showHighlight: false);
 
 			// Find menu items starting with the given filter text
 			var firstMatchedItem = MenuItems.Where(m => m.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) == 0).FirstOrDefault();
@@ -203,12 +241,8 @@ namespace MatterHackers.Agg.UI
 			{
 				// Highlight our new match
 				highlightedItem = firstMatchedItem;
-				statesView = highlightedItem.Children<MenuItemColorStatesView>().FirstOrDefault();
-				if (statesView != null)
-				{
-					statesView.Highlighted = true;
-					statesView.Invalidate();
-				}
+				highLightedIndex = MenuItems.IndexOf(highlightedItem);
+				highlightedItem.ModifyStatesView(showHighlight: true);
 
 				// and scroll into view
 				DropDownContainer.ScrollIntoView(highlightedItem);
@@ -414,6 +448,22 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public override void OnKeyUp(KeyEventArgs keyEvent)
+		{
+			if (keyEvent.KeyCode == Keys.Down)
+			{
+				ShowMenu();
+			}
+
+			base.OnKeyUp(keyEvent);
+		}
+
+		public override void OnFocusChanged(EventArgs e)
+		{
+			this.Invalidate();
+			base.OnFocusChanged(e);
+		}
+
 		public bool UseLeftIcons { get; private set; } = false;
 
 		public MenuItem AddItem(string itemName, string itemValue = null, double pointSize = 12, EventHandler clickAction = null)
@@ -520,6 +570,19 @@ namespace MatterHackers.Agg.UI
 			rowContainer.AddChild(textWidget);
 
 			return rowContainer;
+		}
+	}
+
+	public static class MenuItemExtensions
+	{
+		public static void ModifyStatesView(this MenuItem menuItem, bool showHighlight)
+		{
+			var statesView = menuItem.Children<MenuItemColorStatesView>().FirstOrDefault();
+			if (statesView != null)
+			{
+				statesView.Highlighted = showHighlight;
+				statesView.Invalidate();
+			}
 		}
 	}
 }
