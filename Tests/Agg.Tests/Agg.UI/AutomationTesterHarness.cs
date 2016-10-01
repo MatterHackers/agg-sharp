@@ -87,7 +87,10 @@ namespace MatterHackers.Agg.UI.Tests
 
 			results.Add(testResult);
 
-			Console.WriteLine(" - " + testResult.ToString());
+			Console.WriteLine(
+				" {0} {1}", 
+				passed ? "-" : "!",
+				testResult.ToString());
 		}
 
 		public static void CloseAfterTime(SystemWindow windowToClose, double timeInSeconds)
