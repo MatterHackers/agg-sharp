@@ -80,7 +80,7 @@ namespace MatterHackers.Agg.UI
 		{
 			CheckBox checkBox = (CheckBox)Parent;
 
-			double bottom = Height / 1.8 - CheckBoxWidth;
+			double bottom = LocalBounds.Bottom + (Height / 2 - CheckBoxWidth / 2);
 
 			// the check
 			if (checkBox.Checked)
