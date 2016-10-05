@@ -19,7 +19,9 @@
 //#define USE_UNSAFE // no real code for this yet
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -88,6 +90,26 @@ namespace MatterHackers.Agg
 			startIndex = startIndexNew;
 			return newNumber;
 #endif
+		}
+
+		public static string GetNonCollidingName(IEnumerable<string> listToCheck, string desiredName)
+		{
+			if (!listToCheck.Contains(desiredName))
+			{
+				return desiredName;
+			}
+			else
+			{
+				int nextNumberToTry = 1;
+				string candidateName;
+
+				do
+				{
+					candidateName = string.Format("{0} ({1})", desiredName, nextNumberToTry++);
+				} while (listToCheck.Contains(candidateName));
+
+				return candidateName;
+			}
 		}
 
 		private static double ParseDoubleFast(String source, ref int startIndex)
