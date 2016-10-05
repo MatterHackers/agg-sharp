@@ -1120,7 +1120,7 @@ namespace MatterHackers.Agg.UI
 			get { return (mouseCapturedState == MouseCapturedState.ChildHasMouseCaptured); }
 		}
 
-		public bool Visible
+		public virtual bool Visible
 		{
 			get
 			{

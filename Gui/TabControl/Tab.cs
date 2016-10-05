@@ -86,7 +86,6 @@ namespace MatterHackers.Agg.UI
 	{
 		private RGBA_Bytes backgroundColor = new RGBA_Bytes(230, 230, 230);
 
-		private TabPage tabPageControledByTab;
 		protected GuiWidget normalWidget;
 		protected GuiWidget hoverWidget;
 		protected GuiWidget selectedWidget;
@@ -94,7 +93,7 @@ namespace MatterHackers.Agg.UI
 		public event EventHandler Selected;
 
 		public Tab(string tabName, GuiWidget normalWidget, GuiWidget hoverWidget, GuiWidget pressedWidget,
-			TabPage tabPageControledByTab)
+			TabPage tabPage)
 		{
 			base.Name = tabName;
 			this.normalWidget = normalWidget;
@@ -106,7 +105,7 @@ namespace MatterHackers.Agg.UI
 			AddChild(pressedWidget);
 			pressedWidget.Visible = false;
 			Padding = new BorderDouble(5, 3, 20, 3);
-			this.tabPageControledByTab = tabPageControledByTab;
+			this.TabPage = tabPage;
 			SetBoundsToEncloseChildren();
 		}
 
@@ -118,10 +117,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnSelected(EventArgs e)
 		{
-			if (Selected != null)
-			{
-				Selected(this, e);
-			}
+			Selected?.Invoke(this, e);
 		}
 
 		public void SelectionChanged(object sender, EventArgs e)
@@ -150,30 +146,6 @@ namespace MatterHackers.Agg.UI
 			get { return (TabBar)Parent; }
 		}
 
-		public TabPage TabPage
-		{
-			get { return tabPageControledByTab; }
-		}
-
-		public override string Name
-		{
-			set
-			{
-				// You should not change this it is required for the interface to this tab.
-				GuiWidget.BreakInDebugger();
-			}
-		}
-
-		public override string Text
-		{
-			get
-			{
-				throw new Exception("You are probably looking for the Name not the text of a tab.");
-			}
-			set
-			{
-				throw new Exception("You are probably looking for the Name not the text of a tab.");
-			}
-		}
+		public TabPage TabPage { get; }
 	}
 }

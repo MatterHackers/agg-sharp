@@ -655,7 +655,7 @@ namespace MatterHackers.Agg
 		public byte red;
 		public byte alpha;
 
-		public static readonly RGBA_Bytes Transparent = new RGBA_Bytes(255, 255, 255, 0);
+		public static readonly RGBA_Bytes Transparent = new RGBA_Bytes(0, 0, 0, 0);
 		public static readonly RGBA_Bytes White = new RGBA_Bytes(255, 255, 255, 255);
 		public static readonly RGBA_Bytes LightGray = new RGBA_Bytes(225, 225, 225, 255);
 		public static readonly RGBA_Bytes Gray = new RGBA_Bytes(125, 125, 125, 235);

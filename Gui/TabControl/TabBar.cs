@@ -43,10 +43,10 @@ namespace MatterHackers.Agg.UI
 		public TabBar(FlowDirection direction, GuiWidget tabPageArea)
 			: base(direction)
 		{
-			this.TabPageArea = tabPageArea;
+			this.TabPageContainer = tabPageArea;
 		}
 
-		public GuiWidget TabPageArea { get; }
+		public GuiWidget TabPageContainer { get; }
 
 		public override void AddChild(GuiWidget child, int indexInChildrenList = -1)
 		{
@@ -162,16 +162,10 @@ namespace MatterHackers.Agg.UI
 		{
 			if (currentVisibleTab != tabToSwitchTo)
 			{
-				foreach (GuiWidget tabPage in TabPageArea.Children)
+				// Hide all but the current tab
+				foreach (GuiWidget tabPage in TabPageContainer.Children)
 				{
-					if (tabToSwitchTo.TabPage != tabPage)
-					{
-						tabPage.Visible = false;
-					}
-					else
-					{
-						tabPage.Visible = true;
-					}
+					tabPage.Visible = tabToSwitchTo.TabPage == tabPage;
 				}
 
 				currentVisibleTab = tabToSwitchTo;
