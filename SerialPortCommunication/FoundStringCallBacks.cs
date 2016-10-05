@@ -102,10 +102,15 @@ namespace MatterHackers.SerialPortCommunication
 	{
 		public void CheckForKeys(EventArgs e)
 		{
-			foreach (KeyValuePair<string, FoundStringEventHandler> pair in this.dictionaryOfCallbacks)
+			FoundStringEventArgs foundString = e as FoundStringEventArgs;
+			if(foundString == null)
 			{
-				FoundStringEventArgs foundString = e as FoundStringEventArgs;
-				if (foundString != null && foundString.LineToCheck.StartsWith(pair.Key))
+				return;
+			}
+
+			foreach (var pair in this.dictionaryOfCallbacks)
+			{
+				if (foundString.LineToCheck.StartsWith(pair.Key))
 				{
 					foundString.CallbackWasCalled = true;
 					pair.Value(this, e);
@@ -118,10 +123,15 @@ namespace MatterHackers.SerialPortCommunication
 	{
 		public void CheckForKeys(EventArgs e)
 		{
-			foreach (KeyValuePair<string, FoundStringEventHandler> pair in this.dictionaryOfCallbacks)
+			FoundStringEventArgs foundString = e as FoundStringEventArgs;
+			if (foundString == null)
 			{
-				FoundStringEventArgs foundString = e as FoundStringEventArgs;
-				if (foundString != null && foundString.LineToCheck.Contains(pair.Key))
+				return;
+			}
+
+			foreach (var pair in this.dictionaryOfCallbacks)
+			{
+				if (foundString.LineToCheck.Contains(pair.Key))
 				{
 					foundString.CallbackWasCalled = true;
 					pair.Value(this, e);
