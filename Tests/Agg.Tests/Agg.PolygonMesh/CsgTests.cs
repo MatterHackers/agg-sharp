@@ -60,7 +60,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			Assert.IsTrue(intersect_aabb.XSize == 40 && intersect_aabb.YSize == 40 && intersect_aabb.ZSize == 40);
 		}
 
-		[Test, Ignore("Crashes NUnit on build servers with an unrecoverable StackOverflow error")]
+		[Test, Category("FixNeeded" /* Crashes NUnit on build servers with an unrecoverable StackOverflow error */)]
 		public void SubtractIcosahedronsWorks()
 		{
 			Vector3 centering = new Vector3(100, 100, 20);

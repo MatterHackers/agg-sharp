@@ -150,7 +150,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(container.TopLeftOffset.y == 0);
 		}
 
-		[Test, Ignore("Not implemented or invalid")]
+		[Test, Category("FixNeeded" /* Not implemented or invalid */)]
 		public void FlowLayoutAndListBoxShouldLookTheSameWhenNoScrollBar()
 		{
 			GuiWidget control = new GuiWidget(200, 300);
