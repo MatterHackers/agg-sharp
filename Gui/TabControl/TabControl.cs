@@ -36,7 +36,7 @@ namespace MatterHackers.Agg.UI
 	// TODO: break this up into a model-controller and a view. LBB
 	public class TabControl : FlowLayoutWidget
 	{
-		public Dictionary<string, TabPage> TabPages = new Dictionary<string, TabPage>();
+		private Dictionary<string, TabPage> tabPages = new Dictionary<string, TabPage>();
 
 		private StyledTypeFace typeFaceStyle = new StyledTypeFace(LiberationSansFont.Instance, 12);
 		private TabBar tabBar;
@@ -74,7 +74,7 @@ namespace MatterHackers.Agg.UI
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			// If no selection exists by the first draw, select index 0 if applicable
-			if (SelectedTabIndex == -1 && TabPages.Count > 0)
+			if (SelectedTabIndex == -1 && tabPages.Count > 0)
 			{
 				SelectedTabIndex = 0;
 			}
@@ -157,7 +157,7 @@ namespace MatterHackers.Agg.UI
 		}
 		public string SelectedTabName => tabBar.SelectedTabName;
 
-		public int TabCount => TabPages.Count;
+		public int TabCount => tabPages.Count;
 
 		public void SelectTab(int index)
 		{
@@ -202,7 +202,7 @@ namespace MatterHackers.Agg.UI
 			TabPage tabPageWidget = newTab.TabPage;
 
 			// Use name, not text
-			TabPages.Add(newTab.Name, tabPageWidget);
+			tabPages.Add(newTab.Name, tabPageWidget);
 
 			switch (Orientation)
 			{
