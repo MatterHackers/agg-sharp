@@ -397,7 +397,7 @@ namespace MatterHackers.Agg.UI
 				Vector2 minSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
 
 				string startText = mainControlText.Text;
-				foreach (MenuItem item in MenuItems)
+				foreach (MenuItem item in MenuItems.ToList())
 				{
 					mainControlText.Text = item.Text;
 
@@ -419,7 +419,7 @@ namespace MatterHackers.Agg.UI
 		{
 			// Set new MinSIze
 			Vector2 minSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
-			foreach (MenuItem item in MenuItems)
+			foreach (MenuItem item in MenuItems.ToList())
 			{
 				item.MinimumSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
 			}
