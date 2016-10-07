@@ -33,7 +33,7 @@ namespace MatterHackers.Agg.UI
 {
 	public class TabPage : GuiWidget
 	{
-		public TabPage(String tabTitle)
+		public TabPage(string tabTitle)
 		{
 			AnchorAll();
 			Text = tabTitle;
@@ -44,6 +44,50 @@ namespace MatterHackers.Agg.UI
 		{
 			widgetToAddToPage.AnchorAll();
 			AddChild(widgetToAddToPage);
+		}
+	}
+
+	/// <summary>
+	/// A TabPage widget which defers construction of its root widget until made visible
+	/// </summary>
+	public class LazyTabPage : TabPage
+	{
+		public Func<GuiWidget> Generator { get; set; }
+
+		private GuiWidget rootWidget = null;
+
+		public LazyTabPage(string tabTitle) : base(tabTitle)
+		{
+		}
+
+		public override bool Visible
+		{
+			get { return base.Visible; }
+			set
+			{
+				base.Visible = value;
+
+				if (value && rootWidget == null)
+				{
+					rootWidget = Generator();
+					rootWidget.AnchorAll();
+					AddChild(rootWidget);
+				}
+			}
+		}
+
+		public void Reload()
+		{
+			if (rootWidget != null)
+			{
+				rootWidget.Close();
+				rootWidget = null;
+			}
+
+			if (Visible)
+			{
+				Visible = true;
+			}
 		}
 	}
 }
