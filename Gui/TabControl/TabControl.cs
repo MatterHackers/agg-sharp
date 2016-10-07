@@ -126,6 +126,35 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public TabPage GetTabPage(int index)
+		{
+			if (index >= tabBar.Children.Count)
+			{
+				throw new IndexOutOfRangeException();
+			}
+
+			Tab tab = (Tab)tabBar.Children[index];
+			if (tab != null)
+			{
+				return tab.TabPage;
+			}
+
+			throw new Exception("Somehow there is an object in the tabBar that is not a Tab.");
+		}
+
+		public TabPage GetTabPage(string tabName)
+		{
+			foreach (GuiWidget child in tabBar.Children)
+			{
+				Tab tab = (Tab)child;
+				if (tab != null && tab.Text == tabName)
+				{
+					return tab.TabPage;
+				}
+			}
+
+			throw new Exception("You asked to switch to a page that is not in the TabControl.");
+		}
 		public string SelectedTabName => tabBar.SelectedTabName;
 
 		public int TabCount => TabPages.Count;
@@ -160,6 +189,12 @@ namespace MatterHackers.Agg.UI
 		public bool SelectTab(string tabName)
 		{
 			return tabBar.SelectTab(tabName);
+		}
+
+		public void AddTab(TabPage tabPageWidget, string internalTabName)
+		{
+			Tab newTab = new SimpleTextTabWidget(tabPageWidget, internalTabName);
+			AddTab(newTab);
 		}
 
 		public void AddTab(Tab newTab)
