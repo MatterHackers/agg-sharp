@@ -573,7 +573,7 @@ namespace MatterHackers.Agg.UI.Tests
 	}
 
 #if !__ANDROID__
-	[TestFixture, RunInApplicationDomain, Category("Agg.UI")]
+	[TestFixture, Category("Agg.UI")]
 	public class VerifyFocusMakesTextWidgetEditableClass
 	{
 		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
@@ -585,18 +585,15 @@ namespace MatterHackers.Agg.UI.Tests
 				BackgroundColor = RGBA_Bytes.Black,
 			};
 
-			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
+			Action<AutomationRunner> testToRun = (testRunner) =>
 			{
 				UiThread.RunOnIdle(editField.Focus);
-				AutomationRunner testRunner = new AutomationRunner();
-				testRunner.Wait(1);
 
 				// Now do the actions specific to this test. (replace this for new tests)
 				testRunner.Type("Test Text");
 
-				resultsHarness.AddTestResult(editField.Text == "Test Text", "validate text is typed");
-
-				systemWindow.CloseOnIdle();
+				testRunner.Wait(1);
+				testRunner.AddTestResult(editField.Text == "Test Text", "validate text is typed");
 			};
 
 			editField = new TextEditWidget(pixelWidth: 200)
@@ -606,13 +603,40 @@ namespace MatterHackers.Agg.UI.Tests
 			};
 			systemWindow.AddChild(editField);
 
-			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
+			var testHarness = AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
+
+			Assert.IsTrue(testHarness.AllTestsPassed(1));
+		}
+
+		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain, Category("FixNeeded")]
+		public void VerifyFocusProperty()
+		{
+			SystemWindow systemWindow = new SystemWindow(300, 200)
+			{
+				BackgroundColor = RGBA_Bytes.Black,
+			};
+
+			var editField = new TextEditWidget(pixelWidth: 200)
+			{
+				HAnchor = HAnchor.ParentCenter,
+				VAnchor = VAnchor.ParentCenter,
+			};
+			systemWindow.AddChild(editField);
+
+			Action<AutomationRunner> testToRun = (testRunner) =>
+			{
+				UiThread.RunOnIdle(editField.Focus);
+				testRunner.WaitUntil(() => editField.Focused, 3);
+				testRunner.AddTestResult(editField.Focused, "Focused property should be true after invoking Focus method");
+			};
+
+			var testHarness = AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
 
 			Assert.IsTrue(testHarness.AllTestsPassed(1));
 		}
 	}
 
-	[TestFixture, RunInApplicationDomain, Category("Agg.UI")]
+	[TestFixture, Category("Agg.UI")]
 	public class SelectAllOnFocusCanStillClickAfterSelectionClass
 	{
 		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
@@ -624,21 +648,20 @@ namespace MatterHackers.Agg.UI.Tests
 				BackgroundColor = RGBA_Bytes.Black,
 			};
 
-			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
+			Action<AutomationRunner> testToRun = (testRunner) =>
 			{
 				editField.SelectAllOnFocus = true;
-				AutomationRunner testRunner = new AutomationRunner();
 				testRunner.Wait(1);
 
-				resultsHarness.AddTestResult(testRunner.ClickByName(editField.Name, 1));
+				testRunner.AddTestResult(testRunner.ClickByName(editField.Name, 1));
 
 				editField.SelectAllOnFocus = true;
 				testRunner.Type("123");
-				resultsHarness.AddTestResult(editField.Text == "123", "on enter we have selected all and replaced the text");
+				testRunner.AddTestResult(editField.Text == "123", "on enter we have selected all and replaced the text");
 
-				resultsHarness.AddTestResult(testRunner.ClickByName(editField.Name, 1));
+				testRunner.AddTestResult(testRunner.ClickByName(editField.Name, 1));
 				testRunner.Type("123");
-				resultsHarness.AddTestResult(editField.Text == "123123", "we already have the contol selected so don't select all again.");
+				testRunner.AddTestResult(editField.Text == "123123", "we already have the contol selected so don't select all again.");
 
 				systemWindow.CloseOnIdle();
 			};
@@ -652,7 +675,7 @@ namespace MatterHackers.Agg.UI.Tests
 			};
 			systemWindow.AddChild(editField);
 
-			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExecuteTests(systemWindow, testToRun, 15);
+			var testHarness = AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 15);
 
 			Assert.IsTrue(testHarness.AllTestsPassed(4));
 		}

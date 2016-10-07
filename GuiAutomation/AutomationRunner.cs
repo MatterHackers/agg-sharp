@@ -31,7 +31,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.PlatformAbstract;
@@ -79,6 +81,8 @@ namespace MatterHackers.GuiAutomation
 		public enum ClickOrigin { LowerLeft, Center };
 
 		public enum InterpolationType { LINEAR, EASE_IN, EASE_OUT, EASE_IN_OUT };
+
+		private List<TestResult> results = new List<TestResult>();
 
 		#region Utility
 
@@ -879,5 +883,87 @@ namespace MatterHackers.GuiAutomation
 		}
 
 		#endregion Time
+
+		#region Prior TestHarness code
+		public void AddTestResult(bool passed, string resultDescription = "")
+		{
+			var testResult = new TestResult()
+			{
+				Passed = passed,
+				Description = resultDescription,
+			};
+
+			results.Add(testResult);
+
+			Console.WriteLine(
+				" {0} {1}",
+				passed ? "-" : "!",
+				testResult.ToString());
+		}
+
+		public static void CloseAfterTime(SystemWindow windowToClose, double timeInSeconds)
+		{
+			//Thread.Sleep((int)(timeInSeconds * 1000));
+			//windowToClose.CloseOnIdle();
+		}
+
+		public bool AllTestsPassed(int expectedCount)
+		{
+			return expectedCount == results.Count
+				&& results.TrueForAll(testResult => testResult.Passed);
+		}
+
+		internal class TestResult
+		{
+			internal bool Passed { get; set; }
+			internal string Description { get; set; }
+
+			public override string ToString()
+			{
+				string status = Passed ? "Passed" : "Failed";
+				return $"Test {status}: {Description}";
+			}
+		}
+
+		public static AutomationRunner ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, Action<AutomationRunner> testMethod, double secondsToTestFailure, string imagesDirectory = "")
+		{
+			//StackTrace st = new StackTrace(false);
+			//Debug.WriteLine("\r\nRunning automation test: " + st.GetFrames().Skip(1).First().GetMethod().Name);
+
+			var testRunner = new AutomationRunner(imagesDirectory);
+
+			bool firstDraw = true;
+			initialSystemWindow.AfterDraw += (sender, e) =>
+			{
+				if (firstDraw)
+				{
+					//Task.Run(() => CloseAfterTime(initialSystemWindow, secondsToTestFailure));
+
+					firstDraw = false;
+					Task.Run(() =>
+					{
+						try
+						{
+							testMethod(testRunner);
+						}
+						catch (Exception ex)
+						{
+							Console.WriteLine("Unhandled exception in automation tests: \r\n\t{0}", ex.ToString());
+						}
+
+						if (!initialSystemWindow.HasBeenClosed)
+						{
+							initialSystemWindow.CloseOnIdle();
+						}
+					});
+				}
+			};
+
+			initialSystemWindow.ShowAsSystemWindow();
+
+			return testRunner;
+		}
+
+		#endregion
 	}
 }

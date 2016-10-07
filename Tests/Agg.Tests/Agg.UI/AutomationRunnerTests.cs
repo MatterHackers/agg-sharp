@@ -44,13 +44,12 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				int leftClickCount = 0;
 
-				Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
+				Action<AutomationRunner> testToRun = (AutomationRunner testRunner) =>
 				{
-					AutomationRunner testRunner = new AutomationRunner();
 					testRunner.ClickByName("left");
 					testRunner.Wait(.5);
 
-					resultsHarness.AddTestResult(leftClickCount == 1, "Got left button click");
+					testRunner.AddTestResult(leftClickCount == 1, "Got left button click");
 				};
 
 				SystemWindow buttonContainer = new SystemWindow(300, 200);
@@ -60,7 +59,7 @@ namespace MatterHackers.Agg.UI.Tests
 				leftButton.Click += (sender, e) => { leftClickCount++; };
 				buttonContainer.AddChild(leftButton);
 
-				AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
+				var testHarness = AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
 
 				Assert.IsTrue(testHarness.AllTestsPassed(1));
 			}
@@ -76,19 +75,18 @@ namespace MatterHackers.Agg.UI.Tests
 		{
 			int leftClickCount = 0;
 
-			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
+			Action<AutomationRunner> testToRun = (testRunner) =>
 			{
-				AutomationRunner testRunner = new AutomationRunner();
 				testRunner.ClickByName("left");
 				testRunner.Wait(.5);
-				resultsHarness.AddTestResult(leftClickCount == 1, "Got left button click");
+				testRunner.AddTestResult(leftClickCount == 1, "Got left button click");
 
 				SearchRegion rightButtonRegion = testRunner.GetRegionByName("right");
 
 				testRunner.ClickByName("left", searchRegion: rightButtonRegion);
 				testRunner.Wait(.5);
 
-				resultsHarness.AddTestResult(leftClickCount == 1, "Did not get left button click");
+				testRunner.AddTestResult(leftClickCount == 1, "Did not get left button click");
 			};
 
 			SystemWindow buttonContainer = new SystemWindow(300, 200);
@@ -101,7 +99,7 @@ namespace MatterHackers.Agg.UI.Tests
 			rightButton.Name = "right";
 			buttonContainer.AddChild(rightButton);
 
-			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
+			var testHarness = AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
 
 			Assert.IsTrue(testHarness.AllTestsPassed(2));
 		}
