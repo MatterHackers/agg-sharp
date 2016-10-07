@@ -53,39 +53,38 @@ namespace MatterHackers.Agg.Tests
 
 			double waitTime = .5;
 
-			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
+			Action<AutomationRunner> testToRun = (AutomationRunner testRunner) =>
 			{
-				AutomationRunner testRunner = new AutomationRunner();
 				testRunner.Wait(2);
 				testRunner.ClickByName("rootClickable", 5);
 				testRunner.Wait(waitTime);
-				resultsHarness.AddTestResult(blueClickCount == 1, "Expected 1 click on blue widget");
-				resultsHarness.AddTestResult(orangeClickCount == 0, "Expected 0 clicks on orange widget");
-				resultsHarness.AddTestResult(purpleClickCount == 0, "Expected 1 click on purple widget");
+				testRunner.AddTestResult(blueClickCount == 1, "Expected 1 click on blue widget");
+				testRunner.AddTestResult(orangeClickCount == 0, "Expected 0 clicks on orange widget");
+				testRunner.AddTestResult(purpleClickCount == 0, "Expected 1 click on purple widget");
 
 				testRunner.ClickByName("orangeClickable", 1);
 				testRunner.Wait(waitTime);
-				resultsHarness.AddTestResult(blueClickCount == 1, "Expected 1 click on blue widget");
-				resultsHarness.AddTestResult(orangeClickCount == 1, "Expected 1 clicks on orange widget");
-				resultsHarness.AddTestResult(purpleClickCount == 0, "Expected 0 click on purple widget");
+				testRunner.AddTestResult(blueClickCount == 1, "Expected 1 click on blue widget");
+				testRunner.AddTestResult(orangeClickCount == 1, "Expected 1 clicks on orange widget");
+				testRunner.AddTestResult(purpleClickCount == 0, "Expected 0 click on purple widget");
 
 				testRunner.ClickByName("rootClickable", 1);
 				testRunner.Wait(waitTime);
-				resultsHarness.AddTestResult(blueClickCount == 2, "Expected 1 click on blue widget");
-				resultsHarness.AddTestResult(orangeClickCount == 1, "Expected 0 clicks on orange widget");
-				resultsHarness.AddTestResult(purpleClickCount == 0, "Expected 1 click on purple widget");
+				testRunner.AddTestResult(blueClickCount == 2, "Expected 1 click on blue widget");
+				testRunner.AddTestResult(orangeClickCount == 1, "Expected 0 clicks on orange widget");
+				testRunner.AddTestResult(purpleClickCount == 0, "Expected 1 click on purple widget");
 
 				testRunner.ClickByName("orangeClickable", 1);
 				testRunner.Wait(waitTime);
-				resultsHarness.AddTestResult(blueClickCount == 2, "Expected 1 click on root widget");
-				resultsHarness.AddTestResult(orangeClickCount == 2, "Expected 2 clicks on orange widget");
-				resultsHarness.AddTestResult(purpleClickCount == 0, "Expected 0 click on purple widget");
+				testRunner.AddTestResult(blueClickCount == 2, "Expected 1 click on root widget");
+				testRunner.AddTestResult(orangeClickCount == 2, "Expected 2 clicks on orange widget");
+				testRunner.AddTestResult(purpleClickCount == 0, "Expected 0 click on purple widget");
 
 				testRunner.ClickByName("purpleClickable", 1);
 				testRunner.Wait(waitTime);
-				resultsHarness.AddTestResult(blueClickCount == 2, "Expected 1 click on blue widget");
-				resultsHarness.AddTestResult(orangeClickCount == 2, "Expected 2 clicks on orange widget");
-				resultsHarness.AddTestResult(purpleClickCount == 1, "Expected 1 click on purple widget");
+				testRunner.AddTestResult(blueClickCount == 2, "Expected 1 click on blue widget");
+				testRunner.AddTestResult(orangeClickCount == 2, "Expected 2 clicks on orange widget");
+				testRunner.AddTestResult(purpleClickCount == 1, "Expected 1 click on purple widget");
 			};
 
 			SystemWindow systemWindow = new SystemWindow(300, 200)
@@ -158,7 +157,7 @@ namespace MatterHackers.Agg.Tests
 
 			systemWindow.AddChild(rootClickable);
 
-			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
+			var testHarness = AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
 
 			Assert.IsTrue(testHarness.AllTestsPassed(15));
 		}

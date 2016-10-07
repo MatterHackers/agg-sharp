@@ -112,9 +112,8 @@ namespace MatterHackers.Agg.UI.Tests
 				BackgroundColor = RGBA_Bytes.White,
 			};
 
-			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
+			Action<AutomationRunner> testToRun = (testRunner) =>
 			{
-				AutomationRunner testRunner = new AutomationRunner();
 				testRunner.Wait(1);
 
 				// Now do the actions specific to this test. (replace this for new tests)
@@ -122,10 +121,10 @@ namespace MatterHackers.Agg.UI.Tests
 					testRunner.MoveToByName("ButtonWithToolTip");
 					testRunner.Wait(1.5);
 					GuiWidget toolTipWidget = buttonContainer.FindNamedChildRecursive("ToolTipWidget");
-					resultsHarness.AddTestResult(toolTipWidget != null, "Tool tip is showing");
+					testRunner.AddTestResult(toolTipWidget != null, "Tool tip is showing");
 					testRunner.MoveToByName("right");
 					toolTipWidget = buttonContainer.FindNamedChildRecursive("ToolTipWidget");
-					resultsHarness.AddTestResult(toolTipWidget == null, "Tool tip is not showing");
+					testRunner.AddTestResult(toolTipWidget == null, "Tool tip is not showing");
 				}
 
 				testRunner.Wait(1);
@@ -140,7 +139,7 @@ namespace MatterHackers.Agg.UI.Tests
 			rightButton.Name = "right";
 			buttonContainer.AddChild(rightButton);
 
-			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10000);
+			var testHarness = AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10000);
 
 			Assert.IsTrue(testHarness.AllTestsPassed(2));
 		}
