@@ -27,18 +27,17 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.PlatformAbstract;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Threading;
 
 namespace MatterHackers.GuiAutomation
 {
@@ -48,15 +47,15 @@ namespace MatterHackers.GuiAutomation
 
 		private IInputMethod inputSystem;
 
-        /// <summary>
-        /// The number of seconds to move the mouse when going to a new position.
-        /// </summary>
-        public double TimeToMoveMouse = .5;
+		/// <summary>
+		/// The number of seconds to move the mouse when going to a new position.
+		/// </summary>
+		public double TimeToMoveMouse = .5;
 
 		private string imageDirectory;
 		public double UpDelaySeconds = .2;
 
-		public enum InputType {  Native, Simulated };
+		public enum InputType { Native, Simulated };
 
 		public AutomationRunner(string imageDirectory = "", InputType inputType = InputType.Native, bool drawSimulatedMouse = true)
 		{
@@ -81,7 +80,7 @@ namespace MatterHackers.GuiAutomation
 
 		public enum InterpolationType { LINEAR, EASE_IN, EASE_OUT, EASE_IN_OUT };
 
-#region Utility
+		#region Utility
 
 		public Point2D CurrentMousePosition()
 		{
@@ -121,11 +120,11 @@ namespace MatterHackers.GuiAutomation
 			}
 		}
 
-#endregion Utility
+		#endregion Utility
 
-#region Mouse Functions
+		#region Mouse Functions
 
-#region Search By Image
+		#region Search By Image
 
 		public bool ClickImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
 		{
@@ -167,21 +166,21 @@ namespace MatterHackers.GuiAutomation
 						break;
 
 					case MouseButtons.Left:
-                        inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 						Wait(UpDelaySeconds);
-                        inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
+						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
 						break;
 
 					case MouseButtons.Right:
-                        inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_RIGHTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_RIGHTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 						Wait(UpDelaySeconds);
-                        inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_RIGHTUP, screenPosition.x, screenPosition.y, 0, 0);
+						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_RIGHTUP, screenPosition.x, screenPosition.y, 0, 0);
 						break;
 
 					case MouseButtons.Middle:
-                        inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_MIDDLEDOWN, screenPosition.x, screenPosition.y, 0, 0);
+						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_MIDDLEDOWN, screenPosition.x, screenPosition.y, 0, 0);
 						Wait(UpDelaySeconds);
-                        inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_MIDDLEUP, screenPosition.x, screenPosition.y, 0, 0);
+						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_MIDDLEUP, screenPosition.x, screenPosition.y, 0, 0);
 						break;
 
 					default:
@@ -246,29 +245,29 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-        public void RenderMouse(GuiWidget targetWidget, Graphics2D graphics2D)
-        {
-            GuiWidget parentSystemWindow = targetWidget;
-            while(parentSystemWindow != null 
-                && parentSystemWindow as SystemWindow == null)
-            {
-                parentSystemWindow = parentSystemWindow.Parent;
-            }
+		public void RenderMouse(GuiWidget targetWidget, Graphics2D graphics2D)
+		{
+			GuiWidget parentSystemWindow = targetWidget;
+			while (parentSystemWindow != null
+				&& parentSystemWindow as SystemWindow == null)
+			{
+				parentSystemWindow = parentSystemWindow.Parent;
+			}
 
-            if(parentSystemWindow != null)
-            {
-                Point2D mousePosOnWindow = ScreenToSystemWindow(inputSystem.CurrentMousePosition(), (SystemWindow)parentSystemWindow);
-                Ellipse circle = new Ellipse(new Vector2(mousePosOnWindow.x, mousePosOnWindow.y), 10);
-                if(inputSystem.LeftButtonDown)
-                {
-                    graphics2D.Render(circle, RGBA_Bytes.Green);
-                }
-                graphics2D.Render(new Stroke(circle, 3), RGBA_Bytes.Black);
-                graphics2D.Render(new Stroke(circle, 2), RGBA_Bytes.White);
-            }
-        }
+			if (parentSystemWindow != null)
+			{
+				Point2D mousePosOnWindow = ScreenToSystemWindow(inputSystem.CurrentMousePosition(), (SystemWindow)parentSystemWindow);
+				Ellipse circle = new Ellipse(new Vector2(mousePosOnWindow.x, mousePosOnWindow.y), 10);
+				if (inputSystem.LeftButtonDown)
+				{
+					graphics2D.Render(circle, RGBA_Bytes.Green);
+				}
+				graphics2D.Render(new Stroke(circle, 3), RGBA_Bytes.Black);
+				graphics2D.Render(new Stroke(circle, 2), RGBA_Bytes.White);
+			}
+		}
 
-        public bool DragImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
+		public bool DragImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
 		{
 			ImageBuffer imageToLookFor = LoadImageFromSourcFolder(imageName);
 			if (imageToLookFor != null)
@@ -302,7 +301,7 @@ namespace MatterHackers.GuiAutomation
 
 				Point2D screenPosition = new Point2D((int)matchPosition.x + offset.x, clickYOnScreen);
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
-                inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 
 				return true;
 			}
@@ -344,7 +343,7 @@ namespace MatterHackers.GuiAutomation
 
 				Point2D screenPosition = new Point2D((int)matchPosition.x + offset.x, clickYOnScreen);
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
-                inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
+				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
 
 				return true;
 			}
@@ -398,17 +397,17 @@ namespace MatterHackers.GuiAutomation
 		{
 			Point2D screenPosition = new Point2D(pointOnWindow.x, (int)containingWindow.Height - pointOnWindow.y);
 
-            AbstractOsMappingWidget mappingWidget = containingWindow.Parent as AbstractOsMappingWidget;
-            screenPosition.x += mappingWidget.DesktopPosition.x;
-            screenPosition.y += mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight;
+			AbstractOsMappingWidget mappingWidget = containingWindow.Parent as AbstractOsMappingWidget;
+			screenPosition.x += mappingWidget.DesktopPosition.x;
+			screenPosition.y += mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight;
 
-            return screenPosition;
+			return screenPosition;
 		}
 
 		public static Point2D ScreenToSystemWindow(Point2D pointOnScreen, SystemWindow containingWindow)
 		{
 			Point2D screenPosition = pointOnScreen;
-            AbstractOsMappingWidget mappingWidget = containingWindow.Parent as AbstractOsMappingWidget;
+			AbstractOsMappingWidget mappingWidget = containingWindow.Parent as AbstractOsMappingWidget;
 			screenPosition.x -= mappingWidget.DesktopPosition.x;
 			screenPosition.y -= (mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight);
 
@@ -417,7 +416,7 @@ namespace MatterHackers.GuiAutomation
 			return screenPosition;
 		}
 
-        public static ScreenRectangle SystemWindowToScreen(RectangleDouble rectOnScreen, SystemWindow containingWindow)
+		public static ScreenRectangle SystemWindowToScreen(RectangleDouble rectOnScreen, SystemWindow containingWindow)
 		{
 			ScreenRectangle screenPosition = new ScreenRectangle()
 			{
@@ -430,13 +429,13 @@ namespace MatterHackers.GuiAutomation
 			screenPosition.Top = (int)containingWindow.Height - screenPosition.Top;
 			screenPosition.Bottom = (int)containingWindow.Height - screenPosition.Bottom;
 
-            AbstractOsMappingWidget mappingWidget = containingWindow.Parent as AbstractOsMappingWidget;
-            screenPosition.Left += mappingWidget.DesktopPosition.x;
-            screenPosition.Top += (mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight);
-            screenPosition.Right += mappingWidget.DesktopPosition.x;
-            screenPosition.Bottom += (mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight);
+			AbstractOsMappingWidget mappingWidget = containingWindow.Parent as AbstractOsMappingWidget;
+			screenPosition.Left += mappingWidget.DesktopPosition.x;
+			screenPosition.Top += (mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight);
+			screenPosition.Right += mappingWidget.DesktopPosition.x;
+			screenPosition.Bottom += (mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight);
 
-            return screenPosition;
+			return screenPosition;
 		}
 
 		private static RectangleDouble ScreenToSystemWindow(ScreenRectangle rectOnScreen, SystemWindow containingWindow)
@@ -449,13 +448,13 @@ namespace MatterHackers.GuiAutomation
 				Bottom = (int)rectOnScreen.Bottom,
 			};
 
-            AbstractOsMappingWidget mappingWidget = containingWindow.Parent as AbstractOsMappingWidget;
-            screenPosition.Left -= mappingWidget.DesktopPosition.x;
-            screenPosition.Top -= (mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight);
-            screenPosition.Left -= mappingWidget.DesktopPosition.x;
-            screenPosition.Bottom -= (mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight);
+			AbstractOsMappingWidget mappingWidget = containingWindow.Parent as AbstractOsMappingWidget;
+			screenPosition.Left -= mappingWidget.DesktopPosition.x;
+			screenPosition.Top -= (mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight);
+			screenPosition.Left -= mappingWidget.DesktopPosition.x;
+			screenPosition.Bottom -= (mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight);
 
-            screenPosition.Top = (int)containingWindow.Height - screenPosition.Top;
+			screenPosition.Top = (int)containingWindow.Height - screenPosition.Top;
 			screenPosition.Bottom = (int)containingWindow.Height - screenPosition.Bottom;
 
 			return new RectangleDouble()
@@ -496,9 +495,9 @@ namespace MatterHackers.GuiAutomation
 			return null;
 		}
 
-#endregion Search By Image
+		#endregion Search By Image
 
-#region Search By Names
+		#region Search By Names
 
 		public SearchRegion GetRegionByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null)
 		{
@@ -525,7 +524,7 @@ namespace MatterHackers.GuiAutomation
 			containingWindow = null;
 
 			List<GetResults> getResults = GetWidgetsByName(widgetName, secondsToWait, searchRegion);
-			if (getResults != null 
+			if (getResults != null
 				&& getResults.Count > 0)
 			{
 				containingWindow = getResults[0].containingSystemWindow;
@@ -661,7 +660,7 @@ namespace MatterHackers.GuiAutomation
 
 				Point2D screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
-                inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 
 				return true;
 			}
@@ -748,7 +747,7 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-#endregion Search By Names
+		#endregion Search By Names
 
 		public void SetMouseCursorPosition(int x, int y)
 		{
@@ -796,13 +795,13 @@ namespace MatterHackers.GuiAutomation
 
 		public void Type(string textToType)
 		{
-            inputSystem.Type(textToType);
+			inputSystem.Type(textToType);
 			Wait(.2);
 		}
 
-#endregion Keyboard Functions
+		#endregion Keyboard Functions
 
-#region Time
+		#region Time
 
 		public void Wait(double secondsToWait)
 		{
@@ -879,6 +878,6 @@ namespace MatterHackers.GuiAutomation
 			return true;
 		}
 
-#endregion Time
+		#endregion Time
 	}
 }
