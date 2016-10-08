@@ -144,17 +144,11 @@ namespace MatterHackers.Agg.UI
 
 		public TabPage GetTabPage(string tabName)
 		{
-			foreach (GuiWidget child in tabBar.Children)
-			{
-				Tab tab = (Tab)child;
-				if (tab != null && tab.Text == tabName)
-				{
-					return tab.TabPage;
-				}
-			}
-
-			throw new Exception("You asked to switch to a page that is not in the TabControl.");
+			TabPage tabPage;
+			tabPages.TryGetValue(tabName, out tabPage);
+			return tabPage;
 		}
+
 		public string SelectedTabName => tabBar.SelectedTabName;
 
 		public int TabCount => tabPages.Count;
