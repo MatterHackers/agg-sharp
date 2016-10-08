@@ -211,60 +211,59 @@ namespace MatterHackers.Agg.UI.Tests
 				Name = "menu1",
 			};
 
-			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
+			Action<AutomationRunner> testToRun = (testRunner) =>
 			{
 				try
 				{
-					AutomationRunner testRunner = new AutomationRunner();
 					testRunner.Wait(1);
 
 					// Now do the actions specific to this test. (replace this for new tests)
 					{
-						resultsHarness.AddTestResult(item1ClickCount == 0);
-						resultsHarness.AddTestResult(item2ClickCount == 0);
-						resultsHarness.AddTestResult(item3ClickCount == 0);
+						testRunner.AddTestResult(item1ClickCount == 0);
+						testRunner.AddTestResult(item2ClickCount == 0);
+						testRunner.AddTestResult(item3ClickCount == 0);
 
 						if (true)
 						{
 							testRunner.ClickByName("menu1", 5);
 							testRunner.ClickByName("item1", 5);
 							testRunner.Wait(.1);
-							resultsHarness.AddTestResult(!testList.IsOpen);
-							resultsHarness.AddTestResult(item1ClickCount == 1);
-							resultsHarness.AddTestResult(item2ClickCount == 0);
-							resultsHarness.AddTestResult(item3ClickCount == 0);
+							testRunner.AddTestResult(!testList.IsOpen);
+							testRunner.AddTestResult(item1ClickCount == 1);
+							testRunner.AddTestResult(item2ClickCount == 0);
+							testRunner.AddTestResult(item3ClickCount == 0);
 
 							testRunner.ClickByName("menu1", 5);
 							testRunner.ClickByName("item2", 5);
 							testRunner.Wait(.1);
-							resultsHarness.AddTestResult(!testList.IsOpen);
-							resultsHarness.AddTestResult(item1ClickCount == 1);
-							resultsHarness.AddTestResult(item2ClickCount == 1);
-							resultsHarness.AddTestResult(item3ClickCount == 0);
+							testRunner.AddTestResult(!testList.IsOpen);
+							testRunner.AddTestResult(item1ClickCount == 1);
+							testRunner.AddTestResult(item2ClickCount == 1);
+							testRunner.AddTestResult(item3ClickCount == 0);
 
 							testRunner.ClickByName("menu1", 5);
 							testRunner.ClickByName("item3", 5);
 							testRunner.Wait(.1);
-							resultsHarness.AddTestResult(testList.IsOpen, "It should remain open when clicking on a disabled item.");
-							resultsHarness.AddTestResult(item1ClickCount == 1);
-							resultsHarness.AddTestResult(item2ClickCount == 1);
-							resultsHarness.AddTestResult(item3ClickCount == 0);
+							testRunner.AddTestResult(testList.IsOpen, "It should remain open when clicking on a disabled item.");
+							testRunner.AddTestResult(item1ClickCount == 1);
+							testRunner.AddTestResult(item2ClickCount == 1);
+							testRunner.AddTestResult(item3ClickCount == 0);
 							testRunner.ClickByName("item2", 5);
 							testRunner.Wait(.1);
-							resultsHarness.AddTestResult(!testList.IsOpen);
-							resultsHarness.AddTestResult(item1ClickCount == 1);
-							resultsHarness.AddTestResult(item2ClickCount == 2);
-							resultsHarness.AddTestResult(item3ClickCount == 0);
+							testRunner.AddTestResult(!testList.IsOpen);
+							testRunner.AddTestResult(item1ClickCount == 1);
+							testRunner.AddTestResult(item2ClickCount == 2);
+							testRunner.AddTestResult(item3ClickCount == 0);
 
 							testRunner.ClickByName("menu1", 5);
 							testRunner.ClickByName("OffMenu", 5);
 							testRunner.Wait(.1);
-							resultsHarness.AddTestResult(!testList.IsOpen);
+							testRunner.AddTestResult(!testList.IsOpen);
 						}
 						testRunner.ClickByName("menu1", 5);
 						testRunner.ClickByName("item3", 5);
 						testRunner.ClickByName("OffMenu", 5);
-						resultsHarness.AddTestResult(!testList.IsOpen, "had a bug where after clicking a disabled item would not close clicking outside");
+						testRunner.AddTestResult(!testList.IsOpen, "had a bug where after clicking a disabled item would not close clicking outside");
 					}
 				}
 				catch
@@ -296,7 +295,7 @@ namespace MatterHackers.Agg.UI.Tests
 				Name = "OffMenu",
 			});
 
-			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExecuteTests(menuTestContainer, testToRun, 20);
+			var testHarness = AutomationRunner.ShowWindowAndExecuteTests(menuTestContainer, testToRun, 20);
 
 			Assert.IsTrue(testHarness.AllTestsPassed(21));
 		}

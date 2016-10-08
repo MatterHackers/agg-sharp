@@ -96,7 +96,6 @@
     <Compile Include="Agg.UI\ListBoxTests.cs" />
     <Compile Include="Agg.UI\AutomationRunnerTests.cs" />
     <Compile Include="Agg.UI\MenuTests.cs" />
-    <Compile Include="Agg.UI\AutomationTesterHarness.cs" />
     <Compile Include="Agg.UI\MouseInteractionTests.cs" />
     <Compile Include="Agg.UI\ScrollableWidgetTests.cs" />
     <Compile Include="Agg.UI\TextAndTextWidgetTests.cs" />

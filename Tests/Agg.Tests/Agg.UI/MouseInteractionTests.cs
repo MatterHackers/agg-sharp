@@ -50,25 +50,23 @@ namespace MatterHackers.Agg.UI.Tests
 			int leftClickCount = 0;
 			int rightClickCount = 0;
 
-			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
+			Action<AutomationRunner> testToRun = (testRunner) =>
 			{
-				AutomationRunner testRunner = new AutomationRunner();
-
 				// Now do the actions specific to this test. (replace this for new tests)
 				testRunner.ClickByName("left", 1);
 				testRunner.Wait(.5);
 
-				resultsHarness.AddTestResult(leftClickCount == 1, "Got left button click");
+				testRunner.AddTestResult(leftClickCount == 1, "Got left button click");
 
 				testRunner.ClickByName("right", 1);
 				testRunner.Wait(.5);
 
-				resultsHarness.AddTestResult(rightClickCount == 1, "Got right button click");
+				testRunner.AddTestResult(rightClickCount == 1, "Got right button click");
 
 				testRunner.DragDropByName("left", "right", offsetDrag: new Point2D(1, 0));
 				testRunner.Wait(.5);
 
-				resultsHarness.AddTestResult(leftClickCount == 1, "Mouse down not a click");
+				testRunner.AddTestResult(leftClickCount == 1, "Mouse down not a click");
 			};
 
 			SystemWindow buttonContainer = new SystemWindow(300, 200);
@@ -82,7 +80,7 @@ namespace MatterHackers.Agg.UI.Tests
 			rightButton.Name = "right";
 			buttonContainer.AddChild(rightButton);
 
-			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
+			var testHarness = AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
 
 			Assert.IsTrue(testHarness.AllTestsPassed(3));
 		}
