@@ -927,9 +927,6 @@ namespace MatterHackers.GuiAutomation
 
 		public static AutomationRunner ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, Action<AutomationRunner> testMethod, double secondsToTestFailure, string imagesDirectory = "")
 		{
-			//StackTrace st = new StackTrace(false);
-			//Debug.WriteLine("\r\nRunning automation test: " + st.GetFrames().Skip(1).First().GetMethod().Name);
-
 			var testRunner = new AutomationRunner(imagesDirectory);
 
 			bool firstDraw = true;
@@ -937,7 +934,7 @@ namespace MatterHackers.GuiAutomation
 			{
 				if (firstDraw)
 				{
-					//Task.Run(() => CloseAfterTime(initialSystemWindow, secondsToTestFailure));
+					Task.Run(() => CloseAfterTime(initialSystemWindow, secondsToTestFailure));
 
 					firstDraw = false;
 					Task.Run(() =>
