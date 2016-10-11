@@ -193,11 +193,11 @@ namespace MatterHackers.Agg.UI
 			// Center the window if specified on the SystemWindow
 			if (mainWindowsFormsWindow != WindowsFormsWindow && childSystemWindow.CenterInParent)
 			{
-				Rectangle mainBounds = mainWindowsFormsWindow.DesktopBounds;
+				Rectangle desktopBounds = mainWindowsFormsWindow.DesktopBounds;
 				RectangleDouble newItemBounds = childSystemWindow.LocalBounds;
 
-				windowsFormsWindow.Left = mainBounds.X + mainBounds.Width / 2 - (int) newItemBounds.Width / 2;
-				windowsFormsWindow.Top = mainBounds.Y + mainBounds.Height / 2 - (int) newItemBounds.Height / 2;
+				windowsFormsWindow.Left = desktopBounds.X + desktopBounds.Width / 2 - (int) newItemBounds.Width / 2;
+				windowsFormsWindow.Top = desktopBounds.Y + desktopBounds.Height / 2 - (int) newItemBounds.Height / 2 - TitleBarHeight/2;
 			}
 
 			if (mainWindowsFormsWindow != WindowsFormsWindow
