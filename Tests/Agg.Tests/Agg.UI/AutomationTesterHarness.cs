@@ -55,10 +55,8 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				if (firstDraw)
 				{
-					Task.Run(() => CloseAfterTime(initialSystemWindow, secondsToTestFailure));
-
 					firstDraw = false;
-					Task.Run(() =>
+					var methodUnderTest = Task.Run(() =>
 					{
 						try
 						{
@@ -68,7 +66,10 @@ namespace MatterHackers.Agg.UI.Tests
 						{
 							Console.WriteLine("Unhandled exception in automation tests: \r\n\t{0}", ex.ToString());
 						}
+					});
 
+					Task.WhenAny(methodUnderTest, Task.Delay((int)(1000 * secondsToTestFailure))).ContinueWith((t) =>
+					{
 						initialSystemWindow.CloseOnIdle();
 					});
 				}
@@ -91,12 +92,6 @@ namespace MatterHackers.Agg.UI.Tests
 				" {0} {1}", 
 				passed ? "-" : "!",
 				testResult.ToString());
-		}
-
-		public static void CloseAfterTime(SystemWindow windowToClose, double timeInSeconds)
-		{
-			Thread.Sleep((int)(timeInSeconds * 1000));
-			windowToClose.CloseOnIdle();
 		}
 
 		public bool AllTestsPassed(int expectedCount)
