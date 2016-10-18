@@ -117,6 +117,10 @@
   </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
+    <ProjectReference Include="..\..\AForgeCamera\AForgeCamera.csproj">
+      <Project>{9142b0a3-44ad-4cdb-8f71-e54de2ba7d9b}</Project>
+      <Name>AForgeCamera</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\agg\Agg.csproj">
       <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
       <Name>Agg</Name>
@@ -140,6 +144,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Pages\ButtonAnchorTest.cs" />
+    <Compile Include="Pages\WebCamPage.cs" />
     <Compile Include="Pages\GridControl.cs" />
     <Compile Include="Pages\FontHintPage.cs" />
     <Compile Include="Pages\SplitterPage.cs" />
