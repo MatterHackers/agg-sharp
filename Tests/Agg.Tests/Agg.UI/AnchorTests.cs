@@ -538,27 +538,25 @@ namespace MatterHackers.Agg.UI.Tests
 
 		internal void AnchorAllTests()
 		{
-			{
-				GuiWidget containerNoAnchor = new GuiWidget(300, 200);
-				containerNoAnchor.DoubleBuffer = true;
-				Button positionedButton = new Button("button");
-				positionedButton.LocalBounds = containerNoAnchor.LocalBounds;
-				containerNoAnchor.AddChild(positionedButton);
-				containerNoAnchor.OnDraw(containerNoAnchor.NewGraphics2D());
+			GuiWidget containerNoAnchor = new GuiWidget(300, 200);
+			containerNoAnchor.DoubleBuffer = true;
+			Button positionedButton = new Button("button");
+			positionedButton.LocalBounds = containerNoAnchor.LocalBounds;
+			containerNoAnchor.AddChild(positionedButton);
+			containerNoAnchor.OnDraw(containerNoAnchor.NewGraphics2D());
 
-				GuiWidget containerAnchor = new GuiWidget(300, 200);
-				containerAnchor.DoubleBuffer = true;
-				Button anchoredButton = new Button("button");
-				anchoredButton.Margin = new BorderDouble(); // make sure we have no margin
-				containerAnchor.AddChild(anchoredButton);
-				anchoredButton.HAnchor = HAnchor.ParentLeft | HAnchor.ParentRight;
-				anchoredButton.VAnchor = VAnchor.ParentBottom | VAnchor.ParentTop;
-				containerAnchor.OnDraw(containerAnchor.NewGraphics2D());
-				OutputImages(containerNoAnchor, containerAnchor);
+			GuiWidget containerAnchor = new GuiWidget(300, 200);
+			containerAnchor.DoubleBuffer = true;
+			Button anchoredButton = new Button("button");
+			anchoredButton.Margin = new BorderDouble(); // make sure we have no margin
+			containerAnchor.AddChild(anchoredButton);
+			anchoredButton.HAnchor = HAnchor.ParentLeft | HAnchor.ParentRight;
+			anchoredButton.VAnchor = VAnchor.ParentBottom | VAnchor.ParentTop;
+			containerAnchor.OnDraw(containerAnchor.NewGraphics2D());
+			OutputImages(containerNoAnchor, containerAnchor);
 
-				Assert.IsTrue(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
-				Assert.IsTrue(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.");
-			}
+			Assert.IsTrue(containerNoAnchor.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
+			Assert.IsTrue(containerNoAnchor.BackBuffer == containerAnchor.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
 		[Test]

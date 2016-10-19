@@ -41,31 +41,29 @@ namespace MatterHackers.Agg.UI.Tests
 		public void GetWidgetByNameTestNoRegionSingleWindow()
 		{
 			// single system window
+			int leftClickCount = 0;
+
+			Action<AutomationRunner> testToRun = (AutomationRunner testRunner) =>
 			{
-				int leftClickCount = 0;
+				testRunner.ClickByName("left");
+				testRunner.Wait(.5);
 
-				Action<AutomationRunner> testToRun = (AutomationRunner testRunner) =>
-				{
-					testRunner.ClickByName("left");
-					testRunner.Wait(.5);
+				testRunner.AddTestResult(leftClickCount == 1, "Got left button click");
+			};
 
-					testRunner.AddTestResult(leftClickCount == 1, "Got left button click");
-				};
+			SystemWindow buttonContainer = new SystemWindow(300, 200);
 
-				SystemWindow buttonContainer = new SystemWindow(300, 200);
+			Button leftButton = new Button("left", 10, 40);
+			leftButton.Name = "left";
+			leftButton.Click += (sender, e) => { leftClickCount++; };
+			buttonContainer.AddChild(leftButton);
 
-				Button leftButton = new Button("left", 10, 40);
-				leftButton.Name = "left";
-				leftButton.Click += (sender, e) => { leftClickCount++; };
-				buttonContainer.AddChild(leftButton);
+			var testHarness = AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
 
-				var testHarness = AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
-
-				Assert.IsTrue(testHarness.AllTestsPassed(1));
-			}
+			Assert.IsTrue(testHarness.AllTestsPassed(1));
 		}
 
-		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
+		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain, Category("FixNeeded")]
 		public void GetWidgetByNameTestNoRegionMultipleWindow()
 		{
 		}
@@ -104,7 +102,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(testHarness.AllTestsPassed(2));
 		}
 
-		[Test]
+		[Test, Category("FixNeeded")]
 		public void ClickByName()
 		{
 			// single system window
@@ -116,7 +114,7 @@ namespace MatterHackers.Agg.UI.Tests
 			// multiple system windows
 		}
 		
-		[Test]
+		[Test, Category("FixNeeded")]
 		public void DragDropByName()
 		{
 			// single system window
@@ -128,7 +126,7 @@ namespace MatterHackers.Agg.UI.Tests
 			// multiple system windows
 		}
 			
-		[Test]
+		[Test, Category("FixNeeded")]
 		public void DragByName()
 		{
 			// single system window
@@ -140,7 +138,7 @@ namespace MatterHackers.Agg.UI.Tests
 			// multiple system windows
 		}
 			
-		[Test]
+		[Test, Category("FixNeeded")]
 		public void DropByName()
 		{
 			// single system window
@@ -152,7 +150,7 @@ namespace MatterHackers.Agg.UI.Tests
 			// multiple system windows
 		}
 			
-		[Test]
+		[Test, Category("FixNeeded")]
 		public void DoubleClickByName()
 		{
 			// single system window
@@ -164,7 +162,7 @@ namespace MatterHackers.Agg.UI.Tests
 			// multiple system windows
 		}
 			
-		[Test]
+		[Test, Category("FixNeeded")]
 		public void MoveToByName()
 		{
 			// single system window
@@ -176,7 +174,7 @@ namespace MatterHackers.Agg.UI.Tests
 			// multiple system windows
 		}
 			
-		[Test]
+		[Test, Category("FixNeeded")]
 		public void NameExists()
 		{
 			// single system window

@@ -116,16 +116,13 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				testRunner.Wait(1);
 
-				// Now do the actions specific to this test. (replace this for new tests)
-				{
-					testRunner.MoveToByName("ButtonWithToolTip");
-					testRunner.Wait(1.5);
-					GuiWidget toolTipWidget = buttonContainer.FindNamedChildRecursive("ToolTipWidget");
-					testRunner.AddTestResult(toolTipWidget != null, "Tool tip is showing");
-					testRunner.MoveToByName("right");
-					toolTipWidget = buttonContainer.FindNamedChildRecursive("ToolTipWidget");
-					testRunner.AddTestResult(toolTipWidget == null, "Tool tip is not showing");
-				}
+				testRunner.MoveToByName("ButtonWithToolTip");
+				testRunner.Wait(1.5);
+				GuiWidget toolTipWidget = buttonContainer.FindNamedChildRecursive("ToolTipWidget");
+				testRunner.AddTestResult(toolTipWidget != null, "Tool tip is showing");
+				testRunner.MoveToByName("right");
+				toolTipWidget = buttonContainer.FindNamedChildRecursive("ToolTipWidget");
+				testRunner.AddTestResult(toolTipWidget == null, "Tool tip is not showing");
 
 				testRunner.Wait(1);
 				buttonContainer.CloseOnIdle();
