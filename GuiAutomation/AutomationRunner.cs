@@ -57,9 +57,9 @@ namespace MatterHackers.GuiAutomation
 		private string imageDirectory;
 		public double UpDelaySeconds = .2;
 
-		public enum InputType { Native, Simulated };
+		public enum InputType { Native, Simulated, SimulatedDrawMouse };
 
-		public AutomationRunner(string imageDirectory = "", InputType inputType = InputType.Native, bool drawSimulatedMouse = true)
+		public AutomationRunner(string imageDirectory = "", InputType inputType = InputType.Native)
 		{
 #if !__ANDROID__
 			if (inputType == InputType.Native)
@@ -68,11 +68,11 @@ namespace MatterHackers.GuiAutomation
 			}
 			else
 			{
-				inputSystem = new AggInputMethods(this, drawSimulatedMouse);
+				inputSystem = new AggInputMethods(this, inputType == InputType.SimulatedDrawMouse);
 				HookWindowsInputAndSendToWidget.EnableInputHook = false;
 			}
 #else
-				inputSystem = new AggInputMethods(this, drawSimulatedMouse);
+				inputSystem = new AggInputMethods(this, inputType == InputType.SimulatedDrawMouse);
 #endif
 
 			this.imageDirectory = imageDirectory;
@@ -919,9 +919,9 @@ namespace MatterHackers.GuiAutomation
 			}
 		}
 
-		public static AutomationRunner ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, Action<AutomationRunner> testMethod, double secondsToTestFailure, string imagesDirectory = "")
+		public static AutomationRunner ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, Action<AutomationRunner> testMethod, double secondsToTestFailure, string imagesDirectory = "", InputType inputType = InputType.Native)
 		{
-			var testRunner = new AutomationRunner(imagesDirectory);
+			var testRunner = new AutomationRunner(imagesDirectory, inputType);
 
 			bool firstDraw = true;
 			initialSystemWindow.AfterDraw += (sender, e) =>
