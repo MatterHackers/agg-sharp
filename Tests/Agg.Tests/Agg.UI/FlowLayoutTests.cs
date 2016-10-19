@@ -1474,36 +1474,34 @@ namespace MatterHackers.Agg.UI.Tests
 
 		internal void EnsureNestedAreMinimumSize()
 		{
-			{
-				GuiWidget containerTest = new GuiWidget(640, 480);
-				containerTest.DoubleBuffer = true;
-				FlowLayoutWidget leftToRightLayout = new FlowLayoutWidget(FlowDirection.LeftToRight);
-				containerTest.AddChild(leftToRightLayout);
+			GuiWidget containerTest = new GuiWidget(640, 480);
+			containerTest.DoubleBuffer = true;
+			FlowLayoutWidget leftToRightLayout = new FlowLayoutWidget(FlowDirection.LeftToRight);
+			containerTest.AddChild(leftToRightLayout);
 
-				GuiWidget item1 = new GuiWidget(10, 11);
-				GuiWidget item2 = new GuiWidget(20, 22);
-				GuiWidget item3 = new GuiWidget(30, 33);
-				item3.HAnchor = HAnchor.ParentLeftRight;
+			GuiWidget item1 = new GuiWidget(10, 11);
+			GuiWidget item2 = new GuiWidget(20, 22);
+			GuiWidget item3 = new GuiWidget(30, 33);
+			item3.HAnchor = HAnchor.ParentLeftRight;
 
-				leftToRightLayout.AddChild(item1);
-				leftToRightLayout.AddChild(item2);
-				leftToRightLayout.AddChild(item3);
+			leftToRightLayout.AddChild(item1);
+			leftToRightLayout.AddChild(item2);
+			leftToRightLayout.AddChild(item3);
 
-				containerTest.OnDraw(containerTest.NewGraphics2D());
-				Assert.IsTrue(leftToRightLayout.Width == 60);
-				Assert.IsTrue(leftToRightLayout.MinimumSize.x == 0);
-				Assert.IsTrue(leftToRightLayout.Height == 33);
-				Assert.IsTrue(leftToRightLayout.MinimumSize.y == 0);
-				Assert.IsTrue(item3.Width == 30);
+			containerTest.OnDraw(containerTest.NewGraphics2D());
+			Assert.IsTrue(leftToRightLayout.Width == 60);
+			Assert.IsTrue(leftToRightLayout.MinimumSize.x == 0);
+			Assert.IsTrue(leftToRightLayout.Height == 33);
+			Assert.IsTrue(leftToRightLayout.MinimumSize.y == 0);
+			Assert.IsTrue(item3.Width == 30);
 
-				containerTest.Width = 650;
-				containerTest.OnDraw(containerTest.NewGraphics2D());
-				Assert.IsTrue(leftToRightLayout.Width == 60);
-				Assert.IsTrue(leftToRightLayout.MinimumSize.x == 0);
-				Assert.IsTrue(leftToRightLayout.Height == 33);
-				Assert.IsTrue(leftToRightLayout.MinimumSize.y == 0);
-				Assert.IsTrue(item3.Width == 30);
-			}
+			containerTest.Width = 650;
+			containerTest.OnDraw(containerTest.NewGraphics2D());
+			Assert.IsTrue(leftToRightLayout.Width == 60);
+			Assert.IsTrue(leftToRightLayout.MinimumSize.x == 0);
+			Assert.IsTrue(leftToRightLayout.Height == 33);
+			Assert.IsTrue(leftToRightLayout.MinimumSize.y == 0);
+			Assert.IsTrue(item3.Width == 30);
 		}
 
 		[Test]

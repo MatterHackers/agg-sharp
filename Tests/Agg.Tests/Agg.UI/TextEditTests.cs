@@ -425,94 +425,90 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void NumEditHandlesNonNumberChars()
 		{
-			{
-				GuiWidget container = new GuiWidget();
-				container.DoubleBuffer = true;
-				container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
-				NumberEdit numberEdit = new NumberEdit(0, 0, 0, 12, 200, 16, true, true);
-				container.AddChild(numberEdit);
+			GuiWidget container = new GuiWidget();
+			container.DoubleBuffer = true;
+			container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
+			NumberEdit numberEdit = new NumberEdit(0, 0, 0, 12, 200, 16, true, true);
+			container.AddChild(numberEdit);
 
-				container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, numberEdit.Height - 1, 0));
-				container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, numberEdit.Height - 1, 0));
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, numberEdit.Height - 1, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, numberEdit.Height - 1, 0));
 
-				Assert.IsTrue(numberEdit.CharIndexToInsertBefore == 0);
-				Assert.IsTrue(numberEdit.TopLeftOffset.y == 0);
+			Assert.IsTrue(numberEdit.CharIndexToInsertBefore == 0);
+			Assert.IsTrue(numberEdit.TopLeftOffset.y == 0);
 
-				// type a . (non numeric character)
-				SendKey(Keys.Back, ' ', container);
-				SendKey(Keys.Delete, ' ', container);
-				SendKey(Keys.OemMinus, '-', container);
-				Assert.IsTrue(numberEdit.Value == 0);
-				SendKey(Keys.OemPeriod, '.', container);
-				Assert.IsTrue(numberEdit.Value == 0);
-				SendKey(Keys.D0, '.', container);
-				Assert.IsTrue(numberEdit.Value == 0);
-				SendKey(Keys.A, 'A', container);
-				Assert.IsTrue(numberEdit.Value == 0);
+			// type a . (non numeric character)
+			SendKey(Keys.Back, ' ', container);
+			SendKey(Keys.Delete, ' ', container);
+			SendKey(Keys.OemMinus, '-', container);
+			Assert.IsTrue(numberEdit.Value == 0);
+			SendKey(Keys.OemPeriod, '.', container);
+			Assert.IsTrue(numberEdit.Value == 0);
+			SendKey(Keys.D0, '.', container);
+			Assert.IsTrue(numberEdit.Value == 0);
+			SendKey(Keys.A, 'A', container);
+			Assert.IsTrue(numberEdit.Value == 0);
 
-				container.Close();
-			}
+			container.Close();
 		}
 
-#if(__ANDROID__)
+#if (__ANDROID__)
 		[Test]
 #else
 		[Test, Apartment(ApartmentState.STA)]
 #endif
 		public void TextEditingSpecialKeysWork()
 		{
-			{
-				GuiWidget container = new GuiWidget();
-				container.DoubleBuffer = true;
-				container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
-				TextEditWidget textEdit = new TextEditWidget("some starting text");
-				container.AddChild(textEdit);
+			GuiWidget container = new GuiWidget();
+			container.DoubleBuffer = true;
+			container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
+			TextEditWidget textEdit = new TextEditWidget("some starting text");
+			container.AddChild(textEdit);
 
-				container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, textEdit.Height - 1, 0));
-				container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, textEdit.Height - 1, 0));
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, textEdit.Height - 1, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, textEdit.Height - 1, 0));
 
-				Assert.IsTrue(textEdit.CharIndexToInsertBefore == 0);
-				Assert.IsTrue(textEdit.TopLeftOffset.y == 0);
+			Assert.IsTrue(textEdit.CharIndexToInsertBefore == 0);
+			Assert.IsTrue(textEdit.TopLeftOffset.y == 0);
 
-				Assert.IsTrue(textEdit.Text == "some starting text");
-				// this is to select some text
-				SendKey(Keys.Shift | Keys.Control | Keys.Right, ' ', container);
-				Assert.IsTrue(textEdit.Selection == "some ");
-				Assert.IsTrue(textEdit.Text == "some starting text");
-				// this is to prove that we don't loose the selection when pressing Control
-				SendKeyDown(Keys.Control, container);
-				Assert.IsTrue(textEdit.Selection == "some ");
-				Assert.IsTrue(textEdit.Text == "some starting text");
-				// this is to prove that we don't loose the selection when pressing Shift
-				SendKeyDown(Keys.Shift, container);
-				Assert.IsTrue(textEdit.Text == "some starting text");
-				Assert.IsTrue(textEdit.Selection == "some ");
-				SendKeyDown(Keys.Right, container);
-				Assert.IsTrue(textEdit.Selection == "");
-				SendKey(Keys.Shift | Keys.Control | Keys.Left, ' ', container);
-				Assert.IsTrue(textEdit.Selection == "some ");
-				SendKey(Keys.Delete, ' ', container);
-				Assert.IsTrue(textEdit.Text == "starting text");
-				SendKey(Keys.Shift | Keys.Control | Keys.Right, ' ', container);
-				Assert.IsTrue(textEdit.Selection == "starting ");
+			Assert.IsTrue(textEdit.Text == "some starting text");
+			// this is to select some text
+			SendKey(Keys.Shift | Keys.Control | Keys.Right, ' ', container);
+			Assert.IsTrue(textEdit.Selection == "some ");
+			Assert.IsTrue(textEdit.Text == "some starting text");
+			// this is to prove that we don't loose the selection when pressing Control
+			SendKeyDown(Keys.Control, container);
+			Assert.IsTrue(textEdit.Selection == "some ");
+			Assert.IsTrue(textEdit.Text == "some starting text");
+			// this is to prove that we don't loose the selection when pressing Shift
+			SendKeyDown(Keys.Shift, container);
+			Assert.IsTrue(textEdit.Text == "some starting text");
+			Assert.IsTrue(textEdit.Selection == "some ");
+			SendKeyDown(Keys.Right, container);
+			Assert.IsTrue(textEdit.Selection == "");
+			SendKey(Keys.Shift | Keys.Control | Keys.Left, ' ', container);
+			Assert.IsTrue(textEdit.Selection == "some ");
+			SendKey(Keys.Delete, ' ', container);
+			Assert.IsTrue(textEdit.Text == "starting text");
+			SendKey(Keys.Shift | Keys.Control | Keys.Right, ' ', container);
+			Assert.IsTrue(textEdit.Selection == "starting ");
 
-#if(!__ANDROID__)
-								// if this fails add
-				// GuiHalWidget.SetClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText);
-				// before you call the unit tests
-				Clipboard.SetSystemClipboard(new WindowsFormsClipboard());
+#if (!__ANDROID__)
+			// if this fails add
+			// GuiHalWidget.SetClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText);
+			// before you call the unit tests
+			Clipboard.SetSystemClipboard(new WindowsFormsClipboard());
 
 
-				SendKey(Keys.Control | Keys.C, 'c', container);
-				Assert.IsTrue(textEdit.Selection == "starting ");
-				Assert.IsTrue(textEdit.Text == "starting text");
-				SendKeyDown(Keys.Right, container); // move to the right
-				SendKey(Keys.Control | Keys.V, 'v', container);
-				Assert.IsTrue(textEdit.Text == "starting starting text");
+			SendKey(Keys.Control | Keys.C, 'c', container);
+			Assert.IsTrue(textEdit.Selection == "starting ");
+			Assert.IsTrue(textEdit.Text == "starting text");
+			SendKeyDown(Keys.Right, container); // move to the right
+			SendKey(Keys.Control | Keys.V, 'v', container);
+			Assert.IsTrue(textEdit.Text == "starting starting text");
 #endif
 
-				container.Close();
-			}
+			container.Close();
 		}
 
 		[Test]
@@ -589,7 +585,6 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				UiThread.RunOnIdle(editField.Focus);
 
-				// Now do the actions specific to this test. (replace this for new tests)
 				testRunner.Type("Test Text");
 
 				testRunner.Wait(1);

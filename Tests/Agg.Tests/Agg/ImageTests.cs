@@ -55,21 +55,19 @@ namespace MatterHackers.Agg.Image
 		[Test]
 		public void ClearTests()
 		{
-			{
-				ImageBuffer clearSurface24 = new ImageBuffer(50, 50, 24, new BlenderBGR());
-				Assert.IsTrue(ClearAndCheckImage(clearSurface24, RGBA_Bytes.White), "Clear 24 to white");
-				Assert.IsTrue(ClearAndCheckImage(clearSurface24, RGBA_Bytes.Black), "Clear 24 to black");
+			ImageBuffer clearSurface24 = new ImageBuffer(50, 50, 24, new BlenderBGR());
+			Assert.IsTrue(ClearAndCheckImage(clearSurface24, RGBA_Bytes.White), "Clear 24 to white");
+			Assert.IsTrue(ClearAndCheckImage(clearSurface24, RGBA_Bytes.Black), "Clear 24 to black");
 
-				ImageBuffer clearSurface32 = new ImageBuffer(50, 50);
-				Assert.IsTrue(ClearAndCheckImage(clearSurface32, RGBA_Bytes.White), "Clear 32 to white");
-				Assert.IsTrue(ClearAndCheckImage(clearSurface32, RGBA_Bytes.Black), "Clear 32 to black");
-				Assert.IsTrue(ClearAndCheckImage(clearSurface32, new RGBA_Bytes(0, 0, 0, 0)), "Clear 32 to nothing");
+			ImageBuffer clearSurface32 = new ImageBuffer(50, 50);
+			Assert.IsTrue(ClearAndCheckImage(clearSurface32, RGBA_Bytes.White), "Clear 32 to white");
+			Assert.IsTrue(ClearAndCheckImage(clearSurface32, RGBA_Bytes.Black), "Clear 32 to black");
+			Assert.IsTrue(ClearAndCheckImage(clearSurface32, new RGBA_Bytes(0, 0, 0, 0)), "Clear 32 to nothing");
 
-				ImageBufferFloat clearSurface3ComponentFloat = new ImageBufferFloat(50, 50, 128, new BlenderBGRAFloat());
-				Assert.IsTrue(ClearAndCheckImageFloat(clearSurface3ComponentFloat, RGBA_Floats.White), "Clear float to white");
-				Assert.IsTrue(ClearAndCheckImageFloat(clearSurface3ComponentFloat, RGBA_Floats.Black), "Clear float to black");
-				Assert.IsTrue(ClearAndCheckImageFloat(clearSurface3ComponentFloat, new RGBA_Floats(0, 0, 0, 0)), "Clear float to nothing");
-			}
+			ImageBufferFloat clearSurface3ComponentFloat = new ImageBufferFloat(50, 50, 128, new BlenderBGRAFloat());
+			Assert.IsTrue(ClearAndCheckImageFloat(clearSurface3ComponentFloat, RGBA_Floats.White), "Clear float to white");
+			Assert.IsTrue(ClearAndCheckImageFloat(clearSurface3ComponentFloat, RGBA_Floats.Black), "Clear float to black");
+			Assert.IsTrue(ClearAndCheckImageFloat(clearSurface3ComponentFloat, new RGBA_Floats(0, 0, 0, 0)), "Clear float to nothing");
 		}
 
 		public void ContainsTests()

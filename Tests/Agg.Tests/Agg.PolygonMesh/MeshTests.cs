@@ -258,34 +258,32 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		[Test]
 		public void MergeMeshEdges()
 		{
+			// Test needs writable directory
+			Environment.CurrentDirectory = TestContext.CurrentContext.WorkDirectory;
+
+			Mesh testMesh = new Mesh();
+			Vertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
+			Vertex centerVertexBottom = testMesh.CreateVertex(0, 0, 0);
+			Vertex centerVertexTop = testMesh.CreateVertex(0, 0, 1);
+			Face leftFace = testMesh.CreateFace(new Vertex[] { leftVertexBottom, centerVertexBottom, centerVertexTop });
+			SaveDebugInfo(testMesh);
+
+			Vertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
+			Face rightFace = testMesh.CreateFace(new Vertex[] { centerVertexBottom, rightVertexBottom, centerVertexTop }, CreateOption.CreateNew);
+
+			SaveDebugInfo(testMesh);
+
+			foreach (MeshEdge meshEdge in testMesh.MeshEdges)
 			{
-				// Test needs writable directory
-				Environment.CurrentDirectory = TestContext.CurrentContext.WorkDirectory;
-
-				Mesh testMesh = new Mesh();
-				Vertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
-				Vertex centerVertexBottom = testMesh.CreateVertex(0, 0, 0);
-				Vertex centerVertexTop = testMesh.CreateVertex(0, 0, 1);
-				Face leftFace = testMesh.CreateFace(new Vertex[] { leftVertexBottom, centerVertexBottom, centerVertexTop });
-				SaveDebugInfo(testMesh);
-
-				Vertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
-				Face rightFace = testMesh.CreateFace(new Vertex[] { centerVertexBottom, rightVertexBottom, centerVertexTop }, CreateOption.CreateNew);
-
-				SaveDebugInfo(testMesh);
-
-				foreach (MeshEdge meshEdge in testMesh.MeshEdges)
-				{
-					Assert.IsTrue(meshEdge.firstFaceEdge != null);
-				}
-
-				Assert.IsTrue(testMesh.MeshEdges.Count == 6);
-
-				Assert.IsTrue(testMesh.FindMeshEdges(centerVertexTop, centerVertexBottom).Count == 2);
-				testMesh.MergeMeshEdges();
-				SaveDebugInfo(testMesh);
-				Assert.IsTrue(testMesh.MeshEdges.Count == 5);
+				Assert.IsTrue(meshEdge.firstFaceEdge != null);
 			}
+
+			Assert.IsTrue(testMesh.MeshEdges.Count == 6);
+
+			Assert.IsTrue(testMesh.FindMeshEdges(centerVertexTop, centerVertexBottom).Count == 2);
+			testMesh.MergeMeshEdges();
+			SaveDebugInfo(testMesh);
+			Assert.IsTrue(testMesh.MeshEdges.Count == 5);
 		}
 
 		[Test]
@@ -668,25 +666,23 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		[Test]
 		public void MeshCopy()
 		{
-			{
-				Mesh testMesh = new Mesh();
-				Vertex left = testMesh.CreateVertex(-1, -1, 0);
-				Vertex middle = testMesh.CreateVertex(0, 1, 0);
-				Vertex right = testMesh.CreateVertex(1, -1, 0);
+			Mesh testMesh = new Mesh();
+			Vertex left = testMesh.CreateVertex(-1, -1, 0);
+			Vertex middle = testMesh.CreateVertex(0, 1, 0);
+			Vertex right = testMesh.CreateVertex(1, -1, 0);
 
-				Vertex top = testMesh.CreateVertex(0, 0, 1);
+			Vertex top = testMesh.CreateVertex(0, 0, 1);
 
-				testMesh.CreateFace(new Vertex[] { left, top, middle });
-				testMesh.CreateFace(new Vertex[] { left, right, top });
-				testMesh.CreateFace(new Vertex[] { right, middle, top });
-				testMesh.CreateFace(new Vertex[] { left, middle, right });
+			testMesh.CreateFace(new Vertex[] { left, top, middle });
+			testMesh.CreateFace(new Vertex[] { left, right, top });
+			testMesh.CreateFace(new Vertex[] { right, middle, top });
+			testMesh.CreateFace(new Vertex[] { left, middle, right });
 
-				testMesh.MergeVertices();
+			testMesh.MergeVertices();
 
-				Mesh copyMesh = Mesh.Copy(testMesh);
+			Mesh copyMesh = Mesh.Copy(testMesh);
 
-				Assert.IsTrue(testMesh.Equals(copyMesh));
-			}
+			Assert.IsTrue(testMesh.Equals(copyMesh));
 		}
 	}
 

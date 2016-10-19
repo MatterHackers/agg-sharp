@@ -49,33 +49,31 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void DoubleBufferTests()
 		{
+			bool textWidgetDoubleBufferDefault = TextWidget.DoubleBufferDefault;
+
+			// the text widget is double buffered
+			TextWidget.DoubleBufferDefault = true;
+			ImageBuffer doubleBufferImage = new ImageBuffer(65, 50, 24, new BlenderBGR());
+			Button doubleBufferButton = new Button("testing", 0, 0);
+			doubleBufferButton.OnDraw(doubleBufferImage.NewGraphics2D());
+			SaveImage(doubleBufferImage, "z control.tga");
+
+			// make sure the frame comparison function works.
 			{
-				bool textWidgetDoubleBufferDefault = TextWidget.DoubleBufferDefault;
-
-				// the text widget is double buffered
-				TextWidget.DoubleBufferDefault = true;
-				ImageBuffer doubleBufferImage = new ImageBuffer(65, 50, 24, new BlenderBGR());
-				Button doubleBufferButton = new Button("testing", 0, 0);
-				doubleBufferButton.OnDraw(doubleBufferImage.NewGraphics2D());
-				SaveImage(doubleBufferImage, "z control.tga");
-
-				// make sure the frame comparison function works.
-				{
-					ImageBuffer doubleBufferImageCopy = new ImageBuffer(doubleBufferImage, new BlenderBGR());
-					Assert.IsTrue(doubleBufferImage == doubleBufferImageCopy);
-				}
-
-				// the text widget is not double buffered
-				TextWidget.DoubleBufferDefault = false;
-				ImageBuffer notDoubleBufferImage = new ImageBuffer(65, 50, 24, new BlenderBGR());
-				Button notDoubleBufferButton = new Button("testing", 0, 0);
-				notDoubleBufferButton.OnDraw(notDoubleBufferImage.NewGraphics2D());
-				SaveImage(notDoubleBufferImage, "z test.tga");
-
-				Assert.IsTrue(doubleBufferImage == notDoubleBufferImage);
-
-				TextWidget.DoubleBufferDefault = textWidgetDoubleBufferDefault;
+				ImageBuffer doubleBufferImageCopy = new ImageBuffer(doubleBufferImage, new BlenderBGR());
+				Assert.IsTrue(doubleBufferImage == doubleBufferImageCopy);
 			}
+
+			// the text widget is not double buffered
+			TextWidget.DoubleBufferDefault = false;
+			ImageBuffer notDoubleBufferImage = new ImageBuffer(65, 50, 24, new BlenderBGR());
+			Button notDoubleBufferButton = new Button("testing", 0, 0);
+			notDoubleBufferButton.OnDraw(notDoubleBufferImage.NewGraphics2D());
+			SaveImage(notDoubleBufferImage, "z test.tga");
+
+			Assert.IsTrue(doubleBufferImage == notDoubleBufferImage);
+
+			TextWidget.DoubleBufferDefault = textWidgetDoubleBufferDefault;
 		}
 
 		public void BackBuffersAreScreenAligned()
