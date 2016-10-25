@@ -569,11 +569,11 @@ namespace MatterHackers.Agg.UI.Tests
 	}
 
 #if !__ANDROID__
-	[TestFixture, Category("Agg.UI")]
-	public class VerifyFocusMakesTextWidgetEditableClass
+	[TestFixture, Category("Agg.UI"), RunInApplicationDomain]
+	public class TextEditFocusTests
 	{
-		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
-		public void VerifyFocusMakesTextWidgetEditable()
+		[Test, Apartment(ApartmentState.STA)]
+		public async Task VerifyFocusMakesTextWidgetEditable()
 		{
 			TextEditWidget editField = null;
 			SystemWindow systemWindow = new SystemWindow(300, 200)
@@ -581,14 +581,16 @@ namespace MatterHackers.Agg.UI.Tests
 				BackgroundColor = RGBA_Bytes.Black,
 			};
 
-			Action<AutomationRunner> testToRun = (testRunner) =>
+			AutomationTest testToRun = (testRunner) =>
 			{
 				UiThread.RunOnIdle(editField.Focus);
 
 				testRunner.Type("Test Text");
 
 				testRunner.Wait(1);
-				testRunner.AddTestResult(editField.Text == "Test Text", "validate text is typed");
+				Assert.IsTrue(editField.Text == "Test Text", "validate text is typed");
+
+				return Task.FromResult(0);
 			};
 
 			editField = new TextEditWidget(pixelWidth: 200)
@@ -598,13 +600,11 @@ namespace MatterHackers.Agg.UI.Tests
 			};
 			systemWindow.AddChild(editField);
 
-			var testHarness = AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
-
-			Assert.IsTrue(testHarness.AllTestsPassed(1));
+			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
 		}
 
-		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain, Category("FixNeeded")]
-		public void VerifyFocusProperty()
+		[Test, Apartment(ApartmentState.STA), Category("FixNeeded")]
+		public async Task VerifyFocusProperty()
 		{
 			SystemWindow systemWindow = new SystemWindow(300, 200)
 			{
@@ -618,24 +618,20 @@ namespace MatterHackers.Agg.UI.Tests
 			};
 			systemWindow.AddChild(editField);
 
-			Action<AutomationRunner> testToRun = (testRunner) =>
+			AutomationTest testToRun = (testRunner) =>
 			{
 				UiThread.RunOnIdle(editField.Focus);
 				testRunner.WaitUntil(() => editField.Focused, 3);
-				testRunner.AddTestResult(editField.Focused, "Focused property should be true after invoking Focus method");
+				Assert.IsTrue(editField.Focused, "Focused property should be true after invoking Focus method");
+
+				return Task.FromResult(0);
 			};
 
-			var testHarness = AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
-
-			Assert.IsTrue(testHarness.AllTestsPassed(1));
+			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
 		}
-	}
 
-	[TestFixture, Category("Agg.UI")]
-	public class SelectAllOnFocusCanStillClickAfterSelectionClass
-	{
-		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
-		public void SelectAllOnFocusCanStillClickAfterSelection()
+		[Test, Apartment(ApartmentState.STA)]
+		public async Task SelectAllOnFocusCanStillClickAfterSelection()
 		{
 			TextEditWidget editField = null;
 			SystemWindow systemWindow = new SystemWindow(300, 200)
@@ -643,22 +639,24 @@ namespace MatterHackers.Agg.UI.Tests
 				BackgroundColor = RGBA_Bytes.Black,
 			};
 
-			Action<AutomationRunner> testToRun = (testRunner) =>
+			AutomationTest testToRun = (testRunner) =>
 			{
 				editField.SelectAllOnFocus = true;
 				testRunner.Wait(1);
 
-				testRunner.AddTestResult(testRunner.ClickByName(editField.Name, 1));
+				Assert.IsTrue(testRunner.ClickByName(editField.Name, 1));
 
 				editField.SelectAllOnFocus = true;
 				testRunner.Type("123");
-				testRunner.AddTestResult(editField.Text == "123", "on enter we have selected all and replaced the text");
+				Assert.IsTrue(editField.Text == "123", "on enter we have selected all and replaced the text");
 
-				testRunner.AddTestResult(testRunner.ClickByName(editField.Name, 1));
+				Assert.IsTrue(testRunner.ClickByName(editField.Name, 1));
 				testRunner.Type("123");
-				testRunner.AddTestResult(editField.Text == "123123", "we already have the contol selected so don't select all again.");
+				Assert.IsTrue(editField.Text == "123123", "we already have the contol selected so don't select all again.");
 
 				systemWindow.CloseOnIdle();
+
+				return Task.FromResult(0);
 			};
 
 			editField = new TextEditWidget(pixelWidth: 200)
@@ -670,9 +668,7 @@ namespace MatterHackers.Agg.UI.Tests
 			};
 			systemWindow.AddChild(editField);
 
-			var testHarness = AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 15);
-
-			Assert.IsTrue(testHarness.AllTestsPassed(4));
+			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 15);
 		}
 	}
 #endif

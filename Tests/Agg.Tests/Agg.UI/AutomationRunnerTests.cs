@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using MatterHackers.GuiAutomation;
 using NUnit.Framework;
 
@@ -37,18 +38,20 @@ namespace MatterHackers.Agg.UI.Tests
 	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
 	public class AutomationRunnerTests
 	{
-		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain, Category("FixNeeded")]
-		public void GetWidgetByNameTestNoRegionSingleWindow()
+		[Test, Apartment(ApartmentState.STA), Category("FixNeeded")]
+		public async Task GetWidgetByNameTestNoRegionSingleWindow()
 		{
 			// single system window
 			int leftClickCount = 0;
 
-			Action<AutomationRunner> testToRun = (AutomationRunner testRunner) =>
+			AutomationTest testToRun = (testRunner) =>
 			{
 				testRunner.ClickByName("left");
 				testRunner.Wait(.5);
 
-				testRunner.AddTestResult(leftClickCount == 1, "Got left button click");
+				Assert.IsTrue(leftClickCount == 1, "Got left button click");
+
+				return Task.FromResult(0);
 			};
 
 			SystemWindow buttonContainer = new SystemWindow(300, 200);
@@ -58,33 +61,33 @@ namespace MatterHackers.Agg.UI.Tests
 			leftButton.Click += (sender, e) => { leftClickCount++; };
 			buttonContainer.AddChild(leftButton);
 
-			var testHarness = AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
-
-			Assert.IsTrue(testHarness.AllTestsPassed(1));
+			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
 		}
 
-		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain, Category("FixNeeded")]
+		[Test, Apartment(ApartmentState.STA), Category("FixNeeded")]
 		public void GetWidgetByNameTestNoRegionMultipleWindow()
 		{
 		}
 
-		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
-		public void GetWidgetByNameTestRegionSingleWindow()
+		[Test, Apartment(ApartmentState.STA)]
+		public async Task GetWidgetByNameTestRegionSingleWindow()
 		{
 			int leftClickCount = 0;
 
-			Action<AutomationRunner> testToRun = (testRunner) =>
+			AutomationTest testToRun = (testRunner) =>
 			{
 				testRunner.ClickByName("left");
 				testRunner.Wait(.5);
-				testRunner.AddTestResult(leftClickCount == 1, "Got left button click");
+				Assert.IsTrue(leftClickCount == 1, "Got left button click");
 
 				SearchRegion rightButtonRegion = testRunner.GetRegionByName("right");
 
 				testRunner.ClickByName("left", searchRegion: rightButtonRegion);
 				testRunner.Wait(.5);
 
-				testRunner.AddTestResult(leftClickCount == 1, "Did not get left button click");
+				Assert.IsTrue(leftClickCount == 1, "Did not get left button click");
+
+				return Task.FromResult(0);
 			};
 
 			SystemWindow buttonContainer = new SystemWindow(300, 200);
@@ -97,9 +100,7 @@ namespace MatterHackers.Agg.UI.Tests
 			rightButton.Name = "right";
 			buttonContainer.AddChild(rightButton);
 
-			var testHarness = AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
-
-			Assert.IsTrue(testHarness.AllTestsPassed(2));
+			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
 		}
 
 		[Test, Category("FixNeeded")]

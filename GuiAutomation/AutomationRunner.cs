@@ -43,6 +43,8 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.GuiAutomation
 {
+	public delegate Task AutomationTest(AutomationRunner runner);
+
 	public class AutomationRunner
 	{
 		public long MatchLimit = 50;
@@ -919,9 +921,11 @@ namespace MatterHackers.GuiAutomation
 			}
 		}
 
-		public static AutomationRunner ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, Action<AutomationRunner> testMethod, double secondsToTestFailure, string imagesDirectory = "", InputType inputType = InputType.Native)
+		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure, string imagesDirectory = "", InputType inputType = InputType.Native)
 		{
 			var testRunner = new AutomationRunner(imagesDirectory, inputType);
+
+			AutoResetEvent resetEvent = new AutoResetEvent(false);
 
 			bool firstDraw = true;
 			initialSystemWindow.AfterDraw += (sender, e) =>
@@ -929,31 +933,44 @@ namespace MatterHackers.GuiAutomation
 				if (firstDraw)
 				{
 					firstDraw = false;
-					var methodUnderTest = Task.Run(() =>
-					{
-						try
-						{
-							testMethod(testRunner);
-						}
-						catch (Exception ex)
-						{
-							Console.WriteLine("Unhandled exception in automation tests: \r\n\t{0}", ex.ToString());
-						}
-					});
-
-					Task.WhenAny(methodUnderTest, Task.Delay((int)(1000 * secondsToTestFailure))).ContinueWith((t) =>
-					{
-						if (!initialSystemWindow.HasBeenClosed)
-						{
-							initialSystemWindow.CloseOnIdle();
-						}
-					});
+					resetEvent.Set();
 				}
 			};
 
+			int testTimeout = (int)(1000 * secondsToTestFailure);
+			var timer = Stopwatch.StartNew();
+
+			// Start two tasks, the timeout and the test method. Block in the test method until the first draw
+			Task<Task> task = Task.WhenAny(
+				Task.Delay(testTimeout),
+				Task.Run(() =>
+				{
+					// Wait until the first system window draw before running the test method
+					resetEvent.WaitOne();
+					
+					return testMethod(testRunner);
+				}));
+
+			// Once either the timeout or the test method has completed, reassign the task/result for timeout errors and shutdown the SystemWindow 
+			task.ContinueWith((innerTask) =>
+			{
+				long elapsedTime = timer.ElapsedMilliseconds;
+
+				// Create an exception Task for test timeouts
+				if (elapsedTime >= testTimeout)
+				{
+					task = new Task<Task>(() => { throw new TimeoutException("TestMethod timed out"); });
+					task.RunSynchronously();
+				}
+
+				initialSystemWindow.CloseOnIdle();
+			});
+
+			// Main thread blocks here until released via CloseOnIdle above
 			initialSystemWindow.ShowAsSystemWindow();
 
-			return testRunner;
+			// After the system window is closed return the task and any exception to the calling context
+			return task?.Result ?? Task.FromResult(0);
 		}
 
 		#endregion

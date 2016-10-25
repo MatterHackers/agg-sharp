@@ -34,6 +34,7 @@ using MatterHackers.VectorMath;
 using NUnit.Framework;
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -193,7 +194,7 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain, Category("FixNeeded") /* Test is unstable, failing frequently but succeeding on rebuilds */]
-		public void MenuDisabledItemsWorkCorrectlyActual()
+		public async Task MenuDisabledItemsWorkCorrectlyActual()
 		{
 			int item1ClickCount = 0;
 			int item2ClickCount = 0;
@@ -211,7 +212,7 @@ namespace MatterHackers.Agg.UI.Tests
 				Name = "menu1",
 			};
 
-			Action<AutomationRunner> testToRun = (testRunner) =>
+			AutomationTest testToRun = (testRunner) =>
 			{
 				try
 				{
@@ -219,57 +220,59 @@ namespace MatterHackers.Agg.UI.Tests
 
 					// Now do the actions specific to this test. (replace this for new tests)
 					{
-						testRunner.AddTestResult(item1ClickCount == 0);
-						testRunner.AddTestResult(item2ClickCount == 0);
-						testRunner.AddTestResult(item3ClickCount == 0);
+						Assert.IsTrue(item1ClickCount == 0);
+						Assert.IsTrue(item2ClickCount == 0);
+						Assert.IsTrue(item3ClickCount == 0);
 
 						if (true)
 						{
 							testRunner.ClickByName("menu1", 5);
 							testRunner.ClickByName("item1", 5);
 							testRunner.Wait(.1);
-							testRunner.AddTestResult(!testList.IsOpen);
-							testRunner.AddTestResult(item1ClickCount == 1);
-							testRunner.AddTestResult(item2ClickCount == 0);
-							testRunner.AddTestResult(item3ClickCount == 0);
+							Assert.IsTrue(!testList.IsOpen);
+							Assert.IsTrue(item1ClickCount == 1);
+							Assert.IsTrue(item2ClickCount == 0);
+							Assert.IsTrue(item3ClickCount == 0);
 
 							testRunner.ClickByName("menu1", 5);
 							testRunner.ClickByName("item2", 5);
 							testRunner.Wait(.1);
-							testRunner.AddTestResult(!testList.IsOpen);
-							testRunner.AddTestResult(item1ClickCount == 1);
-							testRunner.AddTestResult(item2ClickCount == 1);
-							testRunner.AddTestResult(item3ClickCount == 0);
+							Assert.IsTrue(!testList.IsOpen);
+							Assert.IsTrue(item1ClickCount == 1);
+							Assert.IsTrue(item2ClickCount == 1);
+							Assert.IsTrue(item3ClickCount == 0);
 
 							testRunner.ClickByName("menu1", 5);
 							testRunner.ClickByName("item3", 5);
 							testRunner.Wait(.1);
-							testRunner.AddTestResult(testList.IsOpen, "It should remain open when clicking on a disabled item.");
-							testRunner.AddTestResult(item1ClickCount == 1);
-							testRunner.AddTestResult(item2ClickCount == 1);
-							testRunner.AddTestResult(item3ClickCount == 0);
+							Assert.IsTrue(testList.IsOpen, "It should remain open when clicking on a disabled item.");
+							Assert.IsTrue(item1ClickCount == 1);
+							Assert.IsTrue(item2ClickCount == 1);
+							Assert.IsTrue(item3ClickCount == 0);
 							testRunner.ClickByName("item2", 5);
 							testRunner.Wait(.1);
-							testRunner.AddTestResult(!testList.IsOpen);
-							testRunner.AddTestResult(item1ClickCount == 1);
-							testRunner.AddTestResult(item2ClickCount == 2);
-							testRunner.AddTestResult(item3ClickCount == 0);
+							Assert.IsTrue(!testList.IsOpen);
+							Assert.IsTrue(item1ClickCount == 1);
+							Assert.IsTrue(item2ClickCount == 2);
+							Assert.IsTrue(item3ClickCount == 0);
 
 							testRunner.ClickByName("menu1", 5);
 							testRunner.ClickByName("OffMenu", 5);
 							testRunner.Wait(.1);
-							testRunner.AddTestResult(!testList.IsOpen);
+							Assert.IsTrue(!testList.IsOpen);
 						}
 						testRunner.ClickByName("menu1", 5);
 						testRunner.ClickByName("item3", 5);
 						testRunner.ClickByName("OffMenu", 5);
-						testRunner.AddTestResult(!testList.IsOpen, "had a bug where after clicking a disabled item would not close clicking outside");
+						Assert.IsTrue(!testList.IsOpen, "had a bug where after clicking a disabled item would not close clicking outside");
 					}
 				}
 				catch
 				{
 					UiThread.RunOnIdle(menuTestContainer.Close, 1);
 				}
+
+				return Task.FromResult(0);
 			};
 
 			testList.AddItem("item1", clickAction: (s,e) =>
@@ -295,9 +298,7 @@ namespace MatterHackers.Agg.UI.Tests
 				Name = "OffMenu",
 			});
 
-			var testHarness = AutomationRunner.ShowWindowAndExecuteTests(menuTestContainer, testToRun, 20);
-
-			Assert.IsTrue(testHarness.AllTestsPassed(21));
+			await AutomationRunner.ShowWindowAndExecuteTests(menuTestContainer, testToRun, 20);
 		}
 
 		[Test]
