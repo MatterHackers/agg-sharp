@@ -2048,7 +2048,10 @@ namespace MatterHackers.Agg.UI
 
 		public void CloseOnIdle()
 		{
-			UiThread.RunOnIdle(this.Close);
+			if (!HasBeenClosed)
+			{
+				UiThread.RunOnIdle(this.Close);
+			}
 		}
 
 		/// <summary>

@@ -37,6 +37,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -45,28 +46,30 @@ namespace MatterHackers.Agg.UI.Tests
 	{
 #if !__ANDROID__
 		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
-		public void DoClickButtonInWindow()
+		public async Task DoClickButtonInWindow()
 		{
 			int leftClickCount = 0;
 			int rightClickCount = 0;
 
-			Action<AutomationRunner> testToRun = (testRunner) =>
+			AutomationTest testToRun = (testRunner) =>
 			{
 				// Now do the actions specific to this test. (replace this for new tests)
 				testRunner.ClickByName("left", 1);
 				testRunner.Wait(.5);
 
-				testRunner.AddTestResult(leftClickCount == 1, "Got left button click");
+				Assert.IsTrue(leftClickCount == 1, "Got left button click");
 
 				testRunner.ClickByName("right", 1);
 				testRunner.Wait(.5);
 
-				testRunner.AddTestResult(rightClickCount == 1, "Got right button click");
+				Assert.IsTrue(rightClickCount == 1, "Got right button click");
 
 				testRunner.DragDropByName("left", "right", offsetDrag: new Point2D(1, 0));
 				testRunner.Wait(.5);
 
-				testRunner.AddTestResult(leftClickCount == 1, "Mouse down not a click");
+				Assert.IsTrue(leftClickCount == 1, "Mouse down not a click");
+
+				return Task.FromResult(0);
 			};
 
 			SystemWindow buttonContainer = new SystemWindow(300, 200);
@@ -80,9 +83,7 @@ namespace MatterHackers.Agg.UI.Tests
 			rightButton.Name = "right";
 			buttonContainer.AddChild(rightButton);
 
-			var testHarness = AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
-
-			Assert.IsTrue(testHarness.AllTestsPassed(3));
+			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
 		}
 
 #endif
