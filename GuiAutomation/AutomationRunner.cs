@@ -134,7 +134,7 @@ namespace MatterHackers.GuiAutomation
 
 		public bool ClickImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
 		{
-			ImageBuffer imageToLookFor = LoadImageFromSourcFolder(imageName);
+			ImageBuffer imageToLookFor = LoadImageFromSourceFolder(imageName);
 			if (imageToLookFor != null)
 			{
 				return ClickImage(imageToLookFor, secondsToWait, searchRegion, offset, origin, mouseButtons);
@@ -238,10 +238,10 @@ namespace MatterHackers.GuiAutomation
 		public bool DragDropImage(string imageNameDrag, string imageNameDrop, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offsetDrag = default(Point2D), ClickOrigin originDrag = ClickOrigin.Center,
 			Point2D offsetDrop = default(Point2D), ClickOrigin originDrop = ClickOrigin.Center)
 		{
-			ImageBuffer imageNeedleDrag = LoadImageFromSourcFolder(imageNameDrag);
+			ImageBuffer imageNeedleDrag = LoadImageFromSourceFolder(imageNameDrag);
 			if (imageNeedleDrag != null)
 			{
-				ImageBuffer imageNeedleDrop = LoadImageFromSourcFolder(imageNameDrop);
+				ImageBuffer imageNeedleDrop = LoadImageFromSourceFolder(imageNameDrop);
 				if (imageNeedleDrop != null)
 				{
 					return DragDropImage(imageNeedleDrag, imageNeedleDrop, secondsToWait, searchRegion, offsetDrag, originDrag, offsetDrop, originDrop);
@@ -275,7 +275,7 @@ namespace MatterHackers.GuiAutomation
 
 		public bool DragImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
 		{
-			ImageBuffer imageToLookFor = LoadImageFromSourcFolder(imageName);
+			ImageBuffer imageToLookFor = LoadImageFromSourceFolder(imageName);
 			if (imageToLookFor != null)
 			{
 				return DragImage(imageToLookFor, secondsToWait, searchRegion, offset, origin);
@@ -317,7 +317,7 @@ namespace MatterHackers.GuiAutomation
 
 		public bool DropImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
 		{
-			ImageBuffer imageToLookFor = LoadImageFromSourcFolder(imageName);
+			ImageBuffer imageToLookFor = LoadImageFromSourceFolder(imageName);
 			if (imageToLookFor != null)
 			{
 				return DropImage(imageToLookFor, secondsToWait, searchRegion, offset, origin);
@@ -359,7 +359,7 @@ namespace MatterHackers.GuiAutomation
 
 		public bool ImageExists(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null)
 		{
-			ImageBuffer imageToLookFor = LoadImageFromSourcFolder(imageName);
+			ImageBuffer imageToLookFor = LoadImageFromSourceFolder(imageName);
 			if (imageToLookFor != null)
 			{
 				return ImageExists(imageToLookFor, secondsToWait, searchRegion);
@@ -484,7 +484,7 @@ namespace MatterHackers.GuiAutomation
 			}, this);
 		}
 
-		private ImageBuffer LoadImageFromSourcFolder(string imageName)
+		private ImageBuffer LoadImageFromSourceFolder(string imageName)
 		{
 			string pathToImage = Path.Combine(imageDirectory, imageName);
 
@@ -816,7 +816,7 @@ namespace MatterHackers.GuiAutomation
 
 		public bool WaitForImage(string imageName, double secondsToWait, SearchRegion searchRegion = null)
 		{
-			ImageBuffer imageToLookFor = LoadImageFromSourcFolder(imageName);
+			ImageBuffer imageToLookFor = LoadImageFromSourceFolder(imageName);
 			if (imageToLookFor != null)
 			{
 				return WaitForImage(imageToLookFor, secondsToWait, searchRegion);
@@ -867,7 +867,7 @@ namespace MatterHackers.GuiAutomation
 		/// Wait up to secondsToWait for the named widget to vanish.
 		/// </summary>
 		/// <param name="widgetName"></param>
-		public bool WaitVanishForName(string widgetName, double secondsToWait) // TODO: should have a search regoin
+		public bool WaitVanishForName(string widgetName, double secondsToWait) // TODO: should have a search region
 		{
 			Stopwatch timeWaited = Stopwatch.StartNew();
 			while (NameExists(widgetName)
