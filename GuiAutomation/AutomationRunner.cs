@@ -84,8 +84,6 @@ namespace MatterHackers.GuiAutomation
 
 		public enum InterpolationType { LINEAR, EASE_IN, EASE_OUT, EASE_IN_OUT };
 
-		private List<TestResult> results = new List<TestResult>();
-
 		#region Utility
 
 		public Point2D CurrentMousePosition()
@@ -887,39 +885,6 @@ namespace MatterHackers.GuiAutomation
 		#endregion Time
 
 		#region Prior TestHarness code
-		public void AddTestResult(bool passed, string resultDescription = "")
-		{
-			var testResult = new TestResult()
-			{
-				Passed = passed,
-				Description = resultDescription,
-			};
-
-			results.Add(testResult);
-
-			Console.WriteLine(
-				" {0} {1}",
-				passed ? "-" : "!",
-				testResult.ToString());
-		}
-
-		public bool AllTestsPassed(int expectedCount)
-		{
-			return expectedCount == results.Count
-				&& results.TrueForAll(testResult => testResult.Passed);
-		}
-
-		internal class TestResult
-		{
-			internal bool Passed { get; set; }
-			internal string Description { get; set; }
-
-			public override string ToString()
-			{
-				string status = Passed ? "Passed" : "Failed";
-				return $"Test {status}: {Description}";
-			}
-		}
 
 		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure, string imagesDirectory = "", InputType inputType = InputType.Native)
 		{
