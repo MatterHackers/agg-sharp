@@ -361,7 +361,7 @@ namespace MatterHackers.Agg.Tests
 				try
 				{
 					MouseEventArgs mouseEvent;
-					AutomationRunner testRunner= new AutomationRunner();
+					AutomationRunner testRunner = new AutomationRunner();
 
 					// Click should occur on mouse[down/up] within the controls bounds
 					{
