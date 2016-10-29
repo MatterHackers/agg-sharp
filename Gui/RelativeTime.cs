@@ -58,23 +58,17 @@ namespace MatterHackers.Agg.UI
 					if (timeToDescribe.Month == now.Month)
 					{
 						// same month
-						if ((now - timeToDescribe).Days < 7)
+						if (now.Date == timeToDescribe.Date)
 						{
-							if ((now - timeToDescribe).Days < 3)
-							{
-								if ((now - timeToDescribe).Days < 1)
-								{
-									return TimeBlock.Today;
-								}
-								else
-								{
-									return TimeBlock.Yesterday;
-								}
-							}
-							else
-							{
-								return TimeBlock.SameWeek;
-							}
+							return TimeBlock.Today;
+						}
+						else if(now.Date.Subtract(TimeSpan.FromDays(1)).Date == timeToDescribe.Date)
+						{
+							return TimeBlock.Yesterday;
+						}
+						else if ((now - timeToDescribe).Days < 7)
+						{
+							return TimeBlock.SameWeek;
 						}
 						else
 						{
