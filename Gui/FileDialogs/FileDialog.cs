@@ -31,39 +31,35 @@ namespace MatterHackers.Agg.UI
 
 		public override bool OpenFileDialog(OpenFileDialogParams openParams, OpenFileDialogDelegate callback)
 		{
-			var chooseFilesWindw = new SystemWindow(640, 300);
-			chooseFilesWindw.BackgroundColor = RGBA_Bytes.DarkGray;
+			var chooseFilesWindow = new SystemWindow(640, 300);
+			chooseFilesWindow.BackgroundColor = RGBA_Bytes.DarkGray;
 			var thisIsABug = new TextWidget("Report this Bug!", pointSize: 54, textColor: RGBA_Bytes.Pink);
 			thisIsABug.Margin = new BorderDouble(0, 30);
 			thisIsABug.VAnchor = VAnchor.ParentTop;
 			thisIsABug.HAnchor = HAnchor.ParentCenter;
-			chooseFilesWindw.AddChild(thisIsABug);
+			chooseFilesWindow.AddChild(thisIsABug);
 
-
-			var fileNameInput = new TextEditWidget(pixelWidth: 400);
-			fileNameInput.VAnchor = VAnchor.ParentCenter;
-			fileNameInput.HAnchor = HAnchor.ParentCenter;
-
-			chooseFilesWindw.AddChild(fileNameInput);
-			chooseFilesWindw.Load += (s1,e1) => fileNameInput.Focus();
-
-			fileNameInput.EnterPressed += (s2, e2) =>
+			var fileNameInput = new TextEditWidget(pixelWidth: 400)
 			{
-				chooseFilesWindw.CloseOnIdle();
+				VAnchor = VAnchor.ParentCenter,
+				HAnchor = HAnchor.ParentCenter
 			};
+			fileNameInput.EnterPressed += (s, e) => chooseFilesWindow.CloseOnIdle();
 
-			chooseFilesWindw.Closed += (s, e) =>
+			chooseFilesWindow.AddChild(fileNameInput);
+			chooseFilesWindow.Load += (s, e) => fileNameInput.Focus();
+			chooseFilesWindow.Closed += (s, e) =>
 			{
 				if (fileNameInput.Text.Length > 2)
 				{
-					string[] files = fileNameInput.Text.Split(';');
+					string[] files = fileNameInput.Text.Split(';', ' ').Select(f => f.Trim('\"')).ToArray();
 					openParams.FileName = files[0];
 					openParams.FileNames = files;
 				}
 				UiThread.RunOnIdle(() => callback?.Invoke(openParams));
 			};
 
-			chooseFilesWindw.ShowAsSystemWindow();
+			chooseFilesWindow.ShowAsSystemWindow();
 
 			return true;
 		}
