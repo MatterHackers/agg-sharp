@@ -34,6 +34,9 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using MatterHackers.Agg.PlatformAbstract;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace MatterHackers.SerialPortCommunication.FrostedSerial
 {
@@ -114,6 +117,26 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 		public static bool EnsureDeviceAccess()
 		{
 			return true;
+		}
+
+		private static Regex linuxDefaultUIFilter = new Regex("/dev/ttyS*\\d+", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+		public static IEnumerable<string> FilterPortsForMac(string[] allPorts)
+		{
+			IEnumerable<string> filteredPorts;
+
+			if (OsInformation.OperatingSystem == OSType.X11)
+			{
+				// A default and naive filter that works well on Ubuntu 14
+				filteredPorts = allPorts.Where(portName => portName != "/dev/tty" && !linuxDefaultUIFilter.Match(portName).Success);
+			}
+			else
+			{
+				// looks_like_mac -- serialPort.StartsWith("/dev/tty."); looks_like_pc -- serialPort.StartsWith("COM")
+				filteredPorts = allPorts.Where(portName => portName.StartsWith("/dev/tty.") || portName.StartsWith("COM"));
+			}
+
+			return filteredPorts.Any() ? filteredPorts : allPorts;
 		}
 
 		public static string[] GetPortNames(bool filter = false)
