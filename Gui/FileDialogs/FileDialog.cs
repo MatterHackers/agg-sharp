@@ -23,6 +23,67 @@ namespace MatterHackers.Agg.UI
 		public abstract string ResolveFilePath(string path);
 	}
 
+	internal class AggFileDialogCreator : FileDialogCreator
+	{
+		internal AggFileDialogCreator()
+		{
+		}
+
+		public override bool OpenFileDialog(OpenFileDialogParams openParams, OpenFileDialogDelegate callback)
+		{
+			var chooseFilesWindw = new SystemWindow(640, 300);
+			chooseFilesWindw.BackgroundColor = RGBA_Bytes.DarkGray;
+			var thisIsABug = new TextWidget("Report this Bug!", pointSize: 54, textColor: RGBA_Bytes.Pink);
+			thisIsABug.Margin = new BorderDouble(0, 30);
+			thisIsABug.VAnchor = VAnchor.ParentTop;
+			thisIsABug.HAnchor = HAnchor.ParentCenter;
+			chooseFilesWindw.AddChild(thisIsABug);
+
+
+			var fileNameInput = new TextEditWidget(pixelWidth: 400);
+			fileNameInput.VAnchor = VAnchor.ParentCenter;
+			fileNameInput.HAnchor = HAnchor.ParentCenter;
+
+			chooseFilesWindw.AddChild(fileNameInput);
+			chooseFilesWindw.Load += (s1,e1) => fileNameInput.Focus();
+
+			fileNameInput.EnterPressed += (s2, e2) =>
+			{
+				chooseFilesWindw.CloseOnIdle();
+			};
+
+			chooseFilesWindw.Closed += (s, e) =>
+			{
+				if (fileNameInput.Text.Length > 2)
+				{
+					string[] files = fileNameInput.Text.Split(';');
+					openParams.FileName = files[0];
+					openParams.FileNames = files;
+				}
+				UiThread.RunOnIdle(() => callback?.Invoke(openParams));
+			};
+
+			chooseFilesWindw.ShowAsSystemWindow();
+
+			return true;
+		}
+
+		public override bool SelectFolderDialog(SelectFolderDialogParams folderParams, SelectFolderDialogDelegate callback)
+		{
+			throw new NotImplementedException();
+		}
+
+		public override bool SaveFileDialog(SaveFileDialogParams saveParams, SaveFileDialogDelegate callback)
+		{
+			throw new NotImplementedException();
+		}
+
+		public override string ResolveFilePath(string path)
+		{
+			throw new NotImplementedException();
+		}
+	}
+
 	public static class FileDialog
 	{
 		private static string lastDirectoryUsed = "";
@@ -37,12 +98,15 @@ namespace MatterHackers.Agg.UI
 				{
 					string pluginPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 					PluginFinder<FileDialogCreator> fileDialogCreatorPlugins = new PluginFinder<FileDialogCreator>(pluginPath);
-					if (fileDialogCreatorPlugins.Plugins.Count != 1)
-					{
-						throw new Exception(string.Format("Did not find any FileDialogCreators in Plugin path ({0}.", pluginPath));
-					}
 
-					fileDialogCreatorPlugin = fileDialogCreatorPlugins.Plugins[0];
+					if (fileDialogCreatorPlugins.Plugins.Count == 0)
+					{
+						fileDialogCreatorPlugin = new AggFileDialogCreator();
+					}
+					else
+					{
+						fileDialogCreatorPlugin = fileDialogCreatorPlugins.Plugins[0];
+					}
 				}
 
 				return fileDialogCreatorPlugin;
