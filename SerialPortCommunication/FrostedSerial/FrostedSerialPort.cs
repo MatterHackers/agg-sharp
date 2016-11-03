@@ -121,7 +121,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
 		private static Regex linuxDefaultUIFilter = new Regex("/dev/ttyS*\\d+", RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-		public static IEnumerable<string> FilterPortsForMac(string[] allPorts)
+		private static IEnumerable<string> FilterPortsForMac(List<string> allPorts)
 		{
 			IEnumerable<string> filteredPorts;
 
@@ -186,7 +186,8 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 				}
 #endif
 			}
-			return serial_ports.ToArray();
+			
+			return FilterPortsForMac(serial_ports).ToArray();
 		}
 
 		public static string GetDefaultPortName()
