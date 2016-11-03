@@ -139,13 +139,13 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 			return filteredPorts.Any() ? filteredPorts : allPorts;
 		}
 
-		public static string[] GetPortNames(bool filter = false)
+		public static string[] GetPortNames(bool filter = true)
 		{
-			int p = (int)Environment.OSVersion.Platform;
+			var p = Environment.OSVersion.Platform;
 			List<string> serial_ports = new List<string>();
 
 			// Are we on Unix?
-			if (p == 4 || p == 128 || p == 6)
+			if (p == PlatformID.Unix || p == PlatformID.MacOSX)
 			{
 				string[] ttys = Directory.GetFiles("/dev/", "tty*");
 
@@ -158,11 +158,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 				// Probe for Linux-styled devices: /dev/ttyS* or /dev/ttyUSB*
 				foreach (string dev in ttys)
 				{
-					if (dev.StartsWith("/dev/ttyS") || dev.StartsWith("/dev/ttyUSB") || dev.StartsWith("/dev/ttyACM"))
-					{
-						serial_ports.Add(dev);
-					}
-					else if (dev != "/dev/tty" && dev.StartsWith("/dev/tty") && !dev.StartsWith("/dev/ttyC"))
+					if (dev != "/dev/tty" && dev.StartsWith("/dev/tty") && !dev.StartsWith("/dev/ttyC"))
 					{
 						serial_ports.Add(dev);
 					}
