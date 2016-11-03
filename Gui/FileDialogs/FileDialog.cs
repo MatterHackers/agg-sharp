@@ -31,37 +31,68 @@ namespace MatterHackers.Agg.UI
 
 		public override bool OpenFileDialog(OpenFileDialogParams openParams, OpenFileDialogDelegate callback)
 		{
-			var chooseFilesWindow = new SystemWindow(640, 300);
-			chooseFilesWindow.BackgroundColor = RGBA_Bytes.DarkGray;
-			var thisIsABug = new TextWidget("Report this Bug!", pointSize: 54, textColor: RGBA_Bytes.Pink);
-			thisIsABug.Margin = new BorderDouble(0, 30);
-			thisIsABug.VAnchor = VAnchor.ParentTop;
-			thisIsABug.HAnchor = HAnchor.ParentCenter;
-			chooseFilesWindow.AddChild(thisIsABug);
-
-			var fileNameInput = new TextEditWidget(pixelWidth: 400)
+			ShowFileDialog((fileText) =>
 			{
-				VAnchor = VAnchor.ParentCenter,
-				HAnchor = HAnchor.ParentCenter
-			};
-			fileNameInput.EnterPressed += (s, e) => chooseFilesWindow.CloseOnIdle();
-
-			chooseFilesWindow.AddChild(fileNameInput);
-			chooseFilesWindow.Load += (s, e) => fileNameInput.Focus();
-			chooseFilesWindow.Closed += (s, e) =>
-			{
-				if (fileNameInput.Text.Length > 2)
+				if (fileText.Length > 2)
 				{
-					string[] files = fileNameInput.Text.Split(';', ' ').Select(f => f.Trim('\"')).ToArray();
+					string[] files = fileText.Split(';', ' ').Select(f => f.Trim('\"')).ToArray();
 					openParams.FileName = files[0];
 					openParams.FileNames = files;
 				}
 				UiThread.RunOnIdle(() => callback?.Invoke(openParams));
-			};
-
-			chooseFilesWindow.ShowAsSystemWindow();
+			});
 
 			return true;
+		}
+
+		public override bool SaveFileDialog(SaveFileDialogParams saveParams, SaveFileDialogDelegate callback)
+		{
+			ShowFileDialog((fileText) =>
+			{
+				if (fileText.Length > 2)
+				{
+					string[] files = fileText.Split(';', ' ').Select(f => f.Trim('\"')).ToArray();
+					saveParams.FileName = files[0];
+					saveParams.FileNames = files;
+				}
+				UiThread.RunOnIdle(() => callback?.Invoke(saveParams));
+			});
+
+			return true;
+		}
+
+		private static void ShowFileDialog(Action<string> dialogClosedHandler)
+		{
+			var systemWindow = new SystemWindow(600, 200)
+			{
+				Title = "TestAutomation File Input",
+				BackgroundColor = RGBA_Bytes.DarkGray
+			};
+
+			var warningLabel = new TextWidget("This dialog should not appear outside of automation tests.\nNotify technical support if visible", pointSize: 15, textColor: RGBA_Bytes.Pink)
+			{
+				Margin = new BorderDouble(20),
+				VAnchor = VAnchor.ParentTop,
+				HAnchor = HAnchor.ParentLeftRight
+			};
+			systemWindow.AddChild(warningLabel);
+
+			var fileNameInput = new TextEditWidget(pixelWidth: 400)
+			{
+				VAnchor = VAnchor.ParentCenter,
+				HAnchor = HAnchor.ParentLeftRight,
+				Margin = new BorderDouble(30, 15)
+			};
+			fileNameInput.EnterPressed += (s, e) => systemWindow.CloseOnIdle();
+			systemWindow.AddChild(fileNameInput);
+
+			systemWindow.Load += (s, e) => fileNameInput.Focus();
+			systemWindow.Closed += (s, e) =>
+			{
+				dialogClosedHandler(fileNameInput.Text);
+			};
+
+			systemWindow.ShowAsSystemWindow();
 		}
 
 		public override bool SelectFolderDialog(SelectFolderDialogParams folderParams, SelectFolderDialogDelegate callback)
@@ -69,15 +100,7 @@ namespace MatterHackers.Agg.UI
 			throw new NotImplementedException();
 		}
 
-		public override bool SaveFileDialog(SaveFileDialogParams saveParams, SaveFileDialogDelegate callback)
-		{
-			throw new NotImplementedException();
-		}
-
-		public override string ResolveFilePath(string path)
-		{
-			throw new NotImplementedException();
-		}
+		public override string ResolveFilePath(string path) => path;
 	}
 
 	public static class FileDialog
