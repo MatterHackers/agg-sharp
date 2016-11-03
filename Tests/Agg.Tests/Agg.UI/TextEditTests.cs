@@ -603,7 +603,7 @@ namespace MatterHackers.Agg.UI.Tests
 			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
 		}
 
-		[Test, Apartment(ApartmentState.STA), Category("FixNeeded")]
+		[Test, Apartment(ApartmentState.STA), Category("FixNeeded" /* Unexpected behavior, possible Agg bug */)]
 		public async Task VerifyFocusProperty()
 		{
 			SystemWindow systemWindow = new SystemWindow(300, 200)
@@ -633,40 +633,38 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test, Apartment(ApartmentState.STA)]
 		public async Task SelectAllOnFocusCanStillClickAfterSelection()
 		{
-			TextEditWidget editField = null;
-			SystemWindow systemWindow = new SystemWindow(300, 200)
-			{
-				BackgroundColor = RGBA_Bytes.Black,
-			};
-
-			AutomationTest testToRun = (testRunner) =>
-			{
-				editField.SelectAllOnFocus = true;
-				testRunner.Wait(1);
-
-				Assert.IsTrue(testRunner.ClickByName(editField.Name, 1));
-
-				editField.SelectAllOnFocus = true;
-				testRunner.Type("123");
-				Assert.IsTrue(editField.Text == "123", "on enter we have selected all and replaced the text");
-
-				Assert.IsTrue(testRunner.ClickByName(editField.Name, 1));
-				testRunner.Type("123");
-				Assert.IsTrue(editField.Text == "123123", "we already have the contol selected so don't select all again.");
-
-				systemWindow.CloseOnIdle();
-
-				return Task.FromResult(0);
-			};
-
-			editField = new TextEditWidget(pixelWidth: 200)
+			var editField = new TextEditWidget(pixelWidth: 200)
 			{
 				Name = "editField",
 				Text = "Some Text",
 				HAnchor = HAnchor.ParentCenter,
 				VAnchor = VAnchor.ParentCenter,
 			};
+
+			var systemWindow = new SystemWindow(300, 200)
+			{
+				BackgroundColor = RGBA_Bytes.Gray,
+			};
 			systemWindow.AddChild(editField);
+
+			AutomationTest testToRun = (testRunner) =>
+			{
+				editField.SelectAllOnFocus = true;
+				testRunner.Wait(1);
+				Assert.IsTrue(testRunner.ClickByName(editField.Name, 1), "Click in the editField control");
+
+				editField.SelectAllOnFocus = true;
+				testRunner.Type("123");
+				Assert.AreEqual("123", editField.Text, "Text input on newly focused control should replace selection");
+
+				Assert.IsTrue(testRunner.ClickByName(editField.Name, 1), "Click in the editField control");
+				testRunner.Wait(.2);
+
+				testRunner.Type("123");
+				Assert.AreEqual("123123", editField.Text, "Text should be appended if control is focused and has already received input");
+
+				return Task.FromResult(0);
+			};
 
 			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 15);
 		}
