@@ -345,6 +345,13 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void ValidateEnterAndLeaveEvents()
 		{
+			int mouseEnter = 0;
+			int mouseLeave = 0;
+			int mouseEnterBounds = 0;
+			int mouseLeaveBounds = 0;
+			int mouseDown = 0;
+			int mouseUp = 0;
+
 			GuiWidget container = new GuiWidget();
 			container.Name = "container";
 			container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
@@ -352,66 +359,103 @@ namespace MatterHackers.Agg.UI.Tests
 			GuiWidget regionA = new GuiWidget();
 			regionA.Name = "regionA";
 			regionA.BoundsRelativeToParent = new RectangleDouble(10, 10, 190, 190);
-			int gotEnter = 0;
-			int gotLeave = 0;
-			regionA.MouseEnter += (sender, e) => { if (regionA.UnderMouseState == UnderMouseState.NotUnderMouse) throw new Exception("It must be under the mouse."); gotEnter++; };
-			regionA.MouseLeave += (sender, e) => { if (regionA.UnderMouseState == UnderMouseState.FirstUnderMouse) throw new Exception("It must not be under the mouse."); gotLeave++; };
-			int gotEnterBounds = 0;
-			int gotLeaveBounds = 0;
-			regionA.MouseEnterBounds += (sender, e) => { if (regionA.UnderMouseState == UnderMouseState.NotUnderMouse) throw new Exception("It must be under the mouse."); gotEnterBounds++; };
-			regionA.MouseLeaveBounds += (sender, e) => { if (regionA.UnderMouseState != UnderMouseState.NotUnderMouse) throw new Exception("It must not be under the mouse."); gotLeaveBounds++; };
+			regionA.MouseDown += (sender, e) => { mouseDown++; };
+			regionA.MouseUp += (sender, e) => { mouseUp++; };
+			regionA.MouseEnter += (sender, e) => { if (regionA.UnderMouseState == UnderMouseState.NotUnderMouse) throw new Exception("It must be under the mouse."); mouseEnter++; };
+			regionA.MouseLeave += (sender, e) => { if (regionA.UnderMouseState == UnderMouseState.FirstUnderMouse) throw new Exception("It must not be under the mouse."); mouseLeave++; };
+			regionA.MouseEnterBounds += (sender, e) => { if (regionA.UnderMouseState == UnderMouseState.NotUnderMouse) throw new Exception("It must be under the mouse."); mouseEnterBounds++; };
+			regionA.MouseLeaveBounds += (sender, e) => { if (regionA.UnderMouseState != UnderMouseState.NotUnderMouse) throw new Exception("It must not be under the mouse."); mouseLeaveBounds++; };
 			container.AddChild(regionA);
 
-			Assert.IsTrue(gotLeave == 0);
-			Assert.IsTrue(gotEnter == 0);
-			Assert.IsTrue(gotLeaveBounds == 0);
-			Assert.IsTrue(gotEnterBounds == 0);
+			Assert.IsTrue(mouseDown == 0);
+			Assert.IsTrue(mouseUp == 0);
+			Assert.IsTrue(mouseLeave == 0);
+			Assert.IsTrue(mouseEnter == 0);
+			Assert.IsTrue(mouseLeaveBounds == 0);
+			Assert.IsTrue(mouseEnterBounds == 0);
 
 			// put the mouse into the widget but outside regionA
+			mouseDown = mouseUp = mouseLeave = mouseEnter = mouseLeaveBounds = mouseEnterBounds = 0;
 			container.OnMouseMove(new MouseEventArgs(MouseButtons.Left, 1, 5, 5, 0));
+			UiThread.InvokePendingActions();
+			Assert.IsTrue(mouseDown == 0);
+			Assert.IsTrue(mouseUp == 0);
 			Assert.IsTrue(regionA.UnderMouseState == UnderMouseState.NotUnderMouse);
-			Assert.IsTrue(gotLeave == 0);
-			Assert.IsTrue(gotEnter == 0);
-			Assert.IsTrue(gotLeaveBounds == 0);
-			Assert.IsTrue(gotEnterBounds == 0);
+			Assert.IsTrue(mouseLeave == 0);
+			Assert.IsTrue(mouseEnter == 0);
+			Assert.IsTrue(mouseLeaveBounds == 0);
+			Assert.IsTrue(mouseEnterBounds == 0);
+
 			// move it into regionA
+			mouseDown = mouseUp = mouseLeave = mouseEnter = mouseLeaveBounds = mouseEnterBounds = 0;
 			container.OnMouseMove(new MouseEventArgs(MouseButtons.Left, 1, 15, 15, 0));
+			UiThread.InvokePendingActions();
+			Assert.IsTrue(mouseDown == 0);
+			Assert.IsTrue(mouseUp == 0);
 			Assert.IsTrue(regionA.UnderMouseState == UnderMouseState.FirstUnderMouse);
-			Assert.IsTrue(gotLeave == 0);
-			Assert.IsTrue(gotEnter == 1);
-			Assert.IsTrue(gotLeaveBounds == 0);
-			Assert.IsTrue(gotEnterBounds == 1);
+			Assert.IsTrue(mouseLeave == 0);
+			Assert.IsTrue(mouseEnter == 1);
+			Assert.IsTrue(mouseLeaveBounds == 0);
+			Assert.IsTrue(mouseEnterBounds == 1);
+
 			// now move it inside regionA and make sure it does not re-trigger either event
-			gotEnter = 0;
-			gotEnterBounds = 0;
+			mouseDown = mouseUp = mouseLeave = mouseEnter = mouseLeaveBounds = mouseEnterBounds = 0;
 			container.OnMouseMove(new MouseEventArgs(MouseButtons.Left, 1, 16, 15, 0));
+			UiThread.InvokePendingActions();
+			Assert.IsTrue(mouseDown == 0);
+			Assert.IsTrue(mouseUp == 0);
 			Assert.IsTrue(regionA.UnderMouseState == UnderMouseState.FirstUnderMouse);
-			Assert.IsTrue(gotLeave == 0);
-			Assert.IsTrue(gotEnter == 0);
-			Assert.IsTrue(gotLeaveBounds == 0);
-			Assert.IsTrue(gotEnterBounds == 0);
+			Assert.IsTrue(mouseLeave == 0);
+			Assert.IsTrue(mouseEnter == 0);
+			Assert.IsTrue(mouseLeaveBounds == 0);
+			Assert.IsTrue(mouseEnterBounds == 0);
 
 			// now leave and make sure we see the leave
+			mouseDown = mouseUp = mouseLeave = mouseEnter = mouseLeaveBounds = mouseEnterBounds = 0;
 			container.OnMouseMove(new MouseEventArgs(MouseButtons.Left, 1, -5, -5, 0));
-			Assert.IsTrue(gotLeave == 1);
-			Assert.IsTrue(gotEnter == 0);
-			Assert.IsTrue(gotLeaveBounds == 1);
-			Assert.IsTrue(gotEnterBounds == 0);
+			UiThread.InvokePendingActions();
+			Assert.IsTrue(mouseDown == 0);
+			Assert.IsTrue(mouseUp == 0);
+			Assert.IsTrue(mouseLeave == 1);
+			Assert.IsTrue(mouseEnter == 0);
+			Assert.IsTrue(mouseLeaveBounds == 1);
+			Assert.IsTrue(mouseEnterBounds == 0);
 
 			// move back on
-			gotLeave = gotEnter = gotLeaveBounds = gotEnterBounds = 0;
+			mouseDown = mouseUp = mouseLeave = mouseEnter = mouseLeaveBounds = mouseEnterBounds = 0;
 			container.OnMouseMove(new MouseEventArgs(MouseButtons.Left, 1, 16, 15, 0));
+			UiThread.InvokePendingActions();
 			// now leave only the inside widget and make sure we see the leave
-			Assert.IsTrue(gotEnter == 1);
-			Assert.IsTrue(gotLeave == 0);
-			Assert.IsTrue(gotLeaveBounds == 0);
-			Assert.IsTrue(gotEnterBounds == 1);
-			gotLeave = gotEnter = gotLeaveBounds = gotEnterBounds = 0;
+			Assert.IsTrue(mouseDown == 0);
+			Assert.IsTrue(mouseUp == 0);
+			Assert.IsTrue(mouseEnter == 1);
+			Assert.IsTrue(mouseLeave == 0);
+			Assert.IsTrue(mouseLeaveBounds == 0);
+			Assert.IsTrue(mouseEnterBounds == 1);
+
+			mouseDown = mouseUp = mouseLeave = mouseEnter = mouseLeaveBounds = mouseEnterBounds = 0;
 			container.OnMouseMove(new MouseEventArgs(MouseButtons.Left, 1, 5, 5, 0));
-			Assert.IsTrue(gotLeave == 1);
-			Assert.IsTrue(gotEnter == 0);
-			Assert.IsTrue(gotLeaveBounds == 1);
-			Assert.IsTrue(gotEnterBounds == 0);
+			UiThread.InvokePendingActions();
+			Assert.IsTrue(mouseDown == 0);
+			Assert.IsTrue(mouseUp == 0);
+			Assert.IsTrue(mouseLeave == 1);
+			Assert.IsTrue(mouseEnter == 0);
+			Assert.IsTrue(mouseLeaveBounds == 1);
+			Assert.IsTrue(mouseEnterBounds == 0);
+
+			// click back on
+			mouseDown = mouseUp = mouseLeave = mouseEnter = mouseLeaveBounds = mouseEnterBounds = 0;
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 16, 15, 0));
+			UiThread.InvokePendingActions();
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 16, 15, 0));
+			UiThread.InvokePendingActions();
+			// now leave only the inside widget and make sure we see the leave
+			Assert.IsTrue(mouseDown == 1);
+			Assert.IsTrue(mouseUp == 1);
+			Assert.IsTrue(mouseEnter == 1);
+			Assert.IsTrue(mouseLeave == 0);
+			Assert.IsTrue(mouseLeaveBounds == 0);
+			Assert.IsTrue(mouseEnterBounds == 1);
 		}
 
 		[Test, Category("FixNeeded" /* Functionality needs to be implemented */)]
