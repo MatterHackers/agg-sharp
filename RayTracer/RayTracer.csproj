@@ -153,7 +153,6 @@
     <Compile Include="TraceData\RayBundle.cs" />
     <Compile Include="Primitive\BoundingVolumeHierarchy.cs" />
     <Compile Include="Camera\SimpleCamera.cs" />
-    <Compile Include="TraceData\Frustum.cs" />
     <Compile Include="Light\PointLight.cs" />
     <Compile Include="Materials\MaterialAbstract.cs" />
     <Compile Include="Materials\ChessboardMaterial.cs" />

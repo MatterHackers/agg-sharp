@@ -30,7 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using MatterHackers.VectorMath;
 using System;
 
-namespace MatterHackers.RayTracer
+namespace MatterHackers.VectorMath
 {
 	public enum FrustumIntersection { Inside, Outside, Intersect };
 
@@ -42,6 +42,33 @@ namespace MatterHackers.RayTracer
 		public Frustum()
 		{
 			Planes = new Plane[6];
+		}
+
+		public static Frustum FrustumFromWorldViewMatrix()
+		{
+			throw new NotImplementedException();
+		}
+
+
+		//float mat[4][4],
+		//float left[4], float right[4], float top[4], float bottom[4],
+		//float near[4], float far[4])
+		void extract_planes_from_projmat(
+			float[][] mat,
+			float[] left, float[] right, float[] top, float[] bottom,
+			float[] near, float[] far)
+		{
+			for (int i = 4; i-- > 0;) left[i] = mat[i][3] + mat[i][0];
+			for (int i = 4; i-- > 0;) right[i] = mat[i][3] - mat[i][0];
+			for (int i = 4; i-- > 0;) bottom[i] = mat[i][3] + mat[i][1];
+			for (int i = 4; i-- > 0;) top[i] = mat[i][3] - mat[i][1];
+			for (int i = 4; i-- > 0;) near[i] = mat[i][3] + mat[i][2];
+			for (int i = 4; i-- > 0;) far[i] = mat[i][3] - mat[i][2];
+		}
+
+		public bool ClipLine(ref Vector3 startPoint, ref Vector3 endPoint)
+		{
+			throw new NotImplementedException();
 		}
 
 		// The front plan is at 0 (the intersection of the 4 side planes). Plane normals should point out.

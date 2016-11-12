@@ -139,6 +139,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AxisAlignedBoundingBox.cs" />
+    <Compile Include="Frustum.cs" />
     <Compile Include="PlaneFloat.cs" />
     <Compile Include="Plane.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
