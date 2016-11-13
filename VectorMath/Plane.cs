@@ -56,6 +56,41 @@ namespace MatterHackers.VectorMath
 			this.DistanceToPlaneFromOrigin = Vector3.Dot(planeNormal, pointOnPlane);
 		}
 
+		public double this[int index]
+		{
+			get
+			{
+				switch (index)
+				{
+					case 0:
+					case 1:
+					case 2:
+						return PlaneNormal[index];
+
+					default:
+						return DistanceToPlaneFromOrigin;
+				}
+			}
+
+			set
+			{
+				switch (index)
+				{
+					case 0:
+					case 1:
+					case 2:
+						Vector3 normal = PlaneNormal;
+						normal[index] = value;
+						PlaneNormal = normal;
+						break;
+
+					default:
+						DistanceToPlaneFromOrigin = value;
+						break;
+				}
+			}
+		}
+
 		public override bool Equals(object obj)
 		{
 			throw new NotImplementedException();

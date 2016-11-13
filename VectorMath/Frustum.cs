@@ -39,31 +39,34 @@ namespace MatterHackers.VectorMath
 		// Plane normals should point out
 		public Plane[] Planes { get; set; } = new Plane[6];
 
+		public Plane Left 
+		{
+			get { return Planes[0]; } 
+			set { Planes[0] = value; }
+		}
+
 		public Frustum()
 		{
 			Planes = new Plane[6];
 		}
 
-		public static Frustum FrustumFromWorldViewMatrix()
+		public static Frustum FrustumFromProjectionMatrix(Matrix4X4 projectionMatrix)
 		{
-			throw new NotImplementedException();
-		}
+			Frustum createdFrustum = new Frustum();
+			// left
+			for (int i = 4; i-- > 0;) createdFrustum.Planes[0][i] = projectionMatrix[i, 3] + projectionMatrix[i, 0];
+			// right
+			for (int i = 4; i-- > 0;) createdFrustum.Planes[1][i] = projectionMatrix[i,3] - projectionMatrix[i,0];
+			// bottom
+			for (int i = 4; i-- > 0;) createdFrustum.Planes[2][i] = projectionMatrix[i, 3] + projectionMatrix[i, 1];
+			// top
+			for (int i = 4; i-- > 0;) createdFrustum.Planes[3][i] = projectionMatrix[i, 3] - projectionMatrix[i, 1];
+			// back
+			for (int i = 4; i-- > 0;) createdFrustum.Planes[4][i] = projectionMatrix[i, 3] - projectionMatrix[i, 2];
+			// front
+			for (int i = 4; i-- > 0;) createdFrustum.Planes[5][i] = projectionMatrix[i, 3] + projectionMatrix[i, 2];
 
-
-		//float mat[4][4],
-		//float left[4], float right[4], float top[4], float bottom[4],
-		//float near[4], float far[4])
-		void extract_planes_from_projmat(
-			float[][] mat,
-			float[] left, float[] right, float[] top, float[] bottom,
-			float[] near, float[] far)
-		{
-			for (int i = 4; i-- > 0;) left[i] = mat[i][3] + mat[i][0];
-			for (int i = 4; i-- > 0;) right[i] = mat[i][3] - mat[i][0];
-			for (int i = 4; i-- > 0;) bottom[i] = mat[i][3] + mat[i][1];
-			for (int i = 4; i-- > 0;) top[i] = mat[i][3] - mat[i][1];
-			for (int i = 4; i-- > 0;) near[i] = mat[i][3] + mat[i][2];
-			for (int i = 4; i-- > 0;) far[i] = mat[i][3] - mat[i][2];
+			return createdFrustum;
 		}
 
 		/// <summary>
