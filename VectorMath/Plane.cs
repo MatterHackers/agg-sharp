@@ -89,6 +89,38 @@ namespace MatterHackers.VectorMath
 			return distanceToPointFromOrigin - DistanceToPlaneFromOrigin;
 		}
 
+		/// <summary>
+		/// Modify the start and end points so they fall on the normal side of the plane.
+		/// </summary>
+		/// <param name="startPoint"></param>
+		/// <param name="endPoint"></param>
+		/// <returns>Returns true if any part of the line is on the normal side of the plane else false.</returns>
+		public bool ClipLine(ref Vector3 startPoint, ref Vector3 endPoint)
+		{
+			double startDistance = GetDistanceFromPlane(startPoint);
+			double endDistance = GetDistanceFromPlane(endPoint);
+
+			if(startDistance < 0)
+			{
+				if(endDistance < 0)
+				{
+					// both points are behind the plane
+					return false;
+				}
+
+				// the start point must be clipped
+				throw new NotImplementedException();
+			}
+			else if(endDistance < 0)
+			{
+				// the end point must be clipped
+				throw new NotImplementedException();
+			}
+
+			// both points in front of the plane
+			return true;
+		}
+
 		public bool Equals(Plane control, double normalError, double lengthError)
 		{
 			if(PlaneNormal.Equals(control.PlaneNormal, normalError)

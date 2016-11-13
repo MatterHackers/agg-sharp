@@ -66,9 +66,20 @@ namespace MatterHackers.VectorMath
 			for (int i = 4; i-- > 0;) far[i] = mat[i][3] - mat[i][2];
 		}
 
+		/// <summary>
+		/// Modify the start and end points so they fall within the view frustum.
+		/// </summary>
+		/// <param name="startPoint"></param>
+		/// <param name="endPoint"></param>
+		/// <returns>Returns true if any part of the line is in the frustum else false.</returns>
 		public bool ClipLine(ref Vector3 startPoint, ref Vector3 endPoint)
 		{
-			throw new NotImplementedException();
+			foreach(Plane plane in Planes)
+			{
+				plane.ClipLine(ref startPoint, ref endPoint);
+			}
+
+			return true;
 		}
 
 		// The front plan is at 0 (the intersection of the 4 side planes). Plane normals should point out.
