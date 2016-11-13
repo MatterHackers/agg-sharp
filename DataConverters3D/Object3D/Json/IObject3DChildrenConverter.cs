@@ -40,7 +40,9 @@ namespace MatterHackers.DataConverters3D
 		private Dictionary<string, string> mappingTypes = new Dictionary<string, string>()
 		{
 			["TextObject"] = "MatterHackers.PolygonMesh.TextObject,MatterHackers.DataConverters3D",
-			["CylinderPrimitive"] = "MatterHackers.MatterControl.PartPreviewWindow.CylinderPrimitive,EditorTools"
+			["CylinderObject3D"] = "MatterHackers.MatterControl.PartPreviewWindow.CylinderObject3D,EditorTools",
+			["ConeObject3D"] = "MatterHackers.MatterControl.PartPreviewWindow.ConeObject3D,EditorTools",
+			["CubeObject3D"] = "MatterHackers.MatterControl.PartPreviewWindow.CubeObject3D,EditorTools",
 		};
 
 		public override bool CanWrite { get; } = false;
