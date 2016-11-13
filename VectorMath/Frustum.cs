@@ -76,9 +76,14 @@ namespace MatterHackers.VectorMath
 		{
 			foreach(Plane plane in Planes)
 			{
-				plane.ClipLine(ref startPoint, ref endPoint);
+				if(!plane.ClipLine(ref startPoint, ref endPoint))
+				{
+					// It is entirely behind the plane so
+					return false;
+				}
 			}
 
+			// It has been clipped to all planes and there is still some left.
 			return true;
 		}
 

@@ -109,12 +109,22 @@ namespace MatterHackers.VectorMath
 				}
 
 				// the start point must be clipped
-				throw new NotImplementedException();
+				// get the normal in the direction of the start point
+				Vector3 lineDirection = startPoint - endPoint;
+				double lineLength = lineDirection.Length;
+				Vector3 lineNormal = lineDirection / lineLength;
+				double startClipRatio = startDistance / (endDistance - startDistance);
+				startPoint = startPoint + lineNormal * (lineLength * startClipRatio);
 			}
 			else if(endDistance < 0)
 			{
 				// the end point must be clipped
-				throw new NotImplementedException();
+				// get the normal in the direction of the start point
+				Vector3 lineDirection = endPoint - startPoint;
+				double lineLength = lineDirection.Length;
+				Vector3 lineNormal = lineDirection / lineLength;
+				double endClipRatio = endDistance / (startDistance - endDistance);
+				endPoint = endPoint + lineNormal * (lineLength * endClipRatio);
 			}
 
 			// both points in front of the plane
