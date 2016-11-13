@@ -42,7 +42,7 @@ namespace MatterHackers.DataConverters3D
 {
 	public class Object3D : IObject3D
 	{
-		public string ActiveEditor { get; set; }
+		public virtual string ActiveEditor { get; set; }
 		public List<IObject3D> Children { get; set; } = new List<IObject3D>();
 		public PlatingData ExtraData { get; } = new PlatingData();
 

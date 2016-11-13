@@ -36,9 +36,11 @@ namespace MatterHackers.DataConverters3D
 {
 	public class IObject3DChildrenConverter : JsonConverter
 	{
+		// Register type mappings to support deserializing to the specified type via simple names
 		private Dictionary<string, string> mappingTypes = new Dictionary<string, string>()
 		{
-			["TextObject"] = "MatterHackers.PolygonMesh.TextObject,MatterHackers.DataConverters3D"
+			["TextObject"] = "MatterHackers.PolygonMesh.TextObject,MatterHackers.DataConverters3D",
+			["CylinderPrimitive"] = "MatterHackers.MatterControl.PartPreviewWindow.CylinderPrimitive,EditorTools"
 		};
 
 		public override bool CanWrite { get; } = false;
