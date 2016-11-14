@@ -61,15 +61,20 @@ namespace MatterHackers.VectorMath
 			for (int i = 4; i-- > 0;) createdFrustum.Planes[2][i] = projectionMatrix[i, 3] + projectionMatrix[i, 1];
 			// top
 			for (int i = 4; i-- > 0;) createdFrustum.Planes[3][i] = projectionMatrix[i, 3] - projectionMatrix[i, 1];
-			// back
-			for (int i = 4; i-- > 0;) createdFrustum.Planes[4][i] = projectionMatrix[i, 3] - projectionMatrix[i, 2];
 			// front
-			for (int i = 4; i-- > 0;) createdFrustum.Planes[5][i] = projectionMatrix[i, 3] + projectionMatrix[i, 2];
+			for (int i = 4; i-- > 0;) createdFrustum.Planes[4][i] = projectionMatrix[i, 3] + projectionMatrix[i, 2];
+			// back
+			for (int i = 4; i-- > 0;) createdFrustum.Planes[5][i] = projectionMatrix[i, 3] - projectionMatrix[i, 2];
+
+			for(int i=0; i<6; i++)
+			{
+				createdFrustum.Planes[i].Normalize();
+			}
 
 			return createdFrustum;
 		}
 
-		/// <summary>
+		/// <summary>  
 		/// Modify the start and end points so they fall within the view frustum.
 		/// </summary>
 		/// <param name="startPoint"></param>

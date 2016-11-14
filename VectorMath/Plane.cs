@@ -252,6 +252,18 @@ namespace MatterHackers.VectorMath
 			return true;
 		}
 
+		public void Normalize()
+		{
+			Normalize(ref this);
+		}
+
+		public static void Normalize(ref Plane plane)
+		{
+			double length = plane.PlaneNormal.Length;
+			plane.PlaneNormal = plane.PlaneNormal / length;
+			plane.DistanceToPlaneFromOrigin /= length;
+		}
+
 		public bool LineHitPlane(Vector3 start, Vector3 end, out Vector3 intersectionPosition)
 		{
 			double distanceToStartFromOrigin = Vector3.Dot(PlaneNormal, start);
