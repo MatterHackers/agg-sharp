@@ -160,7 +160,7 @@ namespace MatterHackers.Agg.Tests
 
 			systemWindow.AddChild(rootClickable);
 
-			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
+			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 25);
 		}
 
 		[Test, Apartment(ApartmentState.STA), Category("FixNeeded")]

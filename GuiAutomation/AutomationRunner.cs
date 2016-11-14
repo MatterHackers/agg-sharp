@@ -609,7 +609,7 @@ namespace MatterHackers.GuiAutomation
 		/// <param name="origin"></param>
 		/// <param name="secondsToWait">Total seconds to stay in this function waiting for the named widget to become visible.</param>
 		/// <returns></returns>
-		public bool ClickByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
+		public bool ClickByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, double delayBeforeReturn = 0.2)
 		{
 			SystemWindow containingWindow;
 			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, secondsToWait, searchRegion);
@@ -631,6 +631,10 @@ namespace MatterHackers.GuiAutomation
 				Wait(UpDelaySeconds);
 
 				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
+
+				// After firing the click event, wait the given period of time before returning to allow MatterControl 
+				// to complete the targeted action
+				Wait(delayBeforeReturn);
 
 				return true;
 			}
