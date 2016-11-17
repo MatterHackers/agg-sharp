@@ -82,6 +82,12 @@ namespace MatterHackers.DataConverters3D
 		[JsonIgnore]
 		public Mesh Mesh { get; set; }
 
+		public void SetAndInvalidateMesh(Mesh mesh)
+		{
+			this.Mesh = mesh;
+			this.MeshPath = null;
+		}
+
 		public string MeshPath { get; set; }
 
 		public string Name { get; set; }

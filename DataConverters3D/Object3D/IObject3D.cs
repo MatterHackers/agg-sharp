@@ -81,6 +81,8 @@ namespace MatterHackers.DataConverters3D
 
 		bool Visible { get; set; }
 
+		void SetAndInvalidateMesh(Mesh mesh);
+
 		/// <summary>
 		/// Create a deep copy of the IObject3D objects
 		/// </summary>
@@ -88,7 +90,7 @@ namespace MatterHackers.DataConverters3D
 		IObject3D Clone();
 
 		/// <summary>
-		/// Get the Axis Aligned Bounding Box transformed by the given offest
+		/// Get the Axis Aligned Bounding Box transformed by the given offset
 		/// </summary>
 		/// <param name="offet">The initial offset to use for the bounds</param>
 		/// <returns></returns>
@@ -102,12 +104,12 @@ namespace MatterHackers.DataConverters3D
 		IPrimitive TraceData();
 
 		/// <summary>
-		/// Enumerator to get the currently visble set of meshes for rendering.
+		/// Enumerator to get the currently visible set of meshes for rendering.
 		/// The returned set may include placeholder or proxy data while
 		/// long operations are happening such as loading or mesh processing.
 		/// </summary>
-		/// <param name="transform">The final transform to apply to the returend 
-		/// transforms as the tree is decended. Often passed as Matrix4X4.Identity.</param>
+		/// <param name="transform">The final transform to apply to the returned 
+		/// transforms as the tree is descended. Often passed as Matrix4X4.Identity.</param>
 		/// <returns></returns>
 		IEnumerable<MeshAndTransform> VisibleMeshes(Matrix4X4 transform);
 	}
