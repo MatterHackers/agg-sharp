@@ -43,6 +43,7 @@ namespace MatterHackers.DataConverters3D
 			["CylinderObject3D"] = "MatterHackers.MatterControl.PartPreviewWindow.CylinderObject3D,EditorTools",
 			["ConeObject3D"] = "MatterHackers.MatterControl.PartPreviewWindow.ConeObject3D,EditorTools",
 			["CubeObject3D"] = "MatterHackers.MatterControl.PartPreviewWindow.CubeObject3D,EditorTools",
+			["OpenSCADObject3D"] = "MatterHackers.MatterControl.PartPreviewWindow.OpenSCADObject3D,EditorTools",
 		};
 
 		public override bool CanWrite { get; } = false;
