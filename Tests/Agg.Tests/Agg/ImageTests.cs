@@ -53,6 +53,22 @@ namespace MatterHackers.Agg.Image
 		}
 
 		[Test]
+		public void ColorHTMLTranslations()
+		{
+			Assert.AreEqual(new RGBA_Bytes("#FFFFFFFF"), new RGBA_Bytes(255, 255, 255, 255));
+			Assert.AreEqual(new RGBA_Bytes("#FFF"), new RGBA_Bytes(255, 255, 255, 255));
+			Assert.AreEqual(new RGBA_Bytes("#FFFF"), new RGBA_Bytes(255, 255, 255, 255));
+			Assert.AreEqual(new RGBA_Bytes("#FFFFFF"), new RGBA_Bytes(255, 255, 255, 255));
+
+			Assert.AreEqual(new RGBA_Bytes("#FFFFFFA1"), new RGBA_Bytes(255, 255, 255, 161));
+			Assert.AreEqual(new RGBA_Bytes("#A1FFFFFF"), new RGBA_Bytes(161, 255, 255, 255));
+			Assert.AreEqual(new RGBA_Bytes("#FFA1FFFF"), new RGBA_Bytes(255, 161, 255, 255));
+			Assert.AreEqual(new RGBA_Bytes("#FFFFA1FF"), new RGBA_Bytes(255, 255, 161, 255));
+
+			Assert.AreEqual(new RGBA_Bytes("#A1FFFF"), new RGBA_Bytes(161, 255, 255, 255));
+		}
+
+		[Test]
 		public void ClearTests()
 		{
 			ImageBuffer clearSurface24 = new ImageBuffer(50, 50, 24, new BlenderBGR());

@@ -25,6 +25,7 @@
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
 using System;
+using Newtonsoft.Json;
 
 namespace MatterHackers.Agg
 {
@@ -53,20 +54,28 @@ namespace MatterHackers.Agg
 		public float blue;
 		public float alpha;
 
+		[JsonIgnore]
 		public int Red0To255 { get { return (int)agg_basics.uround(Math.Max(0, Math.Min(255, red)) * (float)base_mask); } set { red = (float)value / (float)base_mask; } }
 
+		[JsonIgnore]
 		public int Green0To255 { get { return (int)agg_basics.uround(Math.Max(0, Math.Min(255, green)) * (float)base_mask); } set { green = (float)value / (float)base_mask; } }
 
+		[JsonIgnore]
 		public int Blue0To255 { get { return (int)agg_basics.uround(Math.Max(0, Math.Min(255, blue)) * (float)base_mask); } set { blue = (float)value / (float)base_mask; } }
 
+		[JsonIgnore]
 		public int Alpha0To255 { get { return (int)agg_basics.uround(Math.Max(0, Math.Min(255, alpha)) * (float)base_mask); } set { alpha = (float)value / (float)base_mask; } }
 
+		[JsonIgnore]
 		public float Red0To1 { get { return red; } set { red = value; } }
 
+		[JsonIgnore]
 		public float Green0To1 { get { return green; } set { green = value; } }
 
+		[JsonIgnore]
 		public float Blue0To1 { get { return blue; } set { blue = value; } }
 
+		[JsonIgnore]
 		public float Alpha0To1 { get { return alpha; } set { alpha = value; } }
 
 		#region Defined Colors
@@ -650,9 +659,13 @@ namespace MatterHackers.Agg
 		public const int base_scale = (int)(1 << base_shift);
 		public const int base_mask = base_scale - 1;
 
+		[JsonIgnore]
 		public byte blue;
+		[JsonIgnore]
 		public byte green;
+		[JsonIgnore]
 		public byte red;
+		[JsonIgnore]
 		public byte alpha;
 
 		public static readonly RGBA_Bytes Transparent = new RGBA_Bytes(0, 0, 0, 0);
@@ -673,21 +686,83 @@ namespace MatterHackers.Agg
 		public static readonly RGBA_Bytes Yellow = new RGBA_Bytes(255, 255, 0, 255);
 		public static readonly RGBA_Bytes YellowGreen = new RGBA_Bytes(154, 205, 50, 255);
 
+		[JsonIgnore]
 		public int Red0To255 { get { return (int)red; } set { red = (byte)value; } }
 
+		[JsonIgnore]
 		public int Green0To255 { get { return (int)green; } set { green = (byte)value; } }
 
+		[JsonIgnore]
 		public int Blue0To255 { get { return (int)blue; } set { blue = (byte)value; } }
 
+		[JsonIgnore]
 		public int Alpha0To255 { get { return (int)alpha; } set { alpha = (byte)value; } }
 
+		[JsonIgnore]
 		public float Red0To1 { get { return red / 255.0f; } set { red = (byte)Math.Max(0, Math.Min((int)(value * 255), 255)); } }
 
+		[JsonIgnore]
 		public float Green0To1 { get { return green / 255.0f; } set { green = (byte)Math.Max(0, Math.Min((int)(value * 255), 255)); } }
 
+		[JsonIgnore]
 		public float Blue0To1 { get { return blue / 255.0f; } set { blue = (byte)Math.Max(0, Math.Min((int)(value * 255), 255)); } }
 
+		[JsonIgnore]
 		public float Alpha0To1 { get { return alpha / 255.0f; } set { alpha = (byte)Math.Max(0, Math.Min((int)(value * 255), 255)); } }
+
+		// serialize
+		public string Html
+		{
+			get
+			{
+				return $"#{red:X2}{green:X2}{blue:X2}{alpha:X2}";
+			}
+
+			set
+			{
+				switch(value.Length)
+				{
+					case 4: // #CCC, single char rgb
+					case 5: // also has alpha
+						red = (byte)Convert.ToInt32(value.Substring(1, 1) + value.Substring(1, 1), 16);
+						green = (byte)Convert.ToInt32(value.Substring(2, 1) + value.Substring(2, 1), 16);
+						blue = (byte)Convert.ToInt32(value.Substring(3,1) + value.Substring(3, 1), 16);
+						if(value.Length == 5)
+						{
+							alpha = (byte)Convert.ToInt32(value.Substring(4, 1) + value.Substring(4, 1), 16);
+						}
+						else
+						{
+							alpha = 255;
+						}
+						break;
+
+					case 7: // #ACACAC, two char rgb
+					case 9: // also has alpha
+						red = (byte)Convert.ToInt32(value.Substring(1, 2), 16);
+						green = (byte)Convert.ToInt32(value.Substring(3, 2), 16);
+						blue = (byte)Convert.ToInt32(value.Substring(5, 2), 16);
+						if (value.Length == 9)
+						{
+							alpha = (byte)Convert.ToInt32(value.Substring(7, 2), 16);
+						}
+						else
+						{
+							alpha = 255;
+						}
+						break;
+
+					default:
+						break; // don't know what it is, do nothing
+				}
+			}
+		}
+
+		public RGBA_Bytes(string HTMLString)
+			: this()
+		{
+			Html = HTMLString;
+		}
 
 		public RGBA_Bytes(int r_, int g_, int b_)
 			: this(r_, g_, b_, base_mask)
