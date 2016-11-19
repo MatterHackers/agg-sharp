@@ -31,20 +31,45 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using MatterHackers.Agg;
 
 namespace MatterHackers.DataConverters3D
 {
+	public interface IMappingType
+	{
+		string TypeName { get; }
+		string FullTypeName { get; }
+	}
+
 	public class IObject3DChildrenConverter : JsonConverter
 	{
 		// Register type mappings to support deserializing to the specified type via simple names
-		private Dictionary<string, string> mappingTypes = new Dictionary<string, string>()
+		private Dictionary<string, string> mappingTypesCache;
+		private Dictionary<string, string> mappingTypes
 		{
-			["TextObject"] = "MatterHackers.PolygonMesh.TextObject,MatterHackers.DataConverters3D",
-			["CylinderObject3D"] = "MatterHackers.MatterControl.PartPreviewWindow.CylinderObject3D,EditorTools",
-			["ConeObject3D"] = "MatterHackers.MatterControl.PartPreviewWindow.ConeObject3D,EditorTools",
-			["CubeObject3D"] = "MatterHackers.MatterControl.PartPreviewWindow.CubeObject3D,EditorTools",
-			["OpenSCADObject3D"] = "MatterHackers.MatterControl.PartPreviewWindow.OpenSCADObject3D,EditorTools",
-		};
+			get
+			{
+				if (mappingTypesCache == null)
+				{
+					mappingTypesCache = new Dictionary<string, string>()
+					{
+						["TextObject"] = "MatterHackers.PolygonMesh.TextObject,MatterHackers.DataConverters3D",
+						["CylinderObject3D"] = "MatterHackers.MatterControl.PartPreviewWindow.CylinderObject3D,EditorTools",
+						["ConeObject3D"] = "MatterHackers.MatterControl.PartPreviewWindow.ConeObject3D,EditorTools",
+						["CubeObject3D"] = "MatterHackers.MatterControl.PartPreviewWindow.CubeObject3D,EditorTools",
+						["OpenSCADObject3D"] = "MatterHackers.MatterControl.PartPreviewWindow.OpenSCADObject3D,EditorTools",
+					};
+
+					PluginFinder<IMappingType> mappingTypesPlugin = new PluginFinder<IMappingType>();
+					foreach (IMappingType mappingType in mappingTypesPlugin.Plugins)
+					{
+						mappingTypesCache.Add(mappingType.TypeName, mappingType.FullTypeName);
+					}
+				}
+
+				return mappingTypesCache;
+			}
+		}
 
 		public override bool CanWrite { get; } = false;
 

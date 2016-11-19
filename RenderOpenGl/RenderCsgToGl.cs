@@ -61,7 +61,7 @@ namespace MatterHackers.RenderOpenGl
 
 		#region Mesh
 
-		public void RenderToGlRecursive(Csg.Solids.Mesh objectToProcess)
+		public void RenderToGlRecursive(Csg.Solids.MeshContainer objectToProcess)
 		{
 			RGBA_Floats partColor = new RGBA_Floats(.8, .8, 1);
 			GLHelper.Render(objectToProcess.GetMesh(), partColor);

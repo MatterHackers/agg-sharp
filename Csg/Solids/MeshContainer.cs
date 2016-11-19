@@ -33,7 +33,7 @@ using System.IO;
 
 namespace MatterHackers.Csg.Solids
 {
-	public class Mesh : CsgObject
+	public class MeshContainer : CsgObject
 	{
 		private PolygonMesh.Mesh polygonMesh;
 
@@ -73,13 +73,13 @@ namespace MatterHackers.Csg.Solids
 			}
 		}
 
-		public Mesh(string fileOnDisk, string name = "")
+		public MeshContainer(string fileOnDisk, string name = "")
 			: base(name)
 		{
 			sourceFileName = fileOnDisk;
 		}
 
-		public Mesh(MatterHackers.PolygonMesh.Mesh polygonMesh, string name = "")
+		public MeshContainer(MatterHackers.PolygonMesh.Mesh polygonMesh, string name = "")
 			: base(name)
 		{
 			this.polygonMesh = polygonMesh;
