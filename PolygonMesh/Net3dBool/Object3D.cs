@@ -36,6 +36,8 @@ Project: https://github.com/MatterHackers/agg-sharp (an included library)
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using MatterHackers.VectorMath.Octree;
 
 namespace Net3dBool
 {
@@ -64,6 +66,8 @@ namespace Net3dBool
 		/// solid vertices
 		/// </summary>
 		private List<Vertex> vertices;
+
+		//BoundsOctree<int> octree = new BoundsOctree<int>();
 
 		/// <summary>
 		/// Constructs a Object3d object based on a solid file.

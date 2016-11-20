@@ -336,6 +336,11 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
+		public bool Contains(Vector3 position)
+		{
+			throw new NotImplementedException();
+		}
+
 		public bool Contains(AxisAlignedBoundingBox bounds)
 		{
 			if (this.minXYZ.x <= bounds.minXYZ.x

@@ -139,6 +139,21 @@ namespace MatterHackers.VectorMath
 			return (int)System.Math.Pow(2, System.Math.Ceiling(System.Math.Log((double)n, 2)));
 		}
 
+		public static double Clamp(double test, double min, double max)
+		{
+			if(test < min)
+			{
+				return min;
+			}
+
+			if(test > max)
+			{
+				return max;
+			}
+
+			return test;
+		}
+
 		/// <summary>
 		/// Returns the next power of two that is larger than the specified number.
 		/// </summary>

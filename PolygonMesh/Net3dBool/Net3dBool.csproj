@@ -23,7 +23,8 @@
     <DebugSymbols>False</DebugSymbols>
     <DebugType>None</DebugType>
     <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
-    <DefineConstants></DefineConstants>
+    <DefineConstants>
+    </DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
