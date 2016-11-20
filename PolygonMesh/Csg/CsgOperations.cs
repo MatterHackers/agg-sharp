@@ -107,7 +107,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		}
 	}
 #else
-#if false
+#if true
 	// Public interface implementation
 	public static class CsgOperations
 	{
