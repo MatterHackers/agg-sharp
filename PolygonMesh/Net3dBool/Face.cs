@@ -166,7 +166,7 @@ namespace Net3dBool
 
 		public Plane GetPlane()
 		{
-			if (planeCache == null)
+			if (planeCache.PlaneNormal == Vector3.Zero)
 			{
 				Vector3 p1 = v1.GetPosition();
 				Vector3 p2 = v2.GetPosition();
