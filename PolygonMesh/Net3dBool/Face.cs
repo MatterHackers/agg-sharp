@@ -57,7 +57,7 @@ namespace Net3dBool
 		/** face status relative to a solid  */
 		private readonly static double EqualityTolerance = 1e-10f;
 		private enum Side { UP, DOWN, ON, NONE };
-		private Bound boundCache;
+		private AxisAlignedBoundingBox boundCache;
 		private bool cachedBounds = false;
 		private Plane planeCache;
 		private Status status;
@@ -153,11 +153,11 @@ namespace Net3dBool
 			return (a * c * Math.Sin(B)) / 2d;
 		}
 
-		public Bound GetBound()
+		public AxisAlignedBoundingBox GetBound()
 		{
 			if (!cachedBounds)
 			{
-				boundCache = new Bound(v1.GetPosition(), v2.GetPosition(), v3.GetPosition());
+				boundCache = new AxisAlignedBoundingBox(new Vector3[] { v1.GetPosition(), v2.GetPosition(), v3.GetPosition() });
 				cachedBounds = true;
 			}
 
@@ -214,9 +214,8 @@ namespace Net3dBool
 				success = true;
 				closestDistance = Double.MaxValue;
 				//for each face from the other solid...
-				for (int faceIndex = 0; faceIndex < obj.GetNumFaces(); faceIndex++)
+				foreach(Face face in obj.Faces.AllObjects())
 				{
-					Face face = obj.GetFace(faceIndex);
 					intersectionPoint = ray.ComputePlaneIntersection(face.GetPlane());
 
 					//if ray intersects the plane...

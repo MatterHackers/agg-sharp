@@ -57,11 +57,11 @@ namespace Net3dBool
 		/// <summary>
 		/// object representing the solid extremes
 		/// </summary>
-		private Bound bound;
+		private AxisAlignedBoundingBox bound;
 		/// <summary>
 		/// solid faces
 		/// </summary>
-		private List<Face> faces;
+		public BoundsOctree<Face> Faces;
 		/// <summary>
 		/// solid vertices
 		/// </summary>
@@ -80,16 +80,19 @@ namespace Net3dBool
 			int[] indices = solid.getIndices();
 			var verticesTemp = new List<Vertex>();
 
+			AxisAlignedBoundingBox totalBounds = new AxisAlignedBoundingBox(verticesPoints[0], verticesPoints[0]);
 			//create vertices
 			vertices = new List<Vertex>();
 			for (int i = 0; i < verticesPoints.Length; i++)
 			{
 				vertex = AddVertex(verticesPoints[i], Status.UNKNOWN);
+				totalBounds.ExpandToInclude(verticesPoints[i]);
 				verticesTemp.Add(vertex);
 			}
 
 			//create faces
-			faces = new List<Face>();
+			totalBounds.Expand(1);
+			Faces = new BoundsOctree<Face>(totalBounds);
 			for (int i = 0; i < indices.Length; i = i + 3)
 			{
 				v1 = verticesTemp[indices[i]];
@@ -99,7 +102,7 @@ namespace Net3dBool
 			}
 
 			//create bound
-			bound = new Bound(verticesPoints);
+			bound = new AxisAlignedBoundingBox(verticesPoints);
 		}
 
 		/// <summary>
@@ -116,10 +119,8 @@ namespace Net3dBool
 		public void ClassifyFaces(Object3D otherObject)
 		{
 			//calculate adjacency information
-			Face face;
-			for (int i = 0; i < this.GetNumFaces(); i++)
+			foreach (Face face in Faces.AllObjects())
 			{
-				face = this.GetFace(i);
 				face.v1.AddAdjacentVertex(face.v2);
 				face.v1.AddAdjacentVertex(face.v3);
 				face.v2.AddAdjacentVertex(face.v1);
@@ -129,10 +130,8 @@ namespace Net3dBool
 			}
 
 			//for each face
-			for (int i = 0; i < GetNumFaces(); i++)
+			foreach(Face face in Faces.AllObjects())
 			{
-				face = GetFace(i);
-
 				//if the face vertices aren't classified to make the simple classify
 				if (face.SimpleClassify() == false)
 				{
@@ -157,60 +156,12 @@ namespace Net3dBool
 		}
 
 		/// <summary>
-		/// Clones the Object3D object
-		/// </summary>
-		/// <returns>cloned object</returns>
-		public Object3D Clone()
-		{
-			Object3D clone = new Object3D();
-			clone.vertices = new List<Vertex>();
-			for (int i = 0; i < vertices.Count; i++)
-			{
-				clone.vertices.Add(vertices[i].Clone());
-			}
-			clone.faces = new List<Face>();
-			for (int i = 0; i < vertices.Count; i++)
-			{
-				clone.faces.Add(faces[i].Clone());
-			}
-			clone.bound = bound;
-
-			return clone;
-		}
-
-		/// <summary>
 		/// Gets the solid bound
 		/// </summary>
 		/// <returns>solid bound</returns>
-		public Bound GetBound()
+		public AxisAlignedBoundingBox GetBound()
 		{
 			return bound;
-		}
-
-		/// <summary>
-		/// Gets a face reference for a given position
-		/// </summary>
-		/// <param name="index">required face position</param>
-		/// <returns>face reference , null if the position is invalid</returns>
-		public Face GetFace(int index)
-		{
-			if (index < 0 || index >= faces.Count)
-			{
-				return null;
-			}
-			else
-			{
-				return faces[index];
-			}
-		}
-
-		/// <summary>
-		/// Gets the number of faces
-		/// </summary>
-		/// <returns>number of faces</returns>
-		public int GetNumFaces()
-		{
-			return faces.Count;
 		}
 
 		/// <summary>
@@ -218,10 +169,8 @@ namespace Net3dBool
 		/// </summary>
 		public void InvertInsideFaces()
 		{
-			Face face;
-			for (int i = 0; i < GetNumFaces(); i++)
+			foreach (Face face in Faces.AllObjects())
 			{
-				face = GetFace(i);
 				if (face.GetStatus() == Status.INSIDE)
 				{
 					face.Invert();
@@ -236,114 +185,103 @@ namespace Net3dBool
 		public void SplitFaces(Object3D compareObject)
 		{
 			Line line;
-			Face thisFace, compareFace;
 			Segment segment1;
 			Segment segment2;
 			double v1DistToCompareFace, distFace1Vert2, distFace1Vert3, distFace2Vert1, distFace2Vert2, distFace2Vert3;
 			int signFace1Vert1, signFace1Vert2, signFace1Vert3, signFace2Vert1, signFace2Vert2, signFace2Vert3;
-			int numFacesBefore = this.GetNumFaces();
-			int numFacesStart = this.GetNumFaces();
+			//int numFacesBefore = this.GetNumFaces();
+			int numFacesStart = this.Faces.Count;
 
 			//if the objects bounds overlap...
-			if (this.GetBound().Overlap(compareObject.GetBound()))
+			//for each object1 face...
+			foreach (Face thisFace in Faces.GetColliding(compareObject.GetBound()))
 			{
-				//for each object1 face...
-				for (int thisFaceIndex = 0; thisFaceIndex < this.GetNumFaces(); thisFaceIndex++)
+				//if object1 face bound and object2 bound overlap ...
+				//for each object2 face...
+				foreach (Face compareFace in compareObject.Faces.GetColliding(thisFace.GetBound()))
 				{
-					//if object1 face bound and object2 bound overlap ...
-					thisFace = GetFace(thisFaceIndex);
+					//if object1 face bound and object2 face bound overlap...
+					//PART I - DO TWO POLIGONS INTERSECT?
+					//POSSIBLE RESULTS: INTERSECT, NOT_INTERSECT, COPLANAR
 
-					if (thisFace.GetBound().Overlap(compareObject.GetBound()))
+					//distance from the face1 vertices to the face2 plane
+					v1DistToCompareFace = ComputeDistance(thisFace.v1, compareFace);
+					distFace1Vert2 = ComputeDistance(thisFace.v2, compareFace);
+					distFace1Vert3 = ComputeDistance(thisFace.v3, compareFace);
+
+					//distances signs from the face1 vertices to the face2 plane
+					signFace1Vert1 = (v1DistToCompareFace > EqualityTolerance ? 1 : (v1DistToCompareFace < -EqualityTolerance ? -1 : 0));
+					signFace1Vert2 = (distFace1Vert2 > EqualityTolerance ? 1 : (distFace1Vert2 < -EqualityTolerance ? -1 : 0));
+					signFace1Vert3 = (distFace1Vert3 > EqualityTolerance ? 1 : (distFace1Vert3 < -EqualityTolerance ? -1 : 0));
+
+					//if all the signs are zero, the planes are coplanar
+					//if all the signs are positive or negative, the planes do not intersect
+					//if the signs are not equal...
+					if (!(signFace1Vert1 == signFace1Vert2 && signFace1Vert2 == signFace1Vert3))
 					{
-						//for each object2 face...
-						for (int compareFaceIndex = 0; compareFaceIndex < compareObject.GetNumFaces(); compareFaceIndex++)
+						//distance from the face2 vertices to the face1 plane
+						distFace2Vert1 = ComputeDistance(compareFace.v1, thisFace);
+						distFace2Vert2 = ComputeDistance(compareFace.v2, thisFace);
+						distFace2Vert3 = ComputeDistance(compareFace.v3, thisFace);
+
+						//distances signs from the face2 vertices to the face1 plane
+						signFace2Vert1 = (distFace2Vert1 > EqualityTolerance ? 1 : (distFace2Vert1 < -EqualityTolerance ? -1 : 0));
+						signFace2Vert2 = (distFace2Vert2 > EqualityTolerance ? 1 : (distFace2Vert2 < -EqualityTolerance ? -1 : 0));
+						signFace2Vert3 = (distFace2Vert3 > EqualityTolerance ? 1 : (distFace2Vert3 < -EqualityTolerance ? -1 : 0));
+
+						//if the signs are not equal...
+						if (!(signFace2Vert1 == signFace2Vert2 && signFace2Vert2 == signFace2Vert3))
 						{
-							//if object1 face bound and object2 face bound overlap...
-							compareFace = compareObject.GetFace(compareFaceIndex);
-							if (thisFace.GetBound().Overlap(compareFace.GetBound()))
+							line = new Line(thisFace, compareFace);
+
+							//intersection of the face1 and the plane of face2
+							segment1 = new Segment(line, thisFace, signFace1Vert1, signFace1Vert2, signFace1Vert3);
+
+							//intersection of the face2 and the plane of face1
+							segment2 = new Segment(line, compareFace, signFace2Vert1, signFace2Vert2, signFace2Vert3);
+
+							//if the two segments intersect...
+							if (segment1.Intersect(segment2))
 							{
-								//PART I - DO TWO POLIGONS INTERSECT?
-								//POSSIBLE RESULTS: INTERSECT, NOT_INTERSECT, COPLANAR
+								//PART II - SUBDIVIDING NON-COPLANAR POLYGONS
+								int lastNumFaces = Faces.Count;
+								bool splitOccured = this.SplitFace(thisFace, segment1, segment2);
 
-								//distance from the face1 vertices to the face2 plane
-								v1DistToCompareFace = ComputeDistance(thisFace.v1, compareFace);
-								distFace1Vert2 = ComputeDistance(thisFace.v2, compareFace);
-								distFace1Vert3 = ComputeDistance(thisFace.v3, compareFace);
-
-								//distances signs from the face1 vertices to the face2 plane
-								signFace1Vert1 = (v1DistToCompareFace > EqualityTolerance ? 1 : (v1DistToCompareFace < -EqualityTolerance ? -1 : 0));
-								signFace1Vert2 = (distFace1Vert2 > EqualityTolerance ? 1 : (distFace1Vert2 < -EqualityTolerance ? -1 : 0));
-								signFace1Vert3 = (distFace1Vert3 > EqualityTolerance ? 1 : (distFace1Vert3 < -EqualityTolerance ? -1 : 0));
-
-								//if all the signs are zero, the planes are coplanar
-								//if all the signs are positive or negative, the planes do not intersect
-								//if the signs are not equal...
-								if (!(signFace1Vert1 == signFace1Vert2 && signFace1Vert2 == signFace1Vert3))
+								//prevent from infinite loop (with a loss of faces...)
+								if (Faces.Count > numFacesStart * 100)
 								{
-									//distance from the face2 vertices to the face1 plane
-									distFace2Vert1 = ComputeDistance(compareFace.v1, thisFace);
-									distFace2Vert2 = ComputeDistance(compareFace.v2, thisFace);
-									distFace2Vert3 = ComputeDistance(compareFace.v3, thisFace);
+									//System.out.println("possible infinite loop situation: terminating faces split");
+									//return;
+									int a = 0;
+								}
 
-									//distances signs from the face2 vertices to the face1 plane
-									signFace2Vert1 = (distFace2Vert1 > EqualityTolerance ? 1 : (distFace2Vert1 < -EqualityTolerance ? -1 : 0));
-									signFace2Vert2 = (distFace2Vert2 > EqualityTolerance ? 1 : (distFace2Vert2 < -EqualityTolerance ? -1 : 0));
-									signFace2Vert3 = (distFace2Vert3 > EqualityTolerance ? 1 : (distFace2Vert3 < -EqualityTolerance ? -1 : 0));
-
-									//if the signs are not equal...
-									if (!(signFace2Vert1 == signFace2Vert2 && signFace2Vert2 == signFace2Vert3))
+								#if false
+								//if the face in the position isn't the same, there was a break
+								if (splitOccured
+									&& thisFace != GetFace(thisFaceIndex))
+								{
+									//if the generated solid is equal the origin...
+									if (thisFace.Equals(GetFace(GetNumFaces() - 1)))
 									{
-										line = new Line(thisFace, compareFace);
-
-										//intersection of the face1 and the plane of face2
-										segment1 = new Segment(line, thisFace, signFace1Vert1, signFace1Vert2, signFace1Vert3);
-
-										//intersection of the face2 and the plane of face1
-										segment2 = new Segment(line, compareFace, signFace2Vert1, signFace2Vert2, signFace2Vert3);
-
-										//if the two segments intersect...
-										if (segment1.Intersect(segment2))
+										//return it to its position and jump it
+										if (thisFaceIndex != (GetNumFaces() - 1))
 										{
-											//PART II - SUBDIVIDING NON-COPLANAR POLYGONS
-											int lastNumFaces = GetNumFaces();
-											bool splitOccured = this.SplitFace(thisFaceIndex, segment1, segment2);
-
-											//prevent from infinite loop (with a loss of faces...)
-											if (GetNumFaces() > numFacesStart * 100)
-											{
-												//System.out.println("possible infinite loop situation: terminating faces split");
-												//return;
-												int a = 0;
-											}
-
-											//if the face in the position isn't the same, there was a break
-											if (splitOccured
-												&& thisFace != GetFace(thisFaceIndex))
-											{
-												//if the generated solid is equal the origin...
-												if (thisFace.Equals(GetFace(GetNumFaces() - 1)))
-												{
-													//return it to its position and jump it
-													if (thisFaceIndex != (GetNumFaces() - 1))
-													{
-														faces.RemoveAt(GetNumFaces() - 1);
-														faces.Insert(thisFaceIndex, thisFace);
-													}
-													else
-													{
-														continue;
-													}
-												}
-												//else: test next face
-												else
-												{
-													thisFaceIndex--;
-													break;
-												}
-											}
+											Faces.RemoveAt(GetNumFaces() - 1);
+											Faces.Insert(thisFaceIndex, thisFace);
+										}
+										else
+										{
+											continue;
 										}
 									}
+									//else: test next face
+									else
+									{
+										thisFaceIndex--;
+										break;
+									}
 								}
+								#endif
 							}
 						}
 					}
@@ -365,7 +303,7 @@ namespace Net3dBool
 				Face face = new Face(v1, v2, v3);
 				if (face.GetArea() > EqualityTolerance)
 				{
-					faces.Add(face);
+					Faces.Add(face, face.GetBound());
 					return face;
 				}
 				else
@@ -410,7 +348,7 @@ namespace Net3dBool
 		/// <param name="facePos1">new vertex position</param>
 		/// <param name="facePos2">new vertex position</param>
 		/// <param name="linedVertex">linedVertex what vertex is more lined with the interersection found</param>
-		private bool BreakFaceInFive(int faceIndex, Vector3 facePos1, Vector3 facePos2, int linedVertex)
+		private bool BreakFaceInFive(Face face, Vector3 facePos1, Vector3 facePos2, int linedVertex)
 		{
 			//       O
 			//      - -
@@ -419,8 +357,7 @@ namespace Net3dBool
 			//   -    X  -
 			//  -  X      -
 			// O-----------O
-			Face face = faces[faceIndex];
-			faces.RemoveAt(faceIndex);
+			Faces.Remove(face);
 
 			Vertex faceVertex1 = AddVertex(facePos1, Status.BOUNDARY);
 			bool faceVertex1Exists = faceVertex1 != vertices[vertices.Count - 1];
@@ -470,7 +407,7 @@ namespace Net3dBool
 		/// <param name="edgePos">new vertex position</param>
 		/// <param name="facePos">new vertex position</param>
 		/// <param name="endVertex">vertex used for the split</param>
-		private bool BreakFaceInFour(int faceIndex, Vector3 edgePos, Vector3 facePos, Vertex endVertex)
+		private bool BreakFaceInFour(Face face, Vector3 edgePos, Vector3 facePos, Vertex endVertex)
 		{
 			//         2
 			//        -*-
@@ -481,8 +418,6 @@ namespace Net3dBool
 			//   -   *   *   -
 			//  - *         * -
 			// 3---------------1
-			Face face = faces[faceIndex];
-
 			Vertex edgeVertex = AddVertex(edgePos, Status.BOUNDARY);
 			bool edgeExists = edgeVertex != vertices[vertices.Count - 1];
 			Vertex faceVertex = AddVertex(facePos, Status.BOUNDARY);
@@ -495,7 +430,7 @@ namespace Net3dBool
 				return false;
 			}
 
-			faces.RemoveAt(faceIndex);
+			Faces.Remove(face);
 			// check that we are not adding back in the same face we are removing
 			if (endVertex.Equals(face.v1))
 			{
@@ -529,7 +464,7 @@ namespace Net3dBool
 		/// <param name="newPos1">new vertex position</param>
 		/// <param name="newPos2">new vertex position</param>
 		/// <param name="splitEdge">edge that will be split</param>
-		private bool BreakFaceInThree(int faceIndex, Vector3 newPos1, Vector3 newPos2, int splitEdge)
+		private bool BreakFaceInThree(Face face, Vector3 newPos1, Vector3 newPos2, int splitEdge)
 		{
 			//       O
 			//      - -
@@ -544,11 +479,10 @@ namespace Net3dBool
 
 			if (splitEdge == 1) // vertex 3
 			{
-				Face face = faces[faceIndex];
 				bool willMakeExistingFace = (vertex1 == face.v1 && vertex2 == face.v2) || (vertex1 == face.v2 || vertex2 == face.v1);
 				if (!willMakeExistingFace)
 				{
-					faces.RemoveAt(faceIndex);
+					Faces.Remove(face);
 					AddFace(face.v1, vertex1, face.v3);
 					AddFace(vertex1, vertex2, face.v3);
 					AddFace(vertex2, face.v2, face.v3);
@@ -557,11 +491,10 @@ namespace Net3dBool
 			}
 			else if (splitEdge == 2) // vertex 1
 			{
-				Face face = faces[faceIndex];
 				bool willMakeExistingFace = (vertex1 == face.v2 && vertex2 == face.v3) || (vertex1 == face.v3 || vertex2 == face.v2);
 				if (!willMakeExistingFace)
 				{
-					faces.RemoveAt(faceIndex);
+					Faces.Remove(face);
 					AddFace(face.v2, vertex1, face.v1);
 					AddFace(vertex1, vertex2, face.v1);
 					AddFace(vertex2, face.v3, face.v1);
@@ -570,11 +503,10 @@ namespace Net3dBool
 			}
 			else // vertex 2
 			{
-				Face face = faces[faceIndex];
 				bool willMakeExistingFace = (vertex1 == face.v1 && vertex2 == face.v3) || (vertex1 == face.v3 || vertex2 == face.v1);
 				if (!willMakeExistingFace)
 				{
-					faces.RemoveAt(faceIndex);
+					Faces.Remove(face);
 					AddFace(face.v3, vertex1, face.v2);
 					AddFace(vertex1, vertex2, face.v2);
 					AddFace(vertex2, face.v1, face.v2);
@@ -595,7 +527,7 @@ namespace Net3dBool
 		/// <param name="faceIndex">face index in the faces array</param>
 		/// <param name="newPos">new vertex position</param>
 		/// <param name="endVertex">vertex used for the split</param>
-		private bool BreakFaceInThree(int faceIndex, Vector3 newPos)
+		private bool BreakFaceInThree(Face face, Vector3 newPos)
 		{
 			//       O
 			//      -*-
@@ -611,8 +543,7 @@ namespace Net3dBool
 				return false;
 			}
 
-			Face face = faces[faceIndex];
-			faces.RemoveAt(faceIndex);
+			Faces.Remove(face);
 
 			AddFace(face.v1, face.v2, vertex);
 			AddFace(face.v2, face.v3, vertex);
@@ -629,7 +560,7 @@ namespace Net3dBool
 		/// <param name="newPos2">new vertex position</param>
 		/// <param name="startVertex">vertex used for the new faces creation</param>
 		/// <param name="endVertex">vertex used for the new faces creation</param>
-		private bool BreakFaceInThree(int faceIndex, Vector3 newPos1, Vector3 newPos2, Vertex startVertex, Vertex endVertex)
+		private bool BreakFaceInThree(Face face, Vector3 newPos1, Vector3 newPos2, Vertex startVertex, Vertex endVertex)
 		{
 			//       O
 			//      - -
@@ -638,8 +569,7 @@ namespace Net3dBool
 			//   -       -
 			//  -         -
 			// O-----------O
-			Face face = faces[faceIndex];
-			faces.RemoveAt(faceIndex);
+			Faces.Remove(face);
 
 			Vertex vertex1 = AddVertex(newPos1, Status.BOUNDARY);
 			Vertex vertex2 = AddVertex(newPos2, Status.BOUNDARY);
@@ -690,7 +620,7 @@ namespace Net3dBool
 		/// <param name="faceIndex">face index in the faces array</param>
 		/// <param name="newPos">new vertex position</param>
 		/// <param name="splitEdge">edge that will be split</param>
-		private bool BreakFaceInTwo(int faceIndex, Vector3 newPos, int splitEdge)
+		private bool BreakFaceInTwo(Face face, Vector3 newPos, int splitEdge)
 		{
 			//       O
 			//      -*-
@@ -707,8 +637,7 @@ namespace Net3dBool
 				return false;
 			}
 
-			Face face = faces[faceIndex];
-			faces.RemoveAt(faceIndex);
+			Faces.Remove(face);
 
 			if (splitEdge == 1)
 			{
@@ -738,7 +667,7 @@ namespace Net3dBool
 		/// <param name="faceIndex">face index in the faces array</param>
 		/// <param name="newPos">new vertex position</param>
 		/// <param name="endVertex">vertex used for splitting</param>
-		private bool BreakFaceInTwo(int faceIndex, Vector3 newPos, Vertex endVertex)
+		private bool BreakFaceInTwo(Face face, Vector3 newPos, Vertex endVertex)
 		{
 			//       O
 			//      - -
@@ -749,7 +678,6 @@ namespace Net3dBool
 			// O-----------O
 
 			// TODO: make sure we are not creating extra Vertices and not cleaning them up
-			Face face = faces[faceIndex];
 			Vertex vertex = AddVertex(newPos, Status.BOUNDARY);
 
 			if (endVertex.Equals(face.v1))
@@ -760,7 +688,7 @@ namespace Net3dBool
 				{
 					AddFace(face.v1, vertex, face.v3);
 					AddFace(vertex, face.v2, face.v3);
-					faces.RemoveAt(faceIndex);
+					Faces.Remove(face);
 					return true;
 				}
 			}
@@ -772,7 +700,7 @@ namespace Net3dBool
 				{
 					AddFace(face.v2, vertex, face.v1);
 					AddFace(vertex, face.v3, face.v1);
-					faces.RemoveAt(faceIndex);
+					Faces.Remove(face);
 					return true;
 				}
 			}
@@ -784,7 +712,7 @@ namespace Net3dBool
 				{
 					AddFace(face.v3, vertex, face.v2);
 					AddFace(vertex, face.v1, face.v2);
-					faces.RemoveAt(faceIndex);
+					Faces.Remove(face);
 					return true;
 				}
 			}
@@ -813,13 +741,12 @@ namespace Net3dBool
 		/// <param name="faceIndex">face index in the array of faces</param>
 		/// <param name="segment1">segment representing the intersection of the face with the plane</param>
 		/// <param name="segment2">segment representing the intersection of other face with the plane of the current face plane</param>
-		private bool SplitFace(int faceIndex, Segment segment1, Segment segment2)
+		private bool SplitFace(Face face, Segment segment1, Segment segment2)
 		{
 			Vector3 startPos, endPos;
 			int startType, endType, middleType;
 			double startDist, endDist;
 
-			Face face = GetFace(faceIndex);
 			Vertex startVertex = segment1.GetStartVertex();
 			Vertex endVertex = segment1.GetEndVertex();
 
@@ -890,27 +817,27 @@ namespace Net3dBool
 				if (startType == Segment.VERTEX)
 				{
 					//VERTEX-EDGE-EDGE
-					return BreakFaceInTwo(faceIndex, endPos, splitEdge);
+					return BreakFaceInTwo(face, endPos, splitEdge);
 				}
 				else if (endType == Segment.VERTEX)
 				{
 					//EDGE-EDGE-VERTEX
-					return BreakFaceInTwo(faceIndex, startPos, splitEdge);
+					return BreakFaceInTwo(face, startPos, splitEdge);
 				}
 				else if (startDist == endDist)
 				{
 					// EDGE-EDGE-EDGE
-					return BreakFaceInTwo(faceIndex, endPos, splitEdge);
+					return BreakFaceInTwo(face, endPos, splitEdge);
 				}
 				else
 				{
 					if ((startVertex == face.v1 && endVertex == face.v2) || (startVertex == face.v2 && endVertex == face.v3) || (startVertex == face.v3 && endVertex == face.v1))
 					{
-						return BreakFaceInThree(faceIndex, startPos, endPos, splitEdge);
+						return BreakFaceInThree(face, startPos, endPos, splitEdge);
 					}
 					else
 					{
-						return BreakFaceInThree(faceIndex, endPos, startPos, splitEdge);
+						return BreakFaceInThree(face, endPos, startPos, splitEdge);
 					}
 				}
 			}
@@ -918,37 +845,37 @@ namespace Net3dBool
 			else if (startType == Segment.VERTEX && endType == Segment.EDGE)
 			{
 				//VERTEX-FACE-EDGE
-				return BreakFaceInTwo(faceIndex, endPos, endVertex);
+				return BreakFaceInTwo(face, endPos, endVertex);
 			}
 			else if (startType == Segment.EDGE && endType == Segment.VERTEX)
 			{
 				//EDGE-FACE-VERTEX
-				return BreakFaceInTwo(faceIndex, startPos, startVertex);
+				return BreakFaceInTwo(face, startPos, startVertex);
 			}
 			else if (startType == Segment.VERTEX && endType == Segment.FACE)
 			{
 				//VERTEX-FACE-FACE
-				return BreakFaceInThree(faceIndex, endPos);
+				return BreakFaceInThree(face, endPos);
 			}
 			else if (startType == Segment.FACE && endType == Segment.VERTEX)
 			{
 				//FACE-FACE-VERTEX
-				return BreakFaceInThree(faceIndex, startPos);
+				return BreakFaceInThree(face, startPos);
 			}
 			else if (startType == Segment.EDGE && endType == Segment.EDGE)
 			{
 				//EDGE-FACE-EDGE
-				return BreakFaceInThree(faceIndex, startPos, endPos, startVertex, endVertex);
+				return BreakFaceInThree(face, startPos, endPos, startVertex, endVertex);
 			}
 			else if (startType == Segment.EDGE && endType == Segment.FACE)
 			{
 				//EDGE-FACE-FACE
-				return BreakFaceInFour(faceIndex, startPos, endPos, startVertex);
+				return BreakFaceInFour(face, startPos, endPos, startVertex);
 			}
 			else if (startType == Segment.FACE && endType == Segment.EDGE)
 			{
 				//FACE-FACE-EDGE
-				return BreakFaceInFour(faceIndex, endPos, startPos, endVertex);
+				return BreakFaceInFour(face, endPos, startPos, endVertex);
 			}
 			else if (startType == Segment.FACE && endType == Segment.FACE)
 			{
@@ -958,7 +885,7 @@ namespace Net3dBool
 				//if the intersection segment is a point only...
 				if (Math.Abs(segmentVector.x) < EqualityTolerance && Math.Abs(segmentVector.y) < EqualityTolerance && Math.Abs(segmentVector.z) < EqualityTolerance)
 				{
-					return BreakFaceInThree(faceIndex, startPos);
+					return BreakFaceInThree(face, startPos);
 				}
 
 				//gets the vertex more lined with the intersection segment
@@ -992,11 +919,11 @@ namespace Net3dBool
 				// Now find which of the intersection endpoints is nearest to that vertex.
 				if ((linedVertexPos - startPos).Length > (linedVertexPos - endPos).Length)
 				{
-					return BreakFaceInFive(faceIndex, startPos, endPos, linedVertex);
+					return BreakFaceInFive(face, startPos, endPos, linedVertex);
 				}
 				else
 				{
-					return BreakFaceInFive(faceIndex, endPos, startPos, linedVertex);
+					return BreakFaceInFive(face, endPos, startPos, linedVertex);
 				}
 			}
 

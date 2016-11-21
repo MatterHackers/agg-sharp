@@ -23,10 +23,10 @@
 //OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using MatterHackers.VectorMath;
-using Bounds = MatterHackers.VectorMath.AxisAlignedBoundingBox;
 
 // A Dynamic, Loose Octree for storing any objects that can be described with AABB bounds
 // See also: PointOctree, where objects are stored as single points and some code can be simplified
@@ -70,6 +70,16 @@ namespace MatterHackers.VectorMath.Octree
 	readonly Queue<Bounds> lastCollisionChecks = new Queue<Bounds>();
 #endif
 
+		public BoundsOctree(AxisAlignedBoundingBox initialWorldBounds, double minNodeSize = .01, double loosenessVal = 1)
+			: this(Math.Max(initialWorldBounds.XSize, Math.Max(initialWorldBounds.YSize, initialWorldBounds.ZSize)), initialWorldBounds.Center, minNodeSize, loosenessVal)
+		{
+		}
+
+		public IEnumerable<T> AllObjects()
+		{
+			return rootNode.GetColliding(rootNode.bounds);
+		}
+
 		/// <summary>
 		/// Constructor for the bounds octree.
 		/// </summary>
@@ -77,7 +87,7 @@ namespace MatterHackers.VectorMath.Octree
 		/// <param name="initialWorldPos">Position of the centre of the initial node.</param>
 		/// <param name="minNodeSize">Nodes will stop splitting if the new nodes would be smaller than this (metres).</param>
 		/// <param name="loosenessVal">Clamped between 1 and 2. Values > 1 let nodes overlap.</param>
-		public BoundsOctree(double initialWorldSize, Vector3 initialWorldPos, double minNodeSize, double loosenessVal)
+		public BoundsOctree(double initialWorldSize, Vector3 initialWorldPos, double minNodeSize = .01, double loosenessVal = 1)
 		{
 			if (minNodeSize > initialWorldSize)
 			{
@@ -98,7 +108,7 @@ namespace MatterHackers.VectorMath.Octree
 		/// </summary>
 		/// <param name="obj">Object to add.</param>
 		/// <param name="objBounds">3D bounding box around the object.</param>
-		public void Add(T obj, Bounds objBounds)
+		public void Add(T obj, AxisAlignedBoundingBox objBounds)
 		{
 			// Add object or expand the octree until it can be added
 			int count = 0; // Safety check against infinite/excessive growth
@@ -138,7 +148,7 @@ namespace MatterHackers.VectorMath.Octree
 		/// </summary>
 		/// <param name="checkBounds">bounds to check.</param>
 		/// <returns>True if there was a collision.</returns>
-		public bool IsColliding(Bounds checkBounds)
+		public bool IsColliding(AxisAlignedBoundingBox checkBounds)
 		{
 			//#if UNITY_EDITOR
 			// For debugging
@@ -152,15 +162,9 @@ namespace MatterHackers.VectorMath.Octree
 		/// </summary>
 		/// <param name="checkBounds">bounds to check.</param>
 		/// <returns>Objects that intersect with the specified bounds.</returns>
-		public T[] GetColliding(Bounds checkBounds)
+		public IEnumerable<T> GetColliding(AxisAlignedBoundingBox checkBounds)
 		{
-			//#if UNITY_EDITOR
-			// For debugging
-			//AddCollisionCheck(checkBounds);
-			//#endif
-			List<T> collidingWith = new List<T>();
-			rootNode.GetColliding(ref checkBounds, collidingWith);
-			return collidingWith.ToArray();
+			return rootNode.GetColliding(checkBounds);
 		}
 
 #if false

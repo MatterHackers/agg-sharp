@@ -79,22 +79,6 @@ namespace Net3dBool
 		{
 		}
 
-		//----------------------------------OVERRIDES-----------------------------------//
-
-		/**
-     * Clones the BooleanModeller object
-     *
-     * @return cloned BooleanModeller object
-     */
-
-		public BooleanModeller Clone()
-		{
-			BooleanModeller clone = new BooleanModeller();
-			clone.object1 = object1.Clone();
-			clone.object2 = object2.Clone();
-			return clone;
-		}
-
 		//-------------------------------BOOLEAN_OPERATIONS-----------------------------//
 
 		/**
@@ -184,11 +168,9 @@ namespace Net3dBool
 
 		private void GroupObjectComponents(Object3D obj, List<Vertex> vertices, List<int> indices, Status faceStatus1, Status faceStatus2)
 		{
-			Face face;
 			//for each face..
-			for (int i = 0; i < obj.GetNumFaces(); i++)
+			foreach(Face face in obj.Faces.AllObjects())
 			{
-				face = obj.GetFace(i);
 				//if the face status fits with the desired status...
 				if (face.GetStatus() == faceStatus1 || face.GetStatus() == faceStatus2)
 				{

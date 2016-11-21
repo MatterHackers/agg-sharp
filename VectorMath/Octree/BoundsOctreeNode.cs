@@ -46,7 +46,7 @@ namespace MatterHackers.VectorMath.Octree
 		// Actual length of sides, taking the looseness value into account
 		double adjLength;
 		// Bounding box that represents this node
-		Bounds bounds = default(Bounds);
+		public Bounds bounds { get; private set; } = default(Bounds);
 		// Objects in this node
 		readonly List<OctreeObject> objects = new List<OctreeObject>();
 		// Child nodes, if any
@@ -171,34 +171,35 @@ namespace MatterHackers.VectorMath.Octree
 		}
 
 		/// <summary>
-		/// Returns an array of objects that intersect with the specified bounds, if any. Otherwise returns an empty array. See also: IsColliding.
+		/// Enumerates the objects that intersect with the specified bounds, if any. Otherwise returns null. See also: IsColliding.
 		/// </summary>
 		/// <param name="checkBounds">Bounds to check. Passing by ref as it improve performance with structs.</param>
 		/// <param name="result">List result.</param>
 		/// <returns>Objects that intersect with the specified bounds.</returns>
-		public void GetColliding(ref Bounds checkBounds, List<T> result)
+		public IEnumerable<T> GetColliding(AxisAlignedBoundingBox checkBounds)
 		{
 			// Are the input bounds at least partially in this node?
-			if (!bounds.Intersects(checkBounds))
+			if (bounds.Intersects(checkBounds))
 			{
-				return;
-			}
-
-			// Check against any objects in this node
-			for (int i = 0; i < objects.Count; i++)
-			{
-				if (objects[i].Bounds.Intersects(checkBounds))
+				// Check against any objects in this node
+				for (int i = 0; i < objects.Count; i++)
 				{
-					result.Add(objects[i].Obj);
+					if (objects[i].Bounds.Intersects(checkBounds))
+					{
+						yield return objects[i].Obj;
+					}
 				}
-			}
 
-			// Check children
-			if (children != null)
-			{
-				for (int i = 0; i < 8; i++)
+				// Check children
+				if (children != null)
 				{
-					children[i].GetColliding(ref checkBounds, result);
+					for (int i = 0; i < 8; i++)
+					{
+						foreach(var child in children[i].GetColliding(checkBounds))
+						{
+							yield return child;
+						}
+					}
 				}
 			}
 		}
