@@ -304,7 +304,7 @@ namespace MatterHackers.VectorMath
 				Math.Max(minXYZ.z, Math.Min(maxXYZ.z, bounds.maxXYZ.z)));
 
 			Vector3 delta = intersectMaxXYZ - intersectMinXYZ;
-			if (delta.x > 0 && delta.y > 0 && delta.z > 0)
+			if (delta.x >= 0 && delta.y >= 0 && delta.z >= 0)
 			{
 				return true;
 			}

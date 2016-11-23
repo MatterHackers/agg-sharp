@@ -26,7 +26,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using MatterHackers.VectorMath;
 
 // A Dynamic, Loose Octree for storing any objects that can be described with AABB bounds
 // See also: PointOctree, where objects are stored as single points and some code can be simplified
@@ -52,32 +51,22 @@ namespace MatterHackers.VectorMath.Octree
 {
 	public class BoundsOctree<T>
 	{
-		// The total amount of objects currently in the tree
-		public int Count { get; private set; }
+		// Size that the octree was on creation
+		private readonly double initialSize;
 
-		// Root node of the octree
-		BoundsOctreeNode<T> rootNode;
 		// Should be a value between 1 and 2. A multiplier for the base size of a node.
 		// 1.0 is a "normal" octree, while values > 1 have overlap
-		readonly double looseness;
-		// Size that the octree was on creation
-		readonly double initialSize;
+		private readonly double looseness;
+
 		// Minimum side length that a node can be - essentially an alternative to having a max depth
-		readonly double minSize;
-		// For collision visualisation. Automatically removed in builds.
-#if UNITY_EDITOR
-	const int numCollisionsToSave = 4;
-	readonly Queue<Bounds> lastCollisionChecks = new Queue<Bounds>();
-#endif
+		private readonly double minSize;
+
+		// Root node of the octree
+		private BoundsOctreeNode<T> rootNode;
 
 		public BoundsOctree(AxisAlignedBoundingBox initialWorldBounds, double minNodeSize = .01, double loosenessVal = 1)
-			: this(Math.Max(initialWorldBounds.XSize, Math.Max(initialWorldBounds.YSize, initialWorldBounds.ZSize)), initialWorldBounds.Center, minNodeSize, loosenessVal)
+					: this(Math.Max(initialWorldBounds.XSize, Math.Max(initialWorldBounds.YSize, initialWorldBounds.ZSize)), initialWorldBounds.Center, minNodeSize, loosenessVal)
 		{
-		}
-
-		public IEnumerable<T> AllObjects()
-		{
-			return rootNode.GetColliding(rootNode.bounds);
 		}
 
 		/// <summary>
@@ -101,7 +90,8 @@ namespace MatterHackers.VectorMath.Octree
 			rootNode = new BoundsOctreeNode<T>(initialSize, minSize, loosenessVal, initialWorldPos);
 		}
 
-		// #### PUBLIC METHODS ####
+		// The total amount of objects currently in the tree
+		public int Count { get; private set; }
 
 		/// <summary>
 		/// Add an object.
@@ -124,6 +114,41 @@ namespace MatterHackers.VectorMath.Octree
 			Count++;
 		}
 
+		// For collision visualisation. Automatically removed in builds.
+		public IEnumerable<T> AllObjects()
+		{
+			return rootNode.GetColliding(rootNode.bounds);
+		}
+
+		/// <summary>
+		/// Draws node boundaries visually for debugging.
+		/// Must be called from OnDrawGizmos externally. See also: DrawAllObjects.
+		/// </summary>
+		public void DrawAllBounds()
+		{
+			rootNode.DrawAllBounds();
+		}
+
+		/// <summary>
+		/// Draws the bounds of all objects in the tree visually for debugging.
+		/// Must be called from OnDrawGizmos externally. See also: DrawAllBounds.
+		/// </summary>
+		public void DrawAllObjects()
+		{
+			rootNode.DrawAllObjects();
+		}
+
+		/// <summary>
+		/// Returns an array of objects that intersect with the specified bounds, if any. Otherwise returns an empty array. See also: IsColliding.
+		/// </summary>
+		/// <param name="checkBounds">bounds to check.</param>
+		/// <returns>Objects that intersect with the specified bounds.</returns>
+		public IEnumerable<T> GetColliding(AxisAlignedBoundingBox checkBounds)
+		{
+			return rootNode.GetColliding(checkBounds);
+		}
+
+		// #### PUBLIC METHODS ####
 		/// <summary>
 		/// Remove an object. Makes the assumption that the object only exists once in the tree.
 		/// </summary>
@@ -143,87 +168,28 @@ namespace MatterHackers.VectorMath.Octree
 			return removed;
 		}
 
-		/// <summary>
-		/// Check if the specified bounds intersect with anything in the tree. See also: GetColliding.
-		/// </summary>
-		/// <param name="checkBounds">bounds to check.</param>
-		/// <returns>True if there was a collision.</returns>
-		public bool IsColliding(AxisAlignedBoundingBox checkBounds)
-		{
-			//#if UNITY_EDITOR
-			// For debugging
-			//AddCollisionCheck(checkBounds);
-			//#endif
-			return rootNode.IsColliding(ref checkBounds);
-		}
-
-		/// <summary>
-		/// Returns an array of objects that intersect with the specified bounds, if any. Otherwise returns an empty array. See also: IsColliding.
-		/// </summary>
-		/// <param name="checkBounds">bounds to check.</param>
-		/// <returns>Objects that intersect with the specified bounds.</returns>
-		public IEnumerable<T> GetColliding(AxisAlignedBoundingBox checkBounds)
-		{
-			return rootNode.GetColliding(checkBounds);
-		}
-
-#if false
-	/// <summary>
-	/// Draws node boundaries visually for debugging.
-	/// Must be called from OnDrawGizmos externally. See also: DrawAllObjects.
-	/// </summary>
-	public void DrawAllBounds() {
-		rootNode.DrawAllBounds();
-	}
-
-	/// <summary>
-	/// Draws the bounds of all objects in the tree visually for debugging.
-	/// Must be called from OnDrawGizmos externally. See also: DrawAllBounds.
-	/// </summary>
-	public void DrawAllObjects() {
-		rootNode.DrawAllObjects();
-	}
-#endif
-
-		// Intended for debugging. Must be called from OnDrawGizmos externally
-		// See also DrawAllBounds and DrawAllObjects
-		/// <summary>
-		/// Visualises collision checks from IsColliding and GetColliding.
-		/// Collision visualisation code is automatically removed from builds so that collision checks aren't slowed down.
-		/// </summary>
-#if UNITY_EDITOR
-	public void DrawCollisionChecks() {
-		int count = 0;
-		foreach (Bounds collisionCheck in lastCollisionChecks) {
-			Gizmos.color = new Color(1.0f, 1.0f - ((double)count / numCollisionsToSave), 1.0f);
-			Gizmos.DrawCube(collisionCheck.center, collisionCheck.size);
-			count++;
-		}
-		Gizmos.color = Color.white;
-	}
-#endif
-
 		// #### PRIVATE METHODS ####
 
 		/// <summary>
-		/// Used for visualising collision checks with DrawCollisionChecks.
-		/// Automatically removed from builds so that collision checks aren't slowed down.
+		/// Used when growing the octree. Works out where the old root node would fit inside a new, larger root node.
 		/// </summary>
-		/// <param name="checkBounds">bounds that were passed in to check for collisions.</param>
-#if UNITY_EDITOR
-	void AddCollisionCheck(Bounds checkBounds) {
-		lastCollisionChecks.Enqueue(checkBounds);
-		if (lastCollisionChecks.Count > numCollisionsToSave) {
-			lastCollisionChecks.Dequeue();
+		/// <param name="xDir">X direction of growth. 1 or -1.</param>
+		/// <param name="yDir">Y direction of growth. 1 or -1.</param>
+		/// <param name="zDir">Z direction of growth. 1 or -1.</param>
+		/// <returns>Octant where the root node should be.</returns>
+		private static int GetRootPosIndex(int xDir, int yDir, int zDir)
+		{
+			int result = xDir > 0 ? 1 : 0;
+			if (yDir < 0) result += 4;
+			if (zDir > 0) result += 2;
+			return result;
 		}
-	}
-#endif
 
 		/// <summary>
 		/// Grow the octree to fit in all objects.
 		/// </summary>
 		/// <param name="direction">Direction to grow.</param>
-		void Grow(Vector3 direction)
+		private void Grow(Vector3 direction)
 		{
 			int xDirection = direction.x >= 0 ? 1 : -1;
 			int yDirection = direction.y >= 0 ? 1 : -1;
@@ -260,24 +226,9 @@ namespace MatterHackers.VectorMath.Octree
 		/// <summary>
 		/// Shrink the octree if possible, else leave it the same.
 		/// </summary>
-		void Shrink()
+		private void Shrink()
 		{
 			rootNode = rootNode.ShrinkIfPossible(initialSize);
-		}
-
-		/// <summary>
-		/// Used when growing the octree. Works out where the old root node would fit inside a new, larger root node.
-		/// </summary>
-		/// <param name="xDir">X direction of growth. 1 or -1.</param>
-		/// <param name="yDir">Y direction of growth. 1 or -1.</param>
-		/// <param name="zDir">Z direction of growth. 1 or -1.</param>
-		/// <returns>Octant where the root node should be.</returns>
-		static int GetRootPosIndex(int xDir, int yDir, int zDir)
-		{
-			int result = xDir > 0 ? 1 : 0;
-			if (yDir < 0) result += 4;
-			if (zDir > 0) result += 2;
-			return result;
 		}
 	}
 }
