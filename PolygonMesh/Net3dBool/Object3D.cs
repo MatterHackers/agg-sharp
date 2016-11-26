@@ -37,6 +37,7 @@ using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace Net3dBool
 {
@@ -177,13 +178,15 @@ namespace Net3dBool
 			}
 		}
 
+		Stack<Face> addedFaces = new Stack<Face>();
 		/// <summary>
 		/// Split faces so that none face is intercepted by a face of other object
 		/// </summary>
 		/// <param name="compareObject">the other object 3d used to make the split</param>
 		public void SplitFaces(Object3D compareObject)
 		{
-			Line line;
+			addedFaces.Clear();
+				Line line;
 			Segment segment1;
 			Segment segment2;
 			double v1DistToCompareFace, distFace1Vert2, distFace1Vert3, distFace2Vert1, distFace2Vert2, distFace2Vert3;
@@ -193,96 +196,84 @@ namespace Net3dBool
 
 			//if the objects bounds overlap...
 			//for each object1 face...
-			foreach (Face thisFace in Faces.SearchBounds(new Bounds(compareObject.GetBound())))
+			foreach (Face thisFaceIn in Faces.SearchBounds(new Bounds(compareObject.GetBound())).ToArray()) // put it in an array as we will be adding new faces to it
 			{
-				//if object1 face bound and object2 bound overlap ...
-				//for each object2 face...
-				foreach (Face compareFace in compareObject.Faces.SearchBounds(new Bounds(thisFace.GetBound())))
+				Face thisFace = thisFaceIn;
+				bool haveAddedFaces = true;
+				// make sure we processe every face that we have added durring splitting befor moving on to the next face
+				while (haveAddedFaces)
 				{
-					//if object1 face bound and object2 face bound overlap...
-					//PART I - DO TWO POLIGONS INTERSECT?
-					//POSSIBLE RESULTS: INTERSECT, NOT_INTERSECT, COPLANAR
-
-					//distance from the face1 vertices to the face2 plane
-					v1DistToCompareFace = ComputeDistance(thisFace.v1, compareFace);
-					distFace1Vert2 = ComputeDistance(thisFace.v2, compareFace);
-					distFace1Vert3 = ComputeDistance(thisFace.v3, compareFace);
-
-					//distances signs from the face1 vertices to the face2 plane
-					signFace1Vert1 = (v1DistToCompareFace > EqualityTolerance ? 1 : (v1DistToCompareFace < -EqualityTolerance ? -1 : 0));
-					signFace1Vert2 = (distFace1Vert2 > EqualityTolerance ? 1 : (distFace1Vert2 < -EqualityTolerance ? -1 : 0));
-					signFace1Vert3 = (distFace1Vert3 > EqualityTolerance ? 1 : (distFace1Vert3 < -EqualityTolerance ? -1 : 0));
-
-					//if all the signs are zero, the planes are coplanar
-					//if all the signs are positive or negative, the planes do not intersect
-					//if the signs are not equal...
-					if (!(signFace1Vert1 == signFace1Vert2 && signFace1Vert2 == signFace1Vert3))
+					//if object1 face bound and object2 bound overlap ...
+					//for each object2 face...
+					foreach (Face compareFace in compareObject.Faces.SearchBounds(new Bounds(thisFace.GetBound())))
 					{
-						//distance from the face2 vertices to the face1 plane
-						distFace2Vert1 = ComputeDistance(compareFace.v1, thisFace);
-						distFace2Vert2 = ComputeDistance(compareFace.v2, thisFace);
-						distFace2Vert3 = ComputeDistance(compareFace.v3, thisFace);
+						//if object1 face bound and object2 face bound overlap...
+						//PART I - DO TWO POLIGONS INTERSECT?
+						//POSSIBLE RESULTS: INTERSECT, NOT_INTERSECT, COPLANAR
 
-						//distances signs from the face2 vertices to the face1 plane
-						signFace2Vert1 = (distFace2Vert1 > EqualityTolerance ? 1 : (distFace2Vert1 < -EqualityTolerance ? -1 : 0));
-						signFace2Vert2 = (distFace2Vert2 > EqualityTolerance ? 1 : (distFace2Vert2 < -EqualityTolerance ? -1 : 0));
-						signFace2Vert3 = (distFace2Vert3 > EqualityTolerance ? 1 : (distFace2Vert3 < -EqualityTolerance ? -1 : 0));
+						//distance from the face1 vertices to the face2 plane
+						v1DistToCompareFace = ComputeDistance(thisFace.v1, compareFace);
+						distFace1Vert2 = ComputeDistance(thisFace.v2, compareFace);
+						distFace1Vert3 = ComputeDistance(thisFace.v3, compareFace);
 
+						//distances signs from the face1 vertices to the face2 plane
+						signFace1Vert1 = (v1DistToCompareFace > EqualityTolerance ? 1 : (v1DistToCompareFace < -EqualityTolerance ? -1 : 0));
+						signFace1Vert2 = (distFace1Vert2 > EqualityTolerance ? 1 : (distFace1Vert2 < -EqualityTolerance ? -1 : 0));
+						signFace1Vert3 = (distFace1Vert3 > EqualityTolerance ? 1 : (distFace1Vert3 < -EqualityTolerance ? -1 : 0));
+
+						//if all the signs are zero, the planes are coplanar
+						//if all the signs are positive or negative, the planes do not intersect
 						//if the signs are not equal...
-						if (!(signFace2Vert1 == signFace2Vert2 && signFace2Vert2 == signFace2Vert3))
+						if (!(signFace1Vert1 == signFace1Vert2 && signFace1Vert2 == signFace1Vert3))
 						{
-							line = new Line(thisFace, compareFace);
+							//distance from the face2 vertices to the face1 plane
+							distFace2Vert1 = ComputeDistance(compareFace.v1, thisFace);
+							distFace2Vert2 = ComputeDistance(compareFace.v2, thisFace);
+							distFace2Vert3 = ComputeDistance(compareFace.v3, thisFace);
 
-							//intersection of the face1 and the plane of face2
-							segment1 = new Segment(line, thisFace, signFace1Vert1, signFace1Vert2, signFace1Vert3);
+							//distances signs from the face2 vertices to the face1 plane
+							signFace2Vert1 = (distFace2Vert1 > EqualityTolerance ? 1 : (distFace2Vert1 < -EqualityTolerance ? -1 : 0));
+							signFace2Vert2 = (distFace2Vert2 > EqualityTolerance ? 1 : (distFace2Vert2 < -EqualityTolerance ? -1 : 0));
+							signFace2Vert3 = (distFace2Vert3 > EqualityTolerance ? 1 : (distFace2Vert3 < -EqualityTolerance ? -1 : 0));
 
-							//intersection of the face2 and the plane of face1
-							segment2 = new Segment(line, compareFace, signFace2Vert1, signFace2Vert2, signFace2Vert3);
-
-							//if the two segments intersect...
-							if (segment1.Intersect(segment2))
+							//if the signs are not equal...
+							if (!(signFace2Vert1 == signFace2Vert2 && signFace2Vert2 == signFace2Vert3))
 							{
-								//PART II - SUBDIVIDING NON-COPLANAR POLYGONS
-								int lastNumFaces = Faces.Count;
-								bool splitOccured = this.SplitFace(thisFace, segment1, segment2);
+								line = new Line(thisFace, compareFace);
 
-								//prevent from infinite loop (with a loss of faces...)
-								if (Faces.Count > numFacesStart * 100)
-								{
-									//System.out.println("possible infinite loop situation: terminating faces split");
-									//return;
-									int a = 0;
-								}
+								//intersection of the face1 and the plane of face2
+								segment1 = new Segment(line, thisFace, signFace1Vert1, signFace1Vert2, signFace1Vert3);
 
-								#if false
-								//if the face in the position isn't the same, there was a break
-								if (splitOccured
-									&& thisFace != GetFace(thisFaceIndex))
+								//intersection of the face2 and the plane of face1
+								segment2 = new Segment(line, compareFace, signFace2Vert1, signFace2Vert2, signFace2Vert3);
+
+								//if the two segments intersect...
+								if (segment1.Intersect(segment2))
 								{
-									//if the generated solid is equal the origin...
-									if (thisFace.Equals(GetFace(GetNumFaces() - 1)))
+									//PART II - SUBDIVIDING NON-COPLANAR POLYGONS
+									int lastNumFaces = Faces.Count;
+									bool splitOccured = this.SplitFace(thisFace, segment1, segment2);
+
+									//prevent from infinite loop (with a loss of faces...)
+									if (Faces.Count > numFacesStart * 100)
 									{
-										//return it to its position and jump it
-										if (thisFaceIndex != (GetNumFaces() - 1))
-										{
-											Faces.RemoveAt(GetNumFaces() - 1);
-											Faces.Insert(thisFaceIndex, thisFace);
-										}
-										else
-										{
-											continue;
-										}
-									}
-									//else: test next face
-									else
-									{
-										thisFaceIndex--;
-										break;
+										//System.out.println("possible infinite loop situation: terminating faces split");
+										//return;
+										int a = 0;
 									}
 								}
-								#endif
 							}
 						}
+					}
+
+					if (addedFaces.Count > 0)
+					{
+						haveAddedFaces = true;
+						thisFace = addedFaces.Pop();
+					}
+					else
+					{
+						haveAddedFaces = false;
 					}
 				}
 			}
@@ -302,6 +293,7 @@ namespace Net3dBool
 				Face face = new Face(v1, v2, v3);
 				if (face.GetArea() > EqualityTolerance)
 				{
+					addedFaces.Push(face);
 					Faces.Insert(face, new Bounds(face.GetBound()));
 					return face;
 				}
