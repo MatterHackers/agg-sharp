@@ -98,7 +98,7 @@ namespace Net3dBool
 				v1 = verticesTemp[indices[i]];
 				v2 = verticesTemp[indices[i + 1]];
 				v3 = verticesTemp[indices[i + 2]];
-				AddFace(v1, v2, v3);
+				AddFace(v1, v2, v3, null);
 			}
 
 			//create bound
@@ -178,14 +178,14 @@ namespace Net3dBool
 			}
 		}
 
-		Stack<Face> addedFaces = new Stack<Face>();
+		Stack<Face> facesFromSplit = new Stack<Face>();
 		/// <summary>
 		/// Split faces so that none face is intercepted by a face of other object
 		/// </summary>
 		/// <param name="compareObject">the other object 3d used to make the split</param>
 		public void SplitFaces(Object3D compareObject)
 		{
-			addedFaces.Clear();
+			facesFromSplit.Clear();
 				Line line;
 			Segment segment1;
 			Segment segment2;
@@ -266,10 +266,10 @@ namespace Net3dBool
 						}
 					}
 
-					if (addedFaces.Count > 0)
+					if (facesFromSplit.Count > 0)
 					{
 						haveAddedFaces = true;
-						thisFace = addedFaces.Pop();
+						thisFace = facesFromSplit.Pop();
 					}
 					else
 					{
@@ -286,15 +286,25 @@ namespace Net3dBool
 		/// <param name="v2">a face vertex</param>
 		/// <param name="v3">a face vertex</param>
 		/// <returns></returns>
-		private Face AddFace(Vertex v1, Vertex v2, Vertex v3)
+		private Face AddFace(Vertex v1, Vertex v2, Vertex v3, Face faceBeingSplit)
 		{
 			if (!(v1.Equals(v2) || v1.Equals(v3) || v2.Equals(v3)))
 			{
 				Face face = new Face(v1, v2, v3);
 				if (face.GetArea() > EqualityTolerance)
 				{
-					addedFaces.Push(face);
-					Faces.Insert(face, new Bounds(face.GetBound()));
+					if (faceBeingSplit != null)
+					{
+						if (!faceBeingSplit.Equals(face))
+						{
+							Faces.Insert(face, new Bounds(face.GetBound()));
+							facesFromSplit.Push(face);
+						}
+					}
+					else
+					{
+							Faces.Insert(face, new Bounds(face.GetBound()));
+					}
 					return face;
 				}
 				else
@@ -365,27 +375,27 @@ namespace Net3dBool
 
 			if (linedVertex == 1)
 			{
-				AddFace(face.v2, face.v3, faceVertex1);
-				AddFace(face.v2, faceVertex1, faceVertex2);
-				AddFace(face.v3, faceVertex2, faceVertex1);
-				AddFace(face.v2, faceVertex2, face.v1);
-				AddFace(face.v3, face.v1, faceVertex2);
+				AddFace(face.v2, face.v3, faceVertex1, face);
+				AddFace(face.v2, faceVertex1, faceVertex2, face);
+				AddFace(face.v3, faceVertex2, faceVertex1, face);
+				AddFace(face.v2, faceVertex2, face.v1, face);
+				AddFace(face.v3, face.v1, faceVertex2, face);
 			}
 			else if (linedVertex == 2)
 			{
-				AddFace(face.v3, face.v1, faceVertex1);
-				AddFace(face.v3, faceVertex1, faceVertex2);
-				AddFace(face.v1, faceVertex2, faceVertex1);
-				AddFace(face.v3, faceVertex2, face.v2);
-				AddFace(face.v1, face.v2, faceVertex2);
+				AddFace(face.v3, face.v1, faceVertex1, face);
+				AddFace(face.v3, faceVertex1, faceVertex2, face);
+				AddFace(face.v1, faceVertex2, faceVertex1, face);
+				AddFace(face.v3, faceVertex2, face.v2, face);
+				AddFace(face.v1, face.v2, faceVertex2, face);
 			}
 			else
 			{
-				AddFace(face.v1, face.v2, faceVertex1);
-				AddFace(face.v1, faceVertex1, faceVertex2);
-				AddFace(face.v2, faceVertex2, faceVertex1);
-				AddFace(face.v1, faceVertex2, face.v3);
-				AddFace(face.v2, face.v3, faceVertex2);
+				AddFace(face.v1, face.v2, faceVertex1, face);
+				AddFace(face.v1, faceVertex1, faceVertex2, face);
+				AddFace(face.v2, faceVertex2, faceVertex1, face);
+				AddFace(face.v1, faceVertex2, face.v3, face);
+				AddFace(face.v2, face.v3, faceVertex2, face);
 			}
 
 			return true;
@@ -425,24 +435,24 @@ namespace Net3dBool
 			// check that we are not adding back in the same face we are removing
 			if (endVertex.Equals(face.v1))
 			{
-				AddFace(face.v1, edgeVertex, faceVertex);
-				AddFace(edgeVertex, face.v2, faceVertex);
-				AddFace(face.v2, face.v3, faceVertex);
-				AddFace(face.v3, face.v1, faceVertex);
+				AddFace(face.v1, edgeVertex, faceVertex, face);
+				AddFace(edgeVertex, face.v2, faceVertex, face);
+				AddFace(face.v2, face.v3, faceVertex, face);
+				AddFace(face.v3, face.v1, faceVertex, face);
 			}
 			else if (endVertex.Equals(face.v2))
 			{
-				AddFace(face.v2, edgeVertex, faceVertex);
-				AddFace(edgeVertex, face.v3, faceVertex);
-				AddFace(face.v3, face.v1, faceVertex);
-				AddFace(face.v1, face.v2, faceVertex);
+				AddFace(face.v2, edgeVertex, faceVertex, face);
+				AddFace(edgeVertex, face.v3, faceVertex, face);
+				AddFace(face.v3, face.v1, faceVertex, face);
+				AddFace(face.v1, face.v2, faceVertex, face);
 			}
 			else
 			{
-				AddFace(face.v3, edgeVertex, faceVertex);
-				AddFace(edgeVertex, face.v1, faceVertex);
-				AddFace(face.v1, face.v2, faceVertex);
-				AddFace(face.v2, face.v3, faceVertex);
+				AddFace(face.v3, edgeVertex, faceVertex, face);
+				AddFace(edgeVertex, face.v1, faceVertex, face);
+				AddFace(face.v1, face.v2, faceVertex, face);
+				AddFace(face.v2, face.v3, faceVertex, face);
 			}
 
 			return true;
@@ -474,9 +484,9 @@ namespace Net3dBool
 				if (!willMakeExistingFace)
 				{
 					Faces.Remove(face);
-					AddFace(face.v1, vertex1, face.v3);
-					AddFace(vertex1, vertex2, face.v3);
-					AddFace(vertex2, face.v2, face.v3);
+					AddFace(face.v1, vertex1, face.v3, face);
+					AddFace(vertex1, vertex2, face.v3, face);
+					AddFace(vertex2, face.v2, face.v3, face);
 					return true;
 				}
 			}
@@ -486,9 +496,9 @@ namespace Net3dBool
 				if (!willMakeExistingFace)
 				{
 					Faces.Remove(face);
-					AddFace(face.v2, vertex1, face.v1);
-					AddFace(vertex1, vertex2, face.v1);
-					AddFace(vertex2, face.v3, face.v1);
+					AddFace(face.v2, vertex1, face.v1, face);
+					AddFace(vertex1, vertex2, face.v1, face);
+					AddFace(vertex2, face.v3, face.v1, face);
 					return true;
 				}
 			}
@@ -498,9 +508,9 @@ namespace Net3dBool
 				if (!willMakeExistingFace)
 				{
 					Faces.Remove(face);
-					AddFace(face.v3, vertex1, face.v2);
-					AddFace(vertex1, vertex2, face.v2);
-					AddFace(vertex2, face.v1, face.v2);
+					AddFace(face.v3, vertex1, face.v2, face);
+					AddFace(vertex1, vertex2, face.v2, face);
+					AddFace(vertex2, face.v1, face.v2, face);
 					return true;
 				}
 			}
@@ -536,9 +546,9 @@ namespace Net3dBool
 
 			Faces.Remove(face);
 
-			AddFace(face.v1, face.v2, vertex);
-			AddFace(face.v2, face.v3, vertex);
-			AddFace(face.v3, face.v1, vertex);
+			AddFace(face.v1, face.v2, vertex, face);
+			AddFace(face.v2, face.v3, vertex, face);
+			AddFace(face.v3, face.v1, vertex, face);
 
 			return true;
 		}
@@ -567,39 +577,39 @@ namespace Net3dBool
 
 			if (startVertex.Equals(face.v1) && endVertex.Equals(face.v2))
 			{
-				AddFace(face.v1, vertex1, vertex2);
-				AddFace(face.v1, vertex2, face.v3);
-				AddFace(vertex1, face.v2, vertex2);
+				AddFace(face.v1, vertex1, vertex2, face);
+				AddFace(face.v1, vertex2, face.v3, face);
+				AddFace(vertex1, face.v2, vertex2, face);
 			}
 			else if (startVertex.Equals(face.v2) && endVertex.Equals(face.v1))
 			{
-				AddFace(face.v1, vertex2, vertex1);
-				AddFace(face.v1, vertex1, face.v3);
-				AddFace(vertex2, face.v2, vertex1);
+				AddFace(face.v1, vertex2, vertex1, face);
+				AddFace(face.v1, vertex1, face.v3, face);
+				AddFace(vertex2, face.v2, vertex1, face);
 			}
 			else if (startVertex.Equals(face.v2) && endVertex.Equals(face.v3))
 			{
-				AddFace(face.v2, vertex1, vertex2);
-				AddFace(face.v2, vertex2, face.v1);
-				AddFace(vertex1, face.v3, vertex2);
+				AddFace(face.v2, vertex1, vertex2, face);
+				AddFace(face.v2, vertex2, face.v1, face);
+				AddFace(vertex1, face.v3, vertex2, face);
 			}
 			else if (startVertex.Equals(face.v3) && endVertex.Equals(face.v2))
 			{
-				AddFace(face.v2, vertex2, vertex1);
-				AddFace(face.v2, vertex1, face.v1);
-				AddFace(vertex2, face.v3, vertex1);
+				AddFace(face.v2, vertex2, vertex1, face);
+				AddFace(face.v2, vertex1, face.v1, face);
+				AddFace(vertex2, face.v3, vertex1, face);
 			}
 			else if (startVertex.Equals(face.v3) && endVertex.Equals(face.v1))
 			{
-				AddFace(face.v3, vertex1, vertex2);
-				AddFace(face.v3, vertex2, face.v2);
-				AddFace(vertex1, face.v1, vertex2);
+				AddFace(face.v3, vertex1, vertex2, face);
+				AddFace(face.v3, vertex2, face.v2, face);
+				AddFace(vertex1, face.v1, vertex2, face);
 			}
 			else
 			{
-				AddFace(face.v3, vertex2, vertex1);
-				AddFace(face.v3, vertex1, face.v2);
-				AddFace(vertex2, face.v1, vertex1);
+				AddFace(face.v3, vertex2, vertex1, face);
+				AddFace(face.v3, vertex1, face.v2, face);
+				AddFace(vertex2, face.v1, vertex1, face);
 			}
 
 			return true;
@@ -632,21 +642,21 @@ namespace Net3dBool
 
 			if (splitEdge == 1)
 			{
-				AddFace(face.v1, vertex, face.v3);
-				AddFace(vertex, face.v2, face.v3);
+				AddFace(face.v1, vertex, face.v3, face);
+				AddFace(vertex, face.v2, face.v3, face);
 			}
 			else if (splitEdge == 2)
 			{
 				if (!face.v3.Equals(vertex))
 				{
-					AddFace(face.v2, vertex, face.v1);
+					AddFace(face.v2, vertex, face.v1, face);
 				}
-				AddFace(vertex, face.v3, face.v1);
+				AddFace(vertex, face.v3, face.v1, face);
 			}
 			else
 			{
-				AddFace(face.v3, vertex, face.v2);
-				AddFace(vertex, face.v1, face.v2);
+				AddFace(face.v3, vertex, face.v2, face);
+				AddFace(vertex, face.v1, face.v2, face);
 			}
 
 			return true;
@@ -677,8 +687,8 @@ namespace Net3dBool
 				if (!face.v1.Equals(vertex)
 					&& !face.v2.Equals(vertex))
 				{
-					AddFace(face.v1, vertex, face.v3);
-					AddFace(vertex, face.v2, face.v3);
+					AddFace(face.v1, vertex, face.v3, face);
+					AddFace(vertex, face.v2, face.v3, face);
 					Faces.Remove(face);
 					return true;
 				}
@@ -689,8 +699,8 @@ namespace Net3dBool
 				if (!face.v2.Equals(vertex)
 					&& !face.v3.Equals(vertex))
 				{
-					AddFace(face.v2, vertex, face.v1);
-					AddFace(vertex, face.v3, face.v1);
+					AddFace(face.v2, vertex, face.v1, face);
+					AddFace(vertex, face.v3, face.v1, face);
 					Faces.Remove(face);
 					return true;
 				}
@@ -701,8 +711,8 @@ namespace Net3dBool
 				if (!face.v1.Equals(vertex)
 					&& !face.v3.Equals(vertex))
 				{
-					AddFace(face.v3, vertex, face.v2);
-					AddFace(vertex, face.v1, face.v2);
+					AddFace(face.v3, vertex, face.v2, face);
+					AddFace(vertex, face.v1, face.v2, face);
 					Faces.Remove(face);
 					return true;
 				}

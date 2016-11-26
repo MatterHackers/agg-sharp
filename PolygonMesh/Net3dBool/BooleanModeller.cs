@@ -66,9 +66,11 @@ namespace Net3dBool
 			object1 = new Object3D(solid1);
 			object2 = new Object3D(solid2);
 
+			Object3D object1Copy = new Object3D(solid1);
+
 			//split the faces so that none of them intercepts each other
 			object1.SplitFaces(object2);
-			object2.SplitFaces(object1);
+			object2.SplitFaces(object1Copy);
 
 			//classify faces as being inside or outside the other solid
 			object1.ClassifyFaces(object2);
