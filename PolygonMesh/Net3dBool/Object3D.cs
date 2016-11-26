@@ -37,7 +37,6 @@ using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using MatterHackers.VectorMath.Octree;
 
 namespace Net3dBool
 {
@@ -61,7 +60,7 @@ namespace Net3dBool
 		/// <summary>
 		/// solid faces
 		/// </summary>
-		public BoundsOctree<Face> Faces;
+		public Octree<Face> Faces;
 		/// <summary>
 		/// solid vertices
 		/// </summary>
@@ -92,7 +91,7 @@ namespace Net3dBool
 
 			//create faces
 			totalBounds.Expand(1);
-			Faces = new BoundsOctree<Face>(totalBounds);
+			Faces = new Octree<Face>(5, new Bounds(totalBounds));
 			for (int i = 0; i < indices.Length; i = i + 3)
 			{
 				v1 = verticesTemp[indices[i]];
@@ -194,11 +193,11 @@ namespace Net3dBool
 
 			//if the objects bounds overlap...
 			//for each object1 face...
-			foreach (Face thisFace in Faces.GetColliding(compareObject.GetBound()))
+			foreach (Face thisFace in Faces.SearchBounds(new Bounds(compareObject.GetBound())))
 			{
 				//if object1 face bound and object2 bound overlap ...
 				//for each object2 face...
-				foreach (Face compareFace in compareObject.Faces.GetColliding(thisFace.GetBound()))
+				foreach (Face compareFace in compareObject.Faces.SearchBounds(new Bounds(thisFace.GetBound())))
 				{
 					//if object1 face bound and object2 face bound overlap...
 					//PART I - DO TWO POLIGONS INTERSECT?
@@ -303,7 +302,7 @@ namespace Net3dBool
 				Face face = new Face(v1, v2, v3);
 				if (face.GetArea() > EqualityTolerance)
 				{
-					Faces.Add(face, face.GetBound());
+					Faces.Insert(face, new Bounds(face.GetBound()));
 					return face;
 				}
 				else

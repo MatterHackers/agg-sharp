@@ -140,10 +140,7 @@
   <ItemGroup>
     <Compile Include="AxisAlignedBoundingBox.cs" />
     <Compile Include="Frustum.cs" />
-    <Compile Include="Octree\BoundsOctree.cs" />
-    <Compile Include="Octree\BoundsOctreeNode.cs" />
-    <Compile Include="Octree\PointOctree.cs" />
-    <Compile Include="Octree\PointOctreeNode.cs" />
+    <Compile Include="Octree.cs" />
     <Compile Include="PlaneFloat.cs" />
     <Compile Include="Plane.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

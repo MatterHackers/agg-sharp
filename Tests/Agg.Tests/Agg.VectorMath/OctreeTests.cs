@@ -35,7 +35,7 @@ using System.Linq;
 
 namespace MatterHackers.PolygonMesh.UnitTests
 {
-	[TestFixture, Category("Agg.PolygonMesh")]
+	[TestFixture, Category("Agg.VectorMath")]
 	public class OctreeTests
 	{
 		[Test]
@@ -49,13 +49,13 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 			Assert.IsTrue(tree.CountBranches() == 1);
 
-			Assert.AreEqual(tree.SearchArea(new Bounds(-9, -19, -29, 9, 19, 29)).Count(), 4, "Found all items.");
+			Assert.AreEqual(tree.SearchBounds(new Bounds(-9, -19, -29, 9, 19, 29)).Count(), 4, "Found all items.");
 			Assert.AreEqual(tree.SearchPoint(0, 0, 0).Count(), 4, "All or around this point.");
 			Assert.AreEqual(tree.FindCollisions(1).Count(), 3, "Don't find the item we are starting from.");
 			Assert.AreEqual(tree.Count, 4, "Have the right count.");
 
 			tree.Remove(3);
-			Assert.AreEqual(tree.SearchArea(new Bounds(-9, -19, -29, 9, 19, 29)).Count(), 3, "Found all items.");
+			Assert.AreEqual(tree.SearchBounds(new Bounds(-9, -19, -29, 9, 19, 29)).Count(), 3, "Found all items.");
 			Assert.AreEqual(tree.SearchPoint(0, 0, 0).Count(), 3, "All or around this point.");
 			Assert.AreEqual(tree.FindCollisions(1).Count(), 2, "Don't find the item we are starting from.");
 			Assert.AreEqual(tree.Count, 3, "Have the right count.");

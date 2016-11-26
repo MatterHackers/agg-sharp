@@ -23,7 +23,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace MatterHackers.PolygonMesh
+namespace MatterHackers.VectorMath
 {
 	/// <summary>
 	/// Used by the Octree to represent a rectangular area.
@@ -36,6 +36,17 @@ namespace MatterHackers.PolygonMesh
 		public double MinX;
 		public double MinY;
 		public double MinZ;
+
+		public Bounds(AxisAlignedBoundingBox axisAlignedBoundingBox) : this()
+		{
+			this.MinX = axisAlignedBoundingBox.minXYZ.x;
+			this.MinY = axisAlignedBoundingBox.minXYZ.y;
+			this.MinZ = axisAlignedBoundingBox.minXYZ.z;
+
+			this.MaxX = axisAlignedBoundingBox.maxXYZ.x;
+			this.MaxY = axisAlignedBoundingBox.maxXYZ.y;
+			this.MaxZ = axisAlignedBoundingBox.maxXYZ.z;
+		}
 
 		/// <summary>
 		/// Construct a new Octree.
@@ -57,7 +68,7 @@ namespace MatterHackers.PolygonMesh
 		/// <summary>
 		/// Check if this Octree can completely contain another.
 		/// </summary>
-		public bool Contains(ref Bounds other)
+		public bool Contains(Bounds other)
 		{
 			return other.MinX >= MinX
 				&& other.MinY >= MinY
@@ -83,7 +94,7 @@ namespace MatterHackers.PolygonMesh
 		/// <summary>
 		/// Check if this Octree intersects with another.
 		/// </summary>
-		public bool Intersects(ref Bounds other)
+		public bool Intersects(Bounds other)
 		{
 			return MinX < other.MaxX
 				&& MinY < other.MaxY
@@ -127,20 +138,10 @@ namespace MatterHackers.PolygonMesh
 		/// </summary>
 		/// <param name="splitCount">How many leaves a branch can hold before it splits into sub-branches.</param>
 		/// <param name="region">The region that your Octree occupies, all inserted bounds should fit into this.</param>
-		public Octree(int splitCount, ref Bounds region)
+		public Octree(int splitCount, Bounds region)
 		{
 			this.splitCount = splitCount;
-			root = CreateBranch(this, null, ref region);
-		}
-
-		/// <summary>
-		/// Creates a new Octree.
-		/// </summary>
-		/// <param name="splitCount">How many leaves a branch can hold before it splits into sub-branches.</param>
-		/// <param name="region">The region that your octree occupies, all inserted Bounds should fit into this.</param>
-		public Octree(int splitCount, Bounds region)
-			: this(splitCount, ref region)
-		{
+			root = CreateBranch(this, null, region);
 		}
 
 		/// <summary>
@@ -175,7 +176,7 @@ namespace MatterHackers.PolygonMesh
 		public int CountBranches()
 		{
 			int count = 0;
-			CountBranches(root, ref count);
+			CountBranches(root, count);
 			return count;
 		}
 
@@ -197,7 +198,7 @@ namespace MatterHackers.PolygonMesh
 				{
 					for (int i = 0; i < branch.Leaves.Count; ++i)
 					{
-						if (leaf != branch.Leaves[i] && leaf.Bounds.Intersects(ref branch.Leaves[i].Bounds))
+						if (leaf != branch.Leaves[i] && leaf.Bounds.Intersects(branch.Leaves[i].Bounds))
 						{
 							yield return branch.Leaves[i].Value;
 						}
@@ -227,7 +228,7 @@ namespace MatterHackers.PolygonMesh
 					{
 						for (int i = 0; i < branch.Leaves.Count; ++i)
 						{
-							if (leaf.Bounds.Intersects(ref branch.Leaves[i].Bounds))
+							if (leaf.Bounds.Intersects(branch.Leaves[i].Bounds))
 							{
 								yield return branch.Leaves[i].Value;
 							}
@@ -236,6 +237,11 @@ namespace MatterHackers.PolygonMesh
 					branch = branch.Parent;
 				}
 			}
+		}
+
+		public IEnumerable<T> AllObjects()
+		{
+			return root.AllObjects();
 		}
 
 		/// <summary>
@@ -248,7 +254,7 @@ namespace MatterHackers.PolygonMesh
 			Leaf leaf;
 			if (!leafLookup.TryGetValue(value, out leaf))
 			{
-				leaf = CreateLeaf(value, ref bounds);
+				leaf = CreateLeaf(value, bounds);
 				leafLookup.Add(value, leaf);
 			}
 			root.Insert(leaf);
@@ -280,9 +286,9 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public IEnumerable<T> SearchArea(Bounds bounds)
+		public IEnumerable<T> SearchBounds(Bounds bounds)
 		{
-			return root.SearchArea(bounds);
+			return root.SearchBounds(bounds);
 		}
 
 		/// <summary>
@@ -294,10 +300,10 @@ namespace MatterHackers.PolygonMesh
 		/// <param name="xSize">xSize of the search area.</param>
 		/// <param name="ySize">ySize of the search area.</param>
 		/// <param name="values">A list to populate with the results. If null, this function will create the list for you.</param>
-		public IEnumerable<T> SearchArea(double x, double y, double z, double xSize, double ySize, double zSize)
+		public IEnumerable<T> SearchBounds(double x, double y, double z, double xSize, double ySize, double zSize)
 		{
 			var bounds = new Bounds(x, y, z, x + xSize, y + ySize, z + zSize);
-			return SearchArea(bounds);
+			return SearchBounds(bounds);
 		}
 
 		/// <summary>
@@ -312,7 +318,7 @@ namespace MatterHackers.PolygonMesh
 			return root.SearchPoint(x, y, z);
 		}
 
-		private static Branch CreateBranch(Octree<T> tree, Branch parent, ref Bounds bounds)
+		private static Branch CreateBranch(Octree<T> tree, Branch parent, Bounds bounds)
 		{
 			//       ____________
 			//      /     /     /
@@ -352,7 +358,7 @@ namespace MatterHackers.PolygonMesh
 			return branch;
 		}
 
-		private static Leaf CreateLeaf(T value, ref Bounds bounds)
+		private static Leaf CreateLeaf(T value, Bounds bounds)
 		{
 			var leaf = new Leaf();
 			leaf.Value = value;
@@ -360,7 +366,7 @@ namespace MatterHackers.PolygonMesh
 			return leaf;
 		}
 
-		private void CountBranches(Branch branch, ref int count)
+		private void CountBranches(Branch branch, int count)
 		{
 			++count;
 			if (branch.Split)
@@ -369,7 +375,7 @@ namespace MatterHackers.PolygonMesh
 				{
 					if (branch.Branches[i] != null)
 					{
-						CountBranches(branch.Branches[i], ref count);
+						CountBranches(branch.Branches[i], count);
 					}
 				}
 			}
@@ -383,6 +389,28 @@ namespace MatterHackers.PolygonMesh
 			internal Branch Parent;
 			internal bool Split;
 			internal Octree<T> Tree;
+
+			internal IEnumerable<T> AllObjects()
+			{
+				if (Leaves.Count > 0)
+				{
+					for (int i = 0; i < Leaves.Count; ++i)
+					{
+						yield return Leaves[i].Value;
+					}
+				}
+
+				for (int i = 0; i < 8; ++i)
+				{
+					if (Branches[i] != null)
+					{
+						foreach (var children in Branches[i].AllObjects())
+						{
+							yield return children;
+						}
+					}
+				}
+			}
 
 			internal void Clear()
 			{
@@ -405,11 +433,11 @@ namespace MatterHackers.PolygonMesh
 				{
 					for (int i = 0; i < 8; ++i)
 					{
-						if (Bounds[i].Contains(ref leaf.Bounds))
+						if (Bounds[i].Contains(leaf.Bounds))
 						{
 							if (Branches[i] == null)
 							{
-								Branches[i] = CreateBranch(Tree, this, ref Bounds[i]);
+								Branches[i] = CreateBranch(Tree, this, Bounds[i]);
 							}
 							Branches[i].Insert(leaf);
 							return;
@@ -450,35 +478,10 @@ namespace MatterHackers.PolygonMesh
 				{
 					for (int i = 0; i < 8; ++i)
 					{
-						if (Bounds[i].Contains(ref leaf.Bounds)
+						if (Bounds[i].Contains(leaf.Bounds)
 							&& Branches[i] != null)
 						{
 							Branches[i].Remove(leaf);
-						}
-					}
-				}
-			}
-
-			internal IEnumerable<T> SearchArea(Bounds bounds)
-			{
-				if (Leaves.Count > 0)
-				{
-					for (int i = 0; i < Leaves.Count; ++i)
-					{
-						if (bounds.Intersects(ref Leaves[i].Bounds))
-						{
-							yield return Leaves[i].Value;
-						}
-					}
-				}
-
-				for (int i = 0; i < 8; ++i)
-				{
-					if (Branches[i] != null)
-					{
-						foreach (var children in Branches[i].SearchArea(bounds))
-						{
-							yield return children;
 						}
 					}
 				}
@@ -490,7 +493,7 @@ namespace MatterHackers.PolygonMesh
 				{
 					for (int i = 0; i < Leaves.Count; ++i)
 					{
-						if (bounds.Intersects(ref Leaves[i].Bounds))
+						if (bounds.Intersects(Leaves[i].Bounds))
 						{
 							yield return Leaves[i].Value;
 						}
