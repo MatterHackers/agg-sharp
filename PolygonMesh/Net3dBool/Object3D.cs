@@ -297,8 +297,20 @@ namespace Net3dBool
 					{
 						if (!faceBeingSplit.Equals(face))
 						{
-							Faces.Insert(face, new Bounds(face.GetBound()));
-							facesFromSplit.Push(face);
+							bool exists = false;
+							foreach(var test in facesFromSplit)
+							{
+								if(test.Equals(face))
+								{
+									exists = true;
+									break;
+								}
+							}
+							if (!exists)
+							{
+								Faces.Insert(face, new Bounds(face.GetBound()));
+								facesFromSplit.Push(face);
+							}
 						}
 					}
 					else
