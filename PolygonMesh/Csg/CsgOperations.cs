@@ -22,7 +22,7 @@ using System;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
-#if true
+#if false
 	public static class CsgOperations
 	{
 		// Return a new CSG solid representing space in either this solid or in the

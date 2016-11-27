@@ -250,15 +250,21 @@ namespace Net3dBool
 								if (segment1.Intersect(segment2))
 								{
 									//PART II - SUBDIVIDING NON-COPLANAR POLYGONS
-									int lastNumFaces = Faces.Count;
-									bool splitOccured = this.SplitFace(thisFace, segment1, segment2);
-
-									//prevent from infinite loop (with a loss of faces...)
-									if (Faces.Count > numFacesStart * 100)
+									int facesBeforeSplit = facesFromSplit.Count;
+									if(this.SplitFace(thisFace, segment1, segment2))
 									{
-										//System.out.println("possible infinite loop situation: terminating faces split");
-										//return;
-										int a = 0;
+										//prevent from infinite loop (with a loss of faces...)
+										if (Faces.Count > numFacesStart * 100)
+										{
+											//System.out.println("possible infinite loop situation: terminating faces split");
+											//return;
+											int a = 0;
+										}
+
+										if (facesFromSplit.Count > facesBeforeSplit)
+										{
+											break;
+										}
 									}
 								}
 							}
