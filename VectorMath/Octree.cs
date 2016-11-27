@@ -96,12 +96,12 @@ namespace MatterHackers.VectorMath
 		/// </summary>
 		public bool Intersects(Bounds other)
 		{
-			return MinX < other.MaxX
-				&& MinY < other.MaxY
-				&& MinZ < other.MaxZ
-				&& MaxX > other.MinX
-				&& MaxY > other.MinY
-				&& MaxZ > other.MinZ;
+			return MinX <= other.MaxX
+				&& MinY <= other.MaxY
+				&& MinZ <= other.MaxZ
+				&& MaxX >= other.MinX
+				&& MaxY >= other.MinY
+				&& MaxZ >= other.MinZ;
 		}
 
 		/// <summary>

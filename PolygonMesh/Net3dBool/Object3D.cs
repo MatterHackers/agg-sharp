@@ -189,7 +189,6 @@ namespace Net3dBool
 				Line line;
 			Segment segment1;
 			Segment segment2;
-			double v1DistToCompareFace, distFace1Vert2, distFace1Vert3, distFace2Vert1, distFace2Vert2, distFace2Vert3;
 			int signFace1Vert1, signFace1Vert2, signFace1Vert3, signFace2Vert1, signFace2Vert2, signFace2Vert3;
 			//int numFacesBefore = this.GetNumFaces();
 			int numFacesStart = this.Faces.Count;
@@ -212,14 +211,14 @@ namespace Net3dBool
 						//POSSIBLE RESULTS: INTERSECT, NOT_INTERSECT, COPLANAR
 
 						//distance from the face1 vertices to the face2 plane
-						v1DistToCompareFace = ComputeDistance(thisFace.v1, compareFace);
-						distFace1Vert2 = ComputeDistance(thisFace.v2, compareFace);
-						distFace1Vert3 = ComputeDistance(thisFace.v3, compareFace);
+						double v1DistToCompareFace = ComputeDistance(thisFace.v1, compareFace);
+						double v2DistToCompareFace = ComputeDistance(thisFace.v2, compareFace);
+						double v3DistToCompareFace = ComputeDistance(thisFace.v3, compareFace);
 
 						//distances signs from the face1 vertices to the face2 plane
 						signFace1Vert1 = (v1DistToCompareFace > EqualityTolerance ? 1 : (v1DistToCompareFace < -EqualityTolerance ? -1 : 0));
-						signFace1Vert2 = (distFace1Vert2 > EqualityTolerance ? 1 : (distFace1Vert2 < -EqualityTolerance ? -1 : 0));
-						signFace1Vert3 = (distFace1Vert3 > EqualityTolerance ? 1 : (distFace1Vert3 < -EqualityTolerance ? -1 : 0));
+						signFace1Vert2 = (v2DistToCompareFace > EqualityTolerance ? 1 : (v2DistToCompareFace < -EqualityTolerance ? -1 : 0));
+						signFace1Vert3 = (v3DistToCompareFace > EqualityTolerance ? 1 : (v3DistToCompareFace < -EqualityTolerance ? -1 : 0));
 
 						//if all the signs are zero, the planes are coplanar
 						//if all the signs are positive or negative, the planes do not intersect
@@ -227,9 +226,9 @@ namespace Net3dBool
 						if (!(signFace1Vert1 == signFace1Vert2 && signFace1Vert2 == signFace1Vert3))
 						{
 							//distance from the face2 vertices to the face1 plane
-							distFace2Vert1 = ComputeDistance(compareFace.v1, thisFace);
-							distFace2Vert2 = ComputeDistance(compareFace.v2, thisFace);
-							distFace2Vert3 = ComputeDistance(compareFace.v3, thisFace);
+							double distFace2Vert1 = ComputeDistance(compareFace.v1, thisFace);
+							double distFace2Vert2 = ComputeDistance(compareFace.v2, thisFace);
+							double distFace2Vert3 = ComputeDistance(compareFace.v3, thisFace);
 
 							//distances signs from the face2 vertices to the face1 plane
 							signFace2Vert1 = (distFace2Vert1 > EqualityTolerance ? 1 : (distFace2Vert1 < -EqualityTolerance ? -1 : 0));
