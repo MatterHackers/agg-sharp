@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.VectorMath;
@@ -101,6 +102,39 @@ namespace MatterHackers.PolygonMesh
 			}
 
 			return texturedPlane;
+		}
+
+		/// <summary>
+		/// For every T Junction add a vertex to the mesh edge that needs one.
+		/// </summary>
+		/// <param name="mesh"></param>
+		public static void RepairTJunctions(this Mesh mesh)
+		{
+			var nonManifoldEdges = mesh.GetNonManifoldEdges();
+
+			foreach(var edge in nonManifoldEdges)
+			{
+				// Get all the vertices that lay on this edge
+				// split the edge at them
+				// and merge the mesh edges that are now manifold
+			}
+
+			throw new NotImplementedException();
+		}
+
+		public static bool IsManifold(this Mesh mesh)
+		{
+			var nonManifoldEdges = mesh.GetNonManifoldEdges();
+
+			if(nonManifoldEdges.Count == 0)
+			{
+				return true;
+			}
+
+			// Every non-manifold edge must have matching non-manifold edge(s) that it lines up with.
+			// If this is true the model is still functionally manifold.
+
+			return false;
 		}
 	}
 }

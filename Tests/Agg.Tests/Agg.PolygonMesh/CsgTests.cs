@@ -50,14 +50,16 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			Vector3 finalTransform = new Vector3(99.999927784394, 102.400700290798, 16.3588316937214);
 			meshB.Translate(finalTransform);
 
-			Mesh meshToAdd = CsgOperations.Subtract(meshA, meshB);
+			Mesh result = CsgOperations.Subtract(meshA, meshB);
 
 			AxisAlignedBoundingBox a_aabb = meshA.GetAxisAlignedBoundingBox();
 			AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
-			AxisAlignedBoundingBox intersect_aabb = meshToAdd.GetAxisAlignedBoundingBox();
+			AxisAlignedBoundingBox intersect_aabb = result.GetAxisAlignedBoundingBox();
 
 			Assert.IsTrue(a_aabb.XSize == 40 && a_aabb.YSize == 40 && a_aabb.ZSize == 40);
 			Assert.IsTrue(intersect_aabb.XSize == 40 && intersect_aabb.YSize == 40 && intersect_aabb.ZSize == 40);
+
+			Assert.IsTrue(result.IsManifold());
 		}
 
 		[Test, Category("FixNeeded" /* Crashes NUnit on build servers with an unrecoverable StackOverflow error */), Ignore("This test must be disabled due to it taking out nunit")]
@@ -74,14 +76,16 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			Matrix4X4 transformB = Matrix4X4.CreateScale(scaleCurrent) * Matrix4X4.CreateRotation(rotCurrent) * Matrix4X4.CreateTranslation(finalTransform);
 			meshB.Transform(transformB);
 
-			Mesh meshToAdd = CsgOperations.Subtract(meshA, meshB);
+			Mesh result = CsgOperations.Subtract(meshA, meshB);
 
 			AxisAlignedBoundingBox a_aabb = meshA.GetAxisAlignedBoundingBox();
 			AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
-			AxisAlignedBoundingBox intersect_aabb = meshToAdd.GetAxisAlignedBoundingBox();
+			AxisAlignedBoundingBox intersect_aabb = result.GetAxisAlignedBoundingBox();
 
 			Assert.IsTrue(a_aabb.XSize == 40 && a_aabb.YSize == 40 && a_aabb.ZSize == 40);
 			Assert.IsTrue(intersect_aabb.XSize == 40 && intersect_aabb.YSize == 40 && intersect_aabb.ZSize == 40);
+
+			Assert.IsTrue(result.IsManifold());
 		}
 
 		[Test]
@@ -90,14 +94,16 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			Mesh meshA = PlatonicSolids.CreateCube(40, 40, 40);
 			Mesh meshB = PlatonicSolids.CreateCube(40, 40, 40);
 
-			Mesh meshToAdd = CsgOperations.Union(meshA, meshB);
+			Mesh result = CsgOperations.Union(meshA, meshB);
 
 			AxisAlignedBoundingBox a_aabb = meshA.GetAxisAlignedBoundingBox();
 			AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
-			AxisAlignedBoundingBox intersect_aabb = meshToAdd.GetAxisAlignedBoundingBox();
+			AxisAlignedBoundingBox intersect_aabb = result.GetAxisAlignedBoundingBox();
 
 			Assert.IsTrue(a_aabb.XSize == 40 && a_aabb.YSize == 40 && a_aabb.ZSize == 40);
 			Assert.IsTrue(intersect_aabb.XSize == 40 && intersect_aabb.YSize == 40 && intersect_aabb.ZSize == 40);
+
+			Assert.IsTrue(result.IsManifold());
 		}
 
 		[Test]
@@ -111,14 +117,16 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				Mesh meshB = PlatonicSolids.CreateCube(new Vector3(10, 10, 10));
 				meshB.Translate(new Vector3(2, 2, 2));
 
-				Mesh meshIntersect = CsgOperations.Intersect(meshA, meshB);
+				Mesh result = CsgOperations.Intersect(meshA, meshB);
 
 				AxisAlignedBoundingBox a_aabb = meshA.GetAxisAlignedBoundingBox();
 				AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
-				AxisAlignedBoundingBox intersect_aabb = meshIntersect.GetAxisAlignedBoundingBox();
+				AxisAlignedBoundingBox intersect_aabb = result.GetAxisAlignedBoundingBox();
 
 				Assert.IsTrue(a_aabb.XSize == 10 && a_aabb.YSize == 10 && a_aabb.ZSize == 10);
 				Assert.IsTrue(intersect_aabb.XSize == 6 && intersect_aabb.YSize == 6 && intersect_aabb.ZSize == 6);
+
+				Assert.IsTrue(result.IsManifold());
 			}
 
 			// the intersection of 2 cubes that miss eachother
@@ -129,14 +137,16 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				Mesh meshB = PlatonicSolids.CreateCube(new Vector3(10, 10, 10));
 				meshB.Translate(new Vector3(5, 5, 5));
 
-				Mesh meshIntersect = CsgOperations.Intersect(meshA, meshB);
+				Mesh result = CsgOperations.Intersect(meshA, meshB);
 
 				AxisAlignedBoundingBox a_aabb = meshA.GetAxisAlignedBoundingBox();
 				AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
-				AxisAlignedBoundingBox intersect_aabb = meshIntersect.GetAxisAlignedBoundingBox();
+				AxisAlignedBoundingBox intersect_aabb = result.GetAxisAlignedBoundingBox();
 
 				Assert.IsTrue(a_aabb.XSize == 10 && a_aabb.YSize == 10 && a_aabb.ZSize == 10);
 				Assert.IsTrue(intersect_aabb.XSize == 0 && intersect_aabb.YSize == 0 && intersect_aabb.ZSize == 0);
+
+				Assert.IsTrue(result.IsManifold());
 			}
 		}
 
@@ -151,14 +161,16 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				Mesh meshB = PlatonicSolids.CreateCube(new Vector3(10, 10, 10));
 				meshB.Translate(new Vector3(2, 0, 0));
 
-				Mesh meshIntersect = CsgOperations.Union(meshA, meshB);
+				Mesh result = CsgOperations.Union(meshA, meshB);
 
 				AxisAlignedBoundingBox a_aabb = meshA.GetAxisAlignedBoundingBox();
 				AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
-				AxisAlignedBoundingBox intersect_aabb = meshIntersect.GetAxisAlignedBoundingBox();
+				AxisAlignedBoundingBox intersect_aabb = result.GetAxisAlignedBoundingBox();
 
 				Assert.IsTrue(a_aabb.XSize == 10 && a_aabb.YSize == 10 && a_aabb.ZSize == 10);
 				Assert.IsTrue(intersect_aabb.XSize == 14 && intersect_aabb.YSize == 10 && intersect_aabb.ZSize == 10);
+
+				Assert.IsTrue(result.IsManifold());
 			}
 		}
 
@@ -173,15 +185,29 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				Mesh meshB = PlatonicSolids.CreateCube(new Vector3(10, 10, 10));
 				meshB.Translate(new Vector3(2, 0, 0));
 
-				Mesh meshIntersect = CsgOperations.Subtract(meshA, meshB);
+				Mesh result = CsgOperations.Subtract(meshA, meshB);
 
 				AxisAlignedBoundingBox a_aabb = meshA.GetAxisAlignedBoundingBox();
 				AxisAlignedBoundingBox b_aabb = meshB.GetAxisAlignedBoundingBox();
-				AxisAlignedBoundingBox intersect_aabb = meshIntersect.GetAxisAlignedBoundingBox();
+				AxisAlignedBoundingBox intersect_aabb = result.GetAxisAlignedBoundingBox();
 
 				Assert.IsTrue(a_aabb.XSize == 10 && a_aabb.YSize == 10 && a_aabb.ZSize == 10);
 				Assert.IsTrue(intersect_aabb.XSize == 4 && intersect_aabb.YSize == 10 && intersect_aabb.ZSize == 10);
+
+				Assert.IsTrue(result.IsManifold());
 			}
+		}
+
+		[Test]
+		public void SubtractionMakesClosedSolid()
+		{
+			double XOffset = -.4;
+
+			MatterHackers.Csg.CsgObject boxCombine = new MatterHackers.Csg.Solids.Box(10, 10, 10);
+			boxCombine -= new MatterHackers.Csg.Transform.Translate(new MatterHackers.Csg.Solids.Box(10, 10, 10), XOffset, -3, 2);
+			Mesh result = RenderOpenGl.CsgToMesh.Convert(boxCombine);
+
+			Assert.IsTrue(result.IsManifold());
 		}
 	}
 }
