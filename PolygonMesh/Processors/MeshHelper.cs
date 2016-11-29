@@ -112,14 +112,30 @@ namespace MatterHackers.PolygonMesh
 		{
 			var nonManifoldEdges = mesh.GetNonManifoldEdges();
 
-			foreach(var edge in nonManifoldEdges)
+			foreach(MeshEdge edge in nonManifoldEdges)
 			{
+				Vertex start = edge.VertexOnEnd[0];
+				Vertex end = edge.VertexOnEnd[1];
+				Vector3 normal = (end.Position - start.Position).GetNormal();
+
 				// Get all the vertices that lay on this edge
-				// split the edge at them
-				// and merge the mesh edges that are now manifold
+				foreach (var vertex in mesh.Vertices)
+				{
+					// test if it falls on the edge
+					// split the edge at them
+					Vertex createdVertex;
+					MeshEdge createdMeshEdge;
+					mesh.SplitMeshEdge(edge, out createdVertex, out createdMeshEdge);
+					createdVertex.Position = vertex.Position;
+					createdVertex.Normal = vertex.Normal;
+					mesh.MergeVertices(vertex, createdVertex);
+				}
 			}
 
 			throw new NotImplementedException();
+
+			// and merge the mesh edges that are now manifold
+			mesh.MergeMeshEdges();
 		}
 
 		public static bool IsManifold(this Mesh mesh)
