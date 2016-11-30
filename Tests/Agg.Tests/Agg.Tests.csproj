@@ -86,6 +86,7 @@
     <Compile Include="Agg.Gaming\Vector3D.cs" />
     <Compile Include="Agg.PolygonMesh\CsgTests.cs" />
     <Compile Include="Agg.PolygonMesh\MeshTests.cs" />
+    <Compile Include="Agg.VectorMath\OctreeTests.cs" />
     <Compile Include="Agg.PolygonMesh\VertexCollectonTests.cs" />
     <Compile Include="Agg.RayTracer\BooleanTests.cs" />
     <Compile Include="Agg.RayTracer\FrustumTests.cs" />
