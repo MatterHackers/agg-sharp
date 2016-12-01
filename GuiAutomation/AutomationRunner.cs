@@ -742,9 +742,16 @@ namespace MatterHackers.GuiAutomation
 				{
 					foreach (GuiWidget foundChild in foundChildren)
 					{
-						if (foundChild.ActuallyVisibleOnScreen())
+						RectangleDouble childBounds = foundChild.TransformToParentSpace(window, foundChild.LocalBounds);
+
+						ScreenRectangle screenRect = SystemWindowToScreen(childBounds, window);
+						ScreenRectangle result;
+						if (searchRegion == null || ScreenRectangle.Intersection(searchRegion.ScreenRect, screenRect, out result))
 						{
-							return true;
+							if (foundChild.ActuallyVisibleOnScreen())
+							{
+								return true;
+							}
 						}
 					}
 				}
