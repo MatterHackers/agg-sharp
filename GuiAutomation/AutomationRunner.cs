@@ -605,11 +605,9 @@ namespace MatterHackers.GuiAutomation
 		/// <summary>
 		/// Look for a widget with the given name and click it. It and all its parents must be visible and enabled.
 		/// </summary>
-		/// <param name="widgetName"></param>
-		/// <param name="origin"></param>
+		/// <param name="widgetName">The given widget name</param>
 		/// <param name="secondsToWait">Total seconds to stay in this function waiting for the named widget to become visible.</param>
-		/// <returns></returns>
-		public bool ClickByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, double delayBeforeReturn = 0.2)
+		public void ClickByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, double delayBeforeReturn = 0.2)
 		{
 			SystemWindow containingWindow;
 			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, secondsToWait, searchRegion);
@@ -636,10 +634,10 @@ namespace MatterHackers.GuiAutomation
 				// to complete the targeted action
 				Wait(delayBeforeReturn);
 
-				return true;
+				return;
 			}
 
-			return false;
+			throw new Exception($"ClickByName Failed: Named GuiWidget not found [{widgetName}]");
 		}
 
 		public bool DragDropByName(string widgetNameDrag, string widgetNameDrop, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offsetDrag = default(Point2D), ClickOrigin originDrag = ClickOrigin.Center, Point2D offsetDrop = default(Point2D), ClickOrigin originDrop = ClickOrigin.Center)
@@ -744,9 +742,16 @@ namespace MatterHackers.GuiAutomation
 				{
 					foreach (GuiWidget foundChild in foundChildren)
 					{
-						if (foundChild.ActuallyVisibleOnScreen())
+						RectangleDouble childBounds = foundChild.TransformToParentSpace(window, foundChild.LocalBounds);
+
+						ScreenRectangle screenRect = SystemWindowToScreen(childBounds, window);
+						ScreenRectangle result;
+						if (searchRegion == null || ScreenRectangle.Intersection(searchRegion.ScreenRect, screenRect, out result))
 						{
-							return true;
+							if (foundChild.ActuallyVisibleOnScreen())
+							{
+								return true;
+							}
 						}
 					}
 				}

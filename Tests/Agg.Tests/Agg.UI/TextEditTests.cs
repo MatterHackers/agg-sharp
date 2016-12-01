@@ -651,13 +651,13 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				editField.SelectAllOnFocus = true;
 				testRunner.Wait(1);
-				Assert.IsTrue(testRunner.ClickByName(editField.Name, 1), "Click in the editField control");
+				testRunner.ClickByName(editField.Name, 1);
 
 				editField.SelectAllOnFocus = true;
 				testRunner.Type("123");
 				Assert.AreEqual("123", editField.Text, "Text input on newly focused control should replace selection");
 
-				Assert.IsTrue(testRunner.ClickByName(editField.Name, 1), "Click in the editField control");
+				testRunner.ClickByName(editField.Name, 1);
 				testRunner.Wait(.2);
 
 				testRunner.Type("123");
