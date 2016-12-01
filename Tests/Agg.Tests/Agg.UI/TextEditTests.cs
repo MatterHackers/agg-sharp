@@ -657,7 +657,7 @@ namespace MatterHackers.Agg.UI.Tests
 				testRunner.Type("123");
 				Assert.AreEqual("123", editField.Text, "Text input on newly focused control should replace selection");
 
-				testRunner.ClickByName(editField.Name, 1); ;
+				testRunner.ClickByName(editField.Name, 1);
 				testRunner.Wait(.2);
 
 				testRunner.Type("123");
