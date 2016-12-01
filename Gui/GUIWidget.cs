@@ -1204,7 +1204,7 @@ namespace MatterHackers.Agg.UI
 		{
 			foreach (GuiWidget child in Children)
 			{
-				ClearMouseOverWidget();
+				child.ClearMouseOverWidget();
 			}
 
 			UnderMouseState = UI.UnderMouseState.NotUnderMouse;
