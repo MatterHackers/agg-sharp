@@ -106,7 +106,10 @@ namespace MatterHackers.RenderOpenGl
                         && glDataNeedingToBeDeleted[i].refreshCountCreatedOn == currentGlobalRefreshCount) // this is to leak on purpose on android for some gl that kills textures
 					{
 						GL.DeleteTextures(1, ref textureToDelete);
-                        removeGlDataCallBackHolder.releaseAllGlData -= glDataNeedingToBeDeleted[i].DeleteTextureData;
+						if (removeGlDataCallBackHolder != null)
+						{
+							removeGlDataCallBackHolder.releaseAllGlData -= glDataNeedingToBeDeleted[i].DeleteTextureData;
+						}
                     }
 					glDataNeedingToBeDeleted.RemoveAt(i);
 				}

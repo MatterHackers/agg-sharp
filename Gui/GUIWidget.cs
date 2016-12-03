@@ -149,10 +149,9 @@ namespace MatterHackers.Agg.UI
 		private bool doubleBuffer;
 		private ImageBuffer backBuffer;
 
-		private bool debugShowBounds = false;
-		
 		public bool HasBeenClosed { get; private set; }
 
+		private bool debugShowBounds = false;
 		public bool DebugShowBounds
 		{
 			get
@@ -170,25 +169,43 @@ namespace MatterHackers.Agg.UI
 
 			set
 			{
-				debugShowBounds = value;
+				if (debugShowBounds != value)
+				{
+					debugShowBounds = value;
+					Invalidate();
+				}
 			}
 		}
 
 		public LayoutEngine LayoutEngine { get; protected set; }
 
-		private UnderMouseState underMouseState = UnderMouseState.NotUnderMouse;
-
+		private UnderMouseState underMouseState = UI.UnderMouseState.NotUnderMouse;
 		public UnderMouseState UnderMouseState
 		{
 			get
 			{
 				return underMouseState;
 			}
+			
+			private set
+			{
+				if(value == UnderMouseState.FirstUnderMouse)
+				{
+					// set all our parents to the correct state
+					GuiWidget parent = this.Parent;
+					while(parent != null)
+					{
+						parent.underMouseState = UnderMouseState.UnderMouseNotFirst;
+						parent = parent.Parent;
+					}
+				}
+				underMouseState = value;
+			}
 		}
 
 		public bool ContainsFirstUnderMouseRecursive()
 		{
-			if(underMouseState == UnderMouseState.FirstUnderMouse)
+			if(UnderMouseState != UnderMouseState.NotUnderMouse)
 			{
 				return true;
 			}
@@ -1187,10 +1204,10 @@ namespace MatterHackers.Agg.UI
 		{
 			foreach (GuiWidget child in Children)
 			{
-				ClearMouseOverWidget();
+				child.ClearMouseOverWidget();
 			}
 
-			underMouseState = UnderMouseState.NotUnderMouse;
+			UnderMouseState = UI.UnderMouseState.NotUnderMouse;
 		}
 
 		public virtual void OnEnabledChanged(EventArgs e)
@@ -1199,7 +1216,7 @@ namespace MatterHackers.Agg.UI
 			{
 				if (FirstWidgetUnderMouse)
 				{
-					SetUnderMouseStateRecursive();
+					ClearMouseOverWidget();
 					OnMouseLeave(null);
 				}
 			}
@@ -2204,10 +2221,10 @@ namespace MatterHackers.Agg.UI
 				child.DoMouseMovedOffWidgetRecursive(childMouseEvent);
 			}
 
-			bool needToCallLeaveBounds = underMouseState != UI.UnderMouseState.NotUnderMouse;
+			bool needToCallLeaveBounds = UnderMouseState != UI.UnderMouseState.NotUnderMouse;
 			bool needToCallLeave = UnderMouseState == UI.UnderMouseState.FirstUnderMouse;
 
-			underMouseState = UI.UnderMouseState.NotUnderMouse;
+			UnderMouseState = UI.UnderMouseState.NotUnderMouse;
 
 			if (needToCallLeave)
 			{
@@ -2218,15 +2235,6 @@ namespace MatterHackers.Agg.UI
 			{
 				OnMouseLeaveBounds(mouseEvent);
 			}
-		}
-
-		private void SetUnderMouseStateRecursive()
-		{
-			foreach (GuiWidget child in Children)
-			{
-				child.SetUnderMouseStateRecursive();
-			}
-			underMouseState = UI.UnderMouseState.NotUnderMouse;
 		}
 
 		public virtual void OnGestureFling(FlingEventArgs flingEvent)
@@ -2302,7 +2310,7 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 
-				bool mouseEnteredBounds = underMouseState == UI.UnderMouseState.NotUnderMouse;
+				bool mouseEnteredBounds = UnderMouseState == UI.UnderMouseState.NotUnderMouse;
 
 				if (childHasAcceptedThisEvent)
 				{
@@ -2310,17 +2318,16 @@ namespace MatterHackers.Agg.UI
 
 					if (UnderMouseState == UI.UnderMouseState.FirstUnderMouse)
 					{
-						underMouseState = UI.UnderMouseState.NotUnderMouse;
+						UnderMouseState = UI.UnderMouseState.NotUnderMouse;
 						OnMouseLeave(mouseEvent);
 					}
-					underMouseState = UI.UnderMouseState.UnderMouseNotFirst;
 				}
 				else
 				{
 					mouseCapturedState = MouseCapturedState.ThisHasMouseCaptured;
 					if (!FirstWidgetUnderMouse)
 					{
-						underMouseState = UI.UnderMouseState.FirstUnderMouse;
+						UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
 						OnMouseEnter(mouseEvent);
 					}
 
@@ -2489,33 +2496,33 @@ namespace MatterHackers.Agg.UI
 				{
 					if (!FirstWidgetUnderMouse)
 					{
-						underMouseState = UI.UnderMouseState.FirstUnderMouse;
+						UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
 						OnMouseEnter(mouseEvent);
 						OnMouseEnterBounds(mouseEvent);
 					}
-					else if (underMouseState == UI.UnderMouseState.NotUnderMouse)
+					else if (UnderMouseState == UI.UnderMouseState.NotUnderMouse)
 					{
-						underMouseState = UI.UnderMouseState.FirstUnderMouse;
+						UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
 						OnMouseEnterBounds(mouseEvent);
 					}
 
-					underMouseState = UI.UnderMouseState.FirstUnderMouse;
+					UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
 				}
 				else
 				{
 					if (FirstWidgetUnderMouse)
 					{
-						underMouseState = UI.UnderMouseState.NotUnderMouse;
+						UnderMouseState = UI.UnderMouseState.NotUnderMouse;
 						OnMouseLeave(mouseEvent);
 						OnMouseLeaveBounds(mouseEvent);
 					}
-					else if (underMouseState != UI.UnderMouseState.NotUnderMouse)
+					else if (UnderMouseState != UI.UnderMouseState.NotUnderMouse)
 					{
-						underMouseState = UI.UnderMouseState.NotUnderMouse;
+						UnderMouseState = UI.UnderMouseState.NotUnderMouse;
 						OnMouseLeaveBounds(mouseEvent);
 					}
 
-					underMouseState = UI.UnderMouseState.NotUnderMouse;
+					UnderMouseState = UI.UnderMouseState.NotUnderMouse;
 				}
 
 				MouseMove?.Invoke(this, mouseEvent);
@@ -2524,6 +2531,8 @@ namespace MatterHackers.Agg.UI
 
 		private void OnMouseMoveNotCaptured(MouseEventArgs mouseEvent)
 		{
+			bool mouseWasOutsideBounds = UnderMouseState == UI.UnderMouseState.NotUnderMouse;
+
 			if (Parent != null && Parent.mouseMoveEventHasBeenAcceptedByOther)
 			{
 				mouseMoveEventHasBeenAcceptedByOther = true;
@@ -2548,17 +2557,15 @@ namespace MatterHackers.Agg.UI
 
 			if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
 			{
-				bool needToCallEnterBounds = underMouseState == UI.UnderMouseState.NotUnderMouse;
-
 				if (mouseMoveEventHasBeenAcceptedByOther)
 				{
 					if (UnderMouseState == UI.UnderMouseState.FirstUnderMouse)
 					{
 						// set it before we call the function to have the state right to the callee
-						underMouseState = UI.UnderMouseState.UnderMouseNotFirst;
+						UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
 						OnMouseLeave(mouseEvent);
 					}
-					underMouseState = UI.UnderMouseState.UnderMouseNotFirst;
+					UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
 				}
 				else
 				{
@@ -2566,11 +2573,11 @@ namespace MatterHackers.Agg.UI
 					{
 						if (mouseMoveEventHasBeenAcceptedByOther)
 						{
-							underMouseState = UI.UnderMouseState.UnderMouseNotFirst;
+							UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
 						}
 						else
 						{
-							underMouseState = UI.UnderMouseState.FirstUnderMouse;
+							UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
 							SetToolTipText(mouseEvent);
 							OnMouseEnter(mouseEvent);
 						}
@@ -2579,13 +2586,13 @@ namespace MatterHackers.Agg.UI
 					{
 						if (mouseMoveEventHasBeenAcceptedByOther)
 						{
-							underMouseState = UI.UnderMouseState.UnderMouseNotFirst;
+							UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
 							OnMouseLeave(mouseEvent);
 						}
 					}
 				}
 
-				if (needToCallEnterBounds)
+				if (mouseWasOutsideBounds)
 				{
 					OnMouseEnterBounds(mouseEvent);
 				}
@@ -2596,10 +2603,10 @@ namespace MatterHackers.Agg.UI
 			{
 				if (FirstWidgetUnderMouse)
 				{
-					underMouseState = UI.UnderMouseState.NotUnderMouse;
+					UnderMouseState = UI.UnderMouseState.NotUnderMouse;
 					OnMouseLeave(mouseEvent);
 				}
-				underMouseState = UI.UnderMouseState.NotUnderMouse;
+				UnderMouseState = UI.UnderMouseState.NotUnderMouse;
 				OnMouseLeaveBounds(mouseEvent);
 			}
 		}
@@ -2646,7 +2653,7 @@ namespace MatterHackers.Agg.UI
 										OnMouseLeave(mouseEvent);
 									}
 									DoMouseMovedOffWidgetRecursive(mouseEvent);
-									underMouseState = UI.UnderMouseState.NotUnderMouse;
+									UnderMouseState = UI.UnderMouseState.NotUnderMouse;
 								}
 							}
 						}
@@ -2732,13 +2739,13 @@ namespace MatterHackers.Agg.UI
 					{
 						if (FirstWidgetUnderMouse)
 						{
-							underMouseState = UI.UnderMouseState.NotUnderMouse;
+							UnderMouseState = UI.UnderMouseState.NotUnderMouse;
 							OnMouseLeave(mouseEvent);
 							OnMouseLeaveBounds(mouseEvent);
 						}
 						else
 						{
-							underMouseState = UI.UnderMouseState.NotUnderMouse;
+							UnderMouseState = UI.UnderMouseState.NotUnderMouse;
 							OnMouseLeaveBounds(mouseEvent);
 						}
 						DoMouseMovedOffWidgetRecursive(mouseEvent);
