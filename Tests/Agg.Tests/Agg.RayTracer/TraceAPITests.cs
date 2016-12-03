@@ -36,11 +36,7 @@ namespace MatterHackers.RayTracer
 	public class TraceAPITests
 	{
 		[Test]
-		public void RayBundleSameResultAsIndividualRays()
-		{
-		}
-
-		internal void PlaneGetDistanceToIntersection()
+		public void PlaneGetDistanceToIntersection()
 		{
 			Plane testPlane = new Plane(Vector3.UnitZ, 10);
 			bool hitFrontOfPlane;

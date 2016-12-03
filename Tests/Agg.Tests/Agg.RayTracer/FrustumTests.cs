@@ -32,7 +32,7 @@ using NUnit.Framework;
 
 namespace MatterHackers.RayTracer
 {
-    [TestFixture, Category("Agg.RayTracer")]
+    [TestFixture, Category("WorkInProgress")]
 	public class FrustumTests
 	{
 		[Test]
