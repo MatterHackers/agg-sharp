@@ -425,94 +425,90 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void NumEditHandlesNonNumberChars()
 		{
-			{
-				GuiWidget container = new GuiWidget();
-				container.DoubleBuffer = true;
-				container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
-				NumberEdit numberEdit = new NumberEdit(0, 0, 0, 12, 200, 16, true, true);
-				container.AddChild(numberEdit);
+			GuiWidget container = new GuiWidget();
+			container.DoubleBuffer = true;
+			container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
+			NumberEdit numberEdit = new NumberEdit(0, 0, 0, 12, 200, 16, true, true);
+			container.AddChild(numberEdit);
 
-				container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, numberEdit.Height - 1, 0));
-				container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, numberEdit.Height - 1, 0));
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, numberEdit.Height - 1, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, numberEdit.Height - 1, 0));
 
-				Assert.IsTrue(numberEdit.CharIndexToInsertBefore == 0);
-				Assert.IsTrue(numberEdit.TopLeftOffset.y == 0);
+			Assert.IsTrue(numberEdit.CharIndexToInsertBefore == 0);
+			Assert.IsTrue(numberEdit.TopLeftOffset.y == 0);
 
-				// type a . (non numeric character)
-				SendKey(Keys.Back, ' ', container);
-				SendKey(Keys.Delete, ' ', container);
-				SendKey(Keys.OemMinus, '-', container);
-				Assert.IsTrue(numberEdit.Value == 0);
-				SendKey(Keys.OemPeriod, '.', container);
-				Assert.IsTrue(numberEdit.Value == 0);
-				SendKey(Keys.D0, '.', container);
-				Assert.IsTrue(numberEdit.Value == 0);
-				SendKey(Keys.A, 'A', container);
-				Assert.IsTrue(numberEdit.Value == 0);
+			// type a . (non numeric character)
+			SendKey(Keys.Back, ' ', container);
+			SendKey(Keys.Delete, ' ', container);
+			SendKey(Keys.OemMinus, '-', container);
+			Assert.IsTrue(numberEdit.Value == 0);
+			SendKey(Keys.OemPeriod, '.', container);
+			Assert.IsTrue(numberEdit.Value == 0);
+			SendKey(Keys.D0, '.', container);
+			Assert.IsTrue(numberEdit.Value == 0);
+			SendKey(Keys.A, 'A', container);
+			Assert.IsTrue(numberEdit.Value == 0);
 
-				container.Close();
-			}
+			container.Close();
 		}
 
-#if(__ANDROID__)
+#if (__ANDROID__)
 		[Test]
 #else
 		[Test, Apartment(ApartmentState.STA)]
 #endif
 		public void TextEditingSpecialKeysWork()
 		{
-			{
-				GuiWidget container = new GuiWidget();
-				container.DoubleBuffer = true;
-				container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
-				TextEditWidget textEdit = new TextEditWidget("some starting text");
-				container.AddChild(textEdit);
+			GuiWidget container = new GuiWidget();
+			container.DoubleBuffer = true;
+			container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
+			TextEditWidget textEdit = new TextEditWidget("some starting text");
+			container.AddChild(textEdit);
 
-				container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, textEdit.Height - 1, 0));
-				container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, textEdit.Height - 1, 0));
+			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, textEdit.Height - 1, 0));
+			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, textEdit.Height - 1, 0));
 
-				Assert.IsTrue(textEdit.CharIndexToInsertBefore == 0);
-				Assert.IsTrue(textEdit.TopLeftOffset.y == 0);
+			Assert.IsTrue(textEdit.CharIndexToInsertBefore == 0);
+			Assert.IsTrue(textEdit.TopLeftOffset.y == 0);
 
-				Assert.IsTrue(textEdit.Text == "some starting text");
-				// this is to select some text
-				SendKey(Keys.Shift | Keys.Control | Keys.Right, ' ', container);
-				Assert.IsTrue(textEdit.Selection == "some ");
-				Assert.IsTrue(textEdit.Text == "some starting text");
-				// this is to prove that we don't loose the selection when pressing Control
-				SendKeyDown(Keys.Control, container);
-				Assert.IsTrue(textEdit.Selection == "some ");
-				Assert.IsTrue(textEdit.Text == "some starting text");
-				// this is to prove that we don't loose the selection when pressing Shift
-				SendKeyDown(Keys.Shift, container);
-				Assert.IsTrue(textEdit.Text == "some starting text");
-				Assert.IsTrue(textEdit.Selection == "some ");
-				SendKeyDown(Keys.Right, container);
-				Assert.IsTrue(textEdit.Selection == "");
-				SendKey(Keys.Shift | Keys.Control | Keys.Left, ' ', container);
-				Assert.IsTrue(textEdit.Selection == "some ");
-				SendKey(Keys.Delete, ' ', container);
-				Assert.IsTrue(textEdit.Text == "starting text");
-				SendKey(Keys.Shift | Keys.Control | Keys.Right, ' ', container);
-				Assert.IsTrue(textEdit.Selection == "starting ");
+			Assert.IsTrue(textEdit.Text == "some starting text");
+			// this is to select some text
+			SendKey(Keys.Shift | Keys.Control | Keys.Right, ' ', container);
+			Assert.IsTrue(textEdit.Selection == "some ");
+			Assert.IsTrue(textEdit.Text == "some starting text");
+			// this is to prove that we don't loose the selection when pressing Control
+			SendKeyDown(Keys.Control, container);
+			Assert.IsTrue(textEdit.Selection == "some ");
+			Assert.IsTrue(textEdit.Text == "some starting text");
+			// this is to prove that we don't loose the selection when pressing Shift
+			SendKeyDown(Keys.Shift, container);
+			Assert.IsTrue(textEdit.Text == "some starting text");
+			Assert.IsTrue(textEdit.Selection == "some ");
+			SendKeyDown(Keys.Right, container);
+			Assert.IsTrue(textEdit.Selection == "");
+			SendKey(Keys.Shift | Keys.Control | Keys.Left, ' ', container);
+			Assert.IsTrue(textEdit.Selection == "some ");
+			SendKey(Keys.Delete, ' ', container);
+			Assert.IsTrue(textEdit.Text == "starting text");
+			SendKey(Keys.Shift | Keys.Control | Keys.Right, ' ', container);
+			Assert.IsTrue(textEdit.Selection == "starting ");
 
-#if(!__ANDROID__)
-								// if this fails add
-				// GuiHalWidget.SetClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText);
-				// before you call the unit tests
-				Clipboard.SetSystemClipboard(new WindowsFormsClipboard());
+#if (!__ANDROID__)
+			// if this fails add
+			// GuiHalWidget.SetClipboardFunctions(System.Windows.Forms.Clipboard.GetText, System.Windows.Forms.Clipboard.SetText, System.Windows.Forms.Clipboard.ContainsText);
+			// before you call the unit tests
+			Clipboard.SetSystemClipboard(new WindowsFormsClipboard());
 
 
-				SendKey(Keys.Control | Keys.C, 'c', container);
-				Assert.IsTrue(textEdit.Selection == "starting ");
-				Assert.IsTrue(textEdit.Text == "starting text");
-				SendKeyDown(Keys.Right, container); // move to the right
-				SendKey(Keys.Control | Keys.V, 'v', container);
-				Assert.IsTrue(textEdit.Text == "starting starting text");
+			SendKey(Keys.Control | Keys.C, 'c', container);
+			Assert.IsTrue(textEdit.Selection == "starting ");
+			Assert.IsTrue(textEdit.Text == "starting text");
+			SendKeyDown(Keys.Right, container); // move to the right
+			SendKey(Keys.Control | Keys.V, 'v', container);
+			Assert.IsTrue(textEdit.Text == "starting starting text");
 #endif
 
-				container.Close();
-			}
+			container.Close();
 		}
 
 		[Test]
@@ -573,11 +569,11 @@ namespace MatterHackers.Agg.UI.Tests
 	}
 
 #if !__ANDROID__
-	[TestFixture, RunInApplicationDomain, Category("Agg.UI")]
-	public class VerifyFocusMakesTextWidgetEditableClass
+	[TestFixture, Category("Agg.UI"), RunInApplicationDomain]
+	public class TextEditFocusTests
 	{
-		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
-		public void VerifyFocusMakesTextWidgetEditable()
+		[Test, Apartment(ApartmentState.STA)]
+		public async Task VerifyFocusMakesTextWidgetEditable()
 		{
 			TextEditWidget editField = null;
 			SystemWindow systemWindow = new SystemWindow(300, 200)
@@ -585,18 +581,16 @@ namespace MatterHackers.Agg.UI.Tests
 				BackgroundColor = RGBA_Bytes.Black,
 			};
 
-			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
+			AutomationTest testToRun = (testRunner) =>
 			{
 				UiThread.RunOnIdle(editField.Focus);
-				AutomationRunner testRunner = new AutomationRunner();
-				testRunner.Wait(1);
 
-				// Now do the actions specific to this test. (replace this for new tests)
 				testRunner.Type("Test Text");
 
-				resultsHarness.AddTestResult(editField.Text == "Test Text", "validate text is typed");
+				testRunner.Wait(1);
+				Assert.IsTrue(editField.Text == "Test Text", "validate text is typed");
 
-				systemWindow.CloseOnIdle();
+				return Task.FromResult(0);
 			};
 
 			editField = new TextEditWidget(pixelWidth: 200)
@@ -606,55 +600,73 @@ namespace MatterHackers.Agg.UI.Tests
 			};
 			systemWindow.AddChild(editField);
 
-			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
-
-			Assert.IsTrue(testHarness.AllTestsPassed(1));
+			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
 		}
-	}
 
-	[TestFixture, RunInApplicationDomain, Category("Agg.UI")]
-	public class SelectAllOnFocusCanStillClickAfterSelectionClass
-	{
-		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
-		public void SelectAllOnFocusCanStillClickAfterSelection()
+		[Test, Apartment(ApartmentState.STA), Category("FixNeeded" /* Unexpected behavior, possible Agg bug */)]
+		public async Task VerifyFocusProperty()
 		{
-			TextEditWidget editField = null;
 			SystemWindow systemWindow = new SystemWindow(300, 200)
 			{
 				BackgroundColor = RGBA_Bytes.Black,
 			};
 
-			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
+			var editField = new TextEditWidget(pixelWidth: 200)
 			{
-				editField.SelectAllOnFocus = true;
-				AutomationRunner testRunner = new AutomationRunner();
-				testRunner.Wait(1);
+				HAnchor = HAnchor.ParentCenter,
+				VAnchor = VAnchor.ParentCenter,
+			};
+			systemWindow.AddChild(editField);
 
-				resultsHarness.AddTestResult(testRunner.ClickByName(editField.Name, 1));
+			AutomationTest testToRun = (testRunner) =>
+			{
+				UiThread.RunOnIdle(editField.Focus);
+				testRunner.WaitUntil(() => editField.Focused, 3);
+				Assert.IsTrue(editField.Focused, "Focused property should be true after invoking Focus method");
 
-				editField.SelectAllOnFocus = true;
-				testRunner.Type("123");
-				resultsHarness.AddTestResult(editField.Text == "123", "on enter we have selected all and replaced the text");
-
-				resultsHarness.AddTestResult(testRunner.ClickByName(editField.Name, 1));
-				testRunner.Type("123");
-				resultsHarness.AddTestResult(editField.Text == "123123", "we already have the contol selected so don't select all again.");
-
-				systemWindow.CloseOnIdle();
+				return Task.FromResult(0);
 			};
 
-			editField = new TextEditWidget(pixelWidth: 200)
+			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
+		}
+
+		[Test, Apartment(ApartmentState.STA)]
+		public async Task SelectAllOnFocusCanStillClickAfterSelection()
+		{
+			var editField = new TextEditWidget(pixelWidth: 200)
 			{
 				Name = "editField",
 				Text = "Some Text",
 				HAnchor = HAnchor.ParentCenter,
 				VAnchor = VAnchor.ParentCenter,
 			};
+
+			var systemWindow = new SystemWindow(300, 200)
+			{
+				BackgroundColor = RGBA_Bytes.Gray,
+			};
 			systemWindow.AddChild(editField);
 
-			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExecuteTests(systemWindow, testToRun, 15);
+			AutomationTest testToRun = (testRunner) =>
+			{
+				editField.SelectAllOnFocus = true;
+				testRunner.Wait(1);
+				testRunner.ClickByName(editField.Name, 1);
 
-			Assert.IsTrue(testHarness.AllTestsPassed(4));
+				editField.SelectAllOnFocus = true;
+				testRunner.Type("123");
+				Assert.AreEqual("123", editField.Text, "Text input on newly focused control should replace selection");
+
+				testRunner.ClickByName(editField.Name, 1);
+				testRunner.Wait(.2);
+
+				testRunner.Type("123");
+				Assert.AreEqual("123123", editField.Text, "Text should be appended if control is focused and has already received input");
+
+				return Task.FromResult(0);
+			};
+
+			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 15);
 		}
 	}
 #endif

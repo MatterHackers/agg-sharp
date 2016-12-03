@@ -296,7 +296,7 @@ namespace MatterHackers.RayTracer
 
 		public void GetRotation(ref Vector3 pOutVector)
 		{
-			Vector3 UpVector = new Vector3(0, 1, 0); ;
+			Vector3 UpVector = new Vector3(0, 1, 0);
 			Vector3 ForwardVector = new Vector3(0, 0, 1);
 
 			UpVector = Vector3.Transform(UpVector, AxisToWorld);

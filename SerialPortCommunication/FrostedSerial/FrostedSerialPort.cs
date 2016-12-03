@@ -34,6 +34,9 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using MatterHackers.Agg.PlatformAbstract;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace MatterHackers.SerialPortCommunication.FrostedSerial
 {
@@ -116,13 +119,33 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 			return true;
 		}
 
-		public static string[] GetPortNames(bool filter = false)
+		private static Regex linuxDefaultUIFilter = new Regex("/dev/ttyS*\\d+", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+		private static IEnumerable<string> FilterPortsForMac(List<string> allPorts)
 		{
-			int p = (int)Environment.OSVersion.Platform;
+			IEnumerable<string> filteredPorts;
+
+			if (OsInformation.OperatingSystem == OSType.X11)
+			{
+				// A default and naive filter that works well on Ubuntu 14
+				filteredPorts = allPorts.Where(portName => portName != "/dev/tty" && !linuxDefaultUIFilter.Match(portName).Success);
+			}
+			else
+			{
+				// looks_like_mac -- serialPort.StartsWith("/dev/tty."); looks_like_pc -- serialPort.StartsWith("COM")
+				filteredPorts = allPorts.Where(portName => portName.StartsWith("/dev/tty.") || portName.StartsWith("COM"));
+			}
+
+			return filteredPorts.Any() ? filteredPorts : allPorts;
+		}
+
+		public static string[] GetPortNames(bool filter = true)
+		{
+			var p = Environment.OSVersion.Platform;
 			List<string> serial_ports = new List<string>();
 
 			// Are we on Unix?
-			if (p == 4 || p == 128 || p == 6)
+			if (p == PlatformID.Unix || p == PlatformID.MacOSX)
 			{
 				string[] ttys = Directory.GetFiles("/dev/", "tty*");
 
@@ -135,11 +158,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 				// Probe for Linux-styled devices: /dev/ttyS* or /dev/ttyUSB*
 				foreach (string dev in ttys)
 				{
-					if (dev.StartsWith("/dev/ttyS") || dev.StartsWith("/dev/ttyUSB") || dev.StartsWith("/dev/ttyACM"))
-					{
-						serial_ports.Add(dev);
-					}
-					else if (dev != "/dev/tty" && dev.StartsWith("/dev/tty") && !dev.StartsWith("/dev/ttyC"))
+					if (dev != "/dev/tty" && dev.StartsWith("/dev/tty") && !dev.StartsWith("/dev/ttyC"))
 					{
 						serial_ports.Add(dev);
 					}
@@ -163,7 +182,8 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 				}
 #endif
 			}
-			return serial_ports.ToArray();
+			
+			return FilterPortsForMac(serial_ports).ToArray();
 		}
 
 		public static string GetDefaultPortName()

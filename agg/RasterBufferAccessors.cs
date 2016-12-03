@@ -142,7 +142,7 @@ namespace MatterHackers.Agg
 			{
 				m_CurrentBufferOffset = m_SourceImage.GetBufferOffsetXY(m_x, m_y);
 				m_SourceImage.GetBuffer();
-				bufferOffset = m_CurrentBufferOffset; ;
+				bufferOffset = m_CurrentBufferOffset;
 				return m_Buffer;
 			}
 

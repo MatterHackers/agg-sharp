@@ -31,7 +31,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.PlatformAbstract;
@@ -41,6 +43,8 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.GuiAutomation
 {
+	public delegate Task AutomationTest(AutomationRunner runner);
+
 	public class AutomationRunner
 	{
 		public long MatchLimit = 50;
@@ -55,9 +59,9 @@ namespace MatterHackers.GuiAutomation
 		private string imageDirectory;
 		public double UpDelaySeconds = .2;
 
-		public enum InputType { Native, Simulated };
+		public enum InputType { Native, Simulated, SimulatedDrawMouse };
 
-		public AutomationRunner(string imageDirectory = "", InputType inputType = InputType.Native, bool drawSimulatedMouse = true)
+		public AutomationRunner(string imageDirectory = "", InputType inputType = InputType.Native)
 		{
 #if !__ANDROID__
 			if (inputType == InputType.Native)
@@ -66,11 +70,11 @@ namespace MatterHackers.GuiAutomation
 			}
 			else
 			{
-				inputSystem = new AggInputMethods(this, drawSimulatedMouse);
+				inputSystem = new AggInputMethods(this, inputType == InputType.SimulatedDrawMouse);
 				HookWindowsInputAndSendToWidget.EnableInputHook = false;
 			}
 #else
-				inputSystem = new AggInputMethods(this, drawSimulatedMouse);
+				inputSystem = new AggInputMethods(this, inputType == InputType.SimulatedDrawMouse);
 #endif
 
 			this.imageDirectory = imageDirectory;
@@ -128,7 +132,7 @@ namespace MatterHackers.GuiAutomation
 
 		public bool ClickImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
 		{
-			ImageBuffer imageToLookFor = LoadImageFromSourcFolder(imageName);
+			ImageBuffer imageToLookFor = LoadImageFromSourceFolder(imageName);
 			if (imageToLookFor != null)
 			{
 				return ClickImage(imageToLookFor, secondsToWait, searchRegion, offset, origin, mouseButtons);
@@ -232,10 +236,10 @@ namespace MatterHackers.GuiAutomation
 		public bool DragDropImage(string imageNameDrag, string imageNameDrop, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offsetDrag = default(Point2D), ClickOrigin originDrag = ClickOrigin.Center,
 			Point2D offsetDrop = default(Point2D), ClickOrigin originDrop = ClickOrigin.Center)
 		{
-			ImageBuffer imageNeedleDrag = LoadImageFromSourcFolder(imageNameDrag);
+			ImageBuffer imageNeedleDrag = LoadImageFromSourceFolder(imageNameDrag);
 			if (imageNeedleDrag != null)
 			{
-				ImageBuffer imageNeedleDrop = LoadImageFromSourcFolder(imageNameDrop);
+				ImageBuffer imageNeedleDrop = LoadImageFromSourceFolder(imageNameDrop);
 				if (imageNeedleDrop != null)
 				{
 					return DragDropImage(imageNeedleDrag, imageNeedleDrop, secondsToWait, searchRegion, offsetDrag, originDrag, offsetDrop, originDrop);
@@ -269,7 +273,7 @@ namespace MatterHackers.GuiAutomation
 
 		public bool DragImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
 		{
-			ImageBuffer imageToLookFor = LoadImageFromSourcFolder(imageName);
+			ImageBuffer imageToLookFor = LoadImageFromSourceFolder(imageName);
 			if (imageToLookFor != null)
 			{
 				return DragImage(imageToLookFor, secondsToWait, searchRegion, offset, origin);
@@ -311,7 +315,7 @@ namespace MatterHackers.GuiAutomation
 
 		public bool DropImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
 		{
-			ImageBuffer imageToLookFor = LoadImageFromSourcFolder(imageName);
+			ImageBuffer imageToLookFor = LoadImageFromSourceFolder(imageName);
 			if (imageToLookFor != null)
 			{
 				return DropImage(imageToLookFor, secondsToWait, searchRegion, offset, origin);
@@ -353,7 +357,7 @@ namespace MatterHackers.GuiAutomation
 
 		public bool ImageExists(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null)
 		{
-			ImageBuffer imageToLookFor = LoadImageFromSourcFolder(imageName);
+			ImageBuffer imageToLookFor = LoadImageFromSourceFolder(imageName);
 			if (imageToLookFor != null)
 			{
 				return ImageExists(imageToLookFor, secondsToWait, searchRegion);
@@ -478,7 +482,7 @@ namespace MatterHackers.GuiAutomation
 			}, this);
 		}
 
-		private ImageBuffer LoadImageFromSourcFolder(string imageName)
+		private ImageBuffer LoadImageFromSourceFolder(string imageName)
 		{
 			string pathToImage = Path.Combine(imageDirectory, imageName);
 
@@ -601,11 +605,9 @@ namespace MatterHackers.GuiAutomation
 		/// <summary>
 		/// Look for a widget with the given name and click it. It and all its parents must be visible and enabled.
 		/// </summary>
-		/// <param name="widgetName"></param>
-		/// <param name="origin"></param>
+		/// <param name="widgetName">The given widget name</param>
 		/// <param name="secondsToWait">Total seconds to stay in this function waiting for the named widget to become visible.</param>
-		/// <returns></returns>
-		public bool ClickByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
+		public void ClickByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, double delayBeforeReturn = 0.2)
 		{
 			SystemWindow containingWindow;
 			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, secondsToWait, searchRegion);
@@ -628,10 +630,14 @@ namespace MatterHackers.GuiAutomation
 
 				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
 
-				return true;
+				// After firing the click event, wait the given period of time before returning to allow MatterControl 
+				// to complete the targeted action
+				Wait(delayBeforeReturn);
+
+				return;
 			}
 
-			return false;
+			throw new Exception($"ClickByName Failed: Named GuiWidget not found [{widgetName}]");
 		}
 
 		public bool DragDropByName(string widgetNameDrag, string widgetNameDrop, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offsetDrag = default(Point2D), ClickOrigin originDrag = ClickOrigin.Center, Point2D offsetDrop = default(Point2D), ClickOrigin originDrop = ClickOrigin.Center)
@@ -736,9 +742,16 @@ namespace MatterHackers.GuiAutomation
 				{
 					foreach (GuiWidget foundChild in foundChildren)
 					{
-						if (foundChild.ActuallyVisibleOnScreen())
+						RectangleDouble childBounds = foundChild.TransformToParentSpace(window, foundChild.LocalBounds);
+
+						ScreenRectangle screenRect = SystemWindowToScreen(childBounds, window);
+						ScreenRectangle result;
+						if (searchRegion == null || ScreenRectangle.Intersection(searchRegion.ScreenRect, screenRect, out result))
 						{
-							return true;
+							if (foundChild.ActuallyVisibleOnScreen())
+							{
+								return true;
+							}
 						}
 					}
 				}
@@ -810,7 +823,7 @@ namespace MatterHackers.GuiAutomation
 
 		public bool WaitForImage(string imageName, double secondsToWait, SearchRegion searchRegion = null)
 		{
-			ImageBuffer imageToLookFor = LoadImageFromSourcFolder(imageName);
+			ImageBuffer imageToLookFor = LoadImageFromSourceFolder(imageName);
 			if (imageToLookFor != null)
 			{
 				return WaitForImage(imageToLookFor, secondsToWait, searchRegion);
@@ -861,7 +874,7 @@ namespace MatterHackers.GuiAutomation
 		/// Wait up to secondsToWait for the named widget to vanish.
 		/// </summary>
 		/// <param name="widgetName"></param>
-		public bool WaitVanishForName(string widgetName, double secondsToWait) // TODO: should have a search regoin
+		public bool WaitVanishForName(string widgetName, double secondsToWait) // TODO: should have a search region
 		{
 			Stopwatch timeWaited = Stopwatch.StartNew();
 			while (NameExists(widgetName)
@@ -879,5 +892,61 @@ namespace MatterHackers.GuiAutomation
 		}
 
 		#endregion Time
+
+		#region Prior TestHarness code
+
+		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure, string imagesDirectory = "", InputType inputType = InputType.Native)
+		{
+			var testRunner = new AutomationRunner(imagesDirectory, inputType);
+
+			AutoResetEvent resetEvent = new AutoResetEvent(false);
+
+			bool firstDraw = true;
+			initialSystemWindow.AfterDraw += (sender, e) =>
+			{
+				if (firstDraw)
+				{
+					firstDraw = false;
+					resetEvent.Set();
+				}
+			};
+
+			int testTimeout = (int)(1000 * secondsToTestFailure);
+			var timer = Stopwatch.StartNew();
+
+			// Start two tasks, the timeout and the test method. Block in the test method until the first draw
+			Task<Task> task = Task.WhenAny(
+				Task.Delay(testTimeout),
+				Task.Run(() =>
+				{
+					// Wait until the first system window draw before running the test method
+					resetEvent.WaitOne();
+					
+					return testMethod(testRunner);
+				}));
+
+			// Once either the timeout or the test method has completed, reassign the task/result for timeout errors and shutdown the SystemWindow 
+			task.ContinueWith((innerTask) =>
+			{
+				long elapsedTime = timer.ElapsedMilliseconds;
+
+				// Create an exception Task for test timeouts
+				if (elapsedTime >= testTimeout)
+				{
+					task = new Task<Task>(() => { throw new TimeoutException("TestMethod timed out"); });
+					task.RunSynchronously();
+				}
+
+				initialSystemWindow.CloseOnIdle();
+			});
+
+			// Main thread blocks here until released via CloseOnIdle above
+			initialSystemWindow.ShowAsSystemWindow();
+
+			// After the system window is closed return the task and any exception to the calling context
+			return task?.Result ?? Task.FromResult(0);
+		}
+
+		#endregion
 	}
 }

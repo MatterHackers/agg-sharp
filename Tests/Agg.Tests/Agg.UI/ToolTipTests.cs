@@ -105,31 +105,29 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
-		public void ToolTipsShow()
+		public async Task ToolTipsShow()
 		{
 			SystemWindow buttonContainer = new SystemWindow(300, 200)
 			{
 				BackgroundColor = RGBA_Bytes.White,
 			};
 
-			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
+			AutomationTest testToRun = (testRunner) =>
 			{
-				AutomationRunner testRunner = new AutomationRunner();
 				testRunner.Wait(1);
 
-				// Now do the actions specific to this test. (replace this for new tests)
-				{
-					testRunner.MoveToByName("ButtonWithToolTip");
-					testRunner.Wait(1.5);
-					GuiWidget toolTipWidget = buttonContainer.FindNamedChildRecursive("ToolTipWidget");
-					resultsHarness.AddTestResult(toolTipWidget != null, "Tool tip is showing");
-					testRunner.MoveToByName("right");
-					toolTipWidget = buttonContainer.FindNamedChildRecursive("ToolTipWidget");
-					resultsHarness.AddTestResult(toolTipWidget == null, "Tool tip is not showing");
-				}
+				testRunner.MoveToByName("ButtonWithToolTip");
+				testRunner.Wait(1.5);
+				GuiWidget toolTipWidget = buttonContainer.FindNamedChildRecursive("ToolTipWidget");
+				Assert.IsTrue(toolTipWidget != null, "Tool tip is showing");
+				testRunner.MoveToByName("right");
+				toolTipWidget = buttonContainer.FindNamedChildRecursive("ToolTipWidget");
+				Assert.IsTrue(toolTipWidget == null, "Tool tip is not showing");
 
 				testRunner.Wait(1);
 				buttonContainer.CloseOnIdle();
+
+				return Task.FromResult(0);
 			};
 
 			Button leftButton = new Button("left", 10, 40);
@@ -140,9 +138,7 @@ namespace MatterHackers.Agg.UI.Tests
 			rightButton.Name = "right";
 			buttonContainer.AddChild(rightButton);
 
-			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10000);
-
-			Assert.IsTrue(testHarness.AllTestsPassed(2));
+			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10000);
 		}
 
 		[Test]

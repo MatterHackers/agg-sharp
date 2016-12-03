@@ -37,13 +37,13 @@ using NUnit.Framework;
 
 namespace MatterHackers.Agg.Tests
 {
-	[TestFixture, Category("Agg.UI")]
+	[TestFixture, Category("Agg.UI"), RunInApplicationDomain]
 	public class WidgetClickTests
 	{
 		GuiWidget lastClicked = null;
 
-		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
-		public void ClickFiresOnCorrectWidgets()
+		[Test, Apartment(ApartmentState.STA)]
+		public async Task ClickFiresOnCorrectWidgets()
 		{
 			int blueClickCount = 0;
 			int orangeClickCount = 0;
@@ -53,39 +53,41 @@ namespace MatterHackers.Agg.Tests
 
 			double waitTime = .5;
 
-			Action<AutomationTesterHarness> testToRun = (AutomationTesterHarness resultsHarness) =>
+			AutomationTest testToRun = (testRunner) =>
 			{
-				AutomationRunner testRunner = new AutomationRunner();
 				testRunner.Wait(2);
 				testRunner.ClickByName("rootClickable", 5);
 				testRunner.Wait(waitTime);
-				resultsHarness.AddTestResult(blueClickCount == 1, "Expected 1 click on blue widget");
-				resultsHarness.AddTestResult(orangeClickCount == 0, "Expected 0 clicks on orange widget");
-				resultsHarness.AddTestResult(purpleClickCount == 0, "Expected 1 click on purple widget");
+
+				Assert.AreEqual(blueClickCount, 1, "Expected 1 click on blue widget");
+				Assert.AreEqual(orangeClickCount, 0, "Expected 0 clicks on orange widget");
+				Assert.AreEqual(purpleClickCount, 0, "Expected 1 click on purple widget");
 
 				testRunner.ClickByName("orangeClickable", 1);
 				testRunner.Wait(waitTime);
-				resultsHarness.AddTestResult(blueClickCount == 1, "Expected 1 click on blue widget");
-				resultsHarness.AddTestResult(orangeClickCount == 1, "Expected 1 clicks on orange widget");
-				resultsHarness.AddTestResult(purpleClickCount == 0, "Expected 0 click on purple widget");
+				Assert.AreEqual(blueClickCount, 1, "Expected 1 click on blue widget");
+				Assert.AreEqual(orangeClickCount, 1, "Expected 1 clicks on orange widget");
+				Assert.AreEqual(purpleClickCount, 0, "Expected 0 click on purple widget");
 
 				testRunner.ClickByName("rootClickable", 1);
 				testRunner.Wait(waitTime);
-				resultsHarness.AddTestResult(blueClickCount == 2, "Expected 1 click on blue widget");
-				resultsHarness.AddTestResult(orangeClickCount == 1, "Expected 0 clicks on orange widget");
-				resultsHarness.AddTestResult(purpleClickCount == 0, "Expected 1 click on purple widget");
+				Assert.AreEqual(blueClickCount, 2, "Expected 1 click on blue widget");
+				Assert.AreEqual(orangeClickCount, 1, "Expected 0 clicks on orange widget");
+				Assert.AreEqual(purpleClickCount, 0, "Expected 1 click on purple widget");
 
 				testRunner.ClickByName("orangeClickable", 1);
 				testRunner.Wait(waitTime);
-				resultsHarness.AddTestResult(blueClickCount == 2, "Expected 1 click on root widget");
-				resultsHarness.AddTestResult(orangeClickCount == 2, "Expected 2 clicks on orange widget");
-				resultsHarness.AddTestResult(purpleClickCount == 0, "Expected 0 click on purple widget");
+				Assert.AreEqual(blueClickCount, 2, "Expected 1 click on root widget");
+				Assert.AreEqual(orangeClickCount, 2, "Expected 2 clicks on orange widget");
+				Assert.AreEqual(purpleClickCount, 0, "Expected 0 click on purple widget");
 
 				testRunner.ClickByName("purpleClickable", 1);
 				testRunner.Wait(waitTime);
-				resultsHarness.AddTestResult(blueClickCount == 2, "Expected 1 click on blue widget");
-				resultsHarness.AddTestResult(orangeClickCount == 2, "Expected 2 clicks on orange widget");
-				resultsHarness.AddTestResult(purpleClickCount == 1, "Expected 1 click on purple widget");
+				Assert.AreEqual(blueClickCount, 2, "Expected 1 click on blue widget");
+				Assert.AreEqual(orangeClickCount, 2, "Expected 2 clicks on orange widget");
+				Assert.AreEqual(purpleClickCount, 1, "Expected 1 click on purple widget");
+
+				return Task.FromResult(0);
 			};
 
 			SystemWindow systemWindow = new SystemWindow(300, 200)
@@ -158,12 +160,10 @@ namespace MatterHackers.Agg.Tests
 
 			systemWindow.AddChild(rootClickable);
 
-			AutomationTesterHarness testHarness = AutomationTesterHarness.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
-
-			Assert.IsTrue(testHarness.AllTestsPassed(15));
+			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 25);
 		}
 
-		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain, Category("FixNeeded")]
+		[Test, Apartment(ApartmentState.STA), Category("FixNeeded")]
 		public void ClickSuppressedOnExternalMouseUp()
 		{
 			int rootClickCount = 0;
@@ -285,8 +285,7 @@ namespace MatterHackers.Agg.Tests
 			Assert.IsTrue(systemWindow.TestsPassed, systemWindow.ErrorMessage);
 		}
 
-
-		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
+		[Test, Apartment(ApartmentState.STA)]
 		public void ClickSuppressedOnMouseUpWithinChild()
 		{
 			// FixNeeded - Agg currently fires mouse up events in child controls when the parent has the mouse captured
