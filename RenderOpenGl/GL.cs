@@ -254,7 +254,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		static bool glHasBufferObjects = true;
 #endif
 
-		public static bool HardwareAvailable { get; set; }
+		public static bool HardwareAvailable { get; set; } = true;
 
 		public static bool GlHasBufferObjects { get { return glHasBufferObjects; } }
 

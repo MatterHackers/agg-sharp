@@ -50,7 +50,8 @@ namespace MatterHackers.Agg
 
 			mainNavigationTabControl.AddTab(new SliderControlsPage(), "SliderControlsPage");
 			mainNavigationTabControl.AddTab(new TabPage(new FontInfoWidget(), "Fonts"), "Fonts");
-			mainNavigationTabControl.AddTab(new TabPage(new FontHintWidget(), "Font Hinting"), "Fonts");
+			mainNavigationTabControl.AddTab(new TabPage(new FontHintWidget(), "Font Hinting"), "Font Hinting");
+			mainNavigationTabControl.AddTab(new TabPage(new WebCamWidget(), "Web Cam"), "WebCam");
 #endif
 			this.AddChild(mainNavigationTabControl);
 
@@ -71,9 +72,9 @@ namespace MatterHackers.Agg
 
 			base.OnDraw(graphics2D);
 
+
 			long milliseconds = totalTime.ElapsedMilliseconds;
-			graphics2D.DrawString("ms: ", Width - 60, Height - 14);
-			graphics2D.DrawString(milliseconds.ToString() + "  ", Width, Height - 14, justification: Justification.Right);
+			graphics2D.DrawString("ms: " + milliseconds.ToString() + "  ", Width, Height - 14, justification: Justification.Right, backgroundColor: RGBA_Bytes.White);
 			totalTime.Restart();
 		}
 

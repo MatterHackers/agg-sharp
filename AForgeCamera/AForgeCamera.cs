@@ -1,20 +1,15 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 using System.Drawing;
 using System.Drawing.Imaging;
 
 using AForge.Video;
 using AForge.Video.DirectShow;
-
-using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 
 namespace AForge
 {
-    public interface ICamera
+	public interface ICamera
     {
         void TakeSnapShot();
         ImageBuffer CurrentImage { get; }
