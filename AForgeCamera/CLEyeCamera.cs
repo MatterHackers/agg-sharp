@@ -1,16 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Runtime.InteropServices;
-
-using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 
 namespace AForge
 {
-    public class CLEyeCamera : ICamera
+	public class CLEyeCamera : ICamera
     {
         #region [ Camera Parameters ]
         // camera color mode
