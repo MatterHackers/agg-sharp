@@ -430,7 +430,7 @@ namespace MatterHackers.Agg.UI
 		private void MenuItem_Clicked(object sender, EventArgs e)
 		{
 			var menuItem = sender as MenuItem;
-			if (menuItem.Selectable)
+			if (menuItem.CanHeldSelection)
 			{
 				int newSelectedIndex = MenuItems.IndexOf(menuItem);
 				SelectedIndex = newSelectedIndex == -1 ? 0 : newSelectedIndex;
