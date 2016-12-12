@@ -41,7 +41,7 @@ namespace MatterHackers.Agg.UI
 
 		public event EventHandler Selected;
 
-		public bool Selectable { get; set; } = true;
+		public bool CanHeldSelection { get; set; } = true;
 
 		public Func<bool> AllowClicks;
 
