@@ -54,7 +54,7 @@ namespace MatterHackers.GuiAutomation
 		/// <summary>
 		/// The number of seconds to move the mouse when going to a new position.
 		/// </summary>
-		public double TimeToMoveMouse = .5;
+		public static double TimeToMoveMouse { get; set; } = .5;
 
 		private string imageDirectory;
 		public double UpDelaySeconds = .2;
