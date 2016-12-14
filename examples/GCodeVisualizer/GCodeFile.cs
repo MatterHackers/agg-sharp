@@ -131,6 +131,18 @@ namespace MatterHackers.GCodeVisualizer
 			return false;
 		}
 
+		public static bool GetFirstNumberAfter(string stringToCheckAfter, string stringWithNumber, ref int readValue, int startIndex = 0)
+		{
+			double doubleValue = readValue;
+			if(GetFirstNumberAfter(stringToCheckAfter, stringWithNumber, ref doubleValue, startIndex))
+			{
+				readValue = (int)doubleValue;
+				return true;
+			}
+
+			return false;
+		}
+
 		public static bool GetFirstNumberAfter(string stringToCheckAfter, string stringWithNumber, ref double readValue, int startIndex = 0)
 		{
 			int stringPos = stringWithNumber.IndexOf(stringToCheckAfter, startIndex);

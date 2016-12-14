@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2013, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,40 +27,41 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.VectorMath;
-using NUnit.Framework;
+using MatterHackers.Agg.Font;
+using MatterHackers.Agg.Transform;
+using MatterHackers.Agg.UI;
+using MatterHackers.Agg.VertexSource;
+using System.Collections.Generic;
+using System;
+using AForge;
 
-namespace MatterHackers.RayTracer
+namespace MatterHackers.Agg
 {
-	[TestFixture, Category("Agg.RayTracer")]
-	public class TraceAPITests
+	public class WebCamWidget : GuiWidget
 	{
-		[Test]
-		public void PlaneGetDistanceToIntersection()
+		AForgeCamera camera = new AForgeCamera();
+
+		public WebCamWidget()
 		{
-			Plane testPlane = new Plane(Vector3.UnitZ, 10);
-			bool hitFrontOfPlane;
-			double distanceToHit;
+			camera.TakeSnapShot();
+			AnchorAll();
+		}
 
-			Ray lookingAtFrontOfPlane = new Ray(new Vector3(0, 0, 11), new Vector3(0, 0, -1));
-			Assert.IsTrue(testPlane.RayHitPlane(lookingAtFrontOfPlane, out distanceToHit, out hitFrontOfPlane));
-			Assert.IsTrue(distanceToHit == 1);
-			Assert.IsTrue(hitFrontOfPlane);
+		public override void OnClosed(EventArgs e)
+		{
+			camera.CloseCurrentVideoSource();
+			base.OnClosed(e);
+		}
 
-			Ray notLookingAtFrontOfPlane = new Ray(new Vector3(0, 0, 11), new Vector3(0, 0, 1));
-			Assert.IsTrue(!testPlane.RayHitPlane(notLookingAtFrontOfPlane, out distanceToHit, out hitFrontOfPlane));
-			Assert.IsTrue(distanceToHit == double.PositiveInfinity);
-			Assert.IsTrue(!hitFrontOfPlane);
+		public override void OnDraw(Graphics2D graphics2D)
+		{
+			base.OnDraw(graphics2D);
 
-			Ray lookingAtBackOfPlane = new Ray(new Vector3(0, 0, 9), new Vector3(0, 0, 1));
-			Assert.IsTrue(testPlane.RayHitPlane(lookingAtBackOfPlane, out distanceToHit, out hitFrontOfPlane));
-			Assert.IsTrue(distanceToHit == 1);
-			Assert.IsTrue(!hitFrontOfPlane);
-
-			Ray notLookingAtBackOfPlane = new Ray(new Vector3(0, 0, 9), new Vector3(0, 0, -1));
-			Assert.IsTrue(!testPlane.RayHitPlane(notLookingAtBackOfPlane, out distanceToHit, out hitFrontOfPlane));
-			Assert.IsTrue(distanceToHit == double.PositiveInfinity);
-			Assert.IsTrue(hitFrontOfPlane);
+			if (camera.IsNewImageReady())
+			{
+			}
+			graphics2D.Render(camera.CurrentImage, 40, 40);
+			Invalidate();
 		}
 	}
 }

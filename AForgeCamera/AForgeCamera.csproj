@@ -16,7 +16,7 @@
     </UpgradeBackupLocation>
     <OldToolsVersion>2.0</OldToolsVersion>
     <ApplicationRevision>0</ApplicationRevision>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -29,6 +29,7 @@
     <WarningLevel>4</WarningLevel>
     <PlatformTarget>x86</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -39,6 +40,7 @@
     <WarningLevel>4</WarningLevel>
     <PlatformTarget>x86</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
@@ -65,12 +67,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Agg\Agg.csproj">
-      <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
+    <ProjectReference Include="..\agg\Agg.csproj">
+      <Project>{657dbc6d-c3ea-4398-a3fa-ddb73c14f71b}</Project>
       <Name>Agg</Name>
     </ProjectReference>
     <ProjectReference Include="..\VectorMath\VectorMath.csproj">
-      <Project>{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}</Project>
+      <Project>{d3e41b4e-bfbb-44ca-94c8-95c00f754fdd}</Project>
       <Name>VectorMath</Name>
     </ProjectReference>
   </ItemGroup>

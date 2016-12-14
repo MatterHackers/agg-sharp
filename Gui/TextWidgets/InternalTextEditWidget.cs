@@ -116,6 +116,19 @@ namespace MatterHackers.Agg.UI
 
 		private Vector2 insertBarPosition;
 
+		public new bool DoubleBuffer
+		{
+			get
+			{
+				return internalTextWidget.DoubleBuffer;
+			}
+
+			set
+			{
+				internalTextWidget.DoubleBuffer = value;
+			}
+		}
+
 		public Vector2 InsertBarPosition
 		{
 			get { return insertBarPosition; }

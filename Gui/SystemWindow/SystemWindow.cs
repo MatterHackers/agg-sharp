@@ -31,6 +31,7 @@ using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
@@ -99,7 +100,7 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnClosed(EventArgs e)
 		{
-            allOpenSystemWindows.Remove(this);
+			allOpenSystemWindows.Remove(this);
 			base.OnClosed(e);
 			if (Parent != null)
 			{
@@ -107,19 +108,19 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-        static List<SystemWindow> allOpenSystemWindows = new List<SystemWindow>();
-        public static List<SystemWindow> AllOpenSystemWindows
-        {
-            get
-            {
-                return new List<SystemWindow>(allOpenSystemWindows);
-            }
-        }
+		static List<SystemWindow> allOpenSystemWindows = new List<SystemWindow>();
+		public static List<SystemWindow> AllOpenSystemWindows
+		{
+			get
+			{
+				return allOpenSystemWindows.Where(window => window.Parent != null).ToList();
+			}
+		}
 
 		public SystemWindow(double width, double height)
 			: base(width, height, SizeLimitsToSet.None)
 		{
-            ToolTipManager = new ToolTipManager(this);
+			ToolTipManager = new ToolTipManager(this);
 			if (globalSystemWindowCreator == null)
 			{
 				string pluginPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
@@ -131,7 +132,7 @@ namespace MatterHackers.Agg.UI
 				globalSystemWindowCreator = systemWindowCreatorFinder.Plugins[0];
 			}
 
-            allOpenSystemWindows.Add(this);
+			allOpenSystemWindows.Add(this);
 		}
 
 		public override Vector2 MinimumSize
@@ -210,9 +211,9 @@ namespace MatterHackers.Agg.UI
 #endif
 		}
 
-        public void SetHoveredWidget(GuiWidget widgetToShowToolTipFor)
-        {
-            ToolTipManager.SetHoveredWidget(widgetToShowToolTipFor);
-        }
-    }
+		public void SetHoveredWidget(GuiWidget widgetToShowToolTipFor)
+		{
+			ToolTipManager.SetHoveredWidget(widgetToShowToolTipFor);
+		}
+	}
 }

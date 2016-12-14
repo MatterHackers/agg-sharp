@@ -78,14 +78,13 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				testRunner.ClickByName("left");
 				testRunner.Wait(.5);
-				Assert.IsTrue(leftClickCount == 1, "Got left button click");
+				Assert.AreEqual(1, leftClickCount, "Should have one left click count after click");
+
+				Assert.IsTrue(testRunner.NameExists("left"), "Left button should exist");
 
 				SearchRegion rightButtonRegion = testRunner.GetRegionByName("right");
 
-				testRunner.ClickByName("left", searchRegion: rightButtonRegion);
-				testRunner.Wait(.5);
-
-				Assert.IsTrue(leftClickCount == 1, "Did not get left button click");
+				Assert.IsFalse(testRunner.NameExists("left", searchRegion: rightButtonRegion), "Left button should not exist in the right button region");
 
 				return Task.FromResult(0);
 			};
@@ -96,6 +95,7 @@ namespace MatterHackers.Agg.UI.Tests
 			leftButton.Name = "left";
 			leftButton.Click += (sender, e) => { leftClickCount++; };
 			buttonContainer.AddChild(leftButton);
+
 			Button rightButton = new Button("right", 110, 40);
 			rightButton.Name = "right";
 			buttonContainer.AddChild(rightButton);

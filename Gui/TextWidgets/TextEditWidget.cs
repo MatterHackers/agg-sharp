@@ -92,6 +92,19 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public new bool DoubleBuffer
+		{
+			get
+			{
+				return InternalTextEditWidget.DoubleBuffer;
+			}
+
+			set
+			{
+				InternalTextEditWidget.DoubleBuffer = value;
+			}
+		}
+
 		public void ClearUndoHistory()
 		{
 			internalTextEditWidget.ClearUndoHistory();
