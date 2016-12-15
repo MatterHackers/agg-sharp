@@ -214,11 +214,28 @@ namespace MatterHackers.GuiAutomation
 		{
 			SystemWindow systemWindow = SystemWindow.AllOpenSystemWindows[SystemWindow.AllOpenSystemWindows.Count - 1];
 
-			foreach (char character in textToType)
+			// Setup reset event to block until input received
+			var resetEvent = new AutoResetEvent(false);
+
+			UiThread.RunOnIdle(() =>
 			{
-				KeyPressEventArgs aggKeyPressEvent = new KeyPressEventArgs(character);
-				UiThread.RunOnIdle(() => systemWindow.OnKeyPress(aggKeyPressEvent));
-			}
+				if (textToType == "{Enter}")
+				{
+					systemWindow.OnKeyDown(new KeyEventArgs(Keys.Enter));
+					systemWindow.OnKeyUp(new KeyEventArgs(Keys.Enter));
+				}
+				else
+				{
+					foreach (char character in textToType)
+					{
+						systemWindow.OnKeyPress(new KeyPressEventArgs(character));
+					}
+				}
+
+				resetEvent.Set();
+			});
+
+			resetEvent.WaitOne();
 		}
 
 		public void Dispose()
