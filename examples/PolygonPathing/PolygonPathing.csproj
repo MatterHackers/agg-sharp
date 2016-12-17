@@ -108,6 +108,10 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\MatterSlice\MatterSlice.csproj">
+      <Project>{c46ca728-dd2f-4dd1-971a-aaa89d9dff95}</Project>
+      <Name>MatterSlice</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\agg\Agg.csproj">
       <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
       <Name>Agg</Name>
