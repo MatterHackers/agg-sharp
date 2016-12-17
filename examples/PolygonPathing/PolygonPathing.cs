@@ -128,10 +128,15 @@ namespace MatterHackers.PolygonPathing
 						MSClipperLib.IntPoint last = startPos;
 						foreach (var point in pathThatIsInside)
 						{
-							//graphics2D.Line(last.X, last.Y, point.X, point.Y, RGBA_Bytes.Black);
+							graphics2D.Line(last.X, last.Y, point.X, point.Y, RGBA_Bytes.Black);
 							last = point;
 						}
 					}
+				}
+
+				foreach(var crossing in avoid.CrossingPoints)
+				{
+					graphics2D.Circle(crossing.X, crossing.Y, 4, RGBA_Bytes.YellowGreen);
 				}
 
 				avoid.MovePointInsideBoundary(startPos, out startPos);
