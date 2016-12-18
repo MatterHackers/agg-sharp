@@ -110,7 +110,7 @@ namespace MatterHackers.PolygonPathing
 				foreach (var polygon in polygonsToPathAround)
 				{
 					otherPolygons.Add(new List<MSClipperLib.IntPoint>());
-					for(int i=0; i<polygon.Count; i++)
+					for (int i = 0; i < polygon.Count; i++)
 					{
 						otherPolygons[otherPolygons.Count - 1].Add(new MSClipperLib.IntPoint(polygon[i].X, polygon[i].Y));
 					}
@@ -121,22 +121,25 @@ namespace MatterHackers.PolygonPathing
 
 				var avoid = new AvoidCrossingPerimeters(otherPolygons);
 
+				// creat the path
+				List<MSClipperLib.IntPoint> pathThatIsInside = new List<MSClipperLib.IntPoint>();
+				if (avoid.CreatePathInsideBoundary(startPos, mousePos, pathThatIsInside))
 				{
-					List<MSClipperLib.IntPoint> pathThatIsInside = new List<MSClipperLib.IntPoint>();
-					if (avoid.CreatePathInsideBoundary(startPos, mousePos, pathThatIsInside))
+					MSClipperLib.IntPoint last = startPos;
+					foreach (var point in pathThatIsInside)
 					{
-						MSClipperLib.IntPoint last = startPos;
-						foreach (var point in pathThatIsInside)
-						{
-							graphics2D.Line(last.X, last.Y, point.X, point.Y, RGBA_Bytes.Black);
-							last = point;
-						}
+						graphics2D.Line(last.X, last.Y, point.X, point.Y, new RGBA_Bytes(RGBA_Bytes.Black, 128), 2);
+						last = point;
 					}
 				}
 
-				foreach(var crossing in avoid.CrossingPoints)
+				// show all the crossings
+				List<Tuple<int, MSClipperLib.IntPoint>> crossings = new List<Tuple<int, MSClipperLib.IntPoint>>();
+				List<MSClipperLib.IntPoint> poly = avoid.BoundaryPolygons[0];
+				poly.FindCrossingPoints(startPos, mousePos, crossings);
+				foreach (var crossing in crossings)
 				{
-					graphics2D.Circle(crossing.X, crossing.Y, 4, RGBA_Bytes.YellowGreen);
+					graphics2D.Circle(crossing.Item2.X, crossing.Item2.Y, 4, RGBA_Bytes.YellowGreen);
 				}
 
 				avoid.MovePointInsideBoundary(startPos, out startPos);
@@ -179,17 +182,6 @@ namespace MatterHackers.PolygonPathing
 			travelPath.Add(0, 0, ShapePath.FlagsAndCommand.CommandStop);
 
 			graphics2D.Render(new Stroke(travelPath), pathColor);
-
-			foreach (var polygon in polygonsToPathAround)
-			{
-				for (int i = 0; i < polygon.Count; i++)
-				{
-					if (!polygon.IsVertexConcave(i))
-					{
-						graphics2D.Circle(polygon[i].X, polygon[i].Y, 4, RGBA_Bytes.Green);
-					}
-				}
-			}
 		}
 
 		private Polygons CreateTravelPath(Polygons polygonsToPathAround, Polygons travelPolysLine)
