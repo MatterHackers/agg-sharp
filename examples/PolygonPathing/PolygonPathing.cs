@@ -131,26 +131,18 @@ namespace MatterHackers.PolygonPathing
 						graphics2D.Line(last.X, last.Y, point.X, point.Y, new RGBA_Bytes(RGBA_Bytes.Black, 128), 2);
 						last = point;
 					}
+
+					graphics2D.Line(last.X, last.Y, mousePos.X, mousePos.Y, new RGBA_Bytes(RGBA_Bytes.Black, 128), 2);
 				}
 
 				// show all the crossings
 
-				List<Tuple<int, int, MSClipperLib.IntPoint>> polyCrossings = new List<Tuple<int, int, MSClipperLib.IntPoint>>();
-				avoid.BoundaryPolygons.FindCrossingPoints(startPos, mousePos, polyCrossings);
-				polyCrossings.Sort(new MatterHackers.MatterSlice.PolygonsHelper.DirectionSorter(startPos, mousePos));
-
 				int index = 0;
-				foreach (var crossing in polyCrossings)
+				foreach (var crossing in avoid.Crossings)
 				{
-					graphics2D.Circle(crossing.Item3.X, crossing.Item3.Y, 4, new RGBA_Bytes(255 * index / polyCrossings.Count-1, 255 * (polyCrossings.Count - 1 - index) / polyCrossings.Count - 1, 0));
+					graphics2D.Circle(crossing.Item3.X, crossing.Item3.Y, 4, RGBA_Floats.FromHSL((float)index / avoid.Crossings.Count, 1, .5).GetAsRGBA_Bytes());
 					index++;
 				}
-
-				avoid.MovePointInsideBoundary(startPos, out startPos);
-				graphics2D.Circle(startPos.X, startPos.Y, 4, RGBA_Bytes.Magenta);
-
-				avoid.MovePointInsideBoundary(mousePos, out mousePos);
-				graphics2D.Circle(mousePos.X, mousePos.Y, 4, RGBA_Bytes.Yellow);
 			}
 
 			base.OnDraw(graphics2D);
