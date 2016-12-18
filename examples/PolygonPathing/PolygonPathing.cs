@@ -134,12 +134,16 @@ namespace MatterHackers.PolygonPathing
 				}
 
 				// show all the crossings
-				List<Tuple<int, MSClipperLib.IntPoint>> crossings = new List<Tuple<int, MSClipperLib.IntPoint>>();
-				List<MSClipperLib.IntPoint> poly = avoid.BoundaryPolygons[0];
-				poly.FindCrossingPoints(startPos, mousePos, crossings);
-				foreach (var crossing in crossings)
+
+				List<Tuple<int, int, MSClipperLib.IntPoint>> polyCrossings = new List<Tuple<int, int, MSClipperLib.IntPoint>>();
+				avoid.BoundaryPolygons.FindCrossingPoints(startPos, mousePos, polyCrossings);
+				polyCrossings.Sort(new MatterHackers.MatterSlice.PolygonsHelper.DirectionSorter(startPos, mousePos));
+
+				int index = 0;
+				foreach (var crossing in polyCrossings)
 				{
-					graphics2D.Circle(crossing.Item2.X, crossing.Item2.Y, 4, RGBA_Bytes.YellowGreen);
+					graphics2D.Circle(crossing.Item3.X, crossing.Item3.Y, 4, new RGBA_Bytes(255 * index / polyCrossings.Count-1, 255 * (polyCrossings.Count - 1 - index) / polyCrossings.Count - 1, 0));
+					index++;
 				}
 
 				avoid.MovePointInsideBoundary(startPos, out startPos);
