@@ -143,6 +143,8 @@ namespace MatterHackers.PolygonPathing
 					graphics2D.Circle(crossing.Item3.X, crossing.Item3.Y, 4, RGBA_Floats.FromHSL((float)index / avoid.Crossings.Count, 1, .5).GetAsRGBA_Bytes());
 					index++;
 				}
+
+				graphics2D.DrawString($"Length: {avoid.DirectionArround}", 10, Height-30);
 			}
 
 			base.OnDraw(graphics2D);
