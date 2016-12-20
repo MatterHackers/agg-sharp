@@ -179,29 +179,7 @@ namespace MatterHackers.Agg.UI
 
 		public LayoutEngine LayoutEngine { get; protected set; }
 
-		private UnderMouseState underMouseState = UI.UnderMouseState.NotUnderMouse;
-		public UnderMouseState UnderMouseState
-		{
-			get
-			{
-				return underMouseState;
-			}
-			
-			private set
-			{
-				if(value == UnderMouseState.FirstUnderMouse)
-				{
-					// set all our parents to the correct state
-					GuiWidget parent = this.Parent;
-					while(parent != null)
-					{
-						parent.underMouseState = UnderMouseState.UnderMouseNotFirst;
-						parent = parent.Parent;
-					}
-				}
-				underMouseState = value;
-			}
-		}
+		public UnderMouseState UnderMouseState { get; private set; }
 
 		public bool ContainsFirstUnderMouseRecursive()
 		{
@@ -2212,15 +2190,6 @@ namespace MatterHackers.Agg.UI
 
 		private void DoMouseMovedOffWidgetRecursive(MouseEventArgs mouseEvent)
 		{
-			foreach (GuiWidget child in Children)
-			{
-				double childX = mouseEvent.X;
-				double childY = mouseEvent.Y;
-				child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
-				MouseEventArgs childMouseEvent = new MouseEventArgs(mouseEvent, childX, childY);
-				child.DoMouseMovedOffWidgetRecursive(childMouseEvent);
-			}
-
 			bool needToCallLeaveBounds = UnderMouseState != UI.UnderMouseState.NotUnderMouse;
 			bool needToCallLeave = UnderMouseState == UI.UnderMouseState.FirstUnderMouse;
 
@@ -2234,6 +2203,15 @@ namespace MatterHackers.Agg.UI
 			if (needToCallLeaveBounds)
 			{
 				OnMouseLeaveBounds(mouseEvent);
+			}
+
+			foreach (GuiWidget child in Children)
+			{
+				double childX = mouseEvent.X;
+				double childY = mouseEvent.Y;
+				child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
+				MouseEventArgs childMouseEvent = new MouseEventArgs(mouseEvent, childX, childY);
+				child.DoMouseMovedOffWidgetRecursive(childMouseEvent);
 			}
 		}
 
@@ -2267,9 +2245,59 @@ namespace MatterHackers.Agg.UI
 		public virtual void OnMouseDown(MouseEventArgs mouseEvent)
 		{
 			bool focusStateBeforeProcessing = containsFocus;
-			bool mouseDownOnWidget = PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y);
-			if (mouseDownOnWidget)
+			if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
 			{
+				bool willBeInChild = false;
+
+				// figure out what state we will be in when done
+				for (int i = Children.Count - 1; i >= 0; i--)
+				{
+					GuiWidget child = Children[i];
+					double childX = mouseEvent.X;
+					double childY = mouseEvent.Y;
+					child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
+					if (child.Visible
+						&& child.Enabled
+						&& child.CanSelect
+						&& child.PositionWithinLocalBounds(childX, childY))
+					{
+						willBeInChild = true;
+						break;
+					}
+				}
+
+				if (willBeInChild)
+				{
+					if (UnderMouseState == UnderMouseState.FirstUnderMouse)
+					{
+						// set it before we call the function to have the state right to the callee
+						UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
+						OnMouseLeave(mouseEvent);
+					}
+					else if (UnderMouseState == UnderMouseState.NotUnderMouse)
+					{
+						UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
+						OnMouseEnterBounds(mouseEvent);
+					}
+					UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
+				}
+				else // It is in this but not children. It will be the first under mouse
+				{
+					if (UnderMouseState == UnderMouseState.NotUnderMouse)
+					{
+						UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
+						OnMouseEnterBounds(mouseEvent);
+						OnMouseEnter(mouseEvent);
+						SetToolTipText(mouseEvent);
+					}
+					else if (UnderMouseState == UnderMouseState.UnderMouseNotFirst)
+					{
+						UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
+						OnMouseEnter(mouseEvent);
+						SetToolTipText(mouseEvent);
+					}
+				}
+
 				bool childHasAcceptedThisEvent = false;
 				bool childHasTakenFocus = false;
 				for (int i = Children.Count - 1; i >= 0; i--)
@@ -2310,33 +2338,15 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 
-				bool mouseEnteredBounds = UnderMouseState == UI.UnderMouseState.NotUnderMouse;
-
 				if (childHasAcceptedThisEvent)
 				{
 					mouseCapturedState = MouseCapturedState.ChildHasMouseCaptured;
-
-					if (UnderMouseState == UI.UnderMouseState.FirstUnderMouse)
-					{
-						UnderMouseState = UI.UnderMouseState.NotUnderMouse;
-						OnMouseLeave(mouseEvent);
-					}
 				}
 				else
 				{
 					mouseCapturedState = MouseCapturedState.ThisHasMouseCaptured;
-					if (!FirstWidgetUnderMouse)
-					{
-						UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
-						OnMouseEnter(mouseEvent);
-					}
 
 					MouseDown?.Invoke(this, mouseEvent);
-				}
-
-				if (mouseEnteredBounds)
-				{
-					OnMouseEnterBounds(mouseEvent);
 				}
 
 				if (!childHasTakenFocus)
@@ -2349,10 +2359,12 @@ namespace MatterHackers.Agg.UI
 
 				MouseDownInBounds?.Invoke(this, mouseEvent);
 			}
+			// not under the mouse
 			else if (UnderMouseState != UI.UnderMouseState.NotUnderMouse)
 			{
 				Unfocus();
 				mouseCapturedState = MouseCapturedState.NotCaptured;
+				UnderMouseState = UnderMouseState.NotUnderMouse;
 
 				OnMouseLeaveBounds(mouseEvent);
 				if (UnderMouseState == UI.UnderMouseState.FirstUnderMouse)
@@ -2400,10 +2412,10 @@ namespace MatterHackers.Agg.UI
 		}
 
 		internal bool mouseMoveEventHasBeenAcceptedByOther = false;
-
 		public virtual void OnMouseMove(MouseEventArgs mouseEvent)
 		{
 			mouseMoveEventHasBeenAcceptedByOther = false;
+
 			if (mouseCapturedState == MouseCapturedState.NotCaptured)
 			{
 				OnMouseMoveNotCaptured(mouseEvent);
@@ -2531,12 +2543,96 @@ namespace MatterHackers.Agg.UI
 
 		private void OnMouseMoveNotCaptured(MouseEventArgs mouseEvent)
 		{
-			bool mouseWasOutsideBounds = UnderMouseState == UI.UnderMouseState.NotUnderMouse;
-
 			if (Parent != null && Parent.mouseMoveEventHasBeenAcceptedByOther)
 			{
 				mouseMoveEventHasBeenAcceptedByOther = true;
 			}
+
+			if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
+			{
+				if (mouseMoveEventHasBeenAcceptedByOther)
+				{
+					if (UnderMouseState == UnderMouseState.FirstUnderMouse)
+					{
+						// set it before we call the function to have the state right to the callee
+						UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
+						OnMouseLeave(mouseEvent);
+					}
+					else if (UnderMouseState == UnderMouseState.NotUnderMouse)
+					{
+						UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
+						OnMouseEnterBounds(mouseEvent);
+					}
+				}
+				else
+				{
+					bool willBeInChild = false;
+
+					// figure out what state we will be in when done
+					for (int i = Children.Count - 1; i >= 0; i--)
+					{
+						GuiWidget child = Children[i];
+						double childX = mouseEvent.X;
+						double childY = mouseEvent.Y;
+						child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
+						if (child.Visible
+							&& child.Enabled
+							&& child.CanSelect
+							&& child.PositionWithinLocalBounds(childX, childY))
+						{
+							willBeInChild = true;
+							break;
+						}
+					}
+
+					if (willBeInChild)
+					{
+						if (UnderMouseState == UnderMouseState.FirstUnderMouse)
+						{
+							// set it before we call the function to have the state right to the callee
+							UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
+							OnMouseLeave(mouseEvent);
+						}
+						else if (UnderMouseState == UnderMouseState.NotUnderMouse)
+						{
+							UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
+							OnMouseEnterBounds(mouseEvent);
+						}
+						UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
+					}
+					else // It is in this but not children. It will be the first under mouse
+					{
+						if (UnderMouseState == UnderMouseState.NotUnderMouse)
+						{
+							UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
+							OnMouseEnterBounds(mouseEvent);
+							OnMouseEnter(mouseEvent);
+							SetToolTipText(mouseEvent);
+						}
+						else if (UnderMouseState == UnderMouseState.UnderMouseNotFirst)
+						{
+							UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
+							OnMouseEnter(mouseEvent);
+							SetToolTipText(mouseEvent);
+						}
+					}
+				}
+			}
+			else // mouse is not in this bounds
+			{
+				if (UnderMouseState != UI.UnderMouseState.NotUnderMouse)
+				{
+					if (FirstWidgetUnderMouse)
+					{
+						UnderMouseState = UI.UnderMouseState.NotUnderMouse;
+						OnMouseLeave(mouseEvent);
+					}
+					UnderMouseState = UI.UnderMouseState.NotUnderMouse;
+					OnMouseLeaveBounds(mouseEvent);
+				}
+			}
+
+			MouseMove?.Invoke(this, mouseEvent);
 
 			for (int i = Children.Count - 1; i >= 0; i--)
 			{
@@ -2548,66 +2644,11 @@ namespace MatterHackers.Agg.UI
 				if (child.Visible && child.Enabled && child.CanSelect)
 				{
 					child.OnMouseMove(childMouseEvent);
-					if (child.PositionWithinLocalBounds(childX, childY))
+					if (child.UnderMouseState != UnderMouseState.NotUnderMouse)
 					{
 						mouseMoveEventHasBeenAcceptedByOther = true;
 					}
 				}
-			}
-
-			if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
-			{
-				if (mouseMoveEventHasBeenAcceptedByOther)
-				{
-					if (UnderMouseState == UI.UnderMouseState.FirstUnderMouse)
-					{
-						// set it before we call the function to have the state right to the callee
-						UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
-						OnMouseLeave(mouseEvent);
-					}
-					UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
-				}
-				else
-				{
-					if (!FirstWidgetUnderMouse)
-					{
-						if (mouseMoveEventHasBeenAcceptedByOther)
-						{
-							UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
-						}
-						else
-						{
-							UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
-							SetToolTipText(mouseEvent);
-							OnMouseEnter(mouseEvent);
-						}
-					}
-					else // we are the first under mouse
-					{
-						if (mouseMoveEventHasBeenAcceptedByOther)
-						{
-							UnderMouseState = UI.UnderMouseState.UnderMouseNotFirst;
-							OnMouseLeave(mouseEvent);
-						}
-					}
-				}
-
-				if (mouseWasOutsideBounds)
-				{
-					OnMouseEnterBounds(mouseEvent);
-				}
-
-				MouseMove?.Invoke(this, mouseEvent);
-			}
-			else if (UnderMouseState != UI.UnderMouseState.NotUnderMouse)
-			{
-				if (FirstWidgetUnderMouse)
-				{
-					UnderMouseState = UI.UnderMouseState.NotUnderMouse;
-					OnMouseLeave(mouseEvent);
-				}
-				UnderMouseState = UI.UnderMouseState.NotUnderMouse;
-				OnMouseLeaveBounds(mouseEvent);
 			}
 		}
 
