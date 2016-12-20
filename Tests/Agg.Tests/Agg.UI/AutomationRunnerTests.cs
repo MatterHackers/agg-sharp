@@ -64,11 +64,6 @@ namespace MatterHackers.Agg.UI.Tests
 			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
 		}
 
-		[Test, Apartment(ApartmentState.STA), Category("FixNeeded")]
-		public void GetWidgetByNameTestNoRegionMultipleWindow()
-		{
-		}
-
 		[Test, Apartment(ApartmentState.STA)]
 		public async Task GetWidgetByNameTestRegionSingleWindow()
 		{
@@ -101,90 +96,6 @@ namespace MatterHackers.Agg.UI.Tests
 			buttonContainer.AddChild(rightButton);
 
 			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
-		}
-
-		[Test, Category("FixNeeded")]
-		public void ClickByName()
-		{
-			// single system window
-			// no search region specified
-			// multiple system windows
-
-			// constrained search region
-			// no search region specified
-			// multiple system windows
-		}
-		
-		[Test, Category("FixNeeded")]
-		public void DragDropByName()
-		{
-			// single system window
-			// no search region specified
-			// multiple system windows
-
-			// constrained search region
-			// no search region specified
-			// multiple system windows
-		}
-			
-		[Test, Category("FixNeeded")]
-		public void DragByName()
-		{
-			// single system window
-			// no search region specified
-			// multiple system windows
-
-			// constrained search region
-			// no search region specified
-			// multiple system windows
-		}
-			
-		[Test, Category("FixNeeded")]
-		public void DropByName()
-		{
-			// single system window
-			// no search region specified
-			// multiple system windows
-
-			// constrained search region
-			// no search region specified
-			// multiple system windows
-		}
-			
-		[Test, Category("FixNeeded")]
-		public void DoubleClickByName()
-		{
-			// single system window
-			// no search region specified
-			// multiple system windows
-
-			// constrained search region
-			// no search region specified
-			// multiple system windows
-		}
-			
-		[Test, Category("FixNeeded")]
-		public void MoveToByName()
-		{
-			// single system window
-			// no search region specified
-			// multiple system windows
-
-			// constrained search region
-			// no search region specified
-			// multiple system windows
-		}
-			
-		[Test, Category("FixNeeded")]
-		public void NameExists()
-		{
-			// single system window
-			// no search region specified
-			// multiple system windows
-
-			// constrained search region
-			// no search region specified
-			// multiple system windows
 		}
 	}
 }
