@@ -16,7 +16,6 @@
 //          mcseemagg@yahoo.com
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
-using MatterHackers.VectorMath;
 using System.Collections.Generic;
 using MatterHackers.Agg.Transform;
 using MatterHackers.VectorMath;

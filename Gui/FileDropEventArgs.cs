@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using MatterHackers.Agg.Platform;
 
 namespace MatterHackers.Agg.UI
 {
@@ -16,7 +17,7 @@ namespace MatterHackers.Agg.UI
 		{
 			this.X = x;
 			this.Y = y;
-			this.DroppedFiles = FileDialog.ResolveFilePaths(droppedFiles).ToList();
+			this.DroppedFiles = droppedFiles.Select(path => AggContext.FileDialogs.ResolveFilePath(path)).ToList();
 		}
 
 		public bool AcceptDrop { get; set; }

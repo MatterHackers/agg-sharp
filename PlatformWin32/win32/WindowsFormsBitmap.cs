@@ -1,5 +1,3 @@
-using MatterHackers.Agg.PlatformAbstract;
-
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
@@ -42,6 +40,7 @@ using MatterHackers.Agg.PlatformAbstract;
 // THE SOFTWARE.
 using System;
 using System.Drawing;
+using MatterHackers.Agg.Platform;
 
 namespace MatterHackers.Agg.UI
 {
@@ -80,7 +79,7 @@ namespace MatterHackers.Agg.UI
 			RectangleInt intRect = new RectangleInt(0, 0, (int)aggAppWidget.Width, (int)aggAppWidget.Height);
 			aggBitmapAppWidget.bitmapBackBuffer.UpdateHardwareSurface(intRect);
 
-			if (OsInformation.OperatingSystem != OSType.Windows)
+			if (AggContext.OperatingSystem != OSType.Windows)
 			{
 				//displayGraphics.DrawImage(aggBitmapAppWidget.bitmapBackBuffer.windowsBitmap, windowsRect, windowsRect, GraphicsUnit.Pixel);  // around 250 ms for full screen
 				displayGraphics.DrawImageUnscaled(aggBitmapAppWidget.bitmapBackBuffer.windowsBitmap, 0, 0); // around 200 ms for full screnn

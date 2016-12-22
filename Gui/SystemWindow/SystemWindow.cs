@@ -27,17 +27,17 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
+using MatterHackers.Agg.Platform;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
 	public class SystemWindow : GuiWidget
 	{
-		private static SystemWindowCreatorPlugin globalSystemWindowCreator;
+		private static ISystemWindowProvider systemWindowProvider;
 		public EventHandler TitleChanged;
 
 		public AbstractOsMappingWidget AbstractOsMappingWidget { get; set; }
@@ -112,15 +112,13 @@ namespace MatterHackers.Agg.UI
 			: base(width, height, SizeLimitsToSet.None)
 		{
 			ToolTipManager = new ToolTipManager(this);
-			if (globalSystemWindowCreator == null)
+			if (systemWindowProvider == null)
 			{
-				string pluginPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-				PluginFinder<SystemWindowCreatorPlugin> systemWindowCreatorFinder = new PluginFinder<SystemWindowCreatorPlugin>(pluginPath);
-				if (systemWindowCreatorFinder.Plugins.Count != 1)
+				systemWindowProvider = AggContext.CreateInstanceFrom<ISystemWindowProvider>(AggContext.Config.ProviderTypes.SystemWindowProvider);
+				if (systemWindowProvider == null)
 				{
-					throw new Exception(string.Format("Did not find any SystemWindowCreators in Plugin path ({0}.", pluginPath));
+					throw new Exception(string.Format("Unable to load the SystemWindow provider"));
 				}
-				globalSystemWindowCreator = systemWindowCreatorFinder.Plugins[0];
 			}
 
 			allOpenSystemWindows.Add(this);
@@ -179,19 +177,19 @@ namespace MatterHackers.Agg.UI
 			{
 				throw new Exception("To be a system window you cannot be a child of another widget.");
 			}
-			globalSystemWindowCreator.ShowSystemWindow(this);
+			systemWindowProvider.ShowSystemWindow(this);
 		}
 
 		public Point2D DesktopPosition
 		{
 			get
 			{
-				return globalSystemWindowCreator.GetDesktopPosition(this);
+				return systemWindowProvider.GetDesktopPosition(this);
 			}
 
 			set
 			{
-				globalSystemWindowCreator.SetDesktopPosition(this, value);
+				systemWindowProvider.SetDesktopPosition(this, value);
 			}
 		}
 

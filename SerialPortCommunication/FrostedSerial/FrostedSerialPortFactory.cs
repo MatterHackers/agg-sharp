@@ -27,13 +27,13 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg;
-using MatterHackers.Agg.PlatformAbstract;
-using Microsoft.Win32.SafeHandles;
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
+using MatterHackers.Agg;
+using MatterHackers.Agg.Platform;
+using Microsoft.Win32.SafeHandles;
 
 namespace MatterHackers.SerialPortCommunication.FrostedSerial
 {
@@ -96,7 +96,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 		//Windows-only function
 		public virtual bool SerialPortAlreadyOpen(string portName)
 		{
-			if (OsInformation.OperatingSystem == OSType.Windows)
+			if (AggContext.OperatingSystem == OSType.Windows)
 			{
 				const int dwFlagsAndAttributes = 0x40000000;
 				const int GENERIC_READ = unchecked((int)0x80000000);

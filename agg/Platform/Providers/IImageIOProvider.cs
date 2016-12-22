@@ -27,20 +27,22 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.VectorMath;
+using MatterHackers.Agg.Image;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
-namespace MatterHackers.Agg.UI
+namespace MatterHackers.Agg.Platform
 {
-	public abstract class SystemWindowCreatorPlugin
+	public interface IImageIOProvider
 	{
-		public abstract void ShowSystemWindow(SystemWindow systemWindow);
+		bool LoadImageData(Stream stream, ImageSequence destImageSequence);
 
-		public abstract Point2D GetDesktopPosition(SystemWindow systemWindow);
+		bool LoadImageData(string filename, ImageBuffer destImage);
 
-		public abstract void SetDesktopPosition(SystemWindow systemWindow, Point2D position);
+		bool LoadImageData(Stream stream, ImageBuffer destImage);
+
+		bool LoadImageData(string filename, ImageBufferFloat destImage);
+
+		bool SaveImageData(string filename, IImageByte sourceImage);
 	}
 }

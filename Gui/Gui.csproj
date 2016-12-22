@@ -164,16 +164,9 @@
     <Compile Include="CheckBox\CheckBoxViewText.cs" />
     <Compile Include="Clipboard\Clipboard.cs" />
     <Compile Include="DrawEventArgs.cs" />
-    <Compile Include="FileDialogs\AutomationFileDialogCreator.cs" />
-    <Compile Include="FileDialogs\FileDialogCreator.cs" />
     <Compile Include="InvalidateEventArgs.cs" />
     <Compile Include="DefaultViewFactory.cs" />
     <Compile Include="DiagnosticsWidget.cs" />
-    <Compile Include="FileDialogs\FileDialog.cs" />
-    <Compile Include="FileDialogs\FileDialogParams.cs" />
-    <Compile Include="FileDialogs\OpenFileDialogPrams.cs" />
-    <Compile Include="FileDialogs\SaveFileDialogParams.cs" />
-    <Compile Include="FileDialogs\SelectFolderDialogParams.cs" />
     <Compile Include="FileDropEventArgs.cs" />
     <Compile Include="FlowLayoutWidget.cs" />
     <Compile Include="GroupBox.cs" />
@@ -208,7 +201,7 @@
     <Compile Include="ImageSequenceWidget.cs" />
     <Compile Include="StringEventArgs.cs" />
     <Compile Include="SystemWindow\AbstractOsMappingWidget.cs" />
-    <Compile Include="SystemWindow\SystemWindowCreatorPlugin.cs" />
+    <Compile Include="SystemWindow\ISystemWindowProvider.cs" />
     <Compile Include="SystemWindow\ToolTipManager.cs" />
     <Compile Include="TextWidgets\InternalNumberEdit.cs" />
     <Compile Include="TextWidgets\NumberEdit.cs" />
@@ -272,6 +265,8 @@
       <Name>Agg</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Platform\" />
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <ItemGroup />
 </Project>

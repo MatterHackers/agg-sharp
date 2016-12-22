@@ -27,58 +27,20 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using MatterHackers.Agg.PlatformAbstract;
 using MatterHackers.Agg.UI;
+using System;
+using MatterHackers.Agg.Platform;
 
 namespace MatterHackers.Agg
 {
-	public class SystemWindowCreator_WindowsForms : SystemWindowCreatorPlugin
+	public class WinformsSystemWindowProvider : ISystemWindowProvider
 	{
-		private IGuiFactory factoryToUse = null;
-		private AbstractOsMappingWidget firstOsMappingWindow;
-		private Point2D InitialDesktopPosition = new Point2D();
 		private bool pendingSetInitialDesktopPosition = false;
+		private Point2D InitialDesktopPosition = new Point2D();
 
-		public override Point2D GetDesktopPosition(SystemWindow systemWindow)
-		{
-			if (systemWindow.AbstractOsMappingWidget != null)
-			{
-				return systemWindow.AbstractOsMappingWidget.DesktopPosition;
-			}
+		IGuiFactory factoryToUse = null;
 
-			if (pendingSetInitialDesktopPosition)
-			{
-				return InitialDesktopPosition;
-			}
-
-			return new Point2D();
-		}
-
-		public override void SetDesktopPosition(SystemWindow systemWindow, Point2D position)
-		{
-			if (systemWindow.AbstractOsMappingWidget != null)
-			{
-				// Make sure the window is on screen (this logic should improve over time)
-				position.x = Math.Max(0, position.x);
-				position.y = Math.Max(0, position.y);
-
-				// If it's mac make sure we are not completely under the menu bar.
-				if (OsInformation.OperatingSystem == OSType.Mac)
-				{
-					position.y = Math.Max(5, position.y);
-				}
-
-				systemWindow.AbstractOsMappingWidget.DesktopPosition = position;
-			}
-			else
-			{
-				pendingSetInitialDesktopPosition = true;
-				InitialDesktopPosition = position;
-			}
-		}
-
-		public override void ShowSystemWindow(SystemWindow systemWindow)
+		public void ShowSystemWindow(SystemWindow systemWindow)
 		{
 			bool firstWindow = false;
 			if (factoryToUse == null)
@@ -100,17 +62,7 @@ namespace MatterHackers.Agg
 				};
 			}
 
-			AbstractOsMappingWidget osMappingWindow = null;
-			if (firstWindow || !SystemWindow.ShareSingleOsWindow)
-			{
-				osMappingWindow = factoryToUse.CreateSurface(systemWindow);
-				firstOsMappingWindow = osMappingWindow;
-			}
-			else
-			{
-				osMappingWindow = new SingleWindowMappingWidget(systemWindow);
-				firstOsMappingWindow.AddChild(osMappingWindow);
-			}
+			AbstractOsMappingWidget osMappingWindow = factoryToUse.CreateSurface(systemWindow);
 
 			osMappingWindow.Caption = systemWindow.Title;
 			osMappingWindow.AddChild(systemWindow);
@@ -133,7 +85,7 @@ namespace MatterHackers.Agg
 			{
 				osMappingWindow.Run();
 			}
-			else if (!SystemWindow.ShareSingleOsWindow)
+			else
 			{
 				if (systemWindow.IsModal)
 				{
@@ -147,37 +99,48 @@ namespace MatterHackers.Agg
 			}
 		}
 
+		public Point2D GetDesktopPosition(SystemWindow systemWindow)
+		{
+			if (systemWindow.AbstractOsMappingWidget != null)
+			{
+				return systemWindow.AbstractOsMappingWidget.DesktopPosition;
+			}
+
+			if(pendingSetInitialDesktopPosition)
+			{
+				return InitialDesktopPosition;
+			}
+
+			return new Point2D();
+		}
+
+		public void SetDesktopPosition(SystemWindow systemWindow, Point2D position)
+		{
+			if (systemWindow.AbstractOsMappingWidget != null)
+			{
+				// Make sure the window is on screen (this logic should improve over time)
+				position.x = Math.Max(0, position.x);
+				position.y = Math.Max(0, position.y);
+
+				// If it's mac make sure we are not completely under the menu bar.
+				if (AggContext.OperatingSystem == OSType.Mac)
+				{
+					position.y = Math.Max(5, position.y);
+				}
+
+				systemWindow.AbstractOsMappingWidget.DesktopPosition = position;
+			}
+			else
+			{
+				pendingSetInitialDesktopPosition = true;
+				InitialDesktopPosition = position;
+			}
+		}
+
 		private void TitelChangedEventHandler(object sender, EventArgs e)
 		{
 			SystemWindow systemWindow = ((SystemWindow)sender);
 			systemWindow.AbstractOsMappingWidget.Caption = systemWindow.Title;
-		}
-	}
-
-	public class SingleWindowMappingWidget : AbstractOsMappingWidget
-	{
-		public SingleWindowMappingWidget(SystemWindow childSystemWindow)
-			: base(childSystemWindow)
-		{
-			AnchorAll();
-		}
-
-		public override string Caption { get; set; }
-
-		public override Point2D DesktopPosition { get; set; }
-
-		public override int TitleBarHeight { get; }
-
-		public override void Run()
-		{
-		}
-
-		public override void Show()
-		{
-		}
-
-		public override void ShowModal()
-		{
 		}
 	}
 }

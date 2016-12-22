@@ -27,14 +27,15 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
+using System.Diagnostics;
+using System.IO;
 using MatterHackers.Agg;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RenderOpenGl;
 using MatterHackers.VectorMath;
-using System;
-using System.Diagnostics;
-using System.IO;
 
 namespace MatterHackers.MeshVisualizer
 {
@@ -141,7 +142,7 @@ namespace MatterHackers.MeshVisualizer
 
 		private void DoOpenFileButton_ButtonClick()
 		{
-			FileDialog.OpenFileDialog(
+			AggContext.FileDialogs.OpenFileDialog(
 				new OpenFileDialogParams("3D Mesh Files|*.stl;*.amf"),
 				(openParams) =>
 				{

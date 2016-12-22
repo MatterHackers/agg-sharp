@@ -27,50 +27,20 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.Image;
+using MatterHackers.VectorMath;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
-namespace MatterHackers.Agg.PlatformAbstract
+namespace MatterHackers.Agg.UI
 {
-	public class ImageIOPlugin
+	public interface ISystemWindowProvider
 	{
-		public virtual bool LoadImageData(String pathToGifFile, ImageSequence destImageSequence)
-		{
-			if (File.Exists(pathToGifFile))
-			{
-				using (Stream stream = new StreamReader(pathToGifFile).BaseStream)
-				{
-					return LoadImageData(stream, destImageSequence);
-				}
-			}
+		void ShowSystemWindow(SystemWindow systemWindow);
 
-			return false;
-		}
+		Point2D GetDesktopPosition(SystemWindow systemWindow);
 
-		public virtual bool LoadImageData(Stream stream, ImageSequence destImageSequence)
-		{
-			return false;
-		}
-
-		public virtual bool LoadImageData(String filename, ImageBuffer destImage)
-		{
-			throw new Exception("You must implement this in an inherited class.");
-		}
-
-		public virtual bool LoadImageData(Stream stream, ImageBuffer destImage)
-		{
-			return false;
-		}
-
-		public virtual bool LoadImageData(String filename, ImageBufferFloat destImage)
-		{
-			throw new Exception("You must implement this in an inherited class.");
-		}
-
-		public virtual bool SaveImageData(String filename, IImageByte sourceImage)
-		{
-			throw new Exception("You must implement this in an inherited class.");
-		}
+		void SetDesktopPosition(SystemWindow systemWindow, Point2D position);
 	}
 }
