@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MatterHackers.Agg.UI
+namespace MatterHackers.Agg.Platform
 {
 	public class SaveFileDialogParams : FileDialogParams
 	{
@@ -13,7 +13,9 @@ namespace MatterHackers.Agg.UI
 		{
 			if (InitialDirectory == "")
 			{
-				InitialDirectory = FileDialog.LastDirectoryUsed;
+				System.Diagnostics.Debugger.Break();
+				// TODO: ************** MUST IMPLEMENT ****************
+				//			InitialDirectory = Configuration.FileDialogs.LastDirectoryUsed;
 			}
 		}
 	}

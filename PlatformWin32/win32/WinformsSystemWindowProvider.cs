@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2017, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,19 +28,18 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 
 namespace MatterHackers.Agg
 {
-	public class SystemWindowCreator_WindowsForms : SystemWindowCreatorPlugin
+	public class WinformsSystemWindowProvider : ISystemWindowProvider
 	{
 		private IGuiFactory factoryToUse = null;
-		private AbstractOsMappingWidget firstOsMappingWindow;
 		private Point2D InitialDesktopPosition = new Point2D();
 		private bool pendingSetInitialDesktopPosition = false;
 
-		public override Point2D GetDesktopPosition(SystemWindow systemWindow)
+		public Point2D GetDesktopPosition(SystemWindow systemWindow)
 		{
 			if (systemWindow.AbstractOsMappingWidget != null)
 			{
@@ -55,7 +54,7 @@ namespace MatterHackers.Agg
 			return new Point2D();
 		}
 
-		public override void SetDesktopPosition(SystemWindow systemWindow, Point2D position)
+		public void SetDesktopPosition(SystemWindow systemWindow, Point2D position)
 		{
 			if (systemWindow.AbstractOsMappingWidget != null)
 			{
@@ -66,14 +65,14 @@ namespace MatterHackers.Agg
 				// Auto-center if set to (-1,-1)
 				if (position == new Point2D(-1, -1))
 				{
-					Point2D desktopSize = OsInformation.DesktopSize;
+					Point2D desktopSize = AggContext.DesktopSize;
 					position = new Point2D(
 						(desktopSize.x - systemWindow.Width) / 2, 
 						(desktopSize.y - systemWindow.Height - systemWindow.AbstractOsMappingWidget.TitleBarHeight) / 2);
 				}
 
 				// If it's mac make sure we are not completely under the menu bar.
-				if (OsInformation.OperatingSystem == OSType.Mac)
+				if (AggContext.OperatingSystem == OSType.Mac)
 				{
 					position.y = Math.Max(5, position.y);
 				}
@@ -87,7 +86,7 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public override void ShowSystemWindow(SystemWindow systemWindow)
+		public void ShowSystemWindow(SystemWindow systemWindow)
 		{
 			bool firstWindow = false;
 			if (factoryToUse == null)
@@ -109,17 +108,7 @@ namespace MatterHackers.Agg
 				};
 			}
 
-			AbstractOsMappingWidget osMappingWindow = null;
-			if (firstWindow || !SystemWindow.ShareSingleOsWindow)
-			{
-				osMappingWindow = factoryToUse.CreateSurface(systemWindow);
-				firstOsMappingWindow = osMappingWindow;
-			}
-			else
-			{
-				osMappingWindow = new SingleWindowMappingWidget(systemWindow);
-				firstOsMappingWindow.AddChild(osMappingWindow);
-			}
+			AbstractOsMappingWidget osMappingWindow = factoryToUse.CreateSurface(systemWindow);
 
 			osMappingWindow.Caption = systemWindow.Title;
 			osMappingWindow.AddChild(systemWindow);

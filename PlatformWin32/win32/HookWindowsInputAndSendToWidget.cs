@@ -31,7 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
-using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.Agg.Platform;
 
 namespace MatterHackers.Agg.UI
 {
@@ -122,14 +122,14 @@ namespace MatterHackers.Agg.UI
 
 		private void controlToHook_KeyDown(object sender, System.Windows.Forms.KeyEventArgs windowsKeyEvent)
 		{
-			if (OsInformation.OperatingSystem == OSType.Mac
+			if (AggContext.OperatingSystem == OSType.Mac
 			   && windowsKeyEvent.KeyCode == System.Windows.Forms.Keys.Cancel)
 			{
 				windowsKeyEvent = new System.Windows.Forms.KeyEventArgs(System.Windows.Forms.Keys.Enter | windowsKeyEvent.Modifiers);
 			}
 
 			KeyEventArgs aggKeyEvent;
-			if (OsInformation.OperatingSystem == OSType.Mac
+			if (AggContext.OperatingSystem == OSType.Mac
 				&& (windowsKeyEvent.KeyData & System.Windows.Forms.Keys.Alt) == System.Windows.Forms.Keys.Alt)
 			{
 				aggKeyEvent = new KeyEventArgs((Keys)(System.Windows.Forms.Keys.Control | (windowsKeyEvent.KeyData & ~System.Windows.Forms.Keys.Alt)));

@@ -36,7 +36,7 @@ using System.Linq;
 using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.Agg.Platform;
 using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
@@ -159,7 +159,7 @@ namespace MatterHackers.DataConverters3D
 								}
 								else
 								{
-									ImageIO.LoadImageData(ImageStream, diffuseTexture);
+									AggContext.ImageIO.LoadImageData(ImageStream, diffuseTexture);
 								}
 							}
 

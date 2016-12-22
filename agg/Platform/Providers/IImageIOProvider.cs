@@ -27,67 +27,22 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.Agg.Image;
 using System;
 using System.IO;
 
-namespace MatterHackers.Agg.PlatformAbstract
+namespace MatterHackers.Agg.Platform
 {
-	public enum OSType { Unknown, Windows, Mac, X11, Other, Android };
-
-	public class OsInformation
+	public interface IImageIOProvider
 	{
-		private static OSType operatingSystem = OSType.Unknown;
-		private static Point2D desktopSize = new Point2D();
+		bool LoadImageData(Stream stream, ImageSequence destImageSequence);
 
-		public static OSType OperatingSystem
-		{
-			get
-			{
-				if (operatingSystem == OSType.Unknown)
-				{
-					var osInformationPlugins = PluginFinder.CreateInstancesOf<OsInformationPlugin>();
-					if (osInformationPlugins.Count != 1)
-					{
-						throw new Exception("Did not find any OsInformationPlugins");
-					}
+		bool LoadImageData(string filename, ImageBuffer destImage);
 
-					operatingSystem = osInformationPlugins[0].GetOSType();
-				}
+		bool LoadImageData(Stream stream, ImageBuffer destImage);
 
-				return operatingSystem;
-			}
-		}
+		bool LoadImageData(string filename, ImageBufferFloat destImage);
 
-		public static Point2D DesktopSize
-		{
-			get
-			{
-				if (desktopSize.GetLength() == 0)
-				{
-					var osInformationPlugins = PluginFinder.CreateInstancesOf<OsInformationPlugin>();
-					if (osInformationPlugins.Count != 1)
-					{
-						throw new Exception("Did not find any OsInformationPlugins");
-					}
-
-					desktopSize = osInformationPlugins[0].GetDesktopSize();
-				}
-
-				return desktopSize;
-			}
-		}
-	}
-
-	public class OsInformationPlugin
-	{
-		public virtual Point2D GetDesktopSize()
-		{
-			return new Point2D();
-		}
-
-		public virtual OSType GetOSType()
-		{
-			throw new Exception("You must implement this in an inherited class.");
-		}
+		bool SaveImageData(string filename, IImageByte sourceImage);
 	}
 }

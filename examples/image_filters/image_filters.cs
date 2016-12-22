@@ -33,7 +33,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Diagnostics;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
@@ -148,7 +148,7 @@ namespace MatterHackers.Agg
 #endif
 
 			string img_name = "spheres.bmp";
-			if (!ImageIO.LoadImageData(img_name, tempImageToLoadInto))
+			if (!AggContext.ImageIO.LoadImageData(img_name, tempImageToLoadInto))
 			{
 				string buf;
 				buf = "File not found: "

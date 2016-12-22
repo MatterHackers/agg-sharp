@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MatterHackers.Agg.UI
+namespace MatterHackers.Agg.Platform
 {
 	public abstract class FileDialogParams
 	{

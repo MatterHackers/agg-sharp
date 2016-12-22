@@ -1,18 +1,18 @@
 ﻿using System;
 
-namespace MatterHackers.Agg.UI
+namespace MatterHackers.Agg.Platform
 {
 	/// <summary>
 	/// The FileDialog provider interface
 	/// </summary>
-	public abstract class FileDialogCreator
+	public interface IFileDialogProvider
 	{
-		public abstract bool OpenFileDialog(OpenFileDialogParams openParams, Action<OpenFileDialogParams> callback);
+		bool OpenFileDialog(OpenFileDialogParams openParams, Action<OpenFileDialogParams> callback);
 
-		public abstract bool SelectFolderDialog(SelectFolderDialogParams folderParams, Action<SelectFolderDialogParams> callback);
+		bool SelectFolderDialog(SelectFolderDialogParams folderParams, Action<SelectFolderDialogParams> callback);
 
-		public abstract bool SaveFileDialog(SaveFileDialogParams saveParams, Action<SaveFileDialogParams> callback);
+		bool SaveFileDialog(SaveFileDialogParams saveParams, Action<SaveFileDialogParams> callback);
 
-		public abstract string ResolveFilePath(string path);
+		string ResolveFilePath(string path);
 	}
 }

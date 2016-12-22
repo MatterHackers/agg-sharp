@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MatterHackers.Agg.UI
+namespace MatterHackers.Agg.Platform
 {
 	public class OpenFileDialogParams : FileDialogParams
 	{
@@ -12,10 +12,6 @@ namespace MatterHackers.Agg.UI
 		public OpenFileDialogParams(string fileTypeFilter, string initialDirectory = "", bool multiSelect = false, string title = "", string actionButtonLabel = "")
 			: base(fileTypeFilter, initialDirectory, title, actionButtonLabel)
 		{
-			if (InitialDirectory == "")
-			{
-				InitialDirectory = FileDialog.LastDirectoryUsed;
-			}
 			this.MultiSelect = multiSelect;
 		}
 	}

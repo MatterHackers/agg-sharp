@@ -32,7 +32,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using MatterHackers.Agg;
-using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.Agg.Platform;
 
 namespace MatterHackers.Localizations
 {
@@ -55,7 +55,7 @@ namespace MatterHackers.Localizations
 			string translationFilePath = Path.Combine(pathToTranslationsFolder, TwoLetterIsoLanguageName, "Translation.txt");
 
 			// In English no translation file exists and no dictionary will be initialized or loaded
-			if (StaticData.Instance.FileExists(translationFilePath))
+			if (AggContext.StaticData.FileExists(translationFilePath))
 			{
 				translationDictionary = ReadIntoDictionary(translationFilePath);
 			}
@@ -90,7 +90,7 @@ namespace MatterHackers.Localizations
 		{
 			var dictionary = new Dictionary<string, string>();
 
-			string[] lines = StaticData.Instance.ReadAllLines(pathAndFilename);
+			string[] lines = AggContext.StaticData.ReadAllLines(pathAndFilename);
 			bool lookingForEnglish = true;
 			string englishString = "";
 			for (int i = 0; i < lines.Length; i++)
@@ -159,7 +159,7 @@ namespace MatterHackers.Localizations
 		public AutoGeneratingTranslationMap(string pathToTranslationsFolder, string twoLetterIsoLanguageName = "") : base(pathToTranslationsFolder, twoLetterIsoLanguageName)
 		{
 			string relativePath = Path.Combine(pathToTranslationsFolder, "Master.txt");
-			this.masterFilePath = StaticData.Instance.MapPath(relativePath);
+			this.masterFilePath = AggContext.StaticData.MapPath(relativePath);
 
 			// Override the default logic and load master.txt in English debug builds
 			if (this.TwoLetterIsoLanguageName == "en")
@@ -195,7 +195,7 @@ namespace MatterHackers.Localizations
 		{
 			// We only ship release and this could cause a write to the ProgramFiles directory which is not allowed.
 			// So we only write translation text while in debug (another solution in the future could be implemented). LBB
-			if (OsInformation.OperatingSystem == OSType.Windows)
+			if (AggContext.OperatingSystem == OSType.Windows)
 			{
 				// TODO: make sure we don't throw an assertion when running from the ProgramFiles directory.
 				// Don't do saving when we are.
