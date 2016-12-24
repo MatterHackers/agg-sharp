@@ -40,6 +40,9 @@ namespace MatterHackers.PolygonPathing
 {
 	using Agg;
 	using MatterSlice;
+	using MsIntPoint = MSClipperLib.IntPoint;
+	using MsPolygon = List<MSClipperLib.IntPoint>;
+	using MsPolygons = List<List<MSClipperLib.IntPoint>>;
 	using Polygon = List<IntPoint>;
 	using Polygons = List<List<IntPoint>>;
 
@@ -57,6 +60,8 @@ namespace MatterHackers.PolygonPathing
 		};
 
 		private Polygons polygonsToPathAround;
+
+		private double scale = 1;
 
 		private RadioButtonGroup shapeTypeRadioGroup = new RadioButtonGroup(new Vector2(5, 5), new Vector2(205, 110))
 		{
@@ -106,26 +111,18 @@ namespace MatterHackers.PolygonPathing
 
 			if (polygonsToPathAround?.Count > 0)
 			{
-				var otherPolygons = new List<List<MSClipperLib.IntPoint>>();
-				foreach (var polygon in polygonsToPathAround)
-				{
-					otherPolygons.Add(new List<MSClipperLib.IntPoint>());
-					for (int i = 0; i < polygon.Count; i++)
-					{
-						otherPolygons[otherPolygons.Count - 1].Add(new MSClipperLib.IntPoint(polygon[i].X, polygon[i].Y));
-					}
-				}
+				var otherPolygons = PolygonsToMsPolygons(polygonsToPathAround);
 
-				MSClipperLib.IntPoint startPos = new MSClipperLib.IntPoint(lineStart.x, lineStart.y);
-				MSClipperLib.IntPoint mousePos = new MSClipperLib.IntPoint(mousePosition.x, mousePosition.y);
+				MsIntPoint startPos = new MsIntPoint(lineStart.x, lineStart.y);
+				MsIntPoint mousePos = new MsIntPoint(mousePosition.x, mousePosition.y);
 
 				var avoid = new AvoidCrossingPerimeters(otherPolygons);
 
 				// creat the path
-				List<MSClipperLib.IntPoint> pathThatIsInside = new List<MSClipperLib.IntPoint>();
+				MsPolygon pathThatIsInside = new MsPolygon();
 				if (avoid.CreatePathInsideBoundary(startPos, mousePos, pathThatIsInside))
 				{
-					MSClipperLib.IntPoint last = startPos;
+					MsIntPoint last = startPos;
 					foreach (var point in pathThatIsInside)
 					{
 						graphics2D.Line(last.X, last.Y, point.X, point.Y, new RGBA_Bytes(RGBA_Bytes.Black, 128), 2);
@@ -144,7 +141,7 @@ namespace MatterHackers.PolygonPathing
 					index++;
 				}
 
-				graphics2D.DrawString($"Length: {avoid.DirectionArround}", 10, Height-30);
+				graphics2D.DrawString($"Length: {avoid.DirectionArround}", 10, Height - 30);
 			}
 
 			base.OnDraw(graphics2D);
@@ -169,6 +166,41 @@ namespace MatterHackers.PolygonPathing
 				Invalidate();
 			}
 			base.OnMouseMove(mouseEvent);
+		}
+
+		private static Polygons MsPolygonsToPolygons(MsPolygons inputPolygons)
+		{
+			Polygons outputPolygons = new Polygons();
+			foreach (var polygon in inputPolygons)
+			{
+				outputPolygons.Add(new Polygon());
+				for (int i = 0; i < polygon.Count; i++)
+				{
+					outputPolygons[outputPolygons.Count - 1].Add(new IntPoint(polygon[i].X, polygon[i].Y));
+				}
+			}
+
+			return outputPolygons;
+		}
+
+		private static MsPolygons PolygonsToMsPolygons(Polygons inputPolygons)
+		{
+			MsPolygons outputPolygons = new MsPolygons();
+			foreach (var polygon in inputPolygons)
+			{
+				outputPolygons.Add(new MsPolygon());
+				for (int i = 0; i < polygon.Count; i++)
+				{
+					outputPolygons[outputPolygons.Count - 1].Add(new MsIntPoint(polygon[i].X, polygon[i].Y));
+				}
+			}
+
+			return outputPolygons;
+		}
+
+		private string CircelHolesString()
+		{
+			return "x: 109500, y: 119500, z: 0, width: 0,x: 90500, y: 119500, z: 0, width: 0,x: 90500, y: 80500, z: 0, width: 0,x: 109500, y: 80500, z: 0, width: 0,| x:97359, y: 104058, z: 0, width: 0,x: 95574, y: 105237, z: 0, width: 0,x: 94268, y: 106932, z: 0, width: 0,x: 93582, y: 108929, z: 0, width: 0,x: 93582, y: 111071, z: 0, width: 0,x: 94278, y: 113096, z: 0, width: 0,x: 95594, y: 114787, z: 0, width: 0,x: 97386, y: 115958, z: 0, width: 0,x: 99463, y: 116484, z: 0, width: 0,x: 101596, y: 116307, z: 0, width: 0,x: 103558, y: 115447, z: 0, width: 0,x: 105134, y: 113996, z: 0, width: 0,x: 106154, y: 112112, z: 0, width: 0,x: 106502, y: 109969, z: 0, width: 0,x: 106139, y: 107858, z: 0, width: 0,x: 105110, y: 105981, z: 0, width: 0,x: 103530, y: 104540, z: 0, width: 0,x: 101595, y: 103691, z: 0, width: 0,x: 99432, y: 103522, z: 0, width: 0,| x:97359, y: 84059, z: 0, width: 0,x: 95574, y: 85238, z: 0, width: 0,x: 94268, y: 86933, z: 0, width: 0,x: 93582, y: 88930, z: 0, width: 0,x: 93582, y: 91072, z: 0, width: 0,x: 94278, y: 93097, z: 0, width: 0,x: 95594, y: 94788, z: 0, width: 0,x: 97386, y: 95959, z: 0, width: 0,x: 99463, y: 96485, z: 0, width: 0,x: 101597, y: 96308, z: 0, width: 0,x: 103558, y: 95447, z: 0, width: 0,x: 105134, y: 93997, z: 0, width: 0,x: 106154, y: 92113, z: 0, width: 0,x: 106502, y: 89969, z: 0, width: 0,x: 106139, y: 87859, z: 0, width: 0,x: 105111, y: 85982, z: 0, width: 0,x: 103530, y: 84540, z: 0, width: 0,x: 101595, y: 83692, z: 0, width: 0,x: 99432, y: 83523, z: 0, width: 0,|";
 		}
 
 		private void CreateAndRenderPathing(Graphics2D graphics2D, Polygons polygonsToPathAround, Polygons travelPolysLine)
@@ -271,6 +303,8 @@ namespace MatterHackers.PolygonPathing
 		private void RenderPolygonToPathAgainst(Graphics2D graphics2D)
 		{
 			IVertexSource pathToUse = null;
+
+			scale = 1;
 			switch (shapeTypeRadioGroup.SelectedIndex)
 			{
 				case 0:// simple polygon map
@@ -324,23 +358,10 @@ namespace MatterHackers.PolygonPathing
 						// circle holes
 						PathStorage ps1 = new PathStorage();
 
-						double x = 0;
-						double y = 0;
-						ps1.MoveTo(x + 140, y + 145);
-						ps1.LineTo(x + 225, y + 44);
-						ps1.LineTo(x + 296, y + 219);
-						ps1.ClosePolygon();
+						MsPolygons polys = MatterHackers.MatterSlice.PolygonsHelper.CreateFromString(CircelHolesString());
+						scale = 500;
 
-						ps1.LineTo(x + 226, y + 289);
-						ps1.LineTo(x + 82, y + 292);
-						ps1.ClosePolygon();
-
-						ps1.MoveTo(x + 220 - 50, y + 222);
-						ps1.LineTo(x + 265 - 50, y + 331);
-						ps1.LineTo(x + 363 - 50, y + 249);
-						ps1.ClosePolygon();
-
-						pathToUse = ps1;
+						pathToUse = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MsPolygonsToPolygons(polys), 100), Affine.NewTranslation(-300,-500));
 					}
 					break;
 
