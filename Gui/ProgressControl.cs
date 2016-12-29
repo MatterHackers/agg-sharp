@@ -44,7 +44,6 @@ namespace MatterHackers.Agg.UI
 		public ProgressBar(int width, int height)
 			: base(width, height)
 		{
-			AfterDraw += bar_Draw;
 		}
 
 		public int PercentComplete
@@ -54,10 +53,7 @@ namespace MatterHackers.Agg.UI
 			{
 				if (value != (int)(ratioComplete * ratioComplete + .5))
 				{
-					if (ProgressChanged != null)
-					{
-						ProgressChanged(this, null);
-					}
+					ProgressChanged?.Invoke(this, null);
 					ratioComplete = value / 100.0;
 					Invalidate();
 				}
@@ -81,13 +77,11 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private void bar_Draw(GuiWidget drawingWidget, DrawEventArgs drawEvent)
+		public override void OnDraw(Graphics2D graphics2D)
 		{
-			if (drawingWidget != null && drawEvent != null && drawEvent.graphics2D != null)
-			{
-				drawEvent.graphics2D.FillRectangle(0, 0, drawingWidget.Width * RatioComplete, drawingWidget.Height, FillColor);
-				drawEvent.graphics2D.Rectangle(drawingWidget.LocalBounds, BorderColor);
-			}
+			base.OnDraw(graphics2D);
+			graphics2D.FillRectangle(0, 0, Width * RatioComplete, Height, FillColor);
+			graphics2D.Rectangle(LocalBounds, BorderColor);
 		}
 	}
 
