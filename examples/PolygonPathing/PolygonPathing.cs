@@ -143,6 +143,17 @@ namespace MatterHackers.PolygonPathing
 					graphics2D.Circle(crossing.Item3.X, crossing.Item3.Y, 4, RGBA_Floats.FromHSL((float)index / avoid.Crossings.Count, 1, .5).GetAsRGBA_Bytes());
 					index++;
 				}
+
+				foreach(var node in avoid.Waypoints.Nodes)
+				{
+					graphics2D.Circle(node.Position.X, node.Position.Y, 4, RGBA_Bytes.Green);
+					foreach(var link in node.Links)
+					{
+						var pointA = ((Pathfinding.IntPointNode)link.nodeA).Position;
+						var pointB = ((Pathfinding.IntPointNode)link.nodeB).Position;
+						graphics2D.Line(pointA.X, pointA.Y, pointB.X, pointB.Y, RGBA_Bytes.Yellow);
+					}
+				}
 			}
 
 			base.OnDraw(graphics2D);
