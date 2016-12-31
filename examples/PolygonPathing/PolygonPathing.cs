@@ -123,26 +123,7 @@ namespace MatterHackers.PolygonPathing
 
 				// creat the path
 				List<MSClipperLib.IntPoint> pathThatIsInside = new List<MSClipperLib.IntPoint>();
-				if (avoid.CreatePathInsideBoundary(startPos, mousePos, pathThatIsInside))
-				{
-					MSClipperLib.IntPoint last = startPos;
-					foreach (var point in pathThatIsInside)
-					{
-						graphics2D.Line(last.X, last.Y, point.X, point.Y, new RGBA_Bytes(RGBA_Bytes.Black, 128), 2);
-						last = point;
-					}
-
-					graphics2D.Line(last.X, last.Y, mousePos.X, mousePos.Y, new RGBA_Bytes(RGBA_Bytes.Black, 128), 2);
-				}
-
-				// show all the crossings
-
-				int index = 0;
-				foreach (var crossing in avoid.Crossings)
-				{
-					graphics2D.Circle(crossing.Item3.X, crossing.Item3.Y, 4, RGBA_Floats.FromHSL((float)index / avoid.Crossings.Count, 1, .5).GetAsRGBA_Bytes());
-					index++;
-				}
+				bool found = avoid.CreatePathInsideBoundary(startPos, mousePos, pathThatIsInside);
 
 				foreach(var node in avoid.Waypoints.Nodes)
 				{
@@ -153,6 +134,18 @@ namespace MatterHackers.PolygonPathing
 						var pointB = ((Pathfinding.IntPointNode)link.nodeB).Position;
 						graphics2D.Line(pointA.X, pointA.Y, pointB.X, pointB.Y, RGBA_Bytes.Yellow);
 					}
+				}
+
+				if (found)
+				{
+					MSClipperLib.IntPoint last = startPos;
+					foreach (var point in pathThatIsInside)
+					{
+						graphics2D.Line(last.X, last.Y, point.X, point.Y, new RGBA_Bytes(RGBA_Bytes.Black, 128), 2);
+						last = point;
+					}
+
+					graphics2D.Line(last.X, last.Y, mousePos.X, mousePos.Y, new RGBA_Bytes(RGBA_Bytes.Black, 128), 2);
 				}
 			}
 
