@@ -164,6 +164,7 @@
     <Compile Include="CheckBox\CheckBoxViewText.cs" />
     <Compile Include="Clipboard\Clipboard.cs" />
     <Compile Include="DrawEventArgs.cs" />
+    <Compile Include="FileDialogs\AutomationFileDialogCreator.cs" />
     <Compile Include="InvalidateEventArgs.cs" />
     <Compile Include="DefaultViewFactory.cs" />
     <Compile Include="DiagnosticsWidget.cs" />
