@@ -8,7 +8,7 @@ namespace MatterHackers.Agg.UI
 {
 	internal class AutomationFileDialogCreator : FileDialogCreator
 	{
-		public override bool OpenFileDialog(OpenFileDialogParams openParams, OpenFileDialogDelegate callback)
+		public override bool OpenFileDialog(OpenFileDialogParams openParams, Action<OpenFileDialogParams> callback)
 		{
 			ShowFileDialog((fileText) =>
 			{
@@ -24,7 +24,7 @@ namespace MatterHackers.Agg.UI
 			return true;
 		}
 
-		public override bool SaveFileDialog(SaveFileDialogParams saveParams, SaveFileDialogDelegate callback)
+		public override bool SaveFileDialog(SaveFileDialogParams saveParams, Action<SaveFileDialogParams> callback)
 		{
 			ShowFileDialog((fileText) =>
 			{
@@ -74,7 +74,7 @@ namespace MatterHackers.Agg.UI
 			systemWindow.ShowAsSystemWindow();
 		}
 
-		public override bool SelectFolderDialog(SelectFolderDialogParams folderParams, SelectFolderDialogDelegate callback)
+		public override bool SelectFolderDialog(SelectFolderDialogParams folderParams, Action<SelectFolderDialogParams> callback)
 		{
 			throw new NotImplementedException();
 		}
