@@ -35,15 +35,6 @@ using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
-	public abstract class SystemWindowCreatorPlugin
-	{
-		public abstract void ShowSystemWindow(SystemWindow systemWindow);
-
-		public abstract Point2D GetDesktopPosition(SystemWindow systemWindow);
-
-		public abstract void SetDesktopPosition(SystemWindow systemWindow, Point2D position);
-	}
-
 	public class SystemWindow : GuiWidget
 	{
 		private static SystemWindowCreatorPlugin globalSystemWindowCreator;

@@ -1,16 +1,13 @@
-﻿using MatterHackers.Agg.UI;
-using System;
+﻿using System;
 using System.Windows.Forms;
+using MatterHackers.Agg.UI;
 
 namespace MatterHackers.Agg.WindowsFileDialogs
 {
 	public class FileDialogPlugin : FileDialogCreator
 	{
 		// Resolve not needed on non-Mac platforms
-		public override string ResolveFilePath(string path)
-		{
-			return path;
-		}
+		public override string ResolveFilePath(string path) => path;
 
 		public override bool OpenFileDialog(OpenFileDialogParams openParams, OpenFileDialogDelegate callback)
 		{
