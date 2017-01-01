@@ -41,7 +41,7 @@ namespace MatterHackers.Agg.UI
 			return filePaths.Select(path => !path.StartsWith("/.file") ? path : FileDialogCreatorPlugin.ResolveFilePath(path));
 		}
 
-		public static bool OpenFileDialog(OpenFileDialogParams openParams, FileDialogCreator.OpenFileDialogDelegate callback)
+		public static bool OpenFileDialog(OpenFileDialogParams openParams, Action<OpenFileDialogParams> callback)
 		{
 			return FileDialogCreatorPlugin.OpenFileDialog(openParams, (OpenFileDialogParams outputOpenParams) =>
 				{
@@ -66,12 +66,12 @@ namespace MatterHackers.Agg.UI
 			);
 		}
 
-		public static bool SelectFolderDialog(SelectFolderDialogParams folderParams, FileDialogCreator.SelectFolderDialogDelegate callback)
+		public static bool SelectFolderDialog(SelectFolderDialogParams folderParams, Action<SelectFolderDialogParams> callback)
 		{
 			return FileDialogCreatorPlugin.SelectFolderDialog(folderParams, callback);
 		}
 
-		public static bool SaveFileDialog(SaveFileDialogParams saveParams, FileDialogCreator.SaveFileDialogDelegate callback)
+		public static bool SaveFileDialog(SaveFileDialogParams saveParams, Action<SaveFileDialogParams> callback)
 		{
 			return FileDialogCreatorPlugin.SaveFileDialog(saveParams, (SaveFileDialogParams outputSaveParams) =>
 				{
