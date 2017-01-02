@@ -78,6 +78,13 @@ namespace MatterHackers.Csg.Processors
 
 		public string GetScadOutputRecursive(CsgObjectWrapper objectToProcess, int level = 0)
 		{
+			if (objectToProcess is IWriteSCad)
+			{
+				string info = AddRenderInfoIfReqired(objectToProcess);
+				info += ((IWriteSCad)objectToProcess).GetSCadOutput();
+				return ApplyIndent(info, level);
+			}
+
 			return GetScadOutputRecursive((dynamic)objectToProcess.Root, level);
 		}
 
