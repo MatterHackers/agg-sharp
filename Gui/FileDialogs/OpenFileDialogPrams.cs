@@ -9,7 +9,7 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// These are the parameters passed to an open file dialog
 		/// </summary>
-		public OpenFileDialogParams(String fileTypeFilter, String initialDirectory = "", bool multiSelect = false, string title = "", string actionButtonLabel = "")
+		public OpenFileDialogParams(string fileTypeFilter, string initialDirectory = "", bool multiSelect = false, string title = "", string actionButtonLabel = "")
 			: base(fileTypeFilter, initialDirectory, title, actionButtonLabel)
 		{
 			if (InitialDirectory == "")

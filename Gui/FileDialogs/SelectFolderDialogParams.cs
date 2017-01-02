@@ -6,33 +6,25 @@ namespace MatterHackers.Agg.UI
 	{
 		public enum RootFolderTypes { MyComputer };
 
-		public String Description { get; set; }
+		public string Description { get; set; }
 
 		public RootFolderTypes RootFolder { get; set; }
 
-		public String FolderPath { get; set; }
+		public string FolderPath { get; set; }
 
 		public bool ShowNewFolderButton { get; set; }
 
 		/// <summary>
 		/// The title of the dialog window. If not set will show 'Open' or 'Save' as appropriate
 		/// </summary>
-		public string Title
-		{
-			get;
-			set;
-		}
+		public string Title { get; set; }
 
 		/// <summary>
 		/// This does not show on Windows (but does on mac.
 		/// </summary>
-		public string ActionButtonLabel
-		{
-			get;
-			set;
-		}
+		public string ActionButtonLabel { get; set; }
 
-		public SelectFolderDialogParams(String description, RootFolderTypes rootFolder = RootFolderTypes.MyComputer, bool showNewFolderButton = true, string title = "", string actionButtonLabel = "")
+		public SelectFolderDialogParams(string description, RootFolderTypes rootFolder = RootFolderTypes.MyComputer, bool showNewFolderButton = true, string title = "", string actionButtonLabel = "")
 		{
 			this.Description = description;
 			this.RootFolder = rootFolder;

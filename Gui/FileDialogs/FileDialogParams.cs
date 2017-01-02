@@ -4,7 +4,7 @@ namespace MatterHackers.Agg.UI
 {
 	public abstract class FileDialogParams
 	{
-		public FileDialogParams(String fileTypeFilter, String initialDirectory, string title, string actionButtonLabel)
+		public FileDialogParams(string fileTypeFilter, string initialDirectory, string title, string actionButtonLabel)
 		{
 			this.Filter = fileTypeFilter;
 			this.InitialDirectory = initialDirectory;
