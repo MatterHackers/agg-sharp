@@ -43,11 +43,11 @@ namespace MatterHackers.DataConverters2D
 {
 	public static class VertexSourceToClipperPolygons
 	{
-		public static PathStorage CreatePathStorage(List<List<IntPoint>> intersectedPolys, double scaling = 1000)
+		public static PathStorage CreatePathStorage(List<List<IntPoint>> polygons, double scaling = 1000)
 		{
 			PathStorage output = new PathStorage();
 
-			foreach (List<IntPoint> polygon in intersectedPolys)
+			foreach (List<IntPoint> polygon in polygons)
 			{
 				bool first = true;
 				foreach (IntPoint point in polygon)

@@ -127,13 +127,13 @@ namespace MatterHackers.PolygonPathing
 
 				foreach(var node in avoid.Waypoints.Nodes)
 				{
-					graphics2D.Circle(node.Position.X, node.Position.Y, 4, RGBA_Bytes.Green);
 					foreach(var link in node.Links)
 					{
 						var pointA = ((Pathfinding.IntPointNode)link.nodeA).Position;
 						var pointB = ((Pathfinding.IntPointNode)link.nodeB).Position;
 						graphics2D.Line(pointA.X, pointA.Y, pointB.X, pointB.Y, RGBA_Bytes.Yellow);
 					}
+					graphics2D.Circle(node.Position.X, node.Position.Y, 4, RGBA_Bytes.Green);
 				}
 
 				if (found)
@@ -173,14 +173,11 @@ namespace MatterHackers.PolygonPathing
 			base.OnMouseMove(mouseEvent);
 		}
 
-		private void CreateAndRenderPathing(Graphics2D graphics2D, Polygons polygonsToPathAround, Polygons travelPolysLine)
+		private void CreateAndRenderPathing(Graphics2D graphics2D, Polygons travelPolysLine)
 		{
 			Polygons travelPolygons = CreateTravelPath(polygonsToPathAround, travelPolysLine);
-
 			PathStorage travelPath = VertexSourceToClipperPolygons.CreatePathStorage(travelPolygons);
-
 			travelPath.Add(0, 0, ShapePath.FlagsAndCommand.CommandStop);
-
 			graphics2D.Render(new Stroke(travelPath), pathColor);
 		}
 
@@ -456,18 +453,19 @@ namespace MatterHackers.PolygonPathing
 					break;
 			}
 
-			graphics2D.Render(pathToUse, fillColor);
+			polygonsToPathAround = VertexSourceToClipperPolygons.CreatePolygons(pathToUse, 1);
+			polygonsToPathAround = FixWinding(polygonsToPathAround);
+
+			PathStorage shapePath = VertexSourceToClipperPolygons.CreatePathStorage(polygonsToPathAround, 1);
+			graphics2D.Render(shapePath, fillColor);
 
 			PathStorage travelLine = new PathStorage();
 			travelLine.MoveTo(lineStart);
 			travelLine.LineTo(mousePosition);
 
-			polygonsToPathAround = VertexSourceToClipperPolygons.CreatePolygons(pathToUse, 1);
-			polygonsToPathAround = FixWinding(polygonsToPathAround);
-
 			Polygons travelPolysLine = VertexSourceToClipperPolygons.CreatePolygons(travelLine, 1);
 
-			CreateAndRenderPathing(graphics2D, polygonsToPathAround, travelPolysLine);
+			CreateAndRenderPathing(graphics2D, travelPolysLine);
 		}
 	}
 
