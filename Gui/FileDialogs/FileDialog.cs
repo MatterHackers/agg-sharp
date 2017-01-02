@@ -6,23 +6,6 @@ using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
-	public abstract class FileDialogCreator
-	{
-		public delegate void OpenFileDialogDelegate(OpenFileDialogParams openParams);
-
-		public delegate void SelectFolderDialogDelegate(SelectFolderDialogParams folderParams);
-
-		public delegate void SaveFileDialogDelegate(SaveFileDialogParams saveParams);
-
-		public abstract bool OpenFileDialog(OpenFileDialogParams openParams, OpenFileDialogDelegate callback);
-
-		public abstract bool SelectFolderDialog(SelectFolderDialogParams folderParams, SelectFolderDialogDelegate callback);
-
-		public abstract bool SaveFileDialog(SaveFileDialogParams saveParams, SaveFileDialogDelegate callback);
-
-		public abstract string ResolveFilePath(string path);
-	}
-
 	public static class FileDialog
 	{
 		private static string lastDirectoryUsed = "";
@@ -54,11 +37,11 @@ namespace MatterHackers.Agg.UI
 
 		public static IEnumerable<string> ResolveFilePaths(IEnumerable<string> filePaths)
 		{
-			// Only perform Mac file reference resoltion when the string starts with the expected token
+			// Only perform Mac file reference resolution when the string starts with the expected token
 			return filePaths.Select(path => !path.StartsWith("/.file") ? path : FileDialogCreatorPlugin.ResolveFilePath(path));
 		}
 
-		public static bool OpenFileDialog(OpenFileDialogParams openParams, FileDialogCreator.OpenFileDialogDelegate callback)
+		public static bool OpenFileDialog(OpenFileDialogParams openParams, Action<OpenFileDialogParams> callback)
 		{
 			return FileDialogCreatorPlugin.OpenFileDialog(openParams, (OpenFileDialogParams outputOpenParams) =>
 				{
@@ -83,12 +66,12 @@ namespace MatterHackers.Agg.UI
 			);
 		}
 
-		public static bool SelectFolderDialog(SelectFolderDialogParams folderParams, FileDialogCreator.SelectFolderDialogDelegate callback)
+		public static bool SelectFolderDialog(SelectFolderDialogParams folderParams, Action<SelectFolderDialogParams> callback)
 		{
 			return FileDialogCreatorPlugin.SelectFolderDialog(folderParams, callback);
 		}
 
-		public static bool SaveFileDialog(SaveFileDialogParams saveParams, FileDialogCreator.SaveFileDialogDelegate callback)
+		public static bool SaveFileDialog(SaveFileDialogParams saveParams, Action<SaveFileDialogParams> callback)
 		{
 			return FileDialogCreatorPlugin.SaveFileDialog(saveParams, (SaveFileDialogParams outputSaveParams) =>
 				{
