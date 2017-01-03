@@ -100,7 +100,12 @@ namespace MatterHackers.Agg.PlatformAbstract
 				{
 				}
 			};
-			client.DownloadDataAsync(new Uri(uriToLoad));
+			try
+			{
+				client.DownloadDataAsync(new Uri(uriToLoad));
+			}
+			catch
+			{ }
 		}
 	}
 }
