@@ -147,6 +147,8 @@ namespace MatterHackers.PolygonPathing
 
 					graphics2D.Line(last.X, last.Y, mousePos.X, mousePos.Y, new RGBA_Bytes(RGBA_Bytes.Black, 128), 2);
 				}
+
+				//var triangulated = avoid.BoundaryPolygons.Triangulate();
 			}
 
 			base.OnDraw(graphics2D);

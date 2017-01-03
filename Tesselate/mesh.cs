@@ -205,7 +205,7 @@ namespace Tesselate
 
 			vertexHead.nextVertex = vertexHead.prevVertex = vertexHead;
 			vertexHead.edgeThisIsOriginOf = null;
-			vertexHead.clientIndex = 0;
+			vertexHead.ClientIndex = 0;
 
 			faceHead.nextFace = faceHead.prevFace = faceHead;
 			faceHead.halfEdgeThisIsLeftFaceOf = null;
@@ -310,7 +310,7 @@ namespace Tesselate
 			vNext.prevVertex = vNew;
 
 			vNew.edgeThisIsOriginOf = eOrig;
-			vNew.clientIndex = 0;
+			vNew.ClientIndex = 0;
 			/* leave coords, s, t undefined */
 
 			/* fix other edges on this vertex loop */
@@ -891,7 +891,7 @@ namespace Tesselate
 					e = e.nextEdgeCCWAroundOrigin;
 				} while (e != v.edgeThisIsOriginOf);
 			}
-			if (v.prevVertex != vPrev || v.edgeThisIsOriginOf != null || v.clientIndex != 0)
+			if (v.prevVertex != vPrev || v.edgeThisIsOriginOf != null || v.ClientIndex != 0)
 			{
 				throw new Exception();
 			}
