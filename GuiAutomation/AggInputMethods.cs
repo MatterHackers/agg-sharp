@@ -219,17 +219,27 @@ namespace MatterHackers.GuiAutomation
 
 			UiThread.RunOnIdle(() =>
 			{
-				if (textToType == "{Enter}")
+				switch (textToType)
 				{
-					systemWindow.OnKeyDown(new KeyEventArgs(Keys.Enter));
-					systemWindow.OnKeyUp(new KeyEventArgs(Keys.Enter));
-				}
-				else
-				{
-					foreach (char character in textToType)
-					{
-						systemWindow.OnKeyPress(new KeyPressEventArgs(character));
-					}
+					case "{Enter}":
+						systemWindow.OnKeyDown(new KeyEventArgs(Keys.Enter));
+						systemWindow.OnKeyUp(new KeyEventArgs(Keys.Enter));
+						break;
+
+					case "^a":
+						throw new NotImplementedException();
+						break;
+
+					case "{BACKSPACE}":
+						throw new NotImplementedException();
+						break;
+
+					default:
+						foreach (char character in textToType)
+						{
+							systemWindow.OnKeyPress(new KeyPressEventArgs(character));
+						}
+						break;
 				}
 
 				resetEvent.Set();
