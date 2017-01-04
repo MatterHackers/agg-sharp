@@ -185,6 +185,9 @@ namespace MatterHackers.Agg.Image
 				(TargaHeader.ImageType != 2 && TargaHeader.ImageType != 10 && TargaHeader.ImageType != 9) ||
 				(TargaHeader.BPP != 24 && TargaHeader.BPP != 32))
 			{
+#if DEBUG
+				throw new NotImplementedException("Unsupported TGA mode");
+#endif
 #if ASSERTS_ENABLED
 		        if ( ((byte*)pTargaHeader)[0] == 'B' && ((byte*)pTargaHeader)[1] == 'M' )
 		        {
