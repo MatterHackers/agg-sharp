@@ -67,7 +67,7 @@ namespace MatterHackers.MeshVisualizer
 	{
 		static public ImageBuffer BedImage = null;
 		public List<InteractionVolume> interactionVolumes = new List<InteractionVolume>();
-		public InteractionVolume SelectedInteractionVolume = null;
+		public InteractionVolume SelectedInteractionVolume { get; set; } = null;
 		public bool MouseDownOnInteractionVolume { get { return SelectedInteractionVolume != null; } }
 
 		public PartProcessingInfo partProcessingInfo;
@@ -506,7 +506,9 @@ namespace MatterHackers.MeshVisualizer
 			int volumeHitIndex;
 			Ray ray = trackballTumbleWidget.GetRayForLocalBounds(mouseEvent.Position);
 			IntersectInfo info;
-			if (!SuppressUiVolumes && FindInteractionVolumeHit(ray, out volumeHitIndex, out info))
+			if (this.Scene.HasSelection
+				&& !SuppressUiVolumes 
+				&& FindInteractionVolumeHit(ray, out volumeHitIndex, out info))
 			{
 				MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray, info);
 				volumeIndexWithMouseDown = volumeHitIndex;
