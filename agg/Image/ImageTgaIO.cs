@@ -911,17 +911,14 @@ namespace MatterHackers.Agg.Image
 			return LowLevelReadTGABitsFromBuffer(image, WorkPtr, destBitDepth);
 		}
 
-		public static bool LoadImageData(string fileName, ImageBuffer image)
-		{
-			return LoadImageData(image, fileName);
-		}
-
 		static public bool LoadImageData(ImageBuffer image, string fileName)
 		{
 			if (System.IO.File.Exists(fileName))
 			{
-				StreamReader streamReader = new StreamReader(fileName);
-				return LoadImageData(image, streamReader.BaseStream, 32);
+				using (var stream = File.OpenRead(fileName))
+				{
+					return LoadImageData(image, stream, 32);
+				}
 			}
 
 			return false;
