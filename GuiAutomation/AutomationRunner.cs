@@ -54,7 +54,7 @@ namespace MatterHackers.GuiAutomation
 		/// <summary>
 		/// The number of seconds to move the mouse when going to a new position.
 		/// </summary>
-		public double TimeToMoveMouse = .5;
+		public static double TimeToMoveMouse { get; set; } = .5;
 
 		private string imageDirectory;
 		public double UpDelaySeconds = .2;
@@ -616,7 +616,7 @@ namespace MatterHackers.GuiAutomation
 		/// </summary>
 		/// <param name="widgetName">The given widget name</param>
 		/// <param name="secondsToWait">Total seconds to stay in this function waiting for the named widget to become visible.</param>
-		public void ClickByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, double delayBeforeReturn = 0.2)
+		public void ClickByName(string widgetName, double secondsToWait = 5, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, double delayBeforeReturn = 0.2)
 		{
 			SystemWindow containingWindow;
 			Point2D offsetHint;

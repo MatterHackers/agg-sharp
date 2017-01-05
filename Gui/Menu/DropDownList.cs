@@ -429,8 +429,12 @@ namespace MatterHackers.Agg.UI
 
 		private void MenuItem_Clicked(object sender, EventArgs e)
 		{
-			int newSelectedIndex = MenuItems.IndexOf(sender as MenuItem);
-			SelectedIndex = newSelectedIndex == -1 ? 0 : newSelectedIndex;
+			var menuItem = sender as MenuItem;
+			if (menuItem.CanHeldSelection)
+			{
+				int newSelectedIndex = MenuItems.IndexOf(menuItem);
+				SelectedIndex = newSelectedIndex == -1 ? 0 : newSelectedIndex;
+			}
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)

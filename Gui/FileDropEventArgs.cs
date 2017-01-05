@@ -7,17 +7,15 @@ namespace MatterHackers.Agg.UI
 	public class FileDropEventArgs : EventArgs
 	{
 		public List<string> DroppedFiles;
-		private double x;
-		private double y;
 
-		public double X { get { return x; } }
+		public double X { get; }
 
-		public double Y { get { return y; } }
+		public double Y { get; }
 
 		public FileDropEventArgs(List<string> droppedFiles, double x, double y)
 		{
-			this.x = x;
-			this.y = y;
+			this.X = x;
+			this.Y = y;
 			this.DroppedFiles = FileDialog.ResolveFilePaths(droppedFiles).ToList();
 		}
 

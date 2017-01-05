@@ -20,43 +20,9 @@ namespace MatterHackers.Agg.UI
 {
 	public class ButtonBase : GuiWidget
 	{
-		private bool mouseDownOnButton = false;
+		public event EventHandler Click;
 
-		private event EventHandler PrivateClick;
-
-		private List<EventHandler> ClickEventDelegates = new List<EventHandler>();
-
-		public event EventHandler Click
-		{
-			//Wraps the PrivateClick event delegate so that we can track which events have been added and clear them if necessary
-			add
-			{
-				PrivateClick += value;
-				ClickEventDelegates.Add(value);
-			}
-
-			remove
-			{
-				PrivateClick -= value;
-				ClickEventDelegates.Remove(value);
-			}
-		}
-
-		public void UnbindClickEvents()
-		{
-			//Clears all event handlers from the Click event
-			foreach (EventHandler eh in ClickEventDelegates)
-			{
-				PrivateClick -= eh;
-			}
-			ClickEventDelegates.Clear();
-		}
-
-		public bool MouseDownOnButton
-		{
-			get { return mouseDownOnButton; }
-			set { mouseDownOnButton = value; }
-		}
+		public bool MouseDownOnButton { get; private set; } = false;
 
 		public ButtonBase()
 		{
@@ -69,10 +35,7 @@ namespace MatterHackers.Agg.UI
 
 		public void ClickButton(MouseEventArgs mouseEvent)
 		{
-			if (PrivateClick != null)
-			{
-				PrivateClick(this, mouseEvent);
-			}
+			Click?.Invoke(this, mouseEvent);
 		}
 
 		protected void FixBoundsAndChildrenPositions()
@@ -112,7 +75,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (Enabled == false)
 			{
-				mouseDownOnButton = false;
+				MouseDownOnButton = false;
 			}
 			base.OnEnabledChanged(e);
 		}

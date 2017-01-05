@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2016, Lars Brubaker, John Lewin
+Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,45 +27,20 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.VectorMath;
 using System;
-using System.Diagnostics;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
-	[DebuggerDisplay("{Text}:{Value}")]
-	public class MenuItem : GuiWidget
+	public abstract class SystemWindowCreatorPlugin
 	{
-		public class MenuClosedMessage
-		{
-		}
+		public abstract void ShowSystemWindow(SystemWindow systemWindow);
 
-		public event EventHandler Selected;
+		public abstract Point2D GetDesktopPosition(SystemWindow systemWindow);
 
-		public bool CanHeldSelection { get; set; } = true;
-
-		public Func<bool> AllowClicks;
-
-		public string Value { get; set; }
-
-		public MenuItem(GuiWidget viewItem, string value = null)
-		{
-			Value = value;
-			HAnchor = HAnchor.ParentLeftRight | HAnchor.FitToChildren;
-			VAnchor = VAnchor.FitToChildren;
-			AddChild(viewItem);
-		}
-
-		public override void OnMouseUp(MouseEventArgs mouseEvent)
-		{
-			if (AllowClicks?.Invoke() == true)
-			{
-				if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
-				{
-					Selected?.Invoke(this, mouseEvent);
-				}
-			}
-
-			base.OnMouseUp(mouseEvent);
-		}
+		public abstract void SetDesktopPosition(SystemWindow systemWindow, Point2D position);
 	}
 }
