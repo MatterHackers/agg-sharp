@@ -749,11 +749,18 @@ namespace MatterHackers.GuiAutomation
 				window.FindNamedChildrenRecursive(widgetName, foundChildren);
 				if (foundChildren.Count > 0)
 				{
-					foreach (GuiWidget.WidgetAndPosition foundChild in foundChildren)
+					foreach (GuiWidget.WidgetAndPosition foundChild in foundChildren) 
 					{
-						if (foundChild.widget.ActuallyVisibleOnScreen())
+						RectangleDouble childBounds = foundChild.widget.TransformToParentSpace(window, foundChild.widget.LocalBounds);
+
+						ScreenRectangle screenRect = SystemWindowToScreen(childBounds, window);
+						ScreenRectangle result;
+						if (searchRegion == null || ScreenRectangle.Intersection(searchRegion.ScreenRect, screenRect, out result))
 						{
-							return true;
+							if (foundChild.widget.ActuallyVisibleOnScreen())
+							{
+								return true;
+							}
 						}
 					}
 				}
