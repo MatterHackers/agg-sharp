@@ -138,7 +138,7 @@ namespace MatterHackers.VectorMath
 		/// </summary>
 		/// <param name="splitCount">How many leaves a branch can hold before it splits into sub-branches.</param>
 		/// <param name="region">The region that your Octree occupies, all inserted bounds should fit into this.</param>
-		public Octree(int splitCount, Bounds region)
+		public Octree(int splitCount, Bounds region) 
 		{
 			this.splitCount = splitCount;
 			root = CreateBranch(this, null, region);
@@ -175,8 +175,7 @@ namespace MatterHackers.VectorMath
 		/// </summary>
 		public int CountBranches()
 		{
-			int count = 0;
-			CountBranches(root, count);
+			int count = CountBranches(root, 0);
 			return count;
 		}
 
@@ -366,7 +365,7 @@ namespace MatterHackers.VectorMath
 			return leaf;
 		}
 
-		private void CountBranches(Branch branch, int count)
+		private int CountBranches(Branch branch, int count)
 		{
 			++count;
 			if (branch.Split)
@@ -379,6 +378,8 @@ namespace MatterHackers.VectorMath
 					}
 				}
 			}
+
+			return count;
 		}
 
 		internal class Branch

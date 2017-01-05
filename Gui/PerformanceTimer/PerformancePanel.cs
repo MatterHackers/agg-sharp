@@ -96,7 +96,7 @@ namespace MatterHackers.Agg.UI
 			BackgroundColor = new RGBA_Bytes(RGBA_Bytes.White, 180);
 		}
 
-		private event EventHandler unregisterEvents;
+		private EventHandler unregisterEvents;
 
 		public static PerformancePanel GetNamedPanel(string panelName)
 		{
@@ -111,10 +111,7 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnClosed(EventArgs e)
 		{
-			if (unregisterEvents != null)
-			{
-				unregisterEvents(this, null);
-			}
+			unregisterEvents?.Invoke(this, null);
 			base.OnClosed(e);
 		}
 
