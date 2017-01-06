@@ -712,14 +712,14 @@ namespace MatterHackers.GuiAutomation
 			{
 				RectangleDouble childBounds = widgetToClick.TransformToParentSpace(containingWindow, widgetToClick.LocalBounds);
 
-				offset.y = -offset.y;
 				if (origin == ClickOrigin.Center)
 				{
 					offset += offsetHint;
 				}
 
-				Point2D screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left, childBounds.Bottom), containingWindow);
-				Drop((screenPosition + new Point2D(offset.x, -offset.y)) - CurrentMousePosition(), mouseButtons);
+				Point2D screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
+				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
+				Drop(mouseButtons);
 
 				return true;
 			}
@@ -727,10 +727,9 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public void Drop(Point2D offset = default(Point2D), MouseButtons mouseButtons= MouseButtons.Left)
+		public void Drop(MouseButtons mouseButtons = MouseButtons.Left)
 		{
-			Point2D screenPosition = CurrentMousePosition() + new Point2D(offset.x, -offset.y);
-			SetMouseCursorPosition(screenPosition.x, screenPosition.y);
+			Point2D screenPosition = CurrentMousePosition();
 			inputSystem.CreateMouseEvent(GetMouseUp(mouseButtons), screenPosition.x, screenPosition.y, 0, 0);
 		}
 
