@@ -54,7 +54,7 @@ namespace MatterHackers.RayTracer.Traceable
 
 		public bool Contains(IBvhItem itemToCheckFor)
 		{
-			if (this == itemToCheckFor || Child.Contains(itemToCheckFor))
+			if (this == itemToCheckFor || Child?.Contains(itemToCheckFor) == true)
 			{
 				return true;
 			}
