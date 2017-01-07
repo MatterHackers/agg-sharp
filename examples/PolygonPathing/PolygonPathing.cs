@@ -42,16 +42,17 @@ namespace MatterHackers.PolygonPathing
 	using MatterSlice;
 	using Polygon = List<IntPoint>;
 	using Polygons = List<List<IntPoint>>;
+	using MSIntPoint = MSClipperLib.IntPoint;
 	using MSPolygon = List<MSClipperLib.IntPoint>;
 	using MSPolygons = List<List<MSClipperLib.IntPoint>>;
-
+	using System.Linq;
 	public class PolygonPathingDemo : SystemWindow
 	{
 		private Vector2 lineStart = Vector2.Zero;
 		private Vector2 mousePosition;
 		private RGBA_Bytes pathColor = RGBA_Bytes.Green;
 		long scale = 1;
-		MSClipperLib.IntPoint offset = new MSClipperLib.IntPoint(0, 0);
+		MSIntPoint offset = new MSIntPoint(0, 0);
 
 		private RadioButtonGroup pathTypeRadioGroup = new RadioButtonGroup(new Vector2(555, 5), new Vector2(80, 130))
 		{
@@ -110,13 +111,13 @@ namespace MatterHackers.PolygonPathing
 
 			if (polygonsToPathAround?.Count > 0)
 			{
-				MSClipperLib.IntPoint pathStart = ScreenToObject(new MSClipperLib.IntPoint(lineStart.x, lineStart.y));
-				MSClipperLib.IntPoint pathEnd = ScreenToObject(new MSClipperLib.IntPoint(mousePosition.x, mousePosition.y));
+				MSIntPoint pathStart = ScreenToObject(new MSIntPoint(lineStart.x, lineStart.y));
+				MSIntPoint pathEnd = ScreenToObject(new MSIntPoint(mousePosition.x, mousePosition.y));
 
-				var avoid = new AvoidCrossingPerimeters(polygonsToPathAround, scale == 1 ? 0 : -600); // -600 is for a .4 nozzle in matterslice
+				var avoid = new AvoidCrossingPerimeters(polygonsToPathAround, 0);// scale == 1 ? 0 : -600); // -600 is for a .4 nozzle in matterslice
 
 				// creat the path
-				List<MSClipperLib.IntPoint> pathThatIsInside = new List<MSClipperLib.IntPoint>();
+				List<MSIntPoint> pathThatIsInside = new List<MSIntPoint>();
 				bool found = avoid.CreatePathInsideBoundary(pathStart, pathEnd, pathThatIsInside);
 
 				foreach (var node in avoid.Waypoints.Nodes)
@@ -133,7 +134,7 @@ namespace MatterHackers.PolygonPathing
 
 				if (found)
 				{
-					MSClipperLib.IntPoint last = ObjectToScreen(pathStart);
+					MSIntPoint last = ObjectToScreen(pathStart);
 					foreach (var inPoint in pathThatIsInside)
 					{
 						var point = ObjectToScreen(inPoint);
@@ -141,8 +142,20 @@ namespace MatterHackers.PolygonPathing
 						last = point;
 					}
 
-					MSClipperLib.IntPoint point2 = ObjectToScreen(pathEnd);
+					MSIntPoint point2 = ObjectToScreen(pathEnd);
 					graphics2D.Line(last.X, last.Y, point2.X, point2.Y, new RGBA_Bytes(RGBA_Bytes.Black, 128), 2);
+
+					graphics2D.DrawString($"Length = {pathThatIsInside.PolygonLength(false)}", 30, Height - 40);
+				}
+
+				List<Tuple<int, int, MSIntPoint>> crossings = new List<Tuple<int, int, MSIntPoint>>();
+				avoid.BoundaryPolygons.FindCrossingPoints(pathStart, pathEnd, crossings);
+				crossings.Sort(new MatterHackers.MatterSlice.DirectionSorter(pathStart, pathEnd));
+				int index = 0;
+				foreach (var crossing in crossings)
+				{
+					graphics2D.Circle(ObjectToScreen(crossing.Item3).X, ObjectToScreen(crossing.Item3).Y, 4, RGBA_Floats.FromHSL((float)index / crossings.Count, 1, .5).GetAsRGBA_Bytes());
+					index++;
 				}
 
 				//var triangulated = avoid.BoundaryPolygons.Triangulate();
@@ -151,25 +164,25 @@ namespace MatterHackers.PolygonPathing
 			base.OnDraw(graphics2D);
 		}
 
-		MSClipperLib.IntPoint ObjectToScreen(MSClipperLib.IntPoint inPoint)
+		MSIntPoint ObjectToScreen(MSIntPoint inPoint)
 		{
 			return inPoint / scale + offset;
 		}
 
-		MSClipperLib.IntPoint ScreenToObject(MSClipperLib.IntPoint inPoint)
+		MSIntPoint ScreenToObject(MSIntPoint inPoint)
 		{
 			return (inPoint - offset) * scale;
 		}
 
 		private MSPolygons PolygonsToMSPolygons(Polygons polygonsToPathAround)
 		{
-			var otherPolygons = new List<List<MSClipperLib.IntPoint>>();
+			var otherPolygons = new List<List<MSIntPoint>>();
 			foreach (var polygon in polygonsToPathAround)
 			{
-				otherPolygons.Add(new List<MSClipperLib.IntPoint>());
+				otherPolygons.Add(new List<MSIntPoint>());
 				for (int i = 0; i < polygon.Count; i++)
 				{
-					otherPolygons[otherPolygons.Count - 1].Add(new MSClipperLib.IntPoint(polygon[i].X, polygon[i].Y));
+					otherPolygons[otherPolygons.Count - 1].Add(new MSIntPoint(polygon[i].X, polygon[i].Y));
 				}
 			}
 
@@ -402,13 +415,13 @@ namespace MatterHackers.PolygonPathing
 			{
 				polygonsToPathAround = PolygonsToMSPolygons(FixWinding(VertexSourceToClipperPolygons.CreatePolygons(pathToUse, 1)));
 				scale = 1;
-				offset = new MSClipperLib.IntPoint(0, 0);
+				offset = new MSIntPoint(0, 0);
 			}
 			else
 			{
 				polygonsToPathAround = directPolygons;
 				scale = 200;
-				offset = new MSClipperLib.IntPoint(-400, -50);
+				offset = new MSIntPoint(-400, -50);
 			}
 
 
