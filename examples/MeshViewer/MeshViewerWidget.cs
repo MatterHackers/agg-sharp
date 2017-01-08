@@ -433,9 +433,7 @@ namespace MatterHackers.MeshVisualizer
 		{
 			if (File.Exists(itemPath))
 			{
-				partProcessingInfo.Visible = true;
-				partProcessingInfo.progressControl.PercentComplete = 0;
-				partProcessingInfo.centeredInfoText.Text = "Loading Mesh...";
+				BeginProgressReporting("Loading Mesh");
 
 				// TODO: How to we handle mesh load errors? How do we report success?
 				IObject3D loadedItem = await Task.Run(() => Object3D.Load(itemPath, progress: ReportProgress0to100));
@@ -485,7 +483,7 @@ namespace MatterHackers.MeshVisualizer
 					partProcessingInfo.centeredInfoText.Text = string.Format("Sorry! No 3D view available\nfor this file.");
 				}
 
-				partProcessingInfo.Visible = false;
+				EndProgressReporting();
 
 				// Invoke LoadDone event
 				LoadDone?.Invoke(this, null);
@@ -756,6 +754,23 @@ namespace MatterHackers.MeshVisualizer
 			return false;
 		}
 
+		private string progressReportingPrimaryTask = "";
+
+		public void BeginProgressReporting(string taskDescription)
+		{
+			progressReportingPrimaryTask = taskDescription;
+
+			partProcessingInfo.Visible = true;
+			partProcessingInfo.progressControl.PercentComplete = 0;
+			partProcessingInfo.centeredInfoText.Text = taskDescription + "...";
+		}
+
+		public void EndProgressReporting()
+		{
+			progressReportingPrimaryTask = "";
+			partProcessingInfo.Visible = false;
+		}
+
 		public void ReportProgress0to100(double progress0To1, string processingState, out bool continueProcessing)
 		{
 			if (this.HasBeenClosed)
@@ -770,9 +785,14 @@ namespace MatterHackers.MeshVisualizer
 			UiThread.RunOnIdle(() =>
 			{
 				int percentComplete = (int)(progress0To1 * 100);
-				partProcessingInfo.centeredInfoText.Text = "Loading Mesh {0}%...".FormatWith(percentComplete);
+				partProcessingInfo.centeredInfoText.Text =  "{0} {1}%...".FormatWith(progressReportingPrimaryTask, percentComplete);
 				partProcessingInfo.progressControl.PercentComplete = percentComplete;
-				partProcessingInfo.centeredInfoDescription.Text = processingState;
+
+				// Only assign to textbox if value passed through
+				if (processingState != null)
+				{
+					partProcessingInfo.centeredInfoDescription.Text = processingState;
+				}
 			});
 		}
 
