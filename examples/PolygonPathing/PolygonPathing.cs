@@ -148,9 +148,9 @@ namespace MatterHackers.PolygonPathing
 					graphics2D.DrawString($"Length = {pathThatIsInside.PolygonLength(false)}", 30, Height - 40);
 				}
 
-				List<Tuple<int, int, MSIntPoint>> crossings = new List<Tuple<int, int, MSIntPoint>>();
-				avoid.BoundaryPolygons.FindCrossingPoints(pathStart, pathEnd, crossings, avoid.BoundaryEdgeQuadTrees);
+				var crossings = new List<Tuple<int, int, MSIntPoint>>(avoid.BoundaryPolygons.FindCrossingPoints(pathStart, pathEnd, avoid.BoundaryEdgeQuadTrees));
 				crossings.Sort(new MatterHackers.MatterSlice.DirectionSorter(pathStart, pathEnd));
+
 				int index = 0;
 				foreach (var crossing in crossings)
 				{
