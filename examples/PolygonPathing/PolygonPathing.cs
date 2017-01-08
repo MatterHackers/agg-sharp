@@ -149,7 +149,7 @@ namespace MatterHackers.PolygonPathing
 				}
 
 				List<Tuple<int, int, MSIntPoint>> crossings = new List<Tuple<int, int, MSIntPoint>>();
-				avoid.BoundaryPolygons.FindCrossingPoints(pathStart, pathEnd, crossings);
+				avoid.BoundaryPolygons.FindCrossingPoints(pathStart, pathEnd, crossings, avoid.BoundaryEdgeQuadTrees);
 				crossings.Sort(new MatterHackers.MatterSlice.DirectionSorter(pathStart, pathEnd));
 				int index = 0;
 				foreach (var crossing in crossings)
@@ -420,8 +420,11 @@ namespace MatterHackers.PolygonPathing
 			else
 			{
 				polygonsToPathAround = directPolygons;
-				scale = 200;
-				offset = new MSIntPoint(-400, -50);
+				var bounds = directPolygons.GetBounds();
+				long width = (bounds.maxX - bounds.minX) / (long)Width * 4 / 3;
+				long height = (bounds.maxY - bounds.minY) / (long)Height * 4 / 3;
+				scale = Math.Max(width, height);
+				offset = new MSIntPoint(-(bounds.maxX + bounds.minX)/2 / scale + Width / 2, -(bounds.maxY + bounds.minY)/2 / scale + Height / 2);
 			}
 
 
