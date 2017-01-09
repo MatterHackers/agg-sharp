@@ -158,6 +158,15 @@ namespace MatterHackers.PolygonPathing
 					index++;
 				}
 
+				if(avoid.BoundaryPolygons.PointIsInside(pathEnd))
+				{
+					graphics2D.DrawString("Inside", 30, Height - 60, color: RGBA_Bytes.Green);
+				}
+				else
+				{
+					graphics2D.DrawString("Outside", 30, Height - 60, color: RGBA_Bytes.Red);
+				}
+
 				//var triangulated = avoid.BoundaryPolygons.Triangulate();
 			}
 
