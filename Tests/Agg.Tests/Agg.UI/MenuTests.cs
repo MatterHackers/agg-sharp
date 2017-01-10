@@ -269,20 +269,20 @@ namespace MatterHackers.Agg.UI.Tests
 				Name = "SystemWindow",
 			};
 
-			testList.AddItem("item1", clickAction: (s,e) =>
-			{
-				item1ClickCount++;
-			}).Name = "item1";
-			testList.AddItem("item2", clickAction: (s, e) =>
-			{
-				item2ClickCount++;
-			}).Name = "item2";
-			var item3 = testList.AddItem("item3", clickAction: (s, e) =>
-			{
-				item3ClickCount++;
-			});
-			item3.Name = "item3";
-			item3.Enabled = false;
+			var menuItem1 = testList.AddItem("item1");
+			menuItem1.Name = "item1";
+			menuItem1.Selected += (s, e) => item1ClickCount++;
+
+
+			var menuItem2 = testList.AddItem("item2");
+			menuItem2.Name = "item2";
+			menuItem2.Selected += (s, e) => item2ClickCount++;
+
+			var menuItem3 = testList.AddItem("item3");
+			menuItem3.Name = "item3";
+			menuItem3.Enabled = false;
+			menuItem3.Selected += (s, e) => item3ClickCount++;
+			
 			menuTestContainer.AddChild(testList);
 
 			menuTestContainer.AddChild(new GuiWidget(20, 20)
@@ -320,20 +320,18 @@ namespace MatterHackers.Agg.UI.Tests
 				Name = "menu1",
 			};
 
-			testList.AddItem("item1", clickAction: (s, e) =>
-			{
-				item1ClickCount++;
-			}).Name = "item1";
-			testList.AddItem("item2", clickAction: (s, e) =>
-			{
-				item2ClickCount++;
-			}).Name = "item2";
-			var item3 = testList.AddItem("item3", clickAction: (s, e) =>
-			{
-				item3ClickCount++;
-			});
-			item3.Name = "item3";
-			item3.Enabled = false;
+			var menuItem1 = testList.AddItem("item1");
+			menuItem1.Name = "item1";
+			menuItem1.Selected += (s, e) => item1ClickCount++;
+
+			var menuItem2 = testList.AddItem("item2");
+			menuItem2.Name = "item2";
+			menuItem2.Selected += (s, e) => item2ClickCount++;
+
+			var menuItem3 = testList.AddItem("item3");
+			menuItem3.Name = "item3";
+			menuItem3.Enabled = false;
+			menuItem3.Selected += (s, e) => item3ClickCount++;
 			menuTestContainer.AddChild(testList);
 
 			menuTestContainer.AddChild(new GuiWidget(20, 20)
