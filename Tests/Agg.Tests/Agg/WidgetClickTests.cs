@@ -163,7 +163,7 @@ namespace MatterHackers.Agg.Tests
 			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 25);
 		}
 
-		[Test, Apartment(ApartmentState.STA), Category("FixNeeded")]
+		[Test, Apartment(ApartmentState.STA)]
 		public void ClickSuppressedOnExternalMouseUp()
 		{
 			int rootClickCount = 0;
