@@ -38,7 +38,7 @@ namespace MatterHackers.Agg.UI.Tests
 	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
 	public class AutomationRunnerTests
 	{
-		[Test, Apartment(ApartmentState.STA), Category("FixNeeded")]
+		[Test, Apartment(ApartmentState.STA)]
 		public async Task GetWidgetByNameTestNoRegionSingleWindow()
 		{
 			// single system window

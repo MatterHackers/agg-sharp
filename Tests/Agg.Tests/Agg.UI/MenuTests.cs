@@ -193,17 +193,12 @@ namespace MatterHackers.Agg.UI.Tests
 			// click and draw down to item should work as well
 		}
 
-		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain, Category("FixNeeded") /* Test is unstable, failing frequently but succeeding on rebuilds */]
-		public async Task MenuDisabledItemsWorkCorrectlyActual()
+		[Test, Apartment(ApartmentState.STA), /* Test was unstable, putting back in rotation with updates... */]
+		public async Task DisabledMenuItemsWorkCorrectly()
 		{
 			int item1ClickCount = 0;
 			int item2ClickCount = 0;
 			int item3ClickCount = 0;
-			var menuTestContainer = new SystemWindow(300, 200)
-			{
-				BackgroundColor = RGBA_Bytes.White,
-				Name = "SystemWindow",
-			};
 
 			DropDownList testList = new DropDownList("no selection", RGBA_Bytes.Blue, RGBA_Bytes.Green)
 			{
@@ -214,65 +209,64 @@ namespace MatterHackers.Agg.UI.Tests
 
 			AutomationTest testToRun = (testRunner) =>
 			{
-				try
-				{
-					testRunner.Wait(1);
+				Assert.AreEqual(0, item1ClickCount);
+				Assert.AreEqual(0, item2ClickCount);
+				Assert.AreEqual(0, item3ClickCount);
 
-					// Now do the actions specific to this test. (replace this for new tests)
-					{
-						Assert.IsTrue(item1ClickCount == 0);
-						Assert.IsTrue(item2ClickCount == 0);
-						Assert.IsTrue(item3ClickCount == 0);
+				testRunner.ClickByName("menu1");
+				testRunner.ClickByName("item1");
+				
+				testRunner.WaitUntil(() => !testList.IsOpen, 2);
+				Assert.IsTrue(!testList.IsOpen);
+				Assert.AreEqual(1, item1ClickCount);
+				Assert.AreEqual(0, item2ClickCount);
+				Assert.AreEqual(0, item3ClickCount);
 
-						if (true)
-						{
-							testRunner.ClickByName("menu1", 5);
-							testRunner.ClickByName("item1", 5);
-							testRunner.Wait(.1);
-							Assert.IsTrue(!testList.IsOpen);
-							Assert.IsTrue(item1ClickCount == 1);
-							Assert.IsTrue(item2ClickCount == 0);
-							Assert.IsTrue(item3ClickCount == 0);
+				testRunner.ClickByName("menu1");
+				testRunner.ClickByName("item2");
 
-							testRunner.ClickByName("menu1", 5);
-							testRunner.ClickByName("item2", 5);
-							testRunner.Wait(.1);
-							Assert.IsTrue(!testList.IsOpen);
-							Assert.IsTrue(item1ClickCount == 1);
-							Assert.IsTrue(item2ClickCount == 1);
-							Assert.IsTrue(item3ClickCount == 0);
+				testRunner.WaitUntil(() => !testList.IsOpen, 2);
+				Assert.IsTrue(!testList.IsOpen);
+				Assert.AreEqual(1, item1ClickCount);
+				Assert.AreEqual(1, item2ClickCount);
+				Assert.AreEqual(0, item3ClickCount);
 
-							testRunner.ClickByName("menu1", 5);
-							testRunner.ClickByName("item3", 5);
-							testRunner.Wait(.1);
-							Assert.IsTrue(testList.IsOpen, "It should remain open when clicking on a disabled item.");
-							Assert.IsTrue(item1ClickCount == 1);
-							Assert.IsTrue(item2ClickCount == 1);
-							Assert.IsTrue(item3ClickCount == 0);
-							testRunner.ClickByName("item2", 5);
-							testRunner.Wait(.1);
-							Assert.IsTrue(!testList.IsOpen);
-							Assert.IsTrue(item1ClickCount == 1);
-							Assert.IsTrue(item2ClickCount == 2);
-							Assert.IsTrue(item3ClickCount == 0);
+				testRunner.ClickByName("menu1");
+				testRunner.ClickByName("item3");
 
-							testRunner.ClickByName("menu1", 5);
-							testRunner.ClickByName("OffMenu", 5);
-							testRunner.Wait(.1);
-							Assert.IsTrue(!testList.IsOpen);
-						}
-						testRunner.ClickByName("menu1", 5);
-						testRunner.ClickByName("item3", 5);
-						testRunner.ClickByName("OffMenu", 5);
-						Assert.IsTrue(!testList.IsOpen, "had a bug where after clicking a disabled item would not close clicking outside");
-					}
-				}
-				catch
-				{
-					UiThread.RunOnIdle(menuTestContainer.Close, 1);
-				}
+				testRunner.WaitUntil(() => testList.IsOpen, 2);
+				Assert.IsTrue(testList.IsOpen, "It should remain open when clicking on a disabled item.");
+				Assert.AreEqual(1, item1ClickCount);
+				Assert.AreEqual(1, item2ClickCount);
+				Assert.AreEqual(0, item3ClickCount);
+				testRunner.ClickByName("item2");
+
+				testRunner.WaitUntil(() => !testList.IsOpen, 2);
+				Assert.IsTrue(!testList.IsOpen);
+				Assert.AreEqual(1, item1ClickCount);
+				Assert.AreEqual(2, item2ClickCount);
+				Assert.AreEqual(0, item3ClickCount);
+
+				testRunner.ClickByName("menu1");
+				testRunner.ClickByName("OffMenu");
+
+				testRunner.WaitUntil(() => !testList.IsOpen, 2);
+				Assert.IsTrue(!testList.IsOpen);
+
+				testRunner.ClickByName("menu1");
+				testRunner.ClickByName("item3");
+				testRunner.ClickByName("OffMenu");
+
+				testRunner.WaitUntil(() => !testList.IsOpen, 2);
+				Assert.IsTrue(!testList.IsOpen, "had a bug where after clicking a disabled item would not close clicking outside");
 
 				return Task.FromResult(0);
+			};
+
+			var menuTestContainer = new SystemWindow(300, 200)
+			{
+				BackgroundColor = RGBA_Bytes.White,
+				Name = "SystemWindow",
 			};
 
 			testList.AddItem("item1", clickAction: (s,e) =>
