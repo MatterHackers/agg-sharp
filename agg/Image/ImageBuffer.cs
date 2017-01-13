@@ -49,12 +49,8 @@ namespace MatterHackers.Agg.Image
 		private int bufferOffset; // the beginning of the image in this buffer
 		private int bufferFirstPixel; // Pointer to first pixel depending on strideInBytes and image position
 
-		private int width;  // Width in pixels
-		private int height; // Height in pixels
 		private int strideInBytes; // Number of bytes per row. Can be < 0
 		private int m_DistanceInBytesBetweenPixelsInclusive;
-		private int bitDepth;
-		private Vector2 m_OriginOffset = new Vector2(0, 0);
 
 		private IRecieveBlenderByte recieveBlender;
 
@@ -62,20 +58,15 @@ namespace MatterHackers.Agg.Image
 
 		public event EventHandler ImageChanged;
 
-		private int changedCount = 0;
-
-		public int ChangedCount { get { return changedCount; } }
+		public int ChangedCount { get; private set; }
 
 		public void MarkImageChanged()
 		{
 			// mark this unchecked as we don't want to throw an exception if this rolls over.
 			unchecked
 			{
-				changedCount++;
-				if (ImageChanged != null)
-				{
-					ImageChanged(this, null);
-				}
+				ChangedCount++;
+				ImageChanged?.Invoke(this, null);
 			}
 		}
 
@@ -285,9 +276,9 @@ namespace MatterHackers.Agg.Image
 			}
 			SetDimmensionAndFormat(inWidth, inHeight, inScanWidthInBytes, bitsPerPixel, bitsPerPixel / 8, true);
 
-			if (m_ByteBuffer == null || m_ByteBuffer.Length != strideInBytes * height)
+			if (m_ByteBuffer == null || m_ByteBuffer.Length != strideInBytes * Height)
 			{
-				m_ByteBuffer = new byte[strideInBytes * height];
+				m_ByteBuffer = new byte[strideInBytes * Height];
 				SetUpLookupTables();
 			}
 
@@ -412,27 +403,17 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public Vector2 OriginOffset
-		{
-			get { return m_OriginOffset; }
-			set { m_OriginOffset = value; }
-		}
+		public Vector2 OriginOffset { get; set; }
 
-		public int Width
-		{
-			get
-			{
-				return width;
-			}
-		}
+		/// <summary>
+		/// Width in pixels
+		/// </summary>
+		public int Width { get; private set; }
 
-		public int Height
-		{
-			get
-			{
-				return height;
-			}
-		}
+		/// <summary>
+		/// Height in pixels
+		/// </summary>
+		public int Height { get; private set; }
 
 		public int StrideInBytes()
 		{
@@ -449,14 +430,11 @@ namespace MatterHackers.Agg.Image
 			return m_DistanceInBytesBetweenPixelsInclusive;
 		}
 
-		public int BitDepth
-		{
-			get { return bitDepth; }
-		}
+		public int BitDepth { get; private set; }
 
 		public virtual RectangleInt GetBounds()
 		{
-			return new RectangleInt(-(int)m_OriginOffset.x, -(int)m_OriginOffset.y, Width - (int)m_OriginOffset.x, Height - (int)m_OriginOffset.y);
+			return new RectangleInt(-(int)OriginOffset.x, -(int)OriginOffset.y, Width - (int)OriginOffset.x, Height - (int)OriginOffset.y);
 		}
 
 		public IRecieveBlenderByte GetRecieveBlender()
@@ -475,14 +453,14 @@ namespace MatterHackers.Agg.Image
 
 		private void SetUpLookupTables()
 		{
-			yTableArray = new int[height];
-			for (int i = 0; i < height; i++)
+			yTableArray = new int[Height];
+			for (int i = 0; i < Height; i++)
 			{
 				yTableArray[i] = i * strideInBytes;
 			}
 
-			xTableArray = new int[width];
-			for (int i = 0; i < width; i++)
+			xTableArray = new int[Width];
+			for (int i = 0; i < Width; i++)
 			{
 				xTableArray[i] = i * m_DistanceInBytesBetweenPixelsInclusive;
 			}
@@ -494,7 +472,7 @@ namespace MatterHackers.Agg.Image
 			bufferFirstPixel = bufferOffset;
 			if (strideInBytes < 0)
 			{
-				int addAmount = -((int)((int)height - 1) * strideInBytes);
+				int addAmount = -((int)((int)Height - 1) * strideInBytes);
 				bufferFirstPixel = addAmount + bufferOffset;
 			}
 
@@ -519,7 +497,7 @@ namespace MatterHackers.Agg.Image
 
 		public void SetBuffer(byte[] byteBuffer, int bufferOffset)
 		{
-			if (byteBuffer.Length < height * strideInBytes)
+			if (byteBuffer.Length < Height * strideInBytes)
 			{
 				throw new Exception("Your buffer does not have enough room for your height and strideInBytes.");
 			}
@@ -527,7 +505,7 @@ namespace MatterHackers.Agg.Image
 			this.bufferOffset = bufferFirstPixel = bufferOffset;
 			if (strideInBytes < 0)
 			{
-				int addAmount = -((int)((int)height - 1) * strideInBytes);
+				int addAmount = -((int)((int)Height - 1) * strideInBytes);
 				bufferFirstPixel = addAmount + bufferOffset;
 			}
 			SetUpLookupTables();
@@ -535,10 +513,10 @@ namespace MatterHackers.Agg.Image
 
 		private void DeallocateOrClearBuffer(int width, int height, int strideInBytes, int bitDepth, int distanceInBytesBetweenPixelsInclusive)
 		{
-			if (this.width == width
-				&& this.height == height
+			if (this.Width == width
+				&& this.Height == height
 				&& this.strideInBytes == strideInBytes
-				&& this.bitDepth == bitDepth
+				&& this.BitDepth == bitDepth
 				&& m_DistanceInBytesBetweenPixelsInclusive == distanceInBytesBetweenPixelsInclusive
 				&& m_ByteBuffer != null)
 			{
@@ -561,10 +539,10 @@ namespace MatterHackers.Agg.Image
 				DeallocateOrClearBuffer(width, height, strideInBytes, bitDepth, distanceInBytesBetweenPixelsInclusive);
 			}
 
-			this.width = width;
-			this.height = height;
+			this.Width = width;
+			this.Height = height;
 			this.strideInBytes = strideInBytes;
-			this.bitDepth = bitDepth;
+			this.BitDepth = bitDepth;
 			if (distanceInBytesBetweenPixelsInclusive > 4)
 			{
 				throw new System.Exception("It looks like you are passing bits per pixel rather than distance in bytes.");
@@ -583,7 +561,7 @@ namespace MatterHackers.Agg.Image
 		public void DettachBuffer()
 		{
 			m_ByteBuffer = null;
-			width = height = strideInBytes = m_DistanceInBytesBetweenPixelsInclusive = 0;
+			Width = Height = strideInBytes = m_DistanceInBytesBetweenPixelsInclusive = 0;
 		}
 
 		public byte[] GetBuffer()
@@ -648,8 +626,8 @@ namespace MatterHackers.Agg.Image
 
 		public void SetPixel(int x, int y, RGBA_Bytes color)
 		{
-			x -= (int)m_OriginOffset.x;
-			y -= (int)m_OriginOffset.y;
+			x -= (int)OriginOffset.x;
+			y -= (int)OriginOffset.y;
 			recieveBlender.CopyPixels(GetBuffer(), GetBufferOffsetXY(x, y), color, 1);
 		}
 
@@ -901,15 +879,15 @@ namespace MatterHackers.Agg.Image
 
 			// trim the bottom
 			bool aPixelsIsVisible = false;
-			for (int y = 0; y < height; y++)
+			for (int y = 0; y < Height; y++)
 			{
-				for (int x = 0; x < width; x++)
+				for (int x = 0; x < Width; x++)
 				{
 					if (IsPixelVisible(x, y))
 					{
 						visibleBounds.Bottom = y;
-						y = height;
-						x = width;
+						y = Height;
+						x = Width;
 						aPixelsIsVisible = true;
 					}
 				}
@@ -923,42 +901,42 @@ namespace MatterHackers.Agg.Image
 			}
 
 			// trim the bottom
-			for (int y = height - 1; y >= 0; y--)
+			for (int y = Height - 1; y >= 0; y--)
 			{
-				for (int x = 0; x < width; x++)
+				for (int x = 0; x < Width; x++)
 				{
 					if (IsPixelVisible(x, y))
 					{
 						visibleBounds.Top = y + 1;
 						y = -1;
-						x = width;
+						x = Width;
 					}
 				}
 			}
 
 			// trim the left
-			for (int x = 0; x < width; x++)
+			for (int x = 0; x < Width; x++)
 			{
-				for (int y = 0; y < height; y++)
+				for (int y = 0; y < Height; y++)
 				{
 					if (IsPixelVisible(x, y))
 					{
 						visibleBounds.Left = x;
-						y = height;
-						x = width;
+						y = Height;
+						x = Width;
 					}
 				}
 			}
 
 			// trim the right
-			for (int x = width - 1; x >= 0; x--)
+			for (int x = Width - 1; x >= 0; x--)
 			{
-				for (int y = 0; y < height; y++)
+				for (int y = 0; y < Height; y++)
 				{
 					if (IsPixelVisible(x, y))
 					{
 						visibleBounds.Right = x + 1;
-						y = height;
+						y = Height;
 						x = -1;
 					}
 				}
@@ -1035,7 +1013,7 @@ namespace MatterHackers.Agg.Image
 				&& Height == b.Height
 				&& BitDepth == b.BitDepth
 				&& StrideInBytes() == b.StrideInBytes()
-				&& m_OriginOffset == b.m_OriginOffset)
+				&& OriginOffset == b.OriginOffset)
 			{
 				int bytesPerPixel = BitDepth / 8;
 				int aDistanceBetweenPixels = GetBytesBetweenPixelsInclusive();
@@ -1227,7 +1205,7 @@ namespace MatterHackers.Agg.Image
 			Allocate(boundsToCopyFrom.Width, boundsToCopyFrom.Height, boundsToCopyFrom.Width * sourceImage.BitDepth / 8, sourceImage.BitDepth);
 			SetRecieveBlender(sourceImage.GetRecieveBlender());
 
-			if (width != 0 && height != 0)
+			if (Width != 0 && Height != 0)
 			{
 				RectangleInt DestRect = new RectangleInt(0, 0, boundsToCopyFrom.Width, boundsToCopyFrom.Height);
 				RectangleInt AbsoluteSourceRect = boundsToCopyFrom;

@@ -556,8 +556,9 @@ namespace MatterHackers.GuiAutomation
 			}
 
 			List<GetResults> namedWidgetsInRegion = new List<GetResults>();
-			foreach (SystemWindow systemWindow in SystemWindow.AllOpenSystemWindows)
+			for(int i=SystemWindow.AllOpenSystemWindows.Count-1; i>=0 ; i--)
 			{
+				SystemWindow systemWindow = SystemWindow.AllOpenSystemWindows[i];
 				if (searchRegion != null) // only add the widgets that are in the screen region
 				{
 					List<GuiWidget> namedWidgets = new List<GuiWidget>();

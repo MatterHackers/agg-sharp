@@ -57,8 +57,8 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 			{
 				throw new ArgumentException("Invalid Serial Port", "portName");
 			}
-			SafeFileHandle hFile = CreateFile(@"\\.\" + portName, dwAccess, 0, IntPtr.Zero, 3, dwFlagsAndAttributes,
-											  IntPtr.Zero);
+			SafeFileHandle hFile = CreateFile(@"\\.\" + portName, dwAccess, 0, IntPtr.Zero, 3, dwFlagsAndAttributes, IntPtr.Zero);
+
 			if (hFile.IsInvalid)
 			{
 				WinIoError();
