@@ -452,7 +452,7 @@ namespace MatterHackers.PolygonPathing
 			else
 			{
 				polygonsToPathAround = directPolygons;
-				var bounds = directPolygons.GetBounds();
+				var bounds = MSClipperLib.PolygonsExtensions.GetBounds(directPolygons);
 				long width = (bounds.maxX - bounds.minX) / (long)Width * 4 / 3;
 				long height = (bounds.maxY - bounds.minY) / (long)Height * 4 / 3;
 				scale = Math.Max(width, height);
