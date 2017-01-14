@@ -108,8 +108,6 @@ namespace MatterHackers.PolygonPathing
 		{
 			RenderPolygonToPathAgainst(graphics2D);
 
-			graphics2D.Line(lineStart, mousePosition, RGBA_Bytes.Red);
-
 			if (polygonsToPathAround?.Count > 0)
 			{
 				MSIntPoint pathStart = ScreenToObject(new MSIntPoint(lineStart.x, lineStart.y));
@@ -149,14 +147,18 @@ namespace MatterHackers.PolygonPathing
 					graphics2D.DrawString($"Length = {pathThatIsInside.PolygonLength(false)}", 30, Height - 40);
 				}
 
-				var crossings = new List<Tuple<int, int, MSIntPoint>>(avoid.BoundaryPolygons.FindCrossingPoints(pathStart, pathEnd, avoid.BoundaryEdgeQuadTrees));
-				crossings.Sort(new MatterHackers.MatterSlice.DirectionSorter(pathStart, pathEnd));
-
-				int index = 0;
-				foreach (var crossing in crossings)
+				// show the crossings
+				if (false)
 				{
-					graphics2D.Circle(ObjectToScreen(crossing.Item3).X, ObjectToScreen(crossing.Item3).Y, 4, RGBA_Floats.FromHSL((float)index / crossings.Count, 1, .5).GetAsRGBA_Bytes());
-					index++;
+					var crossings = new List<Tuple<int, int, MSIntPoint>>(avoid.BoundaryPolygons.FindCrossingPoints(pathStart, pathEnd, avoid.BoundaryEdgeQuadTrees));
+					crossings.Sort(new MatterHackers.MatterSlice.DirectionSorter(pathStart, pathEnd));
+
+					int index = 0;
+					foreach (var crossing in crossings)
+					{
+						graphics2D.Circle(ObjectToScreen(crossing.Item3).X, ObjectToScreen(crossing.Item3).Y, 4, RGBA_Floats.FromHSL((float)index / crossings.Count, 1, .5).GetAsRGBA_Bytes());
+						index++;
+					}
 				}
 
 				if(avoid.BoundaryPolygons.PointIsInside(pathEnd))
@@ -457,20 +459,8 @@ namespace MatterHackers.PolygonPathing
 				offset = new MSIntPoint(-(bounds.maxX + bounds.minX)/2 / scale + Width / 2, -(bounds.maxY + bounds.minY)/2 / scale + Height / 2);
 			}
 
-
 			IVertexSource shapePath = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(polygonsToPathAround), scale), Affine.NewTranslation(offset.X, offset.Y));
 			graphics2D.Render(shapePath, fillColor);
-
-			// render the travel line
-			PathStorage travelLine = new PathStorage();
-			travelLine.MoveTo(lineStart);
-			travelLine.LineTo(mousePosition);
-
-			Polygons travelPolysLine = VertexSourceToClipperPolygons.CreatePolygons(travelLine, 1);
-			MSPolygons travelPolygons = CreateTravelPath(polygonsToPathAround, PolygonsToMSPolygons(travelPolysLine));
-			PathStorage travelPath = VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(travelPolygons));
-			travelPath.Add(0, 0, ShapePath.FlagsAndCommand.CommandStop);
-			graphics2D.Render(new Stroke(travelPath), pathColor);
 		}
 	}
 
