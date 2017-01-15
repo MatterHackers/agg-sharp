@@ -106,14 +106,20 @@ namespace MatterHackers.PolygonPathing
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			RenderPolygonToPathAgainst(graphics2D);
+			CreatePolygonData();
 
 			if (polygonsToPathAround?.Count > 0)
 			{
 				MSIntPoint pathStart = ScreenToObject(new MSIntPoint(lineStart.x, lineStart.y));
 				MSIntPoint pathEnd = ScreenToObject(new MSIntPoint(mousePosition.x, mousePosition.y));
 
-				var avoid = new AvoidCrossingPerimeters(polygonsToPathAround, 0);// scale == 1 ? 0 : -600); // -600 is for a .4 nozzle in matterslice
+				var avoid = new AvoidCrossingPerimeters(polygonsToPathAround, scale == 1 ? -4 : -600); // -600 is for a .4 nozzle in matterslice
+
+				IVertexSource outlineShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.OutlinePolygons), scale), Affine.NewTranslation(offset.X, offset.Y));
+				graphics2D.Render(outlineShape, RGBA_Bytes.Orange);
+
+				IVertexSource pathingShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.BoundaryPolygons), scale), Affine.NewTranslation(offset.X, offset.Y));
+				graphics2D.Render(pathingShape, fillColor);
 
 				// creat the path
 				List<MSIntPoint> pathThatIsInside = new List<MSIntPoint>();
@@ -282,7 +288,7 @@ namespace MatterHackers.PolygonPathing
 			return outputPolygons;
 		}
 
-		private void RenderPolygonToPathAgainst(Graphics2D graphics2D)
+		private void CreatePolygonData()
 		{
 			IVertexSource pathToUse = null;
 			MSPolygons directPolygons = null;
@@ -458,9 +464,6 @@ namespace MatterHackers.PolygonPathing
 				scale = Math.Max(width, height);
 				offset = new MSIntPoint(-(bounds.maxX + bounds.minX)/2 / scale + Width / 2, -(bounds.maxY + bounds.minY)/2 / scale + Height / 2);
 			}
-
-			IVertexSource shapePath = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(polygonsToPathAround), scale), Affine.NewTranslation(offset.X, offset.Y));
-			graphics2D.Render(shapePath, fillColor);
 		}
 	}
 
