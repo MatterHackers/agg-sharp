@@ -108,10 +108,6 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\MatterSlice\MatterSlice.csproj">
-      <Project>{c46ca728-dd2f-4dd1-971a-aaa89d9dff95}</Project>
-      <Name>MatterSlice</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\..\MatterSlice\MSClipperLib\MSClipperLib.csproj">
       <Project>{2c564be1-352d-4ddb-8226-f0981f983c60}</Project>
       <Name>MSClipperLib</Name>
