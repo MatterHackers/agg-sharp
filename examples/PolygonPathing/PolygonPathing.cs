@@ -35,6 +35,7 @@ using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.DataConverters2D;
 using MatterHackers.VectorMath;
+using MatterHackers.QuadTree;
 
 namespace MatterHackers.PolygonPathing
 {
@@ -46,6 +47,7 @@ namespace MatterHackers.PolygonPathing
 	using MSPolygon = List<MSClipperLib.IntPoint>;
 	using MSPolygons = List<List<MSClipperLib.IntPoint>>;
 	using System.Linq;
+	using Pathfinding;
 	public class PolygonPathingDemo : SystemWindow
 	{
 		private Vector2 lineStart = Vector2.Zero;
@@ -113,7 +115,7 @@ namespace MatterHackers.PolygonPathing
 				MSIntPoint pathStart = ScreenToObject(new MSIntPoint(lineStart.x, lineStart.y));
 				MSIntPoint pathEnd = ScreenToObject(new MSIntPoint(mousePosition.x, mousePosition.y));
 
-				var avoid = new AvoidCrossingPerimeters(polygonsToPathAround, scale == 1 ? -4 : -600); // -600 is for a .4 nozzle in matterslice
+				var avoid = new PathFinder(polygonsToPathAround, scale == 1 ? -4 : -600); // -600 is for a .4 nozzle in matterslice
 
 				IVertexSource outlineShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.OutlinePolygons), scale), Affine.NewTranslation(offset.X, offset.Y));
 				graphics2D.Render(outlineShape, RGBA_Bytes.Orange);
@@ -157,7 +159,7 @@ namespace MatterHackers.PolygonPathing
 				if (false)
 				{
 					var crossings = new List<Tuple<int, int, MSIntPoint>>(avoid.BoundaryPolygons.FindCrossingPoints(pathStart, pathEnd, avoid.BoundaryEdgeQuadTrees));
-					crossings.Sort(new MatterHackers.MatterSlice.DirectionSorter(pathStart, pathEnd));
+					crossings.Sort(new PolygonAndPointDirectionSorter(pathStart, pathEnd));
 
 					int index = 0;
 					foreach (var crossing in crossings)
