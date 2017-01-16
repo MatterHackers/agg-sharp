@@ -83,6 +83,8 @@ namespace MatterHackers.Agg
 			VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(lionShape.Path, transform);
 			graphics2D.Render(transformedPathStorage, lionShape.Colors, lionShape.PathIndex, lionShape.NumPaths);
 
+			graphics2D.DrawString("test", 40, 40, 50);
+
 			base.OnDraw(graphics2D);
 		}
 

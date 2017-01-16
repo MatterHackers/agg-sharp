@@ -108,6 +108,18 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\MatterSlice\MSClipperLib\MSClipperLib.csproj">
+      <Project>{2c564be1-352d-4ddb-8226-f0981f983c60}</Project>
+      <Name>MSClipperLib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\MatterSlice\Pathfinding\Pathfinding.csproj">
+      <Project>{8cb3464f-6130-4edb-8dc6-ccd2697fafbb}</Project>
+      <Name>Pathfinding</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\MatterSlice\QuadTree\QuadTree.csproj">
+      <Project>{23ec3364-7c93-4169-9ab2-7181c66004c0}</Project>
+      <Name>QuadTree</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\agg\Agg.csproj">
       <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
       <Name>Agg</Name>

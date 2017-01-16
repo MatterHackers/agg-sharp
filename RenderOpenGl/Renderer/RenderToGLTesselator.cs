@@ -54,11 +54,11 @@ namespace MatterHackers.RenderOpenGl
 
 		public RenderToGLTesselator()
 		{
-			callBegin += BeginCallBack;
-			callEnd += EndCallBack;
-			callVertex += VertexCallBack;
+			callBegin = BeginCallBack;
+			callEnd = EndCallBack;
+			callVertex = VertexCallBack;
 			//callEdgeFlag += EdgeFlagCallBack;
-			callCombine += CombineCallBack;
+			callCombine = CombineCallBack;
 		}
 
 		public override void BeginPolygon()
@@ -102,10 +102,9 @@ namespace MatterHackers.RenderOpenGl
 			//GL.EdgeFlag(IsEdge);
 		}
 
-		public void CombineCallBack(double[] coords3, int[] data4,
-			double[] weight4, out int outData)
+		public int CombineCallBack(double[] coords3, int[] data4, double[] weight4)
 		{
-			outData = AddVertex(coords3[0], coords3[1], false);
+			return AddVertex(coords3[0], coords3[1], false);
 		}
 
 		public override void AddVertex(double x, double y)
@@ -115,16 +114,17 @@ namespace MatterHackers.RenderOpenGl
 
 		public int AddVertex(double x, double y, bool passOnToTesselator)
 		{
-			int index = verticesCache.Count;
+			int clientIndex = verticesCache.Count;
 			verticesCache.Add(new AddedVertex(x, y));
-			double[] coords = new double[3];
+			double[] coords = new double[2];
 			coords[0] = x;
 			coords[1] = y;
 			if (passOnToTesselator)
 			{
-				AddVertex(coords, index);
+				AddVertex(coords, clientIndex);
 			}
-			return index;
+			
+			return clientIndex;
 		}
 
 		public void Clear()

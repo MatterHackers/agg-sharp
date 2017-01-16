@@ -41,100 +41,37 @@
 */
 
 using System;
+using C5;
 
 namespace Tesselate
 {
 	public class Tesselator
 	{
-		// The begin/end calls must be properly nested.  We keep track of
-		// the current state to enforce the ordering.
-		private enum ProcessingState
-		{
-			Dormant, InPolygon, InContour
-		};
+		public const double MAX_COORD = 1.0e150;
+
+		public int cacheCount;
+
+		public Dictionary edgeDictionary;
+
+		public Face lonelyTriList;
+
+		public Mesh mesh;
+
+		public Tesselator.VertexAndIndex[] simpleVertexCache = new VertexAndIndex[MAX_CACHE_SIZE];
+
+		public WindingRuleType windingRule;
 
 		// We cache vertex data for single-contour polygons so that we can
 		// try a quick-and-dirty decomposition first.
 		private const int MAX_CACHE_SIZE = 100;
 
-		public const double MAX_COORD = 1.0e150;
+		private bool boundaryOnly;
 
-		public struct Vertex
-		{
-			public double x;
-			public double y;
-		}
+		private bool emptyCache;
 
-		public struct VertexAndIndex
-		{
-			public double x;
-			public double y;
-			public int vertexIndex;
-		}
+		private HalfEdge lastHalfEdge;
 
-		public enum TriangleListType
-		{
-			LineLoop,
-			Triangles,
-			TriangleStrip,
-			TriangleFan
-		}
-
-		public enum WindingRuleType
-		{
-			Odd,
-			NonZero,
-			Positive,
-			Negative,
-			ABS_GEQ_Two,
-		}
-
-		private ProcessingState processingState;		/* what begin/end calls have we seen? */
-		private HalfEdge lastHalfEdge;	/* lastEdge.Org is the most recent vertex */
-		public Mesh mesh;		/* stores the input contours, and eventually the tessellation itself */
-
-		public WindingRuleType windingRule;	// rule for determining polygon interior
-
-		public Dictionary edgeDictionary;		/* edge dictionary for sweep line */
-		public C5.IntervalHeap<ContourVertex> vertexPriorityQue = new C5.IntervalHeap<ContourVertex>();
-		public ContourVertex currentSweepVertex;		/* current sweep event being processed */
-
-		public delegate void CallCombineDelegate(double[] coords3, int[] data4,
-			double[] weight4, out int outData);
-
-		public event CallCombineDelegate callCombine;
-
-		/*** state needed for rendering callbacks (see render.c) ***/
-
-		private bool boundaryOnly;	/* Extract contours, not triangles */
-		public Face lonelyTriList;
-		/* list of triangles which could not be rendered as strips or fans */
-
-		public delegate void CallBeginDelegate(TriangleListType type);
-
-		public event CallBeginDelegate callBegin;
-
-		public delegate void CallEdgeFlagDelegate(bool boundaryEdge);
-
-		public event CallEdgeFlagDelegate callEdgeFlag;
-
-		public delegate void CallVertexDelegate(int data);
-
-		public event CallVertexDelegate callVertex;
-
-		public delegate void CallEndDelegate();
-
-		public event CallEndDelegate callEnd;
-
-		public delegate void CallMeshDelegate(Mesh mesh);
-
-		public event CallMeshDelegate callMesh;
-
-		/*** state needed to cache single-contour polygons for renderCache() */
-
-		private bool emptyCache;		/* empty cache on next vertex() call */
-		public int cacheCount;		/* number of cached vertices */
-		public Tesselator.VertexAndIndex[] simpleVertexCache = new VertexAndIndex[MAX_CACHE_SIZE];	/* the vertex data */
+		private ProcessingState processingState;
 
 		public Tesselator()
 		{
@@ -153,6 +90,48 @@ namespace Tesselate
 			RequireState(ProcessingState.Dormant);
 		}
 
+		public Action<TriangleListType> callBegin;
+
+		public Func<double[], int[], double[], int> callCombine;
+
+		public Action<bool> callEdgeFlag;
+
+		public Action callEnd;
+
+		public Action<Mesh> callMesh;
+
+		public Action<int> callVertex;
+
+		public enum TriangleListType
+		{
+			LineLoop,
+			Triangles,
+			TriangleStrip,
+			TriangleFan
+		}
+
+		public enum WindingRuleType
+		{
+			Odd,
+			NonZero,
+			Positive,
+			Negative,
+			ABS_GEQ_Two,
+		}
+
+		// The begin/end calls must be properly nested.  We keep track of
+		// the current state to enforce the ordering.
+		private enum ProcessingState
+		{
+			Dormant, InPolygon, InContour
+		};
+
+		public bool BoundaryOnly
+		{
+			get { return this.boundaryOnly; }
+			set { this.boundaryOnly = value; }
+		}
+
 		public bool EdgeCallBackSet
 		{
 			get
@@ -167,33 +146,54 @@ namespace Tesselate
 			set { this.windingRule = value; }
 		}
 
-		public bool BoundaryOnly
-		{
-			get { return this.boundaryOnly; }
-			set { this.boundaryOnly = value; }
-		}
+		public IntervalHeap<ContourVertex> VertexPriorityQue { get; set; }
 
-		public bool IsWindingInside(int numCrossings)
+		public ContourVertex CurrentSweepVertex { get; set; }
+
+		public void AddVertex(double[] coords2, int clientIndex)
 		{
-			switch (this.windingRule)
+			RequireState(ProcessingState.InContour);
+
+			if (emptyCache)
 			{
-				case Tesselator.WindingRuleType.Odd:
-					return (numCrossings & 1) != 0;
-
-				case Tesselator.WindingRuleType.NonZero:
-					return (numCrossings != 0);
-
-				case Tesselator.WindingRuleType.Positive:
-					return (numCrossings > 0);
-
-				case Tesselator.WindingRuleType.Negative:
-					return (numCrossings < 0);
-
-				case Tesselator.WindingRuleType.ABS_GEQ_Two:
-					return (numCrossings >= 2) || (numCrossings <= -2);
+				EmptyCache();
+				lastHalfEdge = null;
 			}
 
-			throw new Exception();
+			if (mesh == null)
+			{
+				if (cacheCount < MAX_CACHE_SIZE)
+				{
+					CacheVertex(coords2, clientIndex);
+					return;
+				}
+				EmptyCache();
+			}
+
+			AddVertex(coords2[0], coords2[1], clientIndex);
+		}
+
+		public void BeginContour()
+		{
+			RequireState(ProcessingState.InPolygon);
+
+			processingState = ProcessingState.InContour;
+			lastHalfEdge = null;
+			if (cacheCount > 0)
+			{
+				// Just set a flag so we don't get confused by empty contours
+				emptyCache = true;
+			}
+		}
+
+		public virtual void BeginPolygon()
+		{
+			RequireState(ProcessingState.Dormant);
+
+			processingState = ProcessingState.InPolygon;
+			cacheCount = 0;
+			emptyCache = false;
+			mesh = null;
 		}
 
 		public void CallBegin(TriangleListType triangleType)
@@ -204,11 +204,13 @@ namespace Tesselate
 			}
 		}
 
-		public void CallVertex(int vertexData)
+		public void CallCombine(double[] coords3, int[] data4,
+			double[] weight4, out int outData)
 		{
-			if (callVertex != null)
+			outData = 0;
+			if (callCombine != null)
 			{
-				callVertex(vertexData);
+				outData = callCombine(coords3, data4, weight4);
 			}
 		}
 
@@ -228,226 +230,18 @@ namespace Tesselate
 			}
 		}
 
-		public void CallCombine(double[] coords3, int[] data4,
-			double[] weight4, out int outData)
+		public void CallVertex(int vertexData)
 		{
-			outData = 0;
-			if (callCombine != null)
+			if (callVertex != null)
 			{
-				callCombine(coords3, data4, weight4, out outData);
+				callVertex(vertexData);
 			}
-		}
-
-		private void GotoState(ProcessingState newProcessingState)
-		{
-			while (this.processingState != newProcessingState)
-			{
-				/* We change the current state one level at a time, to get to
-				* the desired state.
-				*/
-				if (this.processingState < newProcessingState)
-				{
-					switch (this.processingState)
-					{
-						case ProcessingState.Dormant:
-							throw new Exception("MISSING_BEGIN_POLYGON");
-
-						case ProcessingState.InPolygon:
-							throw new Exception("MISSING_BEGIN_CONTOUR");
-
-						default:
-							break;
-					}
-				}
-				else
-				{
-					switch (this.processingState)
-					{
-						case ProcessingState.InContour:
-							throw new Exception("MISSING_END_CONTOUR");
-
-						case ProcessingState.InPolygon:
-							throw new Exception("MISSING_END_POLYGON");
-
-						default:
-							break;
-					}
-				}
-			}
-		}
-
-		private void RequireState(ProcessingState state)
-		{
-			if (this.processingState != state)
-			{
-				GotoState(state);
-			}
-		}
-
-		public virtual void BeginPolygon()
-		{
-			RequireState(ProcessingState.Dormant);
-
-			processingState = ProcessingState.InPolygon;
-			cacheCount = 0;
-			emptyCache = false;
-			mesh = null;
-		}
-
-		public void BeginContour()
-		{
-			RequireState(ProcessingState.InPolygon);
-
-			processingState = ProcessingState.InContour;
-			lastHalfEdge = null;
-			if (cacheCount > 0)
-			{
-				// Just set a flag so we don't get confused by empty contours
-				emptyCache = true;
-			}
-		}
-
-		private bool AddVertex(double x, double y, int data)
-		{
-			HalfEdge e;
-
-			e = this.lastHalfEdge;
-			if (e == null)
-			{
-				/* Make a self-loop (one vertex, one edge). */
-				e = this.mesh.MakeEdge();
-				Mesh.meshSplice(e, e.otherHalfOfThisEdge);
-			}
-			else
-			{
-				/* Create a new vertex and edge which immediately follow e
-				* in the ordering around the left face.
-				*/
-				if (Mesh.meshSplitEdge(e) == null)
-				{
-					return false;
-				}
-				e = e.nextEdgeCCWAroundLeftFace;
-			}
-
-			/* The new vertex is now e.Org. */
-			e.originVertex.clientIndex = data;
-			e.originVertex.coords[0] = x;
-			e.originVertex.coords[1] = y;
-
-			/* The winding of an edge says how the winding number changes as we
-			* cross from the edge''s right face to its left face.  We add the
-			* vertices in such an order that a CCW contour will add +1 to
-			* the winding number of the region inside the contour.
-			*/
-			e.winding = 1;
-			e.otherHalfOfThisEdge.winding = -1;
-
-			this.lastHalfEdge = e;
-
-			return true;
-		}
-
-		private void EmptyCache()
-		{
-			VertexAndIndex[] v = this.simpleVertexCache;
-
-			this.mesh = new Mesh();
-
-			for (int i = 0; i < this.cacheCount; i++)
-			{
-				this.AddVertex(v[i].x, v[i].y, v[i].vertexIndex);
-			}
-			this.cacheCount = 0;
-			this.emptyCache = false;
-		}
-
-		private void CacheVertex(double[] coords2, int data)
-		{
-			this.simpleVertexCache[this.cacheCount].vertexIndex = data;
-			this.simpleVertexCache[this.cacheCount].x = coords2[0];
-			this.simpleVertexCache[this.cacheCount].y = coords2[1];
-			++this.cacheCount;
-		}
-
-		public void AddVertex(double[] coords2, int data)
-		{
-			RequireState(ProcessingState.InContour);
-
-			if (emptyCache)
-			{
-				EmptyCache();
-				lastHalfEdge = null;
-			}
-
-			if (mesh == null)
-			{
-				if (cacheCount < MAX_CACHE_SIZE)
-				{
-					CacheVertex(coords2, data);
-					return;
-				}
-				EmptyCache();
-			}
-
-			AddVertex(coords2[0], coords2[1], data);
 		}
 
 		public void EndContour()
 		{
 			RequireState(ProcessingState.InContour);
 			processingState = ProcessingState.InPolygon;
-		}
-
-		private void CheckOrientation()
-		{
-			double area;
-			Face curFace, faceHead = this.mesh.faceHead;
-			ContourVertex vHead = this.mesh.vertexHead;
-			HalfEdge curHalfEdge;
-
-			/* When we compute the normal automatically, we choose the orientation
-			 * so that the sum of the signed areas of all contours is non-negative.
-			 */
-			area = 0;
-			for (curFace = faceHead.nextFace; curFace != faceHead; curFace = curFace.nextFace)
-			{
-				curHalfEdge = curFace.halfEdgeThisIsLeftFaceOf;
-				if (curHalfEdge.winding <= 0)
-				{
-					continue;
-				}
-
-				do
-				{
-					area += (curHalfEdge.originVertex.x - curHalfEdge.directionVertex.x)
-						* (curHalfEdge.originVertex.y + curHalfEdge.directionVertex.y);
-					curHalfEdge = curHalfEdge.nextEdgeCCWAroundLeftFace;
-				} while (curHalfEdge != curFace.halfEdgeThisIsLeftFaceOf);
-			}
-
-			if (area < 0)
-			{
-				/* Reverse the orientation by flipping all the t-coordinates */
-				for (ContourVertex curVertex = vHead.nextVertex; curVertex != vHead; curVertex = curVertex.nextVertex)
-				{
-					curVertex.y = -curVertex.y;
-				}
-			}
-		}
-
-		private void ProjectPolygon()
-		{
-			ContourVertex v, vHead = this.mesh.vertexHead;
-
-			// Project the vertices onto the sweep plane
-			for (v = vHead.nextVertex; v != vHead; v = v.nextVertex)
-			{
-				v.x = v.coords[0];
-				v.y = -v.coords[1];
-			}
-
-			CheckOrientation();
 		}
 
 		public void EndPolygon()
@@ -501,9 +295,7 @@ namespace Tesselate
 				rc = this.mesh.TessellateInterior();
 			}
 
-#if DEBUG
-			this.mesh.CheckMesh();
-#endif
+			//this.mesh.CheckMesh();
 
 			if (this.callBegin != null || this.callEnd != null
 				|| this.callVertex != null || this.callEdgeFlag != null)
@@ -514,7 +306,7 @@ namespace Tesselate
 				}
 				else
 				{
-					RenderMesh(mesh);	   /* output strips and fans */
+					RenderMesh(mesh);      /* output strips and fans */
 				}
 			}
 			if (this.callMesh != null)
@@ -533,41 +325,312 @@ namespace Tesselate
 			this.mesh = null;
 		}
 
-		#region CodeFromRender
-
-		private class FaceCount
+		public bool IsWindingInside(int numCrossings)
 		{
-			public FaceCount(int _size, HalfEdge _eStart, RenderDelegate _render)
+			switch (this.windingRule)
 			{
-				size = _size;
-				eStart = _eStart;
-				render = _render;
+				case Tesselator.WindingRuleType.Odd:
+					return (numCrossings & 1) != 0;
+
+				case Tesselator.WindingRuleType.NonZero:
+					return (numCrossings != 0);
+
+				case Tesselator.WindingRuleType.Positive:
+					return (numCrossings > 0);
+
+				case Tesselator.WindingRuleType.Negative:
+					return (numCrossings < 0);
+
+				case Tesselator.WindingRuleType.ABS_GEQ_Two:
+					return (numCrossings >= 2) || (numCrossings <= -2);
 			}
 
-			public int size;		/* number of triangles used */
-			public HalfEdge eStart;	/* edge where this primitive starts */
+			throw new Exception();
+		}
 
-			public delegate void RenderDelegate(Tesselator tess, HalfEdge edge, int data);
+		private bool AddVertex(double x, double y, int clientIndex)
+		{
+			HalfEdge e;
 
-			private event RenderDelegate render;
-
-			// routine to render this primitive
-
-			public void CallRender(Tesselator tess, HalfEdge edge, int data)
+			e = this.lastHalfEdge;
+			if (e == null)
 			{
-				render(tess, edge, data);
+				/* Make a self-loop (one vertex, one edge). */
+				e = this.mesh.MakeEdge();
+				Mesh.meshSplice(e, e.otherHalfOfThisEdge);
+			}
+			else
+			{
+				/* Create a new vertex and edge which immediately follow e
+				* in the ordering around the left face.
+				*/
+				if (Mesh.meshSplitEdge(e) == null)
+				{
+					return false;
+				}
+				e = e.nextEdgeCCWAroundLeftFace;
+			}
+
+			/* The new vertex is now e.Org. */
+			e.originVertex.ClientIndex = clientIndex;
+			e.originVertex.coords[0] = x;
+			e.originVertex.coords[1] = y;
+
+			/* The winding of an edge says how the winding number changes as we
+			* cross from the edge''s right face to its left face.  We add the
+			* vertices in such an order that a CCW contour will add +1 to
+			* the winding number of the region inside the contour.
+			*/
+			e.winding = 1;
+			e.otherHalfOfThisEdge.winding = -1;
+
+			this.lastHalfEdge = e;
+
+			return true;
+		}
+
+		private void CacheVertex(double[] coords2, int clientIndex)
+		{
+			this.simpleVertexCache[this.cacheCount].ClientIndex = clientIndex;
+			this.simpleVertexCache[this.cacheCount].x = coords2[0];
+			this.simpleVertexCache[this.cacheCount].y = coords2[1];
+			++this.cacheCount;
+		}
+
+		private void CheckOrientation()
+		{
+			double area;
+			Face curFace, faceHead = this.mesh.faceHead;
+			ContourVertex vHead = this.mesh.vertexHead;
+			HalfEdge curHalfEdge;
+
+			/* When we compute the normal automatically, we choose the orientation
+			 * so that the sum of the signed areas of all contours is non-negative.
+			 */
+			area = 0;
+			for (curFace = faceHead.nextFace; curFace != faceHead; curFace = curFace.nextFace)
+			{
+				curHalfEdge = curFace.halfEdgeThisIsLeftFaceOf;
+				if (curHalfEdge.winding <= 0)
+				{
+					continue;
+				}
+
+				do
+				{
+					area += (curHalfEdge.originVertex.x - curHalfEdge.directionVertex.x)
+						* (curHalfEdge.originVertex.y + curHalfEdge.directionVertex.y);
+					curHalfEdge = curHalfEdge.nextEdgeCCWAroundLeftFace;
+				} while (curHalfEdge != curFace.halfEdgeThisIsLeftFaceOf);
+			}
+
+			if (area < 0)
+			{
+				/* Reverse the orientation by flipping all the t-coordinates */
+				for (ContourVertex curVertex = vHead.nextVertex; curVertex != vHead; curVertex = curVertex.nextVertex)
+				{
+					curVertex.y = -curVertex.y;
+				}
 			}
 		}
 
-		/************************ Strips and Fans decomposition ******************/
+		private void EmptyCache()
+		{
+			VertexAndIndex[] v = this.simpleVertexCache;
 
-		/* __gl_renderMesh( tess, mesh ) takes a mesh and breaks it into triangle
-		* fans, strips, and separate triangles.  A substantial effort is made
-		* to use as few rendering primitives as possible (ie. to make the fans
-		* and strips as large as possible).
-		*
-		* The rendering output is provided as callbacks (see the api).
-		*/
+			this.mesh = new Mesh();
+
+			for (int i = 0; i < this.cacheCount; i++)
+			{
+				this.AddVertex(v[i].x, v[i].y, v[i].ClientIndex);
+			}
+			this.cacheCount = 0;
+			this.emptyCache = false;
+		}
+
+		private void GotoState(ProcessingState newProcessingState)
+		{
+			while (this.processingState != newProcessingState)
+			{
+				/* We change the current state one level at a time, to get to
+				* the desired state.
+				*/
+				if (this.processingState < newProcessingState)
+				{
+					switch (this.processingState)
+					{
+						case ProcessingState.Dormant:
+							throw new Exception("MISSING_BEGIN_POLYGON");
+
+						case ProcessingState.InPolygon:
+							throw new Exception("MISSING_BEGIN_CONTOUR");
+
+						default:
+							break;
+					}
+				}
+				else
+				{
+					switch (this.processingState)
+					{
+						case ProcessingState.InContour:
+							throw new Exception("MISSING_END_CONTOUR");
+
+						case ProcessingState.InPolygon:
+							throw new Exception("MISSING_END_POLYGON");
+
+						default:
+							break;
+					}
+				}
+			}
+		}
+
+		private void ProjectPolygon()
+		{
+			ContourVertex v, vHead = this.mesh.vertexHead;
+
+			// Project the vertices onto the sweep plane
+			for (v = vHead.nextVertex; v != vHead; v = v.nextVertex)
+			{
+				v.x = v.coords[0];
+				v.y = -v.coords[1];
+			}
+
+			CheckOrientation();
+		}
+
+		private void RequireState(ProcessingState state)
+		{
+			if (this.processingState != state)
+			{
+				GotoState(state);
+			}
+		}
+
+		public struct Vertex
+		{
+			public double x;
+			public double y;
+		}
+
+		public struct VertexAndIndex
+		{
+			public int ClientIndex;
+			public double x;
+			public double y;
+		}
+
+		/* what begin/end calls have we seen? */
+		/* lastEdge.Org is the most recent vertex */
+		/* stores the input contours, and eventually the tessellation itself */
+
+		// rule for determining polygon interior
+
+		/* edge dictionary for sweep line */
+		/* current sweep event being processed */
+		/*** state needed for rendering callbacks (see render.c) ***/
+
+		/* Extract contours, not triangles */
+		/* list of triangles which could not be rendered as strips or fans */
+		/*** state needed to cache single-contour polygons for renderCache() */
+
+		/* empty cache on next vertex() call */
+		/* number of cached vertices */
+		/* the vertex data */
+
+		#region CodeFromRender
+
+		private const int SIGN_INCONSISTENT = 2;
+
+		public void RenderBoundary(Mesh mesh)
+		{
+			for (Face curFace = mesh.faceHead.nextFace; curFace != mesh.faceHead; curFace = curFace.nextFace)
+			{
+				if (curFace.isInterior)
+				{
+					this.CallBegin(Tesselator.TriangleListType.LineLoop);
+					HalfEdge curHalfEdge = curFace.halfEdgeThisIsLeftFaceOf;
+					do
+					{
+						this.CallVertex(curHalfEdge.originVertex.ClientIndex);
+						curHalfEdge = curHalfEdge.nextEdgeCCWAroundLeftFace;
+					} while (curHalfEdge != curFace.halfEdgeThisIsLeftFaceOf);
+					this.CallEnd();
+				}
+			}
+		}
+
+		public bool RenderCache()
+		{
+			Tesselator.VertexAndIndex[] vCache = this.simpleVertexCache;
+			Tesselator.VertexAndIndex v0 = vCache[0];
+			double[] norm3 = new double[3];
+			int sign;
+
+			if (this.cacheCount < 3)
+			{
+				/* Degenerate contour -- no output */
+				return true;
+			}
+
+			norm3[0] = 0;
+			norm3[1] = 0;
+			norm3[2] = 1;
+
+			sign = this.ComputeNormal(norm3);
+			if (sign == SIGN_INCONSISTENT)
+			{
+				// Fan triangles did not have a consistent orientation
+				return false;
+			}
+			if (sign == 0)
+			{
+				// All triangles were degenerate
+				return true;
+			}
+
+			/* Make sure we do the right thing for each winding rule */
+			switch (this.windingRule)
+			{
+				case Tesselator.WindingRuleType.Odd:
+				case Tesselator.WindingRuleType.NonZero:
+					break;
+
+				case Tesselator.WindingRuleType.Positive:
+					if (sign < 0) return true;
+					break;
+
+				case Tesselator.WindingRuleType.Negative:
+					if (sign > 0) return true;
+					break;
+
+				case Tesselator.WindingRuleType.ABS_GEQ_Two:
+					return true;
+			}
+
+			this.CallBegin(this.BoundaryOnly ? Tesselator.TriangleListType.LineLoop
+				: (this.cacheCount > 3) ? Tesselator.TriangleListType.TriangleFan
+				: Tesselator.TriangleListType.Triangles);
+
+			this.CallVertex(v0.ClientIndex);
+			if (sign > 0)
+			{
+				for (int vcIndex = 1; vcIndex < this.cacheCount; ++vcIndex)
+				{
+					this.CallVertex(vCache[vcIndex].ClientIndex);
+				}
+			}
+			else
+			{
+				for (int vcIndex = this.cacheCount - 1; vcIndex > 0; --vcIndex)
+				{
+					this.CallVertex(vCache[vcIndex].ClientIndex);
+				}
+			}
+			this.CallEnd();
+			return true;
+		}
 
 		public void RenderMesh(Mesh mesh)
 		{
@@ -602,186 +665,6 @@ namespace Tesselate
 			}
 		}
 
-		private void RenderMaximumFaceGroup(Face fOrig)
-		{
-			/* We want to find the largest triangle fan or strip of unmarked faces
-			* which includes the given face fOrig.  There are 3 possible fans
-			* passing through fOrig (one centered at each vertex), and 3 possible
-			* strips (one for each CCW permutation of the vertices).  Our strategy
-			* is to try all of these, and take the primitive which uses the most
-			* triangles (a greedy approach).
-			*/
-			HalfEdge e = fOrig.halfEdgeThisIsLeftFaceOf;
-			FaceCount max = new FaceCount(1, e, new FaceCount.RenderDelegate(RenderTriangle));
-			FaceCount newFace;
-
-			max.size = 1;
-			max.eStart = e;
-
-			if (!this.EdgeCallBackSet)
-			{
-				newFace = MaximumFan(e); if (newFace.size > max.size) { max = newFace; }
-				newFace = MaximumFan(e.nextEdgeCCWAroundLeftFace); if (newFace.size > max.size) { max = newFace; }
-				newFace = MaximumFan(e.Lprev); if (newFace.size > max.size) { max = newFace; }
-
-				newFace = MaximumStrip(e); if (newFace.size > max.size) { max = newFace; }
-				newFace = MaximumStrip(e.nextEdgeCCWAroundLeftFace); if (newFace.size > max.size) { max = newFace; }
-				newFace = MaximumStrip(e.Lprev); if (newFace.size > max.size) { max = newFace; }
-			}
-
-			max.CallRender(this, max.eStart, max.size);
-		}
-
-		private FaceCount MaximumFan(HalfEdge eOrig)
-		{
-			/* eOrig.Lface is the face we want to render.  We want to find the size
-			* of a maximal fan around eOrig.Org.  To do this we just walk around
-			* the origin vertex as far as possible in both directions.
-			*/
-			FaceCount newFace = new FaceCount(0, null, new FaceCount.RenderDelegate(RenderFan));
-			Face trail = null;
-			HalfEdge e;
-
-			for (e = eOrig; !e.leftFace.Marked(); e = e.nextEdgeCCWAroundOrigin)
-			{
-				Face.AddToTrail(ref e.leftFace, ref trail);
-				++newFace.size;
-			}
-			for (e = eOrig; !e.rightFace.Marked(); e = e.Oprev)
-			{
-				Face f = e.rightFace;
-				Face.AddToTrail(ref f, ref trail);
-				e.rightFace = f;
-				++newFace.size;
-			}
-			newFace.eStart = e;
-
-			Face.FreeTrail(ref trail);
-			return newFace;
-		}
-
-		private bool IsEven(int n)
-		{
-			return (((n) & 1) == 0);
-		}
-
-		private FaceCount MaximumStrip(HalfEdge eOrig)
-		{
-			/* Here we are looking for a maximal strip that contains the vertices
-			* eOrig.Org, eOrig.Dst, eOrig.Lnext.Dst (in that order or the
-			* reverse, such that all triangles are oriented CCW).
-			*
-			* Again we walk forward and backward as far as possible.  However for
-			* strips there is a twist: to get CCW orientations, there must be
-			* an *even* number of triangles in the strip on one side of eOrig.
-			* We walk the strip starting on a side with an even number of triangles;
-			* if both side have an odd number, we are forced to shorten one side.
-			*/
-			FaceCount newFace = new FaceCount(0, null, RenderStrip);
-			int headSize = 0, tailSize = 0;
-			Face trail = null;
-			HalfEdge e, eTail, eHead;
-
-			for (e = eOrig; !e.leftFace.Marked(); ++tailSize, e = e.nextEdgeCCWAroundOrigin)
-			{
-				Face.AddToTrail(ref e.leftFace, ref trail);
-				++tailSize;
-				e = e.Dprev;
-				if (e.leftFace.Marked()) break;
-				Face.AddToTrail(ref e.leftFace, ref trail);
-			}
-			eTail = e;
-
-			for (e = eOrig; !e.rightFace.Marked(); ++headSize, e = e.Dnext)
-			{
-				Face f = e.rightFace;
-				Face.AddToTrail(ref f, ref trail);
-				e.rightFace = f;
-				++headSize;
-				e = e.Oprev;
-				if (e.rightFace.Marked()) break;
-				f = e.rightFace;
-				Face.AddToTrail(ref f, ref trail);
-				e.rightFace = f;
-			}
-			eHead = e;
-
-			newFace.size = tailSize + headSize;
-			if (IsEven(tailSize))
-			{
-				newFace.eStart = eTail.otherHalfOfThisEdge;
-			}
-			else if (IsEven(headSize))
-			{
-				newFace.eStart = eHead;
-			}
-			else
-			{
-				/* Both sides have odd length, we must shorten one of them.  In fact,
-				* we must start from eHead to guarantee inclusion of eOrig.Lface.
-				*/
-				--newFace.size;
-				newFace.eStart = eHead.nextEdgeCCWAroundOrigin;
-			}
-
-			Face.FreeTrail(ref trail);
-			return newFace;
-		}
-
-		private void RenderTriangle(Tesselator tess, HalfEdge e, int size)
-		{
-			/* Just add the triangle to a triangle list, so we can render all
-			* the separate triangles at once.
-			*/
-			if (size != 1)
-			{
-				throw new Exception();
-			}
-			Face.AddToTrail(ref e.leftFace, ref this.lonelyTriList);
-		}
-
-		private void RenderLonelyTriangles(Face f)
-		{
-			/* Now we render all the separate triangles which could not be
-			* grouped into a triangle fan or strip.
-			*/
-			HalfEdge e;
-			bool newState = false;
-			bool edgeState = false;	/* force edge state output for first vertex */
-			bool sentFirstEdge = false;
-
-			this.CallBegin(Tesselator.TriangleListType.Triangles);
-
-			for (; f != null; f = f.trail)
-			{
-				/* Loop once for each edge (there will always be 3 edges) */
-
-				e = f.halfEdgeThisIsLeftFaceOf;
-				do
-				{
-					if (this.EdgeCallBackSet)
-					{
-						/* Set the "edge state" to TRUE just before we output the
-						* first vertex of each edge on the polygon boundary.
-						*/
-						newState = !e.rightFace.isInterior;
-						if (edgeState != newState || !sentFirstEdge)
-						{
-							sentFirstEdge = true;
-							edgeState = newState;
-							this.CallEdgeFlag(edgeState);
-						}
-					}
-
-					this.CallVertex(e.originVertex.clientIndex);
-
-					e = e.nextEdgeCCWAroundLeftFace;
-				} while (e != f.halfEdgeThisIsLeftFaceOf);
-			}
-
-			this.CallEnd();
-		}
-
 		private static void RenderFan(Tesselator tess, HalfEdge e, int size)
 		{
 			/* Render as many CCW triangles as possible in a fan starting from
@@ -789,15 +672,15 @@ namespace Tesselate
 			* (otherwise we've goofed up somewhere).
 			*/
 			tess.CallBegin(Tesselator.TriangleListType.TriangleFan);
-			tess.CallVertex(e.originVertex.clientIndex);
-			tess.CallVertex(e.directionVertex.clientIndex);
+			tess.CallVertex(e.originVertex.ClientIndex);
+			tess.CallVertex(e.directionVertex.ClientIndex);
 
 			while (!e.leftFace.Marked())
 			{
 				e.leftFace.marked = true;
 				--size;
 				e = e.nextEdgeCCWAroundOrigin;
-				tess.CallVertex(e.directionVertex.clientIndex);
+				tess.CallVertex(e.directionVertex.ClientIndex);
 			}
 
 			if (size != 0)
@@ -814,21 +697,21 @@ namespace Tesselate
 			* (otherwise we've goofed up somewhere).
 			*/
 			tess.CallBegin(Tesselator.TriangleListType.TriangleStrip);
-			tess.CallVertex(halfEdge.originVertex.clientIndex);
-			tess.CallVertex(halfEdge.directionVertex.clientIndex);
+			tess.CallVertex(halfEdge.originVertex.ClientIndex);
+			tess.CallVertex(halfEdge.directionVertex.ClientIndex);
 
 			while (!halfEdge.leftFace.Marked())
 			{
 				halfEdge.leftFace.marked = true;
 				--size;
 				halfEdge = halfEdge.Dprev;
-				tess.CallVertex(halfEdge.originVertex.clientIndex);
+				tess.CallVertex(halfEdge.originVertex.ClientIndex);
 				if (halfEdge.leftFace.Marked()) break;
 
 				halfEdge.leftFace.marked = true;
 				--size;
 				halfEdge = halfEdge.nextEdgeCCWAroundOrigin;
-				tess.CallVertex(halfEdge.directionVertex.clientIndex);
+				tess.CallVertex(halfEdge.directionVertex.ClientIndex);
 			}
 
 			if (size != 0)
@@ -837,35 +720,6 @@ namespace Tesselate
 			}
 			tess.CallEnd();
 		}
-
-		/************************ Boundary contour decomposition ******************/
-
-		/* Takes a mesh, and outputs one
-		* contour for each face marked "inside".  The rendering output is
-		* provided as callbacks.
-		*/
-
-		public void RenderBoundary(Mesh mesh)
-		{
-			for (Face curFace = mesh.faceHead.nextFace; curFace != mesh.faceHead; curFace = curFace.nextFace)
-			{
-				if (curFace.isInterior)
-				{
-					this.CallBegin(Tesselator.TriangleListType.LineLoop);
-					HalfEdge curHalfEdge = curFace.halfEdgeThisIsLeftFaceOf;
-					do
-					{
-						this.CallVertex(curHalfEdge.originVertex.clientIndex);
-						curHalfEdge = curHalfEdge.nextEdgeCCWAroundLeftFace;
-					} while (curHalfEdge != curFace.halfEdgeThisIsLeftFaceOf);
-					this.CallEnd();
-				}
-			}
-		}
-
-		/************************ Quick-and-dirty decomposition ******************/
-
-		private const int SIGN_INCONSISTENT = 2;
 
 		private int ComputeNormal(double[] norm3)
 		/*
@@ -936,6 +790,228 @@ namespace Tesselate
 			return sign;
 		}
 
+		private bool IsEven(int n)
+		{
+			return (((n) & 1) == 0);
+		}
+
+		private FaceCount MaximumFan(HalfEdge eOrig)
+		{
+			/* eOrig.Lface is the face we want to render.  We want to find the size
+			* of a maximal fan around eOrig.Org.  To do this we just walk around
+			* the origin vertex as far as possible in both directions.
+			*/
+			FaceCount newFace = new FaceCount(0, null, RenderFan);
+			Face trail = null;
+			HalfEdge e;
+
+			for (e = eOrig; !e.leftFace.Marked(); e = e.nextEdgeCCWAroundOrigin)
+			{
+				Face.AddToTrail(ref e.leftFace, ref trail);
+				++newFace.size;
+			}
+			for (e = eOrig; !e.rightFace.Marked(); e = e.Oprev)
+			{
+				Face f = e.rightFace;
+				Face.AddToTrail(ref f, ref trail);
+				e.rightFace = f;
+				++newFace.size;
+			}
+			newFace.eStart = e;
+
+			Face.FreeTrail(ref trail);
+			return newFace;
+		}
+
+		private FaceCount MaximumStrip(HalfEdge eOrig)
+		{
+			/* Here we are looking for a maximal strip that contains the vertices
+			* eOrig.Org, eOrig.Dst, eOrig.Lnext.Dst (in that order or the
+			* reverse, such that all triangles are oriented CCW).
+			*
+			* Again we walk forward and backward as far as possible.  However for
+			* strips there is a twist: to get CCW orientations, there must be
+			* an *even* number of triangles in the strip on one side of eOrig.
+			* We walk the strip starting on a side with an even number of triangles;
+			* if both side have an odd number, we are forced to shorten one side.
+			*/
+			FaceCount newFace = new FaceCount(0, null, RenderStrip);
+			int headSize = 0, tailSize = 0;
+			Face trail = null;
+			HalfEdge e, eTail, eHead;
+
+			for (e = eOrig; !e.leftFace.Marked(); ++tailSize, e = e.nextEdgeCCWAroundOrigin)
+			{
+				Face.AddToTrail(ref e.leftFace, ref trail);
+				++tailSize;
+				e = e.Dprev;
+				if (e.leftFace.Marked()) break;
+				Face.AddToTrail(ref e.leftFace, ref trail);
+			}
+			eTail = e;
+
+			for (e = eOrig; !e.rightFace.Marked(); ++headSize, e = e.Dnext)
+			{
+				Face f = e.rightFace;
+				Face.AddToTrail(ref f, ref trail);
+				e.rightFace = f;
+				++headSize;
+				e = e.Oprev;
+				if (e.rightFace.Marked()) break;
+				f = e.rightFace;
+				Face.AddToTrail(ref f, ref trail);
+				e.rightFace = f;
+			}
+			eHead = e;
+
+			newFace.size = tailSize + headSize;
+			if (IsEven(tailSize))
+			{
+				newFace.eStart = eTail.otherHalfOfThisEdge;
+			}
+			else if (IsEven(headSize))
+			{
+				newFace.eStart = eHead;
+			}
+			else
+			{
+				/* Both sides have odd length, we must shorten one of them.  In fact,
+				* we must start from eHead to guarantee inclusion of eOrig.Lface.
+				*/
+				--newFace.size;
+				newFace.eStart = eHead.nextEdgeCCWAroundOrigin;
+			}
+
+			Face.FreeTrail(ref trail);
+			return newFace;
+		}
+
+		private void RenderLonelyTriangles(Face f)
+		{
+			/* Now we render all the separate triangles which could not be
+			* grouped into a triangle fan or strip.
+			*/
+			HalfEdge e;
+			bool newState = false;
+			bool edgeState = false; /* force edge state output for first vertex */
+			bool sentFirstEdge = false;
+
+			this.CallBegin(Tesselator.TriangleListType.Triangles);
+
+			for (; f != null; f = f.trail)
+			{
+				/* Loop once for each edge (there will always be 3 edges) */
+
+				e = f.halfEdgeThisIsLeftFaceOf;
+				do
+				{
+					if (this.EdgeCallBackSet)
+					{
+						/* Set the "edge state" to TRUE just before we output the
+						* first vertex of each edge on the polygon boundary.
+						*/
+						newState = !e.rightFace.isInterior;
+						if (edgeState != newState || !sentFirstEdge)
+						{
+							sentFirstEdge = true;
+							edgeState = newState;
+							this.CallEdgeFlag(edgeState);
+						}
+					}
+
+					this.CallVertex(e.originVertex.ClientIndex);
+
+					e = e.nextEdgeCCWAroundLeftFace;
+				} while (e != f.halfEdgeThisIsLeftFaceOf);
+			}
+
+			this.CallEnd();
+		}
+
+		private void RenderMaximumFaceGroup(Face fOrig)
+		{
+			/* We want to find the largest triangle fan or strip of unmarked faces
+			* which includes the given face fOrig.  There are 3 possible fans
+			* passing through fOrig (one centered at each vertex), and 3 possible
+			* strips (one for each CCW permutation of the vertices).  Our strategy
+			* is to try all of these, and take the primitive which uses the most
+			* triangles (a greedy approach).
+			*/
+			HalfEdge e = fOrig.halfEdgeThisIsLeftFaceOf;
+			FaceCount max = new FaceCount(1, e, RenderTriangle);
+			FaceCount newFace;
+
+			max.size = 1;
+			max.eStart = e;
+
+			if (!this.EdgeCallBackSet)
+			{
+				newFace = MaximumFan(e); if (newFace.size > max.size) { max = newFace; }
+				newFace = MaximumFan(e.nextEdgeCCWAroundLeftFace); if (newFace.size > max.size) { max = newFace; }
+				newFace = MaximumFan(e.Lprev); if (newFace.size > max.size) { max = newFace; }
+
+				newFace = MaximumStrip(e); if (newFace.size > max.size) { max = newFace; }
+				newFace = MaximumStrip(e.nextEdgeCCWAroundLeftFace); if (newFace.size > max.size) { max = newFace; }
+				newFace = MaximumStrip(e.Lprev); if (newFace.size > max.size) { max = newFace; }
+			}
+
+			max.CallRender(this, max.eStart, max.size);
+		}
+
+		private void RenderTriangle(Tesselator tess, HalfEdge e, int size)
+		{
+			/* Just add the triangle to a triangle list, so we can render all
+			* the separate triangles at once.
+			*/
+			if (size != 1)
+			{
+				throw new Exception();
+			}
+			Face.AddToTrail(ref e.leftFace, ref this.lonelyTriList);
+		}
+
+		private class FaceCount
+		{
+			public HalfEdge eStart;
+
+			public int size;
+
+			public FaceCount(int _size, HalfEdge _eStart, Action<Tesselator, HalfEdge, int> _render)
+			{
+				size = _size;
+				eStart = _eStart;
+				render = _render;
+			}
+
+			/* number of triangles used */
+			/* edge where this primitive starts */
+
+			private Action<Tesselator, HalfEdge, int> render;
+
+			// routine to render this primitive
+
+			public void CallRender(Tesselator tess, HalfEdge edge, int data)
+			{
+				render(tess, edge, data);
+			}
+		}
+
+		/************************ Strips and Fans decomposition ******************/
+
+		/* __gl_renderMesh( tess, mesh ) takes a mesh and breaks it into triangle
+		* fans, strips, and separate triangles.  A substantial effort is made
+		* to use as few rendering primitives as possible (ie. to make the fans
+		* and strips as large as possible).
+		*
+		* The rendering output is provided as callbacks (see the api).
+		*/
+		/************************ Boundary contour decomposition ******************/
+
+		/* Takes a mesh, and outputs one
+		* contour for each face marked "inside".  The rendering output is
+		* provided as callbacks.
+		*/
+		/************************ Quick-and-dirty decomposition ******************/
 		/* Takes a single contour and tries to render it
 		* as a triangle fan.  This handles convex polygons, as well as some
 		* non-convex polygons if we get lucky.
@@ -943,77 +1019,6 @@ namespace Tesselate
 		* Returns TRUE if the polygon was successfully rendered.  The rendering
 		* output is provided as callbacks (see the api).
 		*/
-
-		public bool RenderCache()
-		{
-			Tesselator.VertexAndIndex[] vCache = this.simpleVertexCache;
-			Tesselator.VertexAndIndex v0 = vCache[0];
-			double[] norm3 = new double[3];
-			int sign;
-
-			if (this.cacheCount < 3)
-			{
-				/* Degenerate contour -- no output */
-				return true;
-			}
-
-			norm3[0] = 0;
-			norm3[1] = 0;
-			norm3[2] = 1;
-
-			sign = this.ComputeNormal(norm3);
-			if (sign == SIGN_INCONSISTENT)
-			{
-				// Fan triangles did not have a consistent orientation
-				return false;
-			}
-			if (sign == 0)
-			{
-				// All triangles were degenerate
-				return true;
-			}
-
-			/* Make sure we do the right thing for each winding rule */
-			switch (this.windingRule)
-			{
-				case Tesselator.WindingRuleType.Odd:
-				case Tesselator.WindingRuleType.NonZero:
-					break;
-
-				case Tesselator.WindingRuleType.Positive:
-					if (sign < 0) return true;
-					break;
-
-				case Tesselator.WindingRuleType.Negative:
-					if (sign > 0) return true;
-					break;
-
-				case Tesselator.WindingRuleType.ABS_GEQ_Two:
-					return true;
-			}
-
-			this.CallBegin(this.BoundaryOnly ? Tesselator.TriangleListType.LineLoop
-				: (this.cacheCount > 3) ? Tesselator.TriangleListType.TriangleFan
-				: Tesselator.TriangleListType.Triangles);
-
-			this.CallVertex(v0.vertexIndex);
-			if (sign > 0)
-			{
-				for (int vcIndex = 1; vcIndex < this.cacheCount; ++vcIndex)
-				{
-					this.CallVertex(vCache[vcIndex].vertexIndex);
-				}
-			}
-			else
-			{
-				for (int vcIndex = this.cacheCount - 1; vcIndex > 0; --vcIndex)
-				{
-					this.CallVertex(vCache[vcIndex].vertexIndex);
-				}
-			}
-			this.CallEnd();
-			return true;
-		}
 
 		#endregion CodeFromRender
 	}
