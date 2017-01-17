@@ -72,7 +72,7 @@ namespace MatterHackers.GCodeVisualizer
 			FlowLayoutWidget keepOnTop = new FlowLayoutWidget();
 
 			prevLayerButton = new Button("<<", 0, 0);
-			prevLayerButton.Click += new EventHandler(prevLayer_ButtonClick);
+			prevLayerButton.Click += prevLayer_ButtonClick;
 			keepOnTop.AddChild(prevLayerButton);
 
 			currentLayerIndex = new NumberEdit(1, pixelWidth: 40);
@@ -83,7 +83,7 @@ namespace MatterHackers.GCodeVisualizer
 			keepOnTop.AddChild(layerCountTextWidget);
 
 			nextLayerButton = new Button(">>", 0, 0);
-			nextLayerButton.Click += new EventHandler(nextLayer_ButtonClick);
+			nextLayerButton.Click += nextLayer_ButtonClick;
 			keepOnTop.AddChild(nextLayerButton);
 
 			if (gCodeToLoad != "")
@@ -93,7 +93,7 @@ namespace MatterHackers.GCodeVisualizer
 			else
 			{
 				openFileButton = new Button("Open GCode", 0, 0);
-				openFileButton.Click += new EventHandler(openFileButton_ButtonClick);
+				openFileButton.Click += openFileButton_ButtonClick;
 				keepOnTop.AddChild(openFileButton);
 			}
 

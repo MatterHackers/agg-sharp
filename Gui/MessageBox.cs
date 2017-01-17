@@ -38,11 +38,11 @@ namespace MatterHackers.Agg.UI
 						FlowLayoutWidget yesNoButtonsFlow = new FlowLayoutWidget();
 
 						Button yesButton = new Button("Yes");
-						yesButton.Click += new EventHandler(okButton_Click);
+						yesButton.Click += okButton_Click;
 						yesNoButtonsFlow.AddChild(yesButton);
 
 						Button noButton = new Button("No");
-						noButton.Click += new EventHandler(noButton_Click);
+						noButton.Click += (s, e) => Close();
 						yesNoButtonsFlow.AddChild(noButton);
 
 						topToBottomFlow.AddChild(yesNoButtonsFlow);
@@ -52,7 +52,7 @@ namespace MatterHackers.Agg.UI
 				case MessageType.OK:
 					{
 						Button okButton = new Button("Ok");
-						okButton.Click += new EventHandler(okButton_Click);
+						okButton.Click += okButton_Click;
 						topToBottomFlow.AddChild(okButton);
 					}
 					break;
@@ -68,17 +68,9 @@ namespace MatterHackers.Agg.UI
 			IsModal = true;
 		}
 
-		private void noButton_Click(object sender, EventArgs mouseEvent)
-		{
-			Close();
-		}
-
 		private void okButton_Click(object sender, EventArgs mouseEvent)
 		{
-			if (ClickedOk != null)
-			{
-				ClickedOk(this, null);
-			}
+			ClickedOk?.Invoke(this, null);
 			Close();
 		}
 	}
