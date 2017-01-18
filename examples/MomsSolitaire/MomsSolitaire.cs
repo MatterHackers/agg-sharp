@@ -26,15 +26,15 @@ namespace MomsSolitaire
 		public MomsSolitaire()
 		{
 			m_ShuffleButton = new Button("Shuffle", 20, 10);
-			m_ShuffleButton.Click += new EventHandler(DoShuffle);
+			m_ShuffleButton.Click += DoShuffle;
 			AddChild(m_ShuffleButton);
 
 			m_UndoButton = new Button("Undo", 120, 10);
-			m_UndoButton.Click += new EventHandler(DoUndo);
+			m_UndoButton.Click += DoUndo;
 			AddChild(m_UndoButton);
 
 			m_NewGameButton = new Button("New Game", 530, 350);
-			m_NewGameButton.Click += new EventHandler(DoNewGame);
+			m_NewGameButton.Click += DoNewGame;
 			AddChild(m_NewGameButton);
 
 			String inputString = "M -4,0 L 0,6 L 4,0 L 0,-6 z";

@@ -74,7 +74,7 @@ namespace MatterHackers.Agg.UI
 				MinimumSize = new Vector2(Width, Height);
 			}
 
-			Click += new EventHandler(RadioButton_Click);
+			Click += (s, e) => Checked = true;
 		}
 
 		public RadioButton(GuiWidget view)
@@ -106,11 +106,6 @@ namespace MatterHackers.Agg.UI
 			}
 
 			base.OnParentChanged(e);
-		}
-
-		private void RadioButton_Click(object sender, EventArgs mouseEvent)
-		{
-			Checked = true;
 		}
 
 		public void SetFontSize(double fontSize)

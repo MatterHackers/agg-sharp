@@ -22,7 +22,7 @@ namespace RockBlaster
 			GameImageSequence cancelButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "NumPlayersCancelButton");
 			Button cancelGameButton = new Button(400, 200, new ButtonViewThreeImage(cancelButtonSequence.GetImageByIndex(0), cancelButtonSequence.GetImageByIndex(1), cancelButtonSequence.GetImageByIndex(2)));
 			AddChild(cancelGameButton);
-			cancelGameButton.Click += new EventHandler(OnCancelMenuButton);
+			cancelGameButton.Click += OnCancelMenuButton;
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)
