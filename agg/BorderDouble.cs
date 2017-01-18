@@ -27,6 +27,11 @@ namespace MatterHackers.Agg
 			this.Top = top;
 		}
 
+		public static implicit operator BorderDouble(int valueForAll)  // explicit byte to digit conversion operator
+		{
+			return new BorderDouble(valueForAll);
+		}
+
 		public static bool operator ==(BorderDouble a, BorderDouble b)
 		{
 			if (a.Left == b.Left && a.Bottom == b.Bottom && a.Right == b.Right && a.Top == b.Top)
