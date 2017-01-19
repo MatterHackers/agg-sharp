@@ -2720,8 +2720,9 @@ namespace MatterHackers.Agg.UI
 					}
 
 					int countOfChildernThatThinkTheyHaveTheMouseCaptured = 0;
-					foreach (GuiWidget child in Children)
+					for(int childIndex = 0; childIndex < Children.Count(); childIndex++)
 					{
+						GuiWidget child = Children[childIndex];
 						if (childrenLockedInMouseUpCount != 1)
 						{
 							BreakInDebugger("The mouse should always be locked while in mouse up.");

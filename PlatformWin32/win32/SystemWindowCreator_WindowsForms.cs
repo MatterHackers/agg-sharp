@@ -27,77 +27,19 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using MatterHackers.Agg.PlatformAbstract;
 using MatterHackers.Agg.UI;
-using System;
 
 namespace MatterHackers.Agg
 {
 	public class SystemWindowCreator_WindowsForms : SystemWindowCreatorPlugin
 	{
-		private bool pendingSetInitialDesktopPosition = false;
+		private IGuiFactory factoryToUse = null;
+		private AbstractOsMappingWidget firstOsMappingWindow;
 		private Point2D InitialDesktopPosition = new Point2D();
-
-		IGuiFactory factoryToUse = null;
-
-		public override void ShowSystemWindow(SystemWindow systemWindow)
-		{
-			bool firstWindow = false;
-			if (factoryToUse == null)
-			{
-				if (systemWindow.UseOpenGL)
-				{
-					factoryToUse = new WindowsFormsOpenGLFactory();
-				}
-				else
-				{
-					factoryToUse = new WindowsFormsBitmapFactory();
-				}
-				firstWindow = true;
-
-				// When our top most window closes reset this so we can make a window in the future.
-				systemWindow.Closed += (sender, e) =>
-				{
-					factoryToUse = null;
-				};
-			}
-
-			AbstractOsMappingWidget osMappingWindow = factoryToUse.CreateSurface(systemWindow);
-
-			osMappingWindow.Caption = systemWindow.Title;
-			osMappingWindow.AddChild(systemWindow);
-			osMappingWindow.MinimumSize = systemWindow.MinimumSize;
-
-			systemWindow.AbstractOsMappingWidget = osMappingWindow;
-
-			if (pendingSetInitialDesktopPosition)
-			{
-				pendingSetInitialDesktopPosition = false;
-				systemWindow.DesktopPosition = InitialDesktopPosition;
-			}
-
-			systemWindow.AnchorAll();
-			systemWindow.TitleChanged += new EventHandler(TitelChangedEventHandler);
-			// and make sure the title is correct right now
-			TitelChangedEventHandler(systemWindow, null);
-
-			if (firstWindow)
-			{
-				osMappingWindow.Run();
-			}
-			else
-			{
-				if (systemWindow.IsModal)
-				{
-					osMappingWindow.ShowModal();
-				}
-				else
-				{
-					osMappingWindow.Show();
-					osMappingWindow.BringToFront();
-				}
-			}
-		}
+		private bool pendingSetInitialDesktopPosition = false;
+		public static bool UseSingleWindow { get; set; } = false;
 
 		public override Point2D GetDesktopPosition(SystemWindow systemWindow)
 		{
@@ -106,7 +48,7 @@ namespace MatterHackers.Agg
 				return systemWindow.AbstractOsMappingWidget.DesktopPosition;
 			}
 
-			if(pendingSetInitialDesktopPosition)
+			if (pendingSetInitialDesktopPosition)
 			{
 				return InitialDesktopPosition;
 			}
@@ -137,10 +79,106 @@ namespace MatterHackers.Agg
 			}
 		}
 
+		public override void ShowSystemWindow(SystemWindow systemWindow)
+		{
+			bool firstWindow = false;
+			if (factoryToUse == null)
+			{
+				if (systemWindow.UseOpenGL)
+				{
+					factoryToUse = new WindowsFormsOpenGLFactory();
+				}
+				else
+				{
+					factoryToUse = new WindowsFormsBitmapFactory();
+				}
+				firstWindow = true;
+
+				// When our top most window closes reset this so we can make a window in the future.
+				systemWindow.Closed += (sender, e) =>
+				{
+					factoryToUse = null;
+				};
+			}
+
+			AbstractOsMappingWidget osMappingWindow = null;
+			if (firstWindow || !UseSingleWindow)
+			{
+				osMappingWindow = factoryToUse.CreateSurface(systemWindow);
+				firstOsMappingWindow = osMappingWindow;
+			}
+			else
+			{
+				osMappingWindow = new TouchScreenMappingWidget(systemWindow);
+				firstOsMappingWindow.AddChild(osMappingWindow);
+			}
+
+			osMappingWindow.Caption = systemWindow.Title;
+			osMappingWindow.AddChild(systemWindow);
+			osMappingWindow.MinimumSize = systemWindow.MinimumSize;
+
+			systemWindow.AbstractOsMappingWidget = osMappingWindow;
+
+			if (pendingSetInitialDesktopPosition)
+			{
+				pendingSetInitialDesktopPosition = false;
+				systemWindow.DesktopPosition = InitialDesktopPosition;
+			}
+
+			systemWindow.AnchorAll();
+			systemWindow.TitleChanged += new EventHandler(TitelChangedEventHandler);
+			// and make sure the title is correct right now
+			TitelChangedEventHandler(systemWindow, null);
+
+			if (firstWindow)
+			{
+				osMappingWindow.Run();
+			}
+			else if (!UseSingleWindow)
+			{
+				if (systemWindow.IsModal)
+				{
+					osMappingWindow.ShowModal();
+				}
+				else
+				{
+					osMappingWindow.Show();
+					osMappingWindow.BringToFront();
+				}
+			}
+		}
+
 		private void TitelChangedEventHandler(object sender, EventArgs e)
 		{
 			SystemWindow systemWindow = ((SystemWindow)sender);
 			systemWindow.AbstractOsMappingWidget.Caption = systemWindow.Title;
+		}
+	}
+
+	public class TouchScreenMappingWidget : AbstractOsMappingWidget
+	{
+		public TouchScreenMappingWidget(SystemWindow childSystemWindow)
+			: base(childSystemWindow)
+		{
+			AnchorAll();
+		}
+
+		public override string Caption { get; set; }
+
+		public override Point2D DesktopPosition { get; set; }
+
+		public override int TitleBarHeight { get; }
+
+		public override void Run()
+		{
+		}
+
+		public override void Show()
+		{
+		}
+
+		public override void ShowModal()
+		{
 		}
 	}
 }
