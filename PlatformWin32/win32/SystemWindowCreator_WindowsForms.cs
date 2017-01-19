@@ -39,7 +39,6 @@ namespace MatterHackers.Agg
 		private AbstractOsMappingWidget firstOsMappingWindow;
 		private Point2D InitialDesktopPosition = new Point2D();
 		private bool pendingSetInitialDesktopPosition = false;
-		public static bool UseSingleWindow { get; set; } = false;
 
 		public override Point2D GetDesktopPosition(SystemWindow systemWindow)
 		{
@@ -102,14 +101,14 @@ namespace MatterHackers.Agg
 			}
 
 			AbstractOsMappingWidget osMappingWindow = null;
-			if (firstWindow || !UseSingleWindow)
+			if (firstWindow || !SystemWindow.ShareSingleOsWindow)
 			{
 				osMappingWindow = factoryToUse.CreateSurface(systemWindow);
 				firstOsMappingWindow = osMappingWindow;
 			}
 			else
 			{
-				osMappingWindow = new TouchScreenMappingWidget(systemWindow);
+				osMappingWindow = new SingleWindowMappingWidget(systemWindow);
 				firstOsMappingWindow.AddChild(osMappingWindow);
 			}
 
@@ -134,7 +133,7 @@ namespace MatterHackers.Agg
 			{
 				osMappingWindow.Run();
 			}
-			else if (!UseSingleWindow)
+			else if (!SystemWindow.ShareSingleOsWindow)
 			{
 				if (systemWindow.IsModal)
 				{
@@ -155,9 +154,9 @@ namespace MatterHackers.Agg
 		}
 	}
 
-	public class TouchScreenMappingWidget : AbstractOsMappingWidget
+	public class SingleWindowMappingWidget : AbstractOsMappingWidget
 	{
-		public TouchScreenMappingWidget(SystemWindow childSystemWindow)
+		public SingleWindowMappingWidget(SystemWindow childSystemWindow)
 			: base(childSystemWindow)
 		{
 			AnchorAll();
