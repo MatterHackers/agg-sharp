@@ -21,17 +21,17 @@ namespace MatterHackers.Agg.UI
 	{
 		public static BorderDouble DefaultMargin = new BorderDouble(3);
 
-		public Button()
-			: this(0, 0, null)
-		{
-		}
-
 		public Button(GuiWidget buttonView)
 			: this(0, 0, buttonView)
 		{
 		}
 
-		public Button(double x, double y, GuiWidget buttonView)
+		public Button(string buttonText, double x = 0, double y = 0)
+			: this(x, y, new ButtonViewText(buttonText))
+		{
+		}
+
+		public Button(double x = 0, double y = 0, GuiWidget buttonView = null)
 			: base(x, y)
 		{
 			Margin = DefaultMargin;
@@ -50,16 +50,6 @@ namespace MatterHackers.Agg.UI
 
 				MinimumSize = new Vector2(Width, Height);
 			}
-		}
-
-		public Button(String buttonText, double x, double y)
-			: this(x, y, new ButtonViewText(buttonText))
-		{
-		}
-
-		public Button(String buttonText)
-			: this(buttonText, 0, 0)
-		{
 		}
 	}
 }
