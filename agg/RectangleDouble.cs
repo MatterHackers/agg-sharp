@@ -245,12 +245,36 @@ namespace MatterHackers.Agg
 			if (Bottom > y) Bottom = y;
 		}
 
+		public void Inflate(int inflateSize)
+		{
+			Left = Left - inflateSize;
+			Bottom = Bottom - inflateSize;
+			Right = Right + inflateSize;
+			Top = Top + inflateSize;
+		}
+
 		public void Inflate(double inflateSize)
 		{
 			Left = Left - inflateSize;
 			Bottom = Bottom - inflateSize;
 			Right = Right + inflateSize;
 			Top = Top + inflateSize;
+		}
+
+		public void Inflate(BorderDouble borderDouble)
+		{
+			Left -= borderDouble.Left;
+			Right += borderDouble.Right;
+			Bottom -= borderDouble.Bottom;
+			Top += borderDouble.Top;
+		}
+
+		public void Deflate(BorderDouble borderDouble)
+		{
+			Left += borderDouble.Left;
+			Right -= borderDouble.Right;
+			Bottom += borderDouble.Bottom;
+			Top -= borderDouble.Top;
 		}
 
 		public void Offset(Vector2 offset)
@@ -289,22 +313,6 @@ namespace MatterHackers.Agg
 		public double YCenter
 		{
 			get { return (Top + Bottom) / 2; }
-		}
-
-		public void Inflate(BorderDouble borderDouble)
-		{
-			Left -= borderDouble.Left;
-			Right += borderDouble.Right;
-			Bottom -= borderDouble.Bottom;
-			Top += borderDouble.Top;
-		}
-
-		public void Deflate(BorderDouble borderDouble)
-		{
-			Left += borderDouble.Left;
-			Right -= borderDouble.Right;
-			Bottom += borderDouble.Bottom;
-			Top -= borderDouble.Top;
 		}
 
 		public override string ToString()

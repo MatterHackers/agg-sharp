@@ -16,10 +16,38 @@
 //          mcseemagg@yahoo.com
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
+using MatterHackers.VectorMath;
 using System.Collections.Generic;
+using MatterHackers.Agg.Transform;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.VertexSource
 {
+	public enum AngleType { Degrees, Radians }
+
+	public static class ExtensionMethods
+	{
+		public static IVertexSource Rotate(this IVertexSource source, double angle, AngleType angleType = AngleType.Radians)
+		{
+			if (angleType == AngleType.Degrees)
+			{
+				angle = MathHelper.DegreesToRadians(angle);
+			}
+
+			return new VertexSourceApplyTransform(source, Affine.NewRotation(angle));
+		}
+
+		public static IVertexSource Translate(this IVertexSource source, Vector2 vector2)
+		{
+			return source.Translate(vector2.x, vector2.y);
+		}
+
+		public static IVertexSource Translate(this IVertexSource source, double x, double y)
+		{
+			return new VertexSourceApplyTransform(source, Affine.NewTranslation(x, y));
+		}
+	}
+
 	// in the original agg this was conv_transform
 	public class VertexSourceApplyTransform : IVertexSourceProxy
 	{
