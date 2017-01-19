@@ -195,6 +195,12 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// If set only one os window will be created and all system windows will share it.
+		/// Make sure this is set prior to creating any SystemWindows (don't change at runtime).
+		/// </summary>
+		public static bool ShareSingleOsWindow { get; set; }
+
 		public static void AssertDebugNotDefined()
 		{
 #if DEBUG
