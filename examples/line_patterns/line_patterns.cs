@@ -27,12 +27,12 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
-using System;
 
 namespace MatterHackers.Agg
 {
@@ -285,6 +285,7 @@ namespace MatterHackers.Agg
 	{
 		public override GuiWidget NewWidget()
 		{
+			var ImageIO = AggContext.ImageIO;
 			if (!ImageIO.LoadImageData("1.bmp", line_patterns_application.rbuf_img0)
 				|| !ImageIO.LoadImageData("2.bmp", line_patterns_application.rbuf_img1)
 				|| !ImageIO.LoadImageData("3.bmp", line_patterns_application.rbuf_img2)

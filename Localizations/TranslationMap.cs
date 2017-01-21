@@ -1,10 +1,9 @@
-﻿using MatterHackers.Agg;
-using MatterHackers.Agg.PlatformAbstract;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using MatterHackers.Agg;
+using MatterHackers.Agg.Platform;
 
 namespace MatterHackers.Localizations
 {
@@ -167,7 +166,7 @@ namespace MatterHackers.Localizations
 		{
 			// We only ship release and this could cause a write to the ProgramFiles directory which is not allowed.
 			// So we only write translation text while in debug (another solution in the future could be implemented). LBB
-			if (OsInformation.OperatingSystem == OSType.Windows)
+			if (AggContext.OperatingSystem == OSType.Windows)
 			{
 				// TODO: make sure we don't throw an assertion when running from the ProgramFiles directory.
 				// Don't do saving when we are.

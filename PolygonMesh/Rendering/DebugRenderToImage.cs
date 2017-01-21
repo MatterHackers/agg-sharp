@@ -1,10 +1,10 @@
-﻿using MatterHackers.Agg;
+﻿using System;
+using MatterHackers.Agg;
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
-using System;
 
 namespace MatterHackers.PolygonMesh
 {
@@ -53,7 +53,7 @@ namespace MatterHackers.PolygonMesh
 
 		public void RenderToPng(string pngFileName)
 		{
-			ImageIO.SaveImageData(pngFileName, CreateImage(pngFileName));
+			AggContext.ImageIO.SaveImageData(pngFileName, CreateImage(pngFileName));
 		}
 
 		public ImageBuffer CreateImage(string pngFileName)

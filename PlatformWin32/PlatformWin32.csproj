@@ -173,6 +173,7 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="win32\FileSystemStaticData.cs" />
+    <Compile Include="win32\WinformFileDialogProvider.cs" />
     <Compile Include="win32\OsInformationWindowsPlugin.cs" />
     <Compile Include="win32\HookWindowsInputAndSendToWidget.cs" />
     <Compile Include="win32\WidgetForWindowsFormsBitmap.cs" />
@@ -195,17 +196,13 @@
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="win32\WindowsFormsOpenGLFactory.cs" />
-    <Compile Include="win32\SystemWindowCreator_WindowsForms.cs" />
+    <Compile Include="win32\WinformsSystemWindowProvider.cs" />
     <Compile Include="win32\WindowsFormsClipboard.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Gui\Gui.csproj">
       <Project>{74F6BB6C-9D02-4512-A59A-21940E35C532}</Project>
       <Name>Gui</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PlatformAbstract\PlatformAbstract.csproj">
-      <Project>{3E4AABA8-D85F-4922-88C6-5C1B2D2308FB}</Project>
-      <Name>PlatformAbstract</Name>
     </ProjectReference>
     <ProjectReference Include="..\RenderOpenGl\RenderOpenGl.csproj">
       <Project>{545B6912-77FF-4B34-BA76-6C3D6A32BE6A}</Project>

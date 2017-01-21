@@ -1,6 +1,6 @@
-﻿using MatterHackers.Agg.PlatformAbstract;
-using System;
+﻿using System;
 using System.Windows.Forms;
+using MatterHackers.Agg.Platform;
 
 namespace MatterHackers.Agg.UI
 {
@@ -47,14 +47,14 @@ namespace MatterHackers.Agg.UI
 
 		private void controlToHook_KeyDown(object sender, System.Windows.Forms.KeyEventArgs windowsKeyEvent)
 		{
-			if (OsInformation.OperatingSystem == OSType.Mac
+			if (AggContext.OperatingSystem == OSType.Mac
 			   && windowsKeyEvent.KeyCode == System.Windows.Forms.Keys.Cancel)
 			{
 				windowsKeyEvent = new System.Windows.Forms.KeyEventArgs(System.Windows.Forms.Keys.Enter | windowsKeyEvent.Modifiers);
 			}
 
 			MatterHackers.Agg.UI.KeyEventArgs aggKeyEvent;
-			if (OsInformation.OperatingSystem == OSType.Mac
+			if (AggContext.OperatingSystem == OSType.Mac
 				&& (windowsKeyEvent.KeyData & System.Windows.Forms.Keys.Alt) == System.Windows.Forms.Keys.Alt)
 			{
 				aggKeyEvent = new MatterHackers.Agg.UI.KeyEventArgs((MatterHackers.Agg.UI.Keys)(System.Windows.Forms.Keys.Control | (windowsKeyEvent.KeyData & ~System.Windows.Forms.Keys.Alt)));

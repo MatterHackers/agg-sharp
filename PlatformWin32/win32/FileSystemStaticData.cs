@@ -1,13 +1,13 @@
-﻿using MatterHackers.Agg.Image;
-using MatterHackers.Agg.PlatformAbstract;
-using MatterHackers.Agg.UI;
-using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using MatterHackers.Agg.Image;
+using MatterHackers.Agg.Platform;
+using MatterHackers.Agg.UI;
+using Newtonsoft.Json;
 
 namespace MatterHackers.Agg
 {

@@ -31,12 +31,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.Agg.Platform;
+
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
@@ -490,7 +490,7 @@ namespace MatterHackers.GuiAutomation
 			{
 				ImageBuffer imageToLookFor = new ImageBuffer();
 
-				if (ImageIO.LoadImageData(pathToImage, imageToLookFor))
+				if (AggContext.ImageIO.LoadImageData(pathToImage, imageToLookFor))
 				{
 					return imageToLookFor;
 				}
