@@ -57,11 +57,12 @@ namespace MatterHackers.PolygonPathing
 		private long scale = 1;
 		private MSIntPoint offset = new MSIntPoint(0, 0);
 
-		private RadioButtonGroup pathTypeRadioGroup = new RadioButtonGroup(new Vector2(555, 5), new Vector2(80, 130))
+		private CheckBox StayInside = new CheckBox("Stay Inside")
 		{
 			HAnchor = HAnchor.ParentRight | HAnchor.FitToChildren,
 			VAnchor = VAnchor.ParentBottom | VAnchor.FitToChildren,
 			Margin = new BorderDouble(5),
+			BackgroundColor = RGBA_Bytes.White,
 		};
 
 		private MSPolygons polygonsToPathAround;
@@ -78,10 +79,8 @@ namespace MatterHackers.PolygonPathing
 		{
 			BackgroundColor = RGBA_Bytes.White;
 
-			pathTypeRadioGroup.AddRadioButton("Stay Inside");
-			pathTypeRadioGroup.AddRadioButton("Stay Outside");
-			pathTypeRadioGroup.SelectedIndex = 0;
-			AddChild(pathTypeRadioGroup);
+			StayInside.Checked = true;
+			AddChild(StayInside);
 
 			shapeTypeRadioGroup.AddRadioButton("Boxes");
 			shapeTypeRadioGroup.AddRadioButton("Simple Map");
@@ -122,13 +121,21 @@ namespace MatterHackers.PolygonPathing
 					pathEnd = endOverride;
 				}
 
-				var avoid = new PathFinder(polygonsToPathAround, scale == 1 ? -4 : -600); // -600 is for a .4 nozzle in matterslice
+				var avoid = new PathFinder(polygonsToPathAround, scale == 1 ? 4 : 600, StayInside.Checked); // -600 is for a .4 nozzle in matterslice
 
 				IVertexSource outlineShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.OutlinePolygons), scale), Affine.NewTranslation(offset.X, offset.Y));
-				graphics2D.Render(outlineShape, RGBA_Bytes.Orange);
-
 				IVertexSource pathingShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.BoundaryPolygons), scale), Affine.NewTranslation(offset.X, offset.Y));
-				graphics2D.Render(pathingShape, fillColor);
+
+				if (StayInside.Checked)
+				{
+					graphics2D.Render(outlineShape, RGBA_Bytes.Orange);
+					graphics2D.Render(pathingShape, fillColor);
+				}
+				else
+				{
+					graphics2D.Render(pathingShape, fillColor);
+					graphics2D.Render(outlineShape, RGBA_Bytes.Orange);
+				}
 
 				// creat the path
 				List<MSIntPoint> pathThatIsInside = new List<MSIntPoint>();
@@ -332,11 +339,11 @@ namespace MatterHackers.PolygonPathing
 						ps1.LineTo(100, 400);
 						ps1.ClosePolygon();
 
-						ps1.MoveTo(200, 200);
-						ps1.LineTo(300, 200);
-						ps1.LineTo(300, 300);
-						ps1.LineTo(200, 300);
-						ps1.ClosePolygon();
+						//ps1.MoveTo(200, 200);
+						//ps1.LineTo(300, 200);
+						//ps1.LineTo(300, 300);
+						//ps1.LineTo(200, 300);
+						//ps1.ClosePolygon();
 
 						pathToUse = ps1;
 					}
