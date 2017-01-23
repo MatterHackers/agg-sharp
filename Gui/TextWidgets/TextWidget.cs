@@ -1,7 +1,3 @@
-using MatterHackers.Agg.Font;
-using MatterHackers.Agg.Transform;
-using MatterHackers.VectorMath;
-
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
@@ -25,6 +21,9 @@ using MatterHackers.VectorMath;
 //
 //----------------------------------------------------------------------------
 using System;
+using MatterHackers.Agg.Font;
+using MatterHackers.Agg.Transform;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
@@ -32,32 +31,32 @@ namespace MatterHackers.Agg.UI
 	public class TextWidget : GuiWidget
 	{
 		public static bool DoubleBufferDefault = true;
-        
+
 		private RGBA_Bytes textColor;
 
 		private TypeFacePrinter printer;
 
 		public bool EllipsisIfClipped { get; set; }
 
-        public double PointSize
-        {
-            get
-            {
-                return printer.TypeFaceStyle.EmSizeInPoints / GuiWidget.DeviceScale;
-            }
+		public double PointSize
+		{
+			get
+			{
+				return printer.TypeFaceStyle.EmSizeInPoints / GuiWidget.DeviceScale;
+			}
 
-            set
-            {
-                printer.TypeFaceStyle = new StyledTypeFace(printer.TypeFaceStyle.TypeFace, value * GuiWidget.DeviceScale, printer.TypeFaceStyle.DoUnderline, printer.TypeFaceStyle.FlatenCurves);
-	
+			set
+			{
+				printer.TypeFaceStyle = new StyledTypeFace(printer.TypeFaceStyle.TypeFace, value * GuiWidget.DeviceScale, printer.TypeFaceStyle.DoUnderline, printer.TypeFaceStyle.FlatenCurves);
+
 				if (AutoExpandBoundsToText)
 				{
 					DoExpandBoundsToText();
 				}
 
 				this.Invalidate();
-            }
-        }
+			}
+		}
 
 		public TypeFacePrinter Printer
 		{
