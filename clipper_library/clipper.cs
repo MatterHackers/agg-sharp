@@ -456,20 +456,20 @@ namespace ClipperLib
 
 	public struct IntRect
 	{
-		public cInt left;
-		public cInt top;
-		public cInt right;
-		public cInt bottom;
+		public cInt minX;
+		public cInt minY;
+		public cInt maxX;
+		public cInt maxY;
 
 		public IntRect(cInt l, cInt t, cInt r, cInt b)
 		{
-			this.left = l; this.top = t;
-			this.right = r; this.bottom = b;
+			this.minX = l; this.minY = t;
+			this.maxX = r; this.maxY = b;
 		}
 		public IntRect(IntRect ir)
 		{
-			this.left = ir.left; this.top = ir.top;
-			this.right = ir.right; this.bottom = ir.bottom;
+			this.minX = ir.minX; this.minY = ir.minY;
+			this.maxX = ir.maxX; this.maxY = ir.maxY;
 		}
 	}
 
@@ -1197,17 +1197,17 @@ namespace ClipperLib
 			while (i < cnt && paths[i].Count == 0) i++;
 			if (i == cnt) return new IntRect(0, 0, 0, 0);
 			IntRect result = new IntRect();
-			result.left = paths[i][0].X;
-			result.right = result.left;
-			result.top = paths[i][0].Y;
-			result.bottom = result.top;
+			result.minX = paths[i][0].X;
+			result.maxX = result.minX;
+			result.minY = paths[i][0].Y;
+			result.maxY = result.minY;
 			for (; i < cnt; i++)
 				for (int j = 0; j < paths[i].Count; j++)
 				{
-					if (paths[i][j].X < result.left) result.left = paths[i][j].X;
-					else if (paths[i][j].X > result.right) result.right = paths[i][j].X;
-					if (paths[i][j].Y < result.top) result.top = paths[i][j].Y;
-					else if (paths[i][j].Y > result.bottom) result.bottom = paths[i][j].Y;
+					if (paths[i][j].X < result.minX) result.minX = paths[i][j].X;
+					else if (paths[i][j].X > result.maxX) result.maxX = paths[i][j].X;
+					if (paths[i][j].Y < result.minY) result.minY = paths[i][j].Y;
+					else if (paths[i][j].Y > result.maxY) result.maxY = paths[i][j].Y;
 				}
 			return result;
 		}
@@ -4692,10 +4692,10 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 				IntRect r = Clipper.GetBounds(m_destPolys);
 				Path outer = new Path(4);
 
-				outer.Add(new IntPoint(r.left - 10, r.bottom + 10));
-				outer.Add(new IntPoint(r.right + 10, r.bottom + 10));
-				outer.Add(new IntPoint(r.right + 10, r.top - 10));
-				outer.Add(new IntPoint(r.left - 10, r.top - 10));
+				outer.Add(new IntPoint(r.minX - 10, r.maxY + 10));
+				outer.Add(new IntPoint(r.maxX + 10, r.maxY + 10));
+				outer.Add(new IntPoint(r.maxX + 10, r.minY - 10));
+				outer.Add(new IntPoint(r.minX - 10, r.minY - 10));
 
 				clpr.AddPath(outer, PolyType.ptSubject, true);
 				clpr.ReverseSolution = true;
@@ -4724,10 +4724,10 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 				IntRect r = Clipper.GetBounds(m_destPolys);
 				Path outer = new Path(4);
 
-				outer.Add(new IntPoint(r.left - 10, r.bottom + 10));
-				outer.Add(new IntPoint(r.right + 10, r.bottom + 10));
-				outer.Add(new IntPoint(r.right + 10, r.top - 10));
-				outer.Add(new IntPoint(r.left - 10, r.top - 10));
+				outer.Add(new IntPoint(r.minX - 10, r.maxY + 10));
+				outer.Add(new IntPoint(r.maxX + 10, r.maxY + 10));
+				outer.Add(new IntPoint(r.maxX + 10, r.minY - 10));
+				outer.Add(new IntPoint(r.minX - 10, r.minY - 10));
 
 				clpr.AddPath(outer, PolyType.ptSubject, true);
 				clpr.ReverseSolution = true;
