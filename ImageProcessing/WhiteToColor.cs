@@ -64,13 +64,12 @@ namespace MatterHackers.ImageProcessing
 							int offsetA = imageA.GetBufferOffsetY(y);
 							int offsetResult = result.GetBufferOffsetY(y);
 
-							byte amoutOfWhite = imageABuffer[offsetA];
-
 							for (int x = 0; x < width; x++)
 							{
-								resultBuffer[offsetResult++] = (byte)(color.blue * amoutOfWhite / 255); offsetA++;
-								resultBuffer[offsetResult++] = (byte)(color.green * amoutOfWhite / 255); offsetA++;
-								resultBuffer[offsetResult++] = (byte)(color.red * amoutOfWhite / 255); offsetA++;
+								byte amountOfWhite = imageABuffer[offsetA];
+								resultBuffer[offsetResult++] = (byte)(color.blue * amountOfWhite / 255); offsetA++;
+								resultBuffer[offsetResult++] = (byte)(color.green * amountOfWhite / 255); offsetA++;
+								resultBuffer[offsetResult++] = (byte)(color.red * amountOfWhite / 255); offsetA++;
 								resultBuffer[offsetResult++] = imageABuffer[offsetA++];
 							}
 						}
