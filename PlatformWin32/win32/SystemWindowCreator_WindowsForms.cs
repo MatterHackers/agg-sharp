@@ -125,9 +125,10 @@ namespace MatterHackers.Agg
 			}
 
 			systemWindow.AnchorAll();
-			systemWindow.TitleChanged += new EventHandler(TitelChangedEventHandler);
+			systemWindow.TitleChanged += SystemWindow_TitleChanged;
+			
 			// and make sure the title is correct right now
-			TitelChangedEventHandler(systemWindow, null);
+			SystemWindow_TitleChanged(systemWindow, null);
 
 			if (firstWindow)
 			{
@@ -147,7 +148,7 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		private void TitelChangedEventHandler(object sender, EventArgs e)
+		private void SystemWindow_TitleChanged(object sender, EventArgs e)
 		{
 			SystemWindow systemWindow = ((SystemWindow)sender);
 			systemWindow.AbstractOsMappingWidget.Caption = systemWindow.Title;

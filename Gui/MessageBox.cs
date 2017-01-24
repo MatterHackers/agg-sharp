@@ -4,7 +4,7 @@ namespace MatterHackers.Agg.UI
 {
 	public class MessageBox : SystemWindow
 	{
-		public EventHandler ClickedOk;
+		public event EventHandler ClickedOk;
 
 		public enum MessageType { OK, YES_NO };
 
