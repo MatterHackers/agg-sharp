@@ -42,6 +42,13 @@ namespace MatterHackers.Agg.UI
 		public abstract void Run();
 
 		public abstract Point2D DesktopPosition { get; set; }
+
+		public bool Maximized
+		{
+			get { return childSystemWindow.Maximized; }
+			set { childSystemWindow.Maximized = value; }
+		}
+
 		public abstract int TitleBarHeight { get; }
 
 		public virtual void OnInitialize()

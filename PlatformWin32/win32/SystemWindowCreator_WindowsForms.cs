@@ -59,9 +59,18 @@ namespace MatterHackers.Agg
 		{
 			if (systemWindow.AbstractOsMappingWidget != null)
 			{
-				// Make sure the window is on screen (this logic should improve over time)
-				position.x = Math.Max(0, position.x);
-				position.y = Math.Max(0, position.y);
+				// Make sure the window is on screen, but allow for a small amount of negative positioning to account for Form.DesktopLocation quirks
+				position.x = Math.Max(-10, position.x);
+				position.y = Math.Max(-10, position.y);
+
+				// Auto-center if set to (-1,-1)
+				if (position == new Point2D(-1, -1))
+				{
+					Point2D desktopSize = OsInformation.DesktopSize;
+					position = new Point2D(
+						(desktopSize.x - systemWindow.Width) / 2, 
+						(desktopSize.y - systemWindow.Height - systemWindow.AbstractOsMappingWidget.TitleBarHeight) / 2);
+				}
 
 				// If it's mac make sure we are not completely under the menu bar.
 				if (OsInformation.OperatingSystem == OSType.Mac)

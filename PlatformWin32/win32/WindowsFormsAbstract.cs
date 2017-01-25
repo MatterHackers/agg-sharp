@@ -30,6 +30,8 @@ namespace MatterHackers.Agg.UI
 	{
 		protected WidgetForWindowsFormsAbstract aggAppWidget;
 
+		public bool IsInitialized { get; set; } = false;
+
 		private static Form mainForm = null;
 
 		private static System.Timers.Timer idleCallBackTimer = null;
@@ -281,6 +283,15 @@ namespace MatterHackers.Agg.UI
 		protected override void OnResize(EventArgs e)
 		{
 			aggAppWidget.LocalBounds = new RectangleDouble(0, 0, ClientSize.Width, ClientSize.Height);
+
+			// Wait until the control is initialized (and thus WindowState has been set) to ensure we don't wipe out
+			// the persisted data before its loaded
+			if (this.IsInitialized)
+			{
+				// Push the current maximized state into the SystemWindow where it can be used or persisted by Agg applications
+				aggAppWidget.Maximized = this.WindowState == FormWindowState.Maximized;
+			}
+
 			aggAppWidget.Invalidate();
 
 			base.OnResize(e);
