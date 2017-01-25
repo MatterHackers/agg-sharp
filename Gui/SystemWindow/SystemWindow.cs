@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2017, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,18 +27,19 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
 	public class SystemWindow : GuiWidget
 	{
 		private static SystemWindowCreatorPlugin globalSystemWindowCreator;
-		public EventHandler TitleChanged;
+
+		public event EventHandler TitleChanged;
 
 		public AbstractOsMappingWidget AbstractOsMappingWidget { get; set; }
 
@@ -67,27 +68,16 @@ namespace MatterHackers.Agg.UI
 				if (title != value)
 				{
 					title = value;
-					if (TitleChanged != null)
-					{
-						TitleChanged(this, null);
-					}
+					TitleChanged?.Invoke(this, null);
 				}
 			}
 		}
 
 		public enum PixelTypes { Depth24 = 24, Depth32 = 32, DepthFloat = 128 };
 
-		private PixelTypes pixelType = PixelTypes.Depth32;
+		public PixelTypes PixelType { get; set; } = PixelTypes.Depth32;
 
-		public PixelTypes PixelType { get { return pixelType; } set { pixelType = value; } }
-
-		public int BitDepth
-		{
-			get
-			{
-				return (int)pixelType;
-			}
-		}
+		public int BitDepth => (int)this.PixelType;
 
 		public override void OnClosed(EventArgs e)
 		{
