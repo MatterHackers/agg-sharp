@@ -52,9 +52,11 @@ namespace MatterHackers.PolygonPathing
 		MSIntPoint endOverride;
 
 		private Vector2 lineStart = Vector2.Zero;
-		private Vector2 mousePosition;
+		private Vector2 mouseDownPosition;
 		private RGBA_Bytes pathColor = RGBA_Bytes.Green;
-		private long scale = 1;
+		private double scale = 1;
+		long avoidInset;
+		bool updateScaleAndOffset = true;
 		private MSIntPoint offset = new MSIntPoint(0, 0);
 
 		private CheckBox StayInside = new CheckBox("Stay Inside")
@@ -93,6 +95,11 @@ namespace MatterHackers.PolygonPathing
 			shapeTypeRadioGroup.SelectedIndex = 0;
 			AddChild(shapeTypeRadioGroup);
 
+			shapeTypeRadioGroup.SelectionChanged += (s, e) =>
+			{
+				updateScaleAndOffset = true;
+			};
+
 			AnchorAll();
 		}
 
@@ -113,7 +120,7 @@ namespace MatterHackers.PolygonPathing
 			if (polygonsToPathAround?.Count > 0)
 			{
 				MSIntPoint pathStart = ScreenToObject(new MSIntPoint(lineStart.x, lineStart.y));
-				MSIntPoint pathEnd = ScreenToObject(new MSIntPoint(mousePosition.x, mousePosition.y));
+				MSIntPoint pathEnd = ScreenToObject(new MSIntPoint(mouseDownPosition.x, mouseDownPosition.y));
 
 				if (startOverride.X != 0 || startOverride.Y != 0)
 				{
@@ -121,7 +128,17 @@ namespace MatterHackers.PolygonPathing
 					pathEnd = endOverride;
 				}
 
-				var avoid = new PathFinder(polygonsToPathAround, scale == 1 ? 4 : 600, StayInside.Checked); // -600 is for a .4 nozzle in matterslice
+				PathFinder avoid = null;
+				if(!StayInside.Checked)
+				{
+					var boundary = MSClipperLib.CLPolygonsExtensions.GetBounds(polygonsToPathAround);
+					boundary.Inflate(avoidInset * 10);
+					avoid = new PathFinder(polygonsToPathAround, avoidInset, boundary); // -600 is for a .4 nozzle in matterslice
+				}
+				else
+				{
+					avoid = new PathFinder(polygonsToPathAround, avoidInset, null); // -600 is for a .4 nozzle in matterslice
+				}
 
 				IVertexSource outlineShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.OutlinePolygons), scale), Affine.NewTranslation(offset.X, offset.Y));
 				IVertexSource pathingShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.BoundaryPolygons), scale), Affine.NewTranslation(offset.X, offset.Y));
@@ -220,12 +237,20 @@ namespace MatterHackers.PolygonPathing
 
 		private MSIntPoint ObjectToScreen(MSIntPoint inPoint)
 		{
-			return inPoint / scale + offset;
+			if (scale != 0)
+			{
+				inPoint.X = (long)(inPoint.X / scale + .5);
+				inPoint.Y = (long)(inPoint.Y / scale + .5);
+			}
+			inPoint += offset;
+			return inPoint;
 		}
 
 		private MSIntPoint ScreenToObject(MSIntPoint inPoint)
 		{
-			return (inPoint - offset) * scale;
+			inPoint.X = (long)((inPoint.X - offset.X) * scale);
+			inPoint.Y = (long)((inPoint.Y - offset.Y) * scale);
+			return inPoint;
 		}
 
 		private MSPolygons PolygonsToMSPolygons(Polygons polygonsToPathAround)
@@ -264,7 +289,7 @@ namespace MatterHackers.PolygonPathing
 
 			if (mouseEvent.Button == MouseButtons.Left && FirstWidgetUnderMouse)
 			{
-				lineStart = mousePosition = mouseEvent.Position;
+				lineStart = mouseDownPosition = mouseEvent.Position;
 				Invalidate();
 			}
 		}
@@ -273,7 +298,7 @@ namespace MatterHackers.PolygonPathing
 		{
 			if (MouseCaptured)
 			{
-				mousePosition = mouseEvent.Position;
+				mouseDownPosition = mouseEvent.Position;
 				Invalidate();
 			}
 			base.OnMouseMove(mouseEvent);
@@ -400,8 +425,10 @@ namespace MatterHackers.PolygonPathing
 						//startOverride = new MSIntPoint(153099, 78023);
 						//endOverride = new MSIntPoint(153104, 77984);
 
-						polyPath = "x:74146, y:114474,x:74685, y:114065,x:75506, y:113231,x:76189, y:112847,x:76594, y:112508,x:76860, y:112125,x:76966, y:111936,x:77340, y:111139,x:77369, y:111048,x:77461, y:110926,x:77609, y:110551,x:77674, y:110430,x:77937, y:109381,x:78257, y:107999,x:78158, y:107481,x:77898, y:106937,x:77918, y:106717,x:78413, y:105832,x:78552, y:105720,x:78721, y:105649,x:79062, y:105636,x:79456, y:105581,x:79582, y:105525,x:79690, y:105433,x:79797, y:105374,x:80451, y:104594,x:80785, y:104023,x:81481, y:102623,x:81611, y:102183,x:81894, y:100369,x:82066, y:99500,x:82044, y:99231,x:81989, y:99079,x:81828, y:98865,x:81669, y:98729,x:81444, y:98647,x:80977, y:98586,x:80958, y:98296,x:80922, y:98149,x:80673, y:97833,x:80618, y:96920,x:80627, y:96570,x:80775, y:96535,x:81318, y:96486,x:81567, y:96411,x:81691, y:96260,x:81643, y:96108,x:81413, y:95854,x:81287, y:95642,x:81235, y:95519,x:81215, y:95196,x:81280, y:94830,x:82057, y:92638,x:82115, y:92516,x:82258, y:92358,x:82459, y:92315,x:82611, y:92324,x:84430, y:92582,x:84685, y:92643,x:84945, y:92800,x:85204, y:93062,x:85379, y:93343,x:85602, y:93533,x:85642, y:93546,x:85921, y:93284,x:86052, y:93056,x:86305, y:92910,x:87435, y:92557,x:87787, y:92510,x:88158, y:92514,x:88247, y:92466,x:88397, y:92277,x:88545, y:91371,x:88622, y:91101,x:88712, y:90908,x:88798, y:90869,x:89145, y:90784,x:89456, y:90602,x:90344, y:90003,x:90783, y:89667,x:91124, y:89368,x:91341, y:89096,x:91364, y:88996,x:91371, y:88792,x:91284, y:88530,x:91265, y:88318,x:91274, y:88233,x:91430, y:87717,x:91548, y:87541,x:91620, y:87478,x:91877, y:87371,x:92121, y:87327,x:92328, y:87171,x:92365, y:87126,x:92405, y:86748,x:92385, y:86653,x:92447, y:86327,x:92944, y:85898,x:93163, y:85664,x:93493, y:85143,x:93781, y:84933,x:94498, y:84515,x:94631, y:84339,x:94786, y:84213,x:95038, y:83908,x:95369, y:83732,x:95510, y:83695,x:95961, y:83634,x:96126, y:83590,x:96685, y:83261,x:96835, y:83127,x:96936, y:82799,x:97108, y:82534,x:97402, y:82340,x:97600, y:82308,x:97801, y:82331,x:97991, y:82422,x:98087, y:82451,x:98489, y:82694,x:98776, y:82715,x:98932, y:82675,x:99514, y:82664,x:99893, y:82449,x:99993, y:82444,x:100371, y:82643,x:100706, y:82675,x:100995, y:82664,x:101379, y:82686,x:101631, y:82583,x:101907, y:82403,x:102284, y:82301,x:102551, y:82304,x:102891, y:82555,x:102994, y:82729,x:103107, y:83041,x:103198, y:83201,x:103838, y:83548,x:104274, y:83670,x:104473, y:83706,x:104805, y:83845,x:105040, y:84054,x:105218, y:84275,x:105428, y:84431,x:105521, y:84547,x:105841, y:84739,x:106032, y:84822,x:106355, y:85035,x:106607, y:85355,x:106717, y:85642,x:106915, y:85861,x:107477, y:86311,x:107558, y:86515,x:107506, y:86822,x:107545, y:86979,x:107630, y:87161,x:107822, y:87302,x:107949, y:87353,x:108177, y:87403,x:108419, y:87562,x:108493, y:87640,x:108686, y:88247,x:108701, y:88379,x:108599, y:88837,x:108588, y:89020,x:108639, y:89162,x:108884, y:89428,x:109512, y:89941,x:110034, y:90282,x:110322, y:90496,x:110682, y:90719,x:111027, y:90857,x:111183, y:90888,x:111288, y:91046,x:111575, y:92350,x:111661, y:92483,x:111713, y:92502,x:112205, y:92516,x:112563, y:92564,x:113677, y:92912,x:113929, y:93071,x:114017, y:93248,x:114220, y:93469,x:114364, y:93495,x:114497, y:93422,x:114787, y:93013,x:114986, y:92815,x:115223, y:92669,x:115475, y:92589,x:117197, y:92347,x:117279, y:92355,x:117561, y:92450,x:117910, y:92734,x:117946, y:92794,x:118676, y:94821,x:118728, y:95082,x:118739, y:95446,x:118657, y:95698,x:118527, y:95886,x:118358, y:96043,x:118308, y:96126,x:118268, y:96257,x:118271, y:96298,x:118355, y:96393,x:118562, y:96475,x:119055, y:96510,x:119346, y:96576,x:119290, y:97765,x:119225, y:97914,x:118955, y:98284,x:118960, y:98336,x:118910, y:98476,x:118823, y:98537,x:117938, y:98617,x:117567, y:98702,x:117265, y:98867,x:117050, y:99106,x:117001, y:99201,x:116968, y:99500,x:116985, y:99715,x:117381, y:102055,x:117487, y:102475,x:117566, y:102677,x:118312, y:104132,x:118700, y:104732,x:118965, y:105060,x:119276, y:105365,x:119610, y:105557,x:119839, y:105641,x:120929, y:105760,x:121393, y:105712,x:121540, y:105825,x:121824, y:106310,x:122051, y:106747,x:122038, y:106966,x:121836, y:107366,x:121778, y:107560,x:121704, y:108023,x:121888, y:108776,x:121907, y:108936,x:122165, y:110016,x:122360, y:110644,x:122638, y:111144,x:122689, y:111192,x:122875, y:111571,x:123012, y:111952,x:123273, y:112442,x:123413, y:112654,x:123662, y:112858,x:124180, y:113054,x:124392, y:113201,x:125132, y:113933,x:125684, y:114394,x:126486, y:114793,x:127170, y:115097,x:127439, y:115235,x:127934, y:115561,x:127993, y:115746,x:127981, y:115849,x:127905, y:115987,x:127653, y:116280,x:127370, y:116556,x:127237, y:116708,x:124227, y:119610,x:123306, y:120348,x:122869, y:120556,x:122596, y:120630,x:122412, y:120658,x:122243, y:120658,x:121724, y:120555,x:121280, y:120329,x:120922, y:120067,x:120705, y:119807,x:120406, y:119217,x:120238, y:118553,x:120152, y:117916,x:120055, y:116318,x:119964, y:115266,x:119870, y:114490,x:119532, y:112090,x:119307, y:110750,x:118988, y:109214,x:118808, y:108460,x:118280, y:105843,x:118099, y:105157,x:117871, y:104430,x:117511, y:103589,x:117202, y:103057,x:116810, y:102484,x:116401, y:102013,x:116091, y:101723,x:115367, y:101162,x:113619, y:99998,x:113156, y:99639,x:112721, y:99261,x:111082, y:97756,x:110498, y:97266,x:109843, y:96815,x:108874, y:96353,x:107964, y:96047,x:107058, y:95833,x:106221, y:95697,x:105779, y:95660,x:104760, y:95696,x:103727, y:95697,x:102766, y:95759,x:101373, y:95807,x:97931, y:95787,x:96363, y:95703,x:95121, y:95690,x:94322, y:95664,x:93795, y:95701,x:93144, y:95791,x:92556, y:95905,x:91833, y:96096,x:90979, y:96385,x:90412, y:96639,x:89781, y:97011,x:89156, y:97495,x:87038, y:99411,x:86475, y:99874,x:85745, y:100391,x:84655, y:101107,x:83912, y:101671,x:83571, y:101979,x:83137, y:102458,x:82807, y:102925,x:82426, y:103597,x:82275, y:103909,x:82001, y:104598,x:81793, y:105280,x:81638, y:105918,x:81240, y:107936,x:80912, y:109392,x:80503, y:111435,x:80016, y:114867,x:79910, y:116019,x:79817, y:117627,x:79753, y:118277,x:79599, y:119053,x:79420, y:119636,x:79160, y:120080,x:78955, y:120300,x:78482, y:120642,x:78028, y:120794,x:77709, y:120821,x:77571, y:120816,x:77263, y:120739,x:77149, y:120687,x:76572, y:120304,x:76302, y:120096,x:75738, y:119613,x:75011, y:118929,x:73191, y:117147,x:72312, y:116327,x:72080, y:116057,x:72027, y:115852,x:72106, y:115628,x:72147, y:115574,x:72472, y:115295,x:72714, y:115156,x:73959, y:114579,|";
-						startOverride = new MSIntPoint(118291, 105102); endOverride = new MSIntPoint(116969, 102362);
+						polyPath = "x:-130690, y:-104607, z:0, width:0,x:230690, y:-104607, z:0, width:0,x:230690, y:204611, z:0, width:0,x:-130690, y:204611, z:0, width:0,|x:129759, y:95393, z:62150, width:0,x:127503, y:95394, z:62150, width:0,x:127279, y:95449, z:62150, width:0,x:127105, y:95550, z:62150, width:0,x:126954, y:95715, z:62150, width:0,x:126878, y:95853, z:62150, width:0,x:126820, y:96110, z:62150, width:0,x:126853, y:96556, z:62150, width:0,x:126975, y:96751, z:62150, width:0,x:127075, y:96826, z:62150, width:0,x:127283, y:96891, z:62150, width:0,x:128545, y:96892, z:62150, width:0,x:128736, y:96952, z:62150, width:0,x:128899, y:97058, z:62150, width:0,x:128974, y:97182, z:62150, width:0,x:129024, y:97392, z:62150, width:0,x:129024, y:102611, z:62150, width:0,x:128969, y:102839, z:62150, width:0,x:128915, y:102922, z:62150, width:0,x:128558, y:103108, z:62150, width:0,x:111820, y:103111, z:62150, width:0,x:111820, y:104611, z:62150, width:0,x:129749, y:104609, z:62150, width:0,x:130135, y:104510, z:62150, width:0,x:130607, y:104008, z:62150, width:0,x:130690, y:103611, z:62150, width:0,x:130690, y:96392, z:62150, width:0,x:130534, y:95860, z:62150, width:0,x:130230, y:95545, z:62150, width:0,|x:99669, y:103111, z:62150, width:0,x:89340, y:103111, z:62150, width:0,x:89340, y:104611, z:62150, width:0,x:99669, y:104611, z:62150, width:0,|x:70256, y:95395, z:62150, width:0,x:69871, y:95492, z:62150, width:0,x:69584, y:95701, z:62150, width:0,x:69361, y:96082, z:62150, width:0,x:69310, y:96392, z:62150, width:0,x:69310, y:103611, z:62150, width:0,x:69342, y:103856, z:62150, width:0,x:69407, y:104038, z:62150, width:0,x:69469, y:104155, z:62150, width:0,x:69587, y:104303, z:62150, width:0,x:69775, y:104458, z:62150, width:0,x:69947, y:104544, z:62150, width:0,x:70075, y:104586, z:62150, width:0,x:70284, y:104611, z:62150, width:0,x:77033, y:104611, z:62150, width:0,x:77050, y:103111, z:62150, width:0,x:71390, y:103104, z:62150, width:0,x:71206, y:103032, z:62150, width:0,x:71039, y:102853, z:62150, width:0,x:70977, y:102619, z:62150, width:0,x:70979, y:97381, z:62150, width:0,x:71095, y:97068, z:62150, width:0,x:71301, y:96928, z:62150, width:0,x:71450, y:96893, z:62150, width:0,x:72821, y:96864, z:62150, width:0,x:73078, y:96683, z:62150, width:0,x:73179, y:96391, z:62150, width:0,x:73171, y:96029, z:62150, width:0,x:73101, y:95817, z:62150, width:0,x:73034, y:95693, z:62150, width:0,x:72867, y:95528, z:62150, width:0,x:72739, y:95457, z:62150, width:0,x:72536, y:95401, z:62150, width:0,|";
+						// Length of this segment (start->end) 34804.
+						//startOverride = new MSIntPoint(111854, 103111); endOverride = new MSIntPoint(77050, 103111);
+						//TestSinglePathIsInside(polyPath, new IntPoint(111854, 103111), new IntPoint(77050, 103111));
 
 						directPolygons = MSClipperLib.CLPolygonsExtensions.CreateFromString(polyPath);
 					}
@@ -500,18 +527,57 @@ namespace MatterHackers.PolygonPathing
 			if (directPolygons == null)
 			{
 				polygonsToPathAround = PolygonsToMSPolygons(FixWinding(VertexSourceToClipperPolygons.CreatePolygons(pathToUse, 1)));
-				scale = 1;
-				offset = new MSIntPoint(0, 0);
 			}
 			else
 			{
 				polygonsToPathAround = directPolygons;
-				var bounds = MSClipperLib.CLPolygonsExtensions.GetBounds(directPolygons);
-				long width = (bounds.maxX - bounds.minX) / (long)Width * 4 / 3;
-				long height = (bounds.maxY - bounds.minY) / (long)Height * 4 / 3;
-				scale = Math.Max(width, height);
-				offset = new MSIntPoint(-(bounds.maxX + bounds.minX) / 2 / scale + Width / 2, -(bounds.maxY + bounds.minY) / 2 / scale + Height / 2);
 			}
+
+			if (updateScaleAndOffset)
+			{
+				if (directPolygons == null)
+				{
+					avoidInset = 4;
+					scale = 1;
+					offset = new MSIntPoint(0, 0);
+				}
+				else
+				{
+					avoidInset = 600;
+					var bounds = MSClipperLib.CLPolygonsExtensions.GetBounds(directPolygons);
+					long width = (bounds.maxX - bounds.minX) / (long)Width * 4 / 3;
+					long height = (bounds.maxY - bounds.minY) / (long)Height * 4 / 3;
+					scale = Math.Max(width, height);
+					offset = new MSIntPoint(-(bounds.maxX + bounds.minX) / 2 / scale + Width / 2, -(bounds.maxY + bounds.minY) / 2 / scale + Height / 2);
+				}
+				updateScaleAndOffset = false;
+			}
+		}
+
+		public override void OnMouseWheel(MouseEventArgs mouseEvent)
+		{
+			base.OnMouseWheel(mouseEvent);
+			if (FirstWidgetUnderMouse)
+			{
+				const double deltaFor1Click = -120;
+				double scaleAmount = (mouseEvent.WheelDelta / deltaFor1Click) * .1;
+
+				ScalePartAndFixPosition(mouseEvent, scale + scale * scaleAmount);
+
+				Invalidate();
+			}
+		}
+
+		void ScalePartAndFixPosition(MouseEventArgs mouseEvent, double scaleAmount)
+		{
+			var mousPosition = new MSIntPoint(mouseEvent.X, mouseEvent.Y);
+			var mousePreScale = ScreenToObject(mousPosition);
+
+			scale = scaleAmount;
+
+			var mousePostScale = ScreenToObject(mousPosition);
+
+			offset += (mousePostScale - mousePreScale);
 		}
 	}
 
