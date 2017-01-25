@@ -21,6 +21,7 @@ using MatterHackers.RenderOpenGl.OpenGl;
 //----------------------------------------------------------------------------
 using System;
 using System.Diagnostics;
+using System.Windows.Forms;
 
 namespace MatterHackers.Agg.UI
 {
@@ -126,23 +127,28 @@ namespace MatterHackers.Agg.UI
 
 		public void Init()
 		{
-			System.Drawing.Size clientSize = new System.Drawing.Size();
-			clientSize.Width = (int)childSystemWindow.Width;
-			clientSize.Height = (int)childSystemWindow.Height;
-			WindowsFormsWindow.ClientSize = clientSize;
+			// Change the WindowsForms window to match the target SystemWindow bounds
+			WindowsFormsWindow.ClientSize = new System.Drawing.Size((int)childSystemWindow.Width, (int)childSystemWindow.Height);
+
+			// Restore to the last maximized or normal window state
+			WindowsFormsWindow.WindowState = (childSystemWindow.Maximized) ? FormWindowState.Maximized : FormWindowState.Normal;
 
 			if (!childSystemWindow.Resizable)
 			{
-				WindowsFormsWindow.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+				WindowsFormsWindow.FormBorderStyle = FormBorderStyle.FixedDialog;
 				WindowsFormsWindow.MaximizeBox = false;
 			}
 
-			clientSize.Width = (int)childSystemWindow.Width;
-			clientSize.Height = (int)childSystemWindow.Height;
-			WindowsFormsWindow.ClientSize = clientSize;
+			// If maximized, we need to resize the parent SystemWindow to match the new bounds
+			if (childSystemWindow.Maximized)
+			{
+				var maximizedSize = WindowsFormsWindow.ClientSize;
+				childSystemWindow.LocalBounds = new RectangleDouble(0, 0, maximizedSize.Width, maximizedSize.Height);
+			}
 
 			OnInitialize();
 
+			WindowsFormsWindow.IsInitialized = true;
 			initHasBeenCalled = true;
 		}
 

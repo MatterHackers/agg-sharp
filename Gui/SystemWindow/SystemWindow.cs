@@ -172,6 +172,8 @@ namespace MatterHackers.Agg.UI
 			globalSystemWindowCreator.ShowSystemWindow(this);
 		}
 
+		public virtual bool Maximized { get; set; } = false;
+
 		public Point2D DesktopPosition
 		{
 			get
