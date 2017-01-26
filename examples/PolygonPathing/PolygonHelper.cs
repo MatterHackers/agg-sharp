@@ -41,7 +41,7 @@ namespace MatterHackers.PolygonPathing
 
     public static class PolygonHelper
     {
-        public static bool IsVertexConcave(this Polygon vertices, int vertex)
+		public static bool IsVertexConcave(this Polygon vertices, int vertex)
         {
             IntPoint current = vertices[vertex];
             IntPoint next = vertices[(vertex + 1) % vertices.Count];
