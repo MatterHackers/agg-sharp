@@ -161,7 +161,7 @@ namespace MatterHackers.PolygonPathing
 
 				// create the path
 				List<MSIntPoint> pathThatIsInside = new List<MSIntPoint>();
-				bool found = avoid.CreatePathInsideBoundary(pathStart, pathEnd, pathThatIsInside);
+				bool found = avoid.CreatePathInsideBoundary(pathStart, pathEnd, pathThatIsInside, false);
 
 				foreach (var node in avoid.Waypoints.Nodes)
 				{
@@ -236,22 +236,33 @@ namespace MatterHackers.PolygonPathing
 
 				if (!found)
 				{
+					badCount++;
+
 					// try to reduce the polygons under consideration
 					var polys2 = MSPolygonsToPolygons(polygonsToPathAround);
 					var sample = PolygonsToMSPolygons(polys2);
 					int polyIndex = rand.Next(sample.Count - 1);
 					sample[polyIndex].RemoveAt(rand.Next(sample[polyIndex].Count - 1));
-					if(sample[polyIndex].Count == 0)
+					if(sample[polyIndex].Count < 3)
 					{
 						sample.RemoveAt(polyIndex);
 					}
 
+					// move a point towards the center
+					if(false)
+					{
+						var center = MatterHackers.QuadTree.QTPolygonsExtensions.Center(sample);
+						polyIndex = rand.Next(sample.Count - 1);
+						int pointIndex = rand.Next(sample[polyIndex].Count - 1);
+						//sample[polyIndex][pointIndex] = sample[polyIndex][pointIndex] + new MSIntPoint(rand.Next()
+					}
+
 					var avoid2 = new PathFinder(sample, avoidInset, null); // -600 is for a .4 nozzle in matterslice
 					if (!avoid2.CreatePathInsideBoundary(pathStart, pathEnd, pathThatIsInside)
-						&& pathThatIsInside.Count > 0
 						&& avoid2.BoundaryPolygons.PointIsInside(pathStart))
 					{
 						overrideBadPolys = sample;
+						badCount = 0;
 					}
 
 					UiThread.RunOnIdle(Invalidate);
@@ -263,6 +274,7 @@ namespace MatterHackers.PolygonPathing
 			base.OnDraw(graphics2D);
 		}
 		Random rand = new Random();
+		int badCount = 0;
 
 		private MSIntPoint ObjectToScreen(MSIntPoint inPoint)
 		{
