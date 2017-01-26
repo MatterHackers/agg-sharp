@@ -112,9 +112,15 @@ namespace MatterHackers.PolygonPathing
 			demo.ShowAsSystemWindow();
 		}
 
+		MSPolygons overrideBadPolys = null;
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			CreatePolygonData();
+
+			if(overrideBadPolys != null)
+			{
+				polygonsToPathAround = overrideBadPolys;
+			}
 
 			if (polygonsToPathAround?.Count > 0)
 			{
@@ -228,11 +234,35 @@ namespace MatterHackers.PolygonPathing
 					graphics2D.DrawString("Outside", 30, Height - 60, color: RGBA_Bytes.Red);
 				}
 
+				if (!found)
+				{
+					// try to reduce the polygons under consideration
+					var polys2 = MSPolygonsToPolygons(polygonsToPathAround);
+					var sample = PolygonsToMSPolygons(polys2);
+					int polyIndex = rand.Next(sample.Count - 1);
+					sample[polyIndex].RemoveAt(rand.Next(sample[polyIndex].Count - 1));
+					if(sample[polyIndex].Count == 0)
+					{
+						sample.RemoveAt(polyIndex);
+					}
+
+					var avoid2 = new PathFinder(sample, avoidInset, null); // -600 is for a .4 nozzle in matterslice
+					if (!avoid2.CreatePathInsideBoundary(pathStart, pathEnd, pathThatIsInside)
+						&& pathThatIsInside.Count > 0
+						&& avoid2.BoundaryPolygons.PointIsInside(pathStart))
+					{
+						overrideBadPolys = sample;
+					}
+
+					UiThread.RunOnIdle(Invalidate);
+				}
+
 				//var triangulated = avoid.BoundaryPolygons.Triangulate();
 			}
 
 			base.OnDraw(graphics2D);
 		}
+		Random rand = new Random();
 
 		private MSIntPoint ObjectToScreen(MSIntPoint inPoint)
 		{
