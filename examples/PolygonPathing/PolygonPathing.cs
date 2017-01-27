@@ -42,21 +42,34 @@ namespace MatterHackers.PolygonPathing
 	using Agg;
 	using Pathfinding;
 	using MSIntPoint = MSClipperLib.IntPoint;
+	using MSPolygon = List<MSClipperLib.IntPoint>;
 	using MSPolygons = List<List<MSClipperLib.IntPoint>>;
 	using Polygon = List<IntPoint>;
 	using Polygons = List<List<IntPoint>>;
 
 	public class PolygonPathingDemo : SystemWindow
 	{
-		MSIntPoint startOverride;
-		MSIntPoint endOverride;
-
-		private Vector2 mouseDownPosition;
-		private Vector2 mouseCapturedPosition;
-		private RGBA_Bytes pathColor = RGBA_Bytes.Green;
+		private long avoidInset;
+		private int badCount = 0;
+		private int bestPointCount = int.MaxValue;
+		private MSIntPoint endOverride;
+		private Vector2 lastMousePosition = new Vector2(0, 0);
 		private double layerScale = 1;
-		long avoidInset;
-		bool updateScaleAndOffset = true;
+		private Vector2 mouseCapturedPosition;
+		private Vector2 mouseDownPosition;
+		private MSPolygons overrideBadPolys = null;
+		private RGBA_Bytes pathColor = RGBA_Bytes.Green;
+		private MSPolygons polygonsToPathAround;
+		private Random rand = new Random();
+
+		private RadioButtonGroup shapeTypeRadioGroup = new RadioButtonGroup(new Vector2(5, 5), new Vector2(205, 110))
+		{
+			HAnchor = HAnchor.ParentLeft | HAnchor.FitToChildren,
+			VAnchor = VAnchor.ParentBottom | VAnchor.FitToChildren,
+			Margin = new BorderDouble(5),
+		};
+
+		private MSIntPoint startOverride;
 
 		private CheckBox StayInside = new CheckBox("Stay Inside")
 		{
@@ -66,14 +79,8 @@ namespace MatterHackers.PolygonPathing
 			BackgroundColor = RGBA_Bytes.White,
 		};
 
-		private MSPolygons polygonsToPathAround;
-
-		private RadioButtonGroup shapeTypeRadioGroup = new RadioButtonGroup(new Vector2(5, 5), new Vector2(205, 110))
-		{
-			HAnchor = HAnchor.ParentLeft | HAnchor.FitToChildren,
-			VAnchor = VAnchor.ParentBottom | VAnchor.FitToChildren,
-			Margin = new BorderDouble(5),
-		};
+		private Vector2 unscaledRenderOffset = new Vector2(0, 0);
+		private bool updateScaleAndOffset = true;
 
 		public PolygonPathingDemo()
 			: base(740, 520)
@@ -102,8 +109,31 @@ namespace MatterHackers.PolygonPathing
 			AnchorAll();
 		}
 
+		public Affine TotalTransform
+		{
+			get
+			{
+				Affine transform = Affine.NewIdentity();
+				transform *= Affine.NewTranslation(unscaledRenderOffset);
+
+				// scale to view
+				transform *= ScalingTransform;
+				transform *= Affine.NewTranslation(Width / 2, Height / 2);
+
+				return transform;
+			}
+		}
+
 		private RGBA_Bytes fillColor
 		{ get { return RGBA_Bytes.Pink; } }
+
+		private Affine ScalingTransform
+		{
+			get
+			{
+				return Affine.NewScaling(layerScale, layerScale);
+			}
+		}
 
 		[STAThread]
 		public static void Main(string[] args)
@@ -112,12 +142,11 @@ namespace MatterHackers.PolygonPathing
 			demo.ShowAsSystemWindow();
 		}
 
-		MSPolygons overrideBadPolys = null;
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			CreatePolygonData();
 
-			if(overrideBadPolys != null)
+			if (overrideBadPolys != null)
 			{
 				polygonsToPathAround = overrideBadPolys;
 			}
@@ -134,7 +163,7 @@ namespace MatterHackers.PolygonPathing
 				}
 
 				PathFinder avoid = null;
-				if(!StayInside.Checked)
+				if (!StayInside.Checked)
 				{
 					var boundary = MSClipperLib.CLPolygonsExtensions.GetBounds(polygonsToPathAround);
 					boundary.Inflate(avoidInset * 10);
@@ -173,6 +202,8 @@ namespace MatterHackers.PolygonPathing
 					}
 					var pos = ObjectToScreen(node.Position);
 					graphics2D.Circle(pos.X, pos.Y, 4, RGBA_Bytes.Green);
+					int linkCount = Math.Min(5, node.Links.Count-2);
+					graphics2D.Circle(pos.X, pos.Y, 4, RGBA_Floats.FromHSL((float)linkCount / 5, 1, .5).GetAsRGBA_Bytes());
 				}
 
 				if (found)
@@ -214,10 +245,10 @@ namespace MatterHackers.PolygonPathing
 				{
 					foreach (var polygon in avoid.ThinLinePolygons)
 					{
-						for(int i=0; i<polygon.Count-1; i++)
+						for (int i = 0; i < polygon.Count - 1; i++)
 						{
 							var point = polygon[i];
-							var nextPoint = polygon[i+1];
+							var nextPoint = polygon[i + 1];
 							var start = ObjectToScreen(point);
 							var end = ObjectToScreen(nextPoint);
 							graphics2D.Line(start.X, start.Y, end.X, end.Y, RGBA_Bytes.Black, 3);
@@ -234,90 +265,59 @@ namespace MatterHackers.PolygonPathing
 					graphics2D.DrawString("Outside", 30, Height - 60, color: RGBA_Bytes.Red);
 				}
 
-				if (!found)
-				{
-					badCount++;
-
-					// try to reduce the polygons under consideration
-					var polys2 = MSPolygonsToPolygons(polygonsToPathAround);
-					var sample = PolygonsToMSPolygons(polys2);
-					int polyIndex = rand.Next(sample.Count - 1);
-					sample[polyIndex].RemoveAt(rand.Next(sample[polyIndex].Count - 1));
-					if(sample[polyIndex].Count < 3)
-					{
-						sample.RemoveAt(polyIndex);
-					}
-
-					// move a point towards the center
-					if(false)
-					{
-						var center = MatterHackers.QuadTree.QTPolygonsExtensions.Center(sample);
-						polyIndex = rand.Next(sample.Count - 1);
-						int pointIndex = rand.Next(sample[polyIndex].Count - 1);
-						//sample[polyIndex][pointIndex] = sample[polyIndex][pointIndex] + new MSIntPoint(rand.Next()
-					}
-
-					var avoid2 = new PathFinder(sample, avoidInset, null); // -600 is for a .4 nozzle in matterslice
-					if (!avoid2.CreatePathInsideBoundary(pathStart, pathEnd, pathThatIsInside)
-						&& avoid2.BoundaryPolygons.PointIsInside(pathStart))
-					{
-						overrideBadPolys = sample;
-						badCount = 0;
-					}
-
-					UiThread.RunOnIdle(Invalidate);
-				}
-
-				//var triangulated = avoid.BoundaryPolygons.Triangulate();
+				//SimplefyBadPolygon(pathStart, pathEnd, pathThatIsInside, found);
 			}
 
 			base.OnDraw(graphics2D);
 		}
-		Random rand = new Random();
-		int badCount = 0;
 
-		private MSIntPoint ObjectToScreen(MSIntPoint inPoint)
+		private void SimplefyBadPolygon(MSIntPoint pathStart, MSIntPoint pathEnd, MSPolygon pathThatIsInside, bool found)
 		{
-			Vector2 position = new Vector2(inPoint.X, inPoint.Y);
-			TotalTransform.transform(ref position);
-			return new MSIntPoint(position.x, position.y);
-		}
-
-		private MSIntPoint ScreenToObject(MSIntPoint inPoint)
-		{
-			Vector2 position = new Vector2(inPoint.X, inPoint.Y);
-			TotalTransform.inverse_transform(ref position);
-			return new MSIntPoint(position.x, position.y);
-		}
-
-		private MSPolygons PolygonsToMSPolygons(Polygons polygonsToPathAround)
-		{
-			var otherPolygons = new List<List<MSIntPoint>>();
-			foreach (var polygon in polygonsToPathAround)
+			if (!found)
 			{
-				otherPolygons.Add(new List<MSIntPoint>());
-				for (int i = 0; i < polygon.Count; i++)
+				badCount++;
+
+				// try to reduce the polygons under consideration
+				var polys2 = MSPolygonsToPolygons(polygonsToPathAround);
+				var sample = PolygonsToMSPolygons(polys2);
+				int polyIndex = rand.Next(sample.Count);
+				int pointIndex = rand.Next(sample[polyIndex].Count);
+				if (rand.Next(2) == 0)
 				{
-					otherPolygons[otherPolygons.Count - 1].Add(new MSIntPoint(polygon[i].X, polygon[i].Y));
+					sample[polyIndex].RemoveAt(pointIndex);
 				}
-			}
-
-			return otherPolygons;
-		}
-
-		private Polygons MSPolygonsToPolygons(MSPolygons polygonsToPathAround)
-		{
-			var otherPolygons = new List<List<ClipperLib.IntPoint>>();
-			foreach (var polygon in polygonsToPathAround)
-			{
-				otherPolygons.Add(new List<ClipperLib.IntPoint>());
-				for (int i = 0; i < polygon.Count; i++)
+				if (sample[polyIndex].Count < 3)
 				{
-					otherPolygons[otherPolygons.Count - 1].Add(new ClipperLib.IntPoint(polygon[i].X, polygon[i].Y));
+					sample.RemoveAt(polyIndex);
 				}
-			}
 
-			return otherPolygons;
+				// move a point towards the center
+				if (true)
+				{
+					var center = MatterHackers.QuadTree.QTPolygonsExtensions.Center(sample);
+					polyIndex = rand.Next(sample.Count);
+					pointIndex = rand.Next(sample[polyIndex].Count);
+					var pointToMove = sample[polyIndex][pointIndex];
+					var length = MSClipperLib.IntPointExtensions.Length((pointToMove - center));
+					var direction = new MSIntPoint(avoidInset / 2 - rand.Next((int)avoidInset), avoidInset / 2 - rand.Next((int)avoidInset));
+					sample[polyIndex][pointIndex] = sample[polyIndex][pointIndex] + direction;
+
+					direction = (center - pointToMove) * avoidInset / 20 / length;
+					sample[polyIndex][pointIndex] = sample[polyIndex][pointIndex] + direction;
+				}
+
+				var avoid2 = new PathFinder(sample, avoidInset, null); // -600 is for a .4 nozzle in matterslice
+				if (!avoid2.CreatePathInsideBoundary(pathStart, pathEnd, pathThatIsInside)
+					&& avoid2.BoundaryPolygons.PointIsInside(pathStart)
+					&& PointCount(avoid2.BoundaryPolygons) <= bestPointCount)
+				{
+					bestPointCount = PointCount(avoid2.BoundaryPolygons);
+					overrideBadPolys = sample;
+					badCount = 0;
+				}
+
+				UiThread.RunOnIdle(Invalidate);
+			}
 		}
 
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
@@ -332,8 +332,6 @@ namespace MatterHackers.PolygonPathing
 			}
 			lastMousePosition = mouseEvent.Position;
 		}
-
-		private Vector2 lastMousePosition = new Vector2(0, 0);
 
 		public override void OnMouseMove(MouseEventArgs mouseEvent)
 		{
@@ -357,49 +355,24 @@ namespace MatterHackers.PolygonPathing
 			lastMousePosition = mousePos;
 		}
 
-		private MSPolygons CreateTravelPath(MSPolygons polygonsToPathAround, MSPolygons travelPolysLine)
+		public override void OnMouseWheel(MouseEventArgs mouseEvent)
 		{
-			var clipper = new MSClipperLib.Clipper();
+			base.OnMouseWheel(mouseEvent);
+			if (FirstWidgetUnderMouse)
+			{
+				Vector2 mousePreScale = new Vector2(mouseEvent.X, mouseEvent.Y);
+				TotalTransform.inverse_transform(ref mousePreScale);
 
-			clipper.AddPaths(travelPolysLine, MSClipperLib.PolyType.ptSubject, false);
-			clipper.AddPaths(polygonsToPathAround, MSClipperLib.PolyType.ptClip, true);
+				const double deltaFor1Click = 120;
+				layerScale = layerScale + layerScale * (mouseEvent.WheelDelta / deltaFor1Click) * .1;
 
-			var clippedLine = new MSClipperLib.PolyTree();
+				Vector2 mousePostScale = new Vector2(mouseEvent.X, mouseEvent.Y);
+				TotalTransform.inverse_transform(ref mousePostScale);
 
-			//List<List<IntPoint>> intersectedPolys = new List<List<IntPoint>>();
-			//clipper.Execute(ClipType.ctDifference, intersectedPolys);
+				unscaledRenderOffset += (mousePostScale - mousePreScale);
 
-			clipper.Execute(MSClipperLib.ClipType.ctDifference, clippedLine);
-
-			return MSClipperLib.Clipper.OpenPathsFromPolyTree(clippedLine);
-		}
-
-		private Polygons FixWinding(Polygons polygonsToPathAround)
-		{
-			polygonsToPathAround = Clipper.CleanPolygons(polygonsToPathAround);
-			Polygon boundsPolygon = new Polygon();
-			IntRect bounds = Clipper.GetBounds(polygonsToPathAround);
-			bounds.minX -= 10;
-			bounds.maxY += 10;
-			bounds.maxX += 10;
-			bounds.minY -= 10;
-
-			boundsPolygon.Add(new IntPoint(bounds.minX, bounds.minY));
-			boundsPolygon.Add(new IntPoint(bounds.maxX, bounds.minY));
-			boundsPolygon.Add(new IntPoint(bounds.maxX, bounds.maxY));
-			boundsPolygon.Add(new IntPoint(bounds.minX, bounds.maxY));
-
-			Clipper clipper = new Clipper();
-
-			clipper.AddPaths(polygonsToPathAround, PolyType.ptSubject, true);
-			clipper.AddPath(boundsPolygon, PolyType.ptClip, true);
-
-			PolyTree intersectionResult = new PolyTree();
-			clipper.Execute(ClipType.ctIntersection, intersectionResult);
-
-			Polygons outputPolygons = Clipper.ClosedPathsFromPolyTree(intersectionResult);
-
-			return outputPolygons;
+				Invalidate();
+			}
 		}
 
 		private void CreatePolygonData()
@@ -473,9 +446,10 @@ namespace MatterHackers.PolygonPathing
 						// circle holes
 						string polyPath = "x:189400, y:76400,x:170600, y:76400,x:170600, y:37600,x:189400, y:37600,|x:177346, y:60948,x:175525, y:62137,x:174189, y:63854,x:173482, y:65912,x:173482, y:68087,x:174189, y:70145,x:175525, y:71862,x:177346, y:73051,x:179455, y:73585,x:181621, y:73406,x:183614, y:72532,x:185214, y:71059,x:186249, y:69146,x:186608, y:67000,x:186249, y:64853,x:185214, y:62940,x:183614, y:61468,x:181621, y:60593,x:179455, y:60414,|x:177346, y:40949,x:175525, y:42138,x:174189, y:43855,x:173482, y:45913,x:173482, y:48088,x:174189, y:50146,x:175525, y:51863,x:177346, y:53052,x:179455, y:53586,x:181621, y:53407,x:183614, y:52532,x:185214, y:51060,x:186249, y:49147,x:186608, y:47000,x:186249, y:44854,x:185214, y:42941,x:183614, y:41468,x:181621, y:40594,x:179455, y:40415,|";
 
-						polyPath = "x:102433, y:81038, z:1550, width:0,x:104899, y:81308, z:1550, width:0,x:107317, y:81758, z:1550, width:0,x:109665, y:82383, z:1550, width:0,x:111920, y:83178, z:1550, width:0,x:114060, y:84135, z:1550, width:0,x:116065, y:85244, z:1550, width:0,x:117915, y:86496, z:1550, width:0,x:119593, y:87877, z:1550, width:0,x:121082, y:89375, z:1550, width:0,x:122369, y:90975, z:1550, width:0,x:123440, y:92662, z:1550, width:0,x:124286, y:94420, z:1550, width:0,x:124898, y:96231, z:1550, width:0,x:125271, y:98079, z:1550, width:0,x:125400, y:99954, z:1550, width:0,x:125278, y:101866, z:1550, width:0,x:124913, y:103715, z:1550, width:0,x:124307, y:105528, z:1550, width:0,x:123468, y:107287, z:1550, width:0,x:122404, y:108976, z:1550, width:0,x:121123, y:110579, z:1550, width:0,x:119640, y:112081, z:1550, width:0,x:117967, y:113466, z:1550, width:0,x:116122, y:114721, z:1550, width:0,x:114121, y:115835, z:1550, width:0,x:111985, y:116796, z:1550, width:0,x:109733, y:117596, z:1550, width:0,x:107388, y:118227, z:1550, width:0,x:104971, y:118682, z:1550, width:0,x:102507, y:118957, z:1550, width:0,x:100019, y:119050, z:1550, width:0,x:97530, y:118960, z:1550, width:0,x:95199, y:118702, z:1550, width:0,x:92648, y:118235, z:1550, width:0,x:90301, y:117607, z:1550, width:0,x:88048, y:116809, z:1550, width:0,x:85910, y:115850, z:1550, width:0,x:83907, y:114739, z:1550, width:0,x:82059, y:113485, z:1550, width:0,x:80384, y:112102, z:1550, width:0,x:78898, y:110602, z:1550, width:0,x:77614, y:109001, z:1550, width:0,x:76546, y:107313, z:1550, width:0,x:75704, y:105554, z:1550, width:0,x:75095, y:103742, z:1550, width:0,x:74726, y:101894, z:1550, width:0,x:74600, y:100028, z:1550, width:0,x:74719, y:98161, z:1550, width:0,x:75081, y:96313, z:1550, width:0,x:75682, y:94499, z:1550, width:0,x:76518, y:92739, z:1550, width:0,x:77579, y:91048, z:1550, width:0,x:78856, y:89444, z:1550, width:0,x:80337, y:87941, z:1550, width:0,x:82007, y:86554, z:1550, width:0,x:83850, y:85297, z:1550, width:0,x:85752, y:84235, z:1550, width:0,x:87983, y:83217, z:1550, width:0,x:90233, y:82415, z:1550, width:0,x:92577, y:81782, z:1550, width:0,x:94993, y:81324, z:1550, width:0,x:97456, y:81046, z:1550, width:0,x:99945, y:80950, z:1550, width:0,|x:101888, y:108936, z:1550, width:0,x:101894, y:90999, z:1550, width:0,x:101880, y:90775, z:1550, width:0,x:101859, y:90760, z:1550, width:0,x:98805, y:90758, z:1550, width:0,x:98760, y:90789, z:1550, width:0,x:98752, y:103591, z:1550, width:0,x:98732, y:103709, z:1550, width:0,x:92744, y:95046, z:1550, width:0,x:92646, y:94941, z:1550, width:0,x:92547, y:95030, z:1550, width:0,x:82093, y:110158, z:1550, width:0,x:82111, y:110232, z:1550, width:0,x:85915, y:110237, z:1550, width:0,x:85962, y:110205, z:1550, width:0,x:86100, y:110027, z:1550, width:0,x:92567, y:100604, z:1550, width:0,x:92645, y:100511, z:1550, width:0,x:98395, y:108872, z:1550, width:0,x:98513, y:108965, z:1550, width:0,x:101765, y:108971, z:1550, width:0,x:101872, y:108960, z:1550, width:0,|x:117191, y:93565, z:1550, width:0,x:118620, y:90989, z:1550, width:0,x:118712, y:90785, z:1550, width:0,x:118686, y:90760, z:1550, width:0,x:109867, y:90757, z:1550, width:0,x:109772, y:90785, z:1550, width:0,x:109044, y:90801, z:1550, width:0,x:108987, y:90824, z:1550, width:0,x:108646, y:90840, z:1550, width:0,x:108590, y:90863, z:1550, width:0,x:108408, y:90880, z:1550, width:0,x:108351, y:90903, z:1550, width:0,x:108124, y:90922, z:1550, width:0,x:107175, y:91159, z:1550, width:0,x:106578, y:91397, z:1550, width:0,x:106085, y:91661, z:1550, width:0,x:105600, y:92004, z:1550, width:0,x:105399, y:92168, z:1550, width:0,x:105177, y:92384, z:1550, width:0,x:105094, y:92500, z:1550, width:0,x:104939, y:92661, z:1550, width:0,x:104623, y:93102, z:1550, width:0,x:104209, y:93882, z:1550, width:0,x:103888, y:94750, z:1550, width:0,x:103732, y:95364, z:1550, width:0,x:103556, y:96337, z:1550, width:0,x:103534, y:96390, z:1550, width:0,x:103516, y:96655, z:1550, width:0,x:103495, y:96708, z:1550, width:0,x:103476, y:97013, z:1550, width:0,x:103455, y:97066, z:1550, width:0,x:103436, y:97452, z:1550, width:0,x:103410, y:97538, z:1550, width:0,x:103404, y:97967, z:1550, width:0,x:103370, y:98135, z:1550, width:0,x:103366, y:98976, z:1550, width:0,x:103331, y:99170, z:1550, width:0,x:103330, y:100513, z:1550, width:0,x:103360, y:100657, z:1550, width:0,x:103377, y:101669, z:1550, width:0,x:103400, y:101731, z:1550, width:0,x:103417, y:102266, z:1550, width:0,x:103438, y:102317, z:1550, width:0,x:103456, y:102700, z:1550, width:0,x:103478, y:102755, z:1550, width:0,x:103495, y:103054, z:1550, width:0,x:103518, y:103113, z:1550, width:0,x:103542, y:103392, z:1550, width:0,x:103616, y:103857, z:1550, width:0,x:103773, y:104608, z:1550, width:0,x:103838, y:104793, z:1550, width:0,x:103892, y:105044, z:1550, width:0,x:104171, y:105801, z:1550, width:0,x:104512, y:106488, z:1550, width:0,x:104908, y:107067, z:1550, width:0,x:105060, y:107259, z:1550, width:0,x:105396, y:107600, z:1550, width:0,x:106035, y:108074, z:1550, width:0,x:106576, y:108369, z:1550, width:0,x:107303, y:108647, z:1550, width:0,x:107743, y:108766, z:1550, width:0,x:108328, y:108884, z:1550, width:0,x:108593, y:108902, z:1550, width:0,x:108646, y:108924, z:1550, width:0,x:108951, y:108942, z:1550, width:0,x:109012, y:108965, z:1550, width:0,x:109543, y:108980, z:1550, width:0,x:109612, y:109005, z:1550, width:0,x:116077, y:109012, z:1550, width:0,x:116192, y:108999, z:1550, width:0,x:116207, y:108984, z:1550, width:0,x:116207, y:108920, z:1550, width:0,x:115004, y:106740, z:1550, width:0,x:114665, y:106155, z:1550, width:0,x:110165, y:106146, z:1550, width:0,x:110022, y:106116, z:1550, width:0,x:109399, y:106058, z:1550, width:0,x:108885, y:105940, z:1550, width:0,x:108567, y:105821, z:1550, width:0,x:108194, y:105637, z:1550, width:0,x:107825, y:105369, z:1550, width:0,x:107604, y:105153, z:1550, width:0,x:107288, y:104713, z:1550, width:0,x:107073, y:104291, z:1550, width:0,x:106834, y:103604, z:1550, width:0,x:106677, y:102857, z:1550, width:0,x:106658, y:102630, z:1550, width:0,x:106637, y:102579, z:1550, width:0,x:106618, y:102272, z:1550, width:0,x:106597, y:102221, z:1550, width:0,x:106579, y:101877, z:1550, width:0,x:106556, y:101812, z:1550, width:0,x:106541, y:101203, z:1550, width:0,x:106516, y:101136, z:1550, width:0,x:106512, y:98695, z:1550, width:0,x:106542, y:98553, z:1550, width:0,x:106558, y:97941, z:1550, width:0,x:106581, y:97885, z:1550, width:0,x:106599, y:97541, z:1550, width:0,x:106620, y:97487, z:1550, width:0,x:106645, y:97168, z:1550, width:0,x:106724, y:96691, z:1550, width:0,x:106836, y:96151, z:1550, width:0,x:107034, y:95559, z:1550, width:0,x:107259, y:95102, z:1550, width:0,x:107565, y:94657, z:1550, width:0,x:107783, y:94432, z:1550, width:0,x:108223, y:94117, z:1550, width:0,x:108485, y:93981, z:1550, width:0,x:108775, y:93862, z:1550, width:0,x:109402, y:93705, z:1550, width:0,x:109629, y:93686, z:1550, width:0,x:109681, y:93665, z:1550, width:0,x:110022, y:93648, z:1550, width:0,x:110113, y:93620, z:1550, width:0,x:117142, y:93608, z:1550, width:0,|x:83365, y:90789, z:1550, width:0,x:83367, y:105804, z:1550, width:0,x:83387, y:105810, z:1550, width:0,x:83476, y:105729, z:1550, width:0,x:86531, y:101306, z:1550, width:0,x:86538, y:90868, z:1550, width:0,x:86525, y:90775, z:1550, width:0,x:86503, y:90760, z:1550, width:0,x:83410, y:90758, z:1550, width:0,|";
+						polyPath = "x:99832, y:88697,x:88119, y:101091,x:82212, y:86495,|x:86663, y:99419,x:86538, y:90868,x:86525, y:90775,x:86307, y:90633,|";
 						// Length of this segment (start->end) 4789.
 						startOverride = new MSIntPoint(83319, 87278); endOverride = new MSIntPoint(86711, 90660);
+						//TestSinglePathIsInside(polyPath, new IntPoint(83319, 87278), new IntPoint(86711, 90660));
 
 						directPolygons = MSClipperLib.CLPolygonsExtensions.CreateFromString(polyPath);
 					}
@@ -601,48 +575,104 @@ namespace MatterHackers.PolygonPathing
 			}
 		}
 
-		private Affine ScalingTransform
+		private MSPolygons CreateTravelPath(MSPolygons polygonsToPathAround, MSPolygons travelPolysLine)
 		{
-			get
-			{
-				return Affine.NewScaling(layerScale, layerScale);
-			}
+			var clipper = new MSClipperLib.Clipper();
+
+			clipper.AddPaths(travelPolysLine, MSClipperLib.PolyType.ptSubject, false);
+			clipper.AddPaths(polygonsToPathAround, MSClipperLib.PolyType.ptClip, true);
+
+			var clippedLine = new MSClipperLib.PolyTree();
+
+			//List<List<IntPoint>> intersectedPolys = new List<List<IntPoint>>();
+			//clipper.Execute(ClipType.ctDifference, intersectedPolys);
+
+			clipper.Execute(MSClipperLib.ClipType.ctDifference, clippedLine);
+
+			return MSClipperLib.Clipper.OpenPathsFromPolyTree(clippedLine);
 		}
 
-		public Affine TotalTransform
+		private Polygons FixWinding(Polygons polygonsToPathAround)
 		{
-			get
-			{
-				Affine transform = Affine.NewIdentity();
-				transform *= Affine.NewTranslation(unscaledRenderOffset);
+			polygonsToPathAround = Clipper.CleanPolygons(polygonsToPathAround);
+			Polygon boundsPolygon = new Polygon();
+			IntRect bounds = Clipper.GetBounds(polygonsToPathAround);
+			bounds.minX -= 10;
+			bounds.maxY += 10;
+			bounds.maxX += 10;
+			bounds.minY -= 10;
 
-				// scale to view
-				transform *= ScalingTransform;
-				transform *= Affine.NewTranslation(Width / 2, Height / 2);
+			boundsPolygon.Add(new IntPoint(bounds.minX, bounds.minY));
+			boundsPolygon.Add(new IntPoint(bounds.maxX, bounds.minY));
+			boundsPolygon.Add(new IntPoint(bounds.maxX, bounds.maxY));
+			boundsPolygon.Add(new IntPoint(bounds.minX, bounds.maxY));
 
-				return transform;
-			}
+			Clipper clipper = new Clipper();
+
+			clipper.AddPaths(polygonsToPathAround, PolyType.ptSubject, true);
+			clipper.AddPath(boundsPolygon, PolyType.ptClip, true);
+
+			PolyTree intersectionResult = new PolyTree();
+			clipper.Execute(ClipType.ctIntersection, intersectionResult);
+
+			Polygons outputPolygons = Clipper.ClosedPathsFromPolyTree(intersectionResult);
+
+			return outputPolygons;
 		}
-		private Vector2 unscaledRenderOffset = new Vector2(0, 0);
 
-		public override void OnMouseWheel(MouseEventArgs mouseEvent)
+		private Polygons MSPolygonsToPolygons(MSPolygons polygonsToPathAround)
 		{
-			base.OnMouseWheel(mouseEvent);
-			if (FirstWidgetUnderMouse)
+			var otherPolygons = new List<List<ClipperLib.IntPoint>>();
+			foreach (var polygon in polygonsToPathAround)
 			{
-				Vector2 mousePreScale = new Vector2(mouseEvent.X, mouseEvent.Y);
-				TotalTransform.inverse_transform(ref mousePreScale);
-
-				const double deltaFor1Click = 120;
-				layerScale = layerScale + layerScale * (mouseEvent.WheelDelta / deltaFor1Click) * .1;
-
-				Vector2 mousePostScale = new Vector2(mouseEvent.X, mouseEvent.Y);
-				TotalTransform.inverse_transform(ref mousePostScale);
-
-				unscaledRenderOffset += (mousePostScale - mousePreScale);
-
-				Invalidate();
+				otherPolygons.Add(new List<ClipperLib.IntPoint>());
+				for (int i = 0; i < polygon.Count; i++)
+				{
+					otherPolygons[otherPolygons.Count - 1].Add(new ClipperLib.IntPoint(polygon[i].X, polygon[i].Y));
+				}
 			}
+
+			return otherPolygons;
+		}
+
+		private MSIntPoint ObjectToScreen(MSIntPoint inPoint)
+		{
+			Vector2 position = new Vector2(inPoint.X, inPoint.Y);
+			TotalTransform.transform(ref position);
+			return new MSIntPoint(position.x, position.y);
+		}
+
+		private int PointCount(MSPolygons boundaryPolygons)
+		{
+			int count = 0;
+			foreach (MSPolygon polygon in boundaryPolygons)
+			{
+				count += polygon.Count;
+			}
+
+			return count;
+		}
+
+		private MSPolygons PolygonsToMSPolygons(Polygons polygonsToPathAround)
+		{
+			var otherPolygons = new List<List<MSIntPoint>>();
+			foreach (var polygon in polygonsToPathAround)
+			{
+				otherPolygons.Add(new List<MSIntPoint>());
+				for (int i = 0; i < polygon.Count; i++)
+				{
+					otherPolygons[otherPolygons.Count - 1].Add(new MSIntPoint(polygon[i].X, polygon[i].Y));
+				}
+			}
+
+			return otherPolygons;
+		}
+
+		private MSIntPoint ScreenToObject(MSIntPoint inPoint)
+		{
+			Vector2 position = new Vector2(inPoint.X, inPoint.Y);
+			TotalTransform.inverse_transform(ref position);
+			return new MSIntPoint(position.x, position.y);
 		}
 	}
 
