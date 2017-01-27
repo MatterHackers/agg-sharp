@@ -202,7 +202,7 @@ namespace MatterHackers.PolygonPathing
 					}
 					var pos = ObjectToScreen(node.Position);
 					graphics2D.Circle(pos.X, pos.Y, 4, RGBA_Bytes.Green);
-					int linkCount = Math.Min(5, node.Links.Count-2);
+					int linkCount = Math.Min(5, node.Links.Count - 2);
 					graphics2D.Circle(pos.X, pos.Y, 4, RGBA_Floats.FromHSL((float)linkCount / 5, 1, .5).GetAsRGBA_Bytes());
 				}
 
@@ -227,36 +227,14 @@ namespace MatterHackers.PolygonPathing
 				}
 
 				// show the crossings
-				if (false)
-				{
-					var crossings = new List<Tuple<int, int, MSIntPoint>>(avoid.BoundaryPolygons.FindCrossingPoints(pathStart, pathEnd, avoid.BoundaryEdgeQuadTrees));
-					crossings.Sort(new PolygonAndPointDirectionSorter(pathStart, pathEnd));
-
-					int index = 0;
-					foreach (var crossing in crossings)
-					{
-						graphics2D.Circle(ObjectToScreen(crossing.Item3).X, ObjectToScreen(crossing.Item3).Y, 4, RGBA_Floats.FromHSL((float)index / crossings.Count, 1, .5).GetAsRGBA_Bytes());
-						index++;
-					}
-				}
+				//RenderCrossings(graphics2D, pathStart, pathEnd, avoid);
 
 				// show the thin edges
-				if (true && avoid.ThinLinePolygons != null)
-				{
-					foreach (var polygon in avoid.ThinLinePolygons)
-					{
-						for (int i = 0; i < polygon.Count - 1; i++)
-						{
-							var point = polygon[i];
-							var nextPoint = polygon[i + 1];
-							var start = ObjectToScreen(point);
-							var end = ObjectToScreen(nextPoint);
-							graphics2D.Line(start.X, start.Y, end.X, end.Y, RGBA_Bytes.Black, 3);
-						}
-					}
-				}
+				//RenderThinEdges(graphics2D, avoid);
 
-				if (avoid.BoundaryPolygons.PointIsInside(pathEnd))
+				//RenderQuadTree(graphics2D, avoid.BoundaryEdgeQuadTrees, 0);
+
+				if (avoid.BoundaryPolygons.PointIsInside(pathEnd, avoid.BoundaryEdgeQuadTrees, avoid.BoundaryPointQuadTrees))
 				{
 					graphics2D.DrawString("Inside", 30, Height - 60, color: RGBA_Bytes.Green);
 				}
@@ -265,13 +243,95 @@ namespace MatterHackers.PolygonPathing
 					graphics2D.DrawString("Outside", 30, Height - 60, color: RGBA_Bytes.Red);
 				}
 
-				//SimplefyBadPolygon(pathStart, pathEnd, pathThatIsInside, found);
+				if (doSimplify)
+				{
+					SimplifyBadPolygon(pathStart, pathEnd, pathThatIsInside, found);
+				}
 			}
 
 			base.OnDraw(graphics2D);
 		}
 
-		private void SimplefyBadPolygon(MSIntPoint pathStart, MSIntPoint pathEnd, MSPolygon pathThatIsInside, bool found)
+		private void RenderThinEdges(Graphics2D graphics2D, PathFinder avoid)
+		{
+			if (avoid.ThinLinePolygons != null)
+			{
+				foreach (var polygon in avoid.ThinLinePolygons)
+				{
+					for (int i = 0; i < polygon.Count - 1; i++)
+					{
+						var point = polygon[i];
+						var nextPoint = polygon[i + 1];
+						var start = ObjectToScreen(point);
+						var end = ObjectToScreen(nextPoint);
+						graphics2D.Line(start.X, start.Y, end.X, end.Y, RGBA_Bytes.Black, 3);
+					}
+				}
+			}
+		}
+
+		private void RenderCrossings(Graphics2D graphics2D, MSIntPoint pathStart, MSIntPoint pathEnd, PathFinder avoid)
+		{
+			var crossings = new List<Tuple<int, int, MSIntPoint>>(avoid.BoundaryPolygons.FindCrossingPoints(pathStart, pathEnd, avoid.BoundaryEdgeQuadTrees));
+			crossings.Sort(new PolygonAndPointDirectionSorter(pathStart, pathEnd));
+
+			int index = 0;
+			foreach (var crossing in crossings)
+			{
+				var color = RGBA_Floats.FromHSL((float)index / crossings.Count, 1, .5).GetAsRGBA_Bytes();
+				graphics2D.Circle(ObjectToScreen(crossing.Item3).X, ObjectToScreen(crossing.Item3).Y, 4, color);
+				index++;
+			}
+		}
+
+		#region QuadTreeRender
+		private void RenderQuadTree(Graphics2D graphics2D, List<QuadTree<int>> quadTrees, int depth)
+		{
+			foreach (var quadTree in quadTrees)
+			{
+				foreach(var branch in quadTree.Root.Branches)
+				{
+					RenderBranch(graphics2D, branch, depth);
+				}
+
+				RenderBranch(graphics2D, quadTree.Root, depth);
+			}
+		}
+
+		private void RenderBranch(Graphics2D graphics2D, QuadTree<int>.Branch branch, int depth)
+		{
+			if(branch == null)
+			{
+				return;
+			}
+			foreach (var subBranch in branch.Branches)
+			{
+				RenderBranch(graphics2D, subBranch, depth+1);
+			}
+			foreach(var quad in branch.Quads)
+			{
+				var start = ObjectToScreen(new MSIntPoint(quad.MinX, quad.MinY));
+				var end = ObjectToScreen(new MSIntPoint(quad.MaxX, quad.MaxY));
+				graphics2D.Rectangle(start.X, start.Y, end.X, end.Y, RGBA_Bytes.YellowGreen);
+			}
+			foreach (var leaf in branch.Leaves)
+			{
+				RenderLeaf(graphics2D, leaf, depth);
+			}
+		}
+
+		private void RenderLeaf(Graphics2D graphics2D, QuadTree<int>.Leaf leaf, int depth)
+		{
+			var start = ObjectToScreen(new MSIntPoint(leaf.Quad.MinX, leaf.Quad.MinY));
+			var end = ObjectToScreen(new MSIntPoint(leaf.Quad.MaxX, leaf.Quad.MaxY));
+			var color = RGBA_Floats.FromHSL((float)depth / 7, 1, .5).GetAsRGBA_Bytes();
+			graphics2D.Rectangle(start.X, start.Y, end.X, end.Y, color);
+		}
+		#endregion
+
+		bool doSimplify = false;
+
+		private void SimplifyBadPolygon(MSIntPoint start, MSIntPoint end, MSPolygon pathThatIsInside, bool found)
 		{
 			if (!found)
 			{
@@ -292,23 +352,14 @@ namespace MatterHackers.PolygonPathing
 				}
 
 				// move a point towards the center
-				if (true)
-				{
-					var center = MatterHackers.QuadTree.QTPolygonsExtensions.Center(sample);
-					polyIndex = rand.Next(sample.Count);
-					pointIndex = rand.Next(sample[polyIndex].Count);
-					var pointToMove = sample[polyIndex][pointIndex];
-					var length = MSClipperLib.IntPointExtensions.Length((pointToMove - center));
-					var direction = new MSIntPoint(avoidInset / 2 - rand.Next((int)avoidInset), avoidInset / 2 - rand.Next((int)avoidInset));
-					sample[polyIndex][pointIndex] = sample[polyIndex][pointIndex] + direction;
-
-					direction = (center - pointToMove) * avoidInset / 20 / length;
-					sample[polyIndex][pointIndex] = sample[polyIndex][pointIndex] + direction;
-				}
+				var center = MatterHackers.QuadTree.QTPolygonsExtensions.Center(sample);
+				polyIndex = rand.Next(sample.Count);
+				pointIndex = rand.Next(sample[polyIndex].Count);
+				sample[polyIndex][pointIndex] = MoveSampelPoint(sample[polyIndex][pointIndex], center);
 
 				var avoid2 = new PathFinder(sample, avoidInset, null); // -600 is for a .4 nozzle in matterslice
-				if (!avoid2.CreatePathInsideBoundary(pathStart, pathEnd, pathThatIsInside)
-					&& avoid2.BoundaryPolygons.PointIsInside(pathStart)
+				if (!avoid2.CreatePathInsideBoundary(start, end, pathThatIsInside)
+					&& avoid2.BoundaryPolygons.PointIsInside(start)
 					&& PointCount(avoid2.BoundaryPolygons) <= bestPointCount)
 				{
 					bestPointCount = PointCount(avoid2.BoundaryPolygons);
@@ -318,6 +369,20 @@ namespace MatterHackers.PolygonPathing
 
 				UiThread.RunOnIdle(Invalidate);
 			}
+		}
+
+		private MSIntPoint MoveSampelPoint(MSIntPoint pointToMove, MSIntPoint center)
+		{
+			var length = MSClipperLib.IntPointExtensions.Length((pointToMove - center));
+			var direction = new MSIntPoint(avoidInset / 2 - rand.Next((int)avoidInset), avoidInset / 2 - rand.Next((int)avoidInset));
+			pointToMove = pointToMove + direction;
+
+			if (length > 0)
+			{
+				direction = (center - pointToMove) * avoidInset / 20 / length;
+			}
+			pointToMove = pointToMove + direction;
+			return pointToMove;
 		}
 
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
@@ -446,10 +511,10 @@ namespace MatterHackers.PolygonPathing
 						// circle holes
 						string polyPath = "x:189400, y:76400,x:170600, y:76400,x:170600, y:37600,x:189400, y:37600,|x:177346, y:60948,x:175525, y:62137,x:174189, y:63854,x:173482, y:65912,x:173482, y:68087,x:174189, y:70145,x:175525, y:71862,x:177346, y:73051,x:179455, y:73585,x:181621, y:73406,x:183614, y:72532,x:185214, y:71059,x:186249, y:69146,x:186608, y:67000,x:186249, y:64853,x:185214, y:62940,x:183614, y:61468,x:181621, y:60593,x:179455, y:60414,|x:177346, y:40949,x:175525, y:42138,x:174189, y:43855,x:173482, y:45913,x:173482, y:48088,x:174189, y:50146,x:175525, y:51863,x:177346, y:53052,x:179455, y:53586,x:181621, y:53407,x:183614, y:52532,x:185214, y:51060,x:186249, y:49147,x:186608, y:47000,x:186249, y:44854,x:185214, y:42941,x:183614, y:41468,x:181621, y:40594,x:179455, y:40415,|";
 
-						polyPath = "x:99832, y:88697,x:88119, y:101091,x:82212, y:86495,|x:86663, y:99419,x:86538, y:90868,x:86525, y:90775,x:86307, y:90633,|";
-						// Length of this segment (start->end) 4789.
-						startOverride = new MSIntPoint(83319, 87278); endOverride = new MSIntPoint(86711, 90660);
-						//TestSinglePathIsInside(polyPath, new IntPoint(83319, 87278), new IntPoint(86711, 90660));
+						polyPath = "x:219655, y:7130,x:212349, y:44250,x:210115, y:46125,x:207012, y:47846,x:211866, y:55536,x:249231, y:52809,x:176266, y:113595,|";
+						// Length of this segment (start->end) 32286.
+						startOverride = new MSIntPoint(205084, 78424); endOverride = new MSIntPoint(213725, 47315);
+						//TestSinglePathIsInside(polyPath, new IntPoint(205084, 78424), new IntPoint(213725, 47315));
 
 						directPolygons = MSClipperLib.CLPolygonsExtensions.CreateFromString(polyPath);
 					}
