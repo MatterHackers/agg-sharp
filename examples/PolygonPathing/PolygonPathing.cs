@@ -298,7 +298,7 @@ namespace MatterHackers.PolygonPathing
 			}
 		}
 
-		private void RenderBranch(Graphics2D graphics2D, QuadTree<int>.Branch branch, int depth)
+		private void RenderBranch(Graphics2D graphics2D, Branch<int> branch, int depth)
 		{
 			if(branch == null)
 			{
@@ -320,7 +320,7 @@ namespace MatterHackers.PolygonPathing
 			}
 		}
 
-		private void RenderLeaf(Graphics2D graphics2D, QuadTree<int>.Leaf leaf, int depth)
+		private void RenderLeaf(Graphics2D graphics2D, Leaf<int> leaf, int depth)
 		{
 			var start = ObjectToScreen(new MSIntPoint(leaf.Quad.MinX, leaf.Quad.MinY));
 			var end = ObjectToScreen(new MSIntPoint(leaf.Quad.MaxX, leaf.Quad.MaxY));
