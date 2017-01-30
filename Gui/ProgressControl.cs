@@ -41,6 +41,10 @@ namespace MatterHackers.Agg.UI
 
 		private double ratioComplete;
 
+		public ProgressBar()
+		{
+		}
+
 		public ProgressBar(int width, int height)
 			: base(width, height)
 		{
@@ -77,7 +81,14 @@ namespace MatterHackers.Agg.UI
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			base.OnDraw(graphics2D);
-			graphics2D.FillRectangle(0, 0, Width * RatioComplete, Height, FillColor);
+
+			// Restrict fill to valid values
+			var fillWidth = Width * RatioComplete;
+			if (fillWidth > 0 && fillWidth < this.Width)
+			{
+				graphics2D.FillRectangle(0, 0, fillWidth, Height, FillColor);
+			}
+
 			graphics2D.Rectangle(LocalBounds, BorderColor);
 		}
 	}
