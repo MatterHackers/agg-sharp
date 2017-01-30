@@ -39,7 +39,7 @@ namespace MatterHackers.GCodeVisualizer
 {
 	public class GCodeViewWidget : GuiWidget
 	{
-		public EventHandler DoneLoading;
+		public event EventHandler DoneLoading;
 
 		public ProgressChangedEventHandler LoadingProgressChanged;
 

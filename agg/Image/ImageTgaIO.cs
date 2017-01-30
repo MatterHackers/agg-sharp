@@ -185,6 +185,9 @@ namespace MatterHackers.Agg.Image
 				(TargaHeader.ImageType != 2 && TargaHeader.ImageType != 10 && TargaHeader.ImageType != 9) ||
 				(TargaHeader.BPP != 24 && TargaHeader.BPP != 32))
 			{
+#if DEBUG
+				throw new NotImplementedException("Unsupported TGA mode");
+#endif
 #if ASSERTS_ENABLED
 		        if ( ((byte*)pTargaHeader)[0] == 'B' && ((byte*)pTargaHeader)[1] == 'M' )
 		        {
@@ -908,17 +911,14 @@ namespace MatterHackers.Agg.Image
 			return LowLevelReadTGABitsFromBuffer(image, WorkPtr, destBitDepth);
 		}
 
-		public static bool LoadImageData(string fileName, ImageBuffer image)
-		{
-			return LoadImageData(image, fileName);
-		}
-
 		static public bool LoadImageData(ImageBuffer image, string fileName)
 		{
 			if (System.IO.File.Exists(fileName))
 			{
-				StreamReader streamReader = new StreamReader(fileName);
-				return LoadImageData(image, streamReader.BaseStream, 32);
+				using (var stream = File.OpenRead(fileName))
+				{
+					return LoadImageData(image, stream, 32);
+				}
 			}
 
 			return false;

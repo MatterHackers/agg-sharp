@@ -65,7 +65,7 @@ namespace MatterHackers.GuiAutomation
 		private AutomationRunner automationRunner;
 		public bool DrawSimulatedMouse = true;
 
-		private SystemWindow windowToDrawSimpulatedMouseOn = null;
+		private SystemWindow windowToDrawSimulatedMouseOn = null;
 
 		public ImageBuffer GetCurrentScreen()
 		{
@@ -92,16 +92,16 @@ namespace MatterHackers.GuiAutomation
 		public void SetCursorPosition(int x, int y)
 		{
 			SystemWindow topSystemWindow = SystemWindow.AllOpenSystemWindows[SystemWindow.AllOpenSystemWindows.Count - 1];
-			if (windowToDrawSimpulatedMouseOn != topSystemWindow)
+			if (windowToDrawSimulatedMouseOn != topSystemWindow)
 			{
-				if (windowToDrawSimpulatedMouseOn != null)
+				if (windowToDrawSimulatedMouseOn != null)
 				{
-					windowToDrawSimpulatedMouseOn.AfterDraw -= DrawMouse;
+					windowToDrawSimulatedMouseOn.AfterDraw -= DrawMouse;
 				}
-				windowToDrawSimpulatedMouseOn = topSystemWindow;
-				if (windowToDrawSimpulatedMouseOn != null && DrawSimulatedMouse)
+				windowToDrawSimulatedMouseOn = topSystemWindow;
+				if (windowToDrawSimulatedMouseOn != null && DrawSimulatedMouse)
 				{
-					windowToDrawSimpulatedMouseOn.AfterDraw += DrawMouse;
+					windowToDrawSimulatedMouseOn.AfterDraw += DrawMouse;
 				}
 			}
 
@@ -132,7 +132,7 @@ namespace MatterHackers.GuiAutomation
 
 		private void DrawMouse(GuiWidget drawingWidget, DrawEventArgs e)
 		{
-			automationRunner.RenderMouse(windowToDrawSimpulatedMouseOn, e.graphics2D);
+			automationRunner.RenderMouse(windowToDrawSimulatedMouseOn, e.graphics2D);
 		}
 
 		public bool LeftButtonDown { get; private set; }
@@ -219,17 +219,27 @@ namespace MatterHackers.GuiAutomation
 
 			UiThread.RunOnIdle(() =>
 			{
-				if (textToType == "{Enter}")
+				switch (textToType)
 				{
-					systemWindow.OnKeyDown(new KeyEventArgs(Keys.Enter));
-					systemWindow.OnKeyUp(new KeyEventArgs(Keys.Enter));
-				}
-				else
-				{
-					foreach (char character in textToType)
-					{
-						systemWindow.OnKeyPress(new KeyPressEventArgs(character));
-					}
+					case "{Enter}":
+						systemWindow.OnKeyDown(new KeyEventArgs(Keys.Enter));
+						systemWindow.OnKeyUp(new KeyEventArgs(Keys.Enter));
+						break;
+
+					case "^a":
+						SendKey(Keys.Control | Keys.A, 'A', systemWindow);
+						break;
+
+					case "{BACKSPACE}":
+						systemWindow.OnKeyPress(new KeyPressEventArgs('\b'));
+						break;
+
+					default:
+						foreach (char character in textToType)
+						{
+							systemWindow.OnKeyPress(new KeyPressEventArgs(character));
+						}
+						break;
 				}
 
 				resetEvent.Set();
@@ -238,11 +248,22 @@ namespace MatterHackers.GuiAutomation
 			resetEvent.WaitOne();
 		}
 
+		private void SendKey(Keys keyDown, char keyPressed, GuiWidget reciever)
+		{
+			KeyEventArgs keyDownEvent = new KeyEventArgs(keyDown);
+			reciever.OnKeyDown(keyDownEvent);
+			if (!keyDownEvent.SuppressKeyPress)
+			{
+				KeyPressEventArgs keyPressEvent = new KeyPressEventArgs(keyPressed);
+				reciever.OnKeyPress(keyPressEvent);
+			}
+		}
+
 		public void Dispose()
 		{
-			if (windowToDrawSimpulatedMouseOn != null)
+			if (windowToDrawSimulatedMouseOn != null)
 			{
-				windowToDrawSimpulatedMouseOn.AfterDraw -= DrawMouse;
+				windowToDrawSimulatedMouseOn.AfterDraw -= DrawMouse;
 			}
 		}
 	}

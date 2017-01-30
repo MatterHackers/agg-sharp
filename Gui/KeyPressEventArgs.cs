@@ -2,17 +2,14 @@ namespace MatterHackers.Agg.UI
 {
 	public class KeyPressEventArgs
 	{
-		private char m_KeyChar;
-		private bool m_Handled;
-
 		public KeyPressEventArgs(char keyChar)
 		{
-			m_Handled = false;
-			m_KeyChar = keyChar;
+			this.Handled = false;
+			this.KeyChar = keyChar;
 		}
 
-		public bool Handled { get { return m_Handled; } set { m_Handled = value; } }
+		public bool Handled { get; set; }
 
-		public char KeyChar { get { return m_KeyChar; } set { m_KeyChar = value; } }
+		public char KeyChar { get; set; }
 	}
 }

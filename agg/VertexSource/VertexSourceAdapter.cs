@@ -57,11 +57,7 @@ namespace MatterHackers.Agg.VertexSource
 		private double m_start_x;
 		private double m_start_y;
 
-		public IVertexSource VertexSource
-		{
-			get;
-			set;
-		}
+		public IVertexSource VertexSource { get; set; }
 
 		private enum status
 		{

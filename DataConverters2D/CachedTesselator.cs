@@ -77,9 +77,9 @@ namespace MatterHackers.DataConverters2D
 
 		public CachedTesselator()
 		{
-			callVertex += VertexCallBack;
-			callEdgeFlag += EdgeFlagCallBack;
-			callCombine += CombineCallBack;
+			callVertex = VertexCallBack;
+			callEdgeFlag = EdgeFlagCallBack;
+			callCombine = CombineCallBack;
 		}
 
 		public void Clear()
@@ -107,10 +107,10 @@ namespace MatterHackers.DataConverters2D
 			lastEdgeFlagSet = isEdge;
 		}
 
-		public void CombineCallBack(double[] coords3, int[] data4,
-			double[] weight4, out int outData)
+		public int CombineCallBack(double[] coords3, int[] data4,
+			double[] weight4)
 		{
-			outData = AddVertex(coords3[0], coords3[1], false);
+			return AddVertex(coords3[0], coords3[1], false);
 		}
 
 		public override void AddVertex(double x, double y)
@@ -120,16 +120,16 @@ namespace MatterHackers.DataConverters2D
 
 		public int AddVertex(double x, double y, bool passOnToTesselator)
 		{
-			int index = VerticesCache.Count;
+			int clientIndex = VerticesCache.Count;
 			VerticesCache.Add(new AddedVertex(x, y));
 			double[] coords = new double[2];
 			coords[0] = x;
 			coords[1] = y;
 			if (passOnToTesselator)
 			{
-				AddVertex(coords, index);
+				AddVertex(coords, clientIndex);
 			}
-			return index;
+			return clientIndex;
 		}
 	}
 }

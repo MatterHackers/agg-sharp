@@ -49,7 +49,7 @@ namespace Tesselate
 		public ContourVertex nextVertex;		/* next vertex (never null) */
 		public ContourVertex prevVertex;		/* previous vertex (never null) */
 		public HalfEdge edgeThisIsOriginOf;	/* a half-edge with this origin */
-		public int clientIndex;		/* client's data */
+		public int ClientIndex; /* client's data */
 
 		/* Internal data (keep hidden) */
 		public double[] coords = new double[3];	/* vertex location in 3D */
