@@ -231,7 +231,8 @@ namespace MatterHackers.GuiAutomation
 						break;
 
 					case "{BACKSPACE}":
-						systemWindow.OnKeyPress(new KeyPressEventArgs('\b'));
+						systemWindow.OnKeyDown(new KeyEventArgs(Keys.Back));
+						systemWindow.OnKeyUp(new KeyEventArgs(Keys.Back));
 						break;
 
 					default:
