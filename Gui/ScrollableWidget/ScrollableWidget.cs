@@ -118,20 +118,11 @@ namespace MatterHackers.Agg.UI
 			scrollArea = new ScrollingArea(this);
 			scrollArea.HAnchor = UI.HAnchor.FitToChildren;
 			AutoScroll = autoScroll;
-			ScrollArea.BoundsChanged += new EventHandler(ScrollArea_BoundsChanged);
 			verticalScrollBar = new ScrollBar(this);
 
 			base.AddChild(scrollArea);
 			base.AddChild(verticalScrollBar);
 			verticalScrollBar.HAnchor = UI.HAnchor.ParentRight;
-		}
-
-		private void ScrollArea_BoundsChanged(object sender, EventArgs e)
-		{
-			if (AutoScroll)
-			{
-				ScrollArea.ValidateScrollPosition();
-			}
 		}
 
 		public override void OnBoundsChanged(EventArgs e)
