@@ -134,11 +134,6 @@ namespace MatterHackers.Agg.UI
 			base.OnBoundsChanged(e);
 		}
 
-		public override void OnDraw(Graphics2D graphics2D)
-		{
-			base.OnDraw(graphics2D);
-		}
-
 		public override void AddChild(GuiWidget child, int indexInChildrenList = -1)
 		{
 			ScrollArea.AddChild(child, indexInChildrenList);
