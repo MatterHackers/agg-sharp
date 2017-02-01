@@ -587,7 +587,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 				testRunner.Type("Test Text");
 
-				testRunner.Wait(1);
+				testRunner.Delay(1);
 				Assert.IsTrue(editField.Text == "Test Text", "validate text is typed");
 
 				return Task.FromResult(0);
@@ -621,7 +621,7 @@ namespace MatterHackers.Agg.UI.Tests
 			AutomationTest testToRun = (testRunner) =>
 			{
 				UiThread.RunOnIdle(editField.Focus);
-				AutomationRunner.WaitUntil(() => editField.Focused, 3);
+				testRunner.Delay(() => editField.Focused, 3);
 				Assert.IsTrue(editField.Focused, "Focused property should be true after invoking Focus method");
 
 				return Task.FromResult(0);
@@ -650,7 +650,7 @@ namespace MatterHackers.Agg.UI.Tests
 			AutomationTest testToRun = (testRunner) =>
 			{
 				editField.SelectAllOnFocus = true;
-				testRunner.Wait(1);
+				testRunner.Delay(1);
 				testRunner.ClickByName(editField.Name, 1);
 
 				editField.SelectAllOnFocus = true;
@@ -658,7 +658,7 @@ namespace MatterHackers.Agg.UI.Tests
 				Assert.AreEqual("123", editField.Text, "Text input on newly focused control should replace selection");
 
 				testRunner.ClickByName(editField.Name, 1);
-				testRunner.Wait(.2);
+				testRunner.Delay(.2);
 
 				testRunner.Type("123");
 				Assert.AreEqual("123123", editField.Text, "Text should be appended if control is focused and has already received input");

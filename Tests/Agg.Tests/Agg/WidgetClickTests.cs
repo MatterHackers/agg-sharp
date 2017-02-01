@@ -55,34 +55,34 @@ namespace MatterHackers.Agg.Tests
 
 			AutomationTest testToRun = (testRunner) =>
 			{
-				testRunner.Wait(2);
+				testRunner.Delay(2);
 				testRunner.ClickByName("rootClickable", 5);
-				testRunner.Wait(waitTime);
+				testRunner.Delay(waitTime);
 
 				Assert.AreEqual(blueClickCount, 1, "Expected 1 click on blue widget");
 				Assert.AreEqual(orangeClickCount, 0, "Expected 0 clicks on orange widget");
 				Assert.AreEqual(purpleClickCount, 0, "Expected 1 click on purple widget");
 
 				testRunner.ClickByName("orangeClickable", 1);
-				testRunner.Wait(waitTime);
+				testRunner.Delay(waitTime);
 				Assert.AreEqual(blueClickCount, 1, "Expected 1 click on blue widget");
 				Assert.AreEqual(orangeClickCount, 1, "Expected 1 clicks on orange widget");
 				Assert.AreEqual(purpleClickCount, 0, "Expected 0 click on purple widget");
 
 				testRunner.ClickByName("rootClickable", 1);
-				testRunner.Wait(waitTime);
+				testRunner.Delay(waitTime);
 				Assert.AreEqual(blueClickCount, 2, "Expected 1 click on blue widget");
 				Assert.AreEqual(orangeClickCount, 1, "Expected 0 clicks on orange widget");
 				Assert.AreEqual(purpleClickCount, 0, "Expected 1 click on purple widget");
 
 				testRunner.ClickByName("orangeClickable", 1);
-				testRunner.Wait(waitTime);
+				testRunner.Delay(waitTime);
 				Assert.AreEqual(blueClickCount, 2, "Expected 1 click on root widget");
 				Assert.AreEqual(orangeClickCount, 2, "Expected 2 clicks on orange widget");
 				Assert.AreEqual(purpleClickCount, 0, "Expected 0 click on purple widget");
 
 				testRunner.ClickByName("purpleClickable", 1);
-				testRunner.Wait(waitTime);
+				testRunner.Delay(waitTime);
 				Assert.AreEqual(blueClickCount, 2, "Expected 1 click on blue widget");
 				Assert.AreEqual(orangeClickCount, 2, "Expected 2 clicks on orange widget");
 				Assert.AreEqual(purpleClickCount, 1, "Expected 1 click on purple widget");
