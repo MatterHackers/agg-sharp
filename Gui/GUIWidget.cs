@@ -949,7 +949,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public RectangleDouble GetChildrenBoundsIncludingMargins(bool considerChildAnchor = false)
+		public RectangleDouble GetChildrenBoundsIncludingMargins(bool considerChildAnchor = false, Func<GuiWidget, GuiWidget, bool> considerChild = null)
 		{
 			RectangleDouble boundsOfAllChildrenIncludingMargin = new RectangleDouble();
 
@@ -961,7 +961,8 @@ namespace MatterHackers.Agg.UI
 				bool foundVBounds = false;
 				foreach (GuiWidget child in Children)
 				{
-					if (child.Visible == false)
+					if (child.Visible == false 
+					|| (considerChild != null && !considerChild(this, child)))
 					{
 						continue;
 					}
