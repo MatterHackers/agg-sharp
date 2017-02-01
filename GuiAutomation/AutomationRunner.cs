@@ -171,19 +171,19 @@ namespace MatterHackers.GuiAutomation
 
 					case MouseButtons.Left:
 						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
-						Wait(UpDelaySeconds);
+						Delay(UpDelaySeconds);
 						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
 						break;
 
 					case MouseButtons.Right:
 						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_RIGHTDOWN, screenPosition.x, screenPosition.y, 0, 0);
-						Wait(UpDelaySeconds);
+						Delay(UpDelaySeconds);
 						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_RIGHTUP, screenPosition.x, screenPosition.y, 0, 0);
 						break;
 
 					case MouseButtons.Middle:
 						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_MIDDLEDOWN, screenPosition.x, screenPosition.y, 0, 0);
-						Wait(UpDelaySeconds);
+						Delay(UpDelaySeconds);
 						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_MIDDLEUP, screenPosition.x, screenPosition.y, 0, 0);
 						break;
 
@@ -197,7 +197,12 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public void WaitUntil(Func<bool> checkConditionSatisfied, double maxSeconds, int checkInterval = 200)
+		public void Delay(double secondsToWait = .2)
+		{
+			Thread.Sleep((int)(secondsToWait * 1000));
+		}
+
+		public static void StaticDelay(Func<bool> checkConditionSatisfied, double maxSeconds, int checkInterval = 200)
 		{
 			Stopwatch timer = Stopwatch.StartNew();
 
@@ -210,6 +215,11 @@ namespace MatterHackers.GuiAutomation
 
 				Thread.Sleep(checkInterval);
 			}
+		}
+
+		public void Delay(Func<bool> checkConditionSatisfied, double maxSeconds, int checkInterval = 200)
+		{
+			StaticDelay(checkConditionSatisfied, maxSeconds, checkInterval);
 		}
 
 		public bool DoubleClickImage(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
@@ -627,13 +637,13 @@ namespace MatterHackers.GuiAutomation
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
 				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 
-				Wait(UpDelaySeconds);
+				Delay(UpDelaySeconds);
 
 				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
 
 				// After firing the click event, wait the given period of time before returning to allow MatterControl 
 				// to complete the targeted action
-				Wait(delayBeforeReturn);
+				Delay(delayBeforeReturn);
 
 				return;
 			}
@@ -810,17 +820,12 @@ namespace MatterHackers.GuiAutomation
 		public void Type(string textToType)
 		{
 			inputSystem.Type(textToType);
-			Wait(.2);
+			Delay(.2);
 		}
 
 		#endregion Keyboard Functions
 
 		#region Time
-
-		public void Wait(double secondsToWait)
-		{
-			Thread.Sleep((int)(secondsToWait * 1000));
-		}
 
 		public bool WaitForImage(string imageName, double secondsToWait, SearchRegion searchRegion = null)
 		{
@@ -839,7 +844,7 @@ namespace MatterHackers.GuiAutomation
 			while (!ImageExists(imageNeedle)
 				&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
 			{
-				Wait(.05);
+				Delay(.05);
 			}
 
 			if (timeWaited.Elapsed.TotalSeconds > secondsToWait)
@@ -860,7 +865,7 @@ namespace MatterHackers.GuiAutomation
 			while (!NameExists(widgetName)
 				&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
 			{
-				Wait(.05);
+				Delay(.05);
 			}
 
 			if (timeWaited.Elapsed.TotalSeconds > secondsToWait)
@@ -881,7 +886,7 @@ namespace MatterHackers.GuiAutomation
 			while (NameExists(widgetName)
 				&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
 			{
-				Wait(.05);
+				Delay(.05);
 			}
 
 			if (timeWaited.Elapsed.TotalSeconds > secondsToWait)

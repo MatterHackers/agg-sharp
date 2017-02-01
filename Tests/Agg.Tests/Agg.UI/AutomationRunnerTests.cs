@@ -47,7 +47,7 @@ namespace MatterHackers.Agg.UI.Tests
 			AutomationTest testToRun = (testRunner) =>
 			{
 				testRunner.ClickByName("left");
-				testRunner.Wait(.5);
+				testRunner.Delay(.5);
 
 				Assert.IsTrue(leftClickCount == 1, "Got left button click");
 
@@ -72,7 +72,7 @@ namespace MatterHackers.Agg.UI.Tests
 			AutomationTest testToRun = (testRunner) =>
 			{
 				testRunner.ClickByName("left");
-				testRunner.Wait(.5);
+				testRunner.Delay(.5);
 				Assert.AreEqual(1, leftClickCount, "Should have one left click count after click");
 
 				Assert.IsTrue(testRunner.NameExists("left"), "Left button should exist");

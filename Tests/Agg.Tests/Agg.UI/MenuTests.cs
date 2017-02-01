@@ -215,8 +215,8 @@ namespace MatterHackers.Agg.UI.Tests
 
 				testRunner.ClickByName("menu1");
 				testRunner.ClickByName("item1");
-				
-				testRunner.WaitUntil(() => !testList.IsOpen, 2);
+
+				testRunner.Delay(() => !testList.IsOpen, 2);
 				Assert.IsTrue(!testList.IsOpen);
 				Assert.AreEqual(1, item1ClickCount);
 				Assert.AreEqual(0, item2ClickCount);
@@ -225,7 +225,7 @@ namespace MatterHackers.Agg.UI.Tests
 				testRunner.ClickByName("menu1");
 				testRunner.ClickByName("item2");
 
-				testRunner.WaitUntil(() => !testList.IsOpen, 2);
+				testRunner.Delay(() => !testList.IsOpen, 2);
 				Assert.IsTrue(!testList.IsOpen);
 				Assert.AreEqual(1, item1ClickCount);
 				Assert.AreEqual(1, item2ClickCount);
@@ -234,14 +234,14 @@ namespace MatterHackers.Agg.UI.Tests
 				testRunner.ClickByName("menu1");
 				testRunner.ClickByName("item3");
 
-				testRunner.WaitUntil(() => testList.IsOpen, 2);
+				testRunner.Delay(() => testList.IsOpen, 2);
 				Assert.IsTrue(testList.IsOpen, "It should remain open when clicking on a disabled item.");
 				Assert.AreEqual(1, item1ClickCount);
 				Assert.AreEqual(1, item2ClickCount);
 				Assert.AreEqual(0, item3ClickCount);
 				testRunner.ClickByName("item2");
 
-				testRunner.WaitUntil(() => !testList.IsOpen, 2);
+				testRunner.Delay(() => !testList.IsOpen, 2);
 				Assert.IsTrue(!testList.IsOpen);
 				Assert.AreEqual(1, item1ClickCount);
 				Assert.AreEqual(2, item2ClickCount);
@@ -250,14 +250,14 @@ namespace MatterHackers.Agg.UI.Tests
 				testRunner.ClickByName("menu1");
 				testRunner.ClickByName("OffMenu");
 
-				testRunner.WaitUntil(() => !testList.IsOpen, 2);
+				testRunner.Delay(() => !testList.IsOpen, 2);
 				Assert.IsTrue(!testList.IsOpen);
 
 				testRunner.ClickByName("menu1");
 				testRunner.ClickByName("item3");
 				testRunner.ClickByName("OffMenu");
 
-				testRunner.WaitUntil(() => !testList.IsOpen, 2);
+				testRunner.Delay(() => !testList.IsOpen, 2);
 				Assert.IsTrue(!testList.IsOpen, "had a bug where after clicking a disabled item would not close clicking outside");
 
 				return Task.FromResult(0);

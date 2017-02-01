@@ -55,17 +55,17 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				// Now do the actions specific to this test. (replace this for new tests)
 				testRunner.ClickByName("left", 1);
-				testRunner.Wait(.5);
+				testRunner.Delay(.5);
 
 				Assert.IsTrue(leftClickCount == 1, "Got left button click");
 
 				testRunner.ClickByName("right", 1);
-				testRunner.Wait(.5);
+				testRunner.Delay(.5);
 
 				Assert.IsTrue(rightClickCount == 1, "Got right button click");
 
 				testRunner.DragDropByName("left", "right", offsetDrag: new Point2D(1, 0));
-				testRunner.Wait(.5);
+				testRunner.Delay(.5);
 
 				Assert.IsTrue(leftClickCount == 1, "Mouse down not a click");
 
