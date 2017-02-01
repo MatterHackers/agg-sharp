@@ -621,7 +621,7 @@ namespace MatterHackers.Agg.UI.Tests
 			AutomationTest testToRun = (testRunner) =>
 			{
 				UiThread.RunOnIdle(editField.Focus);
-				testRunner.WaitUntil(() => editField.Focused, 3);
+				AutomationRunner.WaitUntil(() => editField.Focused, 3);
 				Assert.IsTrue(editField.Focused, "Focused property should be true after invoking Focus method");
 
 				return Task.FromResult(0);

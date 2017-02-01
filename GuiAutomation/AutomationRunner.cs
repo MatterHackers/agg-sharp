@@ -197,7 +197,7 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public void WaitUntil(Func<bool> checkConditionSatisfied, double maxSeconds, int checkInterval = 200)
+		public static void WaitUntil(Func<bool> checkConditionSatisfied, double maxSeconds, int checkInterval = 200)
 		{
 			Stopwatch timer = Stopwatch.StartNew();
 
