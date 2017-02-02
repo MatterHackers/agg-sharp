@@ -90,8 +90,9 @@ namespace MatterHackers.Agg.UI
 
 		public void AddHorizontalLine()
 		{
-			MenuItem menuItem = new MenuItem(new GuiWidget(HAnchor.ParentLeftRight, VAnchor.AbsolutePosition)
+			MenuItem menuItem = new MenuItem(new GuiWidget()
 			{
+				HAnchor = HAnchor.ParentLeftRight,
 				Height = 2,
 				BackgroundColor = RGBA_Bytes.Gray,
 				Margin = new BorderDouble(3, 1),

@@ -25,7 +25,11 @@ namespace MatterHackers.Agg
 
 			leftToRight.AddChild(previewWindowRayTrace);
 
-			GuiWidget zBuffer = new GuiWidget(HAnchor.ParentLeftRight, VAnchor.ParentBottomTop);
+			GuiWidget zBuffer = new GuiWidget()
+			{
+				HAnchor = HAnchor.ParentLeftRight,
+				VAnchor = VAnchor.ParentBottomTop
+			};
 			zBuffer.BackgroundColor = RGBA_Bytes.Blue;
 			leftToRight.AddChild(zBuffer);
 
