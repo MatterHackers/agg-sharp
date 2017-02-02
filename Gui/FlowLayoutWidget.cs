@@ -35,9 +35,11 @@ namespace MatterHackers.Agg.UI
 	{
 		private LayoutEngineFlow layoutEngine;
 
-		public FlowLayoutWidget(FlowDirection direction = FlowDirection.LeftToRight, HAnchor hAnchor = HAnchor.FitToChildren, VAnchor vAnchor = VAnchor.FitToChildren)
-			: base(hAnchor, vAnchor)
+		public FlowLayoutWidget(FlowDirection direction = FlowDirection.LeftToRight)
 		{
+			HAnchor = HAnchor.FitToChildren;
+			VAnchor = VAnchor.FitToChildren;
+
 			layoutEngine = new LayoutEngineFlow(direction);
 			LayoutEngine = layoutEngine;
 		}
