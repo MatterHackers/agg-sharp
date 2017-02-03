@@ -417,7 +417,7 @@ namespace MatterHackers.GCodeVisualizer
 			GCodeFileLoaded.LoadInBackground(backgroundWorker, gcodePathAndFileName);
 		}
 
-		public override void OnClosed(EventArgs e)
+		public override void OnClosed(ClosedEventArgs e)
 		{
 			if (backgroundWorker != null)
 			{

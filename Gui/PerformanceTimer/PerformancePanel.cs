@@ -109,7 +109,7 @@ namespace MatterHackers.Agg.UI
 			return resultsPanels[panelName];
 		}
 
-		public override void OnClosed(EventArgs e)
+		public override void OnClosed(ClosedEventArgs e)
 		{
 			unregisterEvents?.Invoke(this, null);
 			base.OnClosed(e);

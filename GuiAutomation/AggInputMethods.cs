@@ -130,7 +130,7 @@ namespace MatterHackers.GuiAutomation
 			}
 		}
 
-		private void DrawMouse(GuiWidget drawingWidget, DrawEventArgs e)
+		private void DrawMouse(object drawingWidget, DrawEventArgs e)
 		{
 			automationRunner.RenderMouse(windowToDrawSimulatedMouseOn, e.graphics2D);
 		}

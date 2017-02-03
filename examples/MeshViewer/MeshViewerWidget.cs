@@ -437,7 +437,7 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
-		public override void OnClosed(EventArgs e)
+		public override void OnClosed(ClosedEventArgs e)
 		{
 			if (backgroundWorker != null)
 			{

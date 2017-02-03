@@ -330,7 +330,7 @@ namespace MatterHackers.Agg.UI
 				if (!aggWidgetHasBeenClosed)
 				{
 					aggWidgetHasBeenClosed = true;
-					aggAppWidget.Close();
+					aggAppWidget.Close(!aggIsRequestingClose);
 				}
 
 				if (this == mainForm && !waitingForIdleTimerToStop)
@@ -372,11 +372,14 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		internal virtual void RequestClose()
+		bool aggIsRequestingClose = false;
+		public virtual void RequestClose()
 		{
 			if (!aggWidgetHasBeenClosed)
 			{
+				aggIsRequestingClose = true;
 				Close();
+				aggIsRequestingClose = false;
 			}
 		}
 	}
