@@ -168,7 +168,8 @@ namespace MatterHackers.Agg.UI
 				string convertedText = value;
 				if (value != null)
 				{
-					convertedText = value.Replace('\r', '\n');
+					convertedText = value.Replace("\r\n", "\n");
+					convertedText = convertedText.Replace('\r', '\n');
 					if (Text.Contains("\r"))
 					{
 						throw new Exception("These should have be converted to \n.");
