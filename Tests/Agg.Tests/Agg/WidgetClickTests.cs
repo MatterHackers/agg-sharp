@@ -427,11 +427,11 @@ namespace MatterHackers.Agg.Tests
 			public string ErrorMessage { get; set; }
 		}
 
-		private void widget_DrawSelection(GuiWidget drawingWidget, DrawEventArgs e)
+		private void widget_DrawSelection(Object drawingWidget, DrawEventArgs e)
 		{
 			if (lastClicked == drawingWidget)
 			{
-				e.graphics2D.Rectangle(drawingWidget.LocalBounds, RGBA_Bytes.White);
+				e.graphics2D.Rectangle(((GuiWidget)drawingWidget).LocalBounds, RGBA_Bytes.White);
 			}
 		}
 	}

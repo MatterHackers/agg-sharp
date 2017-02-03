@@ -102,7 +102,7 @@ namespace MatterHackers.Agg.UI
 			scrollingWindow.ScrollArea.VAnchor = VAnchor.FitToChildren;
 		}
 
-		private void widgetRelativeTo_Closed(object sender, EventArgs e)
+		private void widgetRelativeTo_Closed(object sender, ClosedEventArgs e)
 		{
 			widgetRelativeTo.Closed -= widgetRelativeTo_Closed;
 			widgetRelativeTo = null;
@@ -112,7 +112,7 @@ namespace MatterHackers.Agg.UI
 
 		private HashSet<GuiWidget> widgetRefList = new HashSet<GuiWidget>();
 
-		public override void OnClosed(EventArgs e)
+		public override void OnClosed(ClosedEventArgs e)
 		{
 			foreach (MenuItem menuItem in MenuItems)
 			{

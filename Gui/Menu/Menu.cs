@@ -84,7 +84,7 @@ namespace MatterHackers.Agg.UI
 			}
 
 			DropDownContainer = new OpenMenuContents(MenuItems, this, OpenOffset, MenuDirection, MenuItemsBackgroundColor, MenuItemsBorderColor, MenuItemsBorderWidth, maxHeight, AlignToRightEdge);
-			DropDownContainer.Closed += new EventHandler(DropListItems_Closed);
+			DropDownContainer.Closed += DropListItems_Closed;
 			DropDownContainer.Focus();
 		}
 
@@ -101,7 +101,7 @@ namespace MatterHackers.Agg.UI
 			MenuItems.Add(menuItem);
 		}
 
-		virtual protected void DropListItems_Closed(object sender, EventArgs e)
+		virtual protected void DropListItems_Closed(object sender, ClosedEventArgs e)
 		{
 			OpenMenuContents dropListItems = (OpenMenuContents)sender;
 			dropListItems.Closed -= DropListItems_Closed;

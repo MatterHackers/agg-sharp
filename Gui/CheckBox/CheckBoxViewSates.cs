@@ -105,7 +105,7 @@ namespace MatterHackers.Agg.UI
 			base.OnParentChanged(e);
 		}
 
-		public override void OnClosed(EventArgs e)
+		public override void OnClosed(ClosedEventArgs e)
 		{
 			RemoveLinks();
 

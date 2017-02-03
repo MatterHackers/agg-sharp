@@ -79,7 +79,7 @@ namespace MatterHackers.Agg.UI
 
 		public int BitDepth => (int)this.PixelType;
 
-		public override void OnClosed(EventArgs e)
+		public override void OnClosed(ClosedEventArgs e)
 		{
 			allOpenSystemWindows.Remove(this);
 			base.OnClosed(e);
