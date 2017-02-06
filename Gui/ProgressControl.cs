@@ -83,8 +83,8 @@ namespace MatterHackers.Agg.UI
 			base.OnDraw(graphics2D);
 
 			// Restrict fill to valid values
-			var fillWidth = Width * RatioComplete;
-			if (fillWidth > 0 && fillWidth < this.Width)
+			var fillWidth = Math.Min(Width, Width * RatioComplete);
+			if (fillWidth > 0 && fillWidth <= this.Width)
 			{
 				graphics2D.FillRectangle(0, 0, fillWidth, Height, FillColor);
 			}
