@@ -131,10 +131,10 @@ namespace MatterHackers.GCodeVisualizer
 			return false;
 		}
 
-		public static bool GetFirstNumberAfter(string stringToCheckAfter, string stringWithNumber, ref int readValue, int startIndex = 0)
+		public static bool GetFirstNumberAfter(string stringToCheckAfter, string stringWithNumber, ref int readValue, int startIndex = 0, string stopCheckingString = ";")
 		{
 			double doubleValue = readValue;
-			if(GetFirstNumberAfter(stringToCheckAfter, stringWithNumber, ref doubleValue, startIndex))
+			if(GetFirstNumberAfter(stringToCheckAfter, stringWithNumber, ref doubleValue, startIndex, stopCheckingString))
 			{
 				readValue = (int)doubleValue;
 				return true;
@@ -143,10 +143,12 @@ namespace MatterHackers.GCodeVisualizer
 			return false;
 		}
 
-		public static bool GetFirstNumberAfter(string stringToCheckAfter, string stringWithNumber, ref double readValue, int startIndex = 0)
+		public static bool GetFirstNumberAfter(string stringToCheckAfter, string stringWithNumber, ref double readValue, int startIndex = 0, string stopCheckingString = ";")
 		{
 			int stringPos = stringWithNumber.IndexOf(stringToCheckAfter, startIndex);
-			if (stringPos != -1)
+			int stopPos = stringWithNumber.IndexOf(stopCheckingString);
+			if (stringPos != -1
+				&& (stopPos == -1 || stringPos < stopPos))
 			{
 				stringPos += stringToCheckAfter.Length;
 				readValue = agg_basics.ParseDouble(stringWithNumber, ref stringPos, true);
