@@ -603,7 +603,7 @@ namespace MatterHackers.Agg.UI.Tests
 			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
 		}
 
-		[Test, Apartment(ApartmentState.STA), Category("FixNeeded" /* Unexpected behavior, possible Agg bug */)]
+		[Test, Apartment(ApartmentState.STA)]
 		public async Task VerifyFocusProperty()
 		{
 			SystemWindow systemWindow = new SystemWindow(300, 200)
@@ -621,8 +621,8 @@ namespace MatterHackers.Agg.UI.Tests
 			AutomationTest testToRun = (testRunner) =>
 			{
 				UiThread.RunOnIdle(editField.Focus);
-				testRunner.Delay(() => editField.Focused, 3);
-				Assert.IsTrue(editField.Focused, "Focused property should be true after invoking Focus method");
+				testRunner.Delay(() => editField.ContainsFocus, 3);
+				Assert.IsTrue(editField.ContainsFocus, "Focused property should be true after invoking Focus method");
 
 				return Task.FromResult(0);
 			};
