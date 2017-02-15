@@ -899,12 +899,12 @@ namespace MatterHackers.Agg.UI
 
 					Invalidate();
 
-					OnBoundsChanged(null);
-
 					if (DoubleBuffer)
 					{
 						AllocateBackBuffer();
 					}
+
+					OnBoundsChanged(null);
 
 					screenClipping.MarkRecalculate();
 				}
