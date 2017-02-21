@@ -849,6 +849,11 @@ namespace MatterHackers.Agg
 			return false;
 		}
 
+		public override string ToString()
+		{
+			return GetAsHTMLString();
+		}
+
 		public override bool Equals(object obj)
 		{
 			if (obj.GetType() == typeof(RGBA_Bytes))
@@ -875,8 +880,14 @@ namespace MatterHackers.Agg
 
 		public string GetAsHTMLString()
 		{
-			string html = string.Format("#{0:X2}{1:X2}{2:X2}", red, green, blue);
-			return html;
+			if (alpha == 255)
+			{
+				return $"#{red:X2}{green:X2}{blue:X2}";
+			}
+			else
+			{
+				return $"#{red:X2}{green:X2}{blue:X2}{alpha:X2}";
+			}
 		}
 
 		private void clear()

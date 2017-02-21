@@ -513,7 +513,7 @@ namespace NUnitGaming
             Assert.IsTrue(Point3.Equals(new Vector3D(12, 18, 24), .01f));
         }
 
-        [Test, Category("FixNeeded")]
+        [Test]
         public void ScalarDivision()
         {
             Vector3D ScalarMultiplicationArgument = new Vector3D(5.0f, 4.0f, 3.0f);

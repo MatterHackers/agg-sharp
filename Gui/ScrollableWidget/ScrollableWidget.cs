@@ -112,20 +112,11 @@ namespace MatterHackers.Agg.UI
 			scrollArea = new ScrollingArea(this);
 			scrollArea.HAnchor = UI.HAnchor.FitToChildren;
 			AutoScroll = autoScroll;
-			ScrollArea.BoundsChanged += new EventHandler(ScrollArea_BoundsChanged);
 			VerticalScrollBar = new ScrollBar(this);
 
 			base.AddChild(scrollArea);
 			base.AddChild(VerticalScrollBar);
 			VerticalScrollBar.HAnchor = UI.HAnchor.ParentRight;
-		}
-
-		private void ScrollArea_BoundsChanged(object sender, EventArgs e)
-		{
-			if (AutoScroll)
-			{
-				ScrollArea.ValidateScrollPosition();
-			}
 		}
 
 		public override void OnBoundsChanged(EventArgs e)
@@ -135,11 +126,6 @@ namespace MatterHackers.Agg.UI
 				ScrollArea.ValidateScrollPosition();
 			}
 			base.OnBoundsChanged(e);
-		}
-
-		public override void OnDraw(Graphics2D graphics2D)
-		{
-			base.OnDraw(graphics2D);
 		}
 
 		public override void AddChild(GuiWidget child, int indexInChildrenList = -1)

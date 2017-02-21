@@ -494,6 +494,15 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
+		//public override void OnClosed(ClosedEventArgs e)
+		//{
+		//	if (backgroundWorker != null)
+		//	{
+		//		backgroundWorker.CancelAsync();
+		//	}
+		//	base.OnClosed(e);
+		//}
+
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			base.OnDraw(graphics2D);

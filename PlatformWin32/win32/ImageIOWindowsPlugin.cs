@@ -41,7 +41,7 @@ namespace MatterHackers.Agg.Image
 	{
 		public override bool LoadImageData(Stream stream, ImageSequence destImageSequence)
 		{
-			System.Drawing.Image gifImg = System.Drawing.Image.FromStream(stream);
+			var gifImg = System.Drawing.Image.FromStream(stream);
 			if (gifImg != null)
 			{
 				FrameDimension dimension = new FrameDimension(gifImg.FrameDimensionsList[0]);
@@ -52,9 +52,13 @@ namespace MatterHackers.Agg.Image
 				{
 					// Return an Image at a certain index
 					gifImg.SelectActiveFrame(dimension, i);
-					ImageBuffer frame = new ImageBuffer();
-					ConvertBitmapToImage(frame, new Bitmap(gifImg));
-					destImageSequence.AddImage(frame);
+
+					using (var bitmap = new Bitmap(gifImg))
+					{
+						var frame = new ImageBuffer();
+						ConvertBitmapToImage(frame, bitmap);
+						destImageSequence.AddImage(frame);
+					}
 				}
 
 				try
@@ -78,16 +82,20 @@ namespace MatterHackers.Agg.Image
 
 		public override bool LoadImageData(Stream stream, ImageBuffer destImage)
 		{
-			Bitmap m_WidowsBitmap = new Bitmap(stream);
-			return ConvertBitmapToImage(destImage, m_WidowsBitmap);
+			using (var bitmap = new Bitmap(stream))
+			{
+				return ConvertBitmapToImage(destImage, bitmap);
+			}
 		}
 
-		public override bool LoadImageData(String fileName, ImageBuffer destImage)
+		public override bool LoadImageData(string fileName, ImageBuffer destImage)
 		{
 			if (System.IO.File.Exists(fileName))
 			{
-				Bitmap m_WidowsBitmap = new Bitmap(fileName);
-				return ConvertBitmapToImage(destImage, m_WidowsBitmap);
+				using (var bitmap = new Bitmap(fileName))
+				{
+					return ConvertBitmapToImage(destImage, bitmap);
+				}
 			}
 			else
 			{
@@ -95,21 +103,21 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		internal static bool ConvertBitmapToImage(ImageBuffer destImage, Bitmap m_WidowsBitmap)
+		internal static bool ConvertBitmapToImage(ImageBuffer destImage, Bitmap bitmap)
 		{
-			if (m_WidowsBitmap != null)
+			if (bitmap != null)
 			{
-				switch (m_WidowsBitmap.PixelFormat)
+				switch (bitmap.PixelFormat)
 				{
 					case System.Drawing.Imaging.PixelFormat.Format32bppArgb:
 						{
-							destImage.Allocate(m_WidowsBitmap.Width, m_WidowsBitmap.Height, m_WidowsBitmap.Width * 4, 32);
+							destImage.Allocate(bitmap.Width, bitmap.Height, bitmap.Width * 4, 32);
 							if (destImage.GetRecieveBlender() == null)
 							{
 								destImage.SetRecieveBlender(new BlenderBGRA());
 							}
 
-							BitmapData bitmapData = m_WidowsBitmap.LockBits(new Rectangle(0, 0, m_WidowsBitmap.Width, m_WidowsBitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, m_WidowsBitmap.PixelFormat);
+							BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmap.PixelFormat);
 							int sourceIndex = 0;
 							int destIndex = 0;
 							unsafe
@@ -140,16 +148,16 @@ namespace MatterHackers.Agg.Image
 								}
 							}
 
-							m_WidowsBitmap.UnlockBits(bitmapData);
+							bitmap.UnlockBits(bitmapData);
 
 							return true;
 						}
 
 					case System.Drawing.Imaging.PixelFormat.Format24bppRgb:
 						{
-							destImage.Allocate(m_WidowsBitmap.Width, m_WidowsBitmap.Height, m_WidowsBitmap.Width * 4, 32);
+							destImage.Allocate(bitmap.Width, bitmap.Height, bitmap.Width * 4, 32);
 
-							BitmapData bitmapData = m_WidowsBitmap.LockBits(new Rectangle(0, 0, m_WidowsBitmap.Width, m_WidowsBitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, m_WidowsBitmap.PixelFormat);
+							BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmap.PixelFormat);
 							int sourceIndex = 0;
 							int destIndex = 0;
 							unsafe
@@ -171,13 +179,13 @@ namespace MatterHackers.Agg.Image
 								}
 							}
 
-							m_WidowsBitmap.UnlockBits(bitmapData);
+							bitmap.UnlockBits(bitmapData);
 							return true;
 						}
 
 					case System.Drawing.Imaging.PixelFormat.Format8bppIndexed:
 						{
-							Copy8BitDataToImage(destImage, m_WidowsBitmap);
+							Copy8BitDataToImage(destImage, bitmap);
 							return true;
 						}
 
@@ -189,11 +197,11 @@ namespace MatterHackers.Agg.Image
 			return false;
 		}
 
-		private static void Copy8BitDataToImage(ImageBuffer destImage, Bitmap m_WidowsBitmap)
+		private static void Copy8BitDataToImage(ImageBuffer destImage, Bitmap bitmap)
 		{
-			destImage.Allocate(m_WidowsBitmap.Width, m_WidowsBitmap.Height, m_WidowsBitmap.Width * 4, 32);
+			destImage.Allocate(bitmap.Width, bitmap.Height, bitmap.Width * 4, 32);
 
-			BitmapData bitmapData = m_WidowsBitmap.LockBits(new Rectangle(0, 0, m_WidowsBitmap.Width, m_WidowsBitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, m_WidowsBitmap.PixelFormat);
+			BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmap.PixelFormat);
 			int sourceIndex = 0;
 			int destIndex = 0;
 			unsafe
@@ -202,7 +210,7 @@ namespace MatterHackers.Agg.Image
 				byte[] destBuffer = destImage.GetBuffer(out offset);
 				byte* pSourceBuffer = (byte*)bitmapData.Scan0;
 
-				System.Drawing.Color[] colors = m_WidowsBitmap.Palette.Entries;
+				Color[] colors = bitmap.Palette.Entries;
 
 				for (int y = 0; y < destImage.Height; y++)
 				{
@@ -219,10 +227,10 @@ namespace MatterHackers.Agg.Image
 				}
 			}
 
-			m_WidowsBitmap.UnlockBits(bitmapData);
+			bitmap.UnlockBits(bitmapData);
 		}
 
-		public override bool SaveImageData(String filename, IImageByte sourceImage)
+		public override bool SaveImageData(string filename, IImageByte sourceImage)
 		{
 			if (File.Exists(filename))
 			{
@@ -243,59 +251,66 @@ namespace MatterHackers.Agg.Image
 			{
 				if (sourceImage.BitDepth == 32)
 				{
-					Bitmap bitmapToSave = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format32bppArgb);
-					BitmapData bitmapData = bitmapToSave.LockBits(new Rectangle(0, 0, bitmapToSave.Width, bitmapToSave.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmapToSave.PixelFormat);
-					int destIndex = 0;
-					unsafe
+					using (var bitmapToSave = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format32bppArgb))
 					{
-						byte[] sourceBuffer = sourceImage.GetBuffer();
-						byte* pDestBuffer = (byte*)bitmapData.Scan0;
-						int scanlinePadding = bitmapData.Stride - bitmapData.Width * 4;
-						for (int y = 0; y < sourceImage.Height; y++)
+						BitmapData bitmapData = bitmapToSave.LockBits(new Rectangle(0, 0, bitmapToSave.Width, bitmapToSave.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmapToSave.PixelFormat);
+						int destIndex = 0;
+						unsafe
 						{
-							int sourceIndex = sourceImage.GetBufferOffsetXY(0, sourceImage.Height - 1 - y);
-							for (int x = 0; x < sourceImage.Width; x++)
+							byte[] sourceBuffer = sourceImage.GetBuffer();
+							byte* pDestBuffer = (byte*)bitmapData.Scan0;
+							int scanlinePadding = bitmapData.Stride - bitmapData.Width * 4;
+							for (int y = 0; y < sourceImage.Height; y++)
 							{
-								pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
-								pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
-								pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
-								pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+								int sourceIndex = sourceImage.GetBufferOffsetXY(0, sourceImage.Height - 1 - y);
+								for (int x = 0; x < sourceImage.Width; x++)
+								{
+									pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+									pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+									pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+									pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+								}
+
+								destIndex += scanlinePadding;
 							}
-							destIndex += scanlinePadding;
 						}
+
+						bitmapToSave.UnlockBits(bitmapData);
+						bitmapToSave.Save(filename, format);
 					}
-					bitmapToSave.UnlockBits(bitmapData);
-					bitmapToSave.Save(filename, format);
 
 					return true;
 				}
 				else if (sourceImage.BitDepth == 8 && format == ImageFormat.Png)
 				{
-					Bitmap bitmapToSave = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format8bppIndexed);
-					ColorPalette palette = bitmapToSave.Palette;
-					for (int i = 0; i < palette.Entries.Length; i++)
+					using (Bitmap bitmapToSave = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format8bppIndexed))
 					{
-						palette.Entries[i] = System.Drawing.Color.FromArgb(i, i, i);
-					}
-					bitmapToSave.Palette = palette;
-					BitmapData bitmapData = bitmapToSave.LockBits(new Rectangle(0, 0, bitmapToSave.Width, bitmapToSave.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmapToSave.PixelFormat);
-					int destIndex = 0;
-					unsafe
-					{
-						byte[] sourceBuffer = sourceImage.GetBuffer();
-						byte* pDestBuffer = (byte*)bitmapData.Scan0;
-						for (int y = 0; y < sourceImage.Height; y++)
+						ColorPalette palette = bitmapToSave.Palette;
+						for (int i = 0; i < palette.Entries.Length; i++)
 						{
-							int sourceIndex = sourceImage.GetBufferOffsetXY(0, sourceImage.Height - 1 - y);
-							for (int x = 0; x < sourceImage.Width; x++)
+							palette.Entries[i] = Color.FromArgb(i, i, i);
+						}
+						bitmapToSave.Palette = palette;
+						BitmapData bitmapData = bitmapToSave.LockBits(new Rectangle(0, 0, bitmapToSave.Width, bitmapToSave.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmapToSave.PixelFormat);
+						int destIndex = 0;
+						unsafe
+						{
+							byte[] sourceBuffer = sourceImage.GetBuffer();
+							byte* pDestBuffer = (byte*)bitmapData.Scan0;
+							for (int y = 0; y < sourceImage.Height; y++)
 							{
-								pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+								int sourceIndex = sourceImage.GetBufferOffsetXY(0, sourceImage.Height - 1 - y);
+								for (int x = 0; x < sourceImage.Width; x++)
+								{
+									pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+								}
 							}
 						}
+						bitmapToSave.Save(filename, format);
+						bitmapToSave.UnlockBits(bitmapData);
+
+						return true;
 					}
-					bitmapToSave.Save(filename, format);
-					bitmapToSave.UnlockBits(bitmapData);
-					return true;
 				}
 				else
 				{
@@ -310,20 +325,20 @@ namespace MatterHackers.Agg.Image
 		{
 			if (System.IO.File.Exists(filename))
 			{
-				Bitmap m_WidowsBitmap = new Bitmap(filename);
-				if (m_WidowsBitmap != null)
+				var bitmap = new Bitmap(filename);
+				if (bitmap != null)
 				{
-					switch (m_WidowsBitmap.PixelFormat)
+					switch (bitmap.PixelFormat)
 					{
 						case System.Drawing.Imaging.PixelFormat.Format24bppRgb:
-							destImage.Allocate(m_WidowsBitmap.Width, m_WidowsBitmap.Height, m_WidowsBitmap.Width * 4, 128);
+							destImage.Allocate(bitmap.Width, bitmap.Height, bitmap.Width * 4, 128);
 							break;
 
 						default:
 							throw new System.NotImplementedException();
 					}
 
-					BitmapData bitmapData = m_WidowsBitmap.LockBits(new Rectangle(0, 0, m_WidowsBitmap.Width, m_WidowsBitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, m_WidowsBitmap.PixelFormat);
+					BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmap.PixelFormat);
 					int sourceIndex = 0;
 					int destIndex = 0;
 					unsafe
@@ -344,7 +359,7 @@ namespace MatterHackers.Agg.Image
 						}
 					}
 
-					m_WidowsBitmap.UnlockBits(bitmapData);
+					bitmap.UnlockBits(bitmapData);
 
 					return true;
 				}

@@ -45,7 +45,16 @@ namespace PolygonPathing
             return new IntPoint(-thisPoint.Y, thisPoint.X);
         }
 
-        public static long Dot(this IntPoint thisPoint, IntPoint otherPoint)
+		public static IntRect ExpandToInclude(this IntRect inRect, IntRect otherRect)
+		{
+			if (otherRect.minX < inRect.minX) inRect.minX = otherRect.minX;
+			if (otherRect.minY < inRect.minY) inRect.minY = otherRect.minY;
+			if (otherRect.maxX > inRect.maxX) inRect.maxX = otherRect.maxX;
+			if (otherRect.maxY > inRect.maxY) inRect.maxY = otherRect.maxY;
+
+			return inRect;
+		}
+		public static long Dot(this IntPoint thisPoint, IntPoint otherPoint)
         {
             return thisPoint.X * otherPoint.X + thisPoint.Y * otherPoint.Y;
         }

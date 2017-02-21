@@ -70,8 +70,8 @@ namespace MatterHackers.Agg.PlatformAbstract
 
 		public override Point2D GetDesktopSize()
 		{
-			System.Drawing.Size sz = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Size;
-			return new Point2D(sz.Width, sz.Height);
+			var size = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea.Size;
+			return new Point2D(size.Width, size.Height);
 		}
 
 		public override OSType GetOSType()

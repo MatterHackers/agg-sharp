@@ -55,34 +55,34 @@ namespace MatterHackers.Agg.Tests
 
 			AutomationTest testToRun = (testRunner) =>
 			{
-				testRunner.Wait(2);
+				testRunner.Delay(2);
 				testRunner.ClickByName("rootClickable", 5);
-				testRunner.Wait(waitTime);
+				testRunner.Delay(waitTime);
 
 				Assert.AreEqual(blueClickCount, 1, "Expected 1 click on blue widget");
 				Assert.AreEqual(orangeClickCount, 0, "Expected 0 clicks on orange widget");
 				Assert.AreEqual(purpleClickCount, 0, "Expected 1 click on purple widget");
 
 				testRunner.ClickByName("orangeClickable", 1);
-				testRunner.Wait(waitTime);
+				testRunner.Delay(waitTime);
 				Assert.AreEqual(blueClickCount, 1, "Expected 1 click on blue widget");
 				Assert.AreEqual(orangeClickCount, 1, "Expected 1 clicks on orange widget");
 				Assert.AreEqual(purpleClickCount, 0, "Expected 0 click on purple widget");
 
 				testRunner.ClickByName("rootClickable", 1);
-				testRunner.Wait(waitTime);
+				testRunner.Delay(waitTime);
 				Assert.AreEqual(blueClickCount, 2, "Expected 1 click on blue widget");
 				Assert.AreEqual(orangeClickCount, 1, "Expected 0 clicks on orange widget");
 				Assert.AreEqual(purpleClickCount, 0, "Expected 1 click on purple widget");
 
 				testRunner.ClickByName("orangeClickable", 1);
-				testRunner.Wait(waitTime);
+				testRunner.Delay(waitTime);
 				Assert.AreEqual(blueClickCount, 2, "Expected 1 click on root widget");
 				Assert.AreEqual(orangeClickCount, 2, "Expected 2 clicks on orange widget");
 				Assert.AreEqual(purpleClickCount, 0, "Expected 0 click on purple widget");
 
 				testRunner.ClickByName("purpleClickable", 1);
-				testRunner.Wait(waitTime);
+				testRunner.Delay(waitTime);
 				Assert.AreEqual(blueClickCount, 2, "Expected 1 click on blue widget");
 				Assert.AreEqual(orangeClickCount, 2, "Expected 2 clicks on orange widget");
 				Assert.AreEqual(purpleClickCount, 1, "Expected 1 click on purple widget");
@@ -163,7 +163,7 @@ namespace MatterHackers.Agg.Tests
 			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 25);
 		}
 
-		[Test, Apartment(ApartmentState.STA), Category("FixNeeded")]
+		[Test, Apartment(ApartmentState.STA)]
 		public void ClickSuppressedOnExternalMouseUp()
 		{
 			int rootClickCount = 0;
@@ -288,7 +288,7 @@ namespace MatterHackers.Agg.Tests
 		[Test, Apartment(ApartmentState.STA)]
 		public void ClickSuppressedOnMouseUpWithinChild()
 		{
-			// FixNeeded - Agg currently fires mouse up events in child controls when the parent has the mouse captured
+			// Agg currently fires mouse up events in child controls when the parent has the mouse captured
 			// and is performing drag like operations. If the mouse goes down in the parent and comes up on the child
 			// neither control should get a click event
 
@@ -427,11 +427,11 @@ namespace MatterHackers.Agg.Tests
 			public string ErrorMessage { get; set; }
 		}
 
-		private void widget_DrawSelection(GuiWidget drawingWidget, DrawEventArgs e)
+		private void widget_DrawSelection(Object drawingWidget, DrawEventArgs e)
 		{
 			if (lastClicked == drawingWidget)
 			{
-				e.graphics2D.Rectangle(drawingWidget.LocalBounds, RGBA_Bytes.White);
+				e.graphics2D.Rectangle(((GuiWidget)drawingWidget).LocalBounds, RGBA_Bytes.White);
 			}
 		}
 	}

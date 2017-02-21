@@ -107,18 +107,16 @@ namespace MatterHackers.Agg
 				if (FileExists(propertiesPath))
 				{
 					string jsonData = ReadAllText(propertiesPath);
-					ImageSequence.Properties properties = JsonConvert.DeserializeObject<ImageSequence.Properties>(jsonData);
+
+					var properties = JsonConvert.DeserializeObject<ImageSequence.Properties>(jsonData);
 					sequence.FramePerSecond = properties.FramePerFrame;
 					sequence.Looping = properties.Looping;
 				}
 
-				string[] pngFilesIn = GetFiles(pathToImages).Where(fileName => Path.GetExtension(fileName).ToUpper() == ".PNG").ToArray();
-				List<string> pngFiles = new List<string>(pngFilesIn);
-				pngFiles.Sort();
-				foreach (string pngFile in pngFiles)
+				var pngFiles = GetFiles(pathToImages).Where(fileName => Path.GetExtension(fileName).ToUpper() == ".PNG").OrderBy(s => s);
+				foreach (string path in pngFiles)
 				{
-					ImageBuffer image = new ImageBuffer();
-					LoadImage(pngFile, image);
+					ImageBuffer image = LoadImage(path);
 					sequence.AddImage(image);
 				}
 			}
@@ -126,8 +124,10 @@ namespace MatterHackers.Agg
 
 		public void LoadImageData(Stream imageStream, ImageBuffer destImage)
 		{
-			var bitmap = new Bitmap(imageStream);
-			ImageIOWindowsPlugin.ConvertBitmapToImage(destImage, bitmap);
+			using (var bitmap = new Bitmap(imageStream))
+			{
+				ImageIOWindowsPlugin.ConvertBitmapToImage(destImage, bitmap);
+			}
 		}
 
 		static object locker = new object();
@@ -135,15 +135,16 @@ namespace MatterHackers.Agg
 		{
 			lock (locker)
 			{
-				ImageBuffer cachedImage = null;
+				ImageBuffer cachedImage;
 				if (!cachedImages.TryGetValue(path, out cachedImage))
 				{
 					using (var imageStream = OpenSteam(path))
+					using (var bitmap = new Bitmap(imageStream))
 					{
-						var bitmap = new Bitmap(imageStream);
 						cachedImage = new ImageBuffer();
 						ImageIOWindowsPlugin.ConvertBitmapToImage(cachedImage, bitmap);
 					}
+
 					if (cachedImage.Width < 200 && cachedImage.Height < 200)
 					{
 						// only cache relatively small images

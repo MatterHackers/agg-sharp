@@ -1,15 +1,17 @@
 ﻿namespace MatterHackers.Agg.UI
 {
-	public delegate void WidgetClosingEventHandler(object sender, WidgetClosingEnventArgs closingEvent);
-
-	public class WidgetClosingEnventArgs
+	public class ClosingEventArgs
 	{
-		public enum ClosingReason { None, WindowsShutDown, UserClosing, TaskManagerClosing, FormOwnerClosing, ApplicationExitCall };
-
 		public bool Cancel { get; set; }
+	}
 
-		public WidgetClosingEnventArgs()
+	public class ClosedEventArgs
+	{
+		public bool OsEvent { get; private set; }
+		
+		public ClosedEventArgs(bool osEvent)
 		{
+			OsEvent = osEvent;
 		}
 	}
 }

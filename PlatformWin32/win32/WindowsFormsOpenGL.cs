@@ -129,16 +129,16 @@ namespace MatterHackers.Agg.UI
 
 		private bool doneLoading = false;
 
-        protected override void OnClosed(EventArgs e)
-        {
-            glControl.MakeCurrent();
+		protected override void OnClosed(EventArgs e)
+		{
+			glControl.MakeCurrent();
 
-            glControl.releaseAllGlData.Release();
+			glControl.releaseAllGlData.Release();
 
-            base.OnClosed(e);
-        }
-
-        protected override void OnLoad(EventArgs e)
+			base.OnClosed(e);
+		}
+		
+		protected override void OnLoad(EventArgs e)
 		{
 			base.OnLoad(e);
 			doneLoading = true;

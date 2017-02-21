@@ -33,22 +33,22 @@ namespace RockBlaster
 			GameImageSequence onePlayerButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "OnePlayerButton");
 			Button onePlayerGameButton = new Button(270, 310, new ButtonViewThreeImage(onePlayerButtonSequence.GetImageByIndex(0), onePlayerButtonSequence.GetImageByIndex(1), onePlayerButtonSequence.GetImageByIndex(2)));
 			AddChild(onePlayerGameButton);
-			onePlayerGameButton.Click += new EventHandler(OnStartOnePlayerGameButton);
+			onePlayerGameButton.Click += OnStartOnePlayerGameButton;
 
 			GameImageSequence twoPlayerButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "TwoPlayerButton");
 			Button twoPlayerGameButton = new Button(400, 310, new ButtonViewThreeImage(twoPlayerButtonSequence.GetImageByIndex(0), twoPlayerButtonSequence.GetImageByIndex(1), twoPlayerButtonSequence.GetImageByIndex(2)));
 			AddChild(twoPlayerGameButton);
-			twoPlayerGameButton.Click += new EventHandler(OnStartTwoPlayerGameButton);
+			twoPlayerGameButton.Click += OnStartTwoPlayerGameButton;
 
 			GameImageSequence fourPlayerButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "FourPlayerButton");
 			Button fourPlayerGameButton = new Button(530, 310, new ButtonViewThreeImage(fourPlayerButtonSequence.GetImageByIndex(0), fourPlayerButtonSequence.GetImageByIndex(1), fourPlayerButtonSequence.GetImageByIndex(2)));
 			AddChild(fourPlayerGameButton);
-			fourPlayerGameButton.Click += new EventHandler(OnStartFourPlayerGameButton);
+			fourPlayerGameButton.Click += OnStartFourPlayerGameButton;
 
 			GameImageSequence cancelButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "NumPlayersCancelButton");
 			Button cancelGameButton = new Button(400, 210, new ButtonViewThreeImage(cancelButtonSequence.GetImageByIndex(0), cancelButtonSequence.GetImageByIndex(1), cancelButtonSequence.GetImageByIndex(2)));
 			AddChild(cancelGameButton);
-			cancelGameButton.Click += new EventHandler(OnCancelMenuButton);
+			cancelGameButton.Click += OnCancelMenuButton;
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)

@@ -89,7 +89,7 @@ namespace MatterHackers.MeshVisualizer
 			else
 			{
 				openFileButton = new Button("Open 3D File", 0, 0);
-				openFileButton.Click += new EventHandler(openFileButton_ButtonClick);
+				openFileButton.Click += openFileButton_ButtonClick;
 				buttonPanel.AddChild(openFileButton);
 			}
 

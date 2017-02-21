@@ -88,11 +88,14 @@ namespace MatterHackers.Agg.UI
 
 		public string CurrentText { get { return toolTipText; } }
 
+		public static bool AllowToolTips { get; set; } = true;
+
 		public void SetHoveredWidget(GuiWidget widgetToShowToolTipFor)
 		{
-#if __ANDROID__
-			return;
-#endif
+			if (!AllowToolTips)
+			{
+				return;
+			}
 	
 			if (this.widgetThatWantsToShowToolTip != widgetToShowToolTipFor)
 			{

@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace MatterHackers.Agg.Image
 {
@@ -96,25 +97,21 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public static ImageSequence LoadFromTgas(String pathName)
+		public static ImageSequence LoadFromTgas(string pathName)
 		{
-			// First we load up the Data In the Serialization file.
-			String gameDataObjectXMLPath = Path.Combine(pathName, "ImageSequence");
-			ImageSequence sequenceLoaded = new ImageSequence();
+			var sequenceLoaded = new ImageSequence();
 
 			// Now lets look for and load up any images that we find.
-			String[] tgaFilesArray = Directory.GetFiles(pathName, "*.tga");
-			List<String> sortedTgaFiles = new List<string>(tgaFilesArray);
-			// Make sure they are sorted.
-			sortedTgaFiles.Sort();
-			sequenceLoaded.imageList = new List<ImageBuffer>();
-			int imageIndex = 0;
-			foreach (String tgaFile in sortedTgaFiles)
+			var sortedTgaFiles = Directory.GetFiles(pathName, "*.tga").OrderBy(s => s);
+
+			foreach (string tgaFile in sortedTgaFiles)
 			{
-				sequenceLoaded.AddImage(new ImageBuffer(new BlenderPreMultBGRA()));
-				Stream imageStream = File.Open(tgaFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-				ImageTgaIO.LoadImageData(sequenceLoaded.imageList[imageIndex], imageStream, 32);
-				imageIndex++;
+				using (var imageStream = File.OpenRead(tgaFile))
+				{
+					var imageBuffer = new ImageBuffer(new BlenderPreMultBGRA());
+					ImageTgaIO.LoadImageData(imageBuffer, imageStream, 32);
+					sequenceLoaded.AddImage(imageBuffer);
+				}
 			}
 
 			return sequenceLoaded;
