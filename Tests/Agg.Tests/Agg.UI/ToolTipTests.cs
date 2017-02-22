@@ -114,17 +114,17 @@ namespace MatterHackers.Agg.UI.Tests
 
 			AutomationTest testToRun = (testRunner) =>
 			{
-				testRunner.Wait(1);
+				testRunner.Delay(1);
 
 				testRunner.MoveToByName("ButtonWithToolTip");
-				testRunner.Wait(1.5);
+				testRunner.Delay(1.5);
 				GuiWidget toolTipWidget = buttonContainer.FindNamedChildRecursive("ToolTipWidget");
 				Assert.IsTrue(toolTipWidget != null, "Tool tip is showing");
 				testRunner.MoveToByName("right");
 				toolTipWidget = buttonContainer.FindNamedChildRecursive("ToolTipWidget");
 				Assert.IsTrue(toolTipWidget == null, "Tool tip is not showing");
 
-				testRunner.Wait(1);
+				testRunner.Delay(1);
 				buttonContainer.CloseOnIdle();
 
 				return Task.FromResult(0);

@@ -105,7 +105,7 @@ namespace Gaming.Game
 			m_ActualDrawsBudgetGraph = new DataViewGraph(m_ActualDrawsBudgetPosition, 100, 100);
 		}
 
-		public override void OnClosed(EventArgs e)
+		public override void OnClosed(ClosedEventArgs e)
 		{
 			AudioSystem.Shutdown();
 

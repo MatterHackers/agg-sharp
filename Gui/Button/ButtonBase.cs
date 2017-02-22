@@ -20,8 +20,6 @@ namespace MatterHackers.Agg.UI
 {
 	public class ButtonBase : GuiWidget
 	{
-		public event EventHandler Click;
-
 		public bool MouseDownOnButton { get; private set; } = false;
 
 		public ButtonBase()
@@ -35,7 +33,7 @@ namespace MatterHackers.Agg.UI
 
 		public void ClickButton(MouseEventArgs mouseEvent)
 		{
-			Click?.Invoke(this, mouseEvent);
+			this.OnClick(mouseEvent);
 		}
 
 		protected void FixBoundsAndChildrenPositions()
@@ -82,14 +80,7 @@ namespace MatterHackers.Agg.UI
 
 		override public void OnMouseUp(MouseEventArgs mouseEvent)
 		{
-			if (MouseDownOnButton
-			  && PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
-			{
-				ClickButton(mouseEvent);
-			}
-
 			MouseDownOnButton = false;
-
 			base.OnMouseUp(mouseEvent);
 		}
 	}

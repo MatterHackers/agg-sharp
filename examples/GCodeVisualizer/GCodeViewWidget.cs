@@ -39,7 +39,7 @@ namespace MatterHackers.GCodeVisualizer
 {
 	public class GCodeViewWidget : GuiWidget
 	{
-		public EventHandler DoneLoading;
+		public event EventHandler DoneLoading;
 
 		public ProgressChangedEventHandler LoadingProgressChanged;
 
@@ -417,7 +417,7 @@ namespace MatterHackers.GCodeVisualizer
 			GCodeFileLoaded.LoadInBackground(backgroundWorker, gcodePathAndFileName);
 		}
 
-		public override void OnClosed(EventArgs e)
+		public override void OnClosed(ClosedEventArgs e)
 		{
 			if (backgroundWorker != null)
 			{

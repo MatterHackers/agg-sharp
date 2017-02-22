@@ -33,11 +33,7 @@ namespace MatterHackers.Agg.UI
 {
 	public abstract class AbstractOsMappingWidget : GuiWidget
 	{
-		public abstract string Caption
-		{
-			get;
-			set;
-		}
+		public abstract string Caption { get; set; }
 
 		public abstract void ShowModal();
 
@@ -46,9 +42,16 @@ namespace MatterHackers.Agg.UI
 		public abstract void Run();
 
 		public abstract Point2D DesktopPosition { get; set; }
-        public abstract int TitleBarHeight { get; }
 
-        public virtual void OnInitialize()
+		public bool Maximized
+		{
+			get { return childSystemWindow.Maximized; }
+			set { childSystemWindow.Maximized = value; }
+		}
+
+		public abstract int TitleBarHeight { get; }
+
+		public virtual void OnInitialize()
 		{
 		}
 

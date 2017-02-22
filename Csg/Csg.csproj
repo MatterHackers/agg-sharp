@@ -140,12 +140,13 @@
     <Compile Include="Operations\Intersection.cs" />
     <Compile Include="Operations\Union.cs" />
     <Compile Include="Processors\CsgToMesh.cs" />
+    <Compile Include="Processors\IWriteSCad.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Solids\MeshContainer.cs" />
     <Compile Include="Solids\Torus.cs" />
     <Compile Include="Solids\Box.cs" />
     <Compile Include="Solids\BoxPrimitive.cs" />
     <Compile Include="Solids\LinearExtrude.cs" />
-    <Compile Include="Solids\MeshContainer.cs" />
     <Compile Include="Solids\RotateExtrude.cs" />
     <Compile Include="Solids\Round.cs" />
     <Compile Include="Solids\NGonExtrusion.cs" />

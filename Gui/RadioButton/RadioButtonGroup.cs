@@ -101,6 +101,14 @@ namespace MatterHackers.Agg.UI
 			radioButtons.Add(newRadioButton);
 			AddChild(newRadioButton);
 
+			newRadioButton.CheckedStateChanged += (s, e) =>
+			{
+				if (newRadioButton.Checked)
+				{
+					SelectedIndex = SelectedIndex;
+				}
+			};
+
 			return newRadioButton;
 		}
 
@@ -136,10 +144,10 @@ namespace MatterHackers.Agg.UI
 				if (!radioButtons[value].Checked)
 				{
 					radioButtons[value].Checked = true;
-					if (SelectionChanged != null)
-					{
-						SelectionChanged(this, null);
-					}
+				}
+				if (SelectionChanged != null)
+				{
+					SelectionChanged(this, null);
 				}
 			}
 		}

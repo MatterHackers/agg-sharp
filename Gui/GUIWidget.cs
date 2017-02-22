@@ -482,21 +482,21 @@ namespace MatterHackers.Agg.UI
 		public event EventHandler Layout;
 
 		// the event args will be a DrawEventArgs
-		public event DrawEventHandler BeforeDraw;
+		public event EventHandler<DrawEventArgs> BeforeDraw;
 
-		public event DrawEventHandler AfterDraw;
+		public event EventHandler<DrawEventArgs> AfterDraw;
 
 		public event EventHandler<KeyPressEventArgs> KeyPressed;
 
 		public event EventHandler Invalidated;
 
-		public event KeyEventHandler KeyDown;
+		public event EventHandler<KeyEventArgs> KeyDown;
 
-		public event KeyEventHandler KeyUp;
+		public event EventHandler<KeyEventArgs> KeyUp;
 
-		public event WidgetClosingEventHandler Closing;
+		public event EventHandler<ClosingEventArgs> Closing;
 
-		public event EventHandler Closed;
+		public event EventHandler<ClosedEventArgs> Closed;
 
 		public event EventHandler ParentChanged;
 
@@ -573,7 +573,7 @@ namespace MatterHackers.Agg.UI
 		private static readonly RectangleDouble largestValidBounds = new RectangleDouble(-1000000, -1000000, 1000000, 1000000);
 
 		public GuiWidget(double width, double height, SizeLimitsToSet sizeLimits = SizeLimitsToSet.Minimum)
-			: this(HAnchor.AbsolutePosition, VAnchor.AbsolutePosition)
+			: this()
 		{
 			screenClipping = new ScreenClipping(this);
 			if ((sizeLimits & SizeLimitsToSet.Minimum) == SizeLimitsToSet.Minimum)
@@ -587,7 +587,7 @@ namespace MatterHackers.Agg.UI
 			LocalBounds = new RectangleDouble(0, 0, width, height);
 		}
 
-		public GuiWidget(HAnchor hAnchor = HAnchor.AbsolutePosition, VAnchor vAnchor = VAnchor.AbsolutePosition)
+		public GuiWidget()
 		{
 			screenClipping = new ScreenClipping(this);
 			children.CollectionChanged += children_CollectionChanged;
@@ -899,12 +899,12 @@ namespace MatterHackers.Agg.UI
 
 					Invalidate();
 
-					OnBoundsChanged(null);
-
 					if (DoubleBuffer)
 					{
 						AllocateBackBuffer();
 					}
+
+					OnBoundsChanged(null);
 
 					screenClipping.MarkRecalculate();
 				}
@@ -949,7 +949,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public RectangleDouble GetChildrenBoundsIncludingMargins(bool considerChildAnchor = false)
+		public RectangleDouble GetChildrenBoundsIncludingMargins(bool considerChildAnchor = false, Func<GuiWidget, GuiWidget, bool> considerChild = null)
 		{
 			RectangleDouble boundsOfAllChildrenIncludingMargin = new RectangleDouble();
 
@@ -961,7 +961,8 @@ namespace MatterHackers.Agg.UI
 				bool foundVBounds = false;
 				foreach (GuiWidget child in Children)
 				{
-					if (child.Visible == false)
+					if (child.Visible == false 
+					|| (considerChild != null && !considerChild(this, child)))
 					{
 						continue;
 					}
@@ -1372,12 +1373,17 @@ namespace MatterHackers.Agg.UI
 
 		public void CloseAllChildren()
 		{
+			CloseAllChildren(false);
+		}
+
+		public void CloseAllChildren(bool osRequest)
+		{
 			for (int i = Children.Count - 1; i >= 0; i--)
 			{
 				GuiWidget child = Children[i];
 				Children.RemoveAt(i);
 				child.parent = null;
-				child.Close();
+				child.Close(osRequest);
 			}
 		}
 
@@ -2034,7 +2040,7 @@ namespace MatterHackers.Agg.UI
 
 			if (Closing != null)
 			{
-				WidgetClosingEnventArgs closingEventArgs = new WidgetClosingEnventArgs();
+				ClosingEventArgs closingEventArgs = new ClosingEventArgs();
 				Closing(this, closingEventArgs);
 				if (closingEventArgs.Cancel == true)
 				{
@@ -2049,14 +2055,19 @@ namespace MatterHackers.Agg.UI
 		{
 			if (!HasBeenClosed)
 			{
-				UiThread.RunOnIdle(this.Close);
+				UiThread.RunOnIdle(() => this.Close());
 			}
+		}
+
+		public void Close()
+		{
+			Close(false);
 		}
 
 		/// <summary>
 		/// Request a close
 		/// </summary>
-		public void Close()
+		public void Close(bool osRequest)
 		{
 			if (childrenLockedInMouseUpCount != 0)
 			{
@@ -2076,9 +2087,9 @@ namespace MatterHackers.Agg.UI
 
 				HasBeenClosed = true;
 
-				this.CloseAllChildren();
+				this.CloseAllChildren(osRequest);
 
-				OnClosed(null);
+				OnClosed(new ClosedEventArgs(osRequest));
 				if (Parent != null)
 				{
 					// This code will only execute if this is the actual widget we called close on (not a child of the widget we called close on).
@@ -2088,7 +2099,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public virtual void OnClosed(EventArgs e)
+		public virtual void OnClosed(ClosedEventArgs e)
 		{
 			Closed?.Invoke(this, e);
 		}
@@ -2720,8 +2731,9 @@ namespace MatterHackers.Agg.UI
 					}
 
 					int countOfChildernThatThinkTheyHaveTheMouseCaptured = 0;
-					foreach (GuiWidget child in Children)
+					for(int childIndex = 0; childIndex < Children.Count(); childIndex++)
 					{
+						GuiWidget child = Children[childIndex];
 						if (childrenLockedInMouseUpCount != 1)
 						{
 							BreakInDebugger("The mouse should always be locked while in mouse up.");

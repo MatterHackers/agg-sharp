@@ -150,31 +150,6 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(container.TopLeftOffset.y == 0);
 		}
 
-		[Test, Category("FixNeeded" /* Not implemented or invalid */)]
-		public void FlowLayoutAndListBoxShouldLookTheSameWhenNoScrollBar()
-		{
-			GuiWidget control = new GuiWidget(200, 300);
-			control.DoubleBuffer = true;
-			FlowLayoutWidget flowItemContainer = new FlowLayoutWidget(FlowDirection.TopToBottom);
-			flowItemContainer.HAnchor = HAnchor.ParentLeftRight;
-			flowItemContainer.VAnchor = VAnchor.ParentBottomTop;
-
-			AddContents(flowItemContainer);
-			control.AddChild(flowItemContainer);
-			control.OnDraw(control.NewGraphics2D());
-			OutputImage(control.BackBuffer, "control.tga");
-
-			GuiWidget test = new GuiWidget(200, 300);
-			test.DoubleBuffer = true;
-			ListBox listItemContainer = new ListBox();
-			AddContents(listItemContainer);
-			test.AddChild(listItemContainer);
-			test.OnDraw(test.NewGraphics2D());
-			OutputImage(test.BackBuffer, "test.tga");
-
-			Assert.IsTrue(control.BackBuffer.FindLeastSquaresMatch(test.BackBuffer, 0), "The test and control need to match.");
-		}
-
 		private static void AddContents(GuiWidget widgetToAddItemsTo)
 		{
 			string[] listItems = new string[] { "Item1", "Item2", "Item3", "Item4" };

@@ -158,17 +158,17 @@ namespace RockBlaster
 			GameImageSequence startButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "MainMenuStartButton");
 			Button StartGameButton = new Button(400, 310, new ButtonViewThreeImage(startButtonSequence.GetImageByIndex(0), startButtonSequence.GetImageByIndex(1), startButtonSequence.GetImageByIndex(2)));
 			AddChild(StartGameButton);
-			StartGameButton.Click += new EventHandler(OnStartGameButton);
+			StartGameButton.Click += OnStartGameButton;
 
 			GameImageSequence creditsButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "MainMenuCreditsButton");
 			Button creditsGameButton = new Button(400, 230, new ButtonViewThreeImage(creditsButtonSequence.GetImageByIndex(0), creditsButtonSequence.GetImageByIndex(1), creditsButtonSequence.GetImageByIndex(2)));
 			AddChild(creditsGameButton);
-			creditsGameButton.Click += new EventHandler(OnShowCreditsButton);
+			creditsGameButton.Click += OnShowCreditsButton;
 
 			GameImageSequence exitButtonSequence = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "MainMenuExitButton");
 			Button exitGameButton = new Button(400, 170, new ButtonViewThreeImage(exitButtonSequence.GetImageByIndex(0), exitButtonSequence.GetImageByIndex(1), exitButtonSequence.GetImageByIndex(2)));
 			AddChild(exitGameButton);
-			exitGameButton.Click += new EventHandler(OnExitGameButton);
+			exitGameButton.Click += OnExitGameButton;
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)

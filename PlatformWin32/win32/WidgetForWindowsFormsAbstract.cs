@@ -183,7 +183,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override void OnClosed(EventArgs e)
+		public override void OnClosed(ClosedEventArgs e)
 		{
 			WindowsFormsWindow.RequestClose();
 		}

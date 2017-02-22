@@ -29,7 +29,7 @@ namespace MatterHackers.Agg
 				{
 					TabPage tabPage = new TabPage(appWidgetFinder.Plugins[i].GetAppParameters().title);
 					tabPage.AddChild(appWidgetFinder.Plugins[i].NewWidget());
-					tabControl.AddTab(tabPage, "Demo Runner");
+					tabControl.AddTab(tabPage, tabPage.Name);
 				}
 			}
 
