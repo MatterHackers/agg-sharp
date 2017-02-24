@@ -237,7 +237,7 @@ namespace MatterHackers.Agg.Font
 				{
 					if (unicodeString.Split(';').Length > 1 && unicodeString.Split(';')[1].Length > 0)
 					{
-						throw new NotImplementedException("We do not currently support glyphs longer than one character.  You need to wirite the seach so that it will find them if you want to support this");
+						throw new NotImplementedException("We do not currently support glyphs longer than one character.  You need to write the search so that it will find them if you want to support this");
 					}
 
 					if (int.TryParse(unicodeString, NumberStyles.Number, null, out newGlyph.unicode) == false)
