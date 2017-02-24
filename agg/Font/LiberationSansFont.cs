@@ -57,6 +57,8 @@ d=""M68 0v1365h544v-1365h-544zM136 68h408v1229h-408v-1229z"" />
  />
     <glyph glyph-name=""uni00A0"" unicode="" "" horiz-adv-x=""569""
  />
+    <glyph glyph-name=""FIGURE SPACE"" unicode=""&#x2007;""
+/>
     <glyph glyph-name=""uni00A0"" unicode=""&#xa0;"" horiz-adv-x=""569""
  />
     <glyph glyph-name=""exclam"" unicode=""!"" horiz-adv-x=""569""
