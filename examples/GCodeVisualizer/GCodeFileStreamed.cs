@@ -275,7 +275,12 @@ namespace MatterHackers.GCodeVisualizer
 
 		public override double Ratio0to1IntoContainedLayer(int instructionIndex)
 		{
-			throw new NotImplementedException();
+			if (ByteCount != 0)
+			{
+				return BytePosition / (double)ByteCount;
+			}
+
+			return 1;
 		}
 	}
 }
