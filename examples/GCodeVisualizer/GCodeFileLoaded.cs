@@ -290,7 +290,7 @@ namespace MatterHackers.GCodeVisualizer
 							{
 								loadedGCodeFile.layerThickness = double.Parse(lineString.Split('=')[1]);
 							}
-							else if (lineString.StartsWith("; firstLayerThickness"))
+							else if (lineString.StartsWith("; firstLayerThickness") && loadedGCodeFile.firstLayerThickness == 0)
 							{
 								loadedGCodeFile.firstLayerThickness = double.Parse(lineString.Split('=')[1]);
 							}
