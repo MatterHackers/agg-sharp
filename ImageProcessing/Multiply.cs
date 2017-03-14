@@ -29,9 +29,46 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.Agg.Image;
 using System;
+using MatterHackers.Agg;
 
 namespace MatterHackers.ImageProcessing
 {
+	public static class ExtensionMethods
+	{
+		public static ImageBuffer Multiply(this ImageBuffer sourceImage, RGBA_Bytes color)
+		{
+			var outputImage = new ImageBuffer(sourceImage);
+
+			switch (outputImage.BitDepth)
+			{
+				case 32:
+					int height = outputImage.Height;
+					int width = outputImage.Width;
+					byte[] imageABuffer = outputImage.GetBuffer();
+					for (int y = 0; y < height; y++)
+					{
+						int offsetA = outputImage.GetBufferOffsetY(y);
+
+						for (int x = 0; x < width; x++)
+						{
+							imageABuffer[offsetA + 0] = (byte)((imageABuffer[offsetA + 0] * color.blue) / 255);
+							imageABuffer[offsetA + 1] = (byte)((imageABuffer[offsetA + 1] * color.green) / 255);
+							imageABuffer[offsetA + 2] = (byte)((imageABuffer[offsetA + 2] * color.red) / 255);
+							imageABuffer[offsetA + 3] = (byte)((imageABuffer[offsetA + 3] * color.alpha) / 255);
+							offsetA += 4;
+						}
+					}
+
+					break;
+
+				default:
+					throw new NotImplementedException();
+			}
+
+			return outputImage;
+		}
+	}
+
 	public class Multiply
 	{
 		public static void DoMultiply(ImageBuffer result, ImageBuffer imageA, ImageBuffer imageB)
