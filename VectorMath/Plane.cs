@@ -56,6 +56,41 @@ namespace MatterHackers.VectorMath
 			this.DistanceToPlaneFromOrigin = Vector3.Dot(planeNormal, pointOnPlane);
 		}
 
+		public double this[int index]
+		{
+			get
+			{
+				switch (index)
+				{
+					case 0:
+					case 1:
+					case 2:
+						return PlaneNormal[index];
+
+					default:
+						return DistanceToPlaneFromOrigin;
+				}
+			}
+
+			set
+			{
+				switch (index)
+				{
+					case 0:
+					case 1:
+					case 2:
+						Vector3 normal = PlaneNormal;
+						normal[index] = value;
+						PlaneNormal = normal;
+						break;
+
+					default:
+						DistanceToPlaneFromOrigin = value;
+						break;
+				}
+			}
+		}
+
 		public override bool Equals(object obj)
 		{
 			throw new NotImplementedException();
@@ -87,6 +122,48 @@ namespace MatterHackers.VectorMath
 		{
 			double distanceToPointFromOrigin = Vector3.Dot(positionToCheck, PlaneNormal);
 			return distanceToPointFromOrigin - DistanceToPlaneFromOrigin;
+		}
+
+		/// <summary>
+		/// Modify the start and end points so they fall on the normal side of the plane.
+		/// </summary>
+		/// <param name="startPoint"></param>
+		/// <param name="endPoint"></param>
+		/// <returns>Returns true if any part of the line is on the normal side of the plane else false.</returns>
+		public bool ClipLine(ref Vector3 startPoint, ref Vector3 endPoint)
+		{
+			double startDistance = GetDistanceFromPlane(startPoint);
+			double endDistance = GetDistanceFromPlane(endPoint);
+
+			if(startDistance < 0)
+			{
+				if(endDistance < 0)
+				{
+					// both points are behind the plane
+					return false;
+				}
+
+				// the start point must be clipped
+				// get the normal in the direction of the start point
+				Vector3 lineDirection = startPoint - endPoint;
+				double lineLength = lineDirection.Length;
+				Vector3 lineNormal = lineDirection / lineLength;
+				double startClipRatio = startDistance / (endDistance - startDistance);
+				startPoint = startPoint + lineNormal * (lineLength * startClipRatio);
+			}
+			else if(endDistance < 0)
+			{
+				// the end point must be clipped
+				// get the normal in the direction of the start point
+				Vector3 lineDirection = endPoint - startPoint;
+				double lineLength = lineDirection.Length;
+				Vector3 lineNormal = lineDirection / lineLength;
+				double endClipRatio = endDistance / (startDistance - endDistance);
+				endPoint = endPoint + lineNormal * (lineLength * endClipRatio);
+			}
+
+			// both points in front of the plane
+			return true;
 		}
 
 		public bool Equals(Plane control, double normalError, double lengthError)
@@ -173,6 +250,18 @@ namespace MatterHackers.VectorMath
 
 			distanceToHit = distanceToPlaneFromRayOrigin / normalDotRayDirection;
 			return true;
+		}
+
+		public void Normalize()
+		{
+			Normalize(ref this);
+		}
+
+		public static void Normalize(ref Plane plane)
+		{
+			double length = plane.PlaneNormal.Length;
+			plane.PlaneNormal = plane.PlaneNormal / length;
+			plane.DistanceToPlaneFromOrigin /= length;
 		}
 
 		public bool LineHitPlane(Vector3 start, Vector3 end, out Vector3 intersectionPosition)

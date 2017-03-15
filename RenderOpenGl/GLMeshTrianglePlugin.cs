@@ -45,6 +45,14 @@ namespace MatterHackers.RenderOpenGl
 		public static readonly int Stride = Marshal.SizeOf(default(VertexTextureData));
 	}
 
+	public struct VertexColorData
+	{
+		public byte red;
+		public byte green;
+		public byte blue;
+		public static readonly int Stride = Marshal.SizeOf(default(VertexColorData));
+	}
+
 	public struct VertexNormalData
 	{
 		public float normalX;
@@ -64,9 +72,12 @@ namespace MatterHackers.RenderOpenGl
 	public class SubTriangleMesh
 	{
 		public ImageBuffer texture = null;
-		public VectorPOD<VertexTextureData> textrueData = new VectorPOD<VertexTextureData>();
+		public VectorPOD<VertexTextureData> textureData = new VectorPOD<VertexTextureData>();
+		public VectorPOD<VertexColorData> colorData = new VectorPOD<VertexColorData>();
 		public VectorPOD<VertexNormalData> normalData = new VectorPOD<VertexNormalData>();
 		public VectorPOD<VertexPositionData> positionData = new VectorPOD<VertexPositionData>();
+
+		public bool UseVertexColors { get; internal set; }
 	}
 
 	public class GLMeshTrianglePlugin
@@ -79,7 +90,7 @@ namespace MatterHackers.RenderOpenGl
 
 		private int meshUpdateCount;
 
-		static public GLMeshTrianglePlugin Get(Mesh meshToGetDisplayListFor)
+		static public GLMeshTrianglePlugin Get(Mesh meshToGetDisplayListFor, Func<FaceEdge, VertexColorData> getColorFunc = null)
 		{
 			GLMeshTrianglePlugin plugin;
 			meshesWithCacheData.TryGetValue(meshToGetDisplayListFor, out plugin);
@@ -88,7 +99,7 @@ namespace MatterHackers.RenderOpenGl
 			{
 				plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
 				plugin.AddRemoveData();
-				plugin.CreateRenderData(meshToGetDisplayListFor);
+				plugin.CreateRenderData(meshToGetDisplayListFor, getColorFunc);
 				plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
 			}
 
@@ -96,7 +107,7 @@ namespace MatterHackers.RenderOpenGl
 			{
 				GLMeshTrianglePlugin newPlugin = new GLMeshTrianglePlugin();
 				meshesWithCacheData.Add(meshToGetDisplayListFor, newPlugin);
-				newPlugin.CreateRenderData(meshToGetDisplayListFor);
+				newPlugin.CreateRenderData(meshToGetDisplayListFor, getColorFunc);
 				newPlugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
 
 				return newPlugin;
@@ -119,13 +130,14 @@ namespace MatterHackers.RenderOpenGl
 			AddRemoveData();
 		}
 
-		private void CreateRenderData(Mesh meshToBuildListFor)
+		private void CreateRenderData(Mesh meshToBuildListFor, Func<FaceEdge, VertexColorData> getColorFunc)
 		{
 			subMeshs = new List<SubTriangleMesh>();
 			SubTriangleMesh currentSubMesh = null;
-			VectorPOD<VertexTextureData> textureData = new VectorPOD<VertexTextureData>();
-			VectorPOD<VertexNormalData> normalData = new VectorPOD<VertexNormalData>();
-			VectorPOD<VertexPositionData> positionData = new VectorPOD<VertexPositionData>();
+			VectorPOD<VertexTextureData> textureData = null;
+			VectorPOD<VertexColorData> colorData = null;
+			VectorPOD<VertexNormalData> normalData = null;
+			VectorPOD<VertexPositionData> positionData = null;
 			// first make sure all the textures are created
 			foreach (Face face in meshToBuildListFor.Faces)
 			{
@@ -141,9 +153,14 @@ namespace MatterHackers.RenderOpenGl
 					SubTriangleMesh newSubMesh = new SubTriangleMesh();
 					newSubMesh.texture = faceTexture;
 					subMeshs.Add(newSubMesh);
+					if (getColorFunc != null)
+					{
+						newSubMesh.UseVertexColors = true;
+					}
 
 					currentSubMesh = subMeshs[subMeshs.Count - 1];
-					textureData = currentSubMesh.textrueData;
+					textureData = currentSubMesh.textureData;
+					colorData = currentSubMesh.colorData;
 					normalData = currentSubMesh.normalData;
 					positionData = currentSubMesh.positionData;
 				}
@@ -153,6 +170,11 @@ namespace MatterHackers.RenderOpenGl
 				int vertexIndex = 0;
 				foreach (FaceEdge faceEdge in face.FaceEdges())
 				{
+					if (getColorFunc != null)
+					{
+						colorData.add(getColorFunc(faceEdge));
+					}
+
 					if (vertexIndex < 2)
 					{
 						textureUV[vertexIndex] = faceEdge.GetUVs(0);

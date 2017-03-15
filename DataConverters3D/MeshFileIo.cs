@@ -28,53 +28,18 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg;
+using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Csg;
+using MatterHackers.PolygonMesh.Processors;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Security.Cryptography;
+using System.Threading.Tasks;
 
-namespace MatterHackers.PolygonMesh.Processors
+namespace MatterHackers.DataConverters3D
 {
-	public class MeshOutputSettings
-	{
-		public enum CsgOption { SimpleInsertVolumes, DoCsgMerge }
-
-		public enum OutputType { Ascii, Binary };
-
-		public OutputType OutputTypeSetting = OutputType.Binary;
-		public Dictionary<string, string> MetaDataKeyValue = new Dictionary<string, string>();
-		public List<int> MaterialIndexsToSave = null;
-		public CsgOption CsgOptionState = CsgOption.SimpleInsertVolumes;
-
-		public ReportProgressRatio ReportProgress {
-			get; set;
-		}
-
-		public MeshOutputSettings()
-		{
-		}
-
-		public MeshOutputSettings(CsgOption csgOption)
-		{
-			this.CsgOptionState = csgOption;
-		}
-
-		public MeshOutputSettings(OutputType outputTypeSetting, string[] metaDataKeyValuePairs = null, ReportProgressRatio reportProgress = null)
-		{
-			this.ReportProgress = reportProgress;
-
-			this.OutputTypeSetting = outputTypeSetting;
-			if (metaDataKeyValuePairs != null)
-			{
-				for (int i = 0; i < metaDataKeyValuePairs.Length / 2; i++)
-				{
-					MetaDataKeyValue.Add(metaDataKeyValuePairs[i * 2], metaDataKeyValuePairs[i * 2 + 1]);
-				}
-			}
-		}
-	}
-
 	public static class MeshFileIo
 	{
 		public static string ValidFileExtensions()
@@ -82,29 +47,35 @@ namespace MatterHackers.PolygonMesh.Processors
 			return ".STL;.AMF";
 		}
 
-		public static List<MeshGroup> Load(Stream fileStream, string fileExtension, ReportProgressRatio reportProgress = null)
+		public static IObject3D Load(Stream fileStream, string fileExtension, ReportProgressRatio reportProgress = null, IObject3D source = null)
 		{
 			switch (fileExtension.ToUpper())
 			{
 				case ".STL":
-					Mesh loadedMesh = StlProcessing.Load(fileStream, reportProgress);
-					return (loadedMesh == null) ? null : new List<MeshGroup>(new[] { new MeshGroup(loadedMesh) });
+
+					var result = source ?? new Object3D { ItemType = Object3DTypes.Model };
+					result.Mesh = StlProcessing.Load(fileStream, reportProgress);
+					return result;
 
 				case ".AMF":
-					return AmfProcessing.Load(fileStream, reportProgress);
+					//return AmfProcessing.Load(fileStream, reportProgress);
+					return AmfDocument.Load(fileStream, reportProgress, source);
 
 				default:
 					return null;
 			}
 		}
 
-		public static List<MeshGroup> Load(string meshPathAndFileName, ReportProgressRatio reportProgress = null)
+		public static IObject3D Load(string meshPathAndFileName, ReportProgressRatio reportProgress = null, IObject3D source = null)
 		{
 			try
 			{
 				using (Stream stream = new FileStream(meshPathAndFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
 				{
-					return Load(stream, Path.GetExtension(meshPathAndFileName), reportProgress);
+					var loadedItem = Load(stream, Path.GetExtension(meshPathAndFileName), reportProgress, source);
+					loadedItem.MeshPath = meshPathAndFileName;
+
+					return loadedItem;
 				}
 			}
 			catch(Exception e)
@@ -112,6 +83,18 @@ namespace MatterHackers.PolygonMesh.Processors
 				Debug.Print(e.Message);
 				return null;
 			}
+		}
+
+		public static async Task<IObject3D> LoadAsync(string meshPathAndFileName, ReportProgressRatio reportProgress = null)
+		{
+			return await Task.Run(() => Load(meshPathAndFileName, reportProgress));
+		}
+
+		public static bool Save(IObject3D context, string meshPathAndFileName, MeshOutputSettings outputInfo = null, ReportProgressRatio reportProgress = null)
+		{
+			// TODO: Seems conceptually correct but needs validation and refinements
+			var meshGroups = new List<MeshGroup> { context.Flatten() };
+			return Save(meshGroups, meshPathAndFileName, outputInfo, reportProgress);
 		}
 
 		public static bool Save(Mesh mesh, string meshPathAndFileName, MeshOutputSettings outputInfo = null)
@@ -125,7 +108,6 @@ namespace MatterHackers.PolygonMesh.Processors
 			meshGroupsToSave.Add(meshGroupToSave);
 			return Save(meshGroupsToSave, meshPathAndFileName, outputInfo);
 		}
-
 
 		public static bool Save(List<MeshGroup> meshGroupsToSave, string meshPathAndFileName, MeshOutputSettings outputInfo = null, ReportProgressRatio reportProgress = null)
 		{
@@ -213,5 +195,19 @@ namespace MatterHackers.PolygonMesh.Processors
 
 			return 0;
 		}
+
+		public static string ComputeSHA1(string destPath)
+		{
+			// Alternatively: MD5.Create(),  new SHA256Managed()
+			var timer = Stopwatch.StartNew();
+
+			using (var stream = new BufferedStream(File.OpenRead(destPath), 1200000))
+			{
+				byte[] checksum = SHA1.Create().ComputeHash(stream);
+				Console.WriteLine("SHA1 computed in {0}ms", timer.ElapsedMilliseconds);
+				return BitConverter.ToString(checksum).Replace("-", String.Empty);
+			}
+		}
+
 	}
 }

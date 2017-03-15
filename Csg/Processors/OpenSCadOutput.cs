@@ -190,7 +190,7 @@ namespace MatterHackers.Csg.Processors
 		/// <param name="objectToProcess"></param>
 		/// <param name="level"></param>
 		/// <returns></returns>
-		public string GetScadOutputRecursive(Mesh objectToProcess, int level = 0)
+		public string GetScadOutputRecursive(MeshContainer objectToProcess, int level = 0)
 		{
 			string info = AddRenderInfoIfReqired(objectToProcess);
 

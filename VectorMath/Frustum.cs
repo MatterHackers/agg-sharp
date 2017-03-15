@@ -30,7 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using MatterHackers.VectorMath;
 using System;
 
-namespace MatterHackers.RayTracer
+namespace MatterHackers.VectorMath
 {
 	public enum FrustumIntersection { Inside, Outside, Intersect };
 
@@ -39,9 +39,60 @@ namespace MatterHackers.RayTracer
 		// Plane normals should point out
 		public Plane[] Planes { get; set; } = new Plane[6];
 
+		public Plane Left 
+		{
+			get { return Planes[0]; } 
+			set { Planes[0] = value; }
+		}
+
 		public Frustum()
 		{
 			Planes = new Plane[6];
+		}
+
+		public static Frustum FrustumFromProjectionMatrix(Matrix4X4 projectionMatrix)
+		{
+			Frustum createdFrustum = new Frustum();
+			// left
+			for (int i = 4; i-- > 0;) createdFrustum.Planes[0][i] = projectionMatrix[i, 3] + projectionMatrix[i, 0];
+			// right
+			for (int i = 4; i-- > 0;) createdFrustum.Planes[1][i] = projectionMatrix[i,3] - projectionMatrix[i,0];
+			// bottom
+			for (int i = 4; i-- > 0;) createdFrustum.Planes[2][i] = projectionMatrix[i, 3] + projectionMatrix[i, 1];
+			// top
+			for (int i = 4; i-- > 0;) createdFrustum.Planes[3][i] = projectionMatrix[i, 3] - projectionMatrix[i, 1];
+			// front
+			for (int i = 4; i-- > 0;) createdFrustum.Planes[4][i] = projectionMatrix[i, 3] + projectionMatrix[i, 2];
+			// back
+			for (int i = 4; i-- > 0;) createdFrustum.Planes[5][i] = projectionMatrix[i, 3] - projectionMatrix[i, 2];
+
+			for(int i=0; i<6; i++)
+			{
+				createdFrustum.Planes[i].Normalize();
+			}
+
+			return createdFrustum;
+		}
+
+		/// <summary>  
+		/// Modify the start and end points so they fall within the view frustum.
+		/// </summary>
+		/// <param name="startPoint"></param>
+		/// <param name="endPoint"></param>
+		/// <returns>Returns true if any part of the line is in the frustum else false.</returns>
+		public bool ClipLine(ref Vector3 startPoint, ref Vector3 endPoint)
+		{
+			foreach(Plane plane in Planes)
+			{
+				if(!plane.ClipLine(ref startPoint, ref endPoint))
+				{
+					// It is entirely behind the plane so
+					return false;
+				}
+			}
+
+			// It has been clipped to all planes and there is still some left.
+			return true;
 		}
 
 		// The front plan is at 0 (the intersection of the 4 side planes). Plane normals should point out.

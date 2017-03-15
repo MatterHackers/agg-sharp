@@ -14,9 +14,11 @@
 //
 
 using MatterHackers.VectorMath;
+using Net3dBool;
 //using Net3dBool;
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
@@ -35,12 +37,19 @@ namespace MatterHackers.PolygonMesh.Csg
 		//          |       |            |       |
 		//          +-------+            +-------+
 		//
-		public static Mesh Union(Mesh a1, Mesh b1)
+		public static Mesh Union(Mesh a, Mesh b)
 		{
-			CsgAcceleratedMesh a = new CsgAcceleratedMesh(a1);
-			CsgAcceleratedMesh b = new CsgAcceleratedMesh(b1);
-			a.SplitOnAllEdgeIntersections(b);
-			b.SplitOnAllEdgeIntersections(a);
+			Mesh aCopy = Mesh.Copy(a);
+			Mesh bCopy = Mesh.Copy(b);
+
+			Union(ref aCopy, ref bCopy);
+			return aCopy;
+		}
+
+		public static void Union(ref Mesh a, ref Mesh b)
+		{
+			a.SplitFaces(b);
+			b.SplitFaces(a);
 
 			a.MarkInternalVertices(b);
 			b.MarkInternalVertices(a);
@@ -49,8 +58,6 @@ namespace MatterHackers.PolygonMesh.Csg
 			b.RemoveAllInternalEdges();
 
 			a.MergeWith(b);
-
-			return a.mesh;
 		}
 
 		// Return a new CSG solid representing space in this solid but not in the
@@ -67,14 +74,21 @@ namespace MatterHackers.PolygonMesh.Csg
 		//          |       |
 		//          +-------+
 		//
-		public static Mesh Subtract(Mesh a1, Mesh b1)
+		public static Mesh Subtract(Mesh a, Mesh b)
 		{
-			CsgAcceleratedMesh a = new CsgAcceleratedMesh(a1);
-			CsgAcceleratedMesh b = new CsgAcceleratedMesh(b1);
-			a.SplitOnAllEdgeIntersections(b);
+			Mesh aCopy = Mesh.Copy(a);
+			Mesh bCopy = Mesh.Copy(b);
+
+			Subtract(ref aCopy, ref bCopy);
+			return aCopy;
+		}
+
+		public static void Subtract(ref Mesh a, ref Mesh b)
+		{
+			a.SplitFaces(b);
 			a.MarkInternalVertices(b);
 
-			b.SplitOnAllEdgeIntersections(a);
+			b.SplitFaces(a);
 			b.MarkInternalVertices(a);
 
 			a.RemoveAllInternalEdges();
@@ -82,8 +96,6 @@ namespace MatterHackers.PolygonMesh.Csg
 			b.FlipFaces();
 
 			a.MergeWith(b);
-
-			return a.mesh;
 		}
 
 		// Return a new CSG solid representing space both this solid and in the
@@ -102,11 +114,20 @@ namespace MatterHackers.PolygonMesh.Csg
 		//
 		public static Mesh Intersect(Mesh a, Mesh b)
 		{
-			return null;//return PerformOperation(a, b, CsgNode.Intersect);
+			Mesh aCopy = Mesh.Copy(a);
+			Mesh bCopy = Mesh.Copy(b);
+
+			Intersect(ref aCopy, ref bCopy);
+			return aCopy;
+		}
+
+		public static void Intersect(ref Mesh a, ref Mesh b)
+		{
+			throw new NotImplementedException();
 		}
 	}
 #else
-#if false
+#if true
 	// Public interface implementation
 	public static class CsgOperations
 	{

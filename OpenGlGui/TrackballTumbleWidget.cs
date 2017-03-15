@@ -39,6 +39,36 @@ using System.Collections.Generic;
 
 namespace MatterHackers.Agg.OpenGlGui
 {
+	public static class ExtensionMethods
+    {
+		public static void RenderDebugAABB(this TrackballTumbleWidget trackBall, Graphics2D graphics2D, AxisAlignedBoundingBox bounds)
+		{
+			Vector3 renderPosition = bounds.Center;
+			Vector2 objectCenterScreenSpace = trackBall.GetScreenPosition(renderPosition);
+			Point2D screenPositionOfObject3D = new Point2D((int)objectCenterScreenSpace.x, (int)objectCenterScreenSpace.y);
+
+			graphics2D.Circle(objectCenterScreenSpace, 5, RGBA_Bytes.Magenta);
+
+			for (int i = 0; i < 4; i++)
+			{
+				graphics2D.Circle(trackBall.GetScreenPosition(bounds.GetTopCorner(i)), 5, RGBA_Bytes.Magenta);
+				graphics2D.Circle(trackBall.GetScreenPosition(bounds.GetBottomCorner(i)), 5, RGBA_Bytes.Magenta);
+			}
+
+			RectangleDouble screenBoundsOfObject3D = RectangleDouble.ZeroIntersection;
+			for (int i = 0; i < 4; i++)
+			{
+				screenBoundsOfObject3D.ExpandToInclude(trackBall.GetScreenPosition(bounds.GetTopCorner(i)));
+				screenBoundsOfObject3D.ExpandToInclude(trackBall.GetScreenPosition(bounds.GetBottomCorner(i)));
+			}
+
+			graphics2D.Circle(screenBoundsOfObject3D.Left, screenBoundsOfObject3D.Bottom, 5, RGBA_Bytes.Cyan);
+			graphics2D.Circle(screenBoundsOfObject3D.Left, screenBoundsOfObject3D.Top, 5, RGBA_Bytes.Cyan);
+			graphics2D.Circle(screenBoundsOfObject3D.Right, screenBoundsOfObject3D.Bottom, 5, RGBA_Bytes.Cyan);
+			graphics2D.Circle(screenBoundsOfObject3D.Right, screenBoundsOfObject3D.Top, 5, RGBA_Bytes.Cyan);
+		}
+	}
+
 	public class TrackballTumbleWidget : GuiWidget
 	{
 		public event EventHandler DrawGlContent;
@@ -123,13 +153,35 @@ namespace MatterHackers.Agg.OpenGlGui
 			base.OnBoundsChanged(e);
 		}
 
+		public Vector3 GetWorldPosition(Vector2 screenPosition)
+		{
+			Vector4 homoginizedScreenSpace = new Vector4((2.0f * (screenPosition.x / Width)) - 1,
+				1 - (2 * (screenPosition.y / Height)),
+				1,
+				1);
+
+			Matrix4X4 viewProjection = ModelviewMatrix * ProjectionMatrix;
+			Matrix4X4 viewProjectionInverse = Matrix4X4.Invert(viewProjection);
+			Vector4 woldSpace = Vector4.Transform(homoginizedScreenSpace, viewProjectionInverse);
+
+			double perspectiveDivide = 1 / woldSpace.w;
+
+			woldSpace.x *= perspectiveDivide;
+			woldSpace.y *= perspectiveDivide;
+			woldSpace.z *= perspectiveDivide;
+
+			return new Vector3(woldSpace);
+		}
+
 		public Vector2 GetScreenPosition(Vector3 worldPosition)
 		{
-			Vector3 viewPosition = Vector3.Transform(worldPosition, ModelviewMatrix);
+			Vector3 homoginizedViewPosition = Vector3.Transform(worldPosition, ModelviewMatrix);
 
-			Vector3 screenPosition = Vector3.TransformPerspective(viewPosition, ProjectionMatrix);
+			Vector3 homoginizedScreenPosition = Vector3.TransformPerspective(homoginizedViewPosition, ProjectionMatrix);
 
-			return new Vector2(screenPosition.x * Width / 2 + Width / 2, screenPosition.y / screenPosition.z * Height / 2 + Height / 2);
+			Vector2 screenPosition = new Vector2(homoginizedScreenPosition.x * Width / 2 + Width / 2, homoginizedScreenPosition.y * Height / 2 + Height / 2);
+
+			return screenPosition; 
 		}
 
 		public Vector3 GetScreenSpace(Vector3 worldPosition)
@@ -139,11 +191,11 @@ namespace MatterHackers.Agg.OpenGlGui
 			return Vector3.Transform(viewPosition, ProjectionMatrix);
 		}
 
-		public Ray GetRayFromScreen(Vector2 screenPosition)
+		public Ray GetRayForLocalBounds(Vector2 localPosition)
 		{
 			Vector4 rayClip = new Vector4();
-			rayClip.x = (2.0 * screenPosition.x) / Width - 1.0;
-			rayClip.y = (2.0 * screenPosition.y) / Height - 1.0;
+			rayClip.x = (2.0 * localPosition.x) / Width - 1.0;
+			rayClip.y = (2.0 * localPosition.y) / Height - 1.0;
 			rayClip.z = -1.0;
 			rayClip.w = 1.0;
 
@@ -695,11 +747,12 @@ namespace MatterHackers.Agg.OpenGlGui
 		public double GetWorldUnitsPerScreenPixelAtPosition(Vector3 worldPosition, double maxRatio = 5)
 		{
 			Vector2 screenPosition = GetScreenPosition(worldPosition);
-			Ray rayFromScreen = GetRayFromScreen(screenPosition);
-			double distanceFromScreenToWorldPos = (worldPosition - rayFromScreen.origin).Length;
 
-			Ray rightOnePixelRay = GetRayFromScreen(new Vector2(screenPosition.x + 1, screenPosition.y));
-			Vector3 rightOnePixel = rightOnePixelRay.origin + rightOnePixelRay.directionNormal * distanceFromScreenToWorldPos;
+            Ray rayFromScreen = GetRayForLocalBounds(screenPosition);
+			double distanceFromOriginToWorldPos = (worldPosition - rayFromScreen.origin).Length;
+
+			Ray rightOnePixelRay = GetRayForLocalBounds(new Vector2(screenPosition.x + 1, screenPosition.y));
+			Vector3 rightOnePixel = rightOnePixelRay.origin + rightOnePixelRay.directionNormal * distanceFromOriginToWorldPos;
 			double distBetweenPixelsWorldSpace = (rightOnePixel - worldPosition).Length;
 			if(distBetweenPixelsWorldSpace > maxRatio)
 			{

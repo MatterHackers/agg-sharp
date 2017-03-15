@@ -106,7 +106,7 @@ namespace MatterHackers.RenderOpenGl
 			return cube;
 		}
 
-		public PolygonMesh.Mesh CsgToMeshRecursive(Csg.Solids.Mesh objectToPrecess)
+		public PolygonMesh.Mesh CsgToMeshRecursive(Csg.Solids.MeshContainer objectToPrecess)
 		{
 			return objectToPrecess.GetMesh();
 		}

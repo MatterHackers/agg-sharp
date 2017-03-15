@@ -218,7 +218,7 @@ namespace MatterHackers.Agg.Image
 					destIndex = destImage.GetBufferOffsetY(destImage.Height - 1 - y);
 					for (int x = 0; x < destImage.Width; x++)
 					{
-						Color color = colors[pSourceBuffer[sourceIndex++]];
+						System.Drawing.Color color = colors[pSourceBuffer[sourceIndex++]];
 						destBuffer[destIndex++] = color.B;
 						destBuffer[destIndex++] = color.G;
 						destBuffer[destIndex++] = color.R;

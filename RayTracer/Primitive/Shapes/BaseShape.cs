@@ -28,12 +28,22 @@ namespace MatterHackers.RayTracer
 			set { material = value; }
 		}
 
-		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
+		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
 		{
 			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
 			if (bounds.Contains(subRegion))
 			{
 				results.Add(this);
+				return true;
+			}
+
+			return false;
+		}
+
+		public bool Contains(IBvhItem itemToCheckFor)
+		{
+			if (this == itemToCheckFor)
+			{
 				return true;
 			}
 

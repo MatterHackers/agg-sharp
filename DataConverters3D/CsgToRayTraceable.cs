@@ -49,11 +49,11 @@ namespace MatterHackers.DataConverters3D
 		{
 		}
 
-		#region Visitor Patern Functions
+		#region Visitor Pattern Functions
 
 		public IPrimitive GetIPrimitiveRecursive(CsgObject objectToProcess)
 		{
-			throw new Exception("You must wirte the specialized function for this type.");
+			throw new Exception("You must write the specialized function for this type.");
 		}
 
 		#region PrimitiveWrapper

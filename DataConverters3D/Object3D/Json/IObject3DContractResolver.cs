@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2016, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,77 +27,29 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.VectorMath;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using System;
-using System.IO;
+using System.Reflection;
 
-namespace MatterHackers.Csg.Solids
+namespace MatterHackers.DataConverters3D
 {
-	public class Mesh : CsgObject
+	public class IObject3DContractResolver : DefaultContractResolver
 	{
-		private PolygonMesh.Mesh polygonMesh;
+		private static Type IObject3DType = typeof(IObject3D);
 
-		private string sourceFileName = null;
-
-		public string FilePath
+		protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
 		{
-			get
+			JsonProperty property = base.CreateProperty(member, memberSerialization);
+			if (property.PropertyName == "Children" && IObject3DType.IsAssignableFrom(property.DeclaringType))
 			{
-				if (!string.IsNullOrEmpty(sourceFileName))
-				{
-					return sourceFileName;
-				}
-				else
-				{
-					if (polygonMesh != null)
-					{
-						// save to disk and return the path
-						sourceFileName = Path.ChangeExtension(Path.GetRandomFileName(), ".stl");
-						PolygonMesh.Processors.StlProcessing.Save(polygonMesh, sourceFileName);
-						return sourceFileName;
-					}
-					else
-					{
-						throw new Exception("You have to have a mesh or a valid mesh file.");
-					}
-				}
+				property.ShouldSerialize = instance => {
+					IObject3D item = (IObject3D)instance;
+					return string.IsNullOrEmpty(item.MeshPath);
+				};
 			}
 
-			set
-			{
-				if (sourceFileName != value)
-				{
-					sourceFileName = value;
-					polygonMesh = null;
-				}
-			}
-		}
-
-		public Mesh(string fileOnDisk, string name = "")
-			: base(name)
-		{
-			sourceFileName = fileOnDisk;
-		}
-
-		public Mesh(MatterHackers.PolygonMesh.Mesh polygonMesh, string name = "")
-			: base(name)
-		{
-			this.polygonMesh = polygonMesh;
-		}
-
-		public PolygonMesh.Mesh GetMesh()
-		{
-			if (polygonMesh == null)
-			{
-				polygonMesh = MatterHackers.PolygonMesh.Processors.StlProcessing.Load(sourceFileName);
-			}
-
-			return polygonMesh;
-		}
-
-		public override AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
-		{
-			return GetMesh().GetAxisAlignedBoundingBox();
+			return property;
 		}
 	}
 }

@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
 
 namespace MatterHackers.VectorMath
 {
@@ -42,6 +43,19 @@ namespace MatterHackers.VectorMath
 		{
 			this.minXYZ = minXYZ;
 			this.maxXYZ = maxXYZ;
+		}
+
+		public AxisAlignedBoundingBox(IList<Vector3> verticesPoints)
+		{
+			if (verticesPoints.Count > 0)
+			{
+				minXYZ = verticesPoints[0];
+				maxXYZ = verticesPoints[0];
+				for(int i=1; i<verticesPoints.Count; i++)
+				{
+					ExpandToInclude(verticesPoints[i]);
+				}
+			}
 		}
 
 		public Vector3 Size
@@ -112,6 +126,28 @@ namespace MatterHackers.VectorMath
 			return new AxisAlignedBoundingBox(newMin, newMax);
 		}
 
+		public void Expand(int amount)
+		{
+			minXYZ.x -= amount;
+			minXYZ.y -= amount;
+			minXYZ.z -= amount;
+
+			maxXYZ.x += amount;
+			maxXYZ.y += amount;
+			maxXYZ.z += amount;
+		}
+
+		public void ExpandToInclude(Vector3 position)
+		{
+			minXYZ.x = Math.Min(minXYZ.x, position.x);
+			minXYZ.y = Math.Min(minXYZ.y, position.y);
+			minXYZ.z = Math.Min(minXYZ.z, position.z);
+
+			maxXYZ.x = Math.Max(maxXYZ.x, position.x);
+			maxXYZ.y = Math.Max(maxXYZ.y, position.y);
+			maxXYZ.z = Math.Max(maxXYZ.z, position.z);
+		}
+
 		/// <summary>
 		/// Geth the corners by quadrant of the bottom
 		/// </summary>
@@ -137,7 +173,7 @@ namespace MatterHackers.VectorMath
 		}
 
 		/// <summary>
-		/// Geth the corners by quadrant of the top
+		/// Get the corners by quadrant of the top
 		/// </summary>
 		/// <param name="quadrantIndex"></param>
 		public Vector3 GetTopCorner(int quadrantIndex)
@@ -268,7 +304,7 @@ namespace MatterHackers.VectorMath
 				Math.Max(minXYZ.z, Math.Min(maxXYZ.z, bounds.maxXYZ.z)));
 
 			Vector3 delta = intersectMaxXYZ - intersectMinXYZ;
-			if (delta.x > 0 && delta.y > 0 && delta.z > 0)
+			if (delta.x >= 0 && delta.y >= 0 && delta.z >= 0)
 			{
 				return true;
 			}
@@ -334,6 +370,21 @@ namespace MatterHackers.VectorMath
 			{
 				positionToClamp.z = maxXYZ.z;
 			}
+		}
+
+		public bool Contains(Vector3 position)
+		{
+			if (this.minXYZ.x <= position.x
+				&& this.maxXYZ.x >= position.x
+				&& this.minXYZ.y <= position.y
+				&& this.maxXYZ.y >= position.y
+				&& this.minXYZ.z <= position.z
+				&& this.maxXYZ.z >= position.z)
+			{
+				return true;
+			}
+
+			return false;
 		}
 
 		public bool Contains(AxisAlignedBoundingBox bounds)

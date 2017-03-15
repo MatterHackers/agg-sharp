@@ -36,7 +36,7 @@ using System.Collections.Generic;
 
 namespace MatterHackers.PolygonMesh
 {
-	public class VertexCollecton : IEnumerable
+	public class VertexCollecton : IEnumerable<Vertex>
 	{
 		private List<Vertex> vertices = new List<Vertex>();
 
@@ -67,7 +67,12 @@ namespace MatterHackers.PolygonMesh
 			set { vertices.Capacity = value; }
 		}
 
-		public IEnumerator GetEnumerator()
+		public IEnumerator<Vertex> GetEnumerator()
+		{
+			return vertices.GetEnumerator();
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
 		{
 			return vertices.GetEnumerator();
 		}

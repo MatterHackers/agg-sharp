@@ -27,12 +27,24 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-namespace MatterHackers.PolygonMesh.Processors
+using MatterHackers.Agg;
+using MatterHackers.PolygonMesh.Processors;
+using MatterHackers.RayTracer;
+using MatterHackers.RayTracer.Traceable;
+using MatterHackers.VectorMath;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+
+namespace MatterHackers.DataConverters3D
 {
-	public class RemoveTJunctions
+	public class PlatingData
 	{
-		public RemoveTJunctions()
-		{
-		}
+		public Vector3 CurrentScale = new Vector3(1, 1, 1);
+
+		public Vector2 Spacing;
 	}
 }

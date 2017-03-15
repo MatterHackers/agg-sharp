@@ -17,6 +17,9 @@ namespace MatterHackers.RayTracer
 {
 	public class TriangleShape : BaseShape
 	{
+		private readonly static int[] xMapping = new int[] { 1, 0, 0 };
+		private readonly static int[] yMapping = new int[] { 2, 2, 1 };
+
 		Vector3Float aabbMaxXYZ = Vector3Float.NegativeInfinity;
 		Vector3Float aabbMinXYZ = Vector3Float.NegativeInfinity;
 		private RectangleFloat boundsOnMajorAxis = new RectangleFloat(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
@@ -24,8 +27,6 @@ namespace MatterHackers.RayTracer
 		private int majorAxis = 0;
 		private PlaneFloat plane;
 		private Vector3Float[] vertices = new Vector3Float[3];
-		private int[] xMapping = new int[] { 1, 0, 0 };
-		private int[] yMapping = new int[] { 2, 2, 1 };
 
 		public TriangleShape(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2, MaterialAbstract material)
 		{

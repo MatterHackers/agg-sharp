@@ -100,6 +100,11 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnParentChanged(EventArgs e)
 		{
+			if(Parent == null)
+			{
+				return;
+			}
+
 			if (this.SiblingRadioButtonList.Count == 0)
 			{
 				SiblingRadioButtonList = Parent.Children;

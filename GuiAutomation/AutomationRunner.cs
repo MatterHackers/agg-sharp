@@ -164,37 +164,57 @@ namespace MatterHackers.GuiAutomation
 
 				Point2D screenPosition = new Point2D((int)matchPosition.x + offset.x, clickYOnScreen);
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
-				switch (mouseButtons)
-				{
-					case MouseButtons.None:
-						break;
 
-					case MouseButtons.Left:
-						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
-						Delay(UpDelaySeconds);
-						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
-						break;
-
-					case MouseButtons.Right:
-						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_RIGHTDOWN, screenPosition.x, screenPosition.y, 0, 0);
-						Delay(UpDelaySeconds);
-						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_RIGHTUP, screenPosition.x, screenPosition.y, 0, 0);
-						break;
-
-					case MouseButtons.Middle:
-						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_MIDDLEDOWN, screenPosition.x, screenPosition.y, 0, 0);
-						Delay(UpDelaySeconds);
-						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_MIDDLEUP, screenPosition.x, screenPosition.y, 0, 0);
-						break;
-
-					default:
-						break;
-				}
+				inputSystem.CreateMouseEvent(GetMouseDown(mouseButtons), screenPosition.x, screenPosition.y, 0, 0);
+				Delay(UpDelaySeconds);
+				inputSystem.CreateMouseEvent(GetMouseUp(mouseButtons), screenPosition.x, screenPosition.y, 0, 0);
 
 				return true;
 			}
 
 			return false;
+		}
+
+		int GetMouseDown(MouseButtons mouseButtons)
+		{
+			switch (mouseButtons)
+			{
+				case MouseButtons.None:
+					return 0;
+
+				case MouseButtons.Left:
+					return NativeMethods.MOUSEEVENTF_LEFTDOWN;
+
+				case MouseButtons.Right:
+					return NativeMethods.MOUSEEVENTF_RIGHTDOWN;
+
+				case MouseButtons.Middle:
+					return NativeMethods.MOUSEEVENTF_MIDDLEDOWN;
+
+				default:
+					return 0;
+			}
+		}
+
+		int GetMouseUp(MouseButtons mouseButtons)
+		{
+			switch (mouseButtons)
+			{
+				case MouseButtons.None:
+					return 0;
+
+				case MouseButtons.Left:
+					return NativeMethods.MOUSEEVENTF_LEFTUP;
+
+				case MouseButtons.Right:
+					return NativeMethods.MOUSEEVENTF_RIGHTUP;
+
+				case MouseButtons.Middle:
+					return NativeMethods.MOUSEEVENTF_MIDDLEUP;
+
+				default:
+					return 0;
+			}
 		}
 
 		public void Delay(double secondsToWait = .2)
@@ -516,7 +536,8 @@ namespace MatterHackers.GuiAutomation
 		public SearchRegion GetRegionByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null)
 		{
 			SystemWindow containingWindow;
-			GuiWidget namedWidget = GetWidgetByName(widgetName, out containingWindow, secondsToWait, searchRegion);
+			Point2D offsetHint;
+			GuiWidget namedWidget = GetWidgetByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
 
 			if (namedWidget != null)
 			{
@@ -535,26 +556,42 @@ namespace MatterHackers.GuiAutomation
 
 		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, double secondsToWait = 0, SearchRegion searchRegion = null)
 		{
-			containingWindow = null;
+			Point2D offsetHint;
+			return GetWidgetByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
+        }
 
-			List<GetResults> getResults = GetWidgetsByName(widgetName, secondsToWait, searchRegion);
+        public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, out Point2D offsetHint, double secondsToWait = 0, SearchRegion searchRegion = null)
+		{
+			containingWindow = null;
+			offsetHint = Point2D.Zero;
+
+			List<GetByNameResults> getResults = GetWidgetsByName(widgetName, secondsToWait, searchRegion);
 			if (getResults != null
 				&& getResults.Count > 0)
 			{
 				containingWindow = getResults[0].containingSystemWindow;
+				offsetHint = getResults[0].offsetHint;
 				return getResults[0].widget;
 			}
 
 			return null;
 		}
 
-		public class GetResults
+		public class GetByNameResults
 		{
-			public GuiWidget widget;
-			public SystemWindow containingSystemWindow;
+			public GuiWidget widget { get; private set; }
+			public Point2D offsetHint { get; private set; }
+			public SystemWindow containingSystemWindow { get; private set; }
+
+			public GetByNameResults(GuiWidget widget, Point2D offsetHint, SystemWindow containingSystemWindow)
+			{
+				this.widget = widget;
+				this.offsetHint = offsetHint;
+				this.containingSystemWindow = containingSystemWindow;
+			}
 		}
 
-		public List<GetResults> GetWidgetsByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null)
+		public List<GetByNameResults> GetWidgetsByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null)
 		{
 			if (secondsToWait > 0)
 			{
@@ -565,46 +602,38 @@ namespace MatterHackers.GuiAutomation
 				}
 			}
 
-			List<GetResults> namedWidgetsInRegion = new List<GetResults>();
+			List<GetByNameResults> namedWidgetsInRegion = new List<GetByNameResults>();
 			for(int i=SystemWindow.AllOpenSystemWindows.Count-1; i>=0 ; i--)
 			{
 				SystemWindow systemWindow = SystemWindow.AllOpenSystemWindows[i];
 				if (searchRegion != null) // only add the widgets that are in the screen region
 				{
-					List<GuiWidget> namedWidgets = new List<GuiWidget>();
+					List<GuiWidget.WidgetAndPosition> namedWidgets = new List<GuiWidget.WidgetAndPosition>();
 					systemWindow.FindNamedChildrenRecursive(widgetName, namedWidgets);
-					foreach (GuiWidget namedWidget in namedWidgets)
+					foreach (GuiWidget.WidgetAndPosition widgetAndPosition in namedWidgets)
 					{
-						if (namedWidget.ActuallyVisibleOnScreen())
+						if (widgetAndPosition.widget.ActuallyVisibleOnScreen())
 						{
-							RectangleDouble childBounds = namedWidget.TransformToParentSpace(systemWindow, namedWidget.LocalBounds);
+							RectangleDouble childBounds = widgetAndPosition.widget.TransformToParentSpace(systemWindow, widgetAndPosition.widget.LocalBounds);
 
 							ScreenRectangle screenRect = SystemWindowToScreen(childBounds, systemWindow);
 							ScreenRectangle result;
 							if (ScreenRectangle.Intersection(searchRegion.ScreenRect, screenRect, out result))
 							{
-								namedWidgetsInRegion.Add(new GetResults()
-								{
-									widget = namedWidget,
-									containingSystemWindow = systemWindow,
-								});
+								namedWidgetsInRegion.Add(new GetByNameResults(widgetAndPosition.widget, widgetAndPosition.position, systemWindow));
 							}
 						}
 					}
 				}
 				else // add every named widget found
 				{
-					List<GuiWidget> namedWidgets = new List<GuiWidget>();
+					List<GuiWidget.WidgetAndPosition> namedWidgets = new List<GuiWidget.WidgetAndPosition>();
 					systemWindow.FindNamedChildrenRecursive(widgetName, namedWidgets);
-					foreach (GuiWidget namedWidget in namedWidgets)
+					foreach (GuiWidget.WidgetAndPosition namedWidget in namedWidgets)
 					{
-						if (namedWidget.ActuallyVisibleOnScreen())
+						if (namedWidget.widget.ActuallyVisibleOnScreen())
 						{
-							namedWidgetsInRegion.Add(new GetResults()
-							{
-								widget = namedWidget,
-								containingSystemWindow = systemWindow,
-							});
+							namedWidgetsInRegion.Add(new GetByNameResults(namedWidget.widget, namedWidget.position, systemWindow));
 						}
 					}
 				}
@@ -621,15 +650,15 @@ namespace MatterHackers.GuiAutomation
 		public void ClickByName(string widgetName, double secondsToWait = 5, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, double delayBeforeReturn = 0.2)
 		{
 			SystemWindow containingWindow;
-			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, secondsToWait, searchRegion);
+			Point2D offsetHint;
+            GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
 			if (widgetToClick != null)
 			{
 				RectangleDouble childBounds = widgetToClick.TransformToParentSpace(containingWindow, widgetToClick.LocalBounds);
 
 				if (origin == ClickOrigin.Center)
 				{
-					offset.x += (int)childBounds.Width / 2;
-					offset.y += (int)childBounds.Height / 2;
+					offset += offsetHint;
 				}
 
 				Point2D screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
@@ -651,33 +680,33 @@ namespace MatterHackers.GuiAutomation
 			throw new Exception($"ClickByName Failed: Named GuiWidget not found [{widgetName}]");
 		}
 
-		public bool DragDropByName(string widgetNameDrag, string widgetNameDrop, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offsetDrag = default(Point2D), ClickOrigin originDrag = ClickOrigin.Center, Point2D offsetDrop = default(Point2D), ClickOrigin originDrop = ClickOrigin.Center)
+		public bool DragDropByName(string widgetNameDrag, string widgetNameDrop, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offsetDrag = default(Point2D), ClickOrigin originDrag = ClickOrigin.Center, Point2D offsetDrop = default(Point2D), ClickOrigin originDrop = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
 		{
-			if (DragByName(widgetNameDrag, secondsToWait, searchRegion, offsetDrag, originDrag))
+			if (DragByName(widgetNameDrag, secondsToWait, searchRegion, offsetDrag, originDrag, mouseButtons))
 			{
-				return DropByName(widgetNameDrop, secondsToWait, searchRegion, offsetDrop, originDrop);
+				return DropByName(widgetNameDrop, secondsToWait, searchRegion, offsetDrop, originDrop, mouseButtons);
 			}
 
 			return false;
 		}
 
-		public bool DragByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
+		public bool DragByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
 		{
 			SystemWindow containingWindow;
-			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, secondsToWait, searchRegion);
+			Point2D offsetHint;
+			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
 			if (widgetToClick != null)
 			{
 				RectangleDouble childBounds = widgetToClick.TransformToParentSpace(containingWindow, widgetToClick.LocalBounds);
 
 				if (origin == ClickOrigin.Center)
 				{
-					offset.x += (int)childBounds.Width / 2;
-					offset.y += (int)childBounds.Height / 2;
+					offset += offsetHint;
 				}
 
 				Point2D screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
-				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+				inputSystem.CreateMouseEvent(GetMouseDown(mouseButtons), screenPosition.x, screenPosition.y, 0, 0);
 
 				return true;
 			}
@@ -685,23 +714,23 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool DropByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
+		public bool DropByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
 		{
 			SystemWindow containingWindow;
-			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, secondsToWait, searchRegion);
+			Point2D offsetHint;
+			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
 			if (widgetToClick != null)
 			{
 				RectangleDouble childBounds = widgetToClick.TransformToParentSpace(containingWindow, widgetToClick.LocalBounds);
 
 				if (origin == ClickOrigin.Center)
 				{
-					offset.x += (int)childBounds.Width / 2;
-					offset.y += (int)childBounds.Height / 2;
+					offset += offsetHint;
 				}
 
 				Point2D screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
-				Drop();
+				Drop(mouseButtons);
 
 				return true;
 			}
@@ -709,10 +738,10 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public void Drop(Point2D offset = default(Point2D))
+		public void Drop(MouseButtons mouseButtons = MouseButtons.Left)
 		{
-			Point2D screenPosition = CurrentMousePosition() + offset;
-			inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
+			Point2D screenPosition = CurrentMousePosition();
+			inputSystem.CreateMouseEvent(GetMouseUp(mouseButtons), screenPosition.x, screenPosition.y, 0, 0);
 		}
 
 		public bool DoubleClickByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
@@ -723,15 +752,15 @@ namespace MatterHackers.GuiAutomation
 		public bool MoveToByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
 		{
 			SystemWindow containingWindow;
-			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, secondsToWait, searchRegion);
+			Point2D offsetHint;
+			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
 			if (widgetToClick != null)
 			{
 				RectangleDouble childBounds = widgetToClick.TransformToParentSpace(containingWindow, widgetToClick.LocalBounds);
 
 				if (origin == ClickOrigin.Center)
 				{
-					offset.x += (int)childBounds.Width / 2;
-					offset.y += (int)childBounds.Height / 2;
+					offset += offsetHint;
 				}
 
 				Point2D screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
@@ -747,19 +776,19 @@ namespace MatterHackers.GuiAutomation
 		{
 			foreach (SystemWindow window in SystemWindow.AllOpenSystemWindows)
 			{
-				List<GuiWidget> foundChildren = new List<GuiWidget>();
+				List<GuiWidget.WidgetAndPosition> foundChildren = new List<GuiWidget.WidgetAndPosition>();
 				window.FindNamedChildrenRecursive(widgetName, foundChildren);
 				if (foundChildren.Count > 0)
 				{
-					foreach (GuiWidget foundChild in foundChildren)
+					foreach (GuiWidget.WidgetAndPosition foundChild in foundChildren) 
 					{
-						RectangleDouble childBounds = foundChild.TransformToParentSpace(window, foundChild.LocalBounds);
+						RectangleDouble childBounds = foundChild.widget.TransformToParentSpace(window, foundChild.widget.LocalBounds);
 
 						ScreenRectangle screenRect = SystemWindowToScreen(childBounds, window);
 						ScreenRectangle result;
 						if (searchRegion == null || ScreenRectangle.Intersection(searchRegion.ScreenRect, screenRect, out result))
 						{
-							if (foundChild.ActuallyVisibleOnScreen())
+							if (foundChild.widget.ActuallyVisibleOnScreen())
 							{
 								return true;
 							}
