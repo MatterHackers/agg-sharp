@@ -34,6 +34,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Linq;
 
 namespace MatterHackers.SerialPortCommunication.FrostedSerial
 {
@@ -205,6 +206,18 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
 			return newPort;
 #endif // ANDROID
+		}
+
+		public virtual bool SerialPortIsAvailable(string serialPortName)
+		{
+			try
+			{
+				return FrostedSerialPort.GetPortNames().Any(portName => string.Compare(portName, serialPortName, true) == 0);
+			}
+			catch
+			{
+				return false;
+			}
 		}
 	}
 }
