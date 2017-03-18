@@ -27,13 +27,13 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.PlatformAbstract;
-using MatterHackers.Agg.UI;
 using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.Agg.UI;
 
 namespace MatterHackers.Agg.Image
 {

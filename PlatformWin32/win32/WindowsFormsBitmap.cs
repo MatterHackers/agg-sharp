@@ -1,5 +1,3 @@
-using MatterHackers.Agg.PlatformAbstract;
-
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
@@ -42,6 +40,7 @@ using MatterHackers.Agg.PlatformAbstract;
 // THE SOFTWARE.
 using System;
 using System.Drawing;
+using MatterHackers.Agg.PlatformAbstract;
 
 namespace MatterHackers.Agg.UI
 {

@@ -1,3 +1,4 @@
+using System;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.PlatformAbstract;
 using MatterHackers.Agg.RasterizerScanline;
@@ -5,7 +6,6 @@ using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
-using System;
 
 namespace MatterHackers.Agg
 {
