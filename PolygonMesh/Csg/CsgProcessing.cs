@@ -46,7 +46,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 	public class CsgAcceleratedMesh
 	{
-		int internalIntegerScale = 100;
+		//int internalIntegerScale = 100;
 
 		public CsgAcceleratedMesh(Mesh source)
 		{

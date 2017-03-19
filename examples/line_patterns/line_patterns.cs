@@ -239,7 +239,7 @@ namespace MatterHackers.Agg
 			pattern_src_brightness_to_alpha_RGBA_Bytes p8 = new pattern_src_brightness_to_alpha_RGBA_Bytes(rbuf_img7);
 			pattern_src_brightness_to_alpha_RGBA_Bytes p9 = new pattern_src_brightness_to_alpha_RGBA_Bytes(rbuf_img8);
 
-			pattern_filter_bilinear_RGBA_Bytes fltr = new pattern_filter_bilinear_RGBA_Bytes();           // Filtering functor
+			//pattern_filter_bilinear_RGBA_Bytes fltr = new pattern_filter_bilinear_RGBA_Bytes();           // Filtering functor
 
 			// agg::line_image_pattern is the main container for the patterns. It creates
 			// a copy of the patterns extended according to the needs of the filter.
