@@ -848,7 +848,7 @@ namespace MatterHackers.Agg
 		private int m_start;
 		private double m_scale_x;
 		private RectangleInt m_clip_box;
-		private bool m_clipping;
+		//private bool m_clipping;
 
 		//---------------------------------------------------------------------
 		//typedef renderer_outline_image<BaseRenderer, ImagePattern> self_type;
@@ -861,7 +861,7 @@ namespace MatterHackers.Agg
 			m_start = (0);
 			m_scale_x = (1.0);
 			m_clip_box = new RectangleInt(0, 0, 0, 0);
-			m_clipping = (false);
+			//m_clipping = (false);
 		}
 
 		public void attach(IImageByte ren)
@@ -883,7 +883,7 @@ namespace MatterHackers.Agg
 		//---------------------------------------------------------------------
 		public void reset_clipping()
 		{
-			m_clipping = false;
+			//m_clipping = false;
 		}
 
 		public void clip_box(double x1, double y1, double x2, double y2)
@@ -892,7 +892,7 @@ namespace MatterHackers.Agg
 			m_clip_box.Bottom = line_coord_sat.conv(y1);
 			m_clip_box.Right = line_coord_sat.conv(x2);
 			m_clip_box.Top = line_coord_sat.conv(y2);
-			m_clipping = true;
+			//m_clipping = true;
 		}
 
 		//---------------------------------------------------------------------

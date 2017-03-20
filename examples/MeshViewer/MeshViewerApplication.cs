@@ -27,15 +27,15 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
+using System.Diagnostics;
+using System.IO;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RenderOpenGl;
 using MatterHackers.VectorMath;
-using System;
-using System.Diagnostics;
-using System.IO;
 
 namespace MatterHackers.MeshVisualizer
 {

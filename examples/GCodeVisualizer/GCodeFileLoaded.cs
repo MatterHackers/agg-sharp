@@ -143,7 +143,7 @@ namespace MatterHackers.GCodeVisualizer
 			return loadedGCode;
 		}
 
-		static public new void LoadInBackground(BackgroundWorker backgroundWorker, string fileName)
+		static public void LoadInBackground(BackgroundWorker backgroundWorker, string fileName)
 		{
 			if (Path.GetExtension(fileName).ToUpper() == ".GCODE")
 			{

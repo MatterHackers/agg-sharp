@@ -27,13 +27,13 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Runtime.InteropServices;
 using MatterHackers.Agg;
 using MatterHackers.Agg.PlatformAbstract;
 using Microsoft.Win32.SafeHandles;
-using System;
-using System.IO;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Linq;
 
 namespace MatterHackers.SerialPortCommunication.FrostedSerial

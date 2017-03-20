@@ -30,6 +30,8 @@ either expressed or implied, of the FreeBSD Project.
 //#define SourceDepthFloat
 //#define SourceDepth24
 
+using System;
+using System.Diagnostics;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.PlatformAbstract;
 using MatterHackers.Agg.RasterizerScanline;
@@ -37,8 +39,6 @@ using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
-using System;
-using System.Diagnostics;
 
 namespace MatterHackers.Agg
 {

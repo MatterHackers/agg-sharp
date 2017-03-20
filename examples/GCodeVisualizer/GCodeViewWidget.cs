@@ -396,7 +396,7 @@ namespace MatterHackers.GCodeVisualizer
 			lastMousePosition = mousePos;
 		}
 
-		public void Load(string gcodePathAndFileName)
+		public void LoadFile(string gcodePathAndFileName)
 		{
 			loadedGCode = GCodeFile.Load(gcodePathAndFileName);
 			SetInitalLayer();
