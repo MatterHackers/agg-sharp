@@ -50,8 +50,8 @@ namespace MatterHackers.Agg.VertexSource
 	//-----------------------------------------------------------------------
 	public class FlattenCurves : VertexSourceLegacySupport
 	{
-		private double lastX;
-		private double lastY;
+		//private double lastX;
+		//private double lastY;
 		private Curve3 m_curve3;
 		private Curve4 m_curve4;
 
@@ -66,8 +66,8 @@ namespace MatterHackers.Agg.VertexSource
 			m_curve3 = new Curve3();
 			m_curve4 = new Curve4();
 			VertexSource = vertexSource;
-			lastX = (0.0);
-			lastY = (0.0);
+			//lastX = (0.0);
+			//lastY = (0.0);
 		}
 
 		public double ApproximationScale

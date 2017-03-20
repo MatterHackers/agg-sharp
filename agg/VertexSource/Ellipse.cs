@@ -36,7 +36,7 @@ namespace MatterHackers.Agg.VertexSource
 		public double radiusY;
 		private double m_scale;
 		private int numSteps;
-		private int m_step;
+		//private int m_step;
 		private bool m_cw;
 
 		public Ellipse()
@@ -47,7 +47,7 @@ namespace MatterHackers.Agg.VertexSource
 			radiusY = 1.0;
 			m_scale = 1.0;
 			numSteps = 4;
-			m_step = 0;
+			//m_step = 0;
 			m_cw = false;
 		}
 
@@ -69,7 +69,7 @@ namespace MatterHackers.Agg.VertexSource
 			this.radiusY = RadiusY;
 			m_scale = 1;
 			numSteps = num_steps;
-			m_step = 0;
+			//m_step = 0;
 			m_cw = cw;
 			if (numSteps == 0)
 			{
@@ -95,7 +95,7 @@ namespace MatterHackers.Agg.VertexSource
 			radiusX = RadiusX;
 			radiusY = RadiusY;
 			numSteps = num_steps;
-			m_step = 0;
+			//m_step = 0;
 			m_cw = cw;
 			if (numSteps == 0)
 			{

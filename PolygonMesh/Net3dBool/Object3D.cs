@@ -309,7 +309,7 @@ namespace Net3dBool
 											{
 												//System.out.println("possible infinite loop situation: terminating faces split");
 												//return;
-												int a = 0;
+												Console.WriteLine("possible infinite loop situation: terminating faces split");
 											}
 
 											//if the face in the position isn't the same, there was a break

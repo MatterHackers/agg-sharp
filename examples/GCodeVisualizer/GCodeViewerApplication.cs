@@ -88,7 +88,7 @@ namespace MatterHackers.GCodeVisualizer
 
 			if (gCodeToLoad != "")
 			{
-				gCodeViewWidget.Load(gCodeToLoad);
+				gCodeViewWidget.LoadFile(gCodeToLoad);
 			}
 			else
 			{
@@ -139,7 +139,7 @@ namespace MatterHackers.GCodeVisualizer
 		{
 			if (!string.IsNullOrEmpty(openParams.FileName))
 			{
-				gCodeViewWidget.Load(openParams.FileName);
+				gCodeViewWidget.LoadFile(openParams.FileName);
 				currentLayerIndex.Value = 0;
 				currentLayerIndex.MaxValue = gCodeViewWidget.LoadedGCode.NumChangesInZ;
 			}
