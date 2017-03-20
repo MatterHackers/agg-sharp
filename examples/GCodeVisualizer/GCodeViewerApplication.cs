@@ -27,11 +27,11 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.UI;
 using MatterHackers.VectorMath;
-using System;
 
 /*
  * TODO:
@@ -88,7 +88,7 @@ namespace MatterHackers.GCodeVisualizer
 
 			if (gCodeToLoad != "")
 			{
-				gCodeViewWidget.Load(gCodeToLoad);
+				gCodeViewWidget.LoadFile(gCodeToLoad);
 			}
 			else
 			{
@@ -139,7 +139,7 @@ namespace MatterHackers.GCodeVisualizer
 		{
 			if (!string.IsNullOrEmpty(openParams.FileName))
 			{
-				gCodeViewWidget.Load(openParams.FileName);
+				gCodeViewWidget.LoadFile(openParams.FileName);
 				currentLayerIndex.Value = 0;
 				currentLayerIndex.MaxValue = gCodeViewWidget.LoadedGCode.NumChangesInZ;
 			}

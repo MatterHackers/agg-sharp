@@ -345,8 +345,7 @@ namespace MatterHackers.RayTracer
 					}
 				}
 				catch
-				{  
-					int stop = 0;
+				{
 				}
 			}
 		}
@@ -416,7 +415,6 @@ namespace MatterHackers.RayTracer
 						}
 						catch
 						{
-							int stop = 0;
 						}
 					}
 				}

@@ -9,8 +9,6 @@ namespace MatterHackers.Agg.Tests
 	[TestFixture]
 	public class AggDrawingTests
 	{
-		private bool saveTestToContrl = false;
-
 		public static void RunAllTests()
 		{
 			AggDrawingTests tests = new AggDrawingTests();

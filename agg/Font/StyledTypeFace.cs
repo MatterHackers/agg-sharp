@@ -26,7 +26,6 @@ namespace MatterHackers.Agg.Font
 {
 	public class GlyphWithUnderline : VertexSourceLegacySupport
 	{
-		private int state = 0;
 		private IVertexSource underline;
 		private IVertexSource glyph;
 

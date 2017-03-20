@@ -64,7 +64,7 @@ namespace MatterHackers.Agg.UI.Tests
 			systemWindow.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, 11, 11, 0));
 			UiThread.InvokePendingActions();
 
-			// show that initialy we don't have a tooltip
+			// show that initially we don't have a tooltip
 			Assert.IsTrue(systemWindow.Children.Count == 2);
 
 			// sleep 1/2 long enough to show the tool tip
