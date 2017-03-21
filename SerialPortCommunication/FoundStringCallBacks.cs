@@ -61,11 +61,9 @@ namespace MatterHackers.SerialPortCommunication
 
 	public class FoundStringCallbacks
 	{
-		public delegate void FoundStringEventHandler(object sender, EventArgs foundStringEventArgs);
+		public Dictionary<string, EventHandler<FoundStringEventArgs> > dictionaryOfCallbacks = new Dictionary<string, EventHandler<FoundStringEventArgs>>();
 
-		public Dictionary<string, FoundStringEventHandler> dictionaryOfCallbacks = new Dictionary<string, FoundStringEventHandler>();
-
-		public void AddCallbackToKey(string key, FoundStringEventHandler value)
+		public void AddCallbackToKey(string key, EventHandler<FoundStringEventArgs> value)
 		{
 			if (dictionaryOfCallbacks.ContainsKey(key))
 			{
@@ -77,7 +75,7 @@ namespace MatterHackers.SerialPortCommunication
 			}
 		}
 
-		public void RemoveCallbackFromKey(string key, FoundStringEventHandler value)
+		public void RemoveCallbackFromKey(string key, EventHandler<FoundStringEventArgs> value)
 		{
 			if (dictionaryOfCallbacks.ContainsKey(key))
 			{
@@ -100,19 +98,13 @@ namespace MatterHackers.SerialPortCommunication
 
 	public class FoundStringStartsWithCallbacks : FoundStringCallbacks
 	{
-		public void CheckForKeys(EventArgs e)
+		public void CheckForKeys(FoundStringEventArgs e)
 		{
-			FoundStringEventArgs foundString = e as FoundStringEventArgs;
-			if(foundString == null)
-			{
-				return;
-			}
-
 			foreach (var pair in this.dictionaryOfCallbacks)
 			{
-				if (foundString.LineToCheck.StartsWith(pair.Key))
+				if (e.LineToCheck.StartsWith(pair.Key))
 				{
-					foundString.CallbackWasCalled = true;
+					e.CallbackWasCalled = true;
 					pair.Value(this, e);
 				}
 			}
@@ -121,19 +113,13 @@ namespace MatterHackers.SerialPortCommunication
 
 	public class FoundStringContainsCallbacks : FoundStringCallbacks
 	{
-		public void CheckForKeys(EventArgs e)
+		public void CheckForKeys(FoundStringEventArgs e)
 		{
-			FoundStringEventArgs foundString = e as FoundStringEventArgs;
-			if (foundString == null)
-			{
-				return;
-			}
-
 			foreach (var pair in this.dictionaryOfCallbacks)
 			{
-				if (foundString.LineToCheck.Contains(pair.Key))
+				if (e.LineToCheck.Contains(pair.Key))
 				{
-					foundString.CallbackWasCalled = true;
+					e.CallbackWasCalled = true;
 					pair.Value(this, e);
 				}
 			}
