@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using NUnit.Framework;
+using System;
 
 namespace MatterHackers.VectorMath.Tests
 {
@@ -47,10 +48,83 @@ namespace MatterHackers.VectorMath.Tests
 			{
 				Matrix4X4 perspectiveMatrix = Matrix4X4.CreatePerspectiveFieldOfView(MathHelper.Tau / 4, 1, 3, 507);
 				Frustum frustum = Frustum.FrustumFromProjectionMatrix(perspectiveMatrix);
+
+				// left
+				Assert.IsTrue(frustum.Planes[0].PlaneNormal.Equals(new Vector3(1, 0, -1).GetNormal(), .0001));
+				Assert.AreEqual(frustum.Planes[0].DistanceToPlaneFromOrigin, 0, .0001);
+				// right
+				Assert.IsTrue(frustum.Planes[1].PlaneNormal.Equals(new Vector3(-1, 0, -1).GetNormal(), .0001));
+				Assert.AreEqual(frustum.Planes[1].DistanceToPlaneFromOrigin, 0, .0001);
+				// bottom
+				Assert.IsTrue(frustum.Planes[2].PlaneNormal.Equals(new Vector3(0, 1, -1).GetNormal(), .0001));
+				Assert.AreEqual(frustum.Planes[2].DistanceToPlaneFromOrigin, 0, .0001);
+				// top
+				Assert.IsTrue(frustum.Planes[3].PlaneNormal.Equals(new Vector3(0, -1, -1).GetNormal(), .0001));
+				Assert.AreEqual(frustum.Planes[3].DistanceToPlaneFromOrigin, 0, .0001);
+				// near
 				Assert.IsTrue(frustum.Planes[4].PlaneNormal.Equals(new Vector3(0, 0, -1), .0001));
 				Assert.AreEqual(frustum.Planes[4].DistanceToPlaneFromOrigin, -3, .0001);
+				// far
 				Assert.IsTrue(frustum.Planes[5].PlaneNormal.Equals(new Vector3(0, 0, 1), .0001));
 				Assert.AreEqual(frustum.Planes[5].DistanceToPlaneFromOrigin, 507, .0001);
+			}
+		}
+
+		[Test]
+		public void FrustumTransformTests()
+		{
+			// rotate about y 180 degrees
+			{
+				Matrix4X4 perspectiveMatrix = Matrix4X4.CreatePerspectiveFieldOfView(MathHelper.Tau / 4, 1, 3, 507);
+				Frustum frustum = Frustum.FrustumFromProjectionMatrix(perspectiveMatrix);
+				frustum = Frustum.Transform(frustum, Matrix4X4.CreateRotationY(MathHelper.Tau / 2));
+
+				// left
+				Assert.IsTrue(frustum.Planes[0].PlaneNormal.Equals(new Vector3(-1, 0, 1).GetNormal(), .0001));
+				Assert.AreEqual(frustum.Planes[0].DistanceToPlaneFromOrigin, 0, .0001);
+				// right
+				Assert.IsTrue(frustum.Planes[1].PlaneNormal.Equals(new Vector3(1, 0, 1).GetNormal(), .0001));
+				Assert.AreEqual(frustum.Planes[1].DistanceToPlaneFromOrigin, 0, .0001);
+				// bottom
+				Assert.IsTrue(frustum.Planes[2].PlaneNormal.Equals(new Vector3(0, 1, 1).GetNormal(), .0001));
+				Assert.AreEqual(frustum.Planes[2].DistanceToPlaneFromOrigin, 0, .0001);
+				// top
+				Assert.IsTrue(frustum.Planes[3].PlaneNormal.Equals(new Vector3(0, -1, 1).GetNormal(), .0001));
+				Assert.AreEqual(frustum.Planes[3].DistanceToPlaneFromOrigin, 0, .0001);
+				// near
+				Assert.IsTrue(frustum.Planes[4].PlaneNormal.Equals(new Vector3(0, 0, 1), .0001));
+				Assert.AreEqual(frustum.Planes[4].DistanceToPlaneFromOrigin, -3, .0001);
+				// far
+				Assert.IsTrue(frustum.Planes[5].PlaneNormal.Equals(new Vector3(0, 0, -1), .0001));
+				Assert.AreEqual(frustum.Planes[5].DistanceToPlaneFromOrigin, 507, .0001);
+			}
+
+			// translate 10 down z
+			{
+				double zMove = 10;
+				Matrix4X4 perspectiveMatrix = Matrix4X4.CreatePerspectiveFieldOfView(MathHelper.Tau / 4, 1, 3, 507);
+				Frustum frustum = Frustum.FrustumFromProjectionMatrix(perspectiveMatrix);
+				frustum = Frustum.Transform(frustum, Matrix4X4.CreateTranslation(0, 0, -10));
+
+				double expectedPlaneOffset = Math.Sqrt(2 * (zMove / 2) * (zMove / 2));
+				// left
+				Assert.IsTrue(frustum.Planes[0].PlaneNormal.Equals(new Vector3(1, 0, -1).GetNormal(), .0001));
+				Assert.AreEqual(expectedPlaneOffset, frustum.Planes[0].DistanceToPlaneFromOrigin, .0001);
+				// right
+				Assert.IsTrue(frustum.Planes[1].PlaneNormal.Equals(new Vector3(-1, 0, -1).GetNormal(), .0001));
+				Assert.AreEqual(expectedPlaneOffset, frustum.Planes[1].DistanceToPlaneFromOrigin, .0001);
+				// bottom
+				Assert.IsTrue(frustum.Planes[2].PlaneNormal.Equals(new Vector3(0, 1, -1).GetNormal(), .0001));
+				Assert.AreEqual(expectedPlaneOffset, frustum.Planes[2].DistanceToPlaneFromOrigin, .0001);
+				// top
+				Assert.IsTrue(frustum.Planes[3].PlaneNormal.Equals(new Vector3(0, -1, -1).GetNormal(), .0001));
+				Assert.AreEqual(expectedPlaneOffset, frustum.Planes[3].DistanceToPlaneFromOrigin, .0001);
+				// near
+				Assert.IsTrue(frustum.Planes[4].PlaneNormal.Equals(new Vector3(0, 0, -1), .0001));
+				Assert.AreEqual(frustum.Planes[4].DistanceToPlaneFromOrigin, -3 + zMove, .0001);
+				// far
+				Assert.IsTrue(frustum.Planes[5].PlaneNormal.Equals(new Vector3(0, 0, 1), .0001));
+				Assert.AreEqual(frustum.Planes[5].DistanceToPlaneFromOrigin, 507 - zMove, .0001);
 			}
 		}
 
