@@ -69,6 +69,7 @@ namespace MatterHackers.VectorMath
 			for(int i=0; i<6; i++)
 			{
 				createdFrustum.Planes[i].Normalize();
+				createdFrustum.Planes[i].DistanceToPlaneFromOrigin = -createdFrustum.Planes[i].DistanceToPlaneFromOrigin;
 			}
 
 			return createdFrustum;
