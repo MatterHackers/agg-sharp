@@ -63,10 +63,10 @@ namespace MatterHackers.VectorMath.Tests
 				Assert.AreEqual(frustum.Planes[3].DistanceToPlaneFromOrigin, 0, .0001);
 				// near
 				Assert.IsTrue(frustum.Planes[4].PlaneNormal.Equals(new Vector3(0, 0, -1), .0001));
-				Assert.AreEqual(frustum.Planes[4].DistanceToPlaneFromOrigin, -3, .0001);
+				Assert.AreEqual(frustum.Planes[4].DistanceToPlaneFromOrigin, 3, .0001);
 				// far
 				Assert.IsTrue(frustum.Planes[5].PlaneNormal.Equals(new Vector3(0, 0, 1), .0001));
-				Assert.AreEqual(frustum.Planes[5].DistanceToPlaneFromOrigin, 507, .0001);
+				Assert.AreEqual(frustum.Planes[5].DistanceToPlaneFromOrigin, -507, .0001);
 			}
 		}
 
