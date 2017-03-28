@@ -92,9 +92,9 @@ namespace MatterHackers.DataConverters3D
 
 		public string Name { get; set; }
 
-		public bool PersistNode { get; set; } = true;
+		public virtual bool Persistable { get; set; } = true;
 
-		public bool Visible { get; set; } = true;
+		public virtual bool Visible { get; set; } = true;
 
 		public static IObject3D Load(string meshPath, Dictionary<string, IObject3D> itemCache = null, ReportProgressRatio progress = null)
 		{

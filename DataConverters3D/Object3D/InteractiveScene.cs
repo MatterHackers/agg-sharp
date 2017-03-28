@@ -47,9 +47,9 @@ namespace MatterHackers.MeshVisualizer
 		public void Save(string mcxPath, string libraryPath, ReportProgressRatio progress = null)
 		{
 			var itemsWithUnsavedMeshes = from object3D in this.Descendants()
-							  where object3D.MeshPath == null &&
-									object3D.Mesh != null &&
-									object3D.PersistNode == true
+							  where object3D.Persistable  &&
+									object3D.MeshPath == null &&
+									object3D.Mesh != null
 							  select object3D;
 
 			string assetsDirectory = Path.Combine(libraryPath, "Assets");

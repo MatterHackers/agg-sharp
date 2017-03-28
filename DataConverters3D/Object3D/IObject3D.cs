@@ -77,7 +77,7 @@ namespace MatterHackers.DataConverters3D
 
 		string Name { get; set; }
 
-		bool PersistNode { get; set; }
+		bool Persistable { get; }
 
 		bool Visible { get; set; }
 
