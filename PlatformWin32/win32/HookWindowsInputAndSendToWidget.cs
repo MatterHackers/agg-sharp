@@ -27,19 +27,24 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using System.Windows.Forms;
 using MatterHackers.Agg.PlatformAbstract;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Windows.Forms;
 
 namespace MatterHackers.Agg.UI
 {
 	public class HookWindowsInputAndSendToWidget
 	{
-		protected WidgetForWindowsFormsAbstract widgetToSendTo;
 		public static bool EnableInputHook = true;
+		protected WidgetForWindowsFormsAbstract widgetToSendTo;
+		private List<string> dragFiles = null;
+		ContainerControl controlToHook;
 
 		public HookWindowsInputAndSendToWidget(ContainerControl controlToHook, WidgetForWindowsFormsAbstract widgetToSendTo)
 		{
+			this.controlToHook = controlToHook;
 			this.widgetToSendTo = widgetToSendTo;
 			controlToHook.GotFocus += new EventHandler(controlToHook_GotFocus);
 			controlToHook.LostFocus += new EventHandler(controlToHook_LostFocus);
@@ -48,29 +53,70 @@ namespace MatterHackers.Agg.UI
 			controlToHook.KeyUp += new System.Windows.Forms.KeyEventHandler(controlToHook_KeyUp);
 			controlToHook.KeyPress += new System.Windows.Forms.KeyPressEventHandler(controlToHook_KeyPress);
 
-			controlToHook.MouseDown += new MouseEventHandler(controlToHook_MouseDown);
-			controlToHook.MouseMove += new MouseEventHandler(formToHook_MouseMove);
-			controlToHook.MouseUp += new MouseEventHandler(controlToHook_MouseUp);
-			controlToHook.MouseWheel += new MouseEventHandler(controlToHook_MouseWheel);
+			controlToHook.MouseDown += controlToHook_MouseDown;
+			controlToHook.MouseMove += formToHook_MouseMove;
+			controlToHook.MouseUp += controlToHook_MouseUp;
+			controlToHook.MouseWheel += controlToHook_MouseWheel;
+
+			controlToHook.AllowDrop = true;
+
+			controlToHook.DragDrop += ControlToHook_DragDrop;
+			controlToHook.DragEnter += ControlToHook_DragEnter;
+			controlToHook.DragLeave += ControlToHook_DragLeave;
+			controlToHook.DragOver += ControlToHook_DragOver;
 
 			controlToHook.MouseCaptureChanged += new EventHandler(controlToHook_MouseCaptureChanged);
 
 			controlToHook.MouseLeave += new EventHandler(controlToHook_MouseLeave);
 		}
 
-		private void controlToHook_MouseLeave(object sender, EventArgs e)
+		private void ControlToHook_DragDrop(object sender, DragEventArgs dragevent)
 		{
-			widgetToSendTo.OnMouseMove(new MatterHackers.Agg.UI.MouseEventArgs(MatterHackers.Agg.UI.MouseButtons.None, 0, -10, -10, 0));
+			List<string> droppedFiles = GetDroppedFiles(dragevent);
+
+			// do a mouse up
+			widgetToSendTo.OnMouseUp(ConvertWindowsDragEventToAggMouseEvent(dragevent));
+
+			dragFiles = null;
+		}
+
+		private void ControlToHook_DragEnter(object sender, DragEventArgs dragevent)
+		{
+			dragFiles = GetDroppedFiles(dragevent);
+
+			var mouseEvent = ConvertWindowsDragEventToAggMouseEvent(dragevent);
+			widgetToSendTo.OnMouseMove(mouseEvent);
+
+			if (mouseEvent.AcceptDrop)
+			{
+				dragevent.Effect = DragDropEffects.Copy;
+			}
+		}
+
+		private void ControlToHook_DragLeave(object sender, EventArgs dragevent)
+		{
+			dragFiles = null;
+		}
+
+		private void ControlToHook_DragOver(object sender, DragEventArgs dragevent)
+		{
+			dragFiles = GetDroppedFiles(dragevent);
+
+			var mouseEvent = ConvertWindowsDragEventToAggMouseEvent(dragevent);
+			widgetToSendTo.OnMouseMove(mouseEvent);
+
+			if (mouseEvent.AcceptDrop)
+			{
+				dragevent.Effect = DragDropEffects.Copy;
+			}
+			else
+			{
+				dragevent.Effect = DragDropEffects.None;
+			}
 		}
 
 		private void controlToHook_GotFocus(object sender, EventArgs e)
 		{
-			widgetToSendTo.OnFocusChanged(e);
-		}
-
-		private void controlToHook_LostFocus(object sender, EventArgs e)
-		{
-			widgetToSendTo.Unfocus();
 			widgetToSendTo.OnFocusChanged(e);
 		}
 
@@ -82,15 +128,15 @@ namespace MatterHackers.Agg.UI
 				windowsKeyEvent = new System.Windows.Forms.KeyEventArgs(System.Windows.Forms.Keys.Enter | windowsKeyEvent.Modifiers);
 			}
 
-			MatterHackers.Agg.UI.KeyEventArgs aggKeyEvent;
+			KeyEventArgs aggKeyEvent;
 			if (OsInformation.OperatingSystem == OSType.Mac
 				&& (windowsKeyEvent.KeyData & System.Windows.Forms.Keys.Alt) == System.Windows.Forms.Keys.Alt)
 			{
-				aggKeyEvent = new MatterHackers.Agg.UI.KeyEventArgs((MatterHackers.Agg.UI.Keys)(System.Windows.Forms.Keys.Control | (windowsKeyEvent.KeyData & ~System.Windows.Forms.Keys.Alt)));
+				aggKeyEvent = new KeyEventArgs((Keys)(System.Windows.Forms.Keys.Control | (windowsKeyEvent.KeyData & ~System.Windows.Forms.Keys.Alt)));
 			}
 			else
 			{
-				aggKeyEvent = new MatterHackers.Agg.UI.KeyEventArgs((MatterHackers.Agg.UI.Keys)windowsKeyEvent.KeyData);
+				aggKeyEvent = new KeyEventArgs((Keys)windowsKeyEvent.KeyData);
 			}
 			widgetToSendTo.OnKeyDown(aggKeyEvent);
 
@@ -100,9 +146,16 @@ namespace MatterHackers.Agg.UI
 			windowsKeyEvent.SuppressKeyPress = aggKeyEvent.SuppressKeyPress;
 		}
 
+		private void controlToHook_KeyPress(object sender, System.Windows.Forms.KeyPressEventArgs windowsKeyPressEvent)
+		{
+			KeyPressEventArgs aggKeyPressEvent = new KeyPressEventArgs(windowsKeyPressEvent.KeyChar);
+			widgetToSendTo.OnKeyPress(aggKeyPressEvent);
+			windowsKeyPressEvent.Handled = aggKeyPressEvent.Handled;
+		}
+
 		private void controlToHook_KeyUp(object sender, System.Windows.Forms.KeyEventArgs windowsKeyEvent)
 		{
-			MatterHackers.Agg.UI.KeyEventArgs aggKeyEvent = new MatterHackers.Agg.UI.KeyEventArgs((MatterHackers.Agg.UI.Keys)windowsKeyEvent.KeyData);
+			KeyEventArgs aggKeyEvent = new KeyEventArgs((Keys)windowsKeyEvent.KeyData);
 			widgetToSendTo.OnKeyUp(aggKeyEvent);
 
 			Keyboard.SetKeyDownState(aggKeyEvent.KeyCode, false);
@@ -111,25 +164,55 @@ namespace MatterHackers.Agg.UI
 			windowsKeyEvent.SuppressKeyPress = aggKeyEvent.SuppressKeyPress;
 		}
 
-		private void controlToHook_KeyPress(object sender, System.Windows.Forms.KeyPressEventArgs windowsKeyPressEvent)
+		private void controlToHook_LostFocus(object sender, EventArgs e)
 		{
-			MatterHackers.Agg.UI.KeyPressEventArgs aggKeyPressEvent = new MatterHackers.Agg.UI.KeyPressEventArgs(windowsKeyPressEvent.KeyChar);
-			widgetToSendTo.OnKeyPress(aggKeyPressEvent);
-			windowsKeyPressEvent.Handled = aggKeyPressEvent.Handled;
+			widgetToSendTo.Unfocus();
+			widgetToSendTo.OnFocusChanged(e);
 		}
 
-		private MatterHackers.Agg.UI.MouseEventArgs ConvertWindowsMouseEventToAggMouseEvent(System.Windows.Forms.MouseEventArgs windowsMouseEvent)
+		private void controlToHook_MouseCaptureChanged(object sender, EventArgs e)
 		{
-			// we invert the y as we are bottom left coordinate system and windows is top left.
-			int Y = windowsMouseEvent.Y;
-			Y = (int)widgetToSendTo.height() - Y;
-
-			return new MatterHackers.Agg.UI.MouseEventArgs((MatterHackers.Agg.UI.MouseButtons)windowsMouseEvent.Button, windowsMouseEvent.Clicks, windowsMouseEvent.X, Y, windowsMouseEvent.Delta);
+			if (widgetToSendTo.ChildHasMouseCaptured || widgetToSendTo.MouseCaptured)
+			{
+				widgetToSendTo.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, -10, -10, 0));
+			}
 		}
 
 		private void controlToHook_MouseDown(object sender, System.Windows.Forms.MouseEventArgs windowsMouseEvent)
 		{
 			widgetToSendTo.OnMouseDown(ConvertWindowsMouseEventToAggMouseEvent(windowsMouseEvent));
+		}
+
+		private void controlToHook_MouseLeave(object sender, EventArgs e)
+		{
+			widgetToSendTo.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, -10, -10, 0));
+		}
+
+		private void controlToHook_MouseUp(object sender, System.Windows.Forms.MouseEventArgs windowsMouseEvent)
+		{
+			widgetToSendTo.OnMouseUp(ConvertWindowsMouseEventToAggMouseEvent(windowsMouseEvent));
+		}
+
+		private void controlToHook_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs windowsMouseEvent)
+		{
+			widgetToSendTo.OnMouseWheel(ConvertWindowsMouseEventToAggMouseEvent(windowsMouseEvent));
+		}
+
+		private MouseEventArgs ConvertWindowsDragEventToAggMouseEvent(DragEventArgs dragevent)
+		{
+			System.Drawing.Point clientTop = controlToHook.PointToScreen(new System.Drawing.Point(0, 0));
+			System.Drawing.Point appWidgetPos = new System.Drawing.Point(dragevent.X - clientTop.X, (int)widgetToSendTo.height() - (dragevent.Y - clientTop.Y));
+
+			return new MouseEventArgs((MouseButtons.None), 0, appWidgetPos.X, appWidgetPos.Y, 0, dragFiles);
+		}
+
+		private MouseEventArgs ConvertWindowsMouseEventToAggMouseEvent(System.Windows.Forms.MouseEventArgs windowsMouseEvent)
+		{
+			// we invert the y as we are bottom left coordinate system and windows is top left.
+			int Y = windowsMouseEvent.Y;
+			Y = (int)widgetToSendTo.height() - Y;
+
+			return new MouseEventArgs((MouseButtons)windowsMouseEvent.Button, windowsMouseEvent.Clicks, windowsMouseEvent.X, Y, windowsMouseEvent.Delta, dragFiles);
 		}
 
 		private void formToHook_MouseMove(object sender, System.Windows.Forms.MouseEventArgs windowsMouseEvent)
@@ -143,22 +226,20 @@ namespace MatterHackers.Agg.UI
 			widgetToSendTo.OnMouseMove(ConvertWindowsMouseEventToAggMouseEvent(windowsMouseEvent));
 		}
 
-		private void controlToHook_MouseUp(object sender, System.Windows.Forms.MouseEventArgs windowsMouseEvent)
+		private List<string> GetDroppedFiles(DragEventArgs drgevent)
 		{
-			widgetToSendTo.OnMouseUp(ConvertWindowsMouseEventToAggMouseEvent(windowsMouseEvent));
-		}
-
-		private void controlToHook_MouseCaptureChanged(object sender, EventArgs e)
-		{
-			if (widgetToSendTo.ChildHasMouseCaptured || widgetToSendTo.MouseCaptured)
+			List<string> droppedFiles = new List<string>();
+			Array droppedItems = ((IDataObject)drgevent.Data).GetData(DataFormats.FileDrop) as Array;
+			if (droppedItems != null)
 			{
-				widgetToSendTo.OnMouseUp(new MatterHackers.Agg.UI.MouseEventArgs(MouseButtons.Left, 0, -10, -10, 0));
+				foreach (object droppedItem in droppedItems)
+				{
+					string fileName = Path.GetFullPath((string)droppedItem);
+					droppedFiles.Add(fileName);
+				}
 			}
-		}
 
-		private void controlToHook_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs windowsMouseEvent)
-		{
-			widgetToSendTo.OnMouseWheel(ConvertWindowsMouseEventToAggMouseEvent(windowsMouseEvent));
+			return droppedFiles;
 		}
 	}
 }

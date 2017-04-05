@@ -152,45 +152,56 @@ namespace MatterHackers.MeshVisualizer
 			Invalidate();
 		}
 
-		public override void OnDragEnter(FileDropEventArgs fileDropEventArgs)
+		public override void OnMouseEnterBounds(MouseEventArgs mouseEvent)
 		{
-			foreach (string file in fileDropEventArgs.DroppedFiles)
+			if (mouseEvent.DragFiles?.Count > 0)
 			{
-				string extension = Path.GetExtension(file).ToUpper();
-				if ((extension != "" && MeshFileIo.ValidFileExtensions().Contains(extension)))
+				foreach (string file in mouseEvent.DragFiles)
 				{
-					fileDropEventArgs.AcceptDrop = true;
+					string extension = Path.GetExtension(file).ToUpper();
+					if ((extension != "" && MeshFileIo.ValidFileExtensions().Contains(extension)))
+					{
+						mouseEvent.AcceptDrop = true;
+					}
 				}
 			}
-			base.OnDragEnter(fileDropEventArgs);
+
+			base.OnMouseEnterBounds(mouseEvent);
 		}
 
-		public override void OnDragOver(FileDropEventArgs fileDropEventArgs)
+		public override void OnMouseMove(MouseEventArgs mouseEvent)
 		{
-			foreach (string file in fileDropEventArgs.DroppedFiles)
+			if (mouseEvent.DragFiles?.Count > 0)
 			{
-				string extension = Path.GetExtension(file).ToUpper();
-				if ((extension != "" && MeshFileIo.ValidFileExtensions().Contains(extension)))
+				foreach (string file in mouseEvent.DragFiles)
 				{
-					fileDropEventArgs.AcceptDrop = true;
+					string extension = Path.GetExtension(file).ToUpper();
+					if ((extension != "" && MeshFileIo.ValidFileExtensions().Contains(extension)))
+					{
+						mouseEvent.AcceptDrop = true;
+					}
 				}
 			}
-			base.OnDragOver(fileDropEventArgs);
+
+			base.OnMouseMove(mouseEvent);
 		}
 
-		public override void OnDragDrop(FileDropEventArgs fileDropEventArgs)
+
+		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
-			foreach (string droppedFileName in fileDropEventArgs.DroppedFiles)
+			if(mouseEvent.DragFiles?.Count > 0)
 			{
-				string extension = Path.GetExtension(droppedFileName).ToUpper();
-				if ((extension != "" && MeshFileIo.ValidFileExtensions().Contains(extension)))
+				foreach (string droppedFileName in mouseEvent.DragFiles)
 				{
-					meshViewerWidget.LoadItemIntoScene(droppedFileName, MeshViewerWidget.CenterPartAfterLoad.DO);
-					break;
+					string extension = Path.GetExtension(droppedFileName).ToUpper();
+					if ((extension != "" && MeshFileIo.ValidFileExtensions().Contains(extension)))
+					{
+						meshViewerWidget.LoadItemIntoScene(droppedFileName, MeshViewerWidget.CenterPartAfterLoad.DO);
+						break;
+					}
 				}
 			}
-
-			base.OnDragDrop(fileDropEventArgs);
+			base.OnMouseUp(mouseEvent);
 		}
 
 		private Stopwatch totalDrawTime = new Stopwatch();
