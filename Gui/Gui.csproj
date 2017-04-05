@@ -175,7 +175,6 @@
     <Compile Include="FileDialogs\OpenFileDialogPrams.cs" />
     <Compile Include="FileDialogs\SaveFileDialogParams.cs" />
     <Compile Include="FileDialogs\SelectFolderDialogParams.cs" />
-    <Compile Include="FileDropEventArgs.cs" />
     <Compile Include="FlowLayoutWidget.cs" />
     <Compile Include="GroupBox.cs" />
     <Compile Include="Keyboard.cs" />

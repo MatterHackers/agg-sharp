@@ -101,78 +101,9 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private List<string> GetDroppedFiles(DragEventArgs drgevent)
-		{
-			List<string> droppedFiles = new List<string>();
-			Array droppedItems = ((IDataObject)drgevent.Data).GetData(DataFormats.FileDrop) as Array;
-			if (droppedItems != null)
-			{
-				foreach (object droppedItem in droppedItems)
-				{
-					string fileName = Path.GetFullPath((string)droppedItem);
-					droppedFiles.Add(fileName);
-				}
-			}
-
-			return droppedFiles;
-		}
-
-		private Point GetPosForAppWidget(DragEventArgs dragevent)
-		{
-			Point clientTop = PointToScreen(new Point(0, 0));
-			Point appWidgetPos = new Point(dragevent.X - clientTop.X, (int)aggAppWidget.height() - (dragevent.Y - clientTop.Y));
-
-			return appWidgetPos;
-		}
-
-		protected override void OnDragEnter(DragEventArgs dragevent)
-		{
-			List<string> droppedFiles = GetDroppedFiles(dragevent);
-
-			Point appWidgetPos = GetPosForAppWidget(dragevent);
-			FileDropEventArgs fileDropEventArgs = new FileDropEventArgs(droppedFiles, appWidgetPos.X, appWidgetPos.Y);
-			aggAppWidget.OnDragEnter(fileDropEventArgs);
-			if (fileDropEventArgs.AcceptDrop)
-			{
-				dragevent.Effect = DragDropEffects.Copy;
-			}
-
-			base.OnDragEnter(dragevent);
-		}
-
-		protected override void OnDragOver(DragEventArgs dragevent)
-		{
-			List<string> droppedFiles = GetDroppedFiles(dragevent);
-
-			Point appWidgetPos = GetPosForAppWidget(dragevent);
-			FileDropEventArgs fileDropEventArgs = new FileDropEventArgs(droppedFiles, appWidgetPos.X, appWidgetPos.Y);
-			aggAppWidget.OnDragOver(fileDropEventArgs);
-			if (fileDropEventArgs.AcceptDrop)
-			{
-				dragevent.Effect = DragDropEffects.Copy;
-			}
-			else
-			{
-				dragevent.Effect = DragDropEffects.None;
-			}
-
-			base.OnDragOver(dragevent);
-		}
-
-		protected override void OnDragDrop(DragEventArgs dragevent)
-		{
-			List<string> droppedFiles = GetDroppedFiles(dragevent);
-
-			Point appWidgetPos = GetPosForAppWidget(dragevent);
-			FileDropEventArgs fileDropEventArgs = new FileDropEventArgs(droppedFiles, appWidgetPos.X, appWidgetPos.Y);
-			aggAppWidget.OnDragDrop(fileDropEventArgs);
-
-			base.OnDragDrop(dragevent);
-		}
-
 		public void ReleaseOnIdleGuard()
 		{
-			lock(singleInvokeLock)
+			lock (singleInvokeLock)
 			{
 				processingOnIdle = false;
 			}
@@ -183,7 +114,7 @@ namespace MatterHackers.Agg.UI
 			if (aggAppWidget != null
 				&& !aggWidgetHasBeenClosed)
 			{
-				lock(singleInvokeLock)
+				lock (singleInvokeLock)
 				{
 					if (processingOnIdle)
 					{
@@ -194,7 +125,7 @@ namespace MatterHackers.Agg.UI
 					processingOnIdle = true;
 				}
 
-				if ( InvokeRequired)
+				if (InvokeRequired)
 				{
 					Invoke(new Action(() =>
 					{
@@ -202,7 +133,7 @@ namespace MatterHackers.Agg.UI
 						{
 							UiThread.InvokePendingActions();
 						}
-						catch(Exception invokeException)
+						catch (Exception invokeException)
 						{
 #if DEBUG
 							lock (singleInvokeLock)
@@ -316,7 +247,7 @@ namespace MatterHackers.Agg.UI
 			// Call on closing and check if we can close (a "do you want to save" might cancel the close. :).
 			bool cancelClose = false;
 
-			if(aggAppWidget.Children.Count > 0)
+			if (aggAppWidget.Children.Count > 0)
 			{
 				aggAppWidget.Children[0]?.OnClosing(out cancelClose);
 			}
@@ -370,6 +301,11 @@ namespace MatterHackers.Agg.UI
 			catch (Exception)
 			{
 			}
+		}
+
+		protected override void OnDragEnter(DragEventArgs dragevent)
+		{
+			base.OnDragEnter(dragevent);
 		}
 
 		bool aggIsRequestingClose = false;

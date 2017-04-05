@@ -1691,75 +1691,6 @@ namespace MatterHackers.Agg.UI
 		{
 		}
 
-		public virtual void OnDragEnter(FileDropEventArgs fileDropEventArgs)
-		{
-			if (PositionWithinLocalBounds(fileDropEventArgs.X, fileDropEventArgs.Y))
-			{
-				for (int i = Children.Count - 1; i >= 0; i--)
-				{
-					GuiWidget child = Children[i];
-					if (child.Visible)
-					{
-						double childX = fileDropEventArgs.X;
-						double childY = fileDropEventArgs.Y;
-						child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
-
-						FileDropEventArgs childDropEvent = new FileDropEventArgs(fileDropEventArgs.DroppedFiles, childX, childY);
-						child.OnDragEnter(childDropEvent);
-						if (childDropEvent.AcceptDrop)
-						{
-							fileDropEventArgs.AcceptDrop = true;
-						}
-					}
-				}
-			}
-		}
-
-		public virtual void OnDragOver(FileDropEventArgs fileDropEventArgs)
-		{
-			if (PositionWithinLocalBounds(fileDropEventArgs.X, fileDropEventArgs.Y))
-			{
-				for (int i = Children.Count - 1; i >= 0; i--)
-				{
-					GuiWidget child = Children[i];
-					if (child.Visible)
-					{
-						double childX = fileDropEventArgs.X;
-						double childY = fileDropEventArgs.Y;
-						child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
-
-						FileDropEventArgs childDropEvent = new FileDropEventArgs(fileDropEventArgs.DroppedFiles, childX, childY);
-						child.OnDragOver(childDropEvent);
-						if (childDropEvent.AcceptDrop)
-						{
-							fileDropEventArgs.AcceptDrop = true;
-						}
-					}
-				}
-			}
-		}
-
-		public virtual void OnDragDrop(FileDropEventArgs fileDropEventArgs)
-		{
-			// to do this we would need to implement OnDragOver (and debug it, it was a mess when I started it and don't care right now). // LBB 2013 04 30
-			if (PositionWithinLocalBounds(fileDropEventArgs.X, fileDropEventArgs.Y))
-			{
-				for (int i = Children.Count - 1; i >= 0; i--)
-				{
-					GuiWidget child = Children[i];
-					if (child.Visible)
-					{
-						double childX = fileDropEventArgs.X;
-						double childY = fileDropEventArgs.Y;
-						child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
-
-						FileDropEventArgs childDropEvent = new FileDropEventArgs(fileDropEventArgs.DroppedFiles, childX, childY);
-						child.OnDragDrop(childDropEvent);
-					}
-				}
-			}
-		}
-
 		public virtual void OnLayout(LayoutEventArgs layoutEventArgs)
 		{
 			//using (new PerformanceTimer("_LAST_", "Widget OnLayout"))
@@ -2659,6 +2590,7 @@ namespace MatterHackers.Agg.UI
 				if (child.Visible && child.Enabled && child.CanSelect)
 				{
 					child.OnMouseMove(childMouseEvent);
+					mouseEvent.AcceptDrop |= childMouseEvent.AcceptDrop;
 					if (child.UnderMouseState != UnderMouseState.NotUnderMouse)
 					{
 						mouseMoveEventHasBeenAcceptedByOther = true;
