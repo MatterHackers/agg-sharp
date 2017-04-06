@@ -12,6 +12,7 @@ namespace MatterHackers.Agg.GtkFileDialogs
 		public override bool OpenFileDialog(OpenFileDialogParams openParams, Action<OpenFileDialogParams> callback)
 		{
 			WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = true;
+			Gtk.Application.Init();
 
 			Gtk.FileChooserDialog fc =
 				new Gtk.FileChooserDialog(openParams.Title,
@@ -32,7 +33,9 @@ namespace MatterHackers.Agg.GtkFileDialogs
 			}
 			fc.AddFilter(filter);
 
-			Gtk.Application.Init();
+			// fc.Show();
+			// fc.Present();
+			fc.KeepAbove = true;
 
 			if (fc.Run() == (int)ResponseType.Accept)
 			{
@@ -62,6 +65,7 @@ namespace MatterHackers.Agg.GtkFileDialogs
 		public override bool SelectFolderDialog(SelectFolderDialogParams folderParams, Action<SelectFolderDialogParams> callback)
 		{
 			WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = true;
+			Gtk.Application.Init();
 
 			Gtk.FileChooserDialog fc =
 				new Gtk.FileChooserDialog(folderParams.Description,
@@ -70,7 +74,7 @@ namespace MatterHackers.Agg.GtkFileDialogs
 					"Cancel", ResponseType.Cancel,
 					"Open", ResponseType.Accept);
 
-			Gtk.Application.Init();
+			fc.KeepAbove = true;
 
 			if (fc.Run() == (int)ResponseType.Accept)
 			{
@@ -94,6 +98,7 @@ namespace MatterHackers.Agg.GtkFileDialogs
 		public override bool SaveFileDialog(SaveFileDialogParams saveParams, Action<SaveFileDialogParams> callback)
 		{
 			WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = true;
+			Gtk.Application.Init();
 
 			Gtk.FileChooserDialog fc = 
 				new Gtk.FileChooserDialog(saveParams.Title,
@@ -114,7 +119,7 @@ namespace MatterHackers.Agg.GtkFileDialogs
 			fc.CurrentName = saveParams.FileName + extensions[0].TrimStart('*');
 			fc.SetCurrentFolder(saveParams.InitialDirectory);
 
-			Gtk.Application.Init();
+			fc.KeepAbove = true;
 
 			if (fc.Run() == (int)ResponseType.Accept)
 			{
