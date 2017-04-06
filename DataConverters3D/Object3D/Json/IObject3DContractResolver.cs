@@ -40,6 +40,8 @@ namespace MatterHackers.DataConverters3D
 
 		protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
 		{
+			// Conditionally serialize .Children only if .MeshPath is empty. Currently having a Mesh precludes having children - looks like a 
+			// feature for AMF that needs to be reconsidered or constrained to specific scenarios
 			JsonProperty property = base.CreateProperty(member, memberSerialization);
 			if (property.PropertyName == "Children" && IObject3DType.IsAssignableFrom(property.DeclaringType))
 			{
