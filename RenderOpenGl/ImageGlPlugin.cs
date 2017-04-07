@@ -259,7 +259,7 @@ namespace MatterHackers.RenderOpenGl
 							ImageBuffer tempImage = new ImageBuffer(sourceImage.Width / 2, sourceImage.Height / 2);
 							tempImage.NewGraphics2D().Render(sourceImage, 0, 0, 0, .5, .5);
 							int mipLevel = 1;
-							while (sourceImage.Width > 1 && sourceImage.Height > 1)
+							while (sourceImage.Width > 1 || sourceImage.Height > 1)
 							{
 								GL.TexImage2D(TextureTarget.Texture2D, mipLevel++, PixelInternalFormat.Rgba, tempImage.Width, tempImage.Height,
 									0, PixelFormat.Rgba, PixelType.UnsignedByte, tempImage.GetBuffer());
