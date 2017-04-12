@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Linq;
-using System.Text;
 
 namespace MatterHackers.Agg
 {
@@ -126,34 +124,62 @@ namespace MatterHackers.Agg
 			return factoryList;
 		}
 #endif
+		static Dictionary<Assembly, List<Type>> AssemblyAndTypes;
 
 		public List<BaseClassToFind> FindAndAddPlugins(string searchDirectory)
 		{
 			List<BaseClassToFind> factoryList = new List<BaseClassToFind>();
 			if (Directory.Exists(searchDirectory))
 			{
-				//string[] files = Directory.GetFiles(searchDirectory, "*_HalFactory.dll");
-				string[] dllFiles = Directory.GetFiles(searchDirectory, "*.dll");
-				string[] exeFiles = Directory.GetFiles(searchDirectory, "*.exe");
+				if(AssemblyAndTypes == null)
+				{
+					AssemblyAndTypes = new Dictionary<Assembly, List<Type>>();
 
-				List<string> allFiles = new List<string>();
-				allFiles.AddRange(dllFiles);
-				allFiles.AddRange(exeFiles);
-				string[] files = allFiles.ToArray();
+					//string[] files = Directory.GetFiles(searchDirectory, "*_HalFactory.dll");
+					string[] dllFiles = Directory.GetFiles(searchDirectory, "*.dll");
+					string[] exeFiles = Directory.GetFiles(searchDirectory, "*.exe");
 
-				foreach (string file in files)
+					List<string> allFiles = new List<string>();
+					allFiles.AddRange(dllFiles);
+					allFiles.AddRange(exeFiles);
+					string[] files = allFiles.ToArray();
+
+					foreach (var file in files)
+					{
+						try
+						{
+							Assembly assembly = Assembly.LoadFile(file);
+
+							AssemblyAndTypes.Add(assembly, new List<Type>());
+
+							foreach (var type in assembly.GetTypes())
+							{
+								if (type == null || !type.IsClass || !type.IsPublic)
+								{
+									continue;
+								}
+
+								AssemblyAndTypes[assembly].Add(type);
+							}
+						}
+						catch (ReflectionTypeLoadException)
+						{
+						}
+						catch (BadImageFormatException)
+						{
+						}
+						catch (NotSupportedException)
+						{
+						}
+					}
+				}
+
+				foreach (var keyValue in AssemblyAndTypes)
 				{
 					try
 					{
-						Assembly assembly = Assembly.LoadFile(file);
-
-						foreach (Type type in assembly.GetTypes())
+						foreach (var type in keyValue.Value)
 						{
-							if (type == null || !type.IsClass || !type.IsPublic)
-							{
-								continue;
-							}
-
 							if (type.BaseType == typeof(BaseClassToFind))
 							{
 								factoryList.Add((BaseClassToFind)Activator.CreateInstance(type));
