@@ -129,9 +129,8 @@ namespace MatterHackers.Agg.Image
 			return destImage;
 		}
 
-		public ImageBuffer(int width, int height)
+		public ImageBuffer(int width, int height, int bitsPerPixel = 32)
 		{
-			int bitsPerPixel = 32;
 			Allocate(width, height, width* (bitsPerPixel / 8), bitsPerPixel);
 			SetRecieveBlender(new BlenderBGRA());
 		}

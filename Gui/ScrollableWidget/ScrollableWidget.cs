@@ -168,10 +168,10 @@ namespace MatterHackers.Agg.UI
 			return true;
 		}
 
-		bool haveScrolledTooFar = false;
+		bool mouseEventIsTouchScrolling = false;
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
 		{
-			haveScrolledTooFar = false;
+			mouseEventIsTouchScrolling = false;
 			mouseDownY = mouseEvent.Y;
 			mouseDownOnScrollArea = true;
 			scrollOnDownY = ScrollPosition.y;
@@ -193,8 +193,8 @@ namespace MatterHackers.Agg.UI
 			if (ScrollPosition.y < scrollOnDownY - 10
 				|| ScrollPosition.y > scrollOnDownY + 10)
 			{
-				// If we have ever scrolled too far remember not to pass a valid up click
-				haveScrolledTooFar = true;
+				// If touch is enabled and we've scrolled more than 10 pixels, update to suppress child clicks
+				mouseEventIsTouchScrolling = true;
 			}
 
 			base.OnMouseMove(mouseEvent);
@@ -203,9 +203,11 @@ namespace MatterHackers.Agg.UI
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
 			mouseDownOnScrollArea = false;
-			if (haveScrolledTooFar)
+			if (mouseEventIsTouchScrolling 
+				&& PositionWithinLocalBounds(mouseEvent.Position.x, mouseEvent.Position.y))
 			{
-				base.OnMouseUp(new MouseEventArgs(mouseEvent, -10000, -10000));
+				// Suppress child clicks by sending MouseUp coordinates that are outside our bounds
+				base.OnMouseUp(new MouseEventArgs(mouseEvent, double.MinValue, double.MinValue));
 			}
 			else
 			{

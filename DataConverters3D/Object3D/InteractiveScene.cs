@@ -106,12 +106,7 @@ namespace MatterHackers.MeshVisualizer
 				}
 
 				// Serialize the scene to disk using a modified Json.net pipeline with custom ContractResolvers and JsonConverters
-				File.WriteAllText(
-					mcxPath, 
-					JsonConvert.SerializeObject(
-						this, 
-						Formatting.Indented, 
-						new JsonSerializerSettings { ContractResolver = new IObject3DContractResolver() }));
+				File.WriteAllText(mcxPath, this.ToJson());
 			}
 			catch (Exception ex)
 			{
