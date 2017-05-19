@@ -874,8 +874,8 @@ namespace MatterHackers.GCodeVisualizer
 		public override double GetFilamentCubicMm(double filamentDiameterMm)
 		{
 			double filamentUsedMm = GetFilamentUsedMm(filamentDiameterMm);
-			double fillamentRadius = filamentDiameterMm / 2;
-			double areaSquareMm = (fillamentRadius * fillamentRadius) * Math.PI;
+			double filamentRadius = filamentDiameterMm / 2;
+			double areaSquareMm = (filamentRadius * filamentRadius) * Math.PI;
 
 			return areaSquareMm * filamentUsedMm;
 		}

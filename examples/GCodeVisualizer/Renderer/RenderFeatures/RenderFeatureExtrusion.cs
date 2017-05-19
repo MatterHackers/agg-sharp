@@ -47,8 +47,8 @@ namespace MatterHackers.GCodeVisualizer
 			: base(start, end, extruderIndex, travelSpeed)
 		{
 			this.color = color;
-            double fillamentRadius = filamentDiameterMm / 2;
-			double areaSquareMm = (fillamentRadius * fillamentRadius) * Math.PI;
+            double filamentRadius = filamentDiameterMm / 2;
+			double areaSquareMm = (filamentRadius * filamentRadius) * Math.PI;
 
 			this.extrusionVolumeMm3 = (float)(areaSquareMm * totalExtrusionMm);
 			this.layerHeight = (float)layerHeight;

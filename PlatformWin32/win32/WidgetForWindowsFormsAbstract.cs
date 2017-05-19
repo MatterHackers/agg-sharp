@@ -225,7 +225,14 @@ namespace MatterHackers.Agg.UI
 				windowsFormsWindow.Top = mainBounds.Y + mainBounds.Height / 2 - (int)newItemBounds.Height / 2;
 			}
 
-			WindowsFormsWindow.ShowDialog();
+			if (mainWindowsFormsWindow != WindowsFormsWindow)
+			{
+				WindowsFormsWindow.ShowDialog(mainWindowsFormsWindow);
+			}
+			else
+			{
+				WindowsFormsWindow.ShowDialog();
+			}
 		}
 
 		public override void Run()

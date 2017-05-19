@@ -262,7 +262,7 @@ namespace MatterHackers.PolygonPathing
 							{
 								var point1 = ObjectToScreen(polygon[i]);
 								var point2 = ObjectToScreen(polygon[i + 1]);
-								graphics2D.Line(point1.X, point1.Y, point2.X, point2.Y, new RGBA_Bytes(RGBA_Bytes.Black, 64), 3);
+								graphics2D.Line(point1.X + .5, point1.Y + .5, point2.X + .5, point2.Y +.5, new RGBA_Bytes(RGBA_Bytes.Black, 64), 3);
 							}
 						}
 					}
@@ -537,6 +537,10 @@ namespace MatterHackers.PolygonPathing
 						// Length of this segment (start->end) 15257.
 						//startOverride = new MSIntPoint(119160, 104727); endOverride = new MSIntPoint(111711, 91412);
 						//TestSinglePathIsInside(polyPath, new IntPoint(119160, 104727), new IntPoint(111711, 91412));
+
+						// this is a test part for thin edges
+						polyPath = "x: 0, y: 0, z: 0, width: 0,x: 5000, y: 0, z: 0, width: 0,x: 5000, y: 10000, z: 0, width: 0,x: 0, y: 10000, z: 0, width: 0,x: 0, y: 6000, z: 0, width: 0,x: 4900, y: 9900, z: 0, width: 0,x: 4900, y: 100, z: 0, width: 0,x: 0, y: 4000, z: 0, width: 0,";
+						polyPath = "x: 0, y: 0, x: 5000, y: 0, x: 5000, y: 10000, x: 0, y: 10000, x: 0, y: 6000, x: 4900, y: 9900, x: 4900, y: 100, x: 0, y: 4000,";
 
 						directPolygons = MSClipperLib.CLPolygonsExtensions.CreateFromString(polyPath);
 					}
