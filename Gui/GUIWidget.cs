@@ -3056,6 +3056,28 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
+		/// Returns all children of the current GuiWiget recursively matching the given type
+		/// </summary>
+		/// <typeparam name="T">The type filter</typeparam>
+		/// <param name="widget">The context widget</param>
+		/// <returns>All matching child widgets</returns>
+		public static IEnumerable<T> ChildrenRecursive<T>(this GuiWidget widget) where T : GuiWidget
+		{
+			foreach(var child in widget.Children)
+			{
+				foreach(var childChild in child.ChildrenRecursive<T>())
+				{
+					yield return childChild;
+				}
+
+				if(child.GetType() == typeof(T))
+				{
+					yield return (T)child;
+				}
+			}
+		}
+
+		/// <summary>
 		/// Returns all ancestors of the current GuiWidget matching the given type
 		/// </summary>
 		/// <typeparam name="T">The type filter</typeparam>
