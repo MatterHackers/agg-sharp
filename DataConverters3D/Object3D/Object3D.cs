@@ -37,6 +37,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace MatterHackers.DataConverters3D
 {
@@ -98,12 +99,12 @@ namespace MatterHackers.DataConverters3D
 
 		public static IObject3D Load(string meshPath, Dictionary<string, IObject3D> itemCache = null, ReportProgressRatio progress = null)
 		{
-			if(string.IsNullOrEmpty(meshPath) || !File.Exists(meshPath))
+			if (string.IsNullOrEmpty(meshPath) || !File.Exists(meshPath))
 			{
 				return null;
 			}
 
-			if(itemCache == null)
+			if (itemCache == null)
 			{
 				itemCache = new Dictionary<string, IObject3D>();
 			}
@@ -113,29 +114,55 @@ namespace MatterHackers.DataConverters3D
 			// Try to pull the item from cache
 			if (itemCache == null || !itemCache.TryGetValue(meshPath, out loadedItem) || loadedItem == null)
 			{
-				// Otherwise, load it up
-				bool isMcxFile = Path.GetExtension(meshPath) == ".mcx";
-				if (isMcxFile)
+				using (var stream = File.OpenRead(meshPath))
 				{
-					// Load the meta file and convert MeshPath links into objects
-					loadedItem = JsonConvert.DeserializeObject<Object3D>(File.ReadAllText(meshPath));
-					loadedItem.LoadMeshLinks(itemCache, progress);
-				}
-				else
-				{
-					loadedItem = MeshFileIo.Load(meshPath, progress);
-				}
+					string extension = Path.GetExtension(meshPath).ToLower();
+					
+					loadedItem = Load(stream, extension, itemCache, progress);
 
-				if (itemCache != null && !isMcxFile)
-				{
-					itemCache[meshPath] = loadedItem;
+					// Cache loaded assets
+					if (itemCache != null 
+						&& extension != ".mcx"
+						&& loadedItem != null)
+					{
+						itemCache[meshPath] = loadedItem;
+					}
 				}
 			}
 			else
 			{
-				// TODO: Clone might be unnecessary... What about just invalidating the TraceData!!!!!
+				// TODO: Clone seems unnecessary... Review driving requirements
 				loadedItem = loadedItem?.Clone();
 			}
+
+			return loadedItem;
+		}
+
+		public static IObject3D Load(Stream stream, string extension, Dictionary<string, IObject3D> itemCache = null, ReportProgressRatio progress = null)
+		{
+			IObject3D loadedItem = null;
+
+			bool isMcxFile = extension == ".mcx";
+			if (isMcxFile)
+			{
+				string json = new StreamReader(stream).ReadToEnd();
+
+				// Load the meta file and convert MeshPath links into objects
+				loadedItem = JsonConvert.DeserializeObject<Object3D>(json);
+				loadedItem.LoadMeshLinks(itemCache, progress);
+			}
+			else
+			{
+				loadedItem = MeshFileIo.Load(stream, extension, progress);
+			}
+
+			// TODO: Stream loaded content isn't cached
+			// TODO: Consider Mesh cache by SHA rather than file path, doing so would allow caching stream loaded content and would simply need SHA serialized at Scene persist
+			/*
+			if (itemCache != null && !isMcxFile)
+			{
+				itemCache[meshPath] = loadedItem;
+			} */
 
 			return loadedItem;
 		}
@@ -143,6 +170,7 @@ namespace MatterHackers.DataConverters3D
 		// TODO - first attempt at deep clone
 		public IObject3D Clone()
 		{
+			// TODO: This technique loses concrete types, seems invalid
 			return new Object3D()
 			{
 				ItemType = this.ItemType,
@@ -243,6 +271,41 @@ namespace MatterHackers.DataConverters3D
 
 				return hash;
 			}
+		}
+
+		public string ComputeSha1()
+		{
+			return ComputeSha1(this.ToJson());
+		}
+
+		private string ComputeSha1(string json)
+		{
+			// SHA1 value is based on UTF8 encoded file contents
+			using (var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+			{
+				return GenerateSha1(memoryStream);
+			}
+		}
+
+		private string GenerateSha1(Stream stream)
+		{
+			// var timer = Stopwatch.StartNew();
+			using (var sha1 = System.Security.Cryptography.SHA1.Create())
+			{
+				byte[] hash = sha1.ComputeHash(stream);
+				string SHA1 = BitConverter.ToString(hash).Replace("-", String.Empty);
+
+				// Console.WriteLine("{0} {1} {2}", SHA1, timer.ElapsedMilliseconds, filePath);
+				return SHA1;
+			}
+		}
+
+		public string ToJson()
+		{
+			return JsonConvert.SerializeObject(
+						this,
+						Formatting.Indented,
+						new JsonSerializerSettings { ContractResolver = new IObject3DContractResolver() });
 		}
 	}
 }
