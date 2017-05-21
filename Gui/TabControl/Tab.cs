@@ -95,7 +95,7 @@ namespace MatterHackers.Agg.UI
 		public Tab(string tabName, GuiWidget normalWidget, GuiWidget hoverWidget, GuiWidget pressedWidget,
 			TabPage tabPage)
 		{
-			base.Name = tabName;
+			this.Name = tabName;
 			this.normalWidget = normalWidget;
 			this.hoverWidget = hoverWidget;
 			this.selectedWidget = pressedWidget;
