@@ -61,6 +61,9 @@ namespace MatterHackers.DataConverters3D
 					//return AmfProcessing.Load(fileStream, reportProgress);
 					return AmfDocument.Load(fileStream, reportProgress, source);
 
+				case ".OBJ":
+					//return ObjProcessing.Load(fileStream, reportProgress);
+
 				default:
 					return null;
 			}
@@ -128,7 +131,7 @@ namespace MatterHackers.DataConverters3D
 
 					case ".AMF":
 						outputInfo.ReportProgress = reportProgress;
-						return AmfProcessing.Save(meshGroupsToSave, meshPathAndFileName, outputInfo);
+						return AmfDocument.Save(meshGroupsToSave, meshPathAndFileName, outputInfo);
 
 					default:
 						return false;
@@ -193,7 +196,7 @@ namespace MatterHackers.DataConverters3D
 					return StlProcessing.GetEstimatedMemoryUse(fileLocation);
 
 				case ".AMF":
-					return AmfProcessing.GetEstimatedMemoryUse(fileLocation);
+					return AmfDocument.GetEstimatedMemoryUse(fileLocation);
 			}
 
 			return 0;
