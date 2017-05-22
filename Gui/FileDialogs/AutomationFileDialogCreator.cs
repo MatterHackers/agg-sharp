@@ -57,7 +57,8 @@ namespace MatterHackers.Agg.UI
 			{
 				VAnchor = VAnchor.ParentCenter,
 				HAnchor = HAnchor.ParentLeftRight,
-				Margin = new BorderDouble(30, 15)
+				Margin = new BorderDouble(30, 15),
+				Name = "Automation Dialog TextEdit"
 			};
 			fileNameInput.EnterPressed += (s, e) => systemWindow.CloseOnIdle();
 			systemWindow.AddChild(fileNameInput);
