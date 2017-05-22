@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 
 namespace MatterHackers.Agg
@@ -149,9 +148,10 @@ namespace MatterHackers.Agg
 					{
 						try
 						{
-							Assembly assembly = Assembly.LoadFile(file);
+							var assembly = Assembly.LoadFile(file);
+							var assemblyTypeList = new List<Type>();
 
-							AssemblyAndTypes.Add(assembly, new List<Type>());
+							AssemblyAndTypes.Add(assembly, assemblyTypeList);
 
 							foreach (var type in assembly.GetTypes())
 							{
@@ -160,7 +160,7 @@ namespace MatterHackers.Agg
 									continue;
 								}
 
-								AssemblyAndTypes[assembly].Add(type);
+								assemblyTypeList.Add(type);
 							}
 						}
 						catch (ReflectionTypeLoadException)
@@ -179,9 +179,12 @@ namespace MatterHackers.Agg
 				{
 					try
 					{
+						Type targetType = typeof(BaseClassToFind);
+
 						foreach (var type in keyValue.Value)
 						{
-							if (type.BaseType == typeof(BaseClassToFind))
+							if (targetType.IsInterface && targetType.IsAssignableFrom(type) 
+								|| type.BaseType == typeof(BaseClassToFind))
 							{
 								factoryList.Add((BaseClassToFind)Activator.CreateInstance(type));
 							}

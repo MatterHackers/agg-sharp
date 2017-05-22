@@ -125,10 +125,12 @@ namespace MatterHackers.GuiAutomation
 
 		public bool LeftButtonDown { get; private set; }
 
+		private long lastMouseDownMs = UiThread.CurrentTimerMs;
+
+		private int clickCount;
+
 		public void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo)
 		{
-			// figure out where this is on our agg windows
-			// for now only send mouse events to the top most window
 			foreach (var systemWindow in SystemWindow.AllOpenSystemWindows)
 			{
 				Point2D windowPosition = AutomationRunner.ScreenToSystemWindow(currentMousePosition, systemWindow);
@@ -141,20 +143,35 @@ namespace MatterHackers.GuiAutomation
 						// send it to the window
 						if (LeftButtonDown)
 						{
-							MouseEventArgs aggEvent = new MouseEventArgs(mouseButtons, 0, windowPosition.x, windowPosition.y, 0);
-							UiThread.RunOnIdle(() => systemWindow.OnMouseMove(aggEvent));
+							UiThread.RunOnIdle(() =>
+							{
+								systemWindow.OnMouseMove(new MouseEventArgs(mouseButtons, 0, windowPosition.x, windowPosition.y, 0));
+							});
 						}
 						else
 						{
-							MouseEventArgs aggEvent = new MouseEventArgs(mouseButtons, 1, windowPosition.x, windowPosition.y, 0);
-							UiThread.RunOnIdle(() => systemWindow.OnMouseDown(aggEvent));
+							if (lastMouseDownMs > UiThread.CurrentTimerMs - 200)
+							{
+								clickCount++;
+							}
+							else
+							{
+								clickCount = 1;
+							}
+
+							UiThread.RunOnIdle(() =>
+							{
+								systemWindow.OnMouseDown(new MouseEventArgs(mouseButtons, clickCount, windowPosition.x, windowPosition.y, 0));
+							});
 						}
 					}
 					else if (dwFlags == NativeMethods.MOUSEEVENTF_LEFTUP)
 					{
-						MouseEventArgs aggEvent = new MouseEventArgs(mouseButtons, 0, windowPosition.x, windowPosition.y, 0);
 						// send it to the window
-						UiThread.RunOnIdle(() => systemWindow.OnMouseUp(aggEvent));
+						UiThread.RunOnIdle(() =>
+						{
+							systemWindow.OnMouseUp(new MouseEventArgs(mouseButtons, 0, windowPosition.x, windowPosition.y, 0));
+						});
 					}
 					else if (dwFlags == NativeMethods.MOUSEEVENTF_RIGHTDOWN)
 					{
@@ -176,6 +193,11 @@ namespace MatterHackers.GuiAutomation
 			}
 
 			this.LeftButtonDown = (dwFlags == NativeMethods.MOUSEEVENTF_LEFTDOWN);
+
+			if (this.LeftButtonDown)
+			{
+				lastMouseDownMs = UiThread.CurrentTimerMs;
+			}
 		}
 
 		private MouseButtons MapButtons(int cButtons)

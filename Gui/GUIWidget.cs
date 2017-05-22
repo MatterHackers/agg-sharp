@@ -239,7 +239,7 @@ namespace MatterHackers.Agg.UI
 
 		private RGBA_Bytes backgroundColor = new RGBA_Bytes();
 
-		public RGBA_Bytes BackgroundColor
+		public virtual RGBA_Bytes BackgroundColor
 		{
 			get { return backgroundColor; }
 			set

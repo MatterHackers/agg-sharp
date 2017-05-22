@@ -38,6 +38,8 @@ namespace MatterHackers.Agg.UI
 
 		public bool ForcePixelAlignment { get; set; }
 
+		public bool AutoResize { get; set; } = true;
+
 		public ImageWidget(int width, int height)
 		{
 			ForcePixelAlignment = true;
@@ -56,8 +58,11 @@ namespace MatterHackers.Agg.UI
 
 		private void ImageChanged(object s, EventArgs e)
 		{
-			this.Width = image.Width;
-			this.Height = image.Height;
+			if (AutoResize)
+			{
+				this.Width = image.Width;
+				this.Height = image.Height;
+			}
 			Invalidate();
 		}
 
@@ -76,7 +81,10 @@ namespace MatterHackers.Agg.UI
 				}
 				image = value;
 				image.ImageChanged += ImageChanged;
-				LocalBounds = new RectangleDouble(0, 0, image.Width, image.Height);
+				if (AutoResize)
+				{
+					LocalBounds = new RectangleDouble(0, 0, image.Width, image.Height);
+				}
 			}
 		}
 
