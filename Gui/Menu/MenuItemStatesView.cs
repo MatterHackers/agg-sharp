@@ -39,14 +39,14 @@ namespace MatterHackers.Agg.UI
 			base.OnParentChanged(ex);
 		}
 
-		public override void SendToChildren(object objectToRout)
+		public override void SendToChildren(object objectToRoute)
 		{
-			if (objectToRout as MenuItem.MenuClosedMessage != null)
+			if (objectToRoute is MenuItem.MenuClosedMessage)
 			{
 				this.Highlighted = false;
 			}
 
-			base.SendToChildren(objectToRout);
+			base.SendToChildren(objectToRoute);
 		}
 
 		public bool Highlighted
@@ -141,14 +141,14 @@ namespace MatterHackers.Agg.UI
 			base.OnParentChanged(ex);
 		}
 
-		public override void SendToChildren(object objectToRout)
+		public override void SendToChildren(object objectToRoute)
 		{
-			if (objectToRout as MenuItem.MenuClosedMessage != null)
+			if (objectToRoute is MenuItem.MenuClosedMessage)
 			{
 				this.Highlighted = false;
 			}
 
-			base.SendToChildren(objectToRout);
+			base.SendToChildren(objectToRoute);
 		}
 
 		public bool Highlighted

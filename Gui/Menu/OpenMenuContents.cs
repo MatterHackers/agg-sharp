@@ -1,47 +1,84 @@
-﻿using MatterHackers.Agg.VertexSource;
-using MatterHackers.VectorMath;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
+using MatterHackers.Agg.VertexSource;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
-	internal class OpenMenuContents : GuiWidget
+	internal class PopupMenu : PopupWidget
 	{
-		private bool alignToRightEdge;
-		private Direction direction;
-		private GuiWidget widgetRelativeTo;
-		private RGBA_Bytes borderColor;
-		private int borderWidth;
-		private Vector2 openOffset;
-		private ScrollableWidget scrollingWindow;
-
 		private List<MenuItem> MenuItems;
 
-		internal OpenMenuContents(ObservableCollection<MenuItem> MenuItems, GuiWidget widgetRelativeTo, Vector2 openOffset, Direction direction, RGBA_Bytes backgroundColor, RGBA_Bytes borderColor, int borderWidth, double maxHeight, bool alignToRightEdge)
+		public PopupMenu(IEnumerable<MenuItem> MenuItems, GuiWidget widgetRelativeTo, Vector2 openOffset, Direction direction, double maxHeight, bool alignToRightEdge)
+			: base(MenuItems, widgetRelativeTo, openOffset, direction, maxHeight, alignToRightEdge)
 		{
 			this.Name = "_OpenMenuContents";
 			this.MenuItems = new List<MenuItem>();
 			this.MenuItems.AddRange(MenuItems);
+		}
+
+		internal override void CloseMenu()
+		{
+			if (this.Parent != null)
+			{
+				foreach (MenuItem item in MenuItems)
+				{
+					item.Parent.RemoveChild(item);
+				}
+			}
+
+			base.CloseMenu();
+		}
+
+		public override void OnClosed(ClosedEventArgs e)
+		{
+			foreach (MenuItem menuItem in MenuItems)
+			{
+				menuItem.SendToChildren(new MenuItem.MenuClosedMessage());
+			}
+
+			base.OnClosed(e);
+		}
+	}
+
+	public class PopupWidget : GuiWidget
+	{
+		public RGBA_Bytes BorderColor { get; set; }
+
+		public int BorderWidth { get; set; }
+
+		private bool alignToRightEdge;
+		private Direction direction;
+		private GuiWidget widgetRelativeTo;
+		
+		private Vector2 openOffset;
+		private ScrollableWidget scrollingWindow;
+
+		public PopupWidget(IEnumerable<GuiWidget> childrenToAdd, GuiWidget widgetRelativeTo, Vector2 openOffset, Direction direction, double maxHeight, bool alignToRightEdge)
+		{
 			this.alignToRightEdge = alignToRightEdge;
 			this.openOffset = openOffset;
-			this.borderWidth = borderWidth;
-			this.borderColor = borderColor;
-			this.BackgroundColor = backgroundColor;
 
 			this.direction = direction;
 			this.widgetRelativeTo = widgetRelativeTo;
 			scrollingWindow = new ScrollableWidget(true);
 			{
-				FlowLayoutWidget topToBottom = new FlowLayoutWidget(FlowDirection.TopToBottom)
+				var topToBottom = new FlowLayoutWidget(FlowDirection.TopToBottom)
 				{
 					Name = "_topToBottom",
 				};
-				foreach (MenuItem menu in MenuItems)
+
+				foreach (var widget in childrenToAdd)
 				{
-					menu.ClearRemovedFlag();
-					topToBottom.AddChild(menu);
-					menu.AllowClicks = AllowClickingItems;
+					var menu = widget as MenuItem;
+					menu?.ClearRemovedFlag();
+
+					topToBottom.AddChild(widget);
+
+					if (widget is MenuItem)
+					{
+						menu.AllowClicks = AllowClickingItems;
+					}
 				}
 
 				topToBottom.HAnchor = UI.HAnchor.ParentLeft | UI.HAnchor.FitToChildren;
@@ -72,8 +109,8 @@ namespace MatterHackers.Agg.UI
 				if (!widgetRefList.Contains(topParent))
 				{
 					widgetRefList.Add(topParent);
-					topParent.PositionChanged += new EventHandler(widgetRelativeTo_PositionChanged);
-					topParent.BoundsChanged += new EventHandler(widgetRelativeTo_PositionChanged);
+					topParent.PositionChanged += widgetRelativeTo_PositionChanged;
+					topParent.BoundsChanged += widgetRelativeTo_PositionChanged;
 				}
 
 				topParent = topParent.Parent;
@@ -114,11 +151,6 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnClosed(ClosedEventArgs e)
 		{
-			foreach (MenuItem menuItem in MenuItems)
-			{
-				menuItem.SendToChildren(new MenuItem.MenuClosedMessage());
-			}
-
 			UnbindCallbacks();
 			base.OnClosed(e);
 		}
@@ -136,9 +168,8 @@ namespace MatterHackers.Agg.UI
 		{
 			base.OnDraw(graphics2D);
 
-			RoundedRect outlineRect = new RoundedRect(LocalBounds, 0);
-			Stroke wideOutline = new Stroke(outlineRect, borderWidth * 2);
-			graphics2D.Render(wideOutline, borderColor);
+			var outline = new RoundedRect(LocalBounds, 0);
+			graphics2D.Render(new Stroke(outline, BorderWidth * 2), BorderColor);
 		}
 
 		bool firstTimeSizing = true;
@@ -167,12 +198,11 @@ namespace MatterHackers.Agg.UI
 
 				if (firstTimeSizing)
 				{
+					var minHeight = 25;
 					double distanceToWindowBottom = zero.y - Height;
 					if (distanceToWindowBottom < 0)
 					{
-						if (MenuItems.Count > 0 
-							&& MenuItems[0].Height > 10
-							&& Height + distanceToWindowBottom > MenuItems[0].Height * 3)
+						if (Height + distanceToWindowBottom > minHeight)
 						{
 							MakeMenuHaveScroll(Height + distanceToWindowBottom - 5);
 						}
@@ -237,15 +267,10 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseUp(mouseEvent);
 		}
 
-		internal void CloseMenu()
+		internal virtual void CloseMenu()
 		{
 			if (this.Parent != null)
 			{
-				foreach (MenuItem item in MenuItems)
-				{
-					item.Parent.RemoveChild(item);
-				}
-
 				this.Parent.RemoveChild(this);
 				this.Close();
 			}

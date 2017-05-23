@@ -2772,11 +2772,11 @@ namespace MatterHackers.Agg.UI
 			MouseLeave?.Invoke(this, mouseEvent);
 		}
 
-		public virtual void SendToChildren(object objectToRout)
+		public virtual void SendToChildren(object objectToRoute)
 		{
 			foreach (GuiWidget child in Children)
 			{
-				child.SendToChildren(objectToRout);
+				child.SendToChildren(objectToRoute);
 			}
 		}
 

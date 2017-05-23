@@ -103,7 +103,7 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseDown(mouseEvent);
 		}
 
-		internal OpenMenuContents DropDownContainer = null;
+		internal PopupMenu DropDownContainer = null;
 
 		protected virtual void ShowMenu()
 		{
@@ -112,7 +112,13 @@ namespace MatterHackers.Agg.UI
 				throw new Exception("You cannot show the menu on a Menu unless it has a parent (has been added to a GuiWidget).");
 			}
 
-			DropDownContainer = new OpenMenuContents(MenuItems, this, OpenOffset, MenuDirection, MenuItemsBackgroundColor, MenuItemsBorderColor, MenuItemsBorderWidth, maxHeight, AlignToRightEdge);
+			DropDownContainer = new PopupMenu(MenuItems, this, OpenOffset, MenuDirection, maxHeight, AlignToRightEdge)
+			{
+				BorderWidth = MenuItemsBorderWidth,
+				BorderColor = MenuItemsBorderColor,
+				BackgroundColor = MenuItemsBackgroundColor
+			};
+
 			DropDownContainer.Closed += DropListItems_Closed;
 			DropDownContainer.Focus();
 		}
@@ -134,7 +140,7 @@ namespace MatterHackers.Agg.UI
 
 		virtual protected void DropListItems_Closed(object sender, ClosedEventArgs e)
 		{
-			OpenMenuContents dropListItems = (OpenMenuContents)sender;
+			PopupMenu dropListItems = (PopupMenu)sender;
 			dropListItems.Closed -= DropListItems_Closed;
 			IsOpen = false;
 
