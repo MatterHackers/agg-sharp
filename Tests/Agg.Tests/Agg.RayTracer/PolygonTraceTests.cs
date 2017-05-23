@@ -28,17 +28,112 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg;
+using MatterHackers.Agg.OpenGlGui;
+using MatterHackers.DataConverters3D;
+using MatterHackers.PolygonMesh.Processors;
+using MatterHackers.RayTracer.Light;
+using MatterHackers.RayTracer.Traceable;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 
 namespace MatterHackers.RayTracer
 {
+	public static class AggTestUtilities
+	{
+		public static string ResolveProjectPath(this TestContext context, int stepsToProjectRoot, params string[] relativePathSteps)
+		{
+			string assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+			var allPathSteps = new List<string> { assemblyPath };
+			allPathSteps.AddRange(Enumerable.Repeat("..", stepsToProjectRoot));
+
+			if (relativePathSteps.Any())
+			{
+				allPathSteps.AddRange(relativePathSteps);
+			}
+
+			return Path.GetFullPath(Path.Combine(allPathSteps.ToArray()));
+		}
+	}
+
 	[TestFixture, Category("Agg.RayTracer")]
 	public class PolygonTraceTests
 	{
 		[Test, Category("WorkInProgress")]
 		public void RayBundleSameResultAsIndividualRays()
 		{
+		}
+
+		[Test]
+		public void TriangleMajorAxis()
+		{
+			var triangle0 = new TriangleShape(
+				new Vector3(-47.06726, 16.94526, 1.143421),
+				new Vector3(-30.66048, 39.52726, 1.143422),
+				new Vector3(-45.91038, 19.8672, 1.143422),
+				null);
+
+			Assert.AreEqual(2, triangle0.MajorAxis);
+
+			var triangle1 = new TriangleShape(
+				new Vector3(0, 1, 0),
+				new Vector3(0, 0, 1),
+				new Vector3(0, 0, 0),
+				null);
+
+			Assert.AreEqual(0, triangle1.MajorAxis);
+
+			var triangle2 = new TriangleShape(
+				new Vector3(1, 0, 0),
+				new Vector3(0, 0, 1),
+				new Vector3(0, 0, 0),
+				null);
+
+			Assert.AreEqual(1, triangle2.MajorAxis);
+		}
+
+		[Test]
+		public void CorrectRayOnCircle()
+		{
+			var testPartPath = TestContext.CurrentContext.ResolveProjectPath(4, "examples", "RayTracerTest");
+
+			var testPart = Path.Combine(testPartPath,  "circle_100x100_centered.stl");
+			PolygonMesh.Mesh simpleMesh = StlProcessing.Load(testPart);
+			var bvhCollection = MeshToBVH.Convert(simpleMesh);
+
+			var scene = new Scene();
+			scene.shapes.Add(bvhCollection);
+
+			RayTracer raytracer = new RayTracer()
+			{
+				AntiAliasing = AntiAliasing.None,
+				MultiThreaded = false,
+			};
+
+			int samples = 40;
+			var advance = MathHelper.Tau / samples;
+
+			TestSingleAngle(scene, raytracer, advance, 15);
+
+			for (int i = 0; i < samples; i++)
+			{
+				TestSingleAngle(scene, raytracer, advance, i);
+			}
+		}
+
+		private static void TestSingleAngle(Scene scene, RayTracer raytracer, double advance, int i)
+		{
+			var sampleXY = new Vector2(48, 0);
+			sampleXY.Rotate(advance * i);
+			Vector3 rayOrigin = new Vector3(sampleXY, 10);
+
+			Ray ray = new Ray(rayOrigin, -Vector3.UnitZ);
+			IntersectInfo primaryInfo = raytracer.TracePrimaryRay(ray, scene);
+			Assert.IsTrue(primaryInfo.hitType == IntersectionType.FrontFace, "allways have a hit");
 		}
 
 		[Test]

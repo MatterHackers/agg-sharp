@@ -26,7 +26,9 @@ SOFTWARE.
 
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Collections;
 
 namespace MatterHackers.VectorMath
 {
@@ -35,7 +37,7 @@ namespace MatterHackers.VectorMath
 	/// </summary>
 	[Serializable]
 	[StructLayout(LayoutKind.Sequential)]
-	public struct Vector3 : IEquatable<Vector3>
+	public struct Vector3 : IEquatable<Vector3>, IEnumerable<double>
 	{
 		#region Fields
 
@@ -117,6 +119,8 @@ namespace MatterHackers.VectorMath
 			y = v.y;
 			z = v.z;
 		}
+
+		
 
 		#endregion Constructors
 
@@ -1287,6 +1291,20 @@ namespace MatterHackers.VectorMath
 		public static double ComponentMin(Vector3 vector3)
 		{
 			return Math.Min(vector3.x, Math.Min(vector3.y, vector3.z));
+		}
+
+		public IEnumerator<double> GetEnumerator()
+		{
+			yield return x;
+			yield return y;
+			yield return z;
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			yield return x;
+			yield return y;
+			yield return z;
 		}
 	}
 }

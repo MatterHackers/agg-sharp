@@ -12,6 +12,8 @@ using MatterHackers.VectorMath;
 //-----------------------------------------------------------------------
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace MatterHackers.RayTracer
 {
@@ -24,7 +26,7 @@ namespace MatterHackers.RayTracer
 		Vector3Float aabbMinXYZ = Vector3Float.NegativeInfinity;
 		private RectangleFloat boundsOnMajorAxis = new RectangleFloat(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
 		private Vector3Float center;
-		private int majorAxis = 0;
+		public int MajorAxis { get; private set; } = 0;
 		private PlaneFloat plane;
 		private Vector3Float[] vertices = new Vector3Float[3];
 
@@ -37,30 +39,18 @@ namespace MatterHackers.RayTracer
 			vertices[0] = new Vector3Float(vertex0);
 			vertices[1] = new Vector3Float(vertex1);
 			vertices[2] = new Vector3Float(vertex2);
+
 			center = new Vector3Float((vertex0 + vertex1 + vertex2) / 3);
-			if (Math.Abs(planeNormal.x) > Math.Abs(planeNormal.y))
+
+			var normalLength = new Dictionary<double, int>()
 			{
-				if (Math.Abs(planeNormal.x) > Math.Abs(planeNormal.z))
-				{
-					// mostly facing x axis
-					majorAxis = 0;
-				}
-				else if (Math.Abs(planeNormal.y) > Math.Abs(planeNormal.z))
-				{
-					// mostly facing z
-					majorAxis = 2;
-				}
-			}
-			else if (Math.Abs(planeNormal.y) > Math.Abs(planeNormal.z))
-			{
-				// mostly facing y
-				majorAxis = 1;
-			}
-			else
-			{
-				// mostly facing z
-				majorAxis = 2;
-			}
+				[Math.Abs(planeNormal.x)] = 0,
+				[Math.Abs(planeNormal.y)] = 1,
+				[Math.Abs(planeNormal.z)] = 2,
+			};
+
+			MajorAxis = normalLength.OrderBy(x => x.Key).Last().Value;
+
 			for (int i = 0; i < 3; i++)
 			{
 				boundsOnMajorAxis.Left = Math.Min(vertices[i][xForMajorAxis], boundsOnMajorAxis.Left);
@@ -70,8 +60,8 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-		private int xForMajorAxis { get { return xMapping[majorAxis]; } }
-		private int yForMajorAxis { get { return yMapping[majorAxis]; } }
+		private int xForMajorAxis { get { return xMapping[MajorAxis]; } }
+		private int yForMajorAxis { get { return yMapping[MajorAxis]; } }
 		public override int FindFirstRay(RayBundle rayBundle, int rayIndexToStartCheckingFrom)
 		{
 			throw new NotImplementedException();
@@ -116,11 +106,11 @@ namespace MatterHackers.RayTracer
 					Vector3 hitPosition = ray.origin + ray.directionNormal * distanceToHit;
 
 					bool haveHitIn2D = false;
-					if (majorAxis == 0)
+					if (MajorAxis == 0)
 					{
 						haveHitIn2D = Check2DHitOnMajorAxis(hitPosition.y, hitPosition.z);
 					}
-					else if (majorAxis == 1)
+					else if (MajorAxis == 1)
 					{
 						haveHitIn2D = Check2DHitOnMajorAxis(hitPosition.x, hitPosition.z);
 					}

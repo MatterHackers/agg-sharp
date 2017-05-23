@@ -44,7 +44,7 @@ namespace MatterHackers.DataConverters3D
 	{
 		public static string ValidFileExtensions()
 		{
-			return ".STL;.AMF";
+			return ".STL;.AMF;.OBJ";
 		}
 
 		public static IObject3D Load(Stream fileStream, string fileExtension, ReportProgressRatio reportProgress = null, IObject3D source = null)
@@ -60,6 +60,9 @@ namespace MatterHackers.DataConverters3D
 				case ".AMF":
 					//return AmfProcessing.Load(fileStream, reportProgress);
 					return AmfDocument.Load(fileStream, reportProgress, source);
+
+				case ".OBJ":
+					return ObjSupport.Load(fileStream, reportProgress);
 
 				default:
 					return null;
@@ -128,7 +131,11 @@ namespace MatterHackers.DataConverters3D
 
 					case ".AMF":
 						outputInfo.ReportProgress = reportProgress;
-						return AmfProcessing.Save(meshGroupsToSave, meshPathAndFileName, outputInfo);
+						return AmfDocument.Save(meshGroupsToSave, meshPathAndFileName, outputInfo);
+
+					case ".QBJ":
+						outputInfo.ReportProgress = reportProgress;
+						return ObjSupport.Save(meshGroupsToSave, meshPathAndFileName, outputInfo);
 
 					default:
 						return false;
@@ -193,7 +200,10 @@ namespace MatterHackers.DataConverters3D
 					return StlProcessing.GetEstimatedMemoryUse(fileLocation);
 
 				case ".AMF":
-					return AmfProcessing.GetEstimatedMemoryUse(fileLocation);
+					return AmfDocument.GetEstimatedMemoryUse(fileLocation);
+
+				case ".OBJ":
+					throw new NotImplementedException();
 			}
 
 			return 0;
