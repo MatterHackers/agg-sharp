@@ -82,7 +82,7 @@ namespace MatterHackers.Agg.UI
 			base.OnDraw(graphics2D);
 		}
 
-		public TabControl(Orientation orientation = Orientation.Horizontal)
+		public TabControl(Orientation orientation = Orientation.Horizontal, GuiWidget separator = null)
 		{
 			AnchorAll();
 
@@ -91,6 +91,12 @@ namespace MatterHackers.Agg.UI
 			tabBar = new TabBar(FlowDirection.LeftToRight, tabPageArea);
 			
 			base.AddChild(tabBar);
+
+			if (separator != null)
+			{
+				base.AddChild(separator);
+			}
+
 			base.AddChild(tabPageArea);
 
 			tabPageArea.AnchorAll();
