@@ -9,12 +9,17 @@ namespace MatterHackers.Agg.UI
 	{
 		private List<MenuItem> MenuItems;
 
-		public PopupMenu(IEnumerable<MenuItem> MenuItems, GuiWidget widgetRelativeTo, Vector2 openOffset, Direction direction, double maxHeight, bool alignToRightEdge)
-			: base(MenuItems, widgetRelativeTo, openOffset, direction, maxHeight, alignToRightEdge)
+		public PopupMenu(IEnumerable<MenuItem> MenuItems, GuiWidget popupContent, GuiWidget widgetRelativeTo, Vector2 openOffset, Direction direction, double maxHeight, bool alignToRightEdge)
+			: base(popupContent, widgetRelativeTo, openOffset, direction, maxHeight, alignToRightEdge)
 		{
 			this.Name = "_OpenMenuContents";
 			this.MenuItems = new List<MenuItem>();
 			this.MenuItems.AddRange(MenuItems);
+
+			foreach (MenuItem menu in MenuItems)
+			{
+				menu.AllowClicks = AllowClickingItems;
+			}
 		}
 
 		internal override void CloseMenu()
@@ -54,39 +59,25 @@ namespace MatterHackers.Agg.UI
 		private Vector2 openOffset;
 		private ScrollableWidget scrollingWindow;
 
-		public PopupWidget(IEnumerable<GuiWidget> childrenToAdd, GuiWidget widgetRelativeTo, Vector2 openOffset, Direction direction, double maxHeight, bool alignToRightEdge)
+		private GuiWidget contentWidget;
+
+		public PopupWidget(GuiWidget contentWidget, GuiWidget widgetRelativeTo, Vector2 openOffset, Direction direction, double maxHeight, bool alignToRightEdge)
 		{
 			this.alignToRightEdge = alignToRightEdge;
 			this.openOffset = openOffset;
+			this.contentWidget = contentWidget;
 
 			this.direction = direction;
 			this.widgetRelativeTo = widgetRelativeTo;
 			scrollingWindow = new ScrollableWidget(true);
 			{
-				var topToBottom = new FlowLayoutWidget(FlowDirection.TopToBottom)
-				{
-					Name = "_topToBottom",
-				};
+				contentWidget.ClearRemovedFlag();
+				scrollingWindow.AddChild(contentWidget);
 
-				foreach (var widget in childrenToAdd)
-				{
-					var menu = widget as MenuItem;
-					menu?.ClearRemovedFlag();
-
-					topToBottom.AddChild(widget);
-
-					if (widget is MenuItem)
-					{
-						menu.AllowClicks = AllowClickingItems;
-					}
-				}
-
-				topToBottom.HAnchor = UI.HAnchor.ParentLeft | UI.HAnchor.FitToChildren;
-				topToBottom.VAnchor = UI.VAnchor.ParentBottom;
-				Width = topToBottom.Width;
-				Height = topToBottom.Height;
-
-				scrollingWindow.AddChild(topToBottom);
+				contentWidget.HAnchor = UI.HAnchor.ParentLeft | UI.HAnchor.FitToChildren;
+				contentWidget.VAnchor = UI.VAnchor.ParentBottom;
+				Width = contentWidget.Width;
+				Height = contentWidget.Height;
 			}
 
 			scrollingWindow.HAnchor = HAnchor.ParentLeftRight;
@@ -271,6 +262,9 @@ namespace MatterHackers.Agg.UI
 		{
 			if (this.Parent != null)
 			{
+				this.contentWidget?.Parent?.RemoveChild(this.contentWidget);
+				this.contentWidget.ClearRemovedFlag();
+
 				this.Parent.RemoveChild(this);
 				this.Close();
 			}

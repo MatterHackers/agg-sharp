@@ -112,7 +112,18 @@ namespace MatterHackers.Agg.UI
 				throw new Exception("You cannot show the menu on a Menu unless it has a parent (has been added to a GuiWidget).");
 			}
 
-			DropDownContainer = new PopupMenu(MenuItems, this, OpenOffset, MenuDirection, maxHeight, AlignToRightEdge)
+			var topToBottom = new FlowLayoutWidget(FlowDirection.TopToBottom)
+			{
+				Name = "_topToBottom",
+			};
+
+			foreach (MenuItem menu in MenuItems)
+			{
+				menu?.ClearRemovedFlag();
+				topToBottom.AddChild(menu);
+			}
+
+			DropDownContainer = new PopupMenu(MenuItems, topToBottom, this, OpenOffset, MenuDirection, maxHeight, AlignToRightEdge)
 			{
 				BorderWidth = MenuItemsBorderWidth,
 				BorderColor = MenuItemsBorderColor,

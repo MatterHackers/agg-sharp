@@ -120,7 +120,7 @@ namespace MatterHackers.MeshVisualizer
 			labelContainer.Selectable = false;
 
 			this.AddChild(labelContainer);
-	}
+		}
 
 		public event EventHandler LoadDone;
 
@@ -493,15 +493,6 @@ namespace MatterHackers.MeshVisualizer
 				partProcessingInfo.centeredInfoText.Text = string.Format("{0}\n'{1}'", "File not found on disk.", Path.GetFileName(itemPath));
 			}
 		}
-
-		//public override void OnClosed(ClosedEventArgs e)
-		//{
-		//	if (backgroundWorker != null)
-		//	{
-		//		backgroundWorker.CancelAsync();
-		//	}
-		//	base.OnClosed(e);
-		//}
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{

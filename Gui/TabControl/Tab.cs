@@ -44,8 +44,11 @@ namespace MatterHackers.Agg.UI
 			RGBA_Bytes normalTextColor, RGBA_Bytes normalBackgroundColor)
 			: base(internalTabName, new GuiWidget(), new GuiWidget(), new GuiWidget(), tabPageControledByTab)
 		{
-			AddText(tabPageControledByTab.Text, selectedWidget, selectedTextColor, selectedBackgroundColor, pointSize);
-			AddText(tabPageControledByTab.Text, normalWidget, normalTextColor, normalBackgroundColor, pointSize);
+			this.Padding = new BorderDouble(5, 0);
+			this.Margin = new BorderDouble(0, 0, 10, 0);
+
+			AddText(tabPageControledByTab.Text, selectedWidget, selectedTextColor, selectedBackgroundColor, pointSize, true);
+			AddText(tabPageControledByTab.Text, normalWidget, normalTextColor, normalBackgroundColor, pointSize, false);
 			//hoverWidget;
 
 			tabPageControledByTab.TextChanged += new EventHandler(tabPageControledByTab_TextChanged);
@@ -71,14 +74,18 @@ namespace MatterHackers.Agg.UI
 
 		public TextWidget tabTitle;
 
-		private void AddText(string tabText, GuiWidget widgetState, RGBA_Bytes textColor, RGBA_Bytes backgroundColor, double pointSize)
+		private void AddText(string tabText, GuiWidget widgetState, RGBA_Bytes textColor, RGBA_Bytes backgroundColor, double pointSize, bool isActive)
 		{
-			tabTitle = new TextWidget(tabText, pointSize: pointSize, textColor: textColor);
+			tabTitle = new TextWidget(tabText, pointSize: pointSize, textColor: textColor)
+			{
+				VAnchor = VAnchor.ParentCenter,
+			};
 			tabTitle.AutoExpandBoundsToText = true;
 			widgetState.AddChild(tabTitle);
 			widgetState.Selectable = false;
-			widgetState.SetBoundsToEncloseChildren();
 			widgetState.BackgroundColor = backgroundColor;
+
+			EnforceSizingAdornActive(widgetState, isActive);
 		}
 	}
 
@@ -147,5 +154,26 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public TabPage TabPage { get; }
+
+		protected static void EnforceSizingAdornActive(GuiWidget widgetState, bool isActive)
+		{
+			widgetState.Height = 40;
+			widgetState.Margin = 0;
+
+			if (isActive)
+			{
+				// Adorn the active tab with a underline bar
+				widgetState.AddChild(new GuiWidget()
+				{
+					HAnchor = HAnchor.ParentLeftRight,
+					Height = 3,
+					BackgroundColor = ActiveTheme.Instance.PrimaryAccentColor,
+					VAnchor = VAnchor.ParentBottom
+				});
+			}
+
+			RectangleDouble childrenBounds = widgetState.GetMinimumBoundsToEncloseChildren();
+			widgetState.LocalBounds = new RectangleDouble(childrenBounds.Left, widgetState.LocalBounds.Bottom, childrenBounds.Right, widgetState.LocalBounds.Top);
+		}
 	}
 }
