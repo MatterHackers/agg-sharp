@@ -367,7 +367,7 @@ namespace MatterHackers.MeshVisualizer
 						}
 					}
 					CreateRectangularBedGridImage(displayVolumeToBuild, bedCenter, divisor, skip);
-					printerBed = PlatonicSolids.CreateCube(displayVolumeToBuild.x, displayVolumeToBuild.y, 4);
+					printerBed = PlatonicSolids.CreateCube(displayVolumeToBuild.x, displayVolumeToBuild.y, 1.8);
 					{
 						Face face = printerBed.Faces[0];
 						MeshHelper.PlaceTextureOnFace(face, BedImage);
