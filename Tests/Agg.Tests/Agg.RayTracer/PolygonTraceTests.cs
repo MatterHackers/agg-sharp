@@ -68,23 +68,6 @@ namespace MatterHackers.RayTracer
 		{
 		}
 
-		private class TrackBallCamera : ICamera
-		{
-			private TrackballTumbleWidget trackballTumbleWidget;
-
-			public TrackBallCamera(TrackballTumbleWidget trackballTumbleWidget)
-			{
-				this.trackballTumbleWidget = trackballTumbleWidget;
-			}
-
-			public Vector3 Origin { get; set; }
-
-			public Ray GetRay(double screenX, double screenY)
-			{
-				return trackballTumbleWidget.GetRayForLocalBounds(new Vector2(screenX, screenY));
-			}
-		}
-
 		[Test]
 		public void TriangleMajorAxis()
 		{
