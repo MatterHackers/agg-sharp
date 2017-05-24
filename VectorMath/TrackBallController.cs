@@ -70,10 +70,17 @@ namespace MatterHackers.VectorMath
 
 		public TrackBallController(TrackBallController trackBallToCopy)
 		{
-			this.screenCenter = trackBallToCopy.screenCenter;
-			this.rotationTrackingRadius = trackBallToCopy.rotationTrackingRadius;
-			this.currentRotationMatrix = trackBallToCopy.currentRotationMatrix;
-			this.currentTranslationMatrix = trackBallToCopy.currentTranslationMatrix;
+			CopyTransforms(trackBallToCopy);
+		}
+
+		public void CopyTransforms(TrackBallController trackBallToCopy)
+		{
+			screenCenter = trackBallToCopy.screenCenter;
+			rotationTrackingRadius = trackBallToCopy.rotationTrackingRadius;
+			currentRotationMatrix = trackBallToCopy.currentRotationMatrix;
+			currentTranslationMatrix = trackBallToCopy.currentTranslationMatrix;
+
+			OnTransformChanged(null);
 		}
 
 		public void Reset()
