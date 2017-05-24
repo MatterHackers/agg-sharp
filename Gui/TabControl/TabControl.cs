@@ -159,6 +159,8 @@ namespace MatterHackers.Agg.UI
 
 		public int TabCount => tabPages.Count;
 
+		public int TextPointSize { get; set; }
+
 		public void SelectTab(int index)
 		{
 			Tab foundTab = null;
