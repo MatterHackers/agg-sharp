@@ -43,8 +43,9 @@ namespace ObjParser.Types
         public float OpticalDensity { get; set; }
         public float Dissolve { get; set; }
         public float IlluminationModel { get; set; }
+		public string DiffuseTextureFileName { get; internal set; }
 
-        public Material()
+		public Material()
         {
             this.Name = "DefaultMaterial";
             this.AmbientReflectivity = new Color();

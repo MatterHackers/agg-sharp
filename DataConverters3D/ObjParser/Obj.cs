@@ -45,7 +45,7 @@ namespace ObjParser
 			TextureList = new List<TextureVertex>();
 		}
 
-		public string Material { get; set; }
+		public string Material { get; set; } = "";
 		public Extent Size { get; set; }
 
 		public string UseMtl { get; set; }
