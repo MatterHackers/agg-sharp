@@ -97,12 +97,8 @@ namespace MatterHackers.DataConverters3D
 
 		public static IObject3D Load(Stream fileStream, ReportProgressRatio reportProgress = null, IObject3D source = null)
 		{
-			throw new NotImplementedException();
-
 			IObject3D root = source ?? new Object3D();
 			root.ItemType = Object3DTypes.Group;
-
-			IObject3D context = null;
 
 			double parsingFileRatio = .5;
 			int totalMeshes = 0;
@@ -111,6 +107,31 @@ namespace MatterHackers.DataConverters3D
 			// LOAD THE MESH DATA
 			Obj objFile = new Obj();
 			objFile.LoadObj(fileStream);
+
+			IObject3D context = new Object3D()
+			{
+				ItemType = Object3DTypes.Model,
+				Persistable = false
+			};
+			root.Children.Add(context);
+
+			var mesh = new Mesh();
+			context.Mesh = mesh;
+
+			foreach(var vertex in objFile.VertexList)
+			{
+				mesh.CreateVertex(vertex.X, vertex.Y, vertex.Z, CreateOption.CreateNew, SortOption.WillSortLater);
+			}
+
+			foreach(var face in objFile.FaceList)
+			{
+				List<int> zeroBased = new List<int>(face.VertexIndexList.Length);
+				foreach(var index in face.VertexIndexList)
+				{
+					zeroBased.Add(index - 1);
+				}
+				mesh.CreateFace(zeroBased.ToArray(), CreateOption.CreateNew);
+			}
 
 			double currentMeshProgress = 0;
 			double ratioLeftToUse = 1 - parsingFileRatio;
@@ -142,7 +163,7 @@ namespace MatterHackers.DataConverters3D
 			}
 
 			time.Stop();
-			Debug.WriteLine(string.Format("AMF Load in {0:0.00}s", time.Elapsed.TotalSeconds));
+			Debug.WriteLine(string.Format("OBJ Load in {0:0.00}s", time.Elapsed.TotalSeconds));
 
 			time.Restart();
 			bool hasValidMesh = root.Children.Where(item => item.Mesh.Faces.Count > 0).Any();

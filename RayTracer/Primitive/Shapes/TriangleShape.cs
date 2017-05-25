@@ -42,14 +42,7 @@ namespace MatterHackers.RayTracer
 
 			center = new Vector3Float((vertex0 + vertex1 + vertex2) / 3);
 
-			var normalLength = new Dictionary<double, int>()
-			{
-				[Math.Abs(planeNormal.x)] = 0,
-				[Math.Abs(planeNormal.y)] = 1,
-				[Math.Abs(planeNormal.z)] = 2,
-			};
-
-			MajorAxis = normalLength.OrderBy(x => x.Key).Last().Value;
+			MajorAxis = planeNormal.Select((v, i) => new { Axis = i, Value = Math.Abs(v) }).OrderBy(o => o.Value).Last().Axis;
 
 			for (int i = 0; i < 3; i++)
 			{
