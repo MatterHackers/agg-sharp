@@ -590,15 +590,15 @@ namespace MatterHackers.Agg.OpenGlGui
 			DrawGlContent?.Invoke(this, null);
 		}
 
-		private void GradientBand(double startHeight, double endHeight, int startColor, int endColor)
+		private void GradientBand(double startHeight, double endHeight, RGBA_Bytes startColor, RGBA_Bytes endColor)
 		{
 			// triangel 1
 			{
 				// top color
-				GL.Color4(startColor - 5, startColor - 5, startColor, 255);
+				GL.Color4(startColor.red, startColor.green, startColor.blue, startColor.alpha);
 				GL.Vertex2(-1.0, startHeight);
 				// bottom color
-				GL.Color4(endColor - 5, endColor - 5, endColor, 255);
+				GL.Color4(endColor.red, endColor.green, endColor.blue, endColor.alpha);
 				GL.Vertex2(1.0, endHeight);
 				GL.Vertex2(-1.0, endHeight);
 			}
@@ -606,11 +606,11 @@ namespace MatterHackers.Agg.OpenGlGui
 			// triangel 2
 			{
 				// top color
-				GL.Color4(startColor - 5, startColor - 5, startColor, 255);
+				GL.Color4(startColor.red, startColor.green, startColor.blue, startColor.alpha);
 				GL.Vertex2(1.0, startHeight);
 				GL.Vertex2(-1.0, startHeight);
 				// bottom color
-				GL.Color4(endColor - 5, endColor - 5, endColor, 255);
+				GL.Color4(endColor.red, endColor.green, endColor.blue, endColor.alpha);
 				GL.Vertex2(1.0, endHeight);
 			}
 		}
@@ -625,8 +625,8 @@ namespace MatterHackers.Agg.OpenGlGui
 
 			GL.Begin(BeginMode.Triangles);
 
-			GradientBand(1, 0, 255, 245);
-			GradientBand(0, -1, 245, 220);
+			GradientBand(1, 0, new RGBA_Bytes(255,255,255,20), new RGBA_Bytes(255, 255, 255, 0));
+			GradientBand(0, -1, new RGBA_Bytes(0, 0, 0, 0), new RGBA_Bytes(0, 0, 0, 20));
 
 			GL.End();
 		}
