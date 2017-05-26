@@ -71,7 +71,7 @@ namespace MatterHackers.DataConverters3D
 			return meshGroup;
 		}
 
-		public RGBA_Bytes Color { get; set; }
+		public RGBA_Bytes Color { get; set; } = RGBA_Bytes.Transparent;
 
 		[JsonIgnore]
 		public bool HasChildren => Children.Count > 0;
