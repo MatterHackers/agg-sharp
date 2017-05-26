@@ -106,10 +106,12 @@ namespace ObjParser
 				Color c = new Color();
 				switch (parts[0])
 				{
-					case "newmtl":
-						CurrentMaterial = new Material();
-						CurrentMaterial.Name = parts[1];
-						MaterialList.Add(CurrentMaterial);
+					case "d":
+						CurrentMaterial.Dissolve = float.Parse(parts[1]);
+						break;
+
+					case "illum":
+						CurrentMaterial.IlluminationModel = int.Parse(parts[1]);
 						break;
 
 					case "Ka":
@@ -132,25 +134,27 @@ namespace ObjParser
 						CurrentMaterial.EmissiveCoefficient = c;
 						break;
 
-					case "Tf":
-						c.LoadFromStringArray(parts);
-						CurrentMaterial.TransmissionFilter = c;
+					case "map_Kd":
+						CurrentMaterial.DiffuseTextureFileName = parts[1];
 						break;
 
 					case "Ni":
 						CurrentMaterial.OpticalDensity = float.Parse(parts[1]);
 						break;
 
-					case "d":
-						CurrentMaterial.Dissolve = float.Parse(parts[1]);
-						break;
-
-					case "illum":
-						CurrentMaterial.IlluminationModel = int.Parse(parts[1]);
-						break;
-
 					case "Ns":
 						CurrentMaterial.SpecularExponent = float.Parse(parts[1]);
+						break;
+
+					case "newmtl":
+						CurrentMaterial = new Material();
+						CurrentMaterial.Name = parts[1];
+						MaterialList.Add(CurrentMaterial);
+						break;
+
+					case "Tf":
+						c.LoadFromStringArray(parts);
+						CurrentMaterial.TransmissionFilter = c;
 						break;
 				}
 			}

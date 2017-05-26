@@ -28,6 +28,8 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg;
+using MatterHackers.Agg.Image;
+using MatterHackers.Agg.PlatformAbstract;
 using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
@@ -133,6 +135,59 @@ namespace MatterHackers.DataConverters3D
 				mesh.CreateFace(zeroBased.ToArray(), CreateOption.CreateNew);
 			}
 
+			// load and apply any texture
+			if (objFile.Material != "")
+			{
+				// TODO: have consideration for this being in a shared zip file
+				string pathToObj = Path.GetDirectoryName(((FileStream)fileStream).Name);
+				using (var materialsStream = File.OpenRead(Path.Combine(pathToObj, objFile.Material)))
+				{
+					var mtl = new Mtl();
+					mtl.LoadMtl(materialsStream);
+
+					foreach (var material in mtl.MaterialList)
+					{
+						if (!string.IsNullOrEmpty(material.DiffuseTextureFileName))
+						{
+							ImageBuffer diffuseTexture = new ImageBuffer();
+
+							// TODO: have consideration for this being in a shared zip file
+							using (var ImageStream = File.OpenRead(Path.Combine(pathToObj, material.DiffuseTextureFileName)))
+							{
+								if (Path.GetExtension(material.DiffuseTextureFileName).ToLower() == ".tga")
+								{
+									ImageTgaIO.LoadImageData(diffuseTexture, ImageStream, 32);
+								}
+								else
+								{
+									ImageIO.LoadImageData(ImageStream, diffuseTexture);
+								}
+							}
+
+							if (diffuseTexture.Width > 0 && diffuseTexture.Height > 0)
+							{
+								for(int faceIndex = 0; faceIndex < objFile.FaceList.Count; faceIndex++)
+								{
+									var faceData = objFile.FaceList[faceIndex];
+									var polyFace = mesh.Faces[faceIndex];
+									FaceTextureData faceTextureData = FaceTextureData.Get(polyFace);
+									faceTextureData.Textures.Add(diffuseTexture);
+									int edgeIndex = 0;
+									foreach (FaceEdge faceEdge in polyFace.FaceEdges())
+									{
+										FaceEdgeTextureUvData edgeUV = FaceEdgeTextureUvData.Get(faceEdge);
+										int textureIndex = faceData.TextureVertexIndexList[edgeIndex] - 1;
+										edgeUV.TextureUV.Add(new Vector2(objFile.TextureList[textureIndex].X, 
+											objFile.TextureList[textureIndex].Y));
+										edgeIndex++;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
 			double currentMeshProgress = 0;
 			double ratioLeftToUse = 1 - parsingFileRatio;
 			double progressPerMesh = 1.0 / totalMeshes * ratioLeftToUse;
@@ -168,6 +223,7 @@ namespace MatterHackers.DataConverters3D
 			time.Restart();
 			bool hasValidMesh = root.Children.Where(item => item.Mesh.Faces.Count > 0).Any();
 			Debug.WriteLine("hasValidMesh: " + time.ElapsedMilliseconds);
+
 
 			if (reportProgress != null)
 			{
