@@ -89,7 +89,8 @@ namespace MatterHackers.Agg.UI
 
 			set
 			{
-				mainControlText.Margin = value;
+				// Ensure minimum right margin
+				mainControlText.Margin = new BorderDouble(value.Left, value.Bottom, Math.Max(value.Right, 30), value.Top);
 			}
 		}
 
@@ -317,10 +318,13 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		private int arrowHeight = 5;
+
 		private string noSelectionString;
 
 		private static RGBA_Bytes whiteSemiTransparent = new RGBA_Bytes(255, 255, 255, 100);
 		private static RGBA_Bytes whiteTransparent = new RGBA_Bytes(255, 255, 255, 0);
+
 
 		public DropDownList(string noSelectionString, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false)
 			: this(noSelectionString, whiteTransparent, whiteSemiTransparent, direction, maxHeight, useLeftIcons)
@@ -329,7 +333,7 @@ namespace MatterHackers.Agg.UI
 			this.MenuItemsBorderWidth = 1;
 			this.MenuItemsBackgroundColor = RGBA_Bytes.White;
 			this.MenuItemsBorderColor = ActiveTheme.Instance.SecondaryTextColor;
-			this.MenuItemsPadding = new BorderDouble(10, 8, 10, 12);
+			this.MenuItemsPadding = new BorderDouble(10, 7, 7, 7);
 			this.MenuItemsBackgroundHoverColor = ActiveTheme.Instance.PrimaryAccentColor;
 			this.MenuItemsTextHoverColor = RGBA_Bytes.Black;
 			this.MenuItemsTextColor = RGBA_Bytes.Black;
@@ -346,15 +350,15 @@ namespace MatterHackers.Agg.UI
 			if (this.MenuDirection == Direction.Down)
 			{
 				directionArrow = new PathStorage();
-				directionArrow.MoveTo(-4, 0);
-				directionArrow.LineTo(4, 0);
-				directionArrow.LineTo(0, -5);
+				directionArrow.MoveTo(-arrowHeight, 0);
+				directionArrow.LineTo(arrowHeight, 0);
+				directionArrow.LineTo(0, -arrowHeight);
 			}
 			else if (this.MenuDirection == Direction.Up)
 			{
 				directionArrow = new PathStorage();
-				directionArrow.MoveTo(-4, -5);
-				directionArrow.LineTo(4, -5);
+				directionArrow.MoveTo(-arrowHeight, -arrowHeight);
+				directionArrow.LineTo(arrowHeight, -arrowHeight);
 				directionArrow.LineTo(0, 0);
 			}
 			else
@@ -371,7 +375,7 @@ namespace MatterHackers.Agg.UI
 				AutoExpandBoundsToText = true,
 				VAnchor = VAnchor.ParentBottom | VAnchor.FitToChildren,
 				HAnchor = HAnchor.ParentLeft | HAnchor.FitToChildren,
-				Margin = new BorderDouble(right: 30),
+				Margin = new BorderDouble(10, 7, 7, 7),
 				TextColor = RGBA_Bytes.Black
 			};
 			AddChild(mainControlText);
@@ -448,7 +452,7 @@ namespace MatterHackers.Agg.UI
 			// Draw directional arrow
 			if (directionArrow != null)
 			{
-				graphics2D.Render(directionArrow, LocalBounds.Right - 8, LocalBounds.Top - 4, BorderColor);
+				graphics2D.Render(directionArrow, LocalBounds.Right - arrowHeight * 2 - 2, LocalBounds.Center.y + arrowHeight / 2, ActiveTheme.Instance.SecondaryTextColor);
 			}
 		}
 
