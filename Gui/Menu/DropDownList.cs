@@ -452,7 +452,7 @@ namespace MatterHackers.Agg.UI
 			// Draw directional arrow
 			if (directionArrow != null)
 			{
-				graphics2D.Render(directionArrow, LocalBounds.Right - arrowHeight * 2 - 2, LocalBounds.Center.y + arrowHeight / 2, RGBA_Bytes.Black);
+				graphics2D.Render(directionArrow, LocalBounds.Right - arrowHeight * 2 - 2, LocalBounds.Center.y + arrowHeight / 2, ActiveTheme.Instance.SecondaryTextColor);
 			}
 		}
 

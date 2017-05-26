@@ -320,6 +320,9 @@ namespace MatterHackers.Agg.UI.Tests
 				Name = "menu1",
 			};
 
+			// Set padding to achieve targets expected by hard-coded values
+			testList.MenuItemsPadding = new BorderDouble(0, 0, 30, 0);
+
 			var menuItem1 = testList.AddItem("item1");
 			menuItem1.Name = "item1";
 			menuItem1.Selected += (s, e) => item1ClickCount++;
@@ -453,6 +456,9 @@ namespace MatterHackers.Agg.UI.Tests
 			GuiWidget container = new GuiWidget(400, 400);
 			DropDownList listMenu = new DropDownList("- Select Something -", RGBA_Bytes.Black, RGBA_Bytes.Gray);
 			listMenu.OriginRelativeParent = new Vector2(10, 300);
+
+			// Set padding to achieve targets expected by hard-coded values
+			listMenu.MenuItemsPadding = new BorderDouble(0, 0, 30, 0);
 
 			MenuItem cutMenuItem = new MenuItem(new TextWidget("Cut"));
 			cutMenuItem.Selected += (sender, e) => { menuSelected = "Cut"; };
