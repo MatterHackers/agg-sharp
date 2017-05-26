@@ -171,7 +171,8 @@ namespace MatterHackers.MeshVisualizer
 			base.OnLoad(args);
 		}
 
-		public override void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType seachType)
+
+		public override void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType seachType, bool allowInvalidItems = true)
 		{
 			List<GuiWidget> searchChildren = new List<GuiWidget>(Children);
 			foreach (GuiWidget child in searchChildren)
