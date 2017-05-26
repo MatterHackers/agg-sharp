@@ -2801,7 +2801,9 @@ namespace MatterHackers.Agg.UI
 			FindNamedChildrenRecursive(nameToSearchFor, foundChildren, new RectangleDouble(double.MinValue, double.MinValue, double.MaxValue, double.MaxValue), SearchType.Exact);
 		}
 
-        public virtual void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType seachType)
+
+		// allowInvalidItems - automation tests use this function and may need to find disabled or non-visible items to validate their state
+		public virtual void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType seachType, bool allowInvalidItems = true)
 		{
 			bool nameFound = false;
 
@@ -2830,7 +2832,7 @@ namespace MatterHackers.Agg.UI
 			}
 
 			List<GuiWidget> searchChildren = new List<GuiWidget>(Children);
-			foreach (GuiWidget child in searchChildren)
+			foreach (GuiWidget child in searchChildren.Where(child => allowInvalidItems || (child.Visible && child.Enabled)))
 			{
 				RectangleDouble touchingBoundsRelChild = touchingBounds;
 				touchingBoundsRelChild.Offset(-child.OriginRelativeParent);
