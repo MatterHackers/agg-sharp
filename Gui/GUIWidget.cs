@@ -2830,7 +2830,7 @@ namespace MatterHackers.Agg.UI
 			}
 
 			List<GuiWidget> searchChildren = new List<GuiWidget>(Children);
-			foreach (GuiWidget child in searchChildren)
+			foreach (GuiWidget child in searchChildren.Where(child => child.Visible && child.Enabled))
 			{
 				RectangleDouble touchingBoundsRelChild = touchingBounds;
 				touchingBoundsRelChild.Offset(-child.OriginRelativeParent);
