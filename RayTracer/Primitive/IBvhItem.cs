@@ -1,4 +1,5 @@
 ﻿using MatterHackers.Agg;
+using MatterHackers.RayTracer.Traceable;
 using MatterHackers.VectorMath;
 
 // Copyright 2006 Herre Kuijpers - <herre@xs4all.nl>
@@ -13,6 +14,7 @@ using MatterHackers.VectorMath;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MatterHackers.RayTracer
 {
@@ -95,5 +97,79 @@ namespace MatterHackers.RayTracer
 		/// <param name="itemToCheckFor"></param>
 		/// <returns></returns>
 		bool Contains(IBvhItem itemToCheckFor);
+	}
+
+	public static class IBvhItemExtensions
+	{
+		public static BvhAndTransform MakeEnumerable(this IBvhItem item)
+		{
+			return new BvhAndTransform(item);
+		}
+	}
+
+
+	public class BvhAndTransform : IEnumerable<BvhAndTransform>
+	{
+		public Matrix4X4 TransformToWorld { get; private set; }
+		public IBvhItem Bvh { get; private set; }
+		public int Depth { get; private set; } = 0;
+
+		public BvhAndTransform(IBvhItem referenceItem, Matrix4X4 initialTransform = default(Matrix4X4), int initialDepth = 0)
+		{
+			TransformToWorld = initialTransform;
+			if (TransformToWorld == default(Matrix4X4))
+			{
+				TransformToWorld = Matrix4X4.Identity;
+			}
+			Depth = initialDepth;
+
+			Bvh = referenceItem;
+		}
+
+		public IEnumerator<BvhAndTransform> GetEnumerator()
+		{
+			if (Bvh is Transform)
+			{
+				Transform transform = (Transform)Bvh;
+				if (transform.Child != null)
+				{
+					var bat = new BvhAndTransform(transform.Child, TransformToWorld * transform.AxisToWorld, Depth + 1);
+
+					yield return bat;
+
+					foreach (var subBat in bat)
+					{
+						yield return subBat;
+					}
+				}
+			}
+			else if (Bvh is UnboundCollection)
+			{
+				UnboundCollection unboundCollection = (UnboundCollection)Bvh;
+				foreach (var item in unboundCollection.Items)
+				{
+					var bat = new BvhAndTransform(item, TransformToWorld, Depth + 1);
+					yield return bat;
+
+					foreach (var subBat in bat)
+					{
+						yield return subBat;
+					}
+				}
+			}
+			else if (Bvh is TriangleShape)
+			{
+
+			}
+			else
+			{
+				throw new NotImplementedException();
+			}
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			throw new NotImplementedException();
+		}
 	}
 }
