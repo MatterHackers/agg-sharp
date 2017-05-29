@@ -30,6 +30,11 @@ namespace MatterHackers.RayTracer
 		private PlaneFloat plane;
 		private Vector3Float[] vertices = new Vector3Float[3];
 
+		public Vector3 GetVertex(int index)
+		{
+			return new Vector3(vertices[index].x, vertices[index].y, vertices[index].z);
+		}
+
 		public TriangleShape(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2, MaterialAbstract material)
 		{
 			Vector3 planeNormal = Vector3.Cross(vertex1 - vertex0, vertex2 - vertex0).GetNormal();
