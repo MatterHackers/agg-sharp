@@ -174,16 +174,6 @@ namespace MatterHackers.MeshVisualizer
 
 		public override void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType seachType, bool allowInvalidItems = true)
 		{
-			// TODO: Need help understanding unexplained variation from base implementation. What are we adding here that isn't covered by the base.FindXXX call below?
-			/*
-			List<GuiWidget> searchChildren = new List<GuiWidget>(Children);
-			foreach (GuiWidget child in searchChildren)
-			{
-				RectangleDouble touchingBoundsRelChild = touchingBounds;
-				touchingBoundsRelChild.Offset(-child.OriginRelativeParent);
-				child.FindNamedChildrenRecursive(nameToSearchFor, foundChildren, touchingBoundsRelChild, seachType);
-			} */
-
 			foreach (var child in Scene.Children)
 			{
 				string object3DName = "none_Object3D";
