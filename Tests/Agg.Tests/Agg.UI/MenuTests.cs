@@ -194,7 +194,7 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		[Test, Apartment(ApartmentState.STA), /* Test was unstable, putting back in rotation with updates... */]
-		public async Task DisabledMenuItemsWorkCorrectly()
+		public async Task OpenAndCloseMenus()
 		{
 			int item1ClickCount = 0;
 			int item2ClickCount = 0;
@@ -264,7 +264,7 @@ namespace MatterHackers.Agg.UI.Tests
 				testRunner.ClickByName("OffMenu");
 
 				testRunner.Delay(() => !testList.IsOpen, 2);
-				Assert.IsTrue(!testList.IsOpen, "had a bug where after clicking a disabled item would not close clicking outside");
+				Assert.IsFalse(testList.IsOpen, "Menus should close when clicking off menu");
 
 				return Task.FromResult(0);
 			};
