@@ -250,34 +250,18 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseUp(mouseEvent);
 		}
 
-		public override void OnMouseLeaveBounds(MouseEventArgs mouseEvent)
-		{
-			bool withinBounds = PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y);
-			if (!withinBounds)
-			{
-				UiThread.RunOnIdle(() =>
-				{
-					// Don't close the menu if the mouse returned to the bound/source widget
-					if (this.widgetRelativeTo == null
-						|| this.widgetRelativeTo.UnderMouseState != UnderMouseState.NotUnderMouse)
-					{
-						return;
-					}
-
-					CloseMenu();
-				}, 0.1);
-			}
-
-			base.OnMouseLeaveBounds(mouseEvent);
-		}
-
 		public virtual void CloseMenu()
 		{
 			// Restore focus to originating widget on close
 			if (this.widgetRelativeTo != null
 				&& !widgetRelativeTo.HasBeenClosed)
 			{
-				widgetRelativeTo.Focus();
+				// On menu close, select the first scrollable parent of the widgetRelativeTo
+				var scrollableParent = widgetRelativeTo.Parents<ScrollableWidget>().FirstOrDefault();
+				if (scrollableParent != null)
+				{
+					scrollableParent.Focus();
+				}
 			}
 
 			this.contentWidget?.Parent?.RemoveChild(this.contentWidget);
@@ -287,18 +271,24 @@ namespace MatterHackers.Agg.UI
 			this.Close();
 		}
 
-		public override void OnFocusChanged(EventArgs e)
+		public override void OnContainsFocusChanged(EventArgs e)
 		{
-			// Fired any time focus changes. Traditionally we closed the menu if the we weren't focused. 
-			// To accomidate children (or external widgets) having focus we also query for and consider special cases
-			bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus);
-
-			// If the focused changed and we've lost focus and no special cases permit, close the menu
-			if (!this.Focused
-				&& !specialChildHasFocus)
+			UiThread.RunOnIdle(() =>
 			{
-				UiThread.RunOnIdle(CloseMenu);
-			}
+				// Fired any time focus changes. Traditionally we closed the menu if the we weren't focused. 
+				// To accommodate children (or external widgets) having focus we also query for and consider special cases
+				bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus || w.Focused)
+					|| this.ChildrenRecursive<DropDownList>().Any(w => w.IsOpen);
+
+				// If the focused changed and we've lost focus and no special cases permit, close the menu
+				if (!this.ContainsFocus
+					&& !specialChildHasFocus)
+				{
+					UiThread.RunOnIdle(CloseMenu);
+				}
+			});
+
+			base.OnContainsFocusChanged(e);
 		}
 
 		private void widgetRelativeTo_Closed(object sender, ClosedEventArgs e)
