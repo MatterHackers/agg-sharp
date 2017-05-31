@@ -99,22 +99,14 @@ namespace MatterHackers.RayTracer
 		bool Contains(IBvhItem itemToCheckFor);
 	}
 
-	public static class IBvhItemExtensions
-	{
-		public static BvhAndTransform MakeEnumerable(this IBvhItem item)
-		{
-			return new BvhAndTransform(item);
-		}
-	}
-
-
-	public class BvhAndTransform : IEnumerable<BvhAndTransform>
+	public class BvhIterator : IEnumerable<BvhIterator>
 	{
 		public Matrix4X4 TransformToWorld { get; private set; }
 		public IBvhItem Bvh { get; private set; }
 		public int Depth { get; private set; } = 0;
+		Func<BvhIterator, bool> DecentFilter = null;
 
-		public BvhAndTransform(IBvhItem referenceItem, Matrix4X4 initialTransform = default(Matrix4X4), int initialDepth = 0)
+		public BvhIterator(IBvhItem referenceItem, Matrix4X4 initialTransform = default(Matrix4X4), int initialDepth = 0, Func<BvhIterator, bool> decentFilter = null)
 		{
 			TransformToWorld = initialTransform;
 			if (TransformToWorld == default(Matrix4X4))
@@ -124,22 +116,30 @@ namespace MatterHackers.RayTracer
 			Depth = initialDepth;
 
 			Bvh = referenceItem;
+			this.DecentFilter = decentFilter;
 		}
 
-		public IEnumerator<BvhAndTransform> GetEnumerator()
+		public IEnumerator<BvhIterator> GetEnumerator()
 		{
 			if (Bvh is Transform)
 			{
 				Transform transform = (Transform)Bvh;
+
 				if (transform.Child != null)
 				{
-					var bat = new BvhAndTransform(transform.Child, TransformToWorld * transform.AxisToWorld, Depth + 1);
+					var iterator = new BvhIterator(transform.Child, TransformToWorld * transform.AxisToWorld, Depth + 1);
 
-					yield return bat;
-
-					foreach (var subBat in bat)
+					if (DecentFilter?.Invoke(iterator) != false)
 					{
-						yield return subBat;
+						yield return iterator;
+
+						foreach (var subIterator in iterator)
+						{
+							if (DecentFilter?.Invoke(subIterator) != false)
+							{
+								yield return subIterator;
+							}
+						}
 					}
 				}
 			}
@@ -148,18 +148,24 @@ namespace MatterHackers.RayTracer
 				UnboundCollection unboundCollection = (UnboundCollection)Bvh;
 				foreach (var item in unboundCollection.Items)
 				{
-					var bat = new BvhAndTransform(item, TransformToWorld, Depth + 1);
-					yield return bat;
-
-					foreach (var subBat in bat)
+					var iterator = new BvhIterator(item, TransformToWorld, Depth + 1);
+					if (DecentFilter?.Invoke(iterator) != false)
 					{
-						yield return subBat;
+						yield return iterator;
+
+						foreach (var subIterator in iterator)
+						{
+							if (DecentFilter?.Invoke(subIterator) != false)
+							{
+								yield return subIterator;
+							}
+						}
 					}
 				}
 			}
 			else if (Bvh is TriangleShape)
 			{
-
+				// has no children, take no action
 			}
 			else
 			{

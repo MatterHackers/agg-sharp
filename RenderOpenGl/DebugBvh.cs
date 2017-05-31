@@ -42,7 +42,7 @@ namespace MatterHackers.RenderOpenGl
 	{
 		public static void RenderBvhRecursive(this IPrimitive bvhToRender, int startRenderLevel = 0, int endRenderLevel = int.MaxValue)
 		{
-			foreach (var bvhAndTransform in bvhToRender.MakeEnumerable().Where(x =>
+			foreach (var bvhAndTransform in new BvhIterator(bvhToRender).Where(x =>
 					x.Depth >= startRenderLevel 
 					&& x.Depth <= endRenderLevel 
 					&& x.Bvh.GetType() != typeof(TriangleShape)
