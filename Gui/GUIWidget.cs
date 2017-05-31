@@ -2803,7 +2803,7 @@ namespace MatterHackers.Agg.UI
 
 
 		// allowInvalidItems - automation tests use this function and may need to find disabled or non-visible items to validate their state
-		public virtual void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType seachType, bool allowInvalidItems = true)
+		public virtual void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType seachType, bool allowDisabledOrHidden = true)
 		{
 			bool nameFound = false;
 
@@ -2832,11 +2832,11 @@ namespace MatterHackers.Agg.UI
 			}
 
 			List<GuiWidget> searchChildren = new List<GuiWidget>(Children);
-			foreach (GuiWidget child in searchChildren.Where(child => allowInvalidItems || (child.Visible && child.Enabled)))
+			foreach (GuiWidget child in searchChildren.Where(child => allowDisabledOrHidden || (child.Visible && child.Enabled)))
 			{
 				RectangleDouble touchingBoundsRelChild = touchingBounds;
 				touchingBoundsRelChild.Offset(-child.OriginRelativeParent);
-				child.FindNamedChildrenRecursive(nameToSearchFor, foundChildren, touchingBoundsRelChild, seachType);
+				child.FindNamedChildrenRecursive(nameToSearchFor, foundChildren, touchingBoundsRelChild, seachType, allowDisabledOrHidden);
 			}
 		}
 
@@ -3072,7 +3072,7 @@ namespace MatterHackers.Agg.UI
 					yield return childChild;
 				}
 
-				if(child.GetType() == typeof(T))
+				if(child is T)
 				{
 					yield return (T)child;
 				}

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 
@@ -22,13 +23,16 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		internal override void CloseMenu()
+		public override void CloseMenu()
 		{
 			if (this.Parent != null)
 			{
 				foreach (MenuItem item in MenuItems)
 				{
 					item.Parent.RemoveChild(item);
+
+					// Release reference on long lived menu items to local PopupMenu delegate
+					item.AllowClicks = null;
 				}
 			}
 
@@ -52,14 +56,21 @@ namespace MatterHackers.Agg.UI
 
 		public int BorderWidth { get; set; }
 
+		private bool firstTimeSizing = true;
 		private bool alignToRightEdge;
+
 		private Direction direction;
-		private GuiWidget widgetRelativeTo;
 		
 		private Vector2 openOffset;
-		private ScrollableWidget scrollingWindow;
+		
+		private Vector2 scrollPositionAtMouseDown;
+		private Vector2 scrollPositionAtMouseUp;
 
+		protected GuiWidget widgetRelativeTo;
 		private GuiWidget contentWidget;
+		private ScrollableWidget scrollingWindow;
+		private List<GuiWidget> ignoredWidgets { get; }
+		private HashSet<GuiWidget> hookedParents = new HashSet<GuiWidget>();
 
 		public PopupWidget(GuiWidget contentWidget, GuiWidget widgetRelativeTo, Vector2 openOffset, Direction direction, double maxHeight, bool alignToRightEdge)
 		{
@@ -67,8 +78,22 @@ namespace MatterHackers.Agg.UI
 			this.openOffset = openOffset;
 			this.contentWidget = contentWidget;
 
+			if (contentWidget.BackgroundColor == RGBA_Bytes.Transparent)
+			{
+				contentWidget.BackgroundColor = RGBA_Bytes.White;
+				this.BorderColor = RGBA_Bytes.Gray;
+			}
+
+			ignoredWidgets = contentWidget.Children.Where(c => c is IIgnoredPopupChild).ToList();
+
+			if (contentWidget is IIgnoredPopupChild)
+			{
+				ignoredWidgets.Add(contentWidget);
+			}
+
 			this.direction = direction;
 			this.widgetRelativeTo = widgetRelativeTo;
+
 			scrollingWindow = new ScrollableWidget(true);
 			{
 				contentWidget.ClearRemovedFlag();
@@ -88,18 +113,15 @@ namespace MatterHackers.Agg.UI
 			}
 			AddChild(scrollingWindow);
 
-			ContainsFocusChanged += DropListItems_ContainsFocusChanged;
-
 			GuiWidget topParent = widgetRelativeTo.Parent;
 			while (topParent.Parent != null
 				&& topParent as SystemWindow == null)
 			{
 				// Regrettably we don't know who it is that is the window that will actually think it is moving relative to its parent
 				// but we need to know anytime our widgetRelativeTo has been moved by any change, so we hook them all.
-
-				if (!widgetRefList.Contains(topParent))
+				if (!hookedParents.Contains(topParent))
 				{
-					widgetRefList.Add(topParent);
+					hookedParents.Add(topParent);
 					topParent.PositionChanged += widgetRelativeTo_PositionChanged;
 					topParent.BoundsChanged += widgetRelativeTo_PositionChanged;
 				}
@@ -130,31 +152,6 @@ namespace MatterHackers.Agg.UI
 			scrollingWindow.ScrollArea.VAnchor = VAnchor.FitToChildren;
 		}
 
-		private void widgetRelativeTo_Closed(object sender, ClosedEventArgs e)
-		{
-			widgetRelativeTo.Closed -= widgetRelativeTo_Closed;
-			widgetRelativeTo = null;
-			UnbindCallbacks();
-			DropListItems_ContainsFocusChanged(null, null);
-		}
-
-		private HashSet<GuiWidget> widgetRefList = new HashSet<GuiWidget>();
-
-		public override void OnClosed(ClosedEventArgs e)
-		{
-			UnbindCallbacks();
-			base.OnClosed(e);
-		}
-
-		private void UnbindCallbacks()
-		{
-			foreach (GuiWidget widget in widgetRefList)
-			{
-				widget.PositionChanged -= new EventHandler(widgetRelativeTo_PositionChanged);
-				widget.BoundsChanged -= new EventHandler(widgetRelativeTo_PositionChanged);
-			}
-		}
-
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			base.OnDraw(graphics2D);
@@ -163,7 +160,6 @@ namespace MatterHackers.Agg.UI
 			graphics2D.Render(new Stroke(outline, BorderWidth * 2), BorderColor);
 		}
 
-		bool firstTimeSizing = true;
 		private void widgetRelativeTo_PositionChanged(object sender, EventArgs e)
 		{
 			if (widgetRelativeTo != null)
@@ -189,11 +185,11 @@ namespace MatterHackers.Agg.UI
 
 				if (firstTimeSizing)
 				{
-					var minHeight = 25;
+					var maxAllowed = 25;
 					double distanceToWindowBottom = zero.y - Height;
 					if (distanceToWindowBottom < 0)
 					{
-						if (Height + distanceToWindowBottom > minHeight)
+						if (Height + distanceToWindowBottom > maxAllowed)
 						{
 							MakeMenuHaveScroll(Height + distanceToWindowBottom - 5);
 						}
@@ -222,62 +218,105 @@ namespace MatterHackers.Agg.UI
 			firstTimeSizing = false;
 		}
 
-		private Vector2 positionAtMouseDown;
-		private Vector2 positionAtMouseUp;
-
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
 		{
-			positionAtMouseDown = scrollingWindow.ScrollPosition;
+			scrollPositionAtMouseDown = scrollingWindow.ScrollPosition;
 			base.OnMouseDown(mouseEvent);
 		}
 
+		/// <summary>
+		/// Filter to allow click events as long as the scroll position is less than the given threshhold. Prevent click behavior on touch platfroms when drag scrolling
+		/// </summary>
+		/// <returns>A bool indicating if scroll distance is within tolerance</returns>
 		internal bool AllowClickingItems()
 		{
-			if ((positionAtMouseDown - positionAtMouseUp).Length > 5)
-			{
-				return false;
-			}
-
-			return true;
+			return (scrollPositionAtMouseDown - scrollPositionAtMouseUp).Length <= 5;
 		}
 
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
-			bool clickWasOnValidMenuItem = true;
-			if(scrollingWindow?.ScrollArea?.Children?[0]?.ChildHasMouseCaptured == false)
-			{
-				clickWasOnValidMenuItem = false;
-			}
-			positionAtMouseUp = scrollingWindow.ScrollPosition;
+			bool mouseUpOnIgnoredChild = ignoredWidgets.Any(w => w.MouseCaptured || w.ChildHasMouseCaptured);
+
+			bool clickIsInsideScrollArea = (scrollingWindow?.ScrollArea?.Children?[0]?.ChildHasMouseCaptured == true);
+
+			scrollPositionAtMouseUp = scrollingWindow.ScrollPosition;
 			if (!scrollingWindow.VerticalScrollBar.ChildHasMouseCaptured
 				&& AllowClickingItems()
-				&& clickWasOnValidMenuItem)
+				&& clickIsInsideScrollArea
+				&& !mouseUpOnIgnoredChild)
 			{
 				UiThread.RunOnIdle(CloseMenu);
 			}
 			base.OnMouseUp(mouseEvent);
 		}
 
-		internal virtual void CloseMenu()
+		public virtual void CloseMenu()
 		{
-			if (this.Parent != null)
+			// Restore focus to originating widget on close
+			if (this.widgetRelativeTo != null
+				&& !widgetRelativeTo.HasBeenClosed)
 			{
-				this.contentWidget?.Parent?.RemoveChild(this.contentWidget);
-				this.contentWidget.ClearRemovedFlag();
-
-				this.Parent.RemoveChild(this);
-				this.Close();
+				// On menu close, select the first scrollable parent of the widgetRelativeTo
+				var scrollableParent = widgetRelativeTo.Parents<ScrollableWidget>().FirstOrDefault();
+				if (scrollableParent != null)
+				{
+					scrollableParent.Focus();
+				}
 			}
+
+			this.contentWidget?.Parent?.RemoveChild(this.contentWidget);
+			this.contentWidget.ClearRemovedFlag();
+
+			this.Parent?.RemoveChild(this);
+			this.Close();
 		}
 
-		internal void DropListItems_ContainsFocusChanged(object sender, EventArgs e)
+		public override void OnContainsFocusChanged(EventArgs e)
 		{
-			var widget = sender as GuiWidget;
-			if (widget == null
-				|| !widget.Focused)
+			UiThread.RunOnIdle(() =>
 			{
-				UiThread.RunOnIdle(CloseMenu);
-			}
+				// Fired any time focus changes. Traditionally we closed the menu if the we weren't focused. 
+				// To accommodate children (or external widgets) having focus we also query for and consider special cases
+				bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus || w.Focused)
+					|| this.ChildrenRecursive<DropDownList>().Any(w => w.IsOpen);
+
+				// If the focused changed and we've lost focus and no special cases permit, close the menu
+				if (!this.ContainsFocus
+					&& !specialChildHasFocus)
+				{
+					UiThread.RunOnIdle(CloseMenu);
+				}
+			});
+
+			base.OnContainsFocusChanged(e);
 		}
+
+		private void widgetRelativeTo_Closed(object sender, ClosedEventArgs e)
+		{
+			// If the owning widget closed, so should we
+			this.CloseMenu();
+		}
+
+		public override void OnClosed(ClosedEventArgs e)
+		{
+			// Unbind callbacks on parents for position_changed if we're closing
+			foreach (GuiWidget widget in hookedParents)
+			{
+				widget.PositionChanged -= widgetRelativeTo_PositionChanged;
+				widget.BoundsChanged -= widgetRelativeTo_PositionChanged;
+			}
+
+			// Long lived originating item must be unregistered
+			widgetRelativeTo.Closed -= widgetRelativeTo_Closed;
+
+			base.OnClosed(e);
+		}
+	}
+
+	/// <summary>
+	/// Marker interface for ignoring mouse input on popup widget children
+	/// </summary>
+	public interface IIgnoredPopupChild
+	{
 	}
 }

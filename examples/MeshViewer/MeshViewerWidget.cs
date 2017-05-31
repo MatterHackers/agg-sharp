@@ -174,14 +174,6 @@ namespace MatterHackers.MeshVisualizer
 
 		public override void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType seachType, bool allowInvalidItems = true)
 		{
-			List<GuiWidget> searchChildren = new List<GuiWidget>(Children);
-			foreach (GuiWidget child in searchChildren)
-			{
-				RectangleDouble touchingBoundsRelChild = touchingBounds;
-				touchingBoundsRelChild.Offset(-child.OriginRelativeParent);
-				child.FindNamedChildrenRecursive(nameToSearchFor, foundChildren, touchingBoundsRelChild, seachType);
-			}
-
 			foreach (var child in Scene.Children)
 			{
 				string object3DName = "none_Object3D";
@@ -229,7 +221,8 @@ namespace MatterHackers.MeshVisualizer
 					}
 				}
 			}
-			base.FindNamedChildrenRecursive(nameToSearchFor, foundChildren, touchingBounds, seachType);
+
+			base.FindNamedChildrenRecursive(nameToSearchFor, foundChildren, touchingBounds, seachType, allowInvalidItems);
 		}
 
 		public InteractiveScene Scene { get; } = new InteractiveScene();

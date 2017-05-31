@@ -199,7 +199,7 @@
     <Compile Include="Menu\MenuItem.cs" />
     <Compile Include="Menu\MenuItemStatesView.cs" />
     <Compile Include="Menu\MenuStatesView.cs" />
-    <Compile Include="Menu\OpenMenuContents.cs" />
+    <Compile Include="Menu\PopupWidget.cs" />
     <Compile Include="MessageBox.cs" />
     <Compile Include="MouseButtons.cs" />
     <Compile Include="MouseEventArgs.cs" />
