@@ -139,6 +139,10 @@ namespace MatterHackers.RayTracer.Traceable
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{
+			if(Child == null)
+			{
+				return new AxisAlignedBoundingBox(Vector3.Zero, Vector3.Zero);
+			}
 			Vector3 localOrigin = Origin;
 			AxisAlignedBoundingBox localBounds = Child.GetAxisAlignedBoundingBox();
 			AxisAlignedBoundingBox bounds = localBounds.NewTransformed(AxisToWorld);

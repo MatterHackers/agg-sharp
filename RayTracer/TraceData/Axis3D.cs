@@ -68,11 +68,6 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-		public virtual void Render(ICamera camera)
-		{
-			throw new NotImplementedException();
-		}
-
 		public void MoveToAbsolute(double x, double y, double z)
 		{
 			AxisToWorld[3, 0] = x;
