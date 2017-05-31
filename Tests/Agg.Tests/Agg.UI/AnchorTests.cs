@@ -29,20 +29,23 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.Agg.Image;
 using NUnit.Framework;
+using System.IO;
 
 namespace MatterHackers.Agg.UI.Tests
 {
     [TestFixture, Category("Agg.UI")]
 	public class AnchorTests
 	{
-		public static bool saveImagesForDebug = false;
+		public static bool saveImagesForDebug = true;
 
 		private void OutputImages(GuiWidget control, GuiWidget test)
 		{
 			if (saveImagesForDebug)
 			{
-				ImageTgaIO.Save(control.BackBuffer, "image-control.tga");
-				ImageTgaIO.Save(test.BackBuffer, "image-test.tga");
+				string outputPath = TestContext.CurrentContext.WorkDirectory;
+
+				ImageTgaIO.Save(control.BackBuffer, Path.Combine(outputPath, "image-control.tga"));
+				ImageTgaIO.Save(test.BackBuffer, Path.Combine(outputPath, "image-test.tga"));
 			}
 		}
 
