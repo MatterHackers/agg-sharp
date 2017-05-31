@@ -27,9 +27,9 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.VectorMath;
 using System;
 using System.Collections.ObjectModel;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
@@ -68,17 +68,6 @@ namespace MatterHackers.Agg.UI
 			this.MenuDirection = direction;
 			this.VAnchor = VAnchor.FitToChildren;
 			this.HAnchor = HAnchor.FitToChildren;
-			this.Click += (s, e) =>
-			{
-				if (!mouseDownWhileOpen)
-				{
-					if (MenuItems.Count > 0)
-					{
-						UiThread.RunOnIdle(ShowMenu);
-						IsOpen = true;
-					}
-				}
-			};
 		}
 
 		// If max height is > 0 it will limit the height of the menu
@@ -101,6 +90,20 @@ namespace MatterHackers.Agg.UI
 				mouseDownWhileOpen = false;
 			}
 			base.OnMouseDown(mouseEvent);
+		}
+
+		public override void OnClick(MouseEventArgs mouseEvent)
+		{
+			if (!mouseDownWhileOpen)
+			{
+				if (MenuItems.Count > 0)
+				{
+					UiThread.RunOnIdle(ShowMenu);
+					IsOpen = true;
+				}
+			}
+
+			base.OnClick(mouseEvent);
 		}
 
 		internal PopupMenu DropDownContainer = null;
