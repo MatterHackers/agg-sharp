@@ -1298,6 +1298,9 @@ namespace MatterHackers.Agg.UI
 				}
 #endif
 
+				// first thing we do is make sure the child has been initialized
+				childToAdd.Initialize();
+
 				if (indexInChildrenList == -1)
 				{
 					indexInChildrenList = Children.Count;
@@ -1328,6 +1331,14 @@ namespace MatterHackers.Agg.UI
 				childToAdd.InitLayout();
 				OnLayout(new LayoutEventArgs(this, childToAdd, PropertyCausingLayout.AddChild));
 			}
+		}
+
+		/// <summary>
+		/// Override this to create child controls and other 
+		/// </summary>
+		public virtual void Initialize()
+		{
+			Initialized = true;
 		}
 
 		public int GetChildIndex(GuiWidget child)
@@ -1671,6 +1682,8 @@ namespace MatterHackers.Agg.UI
 				return containsFocus;
 			}
 		}
+
+		public bool Initialized { get; private set; } = false;
 
 		public void SuspendLayout()
 		{

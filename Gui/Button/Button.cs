@@ -20,6 +20,7 @@ namespace MatterHackers.Agg.UI
 	public class Button : ButtonBase
 	{
 		public static BorderDouble DefaultMargin = new BorderDouble(3);
+		GuiWidget buttonView;
 
 		public Button(GuiWidget buttonView)
 			: this(0, 0, buttonView)
@@ -34,9 +35,15 @@ namespace MatterHackers.Agg.UI
 		public Button(double x = 0, double y = 0, GuiWidget buttonView = null)
 			: base(x, y)
 		{
-			Margin = DefaultMargin;
-
 			OriginRelativeParent = new Vector2(x, y);
+			this.buttonView = buttonView;
+		}
+
+		public override void Initialize()
+		{
+			base.Initialize();
+
+			Margin = DefaultMargin;
 
 			if (buttonView != null)
 			{
