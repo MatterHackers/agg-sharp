@@ -3094,7 +3094,7 @@ namespace MatterHackers.Agg.UI
 					yield return childChild;
 				}
 
-				if(child.GetType() == typeof(T))
+				if(child is T)
 				{
 					yield return (T)child;
 				}
