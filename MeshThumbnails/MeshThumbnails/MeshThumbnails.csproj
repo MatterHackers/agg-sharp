@@ -50,10 +50,6 @@
       <Project>{04667764-DC7B-4B95-AEF6-B4E6C87A54E9}</Project>
       <Name>DataConverters3D</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\Gui\Gui.csproj">
-      <Project>{74F6BB6C-9D02-4512-A59A-21940E35C532}</Project>
-      <Name>Gui</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\ImageProcessing\ImageProcessing.csproj">
       <Project>{036BCCBA-52D8-457C-84AE-8821F209FE4A}</Project>
       <Name>ImageProcessing</Name>

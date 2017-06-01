@@ -41,25 +41,25 @@ namespace MatterHackers.Agg.OpenGlGui
 {
 	public static class ExtensionMethods
     {
-		public static void RenderDebugAABB(this TrackballTumbleWidget trackBall, Graphics2D graphics2D, AxisAlignedBoundingBox bounds)
+		public static void RenderDebugAABB(this WorldView worldView, Graphics2D graphics2D, AxisAlignedBoundingBox bounds)
 		{
 			Vector3 renderPosition = bounds.Center;
-			Vector2 objectCenterScreenSpace = trackBall.GetScreenPosition(renderPosition);
+			Vector2 objectCenterScreenSpace = worldView.GetScreenPosition(renderPosition);
 			Point2D screenPositionOfObject3D = new Point2D((int)objectCenterScreenSpace.x, (int)objectCenterScreenSpace.y);
 
 			graphics2D.Circle(objectCenterScreenSpace, 5, RGBA_Bytes.Magenta);
 
 			for (int i = 0; i < 4; i++)
 			{
-				graphics2D.Circle(trackBall.GetScreenPosition(bounds.GetTopCorner(i)), 5, RGBA_Bytes.Magenta);
-				graphics2D.Circle(trackBall.GetScreenPosition(bounds.GetBottomCorner(i)), 5, RGBA_Bytes.Magenta);
+				graphics2D.Circle(worldView.GetScreenPosition(bounds.GetTopCorner(i)), 5, RGBA_Bytes.Magenta);
+				graphics2D.Circle(worldView.GetScreenPosition(bounds.GetBottomCorner(i)), 5, RGBA_Bytes.Magenta);
 			}
 
 			RectangleDouble screenBoundsOfObject3D = RectangleDouble.ZeroIntersection;
 			for (int i = 0; i < 4; i++)
 			{
-				screenBoundsOfObject3D.ExpandToInclude(trackBall.GetScreenPosition(bounds.GetTopCorner(i)));
-				screenBoundsOfObject3D.ExpandToInclude(trackBall.GetScreenPosition(bounds.GetBottomCorner(i)));
+				screenBoundsOfObject3D.ExpandToInclude(worldView.GetScreenPosition(bounds.GetTopCorner(i)));
+				screenBoundsOfObject3D.ExpandToInclude(worldView.GetScreenPosition(bounds.GetBottomCorner(i)));
 			}
 
 			graphics2D.Circle(screenBoundsOfObject3D.Left, screenBoundsOfObject3D.Bottom, 5, RGBA_Bytes.Cyan);
@@ -113,102 +113,36 @@ namespace MatterHackers.Agg.OpenGlGui
 		}
 
 		public bool DrawRotationHelperCircle { get; set; }
-
-		private TrackBallController mainTrackBallController = new TrackBallController();
-
-		public TrackBallController TrackBallController
-		{
-			get { return mainTrackBallController; }
-			set
-			{
-				mainTrackBallController.TransformChanged -= TrackBallController_TransformChanged;
-				mainTrackBallController = value;
-				mainTrackBallController.TransformChanged += TrackBallController_TransformChanged;
-			}
-		}
-
+		
+		public TrackBallController TrackBallController { get; }
+		
 		public bool LockTrackBall { get; set; }
 
-		public TrackballTumbleWidget()
+		private WorldView world;
+
+		public TrackballTumbleWidget(WorldView world)
 		{
 			AnchorAll();
 			DrawRotationHelperCircle = true;
-			TrackBallController.TransformChanged += TrackBallController_TransformChanged;
-		}
-
-		private void TrackBallController_TransformChanged(object sender, EventArgs e)
-		{
-			CalculateModelviewMatrix();
+			TrackBallController = new TrackBallController(world);
+			this.world = world;
 		}
 
 		public override void OnBoundsChanged(EventArgs e)
 		{
 			Vector2 screenCenter = new Vector2(Width / 2, Height / 2);
 			double trackingRadius = Math.Min(Width * .45, Height * .45);
-			TrackBallController.ScreenCenter = screenCenter;
+			world.ScreenCenter = screenCenter;
+
 			TrackBallController.TrackBallRadius = trackingRadius;
-			CalculateProjectionMatrix();
+
+			this.world.CalculateProjectionMatrix(this.Width, this.Height);
+
+			this.world.CalculateModelviewMatrix();
+
 			MakeArrowIcons();
 
 			base.OnBoundsChanged(e);
-		}
-
-		public Vector3 GetWorldPosition(Vector2 screenPosition)
-		{
-			Vector4 homoginizedScreenSpace = new Vector4((2.0f * (screenPosition.x / Width)) - 1,
-				1 - (2 * (screenPosition.y / Height)),
-				1,
-				1);
-
-			Matrix4X4 viewProjection = ModelviewMatrix * ProjectionMatrix;
-			Matrix4X4 viewProjectionInverse = Matrix4X4.Invert(viewProjection);
-			Vector4 woldSpace = Vector4.Transform(homoginizedScreenSpace, viewProjectionInverse);
-
-			double perspectiveDivide = 1 / woldSpace.w;
-
-			woldSpace.x *= perspectiveDivide;
-			woldSpace.y *= perspectiveDivide;
-			woldSpace.z *= perspectiveDivide;
-
-			return new Vector3(woldSpace);
-		}
-
-		public Vector2 GetScreenPosition(Vector3 worldPosition)
-		{
-			Vector3 homoginizedViewPosition = Vector3.Transform(worldPosition, ModelviewMatrix);
-
-			Vector3 homoginizedScreenPosition = Vector3.TransformPerspective(homoginizedViewPosition, ProjectionMatrix);
-
-			Vector2 screenPosition = new Vector2(homoginizedScreenPosition.x * Width / 2 + Width / 2, homoginizedScreenPosition.y * Height / 2 + Height / 2);
-
-			return screenPosition; 
-		}
-
-		public Vector3 GetScreenSpace(Vector3 worldPosition)
-		{
-			Vector3 viewPosition = Vector3.Transform(worldPosition, ModelviewMatrix);
-
-			return Vector3.Transform(viewPosition, ProjectionMatrix);
-		}
-
-		public Ray GetRayForLocalBounds(Vector2 localPosition)
-		{
-			Vector4 rayClip = new Vector4();
-			rayClip.x = (2.0 * localPosition.x) / Width - 1.0;
-			rayClip.y = (2.0 * localPosition.y) / Height - 1.0;
-			rayClip.z = -1.0;
-			rayClip.w = 1.0;
-
-			Vector4 rayEye = Vector4.Transform(rayClip, InverseProjectionMatrix);
-			rayEye.z = -1; rayEye.w = 0;
-
-			Vector4 rayWorld = Vector4.Transform(rayEye, InverseModelviewMatrix);
-
-			Vector3 finalRayWorld = new Vector3(rayWorld).GetNormal();
-
-			Vector3 origin = Vector3.Transform(Vector3.Zero, InverseModelviewMatrix);
-
-			return new Ray(origin, finalRayWorld);
 		}
 
 		public override void OnDraw(MatterHackers.Agg.Graphics2D graphics2D)
@@ -236,7 +170,7 @@ namespace MatterHackers.Agg.OpenGlGui
 
 		public void DrawTrackballRadius(Graphics2D graphics2D)
 		{
-			var center = TrackBallController.ScreenCenter;
+			var center = world.ScreenCenter;
 			var radius = TrackBallController.TrackBallRadius;
 			var elipse = new Ellipse(center, radius, radius);
 			var outline = new Stroke(elipse, 3);
@@ -265,7 +199,7 @@ namespace MatterHackers.Agg.OpenGlGui
 
 		private void MakeArrowIcons()
 		{
-			var center = TrackBallController.ScreenCenter;
+			var center = this.world.ScreenCenter;
 			var radius = TrackBallController.TrackBallRadius;
 			insideArrows.Clear();
 			// create the inside arrows
@@ -401,7 +335,7 @@ namespace MatterHackers.Agg.OpenGlGui
 					Vector2 position0 = mouseEvent.GetPosition(0);
 					Vector2 position1 = mouseEvent.GetPosition(1);
 					startDistanceBetweenPoints = (position1 - position0).Length;
-					pinchStartScale = TrackBallController.Scale;
+					pinchStartScale = world.Scale;
 
 					startAngle = Math.Atan2(position1.y - position0.y, position1.x - position0.x);
 
@@ -512,7 +446,7 @@ namespace MatterHackers.Agg.OpenGlGui
 				double curDistanceBetweenPoints = (position1 - position0).Length;
 
 				double scaleAmount = pinchStartScale * curDistanceBetweenPoints / startDistanceBetweenPoints;
-				TrackBallController.Scale = scaleAmount;
+				this.world.Scale = scaleAmount;
 
 				double angle = Math.Atan2(position1.y - position0.y, position1.x - position0.x);
 			}
@@ -682,12 +616,12 @@ namespace MatterHackers.Agg.OpenGlGui
 			// set the projection matrix
 			GL.MatrixMode(MatrixMode.Projection);
 			GL.PushMatrix();
-			GL.LoadMatrix(ProjectionMatrix.GetAsDoubleArray());
+			GL.LoadMatrix(this.world.ProjectionMatrix.GetAsDoubleArray());
 
 			// set the modelview matrix
 			GL.MatrixMode(MatrixMode.Modelview);
 			GL.PushMatrix();
-			GL.LoadMatrix(ModelviewMatrix.GetAsDoubleArray());
+			GL.LoadMatrix(this.world.ModelviewMatrix.GetAsDoubleArray());
 		}
 
 		private void UnsetGlContext()
@@ -709,56 +643,6 @@ namespace MatterHackers.Agg.OpenGlGui
 			GL.Disable(EnableCap.DepthTest);
 
 			GL.PopAttrib();
-		}
-
-		private Matrix4X4 projectionMatrix;
-
-		public Matrix4X4 ProjectionMatrix { get { return projectionMatrix; } }
-
-		private Matrix4X4 inverseProjectionMatrix;
-
-		public Matrix4X4 InverseProjectionMatrix { get { return inverseProjectionMatrix; } }
-
-		public void CalculateProjectionMatrix()
-		{
-			projectionMatrix = Matrix4X4.Identity;
-			if (Width > 0 && Height > 0)
-			{
-				Matrix4X4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(45), Width / Height, 0.1f, 100.0f, out projectionMatrix);
-				inverseProjectionMatrix = Matrix4X4.Invert(ProjectionMatrix);
-			}
-		}
-
-		private Matrix4X4 modelviewMatrix;
-
-		public Matrix4X4 ModelviewMatrix { get { return modelviewMatrix; } }
-
-		private Matrix4X4 inverseModelviewMatrix;
-
-		public Matrix4X4 InverseModelviewMatrix { get { return inverseModelviewMatrix; } }
-
-		public void CalculateModelviewMatrix()
-		{
-			modelviewMatrix = Matrix4X4.CreateTranslation(0, 0, -7);
-			modelviewMatrix = TrackBallController.GetTransform4X4() * modelviewMatrix;
-			inverseModelviewMatrix = Matrix4X4.Invert(modelviewMatrix);
-		}
-
-		public double GetWorldUnitsPerScreenPixelAtPosition(Vector3 worldPosition, double maxRatio = 5)
-		{
-			Vector2 screenPosition = GetScreenPosition(worldPosition);
-
-            Ray rayFromScreen = GetRayForLocalBounds(screenPosition);
-			double distanceFromOriginToWorldPos = (worldPosition - rayFromScreen.origin).Length;
-
-			Ray rightOnePixelRay = GetRayForLocalBounds(new Vector2(screenPosition.x + 1, screenPosition.y));
-			Vector3 rightOnePixel = rightOnePixelRay.origin + rightOnePixelRay.directionNormal * distanceFromOriginToWorldPos;
-			double distBetweenPixelsWorldSpace = (rightOnePixel - worldPosition).Length;
-			if(distBetweenPixelsWorldSpace > maxRatio)
-			{
-				return maxRatio;
-			}
-			return distBetweenPixelsWorldSpace;
 		}
 	}
 }

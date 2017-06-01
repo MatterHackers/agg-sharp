@@ -59,7 +59,8 @@ namespace MatterHackers.RayTracer
 		private List<IPrimitive> renderCollection = new List<IPrimitive>();
 		private Scene scene;
 		private Point2D size;
-		public TrackballTumbleWidget trackballTumbleWidget;
+		
+		private WorldView world;
 
 		private RayTracer rayTracer = new RayTracer()
 		{
@@ -70,9 +71,8 @@ namespace MatterHackers.RayTracer
 		public ThumbnailTracer(IObject3D item, int width, int height)
 		{
 			size = new Point2D(width, height);
-			trackballTumbleWidget = new TrackballTumbleWidget();
-			trackballTumbleWidget.DoOpenGlDrawing = false;
-			trackballTumbleWidget.LocalBounds = new RectangleDouble(0, 0, width, height);
+
+			world = new WorldView(width, height);
 
 			loadedMeshGroups = item.ToMeshGroupList();
 
@@ -80,7 +80,6 @@ namespace MatterHackers.RayTracer
 			if (hasOneOrMoreValidMesh)
 			{
 				SetRenderPosition(loadedMeshGroups);
-				trackballTumbleWidget.AnchorCenter();
 			}
 			else
 			{
@@ -116,11 +115,11 @@ namespace MatterHackers.RayTracer
 
 		public void SetRenderPosition(List<MeshGroup> loadedMeshGroups)
 		{
-			trackballTumbleWidget.TrackBallController.Reset();
-			trackballTumbleWidget.TrackBallController.Scale = .03;
+			world.Reset();
+			world.Scale = .03;
 
-			trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, MathHelper.Tau / 16)));
-			trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
+			world.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, MathHelper.Tau / 16)));
+			world.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
 
 			ScaleMeshToView(loadedMeshGroups);
 		}
@@ -176,14 +175,14 @@ namespace MatterHackers.RayTracer
 			foreach (Face face in meshToDraw.Faces)
 			{
 				int i = 0;
-				Vector3 normal = Vector3.TransformVector(face.normal, trackballTumbleWidget.ModelviewMatrix).GetNormal();
+				Vector3 normal = Vector3.TransformVector(face.normal, world.ModelviewMatrix).GetNormal();
 				if (normal.z > 0)
 				{
 					foreach (FaceEdge faceEdge in face.FaceEdges())
 					{
-						points[i].position = trackballTumbleWidget.GetScreenPosition(faceEdge.firstVertex.Position);
+						points[i].position = world.GetScreenPosition(faceEdge.firstVertex.Position);
 
-						Vector3 transformedPosition = Vector3.TransformPosition(faceEdge.firstVertex.Position, trackballTumbleWidget.ModelviewMatrix);
+						Vector3 transformedPosition = Vector3.TransformPosition(faceEdge.firstVertex.Position, world.ModelviewMatrix);
 						points[i].z = transformedPosition.z;
 						i++;
 					}
@@ -343,7 +342,7 @@ namespace MatterHackers.RayTracer
 		private void CreateScene()
 		{
 			scene = new Scene();
-			scene.camera = new TrackBallCamera(trackballTumbleWidget);
+			scene.camera = new WorldCamera(world);
 			//scene.background = new Background(new RGBA_Floats(0.5, .5, .5), 0.4);
 			scene.background = new Background(new RGBA_Floats(1, 1, 1, 0), 0.6);
 
@@ -365,21 +364,21 @@ namespace MatterHackers.RayTracer
 		{
 			RectangleDouble screenBounds = RectangleDouble.ZeroIntersection;
 
-			screenBounds.ExpandToInclude(trackballTumbleWidget.GetScreenPosition(new Vector3(meshBounds.minXYZ.x, meshBounds.minXYZ.y, meshBounds.minXYZ.z)));
-			screenBounds.ExpandToInclude(trackballTumbleWidget.GetScreenPosition(new Vector3(meshBounds.maxXYZ.x, meshBounds.minXYZ.y, meshBounds.minXYZ.z)));
-			screenBounds.ExpandToInclude(trackballTumbleWidget.GetScreenPosition(new Vector3(meshBounds.maxXYZ.x, meshBounds.maxXYZ.y, meshBounds.minXYZ.z)));
-			screenBounds.ExpandToInclude(trackballTumbleWidget.GetScreenPosition(new Vector3(meshBounds.minXYZ.x, meshBounds.maxXYZ.y, meshBounds.minXYZ.z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.x, meshBounds.minXYZ.y, meshBounds.minXYZ.z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.x, meshBounds.minXYZ.y, meshBounds.minXYZ.z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.x, meshBounds.maxXYZ.y, meshBounds.minXYZ.z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.x, meshBounds.maxXYZ.y, meshBounds.minXYZ.z)));
 
-			screenBounds.ExpandToInclude(trackballTumbleWidget.GetScreenPosition(new Vector3(meshBounds.minXYZ.x, meshBounds.minXYZ.y, meshBounds.maxXYZ.z)));
-			screenBounds.ExpandToInclude(trackballTumbleWidget.GetScreenPosition(new Vector3(meshBounds.maxXYZ.x, meshBounds.minXYZ.y, meshBounds.maxXYZ.z)));
-			screenBounds.ExpandToInclude(trackballTumbleWidget.GetScreenPosition(new Vector3(meshBounds.maxXYZ.x, meshBounds.maxXYZ.y, meshBounds.maxXYZ.z)));
-			screenBounds.ExpandToInclude(trackballTumbleWidget.GetScreenPosition(new Vector3(meshBounds.minXYZ.x, meshBounds.maxXYZ.y, meshBounds.maxXYZ.z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.x, meshBounds.minXYZ.y, meshBounds.maxXYZ.z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.x, meshBounds.minXYZ.y, meshBounds.maxXYZ.z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.x, meshBounds.maxXYZ.y, meshBounds.maxXYZ.z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.x, meshBounds.maxXYZ.y, meshBounds.maxXYZ.z)));
 			return screenBounds;
 		}
 
 		public void GetMinMaxZ(Mesh mesh, ref double minZ, ref double maxZ)
 		{
-			AxisAlignedBoundingBox meshBounds = mesh.GetAxisAlignedBoundingBox(trackballTumbleWidget.ModelviewMatrix);
+			AxisAlignedBoundingBox meshBounds = mesh.GetAxisAlignedBoundingBox(world.ModelviewMatrix);
 
 			minZ = Math.Min(meshBounds.minXYZ.z, minZ);
 			maxZ = Math.Max(meshBounds.maxXYZ.z, maxZ);
@@ -414,7 +413,7 @@ namespace MatterHackers.RayTracer
 
 					if (!NeedsToBeSmaller(partScreenBounds, goalBounds))
 					{
-						trackballTumbleWidget.TrackBallController.Scale *= (1 + scaleFraction);
+						world.Scale *= (1 + scaleFraction);
 						partScreenBounds = GetScreenBounds(meshBounds);
 
 						// If it crossed over the goal reduct the amount we are adjusting by.
@@ -425,7 +424,7 @@ namespace MatterHackers.RayTracer
 					}
 					else
 					{
-						trackballTumbleWidget.TrackBallController.Scale *= (1 - scaleFraction);
+						world.Scale *= (1 - scaleFraction);
 						partScreenBounds = GetScreenBounds(meshBounds);
 
 						// If it crossed over the goal reduct the amount we are adjusting by.
@@ -442,18 +441,18 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-		private class TrackBallCamera : ICamera
+		private class WorldCamera : ICamera
 		{
-			private TrackballTumbleWidget trackballTumbleWidget;
+			private WorldView world;
 
-			public TrackBallCamera(TrackballTumbleWidget trackballTumbleWidget)
+			public WorldCamera(WorldView world)
 			{
-				this.trackballTumbleWidget = trackballTumbleWidget;
+				this.world = world;
 			}
 
 			public Ray GetRay(double screenX, double screenY)
 			{
-				return trackballTumbleWidget.GetRayForLocalBounds(new Vector2(screenX, screenY));
+				return world.GetRayForLocalBounds(new Vector2(screenX, screenY));
 			}
 		}
 	}

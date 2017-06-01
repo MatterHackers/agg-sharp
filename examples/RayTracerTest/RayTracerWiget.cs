@@ -69,9 +69,13 @@ namespace MatterHackers.RayTracer
 		private List<string> timingStrings = new List<string>();
 		private Stopwatch totalTime = new Stopwatch();
 
+		private WorldView world;
+
 		public RayTraceWidget(int width = 200, int height = 200)
 		{
-			trackballTumbleWidget = new TrackballTumbleWidget();
+			world = new WorldView(width, height);
+
+			trackballTumbleWidget = new TrackballTumbleWidget(world);
 			trackballTumbleWidget.DoOpenGlDrawing = false;
 			trackballTumbleWidget.DrawRotationHelperCircle = false;
 			//trackballTumbleWidget.DrawGlContent += trackballTumbleWidget_DrawGlContent;
@@ -84,27 +88,26 @@ namespace MatterHackers.RayTracer
 			CreateScene();
 			LocalBounds = new RectangleDouble(0, 0, width, height);
 
-			trackballTumbleWidget.TrackBallController.Scale = .03;
+			world.Scale = .03;
 
-			trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, MathHelper.Tau / 16)));
-			trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
+			world.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, MathHelper.Tau / 16)));
+			world.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
+
 			trackballTumbleWidget.AnchorAll();
 		}
 
-		private class TrackBallCamera : ICamera
+		public class WorldCamera : ICamera
 		{
-			private TrackballTumbleWidget trackballTumbleWidget;
+			private WorldView world;
 
-			public TrackBallCamera(TrackballTumbleWidget trackballTumbleWidget)
+			public WorldCamera(WorldView world)
 			{
-				this.trackballTumbleWidget = trackballTumbleWidget;
+				this.world = world;
 			}
-
-			public Vector3 Origin { get; set; }
 
 			public Ray GetRay(double screenX, double screenY)
 			{
-				return trackballTumbleWidget.GetRayForLocalBounds(new Vector2(screenX, screenY));
+				return world.GetRayForLocalBounds(new Vector2(screenX, screenY));
 			}
 		}
 
@@ -140,7 +143,7 @@ namespace MatterHackers.RayTracer
 		private void CreateScene()
 		{
 			scene = new Scene();
-			scene.camera = new TrackBallCamera(trackballTumbleWidget);
+			scene.camera = new WorldCamera(world);
 			scene.background = new Background(new RGBA_Floats(0.5, .5, .5), 0.4);
 
 			//AddBoxAndSheresBooleanTest();
@@ -410,7 +413,7 @@ namespace MatterHackers.RayTracer
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			Matrix4X4 currentRenderMatrix = trackballTumbleWidget.ModelviewMatrix;
+			Matrix4X4 currentRenderMatrix = world.ModelviewMatrix;
 			if (lastRenderedMatrix != currentRenderMatrix)
 			{
 				Stopwatch traceTime = new Stopwatch();

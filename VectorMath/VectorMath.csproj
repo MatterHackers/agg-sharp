@@ -153,6 +153,7 @@
     <Compile Include="Vector2.cs" />
     <Compile Include="Vector3.cs" />
     <Compile Include="Vector4.cs" />
+    <Compile Include="WorldView.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
