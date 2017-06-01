@@ -55,6 +55,11 @@ namespace MatterHackers.Agg
 			Top = intRect.Top;
 		}
 
+		public RectangleDouble(Vector2 position1, Vector2 position2) : 
+			this(Math.Min(position1.x, position2.x), Math.Min(position1.y, position2.y), Math.Max(position1.x, position2.x), Math.Max(position1.y, position2.y))
+		{
+		}
+
 		public void SetRect(double left, double bottom, double right, double top)
 		{
 			init(left, bottom, right, top);
