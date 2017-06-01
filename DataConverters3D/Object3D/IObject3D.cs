@@ -34,6 +34,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using MatterHackers.Agg;
+using System.Collections;
 
 namespace MatterHackers.DataConverters3D
 {
@@ -112,5 +113,52 @@ namespace MatterHackers.DataConverters3D
 		/// transforms as the tree is descended. Often passed as Matrix4X4.Identity.</param>
 		/// <returns></returns>
 		IEnumerable<MeshAndTransform> VisibleMeshes(Matrix4X4 transform);
+	}
+
+	public class Object3DIterator : IEnumerable<Object3DIterator>
+	{
+		public Matrix4X4 TransformToWorld { get; private set; }
+		public IObject3D IObject3D { get; private set; }
+		public int Depth { get; private set; } = 0;
+		Func<Object3DIterator, bool> DecentFilter = null;
+
+		public Object3DIterator(IObject3D referenceItem, Matrix4X4 initialTransform = default(Matrix4X4), int initialDepth = 0, Func<Object3DIterator, bool> decentFilter = null)
+		{
+			TransformToWorld = initialTransform;
+			if (TransformToWorld == default(Matrix4X4))
+			{
+				TransformToWorld = Matrix4X4.Identity;
+			}
+			Depth = initialDepth;
+
+			IObject3D = referenceItem;
+			this.DecentFilter = decentFilter;
+		}
+
+		public IEnumerator<Object3DIterator> GetEnumerator()
+		{
+			foreach (var child in IObject3D.Children)
+			{
+				var iterator = new Object3DIterator(child, TransformToWorld * child.Matrix, Depth + 1, DecentFilter);
+
+				if (DecentFilter?.Invoke(iterator) != false)
+				{
+					yield return iterator;
+
+					foreach(var subIterator in iterator)
+					{
+						if (DecentFilter?.Invoke(subIterator) != false)
+						{
+							yield return subIterator;
+						}
+					}
+				}
+			}
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			throw new NotImplementedException();
+		}
 	}
 }
