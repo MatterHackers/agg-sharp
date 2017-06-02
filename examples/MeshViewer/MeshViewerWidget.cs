@@ -101,7 +101,7 @@ namespace MatterHackers.MeshVisualizer
 			BedColor = new RGBA_Floats(.8, .8, .8, .7).GetAsRGBA_Bytes();
 			BuildVolumeColor = new RGBA_Floats(.2, .8, .3, .2).GetAsRGBA_Bytes();
 
-			trackballTumbleWidget = new TrackballTumbleWidget();
+			trackballTumbleWidget = new TrackballTumbleWidget(this.World);
 			trackballTumbleWidget.DrawRotationHelperCircle = false;
 			trackballTumbleWidget.DrawGlContent += trackballTumbleWidget_DrawGlContent;
 			trackballTumbleWidget.TransformState = TrackBallController.MouseDownType.Rotation;
@@ -121,6 +121,8 @@ namespace MatterHackers.MeshVisualizer
 
 			this.AddChild(labelContainer);
 		}
+
+		public WorldView World { get; } = new WorldView(0, 0);
 
 		public event EventHandler LoadDone;
 
@@ -162,8 +164,8 @@ namespace MatterHackers.MeshVisualizer
 				{
 					foreach (var child in Scene.Children)
 					{
-						TrackballTumbleWidget.RenderDebugAABB(e.graphics2D, child.TraceData().GetAxisAlignedBoundingBox());
-						TrackballTumbleWidget.RenderDebugAABB(e.graphics2D, child.GetAxisAlignedBoundingBox(Matrix4X4.Identity));
+						this.World.RenderDebugAABB(e.graphics2D, child.TraceData().GetAxisAlignedBoundingBox());
+						this.World.RenderDebugAABB(e.graphics2D, child.GetAxisAlignedBoundingBox(Matrix4X4.Identity));
 					}
 				};
 			}
@@ -207,14 +209,14 @@ namespace MatterHackers.MeshVisualizer
 					RectangleDouble screenBoundsOfObject3D = RectangleDouble.ZeroIntersection;
 					for(int i=0; i<4; i++)
 					{
-						screenBoundsOfObject3D.ExpandToInclude(TrackballTumbleWidget.GetScreenPosition(bounds.GetTopCorner(i)));
-						screenBoundsOfObject3D.ExpandToInclude(TrackballTumbleWidget.GetScreenPosition(bounds.GetBottomCorner(i)));
+						screenBoundsOfObject3D.ExpandToInclude(this.World.GetScreenPosition(bounds.GetTopCorner(i)));
+						screenBoundsOfObject3D.ExpandToInclude(this.World.GetScreenPosition(bounds.GetBottomCorner(i)));
 					}
 
 					if (touchingBounds.IsTouching(screenBoundsOfObject3D))
 					{
 						Vector3 renderPosition = bounds.Center;
-						Vector2 objectCenterScreenSpace = TrackballTumbleWidget.GetScreenPosition(renderPosition);
+						Vector2 objectCenterScreenSpace = this.World.GetScreenPosition(renderPosition);
 						Point2D screenPositionOfObject3D = new Point2D((int)objectCenterScreenSpace.x, (int)objectCenterScreenSpace.y);
 
 						foundChildren.Add(new WidgetAndPosition(this, screenPositionOfObject3D, object3DName));
@@ -514,7 +516,7 @@ namespace MatterHackers.MeshVisualizer
 			}
 
 			int volumeHitIndex;
-			Ray ray = trackballTumbleWidget.GetRayForLocalBounds(mouseEvent.Position);
+			Ray ray = this.World.GetRayForLocalBounds(mouseEvent.Position);
 			IntersectInfo info;
 			if (this.Scene.HasSelection
 				&& !SuppressUiVolumes 
@@ -540,7 +542,7 @@ namespace MatterHackers.MeshVisualizer
 				return;
 			}
 
-			Ray ray = trackballTumbleWidget.GetRayForLocalBounds(mouseEvent.Position);
+			Ray ray = this.World.GetRayForLocalBounds(mouseEvent.Position);
 			IntersectInfo info = null;
 			if (MouseDownOnInteractionVolume && volumeIndexWithMouseDown != -1)
 			{
@@ -586,7 +588,7 @@ namespace MatterHackers.MeshVisualizer
 			}
 
 			int volumeHitIndex;
-			Ray ray = trackballTumbleWidget.GetRayForLocalBounds(mouseEvent.Position);
+			Ray ray = this.World.GetRayForLocalBounds(mouseEvent.Position);
 			IntersectInfo info;
 			bool anyInteractionVolumeHit = FindInteractionVolumeHit(ray, out volumeHitIndex, out info);
 			MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray, info);
@@ -615,11 +617,12 @@ namespace MatterHackers.MeshVisualizer
 		public void ResetView()
 		{
 			trackballTumbleWidget.ZeroVelocity();
-			trackballTumbleWidget.TrackBallController.Reset();
-			trackballTumbleWidget.TrackBallController.Scale = .03;
-			trackballTumbleWidget.TrackBallController.Translate(-new Vector3(BedCenter));
-			trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, MathHelper.Tau / 16)));
-			trackballTumbleWidget.TrackBallController.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
+
+			this.World.Reset();
+			this.World.Scale = .03;
+			this.World.Translate(-new Vector3(BedCenter));
+			this.World.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, MathHelper.Tau / 16)));
+			this.World.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
 		}
 
 		private void CreateCircularBedGridImage(int linesInX, int linesInY, int increment = 1)

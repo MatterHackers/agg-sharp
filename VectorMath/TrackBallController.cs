@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2017, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -36,97 +36,43 @@ namespace MatterHackers.VectorMath
 		public enum MouseDownType { None, Translation, Rotation, Scale };
 
 		private const double Epsilon = 1.0e-5;
-		private Vector2 screenCenter;
 		private double rotationTrackingRadius;
 
 		private MouseDownType currentTrackingType = MouseDownType.None;
-
-		private Matrix4X4 currentRotationMatrix = Matrix4X4.Identity;
-		private Matrix4X4 currentTranslationMatrix = Matrix4X4.Identity;
 
 		private Matrix4X4 localToScreenTransform;
 
 		private Vector3 rotationStart;
 		private Vector3 rotationCurrent;
-		private Quaternion activeRotationQuaternion = Quaternion.Identity;
 
 		private Vector2 lastTranslationMousePosition = Vector2.Zero;
 		private Vector2 lastScaleMousePosition = Vector2.Zero;
 
 		public event EventHandler TransformChanged;
 
-		public TrackBallController()
-			: this(new Vector2(), 1)
+		private WorldView world;
+
+		public TrackBallController(WorldView world)
+			: this(new Vector2(), 1, world)
 		{
 		}
 
-		public TrackBallController(Vector2 screenCenter, double trackBallRadius)
+		public TrackBallController(Vector2 screenCenter, double trackBallRadius, WorldView world)
 		{
 			rotationStart = new Vector3();
 			rotationCurrent = new Vector3();
-			this.screenCenter = screenCenter;
 			this.rotationTrackingRadius = trackBallRadius;
-		}
 
-		public TrackBallController(TrackBallController trackBallToCopy)
-		{
-			CopyTransforms(trackBallToCopy);
+			this.world = world;
 		}
 
 		public void CopyTransforms(TrackBallController trackBallToCopy)
 		{
-			screenCenter = trackBallToCopy.screenCenter;
 			rotationTrackingRadius = trackBallToCopy.rotationTrackingRadius;
-			currentRotationMatrix = trackBallToCopy.currentRotationMatrix;
-			currentTranslationMatrix = trackBallToCopy.currentTranslationMatrix;
+			this.world.RotationMatrix = trackBallToCopy.world.RotationMatrix;
+			this.world.TranslationMatrix = trackBallToCopy.world.TranslationMatrix;
 
 			OnTransformChanged(null);
-		}
-
-		public void Reset()
-		{
-			currentRotationMatrix = Matrix4X4.Identity;
-			currentTranslationMatrix = Matrix4X4.Identity;
-		}
-
-		public void Translate(Vector3 deltaPosition)
-		{
-			currentTranslationMatrix = Matrix4X4.CreateTranslation(deltaPosition) * currentTranslationMatrix;
-			OnTransformChanged(null);
-		}
-
-		public void Rotate(Quaternion rotation)
-		{
-			currentRotationMatrix = currentRotationMatrix * Matrix4X4.CreateRotation(rotation);
-			OnTransformChanged(null);
-		}
-
-        public double Scale
-		{
-			get
-			{
-				Vector3 scaledUnitVector = Vector3.TransformPosition(Vector3.UnitX, this.GetTransform4X4());
-				return scaledUnitVector.Length;
-			}
-
-			set
-			{
-				if (Scale > 0)
-				{
-					double requiredChange = value / Scale;
-
-					currentTranslationMatrix *= Matrix4X4.CreateScale(requiredChange);
-					OnTransformChanged(null);
-				}
-			}
-		}
-
-		private void OnTransformChanged(EventArgs e)
-		{
-			if (TransformChanged != null)
-			{
-				TransformChanged(this, e);
-			}
 		}
 
 		public MouseDownType CurrentTrackingType
@@ -142,7 +88,7 @@ namespace MatterHackers.VectorMath
 
 		private void MapToSphere(Vector2 screenPoint, out Vector3 vector)
 		{
-			Vector2 deltaFromCenter = screenPoint - screenCenter;
+			Vector2 deltaFromCenter = screenPoint - world.ScreenCenter;
 			Vector2 deltaMinus1To1 = deltaFromCenter;
 
 			//Adjust point coords and scale down to range of [-1 ... 1]
@@ -209,7 +155,8 @@ namespace MatterHackers.VectorMath
 			switch (currentTrackingType)
 			{
 				case MouseDownType.Rotation:
-					activeRotationQuaternion = Quaternion.Identity;
+					var activeRotationQuaternion = Quaternion.Identity;
+					
 					//Map the point to the sphere
 					MapToSphere(mousePosition, out rotationCurrent);
 
@@ -227,6 +174,9 @@ namespace MatterHackers.VectorMath
 						activeRotationQuaternion.Z = Perp.z;
 						//In the quaternion values, w is cosine (theta / 2), where theta is the rotation angle
 						activeRotationQuaternion.W = Vector3.Dot(rotationStart, rotationCurrent);
+
+						world.activeRotationQuaternion = activeRotationQuaternion;
+
 						OnTransformChanged(null);
 					}
 					break;
@@ -234,11 +184,11 @@ namespace MatterHackers.VectorMath
 				case MouseDownType.Translation:
 					{
 						Vector2 mouseDelta = mousePosition - lastTranslationMousePosition;
-						Vector2 scaledDelta = mouseDelta / screenCenter.x * 4.75;
+						Vector2 scaledDelta = mouseDelta / world.ScreenCenter.x * 4.75;
 						Vector3 offset = new Vector3(scaledDelta.x, scaledDelta.y, 0);
-						offset = Vector3.TransformPosition(offset, Matrix4X4.Invert(CurrentRotation));
+						offset = Vector3.TransformPosition(offset, Matrix4X4.Invert(world.RotationMatrix));
 						offset = Vector3.TransformPosition(offset, localToScreenTransform);
-						currentTranslationMatrix = currentTranslationMatrix * Matrix4X4.CreateTranslation(offset);
+						world.TranslationMatrix = world.TranslationMatrix * Matrix4X4.CreateTranslation(offset);
 						lastTranslationMousePosition = mousePosition;
 						OnTransformChanged(null);
 					}
@@ -256,7 +206,7 @@ namespace MatterHackers.VectorMath
 						{
 							zoomDelta = 1 + (1 * mouseDelta.y / 100);
 						}
-						Scale = Scale * zoomDelta;
+						world.Scale = world.Scale * zoomDelta;
 						lastScaleMousePosition = mousePosition;
 						OnTransformChanged(null);
 					}
@@ -272,8 +222,9 @@ namespace MatterHackers.VectorMath
 			switch (currentTrackingType)
 			{
 				case MouseDownType.Rotation:
-					currentRotationMatrix = currentRotationMatrix * Matrix4X4.CreateRotation(activeRotationQuaternion);
-					activeRotationQuaternion = Quaternion.Identity;
+					//world.RotationMatrix = world.RotationMatrix * Matrix4X4.CreateRotation(world.activeRotationQuaternion);
+					world.RotationMatrix = world.RotationMatrix;
+					//world.activeRotationQuaternion = Quaternion.Identity;
 					OnTransformChanged(null);
 					break;
 
@@ -302,39 +253,13 @@ namespace MatterHackers.VectorMath
 				zoomDelta = .8;
 			}
 
-			Scale = Scale * zoomDelta;
+			world.Scale = world.Scale * zoomDelta;
 			OnTransformChanged(null);
 		}
 
-		public Matrix4X4 CurrentRotation
+		private void OnTransformChanged(EventArgs x)
 		{
-			get
-			{
-				if (activeRotationQuaternion == Quaternion.Identity)
-				{
-					return currentRotationMatrix;
-				}
-
-				return currentRotationMatrix * Matrix4X4.CreateRotation(activeRotationQuaternion);
-			}
-		}
-
-		public Matrix4X4 GetTransform4X4()
-		{
-			return currentTranslationMatrix * CurrentRotation;
-		}
-
-		public Vector2 ScreenCenter
-		{
-			get
-			{
-				return screenCenter;
-			}
-
-			set
-			{
-				screenCenter = value;
-			}
+			world.OnTransformChanged(x);
 		}
 
 		public double TrackBallRadius
@@ -349,5 +274,6 @@ namespace MatterHackers.VectorMath
 				rotationTrackingRadius = value;
 			}
 		}
+
 	}
 }
