@@ -12,6 +12,8 @@ using MatterHackers.VectorMath;
 //-----------------------------------------------------------------------
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace MatterHackers.RayTracer
 {
@@ -37,29 +39,16 @@ namespace MatterHackers.RayTracer
 			vertices[1] = new Vector3Float(vertex1);
 			vertices[2] = new Vector3Float(vertex2);
 			center = new Vector3Float((vertex0 + vertex1 + vertex2) / 3);
-			if (Math.Abs(planeNormal.x) > Math.Abs(planeNormal.y))
+
+			var normalLength = new Dictionary<double, int>()
 			{
-				if (Math.Abs(planeNormal.x) > Math.Abs(planeNormal.z))
-				{
-					// mostly facing x axis
-					majorAxis = 0;
-				}
-				else if (Math.Abs(planeNormal.y) > Math.Abs(planeNormal.z))
-				{
-					// mostly facing z
-					majorAxis = 2;
-				}
-			}
-			else if (Math.Abs(planeNormal.y) > Math.Abs(planeNormal.z))
-			{
-				// mostly facing y
-				majorAxis = 1;
-			}
-			else
-			{
-				// mostly facing z
-				majorAxis = 2;
-			}
+				[Math.Abs(planeNormal.x)] = 0,
+				[Math.Abs(planeNormal.y)] = 1,
+				[Math.Abs(planeNormal.z)] = 2,
+			};
+
+			majorAxis = normalLength.OrderBy(x => x.Key).Last().Value;
+
 			for (int i = 0; i < 3; i++)
 			{
 				boundsOnMajorAxis.Left = Math.Min(vertices[i][xForMajorAxis], boundsOnMajorAxis.Left);
