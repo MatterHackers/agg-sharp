@@ -72,7 +72,7 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public static AxisAlignedBoundingBox GetUnionedAxisAlignedBoundingBox(this List<IObject3D> items)
+		public static AxisAlignedBoundingBox GetUnionedAxisAlignedBoundingBox(this IEnumerable<IObject3D> items)
 		{
 			// first find the bounds of what is already here.
 			AxisAlignedBoundingBox totalBounds = AxisAlignedBoundingBox.Empty;
