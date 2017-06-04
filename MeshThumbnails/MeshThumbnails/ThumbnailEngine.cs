@@ -51,17 +51,6 @@ namespace MatterHackers.RayTracer
 
 	public static class ThumbnailEngine
 	{
-		// stlHashCode = this.ItemWrapper.FileHashCode.ToString();
-		// loadedItem = Object3D.Load(this.ItemWrapper.FileLocation);
-		// renderType = GetRenderType(this.ItemWrapper.FileLocation);
-		/*
-		 * if (!File.Exists(this.ItemWrapper.FileLocation))
-			{
-				return;
-			} */
-		// Move null detection to caller -  ?? new ImageBuffer(this.noThumbnailImage)
-		// Move scaling to caller - this.thumbnailImage = ImageBuffer.CreateScaledImage(bigRender, (int)Width, (int)Height);
-		// width, height:  BigRenderSize.x, BigRenderSize.y
 		public static ImageBuffer Generate(IObject3D loadedItem, RenderType renderType, int width, int height, bool allowMultiThreading = true)
 		{
 			switch (renderType)
@@ -106,16 +95,9 @@ namespace MatterHackers.RayTracer
 				default:
 					{
 						var thumbnail = BuildImageFromMeshGroups(loadedItem, width, height);
-						thumbnail.SetRecieveBlender(new BlenderPreMultBGRA());
-
-						System.Diagnostics.Debugger.Break();
-
+						
 						// Force to all white and return
-						//return thumbnail.AllWhite();
-
-
-						// TODO: Fix AllWhite problem
-						return null;
+						return thumbnail.AllWhite();
 					}
 					break;
 			}

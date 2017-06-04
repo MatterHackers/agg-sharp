@@ -38,7 +38,6 @@ using MatterHackers.VectorMath;
 namespace MatterHackers.RayTracer
 {
 	using System.Linq;
-	using MatterHackers.Agg.OpenGlGui;
 	using MatterHackers.Agg.RasterizerScanline;
 	using MatterHackers.Agg.VertexSource;
 	using MatterHackers.RayTracer.Light;
