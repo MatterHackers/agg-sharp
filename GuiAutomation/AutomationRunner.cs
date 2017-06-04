@@ -650,7 +650,7 @@ namespace MatterHackers.GuiAutomation
 		{
 			SystemWindow containingWindow;
 			Point2D offsetHint;
-            GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
+			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
 			if (widgetToClick != null)
 			{
 				RectangleDouble childBounds = widgetToClick.TransformToParentSpace(containingWindow, widgetToClick.LocalBounds);
@@ -893,7 +893,7 @@ namespace MatterHackers.GuiAutomation
 		/// Wait up to secondsToWait for the named widget to exist and be visible.
 		/// </summary>
 		/// <param name="widgetName"></param>
-		public bool WaitForName(string widgetName, double secondsToWait = 1) // TODO: should have a search region
+		public bool WaitForName(string widgetName, double secondsToWait = 5) // TODO: should have a search region
 		{
 			Stopwatch timeWaited = Stopwatch.StartNew();
 			while (!NameExists(widgetName)
