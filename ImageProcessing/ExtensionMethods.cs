@@ -184,5 +184,54 @@ namespace MatterHackers.ImageProcessing
 
 			return outputImage;
 		}
+
+		public static ImageBuffer AllWhite(this ImageBuffer sourceImage)
+		{
+			var destImage = new ImageBuffer(sourceImage);
+
+			switch (destImage.BitDepth)
+			{
+				case 32:
+					{
+						int height = destImage.Height;
+						int width = destImage.Width;
+						byte[] resultBuffer = sourceImage.GetBuffer();
+						byte[] imageABuffer = destImage.GetBuffer();
+						for (int y = 0; y < height; y++)
+						{
+							int offsetA = destImage.GetBufferOffsetY(y);
+							int offsetResult = sourceImage.GetBufferOffsetY(y);
+
+							for (int x = 0; x < width; x++)
+							{
+								int alpha = imageABuffer[offsetA + 3];
+								if (alpha > 0)
+								{
+									resultBuffer[offsetResult++] = (byte)255; offsetA++;
+									resultBuffer[offsetResult++] = (byte)255; offsetA++;
+									resultBuffer[offsetResult++] = (byte)255; offsetA++;
+									resultBuffer[offsetResult++] = (byte)alpha; offsetA++;
+								}
+								else
+								{
+									resultBuffer[offsetResult++] = (byte)0; offsetA++;
+									resultBuffer[offsetResult++] = (byte)0; offsetA++;
+									resultBuffer[offsetResult++] = (byte)0; offsetA++;
+									resultBuffer[offsetResult++] = (byte)0; offsetA++;
+								}
+							}
+						}
+
+						destImage.SetRecieveBlender(new BlenderPreMultBGRA());
+					}
+					break;
+
+				default:
+					throw new NotImplementedException();
+			}
+
+			return destImage;
+		}
+
 	}
 }
