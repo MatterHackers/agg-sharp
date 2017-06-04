@@ -127,7 +127,7 @@ namespace MatterHackers.Agg.UI.Tests
 				testRunner.Delay(1);
 				buttonContainer.CloseOnIdle();
 
-				return Task.FromResult(0);
+				return Task.CompletedTask;
 			};
 
 			Button leftButton = new Button("left", 10, 40);

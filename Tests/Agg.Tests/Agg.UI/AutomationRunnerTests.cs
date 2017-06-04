@@ -51,7 +51,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 				Assert.IsTrue(leftClickCount == 1, "Got left button click");
 
-				return Task.FromResult(0);
+				return Task.CompletedTask;
 			};
 
 			SystemWindow buttonContainer = new SystemWindow(300, 200);
@@ -81,7 +81,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 				Assert.IsFalse(testRunner.NameExists("left", searchRegion: rightButtonRegion), "Left button should not exist in the right button region");
 
-				return Task.FromResult(0);
+				return Task.CompletedTask;
 			};
 
 			SystemWindow buttonContainer = new SystemWindow(300, 200);

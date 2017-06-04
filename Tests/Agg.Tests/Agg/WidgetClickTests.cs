@@ -87,7 +87,7 @@ namespace MatterHackers.Agg.Tests
 				Assert.AreEqual(orangeClickCount, 2, "Expected 2 clicks on orange widget");
 				Assert.AreEqual(purpleClickCount, 1, "Expected 1 click on purple widget");
 
-				return Task.FromResult(0);
+				return Task.CompletedTask;
 			};
 
 			SystemWindow systemWindow = new SystemWindow(300, 200)

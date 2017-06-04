@@ -984,7 +984,7 @@ namespace MatterHackers.GuiAutomation
 			initialSystemWindow.ShowAsSystemWindow();
 
 			// After the system window is closed return the task and any exception to the calling context
-			return task?.Result ?? Task.FromResult(0);
+			return task?.Result ?? Task.CompletedTask;
 		}
 
 		#endregion
