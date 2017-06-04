@@ -590,7 +590,7 @@ namespace MatterHackers.Agg.UI.Tests
 				testRunner.Delay(1);
 				Assert.IsTrue(editField.Text == "Test Text", "validate text is typed");
 
-				return Task.FromResult(0);
+				return Task.CompletedTask;
 			};
 
 			editField = new TextEditWidget(pixelWidth: 200)
@@ -624,7 +624,7 @@ namespace MatterHackers.Agg.UI.Tests
 				testRunner.Delay(() => editField.ContainsFocus, 3);
 				Assert.IsTrue(editField.ContainsFocus, "Focused property should be true after invoking Focus method");
 
-				return Task.FromResult(0);
+				return Task.CompletedTask;
 			};
 
 			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
@@ -663,7 +663,7 @@ namespace MatterHackers.Agg.UI.Tests
 				testRunner.Type("123");
 				Assert.AreEqual("123123", editField.Text, "Text should be appended if control is focused and has already received input");
 
-				return Task.FromResult(0);
+				return Task.CompletedTask;
 			};
 
 			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 15);

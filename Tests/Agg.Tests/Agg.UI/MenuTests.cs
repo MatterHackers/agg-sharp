@@ -124,7 +124,7 @@ namespace MatterHackers.Agg.UI.Tests
 				testRunner.Delay(() => !testList.IsOpen, 2);
 				Assert.IsFalse(testList.IsOpen, "Menus should close when clicking off menu");
 
-				return Task.FromResult(0);
+				return Task.CompletedTask;
 			};
 
 			var menuTestContainer = new SystemWindow(300, 200)

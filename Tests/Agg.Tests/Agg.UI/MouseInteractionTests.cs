@@ -69,7 +69,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 				Assert.IsTrue(leftClickCount == 1, "Mouse down not a click");
 
-				return Task.FromResult(0);
+				return Task.CompletedTask;
 			};
 
 			SystemWindow buttonContainer = new SystemWindow(300, 200);
