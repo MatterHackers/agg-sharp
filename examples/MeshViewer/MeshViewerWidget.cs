@@ -178,10 +178,10 @@ namespace MatterHackers.MeshVisualizer
 		{
 			foreach (var child in Scene.Children)
 			{
-				string object3DName = "none_Object3D";
-				if (child.MeshPath != null)
+				string object3DName = child.Name;
+				if (object3DName == null && child.MeshPath != null)
 				{
-					object3DName = child.Name ?? Path.GetFileName(child.MeshPath);
+					object3DName = Path.GetFileName(child.MeshPath);
 				}
 
 				bool nameFound = false;
