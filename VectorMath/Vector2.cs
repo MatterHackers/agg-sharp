@@ -41,8 +41,12 @@ namespace MatterHackers.VectorMath
 		/// <summary>The X coordinate of this instance.</summary>
 		public double x;
 
+		public double X { get { return x; } set { x = value; } }
+
 		/// <summary>The Y coordinate of this instance.</summary>
 		public double y;
+
+		public double Y { get { return y; } set { y = value; } }
 
 		/// <summary>
 		/// Defines a unit-length Vector2d that points towards the X-axis.
