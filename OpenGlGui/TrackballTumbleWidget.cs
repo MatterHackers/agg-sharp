@@ -353,35 +353,19 @@ namespace MatterHackers.Agg.OpenGlGui
 				{
 					if (TrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.None)
 					{
-						Keys modifierKeys = ModifierKeys;
-						if (modifierKeys == Keys.Shift)
+						switch (TransformState)
 						{
-							TrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Translation);
-						}
-						else if (modifierKeys == Keys.Control)
-						{
-							TrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Scale);
-						}
-						else if (modifierKeys == Keys.Alt)
-						{
-							TrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Rotation);
-						}
-						else
-						{
-							switch (TransformState)
-							{
-								case TrackBallController.MouseDownType.Rotation:
-									TrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Rotation);
-									break;
+							case TrackBallController.MouseDownType.Rotation:
+								TrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Rotation);
+								break;
 
-								case TrackBallController.MouseDownType.Translation:
-									TrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Translation);
-									break;
+							case TrackBallController.MouseDownType.Translation:
+								TrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Translation);
+								break;
 
-								case TrackBallController.MouseDownType.Scale:
-									TrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Scale);
-									break;
-							}
+							case TrackBallController.MouseDownType.Scale:
+								TrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Scale);
+								break;
 						}
 					}
 				}
