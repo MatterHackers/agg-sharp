@@ -121,10 +121,8 @@ namespace MatterHackers.RayTracer
 
 		public IEnumerator<BvhIterator> GetEnumerator()
 		{
-			if (Bvh is Transform)
+			if (Bvh is Transform transform)
 			{
-				Transform transform = (Transform)Bvh;
-
 				if (transform.Child != null)
 				{
 					var iterator = new BvhIterator(transform.Child, TransformToWorld * transform.AxisToWorld, Depth + 1, DecentFilter);
@@ -143,9 +141,8 @@ namespace MatterHackers.RayTracer
 					}
 				}
 			}
-			else if (Bvh is UnboundCollection)
+			else if (Bvh is UnboundCollection unboundCollection)
 			{
-				UnboundCollection unboundCollection = (UnboundCollection)Bvh;
 				foreach (var item in unboundCollection.Items)
 				{
 					var iterator = new BvhIterator(item, TransformToWorld, Depth + 1, DecentFilter);
@@ -176,6 +173,14 @@ namespace MatterHackers.RayTracer
 		IEnumerator IEnumerable.GetEnumerator()
 		{
 			throw new NotImplementedException();
+		}
+	}
+
+	public static class ExtensionMethods
+	{
+		public static BvhIterator Filter(this IPrimitive item, Func<BvhIterator, bool> decentFilter = null)
+		{
+			return new BvhIterator(item, Matrix4X4.Identity, 0, decentFilter);
 		}
 	}
 }
