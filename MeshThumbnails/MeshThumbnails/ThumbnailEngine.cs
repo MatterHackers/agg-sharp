@@ -57,13 +57,16 @@ namespace MatterHackers.RayTracer
 			{
 				case RenderType.RAY_TRACE:
 					{
+						loadedItem.Mesh?.Triangulate();
+
 						var tracer = new ThumbnailTracer(loadedItem, width, height)
 						{
 							MultiThreaded = allowMultiThreading
 						};
 						tracer.TraceScene();
 
-						tracer.destImage.SetRecieveBlender(new BlenderPreMultBGRA());
+						tracer.destImage?.SetRecieveBlender(new BlenderPreMultBGRA());
+
 						return tracer.destImage;
 					}
 					break;
