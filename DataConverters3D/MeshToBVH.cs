@@ -63,17 +63,31 @@ namespace MatterHackers.DataConverters3D
 				{
 					foreach (PolygonMesh.Vertex vertex in face.Vertices())
 					{
-						triangle[index++] = vertex.Position;
-						if (index == 3)
+						if (false)
 						{
-							index = 0;
 							if (materialIntdex == 1)
 							{
-								renderCollection.Add(new TriangleShape(triangle[0], triangle[1], triangle[2], partMaterial));
+								renderCollection.Add(new MeshFaceTraceable(face, partMaterial));
 							}
 							else
 							{
-								renderCollection.Add(new TriangleShape(triangle[0], triangle[1], triangle[2], otherMaterial));
+								renderCollection.Add(new MeshFaceTraceable(face, otherMaterial));
+							}
+						}
+						else
+						{
+							triangle[index++] = vertex.Position;
+							if (index == 3)
+							{
+								index = 0;
+								if (materialIntdex == 1)
+								{
+									renderCollection.Add(new TriangleShape(triangle[0], triangle[1], triangle[2], partMaterial));
+								}
+								else
+								{
+									renderCollection.Add(new TriangleShape(triangle[0], triangle[1], triangle[2], otherMaterial));
+								}
 							}
 						}
 					}

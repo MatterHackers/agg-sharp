@@ -11,14 +11,31 @@ namespace MatterHackers.DataConverters3D
 	public class MeshFaceTraceable : IPrimitive
 	{
 		Face face;
-		public MeshFaceTraceable(Face face)
+		public MeshFaceTraceable(Face face, MaterialAbstract material)
 		{
 			this.face = face;
+			this.Material = material;
 		}
 
-		public RGBA_Floats GetColor(IntersectInfo info) { return RGBA_Floats.Red; }
+		public RGBA_Floats GetColor(IntersectInfo info)
+		{
+			if (Material.HasTexture)
+			{
+				Vector3Float Position = new Vector3Float(face.normal);
+				Vector3Float vecU = new Vector3Float(Position.y, Position.z, -Position.x);
+				Vector3Float vecV = Vector3Float.Cross(vecU, Position);
 
-		public MaterialAbstract Material { get { return null; } set { } }
+				double u = Vector3Float.Dot(new Vector3Float(info.hitPosition), vecU);
+				double v = Vector3Float.Dot(new Vector3Float(info.hitPosition), vecV);
+				return Material.GetColor(u, v);
+			}
+			else
+			{
+				return Material.GetColor(0, 0);
+			}
+		}
+
+		public MaterialAbstract Material { get; set; }
 
 		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
 		{
