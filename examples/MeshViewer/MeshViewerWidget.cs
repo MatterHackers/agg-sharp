@@ -421,11 +421,9 @@ namespace MatterHackers.MeshVisualizer
 			Invalidate();
 		}
 
-		public enum CenterPartAfterLoad { DO, DONT }
-
 		public bool SuppressUiVolumes { get; set; } = false;
 
-		public async Task LoadItemIntoScene(string itemPath, CenterPartAfterLoad centerPart, Vector2 bedCenter = new Vector2(), string itemName = null)
+		public async Task LoadItemIntoScene(string itemPath, Vector2 bedCenter = new Vector2(), string itemName = null)
 		{
 			if (File.Exists(itemPath))
 			{
@@ -443,24 +441,6 @@ namespace MatterHackers.MeshVisualizer
 					// SetMeshAfterLoad
 					Scene.ModifyChildren(children =>
 					{
-						if(centerPart == CenterPartAfterLoad.DO)
-						{
-							var bounds = loadedItem.GetAxisAlignedBoundingBox(Matrix4X4.Identity);
-							Vector3 boundsCenter = (bounds.maxXYZ + bounds.minXYZ) / 2;
-
-							if (loadedItem.Mesh != null)
-							{
-								loadedItem.Matrix = loadedItem.Matrix * Matrix4X4.CreateTranslation(new Vector3(bedCenter.x - boundsCenter.x, bedCenter.y - boundsCenter.y, 0));
-							}
-							else
-							{
-								foreach(var child in loadedItem.Children)
-								{
-									child.Matrix = child.Matrix * Matrix4X4.CreateTranslation(new Vector3(bedCenter.x - boundsCenter.x, bedCenter.y - boundsCenter.y, 0));
-								}
-							}
-						}
-
 						if (loadedItem.Mesh != null)
 						{
 							// STLs currently load directly into the mesh rather than as a group like AMF
