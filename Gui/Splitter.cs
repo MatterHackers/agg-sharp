@@ -52,7 +52,7 @@ namespace MatterHackers.Agg.UI
 
 			public override void OnDraw(Graphics2D graphics2D)
 			{
-				RoundedRect roundRect = new RoundedRect(new RectangleDouble(Width / 2 - Width / 3 - 1, Height / 2 - Height / 8, Width / 2 + Width / 3 - 1, Height / 2 + Height / 8), 2);
+				RoundedRect roundRect = new RoundedRect(LocalBounds.Left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, 0);
 				graphics2D.Render(roundRect, new RGBA_Bytes(0, 0, 0, 60));
 				base.OnDraw(graphics2D);
 			}
@@ -112,7 +112,7 @@ namespace MatterHackers.Agg.UI
 
 		public Splitter()
 		{
-			splitterWidth = 6;
+			splitterBar.Width = 6;
 			SplitterDistance = 120;
 
 			//Panel1.DebugShowBounds = true;
@@ -125,18 +125,20 @@ namespace MatterHackers.Agg.UI
 			AnchorAll();
 		}
 
-		private double splitterWidth;
-
 		public double SplitterWidth
 		{
 			get
 			{
-				return splitterWidth;
+				return splitterBar.Width;
 			}
 
 			set
 			{
-				throw new NotImplementedException();
+				if (splitterBar.Width != value)
+				{
+					splitterBar.Width = value;
+					OnBoundsChanged(null);
+				}
 			}
 		}
 
@@ -176,11 +178,12 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnBoundsChanged(EventArgs e)
 		{
-			splitterBar.LocalBounds = new RectangleDouble(0, 0, 6, Height);
+			splitterBar.LocalBounds = new RectangleDouble(0, 0, splitterBar.Width, Height);
 			splitterBar.OriginRelativeParent = new Vector2(SplitterDistance, 0);
-			Panel1.LocalBounds = new RectangleDouble(0, 0, SplitterDistance - SplitterWidth / 2, LocalBounds.Height);
-			Panel2.LocalBounds = new RectangleDouble(0, 0, LocalBounds.Width - SplitterDistance - SplitterWidth / 2, LocalBounds.Height);
-			Panel2.OriginRelativeParent = new Vector2(SplitterDistance + SplitterWidth, 0);
+			Panel1.LocalBounds = new RectangleDouble(0, 0, SplitterDistance - splitterBar.Width / 2, LocalBounds.Height);
+			Panel2.LocalBounds = new RectangleDouble(0, 0, LocalBounds.Width - SplitterDistance - splitterBar.Width / 2, LocalBounds.Height);
+			Panel2.OriginRelativeParent = new Vector2(SplitterDistance + splitterBar.Width, 0);
+
 			base.OnBoundsChanged(e);
 		}
 	}
