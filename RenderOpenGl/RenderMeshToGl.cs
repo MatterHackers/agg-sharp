@@ -44,44 +44,55 @@ namespace MatterHackers.RenderOpenGl
 			Render(meshToRender, partColor, Matrix4X4.Identity, renderType);
 		}
 
-		public static void Render3DLine(Vector3 start, Vector3 end, double unitsPerPixelStart, double unitsPerPixelEnd, RGBA_Bytes color, bool doDepthTest = true)
+		public static void Render3DLine(WorldView world, Vector3 start, Vector3 end, RGBA_Bytes color, bool doDepthTest = true)
 		{
-			GL.Disable(EnableCap.Texture2D);
-
-			GL.Enable(EnableCap.Blend);
-			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-			GL.Disable(EnableCap.Lighting);
-			if (doDepthTest)
+			Render3DLine(GetClippingFrustum(world), world, start, end, color, doDepthTest);
+		}
+		
+		public static void Render3DLine(Frustum clippingFrustum, WorldView world, Vector3 start, Vector3 end, RGBA_Bytes color, bool doDepthTest = true)
+		{
+			if (clippingFrustum.ClipLine(ref start, ref end))
 			{
-				GL.Enable(EnableCap.DepthTest);
-			}
-			else
-			{
-				GL.Disable(EnableCap.DepthTest);
-			}
+				double unitsPerPixelStart = world.GetWorldUnitsPerScreenPixelAtPosition(start);
+				double unitsPerPixelEnd = world.GetWorldUnitsPerScreenPixelAtPosition(end);
 
-			Vector3 delta = start - end;
-			Matrix4X4 rotateTransform = Matrix4X4.CreateRotation(new Quaternion(Vector3.UnitX + new Vector3(.0001, -.00001, .00002), -delta.GetNormal()));
-			Matrix4X4 scaleTransform = Matrix4X4.CreateScale((end - start).Length, 1, 1);
-			Vector3 lineCenter = (start + end) / 2;
-			Matrix4X4 lineTransform = scaleTransform * rotateTransform * Matrix4X4.CreateTranslation(lineCenter);
+				GL.Disable(EnableCap.Texture2D);
 
-			for(int i=0; i<unscaledLineMesh.Vertices.Count; i++)
-			{
-				Vector3 vertexPosition = unscaledLineMesh.Vertices[i].Position;
-				if(vertexPosition.x < 0)
+				GL.Enable(EnableCap.Blend);
+				GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+				GL.Disable(EnableCap.Lighting);
+				if (doDepthTest)
 				{
-					scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.x, vertexPosition.y * unitsPerPixelStart, vertexPosition.z * unitsPerPixelStart);
+					GL.Enable(EnableCap.DepthTest);
 				}
 				else
 				{
-					scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.x, vertexPosition.y * unitsPerPixelEnd, vertexPosition.z * unitsPerPixelEnd);
+					GL.Disable(EnableCap.DepthTest);
 				}
+
+				Vector3 delta = start - end;
+				Matrix4X4 rotateTransform = Matrix4X4.CreateRotation(new Quaternion(Vector3.UnitX + new Vector3(.0001, -.00001, .00002), -delta.GetNormal()));
+				Matrix4X4 scaleTransform = Matrix4X4.CreateScale((end - start).Length, 1, 1);
+				Vector3 lineCenter = (start + end) / 2;
+				Matrix4X4 lineTransform = scaleTransform * rotateTransform * Matrix4X4.CreateTranslation(lineCenter);
+
+				for (int i = 0; i < unscaledLineMesh.Vertices.Count; i++)
+				{
+					Vector3 vertexPosition = unscaledLineMesh.Vertices[i].Position;
+					if (vertexPosition.x < 0)
+					{
+						scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.x, vertexPosition.y * unitsPerPixelStart, vertexPosition.z * unitsPerPixelStart);
+					}
+					else
+					{
+						scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.x, vertexPosition.y * unitsPerPixelEnd, vertexPosition.z * unitsPerPixelEnd);
+					}
+				}
+
+				scaledLineMesh.MarkAsChanged();
+
+				GLHelper.Render(scaledLineMesh, color, lineTransform, RenderTypes.Shaded);
 			}
-
-			scaledLineMesh.MarkAsChanged();
-
-			GLHelper.Render(scaledLineMesh, color, lineTransform, RenderTypes.Shaded);
 		}
 
 		static Mesh scaledLineMesh = PlatonicSolids.CreateCube();
@@ -124,6 +135,14 @@ namespace MatterHackers.RenderOpenGl
 
 				GL.PopMatrix();
 			}
+		}
+
+		public static Frustum GetClippingFrustum(WorldView world)
+		{
+			var frustum = Frustum.FrustumFromProjectionMatrix(world.ProjectionMatrix);
+			var frustum2 = Frustum.Transform(frustum, world.InverseModelviewMatrix);
+
+			return frustum2;
 		}
 
 		private static void DrawToGL(Mesh meshToRender)
