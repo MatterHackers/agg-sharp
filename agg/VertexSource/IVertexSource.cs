@@ -65,7 +65,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		public ShapePath.FlagsAndCommand vertex(out double x, out double y)
 		{
-			if(currentEnumerator == null)
+			if (currentEnumerator == null)
 			{
 				rewind(0);
 			}
@@ -92,5 +92,19 @@ namespace MatterHackers.Agg.VertexSource
 	public interface IVertexSourceProxy : IVertexSource
 	{
 		IVertexSource VertexSource { get; set; }
+	}
+
+	public static class IVertextSourceExtensions
+	{
+		public static RectangleDouble Bounds(this IVertexSource source)
+		{
+			RectangleDouble bounds = RectangleDouble.ZeroIntersection;
+			foreach(VertexData vertex in source.Vertices())
+			{
+				bounds.ExpandToInclude(vertex.position);
+			}
+
+			return bounds;
+		}
 	}
 }
