@@ -49,6 +49,11 @@ namespace MatterHackers.Agg.VertexSource
 		}
 
 		public bool IsStop { get { return ShapePath.is_stop(command); } }
+
+		public override string ToString()
+		{
+			return $"{command}:{position}";
+		}
 	}
 
 	abstract public class VertexSourceLegacySupport : IVertexSource
@@ -92,5 +97,22 @@ namespace MatterHackers.Agg.VertexSource
 	public interface IVertexSourceProxy : IVertexSource
 	{
 		IVertexSource VertexSource { get; set; }
+	}
+
+	public static class IVertexSourceExtensions
+	{
+		public static RectangleDouble Bounds(this IVertexSource source)
+		{
+			RectangleDouble bounds = RectangleDouble.ZeroIntersection;
+			foreach (var vertex in source.Vertices())
+			{
+				if (!vertex.command.HasFlag(ShapePath.FlagsAndCommand.FlagClose))
+				{
+					bounds.ExpandToInclude(vertex.position);
+				}
+			}
+
+			return bounds;
+		}
 	}
 }

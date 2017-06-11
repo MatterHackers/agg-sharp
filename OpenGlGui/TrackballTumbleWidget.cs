@@ -495,7 +495,7 @@ namespace MatterHackers.Agg.OpenGlGui
 
 		public override void OnMouseWheel(MouseEventArgs mouseEvent)
 		{
-			if (!LockTrackBall)
+			if (!LockTrackBall && ContainsFirstUnderMouseRecursive())
 			{
 				TrackBallController.OnMouseWheel(mouseEvent.WheelDelta);
 				Invalidate();
