@@ -935,7 +935,7 @@ namespace MatterHackers.GuiAutomation
 
 		#region Prior TestHarness code
 
-		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure, string imagesDirectory = "", InputType inputType = InputType.Native)
+		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure, string imagesDirectory = "", InputType inputType = InputType.Native, Action closeWindow = null)
 		{
 			var testRunner = new AutomationRunner(imagesDirectory, inputType);
 
@@ -977,7 +977,15 @@ namespace MatterHackers.GuiAutomation
 					task.RunSynchronously();
 				}
 
-				initialSystemWindow.CloseOnIdle();
+				// Invoke the callers close implementation or fall back to CloseOnIdle
+				if (closeWindow != null)
+				{
+					closeWindow();
+				}
+				else
+				{
+					initialSystemWindow.CloseOnIdle();
+				}
 			});
 
 			// Main thread blocks here until released via CloseOnIdle above
