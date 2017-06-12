@@ -78,12 +78,6 @@ namespace MatterHackers.Agg.UI
 			this.openOffset = openOffset;
 			this.contentWidget = contentWidget;
 
-			if (contentWidget.BackgroundColor == RGBA_Bytes.Transparent)
-			{
-				contentWidget.BackgroundColor = RGBA_Bytes.White;
-				this.BorderColor = RGBA_Bytes.Gray;
-			}
-
 			ignoredWidgets = contentWidget.Children.Where(c => c is IIgnoredPopupChild).ToList();
 
 			if (contentWidget is IIgnoredPopupChild)
