@@ -52,6 +52,12 @@ namespace MatterHackers.Agg.VertexSource
 	{
 		private Transform.ITransform transformToApply;
 
+		public ITransform Transform
+		{
+			get { return transformToApply; }
+			set { transformToApply = value; }
+		}
+
 		public IVertexSource VertexSource
 		{
 			get;
