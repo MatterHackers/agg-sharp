@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2017, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,9 +27,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.VectorMath;
 using System;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
@@ -44,43 +43,30 @@ namespace MatterHackers.Agg.UI
 			{
 			}
 
-			protected bool MouseDownOnBar
-			{
-				get { return mouseDownOnBar; }
-				set { mouseDownOnBar = value; }
-			}
-
-			public override void OnDraw(Graphics2D graphics2D)
-			{
-				RoundedRect roundRect = new RoundedRect(LocalBounds.Left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, 0);
-				graphics2D.Render(roundRect, new RGBA_Bytes(0, 0, 0, 60));
-				base.OnDraw(graphics2D);
-			}
-
 			override public void OnMouseDown(MouseEventArgs mouseEvent)
 			{
 				if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
 				{
-					MouseDownOnBar = true;
+					mouseDownOnBar = true;
 					DownPosition = new Vector2(mouseEvent.X, mouseEvent.Y);
 					DownPosition += OriginRelativeParent;
 				}
 				else
 				{
-					MouseDownOnBar = false;
+					mouseDownOnBar = false;
 				}
 				base.OnMouseDown(mouseEvent);
 			}
 
 			override public void OnMouseUp(MouseEventArgs mouseEvent)
 			{
-				MouseDownOnBar = false;
+				mouseDownOnBar = false;
 				base.OnMouseUp(mouseEvent);
 			}
 
 			override public void OnMouseMove(MouseEventArgs mouseEvent)
 			{
-				if (MouseDownOnBar)
+				if (mouseDownOnBar)
 				{
 					Vector2 mousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
 					mousePosition += OriginRelativeParent;
@@ -103,20 +89,15 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private GuiWidget panel1 = new GuiWidget();
-		private GuiWidget panel2 = new GuiWidget();
-
-		public Orientation Orientation { get; set; }
-
-		private SplitterBar splitterBar = new SplitterBar();
+		private SplitterBar splitterBar = new SplitterBar()
+		{
+			BackgroundColor = RGBA_Bytes.Transparent
+		};
 
 		public Splitter()
 		{
 			splitterBar.Width = 6;
 			SplitterDistance = 120;
-
-			//Panel1.DebugShowBounds = true;
-			//Panel2.DebugShowBounds = true;
 
 			AddChild(Panel1);
 			AddChild(Panel2);
@@ -124,6 +105,18 @@ namespace MatterHackers.Agg.UI
 
 			AnchorAll();
 		}
+
+		public RGBA_Bytes SplitterBackground
+		{
+			get => splitterBar.BackgroundColor;
+			set => splitterBar.BackgroundColor = value;
+		}
+
+		public Orientation Orientation { get; set; }
+
+		public GuiWidget Panel1 { get; } = new GuiWidget();
+
+		public GuiWidget Panel2 { get; } = new GuiWidget();
 
 		public double SplitterWidth
 		{
@@ -157,22 +150,6 @@ namespace MatterHackers.Agg.UI
 					splitterDistance = value;
 					OnBoundsChanged(null);
 				}
-			}
-		}
-
-		public GuiWidget Panel1
-		{
-			get
-			{
-				return panel1;
-			}
-		}
-
-		public GuiWidget Panel2
-		{
-			get
-			{
-				return panel2;
 			}
 		}
 
