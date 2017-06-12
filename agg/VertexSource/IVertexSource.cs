@@ -70,7 +70,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		public ShapePath.FlagsAndCommand vertex(out double x, out double y)
 		{
-			if(currentEnumerator == null)
+			if (currentEnumerator == null)
 			{
 				rewind(0);
 			}
