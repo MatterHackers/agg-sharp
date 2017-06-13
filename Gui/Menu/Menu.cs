@@ -126,7 +126,7 @@ namespace MatterHackers.Agg.UI
 				topToBottom.AddChild(menu);
 			}
 
-			DropDownContainer = new PopupMenu(MenuItems, topToBottom, this, OpenOffset, MenuDirection, maxHeight, AlignToRightEdge)
+			DropDownContainer = new PopupMenu(MenuItems, topToBottom, this, OpenOffset, MenuDirection, maxHeight, AlignToRightEdge, true)
 			{
 				BorderWidth = MenuItemsBorderWidth,
 				BorderColor = MenuItemsBorderColor,

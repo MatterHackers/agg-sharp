@@ -30,7 +30,7 @@ namespace MatterHackers.Agg.UI
 		private Vector2 scrollPositionAtMouseDown;
 		private Vector2 scrollPositionAtMouseUp;
 
-		public PopupWidget(GuiWidget contentWidget, IPopupLayoutEngine layoutEngine)
+		public PopupWidget(GuiWidget contentWidget, IPopupLayoutEngine layoutEngine, bool makeScrollable)
 		{
 			this.contentWidget = contentWidget;
 
@@ -43,24 +43,37 @@ namespace MatterHackers.Agg.UI
 				ignoredWidgets.Add(contentWidget);
 			}
 
-			scrollingWindow = new ScrollableWidget(true);
+			if (makeScrollable)
 			{
-				contentWidget.ClearRemovedFlag();
-				scrollingWindow.AddChild(contentWidget);
+				scrollingWindow = new ScrollableWidget(true);
+				{
+					contentWidget.ClearRemovedFlag();
+					scrollingWindow.AddChild(contentWidget);
 
-				contentWidget.HAnchor = UI.HAnchor.ParentLeft | UI.HAnchor.FitToChildren;
-				contentWidget.VAnchor = UI.VAnchor.ParentBottom;
+					contentWidget.HAnchor = UI.HAnchor.ParentLeft | UI.HAnchor.FitToChildren;
+					contentWidget.VAnchor = UI.VAnchor.ParentBottom;
+					Width = contentWidget.Width;
+					Height = contentWidget.Height;
+				}
+
+				scrollingWindow.HAnchor = HAnchor.ParentLeftRight;
+				scrollingWindow.VAnchor = VAnchor.ParentBottomTop;
+				if (layoutEngine.MaxHeight > 0 && Height > layoutEngine.MaxHeight)
+				{
+					MakeMenuHaveScroll(layoutEngine.MaxHeight);
+				}
+
+				this.AddChild(scrollingWindow);
+			}
+			else
+			{
+				contentWidget.AnchorAll();
+				this.AddChild(contentWidget);
+
 				Width = contentWidget.Width;
-				Height = contentWidget.Height;
+				Width = 500;
+				Height = layoutEngine.MaxHeight;
 			}
-
-			scrollingWindow.HAnchor = HAnchor.ParentLeftRight;
-			scrollingWindow.VAnchor = VAnchor.ParentBottomTop;
-			if (layoutEngine.MaxHeight > 0 && Height > layoutEngine.MaxHeight)
-			{
-				MakeMenuHaveScroll(layoutEngine.MaxHeight);
-			}
-			AddChild(scrollingWindow);
 
 			layoutEngine.ShowPopup(this);
 		}
@@ -116,30 +129,36 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
 		{
-			scrollPositionAtMouseDown = scrollingWindow.ScrollPosition;
+			scrollPositionAtMouseDown = scrollingWindow == null ? Vector2.Zero : scrollingWindow.ScrollPosition;
 			base.OnMouseDown(mouseEvent);
 		}
 
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
-			bool mouseUpOnIgnoredChild = ignoredWidgets.Any(w => w.MouseCaptured || w.ChildHasMouseCaptured);
+			scrollPositionAtMouseUp = Vector2.Zero;
 
-			bool clickIsInsideScrollArea = (scrollingWindow?.ScrollArea?.Children?[0]?.ChildHasMouseCaptured == true);
-
-			scrollPositionAtMouseUp = scrollingWindow.ScrollPosition;
-			if (!scrollingWindow.VerticalScrollBar.ChildHasMouseCaptured
-				&& AllowClickingItems()
-				&& clickIsInsideScrollArea
-				&& !mouseUpOnIgnoredChild)
+			if (scrollingWindow != null)
 			{
-				UiThread.RunOnIdle(CloseMenu);
+				bool mouseUpOnIgnoredChild = ignoredWidgets.Any(w => w.MouseCaptured || w.ChildHasMouseCaptured);
+
+				bool clickIsInsideScrollArea = (scrollingWindow?.ScrollArea?.Children?[0]?.ChildHasMouseCaptured == true);
+
+				scrollPositionAtMouseUp = scrollingWindow.ScrollPosition;
+				if (!scrollingWindow.VerticalScrollBar.ChildHasMouseCaptured
+					&& AllowClickingItems()
+					&& clickIsInsideScrollArea
+					&& !mouseUpOnIgnoredChild)
+				{
+					UiThread.RunOnIdle(CloseMenu);
+				}
 			}
+
 			base.OnMouseUp(mouseEvent);
 		}
 
 		public void ScrollIntoView(GuiWidget widget)
 		{
-			if (scrollingWindow.VerticalScrollBar.Visible)
+			if (scrollingWindow?.VerticalScrollBar.Visible == true)
 			{
 				scrollingWindow.ScrollPosition = new Vector2(0, -widget.BoundsRelativeToParent.Bottom + this.Height / 2);
 			}
@@ -156,6 +175,11 @@ namespace MatterHackers.Agg.UI
 
 		internal void MakeMenuHaveScroll(double maxHeight)
 		{
+			if(scrollingWindow == null)
+			{
+				return;
+			}
+
 			scrollingWindow.VAnchor = VAnchor.AbsolutePosition;
 			scrollingWindow.Height = maxHeight;
 			scrollingWindow.MinimumSize = new Vector2(Width + 15, 0);
@@ -308,8 +332,8 @@ namespace MatterHackers.Agg.UI
 	{
 		private List<MenuItem> MenuItems;
 
-		public PopupMenu(IEnumerable<MenuItem> MenuItems, GuiWidget popupContent, GuiWidget widgetRelativeTo, Vector2 openOffset, Direction direction, double maxHeight, bool alignToRightEdge)
-			: base(popupContent, new PopupLayoutEngine(popupContent, widgetRelativeTo, openOffset, direction, maxHeight, alignToRightEdge))
+		public PopupMenu(IEnumerable<MenuItem> MenuItems, GuiWidget popupContent, GuiWidget widgetRelativeTo, Vector2 openOffset, Direction direction, double maxHeight, bool alignToRightEdge, bool makeScrollable)
+			: base(popupContent, new PopupLayoutEngine(popupContent, widgetRelativeTo, openOffset, direction, maxHeight, alignToRightEdge), makeScrollable)
 		{
 			this.Name = "_OpenMenuContents";
 			this.MenuItems = new List<MenuItem>();
