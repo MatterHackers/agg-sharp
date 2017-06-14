@@ -646,8 +646,10 @@ namespace MatterHackers.GuiAutomation
 		/// </summary>
 		/// <param name="widgetName">The given widget name</param>
 		/// <param name="secondsToWait">Total seconds to stay in this function waiting for the named widget to become visible.</param>
-		public void ClickByName(string widgetName, double secondsToWait = 5, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, double delayBeforeReturn = 0.2, bool isDoubleClick = false)
+		public void ClickByName(string widgetName, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, double delayBeforeReturn = 0.2, bool isDoubleClick = false)
 		{
+			double secondsToWait = 5;
+
 			SystemWindow containingWindow;
 			Point2D offsetHint;
 			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
@@ -749,9 +751,9 @@ namespace MatterHackers.GuiAutomation
 			inputSystem.CreateMouseEvent(GetMouseUp(mouseButtons), screenPosition.x, screenPosition.y, 0, 0);
 		}
 
-		public void DoubleClickByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
+		public void DoubleClickByName(string widgetName, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
 		{
-			this.ClickByName(widgetName, secondsToWait, searchRegion, offset, origin, isDoubleClick: true);
+			this.ClickByName(widgetName, searchRegion, offset, origin, isDoubleClick: true);
 		}
 
 		public bool MoveToByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
