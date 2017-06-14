@@ -54,12 +54,12 @@ namespace MatterHackers.Agg.UI.Tests
 			AutomationTest testToRun = (testRunner) =>
 			{
 				// Now do the actions specific to this test. (replace this for new tests)
-				testRunner.ClickByName("left", 1);
+				testRunner.ClickByName("left");
 				testRunner.Delay(.5);
 
 				Assert.IsTrue(leftClickCount == 1, "Got left button click");
 
-				testRunner.ClickByName("right", 1);
+				testRunner.ClickByName("right");
 				testRunner.Delay(.5);
 
 				Assert.IsTrue(rightClickCount == 1, "Got right button click");
