@@ -314,7 +314,15 @@ namespace MatterHackers.Agg.UI
 			if (!aggWidgetHasBeenClosed)
 			{
 				aggIsRequestingClose = true;
-				Close();
+
+				if (this.InvokeRequired)
+				{
+					Invoke(new Action(() => this.Close()));
+				}
+				else
+				{
+					Close();
+				}
 				aggIsRequestingClose = false;
 			}
 		}
