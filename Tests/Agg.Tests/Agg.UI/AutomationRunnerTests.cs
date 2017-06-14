@@ -38,13 +38,20 @@ namespace MatterHackers.Agg.UI.Tests
 	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
 	public class AutomationRunnerTests
 	{
-		[Test, Apartment(ApartmentState.STA)]
+		[Test]
 		public async Task GetWidgetByNameTestNoRegionSingleWindow()
 		{
 			// single system window
 			int leftClickCount = 0;
 
-			AutomationTest testToRun = (testRunner) =>
+			var buttonContainer = new SystemWindow(300, 200);
+
+			var leftButton = new Button("left", 10, 40);
+			leftButton.Name = "left";
+			leftButton.Click += (sender, e) => { leftClickCount++; };
+			buttonContainer.AddChild(leftButton);
+
+			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, (testRunner) =>
 			{
 				testRunner.ClickByName("left");
 				testRunner.Delay(.5);
@@ -52,24 +59,26 @@ namespace MatterHackers.Agg.UI.Tests
 				Assert.IsTrue(leftClickCount == 1, "Got left button click");
 
 				return Task.CompletedTask;
-			};
-
-			SystemWindow buttonContainer = new SystemWindow(300, 200);
-
-			Button leftButton = new Button("left", 10, 40);
-			leftButton.Name = "left";
-			leftButton.Click += (sender, e) => { leftClickCount++; };
-			buttonContainer.AddChild(leftButton);
-
-			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
+			}, 10);
 		}
 
-		[Test, Apartment(ApartmentState.STA)]
+		[Test]
 		public async Task GetWidgetByNameTestRegionSingleWindow()
 		{
 			int leftClickCount = 0;
 
-			AutomationTest testToRun = (testRunner) =>
+			var buttonContainer = new SystemWindow(300, 200);
+
+			var leftButton = new Button("left", 10, 40);
+			leftButton.Name = "left";
+			leftButton.Click += (sender, e) => { leftClickCount++; };
+			buttonContainer.AddChild(leftButton);
+
+			var rightButton = new Button("right", 110, 40);
+			rightButton.Name = "right";
+			buttonContainer.AddChild(rightButton);
+
+			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, (testRunner) =>
 			{
 				testRunner.ClickByName("left");
 				testRunner.Delay(.5);
@@ -77,25 +86,16 @@ namespace MatterHackers.Agg.UI.Tests
 
 				Assert.IsTrue(testRunner.NameExists("left"), "Left button should exist");
 
-				SearchRegion rightButtonRegion = testRunner.GetRegionByName("right");
+				var widget = testRunner.GetWidgetByName(
+					"left",
+					out _,
+					5,
+					testRunner.GetRegionByName("right"));
 
-				Assert.IsFalse(testRunner.NameExists("left", searchRegion: rightButtonRegion), "Left button should not exist in the right button region");
+				Assert.IsNull(widget, "Left button should not exist in the right button region");
 
 				return Task.CompletedTask;
-			};
-
-			SystemWindow buttonContainer = new SystemWindow(300, 200);
-
-			Button leftButton = new Button("left", 10, 40);
-			leftButton.Name = "left";
-			leftButton.Click += (sender, e) => { leftClickCount++; };
-			buttonContainer.AddChild(leftButton);
-
-			Button rightButton = new Button("right", 110, 40);
-			rightButton.Name = "right";
-			buttonContainer.AddChild(rightButton);
-
-			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
+			}, 10);
 		}
 	}
 }

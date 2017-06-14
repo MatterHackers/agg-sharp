@@ -779,7 +779,12 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool NameExists(string widgetName, SearchRegion searchRegion = null)
+		public bool NameExists(string widgetName, double secondsToWait = 5)
+		{
+			return WaitForName(widgetName, secondsToWait);
+		}
+
+		public bool NamedWidgetExists(string widgetName, SearchRegion searchRegion = null)
 		{
 			foreach (SystemWindow window in SystemWindow.AllOpenSystemWindows)
 			{
@@ -898,7 +903,7 @@ namespace MatterHackers.GuiAutomation
 		public bool WaitForName(string widgetName, double secondsToWait = 5) // TODO: should have a search region
 		{
 			Stopwatch timeWaited = Stopwatch.StartNew();
-			while (!NameExists(widgetName)
+			while (!NamedWidgetExists(widgetName)
 				&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
 			{
 				Delay(.05);
@@ -919,7 +924,7 @@ namespace MatterHackers.GuiAutomation
 		public bool WaitVanishForName(string widgetName, double secondsToWait) // TODO: should have a search region
 		{
 			Stopwatch timeWaited = Stopwatch.StartNew();
-			while (NameExists(widgetName)
+			while (NamedWidgetExists(widgetName)
 				&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
 			{
 				Delay(.05);
