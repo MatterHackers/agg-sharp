@@ -431,5 +431,30 @@ namespace MatterHackers.RenderOpenGl
 				cachedClipRect.Right - transform.tx, cachedClipRect.Top - transform.ty), 0);
 			Render(clearRect, color.GetAsRGBA_Bytes());
 		}
+
+		public void RenderTransformedPath(Matrix4X4 transform, IVertexSource path, RGBA_Bytes color, bool doDepthTest)
+		{
+			GL.Disable(EnableCap.Texture2D);
+
+			GL.MatrixMode(MatrixMode.Modelview);
+			GL.PushMatrix();
+			GL.MultMatrix(transform.GetAsFloatArray());
+			//GL.DepthMask(false);
+			GL.Enable(EnableCap.Blend);
+			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+			GL.Disable(EnableCap.Lighting);
+			if (doDepthTest)
+			{
+				GL.Enable(EnableCap.DepthTest);
+			}
+			else
+			{
+				GL.Disable(EnableCap.DepthTest);
+			}
+
+			this.DrawAAShape(path, color);
+
+			GL.PopMatrix();
+		}
 	}
 }
