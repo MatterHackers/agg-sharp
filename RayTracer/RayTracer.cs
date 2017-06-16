@@ -209,7 +209,7 @@ namespace MatterHackers.RayTracer
 			foreach (ILight light in scene.lights)
 			{
 				// calculate diffuse lighting
-				Vector3 directiorFromHitToLight = light.Origin - info.hitPosition;
+				Vector3 directiorFromHitToLight = light.Origin - info.HitPosition;
 				double distanceToLight = directiorFromHitToLight.Length;
 				Vector3 directiorFromHitToLightNormalized = directiorFromHitToLight.GetNormal();
 
@@ -230,7 +230,7 @@ namespace MatterHackers.RayTracer
 					// calculate reflection ray
 					if (RenderReflection && info.closestHitObject.Material.Reflection > 0)
 					{
-						Ray reflectionRay = GetReflectionRay(info.hitPosition, info.normalAtHit, ray.directionNormal);
+						Ray reflectionRay = GetReflectionRay(info.HitPosition, info.normalAtHit, ray.directionNormal);
 						IntersectInfo reflectionInfo = TracePrimaryRay(reflectionRay, scene);
 						RGBA_Floats reflectionColorAtHit;// = reflectionInfo.closestHitObject.GetColor(reflectionInfo);
 						if (reflectionInfo.hitType != IntersectionType.None && reflectionInfo.distanceToHit > 0)
@@ -250,7 +250,7 @@ namespace MatterHackers.RayTracer
 					//calculate refraction ray
 					if (RenderRefraction && info.closestHitObject.Material.Transparency > 0)
 					{
-						Ray refractionRay = new Ray(info.hitPosition, ray.directionNormal, Ray.sameSurfaceOffset, double.MaxValue);  // GetRefractionRay(info.hitPosition, info.normalAtHit, ray.direction, info.closestHit.Material.Refraction);
+						Ray refractionRay = new Ray(info.HitPosition, ray.directionNormal, Ray.sameSurfaceOffset, double.MaxValue);  // GetRefractionRay(info.hitPosition, info.normalAtHit, ray.direction, info.closestHit.Material.Refraction);
 						IntersectInfo refractionInfo = TracePrimaryRay(refractionRay, scene);
 						RGBA_Floats refractionColorAtHit = refractionInfo.closestHitObject.GetColor(refractionInfo);
 						if (refractionInfo.hitType != IntersectionType.None && refractionInfo.distanceToHit > 0)
@@ -272,7 +272,7 @@ namespace MatterHackers.RayTracer
 				if (RenderShadow)
 				{
 					// calculate shadow, create ray from intersection point to light
-					Ray shadowRay = new Ray(info.hitPosition, directiorFromHitToLightNormalized, Ray.sameSurfaceOffset, double.MaxValue); // it may be usefull to limit the legth to te dist to the camera (but I doubt it LBB).
+					Ray shadowRay = new Ray(info.HitPosition, directiorFromHitToLightNormalized, Ray.sameSurfaceOffset, double.MaxValue); // it may be usefull to limit the legth to te dist to the camera (but I doubt it LBB).
 					shadowRay.isShadowRay = true;
 
 					// if the normal at the closest hit is away from the shadow it is already it it's own shadow.
@@ -301,8 +301,8 @@ namespace MatterHackers.RayTracer
 				{
 					// only show Gloss light if it is not in a shadow of another element.
 					// calculate Gloss lighting (Phong)
-					Vector3 Lv = (info.hitPosition - light.Origin).GetNormal();
-					Vector3 E = (ray.origin - info.hitPosition).GetNormal();
+					Vector3 Lv = (info.HitPosition - light.Origin).GetNormal();
+					Vector3 E = (ray.origin - info.HitPosition).GetNormal();
 					Vector3 H = (E - Lv).GetNormal();
 
 					double Glossweight = 0.0;

@@ -143,7 +143,7 @@ namespace MatterHackers.RayTracer
 			{
 				TriangleShape facingPositiveX = new TriangleShape(new Vector3(0, 1, -1), new Vector3(0, 0, 1), new Vector3(0, -1, -1), redStuff);
 				IntersectInfo positiveXInfo = facingPositiveX.GetClosestIntersection(new Ray(new Vector3(1, 0, 0), new Vector3(-1, 0, 0)));
-				Assert.IsTrue(positiveXInfo.hitPosition == new Vector3(0, 0, 0));
+				Assert.IsTrue(positiveXInfo.HitPosition == new Vector3(0, 0, 0));
 				Assert.IsTrue(positiveXInfo.hitType == IntersectionType.FrontFace);
 				Assert.IsTrue(positiveXInfo.closestHitObject == facingPositiveX);
 				Assert.IsTrue(positiveXInfo.distanceToHit == 1);
@@ -157,7 +157,7 @@ namespace MatterHackers.RayTracer
 				Assert.IsTrue(positiveXInfo == null);
 
 				IntersectInfo negativeXInfo = facingNegativeX.GetClosestIntersection(new Ray(new Vector3(-1, 0, 0), new Vector3(1, 0, 0)));
-				Assert.IsTrue(negativeXInfo.hitPosition == new Vector3(0, 0, 0));
+				Assert.IsTrue(negativeXInfo.HitPosition == new Vector3(0, 0, 0));
 				Assert.IsTrue(negativeXInfo.hitType == IntersectionType.FrontFace);
 				Assert.IsTrue(negativeXInfo.closestHitObject == facingNegativeX);
 				Assert.IsTrue(negativeXInfo.distanceToHit == 1);

@@ -54,7 +54,7 @@ namespace MatterHackers.RayTracer
 	{
 		public IntersectionType hitType;
 		public IPrimitive closestHitObject;
-		public Vector3 hitPosition;
+		public Vector3 HitPosition { get; set; }
 		public Vector3 normalAtHit;
 		public double distanceToHit;
 		public RGBA_Floats totalColor;
@@ -68,7 +68,7 @@ namespace MatterHackers.RayTracer
 		{
 			this.hitType = copyInfo.hitType;
 			this.closestHitObject = copyInfo.closestHitObject;
-			this.hitPosition = copyInfo.hitPosition;
+			this.HitPosition = copyInfo.HitPosition;
 			this.normalAtHit = copyInfo.normalAtHit;
 			this.distanceToHit = copyInfo.distanceToHit;
 		}
