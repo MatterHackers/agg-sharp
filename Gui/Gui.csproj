@@ -206,7 +206,6 @@
     <Compile Include="RadioButton\RadioButtonViewStates.cs" />
     <Compile Include="RadioButton\RadioButtonViewText.cs" />
     <Compile Include="ImageSequenceWidget.cs" />
-    <Compile Include="StringEventArgs.cs" />
     <Compile Include="SystemWindow\AbstractOsMappingWidget.cs" />
     <Compile Include="SystemWindow\SystemWindowCreatorPlugin.cs" />
     <Compile Include="SystemWindow\ToolTipManager.cs" />
