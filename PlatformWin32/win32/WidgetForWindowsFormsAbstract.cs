@@ -149,6 +149,14 @@ namespace MatterHackers.Agg.UI
 				case Cursors.IBeam:
 					WindowsFormsWindow.Cursor = System.Windows.Forms.Cursors.IBeam;
 					break;
+
+				case Cursors.HSplit:
+					WindowsFormsWindow.Cursor = System.Windows.Forms.Cursors.HSplit;
+					break;
+
+				case Cursors.VSplit:
+					WindowsFormsWindow.Cursor = System.Windows.Forms.Cursors.VSplit;
+					break;
 			}
 		}
 

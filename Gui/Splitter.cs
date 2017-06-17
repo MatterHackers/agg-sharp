@@ -41,6 +41,7 @@ namespace MatterHackers.Agg.UI
 
 			public SplitterBar()
 			{
+				this.Cursor = Cursors.VSplit;
 			}
 
 			override public void OnMouseDown(MouseEventArgs mouseEvent)
@@ -157,8 +158,8 @@ namespace MatterHackers.Agg.UI
 		{
 			splitterBar.LocalBounds = new RectangleDouble(0, 0, splitterBar.Width, Height);
 			splitterBar.OriginRelativeParent = new Vector2(SplitterDistance, 0);
-			Panel1.LocalBounds = new RectangleDouble(0, 0, SplitterDistance - splitterBar.Width / 2, LocalBounds.Height);
-			Panel2.LocalBounds = new RectangleDouble(0, 0, LocalBounds.Width - SplitterDistance - splitterBar.Width / 2, LocalBounds.Height);
+			Panel1.LocalBounds = new RectangleDouble(0, 0, SplitterDistance, LocalBounds.Height);
+			Panel2.LocalBounds = new RectangleDouble(0, 0, LocalBounds.Width - SplitterDistance - splitterBar.Width, LocalBounds.Height);
 			Panel2.OriginRelativeParent = new Vector2(SplitterDistance + splitterBar.Width, 0);
 
 			base.OnBoundsChanged(e);
