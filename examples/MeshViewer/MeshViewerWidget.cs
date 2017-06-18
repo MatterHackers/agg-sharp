@@ -531,15 +531,10 @@ namespace MatterHackers.MeshVisualizer
 			}
 			else
 			{
+				MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray, info);
+
 				int volumeHitIndex;
-				if (FindInteractionVolumeHit(ray, out volumeHitIndex, out info))
-				{
-					if (volumeIndexWithMouseDown == volumeHitIndex)
-					{
-						MouseEvent3DArgs mouseEvent3D = new MouseEvent3DArgs(mouseEvent, ray, info);
-						interactionVolumes[volumeHitIndex].OnMouseMove(mouseEvent3D);
-					}
-				}
+				FindInteractionVolumeHit(ray, out volumeHitIndex, out info);
 
 				for (int i = 0; i < interactionVolumes.Count; i++)
 				{
@@ -553,6 +548,8 @@ namespace MatterHackers.MeshVisualizer
 						interactionVolumes[i].MouseOver = false;
 						interactionVolumes[i].MouseMoveInfo = null;
 					}
+
+					interactionVolumes[i].OnMouseMove(mouseEvent3D);
 				}
 			}
 		}

@@ -54,8 +54,8 @@ namespace MatterHackers.RayTracer
 				Vector3 vecU = new Vector3(Position.y, Position.z, -Position.x);
 				Vector3 vecV = Vector3.Cross(vecU, plane.PlaneNormal);
 
-				double u = Vector3.Dot(info.hitPosition, vecU);
-				double v = Vector3.Dot(info.hitPosition, vecV);
+				double u = Vector3.Dot(info.HitPosition, vecU);
+				double v = Vector3.Dot(info.HitPosition, vecV);
 				return Material.GetColor(u, v);
 			}
 			else
@@ -78,7 +78,7 @@ namespace MatterHackers.RayTracer
 				IntersectInfo info = new IntersectInfo();
 				info.closestHitObject = this;
 				info.hitType = IntersectionType.FrontFace;
-				info.hitPosition = ray.origin + ray.directionNormal * distanceToHit;
+				info.HitPosition = ray.origin + ray.directionNormal * distanceToHit;
 				info.normalAtHit = plane.PlaneNormal;
 				info.distanceToHit = distanceToHit;
 

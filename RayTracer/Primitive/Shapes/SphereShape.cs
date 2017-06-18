@@ -56,7 +56,7 @@ namespace MatterHackers.RayTracer
 			{
 				Vector3 vn = new Vector3(0, 1, 0).GetNormal(); // north pole / up
 				Vector3 ve = new Vector3(0, 0, 1).GetNormal(); // equator / sphere orientation
-				Vector3 vp = (info.hitPosition - position).GetNormal(); //points from center of sphere to intersection
+				Vector3 vp = (info.HitPosition - position).GetNormal(); //points from center of sphere to intersection
 
 				double phi = Math.Acos(-Vector3.Dot(vp, vn));
 				double v = (phi * 2 / Math.PI) - 1;
@@ -126,8 +126,8 @@ namespace MatterHackers.RayTracer
 						return null;
 					}
 					info.distanceToHit = distanceToFrontHit;
-					info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
-					info.normalAtHit = (info.hitPosition - position).GetNormal();
+					info.HitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
+					info.normalAtHit = (info.HitPosition - position).GetNormal();
 				}
 				else // check back faces
 				{
@@ -138,8 +138,8 @@ namespace MatterHackers.RayTracer
 					}
 					info.hitType = IntersectionType.BackFace;
 					info.distanceToHit = distanceToBackHit;
-					info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
-					info.normalAtHit = -(info.hitPosition - position).GetNormal();
+					info.HitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
+					info.normalAtHit = -(info.HitPosition - position).GetNormal();
 				}
 
 				return info;
@@ -177,8 +177,8 @@ namespace MatterHackers.RayTracer
 					double distanceToFrontHit = distanceFromRayOriginToSphereCenter - amountSphereCenterToRayIsGreaterThanRayOriginToEdge;
 
 					info.distanceToHit = distanceToFrontHit;
-					info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
-					info.normalAtHit = (info.hitPosition - position).GetNormal();
+					info.HitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
+					info.normalAtHit = (info.HitPosition - position).GetNormal();
 
 					yield return info;
 				}
@@ -191,8 +191,8 @@ namespace MatterHackers.RayTracer
 					double distanceToBackHit = distanceFromRayOriginToSphereCenter + amountSphereCenterToRayIsGreaterThanRayOriginToEdge;
 
 					info.distanceToHit = distanceToBackHit;
-					info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
-					info.normalAtHit = -(info.hitPosition - position).GetNormal();
+					info.HitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
+					info.normalAtHit = -(info.HitPosition - position).GetNormal();
 
 					yield return info;
 				}

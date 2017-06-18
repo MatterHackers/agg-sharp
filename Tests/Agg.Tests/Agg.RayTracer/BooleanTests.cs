@@ -55,7 +55,7 @@ namespace MatterHackers.RayTracer
 
 				Assert.IsTrue(testInfo.hitType == IntersectionType.FrontFace, "Found Hit : Box No CSG");
 				Assert.IsTrue(testInfo.closestHitObject == box1X1, "Found Hit : Box No CSG");
-				Assert.IsTrue(testInfo.hitPosition == new Vector3(0, -.5, 0), "Hit position y = -.5 : Box No CSG");
+				Assert.IsTrue(testInfo.HitPosition == new Vector3(0, -.5, 0), "Hit position y = -.5 : Box No CSG");
 				Assert.IsTrue(testInfo.distanceToHit == .5, "Hit length = .5 : Box No CSG");
 				Assert.IsTrue(testInfo.normalAtHit == -Vector3.UnitY, "Normal Correct : Box No CSG");
 			}
@@ -68,7 +68,7 @@ namespace MatterHackers.RayTracer
 
 				Assert.IsTrue(testInfo.hitType == IntersectionType.FrontFace, "Found Hit : One Subtract");
 				Assert.IsTrue(testInfo.closestHitObject == subtractBox, "Found Hit : One Subtract");
-				Assert.IsTrue(testInfo.hitPosition == new Vector3(0, 0, 0), "Hit position y = 0 : One Subtract");
+				Assert.IsTrue(testInfo.HitPosition == new Vector3(0, 0, 0), "Hit position y = 0 : One Subtract");
 				Assert.IsTrue(testInfo.distanceToHit == 1, "Hit length = 1 : One Subtract");
 				Assert.IsTrue(testInfo.normalAtHit == -Vector3.UnitY, "Normal Correct : One Subtract");
 			}

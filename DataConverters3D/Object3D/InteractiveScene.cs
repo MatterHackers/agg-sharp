@@ -42,6 +42,9 @@ namespace MatterHackers.MeshVisualizer
 		[JsonIgnore]
 		public bool HasSelection => HasChildren && SelectedItem != null;
 
+		[JsonIgnore]
+		public bool ShowSelectionShadow { get; set; }
+
 		public bool IsSelected(Object3DTypes objectType) => HasSelection && SelectedItem.ItemType == objectType;
 
 		public void Save(string mcxPath, string libraryPath, ReportProgressRatio progress = null)

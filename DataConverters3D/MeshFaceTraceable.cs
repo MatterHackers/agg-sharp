@@ -25,8 +25,8 @@ namespace MatterHackers.DataConverters3D
 				Vector3Float vecU = new Vector3Float(Position.y, Position.z, -Position.x);
 				Vector3Float vecV = Vector3Float.Cross(vecU, Position);
 
-				double u = Vector3Float.Dot(new Vector3Float(info.hitPosition), vecU);
-				double v = Vector3Float.Dot(new Vector3Float(info.hitPosition), vecV);
+				double u = Vector3Float.Dot(new Vector3Float(info.HitPosition), vecU);
+				double v = Vector3Float.Dot(new Vector3Float(info.HitPosition), vecV);
 				return Material.GetColor(u, v);
 			}
 			else
@@ -83,7 +83,7 @@ namespace MatterHackers.DataConverters3D
 					IntersectInfo info = new IntersectInfo();
 					info.closestHitObject = this;
 					info.distanceToHit = distanceToHit;
-					info.hitPosition = polyPlaneIntersection;
+					info.HitPosition = polyPlaneIntersection;
 					info.normalAtHit = face.normal;
 					info.hitType = IntersectionType.FrontFace;
 					return info;

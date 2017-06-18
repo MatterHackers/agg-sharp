@@ -170,7 +170,7 @@ namespace MatterHackers.RayTracer.Traceable
 				return null;
 			}
 			IntersectInfo globalInfo = new IntersectInfo(localInfo);
-			globalInfo.hitPosition = Vector3.TransformPosition(localInfo.hitPosition, this.AxisToWorld);
+			globalInfo.HitPosition = Vector3.TransformPosition(localInfo.HitPosition, this.AxisToWorld);
 			globalInfo.normalAtHit = Vector3.TransformVector(localInfo.normalAtHit, this.AxisToWorld);
 			return globalInfo;
 		}
