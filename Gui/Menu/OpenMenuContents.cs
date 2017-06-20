@@ -117,6 +117,13 @@ namespace MatterHackers.Agg.UI
 			foreach (MenuItem menuItem in MenuItems)
 			{
 				menuItem.SendToChildren(new MenuItem.MenuClosedMessage());
+				menuItem.AllowClicks = null;
+			}
+
+			if (widgetRelativeTo != null)
+			{
+				widgetRelativeTo.Closed -= widgetRelativeTo_Closed;
+				widgetRelativeTo = null;
 			}
 
 			UnbindCallbacks();
