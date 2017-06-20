@@ -211,7 +211,7 @@ namespace MatterHackers.GCodeVisualizer
 			{
 				if (index < readLineCount - MaxLinesToBuffer)
 				{
-					throw new Exception("You are asking for a line we no longer have bufferd");
+					throw new Exception("You are asking for a line we no longer have buffered");
 				}
 
 				while (index >= readLineCount)

@@ -36,7 +36,6 @@ using MatterHackers.Agg.VertexSource;
 using MatterHackers.DataConverters3D;
 using MatterHackers.RayTracer;
 using MatterHackers.RenderOpenGl;
-using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.MeshVisualizer
@@ -48,21 +47,20 @@ namespace MatterHackers.MeshVisualizer
 	{
 		public bool MouseDownOnControl;
 		public Matrix4X4 TotalTransform = Matrix4X4.Identity;
-		private MeshViewerWidget meshViewerToDrawWith;
 
 		private bool mouseOver = false;
 
 		public InteractionVolume(IPrimitive collisionVolume, MeshViewerWidget meshViewerToDrawWith)
 		{
 			this.CollisionVolume = collisionVolume;
-			this.meshViewerToDrawWith = meshViewerToDrawWith;
+			this.MeshViewerToDrawWith = meshViewerToDrawWith;
 		}
 
 		public IPrimitive CollisionVolume { get; set; }
 
 		public bool DrawOnTop { get; protected set; }
 
-		public MeshViewerWidget MeshViewerToDrawWith { get { return meshViewerToDrawWith; } }
+		protected MeshViewerWidget MeshViewerToDrawWith { get; }
 
 		public IntersectInfo MouseMoveInfo { get; set; }
 
