@@ -117,7 +117,7 @@ namespace MatterHackers.GCodeVisualizer
 		public static bool FileTooBigToLoad(string fileName)
 		{
 			if (File.Exists(fileName)
-				&& RunningIn32Bit())
+				&& Is32Bit)
 			{
 				FileInfo info = new FileInfo(fileName);
 				// Let's make sure we can load a file this big
@@ -248,15 +248,7 @@ namespace MatterHackers.GCodeVisualizer
 			return (Math.Sqrt(startingVelocityMmPerS2 + distanceAcceleration2) - startingVelocityMmPerS) / accelerationMmPerS2;
 		}
 
-		private static bool RunningIn32Bit()
-		{
-            if (IntPtr.Size == 4)
-            {
-                return true;
-            }
-
-            return false;
-        }
-        #endregion Static Functions
+		private static readonly bool Is32Bit = IntPtr.Size == 4;
+		#endregion Static Functions
     }
 }
