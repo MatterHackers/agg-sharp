@@ -95,7 +95,6 @@ namespace MatterHackers.GCodeVisualizer
 			}
 		}
 
-		private BackgroundWorker backgroundWorker = null;
 		private Vector2 lastMousePosition = new Vector2(0, 0);
 		private Vector2 mouseDownPosition = new Vector2(0, 0);
 
@@ -233,16 +232,6 @@ namespace MatterHackers.GCodeVisualizer
 						}
 					}
 				}
-			}
-		}
-
-		private void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-		{
-			SetGCodeAfterLoad((GCodeFile)e.Result);
-
-			if (DoneLoading != null)
-			{
-				DoneLoading(this, null);
 			}
 		}
 
@@ -403,27 +392,16 @@ namespace MatterHackers.GCodeVisualizer
 			CenterPartInView();
 		}
 
-		public void LoadInBackground(string gcodePathAndFileName)
+		public async void LoadInBackground(string gcodePathAndFileName, ReportProgressRatio progressReporter)
 		{
 			this.FileNameAndPath = gcodePathAndFileName;
-			backgroundWorker = new BackgroundWorker();
-			backgroundWorker.WorkerReportsProgress = true;
-			backgroundWorker.WorkerSupportsCancellation = true;
 
-			backgroundWorker.ProgressChanged += new ProgressChangedEventHandler(backgroundWorker_ProgressChanged);
-			backgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(backgroundWorker_RunWorkerCompleted);
+			loadedGCode = await GCodeFileLoaded.LoadInBackground(gcodePathAndFileName, progressReporter);
 
-			loadedGCode = null;
-			GCodeFileLoaded.LoadInBackground(backgroundWorker, gcodePathAndFileName);
-		}
+			// backgroundWorker_RunWorkerCompleted
+			SetGCodeAfterLoad(loadedGCode);
 
-		public override void OnClosed(ClosedEventArgs e)
-		{
-			if (backgroundWorker != null)
-			{
-				backgroundWorker.CancelAsync();
-			}
-			base.OnClosed(e);
+			DoneLoading?.Invoke(this, null);
 		}
 
 		public override RectangleDouble LocalBounds
