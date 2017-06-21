@@ -119,6 +119,8 @@ namespace MatterHackers.MeshVisualizer
 			labelContainer.AddChild(partProcessingInfo);
 			labelContainer.Selectable = false;
 
+			SetMaterialColor(1, ActiveTheme.Instance.PrimaryAccentColor);
+
 			this.AddChild(labelContainer);
 		}
 
