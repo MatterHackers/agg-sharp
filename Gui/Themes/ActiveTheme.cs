@@ -35,7 +35,6 @@ namespace MatterHackers.Agg.UI
 	{
 		public static RootedObjectEventHandler ThemeChanged = new RootedObjectEventHandler();
 		private static IThemeColors activeTheme = AvailableThemes[0];
-		private static bool suppressNotification = false;
 
 		private static List<IThemeColors> themeColors = null;
 
@@ -106,22 +105,9 @@ namespace MatterHackers.Agg.UI
 			return AvailableThemes[0];
 		}
 
-		public static void ResumeEvents()
-		{
-			suppressNotification = false;
-		}
-
-		public static void SuspendEvents()
-		{
-			suppressNotification = true;
-		}
-
 		private static void OnThemeChanged()
 		{
-			if (!suppressNotification)
-			{
-				ThemeChanged?.CallEvents(null, null);
-			}
+			ThemeChanged?.CallEvents(null, null);
 		}
 	}
 }
