@@ -29,17 +29,14 @@ either expressed or implied, of the FreeBSD Project.
 #define MULTI_THREAD
 #define DUMP_SLOW_TIMES
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.VectorMath;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace MatterHackers.GCodeVisualizer
 {
@@ -75,10 +72,7 @@ namespace MatterHackers.GCodeVisualizer
 			return GCodeCommandQueue[index];
 		}
 
-		public override int LineCount
-		{
-			get { return GCodeCommandQueue.Count; }
-		}
+		public override int LineCount => GCodeCommandQueue.Count;
 
 		public override void Clear()
 		{
@@ -86,13 +80,7 @@ namespace MatterHackers.GCodeVisualizer
 			GCodeCommandQueue.Clear();
 		}
 
-		public override double TotalSecondsInPrint
-		{
-			get
-			{
-				return Instruction(0).secondsToEndFromHere;
-			}
-		}
+		public override double TotalSecondsInPrint => Instruction(0).secondsToEndFromHere;
 
 		public void Add(PrinterMachineInstruction printerMachineInstruction)
 		{
@@ -114,9 +102,7 @@ namespace MatterHackers.GCodeVisualizer
 
 		public static GCodeFile ParseGCodeString(string gcodeContents)
 		{
-			DoWorkEventArgs doWorkEventArgs = new DoWorkEventArgs(gcodeContents);
-			ParseFileContents(null, doWorkEventArgs);
-			return (GCodeFile)doWorkEventArgs.Result;
+			return ParseFileContents(gcodeContents, null);
 		}
 
 		public static GCodeFileLoaded Load(Stream fileStream)
@@ -125,14 +111,12 @@ namespace MatterHackers.GCodeVisualizer
 			try
 			{
 				string gCodeString = "";
-				using (StreamReader sr = new StreamReader(fileStream))
+				using (var reader = new StreamReader(fileStream))
 				{
-					gCodeString = sr.ReadToEnd();
+					gCodeString = reader.ReadToEnd();
 				}
 
-				DoWorkEventArgs doWorkEventArgs = new DoWorkEventArgs(gCodeString);
-				ParseFileContents(null, doWorkEventArgs);
-				loadedGCode = (GCodeFileLoaded)doWorkEventArgs.Result;
+				loadedGCode = ParseFileContents(gCodeString, null);
 			}
 			catch (IOException e)
 			{
@@ -143,29 +127,18 @@ namespace MatterHackers.GCodeVisualizer
 			return loadedGCode;
 		}
 
-		static public void LoadInBackground(BackgroundWorker backgroundWorker, string fileName)
+		public static async Task<GCodeFileLoaded> LoadInBackground(string fileName, ReportProgressRatio progressReporter)
 		{
 			if (Path.GetExtension(fileName).ToUpper() == ".GCODE")
 			{
 				try
 				{
-					if (File.Exists(fileName))
+					if (File.Exists(fileName) && !FileTooBigToLoad(fileName))
 					{
-						if (FileTooBigToLoad(fileName))
+						return await Task.Run(() =>
 						{
-							// It is too big do the processing, report back no load.
-							backgroundWorker.RunWorkerAsync(null);
-							return;
-						}
-
-						backgroundWorker.DoWork += ParseFileContents;
-
-						// Start async ParseFileContents worker,  passing all file contents
-						backgroundWorker.RunWorkerAsync(File.ReadAllText(fileName));
-					}
-					else
-					{
-						backgroundWorker.RunWorkerAsync(null);
+							return ParseFileContents(File.ReadAllText(fileName), progressReporter);
+						});
 					}
 				}
 				catch (IOException e)
@@ -174,10 +147,8 @@ namespace MatterHackers.GCodeVisualizer
 					GuiWidget.BreakInDebugger();
 				}
 			}
-			else
-			{
-				backgroundWorker.RunWorkerAsync(null);
-			}
+
+			return null;
 		}
 
 		public new void Load(string gcodePathAndFileName)
@@ -230,17 +201,14 @@ namespace MatterHackers.GCodeVisualizer
 			return crCount + 1;
 		}
 
-		public static void ParseFileContents(object sender, DoWorkEventArgs doWorkEventArgs)
+		public static GCodeFileLoaded ParseFileContents(string gCodeString, ReportProgressRatio progressReporter)
 		{
-			Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
-			string gCodeString = (string)doWorkEventArgs.Argument;
 			if (gCodeString == null)
 			{
-				return;
+				return null;
 			}
 
 			Stopwatch loadTime = Stopwatch.StartNew();
-			BackgroundWorker backgroundWorker = sender as BackgroundWorker;
 
 			Stopwatch maxProgressReport = new Stopwatch();
 			maxProgressReport.Start();
@@ -303,39 +271,36 @@ namespace MatterHackers.GCodeVisualizer
 #if DEBUG
 							throw new NotImplementedException();
 #else
-                            break;
+							break;
 #endif
 					}
 				}
 
 				loadedGCodeFile.GCodeCommandQueue.Add(machineInstructionForLine);
 
-				if (backgroundWorker != null)
+				if (progressReporter != null && maxProgressReport.ElapsedMilliseconds > 200)
 				{
-					if (backgroundWorker.CancellationPending)
+					progressReporter((double)lineIndex / crCount / 2, "", out bool continueProcessing);
+					if (!continueProcessing)
 					{
-						return;
+						return null;
 					}
 
-					if (backgroundWorker.WorkerReportsProgress && maxProgressReport.ElapsedMilliseconds > 200)
-					{
-						backgroundWorker.ReportProgress(lineIndex * 100 / crCount / 2);
-						maxProgressReport.Restart();
-					}
+					maxProgressReport.Restart();
 				}
 
 				lineIndex++;
 			}
 
-			loadedGCodeFile.AnalyzeGCodeLines(backgroundWorker);
-
-			doWorkEventArgs.Result = loadedGCodeFile;
+			loadedGCodeFile.AnalyzeGCodeLines(progressReporter);
 
 			loadTime.Stop();
 			Console.WriteLine("Time To Load Seconds: {0:0.00}".FormatWith(loadTime.Elapsed.TotalSeconds));
+
+			return loadedGCodeFile;
 		}
 
-		private void AnalyzeGCodeLines(BackgroundWorker backgroundWorker = null)
+		private void AnalyzeGCodeLines(ReportProgressRatio progressReporter)
 		{
 			double feedRateMmPerMin = 0;
 			Vector3 lastPrinterPosition = new Vector3();
@@ -387,18 +352,15 @@ namespace MatterHackers.GCodeVisualizer
 					instruction.secondsThisLine = (float)GetSecondsThisLine(deltaPositionThisLine, deltaEPositionThisLine, feedRateMmPerMin);
 				}
 
-				if (backgroundWorker != null)
+				if (progressReporter != null && maxProgressReport.ElapsedMilliseconds > 200)
 				{
-					if (backgroundWorker.CancellationPending)
+					progressReporter(((double) lineIndex / GCodeCommandQueue.Count / 2) + .5, "", out bool continueProcessing);
+					if (!continueProcessing)
 					{
 						return;
 					}
 
-					if (backgroundWorker.WorkerReportsProgress && maxProgressReport.ElapsedMilliseconds > 200)
-					{
-						backgroundWorker.ReportProgress(lineIndex * 100 / GCodeCommandQueue.Count / 2 + 50);
-						maxProgressReport.Restart();
-					}
+					maxProgressReport.Restart();
 				}
 			}
 
