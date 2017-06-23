@@ -128,7 +128,7 @@ namespace MatterHackers.RayTracer
 					yield return this;
 					if (transform.Child != null)
 					{
-						foreach (var subIterator in new BvhIterator(transform.Child, TransformToWorld * transform.AxisToWorld, Depth + 1, DecentFilter))
+						foreach (var subIterator in new BvhIterator(transform.Child, transform.AxisToWorld * TransformToWorld, Depth + 1, DecentFilter))
 						{
 							yield return subIterator;
 						}
