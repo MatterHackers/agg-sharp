@@ -125,6 +125,7 @@ namespace MatterHackers.RayTracer
 			{
 				if (Bvh is Transform transform)
 				{
+					yield return this;
 					if (transform.Child != null)
 					{
 						foreach (var subIterator in new BvhIterator(transform.Child, TransformToWorld * transform.AxisToWorld, Depth + 1, DecentFilter))
@@ -135,6 +136,7 @@ namespace MatterHackers.RayTracer
 				}
 				else if (Bvh is UnboundCollection unboundCollection)
 				{
+					yield return this;
 					foreach (var item in unboundCollection.Items)
 					{
 						foreach (var subIterator in new BvhIterator(item, TransformToWorld, Depth + 1, DecentFilter))
