@@ -101,12 +101,17 @@ namespace MatterHackers.Agg.VertexSource
 
 	public static class IVertexSourceExtensions
 	{
+		public static RectangleDouble GetBounds(this IVertexSource source)
+		{
+			return source.Bounds();
+		}
+
 		public static RectangleDouble Bounds(this IVertexSource source)
 		{
 			RectangleDouble bounds = RectangleDouble.ZeroIntersection;
 			foreach (var vertex in source.Vertices())
 			{
-				if (!vertex.command.HasFlag(ShapePath.FlagsAndCommand.FlagClose))
+				if (!vertex.IsClose && !vertex.IsStop)
 				{
 					bounds.ExpandToInclude(vertex.position);
 				}

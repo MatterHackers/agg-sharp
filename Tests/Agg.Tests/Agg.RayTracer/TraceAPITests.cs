@@ -53,7 +53,7 @@ namespace MatterHackers.RayTracer
 			var root = new Transform(level1);
 
 			// enumerate it and check it
-			Assert.AreEqual(8, new BvhIterator(root).Count());
+			Assert.AreEqual(9, new BvhIterator(root).Count());
 
 			int count = 0;
 			foreach(var item in new BvhIterator(root))
@@ -61,23 +61,23 @@ namespace MatterHackers.RayTracer
 				switch(count++)
 				{
 					case 0:
+						Assert.IsTrue(item.Bvh is Transform);
+						Assert.AreEqual(0, item.Depth);
+						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 0), item.TransformToWorld);
+						break;
+					case 1:
 						Assert.IsTrue(item.Bvh is UnboundCollection);
 						Assert.AreEqual(1, item.Depth);
 						Assert.AreEqual(Matrix4X4.CreateTranslation(0,0,0), item.TransformToWorld);
 						break;
-					case 1:
+					case 2:
 						Assert.IsTrue(item.Bvh is Transform);
 						Assert.AreEqual(2, item.Depth);
 						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 0), item.TransformToWorld);
 						break;
-					case 2:
+					case 3:
 						Assert.IsTrue(item.Bvh is UnboundCollection);
 						Assert.AreEqual(3, item.Depth);
-						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
-						break;
-					case 3:
-						Assert.IsTrue(item.Bvh is TriangleShape);
-						Assert.AreEqual(4, item.Depth);
 						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
 						break;
 					case 4:
@@ -91,11 +91,16 @@ namespace MatterHackers.RayTracer
 						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
 						break;
 					case 6:
+						Assert.IsTrue(item.Bvh is TriangleShape);
+						Assert.AreEqual(4, item.Depth);
+						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
+						break;
+					case 7:
 						Assert.IsTrue(item.Bvh is Transform);
 						Assert.AreEqual(2, item.Depth);
 						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 0), item.TransformToWorld);
 						break;
-					case 7:
+					case 8:
 						Assert.IsTrue(item.Bvh is TriangleShape);
 						Assert.AreEqual(3, item.Depth);
 						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 40, 0), item.TransformToWorld);

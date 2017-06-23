@@ -121,52 +121,39 @@ namespace MatterHackers.RayTracer
 
 		public IEnumerator<BvhIterator> GetEnumerator()
 		{
-			if (Bvh is Transform transform)
+			if (DecentFilter?.Invoke(this) != false)
 			{
-				if (transform.Child != null)
+				if (Bvh is Transform transform)
 				{
-					var iterator = new BvhIterator(transform.Child, TransformToWorld * transform.AxisToWorld, Depth + 1, DecentFilter);
-
-					if (DecentFilter?.Invoke(iterator) != false)
+					yield return this;
+					if (transform.Child != null)
 					{
-						yield return iterator;
-
-						foreach (var subIterator in iterator)
+						foreach (var subIterator in new BvhIterator(transform.Child, transform.AxisToWorld * TransformToWorld, Depth + 1, DecentFilter))
 						{
-							if (DecentFilter?.Invoke(subIterator) != false)
-							{
-								yield return subIterator;
-							}
+							yield return subIterator;
 						}
 					}
 				}
-			}
-			else if (Bvh is UnboundCollection unboundCollection)
-			{
-				foreach (var item in unboundCollection.Items)
+				else if (Bvh is UnboundCollection unboundCollection)
 				{
-					var iterator = new BvhIterator(item, TransformToWorld, Depth + 1, DecentFilter);
-					if (DecentFilter?.Invoke(iterator) != false)
+					yield return this;
+					foreach (var item in unboundCollection.Items)
 					{
-						yield return iterator;
-
-						foreach (var subIterator in iterator)
+						foreach (var subIterator in new BvhIterator(item, TransformToWorld, Depth + 1, DecentFilter))
 						{
-							if (DecentFilter?.Invoke(subIterator) != false)
-							{
-								yield return subIterator;
-							}
+							yield return subIterator;
 						}
 					}
 				}
-			}
-			else if (Bvh is TriangleShape)
-			{
-				// has no children, take no action
-			}
-			else
-			{
-				throw new NotImplementedException();
+				else if (Bvh is TriangleShape)
+				{
+					// has no children, take no action
+					yield return this;
+				}
+				else
+				{
+					throw new NotImplementedException();
+				}
 			}
 		}
 

@@ -1224,19 +1224,5 @@ namespace MatterHackers.Agg.VertexSource
 			}
 			return (area < 0.0) ? ShapePath.FlagsAndCommand.FlagCW : ShapePath.FlagsAndCommand.FlagCCW;
 		}
-
-		public RectangleDouble GetBounds()
-		{
-			RectangleDouble bounds = RectangleDouble.ZeroIntersection;
-			foreach (VertexData vertexData in Vertices())
-			{
-				if (!vertexData.IsClose && !vertexData.IsStop)
-				{
-					bounds.ExpandToInclude(vertexData.position);
-				}
-			}
-
-			return bounds;
-		}
 	}
 }
