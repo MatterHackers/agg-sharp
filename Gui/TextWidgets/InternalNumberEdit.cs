@@ -157,7 +157,7 @@ namespace MatterHackers.Agg.UI
 				double newValue = ValidateRange(value);
 				if (newValue != Value)
 				{
-					Text = newValue.ToString();
+					Text = newValue.ToString(Format);
 				}
 				else // lets make sure it has the same text as the value
 				{
@@ -167,17 +167,19 @@ namespace MatterHackers.Agg.UI
 						if (currentValue != newValue)
 						{
 							// the text does not match the value so set it
-							Text = newValue.ToString();
+							Text = newValue.ToString(Format);
 						}
 					}
 					else // the text cannot be parsed so set it
 					{
-						Text = newValue.ToString();
+						Text = newValue.ToString(Format);
 						CharIndexToInsertBefore = Text.Length;
 					}
 				}
 			}
 		}
+
+		public string Format { get; set; } = "";
 
 		private double ValidateRange(double valueToValidate)
 		{

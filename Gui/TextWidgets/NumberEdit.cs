@@ -46,6 +46,12 @@ namespace MatterHackers.Agg.UI
 			set { InternalNumberEdit.MaxValue = value; }
 		}
 
+		public string Format
+		{
+			get { return InternalNumberEdit.Format; }
+			set { InternalNumberEdit.Format = value; }
+		}
+
 		public InternalNumberEdit InternalNumberEdit { get { return (InternalNumberEdit)InternalTextEditWidget; } }
 
 		public NumberEdit(double startingValue,
