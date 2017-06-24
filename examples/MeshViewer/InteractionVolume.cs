@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Diagnostics;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
@@ -48,7 +49,11 @@ namespace MatterHackers.MeshVisualizer
 		public bool MouseDownOnControl;
 		public Matrix4X4 TotalTransform = Matrix4X4.Identity;
 
+		protected static Stopwatch TimeSinceMouseUp { get; private set; } = new Stopwatch();
+
 		private bool mouseOver = false;
+
+		protected double SecondsToShowNumberEdit { get; private set; } = 4;
 
 		public InteractionVolume(IPrimitive collisionVolume, MeshViewerWidget meshViewerToDrawWith)
 		{
@@ -173,9 +178,9 @@ namespace MatterHackers.MeshVisualizer
 			this.unitsString = unitsString;
 		}
 
-		public void DisplaySizeInfo(Graphics2D graphics2D, Vector2 widthDisplayCenter, double size)
+		public void DisplaySizeInfo(Graphics2D graphics2D, Vector2 position, double value)
 		{
-			string displayString = formatString.FormatWith(size);
+			string displayString = formatString.FormatWith(value);
 			if (measureDisplayImage == null || measureDisplayedString != displayString)
 			{
 				measureDisplayedString = displayString;
@@ -199,8 +204,8 @@ namespace MatterHackers.MeshVisualizer
 				unitPrinter.Render(widthGraphics, RGBA_Bytes.Black);
 			}
 
-			widthDisplayCenter -= new Vector2(measureDisplayImage.Width / 2, measureDisplayImage.Height / 2);
-			graphics2D.Render(measureDisplayImage, widthDisplayCenter);
+			position -= new Vector2(measureDisplayImage.Width / 2, measureDisplayImage.Height / 2);
+			graphics2D.Render(measureDisplayImage, position);
 		}
 	}
 }
