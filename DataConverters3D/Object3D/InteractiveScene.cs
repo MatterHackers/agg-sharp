@@ -1,17 +1,13 @@
-﻿using MatterHackers.Agg;
-using MatterHackers.DataConverters3D;
-using MatterHackers.PolygonMesh;
-using MatterHackers.PolygonMesh.Processors;
-using MatterHackers.VectorMath;
-using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
+using MatterHackers.Agg;
+using MatterHackers.DataConverters3D;
+using MatterHackers.PolygonMesh;
+using MatterHackers.PolygonMesh.Processors;
+using Newtonsoft.Json;
 
 namespace MatterHackers.MeshVisualizer
 {
