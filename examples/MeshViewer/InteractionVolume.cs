@@ -33,6 +33,7 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
+using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.DataConverters3D;
 using MatterHackers.RayTracer;
@@ -49,12 +50,7 @@ namespace MatterHackers.MeshVisualizer
 		public bool MouseDownOnControl;
 		public Matrix4X4 TotalTransform = Matrix4X4.Identity;
 
-		protected static Stopwatch TimeSinceMouseUp { get; private set; } = new Stopwatch();
-
 		private bool mouseOver = false;
-
-		protected double SecondsToShowNumberEdit { get; private set; } = 4;
-
 		public InteractionVolume(IPrimitive collisionVolume, MeshViewerWidget meshViewerToDrawWith)
 		{
 			this.CollisionVolume = collisionVolume;
@@ -62,13 +58,8 @@ namespace MatterHackers.MeshVisualizer
 		}
 
 		public IPrimitive CollisionVolume { get; set; }
-
 		public bool DrawOnTop { get; protected set; }
-
-		protected MeshViewerWidget MeshViewerToDrawWith { get; }
-
 		public IntersectInfo MouseMoveInfo { get; set; }
-
 		public bool MouseOver
 		{
 			get
@@ -86,23 +77,9 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
-		public static Vector3 SetBottomControlHeight(AxisAlignedBoundingBox originalSelectedBounds, Vector3 cornerPosition)
-		{
-			if (originalSelectedBounds.minXYZ.z < 0)
-			{
-				if (originalSelectedBounds.maxXYZ.z < 0)
-				{
-					cornerPosition.z = originalSelectedBounds.maxXYZ.z;
-				}
-				else
-				{
-					cornerPosition.z = 0;
-				}
-			}
-
-			return cornerPosition;
-		}
-
+		protected MeshViewerWidget MeshViewerToDrawWith { get; }
+		protected double SecondsToShowNumberEdit { get; private set; } = 4;
+		protected Stopwatch timeSinceMouseUp { get; private set; } = new Stopwatch();
 		public static void DrawMeasureLine(Graphics2D graphics2D, Vector2 lineStart, Vector2 lineEnd, RGBA_Bytes color, LineArrows arrows)
 		{
 			graphics2D.Line(lineStart, lineEnd, RGBA_Bytes.Black);
@@ -132,6 +109,22 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
+		public static Vector3 SetBottomControlHeight(AxisAlignedBoundingBox originalSelectedBounds, Vector3 cornerPosition)
+		{
+			if (originalSelectedBounds.minXYZ.z < 0)
+			{
+				if (originalSelectedBounds.maxXYZ.z < 0)
+				{
+					cornerPosition.z = originalSelectedBounds.maxXYZ.z;
+				}
+				else
+				{
+					cornerPosition.z = 0;
+				}
+			}
+
+			return cornerPosition;
+		}
 		public virtual void Draw2DContent(Agg.Graphics2D graphics2D)
 		{
 		}
@@ -162,50 +155,6 @@ namespace MatterHackers.MeshVisualizer
 
 		public virtual void SetPosition(IObject3D selectedItem)
 		{
-		}
-	}
-
-	public class ValueDisplayInfo
-	{
-		private string formatString;
-		private string measureDisplayedString = "";
-		private ImageBuffer measureDisplayImage = null;
-		private string unitsString;
-
-		public ValueDisplayInfo(string formatString = "{0:0.00}", string unitsString = "mm")
-		{
-			this.formatString = formatString;
-			this.unitsString = unitsString;
-		}
-
-		public void DisplaySizeInfo(Graphics2D graphics2D, Vector2 position, double value)
-		{
-			string displayString = formatString.FormatWith(value);
-			if (measureDisplayImage == null || measureDisplayedString != displayString)
-			{
-				measureDisplayedString = displayString;
-				TypeFacePrinter printer = new TypeFacePrinter(measureDisplayedString, 16);
-				TypeFacePrinter unitPrinter = new TypeFacePrinter(unitsString, 10);
-				Double unitPrinterOffset = 1;
-
-				BorderDouble margin = new BorderDouble(5);
-				printer.Origin = new Vector2(margin.Left, margin.Bottom);
-				RectangleDouble bounds = printer.LocalBounds;
-
-				unitPrinter.Origin = new Vector2(bounds.Right + unitPrinterOffset, margin.Bottom);
-				RectangleDouble unitPrinterBounds = unitPrinter.LocalBounds;
-
-				measureDisplayImage = new ImageBuffer((int)(bounds.Width + margin.Width + unitPrinterBounds.Width + unitPrinterOffset), (int)(bounds.Height + margin.Height));
-				// make sure the texture has mipmaps (so it can reduce well)
-				ImageGlPlugin glPlugin = ImageGlPlugin.GetImageGlPlugin(measureDisplayImage, true);
-				Graphics2D widthGraphics = measureDisplayImage.NewGraphics2D();
-				widthGraphics.Clear(new RGBA_Bytes(RGBA_Bytes.White, 128));
-				printer.Render(widthGraphics, RGBA_Bytes.Black);
-				unitPrinter.Render(widthGraphics, RGBA_Bytes.Black);
-			}
-
-			position -= new Vector2(measureDisplayImage.Width / 2, measureDisplayImage.Height / 2);
-			graphics2D.Render(measureDisplayImage, position);
 		}
 	}
 }

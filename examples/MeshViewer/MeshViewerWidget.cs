@@ -68,6 +68,7 @@ namespace MatterHackers.MeshVisualizer
 		static public ImageBuffer BedImage = null;
 		public List<InteractionVolume> interactionVolumes = new List<InteractionVolume>();
 		public InteractionVolume SelectedInteractionVolume { get; set; } = null;
+		public InteractionVolume HoveredInteractionVolume { get; set; } = null;
 		public bool MouseDownOnInteractionVolume { get { return SelectedInteractionVolume != null; } }
 
 		public PartProcessingInfo partProcessingInfo;
@@ -544,6 +545,8 @@ namespace MatterHackers.MeshVisualizer
 					{
 						interactionVolumes[i].MouseOver = true;
 						interactionVolumes[i].MouseMoveInfo = info;
+
+						HoveredInteractionVolume = interactionVolumes[i];
 					}
 					else
 					{
