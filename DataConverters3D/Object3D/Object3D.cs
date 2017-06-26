@@ -54,7 +54,7 @@ namespace MatterHackers.DataConverters3D
 
 		private MeshGroup Flatten(IObject3D item, MeshGroup meshGroup, Matrix4X4 totalTransform, ReportProgressRatio progress = null)
 		{
-			totalTransform *= item.Matrix;
+			totalTransform = item.Matrix * totalTransform;
 
 			if (item.Mesh  != null)
 			{
