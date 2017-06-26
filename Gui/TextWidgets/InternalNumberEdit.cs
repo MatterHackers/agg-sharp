@@ -135,6 +135,12 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// The number of decimal places to show with this numebr. Max is currently 10
+		/// any number below 0 will render without formating (string default behavior).
+		/// </summary>
+		public int MaxDecimalsPlaces { get; set; } = -1;
+
 		public double Value
 		{
 			get
@@ -154,10 +160,15 @@ namespace MatterHackers.Agg.UI
 
 			set
 			{
+				string format = "";
+				if(MaxDecimalsPlaces > 0)
+				{
+					format = "0." + new String('#', Math.Min(10, MaxDecimalsPlaces));
+				}
 				double newValue = ValidateRange(value);
 				if (newValue != Value)
 				{
-					Text = newValue.ToString(Format);
+					Text = newValue.ToString(format);
 				}
 				else // lets make sure it has the same text as the value
 				{
@@ -167,19 +178,17 @@ namespace MatterHackers.Agg.UI
 						if (currentValue != newValue)
 						{
 							// the text does not match the value so set it
-							Text = newValue.ToString(Format);
+							Text = newValue.ToString(format);
 						}
 					}
 					else // the text cannot be parsed so set it
 					{
-						Text = newValue.ToString(Format);
+						Text = newValue.ToString(format);
 						CharIndexToInsertBefore = Text.Length;
 					}
 				}
 			}
 		}
-
-		public string Format { get; set; } = "";
 
 		private double ValidateRange(double valueToValidate)
 		{
