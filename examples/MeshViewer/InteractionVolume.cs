@@ -30,14 +30,10 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Diagnostics;
 using MatterHackers.Agg;
-using MatterHackers.Agg.Font;
-using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
-using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.DataConverters3D;
 using MatterHackers.RayTracer;
-using MatterHackers.RenderOpenGl;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.MeshVisualizer
@@ -51,6 +47,7 @@ namespace MatterHackers.MeshVisualizer
 		public Matrix4X4 TotalTransform = Matrix4X4.Identity;
 
 		private bool mouseOver = false;
+
 		public InteractionVolume(IPrimitive collisionVolume, MeshViewerWidget meshViewerToDrawWith)
 		{
 			this.CollisionVolume = collisionVolume;
@@ -60,6 +57,7 @@ namespace MatterHackers.MeshVisualizer
 		public IPrimitive CollisionVolume { get; set; }
 		public bool DrawOnTop { get; protected set; }
 		public IntersectInfo MouseMoveInfo { get; set; }
+
 		public bool MouseOver
 		{
 			get
@@ -80,6 +78,7 @@ namespace MatterHackers.MeshVisualizer
 		protected MeshViewerWidget MeshViewerToDrawWith { get; }
 		protected double SecondsToShowNumberEdit { get; private set; } = 4;
 		protected Stopwatch timeSinceMouseUp { get; private set; } = new Stopwatch();
+
 		public static void DrawMeasureLine(Graphics2D graphics2D, Vector2 lineStart, Vector2 lineEnd, RGBA_Bytes color, LineArrows arrows)
 		{
 			graphics2D.Line(lineStart, lineEnd, RGBA_Bytes.Black);
@@ -125,6 +124,7 @@ namespace MatterHackers.MeshVisualizer
 
 			return cornerPosition;
 		}
+
 		public virtual void Draw2DContent(Agg.Graphics2D graphics2D)
 		{
 		}
