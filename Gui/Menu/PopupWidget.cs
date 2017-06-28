@@ -13,6 +13,10 @@ namespace MatterHackers.Agg.UI
 	{
 	}
 
+	public class IgnoredPopupWidget : GuiWidget, IIgnoredPopupChild
+	{
+	}
+
 	public interface IPopupLayoutEngine
 	{
 		double MaxHeight { get; }
