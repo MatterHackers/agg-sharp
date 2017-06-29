@@ -214,6 +214,8 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
+		public static RGBA_Bytes WireframeColor = new RGBA_Bytes(150, 70, 70, 255);
+
 		private static void DrawWithWireOverlay(Mesh meshToRender, RenderTypes renderType)
 		{
 			GLMeshTrianglePlugin glMeshPlugin = GLMeshTrianglePlugin.Get(meshToRender);
@@ -228,7 +230,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 			else
 			{
-				GL.Color4(70, 70, 70, 255);
+				GL.Color4(WireframeColor.red, WireframeColor.green, WireframeColor.blue, WireframeColor.alpha);
 			}
 
 			GL.PolygonOffset(0, 0);
