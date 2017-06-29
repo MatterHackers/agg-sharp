@@ -217,8 +217,13 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnKeyDown(KeyEventArgs keyEvent)
 		{
-			m_poly.OnKeyDown(keyEvent);
+			// this must be called first to unsure we get the correct Handled state
 			base.OnKeyDown(keyEvent);
+
+			if (!keyEvent.Handled)
+			{
+				m_poly.OnKeyDown(keyEvent);
+			}
 		}
 
 		// Vertex source interface
@@ -501,7 +506,13 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnKeyDown(KeyEventArgs keyEvent)
 		{
-			m_poly.OnKeyDown(keyEvent);
+			// this must be called first to unsure we get the correct Handled state
+			base.OnKeyDown(keyEvent);
+
+			if (!keyEvent.Handled)
+			{
+				m_poly.OnKeyDown(keyEvent);
+			}
 		}
 
 		// Vertex source interface

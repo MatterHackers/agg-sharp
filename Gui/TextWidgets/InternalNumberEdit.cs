@@ -205,24 +205,28 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnKeyDown(KeyEventArgs keyEvent)
 		{
-			switch (keyEvent.KeyCode)
-			{
-				case Keys.Up:
-					keyEvent.SuppressKeyPress = true;
-					keyEvent.Handled = true;
-					Value = Value + increment;
-					OnEditComplete(keyEvent);
-					break;
-
-				case Keys.Down:
-					keyEvent.SuppressKeyPress = true;
-					keyEvent.Handled = true;
-					Value = Value - increment;
-					OnEditComplete(keyEvent);
-					break;
-			}
-
+			// this must be called first to unsure we get the correct Handled state
 			base.OnKeyDown(keyEvent);
+
+			if (!keyEvent.Handled)
+			{
+				switch (keyEvent.KeyCode)
+				{
+					case Keys.Up:
+						keyEvent.SuppressKeyPress = true;
+						keyEvent.Handled = true;
+						Value = Value + increment;
+						OnEditComplete(keyEvent);
+						break;
+
+					case Keys.Down:
+						keyEvent.SuppressKeyPress = true;
+						keyEvent.Handled = true;
+						Value = Value - increment;
+						OnEditComplete(keyEvent);
+						break;
+				}
+			}
 		}
 
 		public override void OnEditComplete(EventArgs e)
@@ -233,37 +237,42 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnKeyPress(KeyPressEventArgs keyPressEvent)
 		{
-			if (allowedChars.Contains(keyPressEvent.KeyChar))
+			// this must be called first to unsure we get the correct Handled state
+			base.OnKeyPress(keyPressEvent);
+
+			if (!keyPressEvent.Handled)
 			{
-				bool hadSelection = Selecting;
+				if (allowedChars.Contains(keyPressEvent.KeyChar))
+				{
+					bool hadSelection = Selecting;
 
-				int prevCharIndexToInsertBefore = CharIndexToInsertBefore;
-				base.OnKeyPress(keyPressEvent);
-				// let's check and see if the new string is a valid number
-				double number;
-				if (Text == "." && allowDecimals)
-				{
-					return;
-				}
-				if (Text == "-" && allowNegatives)
-				{
-					return;
-				}
-				if (Text == "-." && allowDecimals && allowNegatives)
-				{
-					return;
-				}
-				if (!double.TryParse(Text, out number))
-				{
-					if (hadSelection)
+					int prevCharIndexToInsertBefore = CharIndexToInsertBefore;
+					// let's check and see if the new string is a valid number
+					double number;
+					if (Text == "." && allowDecimals)
 					{
-						// we have to undo twice, once for the delete selection and once for the bad character.
-						Undo();
+						return;
 					}
+					if (Text == "-" && allowNegatives)
+					{
+						return;
+					}
+					if (Text == "-." && allowDecimals && allowNegatives)
+					{
+						return;
+					}
+					if (!double.TryParse(Text, out number))
+					{
+						if (hadSelection)
+						{
+							// we have to undo twice, once for the delete selection and once for the bad character.
+							Undo();
+						}
 
-					Undo();
-					CharIndexToInsertBefore = prevCharIndexToInsertBefore;
-					FixBarPosition(DesiredXPositionOnLine.Set);
+						Undo();
+						CharIndexToInsertBefore = prevCharIndexToInsertBefore;
+						FixBarPosition(DesiredXPositionOnLine.Set);
+					}
 				}
 			}
 		}
