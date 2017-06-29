@@ -2928,6 +2928,11 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Occurs when a character. space or backspace key is pressed while the control has focus.
+		/// base.OnKeyPress should always be called first during override to ensure we get the correct Handled state
+		/// </summary>
+		/// <param name="keyPressEvent"></param>
 		public virtual void OnKeyPress(KeyPressEventArgs keyPressEvent)
 		{
 			GuiWidget childWithFocus = GetChildContainingFocus();
@@ -3014,6 +3019,11 @@ namespace MatterHackers.Agg.UI
 			AdvanceFocus(-1);
 		}
 
+		/// <summary>
+		/// Occurs when a character. space or backspace key is pressed while the control has focus.
+		/// base.OnKeyDown should always be called first during override to ensure we get the correct Handled state
+		/// </summary>
+		/// <param name="keyEvent"></param>
 		public virtual void OnKeyDown(KeyEventArgs keyEvent)
 		{
 			GuiWidget childWithFocus = GetChildContainingFocus();
@@ -3042,6 +3052,11 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Occurs when a character. space or backspace key is released while the control has focus.
+		/// base.OnKeyUp should always be called first during override to ensure we get the correct Handled state
+		/// </summary>
+		/// <param name="keyEvent"></param>
 		public virtual void OnKeyUp(KeyEventArgs keyEvent)
 		{
 			GuiWidget childWithFocus = GetChildContainingFocus();

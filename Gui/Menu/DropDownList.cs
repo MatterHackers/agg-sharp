@@ -458,7 +458,7 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnKeyUp(KeyEventArgs keyEvent)
 		{
-			// this must be called first to unsure we get the correct Handled state
+			// this must be called first to ensure we get the correct Handled state
 			base.OnKeyUp(keyEvent);
 
 			if (!keyEvent.Handled)
