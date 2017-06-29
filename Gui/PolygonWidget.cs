@@ -426,11 +426,6 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseMove(mouseEvent);
 		}
 
-		public override void OnKeyDown(KeyEventArgs keyEvent)
-		{
-			base.OnKeyDown(keyEvent);
-		}
-
 		private bool check_edge(int i, double x, double y)
 		{
 			bool ret = false;

@@ -629,285 +629,288 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnKeyDown(KeyEventArgs keyEvent)
 		{
-			RestartBarFlash();
+			// this must be called first to ensure we get the correct Handled state
+			base.OnKeyDown(keyEvent);
 
-			bool SetDesiredBarPosition = true;
-			bool turnOffSelection = false;
-
-			if (!ShiftKeyIsDown(keyEvent))
+			if (!keyEvent.Handled)
 			{
-				if (keyEvent.Control)
-				{
-					// don't let control keys get into the stream
-					keyEvent.Handled = true;
-				}
-				else if (Selecting)
-				{
-					turnOffSelection = true;
-				}
-			}
+				RestartBarFlash();
 
-			switch (keyEvent.KeyCode)
-			{
-				case Keys.Escape:
-					if (Selecting)
-					{
-						turnOffSelection = true;
-						keyEvent.SuppressKeyPress = true;
-						keyEvent.Handled = true;
-					}
-					break;
+				bool SetDesiredBarPosition = true;
+				bool turnOffSelection = false;
 
-				case Keys.Left:
-					StartSelectionIfRequired(keyEvent);
+				if (!ShiftKeyIsDown(keyEvent))
+				{
 					if (keyEvent.Control)
 					{
-						GotoBeginingOfPreviousToken();
+						// don't let control keys get into the stream
+						keyEvent.Handled = true;
 					}
-					else if (CharIndexToInsertBefore > 0)
+					else if (Selecting)
 					{
+						turnOffSelection = true;
+					}
+				}
+
+				switch (keyEvent.KeyCode)
+				{
+					case Keys.Escape:
+						if (Selecting)
+						{
+							turnOffSelection = true;
+							keyEvent.SuppressKeyPress = true;
+							keyEvent.Handled = true;
+						}
+						break;
+
+					case Keys.Left:
+						StartSelectionIfRequired(keyEvent);
+						if (keyEvent.Control)
+						{
+							GotoBeginingOfPreviousToken();
+						}
+						else if (CharIndexToInsertBefore > 0)
+						{
+							if (turnOffSelection)
+							{
+								CharIndexToInsertBefore = Math.Min(CharIndexToInsertBefore, SelectionIndexToStartBefore);
+							}
+							else
+							{
+								CharIndexToInsertBefore--;
+							}
+						}
+						keyEvent.SuppressKeyPress = true;
+						keyEvent.Handled = true;
+						break;
+
+					case Keys.Right:
+						StartSelectionIfRequired(keyEvent);
+						if (keyEvent.Control)
+						{
+							GotoBeginingOfNextToken();
+						}
+						else if (CharIndexToInsertBefore < internalTextWidget.Text.Length)
+						{
+							if (turnOffSelection)
+							{
+								CharIndexToInsertBefore = Math.Max(CharIndexToInsertBefore, SelectionIndexToStartBefore);
+							}
+							else
+							{
+								CharIndexToInsertBefore++;
+							}
+						}
+						keyEvent.SuppressKeyPress = true;
+						keyEvent.Handled = true;
+						break;
+
+					case Keys.Up:
+						StartSelectionIfRequired(keyEvent);
 						if (turnOffSelection)
 						{
 							CharIndexToInsertBefore = Math.Min(CharIndexToInsertBefore, SelectionIndexToStartBefore);
 						}
-						else
-						{
-							CharIndexToInsertBefore--;
-						}
-					}
-					keyEvent.SuppressKeyPress = true;
-					keyEvent.Handled = true;
-					break;
+						GotoLineAbove();
+						SetDesiredBarPosition = false;
+						keyEvent.SuppressKeyPress = true;
+						keyEvent.Handled = true;
+						break;
 
-				case Keys.Right:
-					StartSelectionIfRequired(keyEvent);
-					if (keyEvent.Control)
-					{
-						GotoBeginingOfNextToken();
-					}
-					else if (CharIndexToInsertBefore < internalTextWidget.Text.Length)
-					{
+					case Keys.Down:
+						StartSelectionIfRequired(keyEvent);
 						if (turnOffSelection)
 						{
 							CharIndexToInsertBefore = Math.Max(CharIndexToInsertBefore, SelectionIndexToStartBefore);
 						}
+						GotoLineBelow();
+						SetDesiredBarPosition = false;
+						keyEvent.SuppressKeyPress = true;
+						keyEvent.Handled = true;
+						break;
+
+					case Keys.Space:
+						keyEvent.Handled = true;
+						break;
+
+					case Keys.End:
+						StartSelectionIfRequired(keyEvent);
+						if (keyEvent.Control)
+						{
+							CharIndexToInsertBefore = internalTextWidget.Text.Length;
+						}
 						else
 						{
-							CharIndexToInsertBefore++;
+							GotoEndOfCurrentLine();
 						}
-					}
-					keyEvent.SuppressKeyPress = true;
-					keyEvent.Handled = true;
-					break;
 
-				case Keys.Up:
-					StartSelectionIfRequired(keyEvent);
-					if (turnOffSelection)
-					{
-						CharIndexToInsertBefore = Math.Min(CharIndexToInsertBefore, SelectionIndexToStartBefore);
-					}
-					GotoLineAbove();
-					SetDesiredBarPosition = false;
-					keyEvent.SuppressKeyPress = true;
-					keyEvent.Handled = true;
-					break;
-
-				case Keys.Down:
-					StartSelectionIfRequired(keyEvent);
-					if (turnOffSelection)
-					{
-						CharIndexToInsertBefore = Math.Max(CharIndexToInsertBefore, SelectionIndexToStartBefore);
-					}
-					GotoLineBelow();
-					SetDesiredBarPosition = false;
-					keyEvent.SuppressKeyPress = true;
-					keyEvent.Handled = true;
-					break;
-
-				case Keys.Space:
-					keyEvent.Handled = true;
-					break;
-
-				case Keys.End:
-					StartSelectionIfRequired(keyEvent);
-					if (keyEvent.Control)
-					{
-						CharIndexToInsertBefore = internalTextWidget.Text.Length;
-					}
-					else
-					{
-						GotoEndOfCurrentLine();
-					}
-
-					keyEvent.SuppressKeyPress = true;
-					keyEvent.Handled = true;
-					break;
-
-				case Keys.Home:
-					StartSelectionIfRequired(keyEvent);
-					if (keyEvent.Control)
-					{
-						CharIndexToInsertBefore = 0;
-					}
-					else
-					{
-						GotoStartOfCurrentLine();
-					}
-
-					keyEvent.SuppressKeyPress = true;
-					keyEvent.Handled = true;
-					break;
-
-				case Keys.Back:
-					if (!Selecting
-						&& CharIndexToInsertBefore > 0)
-					{
-						SelectionIndexToStartBefore = CharIndexToInsertBefore - 1;
-						Selecting = true;
-					}
-
-					DeleteSelection();
-
-					keyEvent.Handled = true;
-					keyEvent.SuppressKeyPress = true;
-					break;
-
-				case Keys.Delete:
-					if (ShiftKeyIsDown(keyEvent))
-					{
-						CopySelection();
-						DeleteSelection();
-						keyEvent.Handled = true;
 						keyEvent.SuppressKeyPress = true;
-					}
-					else
-					{
-						if (!Selecting
-						&& CharIndexToInsertBefore < internalTextWidget.Text.Length)
+						keyEvent.Handled = true;
+						break;
+
+					case Keys.Home:
+						StartSelectionIfRequired(keyEvent);
+						if (keyEvent.Control)
 						{
-							SelectionIndexToStartBefore = CharIndexToInsertBefore + 1;
+							CharIndexToInsertBefore = 0;
+						}
+						else
+						{
+							GotoStartOfCurrentLine();
+						}
+
+						keyEvent.SuppressKeyPress = true;
+						keyEvent.Handled = true;
+						break;
+
+					case Keys.Back:
+						if (!Selecting
+							&& CharIndexToInsertBefore > 0)
+						{
+							SelectionIndexToStartBefore = CharIndexToInsertBefore - 1;
 							Selecting = true;
 						}
 
 						DeleteSelection();
-					}
 
-					turnOffSelection = true;
-					keyEvent.Handled = true;
-					keyEvent.SuppressKeyPress = true;
-					break;
-
-				case Keys.Enter:
-					if (!Multiline)
-					{
-						// TODO: do the right thing.
 						keyEvent.Handled = true;
 						keyEvent.SuppressKeyPress = true;
+						break;
 
-						if (EnterPressed != null)
+					case Keys.Delete:
+						if (ShiftKeyIsDown(keyEvent))
 						{
-							EnterPressed(this, keyEvent);
+							CopySelection();
+							DeleteSelection();
+							keyEvent.SuppressKeyPress = true;
+						}
+						else
+						{
+							if (!Selecting
+							&& CharIndexToInsertBefore < internalTextWidget.Text.Length)
+							{
+								SelectionIndexToStartBefore = CharIndexToInsertBefore + 1;
+								Selecting = true;
+							}
+
+							DeleteSelection();
 						}
 
-						if (TextHasChanged())
-						{
-							OnEditComplete(keyEvent);
-						}
-					}
-					break;
-
-				case Keys.Insert:
-					if (ShiftKeyIsDown(keyEvent))
-					{
 						turnOffSelection = true;
-						PasteFromClipboard();
 						keyEvent.Handled = true;
 						keyEvent.SuppressKeyPress = true;
-					}
-					if (keyEvent.Control)
-					{
-						turnOffSelection = false;
-						CopySelection();
-						keyEvent.Handled = true;
-						keyEvent.SuppressKeyPress = true;
-					}
-					break;
+						break;
 
-				case Keys.A:
-					if (keyEvent.Control)
-					{
-						SelectAll();
-						keyEvent.Handled = true;
-						keyEvent.SuppressKeyPress = true;
-					}
-					break;
+					case Keys.Enter:
+						if (!Multiline)
+						{
+							// TODO: do the right thing.
+							keyEvent.Handled = true;
+							keyEvent.SuppressKeyPress = true;
 
-				case Keys.X:
-					if (keyEvent.Control)
-					{
-						CopySelection();
-						DeleteSelection();
-						keyEvent.Handled = true;
-						keyEvent.SuppressKeyPress = true;
-					}
-					break;
+							if (EnterPressed != null)
+							{
+								EnterPressed(this, keyEvent);
+							}
 
-				case Keys.C:
-					if (keyEvent.Control)
-					{
-						turnOffSelection = false;
-						CopySelection();
-						keyEvent.Handled = true;
-						keyEvent.SuppressKeyPress = true;
-					}
-					break;
+							if (TextHasChanged())
+							{
+								OnEditComplete(keyEvent);
+							}
+						}
+						break;
 
-				case Keys.V:
-					if (keyEvent.Control)
-					{
-						PasteFromClipboard();
-						keyEvent.Handled = true;
-						keyEvent.SuppressKeyPress = true;
-					}
-					break;
+					case Keys.Insert:
+						if (ShiftKeyIsDown(keyEvent))
+						{
+							turnOffSelection = true;
+							PasteFromClipboard();
+							keyEvent.Handled = true;
+							keyEvent.SuppressKeyPress = true;
+						}
+						if (keyEvent.Control)
+						{
+							turnOffSelection = false;
+							CopySelection();
+							keyEvent.Handled = true;
+							keyEvent.SuppressKeyPress = true;
+						}
+						break;
 
-				case Keys.Z:
-					if (keyEvent.Control)
-					{
-						Undo();
-						keyEvent.Handled = true;
-						keyEvent.SuppressKeyPress = true;
-					}
-					break;
+					case Keys.A:
+						if (keyEvent.Control)
+						{
+							SelectAll();
+							keyEvent.Handled = true;
+							keyEvent.SuppressKeyPress = true;
+						}
+						break;
 
-				case Keys.Y:
-					if (keyEvent.Control)
-					{
-						undoBuffer.Redo();
-						keyEvent.Handled = true;
-						keyEvent.SuppressKeyPress = true;
-					}
-					break;
+					case Keys.X:
+						if (keyEvent.Control)
+						{
+							CopySelection();
+							DeleteSelection();
+							keyEvent.Handled = true;
+							keyEvent.SuppressKeyPress = true;
+						}
+						break;
+
+					case Keys.C:
+						if (keyEvent.Control)
+						{
+							turnOffSelection = false;
+							CopySelection();
+							keyEvent.Handled = true;
+							keyEvent.SuppressKeyPress = true;
+						}
+						break;
+
+					case Keys.V:
+						if (keyEvent.Control)
+						{
+							PasteFromClipboard();
+							keyEvent.Handled = true;
+							keyEvent.SuppressKeyPress = true;
+						}
+						break;
+
+					case Keys.Z:
+						if (keyEvent.Control)
+						{
+							Undo();
+							keyEvent.Handled = true;
+							keyEvent.SuppressKeyPress = true;
+						}
+						break;
+
+					case Keys.Y:
+						if (keyEvent.Control)
+						{
+							undoBuffer.Redo();
+							keyEvent.Handled = true;
+							keyEvent.SuppressKeyPress = true;
+						}
+						break;
+				}
+
+				if (SetDesiredBarPosition)
+				{
+					FixBarPosition(DesiredXPositionOnLine.Set);
+				}
+				else
+				{
+					FixBarPosition(DesiredXPositionOnLine.Maintain);
+				}
+
+				// if we are not going to type a character, and therefore replace the selection, turn off the selection now if needed.
+				if (keyEvent.SuppressKeyPress && turnOffSelection)
+				{
+					Selecting = false;
+				}
+
+				Invalidate();
 			}
-
-			base.OnKeyDown(keyEvent);
-
-			if (SetDesiredBarPosition)
-			{
-				FixBarPosition(DesiredXPositionOnLine.Set);
-			}
-			else
-			{
-				FixBarPosition(DesiredXPositionOnLine.Maintain);
-			}
-
-			// if we are not going to type a character, and therefore replace the selection, turn off the selection now if needed.
-			if (keyEvent.SuppressKeyPress && turnOffSelection)
-			{
-				Selecting = false;
-			}
-
-			Invalidate();
 		}
 
 		public void Undo()
@@ -973,39 +976,44 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnKeyPress(KeyPressEventArgs keyPressEvent)
 		{
-			if(keyPressEvent.KeyChar < 32
-				&& keyPressEvent.KeyChar != 13
-				&& keyPressEvent.KeyChar != 9)
-			{
-				return;
-			}
-			if (Selecting)
-			{
-				DeleteSelection();
-				Selecting = false;
-			}
-
-			StringBuilder tempString = new StringBuilder(internalTextWidget.Text);
-			tempString.Insert(CharIndexToInsertBefore, keyPressEvent.KeyChar.ToString());
-			keyPressEvent.Handled = true;
-			CharIndexToInsertBefore++;
-			internalTextWidget.Text = tempString.ToString();
+			// this must be called first to ensure we get the correct Handled state
 			base.OnKeyPress(keyPressEvent);
 
-			FixBarPosition(DesiredXPositionOnLine.Set);
+			if (!keyPressEvent.Handled)
+			{
+				if (keyPressEvent.KeyChar < 32
+				&& keyPressEvent.KeyChar != 13
+				&& keyPressEvent.KeyChar != 9)
+				{
+					return;
+				}
+				if (Selecting)
+				{
+					DeleteSelection();
+					Selecting = false;
+				}
 
-			TextWidgetUndoCommand newUndoData = new TextWidgetUndoCommand(this);
-			if (MergeTypingDuringUndo
-				&& charIndexToAcceptAsMerging == CharIndexToInsertBefore - 1
-				&& keyPressEvent.KeyChar != '\n' && keyPressEvent.KeyChar != '\r')
-			{
-				undoBuffer.Add(newUndoData);
+				StringBuilder tempString = new StringBuilder(internalTextWidget.Text);
+				tempString.Insert(CharIndexToInsertBefore, keyPressEvent.KeyChar.ToString());
+				keyPressEvent.Handled = true;
+				CharIndexToInsertBefore++;
+				internalTextWidget.Text = tempString.ToString();
+
+				FixBarPosition(DesiredXPositionOnLine.Set);
+
+				TextWidgetUndoCommand newUndoData = new TextWidgetUndoCommand(this);
+				if (MergeTypingDuringUndo
+					&& charIndexToAcceptAsMerging == CharIndexToInsertBefore - 1
+					&& keyPressEvent.KeyChar != '\n' && keyPressEvent.KeyChar != '\r')
+				{
+					undoBuffer.Add(newUndoData);
+				}
+				else
+				{
+					undoBuffer.Add(newUndoData);
+				}
+				charIndexToAcceptAsMerging = CharIndexToInsertBefore;
 			}
-			else
-			{
-				undoBuffer.Add(newUndoData);
-			}
-			charIndexToAcceptAsMerging = CharIndexToInsertBefore;
 		}
 
 		private int GetIndexOffset(int CharacterStartIndexInclusive, int MaxCharacterEndIndexInclusive, double DesiredPixelOffset)

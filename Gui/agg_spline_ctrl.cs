@@ -192,28 +192,32 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnKeyDown(KeyEventArgs keyEvent)
 		{
-			double kx = 0.0;
-			double ky = 0.0;
-			bool ret = false;
-			if (m_active_pnt >= 0)
-			{
-				kx = m_xp[m_active_pnt];
-				ky = m_yp[m_active_pnt];
-				if (keyEvent.KeyCode == Keys.Left) { kx -= 0.001; ret = true; }
-				if (keyEvent.KeyCode == Keys.Right) { kx += 0.001; ret = true; }
-				if (keyEvent.KeyCode == Keys.Down) { ky -= 0.001; ret = true; }
-				if (keyEvent.KeyCode == Keys.Up) { ky += 0.001; ret = true; }
-			}
-			if (ret)
-			{
-				set_xp((int)m_active_pnt, kx);
-				set_yp((int)m_active_pnt, ky);
-				update_spline();
-				keyEvent.Handled = true;
-				Invalidate();
-			}
-
+			// this must be called first to ensure we get the correct Handled state
 			base.OnKeyDown(keyEvent);
+
+			if (!keyEvent.Handled)
+			{
+				double kx = 0.0;
+				double ky = 0.0;
+				bool ret = false;
+				if (m_active_pnt >= 0)
+				{
+					kx = m_xp[m_active_pnt];
+					ky = m_yp[m_active_pnt];
+					if (keyEvent.KeyCode == Keys.Left) { kx -= 0.001; ret = true; }
+					if (keyEvent.KeyCode == Keys.Right) { kx += 0.001; ret = true; }
+					if (keyEvent.KeyCode == Keys.Down) { ky -= 0.001; ret = true; }
+					if (keyEvent.KeyCode == Keys.Up) { ky += 0.001; ret = true; }
+				}
+				if (ret)
+				{
+					set_xp((int)m_active_pnt, kx);
+					set_yp((int)m_active_pnt, ky);
+					update_spline();
+					keyEvent.Handled = true;
+					Invalidate();
+				}
+			}
 		}
 
 		public void active_point(int i)

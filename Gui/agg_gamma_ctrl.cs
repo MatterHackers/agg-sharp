@@ -264,29 +264,34 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnKeyDown(KeyEventArgs keyEvent)
 		{
-			double kx1, ky1, kx2, ky2;
-			bool ret = false;
-			m_gamma_spline.values(out kx1, out ky1, out kx2, out ky2);
-			if (m_p1_active)
-			{
-				if (keyEvent.KeyCode == Keys.Left) { kx1 -= 0.005; ret = true; }
-				if (keyEvent.KeyCode == Keys.Right) { kx1 += 0.005; ret = true; }
-				if (keyEvent.KeyCode == Keys.Down) { ky1 -= 0.005; ret = true; }
-				if (keyEvent.KeyCode == Keys.Up) { ky1 += 0.005; ret = true; }
-			}
-			else
-			{
-				if (keyEvent.KeyCode == Keys.Left) { kx2 += 0.005; ret = true; }
-				if (keyEvent.KeyCode == Keys.Right) { kx2 -= 0.005; ret = true; }
-				if (keyEvent.KeyCode == Keys.Down) { ky2 += 0.005; ret = true; }
-				if (keyEvent.KeyCode == Keys.Up) { ky2 -= 0.005; ret = true; }
-			}
-			if (ret)
-			{
-				m_gamma_spline.values(kx1, ky1, kx2, ky2);
-				keyEvent.Handled = true;
-			}
+			// this must be called first to ensure we get the correct Handled state
 			base.OnKeyDown(keyEvent);
+
+			if (!keyEvent.Handled)
+			{
+				double kx1, ky1, kx2, ky2;
+				bool ret = false;
+				m_gamma_spline.values(out kx1, out ky1, out kx2, out ky2);
+				if (m_p1_active)
+				{
+					if (keyEvent.KeyCode == Keys.Left) { kx1 -= 0.005; ret = true; }
+					if (keyEvent.KeyCode == Keys.Right) { kx1 += 0.005; ret = true; }
+					if (keyEvent.KeyCode == Keys.Down) { ky1 -= 0.005; ret = true; }
+					if (keyEvent.KeyCode == Keys.Up) { ky1 += 0.005; ret = true; }
+				}
+				else
+				{
+					if (keyEvent.KeyCode == Keys.Left) { kx2 += 0.005; ret = true; }
+					if (keyEvent.KeyCode == Keys.Right) { kx2 -= 0.005; ret = true; }
+					if (keyEvent.KeyCode == Keys.Down) { ky2 += 0.005; ret = true; }
+					if (keyEvent.KeyCode == Keys.Up) { ky2 -= 0.005; ret = true; }
+				}
+				if (ret)
+				{
+					m_gamma_spline.values(kx1, ky1, kx2, ky2);
+					keyEvent.Handled = true;
+				}
+			}
 		}
 
 		public void change_active_point()

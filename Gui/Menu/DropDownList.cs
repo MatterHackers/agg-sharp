@@ -458,12 +458,16 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnKeyUp(KeyEventArgs keyEvent)
 		{
-			if (keyEvent.KeyCode == Keys.Down)
-			{
-				ShowMenu();
-			}
-
+			// this must be called first to ensure we get the correct Handled state
 			base.OnKeyUp(keyEvent);
+
+			if (!keyEvent.Handled)
+			{
+				if (keyEvent.KeyCode == Keys.Down)
+				{
+					ShowMenu();
+				}
+			}
 		}
 
 		public override void OnFocusChanged(EventArgs e)
