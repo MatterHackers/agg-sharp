@@ -43,7 +43,7 @@ namespace MatterHackers.MeshVisualizer
 
 		public bool IsSelected(Object3DTypes objectType) => HasSelection && SelectedItem.ItemType == objectType;
 
-		public void Save(string mcxPath, string libraryPath, ReportProgressRatio progress = null)
+		public void Save(string mcxPath, string libraryPath, ReportProgressRatio<(double ratio, string state)> progress = null)
 		{
 			var itemsWithUnsavedMeshes = from object3D in this.Descendants()
 							  where object3D.Persistable  &&

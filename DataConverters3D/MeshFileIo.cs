@@ -47,7 +47,7 @@ namespace MatterHackers.DataConverters3D
 			return ".STL;.AMF;.OBJ";
 		}
 
-		public static IObject3D Load(Stream fileStream, string fileExtension, ReportProgressRatio reportProgress = null, IObject3D source = null)
+		public static IObject3D Load(Stream fileStream, string fileExtension, ReportProgressRatio<(double ratio, string state)> reportProgress = null, IObject3D source = null)
 		{
 			switch (fileExtension.ToUpper())
 			{
@@ -69,7 +69,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static IObject3D Load(string meshPathAndFileName, ReportProgressRatio reportProgress = null, IObject3D source = null)
+		public static IObject3D Load(string meshPathAndFileName, ReportProgressRatio<(double ratio, string state)> reportProgress = null, IObject3D source = null)
 		{
 			try
 			{
@@ -91,12 +91,12 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static async Task<IObject3D> LoadAsync(string meshPathAndFileName, ReportProgressRatio reportProgress = null)
+		public static async Task<IObject3D> LoadAsync(string meshPathAndFileName, ReportProgressRatio<(double ratio, string state)> reportProgress = null)
 		{
 			return await Task.Run(() => Load(meshPathAndFileName, reportProgress));
 		}
 
-		public static bool Save(IObject3D context, string meshPathAndFileName, MeshOutputSettings outputInfo = null, ReportProgressRatio reportProgress = null)
+		public static bool Save(IObject3D context, string meshPathAndFileName, MeshOutputSettings outputInfo = null, ReportProgressRatio<(double ratio, string state)> reportProgress = null)
 		{
 			// TODO: Seems conceptually correct but needs validation and refinements
 			var meshGroups = new List<MeshGroup> { context.Flatten() };
@@ -115,7 +115,7 @@ namespace MatterHackers.DataConverters3D
 			return Save(meshGroupsToSave, meshPathAndFileName, outputInfo);
 		}
 
-		public static bool Save(List<MeshGroup> meshGroupsToSave, string meshPathAndFileName, MeshOutputSettings outputInfo = null, ReportProgressRatio reportProgress = null)
+		public static bool Save(List<MeshGroup> meshGroupsToSave, string meshPathAndFileName, MeshOutputSettings outputInfo = null, ReportProgressRatio<(double ratio, string state)> reportProgress = null)
 		{
 			try
 			{

@@ -54,7 +54,7 @@ namespace MatterHackers.PolygonMesh.Processors
 		public List<int> MaterialIndexsToSave = null;
 		public CsgOption CsgOptionState = CsgOption.SimpleInsertVolumes;
 
-		public ReportProgressRatio ReportProgress
+		public ReportProgressRatio<(double ratio, string state)> ReportProgress
 		{
 			get; set;
 		}
@@ -68,7 +68,7 @@ namespace MatterHackers.PolygonMesh.Processors
 			this.CsgOptionState = csgOption;
 		}
 
-		public MeshOutputSettings(OutputType outputTypeSetting, string[] metaDataKeyValuePairs = null, ReportProgressRatio reportProgress = null)
+		public MeshOutputSettings(OutputType outputTypeSetting, string[] metaDataKeyValuePairs = null, ReportProgressRatio<(double ratio, string state)> reportProgress = null)
 		{
 			this.ReportProgress = reportProgress;
 

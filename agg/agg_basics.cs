@@ -23,11 +23,12 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MatterHackers.Agg
 {
-	public delegate void ReportProgressRatio(double progress0To1, string processingState, out bool continueProcessing);
+	public delegate void ReportProgressRatio<T>(T progress, CancellationTokenSource continueProcessing);
 
 	static public class agg_basics
 	{

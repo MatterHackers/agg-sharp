@@ -52,7 +52,7 @@ namespace MatterHackers.DataConverters3D
 			return Flatten(this, new MeshGroup(), Matrix4X4.Identity);
 		}
 
-		private MeshGroup Flatten(IObject3D item, MeshGroup meshGroup, Matrix4X4 totalTransform, ReportProgressRatio progress = null)
+		private MeshGroup Flatten(IObject3D item, MeshGroup meshGroup, Matrix4X4 totalTransform, ReportProgressRatio<(double ratio, string state)> progress = null)
 		{
 			totalTransform = item.Matrix * totalTransform;
 
@@ -97,7 +97,7 @@ namespace MatterHackers.DataConverters3D
 
 		public virtual bool Visible { get; set; } = true;
 
-		public static IObject3D Load(string meshPath, Dictionary<string, IObject3D> itemCache = null, ReportProgressRatio progress = null)
+		public static IObject3D Load(string meshPath, Dictionary<string, IObject3D> itemCache = null, ReportProgressRatio<(double ratio, string state)> progress = null)
 		{
 			if (string.IsNullOrEmpty(meshPath) || !File.Exists(meshPath))
 			{
@@ -138,7 +138,7 @@ namespace MatterHackers.DataConverters3D
 			return loadedItem;
 		}
 
-		public static IObject3D Load(Stream stream, string extension, Dictionary<string, IObject3D> itemCache = null, ReportProgressRatio progress = null)
+		public static IObject3D Load(Stream stream, string extension, Dictionary<string, IObject3D> itemCache = null, ReportProgressRatio<(double ratio, string state)> progress = null)
 		{
 			IObject3D loadedItem = null;
 

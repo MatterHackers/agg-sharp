@@ -33,6 +33,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Threading;
 
 namespace MatterHackers.PolygonMesh
 {
@@ -66,7 +67,7 @@ namespace MatterHackers.PolygonMesh
 
 		public VertexCollecton Vertices { get; private set; } = new VertexCollecton();
 
-		public static Mesh Copy(Mesh meshToCopy, ReportProgressRatio progress = null, bool allowFastCopy = true)
+		public static Mesh Copy(Mesh meshToCopy, ReportProgressRatio<(double ratio, string state)> progress = null, bool allowFastCopy = true)
 		{
 			Mesh newMesh = new Mesh();
 
@@ -167,33 +168,33 @@ namespace MatterHackers.PolygonMesh
 			return newMesh;
 		}
 
-		public void CleanAndMergMesh(double maxDistanceToConsiderVertexAsSame = 0, ReportProgressRatio reportProgress = null)
+		public void CleanAndMergMesh(double maxDistanceToConsiderVertexAsSame = 0, ReportProgressRatio<(double ratio, string state)> reportProgress = null)
 		{
 			if (reportProgress != null)
 			{
 				//Validate();
 
 				bool keepProcessing = true;
-				SortVertices((double progress0To1, string processingState, out bool continueProcessing) =>
+				SortVertices(((double progress0To1, string processingState) progress, CancellationTokenSource continueProcessing) =>
 				{
-					reportProgress(progress0To1 * .41, processingState, out continueProcessing);
-					keepProcessing = continueProcessing;
+					reportProgress((progress.progress0To1 * .41, progress.processingState), continueProcessing);
+					keepProcessing = !continueProcessing.IsCancellationRequested;
 					//Validate();
 				});
 				if (keepProcessing)
 				{
-					MergeVertices(maxDistanceToConsiderVertexAsSame, (double progress0To1, string processingState, out bool continueProcessing) =>
+					MergeVertices(maxDistanceToConsiderVertexAsSame, ((double progress0To1, string processingState) progress, CancellationTokenSource continueProcessing) =>
 					{
-						reportProgress(progress0To1 * .23 + .41, processingState, out continueProcessing);
-						keepProcessing = continueProcessing;
+						reportProgress((progress.progress0To1 * .23 + .41, progress.processingState), continueProcessing);
+						keepProcessing = !continueProcessing.IsCancellationRequested;
 					});
 				}
 				if (keepProcessing)
 				{
-					MergeMeshEdges((double progress0To1, string processingState, out bool continueProcessing) =>
+					MergeMeshEdges(((double progress0To1, string processingState) progress, CancellationTokenSource continueProcessing) =>
 					{
-						reportProgress(progress0To1 * .36 + .64, processingState, out continueProcessing);
-						keepProcessing = continueProcessing;
+						reportProgress((progress.progress0To1 * .36 + .64, progress.processingState), continueProcessing);
+						keepProcessing = !continueProcessing.IsCancellationRequested;
 					});
 					//Validate();
 				}
@@ -618,7 +619,7 @@ namespace MatterHackers.PolygonMesh
 			return Vertices.FindVertices(position, maxDistanceToConsiderVertexAsSame);
 		}
 
-		public void MergeVertices(double maxDistanceToConsiderVertexAsSame = 0, ReportProgressRatio reportProgress = null)
+		public void MergeVertices(double maxDistanceToConsiderVertexAsSame = 0, ReportProgressRatio<(double ratio, string state)> reportProgress = null)
 		{
 			HashSet<Vertex> markedForDeletion = new HashSet<Vertex>();
 			Stopwatch maxProgressReport = new Stopwatch();
@@ -648,9 +649,9 @@ namespace MatterHackers.PolygonMesh
 					{
 						if (maxProgressReport.ElapsedMilliseconds > 200)
 						{
-							bool continueProcessing;
-							reportProgress(i / (double)Vertices.Count, "Merging Vertices", out continueProcessing);
-							if (!continueProcessing)
+							var continueProcessing = new CancellationTokenSource();
+							reportProgress((i / (double)Vertices.Count, "Merging Vertices"), continueProcessing);
+							if (continueProcessing.IsCancellationRequested)
 							{
 								return;
 							}
@@ -663,8 +664,8 @@ namespace MatterHackers.PolygonMesh
 			//Validate(markedForDeletion);
 			if (reportProgress != null)
 			{
-				bool continueProcessing;
-				reportProgress(1, "Deleting Unused Vertices", out continueProcessing);
+				var continueProcessing = new CancellationTokenSource();
+				reportProgress((1, "Deleting Unused Vertices"), continueProcessing);
 			}
 			RemoveVerticesMarkedForDeletion(markedForDeletion);
 		}
@@ -711,12 +712,12 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public void SortVertices(ReportProgressRatio reportProgress = null)
+		public void SortVertices(ReportProgressRatio<(double ratio, string state)> reportProgress = null)
 		{
-			bool continueProcessing;
+			var continueProcessing = new CancellationTokenSource();
 			if (reportProgress != null)
 			{
-				reportProgress(0, "Sorting Vertices", out continueProcessing);
+				reportProgress((0, "Sorting Vertices"), continueProcessing);
 			}
 			timer.Restart();
 			Vertices.Sort();
@@ -724,7 +725,7 @@ namespace MatterHackers.PolygonMesh
 			Debug.WriteLine(timer.ElapsedMilliseconds);
 			if (reportProgress != null)
 			{
-				reportProgress(1, "Sorting Vertices", out continueProcessing);
+				reportProgress((1, "Sorting Vertices"), continueProcessing);
 			}
 		}
 
@@ -808,7 +809,7 @@ namespace MatterHackers.PolygonMesh
 			return meshEdges;
 		}
 
-		public void MergeMeshEdges(ReportProgressRatio reportProgress = null)
+		public void MergeMeshEdges(ReportProgressRatio<(double ratio, string state)> reportProgress = null)
 		{
 			HashSet<MeshEdge> markedForDeletion = new HashSet<MeshEdge>();
 			Stopwatch maxProgressReport = new Stopwatch();
@@ -845,10 +846,10 @@ namespace MatterHackers.PolygonMesh
 				{
 					if (maxProgressReport.ElapsedMilliseconds > 200)
 					{
-						bool continueProcessing;
-						reportProgress(i / (double)MeshEdges.Count, "Merging Mesh Edges", out continueProcessing);
+						var continueProcessing = new CancellationTokenSource();
+						reportProgress((i / (double)MeshEdges.Count, "Merging Mesh Edges"), continueProcessing);
 						maxProgressReport.Restart();
-						if (!continueProcessing)
+						if (continueProcessing.IsCancellationRequested)
 						{
 							return;
 						}

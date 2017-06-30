@@ -41,6 +41,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Xml;
+using System.Threading;
 
 namespace MatterHackers.DataConverters3D
 {
@@ -89,7 +90,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static IObject3D Load(string objPath, ReportProgressRatio reportProgress = null, IObject3D source = null)
+		public static IObject3D Load(string objPath, ReportProgressRatio<(double ratio, string state)> reportProgress = null, IObject3D source = null)
 		{
 			using (var stream = File.OpenRead(objPath))
 			{
@@ -97,7 +98,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static IObject3D Load(Stream fileStream, ReportProgressRatio reportProgress = null, IObject3D source = null)
+		public static IObject3D Load(Stream fileStream, ReportProgressRatio<(double ratio, string state)> reportProgress = null, IObject3D source = null)
 		{
 			IObject3D root = source ?? new Object3D();
 			root.ItemType = Object3DTypes.Group;
@@ -197,23 +198,19 @@ namespace MatterHackers.DataConverters3D
 
 			foreach (var item in root.Children)
 			{
-				bool keepProcessing = true;
+				var keepProcessing = new CancellationTokenSource();
 				item.Mesh.CleanAndMergMesh(reportProgress:
-					(double progress0To1, string processingState, out bool continueProcessing) =>
+					((double progress0To1, string processingState) progress, CancellationTokenSource continueProcessing) =>
 					{
 						if (reportProgress != null)
 						{
 							double currentTotalProgress = parsingFileRatio + currentMeshProgress;
-							reportProgress(currentTotalProgress + progress0To1 * progressPerMesh, processingState, out continueProcessing);
+							reportProgress((currentTotalProgress + progress.progress0To1 * progressPerMesh, progress.processingState), continueProcessing);
 							keepProcessing = continueProcessing;
-						}
-						else
-						{
-							continueProcessing = true;
 						}
 					});
 
-				if (!keepProcessing)
+				if (keepProcessing.IsCancellationRequested)
 				{
 					return null;
 				}
@@ -230,8 +227,8 @@ namespace MatterHackers.DataConverters3D
 
 			if (reportProgress != null)
 			{
-				bool continueProcessingTemp;
-				reportProgress(1, "", out continueProcessingTemp);
+				var continueProcessingTemp = new CancellationTokenSource(); ;
+				reportProgress((1, ""), continueProcessingTemp);
 			}
 
 			return (hasValidMesh) ? root : null;
@@ -308,9 +305,9 @@ namespace MatterHackers.DataConverters3D
 			private bool loadCanceled;
 			private Stopwatch maxProgressReport = new Stopwatch();
 			private Stream positionStream;
-			private ReportProgressRatio reportProgress;
+			private ReportProgressRatio<(double ratio, string state)> reportProgress;
 
-			internal ProgressData(Stream positionStream, ReportProgressRatio reportProgress)
+			internal ProgressData(Stream positionStream, ReportProgressRatio<(double ratio, string state)> reportProgress)
 			{
 				this.reportProgress = reportProgress;
 				this.positionStream = positionStream;
@@ -320,20 +317,16 @@ namespace MatterHackers.DataConverters3D
 
 			internal bool LoadCanceled { get { return loadCanceled; } }
 
-			internal void ReportProgress0To50(out bool continueProcessing)
+			internal void ReportProgress0To50(CancellationTokenSource continueProcessing)
 			{
 				if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
 				{
-					reportProgress(positionStream.Position / (double)bytesInFile * .5, "Loading Mesh", out continueProcessing);
-					if (!continueProcessing)
+					reportProgress((positionStream.Position / (double)bytesInFile * .5, "Loading Mesh"), continueProcessing);
+					if (continueProcessing.IsCancellationRequested)
 					{
 						loadCanceled = true;
 					}
 					maxProgressReport.Restart();
-				}
-				else
-				{
-					continueProcessing = true;
 				}
 			}
 		}
