@@ -40,7 +40,7 @@ namespace MatterHackers.PolygonMesh
 {
 	public static class Object3DExtensions
 	{
-		internal static void LoadMeshLinks(this IObject3D tempScene, Dictionary<string, IObject3D> itemCache, ReportProgressRatio progress)
+		internal static void LoadMeshLinks(this IObject3D tempScene, Dictionary<string, IObject3D> itemCache, ReportProgressRatio<(double ratio, string state)> progress)
 		{
 			var itemsToLoad = (from object3D in tempScene.Descendants()
 							   where !string.IsNullOrEmpty(object3D.MeshPath) &&
@@ -55,7 +55,7 @@ namespace MatterHackers.PolygonMesh
 
 		public static List<MeshGroup> ToMeshGroupList(this IObject3D item) => new List<MeshGroup> { item.Flatten() };
 
-		public static void Load(this IObject3D item, Dictionary<string, IObject3D> itemCache, ReportProgressRatio progress)
+		public static void Load(this IObject3D item, Dictionary<string, IObject3D> itemCache, ReportProgressRatio<(double ratio, string state)> progress)
 		{
 			var loadedItem = Object3D.Load(item.MeshPath, itemCache, progress);
 

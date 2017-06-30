@@ -144,7 +144,7 @@ namespace MatterHackers.PolygonMesh.Processors
 			return true;
 		}
 
-		public static Mesh Load(string fileName, ReportProgressRatio reportProgress = null)
+		public static Mesh Load(string fileName, ReportProgressRatio<(double ratio, string state)> reportProgress = null)
 		{
 			// Early exit if not STL
 			if (Path.GetExtension(fileName).ToUpper() != ".STL") return null;
@@ -157,7 +157,7 @@ namespace MatterHackers.PolygonMesh.Processors
 		}
 
 		// Note: Changing the Load(Stream) return type - this is a breaking change but methods with the same name should return the same type
-		public static Mesh Load(Stream fileStream, ReportProgressRatio reportProgress = null)
+		public static Mesh Load(Stream fileStream, ReportProgressRatio<(double ratio, string state)> reportProgress = null)
 		{
 			try
 			{
@@ -221,7 +221,7 @@ namespace MatterHackers.PolygonMesh.Processors
 			return line.Substring(currentPosition-numberLength, numberLength);
 		}
 
-		public static Mesh ParseFileContents(Stream stlStream, ReportProgressRatio reportProgress)
+		public static Mesh ParseFileContents(Stream stlStream, ReportProgressRatio<(double ratio, string state)> reportProgress)
 		{
 			Stopwatch time = new Stopwatch();
 			time.Start();
@@ -299,9 +299,9 @@ namespace MatterHackers.PolygonMesh.Processors
 
 					if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
 					{
-						bool continueProcessing;
-						reportProgress(stlStream.Position / (double)bytesInFile * parsingFileRatio, "Loading Polygons", out continueProcessing);
-						if (!continueProcessing)
+						var continueProcessing = new CancellationTokenSource();
+						reportProgress((stlStream.Position / (double)bytesInFile * parsingFileRatio, "Loading Polygons"), continueProcessing);
+						if (continueProcessing.IsCancellationRequested)
 						{
 							stlStream.Close();
 							return null;
@@ -347,9 +347,9 @@ namespace MatterHackers.PolygonMesh.Processors
 
 					if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
 					{
-						bool continueProcessing;
-						reportProgress(i / (double)numTriangles * parsingFileRatio, "Loading Polygons", out continueProcessing);
-						if (!continueProcessing)
+						var continueProcessing = new CancellationTokenSource();
+						reportProgress((i / (double)numTriangles * parsingFileRatio, "Loading Polygons"), continueProcessing);
+						if (continueProcessing.IsCancellationRequested)
 						{
 							stlStream.Close();
 							return null;
@@ -371,27 +371,23 @@ namespace MatterHackers.PolygonMesh.Processors
 			// merge all the vetexes that are in the same place together
 			bool finishedCleanAndMerge = true;
 			meshFromStlFile.CleanAndMergMesh(reportProgress:
-				(double progress0To1, string processingState, out bool continueProcessing) =>
+				((double progress0To1, string processingState) progress, CancellationTokenSource continueProcessing) =>
 				{
 					if (reportProgress != null)
 					{
-						reportProgress(parsingFileRatio + progress0To1 * (1 - parsingFileRatio), processingState, out continueProcessing);
-						if (!continueProcessing)
+						reportProgress((parsingFileRatio + progress.progress0To1 * (1 - parsingFileRatio), progress.processingState), continueProcessing);
+						if (continueProcessing.IsCancellationRequested)
 						{
 							finishedCleanAndMerge = false;
 						}
-					}
-					else
-					{
-						continueProcessing = true;
 					}
 				}
 			);
 
 			if (reportProgress != null)
 			{
-				bool continueProcessingTemp;
-				reportProgress(1, "", out continueProcessingTemp);
+				var continueProcessingTemp = new CancellationTokenSource();
+				reportProgress((1, ""), continueProcessingTemp);
 			}
 
 			if (!finishedCleanAndMerge)
