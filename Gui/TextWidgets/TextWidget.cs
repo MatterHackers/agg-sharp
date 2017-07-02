@@ -242,6 +242,13 @@ namespace MatterHackers.Agg.UI
 				Printer.Render(graphics2D, currentColor);
 			}
 
+			// Debug onscreen fonts
+			if (false && this.Text.Trim().Length > 1)
+			{
+				graphics2D.FillRectangle(this.Width - 13, 0, this.Width, this.Height - 2, RGBA_Bytes.White);
+				graphics2D.DrawString(this.PointSize.ToString(), this.Width - 12, 2, 8, color: RGBA_Bytes.Red);
+			}
+
 			graphics2D.PopTransform();
 
 			base.OnDraw(graphics2D);
