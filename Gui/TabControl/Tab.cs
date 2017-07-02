@@ -34,6 +34,8 @@ namespace MatterHackers.Agg.UI
 {
 	public class SimpleTextTabWidget : Tab
 	{
+		private int fixedSize;
+
 		public SimpleTextTabWidget(TabPage tabPageControledByTab, string internalTabName)
 			: this(tabPageControledByTab, internalTabName, 12, RGBA_Bytes.DarkGray, RGBA_Bytes.White, RGBA_Bytes.Black, RGBA_Bytes.White)
 		{
@@ -41,25 +43,27 @@ namespace MatterHackers.Agg.UI
 
 		public SimpleTextTabWidget(TabPage tabPageControledByTab, string internalTabName, double pointSize,
 			RGBA_Bytes selectedTextColor, RGBA_Bytes selectedBackgroundColor,
-			RGBA_Bytes normalTextColor, RGBA_Bytes normalBackgroundColor)
+			RGBA_Bytes normalTextColor, RGBA_Bytes normalBackgroundColor, int fixedSize = 40, bool useUnderlineStyling = false)
 			: base(internalTabName, new GuiWidget(), new GuiWidget(), new GuiWidget(), tabPageControledByTab)
 		{
 			this.Padding = new BorderDouble(5, 0);
 			this.Margin = new BorderDouble(0, 0, 10, 0);
+			this.fixedSize = fixedSize;
+			this.UseUnderlineStyling = useUnderlineStyling;
 
 			AddText(tabPageControledByTab.Text, selectedWidget, selectedTextColor, selectedBackgroundColor, pointSize, true);
 			AddText(tabPageControledByTab.Text, normalWidget, normalTextColor, normalBackgroundColor, pointSize, false);
-			//hoverWidget;
 
 			tabPageControledByTab.TextChanged += new EventHandler(tabPageControledByTab_TextChanged);
 
 			SetBoundsToEncloseChildren();
 		}
 
+		public bool UseUnderlineStyling { get; set; } = false;
+
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
 		{
 			OnSelected(mouseEvent);
-
 			base.OnMouseDown(mouseEvent);
 		}
 
@@ -85,12 +89,14 @@ namespace MatterHackers.Agg.UI
 			widgetState.Selectable = false;
 			widgetState.BackgroundColor = backgroundColor;
 
-			EnforceSizingAdornActive(widgetState, isActive);
+			EnforceSizingAdornActive(widgetState, isActive, this.UseUnderlineStyling, this.fixedSize);
 		}
 	}
 
 	public abstract class Tab : GuiWidget
 	{
+		public static int UnderlineHeight { get; set; } = 2;
+
 		private RGBA_Bytes backgroundColor = new RGBA_Bytes(230, 230, 230);
 
 		protected GuiWidget normalWidget;
@@ -155,18 +161,18 @@ namespace MatterHackers.Agg.UI
 
 		public TabPage TabPage { get; }
 
-		protected static void EnforceSizingAdornActive(GuiWidget widgetState, bool isActive)
+		protected static void EnforceSizingAdornActive(GuiWidget widgetState, bool isActive, bool useUnderlineStyle, int controlHeight = 40, int controlMargin = 0)
 		{
-			widgetState.Height = 40;
-			widgetState.Margin = 0;
+			widgetState.Height = controlHeight;
+			widgetState.Margin = controlMargin;
 
-			if (isActive)
+			if (isActive && useUnderlineStyle)
 			{
 				// Adorn the active tab with a underline bar
 				widgetState.AddChild(new GuiWidget()
 				{
 					HAnchor = HAnchor.ParentLeftRight,
-					Height = 3,
+					Height = UnderlineHeight,
 					BackgroundColor = ActiveTheme.Instance.PrimaryAccentColor,
 					VAnchor = VAnchor.ParentBottom
 				});
