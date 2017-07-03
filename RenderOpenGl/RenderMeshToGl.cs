@@ -44,31 +44,40 @@ namespace MatterHackers.RenderOpenGl
 			Render(meshToRender, partColor, Matrix4X4.Identity, renderType);
 		}
 
-		public static void Render3DLine(WorldView world, Vector3 start, Vector3 end, RGBA_Bytes color, bool doDepthTest = true)
+		public static void Render3DLine(WorldView world, Vector3 start, Vector3 end, RGBA_Bytes color, bool doDepthTest = true, double width = 1)
 		{
-			Render3DLine(GetClippingFrustum(world), world, start, end, color, doDepthTest);
+			Render3DLine(GetClippingFrustum(world), world, start, end, color, doDepthTest, width);
 		}
-		
-		public static void Render3DLine(Frustum clippingFrustum, WorldView world, Vector3 start, Vector3 end, RGBA_Bytes color, bool doDepthTest = true)
+
+		public static void Render3DLine(Frustum clippingFrustum, WorldView world, Vector3 start, Vector3 end, RGBA_Bytes color, bool doDepthTest = true, double width = 1)
+		{
+			PrepareFor3DLineRender(doDepthTest);
+			Render3DLineNoPrep(clippingFrustum, world, start, end, color, width);
+		}
+
+		public static void PrepareFor3DLineRender(bool doDepthTest)
+		{
+			GL.Disable(EnableCap.Texture2D);
+
+			GL.Enable(EnableCap.Blend);
+			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+			GL.Disable(EnableCap.Lighting);
+			if (doDepthTest)
+			{
+				GL.Enable(EnableCap.DepthTest);
+			}
+			else
+			{
+				GL.Disable(EnableCap.DepthTest);
+			}
+		}
+
+		public static void Render3DLineNoPrep(Frustum clippingFrustum, WorldView world, Vector3 start, Vector3 end, RGBA_Bytes color, double width = 1)
 		{
 			if (clippingFrustum.ClipLine(ref start, ref end))
 			{
 				double unitsPerPixelStart = world.GetWorldUnitsPerScreenPixelAtPosition(start);
 				double unitsPerPixelEnd = world.GetWorldUnitsPerScreenPixelAtPosition(end);
-
-				GL.Disable(EnableCap.Texture2D);
-
-				GL.Enable(EnableCap.Blend);
-				GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-				GL.Disable(EnableCap.Lighting);
-				if (doDepthTest)
-				{
-					GL.Enable(EnableCap.DepthTest);
-				}
-				else
-				{
-					GL.Disable(EnableCap.DepthTest);
-				}
 
 				Vector3 delta = start - end;
 				Matrix4X4 rotateTransform = Matrix4X4.CreateRotation(new Quaternion(Vector3.UnitX + new Vector3(.0001, -.00001, .00002), -delta.GetNormal()));
@@ -81,30 +90,61 @@ namespace MatterHackers.RenderOpenGl
 					Vector3 vertexPosition = unscaledLineMesh.Vertices[i].Position;
 					if (vertexPosition.x < 0)
 					{
-						scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.x, vertexPosition.y * unitsPerPixelStart, vertexPosition.z * unitsPerPixelStart);
+						scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.x, vertexPosition.y * unitsPerPixelStart * width, vertexPosition.z * unitsPerPixelStart);
 					}
 					else
 					{
-						scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.x, vertexPosition.y * unitsPerPixelEnd, vertexPosition.z * unitsPerPixelEnd);
+						scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.x, vertexPosition.y * unitsPerPixelEnd * width, vertexPosition.z * unitsPerPixelEnd);
 					}
 				}
 
-				scaledLineMesh.MarkAsChanged();
+				if (true)
+				{
+					GL.Color4(color.Red0To255, color.Green0To255, color.Blue0To255, color.Alpha0To255);
 
-				GLHelper.Render(scaledLineMesh, color, lineTransform, RenderTypes.Shaded);
+					if (color.Alpha0To1 < 1)
+					{
+						GL.Enable(EnableCap.Blend);
+					}
+					else
+					{
+						//GL.Disable(EnableCap.Blend);
+					}
+
+					GL.MatrixMode(MatrixMode.Modelview);
+					GL.PushMatrix();
+					GL.MultMatrix(lineTransform.GetAsFloatArray());
+
+					GL.Begin(BeginMode.Triangles);
+					foreach (var face in scaledLineMesh.Faces)
+					{
+						foreach(var vertex in face.Vertices())
+						{
+							GL.Vertex3(vertex.Position.x, vertex.Position.y, vertex.Position.z);
+						}
+					}
+					GL.End();
+					GL.PopMatrix();
+				}
+				else
+				{
+					scaledLineMesh.MarkAsChanged();
+
+					GLHelper.Render(scaledLineMesh, color, lineTransform, RenderTypes.Shaded);
+				}
 			}
 		}
 
 		static Mesh scaledLineMesh = PlatonicSolids.CreateCube();
 		static Mesh unscaledLineMesh = PlatonicSolids.CreateCube();
 
-		public static void Render(Mesh meshToRender, IColorType partColor, Matrix4X4 transform, RenderTypes renderType)
+		public static void Render(Mesh meshToRender, IColorType color, Matrix4X4 transform, RenderTypes renderType)
 		{
 			if (meshToRender != null)
 			{
-				GL.Color4(partColor.Red0To255, partColor.Green0To255, partColor.Blue0To255, partColor.Alpha0To255);
+				GL.Color4(color.Red0To255, color.Green0To255, color.Blue0To255, color.Alpha0To255);
 
-				if (partColor.Alpha0To1 < 1)
+				if (color.Alpha0To1 < 1)
 				{
 					GL.Enable(EnableCap.Blend);
 				}
@@ -138,7 +178,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		public static Frustum GetClippingFrustum(WorldView world)
+		public static Frustum GetClippingFrustum(this WorldView world)
 		{
 			var frustum = Frustum.FrustumFromProjectionMatrix(world.ProjectionMatrix);
 			var frustum2 = Frustum.Transform(frustum, world.InverseModelviewMatrix);
