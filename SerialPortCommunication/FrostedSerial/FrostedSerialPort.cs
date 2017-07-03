@@ -180,6 +180,11 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 						}
 					}
 				}
+
+#if DEBUG
+				serial_ports.Add("Emulator");
+#endif
+
 #endif
 			}
 			
