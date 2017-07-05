@@ -87,6 +87,11 @@ namespace MatterHackers.Agg.OpenGlGui
 		private float[] specularLight1 = { 0.3f, 0.3f, 0.3f, 1.0f };
 		private float[] lightDirection1 = { 1, 1, 1, 0.0f };
 
+		private List<IVertexSource> insideArrows = new List<IVertexSource>();
+		private List<IVertexSource> outsideArrows = new List<IVertexSource>();
+
+		private WorldView world;
+
 		public RGBA_Bytes RotationHelperCircleColor { get; set; } =  new RGBA_Bytes(RGBA_Bytes.Black, 200);
 
 		public bool DrawRotationHelperCircle { get; set; }
@@ -94,8 +99,6 @@ namespace MatterHackers.Agg.OpenGlGui
 		public TrackBallController TrackBallController { get; }
 		
 		public bool LockTrackBall { get; set; }
-
-		private WorldView world;
 
 		public TrackballTumbleWidget(WorldView world)
 		{
@@ -122,7 +125,7 @@ namespace MatterHackers.Agg.OpenGlGui
 			base.OnBoundsChanged(e);
 		}
 
-		public override void OnDraw(MatterHackers.Agg.Graphics2D graphics2D)
+		public override void OnDraw(Graphics2D graphics2D)
 		{
 			if (DoOpenGlDrawing)
 			{
@@ -131,9 +134,6 @@ namespace MatterHackers.Agg.OpenGlGui
 				UnsetGlContext();
 			}
 
-			RectangleDouble bounds = LocalBounds;
-			//graphics2D.Rectangle(bounds, RGBA_Bytes.Black);
-
 			if (DrawRotationHelperCircle)
 			{
 				DrawTrackballRadius(graphics2D);
@@ -141,9 +141,6 @@ namespace MatterHackers.Agg.OpenGlGui
 
 			base.OnDraw(graphics2D);
 		}
-
-		List<IVertexSource> insideArrows = new List<IVertexSource>();
-		List<IVertexSource> outsideArrows = new List<IVertexSource>();
 
 		public void DrawTrackballRadius(Graphics2D graphics2D)
 		{
@@ -443,32 +440,32 @@ namespace MatterHackers.Agg.OpenGlGui
 		}
 
 		int updatesPerSecond = 30;
-        private void ApplyVelocity()
-        {
+		private void ApplyVelocity()
+		{
 			double msPerUpdate = 1000.0 / updatesPerSecond;
-            if (currentVelocityPerMs.LengthSquared > 0)
-            {
-                if (TrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.None)
-                {
-                    Vector2 center = LocalBounds.Center;
+			if (currentVelocityPerMs.LengthSquared > 0)
+			{
+				if (TrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.None)
+				{
+					Vector2 center = LocalBounds.Center;
 					TrackBallController.OnMouseDown(center, Matrix4X4.Identity, TrackBallController.MouseDownType.Rotation);
 					TrackBallController.OnMouseMove(center + currentVelocityPerMs * msPerUpdate);
 					TrackBallController.OnMouseUp();
-                    Invalidate();
+					Invalidate();
 
-                    currentVelocityPerMs *= .85;
-                    if(currentVelocityPerMs.LengthSquared < .01 / msPerUpdate)
-                    {
-                        currentVelocityPerMs = Vector2.Zero;
-                    }
+					currentVelocityPerMs *= .85;
+					if (currentVelocityPerMs.LengthSquared < .01 / msPerUpdate)
+					{
+						currentVelocityPerMs = Vector2.Zero;
+					}
 
-                    if (currentVelocityPerMs.LengthSquared > 0)
-                    {
+					if (currentVelocityPerMs.LengthSquared > 0)
+					{
 						UiThread.RunOnIdle(ApplyVelocity, 1.0 / updatesPerSecond);
-                    }
-                }
-            }
-        }
+					}
+				}
+			}
+		}
 
 		public override void OnMouseWheel(MouseEventArgs mouseEvent)
 		{
