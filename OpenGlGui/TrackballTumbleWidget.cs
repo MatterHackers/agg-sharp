@@ -73,26 +73,9 @@ namespace MatterHackers.Agg.OpenGlGui
 	{
 		public event EventHandler DrawGlContent;
 
-		private bool doOpenGlDrawing = true;
+		public bool DoOpenGlDrawing { get; set; } = true;
 
-		public bool DoOpenGlDrawing
-		{
-			get
-			{
-				return doOpenGlDrawing;
-			}
-
-			set
-			{
-				doOpenGlDrawing = value;
-			}
-		}
-
-		public TrackBallController.MouseDownType TransformState
-		{
-			get;
-			set;
-		}
+		public TrackBallController.MouseDownType TransformState { get; set; }
 
 		private float[] ambientLight = { 0.2f, 0.2f, 0.2f, 1.0f };
 
@@ -104,13 +87,7 @@ namespace MatterHackers.Agg.OpenGlGui
 		private float[] specularLight1 = { 0.3f, 0.3f, 0.3f, 1.0f };
 		private float[] lightDirection1 = { 1, 1, 1, 0.0f };
 
-		private RGBA_Bytes rotationHelperCircleColor = new RGBA_Bytes(RGBA_Bytes.Black, 200);
-
-		public RGBA_Bytes RotationHelperCircleColor
-		{
-			get { return rotationHelperCircleColor; }
-			set { rotationHelperCircleColor = value; }
-		}
+		public RGBA_Bytes RotationHelperCircleColor { get; set; } =  new RGBA_Bytes(RGBA_Bytes.Black, 200);
 
 		public bool DrawRotationHelperCircle { get; set; }
 		
