@@ -133,7 +133,9 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 			else
 			{
 				// looks_like_mac -- serialPort.StartsWith("/dev/tty."); looks_like_pc -- serialPort.StartsWith("COM")
-				filteredPorts = allPorts.Where(portName => portName.StartsWith("/dev/tty.") || portName.StartsWith("COM"));
+				filteredPorts = allPorts.Where(portName => portName.StartsWith("/dev/tty.") 
+					|| portName.StartsWith("COM")
+					|| portName == "Emulator");
 			}
 
 			return filteredPorts.Any() ? filteredPorts : allPorts;
