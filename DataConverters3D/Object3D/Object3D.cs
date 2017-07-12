@@ -152,7 +152,7 @@ namespace MatterHackers.DataConverters3D
 		{
 			IObject3D loadedItem = null;
 
-			bool isMcxFile = extension == ".mcx";
+			bool isMcxFile = extension.ToLower() == ".mcx";
 			if (isMcxFile)
 			{
 				string json = new StreamReader(stream).ReadToEnd();
