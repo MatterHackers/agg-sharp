@@ -779,11 +779,11 @@ namespace MatterHackers.MeshVisualizer
 				bool isSelected = parentSelected ||
 					Scene.HasSelection && (object3D == Scene.SelectedItem || Scene.SelectedItem.Children.Contains(object3D));
 
-				MeshMaterialData meshData = MeshMaterialData.Get(meshAndTransform.MeshData);
+				MeshExtruderData meshData = MeshExtruderData.Get(meshAndTransform.MeshData);
 				RGBA_Bytes drawColor = object3D.Color;
 				if (drawColor.Alpha0To1 == 0)
 				{
-					drawColor = isSelected ? GetSelectedMaterialColor(meshData.MaterialIndex) : GetMaterialColor(meshData.MaterialIndex);
+					drawColor = isSelected ? GetSelectedMaterialColor(meshData.ExtruderIndex) : GetMaterialColor(meshData.ExtruderIndex);
 				}
 
 				GLHelper.Render(meshAndTransform.MeshData, drawColor, meshAndTransform.Matrix, RenderType);
