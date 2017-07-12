@@ -300,14 +300,14 @@ namespace MatterHackers.DataConverters3D
 							{
 								Mesh mesh = meshGroup.Meshes[meshIndex];
 								int firstVertexIndex = meshVertexStart[meshIndex];
-								MeshMaterialData material = MeshMaterialData.Get(mesh);
-								if (material.MaterialIndex == -1)
+								MeshExtruderData material = MeshExtruderData.Get(mesh);
+								if (material.ExtruderIndex == -1)
 								{
 									amfFile.WriteLine(Indent(3) + "<volume>");
 								}
 								else
 								{
-									amfFile.WriteLine(Indent(3) + "<volume materialid=\"{0}\">".FormatWith(material.MaterialIndex));
+									amfFile.WriteLine(Indent(3) + "<volume materialid=\"{0}\">".FormatWith(material.ExtruderIndex));
 								}
 
 								double faceCount = (double)mesh.Faces.Count;
@@ -355,10 +355,10 @@ namespace MatterHackers.DataConverters3D
 				{
 					foreach (Mesh mesh in meshGroup.Meshes)
 					{
-						MeshMaterialData material = MeshMaterialData.Get(mesh);
-						if (material.MaterialIndex != -1)
+						MeshExtruderData material = MeshExtruderData.Get(mesh);
+						if (material.ExtruderIndex != -1)
 						{
-							materials.Add(material.MaterialIndex);
+							materials.Add(material.ExtruderIndex);
 						}
 					}
 				}
@@ -462,8 +462,8 @@ namespace MatterHackers.DataConverters3D
 			string materialId = reader["materialid"];
 			if (mesh != null && materialId != null)
 			{
-				MeshMaterialData material = MeshMaterialData.Get(mesh);
-				material.MaterialIndex = int.Parse(materialId);
+				MeshExtruderData material = MeshExtruderData.Get(mesh);
+				material.ExtruderIndex = int.Parse(materialId);
 			}
 
 			if (reader.ReadToDescendant("triangle"))

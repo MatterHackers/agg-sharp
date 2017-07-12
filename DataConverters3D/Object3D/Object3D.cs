@@ -48,29 +48,38 @@ namespace MatterHackers.DataConverters3D
 
 		public MeshGroup Flatten()
 		{
-			return Flatten(this, new MeshGroup(), Matrix4X4.Identity);
+			return Flatten(this, new MeshGroup(), Matrix4X4.Identity, 0);
 		}
 
-		private MeshGroup Flatten(IObject3D item, MeshGroup meshGroup, Matrix4X4 totalTransform, ReportProgressRatio<(double ratio, string state)> progress = null)
+		private static MeshGroup Flatten(IObject3D item, MeshGroup meshGroup, Matrix4X4 totalTransform, int extruderIndex, ReportProgressRatio<(double ratio, string state)> progress = null)
 		{
 			totalTransform = item.Matrix * totalTransform;
+
+			if (item.ExtruderIndex != -1)
+			{
+				extruderIndex = item.ExtruderIndex;
+			}
 
 			if (item.Mesh  != null)
 			{
 				var mesh = Mesh.Copy(item.Mesh, progress);
 				mesh.Transform(totalTransform);
 				meshGroup.Meshes.Add(mesh);
+				var material = MeshExtruderData.Get(mesh);
+				material.ExtruderIndex = extruderIndex;
 			}
 
-			foreach(IObject3D child in item.Children.Where(child => child.Visible))
+			foreach (IObject3D child in item.Children.Where(child => child.Visible))
 			{
-				Flatten(child, meshGroup, totalTransform, progress);
+				Flatten(child, meshGroup, totalTransform, extruderIndex, progress);
 			}
 
 			return meshGroup;
 		}
 
 		public RGBA_Bytes Color { get; set; } = RGBA_Bytes.Transparent;
+
+		public int ExtruderIndex { get; set; } = -1;
 
 		[JsonIgnore]
 		public bool HasChildren => Children.Count > 0;

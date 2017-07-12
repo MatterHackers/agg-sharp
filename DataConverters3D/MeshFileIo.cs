@@ -166,8 +166,8 @@ namespace MatterHackers.DataConverters3D
 				{
 					foreach (Mesh mesh in meshGroup.Meshes)
 					{
-						int currentMeshMaterialIntdex = MeshMaterialData.Get(mesh).MaterialIndex;
-						if (outputInfo.MaterialIndexsToSave == null || outputInfo.MaterialIndexsToSave.Contains(currentMeshMaterialIntdex))
+						int extruderIndexIntdex = MeshExtruderData.Get(mesh).ExtruderIndex;
+						if (outputInfo.ExtruderIndexesToSave == null || outputInfo.ExtruderIndexesToSave.Contains(extruderIndexIntdex))
 						{
 							foreach (Face face in mesh.Faces)
 							{
