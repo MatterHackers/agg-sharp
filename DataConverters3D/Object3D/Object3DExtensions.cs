@@ -27,14 +27,14 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg;
-using MatterHackers.DataConverters3D;
-using MatterHackers.RayTracer;
-using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using MatterHackers.Agg;
+using MatterHackers.DataConverters3D;
+using MatterHackers.RayTracer;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh
 {
@@ -43,8 +43,7 @@ namespace MatterHackers.PolygonMesh
 		internal static void LoadMeshLinks(this IObject3D tempScene, Dictionary<string, IObject3D> itemCache, ReportProgressRatio<(double ratio, string state)> progress)
 		{
 			var itemsToLoad = (from object3D in tempScene.Descendants()
-							   where !string.IsNullOrEmpty(object3D.MeshPath) &&
-									 File.Exists(object3D.MeshPath)
+							   where !string.IsNullOrEmpty(object3D.MeshPath)
 							   select object3D).ToList();
 
 			foreach (IObject3D object3D in itemsToLoad)
@@ -57,7 +56,13 @@ namespace MatterHackers.PolygonMesh
 
 		public static void Load(this IObject3D item, Dictionary<string, IObject3D> itemCache, ReportProgressRatio<(double ratio, string state)> progress)
 		{
-			var loadedItem = Object3D.Load(item.MeshPath, itemCache, progress);
+			string filePath = item.MeshPath;
+			if (!File.Exists(filePath))
+			{
+				filePath = Path.Combine(Object3D.AssetsPath, filePath);
+			}
+
+			var loadedItem = Object3D.Load(filePath, itemCache, progress);
 
 			// TODO: Consider refactoring progress reporting to use an instance with state and the original delegate reference to allow anyone along the chain
 			// to determine if continueProcessing has been set to false and allow for more clear aborting (rather than checking for null as we have to do below) 

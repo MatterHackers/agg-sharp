@@ -100,7 +100,8 @@ namespace MatterHackers.MeshVisualizer
 
 					if (savedSuccessfully && File.Exists(assetPath))
 					{
-						item.MeshPath = assetPath;
+						// Assets should be stored relative to the Asset folder
+						item.MeshPath = Path.GetFileName(assetPath);
 					}
 				}
 

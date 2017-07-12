@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2016, John Lewin
+Copyright (c) 2017, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,16 +27,19 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using System;
 using System.Reflection;
+using MatterHackers.Agg;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace MatterHackers.DataConverters3D
 {
 	public class IObject3DContractResolver : DefaultContractResolver
 	{
 		private static Type IObject3DType = typeof(IObject3D);
+
+		private static Type RGBA_BtyesType = typeof(RGBA_Bytes);
 
 		protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
 		{
@@ -45,9 +48,18 @@ namespace MatterHackers.DataConverters3D
 			JsonProperty property = base.CreateProperty(member, memberSerialization);
 			if (property.PropertyName == "Children" && IObject3DType.IsAssignableFrom(property.DeclaringType))
 			{
+				// TODO: Needs review - clipping the Children property when MeshPath is non-null works for AMF but isn't appropriate for many use cases
 				property.ShouldSerialize = instance => {
 					IObject3D item = (IObject3D)instance;
 					return string.IsNullOrEmpty(item.MeshPath);
+				};
+			}
+
+			if (property.PropertyName == "Color" && RGBA_BtyesType.IsAssignableFrom(property.PropertyType))
+			{
+				property.ShouldSerialize = instance => {
+					
+					return instance is IObject3D object3D && object3D.Color != RGBA_Bytes.Transparent;
 				};
 			}
 
