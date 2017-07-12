@@ -43,8 +43,6 @@ namespace MatterHackers.DataConverters3D
 {
 	public class PlatingData
 	{
-		public Vector3 CurrentScale = new Vector3(1, 1, 1);
-
 		public Vector2 Spacing;
 	}
 }
