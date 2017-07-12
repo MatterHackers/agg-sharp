@@ -313,7 +313,11 @@ namespace MatterHackers.DataConverters3D
 			return JsonConvert.SerializeObject(
 						this,
 						Formatting.Indented,
-						new JsonSerializerSettings { ContractResolver = new IObject3DContractResolver() });
+						new JsonSerializerSettings
+						{
+							ContractResolver = new IObject3DContractResolver(),
+							NullValueHandling = NullValueHandling.Ignore
+						});
 		}
 	}
 }
