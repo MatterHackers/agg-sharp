@@ -27,14 +27,14 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using MatterHackers.Agg;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using MatterHackers.Agg;
-using System.Collections;
 
 namespace MatterHackers.DataConverters3D
 {
@@ -65,7 +65,6 @@ namespace MatterHackers.DataConverters3D
 		[JsonConverter(typeof(IObject3DChildrenConverter))]
 		List<IObject3D> Children { get; set; }
 		RGBA_Bytes Color { get; set; }
-		PlatingData ExtraData { get; }
 		MeshGroup Flatten();
 		bool HasChildren { get; }
 		Object3DTypes ItemType { get; set; }
