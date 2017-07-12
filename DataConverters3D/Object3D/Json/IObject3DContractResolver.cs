@@ -48,6 +48,7 @@ namespace MatterHackers.DataConverters3D
 			JsonProperty property = base.CreateProperty(member, memberSerialization);
 			if (property.PropertyName == "Children" && IObject3DType.IsAssignableFrom(property.DeclaringType))
 			{
+				// TODO: Needs review - clipping the Children property when MeshPath is non-null works for AMF but isn't appropriate for many use cases
 				property.ShouldSerialize = instance => {
 					IObject3D item = (IObject3D)instance;
 					return string.IsNullOrEmpty(item.MeshPath);
