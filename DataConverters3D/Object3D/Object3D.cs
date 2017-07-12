@@ -43,6 +43,8 @@ namespace MatterHackers.DataConverters3D
 {
 	public class Object3D : IObject3D
 	{
+		public static string AssetsPath { get; set; }
+
 		public virtual string ActiveEditor { get; set; }
 		public List<IObject3D> Children { get; set; } = new List<IObject3D>();
 
