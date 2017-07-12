@@ -45,7 +45,6 @@ namespace MatterHackers.DataConverters3D
 	{
 		public virtual string ActiveEditor { get; set; }
 		public List<IObject3D> Children { get; set; } = new List<IObject3D>();
-		public PlatingData ExtraData { get; } = new PlatingData();
 
 		public MeshGroup Flatten()
 		{
