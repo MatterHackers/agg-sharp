@@ -31,24 +31,24 @@ using System.Runtime.CompilerServices;
 
 namespace MatterHackers.PolygonMesh
 {
-	public class MeshMaterialData
+	public class MeshExtruderData
 	{
-		public int MaterialIndex = 1;
+		public int ExtruderIndex = 1;
 
-		private MeshMaterialData()
+		private MeshExtruderData()
 		{
 		}
 
-		private static ConditionalWeakTable<Mesh, MeshMaterialData> meshsWithMaterialData = new ConditionalWeakTable<Mesh, MeshMaterialData>();
+		private static ConditionalWeakTable<Mesh, MeshExtruderData> meshsWithMaterialData = new ConditionalWeakTable<Mesh, MeshExtruderData>();
 
-		static public MeshMaterialData Get(Mesh meshToGetMaterialDataFor)
+		static public MeshExtruderData Get(Mesh meshToGetMaterialDataFor)
 		{
-			MeshMaterialData plugin;
+			MeshExtruderData plugin;
 			meshsWithMaterialData.TryGetValue(meshToGetMaterialDataFor, out plugin);
 
 			if (plugin == null)
 			{
-				MeshMaterialData newPlugin = new MeshMaterialData();
+				MeshExtruderData newPlugin = new MeshExtruderData();
 				meshsWithMaterialData.Add(meshToGetMaterialDataFor, newPlugin);
 
 				return newPlugin;

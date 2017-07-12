@@ -65,6 +65,7 @@ namespace MatterHackers.DataConverters3D
 		[JsonConverter(typeof(IObject3DChildrenConverter))]
 		List<IObject3D> Children { get; set; }
 		RGBA_Bytes Color { get; set; }
+		int ExtruderIndex { get; set; }
 		MeshGroup Flatten();
 		bool HasChildren { get; }
 		Object3DTypes ItemType { get; set; }

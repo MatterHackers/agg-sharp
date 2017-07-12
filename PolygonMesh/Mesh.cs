@@ -161,9 +161,9 @@ namespace MatterHackers.PolygonMesh
 				newMesh.CleanAndMergMesh();
 			}
 
-			MeshMaterialData materialDataToCopy = MeshMaterialData.Get(meshToCopy);
-			MeshMaterialData newMaterialData = MeshMaterialData.Get(newMesh);
-			newMaterialData.MaterialIndex = materialDataToCopy.MaterialIndex;
+			MeshExtruderData materialDataToCopy = MeshExtruderData.Get(meshToCopy);
+			MeshExtruderData newMaterialData = MeshExtruderData.Get(newMesh);
+			newMaterialData.ExtruderIndex = materialDataToCopy.ExtruderIndex;
 
 			return newMesh;
 		}
