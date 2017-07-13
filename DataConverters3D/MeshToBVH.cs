@@ -65,7 +65,7 @@ namespace MatterHackers.DataConverters3D
 					{
 						if (false)
 						{
-							if (extruderIntdex == 1)
+							if (extruderIntdex == 0)
 							{
 								renderCollection.Add(new MeshFaceTraceable(face, partMaterial));
 							}
@@ -80,7 +80,7 @@ namespace MatterHackers.DataConverters3D
 							if (index == 3)
 							{
 								index = 0;
-								if (extruderIntdex == 1)
+								if (extruderIntdex == 0)
 								{
 									renderCollection.Add(new TriangleShape(triangle[0], triangle[1], triangle[2], partMaterial));
 								}
