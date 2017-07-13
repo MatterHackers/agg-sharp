@@ -1,14 +1,14 @@
-﻿using MatterHackers.Agg;
+﻿using System.Collections.Generic;
+using MatterHackers.Agg;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;
-using System.Collections.Generic;
 
 namespace MatterHackers.DataConverters3D
 {
 	public static class MeshToBVH
 	{
-		public static IPrimitive Convert(PolygonMesh.Mesh simpleMesh, MaterialAbstract partMaterial = null)
+		public static IPrimitive Convert(Mesh simpleMesh, MaterialAbstract partMaterial = null)
 		{
 			List<IPrimitive> renderCollection = new List<IPrimitive>();
 
@@ -18,9 +18,9 @@ namespace MatterHackers.DataConverters3D
 			}
 			int index = 0;
 			Vector3[] triangle = new Vector3[3];
-			foreach (PolygonMesh.Face face in simpleMesh.Faces)
+			foreach (Face face in simpleMesh.Faces)
 			{
-				foreach (PolygonMesh.Vertex vertex in face.Vertices())
+				foreach (Vertex vertex in face.Vertices())
 				{
 					triangle[index++] = vertex.Position;
 					if (index == 3)
@@ -34,7 +34,7 @@ namespace MatterHackers.DataConverters3D
 			return BoundingVolumeHierarchy.CreateNewHierachy(renderCollection);
 		}
 
-		public static IPrimitive Convert(List<PolygonMesh.MeshGroup> meshGroups, MaterialAbstract partMaterial = null)
+		public static IPrimitive Convert(List<MeshGroup> meshGroups, MaterialAbstract partMaterial = null)
 		{
 			List<IPrimitive> renderCollection = new List<IPrimitive>();
 			foreach (MeshGroup meshGroup in meshGroups)
@@ -45,7 +45,7 @@ namespace MatterHackers.DataConverters3D
 			return BoundingVolumeHierarchy.CreateNewHierachy(renderCollection);
 		}
 
-		public static IPrimitive Convert(PolygonMesh.MeshGroup meshGroup, MaterialAbstract partMaterial = null)
+		public static IPrimitive Convert(MeshGroup meshGroup, MaterialAbstract partMaterial = null)
 		{
 			List<IPrimitive> renderCollection = new List<IPrimitive>();
 
@@ -56,12 +56,12 @@ namespace MatterHackers.DataConverters3D
 			}
 			int index = 0;
 			Vector3[] triangle = new Vector3[3];
-			foreach (PolygonMesh.Mesh mesh in meshGroup.Meshes)
+			foreach (Mesh mesh in meshGroup.Meshes)
 			{
 				int extruderIndex = MeshExtruderData.Get(mesh).ExtruderIndex;
-				foreach (PolygonMesh.Face face in mesh.Faces)
+				foreach (Face face in mesh.Faces)
 				{
-					foreach (PolygonMesh.Vertex vertex in face.Vertices())
+					foreach (Vertex vertex in face.Vertices())
 					{
 						if (false)
 						{
@@ -97,7 +97,7 @@ namespace MatterHackers.DataConverters3D
 			return BoundingVolumeHierarchy.CreateNewHierachy(renderCollection);
 		}
 
-		public static IPrimitive ConvertUnoptomized(PolygonMesh.Mesh simpleMesh)
+		public static IPrimitive ConvertUnoptomized(Mesh simpleMesh)
 		{
 			List<IPrimitive> renderCollection = new List<IPrimitive>();
 
@@ -105,11 +105,11 @@ namespace MatterHackers.DataConverters3D
 			SolidMaterial mhBlueStuff = new SolidMaterial(new RGBA_Floats(0, .32, .58), .01, 0.0, 2.0);
 			int index = 0;
 			Vector3[] triangle = new Vector3[3];
-			//PolygonMesh.Mesh simpleMesh = PolygonMesh.Processors.StlProcessing.Load("complex.stl");
-			//PolygonMesh.Mesh simpleMesh = PolygonMesh.Processors.StlProcessing.Load("Spider With Base.stl");
-			foreach (PolygonMesh.Face face in simpleMesh.Faces)
+			//Mesh simpleMesh = Processors.StlProcessing.Load("complex.stl");
+			//Mesh simpleMesh = Processors.StlProcessing.Load("Spider With Base.stl");
+			foreach (Face face in simpleMesh.Faces)
 			{
-				foreach (PolygonMesh.Vertex vertex in face.Vertices())
+				foreach (Vertex vertex in face.Vertices())
 				{
 					triangle[index++] = vertex.Position;
 					if (index == 3)
