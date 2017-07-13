@@ -58,14 +58,14 @@ namespace MatterHackers.DataConverters3D
 			Vector3[] triangle = new Vector3[3];
 			foreach (PolygonMesh.Mesh mesh in meshGroup.Meshes)
 			{
-				int extruderIntdex = MeshExtruderData.Get(mesh).ExtruderIndex;
+				int extruderIndex = MeshExtruderData.Get(mesh).ExtruderIndex;
 				foreach (PolygonMesh.Face face in mesh.Faces)
 				{
 					foreach (PolygonMesh.Vertex vertex in face.Vertices())
 					{
 						if (false)
 						{
-							if (extruderIntdex == 0)
+							if (extruderIndex == 0)
 							{
 								renderCollection.Add(new MeshFaceTraceable(face, partMaterial));
 							}
@@ -80,7 +80,7 @@ namespace MatterHackers.DataConverters3D
 							if (index == 3)
 							{
 								index = 0;
-								if (extruderIntdex == 0)
+								if (extruderIndex == 0)
 								{
 									renderCollection.Add(new TriangleShape(triangle[0], triangle[1], triangle[2], partMaterial));
 								}
