@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RayTracer;
@@ -64,7 +65,7 @@ namespace MatterHackers.DataConverters3D
 
 			if (item.Mesh  != null)
 			{
-				var mesh = Mesh.Copy(item.Mesh, progress);
+				var mesh = Mesh.Copy(item.Mesh, CancellationToken.None, progress);
 				mesh.Transform(totalTransform);
 				meshGroup.Meshes.Add(mesh);
 				var material = MeshExtruderData.Get(mesh);
@@ -107,7 +108,7 @@ namespace MatterHackers.DataConverters3D
 
 		public virtual bool Visible { get; set; } = true;
 
-		public static IObject3D Load(string meshPath, Dictionary<string, IObject3D> itemCache = null, ReportProgressRatio<(double ratio, string state)> progress = null)
+		public static IObject3D Load(string meshPath, CancellationToken cancellationToken, Dictionary<string, IObject3D> itemCache = null, ReportProgressRatio<(double ratio, string state)> progress = null)
 		{
 			if (string.IsNullOrEmpty(meshPath) || !File.Exists(meshPath))
 			{
@@ -128,7 +129,7 @@ namespace MatterHackers.DataConverters3D
 				{
 					string extension = Path.GetExtension(meshPath).ToLower();
 					
-					loadedItem = Load(stream, extension, itemCache, progress);
+					loadedItem = Load(stream, extension, cancellationToken, itemCache, progress);
 
 					// Cache loaded assets
 					if (itemCache != null 
@@ -148,7 +149,7 @@ namespace MatterHackers.DataConverters3D
 			return loadedItem;
 		}
 
-		public static IObject3D Load(Stream stream, string extension, Dictionary<string, IObject3D> itemCache = null, ReportProgressRatio<(double ratio, string state)> progress = null)
+		public static IObject3D Load(Stream stream, string extension, CancellationToken cancellationToken, Dictionary<string, IObject3D> itemCache = null, ReportProgressRatio<(double ratio, string state)> progress = null)
 		{
 			IObject3D loadedItem = null;
 
@@ -159,11 +160,11 @@ namespace MatterHackers.DataConverters3D
 
 				// Load the meta file and convert MeshPath links into objects
 				loadedItem = JsonConvert.DeserializeObject<Object3D>(json);
-				loadedItem.LoadMeshLinks(itemCache, progress);
+				loadedItem.LoadMeshLinks(cancellationToken, itemCache, progress);
 			}
 			else
 			{
-				loadedItem = MeshFileIo.Load(stream, extension, progress);
+				loadedItem = MeshFileIo.Load(stream, extension, cancellationToken, progress);
 			}
 
 			// TODO: Stream loaded content isn't cached

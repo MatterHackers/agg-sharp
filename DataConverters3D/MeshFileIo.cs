@@ -37,6 +37,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace MatterHackers.DataConverters3D
 {
@@ -47,35 +48,35 @@ namespace MatterHackers.DataConverters3D
 			return ".STL;.AMF;.OBJ";
 		}
 
-		public static IObject3D Load(Stream fileStream, string fileExtension, ReportProgressRatio<(double ratio, string state)> reportProgress = null, IObject3D source = null)
+		public static IObject3D Load(Stream fileStream, string fileExtension, CancellationToken cancellationToken, ReportProgressRatio<(double ratio, string state)> reportProgress = null, IObject3D source = null)
 		{
 			switch (fileExtension.ToUpper())
 			{
 				case ".STL":
 
 					var result = source ?? new Object3D { ItemType = Object3DTypes.Model };
-					result.Mesh = StlProcessing.Load(fileStream, reportProgress);
+					result.Mesh = StlProcessing.Load(fileStream, cancellationToken, reportProgress);
 					return result;
 
 				case ".AMF":
 					//return AmfProcessing.Load(fileStream, reportProgress);
-					return AmfDocument.Load(fileStream, reportProgress, source);
+					return AmfDocument.Load(fileStream, cancellationToken, reportProgress, source);
 
 				case ".OBJ":
-					return ObjSupport.Load(fileStream, reportProgress);
+					return ObjSupport.Load(fileStream, cancellationToken, reportProgress);
 
 				default:
 					return null;
 			}
 		}
 
-		public static IObject3D Load(string meshPathAndFileName, ReportProgressRatio<(double ratio, string state)> reportProgress = null, IObject3D source = null)
+		public static IObject3D Load(string meshPathAndFileName, CancellationToken cancellationToken, ReportProgressRatio<(double ratio, string state)> reportProgress = null, IObject3D source = null)
 		{
 			try
 			{
 				using (Stream stream = new FileStream(meshPathAndFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
 				{
-					var loadedItem = Load(stream, Path.GetExtension(meshPathAndFileName), reportProgress, source);
+					var loadedItem = Load(stream, Path.GetExtension(meshPathAndFileName), cancellationToken, reportProgress, source);
 					if (loadedItem != null)
 					{
 						loadedItem.MeshPath = meshPathAndFileName;
@@ -91,9 +92,9 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static async Task<IObject3D> LoadAsync(string meshPathAndFileName, ReportProgressRatio<(double ratio, string state)> reportProgress = null)
+		public static async Task<IObject3D> LoadAsync(string meshPathAndFileName, CancellationToken cancellationToken, ReportProgressRatio<(double ratio, string state)> reportProgress = null)
 		{
-			return await Task.Run(() => Load(meshPathAndFileName, reportProgress));
+			return await Task.Run(() => Load(meshPathAndFileName, cancellationToken, reportProgress));
 		}
 
 		public static bool Save(IObject3D context, string meshPathAndFileName, MeshOutputSettings outputInfo = null, ReportProgressRatio<(double ratio, string state)> reportProgress = null)
@@ -174,19 +175,19 @@ namespace MatterHackers.DataConverters3D
 								List<Vertex> faceVertices = new List<Vertex>();
 								foreach (FaceEdge faceEdgeToAdd in face.FaceEdges())
 								{
-									// we allow duplicates (the true) to make sure we are not changing the loaded models acuracy.
+									// we allow duplicates (the true) to make sure we are not changing the loaded models accuracy.
 									Vertex newVertex = allPolygons.CreateVertex(faceEdgeToAdd.firstVertex.Position, CreateOption.CreateNew, SortOption.WillSortLater);
 									faceVertices.Add(newVertex);
 								}
 
-								// we allow duplicates (the true) to make sure we are not changing the loaded models acuracy.
+								// we allow duplicates (the true) to make sure we are not changing the loaded models accuracy.
 								allPolygons.CreateFace(faceVertices.ToArray(), CreateOption.CreateNew);
 							}
 						}
 					}
 				}
 
-				allPolygons.CleanAndMergMesh();
+				allPolygons.CleanAndMergMesh(CancellationToken.None);
 			}
 
 			return allPolygons;

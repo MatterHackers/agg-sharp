@@ -41,6 +41,7 @@ using System.IO;
 
 namespace MatterHackers.RayTracer
 {
+	using System.Threading;
 	using MatterHackers.Agg.OpenGlGui;
 	using MatterHackers.RayTracer.Light;
 
@@ -339,7 +340,7 @@ namespace MatterHackers.RayTracer
 			Stopwatch loadTime = new Stopwatch();
 			loadTime.Start();
 
-			PolygonMesh.Mesh simpleMesh = StlProcessing.Load("circle_100x100_centered.stl");
+			PolygonMesh.Mesh simpleMesh = StlProcessing.Load("circle_100x100_centered.stl", CancellationToken.None);
 			//PolygonMesh.Mesh simpleMesh = StlProcessing.Load("Simple.stl");
 			//PolygonMesh.Mesh simpleMesh = StlProcessing.Load("Complex.stl");
 			//PolygonMesh.Mesh simpleMesh = StlProcessing.Load("bunny.stl");

@@ -87,15 +87,15 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static IObject3D Load(string amfPath, ReportProgressRatio<(double ratio, string state)> reportProgress = null, IObject3D source = null)
+		public static IObject3D Load(string amfPath, CancellationToken cancellationToken, ReportProgressRatio<(double ratio, string state)> reportProgress = null, IObject3D source = null)
 		{
 			using (var stream = File.OpenRead(amfPath))
 			{
-				return Load(stream, reportProgress, source);
+				return Load(stream, cancellationToken, reportProgress, source);
 			}
 		}
 
-		public static IObject3D Load(Stream fileStream, ReportProgressRatio<(double ratio, string state)> reportProgress = null, IObject3D source = null)
+		public static IObject3D Load(Stream fileStream, CancellationToken cancellationToken, ReportProgressRatio<(double ratio, string state)> reportProgress = null, IObject3D source = null)
 		{
 			IObject3D root = source ?? new Object3D();
 			root.ItemType = Object3DTypes.Group;
@@ -162,19 +162,19 @@ namespace MatterHackers.DataConverters3D
 
 			foreach (var item in root.Children)
 			{
-				var keepProcessing = new CancellationTokenSource();
-				item.Mesh.CleanAndMergMesh(reportProgress:
-					((double progress0To1, string processingState) progress, CancellationTokenSource continueProcessing) =>
+				item.Mesh.CleanAndMergMesh(
+					cancellationToken, 
+					reportProgress: ((double progress0To1, string processingState) progress) =>
 					{
 						if (reportProgress != null)
 						{
 							double currentTotalProgress = parsingFileRatio + currentMeshProgress;
-							reportProgress((currentTotalProgress + progress.progress0To1 * progressPerMesh, progress.processingState), continueProcessing);
-							keepProcessing = continueProcessing;
+							reportProgress.Invoke((currentTotalProgress + progress.progress0To1 * progressPerMesh, progress.processingState));
 						}
 					});
 
-				if (keepProcessing.IsCancellationRequested)
+
+				if (cancellationToken.IsCancellationRequested)
 				{
 					return null;
 				}
@@ -188,11 +188,7 @@ namespace MatterHackers.DataConverters3D
 			bool hasValidMesh = root.Children.Where(item => item.Mesh.Faces.Count > 0).Any();
 			Debug.WriteLine("hasValidMesh: " + time.ElapsedMilliseconds);
 
-			if (reportProgress != null)
-			{
-				var continueProcessingTemp = new CancellationTokenSource();
-				reportProgress((1, ""), continueProcessingTemp);
-			}
+			reportProgress?.Invoke((1, ""));
 
 			return (hasValidMesh) ? root : null;
 		}
@@ -241,8 +237,6 @@ namespace MatterHackers.DataConverters3D
 			{
 				int objectId = 1;
 
-				var continueProcessing = new CancellationTokenSource();
-
 				int totalMeshes = 0;
 				foreach (MeshGroup meshGroup in meshToSave)
 				{
@@ -274,10 +268,7 @@ namespace MatterHackers.DataConverters3D
 									for (int vertexIndex = 0; vertexIndex < mesh.Vertices.Count; vertexIndex++)
 									{
 										Vertex vertex = mesh.Vertices[vertexIndex];
-										if (outputInfo.ReportProgress != null)
-										{
-											outputInfo.ReportProgress((currentRation + vertexIndex / vertCount * ratioPerMesh * .5, ""), continueProcessing);
-										}
+										outputInfo.ReportProgress?.Invoke((currentRation + vertexIndex / vertCount * ratioPerMesh * .5, ""));
 
 										Vector3 position = vertex.Position;
 										amfFile.WriteLine(Indent(4) + "<vertex>");
@@ -313,10 +304,7 @@ namespace MatterHackers.DataConverters3D
 								double faceCount = (double)mesh.Faces.Count;
 								for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
 								{
-									if (outputInfo.ReportProgress != null)
-									{
-										outputInfo.ReportProgress((currentRation + faceIndex / faceCount * ratioPerMesh * .5, ""), continueProcessing);
-									}
+									outputInfo.ReportProgress?.Invoke((currentRation + faceIndex / faceCount * ratioPerMesh * .5, ""));
 
 									Face face = mesh.Faces[faceIndex];
 									List<Vertex> positionsCCW = new List<Vertex>();
@@ -444,8 +432,7 @@ namespace MatterHackers.DataConverters3D
 							} while (nextSibling != null && reader.ReadToNextSibling(nextSibling));
 						}
 
-						var continueProcessing = new CancellationTokenSource();
-						progressData.ReportProgress0To50(continueProcessing);
+						progressData.ReportProgress0To50();
 
 						vertices.Add(vertex);
 					}
@@ -512,8 +499,7 @@ namespace MatterHackers.DataConverters3D
 						mesh.CreateFace(triangle, CreateOption.CreateNew);
 					}
 
-					var continueProcessing = new CancellationTokenSource();
-					progressData.ReportProgress0To50(continueProcessing);
+					progressData.ReportProgress0To50();
 
 					reader.MoveToEndElement("triangle");
 				} while (reader.ReadToNextSibling("triangle"));
@@ -525,7 +511,6 @@ namespace MatterHackers.DataConverters3D
 		internal class ProgressData
 		{
 			private long bytesInFile;
-			private bool loadCanceled;
 			private Stopwatch maxProgressReport = new Stopwatch();
 			private Stream positionStream;
 			private ReportProgressRatio<(double ratio, string state)> reportProgress;
@@ -538,17 +523,11 @@ namespace MatterHackers.DataConverters3D
 				bytesInFile = (long)positionStream.Length;
 			}
 
-			internal bool LoadCanceled { get { return loadCanceled; } }
-
-			internal void ReportProgress0To50(CancellationTokenSource continueProcessing)
+			internal void ReportProgress0To50()
 			{
 				if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
 				{
-					reportProgress((positionStream.Position / (double)bytesInFile * .5, "Loading Mesh"), continueProcessing);
-					if (continueProcessing.IsCancellationRequested)
-					{
-						loadCanceled = true;
-					}
+					reportProgress((positionStream.Position / (double)bytesInFile * .5, "Loading Mesh"));
 					maxProgressReport.Restart();
 				}
 			}

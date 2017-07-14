@@ -39,6 +39,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 
 namespace MatterHackers.RayTracer
 {
@@ -102,7 +103,7 @@ namespace MatterHackers.RayTracer
 			var testPartPath = TestContext.CurrentContext.ResolveProjectPath(4, "examples", "RayTracerTest");
 
 			var testPart = Path.Combine(testPartPath,  "circle_100x100_centered.stl");
-			PolygonMesh.Mesh simpleMesh = StlProcessing.Load(testPart);
+			PolygonMesh.Mesh simpleMesh = StlProcessing.Load(testPart, CancellationToken.None);
 			var bvhCollection = MeshToBVH.Convert(simpleMesh);
 
 			var scene = new Scene();

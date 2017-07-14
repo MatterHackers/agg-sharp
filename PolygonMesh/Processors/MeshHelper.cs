@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.VectorMath;
@@ -135,7 +136,7 @@ namespace MatterHackers.PolygonMesh
 			throw new NotImplementedException();
 
 			// and merge the mesh edges that are now manifold
-			mesh.MergeMeshEdges();
+			mesh.MergeMeshEdges(CancellationToken.None);
 		}
 
 		public static bool IsManifold(this Mesh mesh)

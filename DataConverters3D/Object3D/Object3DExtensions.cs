@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.DataConverters3D;
 using MatterHackers.RayTracer;
@@ -40,7 +41,7 @@ namespace MatterHackers.PolygonMesh
 {
 	public static class Object3DExtensions
 	{
-		internal static void LoadMeshLinks(this IObject3D tempScene, Dictionary<string, IObject3D> itemCache, ReportProgressRatio<(double ratio, string state)> progress)
+		internal static void LoadMeshLinks(this IObject3D tempScene, CancellationToken cancellationToken, Dictionary<string, IObject3D> itemCache, ReportProgressRatio<(double ratio, string state)> progress)
 		{
 			var itemsToLoad = (from object3D in tempScene.Descendants()
 							   where !string.IsNullOrEmpty(object3D.MeshPath)
@@ -48,13 +49,13 @@ namespace MatterHackers.PolygonMesh
 
 			foreach (IObject3D object3D in itemsToLoad)
 			{
-				object3D.Load(itemCache, progress);
+				object3D.Load(itemCache, cancellationToken, progress);
 			}
 		}
 
 		public static List<MeshGroup> ToMeshGroupList(this IObject3D item) => new List<MeshGroup> { item.Flatten() };
 
-		public static void Load(this IObject3D item, Dictionary<string, IObject3D> itemCache, ReportProgressRatio<(double ratio, string state)> progress)
+		public static void Load(this IObject3D item, Dictionary<string, IObject3D> itemCache, CancellationToken cancellationToken, ReportProgressRatio<(double ratio, string state)> progress)
 		{
 			string filePath = item.MeshPath;
 			if (!File.Exists(filePath))
@@ -62,7 +63,7 @@ namespace MatterHackers.PolygonMesh
 				filePath = Path.Combine(Object3D.AssetsPath, filePath);
 			}
 
-			var loadedItem = Object3D.Load(filePath, itemCache, progress);
+			var loadedItem = Object3D.Load(filePath, cancellationToken, itemCache, progress);
 
 			// TODO: Consider refactoring progress reporting to use an instance with state and the original delegate reference to allow anyone along the chain
 			// to determine if continueProcessing has been set to false and allow for more clear aborting (rather than checking for null as we have to do below) 
