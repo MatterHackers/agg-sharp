@@ -150,9 +150,6 @@ namespace MatterHackers.DataConverters3D
 
 		public static Mesh DoMerge(List<MeshGroup> meshGroupsToMerge, MeshOutputSettings outputInfo)
 		{
-
-			var cancellationTokenSource = new CancellationTokenSource();
-			
 			Mesh allPolygons = new Mesh();
 			if (outputInfo.CsgOptionState == MeshOutputSettings.CsgOption.DoCsgMerge)
 			{
@@ -178,19 +175,19 @@ namespace MatterHackers.DataConverters3D
 								List<Vertex> faceVertices = new List<Vertex>();
 								foreach (FaceEdge faceEdgeToAdd in face.FaceEdges())
 								{
-									// we allow duplicates (the true) to make sure we are not changing the loaded models acuracy.
+									// we allow duplicates (the true) to make sure we are not changing the loaded models accuracy.
 									Vertex newVertex = allPolygons.CreateVertex(faceEdgeToAdd.firstVertex.Position, CreateOption.CreateNew, SortOption.WillSortLater);
 									faceVertices.Add(newVertex);
 								}
 
-								// we allow duplicates (the true) to make sure we are not changing the loaded models acuracy.
+								// we allow duplicates (the true) to make sure we are not changing the loaded models accuracy.
 								allPolygons.CreateFace(faceVertices.ToArray(), CreateOption.CreateNew);
 							}
 						}
 					}
 				}
 
-				allPolygons.CleanAndMergMesh(cancellationTokenSource.Token);
+				allPolygons.CleanAndMergMesh(CancellationToken.None);
 			}
 
 			return allPolygons;

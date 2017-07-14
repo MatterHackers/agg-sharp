@@ -434,7 +434,7 @@ namespace MatterHackers.MeshVisualizer
 				BeginProgressReporting("Loading Mesh");
 
 				// TODO: How to we handle mesh load errors? How do we report success?
-				IObject3D loadedItem = await Task.Run(() => Object3D.Load(itemPath, progress: ReportProgress0to100));
+				IObject3D loadedItem = await Task.Run(() => Object3D.Load(itemPath, CancellationToken.None, progress: ReportProgress0to100));
 				if (loadedItem != null)
 				{
 					if (itemName != null)
@@ -751,13 +751,8 @@ namespace MatterHackers.MeshVisualizer
 			partProcessingInfo.Visible = false;
 		}
 
-		public void ReportProgress0to100((double progress0To1, string processingState) progress, CancellationTokenSource continueProcessing)
+		public void ReportProgress0to100((double progress0To1, string processingState) progress)
 		{
-			if (this.HasBeenClosed)
-			{
-				continueProcessing.Cancel();
-			}
-
 			UiThread.RunOnIdle(() =>
 			{
 				int percentComplete = (int)(progress.progress0To1 * 100);
