@@ -28,7 +28,7 @@ using System.Threading.Tasks;
 
 namespace MatterHackers.Agg
 {
-	public delegate void ReportProgressRatio<T>(T progress, CancellationTokenSource continueProcessing);
+	public delegate void ReportProgressRatio<T>(T progress);
 
 	static public class agg_basics
 	{

@@ -67,7 +67,7 @@ namespace MatterHackers.PolygonMesh
 
 		public VertexCollecton Vertices { get; private set; } = new VertexCollecton();
 
-		public static Mesh Copy(Mesh meshToCopy, ReportProgressRatio<(double ratio, string state)> progress = null, bool allowFastCopy = true)
+		public static Mesh Copy(Mesh meshToCopy, CancellationToken cancellationToken, ReportProgressRatio<(double ratio, string state)> progress = null, bool allowFastCopy = true)
 		{
 			Mesh newMesh = new Mesh();
 
@@ -158,7 +158,7 @@ namespace MatterHackers.PolygonMesh
 					newMesh.CreateFace(faceVertices.ToArray(), CreateOption.CreateNew);
 				}
 
-				newMesh.CleanAndMergMesh();
+				newMesh.CleanAndMergMesh(cancellationToken);
 			}
 
 			MeshExtruderData materialDataToCopy = MeshExtruderData.Get(meshToCopy);
@@ -168,42 +168,36 @@ namespace MatterHackers.PolygonMesh
 			return newMesh;
 		}
 
-		public void CleanAndMergMesh(double maxDistanceToConsiderVertexAsSame = 0, ReportProgressRatio<(double ratio, string state)> reportProgress = null)
+		public void CleanAndMergMesh(CancellationToken cancellationToken, double maxDistanceToConsiderVertexAsSame = 0, ReportProgressRatio<(double ratio, string state)> reportProgress = null)
 		{
 			if (reportProgress != null)
 			{
-				//Validate();
-
-				bool keepProcessing = true;
-				SortVertices(((double progress0To1, string processingState) progress, CancellationTokenSource continueProcessing) =>
+				SortVertices(((double progress0To1, string processingState) progress) =>
 				{
-					reportProgress((progress.progress0To1 * .41, progress.processingState), continueProcessing);
-					keepProcessing = !continueProcessing.IsCancellationRequested;
-					//Validate();
+					reportProgress((progress.progress0To1 * .41, progress.processingState));
 				});
-				if (keepProcessing)
+
+				if (!cancellationToken.IsCancellationRequested)
 				{
-					MergeVertices(maxDistanceToConsiderVertexAsSame, ((double progress0To1, string processingState) progress, CancellationTokenSource continueProcessing) =>
+					MergeVertices(cancellationToken, maxDistanceToConsiderVertexAsSame, ((double progress0To1, string processingState) progress) =>
 					{
-						reportProgress((progress.progress0To1 * .23 + .41, progress.processingState), continueProcessing);
-						keepProcessing = !continueProcessing.IsCancellationRequested;
+						reportProgress((progress.progress0To1 * .23 + .41, progress.processingState));
 					});
 				}
-				if (keepProcessing)
+
+				if (!cancellationToken.IsCancellationRequested)
 				{
-					MergeMeshEdges(((double progress0To1, string processingState) progress, CancellationTokenSource continueProcessing) =>
+					MergeMeshEdges(cancellationToken, ((double progress0To1, string processingState) progress) =>
 					{
-						reportProgress((progress.progress0To1 * .36 + .64, progress.processingState), continueProcessing);
-						keepProcessing = !continueProcessing.IsCancellationRequested;
+						reportProgress((progress.progress0To1 * .36 + .64, progress.processingState));
 					});
-					//Validate();
 				}
 			}
 			else
 			{
 				SortVertices();
-				MergeVertices(maxDistanceToConsiderVertexAsSame);
-				MergeMeshEdges();
+				MergeVertices(cancellationToken, maxDistanceToConsiderVertexAsSame);
+				MergeMeshEdges(cancellationToken);
 			}
 		}
 
@@ -619,7 +613,7 @@ namespace MatterHackers.PolygonMesh
 			return Vertices.FindVertices(position, maxDistanceToConsiderVertexAsSame);
 		}
 
-		public void MergeVertices(double maxDistanceToConsiderVertexAsSame = 0, ReportProgressRatio<(double ratio, string state)> reportProgress = null)
+		public void MergeVertices(CancellationToken cancellationToken, double maxDistanceToConsiderVertexAsSame = 0, ReportProgressRatio<(double ratio, string state)> reportProgress = null)
 		{
 			HashSet<Vertex> markedForDeletion = new HashSet<Vertex>();
 			Stopwatch maxProgressReport = new Stopwatch();
@@ -645,28 +639,22 @@ namespace MatterHackers.PolygonMesh
 						}
 					}
 
-					if (reportProgress != null)
+					if (reportProgress != null
+						&& maxProgressReport.ElapsedMilliseconds > 200)
 					{
-						if (maxProgressReport.ElapsedMilliseconds > 200)
+						reportProgress((i / (double)Vertices.Count, "Merging Vertices"));
+						if (cancellationToken.IsCancellationRequested)
 						{
-							var continueProcessing = new CancellationTokenSource();
-							reportProgress((i / (double)Vertices.Count, "Merging Vertices"), continueProcessing);
-							if (continueProcessing.IsCancellationRequested)
-							{
-								return;
-							}
-							maxProgressReport.Restart();
+							return;
 						}
+						maxProgressReport.Restart();
 					}
 				}
 			}
 
 			//Validate(markedForDeletion);
-			if (reportProgress != null)
-			{
-				var continueProcessing = new CancellationTokenSource();
-				reportProgress((1, "Deleting Unused Vertices"), continueProcessing);
-			}
+			reportProgress?.Invoke((1, "Deleting Unused Vertices"));
+
 			RemoveVerticesMarkedForDeletion(markedForDeletion);
 		}
 
@@ -714,19 +702,14 @@ namespace MatterHackers.PolygonMesh
 
 		public void SortVertices(ReportProgressRatio<(double ratio, string state)> reportProgress = null)
 		{
-			var continueProcessing = new CancellationTokenSource();
-			if (reportProgress != null)
-			{
-				reportProgress((0, "Sorting Vertices"), continueProcessing);
-			}
+			reportProgress?.Invoke((0, "Sorting Vertices"));
+
 			timer.Restart();
 			Vertices.Sort();
 			timer.Stop();
 			Debug.WriteLine(timer.ElapsedMilliseconds);
-			if (reportProgress != null)
-			{
-				reportProgress((1, "Sorting Vertices"), continueProcessing);
-			}
+
+			reportProgress?.Invoke((1, "Sorting Vertices"));
 		}
 
 		private void RemoveVerticesMarkedForDeletion(HashSet<Vertex> markedForDeletion)
@@ -809,7 +792,7 @@ namespace MatterHackers.PolygonMesh
 			return meshEdges;
 		}
 
-		public void MergeMeshEdges(ReportProgressRatio<(double ratio, string state)> reportProgress = null)
+		public void MergeMeshEdges(CancellationToken cancellationToken, ReportProgressRatio<(double ratio, string state)> reportProgress = null)
 		{
 			HashSet<MeshEdge> markedForDeletion = new HashSet<MeshEdge>();
 			Stopwatch maxProgressReport = new Stopwatch();
@@ -846,10 +829,9 @@ namespace MatterHackers.PolygonMesh
 				{
 					if (maxProgressReport.ElapsedMilliseconds > 200)
 					{
-						var continueProcessing = new CancellationTokenSource();
-						reportProgress((i / (double)MeshEdges.Count, "Merging Mesh Edges"), continueProcessing);
+						reportProgress((i / (double)MeshEdges.Count, "Merging Mesh Edges"));
 						maxProgressReport.Restart();
-						if (continueProcessing.IsCancellationRequested)
+						if (cancellationToken.IsCancellationRequested)
 						{
 							return;
 						}

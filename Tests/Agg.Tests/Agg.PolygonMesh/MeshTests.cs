@@ -35,6 +35,7 @@ using MatterHackers.VectorMath;
 using NUnit.Framework;
 using System.IO;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace MatterHackers.PolygonMesh.UnitTests
 {
@@ -249,7 +250,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 				SaveDebugInfo(testMesh);
 
-				testMesh.MergeVertices();
+				testMesh.MergeVertices(CancellationToken.None);
 
 				SaveDebugInfo(testMesh);
 			}
@@ -281,7 +282,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			Assert.IsTrue(testMesh.MeshEdges.Count == 6);
 
 			Assert.IsTrue(testMesh.FindMeshEdges(centerVertexTop, centerVertexBottom).Count == 2);
-			testMesh.MergeMeshEdges();
+			testMesh.MergeMeshEdges(CancellationToken.None);
 			SaveDebugInfo(testMesh);
 			Assert.IsTrue(testMesh.MeshEdges.Count == 5);
 		}
@@ -631,7 +632,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				}
 
 				SaveDebugInfo(testMesh);
-				testMesh.CleanAndMergMesh();
+				testMesh.CleanAndMergMesh(CancellationToken.None);
 				SaveDebugInfo(testMesh);
 
 				Vertex createdVertx;
@@ -645,7 +646,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 					Assert.IsTrue(face.NumVertices == 5, "The faces should all now have 5 vertices.");
 				}
 
-				testMesh.CleanAndMergMesh();
+				testMesh.CleanAndMergMesh(CancellationToken.None);
 
 				testMesh.UnsplitMeshEdge(centerEdge, createdVertx);
 				Assert.IsTrue(centerEdge.GetNumFacesSharingEdge() == 4, "There should again be 4 faces on this edge.");
@@ -654,7 +655,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 					Assert.IsTrue(face.NumVertices == 4, "The faces should all finally have 4 vertices.");
 				}
 
-				testMesh.CleanAndMergMesh();
+				testMesh.CleanAndMergMesh(CancellationToken.None);
 			}
 		}
 
@@ -678,9 +679,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			testMesh.CreateFace(new Vertex[] { right, middle, top });
 			testMesh.CreateFace(new Vertex[] { left, middle, right });
 
-			testMesh.MergeVertices();
+			testMesh.MergeVertices(CancellationToken.None);
 
-			Mesh copyMesh = Mesh.Copy(testMesh);
+			Mesh copyMesh = Mesh.Copy(testMesh, CancellationToken.None);
 
 			Assert.IsTrue(testMesh.Equals(copyMesh));
 		}

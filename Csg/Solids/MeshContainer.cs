@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using MatterHackers.VectorMath;
 using System;
 using System.IO;
+using System.Threading;
 
 namespace MatterHackers.Csg.Solids
 {
@@ -89,7 +90,7 @@ namespace MatterHackers.Csg.Solids
 		{
 			if (polygonMesh == null)
 			{
-				polygonMesh = MatterHackers.PolygonMesh.Processors.StlProcessing.Load(sourceFileName);
+				polygonMesh = MatterHackers.PolygonMesh.Processors.StlProcessing.Load(sourceFileName, CancellationToken.None);
 			}
 
 			return polygonMesh;
