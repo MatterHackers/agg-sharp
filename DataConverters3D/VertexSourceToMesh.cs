@@ -27,17 +27,13 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System.Collections.Generic;
+using System.Threading;
 using ClipperLib;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.DataConverters2D;
 using MatterHackers.PolygonMesh;
-using MatterHackers.RayTracer;
-using MatterHackers.RayTracer.Traceable;
 using MatterHackers.VectorMath;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 
 namespace MatterHackers.DataConverters3D
 {

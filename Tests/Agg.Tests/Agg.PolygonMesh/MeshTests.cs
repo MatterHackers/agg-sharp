@@ -29,13 +29,10 @@ either expressed or implied, of the FreeBSD Project.
 #define DEBUG_INTO_TGAS
 
 using System;
+using System.Threading;
 using MatterHackers.Agg;
-using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
-using System.IO;
-using System.Collections.Generic;
-using System.Threading;
 
 namespace MatterHackers.PolygonMesh.UnitTests
 {

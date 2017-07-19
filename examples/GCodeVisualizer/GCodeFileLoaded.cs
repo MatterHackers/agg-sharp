@@ -128,7 +128,7 @@ namespace MatterHackers.GCodeVisualizer
 			return loadedGCode;
 		}
 
-		public static async Task<GCodeFileLoaded> LoadInBackground(string fileName, ReportProgressRatio<(double ratio, string state)> progressReporter)
+		public static async Task<GCodeFileLoaded> LoadInBackground(string fileName, Action<double, string> progressReporter)
 		{
 			if (Path.GetExtension(fileName).ToUpper() == ".GCODE")
 			{
@@ -202,7 +202,7 @@ namespace MatterHackers.GCodeVisualizer
 			return crCount + 1;
 		}
 
-		public static GCodeFileLoaded ParseFileContents(string gCodeString, CancellationToken cancellationToken, ReportProgressRatio<(double ratio, string state)> progressReporter)
+		public static GCodeFileLoaded ParseFileContents(string gCodeString, CancellationToken cancellationToken, Action<double, string> progressReporter)
 		{
 			if (gCodeString == null)
 			{
@@ -281,7 +281,7 @@ namespace MatterHackers.GCodeVisualizer
 
 				if (progressReporter != null && maxProgressReport.ElapsedMilliseconds > 200)
 				{
-					progressReporter(((double)lineIndex / crCount / 2, ""));
+					progressReporter((double)lineIndex / crCount / 2, "");
 					if (cancellationToken.IsCancellationRequested)
 					{
 						return null;
@@ -301,7 +301,7 @@ namespace MatterHackers.GCodeVisualizer
 			return loadedGCodeFile;
 		}
 
-		private void AnalyzeGCodeLines(CancellationToken cancellationToken, ReportProgressRatio<(double ratio, string state)> progressReporter)
+		private void AnalyzeGCodeLines(CancellationToken cancellationToken, Action<double, string> progressReporter)
 		{
 			double feedRateMmPerMin = 0;
 			Vector3 lastPrinterPosition = new Vector3();
@@ -355,7 +355,7 @@ namespace MatterHackers.GCodeVisualizer
 
 				if (progressReporter != null && maxProgressReport.ElapsedMilliseconds > 200)
 				{
-					progressReporter((((double) lineIndex / GCodeCommandQueue.Count / 2) + .5, ""));
+					progressReporter(((double) lineIndex / GCodeCommandQueue.Count / 2) + .5, "");
 					if (cancellationToken.IsCancellationRequested)
 					{
 						return;

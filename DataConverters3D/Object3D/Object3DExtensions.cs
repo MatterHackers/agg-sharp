@@ -32,7 +32,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using MatterHackers.Agg;
 using MatterHackers.DataConverters3D;
 using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;
@@ -41,7 +40,7 @@ namespace MatterHackers.PolygonMesh
 {
 	public static class Object3DExtensions
 	{
-		internal static void LoadMeshLinks(this IObject3D tempScene, CancellationToken cancellationToken, Dictionary<string, IObject3D> itemCache, ReportProgressRatio<(double ratio, string state)> progress)
+		internal static void LoadMeshLinks(this IObject3D tempScene, CancellationToken cancellationToken, Dictionary<string, IObject3D> itemCache, Action<double, string> progress)
 		{
 			var itemsToLoad = (from object3D in tempScene.Descendants()
 							   where !string.IsNullOrEmpty(object3D.MeshPath)
@@ -55,7 +54,7 @@ namespace MatterHackers.PolygonMesh
 
 		public static List<MeshGroup> ToMeshGroupList(this IObject3D item) => new List<MeshGroup> { item.Flatten() };
 
-		public static void Load(this IObject3D item, Dictionary<string, IObject3D> itemCache, CancellationToken cancellationToken, ReportProgressRatio<(double ratio, string state)> progress)
+		public static void Load(this IObject3D item, Dictionary<string, IObject3D> itemCache, CancellationToken cancellationToken, Action<double, string> progress)
 		{
 			string filePath = item.MeshPath;
 			if (!File.Exists(filePath))

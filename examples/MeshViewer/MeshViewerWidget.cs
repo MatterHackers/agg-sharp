@@ -751,18 +751,18 @@ namespace MatterHackers.MeshVisualizer
 			partProcessingInfo.Visible = false;
 		}
 
-		public void ReportProgress0to100((double progress0To1, string processingState) progress)
+		public void ReportProgress0to100(double progress0To1, string processingState)
 		{
 			UiThread.RunOnIdle(() =>
 			{
-				int percentComplete = (int)(progress.progress0To1 * 100);
+				int percentComplete = (int)(progress0To1 * 100);
 				partProcessingInfo.centeredInfoText.Text =  "{0} {1}%...".FormatWith(progressReportingPrimaryTask, percentComplete);
 				partProcessingInfo.progressControl.PercentComplete = percentComplete;
 
 				// Only assign to textbox if value passed through
-				if (progress.processingState != null)
+				if (processingState != null)
 				{
-					partProcessingInfo.centeredInfoDescription.Text = progress.processingState;
+					partProcessingInfo.centeredInfoDescription.Text = processingState;
 				}
 			});
 		}

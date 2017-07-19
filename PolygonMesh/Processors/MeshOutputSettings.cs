@@ -27,19 +27,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg;
-using MatterHackers.PolygonMesh.Csg;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Threading.Tasks;
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MatterHackers.PolygonMesh.Processors
 {
@@ -54,10 +43,7 @@ namespace MatterHackers.PolygonMesh.Processors
 		public List<int> ExtruderIndexesToSave = null;
 		public CsgOption CsgOptionState = CsgOption.SimpleInsertVolumes;
 
-		public ReportProgressRatio<(double ratio, string state)> ReportProgress
-		{
-			get; set;
-		}
+		public Action<double, string> ReportProgress { get; set; }
 
 		public MeshOutputSettings()
 		{
@@ -68,7 +54,7 @@ namespace MatterHackers.PolygonMesh.Processors
 			this.CsgOptionState = csgOption;
 		}
 
-		public MeshOutputSettings(OutputType outputTypeSetting, string[] metaDataKeyValuePairs = null, ReportProgressRatio<(double ratio, string state)> reportProgress = null)
+		public MeshOutputSettings(OutputType outputTypeSetting, string[] metaDataKeyValuePairs = null, Action<double, string> reportProgress = null)
 		{
 			this.ReportProgress = reportProgress;
 

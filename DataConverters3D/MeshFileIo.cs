@@ -27,17 +27,16 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg;
-using MatterHackers.PolygonMesh;
-using MatterHackers.PolygonMesh.Csg;
-using MatterHackers.PolygonMesh.Processors;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
+using MatterHackers.PolygonMesh;
+using MatterHackers.PolygonMesh.Csg;
+using MatterHackers.PolygonMesh.Processors;
 
 namespace MatterHackers.DataConverters3D
 {
@@ -48,7 +47,7 @@ namespace MatterHackers.DataConverters3D
 			return ".STL;.AMF;.OBJ";
 		}
 
-		public static IObject3D Load(Stream fileStream, string fileExtension, CancellationToken cancellationToken, ReportProgressRatio<(double ratio, string state)> reportProgress = null, IObject3D source = null)
+		public static IObject3D Load(Stream fileStream, string fileExtension, CancellationToken cancellationToken, Action<double, string> reportProgress = null, IObject3D source = null)
 		{
 			switch (fileExtension.ToUpper())
 			{
@@ -70,7 +69,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static IObject3D Load(string meshPathAndFileName, CancellationToken cancellationToken, ReportProgressRatio<(double ratio, string state)> reportProgress = null, IObject3D source = null)
+		public static IObject3D Load(string meshPathAndFileName, CancellationToken cancellationToken, Action<double, string> reportProgress = null, IObject3D source = null)
 		{
 			try
 			{
@@ -92,12 +91,12 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static async Task<IObject3D> LoadAsync(string meshPathAndFileName, CancellationToken cancellationToken, ReportProgressRatio<(double ratio, string state)> reportProgress = null)
+		public static async Task<IObject3D> LoadAsync(string meshPathAndFileName, CancellationToken cancellationToken, Action<double, string> reportProgress = null)
 		{
 			return await Task.Run(() => Load(meshPathAndFileName, cancellationToken, reportProgress));
 		}
 
-		public static bool Save(IObject3D context, string meshPathAndFileName, MeshOutputSettings outputInfo = null, ReportProgressRatio<(double ratio, string state)> reportProgress = null)
+		public static bool Save(IObject3D context, string meshPathAndFileName, MeshOutputSettings outputInfo = null, Action<double, string> reportProgress = null)
 		{
 			// TODO: Seems conceptually correct but needs validation and refinements
 			var meshGroups = new List<MeshGroup> { context.Flatten() };
@@ -116,7 +115,7 @@ namespace MatterHackers.DataConverters3D
 			return Save(meshGroupsToSave, meshPathAndFileName, outputInfo);
 		}
 
-		public static bool Save(List<MeshGroup> meshGroupsToSave, string meshPathAndFileName, MeshOutputSettings outputInfo = null, ReportProgressRatio<(double ratio, string state)> reportProgress = null)
+		public static bool Save(List<MeshGroup> meshGroupsToSave, string meshPathAndFileName, MeshOutputSettings outputInfo = null, Action<double, string> reportProgress = null)
 		{
 			try
 			{

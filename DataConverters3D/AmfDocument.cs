@@ -27,18 +27,18 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg;
-using MatterHackers.PolygonMesh;
-using MatterHackers.PolygonMesh.Processors;
-using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Xml;
 using System.Threading;
+using System.Xml;
+using MatterHackers.Agg;
+using MatterHackers.PolygonMesh;
+using MatterHackers.PolygonMesh.Processors;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.DataConverters3D
 {
@@ -87,7 +87,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static IObject3D Load(string amfPath, CancellationToken cancellationToken, ReportProgressRatio<(double ratio, string state)> reportProgress = null, IObject3D source = null)
+		public static IObject3D Load(string amfPath, CancellationToken cancellationToken, Action<double, string> reportProgress = null, IObject3D source = null)
 		{
 			using (var stream = File.OpenRead(amfPath))
 			{
@@ -95,7 +95,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static IObject3D Load(Stream fileStream, CancellationToken cancellationToken, ReportProgressRatio<(double ratio, string state)> reportProgress = null, IObject3D source = null)
+		public static IObject3D Load(Stream fileStream, CancellationToken cancellationToken, Action<double, string> reportProgress = null, IObject3D source = null)
 		{
 			IObject3D root = source ?? new Object3D();
 			root.ItemType = Object3DTypes.Group;
@@ -164,12 +164,12 @@ namespace MatterHackers.DataConverters3D
 			{
 				item.Mesh.CleanAndMergMesh(
 					cancellationToken, 
-					reportProgress: ((double progress0To1, string processingState) progress) =>
+					reportProgress: (double progress0To1, string processingState) =>
 					{
 						if (reportProgress != null)
 						{
 							double currentTotalProgress = parsingFileRatio + currentMeshProgress;
-							reportProgress.Invoke((currentTotalProgress + progress.progress0To1 * progressPerMesh, progress.processingState));
+							reportProgress.Invoke(currentTotalProgress + progress0To1 * progressPerMesh, processingState);
 						}
 					});
 
@@ -188,7 +188,7 @@ namespace MatterHackers.DataConverters3D
 			bool hasValidMesh = root.Children.Where(item => item.Mesh.Faces.Count > 0).Any();
 			Debug.WriteLine("hasValidMesh: " + time.ElapsedMilliseconds);
 
-			reportProgress?.Invoke((1, ""));
+			reportProgress?.Invoke(1, "");
 
 			return (hasValidMesh) ? root : null;
 		}
@@ -268,7 +268,7 @@ namespace MatterHackers.DataConverters3D
 									for (int vertexIndex = 0; vertexIndex < mesh.Vertices.Count; vertexIndex++)
 									{
 										IVertex vertex = mesh.Vertices[vertexIndex];
-										outputInfo.ReportProgress?.Invoke((currentRation + vertexIndex / vertCount * ratioPerMesh * .5, ""));
+										outputInfo.ReportProgress?.Invoke(currentRation + vertexIndex / vertCount * ratioPerMesh * .5, "");
 
 										Vector3 position = vertex.Position;
 										amfFile.WriteLine(Indent(4) + "<vertex>");
@@ -304,7 +304,7 @@ namespace MatterHackers.DataConverters3D
 								double faceCount = (double)mesh.Faces.Count;
 								for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
 								{
-									outputInfo.ReportProgress?.Invoke((currentRation + faceIndex / faceCount * ratioPerMesh * .5, ""));
+									outputInfo.ReportProgress?.Invoke(currentRation + faceIndex / faceCount * ratioPerMesh * .5, "");
 
 									Face face = mesh.Faces[faceIndex];
 									List<IVertex> positionsCCW = new List<IVertex>();
@@ -513,9 +513,9 @@ namespace MatterHackers.DataConverters3D
 			private long bytesInFile;
 			private Stopwatch maxProgressReport = new Stopwatch();
 			private Stream positionStream;
-			private ReportProgressRatio<(double ratio, string state)> reportProgress;
+			private Action<double, string> reportProgress;
 
-			internal ProgressData(Stream positionStream, ReportProgressRatio<(double ratio, string state)> reportProgress)
+			internal ProgressData(Stream positionStream, Action<double, string> reportProgress)
 			{
 				this.reportProgress = reportProgress;
 				this.positionStream = positionStream;
@@ -527,7 +527,7 @@ namespace MatterHackers.DataConverters3D
 			{
 				if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
 				{
-					reportProgress((positionStream.Position / (double)bytesInFile * .5, "Loading Mesh"));
+					reportProgress(positionStream.Position / (double)bytesInFile * .5, "Loading Mesh");
 					maxProgressReport.Restart();
 				}
 			}
