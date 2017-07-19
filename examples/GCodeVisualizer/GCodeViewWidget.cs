@@ -392,7 +392,7 @@ namespace MatterHackers.GCodeVisualizer
 			CenterPartInView();
 		}
 
-		public async void LoadInBackground(string gcodePathAndFileName, ReportProgressRatio<(double ratio, string state)> progressReporter)
+		public async void LoadInBackground(string gcodePathAndFileName, Action<double, string> progressReporter)
 		{
 			this.FileNameAndPath = gcodePathAndFileName;
 

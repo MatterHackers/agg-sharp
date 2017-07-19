@@ -23,13 +23,9 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace MatterHackers.Agg
 {
-	public delegate void ReportProgressRatio<T>(T progress);
-
 	static public class agg_basics
 	{
 		//----------------------------------------------------------filling_rule_e
