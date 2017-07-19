@@ -170,8 +170,7 @@ namespace MatterHackers.DataConverters3D
 								{
 									var faceData = objFile.FaceList[faceIndex];
 									var polyFace = mesh.Faces[faceIndex];
-									FaceTextureData faceTextureData = FaceTextureData.Get(polyFace);
-									faceTextureData.Textures.Add(diffuseTexture);
+									polyFace.SetTexture(0, diffuseTexture);
 									int edgeIndex = 0;
 									foreach (FaceEdge faceEdge in polyFace.FaceEdges())
 									{
