@@ -65,12 +65,27 @@ namespace MatterHackers.PolygonMesh
 		{
 		}
 
+		public void SetTexture(int index, ImageBuffer image)
+		{
+			if (image == null)
+			{
+				if (ContainingMesh.FaceTexture.ContainsKey((this, index)))
+				{
+					ContainingMesh.FaceTexture.Remove((this, index));
+				}
+			}
+			else
+			{
+				ContainingMesh.FaceTexture[(this, index)] = image;
+			}
+		}
+
 		public ImageBuffer GetTexture(int index)
 		{
-			FaceTextureData faceData = FaceTextureData.Get(this);
-			if (faceData != null && index < faceData.Textures.Count)
+			ImageBuffer image;
+			if (ContainingMesh.FaceTexture.TryGetValue((this, index), out image))
 			{
-				return faceData.Textures[index];
+				return image;
 			}
 
 			return null;

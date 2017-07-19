@@ -82,8 +82,7 @@ namespace MatterHackers.PolygonMesh
 
 		public static void PlaceTextureOnFace(Face face, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
 		{
-			FaceTextureData faceData = FaceTextureData.Get(face);
-			faceData.Textures.Add(textureToUse);
+			face.SetTexture(0, textureToUse);
 			foreach (FaceEdge faceEdge in face.FaceEdges())
 			{
 				Vector3 edgeStartPosition = faceEdge.FirstVertex.Position;

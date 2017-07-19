@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Threading;
+using MatterHackers.Agg.Image;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh
@@ -46,6 +47,7 @@ namespace MatterHackers.PolygonMesh
 		private AxisAlignedBoundingBox fastAABBCache;
 		private Matrix4X4 fastAABBTransform = Matrix4X4.Identity;
 		public Dictionary<(FaceEdge, int), Vector2> TextureUV = new Dictionary<(FaceEdge, int), Vector2>();
+		public Dictionary<(Face, int), ImageBuffer> FaceTexture = new Dictionary<(Face, int), ImageBuffer>();
 
 		public Mesh()
 		{
