@@ -46,14 +46,14 @@ namespace MatterHackers.PolygonMesh
 		{
 			Vector3 scale = new Vector3(scaleIn * .5); // the plane is -1 to 1 and we want it to be -.5 to .5 so it is a unit cube.
 			Mesh plane = new Mesh();
-			Vertex[] verts = new Vertex[8];
+			IVertex[] verts = new Vertex[8];
 			verts[0] = plane.CreateVertex(new Vector3(-1, -1, 0) * scale);
 			verts[1] = plane.CreateVertex(new Vector3(1, -1, 0) * scale);
 			verts[2] = plane.CreateVertex(new Vector3(1, 1, 0) * scale);
 			verts[3] = plane.CreateVertex(new Vector3(-1, 1, 0) * scale);
 
 			// front
-			plane.CreateFace(new Vertex[] { verts[0], verts[1], verts[2], verts[3] });
+			plane.CreateFace(new IVertex[] { verts[0], verts[1], verts[2], verts[3] });
 
 			return plane;
 		}
@@ -115,8 +115,8 @@ namespace MatterHackers.PolygonMesh
 
 			foreach(MeshEdge edge in nonManifoldEdges)
 			{
-				Vertex start = edge.VertexOnEnd[0];
-				Vertex end = edge.VertexOnEnd[1];
+				IVertex start = edge.VertexOnEnd[0];
+				IVertex end = edge.VertexOnEnd[1];
 				Vector3 normal = (end.Position - start.Position).GetNormal();
 
 				// Get all the vertices that lay on this edge
@@ -124,7 +124,7 @@ namespace MatterHackers.PolygonMesh
 				{
 					// test if it falls on the edge
 					// split the edge at them
-					Vertex createdVertex;
+					IVertex createdVertex;
 					MeshEdge createdMeshEdge;
 					mesh.SplitMeshEdge(edge, out createdVertex, out createdMeshEdge);
 					createdVertex.Position = vertex.Position;

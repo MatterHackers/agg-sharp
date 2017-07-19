@@ -35,8 +35,8 @@ using System.Text;
 
 namespace MatterHackers.PolygonMesh
 {
-	[DebuggerDisplay("ID = {Data.ID} | XYZ = {Position}")]
-	public class Vertex
+	[DebuggerDisplay("ID = {ID} | XYZ = {Position}")]
+	public class Vertex : IVertex
 	{
 		public MetaData Data
 		{
@@ -53,6 +53,8 @@ namespace MatterHackers.PolygonMesh
 
 		// this is to save memory on each vertex (12 bytes per positon and 12 per normal rather than 24 and 24)
 		private Vector3Float position;
+
+		public int ID { get { return Data.ID; } }
 
 		public Vector3 Position
 		{
@@ -86,14 +88,14 @@ namespace MatterHackers.PolygonMesh
 
 #endif
 
-		public MeshEdge firstMeshEdge;
+		public MeshEdge FirstMeshEdge { get; set; }
 
 		public Vertex(Vector3 position)
 		{
 			this.Position = position;
 		}
 
-		public virtual Vertex CreateInterpolated(Vertex dest, double ratioToDest)
+		public virtual IVertex CreateInterpolated(IVertex dest, double ratioToDest)
 		{
 			Vertex interpolatedVertex = new Vertex(Vector3.Lerp(this.Position, dest.Position, ratioToDest));
 			interpolatedVertex.Normal = Vector3.Lerp(this.Normal, dest.Normal, ratioToDest).GetNormal();
@@ -103,14 +105,14 @@ namespace MatterHackers.PolygonMesh
 		public void AddDebugInfo(StringBuilder totalDebug, int numTabs)
 		{
 			int firstMeshEdgeID = -1;
-			if (firstMeshEdge != null)
+			if (FirstMeshEdge != null)
 			{
-				firstMeshEdgeID = firstMeshEdge.Data.ID;
+				firstMeshEdgeID = FirstMeshEdge.Data.ID;
 			}
 			totalDebug.Append(new string('\t', numTabs) + String.Format("First MeshEdge: {0}\n", firstMeshEdgeID));
-			if (firstMeshEdge != null)
+			if (FirstMeshEdge != null)
 			{
-				firstMeshEdge.AddDebugInfo(totalDebug, numTabs + 1);
+				FirstMeshEdge.AddDebugInfo(totalDebug, numTabs + 1);
 			}
 		}
 
@@ -144,21 +146,21 @@ namespace MatterHackers.PolygonMesh
 
 		public IEnumerable<MeshEdge> ConnectedMeshEdges()
 		{
-			if (this.firstMeshEdge != null)
+			if (this.FirstMeshEdge != null)
 			{
-				MeshEdge curMeshEdge = this.firstMeshEdge;
+				MeshEdge curMeshEdge = this.FirstMeshEdge;
 				do
 				{
 					yield return curMeshEdge;
 
 					curMeshEdge = curMeshEdge.GetNextMeshEdgeConnectedTo(this);
-				} while (curMeshEdge != this.firstMeshEdge);
+				} while (curMeshEdge != this.FirstMeshEdge);
 			}
 		}
 
-		public MeshEdge GetMeshEdgeConnectedToVertex(Vertex vertexToFindConnectionTo)
+		public MeshEdge GetMeshEdgeConnectedToVertex(IVertex vertexToFindConnectionTo)
 		{
-			if (this.firstMeshEdge == null)
+			if (this.FirstMeshEdge == null)
 			{
 				return null;
 			}
@@ -187,7 +189,7 @@ namespace MatterHackers.PolygonMesh
 
 		public void Validate()
 		{
-			if (firstMeshEdge != null)
+			if (FirstMeshEdge != null)
 			{
 				HashSet<MeshEdge> foundEdges = new HashSet<MeshEdge>();
 

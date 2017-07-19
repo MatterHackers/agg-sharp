@@ -135,7 +135,7 @@ namespace MatterHackers.PolygonMesh
 
 			DrawCircle(imagePosition, vertexColor);
 			WriteStringAtPos(vertex.Data.ID.ToString(), imagePosition, new RGBA_Bytes());
-			WriteStringAtPos("{0}".FormatWith(vertex.firstMeshEdge.Data.ID), imagePosition + new Vector2(0, -12), meshEdgeColor);
+			WriteStringAtPos("{0}".FormatWith(vertex.FirstMeshEdge.Data.ID), imagePosition + new Vector2(0, -12), meshEdgeColor);
 		}
 
 		private void DrawFaceEdge(FaceEdge faceEdge, Vector2 faceAverageCenter)
@@ -154,7 +154,7 @@ namespace MatterHackers.PolygonMesh
 			Vector2 left = normal.GetPerpendicularLeft();
 
 			// draw the starting vertex info
-			WriteStringAtPos("{0}".FormatWith(faceEdge.firstVertex.Data.ID), start + normal * length * .10, vertexColor);
+			WriteStringAtPos("{0}".FormatWith(faceEdge.firstVertex.ID), start + normal * length * .10, vertexColor);
 
 			// draw the next and prev faceEdge info
 			WriteStringAtPos("{0}".FormatWith(faceEdge.nextFaceEdge.Data.ID), start + normal * length * .60, faceEdgeColor);
@@ -185,10 +185,10 @@ namespace MatterHackers.PolygonMesh
 			Vector2 left = normal.GetPerpendicularLeft();
 
 			WriteStringAtPos("{0}".FormatWith(meshEdge.NextMeshEdgeFromEnd[0].Data.ID), start + normal * length * .40, meshEdgeColor);
-			WriteStringAtPos("{0}".FormatWith(meshEdge.VertexOnEnd[0].Data.ID), start + normal * length * .10, vertexColor);
+			WriteStringAtPos("{0}".FormatWith(meshEdge.VertexOnEnd[0].ID), start + normal * length * .10, vertexColor);
 
 			WriteStringAtPos("{0}".FormatWith(meshEdge.NextMeshEdgeFromEnd[1].Data.ID), start + normal * length * .60, meshEdgeColor);
-			WriteStringAtPos("{0}".FormatWith(meshEdge.VertexOnEnd[1].Data.ID), start + normal * length * .90, vertexColor);
+			WriteStringAtPos("{0}".FormatWith(meshEdge.VertexOnEnd[1].ID), start + normal * length * .90, vertexColor);
 		}
 
 		private void DrawEdgeLine(Vector2 start, Vector2 end, string stringToWrite, RGBA_Bytes backgroundColor)

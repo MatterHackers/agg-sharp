@@ -47,7 +47,7 @@ namespace MatterHackers.PolygonMesh
 		}
 
 		public Face containingFace;
-		public Vertex firstVertex;
+		public IVertex firstVertex;
 		public MeshEdge meshEdge;
 
 		public FaceEdge nextFaceEdge;
@@ -60,7 +60,7 @@ namespace MatterHackers.PolygonMesh
 		{
 		}
 
-		public FaceEdge(Face face, MeshEdge meshEdge, Vertex vertex)
+		public FaceEdge(Face face, MeshEdge meshEdge, IVertex vertex)
 		{
 			this.containingFace = face;
 			this.meshEdge = meshEdge;
@@ -87,7 +87,7 @@ namespace MatterHackers.PolygonMesh
 		{
 			totalDebug.Append(new string('\t', numTabs) + String.Format("Face: {0}\n", containingFace.Data.ID));
 			totalDebug.Append(new string('\t', numTabs) + String.Format("MeshEdge: {0}\n", meshEdge.Data.ID));
-			totalDebug.Append(new string('\t', numTabs) + String.Format("Vertex: {0}\n", firstVertex.Data.ID));
+			totalDebug.Append(new string('\t', numTabs) + String.Format("Vertex: {0}\n", firstVertex.ID));
 
 			if (printRecursive)
 			{

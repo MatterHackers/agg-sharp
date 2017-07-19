@@ -76,10 +76,10 @@ namespace MatterHackers.PolygonMesh
 
 		public struct VertexOnEnds
 		{
-			private Vertex vertex0;
-			private Vertex vertex1;
+			private IVertex vertex0;
+			private IVertex vertex1;
 
-			public Vertex this[int index]
+			public IVertex this[int index]
 			{
 				get
 				{
@@ -114,7 +114,7 @@ namespace MatterHackers.PolygonMesh
 			this.NextMeshEdgeFromEnd[1] = this; // start out with a circular reference to ourselves
 		}
 
-		public MeshEdge(Vertex vertex1, Vertex vertex2)
+		public MeshEdge(IVertex vertex1, IVertex vertex2)
 			: this()
 		{
 			this.VertexOnEnd[0] = vertex1;
@@ -126,10 +126,10 @@ namespace MatterHackers.PolygonMesh
 
 		public void AddDebugInfo(StringBuilder totalDebug, int numTabs)
 		{
-			totalDebug.Append(new string('\t', numTabs) + String.Format("Vertex1: {0}\n", VertexOnEnd[0] != null ? VertexOnEnd[0].Data.ID.ToString() : "null"));
+			totalDebug.Append(new string('\t', numTabs) + String.Format("Vertex1: {0}\n", VertexOnEnd[0] != null ? VertexOnEnd[0].ID.ToString() : "null"));
 			totalDebug.Append(String.Format("Vertex1 Next MeshEdge: {0}\n", NextMeshEdgeFromEnd[0].Data.ID));
 
-			totalDebug.Append(new string('\t', numTabs) + String.Format("Vertex2: {0}\n", VertexOnEnd[1] != null ? VertexOnEnd[1].Data.ID.ToString() : "null"));
+			totalDebug.Append(new string('\t', numTabs) + String.Format("Vertex2: {0}\n", VertexOnEnd[1] != null ? VertexOnEnd[1].ID.ToString() : "null"));
 			totalDebug.Append(String.Format("Vertex2 Next MeshEdge: {0}\n", NextMeshEdgeFromEnd[1].Data.ID));
 
 			int firstFaceEdgeID = -1;
@@ -140,13 +140,13 @@ namespace MatterHackers.PolygonMesh
 			totalDebug.Append(new string('\t', numTabs) + String.Format("First FaceEdge: {0}\n", firstFaceEdgeID));
 		}
 
-		public MeshEdge GetNextMeshEdgeConnectedTo(Vertex vertex)
+		public MeshEdge GetNextMeshEdgeConnectedTo(IVertex vertex)
 		{
 			int endVertices = GetVertexEndIndex(vertex);
 			return NextMeshEdgeFromEnd[endVertices];
 		}
 
-		public int GetVertexEndIndex(Vertex vertexToGetIndexOf)
+		public int GetVertexEndIndex(IVertex vertexToGetIndexOf)
 		{
 			if (vertexToGetIndexOf == VertexOnEnd[0])
 			{
@@ -163,7 +163,7 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public int GetOpositeVertexEndIndex(Vertex vertexToNotGetIndexOf)
+		public int GetOpositeVertexEndIndex(IVertex vertexToNotGetIndexOf)
 		{
 			if (vertexToNotGetIndexOf == VertexOnEnd[0])
 			{
@@ -179,23 +179,23 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public void RemoveFromMeshEdgeLinksOfVertex(Vertex vertexToRemoveFrom)
+		public void RemoveFromMeshEdgeLinksOfVertex(IVertex vertexToRemoveFrom)
 		{
 			// lets first fix up the MeshEdge ponted to by the vertexToRemoveFrom
-			if (vertexToRemoveFrom.firstMeshEdge == this)
+			if (vertexToRemoveFrom.FirstMeshEdge == this)
 			{
-				MeshEdge nextMeshEdgeConnectedToThisVertex = vertexToRemoveFrom.firstMeshEdge.GetNextMeshEdgeConnectedTo(vertexToRemoveFrom);
+				MeshEdge nextMeshEdgeConnectedToThisVertex = vertexToRemoveFrom.FirstMeshEdge.GetNextMeshEdgeConnectedTo(vertexToRemoveFrom);
 				// if this is a radial loop
-				if (nextMeshEdgeConnectedToThisVertex == vertexToRemoveFrom.firstMeshEdge)
+				if (nextMeshEdgeConnectedToThisVertex == vertexToRemoveFrom.FirstMeshEdge)
 				{
 					// the vertex is connected to no edges
-					vertexToRemoveFrom.firstMeshEdge = null;
+					vertexToRemoveFrom.FirstMeshEdge = null;
 					return;
 				}
 				else
 				{
 					// hook it up to the next connected mesh edge
-					vertexToRemoveFrom.firstMeshEdge = nextMeshEdgeConnectedToThisVertex;
+					vertexToRemoveFrom.FirstMeshEdge = nextMeshEdgeConnectedToThisVertex;
 				}
 			}
 
@@ -229,33 +229,33 @@ namespace MatterHackers.PolygonMesh
 			VertexOnEnd[GetVertexEndIndex(vertexToRemoveFrom)] = null;
 		}
 
-		public void AddToMeshEdgeLinksOfVertex(Vertex vertexToAddTo)
+		public void AddToMeshEdgeLinksOfVertex(IVertex vertexToAddTo)
 		{
 			int endIndex = GetVertexEndIndex(vertexToAddTo);
 
-			if (vertexToAddTo.firstMeshEdge == null)
+			if (vertexToAddTo.FirstMeshEdge == null)
 			{
 				// the vertex is not currently part of any edge
 				// we are the only edge for this vertex so set its links all to this.
-				vertexToAddTo.firstMeshEdge = this;
+				vertexToAddTo.FirstMeshEdge = this;
 				NextMeshEdgeFromEnd[endIndex] = this;
 			}
 			else // the vertex is already part of an edge (or many)
 			{
-				int endIndexOnFirstMeshEdge = vertexToAddTo.firstMeshEdge.GetVertexEndIndex(vertexToAddTo);
+				int endIndexOnFirstMeshEdge = vertexToAddTo.FirstMeshEdge.GetVertexEndIndex(vertexToAddTo);
 
 				// remember what the one that is there is poiting at
-				MeshEdge vertexCurrentNext = vertexToAddTo.firstMeshEdge.NextMeshEdgeFromEnd[endIndexOnFirstMeshEdge];
+				MeshEdge vertexCurrentNext = vertexToAddTo.FirstMeshEdge.NextMeshEdgeFromEnd[endIndexOnFirstMeshEdge];
 
 				// point the one that is there at us
-				vertexToAddTo.firstMeshEdge.NextMeshEdgeFromEnd[endIndexOnFirstMeshEdge] = this;
+				vertexToAddTo.FirstMeshEdge.NextMeshEdgeFromEnd[endIndexOnFirstMeshEdge] = this;
 
 				// and point the one that are already there at this.
 				this.NextMeshEdgeFromEnd[endIndex] = vertexCurrentNext;
 			}
 		}
 
-		internal bool IsConnectedTo(Vertex vertexToCheck)
+		internal bool IsConnectedTo(IVertex vertexToCheck)
 		{
 			if (VertexOnEnd[0] == vertexToCheck || VertexOnEnd[1] == vertexToCheck)
 			{
@@ -299,7 +299,7 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public Vertex GetOppositeVertex(Vertex vertexToGetOppositeFor)
+		public IVertex GetOppositeVertex(IVertex vertexToGetOppositeFor)
 		{
 			if (vertexToGetOppositeFor == VertexOnEnd[0])
 			{
@@ -315,7 +315,7 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public MeshEdge GetOppositeMeshEdge(Vertex vertexToGetOppositeFor)
+		public MeshEdge GetOppositeMeshEdge(IVertex vertexToGetOppositeFor)
 		{
 			if (vertexToGetOppositeFor == VertexOnEnd[0])
 			{

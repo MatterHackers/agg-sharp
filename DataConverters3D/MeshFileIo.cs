@@ -172,11 +172,11 @@ namespace MatterHackers.DataConverters3D
 						{
 							foreach (Face face in mesh.Faces)
 							{
-								List<Vertex> faceVertices = new List<Vertex>();
+								List<IVertex> faceVertices = new List<IVertex>();
 								foreach (FaceEdge faceEdgeToAdd in face.FaceEdges())
 								{
 									// we allow duplicates (the true) to make sure we are not changing the loaded models accuracy.
-									Vertex newVertex = allPolygons.CreateVertex(faceEdgeToAdd.firstVertex.Position, CreateOption.CreateNew, SortOption.WillSortLater);
+									IVertex newVertex = allPolygons.CreateVertex(faceEdgeToAdd.firstVertex.Position, CreateOption.CreateNew, SortOption.WillSortLater);
 									faceVertices.Add(newVertex);
 								}
 

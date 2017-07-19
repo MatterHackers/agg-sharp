@@ -84,15 +84,15 @@ namespace MatterHackers.PolygonMesh.Csg
 					}
 				case PolyType.SPANNING:
 					{
-						List<Vertex> frontVertices = new List<Vertex>();
-						List<Vertex> backVertices = new List<Vertex>();
+						List<IVertex> frontVertices = new List<IVertex>();
+						List<IVertex> backVertices = new List<IVertex>();
 						for (int firstVertexIndex = 0; firstVertexIndex < polygon.vertices.Count; firstVertexIndex++)
 						{
 							int nextVertexIndex = (firstVertexIndex + 1) % polygon.vertices.Count;
 							PolyType firstPolyType = types[firstVertexIndex];
 							PolyType nextPolyType = types[nextVertexIndex];
-							Vertex firstVertex = polygon.vertices[firstVertexIndex];
-							Vertex nextVertex = polygon.vertices[nextVertexIndex];
+							IVertex firstVertex = polygon.vertices[firstVertexIndex];
+							IVertex nextVertex = polygon.vertices[nextVertexIndex];
 							if (firstPolyType != PolyType.BACK)
 							{
 								frontVertices.Add(firstVertex);
@@ -109,7 +109,7 @@ namespace MatterHackers.PolygonMesh.Csg
 								double firstDistToPlane = this.w - planDotFirstVertex;
 								Vector3 deltaFromFirstToNext = nextVertex.Position - firstVertex.Position;
 								double t = firstDistToPlane / Vector3.Dot(this.normal, deltaFromFirstToNext);
-								Vertex newVertex = firstVertex.CreateInterpolated(nextVertex, t);
+								IVertex newVertex = firstVertex.CreateInterpolated(nextVertex, t);
 								frontVertices.Add(newVertex);
 								backVertices.Add(newVertex);
 							}

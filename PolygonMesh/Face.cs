@@ -148,7 +148,7 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public IEnumerable<Vertex> Vertices()
+		public IEnumerable<IVertex> Vertices()
 		{
 			foreach (FaceEdge faceEdge in FaceEdges())
 			{
@@ -220,7 +220,7 @@ namespace MatterHackers.PolygonMesh
 			bool foundFirst = false;
 			Vector2 firstPosition = Vector2.Zero;
 			int quadrant = 0;
-            foreach (Vertex vertex in Vertices())
+            foreach (IVertex vertex in Vertices())
 			{
 				Vector2 position = new Vector2(vertex.Position[xIndex], vertex.Position[yIndex]);
 				quadrant = GetQuadrant(position, x, y);
