@@ -49,19 +49,15 @@ namespace MatterHackers.PolygonMesh
 		public Dictionary<(FaceEdge, int), Vector2> TextureUV = new Dictionary<(FaceEdge, int), Vector2>();
 		public Dictionary<(Face, int), ImageBuffer> FaceTexture = new Dictionary<(Face, int), ImageBuffer>();
 
+		private AxisAlignedBoundingBox cachedAABB = null;
+
 		public Mesh()
 		{
 		}
 
 		public int ChangedCount { get; private set; } = 0;
 
-		public MetaData Data
-		{
-			get
-			{
-				return MetaData.Get(this);
-			}
-		}
+		public MetaData Data =>  MetaData.Get(this);
 
 		public List<Face> Faces { get; } = new List<Face>();
 
@@ -1213,25 +1209,33 @@ namespace MatterHackers.PolygonMesh
 			{
 				return new AxisAlignedBoundingBox(Vector3.Zero, Vector3.Zero);
 			}
-			Vector3 minXYZ = new Vector3(double.MaxValue, double.MaxValue, double.MaxValue);
-			Vector3 maxXYZ = new Vector3(double.MinValue, double.MinValue, double.MinValue);
 
-			foreach (IVertex vertex in Vertices)
+			if (cachedAABB == null)
 			{
-				minXYZ.x = Math.Min(minXYZ.x, vertex.Position.x);
-				minXYZ.y = Math.Min(minXYZ.y, vertex.Position.y);
-				minXYZ.z = Math.Min(minXYZ.z, vertex.Position.z);
+				Vector3 minXYZ = new Vector3(double.MaxValue, double.MaxValue, double.MaxValue);
+				Vector3 maxXYZ = new Vector3(double.MinValue, double.MinValue, double.MinValue);
 
-				maxXYZ.x = Math.Max(maxXYZ.x, vertex.Position.x);
-				maxXYZ.y = Math.Max(maxXYZ.y, vertex.Position.y);
-				maxXYZ.z = Math.Max(maxXYZ.z, vertex.Position.z);
+				foreach (IVertex vertex in Vertices)
+				{
+					minXYZ.x = Math.Min(minXYZ.x, vertex.Position.x);
+					minXYZ.y = Math.Min(minXYZ.y, vertex.Position.y);
+					minXYZ.z = Math.Min(minXYZ.z, vertex.Position.z);
+
+					maxXYZ.x = Math.Max(maxXYZ.x, vertex.Position.x);
+					maxXYZ.y = Math.Max(maxXYZ.y, vertex.Position.y);
+					maxXYZ.z = Math.Max(maxXYZ.z, vertex.Position.z);
+				}
+
+				cachedAABB = new AxisAlignedBoundingBox(minXYZ, maxXYZ);
 			}
 
-			return new AxisAlignedBoundingBox(minXYZ, maxXYZ);
+			return cachedAABB;
 		}
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 transform)
 		{
+			return GetAxisAlignedBoundingBox().NewTransformed(transform);
+
 			if (fastAABBTransform == transform && fastAABBCache != null)
 			{
 				return fastAABBCache;
