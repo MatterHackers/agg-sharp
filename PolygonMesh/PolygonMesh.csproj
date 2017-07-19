@@ -140,7 +140,6 @@
     <Compile Include="MeshMaterialData.cs" />
     <Compile Include="MeshGroup.cs" />
     <Compile Include="FaceTexturesData.cs" />
-    <Compile Include="FaceEdgeTextureUvData.cs" />
     <Compile Include="Csg\CsgOperations.cs">
       <SubType>Code</SubType>
     </Compile>

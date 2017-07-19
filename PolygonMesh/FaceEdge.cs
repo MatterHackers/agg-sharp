@@ -46,8 +46,8 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public Face containingFace;
-		public IVertex firstVertex;
+		public Face ContainingFace { get; set; }
+		public IVertex FirstVertex { get; set; }
 		public MeshEdge meshEdge;
 
 		public FaceEdge nextFaceEdge;
@@ -62,9 +62,9 @@ namespace MatterHackers.PolygonMesh
 
 		public FaceEdge(Face face, MeshEdge meshEdge, IVertex vertex)
 		{
-			this.containingFace = face;
+			this.ContainingFace = face;
 			this.meshEdge = meshEdge;
-			this.firstVertex = vertex;
+			this.FirstVertex = vertex;
 
 			nextFaceEdge = null;
 			prevFaceEdge = null;
@@ -72,22 +72,37 @@ namespace MatterHackers.PolygonMesh
 			radialNextFaceEdge = radialPrevFaceEdge = this;
 		}
 
-		public Vector2 GetUVs(int index)
+		public void SetUv(int index, Vector2? uv)
 		{
-			FaceEdgeTextureUvData faceEdgeData = FaceEdgeTextureUvData.Get(this);
-			if (faceEdgeData != null && index < faceEdgeData.TextureUV.Count)
+			if (uv == null)
 			{
-				return faceEdgeData.TextureUV[index];
+				if (ContainingFace.ContainingMesh.TextureUV.ContainsKey((this, index)))
+				{
+					ContainingFace.ContainingMesh.TextureUV.Remove((this, index));
+				}
+			}
+			else
+			{
+				ContainingFace.ContainingMesh.TextureUV[(this, index)] = uv.Value;
+			}
+		}
+
+		public Vector2 GetUv(int index)
+		{
+			Vector2 uv;
+			if (ContainingFace.ContainingMesh.TextureUV.TryGetValue((this, index), out uv))
+			{
+				return uv;
 			}
 
-			return new Vector2();
+			return Vector2.Zero;
 		}
 
 		public void AddDebugInfo(StringBuilder totalDebug, int numTabs, bool printRecursive = true)
 		{
-			totalDebug.Append(new string('\t', numTabs) + String.Format("Face: {0}\n", containingFace.Data.ID));
+			totalDebug.Append(new string('\t', numTabs) + String.Format("Face: {0}\n", ContainingFace.Data.ID));
 			totalDebug.Append(new string('\t', numTabs) + String.Format("MeshEdge: {0}\n", meshEdge.Data.ID));
-			totalDebug.Append(new string('\t', numTabs) + String.Format("Vertex: {0}\n", firstVertex.ID));
+			totalDebug.Append(new string('\t', numTabs) + String.Format("Vertex: {0}\n", FirstVertex.ID));
 
 			if (printRecursive)
 			{

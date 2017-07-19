@@ -310,7 +310,7 @@ namespace MatterHackers.DataConverters3D
 									List<IVertex> positionsCCW = new List<IVertex>();
 									foreach (FaceEdge faceEdge in face.FaceEdges())
 									{
-										positionsCCW.Add(faceEdge.firstVertex);
+										positionsCCW.Add(faceEdge.FirstVertex);
 									}
 
 									int numPolys = positionsCCW.Count - 2;

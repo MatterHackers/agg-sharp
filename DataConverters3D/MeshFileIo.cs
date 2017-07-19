@@ -175,7 +175,7 @@ namespace MatterHackers.DataConverters3D
 								foreach (FaceEdge faceEdgeToAdd in face.FaceEdges())
 								{
 									// we allow duplicates (the true) to make sure we are not changing the loaded models accuracy.
-									IVertex newVertex = allPolygons.CreateVertex(faceEdgeToAdd.firstVertex.Position, CreateOption.CreateNew, SortOption.WillSortLater);
+									IVertex newVertex = allPolygons.CreateVertex(faceEdgeToAdd.FirstVertex.Position, CreateOption.CreateNew, SortOption.WillSortLater);
 									faceVertices.Add(newVertex);
 								}
 

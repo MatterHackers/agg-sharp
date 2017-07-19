@@ -26,7 +26,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 		public static IntersectionType Intersection(this Face face, Ray ray, out Vector3 intersectionPosition)
 		{
-			Plane facePlane = new Plane(face.normal, face.firstFaceEdge.firstVertex.Position);
+			Plane facePlane = new Plane(face.normal, face.firstFaceEdge.FirstVertex.Position);
 			double distanceToHit;
 			bool hitFrontOfPlane;
 			if (facePlane.RayHitPlane(ray, out distanceToHit, out hitFrontOfPlane))

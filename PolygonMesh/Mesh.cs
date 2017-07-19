@@ -45,6 +45,7 @@ namespace MatterHackers.PolygonMesh
 	{
 		private AxisAlignedBoundingBox fastAABBCache;
 		private Matrix4X4 fastAABBTransform = Matrix4X4.Identity;
+		public Dictionary<(FaceEdge, int), Vector2> TextureUV = new Dictionary<(FaceEdge, int), Vector2>();
 
 		public Mesh()
 		{
@@ -78,7 +79,7 @@ namespace MatterHackers.PolygonMesh
 				for (int faceIndex = 0; faceIndex < meshToCopy.Faces.Count; faceIndex++)
 				{
 					Face faceToCopy = meshToCopy.Faces[faceIndex];
-					newMesh.Faces.Add(new Face());
+					newMesh.Faces.Add(new Face(newMesh));
 				}
 
 				// now set all the data for the new mesh
@@ -150,7 +151,7 @@ namespace MatterHackers.PolygonMesh
 					List<IVertex> faceVertices = new List<IVertex>();
 					foreach (FaceEdge faceEdgeToAdd in face.FaceEdges())
 					{
-						IVertex newVertex = newMesh.CreateVertex(faceEdgeToAdd.firstVertex.Position, CreateOption.CreateNew, SortOption.WillSortLater);
+						IVertex newVertex = newMesh.CreateVertex(faceEdgeToAdd.FirstVertex.Position, CreateOption.CreateNew, SortOption.WillSortLater);
 						faceVertices.Add(newVertex);
 					}
 
@@ -237,7 +238,7 @@ namespace MatterHackers.PolygonMesh
 					List<IVertex> faceVerices = new List<IVertex>();
 					foreach (FaceEdge faceEdge in face.FaceEdges())
 					{
-						faceVerices.Add(faceEdge.firstVertex);
+						faceVerices.Add(faceEdge.FirstVertex);
 					}
 
 					List<Face> foundFaces = other.FindFacesAtPosition(faceVerices.ToArray());
@@ -327,7 +328,7 @@ namespace MatterHackers.PolygonMesh
 					List<IVertex> positionsCCW = new List<IVertex>();
 					foreach (FaceEdge faceEdge in face.FaceEdges())
 					{
-						positionsCCW.Add(faceEdge.firstVertex);
+						positionsCCW.Add(faceEdge.FirstVertex);
 					}
 
 					for (int splitIndex = 2; splitIndex < positionsCCW.Count - 1; splitIndex++)
@@ -479,12 +480,12 @@ namespace MatterHackers.PolygonMesh
 			int count = 0;
 			foreach (FaceEdge faceEdge in faceToSplit.FaceEdges())
 			{
-				if (faceEdge.firstVertex == splitStartVertex)
+				if (faceEdge.FirstVertex == splitStartVertex)
 				{
 					faceEdgeAfterSplitStart = faceEdge;
 					count++;
 				}
-				else if (faceEdge.firstVertex == splitEndVertex)
+				else if (faceEdge.FirstVertex == splitEndVertex)
 				{
 					faceEdgeAfterSplitEnd = faceEdge;
 					count++;
@@ -496,7 +497,7 @@ namespace MatterHackers.PolygonMesh
 			}
 
 			meshEdgeCreatedDuringSplit = CreateMeshEdge(splitStartVertex, splitEndVertex);
-			faceCreatedDuringSplit = new Face(faceToSplit);
+			faceCreatedDuringSplit = new Face(faceToSplit, this);
 
 			Faces.Add(faceCreatedDuringSplit);
 
@@ -523,7 +524,7 @@ namespace MatterHackers.PolygonMesh
 			// make sure the FaceEdges of the new face all point to the new face.
 			foreach (FaceEdge faceEdge in faceCreatedDuringSplit.firstFaceEdge.NextFaceEdges())
 			{
-				faceEdge.containingFace = faceCreatedDuringSplit;
+				faceEdge.ContainingFace = faceCreatedDuringSplit;
 			}
 
 			newFaceEdgeExistingFace.AddToRadialLoop(meshEdgeCreatedDuringSplit);
@@ -542,7 +543,7 @@ namespace MatterHackers.PolygonMesh
 			FaceEdge faceEdgeToDeleteOnFaceToKeep = meshEdgeToDelete.GetFaceEdge(faceToKeep);
 			FaceEdge faceEdgeToDeleteOnFaceToDelete = meshEdgeToDelete.GetFaceEdge(faceToDelete);
 
-			if (faceEdgeToDeleteOnFaceToKeep.firstVertex == faceEdgeToDeleteOnFaceToDelete.firstVertex)
+			if (faceEdgeToDeleteOnFaceToKeep.FirstVertex == faceEdgeToDeleteOnFaceToDelete.FirstVertex)
 			{
 				throw new Exception("The faces have opposite windings and you cannot merge the edge");
 			}
@@ -562,7 +563,7 @@ namespace MatterHackers.PolygonMesh
 			// make sure the FaceEdges all point to the kept face.
 			foreach (FaceEdge faceEdge in faceToKeep.firstFaceEdge.NextFaceEdges())
 			{
-				faceEdge.containingFace = faceToKeep;
+				faceEdge.ContainingFace = faceToKeep;
 			}
 
 			DeleteMeshEdge(meshEdgeToDelete);
@@ -672,9 +673,9 @@ namespace MatterHackers.PolygonMesh
 				// fix up the face edges
 				foreach (FaceEdge faceEdge in meshEdgeToFix.FaceEdgesSharingMeshEdge())
 				{
-					if (faceEdge.firstVertex == vertexToDelete)
+					if (faceEdge.FirstVertex == vertexToDelete)
 					{
-						faceEdge.firstVertex = vertexToKeep;
+						faceEdge.FirstVertex = vertexToKeep;
 					}
 				}
 
@@ -917,7 +918,7 @@ namespace MatterHackers.PolygonMesh
 			{
 				foreach (FaceEdge faceEdge in meshEdgeToSplit.FaceEdgesSharingMeshEdge())
 				{
-					Face currentFace = faceEdge.containingFace;
+					Face currentFace = faceEdge.ContainingFace;
 					FaceEdge newFaceEdge = new FaceEdge(currentFace, meshEdgeCreatedDuringSplit, vertexCreatedDuringSplit);
 					newFaceEdge.AddToRadialLoop(meshEdgeCreatedDuringSplit);
 					// and inject it into the face loop for this face
@@ -977,9 +978,9 @@ namespace MatterHackers.PolygonMesh
 					}
 
 					// if the FaceEdge we are deleting is the one that the face was using as its firstFaceEdge, change it.
-					if (faceEdge.containingFace.firstFaceEdge == faceEdgeToDelete)
+					if (faceEdge.ContainingFace.firstFaceEdge == faceEdgeToDelete)
 					{
-						faceEdge.containingFace.firstFaceEdge = faceEdge;
+						faceEdge.ContainingFace.firstFaceEdge = faceEdge;
 					}
 
 					// and clear out the FaceEdge we are deleting to help debugging and other references to it.
@@ -988,8 +989,8 @@ namespace MatterHackers.PolygonMesh
 					faceEdgeToDelete.radialNextFaceEdge = null;
 					faceEdgeToDelete.radialPrevFaceEdge = null;
 					faceEdgeToDelete.meshEdge = null;
-					faceEdgeToDelete.containingFace = null;
-					faceEdgeToDelete.firstVertex = null;
+					faceEdgeToDelete.ContainingFace = null;
+					faceEdgeToDelete.FirstVertex = null;
 				}
 			}
 
@@ -1066,7 +1067,7 @@ namespace MatterHackers.PolygonMesh
 			edgesToUse.Add(CreateMeshEdge(nonRepeatingSet[nonRepeatingSet.Count - 1], nonRepeatingSet[0], createOption));
 
 			// make the face and set it's data
-			Face createdFace = new Face();
+			Face createdFace = new Face(this);
 
 			CreateFaceEdges(nonRepeatingSet.ToArray(), edgesToUse, createdFace);
 
