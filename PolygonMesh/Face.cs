@@ -39,6 +39,8 @@ namespace MatterHackers.PolygonMesh
 	[DebuggerDisplay("ID = {Data.ID}")]
 	public class Face
 	{
+		public Mesh ContainingMesh { get; }
+
 		public MetaData Data
 		{
 			get
@@ -53,11 +55,13 @@ namespace MatterHackers.PolygonMesh
 		// number of boundaries
 		// matterial
 
-		public Face()
+		public Face(Mesh containingMesh)
 		{
+			this.ContainingMesh = containingMesh;
 		}
 
-		public Face(Face faceToUseAsModel)
+		public Face(Face faceToUseAsModel, Mesh containingMesh)
+			: this(containingMesh)
 		{
 		}
 
@@ -152,7 +156,7 @@ namespace MatterHackers.PolygonMesh
 		{
 			foreach (FaceEdge faceEdge in FaceEdges())
 			{
-				yield return faceEdge.firstVertex;
+				yield return faceEdge.FirstVertex;
 			}
 		}
 
@@ -179,11 +183,11 @@ namespace MatterHackers.PolygonMesh
 
 		private int GetMajorAxis()
 		{
-			if (firstFaceEdge?.firstVertex != null
-                && firstFaceEdge?.nextFaceEdge?.firstVertex != null)
+			if (firstFaceEdge?.FirstVertex != null
+                && firstFaceEdge?.nextFaceEdge?.FirstVertex != null)
 			{
-				Vector3 position0 = firstFaceEdge.firstVertex.Position;
-				Vector3 position1 = firstFaceEdge.nextFaceEdge.firstVertex.Position;
+				Vector3 position0 = firstFaceEdge.FirstVertex.Position;
+				Vector3 position1 = firstFaceEdge.nextFaceEdge.FirstVertex.Position;
 				Vector3 delta = position1 - position0;
 				delta.x = Math.Abs(delta.x);
 				delta.y = Math.Abs(delta.y);
@@ -272,15 +276,15 @@ namespace MatterHackers.PolygonMesh
 		{
 			FaceEdge faceEdge0 = firstFaceEdge;
 			FaceEdge faceEdge1 = faceEdge0.nextFaceEdge;
-			Vector3 faceEdge1Minus0 = faceEdge1.firstVertex.Position - faceEdge0.firstVertex.Position;
+			Vector3 faceEdge1Minus0 = faceEdge1.FirstVertex.Position - faceEdge0.FirstVertex.Position;
 			FaceEdge faceEdge2 = faceEdge1;
 			bool collinear = false;
 			do
 			{
 				faceEdge2 = faceEdge2.nextFaceEdge;
-				collinear = Vector3.Collinear(faceEdge0.firstVertex.Position, faceEdge1.firstVertex.Position, faceEdge2.firstVertex.Position);
+				collinear = Vector3.Collinear(faceEdge0.FirstVertex.Position, faceEdge1.FirstVertex.Position, faceEdge2.FirstVertex.Position);
 			} while (collinear && faceEdge2 != faceEdge0);
-			Vector3 face2Minus0 = faceEdge2.firstVertex.Position - faceEdge0.firstVertex.Position;
+			Vector3 face2Minus0 = faceEdge2.FirstVertex.Position - faceEdge0.FirstVertex.Position;
 			normal = Vector3.Cross(faceEdge1Minus0, face2Minus0).GetNormal();
 		}
 
@@ -347,7 +351,7 @@ namespace MatterHackers.PolygonMesh
 				if (first)
 				{
 					prevEdge = faceEdge;
-					prevInFront = cutPlane.GetDistanceFromPlane(prevEdge.firstVertex.Position) > 0;
+					prevInFront = cutPlane.GetDistanceFromPlane(prevEdge.FirstVertex.Position) > 0;
 					first = false;
 					firstEdge = prevEdge;
 					firstInFront = prevInFront;
@@ -355,12 +359,12 @@ namespace MatterHackers.PolygonMesh
 				else
 				{
 					FaceEdge curEdge = faceEdge;
-					bool curInFront = cutPlane.GetDistanceFromPlane(curEdge.firstVertex.Position) > 0;
+					bool curInFront = cutPlane.GetDistanceFromPlane(curEdge.FirstVertex.Position) > 0;
 					if (prevInFront != curInFront)
 					{
 						// we crossed over the cut line
-						Vector3 directionNormal = (curEdge.firstVertex.Position - prevEdge.firstVertex.Position).GetNormal();
-						Ray edgeRay = new Ray(prevEdge.firstVertex.Position, directionNormal);
+						Vector3 directionNormal = (curEdge.FirstVertex.Position - prevEdge.FirstVertex.Position).GetNormal();
+						Ray edgeRay = new Ray(prevEdge.FirstVertex.Position, directionNormal);
 						double distanceToHit;
 						bool hitFrontOfPlane;
 						if (cutPlane.RayHitPlane(edgeRay, out distanceToHit, out hitFrontOfPlane))
@@ -390,8 +394,8 @@ namespace MatterHackers.PolygonMesh
 				&& prevInFront != firstInFront)
 			{
 				// we crossed over the cut line
-				Vector3 directionNormal = (firstEdge.firstVertex.Position - prevEdge.firstVertex.Position).GetNormal();
-				Ray edgeRay = new Ray(prevEdge.firstVertex.Position, directionNormal);
+				Vector3 directionNormal = (firstEdge.FirstVertex.Position - prevEdge.FirstVertex.Position).GetNormal();
+				Ray edgeRay = new Ray(prevEdge.FirstVertex.Position, directionNormal);
 				double distanceToHit;
 				bool hitFrontOfPlane;
 				if (cutPlane.RayHitPlane(edgeRay, out distanceToHit, out hitFrontOfPlane))
@@ -419,12 +423,12 @@ namespace MatterHackers.PolygonMesh
 				count++;
 				if (first)
 				{
-					accumulatedPosition = faceEdge.firstVertex.Position;
+					accumulatedPosition = faceEdge.FirstVertex.Position;
 					first = false;
 				}
 				else
 				{
-					accumulatedPosition += faceEdge.firstVertex.Position;
+					accumulatedPosition += faceEdge.FirstVertex.Position;
 				}
 			}
 
@@ -436,7 +440,7 @@ namespace MatterHackers.PolygonMesh
 			AxisAlignedBoundingBox aabb = AxisAlignedBoundingBox.Empty;
 			foreach (FaceEdge faceEdge in FaceEdges())
 			{
-				aabb = AxisAlignedBoundingBox.Union(aabb, faceEdge.firstVertex.Position);
+				aabb = AxisAlignedBoundingBox.Union(aabb, faceEdge.FirstVertex.Position);
             }
 
 			return aabb;

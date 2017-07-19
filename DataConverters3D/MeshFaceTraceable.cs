@@ -66,7 +66,7 @@ namespace MatterHackers.DataConverters3D
 			int index = 0;
 			foreach (FaceEdge faceEdge in face.FaceEdges())
 			{
-				positions[index++] = faceEdge.firstVertex.Position;
+				positions[index++] = faceEdge.FirstVertex.Position;
 				if (index == 3)
 				{
 					break;

@@ -177,8 +177,8 @@ namespace MatterHackers.RenderOpenGl
 
 					if (vertexIndex < 2)
 					{
-						textureUV[vertexIndex] = faceEdge.GetUVs(0);
-						position[vertexIndex] = faceEdge.firstVertex.Position;
+						textureUV[vertexIndex] = faceEdge.GetUv(0);
+						position[vertexIndex] = faceEdge.FirstVertex.Position;
 					}
 					else
 					{
@@ -199,8 +199,8 @@ namespace MatterHackers.RenderOpenGl
 						normalData.Add(tempNormal);
 						positionData.Add(tempPosition);
 
-						Vector2 textureUV2 = faceEdge.GetUVs(0);
-						Vector3 position2 = faceEdge.firstVertex.Position;
+						Vector2 textureUV2 = faceEdge.GetUv(0);
+						Vector3 position2 = faceEdge.FirstVertex.Position;
 						tempTexture.textureU = (float)textureUV2.x; tempTexture.textureV = (float)textureUV2.y;
 						tempNormal.normalX = (float)face.normal.x; tempNormal.normalY = (float)face.normal.y; tempNormal.normalZ = (float)face.normal.z;
 						tempPosition.positionX = (float)position2.x; tempPosition.positionY = (float)position2.y; tempPosition.positionZ = (float)position2.z;
@@ -208,8 +208,8 @@ namespace MatterHackers.RenderOpenGl
 						normalData.Add(tempNormal);
 						positionData.Add(tempPosition);
 
-						textureUV[1] = faceEdge.GetUVs(0);
-						position[1] = faceEdge.firstVertex.Position;
+						textureUV[1] = faceEdge.GetUv(0);
+						position[1] = faceEdge.FirstVertex.Position;
 					}
 
 					vertexIndex++;

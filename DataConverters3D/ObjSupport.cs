@@ -175,9 +175,8 @@ namespace MatterHackers.DataConverters3D
 									int edgeIndex = 0;
 									foreach (FaceEdge faceEdge in polyFace.FaceEdges())
 									{
-										FaceEdgeTextureUvData edgeUV = FaceEdgeTextureUvData.Get(faceEdge);
 										int textureIndex = faceData.TextureVertexIndexList[edgeIndex] - 1;
-										edgeUV.TextureUV.Add(new Vector2(objFile.TextureList[textureIndex].X, 
+										faceEdge.SetUv(0, new Vector2(objFile.TextureList[textureIndex].X, 
 											objFile.TextureList[textureIndex].Y));
 										edgeIndex++;
 									}

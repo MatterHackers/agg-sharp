@@ -295,7 +295,7 @@ namespace MatterHackers.PolygonMesh
 		{
 			foreach (FaceEdge faceEdge in FaceEdgesSharingMeshEdge())
 			{
-				yield return faceEdge.containingFace;
+				yield return faceEdge.ContainingFace;
 			}
 		}
 
@@ -335,7 +335,7 @@ namespace MatterHackers.PolygonMesh
 		{
 			foreach (FaceEdge faceEdge in faceToFindFaceEdgeFor.FaceEdges())
 			{
-				if (faceEdge.containingFace == faceToFindFaceEdgeFor)
+				if (faceEdge.ContainingFace == faceToFindFaceEdgeFor)
 				{
 					return faceEdge;
 				}

@@ -179,9 +179,9 @@ namespace MatterHackers.RayTracer
 				{
 					foreach (FaceEdge faceEdge in face.FaceEdges())
 					{
-						points[i].position = world.GetScreenPosition(faceEdge.firstVertex.Position);
+						points[i].position = world.GetScreenPosition(faceEdge.FirstVertex.Position);
 
-						Vector3 transformedPosition = Vector3.TransformPosition(faceEdge.firstVertex.Position, world.ModelviewMatrix);
+						Vector3 transformedPosition = Vector3.TransformPosition(faceEdge.FirstVertex.Position, world.ModelviewMatrix);
 						points[i].z = transformedPosition.z;
 						i++;
 					}

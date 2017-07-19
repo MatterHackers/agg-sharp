@@ -71,8 +71,7 @@ namespace MatterHackers.PolygonMesh
 			RectangleDouble bounds = RectangleDouble.ZeroIntersection;
 			foreach (FaceEdge faceEdge in face.FaceEdges())
 			{
-				FaceEdgeTextureUvData edgeUV = FaceEdgeTextureUvData.Get(faceEdge);
-				Vector3 edgeStartPosition = faceEdge.firstVertex.Position;
+				Vector3 edgeStartPosition = faceEdge.FirstVertex.Position;
 				Vector3 textureUv = Vector3.Transform(edgeStartPosition, textureCoordinateMapping);
 				bounds.ExpandToInclude(new Vector2(textureUv));
 			}
@@ -87,10 +86,9 @@ namespace MatterHackers.PolygonMesh
 			faceData.Textures.Add(textureToUse);
 			foreach (FaceEdge faceEdge in face.FaceEdges())
 			{
-				FaceEdgeTextureUvData edgeUV = FaceEdgeTextureUvData.Get(faceEdge);
-				Vector3 edgeStartPosition = faceEdge.firstVertex.Position;
+				Vector3 edgeStartPosition = faceEdge.FirstVertex.Position;
 				Vector3 textureUv = Vector3.Transform(edgeStartPosition, textureCoordinateMapping);
-				edgeUV.TextureUV.Add(new Vector2(textureUv));
+				faceEdge.SetUv(0, new Vector2(textureUv));
 			}
 		}
 

@@ -147,7 +147,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				int count = 0;
 				foreach (FaceEdge faceEdge in face.FaceEdges())
 				{
-					VectorMath.Vector3 position = faceEdge.firstVertex.Position;
+					VectorMath.Vector3 position = faceEdge.FirstVertex.Position;
 					if(isFirst)
 					{
 						first = position;
