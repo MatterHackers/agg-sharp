@@ -1,6 +1,4 @@
-﻿using MatterHackers.VectorMath;
-
-/*
+﻿/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
@@ -29,19 +27,44 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-//#define VALIDATE_SEARCH
+using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Text;
 
 namespace MatterHackers.PolygonMesh
 {
-	public abstract class VertexSorterBase : IComparer<IVertex>
+	public interface IVertex
 	{
-		public abstract List<IVertex> FindVertices(List<IVertex> vertices, Vector3 position, double maxDistanceToConsiderVertexAsSame);
+		Vector3 Position { get; set; }
 
-		public virtual int Compare(IVertex a, IVertex b)
-		{
-			throw new NotImplementedException();
-		}
+		Vector3 Normal { get; set; }
+
+		int ID { get; }
+
+		MeshEdge FirstMeshEdge { get; set; }
+
+		/// <summary>
+		/// Create a new vertex between this and the dest
+		/// </summary>
+		/// <param name="dest"></param>
+		/// <param name="ratioToDest"></param>
+		/// <returns></returns>
+		IVertex CreateInterpolated(IVertex dest, double ratioToDest);
+
+		void AddDebugInfo(StringBuilder totalDebug, int numTabs);
+
+		IEnumerable<Face> ConnectedFaces();
+
+		List<MeshEdge> GetConnectedMeshEdges();
+
+		IEnumerable<MeshEdge> ConnectedMeshEdges();
+
+		MeshEdge GetMeshEdgeConnectedToVertex(IVertex vertexToFindConnectionTo);
+
+		int GetConnectedMeshEdgesCount();
+
+		void Validate();
 	}
 }

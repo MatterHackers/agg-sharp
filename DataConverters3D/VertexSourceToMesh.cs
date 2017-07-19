@@ -69,11 +69,11 @@ namespace MatterHackers.DataConverters3D
 					continue;
 				}
 
-				Vertex topVertex0 = extrudedVertexSource.CreateVertex(new Vector3(v0, 0));
-				Vertex topVertex1 = extrudedVertexSource.CreateVertex(new Vector3(v1, 0));
-				Vertex topVertex2 = extrudedVertexSource.CreateVertex(new Vector3(v2, 0));
+				IVertex topVertex0 = extrudedVertexSource.CreateVertex(new Vector3(v0, 0));
+				IVertex topVertex1 = extrudedVertexSource.CreateVertex(new Vector3(v1, 0));
+				IVertex topVertex2 = extrudedVertexSource.CreateVertex(new Vector3(v2, 0));
 
-				extrudedVertexSource.CreateFace(new Vertex[] { topVertex0, topVertex1, topVertex2 });
+				extrudedVertexSource.CreateFace(new IVertex[] { topVertex0, topVertex1, topVertex2 });
 			}
 
 			return extrudedVertexSource;
@@ -139,13 +139,13 @@ namespace MatterHackers.DataConverters3D
 				{
 					Vector3 currentPosition = new Vector3(vertexData.position.x, 0, vertexData.position.y);
 
-					Vertex lastStart = mesh.CreateVertex(Vector3.Transform(lastPosition, Matrix4X4.CreateRotationZ(startAngle)), createOption, sortOption);
-					Vertex lastEnd = mesh.CreateVertex(Vector3.Transform(lastPosition, Matrix4X4.CreateRotationZ(endAngle)), createOption, sortOption);
+					IVertex lastStart = mesh.CreateVertex(Vector3.Transform(lastPosition, Matrix4X4.CreateRotationZ(startAngle)), createOption, sortOption);
+					IVertex lastEnd = mesh.CreateVertex(Vector3.Transform(lastPosition, Matrix4X4.CreateRotationZ(endAngle)), createOption, sortOption);
 
-					Vertex currentStart = mesh.CreateVertex(Vector3.Transform(currentPosition, Matrix4X4.CreateRotationZ(startAngle)), createOption, sortOption);
-					Vertex currentEnd = mesh.CreateVertex(Vector3.Transform(currentPosition, Matrix4X4.CreateRotationZ(endAngle)), createOption, sortOption);
+					IVertex currentStart = mesh.CreateVertex(Vector3.Transform(currentPosition, Matrix4X4.CreateRotationZ(startAngle)), createOption, sortOption);
+					IVertex currentEnd = mesh.CreateVertex(Vector3.Transform(currentPosition, Matrix4X4.CreateRotationZ(endAngle)), createOption, sortOption);
 
-					mesh.CreateFace(new Vertex[] { lastStart, lastEnd, currentEnd, currentStart }, createOption);
+					mesh.CreateFace(new IVertex[] { lastStart, lastEnd, currentEnd, currentStart }, createOption);
 
 					lastPosition = currentPosition;
 				}
@@ -171,27 +171,27 @@ namespace MatterHackers.DataConverters3D
 					continue;
 				}
 
-				Vertex bottomVertex0 = extrudedVertexSource.CreateVertex(new Vector3(v0, 0));
-				Vertex bottomVertex1 = extrudedVertexSource.CreateVertex(new Vector3(v1, 0));
-				Vertex bottomVertex2 = extrudedVertexSource.CreateVertex(new Vector3(v2, 0));
+				IVertex bottomVertex0 = extrudedVertexSource.CreateVertex(new Vector3(v0, 0));
+				IVertex bottomVertex1 = extrudedVertexSource.CreateVertex(new Vector3(v1, 0));
+				IVertex bottomVertex2 = extrudedVertexSource.CreateVertex(new Vector3(v2, 0));
 
-				Vertex topVertex0 = extrudedVertexSource.CreateVertex(new Vector3(v0, zHeight));
-				Vertex topVertex1 = extrudedVertexSource.CreateVertex(new Vector3(v1, zHeight));
-				Vertex topVertex2 = extrudedVertexSource.CreateVertex(new Vector3(v2, zHeight));
+				IVertex topVertex0 = extrudedVertexSource.CreateVertex(new Vector3(v0, zHeight));
+				IVertex topVertex1 = extrudedVertexSource.CreateVertex(new Vector3(v1, zHeight));
+				IVertex topVertex2 = extrudedVertexSource.CreateVertex(new Vector3(v2, zHeight));
 
 				if (teselatedSource.IndicesCache[i + 0].IsEdge)
 				{
-					extrudedVertexSource.CreateFace(new Vertex[] { bottomVertex0, bottomVertex1, topVertex1, topVertex0 });
+					extrudedVertexSource.CreateFace(new IVertex[] { bottomVertex0, bottomVertex1, topVertex1, topVertex0 });
 				}
 
 				if (teselatedSource.IndicesCache[i + 1].IsEdge)
 				{
-					extrudedVertexSource.CreateFace(new Vertex[] { bottomVertex1, bottomVertex2, topVertex2, topVertex1 });
+					extrudedVertexSource.CreateFace(new IVertex[] { bottomVertex1, bottomVertex2, topVertex2, topVertex1 });
 				}
 
 				if (teselatedSource.IndicesCache[i + 2].IsEdge)
 				{
-					extrudedVertexSource.CreateFace(new Vertex[] { bottomVertex2, bottomVertex0, topVertex0, topVertex2 });
+					extrudedVertexSource.CreateFace(new IVertex[] { bottomVertex2, bottomVertex0, topVertex0, topVertex2 });
 				}
 			}
 
@@ -206,11 +206,11 @@ namespace MatterHackers.DataConverters3D
 					continue;
 				}
 
-				Vertex bottomVertex0 = extrudedVertexSource.CreateVertex(new Vector3(v0, 0));
-				Vertex bottomVertex1 = extrudedVertexSource.CreateVertex(new Vector3(v1, 0));
-				Vertex bottomVertex2 = extrudedVertexSource.CreateVertex(new Vector3(v2, 0));
+				IVertex bottomVertex0 = extrudedVertexSource.CreateVertex(new Vector3(v0, 0));
+				IVertex bottomVertex1 = extrudedVertexSource.CreateVertex(new Vector3(v1, 0));
+				IVertex bottomVertex2 = extrudedVertexSource.CreateVertex(new Vector3(v2, 0));
 
-				extrudedVertexSource.CreateFace(new Vertex[] { bottomVertex2, bottomVertex1, bottomVertex0 });
+				extrudedVertexSource.CreateFace(new IVertex[] { bottomVertex2, bottomVertex1, bottomVertex0 });
 			}
 
 			extrudedVertexSource.CleanAndMergMesh(CancellationToken.None);

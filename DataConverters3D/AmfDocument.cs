@@ -267,7 +267,7 @@ namespace MatterHackers.DataConverters3D
 									meshVertexStart.Add(vertexCount);
 									for (int vertexIndex = 0; vertexIndex < mesh.Vertices.Count; vertexIndex++)
 									{
-										Vertex vertex = mesh.Vertices[vertexIndex];
+										IVertex vertex = mesh.Vertices[vertexIndex];
 										outputInfo.ReportProgress?.Invoke((currentRation + vertexIndex / vertCount * ratioPerMesh * .5, ""));
 
 										Vector3 position = vertex.Position;
@@ -307,7 +307,7 @@ namespace MatterHackers.DataConverters3D
 									outputInfo.ReportProgress?.Invoke((currentRation + faceIndex / faceCount * ratioPerMesh * .5, ""));
 
 									Face face = mesh.Faces[faceIndex];
-									List<Vertex> positionsCCW = new List<Vertex>();
+									List<IVertex> positionsCCW = new List<IVertex>();
 									foreach (FaceEdge faceEdge in face.FaceEdges())
 									{
 										positionsCCW.Add(faceEdge.firstVertex);
@@ -490,11 +490,11 @@ namespace MatterHackers.DataConverters3D
 						&& vertices[indices[1]] != vertices[indices[2]]
 						&& vertices[indices[2]] != vertices[indices[0]])
 					{
-						var triangle = new Vertex[]
+						var triangle = new IVertex[]
 						{
-									mesh.CreateVertex(vertices[indices[0]], CreateOption.CreateNew, SortOption.WillSortLater),
-									mesh.CreateVertex(vertices[indices[1]], CreateOption.CreateNew, SortOption.WillSortLater),
-									mesh.CreateVertex(vertices[indices[2]], CreateOption.CreateNew, SortOption.WillSortLater),
+							mesh.CreateVertex(vertices[indices[0]], CreateOption.CreateNew, SortOption.WillSortLater),
+							mesh.CreateVertex(vertices[indices[1]], CreateOption.CreateNew, SortOption.WillSortLater),
+							mesh.CreateVertex(vertices[indices[2]], CreateOption.CreateNew, SortOption.WillSortLater),
 						};
 						mesh.CreateFace(triangle, CreateOption.CreateNew);
 					}

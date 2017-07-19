@@ -74,10 +74,10 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		public void FacePointInPolyTest()
 		{
 			Mesh testMesh = new Mesh();
-			Vertex vertex0 = testMesh.CreateVertex(0, 0, 0);
-			Vertex vertex1 = testMesh.CreateVertex(5, 10, 0);
-			Vertex vertex2 = testMesh.CreateVertex(10, 0, 0);
-			Face face = testMesh.CreateFace(new Vertex[] { vertex0, vertex1, vertex2 });
+			IVertex vertex0 = testMesh.CreateVertex(0, 0, 0);
+			IVertex vertex1 = testMesh.CreateVertex(5, 10, 0);
+			IVertex vertex2 = testMesh.CreateVertex(10, 0, 0);
+			Face face = testMesh.CreateFace(new IVertex[] { vertex0, vertex1, vertex2 });
 
 			Assert.IsTrue(face.PointInPoly(new Vector3(5, 5, 0)));
 		}
@@ -89,9 +89,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			Environment.CurrentDirectory = TestContext.CurrentContext.WorkDirectory;
 
 			Mesh testMesh = new Mesh();
-			Vertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
-			Vertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
-			Vertex centerVertexTop = testMesh.CreateVertex(0, 0, 2);
+			IVertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
+			IVertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
+			IVertex centerVertexTop = testMesh.CreateVertex(0, 0, 2);
 
 			// create the first mesh edge and check stuff
 			MeshEdge meshEdge0 = testMesh.CreateMeshEdge(leftVertexBottom, rightVertexBottom);
@@ -147,17 +147,17 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				Environment.CurrentDirectory = TestContext.CurrentContext.WorkDirectory;
 
 				Mesh testMesh = new Mesh();
-				Vertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
-				Vertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
-				Vertex centerVertexMiddle1 = testMesh.CreateVertex(0, 0, 1);
+				IVertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
+				IVertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
+				IVertex centerVertexMiddle1 = testMesh.CreateVertex(0, 0, 1);
 
 				MeshEdge meshEdgeBottomLeftRight = testMesh.CreateMeshEdge(leftVertexBottom, rightVertexBottom);
 				MeshEdge meshEdgeBottomRightCenter = testMesh.CreateMeshEdge(rightVertexBottom, centerVertexMiddle1);
 				MeshEdge meshEdgeBottomCenterLeft = testMesh.CreateMeshEdge(centerVertexMiddle1, leftVertexBottom);
 
-				Vertex leftVertexTop = testMesh.CreateVertex(-1, 0, 2);
-				Vertex centerVertexMiddle2 = testMesh.CreateVertex(0, 0, 1, CreateOption.CreateNew);
-				Vertex rightVertexTop = testMesh.CreateVertex(1, 0, 2);
+				IVertex leftVertexTop = testMesh.CreateVertex(-1, 0, 2);
+				IVertex centerVertexMiddle2 = testMesh.CreateVertex(0, 0, 1, CreateOption.CreateNew);
+				IVertex rightVertexTop = testMesh.CreateVertex(1, 0, 2);
 
 				MeshEdge meshEdgeTopLeftCenter = testMesh.CreateMeshEdge(leftVertexTop, centerVertexMiddle2);
 				MeshEdge meshEdgeTopCenterRight = testMesh.CreateMeshEdge(centerVertexMiddle2, rightVertexTop);
@@ -189,17 +189,17 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 			{
 				Mesh testMesh = new Mesh();
-				Vertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
-				Vertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
-				Vertex centerVertexMiddle1 = testMesh.CreateVertex(0, 0, 1);
+				IVertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
+				IVertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
+				IVertex centerVertexMiddle1 = testMesh.CreateVertex(0, 0, 1);
 
 				MeshEdge meshEdgeBottomLeftRight = testMesh.CreateMeshEdge(leftVertexBottom, rightVertexBottom);
 				MeshEdge meshEdgeBottomRightCenter = testMesh.CreateMeshEdge(rightVertexBottom, centerVertexMiddle1);
 				MeshEdge meshEdgeBottomCenterLeft = testMesh.CreateMeshEdge(centerVertexMiddle1, leftVertexBottom);
 
-				Vertex leftVertexTop = testMesh.CreateVertex(-1, 0, 2);
-				Vertex centerVertexMiddle2 = testMesh.CreateVertex(0, 0, 1, CreateOption.CreateNew);
-				Vertex rightVertexTop = testMesh.CreateVertex(1, 0, 2);
+				IVertex leftVertexTop = testMesh.CreateVertex(-1, 0, 2);
+				IVertex centerVertexMiddle2 = testMesh.CreateVertex(0, 0, 1, CreateOption.CreateNew);
+				IVertex rightVertexTop = testMesh.CreateVertex(1, 0, 2);
 
 				MeshEdge meshEdgeTopLeftCenter = testMesh.CreateMeshEdge(leftVertexTop, centerVertexMiddle2);
 				MeshEdge meshEdgeTopCenterRight = testMesh.CreateMeshEdge(centerVertexMiddle2, rightVertexTop);
@@ -231,17 +231,17 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 			{
 				Mesh testMesh = new Mesh();
-				Vertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
-				Vertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
-				Vertex centerVertexMiddle1 = testMesh.CreateVertex(0, 0, 1);
+				IVertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
+				IVertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
+				IVertex centerVertexMiddle1 = testMesh.CreateVertex(0, 0, 1);
 
-				Face bottomFace = testMesh.CreateFace(new Vertex[] { leftVertexBottom, rightVertexBottom, centerVertexMiddle1 });
+				Face bottomFace = testMesh.CreateFace(new IVertex[] { leftVertexBottom, rightVertexBottom, centerVertexMiddle1 });
 
-				Vertex leftVertexTop = testMesh.CreateVertex(-1, 0, 2);
-				Vertex centerVertexMiddle2 = testMesh.CreateVertex(0, 0, 1, CreateOption.CreateNew);
-				Vertex rightVertexTop = testMesh.CreateVertex(1, 0, 2);
+				IVertex leftVertexTop = testMesh.CreateVertex(-1, 0, 2);
+				IVertex centerVertexMiddle2 = testMesh.CreateVertex(0, 0, 1, CreateOption.CreateNew);
+				IVertex rightVertexTop = testMesh.CreateVertex(1, 0, 2);
 
-				Face top = testMesh.CreateFace(new Vertex[] { leftVertexTop, centerVertexMiddle2, rightVertexTop });
+				Face top = testMesh.CreateFace(new IVertex[] { leftVertexTop, centerVertexMiddle2, rightVertexTop });
 
 				MeshEdge meshEdgeBottomRightCenter = testMesh.FindMeshEdges(leftVertexBottom, centerVertexMiddle1)[0];
 				MeshEdge meshEdgeTopLeftCenter = testMesh.FindMeshEdges(leftVertexTop, centerVertexMiddle2)[0];
@@ -263,14 +263,14 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			Environment.CurrentDirectory = TestContext.CurrentContext.WorkDirectory;
 
 			Mesh testMesh = new Mesh();
-			Vertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
-			Vertex centerVertexBottom = testMesh.CreateVertex(0, 0, 0);
-			Vertex centerVertexTop = testMesh.CreateVertex(0, 0, 1);
-			Face leftFace = testMesh.CreateFace(new Vertex[] { leftVertexBottom, centerVertexBottom, centerVertexTop });
+			IVertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
+			IVertex centerVertexBottom = testMesh.CreateVertex(0, 0, 0);
+			IVertex centerVertexTop = testMesh.CreateVertex(0, 0, 1);
+			Face leftFace = testMesh.CreateFace(new IVertex[] { leftVertexBottom, centerVertexBottom, centerVertexTop });
 			SaveDebugInfo(testMesh);
 
-			Vertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
-			Face rightFace = testMesh.CreateFace(new Vertex[] { centerVertexBottom, rightVertexBottom, centerVertexTop }, CreateOption.CreateNew);
+			IVertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
+			Face rightFace = testMesh.CreateFace(new IVertex[] { centerVertexBottom, rightVertexBottom, centerVertexTop }, CreateOption.CreateNew);
 
 			SaveDebugInfo(testMesh);
 
@@ -302,11 +302,11 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				Environment.CurrentDirectory = TestContext.CurrentContext.WorkDirectory;
 
 				Mesh testMesh = new Mesh();
-				Vertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
-				Vertex centerVertexBottom = testMesh.CreateVertex(0, 0, 0);
-				Vertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
-				Vertex centerVertexTop = testMesh.CreateVertex(0, 0, 1);
-				Face originalFace = testMesh.CreateFace(new Vertex[] { leftVertexBottom, centerVertexBottom, rightVertexBottom, centerVertexTop });
+				IVertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
+				IVertex centerVertexBottom = testMesh.CreateVertex(0, 0, 0);
+				IVertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
+				IVertex centerVertexTop = testMesh.CreateVertex(0, 0, 1);
+				Face originalFace = testMesh.CreateFace(new IVertex[] { leftVertexBottom, centerVertexBottom, rightVertexBottom, centerVertexTop });
 
 				SaveDebugInfo(testMesh);
 				//       *
@@ -394,13 +394,13 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 			{
 				Mesh testMesh = new Mesh();
-				Vertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
-				Vertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
-				Vertex leftVertexCenter = testMesh.CreateVertex(-1, 0, 1);
-				Vertex rightVertexCenter = testMesh.CreateVertex(1, 0, 1);
-				Vertex leftVertexTop = testMesh.CreateVertex(-1, 0, 2);
-				Vertex rightVertexTop = testMesh.CreateVertex(1, 0, 2);
-				Face originalFace = testMesh.CreateFace(new Vertex[] { rightVertexBottom, rightVertexCenter, rightVertexTop, leftVertexTop, leftVertexCenter, leftVertexBottom });
+				IVertex leftVertexBottom = testMesh.CreateVertex(-1, 0, 0);
+				IVertex rightVertexBottom = testMesh.CreateVertex(1, 0, 0);
+				IVertex leftVertexCenter = testMesh.CreateVertex(-1, 0, 1);
+				IVertex rightVertexCenter = testMesh.CreateVertex(1, 0, 1);
+				IVertex leftVertexTop = testMesh.CreateVertex(-1, 0, 2);
+				IVertex rightVertexTop = testMesh.CreateVertex(1, 0, 2);
+				Face originalFace = testMesh.CreateFace(new IVertex[] { rightVertexBottom, rightVertexCenter, rightVertexTop, leftVertexTop, leftVertexCenter, leftVertexBottom });
 				SaveDebugInfo(testMesh);
 				// *-------*
 				// |       |
@@ -474,15 +474,15 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				Environment.CurrentDirectory = TestContext.CurrentContext.WorkDirectory;
 
 				Mesh testMesh = new Mesh();
-				Vertex leftVertex = testMesh.CreateVertex(-1, 0, 0);
-				Vertex rightVertex = testMesh.CreateVertex(1, 0, 0);
+				IVertex leftVertex = testMesh.CreateVertex(-1, 0, 0);
+				IVertex rightVertex = testMesh.CreateVertex(1, 0, 0);
 				MeshEdge edgeToSplit = testMesh.CreateMeshEdge(leftVertex, rightVertex);
 				Assert.IsTrue(edgeToSplit.VertexOnEnd[0] == leftVertex, "The edgeToSplit is connected the way we expect.");
 				Assert.IsTrue(edgeToSplit.VertexOnEnd[1] == rightVertex, "The edgeToSplit is connected the way we expect.");
-				Assert.IsTrue(leftVertex.firstMeshEdge == edgeToSplit, "First edge of left vertex is the edge.");
-				Assert.IsTrue(rightVertex.firstMeshEdge == edgeToSplit, "First edge of right vertex is the edge.");
+				Assert.IsTrue(leftVertex.FirstMeshEdge == edgeToSplit, "First edge of left vertex is the edge.");
+				Assert.IsTrue(rightVertex.FirstMeshEdge == edgeToSplit, "First edge of right vertex is the edge.");
 				MeshEdge edgeCreatedDuringSplit;
-				Vertex vertexCreatedDuringSplit;
+				IVertex vertexCreatedDuringSplit;
 				testMesh.SplitMeshEdge(edgeToSplit, out vertexCreatedDuringSplit, out edgeCreatedDuringSplit);
 
 				Assert.IsTrue(edgeToSplit.VertexOnEnd[1] == vertexCreatedDuringSplit);
@@ -491,7 +491,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				Assert.IsTrue(edgeCreatedDuringSplit.VertexOnEnd[0] == vertexCreatedDuringSplit, "The edgeCreatedDuringSplit is connected the way we expect.");
 				Assert.IsTrue(edgeCreatedDuringSplit.VertexOnEnd[1] == rightVertex, "The edgeCreatedDuringSplit is connected the way we expect.");
 
-				Assert.IsTrue(vertexCreatedDuringSplit.firstMeshEdge == edgeCreatedDuringSplit, "First edge of new vertex is the edge we split.");
+				Assert.IsTrue(vertexCreatedDuringSplit.FirstMeshEdge == edgeCreatedDuringSplit, "First edge of new vertex is the edge we split.");
 				Assert.IsTrue(edgeCreatedDuringSplit.NextMeshEdgeFromEnd[0] == edgeToSplit, "The next edge is the one we created.");
 				Assert.IsTrue(edgeCreatedDuringSplit.NextMeshEdgeFromEnd[1] == edgeCreatedDuringSplit, "The other side is connected to itself.");
 
@@ -504,10 +504,10 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			// split a polygon's edge and create vert
 			{
 				Mesh testMesh = new Mesh();
-				Vertex leftVertex = testMesh.CreateVertex(-1, 0, 1);
-				Vertex rightVertex = testMesh.CreateVertex(1, 0, 1);
-				Vertex topVertex = testMesh.CreateVertex(-1, 0, -1);
-				Face newFace = testMesh.CreateFace(new Vertex[] { rightVertex, topVertex, leftVertex });
+				IVertex leftVertex = testMesh.CreateVertex(-1, 0, 1);
+				IVertex rightVertex = testMesh.CreateVertex(1, 0, 1);
+				IVertex topVertex = testMesh.CreateVertex(-1, 0, -1);
+				Face newFace = testMesh.CreateFace(new IVertex[] { rightVertex, topVertex, leftVertex });
 
 				Assert.IsTrue(newFace.normal == Vector3.UnitY);
 
@@ -519,7 +519,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				Assert.IsTrue(edgeToSplit.VertexOnEnd[1] == rightVertex, "The edgeToSplit is connected the way we expect.");
 
 				MeshEdge edgeCreatedDuringSplit;
-				Vertex vertexCreatedDuringSplit;
+				IVertex vertexCreatedDuringSplit;
 				SaveDebugInfo(testMesh);
 				testMesh.SplitMeshEdge(edgeToSplit, out vertexCreatedDuringSplit, out edgeCreatedDuringSplit);
 				SaveDebugInfo(testMesh);
@@ -563,26 +563,26 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			{
 				// make an extruded pluss sign.
 				Mesh testMesh = new Mesh();
-				Vertex centerVertex = testMesh.CreateVertex(0, 0, 0);
-				Vertex leftVertex = testMesh.CreateVertex(-1, 0, 0);
-				Vertex rightVertex = testMesh.CreateVertex(1, 0, 0);
-				Vertex frontVertex = testMesh.CreateVertex(0, -1, 0);
-				Vertex backVertex = testMesh.CreateVertex(0, 1, 0);
+				IVertex centerVertex = testMesh.CreateVertex(0, 0, 0);
+				IVertex leftVertex = testMesh.CreateVertex(-1, 0, 0);
+				IVertex rightVertex = testMesh.CreateVertex(1, 0, 0);
+				IVertex frontVertex = testMesh.CreateVertex(0, -1, 0);
+				IVertex backVertex = testMesh.CreateVertex(0, 1, 0);
 
-				Vertex centerVertexTop = testMesh.CreateVertex(0, 0, 1);
-				Vertex leftVertexTop = testMesh.CreateVertex(-1, 0, 1);
-				Vertex rightVertexTop = testMesh.CreateVertex(1, 0, 1);
-				Vertex frontVertexTop = testMesh.CreateVertex(0, -1, 1);
-				Vertex backVertexTop = testMesh.CreateVertex(0, 1, 1);
+				IVertex centerVertexTop = testMesh.CreateVertex(0, 0, 1);
+				IVertex leftVertexTop = testMesh.CreateVertex(-1, 0, 1);
+				IVertex rightVertexTop = testMesh.CreateVertex(1, 0, 1);
+				IVertex frontVertexTop = testMesh.CreateVertex(0, -1, 1);
+				IVertex backVertexTop = testMesh.CreateVertex(0, 1, 1);
 
-				testMesh.CreateFace(new Vertex[] { centerVertex, centerVertexTop, frontVertexTop, frontVertex });
+				testMesh.CreateFace(new IVertex[] { centerVertex, centerVertexTop, frontVertexTop, frontVertex });
 				MeshEdge centerEdge = testMesh.FindMeshEdges(centerVertex, centerVertexTop)[0];
 				Assert.IsTrue(centerEdge.GetNumFacesSharingEdge() == 1, "There should be 1 faces on this edge.");
-				testMesh.CreateFace(new Vertex[] { centerVertex, centerVertexTop, rightVertexTop, rightVertex });
+				testMesh.CreateFace(new IVertex[] { centerVertex, centerVertexTop, rightVertexTop, rightVertex });
 				Assert.IsTrue(centerEdge.GetNumFacesSharingEdge() == 2, "There should be 2 faces on this edge.");
-				testMesh.CreateFace(new Vertex[] { centerVertex, centerVertexTop, backVertexTop, backVertex });
+				testMesh.CreateFace(new IVertex[] { centerVertex, centerVertexTop, backVertexTop, backVertex });
 				Assert.IsTrue(centerEdge.GetNumFacesSharingEdge() == 3, "There should be 3 faces on this edge.");
-				testMesh.CreateFace(new Vertex[] { centerVertex, centerVertexTop, leftVertexTop, leftVertex });
+				testMesh.CreateFace(new IVertex[] { centerVertex, centerVertexTop, leftVertexTop, leftVertex });
 				Assert.IsTrue(centerEdge.GetNumFacesSharingEdge() == 4, "There should be 4 faces on this edge.");
 
 				foreach (Face face in centerEdge.FacesSharingMeshEdgeIterator())
@@ -590,7 +590,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 					Assert.IsTrue(face.NumVertices == 4, "The faces should all have 4 vertices.");
 				}
 
-				Vertex createdVertx;
+				IVertex createdVertx;
 				MeshEdge createdEdge;
 				testMesh.SplitMeshEdge(centerEdge, out createdVertx, out createdEdge);
 				Assert.IsTrue(centerEdge.GetNumFacesSharingEdge() == 4, "There should still be 4 faces on this edge.");
@@ -612,18 +612,18 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			if (false)
 			{
 				Mesh testMesh = new Mesh();
-				Vertex centerVertex = testMesh.CreateVertex(0, 0, 0);
-				Vertex leftVertex = testMesh.CreateVertex(-1, 0, 0);
-				Vertex rightVertex = testMesh.CreateVertex(1, 0, 0);
+				IVertex centerVertex = testMesh.CreateVertex(0, 0, 0);
+				IVertex leftVertex = testMesh.CreateVertex(-1, 0, 0);
+				IVertex rightVertex = testMesh.CreateVertex(1, 0, 0);
 
-				Vertex centerVertexTop = testMesh.CreateVertex(0, 0, 1);
-				Vertex leftVertexTop = testMesh.CreateVertex(-1, 0, 1);
-				Vertex rightVertexTop = testMesh.CreateVertex(1, 0, 1);
+				IVertex centerVertexTop = testMesh.CreateVertex(0, 0, 1);
+				IVertex leftVertexTop = testMesh.CreateVertex(-1, 0, 1);
+				IVertex rightVertexTop = testMesh.CreateVertex(1, 0, 1);
 
-				testMesh.CreateFace(new Vertex[] { centerVertex, centerVertexTop, leftVertexTop, leftVertex });
+				testMesh.CreateFace(new IVertex[] { centerVertex, centerVertexTop, leftVertexTop, leftVertex });
 				MeshEdge centerEdge = testMesh.FindMeshEdges(centerVertex, centerVertexTop)[0];
 				Assert.IsTrue(centerEdge.GetNumFacesSharingEdge() == 1, "There should be 1 faces on this edge.");
-				testMesh.CreateFace(new Vertex[] { centerVertexTop, centerVertex, rightVertex, rightVertexTop });
+				testMesh.CreateFace(new IVertex[] { centerVertexTop, centerVertex, rightVertex, rightVertexTop });
 				Assert.IsTrue(centerEdge.GetNumFacesSharingEdge() == 2, "There should be 2 faces on this edge.");
 
 				foreach (Face face in centerEdge.FacesSharingMeshEdgeIterator())
@@ -635,7 +635,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				testMesh.CleanAndMergMesh(CancellationToken.None);
 				SaveDebugInfo(testMesh);
 
-				Vertex createdVertx;
+				IVertex createdVertx;
 				MeshEdge createdEdge;
 				testMesh.SplitMeshEdge(centerEdge, out createdVertx, out createdEdge);
 				SaveDebugInfo(testMesh);
@@ -668,16 +668,16 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		public void MeshCopy()
 		{
 			Mesh testMesh = new Mesh();
-			Vertex left = testMesh.CreateVertex(-1, -1, 0);
-			Vertex middle = testMesh.CreateVertex(0, 1, 0);
-			Vertex right = testMesh.CreateVertex(1, -1, 0);
+			IVertex left = testMesh.CreateVertex(-1, -1, 0);
+			IVertex middle = testMesh.CreateVertex(0, 1, 0);
+			IVertex right = testMesh.CreateVertex(1, -1, 0);
 
-			Vertex top = testMesh.CreateVertex(0, 0, 1);
+			IVertex top = testMesh.CreateVertex(0, 0, 1);
 
-			testMesh.CreateFace(new Vertex[] { left, top, middle });
-			testMesh.CreateFace(new Vertex[] { left, right, top });
-			testMesh.CreateFace(new Vertex[] { right, middle, top });
-			testMesh.CreateFace(new Vertex[] { left, middle, right });
+			testMesh.CreateFace(new IVertex[] { left, top, middle });
+			testMesh.CreateFace(new IVertex[] { left, right, top });
+			testMesh.CreateFace(new IVertex[] { right, middle, top });
+			testMesh.CreateFace(new IVertex[] { left, middle, right });
 
 			testMesh.MergeVertices(CancellationToken.None);
 

@@ -89,6 +89,8 @@ namespace MatterHackers.DataConverters3D
 
 		public Object3DTypes ItemType { get; set; } = Object3DTypes.Model;
 
+		public Behavior3DTypes BehaviorType { get; set; } = Behavior3DTypes.Solid;
+
 		public Matrix4X4 Matrix { get; set; } = Matrix4X4.Identity;
 
 		[JsonIgnore]

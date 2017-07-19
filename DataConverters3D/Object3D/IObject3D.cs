@@ -46,6 +46,13 @@ namespace MatterHackers.DataConverters3D
 		GenericObject
 	};
 
+	public enum Behavior3DTypes
+	{
+		Solid,
+		Hole,
+		Support
+	};
+
 	public class MeshAndTransform
 	{
 		public Mesh MeshData { get; }
@@ -69,6 +76,8 @@ namespace MatterHackers.DataConverters3D
 		MeshGroup Flatten();
 		bool HasChildren { get; }
 		Object3DTypes ItemType { get; set; }
+
+		Behavior3DTypes BehaviorType { get; set; }
 
 		[JsonConverter(typeof(MatrixConverter))]
 		Matrix4X4 Matrix { get; set; }

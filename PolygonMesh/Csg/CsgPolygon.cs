@@ -11,7 +11,7 @@ namespace MatterHackers.PolygonMesh.Csg
 	// This can be used to define per-polygon properties (such as surface color).
 	public class CsgPolygon
 	{
-		public List<Vertex> vertices = new List<Vertex>();
+		public List<IVertex> vertices = new List<IVertex>();
 		public CsgPlane plane;
 
 		public void flip()
@@ -28,9 +28,9 @@ namespace MatterHackers.PolygonMesh.Csg
 		{
 		}
 
-		public CsgPolygon(List<Vertex> list)
+		public CsgPolygon(List<IVertex> list)
 		{
-			vertices = new List<Vertex>(list);
+			vertices = new List<IVertex>(list);
 			plane = new CsgPlane(vertices[0].Position, vertices[1].Position, vertices[2].Position);
 		}
 	}

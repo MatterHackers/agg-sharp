@@ -156,6 +156,7 @@
     <Compile Include="Rendering\OrthographicZProjection.cs" />
     <Compile Include="Processors\StlProcessing.cs" />
     <Compile Include="Solids\PlatonicSolids.cs" />
+    <Compile Include="IVertex.cs" />
     <Compile Include="Vertex.cs" />
     <Compile Include="VertexCollection.cs" />
     <Compile Include="VertexSorters\VertexSorterBase.cs" />

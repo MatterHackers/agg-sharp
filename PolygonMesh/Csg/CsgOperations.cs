@@ -140,7 +140,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			int nextIndex = 0;
 			foreach (Face face in model.Faces)
 			{
-				List<Vertex> triangle = new List<Vertex>();
+				List<IVertex> triangle = new List<IVertex>();
 				VectorMath.Vector3 first = VectorMath.Vector3.Zero;
 				VectorMath.Vector3 last = VectorMath.Vector3.Zero;
 				bool isFirst = true;
@@ -180,7 +180,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		public static Mesh MeshFromSolid(Solid solid)
 		{
 			Mesh model = new Mesh();
-			List<Vertex> vertices = new List<Vertex>();
+			List<IVertex> vertices = new List<IVertex>();
 			var indices = solid.getIndices();
 			var solidVertices = solid.getVertices();
 			for (int vertexIndex = 0; vertexIndex < indices.Length; vertexIndex++)
@@ -267,10 +267,10 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			foreach (Face face in model.Faces)
 			{
-				List<Vertex> triangle = new List<Vertex>();
+				List<IVertex> triangle = new List<IVertex>();
 				foreach (FaceEdge faceEdge in face.FaceEdges())
 				{
-					Vertex v = new Vertex(faceEdge.firstVertex.Position);
+					IVertex v = new Vertex(faceEdge.firstVertex.Position);
 					v.Normal = faceEdge.firstVertex.Normal;
 					triangle.Add(v);
 				}
