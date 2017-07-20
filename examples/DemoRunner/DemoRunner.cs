@@ -1,6 +1,7 @@
 using MatterHackers.Agg.UI;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MatterHackers.Agg
 {
@@ -14,7 +15,7 @@ namespace MatterHackers.Agg
 
 	internal class DemoRunner : GuiWidget
 	{
-		private static PluginFinder<AppWidgetFactory> appWidgetFinder = new PluginFinder<AppWidgetFactory>(".", new CaptionSorter());
+		private static List<AppWidgetFactory> appWidgetFinder = PluginFinder.CreateInstancesOf<AppWidgetFactory>().OrderBy(a => a.GetAppParameters().title).ToList();
 
 		public DemoRunner()
 		{
@@ -22,13 +23,13 @@ namespace MatterHackers.Agg
 			AddChild(tabControl);
 			tabControl.AnchorAll();
 
-			int count = appWidgetFinder.Plugins.Count;
+			int count = appWidgetFinder.Count;
 			for (int i = 0; i < count; i++)
 			{
-				if (appWidgetFinder.Plugins[i].GetAppParameters().title != "Demo Runner")
+				if (appWidgetFinder[i].GetAppParameters().title != "Demo Runner")
 				{
-					TabPage tabPage = new TabPage(appWidgetFinder.Plugins[i].GetAppParameters().title);
-					tabPage.AddChild(appWidgetFinder.Plugins[i].NewWidget());
+					TabPage tabPage = new TabPage(appWidgetFinder[i].GetAppParameters().title);
+					tabPage.AddChild(appWidgetFinder[i].NewWidget());
 					tabControl.AddTab(tabPage, tabPage.Text);
 				}
 			}
@@ -80,12 +81,12 @@ namespace MatterHackers.Agg
 			if (args.Length > 0)
 			{
 				bool foundADemo = false;
-				for (int i = 0; i < appWidgetFinder.Plugins.Count; i++)
+				for (int i = 0; i < appWidgetFinder.Count; i++)
 				{
-					if (args[0] == appWidgetFinder.Plugins[i].GetAppParameters().title)
+					if (args[0] == appWidgetFinder[i].GetAppParameters().title)
 					{
 						foundADemo = true;
-						StartADemo(appWidgetFinder.Plugins[i]);
+						StartADemo(appWidgetFinder[i]);
 					}
 				}
 

@@ -6,38 +6,60 @@ using System.Reflection;
 
 namespace MatterHackers.Agg
 {
-	public class PluginFinder<BaseClassToFind>
+	public static class PluginFinder
 	{
-		public List<BaseClassToFind> Plugins;
-
-		public PluginFinder(string searchDirectory = null, IComparer<BaseClassToFind> sorter = null)
+		static PluginFinder()
 		{
-#if __ANDROID__
-			// Technique for loading directly form Android Assets (Requires you create and populate the Assets->StaticData->Plugins
-			// folder with the actual plugins you want to load
-			Plugins = LoadPluginsFromAssets();
+			string searchPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
-#else
-			string searchPath;
-			if (searchDirectory == null)
-			{
-				searchPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-			}
-			else
-			{
-				searchPath = Path.GetFullPath(searchDirectory);
-			}
+			// Build type lookup
+			assemblyAndTypes = new Dictionary<Assembly, List<Type>>();
 
-			Plugins = FindAndAddPlugins(searchPath);
-#endif
+			string[] dllFiles = Directory.GetFiles(searchPath, "*.dll");
+			string[] exeFiles = Directory.GetFiles(searchPath, "*.exe");
 
-			if (sorter != null)
+			List<string> allFiles = new List<string>();
+			allFiles.AddRange(dllFiles);
+			allFiles.AddRange(exeFiles);
+			string[] files = allFiles.ToArray();
+
+			foreach (var file in files)
 			{
-				Plugins.Sort(sorter);
+				try
+				{
+					var assembly = Assembly.LoadFile(file);
+					var assemblyTypeList = new List<Type>();
+
+					assemblyAndTypes.Add(assembly, assemblyTypeList);
+
+					foreach (var type in assembly.GetTypes())
+					{
+						if (type == null || !type.IsClass || !type.IsPublic)
+						{
+							continue;
+						}
+
+						assemblyTypeList.Add(type);
+					}
+				}
+				catch (ReflectionTypeLoadException)
+				{
+				}
+				catch (BadImageFormatException)
+				{
+				}
+				catch (NotSupportedException)
+				{
+				}
 			}
 		}
 
 #if __ANDROID__
+
+		// Technique for loading directly form Android Assets (Requires you create and populate the Assets->StaticData->Plugins
+		// folder with the actual plugins you want to load
+		Plugins = LoadPluginsFromAssets();
+
 		private string[] pluginsInAssetsFolder = null;
 
 		private byte[] LoadBytesFromStream(string assetsPath, Android.Content.Res.AssetManager assets)
@@ -125,85 +147,46 @@ namespace MatterHackers.Agg
 			return factoryList;
 		}
 #endif
-		static Dictionary<Assembly, List<Type>> AssemblyAndTypes;
+		private static Dictionary<Assembly, List<Type>> assemblyAndTypes;
 
-		public List<BaseClassToFind> FindAndAddPlugins(string searchDirectory)
+		public static IEnumerable<Type> FindTypes<T>()
 		{
-			List<BaseClassToFind> factoryList = new List<BaseClassToFind>();
-			if (Directory.Exists(searchDirectory))
+			Type targetType = typeof(T);
+
+			return assemblyAndTypes?.SelectMany(kvp => kvp.Value)
+						.Where(type => targetType.IsAssignableFrom(type));
+		}
+
+		public static List<T> CreateInstancesOf<T>()
+		{
+			List<T> constructedTypes = new List<T>();
+			foreach (var keyValue in assemblyAndTypes)
 			{
-				if(AssemblyAndTypes == null)
+				try
 				{
-					AssemblyAndTypes = new Dictionary<Assembly, List<Type>>();
+					Type targetType = typeof(T);
 
-					//string[] files = Directory.GetFiles(searchDirectory, "*_HalFactory.dll");
-					string[] dllFiles = Directory.GetFiles(searchDirectory, "*.dll");
-					string[] exeFiles = Directory.GetFiles(searchDirectory, "*.exe");
-
-					List<string> allFiles = new List<string>();
-					allFiles.AddRange(dllFiles);
-					allFiles.AddRange(exeFiles);
-					string[] files = allFiles.ToArray();
-
-					foreach (var file in files)
+					foreach (var type in keyValue.Value)
 					{
-						try
+						if (targetType.IsInterface && targetType.IsAssignableFrom(type) 
+							|| type.BaseType == typeof(T))
 						{
-							var assembly = Assembly.LoadFile(file);
-							var assemblyTypeList = new List<Type>();
-
-							AssemblyAndTypes.Add(assembly, assemblyTypeList);
-
-							foreach (var type in assembly.GetTypes())
-							{
-								if (type == null || !type.IsClass || !type.IsPublic)
-								{
-									continue;
-								}
-
-								assemblyTypeList.Add(type);
-							}
-						}
-						catch (ReflectionTypeLoadException)
-						{
-						}
-						catch (BadImageFormatException)
-						{
-						}
-						catch (NotSupportedException)
-						{
+							constructedTypes.Add((T)Activator.CreateInstance(type));
 						}
 					}
 				}
-
-				foreach (var keyValue in AssemblyAndTypes)
+				catch (ReflectionTypeLoadException)
 				{
-					try
-					{
-						Type targetType = typeof(BaseClassToFind);
-
-						foreach (var type in keyValue.Value)
-						{
-							if (targetType.IsInterface && targetType.IsAssignableFrom(type) 
-								|| type.BaseType == typeof(BaseClassToFind))
-							{
-								factoryList.Add((BaseClassToFind)Activator.CreateInstance(type));
-							}
-						}
-					}
-					catch (ReflectionTypeLoadException)
-					{
-					}
-					catch (BadImageFormatException)
-					{
-					}
-					catch (NotSupportedException)
-					{
-					}
+				}
+				catch (BadImageFormatException)
+				{
+				}
+				catch (NotSupportedException)
+				{
 				}
 			}
 
-			return factoryList;
+			return constructedTypes;
 		}
 	}
 }

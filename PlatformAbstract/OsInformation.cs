@@ -45,14 +45,13 @@ namespace MatterHackers.Agg.PlatformAbstract
 			{
 				if (operatingSystem == OSType.Unknown)
 				{
-					string pluginPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-					PluginFinder<OsInformationPlugin> osInformationPlugins = new PluginFinder<OsInformationPlugin>(pluginPath);
-					if (osInformationPlugins.Plugins.Count != 1)
+					var osInformationPlugins = PluginFinder.CreateInstancesOf<OsInformationPlugin>();
+					if (osInformationPlugins.Count != 1)
 					{
-						throw new Exception(string.Format("Did not find any OsInformationPlugins in Plugin path ({0}.", pluginPath));
+						throw new Exception("Did not find any OsInformationPlugins");
 					}
 
-					operatingSystem = osInformationPlugins.Plugins[0].GetOSType();
+					operatingSystem = osInformationPlugins[0].GetOSType();
 				}
 
 				return operatingSystem;
@@ -65,14 +64,13 @@ namespace MatterHackers.Agg.PlatformAbstract
 			{
 				if (desktopSize.GetLength() == 0)
 				{
-					string pluginPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-					PluginFinder<OsInformationPlugin> osInformationPlugins = new PluginFinder<OsInformationPlugin>(pluginPath);
-					if (osInformationPlugins.Plugins.Count != 1)
+					var osInformationPlugins = PluginFinder.CreateInstancesOf<OsInformationPlugin>();
+					if (osInformationPlugins.Count != 1)
 					{
-						throw new Exception(string.Format("Did not find any OsInformationPlugins in Plugin path ({0}.", pluginPath));
+						throw new Exception("Did not find any OsInformationPlugins");
 					}
 
-					desktopSize = osInformationPlugins.Plugins[0].GetDesktopSize();
+					desktopSize = osInformationPlugins[0].GetDesktopSize();
 				}
 
 				return desktopSize;

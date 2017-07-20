@@ -104,13 +104,12 @@ namespace MatterHackers.Agg.UI
 			ToolTipManager = new ToolTipManager(this);
 			if (globalSystemWindowCreator == null)
 			{
-				string pluginPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-				PluginFinder<SystemWindowCreatorPlugin> systemWindowCreatorFinder = new PluginFinder<SystemWindowCreatorPlugin>(pluginPath);
-				if (systemWindowCreatorFinder.Plugins.Count != 1)
+				var systemWindowCreators = PluginFinder.CreateInstancesOf<SystemWindowCreatorPlugin>();
+				if (systemWindowCreators.Count != 1)
 				{
-					throw new Exception(string.Format("Did not find any SystemWindowCreators in Plugin path ({0}.", pluginPath));
+					throw new Exception("Did not find any SystemWindowCreators");
 				}
-				globalSystemWindowCreator = systemWindowCreatorFinder.Plugins[0];
+				globalSystemWindowCreator = systemWindowCreators[0];
 			}
 
 			allOpenSystemWindows.Add(this);

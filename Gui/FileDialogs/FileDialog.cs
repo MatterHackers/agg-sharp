@@ -18,16 +18,15 @@ namespace MatterHackers.Agg.UI
 			{
 				if (fileDialogCreatorPlugin == null)
 				{
-					string pluginPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-					PluginFinder<FileDialogCreator> fileDialogCreatorPlugins = new PluginFinder<FileDialogCreator>(pluginPath);
+					var fileDialogCreatorPlugins = PluginFinder.CreateInstancesOf<FileDialogCreator>();
 
-					if (fileDialogCreatorPlugins.Plugins.Count == 0)
+					if (fileDialogCreatorPlugins.Count == 0)
 					{
 						fileDialogCreatorPlugin = new AutomationFileDialogCreator();
 					}
 					else
 					{
-						fileDialogCreatorPlugin = fileDialogCreatorPlugins.Plugins[0];
+						fileDialogCreatorPlugin = fileDialogCreatorPlugins[0];
 					}
 				}
 
