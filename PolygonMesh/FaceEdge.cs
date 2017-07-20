@@ -27,32 +27,20 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh
 {
-	[DebuggerDisplay("ID = {Data.ID}")]
+	[DebuggerDisplay("ID = {ID}")]
 	public class FaceEdge
 	{
-		public MetaData Data
-		{
-			get
-			{
-				return MetaData.Get(this);
-			}
-		}
-
-		public Face ContainingFace { get; set; }
-		public IVertex FirstVertex { get; set; }
 		public MeshEdge meshEdge;
-
 		public FaceEdge nextFaceEdge;
 		public FaceEdge prevFaceEdge;
-
 		public FaceEdge radialNextFaceEdge;
 		public FaceEdge radialPrevFaceEdge;
 
@@ -72,36 +60,14 @@ namespace MatterHackers.PolygonMesh
 			radialNextFaceEdge = radialPrevFaceEdge = this;
 		}
 
-		public void SetUv(int index, Vector2? uv)
-		{
-			if (uv == null)
-			{
-				if (ContainingFace.ContainingMesh.TextureUV.ContainsKey((this, index)))
-				{
-					ContainingFace.ContainingMesh.TextureUV.Remove((this, index));
-				}
-			}
-			else
-			{
-				ContainingFace.ContainingMesh.TextureUV[(this, index)] = uv.Value;
-			}
-		}
-
-		public Vector2 GetUv(int index)
-		{
-			Vector2 uv;
-			if (ContainingFace.ContainingMesh.TextureUV.TryGetValue((this, index), out uv))
-			{
-				return uv;
-			}
-
-			return Vector2.Zero;
-		}
+		public Face ContainingFace { get; set; }
+		public IVertex FirstVertex { get; set; }
+		public int ID { get { return Mesh.GetID(this); } }
 
 		public void AddDebugInfo(StringBuilder totalDebug, int numTabs, bool printRecursive = true)
 		{
-			totalDebug.Append(new string('\t', numTabs) + String.Format("Face: {0}\n", ContainingFace.Data.ID));
-			totalDebug.Append(new string('\t', numTabs) + String.Format("MeshEdge: {0}\n", meshEdge.Data.ID));
+			totalDebug.Append(new string('\t', numTabs) + String.Format("Face: {0}\n", ContainingFace.ID));
+			totalDebug.Append(new string('\t', numTabs) + String.Format("MeshEdge: {0}\n", meshEdge.ID));
 			totalDebug.Append(new string('\t', numTabs) + String.Format("Vertex: {0}\n", FirstVertex.ID));
 
 			if (printRecursive)
@@ -111,7 +77,7 @@ namespace MatterHackers.PolygonMesh
 				{
 					if (afterFirst)
 					{
-						totalDebug.Append(new string('\t', numTabs) + String.Format("Next FaceEdge: {0}\n", faceEdge.Data.ID));
+						totalDebug.Append(new string('\t', numTabs) + String.Format("Next FaceEdge: {0}\n", faceEdge.ID));
 						faceEdge.AddDebugInfo(totalDebug, numTabs + 1, false);
 					}
 					afterFirst = true;
@@ -122,25 +88,6 @@ namespace MatterHackers.PolygonMesh
 
 			PrintFaceEdges(totalDebug, "Radial Next FaceEdge: ", numTabs, RadialNextFaceEdges());
 			PrintFaceEdges(totalDebug, "Radial Prev FaceEdge: ", numTabs, RadialPrevFaceEdges());
-		}
-
-		private static void PrintFaceEdges(StringBuilder totalDebug, string title, int numTabs, IEnumerable<FaceEdge> iterator)
-		{
-			string first = null;
-			totalDebug.Append(new string('\t', numTabs) + String.Format(title));
-			foreach (FaceEdge faceEdge in iterator)
-			{
-				if (first == null)
-				{
-					first = faceEdge.Data.ID.ToString();
-				}
-				else
-				{
-					totalDebug.Append(faceEdge.Data.ID + ", ");
-				}
-			}
-			// show the first one last as it is the this and we want it to print as last.
-			totalDebug.Append(first + "\n");
 		}
 
 		public void AddToRadialLoop(MeshEdge currentMeshEdge)
@@ -161,6 +108,17 @@ namespace MatterHackers.PolygonMesh
 				this.radialPrevFaceEdge.radialNextFaceEdge = this;
 				this.radialNextFaceEdge.radialPrevFaceEdge = this;
 			}
+		}
+
+		public Vector2 GetUv(int index)
+		{
+			Vector2 uv;
+			if (ContainingFace.ContainingMesh.TextureUV.TryGetValue((this, index), out uv))
+			{
+				return uv;
+			}
+
+			return Vector2.Zero;
 		}
 
 		public IEnumerable<FaceEdge> NextFaceEdges()
@@ -205,6 +163,40 @@ namespace MatterHackers.PolygonMesh
 
 				curFaceEdge = curFaceEdge.radialPrevFaceEdge;
 			} while (curFaceEdge != this);
+		}
+
+		public void SetUv(int index, Vector2? uv)
+		{
+			if (uv == null)
+			{
+				if (ContainingFace.ContainingMesh.TextureUV.ContainsKey((this, index)))
+				{
+					ContainingFace.ContainingMesh.TextureUV.Remove((this, index));
+				}
+			}
+			else
+			{
+				ContainingFace.ContainingMesh.TextureUV[(this, index)] = uv.Value;
+			}
+		}
+
+		private static void PrintFaceEdges(StringBuilder totalDebug, string title, int numTabs, IEnumerable<FaceEdge> iterator)
+		{
+			string first = null;
+			totalDebug.Append(new string('\t', numTabs) + String.Format(title));
+			foreach (FaceEdge faceEdge in iterator)
+			{
+				if (first == null)
+				{
+					first = faceEdge.ID.ToString();
+				}
+				else
+				{
+					totalDebug.Append(faceEdge.ID + ", ");
+				}
+			}
+			// show the first one last as it is the this and we want it to print as last.
+			totalDebug.Append(first + "\n");
 		}
 	}
 }

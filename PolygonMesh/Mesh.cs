@@ -41,13 +41,15 @@ namespace MatterHackers.PolygonMesh
 
 	public enum SortOption { SortNow, WillSortLater };
 
-	[DebuggerDisplay("ID = {Data.ID}")]
+	[DebuggerDisplay("ID = {ID}")]
 	public class Mesh
 	{
+		public Dictionary<(Face, int), ImageBuffer> FaceTexture = new Dictionary<(Face, int), ImageBuffer>();
+		public Dictionary<(FaceEdge, int), Vector2> TextureUV = new Dictionary<(FaceEdge, int), Vector2>();
+		private static Dictionary<object, int> Ids = new Dictionary<object, int>();
+		private static int nextIdToUse = 0;
 		private AxisAlignedBoundingBox fastAABBCache;
 		private Matrix4X4 fastAABBTransform = Matrix4X4.Identity;
-		public Dictionary<(FaceEdge, int), Vector2> TextureUV = new Dictionary<(FaceEdge, int), Vector2>();
-		public Dictionary<(Face, int), ImageBuffer> FaceTexture = new Dictionary<(Face, int), ImageBuffer>();
 
 		private AxisAlignedBoundingBox cachedAABB = null;
 
@@ -57,9 +59,9 @@ namespace MatterHackers.PolygonMesh
 
 		public int ChangedCount { get; private set; } = 0;
 
-		public MetaData Data =>  MetaData.Get(this);
-
 		public List<Face> Faces { get; } = new List<Face>();
+
+		public int ID { get { return GetID(this); } }
 
 		public List<MeshEdge> MeshEdges { get; private set; } = new List<MeshEdge>();
 
@@ -86,7 +88,7 @@ namespace MatterHackers.PolygonMesh
 				{
 					IVertex vertexToCopy = meshToCopy.Vertices[vertexIndex];
 					// !!!! ON ERROR !!!!! If this throws an error, you likely need to CleanAndMergMesh the mesh before copying
-					int indexOfFirstMeshEdge = meshEdgeIndexDictionary[vertexToCopy.FirstMeshEdge.Data.ID];
+					int indexOfFirstMeshEdge = meshEdgeIndexDictionary[vertexToCopy.FirstMeshEdge.ID];
 					IVertex newVertex = newMesh.Vertices[vertexIndex];
 					newVertex.FirstMeshEdge = newMesh.MeshEdges[indexOfFirstMeshEdge];
 					newVertex.Normal = vertexToCopy.Normal;
@@ -98,8 +100,8 @@ namespace MatterHackers.PolygonMesh
 					MeshEdge meshEdgeToCopy = meshToCopy.MeshEdges[meshEdgeIndex];
 					MeshEdge newMeshEdge = newMesh.MeshEdges[meshEdgeIndex];
 
-					newMeshEdge.NextMeshEdgeFromEnd[0] = newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeToCopy.NextMeshEdgeFromEnd[0].Data.ID]];
-					newMeshEdge.NextMeshEdgeFromEnd[1] = newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeToCopy.NextMeshEdgeFromEnd[1].Data.ID]];
+					newMeshEdge.NextMeshEdgeFromEnd[0] = newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeToCopy.NextMeshEdgeFromEnd[0].ID]];
+					newMeshEdge.NextMeshEdgeFromEnd[1] = newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeToCopy.NextMeshEdgeFromEnd[1].ID]];
 
 					newMeshEdge.VertexOnEnd[0] = newMesh.Vertices[vertexIndexDictionary[meshEdgeToCopy.VertexOnEnd[0].ID]];
 					newMeshEdge.VertexOnEnd[1] = newMesh.Vertices[vertexIndexDictionary[meshEdgeToCopy.VertexOnEnd[1].ID]];
@@ -133,11 +135,11 @@ namespace MatterHackers.PolygonMesh
 					{
 						MeshEdge meshEdgeFromCopy = verticesFromCopy[i].GetMeshEdgeConnectedToVertex(verticesFromCopy[i + 1]);
 						edgesFromCopy.Add(meshEdgeFromCopy);
-						edgesForNew.Add(newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeFromCopy.Data.ID]]);
+						edgesForNew.Add(newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeFromCopy.ID]]);
 					}
 					MeshEdge lastMeshEdgeFromCopy = verticesFromCopy[verticesFromCopy.Count - 1].GetMeshEdgeConnectedToVertex(verticesFromCopy[0]);
 					edgesFromCopy.Add(lastMeshEdgeFromCopy);
-					edgesForNew.Add(newMesh.MeshEdges[meshEdgeIndexDictionary[lastMeshEdgeFromCopy.Data.ID]]);
+					edgesForNew.Add(newMesh.MeshEdges[meshEdgeIndexDictionary[lastMeshEdgeFromCopy.ID]]);
 
 					CreateFaceEdges(verticesForNew.ToArray(), edgesForNew, newface);
 				}
@@ -164,6 +166,18 @@ namespace MatterHackers.PolygonMesh
 			newMaterialData.ExtruderIndex = materialDataToCopy.ExtruderIndex;
 
 			return newMesh;
+		}
+
+		public static int GetID(object item)
+		{
+			int id;
+			if (!Ids.TryGetValue(item, out id))
+			{
+				id = nextIdToUse++;
+				Ids.Add(item, id);
+			}
+
+			return id;
 		}
 
 		public void CleanAndMergMesh(CancellationToken cancellationToken, double maxDistanceToConsiderVertexAsSame = 0, Action<double, string> reportProgress = null)
@@ -204,7 +218,7 @@ namespace MatterHackers.PolygonMesh
 			if (!(obj is Mesh))
 				return false;
 
-			return this.Equals((Matrix4X4)obj);
+			return this.Equals((Mesh)obj);
 		}
 
 		public bool Equals(Mesh other)
@@ -345,7 +359,7 @@ namespace MatterHackers.PolygonMesh
 			for (int edgeIndex = 0; edgeIndex < meshToCopy.MeshEdges.Count; edgeIndex++)
 			{
 				MeshEdge edgeToCopy = meshToCopy.MeshEdges[edgeIndex];
-				meshEdgeIndexDictionary.Add(edgeToCopy.Data.ID, edgeIndex);
+				meshEdgeIndexDictionary.Add(edgeToCopy.ID, edgeIndex);
 				newMesh.MeshEdges.Add(new MeshEdge());
 			}
 			return meshEdgeIndexDictionary;
@@ -370,7 +384,7 @@ namespace MatterHackers.PolygonMesh
 		public string GetConnectionInfoAsString()
 		{
 			StringBuilder totalDebug = new StringBuilder();
-			totalDebug.Append(String.Format("Mesh: {0}\n", Data.ID));
+			totalDebug.Append(String.Format("Mesh: {0}\n", ID));
 			foreach (IVertex vertex in Vertices)
 			{
 				totalDebug.Append(new string('\t', 1) + String.Format("Vertex: {0}\n", vertex.ID));
@@ -378,12 +392,12 @@ namespace MatterHackers.PolygonMesh
 			}
 			foreach (MeshEdge meshEdge in MeshEdges)
 			{
-				totalDebug.Append(new string('\t', 1) + String.Format("MeshEdge: {0}\n", meshEdge.Data.ID));
+				totalDebug.Append(new string('\t', 1) + String.Format("MeshEdge: {0}\n", meshEdge.ID));
 				meshEdge.AddDebugInfo(totalDebug, 2);
 			}
 			foreach (Face face in Faces)
 			{
-				totalDebug.Append(new string('\t', 1) + String.Format("Face: {0}\n", face.Data.ID));
+				totalDebug.Append(new string('\t', 1) + String.Format("Face: {0}\n", face.ID));
 				face.AddDebugInfo(totalDebug, 2);
 			}
 
@@ -1029,7 +1043,7 @@ namespace MatterHackers.PolygonMesh
 		public Face CreateFace(int[] vertexIndexList, CreateOption createOption = CreateOption.ReuseExisting)
 		{
 			List<IVertex> vertexList = new List<IVertex>();
-			foreach(var index in vertexIndexList)
+			foreach (var index in vertexIndexList)
 			{
 				vertexList.Add(Vertices[index]);
 			}
