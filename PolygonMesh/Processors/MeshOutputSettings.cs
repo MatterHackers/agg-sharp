@@ -40,7 +40,6 @@ namespace MatterHackers.PolygonMesh.Processors
 
 		public OutputType OutputTypeSetting = OutputType.Binary;
 		public Dictionary<string, string> MetaDataKeyValue = new Dictionary<string, string>();
-		public List<int> ExtruderIndexesToSave = null;
 		public CsgOption CsgOptionState = CsgOption.SimpleInsertVolumes;
 
 		public Action<double, string> ReportProgress { get; set; }

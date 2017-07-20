@@ -166,22 +166,18 @@ namespace MatterHackers.DataConverters3D
 				{
 					foreach (Mesh mesh in meshGroup.Meshes)
 					{
-						int extruderIndexIntdex = MeshExtruderData.Get(mesh).ExtruderIndex;
-						if (outputInfo.ExtruderIndexesToSave == null || outputInfo.ExtruderIndexesToSave.Contains(extruderIndexIntdex))
+						foreach (Face face in mesh.Faces)
 						{
-							foreach (Face face in mesh.Faces)
+							List<IVertex> faceVertices = new List<IVertex>();
+							foreach (FaceEdge faceEdgeToAdd in face.FaceEdges())
 							{
-								List<IVertex> faceVertices = new List<IVertex>();
-								foreach (FaceEdge faceEdgeToAdd in face.FaceEdges())
-								{
-									// we allow duplicates (the true) to make sure we are not changing the loaded models accuracy.
-									IVertex newVertex = allPolygons.CreateVertex(faceEdgeToAdd.FirstVertex.Position, CreateOption.CreateNew, SortOption.WillSortLater);
-									faceVertices.Add(newVertex);
-								}
-
 								// we allow duplicates (the true) to make sure we are not changing the loaded models accuracy.
-								allPolygons.CreateFace(faceVertices.ToArray(), CreateOption.CreateNew);
+								IVertex newVertex = allPolygons.CreateVertex(faceEdgeToAdd.FirstVertex.Position, CreateOption.CreateNew, SortOption.WillSortLater);
+								faceVertices.Add(newVertex);
 							}
+
+							// we allow duplicates (the true) to make sure we are not changing the loaded models accuracy.
+							allPolygons.CreateFace(faceVertices.ToArray(), CreateOption.CreateNew);
 						}
 					}
 				}

@@ -49,32 +49,52 @@ namespace MatterHackers.DataConverters3D
 		public virtual string ActiveEditor { get; set; }
 		public List<IObject3D> Children { get; set; } = new List<IObject3D>();
 
-		public MeshGroup Flatten()
+		public MeshGroup Flatten(Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings = null)
 		{
-			return Flatten(this, new MeshGroup(), Matrix4X4.Identity, 0);
+			return Flatten(this, new MeshGroup(), Matrix4X4.Identity, meshPrintOutputSettings, this.ExtruderIndex, this.OutputType);
 		}
 
-		private static MeshGroup Flatten(IObject3D item, MeshGroup meshGroup, Matrix4X4 totalTransform, int extruderIndex, Action<double, string> progress = null)
+		private static MeshGroup Flatten(IObject3D item, MeshGroup meshGroup, Matrix4X4 totalTransform, 
+			Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings, 
+			int overrideExtruderIndex, PrintOutputTypes overridePrintType)
 		{
 			totalTransform = item.Matrix * totalTransform;
 
-			if (item.ExtruderIndex != -1)
+			// if the override is set to a value other than -1 than we need to set every child mesh on down to this extruder / setting
+			if (overrideExtruderIndex == -1 
+				&& item.ExtruderIndex != -1)
 			{
-				extruderIndex = item.ExtruderIndex;
+				overrideExtruderIndex = item.ExtruderIndex;
 			}
 
-			if (item.Mesh  != null)
+			if(overridePrintType != PrintOutputTypes.Default
+				&& item.OutputType != PrintOutputTypes.Default)
 			{
-				var mesh = Mesh.Copy(item.Mesh, CancellationToken.None, progress);
+				overridePrintType = item.OutputType;
+			}
+
+			if (item.Mesh != null)
+			{
+				var mesh = Mesh.Copy(item.Mesh, CancellationToken.None);
 				mesh.Transform(totalTransform);
 				meshGroup.Meshes.Add(mesh);
-				var material = MeshExtruderData.Get(mesh);
-				material.ExtruderIndex = extruderIndex;
+				if (meshPrintOutputSettings != null)
+				{
+					if (!meshPrintOutputSettings.ContainsKey(mesh))
+					{
+						meshPrintOutputSettings.Add(mesh, new MeshPrintOutputSettings());
+					}
+					var material = meshPrintOutputSettings[mesh];
+
+					// If we are not setting an extruder we are on the first extruder
+					material.ExtruderIndex = overrideExtruderIndex == -1 ? 0 : overrideExtruderIndex;
+					material.PrintOutputTypes = overridePrintType == PrintOutputTypes.Default ? PrintOutputTypes.Solid : overridePrintType;
+				}
 			}
 
 			foreach (IObject3D child in item.Children.Where(child => child.Visible))
 			{
-				Flatten(child, meshGroup, totalTransform, extruderIndex, progress);
+				Flatten(child, meshGroup, totalTransform, meshPrintOutputSettings, overrideExtruderIndex, overridePrintType);
 			}
 
 			return meshGroup;
@@ -89,7 +109,7 @@ namespace MatterHackers.DataConverters3D
 
 		public Object3DTypes ItemType { get; set; } = Object3DTypes.Model;
 
-		public Behavior3DTypes BehaviorType { get; set; } = Behavior3DTypes.Solid;
+		public PrintOutputTypes OutputType { get; set; } = PrintOutputTypes.Default;
 
 		public Matrix4X4 Matrix { get; set; } = Matrix4X4.Identity;
 
