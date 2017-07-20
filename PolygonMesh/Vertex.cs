@@ -38,7 +38,7 @@ namespace MatterHackers.PolygonMesh
 	[DebuggerDisplay("ID = {ID} | XYZ = {Position}")]
 	public class Vertex : IVertex
 	{
-		public int ID { get { return Mesh.GetID(this); } }
+		public int ID => Mesh.GetID(this);
 
 #if false
         public Vector3 Position { get; set; }

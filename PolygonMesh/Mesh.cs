@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Threading;
+using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.VectorMath;
 
@@ -46,7 +47,9 @@ namespace MatterHackers.PolygonMesh
 	{
 		public Dictionary<(Face, int), ImageBuffer> FaceTexture = new Dictionary<(Face, int), ImageBuffer>();
 		public Dictionary<(FaceEdge, int), Vector2> TextureUV = new Dictionary<(FaceEdge, int), Vector2>();
-		private static Dictionary<object, int> Ids = new Dictionary<object, int>();
+
+		private static Dictionary<object, int> Ids = new Dictionary<object, int>(ReferenceEqualityComparer.Default);
+
 		private static int nextIdToUse = 0;
 		private AxisAlignedBoundingBox fastAABBCache;
 		private Matrix4X4 fastAABBTransform = Matrix4X4.Identity;
@@ -61,7 +64,7 @@ namespace MatterHackers.PolygonMesh
 
 		public List<Face> Faces { get; } = new List<Face>();
 
-		public int ID { get { return GetID(this); } }
+		public int ID => Mesh.GetID(this);
 
 		public List<MeshEdge> MeshEdges { get; private set; } = new List<MeshEdge>();
 
