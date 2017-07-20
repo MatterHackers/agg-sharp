@@ -38,13 +38,7 @@ namespace MatterHackers.PolygonMesh
 	[DebuggerDisplay("ID = {ID} | XYZ = {Position}")]
 	public class Vertex : IVertex
 	{
-		public MetaData Data
-		{
-			get
-			{
-				return MetaData.Get(this);
-			}
-		}
+		public int ID { get { return Mesh.GetID(this); } }
 
 #if false
         public Vector3 Position { get; set; }
@@ -53,8 +47,6 @@ namespace MatterHackers.PolygonMesh
 
 		// this is to save memory on each vertex (12 bytes per positon and 12 per normal rather than 24 and 24)
 		private Vector3Float position;
-
-		public int ID { get { return Data.ID; } }
 
 		public Vector3 Position
 		{
@@ -107,7 +99,7 @@ namespace MatterHackers.PolygonMesh
 			int firstMeshEdgeID = -1;
 			if (FirstMeshEdge != null)
 			{
-				firstMeshEdgeID = FirstMeshEdge.Data.ID;
+				firstMeshEdgeID = FirstMeshEdge.ID;
 			}
 			totalDebug.Append(new string('\t', numTabs) + String.Format("First MeshEdge: {0}\n", firstMeshEdgeID));
 			if (FirstMeshEdge != null)

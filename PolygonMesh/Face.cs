@@ -27,75 +27,36 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.Image;
-using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using MatterHackers.Agg.Image;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh
 {
 	[DebuggerDisplay("ID = {Data.ID}")]
 	public class Face
 	{
-		public Mesh ContainingMesh { get; }
-
-		public MetaData Data
-		{
-			get
-			{
-				return MetaData.Get(this);
-			}
-		}
-
 		public FaceEdge firstFaceEdge;
 		public Vector3 normal;
-
-		// number of boundaries
-		// matterial
 
 		public Face(Mesh containingMesh)
 		{
 			this.ContainingMesh = containingMesh;
 		}
 
+		// number of boundaries
+		// matterial
 		public Face(Face faceToUseAsModel, Mesh containingMesh)
 			: this(containingMesh)
 		{
 		}
 
-		public void SetTexture(int index, ImageBuffer image)
-		{
-			if (image == null)
-			{
-				if (ContainingMesh.FaceTexture.ContainsKey((this, index)))
-				{
-					ContainingMesh.FaceTexture.Remove((this, index));
-				}
-			}
-			else
-			{
-				ContainingMesh.FaceTexture[(this, index)] = image;
-			}
-		}
+		public Mesh ContainingMesh { get; }
 
-		public ImageBuffer GetTexture(int index)
-		{
-			ImageBuffer image;
-			if (ContainingMesh.FaceTexture.TryGetValue((this, index), out image))
-			{
-				return image;
-			}
-
-			return null;
-		}
-
-		public void AddDebugInfo(StringBuilder totalDebug, int numTabs)
-		{
-			totalDebug.Append(new string('\t', numTabs) + String.Format("First FaceEdge: {0}\n", firstFaceEdge.Data.ID));
-			firstFaceEdge.AddDebugInfo(totalDebug, numTabs + 1);
-		}
+		public int ID { get { return Mesh.GetID(this); } }
 
 		public int NumVertices
 		{
@@ -112,179 +73,10 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		private double GetXIntersept(Vector2 prevPosition, Vector2 position, double y)
+		public void AddDebugInfo(StringBuilder totalDebug, int numTabs)
 		{
-			return position.x - (position.y - y) * (prevPosition.x - position.x) / (prevPosition.y - position.y);
-		}
-
-		private int WrapQuadrantDelta(int delta, Vector2 prevPosition, Vector2 position, double x, double y)
-		{
-			switch (delta)
-			{
-				// make quadrant deltas wrap around
-				case 3:
-					return -1;
-
-				case -3:
-					return 1;
-
-				// check if went around point cw or ccw
-				case 2:
-				case -2:
-					if (GetXIntersept(prevPosition, position, y) > x)
-					{
-						return -delta;
-					}
-					break;
-			}
-
-			return delta;
-		}
-
-		private int GetQuadrant(Vector2 positionToGetQuadantFor, double x, double y)
-		{
-			if (positionToGetQuadantFor.x > x)
-			{
-				if (positionToGetQuadantFor.y > y)
-				{
-					return 0;
-				}
-				else
-				{
-					return 3;
-				}
-			}
-			else
-			{
-				if (positionToGetQuadantFor.y > y)
-				{
-					return 1;
-				}
-				else
-				{
-					return 2;
-				}
-			}
-		}
-
-		public IEnumerable<IVertex> Vertices()
-		{
-			foreach (FaceEdge faceEdge in FaceEdges())
-			{
-				yield return faceEdge.FirstVertex;
-			}
-		}
-
-		public IEnumerable<FaceEdge> FaceEdges()
-		{
-			return firstFaceEdge.NextFaceEdges();
-		}
-
-		/// <summary>
-		/// Check if a point is inside the face at a given position.
-		/// </summary>
-		/// <param name="polyPlaneIntersection"></param>
-		/// <returns></returns>
-		public bool PointInPoly(Vector3 polyPlaneIntersection)
-		{
-			int axisOfProjection = GetMajorAxis();
-
-			int xIndex, yIndex;
-			GetAxisIndices(axisOfProjection, out xIndex, out yIndex);
-
-			// calculate the major axis of this face
-			return PointInPoly(polyPlaneIntersection[xIndex], polyPlaneIntersection[yIndex], axisOfProjection);
-        }
-
-		private int GetMajorAxis()
-		{
-			if (firstFaceEdge?.FirstVertex != null
-                && firstFaceEdge?.nextFaceEdge?.FirstVertex != null)
-			{
-				Vector3 position0 = firstFaceEdge.FirstVertex.Position;
-				Vector3 position1 = firstFaceEdge.nextFaceEdge.FirstVertex.Position;
-				Vector3 delta = position1 - position0;
-				delta.x = Math.Abs(delta.x);
-				delta.y = Math.Abs(delta.y);
-				delta.z = Math.Abs(delta.z);
-				if (delta.x < delta.y && delta.x < delta.z)
-				{
-					// x smallest
-					return 0;
-				}
-				else if(delta.y < delta.x && delta.y < delta.z)
-				{
-					return 1;
-				}
-			}
-
-			return 2;
-        }
-
-		/// <summary>
-		/// Check if a point is inside the face at a given position in x, y or z
-		/// </summary>
-		/// <param name="x"></param>
-		/// <param name="y"></param>
-		/// <param name="axisOfProjection"></param>
-		/// <returns></returns>
-		public bool PointInPoly(double x, double y, int axisOfProjection)
-		{
-			int xIndex, yIndex;
-			GetAxisIndices(axisOfProjection, out xIndex, out yIndex);
-
-			int accumulatedQuadrantAngle = 0;
-			int prevQuadrant = 0;
-			Vector2 prevPosition = Vector2.Zero;
-			bool foundFirst = false;
-			Vector2 firstPosition = Vector2.Zero;
-			int quadrant = 0;
-            foreach (IVertex vertex in Vertices())
-			{
-				Vector2 position = new Vector2(vertex.Position[xIndex], vertex.Position[yIndex]);
-				quadrant = GetQuadrant(position, x, y);
-
-				if (foundFirst)
-				{
-					accumulatedQuadrantAngle += WrapQuadrantDelta(quadrant - prevQuadrant, prevPosition, position, x, y);
-				}
-				else
-				{
-					firstPosition = position;
-					foundFirst = true;
-				}
-
-				prevPosition = position;
-				prevQuadrant = quadrant;
-			}
-
-			quadrant = GetQuadrant(firstPosition, x, y);
-			accumulatedQuadrantAngle += WrapQuadrantDelta(quadrant - prevQuadrant, prevPosition, firstPosition, x, y);
-
-			// complete 360 degrees (angle of + 4 or -4 ) means inside
-			if ((accumulatedQuadrantAngle == 4) || (accumulatedQuadrantAngle == -4))
-			{
-				return true;
-			}
-
-			return false;
-		}
-
-		private static void GetAxisIndices(int axisOfProjection, out int xIndex, out int yIndex)
-		{
-			// set the major axis of projection (defaults to z)
-			xIndex = 0;
-			yIndex = 1;
-			if (axisOfProjection == 0) // x
-			{
-				xIndex = 1;
-				yIndex = 2;
-			}
-			else if (axisOfProjection == 1) // y
-			{
-				xIndex = 0;
-				yIndex = 2;
-			}
+			totalDebug.Append(new string('\t', numTabs) + String.Format("First FaceEdge: {0}\n", firstFaceEdge.ID));
+			firstFaceEdge.AddDebugInfo(totalDebug, numTabs + 1);
 		}
 
 		public void CalculateNormal()
@@ -316,39 +108,42 @@ namespace MatterHackers.PolygonMesh
 			return true;
 		}
 
-		public void Validate()
+		public IEnumerable<FaceEdge> FaceEdges()
 		{
-			List<FaceEdge> nextList = new List<FaceEdge>();
-			foreach (FaceEdge faceEdge in firstFaceEdge.NextFaceEdges())
+			return firstFaceEdge.NextFaceEdges();
+		}
+
+		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
+		{
+			AxisAlignedBoundingBox aabb = AxisAlignedBoundingBox.Empty;
+			foreach (FaceEdge faceEdge in FaceEdges())
 			{
-				nextList.Add(faceEdge);
+				aabb = AxisAlignedBoundingBox.Union(aabb, faceEdge.FirstVertex.Position);
 			}
 
-			int index = nextList.Count;
-			foreach (FaceEdge faceEdge in firstFaceEdge.PrevFaceEdges())
+			return aabb;
+		}
+
+		public Vector3 GetCenter()
+		{
+			bool first = true;
+			Vector3 accumulatedPosition = Vector3.Zero;
+			int count = 0;
+			foreach (FaceEdge faceEdge in FaceEdges())
 			{
-				int validIndex = (index--) % nextList.Count;
-				if (faceEdge != nextList[validIndex])
+				count++;
+				if (first)
 				{
-					throw new Exception("The next and prev sets must be mirrors.");
+					accumulatedPosition = faceEdge.FirstVertex.Position;
+					first = false;
+				}
+				else
+				{
+					accumulatedPosition += faceEdge.FirstVertex.Position;
 				}
 			}
 
-			nextList.Clear();
-			foreach (FaceEdge faceEdge in firstFaceEdge.RadialNextFaceEdges())
-			{
-				nextList.Add(faceEdge);
-			}
-
-			index = nextList.Count;
-			foreach (FaceEdge faceEdge in firstFaceEdge.RadialPrevFaceEdges())
-			{
-				int validIndex = (index--) % nextList.Count;
-				if (faceEdge != nextList[validIndex])
-				{
-					throw new Exception("The next and prev sets must be mirrors.");
-				}
-			}
+			return accumulatedPosition / count;
 		}
 
 		public bool GetCutLine(Plane cutPlane, out Vector3 start, out Vector3 end)
@@ -428,37 +223,235 @@ namespace MatterHackers.PolygonMesh
 			return false;
 		}
 
-		public Vector3 GetCenter()
+		public ImageBuffer GetTexture(int index)
 		{
-			bool first = true;
-			Vector3 accumulatedPosition = Vector3.Zero;
-			int count = 0;
-			foreach (FaceEdge faceEdge in FaceEdges())
+			ImageBuffer image;
+			if (ContainingMesh.FaceTexture.TryGetValue((this, index), out image))
 			{
-				count++;
-				if (first)
+				return image;
+			}
+
+			return null;
+		}
+
+		/// <summary>
+		/// Check if a point is inside the face at a given position.
+		/// </summary>
+		/// <param name="polyPlaneIntersection"></param>
+		/// <returns></returns>
+		public bool PointInPoly(Vector3 polyPlaneIntersection)
+		{
+			int axisOfProjection = GetMajorAxis();
+
+			int xIndex, yIndex;
+			GetAxisIndices(axisOfProjection, out xIndex, out yIndex);
+
+			// calculate the major axis of this face
+			return PointInPoly(polyPlaneIntersection[xIndex], polyPlaneIntersection[yIndex], axisOfProjection);
+		}
+
+		/// <summary>
+		/// Check if a point is inside the face at a given position in x, y or z
+		/// </summary>
+		/// <param name="x"></param>
+		/// <param name="y"></param>
+		/// <param name="axisOfProjection"></param>
+		/// <returns></returns>
+		public bool PointInPoly(double x, double y, int axisOfProjection)
+		{
+			int xIndex, yIndex;
+			GetAxisIndices(axisOfProjection, out xIndex, out yIndex);
+
+			int accumulatedQuadrantAngle = 0;
+			int prevQuadrant = 0;
+			Vector2 prevPosition = Vector2.Zero;
+			bool foundFirst = false;
+			Vector2 firstPosition = Vector2.Zero;
+			int quadrant = 0;
+			foreach (IVertex vertex in Vertices())
+			{
+				Vector2 position = new Vector2(vertex.Position[xIndex], vertex.Position[yIndex]);
+				quadrant = GetQuadrant(position, x, y);
+
+				if (foundFirst)
 				{
-					accumulatedPosition = faceEdge.FirstVertex.Position;
-					first = false;
+					accumulatedQuadrantAngle += WrapQuadrantDelta(quadrant - prevQuadrant, prevPosition, position, x, y);
 				}
 				else
 				{
-					accumulatedPosition += faceEdge.FirstVertex.Position;
+					firstPosition = position;
+					foundFirst = true;
+				}
+
+				prevPosition = position;
+				prevQuadrant = quadrant;
+			}
+
+			quadrant = GetQuadrant(firstPosition, x, y);
+			accumulatedQuadrantAngle += WrapQuadrantDelta(quadrant - prevQuadrant, prevPosition, firstPosition, x, y);
+
+			// complete 360 degrees (angle of + 4 or -4 ) means inside
+			if ((accumulatedQuadrantAngle == 4) || (accumulatedQuadrantAngle == -4))
+			{
+				return true;
+			}
+
+			return false;
+		}
+
+		public void SetTexture(int index, ImageBuffer image)
+		{
+			if (image == null)
+			{
+				if (ContainingMesh.FaceTexture.ContainsKey((this, index)))
+				{
+					ContainingMesh.FaceTexture.Remove((this, index));
+				}
+			}
+			else
+			{
+				ContainingMesh.FaceTexture[(this, index)] = image;
+			}
+		}
+
+		public void Validate()
+		{
+			List<FaceEdge> nextList = new List<FaceEdge>();
+			foreach (FaceEdge faceEdge in firstFaceEdge.NextFaceEdges())
+			{
+				nextList.Add(faceEdge);
+			}
+
+			int index = nextList.Count;
+			foreach (FaceEdge faceEdge in firstFaceEdge.PrevFaceEdges())
+			{
+				int validIndex = (index--) % nextList.Count;
+				if (faceEdge != nextList[validIndex])
+				{
+					throw new Exception("The next and prev sets must be mirrors.");
 				}
 			}
 
-			return accumulatedPosition / count;
+			nextList.Clear();
+			foreach (FaceEdge faceEdge in firstFaceEdge.RadialNextFaceEdges())
+			{
+				nextList.Add(faceEdge);
+			}
+
+			index = nextList.Count;
+			foreach (FaceEdge faceEdge in firstFaceEdge.RadialPrevFaceEdges())
+			{
+				int validIndex = (index--) % nextList.Count;
+				if (faceEdge != nextList[validIndex])
+				{
+					throw new Exception("The next and prev sets must be mirrors.");
+				}
+			}
 		}
 
-		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
+		public IEnumerable<IVertex> Vertices()
 		{
-			AxisAlignedBoundingBox aabb = AxisAlignedBoundingBox.Empty;
 			foreach (FaceEdge faceEdge in FaceEdges())
 			{
-				aabb = AxisAlignedBoundingBox.Union(aabb, faceEdge.FirstVertex.Position);
-            }
+				yield return faceEdge.FirstVertex;
+			}
+		}
 
-			return aabb;
+		private static void GetAxisIndices(int axisOfProjection, out int xIndex, out int yIndex)
+		{
+			// set the major axis of projection (defaults to z)
+			xIndex = 0;
+			yIndex = 1;
+			if (axisOfProjection == 0) // x
+			{
+				xIndex = 1;
+				yIndex = 2;
+			}
+			else if (axisOfProjection == 1) // y
+			{
+				xIndex = 0;
+				yIndex = 2;
+			}
+		}
+
+		private int GetMajorAxis()
+		{
+			if (firstFaceEdge?.FirstVertex != null
+				&& firstFaceEdge?.nextFaceEdge?.FirstVertex != null)
+			{
+				Vector3 position0 = firstFaceEdge.FirstVertex.Position;
+				Vector3 position1 = firstFaceEdge.nextFaceEdge.FirstVertex.Position;
+				Vector3 delta = position1 - position0;
+				delta.x = Math.Abs(delta.x);
+				delta.y = Math.Abs(delta.y);
+				delta.z = Math.Abs(delta.z);
+				if (delta.x < delta.y && delta.x < delta.z)
+				{
+					// x smallest
+					return 0;
+				}
+				else if (delta.y < delta.x && delta.y < delta.z)
+				{
+					return 1;
+				}
+			}
+
+			return 2;
+		}
+
+		private int GetQuadrant(Vector2 positionToGetQuadantFor, double x, double y)
+		{
+			if (positionToGetQuadantFor.x > x)
+			{
+				if (positionToGetQuadantFor.y > y)
+				{
+					return 0;
+				}
+				else
+				{
+					return 3;
+				}
+			}
+			else
+			{
+				if (positionToGetQuadantFor.y > y)
+				{
+					return 1;
+				}
+				else
+				{
+					return 2;
+				}
+			}
+		}
+
+		private double GetXIntersept(Vector2 prevPosition, Vector2 position, double y)
+		{
+			return position.x - (position.y - y) * (prevPosition.x - position.x) / (prevPosition.y - position.y);
+		}
+
+		private int WrapQuadrantDelta(int delta, Vector2 prevPosition, Vector2 position, double x, double y)
+		{
+			switch (delta)
+			{
+				// make quadrant deltas wrap around
+				case 3:
+					return -1;
+
+				case -3:
+					return 1;
+
+				// check if went around point cw or ccw
+				case 2:
+				case -2:
+					if (GetXIntersept(prevPosition, position, y) > x)
+					{
+						return -delta;
+					}
+					break;
+			}
+
+			return delta;
 		}
 	}
 }
