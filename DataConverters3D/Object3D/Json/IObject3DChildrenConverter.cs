@@ -37,8 +37,6 @@ namespace MatterHackers.DataConverters3D
 {
 	public interface IMappingType
 	{
-		string TypeName { get; }
-		string FullTypeName { get; }
 	}
 
 	public class IObject3DChildrenConverter : JsonConverter
@@ -60,10 +58,9 @@ namespace MatterHackers.DataConverters3D
 						["OpenSCADObject3D"] = "MatterHackers.MatterControl.PartPreviewWindow.OpenSCADObject3D,EditorTools",
 					};
 
-					PluginFinder<IMappingType> mappingTypesPlugin = new PluginFinder<IMappingType>();
-					foreach (IMappingType mappingType in mappingTypesPlugin.Plugins)
+					foreach (var type in PluginFinder.FindTypes<IMappingType>())
 					{
-						mappingTypesCache.Add(mappingType.TypeName, mappingType.FullTypeName);
+						mappingTypesCache.Add(type.Name, type.FullName);
 					}
 				}
 

@@ -57,14 +57,14 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
                         availableFactories.Add("Raw", new FrostedSerialPortFactory());
 
                         // add in any plugins that we find with other factories.
-                        PluginFinder<FrostedSerialPortFactory> pluginFinder = new PluginFinder<FrostedSerialPortFactory>();
+                        var portFactories = PluginFinder.CreateInstancesOf<FrostedSerialPortFactory>();
 
-                        foreach (FrostedSerialPortFactory plugin in pluginFinder.Plugins)
+                        foreach (FrostedSerialPortFactory plugin in portFactories)
                         {
                             availableFactories.Add(plugin.GetDriverType(), plugin);
                         }
 
-                        // If we did not finde a RepRap driver add the default.
+                        // If we did not find a RepRap driver add the default.
                         if (!availableFactories.ContainsKey("RepRap"))
                         {
                             availableFactories.Add("RepRap", new FrostedSerialPortFactory());

@@ -44,13 +44,13 @@ namespace MatterHackers.Agg.PlatformAbstract
 				if (imageIOPlugin == null)
 				{
 					string pluginPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-					PluginFinder<ImageIOPlugin> imageIOPlugins = new PluginFinder<ImageIOPlugin>(pluginPath);
-					if (imageIOPlugins.Plugins.Count != 1)
+					var imageIOPlugins = PluginFinder.CreateInstancesOf<ImageIOPlugin>();
+					if (imageIOPlugins.Count != 1)
 					{
 						throw new Exception(string.Format("Did not find any ImageIOPlugins in Plugin path ({0}.", pluginPath));
 					}
 
-					imageIOPlugin = imageIOPlugins.Plugins[0];
+					imageIOPlugin = imageIOPlugins[0];
 				}
 
 				return imageIOPlugin;
