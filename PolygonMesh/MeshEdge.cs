@@ -57,7 +57,7 @@ namespace MatterHackers.PolygonMesh
 			AddToMeshEdgeLinksOfVertex(vertex2);
 		}
 
-		public int ID { get { return Mesh.GetID(this); } }
+		public int ID => Mesh.GetID(this);
 
 		public void AddDebugInfo(StringBuilder totalDebug, int numTabs)
 		{

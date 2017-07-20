@@ -56,7 +56,7 @@ namespace MatterHackers.PolygonMesh
 
 		public Mesh ContainingMesh { get; }
 
-		public int ID { get { return Mesh.GetID(this); } }
+		public int ID => Mesh.GetID(this);
 
 		public int NumVertices
 		{

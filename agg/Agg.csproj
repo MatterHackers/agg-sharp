@@ -191,6 +191,7 @@
     <Compile Include="Collections\UnboundCollection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QuickTimer.cs" />
+    <Compile Include="ReferenceEqualityComparer.cs" />
     <Compile Include="StatisticsTracker.cs" />
     <Compile Include="StringEventArgs.cs" />
     <Compile Include="TraceTiming.cs" />
