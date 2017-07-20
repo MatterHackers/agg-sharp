@@ -49,7 +49,6 @@ namespace MatterHackers.DataConverters3D
 		{
 			List<IPrimitive> renderCollection = new List<IPrimitive>();
 
-			SolidMaterial otherMaterial = new SolidMaterial(new RGBA_Floats(.1, .2, .9), .01, 0.0, 2.0);
 			if (partMaterial == null)
 			{
 				partMaterial = new SolidMaterial(new RGBA_Floats(.9, .2, .1), .01, 0.0, 2.0);
@@ -58,37 +57,15 @@ namespace MatterHackers.DataConverters3D
 			Vector3[] triangle = new Vector3[3];
 			foreach (Mesh mesh in meshGroup.Meshes)
 			{
-				int extruderIndex = MeshExtruderData.Get(mesh).ExtruderIndex;
 				foreach (Face face in mesh.Faces)
 				{
 					foreach (Vertex vertex in face.Vertices())
 					{
-						if (false)
+						triangle[index++] = vertex.Position;
+						if (index == 3)
 						{
-							if (extruderIndex == 0)
-							{
-								renderCollection.Add(new MeshFaceTraceable(face, partMaterial));
-							}
-							else
-							{
-								renderCollection.Add(new MeshFaceTraceable(face, otherMaterial));
-							}
-						}
-						else
-						{
-							triangle[index++] = vertex.Position;
-							if (index == 3)
-							{
-								index = 0;
-								if (extruderIndex == 0)
-								{
-									renderCollection.Add(new TriangleShape(triangle[0], triangle[1], triangle[2], partMaterial));
-								}
-								else
-								{
-									renderCollection.Add(new TriangleShape(triangle[0], triangle[1], triangle[2], otherMaterial));
-								}
-							}
+							index = 0;
+							renderCollection.Add(new TriangleShape(triangle[0], triangle[1], triangle[2], partMaterial));
 						}
 					}
 				}

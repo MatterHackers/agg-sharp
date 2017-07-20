@@ -137,7 +137,6 @@
     <Compile Include="Csg\CsgPlane.cs" />
     <Compile Include="Csg\CsgPolygon.cs" />
     <Compile Include="Csg\CsgProcessing.cs" />
-    <Compile Include="MeshMaterialData.cs" />
     <Compile Include="MeshGroup.cs" />
     <Compile Include="Csg\CsgOperations.cs">
       <SubType>Code</SubType>

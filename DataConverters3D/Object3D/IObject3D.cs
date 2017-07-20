@@ -46,8 +46,9 @@ namespace MatterHackers.DataConverters3D
 		GenericObject
 	};
 
-	public enum Behavior3DTypes
+	public enum PrintOutputTypes
 	{
+		Default,
 		Solid,
 		Hole,
 		Support
@@ -65,6 +66,12 @@ namespace MatterHackers.DataConverters3D
 		}
 	}
 
+	public class MeshPrintOutputSettings
+	{
+		public int ExtruderIndex { get; set; }
+		public PrintOutputTypes PrintOutputTypes { get; set; }
+	}
+
 	public interface IObject3D
 	{
 		string ActiveEditor { get; set; }
@@ -73,11 +80,11 @@ namespace MatterHackers.DataConverters3D
 		List<IObject3D> Children { get; set; }
 		RGBA_Bytes Color { get; set; }
 		int ExtruderIndex { get; set; }
-		MeshGroup Flatten();
+		MeshGroup Flatten(Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings = null);
 		bool HasChildren { get; }
 		Object3DTypes ItemType { get; set; }
 
-		Behavior3DTypes BehaviorType { get; set; }
+		PrintOutputTypes OutputType { get; set; }
 
 		[JsonConverter(typeof(MatrixConverter))]
 		Matrix4X4 Matrix { get; set; }
