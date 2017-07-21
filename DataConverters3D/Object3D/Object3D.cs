@@ -67,7 +67,7 @@ namespace MatterHackers.DataConverters3D
 				overrideExtruderIndex = item.ExtruderIndex;
 			}
 
-			if(overridePrintType != PrintOutputTypes.Default
+			if(overridePrintType == PrintOutputTypes.Default
 				&& item.OutputType != PrintOutputTypes.Default)
 			{
 				overridePrintType = item.OutputType;
