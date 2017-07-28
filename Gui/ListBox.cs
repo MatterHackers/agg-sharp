@@ -185,14 +185,7 @@ namespace MatterHackers.Agg.UI
 					settingLocalBounds = true;
 					if (topToBottomItemList != null)
 					{
-						if (VerticalScrollBar.Visible)
-						{
-							topToBottomItemList.Width = Math.Max(0, value.Width - ScrollArea.Padding.Width - topToBottomItemList.Margin.Width - VerticalScrollBar.Width);
-						}
-						else
-						{
-							topToBottomItemList.Width = Math.Max(0, value.Width - ScrollArea.Padding.Width - topToBottomItemList.Margin.Width);
-						}
+						topToBottomItemList.Width = Math.Max(0, value.Width - ScrollArea.Padding.Width - topToBottomItemList.Margin.Width - VerticalScrollBar.Width);
 					}
 
 					base.LocalBounds = value;
