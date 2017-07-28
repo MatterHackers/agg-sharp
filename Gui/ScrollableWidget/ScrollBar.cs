@@ -35,7 +35,7 @@ namespace MatterHackers.Agg.UI
 {
 	public class DefaultThumbView : GuiWidget
 	{
-		public RGBA_Bytes ThumbColor = RGBA_Bytes.DarkGray;
+		public static RGBA_Bytes ThumbColor = RGBA_Bytes.DarkGray;
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
@@ -46,9 +46,18 @@ namespace MatterHackers.Agg.UI
 		}
 	}
 
+	public class DefaultThumbBackground : GuiWidget
+	{
+		public static RGBA_Bytes DefaultBackgroundColor = RGBA_Bytes.LightGray;
+
+		public DefaultThumbBackground()
+		{
+			this.BackgroundColor = DefaultBackgroundColor;
+		}
+	}
+
 	public class ThumDragWidget : GuiWidget
 	{
-		private bool mouseDownOnThumb = false;
 		private Vector2 MouseDownPosition;
 		private Orientation orientation;
 
@@ -67,11 +76,7 @@ namespace MatterHackers.Agg.UI
 			base.OnBoundsChanged(e);
 		}
 
-		protected bool MouseDownOnThumb
-		{
-			get { return mouseDownOnThumb; }
-			set { mouseDownOnThumb = value; }
-		}
+		protected bool MouseDownOnThumb { get; set; }
 
 		override public void OnMouseDown(MouseEventArgs mouseEvent)
 		{
@@ -120,6 +125,8 @@ namespace MatterHackers.Agg.UI
 
 		public static double ScrollBarWidth = 15 * GuiWidget.DeviceScale;
 
+		public static BorderDouble DefaultMargin = 0;
+
 		public enum ShowState { Never, WhenRequired, Always };
 
 		private ShowState showState = ShowState.WhenRequired;
@@ -156,7 +163,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 		internal ScrollBar(ScrollableWidget parent, Orientation orientation = Orientation.Vertical)
-			: this(parent, new GuiWidget(), new DefaultThumbView(), orientation)
+			: this(parent, new DefaultThumbBackground(), new DefaultThumbView(), orientation)
 		{
 		}
 
@@ -168,12 +175,10 @@ namespace MatterHackers.Agg.UI
 			thumb = new ThumDragWidget(orientation);
 			thumb.AddChild(thumbView);
 
-			background.BackgroundColor = RGBA_Bytes.LightGray;
-
 			AddChild(background);
 			AddChild(thumb);
 
-			BackgroundColor = RGBA_Bytes.Blue;
+			this.Margin = ScrollBar.DefaultMargin;
 
 			ParentScrollWidget.BoundsChanged += new EventHandler(Parent_BoundsChanged);
 			ParentScrollWidget.ScrollArea.BoundsChanged += new EventHandler(ScrollArea_BoundsChanged);
@@ -237,18 +242,15 @@ namespace MatterHackers.Agg.UI
 					Vector2 scrollRatioFromTop0To1 = ParentScrollWidget.ScrollRatioFromTop0To1;
 					double notThumbHeight = ParentScrollWidget.Height - ThumbHeight;
 					thumb.OriginRelativeParent = new Vector2(0, notThumbHeight * scrollRatioFromTop0To1.y);
-
-					ParentScrollWidget.ScrollArea.Padding = new BorderDouble(0, 0, ScrollBar.ScrollBarWidth, 0);
-
 					break;
 
 				case ShowState.Never:
 					Visible = false;
-
-					ParentScrollWidget.ScrollArea.Padding = new BorderDouble(0, 0, 0, 0);
-
 					break;
 			}
+
+			// HACK: Workaround to fix problems with initial positioning - set padding on ScrollArea to force layout
+			this.ParentScrollWidget.ScrollArea.Padding = 0;
 		}
 
 		internal void MoveThumb(Vector2 deltaToMove)
