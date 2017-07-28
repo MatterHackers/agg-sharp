@@ -199,17 +199,15 @@ namespace MatterHackers.Agg.UI
 		private bool alignToRightEdge;
 		private GuiWidget contentWidget;
 		private Direction direction;
-		private bool firstTimeSizing = true;
+		private bool checkIfNeedScrollBar = true;
 		private HashSet<GuiWidget> hookedParents = new HashSet<GuiWidget>();
-		private Vector2 openOffset;
 		private PopupWidget popupWidget;
 
-		public PopupLayoutEngine(GuiWidget contentWidget, GuiWidget widgetRelativeTo, Vector2 openOffset, Direction direction, double maxHeight, bool alignToRightEdge)
+		public PopupLayoutEngine(GuiWidget contentWidget, GuiWidget widgetRelativeTo, Direction direction, double maxHeight, bool alignToRightEdge)
 		{
 			this.MaxHeight = maxHeight;
 			this.contentWidget = contentWidget;
 			this.alignToRightEdge = alignToRightEdge;
-			this.openOffset = openOffset;
 			this.direction = direction;
 			this.widgetRelativeTo = widgetRelativeTo;
 		}
@@ -277,58 +275,52 @@ namespace MatterHackers.Agg.UI
 		{
 			if (widgetRelativeTo != null)
 			{
-				Vector2 zero = widgetRelativeTo.OriginRelativeParent;
+				Vector2 bottomLeftScreenSpace = widgetRelativeTo.Position;
 				if (alignToRightEdge)
 				{
-					zero += new Vector2(widgetRelativeTo.LocalBounds.Left, widgetRelativeTo.LocalBounds.Bottom);
+					// adjust the offset to make it align to the right edged instead
+					bottomLeftScreenSpace -= new Vector2(popupWidget.Width - widgetRelativeTo.LocalBounds.Width, 0);
 				}
 
-				GuiWidget topParent = widgetRelativeTo.Parent;
-				while (topParent != null && topParent.Parent != null)
-				{
-					topParent.ParentToChildTransform.transform(ref zero);
-					topParent = topParent.Parent;
-				}
+				// actually transform it to screen space (use the parent because the position is in parent space and it would be double trasformed)
+				bottomLeftScreenSpace = widgetRelativeTo.Parent.TransformToScreenSpace(bottomLeftScreenSpace);
 
-				double alignmentOffset = 0;
-				if (alignToRightEdge)
+				// we only check for the scroll bar one time (the first time we open)
+				if (checkIfNeedScrollBar)
 				{
-					alignmentOffset = -popupWidget.Width + widgetRelativeTo.Width;
-				}
+					var minimumOpenDownHeight = 50;
 
-				if (firstTimeSizing)
-				{
-					var maxAllowed = 25;
-					double distanceToWindowBottom = zero.y - popupWidget.Height;
-					if (distanceToWindowBottom < 0)
+					// If the bottom of the popup is below the bottom of the screen
+					if (bottomLeftScreenSpace.y - popupWidget.LocalBounds.Height < 0)
 					{
-						if (popupWidget.Height + distanceToWindowBottom > maxAllowed)
-						{
-							popupWidget.MakeMenuHaveScroll(popupWidget.Height + distanceToWindowBottom - 5);
-						}
-						else
+						if (bottomLeftScreenSpace.y <= minimumOpenDownHeight)
 						{
 							direction = Direction.Up;
 						}
+						else
+						{
+							popupWidget.MakeMenuHaveScroll(bottomLeftScreenSpace.y - 5);
+						}
 					}
+
+					// We only check the first time we position the popup
+					checkIfNeedScrollBar = false;
 				}
 
 				switch (direction)
 				{
 					case Direction.Down:
-						popupWidget.OriginRelativeParent = zero + new Vector2(alignmentOffset, -popupWidget.Height) + openOffset;
+						popupWidget.Position = bottomLeftScreenSpace + new Vector2(0, -popupWidget.Height);
 						break;
 
 					case Direction.Up:
-						popupWidget.OriginRelativeParent = zero + new Vector2(alignmentOffset, widgetRelativeTo.Height) + openOffset;
+						popupWidget.Position = bottomLeftScreenSpace + new Vector2(0, widgetRelativeTo.Height);
 						break;
 
 					default:
 						throw new NotImplementedException();
 				}
 			}
-
-			firstTimeSizing = false;
 		}
 	}
 
@@ -336,8 +328,8 @@ namespace MatterHackers.Agg.UI
 	{
 		private List<MenuItem> MenuItems;
 
-		public PopupMenu(IEnumerable<MenuItem> MenuItems, GuiWidget popupContent, GuiWidget widgetRelativeTo, Vector2 openOffset, Direction direction, double maxHeight, bool alignToRightEdge, bool makeScrollable)
-			: base(popupContent, new PopupLayoutEngine(popupContent, widgetRelativeTo, openOffset, direction, maxHeight, alignToRightEdge), makeScrollable)
+		public PopupMenu(IEnumerable<MenuItem> MenuItems, GuiWidget popupContent, GuiWidget widgetRelativeTo, Direction direction, double maxHeight, bool alignToRightEdge, bool makeScrollable)
+			: base(popupContent, new PopupLayoutEngine(popupContent, widgetRelativeTo, direction, maxHeight, alignToRightEdge), makeScrollable)
 		{
 			this.Name = "_OpenMenuContents";
 			this.MenuItems = new List<MenuItem>();
