@@ -291,6 +291,7 @@ namespace MatterHackers.PolygonMesh
 			{
 				fastAABBTransform = Matrix4X4.Identity;
 				fastAABBTransform[0, 0] = double.MinValue;
+				cachedAABB = null;
 				ChangedCount++;
 			}
 		}
