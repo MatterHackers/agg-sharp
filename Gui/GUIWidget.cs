@@ -791,6 +791,41 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// The bottom left position of the widget in its parent space (or the logical/intuitive position).
+		/// </summary>
+		public Vector2 Position
+		{
+			get
+			{
+				var bounds = BoundsRelativeToParent;
+				return new Vector2(bounds.Left, bounds.Bottom);
+			}
+
+			set
+			{
+				var delta = value - Position;
+				OriginRelativeParent = OriginRelativeParent + delta;
+			}
+		}
+
+		/// <summary>
+		/// The width height of the control (its size!)
+		/// </summary>
+		public Vector2 Size
+		{
+			get
+			{
+				return new Vector2(LocalBounds.Width, LocalBounds.Height);
+			}
+
+			set
+			{
+				Width = value.x;
+				Height = value.y;
+			}
+		}
+
 		public virtual Vector2 OriginRelativeParent
 		{
 			get

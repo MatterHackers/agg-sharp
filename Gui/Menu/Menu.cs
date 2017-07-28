@@ -41,8 +41,6 @@ namespace MatterHackers.Agg.UI
 
 		public bool AlignToRightEdge { get; set; }
 
-		public Vector2 OpenOffset { get; set; }
-
 		public bool IsOpen { get; private set; } = false;
 
 		public Direction MenuDirection { get; private set; }
@@ -126,7 +124,7 @@ namespace MatterHackers.Agg.UI
 				topToBottom.AddChild(menu);
 			}
 
-			DropDownContainer = new PopupMenu(MenuItems, topToBottom, this, OpenOffset, MenuDirection, maxHeight, AlignToRightEdge, true)
+			DropDownContainer = new PopupMenu(MenuItems, topToBottom, this, MenuDirection, maxHeight, AlignToRightEdge, true)
 			{
 				BorderWidth = MenuItemsBorderWidth,
 				BorderColor = MenuItemsBorderColor,
