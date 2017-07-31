@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Processors;
@@ -203,6 +204,21 @@ namespace MatterHackers.MeshVisualizer
 			{
 				throw new Exception("Unable to select external object. Item must be in the scene to be selected.");
 			}
+		}
+
+		public void Load(string mcxPath)
+		{
+			var root = Object3D.Load(mcxPath, CancellationToken.None);
+
+			this.ModifyChildren((children) =>
+			{
+				children.Clear();
+
+				if (root != null)
+				{
+					children.AddRange(root.Children);
+				}
+			});
 		}
 	}
 }
