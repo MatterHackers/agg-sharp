@@ -265,13 +265,21 @@ namespace MatterHackers.DataConverters3D
 			return new Transform(traceData, Matrix);
 		}
 
-		public IEnumerable<MeshAndTransform> VisibleMeshes(Matrix4X4 transform)
+		public IEnumerable<MeshAndTransform> VisibleMeshes(Matrix4X4 transform, RGBA_Bytes color = default(RGBA_Bytes))
 		{
+			// If there is no color set yet and the object 3D is specifying a color
+			if (color.Alpha0To255 == 0
+				&& this.Color.Alpha0To255 != 0)
+			{
+				// use this as the color for all recursize children
+				color = this.Color;
+			}
+
 			Matrix4X4 totalTransform = this.Matrix * transform;
 
 			foreach (var child in Children)
 			{
-				foreach (var meshTransform in child.VisibleMeshes(totalTransform))
+				foreach (var meshTransform in child.VisibleMeshes(totalTransform, color))
 				{
 					yield return meshTransform;
 				}
@@ -279,7 +287,14 @@ namespace MatterHackers.DataConverters3D
 
 			if (this.Mesh != null)
 			{
-				yield return new MeshAndTransform(this.Mesh, totalTransform);
+				if (color.Alpha0To255 > 0)
+				{
+					yield return new MeshAndTransform(this.Mesh, totalTransform, color);
+				}
+				else
+				{
+					yield return new MeshAndTransform(this.Mesh, totalTransform, RGBA_Bytes.White);
+				}
 			}
 		}
 

@@ -69,7 +69,6 @@ namespace MatterHackers.RayTracer
 
 						return tracer.destImage;
 					}
-					break;
 
 				case RenderType.PERSPECTIVE:
 					{
@@ -91,7 +90,6 @@ namespace MatterHackers.RayTracer
 						thumbnail.SetRecieveBlender(new BlenderPreMultBGRA());
 						return thumbnail;
 					}
-					break;
 
 				case RenderType.NONE:
 				case RenderType.ORTHOGROPHIC:
@@ -102,7 +100,6 @@ namespace MatterHackers.RayTracer
 						// Force to all white and return
 						return thumbnail.AllWhite();
 					}
-					break;
 			}
 		}
 
