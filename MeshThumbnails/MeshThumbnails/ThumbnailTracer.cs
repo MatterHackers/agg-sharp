@@ -51,9 +51,7 @@ namespace MatterHackers.RayTracer
 
 		private Transform allObjectsHolder;
 
-		private List<MeshGroup> loadedMeshGroups;
-
-		private bool hasOneOrMoreValidMesh;
+		private List<MeshRenderData> loadedMeshDatas;
 
 		private List<IPrimitive> renderCollection = new List<IPrimitive>();
 		private Scene scene;
@@ -73,17 +71,9 @@ namespace MatterHackers.RayTracer
 
 			world = new WorldView(width, height);
 
-			loadedMeshGroups = item.ToMeshGroupList();
+			loadedMeshDatas = item.VisibleMeshes(Matrix4X4.Identity).ToList();
 
-			hasOneOrMoreValidMesh = loadedMeshGroups.SelectMany(mg => mg.Meshes).Where(mesh => mesh?.Faces.Count > 0).Any();
-			if (hasOneOrMoreValidMesh)
-			{
-				SetRenderPosition(loadedMeshGroups);
-			}
-			else
-			{
-				Console.WriteLine();
-			}
+			SetRenderPosition(loadedMeshDatas);
 		}
 
 		public bool MultiThreaded
@@ -94,12 +84,6 @@ namespace MatterHackers.RayTracer
 
 		public void TraceScene()
 		{
-			if (!hasOneOrMoreValidMesh)
-			{
-				destImage = null;
-				return;
-			}
-
 			CreateScene();
 
 			RectangleInt rect = new RectangleInt(0, 0, size.x, size.y);
@@ -112,7 +96,7 @@ namespace MatterHackers.RayTracer
 			rayTracer.CopyColorBufferToImage(destImage, rect);
 		}
 
-		public void SetRenderPosition(List<MeshGroup> loadedMeshGroups)
+		public void SetRenderPosition(List<MeshRenderData> renderDatas)
 		{
 			world.Reset();
 			world.Scale = .03;
@@ -120,7 +104,7 @@ namespace MatterHackers.RayTracer
 			world.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, MathHelper.Tau / 16)));
 			world.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
 
-			ScaleMeshToView(loadedMeshGroups);
+			ScaleMeshToView(renderDatas);
 		}
 
 		private void AddAFloor()
@@ -295,13 +279,13 @@ namespace MatterHackers.RayTracer
 			}
 		}
 		
-		AxisAlignedBoundingBox GetAxisAlignedBoundingBox(List<MeshGroup> meshGroups)
+		AxisAlignedBoundingBox GetAxisAlignedBoundingBox(List<MeshRenderData> renderDatas)
 		{
 			AxisAlignedBoundingBox totalMeshBounds = AxisAlignedBoundingBox.Empty;
 			bool first = true;
-			foreach (MeshGroup meshGroup in meshGroups)
+			foreach (var renderData in renderDatas)
 			{
-				AxisAlignedBoundingBox meshBounds = meshGroup.GetAxisAlignedBoundingBox();
+				AxisAlignedBoundingBox meshBounds = renderData.Mesh.GetAxisAlignedBoundingBox(renderData.Matrix);
 				if (first)
 				{
 					totalMeshBounds = meshBounds;
@@ -316,23 +300,21 @@ namespace MatterHackers.RayTracer
 			return totalMeshBounds;
 		}
 
-		private void AddTestMesh(List<MeshGroup> meshGroups)
+		private void AddTestMesh(List<MeshRenderData> renderDatas)
 		{
-			if (meshGroups != null)
+			if (renderDatas != null)
 			{
-				AxisAlignedBoundingBox totalMeshBounds = GetAxisAlignedBoundingBox(meshGroups);
-				loadedMeshGroups = meshGroups;
+				AxisAlignedBoundingBox totalMeshBounds = GetAxisAlignedBoundingBox(renderDatas);
+				loadedMeshDatas = renderDatas;
 				Vector3 meshCenter = totalMeshBounds.Center;
-				foreach (MeshGroup meshGroup in meshGroups)
+				foreach (var renderData in renderDatas)
 				{
-					meshGroup.Translate(-meshCenter);
+					renderData.Matrix = renderData.Matrix * Matrix4X4.CreateTranslation(-meshCenter);
 				}
 
-				ScaleMeshToView(loadedMeshGroups);
+				ScaleMeshToView(loadedMeshDatas);
 
-				RGBA_Bytes partColor = new RGBA_Bytes(0, 130, 153);
-				partColor = RGBA_Bytes.White;
-				IPrimitive bvhCollection = MeshToBVH.Convert(loadedMeshGroups, new SolidMaterial(partColor.GetAsRGBA_Floats(), .01, 0.0, 2.0));
+				IPrimitive bvhCollection = MeshToBVH.Convert(loadedMeshDatas);
 
 				renderCollection.Add(bvhCollection);
 			}
@@ -345,7 +327,7 @@ namespace MatterHackers.RayTracer
 			//scene.background = new Background(new RGBA_Floats(0.5, .5, .5), 0.4);
 			scene.background = new Background(new RGBA_Floats(1, 1, 1, 0), 0.6);
 
-			AddTestMesh(loadedMeshGroups);
+			AddTestMesh(loadedMeshDatas);
 
 			allObjects = BoundingVolumeHierarchy.CreateNewHierachy(renderCollection);
 			allObjectsHolder = new Transform(allObjects);
@@ -396,11 +378,11 @@ namespace MatterHackers.RayTracer
 			return false;
 		}
 
-		private void ScaleMeshToView(List<MeshGroup> loadedMeshGroups)
+		private void ScaleMeshToView(List<MeshRenderData> renderDatas)
 		{
-			if (loadedMeshGroups != null)
+			if (renderDatas != null)
 			{
-				AxisAlignedBoundingBox meshBounds = GetAxisAlignedBoundingBox(loadedMeshGroups);
+				AxisAlignedBoundingBox meshBounds = GetAxisAlignedBoundingBox(renderDatas);
 
 				bool done = false;
 				double scaleFraction = .1;

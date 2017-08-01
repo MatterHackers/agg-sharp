@@ -265,7 +265,7 @@ namespace MatterHackers.DataConverters3D
 			return new Transform(traceData, Matrix);
 		}
 
-		public IEnumerable<MeshAndTransform> VisibleMeshes(Matrix4X4 transform, RGBA_Bytes color = default(RGBA_Bytes))
+		public IEnumerable<MeshRenderData> VisibleMeshes(Matrix4X4 transform, RGBA_Bytes color = default(RGBA_Bytes))
 		{
 			// If there is no color set yet and the object 3D is specifying a color
 			if (color.Alpha0To255 == 0
@@ -289,11 +289,11 @@ namespace MatterHackers.DataConverters3D
 			{
 				if (color.Alpha0To255 > 0)
 				{
-					yield return new MeshAndTransform(this.Mesh, totalTransform, color);
+					yield return new MeshRenderData(this.Mesh, totalTransform, color);
 				}
 				else
 				{
-					yield return new MeshAndTransform(this.Mesh, totalTransform, RGBA_Bytes.White);
+					yield return new MeshRenderData(this.Mesh, totalTransform, RGBA_Bytes.White);
 				}
 			}
 		}

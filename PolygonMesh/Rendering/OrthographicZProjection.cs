@@ -35,7 +35,7 @@ namespace MatterHackers.PolygonMesh.Rendering
 {
 	public static class OrthographicZProjection
 	{
-		public static void DrawTo(Graphics2D graphics2D, Mesh meshToDraw, Vector2 offset, double scale, RGBA_Bytes silhouetteColor)
+		public static void DrawTo(Graphics2D graphics2D, Mesh meshToDraw, Matrix4X4 matrix, Vector2 offset, double scale, RGBA_Bytes silhouetteColor)
 		{
 			graphics2D.Rasterizer.gamma(new gamma_power(.3));
 			PathStorage polygonProjected = new PathStorage();
@@ -47,7 +47,8 @@ namespace MatterHackers.PolygonMesh.Rendering
 					bool first = true;
 					foreach (FaceEdge faceEdge in face.FaceEdges())
 					{
-						Vector2 position = new Vector2(faceEdge.FirstVertex.Position.x, faceEdge.FirstVertex.Position.y);
+						var position3D = Vector3.Transform(faceEdge.FirstVertex.Position, matrix);
+						Vector2 position = new Vector2(position3D.x, position3D.y);
 						position += offset;
 						position *= scale;
 						if (first)

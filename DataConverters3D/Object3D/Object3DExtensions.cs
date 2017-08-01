@@ -52,8 +52,6 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public static List<MeshGroup> ToMeshGroupList(this IObject3D item) => new List<MeshGroup> { item.Flatten() };
-
 		public static void Load(this IObject3D item, Dictionary<string, IObject3D> itemCache, CancellationToken cancellationToken, Action<double, string> progress)
 		{
 			string filePath = item.MeshPath;

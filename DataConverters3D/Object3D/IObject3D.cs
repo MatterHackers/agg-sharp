@@ -54,16 +54,16 @@ namespace MatterHackers.DataConverters3D
 		Support
 	};
 
-	public class MeshAndTransform
+	public class MeshRenderData
 	{
 		public RGBA_Bytes Color { get; }
-		public Mesh MeshData { get; }
-		public Matrix4X4 Matrix { get; }
+		public Mesh Mesh { get; }
+		public Matrix4X4 Matrix { get; set; }
 
-		public MeshAndTransform(Mesh meshData, Matrix4X4 matrix, RGBA_Bytes color)
+		public MeshRenderData(Mesh meshData, Matrix4X4 matrix, RGBA_Bytes color)
 		{
 			Color = color;
-			MeshData = meshData;
+			Mesh = meshData;
 			Matrix = matrix;
 		}
 	}
@@ -130,7 +130,7 @@ namespace MatterHackers.DataConverters3D
 		/// <param name="transform">The final transform to apply to the returned 
 		/// transforms as the tree is descended. Often passed as Matrix4X4.Identity.</param>
 		/// <returns></returns>
-		IEnumerable<MeshAndTransform> VisibleMeshes(Matrix4X4 transform, RGBA_Bytes color = default(RGBA_Bytes));
+		IEnumerable<MeshRenderData> VisibleMeshes(Matrix4X4 transform, RGBA_Bytes color = default(RGBA_Bytes));
 	}
 
 	public class Object3DIterator : IEnumerable<Object3DIterator>

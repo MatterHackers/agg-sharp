@@ -38,6 +38,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.DataConverters3D;
@@ -57,8 +58,6 @@ namespace MatterHackers.RayTracer
 			{
 				case RenderType.RAY_TRACE:
 					{
-						loadedItem.Mesh?.Triangulate();
-
 						var tracer = new ThumbnailTracer(loadedItem, width, height)
 						{
 							MultiThreaded = allowMultiThreading
@@ -105,46 +104,43 @@ namespace MatterHackers.RayTracer
 
 		private static ImageBuffer BuildImageFromMeshGroups(IObject3D loadedItem, int width, int height, bool debugNonManifoldEdges = false)
 		{
-			List<MeshGroup> loadedMeshGroups = loadedItem.ToMeshGroupList();
+			var loadedMeshGroups = loadedItem.VisibleMeshes(Matrix4X4.Identity).ToList();
 
-			if (loadedMeshGroups?.Count > 0
-				&& loadedMeshGroups[0].Meshes?.Count > 0)
+			if (loadedMeshGroups?.Count > 0)
 			{
 				var tempImage = new ImageBuffer(width, height);
 				Graphics2D partGraphics2D = tempImage.NewGraphics2D();
 				partGraphics2D.Clear(new RGBA_Bytes());
 
-				AxisAlignedBoundingBox aabb = loadedMeshGroups[0].GetAxisAlignedBoundingBox();
+				AxisAlignedBoundingBox aabb = loadedMeshGroups[0].Mesh.GetAxisAlignedBoundingBox(loadedMeshGroups[0].Matrix);
 
-				for (int meshGroupIndex = 1; meshGroupIndex < loadedMeshGroups.Count; meshGroupIndex++)
+				for (int i = 1; i < loadedMeshGroups.Count; i++)
 				{
-					aabb = AxisAlignedBoundingBox.Union(aabb, loadedMeshGroups[meshGroupIndex].GetAxisAlignedBoundingBox());
+					aabb = AxisAlignedBoundingBox.Union(aabb, loadedMeshGroups[i].Mesh.GetAxisAlignedBoundingBox(loadedMeshGroups[i].Matrix));
 				}
 
 				double maxSize = Math.Max(aabb.XSize, aabb.YSize);
 				double scale = width / (maxSize * 1.2);
 
 				var bounds2D = new RectangleDouble(aabb.minXYZ.x, aabb.minXYZ.y, aabb.maxXYZ.x, aabb.maxXYZ.y);
-				foreach (MeshGroup meshGroup in loadedMeshGroups)
+				foreach (var meshGroup in loadedMeshGroups)
 				{
-					foreach (Mesh loadedMesh in meshGroup.Meshes)
-					{
-						PolygonMesh.Rendering.OrthographicZProjection.DrawTo(
-							partGraphics2D,
-							loadedMesh,
-							new Vector2(
-								(width / scale - bounds2D.Width) / 2 - bounds2D.Left,
-								(height / scale - bounds2D.Height) / 2 - bounds2D.Bottom),
-							scale,
-							RGBA_Bytes.White);
-					}
+					PolygonMesh.Rendering.OrthographicZProjection.DrawTo(
+						partGraphics2D,
+						meshGroup.Mesh,
+						meshGroup.Matrix,
+						new Vector2(
+							(width / scale - bounds2D.Width) / 2 - bounds2D.Left,
+							(height / scale - bounds2D.Height) / 2 - bounds2D.Bottom),
+						scale,
+						meshGroup.Color);
 				}
 
 				if (debugNonManifoldEdges)
 				{
-					foreach (Mesh loadedMesh in loadedMeshGroups[0].Meshes)
+					foreach (var loadedMesh in loadedMeshGroups)
 					{
-						List<MeshEdge> nonManifoldEdges = loadedMesh.GetNonManifoldEdges();
+						List<MeshEdge> nonManifoldEdges = loadedMesh.Mesh.GetNonManifoldEdges();
 						if (nonManifoldEdges.Count > 0)
 						{
 							partGraphics2D.Circle(width / 4, width / 4, width / 8, RGBA_Bytes.Red);
