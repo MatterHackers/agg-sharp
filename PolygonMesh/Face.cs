@@ -453,5 +453,33 @@ namespace MatterHackers.PolygonMesh
 
 			return delta;
 		}
+
+		public List<(Vector3, Vector3, Vector3)> AsTriangles()
+		{
+			var points = new List<(Vector3, Vector3, Vector3)>();
+			bool first = true;
+			int vertexIndex = 0;
+			Vector3 firstPosition = Vector3.Zero;
+			Vector3 lastPosition = Vector3.Zero;
+			// for now we assume the polygon is- convex and can be rendered as a fan
+			foreach (Vertex vertex in Vertices())
+			{
+				if (first)
+				{
+					firstPosition = vertex.Position;
+					first = false;
+				}
+
+				if (vertexIndex >= 2)
+				{
+					points.Add((firstPosition, lastPosition, vertex.Position));
+				}
+
+				lastPosition = vertex.Position;
+				vertexIndex++;
+			}
+
+			return points;
+		}
 	}
 }
