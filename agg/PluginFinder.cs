@@ -10,10 +10,23 @@ namespace MatterHackers.Agg
 	{
 		static PluginFinder()
 		{
-			string searchPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+#if __ANDROID__
+			LoadAssembliesFromAssets();
+#else
+			LoadAssembliesFromFileSystem();
+#endif
+		}
 
-			// Build type lookup
+		private static void LoadAssembliesFromFileSystem()
+		{
+			if (assemblyAndTypes != null)
+			{
+				return;
+			}
+
 			assemblyAndTypes = new Dictionary<Assembly, List<Type>>();
+
+			string searchPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
 			string[] dllFiles = Directory.GetFiles(searchPath, "*.dll");
 			string[] exeFiles = Directory.GetFiles(searchPath, "*.exe");
@@ -27,42 +40,41 @@ namespace MatterHackers.Agg
 			{
 				try
 				{
-					var assembly = Assembly.LoadFile(file);
-					var assemblyTypeList = new List<Type>();
-
-					assemblyAndTypes.Add(assembly, assemblyTypeList);
-
-					foreach (var type in assembly.GetTypes())
-					{
-						if (type == null || !type.IsClass || !type.IsPublic)
-						{
-							continue;
-						}
-
-						assemblyTypeList.Add(type);
-					}
+					LoadTypesFromAssembly(Assembly.LoadFile(file));
 				}
-				catch (ReflectionTypeLoadException)
+				catch (Exception ex)
 				{
-				}
-				catch (BadImageFormatException)
-				{
-				}
-				catch (NotSupportedException)
-				{
+					System.Diagnostics.Debug.WriteLine("Error loading assembly: " + ex.Message);
 				}
 			}
 		}
 
+		private static void LoadTypesFromAssembly(Assembly assembly)
+		{
+			var assemblyTypes = new List<Type>();
+
+			foreach (var type in assembly.GetTypes())
+			{
+				try
+				{
+					if (type == null || !type.IsClass || !type.IsPublic)
+					{
+						continue;
+					}
+
+					assemblyTypes.Add(type);
+				}
+				catch (Exception ex)
+				{
+					System.Diagnostics.Debug.WriteLine("Error adding type: " + ex.Message);
+				}
+			}
+
+			assemblyAndTypes.Add(assembly, assemblyTypes);
+		}
+
 #if __ANDROID__
-
-		// Technique for loading directly form Android Assets (Requires you create and populate the Assets->StaticData->Plugins
-		// folder with the actual plugins you want to load
-		Plugins = LoadPluginsFromAssets();
-
-		private string[] pluginsInAssetsFolder = null;
-
-		private byte[] LoadBytesFromStream(string assetsPath, Android.Content.Res.AssetManager assets)
+		private static byte[] LoadBytesFromStream(string assetsPath, Android.Content.Res.AssetManager assets)
 		{
 			byte[] bytes;
 			using (var assetStream = assets.Open(assetsPath)){
@@ -74,77 +86,64 @@ namespace MatterHackers.Agg
 			return bytes;
 		}
 
-		public List<BaseClassToFind> LoadPluginsFromAssets()
+		private static void LoadAssembliesFromAssets()
 		{
-			List<BaseClassToFind> factoryList = new List<BaseClassToFind>();
+			if (assemblyAndTypes != null)
+			{
+				return;
+			}
+
+			assemblyAndTypes = new Dictionary<Assembly, List<Type>>();
 
 			var assets = Android.App.Application.Context.Assets;
 
-			if(pluginsInAssetsFolder == null)
-			{
-				pluginsInAssetsFolder = assets.List("StaticData/Plugins");
-			}
+			string pluginsDirectory = "StaticData/Plugins";
 
-			List<Assembly> pluginAssemblies = new List<Assembly> ();
-			string directory = Path.Combine("StaticData", "Plugins");
+			var pluginsInAssetsFolder = assets.List(pluginsDirectory);
 
-			// Iterate the Android Assets in the StaticData/Plugins directory
-			foreach (string fileName in assets.List(directory))
+			var loadedAssemblies = new List<Assembly>();
+
+			// Iterate Android Assets in the StaticData/Plugins directory, loading each applicable assembly
+			foreach (string fileName in pluginsInAssetsFolder)
 			{
-				if(Path.GetExtension(fileName) == ".dll")
+				if (Path.GetExtension(fileName) == ".dll")
 				{
 					try
 					{
-						string assemblyAssetPath = Path.Combine (directory, fileName);
+						string assemblyAssetPath = Path.Combine(pluginsDirectory, fileName);
 						Byte[] bytes = LoadBytesFromStream(assemblyAssetPath, assets);
 
 						Assembly assembly;
 #if DEBUG
 						// If symbols exist for the assembly, load both together to support debug breakpoints
-						if(pluginsInAssetsFolder.Contains(fileName + ".mdb"))
+						if (pluginsInAssetsFolder.Contains(fileName + ".mdb"))
 						{
 							byte[] symbolData = LoadBytesFromStream(assemblyAssetPath + ".mdb", assets);
 							assembly = Assembly.Load(bytes, symbolData);
 						}
 						else
+#endif
 						{
 							assembly = Assembly.Load(bytes);
 						}
-#else
-						assembly = Assembly.Load(bytes);
-#endif
-						pluginAssemblies.Add(assembly);
+
+						if (assembly != null)
+						{
+							loadedAssemblies.Add(assembly);
+						}
 					}
-					// TODO: All of these exceptions need to be logged!
-					catch (ReflectionTypeLoadException)
+					catch (Exception ex)
 					{
-					}
-					catch (BadImageFormatException)
-					{
-					}
-					catch (NotSupportedException)
-					{
+						System.Diagnostics.Debug.WriteLine("Error loading assembly: " + ex.Message);
 					}
 				}
 			}
 
-			// Iterate plugin assemblies
-			foreach (Assembly assembly in pluginAssemblies)
+			// After all assemblies are loaded, iterate type data. Iterating before all dependent assemblies are loaded will result in exceptions on assembly.GetTypes()
+			foreach (var assembly in loadedAssemblies)
 			{
-				// Iterate each type
-				foreach (Type type in assembly.GetTypes()) {
-					if (type == null || !type.IsClass || !type.IsPublic) {
-						continue;
-					}
-
-					// Add known/requested types to list
-					if (type.BaseType == typeof(BaseClassToFind)) {
-						factoryList.Add ((BaseClassToFind)Activator.CreateInstance (type));
-					}
-				}
+				LoadTypesFromAssembly(assembly);
 			}
-
-			return factoryList;
 		}
 #endif
 		private static Dictionary<Assembly, List<Type>> assemblyAndTypes;
@@ -175,14 +174,12 @@ namespace MatterHackers.Agg
 						}
 					}
 				}
-				catch (ReflectionTypeLoadException)
+				//catch (ReflectionTypeLoadException)	{ }
+				//catch (BadImageFormatException) { }
+				//catch (NotSupportedException) {	}
+				catch(Exception ex)
 				{
-				}
-				catch (BadImageFormatException)
-				{
-				}
-				catch (NotSupportedException)
-				{
+					System.Diagnostics.Debug.WriteLine("Error loading types: " + ex.Message);
 				}
 			}
 
