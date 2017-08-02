@@ -1248,14 +1248,19 @@ namespace MatterHackers.PolygonMesh
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 transform)
 		{
-			return GetAxisAlignedBoundingBox().NewTransformed(transform);
-
-			if (fastAABBTransform == transform && fastAABBCache != null)
+			if(Vertices.Count > 100)
 			{
+				// use the cache
+				return GetAxisAlignedBoundingBox().NewTransformed(transform);
+			}
+			else if (fastAABBTransform == transform && fastAABBCache != null)
+			{
+				// return the fast cache for this transform
 				return fastAABBCache;
 			}
 			else
 			{
+				// calculate the aabb for the current transform
 				Vector3 minXYZ = new Vector3(double.MaxValue, double.MaxValue, double.MaxValue);
 				Vector3 maxXYZ = new Vector3(double.MinValue, double.MinValue, double.MinValue);
 
