@@ -51,20 +51,20 @@ namespace MatterHackers.DataConverters3D
 
 		public MeshGroup Flatten(Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings = null)
 		{
-			return Flatten(this, new MeshGroup(), Matrix4X4.Identity, meshPrintOutputSettings, this.ExtruderIndex, this.OutputType);
+			return Flatten(this, new MeshGroup(), Matrix4X4.Identity, meshPrintOutputSettings, this.MaterialIndex, this.OutputType);
 		}
 
 		private static MeshGroup Flatten(IObject3D item, MeshGroup meshGroup, Matrix4X4 totalTransform, 
 			Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings, 
-			int overrideExtruderIndex, PrintOutputTypes overridePrintType)
+			int overrideMaterialIndex, PrintOutputTypes overridePrintType)
 		{
 			totalTransform = item.Matrix * totalTransform;
 
 			// if the override is set to a value other than -1 than we need to set every child mesh on down to this extruder / setting
-			if (overrideExtruderIndex == -1 
-				&& item.ExtruderIndex != -1)
+			if (overrideMaterialIndex == -1 
+				&& item.MaterialIndex != -1)
 			{
-				overrideExtruderIndex = item.ExtruderIndex;
+				overrideMaterialIndex = item.MaterialIndex;
 			}
 
 			if(overridePrintType == PrintOutputTypes.Default
@@ -87,14 +87,14 @@ namespace MatterHackers.DataConverters3D
 					var material = meshPrintOutputSettings[mesh];
 
 					// If we are not setting an extruder we are on the first extruder
-					material.ExtruderIndex = overrideExtruderIndex == -1 ? 0 : overrideExtruderIndex;
+					material.ExtruderIndex = overrideMaterialIndex == -1 ? 0 : overrideMaterialIndex;
 					material.PrintOutputTypes = overridePrintType == PrintOutputTypes.Default ? PrintOutputTypes.Solid : overridePrintType;
 				}
 			}
 
 			foreach (IObject3D child in item.Children.Where(child => child.Visible))
 			{
-				Flatten(child, meshGroup, totalTransform, meshPrintOutputSettings, overrideExtruderIndex, overridePrintType);
+				Flatten(child, meshGroup, totalTransform, meshPrintOutputSettings, overrideMaterialIndex, overridePrintType);
 			}
 
 			return meshGroup;
@@ -102,7 +102,7 @@ namespace MatterHackers.DataConverters3D
 
 		public RGBA_Bytes Color { get; set; } = RGBA_Bytes.Transparent;
 
-		public int ExtruderIndex { get; set; } = -1;
+		public int MaterialIndex { get; set; } = -1;
 
 		[JsonIgnore]
 		public bool HasChildren => Children.Count > 0;
@@ -265,7 +265,7 @@ namespace MatterHackers.DataConverters3D
 			return new Transform(traceData, Matrix);
 		}
 
-		public IEnumerable<MeshRenderData> VisibleMeshes(Matrix4X4 transform, RGBA_Bytes color = default(RGBA_Bytes))
+		public IEnumerable<MeshRenderData> VisibleMeshes(Matrix4X4 transform, RGBA_Bytes color = default(RGBA_Bytes), int materialIndex = -1)
 		{
 			// If there is no color set yet and the object 3D is specifying a color
 			if (color.Alpha0To255 == 0
@@ -275,11 +275,19 @@ namespace MatterHackers.DataConverters3D
 				color = this.Color;
 			}
 
+			// If there is no material set yet and the object 3D is specifying a material
+			if (materialIndex == -1
+				&& this.MaterialIndex != -1)
+			{
+				// use this as the color for all recursize children
+				materialIndex = this.MaterialIndex;
+			}
+
 			Matrix4X4 totalTransform = this.Matrix * transform;
 
 			foreach (var child in Children)
 			{
-				foreach (var meshTransform in child.VisibleMeshes(totalTransform, color))
+				foreach (var meshTransform in child.VisibleMeshes(totalTransform, color, materialIndex))
 				{
 					yield return meshTransform;
 				}
@@ -289,11 +297,11 @@ namespace MatterHackers.DataConverters3D
 			{
 				if (color.Alpha0To255 > 0)
 				{
-					yield return new MeshRenderData(this.Mesh, totalTransform, color);
+					yield return new MeshRenderData(this.Mesh, totalTransform, color, materialIndex);
 				}
 				else
 				{
-					yield return new MeshRenderData(this.Mesh, totalTransform, RGBA_Bytes.White);
+					yield return new MeshRenderData(this.Mesh, totalTransform, RGBA_Bytes.White, materialIndex);
 				}
 			}
 		}

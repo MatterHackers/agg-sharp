@@ -35,7 +35,7 @@ using System;
 
 namespace MatterHackers.RenderOpenGl
 {
-	public enum RenderTypes { Hidden, Shaded, Outlines, Polygons, Overhang, Wireframe };
+	public enum RenderTypes { Hidden, Shaded, Outlines, Polygons, Overhang, Materials, Wireframe };
 
 	public static class GLHelper
 	{
@@ -162,15 +162,16 @@ namespace MatterHackers.RenderOpenGl
 					case RenderTypes.Hidden:
 						break;
 
-					case RenderTypes.Overhang:
-					case RenderTypes.Shaded:
-						DrawToGL(meshToRender);
-						break;
-
 					case RenderTypes.Polygons:
 					case RenderTypes.Outlines:
 					case RenderTypes.Wireframe:
 						DrawWithWireOverlay(meshToRender, renderType);
+						break;
+
+					case RenderTypes.Overhang:
+					case RenderTypes.Shaded:
+					case RenderTypes.Materials:
+						DrawToGL(meshToRender);
 						break;
 				}
 

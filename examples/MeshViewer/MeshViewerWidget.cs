@@ -775,7 +775,7 @@ namespace MatterHackers.MeshVisualizer
 				RGBA_Bytes drawColor = object3D.Color;
 				if (drawColor.Alpha0To1 == 0)
 				{
-					drawColor = isSelected ? GetSelectedMaterialColor(object3D.ExtruderIndex) : GetMaterialColor(object3D.ExtruderIndex);
+					drawColor = isSelected ? GetSelectedMaterialColor(object3D.MaterialIndex) : GetMaterialColor(object3D.MaterialIndex);
 				}
 
 				GLHelper.Render(meshAndTransform.Mesh, drawColor, meshAndTransform.Matrix, RenderType);
