@@ -10,7 +10,7 @@ namespace MatterHackers.DataConverters3D
 	{
 		public static IPrimitive Convert(Mesh mesh, MaterialAbstract partMaterial = null)
 		{
-			return Convert(new MeshRenderData(mesh, Matrix4X4.Identity, RGBA_Bytes.Black));
+			return Convert(new MeshRenderData(mesh, Matrix4X4.Identity, RGBA_Bytes.Black, -1));
 		}
 
 		public static IPrimitive Convert(MeshRenderData renderData)

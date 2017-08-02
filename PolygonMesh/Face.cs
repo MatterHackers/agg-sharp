@@ -48,7 +48,7 @@ namespace MatterHackers.PolygonMesh
 		}
 
 		// number of boundaries
-		// matterial
+		// material
 		public Face(Face faceToUseAsModel, Mesh containingMesh)
 			: this(containingMesh)
 		{

@@ -59,9 +59,11 @@ namespace MatterHackers.DataConverters3D
 		public RGBA_Bytes Color { get; }
 		public Mesh Mesh { get; }
 		public Matrix4X4 Matrix { get; set; }
+		public int MaterialIndex { get; }
 
-		public MeshRenderData(Mesh meshData, Matrix4X4 matrix, RGBA_Bytes color)
+		public MeshRenderData(Mesh meshData, Matrix4X4 matrix, RGBA_Bytes color, int materialIndex)
 		{
+			MaterialIndex = materialIndex;
 			Color = color;
 			Mesh = meshData;
 			Matrix = matrix;
@@ -81,7 +83,7 @@ namespace MatterHackers.DataConverters3D
 		[JsonConverter(typeof(IObject3DChildrenConverter))]
 		List<IObject3D> Children { get; set; }
 		RGBA_Bytes Color { get; set; }
-		int ExtruderIndex { get; set; }
+		int MaterialIndex { get; set; }
 		MeshGroup Flatten(Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings = null);
 		bool HasChildren { get; }
 		Object3DTypes ItemType { get; set; }
@@ -130,7 +132,7 @@ namespace MatterHackers.DataConverters3D
 		/// <param name="transform">The final transform to apply to the returned 
 		/// transforms as the tree is descended. Often passed as Matrix4X4.Identity.</param>
 		/// <returns></returns>
-		IEnumerable<MeshRenderData> VisibleMeshes(Matrix4X4 transform, RGBA_Bytes color = default(RGBA_Bytes));
+		IEnumerable<MeshRenderData> VisibleMeshes(Matrix4X4 transform, RGBA_Bytes color = default(RGBA_Bytes), int materialIndex = -1);
 	}
 
 	public class Object3DIterator : IEnumerable<Object3DIterator>
