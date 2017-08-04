@@ -32,6 +32,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using MatterHackers.Agg;
+using MatterHackers.Agg.UI;
 using MatterHackers.DataConverters3D;
 using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;
@@ -124,15 +126,49 @@ namespace MatterHackers.PolygonMesh
 			return BoundingVolumeHierarchy.CreateNewHierachy(allPolys, 0);
 		}
 
+		/* 
+		public class SelectionChangeCommand : IUndoRedoCommand
+		{
+			public RGBA_Bytes Color{ get; set; }
+			public int MaterialIndex { get; set; }
+			PrintOutputTypes PrintOutputTypes { get; set; }
+			Matrix4X4 Matrix { get; set; }
+
+			public void Do()
+			{
+				
+			}
+
+			public void Undo()
+			{
+				throw new NotImplementedException();
+			}
+		}*/
+
 		public static void CollapseInto(this IObject3D objectToCollapse, List<IObject3D> collapseInto, Object3DTypes typeFilter = Object3DTypes.SelectionGroup, int depth = int.MaxValue)
 		{
-			if (objectToCollapse != null && objectToCollapse.ItemType == typeFilter)
+			if (objectToCollapse?.ItemType == typeFilter)
 			{
 				collapseInto.Remove(objectToCollapse);
 
 				// Move each child from objectToRemove into the scene, applying the parent transform to each
 				foreach (var child in objectToCollapse.Children)
 				{
+					if (objectToCollapse.Color != RGBA_Bytes.Transparent)
+					{
+						child.Color = objectToCollapse.Color;
+					}
+
+					if (objectToCollapse.MaterialIndex != -1)
+					{
+						child.MaterialIndex = objectToCollapse.MaterialIndex;
+					}
+
+					if (objectToCollapse.OutputType != PrintOutputTypes.Default)
+					{
+						child.OutputType = objectToCollapse.OutputType;
+					}
+
 					child.Matrix *= objectToCollapse.Matrix;
 
 					if (child.ItemType == Object3DTypes.SelectionGroup && depth > 0)
