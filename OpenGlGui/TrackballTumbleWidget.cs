@@ -155,19 +155,9 @@ namespace MatterHackers.Agg.OpenGlGui
 				MakeArrowIcons();
 			}
 
-			if (TrackBallController.LastMoveInsideRadius)
+			foreach (IVertexSource arrow in insideArrows)
 			{
-				foreach (IVertexSource arrow in insideArrows)
-				{
-					graphics2D.Render(arrow, RotationHelperCircleColor);
-				}
-			}
-			else
-			{
-				foreach (IVertexSource arrow in outsideArrows)
-				{
-					graphics2D.Render(arrow, RotationHelperCircleColor);
-				}
+				graphics2D.Render(arrow, RotationHelperCircleColor);
 			}
 		}
 
@@ -420,8 +410,7 @@ namespace MatterHackers.Agg.OpenGlGui
 		{
 			if (!LockTrackBall && TrackBallController.CurrentTrackingType != TrackBallController.MouseDownType.None)
 			{
-                if (TrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.Rotation
-					&& TrackBallController.LastMoveInsideRadius)
+                if (TrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.Rotation)
                 {
 					// try and preserve some of the velocity
 					motionQueue.AddMoveToMotionQueue(mouseEvent.Position, UiThread.CurrentTimerMs);
