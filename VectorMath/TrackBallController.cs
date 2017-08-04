@@ -36,14 +36,14 @@ namespace MatterHackers.VectorMath
 		public enum MouseDownType { None, Translation, Rotation, Scale };
 
 		private const double Epsilon = 1.0e-5;
-		private double rotationTrackingRadius;
+		private double rotationTrackingRadiusPixels;
 
 		private MouseDownType currentTrackingType = MouseDownType.None;
 
 		private Matrix4X4 localToScreenTransform;
 
-		private Vector3 rotationStart;
-		private Vector3 rotationCurrent;
+		private Vector2 mouseDownPosition;
+		private Vector3 moveSpherePosition;
 
 		private Vector2 lastTranslationMousePosition = Vector2.Zero;
 		private Vector2 lastScaleMousePosition = Vector2.Zero;
@@ -59,16 +59,16 @@ namespace MatterHackers.VectorMath
 
 		public TrackBallController(Vector2 screenCenter, double trackBallRadius, WorldView world)
 		{
-			rotationStart = new Vector3();
-			rotationCurrent = new Vector3();
-			this.rotationTrackingRadius = trackBallRadius;
+			mouseDownPosition = new Vector2();
+			moveSpherePosition = new Vector3();
+			this.rotationTrackingRadiusPixels = trackBallRadius;
 
 			this.world = world;
 		}
 
 		public void CopyTransforms(TrackBallController trackBallToCopy)
 		{
-			rotationTrackingRadius = trackBallToCopy.rotationTrackingRadius;
+			rotationTrackingRadiusPixels = trackBallToCopy.rotationTrackingRadiusPixels;
 			this.world.RotationMatrix = trackBallToCopy.world.RotationMatrix;
 			this.world.TranslationMatrix = trackBallToCopy.world.TranslationMatrix;
 
@@ -83,43 +83,23 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
-		bool lastMoveInsideRadius;
-		public bool LastMoveInsideRadius { get { return lastMoveInsideRadius; } }
-
-		private void MapToSphere(Vector2 screenPoint, out Vector3 vector)
+		private Vector3 MapMoveToSphere(Vector2 screenPoint)
 		{
-			Vector2 deltaFromCenter = screenPoint - world.ScreenCenter;
-			Vector2 deltaMinus1To1 = deltaFromCenter;
+			var deltaFromStartPixels = screenPoint - mouseDownPosition;
+			var deltaOnSurface = new Vector2(deltaFromStartPixels.x / rotationTrackingRadiusPixels, deltaFromStartPixels.y / rotationTrackingRadiusPixels);
 
-			//Adjust point coords and scale down to range of [-1 ... 1]
-			deltaMinus1To1.x = (deltaMinus1To1.x / rotationTrackingRadius);
-			deltaMinus1To1.y = (deltaMinus1To1.y / rotationTrackingRadius);
+			var lengthOnSurfaceRadi = deltaOnSurface.Length;
 
-			//Compute square of the length of the vector from this point to the center
-			double length = (deltaMinus1To1.x * deltaMinus1To1.x) + (deltaMinus1To1.y * deltaMinus1To1.y);
+			// get this rotation on the surface of the sphere about y
+			var positionAboutY = Vector3.Transform(new Vector3(0, 0, 1), Matrix4X4.CreateRotationY(lengthOnSurfaceRadi));
 
-			//If the point is mapped outside the sphere... (length > radius squared)
-			if (length > 1.0)
-			{
-				//Compute a normalizing factor (radius / sqrt(length))
-				double normalizedLength = (1.0 / Math.Sqrt(length));
+			// get the angle that this distance travels around the sphere
+			var angleToTravel = Math.Atan2(deltaOnSurface.y, deltaOnSurface.x);
 
-				//Return the "normalized" vector, a point on the sphere
-				vector.x = deltaMinus1To1.x * normalizedLength;
-				vector.y = deltaMinus1To1.y * normalizedLength;
-				vector.z = 0.0;
-				lastMoveInsideRadius = false;
-			}
-			else //Else it's inside
-			{
-				//Return a vector to a point mapped inside the sphere sqrt(radius squared - length)
-				vector.x = deltaMinus1To1.x;
-				vector.y = deltaMinus1To1.y;
-				vector.z = Math.Sqrt(1.0 - length);
-				lastMoveInsideRadius = true;
-			}
+			// now rotate that position about z in the direction of the screen vector
+			var positionOnRotationSphere = Vector3.Transform(positionAboutY, Matrix4X4.CreateRotationZ(angleToTravel));
 
-			vector = Vector3.TransformVector(vector, localToScreenTransform);
+			return positionOnRotationSphere;
 		}
 
 		//Mouse down
@@ -132,7 +112,7 @@ namespace MatterHackers.VectorMath
 				switch (currentTrackingType)
 				{
 					case MouseDownType.Rotation:
-						MapToSphere(mousePosition, out rotationStart);
+						mouseDownPosition = mousePosition;
 						break;
 
 					case MouseDownType.Translation:
@@ -156,13 +136,14 @@ namespace MatterHackers.VectorMath
 			{
 				case MouseDownType.Rotation:
 					var activeRotationQuaternion = Quaternion.Identity;
-					
+
 					//Map the point to the sphere
-					MapToSphere(mousePosition, out rotationCurrent);
+					moveSpherePosition = MapMoveToSphere(mousePosition);
 
 					//Return the quaternion equivalent to the rotation
 					//Compute the vector perpendicular to the begin and end vectors
-					Vector3 Perp = Vector3.Cross(rotationStart, rotationCurrent);
+					var rotationStart3D = new Vector3(0, 0, 1);
+					Vector3 Perp = Vector3.Cross(rotationStart3D, moveSpherePosition);
 
 					//Compute the length of the perpendicular vector
 					if (Perp.Length > Epsilon)
@@ -173,7 +154,7 @@ namespace MatterHackers.VectorMath
 						activeRotationQuaternion.Y = Perp.y;
 						activeRotationQuaternion.Z = Perp.z;
 						//In the quaternion values, w is cosine (theta / 2), where theta is the rotation angle
-						activeRotationQuaternion.W = Vector3.Dot(rotationStart, rotationCurrent);
+						activeRotationQuaternion.W = Vector3.Dot(rotationStart3D, moveSpherePosition);
 
 						world.activeRotationQuaternion = activeRotationQuaternion;
 
@@ -266,12 +247,12 @@ namespace MatterHackers.VectorMath
 		{
 			get
 			{
-				return rotationTrackingRadius;
+				return rotationTrackingRadiusPixels;
 			}
 
 			set
 			{
-				rotationTrackingRadius = value;
+				rotationTrackingRadiusPixels = value;
 			}
 		}
 
