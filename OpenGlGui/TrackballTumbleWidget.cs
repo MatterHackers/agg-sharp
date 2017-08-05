@@ -432,47 +432,6 @@ namespace MatterHackers.Agg.OpenGlGui
 			DrawGlContent?.Invoke(this, null);
 		}
 
-		private void GradientBand(double startHeight, double endHeight, RGBA_Bytes startColor, RGBA_Bytes endColor)
-		{
-			// triangel 1
-			{
-				// top color
-				GL.Color4(startColor.red, startColor.green, startColor.blue, startColor.alpha);
-				GL.Vertex2(-1.0, startHeight);
-				// bottom color
-				GL.Color4(endColor.red, endColor.green, endColor.blue, endColor.alpha);
-				GL.Vertex2(1.0, endHeight);
-				GL.Vertex2(-1.0, endHeight);
-			}
-
-			// triangel 2
-			{
-				// top color
-				GL.Color4(startColor.red, startColor.green, startColor.blue, startColor.alpha);
-				GL.Vertex2(1.0, startHeight);
-				GL.Vertex2(-1.0, startHeight);
-				// bottom color
-				GL.Color4(endColor.red, endColor.green, endColor.blue, endColor.alpha);
-				GL.Vertex2(1.0, endHeight);
-			}
-		}
-
-		private void ClearToGradient()
-		{
-			GL.MatrixMode(MatrixMode.Projection);
-			GL.LoadIdentity();
-
-			GL.MatrixMode(MatrixMode.Modelview);
-			GL.LoadIdentity();
-
-			GL.Begin(BeginMode.Triangles);
-
-			GradientBand(1, 0, new RGBA_Bytes(255,255,255,20), new RGBA_Bytes(255, 255, 255, 0));
-			GradientBand(0, -1, new RGBA_Bytes(0, 0, 0, 0), new RGBA_Bytes(0, 0, 0, 20));
-
-			GL.End();
-		}
-
 		private void SetGlContext()
 		{
 			GL.ClearDepth(1.0);
