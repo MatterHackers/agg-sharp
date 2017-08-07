@@ -145,7 +145,7 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		[Test]
-		public void ParentTopBottomAndFitToChildren()
+		public void ParentStretchAndFitToChildren()
 		{
 			// Make sure normal nested layouts works as expected. First inner added then outer
 			{

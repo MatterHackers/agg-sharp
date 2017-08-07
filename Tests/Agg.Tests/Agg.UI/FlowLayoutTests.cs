@@ -474,7 +474,7 @@ namespace MatterHackers.Agg.UI.Tests
 		[Test]
 		public void NestedFitToChildrenParentWidth()
 		{
-			// child of flow layout is ParentLeftRight
+			// child of flow layout is Stretch
 			{
 				//  _________________________________________
 				//  |            containerControl            |
@@ -482,7 +482,7 @@ namespace MatterHackers.Agg.UI.Tests
 				//  | |    Max_FitToChildren_ParentWidth   | |
 				//  | | ________________________ ________  | |
 				//  | | |                      | |       | | |
-				//  | | |    ParentLeftRight   | | 10x10 | | |
+				//  | | |    Stretch   | | 10x10 | | |
 				//  | | |______________________| |_______| | |
 				//  | |____________________________________| |
 				//  |________________________________________|
@@ -1615,7 +1615,7 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				FlowLayoutWidget leftRightFlowLayout = new FlowLayoutWidget();
 				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
-				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags ParentLeftRight (starts with FitToChildren)
+				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
 				// [<-><->] // attempting to make a visual descrition of what is happening
 				Assert.IsTrue(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
 				GuiWidget leftWidget = new GuiWidget(10, 10); // we call it left widget as it will be the first one in the left to right flow layout
@@ -1668,7 +1668,7 @@ namespace MatterHackers.Agg.UI.Tests
 				FlowLayoutWidget leftRightFlowLayout = new FlowLayoutWidget();
 				leftRightFlowLayout.Name = "leftRightFlowLayout";
 				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
-				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags ParentLeftRight (starts with FitToChildren)
+				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
 				// [<-><->] // attempting to make a visual descrition of what is happening
 				Assert.IsTrue(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
 				GuiWidget leftWidget = new GuiWidget(10, 10); // we call it left widget as it will be the first one in the left to right flow layout
@@ -1721,7 +1721,7 @@ namespace MatterHackers.Agg.UI.Tests
 				FlowLayoutWidget leftRightFlowLayout = new FlowLayoutWidget();
 				leftRightFlowLayout.Name = "leftRightFlowLayout";
 				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
-				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags ParentLeftRight (starts with FitToChildren)
+				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
 				// [<-><->] // attempting to make a visual descrition of what is happening
 				Assert.IsTrue(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
 
@@ -1765,7 +1765,7 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				FlowLayoutWidget leftRightFlowLayout = new FlowLayoutWidget();
 				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
-				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags ParentLeftRight (starts with FitToChildren)
+				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
 				// [<-><->] // attempting to make a visual descrition of what is happening
 				Assert.IsTrue(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
 				GuiWidget leftWidget = new GuiWidget(10, 10); // we call it left widget as it will be the first one in the left to right flow layout

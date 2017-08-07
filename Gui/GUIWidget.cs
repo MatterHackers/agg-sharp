@@ -63,7 +63,7 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		Stretch = Left | Right,
 		/// <summary>
-		/// Take the larger of FitToChildren or ParentLeftRight.
+		/// Take the larger of FitToChildren or Stretch.
 		/// </summary>
 		MaxFitOrStretch = Fit | Stretch,
 	};
@@ -84,7 +84,7 @@ namespace MatterHackers.Agg.UI
 		Fit = 8,
 		Stretch = Bottom | Top,
 		/// <summary>
-		/// Take the larger of FitToChildren or ParentBottomTop.
+		/// Take the larger of FitToChildren or Stretch.
 		/// </summary>
 		MaxFitOrStretch = Fit | Stretch,
 	};
@@ -1912,19 +1912,19 @@ namespace MatterHackers.Agg.UI
 		private void RenderAnchoreInfo(Graphics2D graphics2D)
 		{
 			var color = RGBA_Bytes.Cyan;
-			double size = 5;
+			double size = 10;
 
 			// an arrow pointing right
 			PathStorage rightArrow = new PathStorage();
-			rightArrow.MoveTo(LocalBounds.Center + new Vector2(size + size, 0));
-			rightArrow.LineTo(LocalBounds.Center + new Vector2(size, size * .6));
-			rightArrow.LineTo(LocalBounds.Center + new Vector2(size, -size * .6));
+			rightArrow.MoveTo(new Vector2(size * 2, 0));
+			rightArrow.LineTo(new Vector2(size * 1, size * .6));
+			rightArrow.LineTo(new Vector2(size * 1, -size * .6));
 
 			if (HAnchor == HAnchor.Absolute)
 			{
-				graphics2D.Line(LocalBounds.Center + new Vector2(0, size),
-					LocalBounds.Center + new Vector2(0, -size),
-					color, size * .5);
+				//graphics2D.Line(LocalBounds.Center + new Vector2(0, size * .8),
+					//LocalBounds.Center + new Vector2(0, -size * .8),
+					//color, size * .5);
 			}
 			else // figure out what it is
 			{
@@ -1934,7 +1934,7 @@ namespace MatterHackers.Agg.UI
 				}
 				if (HAnchor.HasFlag(HAnchor.Center))
 				{
-					graphics2D.Circle(LocalBounds.Center, size, color);
+					graphics2D.Circle(LocalBounds.Center, size/2, color);
 				}
 				if (HAnchor.HasFlag(HAnchor.Right))
 				{
@@ -1952,9 +1952,9 @@ namespace MatterHackers.Agg.UI
 
 			if (VAnchor == VAnchor.Absolute)
 			{
-				graphics2D.Line(LocalBounds.Center + new Vector2(size, 0),
-					LocalBounds.Center + new Vector2(-size, 0),
-					color, size * .5);
+				//graphics2D.Line(LocalBounds.Center + new Vector2(size * .8, 0),
+					//LocalBounds.Center + new Vector2(-size * .8, 0),
+					//color, size * .5);
 			}
 			else // figure out what it is
 			{
@@ -1965,7 +1965,7 @@ namespace MatterHackers.Agg.UI
 				}
 				if (VAnchor.HasFlag(VAnchor.Center))
 				{
-					graphics2D.Circle(LocalBounds.Center, size, color);
+					graphics2D.Circle(LocalBounds.Center, size/2, color);
 				}
 				if (VAnchor.HasFlag(VAnchor.Top))
 				{
@@ -1980,14 +1980,6 @@ namespace MatterHackers.Agg.UI
 						Affine.NewRotation(MathHelper.DegreesToRadians(180))), LocalBounds.Center, color);
 				}
 			}
-
-
-			//case VAnchor.ParentBottom:
-			//case VAnchor.ParentCenter:
-			//case VAnchor.ParentTop:
-			//case VAnchor.FitToChildren:
-			//case VAnchor.ParentBottomTop:
-			//case VAnchor.Max_FitToChildren_ParentHeight:
 		}
 
 		private static void DrawBorderBounds(Graphics2D graphics2D, RectangleDouble bounds, BorderDouble border, RGBA_Bytes color)
