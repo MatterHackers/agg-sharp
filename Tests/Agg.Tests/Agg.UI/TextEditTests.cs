@@ -595,8 +595,8 @@ namespace MatterHackers.Agg.UI.Tests
 
 			editField = new TextEditWidget(pixelWidth: 200)
 			{
-				HAnchor = HAnchor.ParentCenter,
-				VAnchor = VAnchor.ParentCenter,
+				HAnchor = HAnchor.Center,
+				VAnchor = VAnchor.Center,
 			};
 			systemWindow.AddChild(editField);
 
@@ -613,8 +613,8 @@ namespace MatterHackers.Agg.UI.Tests
 
 			var editField = new TextEditWidget(pixelWidth: 200)
 			{
-				HAnchor = HAnchor.ParentCenter,
-				VAnchor = VAnchor.ParentCenter,
+				HAnchor = HAnchor.Center,
+				VAnchor = VAnchor.Center,
 			};
 			systemWindow.AddChild(editField);
 
@@ -637,8 +637,8 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				Name = "editField",
 				Text = "Some Text",
-				HAnchor = HAnchor.ParentCenter,
-				VAnchor = VAnchor.ParentCenter,
+				HAnchor = HAnchor.Center,
+				VAnchor = VAnchor.Center,
 			};
 
 			var systemWindow = new SystemWindow(300, 200)

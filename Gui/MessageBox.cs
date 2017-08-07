@@ -22,8 +22,8 @@ namespace MatterHackers.Agg.UI
 		{
 			BackgroundColor = new RGBA_Bytes(50, 50, 50, 240);
 			FlowLayoutWidget topToBottomFlow = new FlowLayoutWidget(FlowDirection.TopToBottom);
-			topToBottomFlow.HAnchor = Agg.UI.HAnchor.ParentCenter;
-			topToBottomFlow.VAnchor = Agg.UI.VAnchor.ParentCenter;
+			topToBottomFlow.HAnchor = Agg.UI.HAnchor.Center;
+			topToBottomFlow.VAnchor = Agg.UI.VAnchor.Center;
 			topToBottomFlow.AddChild(new TextWidget(message, textColor: RGBA_Bytes.White));
 
 			Title = windowTitle;

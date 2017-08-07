@@ -43,7 +43,7 @@ namespace MatterHackers.Agg
 			AddChild(raiseListMenu);
 
 			FlowLayoutWidget mainMenuBar = new FlowLayoutWidget();
-			mainMenuBar.VAnchor = UI.VAnchor.ParentTop;
+			mainMenuBar.VAnchor = UI.VAnchor.Top;
 
 			GuiWidget popupMenu = new TextWidget("Simple Menu");
 			popupMenu.OriginRelativeParent = new Vector2(100, 100);

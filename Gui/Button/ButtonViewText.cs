@@ -35,8 +35,8 @@ namespace MatterHackers.Agg.UI
 			BorderRadius = borderRadius;
 			this.borderWidth = borderWidth;
 			buttonText = new TextWidget(label, textHeight);
-			buttonText.VAnchor = VAnchor.ParentCenter;
-			buttonText.HAnchor = HAnchor.ParentCenter;
+			buttonText.VAnchor = VAnchor.Center;
+			buttonText.HAnchor = HAnchor.Center;
 
 			AnchorAll();
 

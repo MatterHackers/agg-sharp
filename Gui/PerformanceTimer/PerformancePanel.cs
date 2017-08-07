@@ -51,14 +51,14 @@ namespace MatterHackers.Agg.UI
 			this.Name = name;
 			Margin = new BorderDouble(5);
 			Padding = new BorderDouble(3);
-			VAnchor |= VAnchor.ParentTop;
+			VAnchor |= VAnchor.Top;
 
 			if (panels == null)
 			{
 				panels = new PerformanceDisplayWidget();
 				panels.Selectable = false;
-				panels.HAnchor |= HAnchor.ParentLeft;
-				panels.VAnchor |= VAnchor.ParentTop;
+				panels.HAnchor |= HAnchor.Left;
+				panels.VAnchor |= VAnchor.Top;
 				panels.Visible = false; // start out not visible
 
 				if (true) // only add this when doing testing
@@ -185,7 +185,7 @@ namespace MatterHackers.Agg.UI
 					{
 						AutoExpandBoundsToText = true,
 						TextColor = new RGBA_Bytes(120, 20, 20),
-						HAnchor = HAnchor.ParentLeft,
+						HAnchor = HAnchor.Left,
 					}
 				};
 

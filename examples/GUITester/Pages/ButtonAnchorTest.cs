@@ -9,17 +9,17 @@ namespace MatterHackers.Agg
 		public ButtonAnchorTestPage()
 			: base("Button Anchor Tests")
 		{
-			CreateButton(UI.HAnchor.ParentLeft, UI.VAnchor.ParentBottom);
-			CreateButton(UI.HAnchor.ParentCenter, UI.VAnchor.ParentBottom);
-			CreateButton(UI.HAnchor.ParentRight, UI.VAnchor.ParentBottom);
+			CreateButton(UI.HAnchor.Left, UI.VAnchor.Bottom);
+			CreateButton(UI.HAnchor.Center, UI.VAnchor.Bottom);
+			CreateButton(UI.HAnchor.Right, UI.VAnchor.Bottom);
 
-			CreateButton(UI.HAnchor.ParentLeft, UI.VAnchor.ParentCenter);
-			CreateButton(UI.HAnchor.ParentCenter, UI.VAnchor.ParentCenter);
-			CreateButton(UI.HAnchor.ParentRight, UI.VAnchor.ParentCenter);
+			CreateButton(UI.HAnchor.Left, UI.VAnchor.Center);
+			CreateButton(UI.HAnchor.Center, UI.VAnchor.Center);
+			CreateButton(UI.HAnchor.Right, UI.VAnchor.Center);
 
-			CreateButton(UI.HAnchor.ParentLeft, UI.VAnchor.ParentTop);
-			CreateButton(UI.HAnchor.ParentCenter, UI.VAnchor.ParentTop);
-			CreateButton(UI.HAnchor.ParentRight, UI.VAnchor.ParentTop);
+			CreateButton(UI.HAnchor.Left, UI.VAnchor.Top);
+			CreateButton(UI.HAnchor.Center, UI.VAnchor.Top);
+			CreateButton(UI.HAnchor.Right, UI.VAnchor.Top);
 		}
 
 		private void CreateButton(HAnchor hAnchor, VAnchor vAnchor)

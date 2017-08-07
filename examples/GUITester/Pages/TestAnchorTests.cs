@@ -66,7 +66,7 @@ namespace MatterHackers.Agg
 			anchorBottomTop = new TextWidget("Bottom Top Anchor", 12);
 			AddChild(anchorBottomTop);
 			//anchorBottomTop.DebugShowBounds = true;
-			anchorBottomTop.VAnchor = VAnchor.ParentTop | VAnchor.ParentBottom;
+			anchorBottomTop.VAnchor = VAnchor.Top | VAnchor.Bottom;
 			ResumeLayout();
 			PerformLayout();
 		}
@@ -80,31 +80,31 @@ namespace MatterHackers.Agg
 
 			anchorLeft.OriginRelativeParent = new Vector2(leftDist, 290);
 			anchorLeft.Margin = new BorderDouble(leftDist, 0, 0, 0);
-			anchorLeft.HAnchor = HAnchor.ParentLeft;
+			anchorLeft.HAnchor = HAnchor.Left;
 
 			anchorAll.OriginRelativeParent = new Vector2(leftDist, 330);
 			anchorAll.AnchorAll();
 
 			anchorLeftCentered.OriginRelativeParent = new Vector2(leftDist, 250);
-			anchorLeftCentered.HAnchor = HAnchor.ParentLeft;
+			anchorLeftCentered.HAnchor = HAnchor.Left;
 
 			anchorRight.OriginRelativeParent = new Vector2(leftDist, 210);
-			anchorRight.HAnchor = HAnchor.ParentRight;
+			anchorRight.HAnchor = HAnchor.Right;
 
 			anchorLeftRight.OriginRelativeParent = new Vector2(leftDist, 170);
-			anchorLeftRight.HAnchor = HAnchor.ParentRight | HAnchor.ParentLeft;
+			anchorLeftRight.HAnchor = HAnchor.Right | HAnchor.Left;
 
 			anchorLeftRightCenter.OriginRelativeParent = new Vector2(leftDist, 130);
-			anchorLeftRightCenter.HAnchor = HAnchor.ParentRight | HAnchor.ParentLeft;
+			anchorLeftRightCenter.HAnchor = HAnchor.Right | HAnchor.Left;
 
 			anchorLeftRightRight.OriginRelativeParent = new Vector2(leftDist, 100);
-			anchorLeftRightRight.HAnchor = HAnchor.ParentRight | HAnchor.ParentLeft;
+			anchorLeftRightRight.HAnchor = HAnchor.Right | HAnchor.Left;
 
 			anchorBottom.OriginRelativeParent = new Vector2(rightDist, 290);
-			anchorBottom.VAnchor = VAnchor.ParentBottom;
+			anchorBottom.VAnchor = VAnchor.Bottom;
 
 			anchorTop.OriginRelativeParent = new Vector2(rightDist, 250);
-			anchorTop.VAnchor = VAnchor.ParentTop;
+			anchorTop.VAnchor = VAnchor.Top;
 
 			//anchorBottomTop.OriginRelativeParent = new Vector2(rightDist, 210);
 			//anchorBottomTop.AnchorFlags = AnchorFlags.Top | AnchorFlags.Bottom;

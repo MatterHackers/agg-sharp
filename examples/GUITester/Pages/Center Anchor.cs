@@ -12,8 +12,8 @@ namespace MatterHackers.Agg
 			//CreateButton(UI.HAnchor.Left | UI.HAnchor.Right, UI.VAnchor.Bottom | UI.VAnchor.Top);
 
 			//CreateButton(UI.HAnchor.Left | UI.HAnchor.Center, UI.VAnchor.Top | UI.VAnchor.Center);
-			CreateButton(UI.HAnchor.ParentLeft | UI.HAnchor.ParentCenter, UI.VAnchor.ParentBottom | UI.VAnchor.ParentCenter);
-			CreateButton(UI.HAnchor.ParentCenter | UI.HAnchor.ParentRight, UI.VAnchor.ParentCenter | UI.VAnchor.ParentTop);
+			CreateButton(UI.HAnchor.Left | UI.HAnchor.Center, UI.VAnchor.Bottom | UI.VAnchor.Center);
+			CreateButton(UI.HAnchor.Center | UI.HAnchor.Right, UI.VAnchor.Center | UI.VAnchor.Top);
 		}
 
 		private void CreateButton(HAnchor hAnchor, VAnchor vAnchor)

@@ -97,7 +97,7 @@ namespace MatterHackers.Agg.UI
 		{
 			RadioButton newRadioButton = new RadioButton(text);
 			newRadioButton.Margin = new BorderDouble(5, 0);
-			newRadioButton.HAnchor = UI.HAnchor.ParentLeft;
+			newRadioButton.HAnchor = UI.HAnchor.Left;
 			radioButtons.Add(newRadioButton);
 			AddChild(newRadioButton);
 

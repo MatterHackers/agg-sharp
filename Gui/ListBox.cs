@@ -144,7 +144,7 @@ namespace MatterHackers.Agg.UI
 			AutoScroll = true;
 			LocalBounds = new RectangleDouble(0, 0, bounds.Width, bounds.Height);
 			topToBottomItemList = new FlowLayoutWidget(FlowDirection.TopToBottom);
-			topToBottomItemList.HAnchor = UI.HAnchor.ParentLeft | UI.HAnchor.FitToChildren;
+			topToBottomItemList.HAnchor = UI.HAnchor.Left | UI.HAnchor.Fit;
 			base.AddChild(topToBottomItemList);
 		}
 
@@ -158,7 +158,7 @@ namespace MatterHackers.Agg.UI
 			FlowLayoutWidget itemHolder = new FlowLayoutWidget();
 			itemHolder.Name = "list item holder";
 			itemHolder.Margin = new BorderDouble(3, 0, 0, 0);
-			itemHolder.HAnchor = UI.HAnchor.ParentLeftRight | UI.HAnchor.FitToChildren;
+			itemHolder.HAnchor = UI.HAnchor.Stretch | UI.HAnchor.Fit;
 			itemHolder.AddChild(child);
 			//itemHolder.FitToChildren();
 			topToBottomItemList.AddChild(itemHolder, indexInChildrenList);

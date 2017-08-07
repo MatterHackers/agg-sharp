@@ -246,7 +246,7 @@ namespace MatterHackers.Agg.UI
 					if (textWidgetScreenBounds.Bottom < topOfKeyboard)
 					{
 						// make sure the screen is not resizing vertically
-						content.VAnchor = VAnchor.AbsolutePosition;
+						content.VAnchor = VAnchor.Absolute;
 						// move the screen up so we can see the bottom of the text widget
 						content.OriginRelativeParent = new Vector2(0, topOfKeyboard - textWidgetScreenBounds.Bottom + 3);
 					}
@@ -380,7 +380,7 @@ namespace MatterHackers.Agg.UI
 				IsActive = true;
 
 				// make sure the screen is not resizing vertically
-				content.VAnchor = VAnchor.AbsolutePosition;
+				content.VAnchor = VAnchor.Absolute;
 				// move the screen up so we can see the bottom of the text widget
 				content.OriginRelativeParent = new Vector2(0, topOfKeyboard - textWidgetScreenBounds.Bottom + 10);
 			}

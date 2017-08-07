@@ -64,8 +64,8 @@ namespace MatterHackers.Agg.UI
 		{
 			this.maxHeight = maxHeight;
 			this.MenuDirection = direction;
-			this.VAnchor = VAnchor.FitToChildren;
-			this.HAnchor = HAnchor.FitToChildren;
+			this.VAnchor = VAnchor.Fit;
+			this.HAnchor = HAnchor.Fit;
 		}
 
 		// If max height is > 0 it will limit the height of the menu
@@ -139,11 +139,11 @@ namespace MatterHackers.Agg.UI
 		{
 			var menuItem = new MenuItem(new GuiWidget()
 			{
-				HAnchor = HAnchor.ParentLeftRight,
+				HAnchor = HAnchor.Stretch,
 				Height = 1,
 				BackgroundColor = RGBA_Bytes.LightGray,
 				Margin = new BorderDouble(10, 1),
-				VAnchor = VAnchor.ParentCenter,
+				VAnchor = VAnchor.Center,
 			}, "HorizontalLine");
 			MenuItems.Add(menuItem);
 

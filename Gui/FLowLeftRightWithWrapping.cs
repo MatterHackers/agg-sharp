@@ -39,7 +39,7 @@ namespace MatterHackers.Agg.UI
 		public FLowLeftRightWithWrapping()
 			: base(FlowDirection.TopToBottom)
 		{
-			HAnchor = HAnchor.ParentLeftRight;
+			HAnchor = HAnchor.Stretch;
 		}
 
 		public override void OnParentChanged(EventArgs e)

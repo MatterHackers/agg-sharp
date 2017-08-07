@@ -47,27 +47,25 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// The widget will not change width automaticaly and will be positions at the OriginRelative to parent in x.
 		/// </summary>
-		AbsolutePosition = 0,
+		Absolute = 0,
 		/// <summary>
 		/// Hold the widget to the paretns left edge, respecting widget margin and parent padding.
 		/// </summary>
-		ParentLeft = 1,
-		ParentCenter = 2,
-		ParentRight = 4,
+		Left = 1,
+		Center = 2,
+		Right = 4,
 		/// <summary>
 		/// Maintain a size that horizontaly encloses all of its visible children.
 		/// </summary>
-		FitToChildren = 8,
+		Fit = 8,
 		/// <summary>
 		/// Maintin a width that is the same width as its parent.
 		/// </summary>
-		ParentLeftRight = ParentLeft | ParentRight,
-		ParentLeftCenter = ParentLeft | ParentCenter,
-		ParentCenterRight = ParentCenter | ParentRight,
+		Stretch = Left | Right,
 		/// <summary>
 		/// Take the larger of FitToChildren or ParentLeftRight.
 		/// </summary>
-		Max_FitToChildren_ParentWidth = FitToChildren | ParentLeftRight,
+		MaxFitOrStretch = Fit | Stretch,
 	};
 
 	/// <summary>
@@ -76,21 +74,19 @@ namespace MatterHackers.Agg.UI
 	[Flags]
 	public enum VAnchor
 	{
-		AbsolutePosition = 0,
-		ParentBottom = 1,
-		ParentCenter = 2,
-		ParentTop = 4,
+		Absolute = 0,
+		Bottom = 1,
+		Center = 2,
+		Top = 4,
 		/// <summary>
 		/// Maintain a size that verticaly encloses all of its visible children.
 		/// </summary>
-		FitToChildren = 8,
-		ParentBottomTop = ParentBottom | ParentTop,
-		ParentBottomCenter = ParentBottom | ParentCenter,
-		ParentCenterTop = ParentCenter | ParentTop,
+		Fit = 8,
+		Stretch = Bottom | Top,
 		/// <summary>
 		/// Take the larger of FitToChildren or ParentBottomTop.
 		/// </summary>
-		Max_FitToChildren_ParentHeight = FitToChildren | ParentBottomTop,
+		MaxFitOrStretch = Fit | Stretch,
 	};
 
 	public enum Cursors
@@ -364,15 +360,15 @@ namespace MatterHackers.Agg.UI
 			get
 			{
 				int numSet = 0;
-				if (HAnchorIsSet(UI.HAnchor.ParentLeft))
+				if (HAnchorIsSet(UI.HAnchor.Left))
 				{
 					numSet++;
 				}
-				if (HAnchorIsSet(UI.HAnchor.ParentCenter))
+				if (HAnchorIsSet(UI.HAnchor.Center))
 				{
 					numSet++;
 				}
-				if (HAnchorIsSet(UI.HAnchor.ParentRight))
+				if (HAnchorIsSet(UI.HAnchor.Right))
 				{
 					numSet++;
 				}
@@ -390,14 +386,14 @@ namespace MatterHackers.Agg.UI
 			{
 				if (hAnchor != value)
 				{
-					if (value == (HAnchor.ParentLeft | HAnchor.ParentCenter | HAnchor.ParentRight))
+					if (value == (HAnchor.Left | HAnchor.Center | HAnchor.Right))
 					{
 						BreakInDebugger("You cannot be anchored to all three positions.");
 					}
 					hAnchor = value;
 					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.HAnchor));
 
-					if (HAnchorIsSet(HAnchor.FitToChildren))
+					if (HAnchorIsSet(HAnchor.Fit))
 					{
 						OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.HAnchor));
 					}
@@ -417,15 +413,15 @@ namespace MatterHackers.Agg.UI
 			get
 			{
 				int numSet = 0;
-				if (VAnchorIsSet(UI.VAnchor.ParentBottom))
+				if (VAnchorIsSet(UI.VAnchor.Bottom))
 				{
 					numSet++;
 				}
-				if (VAnchorIsSet(UI.VAnchor.ParentCenter))
+				if (VAnchorIsSet(UI.VAnchor.Center))
 				{
 					numSet++;
 				}
-				if (VAnchorIsSet(UI.VAnchor.ParentTop))
+				if (VAnchorIsSet(UI.VAnchor.Top))
 				{
 					numSet++;
 				}
@@ -443,14 +439,14 @@ namespace MatterHackers.Agg.UI
 			{
 				if (vAnchor != value)
 				{
-					if (value == (VAnchor.ParentBottom | VAnchor.ParentCenter | VAnchor.ParentTop))
+					if (value == (VAnchor.Bottom | VAnchor.Center | VAnchor.Top))
 					{
 						BreakInDebugger("You cannot be anchored to all three positions.");
 					}
 					vAnchor = value;
 					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.VAnchor));
 
-					if (VAnchorIsSet(VAnchor.FitToChildren))
+					if (VAnchorIsSet(VAnchor.Fit))
 					{
 						OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.VAnchor));
 					}
@@ -462,14 +458,14 @@ namespace MatterHackers.Agg.UI
 
 		public void AnchorAll()
 		{
-			VAnchor = VAnchor.ParentBottom | VAnchor.ParentTop;
-			HAnchor = HAnchor.ParentLeft | HAnchor.ParentRight;
+			VAnchor = VAnchor.Bottom | VAnchor.Top;
+			HAnchor = HAnchor.Left | HAnchor.Right;
 		}
 
 		public void AnchorCenter()
 		{
-			VAnchor = VAnchor.ParentCenter;
-			HAnchor = HAnchor.ParentCenter;
+			VAnchor = VAnchor.Center;
+			HAnchor = HAnchor.Center;
 		}
 
 		protected Transform.Affine parentToChildTransform = Affine.NewIdentity();
@@ -1899,9 +1895,11 @@ namespace MatterHackers.Agg.UI
 					DrawBorderBounds(graphics2D, LocalBounds, DevicePadding, new RGBA_Bytes(Cyan, 128));
 
 					// show the bounds and inside with an x
-					graphics2D.Line(LocalBounds.Left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, Green);
-					graphics2D.Line(LocalBounds.Left, LocalBounds.Top, LocalBounds.Right, LocalBounds.Bottom, Green);
+					graphics2D.Line(LocalBounds.Left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, new RGBA_Bytes(Green, 100), 3);
+					graphics2D.Line(LocalBounds.Left, LocalBounds.Top, LocalBounds.Right, LocalBounds.Bottom, new RGBA_Bytes(Green, 100), 3);
 					graphics2D.Rectangle(LocalBounds, Red);
+
+					RenderAnchoreInfo(graphics2D);
 				}
 				if (debugShowSize)
 				{
@@ -1909,6 +1907,87 @@ namespace MatterHackers.Agg.UI
 						Width / 2, Max(Height - 16, Height / 2 - 16 * graphics2D.TransformStackCount), color: Magenta, justification: Font.Justification.Center);
 				}
 			}
+		}
+
+		private void RenderAnchoreInfo(Graphics2D graphics2D)
+		{
+			var color = RGBA_Bytes.Cyan;
+			double size = 5;
+
+			// an arrow pointing right
+			PathStorage rightArrow = new PathStorage();
+			rightArrow.MoveTo(LocalBounds.Center + new Vector2(size + size, 0));
+			rightArrow.LineTo(LocalBounds.Center + new Vector2(size, size * .6));
+			rightArrow.LineTo(LocalBounds.Center + new Vector2(size, -size * .6));
+
+			if (HAnchor == HAnchor.Absolute)
+			{
+				graphics2D.Line(LocalBounds.Center + new Vector2(0, size),
+					LocalBounds.Center + new Vector2(0, -size),
+					color, size * .5);
+			}
+			else // figure out what it is
+			{
+				if (HAnchor.HasFlag(HAnchor.Left))
+				{
+					graphics2D.Render(new VertexSourceApplyTransform(rightArrow, Affine.NewRotation(MathHelper.DegreesToRadians(180))), LocalBounds.Center, color);
+				}
+				if (HAnchor.HasFlag(HAnchor.Center))
+				{
+					graphics2D.Circle(LocalBounds.Center, size, color);
+				}
+				if (HAnchor.HasFlag(HAnchor.Right))
+				{
+					graphics2D.Render(rightArrow, LocalBounds.Center, color);
+				}
+				if (HAnchor.HasFlag(HAnchor.Fit))
+				{
+					// draw the right arrow offset
+					var offsetArrow = new VertexSourceApplyTransform(rightArrow, Affine.NewTranslation(-size * 3, 0));
+					graphics2D.Render(offsetArrow, LocalBounds.Center, color);
+					graphics2D.Render(new VertexSourceApplyTransform(offsetArrow, 
+						Affine.NewRotation(MathHelper.DegreesToRadians(180))), LocalBounds.Center, color);
+				}
+			}
+
+			if (VAnchor == VAnchor.Absolute)
+			{
+				graphics2D.Line(LocalBounds.Center + new Vector2(size, 0),
+					LocalBounds.Center + new Vector2(-size, 0),
+					color, size * .5);
+			}
+			else // figure out what it is
+			{
+				var upArrow = new VertexSourceApplyTransform(rightArrow, Affine.NewRotation(MathHelper.DegreesToRadians(90)));
+				if (VAnchor.HasFlag(VAnchor.Bottom))
+				{
+					graphics2D.Render(new VertexSourceApplyTransform(upArrow, Affine.NewRotation(MathHelper.DegreesToRadians(180))), LocalBounds.Center, color);
+				}
+				if (VAnchor.HasFlag(VAnchor.Center))
+				{
+					graphics2D.Circle(LocalBounds.Center, size, color);
+				}
+				if (VAnchor.HasFlag(VAnchor.Top))
+				{
+					graphics2D.Render(upArrow, LocalBounds.Center, color);
+				}
+				if (VAnchor.HasFlag(VAnchor.Fit))
+				{
+					// draw the right arrow offset
+					var offsetArrow = new VertexSourceApplyTransform(upArrow, Affine.NewTranslation(0, -size * 3));
+					graphics2D.Render(offsetArrow, LocalBounds.Center, color);
+					graphics2D.Render(new VertexSourceApplyTransform(offsetArrow,
+						Affine.NewRotation(MathHelper.DegreesToRadians(180))), LocalBounds.Center, color);
+				}
+			}
+
+
+			//case VAnchor.ParentBottom:
+			//case VAnchor.ParentCenter:
+			//case VAnchor.ParentTop:
+			//case VAnchor.FitToChildren:
+			//case VAnchor.ParentBottomTop:
+			//case VAnchor.Max_FitToChildren_ParentHeight:
 		}
 
 		private static void DrawBorderBounds(Graphics2D graphics2D, RectangleDouble bounds, BorderDouble border, RGBA_Bytes color)

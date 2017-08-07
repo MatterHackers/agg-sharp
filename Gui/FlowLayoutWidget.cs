@@ -37,8 +37,8 @@ namespace MatterHackers.Agg.UI
 
 		public FlowLayoutWidget(FlowDirection direction = FlowDirection.LeftToRight)
 		{
-			HAnchor = HAnchor.FitToChildren;
-			VAnchor = VAnchor.FitToChildren;
+			HAnchor = HAnchor.Fit;
+			VAnchor = VAnchor.Fit;
 
 			layoutEngine = new LayoutEngineFlow(direction);
 			LayoutEngine = layoutEngine;

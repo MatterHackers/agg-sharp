@@ -88,7 +88,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			TextWidget testButton1 = new TextWidget("text1");
 			testButton1.Margin = new BorderDouble(buttonMargin);
-			testButton1.VAnchor = VAnchor.ParentBottom | VAnchor.ParentTop;
+			testButton1.VAnchor = VAnchor.Bottom | VAnchor.Top;
 			containerTest.AddChild(testButton1);
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
@@ -122,7 +122,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			Button testButton1 = new Button("button1");
 			testButton1.Margin = new BorderDouble(buttonMargin);
-			testButton1.VAnchor = VAnchor.ParentBottom | VAnchor.ParentTop;
+			testButton1.VAnchor = VAnchor.Bottom | VAnchor.Top;
 			containerTest.AddChild(testButton1);
 
 			containerTest.LocalBounds = containerControl.LocalBounds;
@@ -152,7 +152,7 @@ namespace MatterHackers.Agg.UI.Tests
 				GuiWidget parent = new GuiWidget(100, 200);
 
 				GuiWidget childOuter = new GuiWidget(31, 32);
-				childOuter.VAnchor = VAnchor.FitToChildren | VAnchor.ParentBottomTop;
+				childOuter.VAnchor = VAnchor.Fit | VAnchor.Stretch;
 				Assert.IsTrue(childOuter.LocalBounds == new RectangleDouble(0, 0, 31, 32));
 
 				GuiWidget childInner = new GuiWidget(41, 42);
@@ -172,7 +172,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 				FlowLayoutWidget childOuter = new FlowLayoutWidget(FlowDirection.TopToBottom);
 				childOuter.Name = "childOuter";
-				childOuter.VAnchor = VAnchor.FitToChildren | VAnchor.ParentBottomTop;
+				childOuter.VAnchor = VAnchor.Fit | VAnchor.Stretch;
 				Assert.IsTrue(childOuter.LocalBounds == new RectangleDouble(0, 0, 0, 0));
 
 				GuiWidget childInner = new GuiWidget(41, 42);
@@ -193,7 +193,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 				FlowLayoutWidget childOuter = new FlowLayoutWidget(FlowDirection.TopToBottom);
 				childOuter.Name = "childOuter";
-				childOuter.HAnchor = HAnchor.FitToChildren | HAnchor.ParentLeftRight;
+				childOuter.HAnchor = HAnchor.Fit | HAnchor.Stretch;
 				Assert.IsTrue(childOuter.LocalBounds == new RectangleDouble(0, 0, 0, 0));
 
 				GuiWidget childInner = new GuiWidget(41, 42);
@@ -212,7 +212,7 @@ namespace MatterHackers.Agg.UI.Tests
 				GuiWidget parent = new GuiWidget(100, 200);
 
 				GuiWidget childOuter = new GuiWidget(31, 32);
-				childOuter.VAnchor = VAnchor.FitToChildren | VAnchor.ParentBottomTop;
+				childOuter.VAnchor = VAnchor.Fit | VAnchor.Stretch;
 				Assert.IsTrue(childOuter.LocalBounds == new RectangleDouble(0, 0, 31, 32));
 
 				parent.AddChild(childOuter);
@@ -232,7 +232,7 @@ namespace MatterHackers.Agg.UI.Tests
 			// this is what will happen when the default of minimum size gets set on guiwidget construction
 			{
 				GuiWidget parent = new GuiWidget(10, 10);
-				parent.HAnchor = HAnchor.FitToChildren;
+				parent.HAnchor = HAnchor.Fit;
 
 				GuiWidget child = new GuiWidget(30, 30);
 				Assert.IsTrue(parent.LocalBounds == new RectangleDouble(0, 0, 10, 10));
@@ -241,7 +241,7 @@ namespace MatterHackers.Agg.UI.Tests
 				child.LocalBounds = new RectangleDouble(-10, -11, 10, 11);
 				Assert.IsTrue(child.LocalBounds == new RectangleDouble(-10, -11, 20, 19));
 				Assert.IsTrue(parent.LocalBounds == new RectangleDouble(-10, 0, 20, 10));
-				parent.VAnchor = VAnchor.FitToChildren;
+				parent.VAnchor = VAnchor.Fit;
 				Assert.IsTrue(parent.LocalBounds == new RectangleDouble(-10, -11, 20, 19));
 				child.Width = 50; // we set the max so this won't work
 				Assert.IsTrue(child.LocalBounds == new RectangleDouble(-10, -11, 40, 19));
@@ -250,7 +250,7 @@ namespace MatterHackers.Agg.UI.Tests
 			// this is how it should be resized when we set it change to get smaller than the initial size
 			{
 				GuiWidget parent = new GuiWidget(10, 10);
-				parent.HAnchor = HAnchor.FitToChildren;
+				parent.HAnchor = HAnchor.Fit;
 
 				GuiWidget child = new GuiWidget(30, 30, SizeLimitsToSet.None);
 				Assert.IsTrue(parent.LocalBounds == new RectangleDouble(0, 0, 10, 10));
@@ -259,7 +259,7 @@ namespace MatterHackers.Agg.UI.Tests
 				child.LocalBounds = new RectangleDouble(-10, -11, 10, 11);
 				Assert.IsTrue(child.LocalBounds == new RectangleDouble(-10, -11, 10, 11));
 				Assert.IsTrue(parent.LocalBounds == new RectangleDouble(-10, 0, 10, 10));
-				parent.VAnchor = VAnchor.FitToChildren;
+				parent.VAnchor = VAnchor.Fit;
 				Assert.IsTrue(parent.LocalBounds == new RectangleDouble(-10, -11, 10, 11));
 				child.Width = 50; // we set the max so this won't work
 				Assert.IsTrue(child.LocalBounds == new RectangleDouble(-10, -11, 40, 11));
@@ -268,7 +268,7 @@ namespace MatterHackers.Agg.UI.Tests
 			// if we set min an max size it should no change size at all
 			{
 				GuiWidget parent = new GuiWidget(10, 10);
-				parent.HAnchor = HAnchor.FitToChildren;
+				parent.HAnchor = HAnchor.Fit;
 
 				GuiWidget child = new GuiWidget(30, 30, SizeLimitsToSet.Minimum | SizeLimitsToSet.Maximum);
 				Assert.IsTrue(parent.LocalBounds == new RectangleDouble(0, 0, 10, 10));
@@ -279,7 +279,7 @@ namespace MatterHackers.Agg.UI.Tests
 				child.Width = 50; // we set the max so this won't work
 				Assert.IsTrue(child.LocalBounds == new RectangleDouble(-10, -11, 20, 19));
 				Assert.IsTrue(parent.LocalBounds == new RectangleDouble(-10, 0, 20, 10));
-				parent.VAnchor = VAnchor.FitToChildren;
+				parent.VAnchor = VAnchor.Fit;
 				Assert.IsTrue(parent.LocalBounds == new RectangleDouble(-10, -11, 20, 19));
 			}
 		}
@@ -302,7 +302,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			Button testButton1 = new Button("button1");
 			testButton1.Margin = new BorderDouble(buttonMargin);
-			testButton1.VAnchor = VAnchor.ParentBottom | VAnchor.ParentTop;
+			testButton1.VAnchor = VAnchor.Bottom | VAnchor.Top;
 			containerTest.AddChild(testButton1);
 
 			containerTest.OnDraw(containerTest.NewGraphics2D());
@@ -328,8 +328,8 @@ namespace MatterHackers.Agg.UI.Tests
 				Button anchoredButton = new Button("button");
 				anchoredButton.Margin = new BorderDouble(); // make sure we have no margin
 				containerAnchor.AddChild(anchoredButton);
-				anchoredButton.HAnchor = HAnchor.ParentLeft;
-				anchoredButton.VAnchor = VAnchor.ParentBottom;
+				anchoredButton.HAnchor = HAnchor.Left;
+				anchoredButton.VAnchor = VAnchor.Bottom;
 				containerAnchor.OnDraw(containerAnchor.NewGraphics2D());
 
 				OutputImages(containerNoAnchor, containerAnchor);
@@ -358,8 +358,8 @@ namespace MatterHackers.Agg.UI.Tests
 				anchoredButton.LocalBounds = anchoredButtonBounds;
 				anchoredButton.Margin = new BorderDouble(); // make sure we have no margin
 				containerAnchor.AddChild(anchoredButton);
-				anchoredButton.HAnchor = HAnchor.ParentLeft;
-				anchoredButton.VAnchor = VAnchor.ParentBottom;
+				anchoredButton.HAnchor = HAnchor.Left;
+				anchoredButton.VAnchor = VAnchor.Bottom;
 				containerAnchor.OnDraw(containerAnchor.NewGraphics2D());
 
 				OutputImages(containerNoAnchor, containerAnchor);
@@ -382,8 +382,8 @@ namespace MatterHackers.Agg.UI.Tests
 				Button anchoredButton = new Button("button");
 				containerAnchor.AddChild(anchoredButton);
 				anchoredButton.Margin = new BorderDouble(5);
-				anchoredButton.HAnchor = HAnchor.ParentLeft;
-				anchoredButton.VAnchor = VAnchor.ParentBottom;
+				anchoredButton.HAnchor = HAnchor.Left;
+				anchoredButton.VAnchor = VAnchor.Bottom;
 				containerAnchor.OnDraw(containerAnchor.NewGraphics2D());
 				OutputImages(containerNoAnchor, containerAnchor);
 
@@ -406,8 +406,8 @@ namespace MatterHackers.Agg.UI.Tests
 				Button anchoredButton = new Button("button");
 				containerAnchor.AddChild(anchoredButton);
 				anchoredButton.Margin = new BorderDouble(5);
-				anchoredButton.HAnchor = HAnchor.ParentLeft;
-				anchoredButton.VAnchor = VAnchor.ParentBottom;
+				anchoredButton.HAnchor = HAnchor.Left;
+				anchoredButton.VAnchor = VAnchor.Bottom;
 				containerAnchor.OnDraw(containerAnchor.NewGraphics2D());
 				OutputImages(containerNoAnchor, containerAnchor);
 
@@ -428,8 +428,8 @@ namespace MatterHackers.Agg.UI.Tests
 				containerAnchor.DoubleBuffer = true;
 				Button anchoredButton = new Button("button");
 				containerAnchor.AddChild(anchoredButton);
-				anchoredButton.HAnchor = HAnchor.ParentLeft;
-				anchoredButton.VAnchor = VAnchor.ParentBottom;
+				anchoredButton.HAnchor = HAnchor.Left;
+				anchoredButton.VAnchor = VAnchor.Bottom;
 				anchoredButton.Margin = new BorderDouble(5);
 				containerAnchor.OnDraw(containerAnchor.NewGraphics2D());
 				OutputImages(containerNoAnchor, containerAnchor);
@@ -456,8 +456,8 @@ namespace MatterHackers.Agg.UI.Tests
 				Button anchoredButton = new Button("button");
 				anchoredButton.Margin = new BorderDouble(); // make sure we have no margin
 				containerAnchor.AddChild(anchoredButton);
-				anchoredButton.HAnchor = HAnchor.ParentRight;
-				anchoredButton.VAnchor = VAnchor.ParentBottom;
+				anchoredButton.HAnchor = HAnchor.Right;
+				anchoredButton.VAnchor = VAnchor.Bottom;
 				containerAnchor.OnDraw(containerAnchor.NewGraphics2D());
 				OutputImages(containerNoAnchor, containerAnchor);
 
@@ -479,8 +479,8 @@ namespace MatterHackers.Agg.UI.Tests
 				Button anchoredButton = new Button("button");
 				containerAnchor.AddChild(anchoredButton);
 				anchoredButton.Margin = new BorderDouble(5);
-				anchoredButton.HAnchor = HAnchor.ParentRight;
-				anchoredButton.VAnchor = VAnchor.ParentBottom;
+				anchoredButton.HAnchor = HAnchor.Right;
+				anchoredButton.VAnchor = VAnchor.Bottom;
 				containerAnchor.OnDraw(containerAnchor.NewGraphics2D());
 				OutputImages(containerNoAnchor, containerAnchor);
 
@@ -501,8 +501,8 @@ namespace MatterHackers.Agg.UI.Tests
 				containerAnchor.DoubleBuffer = true;
 				Button anchoredButton = new Button("button");
 				containerAnchor.AddChild(anchoredButton);
-				anchoredButton.HAnchor = HAnchor.ParentRight;
-				anchoredButton.VAnchor = VAnchor.ParentBottom;
+				anchoredButton.HAnchor = HAnchor.Right;
+				anchoredButton.VAnchor = VAnchor.Bottom;
 				anchoredButton.Margin = new BorderDouble(5);
 				containerAnchor.OnDraw(containerAnchor.NewGraphics2D());
 				OutputImages(containerNoAnchor, containerAnchor);
@@ -529,8 +529,8 @@ namespace MatterHackers.Agg.UI.Tests
 				Button anchoredButton = new Button("button");
 				anchoredButton.Margin = new BorderDouble(); // make sure we have no margin
 				containerAnchor.AddChild(anchoredButton);
-				anchoredButton.HAnchor = HAnchor.ParentRight;
-				anchoredButton.VAnchor = VAnchor.ParentTop;
+				anchoredButton.HAnchor = HAnchor.Right;
+				anchoredButton.VAnchor = VAnchor.Top;
 				containerAnchor.OnDraw(containerAnchor.NewGraphics2D());
 				OutputImages(containerNoAnchor, containerAnchor);
 
@@ -553,8 +553,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Button anchoredButton = new Button("button");
 			anchoredButton.Margin = new BorderDouble(); // make sure we have no margin
 			containerAnchor.AddChild(anchoredButton);
-			anchoredButton.HAnchor = HAnchor.ParentLeft | HAnchor.ParentRight;
-			anchoredButton.VAnchor = VAnchor.ParentBottom | VAnchor.ParentTop;
+			anchoredButton.HAnchor = HAnchor.Left | HAnchor.Right;
+			anchoredButton.VAnchor = VAnchor.Bottom | VAnchor.Top;
 			containerAnchor.OnDraw(containerAnchor.NewGraphics2D());
 			OutputImages(containerNoAnchor, containerAnchor);
 
@@ -593,8 +593,8 @@ namespace MatterHackers.Agg.UI.Tests
 
 			Button testButton1 = new Button("button1");
 			testButton1.Margin = buttonMargin;
-			testButton1.VAnchor = VAnchor.ParentCenter;
-			testButton1.HAnchor = HAnchor.ParentCenter;
+			testButton1.VAnchor = VAnchor.Center;
+			testButton1.HAnchor = HAnchor.Center;
 			containerTest.AddChild(testButton1);
 
 			containerTest.OnDraw(containerTest.NewGraphics2D());
@@ -641,8 +641,8 @@ namespace MatterHackers.Agg.UI.Tests
 			testRectangle.LocalBounds = offsetBounds;
 			testRectangle.BackgroundColor = RGBA_Bytes.Red;
 			testRectangle.Margin = buttonMargin;
-			testRectangle.VAnchor = VAnchor.ParentCenter;
-			testRectangle.HAnchor = HAnchor.ParentCenter;
+			testRectangle.VAnchor = VAnchor.Center;
+			testRectangle.HAnchor = HAnchor.Center;
 			containerTest.AddChild(testRectangle);
 
 			containerTest.OnDraw(containerTest.NewGraphics2D());
@@ -685,8 +685,8 @@ namespace MatterHackers.Agg.UI.Tests
 
 			Button testButton1 = new Button("button1");
 			testButton1.Margin = buttonMargin;
-			testButton1.VAnchor = VAnchor.ParentCenter | VAnchor.ParentTop;
-			testButton1.HAnchor = HAnchor.ParentCenter | HAnchor.ParentRight;
+			testButton1.VAnchor = VAnchor.Center | VAnchor.Top;
+			testButton1.HAnchor = HAnchor.Center | HAnchor.Right;
 			containerTest.AddChild(testButton1);
 
 			containerTest.OnDraw(containerTest.NewGraphics2D());
@@ -708,7 +708,7 @@ namespace MatterHackers.Agg.UI.Tests
 			contents.MinimumSize = new VectorMath.Vector2(0, 0);
 
 			// make sure the client area will get smaller when the contents get smaller
-			groupBox.ClientArea.VAnchor = Agg.UI.VAnchor.FitToChildren;
+			groupBox.ClientArea.VAnchor = Agg.UI.VAnchor.Fit;
 			groupBox.ClientArea.Name = "groupBox.ClientArea";
 
 			groupBox.AddChild(contents);

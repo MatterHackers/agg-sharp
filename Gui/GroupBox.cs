@@ -55,21 +55,21 @@
 
 		public GroupBox(GuiWidget groupBoxLabel)
 		{
-			HAnchor = HAnchor.FitToChildren;
-			VAnchor = VAnchor.FitToChildren;
+			HAnchor = HAnchor.Fit;
+			VAnchor = VAnchor.Fit;
 
 			this.Padding = new BorderDouble(14, 14, 14, 16);
 			groupBoxLabel.Margin = new BorderDouble(20, 0, 0, -this.Padding.Top);
-			groupBoxLabel.VAnchor = UI.VAnchor.ParentTop;
-			groupBoxLabel.HAnchor = UI.HAnchor.ParentLeft;
+			groupBoxLabel.VAnchor = UI.VAnchor.Top;
+			groupBoxLabel.HAnchor = UI.HAnchor.Left;
 			base.AddChild(groupBoxLabel);
 
 			this.groupBoxLabel = groupBoxLabel;
 
 			clientArea = new GuiWidget()
 			{
-				HAnchor = HAnchor.Max_FitToChildren_ParentWidth,
-				VAnchor = VAnchor.Max_FitToChildren_ParentHeight
+				HAnchor = HAnchor.MaxFitOrStretch,
+				VAnchor = VAnchor.MaxFitOrStretch
 			};
 			base.AddChild(clientArea);
 		}

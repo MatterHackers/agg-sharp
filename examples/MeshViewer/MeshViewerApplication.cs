@@ -77,7 +77,7 @@ namespace MatterHackers.MeshVisualizer
 			mainContainer.AddChild(viewArea);
 
 			FlowLayoutWidget buttonPanel = new FlowLayoutWidget(FlowDirection.LeftToRight);
-			buttonPanel.HAnchor = HAnchor.ParentLeftRight;
+			buttonPanel.HAnchor = HAnchor.Stretch;
 			buttonPanel.Padding = new BorderDouble(3, 3);
 			buttonPanel.BackgroundColor = RGBA_Bytes.DarkGray;
 
@@ -100,7 +100,7 @@ namespace MatterHackers.MeshVisualizer
 			buttonPanel.AddChild(wireframeCheckBox);
 
 			GuiWidget leftRightSpacer = new GuiWidget();
-			leftRightSpacer.HAnchor = HAnchor.ParentLeftRight;
+			leftRightSpacer.HAnchor = HAnchor.Stretch;
 			buttonPanel.AddChild(leftRightSpacer);
 
 			mainContainer.AddChild(buttonPanel);

@@ -54,14 +54,14 @@ namespace MatterHackers.Agg.UI
 					contentWidget.ClearRemovedFlag();
 					scrollingWindow.AddChild(contentWidget);
 
-					contentWidget.HAnchor = UI.HAnchor.ParentLeft | UI.HAnchor.FitToChildren;
-					contentWidget.VAnchor = UI.VAnchor.ParentBottom;
+					contentWidget.HAnchor = UI.HAnchor.Left | UI.HAnchor.Fit;
+					contentWidget.VAnchor = UI.VAnchor.Bottom;
 					Width = contentWidget.Width;
 					Height = contentWidget.Height;
 				}
 
-				scrollingWindow.HAnchor = HAnchor.ParentLeftRight;
-				scrollingWindow.VAnchor = VAnchor.ParentBottomTop;
+				scrollingWindow.HAnchor = HAnchor.Stretch;
+				scrollingWindow.VAnchor = VAnchor.Stretch;
 				if (layoutEngine.MaxHeight > 0 && Height > layoutEngine.MaxHeight)
 				{
 					MakeMenuHaveScroll(layoutEngine.MaxHeight);
@@ -184,12 +184,12 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
-			scrollingWindow.VAnchor = VAnchor.AbsolutePosition;
+			scrollingWindow.VAnchor = VAnchor.Absolute;
 			scrollingWindow.Height = maxHeight;
 			scrollingWindow.MinimumSize = new Vector2(Width + 15, 0);
 			Width = scrollingWindow.Width;
 			Height = maxHeight;
-			scrollingWindow.ScrollArea.VAnchor = VAnchor.FitToChildren;
+			scrollingWindow.ScrollArea.VAnchor = VAnchor.Fit;
 		}
 	}
 

@@ -70,15 +70,15 @@ namespace MatterHackers.Agg.UI.Tests
 
 			FlowLayoutWidget topToBottomContainer = new FlowLayoutWidget(FlowDirection.TopToBottom)
 			{
-				HAnchor = HAnchor.ParentLeftRight,
-				VAnchor = UI.VAnchor.ParentBottomTop,
+				HAnchor = HAnchor.Stretch,
+				VAnchor = UI.VAnchor.Stretch,
 			};
 			outerContainer.AddChild(topToBottomContainer);
 
 			GuiWidget childWidget = new GuiWidget()
 			{
-				HAnchor = HAnchor.ParentLeftRight,
-				VAnchor = VAnchor.ParentBottomTop,
+				HAnchor = HAnchor.Stretch,
+				VAnchor = VAnchor.Stretch,
 				Margin = new BorderDouble(marginSize),
 				BackgroundColor = RGBA_Bytes.Red,
 			};
@@ -135,7 +135,7 @@ namespace MatterHackers.Agg.UI.Tests
 	
 			FlowLayoutWidget flow1 = new FlowLayoutWidget(FlowDirection.LeftToRight);
 			flow1.Name = "flow1";
-			flow1.HAnchor = HAnchor.ParentLeftRight;
+			flow1.HAnchor = HAnchor.Stretch;
 			flow1.Padding = new BorderDouble(3, 3);
 			containerControl.AddChild(flow1);
 
@@ -200,7 +200,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			FlowLayoutWidget flow1 = new FlowLayoutWidget(FlowDirection.LeftToRight);
 			flow1.Name = "flow1";
-			flow1.HAnchor = HAnchor.ParentLeftRight;
+			flow1.HAnchor = HAnchor.Stretch;
 			flow1.Padding = new BorderDouble(3, 3);
 			containerControl.AddChild(flow1);
 
@@ -492,12 +492,12 @@ namespace MatterHackers.Agg.UI.Tests
 				containerControl.DoubleBuffer = true;
 				FlowLayoutWidget flowWidget = new FlowLayoutWidget()
 				{
-					HAnchor = HAnchor.Max_FitToChildren_ParentWidth,
+					HAnchor = HAnchor.MaxFitOrStretch,
 				};
 				containerControl.AddChild(flowWidget); // flowWidget = 0, 0, 300, 0
 				GuiWidget fitToChildrenOrParent = new GuiWidget(20, 20)
 				{
-					HAnchor = HAnchor.ParentLeftRight,
+					HAnchor = HAnchor.Stretch,
 				};
 				flowWidget.AddChild(fitToChildrenOrParent); // flowWidget = 0, 0, 300, 20  fitToChildrenOrParent = 0, 0, 300, 20
 				GuiWidget fixed10x10 = new GuiWidget(10, 10);
@@ -536,13 +536,13 @@ namespace MatterHackers.Agg.UI.Tests
 				containerControl.DoubleBuffer = true;
 				FlowLayoutWidget flowWidget = new FlowLayoutWidget()
 				{
-					HAnchor = HAnchor.Max_FitToChildren_ParentWidth,
+					HAnchor = HAnchor.MaxFitOrStretch,
 				};
 				containerControl.AddChild(flowWidget);
 				GuiWidget fitToChildrenOrParent = new GuiWidget(20, 20)
 				{
 					Name = "fitToChildrenOrParent",
-					HAnchor = HAnchor.Max_FitToChildren_ParentWidth,
+					HAnchor = HAnchor.MaxFitOrStretch,
 				};
 				flowWidget.AddChild(fitToChildrenOrParent); // flowWidget = 0, 0, 300, 20  fitToChildrenOrParent = 0, 0, 300, 20
 				GuiWidget fixed10x10 = new GuiWidget(10, 10);
@@ -593,12 +593,12 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.DoubleBuffer = true;
 
 			Button testButton1 = new Button("buttonLeft");
-			testButton1.VAnchor = VAnchor.ParentBottom;
+			testButton1.VAnchor = VAnchor.Bottom;
 			testButton1.Margin = buttonMargin;
 			flowLayout.AddChild(testButton1);
 
 			Button testButton2 = new Button("buttonRight");
-			testButton2.VAnchor = VAnchor.ParentBottom;
+			testButton2.VAnchor = VAnchor.Bottom;
 			testButton2.Margin = buttonMargin;
 			flowLayout.AddChild(testButton2);
 
@@ -651,7 +651,7 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.DoubleBuffer = true;
 
 			Button testButtonWide = new Button("Button Wide Text");
-			testButtonWide.HAnchor = HAnchor.ParentLeft;
+			testButtonWide.HAnchor = HAnchor.Left;
 			testButtonWide.Margin = buttonMargin;
 			flowLayout.AddChild(testButtonWide);
 
@@ -660,14 +660,14 @@ namespace MatterHackers.Agg.UI.Tests
 
 			Button testButton1 = new Button("button1");
 			testButton1.Margin = buttonMargin;
-			testButton1.HAnchor = HAnchor.ParentLeft | HAnchor.ParentRight;
+			testButton1.HAnchor = HAnchor.Left | HAnchor.Right;
 			flowLayout.AddChild(testButton1);
 
 			correctHeightOfFlowLayout += testButton1.Height + testButton1.Margin.Height;
 			Assert.AreEqual(flowLayout.Height, correctHeightOfFlowLayout, .001);
 
-			flowLayout.HAnchor = HAnchor.ParentLeft;
-			flowLayout.VAnchor = VAnchor.ParentBottom;
+			flowLayout.HAnchor = HAnchor.Left;
+			flowLayout.VAnchor = VAnchor.Bottom;
 			containerTest.AddChild(flowLayout);
 
 			Vector2 controlButton1Pos = controlButton1.OriginRelativeParent;
@@ -789,7 +789,7 @@ namespace MatterHackers.Agg.UI.Tests
 					buttonRight.Margin = buttonMargin;
 					rightToLeftFlowLayoutRight.AddChild(buttonRight);
 					rightToLeftFlowLayoutRight.SetBoundsToEncloseChildren();
-					rightToLeftFlowLayoutRight.VAnchor = VAnchor.ParentBottom;
+					rightToLeftFlowLayoutRight.VAnchor = VAnchor.Bottom;
 					rightToLeftFlowLayoutAll.AddChild(rightToLeftFlowLayoutRight);
 				}
 
@@ -799,7 +799,7 @@ namespace MatterHackers.Agg.UI.Tests
 					buttonLeft.Margin = buttonMargin;
 					rightToLeftFlowLayoutLeft.AddChild(buttonLeft);
 					rightToLeftFlowLayoutLeft.SetBoundsToEncloseChildren();
-					rightToLeftFlowLayoutLeft.VAnchor = VAnchor.ParentBottom;
+					rightToLeftFlowLayoutLeft.VAnchor = VAnchor.Bottom;
 					rightToLeftFlowLayoutAll.AddChild(rightToLeftFlowLayoutLeft);
 				}
 
@@ -955,12 +955,10 @@ namespace MatterHackers.Agg.UI.Tests
 					left.Margin = buttonMargin;
 					leftToRightFlowLayoutAll.AddChild(left);
 
-					leftToRightFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.ParentBottom, RGBA_Bytes.Orange));
-					leftToRightFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.ParentCenter, RGBA_Bytes.Yellow));
-					leftToRightFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.ParentTop, RGBA_Bytes.YellowGreen));
-					leftToRightFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.ParentBottomCenter, RGBA_Bytes.Green));
-					leftToRightFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.ParentCenterTop, RGBA_Bytes.Blue));
-					leftToRightFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.ParentBottomTop, RGBA_Bytes.Indigo));
+					leftToRightFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Bottom, RGBA_Bytes.Orange));
+					leftToRightFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Center, RGBA_Bytes.Yellow));
+					leftToRightFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Top, RGBA_Bytes.YellowGreen));
+					leftToRightFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Stretch, RGBA_Bytes.Indigo));
 
 					GuiWidget right = new GuiWidget(buttonSize, buttonSize);
 					right.BackgroundColor = RGBA_Bytes.Violet;
@@ -989,7 +987,7 @@ namespace MatterHackers.Agg.UI.Tests
 		{
 			GuiWidget middle = new GuiWidget(buttonSize / 2, buttonSize);
 			middle.Margin = buttonMargin;
-			middle.HAnchor = HAnchor.ParentLeftRight;
+			middle.HAnchor = HAnchor.Stretch;
 			middle.VAnchor = vAnchor;
 			middle.BackgroundColor = color;
 			return middle;
@@ -1075,12 +1073,10 @@ namespace MatterHackers.Agg.UI.Tests
 					left.Margin = buttonMargin;
 					rightToLeftFlowLayoutAll.AddChild(left);
 
-					rightToLeftFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.ParentBottom, RGBA_Bytes.Orange));
-					rightToLeftFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.ParentCenter, RGBA_Bytes.Yellow));
-					rightToLeftFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.ParentTop, RGBA_Bytes.YellowGreen));
-					rightToLeftFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.ParentBottomCenter, RGBA_Bytes.Green));
-					rightToLeftFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.ParentCenterTop, RGBA_Bytes.Blue));
-					rightToLeftFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.ParentBottomTop, RGBA_Bytes.Indigo));
+					rightToLeftFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Bottom, RGBA_Bytes.Orange));
+					rightToLeftFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Center, RGBA_Bytes.Yellow));
+					rightToLeftFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Top, RGBA_Bytes.YellowGreen));
+					rightToLeftFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Stretch, RGBA_Bytes.Indigo));
 
 					GuiWidget right = new GuiWidget(buttonSize, buttonSize);
 					right.BackgroundColor = RGBA_Bytes.Violet;
@@ -1185,12 +1181,10 @@ namespace MatterHackers.Agg.UI.Tests
 					bottom.Margin = buttonMargin;
 					bottomToTopFlowLayoutAll.AddChild(bottom);
 
-					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.ParentLeft, RGBA_Bytes.Orange));
-					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.ParentCenter, RGBA_Bytes.Yellow));
-					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.ParentRight, RGBA_Bytes.YellowGreen));
-					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.ParentLeftCenter, RGBA_Bytes.Green));
-					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.ParentCenterRight, RGBA_Bytes.Blue));
-					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.ParentLeftRight, RGBA_Bytes.Indigo));
+					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Left, RGBA_Bytes.Orange));
+					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Center, RGBA_Bytes.Yellow));
+					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Right, RGBA_Bytes.YellowGreen));
+					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Stretch, RGBA_Bytes.Indigo));
 
 					GuiWidget top = new GuiWidget(buttonSize, buttonSize);
 					top.BackgroundColor = RGBA_Bytes.Violet;
@@ -1219,7 +1213,7 @@ namespace MatterHackers.Agg.UI.Tests
 		{
 			GuiWidget middle = new GuiWidget(buttonSize, buttonSize / 2);
 			middle.Margin = buttonMargin;
-			middle.VAnchor = VAnchor.ParentBottomTop;
+			middle.VAnchor = VAnchor.Stretch;
 			middle.HAnchor = hAnchor;
 			middle.BackgroundColor = color;
 			return middle;
@@ -1305,12 +1299,10 @@ namespace MatterHackers.Agg.UI.Tests
 					top.Margin = buttonMargin;
 					bottomToTopFlowLayoutAll.AddChild(top);
 
-					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.ParentLeft, RGBA_Bytes.Orange));
-					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.ParentCenter, RGBA_Bytes.Yellow));
-					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.ParentRight, RGBA_Bytes.YellowGreen));
-					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.ParentLeftCenter, RGBA_Bytes.Green));
-					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.ParentCenterRight, RGBA_Bytes.Blue));
-					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.ParentLeftRight, RGBA_Bytes.Indigo));
+					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Left, RGBA_Bytes.Orange));
+					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Center, RGBA_Bytes.Yellow));
+					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Right, RGBA_Bytes.YellowGreen));
+					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Stretch, RGBA_Bytes.Indigo));
 
 					GuiWidget bottom = new GuiWidget(buttonSize, buttonSize);
 					bottom.BackgroundColor = RGBA_Bytes.Violet;
@@ -1409,7 +1401,7 @@ namespace MatterHackers.Agg.UI.Tests
 				GuiWidget item1 = new GuiWidget(10, 11);
 				GuiWidget item2 = new GuiWidget(20, 22);
 				GuiWidget item3 = new GuiWidget(30, 33);
-				item3.HAnchor = HAnchor.ParentLeftRight;
+				item3.HAnchor = HAnchor.Stretch;
 
 				leftToRightLayout.AddChild(item1);
 				leftToRightLayout.AddChild(item2);
@@ -1456,7 +1448,7 @@ namespace MatterHackers.Agg.UI.Tests
 				GuiWidget item1 = new GuiWidget(10, 11);
 				GuiWidget item2 = new GuiWidget(20, 22);
 				GuiWidget item3 = new GuiWidget(30, 33);
-				item3.VAnchor = VAnchor.ParentBottomTop;
+				item3.VAnchor = VAnchor.Stretch;
 
 				leftToRightLayout.AddChild(item1);
 				leftToRightLayout.AddChild(item2);
@@ -1482,7 +1474,7 @@ namespace MatterHackers.Agg.UI.Tests
 			GuiWidget item1 = new GuiWidget(10, 11);
 			GuiWidget item2 = new GuiWidget(20, 22);
 			GuiWidget item3 = new GuiWidget(30, 33);
-			item3.HAnchor = HAnchor.ParentLeftRight;
+			item3.HAnchor = HAnchor.Stretch;
 
 			leftToRightLayout.AddChild(item1);
 			leftToRightLayout.AddChild(item2);
@@ -1551,7 +1543,7 @@ namespace MatterHackers.Agg.UI.Tests
 				{
 					FlowLayoutWidget twoColumns = new FlowLayoutWidget();
 					twoColumns.Name = "twoColumns";
-					twoColumns.VAnchor = UI.VAnchor.ParentTop;
+					twoColumns.VAnchor = UI.VAnchor.Top;
 
 					{
 						leftColumn = new FlowLayoutWidget(FlowDirection.TopToBottom);
@@ -1622,8 +1614,8 @@ namespace MatterHackers.Agg.UI.Tests
 			// make sure a middle spacer grows and shrinks correctly
 			{
 				FlowLayoutWidget leftRightFlowLayout = new FlowLayoutWidget();
-				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.FitToChildren); // flow layout starts with FitToChildren
-				leftRightFlowLayout.HAnchor |= HAnchor.ParentLeftRight; // add to the existing flags ParentLeftRight (starts with FitToChildren)
+				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
+				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags ParentLeftRight (starts with FitToChildren)
 				// [<-><->] // attempting to make a visual descrition of what is happening
 				Assert.IsTrue(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
 				GuiWidget leftWidget = new GuiWidget(10, 10); // we call it left widget as it will be the first one in the left to right flow layout
@@ -1632,7 +1624,7 @@ namespace MatterHackers.Agg.UI.Tests
 				Assert.IsTrue(leftRightFlowLayout.Width == 10);
 
 				GuiWidget middleSpacer = new GuiWidget(0, 10); // this widget will hold the space
-				middleSpacer.HAnchor = HAnchor.ParentLeftRight; // by resizing to whatever width it can be
+				middleSpacer.HAnchor = HAnchor.Stretch; // by resizing to whatever width it can be
 				leftRightFlowLayout.AddChild(middleSpacer);
 				// [<->(10)(<->)<->]
 				Assert.IsTrue(leftRightFlowLayout.Width == 10);
@@ -1675,8 +1667,8 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				FlowLayoutWidget leftRightFlowLayout = new FlowLayoutWidget();
 				leftRightFlowLayout.Name = "leftRightFlowLayout";
-				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.FitToChildren); // flow layout starts with FitToChildren
-				leftRightFlowLayout.HAnchor |= HAnchor.ParentLeftRight; // add to the existing flags ParentLeftRight (starts with FitToChildren)
+				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
+				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags ParentLeftRight (starts with FitToChildren)
 				// [<-><->] // attempting to make a visual descrition of what is happening
 				Assert.IsTrue(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
 				GuiWidget leftWidget = new GuiWidget(10, 10); // we call it left widget as it will be the first one in the left to right flow layout
@@ -1687,10 +1679,10 @@ namespace MatterHackers.Agg.UI.Tests
 
 				FlowLayoutWidget middleFlowLayoutWrapper = new FlowLayoutWidget(); // we are going to wrap the implicitly middle items to test nested resizing
 				middleFlowLayoutWrapper.Name = "middleFlowLayoutWrapper";
-				middleFlowLayoutWrapper.HAnchor |= HAnchor.ParentLeftRight;
+				middleFlowLayoutWrapper.HAnchor |= HAnchor.Stretch;
 				GuiWidget middleSpacer = new GuiWidget(0, 10); // this widget will hold the space
 				middleSpacer.Name = "middleSpacer";
-				middleSpacer.HAnchor = HAnchor.ParentLeftRight; // by resizing to whatever width it can be
+				middleSpacer.HAnchor = HAnchor.Stretch; // by resizing to whatever width it can be
 				middleFlowLayoutWrapper.AddChild(middleSpacer);
 				// {<->(<->)<->}
 				leftRightFlowLayout.AddChild(middleFlowLayoutWrapper);
@@ -1728,14 +1720,14 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				FlowLayoutWidget leftRightFlowLayout = new FlowLayoutWidget();
 				leftRightFlowLayout.Name = "leftRightFlowLayout";
-				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.FitToChildren); // flow layout starts with FitToChildren
-				leftRightFlowLayout.HAnchor |= HAnchor.ParentLeftRight; // add to the existing flags ParentLeftRight (starts with FitToChildren)
+				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
+				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags ParentLeftRight (starts with FitToChildren)
 				// [<-><->] // attempting to make a visual descrition of what is happening
 				Assert.IsTrue(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
 
 				GuiWidget middleSpacer = new GuiWidget(0, 10); // this widget will hold the space
 				middleSpacer.Name = "middleSpacer";
-				middleSpacer.HAnchor = HAnchor.ParentLeftRight; // by resizing to whatever width it can be
+				middleSpacer.HAnchor = HAnchor.Stretch; // by resizing to whatever width it can be
 				leftRightFlowLayout.AddChild(middleSpacer);
 				// [<->(<->)<->]
 				Assert.IsTrue(leftRightFlowLayout.Width == 0);
@@ -1746,7 +1738,7 @@ namespace MatterHackers.Agg.UI.Tests
 				GuiWidget containerOuter = new GuiWidget(40, 20);
 				containerOuter.Name = "containerOuter";
 				GuiWidget containerInner = new GuiWidget(0, 20);
-				containerInner.HAnchor = HAnchor.ParentLeftRight | HAnchor.FitToChildren;
+				containerInner.HAnchor = HAnchor.Stretch | HAnchor.Fit;
 				containerInner.Name = "containerInner";
 				containerOuter.AddChild(containerInner);
 				Assert.IsTrue(containerInner.Width == 40);
@@ -1772,8 +1764,8 @@ namespace MatterHackers.Agg.UI.Tests
 			// make sure a middle spacer grows and shrinks correctly when in another guiwidget (not a flow widget) that is LeftRight
 			{
 				FlowLayoutWidget leftRightFlowLayout = new FlowLayoutWidget();
-				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.FitToChildren); // flow layout starts with FitToChildren
-				leftRightFlowLayout.HAnchor |= HAnchor.ParentLeftRight; // add to the existing flags ParentLeftRight (starts with FitToChildren)
+				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
+				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags ParentLeftRight (starts with FitToChildren)
 				// [<-><->] // attempting to make a visual descrition of what is happening
 				Assert.IsTrue(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
 				GuiWidget leftWidget = new GuiWidget(10, 10); // we call it left widget as it will be the first one in the left to right flow layout
@@ -1782,7 +1774,7 @@ namespace MatterHackers.Agg.UI.Tests
 				Assert.IsTrue(leftRightFlowLayout.Width == 10);
 
 				GuiWidget middleSpacer = new GuiWidget(0, 10); // this widget will hold the space
-				middleSpacer.HAnchor = HAnchor.ParentLeftRight; // by resizing to whatever width it can be
+				middleSpacer.HAnchor = HAnchor.Stretch; // by resizing to whatever width it can be
 				leftRightFlowLayout.AddChild(middleSpacer);
 				// [<->(10)(<->)<->]
 				Assert.IsTrue(leftRightFlowLayout.Width == 10);
@@ -1796,7 +1788,7 @@ namespace MatterHackers.Agg.UI.Tests
 				GuiWidget containerOuter = new GuiWidget(40, 20);
 				containerOuter.Name = "containerOuter";
 				GuiWidget containerInner = new GuiWidget(0, 20);
-				containerInner.HAnchor = HAnchor.ParentLeftRight | HAnchor.FitToChildren;
+				containerInner.HAnchor = HAnchor.Stretch | HAnchor.Fit;
 				containerInner.Name = "containerInner";
 				containerOuter.AddChild(containerInner);
 				Assert.IsTrue(containerInner.Width == 40);
@@ -1825,13 +1817,13 @@ namespace MatterHackers.Agg.UI.Tests
 		{
 			FlowLayoutWidget searchPanel = new FlowLayoutWidget();
 			searchPanel.BackgroundColor = new RGBA_Bytes(180, 180, 180);
-			searchPanel.HAnchor = HAnchor.ParentLeftRight;
+			searchPanel.HAnchor = HAnchor.Stretch;
 			searchPanel.Padding = new BorderDouble(3, 3);
 			{
 				TextEditWidget searchInput = new TextEditWidget("Test");
 				searchInput.Margin = new BorderDouble(6, 0);
-				searchInput.HAnchor = HAnchor.ParentLeftRight;
-				searchInput.VAnchor = VAnchor.ParentCenter;
+				searchInput.HAnchor = HAnchor.Stretch;
+				searchInput.VAnchor = VAnchor.Center;
 
 				Button searchButton = new Button("Search");
 				searchButton.Margin = new BorderDouble(right: 9);

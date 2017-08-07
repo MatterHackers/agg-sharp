@@ -95,7 +95,7 @@ namespace MatterHackers.Agg.UI
 
 		private void FixOriginXIfRightToLeft(GuiWidget parent)
 		{
-			if (parent.HAnchorIsSet(HAnchor.FitToChildren) && FlowDirection == UI.FlowDirection.RightToLeft)
+			if (parent.HAnchorIsSet(HAnchor.Fit) && FlowDirection == UI.FlowDirection.RightToLeft)
 			{
 				RectangleDouble encloseChildrenRect = parent.GetMinimumBoundsToEncloseChildren();
 
@@ -114,7 +114,7 @@ namespace MatterHackers.Agg.UI
 
 		private void FixOriginYIfTopToBottom(GuiWidget parent)
 		{
-			if (parent.VAnchorIsSet(VAnchor.FitToChildren) && FlowDirection == UI.FlowDirection.TopToBottom)
+			if (parent.VAnchorIsSet(VAnchor.Fit) && FlowDirection == UI.FlowDirection.TopToBottom)
 			{
 				RectangleDouble encloseChildrenRect = parent.GetMinimumBoundsToEncloseChildren();
 
@@ -163,10 +163,10 @@ namespace MatterHackers.Agg.UI
 			}
 			else
 			{
-				if (child.HAnchor == HAnchor.ParentLeftRight || child.HAnchorIsSet(HAnchor.FitToChildren))
+				if (child.HAnchor == HAnchor.Stretch || child.HAnchorIsSet(HAnchor.Fit))
 				{
 				}
-				else if (child.HAnchor != HAnchor.AbsolutePosition)
+				else if (child.HAnchor != HAnchor.Absolute)
 				{
 					throw new Exception("HAnchor for a left right flow widget needs to be none or ParentLeftRight.");
 				}
@@ -181,10 +181,10 @@ namespace MatterHackers.Agg.UI
 			}
 			else
 			{
-				if (child.VAnchor == VAnchor.ParentBottomTop || child.VAnchorIsSet(VAnchor.FitToChildren))
+				if (child.VAnchor == VAnchor.Stretch || child.VAnchorIsSet(VAnchor.Fit))
 				{
 				}
-				else if (child.VAnchor != VAnchor.AbsolutePosition)
+				else if (child.VAnchor != VAnchor.Absolute)
 				{
 					throw new Exception("VAnchor for a top bottom flow widget needs to be none or ParentTopBottom.");
 				}
@@ -233,12 +233,12 @@ namespace MatterHackers.Agg.UI
 						totalMinimumWidthOfAllItems += child.MinimumSize.x + child.DeviceMargin.Width;
 						totalMinimumHeightOfAllItems = Math.Max(totalMinimumHeightOfAllItems, child.MinimumSize.y + child.DeviceMargin.Height);
 
-						if (child.HAnchorIsSet(HAnchor.ParentLeftRight))
+						if (child.HAnchorIsSet(HAnchor.Stretch))
 						{
 							numItemsNeedingExpanding++;
 							totalWidthOfStaticItems += child.DeviceMargin.Width;
 						}
-						else if (child.HAnchor == HAnchor.AbsolutePosition || child.HAnchorIsSet(HAnchor.FitToChildren))
+						else if (child.HAnchor == HAnchor.Absolute || child.HAnchorIsSet(HAnchor.Fit))
 						{
 							totalWidthOfStaticItems += childBoundsWithMargin.Width;
 						}
@@ -252,12 +252,12 @@ namespace MatterHackers.Agg.UI
 					case UI.FlowDirection.BottomToTop:
 						totalMinimumWidthOfAllItems = Math.Max(totalMinimumWidthOfAllItems, child.MinimumSize.x + child.DeviceMargin.Width);
 						totalMinimumHeightOfAllItems += child.MinimumSize.y + child.DeviceMargin.Height;
-						if (child.VAnchorIsSet(VAnchor.ParentBottomTop))
+						if (child.VAnchorIsSet(VAnchor.Stretch))
 						{
 							numItemsNeedingExpanding++;
 							totalHeightOfStaticItems += child.DeviceMargin.Height;
 						}
-						else if (child.VAnchor == VAnchor.AbsolutePosition || child.VAnchorIsSet(VAnchor.FitToChildren))
+						else if (child.VAnchor == VAnchor.Absolute || child.VAnchorIsSet(VAnchor.Fit))
 						{
 							totalHeightOfStaticItems += childBoundsWithMargin.Height;
 						}
@@ -283,7 +283,7 @@ namespace MatterHackers.Agg.UI
 							{
 								double newX = curX - child.LocalBounds.Left + child.DeviceMargin.Left;
 								child.OriginRelativeParent = new Vector2(newX, child.OriginRelativeParent.y);
-								if (child.HAnchorIsSet(HAnchor.ParentLeftRight))
+								if (child.HAnchorIsSet(HAnchor.Stretch))
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
 									double newWidth = (parent.LocalBounds.Width - parent.DevicePadding.Width - totalWidthOfStaticItems) / numItemsNeedingExpanding;
@@ -303,7 +303,7 @@ namespace MatterHackers.Agg.UI
 						{
 							if (child.Visible == true)
 							{
-								if (child.HAnchorIsSet(HAnchor.ParentLeftRight))
+								if (child.HAnchorIsSet(HAnchor.Stretch))
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
 									double newWidth = (parent.LocalBounds.Width - parent.DevicePadding.Width - totalWidthOfStaticItems) / numItemsNeedingExpanding;
@@ -328,7 +328,7 @@ namespace MatterHackers.Agg.UI
 							{
 								double newY = curY - child.LocalBounds.Bottom + child.DeviceMargin.Bottom;
 								child.OriginRelativeParent = new Vector2(child.OriginRelativeParent.x, newY);
-								if (child.VAnchorIsSet(VAnchor.ParentBottomTop))
+								if (child.VAnchorIsSet(VAnchor.Stretch))
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
 									double newHeight = (parent.LocalBounds.Height - parent.DevicePadding.Height - totalHeightOfStaticItems) / numItemsNeedingExpanding;
@@ -348,7 +348,7 @@ namespace MatterHackers.Agg.UI
 						{
 							if (child.Visible == true)
 							{
-								if (child.VAnchorIsSet(VAnchor.ParentBottomTop))
+								if (child.VAnchorIsSet(VAnchor.Stretch))
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
 									double newHeight = (parent.LocalBounds.Height - parent.DevicePadding.Height - totalHeightOfStaticItems) / numItemsNeedingExpanding;

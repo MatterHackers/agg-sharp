@@ -373,8 +373,8 @@ namespace MatterHackers.Agg.UI
 			mainControlText = new TextWidget(noSelectionString)
 			{
 				AutoExpandBoundsToText = true,
-				VAnchor = VAnchor.ParentBottom | VAnchor.FitToChildren,
-				HAnchor = HAnchor.ParentLeft | HAnchor.FitToChildren,
+				VAnchor = VAnchor.Bottom | VAnchor.Fit,
+				HAnchor = HAnchor.Left | HAnchor.Fit,
 				Margin = new BorderDouble(10, 7, 7, 7),
 				TextColor = RGBA_Bytes.Black
 			};
@@ -546,8 +546,8 @@ namespace MatterHackers.Agg.UI
 		{
 			var rowContainer = new FlowLayoutWidget()
 			{
-				HAnchor = HAnchor.ParentLeftRight | HAnchor.FitToChildren,
-				VAnchor = VAnchor.FitToChildren,
+				HAnchor = HAnchor.Stretch | HAnchor.Fit,
+				VAnchor = VAnchor.Fit,
 				BackgroundColor = color
 			};
 
@@ -565,7 +565,7 @@ namespace MatterHackers.Agg.UI
 					ImageBuffer scaledImage = ImageBuffer.CreateScaledImage(leftImage, size, size);
 					rowContainer.AddChild(new ImageWidget(scaledImage)
 					{
-						VAnchor = VAnchor.ParentCenter,
+						VAnchor = VAnchor.Center,
 						Margin = new BorderDouble(MenuItemsPadding.Left, MenuItemsPadding.Bottom, 3, MenuItemsPadding.Top),
 					});
 					textWidget.Margin = new BorderDouble(0, MenuItemsPadding.Bottom, MenuItemsPadding.Right, MenuItemsPadding.Top);

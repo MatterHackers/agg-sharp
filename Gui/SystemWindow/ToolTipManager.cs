@@ -216,7 +216,7 @@ namespace MatterHackers.Agg.UI
 					toolTipWidget.AddChild(new WrappedTextWidget(toolTipText) 
 					{
 						Width = 350 * GuiWidget.DeviceScale,
-						HAnchor = HAnchor.FitToChildren,
+						HAnchor = HAnchor.Fit,
 					});
 
 					// Increase the delay to make long text stay on screen long enough to read
