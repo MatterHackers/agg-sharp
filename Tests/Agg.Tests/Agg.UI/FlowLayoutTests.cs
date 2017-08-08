@@ -888,16 +888,16 @@ namespace MatterHackers.Agg.UI.Tests
 		public void LeftRightWithAnchorLeftRightChildTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			double buttonSize = 40;
-			GuiWidget containerControl = new GuiWidget(buttonSize * 8, buttonSize * 3);
+			GuiWidget containerControl = new GuiWidget(buttonSize * 6, buttonSize * 3);
 			containerControl.Padding = controlPadding;
 			containerControl.DoubleBuffer = true;
 
-			RectangleDouble[] eightControlRectangles = new RectangleDouble[8];
-			RGBA_Bytes[] eightColors = new RGBA_Bytes[] { RGBA_Bytes.Red, RGBA_Bytes.Orange, RGBA_Bytes.Yellow, RGBA_Bytes.YellowGreen, RGBA_Bytes.Green, RGBA_Bytes.Blue, RGBA_Bytes.Indigo, RGBA_Bytes.Violet };
+			RectangleDouble[] eightControlRectangles = new RectangleDouble[6];
+			RGBA_Bytes[] testColors = new RGBA_Bytes[] { RGBA_Bytes.Red, RGBA_Bytes.Orange, RGBA_Bytes.Yellow, RGBA_Bytes.YellowGreen, RGBA_Bytes.Green, RGBA_Bytes.Blue };
 			{
 				double currentleft = controlPadding.Left + buttonMargin.Left;
 				double buttonHeightWithMargin = buttonSize + buttonMargin.Height;
-				double scaledWidth = (containerControl.Width - controlPadding.Width - buttonMargin.Width * 8 - buttonSize * 2) / 6;
+				double scaledWidth = (containerControl.Width - controlPadding.Width - buttonMargin.Width * 6 - buttonSize * 2) / 4;
 				// the left unsized rect
 				eightControlRectangles[0] = new RectangleDouble(
 						currentleft,
@@ -920,26 +920,18 @@ namespace MatterHackers.Agg.UI.Tests
 				currentleft += scaledWidth + buttonMargin.Width;
 				eightControlRectangles[3] = new RectangleDouble(currentleft, topAnchorY - buttonSize, currentleft + scaledWidth, topAnchorY);
 
-				// bottom center anchor
-				currentleft += scaledWidth + buttonMargin.Width;
-				eightControlRectangles[4] = new RectangleDouble(currentleft, bottomAnchorY, currentleft + scaledWidth, centerYOfContainer - buttonMargin.Top);
-
-				// center top anchor
-				currentleft += scaledWidth + buttonMargin.Width;
-				eightControlRectangles[5] = new RectangleDouble(currentleft, centerYOfContainer + buttonMargin.Bottom, currentleft + scaledWidth, topAnchorY);
-
 				// bottom top anchor
 				currentleft += scaledWidth + buttonMargin.Width;
-				eightControlRectangles[6] = new RectangleDouble(currentleft, bottomAnchorY, currentleft + scaledWidth, topAnchorY);
+				eightControlRectangles[4] = new RectangleDouble(currentleft, bottomAnchorY, currentleft + scaledWidth, topAnchorY);
 
 				// right anchor
 				currentleft += scaledWidth + buttonMargin.Width;
-				eightControlRectangles[7] = new RectangleDouble(currentleft, 0, currentleft + buttonSize, buttonSize);
+				eightControlRectangles[5] = new RectangleDouble(currentleft, 0, currentleft + buttonSize, buttonSize);
 
 				Graphics2D graphics = containerControl.NewGraphics2D();
-				for (int i = 0; i < 8; i++)
+				for (int i = 0; i < 6; i++)
 				{
-					graphics.FillRectangle(eightControlRectangles[i], eightColors[i]);
+					graphics.FillRectangle(eightControlRectangles[i], testColors[i]);
 				}
 			}
 
@@ -951,17 +943,17 @@ namespace MatterHackers.Agg.UI.Tests
 				leftToRightFlowLayoutAll.Padding = controlPadding;
 				{
 					GuiWidget left = new GuiWidget(buttonSize, buttonSize);
-					left.BackgroundColor = RGBA_Bytes.Red;
+					left.BackgroundColor = testColors[0];
 					left.Margin = buttonMargin;
 					leftToRightFlowLayoutAll.AddChild(left);
 
-					leftToRightFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Bottom, RGBA_Bytes.Orange));
-					leftToRightFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Center, RGBA_Bytes.Yellow));
-					leftToRightFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Top, RGBA_Bytes.YellowGreen));
-					leftToRightFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Stretch, RGBA_Bytes.Indigo));
+					leftToRightFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Bottom, testColors[1]));
+					leftToRightFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Center, testColors[2]));
+					leftToRightFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Top, testColors[3]));
+					leftToRightFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Stretch, testColors[4]));
 
 					GuiWidget right = new GuiWidget(buttonSize, buttonSize);
-					right.BackgroundColor = RGBA_Bytes.Violet;
+					right.BackgroundColor = testColors[5];
 					right.Margin = buttonMargin;
 					leftToRightFlowLayoutAll.AddChild(right);
 				}
@@ -972,7 +964,7 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			for (int i = 0; i < 8; i++)
+			for (int i = 0; i < 6; i++)
 			{
 				Assert.IsTrue(eightControlRectangles[i] == leftToRightFlowLayoutAll.Children[i].BoundsRelativeToParent);
 			}
@@ -1006,16 +998,16 @@ namespace MatterHackers.Agg.UI.Tests
 		public void RightLeftWithAnchorLeftRightChildTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			double buttonSize = 40;
-			GuiWidget containerControl = new GuiWidget(buttonSize * 8, buttonSize * 3);
+			GuiWidget containerControl = new GuiWidget(buttonSize * 6, buttonSize * 3);
 			containerControl.Padding = controlPadding;
 			containerControl.DoubleBuffer = true;
 
-			RectangleDouble[] eightControlRectangles = new RectangleDouble[8];
-			RGBA_Bytes[] eightColors = new RGBA_Bytes[] { RGBA_Bytes.Red, RGBA_Bytes.Orange, RGBA_Bytes.Yellow, RGBA_Bytes.YellowGreen, RGBA_Bytes.Green, RGBA_Bytes.Blue, RGBA_Bytes.Indigo, RGBA_Bytes.Violet };
+			RectangleDouble[] eightControlRectangles = new RectangleDouble[6];
+			RGBA_Bytes[] testColors = new RGBA_Bytes[] { RGBA_Bytes.Red, RGBA_Bytes.Orange, RGBA_Bytes.Yellow, RGBA_Bytes.YellowGreen, RGBA_Bytes.Green, RGBA_Bytes.Blue };
 			{
 				double currentLeft = containerControl.Width - controlPadding.Right - buttonMargin.Right - buttonSize;
 				double buttonHeightWithMargin = buttonSize + buttonMargin.Height;
-				double scaledWidth = (containerControl.Width - controlPadding.Width - buttonMargin.Width * 8 - buttonSize * 2) / 6;
+				double scaledWidth = (containerControl.Width - controlPadding.Width - buttonMargin.Width * 6 - buttonSize * 2) / 4;
 				// the left unsized rect
 				eightControlRectangles[0] = new RectangleDouble(
 						currentLeft,
@@ -1038,26 +1030,18 @@ namespace MatterHackers.Agg.UI.Tests
 				currentLeft -= scaledWidth + buttonMargin.Width;
 				eightControlRectangles[3] = new RectangleDouble(currentLeft, topAnchorY - buttonSize, currentLeft + scaledWidth, topAnchorY);
 
-				// bottom center anchor
-				currentLeft -= scaledWidth + buttonMargin.Width;
-				eightControlRectangles[4] = new RectangleDouble(currentLeft, bottomAnchorY, currentLeft + scaledWidth, centerYOfContainer - buttonMargin.Top);
-
-				// center top anchor
-				currentLeft -= scaledWidth + buttonMargin.Width;
-				eightControlRectangles[5] = new RectangleDouble(currentLeft, centerYOfContainer + buttonMargin.Bottom, currentLeft + scaledWidth, topAnchorY);
-
 				// bottom top anchor
 				currentLeft -= scaledWidth + buttonMargin.Width;
-				eightControlRectangles[6] = new RectangleDouble(currentLeft, bottomAnchorY, currentLeft + scaledWidth, topAnchorY);
+				eightControlRectangles[4] = new RectangleDouble(currentLeft, bottomAnchorY, currentLeft + scaledWidth, topAnchorY);
 
 				// right anchor
 				currentLeft -= buttonSize + buttonMargin.Width;
-				eightControlRectangles[7] = new RectangleDouble(currentLeft, 0, currentLeft + buttonSize, buttonSize);
+				eightControlRectangles[5] = new RectangleDouble(currentLeft, 0, currentLeft + buttonSize, buttonSize);
 
 				Graphics2D graphics = containerControl.NewGraphics2D();
-				for (int i = 0; i < 8; i++)
+				for (int i = 0; i < 6; i++)
 				{
-					graphics.FillRectangle(eightControlRectangles[i], eightColors[i]);
+					graphics.FillRectangle(eightControlRectangles[i], testColors[i]);
 				}
 			}
 
@@ -1069,17 +1053,17 @@ namespace MatterHackers.Agg.UI.Tests
 				rightToLeftFlowLayoutAll.Padding = controlPadding;
 				{
 					GuiWidget left = new GuiWidget(buttonSize, buttonSize);
-					left.BackgroundColor = RGBA_Bytes.Red;
+					left.BackgroundColor = testColors[0];
 					left.Margin = buttonMargin;
 					rightToLeftFlowLayoutAll.AddChild(left);
 
-					rightToLeftFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Bottom, RGBA_Bytes.Orange));
-					rightToLeftFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Center, RGBA_Bytes.Yellow));
-					rightToLeftFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Top, RGBA_Bytes.YellowGreen));
-					rightToLeftFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Stretch, RGBA_Bytes.Indigo));
+					rightToLeftFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Bottom, testColors[1]));
+					rightToLeftFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Center, testColors[2]));
+					rightToLeftFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Top, testColors[3]));
+					rightToLeftFlowLayoutAll.AddChild(CreateLeftToRightMiddleWidget(buttonMargin, buttonSize, VAnchor.Stretch, testColors[4]));
 
 					GuiWidget right = new GuiWidget(buttonSize, buttonSize);
-					right.BackgroundColor = RGBA_Bytes.Violet;
+					right.BackgroundColor = testColors[5];
 					right.Margin = buttonMargin;
 					rightToLeftFlowLayoutAll.AddChild(right);
 				}
@@ -1090,7 +1074,7 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			for (int i = 0; i < 8; i++)
+			for (int i = 0; i < 6; i++)
 			{
 				Assert.IsTrue(eightControlRectangles[i].Equals(rightToLeftFlowLayoutAll.Children[i].BoundsRelativeToParent, .001));
 			}
@@ -1114,16 +1098,16 @@ namespace MatterHackers.Agg.UI.Tests
 		public void BottomTopWithAnchorBottomTopChildTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			double buttonSize = 40;
-			GuiWidget containerControl = new GuiWidget(buttonSize * 3, buttonSize * 8);
+			GuiWidget containerControl = new GuiWidget(buttonSize * 3, buttonSize * 6);
 			containerControl.Padding = controlPadding;
 			containerControl.DoubleBuffer = true;
 
-			RectangleDouble[] eightControlRectangles = new RectangleDouble[8];
-			RGBA_Bytes[] eightColors = new RGBA_Bytes[] { RGBA_Bytes.Red, RGBA_Bytes.Orange, RGBA_Bytes.Yellow, RGBA_Bytes.YellowGreen, RGBA_Bytes.Green, RGBA_Bytes.Blue, RGBA_Bytes.Indigo, RGBA_Bytes.Violet };
+			RectangleDouble[] eightControlRectangles = new RectangleDouble[6];
+			RGBA_Bytes[] sixColors = new RGBA_Bytes[] { RGBA_Bytes.Red, RGBA_Bytes.Orange, RGBA_Bytes.Yellow, RGBA_Bytes.YellowGreen, RGBA_Bytes.Green, RGBA_Bytes.Blue };
 			{
 				double currentBottom = controlPadding.Bottom + buttonMargin.Bottom;
 				double buttonWidthWithMargin = buttonSize + buttonMargin.Width;
-				double scaledHeight = (containerControl.Height - controlPadding.Height - buttonMargin.Height * 8 - buttonSize * 2) / 6;
+				double scaledHeight = (containerControl.Height - controlPadding.Height - buttonMargin.Height * 6 - buttonSize * 2) / 4;
 				// the bottom unsized rect
 				eightControlRectangles[0] = new RectangleDouble(
 						0,
@@ -1146,26 +1130,18 @@ namespace MatterHackers.Agg.UI.Tests
 				currentBottom += scaledHeight + buttonMargin.Height;
 				eightControlRectangles[3] = new RectangleDouble(rightAnchorX - buttonSize, currentBottom, rightAnchorX, currentBottom + scaledHeight);
 
-				// left center anchor
-				currentBottom += scaledHeight + buttonMargin.Height;
-				eightControlRectangles[4] = new RectangleDouble(leftAnchorX, currentBottom, centerXOfContainer - buttonMargin.Right, currentBottom + scaledHeight);
-
-				// center right anchor
-				currentBottom += scaledHeight + buttonMargin.Height;
-				eightControlRectangles[5] = new RectangleDouble(centerXOfContainer + buttonMargin.Left, currentBottom, rightAnchorX, currentBottom + scaledHeight);
-
 				// left right anchor
 				currentBottom += scaledHeight + buttonMargin.Height;
-				eightControlRectangles[6] = new RectangleDouble(leftAnchorX, currentBottom, rightAnchorX, currentBottom + scaledHeight);
+				eightControlRectangles[4] = new RectangleDouble(leftAnchorX, currentBottom, rightAnchorX, currentBottom + scaledHeight);
 
 				// top anchor
 				currentBottom += scaledHeight + buttonMargin.Height;
-				eightControlRectangles[7] = new RectangleDouble(0, currentBottom, buttonSize, currentBottom + buttonSize);
+				eightControlRectangles[5] = new RectangleDouble(0, currentBottom, buttonSize, currentBottom + buttonSize);
 
 				Graphics2D graphics = containerControl.NewGraphics2D();
-				for (int i = 0; i < 8; i++)
+				for (int i = 0; i < 6; i++)
 				{
-					graphics.FillRectangle(eightControlRectangles[i], eightColors[i]);
+					graphics.FillRectangle(eightControlRectangles[i], sixColors[i]);
 				}
 			}
 
@@ -1177,17 +1153,17 @@ namespace MatterHackers.Agg.UI.Tests
 				bottomToTopFlowLayoutAll.Padding = controlPadding;
 				{
 					GuiWidget bottom = new GuiWidget(buttonSize, buttonSize);
-					bottom.BackgroundColor = RGBA_Bytes.Red;
+					bottom.BackgroundColor = sixColors[0];
 					bottom.Margin = buttonMargin;
 					bottomToTopFlowLayoutAll.AddChild(bottom);
 
-					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Left, RGBA_Bytes.Orange));
-					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Center, RGBA_Bytes.Yellow));
-					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Right, RGBA_Bytes.YellowGreen));
-					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Stretch, RGBA_Bytes.Indigo));
+					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Left, sixColors[1]));
+					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Center, sixColors[2]));
+					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Right, sixColors[3]));
+					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Stretch, sixColors[4]));
 
 					GuiWidget top = new GuiWidget(buttonSize, buttonSize);
-					top.BackgroundColor = RGBA_Bytes.Violet;
+					top.BackgroundColor = sixColors[5];
 					top.Margin = buttonMargin;
 					bottomToTopFlowLayoutAll.AddChild(top);
 				}
@@ -1198,7 +1174,7 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			for (int i = 0; i < 8; i++)
+			for (int i = 0; i < 6; i++)
 			{
 				Assert.IsTrue(eightControlRectangles[i] == bottomToTopFlowLayoutAll.Children[i].BoundsRelativeToParent);
 			}
@@ -1232,16 +1208,16 @@ namespace MatterHackers.Agg.UI.Tests
 		public void TopBottomWithAnchorBottomTopChildTest(BorderDouble controlPadding, BorderDouble buttonMargin)
 		{
 			double buttonSize = 40;
-			GuiWidget containerControl = new GuiWidget(buttonSize * 3, buttonSize * 8);
+			GuiWidget containerControl = new GuiWidget(buttonSize * 3, buttonSize * 6);
 			containerControl.Padding = controlPadding;
 			containerControl.DoubleBuffer = true;
 
-			RectangleDouble[] eightControlRectangles = new RectangleDouble[8];
-			RGBA_Bytes[] eightColors = new RGBA_Bytes[] { RGBA_Bytes.Red, RGBA_Bytes.Orange, RGBA_Bytes.Yellow, RGBA_Bytes.YellowGreen, RGBA_Bytes.Green, RGBA_Bytes.Blue, RGBA_Bytes.Indigo, RGBA_Bytes.Violet };
+			RectangleDouble[] eightControlRectangles = new RectangleDouble[6];
+			RGBA_Bytes[] testColors = new RGBA_Bytes[] { RGBA_Bytes.Red, RGBA_Bytes.Orange, RGBA_Bytes.Yellow, RGBA_Bytes.YellowGreen, RGBA_Bytes.Green, RGBA_Bytes.Blue };
 			{
 				double currentBottom = containerControl.Height - controlPadding.Top - buttonMargin.Top - buttonSize;
 				double buttonWidthWithMargin = buttonSize + buttonMargin.Width;
-				double scaledHeight = (containerControl.Height - controlPadding.Height - buttonMargin.Height * 8 - buttonSize * 2) / 6;
+				double scaledHeight = (containerControl.Height - controlPadding.Height - buttonMargin.Height * 6 - buttonSize * 2) / 4;
 				// the bottom unsized rect
 				eightControlRectangles[0] = new RectangleDouble(
 						0,
@@ -1264,26 +1240,18 @@ namespace MatterHackers.Agg.UI.Tests
 				currentBottom -= scaledHeight + buttonMargin.Height;
 				eightControlRectangles[3] = new RectangleDouble(rightAnchorX - buttonSize, currentBottom, rightAnchorX, currentBottom + scaledHeight);
 
-				// left center anchor
-				currentBottom -= scaledHeight + buttonMargin.Height;
-				eightControlRectangles[4] = new RectangleDouble(leftAnchorX, currentBottom, centerXOfContainer - buttonMargin.Right, currentBottom + scaledHeight);
-
-				// center right anchor
-				currentBottom -= scaledHeight + buttonMargin.Height;
-				eightControlRectangles[5] = new RectangleDouble(centerXOfContainer + buttonMargin.Left, currentBottom, rightAnchorX, currentBottom + scaledHeight);
-
 				// left right anchor
 				currentBottom -= scaledHeight + buttonMargin.Height;
-				eightControlRectangles[6] = new RectangleDouble(leftAnchorX, currentBottom, rightAnchorX, currentBottom + scaledHeight);
+				eightControlRectangles[4] = new RectangleDouble(leftAnchorX, currentBottom, rightAnchorX, currentBottom + scaledHeight);
 
 				// top anchor
 				currentBottom -= buttonSize + buttonMargin.Height;
-				eightControlRectangles[7] = new RectangleDouble(0, currentBottom, buttonSize, currentBottom + buttonSize);
+				eightControlRectangles[5] = new RectangleDouble(0, currentBottom, buttonSize, currentBottom + buttonSize);
 
 				Graphics2D graphics = containerControl.NewGraphics2D();
-				for (int i = 0; i < 8; i++)
+				for (int i = 0; i < 6; i++)
 				{
-					graphics.FillRectangle(eightControlRectangles[i], eightColors[i]);
+					graphics.FillRectangle(eightControlRectangles[i], testColors[i]);
 				}
 			}
 
@@ -1295,17 +1263,17 @@ namespace MatterHackers.Agg.UI.Tests
 				bottomToTopFlowLayoutAll.Padding = controlPadding;
 				{
 					GuiWidget top = new GuiWidget(buttonSize, buttonSize);
-					top.BackgroundColor = RGBA_Bytes.Red;
+					top.BackgroundColor = testColors[0];
 					top.Margin = buttonMargin;
 					bottomToTopFlowLayoutAll.AddChild(top);
 
-					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Left, RGBA_Bytes.Orange));
-					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Center, RGBA_Bytes.Yellow));
-					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Right, RGBA_Bytes.YellowGreen));
-					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Stretch, RGBA_Bytes.Indigo));
+					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Left, testColors[1]));
+					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Center, testColors[2]));
+					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Right, testColors[3]));
+					bottomToTopFlowLayoutAll.AddChild(CreateBottomToTopMiddleWidget(buttonMargin, buttonSize, HAnchor.Stretch, testColors[4]));
 
 					GuiWidget bottom = new GuiWidget(buttonSize, buttonSize);
-					bottom.BackgroundColor = RGBA_Bytes.Violet;
+					bottom.BackgroundColor = testColors[5];
 					bottom.Margin = buttonMargin;
 					bottomToTopFlowLayoutAll.AddChild(bottom);
 				}
@@ -1316,7 +1284,7 @@ namespace MatterHackers.Agg.UI.Tests
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
 
-			for (int i = 0; i < 8; i++)
+			for (int i = 0; i < 6; i++)
 			{
 				Assert.IsTrue(eightControlRectangles[i].Equals(bottomToTopFlowLayoutAll.Children[i].BoundsRelativeToParent, .001));
 			}
