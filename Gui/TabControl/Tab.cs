@@ -82,7 +82,7 @@ namespace MatterHackers.Agg.UI
 		{
 			tabTitle = new TextWidget(tabText, pointSize: pointSize, textColor: textColor)
 			{
-				VAnchor = VAnchor.ParentCenter,
+				VAnchor = VAnchor.Center,
 			};
 			tabTitle.AutoExpandBoundsToText = true;
 			widgetState.AddChild(tabTitle);
@@ -171,10 +171,10 @@ namespace MatterHackers.Agg.UI
 				// Adorn the active tab with a underline bar
 				widgetState.AddChild(new GuiWidget()
 				{
-					HAnchor = HAnchor.ParentLeftRight,
+					HAnchor = HAnchor.Stretch,
 					Height = UnderlineHeight,
 					BackgroundColor = ActiveTheme.Instance.PrimaryAccentColor,
-					VAnchor = VAnchor.ParentBottom
+					VAnchor = VAnchor.Bottom
 				});
 			}
 

@@ -98,8 +98,8 @@ namespace MatterHackers.Agg.Tests
 			var rootClickable = new GuiWidget()
 			{
 				Width = 50,
-				HAnchor = HAnchor.ParentLeftRight,
-				VAnchor = VAnchor.ParentBottomTop,
+				HAnchor = HAnchor.Stretch,
+				VAnchor = VAnchor.Stretch,
 				Margin = new BorderDouble(50),
 				Name = "rootClickable",
 				BackgroundColor = RGBA_Bytes.Blue
@@ -140,7 +140,7 @@ namespace MatterHackers.Agg.Tests
 				Width = 35,
 				Height = 25,
 				OriginRelativeParent = new VectorMath.Vector2(0, 10),
-				HAnchor = HAnchor.ParentRight,
+				HAnchor = HAnchor.Right,
 				Name = "purpleClickable",
 				Margin = new BorderDouble(10),
 				BackgroundColor = new RGBA_Bytes(141, 0, 206)
@@ -180,8 +180,8 @@ namespace MatterHackers.Agg.Tests
 			var rootClickable = new GuiWidget()
 			{
 				Width = 50,
-				HAnchor = HAnchor.ParentLeftRight,
-				VAnchor = VAnchor.ParentBottomTop,
+				HAnchor = HAnchor.Stretch,
+				VAnchor = VAnchor.Stretch,
 				Margin = new BorderDouble(50),
 				Name = "rootClickable",
 				BackgroundColor = RGBA_Bytes.Blue
@@ -307,8 +307,8 @@ namespace MatterHackers.Agg.Tests
 			var rootClickable = new GuiWidget()
 			{
 				Width = 50,
-				HAnchor = HAnchor.ParentLeftRight,
-				VAnchor = VAnchor.ParentBottomTop,
+				HAnchor = HAnchor.Stretch,
+				VAnchor = VAnchor.Stretch,
 				Margin = new BorderDouble(50),
 				Name = "rootClickable",
 				BackgroundColor = RGBA_Bytes.Blue

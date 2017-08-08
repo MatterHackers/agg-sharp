@@ -48,11 +48,11 @@ namespace MatterHackers.Agg.UI
 				DoubleBuffer = doubleBufferText,
 			};
 			textWidget.AutoExpandBoundsToText = true;
-			textWidget.HAnchor = HAnchor.ParentLeft;
-			textWidget.VAnchor = VAnchor.ParentCenter;
+			textWidget.HAnchor = HAnchor.Left;
+			textWidget.VAnchor = VAnchor.Center;
 			unwrappedText = text;
-			HAnchor = HAnchor.ParentLeftRight;
-			VAnchor = VAnchor.FitToChildren;
+			HAnchor = HAnchor.Stretch;
+			VAnchor = VAnchor.Fit;
 			AddChild(textWidget);
 		}
 

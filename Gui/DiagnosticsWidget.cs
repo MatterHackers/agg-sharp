@@ -134,9 +134,9 @@ namespace MatterHackers.Agg.UI
 		public LineWidget(double width, double height)
 			: base(width, height)
 		{
-			VAnchor = UI.VAnchor.ParentBottomTop;
-			VAnchor = UI.VAnchor.FitToChildren;
-			HAnchor = UI.HAnchor.FitToChildren;
+			VAnchor = UI.VAnchor.Stretch;
+			VAnchor = UI.VAnchor.Fit;
+			HAnchor = UI.HAnchor.Fit;
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)

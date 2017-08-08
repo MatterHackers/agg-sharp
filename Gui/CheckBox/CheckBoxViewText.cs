@@ -35,7 +35,7 @@ namespace MatterHackers.Agg.UI
 			FlowLayoutWidget leftToRight = new FlowLayoutWidget();
 			GuiWidget boxSpace = new GuiWidget(CheckBoxWidth * 2, 1)
 			{ 
-				VAnchor = VAnchor.ParentCenter,
+				VAnchor = VAnchor.Center,
 			};
 			leftToRight.AddChild(boxSpace);
 
@@ -46,8 +46,8 @@ namespace MatterHackers.Agg.UI
 			AnchorAll();
 
 			Padding = DefaultPadding;
-			HAnchor = UI.HAnchor.FitToChildren;
-			VAnchor = UI.VAnchor.FitToChildren;
+			HAnchor = UI.HAnchor.Fit;
+			VAnchor = UI.VAnchor.Fit;
 
 			if (textColor.Alpha0To1 > 0)
 			{

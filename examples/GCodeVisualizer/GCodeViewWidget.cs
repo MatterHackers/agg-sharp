@@ -189,8 +189,8 @@ namespace MatterHackers.GCodeVisualizer
 			{
 				TextWidget noGCodeLoaded = new TextWidget(string.Format("Not a valid GCode file."));
 				noGCodeLoaded.Margin = new BorderDouble(0, 0, 0, 0);
-				noGCodeLoaded.VAnchor = Agg.UI.VAnchor.ParentCenter;
-				noGCodeLoaded.HAnchor = Agg.UI.HAnchor.ParentCenter;
+				noGCodeLoaded.VAnchor = Agg.UI.VAnchor.Center;
+				noGCodeLoaded.HAnchor = Agg.UI.HAnchor.Center;
 				this.AddChild(noGCodeLoaded);
 			}
 			else

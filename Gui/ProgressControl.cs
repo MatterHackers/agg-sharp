@@ -128,7 +128,7 @@ namespace MatterHackers.Agg.UI
 			processTextWidget = new TextWidget(message, textColor: textColor);
 			processTextWidget.AutoExpandBoundsToText = true;
 			processTextWidget.Margin = new BorderDouble(leftMargin, 0, 5, 0);
-			processTextWidget.VAnchor = VAnchor.ParentCenter;
+			processTextWidget.VAnchor = VAnchor.Center;
 			AddChild(processTextWidget);
 
 			progressBar = new ProgressBar(barWidgth, barHeight)
@@ -136,12 +136,12 @@ namespace MatterHackers.Agg.UI
 				FillColor = fillColor,
 			};
 
-			progressBar.VAnchor = VAnchor.ParentCenter;
+			progressBar.VAnchor = VAnchor.Center;
 			AddChild(progressBar);
 
 			progressTextWidget = new TextWidget("", textColor: textColor, pointSize: 8);
 			progressTextWidget.AutoExpandBoundsToText = true;
-			progressTextWidget.VAnchor = VAnchor.ParentCenter;
+			progressTextWidget.VAnchor = VAnchor.Center;
 			progressTextWidget.Margin = new BorderDouble(5, 0);
 			AddChild(progressTextWidget);
 		}

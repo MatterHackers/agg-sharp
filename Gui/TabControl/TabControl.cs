@@ -56,13 +56,13 @@ namespace MatterHackers.Agg.UI
 					case Orientation.Horizontal:
 						FlowDirection = UI.FlowDirection.TopToBottom;
 						tabBar.FlowDirection = FlowDirection.LeftToRight;
-						tabBar.HAnchor = UI.HAnchor.ParentLeft | UI.HAnchor.ParentRight;
+						tabBar.HAnchor = UI.HAnchor.Left | UI.HAnchor.Right;
 						break;
 
 					case Orientation.Vertical:
 						FlowDirection = UI.FlowDirection.LeftToRight;
 						tabBar.FlowDirection = FlowDirection.TopToBottom;
-						tabBar.VAnchor = VAnchor.ParentTop | VAnchor.ParentBottom;
+						tabBar.VAnchor = VAnchor.Top | VAnchor.Bottom;
 						break;
 
 					default:
@@ -209,11 +209,11 @@ namespace MatterHackers.Agg.UI
 			switch (Orientation)
 			{
 				case Orientation.Horizontal:
-					newTab.VAnchor = VAnchor.ParentCenter;
+					newTab.VAnchor = VAnchor.Center;
 					break;
 
 				case Orientation.Vertical:
-					newTab.HAnchor = HAnchor.ParentLeft | HAnchor.ParentRight;
+					newTab.HAnchor = HAnchor.Left | HAnchor.Right;
 					break;
 			}
 

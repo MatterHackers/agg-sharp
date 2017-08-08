@@ -52,7 +52,7 @@ namespace MatterHackers.Agg
 
 			AddChild(topToBottom);
 
-			topToBottom.VAnchor = UI.VAnchor.ParentTop;
+			topToBottom.VAnchor = UI.VAnchor.Top;
 		}
 	}
 }

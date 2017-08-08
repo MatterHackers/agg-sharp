@@ -79,7 +79,7 @@ namespace MatterHackers.Agg
 			foreach (GuiWidget child in topToBottom.Children)
 			{
 				//child.Padding = new BorderDouble(4);
-				child.HAnchor = UI.HAnchor.ParentCenter;
+				child.HAnchor = UI.HAnchor.Center;
 				child.BackgroundColor = RGBA_Bytes.White;
 				//child.Margin = new BorderDouble(3);
 				if (child is TextWidget)
@@ -100,8 +100,8 @@ namespace MatterHackers.Agg
 				((Slider)sender).Parent.SetBoundsToEncloseChildren();
 			};
 
-			topToBottom.HAnchor = UI.HAnchor.ParentCenter;
-			topToBottom.VAnchor = UI.VAnchor.ParentCenter;
+			topToBottom.HAnchor = UI.HAnchor.Center;
+			topToBottom.VAnchor = UI.VAnchor.Center;
 		}
 	}
 }

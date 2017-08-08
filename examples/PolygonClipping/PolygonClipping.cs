@@ -36,14 +36,14 @@ namespace MatterHackers.Agg
 
         private RadioButtonGroup m_operation = new RadioButtonGroup(new Vector2(555, 5), new Vector2(80, 130))
         {
-            HAnchor = HAnchor.ParentRight | HAnchor.FitToChildren,
-            VAnchor = VAnchor.ParentBottom | VAnchor.FitToChildren,
+            HAnchor = HAnchor.Right | HAnchor.Fit,
+            VAnchor = VAnchor.Bottom | VAnchor.Fit,
             Margin = new BorderDouble(5),
         };
         private RadioButtonGroup m_polygons = new RadioButtonGroup(new Vector2(5, 5), new Vector2(205, 110))
         {
-            HAnchor = HAnchor.ParentLeft | HAnchor.FitToChildren,
-            VAnchor = VAnchor.ParentBottom | VAnchor.FitToChildren,
+            HAnchor = HAnchor.Left | HAnchor.Fit,
+            VAnchor = VAnchor.Bottom | VAnchor.Fit,
             Margin = new BorderDouble(5),
         };
 

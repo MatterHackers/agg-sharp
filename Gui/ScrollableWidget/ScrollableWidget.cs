@@ -110,13 +110,13 @@ namespace MatterHackers.Agg.UI
 			: base(width, height)
 		{
 			scrollArea = new ScrollingArea(this);
-			scrollArea.HAnchor = UI.HAnchor.FitToChildren;
+			scrollArea.HAnchor = UI.HAnchor.Fit;
 			AutoScroll = autoScroll;
 			VerticalScrollBar = new ScrollBar(this);
 
 			base.AddChild(scrollArea);
 			base.AddChild(VerticalScrollBar);
-			VerticalScrollBar.HAnchor = UI.HAnchor.ParentRight;
+			VerticalScrollBar.HAnchor = UI.HAnchor.Right;
 		}
 
 		public override void OnBoundsChanged(EventArgs e)

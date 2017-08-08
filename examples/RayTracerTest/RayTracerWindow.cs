@@ -16,8 +16,8 @@ namespace MatterHackers.Agg
 			//CalculateIntersectCostsAndSaveToFile();
 
 			FlowLayoutWidget leftToRight = new FlowLayoutWidget();
-			leftToRight.HAnchor |= HAnchor.ParentLeftRight;
-			leftToRight.VAnchor |= VAnchor.ParentBottomTop;
+			leftToRight.HAnchor |= HAnchor.Stretch;
+			leftToRight.VAnchor |= VAnchor.Stretch;
 
 			previewWindowRayTrace = new RayTraceWidget();
 			AnchorAll();
@@ -27,8 +27,8 @@ namespace MatterHackers.Agg
 
 			GuiWidget zBuffer = new GuiWidget()
 			{
-				HAnchor = HAnchor.ParentLeftRight,
-				VAnchor = VAnchor.ParentBottomTop
+				HAnchor = HAnchor.Stretch,
+				VAnchor = VAnchor.Stretch
 			};
 			zBuffer.BackgroundColor = RGBA_Bytes.Blue;
 			leftToRight.AddChild(zBuffer);

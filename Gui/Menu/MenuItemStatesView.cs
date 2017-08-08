@@ -11,10 +11,10 @@ namespace MatterHackers.Agg.UI
 
 		public MenuItemStatesView(GuiWidget normalState, GuiWidget overState)
 		{
-			overState.HAnchor |= HAnchor.ParentLeftRight;
-			normalState.HAnchor |= HAnchor.ParentLeftRight;
-			HAnchor = HAnchor.ParentLeftRight | HAnchor.FitToChildren;
-			VAnchor = VAnchor.FitToChildren;
+			overState.HAnchor |= HAnchor.Stretch;
+			normalState.HAnchor |= HAnchor.Stretch;
+			HAnchor = HAnchor.Stretch | HAnchor.Fit;
+			VAnchor = VAnchor.Fit;
 			Selectable = false;
 			this.normalState = normalState;
 			this.overState = overState;
@@ -97,8 +97,8 @@ namespace MatterHackers.Agg.UI
 
 		public MenuItemColorStatesView(string name)
 		{
-			HAnchor = HAnchor.ParentLeftRight | HAnchor.FitToChildren;
-			VAnchor = VAnchor.FitToChildren;
+			HAnchor = HAnchor.Stretch | HAnchor.Fit;
+			VAnchor = VAnchor.Fit;
 			Selectable = false;
 
 			textWidgetContainer = new GuiWidget();
@@ -107,9 +107,9 @@ namespace MatterHackers.Agg.UI
 				AutoExpandBoundsToText = true,
 			};
 
-			textWidgetContainer.HAnchor = HAnchor.FitToChildren;
+			textWidgetContainer.HAnchor = HAnchor.Fit;
 			textWidgetContainer.AddChild(textWidget);
-			textWidgetContainer.VAnchor = VAnchor.FitToChildren;
+			textWidgetContainer.VAnchor = VAnchor.Fit;
 
 			AddChild(textWidgetContainer);
 		}

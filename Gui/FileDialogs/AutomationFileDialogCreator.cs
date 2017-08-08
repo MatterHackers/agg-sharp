@@ -48,15 +48,15 @@ namespace MatterHackers.Agg.UI
 			var warningLabel = new TextWidget("This dialog should not appear outside of automation tests.\nNotify technical support if visible", pointSize: 15, textColor: RGBA_Bytes.Pink)
 			{
 				Margin = new BorderDouble(20),
-				VAnchor = VAnchor.ParentTop,
-				HAnchor = HAnchor.ParentLeftRight
+				VAnchor = VAnchor.Top,
+				HAnchor = HAnchor.Stretch
 			};
 			systemWindow.AddChild(warningLabel);
 
 			var fileNameInput = new TextEditWidget(pixelWidth: 400)
 			{
-				VAnchor = VAnchor.ParentCenter,
-				HAnchor = HAnchor.ParentLeftRight,
+				VAnchor = VAnchor.Center,
+				HAnchor = HAnchor.Stretch,
 				Margin = new BorderDouble(30, 15),
 				Name = "Automation Dialog TextEdit"
 			};

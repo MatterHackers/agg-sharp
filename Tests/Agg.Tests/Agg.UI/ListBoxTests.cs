@@ -98,7 +98,7 @@ namespace MatterHackers.Agg.UI.Tests
 						ListBox listBox = new ListBox(new RectangleDouble(0, 0, 200, 300));
 						//listBox.BackgroundColor = RGBA_Bytes.Red;
 						listBox.Name = "listBox";
-						listBox.VAnchor = UI.VAnchor.ParentTop;
+						listBox.VAnchor = UI.VAnchor.Top;
 						listBox.ScrollArea.Margin = new BorderDouble(15);
 						leftToRightLayout.AddChild(listBox);
 
@@ -138,7 +138,7 @@ namespace MatterHackers.Agg.UI.Tests
 			ListBox container = new ListBox(new RectangleDouble(0, 0, 200, 300));
 			//container.BackgroundColor = RGBA_Bytes.Red;
 			container.Name = "containerListBox";
-			container.VAnchor = UI.VAnchor.ParentTop;
+			container.VAnchor = UI.VAnchor.Top;
 			container.Margin = new BorderDouble(15);
 
 			contents.AddChild(container);
