@@ -35,7 +35,7 @@ namespace MatterHackers.Agg.UI
 	public class WrappedTextWidget : GuiWidget
 	{
 		private String unwrappedText;
-		private TextWidget textWidget;
+		public TextWidget TextWidget { get; }
 		private double pointSize;
 		private double wrappedWidth = -1;
 
@@ -43,34 +43,34 @@ namespace MatterHackers.Agg.UI
 			RGBA_Bytes textColor = new RGBA_Bytes(), bool ellipsisIfClipped = true, bool underline = false, RGBA_Bytes backgroundColor = new RGBA_Bytes(), bool doubleBufferText = true)
 		{
 			this.pointSize = pointSize;
-			textWidget = new TextWidget("", 0, 0, pointSize, justification, textColor, ellipsisIfClipped, underline, backgroundColor)
+			TextWidget = new TextWidget("", 0, 0, pointSize, justification, textColor, ellipsisIfClipped, underline, backgroundColor)
 			{
 				DoubleBuffer = doubleBufferText,
 			};
-			textWidget.AutoExpandBoundsToText = true;
-			textWidget.HAnchor = HAnchor.Left;
-			textWidget.VAnchor = VAnchor.Center;
+			TextWidget.AutoExpandBoundsToText = true;
+			TextWidget.HAnchor = HAnchor.Left;
+			TextWidget.VAnchor = VAnchor.Center;
 			unwrappedText = text;
 			HAnchor = HAnchor.Stretch;
 			VAnchor = VAnchor.Fit;
-			AddChild(textWidget);
+			AddChild(TextWidget);
 		}
 
 		public RGBA_Bytes TextColor
 		{
-			get { return textWidget.TextColor; }
-			set { textWidget.TextColor = value; }
+			get { return TextWidget.TextColor; }
+			set { TextWidget.TextColor = value; }
 		}
 
 		public bool DrawFromHintedCache
 		{
 			get
 			{
-				return textWidget.Printer.DrawFromHintedCache;
+				return TextWidget.Printer.DrawFromHintedCache;
 			}
 			set
 			{
-				textWidget.Printer.DrawFromHintedCache = value;
+				TextWidget.Printer.DrawFromHintedCache = value;
 			}
 		}
 
@@ -85,14 +85,14 @@ namespace MatterHackers.Agg.UI
 
 		private void AdjustTextWrap()
 		{
-			if (textWidget != null)
+			if (TextWidget != null)
 			{
 				if (Width > 0)
 				{
-					EnglishTextWrapping wrapper = new EnglishTextWrapping(textWidget.Printer.TypeFaceStyle.EmSizeInPoints);
+					EnglishTextWrapping wrapper = new EnglishTextWrapping(TextWidget.Printer.TypeFaceStyle.EmSizeInPoints);
 					string wrappedMessage = wrapper.InsertCRs(unwrappedText, Width);
 					wrappedWidth = Width;
-					textWidget.Text = wrappedMessage;
+					TextWidget.Text = wrappedMessage;
 				}
 			}
 		}

@@ -35,6 +35,7 @@ namespace MatterHackers.VectorMath
 	public class AxisAlignedBoundingBox
 	{
 		public static AxisAlignedBoundingBox Empty { get; } = new AxisAlignedBoundingBox(Vector3.PositiveInfinity, Vector3.NegativeInfinity);
+		public static AxisAlignedBoundingBox Zero { get; } = new AxisAlignedBoundingBox(Vector3.Zero, Vector3.Zero);
 
 		public Vector3 minXYZ;
 		public Vector3 maxXYZ;
