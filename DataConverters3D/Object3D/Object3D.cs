@@ -231,6 +231,11 @@ namespace MatterHackers.DataConverters3D
 				totalBounds += child.GetAxisAlignedBoundingBox(totalTransorm);
 			}
 
+			if(totalBounds.minXYZ.x == double.PositiveInfinity)
+			{
+				return AxisAlignedBoundingBox.Zero;
+			}
+
 			return totalBounds;
 		}
 
