@@ -33,8 +33,6 @@ namespace MatterHackers.VectorMath
 {
 	public class WorldView
 	{
-		public Quaternion activeRotationQuaternion { get; set; } = Quaternion.Identity;
-
 		private Vector2 screenCenter;
 
 		private Matrix4X4 currentRotationMatrix = Matrix4X4.Identity;
@@ -95,19 +93,12 @@ namespace MatterHackers.VectorMath
 		{
 			get
 			{
-				if (activeRotationQuaternion == Quaternion.Identity)
-				{
-					return currentRotationMatrix;
-				}
-
-				return currentRotationMatrix * Matrix4X4.CreateRotation(activeRotationQuaternion);
+				return currentRotationMatrix;
 			}
 
 			set
 			{
 				currentRotationMatrix = value;
-				activeRotationQuaternion = Quaternion.Identity;
-
 				OnTransformChanged(null);
 			}
 		}

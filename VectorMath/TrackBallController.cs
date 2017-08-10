@@ -107,7 +107,6 @@ namespace MatterHackers.VectorMath
 		{
 			//if (currentTrackingType == MouseDownType.None)
 			{
-				localToScreenTransform = Matrix4X4.Invert(screenToLocal);
 				currentTrackingType = trackType;
 				switch (currentTrackingType)
 				{
@@ -116,6 +115,7 @@ namespace MatterHackers.VectorMath
 						break;
 
 					case MouseDownType.Translation:
+						localToScreenTransform = Matrix4X4.Invert(screenToLocal);
 						lastTranslationMousePosition = mousePosition;
 						break;
 
@@ -156,8 +156,8 @@ namespace MatterHackers.VectorMath
 						//In the quaternion values, w is cosine (theta / 2), where theta is the rotation angle
 						activeRotationQuaternion.W = Vector3.Dot(rotationStart3D, moveSpherePosition);
 
-						world.activeRotationQuaternion = activeRotationQuaternion;
-
+						mouseDownPosition = mousePosition;
+						world.RotationMatrix = world.RotationMatrix * Matrix4X4.CreateRotation(activeRotationQuaternion);
 						OnTransformChanged(null);
 					}
 					break;
@@ -203,10 +203,6 @@ namespace MatterHackers.VectorMath
 			switch (currentTrackingType)
 			{
 				case MouseDownType.Rotation:
-					//world.RotationMatrix = world.RotationMatrix * Matrix4X4.CreateRotation(world.activeRotationQuaternion);
-					world.RotationMatrix = world.RotationMatrix;
-					//world.activeRotationQuaternion = Quaternion.Identity;
-					OnTransformChanged(null);
 					break;
 
 				case MouseDownType.Translation:
