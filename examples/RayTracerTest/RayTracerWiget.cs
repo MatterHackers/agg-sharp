@@ -78,7 +78,6 @@ namespace MatterHackers.RayTracer
 
 			trackballTumbleWidget = new TrackballTumbleWidget(world);
 			trackballTumbleWidget.DoOpenGlDrawing = false;
-			trackballTumbleWidget.DrawRotationHelperCircle = false;
 			//trackballTumbleWidget.DrawGlContent += trackballTumbleWidget_DrawGlContent;
 			trackballTumbleWidget.TransformState = TrackBallController.MouseDownType.Rotation;
 

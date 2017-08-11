@@ -92,10 +92,6 @@ namespace MatterHackers.Agg.OpenGlGui
 
 		private WorldView world;
 
-		public RGBA_Bytes RotationHelperCircleColor { get; set; } =  new RGBA_Bytes(RGBA_Bytes.Black, 200);
-
-		public bool DrawRotationHelperCircle { get; set; }
-		
 		public TrackBallController TrackBallController { get; }
 		
 		public bool LockTrackBall { get; set; }
@@ -103,7 +99,6 @@ namespace MatterHackers.Agg.OpenGlGui
 		public TrackballTumbleWidget(WorldView world)
 		{
 			AnchorAll();
-			DrawRotationHelperCircle = true;
 			TrackBallController = new TrackBallController(world);
 			this.world = world;
 		}
@@ -134,31 +129,7 @@ namespace MatterHackers.Agg.OpenGlGui
 				UnsetGlContext();
 			}
 
-			if (DrawRotationHelperCircle)
-			{
-				DrawTrackballRadius(graphics2D);
-			}
-
 			base.OnDraw(graphics2D);
-		}
-
-		public void DrawTrackballRadius(Graphics2D graphics2D)
-		{
-			var center = world.ScreenCenter;
-			var radius = TrackBallController.TrackBallRadius;
-			var elipse = new Ellipse(center, radius, radius);
-			var outline = new Stroke(elipse, 3);
-			graphics2D.Render(outline, RotationHelperCircleColor);
-
-			if (insideArrows.Count == 0)
-			{
-				MakeArrowIcons();
-			}
-
-			foreach (IVertexSource arrow in insideArrows)
-			{
-				graphics2D.Render(arrow, RotationHelperCircleColor);
-			}
 		}
 
 		private void MakeArrowIcons()
@@ -359,21 +330,11 @@ namespace MatterHackers.Agg.OpenGlGui
 			{
 				currentMousePosition.x = mouseEvent.X;
 				currentMousePosition.y = mouseEvent.Y;
-				if (MouseCaptured
-					&& TransformState == TrackBallController.MouseDownType.Rotation)
-				{
-					DrawRotationHelperCircle = true;
-				}
-				else
-				{
-					DrawRotationHelperCircle = false;
-				}
 			}
 			else
 			{
 				Vector2 centerPosition = (mouseEvent.GetPosition(1) + mouseEvent.GetPosition(0)) / 2;
 				currentMousePosition = centerPosition;
-				DrawRotationHelperCircle = false;
 			}
 
 			motionQueue.AddMoveToMotionQueue(currentMousePosition, UiThread.CurrentTimerMs);
