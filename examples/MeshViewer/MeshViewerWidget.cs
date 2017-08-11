@@ -104,7 +104,6 @@ namespace MatterHackers.MeshVisualizer
 			BuildVolumeColor = new RGBA_Floats(.2, .8, .3, .2).GetAsRGBA_Bytes();
 
 			trackballTumbleWidget = new TrackballTumbleWidget(this.World);
-			trackballTumbleWidget.DrawRotationHelperCircle = false;
 			trackballTumbleWidget.DrawGlContent += trackballTumbleWidget_DrawGlContent;
 			trackballTumbleWidget.TransformState = TrackBallController.MouseDownType.Rotation;
 
@@ -489,14 +488,6 @@ namespace MatterHackers.MeshVisualizer
 		{
 			base.OnMouseDown(mouseEvent);
 
-			if (trackballTumbleWidget.MouseCaptured)
-			{
-				if (trackballTumbleWidget.TransformState == TrackBallController.MouseDownType.Rotation || mouseEvent.Button == MouseButtons.Right)
-				{
-					trackballTumbleWidget.DrawRotationHelperCircle = true;
-				}
-			}
-
 			int volumeHitIndex;
 			Ray ray = this.World.GetRayForLocalBounds(mouseEvent.Position);
 			IntersectInfo info;
@@ -560,7 +551,6 @@ namespace MatterHackers.MeshVisualizer
 
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
-			trackballTumbleWidget.DrawRotationHelperCircle = false;
 			Invalidate();
 
 			if(SuppressUiVolumes)
