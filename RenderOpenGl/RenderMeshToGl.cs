@@ -80,21 +80,24 @@ namespace MatterHackers.RenderOpenGl
 				double unitsPerPixelEnd = world.GetWorldUnitsPerScreenPixelAtPosition(end);
 
 				Vector3 delta = start - end;
-				Matrix4X4 rotateTransform = Matrix4X4.CreateRotation(new Quaternion(Vector3.UnitX + new Vector3(.0001, -.00001, .00002), -delta.GetNormal()));
-				Matrix4X4 scaleTransform = Matrix4X4.CreateScale((end - start).Length, 1, 1);
+				var deltaLength = delta.Length;
+				Matrix4X4 rotateTransform = Matrix4X4.CreateRotation(new Quaternion(Vector3.UnitX + new Vector3(.0001, -.00001, .00002), -delta / deltaLength));
+				Matrix4X4 scaleTransform = Matrix4X4.CreateScale(deltaLength, 1, 1);
 				Vector3 lineCenter = (start + end) / 2;
 				Matrix4X4 lineTransform = scaleTransform * rotateTransform * Matrix4X4.CreateTranslation(lineCenter);
 
+				var startScale = unitsPerPixelStart * width;
+				var endScale = unitsPerPixelEnd * width;
 				for (int i = 0; i < unscaledLineMesh.Vertices.Count; i++)
 				{
 					Vector3 vertexPosition = unscaledLineMesh.Vertices[i].Position;
 					if (vertexPosition.x < 0)
 					{
-						scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.x, vertexPosition.y * unitsPerPixelStart * width, vertexPosition.z * unitsPerPixelStart);
+						scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.x, vertexPosition.y * startScale, vertexPosition.z * startScale);
 					}
 					else
 					{
-						scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.x, vertexPosition.y * unitsPerPixelEnd * width, vertexPosition.z * unitsPerPixelEnd);
+						scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.x, vertexPosition.y * endScale, vertexPosition.z * endScale);
 					}
 				}
 
@@ -118,9 +121,11 @@ namespace MatterHackers.RenderOpenGl
 					GL.Begin(BeginMode.Triangles);
 					foreach (var face in scaledLineMesh.Faces)
 					{
-						foreach(var vertex in face.Vertices())
+						foreach(var vertex in face.AsTriangles())
 						{
-							GL.Vertex3(vertex.Position.x, vertex.Position.y, vertex.Position.z);
+							GL.Vertex3(vertex.Item1.x, vertex.Item1.y, vertex.Item1.z);
+							GL.Vertex3(vertex.Item2.x, vertex.Item2.y, vertex.Item2.z);
+							GL.Vertex3(vertex.Item3.x, vertex.Item3.y, vertex.Item3.z);
 						}
 					}
 					GL.End();
