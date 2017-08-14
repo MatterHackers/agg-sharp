@@ -137,7 +137,7 @@
       <Name>Gui</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj">
-      <Project>{670BDDFF-927B-425D-9DD1-22ACB14356EB}</Project>
+      <Project>{670bddff-927b-425d-9dd1-22acb14356eb}</Project>
       <Name>PlatformWin32</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\VectorMath\VectorMath.csproj">
