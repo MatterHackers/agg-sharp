@@ -74,6 +74,45 @@ namespace MatterHackers.ImageProcessing
 			return outputImage;
 		}
 
+		public static ImageBuffer AjustAlpha(this ImageBuffer sourceImage, double factor)
+		{
+			var outputImage = new ImageBuffer(sourceImage);
+
+			switch (outputImage.BitDepth)
+			{
+				case 32:
+					{
+						int height = outputImage.Height;
+						int width = outputImage.Width;
+						byte[] imageABuffer = outputImage.GetBuffer();
+
+						for (int y = 0; y < height; y++)
+						{
+							int offsetA = outputImage.GetBufferOffsetY(y);
+
+							for (int x = 0; x < width; x++)
+							{
+								var alpha = imageABuffer[offsetA + 3];
+								if (alpha > 0)
+								{
+									imageABuffer[offsetA + 3] = (byte) (alpha * factor);
+								}
+
+								offsetA += 4;
+							}
+						}
+
+						outputImage.SetRecieveBlender(new BlenderPreMultBGRA());
+					}
+					break;
+
+				default:
+					throw new NotImplementedException();
+			}
+
+			return outputImage;
+		}
+
 		public static ImageBuffer ReplaceColor(this ImageBuffer sourceImage, RGBA_Bytes existingColor, RGBA_Bytes newColor, bool keepExistingAlpha = true)
 		{
 			var outputImage = new ImageBuffer(sourceImage);
