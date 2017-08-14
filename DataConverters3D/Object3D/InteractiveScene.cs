@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using MatterHackers.Agg.UI;
 using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Processors;
@@ -16,6 +17,10 @@ namespace MatterHackers.MeshVisualizer
 		public event EventHandler SelectionChanged;
 
 		private IObject3D selectedItem;
+
+		public InteractiveScene()
+		{
+		}
 
 		[JsonIgnore]
 		public IObject3D SelectedItem
@@ -35,6 +40,9 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
+		[JsonIgnore]
+		public UndoBuffer UndoBuffer { get; } = new UndoBuffer();
+		
 		[JsonIgnore]
 		public bool HasSelection => HasChildren && SelectedItem != null;
 
