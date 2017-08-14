@@ -61,12 +61,6 @@ namespace MatterHackers.Agg.UI
 
 		public bool UseUnderlineStyling { get; set; } = false;
 
-		public override void OnMouseDown(MouseEventArgs mouseEvent)
-		{
-			OnSelected(mouseEvent);
-			base.OnMouseDown(mouseEvent);
-		}
-
 		private void tabPageControledByTab_TextChanged(object sender, EventArgs e)
 		{
 			normalWidget.Children[0].Text = ((GuiWidget)sender).Text;
@@ -131,6 +125,12 @@ namespace MatterHackers.Agg.UI
 		public virtual void OnSelected(EventArgs e)
 		{
 			Selected?.Invoke(this, e);
+		}
+
+		public override void OnMouseDown(MouseEventArgs mouseEvent)
+		{
+			OnSelected(mouseEvent);
+			base.OnClick(mouseEvent);
 		}
 
 		public void SelectionChanged(object sender, EventArgs e)
