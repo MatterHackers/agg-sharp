@@ -30,9 +30,13 @@ namespace MatterHackers.Agg.UI
 
 		public double NumSecondsToFade { get; set; } = 0;
 
-		public ButtonViewThreeImage(IImageByte normal, IImageByte hover, IImageByte pressed, IImageByte disabled)
+		public ButtonViewThreeImage(IImageByte normal, IImageByte hover, IImageByte pressed, IImageByte disabled = null)
 		{
-			
+			if (disabled == null)
+			{
+				disabled = normal;
+			}
+
 			hoverOpacity = 0;
 			normalImage = normal;
 			hoverImage = hover;
