@@ -52,6 +52,7 @@ namespace MatterHackers.PolygonPathing
 		private long avoidInset;
 		private int badCount = 0;
 		private int bestPointCount = int.MaxValue;
+		private bool doSimplify = false;
 		private MSIntPoint endOverride;
 		private Vector2 lastMousePosition = new Vector2(0, 0);
 		private double layerScale = 1;
@@ -174,8 +175,8 @@ namespace MatterHackers.PolygonPathing
 					avoid = new PathFinder(polygonsToPathAround, avoidInset, null); // -600 is for a .4 nozzle in matterslice
 				}
 
-				IVertexSource outlineShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.OutlinePolygons), 1), TotalTransform);
-				IVertexSource pathingShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.BoundaryPolygons), 1), TotalTransform);
+				IVertexSource outlineShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.OutlineData.Polygons), 1), TotalTransform);
+				IVertexSource pathingShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.PathingData.Polygons), 1), TotalTransform);
 
 				if (StayInside.Checked)
 				{
@@ -192,7 +193,7 @@ namespace MatterHackers.PolygonPathing
 				List<MSIntPoint> pathThatIsInside = new List<MSIntPoint>();
 				bool found = avoid.CreatePathInsideBoundary(pathStart, pathEnd, pathThatIsInside, false);
 
-				foreach (var node in avoid.Waypoints.Nodes)
+				foreach (var node in avoid.PathingData.Waypoints.Nodes)
 				{
 					foreach (var link in node.Links)
 					{
@@ -232,9 +233,9 @@ namespace MatterHackers.PolygonPathing
 				// show the thin edges
 				//RenderThinEdges(graphics2D, avoid);
 
-				//RenderQuadTree(graphics2D, avoid.BoundaryEdgeQuadTrees, 0);
+				//RenderQuadTree(graphics2D, avoid.PathingData.EdgeQuadTrees, 0);
 
-				if (avoid.BoundaryPolygons.PointIsInside(pathEnd, avoid.BoundaryEdgeQuadTrees, avoid.BoundaryPointQuadTrees))
+				if (avoid.PathingData.Polygons.PointIsInside(pathEnd, avoid.PathingData.EdgeQuadTrees, avoid.PathingData.PointQuadTrees))
 				{
 					graphics2D.DrawString("Inside", 30, Height - 60, color: RGBA_Bytes.Green);
 				}
@@ -248,13 +249,13 @@ namespace MatterHackers.PolygonPathing
 					SimplifyBadPolygon(pathStart, pathEnd, pathThatIsInside, found);
 				}
 
-				if(true)
+				if (true)
 				{
 					MSPolygons pathsWithOverlapsRemoved;
-					var insetPolys = MSClipperLib.CLPolygonsExtensions.Offset(avoid.OutlinePolygons, 0);
+					var insetPolys = MSClipperLib.CLPolygonsExtensions.Offset(avoid.OutlineData.Polygons, 0);
 					if (insetPolys != null && insetPolys.Count > 0)
 					{
-						var pathHadOverlaps = QTPolygonExtensions.MergePerimeterOverlaps(insetPolys[0], avoidInset*2, out pathsWithOverlapsRemoved, true);
+						var pathHadOverlaps = QTPolygonExtensions.MergePerimeterOverlaps(insetPolys[0], avoidInset * 2, out pathsWithOverlapsRemoved, true);
 
 						foreach (var polygon in pathsWithOverlapsRemoved)
 						{
@@ -262,7 +263,7 @@ namespace MatterHackers.PolygonPathing
 							{
 								var point1 = ObjectToScreen(polygon[i]);
 								var point2 = ObjectToScreen(polygon[i + 1]);
-								graphics2D.Line(point1.X + .5, point1.Y + .5, point2.X + .5, point2.Y +.5, new RGBA_Bytes(RGBA_Bytes.Black, 64), 3);
+								graphics2D.Line(point1.X + .5, point1.Y + .5, point2.X + .5, point2.Y + .5, new RGBA_Bytes(RGBA_Bytes.Black, 64), 3);
 							}
 						}
 					}
@@ -270,139 +271,6 @@ namespace MatterHackers.PolygonPathing
 			}
 
 			base.OnDraw(graphics2D);
-		}
-
-		private void RenderThinEdges(Graphics2D graphics2D, PathFinder avoid)
-		{
-			if (avoid.ThinLinePolygons != null)
-			{
-				foreach (var polygon in avoid.ThinLinePolygons)
-				{
-					for (int i = 0; i < polygon.Count - 1; i++)
-					{
-						var point = polygon[i];
-						var nextPoint = polygon[i + 1];
-						var start = ObjectToScreen(point);
-						var end = ObjectToScreen(nextPoint);
-						graphics2D.Line(start.X, start.Y, end.X, end.Y, RGBA_Bytes.Black, 3);
-					}
-				}
-			}
-		}
-
-		private void RenderCrossings(Graphics2D graphics2D, MSIntPoint pathStart, MSIntPoint pathEnd, PathFinder avoid)
-		{
-			var crossings = new List<Tuple<int, int, MSIntPoint>>(avoid.BoundaryPolygons.FindCrossingPoints(pathStart, pathEnd, avoid.BoundaryEdgeQuadTrees));
-			crossings.Sort(new PolygonAndPointDirectionSorter(pathStart, pathEnd));
-
-			int index = 0;
-			foreach (var crossing in crossings)
-			{
-				var color = RGBA_Floats.FromHSL((float)index / crossings.Count, 1, .5).GetAsRGBA_Bytes();
-				graphics2D.Circle(ObjectToScreen(crossing.Item3).X, ObjectToScreen(crossing.Item3).Y, 4, color);
-				index++;
-			}
-		}
-
-		#region QuadTreeRender
-		private void RenderQuadTree(Graphics2D graphics2D, List<QuadTree<int>> quadTrees, int depth)
-		{
-			foreach (var quadTree in quadTrees)
-			{
-				foreach(var branch in quadTree.Root.Branches)
-				{
-					RenderBranch(graphics2D, branch, depth);
-				}
-
-				RenderBranch(graphics2D, quadTree.Root, depth);
-			}
-		}
-
-		private void RenderBranch(Graphics2D graphics2D, Branch<int> branch, int depth)
-		{
-			if(branch == null)
-			{
-				return;
-			}
-			foreach (var subBranch in branch.Branches)
-			{
-				RenderBranch(graphics2D, subBranch, depth+1);
-			}
-			foreach(var quad in branch.Quads)
-			{
-				var start = ObjectToScreen(new MSIntPoint(quad.MinX, quad.MinY));
-				var end = ObjectToScreen(new MSIntPoint(quad.MaxX, quad.MaxY));
-				graphics2D.Rectangle(start.X, start.Y, end.X, end.Y, RGBA_Bytes.YellowGreen);
-			}
-			foreach (var leaf in branch.Leaves)
-			{
-				RenderLeaf(graphics2D, leaf, depth);
-			}
-		}
-
-		private void RenderLeaf(Graphics2D graphics2D, Leaf<int> leaf, int depth)
-		{
-			var start = ObjectToScreen(new MSIntPoint(leaf.Quad.MinX, leaf.Quad.MinY));
-			var end = ObjectToScreen(new MSIntPoint(leaf.Quad.MaxX, leaf.Quad.MaxY));
-			var color = RGBA_Floats.FromHSL((float)depth / 7, 1, .5).GetAsRGBA_Bytes();
-			graphics2D.Rectangle(start.X, start.Y, end.X, end.Y, color);
-		}
-		#endregion
-
-		bool doSimplify = false;
-
-		private void SimplifyBadPolygon(MSIntPoint start, MSIntPoint end, MSPolygon pathThatIsInside, bool found)
-		{
-			if (!found)
-			{
-				badCount++;
-
-				// try to reduce the polygons under consideration
-				var polys2 = MSPolygonsToPolygons(polygonsToPathAround);
-				var sample = PolygonsToMSPolygons(polys2);
-				int polyIndex = rand.Next(sample.Count);
-				int pointIndex = rand.Next(sample[polyIndex].Count);
-				if (rand.Next(2) == 0)
-				{
-					sample[polyIndex].RemoveAt(pointIndex);
-				}
-				if (sample[polyIndex].Count < 3)
-				{
-					sample.RemoveAt(polyIndex);
-				}
-
-				// move a point towards the center
-				var center = MatterHackers.QuadTree.QTPolygonsExtensions.Center(sample);
-				polyIndex = rand.Next(sample.Count);
-				pointIndex = rand.Next(sample[polyIndex].Count);
-				sample[polyIndex][pointIndex] = MoveSampelPoint(sample[polyIndex][pointIndex], center);
-
-				var avoid2 = new PathFinder(sample, avoidInset, null); // -600 is for a .4 nozzle in matterslice
-				if (!avoid2.CreatePathInsideBoundary(start, end, pathThatIsInside)
-					&& avoid2.BoundaryPolygons.PointIsInside(start)
-					&& PointCount(avoid2.BoundaryPolygons) <= bestPointCount)
-				{
-					bestPointCount = PointCount(avoid2.BoundaryPolygons);
-					overrideBadPolys = sample;
-					badCount = 0;
-				}
-
-				UiThread.RunOnIdle(Invalidate);
-			}
-		}
-
-		private MSIntPoint MoveSampelPoint(MSIntPoint pointToMove, MSIntPoint center)
-		{
-			var length = MSClipperLib.IntPointExtensions.Length((pointToMove - center));
-			var direction = new MSIntPoint(avoidInset / 2 - rand.Next((int)avoidInset), avoidInset / 2 - rand.Next((int)avoidInset));
-			pointToMove = pointToMove + direction;
-
-			if (length > 0)
-			{
-				direction = (center - pointToMove) * avoidInset / 20 / length;
-			}
-			pointToMove = pointToMove + direction;
-			return pointToMove;
 		}
 
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
@@ -530,7 +398,6 @@ namespace MatterHackers.PolygonPathing
 					{
 						// circle holes
 						string polyPath = "x:189400, y:76400,x:170600, y:76400,x:170600, y:37600,x:189400, y:37600,|x:177346, y:60948,x:175525, y:62137,x:174189, y:63854,x:173482, y:65912,x:173482, y:68087,x:174189, y:70145,x:175525, y:71862,x:177346, y:73051,x:179455, y:73585,x:181621, y:73406,x:183614, y:72532,x:185214, y:71059,x:186249, y:69146,x:186608, y:67000,x:186249, y:64853,x:185214, y:62940,x:183614, y:61468,x:181621, y:60593,x:179455, y:60414,|x:177346, y:40949,x:175525, y:42138,x:174189, y:43855,x:173482, y:45913,x:173482, y:48088,x:174189, y:50146,x:175525, y:51863,x:177346, y:53052,x:179455, y:53586,x:181621, y:53407,x:183614, y:52532,x:185214, y:51060,x:186249, y:49147,x:186608, y:47000,x:186249, y:44854,x:185214, y:42941,x:183614, y:41468,x:181621, y:40594,x:179455, y:40415,|";
-
 
 						polyPath = "x:93366, y:91331, z:1350, width:0,x:94003, y:91156, z:1350, width:0,x:94320, y:91122, z:1350, width:0,x:94384, y:91084, z:1350, width:0,x:94489, y:91062, z:1350, width:0,x:94542, y:90990, z:1350, width:0,x:94707, y:90558, z:1350, width:0,x:94787, y:90446, z:1350, width:0,x:94968, y:90314, z:1350, width:0,x:95097, y:90256, z:1350, width:0,x:95329, y:90187, z:1350, width:0,x:96538, y:89988, z:1350, width:0,x:99450, y:89738, z:1350, width:0,x:100275, y:89717, z:1350, width:0,x:103355, y:89975, z:1350, width:0,x:103882, y:90070, z:1350, width:0,x:104540, y:90165, z:1350, width:0,x:104978, y:90298, z:1350, width:0,x:105145, y:90412, z:1350, width:0,x:105249, y:90557, z:1350, width:0,x:105413, y:91048, z:1350, width:0,x:105591, y:91129, z:1350, width:0,x:106259, y:91240, z:1350, width:0,x:106536, y:91320, z:1350, width:0,x:107259, y:91620, z:1350, width:0,x:107314, y:91678, z:1350, width:0,x:107414, y:91999, z:1350, width:0,x:107520, y:92064, z:1350, width:0,x:107924, y:91976, z:1350, width:0,x:108175, y:92140, z:1350, width:0,x:108302, y:92261, z:1350, width:0,x:108432, y:92333, z:1350, width:0,x:108565, y:92347, z:1350, width:0,x:108855, y:92277, z:1350, width:0,x:111216, y:91019, z:1350, width:0,x:111433, y:90954, z:1350, width:0,x:111544, y:90943, z:1350, width:0,x:111692, y:90967, z:1350, width:0,x:111731, y:90989, z:1350, width:0,x:111864, y:91012, z:1350, width:0,x:112148, y:91161, z:1350, width:0,x:112317, y:91366, z:1350, width:0,x:113139, y:93293, z:1350, width:0,x:113242, y:93641, z:1350, width:0,x:113218, y:94175, z:1350, width:0,x:113284, y:94469, z:1350, width:0,x:113269, y:94631, z:1350, width:0,x:113149, y:95107, z:1350, width:0,x:113181, y:95420, z:1350, width:0,x:113336, y:95829, z:1350, width:0,x:114178, y:97187, z:1350, width:0,x:114250, y:97506, z:1350, width:0,x:114327, y:97652, z:1350, width:0,x:114504, y:97690, z:1350, width:0,x:114590, y:97687, z:1350, width:0,x:114913, y:97608, z:1350, width:0,x:115235, y:97615, z:1350, width:0,x:115407, y:97740, z:1350, width:0,x:115734, y:98261, z:1350, width:0,x:117175, y:100909, z:1350, width:0,x:117389, y:101565, z:1350, width:0,x:117492, y:101708, z:1350, width:0,x:117735, y:101795, z:1350, width:0,x:118474, y:101848, z:1350, width:0,x:119040, y:101973, z:1350, width:0,x:119767, y:102190, z:1350, width:0,x:121240, y:102679, z:1350, width:0,x:121550, y:102847, z:1350, width:0,x:121677, y:102974, z:1350, width:0,x:121747, y:103167, z:1350, width:0,x:121703, y:103336, z:1350, width:0,x:121538, y:103620, z:1350, width:0,x:121023, y:104343, z:1350, width:0,x:120480, y:105152, z:1350, width:0,x:119364, y:106900, z:1350, width:0,x:119150, y:107204, z:1350, width:0,x:118971, y:107342, z:1350, width:0,x:118749, y:107405, z:1350, width:0,x:118356, y:107356, z:1350, width:0,x:117877, y:107203, z:1350, width:0,x:117462, y:107011, z:1350, width:0,x:117159, y:106812, z:1350, width:0,x:116723, y:106446, z:1350, width:0,x:113947, y:103525, z:1350, width:0,x:111963, y:101490, z:1350, width:0,x:107755, y:97062, z:1350, width:0,x:106991, y:96348, z:1350, width:0,x:106533, y:96005, z:1350, width:0,x:106199, y:95811, z:1350, width:0,x:105857, y:95643, z:1350, width:0,x:104952, y:95307, z:1350, width:0,x:103293, y:94785, z:1350, width:0,x:102578, y:94619, z:1350, width:0,x:102018, y:94542, z:1350, width:0,x:101363, y:94511, z:1350, width:0,x:100138, y:94548, z:1350, width:0,x:98594, y:94509, z:1350, width:0,x:97838, y:94548, z:1350, width:0,x:97308, y:94626, z:1350, width:0,x:96678, y:94785, z:1350, width:0,x:95086, y:95275, z:1350, width:0,x:94126, y:95627, z:1350, width:0,x:93576, y:95898, z:1350, width:0,x:93048, y:96265, z:1350, width:0,x:92717, y:96547, z:1350, width:0,x:92208, y:97036, z:1350, width:0,x:88729, y:100697, z:1350, width:0,x:85212, y:104334, z:1350, width:0,x:83286, y:106392, z:1350, width:0,x:82854, y:106776, z:1350, width:0,x:82611, y:106936, z:1350, width:0,x:82111, y:107187, z:1350, width:0,x:81732, y:107315, z:1350, width:0,x:81373, y:107390, z:1350, width:0,x:81077, y:107379, z:1350, width:0,x:80895, y:107305, z:1350, width:0,x:80817, y:107226, z:1350, width:0,x:78888, y:104270, z:1350, width:0,x:78388, y:103583, z:1350, width:0,x:78283, y:103409, z:1350, width:0,x:78280, y:103315, z:1350, width:0,x:78320, y:103157, z:1350, width:0,x:78444, y:102927, z:1350, width:0,x:78530, y:102823, z:1350, width:0,x:78655, y:102711, z:1350, width:0,x:79692, y:102348, z:1350, width:0,x:81250, y:101888, z:1350, width:0,x:81706, y:101826, z:1350, width:0,x:82155, y:101827, z:1350, width:0,x:82413, y:101776, z:1350, width:0,x:82555, y:101611, z:1350, width:0,x:82751, y:100971, z:1350, width:0,x:83932, y:98791, z:1350, width:0,x:84226, y:98308, z:1350, width:0,x:84457, y:98006, z:1350, width:0,x:84806, y:97775, z:1350, width:0,x:85148, y:97796, z:1350, width:0,x:85338, y:97826, z:1350, width:0,x:85814, y:97977, z:1350, width:0,x:86003, y:97969, z:1350, width:0,x:86053, y:97849, z:1350, width:0,x:85935, y:97262, z:1350, width:0,x:86045, y:96806, z:1350, width:0,x:86556, y:95953, z:1350, width:0,x:86767, y:95521, z:1350, width:0,x:86840, y:95172, z:1350, width:0,x:86838, y:95075, z:1350, width:0,x:86750, y:94693, z:1350, width:0,x:86690, y:94546, z:1350, width:0,x:86760, y:94205, z:1350, width:0,x:86708, y:93668, z:1350, width:0,x:86806, y:93340, z:1350, width:0,x:87675, y:91291, z:1350, width:0,x:87787, y:91192, z:1350, width:0,x:88352, y:90940, z:1350, width:0,x:88440, y:90947, z:1350, width:0,x:88536, y:90933, z:1350, width:0,x:88720, y:91012, z:1350, width:0,x:89638, y:91495, z:1350, width:0,x:90901, y:92198, z:1350, width:0,x:91173, y:92312, z:1350, width:0,x:91441, y:92366, z:1350, width:0,x:91625, y:92293, z:1350, width:0,x:91766, y:92160, z:1350, width:0,x:92060, y:91953, z:1350, width:0,x:92464, y:92086, z:1350, width:0,x:92523, y:92072, z:1350, width:0,x:92663, y:91639, z:1350, width:0,|";
 						polyPath = "x: 104751, y: 130166, z: 0, width: 0,x: 104400, y: 129949, z: 0, width: 0,x: 103064, y: 129390, z: 0, width: 0,x: 102614, y: 128707, z: 0, width: 0,x: 101733, y: 127829, z: 0, width: 0,x: 101301, y: 127341, z: 0, width: 0,x: 99940, y: 127383, z: 0, width: 0,x: 99440, y: 127563, z: 0, width: 0,x: 98311, y: 127380, z: 0, width: 0,x: 96530, y: 128734, z: 0, width: 0,x: 94796, y: 130141, z: 0, width: 0,x: 93348, y: 129611, z: 0, width: 0,x: 93043, y: 129578, z: 0, width: 0,x: 92750, y: 129313, z: 0, width: 0,x: 92750, y: 129084, z: 0, width: 0,x: 93406, y: 121577, z: 0, width: 0,x: 96191, y: 120235, z: 0, width: 0,x: 96177, y: 119869, z: 0, width: 0,x: 97428, y: 119399, z: 0, width: 0,x: 95607, y: 115166, z: 0, width: 0,x: 95321, y: 114071, z: 0, width: 0,x: 95399, y: 113263, z: 0, width: 0,x: 96164, y: 110086, z: 0, width: 0,x: 97404, y: 108281, z: 0, width: 0,x: 97278, y: 107558, z: 0, width: 0,x: 97814, y: 105307, z: 0, width: 0,x: 96235, y: 105017, z: 0, width: 0,x: 95333, y: 105087, z: 0, width: 0,x: 94833, y: 105246, z: 0, width: 0,x: 93781, y: 105172, z: 0, width: 0,x: 92745, y: 105398, z: 0, width: 0,x: 92200, y: 105131, z: 0, width: 0,x: 91938, y: 105065, z: 0, width: 0,x: 90973, y: 103919, z: 0, width: 0,x: 90676, y: 103352, z: 0, width: 0,x: 90471, y: 100865, z: 0, width: 0,x: 90370, y: 100244, z: 0, width: 0,x: 91419, y: 99079, z: 0, width: 0,x: 91922, y: 97867, z: 0, width: 0,x: 92608, y: 97563, z: 0, width: 0,x: 93929, y: 97845, z: 0, width: 0,x: 96284, y: 100022, z: 0, width: 0,x: 96454, y: 101997, z: 0, width: 0,x: 97448, y: 103641, z: 0, width: 0,x: 99467, y: 104117, z: 0, width: 0,x: 99785, y: 104599, z: 0, width: 0,x: 100833, y: 104401, z: 0, width: 0,x: 102237, y: 104014, z: 0, width: 0,x: 102023, y: 103141, z: 0, width: 0,x: 102121, y: 102923, z: 0, width: 0,x: 102500, y: 101863, z: 0, width: 0,x: 102666, y: 101969, z: 0, width: 0,x: 104509, y: 99245, z: 0, width: 0,x: 104733, y: 98678, z: 0, width: 0,x: 105653, y: 97830, z: 0, width: 0,x: 107289, y: 97635, z: 0, width: 0,x: 109015, y: 99392, z: 0, width: 0,x: 109098, y: 99430, z: 0, width: 0,x: 109242, y: 102266, z: 0, width: 0,x: 109137, y: 104083, z: 0, width: 0,x: 106795, y: 105328, z: 0, width: 0,x: 106328, y: 105305, z: 0, width: 0,x: 104143, y: 105087, z: 0, width: 0,x: 103202, y: 105197, z: 0, width: 0,x: 102916, y: 106712, z: 0, width: 0,x: 103039, y: 108553, z: 0, width: 0,x: 103694, y: 110017, z: 0, width: 0,x: 104350, y: 113450, z: 0, width: 0,x: 104447, y: 114170, z: 0, width: 0,x: 103916, y: 115379, z: 0, width: 0,x: 103125, y: 117319, z: 0, width: 0,x: 103341, y: 120380, z: 0, width: 0,x: 106389, y: 121666, z: 0, width: 0,x: 106836, y: 122117, z: 0, width: 0,x: 107673, y: 123377, z: 0, width: 0,x: 107682, y: 123652, z: 0, width: 0,x: 107959, y: 126057, z: 0, width: 0,x: 107970, y: 127080, z: 0, width: 0,x: 108013, y: 127716, z: 0, width: 0,x: 107974, y: 127932, z: 0, width: 0,x: 107893, y: 128090, z: 0, width: 0,x: 106675, y: 129444, z: 0, width: 0,x: 105908, y: 129814, z: 0, width: 0,";
@@ -711,6 +578,20 @@ namespace MatterHackers.PolygonPathing
 			return outputPolygons;
 		}
 
+		private MSIntPoint MoveSampelPoint(MSIntPoint pointToMove, MSIntPoint center)
+		{
+			var length = MSClipperLib.IntPointExtensions.Length((pointToMove - center));
+			var direction = new MSIntPoint(avoidInset / 2 - rand.Next((int)avoidInset), avoidInset / 2 - rand.Next((int)avoidInset));
+			pointToMove = pointToMove + direction;
+
+			if (length > 0)
+			{
+				direction = (center - pointToMove) * avoidInset / 20 / length;
+			}
+			pointToMove = pointToMove + direction;
+			return pointToMove;
+		}
+
 		private Polygons MSPolygonsToPolygons(MSPolygons polygonsToPathAround)
 		{
 			var otherPolygons = new List<List<ClipperLib.IntPoint>>();
@@ -759,11 +640,112 @@ namespace MatterHackers.PolygonPathing
 			return otherPolygons;
 		}
 
+		private void RenderCrossings(Graphics2D graphics2D, MSIntPoint pathStart, MSIntPoint pathEnd, PathFinder avoid)
+		{
+			var crossings = new List<Tuple<int, int, MSIntPoint>>(avoid.PathingData.Polygons.FindCrossingPoints(pathStart, pathEnd, avoid.PathingData.EdgeQuadTrees));
+			crossings.Sort(new PolygonAndPointDirectionSorter(pathStart, pathEnd));
+
+			int index = 0;
+			foreach (var crossing in crossings)
+			{
+				var color = RGBA_Floats.FromHSL((float)index / crossings.Count, 1, .5).GetAsRGBA_Bytes();
+				graphics2D.Circle(ObjectToScreen(crossing.Item3).X, ObjectToScreen(crossing.Item3).Y, 4, color);
+				index++;
+			}
+		}
+
+		#region QuadTreeRender
+
+		private void RenderBranch(Graphics2D graphics2D, Branch<int> branch, int depth)
+		{
+			if (branch == null)
+			{
+				return;
+			}
+			foreach (var subBranch in branch.Branches)
+			{
+				RenderBranch(graphics2D, subBranch, depth + 1);
+			}
+			foreach (var quad in branch.Quads)
+			{
+				var start = ObjectToScreen(new MSIntPoint(quad.MinX, quad.MinY));
+				var end = ObjectToScreen(new MSIntPoint(quad.MaxX, quad.MaxY));
+				graphics2D.Rectangle(start.X, start.Y, end.X, end.Y, RGBA_Bytes.YellowGreen);
+			}
+			foreach (var leaf in branch.Leaves)
+			{
+				RenderLeaf(graphics2D, leaf, depth);
+			}
+		}
+
+		private void RenderLeaf(Graphics2D graphics2D, Leaf<int> leaf, int depth)
+		{
+			var start = ObjectToScreen(new MSIntPoint(leaf.Quad.MinX, leaf.Quad.MinY));
+			var end = ObjectToScreen(new MSIntPoint(leaf.Quad.MaxX, leaf.Quad.MaxY));
+			var color = RGBA_Floats.FromHSL((float)depth / 7, 1, .5).GetAsRGBA_Bytes();
+			graphics2D.Rectangle(start.X, start.Y, end.X, end.Y, color);
+		}
+
+		private void RenderQuadTree(Graphics2D graphics2D, List<QuadTree<int>> quadTrees, int depth)
+		{
+			foreach (var quadTree in quadTrees)
+			{
+				foreach (var branch in quadTree.Root.Branches)
+				{
+					RenderBranch(graphics2D, branch, depth);
+				}
+
+				RenderBranch(graphics2D, quadTree.Root, depth);
+			}
+		}
+
+		#endregion QuadTreeRender
+
 		private MSIntPoint ScreenToObject(MSIntPoint inPoint)
 		{
 			Vector2 position = new Vector2(inPoint.X, inPoint.Y);
 			TotalTransform.inverse_transform(ref position);
 			return new MSIntPoint(position.x, position.y);
+		}
+
+		private void SimplifyBadPolygon(MSIntPoint start, MSIntPoint end, MSPolygon pathThatIsInside, bool found)
+		{
+			if (!found)
+			{
+				badCount++;
+
+				// try to reduce the polygons under consideration
+				var polys2 = MSPolygonsToPolygons(polygonsToPathAround);
+				var sample = PolygonsToMSPolygons(polys2);
+				int polyIndex = rand.Next(sample.Count);
+				int pointIndex = rand.Next(sample[polyIndex].Count);
+				if (rand.Next(2) == 0)
+				{
+					sample[polyIndex].RemoveAt(pointIndex);
+				}
+				if (sample[polyIndex].Count < 3)
+				{
+					sample.RemoveAt(polyIndex);
+				}
+
+				// move a point towards the center
+				var center = MatterHackers.QuadTree.QTPolygonsExtensions.Center(sample);
+				polyIndex = rand.Next(sample.Count);
+				pointIndex = rand.Next(sample[polyIndex].Count);
+				sample[polyIndex][pointIndex] = MoveSampelPoint(sample[polyIndex][pointIndex], center);
+
+				var avoid2 = new PathFinder(sample, avoidInset, null); // -600 is for a .4 nozzle in matterslice
+				if (!avoid2.CreatePathInsideBoundary(start, end, pathThatIsInside)
+					&& avoid2.PathingData.Polygons.PointIsInside(start)
+					&& PointCount(avoid2.PathingData.Polygons) <= bestPointCount)
+				{
+					bestPointCount = PointCount(avoid2.PathingData.Polygons);
+					overrideBadPolys = sample;
+					badCount = 0;
+				}
+
+				UiThread.RunOnIdle(Invalidate);
+			}
 		}
 	}
 
