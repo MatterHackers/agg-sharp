@@ -20,35 +20,38 @@ namespace MatterHackers.Agg.UI
 {
 	public class ButtonViewThreeImage : GuiWidget
 	{
-		private IImageByte normalIMage;
+		private IImageByte normalImage;
 		private IImageByte hoverImage;
 		private IImageByte pressedImage;
+		private IImageByte disabledImage;
+
 		private double hoverOpacity;
 		private System.Diagnostics.Stopwatch timeSinceLastDraw = new System.Diagnostics.Stopwatch();
-		private double numSecondsToFade = 0;
 
-		public double NumSecondsToFade
+		public double NumSecondsToFade { get; set; } = 0;
+
+		public ButtonViewThreeImage(IImageByte normal, IImageByte hover, IImageByte pressed, IImageByte disabled = null)
 		{
-			get { return numSecondsToFade; }
-			set
+			if (disabled == null)
 			{
-				numSecondsToFade = value;
+				disabled = normal;
 			}
-		}
 
-		public ButtonViewThreeImage(IImageByte normal, IImageByte hover, IImageByte pressed)
-		{
 			hoverOpacity = 0;
-			normalIMage = normal;
+			normalImage = normal;
 			hoverImage = hover;
 			pressedImage = pressed;
+			disabledImage = disabled;
+
+			this.HAnchor = HAnchor.Stretch;
+			this.VAnchor = VAnchor.Stretch;
 		}
 
 		public override void OnParentChanged(EventArgs e)
 		{
 			Button parentButton = (Button)Parent;
 
-			RectangleInt imageBounds = normalIMage.GetBounds();
+			RectangleInt imageBounds = normalImage.GetBounds();
 			parentButton.OriginRelativeParent += new Vector2(imageBounds.Left, imageBounds.Bottom);
 
 			RectangleDouble bounds = parentButton.LocalBounds;
@@ -82,8 +85,15 @@ namespace MatterHackers.Agg.UI
 
 			Button parentButton = (Button)Parent;
 
-			double x = 0;// parentButton.Width / 2;
-			double y = 0;// parentButton.Height / 2;
+			double x = parentButton.Width / 2 - normalImage.Width / 2;
+			double y = parentButton.Height / 2 - normalImage.Height / 2;
+
+			if (!parentButton.Enabled)
+			{
+				graphics2D.Render(disabledImage, x, y);
+				base.OnDraw(graphics2D);
+				return;
+			}
 
 			if (parentButton.UnderMouseState == UI.UnderMouseState.FirstUnderMouse)
 			{
@@ -93,11 +103,11 @@ namespace MatterHackers.Agg.UI
 				}
 				else
 				{
-					if (numSecondsToFade > 0)
+					if (NumSecondsToFade > 0)
 					{
 						if (hoverOpacity < 1)
 						{
-							graphics2D.Render(normalIMage, x, y);
+							graphics2D.Render(normalImage, x, y);
 						}
 						IRecieveBlenderByte oldBlender = null;
 						if (graphics2D.DestImage != null)
@@ -117,16 +127,16 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 
-				if (numSecondsToFade > 0)
+				if (NumSecondsToFade > 0)
 				{
-					hoverOpacity += numSecondsSinceLastDraw / numSecondsToFade;
+					hoverOpacity += numSecondsSinceLastDraw / NumSecondsToFade;
 				}
 				if (hoverOpacity > 1) hoverOpacity = 1;
 			}
 			else
 			{
-				graphics2D.Render(normalIMage, x, y);
-				if (numSecondsToFade > 0 && hoverOpacity > 0)
+				graphics2D.Render(normalImage, x, y);
+				if (NumSecondsToFade > 0 && hoverOpacity > 0)
 				{
 					IRecieveBlenderByte oldBlender = null;
 					if (graphics2D.DestImage != null)
@@ -134,6 +144,7 @@ namespace MatterHackers.Agg.UI
 						oldBlender = graphics2D.DestImage.GetRecieveBlender();
 						graphics2D.DestImage.SetRecieveBlender(new BlenderPolyColorPreMultBGRA(new RGBA_Bytes(1, 1, 1, hoverOpacity)));
 					}
+
 					graphics2D.Render(hoverImage, x, y);
 					if (graphics2D.DestImage != null)
 					{
@@ -141,9 +152,9 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 
-				if (numSecondsToFade > 0)
+				if (NumSecondsToFade > 0)
 				{
-					hoverOpacity -= numSecondsSinceLastDraw / numSecondsToFade;
+					hoverOpacity -= numSecondsSinceLastDraw / NumSecondsToFade;
 				}
 				if (hoverOpacity < 0) hoverOpacity = 0;
 			}
