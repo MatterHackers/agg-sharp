@@ -65,19 +65,19 @@ namespace MatterHackers.Agg.UI
 			SetBoundsToEncloseChildren();
 		}
 
-		private void AddText(string tabText, GuiWidget widgetState, RGBA_Bytes textColor, RGBA_Bytes backgroundColor, double pointSize, bool isActive, int fixedSize, bool useUnderlineStyling)
+		private void AddText(string tabText, GuiWidget viewWidget, RGBA_Bytes textColor, RGBA_Bytes backgroundColor, double pointSize, bool isActive, int fixedSize, bool useUnderlineStyling)
 		{
 			var tabTitle = new TextWidget(tabText, pointSize: pointSize, textColor: textColor)
 			{
 				VAnchor = VAnchor.Center,
 				AutoExpandBoundsToText = true,
 			};
-			widgetState.AddChild(tabTitle);
+			viewWidget.AddChild(tabTitle);
 
-			widgetState.Selectable = false;
-			widgetState.BackgroundColor = backgroundColor;
+			viewWidget.Selectable = false;
+			viewWidget.BackgroundColor = backgroundColor;
 
-			EnforceSizingAdornActive(widgetState, isActive, useUnderlineStyling, fixedSize);
+			EnforceSizingAdornActive(viewWidget, isActive, useUnderlineStyling, fixedSize);
 		}
 	}
 
@@ -155,15 +155,15 @@ namespace MatterHackers.Agg.UI
 
 		public TabPage TabPage { get; }
 
-		protected static void EnforceSizingAdornActive(GuiWidget widgetState, bool isActive, bool useUnderlineStyle, int controlHeight = 40, int controlMargin = 0)
+		protected static void EnforceSizingAdornActive(GuiWidget viewWidget, bool isActive, bool useUnderlineStyle, int controlHeight = 40, int controlMargin = 0)
 		{
-			widgetState.Height = controlHeight;
-			widgetState.Margin = controlMargin;
+			viewWidget.Height = controlHeight;
+			viewWidget.Margin = controlMargin;
 
 			if (isActive && useUnderlineStyle)
 			{
 				// Adorn the active tab with a underline bar
-				widgetState.AddChild(new GuiWidget()
+				viewWidget.AddChild(new GuiWidget()
 				{
 					HAnchor = HAnchor.Stretch,
 					Height = UnderlineHeight,
@@ -172,8 +172,8 @@ namespace MatterHackers.Agg.UI
 				});
 			}
 
-			RectangleDouble childrenBounds = widgetState.GetMinimumBoundsToEncloseChildren();
-			widgetState.LocalBounds = new RectangleDouble(childrenBounds.Left, widgetState.LocalBounds.Bottom, childrenBounds.Right, widgetState.LocalBounds.Top);
+			RectangleDouble childrenBounds = viewWidget.GetMinimumBoundsToEncloseChildren();
+			viewWidget.LocalBounds = new RectangleDouble(childrenBounds.Left, viewWidget.LocalBounds.Bottom, childrenBounds.Right, viewWidget.LocalBounds.Top);
 		}
 	}
 }
