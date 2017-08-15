@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2017, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,68 +28,56 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.Diagnostics;
 
 namespace MatterHackers.Agg.UI
 {
-	public class SimpleTextTabWidget : Tab
+	public class TextTab : Tab
 	{
-		private int fixedSize;
-
-		public SimpleTextTabWidget(TabPage tabPageControledByTab, string internalTabName)
-			: this(tabPageControledByTab, internalTabName, 12, RGBA_Bytes.DarkGray, RGBA_Bytes.White, RGBA_Bytes.Black, RGBA_Bytes.White)
+		public TextTab(TabPage tabPage, string internalTabName)
+			: this(tabPage, internalTabName, 12, RGBA_Bytes.DarkGray, RGBA_Bytes.White, RGBA_Bytes.Black, RGBA_Bytes.White)
 		{
 		}
 
-		public SimpleTextTabWidget(TabPage tabPageControledByTab, string internalTabName, double pointSize,
+		public TextTab(TabPage tabPage, string internalTabName, double pointSize,
 			RGBA_Bytes selectedTextColor, RGBA_Bytes selectedBackgroundColor,
 			RGBA_Bytes normalTextColor, RGBA_Bytes normalBackgroundColor, int fixedSize = 40, bool useUnderlineStyling = false)
-			: base(internalTabName, new GuiWidget(), new GuiWidget(), new GuiWidget(), tabPageControledByTab)
+			: base(internalTabName, new GuiWidget(), new GuiWidget(), new GuiWidget(), tabPage)
 		{
 			this.Padding = new BorderDouble(5, 0);
 			this.Margin = new BorderDouble(0, 0, 10, 0);
-			this.fixedSize = fixedSize;
-			this.UseUnderlineStyling = useUnderlineStyling;
 
-			AddText(tabPageControledByTab.Text, selectedWidget, selectedTextColor, selectedBackgroundColor, pointSize, true);
-			AddText(tabPageControledByTab.Text, normalWidget, normalTextColor, normalBackgroundColor, pointSize, false);
+			AddText(tabPage.Text, selectedWidget, selectedTextColor, selectedBackgroundColor, pointSize, true, fixedSize, useUnderlineStyling);
+			AddText(tabPage.Text, normalWidget, normalTextColor, normalBackgroundColor, pointSize, false, fixedSize, useUnderlineStyling);
 
-			tabPageControledByTab.TextChanged += new EventHandler(tabPageControledByTab_TextChanged);
+			// Bind changes on TabPage.Text to ensure 
+			tabPage.TextChanged += (s, e) =>
+			{
+				// TODO: Why the heavy use of SetBoundsToEncloseChildren? Shouldn't XAnchor.Fit cover this?
+				normalWidget.Children[0].Text = ((GuiWidget)s).Text;
+				normalWidget.SetBoundsToEncloseChildren();
+
+				selectedWidget.Children[0].Text = ((GuiWidget)s).Text;
+				selectedWidget.SetBoundsToEncloseChildren();
+
+				SetBoundsToEncloseChildren();
+			};
 
 			SetBoundsToEncloseChildren();
 		}
 
-		public bool UseUnderlineStyling { get; set; } = false;
-
-		public override void OnMouseDown(MouseEventArgs mouseEvent)
+		private void AddText(string tabText, GuiWidget viewWidget, RGBA_Bytes textColor, RGBA_Bytes backgroundColor, double pointSize, bool isActive, int fixedSize, bool useUnderlineStyling)
 		{
-			OnSelected(mouseEvent);
-			base.OnMouseDown(mouseEvent);
-		}
-
-		private void tabPageControledByTab_TextChanged(object sender, EventArgs e)
-		{
-			normalWidget.Children[0].Text = ((GuiWidget)sender).Text;
-			normalWidget.SetBoundsToEncloseChildren();
-			selectedWidget.Children[0].Text = ((GuiWidget)sender).Text;
-			selectedWidget.SetBoundsToEncloseChildren();
-			SetBoundsToEncloseChildren();
-		}
-
-		public TextWidget tabTitle;
-
-		private void AddText(string tabText, GuiWidget widgetState, RGBA_Bytes textColor, RGBA_Bytes backgroundColor, double pointSize, bool isActive)
-		{
-			tabTitle = new TextWidget(tabText, pointSize: pointSize, textColor: textColor)
+			var tabTitle = new TextWidget(tabText, pointSize: pointSize, textColor: textColor)
 			{
 				VAnchor = VAnchor.Center,
+				AutoExpandBoundsToText = true,
 			};
-			tabTitle.AutoExpandBoundsToText = true;
-			widgetState.AddChild(tabTitle);
-			widgetState.Selectable = false;
-			widgetState.BackgroundColor = backgroundColor;
+			viewWidget.AddChild(tabTitle);
 
-			EnforceSizingAdornActive(widgetState, isActive, this.UseUnderlineStyling, this.fixedSize);
+			viewWidget.Selectable = false;
+			viewWidget.BackgroundColor = backgroundColor;
+
+			EnforceSizingAdornActive(viewWidget, isActive, useUnderlineStyling, fixedSize);
 		}
 	}
 
@@ -112,13 +100,16 @@ namespace MatterHackers.Agg.UI
 			this.normalWidget = normalWidget;
 			this.hoverWidget = hoverWidget;
 			this.selectedWidget = pressedWidget;
+			this.Padding = new BorderDouble(5, 3, 20, 3);
+			this.TabPage = tabPage;
+
 			AddChild(normalWidget);
 			AddChild(hoverWidget);
-			hoverWidget.Visible = false;
 			AddChild(pressedWidget);
+
+			hoverWidget.Visible = false;
 			pressedWidget.Visible = false;
-			Padding = new BorderDouble(5, 3, 20, 3);
-			this.TabPage = tabPage;
+			
 			SetBoundsToEncloseChildren();
 		}
 
@@ -133,7 +124,13 @@ namespace MatterHackers.Agg.UI
 			Selected?.Invoke(this, e);
 		}
 
-		public void SelectionChanged(object sender, EventArgs e)
+		public override void OnMouseDown(MouseEventArgs mouseEvent)
+		{
+			OnSelected(mouseEvent);
+			base.OnClick(mouseEvent);
+		}
+
+		private void SelectionChanged(object sender, EventArgs e)
 		{
 			if (TabBarContaningTab != null)
 			{
@@ -154,22 +151,19 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public TabBar TabBarContaningTab
-		{
-			get { return (TabBar)Parent; }
-		}
+		public TabBar TabBarContaningTab => Parent as TabBar;
 
 		public TabPage TabPage { get; }
 
-		protected static void EnforceSizingAdornActive(GuiWidget widgetState, bool isActive, bool useUnderlineStyle, int controlHeight = 40, int controlMargin = 0)
+		protected static void EnforceSizingAdornActive(GuiWidget viewWidget, bool isActive, bool useUnderlineStyle, int controlHeight = 40, int controlMargin = 0)
 		{
-			widgetState.Height = controlHeight;
-			widgetState.Margin = controlMargin;
+			viewWidget.Height = controlHeight;
+			viewWidget.Margin = controlMargin;
 
 			if (isActive && useUnderlineStyle)
 			{
 				// Adorn the active tab with a underline bar
-				widgetState.AddChild(new GuiWidget()
+				viewWidget.AddChild(new GuiWidget()
 				{
 					HAnchor = HAnchor.Stretch,
 					Height = UnderlineHeight,
@@ -178,8 +172,8 @@ namespace MatterHackers.Agg.UI
 				});
 			}
 
-			RectangleDouble childrenBounds = widgetState.GetMinimumBoundsToEncloseChildren();
-			widgetState.LocalBounds = new RectangleDouble(childrenBounds.Left, widgetState.LocalBounds.Bottom, childrenBounds.Right, widgetState.LocalBounds.Top);
+			RectangleDouble childrenBounds = viewWidget.GetMinimumBoundsToEncloseChildren();
+			viewWidget.LocalBounds = new RectangleDouble(childrenBounds.Left, viewWidget.LocalBounds.Bottom, childrenBounds.Right, viewWidget.LocalBounds.Top);
 		}
 	}
 }
