@@ -106,13 +106,16 @@ namespace MatterHackers.Agg.UI
 			this.normalWidget = normalWidget;
 			this.hoverWidget = hoverWidget;
 			this.selectedWidget = pressedWidget;
+			this.Padding = new BorderDouble(5, 3, 20, 3);
+			this.TabPage = tabPage;
+
 			AddChild(normalWidget);
 			AddChild(hoverWidget);
-			hoverWidget.Visible = false;
 			AddChild(pressedWidget);
+
+			hoverWidget.Visible = false;
 			pressedWidget.Visible = false;
-			Padding = new BorderDouble(5, 3, 20, 3);
-			this.TabPage = tabPage;
+			
 			SetBoundsToEncloseChildren();
 		}
 
@@ -133,7 +136,7 @@ namespace MatterHackers.Agg.UI
 			base.OnClick(mouseEvent);
 		}
 
-		public void SelectionChanged(object sender, EventArgs e)
+		private void SelectionChanged(object sender, EventArgs e)
 		{
 			if (TabBarContaningTab != null)
 			{
@@ -154,10 +157,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public TabBar TabBarContaningTab
-		{
-			get { return (TabBar)Parent; }
-		}
+		public TabBar TabBarContaningTab => Parent as TabBar;
 
 		public TabPage TabPage { get; }
 
