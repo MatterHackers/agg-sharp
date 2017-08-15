@@ -27,7 +27,6 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.Font;
 using System;
 using System.Collections.Generic;
 
@@ -38,10 +37,9 @@ namespace MatterHackers.Agg.UI
 	{
 		private Dictionary<string, TabPage> tabPages = new Dictionary<string, TabPage>();
 
-		private StyledTypeFace typeFaceStyle = new StyledTypeFace(LiberationSansFont.Instance, 12);
 		private TabBar tabBar;
 
-		public TabBar TabBar { get { return tabBar; } }
+		public TabBar TabBar => tabBar;
 
 		private Orientation orientation;
 
@@ -71,17 +69,6 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override void OnDraw(Graphics2D graphics2D)
-		{
-			// If no selection exists by the first draw, select index 0 if applicable
-			if (SelectedTabIndex == -1 && tabPages.Count > 0)
-			{
-				SelectedTabIndex = 0;
-			}
-
-			base.OnDraw(graphics2D);
-		}
-
 		public TabControl(Orientation orientation = Orientation.Horizontal, GuiWidget separator = null)
 		{
 			AnchorAll();
@@ -102,6 +89,17 @@ namespace MatterHackers.Agg.UI
 			tabPageArea.AnchorAll();
 
 			this.Orientation = orientation;
+		}
+
+		public override void OnLoad(EventArgs args)
+		{
+			// If no selection exists by the first draw, select index 0 if applicable
+			if (SelectedTabIndex == -1 && tabPages.Count > 0)
+			{
+				SelectedTabIndex = 0;
+			}
+
+			base.OnLoad(args);
 		}
 
 		public override void AddChild(GuiWidget child, int indexInChildrenList = -1)
@@ -195,8 +193,7 @@ namespace MatterHackers.Agg.UI
 
 		public void AddTab(TabPage tabPageWidget, string internalTabName)
 		{
-			Tab newTab = new SimpleTextTabWidget(tabPageWidget, internalTabName);
-			AddTab(newTab);
+			AddTab(new TextTab(tabPageWidget, internalTabName));
 		}
 
 		public void AddTab(Tab newTab)
@@ -225,4 +222,3 @@ namespace MatterHackers.Agg.UI
 		}
 	}
 }
- 
