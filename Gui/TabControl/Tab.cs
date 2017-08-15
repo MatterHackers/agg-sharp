@@ -34,23 +34,23 @@ namespace MatterHackers.Agg.UI
 {
 	public class SimpleTextTabWidget : Tab
 	{
-		public SimpleTextTabWidget(TabPage tabPageControledByTab, string internalTabName)
-			: this(tabPageControledByTab, internalTabName, 12, RGBA_Bytes.DarkGray, RGBA_Bytes.White, RGBA_Bytes.Black, RGBA_Bytes.White)
+		public SimpleTextTabWidget(TabPage tabPage, string internalTabName)
+			: this(tabPage, internalTabName, 12, RGBA_Bytes.DarkGray, RGBA_Bytes.White, RGBA_Bytes.Black, RGBA_Bytes.White)
 		{
 		}
 
-		public SimpleTextTabWidget(TabPage tabPageControledByTab, string internalTabName, double pointSize,
+		public SimpleTextTabWidget(TabPage tabPage, string internalTabName, double pointSize,
 			RGBA_Bytes selectedTextColor, RGBA_Bytes selectedBackgroundColor,
 			RGBA_Bytes normalTextColor, RGBA_Bytes normalBackgroundColor, int fixedSize = 40, bool useUnderlineStyling = false)
-			: base(internalTabName, new GuiWidget(), new GuiWidget(), new GuiWidget(), tabPageControledByTab)
+			: base(internalTabName, new GuiWidget(), new GuiWidget(), new GuiWidget(), tabPage)
 		{
 			this.Padding = new BorderDouble(5, 0);
 			this.Margin = new BorderDouble(0, 0, 10, 0);
 
-			AddText(tabPageControledByTab.Text, selectedWidget, selectedTextColor, selectedBackgroundColor, pointSize, true, fixedSize, useUnderlineStyling);
-			AddText(tabPageControledByTab.Text, normalWidget, normalTextColor, normalBackgroundColor, pointSize, false, fixedSize, useUnderlineStyling);
+			AddText(tabPage.Text, selectedWidget, selectedTextColor, selectedBackgroundColor, pointSize, true, fixedSize, useUnderlineStyling);
+			AddText(tabPage.Text, normalWidget, normalTextColor, normalBackgroundColor, pointSize, false, fixedSize, useUnderlineStyling);
 
-			tabPageControledByTab.TextChanged += new EventHandler(tabPageControledByTab_TextChanged);
+			tabPage.TextChanged += new EventHandler(tabPageControledByTab_TextChanged);
 
 			SetBoundsToEncloseChildren();
 		}
