@@ -56,7 +56,7 @@ namespace MatterHackers.DataConverters3D
 
 		private static MeshGroup Flatten(IObject3D item, MeshGroup meshGroup, Matrix4X4 totalTransform, 
 			Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings, 
-			int overrideMaterialIndex, PrintOutputTypes overridePrintType)
+			int overrideMaterialIndex, PrintOutputTypes printOutputType)
 		{
 			totalTransform = item.Matrix * totalTransform;
 
@@ -67,10 +67,10 @@ namespace MatterHackers.DataConverters3D
 				overrideMaterialIndex = item.MaterialIndex;
 			}
 
-			if(overridePrintType == PrintOutputTypes.Default
+			if(printOutputType == PrintOutputTypes.Default
 				&& item.OutputType != PrintOutputTypes.Default)
 			{
-				overridePrintType = item.OutputType;
+				printOutputType = item.OutputType;
 			}
 
 			if (item.Mesh != null)
@@ -88,13 +88,15 @@ namespace MatterHackers.DataConverters3D
 
 					// If we are not setting an extruder we are on the first extruder
 					material.ExtruderIndex = overrideMaterialIndex == -1 ? 0 : overrideMaterialIndex;
-					material.PrintOutputTypes = overridePrintType == PrintOutputTypes.Default ? PrintOutputTypes.Solid : overridePrintType;
+					material.PrintOutputTypes = printOutputType == PrintOutputTypes.Default ? PrintOutputTypes.Solid : printOutputType;
 				}
 			}
-
-			foreach (IObject3D child in item.Children.Where(child => child.Visible))
+			else // we only add child meshes if we did not find a mesh at this level
 			{
-				Flatten(child, meshGroup, totalTransform, meshPrintOutputSettings, overrideMaterialIndex, overridePrintType);
+				foreach (IObject3D child in item.Children.Where(child => child.Visible))
+				{
+					Flatten(child, meshGroup, totalTransform, meshPrintOutputSettings, overrideMaterialIndex, printOutputType);
+				}
 			}
 
 			return meshGroup;
@@ -270,7 +272,7 @@ namespace MatterHackers.DataConverters3D
 			return new Transform(traceData, Matrix);
 		}
 
-		public IEnumerable<MeshRenderData> VisibleMeshes(Matrix4X4 transform, RGBA_Bytes color = default(RGBA_Bytes), int materialIndex = -1)
+		public IEnumerable<MeshRenderData> VisibleMeshes(Matrix4X4 transform, RGBA_Bytes color = default(RGBA_Bytes), int materialIndex = -1, PrintOutputTypes outputType = PrintOutputTypes.Default)
 		{
 			// If there is no color set yet and the object 3D is specifying a color
 			if (color.Alpha0To255 == 0
@@ -288,13 +290,25 @@ namespace MatterHackers.DataConverters3D
 				materialIndex = this.MaterialIndex;
 			}
 
+			if(outputType == PrintOutputTypes.Default
+				&& this.OutputType != PrintOutputTypes.Default)
+			{
+				outputType = this.OutputType;
+			}
+
 			Matrix4X4 totalTransform = this.Matrix * transform;
 
-			foreach (var child in Children)
+			if (this.Mesh == null)
 			{
-				foreach (var meshTransform in child.VisibleMeshes(totalTransform, color, materialIndex))
+				foreach (var child in Children)
 				{
-					yield return meshTransform;
+					if (this.ItemType != Object3DTypes.Group || child.OutputType != PrintOutputTypes.Hole)
+					{
+						foreach (var meshTransform in child.VisibleMeshes(totalTransform, color, materialIndex))
+						{
+							yield return meshTransform;
+						}
+					}
 				}
 			}
 
@@ -302,11 +316,11 @@ namespace MatterHackers.DataConverters3D
 			{
 				if (color.Alpha0To255 > 0)
 				{
-					yield return new MeshRenderData(this.Mesh, totalTransform, color, materialIndex);
+					yield return new MeshRenderData(this.Mesh, totalTransform, color, materialIndex, outputType);
 				}
 				else
 				{
-					yield return new MeshRenderData(this.Mesh, totalTransform, RGBA_Bytes.White, materialIndex);
+					yield return new MeshRenderData(this.Mesh, totalTransform, RGBA_Bytes.White, materialIndex, outputType);
 				}
 			}
 		}

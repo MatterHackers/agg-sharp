@@ -217,6 +217,12 @@ namespace MatterHackers.PolygonMesh.Csg
 			return MeshFromSolid(result);
 		}
 
+		/// <summary>
+		/// Subtract b from a
+		/// </summary>
+		/// <param name="a"></param>
+		/// <param name="b"></param>
+		/// <returns></returns>
 		public static Mesh Subtract(Mesh a, Mesh b)
 		{
 			if (a.Faces.Count == 0)

@@ -129,7 +129,6 @@ namespace MatterHackers.DataConverters3D
 								context = new Object3D()
 								{
 									ItemType = Object3DTypes.Model,
-									Persistable = false
 								};
 								root.Children.Add(context);
 								break;
