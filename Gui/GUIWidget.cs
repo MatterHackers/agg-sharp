@@ -127,7 +127,6 @@ namespace MatterHackers.Agg.UI
 		FirstUnderMouse
 	};
 
-	[DebuggerDisplay("Name = {Name}, Bounds = {LocalBounds}")]
 	public class GuiWidget
 	{
 		public static double DeviceScale { get; set; } = 1;
@@ -590,6 +589,11 @@ namespace MatterHackers.Agg.UI
 			LayoutEngine = new LayoutEngineSimpleAlign();
 			HAnchor = hAnchor;
 			VAnchor = vAnchor;
+		}
+
+		public override string ToString()
+		{
+			return $"Name = {Name}, Bounds = {LocalBounds} - {GetType().Name}";
 		}
 
 		private void children_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
