@@ -693,14 +693,19 @@ namespace MatterHackers.Agg.UI
 
 			set
 			{
-				doubleBuffer = value;
-				if (doubleBuffer)
+				if (this.DoubleBuffer != value)
 				{
-					AllocateBackBuffer();
-				}
-				else
-				{
-					backBuffer = null;
+					doubleBuffer = value;
+					if (doubleBuffer)
+					{
+						AllocateBackBuffer();
+					}
+					else
+					{
+						backBuffer = null;
+					}
+
+					Invalidate();
 				}
 			}
 		}
