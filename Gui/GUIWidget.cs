@@ -127,7 +127,6 @@ namespace MatterHackers.Agg.UI
 		FirstUnderMouse
 	};
 
-	[DebuggerDisplay("Name = {Name}, Bounds = {LocalBounds}")]
 	public class GuiWidget
 	{
 		public static double DeviceScale { get; set; } = 1;
@@ -592,6 +591,11 @@ namespace MatterHackers.Agg.UI
 			VAnchor = vAnchor;
 		}
 
+		public override string ToString()
+		{
+			return $"Name = {Name}, Bounds = {LocalBounds} - {GetType().Name}";
+		}
+
 		private void children_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
 		{
 			if (childrenLockedInMouseUpCount != 0)
@@ -689,14 +693,19 @@ namespace MatterHackers.Agg.UI
 
 			set
 			{
-				doubleBuffer = value;
-				if (doubleBuffer)
+				if (this.DoubleBuffer != value)
 				{
-					AllocateBackBuffer();
-				}
-				else
-				{
-					backBuffer = null;
+					doubleBuffer = value;
+					if (doubleBuffer)
+					{
+						AllocateBackBuffer();
+					}
+					else
+					{
+						backBuffer = null;
+					}
+
+					Invalidate();
 				}
 			}
 		}

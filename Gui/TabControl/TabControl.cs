@@ -196,7 +196,7 @@ namespace MatterHackers.Agg.UI
 			AddTab(new TextTab(tabPageWidget, internalTabName));
 		}
 
-		public void AddTab(Tab newTab)
+		public void AddTab(Tab newTab, int tabPosition = -1)
 		{
 			TabPage tabPageWidget = newTab.TabPage;
 
@@ -214,7 +214,7 @@ namespace MatterHackers.Agg.UI
 					break;
 			}
 
-			tabBar.AddChild(newTab);
+			tabBar.AddChild(newTab, tabPosition);
 
 			tabBar.TabPageContainer.AddChild(tabPageWidget);
 
