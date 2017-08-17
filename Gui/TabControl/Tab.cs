@@ -93,22 +93,22 @@ namespace MatterHackers.Agg.UI
 
 		public event EventHandler Selected;
 
-		public Tab(string tabName, GuiWidget normalWidget, GuiWidget hoverWidget, GuiWidget pressedWidget,
+		public Tab(string tabName, GuiWidget normalWidget, GuiWidget hoverWidget, GuiWidget selectedWidget,
 			TabPage tabPage)
 		{
 			this.Name = tabName;
 			this.normalWidget = normalWidget;
 			this.hoverWidget = hoverWidget;
-			this.selectedWidget = pressedWidget;
+			this.selectedWidget = selectedWidget;
 			this.Padding = new BorderDouble(5, 3, 20, 3);
 			this.TabPage = tabPage;
 
 			AddChild(normalWidget);
 			AddChild(hoverWidget);
-			AddChild(pressedWidget);
+			AddChild(selectedWidget);
 
 			hoverWidget.Visible = false;
-			pressedWidget.Visible = false;
+			selectedWidget.Visible = false;
 			
 			SetBoundsToEncloseChildren();
 		}
