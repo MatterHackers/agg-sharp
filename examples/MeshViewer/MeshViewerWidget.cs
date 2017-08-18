@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2016, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -26,6 +26,8 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
+
+#define DO_LIGHTING
 
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
@@ -84,6 +86,16 @@ namespace MatterHackers.MeshVisualizer
 		private static Mesh printerBed = null;
 		private RenderTypes renderType = RenderTypes.Shaded;
 
+		private float[] ambientLight = { 0.2f, 0.2f, 0.2f, 1.0f };
+
+		private float[] diffuseLight0 = { 0.7f, 0.7f, 0.7f, 1.0f };
+		private float[] specularLight0 = { 0.5f, 0.5f, 0.5f, 1.0f };
+		private float[] lightDirection0 = { -1, -1, 1, 0.0f };
+
+		private float[] diffuseLight1 = { 0.5f, 0.5f, 0.5f, 1.0f };
+		private float[] specularLight1 = { 0.3f, 0.3f, 0.3f, 1.0f };
+		private float[] lightDirection1 = { 1, 1, 1, 0.0f };
+
 		public double SnapGridDistance { get; set; } = 1;
 
 		private TrackballTumbleWidget trackballTumbleWidget;
@@ -104,7 +116,6 @@ namespace MatterHackers.MeshVisualizer
 			BuildVolumeColor = new RGBA_Floats(.2, .8, .3, .2).GetAsRGBA_Bytes();
 
 			trackballTumbleWidget = new TrackballTumbleWidget(this.World);
-			trackballTumbleWidget.DrawGlContent += trackballTumbleWidget_DrawGlContent;
 			trackballTumbleWidget.TransformState = TrackBallController.MouseDownType.Rotation;
 
 			AddChild(trackballTumbleWidget);
@@ -175,7 +186,6 @@ namespace MatterHackers.MeshVisualizer
 
 			base.OnLoad(args);
 		}
-
 
 		public override void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType seachType, bool allowInvalidItems = true)
 		{
@@ -475,6 +485,41 @@ namespace MatterHackers.MeshVisualizer
 		{
 			base.OnDraw(graphics2D);
 
+			this.SetGlContext();
+
+			foreach (var object3D in Scene.Children)
+			{
+				DrawObject(object3D, Matrix4X4.Identity, false);
+			}
+
+			if (RenderBed)
+			{
+				GLHelper.Render(printerBed, this.BedColor);
+			}
+
+			if (buildVolume != null && RenderBuildVolume)
+			{
+				GLHelper.Render(buildVolume, this.BuildVolumeColor);
+			}
+
+			// we don't want to render the bed or build volume before we load a model.
+			if (Scene.HasChildren || AllowBedRenderingWhenEmpty)
+			{
+				if (false) // this is code to draw a small axis indicator
+				{
+					double big = 10;
+					double small = 1;
+					Mesh xAxis = PlatonicSolids.CreateCube(big, small, small);
+					GLHelper.Render(xAxis, RGBA_Bytes.Red);
+					Mesh yAxis = PlatonicSolids.CreateCube(small, big, small);
+					GLHelper.Render(yAxis, RGBA_Bytes.Green);
+					Mesh zAxis = PlatonicSolids.CreateCube(small, small, big);
+					GLHelper.Render(zAxis, RGBA_Bytes.Blue);
+				}
+			}
+
+			DrawInteractionVolumes();
+
 			//if (!SuppressUiVolumes)
 			{
 				foreach (InteractionVolume interactionVolume in interactionVolumes)
@@ -482,6 +527,8 @@ namespace MatterHackers.MeshVisualizer
 					interactionVolume.Draw2DContent(graphics2D);
 				}
 			}
+
+			this.UnsetGlContext();
 		}
 
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
@@ -772,43 +819,7 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
-		private void trackballTumbleWidget_DrawGlContent(object sender, EventArgs e)
-		{
-			foreach(var object3D in Scene.Children)
-			{
-				DrawObject(object3D, Matrix4X4.Identity, false);
-			}
-
-			if (RenderBed)
-			{
-				GLHelper.Render(printerBed, this.BedColor);
-			}
-
-			if (buildVolume != null && RenderBuildVolume)
-			{
-				GLHelper.Render(buildVolume, this.BuildVolumeColor);
-			}
-
-			// we don't want to render the bed or build volume before we load a model.
-			if (Scene.HasChildren || AllowBedRenderingWhenEmpty)
-			{
-				if (false) // this is code to draw a small axis indicator
-				{
-					double big = 10;
-					double small = 1;
-					Mesh xAxis = PlatonicSolids.CreateCube(big, small, small);
-					GLHelper.Render(xAxis, RGBA_Bytes.Red);
-					Mesh yAxis = PlatonicSolids.CreateCube(small, big, small);
-					GLHelper.Render(yAxis, RGBA_Bytes.Green);
-					Mesh zAxis = PlatonicSolids.CreateCube(small, small, big);
-					GLHelper.Render(zAxis, RGBA_Bytes.Blue);
-				}
-			}
-
-			DrawInteractionVolumes(e);
-		}
-
-		private void DrawInteractionVolumes(EventArgs e)
+		private void DrawInteractionVolumes()
 		{
 			if(SuppressUiVolumes)
 			{
@@ -831,6 +842,86 @@ namespace MatterHackers.MeshVisualizer
 			{
 				interactionVolume.DrawGlContent(new DrawGlContentEventArgs(true));
 			}
+		}
+
+		private void SetGlContext()
+		{
+			GL.ClearDepth(1.0);
+			GL.Clear(ClearBufferMask.DepthBufferBit);   // Clear the Depth Buffer
+
+			GL.PushAttrib(AttribMask.ViewportBit);
+			RectangleDouble screenRect = this.TransformToScreenSpace(LocalBounds);
+			GL.Viewport((int)screenRect.Left, (int)screenRect.Bottom, (int)screenRect.Width, (int)screenRect.Height);
+
+			GL.ShadeModel(ShadingModel.Smooth);
+
+			GL.FrontFace(FrontFaceDirection.Ccw);
+			GL.CullFace(CullFaceMode.Back);
+
+			GL.DepthFunc(DepthFunction.Lequal);
+
+			GL.Disable(EnableCap.DepthTest);
+			//ClearToGradient();
+
+#if DO_LIGHTING
+			GL.Light(LightName.Light0, LightParameter.Ambient, ambientLight);
+
+			GL.Light(LightName.Light0, LightParameter.Diffuse, diffuseLight0);
+			GL.Light(LightName.Light0, LightParameter.Specular, specularLight0);
+
+			GL.Light(LightName.Light0, LightParameter.Ambient, new float[] { 0, 0, 0, 0 });
+			GL.Light(LightName.Light1, LightParameter.Diffuse, diffuseLight1);
+			GL.Light(LightName.Light1, LightParameter.Specular, specularLight1);
+
+			GL.ColorMaterial(MaterialFace.FrontAndBack, ColorMaterialParameter.AmbientAndDiffuse);
+
+			GL.Enable(EnableCap.Light0);
+			GL.Enable(EnableCap.Light1);
+			GL.Enable(EnableCap.DepthTest);
+			GL.Enable(EnableCap.Blend);
+			GL.Enable(EnableCap.Normalize);
+			GL.Enable(EnableCap.Lighting);
+			GL.Enable(EnableCap.ColorMaterial);
+
+			Vector3 lightDirectionVector = new Vector3(lightDirection0[0], lightDirection0[1], lightDirection0[2]);
+			lightDirectionVector.Normalize();
+			lightDirection0[0] = (float)lightDirectionVector.x;
+			lightDirection0[1] = (float)lightDirectionVector.y;
+			lightDirection0[2] = (float)lightDirectionVector.z;
+			GL.Light(LightName.Light0, LightParameter.Position, lightDirection0);
+			GL.Light(LightName.Light1, LightParameter.Position, lightDirection1);
+#endif
+
+			// set the projection matrix
+			GL.MatrixMode(MatrixMode.Projection);
+			GL.PushMatrix();
+			GL.LoadMatrix(this.World.ProjectionMatrix.GetAsDoubleArray());
+
+			// set the modelview matrix
+			GL.MatrixMode(MatrixMode.Modelview);
+			GL.PushMatrix();
+			GL.LoadMatrix(this.World.ModelviewMatrix.GetAsDoubleArray());
+		}
+
+		private void UnsetGlContext()
+		{
+			GL.MatrixMode(MatrixMode.Projection);
+			GL.PopMatrix();
+
+			GL.MatrixMode(MatrixMode.Modelview);
+			GL.PopMatrix();
+
+#if DO_LIGHTING
+			GL.Disable(EnableCap.ColorMaterial);
+			GL.Disable(EnableCap.Lighting);
+			GL.Disable(EnableCap.Light0);
+			GL.Disable(EnableCap.Light1);
+#endif
+			GL.Disable(EnableCap.Normalize);
+			GL.Disable(EnableCap.Blend);
+			GL.Disable(EnableCap.DepthTest);
+
+			GL.PopAttrib();
 		}
 
 		public class PartProcessingInfo : FlowLayoutWidget
