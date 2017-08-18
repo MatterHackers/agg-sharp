@@ -72,17 +72,7 @@ namespace MatterHackers.Agg.OpenGlGui
 	public class TrackballTumbleWidget : GuiWidget
 	{
 		public TrackBallController.MouseDownType TransformState { get; set; }
-
-		private float[] ambientLight = { 0.2f, 0.2f, 0.2f, 1.0f };
-
-		private float[] diffuseLight0 = { 0.7f, 0.7f, 0.7f, 1.0f };
-		private float[] specularLight0 = { 0.5f, 0.5f, 0.5f, 1.0f };
-		private float[] lightDirection0 = { -1, -1, 1, 0.0f };
-
-		private float[] diffuseLight1 = { 0.5f, 0.5f, 0.5f, 1.0f };
-		private float[] specularLight1 = { 0.3f, 0.3f, 0.3f, 1.0f };
-		private float[] lightDirection1 = { 1, 1, 1, 0.0f };
-
+		
 		private List<IVertexSource> insideArrows = new List<IVertexSource>();
 		private List<IVertexSource> outsideArrows = new List<IVertexSource>();
 
@@ -119,7 +109,6 @@ namespace MatterHackers.Agg.OpenGlGui
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			base.OnDraw(graphics2D);
-
 		}
 
 		private void MakeArrowIcons()
