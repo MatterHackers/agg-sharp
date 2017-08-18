@@ -350,22 +350,25 @@ namespace MatterHackers.Agg.OpenGlGui
 		{
 			if (!LockTrackBall && TrackBallController.CurrentTrackingType != TrackBallController.MouseDownType.None)
 			{
-                if (TrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.Rotation)
-                {
+				if (TrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.Rotation)
+				{
 					// try and preserve some of the velocity
 					motionQueue.AddMoveToMotionQueue(mouseEvent.Position, UiThread.CurrentTimerMs);
 
-					currentVelocityPerMs = motionQueue.GetVelocityPixelsPerMs();
-                    if (currentVelocityPerMs.LengthSquared > 0)
-                    {
-                        UiThread.RunOnIdle(ApplyVelocity);
-                    }
-                }
+					if (!Keyboard.IsKeyDown(Keys.ShiftKey))
+					{
+						currentVelocityPerMs = motionQueue.GetVelocityPixelsPerMs();
+						if (currentVelocityPerMs.LengthSquared > 0)
+						{
+							UiThread.RunOnIdle(ApplyVelocity);
+						}
+					}
+				}
 
 				TrackBallController.OnMouseUp();
-            }
+			}
 
-            base.OnMouseUp(mouseEvent);
+			base.OnMouseUp(mouseEvent);
 		}
 
 		int updatesPerSecond = 30;
@@ -378,7 +381,7 @@ namespace MatterHackers.Agg.OpenGlGui
 				{
 					Vector2 center = LocalBounds.Center;
 					TrackBallController.OnMouseDown(center, Matrix4X4.Identity, TrackBallController.MouseDownType.Rotation);
-					TrackBallController.OnMouseMove(center + currentVelocityPerMs * msPerUpdate, Keyboard.IsKeyDown(Keys.ShiftKey));
+					TrackBallController.OnMouseMove(center + currentVelocityPerMs * msPerUpdate, false);
 					TrackBallController.OnMouseUp();
 					Invalidate();
 

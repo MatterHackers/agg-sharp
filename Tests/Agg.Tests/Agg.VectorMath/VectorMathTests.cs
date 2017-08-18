@@ -33,6 +33,38 @@ using System;
 namespace MatterHackers.VectorMath.Tests
 {
 	[TestFixture, Category("Agg.VectorMath")]
+	public class Vector2Tests
+	{
+		[Test]
+		public void GetDeltaAngleTests()
+		{
+			// angles around 0
+			{
+				var center = new Vector2(0, 0);
+				var start = new Vector2(1, 0);
+				var end = new Vector2(0, 1);
+				Assert.IsTrue(Math.Abs(MathHelper.Tau / 4 - center.GetDeltaAngle(start, end)) < .0001);
+
+				start = new Vector2(-1, 0);
+				end = new Vector2(0, 1);
+				Assert.IsTrue(Math.Abs(-MathHelper.Tau / 4 - center.GetDeltaAngle(start, end)) < .0001);
+			}
+
+			// angles around 1,2
+			{
+				var center = new Vector2(1, 2);
+				var start = new Vector2(2, 2);
+				var end = new Vector2(1, 3);
+				Assert.IsTrue(Math.Abs(MathHelper.Tau / 4 - center.GetDeltaAngle(start, end)) < .0001);
+
+				start = new Vector2(0, 2);
+				end = new Vector2(1, 3);
+				Assert.IsTrue(Math.Abs(-MathHelper.Tau / 4 - center.GetDeltaAngle(start, end)) < .0001);
+			}
+		}
+	}
+
+	[TestFixture, Category("Agg.VectorMath")]
 	public class Vector3Tests
 	{
 		[Test]
