@@ -31,6 +31,7 @@ using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
+using MatterHackers.VectorMath;
 using NUnit.Framework;
 
 namespace MatterHackers.Agg.UI.Tests
@@ -57,6 +58,43 @@ namespace MatterHackers.Agg.UI.Tests
 				double backToOrignWidth = textItem.Width;
 				Assert.IsTrue(backToOrignWidth == origWidth);
 
+
+				double origHeight = textItem.Height;
+				textItem.Text = "test\nItem";
+				double newlineHeight = textItem.Height;
+				textItem.Text = "test Item";
+				double backToOrignHeight = textItem.Height;
+
+				Assert.IsTrue(backToOrignHeight == origHeight);
+			}
+
+			// make sure text widget gets smaller vertically when it needs to
+			{
+				GuiWidget containerControl = new GuiWidget(640, 480);
+				containerControl.DoubleBuffer = true;
+
+				GuiWidget holder = new GuiWidget(500, 10)
+				{
+					VAnchor = VAnchor.Fit,
+					MinimumSize = Vector2.Zero
+				};
+				containerControl.AddChild(holder);
+
+				var textItem = new WrappedTextWidget("some very long text that can wrap");
+				holder.AddChild(textItem);
+
+				var origSize = textItem.Size;
+				Assert.IsTrue(origSize.x > 10, "The control expanded");
+				holder.Width = 100;
+				var bigSize = textItem.Size;
+
+				Assert.IsTrue(bigSize.x < origSize.x, "The control got narrower and taller");
+				Assert.IsTrue(bigSize.y > origSize.y, "The control got narrower and taller");
+
+				holder.Width = 500;
+				var backToOrignSize = textItem.Size;
+				Assert.IsTrue(backToOrignSize.x == origSize.x);
+				Assert.IsTrue(backToOrignSize.y == origSize.y);
 
 				double origHeight = textItem.Height;
 				textItem.Text = "test\nItem";

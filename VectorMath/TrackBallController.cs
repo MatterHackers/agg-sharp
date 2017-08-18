@@ -83,23 +83,42 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
-		private Vector3 MapMoveToSphere(Vector2 screenPoint)
+		private Vector3 MapMoveToSphere(Vector2 screenPoint, bool rotateOnZ)
 		{
-			var deltaFromStartPixels = screenPoint - mouseDownPosition;
-			var deltaOnSurface = new Vector2(deltaFromStartPixels.x / rotationTrackingRadiusPixels, deltaFromStartPixels.y / rotationTrackingRadiusPixels);
+			if (rotateOnZ)
+			{
+				var deltaFromStartPixels = screenPoint.x - mouseDownPosition.x;
+				var deltaOnSurface = deltaFromStartPixels / rotationTrackingRadiusPixels;
 
-			var lengthOnSurfaceRadi = deltaOnSurface.Length;
+				// get this rotation on the surface of the sphere about z
+				var positionAboutZ = Vector3.Transform(new Vector3(1, 0, 0), Matrix4X4.CreateRotationZ(deltaOnSurface));
 
-			// get this rotation on the surface of the sphere about y
-			var positionAboutY = Vector3.Transform(new Vector3(0, 0, 1), Matrix4X4.CreateRotationY(lengthOnSurfaceRadi));
+				// get the angle that this distance travels around the sphere
+				var angleToTravel = Math.Atan2(positionAboutZ.y, positionAboutZ.x);
 
-			// get the angle that this distance travels around the sphere
-			var angleToTravel = Math.Atan2(deltaOnSurface.y, deltaOnSurface.x);
+				// now rotate that position about z in the direction of the screen vector
+				var positionOnRotationSphere = Vector3.Transform(new Vector3(1, 0, 0), Matrix4X4.CreateRotationZ(angleToTravel));
 
-			// now rotate that position about z in the direction of the screen vector
-			var positionOnRotationSphere = Vector3.Transform(positionAboutY, Matrix4X4.CreateRotationZ(angleToTravel));
+				return positionAboutZ;
+			}
+			else
+			{
+				var deltaFromStartPixels = screenPoint - mouseDownPosition;
+				var deltaOnSurface = new Vector2(deltaFromStartPixels.x / rotationTrackingRadiusPixels, deltaFromStartPixels.y / rotationTrackingRadiusPixels);
 
-			return positionOnRotationSphere;
+				var lengthOnSurfaceRadi = deltaOnSurface.Length;
+
+				// get this rotation on the surface of the sphere about y
+				var positionAboutY = Vector3.Transform(new Vector3(0, 0, 1), Matrix4X4.CreateRotationY(lengthOnSurfaceRadi));
+
+				// get the angle that this distance travels around the sphere
+				var angleToTravel = Math.Atan2(deltaOnSurface.y, deltaOnSurface.x);
+
+				// now rotate that position about z in the direction of the screen vector
+				var positionOnRotationSphere = Vector3.Transform(positionAboutY, Matrix4X4.CreateRotationZ(angleToTravel));
+
+				return positionOnRotationSphere;
+			}
 		}
 
 		//Mouse down
@@ -130,7 +149,7 @@ namespace MatterHackers.VectorMath
 		}
 
 		//Mouse drag, calculate rotation
-		public void OnMouseMove(Vector2 mousePosition)
+		public void OnMouseMove(Vector2 mousePosition, bool rotateOnZ)
 		{
 			switch (currentTrackingType)
 			{
@@ -138,7 +157,7 @@ namespace MatterHackers.VectorMath
 					var activeRotationQuaternion = Quaternion.Identity;
 
 					//Map the point to the sphere
-					moveSpherePosition = MapMoveToSphere(mousePosition);
+					moveSpherePosition = MapMoveToSphere(mousePosition, rotateOnZ);
 
 					//Return the quaternion equivalent to the rotation
 					//Compute the vector perpendicular to the begin and end vectors
