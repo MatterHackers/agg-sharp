@@ -71,10 +71,6 @@ namespace MatterHackers.Agg.OpenGlGui
 
 	public class TrackballTumbleWidget : GuiWidget
 	{
-		public event EventHandler DrawGlContent;
-
-		public bool DoOpenGlDrawing { get; set; } = true;
-
 		public TrackBallController.MouseDownType TransformState { get; set; }
 
 		private float[] ambientLight = { 0.2f, 0.2f, 0.2f, 1.0f };
@@ -122,14 +118,8 @@ namespace MatterHackers.Agg.OpenGlGui
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			if (DoOpenGlDrawing)
-			{
-				SetGlContext();
-				OnDrawGlContent();
-				UnsetGlContext();
-			}
-
 			base.OnDraw(graphics2D);
+
 		}
 
 		private void MakeArrowIcons()
@@ -425,91 +415,6 @@ namespace MatterHackers.Agg.OpenGlGui
 				Invalidate();
 			}
 			base.OnMouseWheel(mouseEvent);
-		}
-
-		private void OnDrawGlContent()
-		{
-			DrawGlContent?.Invoke(this, null);
-		}
-
-		private void SetGlContext()
-		{
-			GL.ClearDepth(1.0);
-			GL.Clear(ClearBufferMask.DepthBufferBit);	// Clear the Depth Buffer
-
-			GL.PushAttrib(AttribMask.ViewportBit);
-			RectangleDouble screenRect = this.TransformToScreenSpace(LocalBounds);
-			GL.Viewport((int)screenRect.Left, (int)screenRect.Bottom, (int)screenRect.Width, (int)screenRect.Height);
-
-			GL.ShadeModel(ShadingModel.Smooth);
-
-			GL.FrontFace(FrontFaceDirection.Ccw);
-			GL.CullFace(CullFaceMode.Back);
-
-			GL.DepthFunc(DepthFunction.Lequal);
-
-			GL.Disable(EnableCap.DepthTest);
-			//ClearToGradient();
-
-#if DO_LIGHTING
-			GL.Light(LightName.Light0, LightParameter.Ambient, ambientLight);
-
-			GL.Light(LightName.Light0, LightParameter.Diffuse, diffuseLight0);
-			GL.Light(LightName.Light0, LightParameter.Specular, specularLight0);
-
-			GL.Light(LightName.Light0, LightParameter.Ambient, new float[] { 0, 0, 0, 0 });
-			GL.Light(LightName.Light1, LightParameter.Diffuse, diffuseLight1);
-			GL.Light(LightName.Light1, LightParameter.Specular, specularLight1);
-
-			GL.ColorMaterial(MaterialFace.FrontAndBack, ColorMaterialParameter.AmbientAndDiffuse);
-
-			GL.Enable(EnableCap.Light0);
-			GL.Enable(EnableCap.Light1);
-			GL.Enable(EnableCap.DepthTest);
-			GL.Enable(EnableCap.Blend);
-			GL.Enable(EnableCap.Normalize);
-			GL.Enable(EnableCap.Lighting);
-			GL.Enable(EnableCap.ColorMaterial);
-
-			Vector3 lightDirectionVector = new Vector3(lightDirection0[0], lightDirection0[1], lightDirection0[2]);
-			lightDirectionVector.Normalize();
-			lightDirection0[0] = (float)lightDirectionVector.x;
-			lightDirection0[1] = (float)lightDirectionVector.y;
-			lightDirection0[2] = (float)lightDirectionVector.z;
-			GL.Light(LightName.Light0, LightParameter.Position, lightDirection0);
-			GL.Light(LightName.Light1, LightParameter.Position, lightDirection1);
-#endif
-
-			// set the projection matrix
-			GL.MatrixMode(MatrixMode.Projection);
-			GL.PushMatrix();
-			GL.LoadMatrix(this.world.ProjectionMatrix.GetAsDoubleArray());
-
-			// set the modelview matrix
-			GL.MatrixMode(MatrixMode.Modelview);
-			GL.PushMatrix();
-			GL.LoadMatrix(this.world.ModelviewMatrix.GetAsDoubleArray());
-		}
-
-		private void UnsetGlContext()
-		{
-			GL.MatrixMode(MatrixMode.Projection);
-			GL.PopMatrix();
-
-			GL.MatrixMode(MatrixMode.Modelview);
-			GL.PopMatrix();
-
-#if DO_LIGHTING
-			GL.Disable(EnableCap.ColorMaterial);
-			GL.Disable(EnableCap.Lighting);
-			GL.Disable(EnableCap.Light0);
-			GL.Disable(EnableCap.Light1);
-#endif
-			GL.Disable(EnableCap.Normalize);
-			GL.Disable(EnableCap.Blend);
-			GL.Disable(EnableCap.DepthTest);
-
-			GL.PopAttrib();
 		}
 	}
 }
