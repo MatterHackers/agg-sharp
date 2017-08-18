@@ -131,6 +131,24 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
+		/// <summary>
+		/// Get the delta angle from start to end relative to this
+		/// </summary>
+		/// <param name="startPosition"></param>
+		/// <param name="endPosition"></param>
+		public double GetDeltaAngle(Vector2 startPosition, Vector2 endPosition)
+		{
+			startPosition -= this;
+			var startAngle = Math.Atan2(startPosition.y, startPosition.x);
+			startAngle = startAngle < 0 ? startAngle + MathHelper.Tau : startAngle;
+
+			endPosition -= this;
+			var endAngle = Math.Atan2(endPosition.y, endPosition.x);
+			endAngle = endAngle < 0 ? endAngle + MathHelper.Tau : endAngle;
+
+			return endAngle - startAngle;
+		}
+
 		#endregion Properties
 
 		#region Public Members

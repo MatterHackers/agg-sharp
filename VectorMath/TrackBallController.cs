@@ -53,11 +53,11 @@ namespace MatterHackers.VectorMath
 		private WorldView world;
 
 		public TrackBallController(WorldView world)
-			: this(new Vector2(), 1, world)
+			: this(1, world)
 		{
 		}
 
-		public TrackBallController(Vector2 screenCenter, double trackBallRadius, WorldView world)
+		public TrackBallController(double trackBallRadius, WorldView world)
 		{
 			mouseDownPosition = new Vector2();
 			moveSpherePosition = new Vector3();
@@ -87,19 +87,14 @@ namespace MatterHackers.VectorMath
 		{
 			if (rotateOnZ)
 			{
-				var deltaFromStartPixels = screenPoint.x - mouseDownPosition.x;
-				var deltaOnSurface = deltaFromStartPixels / rotationTrackingRadiusPixels;
+				var deltaFromScreenCenter = world.ScreenCenter - screenPoint;
 
-				// get this rotation on the surface of the sphere about z
-				var positionAboutZ = Vector3.Transform(new Vector3(1, 0, 0), Matrix4X4.CreateRotationZ(deltaOnSurface));
-
-				// get the angle that this distance travels around the sphere
-				var angleToTravel = Math.Atan2(positionAboutZ.y, positionAboutZ.x);
+				var angleToTravel = world.ScreenCenter.GetDeltaAngle(mouseDownPosition, screenPoint);
 
 				// now rotate that position about z in the direction of the screen vector
-				var positionOnRotationSphere = Vector3.Transform(new Vector3(1, 0, 0), Matrix4X4.CreateRotationZ(angleToTravel));
+				var positionOnRotationSphere = Vector3.Transform(new Vector3(1, 0, 0), Matrix4X4.CreateRotationZ(angleToTravel/2));
 
-				return positionAboutZ;
+				return positionOnRotationSphere;
 			}
 			else
 			{
