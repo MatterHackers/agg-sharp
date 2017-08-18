@@ -71,22 +71,8 @@ namespace MatterHackers.Agg.OpenGlGui
 
 	public class TrackballTumbleWidget : GuiWidget
 	{
-		public event EventHandler DrawGlContent;
-
-		public bool DoOpenGlDrawing { get; set; } = true;
-
 		public TrackBallController.MouseDownType TransformState { get; set; }
-
-		private float[] ambientLight = { 0.2f, 0.2f, 0.2f, 1.0f };
-
-		private float[] diffuseLight0 = { 0.7f, 0.7f, 0.7f, 1.0f };
-		private float[] specularLight0 = { 0.5f, 0.5f, 0.5f, 1.0f };
-		private float[] lightDirection0 = { -1, -1, 1, 0.0f };
-
-		private float[] diffuseLight1 = { 0.5f, 0.5f, 0.5f, 1.0f };
-		private float[] specularLight1 = { 0.3f, 0.3f, 0.3f, 1.0f };
-		private float[] lightDirection1 = { 1, 1, 1, 0.0f };
-
+		
 		private List<IVertexSource> insideArrows = new List<IVertexSource>();
 		private List<IVertexSource> outsideArrows = new List<IVertexSource>();
 
@@ -122,13 +108,6 @@ namespace MatterHackers.Agg.OpenGlGui
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			if (DoOpenGlDrawing)
-			{
-				SetGlContext();
-				OnDrawGlContent();
-				UnsetGlContext();
-			}
-
 			base.OnDraw(graphics2D);
 		}
 
@@ -425,132 +404,6 @@ namespace MatterHackers.Agg.OpenGlGui
 				Invalidate();
 			}
 			base.OnMouseWheel(mouseEvent);
-		}
-
-		private void OnDrawGlContent()
-		{
-			DrawGlContent?.Invoke(this, null);
-		}
-
-		private void GradientBand(double startHeight, double endHeight, RGBA_Bytes startColor, RGBA_Bytes endColor)
-		{
-			// triangel 1
-			{
-				// top color
-				GL.Color4(startColor.red, startColor.green, startColor.blue, startColor.alpha);
-				GL.Vertex2(-1.0, startHeight);
-				// bottom color
-				GL.Color4(endColor.red, endColor.green, endColor.blue, endColor.alpha);
-				GL.Vertex2(1.0, endHeight);
-				GL.Vertex2(-1.0, endHeight);
-			}
-
-			// triangel 2
-			{
-				// top color
-				GL.Color4(startColor.red, startColor.green, startColor.blue, startColor.alpha);
-				GL.Vertex2(1.0, startHeight);
-				GL.Vertex2(-1.0, startHeight);
-				// bottom color
-				GL.Color4(endColor.red, endColor.green, endColor.blue, endColor.alpha);
-				GL.Vertex2(1.0, endHeight);
-			}
-		}
-
-		private void ClearToGradient()
-		{
-			GL.MatrixMode(MatrixMode.Projection);
-			GL.LoadIdentity();
-
-			GL.MatrixMode(MatrixMode.Modelview);
-			GL.LoadIdentity();
-
-			GL.Begin(BeginMode.Triangles);
-
-			GradientBand(1, 0, new RGBA_Bytes(255,255,255,20), new RGBA_Bytes(255, 255, 255, 0));
-			GradientBand(0, -1, new RGBA_Bytes(0, 0, 0, 0), new RGBA_Bytes(0, 0, 0, 20));
-
-			GL.End();
-		}
-
-		private void SetGlContext()
-		{
-			GL.ClearDepth(1.0);
-			GL.Clear(ClearBufferMask.DepthBufferBit);	// Clear the Depth Buffer
-
-			GL.PushAttrib(AttribMask.ViewportBit);
-			RectangleDouble screenRect = this.TransformToScreenSpace(LocalBounds);
-			GL.Viewport((int)screenRect.Left, (int)screenRect.Bottom, (int)screenRect.Width, (int)screenRect.Height);
-
-			GL.ShadeModel(ShadingModel.Smooth);
-
-			GL.FrontFace(FrontFaceDirection.Ccw);
-			GL.CullFace(CullFaceMode.Back);
-
-			GL.DepthFunc(DepthFunction.Lequal);
-
-			GL.Disable(EnableCap.DepthTest);
-			//ClearToGradient();
-
-#if DO_LIGHTING
-			GL.Light(LightName.Light0, LightParameter.Ambient, ambientLight);
-
-			GL.Light(LightName.Light0, LightParameter.Diffuse, diffuseLight0);
-			GL.Light(LightName.Light0, LightParameter.Specular, specularLight0);
-
-			GL.Light(LightName.Light0, LightParameter.Ambient, new float[] { 0, 0, 0, 0 });
-			GL.Light(LightName.Light1, LightParameter.Diffuse, diffuseLight1);
-			GL.Light(LightName.Light1, LightParameter.Specular, specularLight1);
-
-			GL.ColorMaterial(MaterialFace.FrontAndBack, ColorMaterialParameter.AmbientAndDiffuse);
-
-			GL.Enable(EnableCap.Light0);
-			GL.Enable(EnableCap.Light1);
-			GL.Enable(EnableCap.DepthTest);
-			GL.Enable(EnableCap.Blend);
-			GL.Enable(EnableCap.Normalize);
-			GL.Enable(EnableCap.Lighting);
-			GL.Enable(EnableCap.ColorMaterial);
-
-			Vector3 lightDirectionVector = new Vector3(lightDirection0[0], lightDirection0[1], lightDirection0[2]);
-			lightDirectionVector.Normalize();
-			lightDirection0[0] = (float)lightDirectionVector.x;
-			lightDirection0[1] = (float)lightDirectionVector.y;
-			lightDirection0[2] = (float)lightDirectionVector.z;
-			GL.Light(LightName.Light0, LightParameter.Position, lightDirection0);
-			GL.Light(LightName.Light1, LightParameter.Position, lightDirection1);
-#endif
-
-			// set the projection matrix
-			GL.MatrixMode(MatrixMode.Projection);
-			GL.PushMatrix();
-			GL.LoadMatrix(this.world.ProjectionMatrix.GetAsDoubleArray());
-
-			// set the modelview matrix
-			GL.MatrixMode(MatrixMode.Modelview);
-			GL.PushMatrix();
-			GL.LoadMatrix(this.world.ModelviewMatrix.GetAsDoubleArray());
-		}
-
-		private void UnsetGlContext()
-		{
-			GL.MatrixMode(MatrixMode.Projection);
-			GL.PopMatrix();
-
-			GL.MatrixMode(MatrixMode.Modelview);
-			GL.PopMatrix();
-
-#if DO_LIGHTING
-			GL.Disable(EnableCap.ColorMaterial);
-			GL.Disable(EnableCap.Lighting);
-			GL.Disable(EnableCap.Light0);
-			GL.Disable(EnableCap.Light1);
-#endif
-			GL.Disable(EnableCap.Normalize);
-			GL.Disable(EnableCap.Blend);
-			GL.Disable(EnableCap.DepthTest);
-
-			GL.PopAttrib();
 		}
 	}
 }
