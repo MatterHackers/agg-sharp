@@ -162,6 +162,10 @@ namespace MatterHackers.VectorMath
 					//Return the quaternion equivalent to the rotation
 					//Compute the vector perpendicular to the begin and end vectors
 					var rotationStart3D = new Vector3(0, 0, 1);
+					if(rotateOnZ)
+					{
+						rotationStart3D = new Vector3(1, 0, 0);
+					}
 					Vector3 Perp = Vector3.Cross(rotationStart3D, moveSpherePosition);
 
 					//Compute the length of the perpendicular vector
