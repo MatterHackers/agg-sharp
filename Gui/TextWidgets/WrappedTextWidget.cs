@@ -49,7 +49,7 @@ namespace MatterHackers.Agg.UI
 			};
 			TextWidget.AutoExpandBoundsToText = true;
 			TextWidget.HAnchor = HAnchor.Left;
-			TextWidget.VAnchor = VAnchor.Center;
+			TextWidget.VAnchor = VAnchor.Center | VAnchor.Fit;
 			unwrappedText = text;
 			HAnchor = HAnchor.Stretch;
 			VAnchor = VAnchor.Fit;
