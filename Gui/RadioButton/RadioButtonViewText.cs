@@ -1,7 +1,6 @@
-﻿using MatterHackers.Agg.VertexSource;
+﻿using System;
+using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
-using System;
-using MatterHackers.Agg.Image;
 
 namespace MatterHackers.Agg.UI
 {
@@ -15,8 +14,6 @@ namespace MatterHackers.Agg.UI
 		{
 			this.MinimumSize = new Vector2(boxWidth + 1, boxWidth + 1);
 			this.DoubleBuffer = true;
-			//this.BackBuffer.SetRecieveBlender(new BlenderPreMultBGRA());
-
 			this.Margin = new BorderDouble(right: 10);
 
 			center = this.LocalBounds.Center;
@@ -33,7 +30,7 @@ namespace MatterHackers.Agg.UI
 			}
 
 			// Radio check
-			if (true || this.RadioButton.Checked )
+			if (this.RadioButton.Checked)
 			{
 				graphics2D.Circle(center, boxWidth / 4, this.RadioButton.TextColor);
 			}
@@ -54,6 +51,8 @@ namespace MatterHackers.Agg.UI
 
 		protected RadioCircleWidget radioCircle;
 
+		protected RadioButton radioButton;
+
 		public RadioButtonViewText(string label, int fontSize=12)
 		{
 			radioCircle = new RadioCircleWidget();
@@ -67,10 +66,16 @@ namespace MatterHackers.Agg.UI
 		{
 			if (Parent is RadioButton radioButton)
 			{
+				this.radioButton = radioButton;
 				radioButton.MouseEnter += redrawButtonIfRequired;
 				radioButton.MouseDown += redrawButtonIfRequired;
 				radioButton.MouseUp += redrawButtonIfRequired;
 				radioButton.MouseLeave += redrawButtonIfRequired;
+				radioButton.CheckedStateChanged += (s, e2) =>
+				{
+					// Invalidate double buffered control
+					radioCircle.Invalidate();
+				};
 
 				radioCircle.RadioButton = radioButton;
 				radioButton.TextColor = ActiveTheme.Instance.PrimaryTextColor;
