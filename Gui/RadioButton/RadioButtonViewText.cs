@@ -1,45 +1,81 @@
 ﻿using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using System;
+using MatterHackers.Agg.Image;
 
 namespace MatterHackers.Agg.UI
 {
-	public class RadioButtonViewText : GuiWidget
+	public class RadioCircleWidget : GuiWidget
 	{
-		private RGBA_Bytes inactiveColor;
-		private RGBA_Bytes activeColor;
-
-		private TextWidget labelTextWidget;
-
 		private double boxWidth = 10 * GuiWidget.DeviceScale;
+		private double borderRadius;
+		private Vector2 center;
+
+		public RadioCircleWidget()
+		{
+			this.MinimumSize = new Vector2(boxWidth + 1, boxWidth + 1);
+			this.DoubleBuffer = true;
+			//this.BackBuffer.SetRecieveBlender(new BlenderPreMultBGRA());
+
+			this.Margin = new BorderDouble(right: 10);
+
+			center = this.LocalBounds.Center;
+			borderRadius = boxWidth / 2;
+		}
+
+		public RadioButton RadioButton { get; set; }
+
+		public override void OnDraw(Graphics2D graphics2D)
+		{
+			if (this.RadioButton == null)
+			{
+				return;
+			}
+
+			// Radio check
+			if (true || this.RadioButton.Checked )
+			{
+				graphics2D.Circle(center, boxWidth / 4, this.RadioButton.TextColor);
+			}
+
+			// Radio border
+			int strokeWidth = (this.RadioButton.MouseDownOnButton && this.RadioButton.FirstWidgetUnderMouse) ? 2 : 1;
+			graphics2D.Render(
+				new Stroke(new Ellipse(center, borderRadius), strokeWidth), 
+				this.RadioButton.TextColor);
+
+			base.OnDraw(graphics2D);
+		}
+	}
+	
+	public class RadioButtonViewText : FlowLayoutWidget
+	{
+		protected TextWidget labelTextWidget;
+
+		protected RadioCircleWidget radioCircle;
 
 		public RadioButtonViewText(string label, int fontSize=12)
 		{
-            labelTextWidget = new TextWidget(label, fontSize);
-			AddChild(labelTextWidget);
+			radioCircle = new RadioCircleWidget();
+			this.AddChild(radioCircle);
 
-			LocalBounds = GetLocalBounds();
-
-			inactiveColor = new RGBA_Bytes(0.0, 0.0, 0.0);
-			activeColor = new RGBA_Bytes(0.4, 0.0, 0.0);
+			labelTextWidget = new TextWidget(label, fontSize);
+			this.AddChild(labelTextWidget);
 		}
 
 		public override void OnParentChanged(EventArgs e)
 		{
-			GuiWidget radioButton = Parent;
+			if (Parent is RadioButton radioButton)
+			{
+				radioButton.MouseEnter += redrawButtonIfRequired;
+				radioButton.MouseDown += redrawButtonIfRequired;
+				radioButton.MouseUp += redrawButtonIfRequired;
+				radioButton.MouseLeave += redrawButtonIfRequired;
 
-			radioButton.MouseEnter += redrawButtonIfRequired;
-			radioButton.MouseDown += redrawButtonIfRequired;
-			radioButton.MouseUp += redrawButtonIfRequired;
-			radioButton.MouseLeave += redrawButtonIfRequired;
-
+				radioCircle.RadioButton = radioButton;
+				radioButton.TextColor = ActiveTheme.Instance.PrimaryTextColor;
+			}
 			base.OnParentChanged(e);
-		}
-
-		public override void OnDraw(Graphics2D graphics2D)
-		{
-			DoDrawBeforeChildren(graphics2D);
-			base.OnDraw(graphics2D);
 		}
 
 		public void redrawButtonIfRequired(object sender, EventArgs e)
@@ -47,80 +83,16 @@ namespace MatterHackers.Agg.UI
 			((GuiWidget)sender).Invalidate();
 		}
 
-		public void DoDrawBeforeChildren(Graphics2D graphics2D)
-		{
-			RadioButton radioButton = Parent as RadioButton;
-			if (radioButton == null)
-			{
-				return;
-			}
-			Vector2 center = new Vector2(boxWidth / 2 + 1, boxWidth / 2 - labelTextWidget.Printer.TypeFaceStyle.DescentInPixels);
-
-			// the check
-			if (radioButton.Checked)
-			{
-				graphics2D.Circle(center, boxWidth / 4, radioButton.TextColor);
-			}
-
-			if (radioButton.MouseDownOnButton && radioButton.FirstWidgetUnderMouse)
-			{
-				// extra frame
-				graphics2D.Render(new Stroke(new Ellipse(center, boxWidth / 2, boxWidth / 2), 2), radioButton.TextColor);
-			}
-			else
-			{
-				// the frame
-				graphics2D.Render(new Stroke(new Ellipse(center, boxWidth / 2, boxWidth / 2)), radioButton.TextColor);
-			}
-		}
-
 		public override string Text
 		{
-			get
-			{
-				return labelTextWidget.Text;
-			}
-
-			set
-			{
-				labelTextWidget.Text = value;
-			}
+			get => labelTextWidget.Text;
+			set => labelTextWidget.Text = value;
 		}
 
 		public RGBA_Bytes TextColor
 		{
-			get
-			{
-				return labelTextWidget.TextColor;
-			}
-
-			set
-			{
-				labelTextWidget.TextColor = value;
-			}
-		}
-
-		public void inactive_color(IColorType c)
-		{
-			inactiveColor = c.GetAsRGBA_Bytes();
-		}
-
-		public void active_color(IColorType c)
-		{
-			activeColor = c.GetAsRGBA_Bytes();
-		}
-
-		internal RectangleDouble GetLocalBounds()
-		{
-			labelTextWidget.OriginRelativeParent = new Vector2(boxWidth * 2, -labelTextWidget.Printer.TypeFaceStyle.DescentInPixels);
-
-			RectangleDouble localBounds = new RectangleDouble();
-			localBounds.Left = 0;
-			localBounds.Bottom = 0;
-			localBounds.Right = localBounds.Left + boxWidth * 2 + labelTextWidget.Width;
-			localBounds.Top = localBounds.Bottom + labelTextWidget.Height;
-
-			return localBounds;
+			get => labelTextWidget.TextColor;
+			set => labelTextWidget.TextColor = value;
 		}
 	}
 }
