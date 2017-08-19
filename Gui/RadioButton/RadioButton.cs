@@ -113,19 +113,13 @@ namespace MatterHackers.Agg.UI
 			base.OnParentChanged(e);
 		}
 
-		public void SetFontSize(double fontSize)
-		{
-			// TODO: Need to set the point size of the font and recalculate the bounds
-			throw new NotImplementedException("Warning: Need to set the point size of the font and recalculate the bounds");
-		}
-
-		public override String Text
+		public override string Text
 		{
 			get
 			{
-				if (Children.Count > 0 && Children[0] is RadioButtonViewText)
+				if (Children.FirstOrDefault() is RadioButtonViewText buttonView)
 				{
-					return ((RadioButtonViewText)Children[0]).Text;
+					return buttonView.Text;
 				}
 
 				return base.Text;
@@ -133,9 +127,9 @@ namespace MatterHackers.Agg.UI
 
 			set
 			{
-				if (Children.Count > 0 && Children[0] is RadioButtonViewText)
+				if (Children.FirstOrDefault() is RadioButtonViewText buttonView)
 				{
-					Children[0].Text = value;
+					buttonView.Text = value;
 				}
 
 				base.Text = value;
@@ -148,7 +142,7 @@ namespace MatterHackers.Agg.UI
 			{
 				foreach (GuiWidget child in SiblingRadioButtonList.Distinct())
 				{
-					RadioButton radioButton = child as RadioButton;
+					var radioButton = child as RadioButton;
 					if (radioButton != null && radioButton != this)
 					{
 						radioButton.Checked = false;
@@ -159,11 +153,7 @@ namespace MatterHackers.Agg.UI
 
 		public bool Checked
 		{
-			get
-			{
-				return isChecked;
-			}
-
+			get => isChecked;
 			set
 			{
 				if (isChecked != value)
@@ -181,35 +171,16 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnCheckStateChanged()
 		{
-			if (CheckedStateChanged != null)
-			{
-				CheckedStateChanged(this, null);
-			}
-		}
-
-		public void inactive_color(IColorType c)
-		{
-			if (Children.Count > 0 && Children[0] is RadioButtonViewText)
-			{
-				((RadioButtonViewText)Children[0]).inactive_color(c);
-			}
-		}
-
-		public void active_color(IColorType c)
-		{
-			if (Children.Count > 0 && Children[0] is RadioButtonViewText)
-			{
-				((RadioButtonViewText)Children[0]).active_color(c);
-			}
+			CheckedStateChanged?.Invoke(this, null);
 		}
 
 		public RGBA_Bytes TextColor
 		{
 			get
 			{
-				if (Children.Count > 0 && Children[0] is RadioButtonViewText)
+				if (Children.FirstOrDefault() is RadioButtonViewText buttonView)
 				{
-					return ((RadioButtonViewText)Children[0]).TextColor;
+					return buttonView.TextColor;
 				}
 
 				return RGBA_Bytes.White;
@@ -217,9 +188,9 @@ namespace MatterHackers.Agg.UI
 
 			set
 			{
-				if (Children.Count > 0 && Children[0] is RadioButtonViewText)
+				if (Children.FirstOrDefault() is RadioButtonViewText buttonView)
 				{
-					((RadioButtonViewText)Children[0]).TextColor = value;
+					buttonView.TextColor = value;
 				}
 			}
 		}
