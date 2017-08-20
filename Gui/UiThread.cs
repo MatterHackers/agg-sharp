@@ -135,7 +135,16 @@ namespace MatterHackers.Agg.UI
 
 			foreach (Action action in callThisCycle)
 			{
-				action?.Invoke();
+				try
+				{
+					action?.Invoke();
+				}
+				catch (Exception invokeException)
+				{
+#if DEBUG
+					throw (invokeException);
+#endif
+				}
 			}
 
 			// now call all the functions (we put them in backwards to make it easier to remove them as we went so run them backwards
