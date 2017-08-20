@@ -30,11 +30,11 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using MatterHackers.Agg;
 using MatterHackers.Agg.PlatformAbstract;
 using Microsoft.Win32.SafeHandles;
-using System.Linq;
 
 namespace MatterHackers.SerialPortCommunication.FrostedSerial
 {

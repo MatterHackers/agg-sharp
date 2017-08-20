@@ -27,11 +27,11 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.PlatformAbstract;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
+using MatterHackers.Agg.PlatformAbstract;
 
 namespace MatterHackers.Agg.UI
 {
