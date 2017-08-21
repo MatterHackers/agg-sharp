@@ -16,17 +16,17 @@
 //          mcseemagg@yahoo.com
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
-using MatterHackers.Agg.Image;
-using MatterHackers.Agg.Transform;
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.VectorMath;
 using System;
-using static System.Math;
-using static MatterHackers.Agg.RGBA_Bytes;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using MatterHackers.Agg.Image;
+using MatterHackers.Agg.Transform;
+using MatterHackers.Agg.VertexSource;
+using MatterHackers.VectorMath;
+using static System.Math;
+using static MatterHackers.Agg.RGBA_Bytes;
 
 namespace MatterHackers.Agg.UI
 {
