@@ -331,11 +331,14 @@ namespace MatterHackers.DataConverters3D
 		{
 			long hash = 19;
 
-			hash = hash * 31 + Matrix.GetLongHashCode();
-
-			foreach (var child in Children)
+			unchecked
 			{
-				hash = hash * 31 + child.GetLongHashCode();
+				hash = hash * 31 + Matrix.GetLongHashCode();
+
+				foreach (var child in Children)
+				{
+					hash = hash * 31 + child.GetLongHashCode();
+				}
 			}
 
 			return hash;

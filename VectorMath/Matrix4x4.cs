@@ -1255,16 +1255,17 @@ namespace MatterHackers.VectorMath
 		/// <returns></returns>
 		public long GetLongHashCode()
 		{
-			{
-				long hash = 19;
+			long hash = 19;
 
+			unchecked
+			{
 				hash = hash * 31 + Row0.GetLongHashCode();
 				hash = hash * 31 + Row1.GetLongHashCode();
 				hash = hash * 31 + Row2.GetLongHashCode();
 				hash = hash * 31 + Row3.GetLongHashCode();
-
-				return hash;
 			}
+
+			return hash;
 		}
 
 		#endregion public override int GetHashCode()
