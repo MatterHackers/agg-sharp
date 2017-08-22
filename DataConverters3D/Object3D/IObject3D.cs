@@ -120,6 +120,12 @@ namespace MatterHackers.DataConverters3D
 		AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 offet);
 
 		/// <summary>
+		/// return a 64 bit hash code of the transforms and children and transforms
+		/// </summary>
+		/// <returns></returns>
+		long GetLongHashCode();
+
+		/// <summary>
 		/// Return ray tracing data for the current data. This is used
 		/// for intersections (mouse hit) and possibly rendering.
 		/// </summary>
