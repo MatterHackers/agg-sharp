@@ -152,6 +152,7 @@ namespace MatterHackers.Agg.Platform
 			public string ImageIOProvider { get; set; }
 			public string StaticDataProvider { get; set; }
 			public string SystemWindowProvider { get; set; }
+			public string SystemWindow { get; set; }
 		}
 
 		public class SliceEngineSettings

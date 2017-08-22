@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2017, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -37,10 +37,7 @@ namespace MatterHackers.Agg.UI
 {
 	public interface ISystemWindowProvider
 	{
-		void ShowSystemWindow(SystemWindow systemWindow);
-
-		Point2D GetDesktopPosition(SystemWindow systemWindow);
-
-		void SetDesktopPosition(SystemWindow systemWindow, Point2D position);
+		void CreateSystemWindow(SystemWindow systemWindow);
+		void Release();
 	}
 }

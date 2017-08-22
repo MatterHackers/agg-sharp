@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (c) 2014, Lars Brubaker
 All rights reserved.
 
@@ -28,11 +28,34 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
-	public interface IGuiFactory
+	public interface IPlatformWindow
 	{
-		AbstractOsMappingWidget CreateSurface(SystemWindow childSystemWindow);
+		string Caption { get; set; }
+
+		int TitleBarHeight { get; }
+
+		Point2D DesktopPosition { get; set; }
+
+		Vector2 MinimumSize { get; set; }
+
+		SystemWindow AggSystemWindow { get; set; }
+
+		Agg.UI.Keys ModifierKeys { get; }
+
+		void BringToFront();
+
+		void Invalidate(RectangleDouble rectToInvalidate);
+
+		void BoundsChanged(EventArgs e);
+
+		void Close();
+
+		void SetCursor(Cursors cursorToSet);
+
+		void ShowSystemWindow();
 	}
 }

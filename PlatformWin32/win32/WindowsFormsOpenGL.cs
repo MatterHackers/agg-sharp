@@ -22,6 +22,7 @@ using System.Drawing;
 
 using OpenTK;
 using MatterHackers.RenderOpenGl;
+using System.Diagnostics;
 
 #if USE_GLES
 using OpenTK.Graphics.ES11;
@@ -94,7 +95,7 @@ namespace MatterHackers.Agg.UI
 
 		protected override void OnPaint(PaintEventArgs e)
 		{
-			Parent.Invalidate();
+			//Parent.Invalidate();
 			base.OnPaint(e);
 		}
 
@@ -104,27 +105,12 @@ namespace MatterHackers.Agg.UI
 		}
 	}
 
-	public class WindowsFormsOpenGL : WindowsFormsAbstract
+	public class OpenGLSystemWindow : WinformsSystemWindow
 	{
 		private MyGLControl glControl;
 
-		public WindowsFormsOpenGL(AbstractOsMappingWidget app, SystemWindow childSystemWindow)
+		public OpenGLSystemWindow()
 		{
-			switch (childSystemWindow.BitDepth)
-			{
-				case 32:
-					glControl = new MyGLControl(32, childSystemWindow.StencilBufferDepth);
-					break;
-
-				default:
-					throw new NotImplementedException();
-			}
-
-			Controls.Add(glControl);
-
-			SetUpFormsWindow(app, childSystemWindow);
-
-			HookWindowsInputAndSendToWidget communication = new HookWindowsInputAndSendToWidget(glControl, aggAppWidget);
 		}
 
 		private bool doneLoading = false;
@@ -140,9 +126,27 @@ namespace MatterHackers.Agg.UI
 		
 		protected override void OnLoad(EventArgs e)
 		{
+			id = count++;
+
+			switch (AggSystemWindow.BitDepth)
+			{
+				case 32:
+					glControl = new MyGLControl(32, AggSystemWindow.StencilBufferDepth);
+					break;
+
+				default:
+					throw new NotImplementedException();
+			}
+
+			Controls.Add(glControl);
+
 			base.OnLoad(e);
+
 			doneLoading = true;
-			((WidgetForWindowsFormsOpenGL)aggAppWidget).Init();
+
+			glControl.HookEvents(AggSystemWindow);
+
+			Init();
 		}
 
 		private void SetupViewport()
@@ -172,7 +176,12 @@ namespace MatterHackers.Agg.UI
 			// If this throws an assert, you are calling MakeCurrent() before the glControl is done being constructed.
 			// Call this function after you have called Show().
 			glControl.MakeCurrent();
-			base.OnPaint(paintEventArgs);
+
+			if (CheckGlControl())
+			{
+				base.OnPaint(paintEventArgs);
+			}
+			CheckGlControl();
 		}
 
 		protected override void OnResize(EventArgs e)
@@ -192,37 +201,25 @@ namespace MatterHackers.Agg.UI
 				//glSurface.Location = new Point(0, 0);
 				glControl.Bounds = bounds;
 
-				base.OnResize(e);
+				if (initHasBeenCalled)
+				{
+					CheckGlControl();
+					SetAndClearViewPort();
+					base.OnResize(e);
+					CheckGlControl();
+				}
+				else
+				{
+					base.OnResize(e);
+				}
+
 				SetupViewport();
 			}
 		}
 
-#if false
-        void MakeCurrentAndInvalidate()
-        {
-            glControl.MakeCurrent();
-            Invalidate();
-        }
-
-        internal override void RequestInvalidate(Rectangle windowsRectToInvalidate)
-        {
-            if (doneLoading)
-            {
-                if (InvokeRequired)
-                {
-                    // This currently causes a lock when we close a window (the main window locks).
-                    //Invoke(new MethodInvoker(MakeCurrentAndInvalidate));
-                }
-                else
-                {
-                    glControl.MakeCurrent();
-                    base.RequestInvalidate(windowsRectToInvalidate);
-                }
-            }
-        }
-#endif
-
-        public override Size MinimumSize
+		/*
+		TODO: Investigate...
+		public new Size MinimumSize
 		{
 			get
 			{
@@ -238,6 +235,7 @@ namespace MatterHackers.Agg.UI
 				base.MinimumSize = value;
 			}
 		}
+		*/
 
 		public override void CopyBackBufferToScreen(Graphics displayGraphics)
 		{
@@ -245,5 +243,89 @@ namespace MatterHackers.Agg.UI
             // Call this function you have called Show().
             glControl.SwapBuffers();
 		}
+
+		#region WidgetForOpenGL
+		private static int count;
+		private int id;
+
+		public override string ToString()
+		{
+			return "{0}".FormatWith(id);
+		}
+
+		private bool viewPortHasBeenSet = false;
+
+		private void SetAndClearViewPort()
+		{
+			GL.Viewport(0, 0, this.ClientSize.Width, this.ClientSize.Height);                   // Reset The Current Viewport
+			viewPortHasBeenSet = true;
+
+			// The following lines set the screen up for a perspective view. Meaning things in the distance get smaller.
+			// This creates a realistic looking scene.
+			// The perspective is calculated with a 45 degree viewing angle based on the windows width and height.
+			// The 0.1f, 100.0f is the starting point and ending point for how deep we can draw into the screen.
+
+			GL.MatrixMode(MatrixMode.Projection);
+			GL.LoadIdentity();
+
+			GL.MatrixMode(MatrixMode.Modelview);
+			GL.LoadIdentity();
+			GL.Scissor(0, 0, this.ClientSize.Width, this.ClientSize.Height);
+
+			NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
+		}
+
+		private bool CheckGlControl()
+		{
+			if (firstGlControlSeen == null)
+			{
+				firstGlControlSeen = MyGLControl.currentControl;
+			}
+
+			//if (firstGlControlSeen != MyGLControl.currentControl)
+			if (MyGLControl.currentControl.Id != this.id)
+			{
+				Debug.WriteLine("Is {0} Should be {1}".FormatWith(firstGlControlSeen.Id, MyGLControl.currentControl.Id));
+				//throw new Exception("We have the wrong gl control realized.");
+				return false;
+			}
+
+			return true;
+		}
+
+		private MyGLControl firstGlControlSeen = null;
+
+		public override Graphics2D NewGraphics2D()
+		{
+			if (!viewPortHasBeenSet)
+			{
+				SetAndClearViewPort();
+			}
+
+			Graphics2D graphics2D = new Graphics2DOpenGL(this.ClientSize.Width, this.ClientSize.Height);
+			graphics2D.PushTransform();
+
+			return graphics2D;
+		}
+
+		private bool initHasBeenCalled = false;
+
+		public void Init()
+		{
+			this.ClientSize = new Size((int)AggSystemWindow.Width, (int)AggSystemWindow.Height);
+
+			if (!AggSystemWindow.Resizable)
+			{
+				this.FormBorderStyle = FormBorderStyle.FixedDialog;
+				this.MaximizeBox = false;
+			}
+
+			this.ClientSize = new Size((int)AggSystemWindow.Width, (int)AggSystemWindow.Height);
+
+			NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
+
+			initHasBeenCalled = true;
+		}
+		#endregion
 	}
 }

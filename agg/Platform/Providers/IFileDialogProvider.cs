@@ -16,5 +16,7 @@ namespace MatterHackers.Agg.Platform
 		bool SelectFolderDialog(SelectFolderDialogParams folderParams, Action<SelectFolderDialogParams> callback);
 
 		bool SaveFileDialog(SaveFileDialogParams saveParams, Action<SaveFileDialogParams> callback);
+
+		void ShowFileInFolder(string fileName);
 	}
 }

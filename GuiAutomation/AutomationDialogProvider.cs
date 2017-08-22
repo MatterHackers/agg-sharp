@@ -81,5 +81,9 @@ namespace MatterHackers.Agg.Platform
 		}
 
 		public string ResolveFilePath(string path) => path;
+
+		public void ShowFileInFolder(string fileName)
+		{
+		}
 	}
 }

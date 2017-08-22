@@ -71,7 +71,8 @@ namespace MatterHackers.GuiAutomation
 			else
 			{
 				inputSystem = new AggInputMethods(this, inputType == InputType.SimulatedDrawMouse);
-				HookWindowsInputAndSendToWidget.EnableInputHook = false;
+				// TODO: Consider how to set this and if needed
+				//HookWindowsInputAndSendToWidget.EnableInputHook = false;
 			}
 #else
 				inputSystem = new AggInputMethods(this, inputType == InputType.SimulatedDrawMouse);
@@ -431,7 +432,7 @@ namespace MatterHackers.GuiAutomation
 		{
 			Point2D screenPosition = new Point2D(pointOnWindow.x, (int)containingWindow.Height - pointOnWindow.y);
 
-			AbstractOsMappingWidget mappingWidget = containingWindow.Parent as AbstractOsMappingWidget;
+			IPlatformWindow mappingWidget = containingWindow.PlatformWindow;
 			screenPosition.x += mappingWidget.DesktopPosition.x;
 			screenPosition.y += mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight;
 
@@ -441,7 +442,7 @@ namespace MatterHackers.GuiAutomation
 		public static Point2D ScreenToSystemWindow(Point2D pointOnScreen, SystemWindow containingWindow)
 		{
 			Point2D screenPosition = pointOnScreen;
-			AbstractOsMappingWidget mappingWidget = containingWindow.Parent as AbstractOsMappingWidget;
+			IPlatformWindow mappingWidget = containingWindow.PlatformWindow;
 			screenPosition.x -= mappingWidget.DesktopPosition.x;
 			screenPosition.y -= (mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight);
 
@@ -463,7 +464,7 @@ namespace MatterHackers.GuiAutomation
 			screenPosition.Top = (int)containingWindow.Height - screenPosition.Top;
 			screenPosition.Bottom = (int)containingWindow.Height - screenPosition.Bottom;
 
-			AbstractOsMappingWidget mappingWidget = containingWindow.Parent as AbstractOsMappingWidget;
+			IPlatformWindow mappingWidget = containingWindow.PlatformWindow;
 			screenPosition.Left += mappingWidget.DesktopPosition.x;
 			screenPosition.Top += (mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight);
 			screenPosition.Right += mappingWidget.DesktopPosition.x;
@@ -482,7 +483,7 @@ namespace MatterHackers.GuiAutomation
 				Bottom = (int)rectOnScreen.Bottom,
 			};
 
-			AbstractOsMappingWidget mappingWidget = containingWindow.Parent as AbstractOsMappingWidget;
+			IPlatformWindow mappingWidget = containingWindow.PlatformWindow;
 			screenPosition.Left -= mappingWidget.DesktopPosition.x;
 			screenPosition.Top -= (mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight);
 			screenPosition.Left -= mappingWidget.DesktopPosition.x;
