@@ -30,10 +30,11 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using MatterHackers.Agg;
 
-namespace MatterHackers.Agg.PlatformAbstract
+namespace MatterHackers.Agg.Platform
 {
-	public class OsInformationWindowsPlugin : OsInformationPlugin
+	public class WinformsInformationProvider : IOsInformationProvider
 	{
 		//From Managed.Windows.Forms/XplatUI
 		[DllImport("libc")]
@@ -68,13 +69,18 @@ namespace MatterHackers.Agg.PlatformAbstract
 			return false;
 		}
 
-		public override Point2D GetDesktopSize()
+		public WinformsInformationProvider()
 		{
+			this.OperatingSystem = GetOSType();
+
 			var size = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea.Size;
-			return new Point2D(size.Width, size.Height);
+			this.DesktopSize = new Point2D(size.Width, size.Height);
 		}
 
-		public override OSType GetOSType()
+		public OSType OperatingSystem { get; }
+		public Point2D DesktopSize { get; }
+
+		private OSType GetOSType()
 		{
 			if (Path.DirectorySeparatorChar == '\\')
 			{

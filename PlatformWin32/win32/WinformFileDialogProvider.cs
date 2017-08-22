@@ -2,14 +2,14 @@
 using System.Windows.Forms;
 using MatterHackers.Agg.UI;
 
-namespace MatterHackers.Agg.WindowsFileDialogs
+namespace MatterHackers.Agg.Platform
 {
-	public class FileDialogPlugin : FileDialogCreator
+	public class WinformsFileDialogProvider : IFileDialogProvider
 	{
 		// Resolve not needed on non-Mac platforms
-		public override string ResolveFilePath(string path) => path;
+		public string ResolveFilePath(string path) => path;
 
-		public override bool OpenFileDialog(OpenFileDialogParams openParams, Action<OpenFileDialogParams> callback)
+		public bool OpenFileDialog(OpenFileDialogParams openParams, Action<OpenFileDialogParams> callback)
 		{
 			WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = true;
 			openParams.FileName = "";
@@ -44,7 +44,7 @@ namespace MatterHackers.Agg.WindowsFileDialogs
 			return true;
 		}
 
-		public override bool SelectFolderDialog(SelectFolderDialogParams folderParams, Action<SelectFolderDialogParams> callback)
+		public bool SelectFolderDialog(SelectFolderDialogParams folderParams, Action<SelectFolderDialogParams> callback)
 		{
 			SelectFolderDialog(ref folderParams);
 			UiThread.RunOnIdle(() =>
@@ -79,7 +79,7 @@ namespace MatterHackers.Agg.WindowsFileDialogs
 			return folderBrowserDialog.SelectedPath;
 		}
 
-		public override bool SaveFileDialog(SaveFileDialogParams saveParams, Action<SaveFileDialogParams> callback)
+		public bool SaveFileDialog(SaveFileDialogParams saveParams, Action<SaveFileDialogParams> callback)
 		{
 			WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = true;
 			SaveFileDialogParams SaveFileDialogDialogParams = saveParams;

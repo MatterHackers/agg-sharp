@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 using MatterHackers.VectorMath;
 
@@ -129,10 +130,10 @@ namespace MatterHackers.GCodeVisualizer
 		private void openFileButton_ButtonClick(object sender, EventArgs mouseEvent)
 		{
 			UiThread.RunOnIdle(() =>
-				{
-					OpenFileDialogParams openParams = new OpenFileDialogParams("gcode files|*.gcode");
-					FileDialog.OpenFileDialog(openParams, onFileSelected);
-				});
+			{
+				OpenFileDialogParams openParams = new OpenFileDialogParams("gcode files|*.gcode");
+				AggContext.FileDialogs.OpenFileDialog(openParams, onFileSelected);
+			});
 		}
 
 		private void onFileSelected(OpenFileDialogParams openParams)

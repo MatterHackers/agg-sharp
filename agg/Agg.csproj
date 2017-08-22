@@ -196,6 +196,15 @@
     <Compile Include="StringEventArgs.cs" />
     <Compile Include="TraceTiming.cs" />
     <Compile Include="DumpCallStackIfSlow.cs" />
+    <Compile Include="Platform\AggContext.cs" />
+    <Compile Include="Platform\Providers\IStaticData.cs" />
+    <Compile Include="Platform\Providers\IFileDialogProvider.cs" />
+    <Compile Include="Platform\Providers\IImageIOProvider.cs" />
+    <Compile Include="Platform\Providers\IOsInformationProvider.cs" />
+    <Compile Include="Platform\FileDialogs\FileDialogParams.cs" />
+    <Compile Include="Platform\FileDialogs\OpenFileDialogPrams.cs" />
+    <Compile Include="Platform\FileDialogs\SaveFileDialogParams.cs" />
+    <Compile Include="Platform\FileDialogs\SelectFolderDialogParams.cs" />
     <Compile Include="Font\TextWrapping.cs" />
     <Compile Include="Image\ImageSequence.cs" />
     <Compile Include="PluginFinder.cs" />
@@ -304,6 +313,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <EmbeddedResource Include="Platform\config.json">
+        <LogicalName>config.json</LogicalName>
+    </EmbeddedResource>
+
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

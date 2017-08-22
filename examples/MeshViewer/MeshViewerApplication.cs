@@ -31,6 +31,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using MatterHackers.Agg;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 using MatterHackers.DataConverters3D;
 using MatterHackers.RenderOpenGl;
@@ -141,7 +142,7 @@ namespace MatterHackers.MeshVisualizer
 
 		private void DoOpenFileButton_ButtonClick()
 		{
-			FileDialog.OpenFileDialog(
+			AggContext.FileDialogs.OpenFileDialog(
 				new OpenFileDialogParams("3D Mesh Files|*.stl;*.amf;*.obj"),
 				(openParams) =>
 				{

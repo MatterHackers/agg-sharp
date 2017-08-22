@@ -31,13 +31,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using MatterHackers.Agg.Platform;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
 	public class SystemWindow : GuiWidget
 	{
-		private static SystemWindowCreatorPlugin globalSystemWindowCreator;
+		private static ISystemWindowProvider systemWindowProvider;
 
 		public event EventHandler TitleChanged;
 
@@ -102,14 +103,13 @@ namespace MatterHackers.Agg.UI
 			: base(width, height, SizeLimitsToSet.None)
 		{
 			ToolTipManager = new ToolTipManager(this);
-			if (globalSystemWindowCreator == null)
+			if (systemWindowProvider == null)
 			{
-				var systemWindowCreators = PluginFinder.CreateInstancesOf<SystemWindowCreatorPlugin>();
-				if (systemWindowCreators.Count != 1)
+				systemWindowProvider = AggContext.CreateInstanceFrom<ISystemWindowProvider>(AggContext.Config.ProviderTypes.SystemWindowProvider);
+				if (systemWindowProvider == null)
 				{
-					throw new Exception("Did not find any SystemWindowCreators");
+					throw new Exception(string.Format("Unable to load the SystemWindow provider"));
 				}
-				globalSystemWindowCreator = systemWindowCreators[0];
 			}
 
 			allOpenSystemWindows.Add(this);
@@ -168,7 +168,7 @@ namespace MatterHackers.Agg.UI
 			{
 				throw new Exception("To be a system window you cannot be a child of another widget.");
 			}
-			globalSystemWindowCreator.ShowSystemWindow(this);
+			systemWindowProvider.ShowSystemWindow(this);
 		}
 
 		public virtual bool Maximized { get; set; } = false;
@@ -177,12 +177,12 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				return globalSystemWindowCreator.GetDesktopPosition(this);
+				return systemWindowProvider.GetDesktopPosition(this);
 			}
 
 			set
 			{
-				globalSystemWindowCreator.SetDesktopPosition(this, value);
+				systemWindowProvider.SetDesktopPosition(this, value);
 			}
 		}
 

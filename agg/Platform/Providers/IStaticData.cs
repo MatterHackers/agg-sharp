@@ -2,7 +2,7 @@
 using System.IO;
 using MatterHackers.Agg.Image;
 
-namespace MatterHackers.Agg.PlatformAbstract
+namespace MatterHackers.Agg.Platform
 {
 	public interface IStaticData
 	{

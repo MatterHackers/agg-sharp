@@ -32,14 +32,14 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 
 namespace MatterHackers.Agg.Image
 {
-	public class ImageIOWindowsPlugin : ImageIOPlugin
+	public class ImageIOWindowsPlugin : IImageIOProvider
 	{
-		public override bool LoadImageData(Stream stream, ImageSequence destImageSequence)
+		public bool LoadImageData(Stream stream, ImageSequence destImageSequence)
 		{
 			var gifImg = System.Drawing.Image.FromStream(stream);
 			if (gifImg != null)
@@ -80,7 +80,7 @@ namespace MatterHackers.Agg.Image
 			return false;
 		}
 
-		public override bool LoadImageData(Stream stream, ImageBuffer destImage)
+		public bool LoadImageData(Stream stream, ImageBuffer destImage)
 		{
 			using (var bitmap = new Bitmap(stream))
 			{
@@ -88,7 +88,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public override bool LoadImageData(string fileName, ImageBuffer destImage)
+		public bool LoadImageData(string fileName, ImageBuffer destImage)
 		{
 			if (System.IO.File.Exists(fileName))
 			{
@@ -230,7 +230,7 @@ namespace MatterHackers.Agg.Image
 			bitmap.UnlockBits(bitmapData);
 		}
 
-		public override bool SaveImageData(string filename, IImageByte sourceImage)
+		public bool SaveImageData(string filename, IImageByte sourceImage)
 		{
 			if (File.Exists(filename))
 			{
@@ -321,7 +321,7 @@ namespace MatterHackers.Agg.Image
 			return false;
 		}
 
-		public override bool LoadImageData(String filename, ImageBufferFloat destImage)
+		public bool LoadImageData(String filename, ImageBufferFloat destImage)
 		{
 			if (System.IO.File.Exists(filename))
 			{

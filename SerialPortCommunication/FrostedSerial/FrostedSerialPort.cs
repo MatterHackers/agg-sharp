@@ -35,7 +35,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.Agg.Platform;
 using Microsoft.Win32;
 
 namespace MatterHackers.SerialPortCommunication.FrostedSerial
@@ -125,7 +125,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 		{
 			IEnumerable<string> filteredPorts;
 
-			if (OsInformation.OperatingSystem == OSType.X11)
+			if (AggContext.OperatingSystem == OSType.X11)
 			{
 				// A default and naive filter that works well on Ubuntu 14
 				filteredPorts = allPorts.Where(portName => portName != "/dev/tty" && !linuxDefaultUIFilter.Match(portName).Success);

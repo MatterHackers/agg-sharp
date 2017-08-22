@@ -1,6 +1,6 @@
 using System;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
@@ -22,7 +22,7 @@ namespace MatterHackers.Agg
 		{
 			AnchorAll();
 			string img_name = "spheres.bmp";
-			if (!ImageIO.LoadImageData(img_name, sourceImage))
+			if (!AggContext.ImageIO.LoadImageData(img_name, sourceImage))
 			{
 				string buf;
 				buf = "File not found: "

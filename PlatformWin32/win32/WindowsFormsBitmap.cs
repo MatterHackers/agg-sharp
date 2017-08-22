@@ -38,9 +38,10 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
+
 using System;
 using System.Drawing;
-using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.Agg.Platform;
 
 namespace MatterHackers.Agg.UI
 {
@@ -79,7 +80,7 @@ namespace MatterHackers.Agg.UI
 			RectangleInt intRect = new RectangleInt(0, 0, (int)aggAppWidget.Width, (int)aggAppWidget.Height);
 			aggBitmapAppWidget.bitmapBackBuffer.UpdateHardwareSurface(intRect);
 
-			if (OsInformation.OperatingSystem != OSType.Windows)
+			if (AggContext.OperatingSystem != OSType.Windows)
 			{
 				//displayGraphics.DrawImage(aggBitmapAppWidget.bitmapBackBuffer.windowsBitmap, windowsRect, windowsRect, GraphicsUnit.Pixel);  // around 250 ms for full screen
 				displayGraphics.DrawImageUnscaled(aggBitmapAppWidget.bitmapBackBuffer.windowsBitmap, 0, 0); // around 200 ms for full screnn

@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Linq;
+using MatterHackers.Agg.UI;
 
-namespace MatterHackers.Agg.UI
+namespace MatterHackers.Agg.Platform
 {
-	internal class AutomationFileDialogCreator : FileDialogCreator
+	internal class AutomationDialogProvider : IFileDialogProvider
 	{
-		public override bool OpenFileDialog(OpenFileDialogParams openParams, Action<OpenFileDialogParams> callback)
+		public bool OpenFileDialog(OpenFileDialogParams openParams, Action<OpenFileDialogParams> callback)
 		{
 			ShowFileDialog((fileText) =>
 			{
@@ -21,7 +22,7 @@ namespace MatterHackers.Agg.UI
 			return true;
 		}
 
-		public override bool SaveFileDialog(SaveFileDialogParams saveParams, Action<SaveFileDialogParams> callback)
+		public bool SaveFileDialog(SaveFileDialogParams saveParams, Action<SaveFileDialogParams> callback)
 		{
 			ShowFileDialog((fileText) =>
 			{
@@ -72,11 +73,11 @@ namespace MatterHackers.Agg.UI
 			systemWindow.ShowAsSystemWindow();
 		}
 
-		public override bool SelectFolderDialog(SelectFolderDialogParams folderParams, Action<SelectFolderDialogParams> callback)
+		public bool SelectFolderDialog(SelectFolderDialogParams folderParams, Action<SelectFolderDialogParams> callback)
 		{
 			throw new NotImplementedException();
 		}
 
-		public override string ResolveFilePath(string path) => path;
+		public string ResolveFilePath(string path) => path;
 	}
 }
