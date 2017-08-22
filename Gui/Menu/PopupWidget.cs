@@ -273,7 +273,8 @@ namespace MatterHackers.Agg.UI
 
 		private void widgetRelativeTo_PositionChanged(object sender, EventArgs e)
 		{
-			if (widgetRelativeTo != null)
+			if (widgetRelativeTo != null
+				&& widgetRelativeTo.Parent != null)
 			{
 				Vector2 bottomLeftScreenSpace = widgetRelativeTo.Position;
 				if (alignToRightEdge)
