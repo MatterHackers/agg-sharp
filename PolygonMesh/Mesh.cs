@@ -42,7 +42,6 @@ namespace MatterHackers.PolygonMesh
 
 	public enum SortOption { SortNow, WillSortLater };
 
-	[DebuggerDisplay("ID = {ID}")]
 	public class Mesh
 	{
 		public Dictionary<(Face, int), ImageBuffer> FaceTexture = new Dictionary<(Face, int), ImageBuffer>();
@@ -51,10 +50,9 @@ namespace MatterHackers.PolygonMesh
 		private static Dictionary<object, int> Ids = new Dictionary<object, int>(ReferenceEqualityComparer.Default);
 
 		private static int nextIdToUse = 0;
+		private AxisAlignedBoundingBox cachedAABB = null;
 		private AxisAlignedBoundingBox fastAABBCache;
 		private Matrix4X4 fastAABBTransform = Matrix4X4.Identity;
-
-		private AxisAlignedBoundingBox cachedAABB = null;
 
 		public Mesh()
 		{
@@ -1248,7 +1246,7 @@ namespace MatterHackers.PolygonMesh
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 transform)
 		{
-			if(Vertices.Count > 100)
+			if (Vertices.Count > 100)
 			{
 				// use the cache
 				return GetAxisAlignedBoundingBox().NewTransformed(transform);
@@ -1281,6 +1279,11 @@ namespace MatterHackers.PolygonMesh
 			}
 
 			return fastAABBCache;
+		}
+
+		public override string ToString()
+		{
+			return $"ID = {ID}, Faces = {Faces.Count}";
 		}
 
 		#endregion Public Members

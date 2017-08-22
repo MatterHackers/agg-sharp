@@ -34,6 +34,11 @@ namespace MatterHackers.MeshVisualizer
 			{
 				if (selectedItem != value)
 				{
+					if (SelectedItem?.ItemType == Object3DTypes.SelectionGroup)
+					{
+						ModifyChildren(ClearSelectionApplyChanges);
+					}
+
 					selectedItem = value;
 					SelectionChanged?.Invoke(this, null);
 				}
@@ -149,11 +154,6 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
-		public void Select(IObject3D item)
-		{
-			SelectedItem = item;
-		}
-
 		public void ModifyChildren(Action<List<IObject3D>> modifier)
 		{
 			// Copy the child items
@@ -164,6 +164,11 @@ namespace MatterHackers.MeshVisualizer
 
 			// Swap the modified list into place
 			Children = clonedChildren;
+		}
+
+		private void ClearSelectionApplyChanges(List<IObject3D> target)
+		{
+			SelectedItem.CollapseInto(target);
 		}
 
 		public void ClearSelection()
@@ -183,7 +188,12 @@ namespace MatterHackers.MeshVisualizer
 
 			if (HasSelection)
 			{
-				ModifyChildren(children =>
+				if(SelectedItem.ItemType == Object3DTypes.SelectionGroup)
+				{
+					this.Children.Remove(itemToAdd);
+					SelectedItem.Children.Add(itemToAdd);
+				}
+				else // add a new selection group and add to its children
 				{
 					// We're adding a new item to the selection. To do so we wrap the selected item
 					// in a new group and with the new item. The selection will continue to grow in this
@@ -196,13 +206,12 @@ namespace MatterHackers.MeshVisualizer
 					newSelectionGroup.Children.Add(SelectedItem);
 					newSelectionGroup.Children.Add(itemToAdd);
 
-					// Swap items
-					children.Remove(SelectedItem);
-					children.Remove(itemToAdd);
-					children.Add(newSelectionGroup);
+					this.Children.Remove(itemToAdd);
+					this.Children.Remove(SelectedItem);
+					this.Children.Add(newSelectionGroup);
 
-					this.Select(newSelectionGroup);
-				});
+					SelectedItem = newSelectionGroup;
+				}
 			}
 			else if (Children.Contains(itemToAdd))
 			{
