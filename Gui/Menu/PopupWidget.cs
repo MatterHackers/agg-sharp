@@ -71,11 +71,9 @@ namespace MatterHackers.Agg.UI
 			}
 			else
 			{
-				contentWidget.AnchorAll();
 				this.AddChild(contentWidget);
 
 				Width = contentWidget.Width;
-				Width = 500;
 				Height = layoutEngine.MaxHeight;
 			}
 
