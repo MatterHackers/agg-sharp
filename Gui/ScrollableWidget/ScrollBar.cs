@@ -215,6 +215,24 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseDown(mouseEvent);
 		}
 
+		bool mouseInBounds = false;
+
+		public override void OnMouseEnterBounds(MouseEventArgs mouseEvent)
+		{
+			mouseInBounds = true;
+			base.OnMouseEnterBounds(mouseEvent);
+
+			this.UpdateScrollBar();
+		}
+
+		public override void OnMouseLeaveBounds(MouseEventArgs mouseEvent)
+		{
+			mouseInBounds = false;
+			base.OnMouseLeaveBounds(mouseEvent);
+
+			this.UpdateScrollBar();
+		}
+
 		private void UpdateScrollBar()
 		{
 			switch (Show)
@@ -236,8 +254,9 @@ namespace MatterHackers.Agg.UI
 					LocalBounds = new RectangleDouble(0, 0, ScrollBarWidth, ParentScrollWidget.Height);
 					background.LocalBounds = LocalBounds;
 
-					// this is for vertical scroll bar
-					thumb.LocalBounds = new RectangleDouble(0, 0, ScrollBarWidth, ThumbHeight);
+					// On hover, grow the thumb bounds by the given value
+					int growAmount = (mouseInBounds) ? 0 : 3;
+					thumb.LocalBounds = new RectangleDouble(growAmount, 0, ScrollBarWidth - growAmount + 1, ThumbHeight);
 
 					Vector2 scrollRatioFromTop0To1 = ParentScrollWidget.ScrollRatioFromTop0To1;
 					double notThumbHeight = ParentScrollWidget.Height - ThumbHeight;
