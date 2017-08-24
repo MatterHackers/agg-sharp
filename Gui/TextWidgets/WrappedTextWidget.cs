@@ -74,12 +74,26 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public override string Text
+		{
+			get => unwrappedText;
+			set
+			{
+				if (unwrappedText != value)
+				{
+					unwrappedText = value;
+					this.AdjustTextWrap();
+				}
+			}
+		}
+
 		public override void OnBoundsChanged(EventArgs e)
 		{
 			if (wrappedWidth != Width)
 			{
 				AdjustTextWrap();
 			}
+
 			base.OnBoundsChanged(e);
 		}
 
