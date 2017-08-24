@@ -21,7 +21,7 @@ namespace MatterHackers.DataConverters3D
 		{
 			if (Material.HasTexture)
 			{
-				Vector3Float Position = new Vector3Float(face.normal);
+				Vector3Float Position = new Vector3Float(face.Normal);
 				Vector3Float vecU = new Vector3Float(Position.y, Position.z, -Position.x);
 				Vector3Float vecV = Vector3Float.Cross(vecU, Position);
 
@@ -84,7 +84,7 @@ namespace MatterHackers.DataConverters3D
 					info.closestHitObject = this;
 					info.distanceToHit = distanceToHit;
 					info.HitPosition = polyPlaneIntersection;
-					info.normalAtHit = face.normal;
+					info.normalAtHit = face.Normal;
 					info.hitType = IntersectionType.FrontFace;
 					return info;
 				}

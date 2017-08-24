@@ -74,7 +74,7 @@ namespace MatterHackers.PolygonMesh.Processors
 							int thirdIndex = 2;
 							for (int polyIndex = 0; polyIndex < numPolys; polyIndex++)
 							{
-								streamWriter.WriteLine("  facet normal " + FormatForStl(face.normal));
+								streamWriter.WriteLine("  facet normal " + FormatForStl(face.Normal));
 								streamWriter.WriteLine("    outer loop");
 								streamWriter.WriteLine("      vertex " + FormatForStl(positionsCCW[0]));
 								streamWriter.WriteLine("      vertex " + FormatForStl(positionsCCW[secondIndex]));

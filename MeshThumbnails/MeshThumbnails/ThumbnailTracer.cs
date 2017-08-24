@@ -158,7 +158,7 @@ namespace MatterHackers.RayTracer
 			foreach (Face face in meshToDraw.Faces)
 			{
 				int i = 0;
-				Vector3 normal = Vector3.TransformVector(face.normal, world.ModelviewMatrix).GetNormal();
+				Vector3 normal = Vector3.TransformVector(face.Normal, world.ModelviewMatrix).GetNormal();
 				if (normal.z > 0)
 				{
 					foreach (FaceEdge faceEdge in face.FaceEdges())
