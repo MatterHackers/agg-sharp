@@ -142,7 +142,7 @@ namespace MatterHackers.VectorMath
 				this.height = height;
 
 				var projectionMatrix = Matrix4X4.Identity;
-				Matrix4X4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(45), width / height, 0.1f, 100.0f, out projectionMatrix);
+				Matrix4X4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(45), width / height, zNear, zFar, out projectionMatrix);
 
 				this.ProjectionMatrix = projectionMatrix;
 				this.InverseProjectionMatrix = Matrix4X4.Invert(projectionMatrix);
@@ -159,6 +159,8 @@ namespace MatterHackers.VectorMath
 
 		private double width;
 		private double height;
+		double zNear = .1;
+		double zFar = 100;
 
 		public void CalculateModelviewMatrix()
 		{
@@ -230,7 +232,8 @@ namespace MatterHackers.VectorMath
 			Vector3 homoginizedScreenPosition = Vector3.TransformPerspective(homoginizedViewPosition, this.ProjectionMatrix);
 
 			// Screen position
-			return new Vector2(homoginizedScreenPosition.x * width / 2 + width / 2, homoginizedScreenPosition.y * height / 2 + height / 2);
+			return new Vector2(homoginizedScreenPosition.x * width / 2 + width / 2, 
+				homoginizedScreenPosition.y * height / 2 + height / 2);
 		}
 
 		public Vector3 GetScreenSpace(Vector3 worldPosition)
