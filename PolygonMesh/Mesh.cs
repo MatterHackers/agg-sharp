@@ -53,6 +53,7 @@ namespace MatterHackers.PolygonMesh
 		private AxisAlignedBoundingBox cachedAABB = null;
 		private AxisAlignedBoundingBox fastAABBCache;
 		private Matrix4X4 fastAABBTransform = Matrix4X4.Identity;
+		public FaceBspNode FaceBspTree { get; set; } = null;
 
 		public Mesh()
 		{
@@ -118,7 +119,7 @@ namespace MatterHackers.PolygonMesh
 					Face faceToCopy = meshToCopy.Faces[faceIndex];
 					Face newface = newMesh.Faces[faceIndex];
 
-					newface.normal = faceToCopy.normal;
+					newface.Normal = faceToCopy.Normal;
 
 					// hook up the face edges
 					//public FaceEdge firstFaceEdge;

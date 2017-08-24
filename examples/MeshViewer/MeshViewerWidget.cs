@@ -398,7 +398,7 @@ namespace MatterHackers.MeshVisualizer
 						{
 							foreach (Face face in printerBed.Faces)
 							{
-								if (face.normal.z > 0)
+								if (face.Normal.z > 0)
 								{
 									face.SetTexture(0, BedImage);
 									foreach (FaceEdge faceEdge in face.FaceEdges())

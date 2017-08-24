@@ -112,7 +112,7 @@ namespace MatterHackers.RenderOpenGl
 					{
 						FaceEdge firstFaceEdge = meshEdge.firstFaceEdge;
 						FaceEdge nextFaceEdge = meshEdge.firstFaceEdge.radialNextFaceEdge;
-						double angle = Vector3.CalculateAngle(firstFaceEdge.ContainingFace.normal, nextFaceEdge.ContainingFace.normal);
+						double angle = Vector3.CalculateAngle(firstFaceEdge.ContainingFace.Normal, nextFaceEdge.ContainingFace.Normal);
 						if (angle > MathHelper.Tau * .1)
 						{
 							edgeLinesData.Add(AddVertex(meshEdge.VertexOnEnd[0].Position, meshEdge.VertexOnEnd[1].Position));

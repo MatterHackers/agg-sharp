@@ -41,7 +41,7 @@ namespace MatterHackers.PolygonMesh.Rendering
 			PathStorage polygonProjected = new PathStorage();
 			foreach (Face face in meshToDraw.Faces)
 			{
-				if (face.normal.z > 0)
+				if (face.Normal.z > 0)
 				{
 					polygonProjected.remove_all();
 					bool first = true;

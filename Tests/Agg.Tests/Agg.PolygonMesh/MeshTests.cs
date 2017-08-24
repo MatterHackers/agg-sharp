@@ -506,7 +506,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				IVertex topVertex = testMesh.CreateVertex(-1, 0, -1);
 				Face newFace = testMesh.CreateFace(new IVertex[] { rightVertex, topVertex, leftVertex });
 
-				Assert.IsTrue(newFace.normal == Vector3.UnitY);
+				Assert.IsTrue(newFace.Normal == Vector3.UnitY);
 
 				Assert.IsTrue(newFace.NumVertices == 3, "We have a 3 vertex face.");
 				Assert.IsTrue(newFace.FaceEdgeLoopIsGood());

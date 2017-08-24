@@ -186,14 +186,14 @@ namespace MatterHackers.RenderOpenGl
 						VertexNormalData tempNormal;
 						VertexPositionData tempPosition;
 						tempTexture.textureU = (float)textureUV[0].x; tempTexture.textureV = (float)textureUV[0].y;
-						tempNormal.normalX = (float)face.normal.x; tempNormal.normalY = (float)face.normal.y; tempNormal.normalZ = (float)face.normal.z;
+						tempNormal.normalX = (float)face.Normal.x; tempNormal.normalY = (float)face.Normal.y; tempNormal.normalZ = (float)face.Normal.z;
 						tempPosition.positionX = (float)position[0].x; tempPosition.positionY = (float)position[0].y; tempPosition.positionZ = (float)position[0].z;
 						textureData.Add(tempTexture);
 						normalData.Add(tempNormal);
 						positionData.Add(tempPosition);
 
 						tempTexture.textureU = (float)textureUV[1].x; tempTexture.textureV = (float)textureUV[1].y;
-						tempNormal.normalX = (float)face.normal.x; tempNormal.normalY = (float)face.normal.y; tempNormal.normalZ = (float)face.normal.z;
+						tempNormal.normalX = (float)face.Normal.x; tempNormal.normalY = (float)face.Normal.y; tempNormal.normalZ = (float)face.Normal.z;
 						tempPosition.positionX = (float)position[1].x; tempPosition.positionY = (float)position[1].y; tempPosition.positionZ = (float)position[1].z;
 						textureData.Add(tempTexture);
 						normalData.Add(tempNormal);
@@ -202,7 +202,7 @@ namespace MatterHackers.RenderOpenGl
 						Vector2 textureUV2 = faceEdge.GetUv(0);
 						Vector3 position2 = faceEdge.FirstVertex.Position;
 						tempTexture.textureU = (float)textureUV2.x; tempTexture.textureV = (float)textureUV2.y;
-						tempNormal.normalX = (float)face.normal.x; tempNormal.normalY = (float)face.normal.y; tempNormal.normalZ = (float)face.normal.z;
+						tempNormal.normalX = (float)face.Normal.x; tempNormal.normalY = (float)face.Normal.y; tempNormal.normalZ = (float)face.Normal.z;
 						tempPosition.positionX = (float)position2.x; tempPosition.positionY = (float)position2.y; tempPosition.positionZ = (float)position2.z;
 						textureData.Add(tempTexture);
 						normalData.Add(tempNormal);

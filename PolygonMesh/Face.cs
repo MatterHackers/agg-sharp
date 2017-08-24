@@ -40,7 +40,7 @@ namespace MatterHackers.PolygonMesh
 	public class Face
 	{
 		public FaceEdge firstFaceEdge;
-		public Vector3 normal;
+		public Vector3 Normal { get; set; }
 
 		public Face(Mesh containingMesh)
 		{
@@ -92,7 +92,7 @@ namespace MatterHackers.PolygonMesh
 				collinear = Vector3.Collinear(faceEdge0.FirstVertex.Position, faceEdge1.FirstVertex.Position, faceEdge2.FirstVertex.Position);
 			} while (collinear && faceEdge2 != faceEdge0);
 			Vector3 face2Minus0 = faceEdge2.FirstVertex.Position - faceEdge0.FirstVertex.Position;
-			normal = Vector3.Cross(faceEdge1Minus0, face2Minus0).GetNormal();
+			Normal = Vector3.Cross(faceEdge1Minus0, face2Minus0).GetNormal();
 		}
 
 		public bool FaceEdgeLoopIsGood()
