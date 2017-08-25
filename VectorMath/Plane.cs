@@ -127,9 +127,6 @@ namespace MatterHackers.VectorMath
 		{
 			double distanceToPosition = Vector3.Dot(PlaneNormal, positionToCheck);
 			return distanceToPosition - DistanceToPlaneFromOrigin;
-
-			//double distanceToPointFromOrigin = Vector3.Dot(positionToCheck, PlaneNormal);
-			//return distanceToPointFromOrigin - DistanceToPlaneFromOrigin;
 		}
 
 		/// <summary>

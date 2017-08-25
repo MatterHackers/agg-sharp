@@ -215,7 +215,8 @@ namespace MatterHackers.DataConverters3D
 				MeshPath = this.MeshPath,
 				Children = new List<IObject3D>(this.Children.Select(child => child.Clone())),
 				Matrix = this.Matrix,
-				traceData = this.traceData
+				traceData = this.traceData,
+				OutputType = this.OutputType
 			};
 		}
 

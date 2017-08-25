@@ -176,7 +176,16 @@ namespace MatterHackers.RenderOpenGl
 					case RenderTypes.Overhang:
 					case RenderTypes.Shaded:
 					case RenderTypes.Materials:
-						DrawToGL(meshToRender);
+						if (color.Alpha0To1 < 1
+							&& meshToRender.FaceBspTree != null)
+						{
+							DrawToGLUsingBsp(meshToRender);
+							DrawWithWireOverlay(meshToRender, RenderTypes.Outlines);
+						}
+						else
+						{
+							DrawToGL(meshToRender);
+						}
 						break;
 				}
 
@@ -190,6 +199,37 @@ namespace MatterHackers.RenderOpenGl
 			var frustum2 = Frustum.Transform(frustum, world.InverseModelviewMatrix);
 
 			return frustum2;
+		}
+
+		private static void DrawToGLUsingBsp(Mesh meshToRender)
+		{
+			GL.Begin(BeginMode.Triangles);
+			foreach (var face in meshToRender.Faces)
+			{
+				/*
+				// Make sure the GLMeshPlugin has a reference to hold onto the image so it does not go away before this.
+				if (subMesh.texture != null)
+				{
+					ImageGlPlugin glPlugin = ImageGlPlugin.GetImageGlPlugin(subMesh.texture, true);
+					GL.Enable(EnableCap.Texture2D);
+					GL.BindTexture(TextureTarget.Texture2D, glPlugin.GLTextureHandle);
+					GL.EnableClientState(ArrayCap.TextureCoordArray);
+				}
+				else
+				{
+					GL.Disable(EnableCap.Texture2D);
+					GL.DisableClientState(ArrayCap.TextureCoordArray);
+				}
+				*/
+
+				foreach (var vertex in face.AsTriangles())
+				{
+					GL.Vertex3(vertex.Item1.x, vertex.Item1.y, vertex.Item1.z);
+					GL.Vertex3(vertex.Item2.x, vertex.Item2.y, vertex.Item2.z);
+					GL.Vertex3(vertex.Item3.x, vertex.Item3.y, vertex.Item3.z);
+				}
+			}
+			GL.End();
 		}
 
 		private static void DrawToGL(Mesh meshToRender)
