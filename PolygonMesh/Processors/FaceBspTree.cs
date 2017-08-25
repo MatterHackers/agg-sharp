@@ -56,21 +56,81 @@ namespace MatterHackers.PolygonMesh
 			return root;
 		}
 
-		public static IEnumerable<Face> GetFacesInVisibiltyOrder(FaceBspNode root, WorldView worldView)
+		public static IEnumerable<Face> GetFacesInVisibiltyOrder(FaceBspNode node, Matrix4X4 meshToViewTransform, Matrix4X4 inverseMeshToViewTransform)
 		{
-			// return all the back faces
-			foreach (var face in GetFacesInVisibiltyOrder(root.BackNode, worldView))
+			if (node.Face == null)
 			{
-				yield return face;
+				//yield break;
 			}
 
-			// return this face
-			yield return root.Face;
+			// Are we in front of or behind this face
+			var faceNormalInViewSpace = Vector3.TransformNormalInverse(node.Face.Normal, inverseMeshToViewTransform).GetNormal();
+			var pointOnFaceInViewSpace = Vector3.Transform(node.Face.firstFaceEdge.FirstVertex.Position, meshToViewTransform);
+			var infrontOfFace = Vector3.Dot(faceNormalInViewSpace, pointOnFaceInViewSpace) < 0;
 
-			// return all the front faces
-			foreach (var face in GetFacesInVisibiltyOrder(root.BackNode, worldView))
+			if (infrontOfFace)
 			{
-				yield return face;
+				// return all the back faces
+				if (node.BackNode != null && node.BackNode.Face != null)
+				{
+					foreach (var face in GetFacesInVisibiltyOrder(node.BackNode, meshToViewTransform, inverseMeshToViewTransform))
+					{
+						if (face != null)
+						{
+							yield return face;
+						}
+					}
+				}
+
+				// return this face
+				if (node.Face != null)
+				{
+					yield return node.Face;
+				}
+
+				// return all the front faces
+				if (node.FrontNode != null && node.FrontNode.Face != null)
+				{
+					foreach (var face in GetFacesInVisibiltyOrder(node.FrontNode, meshToViewTransform, inverseMeshToViewTransform))
+					{
+						if (face != null)
+						{
+							yield return face;
+						}
+					}
+				}
+			}
+			else
+			{
+				// return all the front faces
+				if (node.FrontNode != null && node.FrontNode.Face != null)
+				{
+					foreach (var face in GetFacesInVisibiltyOrder(node.FrontNode, meshToViewTransform, inverseMeshToViewTransform))
+					{
+						if (face != null)
+						{
+							yield return face;
+						}
+					}
+				}
+
+				// return this face
+				if (node.Face != null)
+				{
+					yield return node.Face;
+				}
+
+				// return all the back faces
+				if (node.BackNode != null && node.BackNode.Face != null)
+				{
+					foreach (var face in GetFacesInVisibiltyOrder(node.BackNode, meshToViewTransform, inverseMeshToViewTransform))
+					{
+						if (face != null)
+						{
+							yield return face;
+						}
+					}
+				}
 			}
 		}
 
@@ -81,11 +141,8 @@ namespace MatterHackers.PolygonMesh
 
 			Face checkFace = faces[faceIndex];
 			var pointOnCheckFace = faces[faceIndex].Vertices().FirstOrDefault().Position;
-			int step = faces.Count / 10;
-			if(step < 10)
-			{
-				step = 1;
-			}
+
+			int step = 1; // Math.Max(1, faces.Count / 100);
 			for (int i = 0; i < faces.Count; i += step)
 			{
 				if (i != faceIndex)
@@ -105,7 +162,7 @@ namespace MatterHackers.PolygonMesh
 								positiveDistance += (distanceToPlan * distanceToPlan);
 							}
 
-							if(negativeDistance > smallestCrossingArrea 
+							if (negativeDistance > smallestCrossingArrea
 								&& positiveDistance > smallestCrossingArrea)
 							{
 								return negativeDistance;
@@ -123,6 +180,7 @@ namespace MatterHackers.PolygonMesh
 		{
 			Face checkFace = faces[faceIndex];
 			var pointOnCheckFace = faces[faceIndex].Vertices().FirstOrDefault().Position;
+
 			for (int i = 0; i < faces.Count; i++)
 			{
 				if (i != faceIndex)
@@ -165,7 +223,8 @@ namespace MatterHackers.PolygonMesh
 			double smallestCrossingArrea = double.MaxValue;
 
 			// find the first face that does not split anything
-			for (int i = 0; i < faces.Count; i++)
+			int step = Math.Max(1, faces.Count / 10);
+			for (int i = 0; i < faces.Count; i += step)
 			{
 				// calculate how much of polygons cross this face
 				double crossingArrea = CalculateCrosingArrea(i, faces, smallestCrossingArrea);

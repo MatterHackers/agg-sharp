@@ -33,7 +33,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using MatterHackers.Agg;
+using MatterHackers.Agg.UI;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RayTracer;
 using MatterHackers.RayTracer.Traceable;
@@ -111,7 +113,33 @@ namespace MatterHackers.DataConverters3D
 
 		public Object3DTypes ItemType { get; set; } = Object3DTypes.Model;
 
-		public PrintOutputTypes OutputType { get; set; } = PrintOutputTypes.Default;
+		PrintOutputTypes _outputType = PrintOutputTypes.Default;
+		public PrintOutputTypes OutputType
+		{
+			get
+			{
+				return _outputType;
+			}
+			set
+			{
+				if (_outputType != value)
+				{
+					_outputType = value;
+					if ((_outputType == PrintOutputTypes.Support
+						|| _outputType == PrintOutputTypes.Hole)
+						&& Mesh != null
+						&& Mesh.FaceBspTree == null
+						&& Mesh.Faces.Count < 2000)
+					{
+						Task.Run(() =>
+						{
+							var bspTree = FaceBspTree.Create(Mesh);
+							UiThread.RunOnIdle(() => Mesh.FaceBspTree = bspTree);
+						});
+					}
+				}
+			}
+		}
 
 		public Matrix4X4 Matrix { get; set; } = Matrix4X4.Identity;
 
