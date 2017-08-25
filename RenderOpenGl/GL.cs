@@ -751,6 +751,17 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #endif
 		}
 
+		public static void Normal3(double x, double y, double z)
+		{
+#if USE_OPENGL
+			if (HardwareAvailable)
+			{
+				OpenTK.Graphics.OpenGL.GL.Normal3(x, y, z);
+			}
+#else
+#endif
+		}
+
 		public static void Vertex3(double x, double y, double z)
 		{
 #if USE_OPENGL

@@ -27,11 +27,11 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using MatterHackers.Agg;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
-using System;
 
 namespace MatterHackers.RenderOpenGl
 {
@@ -39,20 +39,16 @@ namespace MatterHackers.RenderOpenGl
 
 	public static class GLHelper
 	{
-		public static void Render(Mesh meshToRender, IColorType partColor, RenderTypes renderType = RenderTypes.Shaded)
-		{
-			Render(meshToRender, partColor, Matrix4X4.Identity, renderType);
-		}
+		private static Mesh scaledLineMesh = PlatonicSolids.CreateCube();
 
-		public static void Render3DLine(WorldView world, Vector3 start, Vector3 end, RGBA_Bytes color, bool doDepthTest = true, double width = 1)
-		{
-			Render3DLine(GetClippingFrustum(world), world, start, end, color, doDepthTest, width);
-		}
+		private static Mesh unscaledLineMesh = PlatonicSolids.CreateCube();
 
-		public static void Render3DLine(Frustum clippingFrustum, WorldView world, Vector3 start, Vector3 end, RGBA_Bytes color, bool doDepthTest = true, double width = 1)
+		public static Frustum GetClippingFrustum(this WorldView world)
 		{
-			PrepareFor3DLineRender(doDepthTest);
-			Render3DLineNoPrep(clippingFrustum, world, start, end, color, width);
+			var frustum = Frustum.FrustumFromProjectionMatrix(world.ProjectionMatrix);
+			var frustum2 = Frustum.Transform(frustum, world.InverseModelviewMatrix);
+
+			return frustum2;
 		}
 
 		public static void PrepareFor3DLineRender(bool doDepthTest)
@@ -70,6 +66,72 @@ namespace MatterHackers.RenderOpenGl
 			{
 				GL.Disable(EnableCap.DepthTest);
 			}
+		}
+
+		public static void Render(Mesh meshToRender, RGBA_Bytes partColor, RenderTypes renderType = RenderTypes.Shaded, Matrix4X4? meshToViewTransform = null, RGBA_Bytes wireFrameColor = default(RGBA_Bytes))
+		{
+			Render(meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor);
+		}
+
+		public static void Render(Mesh meshToRender, RGBA_Bytes color, Matrix4X4 transform, RenderTypes renderType, Matrix4X4? meshToViewTransform = null, RGBA_Bytes wireFrameColor = default(RGBA_Bytes))
+		{
+			if (meshToRender != null)
+			{
+				GL.Color4(color.Red0To255, color.Green0To255, color.Blue0To255, color.Alpha0To255);
+
+				if (color.Alpha0To1 < 1)
+				{
+					GL.Enable(EnableCap.Blend);
+				}
+				else
+				{
+					GL.Disable(EnableCap.Blend);
+				}
+
+				GL.MatrixMode(MatrixMode.Modelview);
+				GL.PushMatrix();
+				GL.MultMatrix(transform.GetAsFloatArray());
+
+				switch (renderType)
+				{
+					case RenderTypes.Hidden:
+						break;
+
+					case RenderTypes.Polygons:
+					case RenderTypes.Outlines:
+						GL.Enable(EnableCap.PolygonOffsetFill);
+						GL.PolygonOffset(1, 1);
+						DrawToGL(meshToRender, color.Alpha0To1 < 1, meshToViewTransform);
+						GL.PolygonOffset(0, 0);
+						GL.Disable(EnableCap.PolygonOffsetFill);
+
+						DrawWireOverlay(meshToRender, renderType, wireFrameColor);
+						break;
+
+					case RenderTypes.Wireframe:
+						DrawWireOverlay(meshToRender, renderType, wireFrameColor);
+						break;
+
+					case RenderTypes.Overhang:
+					case RenderTypes.Shaded:
+					case RenderTypes.Materials:
+						DrawToGL(meshToRender, color.Alpha0To1 < 1, meshToViewTransform);
+						break;
+				}
+
+				GL.PopMatrix();
+			}
+		}
+
+		public static void Render3DLine(WorldView world, Vector3 start, Vector3 end, RGBA_Bytes color, bool doDepthTest = true, double width = 1)
+		{
+			Render3DLine(GetClippingFrustum(world), world, start, end, color, doDepthTest, width);
+		}
+
+		public static void Render3DLine(Frustum clippingFrustum, WorldView world, Vector3 start, Vector3 end, RGBA_Bytes color, bool doDepthTest = true, double width = 1)
+		{
+			PrepareFor3DLineRender(doDepthTest);
+			Render3DLineNoPrep(clippingFrustum, world, start, end, color, width);
 		}
 
 		public static void Render3DLineNoPrep(Frustum clippingFrustum, WorldView world, Vector3 start, Vector3 end, RGBA_Bytes color, double width = 1)
@@ -121,7 +183,7 @@ namespace MatterHackers.RenderOpenGl
 					GL.Begin(BeginMode.Triangles);
 					foreach (var face in scaledLineMesh.Faces)
 					{
-						foreach(var vertex in face.AsTriangles())
+						foreach (var vertex in face.AsTriangles())
 						{
 							GL.Vertex3(vertex.Item1.x, vertex.Item1.y, vertex.Item1.z);
 							GL.Vertex3(vertex.Item2.x, vertex.Item2.y, vertex.Item2.z);
@@ -140,100 +202,16 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		static Mesh scaledLineMesh = PlatonicSolids.CreateCube();
-		static Mesh unscaledLineMesh = PlatonicSolids.CreateCube();
-
-		public static void Render(Mesh meshToRender, IColorType color, Matrix4X4 transform, RenderTypes renderType)
+		private static void DrawToGL(Mesh meshToRender, bool isTransparent, Matrix4X4? meshToViewTransform)
 		{
-			if (meshToRender != null)
+			if (meshToViewTransform != null
+				&& isTransparent
+				&& meshToRender.FaceBspTree != null)
 			{
-				GL.Color4(color.Red0To255, color.Green0To255, color.Blue0To255, color.Alpha0To255);
-
-				if (color.Alpha0To1 < 1)
-				{
-					GL.Enable(EnableCap.Blend);
-				}
-				else
-				{
-					GL.Disable(EnableCap.Blend);
-				}
-
-				GL.MatrixMode(MatrixMode.Modelview);
-				GL.PushMatrix();
-				GL.MultMatrix(transform.GetAsFloatArray());
-
-				switch (renderType)
-				{
-					case RenderTypes.Hidden:
-						break;
-
-					case RenderTypes.Polygons:
-					case RenderTypes.Outlines:
-					case RenderTypes.Wireframe:
-						DrawWithWireOverlay(meshToRender, renderType);
-						break;
-
-					case RenderTypes.Overhang:
-					case RenderTypes.Shaded:
-					case RenderTypes.Materials:
-						if (color.Alpha0To1 < 1
-							&& meshToRender.FaceBspTree != null)
-						{
-							DrawToGLUsingBsp(meshToRender);
-							DrawWithWireOverlay(meshToRender, RenderTypes.Outlines);
-						}
-						else
-						{
-							DrawToGL(meshToRender);
-						}
-						break;
-				}
-
-				GL.PopMatrix();
+				DrawToGLUsingBsp(meshToRender, meshToViewTransform.Value);
+				return;
 			}
-		}
 
-		public static Frustum GetClippingFrustum(this WorldView world)
-		{
-			var frustum = Frustum.FrustumFromProjectionMatrix(world.ProjectionMatrix);
-			var frustum2 = Frustum.Transform(frustum, world.InverseModelviewMatrix);
-
-			return frustum2;
-		}
-
-		private static void DrawToGLUsingBsp(Mesh meshToRender)
-		{
-			GL.Begin(BeginMode.Triangles);
-			foreach (var face in meshToRender.Faces)
-			{
-				/*
-				// Make sure the GLMeshPlugin has a reference to hold onto the image so it does not go away before this.
-				if (subMesh.texture != null)
-				{
-					ImageGlPlugin glPlugin = ImageGlPlugin.GetImageGlPlugin(subMesh.texture, true);
-					GL.Enable(EnableCap.Texture2D);
-					GL.BindTexture(TextureTarget.Texture2D, glPlugin.GLTextureHandle);
-					GL.EnableClientState(ArrayCap.TextureCoordArray);
-				}
-				else
-				{
-					GL.Disable(EnableCap.Texture2D);
-					GL.DisableClientState(ArrayCap.TextureCoordArray);
-				}
-				*/
-
-				foreach (var vertex in face.AsTriangles())
-				{
-					GL.Vertex3(vertex.Item1.x, vertex.Item1.y, vertex.Item1.z);
-					GL.Vertex3(vertex.Item2.x, vertex.Item2.y, vertex.Item2.z);
-					GL.Vertex3(vertex.Item3.x, vertex.Item3.y, vertex.Item3.z);
-				}
-			}
-			GL.End();
-		}
-
-		private static void DrawToGL(Mesh meshToRender)
-		{
 			GLMeshTrianglePlugin glMeshPlugin = GLMeshTrianglePlugin.Get(meshToRender);
 			for (int i = 0; i < glMeshPlugin.subMeshs.Count; i++)
 			{
@@ -252,7 +230,7 @@ namespace MatterHackers.RenderOpenGl
 					GL.DisableClientState(ArrayCap.TextureCoordArray);
 				}
 
-				if(subMesh.UseVertexColors)
+				if (subMesh.UseVertexColors)
 				{
 					GL.EnableClientState(ArrayCap.ColorArray);
 				}
@@ -263,7 +241,7 @@ namespace MatterHackers.RenderOpenGl
 				{
 					fixed (VertexTextureData* pTextureData = subMesh.textureData.Array)
 					{
-						fixed(VertexColorData* pColorData = subMesh.colorData.Array)
+						fixed (VertexColorData* pColorData = subMesh.colorData.Array)
 						{
 							fixed (VertexNormalData* pNormalData = subMesh.normalData.Array)
 							{
@@ -300,27 +278,49 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		public static RGBA_Bytes WireframeColor = new RGBA_Bytes(150, 70, 70, 255);
-
-		private static void DrawWithWireOverlay(Mesh meshToRender, RenderTypes renderType)
+		private static void DrawToGLUsingBsp(Mesh meshToRender, Matrix4X4 meshToViewTransform)
 		{
-			GLMeshTrianglePlugin glMeshPlugin = GLMeshTrianglePlugin.Get(meshToRender);
-
-			GL.Enable(EnableCap.PolygonOffsetFill);
-			GL.PolygonOffset(1, 1);
-
-			if (renderType != RenderTypes.Wireframe)
+			GL.Begin(BeginMode.Triangles);
+			var inverseMeshToViewTransform = meshToViewTransform;
+			inverseMeshToViewTransform.Invert();
+			foreach (var face in FaceBspTree.GetFacesInVisibiltyOrder(meshToRender.FaceBspTree, meshToViewTransform, inverseMeshToViewTransform))
 			{
-				DrawToGL(meshToRender);
-				GL.Color4(0, 0, 0, 255);
-			}
-			else
-			{
-				GL.Color4(WireframeColor.red, WireframeColor.green, WireframeColor.blue, WireframeColor.alpha);
-			}
+				if (face == null)
+				{
+					continue;
+				}
+				/*
+				// Make sure the GLMeshPlugin has a reference to hold onto the image so it does not go away before this.
+				if (subMesh.texture != null)
+				{
+					ImageGlPlugin glPlugin = ImageGlPlugin.GetImageGlPlugin(subMesh.texture, true);
+					GL.Enable(EnableCap.Texture2D);
+					GL.BindTexture(TextureTarget.Texture2D, glPlugin.GLTextureHandle);
+					GL.EnableClientState(ArrayCap.TextureCoordArray);
+				}
+				else
+				{
+					GL.Disable(EnableCap.Texture2D);
+					GL.DisableClientState(ArrayCap.TextureCoordArray);
+				}
+				*/
 
-			GL.PolygonOffset(0, 0);
-			GL.Disable(EnableCap.PolygonOffsetFill);
+				GL.Normal3(face.Normal.x, face.Normal.y, face.Normal.z);
+
+				foreach (var vertex in face.AsTriangles())
+				{
+					GL.Vertex3(vertex.Item1.x, vertex.Item1.y, vertex.Item1.z);
+					GL.Vertex3(vertex.Item2.x, vertex.Item2.y, vertex.Item2.z);
+					GL.Vertex3(vertex.Item3.x, vertex.Item3.y, vertex.Item3.z);
+				}
+			}
+			GL.End();
+		}
+
+		private static void DrawWireOverlay(Mesh meshToRender, RenderTypes renderType, RGBA_Bytes color)
+		{
+			GL.Color4(color.red, color.green, color.blue, color.alpha == 0 ? 255 : color.alpha);
+
 			GL.Disable(EnableCap.Lighting);
 
 			GL.DisableClientState(ArrayCap.TextureCoordArray);
