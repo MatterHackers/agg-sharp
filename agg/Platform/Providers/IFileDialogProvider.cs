@@ -7,12 +7,14 @@ namespace MatterHackers.Agg.Platform
 	/// </summary>
 	public interface IFileDialogProvider
 	{
+		string LastDirectoryUsed { get; }
+
+		string ResolveFilePath(string path);
+
 		bool OpenFileDialog(OpenFileDialogParams openParams, Action<OpenFileDialogParams> callback);
 
 		bool SelectFolderDialog(SelectFolderDialogParams folderParams, Action<SelectFolderDialogParams> callback);
 
 		bool SaveFileDialog(SaveFileDialogParams saveParams, Action<SaveFileDialogParams> callback);
-
-		string ResolveFilePath(string path);
 	}
 }
