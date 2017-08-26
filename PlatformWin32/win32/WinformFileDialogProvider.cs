@@ -6,6 +6,8 @@ namespace MatterHackers.Agg.Platform
 {
 	public class WinformsFileDialogProvider : IFileDialogProvider
 	{
+		public string LastDirectoryUsed { get; private set; }
+
 		// Resolve not needed on non-Mac platforms
 		public string ResolveFilePath(string path) => path;
 
@@ -15,18 +17,20 @@ namespace MatterHackers.Agg.Platform
 			openParams.FileName = "";
 			openParams.FileNames = null;
 
-			OpenFileDialog openFileDialog1 = new OpenFileDialog();
-
-			openFileDialog1.InitialDirectory = openParams.InitialDirectory;
-			openFileDialog1.Filter = openParams.Filter;
-			openFileDialog1.Multiselect = openParams.MultiSelect;
-			openFileDialog1.Title = openParams.Title;
-
-			openFileDialog1.FilterIndex = openParams.FilterIndex;
-			openFileDialog1.RestoreDirectory = true;
+			var openFileDialog1 = new OpenFileDialog
+			{
+				InitialDirectory = openParams.InitialDirectory,
+				Filter = openParams.Filter,
+				Multiselect = openParams.MultiSelect,
+				Title = openParams.Title,
+				FilterIndex = openParams.FilterIndex,
+				RestoreDirectory = true
+			};
 
 			if (openFileDialog1.ShowDialog() == DialogResult.OK)
 			{
+				this.LastDirectoryUsed = System.IO.Path.GetDirectoryName(openFileDialog1.FileName);
+
 				openParams.FileNames = openFileDialog1.FileNames;
 				openParams.FileName = openFileDialog1.FileName;
 			}
@@ -82,31 +86,31 @@ namespace MatterHackers.Agg.Platform
 		public bool SaveFileDialog(SaveFileDialogParams saveParams, Action<SaveFileDialogParams> callback)
 		{
 			WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = true;
-			SaveFileDialogParams SaveFileDialogDialogParams = saveParams;
 
-			SaveFileDialog saveFileDialog1 = new SaveFileDialog();
-
-			saveFileDialog1.InitialDirectory = SaveFileDialogDialogParams.InitialDirectory;
-			saveFileDialog1.Filter = saveParams.Filter;
-			saveFileDialog1.FilterIndex = saveParams.FilterIndex;
-			saveFileDialog1.RestoreDirectory = true;
-			saveFileDialog1.AddExtension = true;
-			saveFileDialog1.FileName = saveParams.FileName;
-
-			saveFileDialog1.Title = saveParams.Title;
-			saveFileDialog1.ShowHelp = false;
-			saveFileDialog1.OverwritePrompt = true;
-			saveFileDialog1.CheckPathExists = true;
-			saveFileDialog1.SupportMultiDottedExtensions = true;
-			saveFileDialog1.ValidateNames = false;
+			var saveFileDialog1 = new SaveFileDialog
+			{
+				InitialDirectory = saveParams.InitialDirectory,
+				Filter = saveParams.Filter,
+				FilterIndex = saveParams.FilterIndex,
+				RestoreDirectory = true,
+				AddExtension = true,
+				FileName = saveParams.FileName,
+				Title = saveParams.Title,
+				ShowHelp = false,
+				OverwritePrompt = true,
+				CheckPathExists = true,
+				SupportMultiDottedExtensions = true,
+				ValidateNames = false
+			};
 
 			if (saveFileDialog1.ShowDialog() == DialogResult.OK)
 			{
-				SaveFileDialogDialogParams.FileName = saveFileDialog1.FileName;
+				saveParams.FileName = saveFileDialog1.FileName;
+				this.LastDirectoryUsed = System.IO.Path.GetDirectoryName(saveParams.FileName);
 			}
 			else
 			{
-				SaveFileDialogDialogParams.FileName = null;
+				saveParams.FileName = null;
 			}
 
 			WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = false;

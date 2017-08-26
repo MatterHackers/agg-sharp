@@ -6,6 +6,8 @@ namespace MatterHackers.Agg.Platform
 {
 	internal class AutomationDialogProvider : IFileDialogProvider
 	{
+		public string LastDirectoryUsed { get; private set; }
+
 		public bool OpenFileDialog(OpenFileDialogParams openParams, Action<OpenFileDialogParams> callback)
 		{
 			ShowFileDialog((fileText) =>
