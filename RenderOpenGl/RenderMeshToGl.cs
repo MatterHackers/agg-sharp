@@ -281,9 +281,7 @@ namespace MatterHackers.RenderOpenGl
 		private static void DrawToGLUsingBsp(Mesh meshToRender, Matrix4X4 meshToViewTransform)
 		{
 			GL.Begin(BeginMode.Triangles);
-			var inverseMeshToViewTransform = meshToViewTransform;
-			inverseMeshToViewTransform.Invert();
-			foreach (var face in FaceBspTree .GetFacesInVisibiltyOrder(meshToRender.Faces, meshToRender.FaceBspTree, meshToViewTransform, inverseMeshToViewTransform))
+			foreach (var face in FaceBspTree .GetFacesInVisibiltyOrder(meshToRender.Faces, meshToRender.FaceBspTree, meshToViewTransform))
 			{
 				if (face == null)
 				{
