@@ -48,7 +48,7 @@ namespace MatterHackers.PolygonMesh
 
 		public override List<IVertex> FindVertices(List<IVertex> vertices, Vector3 position, double maxDistanceToConsiderVertexAsSame)
 		{
-			List<IVertex> foundVertexes = new List<IVertex>();
+			List<IVertex> foundVertices = new List<IVertex>();
 
 			IVertex testPos = new Vertex(position);
 			int index = vertices.BinarySearch(testPos, this);
@@ -65,7 +65,7 @@ namespace MatterHackers.PolygonMesh
 					// we are too far away in x, we are done with this direction
 					break;
 				}
-				AddToListIfSameEnough(vertices, position, foundVertexes, maxDistanceToConsiderVertexAsSameSquared, i);
+				AddToListIfSameEnough(vertices, position, foundVertices, maxDistanceToConsiderVertexAsSameSquared, i);
 			}
 			for (int i = index - 1; i >= 0; i--)
 			{
@@ -74,10 +74,10 @@ namespace MatterHackers.PolygonMesh
 					// we are too far away in x, we are done with this direction
 					break;
 				}
-				AddToListIfSameEnough(vertices, position, foundVertexes, maxDistanceToConsiderVertexAsSameSquared, i);
+				AddToListIfSameEnough(vertices, position, foundVertices, maxDistanceToConsiderVertexAsSameSquared, i);
 			}
 
-			return foundVertexes;
+			return foundVertices;
 		}
 
 		private void AddToListIfSameEnough(List<IVertex> vertices, Vector3 position, List<IVertex> findList, double maxDistanceToConsiderVertexAsSameSquared, int i)

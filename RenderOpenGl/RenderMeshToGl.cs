@@ -283,12 +283,13 @@ namespace MatterHackers.RenderOpenGl
 			GL.Begin(BeginMode.Triangles);
 			var inverseMeshToViewTransform = meshToViewTransform;
 			inverseMeshToViewTransform.Invert();
-			foreach (var face in FaceBspTree.GetFacesInVisibiltyOrder(meshToRender.FaceBspTree, meshToViewTransform, inverseMeshToViewTransform))
+			foreach (var face in FaceBspTree .GetFacesInVisibiltyOrder(meshToRender.Faces, meshToRender.FaceBspTree, meshToViewTransform, inverseMeshToViewTransform))
 			{
 				if (face == null)
 				{
 					continue;
 				}
+
 				/*
 				// Make sure the GLMeshPlugin has a reference to hold onto the image so it does not go away before this.
 				if (subMesh.texture != null)

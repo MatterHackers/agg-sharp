@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 #define DEBUG_INTO_TGAS
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.VectorMath;
@@ -659,6 +660,49 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		public void DetectAndRemoveTJunctions()
 		{
 			//throw new NotImplementedException();
+		}
+
+		[Test]
+		public void CreateBspFaceTrees()
+		{
+			// a simple list of 3 faces
+			//
+			// Index 1 ^------------------- z = 3
+			// 
+			// Index 0 ^------------------- z = 2
+			//
+			// Index 2 ^------------------- z = 1
+
+			Mesh testMesh = new Mesh();
+
+			testMesh.CreateFace(new IVertex[]
+			{
+				testMesh.CreateVertex(0, 0, 2),
+				testMesh.CreateVertex(10, 0, 2),
+				testMesh.CreateVertex(5, 5, 2)
+			});
+			testMesh.CreateFace(new IVertex[]
+			{
+				testMesh.CreateVertex(0, 0, 3),
+				testMesh.CreateVertex(10, 0, 3),
+				testMesh.CreateVertex(5, 5, 3)
+			});
+			testMesh.CreateFace(new IVertex[]
+			{
+				testMesh.CreateVertex(0, 0, 1),
+				testMesh.CreateVertex(10, 0, 1),
+				testMesh.CreateVertex(5, 5, 1)
+			});
+
+			// test they are in the right order
+			{
+				var root = FaceBspTree.Create(testMesh);
+
+				Assert.IsTrue(root.Index == 1);
+				Assert.IsTrue(root.BackNode.Index == 0);
+				Assert.IsTrue(root.BackNode.BackNode.Index == 2);
+				Assert.IsTrue(root.FrontNode.Index == -1);
+			}
 		}
 
 		[Test]

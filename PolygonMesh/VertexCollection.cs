@@ -94,7 +94,7 @@ namespace MatterHackers.PolygonMesh
 				throw new Exception("You can't Find a vertex in an unsorted VertexCollection. Sort it first (or add the vertexes without preventing sorting).");
 			}
 
-			List<IVertex> foundVertexes = vertexSorter.FindVertices(vertices, position, maxDistanceToConsiderVertexAsSame);
+			List<IVertex> foundVertices = vertexSorter.FindVertices(vertices, position, maxDistanceToConsiderVertexAsSame);
 
 #if VALIDATE_SEARCH
             if (testList.Count != findList.Count)
@@ -110,7 +110,7 @@ namespace MatterHackers.PolygonMesh
             }
 #endif
 
-			return foundVertexes;
+			return foundVertices;
 		}
 
 		public void Sort()

@@ -45,35 +45,30 @@ namespace MatterHackers.PolygonMesh
 		/// </summary>
 		/// <param name="mesh"></param>
 		/// <returns></returns>
-		public static FaceBspNode Create(Mesh mesh)
+		public static BspNode Create(Mesh mesh)
 		{
-			FaceBspNode root = new FaceBspNode();
+			BspNode root = new BspNode();
 
 			var faces = new List<Face>(mesh.Faces);
 
-			CreateNoSplitingFast(root, faces);
+			CreateNoSplitingFast(mesh.Faces, root, faces);
 
 			return root;
 		}
 
-		public static IEnumerable<Face> GetFacesInVisibiltyOrder(FaceBspNode node, Matrix4X4 meshToViewTransform, Matrix4X4 inverseMeshToViewTransform)
+		public static IEnumerable<Face> GetFacesInVisibiltyOrder(List<Face> facesList, BspNode node, Matrix4X4 meshToViewTransform, Matrix4X4 inverseMeshToViewTransform)
 		{
-			if (node.Face == null)
-			{
-				//yield break;
-			}
-
 			// Are we in front of or behind this face
-			var faceNormalInViewSpace = Vector3.TransformNormalInverse(node.Face.Normal, inverseMeshToViewTransform).GetNormal();
-			var pointOnFaceInViewSpace = Vector3.Transform(node.Face.firstFaceEdge.FirstVertex.Position, meshToViewTransform);
+			var faceNormalInViewSpace = Vector3.TransformNormalInverse(facesList[node.Index].Normal, inverseMeshToViewTransform).GetNormal();
+			var pointOnFaceInViewSpace = Vector3.Transform(facesList[node.Index].firstFaceEdge.FirstVertex.Position, meshToViewTransform);
 			var infrontOfFace = Vector3.Dot(faceNormalInViewSpace, pointOnFaceInViewSpace) < 0;
 
 			if (infrontOfFace)
 			{
 				// return all the back faces
-				if (node.BackNode != null && node.BackNode.Face != null)
+				if (node.BackNode != null && node.BackNode.Index != -1)
 				{
-					foreach (var face in GetFacesInVisibiltyOrder(node.BackNode, meshToViewTransform, inverseMeshToViewTransform))
+					foreach (var face in GetFacesInVisibiltyOrder(facesList, node.BackNode, meshToViewTransform, inverseMeshToViewTransform))
 					{
 						if (face != null)
 						{
@@ -83,15 +78,15 @@ namespace MatterHackers.PolygonMesh
 				}
 
 				// return this face
-				if (node.Face != null)
+				if (node.Index != -1)
 				{
-					yield return node.Face;
+					yield return facesList[node.Index];
 				}
 
 				// return all the front faces
-				if (node.FrontNode != null && node.FrontNode.Face != null)
+				if (node.FrontNode != null && node.FrontNode.Index != -1)
 				{
-					foreach (var face in GetFacesInVisibiltyOrder(node.FrontNode, meshToViewTransform, inverseMeshToViewTransform))
+					foreach (var face in GetFacesInVisibiltyOrder(facesList, node.FrontNode, meshToViewTransform, inverseMeshToViewTransform))
 					{
 						if (face != null)
 						{
@@ -103,9 +98,9 @@ namespace MatterHackers.PolygonMesh
 			else
 			{
 				// return all the front faces
-				if (node.FrontNode != null && node.FrontNode.Face != null)
+				if (node.FrontNode != null && node.FrontNode.Index != -1)
 				{
-					foreach (var face in GetFacesInVisibiltyOrder(node.FrontNode, meshToViewTransform, inverseMeshToViewTransform))
+					foreach (var face in GetFacesInVisibiltyOrder(facesList, node.FrontNode, meshToViewTransform, inverseMeshToViewTransform))
 					{
 						if (face != null)
 						{
@@ -115,15 +110,15 @@ namespace MatterHackers.PolygonMesh
 				}
 
 				// return this face
-				if (node.Face != null)
+				if (node.Index != -1)
 				{
-					yield return node.Face;
+					yield return facesList[node.Index];
 				}
 
 				// return all the back faces
-				if (node.BackNode != null && node.BackNode.Face != null)
+				if (node.BackNode != null && node.BackNode.Index != -1)
 				{
-					foreach (var face in GetFacesInVisibiltyOrder(node.BackNode, meshToViewTransform, inverseMeshToViewTransform))
+					foreach (var face in GetFacesInVisibiltyOrder(facesList, node.BackNode, meshToViewTransform, inverseMeshToViewTransform))
 					{
 						if (face != null)
 						{
@@ -212,7 +207,7 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		private static void CreateNoSplitingFast(FaceBspNode node, List<Face> faces)
+		private static void CreateNoSplitingFast(List<Face> sourceFaces, BspNode node, List<Face> faces)
 		{
 			if (faces.Count == 0)
 			{
@@ -241,22 +236,22 @@ namespace MatterHackers.PolygonMesh
 				}
 			}
 
-			node.Face = faces[bestFaceIndex];
+			node.Index = sourceFaces.IndexOf(faces[bestFaceIndex]);
 
 			// put the behind stuff in a list
 			List<Face> backFaces = new List<Face>();
 			List<Face> frontFaces = new List<Face>();
 			CreateBackAndFrontFaceLists(bestFaceIndex, faces, backFaces, frontFaces);
 
-			CreateNoSplitingFast(node.BackNode = new FaceBspNode(), backFaces);
-			CreateNoSplitingFast(node.FrontNode = new FaceBspNode(), frontFaces);
+			CreateNoSplitingFast(sourceFaces, node.BackNode = new BspNode(), backFaces);
+			CreateNoSplitingFast(sourceFaces, node.FrontNode = new BspNode(), frontFaces);
 		}
 	}
 
-	public class FaceBspNode
+	public class BspNode
 	{
-		public Face Face;
-		public FaceBspNode BackNode { get; set; }
-		public FaceBspNode FrontNode { get; set; }
+		public int Index { get; internal set; } = -1;
+		public BspNode BackNode { get; internal set; }
+		public BspNode FrontNode { get; internal set; }
 	}
 }
