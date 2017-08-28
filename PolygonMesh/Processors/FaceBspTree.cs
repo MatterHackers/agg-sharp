@@ -56,11 +56,11 @@ namespace MatterHackers.PolygonMesh
 			return root;
 		}
 
-		public static IEnumerable<Face> GetFacesInVisibiltyOrder(List<Face> facesList, BspNode node, Matrix4X4 meshToViewTransform)
+		public static void GetFacesInVisibiltyOrder(List<Face> meshFaces, BspNode node, Matrix4X4 meshToViewTransform, List<Face> faceRenderOrder)
 		{
 			// Are we in front of or behind this face
-			var faceNormalInViewSpace = Vector3.TransformNormal(facesList[node.Index].Normal, facesList[node.Index].firstFaceEdge.FirstVertex.Position, meshToViewTransform).GetNormal();
-			var pointOnFaceInViewSpace = Vector3.Transform(facesList[node.Index].firstFaceEdge.FirstVertex.Position, meshToViewTransform);
+			var faceNormalInViewSpace = Vector3.TransformNormal(meshFaces[node.Index].Normal, meshFaces[node.Index].firstFaceEdge.FirstVertex.Position, meshToViewTransform).GetNormal();
+			var pointOnFaceInViewSpace = Vector3.Transform(meshFaces[node.Index].firstFaceEdge.FirstVertex.Position, meshToViewTransform);
 			var infrontOfFace = Vector3.Dot(faceNormalInViewSpace, pointOnFaceInViewSpace) < 0;
 
 			if (infrontOfFace)
@@ -68,31 +68,19 @@ namespace MatterHackers.PolygonMesh
 				// return all the back faces
 				if (node.BackNode != null && node.BackNode.Index != -1)
 				{
-					foreach (var face in GetFacesInVisibiltyOrder(facesList, node.BackNode, meshToViewTransform))
-					{
-						if (face != null)
-						{
-							yield return face;
-						}
-					}
+					GetFacesInVisibiltyOrder(meshFaces, node.BackNode, meshToViewTransform, faceRenderOrder);
 				}
 
 				// return this face
 				if (node.Index != -1)
 				{
-					yield return facesList[node.Index];
+					faceRenderOrder.Add(meshFaces[node.Index]);
 				}
 
 				// return all the front faces
 				if (node.FrontNode != null && node.FrontNode.Index != -1)
 				{
-					foreach (var face in GetFacesInVisibiltyOrder(facesList, node.FrontNode, meshToViewTransform))
-					{
-						if (face != null)
-						{
-							yield return face;
-						}
-					}
+					GetFacesInVisibiltyOrder(meshFaces, node.FrontNode, meshToViewTransform, faceRenderOrder);
 				}
 			}
 			else
@@ -100,31 +88,19 @@ namespace MatterHackers.PolygonMesh
 				// return all the front faces
 				if (node.FrontNode != null && node.FrontNode.Index != -1)
 				{
-					foreach (var face in GetFacesInVisibiltyOrder(facesList, node.FrontNode, meshToViewTransform))
-					{
-						if (face != null)
-						{
-							yield return face;
-						}
-					}
+					GetFacesInVisibiltyOrder(meshFaces, node.FrontNode, meshToViewTransform, faceRenderOrder);
 				}
 
 				// return this face
 				if (node.Index != -1)
 				{
-					yield return facesList[node.Index];
+					faceRenderOrder.Add(meshFaces[node.Index]);
 				}
 
 				// return all the back faces
 				if (node.BackNode != null && node.BackNode.Index != -1)
 				{
-					foreach (var face in GetFacesInVisibiltyOrder(facesList, node.BackNode, meshToViewTransform))
-					{
-						if (face != null)
-						{
-							yield return face;
-						}
-					}
+					GetFacesInVisibiltyOrder(meshFaces, node.BackNode, meshToViewTransform, faceRenderOrder);
 				}
 			}
 		}

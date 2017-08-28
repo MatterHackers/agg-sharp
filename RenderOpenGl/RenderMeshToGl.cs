@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
 using MatterHackers.Agg;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RenderOpenGl.OpenGl;
@@ -278,10 +279,15 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
+		// There can be a singleton of this because GL must always render on the UI thread and can't overlap this array
+		static List<Face> bspFaceList = new List<Face>();
 		private static void DrawToGLUsingBsp(Mesh meshToRender, Matrix4X4 meshToViewTransform)
 		{
 			GL.Begin(BeginMode.Triangles);
-			foreach (var face in FaceBspTree .GetFacesInVisibiltyOrder(meshToRender.Faces, meshToRender.FaceBspTree, meshToViewTransform))
+
+			bspFaceList.Clear();
+			FaceBspTree.GetFacesInVisibiltyOrder(meshToRender.Faces, meshToRender.FaceBspTree, meshToViewTransform, bspFaceList);
+			foreach (var face in bspFaceList)
 			{
 				if (face == null)
 				{

@@ -951,9 +951,10 @@ namespace MatterHackers.VectorMath
 		/// <returns>The transformed vector</returns>
 		public static Vector3 Transform(Vector3 vec, Matrix4X4 mat)
 		{
-			Vector3 result;
-			Transform(ref vec, ref mat, out result);
-			return result;
+			return new Vector3(
+				vec.x * mat.Row0.x + vec.y * mat.Row1.x + vec.z * mat.Row2.x + mat.Row3.x,
+				vec.x * mat.Row0.y + vec.y * mat.Row1.y + vec.z * mat.Row2.y + mat.Row3.y,
+				vec.x * mat.Row0.z + vec.y * mat.Row1.z + vec.z * mat.Row2.z + mat.Row3.z);
 		}
 
 		/// <summary>Transform a Vector by the given Matrix</summary>
@@ -962,9 +963,10 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">The transformed vector</param>
 		public static void Transform(ref Vector3 vec, ref Matrix4X4 mat, out Vector3 result)
 		{
-			Vector4 v4 = new Vector4(vec.x, vec.y, vec.z, 1.0);
-			Vector4.Transform(ref v4, ref mat, out v4);
-			result = v4.Xyz;
+			result = new Vector3(
+				vec.x * mat.Row0.x + vec.y * mat.Row1.x + vec.z * mat.Row2.x + mat.Row3.x,
+				vec.x * mat.Row0.y + vec.y * mat.Row1.y + vec.z * mat.Row2.y + mat.Row3.y,
+				vec.x * mat.Row0.z + vec.y * mat.Row1.z + vec.z * mat.Row2.z + mat.Row3.z);
 		}
 
 		/// <summary>
@@ -1114,7 +1116,7 @@ namespace MatterHackers.VectorMath
 		/// Negates an instance.
 		/// </summary>
 		/// <param name="vec">The instance.</param>
-		/// <returns>The result of the calculation.</returns>
+		/// <returns>The result of the calculation.</returns> 
 		public static Vector3 operator -(Vector3 vec)
 		{
 			vec.x = -vec.x;
