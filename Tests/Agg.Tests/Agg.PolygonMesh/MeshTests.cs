@@ -698,10 +698,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			{
 				var root = FaceBspTree.Create(testMesh);
 
-				Assert.IsTrue(root.Index == 1);
-				Assert.IsTrue(root.BackNode.Index == 0);
-				Assert.IsTrue(root.BackNode.BackNode.Index == 2);
-				Assert.IsTrue(root.FrontNode.Index == -1);
+				Assert.IsTrue(root.Index == 0);
+				Assert.IsTrue(root.BackNode.Index == 2);
+				Assert.IsTrue(root.FrontNode.Index == 1);
 
 				List<Face> renderOredrList = new List<Face>();
 				FaceBspTree.GetFacesInVisibiltyOrder(testMesh.Faces, root, Matrix4X4.Identity, renderOredrList);

@@ -817,31 +817,15 @@ namespace MatterHackers.VectorMath
 					   vec.z * mat.Row2.z;
 		}
 
-		/// <summary>Transform a Normal by the given Matrix</summary>
-		/// <remarks>
-		/// This calculates the inverse of the given matrix, use TransformNormalInverse if you
-		/// already have the inverse to avoid this extra calculation
-		/// </remarks>
-		/// <param name="normal">The normal to transform</param>
+		/// <summary>Transform a Normal by the given Matrix. This is faster when you have 
+		/// a point on the plane that the normal is located on</summary>		/// <param name="normal">The normal to transform</param>
 		/// <param name="mat">The desired transformation</param>
 		/// <returns>The transformed normal</returns>
 		public static Vector3 TransformNormal(Vector3 normal, Matrix4X4 mat)
 		{
-			mat.Invert();
-			return TransformNormalInverse(normal, mat);
-		}
-
-		/// <summary>Transform a Normal by the given Matrix. This is faster when you have 
-		/// a point on the plane that the normal is located on</summary>
-		/// <param name="normal"></param>
-		/// <param name="pointOfPlaneOfNormal"></param>
-		/// <param name="mat"></param>
-		/// <returns></returns>
-		public static Vector3 TransformNormal(Vector3 normal, Vector3 pointOfPlaneOfNormal, Matrix4X4 mat)
-		{
-			var transformedPoint = Vector3.Transform(pointOfPlaneOfNormal, mat);
-			var normalAtPoint = Vector3.Transform(pointOfPlaneOfNormal + normal, mat);
-			return normalAtPoint - transformedPoint;
+			var transformedZero = Vector3.Transform(Vector3.Zero, mat);
+			var normalAtPoint = Vector3.Transform(normal, mat);
+			return normalAtPoint - transformedZero;
 		}
 
 		/// <summary>Transform a Normal by the given Matrix</summary>
