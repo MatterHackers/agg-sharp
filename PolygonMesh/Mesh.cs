@@ -53,7 +53,7 @@ namespace MatterHackers.PolygonMesh
 		private AxisAlignedBoundingBox cachedAABB = null;
 		private AxisAlignedBoundingBox fastAABBCache;
 		private Matrix4X4 fastAABBTransform = Matrix4X4.Identity;
-		public FaceBspNode FaceBspTree { get; set; } = null;
+		public BspNode FaceBspTree { get; set; } = null;
 
 		public Mesh()
 		{
@@ -403,13 +403,13 @@ namespace MatterHackers.PolygonMesh
 			return totalDebug.ToString();
 		}
 
-		public void Validate(HashSet<IVertex> vertexesToSkip = null)
+		public void Validate(HashSet<IVertex> verticesToSkip = null)
 		{
-			if (vertexesToSkip != null)
+			if (verticesToSkip != null)
 			{
 				foreach (IVertex vertex in Vertices)
 				{
-					if (!vertexesToSkip.Contains(vertex))
+					if (!verticesToSkip.Contains(vertex))
 					{
 						vertex.Validate();
 					}

@@ -822,19 +822,33 @@ namespace MatterHackers.VectorMath
 		/// This calculates the inverse of the given matrix, use TransformNormalInverse if you
 		/// already have the inverse to avoid this extra calculation
 		/// </remarks>
-		/// <param name="norm">The normal to transform</param>
+		/// <param name="normal">The normal to transform</param>
 		/// <param name="mat">The desired transformation</param>
 		/// <returns>The transformed normal</returns>
-		public static Vector3 TransformNormal(Vector3 norm, Matrix4X4 mat)
+		public static Vector3 TransformNormal(Vector3 normal, Matrix4X4 mat)
 		{
 			mat.Invert();
-			return TransformNormalInverse(norm, mat);
+			return TransformNormalInverse(normal, mat);
+		}
+
+		/// <summary>Transform a Normal by the given Matrix. This is faster when you have 
+		/// a point on the plane that the normal is located on</summary>
+		/// <param name="normal"></param>
+		/// <param name="pointOfPlaneOfNormal"></param>
+		/// <param name="mat"></param>
+		/// <returns></returns>
+		public static Vector3 TransformNormal(Vector3 normal, Vector3 pointOfPlaneOfNormal, Matrix4X4 mat)
+		{
+			var transformedPoint = Vector3.Transform(pointOfPlaneOfNormal, mat);
+			var normalAtPoint = Vector3.Transform(pointOfPlaneOfNormal + normal, mat);
+			return normalAtPoint - transformedPoint;
 		}
 
 		/// <summary>Transform a Normal by the given Matrix</summary>
 		/// <remarks>
-		/// This calculates the inverse of the given matrix, use TransformNormalInverse if you
-		/// already have the inverse to avoid this extra calculation
+		/// This calculates the inverse of the given matrix, use TransformNormal if you have 
+		/// a point on the plane (fastest) or TransformNormalInverse if you
+		/// have the inverse but not a ponit on the plane - to avoid this extra calculation
 		/// </remarks>
 		/// <param name="norm">The normal to transform</param>
 		/// <param name="mat">The desired transformation</param>
@@ -937,9 +951,10 @@ namespace MatterHackers.VectorMath
 		/// <returns>The transformed vector</returns>
 		public static Vector3 Transform(Vector3 vec, Matrix4X4 mat)
 		{
-			Vector3 result;
-			Transform(ref vec, ref mat, out result);
-			return result;
+			return new Vector3(
+				vec.x * mat.Row0.x + vec.y * mat.Row1.x + vec.z * mat.Row2.x + mat.Row3.x,
+				vec.x * mat.Row0.y + vec.y * mat.Row1.y + vec.z * mat.Row2.y + mat.Row3.y,
+				vec.x * mat.Row0.z + vec.y * mat.Row1.z + vec.z * mat.Row2.z + mat.Row3.z);
 		}
 
 		/// <summary>Transform a Vector by the given Matrix</summary>
@@ -948,9 +963,10 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">The transformed vector</param>
 		public static void Transform(ref Vector3 vec, ref Matrix4X4 mat, out Vector3 result)
 		{
-			Vector4 v4 = new Vector4(vec.x, vec.y, vec.z, 1.0);
-			Vector4.Transform(ref v4, ref mat, out v4);
-			result = v4.Xyz;
+			result = new Vector3(
+				vec.x * mat.Row0.x + vec.y * mat.Row1.x + vec.z * mat.Row2.x + mat.Row3.x,
+				vec.x * mat.Row0.y + vec.y * mat.Row1.y + vec.z * mat.Row2.y + mat.Row3.y,
+				vec.x * mat.Row0.z + vec.y * mat.Row1.z + vec.z * mat.Row2.z + mat.Row3.z);
 		}
 
 		/// <summary>
@@ -1100,7 +1116,7 @@ namespace MatterHackers.VectorMath
 		/// Negates an instance.
 		/// </summary>
 		/// <param name="vec">The instance.</param>
-		/// <returns>The result of the calculation.</returns>
+		/// <returns>The result of the calculation.</returns> 
 		public static Vector3 operator -(Vector3 vec)
 		{
 			vec.x = -vec.x;
