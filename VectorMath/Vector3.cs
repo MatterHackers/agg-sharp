@@ -817,15 +817,16 @@ namespace MatterHackers.VectorMath
 					   vec.z * mat.Row2.z;
 		}
 
-		/// <summary>Transform a Normal by the given Matrix. This is faster when you have 
-		/// a point on the plane that the normal is located on</summary>		/// <param name="normal">The normal to transform</param>
+		/// This calculates the inverse of the given matrix, use TransformNormalInverse if you
+		/// already have the inverse to avoid this extra calculation
+		/// <param name="normal">The normal to transform</param>
 		/// <param name="mat">The desired transformation</param>
 		/// <returns>The transformed normal</returns>
 		public static Vector3 TransformNormal(Vector3 normal, Matrix4X4 mat)
 		{
-			var transformedZero = Vector3.Transform(Vector3.Zero, mat);
-			var normalAtPoint = Vector3.Transform(normal, mat);
-			return normalAtPoint - transformedZero;
+			Vector3 result;
+			TransformNormal(ref normal, ref mat, out result);
+			return result;
 		}
 
 		/// <summary>Transform a Normal by the given Matrix</summary>
@@ -834,13 +835,13 @@ namespace MatterHackers.VectorMath
 		/// a point on the plane (fastest) or TransformNormalInverse if you
 		/// have the inverse but not a ponit on the plane - to avoid this extra calculation
 		/// </remarks>
-		/// <param name="norm">The normal to transform</param>
+		/// <param name="normal">The normal to transform</param>
 		/// <param name="mat">The desired transformation</param>
 		/// <param name="result">The transformed normal</param>
-		public static void TransformNormal(ref Vector3 norm, ref Matrix4X4 mat, out Vector3 result)
+		public static void TransformNormal(ref Vector3 normal, ref Matrix4X4 mat, out Vector3 result)
 		{
 			Matrix4X4 Inverse = Matrix4X4.Invert(mat);
-			Vector3.TransformNormalInverse(ref norm, ref Inverse, out result);
+			Vector3.TransformNormalInverse(ref normal, ref Inverse, out result);
 		}
 
 		/// <summary>Transform a Normal by the (transpose of the) given Matrix</summary>
@@ -848,15 +849,15 @@ namespace MatterHackers.VectorMath
 		/// This version doesn't calculate the inverse matrix.
 		/// Use this version if you already have the inverse of the desired transform to hand
 		/// </remarks>
-		/// <param name="norm">The normal to transform</param>
+		/// <param name="normal">The normal to transform</param>
 		/// <param name="invMat">The inverse of the desired transformation</param>
 		/// <returns>The transformed normal</returns>
-		public static Vector3 TransformNormalInverse(Vector3 norm, Matrix4X4 invMat)
+		public static Vector3 TransformNormalInverse(Vector3 normal, Matrix4X4 invMat)
 		{
 			return new Vector3(
-				Vector3.Dot(norm, new Vector3(invMat.Row0)),
-				Vector3.Dot(norm, new Vector3(invMat.Row1)),
-				Vector3.Dot(norm, new Vector3(invMat.Row2)));
+				Vector3.Dot(normal, new Vector3(invMat.Row0)),
+				Vector3.Dot(normal, new Vector3(invMat.Row1)),
+				Vector3.Dot(normal, new Vector3(invMat.Row2)));
 		}
 
 		/// <summary>Transform a Normal by the (transpose of the) given Matrix</summary>
@@ -864,22 +865,22 @@ namespace MatterHackers.VectorMath
 		/// This version doesn't calculate the inverse matrix.
 		/// Use this version if you already have the inverse of the desired transform to hand
 		/// </remarks>
-		/// <param name="norm">The normal to transform</param>
+		/// <param name="normal">The normal to transform</param>
 		/// <param name="invMat">The inverse of the desired transformation</param>
 		/// <param name="result">The transformed normal</param>
-		public static void TransformNormalInverse(ref Vector3 norm, ref Matrix4X4 invMat, out Vector3 result)
+		public static void TransformNormalInverse(ref Vector3 normal, ref Matrix4X4 invMat, out Vector3 result)
 		{
-			result.x = norm.x * invMat.Row0.x +
-					   norm.y * invMat.Row0.y +
-					   norm.z * invMat.Row0.z;
+			result.x = normal.x * invMat.Row0.x +
+					   normal.y * invMat.Row0.y +
+					   normal.z * invMat.Row0.z;
 
-			result.y = norm.x * invMat.Row1.x +
-					   norm.y * invMat.Row1.y +
-					   norm.z * invMat.Row1.z;
+			result.y = normal.x * invMat.Row1.x +
+					   normal.y * invMat.Row1.y +
+					   normal.z * invMat.Row1.z;
 
-			result.z = norm.x * invMat.Row2.x +
-					   norm.y * invMat.Row2.y +
-					   norm.z * invMat.Row2.z;
+			result.z = normal.x * invMat.Row2.x +
+					   normal.y * invMat.Row2.y +
+					   normal.z * invMat.Row2.z;
 		}
 
 		/// <summary>Transform a Position by the given Matrix</summary>

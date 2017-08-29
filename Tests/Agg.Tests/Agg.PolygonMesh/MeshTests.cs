@@ -703,7 +703,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				Assert.IsTrue(root.FrontNode.Index == 1);
 
 				List<Face> renderOredrList = new List<Face>();
-				FaceBspTree.GetFacesInVisibiltyOrder(testMesh.Faces, root, Matrix4X4.Identity, renderOredrList);
+				FaceBspTree.GetFacesInVisibiltyOrder(testMesh.Faces, root, Matrix4X4.Identity, Matrix4X4.Identity, renderOredrList);
 				Assert.IsTrue(renderOredrList[0] == testMesh.Faces[1]);
 				Assert.IsTrue(renderOredrList[1] == testMesh.Faces[0]);
 				Assert.IsTrue(renderOredrList[2] == testMesh.Faces[2]);
