@@ -329,11 +329,11 @@ namespace MatterHackers.DataConverters3D
 
 			if (this.Mesh == null)
 			{
-				foreach (var child in Children)
+				foreach (var child in Children.ToList())
 				{
 					if (this.ItemType != Object3DTypes.Group || child.OutputType != PrintOutputTypes.Hole)
 					{
-						foreach (var meshTransform in child.VisibleMeshes(totalTransform, color, materialIndex))
+						foreach (var meshTransform in child.VisibleMeshes(totalTransform, color, materialIndex, outputType))
 						{
 							yield return meshTransform;
 						}
