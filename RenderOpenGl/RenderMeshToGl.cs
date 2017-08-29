@@ -209,7 +209,9 @@ namespace MatterHackers.RenderOpenGl
 				&& isTransparent
 				&& meshToRender.FaceBspTree != null)
 			{
-				DrawToGLUsingBsp(meshToRender, meshToViewTransform.Value);
+				var invMeshToViewTransform = meshToViewTransform.Value;
+				invMeshToViewTransform.Invert();
+				DrawToGLUsingBsp(meshToRender, meshToViewTransform.Value, invMeshToViewTransform);
 				return;
 			}
 
@@ -281,12 +283,12 @@ namespace MatterHackers.RenderOpenGl
 
 		// There can be a singleton of this because GL must always render on the UI thread and can't overlap this array
 		static List<Face> bspFaceList = new List<Face>();
-		private static void DrawToGLUsingBsp(Mesh meshToRender, Matrix4X4 meshToViewTransform)
+		private static void DrawToGLUsingBsp(Mesh meshToRender, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform)
 		{
 			GL.Begin(BeginMode.Triangles);
 
 			bspFaceList.Clear();
-			FaceBspTree.GetFacesInVisibiltyOrder(meshToRender.Faces, meshToRender.FaceBspTree, meshToViewTransform, bspFaceList);
+			FaceBspTree.GetFacesInVisibiltyOrder(meshToRender.Faces, meshToRender.FaceBspTree, meshToViewTransform, invMeshToViewTransform, bspFaceList);
 			foreach (var face in bspFaceList)
 			{
 				if (face == null)
