@@ -46,9 +46,4 @@ namespace MatterHackers.Agg.Platform
 
 		void LoadSequence(string path, ImageSequence sequence);
 	}
-
-	public static class StaticData
-	{
-		public static IStaticData Instance { get; set; }
-	}
 }
