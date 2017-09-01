@@ -1228,6 +1228,22 @@ namespace MatterHackers.VectorMath
 			return new { x, y, z }.GetHashCode();
 		}
 
+		/// <summary>
+		/// return a 64 bit hash code proposed by Jon Skeet
+		// http://stackoverflow.com/questions/8094867/good-gethashcode-override-for-list-of-foo-objects-respecting-the-order
+		/// </summary>
+		/// <returns></returns>
+		public long GetLongHashCode()
+		{
+			long hash = 19;
+
+			hash = hash * 31 + x.GetHashCode();
+			hash = hash * 31 + y.GetHashCode();
+			hash = hash * 31 + z.GetHashCode();
+
+			return hash;
+		}
+
 		#endregion public override int GetHashCode()
 
 		#region public override bool Equals(object obj)

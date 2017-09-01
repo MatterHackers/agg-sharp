@@ -104,7 +104,7 @@ namespace MatterHackers.MeshVisualizer
 				foreach (IObject3D item in itemsWithUnsavedMeshes)
 				{
 					// Calculate the mesh hash
-					int hashCode = item.Mesh.GetHash();
+					int hashCode = (int)item.Mesh.GetLongHashCode();
 
 					string assetPath;
 

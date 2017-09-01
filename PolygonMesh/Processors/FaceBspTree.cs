@@ -41,17 +41,24 @@ namespace MatterHackers.PolygonMesh
 		/// </summary>
 		/// <param name="mesh"></param>
 		/// <returns></returns>
-		public static BspNode Create(Mesh mesh)
+		public static BspNode Create(Mesh mesh, int maxFacesToTest = 10, bool tryToBalanceTree = false)
 		{
 			BspNode root = new BspNode();
 
 			var faces = new List<Face>(mesh.Faces);
 
-			CreateNoSplitingFast(mesh.Faces, root, faces);
+			CreateNoSplitingFast(mesh.Faces, root, faces, maxFacesToTest, tryToBalanceTree);
 
 			return root;
 		}
 
+		/// <summary>
+		/// Get an ordered list of the faces to render based on the camera position.
+		/// </summary>
+		/// <param name="node"></param>
+		/// <param name="meshToViewTransform"></param>
+		/// <param name="invMeshToViewTransform"></param>
+		/// <param name="faceRenderOrder"></param>
 		public static void GetFacesInVisibiltyOrder(List<Face> meshFaces, BspNode node, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform, List<Face> faceRenderOrder)
 		{
 			// Are we in front of or behind this face
@@ -109,7 +116,7 @@ namespace MatterHackers.PolygonMesh
 			int positiveSideCount = 0;
 
 			Face checkFace = faces[faceIndex];
-			var pointOnCheckFace = faces[faceIndex].Vertices().FirstOrDefault().Position;
+			var pointOnCheckFace = faces[faceIndex].firstFaceEdge.FirstVertex.Position;
 
 			for (int i = 0; i < faces.Count; i++)
 			{
@@ -189,7 +196,7 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		private static void CreateNoSplitingFast(List<Face> sourceFaces, BspNode node, List<Face> faces)
+		private static void CreateNoSplitingFast(List<Face> sourceFaces, BspNode node, List<Face> faces, int maxFacesToTest, bool tryToBalanceTree)
 		{
 			if (faces.Count == 0)
 			{
@@ -201,7 +208,7 @@ namespace MatterHackers.PolygonMesh
 			int bestBalance = int.MaxValue;
 
 			// find the first face that does not split anything
-			int step = Math.Max(1, faces.Count / 10);
+			int step = Math.Max(1, faces.Count / maxFacesToTest);
 			for (int i = 0; i < faces.Count; i += step)
 			{
 				// calculate how much of polygons cross this face
@@ -212,7 +219,11 @@ namespace MatterHackers.PolygonMesh
 					smallestCrossingArrea = crossingArrea;
 					bestBalance = balance;
 					bestFaceIndex = i;
-					break;
+					if (crossingArrea == 0
+						&& !tryToBalanceTree)
+					{
+						break;
+					}
 				}
 				else if (crossingArrea == smallestCrossingArrea
 					&& balance < bestBalance)
@@ -230,8 +241,8 @@ namespace MatterHackers.PolygonMesh
 			List<Face> frontFaces = new List<Face>();
 			CreateBackAndFrontFaceLists(bestFaceIndex, faces, backFaces, frontFaces);
 
-			CreateNoSplitingFast(sourceFaces, node.BackNode = new BspNode(), backFaces);
-			CreateNoSplitingFast(sourceFaces, node.FrontNode = new BspNode(), frontFaces);
+			CreateNoSplitingFast(sourceFaces, node.BackNode = new BspNode(), backFaces, maxFacesToTest, tryToBalanceTree);
+			CreateNoSplitingFast(sourceFaces, node.FrontNode = new BspNode(), frontFaces, maxFacesToTest, tryToBalanceTree);
 		}
 	}
 
