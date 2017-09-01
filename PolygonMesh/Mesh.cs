@@ -264,11 +264,11 @@ namespace MatterHackers.PolygonMesh
 			return false;
 		}
 
-		public int GetHash()
+		public long GetLongHashCode()
 		{
 			unchecked
 			{
-				int hash = 19;
+				long hash = 19;
 
 				hash = hash * 31 + MeshEdges.Count;
 				hash = hash * 31 + Faces.Count;
@@ -276,7 +276,7 @@ namespace MatterHackers.PolygonMesh
 
 				foreach (var vertex in Vertices)
 				{
-					hash = hash * 31 + vertex.Position.GetHashCode();
+					hash = hash * 31 + vertex.Position.GetLongHashCode();
 				}
 
 				return hash;
