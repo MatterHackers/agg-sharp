@@ -32,11 +32,15 @@ using System.Collections.Generic;
 
 namespace MatterHackers.Agg.UI
 {
-	public class FLowLeftRightWithWrapping : FlowLayoutWidget
+	public class FlowLeftRightWithWrapping : FlowLayoutWidget
 	{
 		private List<GuiWidget> addedChildren = new List<GuiWidget>();
 
-		public FLowLeftRightWithWrapping()
+		public HAnchor RowFlowAnchor { get; set; } = HAnchor.Left | HAnchor.Fit;
+		public BorderDouble RowMargin { get; set; } = new BorderDouble(3, 0);
+		public BorderDouble RowPadding { get; set; } = new BorderDouble(3);
+
+		public FlowLeftRightWithWrapping()
 			: base(FlowDirection.TopToBottom)
 		{
 			HAnchor = HAnchor.Stretch;
@@ -87,27 +91,29 @@ namespace MatterHackers.Agg.UI
 			this.CloseAllChildren();
 
 			// add in new row containers with buttons
-			FlowLayoutWidget childContairRow = new FlowLayoutWidget()
+			FlowLayoutWidget childContainerRow = new FlowLayoutWidget()
 			{
-				Margin = new BorderDouble(3, 0),
-				Padding = new BorderDouble(3),
+				Margin = RowMargin,
+				Padding = RowPadding,
+				HAnchor = RowFlowAnchor,
 			};
-			base.AddChild(childContairRow);
+			base.AddChild(childContainerRow);
 
 			foreach (var child in addedChildren)
 			{
-				if (childContairRow.Width + child.Width > Parent.Width)
+				if (childContainerRow.Width + child.Width > Parent.Width)
 				{
-					childContairRow = new FlowLayoutWidget()
+					childContainerRow = new FlowLayoutWidget()
 					{
-						Margin = new BorderDouble(3, 0),
-						Padding = new BorderDouble(3),
+						Margin = RowMargin,
+						Padding = RowPadding,
+						HAnchor = RowFlowAnchor,
 					};
-					base.AddChild(childContairRow);
+					base.AddChild(childContainerRow);
 				}
 
 				// add the button to the current row
-				childContairRow.AddChild(child);
+				childContainerRow.AddChild(child);
 			}
 			doingLayout = false;
 		}
