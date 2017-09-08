@@ -259,7 +259,12 @@ namespace MatterHackers.DataConverters3D
 			// Add the bounds of each child object
 			foreach (IObject3D child in Children)
 			{
-				totalBounds += child.GetAxisAlignedBoundingBox(totalTransorm);
+				var childBounds = child.GetAxisAlignedBoundingBox(totalTransorm);
+				// Check if the child actually has any bounds
+				if (childBounds.XSize > 0)
+				{
+					totalBounds += childBounds;
+				}
 			}
 
 			if(totalBounds.minXYZ.x == double.PositiveInfinity)
