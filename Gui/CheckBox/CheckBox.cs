@@ -68,8 +68,6 @@ namespace MatterHackers.Agg.UI
 
 				MinimumSize = new Vector2(Width, Height);
 			}
-
-			Click += CheckBox_Click;
 		}
 
 		public CheckBox(double x, double y, string label, double textSize = 12)
@@ -111,9 +109,10 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private void CheckBox_Click(object sender, EventArgs mouseEvent)
+		public override void OnClick(MouseEventArgs mouseEvent)
 		{
 			Checked = !Checked;
+			base.OnClick(mouseEvent);
 		}
 
 		public bool Checked
@@ -136,10 +135,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnCheckStateChanged(EventArgs e)
 		{
-			if (CheckedStateChanged != null)
-			{
-				CheckedStateChanged(this, e);
-			}
+			CheckedStateChanged?.Invoke(this, e);
 		}
 	}
 }
