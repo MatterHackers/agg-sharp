@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -54,6 +55,52 @@ namespace MatterHackers.DataConverters3D
 		public MeshGroup Flatten(Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings = null)
 		{
 			return Flatten(this, new MeshGroup(), Matrix4X4.Identity, meshPrintOutputSettings, this.MaterialIndex, this.OutputType);
+		}
+
+		void ApplyDifferenceToMeshes()
+		{
+			// spin up a task to remove holes from the objects in the group
+			var holes = Children.Where(obj => obj.OutputType == PrintOutputTypes.Hole).ToList();
+			if (holes.Any())
+			{
+				var itemsToReplace = new List<(IObject3D object3D, Mesh newMesh)>();
+				foreach (var hole in holes)
+				{
+					var transformedHole = Mesh.Copy(hole.Mesh, CancellationToken.None);
+					transformedHole.Transform(hole.Matrix);
+
+					var stuffToModify = Children.Where(obj => obj.OutputType != PrintOutputTypes.Hole && obj.Mesh != null).ToList();
+					foreach (var object3D in stuffToModify)
+					{
+						var transformedObject = Mesh.Copy(object3D.Mesh, CancellationToken.None);
+						transformedObject.Transform(object3D.Matrix);
+
+						var newMesh = PolygonMesh.Csg.CsgOperations.Subtract(transformedObject, transformedHole);
+						if (newMesh != object3D.Mesh)
+						{
+							itemsToReplace.Add((object3D, newMesh));
+						}
+					}
+
+					foreach (var x in itemsToReplace)
+					{
+						Children.Remove(x.object3D);
+
+						var newItem = new Object3D()
+						{
+							Mesh = x.newMesh,
+
+							// Copy over child properties...
+							OutputType = x.object3D.OutputType,
+							Color = x.object3D.Color,
+							MaterialIndex = x.object3D.MaterialIndex
+						};
+						newItem.Children.Add(x.object3D);
+
+						Children.Add(newItem);
+					}
+				}
+			}
 		}
 
 		private static MeshGroup Flatten(IObject3D item, MeshGroup meshGroup, Matrix4X4 totalTransform, 
@@ -253,21 +300,27 @@ namespace MatterHackers.DataConverters3D
 			var totalTransorm = this.Matrix * matrix;
 
 			// Set the initial bounding box to empty or the bounds of the objects MeshGroup
-			bool meshIsEmpty = this.Mesh == null;
-			AxisAlignedBoundingBox totalBounds = meshIsEmpty ? AxisAlignedBoundingBox.Empty : this.Mesh.GetAxisAlignedBoundingBox(totalTransorm);
+			AxisAlignedBoundingBox totalBounds = this.Mesh == null ? AxisAlignedBoundingBox.Empty : this.Mesh.GetAxisAlignedBoundingBox(totalTransorm);
 
-			// Add the bounds of each child object
-			foreach (IObject3D child in Children)
+			// if this is a group
+			if (Children.Count > 0)
 			{
-				var childBounds = child.GetAxisAlignedBoundingBox(totalTransorm);
-				// Check if the child actually has any bounds
-				if (childBounds.XSize > 0)
+				// TODO: If is all holes than return the accumulated bounds
+				// If it has booleans done to it (holes and meshes) return only the non-hole bounds
+				foreach (IObject3D child in Children)
 				{
-					totalBounds += childBounds;
+					// Add the bounds of each child object
+					var childBounds = child.GetAxisAlignedBoundingBox(totalTransorm);
+					// Check if the child actually has any bounds
+					if (childBounds.XSize > 0)
+					{
+						totalBounds += childBounds;
+					}
 				}
 			}
 
-			if(totalBounds.minXYZ.x == double.PositiveInfinity)
+			// Make sure we have some data. Else return 0 bounds.
+			if (totalBounds.minXYZ.x == double.PositiveInfinity)
 			{
 				return AxisAlignedBoundingBox.Zero;
 			}

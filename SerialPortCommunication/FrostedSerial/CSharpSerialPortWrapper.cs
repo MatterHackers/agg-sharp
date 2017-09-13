@@ -28,6 +28,8 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.IO;
+using System.Text;
 
 namespace MatterHackers.SerialPortCommunication.FrostedSerial
 {
@@ -147,18 +149,29 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
 		public void Write(string str)
 		{
-			port.Write(str);
+			lock (port)
+			{
+				Stream s = port.BaseStream;
+				byte[] toBytes = Encoding.ASCII.GetBytes(str);
+				IAsyncResult ar = s.WriteAsync(toBytes, 0, toBytes.Length);
+				if (!ar.IsCompleted)
+				{
+					ar.AsyncWaitHandle.WaitOne();
+				}
+			}
+
+			//port.Write(str);
 		}
 
-        public void Write(byte[] buffer, int offset, int count)
-        {
-            port.Write(buffer, offset, count);
-        }
+		public void Write(byte[] buffer, int offset, int count)
+		{
+			port.Write(buffer, offset, count);
+		}
 
-        public int Read(byte[] buffer, int offset, int count)
-        {
-            return port.Read(buffer, offset, count);
-        }
+		public int Read(byte[] buffer, int offset, int count)
+		{
+			return port.Read(buffer, offset, count);
+		}
 	}
 
 #endif
