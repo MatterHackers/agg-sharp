@@ -104,7 +104,7 @@ namespace MatterHackers.RayTracer
 
 		private static ImageBuffer BuildImageFromMeshGroups(IObject3D loadedItem, int width, int height, bool debugNonManifoldEdges = false)
 		{
-			var loadedMeshGroups = loadedItem.VisibleMeshes(Matrix4X4.Identity).ToList();
+			var loadedMeshGroups = loadedItem.VisibleMeshes().ToList();
 
 			if (loadedMeshGroups?.Count > 0)
 			{

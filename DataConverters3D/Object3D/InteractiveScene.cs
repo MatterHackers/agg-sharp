@@ -78,7 +78,7 @@ namespace MatterHackers.MeshVisualizer
 		public UndoBuffer UndoBuffer { get; } = new UndoBuffer();
 		
 		[JsonIgnore]
-		public bool HasSelection => HasChildren && SelectedItem != null;
+		public bool HasSelection => this.HasChildren() && SelectedItem != null;
 
 		[JsonIgnore]
 		public bool ShowSelectionShadow { get; set; } = true;

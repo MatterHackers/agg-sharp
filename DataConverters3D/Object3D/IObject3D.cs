@@ -31,6 +31,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using MatterHackers.Agg;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RayTracer;
@@ -79,11 +80,82 @@ namespace MatterHackers.DataConverters3D
 		public PrintOutputTypes PrintOutputTypes { get; set; }
 	}
 
-	public static class ObjectHelperExtensions
+	public static class Object3DHelperExtensions
 	{
 		public static void AddRange(this IList<IObject3D> list, IEnumerable<IObject3D> addItems)
 		{
 			list.AddRange(addItems);
+		}
+
+		public static bool HasChildren(this IObject3D object3D)
+		{
+			return object3D.Children.Count > 0;
+		}
+
+		/// <summary>
+		/// Enumerator to get the currently visible set of meshes for rendering.
+		/// The returned set may include placeholder or proxy data while
+		/// long operations are happening such as loading or mesh processing.
+		/// </summary>
+		/// <param name="transform">The final transform to apply to the returned 
+		/// transforms as the tree is descended. Often passed as Matrix4X4.Identity.</param>
+		/// <returns></returns>
+		public static IEnumerable<MeshRenderData> VisibleMeshes(this IObject3D collection)
+		{
+			return collection.VisibleMeshes(Matrix4X4.Identity, collection.Color, collection.MaterialIndex, collection.OutputType);
+		}
+
+		private static IEnumerable<MeshRenderData> VisibleMeshes(this IObject3D collection, Matrix4X4 transform, RGBA_Bytes color = default(RGBA_Bytes), int materialIndex = -1, PrintOutputTypes outputType = PrintOutputTypes.Default)
+		{
+			// If there is no color set yet and the object 3D is specifying a color
+			if (color.Alpha0To255 == 0
+				&& collection.Color.Alpha0To255 != 0)
+			{
+				// use collection as the color for all recursize children
+				color = collection.Color;
+			}
+
+			// If there is no material set yet and the object 3D is specifying a material
+			if (materialIndex == -1
+				&& collection.MaterialIndex != -1)
+			{
+				// use collection as the color for all recursize children
+				materialIndex = collection.MaterialIndex;
+			}
+
+			if (outputType == PrintOutputTypes.Default
+				&& collection.OutputType != PrintOutputTypes.Default)
+			{
+				outputType = collection.OutputType;
+			}
+
+			Matrix4X4 totalTransform = collection.Matrix * transform;
+
+			if (collection.Mesh == null)
+			{
+				foreach (var child in collection.Children.ToList())
+				{
+					if (collection.ItemType != Object3DTypes.Group || child.OutputType != PrintOutputTypes.Hole)
+					{
+						foreach (var meshTransform in child.VisibleMeshes(totalTransform, color, materialIndex, outputType))
+						{
+							yield return meshTransform;
+						}
+					}
+				}
+			}
+
+			if (collection.Mesh != null)
+			{
+				if (color.Alpha0To255 > 0)
+				{
+					yield return new MeshRenderData(collection.Mesh, totalTransform, color, materialIndex, outputType);
+				}
+				else
+				{
+					yield return new MeshRenderData(collection.Mesh, totalTransform, RGBA_Bytes.White, materialIndex, outputType);
+				}
+			}
 		}
 	}
 
@@ -96,7 +168,6 @@ namespace MatterHackers.DataConverters3D
 		RGBA_Bytes Color { get; set; }
 		int MaterialIndex { get; set; }
 		MeshGroup Flatten(Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings = null);
-		bool HasChildren { get; }
 		Object3DTypes ItemType { get; set; }
 
 		PrintOutputTypes OutputType { get; set; }
@@ -140,16 +211,6 @@ namespace MatterHackers.DataConverters3D
 		/// </summary>
 		/// <returns></returns>
 		IPrimitive TraceData();
-
-		/// <summary>
-		/// Enumerator to get the currently visible set of meshes for rendering.
-		/// The returned set may include placeholder or proxy data while
-		/// long operations are happening such as loading or mesh processing.
-		/// </summary>
-		/// <param name="transform">The final transform to apply to the returned 
-		/// transforms as the tree is descended. Often passed as Matrix4X4.Identity.</param>
-		/// <returns></returns>
-		IEnumerable<MeshRenderData> VisibleMeshes(Matrix4X4 transform, RGBA_Bytes color = default(RGBA_Bytes), int materialIndex = -1, PrintOutputTypes printOutputType = PrintOutputTypes.Default);
 	}
 
 	public class Object3DIterator : IEnumerable<Object3DIterator>
