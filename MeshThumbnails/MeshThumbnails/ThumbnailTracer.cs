@@ -71,7 +71,7 @@ namespace MatterHackers.RayTracer
 
 			world = new WorldView(width, height);
 
-			loadedMeshDatas = item.VisibleMeshes(Matrix4X4.Identity).ToList();
+			loadedMeshDatas = item.VisibleMeshes().ToList();
 
 			SetRenderPosition(loadedMeshDatas);
 		}

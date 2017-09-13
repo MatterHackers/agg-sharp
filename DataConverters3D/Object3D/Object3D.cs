@@ -155,9 +155,6 @@ namespace MatterHackers.DataConverters3D
 
 		public int MaterialIndex { get; set; } = -1;
 
-		[JsonIgnore]
-		public bool HasChildren => Children.Count > 0;
-
 		public Object3DTypes ItemType { get; set; } = Object3DTypes.Model;
 
 		PrintOutputTypes _outputType = PrintOutputTypes.Default;
@@ -357,59 +354,6 @@ namespace MatterHackers.DataConverters3D
 
 			// Wrap with the local transform
 			return new Transform(traceData, Matrix);
-		}
-
-		public IEnumerable<MeshRenderData> VisibleMeshes(Matrix4X4 transform, RGBA_Bytes color = default(RGBA_Bytes), int materialIndex = -1, PrintOutputTypes outputType = PrintOutputTypes.Default)
-		{
-			// If there is no color set yet and the object 3D is specifying a color
-			if (color.Alpha0To255 == 0
-				&& this.Color.Alpha0To255 != 0)
-			{
-				// use this as the color for all recursize children
-				color = this.Color;
-			}
-
-			// If there is no material set yet and the object 3D is specifying a material
-			if (materialIndex == -1
-				&& this.MaterialIndex != -1)
-			{
-				// use this as the color for all recursize children
-				materialIndex = this.MaterialIndex;
-			}
-
-			if(outputType == PrintOutputTypes.Default
-				&& this.OutputType != PrintOutputTypes.Default)
-			{
-				outputType = this.OutputType;
-			}
-
-			Matrix4X4 totalTransform = this.Matrix * transform;
-
-			if (this.Mesh == null)
-			{
-				foreach (var child in Children.ToList())
-				{
-					if (this.ItemType != Object3DTypes.Group || child.OutputType != PrintOutputTypes.Hole)
-					{
-						foreach (var meshTransform in child.VisibleMeshes(totalTransform, color, materialIndex, outputType))
-						{
-							yield return meshTransform;
-						}
-					}
-				}
-			}
-
-			if (this.Mesh != null)
-			{
-				if (color.Alpha0To255 > 0)
-				{
-					yield return new MeshRenderData(this.Mesh, totalTransform, color, materialIndex, outputType);
-				}
-				else
-				{
-					yield return new MeshRenderData(this.Mesh, totalTransform, RGBA_Bytes.White, materialIndex, outputType);
-				}
-			}
 		}
 
 		// Hashcode for lists as proposed by Jon Skeet
