@@ -256,7 +256,7 @@ namespace MatterHackers.MeshVisualizer
 				if (renderType != value)
 				{
 					renderType = value;
-					foreach(var renderTransfrom in Scene.VisibleMeshes(Matrix4X4.Identity))
+					foreach(var renderTransfrom in Scene.VisibleMeshes())
 					{
 						renderTransfrom.Mesh.MarkAsChanged();
 					}
@@ -489,7 +489,7 @@ namespace MatterHackers.MeshVisualizer
 
 			foreach (var object3D in Scene.Children)
 			{
-				DrawObject(object3D, Matrix4X4.Identity, false);
+				DrawObject(object3D, false);
 			}
 
 			if (RenderBed)
@@ -503,7 +503,7 @@ namespace MatterHackers.MeshVisualizer
 			}
 
 			// we don't want to render the bed or build volume before we load a model.
-			if (Scene.HasChildren || AllowBedRenderingWhenEmpty)
+			if (Scene.HasChildren() || AllowBedRenderingWhenEmpty)
 			{
 				if (false) // this is code to draw a small axis indicator
 				{
@@ -802,9 +802,9 @@ namespace MatterHackers.MeshVisualizer
 			});
 		}
 
-		private void DrawObject(IObject3D object3D, Matrix4X4 transform, bool parentSelected)
+		private void DrawObject(IObject3D object3D, bool parentSelected)
 		{
-			foreach(MeshRenderData meshAndTransform in object3D.VisibleMeshes(transform))
+			foreach(MeshRenderData meshAndTransform in object3D.VisibleMeshes())
 			{
 				bool isSelected = parentSelected ||
 					Scene.HasSelection && (object3D == Scene.SelectedItem || Scene.SelectedItem.Children.Contains(object3D));
