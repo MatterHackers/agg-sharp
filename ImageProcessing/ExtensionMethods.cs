@@ -271,6 +271,5 @@ namespace MatterHackers.ImageProcessing
 
 			return destImage;
 		}
-
 	}
 }

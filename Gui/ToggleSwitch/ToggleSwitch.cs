@@ -53,7 +53,7 @@ namespace MatterHackers.Agg.UI
 			TextWidget text = new TextWidget(word, pointSize: 10, textColor: textColor);
 			text.VAnchor = VAnchor.Center;
 
-			SwitchView switchGraphics = new SwitchView(width, height, isChecked, backgroundColor, interiorColor, thumbColor, textColor);
+			SwitchView switchGraphics = new SwitchView(width, height, isChecked, backgroundColor, interiorColor, isChecked ? thumbColor : RGBA_Bytes.Gray, textColor);
 			switchGraphics.VAnchor = VAnchor.Center;
 			switchGraphics.Margin = new BorderDouble(5, 0, 0, 0);
 
