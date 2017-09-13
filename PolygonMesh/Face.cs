@@ -456,7 +456,13 @@ namespace MatterHackers.PolygonMesh
 
 		public List<(Vector3, Vector3, Vector3)> AsTriangles()
 		{
-			var points = new List<(Vector3, Vector3, Vector3)>();
+			var triangles = new List<(Vector3, Vector3, Vector3)>();
+			AsTriangles(triangles);
+			return triangles;
+		}
+
+		public void AsTriangles(List<(Vector3, Vector3, Vector3)> triangles)
+		{
 			bool first = true;
 			int vertexIndex = 0;
 			Vector3 firstPosition = Vector3.Zero;
@@ -472,14 +478,12 @@ namespace MatterHackers.PolygonMesh
 
 				if (vertexIndex >= 2)
 				{
-					points.Add((firstPosition, lastPosition, vertex.Position));
+					triangles.Add((firstPosition, lastPosition, vertex.Position));
 				}
 
 				lastPosition = vertex.Position;
 				vertexIndex++;
 			}
-
-			return points;
 		}
 	}
 }

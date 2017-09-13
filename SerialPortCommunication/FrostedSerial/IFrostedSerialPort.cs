@@ -49,7 +49,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
 		void Write(string str);
 
-        void Write(byte[] buffer, int offset, int count);
+		void Write(byte[] buffer, int offset, int count);
 
 		int WriteTimeout { get; set; }
 
@@ -57,7 +57,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
 		string ReadExisting();
 
-        int Read(byte[] buffer, int offset, int count);
+		int Read(byte[] buffer, int offset, int count);
 
 		bool IsOpen { get; }
 

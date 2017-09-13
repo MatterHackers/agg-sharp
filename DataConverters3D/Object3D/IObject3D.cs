@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using MatterHackers.Agg;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RayTracer;
@@ -76,6 +77,14 @@ namespace MatterHackers.DataConverters3D
 	{
 		public int ExtruderIndex { get; set; }
 		public PrintOutputTypes PrintOutputTypes { get; set; }
+	}
+
+	public static class ObjectHelperExtensions
+	{
+		public static void AddRange(this IList<IObject3D> list, IEnumerable<IObject3D> addItems)
+		{
+			list.AddRange(addItems);
+		}
 	}
 
 	public interface IObject3D
