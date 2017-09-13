@@ -94,7 +94,7 @@ namespace MatterHackers.Agg.UI
 
 			LocalBounds = printer.LocalBounds;
 
-			MinimumSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
+			MinimumSize = new Vector2(0, LocalBounds.Height);
 		}
 
 		public override RectangleDouble LocalBounds

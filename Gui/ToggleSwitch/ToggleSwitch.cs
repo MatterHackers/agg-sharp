@@ -37,23 +37,23 @@ namespace MatterHackers.Agg.UI
 			RGBA_Bytes backgroundColor, RGBA_Bytes interiorColor, RGBA_Bytes thumbColor, RGBA_Bytes textColor)
 		{
 			this.onText = onText;
-			GuiWidget normal = createState(offText, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
-			GuiWidget normalHover = createState(offText, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
-			GuiWidget switchNormalToPressed = createState(onText, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
-			GuiWidget pressed = createState(onText, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
-			GuiWidget pressedHover = createState(onText, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
-			GuiWidget switchPressedToNormal = createState(offText, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
+			GuiWidget normal = createState(offText, false, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
+			GuiWidget normalHover = createState(offText, false, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
+			GuiWidget switchNormalToPressed = createState(onText, true, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
+			GuiWidget pressed = createState(onText, true, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
+			GuiWidget pressedHover = createState(onText, true, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
+			GuiWidget switchPressedToNormal = createState(offText, false, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
 			GuiWidget disabled = new TextWidget("disabled");
 			SetViewStates(normal, normalHover, switchNormalToPressed, pressed, pressedHover, switchPressedToNormal, disabled);
 			this.VAnchor = VAnchor.Fit;
 		}
 
-		private GuiWidget createState(string word, double width, double height, ref RGBA_Bytes backgroundColor, ref RGBA_Bytes interiorColor, ref RGBA_Bytes thumbColor, ref RGBA_Bytes textColor)
+		private GuiWidget createState(string word, bool isChecked, double width, double height, ref RGBA_Bytes backgroundColor, ref RGBA_Bytes interiorColor, ref RGBA_Bytes thumbColor, ref RGBA_Bytes textColor)
 		{
 			TextWidget text = new TextWidget(word, pointSize: 10, textColor: textColor);
 			text.VAnchor = VAnchor.Center;
 
-			SwitchView switchGraphics = new SwitchView(width, height, word == onText, backgroundColor, interiorColor, thumbColor, textColor);
+			SwitchView switchGraphics = new SwitchView(width, height, isChecked, backgroundColor, interiorColor, isChecked ? thumbColor : RGBA_Bytes.Gray, textColor);
 			switchGraphics.VAnchor = VAnchor.Center;
 			switchGraphics.Margin = new BorderDouble(5, 0, 0, 0);
 
