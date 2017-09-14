@@ -43,8 +43,14 @@ namespace MatterHackers.Agg.UI
 			RGBA_Bytes normalTextColor, RGBA_Bytes normalBackgroundColor, int fixedSize = 40, bool useUnderlineStyling = false)
 			: base(internalTabName, new GuiWidget(), new GuiWidget(), new GuiWidget(), tabPage)
 		{
-			this.Padding = new BorderDouble(5, 0);
-			this.Margin = new BorderDouble(0, 0, 10, 0);
+			this.Padding = 0;
+			this.Margin = 0;
+
+			normalWidget.HAnchor = HAnchor.Fit;
+			normalWidget.Padding = new BorderDouble(10);
+
+			selectedWidget.HAnchor = HAnchor.Fit;
+			selectedWidget.Padding = new BorderDouble(10, 0);
 
 			AddText(tabPage.Text, selectedWidget, selectedTextColor, selectedBackgroundColor, pointSize, true, fixedSize, useUnderlineStyling);
 			AddText(tabPage.Text, normalWidget, normalTextColor, normalBackgroundColor, pointSize, false, fixedSize, useUnderlineStyling);
@@ -52,17 +58,15 @@ namespace MatterHackers.Agg.UI
 			// Bind changes on TabPage.Text to ensure 
 			tabPage.TextChanged += (s, e) =>
 			{
-				// TODO: Why the heavy use of SetBoundsToEncloseChildren? Shouldn't XAnchor.Fit cover this?
-				normalWidget.Children[0].Text = ((GuiWidget)s).Text;
-				normalWidget.SetBoundsToEncloseChildren();
-
-				selectedWidget.Children[0].Text = ((GuiWidget)s).Text;
-				selectedWidget.SetBoundsToEncloseChildren();
-
-				SetBoundsToEncloseChildren();
+				if (s is GuiWidget widget)
+				{
+					normalWidget.Children[0].Text = widget.Text;
+					selectedWidget.Children[0].Text = widget.Text;
+				}
 			};
 
-			SetBoundsToEncloseChildren();
+			this.HAnchor = HAnchor.Fit;
+			this.VAnchor = VAnchor.Fit;
 		}
 
 		private void AddText(string tabText, GuiWidget viewWidget, RGBA_Bytes textColor, RGBA_Bytes backgroundColor, double pointSize, bool isActive, int fixedSize, bool useUnderlineStyling)
@@ -109,8 +113,9 @@ namespace MatterHackers.Agg.UI
 
 			hoverWidget.Visible = false;
 			selectedWidget.Visible = false;
-			
-			SetBoundsToEncloseChildren();
+
+			this.VAnchor = VAnchor.Fit;
+			this.HAnchor = HAnchor.Fit;
 		}
 
 		public override void OnParentChanged(EventArgs e)
@@ -171,9 +176,6 @@ namespace MatterHackers.Agg.UI
 					VAnchor = VAnchor.Bottom
 				});
 			}
-
-			RectangleDouble childrenBounds = viewWidget.GetMinimumBoundsToEncloseChildren();
-			viewWidget.LocalBounds = new RectangleDouble(childrenBounds.Left, viewWidget.LocalBounds.Bottom, childrenBounds.Right, viewWidget.LocalBounds.Top);
 		}
 	}
 }
