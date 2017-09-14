@@ -178,17 +178,17 @@ namespace MatterHackers.Agg.UI
 
 		public bool ContainsFirstUnderMouseRecursive()
 		{
-			if(UnderMouseState == UnderMouseState.FirstUnderMouse)
+			if (UnderMouseState == UnderMouseState.FirstUnderMouse)
 			{
 				return true;
 			}
-			if(UnderMouseState == UnderMouseState.NotUnderMouse)
+			if (UnderMouseState == UnderMouseState.NotUnderMouse)
 			{
 				return false;
 			}
-			foreach(var child in Children)
+			foreach (var child in Children)
 			{
-				if(child.ContainsFirstUnderMouseRecursive())
+				if (child.ContainsFirstUnderMouseRecursive())
 				{
 					return true;
 				}
@@ -273,7 +273,7 @@ namespace MatterHackers.Agg.UI
 					{
 						padding = value;
 						devicePadding = Padding * GuiWidget.DeviceScale;
-						if(EnforceIntegerBounds)
+						if (EnforceIntegerBounds)
 						{
 							devicePadding.Round();
 						}
@@ -324,7 +324,7 @@ namespace MatterHackers.Agg.UI
 					margin = value;
 					deviceMargin = Margin * GuiWidget.DeviceScale;
 
-					if(EnforceIntegerBounds)
+					if (EnforceIntegerBounds)
 					{
 						deviceMargin.Round();
 					}
@@ -1001,7 +1001,7 @@ namespace MatterHackers.Agg.UI
 				bool foundVBounds = false;
 				foreach (GuiWidget child in Children)
 				{
-					if (child.Visible == false 
+					if (child.Visible == false
 					|| (considerChild != null && !considerChild(this, child)))
 					{
 						continue;
@@ -1009,30 +1009,11 @@ namespace MatterHackers.Agg.UI
 
 					if (considerChildAnchor)
 					{
-						var minChildWidth = Math.Max(child.MinimumSize.x, child.HAnchor.HasFlag(HAnchor.Stretch) ? 0 : child.Width);
-						if(child.HAnchor.HasFlag(HAnchor.Fit))
-						{
-							RectangleDouble childMin = child.GetChildrenBoundsIncludingMargins(true);
-							minChildWidth = Math.Max(minChildWidth, childMin.Width);
-						}
-						var minChildHeight = Math.Max(child.MinimumSize.y, child.VAnchor.HasFlag(VAnchor.Stretch) ? 0 : child.Height);
-						if (child.VAnchor.HasFlag(VAnchor.Fit))
-						{
-							RectangleDouble childMin = child.GetChildrenBoundsIncludingMargins(true);
-							minChildHeight = Math.Max(minChildHeight, childMin.Height);
-						}
+						var childSize = child.MinimumSize;
+						minSize.x = Max(child.Width + child.DeviceMargin.Width, minSize.x);
+						minSize.y = Max(child.Height + child.DeviceMargin.Height, minSize.y);
 
-						// hack them to be the old way
-						//minChildWidth = Math.Max(child.MinimumSize.x, child.HAnchor == HAnchor.Stretch ? child.Width : child.Width);
-						//minChildHeight = Math.Max(child.MinimumSize.y, child.VAnchor == VAnchor.Stretch ? child.Height : child.Height);
-
-						minSize.x = Max(minChildWidth + child.DeviceMargin.Width, minSize.x);
-						minSize.y = Max(minChildHeight + child.DeviceMargin.Height, minSize.y);
-
-						RectangleDouble childBoundsWithMargin = new RectangleDouble(child.BoundsRelativeToParent.Left,
-							child.BoundsRelativeToParent.Bottom,
-							child.BoundsRelativeToParent.Left + minChildWidth,
-							child.BoundsRelativeToParent.Bottom + minChildHeight);
+						RectangleDouble childBoundsWithMargin = child.BoundsRelativeToParent;
 						childBoundsWithMargin.Inflate(child.DeviceMargin);
 
 						if (!child.HAnchorIsFloating)
@@ -1952,8 +1933,8 @@ namespace MatterHackers.Agg.UI
 			if (HAnchor == HAnchor.Absolute)
 			{
 				//graphics2D.Line(LocalBounds.Center + new Vector2(0, size * .8),
-					//LocalBounds.Center + new Vector2(0, -size * .8),
-					//color, size * .5);
+				//LocalBounds.Center + new Vector2(0, -size * .8),
+				//color, size * .5);
 			}
 			else // figure out what it is
 			{
@@ -1963,7 +1944,7 @@ namespace MatterHackers.Agg.UI
 				}
 				if (HAnchor.HasFlag(HAnchor.Center))
 				{
-					graphics2D.Circle(LocalBounds.Center, size/2, color);
+					graphics2D.Circle(LocalBounds.Center, size / 2, color);
 				}
 				if (HAnchor.HasFlag(HAnchor.Right))
 				{
@@ -1974,7 +1955,7 @@ namespace MatterHackers.Agg.UI
 					// draw the right arrow offset
 					var offsetArrow = new VertexSourceApplyTransform(rightArrow, Affine.NewTranslation(-size * 3, 0));
 					graphics2D.Render(offsetArrow, LocalBounds.Center, color);
-					graphics2D.Render(new VertexSourceApplyTransform(offsetArrow, 
+					graphics2D.Render(new VertexSourceApplyTransform(offsetArrow,
 						Affine.NewRotation(MathHelper.DegreesToRadians(180))), LocalBounds.Center, color);
 				}
 			}
@@ -1982,8 +1963,8 @@ namespace MatterHackers.Agg.UI
 			if (VAnchor == VAnchor.Absolute)
 			{
 				//graphics2D.Line(LocalBounds.Center + new Vector2(size * .8, 0),
-					//LocalBounds.Center + new Vector2(-size * .8, 0),
-					//color, size * .5);
+				//LocalBounds.Center + new Vector2(-size * .8, 0),
+				//color, size * .5);
 			}
 			else // figure out what it is
 			{
@@ -1994,7 +1975,7 @@ namespace MatterHackers.Agg.UI
 				}
 				if (VAnchor.HasFlag(VAnchor.Center))
 				{
-					graphics2D.Circle(LocalBounds.Center, size/2, color);
+					graphics2D.Circle(LocalBounds.Center, size / 2, color);
 				}
 				if (VAnchor.HasFlag(VAnchor.Top))
 				{
@@ -2470,7 +2451,7 @@ namespace MatterHackers.Agg.UI
 
 			LastMouseDownMs = UiThread.CurrentTimerMs;
 
-			if(focusStateBeforeProcessing != containsFocus)
+			if (focusStateBeforeProcessing != containsFocus)
 			{
 				OnContainsFocusChanged(null);
 			}
@@ -2811,7 +2792,7 @@ namespace MatterHackers.Agg.UI
 					}
 
 					int countOfChildernThatThinkTheyHaveTheMouseCaptured = 0;
-					for(int childIndex = 0; childIndex < Children.Count(); childIndex++)
+					for (int childIndex = 0; childIndex < Children.Count(); childIndex++)
 					{
 						GuiWidget child = Children[childIndex];
 						if (childrenLockedInMouseUpCount != 1)
@@ -2964,14 +2945,14 @@ namespace MatterHackers.Agg.UI
 			}
 			else
 			{
-				if (nameToSearchFor == "" 
+				if (nameToSearchFor == ""
 					|| Name.Contains(nameToSearchFor))
 				{
 					nameFound = true;
 				}
 			}
 
-			if(nameFound)
+			if (nameFound)
 			{
 				if (touchingBounds.IntersectWithRectangle(this.LocalBounds))
 				{
@@ -3228,14 +3209,14 @@ namespace MatterHackers.Agg.UI
 		/// <returns>All matching child widgets</returns>
 		public static IEnumerable<T> ChildrenRecursive<T>(this GuiWidget widget) where T : GuiWidget
 		{
-			foreach(var child in widget.Children)
+			foreach (var child in widget.Children)
 			{
-				foreach(var childChild in child.ChildrenRecursive<T>())
+				foreach (var childChild in child.ChildrenRecursive<T>())
 				{
 					yield return childChild;
 				}
 
-				if(child is T)
+				if (child is T)
 				{
 					yield return (T)child;
 				}

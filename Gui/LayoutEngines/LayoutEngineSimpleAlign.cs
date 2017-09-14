@@ -220,7 +220,7 @@ namespace MatterHackers.Agg.UI
 				if (widgetToAdjust.Parent != null
 					&& widgetToAdjust.Parent.LayoutEngine != null)
 				{
-					if(widgetToAdjust.Parent.LayoutEngine as LayoutEngineFlow != null)
+					if (widgetToAdjust.Parent.LayoutEngine as LayoutEngineFlow != null)
 					{
 						// The parent is a flow layout widget but it will only adjust our size if we are HAnchor leftright
 						if (widgetToAdjust.HAnchorIsSet(HAnchor.Stretch))
@@ -239,7 +239,7 @@ namespace MatterHackers.Agg.UI
 					}
 					else
 					{
-							throw new NotImplementedException();
+						throw new NotImplementedException();
 					}
 				}
 				else
