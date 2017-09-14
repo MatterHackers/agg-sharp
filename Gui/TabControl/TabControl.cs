@@ -203,17 +203,6 @@ namespace MatterHackers.Agg.UI
 			// Use name, not text
 			tabPages.Add(newTab.Name, tabPageWidget);
 
-			switch (Orientation)
-			{
-				case Orientation.Horizontal:
-					newTab.VAnchor = VAnchor.Center;
-					break;
-
-				case Orientation.Vertical:
-					newTab.HAnchor = HAnchor.Left | HAnchor.Right;
-					break;
-			}
-
 			tabBar.AddChild(newTab, tabPosition);
 
 			tabBar.TabPageContainer.AddChild(tabPageWidget);

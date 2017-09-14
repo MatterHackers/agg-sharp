@@ -1009,9 +1009,24 @@ namespace MatterHackers.Agg.UI
 
 					if (considerChildAnchor)
 					{
-						var minChildWidth = Math.Max(child.MinimumSize.x, child.HAnchor == HAnchor.Stretch ? 0 : child.Width);
+						var minChildWidth = Math.Max(child.MinimumSize.x, child.HAnchor.HasFlag(HAnchor.Stretch) ? 10 : child.Width);
+						if(child.HAnchor.HasFlag(HAnchor.Fit))
+						{
+							RectangleDouble childMin = child.GetChildrenBoundsIncludingMargins(true);
+							minChildWidth = Math.Max(minChildWidth, childMin.Width);
+						}
+						var minChildHeight = Math.Max(child.MinimumSize.y, child.VAnchor.HasFlag(VAnchor.Stretch) ? 10 : child.Height);
+						if (child.VAnchor.HasFlag(VAnchor.Fit))
+						{
+							RectangleDouble childMin = child.GetChildrenBoundsIncludingMargins(true);
+							minChildHeight = Math.Max(minChildHeight, childMin.Height);
+						}
+
+						// hack them to be the old way
+						//minChildWidth = Math.Max(child.MinimumSize.x, child.HAnchor == HAnchor.Stretch ? child.Width : child.Width);
+						//minChildHeight = Math.Max(child.MinimumSize.y, child.VAnchor == VAnchor.Stretch ? child.Height : child.Height);
+
 						minSize.x = Max(minChildWidth + child.DeviceMargin.Width, minSize.x);
-						var minChildHeight = Math.Max(child.MinimumSize.y, child.VAnchor == VAnchor.Stretch ? 0 : child.Height);
 						minSize.y = Max(minChildHeight + child.DeviceMargin.Height, minSize.y);
 
 						RectangleDouble childBoundsWithMargin = new RectangleDouble(child.BoundsRelativeToParent.Left,
