@@ -82,7 +82,6 @@ namespace MatterHackers.Agg.UI
 
 	public class MenuItemColorStatesView : GuiWidget
 	{
-		GuiWidget textWidgetContainer;
 		TextWidget textWidget;
 
 		public RGBA_Bytes NormalBackgroundColor { get; set; }
@@ -101,17 +100,13 @@ namespace MatterHackers.Agg.UI
 			VAnchor = VAnchor.Fit;
 			Selectable = false;
 
-			textWidgetContainer = new GuiWidget();
 			textWidget = new TextWidget(name)
 			{
 				AutoExpandBoundsToText = true,
+				HAnchor = HAnchor.Left
 			};
 
-			textWidgetContainer.HAnchor = HAnchor.Fit;
-			textWidgetContainer.AddChild(textWidget);
-			textWidgetContainer.VAnchor = VAnchor.Fit;
-
-			AddChild(textWidgetContainer);
+			AddChild(textWidget);
 		}
 
 		public override void OnParentChanged(EventArgs ex)
