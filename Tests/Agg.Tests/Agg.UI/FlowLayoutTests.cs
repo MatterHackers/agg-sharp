@@ -1581,17 +1581,26 @@ namespace MatterHackers.Agg.UI.Tests
 		{
 			// make sure a middle spacer grows and shrinks correctly
 			{
-				FlowLayoutWidget leftRightFlowLayout = new FlowLayoutWidget();
+				FlowLayoutWidget leftRightFlowLayout = new FlowLayoutWidget()
+				{
+					Name = "leftRightFlowLayout"
+				};
 				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
 				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
-				// [<-><->] // attempting to make a visual descrition of what is happening
+				// [no content] // attempting to make a visual descrition of what is happening
 				Assert.IsTrue(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
-				GuiWidget leftWidget = new GuiWidget(10, 10); // we call it left widget as it will be the first one in the left to right flow layout
+				GuiWidget leftWidget = new GuiWidget(10, 10)
+				{
+					Name = "leftWidget"
+				}; // we call it left widget as it will be the first one in the left to right flow layout
 				leftRightFlowLayout.AddChild(leftWidget); // add in a child with a width of 10
 				// [<->(10)<->] // the flow layout should now be forced to be 10 wide
 				Assert.IsTrue(leftRightFlowLayout.Width == 10);
 
-				GuiWidget middleSpacer = new GuiWidget(0, 10); // this widget will hold the space
+				GuiWidget middleSpacer = new GuiWidget(0, 10)
+				{
+					Name = "middleSpacer"
+				}; // this widget will hold the space
 				middleSpacer.HAnchor = HAnchor.Stretch; // by resizing to whatever width it can be
 				leftRightFlowLayout.AddChild(middleSpacer);
 				// [<->(10)(<->)<->]

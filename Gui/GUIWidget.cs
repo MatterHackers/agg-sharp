@@ -1009,13 +1009,13 @@ namespace MatterHackers.Agg.UI
 
 					if (considerChildAnchor)
 					{
-						var minChildWidth = Math.Max(child.MinimumSize.x, child.HAnchor.HasFlag(HAnchor.Stretch) ? 10 : child.Width);
+						var minChildWidth = Math.Max(child.MinimumSize.x, child.HAnchor.HasFlag(HAnchor.Stretch) ? 0 : child.Width);
 						if(child.HAnchor.HasFlag(HAnchor.Fit))
 						{
 							RectangleDouble childMin = child.GetChildrenBoundsIncludingMargins(true);
 							minChildWidth = Math.Max(minChildWidth, childMin.Width);
 						}
-						var minChildHeight = Math.Max(child.MinimumSize.y, child.VAnchor.HasFlag(VAnchor.Stretch) ? 10 : child.Height);
+						var minChildHeight = Math.Max(child.MinimumSize.y, child.VAnchor.HasFlag(VAnchor.Stretch) ? 0 : child.Height);
 						if (child.VAnchor.HasFlag(VAnchor.Fit))
 						{
 							RectangleDouble childMin = child.GetChildrenBoundsIncludingMargins(true);
