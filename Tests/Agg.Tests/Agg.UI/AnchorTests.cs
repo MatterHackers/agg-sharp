@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using MatterHackers.Agg.Image;
 using NUnit.Framework;
 using System.IO;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -650,6 +651,148 @@ namespace MatterHackers.Agg.UI.Tests
 
 			Assert.IsTrue(containerControl.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
 			Assert.IsTrue(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
+		}
+
+		[Test]
+		public void VAnchorFitIgnoresChildrenWithVAnchorStretch()
+		{
+			//  ______________________________________________________________
+			//  |       containerControl 300                                  |
+			//  | __________________________________________________________  |
+			//  | |      Child A VAnchor.Fit                                | |
+			//  | |   ________________________  __________________________  | |
+			//  | |   | Child B Absolute Size | | Child C VAnchor.Stretch | | |
+			//  | |   |_______________________| |_________________________| | |
+			//  | |_________________________________________________________| |
+			//  |_____________________________________________________________|
+			//
+
+			// create controls
+			var containerControl = new GuiWidget(200, 300)
+			{
+				Name = "containerControl",
+				DoubleBuffer = true
+			};
+			containerControl.DoubleBuffer = true;
+			var childA = new GuiWidget(100, 10)
+			{
+				VAnchor = VAnchor.Fit,
+				Name = "childA",
+				MinimumSize = Vector2.Zero
+			};
+			Assert.AreEqual(10, childA.Height);
+			containerControl.AddChild(childA);
+			var childB = new GuiWidget(100, 100)
+			{
+				Name = "childB",
+				MinimumSize = Vector2.Zero
+			};
+			childA.AddChild(childB);
+			Assert.AreEqual(100, childA.Height);
+			var childC = new GuiWidget(100, 100)
+			{
+				VAnchor = VAnchor.Stretch,
+				Name = "childA",
+				MinimumSize = Vector2.Zero
+			};
+			childA.AddChild(childC);
+
+			// assert sizes
+			Assert.AreEqual(100, childA.Height);
+
+			// expand B
+			childB.Height = 120;
+
+			// assert sizes
+			Assert.AreEqual(120, childA.Height);
+
+			// compact B
+			childB.Height = 80;
+
+			// assert sizes
+			Assert.AreEqual(80, childA.Height);
+		}
+
+		[Test]
+		public void HAnchorFitIgnoresChildrenWithHAnchorStretch()
+		{
+			//  ______________________________________________________________
+			//  |       containerControl 300                                  |
+			//  | __________________________________________________________  |
+			//  | |      Child A HAnchor.Fit                                | |
+			//  | |   ________________________  __________________________  | |
+			//  | |   | Child B Absolute Size | | Child C HAnchor.Stretch | | |
+			//  | |   |_______________________| |_________________________| | |
+			//  | |_________________________________________________________| |
+			//  |_____________________________________________________________|
+			//
+
+			// create controls
+			var containerControl = new GuiWidget(300, 200)
+			{
+				Name = "containerControl",
+				DoubleBuffer = true
+			};
+			containerControl.DoubleBuffer = true;
+			var childA = new GuiWidget(10, 100)
+			{
+				HAnchor = HAnchor.Fit,
+				Name = "childA",
+				MinimumSize = Vector2.Zero
+			};
+			Assert.AreEqual(10, childA.Width);
+			containerControl.AddChild(childA);
+			var childB = new GuiWidget(100, 100)
+			{
+				Name = "childB",
+				MinimumSize = Vector2.Zero
+			};
+			childA.AddChild(childB);
+			Assert.AreEqual(100, childA.Width);
+			var childC = new GuiWidget(100, 100)
+			{
+				HAnchor = HAnchor.Stretch,
+				Name = "childA",
+				MinimumSize = Vector2.Zero
+			};
+			childA.AddChild(childC);
+
+			// assert sizes
+			Assert.AreEqual(100, childA.Width);
+
+			// expand B
+			childB.Width = 120;
+
+			// assert sizes
+			Assert.AreEqual(120, childA.Width);
+
+			// compact B
+			childB.Width = 80;
+
+			// assert sizes
+			Assert.AreEqual(80, childA.Width);
+		}
+
+		[Test]
+		public void VAnchorCenterAndVAnchorFitWorkCorrectlyTogether()
+		{
+			//  ______________________________________________________________
+			//  |       containerControl 300                                  |
+			//  | __________________________________________________________  |
+			//  | |      Child A VAnchor.Center | Fit                       | |
+			//  | |   ________________________                              | |
+			//  | |   | Child B Absolute Size |                             | |
+			//  | |   |_______________________|                             | |
+			//  | |_________________________________________________________| |
+			//  |_____________________________________________________________|
+			//
+
+			// create controls
+			// assert sizes and positions
+			// expand B
+			// assert sizes and positions
+			// compact B
+			// assert sizes and positions
 		}
 
 		[Test]

@@ -1009,10 +1009,15 @@ namespace MatterHackers.Agg.UI
 
 					if (considerChildAnchor)
 					{
-						minSize.x = Max(child.Width + child.DeviceMargin.Width, minSize.x);
-						minSize.y = Max(child.Height + child.DeviceMargin.Height, minSize.y);
+						var minChildWidth = Math.Max(child.MinimumSize.x, child.HAnchor == HAnchor.Stretch ? 0 : child.Width);
+						minSize.x = Max(minChildWidth + child.DeviceMargin.Width, minSize.x);
+						var minChildHeight = Math.Max(child.MinimumSize.y, child.VAnchor == VAnchor.Stretch ? 0 : child.Height);
+						minSize.y = Max(minChildHeight + child.DeviceMargin.Height, minSize.y);
 
-						RectangleDouble childBoundsWithMargin = child.BoundsRelativeToParent;
+						RectangleDouble childBoundsWithMargin = new RectangleDouble(child.BoundsRelativeToParent.Left,
+							child.BoundsRelativeToParent.Bottom,
+							child.BoundsRelativeToParent.Left + minChildWidth,
+							child.BoundsRelativeToParent.Bottom + minChildHeight);
 						childBoundsWithMargin.Inflate(child.DeviceMargin);
 
 						if (!child.HAnchorIsFloating)
