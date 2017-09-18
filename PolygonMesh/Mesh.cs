@@ -317,6 +317,14 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
+		public void CalculateNormals()
+		{
+			foreach(var face in Faces)
+			{
+				face.CalculateNormal();
+			}
+		}
+
 		public void Translate(Vector3 offset)
 		{
 			if (offset != Vector3.Zero)
