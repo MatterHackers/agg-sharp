@@ -162,9 +162,14 @@ namespace MatterHackers.DataConverters3D
 	public interface IObject3D
 	{
 		string ActiveEditor { get; set; }
+		string OwnerID { get; set; }
 
 		[JsonConverter(typeof(IObject3DChildrenConverter))]
 		List<IObject3D> Children { get; set; }
+
+		[JsonIgnore]
+		IObject3D Parent { get; set; }
+
 		RGBA_Bytes Color { get; set; }
 		int MaterialIndex { get; set; }
 		MeshGroup Flatten(Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings = null);
@@ -183,6 +188,7 @@ namespace MatterHackers.DataConverters3D
 		bool Persistable { get; }
 
 		bool Visible { get; set; }
+		string ID { get; set; }
 
 		void SetAndInvalidateMesh(Mesh mesh);
 
