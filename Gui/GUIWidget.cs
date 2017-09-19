@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using MatterHackers.Agg.Image;
@@ -262,6 +263,7 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// The space between the Widget and it's contents (the inside border).
 		/// </summary>
+		[Category("Layout")]
 		public virtual BorderDouble Padding
 		{
 			get { return padding; }
@@ -311,6 +313,7 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// The space between the Widget and it's parent (the outside border).
 		/// </summary>
+		[Category("Layout")]
 		public virtual BorderDouble Margin
 		{
 			get
@@ -378,6 +381,7 @@ namespace MatterHackers.Agg.UI
 
 		private HAnchor hAnchor;
 
+		[Category("Layout Anchor")]
 		public virtual HAnchor HAnchor
 		{
 			get { return hAnchor; }
@@ -431,6 +435,7 @@ namespace MatterHackers.Agg.UI
 
 		private VAnchor vAnchor;
 
+		[Category("Layout Anchor")]
 		public virtual VAnchor VAnchor
 		{
 			get { return vAnchor; }
@@ -730,6 +735,7 @@ namespace MatterHackers.Agg.UI
 
 		private Vector2 minimumSize = new Vector2();
 
+		[Category("Layout Constraints")]
 		public virtual Vector2 MinimumSize
 		{
 			get
@@ -773,6 +779,7 @@ namespace MatterHackers.Agg.UI
 
 		private Vector2 maximumSize = new Vector2(double.MaxValue, double.MaxValue);
 
+		[Category("Layout Constraints")]
 		public Vector2 MaximumSize
 		{
 			get
@@ -799,6 +806,7 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// The bottom left position of the widget in its parent space (or the logical/intuitive position).
 		/// </summary>
+		[Category("Layout")]
 		public Vector2 Position
 		{
 			get
@@ -817,6 +825,7 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// The width height of the control (its size!)
 		/// </summary>
+		[Category("Layout")]
 		public Vector2 Size
 		{
 			get
@@ -890,6 +899,7 @@ namespace MatterHackers.Agg.UI
 			return false;
 		}
 
+		[Category("Layout")]
 		public virtual RectangleDouble LocalBounds
 		{
 			get
@@ -1290,6 +1300,7 @@ namespace MatterHackers.Agg.UI
 			get { return true; }
 		}
 
+		[Category("Layout")]
 		public virtual double Width
 		{
 			get
@@ -1304,6 +1315,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		[Category("Layout")]
 		public virtual double Height
 		{
 			get
