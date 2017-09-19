@@ -95,8 +95,13 @@ namespace MatterHackers.PolygonMesh
 			while (nodes.Any())
 			{
 				IObject3D node = nodes.Pop();
+				
 				yield return node;
-				foreach (var n in node.Children) nodes.Push(n);
+				foreach (var n in node.Children)
+				{
+					n.Parent = node;
+					nodes.Push(n);
+				}
 			}
 		}
 

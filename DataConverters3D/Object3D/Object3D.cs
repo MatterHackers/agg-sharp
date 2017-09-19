@@ -49,14 +49,20 @@ namespace MatterHackers.DataConverters3D
 	{
 		public static string AssetsPath { get; set; }
 
+		public string ID { get; set; }
+
+		public string OwnerID { get; set; }
+
 		public virtual string ActiveEditor { get; set; }
 		public List<IObject3D> Children { get; set; } = new List<IObject3D>();
+
+		public IObject3D Parent { get; set; }
 
 		public MeshGroup Flatten(Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings = null)
 		{
 			return Flatten(this, new MeshGroup(), Matrix4X4.Identity, meshPrintOutputSettings, this.MaterialIndex, this.OutputType);
 		}
-
+		
 		void ApplyDifferenceToMeshes()
 		{
 			// spin up a task to remove holes from the objects in the group
