@@ -183,6 +183,11 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
+		/// <summary>
+		/// Provides a safe context to manipulate Scene.Children. Copies Scene.Children into a new list, invokes the 'modifier'
+		/// Action passing in the copied list and swaps Scene.Children to the new list after the Action has a chance to modify the tree
+		/// </summary>
+		/// <param name="modifier">The Action to invoke</param>
 		public void ModifyChildren(Action<List<IObject3D>> modifier)
 		{
 			// Copy the child items
