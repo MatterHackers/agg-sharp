@@ -65,7 +65,12 @@ namespace MatterHackers.MeshVisualizer
 				{
 					if (SelectedItem?.ItemType == Object3DTypes.SelectionGroup)
 					{
-						ModifyChildren(ClearSelectionApplyChanges);
+						// If the selected item is a SelectionGroup, collapse its contents into the root
+						// of the scene when it loses focus
+						ModifyChildren(children =>
+						{
+							ClearSelectionApplyChanges(children);
+						});
 					}
 
 					selectedItem = value;
