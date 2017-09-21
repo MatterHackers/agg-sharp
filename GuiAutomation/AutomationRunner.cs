@@ -571,6 +571,9 @@ namespace MatterHackers.GuiAutomation
 			{
 				containingWindow = getResults[0].containingSystemWindow;
 				offsetHint = getResults[0].offsetHint;
+				getResults[0].widget.DebugShowBounds = true;
+				UiThread.RunOnIdle(() => getResults[0].widget.DebugShowBounds = false, 1);
+
 				return getResults[0].widget;
 			}
 
