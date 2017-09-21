@@ -150,13 +150,22 @@ namespace MatterHackers.PolygonMesh
 			}
 		}*/
 
+		/// <summary>
+		/// Collapses the source object into the target list (often but not necessarily the scene)
+		/// </summary>
+		/// <param name="objectToCollapse">The object to collapse</param>
+		/// <param name="collapseInto">The target to collapse into</param>
+		/// <param name="typeFilter">Type filter</param>
+		/// <param name="depth">?</param>
 		public static void CollapseInto(this IObject3D objectToCollapse, List<IObject3D> collapseInto, Object3DTypes typeFilter = Object3DTypes.SelectionGroup, int depth = int.MaxValue)
 		{
-			if (objectToCollapse?.ItemType == typeFilter)
+			if (objectToCollapse != null 
+				&& (objectToCollapse?.ItemType == typeFilter
+				|| typeFilter == Object3DTypes.Any))
 			{
 				collapseInto.Remove(objectToCollapse);
 
-				// Move each child from objectToRemove into the scene, applying the parent transform to each
+				// Move each child from objectToRemove into the target (often the scene), applying the parent transform to each
 				foreach (var child in objectToCollapse.Children)
 				{
 					if (objectToCollapse.Color != RGBA_Bytes.Transparent)
