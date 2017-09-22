@@ -141,13 +141,23 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 			return filteredPorts.Any() ? filteredPorts : allPorts;
 		}
 
+		public static bool MockPortsForTest = false;
+
 		public static string[] GetPortNames(bool filter = true)
 		{
 			var p = Environment.OSVersion.Platform;
 			List<string> serial_ports = new List<string>();
 
 			// Are we on Unix?
-			if (p == PlatformID.Unix || p == PlatformID.MacOSX)
+			if (MockPortsForTest)
+			{
+				serial_ports.Add("COM-TestA");
+				serial_ports.Add("COM-TestB");
+				serial_ports.Add("COM-TestC");
+				serial_ports.Add("COM-Test0");
+				serial_ports.Add("COM-Test1");
+			}
+			else if (p == PlatformID.Unix || p == PlatformID.MacOSX)
 			{
 				string[] ttys = Directory.GetFiles("/dev/", "tty*");
 
@@ -182,14 +192,13 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 						}
 					}
 				}
-
-#if DEBUG
-				serial_ports.Add("Emulator");
-#endif
-
 #endif
 			}
-			
+
+#if DEBUG
+			serial_ports.Add("Emulator");
+#endif
+
 			return FilterPortsForMac(serial_ports).ToArray();
 		}
 
