@@ -1221,6 +1221,7 @@ namespace MatterHackers.Agg.UI
 					enabled = value;
 					if (enabled == false)
 					{
+						ClearCapturedState();
 						Unfocus();
 					}
 
@@ -2495,6 +2496,14 @@ namespace MatterHackers.Agg.UI
 
 				SystemWindow systemWindow = parent as SystemWindow;
 				systemWindow?.SetHoveredWidget(this);
+			}
+		}
+
+		public bool MouseDownOnWidget
+		{
+			get
+			{
+				return mouseCapturedState == MouseCapturedState.ThisHasMouseCaptured;
 			}
 		}
 

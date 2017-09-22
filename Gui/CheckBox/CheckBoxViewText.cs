@@ -94,7 +94,7 @@ namespace MatterHackers.Agg.UI
 			graphics2D.Rectangle(clampedRect, this.TextColor);
 
 			// extra frame
-			if (checkBox.MouseDownOnButton && checkBox.FirstWidgetUnderMouse)
+			if (checkBox.MouseDownOnWidget && checkBox.FirstWidgetUnderMouse)
 			{
 				clampedRect.Inflate(1);
 				graphics2D.Rectangle(clampedRect, this.TextColor);

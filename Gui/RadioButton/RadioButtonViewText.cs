@@ -36,7 +36,7 @@ namespace MatterHackers.Agg.UI
 			}
 
 			// Radio border
-			int strokeWidth = (this.RadioButton.MouseDownOnButton && this.RadioButton.FirstWidgetUnderMouse) ? 2 : 1;
+			int strokeWidth = (this.RadioButton.MouseDownOnWidget && this.RadioButton.FirstWidgetUnderMouse) ? 2 : 1;
 			graphics2D.Render(
 				new Stroke(new Ellipse(center, borderRadius), strokeWidth), 
 				this.RadioButton.TextColor);

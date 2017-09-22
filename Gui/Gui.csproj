@@ -158,7 +158,6 @@
     <Compile Include="Button\ButtonViewText.cs" />
     <Compile Include="Button\ButtonViewThreeImage.cs" />
     <Compile Include="Button\Button.cs" />
-    <Compile Include="Button\ButtonBase.cs" />
     <Compile Include="CheckBox\CheckBox.cs" />
     <Compile Include="CheckBox\CheckBoxViewSates.cs" />
     <Compile Include="CheckBox\CheckBoxViewText.cs" />
