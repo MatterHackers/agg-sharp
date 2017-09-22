@@ -143,6 +143,7 @@ namespace MatterHackers.Agg.Platform
 		public class PlatformConfig
 		{
 			public ProviderSettings ProviderTypes { get; set; }
+            public OpenScadSettings OpenScad { get; set; }
 		}
 
 		public class ProviderSettings
@@ -153,6 +154,11 @@ namespace MatterHackers.Agg.Platform
 			public string StaticDataProvider { get; set; }
 			public string SystemWindowProvider { get; set; }
 		}
+
+        public class OpenScadSettings
+        {
+            public string ExecutablePath { get; set; }
+        }
 
 		public class SliceEngineSettings
 		{
