@@ -5,5 +5,8 @@
 		"SystemWindowProvider": "MatterHackers.Agg.WinformsSystemWindowProvider, agg_platform_win32",
 		"ImageIOProvider": "MatterHackers.Agg.Image.ImageIOWindowsPlugin, agg_platform_win32",
 		"StaticDataProvider": "MatterHackers.Agg.FileSystemStaticData, agg_platform_win32"
-	}
+    },
+    "OpenScad": {
+        "ExecutablePath": "/usr/bin/openscad"
+    }
 }
