@@ -75,7 +75,7 @@ namespace MatterHackers.Agg.UI
 						}
 						else
 						{
-							if (radioButton.MouseDownOnButton)
+							if (radioButton.MouseDownOnWidget)
 							{
 								uncheckedWidget.Visible = false;
 								uncheckedHoverWidget.Visible = false;

@@ -105,7 +105,7 @@ namespace MatterHackers.Agg.UI
 				{
 					if (parentButton.FirstWidgetUnderMouse)
 					{
-						if (parentButton.MouseDownOnButton)
+						if (parentButton.MouseDownOnWidget)
 						{
 							hoverWidget.Visible = false;
 							pressedWidget.Visible = true;

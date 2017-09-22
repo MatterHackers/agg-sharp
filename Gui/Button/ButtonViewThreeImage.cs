@@ -97,7 +97,7 @@ namespace MatterHackers.Agg.UI
 
 			if (parentButton.UnderMouseState == UI.UnderMouseState.FirstUnderMouse)
 			{
-				if (parentButton.MouseDownOnButton)
+				if (parentButton.MouseDownOnWidget)
 				{
 					graphics2D.Render(pressedImage, x, y);
 				}

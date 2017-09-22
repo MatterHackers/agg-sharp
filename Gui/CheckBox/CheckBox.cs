@@ -26,7 +26,7 @@ using System;
 
 namespace MatterHackers.Agg.UI
 {
-	public class CheckBox : ButtonBase
+	public class CheckBox : GuiWidget
 	{
 		public static BorderDouble DefaultMargin;// = new BorderDouble(3);
 

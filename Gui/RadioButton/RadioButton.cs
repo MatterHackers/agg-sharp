@@ -25,19 +25,31 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace MatterHackers.Agg.UI
 {
-	public class RadioButton : ButtonBase
+	public interface ICheckbox
+	{
+		event EventHandler CheckedStateChanged;
+		bool Checked { get; set; }
+	}
+
+	public interface IRadioButton: ICheckbox
+	{
+		IEnumerable<GuiWidget> SiblingRadioButtonList { get; set; }
+	}
+
+	public class RadioButton : GuiWidget, IRadioButton
 	{
 		public event EventHandler CheckedStateChanged;
 
-		private ObservableCollection<GuiWidget> siblingRadioButtonList = new ObservableCollection<GuiWidget>();
+		private IEnumerable<GuiWidget> siblingRadioButtonList = null;
 		private bool isChecked = false;
 
 		public static BorderDouble defaultMargin = new BorderDouble(5);
 
-		public ObservableCollection<GuiWidget> SiblingRadioButtonList
+		public IEnumerable<GuiWidget> SiblingRadioButtonList
 		{
 			get
 			{
@@ -46,12 +58,6 @@ namespace MatterHackers.Agg.UI
 			set
 			{
 				this.siblingRadioButtonList = value;
-
-				// When assigned, add this instance to the list
-				if(!siblingRadioButtonList.Contains(this))
-				{
-					siblingRadioButtonList.Add(this);
-				}
 			}
 		}
 
@@ -82,6 +88,25 @@ namespace MatterHackers.Agg.UI
 		{
 		}
 
+		protected void FixBoundsAndChildrenPositions()
+		{
+			SetBoundsToEncloseChildren();
+
+			if (LocalBounds.Left != 0 || LocalBounds.Bottom != 0)
+			{
+				SuspendLayout();
+				// let's make sure that a button has 0, 0 at the lower left
+				// move the children so they will fit with 0, 0 at the lower left
+				foreach (GuiWidget child in Children)
+				{
+					child.OriginRelativeParent = child.OriginRelativeParent + new Vector2(-LocalBounds.Left, -LocalBounds.Bottom);
+				}
+				ResumeLayout();
+
+				SetBoundsToEncloseChildren();
+			}
+		}
+
 		public RadioButton(string label, int fontSize=12)
 			: this(0, 0, label, fontSize)
 		{
@@ -105,7 +130,7 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
-			if (this.SiblingRadioButtonList.Count == 0)
+			if (this.SiblingRadioButtonList == null)
 			{
 				SiblingRadioButtonList = Parent.Children;
 			}
@@ -142,7 +167,7 @@ namespace MatterHackers.Agg.UI
 			{
 				foreach (GuiWidget child in SiblingRadioButtonList.Distinct())
 				{
-					var radioButton = child as RadioButton;
+					var radioButton = child as IRadioButton;
 					if (radioButton != null && radioButton != this)
 					{
 						radioButton.Checked = false;

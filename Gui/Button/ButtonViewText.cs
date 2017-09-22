@@ -89,7 +89,7 @@ namespace MatterHackers.Agg.UI
 			RGBA_Bytes insideColor = new RGBA_Bytes(1.0, 1.0, 1.0);
 			if (parentButton.FirstWidgetUnderMouse)
 			{
-				if (parentButton.MouseDownOnButton)
+				if (parentButton.MouseDownOnWidget)
 				{
 					insideColor = DefaultViewFactory.DefaultBlue;
 				}
