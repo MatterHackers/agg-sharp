@@ -44,6 +44,7 @@ namespace MatterHackers.MeshVisualizer
 	public class InteractiveScene : Object3D
 	{
 		public event EventHandler SelectionChanged;
+		public event EventHandler ChildrenModified;
 
 		private IObject3D selectedItem;
 
@@ -203,6 +204,8 @@ namespace MatterHackers.MeshVisualizer
 
 			// Swap the modified list into place
 			Children = clonedChildren;
+
+			this.ChildrenModified?.Invoke(this, null);
 		}
 
 		private void ClearSelectionApplyChanges(List<IObject3D> target)
