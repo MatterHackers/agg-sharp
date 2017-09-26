@@ -94,7 +94,7 @@ namespace MatterHackers.DataConverters3D
 				}
 			}
 
-			return items;
+			return new SafeList<IObject3D>(items);
 		}
 		
 		public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)

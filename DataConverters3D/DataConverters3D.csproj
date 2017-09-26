@@ -144,6 +144,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Object3D\SafeList.cs" />
     <Compile Include="ObjSupport.cs" />
     <Compile Include="AmfDocument.cs" />
     <Compile Include="CsgToRayTraceable.cs" />

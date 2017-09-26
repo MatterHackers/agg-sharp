@@ -54,7 +54,7 @@ namespace MatterHackers.DataConverters3D
 		public string OwnerID { get; set; }
 
 		public virtual string ActiveEditor { get; set; }
-		public List<IObject3D> Children { get; set; } = new List<IObject3D>();
+		public SafeList<IObject3D> Children { get; set; } = new SafeList<IObject3D>();
 
 		public IObject3D Parent { get; set; }
 
@@ -88,23 +88,30 @@ namespace MatterHackers.DataConverters3D
 						}
 					}
 
-					foreach (var x in itemsToReplace)
+					this.Children.Modify(list =>
 					{
-						Children.Remove(x.object3D);
-
-						var newItem = new Object3D()
+						foreach (var x in itemsToReplace)
 						{
-							Mesh = x.newMesh,
+							// Remove the original object
+							list.Remove(x.object3D);
 
-							// Copy over child properties...
-							OutputType = x.object3D.OutputType,
-							Color = x.object3D.Color,
-							MaterialIndex = x.object3D.MaterialIndex
-						};
-						newItem.Children.Add(x.object3D);
+							// Create the replacement, wrapping the original
+							var newItem = new Object3D()
+							{
+								Mesh = x.newMesh,
 
-						Children.Add(newItem);
-					}
+								// Copy over child properties...
+								OutputType = x.object3D.OutputType,
+								Color = x.object3D.Color,
+								MaterialIndex = x.object3D.MaterialIndex
+							};
+							newItem.Children.Modify(childList => childList.Add(x.object3D));
+
+							// Add the replacement
+							list.Add(newItem);
+						}
+					});
+
 				}
 			}
 		}
@@ -291,7 +298,7 @@ namespace MatterHackers.DataConverters3D
 				Color = this.Color,
 				ActiveEditor = this.ActiveEditor,
 				MeshPath = this.MeshPath,
-				Children = new List<IObject3D>(this.Children.Select(child => child.Clone())),
+				Children = new SafeList<IObject3D>(this.Children.Select(child => child.Clone())),
 				Matrix = this.Matrix,
 				traceData = this.traceData,
 				OutputType = this.OutputType
