@@ -68,9 +68,9 @@ namespace MatterHackers.MeshVisualizer
 					{
 						// If the selected item is a SelectionGroup, collapse its contents into the root
 						// of the scene when it loses focus
-						ModifyChildren(children =>
+						Children.Modify(list =>
 						{
-							ClearSelectionApplyChanges(children);
+							SelectedItem.CollapseInto(list);
 						});
 					}
 
@@ -189,34 +189,6 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
-		/// <summary>
-		/// Provides a safe context to manipulate Scene.Children. Copies Scene.Children into a new list, invokes the 'modifier'
-		/// Action passing in the copied list and swaps Scene.Children to the new list after the Action has a chance to modify the tree
-		/// </summary>
-		/// <param name="modifier">The Action to invoke</param>
-		public void ModifyChildren(Action<List<IObject3D>> modifier)
-		{
-			// Copy the child items
-			var clonedChildren = new List<IObject3D>(Children);
-
-			// Pass them to the action
-			modifier(clonedChildren);
-
-			// Swap the modified list into place
-			Children.Modify(list =>
-			{
-				list.Clear();
-				list.AddRange(clonedChildren);
-			});
-
-			this.ChildrenModified?.Invoke(this, null);
-		}
-
-		private void ClearSelectionApplyChanges(List<IObject3D> target)
-		{
-			SelectedItem.CollapseInto(target);
-		}
-
 		public void ClearSelection()
 		{
 			if (HasSelection)
@@ -282,13 +254,13 @@ namespace MatterHackers.MeshVisualizer
 		{
 			var root = Object3D.Load(mcxPath, CancellationToken.None);
 
-			this.ModifyChildren((children) =>
+			this.Children.Modify(list =>
 			{
-				children.Clear();
+				list.Clear();
 
 				if (root != null)
 				{
-					children.AddRange(root.Children);
+					list.AddRange(root.Children);
 				}
 			});
 		}
