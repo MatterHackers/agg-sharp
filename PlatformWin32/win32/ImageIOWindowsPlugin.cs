@@ -156,6 +156,10 @@ namespace MatterHackers.Agg.Image
 					case System.Drawing.Imaging.PixelFormat.Format24bppRgb:
 						{
 							destImage.Allocate(bitmap.Width, bitmap.Height, bitmap.Width * 4, 32);
+							if (destImage.GetRecieveBlender() == null)
+							{
+								destImage.SetRecieveBlender(new BlenderBGRA());
+							}
 
 							BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmap.PixelFormat);
 							int sourceIndex = 0;
@@ -200,6 +204,10 @@ namespace MatterHackers.Agg.Image
 		private static void Copy8BitDataToImage(ImageBuffer destImage, Bitmap bitmap)
 		{
 			destImage.Allocate(bitmap.Width, bitmap.Height, bitmap.Width * 4, 32);
+			if (destImage.GetRecieveBlender() == null)
+			{
+				destImage.SetRecieveBlender(new BlenderBGRA());
+			}
 
 			BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmap.PixelFormat);
 			int sourceIndex = 0;
