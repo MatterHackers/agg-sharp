@@ -203,7 +203,11 @@ namespace MatterHackers.MeshVisualizer
 			modifier(clonedChildren);
 
 			// Swap the modified list into place
-			Children = clonedChildren;
+			Children.Modify(list =>
+			{
+				list.Clear();
+				list.AddRange(clonedChildren);
+			});
 
 			this.ChildrenModified?.Invoke(this, null);
 		}
@@ -228,12 +232,15 @@ namespace MatterHackers.MeshVisualizer
 				return;
 			}
 
-			if (HasSelection)
+			if (this.HasSelection)
 			{
 				if(SelectedItem.ItemType == Object3DTypes.SelectionGroup)
 				{
-					this.Children.Remove(itemToAdd);
-					SelectedItem.Children.Add(itemToAdd);
+					// Remove from the scene root
+					this.Children.Modify(list => list.Remove(itemToAdd));
+
+					// Move into the SelectionGroup
+					SelectedItem.Children.Modify(list => list.Add(itemToAdd));
 				}
 				else // add a new selection group and add to its children
 				{
@@ -245,13 +252,19 @@ namespace MatterHackers.MeshVisualizer
 						ItemType = Object3DTypes.SelectionGroup,
 					};
 
-					newSelectionGroup.Children.Add(SelectedItem);
-					newSelectionGroup.Children.Add(itemToAdd);
+					newSelectionGroup.Children.Modify(list =>
+					{
+						list.Add(SelectedItem);
+						list.Add(itemToAdd);
+					});
 
-					this.Children.Remove(itemToAdd);
-					this.Children.Remove(SelectedItem);
-					this.Children.Add(newSelectionGroup);
-
+					this.Children.Modify(list =>
+					{
+						list.Remove(itemToAdd);
+						list.Remove(SelectedItem);
+						list.Add(newSelectionGroup);
+					});
+					
 					SelectedItem = newSelectionGroup;
 				}
 			}
