@@ -450,7 +450,7 @@ namespace MatterHackers.MeshVisualizer
 					}
 
 					// SetMeshAfterLoad
-					Scene.ModifyChildren(children =>
+					Scene.Children.Modify(children =>
 					{
 						if (loadedItem.Mesh != null)
 						{
