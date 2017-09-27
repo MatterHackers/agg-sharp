@@ -99,20 +99,6 @@ namespace MatterHackers.Agg.UI
 		private ProgressBar progressBar;
 		private TextWidget progressTextWidget;
 
-		public event EventHandler ProgressChanged
-		{
-			//Wraps the PrivateClick event delegate so that we can track which events have been added and clear them if necessary
-			add
-			{
-				progressBar.ProgressChanged += value;
-			}
-
-			remove
-			{
-				progressBar.ProgressChanged -= value;
-			}
-		}
-
 		public double PointSize
 		{
 			get { return processTextWidget.PointSize; }
@@ -125,25 +111,25 @@ namespace MatterHackers.Agg.UI
 
 		public ProgressControl(string message, RGBA_Bytes textColor, RGBA_Bytes fillColor, int barWidgth = 80, int barHeight = 15, int leftMargin = 5)
 		{
-			processTextWidget = new TextWidget(message, textColor: textColor);
-			processTextWidget.AutoExpandBoundsToText = true;
-			processTextWidget.Margin = new BorderDouble(leftMargin, 0, 5, 0);
-			processTextWidget.VAnchor = VAnchor.Center;
-			AddChild(processTextWidget);
+			this.AddChild(processTextWidget = new TextWidget(message, textColor: textColor)
+			{
+				AutoExpandBoundsToText = true,
+				Margin = new BorderDouble(leftMargin, 0, 5, 0),
+				VAnchor = VAnchor.Center,
+			});
 
-			progressBar = new ProgressBar(barWidgth, barHeight)
+			this.AddChild(progressBar = new ProgressBar(barWidgth, barHeight)
 			{
 				FillColor = fillColor,
-			};
+				VAnchor = VAnchor.Center,
+			});
 
-			progressBar.VAnchor = VAnchor.Center;
-			AddChild(progressBar);
-
-			progressTextWidget = new TextWidget("", textColor: textColor, pointSize: 8);
-			progressTextWidget.AutoExpandBoundsToText = true;
-			progressTextWidget.VAnchor = VAnchor.Center;
-			progressTextWidget.Margin = new BorderDouble(5, 0);
-			AddChild(progressTextWidget);
+			this.AddChild(progressTextWidget = new TextWidget("", textColor: textColor, pointSize: 8)
+			{
+				AutoExpandBoundsToText = true,
+				VAnchor = VAnchor.Center,
+				Margin = new BorderDouble(5, 0),
+			});
 		}
 
 		public RGBA_Bytes FillColor

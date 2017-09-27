@@ -19,12 +19,9 @@ namespace MatterHackers.Agg.UI
 {
 	public class ButtonViewText : GuiWidget
 	{
-		protected double borderWidth;
-		protected double borderRadius;
+		public double BorderWidth { get; set; }
 
-		public double BorderWidth { get { return borderWidth; } set { borderWidth = value; } }
-
-		public double BorderRadius { get { return borderRadius; } set { borderRadius = value; } }
+		public double BorderRadius { get; set; }
 
 		protected TextWidget buttonText;
 
@@ -32,8 +29,9 @@ namespace MatterHackers.Agg.UI
 
 		public ButtonViewText(string label, double textHeight = 16, double borderWidth = 3, double borderRadius = 5)
 		{
-			BorderRadius = borderRadius;
-			this.borderWidth = borderWidth;
+			this.BorderRadius = borderRadius;
+			this.BorderWidth = borderWidth;
+
 			buttonText = new TextWidget(label, textHeight);
 			buttonText.VAnchor = VAnchor.Center;
 			buttonText.HAnchor = HAnchor.Center;
@@ -51,26 +49,29 @@ namespace MatterHackers.Agg.UI
 		{
 			GuiWidget parentButton = Parent;
 
-			parentButton.TextChanged += new EventHandler(parentButton_TextChanged);
-
-			parentButton.MouseEnter += redrawButtonIfRequired;
-			parentButton.MouseDown += redrawButtonIfRequired;
-			parentButton.MouseUp += redrawButtonIfRequired;
-			parentButton.MouseLeave += redrawButtonIfRequired;
+			parentButton.TextChanged += ParentButton_TextChanged;
+			parentButton.MouseEnter += Invalidate_Parent;
+			parentButton.MouseDown += Invalidate_Parent;
+			parentButton.MouseUp += Invalidate_Parent;
+			parentButton.MouseLeave += Invalidate_Parent;
 
 			base.OnParentChanged(e);
 		}
 
-		private void parentButton_TextChanged(object sender, EventArgs e)
+		private void ParentButton_TextChanged(object sender, EventArgs e)
 		{
 			buttonText.Text = ((GuiWidget)sender).Text;
-
 			SetBoundsToEncloseChildren();
+		}
+
+		private void Invalidate_Parent(object sender, EventArgs e)
+		{
+			((GuiWidget)sender).Invalidate();
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			Button parentButton = (Button)Parent;
+			GuiWidget parentButton = Parent;
 
 			RectangleDouble Bounds = LocalBounds;
 
@@ -83,10 +84,13 @@ namespace MatterHackers.Agg.UI
 			{
 				graphics2D.Render(rectBorder, new RGBA_Bytes(128, 128, 128));
 			}
+
 			RectangleDouble insideBounds = Bounds;
 			insideBounds.Inflate(-BorderWidth);
+
 			RoundedRect rectInside = new RoundedRect(insideBounds, Math.Max(BorderRadius - BorderWidth, 0));
 			RGBA_Bytes insideColor = new RGBA_Bytes(1.0, 1.0, 1.0);
+
 			if (parentButton.FirstWidgetUnderMouse)
 			{
 				if (parentButton.MouseDownOnWidget)
@@ -102,11 +106,6 @@ namespace MatterHackers.Agg.UI
 			graphics2D.Render(rectInside, insideColor);
 
 			base.OnDraw(graphics2D);
-		}
-
-		public void redrawButtonIfRequired(object sender, EventArgs e)
-		{
-			((GuiWidget)sender).Invalidate();
 		}
 	}
 }

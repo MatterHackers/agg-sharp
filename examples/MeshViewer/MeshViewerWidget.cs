@@ -937,10 +937,10 @@ namespace MatterHackers.MeshVisualizer
 				progressControl.HAnchor = HAnchor.Center;
 				AddChild(progressControl);
 				progressControl.Visible = false;
-				progressControl.ProgressChanged += (sender, e) =>
-				{
-					progressControl.Visible = true;
-				};
+				//progressControl.ProgressChanged += (sender, e) =>
+				//{
+				//	progressControl.Visible = true;
+				//};
 
 				centeredInfoText = new TextWidget(startingTextMessage);
 				centeredInfoText.HAnchor = HAnchor.Center;
