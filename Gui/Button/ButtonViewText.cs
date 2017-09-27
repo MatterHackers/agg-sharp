@@ -50,10 +50,10 @@ namespace MatterHackers.Agg.UI
 			GuiWidget parentButton = Parent;
 
 			parentButton.TextChanged += ParentButton_TextChanged;
-			parentButton.MouseEnter += InvalidateParent;
-			parentButton.MouseDown += InvalidateParent;
-			parentButton.MouseUp += InvalidateParent;
-			parentButton.MouseLeave += InvalidateParent;
+			parentButton.MouseEnter += Invalidate_Parent;
+			parentButton.MouseDown += Invalidate_Parent;
+			parentButton.MouseUp += Invalidate_Parent;
+			parentButton.MouseLeave += Invalidate_Parent;
 
 			base.OnParentChanged(e);
 		}
@@ -64,7 +64,7 @@ namespace MatterHackers.Agg.UI
 			SetBoundsToEncloseChildren();
 		}
 
-		private void InvalidateParent(object sender, EventArgs e)
+		private void Invalidate_Parent(object sender, EventArgs e)
 		{
 			((GuiWidget)sender).Invalidate();
 		}
