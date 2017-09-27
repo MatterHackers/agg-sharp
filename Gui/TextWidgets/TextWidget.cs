@@ -34,8 +34,6 @@ namespace MatterHackers.Agg.UI
 
 		private RGBA_Bytes textColor;
 
-		private TypeFacePrinter printer;
-
 		public bool EllipsisIfClipped { get; set; }
 
 		public RGBA_Bytes DisabledColor { get; set; }
@@ -44,12 +42,12 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				return printer.TypeFaceStyle.EmSizeInPoints / GuiWidget.DeviceScale;
+				return Printer.TypeFaceStyle.EmSizeInPoints / GuiWidget.DeviceScale;
 			}
 
 			set
 			{
-				printer.TypeFaceStyle = new StyledTypeFace(printer.TypeFaceStyle.TypeFace, value * GuiWidget.DeviceScale, printer.TypeFaceStyle.DoUnderline, printer.TypeFaceStyle.FlatenCurves);
+				Printer.TypeFaceStyle = new StyledTypeFace(Printer.TypeFaceStyle.TypeFace, value * GuiWidget.DeviceScale, Printer.TypeFaceStyle.DoUnderline, Printer.TypeFaceStyle.FlatenCurves);
 
 				if (AutoExpandBoundsToText)
 				{
@@ -60,13 +58,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public TypeFacePrinter Printer
-		{
-			get
-			{
-				return printer;
-			}
-		}
+		public TypeFacePrinter Printer { get; private set; }
 
 		public TextWidget(string text, double x = 0, double y = 0, double pointSize = 12, Justification justification = Justification.Left, RGBA_Bytes textColor = new RGBA_Bytes(), bool ellipsisIfClipped = true, bool underline = false, RGBA_Bytes backgroundColor = new RGBA_Bytes(), TypeFace typeFace = null)
 		{
@@ -94,9 +86,9 @@ namespace MatterHackers.Agg.UI
 				typeFace = LiberationSansFont.Instance;
 			}
 			StyledTypeFace typeFaceStyle = new StyledTypeFace(typeFace, pointSize * GuiWidget.DeviceScale, underline);
-			printer = new TypeFacePrinter(text, typeFaceStyle, justification: justification);
+			Printer = new TypeFacePrinter(text, typeFaceStyle, justification: justification);
 
-			LocalBounds = printer.LocalBounds;
+			LocalBounds = Printer.LocalBounds;
 
 			MinimumSize = new Vector2(0, LocalBounds.Height);
 		}
@@ -113,7 +105,7 @@ namespace MatterHackers.Agg.UI
 				{
 					if (AutoExpandBoundsToText)
 					{
-						RectangleDouble textBoundsWithPadding = printer.LocalBounds;
+						RectangleDouble textBoundsWithPadding = Printer.LocalBounds;
 						textBoundsWithPadding.Inflate(Padding);
 						MinimumSize = new Vector2(textBoundsWithPadding.Width, textBoundsWithPadding.Height);
 						base.LocalBounds = textBoundsWithPadding;
@@ -150,12 +142,12 @@ namespace MatterHackers.Agg.UI
 		public void DoExpandBoundsToText()
 		{
 			Invalidate(); // do it before and after in case it changes size.
-			LocalBounds = printer.LocalBounds;
+			LocalBounds = Printer.LocalBounds;
 			if (Text == "" || LocalBounds.Width < 1)
 			{
-				printer.Text = " ";
-				LocalBounds = printer.LocalBounds;
-				printer.Text = "";
+				Printer.Text = " ";
+				LocalBounds = Printer.LocalBounds;
+				Printer.Text = "";
 			}
 
 			Invalidate();
@@ -183,10 +175,10 @@ namespace MatterHackers.Agg.UI
 				if (base.Text != convertedText)
 				{
 					base.Text = convertedText;
-					bool wasUsingHintedCache = printer.DrawFromHintedCache;
+					bool wasUsingHintedCache = Printer.DrawFromHintedCache;
 					// Text may have been changed by a call back be sure to use what we really have set
-					printer = new TypeFacePrinter(base.Text, printer.TypeFaceStyle, justification: printer.Justification);
-					printer.DrawFromHintedCache = wasUsingHintedCache;
+					Printer = new TypeFacePrinter(base.Text, Printer.TypeFaceStyle, justification: Printer.Justification);
+					Printer.DrawFromHintedCache = wasUsingHintedCache;
 					if (AutoExpandBoundsToText)
 					{
 						DoExpandBoundsToText();
@@ -210,7 +202,7 @@ namespace MatterHackers.Agg.UI
 
 			double yOffsetForText = Printer.TypeFaceStyle.EmSizeInPixels * numLines;
 			double xOffsetForText = 0;
-			switch (printer.Justification)
+			switch (Printer.Justification)
 			{
 				case Justification.Left:
 					break;
