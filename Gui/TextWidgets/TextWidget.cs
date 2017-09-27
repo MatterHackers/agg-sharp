@@ -38,6 +38,8 @@ namespace MatterHackers.Agg.UI
 
 		public bool EllipsisIfClipped { get; set; }
 
+		public RGBA_Bytes DisabledColor { get; set; }
+
 		public double PointSize
 		{
 			get
@@ -68,6 +70,8 @@ namespace MatterHackers.Agg.UI
 
 		public TextWidget(string text, double x = 0, double y = 0, double pointSize = 12, Justification justification = Justification.Left, RGBA_Bytes textColor = new RGBA_Bytes(), bool ellipsisIfClipped = true, bool underline = false, RGBA_Bytes backgroundColor = new RGBA_Bytes(), TypeFace typeFace = null)
 		{
+			DisabledColor = new RGBA_Bytes(textColor, 50);
+
 			Selectable = false;
 			DoubleBuffer = DoubleBufferDefault;
 			AutoExpandBoundsToText = false;
@@ -256,11 +260,7 @@ namespace MatterHackers.Agg.UI
 
 		public RGBA_Bytes TextColor
 		{
-			get
-			{
-				return textColor;
-			}
-
+			get => (this.Enabled) ? textColor : this.DisabledColor;
 			set
 			{
 				if (textColor != value)
