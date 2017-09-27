@@ -109,16 +109,25 @@ namespace MatterHackers.Agg
 			// Iterate plugin assemblies
 			foreach (Assembly assembly in pluginAssemblies)
 			{
-				// Iterate each type
-				foreach (Type type in assembly.GetTypes()) {
-					if (type == null || !type.IsClass || !type.IsPublic) {
-						continue;
-					}
+				try
+				{
+					// Iterate each type
+					foreach (Type type in assembly.GetTypes())
+					{
+						if (type == null || !type.IsClass || !type.IsPublic)
+						{
+							continue;
+						}
 
-					// Add known/requested types to list
-					if (type.BaseType == typeof(BaseClassToFind)) {
-						factoryList.Add ((BaseClassToFind)Activator.CreateInstance (type));
+						// Add known/requested types to list
+						if (type.BaseType == typeof(BaseClassToFind))
+						{
+							factoryList.Add((BaseClassToFind)Activator.CreateInstance(type));
+						}
 					}
+				}
+				catch
+				{
 				}
 			}
 
