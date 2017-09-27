@@ -64,8 +64,8 @@ namespace MatterHackers.PolygonPathing
 
 		private RadioButtonGroup shapeTypeRadioGroup = new RadioButtonGroup(new Vector2(5, 5), new Vector2(205, 110))
 		{
-			HAnchor = HAnchor.ParentLeft | HAnchor.FitToChildren,
-			VAnchor = VAnchor.ParentBottom | VAnchor.FitToChildren,
+			HAnchor = HAnchor.Left | HAnchor.Fit,
+			VAnchor = VAnchor.Bottom | VAnchor.Fit,
 			Margin = new BorderDouble(5),
 		};
 
@@ -73,8 +73,8 @@ namespace MatterHackers.PolygonPathing
 
 		private CheckBox StayInside = new CheckBox("Stay Inside")
 		{
-			HAnchor = HAnchor.ParentRight | HAnchor.FitToChildren,
-			VAnchor = VAnchor.ParentBottom | VAnchor.FitToChildren,
+			HAnchor = HAnchor.Right | HAnchor.Fit,
+			VAnchor = VAnchor.Bottom | VAnchor.Fit,
 			Margin = new BorderDouble(5),
 			BackgroundColor = RGBA_Bytes.White,
 		};
@@ -174,8 +174,8 @@ namespace MatterHackers.PolygonPathing
 					avoid = new PathFinder(polygonsToPathAround, avoidInset, null); // -600 is for a .4 nozzle in matterslice
 				}
 
-				IVertexSource outlineShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.OutlinePolygons), 1), TotalTransform);
-				IVertexSource pathingShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.BoundaryPolygons), 1), TotalTransform);
+				IVertexSource outlineShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.OutlineData.Polygons), 1), TotalTransform);
+				IVertexSource pathingShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.PathingData.Polygons), 1), TotalTransform);
 
 				if (StayInside.Checked)
 				{
@@ -192,7 +192,7 @@ namespace MatterHackers.PolygonPathing
 				List<MSIntPoint> pathThatIsInside = new List<MSIntPoint>();
 				bool found = avoid.CreatePathInsideBoundary(pathStart, pathEnd, pathThatIsInside, false);
 
-				foreach (var node in avoid.Waypoints.Nodes)
+				foreach (var node in avoid.PathingData.Waypoints.Nodes)
 				{
 					foreach (var link in node.Links)
 					{
@@ -234,7 +234,7 @@ namespace MatterHackers.PolygonPathing
 
 				//RenderQuadTree(graphics2D, avoid.BoundaryEdgeQuadTrees, 0);
 
-				if (avoid.BoundaryPolygons.PointIsInside(pathEnd, avoid.BoundaryEdgeQuadTrees, avoid.BoundaryPointQuadTrees))
+				if (avoid.OutlineData.Polygons.PointIsInside(pathEnd, avoid.OutlineData.EdgeQuadTrees, avoid.OutlineData.EdgeQuadTrees, avoid.OutlineData.PointIsInside))
 				{
 					graphics2D.DrawString("Inside", 30, Height - 60, color: RGBA_Bytes.Green);
 				}
@@ -251,7 +251,7 @@ namespace MatterHackers.PolygonPathing
 				if(true)
 				{
 					MSPolygons pathsWithOverlapsRemoved;
-					var insetPolys = MSClipperLib.CLPolygonsExtensions.Offset(avoid.OutlinePolygons, 0);
+					var insetPolys = MSClipperLib.CLPolygonsExtensions.Offset(avoid.OutlineData.Polygons, 0);
 					if (insetPolys != null && insetPolys.Count > 0)
 					{
 						var pathHadOverlaps = QTPolygonExtensions.MergePerimeterOverlaps(insetPolys[0], avoidInset*2, out pathsWithOverlapsRemoved, true);
@@ -267,32 +267,17 @@ namespace MatterHackers.PolygonPathing
 						}
 					}
 				}
+
+				var image = avoid.OutlineData.InsideCache;
+				graphics2D.Render(image, Width - image.Width/4, Height - image.Height/4, image.Width/4, image.Height/4);
 			}
 
 			base.OnDraw(graphics2D);
 		}
 
-		private void RenderThinEdges(Graphics2D graphics2D, PathFinder avoid)
-		{
-			if (avoid.ThinLinePolygons != null)
-			{
-				foreach (var polygon in avoid.ThinLinePolygons)
-				{
-					for (int i = 0; i < polygon.Count - 1; i++)
-					{
-						var point = polygon[i];
-						var nextPoint = polygon[i + 1];
-						var start = ObjectToScreen(point);
-						var end = ObjectToScreen(nextPoint);
-						graphics2D.Line(start.X, start.Y, end.X, end.Y, RGBA_Bytes.Black, 3);
-					}
-				}
-			}
-		}
-
 		private void RenderCrossings(Graphics2D graphics2D, MSIntPoint pathStart, MSIntPoint pathEnd, PathFinder avoid)
 		{
-			var crossings = new List<Tuple<int, int, MSIntPoint>>(avoid.BoundaryPolygons.FindCrossingPoints(pathStart, pathEnd, avoid.BoundaryEdgeQuadTrees));
+			var crossings = new List<Tuple<int, int, MSIntPoint>>(avoid.OutlineData.Polygons.FindCrossingPoints(pathStart, pathEnd, avoid.OutlineData.EdgeQuadTrees));
 			crossings.Sort(new PolygonAndPointDirectionSorter(pathStart, pathEnd));
 
 			int index = 0;
@@ -379,10 +364,10 @@ namespace MatterHackers.PolygonPathing
 
 				var avoid2 = new PathFinder(sample, avoidInset, null); // -600 is for a .4 nozzle in matterslice
 				if (!avoid2.CreatePathInsideBoundary(start, end, pathThatIsInside)
-					&& avoid2.BoundaryPolygons.PointIsInside(start)
-					&& PointCount(avoid2.BoundaryPolygons) <= bestPointCount)
+					&& avoid2.OutlineData.Polygons.PointIsInside(start)
+					&& PointCount(avoid2.OutlineData.Polygons) <= bestPointCount)
 				{
-					bestPointCount = PointCount(avoid2.BoundaryPolygons);
+					bestPointCount = PointCount(avoid2.OutlineData.Polygons);
 					overrideBadPolys = sample;
 					badCount = 0;
 				}
