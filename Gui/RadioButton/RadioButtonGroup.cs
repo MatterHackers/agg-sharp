@@ -95,10 +95,13 @@ namespace MatterHackers.Agg.UI
 
 		public RadioButton AddRadioButton(string text)
 		{
-			RadioButton newRadioButton = new RadioButton(text);
-			newRadioButton.Margin = new BorderDouble(5, 0);
-			newRadioButton.HAnchor = UI.HAnchor.Left;
-			radioButtons.Add(newRadioButton);
+			RadioButton newRadioButton = new RadioButton(text)
+			{
+				TextColor = RGBA_Bytes.Black,
+				Margin = new BorderDouble(5, 0),
+				HAnchor = UI.HAnchor.Left,
+			};
+		radioButtons.Add(newRadioButton);
 			AddChild(newRadioButton);
 
 			newRadioButton.CheckedStateChanged += (s, e) =>
