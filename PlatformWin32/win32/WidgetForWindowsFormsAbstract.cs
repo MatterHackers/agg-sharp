@@ -66,6 +66,8 @@ namespace MatterHackers.Agg.UI
 			Focus();
 		}
 
+		internal SystemWindow SystemWindow => childSystemWindow;
+
 		public override int TitleBarHeight
         {
             get
