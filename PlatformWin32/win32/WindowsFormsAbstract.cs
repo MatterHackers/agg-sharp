@@ -30,6 +30,8 @@ namespace MatterHackers.Agg.UI
 	{
 		protected WidgetForWindowsFormsAbstract aggAppWidget;
 
+		public SystemWindow SystemWindow => aggAppWidget.SystemWindow;
+
 		public bool IsInitialized { get; set; } = false;
 
 		private static Form mainForm = null;
@@ -326,5 +328,14 @@ namespace MatterHackers.Agg.UI
 				aggIsRequestingClose = false;
 			}
 		}
+
+#if DEBUG
+		public abstract class FormInspector : Form
+		{
+			public virtual bool Inspecting { get; set; }
+		}
+
+		public static Func<SystemWindow, FormInspector> InspectorCreator { get; set; }
+#endif
 	}
 }

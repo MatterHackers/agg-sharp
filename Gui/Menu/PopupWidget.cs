@@ -114,7 +114,7 @@ namespace MatterHackers.Agg.UI
 				if (!this.ContainsFocus
 					&& !specialChildHasFocus)
 				{
-					UiThread.RunOnIdle(CloseMenu);
+					this.CloseMenu();
 				}
 			});
 

@@ -42,10 +42,42 @@ namespace MatterHackers.Agg.UI
 		private List<string> dragFiles = null;
 		ContainerControl controlToHook;
 
+#if DEBUG
+		private WindowsFormsAbstract.FormInspector inspectForm;
+#endif
 		public HookWindowsInputAndSendToWidget(ContainerControl controlToHook, WidgetForWindowsFormsAbstract widgetToSendTo)
 		{
 			this.controlToHook = controlToHook;
 			this.widgetToSendTo = widgetToSendTo;
+
+#if DEBUG
+			this.widgetToSendTo.KeyDown += (s, e) =>
+			{
+				switch (e.KeyCode)
+				{
+					case Keys.F1:
+						if (inspectForm != null)
+						{
+							// Toggle mode if window is open
+							inspectForm.Inspecting = !inspectForm.Inspecting;
+						}
+						else
+						{
+							// Otherwise open
+							inspectForm = WindowsFormsAbstract.InspectorCreator.Invoke(widgetToSendTo.SystemWindow);
+							inspectForm.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
+							inspectForm.Location = new System.Drawing.Point(0, 0);
+							inspectForm.FormClosed += (s2, e2) =>
+							{
+								inspectForm = null;
+							};
+							inspectForm.Show();
+						}
+						return;
+				}
+			};
+#endif
+
 			controlToHook.GotFocus += new EventHandler(controlToHook_GotFocus);
 			controlToHook.LostFocus += new EventHandler(controlToHook_LostFocus);
 
