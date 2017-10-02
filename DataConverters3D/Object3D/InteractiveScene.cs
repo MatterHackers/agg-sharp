@@ -44,7 +44,6 @@ namespace MatterHackers.MeshVisualizer
 	public class InteractiveScene : Object3D
 	{
 		public event EventHandler SelectionChanged;
-		public event EventHandler ChildrenModified;
 
 		private IObject3D selectedItem;
 
