@@ -31,24 +31,22 @@ namespace MatterHackers.Agg.UI
 {
 	public class ToggleSwitchView : CheckBoxViewStates
 	{
-		string onText = "";
-
-		public ToggleSwitchView(string onText, string offText, double width, double height,
-			RGBA_Bytes backgroundColor, RGBA_Bytes interiorColor, RGBA_Bytes thumbColor, RGBA_Bytes textColor)
+		public ToggleSwitchView(string onText, string offText, double width, double height, RGBA_Bytes backgroundColor, RGBA_Bytes interiorColor, RGBA_Bytes thumbColor, RGBA_Bytes textColor, RGBA_Bytes borderColor)
 		{
-			this.onText = onText;
-			GuiWidget normal = createState(offText, false, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
-			GuiWidget normalHover = createState(offText, false, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
-			GuiWidget switchNormalToPressed = createState(onText, true, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
-			GuiWidget pressed = createState(onText, true, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
-			GuiWidget pressedHover = createState(onText, true, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
-			GuiWidget switchPressedToNormal = createState(offText, false, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
+			GuiWidget normal = createState(offText, false, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor, borderColor);
+			GuiWidget normalHover = createState(offText, false, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor, borderColor);
+			GuiWidget switchNormalToPressed = createState(onText, true, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor, borderColor);
+			GuiWidget pressed = createState(onText, true, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor, borderColor);
+			GuiWidget pressedHover = createState(onText, true, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor, borderColor);
+			GuiWidget switchPressedToNormal = createState(offText, false, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor, borderColor);
 			GuiWidget disabled = new TextWidget("disabled");
+
 			SetViewStates(normal, normalHover, switchNormalToPressed, pressed, pressedHover, switchPressedToNormal, disabled);
+
 			this.VAnchor = VAnchor.Fit;
 		}
 
-		private GuiWidget createState(string word, bool isChecked, double width, double height, ref RGBA_Bytes backgroundColor, ref RGBA_Bytes interiorColor, ref RGBA_Bytes thumbColor, ref RGBA_Bytes textColor)
+		private GuiWidget createState(string word, bool isChecked, double width, double height, ref RGBA_Bytes backgroundColor, ref RGBA_Bytes interiorColor, ref RGBA_Bytes thumbColor, ref RGBA_Bytes textColor, RGBA_Bytes borderColor)
 		{
 			GuiWidget switchNormalToPressed = new FlowLayoutWidget(FlowDirection.LeftToRight);
 
@@ -61,10 +59,11 @@ namespace MatterHackers.Agg.UI
 				});
 			}
 
-			switchNormalToPressed.AddChild(new SwitchView(width, height, isChecked, backgroundColor, interiorColor, isChecked ? thumbColor : RGBA_Bytes.Gray, textColor)
-			{
-				VAnchor = VAnchor.Center
-			});
+			switchNormalToPressed.AddChild(
+				new SwitchView(width, height, isChecked, backgroundColor, interiorColor, isChecked ? thumbColor : RGBA_Bytes.Gray, textColor, borderColor)
+				{
+					VAnchor = VAnchor.Center
+				});
 
 			return switchNormalToPressed;
 		}
@@ -83,7 +82,9 @@ namespace MatterHackers.Agg.UI
 
 			private RectangleDouble switchBounds { get; }
 
-			internal SwitchView(double width, double height, bool startValue, RGBA_Bytes backgroundColor, RGBA_Bytes interiorColor, RGBA_Bytes thumbColor, RGBA_Bytes exteriorColor)
+			private RGBA_Bytes borderColor;
+
+			internal SwitchView(double width, double height, bool startValue, RGBA_Bytes backgroundColor, RGBA_Bytes interiorColor, RGBA_Bytes thumbColor, RGBA_Bytes exteriorColor, RGBA_Bytes borderColor)
 			{
 				this.Checked = startValue;
 
@@ -92,6 +93,9 @@ namespace MatterHackers.Agg.UI
 
 				InteriorColor = interiorColor;
 				ExteriorColor = exteriorColor;
+
+				this.borderColor = borderColor;
+
 				ThumbColor = thumbColor;
 				LocalBounds = new RectangleDouble(0, 0, width, height);
 
@@ -115,18 +119,19 @@ namespace MatterHackers.Agg.UI
 
 			public override void OnDraw(Graphics2D graphics2D)
 			{
-				graphics2D.FillRectangle(this.switchBounds, BackgroundColor);
+				graphics2D.FillRectangle(switchBounds, this.BackgroundColor);
 				base.OnDraw(graphics2D);
 
 				if (this.Checked)
 				{
-					graphics2D.FillRectangle(innerRect, InteriorColor);
+					graphics2D.FillRectangle(innerRect, this.InteriorColor);
 				}
 
-				graphics2D.Rectangle(this.borderRect, ExteriorColor, 1);
+				// Draw border
+				graphics2D.Rectangle(borderRect, borderColor, 1);
 
 				var thumbBounds = (this.Checked) ? checkedThumbBounds : uncheckedThumbBounds;
-				graphics2D.FillRectangle(thumbBounds, ThumbColor);
+				graphics2D.FillRectangle(thumbBounds, this.ThumbColor);
 				graphics2D.Rectangle(thumbBounds, new RGBA_Bytes(255, 255, 255, 90), 1);
 			}
 		}
