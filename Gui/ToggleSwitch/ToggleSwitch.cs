@@ -71,7 +71,7 @@ namespace MatterHackers.Agg.UI
 
 		internal class SwitchView : GuiWidget
 		{
-			bool startValue;
+			private bool Checked { get; }
 
 			private RectangleDouble borderRect;
 
@@ -85,7 +85,7 @@ namespace MatterHackers.Agg.UI
 
 			internal SwitchView(double width, double height, bool startValue, RGBA_Bytes backgroundColor, RGBA_Bytes interiorColor, RGBA_Bytes thumbColor, RGBA_Bytes exteriorColor)
 			{
-				this.startValue = startValue;
+				this.Checked = startValue;
 
 				var thumbHeight = height;
 				var thumbWidth = 15;
@@ -118,14 +118,14 @@ namespace MatterHackers.Agg.UI
 				graphics2D.FillRectangle(this.switchBounds, BackgroundColor);
 				base.OnDraw(graphics2D);
 
-				if (startValue)
+				if (this.Checked)
 				{
 					graphics2D.FillRectangle(innerRect, InteriorColor);
 				}
 
 				graphics2D.Rectangle(this.borderRect, ExteriorColor, 1);
 
-				var thumbBounds = (this.startValue) ? checkedThumbBounds : uncheckedThumbBounds;
+				var thumbBounds = (this.Checked) ? checkedThumbBounds : uncheckedThumbBounds;
 				graphics2D.FillRectangle(thumbBounds, ThumbColor);
 				graphics2D.Rectangle(thumbBounds, new RGBA_Bytes(255, 255, 255, 90), 1);
 			}
