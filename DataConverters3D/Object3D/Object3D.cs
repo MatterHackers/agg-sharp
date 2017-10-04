@@ -164,7 +164,32 @@ namespace MatterHackers.DataConverters3D
 			return meshGroup;
 		}
 
-		public RGBA_Bytes Color { get; set; } = RGBA_Bytes.Transparent;
+		RGBA_Bytes _color = RGBA_Bytes.Transparent;
+		public RGBA_Bytes Color
+		{
+			get { return _color; }
+			set
+			{
+				if (_color != value)
+				{
+					_color = value;
+					if (_color.alpha == 255)
+					{
+						Mesh.FaceBspTree = null;
+					}
+					else if (Mesh != null
+						&& Mesh.FaceBspTree == null
+						&& Mesh.Faces.Count < 2000)
+					{
+						Task.Run(() =>
+						{
+							var bspTree = FaceBspTree.Create(Mesh);
+							UiThread.RunOnIdle(() => Mesh.FaceBspTree = bspTree);
+						});
+					}
+				}
+			}
+		}
 
 		public int MaterialIndex { get; set; } = -1;
 
