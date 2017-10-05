@@ -44,7 +44,7 @@ namespace MatterHackers.Agg.UI.Tests
 		internal int popCount;
 	}
 
-	[TestFixture, Category("Agg.UI.ToolTip")]
+	[TestFixture, Category("Agg.UI.ToolTip"), Apartment(ApartmentState.STA), RunInApplicationDomain]
 	public class ToolTipTests
 	{
 		static string toolTip1Text = "toolTip1";
@@ -104,7 +104,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
 		}
 
-		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
+		[Test]
 		public async Task ToolTipsShow()
 		{
 			SystemWindow buttonContainer = new SystemWindow(300, 200)
