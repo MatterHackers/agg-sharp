@@ -45,68 +45,113 @@ using MatterHackers.Agg.Platform;
 
 namespace MatterHackers.Agg.UI
 {
-	public class WindowsFormBitmap : WindowsFormsAbstract
+	public class BitmapSystemWindow : WinformsSystemWindow
 	{
-		public WindowsFormBitmap(AbstractOsMappingWidget app, SystemWindow childSystemWindow)
+		public BitmapSystemWindow(SystemWindow childSystemWindow)
 		{
-			SetUpFormsWindow(app, childSystemWindow);
-
-			HookWindowsInputAndSendToWidget communication = new HookWindowsInputAndSendToWidget(this, aggAppWidget);
+			this.AggSystemWindow = childSystemWindow;
 		}
-
-		[System.Runtime.InteropServices.DllImport("gdi32.dll")]
-		public static extern bool DeleteObject(IntPtr hObject);
-
-		[System.Runtime.InteropServices.DllImportAttribute("gdi32.dll")]
-		public static extern System.IntPtr SelectObject(System.IntPtr hdc, System.IntPtr h);
-
-		[System.Runtime.InteropServices.DllImportAttribute("gdi32.dll")]
-		private static extern int BitBlt(
-			IntPtr hdcDest,     // handle to destination DC (device context)
-			int nXDest,         // x-coord of destination upper-left corner
-			int nYDest,         // y-coord of destination upper-left corner
-			int nWidth,         // width of destination rectangle
-			int nHeight,        // height of destination rectangle
-			IntPtr hdcSrc,      // handle to source DC
-			int nXSrc,          // x-coordinate of source upper-left corner
-			int nYSrc,          // y-coordinate of source upper-left corner
-			System.Int32 dwRop  // raster operation code
-			);
 
 		public override void CopyBackBufferToScreen(Graphics displayGraphics)
 		{
-			WidgetForWindowsFormsBitmap aggBitmapAppWidget = ((WidgetForWindowsFormsBitmap)aggAppWidget);
-
-			RectangleInt intRect = new RectangleInt(0, 0, (int)aggAppWidget.Width, (int)aggAppWidget.Height);
-			aggBitmapAppWidget.bitmapBackBuffer.UpdateHardwareSurface(intRect);
+			RectangleInt intRect = new RectangleInt(0, 0, (int)AggSystemWindow.Width, (int)AggSystemWindow.Height);
+			bitmapBackBuffer.UpdateHardwareSurface(intRect);
 
 			if (AggContext.OperatingSystem != OSType.Windows)
 			{
 				//displayGraphics.DrawImage(aggBitmapAppWidget.bitmapBackBuffer.windowsBitmap, windowsRect, windowsRect, GraphicsUnit.Pixel);  // around 250 ms for full screen
-				displayGraphics.DrawImageUnscaled(aggBitmapAppWidget.bitmapBackBuffer.windowsBitmap, 0, 0); // around 200 ms for full screnn
+				displayGraphics.DrawImageUnscaled(bitmapBackBuffer.windowsBitmap, 0, 0); // around 200 ms for full screen
 			}
 			else
 			{
-				// or the code below which calls BitBlt directly running at 17 ms for full screnn.
-				const int SRCCOPY = 0xcc0020;
-
-				using (Graphics bitmapGraphics = Graphics.FromImage(aggBitmapAppWidget.bitmapBackBuffer.windowsBitmap))
+				using (Graphics bitmapGraphics = Graphics.FromImage(bitmapBackBuffer.windowsBitmap))
 				{
 					IntPtr displayHDC = displayGraphics.GetHdc();
 					IntPtr bitmapHDC = bitmapGraphics.GetHdc();
 
-					IntPtr hBitmap = aggBitmapAppWidget.bitmapBackBuffer.windowsBitmap.GetHbitmap();
-					IntPtr hOldObject = SelectObject(bitmapHDC, hBitmap);
+					IntPtr hBitmap = bitmapBackBuffer.windowsBitmap.GetHbitmap();
+					IntPtr hOldObject = NativeMethods.SelectObject(bitmapHDC, hBitmap);
 
-					int result = BitBlt(displayHDC, 0, 0, aggBitmapAppWidget.bitmapBackBuffer.windowsBitmap.Width, aggBitmapAppWidget.bitmapBackBuffer.windowsBitmap.Height, bitmapHDC, 0, 0, SRCCOPY);
+					int result = NativeMethods.BitBlt(displayHDC, 0, 0, bitmapBackBuffer.windowsBitmap.Width, bitmapBackBuffer.windowsBitmap.Height, bitmapHDC, 0, 0, NativeMethods.SRCCOPY);
 
-					SelectObject(bitmapHDC, hOldObject);
-					DeleteObject(hBitmap);
+					NativeMethods.SelectObject(bitmapHDC, hOldObject);
+					NativeMethods.DeleteObject(hBitmap);
 
 					bitmapGraphics.ReleaseHdc(bitmapHDC);
 					displayGraphics.ReleaseHdc(displayHDC);
 				}
 			}
 		}
+
+		internal WindowsFormsBitmapBackBuffer bitmapBackBuffer = new WindowsFormsBitmapBackBuffer();
+
+		public override void BoundsChanged(EventArgs e)
+		{
+			if (AggSystemWindow != null)
+			{
+				System.Drawing.Imaging.PixelFormat format = System.Drawing.Imaging.PixelFormat.Undefined;
+				switch (AggSystemWindow.BitDepth)
+				{
+					case 24:
+						format = System.Drawing.Imaging.PixelFormat.Format24bppRgb;
+						break;
+
+					case 32:
+						format = System.Drawing.Imaging.PixelFormat.Format32bppArgb;
+						break;
+
+					default:
+						throw new NotImplementedException();
+				}
+
+				int bitDepth = System.Drawing.Image.GetPixelFormatSize(format);
+				bitmapBackBuffer.Initialize((int)Width, (int)Height, bitDepth);
+				NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
+			}
+
+			base.BoundsChanged(e);
+		}
+
+		public override Graphics2D NewGraphics2D()
+		{
+			Graphics2D graphics2D;
+			if (bitmapBackBuffer.backingImageBufferByte != null)
+			{
+				graphics2D = bitmapBackBuffer.backingImageBufferByte.NewGraphics2D();
+			}
+			else
+			{
+				graphics2D = bitmapBackBuffer.backingImageBufferFloat.NewGraphics2D();
+			}
+			graphics2D.PushTransform();
+			return graphics2D;
+		}
+
+		public void Init(SystemWindow childSystemWindow)
+		{
+			System.Drawing.Size clientSize = new System.Drawing.Size();
+			clientSize.Width = (int)childSystemWindow.Width;
+			clientSize.Height = (int)childSystemWindow.Height;
+			this.ClientSize = clientSize;
+
+			if (!childSystemWindow.Resizable)
+			{
+				this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+				this.MaximizeBox = false;
+			}
+
+			clientSize.Width = (int)childSystemWindow.Width;
+			clientSize.Height = (int)childSystemWindow.Height;
+			this.ClientSize = clientSize;
+
+			// OnInitialize(); {{
+
+			bitmapBackBuffer.Initialize((int)childSystemWindow.Width, (int)childSystemWindow.Height, childSystemWindow.BitDepth);
+
+			NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
+
+			// OnInitialize(); }}
+
+		} 
 	}
 }

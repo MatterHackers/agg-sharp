@@ -176,7 +176,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RelativeTime.cs" />
     <Compile Include="SoftKeyboard.cs" />
-    <Compile Include="SystemWindow\OsMappingWidgetFactory.cs" />
     <Compile Include="ImageWidget.cs" />
     <Compile Include="KeyEventArgs.cs" />
     <Compile Include="KeyPressEventArgs.cs" />
@@ -198,8 +197,8 @@
     <Compile Include="RadioButton\RadioButtonViewStates.cs" />
     <Compile Include="RadioButton\RadioButtonViewText.cs" />
     <Compile Include="ImageSequenceWidget.cs" />
-    <Compile Include="SystemWindow\AbstractOsMappingWidget.cs" />
     <Compile Include="SystemWindow\ISystemWindowProvider.cs" />
+    <Compile Include="SystemWindow\IPlatformWindow.cs" />
     <Compile Include="SystemWindow\ToolTipManager.cs" />
     <Compile Include="TextWidgets\InternalNumberEdit.cs" />
     <Compile Include="TextWidgets\NumberEdit.cs" />

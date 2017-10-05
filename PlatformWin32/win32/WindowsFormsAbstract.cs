@@ -21,20 +21,66 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
+using MatterHackers.Agg.Platform;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
-	public abstract class WindowsFormsAbstract : Form
+	public static class ExtensionMethods
 	{
-		protected WidgetForWindowsFormsAbstract aggAppWidget;
+		private static ISystemWindowProvider windowProvider = null;
 
-		public SystemWindow SystemWindow => aggAppWidget.SystemWindow;
+		public static ISystemWindowProvider GetWindowProvider(this SystemWindow context)
+		{
+			if (windowProvider == null)
+			{
+				windowProvider = AggContext.CreateInstanceFrom<ISystemWindowProvider>(AggContext.Config.ProviderTypes.SystemWindowProvider);
+			}
 
+			return windowProvider;
+		}
+	}
+
+	public class WinformsSystemWindowProvider : ISystemWindowProvider
+	{
+		private static IPlatformWindow platformWindow = null;
+
+		public bool SingleWindowMode { get; set; } = true;
+
+		/// <summary>
+		/// Creates or connects a PlatformWindow to the given SystemWindow
+		/// </summary>
+		public void CreateSystemWindow(SystemWindow systemWindow)
+		{
+			if (SingleWindowMode)
+			{
+				if (platformWindow == null)
+				{
+					platformWindow = AggContext.CreateInstanceFrom<IPlatformWindow>(AggContext.Config.ProviderTypes.SystemWindow);
+					platformWindow.AggSystemWindow = systemWindow;
+				}
+			}
+			else
+			{
+				var window = AggContext.CreateInstanceFrom<IPlatformWindow>(AggContext.Config.ProviderTypes.SystemWindow);
+				window.AggSystemWindow = systemWindow;
+			}
+		}
+
+		public void Release()
+		{
+			platformWindow = null;
+		}
+	}
+
+	public abstract class WinformsSystemWindow : Form, IPlatformWindow
+	{
 		public bool IsInitialized { get; set; } = false;
 
-		private static Form mainForm = null;
+		public static bool EnableInputHook = true;
 
 		private static System.Timers.Timer idleCallBackTimer = null;
 
@@ -42,65 +88,70 @@ namespace MatterHackers.Agg.UI
 
 		private static object singleInvokeLock = new object();
 
-		private bool aggWidgetHasBeenClosed = false;
+		private SystemWindow systemWindow;
+		public SystemWindow AggSystemWindow
+		{
+			get
+			{
+				return systemWindow;
+			}
+			set
+			{
+				systemWindow = value;
 
-		public WindowsFormsAbstract()
+				if (systemWindow != null)
+				{
+					this.Caption = systemWindow.Title;
+					this.MinimumSize = systemWindow.MinimumSize;
+				}
+			}
+		}
+
+		public bool IsMainWindow { get; } = false;
+
+		public WinformsSystemWindow()
 		{
 			if (idleCallBackTimer == null)
 			{
 				idleCallBackTimer = new System.Timers.Timer();
-				mainForm = this;
 				// call up to 100 times a second
 				idleCallBackTimer.Interval = 10;
 				idleCallBackTimer.Elapsed += InvokePendingOnIdleActions;
 				idleCallBackTimer.Start();
 			}
 
+			// Track first window
+			if (MainWindowsFormsWindow == null)
+			{
+				MainWindowsFormsWindow = this;
+				IsMainWindow = true;
+			}
+
 			this.TitleBarHeight = RectangleToScreen(ClientRectangle).Top - this.Top;
-		}
-
-		public static void ShowFileInFolder(string fileToShow)
-		{
-			string argument = "/select, \"" + Path.GetFullPath(fileToShow) + "\"";
-
-			System.Diagnostics.Process.Start("explorer.exe", argument);
-		}
-
-		public int TitleBarHeight { get; private set; } = 0;
-
-		protected void SetUpFormsWindow(AbstractOsMappingWidget app, SystemWindow childSystemWindow)
-		{
-			aggAppWidget = (WidgetForWindowsFormsAbstract)app;
 			this.AllowDrop = true;
 
-			if (File.Exists("application.ico"))
+			string iconPath = File.Exists("application.ico") ?
+				"application.ico" :
+				"../MonoBundle/StaticData/application.ico";
+
+			try
 			{
-				try
-				{
-					this.Icon = new System.Drawing.Icon("application.ico");
-				}
-				catch (System.ComponentModel.Win32Exception ex)
-				{
-					if (ex.NativeErrorCode != 0)
-					{
-						throw;
-					}
-				}
+				this.Icon = new Icon(iconPath);
 			}
-			else if (File.Exists("../MonoBundle/StaticData/application.ico"))
+			catch { }
+		}
+
+		protected override void OnClosed(EventArgs e)
+		{
+			if (IsMainWindow)
 			{
-				try
-				{
-					this.Icon = new System.Drawing.Icon("../MonoBundle/StaticData/application.ico");
-				}
-				catch (System.ComponentModel.Win32Exception ex)
-				{
-					if (ex.NativeErrorCode != 0)
-					{
-						throw;
-					}
-				}
+				// Ensure that when the MainWindow is closed, we null the field so we can recreate the MainWindow
+				MainWindowsFormsWindow = null;
 			}
+
+			AggSystemWindow = null;
+
+			base.OnClosed(e);
 		}
 
 		public void ReleaseOnIdleGuard()
@@ -113,8 +164,7 @@ namespace MatterHackers.Agg.UI
 
 		private void InvokePendingOnIdleActions(object sender, ElapsedEventArgs e)
 		{
-			if (aggAppWidget != null
-				&& !aggWidgetHasBeenClosed)
+			if (AggSystemWindow?.HasBeenClosed == false)
 			{
 				lock (singleInvokeLock)
 				{
@@ -161,7 +211,9 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public bool ShowingSystemDialog = false;
+		public static bool ShowingSystemDialog = false;
+
+		public abstract Graphics2D NewGraphics2D();
 
 		protected override void OnPaint(PaintEventArgs paintEventArgs)
 		{
@@ -180,8 +232,14 @@ namespace MatterHackers.Agg.UI
 			if (ClientSize.Width > 0 && ClientSize.Height > 0)
 			{
 				DrawCount++;
-				aggAppWidget.OnDraw(aggAppWidget.NewGraphics2D());
 
+				AggSystemWindow.OnDraw(this.NewGraphics2D());
+
+				/*
+				var bitmap = new Bitmap((int)SystemWindow.Width, (int)SystemWindow.Height);
+				paintEventArgs.Graphics.DrawImage(bitmap, 0, 0);
+				bitmap.Save($"c:\\temp\\gah-{DateTime.Now.Ticks}.png");
+				*/
 				CopyBackBufferToScreen(paintEventArgs.Graphics);
 			}
 
@@ -204,28 +262,29 @@ namespace MatterHackers.Agg.UI
 		protected override void OnActivated(EventArgs e)
 		{
 			// focus the first child of the forms window (should be the system window)
-			if (aggAppWidget != null
-				&& aggAppWidget.Children.Count > 0
-				&& aggAppWidget.Children[0] != null)
+			if (AggSystemWindow != null
+				&& AggSystemWindow.Children.Count > 0
+				&& AggSystemWindow.Children[0] != null)
 			{
-				aggAppWidget.Children[0].Focus();
+				AggSystemWindow.Children[0].Focus();
 			}
+
 			base.OnActivated(e);
 		}
 
 		protected override void OnResize(EventArgs e)
 		{
-			aggAppWidget.LocalBounds = new RectangleDouble(0, 0, ClientSize.Width, ClientSize.Height);
+			AggSystemWindow.LocalBounds = new RectangleDouble(0, 0, ClientSize.Width, ClientSize.Height);
 
 			// Wait until the control is initialized (and thus WindowState has been set) to ensure we don't wipe out
 			// the persisted data before its loaded
 			if (this.IsInitialized)
 			{
 				// Push the current maximized state into the SystemWindow where it can be used or persisted by Agg applications
-				aggAppWidget.Maximized = this.WindowState == FormWindowState.Maximized;
+				AggSystemWindow.Maximized = this.WindowState == FormWindowState.Maximized;
 			}
 
-			aggAppWidget.Invalidate();
+			AggSystemWindow.Invalidate();
 
 			base.OnResize(e);
 		}
@@ -249,34 +308,33 @@ namespace MatterHackers.Agg.UI
 			// Call on closing and check if we can close (a "do you want to save" might cancel the close. :).
 			bool cancelClose = false;
 
-			if (aggAppWidget.Children.Count > 0)
+			if (!AggSystemWindow.HasBeenClosed)
 			{
-				aggAppWidget.Children[0]?.OnClosing(out cancelClose);
-			}
+				AggSystemWindow.OnClosing(out cancelClose);
 
-			if (cancelClose)
-			{
-				e.Cancel = true;
-			}
-			else
-			{
-				if (!aggWidgetHasBeenClosed)
+				if (cancelClose)
 				{
-					aggWidgetHasBeenClosed = true;
-					aggAppWidget.Close(!aggIsRequestingClose);
-				}
-
-				if (this == mainForm && !waitingForIdleTimerToStop)
-				{
-					waitingForIdleTimerToStop = true;
-					idleCallBackTimer.Stop();
-					idleCallBackTimer.Elapsed -= InvokePendingOnIdleActions;
 					e.Cancel = true;
-					// We just need to wait for this event to end so we can re-enter the idle loop with the time stopped
-					// If we close with the idle loop timer not stopped we throw and exception.
-					System.Windows.Forms.Timer delayedCloseTimer = new System.Windows.Forms.Timer();
-					delayedCloseTimer.Tick += DoDelayedClose;
-					delayedCloseTimer.Start();
+				}
+				else
+				{
+					if (!AggSystemWindow.HasBeenClosed)
+					{
+						AggSystemWindow.Close();
+					}
+
+					if (this.IsMainWindow && !waitingForIdleTimerToStop)
+					{
+						waitingForIdleTimerToStop = true;
+						idleCallBackTimer.Stop();
+						idleCallBackTimer.Elapsed -= InvokePendingOnIdleActions;
+						e.Cancel = true;
+						// We just need to wait for this event to end so we can re-enter the idle loop with the time stopped
+						// If we close with the idle loop timer not stopped we throw and exception.
+						System.Windows.Forms.Timer delayedCloseTimer = new System.Windows.Forms.Timer();
+						delayedCloseTimer.Tick += DoDelayedClose;
+						delayedCloseTimer.Start();
+					}
 				}
 			}
 
@@ -289,43 +347,339 @@ namespace MatterHackers.Agg.UI
 			this.Close();
 		}
 
-		internal virtual void RequestInvalidate(Rectangle windowsRectToInvalidate)
-		{
-			// In mono this can throw an invalid exception sometimes. So we catch it to prevent a crash.
-			// http://lists.ximian.com/pipermail/mono-bugs/2007-September/061540.html
-			try
-			{
-				Invalidate(windowsRectToInvalidate);
+		#region WidgetForWindowsFormsAbstract/WinformsWindowWidget
+		#endregion
 
-				Rectangle allRectToInvalidate = new Rectangle(0, 0, (int)Width, (int)Height);
-				Invalidate(allRectToInvalidate);
-			}
-			catch (Exception)
+		#region IPlatformWindow
+
+		public new Agg.UI.Keys ModifierKeys => (Agg.UI.Keys)Control.ModifierKeys;
+
+		/*
+		 * 
+		 * // Can't simply override BringToFront. Change Interface method name/signature if required. Leaving as is
+		 * // to call base/this.BringToFront via Interface call
+		public override void BringToFront()
+		{
+			// Numerous articles on the web claim that Activate does not always bring to front (something MatterControl
+			// suffers when running automation tests). If we were to continue to use Activate, we might consider calling
+			// BringToFront after
+			this.Activate();
+			this.BringToFront();
+		}*/
+
+		// TODO: Why is this member named Caption instead of Title?
+		public string Caption
+		{
+			get
 			{
+				return this.Text;
+			}
+			set
+			{
+				this.Text = value;
 			}
 		}
 
-		protected override void OnDragEnter(DragEventArgs dragevent)
+		public Point2D DesktopPosition
 		{
-			base.OnDragEnter(dragevent);
-		}
-
-		bool aggIsRequestingClose = false;
-		public virtual void RequestClose()
-		{
-			if (!aggWidgetHasBeenClosed)
+			get
 			{
-				aggIsRequestingClose = true;
+				return new Point2D(this.DesktopLocation.X, this.DesktopLocation.Y);
+			}
 
-				if (this.InvokeRequired)
+			set
+			{
+				if (!this.Visible)
 				{
-					Invoke(new Action(() => this.Close()));
+					this.StartPosition = FormStartPosition.Manual;
+				}
+
+				this.DesktopLocation = new Point(value.x, value.y);
+			}
+		}
+
+		public new void Show()
+		{
+			// Center the window if specified on the SystemWindow
+			if (MainWindowsFormsWindow != this && systemWindow.CenterInParent)
+			{
+				Rectangle desktopBounds = MainWindowsFormsWindow.DesktopBounds;
+				RectangleDouble newItemBounds = systemWindow.LocalBounds;
+
+				this.Left = desktopBounds.X + desktopBounds.Width / 2 - (int)newItemBounds.Width / 2;
+				this.Top = desktopBounds.Y + desktopBounds.Height / 2 - (int)newItemBounds.Height / 2 - TitleBarHeight / 2;
+			}
+
+			if (MainWindowsFormsWindow != this
+				&& systemWindow.AlwaysOnTopOfMain)
+			{
+				base.Show(MainWindowsFormsWindow);
+			}
+			else
+			{
+				base.Show();
+			}
+		}
+
+		public void ShowModal()
+		{
+			// Release the onidle guard so that the onidle pump continues processing while we block at ShowDialog below
+			Task.Run(() => this.ReleaseOnIdleGuard());
+
+			if (MainWindowsFormsWindow != this && systemWindow.CenterInParent)
+			{
+				Rectangle mainBounds = MainWindowsFormsWindow.DesktopBounds;
+				RectangleDouble newItemBounds = systemWindow.LocalBounds;
+
+				this.Left = mainBounds.X + mainBounds.Width / 2 - (int)newItemBounds.Width / 2;
+				this.Top = mainBounds.Y + mainBounds.Height / 2 - (int)newItemBounds.Height / 2;
+			}
+
+			this.ShowDialog();
+		}
+
+		public void Invalidate(RectangleDouble rectToInvalidate)
+		{
+			// Cascade Agg invalidates to Winforms
+			//
+			// TODO: Evaluate the cost of this action
+			this.Invalidate();
+		}
+
+		/*
+		 * 
+		 * // Region based invalidate is pointless given in OnPaint we call OnDraw on the Agg root
+		 * // i.e. We always redraw everything. Region has no effect
+		
+		public override void Invalidate(RectangleDouble rectToInvalidate)
+		{
+			rectToInvalidate.IntersectWithRectangle(LocalBounds);
+
+			//rectToInvalidate = new rect_d(0, 0, Width, Height);
+
+			Rectangle windowsRectToInvalidate = GetRectangleFromRectD(rectToInvalidate);
+			if (WindowsFormsWindow != null)
+			{
+				// This looks like a positive feedback loop
+				WindowsFormsWindow.RequestInvalidate(windowsRectToInvalidate);
+			}
+		}
+
+		public Rectangle GetRectangleFromRectD(RectangleDouble rectD)
+		{
+			Rectangle windowsRect = new Rectangle(
+				(int)System.Math.Floor(rectD.Left),
+				(int)System.Math.Floor(Height - rectD.Top),
+				(int)System.Math.Ceiling(rectD.Width),
+				(int)System.Math.Ceiling(rectD.Height));
+
+			return windowsRect;
+		}
+		 */
+
+		public virtual void BoundsChanged(EventArgs e)
+		{
+			// Cascade Agg SystemWindow size change to Winforms
+			//
+			// TODO: It seems likely that we tell Winforms to resize, then Winforms tells us a to resize, then... ?
+			this.Invalidate();
+		}
+
+		public void SetCursor(Cursors cursorToSet)
+		{
+			switch (cursorToSet)
+			{
+				case Cursors.Arrow:
+					this.Cursor = System.Windows.Forms.Cursors.Arrow;
+					break;
+
+				case Cursors.Hand:
+					this.Cursor = System.Windows.Forms.Cursors.Hand;
+					break;
+
+				case Cursors.IBeam:
+					this.Cursor = System.Windows.Forms.Cursors.IBeam;
+					break;
+			}
+		}
+
+		public int TitleBarHeight { get; private set; } = 0;
+
+		#endregion
+
+		#region Agg Event Proxies
+		/*
+		protected override void OnMouseLeave(EventArgs e)
+		{
+			SystemWindow.OnMouseMove(new MatterHackers.Agg.UI.MouseEventArgs(MatterHackers.Agg.UI.MouseButtons.None, 0, -10, -10, 0));
+			base.OnMouseLeave(e);
+		}
+
+		protected override void OnGotFocus(EventArgs e)
+		{
+			SystemWindow.OnFocusChanged(e);
+			base.OnGotFocus(e);
+		}
+
+		protected override void OnLostFocus(EventArgs e)
+		{
+			SystemWindow.Unfocus();
+			SystemWindow.OnFocusChanged(e);
+
+			base.OnLostFocus(e);
+		}
+
+		protected override void OnKeyDown(System.Windows.Forms.KeyEventArgs e)
+		{
+			MatterHackers.Agg.UI.KeyEventArgs aggKeyEvent;
+			if (OsInformation.OperatingSystem == OSType.Mac
+				&& (e.KeyData & System.Windows.Forms.Keys.Alt) == System.Windows.Forms.Keys.Alt)
+			{
+				aggKeyEvent = new MatterHackers.Agg.UI.KeyEventArgs((MatterHackers.Agg.UI.Keys)(System.Windows.Forms.Keys.Control | (e.KeyData & ~System.Windows.Forms.Keys.Alt)));
+			}
+			else
+			{
+				aggKeyEvent = new MatterHackers.Agg.UI.KeyEventArgs((MatterHackers.Agg.UI.Keys)e.KeyData);
+			}
+			SystemWindow.OnKeyDown(aggKeyEvent);
+
+			Keyboard.SetKeyDownState(aggKeyEvent.KeyCode, true);
+
+			e.Handled = aggKeyEvent.Handled;
+			e.SuppressKeyPress = aggKeyEvent.SuppressKeyPress;
+
+			base.OnKeyDown(e);
+		}
+
+		protected override void OnKeyUp(System.Windows.Forms.KeyEventArgs e)
+		{
+			MatterHackers.Agg.UI.KeyEventArgs aggKeyEvent = new MatterHackers.Agg.UI.KeyEventArgs((MatterHackers.Agg.UI.Keys)e.KeyData);
+			SystemWindow.OnKeyUp(aggKeyEvent);
+
+			Keyboard.SetKeyDownState(aggKeyEvent.KeyCode, false);
+
+			e.Handled = aggKeyEvent.Handled;
+			e.SuppressKeyPress = aggKeyEvent.SuppressKeyPress;
+
+			base.OnKeyUp(e);
+		}
+
+		protected override void OnKeyPress(System.Windows.Forms.KeyPressEventArgs e)
+		{
+			MatterHackers.Agg.UI.KeyPressEventArgs aggKeyPressEvent = new MatterHackers.Agg.UI.KeyPressEventArgs(e.KeyChar);
+			SystemWindow.OnKeyPress(aggKeyPressEvent);
+			e.Handled = aggKeyPressEvent.Handled;
+
+			base.OnKeyPress(e);
+		}
+
+		private MatterHackers.Agg.UI.MouseEventArgs ConvertWindowsMouseEventToAggMouseEvent(System.Windows.Forms.MouseEventArgs windowsMouseEvent)
+		{
+			// we invert the y as we are bottom left coordinate system and windows is top left.
+			int Y = windowsMouseEvent.Y;
+			Y = (int)SystemWindow.BoundsRelativeToParent.Height - Y;
+
+			return new MatterHackers.Agg.UI.MouseEventArgs((MatterHackers.Agg.UI.MouseButtons)windowsMouseEvent.Button, windowsMouseEvent.Clicks, windowsMouseEvent.X, Y, windowsMouseEvent.Delta);
+		}
+
+		protected override void OnMouseDown(System.Windows.Forms.MouseEventArgs e)
+		{
+			SystemWindow.OnMouseDown(ConvertWindowsMouseEventToAggMouseEvent(e));
+			base.OnMouseDown(e);
+		}
+
+		protected override void OnMouseMove(System.Windows.Forms.MouseEventArgs e)
+		{
+			// TODO: Remove short term workaround for automation issues where mouse events fire differently if mouse is within window region
+			if (!EnableInputHook)
+			{
+				return;
+			}
+
+			SystemWindow.OnMouseMove(ConvertWindowsMouseEventToAggMouseEvent(e));
+			base.OnMouseMove(e);
+		}
+
+		protected override void OnMouseUp(System.Windows.Forms.MouseEventArgs e)
+		{
+			SystemWindow.OnMouseUp(ConvertWindowsMouseEventToAggMouseEvent(e));
+			base.OnMouseUp(e);
+		}
+
+		protected override void OnMouseCaptureChanged(EventArgs e)
+		{
+			if (SystemWindow.ChildHasMouseCaptured || SystemWindow.MouseCaptured)
+			{
+				SystemWindow.OnMouseUp(new MatterHackers.Agg.UI.MouseEventArgs(Agg.UI.MouseButtons.Left, 0, -10, -10, 0));
+			}
+			base.OnMouseCaptureChanged(e);
+		}
+
+		protected override void OnMouseWheel(System.Windows.Forms.MouseEventArgs e)
+		{
+			SystemWindow.OnMouseWheel(ConvertWindowsMouseEventToAggMouseEvent(e));
+			base.OnMouseWheel(e);
+		}
+		*/
+		#endregion
+
+		public static WinformsSystemWindow MainWindowsFormsWindow { get; private set; }
+
+		public new Vector2 MinimumSize
+		{
+			get
+			{
+				return new Vector2(base.MinimumSize.Width, base.MinimumSize.Height);
+			}
+			set
+			{
+				Size clientSize = new Size((int)Math.Ceiling(value.x), (int)Math.Ceiling(value.y));
+
+				Size windowSize = new Size(
+					clientSize.Width + this.Width - this.ClientSize.Width,
+					clientSize.Height + this.Height - this.ClientSize.Height);
+
+				base.MinimumSize = windowSize;
+			}
+		}
+
+		private bool pendingSetInitialDesktopPosition = false;
+		private Point2D InitialDesktopPosition = new Point2D();
+		private static bool firstWindow = true;
+
+		public void ShowSystemWindow()
+		{
+			// TODO: Now done at construction time, verify no issue
+			// osMappingWindow.Caption = systemWindow.Title;
+			// osMappingWindow.MinimumSize = systemWindow.MinimumSize;
+
+			if (pendingSetInitialDesktopPosition)
+			{
+				pendingSetInitialDesktopPosition = false;
+				systemWindow.DesktopPosition = InitialDesktopPosition;
+			}
+
+			systemWindow.AnchorAll();
+			// and make sure the title is correct right now
+
+			if (firstWindow)
+			{
+				firstWindow = false;
+
+				this.Show();
+				Application.Run(this);
+			}
+			else
+			{
+				if (systemWindow.IsModal)
+				{
+					this.ShowModal();
 				}
 				else
 				{
-					Close();
+					this.Show();
+					this.BringToFront();
 				}
-				aggIsRequestingClose = false;
 			}
 		}
 

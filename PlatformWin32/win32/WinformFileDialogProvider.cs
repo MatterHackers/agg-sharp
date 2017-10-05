@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Windows.Forms;
 using MatterHackers.Agg.UI;
 
@@ -13,7 +14,7 @@ namespace MatterHackers.Agg.Platform
 
 		public bool OpenFileDialog(OpenFileDialogParams openParams, Action<OpenFileDialogParams> callback)
 		{
-			WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = true;
+			WinformsSystemWindow.ShowingSystemDialog = true;
 			openParams.FileName = "";
 			openParams.FileNames = null;
 
@@ -35,7 +36,7 @@ namespace MatterHackers.Agg.Platform
 				openParams.FileName = openFileDialog1.FileName;
 			}
 
-			WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = false;
+			WinformsSystemWindow.ShowingSystemDialog = false;
 
 			UiThread.RunOnIdle((state) =>
 			{
@@ -60,7 +61,7 @@ namespace MatterHackers.Agg.Platform
 
 		private string SelectFolderDialog(ref SelectFolderDialogParams folderParams)
 		{
-			WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = true;
+			WinformsSystemWindow.ShowingSystemDialog = true;
 
 			FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
 			folderBrowserDialog.Description = folderParams.Description;
@@ -77,15 +78,16 @@ namespace MatterHackers.Agg.Platform
 
 			folderBrowserDialog.ShowDialog();
 
-			WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = false;
+			WinformsSystemWindow.ShowingSystemDialog = false;
 			folderParams.FolderPath = folderBrowserDialog.SelectedPath;
 
 			return folderBrowserDialog.SelectedPath;
 		}
 
+		// WinformFileDialogProvider.cs
 		public bool SaveFileDialog(SaveFileDialogParams saveParams, Action<SaveFileDialogParams> callback)
 		{
-			WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = true;
+			WinformsSystemWindow.ShowingSystemDialog = true;
 
 			var saveFileDialog1 = new SaveFileDialog
 			{
@@ -113,7 +115,7 @@ namespace MatterHackers.Agg.Platform
 				saveParams.FileName = null;
 			}
 
-			WidgetForWindowsFormsAbstract.MainWindowsFormsWindow.ShowingSystemDialog = false;
+			WinformsSystemWindow.ShowingSystemDialog = false;
 
 			UiThread.RunOnIdle(() =>
 			{
@@ -121,6 +123,15 @@ namespace MatterHackers.Agg.Platform
 			});
 
 			return true;
+		}
+
+		/// <summary>
+		/// Opens a shell window to the requested path
+		/// </summary>
+		/// <param name="fileToShow">The path to open</param>
+		public void ShowFileInFolder(string fileToShow)
+		{
+			System.Diagnostics.Process.Start("explorer.exe", $"/select, \"{Path.GetFullPath(fileToShow)}\"");
 		}
 	}
 }

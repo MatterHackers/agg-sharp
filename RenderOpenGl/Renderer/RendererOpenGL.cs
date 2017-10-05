@@ -304,7 +304,10 @@ namespace MatterHackers.RenderOpenGl
 			}
 #endif
 
+
 			ImageBuffer sourceAsImageBuffer = (ImageBuffer)source;
+			//ImageIO.SaveImageData($"c:\\temp\\gah-{DateTime.Now.Ticks}.png", sourceAsImageBuffer);
+
 			ImageGlPlugin glPlugin = ImageGlPlugin.GetImageGlPlugin(sourceAsImageBuffer, false);
 
 			// Prepare openGL for rendering

@@ -174,29 +174,21 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="win32\FileSystemStaticData.cs" />
     <Compile Include="win32\WinformFileDialogProvider.cs" />
+    <Compile Include="win32\NativeMethods.cs" />
     <Compile Include="win32\OsInformationWindowsPlugin.cs" />
-    <Compile Include="win32\HookWindowsInputAndSendToWidget.cs" />
-    <Compile Include="win32\WidgetForWindowsFormsBitmap.cs" />
-    <Compile Include="win32\WindowsFormsAbstract.cs">
-      <SubType>Form</SubType>
-    </Compile>
+    <Compile Include="win32\WindowsFormsAbstract.cs" />
     <Compile Include="win32\DirtyRects.cs" />
     <Compile Include="win32\ImageIOWindowsPlugin.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="win32\Joystick_win32.cs" />
-    <Compile Include="win32\WidgetForWindowsFormsAbstract.cs" />
-    <Compile Include="win32\WidgetForWindowsFormsOpenGL.cs" />
     <Compile Include="win32\WindowsFormsBitmapBackBuffer.cs" />
     <Compile Include="win32\WindowsFormsBitmap.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="win32\WindowsFormsBitmapFactory.cs" />
     <Compile Include="win32\WindowsFormsOpenGL.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="win32\WindowsFormsOpenGLFactory.cs" />
-    <Compile Include="win32\WinformsSystemWindowProvider.cs" />
     <Compile Include="win32\WindowsFormsClipboard.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -235,6 +227,7 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <None Include="AggDrawPipeline.cd" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

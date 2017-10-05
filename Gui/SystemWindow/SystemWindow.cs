@@ -38,12 +38,6 @@ namespace MatterHackers.Agg.UI
 {
 	public class SystemWindow : GuiWidget
 	{
-		private static ISystemWindowProvider systemWindowProvider;
-
-		public event EventHandler TitleChanged;
-
-		public AbstractOsMappingWidget AbstractOsMappingWidget { get; set; }
-
 		public bool AlwaysOnTopOfMain { get; set; }
 
 		public bool CenterInParent { get; set; } = true;
@@ -69,7 +63,7 @@ namespace MatterHackers.Agg.UI
 				if (title != value)
 				{
 					title = value;
-					TitleChanged?.Invoke(this, null);
+					PlatformWindow.Caption = value;
 				}
 			}
 		}
@@ -82,53 +76,34 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnClosed(ClosedEventArgs e)
 		{
-			allOpenSystemWindows.Remove(this);
+			AllOpenSystemWindows.Remove(this);
+
 			base.OnClosed(e);
-			if (Parent != null)
-			{
-				Parent.Close();
-			}
+
+			// Invoke Close on our PlatformWindow and release our reference when complete
+			this.PlatformWindow.Close();
+			this.PlatformWindow = null;
 		}
 
-		static List<SystemWindow> allOpenSystemWindows = new List<SystemWindow>();
-		public static List<SystemWindow> AllOpenSystemWindows
-		{
-			get
-			{
-				return allOpenSystemWindows.Where(window => window.Parent != null).ToList();
-			}
-		}
-
+		public static List<SystemWindow> AllOpenSystemWindows { get; } = new List<SystemWindow>();
+		
 		public SystemWindow(double width, double height)
 			: base(width, height, SizeLimitsToSet.None)
 		{
 			ToolTipManager = new ToolTipManager(this);
-			if (systemWindowProvider == null)
-			{
-				systemWindowProvider = AggContext.CreateInstanceFrom<ISystemWindowProvider>(AggContext.Config.ProviderTypes.SystemWindowProvider);
-				if (systemWindowProvider == null)
-				{
-					throw new Exception(string.Format("Unable to load the SystemWindow provider"));
-				}
-			}
 
-			allOpenSystemWindows.Add(this);
+			// Create the backing IPlatformWindow object and set its AggSystemWindow property to this new SystemWindow
+			this.PlatformWindow = AggContext.CreateInstanceFrom<IPlatformWindow>(AggContext.Config.ProviderTypes.SystemWindowProvider);
+
+			// Wire up this SystemWindow
+			this.PlatformWindow.AggSystemWindow = this;
+
+			AllOpenSystemWindows.Add(this);
 		}
 
-		public override Vector2 MinimumSize
+		public override void OnMinimumSizeChanged(EventArgs e)
 		{
-			get
-			{
-				return base.MinimumSize;
-			}
-			set
-			{
-				base.MinimumSize = value;
-				if (Parent != null)
-				{
-					Parent.MinimumSize = value;
-				}
-			}
+			PlatformWindow.MinimumSize = this.MinimumSize;
 		}
 
 		private Vector2 lastMousePosition;
@@ -168,21 +143,43 @@ namespace MatterHackers.Agg.UI
 			{
 				throw new Exception("To be a system window you cannot be a child of another widget.");
 			}
-			systemWindowProvider.ShowSystemWindow(this);
+			PlatformWindow.ShowSystemWindow();
 		}
 
 		public virtual bool Maximized { get; set; } = false;
+
+		private bool pendingSetInitialDesktopPosition = false;
+		private Point2D InitialDesktopPosition = new Point2D();
 
 		public Point2D DesktopPosition
 		{
 			get
 			{
-				return systemWindowProvider.GetDesktopPosition(this);
+				return PlatformWindow.DesktopPosition;
 			}
-
 			set
 			{
-				systemWindowProvider.SetDesktopPosition(this, value);
+				Point2D position = value;
+
+				if (PlatformWindow != null)
+				{
+					// Make sure the window is on screen (this logic should improve over time)
+					position.x = Math.Max(0, position.x);
+					position.y = Math.Max(0, position.y);
+
+					// If it's mac make sure we are not completely under the menu bar.
+					if (AggContext.OperatingSystem == OSType.Mac)
+					{
+						position.y = Math.Max(5, position.y);
+					}
+
+					PlatformWindow.DesktopPosition = position;
+				}
+				else
+				{
+					pendingSetInitialDesktopPosition = true;
+					InitialDesktopPosition = position;
+				}
 			}
 		}
 
@@ -203,5 +200,52 @@ namespace MatterHackers.Agg.UI
 		{
 			ToolTipManager.SetHoveredWidget(widgetToShowToolTipFor);
 		}
+
+		public override void Invalidate(RectangleDouble rectToInvalidate)
+		{
+			PlatformWindow?.Invalidate(LocalBounds);
+		}
+
+		// TODO: This should become private... Callers should interact with SystemWindow proxies
+		public IPlatformWindow PlatformWindow { get; private set; }
+
+		public override Keys ModifierKeys => PlatformWindow.ModifierKeys;
+
+		// {{{{{ Should be moved to SystemWindow
+
+		/*
+		public override Vector2 MinimumSize
+		{
+			get
+			{
+				return base.MinimumSize;
+			}
+			set
+			{
+				base.MinimumSize = value;
+
+				Size clientSize = new Size((int)Math.Ceiling(MinimumSize.x), (int)Math.Ceiling(MinimumSize.y));
+				Size windowSize = new Size(clientSize.Width + WindowsFormsWindow.Width - WindowsFormsWindow.ClientSize.Width,
+					clientSize.Height + WindowsFormsWindow.Height - WindowsFormsWindow.ClientSize.Height);
+
+				WindowsFormsWindow.MinimumSize = windowSize;
+			}
+		}
+
+		internal virtual void RequestClose()
+		{
+			if (!aggWidgetHasBeenClosed)
+			{
+				Close();
+			}
+		}
+
+		public override void OnClosed(EventArgs e)
+		{
+			WindowsFormsWindow.RequestClose();
+		}
+		*/
+
+		// }}}}} Should be moved to SystemWindow
 	}
 }
