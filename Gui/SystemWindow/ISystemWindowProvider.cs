@@ -27,17 +27,11 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.VectorMath;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-
 namespace MatterHackers.Agg.UI
 {
 	public interface ISystemWindowProvider
 	{
-		void CreateSystemWindow(SystemWindow systemWindow);
-		void Release();
+		void ShowSystemWindow(SystemWindow systemWindow);
+		void CloseSystemWindow(SystemWindow systemWindow);
 	}
 }

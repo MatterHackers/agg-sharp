@@ -42,8 +42,6 @@ namespace MatterHackers.Agg.UI
 
 		Vector2 MinimumSize { get; set; }
 
-		SystemWindow AggSystemWindow { get; set; }
-
 		Agg.UI.Keys ModifierKeys { get; }
 
 		void BringToFront();
@@ -56,6 +54,8 @@ namespace MatterHackers.Agg.UI
 
 		void SetCursor(Cursors cursorToSet);
 
-		void ShowSystemWindow();
+		void ShowSystemWindow(SystemWindow systemWindow);
+
+		void CloseSystemWindow(SystemWindow systemWindow);
 	}
 }

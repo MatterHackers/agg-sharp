@@ -29,8 +29,6 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using MatterHackers.Agg.Platform;
 using MatterHackers.VectorMath;
 
@@ -63,7 +61,6 @@ namespace MatterHackers.Agg.UI
 				if (title != value)
 				{
 					title = value;
-					PlatformWindow.Caption = value;
 				}
 			}
 		}
@@ -81,29 +78,28 @@ namespace MatterHackers.Agg.UI
 			base.OnClosed(e);
 
 			// Invoke Close on our PlatformWindow and release our reference when complete
-			this.PlatformWindow.Close();
+			systemWindowProvider.CloseSystemWindow(this);
 			this.PlatformWindow = null;
 		}
 
 		public static List<SystemWindow> AllOpenSystemWindows { get; } = new List<SystemWindow>();
-		
+
 		public SystemWindow(double width, double height)
 			: base(width, height, SizeLimitsToSet.None)
 		{
 			ToolTipManager = new ToolTipManager(this);
 
-			// Create the backing IPlatformWindow object and set its AggSystemWindow property to this new SystemWindow
-			this.PlatformWindow = AggContext.CreateInstanceFrom<IPlatformWindow>(AggContext.Config.ProviderTypes.SystemWindowProvider);
-
-			// Wire up this SystemWindow
-			this.PlatformWindow.AggSystemWindow = this;
+			this.BackgroundColor = ActiveTheme.Instance.PrimaryBackgroundColor;
 
 			AllOpenSystemWindows.Add(this);
 		}
 
 		public override void OnMinimumSizeChanged(EventArgs e)
 		{
-			PlatformWindow.MinimumSize = this.MinimumSize;
+			if (PlatformWindow != null)
+			{
+				PlatformWindow.MinimumSize = this.MinimumSize;
+			}
 		}
 
 		private Vector2 lastMousePosition;
@@ -137,13 +133,23 @@ namespace MatterHackers.Agg.UI
 			Parent?.BringToFront();
 		}
 
+
+		private static ISystemWindowProvider systemWindowProvider = null;
+
 		public void ShowAsSystemWindow()
 		{
 			if (Parent != null)
 			{
 				throw new Exception("To be a system window you cannot be a child of another widget.");
 			}
-			PlatformWindow.ShowSystemWindow();
+
+			if (systemWindowProvider == null)
+			{
+				systemWindowProvider = AggContext.CreateInstanceFrom<ISystemWindowProvider>(AggContext.Config.ProviderTypes.SystemWindowProvider);
+			}
+
+			// Create the backing IPlatformWindow object and set its AggSystemWindow property to this new SystemWindow
+			systemWindowProvider.ShowSystemWindow(this);
 		}
 
 		public virtual bool Maximized { get; set; } = false;
@@ -207,7 +213,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 		// TODO: This should become private... Callers should interact with SystemWindow proxies
-		public IPlatformWindow PlatformWindow { get; private set; }
+		public IPlatformWindow PlatformWindow { get; set; }
 
 		public override Keys ModifierKeys => PlatformWindow.ModifierKeys;
 
