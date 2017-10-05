@@ -190,6 +190,7 @@
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="win32\WindowsFormsClipboard.cs" />
+    <Compile Include="win32\WinformsEventSink.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Gui\Gui.csproj">

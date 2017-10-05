@@ -117,13 +117,16 @@ namespace MatterHackers.Agg.UI
 
 		protected override void OnClosed(EventArgs e)
 		{
-			glControl.MakeCurrent();
-
-			glControl.releaseAllGlData.Release();
+			if (!this.IsDisposed
+				|| !glControl.IsDisposed)
+			{
+				glControl.MakeCurrent();
+				glControl.releaseAllGlData.Release();
+			}
 
 			base.OnClosed(e);
 		}
-		
+
 		protected override void OnLoad(EventArgs e)
 		{
 			id = count++;
@@ -144,7 +147,7 @@ namespace MatterHackers.Agg.UI
 
 			doneLoading = true;
 
-			glControl.HookEvents(AggSystemWindow);
+			this.EventSink = new WinformsEventSink(glControl, AggSystemWindow);
 
 			Init();
 		}

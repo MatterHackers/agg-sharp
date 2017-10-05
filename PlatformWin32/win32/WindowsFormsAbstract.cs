@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
@@ -29,55 +28,46 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
-	public static class ExtensionMethods
-	{
-		private static ISystemWindowProvider windowProvider = null;
-
-		public static ISystemWindowProvider GetWindowProvider(this SystemWindow context)
-		{
-			if (windowProvider == null)
-			{
-				windowProvider = AggContext.CreateInstanceFrom<ISystemWindowProvider>(AggContext.Config.ProviderTypes.SystemWindowProvider);
-			}
-
-			return windowProvider;
-		}
-	}
-
 	public class WinformsSystemWindowProvider : ISystemWindowProvider
 	{
 		private static IPlatformWindow platformWindow = null;
 
-		public bool SingleWindowMode { get; set; } = true;
-
 		/// <summary>
 		/// Creates or connects a PlatformWindow to the given SystemWindow
 		/// </summary>
-		public void CreateSystemWindow(SystemWindow systemWindow)
+		public void ShowSystemWindow(SystemWindow systemWindow)
 		{
-			if (SingleWindowMode)
+			bool singleWindowMode = WinformsSystemWindow.SingleWindowMode;
+			bool isFirstWindow = platformWindow == null;
+			if ((singleWindowMode && platformWindow == null)
+				|| !singleWindowMode)
 			{
-				if (platformWindow == null)
-				{
-					platformWindow = AggContext.CreateInstanceFrom<IPlatformWindow>(AggContext.Config.ProviderTypes.SystemWindow);
-					platformWindow.AggSystemWindow = systemWindow;
-				}
+				platformWindow = AggContext.CreateInstanceFrom<IPlatformWindow>(AggContext.Config.ProviderTypes.SystemWindow);
 			}
-			else
+
+			if ((singleWindowMode && isFirstWindow)
+				|| !singleWindowMode)
 			{
-				var window = AggContext.CreateInstanceFrom<IPlatformWindow>(AggContext.Config.ProviderTypes.SystemWindow);
-				window.AggSystemWindow = systemWindow;
+				platformWindow.Caption = systemWindow.Title;
+				platformWindow.MinimumSize = systemWindow.MinimumSize;
 			}
+
+			systemWindow.PlatformWindow = platformWindow;
+			platformWindow.ShowSystemWindow(systemWindow);
 		}
 
-		public void Release()
+		public void CloseSystemWindow(SystemWindow systemWindow)
 		{
-			platformWindow = null;
+			platformWindow.CloseSystemWindow(systemWindow);
 		}
 	}
 
 	public abstract class WinformsSystemWindow : Form, IPlatformWindow
 	{
+		private static Stack<SystemWindow> allOpenSystemWindows = new Stack<SystemWindow>();
+
+		public static bool SingleWindowMode { get; set; } = false;
+
 		public bool IsInitialized { get; set; } = false;
 
 		public static bool EnableInputHook = true;
@@ -87,6 +77,8 @@ namespace MatterHackers.Agg.UI
 		private static bool processingOnIdle = false;
 
 		private static object singleInvokeLock = new object();
+
+		protected WinformsEventSink EventSink;
 
 		private SystemWindow systemWindow;
 		public SystemWindow AggSystemWindow
@@ -102,7 +94,16 @@ namespace MatterHackers.Agg.UI
 				if (systemWindow != null)
 				{
 					this.Caption = systemWindow.Title;
-					this.MinimumSize = systemWindow.MinimumSize;
+
+					if (SingleWindowMode)
+					{
+						// Set this system window as the event target
+						this.EventSink?.SetActiveSystemWindow(systemWindow);
+					}
+					else
+					{
+						this.MinimumSize = systemWindow.MinimumSize;
+					}
 				}
 			}
 		}
@@ -217,6 +218,12 @@ namespace MatterHackers.Agg.UI
 
 		protected override void OnPaint(PaintEventArgs paintEventArgs)
 		{
+			if (AggSystemWindow == null
+				|| AggSystemWindow.HasBeenClosed)
+			{
+				return;
+			}
+
 			base.OnPaint(paintEventArgs);
 
 			if (ShowingSystemDialog)
@@ -308,7 +315,7 @@ namespace MatterHackers.Agg.UI
 			// Call on closing and check if we can close (a "do you want to save" might cancel the close. :).
 			bool cancelClose = false;
 
-			if (!AggSystemWindow.HasBeenClosed)
+			if (AggSystemWindow != null && !AggSystemWindow.HasBeenClosed)
 			{
 				AggSystemWindow.OnClosing(out cancelClose);
 
@@ -647,20 +654,30 @@ namespace MatterHackers.Agg.UI
 		private Point2D InitialDesktopPosition = new Point2D();
 		private static bool firstWindow = true;
 
-		public void ShowSystemWindow()
+		public void ShowSystemWindow(SystemWindow systemWindow)
 		{
 			// TODO: Now done at construction time, verify no issue
 			// osMappingWindow.Caption = systemWindow.Title;
 			// osMappingWindow.MinimumSize = systemWindow.MinimumSize;
 
+
+			if (SingleWindowMode)
+			{
+				// Store the active SystemWindow
+				allOpenSystemWindows.Push(systemWindow);
+			}
+
+			// Set the active SystemWindow
+			this.AggSystemWindow = systemWindow;
+
 			if (pendingSetInitialDesktopPosition)
 			{
+				// and make sure the title is correct right now
 				pendingSetInitialDesktopPosition = false;
 				systemWindow.DesktopPosition = InitialDesktopPosition;
 			}
 
 			systemWindow.AnchorAll();
-			// and make sure the title is correct right now
 
 			if (firstWindow)
 			{
@@ -669,7 +686,7 @@ namespace MatterHackers.Agg.UI
 				this.Show();
 				Application.Run(this);
 			}
-			else
+			else if (!SingleWindowMode)
 			{
 				if (systemWindow.IsModal)
 				{
@@ -680,6 +697,34 @@ namespace MatterHackers.Agg.UI
 					this.Show();
 					this.BringToFront();
 				}
+			}
+			else if (SingleWindowMode)
+			{
+				// Notify the embedded window of its new single windows parent size
+				// TODO: Hack - figure out how to push this into non-firstWindow items
+				//systemWindow.Size = new Vector2(this.Size.Width, this.Size.Height);
+
+				systemWindow.Size = new Vector2(
+						this.ClientSize.Width,
+						this.ClientSize.Height);
+				//systemWindow.Position = Vector2.Zero;
+			}
+		}
+
+		public void CloseSystemWindow(SystemWindow systemWindow)
+		{
+			if (SingleWindowMode)
+			{
+				// Remove the closing window
+				allOpenSystemWindows.Pop();
+
+				// Restore the prior window from the stack
+				AggSystemWindow = allOpenSystemWindows.Count <= 0 ? null : allOpenSystemWindows.Peek();
+				AggSystemWindow?.Invalidate();
+			}
+			else
+			{
+				this.Close();
 			}
 		}
 
