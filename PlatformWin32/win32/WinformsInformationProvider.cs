@@ -30,7 +30,6 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
-using MatterHackers.Agg;
 
 namespace MatterHackers.Agg.Platform
 {
