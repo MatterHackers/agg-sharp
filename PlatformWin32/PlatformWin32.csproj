@@ -178,7 +178,6 @@
     <Compile Include="win32\OpenGLSystemWindow.cs" />
     <Compile Include="win32\WinformFileDialogProvider.cs" />
     <Compile Include="win32\NativeMethods.cs" />
-    <Compile Include="win32\OsInformationWindowsPlugin.cs" />
     <Compile Include="win32\DirtyRects.cs" />
     <Compile Include="win32\ImageIOWindowsPlugin.cs">
       <SubType>Code</SubType>
@@ -187,6 +186,7 @@
     <Compile Include="win32\WindowsFormsBitmapBackBuffer.cs" />
     <Compile Include="win32\WindowsFormsClipboard.cs" />
     <Compile Include="win32\WinformsEventSink.cs" />
+    <Compile Include="win32\WinformsInformationProvider.cs" />
     <Compile Include="win32\WinformsSystemWindow.cs" />
     <Compile Include="win32\WinformsSystemWindowProvider.cs" />
   </ItemGroup>
