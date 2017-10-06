@@ -19,8 +19,6 @@
 using System;
 using System.Windows.Forms;
 using System.Drawing;
-
-using OpenTK;
 using MatterHackers.RenderOpenGl;
 using System.Diagnostics;
 
@@ -34,76 +32,6 @@ using OpenTK.Graphics.OpenGL;
 
 namespace MatterHackers.Agg.UI
 {
-	public class AggGLControl : GLControl
-	{
-		internal static AggGLControl currentControl;
-		static bool checkedCapabilities = false;
-
-		private static int nextId;
-		public int Id;
-
-		internal RemoveGlDataCallBackHolder releaseAllGlData = new RemoveGlDataCallBackHolder();
-
-		// If you have an error here it is likely that you need to bulid your project with Platform Target x86.
-		public AggGLControl(int bitDepth, int setencilDepth)
-		//: base(new GraphicsMode(new ColorFormat(32), 32, 0, 4))
-		{
-			if (!checkedCapabilities)
-			{
-				try
-				{
-					IntPtr address = (this.Context as OpenTK.Graphics.IGraphicsContextInternal).GetAddress("glGenBuffers");
-
-					string versionString = GL.GetString(StringName.Version);
-					int firstSpace = versionString.IndexOf(' ');
-					if (firstSpace != -1)
-					{
-						versionString = versionString.Substring(0, firstSpace);
-					}
-
-					Version openGLVersion = new Version(versionString);
-					string glExtensionsString = GL.GetString(StringName.Extensions);
-					bool extensionSupport = glExtensionsString.Contains("GL_ARB_vertex_attrib_binding");
-
-					if (openGLVersion.CompareTo(new Version(2, 1)) < 0 && !extensionSupport)
-					{
-						MatterHackers.RenderOpenGl.OpenGl.GL.DisableGlBuffers();
-					}
-				}
-				catch
-				{
-					MatterHackers.RenderOpenGl.OpenGl.GL.DisableGlBuffers();
-				}
-
-				checkedCapabilities = true;
-			}
-			Id = nextId++;
-		}
-
-		public new void MakeCurrent()
-		{
-			currentControl = this;
-			base.MakeCurrent();
-			ImageGlPlugin.SetCurrentContextData(Id, releaseAllGlData);
-		}
-
-		protected override bool ProcessDialogKey(System.Windows.Forms.Keys keyData)
-		{
-			return false;
-		}
-
-		protected override void OnPaint(PaintEventArgs e)
-		{
-			//Parent.Invalidate();
-			base.OnPaint(e);
-		}
-
-		public override string ToString()
-		{
-			return "{0}".FormatWith(Id);
-		}
-	}
-
 	public class OpenGLSystemWindow : WinformsSystemWindow
 	{
 		private AggGLControl glControl;
