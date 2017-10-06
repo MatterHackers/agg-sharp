@@ -34,22 +34,22 @@ using OpenTK.Graphics.OpenGL;
 
 namespace MatterHackers.Agg.UI
 {
-	public class MyGLControl : GLControl
+	public class AggGLControl : GLControl
 	{
-		internal static MyGLControl currentControl;
-        static bool checkedCapabilities = false;
+		internal static AggGLControl currentControl;
+		static bool checkedCapabilities = false;
 
 		private static int nextId;
 		public int Id;
 
-        internal RemoveGlDataCallBackHolder releaseAllGlData = new RemoveGlDataCallBackHolder();
+		internal RemoveGlDataCallBackHolder releaseAllGlData = new RemoveGlDataCallBackHolder();
 
-        // If you have an error here it is likely that you need to bulid your project with Platform Target x86.
-        public MyGLControl(int bitDepth, int setencilDepth)
+		// If you have an error here it is likely that you need to bulid your project with Platform Target x86.
+		public AggGLControl(int bitDepth, int setencilDepth)
 		//: base(new GraphicsMode(new ColorFormat(32), 32, 0, 4))
 		{
-            if (!checkedCapabilities)
-            {
+			if (!checkedCapabilities)
+			{
 				try
 				{
 					IntPtr address = (this.Context as OpenTK.Graphics.IGraphicsContextInternal).GetAddress("glGenBuffers");
@@ -76,17 +76,16 @@ namespace MatterHackers.Agg.UI
 				}
 
 				checkedCapabilities = true;
-            }
+			}
 			Id = nextId++;
 		}
 
-		
 		public new void MakeCurrent()
 		{
 			currentControl = this;
 			base.MakeCurrent();
-            ImageGlPlugin.SetCurrentContextData(Id, releaseAllGlData);
-        }
+			ImageGlPlugin.SetCurrentContextData(Id, releaseAllGlData);
+		}
 
 		protected override bool ProcessDialogKey(System.Windows.Forms.Keys keyData)
 		{
@@ -107,7 +106,7 @@ namespace MatterHackers.Agg.UI
 
 	public class OpenGLSystemWindow : WinformsSystemWindow
 	{
-		private MyGLControl glControl;
+		private AggGLControl glControl;
 
 		public OpenGLSystemWindow()
 		{
@@ -134,7 +133,7 @@ namespace MatterHackers.Agg.UI
 			switch (AggSystemWindow.BitDepth)
 			{
 				case 32:
-					glControl = new MyGLControl(32, AggSystemWindow.StencilBufferDepth);
+					glControl = new AggGLControl(32, AggSystemWindow.StencilBufferDepth);
 					break;
 
 				default:
@@ -282,13 +281,13 @@ namespace MatterHackers.Agg.UI
 		{
 			if (firstGlControlSeen == null)
 			{
-				firstGlControlSeen = MyGLControl.currentControl;
+				firstGlControlSeen = AggGLControl.currentControl;
 			}
 
 			//if (firstGlControlSeen != MyGLControl.currentControl)
-			if (MyGLControl.currentControl.Id != this.id)
+			if (AggGLControl.currentControl.Id != this.id)
 			{
-				Debug.WriteLine("Is {0} Should be {1}".FormatWith(firstGlControlSeen.Id, MyGLControl.currentControl.Id));
+				Debug.WriteLine("Is {0} Should be {1}".FormatWith(firstGlControlSeen.Id, AggGLControl.currentControl.Id));
 				//throw new Exception("We have the wrong gl control realized.");
 				return false;
 			}
@@ -296,7 +295,7 @@ namespace MatterHackers.Agg.UI
 			return true;
 		}
 
-		private MyGLControl firstGlControlSeen = null;
+		private AggGLControl firstGlControlSeen = null;
 
 		public override Graphics2D NewGraphics2D()
 		{
