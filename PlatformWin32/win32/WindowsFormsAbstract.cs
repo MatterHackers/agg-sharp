@@ -165,7 +165,7 @@ namespace MatterHackers.Agg.UI
 
 		private void InvokePendingOnIdleActions(object sender, ElapsedEventArgs e)
 		{
-			if (AggSystemWindow?.HasBeenClosed == false)
+			if (!this.IsDisposed)
 			{
 				lock (singleInvokeLock)
 				{
@@ -207,7 +207,6 @@ namespace MatterHackers.Agg.UI
 				else
 				{
 					UiThread.InvokePendingActions();
-					processingOnIdle = false;
 				}
 			}
 		}
@@ -713,6 +712,13 @@ namespace MatterHackers.Agg.UI
 
 		public void CloseSystemWindow(SystemWindow systemWindow)
 		{
+			if (systemWindow == MainWindowsFormsWindow.AggSystemWindow)
+			{
+				// Close the main SystemWindow if it's being requested
+				UiThread.RunOnIdle(MainWindowsFormsWindow.Close);
+				return;
+			}
+
 			if (SingleWindowMode)
 			{
 				// Remove the closing window
@@ -724,7 +730,10 @@ namespace MatterHackers.Agg.UI
 			}
 			else
 			{
-				this.Close();
+				if (!this.IsDisposed && !this.IsDisposed)
+				{
+					UiThread.RunOnIdle(this.Close);
+				}
 			}
 		}
 

@@ -791,7 +791,7 @@ namespace MatterHackers.GuiAutomation
 
 		public bool NamedWidgetExists(string widgetName, SearchRegion searchRegion = null)
 		{
-			foreach (SystemWindow window in SystemWindow.AllOpenSystemWindows)
+			foreach (SystemWindow window in SystemWindow.AllOpenSystemWindows.ToArray())
 			{
 				List<GuiWidget.WidgetAndPosition> foundChildren = new List<GuiWidget.WidgetAndPosition>();
 				window.FindNamedChildrenRecursive(widgetName, foundChildren);
