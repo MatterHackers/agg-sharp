@@ -176,6 +176,7 @@
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="win32\FileSystemStaticData.cs" />
+    <Compile Include="win32\OpenGLSystemWindow.cs" />
     <Compile Include="win32\WinformFileDialogProvider.cs" />
     <Compile Include="win32\NativeMethods.cs" />
     <Compile Include="win32\OsInformationWindowsPlugin.cs" />
@@ -186,9 +187,6 @@
     <Compile Include="win32\Joystick_win32.cs" />
     <Compile Include="win32\WindowsFormsBitmapBackBuffer.cs" />
     <Compile Include="win32\WindowsFormsBitmap.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="win32\WindowsFormsOpenGL.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="win32\WindowsFormsClipboard.cs" />
