@@ -23,45 +23,10 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
-using MatterHackers.Agg.Platform;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
-	public class WinformsSystemWindowProvider : ISystemWindowProvider
-	{
-		private static IPlatformWindow platformWindow = null;
-
-		/// <summary>
-		/// Creates or connects a PlatformWindow to the given SystemWindow
-		/// </summary>
-		public void ShowSystemWindow(SystemWindow systemWindow)
-		{
-			bool singleWindowMode = WinformsSystemWindow.SingleWindowMode;
-			bool isFirstWindow = platformWindow == null;
-			if ((singleWindowMode && platformWindow == null)
-				|| !singleWindowMode)
-			{
-				platformWindow = AggContext.CreateInstanceFrom<IPlatformWindow>(AggContext.Config.ProviderTypes.SystemWindow);
-			}
-
-			if ((singleWindowMode && isFirstWindow)
-				|| !singleWindowMode)
-			{
-				platformWindow.Caption = systemWindow.Title;
-				platformWindow.MinimumSize = systemWindow.MinimumSize;
-			}
-
-			systemWindow.PlatformWindow = platformWindow;
-			platformWindow.ShowSystemWindow(systemWindow);
-		}
-
-		public void CloseSystemWindow(SystemWindow systemWindow)
-		{
-			platformWindow.CloseSystemWindow(systemWindow);
-		}
-	}
-
 	public abstract class WinformsSystemWindow : Form, IPlatformWindow
 	{
 		private static Stack<SystemWindow> allOpenSystemWindows = new Stack<SystemWindow>();
