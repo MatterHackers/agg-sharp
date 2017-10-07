@@ -39,6 +39,9 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonPathing
 {
+	using System.Globalization;
+	using System.IO;
+	using System.Text.RegularExpressions;
 	using Agg;
 	using Pathfinding;
 	using MSIntPoint = MSClipperLib.IntPoint;
@@ -47,8 +50,109 @@ namespace MatterHackers.PolygonPathing
 	using Polygon = List<IntPoint>;
 	using Polygons = List<List<IntPoint>>;
 
+	public class ErrorPathData
+	{
+		int currentPolyPathLine = -1;
+		int currentSegmentLine = -1;
+		string[] fileContent;
+		public ErrorPathData(string filePath)
+		{
+			if (File.Exists(filePath))
+			{
+				fileContent = File.ReadAllLines(filePath);
+			}
+			FindNextStartWith("polyPath", ref currentPolyPathLine);
+			FindNextStartWith("// startOverride", ref currentSegmentLine);
+		}
+
+		private void FindNextStartWith(string startString, ref int currentPolyPathLine, int searchDirection = 1)
+		{
+			int start = currentPolyPathLine + searchDirection;
+			int endValue = searchDirection == 1 ? fileContent.Length : -1;
+			if (start != endValue)
+			{
+				for (int i = start; i != endValue; i += searchDirection)
+				{
+					if (fileContent[i].StartsWith(startString))
+					{
+						currentPolyPathLine = i;
+						return;
+					}
+				}
+			}
+		}
+
+		public bool Valid { get { return currentPolyPathLine != -1; } }
+
+		private static Regex numberRegex = new Regex(@"[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?");
+		private static double GetNextNumber(String source, ref int startIndex)
+		{
+			Match numberMatch = numberRegex.Match(source, startIndex);
+			String returnString = numberMatch.Value;
+			startIndex = numberMatch.Index + numberMatch.Length;
+			double returnVal;
+			double.TryParse(returnString, NumberStyles.Number, CultureInfo.InvariantCulture, out returnVal);
+			return returnVal;
+		}
+
+		public string PolyPath { get { return fileContent[currentPolyPathLine]; } }
+		public MSIntPoint Start
+		{
+			get
+			{
+				// looks like '// startOverride = new MSIntPoint(114226, 73766); endOverride = new MSIntPoint(100094, 77302);'
+				string line = fileContent[currentSegmentLine];
+				int index = 0;
+				double x = GetNextNumber(line, ref index);
+				double y = GetNextNumber(line, ref index);
+				return new MSIntPoint(x, y);
+			}
+		}
+		public MSIntPoint End
+		{
+			get
+			{
+				string line = fileContent[currentSegmentLine];
+				int index = 0;
+				double skip = GetNextNumber(line, ref index);
+				skip = GetNextNumber(line, ref index);
+				double x = GetNextNumber(line, ref index);
+				double y = GetNextNumber(line, ref index);
+				return new MSIntPoint(x, y);
+			}
+		}
+
+		internal void PrevSegment()
+		{
+			FindNextStartWith("// startOverride", ref currentSegmentLine, -1);
+		}
+
+		internal void NextSegment()
+		{
+			FindNextStartWith("// startOverride", ref currentSegmentLine);
+			// make sure we didn't go past this paths segments
+		}
+
+		internal void PrevOutline()
+		{
+			FindNextStartWith("polyPath", ref currentPolyPathLine, -1);
+			// make sure we are on the segments for this path
+			currentSegmentLine = currentPolyPathLine;
+			NextSegment();
+		}
+
+		internal void NextOutline()
+		{
+			FindNextStartWith("polyPath", ref currentPolyPathLine);
+			// make sure we are on the segments for this path
+			currentSegmentLine = currentPolyPathLine;
+			NextSegment();
+		}
+	}
+
 	public class PolygonPathingDemo : SystemWindow
 	{
+		ErrorPathData errorData;
 		private long avoidInset;
 		private int badCount = 0;
 		private int bestPointCount = int.MaxValue;
@@ -85,7 +189,7 @@ namespace MatterHackers.PolygonPathing
 		public PolygonPathingDemo()
 			: base(740, 520)
 		{
-			BackgroundColor = RGBA_Bytes.White;
+			errorData = new ErrorPathData("C:/Development/MCCentral/MatterControl/bin/Debug/DebugPathFinder.txt");
 
 			StayInside.Checked = true;
 			AddChild(StayInside);
@@ -98,6 +202,10 @@ namespace MatterHackers.PolygonPathing
 			shapeTypeRadioGroup.AddRadioButton("Rocktopus");
 			shapeTypeRadioGroup.AddRadioButton("Spiral");
 			shapeTypeRadioGroup.AddRadioButton("Glyph");
+			if (errorData.Valid)
+			{
+				shapeTypeRadioGroup.AddRadioButton("Errors");
+			}
 			shapeTypeRadioGroup.SelectedIndex = 0;
 			AddChild(shapeTypeRadioGroup);
 
@@ -144,6 +252,8 @@ namespace MatterHackers.PolygonPathing
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
+			graphics2D.FillRectangle(LocalBounds, RGBA_Bytes.White);
+
 			CreatePolygonData();
 
 			if (overrideBadPolys != null)
@@ -243,6 +353,15 @@ namespace MatterHackers.PolygonPathing
 					graphics2D.DrawString("Outside", 30, Height - 60, color: RGBA_Bytes.Red);
 				}
 
+				if(avoid.AllPathSegmentsAreInsideOutlines(pathThatIsInside, pathStart, pathEnd))
+				{
+					graphics2D.DrawString("Good Path", 30, Height - 75, color: RGBA_Bytes.Green);
+				}
+				else
+				{
+					graphics2D.DrawString("Bad Path", 30, Height - 75, color: RGBA_Bytes.Red);
+				}
+
 				if (doSimplify)
 				{
 					SimplifyBadPolygon(pathStart, pathEnd, pathThatIsInside, found);
@@ -268,8 +387,8 @@ namespace MatterHackers.PolygonPathing
 					}
 				}
 
-				var image = avoid.OutlineData.InsideCache;
-				graphics2D.Render(image, Width - image.Width/4, Height - image.Height/4, image.Width/4, image.Height/4);
+				//var image = avoid.OutlineData.InsideCache;
+				//graphics2D.Render(image, Width - image.Width/4, Height - image.Height/4, image.Width/4, image.Height/4);
 			}
 
 			base.OnDraw(graphics2D);
@@ -351,7 +470,7 @@ namespace MatterHackers.PolygonPathing
 				{
 					sample[polyIndex].RemoveAt(pointIndex);
 				}
-				if (sample[polyIndex].Count < 3)
+				if (sample.Count > 1 && sample[polyIndex].Count < 3)
 				{
 					sample.RemoveAt(polyIndex);
 				}
@@ -619,6 +738,15 @@ namespace MatterHackers.PolygonPathing
 						pathToUse = curve;
 					}
 					break;
+
+				case 8: // errors
+					{
+						directPolygons = MSClipperLib.CLPolygonsExtensions.CreateFromString(errorData.PolyPath);
+						startOverride = errorData.Start;
+						endOverride = errorData.End;
+
+					}
+					break;
 			}
 
 			if (directPolygons == null)
@@ -649,6 +777,30 @@ namespace MatterHackers.PolygonPathing
 				}
 				updateScaleAndOffset = false;
 			}
+		}
+
+		public override void OnKeyDown(KeyEventArgs keyEvent)
+		{
+			switch(keyEvent.KeyCode)
+			{
+				case Keys.Left:
+					errorData.PrevSegment();
+					Invalidate();
+					break;
+				case Keys.Right:
+					errorData.NextSegment();
+					Invalidate();
+					break;
+				case Keys.Up:
+					errorData.PrevOutline();
+					Invalidate();
+					break;
+				case Keys.Down:
+					errorData.NextOutline();
+					Invalidate();
+					break;
+			}
+			base.OnKeyDown(keyEvent);
 		}
 
 		private MSPolygons CreateTravelPath(MSPolygons polygonsToPathAround, MSPolygons travelPolysLine)
