@@ -204,7 +204,11 @@ namespace MatterHackers.Agg.UI
 			{
 				DrawCount++;
 
-				AggSystemWindow.OnDraw(this.NewGraphics2D());
+				var graphics2D = this.NewGraphics2D();
+				// We must call on draw background as this is effectively our child and that is the way it is done in GuiWidget.
+				// Parents call child OnDrawBackground before they call OnDraw
+				AggSystemWindow.OnDrawBackground(graphics2D);
+				AggSystemWindow.OnDraw(graphics2D);
 
 				/*
 				var bitmap = new Bitmap((int)SystemWindow.Width, (int)SystemWindow.Height);

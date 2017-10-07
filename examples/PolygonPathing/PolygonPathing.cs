@@ -189,6 +189,8 @@ namespace MatterHackers.PolygonPathing
 		public PolygonPathingDemo()
 			: base(740, 520)
 		{
+			BackgroundColor = RGBA_Bytes.White;
+
 			errorData = new ErrorPathData("C:/Development/MCCentral/MatterControl/bin/Debug/DebugPathFinder.txt");
 
 			StayInside.Checked = true;
@@ -252,7 +254,7 @@ namespace MatterHackers.PolygonPathing
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			graphics2D.FillRectangle(LocalBounds, RGBA_Bytes.White);
+			//graphics2D.FillRectangle(LocalBounds, RGBA_Bytes.White);
 
 			CreatePolygonData();
 
