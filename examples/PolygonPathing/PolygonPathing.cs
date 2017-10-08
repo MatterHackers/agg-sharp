@@ -320,16 +320,19 @@ namespace MatterHackers.PolygonPathing
 
 				if (found)
 				{
-					MSIntPoint last = ObjectToScreen(pathStart);
+					PathStorage solution = new PathStorage();
+					MSIntPoint start = ObjectToScreen(pathStart);
+					solution.MoveTo(new Vector2(start.X, start.Y));
+
 					foreach (var inPoint in pathThatIsInside)
 					{
 						var point = ObjectToScreen(inPoint);
-						graphics2D.Line(last.X, last.Y, point.X, point.Y, new RGBA_Bytes(RGBA_Bytes.Black, 64), 3);
-						last = point;
+						solution.LineTo(new Vector2(point.X, point.Y));
 					}
 
-					MSIntPoint point2 = ObjectToScreen(pathEnd);
-					graphics2D.Line(last.X, last.Y, point2.X, point2.Y, new RGBA_Bytes(RGBA_Bytes.Black, 64), 3);
+					MSIntPoint end = ObjectToScreen(pathEnd);
+					solution.LineTo(new Vector2(end.X, end.Y));
+					graphics2D.Render(new Stroke(solution, 30), new RGBA_Bytes(RGBA_Bytes.Green, 100));
 
 					graphics2D.DrawString($"Length = {MSClipperLib.CLPolygonExtensions.PolygonLength(pathThatIsInside, false)}", 30, Height - 40);
 				}
