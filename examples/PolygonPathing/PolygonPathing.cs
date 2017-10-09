@@ -332,7 +332,7 @@ namespace MatterHackers.PolygonPathing
 
 					MSIntPoint end = ObjectToScreen(pathEnd);
 					solution.LineTo(new Vector2(end.X, end.Y));
-					graphics2D.Render(new Stroke(solution, 30), new RGBA_Bytes(RGBA_Bytes.Green, 100));
+					graphics2D.Render(new Stroke(solution, 5), new RGBA_Bytes(RGBA_Bytes.Green, 100));
 
 					graphics2D.DrawString($"Length = {MSClipperLib.CLPolygonExtensions.PolygonLength(pathThatIsInside, false)}", 30, Height - 40);
 				}
