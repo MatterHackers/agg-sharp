@@ -5,8 +5,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{C2189EA4-77A4-4A97-AD7D-72E76CAD9E8B}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>MatterHackers.Agg.GtkFileDialogs</RootNamespace>
-    <AssemblyName>GtkFileDialogs</AssemblyName>
+    <RootNamespace>agg_platform_gtk</RootNamespace>
+    <AssemblyName>agg_platform_gtk</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -39,7 +39,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="FileDialogPlugin.cs" />
+    <Compile Include="GtkFileDialogProvider.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
