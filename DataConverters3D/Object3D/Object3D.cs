@@ -175,7 +175,10 @@ namespace MatterHackers.DataConverters3D
 					_color = value;
 					if (_color.alpha == 255)
 					{
-						Mesh.FaceBspTree = null;
+						if (Mesh != null)
+						{
+							Mesh.FaceBspTree = null;
+						}
 					}
 					else if (Mesh != null
 						&& Mesh.FaceBspTree == null
