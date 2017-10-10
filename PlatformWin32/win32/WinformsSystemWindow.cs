@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
@@ -683,7 +684,8 @@ namespace MatterHackers.Agg.UI
 
 		public void CloseSystemWindow(SystemWindow systemWindow)
 		{
-			if (systemWindow == MainWindowsFormsWindow.AggSystemWindow)
+			var rootWindow = allOpenSystemWindows.LastOrDefault();
+			if (systemWindow == rootWindow)
 			{
 				// Close the main SystemWindow if it's being requested
 				UiThread.RunOnIdle(MainWindowsFormsWindow.Close);
