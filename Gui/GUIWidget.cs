@@ -1938,7 +1938,7 @@ namespace MatterHackers.Agg.UI
 			double size = 10;
 
 			// an arrow pointing right
-			PathStorage rightArrow = new PathStorage();
+			VertexStorage rightArrow = new VertexStorage();
 			rightArrow.MoveTo(new Vector2(size * 2, 0));
 			rightArrow.LineTo(new Vector2(size * 1, size * .6));
 			rightArrow.LineTo(new Vector2(size * 1, -size * .6));
@@ -2010,7 +2010,7 @@ namespace MatterHackers.Agg.UI
 			if (border.Width != 0
 				|| border.Height != 0)
 			{
-				PathStorage borderPath = new PathStorage();
+				VertexStorage borderPath = new VertexStorage();
 				borderPath.MoveTo(bounds.Left, bounds.Bottom);
 				borderPath.LineTo(bounds.Left, bounds.Top);
 				borderPath.LineTo(bounds.Right, bounds.Top);

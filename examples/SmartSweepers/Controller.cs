@@ -10,9 +10,9 @@ namespace SmartSweeper
 {
 	public class CController
 	{
-		private PathStorage m_LinesToDraw = new PathStorage();
-		private PathStorage m_BestPathToDraw = new PathStorage();
-		private PathStorage m_AveragePathToDraw = new PathStorage();
+		private VertexStorage m_LinesToDraw = new VertexStorage();
+		private VertexStorage m_BestPathToDraw = new VertexStorage();
+		private VertexStorage m_AveragePathToDraw = new VertexStorage();
 		private double m_SweeperScale;
 
 		private Vector3[] sweeper = {new Vector3(-1, -1, 0),

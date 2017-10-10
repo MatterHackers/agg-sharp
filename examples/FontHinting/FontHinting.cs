@@ -70,7 +70,7 @@ namespace MatterHackers.Agg
 
 			ras.gamma(new gamma_none());
 
-			PathStorage ps = new PathStorage();
+			VertexStorage ps = new VertexStorage();
 			Stroke pg = new Stroke(ps);
 			pg.width(2);
 

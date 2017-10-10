@@ -86,7 +86,7 @@ namespace MatterHackers.DataConverters3D
 			// mirror left material across the origin
 			// union mirrored left with right material
 			// convert the data back to PathStorage
-			PathStorage cleanedPath = VertexSourceToClipperPolygons.CreatePathStorage(polygons);
+			VertexStorage cleanedPath = VertexSourceToClipperPolygons.CreatePathStorage(polygons);
 
 			Mesh mesh = new Mesh();
 

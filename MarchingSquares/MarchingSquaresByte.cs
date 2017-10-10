@@ -366,7 +366,7 @@ namespace MatterHackers.MarchingSquares
 		{
 			foreach (LineSegment lineSegment in LineSegments)
 			{
-				PathStorage m_LinesToDraw = new PathStorage();
+				VertexStorage m_LinesToDraw = new VertexStorage();
 				m_LinesToDraw.remove_all();
 				m_LinesToDraw.MoveTo(lineSegment.start.x, lineSegment.start.y);
 				m_LinesToDraw.LineTo(lineSegment.end.x, lineSegment.end.y);

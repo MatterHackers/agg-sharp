@@ -21,7 +21,7 @@ namespace Gaming.Game
 		private uint m_Height;
 		private Dictionary<String, HistoryData> m_DataHistoryArray;
 		private int m_ColorIndex;
-		private PathStorage m_LinesToDraw;
+		private VertexStorage m_LinesToDraw;
 
 		internal class HistoryData
 		{
@@ -124,7 +124,7 @@ namespace Gaming.Game
 
 		public DataViewGraph(Vector2 RenderPosition, uint Width, uint Height, double StartMin, double StartMax)
 		{
-			m_LinesToDraw = new PathStorage();
+			m_LinesToDraw = new VertexStorage();
 			m_DataHistoryArray = new Dictionary<String, HistoryData>();
 
 			m_Width = Width;

@@ -1869,7 +1869,7 @@ namespace MatterHackers.Agg
             1283.6,1393.6
         };
 
-		public static void Make(PathStorage ps)
+		public static void Make(VertexStorage ps)
 		{
 			ps.remove_all();
 			ps.MoveTo(poly1[0], poly1[1]);

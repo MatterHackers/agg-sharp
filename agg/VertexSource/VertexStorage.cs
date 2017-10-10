@@ -35,18 +35,18 @@ namespace MatterHackers.Agg.VertexSource
 	//
 	// See also: vertex_source concept
 	//------------------------------------------------------------------------
-	public class PathStorage : IVertexSource, IVertexDest
+	public class VertexStorage : IVertexSource, IVertexDest
 	{
 		#region InternalVertexStorage
 
-		private class VertexStorage
+		private class VertexData
 		{
 			private int m_allocated_vertices;
 			private ShapePath.FlagsAndCommand[] m_CommandAndFlags;
 			private double[] m_coord_x;
 			private double[] m_coord_y;
 			private int m_num_vertices;
-			public VertexStorage()
+			public VertexData()
 			{
 			}
 
@@ -213,15 +213,15 @@ namespace MatterHackers.Agg.VertexSource
 		#endregion InternalVertexStorage
 
 		private int iteratorIndex;
-		private VertexStorage vertices;
-		public PathStorage()
+		private VertexData vertices;
+		public VertexStorage()
 		{
-			vertices = new VertexStorage();
+			vertices = new VertexData();
 		}
 
-		public PathStorage(string svgDString)
+		public VertexStorage(string svgDString)
 		{
-			vertices = new VertexStorage();
+			vertices = new VertexData();
 			ParseSvgDString(svgDString);
 		}
 
@@ -249,7 +249,7 @@ namespace MatterHackers.Agg.VertexSource
 			ShapePath.FlagsAndCommand controlFlagsAndCommand = control.vertex(out controlX, out controlY);
 
 			int index = 0;
-			foreach (VertexData vertexData in test.Vertices())
+			foreach (VertexSource.VertexData vertexData in test.Vertices())
 			{
 				if (controlFlagsAndCommand != vertexData.command
 					|| controlX < vertexData.position.x - maxError || controlX > vertexData.position.x + maxError
@@ -638,12 +638,12 @@ namespace MatterHackers.Agg.VertexSource
 		// Join path. The path is joined with the existing one, that is,
 		// it behaves as if the pen of a plotter was always down (drawing)
 		//template<class VertexSource>
-		public void join_path(PathStorage vs)
+		public void join_path(VertexStorage vs)
 		{
 			join_path(vs, 0);
 		}
 
-		public void join_path(PathStorage vs, int path_id)
+		public void join_path(VertexStorage vs, int path_id)
 		{
 			double x, y;
 			vs.rewind(path_id);
@@ -975,7 +975,7 @@ namespace MatterHackers.Agg.VertexSource
 			iteratorIndex = pathId;
 		}
 
-		public void ShareVertexData(PathStorage pathStorageToShareFrom)
+		public void ShareVertexData(VertexStorage pathStorageToShareFrom)
 		{
 			vertices = pathStorageToShareFrom.vertices;
 		}
@@ -1155,7 +1155,7 @@ namespace MatterHackers.Agg.VertexSource
 			arc_to(rx, ry, angle, large_arc_flag, sweep_flag, dx, dy);
 		}
 		 */
-		public IEnumerable<VertexData> Vertices()
+		public IEnumerable<VertexSource.VertexData> Vertices()
 		{
 			int count = vertices.total_vertices();
 			for (int i = 0; i < count; i++)
@@ -1163,10 +1163,10 @@ namespace MatterHackers.Agg.VertexSource
 				double x = 0;
 				double y = 0;
 				ShapePath.FlagsAndCommand command = vertices.vertex(i, out x, out y);
-				yield return new VertexData(command, new Vector2(x, y));
+				yield return new VertexSource.VertexData(command, new Vector2(x, y));
 			}
 
-			yield return new VertexData(ShapePath.FlagsAndCommand.CommandStop, new Vector2(0, 0));
+			yield return new VertexSource.VertexData(ShapePath.FlagsAndCommand.CommandStop, new Vector2(0, 0));
 		}
 		/*
 		// Concatenate polygon/polyline.

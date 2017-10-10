@@ -165,7 +165,7 @@ namespace MomsSolitaire
 
 		public static IVertexSource CreatePath(String DFromSVGFile, double xOffset, double yOffset)
 		{
-			PathStorage path = new PathStorage();
+			VertexStorage path = new VertexStorage();
 			string[] splitOnSpace = DFromSVGFile.Split(' ');
 			string[] splitOnComma;
 			double xc1, yc1, xc2, yc2, x, y;
@@ -276,7 +276,7 @@ namespace MomsSolitaire
 				DestGraphics.Render(stringToDraw.Printer, new RGBA_Bytes(0, 0, 0));
 
 				RGBA_Bytes SuitColor = new RGBA_Bytes(0, 0, 0);
-				IVertexSource suitPath = new PathStorage();
+				IVertexSource suitPath = new VertexStorage();
 
 				switch (CardSuit)
 				{
