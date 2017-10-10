@@ -133,7 +133,6 @@ namespace MatterHackers.Agg.UI
 			Parent?.BringToFront();
 		}
 
-
 		private static ISystemWindowProvider systemWindowProvider = null;
 
 		public void ShowAsSystemWindow()
@@ -154,8 +153,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual bool Maximized { get; set; } = false;
 
-		private bool pendingSetInitialDesktopPosition = false;
-		private Point2D InitialDesktopPosition = new Point2D();
+		public Point2D InitialDesktopPosition = new Point2D();
 
 		public Point2D DesktopPosition
 		{
@@ -183,7 +181,6 @@ namespace MatterHackers.Agg.UI
 				}
 				else
 				{
-					pendingSetInitialDesktopPosition = true;
 					InitialDesktopPosition = position;
 				}
 			}
@@ -216,42 +213,5 @@ namespace MatterHackers.Agg.UI
 		public IPlatformWindow PlatformWindow { get; set; }
 
 		public override Keys ModifierKeys => PlatformWindow.ModifierKeys;
-
-		// {{{{{ Should be moved to SystemWindow
-
-		/*
-		public override Vector2 MinimumSize
-		{
-			get
-			{
-				return base.MinimumSize;
-			}
-			set
-			{
-				base.MinimumSize = value;
-
-				Size clientSize = new Size((int)Math.Ceiling(MinimumSize.x), (int)Math.Ceiling(MinimumSize.y));
-				Size windowSize = new Size(clientSize.Width + WindowsFormsWindow.Width - WindowsFormsWindow.ClientSize.Width,
-					clientSize.Height + WindowsFormsWindow.Height - WindowsFormsWindow.ClientSize.Height);
-
-				WindowsFormsWindow.MinimumSize = windowSize;
-			}
-		}
-
-		internal virtual void RequestClose()
-		{
-			if (!aggWidgetHasBeenClosed)
-			{
-				Close();
-			}
-		}
-
-		public override void OnClosed(EventArgs e)
-		{
-			WindowsFormsWindow.RequestClose();
-		}
-		*/
-
-		// }}}}} Should be moved to SystemWindow
 	}
 }

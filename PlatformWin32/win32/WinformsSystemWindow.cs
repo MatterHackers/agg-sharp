@@ -375,6 +375,8 @@ namespace MatterHackers.Agg.UI
 
 		public new void Show()
 		{
+			this.ClientSize = new Size((int)systemWindow.Width, (int)systemWindow.Height);
+
 			// Center the window if specified on the SystemWindow
 			if (MainWindowsFormsWindow != this && systemWindow.CenterInParent)
 			{
@@ -383,6 +385,15 @@ namespace MatterHackers.Agg.UI
 
 				this.Left = desktopBounds.X + desktopBounds.Width / 2 - (int)newItemBounds.Width / 2;
 				this.Top = desktopBounds.Y + desktopBounds.Height / 2 - (int)newItemBounds.Height / 2 - TitleBarHeight / 2;
+			}
+			else if (systemWindow.InitialDesktopPosition == new Point2D(-1, -1))
+			{
+				this.CenterToScreen();
+			}
+			else
+			{
+				this.StartPosition = FormStartPosition.Manual;
+				this.DesktopPosition = systemWindow.InitialDesktopPosition;
 			}
 
 			if (MainWindowsFormsWindow != this
@@ -618,8 +629,6 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private bool pendingSetInitialDesktopPosition = false;
-		private Point2D InitialDesktopPosition = new Point2D();
 		private static bool firstWindow = true;
 
 		public void ShowSystemWindow(SystemWindow systemWindow)
@@ -637,13 +646,6 @@ namespace MatterHackers.Agg.UI
 
 			// Set the active SystemWindow
 			this.AggSystemWindow = systemWindow;
-
-			if (pendingSetInitialDesktopPosition)
-			{
-				// and make sure the title is correct right now
-				pendingSetInitialDesktopPosition = false;
-				systemWindow.DesktopPosition = InitialDesktopPosition;
-			}
 
 			systemWindow.AnchorAll();
 

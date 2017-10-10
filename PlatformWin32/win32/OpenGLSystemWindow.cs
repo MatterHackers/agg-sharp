@@ -62,6 +62,7 @@ namespace MatterHackers.Agg.UI
 			{
 				case 32:
 					glControl = new AggGLControl(32, AggSystemWindow.StencilBufferDepth);
+					glControl.Dock = DockStyle.Fill;
 					break;
 
 				default:
@@ -76,7 +77,15 @@ namespace MatterHackers.Agg.UI
 
 			this.EventSink = new WinformsEventSink(glControl, AggSystemWindow);
 
-			Init();
+			// Init();
+			if (!AggSystemWindow.Resizable)
+			{
+				this.FormBorderStyle = FormBorderStyle.FixedDialog;
+				this.MaximizeBox = false;
+			}
+
+			this.IsInitialized = true;
+			initHasBeenCalled = true;
 		}
 
 		private void SetupViewport()
@@ -240,22 +249,6 @@ namespace MatterHackers.Agg.UI
 
 		private bool initHasBeenCalled = false;
 
-		public void Init()
-		{
-			this.ClientSize = new Size((int)AggSystemWindow.Width, (int)AggSystemWindow.Height);
-
-			if (!AggSystemWindow.Resizable)
-			{
-				this.FormBorderStyle = FormBorderStyle.FixedDialog;
-				this.MaximizeBox = false;
-			}
-
-			this.ClientSize = new Size((int)AggSystemWindow.Width, (int)AggSystemWindow.Height);
-
-			NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
-
-			initHasBeenCalled = true;
-		}
 		#endregion
 	}
 }
