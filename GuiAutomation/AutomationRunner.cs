@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.Agg;
@@ -791,7 +792,8 @@ namespace MatterHackers.GuiAutomation
 
 		public bool NamedWidgetExists(string widgetName, SearchRegion searchRegion = null)
 		{
-			foreach (SystemWindow window in SystemWindow.AllOpenSystemWindows.ToArray())
+			// Ignore SystemWindows with null PlatformWindow members - SystemWindow constructed but not yet shown
+			foreach (SystemWindow window in SystemWindow.AllOpenSystemWindows.Where(w => w.PlatformWindow != null).ToArray())
 			{
 				List<GuiWidget.WidgetAndPosition> foundChildren = new List<GuiWidget.WidgetAndPosition>();
 				window.FindNamedChildrenRecursive(widgetName, foundChildren);
