@@ -286,7 +286,7 @@ namespace MatterHackers.PolygonPathing
 					avoid = new PathFinder(polygonsToPathAround, avoidInset, null); // -600 is for a .4 nozzle in matterslice
 				}
 
-				IVertexSource outlineShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.OutlineData.Polygons), 1), TotalTransform);
+				IVertexSource outlineShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.OutsideData.Polygons), 1), TotalTransform);
 				IVertexSource pathingShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.PathingData.Polygons), 1), TotalTransform);
 
 				if (StayInside.Checked)
@@ -349,7 +349,7 @@ namespace MatterHackers.PolygonPathing
 
 				//RenderQuadTree(graphics2D, avoid.BoundaryEdgeQuadTrees, 0);
 
-				if (avoid.OutlineData.Polygons.PointIsInside(pathEnd, avoid.OutlineData.EdgeQuadTrees, avoid.OutlineData.EdgeQuadTrees, avoid.OutlineData.PointIsInside))
+				if (avoid.OutsideData.Polygons.PointIsInside(pathEnd, avoid.OutsideData.EdgeQuadTrees, avoid.OutsideData.EdgeQuadTrees, avoid.OutsideData.PointIsInside))
 				{
 					graphics2D.DrawString("Inside", 30, Height - 60, color: RGBA_Bytes.Green);
 				}
@@ -375,7 +375,7 @@ namespace MatterHackers.PolygonPathing
 				if(true)
 				{
 					MSPolygons pathsWithOverlapsRemoved;
-					var insetPolys = MSClipperLib.CLPolygonsExtensions.Offset(avoid.OutlineData.Polygons, 0);
+					var insetPolys = MSClipperLib.CLPolygonsExtensions.Offset(avoid.OutsideData.Polygons, 0);
 					if (insetPolys != null && insetPolys.Count > 0)
 					{
 						var pathHadOverlaps = QTPolygonExtensions.MergePerimeterOverlaps(insetPolys[0], avoidInset*2, out pathsWithOverlapsRemoved, true);
@@ -401,7 +401,7 @@ namespace MatterHackers.PolygonPathing
 
 		private void RenderCrossings(Graphics2D graphics2D, MSIntPoint pathStart, MSIntPoint pathEnd, PathFinder avoid)
 		{
-			var crossings = new List<Tuple<int, int, MSIntPoint>>(avoid.OutlineData.Polygons.FindCrossingPoints(pathStart, pathEnd, avoid.OutlineData.EdgeQuadTrees));
+			var crossings = new List<Tuple<int, int, MSIntPoint>>(avoid.OutsideData.Polygons.FindCrossingPoints(pathStart, pathEnd, avoid.OutsideData.EdgeQuadTrees));
 			crossings.Sort(new PolygonAndPointDirectionSorter(pathStart, pathEnd));
 
 			int index = 0;
@@ -488,10 +488,10 @@ namespace MatterHackers.PolygonPathing
 
 				var avoid2 = new PathFinder(sample, avoidInset, null); // -600 is for a .4 nozzle in matterslice
 				if (!avoid2.CreatePathInsideBoundary(start, end, pathThatIsInside)
-					&& avoid2.OutlineData.Polygons.PointIsInside(start)
-					&& PointCount(avoid2.OutlineData.Polygons) <= bestPointCount)
+					&& avoid2.OutsideData.Polygons.PointIsInside(start)
+					&& PointCount(avoid2.OutsideData.Polygons) <= bestPointCount)
 				{
-					bestPointCount = PointCount(avoid2.OutlineData.Polygons);
+					bestPointCount = PointCount(avoid2.OutsideData.Polygons);
 					overrideBadPolys = sample;
 					badCount = 0;
 				}
