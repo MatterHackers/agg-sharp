@@ -279,7 +279,7 @@
     <Compile Include="VertexSource\Ellipse.cs" />
     <Compile Include="VertexSource\FlattenCurve.cs" />
     <Compile Include="VertexSource\IVertexSource.cs" />
-    <Compile Include="VertexSource\PathStorage.cs" />
+    <Compile Include="VertexSource\VertexStorage.cs" />
     <Compile Include="VertexSource\RoundedRect.cs" />
     <Compile Include="Font\StyledTypeFace.cs" />
     <Compile Include="VertexSource\StrokeGenerator.cs" />
@@ -314,9 +314,8 @@
   <ItemGroup>
     <None Include="packages.config" />
     <EmbeddedResource Include="Platform\config.json">
-        <LogicalName>config.json</LogicalName>
+      <LogicalName>config.json</LogicalName>
     </EmbeddedResource>
-
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

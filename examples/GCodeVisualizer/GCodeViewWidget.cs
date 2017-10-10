@@ -243,7 +243,7 @@ namespace MatterHackers.GCodeVisualizer
 			}
 		}
 
-		private PathStorage grid = new PathStorage();
+		private VertexStorage grid = new VertexStorage();
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{

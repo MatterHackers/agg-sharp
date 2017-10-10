@@ -55,7 +55,7 @@ namespace MatterHackers.Agg.UI
 		private double m_ys1;
 		private double m_xs2;
 		private double m_ys2;
-		private VertexSource.PathStorage m_curve_pnt;
+		private VertexSource.VertexStorage m_curve_pnt;
 		private Stroke m_curve_poly;
 		private VertexSource.Ellipse m_ellipse;
 		private int m_idx;
@@ -72,7 +72,7 @@ namespace MatterHackers.Agg.UI
 			: base(location, false)
 		{
 			LocalBounds = new RectangleDouble(0, 0, size.x, size.y);
-			m_curve_pnt = new PathStorage();
+			m_curve_pnt = new VertexStorage();
 			m_curve_poly = new Stroke(m_curve_pnt);
 			m_ellipse = new Ellipse();
 

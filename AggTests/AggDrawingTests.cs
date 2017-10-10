@@ -61,7 +61,7 @@ namespace MatterHackers.Agg.Tests
 			// there is an assumtion that we got to save valid vertex lists at least once.
 			string controlFileTxt = testTypeString + " Control.Txt";
 			string vertexSourceFolder = "ControlVertexSources";
-			PathStorage controlVertexSource = new PathStorage();
+			VertexStorage controlVertexSource = new VertexStorage();
 			if (!Directory.Exists(vertexSourceFolder))
 			{
 				Directory.CreateDirectory(vertexSourceFolder);

@@ -33,7 +33,7 @@ namespace MatterHackers.Agg.Font
 			public int horiz_adv_x;
 			public int unicode;
 			public string glyphName;
-			public PathStorage glyphData = new PathStorage();
+			public VertexStorage glyphData = new VertexStorage();
 		}
 
 		private class Panos_1
@@ -313,7 +313,7 @@ namespace MatterHackers.Agg.Font
 			Glyph glyph;
 			if (glyphs.TryGetValue(character, out glyph))
 			{
-				PathStorage writeableGlyph = new PathStorage();
+				VertexStorage writeableGlyph = new VertexStorage();
 				writeableGlyph.ShareVertexData(glyph.glyphData);
 				return writeableGlyph;
 			}

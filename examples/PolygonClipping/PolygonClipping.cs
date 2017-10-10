@@ -11,7 +11,7 @@ namespace MatterHackers.Agg
 {
 	public class PolygonClippingDemo : GuiWidget
 	{
-		private PathStorage CombinePaths(IVertexSource a, IVertexSource b, ClipType clipType)
+		private VertexStorage CombinePaths(IVertexSource a, IVertexSource b, ClipType clipType)
 		{
 			List<List<IntPoint>> aPolys = VertexSourceToClipperPolygons.CreatePolygons(a);
 			List<List<IntPoint>> bPolys = VertexSourceToClipperPolygons.CreatePolygons(b);
@@ -24,7 +24,7 @@ namespace MatterHackers.Agg
 			List<List<IntPoint>> intersectedPolys = new List<List<IntPoint>>();
 			clipper.Execute(clipType, intersectedPolys);
 
-			PathStorage output = VertexSourceToClipperPolygons.CreatePathStorage(intersectedPolys);
+			VertexStorage output = VertexSourceToClipperPolygons.CreatePathStorage(intersectedPolys);
 
 			output.Add(0, 0, ShapePath.FlagsAndCommand.CommandStop);
 
@@ -81,8 +81,8 @@ public PolygonClippingDemo()
 						//------------------------------------
 						// Two simple paths
 						//
-						PathStorage ps1 = new PathStorage();
-						PathStorage ps2 = new PathStorage();
+						VertexStorage ps1 = new VertexStorage();
+						VertexStorage ps2 = new VertexStorage();
 
 						double x = m_x - Width / 2 + 100;
 						double y = m_y - Height / 2 + 100;
@@ -123,8 +123,8 @@ public PolygonClippingDemo()
 						//------------------------------------
 						// Closed stroke
 						//
-						PathStorage ps1 = new PathStorage();
-						PathStorage ps2 = new PathStorage();
+						VertexStorage ps1 = new VertexStorage();
+						VertexStorage ps2 = new VertexStorage();
 						Stroke stroke = new Stroke(ps2);
 						stroke.width(10.0);
 
@@ -161,8 +161,8 @@ public PolygonClippingDemo()
 						//------------------------------------
 						// Great Britain and Arrows
 						//
-						PathStorage gb_poly = new PathStorage();
-						PathStorage arrows = new PathStorage();
+						VertexStorage gb_poly = new VertexStorage();
+						VertexStorage arrows = new VertexStorage();
 						GreatBritanPathStorage.Make(gb_poly);
 						make_arrows(arrows);
 
@@ -198,7 +198,7 @@ public PolygonClippingDemo()
 						Stroke stroke = new Stroke(sp);
 						stroke.width(15.0);
 
-						PathStorage gb_poly = new PathStorage();
+						VertexStorage gb_poly = new VertexStorage();
 						GreatBritanPathStorage.Make(gb_poly);
 
 						Affine mtx = Affine.NewIdentity(); ;
@@ -228,7 +228,7 @@ public PolygonClippingDemo()
 						Stroke stroke = new Stroke(sp);
 						stroke.width(15.0);
 
-						PathStorage glyph = new PathStorage();
+						VertexStorage glyph = new VertexStorage();
 						glyph.MoveTo(28.47, 6.45);
 						glyph.curve3(21.58, 1.12, 19.82, 0.29);
 						glyph.curve3(17.19, -0.93, 14.21, -0.93);
@@ -292,7 +292,7 @@ public PolygonClippingDemo()
 
 		private void CreateAndRenderCombined(Graphics2D graphics2D, IVertexSource ps1, IVertexSource ps2)
 		{
-			PathStorage combined = null;
+			VertexStorage combined = null;
 
 			switch (m_operation.SelectedIndex)
 			{
@@ -368,7 +368,7 @@ public PolygonClippingDemo()
 			appWidget.CreateWidgetAndRunInWindow();
 		}
 
-		private void make_arrows(PathStorage ps)
+		private void make_arrows(VertexStorage ps)
 		{
 			ps.remove_all();
 

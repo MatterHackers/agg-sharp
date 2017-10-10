@@ -55,7 +55,7 @@ namespace MatterHackers.Agg
 				}
 
 				// and a little polygon
-				PathStorage littlePoly = new PathStorage();
+				VertexStorage littlePoly = new VertexStorage();
 				littlePoly.MoveTo(50, 50);
 				littlePoly.LineTo(150, 50);
 				littlePoly.LineTo(200, 200);

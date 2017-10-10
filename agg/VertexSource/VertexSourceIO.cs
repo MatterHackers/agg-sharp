@@ -4,7 +4,7 @@ namespace MatterHackers.Agg.VertexSource
 {
 	public class VertexSourceIO
 	{
-		public static void Load(PathStorage vertexSource, string pathAndFileName)
+		public static void Load(VertexStorage vertexSource, string pathAndFileName)
 		{
 			vertexSource.remove_all();
 			string[] allLines = File.ReadAllLines(pathAndFileName);
