@@ -43,7 +43,7 @@ namespace MatterHackers.Agg.UI
 		internal RemoveGlDataCallBackHolder releaseAllGlData = new RemoveGlDataCallBackHolder();
 
 		// If you have an error here it is likely that you need to bulid your project with Platform Target x86.
-		public AggGLControl(int bitDepth, int setencilDepth)
+		public AggGLControl(int bitDepth, int stencilDepth)
 		//: base(new GraphicsMode(new ColorFormat(32), 32, 0, 4))
 		{
 			if (!checkedCapabilities)

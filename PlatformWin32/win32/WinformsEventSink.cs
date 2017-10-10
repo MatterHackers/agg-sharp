@@ -10,9 +10,9 @@ namespace MatterHackers.Agg.UI
 
 		private GuiWidget widgetToSendTo;
 
-		public WinformsEventSink(ContainerControl controlToHook, SystemWindow widgetToSendTo2)
+		public WinformsEventSink(ContainerControl controlToHook, SystemWindow systemWindow)
 		{
-			widgetToSendTo = widgetToSendTo2;
+			widgetToSendTo = systemWindow;
 			controlToHook.GotFocus += controlToHook_GotFocus;
 			controlToHook.LostFocus += controlToHook_LostFocus;
 
