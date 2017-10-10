@@ -340,7 +340,7 @@ namespace MatterHackers.Agg.UI
 				LocalBounds.Top + m_border_extra);
 			graphics2D.FillRectangle(backgroundRect, m_background_color);
 
-			PathStorage border = new PathStorage();
+			VertexStorage border = new VertexStorage();
 			border.LineTo(LocalBounds.Left, LocalBounds.Bottom);
 			border.LineTo(LocalBounds.Right, LocalBounds.Bottom);
 			border.LineTo(LocalBounds.Right, LocalBounds.Top);

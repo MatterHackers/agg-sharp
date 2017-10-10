@@ -78,7 +78,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private PathStorage directionArrow = null;
+		private VertexStorage directionArrow = null;
 
 		public BorderDouble MenuItemsPadding
 		{
@@ -349,14 +349,14 @@ namespace MatterHackers.Agg.UI
 			UseLeftIcons = useLeftIcons;
 			if (this.MenuDirection == Direction.Down)
 			{
-				directionArrow = new PathStorage();
+				directionArrow = new VertexStorage();
 				directionArrow.MoveTo(-arrowHeight, 0);
 				directionArrow.LineTo(arrowHeight, 0);
 				directionArrow.LineTo(0, -arrowHeight);
 			}
 			else if (this.MenuDirection == Direction.Up)
 			{
-				directionArrow = new PathStorage();
+				directionArrow = new VertexStorage();
 				directionArrow.MoveTo(-arrowHeight, -arrowHeight);
 				directionArrow.LineTo(arrowHeight, -arrowHeight);
 				directionArrow.LineTo(0, 0);

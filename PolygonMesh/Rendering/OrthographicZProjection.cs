@@ -38,7 +38,7 @@ namespace MatterHackers.PolygonMesh.Rendering
 		public static void DrawTo(Graphics2D graphics2D, Mesh meshToDraw, Matrix4X4 matrix, Vector2 offset, double scale, RGBA_Bytes silhouetteColor)
 		{
 			graphics2D.Rasterizer.gamma(new gamma_power(.3));
-			PathStorage polygonProjected = new PathStorage();
+			VertexStorage polygonProjected = new VertexStorage();
 			foreach (Face face in meshToDraw.Faces)
 			{
 				if (Vector3.TransformNormal(face.Normal, matrix).z > 0)

@@ -30,7 +30,7 @@ namespace MatterHackers.Agg
 	{
 		private const int cover_full = 255;
 		protected IScanlineCache m_ScanlineCache;
-		private PathStorage drawImageRectPath = new PathStorage();
+		private VertexStorage drawImageRectPath = new VertexStorage();
 		private MatterHackers.Agg.span_allocator destImageSpanAllocatorCache = new span_allocator();
 		private ScanlineCachePacked8 drawImageScanlineCache = new ScanlineCachePacked8();
 		private ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
