@@ -144,6 +144,9 @@ namespace MatterHackers.VectorMath
 				var projectionMatrix = Matrix4X4.Identity;
 				Matrix4X4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(45), width / height, zNear, zFar, out projectionMatrix);
 
+				// thinking about how to do orthographic
+				//projectionMatrix = Matrix4X4.CreateOrthographic(width * 10, height * 10, zNear, zFar);
+
 				this.ProjectionMatrix = projectionMatrix;
 				this.InverseProjectionMatrix = Matrix4X4.Invert(projectionMatrix);
 			}
