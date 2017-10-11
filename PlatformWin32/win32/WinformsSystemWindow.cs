@@ -103,7 +103,10 @@ namespace MatterHackers.Agg.UI
 
 			try
 			{
-				this.Icon = new Icon(iconPath);
+				if (File.Exists(iconPath))
+				{
+					this.Icon = new Icon(iconPath);
+				}
 			}
 			catch { }
 		}

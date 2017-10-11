@@ -153,7 +153,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual bool Maximized { get; set; } = false;
 
-		public Point2D InitialDesktopPosition = new Point2D();
+		public Point2D InitialDesktopPosition = new Point2D(-1, -1);
 
 		public Point2D DesktopPosition
 		{

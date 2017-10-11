@@ -99,7 +99,7 @@ namespace MatterHackers.Agg.Tests
 			{
 				Width = 50,
 				HAnchor = HAnchor.Stretch,
-				VAnchor = VAnchor.Stretch,
+				VAnchor = VAnchor.Fit | VAnchor.Center,
 				Margin = new BorderDouble(50),
 				Name = "rootClickable",
 				BackgroundColor = RGBA_Bytes.Blue
