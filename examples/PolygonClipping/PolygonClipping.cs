@@ -24,7 +24,7 @@ namespace MatterHackers.Agg
 			List<List<IntPoint>> intersectedPolys = new List<List<IntPoint>>();
 			clipper.Execute(clipType, intersectedPolys);
 
-			VertexStorage output = VertexSourceToClipperPolygons.CreatePathStorage(intersectedPolys);
+			VertexStorage output = VertexSourceToClipperPolygons.CreateVertexStorage(intersectedPolys);
 
 			output.Add(0, 0, ShapePath.FlagsAndCommand.CommandStop);
 
