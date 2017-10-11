@@ -84,6 +84,9 @@ namespace MatterHackers.Agg.UI
 				this.MaximizeBox = false;
 			}
 
+			// Restore to the last maximized or normal window state
+			this.WindowState = (this.AggSystemWindow.Maximized) ? FormWindowState.Maximized : FormWindowState.Normal;
+
 			this.IsInitialized = true;
 			initHasBeenCalled = true;
 		}
