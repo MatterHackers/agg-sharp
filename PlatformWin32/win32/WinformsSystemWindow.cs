@@ -685,9 +685,10 @@ namespace MatterHackers.Agg.UI
 		public void CloseSystemWindow(SystemWindow systemWindow)
 		{
 			var rootWindow = allOpenSystemWindows.LastOrDefault();
-			if (systemWindow == rootWindow)
+			if ((systemWindow == rootWindow && SingleWindowMode)
+				|| (systemWindow == MainWindowsFormsWindow.systemWindow && !SingleWindowMode))
 			{
-				// Close the main SystemWindow if it's being requested
+				// Close the main (first) PlatformWindow if it's being requested and not this instance
 				UiThread.RunOnIdle(MainWindowsFormsWindow.Close);
 				return;
 			}
