@@ -84,6 +84,9 @@ namespace MatterHackers.Agg.UI
 				this.MaximizeBox = false;
 			}
 
+			// Change the WindowsForms window to match the target SystemWindow bounds
+			this.ClientSize = new Size((int)AggSystemWindow.Width, (int)AggSystemWindow.Height);
+
 			// Restore to the last maximized or normal window state
 			this.WindowState = (this.AggSystemWindow.Maximized) ? FormWindowState.Maximized : FormWindowState.Normal;
 
