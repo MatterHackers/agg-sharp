@@ -60,9 +60,9 @@ namespace MatterHackers.PolygonPathing
 			if (File.Exists(filePath))
 			{
 				fileContent = File.ReadAllLines(filePath);
+				FindNextStartWith("polyPath", ref currentPolyPathLine);
+				FindNextStartWith("// startOverride", ref currentSegmentLine);
 			}
-			FindNextStartWith("polyPath", ref currentPolyPathLine);
-			FindNextStartWith("// startOverride", ref currentSegmentLine);
 		}
 
 		private void FindNextStartWith(string startString, ref int currentPolyPathLine, int searchDirection = 1)
@@ -286,8 +286,8 @@ namespace MatterHackers.PolygonPathing
 					avoid = new PathFinder(polygonsToPathAround, avoidInset, null); // -600 is for a .4 nozzle in matterslice
 				}
 
-				IVertexSource outlineShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.OutsideData.Polygons), 1), TotalTransform);
-				IVertexSource pathingShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.PathingData.Polygons), 1), TotalTransform);
+				IVertexSource outlineShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreateVertexStorage(MSPolygonsToPolygons(avoid.OutsideData.Polygons), 1), TotalTransform);
+				IVertexSource pathingShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreateVertexStorage(MSPolygonsToPolygons(avoid.PathingData.Polygons), 1), TotalTransform);
 
 				if (StayInside.Checked)
 				{
@@ -320,7 +320,7 @@ namespace MatterHackers.PolygonPathing
 
 				if (found)
 				{
-					PathStorage solution = new PathStorage();
+					VertexStorage solution = new VertexStorage();
 					MSIntPoint start = ObjectToScreen(pathStart);
 					solution.MoveTo(new Vector2(start.X, start.Y));
 
@@ -580,7 +580,7 @@ namespace MatterHackers.PolygonPathing
 			{
 				case 0:// simple boxes
 					{
-						PathStorage ps1 = new PathStorage();
+						VertexStorage ps1 = new VertexStorage();
 
 						ps1.MoveTo(100, 100);
 						ps1.LineTo(400, 100);
@@ -600,7 +600,7 @@ namespace MatterHackers.PolygonPathing
 
 				case 1:// simple polygon map
 					{
-						PathStorage ps1 = new PathStorage();
+						VertexStorage ps1 = new VertexStorage();
 
 						ps1.MoveTo(85, 417);
 						ps1.LineTo(338, 428);
@@ -688,7 +688,7 @@ namespace MatterHackers.PolygonPathing
 						//------------------------------------
 						// Spiral and glyph
 						//
-						PathStorage glyph = new PathStorage();
+						VertexStorage glyph = new VertexStorage();
 						glyph.MoveTo(28.47, 6.45);
 						glyph.curve3(21.58, 1.12, 19.82, 0.29);
 						glyph.curve3(17.19, -0.93, 14.21, -0.93);

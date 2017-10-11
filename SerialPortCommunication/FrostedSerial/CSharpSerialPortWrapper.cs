@@ -149,18 +149,7 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 
 		public void Write(string str)
 		{
-			lock (port)
-			{
-				Stream s = port.BaseStream;
-				byte[] toBytes = Encoding.ASCII.GetBytes(str);
-				IAsyncResult ar = s.WriteAsync(toBytes, 0, toBytes.Length);
-				if (!ar.IsCompleted)
-				{
-					ar.AsyncWaitHandle.WaitOne();
-				}
-			}
-
-			//port.Write(str);
+			port.Write(str);
 		}
 
 		public void Write(byte[] buffer, int offset, int count)
@@ -175,4 +164,4 @@ namespace MatterHackers.SerialPortCommunication.FrostedSerial
 	}
 
 #endif
-}
+		}
