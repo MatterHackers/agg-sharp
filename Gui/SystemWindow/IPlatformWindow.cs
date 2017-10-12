@@ -27,7 +27,6 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
@@ -42,17 +41,17 @@ namespace MatterHackers.Agg.UI
 
 		Vector2 MinimumSize { get; set; }
 
-		Agg.UI.Keys ModifierKeys { get; }
+		Keys ModifierKeys { get; }
 
 		void BringToFront();
 
 		void Invalidate(RectangleDouble rectToInvalidate);
 
-		void BoundsChanged(EventArgs e);
-
 		void Close();
 
 		void SetCursor(Cursors cursorToSet);
+
+		Graphics2D NewGraphics2D();
 
 		void ShowSystemWindow(SystemWindow systemWindow);
 

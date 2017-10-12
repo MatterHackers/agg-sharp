@@ -133,6 +133,11 @@ namespace MatterHackers.Agg.UI
 			Parent?.BringToFront();
 		}
 
+		public override Graphics2D NewGraphics2D()
+		{
+			return this.PlatformWindow.NewGraphics2D();
+		}
+
 		private static ISystemWindowProvider systemWindowProvider = null;
 
 		public void ShowAsSystemWindow()

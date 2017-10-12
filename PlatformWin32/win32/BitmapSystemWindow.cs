@@ -47,9 +47,10 @@ namespace MatterHackers.Agg.UI
 {
 	public class BitmapSystemWindow : WinformsSystemWindow
 	{
-		public BitmapSystemWindow(SystemWindow childSystemWindow)
+		internal WindowsFormsBitmapBackBuffer bitmapBackBuffer = new WindowsFormsBitmapBackBuffer();
+
+		public BitmapSystemWindow()
 		{
-			this.AggSystemWindow = childSystemWindow;
 		}
 
 		public override void CopyBackBufferToScreen(Graphics displayGraphics)
@@ -83,10 +84,10 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		internal WindowsFormsBitmapBackBuffer bitmapBackBuffer = new WindowsFormsBitmapBackBuffer();
-
-		public override void BoundsChanged(EventArgs e)
+		protected override void OnResize(EventArgs e)
 		{
+			base.OnResize(e);
+
 			if (AggSystemWindow != null)
 			{
 				System.Drawing.Imaging.PixelFormat format = System.Drawing.Imaging.PixelFormat.Undefined;
@@ -108,8 +109,6 @@ namespace MatterHackers.Agg.UI
 				bitmapBackBuffer.Initialize((int)Width, (int)Height, bitDepth);
 				NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
 			}
-
-			base.BoundsChanged(e);
 		}
 
 		public override Graphics2D NewGraphics2D()
@@ -127,31 +126,34 @@ namespace MatterHackers.Agg.UI
 			return graphics2D;
 		}
 
-		public void Init(SystemWindow childSystemWindow)
+		protected override void OnLoad(EventArgs e)
 		{
+			base.OnLoad(e);
+
+			this.EventSink = new WinformsEventSink(this, AggSystemWindow);
+
 			System.Drawing.Size clientSize = new System.Drawing.Size();
-			clientSize.Width = (int)childSystemWindow.Width;
-			clientSize.Height = (int)childSystemWindow.Height;
+			clientSize.Width = (int)this.AggSystemWindow.Width;
+			clientSize.Height = (int)this.AggSystemWindow.Height;
 			this.ClientSize = clientSize;
 
-			if (!childSystemWindow.Resizable)
+			if (!this.AggSystemWindow.Resizable)
 			{
 				this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
 				this.MaximizeBox = false;
 			}
 
-			clientSize.Width = (int)childSystemWindow.Width;
-			clientSize.Height = (int)childSystemWindow.Height;
+			clientSize.Width = (int)this.AggSystemWindow.Width;
+			clientSize.Height = (int)this.AggSystemWindow.Height;
 			this.ClientSize = clientSize;
 
 			// OnInitialize(); {{
 
-			bitmapBackBuffer.Initialize((int)childSystemWindow.Width, (int)childSystemWindow.Height, childSystemWindow.BitDepth);
+			bitmapBackBuffer.Initialize((int)this.AggSystemWindow.Width, (int)this.AggSystemWindow.Height, this.AggSystemWindow.BitDepth);
 
 			NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
 
 			// OnInitialize(); }}
-
-		} 
+		}
 	}
 }

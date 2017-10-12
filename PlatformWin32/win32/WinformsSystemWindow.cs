@@ -467,14 +467,6 @@ namespace MatterHackers.Agg.UI
 		}
 		 */
 
-		public virtual void BoundsChanged(EventArgs e)
-		{
-			// Cascade Agg SystemWindow size change to Winforms
-			//
-			// TODO: It seems likely that we tell Winforms to resize, then Winforms tells us a to resize, then... ?
-			this.Invalidate();
-		}
-
 		public void SetCursor(Cursors cursorToSet)
 		{
 			switch (cursorToSet)
