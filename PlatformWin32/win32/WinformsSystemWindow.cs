@@ -296,18 +296,19 @@ namespace MatterHackers.Agg.UI
 				}
 				else
 				{
+					// Stop the RunOnIdle timer/pump
+					if (this.IsMainWindow)
+					{
+						idleCallBackTimer.Elapsed -= InvokePendingOnIdleActions;
+						idleCallBackTimer.Stop();
+					}
+
 					// Close the SystemWindow
 					if (!AggSystemWindow.HasBeenClosed)
 					{
 						// Store that the Close operation started here
 						winformAlreadyClosing = true;
 						AggSystemWindow.Close();
-					}
-
-					if (this.IsMainWindow)
-					{
-						idleCallBackTimer.Stop();
-						idleCallBackTimer.Elapsed -= InvokePendingOnIdleActions;
 					}
 				}
 			}
