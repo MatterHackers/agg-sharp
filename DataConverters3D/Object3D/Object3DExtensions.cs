@@ -178,11 +178,6 @@ namespace MatterHackers.PolygonMesh
 						child.MaterialIndex = objectToCollapse.MaterialIndex;
 					}
 
-					if (objectToCollapse.OutputType != PrintOutputTypes.Default)
-					{
-						child.OutputType = objectToCollapse.OutputType;
-					}
-
 					child.Matrix *= objectToCollapse.Matrix;
 
 					if (child.ItemType == Object3DTypes.SelectionGroup && depth > 0)

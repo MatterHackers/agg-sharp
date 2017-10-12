@@ -174,7 +174,7 @@ namespace MatterHackers.DataConverters3D
 		MeshGroup Flatten(Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings = null);
 		Object3DTypes ItemType { get; set; }
 
-		PrintOutputTypes OutputType { get; set; }
+		PrintOutputTypes OutputType { get; }
 
 		[JsonConverter(typeof(MatrixConverter))]
 		Matrix4X4 Matrix { get; set; }
