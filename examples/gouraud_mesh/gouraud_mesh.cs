@@ -5,10 +5,11 @@ using MatterHackers.Agg.VertexSource;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using MatterHackers.Agg.UI.Examples;
 
 namespace MatterHackers.Agg
 {
-	public class gouraud_mesh_application : GuiWidget
+	public class gouraud_mesh_application : GuiWidget, IDemoApp
 	{
 		private Stopwatch stopwatch = new Stopwatch();
 
@@ -31,6 +32,14 @@ namespace MatterHackers.Agg
 				dc = (dc_);
 			}
 		};
+
+		public string Title { get; } = "Gouraud Mesh Shading";
+
+		public string DemoCategory { get; } = "Vector";
+
+		public string DemoDescription { get; } = "Yet another example that demonstrates the power of compound shape rasterization. Here we create a "
+				+ "mesh of triangles and render them in one pass with multiple Gouraud shaders (span_gouraud_rgba). "
+				+ "The example demonstrates perfect Anti-Aliasing and perfect triangle stitching (seamless edges) at the same time.";
 
 		public struct mesh_triangle
 		{
@@ -447,30 +456,12 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new GouraudMeshShadingFactory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new gouraud_mesh_application();
 
-	public class GouraudMeshShadingFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new gouraud_mesh_application();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-				"Vector",
-				"Gouraud Mesh Shading",
-				"Yet another example that demonstrates the power of compound shape rasterization. Here we create a "
-				+ "mesh of triangles and render them in one pass with multiple Gouraud shaders (span_gouraud_rgba). "
-				+ "The example demonstrates perfect Anti-Aliasing and perfect triangle stitching (seamless edges) at the same time.",
-				400,
-				400);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(400, 400);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

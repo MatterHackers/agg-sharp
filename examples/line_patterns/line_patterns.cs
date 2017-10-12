@@ -32,6 +32,7 @@ using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
 
 namespace MatterHackers.Agg
@@ -103,7 +104,7 @@ namespace MatterHackers.Agg
 		}
 	};
 
-	public class line_patterns_application : GuiWidget
+	public class line_patterns_application : GuiWidget, IDemoApp
 	{
 		private RGBA_Bytes m_ctrl_color;
 		private CheckBox m_approximation_method;
@@ -128,6 +129,28 @@ namespace MatterHackers.Agg
 		public static ImageBuffer rbuf_img6 = new ImageBuffer();
 		public static ImageBuffer rbuf_img7 = new ImageBuffer();
 		public static ImageBuffer rbuf_img8 = new ImageBuffer();
+
+		static line_patterns_application()
+		{
+			var ImageIO = AggContext.ImageIO;
+			if (!ImageIO.LoadImageData("1.bmp", line_patterns_application.rbuf_img0)
+				|| !ImageIO.LoadImageData("2.bmp", line_patterns_application.rbuf_img1)
+				|| !ImageIO.LoadImageData("3.bmp", line_patterns_application.rbuf_img2)
+				|| !ImageIO.LoadImageData("4.bmp", line_patterns_application.rbuf_img3)
+				|| !ImageIO.LoadImageData("5.bmp", line_patterns_application.rbuf_img4)
+				|| !ImageIO.LoadImageData("6.bmp", line_patterns_application.rbuf_img5)
+				|| !ImageIO.LoadImageData("7.bmp", line_patterns_application.rbuf_img6)
+				|| !ImageIO.LoadImageData("8.bmp", line_patterns_application.rbuf_img7)
+				|| !ImageIO.LoadImageData("9.bmp", line_patterns_application.rbuf_img8))
+			{
+				String buf = "There must be files 1%s...9%s\n"
+							 + "Download and unzip:\n"
+							 + "http://www.antigrain.com/line_patterns.bmp.zip\n"
+							 + "or\n"
+							 + "http://www.antigrain.com/line_patterns.ppm.tar.gz\n";
+				throw new System.Exception(buf);
+			}
+		}
 
 		public line_patterns_application()
 		{
@@ -180,6 +203,12 @@ namespace MatterHackers.Agg
 
 			m_approximation_method.CheckedStateChanged += m_approximation_method_CheckedStateChanged;
 		}
+
+		public string Title { get; } = "Line Patterns";
+
+		public string DemoCategory { get; } = "Vector";
+
+		public string DemoDescription { get; } = "AGG Example. Drawing Lines with Image Patterns";
 
 		private void m_approximation_method_CheckedStateChanged(object sender, EventArgs e)
 		{
@@ -276,47 +305,12 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new LinePaternsFactory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new line_patterns_application();
 
-	public class LinePaternsFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			var ImageIO = AggContext.ImageIO;
-			if (!ImageIO.LoadImageData("1.bmp", line_patterns_application.rbuf_img0)
-				|| !ImageIO.LoadImageData("2.bmp", line_patterns_application.rbuf_img1)
-				|| !ImageIO.LoadImageData("3.bmp", line_patterns_application.rbuf_img2)
-				|| !ImageIO.LoadImageData("4.bmp", line_patterns_application.rbuf_img3)
-				|| !ImageIO.LoadImageData("5.bmp", line_patterns_application.rbuf_img4)
-				|| !ImageIO.LoadImageData("6.bmp", line_patterns_application.rbuf_img5)
-				|| !ImageIO.LoadImageData("7.bmp", line_patterns_application.rbuf_img6)
-				|| !ImageIO.LoadImageData("8.bmp", line_patterns_application.rbuf_img7)
-				|| !ImageIO.LoadImageData("9.bmp", line_patterns_application.rbuf_img8))
-			{
-				String buf = "There must be files 1%s...9%s\n"
-							 + "Download and unzip:\n"
-							 + "http://www.antigrain.com/line_patterns.bmp.zip\n"
-							 + "or\n"
-							 + "http://www.antigrain.com/line_patterns.ppm.tar.gz\n";
-				throw new System.Exception(buf);
-			}
-
-			return new line_patterns_application();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-				"Vector",
-				"Line Paterns",
-				"AGG Example. Drawing Lines with Image Patterns",
-				500,
-				450);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(500, 450);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

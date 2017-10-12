@@ -1,9 +1,8 @@
-using MatterHackers.Agg.Font;
-using MatterHackers.Agg.Transform;
-using MatterHackers.Agg.UI;
-using MatterHackers.Agg.VertexSource;
 using System;
 using System.Diagnostics;
+using MatterHackers.Agg.Font;
+using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 
 namespace MatterHackers.Agg
 {
@@ -22,7 +21,7 @@ namespace MatterHackers.Agg
 		}
 	}
 
-	public class GuiTester : GuiWidget
+	public class GuiTester : GuiWidget, IDemoApp
 	{
 		private TabControl mainNavigationTabControl;
 
@@ -58,6 +57,12 @@ namespace MatterHackers.Agg
 			AnchorAll();
 		}
 
+		public string Title { get; } = "GUI Tester";
+
+		public string DemoCategory { get; } = "GUI";
+
+		public string DemoDescription { get; } = "Shows a tabbed page of the windows controls that are available in ";
+
 		private bool putUpDiagnostics = false;
 		private Stopwatch totalTime = new Stopwatch();
 
@@ -83,28 +88,12 @@ namespace MatterHackers.Agg
 		{
 			Clipboard.SetSystemClipboard(new WindowsFormsClipboard());
 
-			AppWidgetFactory appWidget = new GuiTesterFactory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new GuiTester();
 
-	public class GuiTesterFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new GuiTester();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-			"GUI",
-			"GUI Tester",
-			"Shows a tabed page of the windows controls that are available in ",
-			800,
-			600);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(800, 600);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

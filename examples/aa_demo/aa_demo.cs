@@ -4,6 +4,7 @@ using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using System;
+using MatterHackers.Agg.UI.Examples;
 
 namespace MatterHackers.Agg
 {
@@ -69,7 +70,7 @@ namespace MatterHackers.Agg
 		}
 	}
 
-	public class aa_demo : GuiWidget
+	public class aa_demo : GuiWidget, IDemoApp
 	{
 		private double[] m_x = new double[3];
 		private double[] m_y = new double[3];
@@ -104,6 +105,16 @@ namespace MatterHackers.Agg
 			gammaSlider.SetRange(0.0, 3.0);
 			gammaSlider.Value = 1.0;
 		}
+
+		public string Title { get; } = "Zoomed Anti-Aliasing";
+
+		public string DemoCategory { get; } = "Vector";
+
+		public string DemoDescription { get; } = "Demonstration of the Anti-Aliasing principle with Subpixel Accuracy. The triangle "
+				+ "is rendered two times, with its “natural” size (at the bottom-left) and enlarged. "
+				+ "To draw the enlarged version there is a special scanline renderer written (see "
+				+ "class renderer_enlarged in the source code). You can drag the whole triangle as well "
+				+ "as each vertex of it. Also change “Gamma” to see how it affects the quality of Anti-Aliasing.";
 
 		public override void OnParentChanged(EventArgs e)
 		{
@@ -237,32 +248,12 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new aa_demoFactory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new aa_demo();
 
-	public class aa_demoFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new aa_demo();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-			"Vector",
-			"Zoomed Anti-Aliasing",
-			"Demonstration of the Anti-Aliasing principle with Subpixel Accuracy. The triangle "
-					+ "is rendered two times, with its “natural” size (at the bottom-left) and enlarged. "
-					+ "To draw the enlarged version there is a special scanline renderer written (see "
-					+ "class renderer_enlarged in the source code). You can drag the whole triangle as well "
-					+ "as each vertex of it. Also change “Gamma” to see how it affects the quality of Anti-Aliasing.",
-			600,
-			400);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(600, 400);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

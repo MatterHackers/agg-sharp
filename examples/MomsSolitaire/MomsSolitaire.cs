@@ -1,14 +1,15 @@
+using System;
+using System.Globalization;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
-using System;
-using System.Globalization;
 
 namespace MomsSolitaire
 {
-	public class MomsSolitaire : GuiWidget
+	public class MomsSolitaire : GuiWidget, IDemoApp
 	{
 		private static double CARD_WIDTH = 50;
 		private static double CARD_HEIGHT = 72;
@@ -46,6 +47,12 @@ namespace MomsSolitaire
 			inputString = "M -0.014134084,1046.8659 C -0.11617408,1047.0729 -0.51444404,1048.0169 -1.3283268,1049.1402 C -2.2279798,1050.3819 -2.8141348,1051.01 -3.5427888,1052.198 C -4.0205138,1052.9768 -4.5747888,1055.4361 -2.5444308,1055.9721 C -0.68185405,1056.4637 -0.31250405,1055.0924 -0.31250405,1055.0924 C -0.36461405,1056.9023 -0.36315405,1057.4807 -1.6400568,1057.7007 C -1.7048928,1057.7118 -1.7136608,1057.7763 -1.7001428,1057.8635 L 1.6996155,1057.8635 C 1.7131255,1057.7763 1.7043655,1057.7118 1.6395255,1057.7007 C 0.36262595,1057.4807 0.36408595,1056.9023 0.31197595,1055.0924 C 0.31197595,1055.0924 0.68132594,1056.4637 2.5438955,1055.9721 C 4.5742555,1055.4361 4.0199855,1052.9768 3.5422555,1052.198 C 2.8136055,1051.01 2.2274455,1050.3819 1.3277955,1049.1402 C 0.51391594,1048.0169 0.11564595,1047.0729 0.013605915,1046.8659 L -0.014134084,1046.8659 z";
 			m_SpadeShape = CreatePath(inputString, 0, -1052);
 		}
+
+		public string Title { get; } = "Moms Solitaire";
+
+		public string DemoCategory { get; } = "Game";
+
+		public string DemoDescription { get; } = "A port of the Forth solitaire game that my cousin Marlin Eller wrote for his mom on mothers day in 1989.";
 
 		public override void OnParentChanged(EventArgs e)
 		{
@@ -469,25 +476,17 @@ namespace MomsSolitaire
 					break;
 			}
 		}
-	}
 
-	public class MomsSolitaireFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
+
+		[STAThread]
+		public static void Main(string[] args)
 		{
-			return new MomsSolitaire();
-		}
+			var demoWidget = new MomsSolitaire();
 
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-			"Game",
-			"Moms Solitaire",
-			"A port of the Forth solitaire game that my cousin Marlin Eller wrote for his mom on mothers day in 1989.",
-			691,
-			390);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(691, 390);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

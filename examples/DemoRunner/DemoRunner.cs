@@ -1,24 +1,16 @@
-using MatterHackers.Agg.UI;
 using System;
-using System.Collections.Generic;
 using System.Linq;
+using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 
 namespace MatterHackers.Agg
 {
-	public class CaptionSorter : IComparer<AppWidgetFactory>
-	{
-		public int Compare(AppWidgetFactory a, AppWidgetFactory b)
-		{
-			return a.GetAppParameters().title.CompareTo(b.GetAppParameters().title);
-		}
-	}
-
 	internal class DemoRunner : GuiWidget
 	{
-		private static List<AppWidgetFactory> appWidgetFinder = PluginFinder.CreateInstancesOf<AppWidgetFactory>().OrderBy(a => a.GetAppParameters().title).ToList();
-
 		public DemoRunner()
 		{
+			var appWidgetFinder = PluginFinder.CreateInstancesOf<IDemoApp>().OrderBy(a => a.Title).ToList();
+
 			TabControl tabControl = new TabControl(Orientation.Vertical);
 			AddChild(tabControl);
 			tabControl.AnchorAll();
@@ -26,51 +18,12 @@ namespace MatterHackers.Agg
 			int count = appWidgetFinder.Count;
 			for (int i = 0; i < count; i++)
 			{
-				if (appWidgetFinder[i].GetAppParameters().title != "Demo Runner")
-				{
-					TabPage tabPage = new TabPage(appWidgetFinder[i].GetAppParameters().title);
-					tabPage.AddChild(appWidgetFinder[i].NewWidget());
-					tabControl.AddTab(tabPage, tabPage.Text);
-				}
+				TabPage tabPage = new TabPage(appWidgetFinder[i].Title);
+				tabPage.AddChild(appWidgetFinder[i] as GuiWidget);
+				tabControl.AddTab(tabPage, tabPage.Text);
 			}
 
 			AnchorAll();
-		}
-
-		private static bool usedMainThread = false;
-
-		public static void StartADemo(AppWidgetFactory appWidgetFactory)
-		{
-			if (usedMainThread)
-			{
-				System.AppDomainSetup domainSetup = new AppDomainSetup();
-				domainSetup.ApplicationBase = ".";
-				System.AppDomain newDomain = null;
-
-				bool usePermissionTest = false;
-				if (usePermissionTest)
-				{
-					System.Security.PermissionSet permissionSet = new System.Security.PermissionSet(System.Security.Permissions.PermissionState.None);
-					permissionSet.AddPermission(new System.Security.Permissions.SecurityPermission(System.Security.Permissions.SecurityPermissionFlag.Execution));
-					permissionSet.AddPermission(new System.Security.Permissions.FileIOPermission(System.Security.Permissions.PermissionState.Unrestricted));
-
-					newDomain = System.AppDomain.CreateDomain(appWidgetFactory.GetAppParameters().title, null, domainSetup, permissionSet, null);
-				}
-				else
-				{
-					newDomain = System.AppDomain.CreateDomain(appWidgetFactory.GetAppParameters().title);
-				}
-
-				string[] args = { appWidgetFactory.GetAppParameters().title };
-				newDomain.ExecuteAssembly("./DemoRunner.exe", args);
-				//System.AppDomain.Unload(newDomain);
-			}
-			else
-			{
-				usedMainThread = true;
-				appWidgetFactory.CreateWidgetAndRunInWindow();
-				//appWidgetFactory.CreateWidgetAndRunInWindow(AppWidgetFactory.ValidDepthVaules.Depth32, AppWidgetFactory.RenderSurface.OpenGL);
-			}
 		}
 
 		[STAThread]
@@ -78,58 +31,10 @@ namespace MatterHackers.Agg
 		{
 			Clipboard.SetSystemClipboard(new WindowsFormsClipboard());
 
-			if (args.Length > 0)
-			{
-				bool foundADemo = false;
-				for (int i = 0; i < appWidgetFinder.Count; i++)
-				{
-					if (args[0] == appWidgetFinder[i].GetAppParameters().title)
-					{
-						foundADemo = true;
-						StartADemo(appWidgetFinder[i]);
-					}
-				}
-
-				if (foundADemo)
-				{
-					return;
-				}
-			}
-
-			StartADemo(new DemoRunnerFactory());
-
-			//StartADemo(new MatterCadWidgetFactory());
-			//StartADemo(new GCodeVisualizerFactory());
-			//StartADemo(new ComponentRenderingFactory());
-			//StartADemo(new LionFactory());
-			//StartADemo(new GradientsFactory());
-			//StartADemo(new ImageFiltersFactory());
-			//StartADemo(new LionOutlineFactory());
-			//StartADemo(new image_resample());
-			//StartADemo(new FloodFillDemo());
-			//StartADemo(new aa_demoFactory());
-			//StartADemo(new BlurFactory());
-			//StartADemo(new GuiTesterFactory());
-		}
-	}
-
-	public class DemoRunnerFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new DemoRunner();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-			"Utility",
-			"Demo Runner",
-			"Use this to run all the demos.",
-			640,
-			480);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(640, 480);
+			systemWindow.Title = "Demo Runner";
+			systemWindow.AddChild(new DemoRunner());
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

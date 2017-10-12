@@ -1,8 +1,8 @@
+using System;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
-using System;
 
 namespace MatterHackers.Agg
 {
@@ -54,6 +54,12 @@ namespace MatterHackers.Agg
 			m_slider2.Value = 1.0;
 		}
 
+		public string Title { get; } = "Flood Fill";
+
+		public string DemoCategory { get; } = "Bitmap";
+
+		public string DemoDescription { get; } = "Demonstration of a flood filling algorithm.";
+
 		public override void OnParentChanged(EventArgs e)
 		{
 			AnchorAll();
@@ -91,28 +97,12 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new FloodFillFactory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new FloodFillDemo();
 
-	public class FloodFillFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new FloodFillDemo();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-			"Bitmap",
-			"Flood Fill",
-			"Demonstration of a flood filling algorithm.",
-			600,
-			400);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(600, 400);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

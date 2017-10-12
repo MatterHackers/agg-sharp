@@ -5,12 +5,13 @@ using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg
 {
-	public class image_resample : GuiWidget
+	public class image_resample : GuiWidget, IDemoApp
 	{
 		private Stopwatch stopwatch = new Stopwatch();
 
@@ -61,6 +62,12 @@ namespace MatterHackers.Agg
 			m_blur.Text = "Blur={0:F3}";
 			AddChild(m_blur);
 		}
+
+		public string Title { get; } = "Image Transformations with Resampling";
+
+		public string DemoCategory { get; } = "Bitmap";
+
+		public string DemoDescription { get; } = "The demonstration of image transformations with resampling. You can see the difference in quality between regular image transformers and the ones with resampling. Of course, image tranformations with resampling work slower because they provide the best possible quality.";
 
 		public override void OnParentChanged(EventArgs e)
 		{
@@ -440,25 +447,16 @@ namespace MatterHackers.Agg
 
 			base.OnKeyDown(keyEvent);
 		}
-	}
 
-	public class ImageResampleFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
+		[STAThread]
+		public static void Main(string[] args)
 		{
-			return new image_resample();
-		}
+			var demoWidget = new image_resample();
 
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-				"Bitmap",
-				"Image Transformations with Resampling",
-				"The demonstration of image transformations with resampling. You can see the difference in quality between regular image transformers and the ones with resampling. Of course, image tranformations with resampling work slower because they provide the best possible quality.",
-				600,
-				600);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(600, 600);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

@@ -47,10 +47,10 @@ namespace Gaming.Game
 			UiThread.RunOnIdle(OnIdle);
 		}
 
-		public override void OnParentChanged(EventArgs e)
+		public override void OnLoad(EventArgs args)
 		{
-			base.OnParentChanged(e);
 			CreateGraphs();
+			base.OnLoad(args);
 		}
 
 		public bool ShowFrameRate

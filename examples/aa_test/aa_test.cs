@@ -1,12 +1,13 @@
+using System;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
-using System;
 
 namespace MatterHackers.Agg
 {
-	public class aa_test : GuiWidget
+	public class aa_test : GuiWidget, IDemoApp
 	{
 		private double[] m_x = new double[2];
 		private double[] m_y = new double[2];
@@ -28,6 +29,12 @@ namespace MatterHackers.Agg
 			m_gamma.SetRange(0.0, 3.0);
 			m_gamma.Value = 1.8;
 		}
+
+		public string Title { get; } = "Anti-Alias Test";
+
+		public string DemoCategory { get; } = "Vector";
+
+		public string DemoDescription { get; } = "A test of Anti-Aliasing the same as in http://homepage.mac.com/arekkusu/bugs/invariance";
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
@@ -316,28 +323,12 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new AATestFactory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new aa_test();
 
-	public class AATestFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new aa_test();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-				"Vector",
-				"Anit-Alias Test",
-				"A test of Anti-Aliasing the same as in http://homepage.mac.com/arekkusu/bugs/invariance",
-				480,
-				350);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(480, 350);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

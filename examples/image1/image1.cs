@@ -4,12 +4,13 @@ using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg
 {
-	public class image1Widget : GuiWidget
+	public class image1Widget : GuiWidget, IDemoApp
 	{
 		private MatterHackers.Agg.UI.Slider drawAngle;
 		private MatterHackers.Agg.UI.Slider drawScale;
@@ -52,6 +53,14 @@ namespace MatterHackers.Agg
 			drawScale.SetRange(0.1, 5.0);
 			drawScale.Value = 1.0;
 		}
+
+		public string Title { get; } = "Image Rotate & Scale";
+
+		public string DemoCategory { get; } = "Bitmap";
+
+		public string DemoDescription { get; } = @"This is the first example of the image transformation algorithms.
+The example allows you to rotate and scale the image with respect to
+its center. Also, the image is scaled when resizing the window.";
 
 		private void NeedsRedraw(object sender, EventArgs e)
 		{
@@ -173,30 +182,12 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new Image1Factory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new image1Widget();
 
-	public class Image1Factory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new image1Widget();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-				"Bitmap",
-				"Image Rotate & Scale",
-				@"This is the first example of the image transformation algorithms.
-The example allows you to rotate and scale the image with respect to
-its center. Also, the image is scaled when resizing the window.",
-										   350,
-										   400);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(350, 400);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

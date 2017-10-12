@@ -65,6 +65,8 @@ namespace MatterHackers.GCodeVisualizer
 		public GCodeViewerApplication(string gCodeToLoad = "")
 			: base(800, 600)
 		{
+			this.Title = "G Code Visualizer";
+
 			MinimumSize = new VectorMath.Vector2(200, 200);
 			Title = "MatterHackers GCodeVisualizer";
 			gCodeViewWidget = new GCodeViewWidget(new Vector2(), new Vector2(100, 100));
@@ -103,6 +105,10 @@ namespace MatterHackers.GCodeVisualizer
 			AnchorAll();
 			UiThread.RunOnIdle(currentLayerIndex.Focus);
 		}
+
+		public string DemoCategory { get; } = "Other";
+
+		public string DemoDescription { get; } = "A sample application to visualize the g-code created for a rep-rap type FDM machine.";
 
 		private void SetActiveLayer(int layer)
 		{
@@ -168,26 +174,13 @@ namespace MatterHackers.GCodeVisualizer
 			app.DoubleBuffer = true;
 			app.BackBuffer.SetRecieveBlender(new BlenderPreMultBGRA());
 			app.ShowAsSystemWindow();
-		}
-	}
 
-	public class GCodeVisualizerFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new GCodeViewerApplication();
-		}
+			//var demoWidget = new aa_demo();
 
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-			"Other",
-			"G Code Visualizer",
-			"A sample application to visualize the g-code created for a rep-rap type FDM machine.",
-			600,
-			400);
-
-			return appWidgetInfo;
+			//var systemWindow = new SystemWindow(600, 400);
+			//systemWindow.Title = demoWidget.Title;
+			//systemWindow.AddChild(demoWidget);
+			//systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

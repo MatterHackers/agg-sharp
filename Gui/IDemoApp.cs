@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2017, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,34 +27,12 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.VectorMath;
-
-namespace MatterHackers.Agg.UI
+namespace MatterHackers.Agg.UI.Examples
 {
-	public interface IPlatformWindow
+	public interface IDemoApp
 	{
-		string Caption { get; set; }
-
-		int TitleBarHeight { get; }
-
-		Point2D DesktopPosition { get; set; }
-
-		Vector2 MinimumSize { get; set; }
-
-		Keys ModifierKeys { get; }
-
-		void BringToFront();
-
-		void Invalidate(RectangleDouble rectToInvalidate);
-
-		void Close();
-
-		void SetCursor(Cursors cursorToSet);
-
-		Graphics2D NewGraphics2D();
-
-		void ShowSystemWindow(SystemWindow systemWindow);
-
-		void CloseSystemWindow(SystemWindow systemWindow);
+		string DemoCategory { get; }
+		string Title { get; }
+		string DemoDescription { get; }
 	}
 }

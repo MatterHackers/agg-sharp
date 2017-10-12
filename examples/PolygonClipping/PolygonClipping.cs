@@ -1,15 +1,16 @@
+using System;
+using System.Collections.Generic;
 using ClipperLib;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
-using MatterHackers.VectorMath;
-using System;
-using System.Collections.Generic;
 using MatterHackers.DataConverters2D;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg
 {
-	public class PolygonClippingDemo : GuiWidget
+	public class PolygonClippingDemo : GuiWidget, IDemoApp
 	{
 		private VertexStorage CombinePaths(IVertexSource a, IVertexSource b, ClipType clipType)
 		{
@@ -34,23 +35,26 @@ namespace MatterHackers.Agg
 		private double m_x;
 		private double m_y;
 
-        private RadioButtonGroup m_operation = new RadioButtonGroup(new Vector2(555, 5), new Vector2(80, 130))
-        {
-            HAnchor = HAnchor.Right | HAnchor.Fit,
-            VAnchor = VAnchor.Bottom | VAnchor.Fit,
-            Margin = new BorderDouble(5),
-        };
-        private RadioButtonGroup m_polygons = new RadioButtonGroup(new Vector2(5, 5), new Vector2(205, 110))
-        {
-            HAnchor = HAnchor.Left | HAnchor.Fit,
-            VAnchor = VAnchor.Bottom | VAnchor.Fit,
-            Margin = new BorderDouble(5),
-        };
+		private RadioButtonGroup m_operation;
+		private RadioButtonGroup m_polygons;
 
-
-public PolygonClippingDemo()
+		public PolygonClippingDemo()
 		{
 			BackgroundColor = RGBA_Bytes.White;
+
+			m_operation = new RadioButtonGroup(new Vector2(555, 5), new Vector2(80, 130))
+			{
+				HAnchor = HAnchor.Right | HAnchor.Fit,
+				VAnchor = VAnchor.Bottom | VAnchor.Fit,
+				Margin = new BorderDouble(5),
+			};
+
+			m_polygons = new RadioButtonGroup(new Vector2(5, 5), new Vector2(205, 110))
+			{
+				HAnchor = HAnchor.Left | HAnchor.Fit,
+				VAnchor = VAnchor.Bottom | VAnchor.Fit,
+				Margin = new BorderDouble(5),
+			};
 
 			m_operation.AddRadioButton("None");
 			m_operation.AddRadioButton("OR");
@@ -71,6 +75,13 @@ public PolygonClippingDemo()
 
 			AnchorAll();
 		}
+
+		public string Title { get; } = "PolygonClipping";
+
+		public string DemoCategory { get; } = "Clipping";
+
+		public string DemoDescription { get; } = "Demonstration of general polygon clipping using the clipper library.";
+
 
 		private void render_gpc(Graphics2D graphics2D)
 		{
@@ -364,8 +375,12 @@ public PolygonClippingDemo()
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new PolygonClippingFactory();
-			appWidget.CreateWidgetAndRunInWindow();
+			var demoWidget = new PolygonClippingDemo();
+
+			var systemWindow = new SystemWindow(640, 520);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 
 		private void make_arrows(VertexStorage ps)
@@ -407,26 +422,6 @@ public PolygonClippingDemo()
 			ps.LineTo(1252.599999999999909, 1235.599999999999909);
 			ps.LineTo(1283.799999999999955, 1251.200000000000045);
 			ps.ClosePolygon();
-		}
-	}
-
-	public class PolygonClippingFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new PolygonClippingDemo();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-			"Clipping",
-			"PolygonClipping",
-			"Demonstration of general polygon clipping using the clipper library.",
-			640,
-			520);
-
-			return appWidgetInfo;
 		}
 	}
 

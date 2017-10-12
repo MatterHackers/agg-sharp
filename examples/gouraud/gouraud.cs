@@ -1,13 +1,14 @@
+using System;
+using System.Diagnostics;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
-using System;
-using System.Diagnostics;
 
 namespace MatterHackers.Agg
 {
-	public class gouraud_application : GuiWidget
+	public class gouraud_application : GuiWidget, IDemoApp
 	{
 		private double[] m_x = new double[3];
 		private double[] m_y = new double[3];
@@ -47,6 +48,20 @@ namespace MatterHackers.Agg
 			m_gamma.Value = 0.809;
 			m_alpha.Value = 1.0;
 		}
+
+		public string Title { get; } = "Gouraud Colors";
+
+		public string DemoCategory { get; } = "Vector";
+
+		public string DemoDescription { get; } = "Gouraud shading. It's a simple method of interpolating colors in a triangle. There's no 'cube' drawn"
+				+ ", there're just 6 triangles. You define a triangle and colors in its vertices. When rendering, the "
+				+ "colors will be linearly interpolated. But there's a problem that appears when drawing adjacent "
+				+ "triangles with Anti-Aliasing. Anti-Aliased polygons do not 'dock' to each other correctly, there "
+				+ "visual artifacts at the edges appear. I call it “the problem of adjacent edges”. AGG has a simple"
+				+ " mechanism that allows you to get rid of the artifacts, just dilating the polygons and/or changing "
+				+ "the gamma-correction value. But it's tricky, because the values depend on the opacity of the polygons."
+				+ " In this example you can change the opacity, the dilation value and gamma. Also you can drag the "
+				+ "Red, Green and Blue corners of the “cube”.";
 
 		private void SliderValueChanged(object sender, EventArgs e)
 		{
@@ -278,36 +293,12 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new gouraud_application_Factory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new gouraud_application();
 
-	public class gouraud_application_Factory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new gouraud_application();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-				"Vector",
-				"Gouraud Colors",
-				"Gouraud shading. It's a simple method of interpolating colors in a triangle. There's no 'cube' drawn"
-				+ ", there're just 6 triangles. You define a triangle and colors in its vertices. When rendering, the "
-				+ "colors will be linearly interpolated. But there's a problem that appears when drawing adjacent "
-				+ "triangles with Anti-Aliasing. Anti-Aliased polygons do not 'dock' to each other correctly, there "
-				+ "visual artifacts at the edges appear. I call it “the problem of adjacent edges”. AGG has a simple"
-				+ " mechanism that allows you to get rid of the artifacts, just dilating the polygons and/or changing "
-				+ "the gamma-correction value. But it's tricky, because the values depend on the opacity of the polygons."
-				+ " In this example you can change the opacity, the dilation value and gamma. Also you can drag the "
-				+ "Red, Green and Blue corners of the “cube”.",
-				400,
-				320);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(400, 300);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

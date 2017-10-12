@@ -1,13 +1,14 @@
+using System;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
-using System;
 
 namespace MatterHackers.Agg
 {
-	public class rounded_rect_application : GuiWidget
+	public class rounded_rect_application : GuiWidget, IDemoApp
 	{
 		private double[] m_x = new double[2];
 		private double[] m_y = new double[2];
@@ -60,6 +61,20 @@ namespace MatterHackers.Agg
 			m_DrawAsOutlineCheckBox.TextColor = new RGBA_Floats(.5, .5, .5).GetAsRGBA_Bytes();
 			//m_DrawAsOutlineCheckBox.inactive_color(new RGBA_Bytes(127, 127, 127));
 		}
+
+		public string Title { get; } = "Rounded Rect";
+
+		public string DemoCategory { get; } = "Vector";
+
+		public string DemoDescription { get; } = "Yet another example dedicated to Gamma Correction. If you have a CRT monitor: The rectangle looks bad - "
+				+ " the rounded corners are thicker than its side lines. First try to drag the “subpixel offset” control "
+				+ "— it simply adds some fractional value to the coordinates. When dragging you will see that the rectangle"
+				+ "is 'blinking'. Then increase 'Gamma' to about 1.5. The result will look almost perfect — the visual "
+				+ "thickness of the rectangle remains the same. That's good, but turn the checkbox 'White on black' on — what "
+				+ "do we see? Our rounded rectangle looks terrible. Drag the 'subpixel offset' slider — it's blinking as hell."
+				+ "Now decrease 'Gamma' to about 0.6. What do we see now? Perfect result! If you use an LCD monitor, the good "
+				+ "value of gamma will be closer to 1.0 in both cases — black on white or white on black. There's no "
+				+ "perfection in this world, but at least you can control Gamma in Anti-Grain Geometry :-).";
 
 		private void NeedsRedraw(object sender, EventArgs e)
 		{
@@ -170,36 +185,12 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new RoundedRectFactory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new rounded_rect_application();
 
-	public class RoundedRectFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new rounded_rect_application();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-				"Vector",
-				"Rounded Rect",
-				"Yet another example dedicated to Gamma Correction. If you have a CRT monitor: The rectangle looks bad - "
-				+ " the rounded corners are thicker than its side lines. First try to drag the “subpixel offset” control "
-				+ "— it simply adds some fractional value to the coordinates. When dragging you will see that the rectangle"
-				+ "is 'blinking'. Then increase 'Gamma' to about 1.5. The result will look almost perfect — the visual "
-				+ "thickness of the rectangle remains the same. That's good, but turn the checkbox 'White on black' on — what "
-				+ "do we see? Our rounded rectangle looks terrible. Drag the 'subpixel offset' slider — it's blinking as hell."
-				+ "Now decrease 'Gamma' to about 0.6. What do we see now? Perfect result! If you use an LCD monitor, the good "
-				+ "value of gamma will be closer to 1.0 in both cases — black on white or white on black. There's no "
-				+ "perfection in this world, but at least you can control Gamma in Anti-Grain Geometry :-).",
-				600,
-				400);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(600, 400);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

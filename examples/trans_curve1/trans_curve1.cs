@@ -1,9 +1,10 @@
-using MatterHackers.Agg.UI;
 using System;
+using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 
 namespace MatterHackers.Agg
 {
-	public class trans_curve1_application : GuiWidget
+	public class trans_curve1_application : GuiWidget, IDemoApp
 	{
 		private PolygonEditWidget m_poly;
 		private Slider m_num_points;
@@ -49,6 +50,12 @@ namespace MatterHackers.Agg
 			m_animate.CheckedStateChanged += m_animate_CheckedStateChanged;
 			AddChild(m_animate);
 		}
+
+		public string Title { get; } = "Trans Curve1";
+
+		public string DemoCategory { get; } = "Vector";
+
+		public string DemoDescription { get; } = "AGG has a gray-scale renderer that can use any 8-bit color channel of an RGB or RGBA frame buffer. Most likely it will be used to draw gray-scale images directly in the alpha-channel.";
 
 		private void on_init()
 		{
@@ -130,28 +137,12 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new TransCurve1Factory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new trans_curve1_application();
 
-	public class TransCurve1Factory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new trans_curve1_application();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-				"Vector",
-				"Trans Curve1",
-				"AGG has a gray-scale renderer that can use any 8-bit color channel of an RGB or RGBA frame buffer. Most likely it will be used to draw gray-scale images directly in the alpha-channel.",
-				600,
-				600);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(600, 600);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

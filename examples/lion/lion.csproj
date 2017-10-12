@@ -179,5 +179,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <EmbeddedResource Include="config.json" />
   </ItemGroup>
 </Project>
