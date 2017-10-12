@@ -46,24 +46,9 @@ namespace MatterHackers.Agg.UI
 
 		public int StencilBufferDepth { get; set; }
 
-		private string title = "";
-
 		public ToolTipManager ToolTipManager { get; private set; }
 
-		public string Title
-		{
-			get
-			{
-				return title;
-			}
-			set
-			{
-				if (title != value)
-				{
-					title = value;
-				}
-			}
-		}
+		public string Title { get; set; }
 
 		public enum PixelTypes { Depth24 = 24, Depth32 = 32, DepthFloat = 128 };
 
