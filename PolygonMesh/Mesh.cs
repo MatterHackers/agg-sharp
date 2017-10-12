@@ -1253,9 +1253,11 @@ namespace MatterHackers.PolygonMesh
 			return cachedAABB;
 		}
 
-		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 transform)
+		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 transform,  bool requirePrecision = false)
 		{
-			if (Vertices.Count > 100)
+			// if precision is not required and the mesh is "big", transform the simple bounds
+			if (!requirePrecision
+				&& Vertices.Count > 100)
 			{
 				// use the cache
 				return GetAxisAlignedBoundingBox().NewTransformed(transform);
