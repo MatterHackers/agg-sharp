@@ -280,6 +280,8 @@ namespace MatterHackers.Agg.UI
 			base.SetVisibleCore(value);
 		}
 
+		private bool winformAlreadyClosing = false;
+
 		protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
 		{
 			if (AggSystemWindow != null && !AggSystemWindow.HasBeenClosed)
@@ -294,8 +296,11 @@ namespace MatterHackers.Agg.UI
 				}
 				else
 				{
+					// Close the SystemWindow
 					if (!AggSystemWindow.HasBeenClosed)
 					{
+						// Store that the Close operation started here
+						winformAlreadyClosing = true;
 						AggSystemWindow.Close();
 					}
 
@@ -659,6 +664,12 @@ namespace MatterHackers.Agg.UI
 
 		public void CloseSystemWindow(SystemWindow systemWindow)
 		{
+			// Prevent our call to SystemWindow.Close from recursing
+			if (this.winformAlreadyClosing)
+			{
+				return;
+			}
+
 			var rootWindow = allOpenSystemWindows.LastOrDefault();
 			if ((systemWindow == rootWindow && SingleWindowMode)
 				|| (systemWindow == MainWindowsFormsWindow.systemWindow && !SingleWindowMode))
