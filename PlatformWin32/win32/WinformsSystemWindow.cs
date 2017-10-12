@@ -664,7 +664,14 @@ namespace MatterHackers.Agg.UI
 				|| (systemWindow == MainWindowsFormsWindow.systemWindow && !SingleWindowMode))
 			{
 				// Close the main (first) PlatformWindow if it's being requested and not this instance
-				UiThread.RunOnIdle(MainWindowsFormsWindow.Close);
+				if (this.InvokeRequired)
+				{
+					this.Invoke((Action)MainWindowsFormsWindow.Close);
+				}
+				else
+				{
+					MainWindowsFormsWindow.Close();
+				}
 				return;
 			}
 
@@ -681,7 +688,14 @@ namespace MatterHackers.Agg.UI
 			{
 				if (!this.IsDisposed && !this.IsDisposed)
 				{
-					UiThread.RunOnIdle(this.Close);
+					if (this.InvokeRequired)
+					{
+						this.Invoke((Action)this.Close);
+					}
+					else
+					{
+						this.Close();
+					}
 				}
 			}
 		}
