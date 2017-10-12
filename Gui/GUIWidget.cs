@@ -494,8 +494,6 @@ namespace MatterHackers.Agg.UI
 
 		public event EventHandler<KeyEventArgs> KeyUp;
 
-		public event EventHandler<ClosingEventArgs> Closing;
-
 		public event EventHandler<ClosedEventArgs> Closed;
 
 		public event EventHandler ParentChanged;
@@ -2107,23 +2105,6 @@ namespace MatterHackers.Agg.UI
 			return screenClipping.visibleAfterClipping;
 		}
 
-		public virtual void OnClosing(out bool cancelClose)
-		{
-			cancelClose = false;
-
-			if (Closing != null)
-			{
-				ClosingEventArgs closingEventArgs = new ClosingEventArgs();
-				Closing(this, closingEventArgs);
-				if (closingEventArgs.Cancel == true)
-				{
-					// someone canceled it so stop checking.
-					cancelClose = true;
-					return;
-				}
-			}
-		}
-
 		public void CloseOnIdle()
 		{
 			if (!HasBeenClosed)
@@ -2149,15 +2130,6 @@ namespace MatterHackers.Agg.UI
 
 			if (!HasBeenClosed)
 			{
-				bool cancelClose;
-				OnClosing(out cancelClose);
-
-				// If the close request was aborted by the control, abort the close attempt
-				if (cancelClose)
-				{
-					return;
-				}
-
 				HasBeenClosed = true;
 
 				this.CloseAllChildren(osRequest);

@@ -282,14 +282,13 @@ namespace MatterHackers.Agg.UI
 
 		protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
 		{
-			// Call on closing and check if we can close (a "do you want to save" might cancel the close. :).
-			bool cancelClose = false;
-
 			if (AggSystemWindow != null && !AggSystemWindow.HasBeenClosed)
 			{
-				AggSystemWindow.OnClosing(out cancelClose);
+				// Call on closing and check if we can close (a "do you want to save" might cancel the close. :).
+				var eventArgs = new ClosingEventArgs();
+				AggSystemWindow.OnClosing(eventArgs);
 
-				if (cancelClose)
+				if (eventArgs.Cancel)
 				{
 					e.Cancel = true;
 				}
@@ -615,11 +614,6 @@ namespace MatterHackers.Agg.UI
 
 		public void ShowSystemWindow(SystemWindow systemWindow)
 		{
-			// TODO: Now done at construction time, verify no issue
-			// osMappingWindow.Caption = systemWindow.Title;
-			// osMappingWindow.MinimumSize = systemWindow.MinimumSize;
-
-
 			if (SingleWindowMode)
 			{
 				// Store the active SystemWindow

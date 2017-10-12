@@ -36,6 +36,8 @@ namespace MatterHackers.Agg.UI
 {
 	public class SystemWindow : GuiWidget
 	{
+		public event EventHandler<ClosingEventArgs> Closing;
+
 		public bool AlwaysOnTopOfMain { get; set; }
 
 		public bool CenterInParent { get; set; } = true;
@@ -65,6 +67,11 @@ namespace MatterHackers.Agg.UI
 			// Invoke Close on our PlatformWindow and release our reference when complete
 			systemWindowProvider.CloseSystemWindow(this);
 			this.PlatformWindow = null;
+		}
+
+		public virtual void OnClosing(ClosingEventArgs eventArgs)
+		{
+			Closing?.Invoke(this, eventArgs);
 		}
 
 		public static List<SystemWindow> AllOpenSystemWindows { get; } = new List<SystemWindow>();
