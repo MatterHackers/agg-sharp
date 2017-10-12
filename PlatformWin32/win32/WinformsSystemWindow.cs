@@ -301,6 +301,10 @@ namespace MatterHackers.Agg.UI
 					{
 						idleCallBackTimer.Elapsed -= InvokePendingOnIdleActions;
 						idleCallBackTimer.Stop();
+
+						// Workaround for "Cannot access disposed object." exception
+						// https://stackoverflow.com/a/9669702/84369 - ".Stop() without .DoEvents() is not enough, as it'll dispose objects without waiting for your thread to finish its work"
+						Application.DoEvents();
 					}
 
 					// Close the SystemWindow
