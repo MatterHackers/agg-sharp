@@ -195,7 +195,7 @@ namespace MatterHackers.DataConverters3D
 
 		public int MaterialIndex { get; set; } = -1;
 
-		public Object3DTypes ItemType { get; set; } = Object3DTypes.Model;
+		public Object3DTypes ItemType { get; set; } = Object3DTypes.Default;
 
 		virtual public PrintOutputTypes OutputType
 		{

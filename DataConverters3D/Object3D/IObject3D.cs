@@ -41,9 +41,7 @@ namespace MatterHackers.DataConverters3D
 {
 	public enum Object3DTypes
 	{
-		Any,
-		Model,
-		Group,
+		Default,
 		SelectionGroup,
 	};
 
@@ -134,7 +132,7 @@ namespace MatterHackers.DataConverters3D
 			{
 				foreach (var child in collection.Children.ToList())
 				{
-					if (collection.ItemType != Object3DTypes.Group || child.OutputType != PrintOutputTypes.Hole)
+					if (collection.ItemType != Object3DTypes.Default || child.OutputType != PrintOutputTypes.Hole)
 					{
 						foreach (var meshTransform in child.VisibleMeshes(totalTransform, color, materialIndex, outputType))
 						{
