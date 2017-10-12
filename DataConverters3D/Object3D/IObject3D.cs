@@ -202,7 +202,7 @@ namespace MatterHackers.DataConverters3D
 		/// </summary>
 		/// <param name="offet">The initial offset to use for the bounds</param>
 		/// <returns></returns>
-		AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 offet);
+		AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 offet, bool requirePrecision = false);
 
 		/// <summary>
 		/// return a 64 bit hash code of the transforms and children and transforms
