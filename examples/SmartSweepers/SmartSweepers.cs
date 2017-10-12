@@ -1,11 +1,11 @@
+using System;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.UI;
-using System;
+using MatterHackers.Agg.UI.Examples;
 
 namespace SmartSweeper
 {
-	public class SmartSweepersApplication : Gaming.Game.GamePlatform
+	public class SmartSweepersApplication : Gaming.Game.GamePlatform, IDemoApp
 	{
 		private CController m_Controller;
 		private static double rtri;                                              // Angle For The Triangle ( NEW )
@@ -15,7 +15,12 @@ namespace SmartSweeper
 		public SmartSweepersApplication(double width, double height)
 			: base(60, 5, width, height)
 		{
+			this.Title = "Smart Sweepers";
 		}
+
+		public string DemoCategory { get; } = "Game";
+
+		public string DemoDescription { get; } = "Shows off a cool c# neral net framwork.";
 
 		private bool firstTime = true;
 
@@ -63,26 +68,6 @@ namespace SmartSweeper
 
 			smartSweepers.Title = "Smart Sweepers";
 			smartSweepers.ShowAsSystemWindow();
-		}
-	}
-
-	public class SmartSweepersFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new SmartSweepersApplication(640, 480);
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-				"Game",
-				"Smart Sweepers",
-				"Shows off a cool c# neral net framwork.",
-				640,
-				480);
-
-			return appWidgetInfo;
 		}
 	}
 }

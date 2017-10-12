@@ -1,16 +1,17 @@
 #define USE_CLIPPING_ALPHA_MASK
 
+using System;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
-using System;
 
 namespace MatterHackers.Agg
 {
-	public class alpha_mask2_application : GuiWidget
+	public class alpha_mask2_application : GuiWidget, IDemoApp
 	{
 		private byte[] alphaByteArray;
 
@@ -47,6 +48,12 @@ namespace MatterHackers.Agg
 			numMasksSlider.Text = "N={0:F3}";
 			numMasksSlider.OriginRelativeParent = Vector2.Zero;
 		}
+
+		public string Title { get; } = "Clipping to multiple rectangle regions";
+
+		public string DemoCategory { get; } = "Bitmap";
+
+		public string DemoDescription { get; } = "";
 
 		private unsafe void generate_alpha_mask(int cx, int cy)
 		{
@@ -306,36 +313,15 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public static void StartDemo()
-		{
-			AppWidgetFactory appWidget = new AlphaMask2Factory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			StartDemo();
-		}
-	}
+			var demoWidget = new alpha_mask2_application();
 
-	public class AlphaMask2Factory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new alpha_mask2_application();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-				"Bitmap",
-				"Clipping to multiple rectangle regions",
-				@"",
-										   512,
-										   400);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(512, 400);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

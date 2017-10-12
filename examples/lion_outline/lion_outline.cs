@@ -34,10 +34,12 @@ using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using System;
+using MatterHackers.Agg.UI.Examples;
+using MatterHackers.Agg.Platform;
 
 namespace MatterHackers.Agg
 {
-	public class lion_outline : GuiWidget
+	public class lion_outline : GuiWidget, IDemoApp
 	{
 		private MatterHackers.Agg.UI.Slider widthSlider;
 		private MatterHackers.Agg.UI.CheckBox renderAsScanlineCheckBox;
@@ -70,6 +72,18 @@ namespace MatterHackers.Agg
 			renderAccurateJoinsCheckBox = new CheckBox(200 + 10.0, 10.0 + 4.0 + 16.0, "Accurate Joins");
 			AddChild(renderAccurateJoinsCheckBox);
 		}
+
+		public string Title { get; } = "Lion Outline";
+
+		public string DemoCategory { get; } = "Vector";
+
+		public string DemoDescription { get; } = "The example demonstrates Maxim's algorithm of drawing Anti-Aliased lines. " +
+				"The algorithm works about 2.5 times faster than the scanline rasterizer but has " +
+				"some restrictions, particularly, line joins can be only of the �miter� type, " +
+				"and when so called miter limit is exceded, they are not as accurate as generated " +
+				"by the stroke converter (conv_stroke). To see the difference, maximize the window " +
+				"and try to rotate and scale the �lion� with and without using the scanline " +
+				"rasterizer (a checkbox at the bottom). The difference in performance is obvious.";
 
 		public override void OnParentChanged(EventArgs e)
 		{
@@ -187,35 +201,14 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new LionOutlineFactory();
-			appWidget.CreateWidgetAndRunInWindow();
-			//appWidget.CreateWidgetAndRunInWindow(surfaceType: AppWidgetFactory.RenderSurface.OpenGL);
-		}
-	}
+			//AggContext.Init(embeddedResourceName: "lion_outline.config.json");
 
-	public class LionOutlineFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new lion_outline();
-		}
+			var demoWidget = new lion_outline();
 
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-			"Vector",
-			"Lion Outline",
-			"The example demonstrates Maxim's algorithm of drawing Anti-Aliased lines. " +
-			"The algorithm works about 2.5 times faster than the scanline rasterizer but has" +
-			" some restrictions, particularly, line joins can be only of the �miter� type, " +
-			"and when so called miter limit is exceded, they are not as accurate as generated " +
-			"by the stroke converter (conv_stroke). To see the difference, maximize the window" +
-			" and try to rotate and scale the �lion� with and without using the scanline " +
-			"rasterizer (a checkbox at the bottom). The difference in performance is obvious.",
-			512,
-			512);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(512, 512);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

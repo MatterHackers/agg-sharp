@@ -27,14 +27,16 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
-using System;
 
 namespace MatterHackers.Agg
 {
-	public class Lion : GuiWidget
+	public class Lion : GuiWidget, IDemoApp
 	{
 		private Slider alphaSlider;
 		private LionShape lionShape = new LionShape();
@@ -52,6 +54,15 @@ namespace MatterHackers.Agg
 			alphaSlider.Text = "Alpha {0:F3}";
 			alphaSlider.Value = 0.1;
 		}
+
+		public string Title { get; } = "Lion Filled";
+
+		public string DemoCategory { get; } = "Vector";
+
+		public string DemoDescription { get; } = "Affine transformer, and basic renderers. You can rotate and scale the “Lion” with the "
+				+ "left mouse button. Right mouse button adds “skewing” transformations, proportional to the “X” "
+				+ "coordinate. The image is drawn over the old one with a cetrain opacity value. Change “Alpha” "
+				+ "to draw funny looking “lions”. Change window size to clear the window.";
 
 		public override void OnParentChanged(EventArgs e)
 		{
@@ -149,32 +160,15 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new LionFactory();
-			//appWidget.CreateWidgetAndRunInWindow();
-			appWidget.CreateWidgetAndRunInWindow(surfaceType: AppWidgetFactory.RenderSurface.OpenGL);
-		}
-	}
+			// Init agg with our OpenGL window definition
+			//AggContext.Init(embeddedResourceName: "lion.config.json");
 
-	public class LionFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new Lion();
-		}
+			var demoWidget = new Lion();
 
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-			"Vector",
-			"Lion Filled",
-			"Affine transformer, and basic renderers. You can rotate and scale the “Lion” with the"
-					+ " left mouse button. Right mouse button adds “skewing” transformations, proportional to the “X” "
-					+ "coordinate. The image is drawn over the old one with a cetrain opacity value. Change “Alpha” "
-					+ "to draw funny looking “lions”. Change window size to clear the window.",
-			512,
-			400);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(512, 400);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

@@ -5,6 +5,7 @@ using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using System;
+using MatterHackers.Agg.UI.Examples;
 
 namespace MatterHackers.Agg
 {
@@ -33,7 +34,7 @@ namespace MatterHackers.Agg
 		private byte[] m_profile;
 	};
 
-	public class Gradients : GuiWidget
+	public class Gradients : GuiWidget, IDemoApp
 	{
 		private double center_x = 350;
 		private double center_y = 280;
@@ -172,6 +173,12 @@ namespace MatterHackers.Agg
 			m_GradWrapRBox.AddRadioButton("Clamp");
 			m_GradWrapRBox.SelectedIndex = 0;
 		}
+
+		public string Title { get; } = "Gradients";
+
+		public string DemoCategory { get; } = "Vector";
+
+		public string DemoDescription { get; } = "This �sphere� is rendered with color gradients only. Initially there was an idea to compensate so called Mach Bands effect. To do so I added a gradient profile functor. Then the concept was extended to set a color profile. As a result you can render simple geometrical objects in 2D looking like 3D ones. In this example you can construct your own color profile and select the gradient function. There're not so many gradient functions in AGG, but you can easily add your own. Also, drag the �gradient� with the left mouse button, scale and rotate it with the right one.";
 
 		private void NeedRedraw(object sender, MouseEventArgs mouseEvent)
 		{
@@ -359,28 +366,12 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new GradientsFactory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new Gradients();
 
-	public class GradientsFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new Gradients();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-			"Vector",
-			"Gradients",
-			"This �sphere� is rendered with color gradients only. Initially there was an idea to compensate so called Mach Bands effect. To do so I added a gradient profile functor. Then the concept was extended to set a color profile. As a result you can render simple geometrical objects in 2D looking like 3D ones. In this example you can construct your own color profile and select the gradient function. There're not so many gradient functions in AGG, but you can easily add your own. Also, drag the �gradient� with the left mouse button, scale and rotate it with the right one.",
-			512,
-			400);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(512, 400);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

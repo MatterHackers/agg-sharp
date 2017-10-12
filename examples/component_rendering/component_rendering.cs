@@ -27,15 +27,16 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.VectorMath;
-using System;
 
 namespace MatterHackers.Agg
 {
-	public class ComponentRendering : GuiWidget
+	public class ComponentRendering : GuiWidget, IDemoApp
 	{
 		private Slider alphaSlider;
 		private CheckBox useBlackBackgroundCheckbox;
@@ -55,6 +56,12 @@ namespace MatterHackers.Agg
 			useBlackBackgroundCheckbox.TextColor = new RGBA_Bytes(127, 127, 127);
 			AddChild(useBlackBackgroundCheckbox);
 		}
+
+		public string Title { get; } = "Component Rendering";
+
+		public string DemoCategory { get; } = "Vector";
+
+		public string DemoDescription { get; } = "AGG has a gray-scale renderer that can use any 8-bit color channel of an RGB or RGBA frame buffer. Most likely it will be used to draw gray-scale images directly in the alpha-channel.";
 
 		public override void OnParentChanged(EventArgs e)
 		{
@@ -160,28 +167,13 @@ namespace MatterHackers.Agg
 		{
 			MatterHackers.Agg.Tests.AggDrawingTests.RunAllTests();
 
-			AppWidgetFactory appWidget = new ComponentRenderingFactory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new ComponentRendering();
 
-	public class ComponentRenderingFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new ComponentRendering();
-		}
+			var systemWindow = new SystemWindow(320, 320);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-				"Vector",
-				"Component Rendering",
-				"AGG has a gray-scale renderer that can use any 8-bit color channel of an RGB or RGBA frame buffer. Most likely it will be used to draw gray-scale images directly in the alpha-channel.",
-				320,
-				320);
-
-			return appWidgetInfo;
 		}
 	}
 }

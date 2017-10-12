@@ -37,12 +37,13 @@ using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg
 {
-	public class image_filters : FlowLayoutWidget
+	public class image_filters : FlowLayoutWidget, IDemoApp
 	{
 #if SourceDepthFloat
         public static ImageBufferFloat m_TempDestImage = new ImageBufferFloat();
@@ -136,6 +137,12 @@ namespace MatterHackers.Agg
 
 			filterSelectionButtons.background_color(new RGBA_Floats(0.0, 0.0, 0.0, 0.1));
 		}
+
+		public string Title { get; } = "Image Filters Comparison";
+
+		public string DemoCategory { get; } = "Bitmap";
+
+		public string DemoDescription { get; } = "The image transformer algorithm can work with different interpolation filters, such as Bilinear, Bicubic, Sinc, Blackman. The example demonstrates the difference in quality between different filters. When switch the �Run Test� on, the image starts rotating. But at each step there is the previously rotated image taken, so the quality degrades. This degradation as well as the performance depend on the type of the interpolation filter.";
 
 		public override void OnParentChanged(EventArgs e)
 		{
@@ -536,28 +543,12 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new ImageFiltersFactory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new image_filters();
 
-	public class ImageFiltersFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new image_filters();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-			"Bitmap",
-			"Image Filters Comparison",
-			"The image transformer algorithm can work with different interpolation filters, such as Bilinear, Bicubic, Sinc, Blackman. The example demonstrates the difference in quality between different filters. When switch the �Run Test� on, the image starts rotating. But at each step there is the previously rotated image taken, so the quality degrades. This degradation as well as the performance depend on the type of the interpolation filter.",
-			305,
-			325);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(305, 325);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

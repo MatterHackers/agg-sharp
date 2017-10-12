@@ -1,15 +1,16 @@
+using System;
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
-using System;
 
 namespace MatterHackers.Agg
 {
-	public class FontHinter : GuiWidget
+	public class FontHinter : GuiWidget, IDemoApp
 	{
 		private Slider pixelSizeSlider;
 		private Slider gammaSlider;
@@ -36,6 +37,12 @@ namespace MatterHackers.Agg
 
 			AddChild(topToBottom);
 		}
+
+		public string Title { get; } = "Font Hinter";
+
+		public string DemoCategory { get; } = "Bitmap";
+
+		public string DemoDescription { get; } = "";
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
@@ -104,28 +111,13 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new BlurFactory();
-			appWidget.CreateWidgetAndRunInWindow(SystemWindow.PixelTypes.Depth24);
-		}
-	}
+			var demoWidget = new FontHinter();
 
-	public class BlurFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new FontHinter();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-				"Bitmap",
-				"Font Hinter",
-				@"",
-				440,
-				330);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(440, 330);
+			systemWindow.PixelType = SystemWindow.PixelTypes.Depth24;
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 

@@ -1,16 +1,17 @@
+using System;
+using System.Diagnostics;
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
-using System;
-using System.Diagnostics;
 
 namespace MatterHackers.Agg
 {
-	public class blur : GuiWidget
+	public class blur : GuiWidget, IDemoApp
 	{
 		private RadioButtonGroup m_method;
 		private Slider m_radius;
@@ -88,6 +89,19 @@ namespace MatterHackers.Agg
 			m_shadow_ctrl.SetYN(3, m_shape_bounds.Top);
 			m_shadow_ctrl.line_color(new RGBA_Floats(0, 0.3, 0.5, 0.3));
 		}
+
+		public string Title { get; } = "Gaussian and Stack Blur";
+
+		public string DemoCategory { get; } = "Bitmap";
+
+		public string DemoDescription { get; } = @"Now you can blur rendered images rather fast! There two algorithms are used:
+Stack Blur by Mario Klingemann and Fast Recursive Gaussian Filter, described
+here and here (PDF). The speed of both methods does not depend on the filter radius.
+Mario's method works 3-5 times faster; it doesn't produce exactly Gaussian response,
+but pretty fair for most practical purposes. The recursive filter uses floating
+point arithmetic and works slower. But it is true Gaussian filter, with theoretically
+infinite impulse response. The radius (actually 2*sigma value) can be fractional
+and the filter produces quite adequate result.";
 
 		public override void OnParentChanged(EventArgs e)
 		{
@@ -264,35 +278,12 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new BlurFactory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new blur();
 
-	public class BlurFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new blur();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-				"Bitmap",
-				"Gaussian and Stack Blur",
-				@"Now you can blur rendered images rather fast! There two algorithms are used:
-Stack Blur by Mario Klingemann and Fast Recursive Gaussian Filter, described
-here and here (PDF). The speed of both methods does not depend on the filter radius.
-Mario's method works 3-5 times faster; it doesn't produce exactly Gaussian response,
-but pretty fair for most practical purposes. The recursive filter uses floating
-point arithmetic and works slower. But it is true Gaussian filter, with theoretically
-infinite impulse response. The radius (actually 2*sigma value) can be fractional
-and the filter produces quite adequate result.",
-										   440,
-										   330);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(440, 330);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }
