@@ -105,18 +105,9 @@ namespace MatterHackers.Agg.Platform
 		{
 			get
 			{
-				if(_config	== null)
+				if (_config == null)
 				{
-					if (File.Exists("config.json"))
-					{
-						// Use the file system based config or fall back to empty
-						_config = JsonConvert.DeserializeObject<PlatformConfig>(File.ReadAllText("config.json"));
-					}
-					else
-					{
-						// On desktop/msbuild the config.json embedded resource does not have a namespace qualifier. On Android/Mono it does and the caller should pass the right/full resource name
-						LoadConfigFromCallingAssembly("config.json");
-					}
+					Init("config.json");
 				}
 
 				return _config;
@@ -127,15 +118,24 @@ namespace MatterHackers.Agg.Platform
 			}
 		}
 
-		public static void LoadConfigFromCallingAssembly(string embeddedResourceName)
+		// On desktop/msbuild the config.json embedded resource does not have a namespace qualifier. On Android/Mono it does and the caller should pass the right/full resource name
+		public static void Init(string embeddedResourceName)
 		{
-			// Look for and use an embedded config
-			var resourceStream = Assembly.GetCallingAssembly()?.GetManifestResourceStream(embeddedResourceName);
-			if (resourceStream != null)
+			if (File.Exists("config.json"))
 			{
-				using (var reader = new StreamReader(resourceStream))
+				// Use the file system based config or fall back to empty
+				Config = JsonConvert.DeserializeObject<PlatformConfig>(File.ReadAllText("config.json"));
+			}
+			else
+			{
+				// Look for and use an embedded config
+				var resourceStream = Assembly.GetCallingAssembly()?.GetManifestResourceStream(embeddedResourceName);
+				if (resourceStream != null)
 				{
-					AggContext.Config = JsonConvert.DeserializeObject<PlatformConfig>(reader.ReadToEnd());
+					using (var reader = new StreamReader(resourceStream))
+					{
+						Config = JsonConvert.DeserializeObject<PlatformConfig>(reader.ReadToEnd());
+					}
 				}
 			}
 		}
