@@ -280,8 +280,6 @@ namespace MatterHackers.Agg.UI
 			base.SetVisibleCore(value);
 		}
 
-		private bool waitingForIdleTimerToStop = false;
-
 		protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
 		{
 			// Call on closing and check if we can close (a "do you want to save" might cancel the close. :).
@@ -302,17 +300,10 @@ namespace MatterHackers.Agg.UI
 						AggSystemWindow.Close();
 					}
 
-					if (this.IsMainWindow && !waitingForIdleTimerToStop)
+					if (this.IsMainWindow)
 					{
-						waitingForIdleTimerToStop = true;
 						idleCallBackTimer.Stop();
 						idleCallBackTimer.Elapsed -= InvokePendingOnIdleActions;
-						e.Cancel = true;
-						// We just need to wait for this event to end so we can re-enter the idle loop with the time stopped
-						// If we close with the idle loop timer not stopped we throw and exception.
-						System.Windows.Forms.Timer delayedCloseTimer = new System.Windows.Forms.Timer();
-						delayedCloseTimer.Tick += DoDelayedClose;
-						delayedCloseTimer.Start();
 					}
 				}
 			}
@@ -320,11 +311,6 @@ namespace MatterHackers.Agg.UI
 			base.OnClosing(e);
 		}
 
-		private void DoDelayedClose(object sender, EventArgs e)
-		{
-			((System.Windows.Forms.Timer)sender).Stop();
-			this.Close();
-		}
 
 		#region WidgetForWindowsFormsAbstract/WinformsWindowWidget
 		#endregion
