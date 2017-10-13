@@ -41,7 +41,9 @@ namespace MatterHackers.DataConverters3D
 {
 	public enum Object3DTypes
 	{
-		Default,
+		Any,
+		Model,
+		Group,
 		SelectionGroup,
 	};
 
@@ -132,7 +134,7 @@ namespace MatterHackers.DataConverters3D
 			{
 				foreach (var child in collection.Children.ToList())
 				{
-					if (collection.ItemType != Object3DTypes.Default || child.OutputType != PrintOutputTypes.Hole)
+					if (collection.ItemType != Object3DTypes.Group || child.OutputType != PrintOutputTypes.Hole)
 					{
 						foreach (var meshTransform in child.VisibleMeshes(totalTransform, color, materialIndex, outputType))
 						{
@@ -172,7 +174,7 @@ namespace MatterHackers.DataConverters3D
 		MeshGroup Flatten(Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings = null);
 		Object3DTypes ItemType { get; set; }
 
-		PrintOutputTypes OutputType { get; }
+		PrintOutputTypes OutputType { get; set; }
 
 		[JsonConverter(typeof(MatrixConverter))]
 		Matrix4X4 Matrix { get; set; }

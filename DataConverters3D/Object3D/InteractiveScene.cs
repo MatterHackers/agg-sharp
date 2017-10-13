@@ -45,6 +45,8 @@ namespace MatterHackers.MeshVisualizer
 	{
 		public event EventHandler SelectionChanged;
 
+		private IObject3D selectedItem;
+
 		public InteractiveScene()
 		{
 		}
@@ -54,22 +56,12 @@ namespace MatterHackers.MeshVisualizer
 		{
 			get
 			{
-				var selection = Children.Where((child) => child.ItemType == Object3DTypes.SelectionGroup);
-				if (selection.Count() == 0)
-				{
-					return null;
-				}
-				else if(selection.Count() == 1)
-				{
-					return selection.First();
-				}
-
-				throw new Exception("There sholud only ever be 0 or 1 selected object.");
+				return selectedItem;
 			}
 
 			set
 			{
-				if (SelectedItem != value)
+				if (selectedItem != value)
 				{
 					if (SelectedItem?.ItemType == Object3DTypes.SelectionGroup)
 					{
@@ -81,10 +73,7 @@ namespace MatterHackers.MeshVisualizer
 						});
 					}
 
-					if (value != null)
-					{
-						CreateSelectionWrapper(value);
-					}
+					selectedItem = value;
 					SelectionChanged?.Invoke(this, null);
 				}
 			}
@@ -98,6 +87,8 @@ namespace MatterHackers.MeshVisualizer
 
 		[JsonIgnore]
 		public bool ShowSelectionShadow { get; set; } = true;
+
+		public bool IsSelected(Object3DTypes objectType) => HasSelection && SelectedItem.ItemType == objectType;
 
 		public void Save(string mcxPath, string libraryPath, Action<double, string> progress = null)
 		{
@@ -207,50 +198,55 @@ namespace MatterHackers.MeshVisualizer
 
 		public void AddToSelection(IObject3D itemToAdd)
 		{
-			if (SelectedItem?.Children?.Contains(itemToAdd) == true)
+			if (itemToAdd == SelectedItem || SelectedItem?.Children?.Contains(itemToAdd) == true)
 			{
 				return;
 			}
 
 			if (this.HasSelection)
 			{
-				if (SelectedItem.ItemType != Object3DTypes.SelectionGroup)
+				if(SelectedItem.ItemType == Object3DTypes.SelectionGroup)
 				{
-					throw new Exception("Selected item must be a selection group.");
+					// Remove from the scene root
+					this.Children.Modify(list => list.Remove(itemToAdd));
+
+					// Move into the SelectionGroup
+					SelectedItem.Children.Modify(list => list.Add(itemToAdd));
 				}
-				// Remove from the scene root
-				this.Children.Modify(list => list.Remove(itemToAdd));
+				else // add a new selection group and add to its children
+				{
+					// We're adding a new item to the selection. To do so we wrap the selected item
+					// in a new group and with the new item. The selection will continue to grow in this
+					// way until it's applied, due to a loss of focus or until a group operation occurs
+					var newSelectionGroup = new Object3D
+					{
+						ItemType = Object3DTypes.SelectionGroup,
+					};
 
-				// Move into the SelectionGroup
-				SelectedItem.Children.Modify(list => list.Add(itemToAdd));
+					newSelectionGroup.Children.Modify(list =>
+					{
+						list.Add(SelectedItem);
+						list.Add(itemToAdd);
+					});
+
+					this.Children.Modify(list =>
+					{
+						list.Remove(itemToAdd);
+						list.Remove(SelectedItem);
+						list.Add(newSelectionGroup);
+					});
+					
+					SelectedItem = newSelectionGroup;
+				}
 			}
-			else // add a new selection group and add to its children
+			else if (Children.Contains(itemToAdd))
 			{
-				CreateSelectionWrapper(itemToAdd);
+				SelectedItem = itemToAdd;
 			}
-					SelectionChanged?.Invoke(this, null);
-		}
-
-		private void CreateSelectionWrapper(IObject3D itemToAdd)
-		{
-			// We're selection an item. To do so we wrap the selected item
-			// in a new group. The selection will continue to grow in this
-			// way until it's applied, due to a loss of focus or until a group operation occurs
-			var newSelectionGroup = new Object3D
+			else
 			{
-				ItemType = Object3DTypes.SelectionGroup,
-			};
-
-			newSelectionGroup.Children.Modify(list =>
-			{
-				list.Add(itemToAdd);
-			});
-
-			this.Children.Modify(list =>
-			{
-				list.Remove(itemToAdd);
-				list.Add(newSelectionGroup);
-			});
+				throw new Exception("Unable to select external object. Item must be in the scene to be selected.");
+			}
 		}
 
 		public void Load(string mcxPath)

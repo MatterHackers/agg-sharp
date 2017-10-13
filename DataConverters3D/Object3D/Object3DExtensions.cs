@@ -160,7 +160,8 @@ namespace MatterHackers.PolygonMesh
 		public static void CollapseInto(this IObject3D objectToCollapse, List<IObject3D> collapseInto, Object3DTypes typeFilter = Object3DTypes.SelectionGroup, int depth = int.MaxValue)
 		{
 			if (objectToCollapse != null 
-				&& (objectToCollapse?.ItemType == typeFilter))
+				&& (objectToCollapse?.ItemType == typeFilter
+				|| typeFilter == Object3DTypes.Any))
 			{
 				collapseInto.Remove(objectToCollapse);
 
@@ -175,6 +176,11 @@ namespace MatterHackers.PolygonMesh
 					if (objectToCollapse.MaterialIndex != -1)
 					{
 						child.MaterialIndex = objectToCollapse.MaterialIndex;
+					}
+
+					if (objectToCollapse.OutputType != PrintOutputTypes.Default)
+					{
+						child.OutputType = objectToCollapse.OutputType;
 					}
 
 					child.Matrix *= objectToCollapse.Matrix;
