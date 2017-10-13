@@ -280,39 +280,39 @@ namespace MatterHackers.Agg.UI
 			base.SetVisibleCore(value);
 		}
 
-		private bool waitingForIdleTimerToStop = false;
+		private bool winformAlreadyClosing = false;
 
 		protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
 		{
-			// Call on closing and check if we can close (a "do you want to save" might cancel the close. :).
-			bool cancelClose = false;
-
 			if (AggSystemWindow != null && !AggSystemWindow.HasBeenClosed)
 			{
-				AggSystemWindow.OnClosing(out cancelClose);
+				// Call on closing and check if we can close (a "do you want to save" might cancel the close. :).
+				var eventArgs = new ClosingEventArgs();
+				AggSystemWindow.OnClosing(eventArgs);
 
-				if (cancelClose)
+				if (eventArgs.Cancel)
 				{
 					e.Cancel = true;
 				}
 				else
 				{
-					if (!AggSystemWindow.HasBeenClosed)
+					// Stop the RunOnIdle timer/pump
+					if (this.IsMainWindow)
 					{
-						AggSystemWindow.Close();
+						idleCallBackTimer.Elapsed -= InvokePendingOnIdleActions;
+						idleCallBackTimer.Stop();
+
+						// Workaround for "Cannot access disposed object." exception
+						// https://stackoverflow.com/a/9669702/84369 - ".Stop() without .DoEvents() is not enough, as it'll dispose objects without waiting for your thread to finish its work"
+						Application.DoEvents();
 					}
 
-					if (this.IsMainWindow && !waitingForIdleTimerToStop)
+					// Close the SystemWindow
+					if (!AggSystemWindow.HasBeenClosed)
 					{
-						waitingForIdleTimerToStop = true;
-						idleCallBackTimer.Stop();
-						idleCallBackTimer.Elapsed -= InvokePendingOnIdleActions;
-						e.Cancel = true;
-						// We just need to wait for this event to end so we can re-enter the idle loop with the time stopped
-						// If we close with the idle loop timer not stopped we throw and exception.
-						System.Windows.Forms.Timer delayedCloseTimer = new System.Windows.Forms.Timer();
-						delayedCloseTimer.Tick += DoDelayedClose;
-						delayedCloseTimer.Start();
+						// Store that the Close operation started here
+						winformAlreadyClosing = true;
+						AggSystemWindow.Close();
 					}
 				}
 			}
@@ -320,11 +320,6 @@ namespace MatterHackers.Agg.UI
 			base.OnClosing(e);
 		}
 
-		private void DoDelayedClose(object sender, EventArgs e)
-		{
-			((System.Windows.Forms.Timer)sender).Stop();
-			this.Close();
-		}
 
 		#region WidgetForWindowsFormsAbstract/WinformsWindowWidget
 		#endregion
@@ -629,11 +624,6 @@ namespace MatterHackers.Agg.UI
 
 		public void ShowSystemWindow(SystemWindow systemWindow)
 		{
-			// TODO: Now done at construction time, verify no issue
-			// osMappingWindow.Caption = systemWindow.Title;
-			// osMappingWindow.MinimumSize = systemWindow.MinimumSize;
-
-
 			if (SingleWindowMode)
 			{
 				// Store the active SystemWindow
@@ -679,12 +669,25 @@ namespace MatterHackers.Agg.UI
 
 		public void CloseSystemWindow(SystemWindow systemWindow)
 		{
+			// Prevent our call to SystemWindow.Close from recursing
+			if (this.winformAlreadyClosing)
+			{
+				return;
+			}
+
 			var rootWindow = allOpenSystemWindows.LastOrDefault();
 			if ((systemWindow == rootWindow && SingleWindowMode)
 				|| (systemWindow == MainWindowsFormsWindow.systemWindow && !SingleWindowMode))
 			{
 				// Close the main (first) PlatformWindow if it's being requested and not this instance
-				UiThread.RunOnIdle(MainWindowsFormsWindow.Close);
+				if (this.InvokeRequired)
+				{
+					this.Invoke((Action)MainWindowsFormsWindow.Close);
+				}
+				else
+				{
+					MainWindowsFormsWindow.Close();
+				}
 				return;
 			}
 
@@ -701,7 +704,14 @@ namespace MatterHackers.Agg.UI
 			{
 				if (!this.IsDisposed && !this.IsDisposed)
 				{
-					UiThread.RunOnIdle(this.Close);
+					if (this.InvokeRequired)
+					{
+						this.Invoke((Action)this.Close);
+					}
+					else
+					{
+						this.Close();
+					}
 				}
 			}
 		}
