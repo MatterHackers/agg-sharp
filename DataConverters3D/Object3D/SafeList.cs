@@ -51,7 +51,7 @@ namespace MatterHackers.DataConverters3D
 
 		public void Add(T item) => this.Modify(list => list.Add(item));
 
-		public void Remove(T item) => this.Modify(list => list.Remove(item));
+		public void Remove(T item) => this.Modify(list => list.Add(item));
 
 		public int Count => items.Count;
 

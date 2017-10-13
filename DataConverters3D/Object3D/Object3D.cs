@@ -101,6 +101,7 @@ namespace MatterHackers.DataConverters3D
 								Mesh = x.newMesh,
 
 								// Copy over child properties...
+								OutputType = x.object3D.OutputType,
 								Color = x.object3D.Color,
 								MaterialIndex = x.object3D.MaterialIndex
 							};
@@ -195,13 +196,33 @@ namespace MatterHackers.DataConverters3D
 
 		public int MaterialIndex { get; set; } = -1;
 
-		public Object3DTypes ItemType { get; set; } = Object3DTypes.Default;
+		public Object3DTypes ItemType { get; set; } = Object3DTypes.Model;
 
-		virtual public PrintOutputTypes OutputType
+		PrintOutputTypes _outputType = PrintOutputTypes.Default;
+		public PrintOutputTypes OutputType
 		{
 			get
 			{
-				return PrintOutputTypes.Default;
+				return _outputType;
+			}
+			set
+			{
+				if (_outputType != value)
+				{
+					_outputType = value;
+					if ((_outputType == PrintOutputTypes.Support
+						|| _outputType == PrintOutputTypes.Hole)
+						&& Mesh != null
+						&& Mesh.FaceBspTree == null
+						&& Mesh.Faces.Count < 2000)
+					{
+						Task.Run(() =>
+						{
+							var bspTree = FaceBspTree.Create(Mesh);
+							UiThread.RunOnIdle(() => Mesh.FaceBspTree = bspTree);
+						});
+					}
+				}
 			}
 		}
 
@@ -308,6 +329,7 @@ namespace MatterHackers.DataConverters3D
 				Children = new SafeList<IObject3D>(this.Children.Select(child => child.Clone())),
 				Matrix = this.Matrix,
 				traceData = this.traceData,
+				OutputType = this.OutputType
 			};
 		}
 
