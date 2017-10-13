@@ -99,8 +99,6 @@ namespace MatterHackers.MeshVisualizer
 		[JsonIgnore]
 		public bool ShowSelectionShadow { get; set; } = true;
 
-		public bool IsSelected(Object3DTypes objectType) => HasSelection && SelectedItem.ItemType == objectType;
-
 		public void Save(string mcxPath, string libraryPath, Action<double, string> progress = null)
 		{
 			var itemsWithUnsavedMeshes = from object3D in this.Descendants()
@@ -230,6 +228,7 @@ namespace MatterHackers.MeshVisualizer
 			{
 				CreateSelectionWrapper(itemToAdd);
 			}
+					SelectionChanged?.Invoke(this, null);
 		}
 
 		private void CreateSelectionWrapper(IObject3D itemToAdd)
