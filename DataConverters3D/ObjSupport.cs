@@ -100,7 +100,7 @@ namespace MatterHackers.DataConverters3D
 		public static IObject3D Load(Stream fileStream, CancellationToken cancellationToken, Action<double, string> reportProgress = null, IObject3D source = null)
 		{
 			IObject3D root = source ?? new Object3D();
-			root.ItemType = Object3DTypes.Group;
+			root.ItemType = Object3DTypes.Default;
 
 			double parsingFileRatio = .5;
 			int totalMeshes = 0;
@@ -110,10 +110,7 @@ namespace MatterHackers.DataConverters3D
 			Obj objFile = new Obj();
 			objFile.LoadObj(fileStream);
 
-			IObject3D context = new Object3D()
-			{
-				ItemType = Object3DTypes.Model,
-			};
+			IObject3D context = new Object3D();
 			root.Children.Add(context);
 
 			var mesh = new Mesh();
