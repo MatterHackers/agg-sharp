@@ -35,13 +35,9 @@ using MatterHackers.Agg;
 
 namespace MatterHackers.DataConverters3D
 {
-	public interface IMappingType
-	{
-	}
-
 	public class IObject3DChildrenConverter : JsonConverter
 	{
-		// Register type mappings to support deserializing to the specified type via simple names
+		// Register type mappings to support deserializing to the IObject3D concrete type - long term hopefully via configuration mapping, short term via IObject3D inheritance
 		private Dictionary<string, string> mappingTypesCache;
 		private Dictionary<string, string> mappingTypes
 		{
@@ -49,18 +45,11 @@ namespace MatterHackers.DataConverters3D
 			{
 				if (mappingTypesCache == null)
 				{
-					mappingTypesCache = new Dictionary<string, string>()
-					{
-						["TextObject"] = "MatterHackers.PolygonMesh.TextObject,MatterHackers.DataConverters3D",
-						["CylinderObject3D"] = "MatterHackers.MatterControl.PartPreviewWindow.CylinderObject3D,EditorTools",
-						["ConeObject3D"] = "MatterHackers.MatterControl.PartPreviewWindow.ConeObject3D,EditorTools",
-						["CubeObject3D"] = "MatterHackers.MatterControl.PartPreviewWindow.CubeObject3D,EditorTools",
-						["OpenSCADObject3D"] = "MatterHackers.MatterControl.PartPreviewWindow.OpenSCADObject3D,EditorTools",
-					};
+					mappingTypesCache = new Dictionary<string, string>();
 
-					foreach (var type in PluginFinder.FindTypes<IMappingType>())
+					foreach (var type in PluginFinder.FindTypes<IObject3D>())
 					{
-						mappingTypesCache.Add(type.Name, type.FullName);
+						mappingTypesCache.Add(type.Name, type.AssemblyQualifiedName);
 					}
 				}
 
