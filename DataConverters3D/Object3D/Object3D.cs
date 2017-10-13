@@ -47,6 +47,16 @@ namespace MatterHackers.DataConverters3D
 {
 	public class Object3D : IObject3D
 	{
+		public Object3D()
+		{
+			var type = this.GetType();
+			if (type != typeof(Object3D)
+				&& type.Name != "InteractiveScene")
+			{
+				this.TypeName = type.Name;
+			}
+		}
+
 		public static string AssetsPath { get; set; }
 
 		public string ID { get; set; }
@@ -55,6 +65,8 @@ namespace MatterHackers.DataConverters3D
 
 		public virtual string ActiveEditor { get; set; }
 		public SafeList<IObject3D> Children { get; set; } = new SafeList<IObject3D>();
+
+		public string TypeName { get; }
 
 		public IObject3D Parent { get; set; }
 
@@ -265,7 +277,7 @@ namespace MatterHackers.DataConverters3D
 				using (var stream = File.OpenRead(meshPath))
 				{
 					string extension = Path.GetExtension(meshPath).ToLower();
-					
+
 					loadedItem = Load(stream, extension, cancellationToken, itemCache, progress);
 
 					// Cache loaded assets

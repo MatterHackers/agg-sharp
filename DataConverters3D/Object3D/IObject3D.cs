@@ -179,6 +179,8 @@ namespace MatterHackers.DataConverters3D
 		[JsonConverter(typeof(MatrixConverter))]
 		Matrix4X4 Matrix { get; set; }
 
+		string TypeName { get; }
+
 		Mesh Mesh { get; set; }
 		string MeshPath { get; set; }
 

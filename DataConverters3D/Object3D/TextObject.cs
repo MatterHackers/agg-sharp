@@ -36,6 +36,5 @@ namespace MatterHackers.PolygonMesh
 		public string Text { get; set; }
 		public double Spacing { get; set; }
 		public bool Underline { get; set; }
-		public string TypeName { get; } = nameof(TextObject);
 	}
 }

@@ -81,7 +81,7 @@ namespace MatterHackers.MeshVisualizer
 
 		[JsonIgnore]
 		public UndoBuffer UndoBuffer { get; } = new UndoBuffer();
-		
+
 		[JsonIgnore]
 		public bool HasSelection => this.HasChildren() && SelectedItem != null;
 
@@ -235,7 +235,7 @@ namespace MatterHackers.MeshVisualizer
 						list.Remove(SelectedItem);
 						list.Add(newSelectionGroup);
 					});
-					
+
 					SelectedItem = newSelectionGroup;
 				}
 			}
