@@ -680,9 +680,9 @@ namespace MatterHackers.Agg.UI
 				|| (systemWindow == MainWindowsFormsWindow.systemWindow && !SingleWindowMode))
 			{
 				// Close the main (first) PlatformWindow if it's being requested and not this instance
-				if (this.InvokeRequired)
+				if (MainWindowsFormsWindow.InvokeRequired)
 				{
-					this.Invoke((Action)MainWindowsFormsWindow.Close);
+					MainWindowsFormsWindow.Invoke((Action)MainWindowsFormsWindow.Close);
 				}
 				else
 				{
