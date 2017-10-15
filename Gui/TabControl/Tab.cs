@@ -31,7 +31,7 @@ using System;
 
 namespace MatterHackers.Agg.UI
 {
-	public class TextTab : Tab
+	public class TextTab : ThreeViewTab
 	{
 		public TextTab(TabPage tabPage, string internalTabName)
 			: this(tabPage, internalTabName, 12, RGBA_Bytes.DarkGray, RGBA_Bytes.White, RGBA_Bytes.Black, RGBA_Bytes.White)
@@ -85,27 +85,20 @@ namespace MatterHackers.Agg.UI
 		}
 	}
 
-	public abstract class Tab : GuiWidget
+	public abstract class ThreeViewTab : Tab
 	{
 		public static int UnderlineHeight { get; set; } = 2;
-
-		private RGBA_Bytes backgroundColor = new RGBA_Bytes(230, 230, 230);
 
 		protected GuiWidget normalWidget;
 		protected GuiWidget hoverWidget;
 		protected GuiWidget selectedWidget;
 
-		public event EventHandler Selected;
-
-		public Tab(string tabName, GuiWidget normalWidget, GuiWidget hoverWidget, GuiWidget selectedWidget,
-			TabPage tabPage)
+		public ThreeViewTab(string tabName, GuiWidget normalWidget, GuiWidget hoverWidget, GuiWidget selectedWidget, TabPage tabPage)
+			: base (tabName, tabPage)
 		{
-			this.Name = tabName;
 			this.normalWidget = normalWidget;
 			this.hoverWidget = hoverWidget;
 			this.selectedWidget = selectedWidget;
-			this.Padding = new BorderDouble(5, 3, 20, 3);
-			this.TabPage = tabPage;
 
 			AddChild(normalWidget);
 			AddChild(hoverWidget);
@@ -118,24 +111,7 @@ namespace MatterHackers.Agg.UI
 			this.HAnchor = HAnchor.Fit;
 		}
 
-		public override void OnParentChanged(EventArgs e)
-		{
-			TabBarContaningTab.TabIndexChanged += SelectionChanged;
-			base.OnParentChanged(e);
-		}
-
-		public virtual void OnSelected(EventArgs e)
-		{
-			Selected?.Invoke(this, e);
-		}
-
-		public override void OnMouseDown(MouseEventArgs mouseEvent)
-		{
-			OnSelected(mouseEvent);
-			base.OnClick(mouseEvent);
-		}
-
-		private void SelectionChanged(object sender, EventArgs e)
+		protected override void OnTabIndexChanged()
 		{
 			if (TabBarContaningTab != null)
 			{
@@ -154,11 +130,9 @@ namespace MatterHackers.Agg.UI
 					selectedWidget.Visible = false;
 				}
 			}
+
+			base.OnTabIndexChanged();
 		}
-
-		public TabBar TabBarContaningTab => Parent as TabBar;
-
-		public TabPage TabPage { get; }
 
 		protected static void EnforceSizingAdornActive(GuiWidget viewWidget, bool isActive, bool useUnderlineStyle, int controlHeight = 40, int controlMargin = 0)
 		{
@@ -177,5 +151,72 @@ namespace MatterHackers.Agg.UI
 				});
 			}
 		}
+	}
+
+	public abstract class Tab : GuiWidget
+	{
+		public event EventHandler Selected;
+
+		private bool registerListener = true;
+
+		public Tab(string tabName, TabPage tabPage)
+		{
+			this.Name = tabName;
+			this.Padding = new BorderDouble(5, 3, 20, 3);
+			this.TabPage = tabPage;
+
+			this.VAnchor = VAnchor.Fit;
+			this.HAnchor = HAnchor.Fit;
+		}
+
+		public virtual void OnSelected(EventArgs e)
+		{
+			Selected?.Invoke(this, e);
+		}
+
+		public void Select()
+		{
+			OnSelected(null);
+		}
+
+		public override void OnMouseDown(MouseEventArgs mouseEvent)
+		{
+			OnSelected(mouseEvent);
+			base.OnClick(mouseEvent);
+		}
+
+		public override void OnParentChanged(EventArgs e)
+		{
+			if (registerListener)
+			{
+				TabBarContaningTab.TabIndexChanged += TabBarContaningTab_TabIndexChanged;
+				registerListener = false;
+			}
+
+			base.OnParentChanged(e);
+		}
+
+		private void TabBarContaningTab_TabIndexChanged(object sender, EventArgs e)
+		{
+			this.OnTabIndexChanged();
+		}
+
+		public override void OnClosed(ClosedEventArgs e)
+		{
+			if (this.TabBarContaningTab != null)
+			{
+				this.TabBarContaningTab.TabIndexChanged -= TabBarContaningTab_TabIndexChanged;
+			}
+
+			base.OnClosed(e);
+		}
+
+		protected virtual void OnTabIndexChanged()
+		{
+		}
+
+		public TabBar TabBarContaningTab => Parent as TabBar;
+
+		public TabPage TabPage { get; }
 	}
 }

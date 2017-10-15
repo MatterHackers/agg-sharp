@@ -137,8 +137,7 @@ namespace MatterHackers.Agg.UI
 				throw new IndexOutOfRangeException();
 			}
 
-			Tab tab = (Tab)tabBar.Children[index];
-			if (tab != null)
+			if (tabBar.Children[index] is Tab tab)
 			{
 				return tab.TabPage;
 			}
@@ -165,8 +164,7 @@ namespace MatterHackers.Agg.UI
 			int tabCount = 0;
 			foreach (GuiWidget child in tabBar.Children)
 			{
-				Tab tab = child as Tab;
-				if (tab != null)
+				if (child is Tab tab)
 				{
 					foundTab = tab;
 					if (tabCount == index)
@@ -198,16 +196,16 @@ namespace MatterHackers.Agg.UI
 
 		public void AddTab(Tab newTab, int tabPosition = -1)
 		{
-			TabPage tabPageWidget = newTab.TabPage;
+			var tabPage = newTab.TabPage;
 
 			// Use name, not text
-			tabPages.Add(newTab.Name, tabPageWidget);
+			tabPages.Add(newTab.Name, tabPage);
 
 			tabBar.AddChild(newTab, tabPosition);
 
-			tabBar.TabPageContainer.AddChild(tabPageWidget);
+			tabBar.TabPageContainer.AddChild(tabPage);
 
-			tabPageWidget.Visible = false;
+			tabPage.Visible = false;
 		}
 	}
 }
