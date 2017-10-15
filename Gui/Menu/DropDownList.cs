@@ -318,13 +318,10 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private int arrowHeight = 5;
-
 		private string noSelectionString;
 
 		private static RGBA_Bytes whiteSemiTransparent = new RGBA_Bytes(255, 255, 255, 100);
 		private static RGBA_Bytes whiteTransparent = new RGBA_Bytes(255, 255, 255, 0);
-
 
 		public DropDownList(string noSelectionString, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false)
 			: this(noSelectionString, whiteTransparent, whiteSemiTransparent, direction, maxHeight, useLeftIcons)
@@ -347,24 +344,9 @@ namespace MatterHackers.Agg.UI
 			: base(direction, maxHeight)
 		{
 			UseLeftIcons = useLeftIcons;
-			if (this.MenuDirection == Direction.Down)
-			{
-				directionArrow = new VertexStorage();
-				directionArrow.MoveTo(-arrowHeight, 0);
-				directionArrow.LineTo(arrowHeight, 0);
-				directionArrow.LineTo(0, -arrowHeight);
-			}
-			else if (this.MenuDirection == Direction.Up)
-			{
-				directionArrow = new VertexStorage();
-				directionArrow.MoveTo(-arrowHeight, -arrowHeight);
-				directionArrow.LineTo(arrowHeight, -arrowHeight);
-				directionArrow.LineTo(0, 0);
-			}
-			else
-			{
-				throw new NotImplementedException("Pulldown direction has not been implemented");
-			}
+
+			// Always Down, unless Up
+			directionArrow = (this.MenuDirection == Direction.Up) ? DropArrow.UpArrow : DropArrow.DownArrow;
 
 			MenuItems.CollectionChanged += MenuItems_CollectionChanged;
 
@@ -378,6 +360,7 @@ namespace MatterHackers.Agg.UI
 				Margin = new BorderDouble(10, 7, 7, 7),
 				TextColor = RGBA_Bytes.Black
 			};
+
 			AddChild(mainControlText);
 
 			MouseEnter += (s, e) => BackgroundColor = HoverColor;
@@ -452,7 +435,7 @@ namespace MatterHackers.Agg.UI
 			// Draw directional arrow
 			if (directionArrow != null)
 			{
-				graphics2D.Render(directionArrow, LocalBounds.Right - arrowHeight * 2 - 2, LocalBounds.Center.y + arrowHeight / 2, ActiveTheme.Instance.SecondaryTextColor);
+				graphics2D.Render(directionArrow, LocalBounds.Right - DropArrow.ArrowHeight * 2 - 2, LocalBounds.Center.y + DropArrow.ArrowHeight / 2, ActiveTheme.Instance.SecondaryTextColor);
 			}
 		}
 

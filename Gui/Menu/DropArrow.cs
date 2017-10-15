@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2017, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,82 +27,57 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using System;
-using MatterHackers.Agg.Image;
+using MatterHackers.Agg.VertexSource;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
-	public class ImageWidget : GuiWidget
+	public class DropArrow : GuiWidget
 	{
-		private ImageBuffer image;
+		public static VertexStorage DownArrow = null;
+		public static VertexStorage UpArrow = null;
 
-		public bool ForcePixelAlignment { get; set; }
+		public static int ArrowHeight { get; set; } = 5;
 
-		public bool AutoResize { get; set; } = true;
-
-		public ImageWidget(int width, int height)
+		static DropArrow()
 		{
-			ForcePixelAlignment = true;
-			LocalBounds = new RectangleDouble(0, 0, width, height);
+			DownArrow = new VertexStorage();
+			DownArrow.MoveTo(-ArrowHeight, 0);
+			DownArrow.LineTo(ArrowHeight, 0);
+			DownArrow.LineTo(0, -ArrowHeight);
+
+			UpArrow = new VertexStorage();
+			UpArrow.MoveTo(-ArrowHeight, -ArrowHeight);
+			UpArrow.LineTo(ArrowHeight, -ArrowHeight);
+			UpArrow.LineTo(0, 0);
 		}
 
-		public ImageWidget(ImageBuffer initialImage)
-			: this(initialImage.Width, initialImage.Height)
+		public DropArrow()
 		{
-			Image = initialImage;
-			if (image != null)
-			{
-				Image.ImageChanged += ImageChanged;
-			}
+			this.Width = ArrowHeight;
+			this.Height = ArrowHeight;
+			this.VAnchor = VAnchor.Center;
+			this.HAnchor = HAnchor.Right;
+
+			this.Arrow = DownArrow;
 		}
 
-		private void ImageChanged(object s, EventArgs e)
-		{
-			if (AutoResize)
-			{
-				this.Width = image.Width;
-				this.Height = image.Height;
-			}
-			Invalidate();
-		}
+		public VertexStorage Arrow { get; set; }
 
-		public ImageBuffer Image
-		{
-			get
-			{
-				return image;
-			}
+		public int StrokeWidth { get; set; } = 1;
 
-			set
-			{
-				if(image != null)
-				{
-					image.ImageChanged -= ImageChanged;
-				}
-				image = value;
-				image.ImageChanged += ImageChanged;
-				if (AutoResize)
-				{
-					LocalBounds = new RectangleDouble(0, 0, image.Width, image.Height);
-				}
-			}
-		}
+		public RGBA_Bytes StrokeColor { get; set; }
+
+		public Vector2 DrawBounds { get; set; }
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			if (image != null)
-			{
-				RectangleDouble screenBounds = TransformToScreenSpace(LocalBounds);
-				double pixelAlignXAdjust = 0;
-				double pixelAlignYAdjust = 0;
-				if (ForcePixelAlignment)
-				{
-					pixelAlignXAdjust = screenBounds.Left - (int)screenBounds.Left;
-					pixelAlignYAdjust = screenBounds.Bottom - (int)screenBounds.Bottom;
-				}
-				graphics2D.Render(image, -pixelAlignXAdjust, -pixelAlignYAdjust);
-			}
 			base.OnDraw(graphics2D);
+
+			if (this.Arrow != null)
+			{
+				graphics2D.Render(this.Arrow, this.DrawBounds.x - ArrowHeight * 2 - 2, this.DrawBounds.y / 2 + ArrowHeight / 2, ActiveTheme.Instance.SecondaryTextColor);
+			}
 		}
 	}
 }
