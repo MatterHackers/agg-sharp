@@ -118,16 +118,6 @@ namespace MatterHackers.Agg
 			return scaledImage;
 		}
 
-		/// <summary>
-		/// Loads the specified file from the StaticData/Icons path
-		/// </summary>
-		/// <param name="path">The file path to load</param>
-		/// <param name="buffer">The ImageBuffer to populate with data from the given file</param>
-		public void LoadIcon(string path, ImageBuffer buffer)
-		{
-			LoadImage(Path.Combine("Icons", path), buffer);
-		}
-
 		public void LoadSequence(string pathToImages, ImageSequence sequence)
 		{
 			if (DirectoryExists(pathToImages))
@@ -160,7 +150,7 @@ namespace MatterHackers.Agg
 		}
 
 		static object locker = new object();
-		public void LoadImage(string path, ImageBuffer destImage)
+		private void LoadImage(string path, ImageBuffer destImage)
 		{
 			lock (locker)
 			{
