@@ -89,7 +89,7 @@ namespace MatterHackers.Agg.UI
 				this.Checked = startValue;
 
 				var thumbHeight = height;
-				var thumbWidth = 12;
+				var thumbWidth = 14;
 
 				InteriorColor = interiorColor;
 				ExteriorColor = exteriorColor;
