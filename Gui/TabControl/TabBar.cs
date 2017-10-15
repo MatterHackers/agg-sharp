@@ -50,10 +50,9 @@ namespace MatterHackers.Agg.UI
 
 		public override void AddChild(GuiWidget child, int indexInChildrenList = -1)
 		{
-			Tab newTab = child as Tab;
-			if (newTab != null)
+			if (child is Tab newTab)
 			{
-				newTab.Selected += SwitchToTab;
+				newTab.Selected += Tab_Selected;
 			}
 			base.AddChild(child, indexInChildrenList);
 		}
@@ -117,8 +116,7 @@ namespace MatterHackers.Agg.UI
 			int tabCount = 0;
 			foreach (GuiWidget child in Children)
 			{
-				Tab tab = child as Tab;
-				if (tab != null)
+				if (child is Tab tab)
 				{
 					if (index == tabCount)
 					{
@@ -146,12 +144,11 @@ namespace MatterHackers.Agg.UI
 			return false;
 		}
 
-		private void SwitchToTab(object sender, EventArgs e)
+		private void Tab_Selected(object sender, EventArgs e)
 		{
 			UiThread.RunOnIdle(() =>
 			{
-				Tab clickedTab = (Tab) sender;
-				if (clickedTab != null)
+				if (sender is Tab clickedTab)
 				{
 					SelectTab(clickedTab);
 				}
