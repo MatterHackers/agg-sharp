@@ -4,6 +4,8 @@ using MatterHackers.Agg.Image;
 
 namespace MatterHackers.Agg.Platform
 {
+	public enum IconColor { Theme, White, Raw };
+
 	public interface IStaticData
 	{
 		bool DirectoryExists(string pathToManufacturers);
@@ -19,18 +21,9 @@ namespace MatterHackers.Agg.Platform
 		/// </summary>
 		/// <param name="path">The file path to load</param>
 		/// <returns>An ImageBuffer initialized with data from the given file</returns>
-		ImageBuffer LoadIcon(string path);
+		ImageBuffer LoadIcon(string path, IconColor iconColor = IconColor.Raw);
 
-		ImageBuffer LoadIcon(string path, int width, int height);
-
-		/// <summary>
-		/// Loads the specified file from the StaticData/Icons path
-		/// </summary>
-		/// <param name="path">The file path to load</param>
-		/// <param name="buffer">The ImageBuffer to populate with data from the given file</param>
-		void LoadIcon(string path, ImageBuffer buffer);
-
-		void LoadImage(string path, ImageBuffer destImage);
+		ImageBuffer LoadIcon(string path, int width, int height, IconColor iconColor = IconColor.Raw);
 
 		ImageBuffer LoadImage(string path);
 
