@@ -34,6 +34,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using MatterHackers.Agg.Image;
+using MatterHackers.Agg.ImageProcessing;
 using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 using Newtonsoft.Json;
@@ -94,9 +95,9 @@ namespace MatterHackers.Agg
 		/// </summary>
 		/// <param name="path">The file path to load</param>
 		/// <returns>An ImageBuffer initialized with data from the given file</returns>
-		public ImageBuffer LoadIcon(string path)
+		public ImageBuffer LoadIcon(string path, IconColor iconColor = IconColor.Raw)
 		{
-			return LoadImage(Path.Combine("Icons", path));
+			return LoadImage(Path.Combine("Icons", path), iconColor);
 		}
 
 		/// <summary>
@@ -107,11 +108,12 @@ namespace MatterHackers.Agg
 		/// <param name="width"></param>
 		/// <param name="height"></param>
 		/// <returns></returns>
-		public ImageBuffer LoadIcon(string path, int width, int height)
+		public ImageBuffer LoadIcon(string path, int width, int height, IconColor iconColor = IconColor.Raw)
 		{
 			int deviceWidth = (int)(width * GuiWidget.DeviceScale);
 			int deviceHeight = (int)(height * GuiWidget.DeviceScale);
-			ImageBuffer scaledImage = LoadIcon(path);
+
+			ImageBuffer scaledImage = LoadIcon(path, iconColor);
 			scaledImage.SetRecieveBlender(new BlenderPreMultBGRA());
 			scaledImage = ImageBuffer.CreateScaledImage(scaledImage, deviceWidth, deviceHeight);
 
@@ -150,7 +152,7 @@ namespace MatterHackers.Agg
 		}
 
 		static object locker = new object();
-		private void LoadImage(string path, ImageBuffer destImage)
+		private void LoadImage(string path, ImageBuffer destImage, IconColor iconColor = IconColor.Raw)
 		{
 			lock (locker)
 			{
@@ -171,14 +173,32 @@ namespace MatterHackers.Agg
 					}
 				}
 
+				// Themed icons are black and need be inverted on dark themes, or when white icons are requested
+				if ((iconColor == IconColor.Theme && ActiveTheme.Instance.IsDarkTheme)
+					|| iconColor == IconColor.White)
+				{
+					// TODO: Revise InvertLightness to not modify in-place, and restore this call and remove the workaround below
+					// cachedImage = cachedImage.InvertLightness();
+
+					cachedImage = new ImageBuffer(cachedImage);
+					cachedImage.SetRecieveBlender(new BlenderPreMultBGRA());
+
+					cachedImage.InvertLightness();
+				}
+
 				destImage.CopyFrom(cachedImage);
 			}
 		}
 
 		public ImageBuffer LoadImage(string path)
 		{
+			return LoadImage(path, IconColor.Raw);
+		}
+
+		public ImageBuffer LoadImage(string path, IconColor iconColor)
+		{
 			ImageBuffer temp = new ImageBuffer();
-			LoadImage(path, temp);
+			LoadImage(path, temp, iconColor);
 
 			return temp;
 		}
