@@ -177,13 +177,8 @@ namespace MatterHackers.Agg
 				if ((iconColor == IconColor.Theme && ActiveTheme.Instance.IsDarkTheme)
 					|| iconColor == IconColor.White)
 				{
-					// TODO: Revise InvertLightness to not modify in-place, and restore this call and remove the workaround below
-					// cachedImage = cachedImage.InvertLightness();
-
-					cachedImage = new ImageBuffer(cachedImage);
+					cachedImage = cachedImage.InvertLightness();
 					cachedImage.SetRecieveBlender(new BlenderPreMultBGRA());
-
-					cachedImage.InvertLightness();
 				}
 
 				destImage.CopyFrom(cachedImage);
