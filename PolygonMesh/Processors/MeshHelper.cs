@@ -61,12 +61,7 @@ namespace MatterHackers.PolygonMesh
 		public static void PlaceTextureOnFace(Face face, ImageBuffer textureToUse)
 		{
 			// planer project along the normal of this face
-			Matrix4X4 textureCoordinateMapping = Matrix4X4.CreateRotation(new Quaternion(-Vector3.UnitZ, face.Normal));
-			if (Vector3.UnitZ ==  face.Normal
-				|| -Vector3.UnitZ == face.Normal)
-			{
-				textureCoordinateMapping = Matrix4X4.CreateRotation(new Quaternion(Vector3.UnitZ, face.Normal));
-			}
+			Matrix4X4 textureCoordinateMapping = Matrix4X4.CreateRotation(new Quaternion(Vector3.UnitZ, face.Normal));
 
 			RectangleDouble bounds = RectangleDouble.ZeroIntersection;
 			foreach (FaceEdge faceEdge in face.FaceEdges())
