@@ -95,7 +95,7 @@ namespace MatterHackers.Agg
 		/// </summary>
 		/// <param name="path">The file path to load</param>
 		/// <returns>An ImageBuffer initialized with data from the given file</returns>
-		public ImageBuffer LoadIcon(string path, IconColor iconColor = IconColor.Theme)
+		public ImageBuffer LoadIcon(string path, IconColor iconColor = IconColor.Raw)
 		{
 			return LoadImage(Path.Combine("Icons", path), iconColor);
 		}
@@ -108,7 +108,7 @@ namespace MatterHackers.Agg
 		/// <param name="width"></param>
 		/// <param name="height"></param>
 		/// <returns></returns>
-		public ImageBuffer LoadIcon(string path, int width, int height, IconColor iconColor = IconColor.Theme)
+		public ImageBuffer LoadIcon(string path, int width, int height, IconColor iconColor = IconColor.Raw)
 		{
 			int deviceWidth = (int)(width * GuiWidget.DeviceScale);
 			int deviceHeight = (int)(height * GuiWidget.DeviceScale);
