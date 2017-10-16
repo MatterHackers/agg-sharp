@@ -27,8 +27,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.Image;
 using System;
+using MatterHackers.Agg.Image;
 
 namespace MatterHackers.Agg.ImageProcessing
 {
@@ -36,7 +36,7 @@ namespace MatterHackers.Agg.ImageProcessing
 	{
 		public static ImageBuffer InvertLightness(this ImageBuffer imageBuffer)
 		{
-			return MatterHackers.Agg.ImageProcessing.InvertLightness.DoInvertLightness(imageBuffer);
+			return ImageProcessing.InvertLightness.DoInvertLightness(imageBuffer);
 		}
 	}
 
@@ -52,10 +52,12 @@ namespace MatterHackers.Agg.ImageProcessing
 			return false;
 		}
 
-		public static ImageBuffer DoInvertLightness(ImageBuffer sourceImageAndDest)
+		public static ImageBuffer DoInvertLightness(ImageBuffer sourceImage)
 		{
-			DoInvertLightness(sourceImageAndDest, sourceImageAndDest);
-			return sourceImageAndDest;
+			var destImage = new ImageBuffer(sourceImage);
+			DoInvertLightness(destImage, sourceImage);
+
+			return destImage;
 		}
 
 		public static void DoInvertLightness(ImageBuffer result, ImageBuffer sourceImage)

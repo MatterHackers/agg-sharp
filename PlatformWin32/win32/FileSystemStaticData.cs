@@ -95,7 +95,7 @@ namespace MatterHackers.Agg
 		/// </summary>
 		/// <param name="path">The file path to load</param>
 		/// <returns>An ImageBuffer initialized with data from the given file</returns>
-		public ImageBuffer LoadIcon(string path, IconColor iconColor = IconColor.Raw)
+		public ImageBuffer LoadIcon(string path, IconColor iconColor = IconColor.Theme)
 		{
 			return LoadImage(Path.Combine("Icons", path), iconColor);
 		}
@@ -108,7 +108,7 @@ namespace MatterHackers.Agg
 		/// <param name="width"></param>
 		/// <param name="height"></param>
 		/// <returns></returns>
-		public ImageBuffer LoadIcon(string path, int width, int height, IconColor iconColor = IconColor.Raw)
+		public ImageBuffer LoadIcon(string path, int width, int height, IconColor iconColor = IconColor.Theme)
 		{
 			int deviceWidth = (int)(width * GuiWidget.DeviceScale);
 			int deviceHeight = (int)(height * GuiWidget.DeviceScale);
@@ -177,13 +177,8 @@ namespace MatterHackers.Agg
 				if ((iconColor == IconColor.Theme && ActiveTheme.Instance.IsDarkTheme)
 					|| iconColor == IconColor.White)
 				{
-					// TODO: Revise InvertLightness to not modify in-place, and restore this call and remove the workaround below
-					// cachedImage = cachedImage.InvertLightness();
-
-					cachedImage = new ImageBuffer(cachedImage);
+					cachedImage = cachedImage.InvertLightness();
 					cachedImage.SetRecieveBlender(new BlenderPreMultBGRA());
-
-					cachedImage.InvertLightness();
 				}
 
 				destImage.CopyFrom(cachedImage);
