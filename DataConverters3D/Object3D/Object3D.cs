@@ -59,7 +59,7 @@ namespace MatterHackers.DataConverters3D
 
 		public static string AssetsPath { get; set; }
 
-		public string ID { get; set; }
+		public string ID { get; set; } = Guid.NewGuid().ToString();
 
 		public string OwnerID { get; set; }
 
