@@ -50,7 +50,20 @@ namespace MatterHackers.Agg.UI
 
 		public ToolTipManager ToolTipManager { get; private set; }
 
-		public string Title { get; set; }
+		private string _title;
+		public string Title
+		{
+			get => _title;
+			set
+			{
+				_title = value;
+
+				if (this.PlatformWindow != null)
+				{
+					this.PlatformWindow.Caption = _title;
+				}
+			}
+		}
 
 		public enum PixelTypes { Depth24 = 24, Depth32 = 32, DepthFloat = 128 };
 
