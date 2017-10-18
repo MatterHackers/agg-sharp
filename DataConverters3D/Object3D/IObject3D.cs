@@ -106,53 +106,56 @@ namespace MatterHackers.DataConverters3D
 
 		private static IEnumerable<MeshRenderData> VisibleMeshes(this IObject3D collection, Matrix4X4 transform, RGBA_Bytes color = default(RGBA_Bytes), int materialIndex = -1, PrintOutputTypes outputType = PrintOutputTypes.Default)
 		{
-			// If there is no color set yet and the object 3D is specifying a color
-			if (color.Alpha0To255 == 0
-				&& collection.Color.Alpha0To255 != 0)
+			if (collection.Visible)
 			{
-				// use collection as the color for all recursize children
-				color = collection.Color;
-			}
-
-			// If there is no material set yet and the object 3D is specifying a material
-			if (materialIndex == -1
-				&& collection.MaterialIndex != -1)
-			{
-				// use collection as the color for all recursize children
-				materialIndex = collection.MaterialIndex;
-			}
-
-			if (outputType == PrintOutputTypes.Default
-				&& collection.OutputType != PrintOutputTypes.Default)
-			{
-				outputType = collection.OutputType;
-			}
-
-			Matrix4X4 totalTransform = collection.Matrix * transform;
-
-			if (collection.Mesh == null)
-			{
-				foreach (var child in collection.Children.ToList())
+				// If there is no color set yet and the object 3D is specifying a color
+				if (color.Alpha0To255 == 0
+					&& collection.Color.Alpha0To255 != 0)
 				{
-					if (collection.ItemType != Object3DTypes.Group || child.OutputType != PrintOutputTypes.Hole)
+					// use collection as the color for all recursize children
+					color = collection.Color;
+				}
+
+				// If there is no material set yet and the object 3D is specifying a material
+				if (materialIndex == -1
+					&& collection.MaterialIndex != -1)
+				{
+					// use collection as the color for all recursize children
+					materialIndex = collection.MaterialIndex;
+				}
+
+				if (outputType == PrintOutputTypes.Default
+					&& collection.OutputType != PrintOutputTypes.Default)
+				{
+					outputType = collection.OutputType;
+				}
+
+				Matrix4X4 totalTransform = collection.Matrix * transform;
+
+				if (collection.Mesh == null)
+				{
+					foreach (var child in collection.Children.ToList())
 					{
-						foreach (var meshTransform in child.VisibleMeshes(totalTransform, color, materialIndex, outputType))
+						if (collection.ItemType != Object3DTypes.Group || child.OutputType != PrintOutputTypes.Hole)
 						{
-							yield return meshTransform;
+							foreach (var meshTransform in child.VisibleMeshes(totalTransform, color, materialIndex, outputType))
+							{
+								yield return meshTransform;
+							}
 						}
 					}
 				}
-			}
 
-			if (collection.Mesh != null)
-			{
-				if (color.Alpha0To255 > 0)
+				if (collection.Mesh != null)
 				{
-					yield return new MeshRenderData(collection.Mesh, totalTransform, color, materialIndex, outputType);
-				}
-				else
-				{
-					yield return new MeshRenderData(collection.Mesh, totalTransform, RGBA_Bytes.White, materialIndex, outputType);
+					if (color.Alpha0To255 > 0)
+					{
+						yield return new MeshRenderData(collection.Mesh, totalTransform, color, materialIndex, outputType);
+					}
+					else
+					{
+						yield return new MeshRenderData(collection.Mesh, totalTransform, RGBA_Bytes.White, materialIndex, outputType);
+					}
 				}
 			}
 		}

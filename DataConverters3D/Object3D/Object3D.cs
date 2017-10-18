@@ -349,22 +349,28 @@ namespace MatterHackers.DataConverters3D
 		{
 			var totalTransorm = this.Matrix * matrix;
 
+			AxisAlignedBoundingBox totalBounds = AxisAlignedBoundingBox.Empty;
 			// Set the initial bounding box to empty or the bounds of the objects MeshGroup
-			AxisAlignedBoundingBox totalBounds = this.Mesh == null ? AxisAlignedBoundingBox.Empty : this.Mesh.GetAxisAlignedBoundingBox(totalTransorm, requirePrecision);
-
-			// if this is a group
-			if (Children.Count > 0)
+			if (this.Mesh != null)
+			{
+				totalBounds = this.Mesh.GetAxisAlignedBoundingBox(totalTransorm, requirePrecision);
+			}
+			else if (Children.Count > 0)
 			{
 				// TODO: If is all holes than return the accumulated bounds
 				// If it has booleans done to it (holes and meshes) return only the non-hole bounds
 				foreach (IObject3D child in Children)
 				{
-					// Add the bounds of each child object
-					var childBounds = child.GetAxisAlignedBoundingBox(totalTransorm, requirePrecision);
-					// Check if the child actually has any bounds
-					if (childBounds.XSize > 0)
+					if (child.OutputType != PrintOutputTypes.Hole
+						&& child.Visible)
 					{
-						totalBounds += childBounds;
+						// Add the bounds of each child object
+						var childBounds = child.GetAxisAlignedBoundingBox(totalTransorm, requirePrecision);
+						// Check if the child actually has any bounds
+						if (childBounds.XSize > 0)
+						{
+							totalBounds += childBounds;
+						}
 					}
 				}
 			}
