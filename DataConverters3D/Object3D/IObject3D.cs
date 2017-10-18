@@ -55,24 +55,6 @@ namespace MatterHackers.DataConverters3D
 		Support
 	};
 
-	public class MeshRenderData
-	{
-		public RGBA_Bytes Color { get; }
-		public Mesh Mesh { get; }
-		public Matrix4X4 Matrix { get; set; }
-		public int MaterialIndex { get; }
-		public PrintOutputTypes OutputType { get; }
-
-		public MeshRenderData(Mesh meshData, Matrix4X4 matrix, RGBA_Bytes color, int materialIndex, PrintOutputTypes outputType)
-		{
-			OutputType = outputType;
-			MaterialIndex = materialIndex;
-			Color = color;
-			Mesh = meshData;
-			Matrix = matrix;
-		}
-	}
-
 	public class MeshPrintOutputSettings
 	{
 		public int ExtruderIndex { get; set; }
@@ -99,62 +81,27 @@ namespace MatterHackers.DataConverters3D
 		/// <param name="transform">The final transform to apply to the returned 
 		/// transforms as the tree is descended. Often passed as Matrix4X4.Identity.</param>
 		/// <returns></returns>
-		public static IEnumerable<MeshRenderData> VisibleMeshes(this IObject3D collection)
+		public static IEnumerable<IObject3D> VisibleMeshes(this IObject3D root)
 		{
-			return collection.VisibleMeshes(Matrix4X4.Identity, collection.Color, collection.MaterialIndex, collection.OutputType);
-		}
-
-		private static IEnumerable<MeshRenderData> VisibleMeshes(this IObject3D collection, Matrix4X4 transform, RGBA_Bytes color = default(RGBA_Bytes), int materialIndex = -1, PrintOutputTypes outputType = PrintOutputTypes.Default)
-		{
-			if (collection.Visible)
+			var items = new Stack<IObject3D>(new[] { root });
+			while (items.Any())
 			{
-				// If there is no color set yet and the object 3D is specifying a color
-				if (color.Alpha0To255 == 0
-					&& collection.Color.Alpha0To255 != 0)
-				{
-					// use collection as the color for all recursize children
-					color = collection.Color;
-				}
+				IObject3D item = items.Pop();
 
-				// If there is no material set yet and the object 3D is specifying a material
-				if (materialIndex == -1
-					&& collection.MaterialIndex != -1)
+				if (root.Visible)
 				{
-					// use collection as the color for all recursize children
-					materialIndex = collection.MaterialIndex;
-				}
-
-				if (outputType == PrintOutputTypes.Default
-					&& collection.OutputType != PrintOutputTypes.Default)
-				{
-					outputType = collection.OutputType;
-				}
-
-				Matrix4X4 totalTransform = collection.Matrix * transform;
-
-				if (collection.Mesh == null)
-				{
-					foreach (var child in collection.Children.ToList())
+					if (item.Mesh != null)
 					{
-						if (collection.ItemType != Object3DTypes.Group || child.OutputType != PrintOutputTypes.Hole)
+						// there is a mesh return the object
+						yield return item;
+					}
+					else // there is no mesh go into the object and iterate its children
+					{
+						foreach (var n in item.Children)
 						{
-							foreach (var meshTransform in child.VisibleMeshes(totalTransform, color, materialIndex, outputType))
-							{
-								yield return meshTransform;
-							}
+							n.Parent = item;
+							items.Push(n);
 						}
-					}
-				}
-
-				if (collection.Mesh != null)
-				{
-					if (color.Alpha0To255 > 0)
-					{
-						yield return new MeshRenderData(collection.Mesh, totalTransform, color, materialIndex, outputType);
-					}
-					else
-					{
-						yield return new MeshRenderData(collection.Mesh, totalTransform, RGBA_Bytes.White, materialIndex, outputType);
 					}
 				}
 			}

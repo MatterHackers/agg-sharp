@@ -104,41 +104,41 @@ namespace MatterHackers.RayTracer
 
 		private static ImageBuffer BuildImageFromMeshGroups(IObject3D loadedItem, int width, int height, bool debugNonManifoldEdges = false)
 		{
-			var loadedMeshGroups = loadedItem.VisibleMeshes().ToList();
+			var visibleMeshes = loadedItem.VisibleMeshes().ToList();
 
-			if (loadedMeshGroups?.Count > 0)
+			if (visibleMeshes?.Count > 0)
 			{
 				var tempImage = new ImageBuffer(width, height);
 				Graphics2D partGraphics2D = tempImage.NewGraphics2D();
 				partGraphics2D.Clear(new RGBA_Bytes());
 
-				AxisAlignedBoundingBox aabb = loadedMeshGroups[0].Mesh.GetAxisAlignedBoundingBox(loadedMeshGroups[0].Matrix);
+				AxisAlignedBoundingBox aabb = visibleMeshes[0].Mesh.GetAxisAlignedBoundingBox(visibleMeshes[0].WorldMatrix());
 
-				for (int i = 1; i < loadedMeshGroups.Count; i++)
+				for (int i = 1; i < visibleMeshes.Count; i++)
 				{
-					aabb = AxisAlignedBoundingBox.Union(aabb, loadedMeshGroups[i].Mesh.GetAxisAlignedBoundingBox(loadedMeshGroups[i].Matrix));
+					aabb = AxisAlignedBoundingBox.Union(aabb, visibleMeshes[i].Mesh.GetAxisAlignedBoundingBox(visibleMeshes[i].WorldMatrix()));
 				}
 
 				double maxSize = Math.Max(aabb.XSize, aabb.YSize);
 				double scale = width / (maxSize * 1.2);
 
 				var bounds2D = new RectangleDouble(aabb.minXYZ.x, aabb.minXYZ.y, aabb.maxXYZ.x, aabb.maxXYZ.y);
-				foreach (var meshGroup in loadedMeshGroups)
+				foreach (var meshGroup in visibleMeshes)
 				{
 					PolygonMesh.Rendering.OrthographicZProjection.DrawTo(
 						partGraphics2D,
 						meshGroup.Mesh,
-						meshGroup.Matrix,
+						meshGroup.WorldMatrix(),
 						new Vector2(
 							(width / scale - bounds2D.Width) / 2 - bounds2D.Left,
 							(height / scale - bounds2D.Height) / 2 - bounds2D.Bottom),
 						scale,
-						meshGroup.Color);
+						meshGroup.WorldColor());
 				}
 
 				if (debugNonManifoldEdges)
 				{
-					foreach (var loadedMesh in loadedMeshGroups)
+					foreach (var loadedMesh in visibleMeshes)
 					{
 						List<MeshEdge> nonManifoldEdges = loadedMesh.Mesh.GetNonManifoldEdges();
 						if (nonManifoldEdges.Count > 0)
