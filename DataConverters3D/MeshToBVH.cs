@@ -10,32 +10,37 @@ namespace MatterHackers.DataConverters3D
 	{
 		public static IPrimitive Convert(Mesh mesh, MaterialAbstract partMaterial = null)
 		{
-			return Convert(new MeshRenderData(mesh, Matrix4X4.Identity, RGBA_Bytes.Black, -1, PrintOutputTypes.Solid));
+			return Convert(new Object3D()
+			{
+				Mesh = mesh
+			});
 		}
 
-		public static IPrimitive Convert(MeshRenderData renderData)
+		public static IPrimitive Convert(IObject3D renderData)
 		{
 			List<IPrimitive> renderCollection = new List<IPrimitive>();
 
 			SolidMaterial partMaterial;
-			if (renderData.Color.alpha != 0)
+			var color = renderData.WorldColor();
+			if (color.alpha != 0)
 			{
-				partMaterial = new SolidMaterial(new RGBA_Floats(renderData.Color.Red0To1, renderData.Color.Green0To1, renderData.Color.Blue0To1), .01, 0.0, 2.0);
+				partMaterial = new SolidMaterial(new RGBA_Floats(color.Red0To1, color.Green0To1, color.Blue0To1), .01, 0.0, 2.0);
 			}
 			else
 			{
 				partMaterial = new SolidMaterial(new RGBA_Floats(.9, .2, .1), .01, 0.0, 2.0);
 			}
 
+			var worldMatrix = renderData.WorldMatrix();
 			foreach (Face face in renderData.Mesh.Faces)
 			{
 				var triangles = face.AsTriangles();
 				foreach (var triangle in triangles)
 				{
 					renderCollection.Add(new TriangleShape(
-						Vector3.Transform(triangle.Item1, renderData.Matrix),
-						Vector3.Transform(triangle.Item2, renderData.Matrix),
-						Vector3.Transform(triangle.Item3, renderData.Matrix),
+						Vector3.Transform(triangle.Item1, worldMatrix),
+						Vector3.Transform(triangle.Item2, worldMatrix),
+						Vector3.Transform(triangle.Item3, worldMatrix),
 						partMaterial));
 				}
 			}
@@ -43,7 +48,7 @@ namespace MatterHackers.DataConverters3D
 			return BoundingVolumeHierarchy.CreateNewHierachy(renderCollection);
 		}
 
-		public static IPrimitive Convert(List<MeshRenderData> renderDatas)
+		public static IPrimitive Convert(List<IObject3D> renderDatas)
 		{
 			List<IPrimitive> renderCollection = new List<IPrimitive>();
 			foreach (var renderData in renderDatas)

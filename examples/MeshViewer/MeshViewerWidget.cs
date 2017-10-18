@@ -804,18 +804,12 @@ namespace MatterHackers.MeshVisualizer
 
 		private void DrawObject(IObject3D object3D, bool parentSelected)
 		{
-			foreach(MeshRenderData meshAndTransform in object3D.VisibleMeshes())
+			foreach(var item in object3D.VisibleMeshes())
 			{
 				bool isSelected = parentSelected ||
 					Scene.HasSelection && (object3D == Scene.SelectedItem || Scene.SelectedItem.Children.Contains(object3D));
 
-				RGBA_Bytes drawColor = object3D.Color;
-				if (drawColor.Alpha0To1 == 0)
-				{
-					drawColor = isSelected ? GetSelectedMaterialColor(object3D.MaterialIndex) : GetMaterialColor(object3D.MaterialIndex);
-				}
-
-				GLHelper.Render(meshAndTransform.Mesh, drawColor, meshAndTransform.Matrix, RenderType);
+				GLHelper.Render(item.Mesh, item.WorldColor(), item.WorldMatrix(), RenderType);
 			}
 		}
 

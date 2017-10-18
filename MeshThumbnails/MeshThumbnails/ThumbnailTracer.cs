@@ -51,7 +51,7 @@ namespace MatterHackers.RayTracer
 
 		private Transform allObjectsHolder;
 
-		private List<MeshRenderData> loadedMeshDatas;
+		private List<IObject3D> loadedMeshDatas;
 
 		private List<IPrimitive> renderCollection = new List<IPrimitive>();
 		private Scene scene;
@@ -96,7 +96,7 @@ namespace MatterHackers.RayTracer
 			rayTracer.CopyColorBufferToImage(destImage, rect);
 		}
 
-		public void SetRenderPosition(List<MeshRenderData> renderDatas)
+		public void SetRenderPosition(List<IObject3D> renderDatas)
 		{
 			world.Reset();
 			world.Scale = .03;
@@ -279,13 +279,13 @@ namespace MatterHackers.RayTracer
 			}
 		}
 		
-		AxisAlignedBoundingBox GetAxisAlignedBoundingBox(List<MeshRenderData> renderDatas)
+		AxisAlignedBoundingBox GetAxisAlignedBoundingBox(List<IObject3D> renderDatas)
 		{
 			AxisAlignedBoundingBox totalMeshBounds = AxisAlignedBoundingBox.Empty;
 			bool first = true;
 			foreach (var renderData in renderDatas)
 			{
-				AxisAlignedBoundingBox meshBounds = renderData.Mesh.GetAxisAlignedBoundingBox(renderData.Matrix);
+				AxisAlignedBoundingBox meshBounds = renderData.Mesh.GetAxisAlignedBoundingBox(renderData.WorldMatrix());
 				if (first)
 				{
 					totalMeshBounds = meshBounds;
@@ -300,7 +300,7 @@ namespace MatterHackers.RayTracer
 			return totalMeshBounds;
 		}
 
-		private void AddTestMesh(List<MeshRenderData> renderDatas)
+		private void AddTestMesh(List<IObject3D> renderDatas)
 		{
 			if (renderDatas != null)
 			{
@@ -378,7 +378,7 @@ namespace MatterHackers.RayTracer
 			return false;
 		}
 
-		private void ScaleMeshToView(List<MeshRenderData> renderDatas)
+		private void ScaleMeshToView(List<IObject3D> renderDatas)
 		{
 			if (renderDatas != null)
 			{

@@ -55,6 +55,9 @@ namespace MatterHackers.DataConverters3D
 			{
 				this.TypeName = type.Name;
 			}
+
+			Children = new SafeList<IObject3D>();
+			Children.PostModify = UpdateParent;
 		}
 
 		public static string AssetsPath { get; set; }
@@ -64,7 +67,7 @@ namespace MatterHackers.DataConverters3D
 		public string OwnerID { get; set; }
 
 		public virtual string ActiveEditor { get; set; }
-		public SafeList<IObject3D> Children { get; set; } = new SafeList<IObject3D>();
+		public SafeList<IObject3D> Children { get; set; }
 
 		public string TypeName { get; }
 
@@ -74,7 +77,16 @@ namespace MatterHackers.DataConverters3D
 		{
 			return Flatten(this, new MeshGroup(), Matrix4X4.Identity, meshPrintOutputSettings, this.MaterialIndex, this.OutputType);
 		}
-		
+
+		void UpdateParent(List<IObject3D> list)
+		{
+			// Make sure all the children have this as their parent
+			foreach (var item in list)
+			{
+				item.Parent = this;
+			}
+		}
+
 		void ApplyDifferenceToMeshes()
 		{
 			// spin up a task to remove holes from the objects in the group
@@ -331,7 +343,7 @@ namespace MatterHackers.DataConverters3D
 		public IObject3D Clone()
 		{
 			// TODO: This technique loses concrete types, seems invalid
-			return new Object3D()
+			var copy = new Object3D()
 			{
 				ItemType = this.ItemType,
 				Mesh = this.Mesh,
@@ -343,6 +355,9 @@ namespace MatterHackers.DataConverters3D
 				traceData = this.traceData,
 				OutputType = this.OutputType
 			};
+			copy.Children.PostModify = UpdateParent;
+
+			return copy;
 		}
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix, bool requirePrecision = false)

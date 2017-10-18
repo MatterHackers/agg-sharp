@@ -39,6 +39,8 @@ namespace MatterHackers.DataConverters3D
 
 		private List<T> items;
 
+		public Action<List<T>> PostModify;
+
 		public SafeList()
 		{
 			items = new List<T>();
@@ -69,6 +71,9 @@ namespace MatterHackers.DataConverters3D
 
 			// Pass the new list to the Action for manipulation
 			modifier(safeClone);
+
+			// Give a chance to have a common function called after any modify
+			PostModify?.Invoke(safeClone);
 
 			// Swap the modified list into place
 			items = safeClone;

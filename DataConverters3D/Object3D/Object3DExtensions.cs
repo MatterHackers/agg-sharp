@@ -95,25 +95,81 @@ namespace MatterHackers.PolygonMesh
 			var parent = child.Parent;
 			while (parent != null)
 			{
-				matrix *= parent.Matrix;
+				matrix = matrix * parent.Matrix;
 				parent = parent.Parent;
 			}
 
 			return matrix;
 		}
 
+		public static List<IObject3D> Ancestors(this IObject3D child)
+		{
+			List<IObject3D> ancestors = new List<IObject3D>();
+			ancestors.Add(child);
+			var parent = child.Parent;
+			while (parent != null)
+			{
+				ancestors.Add(parent);
+				parent = parent.Parent;
+			}
+
+			return ancestors;
+		}
+
+		public static RGBA_Bytes WorldColor(this IObject3D child)
+		{
+			foreach(var item in Enumerable.Reverse(child.Ancestors()))
+			{
+				if (item.Color.Alpha0To255 != 0)
+				{
+					// use collection as the color for all recursize children
+					return item.Color;
+				}
+			}
+
+			return RGBA_Bytes.White;
+		}
+
+		public static PrintOutputTypes WorldOutputType(this IObject3D child)
+		{
+			foreach (var item in Enumerable.Reverse(child.Ancestors()))
+			{
+				if (item.OutputType != PrintOutputTypes.Default)
+				{
+					// use collection as the color for all recursize children
+					return item.OutputType;
+				}
+			}
+
+			return PrintOutputTypes.Default;
+		}
+
+		public static int WorldMaterialIndex(this IObject3D child)
+		{
+			foreach (var item in Enumerable.Reverse(child.Ancestors()))
+			{
+				if (item.MaterialIndex != -1)
+				{
+					// use collection as the color for all recursize children
+					return item.MaterialIndex;
+				}
+			}
+
+			return -1;
+		}
+
 		public static IEnumerable<IObject3D> Descendants(this IObject3D root)
 		{
-			var nodes = new Stack<IObject3D>(new[] { root });
-			while (nodes.Any())
+			var items = new Stack<IObject3D>(new[] { root });
+			while (items.Any())
 			{
-				IObject3D node = nodes.Pop();
+				IObject3D item = items.Pop();
 				
-				yield return node;
-				foreach (var n in node.Children)
+				yield return item;
+				foreach (var n in item.Children)
 				{
-					n.Parent = node;
-					nodes.Push(n);
+					n.Parent = item;
+					items.Push(n);
 				}
 			}
 		}
