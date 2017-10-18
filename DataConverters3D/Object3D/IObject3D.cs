@@ -90,7 +90,8 @@ namespace MatterHackers.DataConverters3D
 
 				if (root.Visible)
 				{
-					if (item.Mesh != null)
+					if (item.Mesh != null
+						&& item.Visible)
 					{
 						// there is a mesh return the object
 						yield return item;
@@ -100,7 +101,10 @@ namespace MatterHackers.DataConverters3D
 						foreach (var n in item.Children)
 						{
 							n.Parent = item;
-							items.Push(n);
+							if (item.Visible)
+							{
+								items.Push(n);
+							}
 						}
 					}
 				}
