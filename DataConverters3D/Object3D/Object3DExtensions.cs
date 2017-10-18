@@ -89,6 +89,19 @@ namespace MatterHackers.PolygonMesh
 			return totalBounds;
 		}
 
+		public static Matrix4X4 WorldMatrix(this IObject3D child)
+		{
+			var matrix = child.Matrix;
+			var parent = child.Parent;
+			while (parent != null)
+			{
+				matrix *= parent.Matrix;
+				parent = parent.Parent;
+			}
+
+			return matrix;
+		}
+
 		public static IEnumerable<IObject3D> Descendants(this IObject3D root)
 		{
 			var nodes = new Stack<IObject3D>(new[] { root });
