@@ -3050,18 +3050,12 @@ namespace MatterHackers.Agg.UI
 				childWithFocus.OnKeyPress(keyPressEvent);
 			}
 
-			if (KeyPressed != null)
-			{
-				KeyPressed(this, keyPressEvent);
-			}
+			KeyPressed?.Invoke(this, keyPressEvent);
 		}
 
 		public virtual void OnPositionChanged(EventArgs e)
 		{
-			if (PositionChanged != null)
-			{
-				PositionChanged(this, e);
-			}
+			PositionChanged?.Invoke(this, e);
 		}
 
 		private static int SortOnTabIndex(GuiWidget one, GuiWidget two)
@@ -3155,10 +3149,7 @@ namespace MatterHackers.Agg.UI
 				keyEvent.SuppressKeyPress = true;
 			}
 
-			if (KeyDown != null)
-			{
-				KeyDown(this, keyEvent);
-			}
+			KeyDown?.Invoke(this, keyEvent);
 		}
 
 		/// <summary>
@@ -3174,10 +3165,7 @@ namespace MatterHackers.Agg.UI
 				childWithFocus.OnKeyUp(keyEvent);
 			}
 
-			if (KeyUp != null)
-			{
-				KeyUp(this, keyEvent);
-			}
+			KeyUp?.Invoke(this, keyEvent);
 		}
 	}
 
