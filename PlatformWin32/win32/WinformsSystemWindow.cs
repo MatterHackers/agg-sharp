@@ -630,8 +630,9 @@ namespace MatterHackers.Agg.UI
 				allOpenSystemWindows.Push(systemWindow);
 			}
 
-			// Set the active SystemWindow
+			// Set the active SystemWindow & PlatformWindow references
 			this.AggSystemWindow = systemWindow;
+			systemWindow.PlatformWindow = this;
 
 			systemWindow.AnchorAll();
 
