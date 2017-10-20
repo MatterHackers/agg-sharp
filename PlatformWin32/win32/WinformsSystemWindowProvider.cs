@@ -22,35 +22,35 @@ namespace MatterHackers.Agg.UI
 {
 	public class WinformsSystemWindowProvider : ISystemWindowProvider
 	{
-		private static IPlatformWindow platformWindow = null;
+		private static IPlatformWindow singlePlatformWindow = null;
 
 		/// <summary>
 		/// Creates or connects a PlatformWindow to the given SystemWindow
 		/// </summary>
 		public void ShowSystemWindow(SystemWindow systemWindow)
 		{
-			bool singleWindowMode = WinformsSystemWindow.SingleWindowMode;
-			bool isFirstWindow = platformWindow == null;
-			if ((singleWindowMode && platformWindow == null)
-				|| !singleWindowMode)
-			{
-				platformWindow = AggContext.CreateInstanceFrom<IPlatformWindow>(AggContext.Config.ProviderTypes.SystemWindow);
-			}
+			IPlatformWindow platformWindow;
 
+			bool singleWindowMode = WinformsSystemWindow.SingleWindowMode;
+			bool isFirstWindow = singlePlatformWindow == null;
 			if ((singleWindowMode && isFirstWindow)
 				|| !singleWindowMode)
 			{
+				platformWindow = AggContext.CreateInstanceFrom<IPlatformWindow>(AggContext.Config.ProviderTypes.SystemWindow);
 				platformWindow.Caption = systemWindow.Title;
 				platformWindow.MinimumSize = systemWindow.MinimumSize;
 			}
+			else
+			{
+				platformWindow = singlePlatformWindow;
+			}
 
-			systemWindow.PlatformWindow = platformWindow;
 			platformWindow.ShowSystemWindow(systemWindow);
 		}
 
 		public void CloseSystemWindow(SystemWindow systemWindow)
 		{
-			platformWindow.CloseSystemWindow(systemWindow);
+			systemWindow.PlatformWindow.CloseSystemWindow(systemWindow);
 		}
 	}
 }
