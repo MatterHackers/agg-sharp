@@ -112,7 +112,7 @@ namespace MatterHackers.DataConverters3D
 		}
 	}
 
-	public interface IObject3D
+	public interface IObject3D : IAscendable<IObject3D>
 	{
 		string ActiveEditor { get; set; }
 		string OwnerID { get; set; }

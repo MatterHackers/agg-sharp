@@ -63,6 +63,8 @@ namespace MatterHackers.DataConverters3D
 
 		public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
 		{
+			var parentItem = existingValue as IObject3D;
+
 			var items = new List<IObject3D>();
 
 			JArray jArray = JArray.Load(reader);
@@ -70,22 +72,29 @@ namespace MatterHackers.DataConverters3D
 			{
 				string typeName = item["TypeName"]?.ToString();
 				string fullTypeName;
+
+				IObject3D childItem;
+
 				if (string.IsNullOrEmpty(typeName) || typeName == "Object3D" || !mappingTypes.TryGetValue(typeName, out fullTypeName))
 				{
 					// Use a normal Object3D type if the TypeName field is missing, invalid or has no mapping entry
-					items.Add(item.ToObject<Object3D>(serializer));
+					childItem = item.ToObject<Object3D>(serializer);
 				}
 				else
 				{
 					// If a mapping entry exists, try to find the type for the given entry falling back to Object3D if that fails
 					Type type = Type.GetType(fullTypeName) ?? typeof(Object3D);
-					items.Add((IObject3D)item.ToObject(type, serializer));
+					childItem = (IObject3D)item.ToObject(type, serializer);
 				}
+
+				childItem.Parent = parentItem;
+
+				items.Add(childItem);
 			}
 
-			return new SafeList<IObject3D>(items);
+			return new SafeList<IObject3D>(items, null);
 		}
-		
+
 		public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
 		{
 		}

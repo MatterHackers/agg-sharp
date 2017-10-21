@@ -33,21 +33,27 @@ using System.Collections.Generic;
 
 namespace MatterHackers.DataConverters3D
 {
-	public class SafeList<T> : IEnumerable<T>
+	public interface IAscendable<T>
+	{
+		T Parent { get; set; }
+	}
+
+	public class SafeList<T> : IEnumerable<T> where T : IAscendable<T>
 	{
 		public event EventHandler ItemsModified;
 
-		private List<T> items;
+		private List<T> items = new List<T>();
 
-		public Action<List<T>> PostModify;
+		private T parentItem;
 
-		public SafeList()
+		public SafeList(T parent)
 		{
-			items = new List<T>();
+			this.parentItem = parent;
 		}
 
-		public SafeList(IEnumerable<T> sourceItems)
+		public SafeList(IEnumerable<T> sourceItems, T parent)
 		{
+			this.parentItem = parent;
 			items = new List<T>(sourceItems);
 		}
 
@@ -58,6 +64,11 @@ namespace MatterHackers.DataConverters3D
 		public int Count => items.Count;
 
 		public bool Contains(T item) => items.Contains(item);
+
+		public void StoreParent(T parent)
+		{
+			this.parentItem = parent;
+		}
 
 		/// <summary>
 		/// Provides a safe context to manipulate items. Copies items into a new list, invokes the 'modifier'
@@ -72,11 +83,16 @@ namespace MatterHackers.DataConverters3D
 			// Pass the new list to the Action for manipulation
 			modifier(safeClone);
 
-			// Give a chance to have a common function called after any modify
-			PostModify?.Invoke(safeClone);
-
 			// Swap the modified list into place
 			items = safeClone;
+
+			if (parentItem != null)
+			{
+				foreach (var item in items)
+				{
+					item.Parent = parentItem;
+				}
+			}
 
 			this.ItemsModified?.Invoke(this, null);
 		}

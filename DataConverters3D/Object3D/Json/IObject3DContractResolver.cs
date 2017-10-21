@@ -41,6 +41,31 @@ namespace MatterHackers.DataConverters3D
 
 		private static Type RGBA_BtyesType = typeof(RGBA_Bytes);
 
+		protected override JsonObjectContract CreateObjectContract(Type objectType)
+		{
+			var result = base.CreateObjectContract(objectType);
+
+			if (IObject3DType.IsAssignableFrom(objectType)
+				&& result is JsonObjectContract contract)
+			{
+				// Add a post deserialization callback to set Parent 
+				contract.OnDeserializedCallbacks.Add((o, context) =>
+				{
+					if (o is IObject3D object3D)
+					{
+						foreach (var child in object3D.Children)
+						{
+							child.Parent = object3D;
+						}
+
+						object3D.Children.StoreParent(object3D);
+					}
+				});
+			}
+
+			return result;
+		}
+
 		protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
 		{
 			// Conditionally serialize .Children only if .MeshPath is empty. Currently having a Mesh precludes having children - looks like a 
@@ -57,8 +82,8 @@ namespace MatterHackers.DataConverters3D
 
 			if (property.PropertyName == "Color" && RGBA_BtyesType.IsAssignableFrom(property.PropertyType))
 			{
-				property.ShouldSerialize = instance => {
-					
+				property.ShouldSerialize = instance =>
+				{
 					return instance is IObject3D object3D && object3D.Color != RGBA_Bytes.Transparent;
 				};
 			}
