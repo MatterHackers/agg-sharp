@@ -161,6 +161,8 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
+		[JsonIgnore]
+		// TODO: Remove from InteractiveScene - coordinate debug details between MeshViewer and Inspector directly 
 		public IObject3D DebugItem { get; set; }
 
 		private string GetOpenFilePath(string libraryPath, string extension)
