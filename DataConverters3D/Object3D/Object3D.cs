@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -56,8 +57,7 @@ namespace MatterHackers.DataConverters3D
 				this.TypeName = type.Name;
 			}
 
-			Children = new SafeList<IObject3D>();
-			Children.PostModify = UpdateParent;
+			Children = new SafeList<IObject3D>(this);
 		}
 
 		public static string AssetsPath { get; set; }
@@ -320,7 +320,13 @@ namespace MatterHackers.DataConverters3D
 				string json = new StreamReader(stream).ReadToEnd();
 
 				// Load the meta file and convert MeshPath links into objects
-				loadedItem = JsonConvert.DeserializeObject<Object3D>(json);
+				loadedItem = JsonConvert.DeserializeObject<Object3D>(
+					json,
+					new JsonSerializerSettings
+					{
+						ContractResolver = new IObject3DContractResolver(),
+						NullValueHandling = NullValueHandling.Ignore
+					});
 				loadedItem.LoadMeshLinks(cancellationToken, itemCache, progress);
 			}
 			else
@@ -339,25 +345,41 @@ namespace MatterHackers.DataConverters3D
 			return loadedItem;
 		}
 
-		// TODO - first attempt at deep clone
+		// Deep clone via json serialization
 		public IObject3D Clone()
 		{
-			// TODO: This technique loses concrete types, seems invalid
-			var copy = new Object3D()
-			{
-				ItemType = this.ItemType,
-				Mesh = this.Mesh,
-				Color = this.Color,
-				ActiveEditor = this.ActiveEditor,
-				MeshPath = this.MeshPath,
-				Children = new SafeList<IObject3D>(this.Children.Select(child => child.Clone())),
-				Matrix = this.Matrix,
-				traceData = this.traceData,
-				OutputType = this.OutputType
-			};
-			copy.Children.PostModify = UpdateParent;
+			// Index items by ID
+			var allItemsByID = this.Descendants().ToDictionary(i => i.ID);
 
-			return copy;
+			IObject3D clonedItem;
+
+			using (var memoryStream = new MemoryStream())
+			using (var writer = new StreamWriter(memoryStream))
+			{
+				// Wrap with a temporary container
+				var wrapper = new Object3D();
+				wrapper.Children.Add(this);
+
+				// Push json into stream and reset to start
+				writer.Write(JsonConvert.SerializeObject(wrapper));
+				writer.Flush();
+				memoryStream.Position = 0;
+
+				// Load serialized content
+				var roundTripped = Object3D.Load(memoryStream, ".mcx", CancellationToken.None);
+
+				// Remove temp container
+				clonedItem = roundTripped.Children.First();
+			}
+
+			// Copy mesh instances to cloned tree
+			foreach(var item in clonedItem.Descendants())
+			{
+				item.Mesh = allItemsByID[item.ID].Mesh;
+				item.ID = Guid.NewGuid().ToString();
+			}
+
+			return clonedItem;
 		}
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix, bool requirePrecision = false)

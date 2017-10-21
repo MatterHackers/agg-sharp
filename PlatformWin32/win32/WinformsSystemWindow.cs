@@ -718,7 +718,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 #if DEBUG
-		public abstract class FormInspector : Form
+		public class FormInspector : Form
 		{
 			public virtual bool Inspecting { get; set; }
 		}

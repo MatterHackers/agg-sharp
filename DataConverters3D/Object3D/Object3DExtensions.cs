@@ -232,9 +232,10 @@ namespace MatterHackers.PolygonMesh
 				&& (objectToCollapse?.ItemType == typeFilter
 				|| typeFilter == Object3DTypes.Any))
 			{
+				// Remove the collapsing item from the list
 				collapseInto.Remove(objectToCollapse);
 
-				// Move each child from objectToRemove into the target (often the scene), applying the parent transform to each
+				// Move each child from objectToCollapse into the target (often the scene), applying the parent transform to each
 				foreach (var child in objectToCollapse.Children)
 				{
 					if (objectToCollapse.Color != RGBA_Bytes.Transparent)
