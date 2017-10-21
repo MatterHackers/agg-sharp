@@ -29,18 +29,17 @@ either expressed or implied, of the FreeBSD Project.
 
 #define DO_LIGHTING
 
+using System;
+using System.Collections.Generic;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
-using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
-using System;
-using System.Collections.Generic;
 
 namespace MatterHackers.Agg.OpenGlGui
 {
 	public static class ExtensionMethods
-    {
+	{
 		public static void RenderDebugAABB(this WorldView worldView, Graphics2D graphics2D, AxisAlignedBoundingBox bounds)
 		{
 			Vector3 renderPosition = bounds.Center;
@@ -72,14 +71,14 @@ namespace MatterHackers.Agg.OpenGlGui
 	public class TrackballTumbleWidget : GuiWidget
 	{
 		public TrackBallController.MouseDownType TransformState { get; set; }
-		
+
 		private List<IVertexSource> insideArrows = new List<IVertexSource>();
 		private List<IVertexSource> outsideArrows = new List<IVertexSource>();
 
 		private WorldView world;
 
 		public TrackBallController TrackBallController { get; }
-		
+
 		public bool LockTrackBall { get; set; }
 
 		public TrackballTumbleWidget(WorldView world)
@@ -104,11 +103,6 @@ namespace MatterHackers.Agg.OpenGlGui
 			MakeArrowIcons();
 
 			base.OnBoundsChanged(e);
-		}
-
-		public override void OnDraw(Graphics2D graphics2D)
-		{
-			base.OnDraw(graphics2D);
 		}
 
 		private void MakeArrowIcons()
@@ -195,7 +189,7 @@ namespace MatterHackers.Agg.OpenGlGui
 					// Get all the movement that is less 100 ms from the last time (the mouse up)
 					TimeAndPosition lastTime = motionQueue[motionQueue.Count - 1];
 					int firstTimeIndex = motionQueue.Count - 1;
-					while (firstTimeIndex > 0 && motionQueue[firstTimeIndex-1].timeMs + 100 > lastTime.timeMs)
+					while (firstTimeIndex > 0 && motionQueue[firstTimeIndex - 1].timeMs + 100 > lastTime.timeMs)
 					{
 						firstTimeIndex--;
 					}
@@ -236,8 +230,7 @@ namespace MatterHackers.Agg.OpenGlGui
 				}
 				else
 				{
-					Vector2 centerPosition = (mouseEvent.GetPosition(1) + mouseEvent.GetPosition(0)) / 2;
-					currentMousePosition = centerPosition;
+					currentMousePosition = (mouseEvent.GetPosition(1) + mouseEvent.GetPosition(0)) / 2;
 				}
 
 				currentVelocityPerMs = Vector2.Zero;
@@ -312,8 +305,7 @@ namespace MatterHackers.Agg.OpenGlGui
 			}
 			else
 			{
-				Vector2 centerPosition = (mouseEvent.GetPosition(1) + mouseEvent.GetPosition(0)) / 2;
-				currentMousePosition = centerPosition;
+				currentMousePosition = (mouseEvent.GetPosition(1) + mouseEvent.GetPosition(0)) / 2;
 			}
 
 			motionQueue.AddMoveToMotionQueue(currentMousePosition, UiThread.CurrentTimerMs);

@@ -33,12 +33,10 @@ namespace MatterHackers.VectorMath
 {
 	public class WorldView
 	{
-		private Vector2 screenCenter;
-
 		private Matrix4X4 currentRotationMatrix = Matrix4X4.Identity;
 		private Matrix4X4 currentTranslationMatrix = Matrix4X4.Identity;
 
-		public WorldView(double width,  double height)
+		public WorldView(double width, double height)
 		{
 			this.width = width;
 			this.height = height;
@@ -91,11 +89,7 @@ namespace MatterHackers.VectorMath
 
 		public Matrix4X4 RotationMatrix
 		{
-			get
-			{
-				return currentRotationMatrix;
-			}
-
+			get => currentRotationMatrix;
 			set
 			{
 				currentRotationMatrix = value;
@@ -105,10 +99,7 @@ namespace MatterHackers.VectorMath
 
 		public Matrix4X4 TranslationMatrix
 		{
-			get
-			{
-				return currentTranslationMatrix;
-			}
+			get => currentTranslationMatrix;
 			set
 			{
 				currentTranslationMatrix = value;
@@ -121,18 +112,7 @@ namespace MatterHackers.VectorMath
 			return currentTranslationMatrix * RotationMatrix;
 		}
 
-		public Vector2 ScreenCenter
-		{
-			get
-			{
-				return screenCenter;
-			}
-
-			set
-			{
-				screenCenter = value;
-			}
-		}
+		public Vector2 ScreenCenter { get; set; }
 
 		public void CalculateProjectionMatrix(double width, double height)
 		{
@@ -235,7 +215,7 @@ namespace MatterHackers.VectorMath
 			Vector3 homoginizedScreenPosition = Vector3.TransformPerspective(homoginizedViewPosition, this.ProjectionMatrix);
 
 			// Screen position
-			return new Vector2(homoginizedScreenPosition.x * width / 2 + width / 2, 
+			return new Vector2(homoginizedScreenPosition.x * width / 2 + width / 2,
 				homoginizedScreenPosition.y * height / 2 + height / 2);
 		}
 
