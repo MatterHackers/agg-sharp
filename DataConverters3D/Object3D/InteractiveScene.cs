@@ -161,6 +161,8 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
+		public IObject3D DebugItem { get; set; }
+
 		private string GetOpenFilePath(string libraryPath, string extension)
 		{
 			string filePath;
