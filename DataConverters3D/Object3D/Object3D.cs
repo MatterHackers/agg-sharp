@@ -29,10 +29,8 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -371,6 +369,8 @@ namespace MatterHackers.DataConverters3D
 				// Remove temp container
 				clonedItem = roundTripped.Children.First();
 			}
+
+			// TODO: OwnerID must be reprocessed during/after changing IDs to ensure consistency
 
 			// Copy mesh instances to cloned tree
 			foreach(var item in clonedItem.Descendants())
