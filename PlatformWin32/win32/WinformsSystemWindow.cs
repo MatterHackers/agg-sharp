@@ -720,7 +720,7 @@ namespace MatterHackers.Agg.UI
 #if DEBUG
 		public class FormInspector : Form
 		{
-			public virtual bool Inspecting { get; set; }
+			public virtual bool Inspecting { get; set; } = true;
 		}
 
 		public static Func<SystemWindow, FormInspector> InspectorCreator { get; set; }
