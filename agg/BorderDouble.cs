@@ -1,10 +1,14 @@
 ﻿using System;
+using System.ComponentModel;
+using System.Globalization;
+using System.Linq;
 
 namespace MatterHackers.Agg
 {
 	/// <summary>
 	/// BorderDouble is used to represent the border around (Margin) on inside (Padding) of a rectangular area.
 	/// </summary>
+	[TypeConverter(typeof(BorderDoubleConverter))]
 	public struct BorderDouble
 	{
 		public double Left, Bottom, Right, Top;
@@ -104,7 +108,7 @@ namespace MatterHackers.Agg
 
 		public override string ToString()
 		{
-			return string.Format("L:{0}, B:{1}, R:{2}, T:{3}", Left, Bottom, Right, Top);
+			return $"{Left}, {Bottom}, {Right}, {Top}";
 		}
 
 		public void Round()
@@ -113,6 +117,43 @@ namespace MatterHackers.Agg
 			this.Bottom = Math.Round(this.Bottom);
 			this.Right = Math.Round(this.Right);
 			this.Top = Math.Round(this.Top);
+		}
+	}
+
+	public class BorderDoubleConverter : TypeConverter
+	{
+		public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+		{
+			return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
+		}
+
+		public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+		{
+			string stringValue = value as string;
+
+			if (!string.IsNullOrEmpty(stringValue))
+			{
+				var values = stringValue.Split(',').Select(s =>
+				{
+					double result;
+					double.TryParse(s, out result);
+					return result;
+				}).ToArray();
+
+				switch (values.Length)
+				{
+					case 1:
+						return new BorderDouble(values[0]);
+					case 2:
+						return new BorderDouble(values[0], values[1]);
+					case 4:
+						return new BorderDouble(values[0], values[1], values[2], values[3]);
+					default:
+						return 0;
+				}
+			}
+
+			return base.ConvertFrom(context, culture, value);
 		}
 	}
 }
