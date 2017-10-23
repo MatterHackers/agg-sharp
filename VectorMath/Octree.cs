@@ -22,6 +22,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MatterHackers.VectorMath
 {
@@ -393,21 +394,24 @@ namespace MatterHackers.VectorMath
 
 			internal IEnumerable<T> AllObjects()
 			{
-				if (Leaves.Count > 0)
+				var items = new Stack<Branch>(new Branch[] { this });
+				while (items.Any())
 				{
-					for (int i = 0; i < Leaves.Count; ++i)
-					{
-						yield return Leaves[i].Value;
-					}
-				}
+					Branch item = items.Pop();
 
-				for (int i = 0; i < 8; ++i)
-				{
-					if (Branches[i] != null)
+					if (item.Leaves.Count > 0)
 					{
-						foreach (var children in Branches[i].AllObjects())
+						for (int i = 0; i < item.Leaves.Count; ++i)
 						{
-							yield return children;
+							yield return item.Leaves[i].Value;
+						}
+					}
+
+					for (int i = 0; i < 8; ++i)
+					{
+						if (item.Branches[i] != null)
+						{
+							items.Push(item.Branches[i]);
 						}
 					}
 				}
@@ -490,24 +494,27 @@ namespace MatterHackers.VectorMath
 
 			internal IEnumerable<T> SearchBounds(Bounds bounds)
 			{
-				if (Leaves.Count > 0)
+				var items = new Stack<Branch>(new Branch[] { this });
+				while (items.Any())
 				{
-					for (int i = 0; i < Leaves.Count; ++i)
+					Branch item = items.Pop();
+
+					if (item.Leaves.Count > 0)
 					{
-						if (bounds.Intersects(Leaves[i].Bounds))
+						for (int i = 0; i < item.Leaves.Count; ++i)
 						{
-							yield return Leaves[i].Value;
+							if (bounds.Intersects(item.Leaves[i].Bounds))
+							{
+								yield return item.Leaves[i].Value;
+							}
 						}
 					}
-				}
 
-				for (int i = 0; i < 8; ++i)
-				{
-					if (Branches[i] != null)
+					for (int i = 0; i < 8; ++i)
 					{
-						foreach (var child in Branches[i].SearchBounds(bounds))
+						if (item.Branches[i] != null)
 						{
-							yield return child;
+							items.Push(item.Branches[i]);
 						}
 					}
 				}

@@ -202,6 +202,7 @@ namespace Net3dBool
 		{
 			//creating a ray starting at the face baricenter going to the normal direction
 			Line ray = new Line(GetNormal(), center);
+			ray.PerturbDirection();
 
 			bool success;
 			double distance;
