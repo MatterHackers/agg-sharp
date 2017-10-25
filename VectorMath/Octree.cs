@@ -121,6 +121,12 @@ namespace MatterHackers.VectorMath
 			MaxY = maxY;
 			MaxZ = maxZ;
 		}
+
+		public void Expand(double amount)
+		{
+			MinX -= amount; MinY -= amount; MinZ -= amount;
+			MaxX += amount; MaxY += amount; MaxZ += amount;
+		}
 	}
 
 	/// <summary>
