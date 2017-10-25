@@ -133,7 +133,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Csg\CsgNode.cs" />
     <Compile Include="Csg\CsgPlane.cs" />
     <Compile Include="Csg\CsgPolygon.cs" />
     <Compile Include="Csg\CsgProcessing.cs" />

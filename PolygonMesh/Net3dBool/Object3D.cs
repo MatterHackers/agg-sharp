@@ -180,22 +180,21 @@ namespace Net3dBool
 
 		Stack<Face> facesFromSplit = new Stack<Face>();
 		/// <summary>
-		/// Split faces so that none face is intercepted by a face of other object
+		/// Split faces so that no face is intercepted by a face of other object
 		/// </summary>
 		/// <param name="compareObject">the other object 3d used to make the split</param>
 		public void SplitFaces(Object3D compareObject)
 		{
 			facesFromSplit.Clear();
-				Line line;
 			Segment segment1;
 			Segment segment2;
 			int signFace1Vert1, signFace1Vert2, signFace1Vert3, signFace2Vert1, signFace2Vert2, signFace2Vert3;
-			//int numFacesBefore = this.GetNumFaces();
 			int numFacesStart = this.Faces.Count;
 
 			//if the objects bounds overlap...
 			//for each object1 face...
-			foreach (Face thisFaceIn in Faces.SearchBounds(new Bounds(compareObject.GetBound())).ToArray()) // put it in an array as we will be adding new faces to it
+			var bounds = new Bounds(compareObject.GetBound());
+			foreach (Face thisFaceIn in Faces.SearchBounds(bounds).ToArray()) // put it in an array as we will be adding new faces to it
 			{
 				Face thisFace = thisFaceIn;
 				bool haveAddedFaces = true;
@@ -238,7 +237,7 @@ namespace Net3dBool
 							//if the signs are not equal...
 							if (!(signFace2Vert1 == signFace2Vert2 && signFace2Vert2 == signFace2Vert3))
 							{
-								line = new Line(thisFace, compareFace);
+								var line = new Line(thisFace, compareFace);
 
 								//intersection of the face1 and the plane of face2
 								segment1 = new Segment(line, thisFace, signFace1Vert1, signFace1Vert2, signFace1Vert3);

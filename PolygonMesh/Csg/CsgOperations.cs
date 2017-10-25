@@ -19,6 +19,7 @@ using Net3dBool;
 using System.Collections.Generic;
 using System.Linq;
 using System;
+using System.Threading;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
@@ -37,10 +38,10 @@ namespace MatterHackers.PolygonMesh.Csg
 		//          |       |            |       |
 		//          +-------+            +-------+
 		//
-		public static Mesh Union(Mesh a, Mesh b)
+		public static Mesh Union(Mesh aIn, Mesh bIn)
 		{
-			Mesh aCopy = Mesh.Copy(a);
-			Mesh bCopy = Mesh.Copy(b);
+			Mesh aCopy = Mesh.Copy(aIn, CancellationToken.None);
+			Mesh bCopy = Mesh.Copy(bIn, CancellationToken.None);
 
 			Union(ref aCopy, ref bCopy);
 			return aCopy;
@@ -76,8 +77,8 @@ namespace MatterHackers.PolygonMesh.Csg
 		//
 		public static Mesh Subtract(Mesh a, Mesh b)
 		{
-			Mesh aCopy = Mesh.Copy(a);
-			Mesh bCopy = Mesh.Copy(b);
+			Mesh aCopy = Mesh.Copy(a, CancellationToken.None);
+			Mesh bCopy = Mesh.Copy(b, CancellationToken.None);
 
 			Subtract(ref aCopy, ref bCopy);
 			return aCopy;
@@ -114,14 +115,19 @@ namespace MatterHackers.PolygonMesh.Csg
 		//
 		public static Mesh Intersect(Mesh a, Mesh b)
 		{
-			Mesh aCopy = Mesh.Copy(a);
-			Mesh bCopy = Mesh.Copy(b);
+			Mesh aCopy = Mesh.Copy(a, CancellationToken.None);
+			Mesh bCopy = Mesh.Copy(b, CancellationToken.None);
 
 			Intersect(ref aCopy, ref bCopy);
 			return aCopy;
 		}
 
 		public static void Intersect(ref Mesh a, ref Mesh b)
+		{
+			throw new NotImplementedException();
+		}
+
+		public static (Mesh subtract, Mesh intersect) IntersectAndSubtract(Mesh recieveSubtraction, Mesh recieveIntersection)
 		{
 			throw new NotImplementedException();
 		}
@@ -260,79 +266,25 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			return MeshFromSolid(result);
 		}
-	}
-#else
-	public delegate CsgNode CsgFunctionHandler(CsgNode a, CsgNode b);
 
-	// Public interface implementation
-	public static class CsgOperations
-	{
-		public static List<CsgPolygon> PolygonsFromMesh(Mesh model)
+		public static (Mesh subtract, Mesh intersect) IntersectAndSubtract(Mesh recieveSubtraction, Mesh recieveIntersection)
 		{
-			List<CsgPolygon> list = new List<CsgPolygon>();
-
-			foreach (Face face in model.Faces)
+			if (recieveSubtraction.Faces.Count == 0)
 			{
-				List<IVertex> triangle = new List<IVertex>();
-				foreach (FaceEdge faceEdge in face.FaceEdges())
-				{
-					IVertex v = new Vertex(faceEdge.firstVertex.Position);
-					v.Normal = faceEdge.firstVertex.Normal;
-					triangle.Add(v);
-				}
-
-				// TODO: make sure this polygon is convex
-				list.Add(new CsgPolygon(triangle));
+				return (recieveSubtraction, recieveIntersection);
 			}
-
-			return list;
-		}
-
-		public static Mesh MeshFromPolygons(List<CsgPolygon> polygons)
-		{
-			Mesh model = new Mesh();
-			HashSet<PolygonMesh.Vertex> vertices = new HashSet<PolygonMesh.Vertex>();
-			for (int polygonIndex = 0; polygonIndex < polygons.Count; polygonIndex++)
+			if (recieveIntersection.Faces.Count == 0)
 			{
-				CsgPolygon poly = polygons[polygonIndex];
-				vertices.Clear();
-
-				for (int vertexIndex = 0; vertexIndex < poly.vertices.Count; vertexIndex++)
-				{
-					vertices.Add(model.CreateVertex(poly.vertices[vertexIndex].Position));
-				}
-
-				if (vertices.Count > 2)
-				{
-					model.CreateFace(vertices.ToArray());
-				}
+				return (recieveSubtraction, recieveIntersection);
 			}
+			var A = SolidFromMesh(recieveSubtraction);
+			var B = SolidFromMesh(recieveIntersection);
 
-			return model;
-		}
+			var modeller = new BooleanModeller(A, B);
+			var intersection = modeller.GetIntersection();
+			var difference = modeller.GetDifference();
 
-		public static Mesh Union(Mesh a, Mesh b)
-		{
-			return PerformOperation(a, b, CsgNode.Union);
-		}
-
-		public static Mesh Subtract(Mesh a, Mesh b)
-		{
-			return PerformOperation(a, b, CsgNode.Subtract);
-		}
-
-		public static Mesh Intersect(Mesh a, Mesh b)
-		{
-			return PerformOperation(a, b, CsgNode.Intersect);
-		}
-
-		private static Mesh PerformOperation(Mesh a, Mesh b, CsgFunctionHandler fun)
-		{
-			CsgNode A = new CsgNode(PolygonsFromMesh(a));
-			CsgNode B = new CsgNode(PolygonsFromMesh(b));
-			CsgNode AB = fun(A, B);
-			List<CsgPolygon> polygons = AB.GetAllPolygons();
-			return MeshFromPolygons(polygons);
+			return (MeshFromSolid(difference), MeshFromSolid(intersection));
 		}
 	}
 #endif
