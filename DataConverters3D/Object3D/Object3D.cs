@@ -46,6 +46,8 @@ namespace MatterHackers.DataConverters3D
 {
 	public class Object3D : IObject3D
 	{
+		public event EventHandler Invalidated;
+
 		public Object3D()
 		{
 			var type = this.GetType();
@@ -343,6 +345,16 @@ namespace MatterHackers.DataConverters3D
 			return loadedItem;
 		}
 
+		public void Invalidate()
+		{
+			Invalidated?.Invoke(this, null);
+
+			if (Parent != null)
+			{
+				Parent.Invalidate();
+			}
+		}
+
 		// Deep clone via json serialization
 		public IObject3D Clone()
 		{
@@ -370,13 +382,20 @@ namespace MatterHackers.DataConverters3D
 				clonedItem = roundTripped.Children.First();
 			}
 
-			// TODO: OwnerID must be reprocessed during/after changing IDs to ensure consistency
-
 			// Copy mesh instances to cloned tree
-			foreach(var item in clonedItem.Descendants())
+			foreach(var descendant in clonedItem.Descendants())
 			{
-				item.Mesh = allItemsByID[item.ID].Mesh;
-				item.ID = Guid.NewGuid().ToString();
+				descendant.Mesh = allItemsByID[descendant.ID].Mesh;
+
+				// store the original id
+				string originalId = descendant.ID;
+				// update it to a new ID
+				descendant.ID = Guid.NewGuid().ToString();
+				// Now OwnerID must be reprocessed after changing ID to ensure consistency
+				foreach (var child in descendant.Descendants().Where((c) => c.OwnerID == originalId))
+				{
+					child.OwnerID = descendant.ID;
+				}
 			}
 
 			return clonedItem;
