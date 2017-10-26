@@ -1305,6 +1305,21 @@ namespace MatterHackers.VectorMath
 				Row3 == other.Row3;
 		}
 
+		/// <summary>
+		/// Indicates whether this instance and a specified object are equal within an error range.
+		/// </summary>
+		/// <param name="other"></param>
+		/// <param name="errorRange"></param>
+		/// <returns></returns>
+		public bool Equals(Matrix4X4 other, double errorRange)
+		{
+			return
+				Row0.Equals(other.Row0, errorRange) &&
+				Row1.Equals(other.Row1, errorRange) &&
+				Row2.Equals(other.Row2, errorRange) &&
+				Row3.Equals(other.Row3, errorRange);
+		}
+
 		#endregion IEquatable<Matrix4d> Members
 
 		public float[] GetAsFloatArray()

@@ -923,6 +923,25 @@ namespace MatterHackers.VectorMath
 			return this.Equals((Vector4)obj);
 		}
 
+		/// <summary>
+		/// Indicates whether this instance and a specified object are equal within an error range.
+		/// </summary>
+		/// <param name="OtherVector"></param>
+		/// <param name="ErrorValue"></param>
+		/// <returns>True if the instances are equal; false otherwise.</returns>
+		public bool Equals(Vector4 OtherVector, double ErrorValue)
+		{
+			if ((x < OtherVector.x + ErrorValue && x > OtherVector.x - ErrorValue) &&
+				(y < OtherVector.y + ErrorValue && y > OtherVector.y - ErrorValue) &&
+				(z < OtherVector.z + ErrorValue && z > OtherVector.z - ErrorValue) &&
+				(w < OtherVector.w + ErrorValue && w > OtherVector.w - ErrorValue))
+			{
+				return true;
+			}
+
+			return false;
+		}
+
 		#endregion public override bool Equals(object obj)
 
 		#endregion Overrides
