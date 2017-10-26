@@ -154,6 +154,11 @@ namespace MatterHackers.DataConverters3D
 		IObject3D Clone();
 
 		/// <summary>
+		/// Mark that this object has changed (and notify its parent)
+		/// </summary>
+		void Invalidate();
+
+		/// <summary>
 		/// Get the Axis Aligned Bounding Box transformed by the given offset
 		/// </summary>
 		/// <param name="offet">The initial offset to use for the bounds</param>
