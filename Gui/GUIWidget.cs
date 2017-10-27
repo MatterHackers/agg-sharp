@@ -2907,12 +2907,21 @@ namespace MatterHackers.Agg.UI
 			public Point2D position { get; private set; }
 			public GuiWidget widget { get; private set; }
 			public string name { get; private set; }
+			public object NamedObject { get; private set; }
 
-			public WidgetAndPosition(GuiWidget widget, Point2D position, string name)
+			public WidgetAndPosition(GuiWidget widget, Point2D position, string name, object namedObject = null)
 			{
 				this.name = name;
 				this.widget = widget;
 				this.position = position;
+				if (namedObject == null)
+				{
+					this.NamedObject = widget;
+				}
+				else
+				{
+					this.NamedObject = namedObject;
+				}
 			}
 		}
 
