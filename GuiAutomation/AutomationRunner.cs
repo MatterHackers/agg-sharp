@@ -560,9 +560,9 @@ namespace MatterHackers.GuiAutomation
 		{
 			Point2D offsetHint;
 			return GetWidgetByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
-        }
+		}
 
-        public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, out Point2D offsetHint, double secondsToWait = 0, SearchRegion searchRegion = null)
+		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, out Point2D offsetHint, double secondsToWait = 0, SearchRegion searchRegion = null)
 		{
 			containingWindow = null;
 			offsetHint = Point2D.Zero;
@@ -571,12 +571,38 @@ namespace MatterHackers.GuiAutomation
 			if (getResults != null
 				&& getResults.Count > 0)
 			{
-				containingWindow = getResults[0].containingSystemWindow;
-				offsetHint = getResults[0].offsetHint;
-				getResults[0].widget.DebugShowBounds = true;
-				UiThread.RunOnIdle(() => getResults[0].widget.DebugShowBounds = false, 1);
+				containingWindow = getResults[0].ContainingSystemWindow;
+				offsetHint = getResults[0].OffsetHint;
+				getResults[0].Widget.DebugShowBounds = true;
+				UiThread.RunOnIdle(() => getResults[0].Widget.DebugShowBounds = false, 1);
 
-				return getResults[0].widget;
+				return getResults[0].Widget;
+			}
+
+			return null;
+		}
+
+		public object GetObjectByName(string widgetName, out SystemWindow containingWindow, double secondsToWait = 0, SearchRegion searchRegion = null)
+		{
+			Point2D offsetHint;
+			return GetObjectByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
+		}
+
+		public object GetObjectByName(string widgetName, out SystemWindow containingWindow, out Point2D offsetHint, double secondsToWait = 0, SearchRegion searchRegion = null)
+		{
+			containingWindow = null;
+			offsetHint = Point2D.Zero;
+
+			List<GetByNameResults> getResults = GetWidgetsByName(widgetName, secondsToWait, searchRegion);
+			if (getResults != null
+				&& getResults.Count > 0)
+			{
+				containingWindow = getResults[0].ContainingSystemWindow;
+				offsetHint = getResults[0].OffsetHint;
+				getResults[0].Widget.DebugShowBounds = true;
+				UiThread.RunOnIdle(() => getResults[0].Widget.DebugShowBounds = false, 1);
+
+				return getResults[0].NamedObject;
 			}
 
 			return null;
@@ -584,15 +610,17 @@ namespace MatterHackers.GuiAutomation
 
 		public class GetByNameResults
 		{
-			public GuiWidget widget { get; private set; }
-			public Point2D offsetHint { get; private set; }
-			public SystemWindow containingSystemWindow { get; private set; }
+			public GuiWidget Widget { get; private set; }
+			public Point2D OffsetHint { get; private set; }
+			public SystemWindow ContainingSystemWindow { get; private set; }
+			public object NamedObject { get; private set; }
 
-			public GetByNameResults(GuiWidget widget, Point2D offsetHint, SystemWindow containingSystemWindow)
+			public GetByNameResults(GuiWidget widget, Point2D offsetHint, SystemWindow containingSystemWindow, object namedItem)
 			{
-				this.widget = widget;
-				this.offsetHint = offsetHint;
-				this.containingSystemWindow = containingSystemWindow;
+				this.Widget = widget;
+				this.OffsetHint = offsetHint;
+				this.ContainingSystemWindow = containingSystemWindow;
+				this.NamedObject = namedItem;
 			}
 		}
 
@@ -625,7 +653,7 @@ namespace MatterHackers.GuiAutomation
 							ScreenRectangle result;
 							if (ScreenRectangle.Intersection(searchRegion.ScreenRect, screenRect, out result))
 							{
-								namedWidgetsInRegion.Add(new GetByNameResults(widgetAndPosition.widget, widgetAndPosition.position, systemWindow));
+								namedWidgetsInRegion.Add(new GetByNameResults(widgetAndPosition.widget, widgetAndPosition.position, systemWindow, widgetAndPosition.NamedObject));
 							}
 						}
 					}
@@ -638,7 +666,7 @@ namespace MatterHackers.GuiAutomation
 					{
 						if (namedWidget.widget.ActuallyVisibleOnScreen())
 						{
-							namedWidgetsInRegion.Add(new GetByNameResults(namedWidget.widget, namedWidget.position, systemWindow));
+							namedWidgetsInRegion.Add(new GetByNameResults(namedWidget.widget, namedWidget.position, systemWindow, namedWidget.NamedObject));
 						}
 					}
 				}
@@ -865,6 +893,13 @@ namespace MatterHackers.GuiAutomation
 			throw new NotImplementedException();
 		}
 
+		/// <summary>
+		/// Send the string to the system system window
+		/// ^ will add the control key
+		/// {Enter} will type the enter key
+		/// {BACKSPACE} will type the backspace key
+		/// </summary>
+		/// <param name="textToType"></param>
 		public void Type(string textToType)
 		{
 			inputSystem.Type(textToType);
