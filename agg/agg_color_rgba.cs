@@ -25,6 +25,8 @@
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
 using System;
+using System.ComponentModel;
+using System.Globalization;
 using Newtonsoft.Json;
 
 namespace MatterHackers.Agg
@@ -647,6 +649,7 @@ namespace MatterHackers.Agg
 		}
 	}
 
+	[TypeConverter(typeof(RGBA_BytesConverter))]
 	public struct RGBA_Bytes : IColorType
 	{
 		public const int cover_shift = 8;
@@ -758,10 +761,10 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public RGBA_Bytes(string HTMLString)
+		public RGBA_Bytes(string htmlString)
 			: this()
 		{
-			Html = HTMLString;
+			Html = htmlString;
 		}
 
 		public RGBA_Bytes(int r_, int g_, int b_)
@@ -990,6 +993,31 @@ namespace MatterHackers.Agg
 			RGBA_Bytes result = new RGBA_Bytes(this);
 			result = this * (1 - weight) + other * weight;
 			return result;
+		}
+	}
+
+	public class RGBA_BytesConverter : TypeConverter
+	{
+		public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+		{
+			return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
+		}
+
+		public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+		{
+			string stringValue = value as string;
+
+
+			if (string.IsNullOrEmpty(stringValue))
+			{
+				return RGBA_Bytes.Transparent;
+			}
+			else if (stringValue.Contains("#"))
+			{
+				return new RGBA_Bytes(stringValue);
+			}
+
+			return base.ConvertFrom(context, culture, value);
 		}
 	}
 
