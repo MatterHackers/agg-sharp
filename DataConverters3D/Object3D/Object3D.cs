@@ -188,7 +188,7 @@ namespace MatterHackers.DataConverters3D
 			return meshGroup;
 		}
 
-		RGBA_Bytes _color = RGBA_Bytes.Transparent;
+		private RGBA_Bytes _color = RGBA_Bytes.Transparent;
 		public RGBA_Bytes Color
 		{
 			get { return _color; }
@@ -259,6 +259,7 @@ namespace MatterHackers.DataConverters3D
 		{
 			this.Mesh = mesh;
 			this.MeshPath = null;
+			this.traceData = null;
 		}
 
 		public string MeshPath { get; set; }

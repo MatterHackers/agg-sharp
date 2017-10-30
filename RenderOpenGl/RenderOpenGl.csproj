@@ -183,8 +183,5 @@
     <Compile Include="Renderer\RenderToGLTesselator.cs" />
     <Compile Include="RenderMeshToGl.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
