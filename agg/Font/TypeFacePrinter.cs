@@ -74,8 +74,10 @@ namespace MatterHackers.Agg.Font
 
 		public Vector2 Origin { get; set; }
 
-		public TypeFacePrinter(String text = "", double pointSize = 12, Vector2 origin = new Vector2(), Justification justification = Justification.Left, Baseline baseline = Baseline.Text)
-			: this(text, new StyledTypeFace(LiberationSansFont.Instance, pointSize), origin, justification, baseline)
+		public TypeFacePrinter(String text = "", double pointSize = 12, Vector2 origin = new Vector2(), Justification justification = Justification.Left, Baseline baseline = Baseline.Text, bool bold = false)
+			: this(text, 
+				  bold ? new StyledTypeFace(LiberationSansBoldFont.Instance, pointSize)  : new StyledTypeFace(LiberationSansFont.Instance, pointSize), 
+				  origin, justification, baseline)
 		{
 		}
 
