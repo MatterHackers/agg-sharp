@@ -200,9 +200,10 @@ namespace MatterHackers.Agg
 
 		public void DrawString(string Text, double x, double y, double pointSize = 12,
 			Justification justification = Justification.Left, Baseline baseline = Baseline.Text,
-			Color color = new Color(), bool drawFromHintedCach = false, Color backgroundColor = new Color())
+			Color color = new Color(), bool drawFromHintedCach = false, Color backgroundColor = new Color(),
+			bool bold = false)
 		{
-			TypeFacePrinter stringPrinter = new TypeFacePrinter(Text, pointSize, new Vector2(x, y), justification, baseline);
+			TypeFacePrinter stringPrinter = new TypeFacePrinter(Text, pointSize, new Vector2(x, y), justification, baseline, bold);
 			if (color.Alpha0To255 == 0)
 			{
 				color = Color.Black;
