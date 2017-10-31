@@ -81,14 +81,14 @@ namespace MatterHackers.RenderOpenGl
 			//verts[6] = cube.CreateVertex(new Vector3(1, 1, -1));
 			//verts[7] = cube.CreateVertex(new Vector3(-1, 1, -1));
 
-			verts[0] = cube.CreateVertex(new Vector3(aabb.minXYZ.x, aabb.minXYZ.y, aabb.maxXYZ.z));
-			verts[1] = cube.CreateVertex(new Vector3(aabb.maxXYZ.x, aabb.minXYZ.y, aabb.maxXYZ.z));
-			verts[2] = cube.CreateVertex(new Vector3(aabb.maxXYZ.x, aabb.maxXYZ.y, aabb.maxXYZ.z));
-			verts[3] = cube.CreateVertex(new Vector3(aabb.minXYZ.x, aabb.maxXYZ.y, aabb.maxXYZ.z));
-			verts[4] = cube.CreateVertex(new Vector3(aabb.minXYZ.x, aabb.minXYZ.y, aabb.minXYZ.z));
-			verts[5] = cube.CreateVertex(new Vector3(aabb.maxXYZ.x, aabb.minXYZ.y, aabb.minXYZ.z));
-			verts[6] = cube.CreateVertex(new Vector3(aabb.maxXYZ.x, aabb.maxXYZ.y, aabb.minXYZ.z));
-			verts[7] = cube.CreateVertex(new Vector3(aabb.minXYZ.x, aabb.maxXYZ.y, aabb.minXYZ.z));
+			verts[0] = cube.CreateVertex(new Vector3(aabb.minXYZ.X, aabb.minXYZ.Y, aabb.maxXYZ.Z));
+			verts[1] = cube.CreateVertex(new Vector3(aabb.maxXYZ.X, aabb.minXYZ.Y, aabb.maxXYZ.Z));
+			verts[2] = cube.CreateVertex(new Vector3(aabb.maxXYZ.X, aabb.maxXYZ.Y, aabb.maxXYZ.Z));
+			verts[3] = cube.CreateVertex(new Vector3(aabb.minXYZ.X, aabb.maxXYZ.Y, aabb.maxXYZ.Z));
+			verts[4] = cube.CreateVertex(new Vector3(aabb.minXYZ.X, aabb.minXYZ.Y, aabb.minXYZ.Z));
+			verts[5] = cube.CreateVertex(new Vector3(aabb.maxXYZ.X, aabb.minXYZ.Y, aabb.minXYZ.Z));
+			verts[6] = cube.CreateVertex(new Vector3(aabb.maxXYZ.X, aabb.maxXYZ.Y, aabb.minXYZ.Z));
+			verts[7] = cube.CreateVertex(new Vector3(aabb.minXYZ.X, aabb.maxXYZ.Y, aabb.minXYZ.Z));
 
 			// front
 			cube.CreateFace(new IVertex[] { verts[0], verts[1], verts[2], verts[3] });
@@ -138,10 +138,10 @@ namespace MatterHackers.RenderOpenGl
 			for (int i = 0; i < count; i++)
 			{
 				Vector2 bottomRadialPos = Vector2.Rotate(new Vector2(cylinderToMeasure.Radius1, 0), MathHelper.Tau * i / 20);
-				IVertex bottomVertex = cylinder.CreateVertex(new Vector3(bottomRadialPos.x, bottomRadialPos.y, -cylinderToMeasure.Height / 2));
+				IVertex bottomVertex = cylinder.CreateVertex(new Vector3(bottomRadialPos.X, bottomRadialPos.Y, -cylinderToMeasure.Height / 2));
 				bottomVerts.Add(bottomVertex);
 				Vector2 topRadialPos = Vector2.Rotate(new Vector2(cylinderToMeasure.Radius1, 0), MathHelper.Tau * i / 20);
-				IVertex topVertex = cylinder.CreateVertex(new Vector3(topRadialPos.x, topRadialPos.y, cylinderToMeasure.Height / 2));
+				IVertex topVertex = cylinder.CreateVertex(new Vector3(topRadialPos.X, topRadialPos.Y, cylinderToMeasure.Height / 2));
 				topVerts.Add(topVertex);
 			}
 

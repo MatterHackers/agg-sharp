@@ -76,7 +76,7 @@ namespace MatterHackers.Agg.UI
 
 			if (this.Arrow != null)
 			{
-				graphics2D.Render(this.Arrow, this.DrawBounds.x - ArrowHeight * 2 - 2, this.DrawBounds.y / 2 + ArrowHeight / 2, ActiveTheme.Instance.SecondaryTextColor);
+				graphics2D.Render(this.Arrow, this.DrawBounds.X - ArrowHeight * 2 - 2, this.DrawBounds.Y / 2 + ArrowHeight / 2, ActiveTheme.Instance.SecondaryTextColor);
 			}
 		}
 	}

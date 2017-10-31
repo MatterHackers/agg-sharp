@@ -356,7 +356,7 @@ namespace MatterHackers.Agg.UI
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			base.OnDraw(graphics2D);
-			if (content.OriginRelativeParent.y != 0)
+			if (content.OriginRelativeParent.Y != 0)
 			{
 				graphics2D.FillRectangle(0, 0, Width, KeyboardHeight, Color.Black);
 			}

@@ -99,7 +99,7 @@ namespace MatterHackers.VectorMath
 			else
 			{
 				var deltaFromStartPixels = screenPoint - mouseDownPosition;
-				var deltaOnSurface = new Vector2(deltaFromStartPixels.x / rotationTrackingRadiusPixels, deltaFromStartPixels.y / rotationTrackingRadiusPixels);
+				var deltaOnSurface = new Vector2(deltaFromStartPixels.X / rotationTrackingRadiusPixels, deltaFromStartPixels.Y / rotationTrackingRadiusPixels);
 
 				var lengthOnSurfaceRadi = deltaOnSurface.Length;
 
@@ -107,7 +107,7 @@ namespace MatterHackers.VectorMath
 				var positionAboutY = Vector3.Transform(new Vector3(0, 0, 1), Matrix4X4.CreateRotationY(lengthOnSurfaceRadi));
 
 				// get the angle that this distance travels around the sphere
-				var angleToTravel = Math.Atan2(deltaOnSurface.y, deltaOnSurface.x);
+				var angleToTravel = Math.Atan2(deltaOnSurface.Y, deltaOnSurface.X);
 
 				// now rotate that position about z in the direction of the screen vector
 				var positionOnRotationSphere = Vector3.Transform(positionAboutY, Matrix4X4.CreateRotationZ(angleToTravel));
@@ -168,9 +168,9 @@ namespace MatterHackers.VectorMath
 					{
 						//if its non-zero
 						//We're ok, so return the perpendicular vector as the transform after all
-						activeRotationQuaternion.X = Perp.x;
-						activeRotationQuaternion.Y = Perp.y;
-						activeRotationQuaternion.Z = Perp.z;
+						activeRotationQuaternion.X = Perp.X;
+						activeRotationQuaternion.Y = Perp.Y;
+						activeRotationQuaternion.Z = Perp.Z;
 						//In the quaternion values, w is cosine (theta / 2), where theta is the rotation angle
 						activeRotationQuaternion.W = Vector3.Dot(rotationStart3D, moveSpherePosition);
 
@@ -183,8 +183,8 @@ namespace MatterHackers.VectorMath
 				case MouseDownType.Translation:
 					{
 						Vector2 mouseDelta = mousePosition - lastTranslationMousePosition;
-						Vector2 scaledDelta = mouseDelta / world.ScreenCenter.x * 4.75;
-						Vector3 offset = new Vector3(scaledDelta.x, scaledDelta.y, 0);
+						Vector2 scaledDelta = mouseDelta / world.ScreenCenter.X * 4.75;
+						Vector3 offset = new Vector3(scaledDelta.X, scaledDelta.Y, 0);
 						offset = Vector3.TransformPosition(offset, Matrix4X4.Invert(world.RotationMatrix));
 						offset = Vector3.TransformPosition(offset, localToScreenTransform);
 						world.TranslationMatrix = world.TranslationMatrix * Matrix4X4.CreateTranslation(offset);
@@ -197,13 +197,13 @@ namespace MatterHackers.VectorMath
 					{
 						Vector2 mouseDelta = mousePosition - lastScaleMousePosition;
 						double zoomDelta = 1;
-						if (mouseDelta.y < 0)
+						if (mouseDelta.Y < 0)
 						{
-							zoomDelta = 1 - (-1 * mouseDelta.y / 100);
+							zoomDelta = 1 - (-1 * mouseDelta.Y / 100);
 						}
-						else if (mouseDelta.y > 0)
+						else if (mouseDelta.Y > 0)
 						{
-							zoomDelta = 1 + (1 * mouseDelta.y / 100);
+							zoomDelta = 1 + (1 * mouseDelta.Y / 100);
 						}
 						world.Scale = world.Scale * zoomDelta;
 						lastScaleMousePosition = mousePosition;

@@ -74,8 +74,8 @@ namespace MatterHackers.Agg.VertexSource
 			{
 				rewind(0);
 			}
-			x = currentEnumerator.Current.position.x;
-			y = currentEnumerator.Current.position.y;
+			x = currentEnumerator.Current.position.X;
+			y = currentEnumerator.Current.position.Y;
 			ShapePath.FlagsAndCommand command = currentEnumerator.Current.command;
 
 			currentEnumerator.MoveNext();

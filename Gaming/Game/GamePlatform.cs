@@ -84,21 +84,21 @@ namespace Gaming.Game
 			ColorF FrameRateControlColor = new ColorF(1, 1, 1, 1);
 
 			m_PotentialDrawsBudgetPosition = new Vector2(10, (double)Height + FrameRateOffset);
-			m_ShowPotentialDrawsBudgetGraph = new MatterHackers.Agg.UI.CheckBox(m_PotentialDrawsBudgetPosition.x, m_PotentialDrawsBudgetPosition.y, "D:000.000");
+			m_ShowPotentialDrawsBudgetGraph = new MatterHackers.Agg.UI.CheckBox(m_PotentialDrawsBudgetPosition.X, m_PotentialDrawsBudgetPosition.Y, "D:000.000");
 			m_ShowPotentialDrawsBudgetGraph.TextColor = FrameRateControlColor.GetAsRGBA_Bytes();
 			//m_ShowPotentialDrawsBudgetGraph.inactive_color(FrameRateControlColor);
 			AddChild(m_ShowPotentialDrawsBudgetGraph);
 			m_PotentialDrawsBudgetGraph = new DataViewGraph(m_PotentialDrawsBudgetPosition, 100, 100);
 
 			m_PotentialUpdatesBudgetPosition = new Vector2(115, (double)Height + FrameRateOffset);
-			m_ShowPotentialUpdatesBudgetGraph = new MatterHackers.Agg.UI.CheckBox(m_PotentialUpdatesBudgetPosition.x, m_PotentialUpdatesBudgetPosition.y, "U:000.000");
+			m_ShowPotentialUpdatesBudgetGraph = new MatterHackers.Agg.UI.CheckBox(m_PotentialUpdatesBudgetPosition.X, m_PotentialUpdatesBudgetPosition.Y, "U:000.000");
 			m_ShowPotentialUpdatesBudgetGraph.TextColor = FrameRateControlColor.GetAsRGBA_Bytes();
 			//m_ShowPotentialUpdatesBudgetGraph.inactive_color(FrameRateControlColor);
 			AddChild(m_ShowPotentialUpdatesBudgetGraph);
 			m_PotentialUpdatesBudgetGraph = new DataViewGraph(m_PotentialUpdatesBudgetPosition, 100, 100);
 
 			m_ActualDrawsBudgetPosition = new Vector2(220, (double)Height + FrameRateOffset);
-			m_ShowActualDrawsBudgetGraph = new MatterHackers.Agg.UI.CheckBox(m_ActualDrawsBudgetPosition.x, m_ActualDrawsBudgetPosition.y, "A:000.000");
+			m_ShowActualDrawsBudgetGraph = new MatterHackers.Agg.UI.CheckBox(m_ActualDrawsBudgetPosition.X, m_ActualDrawsBudgetPosition.Y, "A:000.000");
 			m_ShowActualDrawsBudgetGraph.TextColor = FrameRateControlColor.GetAsRGBA_Bytes();
 			//m_ShowActualDrawsBudgetGraph.inactive_color(FrameRateControlColor);
 			AddChild(m_ShowActualDrawsBudgetGraph);

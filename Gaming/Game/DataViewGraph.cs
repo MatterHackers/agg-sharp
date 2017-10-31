@@ -154,12 +154,12 @@ namespace Gaming.Game
 
 		public void Draw(MatterHackers.Agg.Transform.ITransform Position, Graphics2D renderer)
 		{
-			double TextHeight = m_Position.y - 20;
+			double TextHeight = m_Position.Y - 20;
 			double Range = (m_DataViewMaxY - m_DataViewMinY);
 			VertexSourceApplyTransform TransformedLinesToDraw;
 			Stroke StrockedTransformedLinesToDraw;
 
-			RoundedRect BackGround = new RoundedRect(m_Position.x, m_Position.y - 1, m_Position.x + m_Width, m_Position.y - 1 + m_Height + 2, 5);
+			RoundedRect BackGround = new RoundedRect(m_Position.X, m_Position.Y - 1, m_Position.X + m_Width, m_Position.Y - 1 + m_Height + 2, 5);
 			VertexSourceApplyTransform TransformedBackGround = new VertexSourceApplyTransform(BackGround, Position);
 			renderer.Render(TransformedBackGround, new Color(0, 0, 0, .5));
 
@@ -167,10 +167,10 @@ namespace Gaming.Game
 			if (m_DataViewMinY < 0 && m_DataViewMaxY > 0)
 			{
 				m_LinesToDraw.remove_all();
-				m_LinesToDraw.MoveTo(m_Position.x,
-					m_Position.y + ((0 - m_DataViewMinY) * m_Height / Range));
-				m_LinesToDraw.LineTo(m_Position.x + m_Width,
-					m_Position.y + ((0 - m_DataViewMinY) * m_Height / Range));
+				m_LinesToDraw.MoveTo(m_Position.X,
+					m_Position.Y + ((0 - m_DataViewMinY) * m_Height / Range));
+				m_LinesToDraw.LineTo(m_Position.X + m_Width,
+					m_Position.Y + ((0 - m_DataViewMinY) * m_Height / Range));
 				TransformedLinesToDraw = new VertexSourceApplyTransform(m_LinesToDraw, Position);
 				StrockedTransformedLinesToDraw = new Stroke(TransformedLinesToDraw);
 				renderer.Render(StrockedTransformedLinesToDraw, new Color(0, 0, 0, 1));
@@ -190,13 +190,13 @@ namespace Gaming.Game
 				{
 					if (i == 0)
 					{
-						m_LinesToDraw.MoveTo(m_Position.x + i,
-							m_Position.y + ((history.GetItem(i) - m_DataViewMinY) * m_Height / Range));
+						m_LinesToDraw.MoveTo(m_Position.X + i,
+							m_Position.Y + ((history.GetItem(i) - m_DataViewMinY) * m_Height / Range));
 					}
 					else
 					{
-						m_LinesToDraw.LineTo(m_Position.x + i,
-							m_Position.y + ((history.GetItem(i) - m_DataViewMinY) * m_Height / Range));
+						m_LinesToDraw.LineTo(m_Position.X + i,
+							m_Position.Y + ((history.GetItem(i) - m_DataViewMinY) * m_Height / Range));
 					}
 				}
 
@@ -205,11 +205,11 @@ namespace Gaming.Game
 				renderer.Render(StrockedTransformedLinesToDraw, history.m_Color);
 
 				String Text = historyKeyValue.Key + ": Min:" + MinMin.ToString("0.0") + " Max:" + MaxMax.ToString("0.0");
-				renderer.DrawString(Text, m_Position.x, TextHeight - m_Height);
+				renderer.DrawString(Text, m_Position.X, TextHeight - m_Height);
 				TextHeight -= 20;
 			}
 
-			RoundedRect BackGround2 = new RoundedRect(m_Position.x, m_Position.y - 1, m_Position.x + m_Width, m_Position.y - 1 + m_Height + 2, 5);
+			RoundedRect BackGround2 = new RoundedRect(m_Position.X, m_Position.Y - 1, m_Position.X + m_Width, m_Position.Y - 1 + m_Height + 2, 5);
 			VertexSourceApplyTransform TransformedBackGround2 = new VertexSourceApplyTransform(BackGround2, Position);
 			Stroke StrockedTransformedBackGround = new Stroke(TransformedBackGround2);
 			renderer.Render(StrockedTransformedBackGround, new Color(0.0, 0, 0, 1));

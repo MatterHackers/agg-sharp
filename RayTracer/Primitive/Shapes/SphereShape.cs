@@ -41,8 +41,8 @@ namespace MatterHackers.RayTracer
 		public override AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{
 			return new AxisAlignedBoundingBox(
-				new Vector3(position.x - radius, position.y - radius, position.z - radius),
-				new Vector3(position.x + radius, position.y + radius, position.z + radius));
+				new Vector3(position.X - radius, position.Y - radius, position.Z - radius),
+				new Vector3(position.X + radius, position.Y + radius, position.Z + radius));
 		}
 
 		public override double GetIntersectCost()
@@ -201,7 +201,7 @@ namespace MatterHackers.RayTracer
 
 		public override string ToString()
 		{
-			return string.Format("Sphere ({0},{1},{2}) Radius: {3}", position.x, position.y, position.z, radius);
+			return string.Format("Sphere ({0},{1},{2}) Radius: {3}", position.X, position.Y, position.Z, radius);
 		}
 	}
 }

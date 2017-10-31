@@ -92,9 +92,9 @@ namespace MatterHackers.Agg.UI
 		public int WheelDelta { get; set; }
 
 		//public Point Location { get; }
-		public double X { get { return positions[0].x; } set { positions[0] = new Vector2(value, positions[0].y); } }
+		public double X { get { return positions[0].X; } set { positions[0] = new Vector2(value, positions[0].Y); } }
 
-		public double Y { get { return positions[0].y; } set { positions[0] = new Vector2(positions[0].x, value); } }
+		public double Y { get { return positions[0].Y; } set { positions[0] = new Vector2(positions[0].X, value); } }
 
 		public Vector2 GetPosition(int index)
 		{

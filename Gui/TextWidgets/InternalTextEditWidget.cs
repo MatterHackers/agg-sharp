@@ -383,12 +383,12 @@ namespace MatterHackers.Agg.UI
 				Vector2 selectPosition = internalTextWidget.Printer.GetOffsetLeftOfCharacterIndex(SelectionIndexToStartBefore);
 
 				// for each selected line draw a rect for the chars of that line
-				if (selectPosition.y == InsertBarPosition.y)
+				if (selectPosition.Y == InsertBarPosition.Y)
 				{
-					RectangleDouble bar = new RectangleDouble(Math.Ceiling(selectPosition.x),
-											Math.Ceiling(internalTextWidget.Height + selectPosition.y),
-											Math.Ceiling(InsertBarPosition.x + 1),
-											Math.Ceiling(internalTextWidget.Height + InsertBarPosition.y - fontHeight));
+					RectangleDouble bar = new RectangleDouble(Math.Ceiling(selectPosition.X),
+											Math.Ceiling(internalTextWidget.Height + selectPosition.Y),
+											Math.Ceiling(InsertBarPosition.X + 1),
+											Math.Ceiling(internalTextWidget.Height + InsertBarPosition.Y - fontHeight));
 
 					RoundedRect selectCursorRect = new RoundedRect(bar, 0);
 					graphics2D.Render(selectCursorRect, this.highlightColor);
@@ -401,7 +401,7 @@ namespace MatterHackers.Agg.UI
 					Vector2 lineStartPos = internalTextWidget.Printer.GetOffsetLeftOfCharacterIndex(lineStart);
 					int lineEnd = lineStart + 1;
 					Vector2 lineEndPos = internalTextWidget.Printer.GetOffsetLeftOfCharacterIndex(lineEnd);
-					if (lineEndPos.y != lineStartPos.y)
+					if (lineEndPos.Y != lineStartPos.Y)
 					{
 						// we are starting on a '\n', adjust so we will show the cr at the end of the line
 						lineEndPos = lineStartPos;
@@ -412,23 +412,23 @@ namespace MatterHackers.Agg.UI
 						Vector2 nextPos = internalTextWidget.Printer.GetOffsetLeftOfCharacterIndex(i);
 						if (firstCharOfLine)
 						{
-							if (lineEndPos.y != lineStartPos.y)
+							if (lineEndPos.Y != lineStartPos.Y)
 							{
 								// we are starting on a '\n', adjust so we will show the cr at the end of the line
 								lineEndPos = lineStartPos;
 							}
 							firstCharOfLine = false;
 						}
-						if (nextPos.y != lineStartPos.y)
+						if (nextPos.Y != lineStartPos.Y)
 						{
-							if (lineEndPos.x == lineStartPos.x)
+							if (lineEndPos.X == lineStartPos.X)
 							{
-								lineEndPos.x += Printer.TypeFaceStyle.GetAdvanceForCharacter(' ');
+								lineEndPos.X += Printer.TypeFaceStyle.GetAdvanceForCharacter(' ');
 							}
-							RectangleDouble bar = new RectangleDouble(Math.Ceiling(lineStartPos.x),
-													Math.Ceiling(internalTextWidget.Height + lineStartPos.y),
-													Math.Ceiling(lineEndPos.x + 1),
-													Math.Ceiling(internalTextWidget.Height + lineEndPos.y - fontHeight));
+							RectangleDouble bar = new RectangleDouble(Math.Ceiling(lineStartPos.X),
+													Math.Ceiling(internalTextWidget.Height + lineStartPos.Y),
+													Math.Ceiling(lineEndPos.X + 1),
+													Math.Ceiling(internalTextWidget.Height + lineEndPos.Y - fontHeight));
 
 							RoundedRect selectCursorRect = new RoundedRect(bar, 0);
 							graphics2D.Render(selectCursorRect, this.highlightColor);
@@ -440,12 +440,12 @@ namespace MatterHackers.Agg.UI
 							lineEndPos = nextPos;
 						}
 					}
-					if (lineEndPos.x != lineStartPos.x)
+					if (lineEndPos.X != lineStartPos.X)
 					{
-						RectangleDouble bar = new RectangleDouble(Math.Ceiling(lineStartPos.x),
-												Math.Ceiling(internalTextWidget.Height + lineStartPos.y),
-												Math.Ceiling(lineEndPos.x + 1),
-												Math.Ceiling(internalTextWidget.Height + lineEndPos.y - fontHeight));
+						RectangleDouble bar = new RectangleDouble(Math.Ceiling(lineStartPos.X),
+												Math.Ceiling(internalTextWidget.Height + lineStartPos.Y),
+												Math.Ceiling(lineEndPos.X + 1),
+												Math.Ceiling(internalTextWidget.Height + lineEndPos.Y - fontHeight));
 
 						RoundedRect selectCursorRect = new RoundedRect(bar, 0);
 						graphics2D.Render(selectCursorRect, this.highlightColor);
@@ -457,10 +457,10 @@ namespace MatterHackers.Agg.UI
 			{
 				double xFraction = graphics2D.GetTransform().tx;
 				xFraction = xFraction - (int)xFraction;
-				RectangleDouble bar2 = new RectangleDouble(Math.Ceiling(InsertBarPosition.x) - xFraction,
-										Math.Ceiling(internalTextWidget.Height + InsertBarPosition.y - fontHeight),
-										Math.Ceiling(InsertBarPosition.x + 1) - xFraction,
-										Math.Ceiling(internalTextWidget.Height + InsertBarPosition.y));
+				RectangleDouble bar2 = new RectangleDouble(Math.Ceiling(InsertBarPosition.X) - xFraction,
+										Math.Ceiling(internalTextWidget.Height + InsertBarPosition.Y - fontHeight),
+										Math.Ceiling(InsertBarPosition.X + 1) - xFraction,
+										Math.Ceiling(internalTextWidget.Height + InsertBarPosition.Y));
 				RoundedRect cursorRect = new RoundedRect(bar2, 0);
 				graphics2D.Render(cursorRect, this.cursorColor);
 			}
@@ -553,7 +553,7 @@ namespace MatterHackers.Agg.UI
 			InsertBarPosition = internalTextWidget.Printer.GetOffsetLeftOfCharacterIndex(CharIndexToInsertBefore);
 			if (desiredXPositionOnLine == DesiredXPositionOnLine.Set)
 			{
-				desiredBarX = InsertBarPosition.x;
+				desiredBarX = InsertBarPosition.X;
 			}
 			Invalidate();
 		}
@@ -1026,10 +1026,10 @@ namespace MatterHackers.Agg.UI
 			{
 				internalTextWidget.Printer.GetOffset(CharacterStartIndexInclusive, CharacterStartIndexInclusive + OffsetIndex, out offset);
 				OffsetIndex++;
-				if (offset.x >= DesiredPixelOffset || OffsetIndex >= EndOffsetIndex)
+				if (offset.X >= DesiredPixelOffset || OffsetIndex >= EndOffsetIndex)
 				{
-					if (Math.Abs(offset.y) < .01
-						&& Math.Abs(lastOffset.x - DesiredPixelOffset) < Math.Abs(offset.x - DesiredPixelOffset))
+					if (Math.Abs(offset.Y) < .01
+						&& Math.Abs(lastOffset.X - DesiredPixelOffset) < Math.Abs(offset.X - DesiredPixelOffset))
 					{
 						OffsetIndex--;
 					}

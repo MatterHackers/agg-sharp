@@ -256,8 +256,8 @@ namespace MatterHackers.Agg.VertexSource
 			int clostestIndex = -1;
 			double clostestDist = double.MaxValue;
 			Vector2 offset;
-			offset.x = 0;
-			offset.y = 0;
+			offset.X = 0;
+			offset.Y = 0;
 			int characterToMeasureStartIndexInclusive = 0;
 			int characterToMeasureEndIndexInclusive = m_Text.Length - 1;
 			if (m_Text.Length > 0)
@@ -277,16 +277,16 @@ namespace MatterHackers.Agg.VertexSource
 					char singleChar = m_Text[i];
 					if (singleChar == '\r' || singleChar == '\n')
 					{
-						offset.x = 0;
-						offset.y -= FontSize + m_SpaceBetweenLines;
+						offset.X = 0;
+						offset.Y -= FontSize + m_SpaceBetweenLines;
 					}
 					else
 					{
 						double sigleWidth;
 						double sigleHeight;
 						GetSize(singleChar, out sigleWidth, out sigleHeight);
-						offset.x += sigleWidth + m_SpaceBetweenCharacters;
-						offset.y += sigleHeight;
+						offset.X += sigleWidth + m_SpaceBetweenCharacters;
+						offset.Y += sigleHeight;
 					}
 				}
 
@@ -311,8 +311,8 @@ namespace MatterHackers.Agg.VertexSource
 		public void GetSize(int characterToMeasureStartIndexInclusive, int characterToMeasureEndIndexInclusive, out Vector2 pixelSize)
 		{
 			double currentX = 0;
-			pixelSize.x = 0;
-			pixelSize.y = 0;
+			pixelSize.X = 0;
+			pixelSize.Y = 0;
 			if (m_Text.Length > 0)
 			{
 				characterToMeasureStartIndexInclusive = Math.Max(0, Math.Min(characterToMeasureStartIndexInclusive, m_Text.Length - 1));
@@ -323,7 +323,7 @@ namespace MatterHackers.Agg.VertexSource
 					if (singleChar == '\r' || singleChar == '\n')
 					{
 						currentX = 0;
-						pixelSize.y -= FontSize + m_SpaceBetweenLines;
+						pixelSize.Y -= FontSize + m_SpaceBetweenLines;
 					}
 					else
 					{
@@ -331,8 +331,8 @@ namespace MatterHackers.Agg.VertexSource
 						double sigleHeight;
 						GetSize(singleChar, out sigleWidth, out sigleHeight);
 						currentX += sigleWidth + m_SpaceBetweenCharacters;
-						pixelSize.x = Math.Max(currentX, pixelSize.x);
-						pixelSize.y += sigleHeight;
+						pixelSize.X = Math.Max(currentX, pixelSize.X);
+						pixelSize.Y += sigleHeight;
 					}
 				}
 			}

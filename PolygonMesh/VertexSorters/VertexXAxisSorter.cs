@@ -43,7 +43,7 @@ namespace MatterHackers.PolygonMesh
 
 		public override int Compare(IVertex a, IVertex b)
 		{
-			return a.Position.x.CompareTo(b.Position.x);
+			return a.Position.X.CompareTo(b.Position.X);
 		}
 
 		public override List<IVertex> FindVertices(List<IVertex> vertices, Vector3 position, double maxDistanceToConsiderVertexAsSame)
@@ -60,7 +60,7 @@ namespace MatterHackers.PolygonMesh
 			double maxDistanceToConsiderVertexAsSameSquared = maxDistanceToConsiderVertexAsSame * maxDistanceToConsiderVertexAsSame;
 			for (int i = index; i < vertices.Count; i++)
 			{
-				if (Math.Abs(vertices[i].Position.x - position.x) > maxDistanceToConsiderVertexAsSame)
+				if (Math.Abs(vertices[i].Position.X - position.X) > maxDistanceToConsiderVertexAsSame)
 				{
 					// we are too far away in x, we are done with this direction
 					break;
@@ -69,7 +69,7 @@ namespace MatterHackers.PolygonMesh
 			}
 			for (int i = index - 1; i >= 0; i--)
 			{
-				if (Math.Abs(vertices[i].Position.x - position.x) > maxDistanceToConsiderVertexAsSame)
+				if (Math.Abs(vertices[i].Position.X - position.X) > maxDistanceToConsiderVertexAsSame)
 				{
 					// we are too far away in x, we are done with this direction
 					break;

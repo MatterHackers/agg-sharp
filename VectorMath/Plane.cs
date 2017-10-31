@@ -52,7 +52,7 @@ namespace MatterHackers.VectorMath
 
 		public override string ToString()
 		{
-			return $"D:{DistanceToPlaneFromOrigin:0.###} V:x{PlaneNormal.x:0.###}, y{PlaneNormal.y:0.###}, z{PlaneNormal.z:0.###}";
+			return $"D:{DistanceToPlaneFromOrigin:0.###} V:x{PlaneNormal.X:0.###}, y{PlaneNormal.Y:0.###}, z{PlaneNormal.Z:0.###}";
 		}
 
 		public Plane(Vector3 planeNormal, Vector3 pointOnPlane)

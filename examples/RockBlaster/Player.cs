@@ -132,7 +132,7 @@ namespace RockBlaster
 		{
 			int playerSequenceIndex = GetPlayerIndex();
 			GameImageSequence playerShip = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "Player" + (playerSequenceIndex + 1).ToString() + "Ship");
-			destRenderer.Render(playerShip.GetImageByRatio(m_Rotation / (2 * Math.PI)), m_Position.x, m_Position.y);
+			destRenderer.Render(playerShip.GetImageByRatio(m_Rotation / (2 * Math.PI)), m_Position.X, m_Position.Y);
 		}
 
 		internal void DrawBullets(Graphics2D destRenderer)
@@ -141,7 +141,7 @@ namespace RockBlaster
 			GameImageSequence bulletImage = (GameImageSequence)DataAssetCache.Instance.GetAsset(typeof(GameImageSequence), "Player" + (playerSequenceIndex + 1).ToString() + "Bullet");
 			foreach (Bullet aBullet in m_BulletList)
 			{
-				destRenderer.Render(bulletImage.GetImageByIndex(0), aBullet.Position.x, aBullet.Position.y, aBullet.Velocity.GetAngle0To2PI(), 1, 1);
+				destRenderer.Render(bulletImage.GetImageByIndex(0), aBullet.Position.X, aBullet.Position.Y, aBullet.Velocity.GetAngle0To2PI(), 1, 1);
 			}
 		}
 

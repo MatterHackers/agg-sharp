@@ -78,9 +78,9 @@ namespace Net3dBool
      */
         public Vertex(double x, double y, double z)
         {
-			this.Position.x = x;
-			this.Position.y = y;
-			this.Position.z = z;
+			this.Position.X = x;
+			this.Position.Y = y;
+			this.Position.Z = z;
 
             adjacentVertices = new List<Vertex>();
             status = Status.UNKNOWN;
@@ -93,9 +93,9 @@ namespace Net3dBool
 		/// <param name="status">vertex status - UNKNOWN, BOUNDARY, INSIDE or OUTSIDE</param>
 		public Vertex(Vector3 position, Status status)
         {
-            Position.x = position.x;
-			Position.y = position.y;
-			Position.z = position.z;
+            Position.X = position.X;
+			Position.Y = position.Y;
+			Position.Z = position.Z;
 
             adjacentVertices = new List<Vertex>();
             this.status = status;
@@ -148,7 +148,7 @@ namespace Net3dBool
      */
         public String toString()
         {
-            return "(" + Position.x + ", " + Position.y + ", " + Position.z + ")";
+            return "(" + Position.X + ", " + Position.Y + ", " + Position.Z + ")";
         }
 
         /**

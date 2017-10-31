@@ -44,7 +44,7 @@ namespace MatterHackers.Agg.OpenGlGui
 		{
 			Vector3 renderPosition = bounds.Center;
 			Vector2 objectCenterScreenSpace = worldView.GetScreenPosition(renderPosition);
-			Point2D screenPositionOfObject3D = new Point2D((int)objectCenterScreenSpace.x, (int)objectCenterScreenSpace.y);
+			Point2D screenPositionOfObject3D = new Point2D((int)objectCenterScreenSpace.X, (int)objectCenterScreenSpace.Y);
 
 			graphics2D.Circle(objectCenterScreenSpace, 5, Color.Magenta);
 
@@ -225,8 +225,8 @@ namespace MatterHackers.Agg.OpenGlGui
 				Vector2 currentMousePosition;
 				if (mouseEvent.NumPositions == 1)
 				{
-					currentMousePosition.x = mouseEvent.X;
-					currentMousePosition.y = mouseEvent.Y;
+					currentMousePosition.X = mouseEvent.X;
+					currentMousePosition.Y = mouseEvent.Y;
 				}
 				else
 				{
@@ -244,7 +244,7 @@ namespace MatterHackers.Agg.OpenGlGui
 					startDistanceBetweenPoints = (position1 - position0).Length;
 					pinchStartScale = world.Scale;
 
-					startAngle = Math.Atan2(position1.y - position0.y, position1.x - position0.x);
+					startAngle = Math.Atan2(position1.Y - position0.Y, position1.X - position0.X);
 
 					if (TransformState != TrackBallController.MouseDownType.None)
 					{
@@ -300,8 +300,8 @@ namespace MatterHackers.Agg.OpenGlGui
 			Vector2 currentMousePosition;
 			if (mouseEvent.NumPositions == 1)
 			{
-				currentMousePosition.x = mouseEvent.X;
-				currentMousePosition.y = mouseEvent.Y;
+				currentMousePosition.X = mouseEvent.X;
+				currentMousePosition.Y = mouseEvent.Y;
 			}
 			else
 			{
@@ -328,7 +328,7 @@ namespace MatterHackers.Agg.OpenGlGui
 				double scaleAmount = pinchStartScale * curDistanceBetweenPoints / startDistanceBetweenPoints;
 				this.world.Scale = scaleAmount;
 
-				double angle = Math.Atan2(position1.y - position0.y, position1.x - position0.x);
+				double angle = Math.Atan2(position1.Y - position0.Y, position1.X - position0.X);
 			}
 		}
 

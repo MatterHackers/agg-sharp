@@ -52,12 +52,12 @@ namespace MatterHackers.Agg.VertexSource
 		}
 
 		public Ellipse(Vector2 origin, double Radius)
-			: this(origin.x, origin.y, Radius, Radius, 0, false)
+			: this(origin.X, origin.Y, Radius, Radius, 0, false)
 		{
 		}
 
 		public Ellipse(Vector2 origin, double RadiusX, double RadiusY, int num_steps = 0, bool cw = false)
-			: this(origin.x, origin.y, RadiusX, RadiusY, num_steps, cw)
+			: this(origin.X, origin.Y, RadiusX, RadiusY, num_steps, cw)
 		{
 		}
 
@@ -113,8 +113,8 @@ namespace MatterHackers.Agg.VertexSource
 		{
 			VertexData vertexData = new VertexData();
 			vertexData.command = FlagsAndCommand.CommandMoveTo;
-			vertexData.position.x = originX + radiusX;
-			vertexData.position.y = originY;
+			vertexData.position.X = originX + radiusX;
+			vertexData.position.Y = originY;
 			yield return vertexData;
 
 			double anglePerStep = MathHelper.Tau / (double)numSteps;
@@ -126,14 +126,14 @@ namespace MatterHackers.Agg.VertexSource
 
 				if (m_cw)
 				{
-					vertexData.position.x = originX + Math.Cos(MathHelper.Tau - angle) * radiusX;
-					vertexData.position.y = originY + Math.Sin(MathHelper.Tau - angle) * radiusY;
+					vertexData.position.X = originX + Math.Cos(MathHelper.Tau - angle) * radiusX;
+					vertexData.position.Y = originY + Math.Sin(MathHelper.Tau - angle) * radiusY;
 					yield return vertexData;
 				}
 				else
 				{
-					vertexData.position.x = originX + Math.Cos(angle) * radiusX;
-					vertexData.position.y = originY + Math.Sin(angle) * radiusY;
+					vertexData.position.X = originX + Math.Cos(angle) * radiusX;
+					vertexData.position.Y = originY + Math.Sin(angle) * radiusY;
 					yield return vertexData;
 				}
 			}

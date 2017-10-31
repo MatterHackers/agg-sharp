@@ -52,7 +52,7 @@ namespace RockBlaster
 		{
 			Affine Final = Affine.NewIdentity();
 			Final *= Affine.NewRotation(m_Rotation);
-			Final *= Affine.NewTranslation(m_Position.x, m_Position.y);
+			Final *= Affine.NewTranslation(m_Position.X, m_Position.Y);
 			var TransformedShip = new VertexSourceApplyTransform(ellipseShape, Final);
 			destRenderer.Render(TransformedShip, new Color(.9, .4, .2, 1));
 		}

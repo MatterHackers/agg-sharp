@@ -200,7 +200,7 @@ namespace MatterHackers.Agg.UI
 					toolTipWidget = new FlowLayoutWidget()
 					{
 						BackgroundColor = Color.White,
-						OriginRelativeParent = new Vector2((int)mousePosition.x, (int)mousePosition.y),
+						OriginRelativeParent = new Vector2((int)mousePosition.X, (int)mousePosition.Y),
 						Padding = new BorderDouble(3),
 						Selectable = false,
 					};
@@ -243,12 +243,12 @@ namespace MatterHackers.Agg.UI
 
 					if (toolTipBoundsRelativeToParent.Right > ownerBounds.Right - 3)
 					{
-						offset.x = ownerBounds.Right - toolTipBoundsRelativeToParent.Right - 3;
+						offset.X = ownerBounds.Right - toolTipBoundsRelativeToParent.Right - 3;
 					}
 
 					if (toolTipBoundsRelativeToParent.Bottom < ownerBounds.Bottom + 3)
 					{
-						offset.y = ownerBounds.Bottom - toolTipBoundsRelativeToParent.Bottom + 3;
+						offset.Y = ownerBounds.Bottom - toolTipBoundsRelativeToParent.Bottom + 3;
 					}
 
 					toolTipWidget.OriginRelativeParent = toolTipWidget.OriginRelativeParent + offset;

@@ -147,7 +147,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			contents.OnDraw(contents.NewGraphics2D());
 
-			Assert.IsTrue(container.TopLeftOffset.y == 0);
+			Assert.IsTrue(container.TopLeftOffset.Y == 0);
 		}
 
 		private static void AddContents(GuiWidget widgetToAddItemsTo)

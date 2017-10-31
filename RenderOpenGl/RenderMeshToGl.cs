@@ -154,13 +154,13 @@ namespace MatterHackers.RenderOpenGl
 				for (int i = 0; i < unscaledLineMesh.Vertices.Count; i++)
 				{
 					Vector3 vertexPosition = unscaledLineMesh.Vertices[i].Position;
-					if (vertexPosition.x < 0)
+					if (vertexPosition.X < 0)
 					{
-						scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.x, vertexPosition.y * startScale, vertexPosition.z * startScale);
+						scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.X, vertexPosition.Y * startScale, vertexPosition.Z * startScale);
 					}
 					else
 					{
-						scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.x, vertexPosition.y * endScale, vertexPosition.z * endScale);
+						scaledLineMesh.Vertices[i].Position = new Vector3(vertexPosition.X, vertexPosition.Y * endScale, vertexPosition.Z * endScale);
 					}
 				}
 
@@ -186,9 +186,9 @@ namespace MatterHackers.RenderOpenGl
 					{
 						foreach (var vertex in face.AsTriangles())
 						{
-							GL.Vertex3(vertex.Item1.x, vertex.Item1.y, vertex.Item1.z);
-							GL.Vertex3(vertex.Item2.x, vertex.Item2.y, vertex.Item2.z);
-							GL.Vertex3(vertex.Item3.x, vertex.Item3.y, vertex.Item3.z);
+							GL.Vertex3(vertex.Item1.X, vertex.Item1.Y, vertex.Item1.Z);
+							GL.Vertex3(vertex.Item2.X, vertex.Item2.Y, vertex.Item2.Z);
+							GL.Vertex3(vertex.Item3.X, vertex.Item3.Y, vertex.Item3.Z);
 						}
 					}
 					GL.End();
@@ -312,13 +312,13 @@ namespace MatterHackers.RenderOpenGl
 				}
 				*/
 
-				GL.Normal3(face.Normal.x, face.Normal.y, face.Normal.z);
+				GL.Normal3(face.Normal.X, face.Normal.Y, face.Normal.Z);
 
 				foreach (var vertex in face.AsTriangles())
 				{
-					GL.Vertex3(vertex.Item1.x, vertex.Item1.y, vertex.Item1.z);
-					GL.Vertex3(vertex.Item2.x, vertex.Item2.y, vertex.Item2.z);
-					GL.Vertex3(vertex.Item3.x, vertex.Item3.y, vertex.Item3.z);
+					GL.Vertex3(vertex.Item1.X, vertex.Item1.Y, vertex.Item1.Z);
+					GL.Vertex3(vertex.Item2.X, vertex.Item2.Y, vertex.Item2.Z);
+					GL.Vertex3(vertex.Item3.X, vertex.Item3.Y, vertex.Item3.Z);
 				}
 			}
 			GL.End();

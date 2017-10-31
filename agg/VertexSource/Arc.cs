@@ -111,7 +111,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		override public IEnumerable<VertexData> Vertices()
 		{
-			double averageRadius = (Math.Abs(radius.x) + Math.Abs(radius.y)) / 2;
+			double averageRadius = (Math.Abs(radius.X) + Math.Abs(radius.Y)) / 2;
 			flatenDeltaAngle = Math.Acos(averageRadius / (averageRadius + 0.125 / scale)) * 2;
 			while (endAngle < startAngle)
 			{
@@ -122,8 +122,8 @@ namespace MatterHackers.Agg.VertexSource
 			vertexData.command = FlagsAndCommand.CommandMoveTo;
 			if (direction == Direction.CounterClockWise)
 			{
-				vertexData.position.x = origin.x + Math.Cos(startAngle) * radius.x;
-				vertexData.position.y = origin.y + Math.Sin(startAngle) * radius.y;
+				vertexData.position.X = origin.X + Math.Cos(startAngle) * radius.X;
+				vertexData.position.Y = origin.Y + Math.Sin(startAngle) * radius.Y;
 				yield return vertexData;
 
 				vertexData.command = FlagsAndCommand.CommandLineTo;
@@ -131,21 +131,21 @@ namespace MatterHackers.Agg.VertexSource
 				int numSteps = (int)((endAngle - startAngle) / flatenDeltaAngle);
                 for (int i=0; i<=numSteps; i++)
 				{
-					vertexData.position.x = origin.x + Math.Cos(angle) * radius.x;
-					vertexData.position.y = origin.y + Math.Sin(angle) * radius.y;
+					vertexData.position.X = origin.X + Math.Cos(angle) * radius.X;
+					vertexData.position.Y = origin.Y + Math.Sin(angle) * radius.Y;
 					yield return vertexData;
 
 					angle += flatenDeltaAngle;
 				}
 
-				vertexData.position.x = origin.x + Math.Cos(endAngle) * radius.x;
-				vertexData.position.y = origin.y + Math.Sin(endAngle) * radius.y;
+				vertexData.position.X = origin.X + Math.Cos(endAngle) * radius.X;
+				vertexData.position.Y = origin.Y + Math.Sin(endAngle) * radius.Y;
 				yield return vertexData;
 			}
 			else
 			{
-				vertexData.position.x = origin.x + Math.Cos(endAngle) * radius.x;
-				vertexData.position.y = origin.y + Math.Sin(endAngle) * radius.y;
+				vertexData.position.X = origin.X + Math.Cos(endAngle) * radius.X;
+				vertexData.position.Y = origin.Y + Math.Sin(endAngle) * radius.Y;
 				yield return vertexData;
 
 				vertexData.command = FlagsAndCommand.CommandLineTo;
@@ -153,15 +153,15 @@ namespace MatterHackers.Agg.VertexSource
 				int numSteps = (int)((endAngle - startAngle) / flatenDeltaAngle);
 				for (int i = 0; i <= numSteps; i++)
 				{
-					vertexData.position.x = origin.x + Math.Cos(angle) * radius.x;
-					vertexData.position.y = origin.y + Math.Sin(angle) * radius.y;
+					vertexData.position.X = origin.X + Math.Cos(angle) * radius.X;
+					vertexData.position.Y = origin.Y + Math.Sin(angle) * radius.Y;
 					yield return vertexData;
 
 					angle -= flatenDeltaAngle;
 				}
 
-				vertexData.position.x = origin.x + Math.Cos(startAngle) * radius.x;
-				vertexData.position.y = origin.y + Math.Sin(startAngle) * radius.y;
+				vertexData.position.X = origin.X + Math.Cos(startAngle) * radius.X;
+				vertexData.position.Y = origin.Y + Math.Sin(startAngle) * radius.Y;
 				yield return vertexData;
 			}
 

@@ -124,9 +124,9 @@ namespace MatterHackers.Agg
 
 		private void DrawImage(IImageByte sourceImage, ISpanGenerator spanImageFilter, Affine destRectTransform)
 		{
-			if (destImageByte.OriginOffset.x != 0 || destImageByte.OriginOffset.y != 0)
+			if (destImageByte.OriginOffset.X != 0 || destImageByte.OriginOffset.Y != 0)
 			{
-				destRectTransform *= Affine.NewTranslation(-destImageByte.OriginOffset.x, -destImageByte.OriginOffset.y);
+				destRectTransform *= Affine.NewTranslation(-destImageByte.OriginOffset.X, -destImageByte.OriginOffset.Y);
 			}
 
 			VertexSourceApplyTransform transformedRect = new VertexSourceApplyTransform(drawImageRectPath, destRectTransform);
@@ -190,8 +190,8 @@ namespace MatterHackers.Agg
 			}
 
 			//bool IsMipped = false;
-			double sourceOriginOffsetX = source.OriginOffset.x;
-			double sourceOriginOffsetY = source.OriginOffset.y;
+			double sourceOriginOffsetX = source.OriginOffset.X;
+			double sourceOriginOffsetY = source.OriginOffset.Y;
 			bool CanUseMipMaps = IsScaled;
 			if (scaleX > 0.5 || scaleY > 0.5)
 			{

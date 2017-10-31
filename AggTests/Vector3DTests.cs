@@ -78,9 +78,9 @@ namespace MatterHackers.Agg.Tests
 			Vector3 Test1 = new Vector3(10, 0, 0);
 			Vector3 Test2 = new Vector3(1, 1, 0);
 			Vector3 CrossResult = Vector3.Cross(Test2, Test1);
-			Assert.IsTrue(CrossResult.x == 0);
-			Assert.IsTrue(CrossResult.y == 0);
-			Assert.IsTrue(CrossResult.z < 0);
+			Assert.IsTrue(CrossResult.X == 0);
+			Assert.IsTrue(CrossResult.Y == 0);
+			Assert.IsTrue(CrossResult.Z < 0);
 		}
 
 		[Test]

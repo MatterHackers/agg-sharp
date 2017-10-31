@@ -169,7 +169,7 @@ namespace MatterHackers.Agg
 
 		public bool Contains(Vector2 position)
 		{
-			return Contains((float)position.x, (float)position.y);
+			return Contains((float)position.X, (float)position.Y);
 		}
 
 		public bool IntersectRectangles(RectangleFloat rectToCopy, RectangleFloat rectToIntersectWith)
@@ -229,7 +229,7 @@ namespace MatterHackers.Agg
 
 		public void ExpandToInclude(Vector2 position)
 		{
-			ExpandToInclude((float)position.x, (float)position.y);
+			ExpandToInclude((float)position.X, (float)position.Y);
 		}
 
 		public void ExpandToInclude(float x, float y)
@@ -250,7 +250,7 @@ namespace MatterHackers.Agg
 
 		public void Offset(Vector2 offset)
 		{
-			Offset((float)offset.x, (float)offset.y);
+			Offset((float)offset.X, (float)offset.Y);
 		}
 
 		public void Offset(float x, float y)

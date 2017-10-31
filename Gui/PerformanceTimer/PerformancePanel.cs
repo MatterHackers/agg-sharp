@@ -287,7 +287,7 @@ namespace MatterHackers.Agg.UI
 					GuiWidget child = sender as GuiWidget;
 					if (child != null)
 					{
-						child.MinimumSize = new VectorMath.Vector2(Math.Max(child.MinimumSize.x, child.Width), 0);
+						child.MinimumSize = new VectorMath.Vector2(Math.Max(child.MinimumSize.X, child.Width), 0);
 					}
 				};
 

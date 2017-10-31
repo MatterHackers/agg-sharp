@@ -292,24 +292,24 @@ namespace MatterHackers.Agg.UI
 					// If the bottom of the popup is below the bottom of the screen
 					if (direction == Direction.Down)
 					{
-						if (bottomLeftScreenSpace.y - popupWidget.LocalBounds.Height < 0)
+						if (bottomLeftScreenSpace.Y - popupWidget.LocalBounds.Height < 0)
 						{
-							if (bottomLeftScreenSpace.y <= minimumOpenHeight)
+							if (bottomLeftScreenSpace.Y <= minimumOpenHeight)
 							{
 								direction = Direction.Up;
 							}
 							else
 							{
-								popupWidget.MakeMenuHaveScroll(bottomLeftScreenSpace.y - 5);
+								popupWidget.MakeMenuHaveScroll(bottomLeftScreenSpace.Y - 5);
 							}
 						}
 					}
 					else
 					{
 						SystemWindow windowToAddTo = widgetRelativeTo.Parents<SystemWindow>().FirstOrDefault();
-						if (bottomLeftScreenSpace.y + popupWidget.LocalBounds.Height > windowToAddTo.Height)
+						if (bottomLeftScreenSpace.Y + popupWidget.LocalBounds.Height > windowToAddTo.Height)
 						{
-							popupWidget.MakeMenuHaveScroll(bottomLeftScreenSpace.y - 5);
+							popupWidget.MakeMenuHaveScroll(bottomLeftScreenSpace.Y - 5);
 						}
 					}
 

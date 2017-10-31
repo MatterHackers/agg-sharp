@@ -47,7 +47,7 @@ namespace MatterHackers.Agg.VertexSource
 				{
 					foreach (VertexData vertexData in vertexSource.Vertices())
 					{
-						outFile.WriteLine("{0}, {1}, {2}", vertexData.position.x, vertexData.position.y, vertexData.command.ToString());
+						outFile.WriteLine("{0}, {1}, {2}", vertexData.position.X, vertexData.position.Y, vertexData.command.ToString());
 					}
 				}
 			}

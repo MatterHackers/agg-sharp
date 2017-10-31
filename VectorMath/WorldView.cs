@@ -158,7 +158,7 @@ namespace MatterHackers.VectorMath
 			Ray rayFromScreen = GetRayForLocalBounds(screenPosition);
 			double distanceFromOriginToWorldPos = (worldPosition - rayFromScreen.origin).Length;
 
-			Ray rightOnePixelRay = GetRayForLocalBounds(new Vector2(screenPosition.x + 1, screenPosition.y));
+			Ray rightOnePixelRay = GetRayForLocalBounds(new Vector2(screenPosition.X + 1, screenPosition.Y));
 			Vector3 rightOnePixel = rightOnePixelRay.origin + rightOnePixelRay.directionNormal * distanceFromOriginToWorldPos;
 			double distBetweenPixelsWorldSpace = (rightOnePixel - worldPosition).Length;
 			if (distBetweenPixelsWorldSpace > maxRatio)
@@ -171,13 +171,13 @@ namespace MatterHackers.VectorMath
 		public Ray GetRayForLocalBounds(Vector2 localPosition)
 		{
 			Vector4 rayClip = new Vector4();
-			rayClip.x = (2.0 * localPosition.x) / this.width - 1.0;
-			rayClip.y = (2.0 * localPosition.y) / this.height - 1.0;
-			rayClip.z = -1.0;
-			rayClip.w = 1.0;
+			rayClip.X = (2.0 * localPosition.X) / this.width - 1.0;
+			rayClip.Y = (2.0 * localPosition.Y) / this.height - 1.0;
+			rayClip.Z = -1.0;
+			rayClip.W = 1.0;
 
 			Vector4 rayEye = Vector4.Transform(rayClip, InverseProjectionMatrix);
-			rayEye.z = -1; rayEye.w = 0;
+			rayEye.Z = -1; rayEye.W = 0;
 
 			Vector4 rayWorld = Vector4.Transform(rayEye, InverseModelviewMatrix);
 
@@ -190,8 +190,8 @@ namespace MatterHackers.VectorMath
 
 		public Vector3 GetWorldPosition(Vector2 screenPosition)
 		{
-			Vector4 homoginizedScreenSpace = new Vector4((2.0f * (screenPosition.x / width)) - 1,
-				1 - (2 * (screenPosition.y / height)),
+			Vector4 homoginizedScreenSpace = new Vector4((2.0f * (screenPosition.X / width)) - 1,
+				1 - (2 * (screenPosition.Y / height)),
 				1,
 				1);
 
@@ -199,11 +199,11 @@ namespace MatterHackers.VectorMath
 			Matrix4X4 viewProjectionInverse = Matrix4X4.Invert(viewProjection);
 			Vector4 woldSpace = Vector4.Transform(homoginizedScreenSpace, viewProjectionInverse);
 
-			double perspectiveDivide = 1 / woldSpace.w;
+			double perspectiveDivide = 1 / woldSpace.W;
 
-			woldSpace.x *= perspectiveDivide;
-			woldSpace.y *= perspectiveDivide;
-			woldSpace.z *= perspectiveDivide;
+			woldSpace.X *= perspectiveDivide;
+			woldSpace.Y *= perspectiveDivide;
+			woldSpace.Z *= perspectiveDivide;
 
 			return new Vector3(woldSpace);
 		}
@@ -215,8 +215,8 @@ namespace MatterHackers.VectorMath
 			Vector3 homoginizedScreenPosition = Vector3.TransformPerspective(homoginizedViewPosition, this.ProjectionMatrix);
 
 			// Screen position
-			return new Vector2(homoginizedScreenPosition.x * width / 2 + width / 2,
-				homoginizedScreenPosition.y * height / 2 + height / 2);
+			return new Vector2(homoginizedScreenPosition.X * width / 2 + width / 2,
+				homoginizedScreenPosition.Y * height / 2 + height / 2);
 		}
 
 		public Vector3 GetScreenSpace(Vector3 worldPosition)

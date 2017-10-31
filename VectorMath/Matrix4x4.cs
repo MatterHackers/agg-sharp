@@ -165,12 +165,12 @@ namespace MatterHackers.VectorMath
 			get
 			{
 				return
-					Row0.x * Row1.y * Row2.z * Row3.w - Row0.x * Row1.y * Row2.w * Row3.z + Row0.x * Row1.z * Row2.w * Row3.y - Row0.x * Row1.z * Row2.y * Row3.w
-				  + Row0.x * Row1.w * Row2.y * Row3.z - Row0.x * Row1.w * Row2.z * Row3.y - Row0.y * Row1.z * Row2.w * Row3.x + Row0.y * Row1.z * Row2.x * Row3.w
-				  - Row0.y * Row1.w * Row2.x * Row3.z + Row0.y * Row1.w * Row2.z * Row3.x - Row0.y * Row1.x * Row2.z * Row3.w + Row0.y * Row1.x * Row2.w * Row3.z
-				  + Row0.z * Row1.w * Row2.x * Row3.y - Row0.z * Row1.w * Row2.y * Row3.x + Row0.z * Row1.x * Row2.y * Row3.w - Row0.z * Row1.x * Row2.w * Row3.y
-				  + Row0.z * Row1.y * Row2.w * Row3.x - Row0.z * Row1.y * Row2.x * Row3.w - Row0.w * Row1.x * Row2.y * Row3.z + Row0.w * Row1.x * Row2.z * Row3.y
-				  - Row0.w * Row1.y * Row2.z * Row3.x + Row0.w * Row1.y * Row2.x * Row3.z - Row0.w * Row1.z * Row2.x * Row3.y + Row0.w * Row1.z * Row2.y * Row3.x;
+					Row0.X * Row1.Y * Row2.Z * Row3.W - Row0.X * Row1.Y * Row2.W * Row3.Z + Row0.X * Row1.Z * Row2.W * Row3.Y - Row0.X * Row1.Z * Row2.Y * Row3.W
+				  + Row0.X * Row1.W * Row2.Y * Row3.Z - Row0.X * Row1.W * Row2.Z * Row3.Y - Row0.Y * Row1.Z * Row2.W * Row3.X + Row0.Y * Row1.Z * Row2.X * Row3.W
+				  - Row0.Y * Row1.W * Row2.X * Row3.Z + Row0.Y * Row1.W * Row2.Z * Row3.X - Row0.Y * Row1.X * Row2.Z * Row3.W + Row0.Y * Row1.X * Row2.W * Row3.Z
+				  + Row0.Z * Row1.W * Row2.X * Row3.Y - Row0.Z * Row1.W * Row2.Y * Row3.X + Row0.Z * Row1.X * Row2.Y * Row3.W - Row0.Z * Row1.X * Row2.W * Row3.Y
+				  + Row0.Z * Row1.Y * Row2.W * Row3.X - Row0.Z * Row1.Y * Row2.X * Row3.W - Row0.W * Row1.X * Row2.Y * Row3.Z + Row0.W * Row1.X * Row2.Z * Row3.Y
+				  - Row0.W * Row1.Y * Row2.Z * Row3.X + Row0.W * Row1.Y * Row2.X * Row3.Z - Row0.W * Row1.Z * Row2.X * Row3.Y + Row0.W * Row1.Z * Row2.Y * Row3.X;
 			}
 		}
 
@@ -187,7 +187,7 @@ namespace MatterHackers.VectorMath
 		/// </summary>
 		public Vector4 Column0
 		{
-			get { return new Vector4(Row0.x, Row1.x, Row2.x, Row3.x); }
+			get { return new Vector4(Row0.X, Row1.X, Row2.X, Row3.X); }
 		}
 
 		/// <summary>
@@ -195,7 +195,7 @@ namespace MatterHackers.VectorMath
 		/// </summary>
 		public Vector4 Column1
 		{
-			get { return new Vector4(Row0.y, Row1.y, Row2.y, Row3.y); }
+			get { return new Vector4(Row0.Y, Row1.Y, Row2.Y, Row3.Y); }
 		}
 
 		/// <summary>
@@ -203,7 +203,7 @@ namespace MatterHackers.VectorMath
 		/// </summary>
 		public Vector4 Column2
 		{
-			get { return new Vector4(Row0.z, Row1.z, Row2.z, Row3.z); }
+			get { return new Vector4(Row0.Z, Row1.Z, Row2.Z, Row3.Z); }
 		}
 
 		/// <summary>
@@ -211,88 +211,88 @@ namespace MatterHackers.VectorMath
 		/// </summary>
 		public Vector4 Column3
 		{
-			get { return new Vector4(Row0.w, Row1.w, Row2.w, Row3.w); }
+			get { return new Vector4(Row0.W, Row1.W, Row2.W, Row3.W); }
 		}
 
 		/// <summary>
 		/// Gets or sets the value at row 1, column 1 of this instance.
 		/// </summary>
-		public double M11 { get { return Row0.x; } set { Row0.x = value; } }
+		public double M11 { get { return Row0.X; } set { Row0.X = value; } }
 
 		/// <summary>
 		/// Gets or sets the value at row 1, column 2 of this instance.
 		/// </summary>
-		public double M12 { get { return Row0.y; } set { Row0.y = value; } }
+		public double M12 { get { return Row0.Y; } set { Row0.Y = value; } }
 
 		/// <summary>
 		/// Gets or sets the value at row 1, column 3 of this instance.
 		/// </summary>
-		public double M13 { get { return Row0.z; } set { Row0.z = value; } }
+		public double M13 { get { return Row0.Z; } set { Row0.Z = value; } }
 
 		/// <summary>
 		/// Gets or sets the value at row 1, column 4 of this instance.
 		/// </summary>
-		public double M14 { get { return Row0.w; } set { Row0.w = value; } }
+		public double M14 { get { return Row0.W; } set { Row0.W = value; } }
 
 		/// <summary>
 		/// Gets or sets the value at row 2, column 1 of this instance.
 		/// </summary>
-		public double M21 { get { return Row1.x; } set { Row1.x = value; } }
+		public double M21 { get { return Row1.X; } set { Row1.X = value; } }
 
 		/// <summary>
 		/// Gets or sets the value at row 2, column 2 of this instance.
 		/// </summary>
-		public double M22 { get { return Row1.y; } set { Row1.y = value; } }
+		public double M22 { get { return Row1.Y; } set { Row1.Y = value; } }
 
 		/// <summary>
 		/// Gets or sets the value at row 2, column 3 of this instance.
 		/// </summary>
-		public double M23 { get { return Row1.z; } set { Row1.z = value; } }
+		public double M23 { get { return Row1.Z; } set { Row1.Z = value; } }
 
 		/// <summary>
 		/// Gets or sets the value at row 2, column 4 of this instance.
 		/// </summary>
-		public double M24 { get { return Row1.w; } set { Row1.w = value; } }
+		public double M24 { get { return Row1.W; } set { Row1.W = value; } }
 
 		/// <summary>
 		/// Gets or sets the value at row 3, column 1 of this instance.
 		/// </summary>
-		public double M31 { get { return Row2.x; } set { Row2.x = value; } }
+		public double M31 { get { return Row2.X; } set { Row2.X = value; } }
 
 		/// <summary>
 		/// Gets or sets the value at row 3, column 2 of this instance.
 		/// </summary>
-		public double M32 { get { return Row2.y; } set { Row2.y = value; } }
+		public double M32 { get { return Row2.Y; } set { Row2.Y = value; } }
 
 		/// <summary>
 		/// Gets or sets the value at row 3, column 3 of this instance.
 		/// </summary>
-		public double M33 { get { return Row2.z; } set { Row2.z = value; } }
+		public double M33 { get { return Row2.Z; } set { Row2.Z = value; } }
 
 		/// <summary>
 		/// Gets or sets the value at row 3, column 4 of this instance.
 		/// </summary>
-		public double M34 { get { return Row2.w; } set { Row2.w = value; } }
+		public double M34 { get { return Row2.W; } set { Row2.W = value; } }
 
 		/// <summary>
 		/// Gets or sets the value at row 4, column 1 of this instance.
 		/// </summary>
-		public double M41 { get { return Row3.x; } set { Row3.x = value; } }
+		public double M41 { get { return Row3.X; } set { Row3.X = value; } }
 
 		/// <summary>
 		/// Gets or sets the value at row 4, column 2 of this instance.
 		/// </summary>
-		public double M42 { get { return Row3.y; } set { Row3.y = value; } }
+		public double M42 { get { return Row3.Y; } set { Row3.Y = value; } }
 
 		/// <summary>
 		/// Gets or sets the value at row 4, column 3 of this instance.
 		/// </summary>
-		public double M43 { get { return Row3.z; } set { Row3.z = value; } }
+		public double M43 { get { return Row3.Z; } set { Row3.Z = value; } }
 
 		/// <summary>
 		/// Gets or sets the value at row 4, column 4 of this instance.
 		/// </summary>
-		public double M44 { get { return Row3.w; } set { Row3.w = value; } }
+		public double M44 { get { return Row3.W; } set { Row3.W = value; } }
 
 		#endregion Properties
 
@@ -432,9 +432,9 @@ namespace MatterHackers.VectorMath
 
 			axis.Normalize();
 
-			result = new Matrix4X4(t * axis.x * axis.x + cos, t * axis.x * axis.y - sin * axis.z, t * axis.x * axis.z + sin * axis.y, 0.0,
-								 t * axis.x * axis.y + sin * axis.z, t * axis.y * axis.y + cos, t * axis.y * axis.z - sin * axis.x, 0.0,
-								 t * axis.x * axis.z - sin * axis.y, t * axis.y * axis.z + sin * axis.x, t * axis.z * axis.z + cos, 0.0,
+			result = new Matrix4X4(t * axis.X * axis.X + cos, t * axis.X * axis.Y - sin * axis.Z, t * axis.X * axis.Z + sin * axis.Y, 0.0,
+								 t * axis.X * axis.Y + sin * axis.Z, t * axis.Y * axis.Y + cos, t * axis.Y * axis.Z - sin * axis.X, 0.0,
+								 t * axis.X * axis.Z - sin * axis.Y, t * axis.Y * axis.Z + sin * axis.X, t * axis.Z * axis.Z + cos, 0.0,
 								 0, 0, 0, 1);
 		}
 
@@ -559,9 +559,9 @@ namespace MatterHackers.VectorMath
 			axis.Normalize();
 
 			Matrix4X4 result;
-			result.Row0 = new Vector4(t * axis.x * axis.x + cos, t * axis.x * axis.y - sin * axis.z, t * axis.x * axis.z + sin * axis.y, 0.0);
-			result.Row1 = new Vector4(t * axis.x * axis.y + sin * axis.z, t * axis.y * axis.y + cos, t * axis.y * axis.z - sin * axis.x, 0.0);
-			result.Row2 = new Vector4(t * axis.x * axis.z - sin * axis.y, t * axis.y * axis.z + sin * axis.x, t * axis.z * axis.z + cos, 0.0);
+			result.Row0 = new Vector4(t * axis.X * axis.X + cos, t * axis.X * axis.Y - sin * axis.Z, t * axis.X * axis.Z + sin * axis.Y, 0.0);
+			result.Row1 = new Vector4(t * axis.X * axis.Y + sin * axis.Z, t * axis.Y * axis.Y + cos, t * axis.Y * axis.Z - sin * axis.X, 0.0);
+			result.Row2 = new Vector4(t * axis.X * axis.Z - sin * axis.Y, t * axis.Y * axis.Z + sin * axis.X, t * axis.Z * axis.Z + cos, 0.0);
 			result.Row3 = Vector4.UnitW;
 			return result;
 		}
@@ -616,7 +616,7 @@ namespace MatterHackers.VectorMath
 		public static void CreateTranslation(ref Vector3 vector, out Matrix4X4 result)
 		{
 			result = Identity;
-			result.Row3 = new Vector4(vector.x, vector.y, vector.z, 1);
+			result.Row3 = new Vector4(vector.X, vector.Y, vector.Z, 1);
 		}
 
 		/// <summary>
@@ -641,7 +641,7 @@ namespace MatterHackers.VectorMath
 		public static Matrix4X4 CreateTranslation(Vector3 vector)
 		{
 			Matrix4X4 result;
-			CreateTranslation(vector.x, vector.y, vector.z, out result);
+			CreateTranslation(vector.X, vector.Y, vector.Z, out result);
 			return result;
 		}
 
@@ -890,7 +890,7 @@ namespace MatterHackers.VectorMath
 		/// <returns>A scaling matrix</returns>
 		public static Matrix4X4 CreateScale(Vector3 scale)
 		{
-			return CreateScale(scale.x, scale.y, scale.z);
+			return CreateScale(scale.X, scale.Y, scale.Z);
 		}
 
 		/// <summary>
@@ -929,9 +929,9 @@ namespace MatterHackers.VectorMath
 			Vector3 x = Vector3.Normalize(Vector3.Cross(up, z));
 			Vector3 y = Vector3.Normalize(Vector3.Cross(z, x));
 
-			Matrix4X4 rot = new Matrix4X4(new Vector4(x.x, y.x, z.x, 0.0),
-										new Vector4(x.y, y.y, z.y, 0.0),
-										new Vector4(x.z, y.z, z.z, 0.0),
+			Matrix4X4 rot = new Matrix4X4(new Vector4(x.X, y.X, z.X, 0.0),
+										new Vector4(x.Y, y.Y, z.Y, 0.0),
+										new Vector4(x.Z, y.Z, z.Z, 0.0),
 										Vector4.UnitW);
 
 			Matrix4X4 trans = Matrix4X4.CreateTranslation(-eye);
@@ -1057,10 +1057,10 @@ namespace MatterHackers.VectorMath
 			int[] pivotIdx = { -1, -1, -1, -1 };
 
 			// convert the matrix to an array for easy looping
-			double[,] inverse = {{mat.Row0.x, mat.Row0.y, mat.Row0.z, mat.Row0.w},
-                                {mat.Row1.x, mat.Row1.y, mat.Row1.z, mat.Row1.w},
-                                {mat.Row2.x, mat.Row2.y, mat.Row2.z, mat.Row2.w},
-                                {mat.Row3.x, mat.Row3.y, mat.Row3.z, mat.Row3.w} };
+			double[,] inverse = {{mat.Row0.X, mat.Row0.Y, mat.Row0.Z, mat.Row0.W},
+                                {mat.Row1.X, mat.Row1.Y, mat.Row1.Z, mat.Row1.W},
+                                {mat.Row2.X, mat.Row2.Y, mat.Row2.Z, mat.Row2.W},
+                                {mat.Row3.X, mat.Row3.Y, mat.Row3.Z, mat.Row3.W} };
 			int icol = 0;
 			int irow = 0;
 			for (int i = 0; i < 4; i++)

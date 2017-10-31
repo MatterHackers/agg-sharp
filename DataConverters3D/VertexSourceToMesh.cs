@@ -128,12 +128,12 @@ namespace MatterHackers.DataConverters3D
 				}
 				if (vertexData.IsMoveTo)
 				{
-					lastPosition = new Vector3(vertexData.position.x, 0, vertexData.position.y);
+					lastPosition = new Vector3(vertexData.position.X, 0, vertexData.position.Y);
 				}
 
 				if (vertexData.IsLineTo)
 				{
-					Vector3 currentPosition = new Vector3(vertexData.position.x, 0, vertexData.position.y);
+					Vector3 currentPosition = new Vector3(vertexData.position.X, 0, vertexData.position.Y);
 
 					IVertex lastStart = mesh.CreateVertex(Vector3.Transform(lastPosition, Matrix4X4.CreateRotationZ(startAngle)), createOption, sortOption);
 					IVertex lastEnd = mesh.CreateVertex(Vector3.Transform(lastPosition, Matrix4X4.CreateRotationZ(endAngle)), createOption, sortOption);

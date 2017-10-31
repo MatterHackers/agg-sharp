@@ -157,39 +157,39 @@ namespace MatterHackers.VectorMath
 			for (int i = 0; i < Planes.Length; ++i)
 			{
 				// X axis
-				if (Planes[i].PlaneNormal.x > 0)
+				if (Planes[i].PlaneNormal.X > 0)
 				{
-					vmin.x = boundingBox.minXYZ.x;
-					vmax.x = boundingBox.maxXYZ.x;
+					vmin.X = boundingBox.minXYZ.X;
+					vmax.X = boundingBox.maxXYZ.X;
 				}
 				else
 				{
-					vmin.x = boundingBox.maxXYZ.x;
-					vmax.x = boundingBox.minXYZ.x;
+					vmin.X = boundingBox.maxXYZ.X;
+					vmax.X = boundingBox.minXYZ.X;
 				}
 
 				// Y axis
-				if (Planes[i].PlaneNormal.y > 0)
+				if (Planes[i].PlaneNormal.Y > 0)
 				{
-					vmin.y = boundingBox.minXYZ.y;
-					vmax.y = boundingBox.maxXYZ.y;
+					vmin.Y = boundingBox.minXYZ.Y;
+					vmax.Y = boundingBox.maxXYZ.Y;
 				}
 				else
 				{
-					vmin.y = boundingBox.maxXYZ.y;
-					vmax.y = boundingBox.minXYZ.y;
+					vmin.Y = boundingBox.maxXYZ.Y;
+					vmax.Y = boundingBox.minXYZ.Y;
 				}
 
 				// Z axis
-				if (Planes[i].PlaneNormal.z > 0)
+				if (Planes[i].PlaneNormal.Z > 0)
 				{
-					vmin.z = boundingBox.minXYZ.z;
-					vmax.z = boundingBox.maxXYZ.z;
+					vmin.Z = boundingBox.minXYZ.Z;
+					vmax.Z = boundingBox.maxXYZ.Z;
 				}
 				else
 				{
-					vmin.z = boundingBox.maxXYZ.z;
-					vmax.z = boundingBox.minXYZ.z;
+					vmin.Z = boundingBox.maxXYZ.Z;
+					vmax.Z = boundingBox.minXYZ.Z;
 				}
 
 				if (Vector3.Dot(Planes[i].PlaneNormal, vmin) - Planes[i].DistanceToPlaneFromOrigin > 0)

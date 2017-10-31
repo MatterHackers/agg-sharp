@@ -84,7 +84,7 @@ namespace MatterHackers.Agg
 			}
 
 			Affine transform = Affine.NewIdentity();
-			transform *= Affine.NewTranslation(-lionShape.Center.x, -lionShape.Center.y);
+			transform *= Affine.NewTranslation(-lionShape.Center.X, -lionShape.Center.Y);
 			transform *= Affine.NewScaling(lionScale, lionScale);
 			transform *= Affine.NewRotation(angle + Math.PI);
 			transform *= Affine.NewSkewing(skewX / 1000.0, skewY / 1000.0);

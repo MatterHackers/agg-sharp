@@ -282,8 +282,8 @@ namespace MatterHackers.RenderOpenGl
 			float texCoordX = imageWidth / (float)hardwareWidth;
 			float texCoordY = imageHeight / (float)hardwareHeight;
 
-			float OffsetX = (float)bufferedImage.OriginOffset.x;
-			float OffsetY = (float)bufferedImage.OriginOffset.y;
+			float OffsetX = (float)bufferedImage.OriginOffset.X;
+			float OffsetY = (float)bufferedImage.OriginOffset.Y;
 
 			glData.textureUVs = new float[8];
 			glData.positions = new float[8];

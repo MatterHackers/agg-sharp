@@ -293,8 +293,8 @@ namespace MatterHackers.Agg.VertexSource
 						else
 						{
 							Vector2 c = m_out_vertices[(int)m_out_vertex++];
-							x = c.x;
-							y = c.y;
+							x = c.X;
+							y = c.Y;
 							return cmd;
 						}
 						break;

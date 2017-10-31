@@ -48,15 +48,15 @@ namespace MatterHackers.RenderOpenGl
 		{
 			// P1
 			GL.TexCoord2(.2, .25);
-			GL.Vertex2(p0.x, p0.y);
+			GL.Vertex2(p0.X, p0.Y);
 
 			// P2
 			GL.TexCoord2(.2, .75);
-			GL.Vertex2(p1.x, p1.y);
+			GL.Vertex2(p1.X, p1.Y);
 
 			// P3
 			GL.TexCoord2(.9, .5);
-			GL.Vertex2(p2.x, p2.y);
+			GL.Vertex2(p2.X, p2.Y);
 		}
 
 		/// <summary>
@@ -112,14 +112,14 @@ namespace MatterHackers.RenderOpenGl
 
 		private void FanDo(Vector2 fanTEnd, Vector2 fanPEnd)
 		{
-			GL.TexCoord2(fanTStart.x, fanTStart.y);
-			GL.Vertex2(fanPStart.x, fanPStart.y);
+			GL.TexCoord2(fanTStart.X, fanTStart.Y);
+			GL.Vertex2(fanPStart.X, fanPStart.Y);
 
-			GL.TexCoord2(fanTNext.x, fanTNext.y);
-			GL.Vertex2(fanPNext.x, fanPNext.y);
+			GL.TexCoord2(fanTNext.X, fanTNext.Y);
+			GL.Vertex2(fanPNext.X, fanPNext.Y);
 
-			GL.TexCoord2(fanTEnd.x, fanTEnd.y);
-			GL.Vertex2(fanPEnd.x, fanPEnd.y);
+			GL.TexCoord2(fanTEnd.X, fanTEnd.Y);
+			GL.Vertex2(fanPEnd.X, fanPEnd.Y);
 
 			fanTNext = fanTEnd;
 			fanPNext = fanPEnd;

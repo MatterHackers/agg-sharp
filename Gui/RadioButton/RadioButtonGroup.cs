@@ -47,7 +47,7 @@ namespace MatterHackers.Agg.UI
 			Margin = new BorderDouble();
 			Padding = new BorderDouble(5);
 
-			LocalBounds = new RectangleDouble(0, 0, size.x, size.y);
+			LocalBounds = new RectangleDouble(0, 0, size.X, size.Y);
 			OriginRelativeParent = location;
 			radioButtons = new List<RadioButton>();
 

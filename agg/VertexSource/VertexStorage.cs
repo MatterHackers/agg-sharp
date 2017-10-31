@@ -252,8 +252,8 @@ namespace MatterHackers.Agg.VertexSource
 			foreach (VertexSource.VertexData vertexData in test.Vertices())
 			{
 				if (controlFlagsAndCommand != vertexData.command
-					|| controlX < vertexData.position.x - maxError || controlX > vertexData.position.x + maxError
-					|| controlY < vertexData.position.y - maxError || controlY > vertexData.position.y + maxError)
+					|| controlX < vertexData.position.X - maxError || controlX > vertexData.position.X + maxError
+					|| controlY < vertexData.position.Y - maxError || controlY > vertexData.position.Y + maxError)
 				{
 					return false;
 				}
@@ -691,7 +691,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		public void LineTo(Vector2 position)
 		{
-			LineTo(position.x, position.y);
+			LineTo(position.X, position.Y);
 		}
 
 		public void LineTo(double x, double y)
@@ -716,7 +716,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		public void MoveTo(Vector2 position)
 		{
-			MoveTo(position.x, position.y);
+			MoveTo(position.X, position.Y);
 		}
 
 		public void MoveTo(double x, double y)
@@ -748,13 +748,13 @@ namespace MatterHackers.Agg.VertexSource
 							{
 								parseIndex++;
 								Vector2 controlPoint1;
-								controlPoint1.x = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-								controlPoint1.y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+								controlPoint1.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+								controlPoint1.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
 								foundSecondControlPoint = true;
-								secondControlPoint.x = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-								secondControlPoint.y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-								curXY.x = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-								curXY.y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+								secondControlPoint.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+								secondControlPoint.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+								curXY.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+								curXY.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
 								if (command == 'c')
 								{
 									controlPoint1 += lastXY;
@@ -762,7 +762,7 @@ namespace MatterHackers.Agg.VertexSource
 									curXY += lastXY;
 								}
 
-								this.curve4(controlPoint1.x, controlPoint1.y, secondControlPoint.x, secondControlPoint.y, curXY.x, curXY.y);
+								this.curve4(controlPoint1.X, controlPoint1.Y, secondControlPoint.X, secondControlPoint.Y, curXY.X, curXY.Y);
 								
 								// if the next element is another coordinate than we just continue to add more curves.
 							} while(NextElementIsANumber(dString, parseIndex));
@@ -789,14 +789,14 @@ namespace MatterHackers.Agg.VertexSource
 								}
 								else
 								{
-									controlPoint1.x = curXY.x - (secondControlPoint.x - curXY.x);
-									controlPoint1.y = curXY.y - (secondControlPoint.y - curXY.y);
+									controlPoint1.X = curXY.X - (secondControlPoint.X - curXY.X);
+									controlPoint1.Y = curXY.Y - (secondControlPoint.Y - curXY.Y);
 								}
 								foundSecondControlPoint = true;
-								secondControlPoint.x = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-								secondControlPoint.y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-								curXY.x = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-								curXY.y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+								secondControlPoint.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+								secondControlPoint.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+								curXY.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+								curXY.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
 								if (command == 's')
 								{
 									controlPoint1 += lastXY;
@@ -804,7 +804,7 @@ namespace MatterHackers.Agg.VertexSource
 									curXY += lastXY;
 								}
 
-								this.curve4(controlPoint1.x, controlPoint1.y, secondControlPoint.x, secondControlPoint.y, curXY.x, curXY.y);
+								this.curve4(controlPoint1.X, controlPoint1.Y, secondControlPoint.X, secondControlPoint.Y, curXY.X, curXY.Y);
 
 								// if the next element is another coordinate than we just continue to add more curves.
 							} while (NextElementIsANumber(dString, parseIndex));
@@ -814,14 +814,14 @@ namespace MatterHackers.Agg.VertexSource
 					case 'h': // horizontal line to relative
 					case 'H': // horizontal line to absolute
 						parseIndex++;
-						curXY.y = lastXY.y;
-						curXY.x = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+						curXY.Y = lastXY.Y;
+						curXY.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
 						if (command == 'h')
 						{
-							curXY.x += lastXY.x;
+							curXY.X += lastXY.X;
 						}
 
-						this.HorizontalLineTo(curXY.x);
+						this.HorizontalLineTo(curXY.X);
 						break;
 
 					case 'l': // line to relative
@@ -829,14 +829,14 @@ namespace MatterHackers.Agg.VertexSource
 						do
 						{
 							parseIndex++;
-							curXY.x = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-							curXY.y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+							curXY.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+							curXY.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
 							if (command == 'l')
 							{
 								curXY += lastXY;
 							}
 
-							this.LineTo(curXY.x, curXY.y);
+							this.LineTo(curXY.X, curXY.Y);
 						} while (NextElementIsANumber(dString, parseIndex));
 						break;
 
@@ -846,14 +846,14 @@ namespace MatterHackers.Agg.VertexSource
 						// svg fonts are stored cw and agg expects its shapes to be ccw.  cw shapes are holes.
 						// so we store the position of the start of this polygon so we can flip it when we colse it.
 						polyStartVertexSourceIndex = this.size();
-						curXY.x = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-						curXY.y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+						curXY.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+						curXY.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
 						if (command == 'm')
 						{
 							curXY += lastXY;
 						}
 
-						this.MoveTo(curXY.x, curXY.y);
+						this.MoveTo(curXY.X, curXY.Y);
 						polyStart = curXY;
 						break;
 
@@ -862,44 +862,44 @@ namespace MatterHackers.Agg.VertexSource
 						{
 							parseIndex++;
 							Vector2 controlPoint;
-							controlPoint.x = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-							controlPoint.y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-							curXY.x = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-							curXY.y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+							controlPoint.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+							controlPoint.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+							curXY.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+							curXY.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
 							if (command == 'q')
 							{
 								controlPoint += lastXY;
 								curXY += lastXY;
 							}
 
-							this.curve3(controlPoint.x, controlPoint.y, curXY.x, curXY.y);
+							this.curve3(controlPoint.X, controlPoint.Y, curXY.X, curXY.Y);
 						}
 						break;
 
 					case 't': // Shorthand/smooth quadratic Bézier curveto relative
 					case 'T': // Shorthand/smooth quadratic Bézier curveto absolute
 						parseIndex++;
-						curXY.x = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
-						curXY.y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+						curXY.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+						curXY.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
 						if (command == 't')
 						{
 							curXY += lastXY;
 						}
 
-						this.curve3(curXY.x, curXY.y);
+						this.curve3(curXY.X, curXY.Y);
 						break;
 
 					case 'v': // vertical line to relative
 					case 'V': // vertical line to absolute
 						parseIndex++;
-						curXY.x = lastXY.x;
-						curXY.y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
+						curXY.X = lastXY.X;
+						curXY.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
 						if (command == 'v')
 						{
-							curXY.y += lastXY.y;
+							curXY.Y += lastXY.Y;
 						}
 
-						this.VerticalLineTo(curXY.y);
+						this.VerticalLineTo(curXY.Y);
 						break;
 
 					case 'z': // close path

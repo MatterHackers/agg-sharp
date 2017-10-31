@@ -188,9 +188,9 @@ namespace MatterHackers.RayTracer
 
 					// we don't need to set this if we are anti-aliased
 					int totalOffset = bufferOffset + x * 4;
-					destBuffer[totalOffset++] = (byte)((NormalBuffer[x][y].x + 1) * 128);
-					destBuffer[totalOffset++] = (byte)((NormalBuffer[x][y].y + 1) * 128);
-					destBuffer[totalOffset++] = (byte)((NormalBuffer[x][y].z + 1) * 128);
+					destBuffer[totalOffset++] = (byte)((NormalBuffer[x][y].X + 1) * 128);
+					destBuffer[totalOffset++] = (byte)((NormalBuffer[x][y].Y + 1) * 128);
+					destBuffer[totalOffset++] = (byte)((NormalBuffer[x][y].Z + 1) * 128);
 					destBuffer[totalOffset] = 255;
 				}
 			}

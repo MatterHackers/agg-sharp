@@ -132,7 +132,7 @@ namespace MatterHackers.Agg.UI
 			if ((child.VAnchor & VAnchor.Bottom) == VAnchor.Bottom)
 			{
 				// hold it to the Bottom
-				newOriginRelParent = new Vector2(child.OriginRelativeParent.x, parent.LocalBounds.Bottom + child.DeviceMargin.Bottom + parent.DevicePadding.Bottom - child.LocalBounds.Bottom);
+				newOriginRelParent = new Vector2(child.OriginRelativeParent.X, parent.LocalBounds.Bottom + child.DeviceMargin.Bottom + parent.DevicePadding.Bottom - child.LocalBounds.Bottom);
 
 				if ((child.VAnchor & VAnchor.Center) == VAnchor.Center)
 				{
@@ -153,7 +153,7 @@ namespace MatterHackers.Agg.UI
 				if ((child.VAnchor & VAnchor.Top) == VAnchor.Top)
 				{
 					// fix the offset
-					newOriginRelParent = new VectorMath.Vector2(child.OriginRelativeParent.x,
+					newOriginRelParent = new VectorMath.Vector2(child.OriginRelativeParent.X,
 						parent.DevicePadding.Bottom + child.DeviceMargin.Bottom + (parent.Height - parent.DevicePadding.Bottom - parent.DevicePadding.Top) / 2);
 
 					// bounds need to be stretched
@@ -165,14 +165,14 @@ namespace MatterHackers.Agg.UI
 					// hold it centered
 					double parentCenterY = parent.LocalBounds.Bottom + parent.DevicePadding.Bottom + (parent.Height - parent.DevicePadding.Bottom - parent.DevicePadding.Top) / 2;
 					double originY = parentCenterY - child.LocalBounds.Bottom - (child.Height + child.DeviceMargin.Bottom + child.DeviceMargin.Top) / 2 + child.DeviceMargin.Bottom;
-					newOriginRelParent = new Vector2(child.OriginRelativeParent.x, originY);
+					newOriginRelParent = new Vector2(child.OriginRelativeParent.X, originY);
 				}
 				needToAdjustAnything = true;
 			}
 			else if ((child.VAnchor & VAnchor.Top) == VAnchor.Top)
 			{
 				// hold it to the Top
-				newOriginRelParent = new Vector2(child.OriginRelativeParent.x, parent.LocalBounds.Top - child.DeviceMargin.Top - parent.DevicePadding.Top - child.LocalBounds.Top);
+				newOriginRelParent = new Vector2(child.OriginRelativeParent.X, parent.LocalBounds.Top - child.DeviceMargin.Top - parent.DevicePadding.Top - child.LocalBounds.Top);
 				needToAdjustAnything = true;
 			}
 
@@ -274,7 +274,7 @@ namespace MatterHackers.Agg.UI
 			if ((child.HAnchor & HAnchor.Left) == HAnchor.Left)
 			{
 				// Hold it to the left
-				newOriginRelParent = new Vector2(parent.LocalBounds.Left + child.DeviceMargin.Left + parent.DevicePadding.Left - child.LocalBounds.Left, child.OriginRelativeParent.y);
+				newOriginRelParent = new Vector2(parent.LocalBounds.Left + child.DeviceMargin.Left + parent.DevicePadding.Left - child.LocalBounds.Left, child.OriginRelativeParent.Y);
 
 				if ((child.HAnchor & HAnchor.Center) == HAnchor.Center)
 				{
@@ -297,7 +297,7 @@ namespace MatterHackers.Agg.UI
 					// fix the offset
 					newOriginRelParent = new VectorMath.Vector2(
 						parent.DevicePadding.Left + child.DeviceMargin.Left + (parent.Width - parent.DevicePadding.Left - parent.DevicePadding.Right) / 2,
-						child.OriginRelativeParent.y);
+						child.OriginRelativeParent.Y);
 
 					// widen the bounds to the right
 					double parentUsableWidth = parent.LocalBounds.Width - (parent.DevicePadding.Left + parent.DevicePadding.Right);
@@ -308,14 +308,14 @@ namespace MatterHackers.Agg.UI
 					// hold it centered
 					double parentCenterX = parent.LocalBounds.Left + parent.DevicePadding.Left + (parent.Width - (parent.DevicePadding.Left + parent.DevicePadding.Right)) / 2;
 					double originX = parentCenterX - child.LocalBounds.Left - (child.Width + child.DeviceMargin.Left + child.DeviceMargin.Right) / 2 + child.DeviceMargin.Left;
-					newOriginRelParent = new Vector2(originX, child.OriginRelativeParent.y);
+					newOriginRelParent = new Vector2(originX, child.OriginRelativeParent.Y);
 				}
 				needToAdjustAnything = true;
 			}
 			else if ((child.HAnchor & HAnchor.Right) == HAnchor.Right)
 			{
 				// hold it to the right
-				newOriginRelParent = new Vector2(parent.LocalBounds.Right - child.DeviceMargin.Right - parent.DevicePadding.Right - child.LocalBounds.Right, child.OriginRelativeParent.y);
+				newOriginRelParent = new Vector2(parent.LocalBounds.Right - child.DeviceMargin.Right - parent.DevicePadding.Right - child.LocalBounds.Right, child.OriginRelativeParent.Y);
 				needToAdjustAnything = true;
 			}
 

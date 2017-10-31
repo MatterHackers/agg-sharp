@@ -56,9 +56,9 @@ namespace MatterHackers.PolygonMesh
 			}
 			set
 			{
-				position.x = (float)value.x;
-				position.y = (float)value.y;
-				position.z = (float)value.z;
+				position.x = (float)value.X;
+				position.y = (float)value.Y;
+				position.z = (float)value.Z;
 			}
 		}
 
@@ -72,9 +72,9 @@ namespace MatterHackers.PolygonMesh
 			}
 			set
 			{
-				normal.x = (float)value.x;
-				normal.y = (float)value.y;
-				normal.z = (float)value.z;
+				normal.x = (float)value.X;
+				normal.y = (float)value.Y;
+				normal.z = (float)value.Z;
 			}
 		}
 

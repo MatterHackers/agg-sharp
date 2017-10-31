@@ -150,7 +150,7 @@ namespace MatterHackers.MarchingSquares
 					int currentSegmentIndex = segmentToAddIndex;
 					LineSegment currentSegment = LineSegments[currentSegmentIndex];
 					Vector2 connectionVertex = currentSegment.end;
-					loopToAdd.Add(new IntPoint((long)(connectionVertex.x * pixelsToIntPointsScale), (long)(connectionVertex.y * pixelsToIntPointsScale)));
+					loopToAdd.Add(new IntPoint((long)(connectionVertex.X * pixelsToIntPointsScale), (long)(connectionVertex.Y * pixelsToIntPointsScale)));
 					hasBeenAddedList[currentSegmentIndex] = true;
 					bool addedToLoop = false;
 					do
@@ -182,7 +182,7 @@ namespace MatterHackers.MarchingSquares
 									hasBeenAddedList[segmentToCheckIndex] = true;
 									currentSegmentIndex = segmentToCheckIndex;
 									currentSegment = segmentToCheck;
-									loopToAdd.Add(new IntPoint((long)(connectionVertex.x * pixelsToIntPointsScale), (long)(connectionVertex.y * pixelsToIntPointsScale)));
+									loopToAdd.Add(new IntPoint((long)(connectionVertex.X * pixelsToIntPointsScale), (long)(connectionVertex.Y * pixelsToIntPointsScale)));
 									addedToLoop = true;
 									break;
 								}
@@ -251,15 +251,15 @@ namespace MatterHackers.MarchingSquares
 
 		private LineSegment GetInterpolatedSegment(LineSegment segmentA, LineSegment segmentB)
 		{
-			double colorAStartThreshold = thersholdPerPixel[((int)segmentA.start.x) + ((int)segmentA.start.y) * imageToMarch.Width];
-			double colorAEndThreshold = thersholdPerPixel[((int)segmentA.end.x) + ((int)segmentA.end.y) * imageToMarch.Width];
+			double colorAStartThreshold = thersholdPerPixel[((int)segmentA.start.X) + ((int)segmentA.start.Y) * imageToMarch.Width];
+			double colorAEndThreshold = thersholdPerPixel[((int)segmentA.end.X) + ((int)segmentA.end.Y) * imageToMarch.Width];
 
 			Vector2 directionA = segmentA.end - segmentA.start;
 			double offsetA = 1 - (colorAEndThreshold + colorAStartThreshold) / 2.0;
 			directionA *= offsetA;
 
-			double colorBStartThreshold = thersholdPerPixel[((int)segmentB.start.x) + ((int)segmentB.start.y) * imageToMarch.Width];
-			double colorBEndThreshold = thersholdPerPixel[((int)segmentB.end.x) + ((int)segmentB.end.y) * imageToMarch.Width];
+			double colorBStartThreshold = thersholdPerPixel[((int)segmentB.start.X) + ((int)segmentB.start.Y) * imageToMarch.Width];
+			double colorBEndThreshold = thersholdPerPixel[((int)segmentB.end.X) + ((int)segmentB.end.Y) * imageToMarch.Width];
 
 			Vector2 directionB = segmentB.end - segmentB.start;
 			double ratioB = 1 - (colorBEndThreshold + colorBStartThreshold) / 2.0;
@@ -267,10 +267,10 @@ namespace MatterHackers.MarchingSquares
 
 			double offsetToPixelCenter = .5;
 			LineSegment segment = new LineSegment(
-				(segmentA.start.x + directionA.x) + offsetToPixelCenter,
-				(segmentA.start.y + directionA.y) + offsetToPixelCenter,
-				(segmentB.start.x + directionB.x) + offsetToPixelCenter,
-				(segmentB.start.y + directionB.y) + offsetToPixelCenter,
+				(segmentA.start.X + directionA.X) + offsetToPixelCenter,
+				(segmentA.start.Y + directionA.Y) + offsetToPixelCenter,
+				(segmentB.start.X + directionB.X) + offsetToPixelCenter,
+				(segmentB.start.Y + directionB.Y) + offsetToPixelCenter,
 				segmentA.color);
 
 			return segment;
@@ -368,8 +368,8 @@ namespace MatterHackers.MarchingSquares
 			{
 				VertexStorage m_LinesToDraw = new VertexStorage();
 				m_LinesToDraw.remove_all();
-				m_LinesToDraw.MoveTo(lineSegment.start.x, lineSegment.start.y);
-				m_LinesToDraw.LineTo(lineSegment.end.x, lineSegment.end.y);
+				m_LinesToDraw.MoveTo(lineSegment.start.X, lineSegment.start.Y);
+				m_LinesToDraw.LineTo(lineSegment.end.X, lineSegment.end.Y);
 				Stroke StrockedLineToDraw = new Stroke(m_LinesToDraw, .25);
 				graphics2D.Render(StrockedLineToDraw, lineSegment.color);
 			}

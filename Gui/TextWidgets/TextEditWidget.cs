@@ -387,23 +387,23 @@ namespace MatterHackers.Agg.UI
 			// move the minimum amount required to keep the bar in view
 			Vector2 currentOffsetInView = barPosition + TopLeftOffset;
 			Vector2 requiredOffet = Vector2.Zero;
-			if (currentOffsetInView.x > Width - 2)
+			if (currentOffsetInView.X > Width - 2)
 			{
-				requiredOffet.x = currentOffsetInView.x - Width + 2;
+				requiredOffet.X = currentOffsetInView.X - Width + 2;
 			}
-			else if (currentOffsetInView.x < 0)
+			else if (currentOffsetInView.X < 0)
 			{
-				requiredOffet.x = currentOffsetInView.x;
+				requiredOffet.X = currentOffsetInView.X;
 			}
-			if (currentOffsetInView.y <= -(Height - fontHeight))
+			if (currentOffsetInView.Y <= -(Height - fontHeight))
 			{
-				requiredOffet.y = -(currentOffsetInView.y + Height) + fontHeight;
+				requiredOffet.Y = -(currentOffsetInView.Y + Height) + fontHeight;
 			}
-			else if (currentOffsetInView.y > 0)
+			else if (currentOffsetInView.Y > 0)
 			{
-				requiredOffet.y = -currentOffsetInView.y;
+				requiredOffet.Y = -currentOffsetInView.Y;
 			}
-			TopLeftOffset = new VectorMath.Vector2(TopLeftOffset.x - requiredOffet.x, TopLeftOffset.y + requiredOffet.y);
+			TopLeftOffset = new VectorMath.Vector2(TopLeftOffset.X - requiredOffet.X, TopLeftOffset.Y + requiredOffet.Y);
 		}
 
 		public bool SelectAllOnFocus 

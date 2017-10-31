@@ -174,7 +174,7 @@ namespace MatterHackers.Agg.UI
 			mouseEventIsTouchScrolling = false;
 			mouseDownY = mouseEvent.Y;
 			mouseDownOnScrollArea = true;
-			scrollOnDownY = ScrollPosition.y;
+			scrollOnDownY = ScrollPosition.Y;
 			base.OnMouseDown(mouseEvent);
 		}
 
@@ -187,11 +187,11 @@ namespace MatterHackers.Agg.UI
 
 			if (mouseDownOnScrollArea && ScrollWithMouse(this))
 			{
-				ScrollPosition = new Vector2(ScrollPosition.x, scrollOnDownY - (mouseDownY - mouseEvent.Y));
+				ScrollPosition = new Vector2(ScrollPosition.X, scrollOnDownY - (mouseDownY - mouseEvent.Y));
 			}
 
-			if (ScrollPosition.y < scrollOnDownY - 10
-				|| ScrollPosition.y > scrollOnDownY + 10)
+			if (ScrollPosition.Y < scrollOnDownY - 10
+				|| ScrollPosition.Y > scrollOnDownY + 10)
 			{
 				// If touch is enabled and we've scrolled more than 10 pixels, update to suppress child clicks
 				mouseEventIsTouchScrolling = true;
@@ -204,7 +204,7 @@ namespace MatterHackers.Agg.UI
 		{
 			mouseDownOnScrollArea = false;
 			if (mouseEventIsTouchScrolling 
-				&& PositionWithinLocalBounds(mouseEvent.Position.x, mouseEvent.Position.y))
+				&& PositionWithinLocalBounds(mouseEvent.Position.X, mouseEvent.Position.Y))
 			{
 				// Suppress child clicks by sending MouseUp coordinates that are outside our bounds
 				base.OnMouseUp(new MouseEventArgs(mouseEvent, double.MinValue, double.MinValue));
@@ -240,11 +240,11 @@ namespace MatterHackers.Agg.UI
 
 			if (boundsOfScrollableContents.Width > 0)
 			{
-				ratio.x = Math.Max(0, Math.Min(1, Width / boundsOfScrollableContents.Width));
+				ratio.X = Math.Max(0, Math.Min(1, Width / boundsOfScrollableContents.Width));
 			}
 			if (boundsOfScrollableContents.Height > 0)
 			{
-				ratio.y = Math.Max(0, Math.Min(1, Height / boundsOfScrollableContents.Height));
+				ratio.Y = Math.Max(0, Math.Min(1, Height / boundsOfScrollableContents.Height));
 			}
 
 			return ratio;
@@ -285,13 +285,13 @@ namespace MatterHackers.Agg.UI
 				double x0To1 = 0;
 				if (maxXMovement != 0)
 				{
-					x0To1 = 1 + (TopLeftOffset.x + ScrollArea.Margin.Left) / maxXMovement;
+					x0To1 = 1 + (TopLeftOffset.X + ScrollArea.Margin.Left) / maxXMovement;
 				}
 
 				double y0To1 = 0;
 				if (maxYMovement != 0)
 				{
-					y0To1 = 1 - TopLeftOffset.y / maxYMovement;
+					y0To1 = 1 - TopLeftOffset.Y / maxYMovement;
 				}
 
 				Vector2 scrollRatio0To1 = new Vector2(Math.Min(1, Math.Max(0, x0To1)), Math.Min(1, Math.Max(0, y0To1)));
@@ -309,8 +309,8 @@ namespace MatterHackers.Agg.UI
 
 				Vector2 scrollRatio0To1 = value;
 				Vector2 newTopLeftOffset;
-				newTopLeftOffset.x = scrollRatio0To1.x * maxXMovement + ScrollArea.Margin.Left;
-				newTopLeftOffset.y = -(scrollRatio0To1.y - 1) * maxYMovement;
+				newTopLeftOffset.X = scrollRatio0To1.X * maxXMovement + ScrollArea.Margin.Left;
+				newTopLeftOffset.Y = -(scrollRatio0To1.Y - 1) * maxYMovement;
 
 				TopLeftOffset = newTopLeftOffset;
 			}

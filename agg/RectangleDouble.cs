@@ -56,7 +56,7 @@ namespace MatterHackers.Agg
 		}
 
 		public RectangleDouble(Vector2 position1, Vector2 position2) : 
-			this(Math.Min(position1.x, position2.x), Math.Min(position1.y, position2.y), Math.Max(position1.x, position2.x), Math.Max(position1.y, position2.y))
+			this(Math.Min(position1.X, position2.X), Math.Min(position1.Y, position2.Y), Math.Max(position1.X, position2.X), Math.Max(position1.Y, position2.Y))
 		{
 		}
 
@@ -174,7 +174,7 @@ namespace MatterHackers.Agg
 
         public bool Contains(Vector2 position)
         {
-            return Contains(position.x, position.y);
+            return Contains(position.X, position.Y);
         }
 
         public bool Contains(Point2D position)
@@ -246,7 +246,7 @@ namespace MatterHackers.Agg
 
 		public void ExpandToInclude(Vector2 position)
 		{
-			ExpandToInclude(position.x, position.y);
+			ExpandToInclude(position.X, position.Y);
 		}
 
 		public void ExpandToInclude(double x, double y)
@@ -291,7 +291,7 @@ namespace MatterHackers.Agg
 
 		public void Offset(Vector2 offset)
 		{
-			Offset(offset.x, offset.y);
+			Offset(offset.X, offset.Y);
 		}
 
 		public void Offset(double x, double y)

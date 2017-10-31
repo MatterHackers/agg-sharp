@@ -48,8 +48,8 @@ namespace MatterHackers.DataConverters2D
 
 			internal AddedVertex(double x, double y)
 			{
-				position.x = x;
-				position.y = y;
+				position.X = x;
+				position.Y = y;
 			}
 		}
 

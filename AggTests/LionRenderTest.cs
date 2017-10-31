@@ -21,7 +21,7 @@ namespace MatterHackers.Agg.Tests
 			}
 
 			Affine transform = Affine.NewIdentity();
-			transform *= Affine.NewTranslation(-lionShape.Center.x, -lionShape.Center.y);
+			transform *= Affine.NewTranslation(-lionShape.Center.X, -lionShape.Center.Y);
 			transform *= Affine.NewTranslation(renderedImage.Width / 2, renderedImage.Height / 2);
 
 			// This code renders the lion:

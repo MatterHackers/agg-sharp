@@ -51,7 +51,7 @@ namespace MatterHackers.RayTracer
 			if (Material.HasTexture)
 			{
 				Vector3 Position = plane.PlaneNormal;
-				Vector3 vecU = new Vector3(Position.y, Position.z, -Position.x);
+				Vector3 vecU = new Vector3(Position.Y, Position.Z, -Position.X);
 				Vector3 vecV = Vector3.Cross(vecU, plane.PlaneNormal);
 
 				double u = Vector3.Dot(info.HitPosition, vecU);
@@ -100,7 +100,7 @@ namespace MatterHackers.RayTracer
 
 		public override string ToString()
 		{
-			return string.Format("Sphere {0}x+{1}y+{2}z+{3}=0)", plane.PlaneNormal.x, plane.PlaneNormal.y, plane.PlaneNormal.z, plane.DistanceToPlaneFromOrigin);
+			return string.Format("Sphere {0}x+{1}y+{2}z+{3}=0)", plane.PlaneNormal.X, plane.PlaneNormal.Y, plane.PlaneNormal.Z, plane.DistanceToPlaneFromOrigin);
 		}
 	}
 }

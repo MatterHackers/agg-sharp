@@ -419,8 +419,8 @@ namespace MatterHackers.Agg.VertexSource
 			}
 
 			Vector2 p = m_points[m_count++];
-			x = p.x;
-			y = p.y;
+			x = p.X;
+			y = p.Y;
 			return (m_count == 1) ? ShapePath.FlagsAndCommand.CommandMoveTo : ShapePath.FlagsAndCommand.CommandLineTo;
 		}
 
@@ -910,8 +910,8 @@ namespace MatterHackers.Agg.VertexSource
 				return ShapePath.FlagsAndCommand.CommandStop;
 			}
 			Vector2 p = m_points[m_count++];
-			x = p.x;
-			y = p.y;
+			x = p.X;
+			y = p.Y;
 			return (m_count == 1) ? ShapePath.FlagsAndCommand.CommandMoveTo : ShapePath.FlagsAndCommand.CommandLineTo;
 		}
 

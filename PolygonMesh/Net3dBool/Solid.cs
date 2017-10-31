@@ -172,8 +172,8 @@ namespace Net3dBool
             {
                 for (int i = 0; i < vertices.Length; i++)
                 {
-                    vertices[i].x += dx;
-                    vertices[i].y += dy;
+                    vertices[i].X += dx;
+                    vertices[i].Y += dy;
                 }
 
                 defineGeometry();
@@ -201,31 +201,31 @@ namespace Net3dBool
                 double newX, newY, newZ;
                 for (int i = 0; i < vertices.Length; i++)
                 {
-                    vertices[i].x -= mean.x; 
-                    vertices[i].y -= mean.y; 
-                    vertices[i].z -= mean.z; 
+                    vertices[i].X -= mean.X; 
+                    vertices[i].Y -= mean.Y; 
+                    vertices[i].Z -= mean.Z; 
 
                     //x rotation
                     if (dx != 0)
                     {
-                        newY = vertices[i].y * cosX - vertices[i].z * sinX;
-                        newZ = vertices[i].y * sinX + vertices[i].z * cosX;
-                        vertices[i].y = newY;
-                        vertices[i].z = newZ;
+                        newY = vertices[i].Y * cosX - vertices[i].Z * sinX;
+                        newZ = vertices[i].Y * sinX + vertices[i].Z * cosX;
+                        vertices[i].Y = newY;
+                        vertices[i].Z = newZ;
                     }
 
                     //y rotation
                     if (dy != 0)
                     {
-                        newX = vertices[i].x * cosY + vertices[i].z * sinY;
-                        newZ = -vertices[i].x * sinY + vertices[i].z * cosY;
-                        vertices[i].x = newX;
-                        vertices[i].z = newZ;
+                        newX = vertices[i].X * cosY + vertices[i].Z * sinY;
+                        newZ = -vertices[i].X * sinY + vertices[i].Z * cosY;
+                        vertices[i].X = newX;
+                        vertices[i].Z = newZ;
                     }
 
-                    vertices[i].x += mean.x; 
-                    vertices[i].y += mean.y; 
-                    vertices[i].z += mean.z;
+                    vertices[i].X += mean.X; 
+                    vertices[i].Y += mean.Y; 
+                    vertices[i].Z += mean.Z;
                 }
             }
 
@@ -243,7 +243,7 @@ namespace Net3dBool
             {
                 for (int i = 0; i < vertices.Length; i++)
                 {
-                    vertices[i].z += dz;
+                    vertices[i].Z += dz;
                 }
 
                 defineGeometry();
@@ -261,9 +261,9 @@ namespace Net3dBool
         {
             for (int i = 0; i < vertices.Length; i++)
             {
-                vertices[i].x *= dx;
-                vertices[i].y *= dy;
-                vertices[i].z *= dz;
+                vertices[i].X *= dx;
+                vertices[i].Y *= dy;
+                vertices[i].Z *= dz;
             }
 
             defineGeometry();
@@ -297,13 +297,13 @@ namespace Net3dBool
             Vector3 mean = new Vector3();
             for (int i = 0; i < vertices.Length; i++)
             {
-                mean.x += vertices[i].x;
-                mean.y += vertices[i].y;
-                mean.z += vertices[i].z;
+                mean.X += vertices[i].X;
+                mean.Y += vertices[i].Y;
+                mean.Z += vertices[i].Z;
             }
-            mean.x /= vertices.Length;
-            mean.y /= vertices.Length;
-            mean.z /= vertices.Length;
+            mean.X /= vertices.Length;
+            mean.Y /= vertices.Length;
+            mean.Z /= vertices.Length;
 
             return mean;
         }

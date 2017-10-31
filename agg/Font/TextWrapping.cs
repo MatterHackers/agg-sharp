@@ -100,7 +100,7 @@ namespace MatterHackers.Agg.Font
 						currentLength += printer.TypeFaceStyle.GetAdvanceForCharacter(textToWrap, countBeforeWrap);
 					}
 
-					while (printer.GetOffsetLeftOfCharacterIndex(countBeforeWrap).x > maxPixelWidth
+					while (printer.GetOffsetLeftOfCharacterIndex(countBeforeWrap).X > maxPixelWidth
 						&& countBeforeWrap > 1)
 					{
 						// now trim back to the last break

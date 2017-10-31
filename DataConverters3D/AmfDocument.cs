@@ -273,9 +273,9 @@ namespace MatterHackers.DataConverters3D
 										amfFile.WriteLine(Indent(4) + "<vertex>");
 										{
 											amfFile.WriteLine(Indent(5) + "<coordinates>");
-											amfFile.WriteLine(Indent(6) + "<x>{0}</x>".FormatWith(position.x));
-											amfFile.WriteLine(Indent(6) + "<y>{0}</y>".FormatWith(position.y));
-											amfFile.WriteLine(Indent(6) + "<z>{0}</z>".FormatWith(position.z));
+											amfFile.WriteLine(Indent(6) + "<x>{0}</x>".FormatWith(position.X));
+											amfFile.WriteLine(Indent(6) + "<y>{0}</y>".FormatWith(position.Y));
+											amfFile.WriteLine(Indent(6) + "<z>{0}</z>".FormatWith(position.Z));
 											amfFile.WriteLine(Indent(5) + "</coordinates>");
 										}
 										amfFile.WriteLine(Indent(4) + "</vertex>");
@@ -385,17 +385,17 @@ namespace MatterHackers.DataConverters3D
 								switch (reader.Name)
 								{
 									case "x":
-										vertex.x = reader.ReadElementContentAsDouble();
+										vertex.X = reader.ReadElementContentAsDouble();
 										nextSibling = "y";
 										break;
 
 									case "y":
-										vertex.y = reader.ReadElementContentAsDouble();
+										vertex.Y = reader.ReadElementContentAsDouble();
 										nextSibling = "z";
 										break;
 
 									case "z":
-										vertex.z = reader.ReadElementContentAsDouble();
+										vertex.Z = reader.ReadElementContentAsDouble();
 										nextSibling = null;
 
 										break;

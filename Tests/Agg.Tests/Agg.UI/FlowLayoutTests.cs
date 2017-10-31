@@ -255,9 +255,9 @@ namespace MatterHackers.Agg.UI.Tests
 				Button topButtonC = new Button("top button");
 				Button bottomButtonC = new Button("bottom wide button");
 				topButtonC.LocalBounds = new RectangleDouble(0, 0, bottomButtonC.LocalBounds.Width, 40);
-				topButtonC.OriginRelativeParent = new Vector2(bottomButtonC.OriginRelativeParent.x + buttonMargin.Left, containerControl.Height - controlPadding.Top - topButtonC.Height - buttonMargin.Top);
+				topButtonC.OriginRelativeParent = new Vector2(bottomButtonC.OriginRelativeParent.X + buttonMargin.Left, containerControl.Height - controlPadding.Top - topButtonC.Height - buttonMargin.Top);
 				containerControl.AddChild(topButtonC);
-				bottomButtonC.OriginRelativeParent = new Vector2(bottomButtonC.OriginRelativeParent.x + buttonMargin.Left, topButtonC.OriginRelativeParent.y - buttonMargin.Height - bottomButtonC.Height);
+				bottomButtonC.OriginRelativeParent = new Vector2(bottomButtonC.OriginRelativeParent.X + buttonMargin.Left, topButtonC.OriginRelativeParent.Y - buttonMargin.Height - bottomButtonC.Height);
 				containerControl.AddChild(bottomButtonC);
 			}
 			containerControl.OnDraw(containerControl.NewGraphics2D());
@@ -374,10 +374,10 @@ namespace MatterHackers.Agg.UI.Tests
 			GuiWidget containerControl = new GuiWidget(300, 200);
 			containerControl.DoubleBuffer = true;
 			Button controlButton1 = new Button("buttonLeft");
-			controlButton1.OriginRelativeParent = new VectorMath.Vector2(controlPadding.Left + buttonMargin.Left, controlButton1.OriginRelativeParent.y);
+			controlButton1.OriginRelativeParent = new VectorMath.Vector2(controlPadding.Left + buttonMargin.Left, controlButton1.OriginRelativeParent.Y);
 			containerControl.AddChild(controlButton1);
 			Button controlButton2 = new Button("buttonRight");
-			controlButton2.OriginRelativeParent = new VectorMath.Vector2(controlPadding.Left + buttonMargin.Width + buttonMargin.Left + controlButton1.Width, controlButton2.OriginRelativeParent.y);
+			controlButton2.OriginRelativeParent = new VectorMath.Vector2(controlPadding.Left + buttonMargin.Width + buttonMargin.Left + controlButton1.Width, controlButton2.OriginRelativeParent.Y);
 			containerControl.AddChild(controlButton2);
 			containerControl.OnDraw(containerControl.NewGraphics2D());
 
@@ -430,10 +430,10 @@ namespace MatterHackers.Agg.UI.Tests
 			GuiWidget containerControl = new GuiWidget(300, 200);
 			containerControl.DoubleBuffer = true;
 			Button controlButtonRight = new Button("buttonRight");
-			controlButtonRight.OriginRelativeParent = new VectorMath.Vector2(containerControl.Width - controlPadding.Right - buttonMargin.Right - controlButtonRight.Width, controlButtonRight.OriginRelativeParent.y);
+			controlButtonRight.OriginRelativeParent = new VectorMath.Vector2(containerControl.Width - controlPadding.Right - buttonMargin.Right - controlButtonRight.Width, controlButtonRight.OriginRelativeParent.Y);
 			containerControl.AddChild(controlButtonRight);
 			Button controlButtonLeft = new Button("buttonLeft");
-			controlButtonLeft.OriginRelativeParent = new VectorMath.Vector2(controlButtonRight.BoundsRelativeToParent.Left - buttonMargin.Width - controlButtonLeft.Width, controlButtonLeft.OriginRelativeParent.y);
+			controlButtonLeft.OriginRelativeParent = new VectorMath.Vector2(controlButtonRight.BoundsRelativeToParent.Left - buttonMargin.Width - controlButtonLeft.Width, controlButtonLeft.OriginRelativeParent.Y);
 			containerControl.AddChild(controlButtonLeft);
 			containerControl.OnDraw(containerControl.NewGraphics2D());
 
@@ -579,10 +579,10 @@ namespace MatterHackers.Agg.UI.Tests
 			GuiWidget containerControl = new GuiWidget(300, 200);
 			containerControl.DoubleBuffer = true;
 			Button controlButton1 = new Button("buttonLeft");
-			controlButton1.OriginRelativeParent = new VectorMath.Vector2(controlPadding.Left + buttonMargin.Left, controlButton1.OriginRelativeParent.y + controlPadding.Bottom + buttonMargin.Bottom);
+			controlButton1.OriginRelativeParent = new VectorMath.Vector2(controlPadding.Left + buttonMargin.Left, controlButton1.OriginRelativeParent.Y + controlPadding.Bottom + buttonMargin.Bottom);
 			containerControl.AddChild(controlButton1);
 			Button controlButton2 = new Button("buttonRight");
-			controlButton2.OriginRelativeParent = new VectorMath.Vector2(controlPadding.Left + buttonMargin.Width + buttonMargin.Left + controlButton1.Width, controlButton2.OriginRelativeParent.y + controlPadding.Bottom + buttonMargin.Bottom);
+			controlButton2.OriginRelativeParent = new VectorMath.Vector2(controlPadding.Left + buttonMargin.Width + buttonMargin.Left + controlButton1.Width, controlButton2.OriginRelativeParent.Y + controlPadding.Bottom + buttonMargin.Bottom);
 			containerControl.AddChild(controlButton2);
 			containerControl.OnDraw(containerControl.NewGraphics2D());
 
@@ -639,8 +639,8 @@ namespace MatterHackers.Agg.UI.Tests
 			Button controlButtonWide = new Button("Button Wide Text");
 			containerControl.AddChild(controlButtonWide);
 			Button controlButton1 = new Button("button1");
-			controlButton1.OriginRelativeParent = new VectorMath.Vector2(controlPadding.Left + buttonMargin.Left + controlButton1.OriginRelativeParent.x, controlPadding.Bottom + buttonMargin.Bottom);
-			controlButtonWide.OriginRelativeParent = new VectorMath.Vector2(controlPadding.Left + buttonMargin.Left + controlButtonWide.OriginRelativeParent.x, controlButton1.BoundsRelativeToParent.Top + buttonMargin.Height);
+			controlButton1.OriginRelativeParent = new VectorMath.Vector2(controlPadding.Left + buttonMargin.Left + controlButton1.OriginRelativeParent.X, controlPadding.Bottom + buttonMargin.Bottom);
+			controlButtonWide.OriginRelativeParent = new VectorMath.Vector2(controlPadding.Left + buttonMargin.Left + controlButtonWide.OriginRelativeParent.X, controlButton1.BoundsRelativeToParent.Top + buttonMargin.Height);
 			controlButton1.LocalBounds = controlButtonWide.LocalBounds;
 			containerControl.AddChild(controlButton1);
 			containerControl.OnDraw(containerControl.NewGraphics2D());
@@ -710,8 +710,8 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				Button buttonTop = new Button("buttonTop");
 				Button buttonBottom = new Button("buttonBottom");
-				buttonTop.OriginRelativeParent = new VectorMath.Vector2(buttonTop.OriginRelativeParent.x, containerControl.LocalBounds.Top - buttonMargin.Top - controlPadding.Top - buttonTop.Height);
-				buttonBottom.OriginRelativeParent = new VectorMath.Vector2(buttonBottom.OriginRelativeParent.x, buttonTop.BoundsRelativeToParent.Bottom - buttonBottom.Height - buttonMargin.Height);
+				buttonTop.OriginRelativeParent = new VectorMath.Vector2(buttonTop.OriginRelativeParent.X, containerControl.LocalBounds.Top - buttonMargin.Top - controlPadding.Top - buttonTop.Height);
+				buttonBottom.OriginRelativeParent = new VectorMath.Vector2(buttonBottom.OriginRelativeParent.X, buttonTop.BoundsRelativeToParent.Bottom - buttonBottom.Height - buttonMargin.Height);
 				containerControl.AddChild(buttonTop);
 				containerControl.AddChild(buttonBottom);
 				containerControl.OnDraw(containerControl.NewGraphics2D());
@@ -770,8 +770,8 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				Button buttonRight = new Button("buttonRight");
 				Button buttonLeft = new Button("buttonLeft");
-				buttonRight.OriginRelativeParent = new VectorMath.Vector2(containerControl.LocalBounds.Right - controlPadding.Right - buttonMargin.Right - buttonRight.Width, buttonRight.OriginRelativeParent.y + controlPadding.Bottom + buttonMargin.Bottom);
-				buttonLeft.OriginRelativeParent = new VectorMath.Vector2(buttonRight.BoundsRelativeToParent.Left - buttonMargin.Width - buttonLeft.Width, buttonLeft.OriginRelativeParent.y + controlPadding.Bottom + buttonMargin.Bottom);
+				buttonRight.OriginRelativeParent = new VectorMath.Vector2(containerControl.LocalBounds.Right - controlPadding.Right - buttonMargin.Right - buttonRight.Width, buttonRight.OriginRelativeParent.Y + controlPadding.Bottom + buttonMargin.Bottom);
+				buttonLeft.OriginRelativeParent = new VectorMath.Vector2(buttonRight.BoundsRelativeToParent.Left - buttonMargin.Width - buttonLeft.Width, buttonLeft.OriginRelativeParent.Y + controlPadding.Bottom + buttonMargin.Bottom);
 				containerControl.AddChild(buttonRight);
 				containerControl.AddChild(buttonLeft);
 				containerControl.OnDraw(containerControl.NewGraphics2D());
@@ -834,8 +834,8 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				Button buttonRight = new Button("buttonRight");
 				Button buttonLeft = new Button("buttonLeft");
-				buttonLeft.OriginRelativeParent = new VectorMath.Vector2(controlPadding.Left + buttonMargin.Left, buttonLeft.OriginRelativeParent.y);
-				buttonRight.OriginRelativeParent = new VectorMath.Vector2(buttonLeft.BoundsRelativeToParent.Right + buttonMargin.Width, buttonRight.OriginRelativeParent.y);
+				buttonLeft.OriginRelativeParent = new VectorMath.Vector2(controlPadding.Left + buttonMargin.Left, buttonLeft.OriginRelativeParent.Y);
+				buttonRight.OriginRelativeParent = new VectorMath.Vector2(buttonLeft.BoundsRelativeToParent.Right + buttonMargin.Width, buttonRight.OriginRelativeParent.Y);
 				containerControl.AddChild(buttonRight);
 				containerControl.AddChild(buttonLeft);
 				containerControl.OnDraw(containerControl.NewGraphics2D());
@@ -1316,7 +1316,7 @@ namespace MatterHackers.Agg.UI.Tests
 			bottomLeftToRight.AddChild(bottomContentTopToBottom);
 
 			Button button1 = new Button("button1");
-			Assert.IsTrue(button1.MinimumSize.x > 0, "Buttons should set their min size on construction.");
+			Assert.IsTrue(button1.MinimumSize.X > 0, "Buttons should set their min size on construction.");
 			bottomContentTopToBottom.AddChild(button1);
 			//Assert.IsTrue(bottomContentTopToBottom.MinimumSize.x >= button1.MinimumSize.x, "There should be space for the button.");
 			bottomContentTopToBottom.AddChild(new Button("button2"));
@@ -1330,7 +1330,7 @@ namespace MatterHackers.Agg.UI.Tests
 			OutputImage(containerTest.BackBuffer, "zFlowLaoutsGetMinSize.tga");
 
 			Assert.IsTrue(bottomLeftToRight.Width > 0, "This needs to have been expanded when the bottomContentTopToBottom grew.");
-			Assert.IsTrue(bottomLeftToRight.MinimumSize.x >= bottomContentTopToBottom.MinimumSize.x, "These should be space for the next flowLayout.");
+			Assert.IsTrue(bottomLeftToRight.MinimumSize.X >= bottomContentTopToBottom.MinimumSize.X, "These should be space for the next flowLayout.");
 			Assert.IsTrue(containerTest.BackBuffer != null, "When we set a guiWidget to DoubleBuffer it needs to create one.");
 		}
 
@@ -1450,17 +1450,17 @@ namespace MatterHackers.Agg.UI.Tests
 
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			Assert.IsTrue(leftToRightLayout.Width == 60);
-			Assert.IsTrue(leftToRightLayout.MinimumSize.x == 0);
+			Assert.IsTrue(leftToRightLayout.MinimumSize.X == 0);
 			Assert.IsTrue(leftToRightLayout.Height == 33);
-			Assert.IsTrue(leftToRightLayout.MinimumSize.y == 0);
+			Assert.IsTrue(leftToRightLayout.MinimumSize.Y == 0);
 			Assert.IsTrue(item3.Width == 30);
 
 			containerTest.Width = 650;
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			Assert.IsTrue(leftToRightLayout.Width == 60);
-			Assert.IsTrue(leftToRightLayout.MinimumSize.x == 0);
+			Assert.IsTrue(leftToRightLayout.MinimumSize.X == 0);
 			Assert.IsTrue(leftToRightLayout.Height == 33);
-			Assert.IsTrue(leftToRightLayout.MinimumSize.y == 0);
+			Assert.IsTrue(leftToRightLayout.MinimumSize.Y == 0);
 			Assert.IsTrue(item3.Width == 30);
 		}
 
@@ -1554,20 +1554,20 @@ namespace MatterHackers.Agg.UI.Tests
 
 					everything.AddChild(twoColumns);
 
-					Assert.IsTrue(firstItem.OriginRelativeParent.y == 54);
+					Assert.IsTrue(firstItem.OriginRelativeParent.Y == 54);
 					//Assert.IsTrue(firstItem.OriginRelativeParent.y - topLeftStuff.LocalBounds.Bottom == 54);
 					Assert.IsTrue(twoColumns.BoundsRelativeToParent.Top == 500);
 					Assert.IsTrue(leftColumn.BoundsRelativeToParent.Top == 67);
 					Assert.IsTrue(leftColumn.BoundsRelativeToParent.Bottom == 0);
-					Assert.IsTrue(leftColumn.OriginRelativeParent.y == 0);
+					Assert.IsTrue(leftColumn.OriginRelativeParent.Y == 0);
 					Assert.IsTrue(topLeftStuff.BoundsRelativeToParent.Top == 67);
 					Assert.IsTrue(topLeftStuff.Height == 67);
 					Assert.IsTrue(leftColumn.Height == 67);
 
 					hideCheckBox.Checked = true;
 
-					Assert.IsTrue(firstItem.OriginRelativeParent.y == 21);
-					Assert.IsTrue(leftColumn.OriginRelativeParent.y == 0);
+					Assert.IsTrue(firstItem.OriginRelativeParent.Y == 21);
+					Assert.IsTrue(leftColumn.OriginRelativeParent.Y == 0);
 					Assert.IsTrue(leftColumn.BoundsRelativeToParent.Bottom == 0);
 					Assert.IsTrue(topLeftStuff.Height == 34);
 					Assert.IsTrue(leftColumn.Height == 34);
@@ -1631,7 +1631,7 @@ namespace MatterHackers.Agg.UI.Tests
 				Assert.IsTrue(leftRightFlowLayout.Width == 40);
 				Assert.IsTrue(middleSpacer.Width == 20);
 
-				Assert.IsTrue(container.MinimumSize.x == 40); // minimum size is set to the construction size for normal GuiWidgets
+				Assert.IsTrue(container.MinimumSize.X == 40); // minimum size is set to the construction size for normal GuiWidgets
 				container.MinimumSize = new Vector2(0, 0); // make sure we can make this smaller
 				container.Width = 10;
 				// (10[<->(10)(<->)(10)<->]) // the extra 20 must be put into the expandable (<->) by shrinking it

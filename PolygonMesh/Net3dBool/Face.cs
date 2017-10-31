@@ -143,8 +143,8 @@ namespace Net3dBool
 			Vector3 p1 = v1.GetPosition();
 			Vector3 p2 = v2.GetPosition();
 			Vector3 p3 = v3.GetPosition();
-			Vector3 xy = new Vector3(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z);
-			Vector3 xz = new Vector3(p3.x - p1.x, p3.y - p1.y, p3.z - p1.z);
+			Vector3 xy = new Vector3(p2.X - p1.X, p2.Y - p1.Y, p2.Z - p1.Z);
+			Vector3 xz = new Vector3(p3.X - p1.X, p3.Y - p1.Y, p3.Z - p1.Z);
 
 			double a = (p1 - p2).Length;
 			double c = (p1 - p3).Length;
@@ -220,7 +220,7 @@ namespace Net3dBool
 					intersectionPoint = ray.ComputePlaneIntersection(face.GetPlane());
 
 					//if ray intersects the plane...
-					if (intersectionPoint.x != double.PositiveInfinity)
+					if (intersectionPoint.X != double.PositiveInfinity)
 					{
 						double dotProduct = Vector3.Dot(face.GetNormal(), ray.Direction);
 						distance = ray.ComputePointToPointDistance(intersectionPoint);
@@ -381,16 +381,16 @@ namespace Net3dBool
 		private static Side LinePositionInX(Vector3 point, Vector3 pointLine1, Vector3 pointLine2)
 		{
 			double a, b, z;
-			if ((Math.Abs(pointLine1.y - pointLine2.y) > EqualityTolerance) && (((point.y >= pointLine1.y) && (point.y <= pointLine2.y)) || ((point.y <= pointLine1.y) && (point.y >= pointLine2.y))))
+			if ((Math.Abs(pointLine1.Y - pointLine2.Y) > EqualityTolerance) && (((point.Y >= pointLine1.Y) && (point.Y <= pointLine2.Y)) || ((point.Y <= pointLine1.Y) && (point.Y >= pointLine2.Y))))
 			{
-				a = (pointLine2.z - pointLine1.z) / (pointLine2.y - pointLine1.y);
-				b = pointLine1.z - a * pointLine1.y;
-				z = a * point.y + b;
-				if (z > point.z + EqualityTolerance)
+				a = (pointLine2.Z - pointLine1.Z) / (pointLine2.Y - pointLine1.Y);
+				b = pointLine1.Z - a * pointLine1.Y;
+				z = a * point.Y + b;
+				if (z > point.Z + EqualityTolerance)
 				{
 					return Side.UP;
 				}
-				else if (z < point.z - EqualityTolerance)
+				else if (z < point.Z - EqualityTolerance)
 				{
 					return Side.DOWN;
 				}
@@ -415,16 +415,16 @@ namespace Net3dBool
 		private static Side LinePositionInY(Vector3 point, Vector3 pointLine1, Vector3 pointLine2)
 		{
 			double a, b, z;
-			if ((Math.Abs(pointLine1.x - pointLine2.x) > EqualityTolerance) && (((point.x >= pointLine1.x) && (point.x <= pointLine2.x)) || ((point.x <= pointLine1.x) && (point.x >= pointLine2.x))))
+			if ((Math.Abs(pointLine1.X - pointLine2.X) > EqualityTolerance) && (((point.X >= pointLine1.X) && (point.X <= pointLine2.X)) || ((point.X <= pointLine1.X) && (point.X >= pointLine2.X))))
 			{
-				a = (pointLine2.z - pointLine1.z) / (pointLine2.x - pointLine1.x);
-				b = pointLine1.z - a * pointLine1.x;
-				z = a * point.x + b;
-				if (z > point.z + EqualityTolerance)
+				a = (pointLine2.Z - pointLine1.Z) / (pointLine2.X - pointLine1.X);
+				b = pointLine1.Z - a * pointLine1.X;
+				z = a * point.X + b;
+				if (z > point.Z + EqualityTolerance)
 				{
 					return Side.UP;
 				}
-				else if (z < point.z - EqualityTolerance)
+				else if (z < point.Z - EqualityTolerance)
 				{
 					return Side.DOWN;
 				}
@@ -449,16 +449,16 @@ namespace Net3dBool
 		private static Side LinePositionInZ(Vector3 point, Vector3 pointLine1, Vector3 pointLine2)
 		{
 			double a, b, y;
-			if ((Math.Abs(pointLine1.x - pointLine2.x) > EqualityTolerance) && (((point.x >= pointLine1.x) && (point.x <= pointLine2.x)) || ((point.x <= pointLine1.x) && (point.x >= pointLine2.x))))
+			if ((Math.Abs(pointLine1.X - pointLine2.X) > EqualityTolerance) && (((point.X >= pointLine1.X) && (point.X <= pointLine2.X)) || ((point.X <= pointLine1.X) && (point.X >= pointLine2.X))))
 			{
-				a = (pointLine2.y - pointLine1.y) / (pointLine2.x - pointLine1.x);
-				b = pointLine1.y - a * pointLine1.x;
-				y = a * point.x + b;
-				if (y > point.y + EqualityTolerance)
+				a = (pointLine2.Y - pointLine1.Y) / (pointLine2.X - pointLine1.X);
+				b = pointLine1.Y - a * pointLine1.X;
+				y = a * point.X + b;
+				if (y > point.Y + EqualityTolerance)
 				{
 					return Side.UP;
 				}
-				else if (y < point.y - EqualityTolerance)
+				else if (y < point.Y - EqualityTolerance)
 				{
 					return Side.DOWN;
 				}
@@ -486,7 +486,7 @@ namespace Net3dBool
 			Vector3 normal = GetNormal();
 
 			//if x is constant...
-			if (Math.Abs(normal.x) > EqualityTolerance)
+			if (Math.Abs(normal.X) > EqualityTolerance)
 			{
 				//tests on the x plane
 				result1 = LinePositionInX(point, v1.GetPosition(), v2.GetPosition());
@@ -495,7 +495,7 @@ namespace Net3dBool
 			}
 
 			//if y is constant...
-			else if (Math.Abs(normal.y) > EqualityTolerance)
+			else if (Math.Abs(normal.Y) > EqualityTolerance)
 			{
 				//tests on the y plane
 				result1 = LinePositionInY(point, v1.GetPosition(), v2.GetPosition());
