@@ -145,7 +145,7 @@ namespace MatterHackers.Agg.VertexSource
 						{
 							vertexDataEnumerator.MoveNext();
 							VertexData vertexDataEnd = vertexDataEnumerator.Current;
-							m_curve3.init(lastPosition.position.x, lastPosition.position.y, vertexData.position.x, vertexData.position.y, vertexDataEnd.position.x, vertexDataEnd.position.y);
+							m_curve3.init(lastPosition.position.X, lastPosition.position.Y, vertexData.position.X, vertexData.position.Y, vertexDataEnd.position.X, vertexDataEnd.position.Y);
 							IEnumerator<VertexData> curveIterator = m_curve3.Vertices().GetEnumerator();
 							curveIterator.MoveNext(); // First call returns path_cmd_move_to
 							do
@@ -168,7 +168,7 @@ namespace MatterHackers.Agg.VertexSource
 							VertexData vertexDataControl = vertexDataEnumerator.Current;
 							vertexDataEnumerator.MoveNext();
 							VertexData vertexDataEnd = vertexDataEnumerator.Current;
-							m_curve4.init(lastPosition.position.x, lastPosition.position.y, vertexData.position.x, vertexData.position.y, vertexDataControl.position.x, vertexDataControl.position.y, vertexDataEnd.position.x, vertexDataEnd.position.y);
+							m_curve4.init(lastPosition.position.X, lastPosition.position.Y, vertexData.position.X, vertexData.position.Y, vertexDataControl.position.X, vertexDataControl.position.Y, vertexDataEnd.position.X, vertexDataEnd.position.Y);
 							IEnumerator<VertexData> curveIterator = m_curve4.Vertices().GetEnumerator();
 							curveIterator.MoveNext(); // First call returns path_cmd_move_to
 							while (!ShapePath.is_stop(vertexData.command))

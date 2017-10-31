@@ -275,8 +275,8 @@ namespace MatterHackers.Agg
 		{
 			numPaths = MatterHackers.Agg.LionParser.parse_lion(path, colors, pathIndex);
 			MatterHackers.Agg.bounding_rect.get_bounding_rect(path, pathIndex, 0, numPaths, out boundingRect);
-			center.x = (boundingRect.Right - boundingRect.Left) / 2.0;
-			center.y = (boundingRect.Top - boundingRect.Bottom) / 2.0;
+			center.X = (boundingRect.Right - boundingRect.Left) / 2.0;
+			center.Y = (boundingRect.Top - boundingRect.Bottom) / 2.0;
 		}
 	}
 }

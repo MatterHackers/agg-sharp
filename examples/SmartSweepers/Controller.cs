@@ -259,10 +259,10 @@ namespace SmartSweeper
 
 					//draw the mines
 					m_LinesToDraw.remove_all();
-					m_LinesToDraw.MoveTo(mineVB[0].x, mineVB[0].y);
+					m_LinesToDraw.MoveTo(mineVB[0].X, mineVB[0].Y);
 					for (int vert = 1; vert < mineVB.Count; ++vert)
 					{
-						m_LinesToDraw.LineTo(mineVB[vert].x, mineVB[vert].y);
+						m_LinesToDraw.LineTo(mineVB[vert].X, mineVB[vert].Y);
 					}
 
 					renderer.Render(m_LinesToDraw, m_BlackPen);
@@ -284,10 +284,10 @@ namespace SmartSweeper
 
 					//draw the sweeper left track
 					m_LinesToDraw.remove_all();
-					m_LinesToDraw.MoveTo(sweeperVB[0].x, sweeperVB[0].y);
+					m_LinesToDraw.MoveTo(sweeperVB[0].X, sweeperVB[0].Y);
 					for (int vert = 1; vert < 4; ++vert)
 					{
-						m_LinesToDraw.LineTo(sweeperVB[vert].x, sweeperVB[vert].y);
+						m_LinesToDraw.LineTo(sweeperVB[vert].X, sweeperVB[vert].Y);
 					}
 
 					if (i == m_pGA.NumElite)
@@ -299,21 +299,21 @@ namespace SmartSweeper
 
 					//draw the sweeper right track
 					m_LinesToDraw.remove_all();
-					m_LinesToDraw.MoveTo(sweeperVB[4].x, sweeperVB[4].y);
+					m_LinesToDraw.MoveTo(sweeperVB[4].X, sweeperVB[4].Y);
 					for (int vert = 5; vert < 8; ++vert)
 					{
-						m_LinesToDraw.LineTo(sweeperVB[vert].x, sweeperVB[vert].y);
+						m_LinesToDraw.LineTo(sweeperVB[vert].X, sweeperVB[vert].Y);
 					}
 					renderer.Render(m_LinesToDraw, currentColor);
 
 					// draw the body
 					m_LinesToDraw.remove_all();
-					m_LinesToDraw.MoveTo(sweeperVB[8].x, sweeperVB[8].y);
-					m_LinesToDraw.LineTo(sweeperVB[9].x, sweeperVB[9].y);
-					m_LinesToDraw.MoveTo(sweeperVB[10].x, sweeperVB[10].y);
+					m_LinesToDraw.MoveTo(sweeperVB[8].X, sweeperVB[8].Y);
+					m_LinesToDraw.LineTo(sweeperVB[9].X, sweeperVB[9].Y);
+					m_LinesToDraw.MoveTo(sweeperVB[10].X, sweeperVB[10].Y);
 					for (int vert = 11; vert < 16; ++vert)
 					{
-						m_LinesToDraw.LineTo(sweeperVB[vert].x, sweeperVB[vert].y);
+						m_LinesToDraw.LineTo(sweeperVB[vert].X, sweeperVB[vert].Y);
 					}
 					renderer.Render(m_LinesToDraw, currentColor);
 				}
@@ -333,7 +333,7 @@ namespace SmartSweeper
 			matTransform = Matrix4X4.CreateScale(m_MineScale, m_MineScale, 1);
 
 			//translate
-			matTransform *= Matrix4X4.CreateTranslation(vPos.x, vPos.y, 0);
+			matTransform *= Matrix4X4.CreateTranslation(vPos.X, vPos.Y, 0);
 
 			//transform the ships vertices
 			for (int i = 0; i < VBuffer.Count; i++)

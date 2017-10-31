@@ -338,15 +338,15 @@ namespace MatterHackers.Agg.UI.Tests
 				container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 5, 1, 0));
 				container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 5, 1, 0));
 				Assert.IsTrue(multiLine.ContainsFocus == true);
-				Assert.IsTrue(multiLine.InsertBarPosition.y == -32);
+				Assert.IsTrue(multiLine.InsertBarPosition.Y == -32);
 				SendKey(Keys.Home, ' ', container);
-				Assert.IsTrue(multiLine.InsertBarPosition.y == -32);
+				Assert.IsTrue(multiLine.InsertBarPosition.Y == -32);
 				Assert.IsTrue(multiLine.Text == "line1\nline2\nline3");
 				SendKey(Keys.A, 'a', container);
 				Assert.IsTrue(multiLine.Text == "line1\nline2\naline3");
 				SendKey(Keys.Back, ' ', container);
 				Assert.IsTrue(multiLine.Text == "line1\nline2\nline3");
-				Assert.IsTrue(multiLine.InsertBarPosition.y == -32);
+				Assert.IsTrue(multiLine.InsertBarPosition.Y == -32);
 				container.Close();
 			}
 
@@ -361,16 +361,16 @@ namespace MatterHackers.Agg.UI.Tests
 				container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0));
 				Assert.IsTrue(multiLine.ContainsFocus == true);
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 0);
-				Assert.IsTrue(multiLine.InsertBarPosition.x == 0);
+				Assert.IsTrue(multiLine.InsertBarPosition.X == 0);
 				SendKey(Keys.Home, ' ', container);
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 0);
-				Assert.IsTrue(multiLine.InsertBarPosition.x == 0);
+				Assert.IsTrue(multiLine.InsertBarPosition.X == 0);
 				SendKey(Keys.Right, ' ', container);
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 1);
-				double leftOne = multiLine.InsertBarPosition.x;
+				double leftOne = multiLine.InsertBarPosition.X;
 				SendKey(Keys.Right, ' ', container);
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 2);
-				Assert.IsTrue(multiLine.InsertBarPosition.x == leftOne * 2);
+				Assert.IsTrue(multiLine.InsertBarPosition.X == leftOne * 2);
 				container.Close();
 			}
 
@@ -387,37 +387,37 @@ namespace MatterHackers.Agg.UI.Tests
 				container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, multiLine.Height - 1, 0));
 
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 0);
-				Assert.IsTrue(multiLine.InsertBarPosition.y == 0);
+				Assert.IsTrue(multiLine.InsertBarPosition.Y == 0);
 
 				// move past \n
 				SendKey(Keys.Right, ' ', container);
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 1);
-				Assert.IsTrue(multiLine.InsertBarPosition.y == -16);
+				Assert.IsTrue(multiLine.InsertBarPosition.Y == -16);
 
 				// move past 1
 				SendKey(Keys.Right, ' ', container);
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 2);
-				Assert.IsTrue(multiLine.InsertBarPosition.y == -16);
+				Assert.IsTrue(multiLine.InsertBarPosition.Y == -16);
 
 				// move past \n
 				SendKey(Keys.Right, ' ', container);
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 3);
-				Assert.IsTrue(multiLine.InsertBarPosition.y == -32);
+				Assert.IsTrue(multiLine.InsertBarPosition.Y == -32);
 
 				// move past \n
 				SendKey(Keys.Right, ' ', container);
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 4);
-				Assert.IsTrue(multiLine.InsertBarPosition.y == -48);
+				Assert.IsTrue(multiLine.InsertBarPosition.Y == -48);
 
 				// move past 3
 				SendKey(Keys.Right, ' ', container);
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 5);
-				Assert.IsTrue(multiLine.InsertBarPosition.y == -48);
+				Assert.IsTrue(multiLine.InsertBarPosition.Y == -48);
 
 				// move past \n
 				SendKey(Keys.Right, ' ', container);
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 6);
-				Assert.IsTrue(multiLine.InsertBarPosition.y == -64);
+				Assert.IsTrue(multiLine.InsertBarPosition.Y == -64);
 				container.Close();
 			}
 		}
@@ -435,7 +435,7 @@ namespace MatterHackers.Agg.UI.Tests
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, numberEdit.Height - 1, 0));
 
 			Assert.IsTrue(numberEdit.CharIndexToInsertBefore == 0);
-			Assert.IsTrue(numberEdit.TopLeftOffset.y == 0);
+			Assert.IsTrue(numberEdit.TopLeftOffset.Y == 0);
 
 			// type a . (non numeric character)
 			SendKey(Keys.Back, ' ', container);
@@ -469,7 +469,7 @@ namespace MatterHackers.Agg.UI.Tests
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, textEdit.Height - 1, 0));
 
 			Assert.IsTrue(textEdit.CharIndexToInsertBefore == 0);
-			Assert.IsTrue(textEdit.TopLeftOffset.y == 0);
+			Assert.IsTrue(textEdit.TopLeftOffset.Y == 0);
 
 			Assert.IsTrue(textEdit.Text == "some starting text");
 			// this is to select some text

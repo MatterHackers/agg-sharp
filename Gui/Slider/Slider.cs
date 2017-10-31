@@ -326,7 +326,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public Slider(Vector2 lowerLeft, Vector2 upperRight)
-			: this(new Vector2(lowerLeft.x, lowerLeft.y + (upperRight.y - lowerLeft.y) / 2), upperRight.x - lowerLeft.x)
+			: this(new Vector2(lowerLeft.X, lowerLeft.Y + (upperRight.Y - lowerLeft.Y) / 2), upperRight.X - lowerLeft.X)
 		{
 		}
 
@@ -410,11 +410,11 @@ namespace MatterHackers.Agg.UI
 			{
 				if (Orientation == Orientation.Horizontal)
 				{
-					mouseDownOffsetFromThumbCenter = mousePos.x - PositionPixelsFromFirstValue;
+					mouseDownOffsetFromThumbCenter = mousePos.X - PositionPixelsFromFirstValue;
 				}
 				else
 				{
-					mouseDownOffsetFromThumbCenter = mousePos.y - PositionPixelsFromFirstValue;
+					mouseDownOffsetFromThumbCenter = mousePos.Y - PositionPixelsFromFirstValue;
 				}
 				downOnThumb = true;
 			}
@@ -425,11 +425,11 @@ namespace MatterHackers.Agg.UI
 				{
 					if (Orientation == Orientation.Horizontal)
 					{
-						PositionPixelsFromFirstValue = mousePos.x;
+						PositionPixelsFromFirstValue = mousePos.X;
 					}
 					else
 					{
-						PositionPixelsFromFirstValue = mousePos.y;
+						PositionPixelsFromFirstValue = mousePos.Y;
 					}
 				}
 			}
@@ -454,11 +454,11 @@ namespace MatterHackers.Agg.UI
 				double oldValue = Value;
 				if (Orientation == Orientation.Horizontal)
 				{
-					PositionPixelsFromFirstValue = mousePos.x - mouseDownOffsetFromThumbCenter;
+					PositionPixelsFromFirstValue = mousePos.X - mouseDownOffsetFromThumbCenter;
 				}
 				else
 				{
-					PositionPixelsFromFirstValue = mousePos.y - mouseDownOffsetFromThumbCenter;
+					PositionPixelsFromFirstValue = mousePos.Y - mouseDownOffsetFromThumbCenter;
 				}
 				if (oldValue != Value)
 				{

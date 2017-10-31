@@ -40,13 +40,13 @@ namespace MatterHackers.VectorMath
 
 		public Bounds(AxisAlignedBoundingBox axisAlignedBoundingBox) : this()
 		{
-			this.MinX = axisAlignedBoundingBox.minXYZ.x;
-			this.MinY = axisAlignedBoundingBox.minXYZ.y;
-			this.MinZ = axisAlignedBoundingBox.minXYZ.z;
+			this.MinX = axisAlignedBoundingBox.minXYZ.X;
+			this.MinY = axisAlignedBoundingBox.minXYZ.Y;
+			this.MinZ = axisAlignedBoundingBox.minXYZ.Z;
 
-			this.MaxX = axisAlignedBoundingBox.maxXYZ.x;
-			this.MaxY = axisAlignedBoundingBox.maxXYZ.y;
-			this.MaxZ = axisAlignedBoundingBox.maxXYZ.z;
+			this.MaxX = axisAlignedBoundingBox.maxXYZ.X;
+			this.MaxY = axisAlignedBoundingBox.maxXYZ.Y;
+			this.MaxZ = axisAlignedBoundingBox.maxXYZ.Z;
 		}
 
 		/// <summary>

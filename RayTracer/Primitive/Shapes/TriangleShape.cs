@@ -47,7 +47,7 @@ namespace MatterHackers.RayTracer
 
 			center = new Vector3Float((vertex0 + vertex1 + vertex2) / 3);
 
-			var normalLengths = new [] { Math.Abs(planeNormal.x), Math.Abs(planeNormal.y), Math.Abs(planeNormal.z)};
+			var normalLengths = new [] { Math.Abs(planeNormal.X), Math.Abs(planeNormal.Y), Math.Abs(planeNormal.Z)};
 			MajorAxis = normalLengths.Select((v, i) => new { Axis = i, Value = Math.Abs(v) }).OrderBy(o => o.Value).Last().Axis;
 
 			for (int i = 0; i < 3; i++)
@@ -107,15 +107,15 @@ namespace MatterHackers.RayTracer
 					bool haveHitIn2D = false;
 					if (MajorAxis == 0)
 					{
-						haveHitIn2D = Check2DHitOnMajorAxis(hitPosition.y, hitPosition.z);
+						haveHitIn2D = Check2DHitOnMajorAxis(hitPosition.Y, hitPosition.Z);
 					}
 					else if (MajorAxis == 1)
 					{
-						haveHitIn2D = Check2DHitOnMajorAxis(hitPosition.x, hitPosition.z);
+						haveHitIn2D = Check2DHitOnMajorAxis(hitPosition.X, hitPosition.Z);
 					}
 					else
 					{
-						haveHitIn2D = Check2DHitOnMajorAxis(hitPosition.x, hitPosition.y);
+						haveHitIn2D = Check2DHitOnMajorAxis(hitPosition.X, hitPosition.Y);
 					}
 					if (haveHitIn2D)
 					{

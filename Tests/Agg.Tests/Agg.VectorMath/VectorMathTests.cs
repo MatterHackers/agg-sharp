@@ -331,8 +331,8 @@ namespace MatterHackers.VectorMath.Tests
 				Vector3 endPoint = new Vector3(0, 0, 8);
 				bool exists = testPlane.ClipLine(ref startPoint, ref endPoint);
 				Assert.IsTrue(exists);
-				Assert.IsTrue(startPoint.z == 5);
-				Assert.IsTrue(endPoint.z == 8);
+				Assert.IsTrue(startPoint.Z == 5);
+				Assert.IsTrue(endPoint.Z == 8);
 			}
 
 			{
@@ -341,8 +341,8 @@ namespace MatterHackers.VectorMath.Tests
 				Vector3 endPoint = new Vector3(0, 0, -2);
 				bool exists = testPlane.ClipLine(ref startPoint, ref endPoint);
 				Assert.IsTrue(exists);
-				Assert.IsTrue(startPoint.z == 8);
-				Assert.IsTrue(endPoint.z == 5);
+				Assert.IsTrue(startPoint.Z == 8);
+				Assert.IsTrue(endPoint.Z == 5);
 			}
 
 			{
@@ -359,8 +359,8 @@ namespace MatterHackers.VectorMath.Tests
 				Vector3 endPoint = new Vector3(0, 0, 12);
 				bool exists = testPlane.ClipLine(ref startPoint, ref endPoint);
 				Assert.IsTrue(exists);
-				Assert.IsTrue(startPoint.z == 6);
-				Assert.IsTrue(endPoint.z == 12);
+				Assert.IsTrue(startPoint.Z == 6);
+				Assert.IsTrue(endPoint.Z == 12);
 			}
 		}
 

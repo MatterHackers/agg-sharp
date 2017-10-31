@@ -69,15 +69,15 @@ namespace MatterHackers.PolygonMesh
 			// assume project on y for now
 			foreach (Vertex vertex in meshToRender.Vertices)
 			{
-				min.x = Math.Min(min.x, vertex.Position[xAxis]);
-				min.y = Math.Min(min.y, vertex.Position[yAxis]);
+				min.X = Math.Min(min.X, vertex.Position[xAxis]);
+				min.Y = Math.Min(min.Y, vertex.Position[yAxis]);
 
-				max.x = Math.Max(max.x, vertex.Position[xAxis]);
-				max.y = Math.Max(max.y, vertex.Position[yAxis]);
+				max.X = Math.Max(max.X, vertex.Position[xAxis]);
+				max.Y = Math.Max(max.Y, vertex.Position[yAxis]);
 			}
 
-			scale = Math.Min((image.Width - padding * 2) / (max.x - min.x), (image.Height - padding * 2) / (max.y - min.y));
-			origin = new Vector2(min.x * scale, min.y * scale) - new Vector2(padding, padding);
+			scale = Math.Min((image.Width - padding * 2) / (max.X - min.X), (image.Height - padding * 2) / (max.Y - min.Y));
+			origin = new Vector2(min.X * scale, min.Y * scale) - new Vector2(padding, padding);
 		}
 
 		public void RenderToPng(string pngFileName)
@@ -205,7 +205,7 @@ namespace MatterHackers.PolygonMesh
 			graphics.Line(firstArrow, firstArrow - left * 5 - normal * 5, Color.Black);
 
 			graphics.FillRectangle((end + start) / 2 - new Vector2(20, 7), (end + start) / 2 + new Vector2(20, 7), Color.White);
-			Vector2 stringCenter = new Vector2((end.x + start.x) / 2, (end.y + start.y) / 2);
+			Vector2 stringCenter = new Vector2((end.X + start.X) / 2, (end.Y + start.Y) / 2);
 			DrawCircle(stringCenter, backgroundColor);
 			WriteStringAtPos(stringToWrite, stringCenter, backgroundColor);
 		}
@@ -220,7 +220,7 @@ namespace MatterHackers.PolygonMesh
 
 		private Vector2 GetImagePosition(Vector3 originalPosition)
 		{
-			return new Vector2(originalPosition[xAxis] * scale - origin.x, originalPosition[yAxis] * scale - origin.y);
+			return new Vector2(originalPosition[xAxis] * scale - origin.X, originalPosition[yAxis] * scale - origin.Y);
 		}
 
 		private void DrawCircle(Vector2 imagePosition, Color color)
@@ -232,13 +232,13 @@ namespace MatterHackers.PolygonMesh
 
 		private void DrawRectangle(Vector2 imagePosition)
 		{
-			RoundedRect rect = new RoundedRect(imagePosition.x - 20, imagePosition.y - 7, imagePosition.x + 20, imagePosition.y + 7, 3);
+			RoundedRect rect = new RoundedRect(imagePosition.X - 20, imagePosition.Y - 7, imagePosition.X + 20, imagePosition.Y + 7, 3);
 			graphics.Render(new Stroke(rect), Color.Black);
 		}
 
 		private void WriteStringAtPos(string stringToWrite, Vector2 imagePosition, Color backgroundColor)
 		{
-			graphics.DrawString(stringToWrite, imagePosition.x, imagePosition.y, 10, justification: Justification.Center, baseline: Baseline.BoundsCenter, color: Color.Black, backgroundColor: backgroundColor);
+			graphics.DrawString(stringToWrite, imagePosition.X, imagePosition.Y, 10, justification: Justification.Center, baseline: Baseline.BoundsCenter, color: Color.Black, backgroundColor: backgroundColor);
 		}
 	}
 }

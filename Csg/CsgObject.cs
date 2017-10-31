@@ -149,9 +149,9 @@ namespace MatterHackers.Csg
 			{
 				AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
 				return new Vector3(
-					bounds.maxXYZ.x - bounds.minXYZ.x,
-					bounds.maxXYZ.y - bounds.minXYZ.y,
-					bounds.maxXYZ.z - bounds.minXYZ.z);
+					bounds.maxXYZ.X - bounds.minXYZ.X,
+					bounds.maxXYZ.Y - bounds.minXYZ.Y,
+					bounds.maxXYZ.Z - bounds.minXYZ.Z);
 			}
 
 			set
@@ -160,11 +160,11 @@ namespace MatterHackers.Csg
 			}
 		}
 
-		public double XSize { get { return Size.x; } }
+		public double XSize { get { return Size.X; } }
 
-		public double YSize { get { return Size.y; } }
+		public double YSize { get { return Size.Y; } }
 
-		public double ZSize { get { return Size.z; } }
+		public double ZSize { get { return Size.Z; } }
 
 		#endregion Size Functions
 

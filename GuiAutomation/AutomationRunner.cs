@@ -161,10 +161,10 @@ namespace MatterHackers.GuiAutomation
 			if (searchRegion.Image.FindLeastSquaresMatch(imageNeedle, out matchPosition, out bestMatch, MatchLimit))
 			{
 				int screenHeight = inputSystem.GetCurrentScreenHeight();
-				int clickY = (int)(searchRegion.ScreenRect.Bottom + matchPosition.y + offset.y);
+				int clickY = (int)(searchRegion.ScreenRect.Bottom + matchPosition.Y + offset.y);
 				int clickYOnScreen = screenHeight - clickY; // invert to put it on the screen
 
-				Point2D screenPosition = new Point2D((int)matchPosition.x + offset.x, clickYOnScreen);
+				Point2D screenPosition = new Point2D((int)matchPosition.X + offset.x, clickYOnScreen);
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
 
 				inputSystem.CreateMouseEvent(GetMouseDown(mouseButtons), screenPosition.x, screenPosition.y, 0, 0);
@@ -339,10 +339,10 @@ namespace MatterHackers.GuiAutomation
 			if (searchRegion.Image.FindLeastSquaresMatch(imageNeedle, out matchPosition, out bestMatch, MatchLimit))
 			{
 				int screenHeight = inputSystem.GetCurrentScreenHeight();
-				int clickY = (int)(searchRegion.ScreenRect.Bottom + matchPosition.y + offset.y);
+				int clickY = (int)(searchRegion.ScreenRect.Bottom + matchPosition.Y + offset.y);
 				int clickYOnScreen = screenHeight - clickY; // invert to put it on the screen
 
-				Point2D screenPosition = new Point2D((int)matchPosition.x + offset.x, clickYOnScreen);
+				Point2D screenPosition = new Point2D((int)matchPosition.X + offset.x, clickYOnScreen);
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
 				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 
@@ -381,10 +381,10 @@ namespace MatterHackers.GuiAutomation
 			if (searchRegion.Image.FindLeastSquaresMatch(imageNeedle, out matchPosition, out bestMatch, MatchLimit))
 			{
 				int screenHeight = inputSystem.GetCurrentScreenHeight();
-				int clickY = (int)(searchRegion.ScreenRect.Bottom + matchPosition.y + offset.y);
+				int clickY = (int)(searchRegion.ScreenRect.Bottom + matchPosition.Y + offset.y);
 				int clickYOnScreen = screenHeight - clickY; // invert to put it on the screen
 
-				Point2D screenPosition = new Point2D((int)matchPosition.x + offset.x, clickYOnScreen);
+				Point2D screenPosition = new Point2D((int)matchPosition.X + offset.x, clickYOnScreen);
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
 				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
 
@@ -867,11 +867,11 @@ namespace MatterHackers.GuiAutomation
 				double ratio = i / (double)steps;
 				ratio = GetInterpolatedValue(ratio, InterpolationType.EASE_OUT);
 				Vector2 current = start + delta * ratio;
-				inputSystem.SetCursorPosition((int)current.x, (int)current.y);
+				inputSystem.SetCursorPosition((int)current.X, (int)current.Y);
 				Thread.Sleep(20);
 			}
 
-			inputSystem.SetCursorPosition((int)end.x, (int)end.y);
+			inputSystem.SetCursorPosition((int)end.X, (int)end.Y);
 		}
 
 		public void Dispose()

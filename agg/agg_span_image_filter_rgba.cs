@@ -976,11 +976,11 @@ namespace MatterHackers.Agg
 				float totalWeight = 0.0f;
 				for (; ; )
 				{
-					float yweight = (float)m_filterFunction.calc_weight(System.Math.Sqrt((sourceSample.y - sourceOrigin.y) * (sourceSample.y - sourceOrigin.y)));
+					float yweight = (float)m_filterFunction.calc_weight(System.Math.Sqrt((sourceSample.Y - sourceOrigin.Y) * (sourceSample.Y - sourceOrigin.Y)));
 					x_count = (int)diameter;
 					for (; ; )
 					{
-						float xweight = (float)m_filterFunction.calc_weight(System.Math.Sqrt((sourceSample.x - sourceOrigin.x) * (sourceSample.x - sourceOrigin.x)));
+						float xweight = (float)m_filterFunction.calc_weight(System.Math.Sqrt((sourceSample.X - sourceOrigin.X) * (sourceSample.X - sourceOrigin.X)));
 						float weight = xweight * yweight;
 
 						f_r += weight * fg_ptr[bufferIndex + ImageBuffer.OrderR];
@@ -989,15 +989,15 @@ namespace MatterHackers.Agg
 						f_a += weight * fg_ptr[bufferIndex + ImageBuffer.OrderA];
 
 						totalWeight += weight;
-						sourceSample.x += 1;
+						sourceSample.X += 1;
 						if (--x_count == 0) break;
 						sourceAccessor.next_x(out bufferIndex);
 					}
 
-					sourceSample.x -= diameter;
+					sourceSample.X -= diameter;
 
 					if (--y_count == 0) break;
-					sourceSample.y += 1;
+					sourceSample.Y += 1;
 					fg_ptr = sourceAccessor.next_y(out bufferIndex);
 				}
 

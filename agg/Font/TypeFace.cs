@@ -398,12 +398,12 @@ namespace MatterHackers.Agg.Font
 			// render the legend
 			StyledTypeFace legendFont = new StyledTypeFace(this, 12);
 			Vector2 textPos = new Vector2(x + width / 2, y + typeFaceNameStyle.EmSizeInPixels * 1.5);
-			graphics2D.Render(new TypeFacePrinter("Descent"), textPos, descentColor); textPos.y += legendFont.EmSizeInPixels;
-			graphics2D.Render(new TypeFacePrinter("Underline"), textPos, underlineColor); textPos.y += legendFont.EmSizeInPixels;
-			graphics2D.Render(new TypeFacePrinter("X Height"), textPos, xHeightColor); textPos.y += legendFont.EmSizeInPixels;
-			graphics2D.Render(new TypeFacePrinter("CapHeight"), textPos, capHeightColor); textPos.y += legendFont.EmSizeInPixels;
-			graphics2D.Render(new TypeFacePrinter("Ascent"), textPos, ascentColor); textPos.y += legendFont.EmSizeInPixels;
-			graphics2D.Render(new TypeFacePrinter("Origin"), textPos, originColor); textPos.y += legendFont.EmSizeInPixels;
+			graphics2D.Render(new TypeFacePrinter("Descent"), textPos, descentColor); textPos.Y += legendFont.EmSizeInPixels;
+			graphics2D.Render(new TypeFacePrinter("Underline"), textPos, underlineColor); textPos.Y += legendFont.EmSizeInPixels;
+			graphics2D.Render(new TypeFacePrinter("X Height"), textPos, xHeightColor); textPos.Y += legendFont.EmSizeInPixels;
+			graphics2D.Render(new TypeFacePrinter("CapHeight"), textPos, capHeightColor); textPos.Y += legendFont.EmSizeInPixels;
+			graphics2D.Render(new TypeFacePrinter("Ascent"), textPos, ascentColor); textPos.Y += legendFont.EmSizeInPixels;
+			graphics2D.Render(new TypeFacePrinter("Origin"), textPos, originColor); textPos.Y += legendFont.EmSizeInPixels;
 			graphics2D.Render(new TypeFacePrinter("Bounding Box"), textPos, boundingBoxColor);
 		}
 	}

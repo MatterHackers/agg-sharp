@@ -71,7 +71,7 @@ namespace MatterHackers.Agg.UI
 		public spline_ctrl(Vector2 location, Vector2 size, int num_pnt)
 			: base(location, false)
 		{
-			LocalBounds = new RectangleDouble(0, 0, size.x, size.y);
+			LocalBounds = new RectangleDouble(0, 0, size.X, size.Y);
 			m_curve_pnt = new VertexStorage();
 			m_curve_poly = new Stroke(m_curve_pnt);
 			m_ellipse = new Ellipse();

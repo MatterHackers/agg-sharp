@@ -610,7 +610,7 @@ namespace MatterHackers.Agg.UI
 			}
 			set
 			{
-				Size clientSize = new Size((int)Math.Ceiling(value.x), (int)Math.Ceiling(value.y));
+				Size clientSize = new Size((int)Math.Ceiling(value.X), (int)Math.Ceiling(value.Y));
 
 				Size windowSize = new Size(
 					clientSize.Width + this.Width - this.ClientSize.Width,

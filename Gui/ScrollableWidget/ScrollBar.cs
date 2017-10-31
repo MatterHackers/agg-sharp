@@ -103,11 +103,11 @@ namespace MatterHackers.Agg.UI
 
 				if (orientation == Orientation.Vertical)
 				{
-					deltaFromDownPosition.x = 0;
+					deltaFromDownPosition.X = 0;
 				}
 				else
 				{
-					deltaFromDownPosition.y = 0;
+					deltaFromDownPosition.Y = 0;
 				}
 
 				ScrollBar parentScrollBar = (ScrollBar)Parent;
@@ -202,7 +202,7 @@ namespace MatterHackers.Agg.UI
 			if (!thumb.BoundsRelativeToParent.Contains(mouseEvent.X, mouseEvent.Y))
 			{
 				// we did not click on the thumb so we want to move the scroll bar towards the click
-				if (mouseEvent.Y < thumb.OriginRelativeParent.y)
+				if (mouseEvent.Y < thumb.OriginRelativeParent.Y)
 				{
 					MoveThumb(new Vector2(0, -thumb.Height));
 				}
@@ -260,7 +260,7 @@ namespace MatterHackers.Agg.UI
 
 					Vector2 scrollRatioFromTop0To1 = ParentScrollWidget.ScrollRatioFromTop0To1;
 					double notThumbHeight = ParentScrollWidget.Height - ThumbHeight;
-					thumb.OriginRelativeParent = new Vector2(0, notThumbHeight * scrollRatioFromTop0To1.y);
+					thumb.OriginRelativeParent = new Vector2(0, notThumbHeight * scrollRatioFromTop0To1.Y);
 					break;
 
 				case ShowState.Never:
@@ -275,7 +275,7 @@ namespace MatterHackers.Agg.UI
 		internal void MoveThumb(Vector2 deltaToMove)
 		{
 			double notThumbHeight = ParentScrollWidget.Height - ThumbHeight;
-			double changeRatio = deltaToMove.y / notThumbHeight;
+			double changeRatio = deltaToMove.Y / notThumbHeight;
 			ParentScrollWidget.ScrollRatioFromTop0To1 = ParentScrollWidget.ScrollRatioFromTop0To1 + new Vector2(0, changeRatio);
 		}
 
@@ -284,7 +284,7 @@ namespace MatterHackers.Agg.UI
 			get
 			{
 				Vector2 ratioOfViewToContents0To1 = ParentScrollWidget.RatioOfViewToContents0To1();
-				return ratioOfViewToContents0To1.y * ParentScrollWidget.Height;
+				return ratioOfViewToContents0To1.Y * ParentScrollWidget.Height;
 			}
 		}
 

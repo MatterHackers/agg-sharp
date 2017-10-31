@@ -38,7 +38,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		public static IVertexSource Translate(this IVertexSource source, Vector2 vector2)
 		{
-			return source.Translate(vector2.x, vector2.y);
+			return source.Translate(vector2.X, vector2.Y);
 		}
 
 		public static IVertexSource Translate(this IVertexSource source, double x, double y)
@@ -87,7 +87,7 @@ namespace MatterHackers.Agg.VertexSource
 				VertexData transformedVertex = vertexData;
 				if (ShapePath.is_vertex(transformedVertex.command))
 				{
-					transformToApply.transform(ref transformedVertex.position.x, ref transformedVertex.position.y);
+					transformToApply.transform(ref transformedVertex.position.X, ref transformedVertex.position.Y);
 				}
 				yield return transformedVertex;
 			}

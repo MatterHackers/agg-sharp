@@ -102,35 +102,35 @@ namespace MatterHackers.Agg.UI
 				debugRecursionCount++;
 				if (debugRecursionCount < 20)
 				{
-					parentScrollableWidget.TopLeftOffset = new Vector2(parentScrollableWidget.TopLeftOffset.x, 0);
+					parentScrollableWidget.TopLeftOffset = new Vector2(parentScrollableWidget.TopLeftOffset.X, 0);
 				}
 				debugRecursionCount--;
-				newOrigin.y = OriginRelativeParent.y;
+				newOrigin.Y = OriginRelativeParent.Y;
 			}
 			else
 			{
-				if (newOrigin.y + Margin.Top + Padding.Top + LocalBounds.Top < Parent.LocalBounds.Top)
+				if (newOrigin.Y + Margin.Top + Padding.Top + LocalBounds.Top < Parent.LocalBounds.Top)
 				{
-					newOrigin.y = Parent.LocalBounds.Top - Margin.Top - Padding.Top - LocalBounds.Top;
+					newOrigin.Y = Parent.LocalBounds.Top - Margin.Top - Padding.Top - LocalBounds.Top;
 				}
 				else if (LocalBounds.Height + Margin.Height >= Parent.LocalBounds.Height)
 				{
 					if (BoundsRelativeToParent.Bottom - Margin.Bottom > Parent.LocalBounds.Bottom)
 					{
-						newOrigin.y = Parent.LocalBounds.Bottom - LocalBounds.Bottom + Margin.Bottom;
+						newOrigin.Y = Parent.LocalBounds.Bottom - LocalBounds.Bottom + Margin.Bottom;
 					}
 				}
 			}
 
 			if (BoundsRelativeToParent.Left - Margin.Left > Parent.LocalBounds.Left)
 			{
-				newOrigin.x = Parent.LocalBounds.Left - LocalBounds.Left + Margin.Left;
+				newOrigin.X = Parent.LocalBounds.Left - LocalBounds.Left + Margin.Left;
 			}
 			else if (LocalBounds.Width + Margin.Width > Parent.LocalBounds.Width)
 			{
 				if (BoundsRelativeToParent.Right + Margin.Right < Parent.LocalBounds.Right)
 				{
-					newOrigin.x = Parent.LocalBounds.Right - LocalBounds.Right - Margin.Right;
+					newOrigin.X = Parent.LocalBounds.Right - LocalBounds.Right - Margin.Right;
 				}
 			}
 

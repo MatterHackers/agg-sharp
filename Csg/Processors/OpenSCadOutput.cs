@@ -98,11 +98,11 @@ namespace MatterHackers.Csg.Processors
 
 			if (objectToProcess.CreateCentered)
 			{
-				info += "cube([" + objectToProcess.Size.x.ToString() + ", " + objectToProcess.Size.y.ToString() + ", " + objectToProcess.Size.z.ToString() + "], center=true);" + AddNameAsComment(objectToProcess);
+				info += "cube([" + objectToProcess.Size.X.ToString() + ", " + objectToProcess.Size.Y.ToString() + ", " + objectToProcess.Size.Z.ToString() + "], center=true);" + AddNameAsComment(objectToProcess);
 			}
 			else
 			{
-				info += "cube([" + objectToProcess.Size.x.ToString() + ", " + objectToProcess.Size.y.ToString() + ", " + objectToProcess.Size.z.ToString() + "]);" + AddNameAsComment(objectToProcess);
+				info += "cube([" + objectToProcess.Size.X.ToString() + ", " + objectToProcess.Size.Y.ToString() + ", " + objectToProcess.Size.Z.ToString() + "]);" + AddNameAsComment(objectToProcess);
 			}
 			return ApplyIndent(info, level);
 		}
@@ -144,7 +144,7 @@ namespace MatterHackers.Csg.Processors
 			string thingToRotate = "polygon( points=[";
 			foreach (Vector2 point in objectToProcess.Points)
 			{
-				thingToRotate += "[" + point.x.ToString() + ", " + point.y.ToString() + "], ";
+				thingToRotate += "[" + point.X.ToString() + ", " + point.Y.ToString() + "], ";
 			}
 			thingToRotate += "] );";
 
@@ -171,7 +171,7 @@ namespace MatterHackers.Csg.Processors
 			string thingToRotate = "polygon( points=[";
 			foreach (Vector2 point in objectToProcess.Points)
 			{
-				thingToRotate += "[" + point.x.ToString() + ", " + point.y.ToString() + "], ";
+				thingToRotate += "[" + point.X.ToString() + ", " + point.Y.ToString() + "], ";
 			}
 			thingToRotate += "] );";
 

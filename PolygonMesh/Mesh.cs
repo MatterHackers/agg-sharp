@@ -1238,13 +1238,13 @@ namespace MatterHackers.PolygonMesh
 
 				foreach (IVertex vertex in Vertices)
 				{
-					minXYZ.x = Math.Min(minXYZ.x, vertex.Position.x);
-					minXYZ.y = Math.Min(minXYZ.y, vertex.Position.y);
-					minXYZ.z = Math.Min(minXYZ.z, vertex.Position.z);
+					minXYZ.X = Math.Min(minXYZ.X, vertex.Position.X);
+					minXYZ.Y = Math.Min(minXYZ.Y, vertex.Position.Y);
+					minXYZ.Z = Math.Min(minXYZ.Z, vertex.Position.Z);
 
-					maxXYZ.x = Math.Max(maxXYZ.x, vertex.Position.x);
-					maxXYZ.y = Math.Max(maxXYZ.y, vertex.Position.y);
-					maxXYZ.z = Math.Max(maxXYZ.z, vertex.Position.z);
+					maxXYZ.X = Math.Max(maxXYZ.X, vertex.Position.X);
+					maxXYZ.Y = Math.Max(maxXYZ.Y, vertex.Position.Y);
+					maxXYZ.Z = Math.Max(maxXYZ.Z, vertex.Position.Z);
 				}
 
 				cachedAABB = new AxisAlignedBoundingBox(minXYZ, maxXYZ);
@@ -1276,13 +1276,13 @@ namespace MatterHackers.PolygonMesh
 				foreach (IVertex vertex in Vertices)
 				{
 					Vector3 position = Vector3.Transform(vertex.Position, transform);
-					minXYZ.x = Math.Min(minXYZ.x, position.x);
-					minXYZ.y = Math.Min(minXYZ.y, position.y);
-					minXYZ.z = Math.Min(minXYZ.z, position.z);
+					minXYZ.X = Math.Min(minXYZ.X, position.X);
+					minXYZ.Y = Math.Min(minXYZ.Y, position.Y);
+					minXYZ.Z = Math.Min(minXYZ.Z, position.Z);
 
-					maxXYZ.x = Math.Max(maxXYZ.x, position.x);
-					maxXYZ.y = Math.Max(maxXYZ.y, position.y);
-					maxXYZ.z = Math.Max(maxXYZ.z, position.z);
+					maxXYZ.X = Math.Max(maxXYZ.X, position.X);
+					maxXYZ.Y = Math.Max(maxXYZ.Y, position.Y);
+					maxXYZ.Z = Math.Max(maxXYZ.Z, position.Z);
 				}
 
 				fastAABBTransform = transform;

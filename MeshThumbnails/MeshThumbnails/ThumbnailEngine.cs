@@ -122,7 +122,7 @@ namespace MatterHackers.RayTracer
 				double maxSize = Math.Max(aabb.XSize, aabb.YSize);
 				double scale = width / (maxSize * 1.2);
 
-				var bounds2D = new RectangleDouble(aabb.minXYZ.x, aabb.minXYZ.y, aabb.maxXYZ.x, aabb.maxXYZ.y);
+				var bounds2D = new RectangleDouble(aabb.minXYZ.X, aabb.minXYZ.Y, aabb.maxXYZ.X, aabb.maxXYZ.Y);
 				foreach (var meshGroup in visibleMeshes)
 				{
 					PolygonMesh.Rendering.OrthographicZProjection.DrawTo(

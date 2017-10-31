@@ -161,16 +161,16 @@ namespace MatterHackers.PolygonMesh.Csg
 					}
 					if (count < 3)
 					{
-						vertices.Add(new Vector3(position.x, position.y, position.z));
+						vertices.Add(new Vector3(position.X, position.Y, position.Z));
 						indices.Add(nextIndex++);
 					}
 					else // add an entire new polygon
 					{
-						vertices.Add(new Vector3(first.x, first.y, first.z));
+						vertices.Add(new Vector3(first.X, first.Y, first.Z));
 						indices.Add(nextIndex++);
-						vertices.Add(new Vector3(last.x, last.y, last.z));
+						vertices.Add(new Vector3(last.X, last.Y, last.Z));
 						indices.Add(nextIndex++);
-						vertices.Add(new Vector3(position.x, position.y, position.z));
+						vertices.Add(new Vector3(position.X, position.Y, position.Z));
 						indices.Add(nextIndex++);
 					}
 					count++;
@@ -192,7 +192,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			for (int vertexIndex = 0; vertexIndex < indices.Length; vertexIndex++)
 			{
 				var position = solidVertices[indices[vertexIndex]];
-				vertices.Add(model.CreateVertex(position.x, position.y, position.z));
+				vertices.Add(model.CreateVertex(position.X, position.Y, position.Z));
 
 				if (vertices.Count > 2)
 				{

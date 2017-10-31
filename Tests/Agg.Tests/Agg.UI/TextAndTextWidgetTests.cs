@@ -84,17 +84,17 @@ namespace MatterHackers.Agg.UI.Tests
 				holder.AddChild(textItem);
 
 				var origSize = textItem.Size;
-				Assert.IsTrue(origSize.x > 10, "The control expanded");
+				Assert.IsTrue(origSize.X > 10, "The control expanded");
 				holder.Width = 100;
 				var bigSize = textItem.Size;
 
-				Assert.IsTrue(bigSize.x < origSize.x, "The control got narrower and taller");
-				Assert.IsTrue(bigSize.y > origSize.y, "The control got narrower and taller");
+				Assert.IsTrue(bigSize.X < origSize.X, "The control got narrower and taller");
+				Assert.IsTrue(bigSize.Y > origSize.Y, "The control got narrower and taller");
 
 				holder.Width = 500;
 				var backToOrignSize = textItem.Size;
-				Assert.IsTrue(backToOrignSize.x == origSize.x);
-				Assert.IsTrue(backToOrignSize.y == origSize.y);
+				Assert.IsTrue(backToOrignSize.X == origSize.X);
+				Assert.IsTrue(backToOrignSize.Y == origSize.Y);
 
 				double origHeight = textItem.Height;
 				textItem.Text = "test\nItem";

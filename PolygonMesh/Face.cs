@@ -382,15 +382,15 @@ namespace MatterHackers.PolygonMesh
 				Vector3 position0 = firstFaceEdge.FirstVertex.Position;
 				Vector3 position1 = firstFaceEdge.nextFaceEdge.FirstVertex.Position;
 				Vector3 delta = position1 - position0;
-				delta.x = Math.Abs(delta.x);
-				delta.y = Math.Abs(delta.y);
-				delta.z = Math.Abs(delta.z);
-				if (delta.x < delta.y && delta.x < delta.z)
+				delta.X = Math.Abs(delta.X);
+				delta.Y = Math.Abs(delta.Y);
+				delta.Z = Math.Abs(delta.Z);
+				if (delta.X < delta.Y && delta.X < delta.Z)
 				{
 					// x smallest
 					return 0;
 				}
-				else if (delta.y < delta.x && delta.y < delta.z)
+				else if (delta.Y < delta.X && delta.Y < delta.Z)
 				{
 					return 1;
 				}
@@ -401,9 +401,9 @@ namespace MatterHackers.PolygonMesh
 
 		private int GetQuadrant(Vector2 positionToGetQuadantFor, double x, double y)
 		{
-			if (positionToGetQuadantFor.x > x)
+			if (positionToGetQuadantFor.X > x)
 			{
-				if (positionToGetQuadantFor.y > y)
+				if (positionToGetQuadantFor.Y > y)
 				{
 					return 0;
 				}
@@ -414,7 +414,7 @@ namespace MatterHackers.PolygonMesh
 			}
 			else
 			{
-				if (positionToGetQuadantFor.y > y)
+				if (positionToGetQuadantFor.Y > y)
 				{
 					return 1;
 				}
@@ -427,7 +427,7 @@ namespace MatterHackers.PolygonMesh
 
 		private double GetXIntersept(Vector2 prevPosition, Vector2 position, double y)
 		{
-			return position.x - (position.y - y) * (prevPosition.x - position.x) / (prevPosition.y - position.y);
+			return position.X - (position.Y - y) * (prevPosition.X - position.X) / (prevPosition.Y - position.Y);
 		}
 
 		private int WrapQuadrantDelta(int delta, Vector2 prevPosition, Vector2 position, double x, double y)

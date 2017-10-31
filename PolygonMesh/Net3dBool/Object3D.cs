@@ -897,10 +897,10 @@ namespace Net3dBool
 			else if (startType == Segment.FACE && endType == Segment.FACE)
 			{
 				//FACE-FACE-FACE
-				Vector3 segmentVector = new Vector3(startPos.x - endPos.x, startPos.y - endPos.y, startPos.z - endPos.z);
+				Vector3 segmentVector = new Vector3(startPos.X - endPos.X, startPos.Y - endPos.Y, startPos.Z - endPos.Z);
 
 				//if the intersection segment is a point only...
-				if (Math.Abs(segmentVector.x) < EqualityTolerance && Math.Abs(segmentVector.y) < EqualityTolerance && Math.Abs(segmentVector.z) < EqualityTolerance)
+				if (Math.Abs(segmentVector.X) < EqualityTolerance && Math.Abs(segmentVector.Y) < EqualityTolerance && Math.Abs(segmentVector.Z) < EqualityTolerance)
 				{
 					return BreakFaceInThree(face, startPos);
 				}
@@ -908,13 +908,13 @@ namespace Net3dBool
 				//gets the vertex more lined with the intersection segment
 				int linedVertex;
 				Vector3 linedVertexPos;
-				Vector3 vertexVector = new Vector3(endPos.x - face.v1.Position.x, endPos.y - face.v1.Position.y, endPos.z - face.v1.Position.z);
+				Vector3 vertexVector = new Vector3(endPos.X - face.v1.Position.X, endPos.Y - face.v1.Position.Y, endPos.Z - face.v1.Position.Z);
 				vertexVector.Normalize();
 				double dot1 = Math.Abs(Vector3.Dot(segmentVector, vertexVector));
-				vertexVector = new Vector3(endPos.x - face.v2.Position.x, endPos.y - face.v2.Position.y, endPos.z - face.v2.Position.z);
+				vertexVector = new Vector3(endPos.X - face.v2.Position.X, endPos.Y - face.v2.Position.Y, endPos.Z - face.v2.Position.Z);
 				vertexVector.Normalize();
 				double dot2 = Math.Abs(Vector3.Dot(segmentVector, vertexVector));
-				vertexVector = new Vector3(endPos.x - face.v3.Position.x, endPos.y - face.v3.Position.y, endPos.z - face.v3.Position.z);
+				vertexVector = new Vector3(endPos.X - face.v3.Position.X, endPos.Y - face.v3.Position.Y, endPos.Z - face.v3.Position.Z);
 				vertexVector.Normalize();
 				double dot3 = Math.Abs(Vector3.Dot(segmentVector, vertexVector));
 				if (dot1 > dot2 && dot1 > dot3)

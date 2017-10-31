@@ -388,8 +388,8 @@ namespace MatterHackers.Agg.UI
 				{
 					mainControlText.Text = item.Text;
 
-					minSize.x = Math.Max(minSize.x, LocalBounds.Width);
-					minSize.y = Math.Max(minSize.y, LocalBounds.Height);
+					minSize.X = Math.Max(minSize.X, LocalBounds.Width);
+					minSize.Y = Math.Max(minSize.Y, LocalBounds.Height);
 				}
 				mainControlText.Text = startText;
 
@@ -435,7 +435,7 @@ namespace MatterHackers.Agg.UI
 			// Draw directional arrow
 			if (directionArrow != null)
 			{
-				graphics2D.Render(directionArrow, LocalBounds.Right - DropArrow.ArrowHeight * 2 - 2, LocalBounds.Center.y + DropArrow.ArrowHeight / 2, ActiveTheme.Instance.SecondaryTextColor);
+				graphics2D.Render(directionArrow, LocalBounds.Right - DropArrow.ArrowHeight * 2 - 2, LocalBounds.Center.Y + DropArrow.ArrowHeight / 2, ActiveTheme.Instance.SecondaryTextColor);
 			}
 		}
 

@@ -71,9 +71,9 @@ namespace MatterHackers.VectorMath
 			this.intersectionType = intersectionType;
 			oneOverDirection = 1 / directionNormal;
 
-			sign[0] = (oneOverDirection.x < 0) ? Sign.negative : Sign.positive;
-			sign[1] = (oneOverDirection.y < 0) ? Sign.negative : Sign.positive;
-			sign[2] = (oneOverDirection.z < 0) ? Sign.negative : Sign.positive;
+			sign[0] = (oneOverDirection.X < 0) ? Sign.negative : Sign.positive;
+			sign[1] = (oneOverDirection.Y < 0) ? Sign.negative : Sign.positive;
+			sign[2] = (oneOverDirection.Z < 0) ? Sign.negative : Sign.positive;
 		}
 
 		public Ray(Ray rayToCopy)
@@ -94,12 +94,12 @@ namespace MatterHackers.VectorMath
 		{
 			Ray ray = this;
 			// we calculate distance to the intersection with the x planes of the box
-			double minDistFound = (bounds[(int)ray.sign[0]].x - ray.origin.x) * ray.oneOverDirection.x;
-			double maxDistFound = (bounds[1 - (int)ray.sign[0]].x - ray.origin.x) * ray.oneOverDirection.x;
+			double minDistFound = (bounds[(int)ray.sign[0]].X - ray.origin.X) * ray.oneOverDirection.X;
+			double maxDistFound = (bounds[1 - (int)ray.sign[0]].X - ray.origin.X) * ray.oneOverDirection.X;
 
 			// now find the distance to the y planes of the box
-			double minDistToY = (bounds[(int)ray.sign[1]].y - ray.origin.y) * ray.oneOverDirection.y;
-			double maxDistToY = (bounds[1 - (int)ray.sign[1]].y - ray.origin.y) * ray.oneOverDirection.y;
+			double minDistToY = (bounds[(int)ray.sign[1]].Y - ray.origin.Y) * ray.oneOverDirection.Y;
+			double maxDistToY = (bounds[1 - (int)ray.sign[1]].Y - ray.origin.Y) * ray.oneOverDirection.Y;
 
 			if ((minDistFound > maxDistToY) || (minDistToY > maxDistFound))
 			{
@@ -117,8 +117,8 @@ namespace MatterHackers.VectorMath
 			}
 
 			// and finaly the z planes
-			double minDistToZ = (bounds[(int)ray.sign[2]].z - ray.origin.z) * ray.oneOverDirection.z;
-			double maxDistToZ = (bounds[1 - (int)ray.sign[2]].z - ray.origin.z) * ray.oneOverDirection.z;
+			double minDistToZ = (bounds[(int)ray.sign[2]].Z - ray.origin.Z) * ray.oneOverDirection.Z;
+			double maxDistToZ = (bounds[1 - (int)ray.sign[2]].Z - ray.origin.Z) * ray.oneOverDirection.Z;
 
 			if ((minDistFound > maxDistToZ) || (minDistToZ > maxDistFound))
 			{

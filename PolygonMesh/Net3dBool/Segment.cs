@@ -359,7 +359,7 @@ namespace Net3dBool
 		{
 			Vector3 point1 = vertex1.GetPosition();
 			Vector3 point2 = vertex2.GetPosition();
-			Vector3 edgeDirection = new Vector3(point2.x - point1.x, point2.y - point1.y, point2.z - point1.z);
+			Vector3 edgeDirection = new Vector3(point2.X - point1.X, point2.Y - point1.Y, point2.Z - point1.Z);
 			Line edgeLine = new Line(edgeDirection, point1);
 
 			if (index == 0)

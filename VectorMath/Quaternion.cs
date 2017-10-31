@@ -97,17 +97,17 @@ namespace MatterHackers.VectorMath
 		/// <summary>
 		/// Gets or sets the X component of this instance.
 		/// </summary>
-		public double X { get { return xyz.x; } set { xyz.x = value; } }
+		public double X { get { return xyz.X; } set { xyz.X = value; } }
 
 		/// <summary>
 		/// Gets or sets the Y component of this instance.
 		/// </summary>
-		public double Y { get { return xyz.y; } set { xyz.y = value; } }
+		public double Y { get { return xyz.Y; } set { xyz.Y = value; } }
 
 		/// <summary>
 		/// Gets or sets the Z component of this instance.
 		/// </summary>
-		public double Z { get { return xyz.z; } set { xyz.z = value; } }
+		public double Z { get { return xyz.Z; } set { xyz.Z = value; } }
 
 		/// <summary>
 		/// Gets or sets the W component of this instance.
@@ -129,7 +129,7 @@ namespace MatterHackers.VectorMath
 		{
 			Vector4 result = ToAxisAngle();
 			axis = result.Xyz;
-			angle = result.w;
+			angle = result.W;
 		}
 
 		/// <summary>
@@ -144,7 +144,7 @@ namespace MatterHackers.VectorMath
 
 			Vector4 result = new Vector4();
 
-			result.w = 2.0f * (float)System.Math.Acos(q.W); // angle
+			result.W = 2.0f * (float)System.Math.Acos(q.W); // angle
 			float den = (float)System.Math.Sqrt(1.0 - q.W * q.W);
 			if (den > 0.0001f)
 			{
@@ -466,9 +466,9 @@ namespace MatterHackers.VectorMath
 
 		public static Quaternion FromEulerAngles(Vector3 rotation)
 		{
-			Quaternion xRotation = FromAxisAngle(Vector3.UnitX, rotation.x);
-			Quaternion yRotation = FromAxisAngle(Vector3.UnitY, rotation.y);
-			Quaternion zRotation = FromAxisAngle(Vector3.UnitZ, rotation.z);
+			Quaternion xRotation = FromAxisAngle(Vector3.UnitX, rotation.X);
+			Quaternion yRotation = FromAxisAngle(Vector3.UnitY, rotation.Y);
+			Quaternion zRotation = FromAxisAngle(Vector3.UnitZ, rotation.Z);
 
 			//return xRotation * yRotation * zRotation;
 			return zRotation * yRotation * xRotation;
@@ -696,7 +696,7 @@ namespace MatterHackers.VectorMath
 		/// <returns>A hash code formed from the bitwise XOR of this objects members.</returns>
 		public override int GetHashCode()
 		{
-			return new { Xyz.x, Xyz.y, Xyz.z, W }.GetHashCode();
+			return new { Xyz.X, Xyz.Y, Xyz.Z, W }.GetHashCode();
 		}
 
 		#endregion public override int GetHashCode ()

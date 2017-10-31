@@ -145,12 +145,12 @@ namespace MatterHackers.Agg
 
 		public void Render(IImageByte imageSource, Vector2 position)
 		{
-			Render(imageSource, position.x, position.y);
+			Render(imageSource, position.X, position.Y);
 		}
 
 		public void Render(IImageByte imageSource, Vector2 position, double width, double height)
 		{
-			Render(imageSource, position.x, position.y, width, height);
+			Render(imageSource, position.X, position.Y, width, height);
 		}
 
 		public void Render(IImageByte imageSource, double x, double y)
@@ -193,7 +193,7 @@ namespace MatterHackers.Agg
 
 		public void Render(IVertexSource vertexSource, Vector2 position, IColorType color)
 		{
-			Render(new VertexSourceApplyTransform(vertexSource, Affine.NewTranslation(position.x, position.y)), 0, color);
+			Render(new VertexSourceApplyTransform(vertexSource, Affine.NewTranslation(position.X, position.Y)), 0, color);
 		}
 
 		public abstract void Clear(IColorType color);
@@ -219,7 +219,7 @@ namespace MatterHackers.Agg
 
 		public void Circle(Vector2 origin, double radius, Color color)
 		{
-			Circle(origin.x, origin.y, radius, color);
+			Circle(origin.X, origin.Y, radius, color);
 		}
 
 		public void Circle(double x, double y, double radius, Color color)
@@ -230,7 +230,7 @@ namespace MatterHackers.Agg
 
 		public void Line(Vector2 start, Vector2 end, Color color, double strokeWidth = 1)
 		{
-			Line(start.x, start.y, end.x, end.y, color, strokeWidth);
+			Line(start.X, start.Y, end.X, end.Y, color, strokeWidth);
 		}
 
 		public void Line(double x1, double y1, double x2, double y2, Color color, double strokeWidth = 1)
@@ -271,7 +271,7 @@ namespace MatterHackers.Agg
 
 		public void FillRectangle(Vector2 leftBottom, Vector2 rightTop, IColorType fillColor)
 		{
-			FillRectangle(leftBottom.x, leftBottom.y, rightTop.x, rightTop.y, fillColor);
+			FillRectangle(leftBottom.X, leftBottom.Y, rightTop.X, rightTop.Y, fillColor);
 		}
 
 		public abstract void FillRectangle(double left, double bottom, double right, double top, IColorType fillColor);

@@ -71,7 +71,7 @@ namespace MatterHackers.Agg.UI
 				{
 					Vector2 mousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
 					mousePosition += OriginRelativeParent;
-					double deltaX = mousePosition.x - DownPosition.x;
+					double deltaX = mousePosition.X - DownPosition.X;
 					double newSplitterPosition = ((Splitter)Parent).SplitterDistance + deltaX;
 
 					if (newSplitterPosition < Parent.LocalBounds.Left + Parent.Padding.Left)

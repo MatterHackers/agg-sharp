@@ -396,7 +396,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		{
 			if (HardwareAvailable)
 			{
-				Translate(vector.x, vector.y, vector.z);
+				Translate(vector.X, vector.Y, vector.Z);
 			}
 		}
 

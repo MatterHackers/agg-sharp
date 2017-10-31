@@ -433,7 +433,7 @@ namespace MatterHackers.Agg.Image
 
 		public virtual RectangleInt GetBounds()
 		{
-			return new RectangleInt(-(int)OriginOffset.x, -(int)OriginOffset.y, Width - (int)OriginOffset.x, Height - (int)OriginOffset.y);
+			return new RectangleInt(-(int)OriginOffset.X, -(int)OriginOffset.Y, Width - (int)OriginOffset.X, Height - (int)OriginOffset.Y);
 		}
 
 		public IRecieveBlenderByte GetRecieveBlender()
@@ -625,8 +625,8 @@ namespace MatterHackers.Agg.Image
 
 		public void SetPixel(int x, int y, Color color)
 		{
-			x -= (int)OriginOffset.x;
-			y -= (int)OriginOffset.y;
+			x -= (int)OriginOffset.X;
+			y -= (int)OriginOffset.Y;
 			recieveBlender.CopyPixels(GetBuffer(), GetBufferOffsetXY(x, y), color, 1);
 		}
 
@@ -970,7 +970,7 @@ namespace MatterHackers.Agg.Image
 				// set the frame equal to the TempImage
 				Initialize(TempImage);
 
-				OriginOffset = new Vector2(-visibleBounds.Left + OldOriginOffset.x, -visibleBounds.Bottom + OldOriginOffset.y);
+				OriginOffset = new Vector2(-visibleBounds.Left + OldOriginOffset.X, -visibleBounds.Bottom + OldOriginOffset.Y);
 			}
 			else
 			{
@@ -1182,7 +1182,7 @@ namespace MatterHackers.Agg.Image
 		public RectangleInt GetBoundingRect()
 		{
 			RectangleInt boundingRect = new RectangleInt(0, 0, Width, Height);
-			boundingRect.Offset((int)OriginOffset.x, (int)OriginOffset.y);
+			boundingRect.Offset((int)OriginOffset.X, (int)OriginOffset.Y);
 			return boundingRect;
 		}
 
@@ -1212,8 +1212,8 @@ namespace MatterHackers.Agg.Image
 				MatterHackers.Agg.Graphics2D graphics2D = NewGraphics2D();
 				graphics2D.Clear(new Color(0, 0, 0, 0));
 
-				int x = -boundsToCopyFrom.Left - (int)sourceImage.OriginOffset.x;
-				int y = -boundsToCopyFrom.Bottom - (int)sourceImage.OriginOffset.y;
+				int x = -boundsToCopyFrom.Left - (int)sourceImage.OriginOffset.X;
+				int y = -boundsToCopyFrom.Bottom - (int)sourceImage.OriginOffset.Y;
 
 				graphics2D.Render(sourceImage, x, y, 0, 1, 1);
 			}

@@ -39,22 +39,22 @@ namespace MatterHackers.VectorMath
 		/// <summary>
 		/// The X component of the Vector4d.
 		/// </summary>
-		public double x;
+		public double X;
 
 		/// <summary>
 		/// The Y component of the Vector4d.
 		/// </summary>
-		public double y;
+		public double Y;
 
 		/// <summary>
 		/// The Z component of the Vector4d.
 		/// </summary>
-		public double z;
+		public double Z;
 
 		/// <summary>
 		/// The W component of the Vector4d.
 		/// </summary>
-		public double w;
+		public double W;
 
 		/// <summary>
 		/// Defines a unit-length Vector4d that points towards the X-axis.
@@ -104,10 +104,10 @@ namespace MatterHackers.VectorMath
 		/// <param name="w">The w component of the Vector4d.</param>
 		public Vector4(double x, double y, double z, double w)
 		{
-			this.x = x;
-			this.y = y;
-			this.z = z;
-			this.w = w;
+			this.X = x;
+			this.Y = y;
+			this.Z = z;
+			this.W = w;
 		}
 
 		/// <summary>
@@ -116,10 +116,10 @@ namespace MatterHackers.VectorMath
 		/// <param name="v">The Vector2d to copy components from.</param>
 		public Vector4(Vector2 v)
 		{
-			x = v.x;
-			y = v.y;
-			z = 0.0f;
-			w = 0.0f;
+			X = v.X;
+			Y = v.Y;
+			Z = 0.0f;
+			W = 0.0f;
 		}
 
 		/// <summary>
@@ -128,10 +128,10 @@ namespace MatterHackers.VectorMath
 		/// <param name="v">The Vector3d to copy components from.</param>
 		public Vector4(Vector3 v)
 		{
-			x = v.x;
-			y = v.y;
-			z = v.z;
-			w = 0.0f;
+			X = v.X;
+			Y = v.Y;
+			Z = v.Z;
+			W = 0.0f;
 		}
 
 		/// <summary>
@@ -141,10 +141,10 @@ namespace MatterHackers.VectorMath
 		/// <param name="w">The w component of the new Vector4.</param>
 		public Vector4(Vector3 v, double w)
 		{
-			x = v.x;
-			y = v.y;
-			z = v.z;
-			this.w = w;
+			X = v.X;
+			Y = v.Y;
+			Z = v.Z;
+			this.W = w;
 		}
 
 		/// <summary>
@@ -153,10 +153,10 @@ namespace MatterHackers.VectorMath
 		/// <param name="v">The Vector4d to copy components from.</param>
 		public Vector4(Vector4 v)
 		{
-			x = v.x;
-			y = v.y;
-			z = v.z;
-			w = v.w;
+			X = v.X;
+			Y = v.Y;
+			Z = v.Z;
+			W = v.W;
 		}
 
 		#endregion Constructors
@@ -172,16 +172,16 @@ namespace MatterHackers.VectorMath
 				switch (index)
 				{
 					case 0:
-						return x;
+						return X;
 
 					case 1:
-						return y;
+						return Y;
 
 					case 2:
-						return z;
+						return Z;
 
 					case 3:
-						return w;
+						return W;
 
 					default:
 						return 0;
@@ -193,19 +193,19 @@ namespace MatterHackers.VectorMath
 				switch (index)
 				{
 					case 0:
-						x = value;
+						X = value;
 						break;
 
 					case 1:
-						y = value;
+						Y = value;
 						break;
 
 					case 2:
-						z = value;
+						Z = value;
 						break;
 
 					case 3:
-						w = value;
+						W = value;
 						break;
 
 					default:
@@ -229,7 +229,7 @@ namespace MatterHackers.VectorMath
 		{
 			get
 			{
-				return System.Math.Sqrt(x * x + y * y + z * z + w * w);
+				return System.Math.Sqrt(X * X + Y * Y + Z * Z + W * W);
 			}
 		}
 
@@ -249,7 +249,7 @@ namespace MatterHackers.VectorMath
 		{
 			get
 			{
-				return x * x + y * y + z * z + w * w;
+				return X * X + Y * Y + Z * Z + W * W;
 			}
 		}
 
@@ -263,10 +263,10 @@ namespace MatterHackers.VectorMath
 		public void Normalize()
 		{
 			double scale = 1.0 / this.Length;
-			x *= scale;
-			y *= scale;
-			z *= scale;
-			w *= scale;
+			X *= scale;
+			Y *= scale;
+			Z *= scale;
+			W *= scale;
 		}
 
 		#endregion public void Normalize()
@@ -297,7 +297,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">Result of operation.</param>
 		public static void Add(ref Vector4 a, ref Vector4 b, out Vector4 result)
 		{
-			result = new Vector4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
+			result = new Vector4(a.X + b.X, a.Y + b.Y, a.Z + b.Z, a.W + b.W);
 		}
 
 		#endregion Add
@@ -324,7 +324,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">Result of subtraction</param>
 		public static void Subtract(ref Vector4 a, ref Vector4 b, out Vector4 result)
 		{
-			result = new Vector4(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
+			result = new Vector4(a.X - b.X, a.Y - b.Y, a.Z - b.Z, a.W - b.W);
 		}
 
 		#endregion Subtract
@@ -351,7 +351,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">Result of the operation.</param>
 		public static void Multiply(ref Vector4 vector, double scale, out Vector4 result)
 		{
-			result = new Vector4(vector.x * scale, vector.y * scale, vector.z * scale, vector.w * scale);
+			result = new Vector4(vector.X * scale, vector.Y * scale, vector.Z * scale, vector.W * scale);
 		}
 
 		/// <summary>
@@ -374,7 +374,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">Result of the operation.</param>
 		public static void Multiply(ref Vector4 vector, ref Vector4 scale, out Vector4 result)
 		{
-			result = new Vector4(vector.x * scale.x, vector.y * scale.y, vector.z * scale.z, vector.w * scale.w);
+			result = new Vector4(vector.X * scale.X, vector.Y * scale.Y, vector.Z * scale.Z, vector.W * scale.W);
 		}
 
 		#endregion Multiply
@@ -424,7 +424,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">Result of the operation.</param>
 		public static void Divide(ref Vector4 vector, ref Vector4 scale, out Vector4 result)
 		{
-			result = new Vector4(vector.x / scale.x, vector.y / scale.y, vector.z / scale.z, vector.w / scale.w);
+			result = new Vector4(vector.X / scale.X, vector.Y / scale.Y, vector.Z / scale.Z, vector.W / scale.W);
 		}
 
 		#endregion Divide
@@ -439,10 +439,10 @@ namespace MatterHackers.VectorMath
 		/// <returns>The component-wise minimum</returns>
 		public static Vector4 Min(Vector4 a, Vector4 b)
 		{
-			a.x = a.x < b.x ? a.x : b.x;
-			a.y = a.y < b.y ? a.y : b.y;
-			a.z = a.z < b.z ? a.z : b.z;
-			a.w = a.w < b.w ? a.w : b.w;
+			a.X = a.X < b.X ? a.X : b.X;
+			a.Y = a.Y < b.Y ? a.Y : b.Y;
+			a.Z = a.Z < b.Z ? a.Z : b.Z;
+			a.W = a.W < b.W ? a.W : b.W;
 			return a;
 		}
 
@@ -454,10 +454,10 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">The component-wise minimum</param>
 		public static void Min(ref Vector4 a, ref Vector4 b, out Vector4 result)
 		{
-			result.x = a.x < b.x ? a.x : b.x;
-			result.y = a.y < b.y ? a.y : b.y;
-			result.z = a.z < b.z ? a.z : b.z;
-			result.w = a.w < b.w ? a.w : b.w;
+			result.X = a.X < b.X ? a.X : b.X;
+			result.Y = a.Y < b.Y ? a.Y : b.Y;
+			result.Z = a.Z < b.Z ? a.Z : b.Z;
+			result.W = a.W < b.W ? a.W : b.W;
 		}
 
 		#endregion Min
@@ -472,10 +472,10 @@ namespace MatterHackers.VectorMath
 		/// <returns>The component-wise maximum</returns>
 		public static Vector4 Max(Vector4 a, Vector4 b)
 		{
-			a.x = a.x > b.x ? a.x : b.x;
-			a.y = a.y > b.y ? a.y : b.y;
-			a.z = a.z > b.z ? a.z : b.z;
-			a.w = a.w > b.w ? a.w : b.w;
+			a.X = a.X > b.X ? a.X : b.X;
+			a.Y = a.Y > b.Y ? a.Y : b.Y;
+			a.Z = a.Z > b.Z ? a.Z : b.Z;
+			a.W = a.W > b.W ? a.W : b.W;
 			return a;
 		}
 
@@ -487,10 +487,10 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">The component-wise maximum</param>
 		public static void Max(ref Vector4 a, ref Vector4 b, out Vector4 result)
 		{
-			result.x = a.x > b.x ? a.x : b.x;
-			result.y = a.y > b.y ? a.y : b.y;
-			result.z = a.z > b.z ? a.z : b.z;
-			result.w = a.w > b.w ? a.w : b.w;
+			result.X = a.X > b.X ? a.X : b.X;
+			result.Y = a.Y > b.Y ? a.Y : b.Y;
+			result.Z = a.Z > b.Z ? a.Z : b.Z;
+			result.W = a.W > b.W ? a.W : b.W;
 		}
 
 		#endregion Max
@@ -506,10 +506,10 @@ namespace MatterHackers.VectorMath
 		/// <returns>The clamped vector</returns>
 		public static Vector4 Clamp(Vector4 vec, Vector4 min, Vector4 max)
 		{
-			vec.x = vec.x < min.x ? min.x : vec.x > max.x ? max.x : vec.x;
-			vec.y = vec.y < min.y ? min.y : vec.y > max.y ? max.y : vec.y;
-			vec.z = vec.x < min.z ? min.z : vec.z > max.z ? max.z : vec.z;
-			vec.w = vec.y < min.w ? min.w : vec.w > max.w ? max.w : vec.w;
+			vec.X = vec.X < min.X ? min.X : vec.X > max.X ? max.X : vec.X;
+			vec.Y = vec.Y < min.Y ? min.Y : vec.Y > max.Y ? max.Y : vec.Y;
+			vec.Z = vec.X < min.Z ? min.Z : vec.Z > max.Z ? max.Z : vec.Z;
+			vec.W = vec.Y < min.W ? min.W : vec.W > max.W ? max.W : vec.W;
 			return vec;
 		}
 
@@ -522,10 +522,10 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">The clamped vector</param>
 		public static void Clamp(ref Vector4 vec, ref Vector4 min, ref Vector4 max, out Vector4 result)
 		{
-			result.x = vec.x < min.x ? min.x : vec.x > max.x ? max.x : vec.x;
-			result.y = vec.y < min.y ? min.y : vec.y > max.y ? max.y : vec.y;
-			result.z = vec.x < min.z ? min.z : vec.z > max.z ? max.z : vec.z;
-			result.w = vec.y < min.w ? min.w : vec.w > max.w ? max.w : vec.w;
+			result.X = vec.X < min.X ? min.X : vec.X > max.X ? max.X : vec.X;
+			result.Y = vec.Y < min.Y ? min.Y : vec.Y > max.Y ? max.Y : vec.Y;
+			result.Z = vec.X < min.Z ? min.Z : vec.Z > max.Z ? max.Z : vec.Z;
+			result.W = vec.Y < min.W ? min.W : vec.W > max.W ? max.W : vec.W;
 		}
 
 		#endregion Clamp
@@ -540,10 +540,10 @@ namespace MatterHackers.VectorMath
 		public static Vector4 Normalize(Vector4 vec)
 		{
 			double scale = 1.0 / vec.Length;
-			vec.x *= scale;
-			vec.y *= scale;
-			vec.z *= scale;
-			vec.w *= scale;
+			vec.X *= scale;
+			vec.Y *= scale;
+			vec.Z *= scale;
+			vec.W *= scale;
 			return vec;
 		}
 
@@ -555,10 +555,10 @@ namespace MatterHackers.VectorMath
 		public static void Normalize(ref Vector4 vec, out Vector4 result)
 		{
 			double scale = 1.0 / vec.Length;
-			result.x = vec.x * scale;
-			result.y = vec.y * scale;
-			result.z = vec.z * scale;
-			result.w = vec.w * scale;
+			result.X = vec.X * scale;
+			result.Y = vec.Y * scale;
+			result.Z = vec.Z * scale;
+			result.W = vec.W * scale;
 		}
 
 		#endregion Normalize
@@ -573,7 +573,7 @@ namespace MatterHackers.VectorMath
 		/// <returns>The dot product of the two inputs</returns>
 		public static double Dot(Vector4 left, Vector4 right)
 		{
-			return left.x * right.x + left.y * right.y + left.z * right.z + left.w * right.w;
+			return left.X * right.X + left.Y * right.Y + left.Z * right.Z + left.W * right.W;
 		}
 
 		/// <summary>
@@ -584,7 +584,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">The dot product of the two inputs</param>
 		public static void Dot(ref Vector4 left, ref Vector4 right, out double result)
 		{
-			result = left.x * right.x + left.y * right.y + left.z * right.z + left.w * right.w;
+			result = left.X * right.X + left.Y * right.Y + left.Z * right.Z + left.W * right.W;
 		}
 
 		#endregion Dot
@@ -600,10 +600,10 @@ namespace MatterHackers.VectorMath
 		/// <returns>a when blend=0, b when blend=1, and a linear combination otherwise</returns>
 		public static Vector4 Lerp(Vector4 a, Vector4 b, double blend)
 		{
-			a.x = blend * (b.x - a.x) + a.x;
-			a.y = blend * (b.y - a.y) + a.y;
-			a.z = blend * (b.z - a.z) + a.z;
-			a.w = blend * (b.w - a.w) + a.w;
+			a.X = blend * (b.X - a.X) + a.X;
+			a.Y = blend * (b.Y - a.Y) + a.Y;
+			a.Z = blend * (b.Z - a.Z) + a.Z;
+			a.W = blend * (b.W - a.W) + a.W;
 			return a;
 		}
 
@@ -616,10 +616,10 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">a when blend=0, b when blend=1, and a linear combination otherwise</param>
 		public static void Lerp(ref Vector4 a, ref Vector4 b, double blend, out Vector4 result)
 		{
-			result.x = blend * (b.x - a.x) + a.x;
-			result.y = blend * (b.y - a.y) + a.y;
-			result.z = blend * (b.z - a.z) + a.z;
-			result.w = blend * (b.w - a.w) + a.w;
+			result.X = blend * (b.X - a.X) + a.X;
+			result.Y = blend * (b.Y - a.Y) + a.Y;
+			result.Z = blend * (b.Z - a.Z) + a.Z;
+			result.W = blend * (b.W - a.W) + a.W;
 		}
 
 		#endregion Lerp
@@ -684,10 +684,10 @@ namespace MatterHackers.VectorMath
 		public static void Transform(ref Vector4 vec, ref Matrix4X4 mat, out Vector4 result)
 		{
 			result = new Vector4(
-				vec.x * mat.Row0.x + vec.y * mat.Row1.x + vec.z * mat.Row2.x + vec.w * mat.Row3.x,
-				vec.x * mat.Row0.y + vec.y * mat.Row1.y + vec.z * mat.Row2.y + vec.w * mat.Row3.y,
-				vec.x * mat.Row0.z + vec.y * mat.Row1.z + vec.z * mat.Row2.z + vec.w * mat.Row3.z,
-				vec.x * mat.Row0.w + vec.y * mat.Row1.w + vec.z * mat.Row2.w + vec.w * mat.Row3.w);
+				vec.X * mat.Row0.X + vec.Y * mat.Row1.X + vec.Z * mat.Row2.X + vec.W * mat.Row3.X,
+				vec.X * mat.Row0.Y + vec.Y * mat.Row1.Y + vec.Z * mat.Row2.Y + vec.W * mat.Row3.Y,
+				vec.X * mat.Row0.Z + vec.Y * mat.Row1.Z + vec.Z * mat.Row2.Z + vec.W * mat.Row3.Z,
+				vec.X * mat.Row0.W + vec.Y * mat.Row1.W + vec.Z * mat.Row2.W + vec.W * mat.Row3.W);
 		}
 
 		/// <summary>
@@ -711,7 +711,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">The result of the operation.</param>
 		public static void Transform(ref Vector4 vec, ref Quaternion quat, out Vector4 result)
 		{
-			Quaternion v = new Quaternion(vec.x, vec.y, vec.z, vec.w), i, t;
+			Quaternion v = new Quaternion(vec.X, vec.Y, vec.Z, vec.W), i, t;
 			Quaternion.Invert(ref quat, out i);
 			Quaternion.Multiply(ref quat, ref v, out t);
 			Quaternion.Multiply(ref t, ref i, out v);
@@ -728,12 +728,12 @@ namespace MatterHackers.VectorMath
 		/// <summary>
 		/// Gets or sets an OpenTK.Vector2d with the X and Y components of this instance.
 		/// </summary>
-		public Vector2 Xy { get { return new Vector2(x, y); } set { x = value.x; y = value.y; } }
+		public Vector2 Xy { get { return new Vector2(X, Y); } set { X = value.X; Y = value.Y; } }
 
 		/// <summary>
 		/// Gets or sets an OpenTK.Vector3d with the X, Y and Z components of this instance.
 		/// </summary>
-		public Vector3 Xyz { get { return new Vector3(x, y, z); } set { x = value.x; y = value.y; z = value.z; } }
+		public Vector3 Xyz { get { return new Vector3(X, Y, Z); } set { X = value.X; Y = value.Y; Z = value.Z; } }
 
 		#endregion Swizzle
 
@@ -747,10 +747,10 @@ namespace MatterHackers.VectorMath
 		/// <returns>The result of the calculation.</returns>
 		public static Vector4 operator +(Vector4 left, Vector4 right)
 		{
-			left.x += right.x;
-			left.y += right.y;
-			left.z += right.z;
-			left.w += right.w;
+			left.X += right.X;
+			left.Y += right.Y;
+			left.Z += right.Z;
+			left.W += right.W;
 			return left;
 		}
 
@@ -762,10 +762,10 @@ namespace MatterHackers.VectorMath
 		/// <returns>The result of the calculation.</returns>
 		public static Vector4 operator -(Vector4 left, Vector4 right)
 		{
-			left.x -= right.x;
-			left.y -= right.y;
-			left.z -= right.z;
-			left.w -= right.w;
+			left.X -= right.X;
+			left.Y -= right.Y;
+			left.Z -= right.Z;
+			left.W -= right.W;
 			return left;
 		}
 
@@ -776,10 +776,10 @@ namespace MatterHackers.VectorMath
 		/// <returns>The result of the calculation.</returns>
 		public static Vector4 operator -(Vector4 vec)
 		{
-			vec.x = -vec.x;
-			vec.y = -vec.y;
-			vec.z = -vec.z;
-			vec.w = -vec.w;
+			vec.X = -vec.X;
+			vec.Y = -vec.Y;
+			vec.Z = -vec.Z;
+			vec.W = -vec.W;
 			return vec;
 		}
 
@@ -791,10 +791,10 @@ namespace MatterHackers.VectorMath
 		/// <returns>The result of the calculation.</returns>
 		public static Vector4 operator *(Vector4 vec, double scale)
 		{
-			vec.x *= scale;
-			vec.y *= scale;
-			vec.z *= scale;
-			vec.w *= scale;
+			vec.X *= scale;
+			vec.Y *= scale;
+			vec.Z *= scale;
+			vec.W *= scale;
 			return vec;
 		}
 
@@ -806,10 +806,10 @@ namespace MatterHackers.VectorMath
 		/// <returns>The result of the calculation.</returns>
 		public static Vector4 operator *(double scale, Vector4 vec)
 		{
-			vec.x *= scale;
-			vec.y *= scale;
-			vec.z *= scale;
-			vec.w *= scale;
+			vec.X *= scale;
+			vec.Y *= scale;
+			vec.Z *= scale;
+			vec.W *= scale;
 			return vec;
 		}
 
@@ -822,10 +822,10 @@ namespace MatterHackers.VectorMath
 		public static Vector4 operator /(Vector4 vec, double scale)
 		{
 			double mult = 1 / scale;
-			vec.x *= mult;
-			vec.y *= mult;
-			vec.z *= mult;
-			vec.w *= mult;
+			vec.X *= mult;
+			vec.Y *= mult;
+			vec.Z *= mult;
+			vec.W *= mult;
 			return vec;
 		}
 
@@ -863,7 +863,7 @@ namespace MatterHackers.VectorMath
 		/// <returns></returns>
 		public override string ToString()
 		{
-			return String.Format("{0}, {1}, {2}, {3}", x, y, z, w);
+			return String.Format("{0}, {1}, {2}, {3}", X, Y, Z, W);
 		}
 
 		/// <summary>
@@ -873,7 +873,7 @@ namespace MatterHackers.VectorMath
 		/// <returns></returns>
 		public string ToString(string format = "")
 		{
-			return x.ToString(format) + ", " + y.ToString(format) + ", " + z.ToString(format) + ", " + w.ToString(format);
+			return X.ToString(format) + ", " + Y.ToString(format) + ", " + Z.ToString(format) + ", " + W.ToString(format);
 		}
 
 		#endregion public override string ToString()
@@ -886,7 +886,7 @@ namespace MatterHackers.VectorMath
 		/// <returns>A System.Int32 containing the unique hashcode for this instance.</returns>
 		public override int GetHashCode()
 		{
-			return new { x, y, z, w }.GetHashCode();
+			return new { X, Y, Z, W }.GetHashCode();
 		}
 
 		/// <summary>
@@ -898,10 +898,10 @@ namespace MatterHackers.VectorMath
 		{
 			long hash = 19;
 
-			hash = hash * 31 + x.GetHashCode();
-			hash = hash * 31 + y.GetHashCode();
-			hash = hash * 31 + z.GetHashCode();
-			hash = hash * 31 + w.GetHashCode();
+			hash = hash * 31 + X.GetHashCode();
+			hash = hash * 31 + Y.GetHashCode();
+			hash = hash * 31 + Z.GetHashCode();
+			hash = hash * 31 + W.GetHashCode();
 
 			return hash;
 		}
@@ -931,10 +931,10 @@ namespace MatterHackers.VectorMath
 		/// <returns>True if the instances are equal; false otherwise.</returns>
 		public bool Equals(Vector4 OtherVector, double ErrorValue)
 		{
-			if ((x < OtherVector.x + ErrorValue && x > OtherVector.x - ErrorValue) &&
-				(y < OtherVector.y + ErrorValue && y > OtherVector.y - ErrorValue) &&
-				(z < OtherVector.z + ErrorValue && z > OtherVector.z - ErrorValue) &&
-				(w < OtherVector.w + ErrorValue && w > OtherVector.w - ErrorValue))
+			if ((X < OtherVector.X + ErrorValue && X > OtherVector.X - ErrorValue) &&
+				(Y < OtherVector.Y + ErrorValue && Y > OtherVector.Y - ErrorValue) &&
+				(Z < OtherVector.Z + ErrorValue && Z > OtherVector.Z - ErrorValue) &&
+				(W < OtherVector.W + ErrorValue && W > OtherVector.W - ErrorValue))
 			{
 				return true;
 			}
@@ -956,10 +956,10 @@ namespace MatterHackers.VectorMath
 		public bool Equals(Vector4 other)
 		{
 			return
-				x == other.x &&
-				y == other.y &&
-				z == other.z &&
-				w == other.w;
+				X == other.X &&
+				Y == other.Y &&
+				Z == other.Z &&
+				W == other.W;
 		}
 
 		#endregion IEquatable<Vector4d> Members

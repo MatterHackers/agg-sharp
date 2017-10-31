@@ -79,7 +79,7 @@ namespace MatterHackers.Agg.Collections
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{
-			if (cachedAABB.minXYZ.x == double.NegativeInfinity)
+			if (cachedAABB.minXYZ.X == double.NegativeInfinity)
 			{
 				cachedAABB = items[0].GetAxisAlignedBoundingBox();
 				for (int i = 1; i < items.Count; i++)

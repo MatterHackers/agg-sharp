@@ -433,7 +433,7 @@ namespace MatterHackers.DataConverters3D
 			}
 
 			// Make sure we have some data. Else return 0 bounds.
-			if (totalBounds.minXYZ.x == double.PositiveInfinity)
+			if (totalBounds.minXYZ.X == double.PositiveInfinity)
 			{
 				return AxisAlignedBoundingBox.Zero;
 			}

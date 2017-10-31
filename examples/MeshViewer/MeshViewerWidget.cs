@@ -230,7 +230,7 @@ namespace MatterHackers.MeshVisualizer
 					{
 						Vector3 renderPosition = bounds.Center;
 						Vector2 objectCenterScreenSpace = this.World.GetScreenPosition(renderPosition);
-						Point2D screenPositionOfObject3D = new Point2D((int)objectCenterScreenSpace.x, (int)objectCenterScreenSpace.y);
+						Point2D screenPositionOfObject3D = new Point2D((int)objectCenterScreenSpace.X, (int)objectCenterScreenSpace.Y);
 
 						foundChildren.Add(new WidgetAndPosition(this, screenPositionOfObject3D, object3DName));
 					}
@@ -350,7 +350,7 @@ namespace MatterHackers.MeshVisualizer
 			MeshViewerWidget.displayVolume = displayVolume;
 			Vector3 displayVolumeToBuild = Vector3.ComponentMax(displayVolume, new Vector3(1, 1, 1));
 
-			double sizeForMarking = Math.Max(displayVolumeToBuild.x, displayVolumeToBuild.y);
+			double sizeForMarking = Math.Max(displayVolumeToBuild.X, displayVolumeToBuild.Y);
 			double divisor = 10;
 			int skip = 1;
 			if (sizeForMarking > 1000)
@@ -367,16 +367,16 @@ namespace MatterHackers.MeshVisualizer
 			switch (bedShape)
 			{
 				case BedShape.Rectangular:
-					if (displayVolumeToBuild.z > 0)
+					if (displayVolumeToBuild.Z > 0)
 					{
 						buildVolume = PlatonicSolids.CreateCube(displayVolumeToBuild);
 						foreach (Vertex vertex in buildVolume.Vertices)
 						{
-							vertex.Position = vertex.Position + new Vector3(0, 0, displayVolumeToBuild.z / 2);
+							vertex.Position = vertex.Position + new Vector3(0, 0, displayVolumeToBuild.Z / 2);
 						}
 					}
 					CreateRectangularBedGridImage(displayVolumeToBuild, bedCenter, divisor, skip);
-					printerBed = PlatonicSolids.CreateCube(displayVolumeToBuild.x, displayVolumeToBuild.y, 1.8);
+					printerBed = PlatonicSolids.CreateCube(displayVolumeToBuild.X, displayVolumeToBuild.Y, 1.8);
 					{
 						Face face = printerBed.Faces[0];
 						MeshHelper.PlaceTextureOnFace(face, BedImage);
@@ -385,26 +385,26 @@ namespace MatterHackers.MeshVisualizer
 
 				case BedShape.Circular:
 					{
-						if (displayVolumeToBuild.z > 0)
+						if (displayVolumeToBuild.Z > 0)
 						{
-							buildVolume = VertexSourceToMesh.Extrude(new Ellipse(new Vector2(), displayVolumeToBuild.x / 2, displayVolumeToBuild.y / 2), displayVolumeToBuild.z);
+							buildVolume = VertexSourceToMesh.Extrude(new Ellipse(new Vector2(), displayVolumeToBuild.X / 2, displayVolumeToBuild.Y / 2), displayVolumeToBuild.Z);
 							foreach (Vertex vertex in buildVolume.Vertices)
 							{
 								vertex.Position = vertex.Position + new Vector3(0, 0, .2);
 							}
 						}
-						CreateCircularBedGridImage((int)(displayVolumeToBuild.x / divisor), (int)(displayVolumeToBuild.y / divisor), skip);
-						printerBed = VertexSourceToMesh.Extrude(new Ellipse(new Vector2(), displayVolumeToBuild.x / 2, displayVolumeToBuild.y / 2), 2);
+						CreateCircularBedGridImage((int)(displayVolumeToBuild.X / divisor), (int)(displayVolumeToBuild.Y / divisor), skip);
+						printerBed = VertexSourceToMesh.Extrude(new Ellipse(new Vector2(), displayVolumeToBuild.X / 2, displayVolumeToBuild.Y / 2), 2);
 						{
 							foreach (Face face in printerBed.Faces)
 							{
-								if (face.Normal.z > 0)
+								if (face.Normal.Z > 0)
 								{
 									face.SetTexture(0, BedImage);
 									foreach (FaceEdge faceEdge in face.FaceEdges())
 									{
-										faceEdge.SetUv(0, new Vector2((displayVolumeToBuild.x / 2 + faceEdge.FirstVertex.Position.x) / displayVolumeToBuild.x,
-											(displayVolumeToBuild.y / 2 + faceEdge.FirstVertex.Position.y) / displayVolumeToBuild.y));
+										faceEdge.SetUv(0, new Vector2((displayVolumeToBuild.X / 2 + faceEdge.FirstVertex.Position.X) / displayVolumeToBuild.X,
+											(displayVolumeToBuild.Y / 2 + faceEdge.FirstVertex.Position.Y) / displayVolumeToBuild.Y));
 									}
 								}
 							}
@@ -682,9 +682,9 @@ namespace MatterHackers.MeshVisualizer
 				Graphics2D graphics2D = BedImage.NewGraphics2D();
 				graphics2D.Clear(bedBaseColor);
 				{
-					double lineDist = BedImage.Width / (displayVolumeToBuild.x / divisor);
+					double lineDist = BedImage.Width / (displayVolumeToBuild.X / divisor);
 
-					double xPositionCm = (-(displayVolume.x / 2.0) + bedCenter.x) / divisor;
+					double xPositionCm = (-(displayVolume.X / 2.0) + bedCenter.X) / divisor;
 					int xPositionCmInt = (int)Math.Round(xPositionCm);
 					double fraction = xPositionCm - xPositionCmInt;
 					int pointSize = 20;
@@ -703,9 +703,9 @@ namespace MatterHackers.MeshVisualizer
 					}
 				}
 				{
-					double lineDist = BedImage.Height / (displayVolumeToBuild.y / divisor);
+					double lineDist = BedImage.Height / (displayVolumeToBuild.Y / divisor);
 
-					double yPositionCm = (-(displayVolume.y / 2.0) + bedCenter.y) / divisor;
+					double yPositionCm = (-(displayVolume.Y / 2.0) + bedCenter.Y) / divisor;
 					int yPositionCmInt = (int)Math.Round(yPositionCm);
 					double fraction = yPositionCm - yPositionCmInt;
 					int pointSize = 20;
@@ -879,9 +879,9 @@ namespace MatterHackers.MeshVisualizer
 
 			Vector3 lightDirectionVector = new Vector3(lightDirection0[0], lightDirection0[1], lightDirection0[2]);
 			lightDirectionVector.Normalize();
-			lightDirection0[0] = (float)lightDirectionVector.x;
-			lightDirection0[1] = (float)lightDirectionVector.y;
-			lightDirection0[2] = (float)lightDirectionVector.z;
+			lightDirection0[0] = (float)lightDirectionVector.X;
+			lightDirection0[1] = (float)lightDirectionVector.Y;
+			lightDirection0[2] = (float)lightDirectionVector.Z;
 			GL.Light(LightName.Light0, LightParameter.Position, lightDirection0);
 			GL.Light(LightName.Light1, LightParameter.Position, lightDirection1);
 #endif

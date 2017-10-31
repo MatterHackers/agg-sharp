@@ -71,10 +71,10 @@ its center. Also, the image is scaled when resizing the window.";
 		{
 			ImageBuffer widgetsSubImage = ImageBuffer.NewSubImageReference(graphics2D.DestImage, graphics2D.GetClippingRect());
 
-			if (orignialSize.x == 0)
+			if (orignialSize.X == 0)
 			{
-				orignialSize.x = WindowSize.x;
-				orignialSize.y = WindowSize.y;
+				orignialSize.X = WindowSize.x;
+				orignialSize.Y = WindowSize.y;
 			}
 
 			ImageBuffer destImageWithPreMultBlender = new ImageBuffer();
@@ -97,16 +97,16 @@ its center. Also, the image is scaled when resizing the window.";
 			clippingProxy_pre.clear(new ColorF(1.0, 1.0, 1.0));
 
 			Affine src_mtx = Affine.NewIdentity();
-			src_mtx *= Affine.NewTranslation(-orignialSize.x / 2 - 10, -orignialSize.y / 2 - 20 - 10);
+			src_mtx *= Affine.NewTranslation(-orignialSize.X / 2 - 10, -orignialSize.Y / 2 - 20 - 10);
 			src_mtx *= Affine.NewRotation(drawAngle.Value * Math.PI / 180.0);
 			src_mtx *= Affine.NewScaling(drawScale.Value);
-			src_mtx *= Affine.NewTranslation(orignialSize.x / 2, orignialSize.y / 2 + 20);
+			src_mtx *= Affine.NewTranslation(orignialSize.X / 2, orignialSize.Y / 2 + 20);
 
 			Affine img_mtx = Affine.NewIdentity();
-			img_mtx *= Affine.NewTranslation(-orignialSize.x / 2 + 10, -orignialSize.y / 2 + 20 + 10);
+			img_mtx *= Affine.NewTranslation(-orignialSize.X / 2 + 10, -orignialSize.Y / 2 + 20 + 10);
 			img_mtx *= Affine.NewRotation(drawAngle.Value * Math.PI / 180.0);
 			img_mtx *= Affine.NewScaling(drawScale.Value);
-			img_mtx *= Affine.NewTranslation(orignialSize.x / 2, orignialSize.y / 2 + 20);
+			img_mtx *= Affine.NewTranslation(orignialSize.X / 2, orignialSize.Y / 2 + 20);
 			img_mtx.invert();
 
 			MatterHackers.Agg.span_allocator sa = new span_allocator();
@@ -139,14 +139,14 @@ its center. Also, the image is scaled when resizing the window.";
 			ScanlineCachePacked8 sl = new ScanlineCachePacked8();
 			//scanline_unpacked_8 sl = new scanline_unpacked_8();
 
-			double r = orignialSize.x;
-			if (orignialSize.y - 60 < r)
+			double r = orignialSize.X;
+			if (orignialSize.Y - 60 < r)
 			{
-				r = orignialSize.y - 60;
+				r = orignialSize.Y - 60;
 			}
 
-			VertexSource.Ellipse ell = new VertexSource.Ellipse(orignialSize.x / 2.0 + 10,
-				orignialSize.y / 2.0 + 20 + 10,
+			VertexSource.Ellipse ell = new VertexSource.Ellipse(orignialSize.X / 2.0 + 10,
+				orignialSize.Y / 2.0 + 20 + 10,
 				r / 2.0 + 16.0,
 				r / 2.0 + 16.0, 200);
 
@@ -161,7 +161,7 @@ its center. Also, the image is scaled when resizing the window.";
 			{
 				Vector2 screenCenter = new Vector2(Width / 2, Height / 2);
 				Vector2 deltaToMouse = mousePosition - screenCenter;
-				double angleToMouse = Math.Atan2(deltaToMouse.y, deltaToMouse.x);
+				double angleToMouse = Math.Atan2(deltaToMouse.Y, deltaToMouse.X);
 				double diagonalSize = Math.Sqrt(sourceImage.Width * sourceImage.Width + sourceImage.Height * sourceImage.Height);
 				double distToMouse = deltaToMouse.Length;
 				double scalling = distToMouse / diagonalSize;

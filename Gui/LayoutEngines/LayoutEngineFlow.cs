@@ -107,7 +107,7 @@ namespace MatterHackers.Agg.UI
 						continue;
 					}
 
-					child.OriginRelativeParent = new Vector2(child.OriginRelativeParent.x - encloseChildrenRect.Left, child.OriginRelativeParent.y);
+					child.OriginRelativeParent = new Vector2(child.OriginRelativeParent.X - encloseChildrenRect.Left, child.OriginRelativeParent.Y);
 				}
 			}
 		}
@@ -126,7 +126,7 @@ namespace MatterHackers.Agg.UI
 						continue;
 					}
 
-					child.OriginRelativeParent = new Vector2(child.OriginRelativeParent.x, child.OriginRelativeParent.y - encloseChildrenRect.Bottom);
+					child.OriginRelativeParent = new Vector2(child.OriginRelativeParent.X, child.OriginRelativeParent.Y - encloseChildrenRect.Bottom);
 				}
 			}
 		}
@@ -230,8 +230,8 @@ namespace MatterHackers.Agg.UI
 				{
 					case UI.FlowDirection.LeftToRight:
 					case UI.FlowDirection.RightToLeft:
-						totalMinimumWidthOfAllItems += child.MinimumSize.x + child.DeviceMargin.Width;
-						totalMinimumHeightOfAllItems = Math.Max(totalMinimumHeightOfAllItems, child.MinimumSize.y + child.DeviceMargin.Height);
+						totalMinimumWidthOfAllItems += child.MinimumSize.X + child.DeviceMargin.Width;
+						totalMinimumHeightOfAllItems = Math.Max(totalMinimumHeightOfAllItems, child.MinimumSize.Y + child.DeviceMargin.Height);
 
 						if (child.HAnchorIsSet(HAnchor.Stretch))
 						{
@@ -250,8 +250,8 @@ namespace MatterHackers.Agg.UI
 
 					case UI.FlowDirection.TopToBottom:
 					case UI.FlowDirection.BottomToTop:
-						totalMinimumWidthOfAllItems = Math.Max(totalMinimumWidthOfAllItems, child.MinimumSize.x + child.DeviceMargin.Width);
-						totalMinimumHeightOfAllItems += child.MinimumSize.y + child.DeviceMargin.Height;
+						totalMinimumWidthOfAllItems = Math.Max(totalMinimumWidthOfAllItems, child.MinimumSize.X + child.DeviceMargin.Width);
+						totalMinimumHeightOfAllItems += child.MinimumSize.Y + child.DeviceMargin.Height;
 						if (child.VAnchorIsSet(VAnchor.Stretch))
 						{
 							numItemsNeedingExpanding++;
@@ -282,7 +282,7 @@ namespace MatterHackers.Agg.UI
 							if (child.Visible == true)
 							{
 								double newX = curX - child.LocalBounds.Left + child.DeviceMargin.Left;
-								child.OriginRelativeParent = new Vector2(newX, child.OriginRelativeParent.y);
+								child.OriginRelativeParent = new Vector2(newX, child.OriginRelativeParent.Y);
 								if (child.HAnchorIsSet(HAnchor.Stretch))
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
@@ -312,7 +312,7 @@ namespace MatterHackers.Agg.UI
 								}
 
 								double newX = curX - child.LocalBounds.Left - (child.LocalBounds.Width + child.DeviceMargin.Right);
-								child.OriginRelativeParent = new Vector2(newX, child.OriginRelativeParent.y);
+								child.OriginRelativeParent = new Vector2(newX, child.OriginRelativeParent.Y);
 								curX -= (child.LocalBounds.Width + child.DeviceMargin.Width);
 							}
 						}
@@ -327,7 +327,7 @@ namespace MatterHackers.Agg.UI
 							if (child.Visible == true)
 							{
 								double newY = curY - child.LocalBounds.Bottom + child.DeviceMargin.Bottom;
-								child.OriginRelativeParent = new Vector2(child.OriginRelativeParent.x, newY);
+								child.OriginRelativeParent = new Vector2(child.OriginRelativeParent.X, newY);
 								if (child.VAnchorIsSet(VAnchor.Stretch))
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
@@ -357,7 +357,7 @@ namespace MatterHackers.Agg.UI
 								}
 
 								double newY = curY - child.LocalBounds.Bottom - (child.LocalBounds.Height + child.DeviceMargin.Top);
-								child.OriginRelativeParent = new Vector2(child.OriginRelativeParent.x, newY);
+								child.OriginRelativeParent = new Vector2(child.OriginRelativeParent.X, newY);
 								curY -= (child.LocalBounds.Height + child.DeviceMargin.Height);
 							}
 						}

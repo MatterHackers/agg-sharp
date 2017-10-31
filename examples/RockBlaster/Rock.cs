@@ -46,7 +46,7 @@ namespace RockBlaster
 		protected override void DoDraw(Graphics2D destRenderer)
 		{
 			GameImageSequence rockShip = GetImageSequence();
-			destRenderer.Render(rockShip.GetImageByRatio(playRatio), m_Position.x, m_Position.y, 0, scaleRatio, scaleRatio);
+			destRenderer.Render(rockShip.GetImageByRatio(playRatio), m_Position.X, m_Position.Y, 0, scaleRatio, scaleRatio);
 		}
 
 		public override void Update(double numSecondsPassed)

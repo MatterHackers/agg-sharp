@@ -120,9 +120,9 @@ namespace MatterHackers.PolygonMesh.Processors
 								bw.Write((float)0);
 								bw.Write((float)0);
 								// save the position
-								bw.Write((float)positionsCCW[0].x); bw.Write((float)positionsCCW[0].y); bw.Write((float)positionsCCW[0].z);
-								bw.Write((float)positionsCCW[secondIndex].x); bw.Write((float)positionsCCW[secondIndex].y); bw.Write((float)positionsCCW[secondIndex].z);
-								bw.Write((float)positionsCCW[thirdIndex].x); bw.Write((float)positionsCCW[thirdIndex].y); bw.Write((float)positionsCCW[thirdIndex].z);
+								bw.Write((float)positionsCCW[0].X); bw.Write((float)positionsCCW[0].Y); bw.Write((float)positionsCCW[0].Z);
+								bw.Write((float)positionsCCW[secondIndex].X); bw.Write((float)positionsCCW[secondIndex].Y); bw.Write((float)positionsCCW[secondIndex].Z);
+								bw.Write((float)positionsCCW[thirdIndex].X); bw.Write((float)positionsCCW[thirdIndex].Y); bw.Write((float)positionsCCW[thirdIndex].Z);
 
 								// and the attribute
 								bw.Write((ushort)0);
@@ -191,13 +191,13 @@ namespace MatterHackers.PolygonMesh.Processors
 			Vector3 vector0;
 			int currentPosition = "vertex".Length;
 			string number = GetNumber(line, ref currentPosition);
-			double.TryParse(number, style, culture, out vector0.x);
+			double.TryParse(number, style, culture, out vector0.X);
 
 			number = GetNumber(line, ref currentPosition);
-			double.TryParse(number, style, culture, out vector0.y);
+			double.TryParse(number, style, culture, out vector0.Y);
 
 			number = GetNumber(line, ref currentPosition);
-			double.TryParse(number, style, culture, out vector0.z);
+			double.TryParse(number, style, culture, out vector0.Z);
 
 			return vector0;
 		}
@@ -386,7 +386,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
 		public static string FormatForStl(Vector3 value)
 		{
-			return string.Format("{0:0.000000} {1:0.000000} {2:0.000000}", value.x, value.y, value.z);
+			return string.Format("{0:0.000000} {1:0.000000} {2:0.000000}", value.X, value.Y, value.Z);
 		}
 
 		private static bool ParseLine(Mesh meshFromStlFile, string thisLine, out Vector3 vertexPosition)
@@ -404,9 +404,9 @@ namespace MatterHackers.PolygonMesh.Processors
 			}
 			string[] splitOnSpace = noDoubleSpaces.Split(' ');
 			vertexPosition = new Vector3();
-			bool goodParse = double.TryParse(splitOnSpace[1], out vertexPosition.x);
-			goodParse &= double.TryParse(splitOnSpace[2], out vertexPosition.y);
-			goodParse &= double.TryParse(splitOnSpace[3], out vertexPosition.z);
+			bool goodParse = double.TryParse(splitOnSpace[1], out vertexPosition.X);
+			goodParse &= double.TryParse(splitOnSpace[2], out vertexPosition.Y);
+			goodParse &= double.TryParse(splitOnSpace[3], out vertexPosition.Z);
 			return goodParse;
 		}
 

@@ -185,25 +185,25 @@ namespace MatterHackers.RenderOpenGl
 						VertexTextureData tempTexture;
 						VertexNormalData tempNormal;
 						VertexPositionData tempPosition;
-						tempTexture.textureU = (float)textureUV[0].x; tempTexture.textureV = (float)textureUV[0].y;
-						tempNormal.normalX = (float)face.Normal.x; tempNormal.normalY = (float)face.Normal.y; tempNormal.normalZ = (float)face.Normal.z;
-						tempPosition.positionX = (float)position[0].x; tempPosition.positionY = (float)position[0].y; tempPosition.positionZ = (float)position[0].z;
+						tempTexture.textureU = (float)textureUV[0].X; tempTexture.textureV = (float)textureUV[0].Y;
+						tempNormal.normalX = (float)face.Normal.X; tempNormal.normalY = (float)face.Normal.Y; tempNormal.normalZ = (float)face.Normal.Z;
+						tempPosition.positionX = (float)position[0].X; tempPosition.positionY = (float)position[0].Y; tempPosition.positionZ = (float)position[0].Z;
 						textureData.Add(tempTexture);
 						normalData.Add(tempNormal);
 						positionData.Add(tempPosition);
 
-						tempTexture.textureU = (float)textureUV[1].x; tempTexture.textureV = (float)textureUV[1].y;
-						tempNormal.normalX = (float)face.Normal.x; tempNormal.normalY = (float)face.Normal.y; tempNormal.normalZ = (float)face.Normal.z;
-						tempPosition.positionX = (float)position[1].x; tempPosition.positionY = (float)position[1].y; tempPosition.positionZ = (float)position[1].z;
+						tempTexture.textureU = (float)textureUV[1].X; tempTexture.textureV = (float)textureUV[1].Y;
+						tempNormal.normalX = (float)face.Normal.X; tempNormal.normalY = (float)face.Normal.Y; tempNormal.normalZ = (float)face.Normal.Z;
+						tempPosition.positionX = (float)position[1].X; tempPosition.positionY = (float)position[1].Y; tempPosition.positionZ = (float)position[1].Z;
 						textureData.Add(tempTexture);
 						normalData.Add(tempNormal);
 						positionData.Add(tempPosition);
 
 						Vector2 textureUV2 = faceEdge.GetUv(0);
 						Vector3 position2 = faceEdge.FirstVertex.Position;
-						tempTexture.textureU = (float)textureUV2.x; tempTexture.textureV = (float)textureUV2.y;
-						tempNormal.normalX = (float)face.Normal.x; tempNormal.normalY = (float)face.Normal.y; tempNormal.normalZ = (float)face.Normal.z;
-						tempPosition.positionX = (float)position2.x; tempPosition.positionY = (float)position2.y; tempPosition.positionZ = (float)position2.z;
+						tempTexture.textureU = (float)textureUV2.X; tempTexture.textureV = (float)textureUV2.Y;
+						tempNormal.normalX = (float)face.Normal.X; tempNormal.normalY = (float)face.Normal.Y; tempNormal.normalZ = (float)face.Normal.Z;
+						tempPosition.positionX = (float)position2.X; tempPosition.positionY = (float)position2.Y; tempPosition.positionZ = (float)position2.Z;
 						textureData.Add(tempTexture);
 						normalData.Add(tempNormal);
 						positionData.Add(tempPosition);

@@ -121,7 +121,7 @@ namespace MatterHackers.Agg.UI
 			: base(position, false)
 		{
 			Vector2 location = position;// Vector2.Zero;
-			LocalBounds = new RectangleDouble(0, 0, size.x, size.y);
+			LocalBounds = new RectangleDouble(0, 0, size.X, size.Y);
 
 			m_border_width = (2.0);
 			m_border_extra = (0.0);
@@ -131,13 +131,13 @@ namespace MatterHackers.Agg.UI
 			m_point_size = (5.0);
 			m_text_height = (9.0);
 
-			double x2 = location.x + size.x;
-			double y2 = location.y + size.y;
-			m_xc1 = location.x;
-			m_yc1 = location.y;
+			double x2 = location.X + size.X;
+			double y2 = location.Y + size.Y;
+			m_xc1 = location.X;
+			m_yc1 = location.Y;
 			m_xc2 = (x2);
 			m_yc2 = (y2 - m_text_height * 2.0);
-			m_xt1 = location.x;
+			m_xt1 = location.X;
 			m_yt1 = (y2 - m_text_height * 2.0);
 			m_xt2 = (x2);
 			m_yt2 = (y2);

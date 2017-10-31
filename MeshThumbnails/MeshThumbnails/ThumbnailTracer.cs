@@ -143,7 +143,7 @@ namespace MatterHackers.RayTracer
 			span_gouraud_rgba span_gen = new span_gouraud_rgba();
 
 			span_gen.colors(points[0].color, points[1].color, points[2].color);
-			span_gen.triangle(points[0].position.x, points[0].position.y, points[1].position.x, points[1].position.y, points[2].position.x, points[2].position.y);
+			span_gen.triangle(points[0].position.X, points[0].position.Y, points[1].position.X, points[1].position.Y, points[2].position.X, points[2].position.Y);
 			ras.add_path(span_gen);
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
 			scanlineRenderer.GenerateAndRender(ras, sl, ren_base, span_alloc, span_gen);
@@ -159,14 +159,14 @@ namespace MatterHackers.RayTracer
 			{
 				int i = 0;
 				Vector3 normal = Vector3.TransformVector(face.Normal, world.ModelviewMatrix).GetNormal();
-				if (normal.z > 0)
+				if (normal.Z > 0)
 				{
 					foreach (FaceEdge faceEdge in face.FaceEdges())
 					{
 						points[i].position = world.GetScreenPosition(faceEdge.FirstVertex.Position);
 
 						Vector3 transformedPosition = Vector3.TransformPosition(faceEdge.FirstVertex.Position, world.ModelviewMatrix);
-						points[i].z = transformedPosition.z;
+						points[i].z = transformedPosition.Z;
 						i++;
 					}
 
@@ -345,15 +345,15 @@ namespace MatterHackers.RayTracer
 		{
 			RectangleDouble screenBounds = RectangleDouble.ZeroIntersection;
 
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.x, meshBounds.minXYZ.y, meshBounds.minXYZ.z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.x, meshBounds.minXYZ.y, meshBounds.minXYZ.z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.x, meshBounds.maxXYZ.y, meshBounds.minXYZ.z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.x, meshBounds.maxXYZ.y, meshBounds.minXYZ.z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.X, meshBounds.minXYZ.Y, meshBounds.minXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.X, meshBounds.minXYZ.Y, meshBounds.minXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.X, meshBounds.maxXYZ.Y, meshBounds.minXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.X, meshBounds.maxXYZ.Y, meshBounds.minXYZ.Z)));
 
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.x, meshBounds.minXYZ.y, meshBounds.maxXYZ.z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.x, meshBounds.minXYZ.y, meshBounds.maxXYZ.z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.x, meshBounds.maxXYZ.y, meshBounds.maxXYZ.z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.x, meshBounds.maxXYZ.y, meshBounds.maxXYZ.z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.X, meshBounds.minXYZ.Y, meshBounds.maxXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.X, meshBounds.minXYZ.Y, meshBounds.maxXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.X, meshBounds.maxXYZ.Y, meshBounds.maxXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.X, meshBounds.maxXYZ.Y, meshBounds.maxXYZ.Z)));
 			return screenBounds;
 		}
 
@@ -361,8 +361,8 @@ namespace MatterHackers.RayTracer
 		{
 			AxisAlignedBoundingBox meshBounds = mesh.GetAxisAlignedBoundingBox(world.ModelviewMatrix);
 
-			minZ = Math.Min(meshBounds.minXYZ.z, minZ);
-			maxZ = Math.Max(meshBounds.maxXYZ.z, maxZ);
+			minZ = Math.Min(meshBounds.minXYZ.Z, minZ);
+			maxZ = Math.Max(meshBounds.maxXYZ.Z, maxZ);
 		}
 
 		private bool NeedsToBeSmaller(RectangleDouble partScreenBounds, RectangleDouble goalBounds)
