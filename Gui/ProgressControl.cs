@@ -33,9 +33,9 @@ namespace MatterHackers.Agg.UI
 {
 	public class ProgressBar : GuiWidget
 	{
-		public RGBA_Bytes BorderColor { get; set; } = RGBA_Bytes.Black;
+		public Color BorderColor { get; set; } = Color.Black;
 
-		public RGBA_Bytes FillColor { get; set; }
+		public Color FillColor { get; set; }
 
 		public event EventHandler ProgressChanged;
 
@@ -109,7 +109,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public ProgressControl(string message, RGBA_Bytes textColor, RGBA_Bytes fillColor, int barWidgth = 80, int barHeight = 15, int leftMargin = 5)
+		public ProgressControl(string message, Color textColor, Color fillColor, int barWidgth = 80, int barHeight = 15, int leftMargin = 5)
 		{
 			this.AddChild(processTextWidget = new TextWidget(message, textColor: textColor)
 			{
@@ -132,7 +132,7 @@ namespace MatterHackers.Agg.UI
 			});
 		}
 
-		public RGBA_Bytes FillColor
+		public Color FillColor
 		{
 			get { return progressBar.FillColor; }
 			set { progressBar.FillColor = value; }

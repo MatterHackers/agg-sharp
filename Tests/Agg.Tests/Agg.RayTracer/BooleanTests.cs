@@ -43,8 +43,8 @@ namespace MatterHackers.RayTracer
 		[Test]
 		public void DifferenceTestsForBox()
 		{
-			SolidMaterial redMaterial = new SolidMaterial(RGBA_Floats.Red, 0, 0, 0);
-			SolidMaterial blueMaterial = new SolidMaterial(RGBA_Floats.Blue, 0, 0, 0);
+			SolidMaterial redMaterial = new SolidMaterial(ColorF.Red, 0, 0, 0);
+			SolidMaterial blueMaterial = new SolidMaterial(ColorF.Blue, 0, 0, 0);
 			Ray castRay = new Ray(new Vector3(0, -1, 0), Vector3.UnitY);
 
 			BoxShape box1X1 = new BoxShape(new Vector3(-.5, -.5, -.5), new Vector3(.5, .5, .5), blueMaterial);

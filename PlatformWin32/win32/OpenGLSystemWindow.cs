@@ -217,7 +217,7 @@ namespace MatterHackers.Agg.UI
 			GL.LoadIdentity();
 			GL.Scissor(0, 0, this.ClientSize.Width, this.ClientSize.Height);
 
-			NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
+			NewGraphics2D().Clear(new ColorF(1, 1, 1, 1));
 		}
 
 		private bool CheckGlControl()

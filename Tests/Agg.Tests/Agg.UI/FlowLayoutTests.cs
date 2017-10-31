@@ -80,7 +80,7 @@ namespace MatterHackers.Agg.UI.Tests
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Stretch,
 				Margin = new BorderDouble(marginSize),
-				BackgroundColor = RGBA_Bytes.Red,
+				BackgroundColor = Color.Red,
 			};
 
 			topToBottomContainer.AddChild(childWidget);
@@ -88,7 +88,7 @@ namespace MatterHackers.Agg.UI.Tests
 			topToBottomContainer.PerformLayout();
 
 			outerContainer.DoubleBuffer = true;
-			outerContainer.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			outerContainer.BackBuffer.NewGraphics2D().Clear(Color.White);
 			outerContainer.OnDraw(outerContainer.NewGraphics2D());
 
 			// For troubleshooting or visual validation
@@ -250,7 +250,7 @@ namespace MatterHackers.Agg.UI.Tests
 		{
 			GuiWidget containerControl = new GuiWidget(300, 200);
 			containerControl.DoubleBuffer = true;
-			containerControl.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			containerControl.BackBuffer.NewGraphics2D().Clear(Color.White);
 			{
 				Button topButtonC = new Button("top button");
 				Button bottomButtonC = new Button("bottom wide button");
@@ -264,7 +264,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			GuiWidget containerTest = new GuiWidget(300, 200);
 			containerTest.DoubleBuffer = true;
-			containerTest.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			containerTest.BackBuffer.NewGraphics2D().Clear(Color.White);
 
 			FlowLayoutWidget allButtons = new FlowLayoutWidget(FlowDirection.TopToBottom);
 			allButtons.AnchorAll();
@@ -316,7 +316,7 @@ namespace MatterHackers.Agg.UI.Tests
 			GuiWidget containerTest = new GuiWidget(300, 200);
 			containerTest.Padding = controlPadding;
 			containerTest.DoubleBuffer = true;
-			containerTest.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			containerTest.BackBuffer.NewGraphics2D().Clear(Color.White);
 
 			FlowLayoutWidget allButtons = new FlowLayoutWidget(FlowDirection.TopToBottom);
 			{
@@ -346,12 +346,12 @@ namespace MatterHackers.Agg.UI.Tests
 			RectangleDouble newBounds = oldBounds;
 			newBounds.Right += 10;
 			containerTest.LocalBounds = newBounds;
-			containerTest.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			containerTest.BackBuffer.NewGraphics2D().Clear(Color.White);
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImage(containerTest, "image-test.tga");
 
 			containerTest.LocalBounds = oldBounds;
-			containerTest.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			containerTest.BackBuffer.NewGraphics2D().Clear(Color.White);
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImage(containerTest, "image-test.tga");
 
@@ -893,7 +893,7 @@ namespace MatterHackers.Agg.UI.Tests
 			containerControl.DoubleBuffer = true;
 
 			RectangleDouble[] eightControlRectangles = new RectangleDouble[6];
-			RGBA_Bytes[] testColors = new RGBA_Bytes[] { RGBA_Bytes.Red, RGBA_Bytes.Orange, RGBA_Bytes.Yellow, RGBA_Bytes.YellowGreen, RGBA_Bytes.Green, RGBA_Bytes.Blue };
+			Color[] testColors = new Color[] { Color.Red, Color.Orange, Color.Yellow, Color.YellowGreen, Color.Green, Color.Blue };
 			{
 				double currentleft = controlPadding.Left + buttonMargin.Left;
 				double buttonHeightWithMargin = buttonSize + buttonMargin.Height;
@@ -975,7 +975,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 0), "The test and control need to match.");
 		}
 
-		private GuiWidget CreateLeftToRightMiddleWidget(BorderDouble buttonMargin, double buttonSize, VAnchor vAnchor, RGBA_Bytes color)
+		private GuiWidget CreateLeftToRightMiddleWidget(BorderDouble buttonMargin, double buttonSize, VAnchor vAnchor, Color color)
 		{
 			GuiWidget middle = new GuiWidget(buttonSize / 2, buttonSize);
 			middle.Margin = buttonMargin;
@@ -1003,7 +1003,7 @@ namespace MatterHackers.Agg.UI.Tests
 			containerControl.DoubleBuffer = true;
 
 			RectangleDouble[] eightControlRectangles = new RectangleDouble[6];
-			RGBA_Bytes[] testColors = new RGBA_Bytes[] { RGBA_Bytes.Red, RGBA_Bytes.Orange, RGBA_Bytes.Yellow, RGBA_Bytes.YellowGreen, RGBA_Bytes.Green, RGBA_Bytes.Blue };
+			Color[] testColors = new Color[] { Color.Red, Color.Orange, Color.Yellow, Color.YellowGreen, Color.Green, Color.Blue };
 			{
 				double currentLeft = containerControl.Width - controlPadding.Right - buttonMargin.Right - buttonSize;
 				double buttonHeightWithMargin = buttonSize + buttonMargin.Height;
@@ -1103,7 +1103,7 @@ namespace MatterHackers.Agg.UI.Tests
 			containerControl.DoubleBuffer = true;
 
 			RectangleDouble[] eightControlRectangles = new RectangleDouble[6];
-			RGBA_Bytes[] sixColors = new RGBA_Bytes[] { RGBA_Bytes.Red, RGBA_Bytes.Orange, RGBA_Bytes.Yellow, RGBA_Bytes.YellowGreen, RGBA_Bytes.Green, RGBA_Bytes.Blue };
+			Color[] sixColors = new Color[] { Color.Red, Color.Orange, Color.Yellow, Color.YellowGreen, Color.Green, Color.Blue };
 			{
 				double currentBottom = controlPadding.Bottom + buttonMargin.Bottom;
 				double buttonWidthWithMargin = buttonSize + buttonMargin.Width;
@@ -1185,7 +1185,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(containerControl.BackBuffer.FindLeastSquaresMatch(containerTest.BackBuffer, 0), "The test and control need to match.");
 		}
 
-		private GuiWidget CreateBottomToTopMiddleWidget(BorderDouble buttonMargin, double buttonSize, HAnchor hAnchor, RGBA_Bytes color)
+		private GuiWidget CreateBottomToTopMiddleWidget(BorderDouble buttonMargin, double buttonSize, HAnchor hAnchor, Color color)
 		{
 			GuiWidget middle = new GuiWidget(buttonSize, buttonSize / 2);
 			middle.Margin = buttonMargin;
@@ -1213,7 +1213,7 @@ namespace MatterHackers.Agg.UI.Tests
 			containerControl.DoubleBuffer = true;
 
 			RectangleDouble[] eightControlRectangles = new RectangleDouble[6];
-			RGBA_Bytes[] testColors = new RGBA_Bytes[] { RGBA_Bytes.Red, RGBA_Bytes.Orange, RGBA_Bytes.Yellow, RGBA_Bytes.YellowGreen, RGBA_Bytes.Green, RGBA_Bytes.Blue };
+			Color[] testColors = new Color[] { Color.Red, Color.Orange, Color.Yellow, Color.YellowGreen, Color.Green, Color.Blue };
 			{
 				double currentBottom = containerControl.Height - controlPadding.Top - buttonMargin.Top - buttonSize;
 				double buttonWidthWithMargin = buttonSize + buttonMargin.Width;
@@ -1324,7 +1324,7 @@ namespace MatterHackers.Agg.UI.Tests
 			bottomContentTopToBottom.AddChild(wideButton);
 			//Assert.IsTrue(bottomContentTopToBottom.MinimumSize.x >= wideButton.MinimumSize.x, "These should be space for the button.");
 
-			containerTest.BackgroundColor = RGBA_Bytes.White;
+			containerTest.BackgroundColor = Color.White;
 			containerTest.OnDrawBackground(containerTest.NewGraphics2D());
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImage(containerTest.BackBuffer, "zFlowLaoutsGetMinSize.tga");
@@ -1793,7 +1793,7 @@ namespace MatterHackers.Agg.UI.Tests
 		public void TestVAnchorCenter()
 		{
 			FlowLayoutWidget searchPanel = new FlowLayoutWidget();
-			searchPanel.BackgroundColor = new RGBA_Bytes(180, 180, 180);
+			searchPanel.BackgroundColor = new Color(180, 180, 180);
 			searchPanel.HAnchor = HAnchor.Stretch;
 			searchPanel.Padding = new BorderDouble(3, 3);
 			{

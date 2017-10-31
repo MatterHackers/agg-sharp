@@ -1629,11 +1629,11 @@ namespace MatterHackers.Agg
 
 	public abstract class LineRenderer
 	{
-		private RGBA_Bytes m_color;
+		private Color m_color;
 
 		public delegate bool CompareFunction(int value);
 
-		public RGBA_Bytes color()
+		public Color color()
 		{
 			return m_color;
 		}

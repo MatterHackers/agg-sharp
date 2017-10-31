@@ -50,7 +50,7 @@ namespace MatterHackers.RayTracer
 			return 670;
 		}
 
-		public override RGBA_Floats GetColor(IntersectInfo info)
+		public override ColorF GetColor(IntersectInfo info)
 		{
 			if (Material.HasTexture)
 			{

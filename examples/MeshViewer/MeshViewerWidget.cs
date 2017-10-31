@@ -76,10 +76,10 @@ namespace MatterHackers.MeshVisualizer
 
 		public PartProcessingInfo partProcessingInfo;
 		private static ImageBuffer lastCreatedBedImage = new ImageBuffer();
-		private static Dictionary<int, RGBA_Bytes> materialColors = new Dictionary<int, RGBA_Bytes>();
-		private RGBA_Bytes bedBaseColor = new RGBA_Bytes(245, 245, 255);
+		private static Dictionary<int, Color> materialColors = new Dictionary<int, Color>();
+		private Color bedBaseColor = new Color(245, 245, 255);
 		static public Vector2 BedCenter { get; private set; }
-		private RGBA_Bytes bedMarkingsColor = RGBA_Bytes.Black;
+		private Color bedMarkingsColor = Color.Black;
 		private static BedShape bedShape = BedShape.Rectangular;
 		private static Mesh buildVolume = null;
 		private static Vector3 displayVolume;
@@ -112,8 +112,8 @@ namespace MatterHackers.MeshVisualizer
 			RenderBed = true;
 			RenderBuildVolume = false;
 			//SetMaterialColor(1, RGBA_Bytes.LightGray, RGBA_Bytes.White);
-			BedColor = new RGBA_Floats(.8, .8, .8, .7).GetAsRGBA_Bytes();
-			BuildVolumeColor = new RGBA_Floats(.2, .8, .3, .2).GetAsRGBA_Bytes();
+			BedColor = new ColorF(.8, .8, .8, .7).GetAsRGBA_Bytes();
+			BuildVolumeColor = new ColorF(.2, .8, .3, .2).GetAsRGBA_Bytes();
 
 			trackballTumbleWidget = new TrackballTumbleWidget(this.World);
 			trackballTumbleWidget.TransformState = TrackBallController.MouseDownType.Rotation;
@@ -142,9 +142,9 @@ namespace MatterHackers.MeshVisualizer
 
 		public bool AllowBedRenderingWhenEmpty { get; set; }
 
-		public RGBA_Bytes BedColor { get; set; }
+		public Color BedColor { get; set; }
 
-		public RGBA_Bytes BuildVolumeColor { get; set; }
+		public Color BuildVolumeColor { get; set; }
 
 		public Vector3 DisplayVolume { get { return displayVolume; } }
 
@@ -279,7 +279,7 @@ namespace MatterHackers.MeshVisualizer
 #endif
 		}
 
-		public static RGBA_Bytes GetMaterialColor(int materialIndexBase1)
+		public static Color GetMaterialColor(int materialIndexBase1)
 		{
 			lock (materialColors)
 			{
@@ -290,10 +290,10 @@ namespace MatterHackers.MeshVisualizer
 			}
 
 			// we currently expect at most 4 extruders
-			return RGBA_Floats.FromHSL((materialIndexBase1 % 4) / 4.0, .5, .5).GetAsRGBA_Bytes();
+			return ColorF.FromHSL((materialIndexBase1 % 4) / 4.0, .5, .5).GetAsRGBA_Bytes();
 		}
 
-		public static RGBA_Bytes GetSelectedMaterialColor(int materialIndexBase1)
+		public static Color GetSelectedMaterialColor(int materialIndexBase1)
 		{
 			double hue0To1;
 			double saturation0To1;
@@ -305,10 +305,10 @@ namespace MatterHackers.MeshVisualizer
 			lightness0To1 = Math.Min(1, lightness0To1 * 1.2);
 
 			// we sort of expect at most 4 extruders
-			return RGBA_Floats.FromHSL(hue0To1, saturation0To1, lightness0To1).GetAsRGBA_Bytes();
+			return ColorF.FromHSL(hue0To1, saturation0To1, lightness0To1).GetAsRGBA_Bytes();
 		}
 
-		public static void SetMaterialColor(int materialIndexBase1, RGBA_Bytes color)
+		public static void SetMaterialColor(int materialIndexBase1, Color color)
 		{
 			lock (materialColors)
 			{
@@ -510,11 +510,11 @@ namespace MatterHackers.MeshVisualizer
 					double big = 10;
 					double small = 1;
 					Mesh xAxis = PlatonicSolids.CreateCube(big, small, small);
-					GLHelper.Render(xAxis, RGBA_Bytes.Red);
+					GLHelper.Render(xAxis, Color.Red);
 					Mesh yAxis = PlatonicSolids.CreateCube(small, big, small);
-					GLHelper.Render(yAxis, RGBA_Bytes.Green);
+					GLHelper.Render(yAxis, Color.Green);
 					Mesh zAxis = PlatonicSolids.CreateCube(small, small, big);
-					GLHelper.Render(zAxis, RGBA_Bytes.Blue);
+					GLHelper.Render(zAxis, Color.Blue);
 				}
 			}
 
@@ -927,7 +927,7 @@ namespace MatterHackers.MeshVisualizer
 			internal PartProcessingInfo(string startingTextMessage)
 				: base(FlowDirection.TopToBottom)
 			{
-				progressControl = new ProgressControl("", RGBA_Bytes.Black, RGBA_Bytes.Black);
+				progressControl = new ProgressControl("", Color.Black, Color.Black);
 				progressControl.HAnchor = HAnchor.Center;
 				AddChild(progressControl);
 				progressControl.Visible = false;

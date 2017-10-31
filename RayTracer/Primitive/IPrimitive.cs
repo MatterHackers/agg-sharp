@@ -26,7 +26,7 @@ namespace MatterHackers.RayTracer
 		/// </summary>
 		/// <param name="info"></param>
 		/// <returns></returns>
-		RGBA_Floats GetColor(IntersectInfo info);
+		ColorF GetColor(IntersectInfo info);
 
 		/// <summary>
 		/// Specifies the ambient and diffuse color of the element.

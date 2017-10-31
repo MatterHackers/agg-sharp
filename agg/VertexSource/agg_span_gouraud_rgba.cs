@@ -95,18 +95,18 @@ namespace MatterHackers.Agg.VertexSource
 		{
 		}
 
-		public span_gouraud_rgba(RGBA_Bytes c1,
-						  RGBA_Bytes c2,
-						  RGBA_Bytes c3,
+		public span_gouraud_rgba(Color c1,
+						  Color c2,
+						  Color c3,
 						  double x1, double y1,
 						  double x2, double y2,
 						  double x3, double y3)
 			: this(c1, c2, c3, x1, y1, x2, y2, x3, y3, 0)
 		{ }
 
-		public span_gouraud_rgba(RGBA_Bytes c1,
-						  RGBA_Bytes c2,
-						  RGBA_Bytes c3,
+		public span_gouraud_rgba(Color c1,
+						  Color c2,
+						  Color c3,
 						  double x1, double y1,
 						  double x2, double y2,
 						  double x3, double y3,
@@ -131,7 +131,7 @@ namespace MatterHackers.Agg.VertexSource
 			m_rgba3.init(coord[1], coord[2]);
 		}
 
-		public void generate(RGBA_Bytes[] span, int spanIndex, int x, int y, int len)
+		public void generate(Color[] span, int spanIndex, int x, int y, int len)
 		{
 			m_rgba1.calc(y);//(m_rgba1.m_1dy > 2) ? m_rgba1.m_y1 : y);
 			rgba_calc pc1 = m_rgba1;

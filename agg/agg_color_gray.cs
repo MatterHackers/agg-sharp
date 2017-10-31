@@ -51,28 +51,28 @@ namespace MatterHackers.Agg
 		}
 
 		//--------------------------------------------------------------------
-		public gray8(RGBA_Floats c)
+		public gray8(ColorF c)
 		{
 			v = ((byte)agg_basics.uround((0.299 * c.Red0To255 + 0.587 * c.Green0To255 + 0.114 * c.Blue0To255) * (double)(base_mask)));
 			a = ((byte)agg_basics.uround(c.Alpha0To255 * (double)(base_mask)));
 		}
 
 		//--------------------------------------------------------------------
-		public gray8(RGBA_Floats c, double a_)
+		public gray8(ColorF c, double a_)
 		{
 			v = ((byte)agg_basics.uround((0.299 * c.Red0To255 + 0.587 * c.Green0To255 + 0.114 * c.Blue0To255) * (double)(base_mask)));
 			a = ((byte)agg_basics.uround(a_ * (double)(base_mask)));
 		}
 
 		//--------------------------------------------------------------------
-		public gray8(RGBA_Bytes c)
+		public gray8(Color c)
 		{
 			v = (byte)((c.Red0To255 * 77 + c.Green0To255 * 150 + c.Blue0To255 * 29) >> 8);
 			a = (byte)(c.Alpha0To255);
 		}
 
 		//--------------------------------------------------------------------
-		public gray8(RGBA_Bytes c, int a_)
+		public gray8(Color c, int a_)
 		{
 			v = (byte)((c.Red0To255 * 77 + c.Green0To255 * 150 + c.Blue0To255 * 29) >> 8);
 			a = (byte)(a_);

@@ -199,7 +199,7 @@ namespace MatterHackers.Agg.UI
 					toolTipText = widgetThatWantsToShowToolTip.ToolTipText;
 					toolTipWidget = new FlowLayoutWidget()
 					{
-						BackgroundColor = RGBA_Bytes.White,
+						BackgroundColor = Color.White,
 						OriginRelativeParent = new Vector2((int)mousePosition.x, (int)mousePosition.y),
 						Padding = new BorderDouble(3),
 						Selectable = false,
@@ -209,7 +209,7 @@ namespace MatterHackers.Agg.UI
 
 					toolTipWidget.AfterDraw += (sender, drawEventHandler) =>
 					{
-						drawEventHandler.graphics2D.Rectangle(toolTipWidget.LocalBounds, RGBA_Bytes.Black);
+						drawEventHandler.graphics2D.Rectangle(toolTipWidget.LocalBounds, Color.Black);
 					};
 
 					// Make sure we wrap long text

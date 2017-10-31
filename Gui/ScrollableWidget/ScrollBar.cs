@@ -35,7 +35,7 @@ namespace MatterHackers.Agg.UI
 {
 	public class DefaultThumbView : GuiWidget
 	{
-		public static RGBA_Bytes ThumbColor = RGBA_Bytes.DarkGray;
+		public static Color ThumbColor = Color.DarkGray;
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
@@ -48,7 +48,7 @@ namespace MatterHackers.Agg.UI
 
 	public class DefaultThumbBackground : GuiWidget
 	{
-		public static RGBA_Bytes DefaultBackgroundColor = RGBA_Bytes.LightGray;
+		public static Color DefaultBackgroundColor = Color.LightGray;
 
 		public DefaultThumbBackground()
 		{

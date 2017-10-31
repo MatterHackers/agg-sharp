@@ -92,7 +92,7 @@ namespace MatterHackers.Agg.UI
 
 		private SplitterBar splitterBar = new SplitterBar()
 		{
-			BackgroundColor = RGBA_Bytes.Transparent
+			BackgroundColor = Color.Transparent
 		};
 
 		public Splitter()
@@ -107,7 +107,7 @@ namespace MatterHackers.Agg.UI
 			AnchorAll();
 		}
 
-		public RGBA_Bytes SplitterBackground
+		public Color SplitterBackground
 		{
 			get => splitterBar.BackgroundColor;
 			set => splitterBar.BackgroundColor = value;

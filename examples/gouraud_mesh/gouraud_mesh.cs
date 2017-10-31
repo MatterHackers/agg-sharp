@@ -17,12 +17,12 @@ namespace MatterHackers.Agg
 		{
 			public double x, y;
 			public double dx, dy;
-			public RGBA_Bytes color;
-			public RGBA_Bytes dc;
+			public Color color;
+			public Color dc;
 
 			public mesh_point(double x_, double y_,
 					   double dx_, double dy_,
-					   RGBA_Bytes c, RGBA_Bytes dc_)
+					   Color c, Color dc_)
 			{
 				x = (x_);
 				y = (y_);
@@ -117,8 +117,8 @@ namespace MatterHackers.Agg
 					{
 						double dx = random(-0.5, 0.5);
 						double dy = random(-0.5, 0.5);
-						RGBA_Bytes c = new RGBA_Bytes(rand.Next() & 0xFF, rand.Next() & 0xFF, rand.Next() & 0xFF);
-						RGBA_Bytes dc = new RGBA_Bytes(rand.Next() & 1, rand.Next() & 1, rand.Next() & 1);
+						Color c = new Color(rand.Next() & 0xFF, rand.Next() & 0xFF, rand.Next() & 0xFF);
+						Color dc = new Color(rand.Next() & 1, rand.Next() & 1, rand.Next() & 1);
 						m_vertices.add(new mesh_point(x, start_y, dx, dy, c, dc));
 						x += cell_w;
 					}
@@ -202,8 +202,8 @@ namespace MatterHackers.Agg
 				int i;
 				for (i = 1; i < m_vertices.size(); i++)
 				{
-					RGBA_Bytes c = m_vertices[i].color;
-					RGBA_Bytes dc = m_vertices[i].dc;
+					Color c = m_vertices[i].color;
+					Color dc = m_vertices[i].dc;
 					int r = (int)c.Red0To255 + (dc.Red0To255 != 0 ? 5 : -5);
 					int g = (int)c.Green0To255 + (dc.Green0To255 != 0 ? 5 : -5);
 					int b = (int)c.Blue0To255 + (dc.Blue0To255 != 0 ? 5 : -5);
@@ -311,9 +311,9 @@ namespace MatterHackers.Agg
 					mesh_point p2 = mesh.vertex(t.p2);
 					mesh_point p3 = mesh.vertex(t.p3);
 
-					RGBA_Bytes c1 = p1.color;
-					RGBA_Bytes c2 = p2.color;
-					RGBA_Bytes c3 = p3.color;
+					Color c1 = p1.color;
+					Color c2 = p2.color;
+					Color c3 = p3.color;
 					c1.apply_gamma_dir(gamma);
 					c2.apply_gamma_dir(gamma);
 					c3.apply_gamma_dir(gamma);
@@ -331,12 +331,12 @@ namespace MatterHackers.Agg
 				return false;
 			}
 
-			public RGBA_Bytes color(int style)
+			public Color color(int style)
 			{
-				return new RGBA_Bytes(0, 0, 0, 0);
+				return new Color(0, 0, 0, 0);
 			}
 
-			public void generate_span(RGBA_Bytes[] span, int spanIndex, int x, int y, int len, int style)
+			public void generate_span(Color[] span, int spanIndex, int x, int y, int len, int style)
 			{
 				m_triangles[style].generate(span, spanIndex, x, y, len);
 			}
@@ -361,7 +361,7 @@ namespace MatterHackers.Agg
 
 			IImageByte destImage = backBuffer;
 			ImageClippingProxy clippingProxy = new ImageClippingProxy(destImage);
-			clippingProxy.clear(new RGBA_Floats(0, 0, 0));
+			clippingProxy.clear(new ColorF(0, 0, 0));
 
 			ScanlineRasterizer ras = new ScanlineRasterizer();
 			scanline_unpacked_8 sl = new scanline_unpacked_8();
@@ -405,7 +405,7 @@ namespace MatterHackers.Agg
 			t.text(buf);
 
 			ras.add_path(pt);
-			scanlineRenderer.RenderSolid(clippingProxy, ras, sl, new RGBA_Bytes(255, 255, 255));
+			scanlineRenderer.RenderSolid(clippingProxy, ras, sl, new Color(255, 255, 255));
 
 			if (m_gamma.GetGamma() != 1.0)
 			{

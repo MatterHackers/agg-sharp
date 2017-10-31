@@ -27,7 +27,7 @@ using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using static System.Math;
-using static MatterHackers.Agg.RGBA_Bytes;
+using static MatterHackers.Agg.Color;
 
 namespace MatterHackers.Agg.UI
 {
@@ -233,9 +233,9 @@ namespace MatterHackers.Agg.UI
 
 		public virtual int TabIndex { get; set; }
 
-		private RGBA_Bytes backgroundColor = new RGBA_Bytes();
+		private Color backgroundColor = new Color();
 
-		public virtual RGBA_Bytes BackgroundColor
+		public virtual Color BackgroundColor
 		{
 			get { return backgroundColor; }
 			set
@@ -1837,7 +1837,7 @@ namespace MatterHackers.Agg.UI
 							invertedMargin.Bottom = -invertedMargin.Bottom;
 							invertedMargin.Right = -invertedMargin.Right;
 							invertedMargin.Top = -invertedMargin.Top;
-							DrawBorderBounds(graphics2D, child.BoundsRelativeToParent, invertedMargin, new RGBA_Bytes(Red, 128));
+							DrawBorderBounds(graphics2D, child.BoundsRelativeToParent, invertedMargin, new Color(Red, 128));
 						}
 
 						RectangleDouble oldClippingRect = graphics2D.GetClippingRect();
@@ -1873,7 +1873,7 @@ namespace MatterHackers.Agg.UI
 									if (child.isCurrentlyInvalid)
 									{
 										Graphics2D childBackBufferGraphics2D = child.backBuffer.NewGraphics2D();
-										childBackBufferGraphics2D.Clear(new RGBA_Bytes(0, 0, 0, 0));
+										childBackBufferGraphics2D.Clear(new Color(0, 0, 0, 0));
 										Affine transformToBuffer = Affine.NewTranslation(-xOffset + xFraction, -yOffset + yFraction);
 										childBackBufferGraphics2D.SetTransform(transformToBuffer);
 										child.OnDrawBackground(childBackBufferGraphics2D);
@@ -1913,11 +1913,11 @@ namespace MatterHackers.Agg.UI
 				if (DebugShowBounds)
 				{
 					// draw the padding
-					DrawBorderBounds(graphics2D, LocalBounds, DevicePadding, new RGBA_Bytes(Cyan, 128));
+					DrawBorderBounds(graphics2D, LocalBounds, DevicePadding, new Color(Cyan, 128));
 
 					// show the bounds and inside with an x
-					graphics2D.Line(LocalBounds.Left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, new RGBA_Bytes(Green, 100), 3);
-					graphics2D.Line(LocalBounds.Left, LocalBounds.Top, LocalBounds.Right, LocalBounds.Bottom, new RGBA_Bytes(Green, 100), 3);
+					graphics2D.Line(LocalBounds.Left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, new Color(Green, 100), 3);
+					graphics2D.Line(LocalBounds.Left, LocalBounds.Top, LocalBounds.Right, LocalBounds.Bottom, new Color(Green, 100), 3);
 					graphics2D.Rectangle(LocalBounds, Red);
 
 					RenderAnchoreInfo(graphics2D);
@@ -1932,7 +1932,7 @@ namespace MatterHackers.Agg.UI
 
 		private void RenderAnchoreInfo(Graphics2D graphics2D)
 		{
-			var color = RGBA_Bytes.Cyan;
+			var color = Color.Cyan;
 			double size = 10;
 
 			// an arrow pointing right
@@ -2003,7 +2003,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private static void DrawBorderBounds(Graphics2D graphics2D, RectangleDouble bounds, BorderDouble border, RGBA_Bytes color)
+		private static void DrawBorderBounds(Graphics2D graphics2D, RectangleDouble bounds, BorderDouble border, Color color)
 		{
 			if (border.Width != 0
 				|| border.Height != 0)

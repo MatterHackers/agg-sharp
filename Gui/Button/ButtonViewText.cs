@@ -78,18 +78,18 @@ namespace MatterHackers.Agg.UI
 			RoundedRect rectBorder = new RoundedRect(Bounds, BorderRadius);
 			if (parentButton.Enabled == true)
 			{
-				graphics2D.Render(rectBorder, new RGBA_Bytes(0, 0, 0));
+				graphics2D.Render(rectBorder, new Color(0, 0, 0));
 			}
 			else
 			{
-				graphics2D.Render(rectBorder, new RGBA_Bytes(128, 128, 128));
+				graphics2D.Render(rectBorder, new Color(128, 128, 128));
 			}
 
 			RectangleDouble insideBounds = Bounds;
 			insideBounds.Inflate(-BorderWidth);
 
 			RoundedRect rectInside = new RoundedRect(insideBounds, Math.Max(BorderRadius - BorderWidth, 0));
-			RGBA_Bytes insideColor = new RGBA_Bytes(1.0, 1.0, 1.0);
+			Color insideColor = new Color(1.0, 1.0, 1.0);
 
 			if (parentButton.FirstWidgetUnderMouse)
 			{
@@ -99,7 +99,7 @@ namespace MatterHackers.Agg.UI
 				}
 				else
 				{
-					insideColor = DefaultViewFactory.DefaultBlue.GetAsRGBA_Floats().Blend(RGBA_Floats.White, .75).GetAsRGBA_Bytes();
+					insideColor = DefaultViewFactory.DefaultBlue.GetAsRGBA_Floats().Blend(ColorF.White, .75).GetAsRGBA_Bytes();
 				}
 			}
 

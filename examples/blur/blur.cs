@@ -87,7 +87,7 @@ namespace MatterHackers.Agg
 			m_shadow_ctrl.SetYN(2, m_shape_bounds.Top);
 			m_shadow_ctrl.SetXN(3, m_shape_bounds.Left);
 			m_shadow_ctrl.SetYN(3, m_shape_bounds.Top);
-			m_shadow_ctrl.line_color(new RGBA_Floats(0, 0.3, 0.5, 0.3));
+			m_shadow_ctrl.line_color(new ColorF(0, 0.3, 0.5, 0.3));
 		}
 
 		public string Title { get; } = "Gaussian and Stack Blur";
@@ -119,7 +119,7 @@ and the filter produces quite adequate result.";
 		{
 			ImageBuffer widgetsSubImage = ImageBuffer.NewSubImageReference(graphics2D.DestImage, graphics2D.GetClippingRect());
 			ImageClippingProxy clippingProxy = new ImageClippingProxy(widgetsSubImage);
-			clippingProxy.clear(new RGBA_Floats(1, 1, 1));
+			clippingProxy.clear(new ColorF(1, 1, 1));
 			m_ras.SetVectorClipBox(0, 0, Width, Height);
 
 			Affine move = Affine.NewTranslation(10, 10);
@@ -143,7 +143,7 @@ and the filter produces quite adequate result.";
 			// Render shadow
 			m_ras.add_path(shadow_trans);
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
-			scanlineRenderer.RenderSolid(clippingProxy, m_ras, m_sl, new RGBA_Floats(0.2, 0.3, 0).GetAsRGBA_Bytes());
+			scanlineRenderer.RenderSolid(clippingProxy, m_ras, m_sl, new ColorF(0.2, 0.3, 0).GetAsRGBA_Bytes());
 
 			// Calculate the bounding box and extend it by the blur radius
 			RectangleDouble bbox = new RectangleDouble();
@@ -269,7 +269,7 @@ and the filter produces quite adequate result.";
 				m_ras.add_path(m_path);
 			}
 
-			scanlineRenderer.RenderSolid(clippingProxy, m_ras, m_sl, new RGBA_Floats(0.6, 0.9, 0.7, 0.8).GetAsRGBA_Bytes());
+			scanlineRenderer.RenderSolid(clippingProxy, m_ras, m_sl, new ColorF(0.6, 0.9, 0.7, 0.8).GetAsRGBA_Bytes());
 
 			graphics2D.DrawString(string.Format("{0:F2} ms", tm), 140, 30);
 			base.OnDraw(graphics2D);

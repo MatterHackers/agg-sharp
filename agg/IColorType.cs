@@ -16,11 +16,11 @@ namespace MatterHackers.Agg
 {
 	public interface IColorType
 	{
-		RGBA_Floats GetAsRGBA_Floats();
+		ColorF GetAsRGBA_Floats();
 
-		RGBA_Bytes GetAsRGBA_Bytes();
+		Color GetAsRGBA_Bytes();
 
-		RGBA_Bytes gradient(RGBA_Bytes c, double k);
+		Color gradient(Color c, double k);
 
 		int Red0To255 { get; set; }
 

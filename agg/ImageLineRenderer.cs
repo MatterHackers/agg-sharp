@@ -198,7 +198,7 @@ namespace MatterHackers.Agg
 		}
 
 		//--------------------------------------------------------------------
-		public void pixel(RGBA_Bytes[] destBuffer, int destBufferOffset, int x, int y)
+		public void pixel(Color[] destBuffer, int destBufferOffset, int x, int y)
 		{
 			m_filter.pixel_high_res(m_buf, destBuffer, destBufferOffset,
 									 x % m_width_hr + m_dilation_hr,
@@ -933,20 +933,20 @@ namespace MatterHackers.Agg
 			return (double)(subpixel_width()) / LineAABasics.line_subpixel_scale;
 		}
 
-		public void pixel(RGBA_Bytes[] p, int offset, int x, int y)
+		public void pixel(Color[] p, int offset, int x, int y)
 		{
 			throw new NotImplementedException();
 
 			//m_pattern.pixel(p, x, y);
 		}
 
-		public void blend_color_hspan(int x, int y, uint len, RGBA_Bytes[] colors, int colorsOffset)
+		public void blend_color_hspan(int x, int y, uint len, Color[] colors, int colorsOffset)
 		{
 			throw new NotImplementedException();
 			//            m_ren.blend_color_hspan(x, y, len, colors, null, 0);
 		}
 
-		public void blend_color_vspan(int x, int y, uint len, RGBA_Bytes[] colors, int colorsOffset)
+		public void blend_color_vspan(int x, int y, uint len, Color[] colors, int colorsOffset)
 		{
 			throw new NotImplementedException();
 			//            m_ren.blend_color_vspan(x, y, len, colors, null, 0);

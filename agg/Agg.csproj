@@ -175,7 +175,6 @@
     <Compile Include="agg_bspline.cs" />
     <Compile Include="agg_clip_liang_barsky.cs" />
     <Compile Include="agg_color_gray.cs" />
-    <Compile Include="agg_color_rgba.cs" />
     <Compile Include="agg_dda_line.cs" />
     <Compile Include="agg_gamma_functions.cs" />
     <Compile Include="agg_image_filters.cs" />
@@ -189,6 +188,7 @@
     <Compile Include="Collections\IBoundedItem.cs" />
     <Compile Include="Collections\BoundingVolumeHierarchy.cs" />
     <Compile Include="Collections\UnboundCollection.cs" />
+    <Compile Include="Color.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QuickTimer.cs" />
     <Compile Include="ReferenceEqualityComparer.cs" />

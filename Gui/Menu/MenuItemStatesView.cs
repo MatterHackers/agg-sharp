@@ -84,13 +84,13 @@ namespace MatterHackers.Agg.UI
 	{
 		TextWidget textWidget;
 
-		public RGBA_Bytes NormalBackgroundColor { get; set; }
-		public RGBA_Bytes OverBackgroundColor { get; set; }
-		public RGBA_Bytes DisabledBackgroundColor { get; set; }
+		public Color NormalBackgroundColor { get; set; }
+		public Color OverBackgroundColor { get; set; }
+		public Color DisabledBackgroundColor { get; set; }
 
-		public RGBA_Bytes NormalTextColor { get; set; }
-		public RGBA_Bytes OverTextColor { get; set; }
-		public RGBA_Bytes DisabledTextColor { get; set; }
+		public Color NormalTextColor { get; set; }
+		public Color OverTextColor { get; set; }
+		public Color DisabledTextColor { get; set; }
 
 		public double PointSize { get { return textWidget.PointSize; } set { textWidget.PointSize = value; } }
 

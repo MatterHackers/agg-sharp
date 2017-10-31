@@ -51,11 +51,11 @@ namespace MatterHackers.Agg.UI
 			OriginRelativeParent = location;
 			radioButtons = new List<RadioButton>();
 
-			backgroundColor = (new RGBA_Floats(1.0, 1.0, 0.9));
-			borderColor = (new RGBA_Floats(0.0, 0.0, 0.0));
-			textColor = (new RGBA_Floats(0.0, 0.0, 0.0));
-			inactiveColor = (new RGBA_Floats(0.0, 0.0, 0.0));
-			activeColor = (new RGBA_Floats(0.4, 0.0, 0.0));
+			backgroundColor = (new ColorF(1.0, 1.0, 0.9));
+			borderColor = (new ColorF(0.0, 0.0, 0.0));
+			textColor = (new ColorF(0.0, 0.0, 0.0));
+			inactiveColor = (new ColorF(0.0, 0.0, 0.0));
+			activeColor = (new ColorF(0.4, 0.0, 0.0));
 		}
 
 		public void background_color(IColorType c)
@@ -97,7 +97,7 @@ namespace MatterHackers.Agg.UI
 		{
 			RadioButton newRadioButton = new RadioButton(text)
 			{
-				TextColor = RGBA_Bytes.Black,
+				TextColor = Color.Black,
 				Margin = new BorderDouble(5, 0),
 				HAnchor = UI.HAnchor.Left,
 			};

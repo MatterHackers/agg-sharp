@@ -340,10 +340,10 @@ namespace MatterHackers.Agg.UI
 			return textWhenGotFocus != Text;
 		}
 
-		public RGBA_Bytes cursorColor = RGBA_Bytes.DarkGray;
-		public RGBA_Bytes highlightColor = RGBA_Bytes.Gray;
-		public RGBA_Bytes borderColor = RGBA_Bytes.White;
-		public RGBA_Bytes textColor = RGBA_Bytes.Black;
+		public Color cursorColor = Color.DarkGray;
+		public Color highlightColor = Color.Gray;
+		public Color borderColor = Color.White;
+		public Color textColor = Color.Black;
 		public int borderWidth = 0;
 		public int borderRadius = 0;
 
@@ -360,7 +360,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public RGBA_Bytes TextColor
+		public Color TextColor
 		{
 			get
 			{

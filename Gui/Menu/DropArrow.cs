@@ -66,7 +66,7 @@ namespace MatterHackers.Agg.UI
 
 		public int StrokeWidth { get; set; } = 1;
 
-		public RGBA_Bytes StrokeColor { get; set; }
+		public Color StrokeColor { get; set; }
 
 		public Vector2 DrawBounds { get; set; }
 

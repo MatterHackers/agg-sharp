@@ -58,10 +58,10 @@ namespace MatterHackers.Agg.UI.Tests
 			int item2ClickCount = 0;
 			int item3ClickCount = 0;
 
-			DropDownList testList = new DropDownList("no selection", RGBA_Bytes.Blue, RGBA_Bytes.Green)
+			DropDownList testList = new DropDownList("no selection", Color.Blue, Color.Green)
 			{
-				MenuItemsBackgroundColor = RGBA_Bytes.White,
-				MenuItemsBackgroundHoverColor = RGBA_Bytes.LightGray,
+				MenuItemsBackgroundColor = Color.White,
+				MenuItemsBackgroundHoverColor = Color.LightGray,
 				Name = "menu1",
 			};
 
@@ -129,7 +129,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			var menuTestContainer = new SystemWindow(300, 200)
 			{
-				BackgroundColor = RGBA_Bytes.White,
+				BackgroundColor = Color.White,
 				Name = "SystemWindow",
 			};
 
@@ -152,7 +152,7 @@ namespace MatterHackers.Agg.UI.Tests
 			menuTestContainer.AddChild(new GuiWidget(20, 20)
 			{
 				OriginRelativeParent = new Vector2(160, 150),
-				BackgroundColor = RGBA_Bytes.Cyan,
+				BackgroundColor = Color.Cyan,
 				Name = "OffMenu",
 			});
 

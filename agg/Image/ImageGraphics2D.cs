@@ -235,9 +235,9 @@ namespace MatterHackers.Agg
 
 							span_image_filter spanImageFilter;
 							span_interpolator_linear interpolator = new span_interpolator_linear(sourceRectTransform);
-							ImageBufferAccessorClip sourceAccessor = new ImageBufferAccessorClip(source, RGBA_Floats.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
+							ImageBufferAccessorClip sourceAccessor = new ImageBufferAccessorClip(source, ColorF.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
 
-							spanImageFilter = new span_image_filter_rgba_bilinear_clip(sourceAccessor, RGBA_Floats.rgba_pre(0, 0, 0, 0), interpolator);
+							spanImageFilter = new span_image_filter_rgba_bilinear_clip(sourceAccessor, ColorF.rgba_pre(0, 0, 0, 0), interpolator);
 
 							DrawImage(source, spanImageFilter, destRectTransform);
 						}
@@ -253,7 +253,7 @@ namespace MatterHackers.Agg
 							sourceRectTransform.invert();
 
 							span_interpolator_linear interpolator = new span_interpolator_linear(sourceRectTransform);
-							ImageBufferAccessorClip sourceAccessor = new ImageBufferAccessorClip(source, RGBA_Floats.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
+							ImageBufferAccessorClip sourceAccessor = new ImageBufferAccessorClip(source, ColorF.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
 
 							//spanImageFilter = new span_image_filter_rgba_bilinear_clip(sourceAccessor, RGBA_Floats.rgba_pre(0, 0, 0, 0), interpolator);
 
@@ -285,7 +285,7 @@ namespace MatterHackers.Agg
 				sourceRectTransform.invert();
 
 				span_interpolator_linear interpolator = new span_interpolator_linear(sourceRectTransform);
-				ImageBufferAccessorClip sourceAccessor = new ImageBufferAccessorClip(source, RGBA_Floats.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
+				ImageBufferAccessorClip sourceAccessor = new ImageBufferAccessorClip(source, ColorF.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
 
 				span_image_filter spanImageFilter = null;
 				switch (source.BitDepth)
@@ -312,7 +312,7 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public override void Rectangle(double left, double bottom, double right, double top, RGBA_Bytes color, double strokeWidth)
+		public override void Rectangle(double left, double bottom, double right, double top, Color color, double strokeWidth)
 		{
 			RoundedRect rect = new RoundedRect(left + .5, bottom + .5, right - .5, top - .5, 0);
 			Stroke rectOutline = new Stroke(rect, strokeWidth);
@@ -341,7 +341,7 @@ namespace MatterHackers.Agg
 
 			if (DestImage != null)
 			{
-				RGBA_Bytes color = iColor.GetAsRGBA_Bytes();
+				Color color = iColor.GetAsRGBA_Bytes();
 				int width = DestImage.Width;
 				int height = DestImage.Height;
 				byte[] buffer = DestImage.GetBuffer();
@@ -407,7 +407,7 @@ namespace MatterHackers.Agg
 					throw new Exception("You have to have either a byte or float DestImage.");
 				}
 
-				RGBA_Floats color = iColor.GetAsRGBA_Floats();
+				ColorF color = iColor.GetAsRGBA_Floats();
 				int width = DestImageFloat.Width;
 				int height = DestImageFloat.Height;
 				float[] buffer = DestImageFloat.GetBuffer();

@@ -13,12 +13,12 @@ namespace MatterHackers.Agg.Font
 		{
 		}
 
-		public RGBA_Bytes PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+		public Color PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
 		{
-			return new RGBA_Bytes(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
+			return new Color(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
 		}
 
-		public void CopyPixels(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor, int count)
+		public void CopyPixels(byte[] buffer, int bufferOffset, Color sourceColor, int count)
 		{
 			do
 			{
@@ -27,7 +27,7 @@ namespace MatterHackers.Agg.Font
 			while (--count != 0);
 		}
 
-		public void BlendPixel(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor)
+		public void BlendPixel(byte[] buffer, int bufferOffset, Color sourceColor)
 		{
 			unchecked
 			{
@@ -38,13 +38,13 @@ namespace MatterHackers.Agg.Font
 				else
 				{
 					int r = buffer[bufferOffset];
-					buffer[bufferOffset] = (byte)(((sourceColor.red - r) * sourceColor.alpha + (r << (int)RGBA_Bytes.base_shift)) >> (int)RGBA_Bytes.base_shift);
+					buffer[bufferOffset] = (byte)(((sourceColor.red - r) * sourceColor.alpha + (r << (int)Color.base_shift)) >> (int)Color.base_shift);
 				}
 			}
 		}
 
 		public void BlendPixels(byte[] destBuffer, int bufferOffset,
-			RGBA_Bytes[] sourceColors, int sourceColorsOffset,
+			Color[] sourceColors, int sourceColorsOffset,
 			byte[] covers, int coversIndex, bool firstCoverForAll, int count)
 		{
 			if (firstCoverForAll)
@@ -82,7 +82,7 @@ namespace MatterHackers.Agg.Font
 					}
 					else
 					{
-						RGBA_Bytes color = sourceColors[sourceColorsOffset];
+						Color color = sourceColors[sourceColorsOffset];
 						color.alpha = (byte)((color.alpha * (cover) + 255) >> 8);
 						BlendPixel(destBuffer, bufferOffset, color);
 					}

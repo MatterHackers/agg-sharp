@@ -96,9 +96,9 @@ namespace MatterHackers.Agg
 		{
 		}
 
-		public override RGBA_Bytes GetPixel(int x, int y)
+		public override Color GetPixel(int x, int y)
 		{
-			RGBA_Bytes c = linkedImage.GetPixel(x, y);
+			Color c = linkedImage.GetPixel(x, y);
 			c.Alpha0To255 = brightness_to_alpha[c.Red0To255 + c.Green0To255 + c.Blue0To255];
 			return c;
 		}
@@ -106,7 +106,7 @@ namespace MatterHackers.Agg
 
 	public class line_patterns_application : GuiWidget, IDemoApp
 	{
-		private RGBA_Bytes m_ctrl_color;
+		private Color m_ctrl_color;
 		private CheckBox m_approximation_method;
 		private bezier_ctrl m_curve1 = new bezier_ctrl();
 		private bezier_ctrl m_curve2 = new bezier_ctrl();
@@ -155,7 +155,7 @@ namespace MatterHackers.Agg
 		public line_patterns_application()
 		{
 			AnchorAll();
-			m_ctrl_color = new RGBA_Bytes(0, 0.3, 0.5, 0.3);
+			m_ctrl_color = new Color(0, 0.3, 0.5, 0.3);
 			m_scale_x = new Slider(5.0, 5.0, 240.0, 12.0);
 			m_start_x = new Slider(250.0, 5.0, 495.0, 12.0);
 			m_approximation_method = new CheckBox(10, 30, "Approximation Method = curve_div");
@@ -246,7 +246,7 @@ namespace MatterHackers.Agg
 		{
 			ImageClippingProxy ren_base = new ImageClippingProxy(graphics2D.DestImage);
 
-			ren_base.clear(new RGBA_Floats(1.0, 1.0, .95));
+			ren_base.clear(new ColorF(1.0, 1.0, .95));
 
 			ScanlineRasterizer ras = new ScanlineRasterizer();
 			ScanlineCachePacked8 sl = new ScanlineCachePacked8();

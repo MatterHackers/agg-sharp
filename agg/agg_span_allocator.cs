@@ -21,15 +21,15 @@ namespace MatterHackers.Agg
 	//----------------------------------------------------------span_allocator
 	public class span_allocator
 	{
-		private ArrayPOD<RGBA_Bytes> m_span;
+		private ArrayPOD<Color> m_span;
 
 		public span_allocator()
 		{
-			m_span = new ArrayPOD<RGBA_Bytes>(255);
+			m_span = new ArrayPOD<Color>(255);
 		}
 
 		//--------------------------------------------------------------------
-		public ArrayPOD<RGBA_Bytes> allocate(int span_len)
+		public ArrayPOD<Color> allocate(int span_len)
 		{
 			if (span_len > m_span.Size())
 			{
@@ -42,7 +42,7 @@ namespace MatterHackers.Agg
 			return m_span;
 		}
 
-		public ArrayPOD<RGBA_Bytes> span()
+		public ArrayPOD<Color> span()
 		{
 			return m_span;
 		}

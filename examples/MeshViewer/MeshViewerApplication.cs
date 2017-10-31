@@ -56,7 +56,7 @@ namespace MatterHackers.MeshVisualizer
 		public MeshViewerApplication(string meshFileToLoad = "")
 			: base(800, 600)
 		{
-			BackgroundColor = RGBA_Bytes.White;
+			BackgroundColor = Color.White;
 			MinimumSize = new VectorMath.Vector2(200, 200);
 			Title = "MatterHackers MeshViewr";
 			UseOpenGL = true;
@@ -80,7 +80,7 @@ namespace MatterHackers.MeshVisualizer
 			FlowLayoutWidget buttonPanel = new FlowLayoutWidget(FlowDirection.LeftToRight);
 			buttonPanel.HAnchor = HAnchor.Stretch;
 			buttonPanel.Padding = new BorderDouble(3, 3);
-			buttonPanel.BackgroundColor = RGBA_Bytes.DarkGray;
+			buttonPanel.BackgroundColor = Color.DarkGray;
 
 			if (meshFileToLoad != "")
 			{

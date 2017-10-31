@@ -24,11 +24,11 @@ namespace MatterHackers.DataConverters3D
 			var color = renderData.WorldColor();
 			if (color.alpha != 0)
 			{
-				partMaterial = new SolidMaterial(new RGBA_Floats(color.Red0To1, color.Green0To1, color.Blue0To1), .01, 0.0, 2.0);
+				partMaterial = new SolidMaterial(new ColorF(color.Red0To1, color.Green0To1, color.Blue0To1), .01, 0.0, 2.0);
 			}
 			else
 			{
-				partMaterial = new SolidMaterial(new RGBA_Floats(.9, .2, .1), .01, 0.0, 2.0);
+				partMaterial = new SolidMaterial(new ColorF(.9, .2, .1), .01, 0.0, 2.0);
 			}
 
 			var worldMatrix = renderData.WorldMatrix();
@@ -65,7 +65,7 @@ namespace MatterHackers.DataConverters3D
 
 			if (partMaterial == null)
 			{
-				partMaterial = new SolidMaterial(new RGBA_Floats(.9, .2, .1), .01, 0.0, 2.0);
+				partMaterial = new SolidMaterial(new ColorF(.9, .2, .1), .01, 0.0, 2.0);
 			}
 			int index = 0;
 			Vector3[] triangle = new Vector3[3];
@@ -93,7 +93,7 @@ namespace MatterHackers.DataConverters3D
 			List<IPrimitive> renderCollection = new List<IPrimitive>();
 
 			//SolidMaterial redStuff = new SolidMaterial(new RGBA_Floats(.9, .2, .1), .01, 0.0, 2.0);
-			SolidMaterial mhBlueStuff = new SolidMaterial(new RGBA_Floats(0, .32, .58), .01, 0.0, 2.0);
+			SolidMaterial mhBlueStuff = new SolidMaterial(new ColorF(0, .32, .58), .01, 0.0, 2.0);
 			int index = 0;
 			Vector3[] triangle = new Vector3[3];
 			//Mesh simpleMesh = Processors.StlProcessing.Load("complex.stl");

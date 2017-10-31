@@ -10,7 +10,7 @@ namespace MatterHackers.Agg
 			: base("Text Edit Widget")
 		{
 			FlowLayoutWidget topToBottom = new FlowLayoutWidget(FlowDirection.TopToBottom);
-			BackgroundColor = new RGBA_Bytes(210, 210, 255);
+			BackgroundColor = new Color(210, 210, 255);
 			topToBottom.Padding = new BorderDouble(20);
 
 			topToBottom.AddChild(new TextWidget("testing underline jpqy", underline: true));
@@ -80,11 +80,11 @@ namespace MatterHackers.Agg
 			{
 				//child.Padding = new BorderDouble(4);
 				child.HAnchor = UI.HAnchor.Center;
-				child.BackgroundColor = RGBA_Bytes.White;
+				child.BackgroundColor = Color.White;
 				//child.Margin = new BorderDouble(3);
 				if (child is TextWidget)
 				{
-					child.BackgroundColor = new RGBA_Bytes(255, 200, 200);
+					child.BackgroundColor = new Color(255, 200, 200);
 				}
 			}
 

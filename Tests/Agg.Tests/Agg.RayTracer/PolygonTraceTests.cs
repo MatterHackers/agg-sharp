@@ -140,7 +140,7 @@ namespace MatterHackers.RayTracer
 		[Test]
 		public void PolygonHitTests()
 		{
-			SolidMaterial redStuff = new SolidMaterial(new RGBA_Floats(1, 0, 0), 0, 0, 2);
+			SolidMaterial redStuff = new SolidMaterial(new ColorF(1, 0, 0), 0, 0, 2);
 			{
 				TriangleShape facingPositiveX = new TriangleShape(new Vector3(0, 1, -1), new Vector3(0, 0, 1), new Vector3(0, -1, -1), redStuff);
 				IntersectInfo positiveXInfo = facingPositiveX.GetClosestIntersection(new Ray(new Vector3(1, 0, 0), new Vector3(-1, 0, 0)));

@@ -38,7 +38,7 @@ namespace SmartSweeper
 				m_Controller = new CController(backBuffer, 30, 40, .1, .7, .3, 4, 1, 2000);
 			}
 
-			graphics2D.Clear(new RGBA_Floats(1, 1, 1, 1));
+			graphics2D.Clear(new ColorF(1, 1, 1, 1));
 			graphics2D.Rasterizer.SetVectorClipBox(0, 0, (int)Width, (int)Height);
 			m_Controller.FastRender(m_SuperFast.Checked);
 			m_Controller.Render(graphics2D);

@@ -45,15 +45,15 @@ namespace MatterHackers.Agg.UI
 
 		public Direction MenuDirection { get; private set; }
 
-		public RGBA_Bytes MenuItemsBorderColor { get; set; }
+		public Color MenuItemsBorderColor { get; set; }
 
-		public RGBA_Bytes MenuItemsBackgroundColor { get; set; } = RGBA_Bytes.White;
+		public Color MenuItemsBackgroundColor { get; set; } = Color.White;
 
-		public RGBA_Bytes MenuItemsBackgroundHoverColor { get; set; } = RGBA_Bytes.Gray;
+		public Color MenuItemsBackgroundHoverColor { get; set; } = Color.Gray;
 
-		public RGBA_Bytes MenuItemsTextColor { get; set; } = RGBA_Bytes.Black;
+		public Color MenuItemsTextColor { get; set; } = Color.Black;
 
-		public RGBA_Bytes MenuItemsTextHoverColor { get; set; } = RGBA_Bytes.Black;
+		public Color MenuItemsTextHoverColor { get; set; } = Color.Black;
 
 		public int MenuItemsBorderWidth { get; set; } = 1;
 
@@ -141,7 +141,7 @@ namespace MatterHackers.Agg.UI
 			{
 				HAnchor = HAnchor.Stretch,
 				Height = 1,
-				BackgroundColor = RGBA_Bytes.LightGray,
+				BackgroundColor = Color.LightGray,
 				Margin = new BorderDouble(10, 1),
 				VAnchor = VAnchor.Center,
 			}, "HorizontalLine");

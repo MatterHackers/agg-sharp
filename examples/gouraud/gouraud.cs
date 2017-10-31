@@ -101,46 +101,46 @@ namespace MatterHackers.Agg
 			double x3 = (m_x[0] + m_x[2]) / 2 - (xc - (m_x[0] + m_x[2]) / 2);
 			double y3 = (m_y[0] + m_y[2]) / 2 - (yc - (m_y[0] + m_y[2]) / 2);
 
-			span_gen.colors(new RGBA_Floats(1, 0, 0, alpha),
-							new RGBA_Floats(0, 1, 0, alpha),
-							new RGBA_Floats(brc, brc, brc, alpha));
+			span_gen.colors(new ColorF(1, 0, 0, alpha),
+							new ColorF(0, 1, 0, alpha),
+							new ColorF(brc, brc, brc, alpha));
 			span_gen.triangle(m_x[0], m_y[0], m_x[1], m_y[1], xc, yc, d);
 			ras.add_path(span_gen);
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
 			scanlineRenderer.GenerateAndRender(ras, sl, ren_base, span_alloc, span_gen);
 
-			span_gen.colors(new RGBA_Floats(0, 1, 0, alpha),
-							new RGBA_Floats(0, 0, 1, alpha),
-							new RGBA_Floats(brc, brc, brc, alpha));
+			span_gen.colors(new ColorF(0, 1, 0, alpha),
+							new ColorF(0, 0, 1, alpha),
+							new ColorF(brc, brc, brc, alpha));
 			span_gen.triangle(m_x[1], m_y[1], m_x[2], m_y[2], xc, yc, d);
 			ras.add_path(span_gen);
 			scanlineRenderer.GenerateAndRender(ras, sl, ren_base, span_alloc, span_gen);
 
-			span_gen.colors(new RGBA_Floats(0, 0, 1, alpha),
-							new RGBA_Floats(1, 0, 0, alpha),
-							new RGBA_Floats(brc, brc, brc, alpha));
+			span_gen.colors(new ColorF(0, 0, 1, alpha),
+							new ColorF(1, 0, 0, alpha),
+							new ColorF(brc, brc, brc, alpha));
 			span_gen.triangle(m_x[2], m_y[2], m_x[0], m_y[0], xc, yc, d);
 			ras.add_path(span_gen);
 			scanlineRenderer.GenerateAndRender(ras, sl, ren_base, span_alloc, span_gen);
 
 			brc = 1 - brc;
-			span_gen.colors(new RGBA_Floats(1, 0, 0, alpha),
-							new RGBA_Floats(0, 1, 0, alpha),
-							new RGBA_Floats(brc, brc, brc, alpha));
+			span_gen.colors(new ColorF(1, 0, 0, alpha),
+							new ColorF(0, 1, 0, alpha),
+							new ColorF(brc, brc, brc, alpha));
 			span_gen.triangle(m_x[0], m_y[0], m_x[1], m_y[1], x1, y1, d);
 			ras.add_path(span_gen);
 			scanlineRenderer.GenerateAndRender(ras, sl, ren_base, span_alloc, span_gen);
 
-			span_gen.colors(new RGBA_Floats(0, 1, 0, alpha),
-							new RGBA_Floats(0, 0, 1, alpha),
-							new RGBA_Floats(brc, brc, brc, alpha));
+			span_gen.colors(new ColorF(0, 1, 0, alpha),
+							new ColorF(0, 0, 1, alpha),
+							new ColorF(brc, brc, brc, alpha));
 			span_gen.triangle(m_x[1], m_y[1], m_x[2], m_y[2], x2, y2, d);
 			ras.add_path(span_gen);
 			scanlineRenderer.GenerateAndRender(ras, sl, ren_base, span_alloc, span_gen);
 
-			span_gen.colors(new RGBA_Floats(0, 0, 1, alpha),
-							new RGBA_Floats(1, 0, 0, alpha),
-							new RGBA_Floats(brc, brc, brc, alpha));
+			span_gen.colors(new ColorF(0, 0, 1, alpha),
+							new ColorF(1, 0, 0, alpha),
+							new ColorF(brc, brc, brc, alpha));
 			span_gen.triangle(m_x[2], m_y[2], m_x[0], m_y[0], x3, y3, d);
 			ras.add_path(span_gen);
 			scanlineRenderer.GenerateAndRender(ras, sl, ren_base, span_alloc, span_gen);
@@ -158,7 +158,7 @@ namespace MatterHackers.Agg
 			pf.Attach(backBuffer, new BlenderBGRA());
 #endif
 			ImageClippingProxy ren_base = new ImageClippingProxy(pf);
-			ren_base.clear(new RGBA_Floats(1.0, 1.0, 1.0));
+			ren_base.clear(new ColorF(1.0, 1.0, 1.0));
 
 			scanline_unpacked_8 sl = new scanline_unpacked_8();
 			ScanlineRasterizer ras = new ScanlineRasterizer();

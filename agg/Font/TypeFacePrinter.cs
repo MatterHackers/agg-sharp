@@ -133,7 +133,7 @@ namespace MatterHackers.Agg.Font
 			}
 		}
 
-		public void Render(Graphics2D graphics2D, RGBA_Bytes color, IVertexSourceProxy vertexSourceToApply)
+		public void Render(Graphics2D graphics2D, Color color, IVertexSourceProxy vertexSourceToApply)
 		{
 			vertexSourceToApply.VertexSource = this;
 			rewind(0);
@@ -148,7 +148,7 @@ namespace MatterHackers.Agg.Font
 			}
 		}
 
-		public void Render(Graphics2D graphics2D, RGBA_Bytes color)
+		public void Render(Graphics2D graphics2D, Color color)
 		{
 			if (DrawFromHintedCache)
 			{
@@ -161,7 +161,7 @@ namespace MatterHackers.Agg.Font
 			}
 		}
 
-		private void RenderFromCache(Graphics2D graphics2D, RGBA_Bytes color)
+		private void RenderFromCache(Graphics2D graphics2D, Color color)
 		{
 			if (text != null && text.Length > 0)
 			{

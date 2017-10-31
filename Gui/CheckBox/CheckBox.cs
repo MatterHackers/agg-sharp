@@ -80,13 +80,13 @@ namespace MatterHackers.Agg.UI
 		{
 		}
 
-		public CheckBox(string label, RGBA_Bytes textColor, double textSize = 12)
+		public CheckBox(string label, Color textColor, double textSize = 12)
 			: this(0, 0, label, textSize)
 		{
 			TextColor = textColor;
 		}
 
-		public RGBA_Bytes TextColor
+		public Color TextColor
 		{
 			get
 			{
@@ -96,7 +96,7 @@ namespace MatterHackers.Agg.UI
 					return child.TextColor;
 				}
 
-				return RGBA_Bytes.Black;
+				return Color.Black;
 			}
 
 			set

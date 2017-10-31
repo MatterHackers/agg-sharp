@@ -46,12 +46,12 @@ namespace MatterHackers.Agg.OpenGlGui
 			Vector2 objectCenterScreenSpace = worldView.GetScreenPosition(renderPosition);
 			Point2D screenPositionOfObject3D = new Point2D((int)objectCenterScreenSpace.x, (int)objectCenterScreenSpace.y);
 
-			graphics2D.Circle(objectCenterScreenSpace, 5, RGBA_Bytes.Magenta);
+			graphics2D.Circle(objectCenterScreenSpace, 5, Color.Magenta);
 
 			for (int i = 0; i < 4; i++)
 			{
-				graphics2D.Circle(worldView.GetScreenPosition(bounds.GetTopCorner(i)), 5, RGBA_Bytes.Magenta);
-				graphics2D.Circle(worldView.GetScreenPosition(bounds.GetBottomCorner(i)), 5, RGBA_Bytes.Magenta);
+				graphics2D.Circle(worldView.GetScreenPosition(bounds.GetTopCorner(i)), 5, Color.Magenta);
+				graphics2D.Circle(worldView.GetScreenPosition(bounds.GetBottomCorner(i)), 5, Color.Magenta);
 			}
 
 			RectangleDouble screenBoundsOfObject3D = RectangleDouble.ZeroIntersection;
@@ -61,10 +61,10 @@ namespace MatterHackers.Agg.OpenGlGui
 				screenBoundsOfObject3D.ExpandToInclude(worldView.GetScreenPosition(bounds.GetBottomCorner(i)));
 			}
 
-			graphics2D.Circle(screenBoundsOfObject3D.Left, screenBoundsOfObject3D.Bottom, 5, RGBA_Bytes.Cyan);
-			graphics2D.Circle(screenBoundsOfObject3D.Left, screenBoundsOfObject3D.Top, 5, RGBA_Bytes.Cyan);
-			graphics2D.Circle(screenBoundsOfObject3D.Right, screenBoundsOfObject3D.Bottom, 5, RGBA_Bytes.Cyan);
-			graphics2D.Circle(screenBoundsOfObject3D.Right, screenBoundsOfObject3D.Top, 5, RGBA_Bytes.Cyan);
+			graphics2D.Circle(screenBoundsOfObject3D.Left, screenBoundsOfObject3D.Bottom, 5, Color.Cyan);
+			graphics2D.Circle(screenBoundsOfObject3D.Left, screenBoundsOfObject3D.Top, 5, Color.Cyan);
+			graphics2D.Circle(screenBoundsOfObject3D.Right, screenBoundsOfObject3D.Bottom, 5, Color.Cyan);
+			graphics2D.Circle(screenBoundsOfObject3D.Right, screenBoundsOfObject3D.Top, 5, Color.Cyan);
 		}
 	}
 

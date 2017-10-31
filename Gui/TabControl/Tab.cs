@@ -34,13 +34,13 @@ namespace MatterHackers.Agg.UI
 	public class TextTab : ThreeViewTab
 	{
 		public TextTab(TabPage tabPage, string internalTabName)
-			: this(tabPage, internalTabName, 12, RGBA_Bytes.DarkGray, RGBA_Bytes.White, RGBA_Bytes.Black, RGBA_Bytes.White)
+			: this(tabPage, internalTabName, 12, Color.DarkGray, Color.White, Color.Black, Color.White)
 		{
 		}
 
 		public TextTab(TabPage tabPage, string internalTabName, double pointSize,
-			RGBA_Bytes selectedTextColor, RGBA_Bytes selectedBackgroundColor,
-			RGBA_Bytes normalTextColor, RGBA_Bytes normalBackgroundColor, int fixedSize = 40, bool useUnderlineStyling = false)
+			Color selectedTextColor, Color selectedBackgroundColor,
+			Color normalTextColor, Color normalBackgroundColor, int fixedSize = 40, bool useUnderlineStyling = false)
 			: base(internalTabName, new GuiWidget(), new GuiWidget(), new GuiWidget(), tabPage)
 		{
 			this.Padding = 0;
@@ -69,7 +69,7 @@ namespace MatterHackers.Agg.UI
 			this.VAnchor = VAnchor.Fit;
 		}
 
-		private void AddText(string tabText, GuiWidget viewWidget, RGBA_Bytes textColor, RGBA_Bytes backgroundColor, double pointSize, bool isActive, int fixedSize, bool useUnderlineStyling)
+		private void AddText(string tabText, GuiWidget viewWidget, Color textColor, Color backgroundColor, double pointSize, bool isActive, int fixedSize, bool useUnderlineStyling)
 		{
 			var tabTitle = new TextWidget(tabText, pointSize: pointSize, textColor: textColor)
 			{

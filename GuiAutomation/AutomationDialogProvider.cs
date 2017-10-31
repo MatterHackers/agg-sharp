@@ -45,10 +45,10 @@ namespace MatterHackers.Agg.Platform
 			var systemWindow = new SystemWindow(600, 200)
 			{
 				Title = "TestAutomation File Input",
-				BackgroundColor = RGBA_Bytes.DarkGray
+				BackgroundColor = Color.DarkGray
 			};
 
-			var warningLabel = new TextWidget("This dialog should not appear outside of automation tests.\nNotify technical support if visible", pointSize: 15, textColor: RGBA_Bytes.Pink)
+			var warningLabel = new TextWidget("This dialog should not appear outside of automation tests.\nNotify technical support if visible", pointSize: 15, textColor: Color.Pink)
 			{
 				Margin = new BorderDouble(20),
 				VAnchor = VAnchor.Top,

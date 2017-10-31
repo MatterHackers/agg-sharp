@@ -80,7 +80,7 @@ namespace MatterHackers.Agg.UI
 			layoutEngine.ShowPopup(this);
 		}
 
-		public RGBA_Bytes BorderColor { get; set; }
+		public Color BorderColor { get; set; }
 
 		public int BorderWidth { get; set; }
 		private List<GuiWidget> ignoredWidgets { get; }

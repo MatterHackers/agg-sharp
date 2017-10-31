@@ -94,7 +94,7 @@ its center. Also, the image is scaled when resizing the window.";
 
 			ImageClippingProxy clippingProxy_pre = new ImageClippingProxy(destImageWithPreMultBlender);
 
-			clippingProxy_pre.clear(new RGBA_Floats(1.0, 1.0, 1.0));
+			clippingProxy_pre.clear(new ColorF(1.0, 1.0, 1.0));
 
 			Affine src_mtx = Affine.NewIdentity();
 			src_mtx *= Affine.NewTranslation(-orignialSize.x / 2 - 10, -orignialSize.y / 2 - 20 - 10);
@@ -118,15 +118,15 @@ its center. Also, the image is scaled when resizing the window.";
 			{
 				case 24:
 					{
-						ImageBufferAccessorClip source = new ImageBufferAccessorClip(sourceImage, RGBA_Floats.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
-						sg = new span_image_filter_rgb_bilinear_clip(source, RGBA_Floats.rgba_pre(0, 0.4, 0, 0.5), interpolator);
+						ImageBufferAccessorClip source = new ImageBufferAccessorClip(sourceImage, ColorF.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
+						sg = new span_image_filter_rgb_bilinear_clip(source, ColorF.rgba_pre(0, 0.4, 0, 0.5), interpolator);
 					}
 					break;
 
 				case 32:
 					{
-						ImageBufferAccessorClip source = new ImageBufferAccessorClip(sourceImage, RGBA_Floats.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
-						sg = new span_image_filter_rgba_bilinear_clip(source, RGBA_Floats.rgba_pre(0, 0.4, 0, 0.5), interpolator);
+						ImageBufferAccessorClip source = new ImageBufferAccessorClip(sourceImage, ColorF.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
+						sg = new span_image_filter_rgba_bilinear_clip(source, ColorF.rgba_pre(0, 0.4, 0, 0.5), interpolator);
 					}
 					break;
 

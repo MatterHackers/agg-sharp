@@ -24,8 +24,8 @@ namespace MatterHackers.Agg.UI
 
 		protected FlowLayoutWidget topToBottomItemList;
 
-		private RGBA_Bytes hoverColor = new RGBA_Bytes(205, 205, 255, 255);
-		private RGBA_Bytes selectedColor = new RGBA_Bytes(105, 105, 255, 255);
+		private Color hoverColor = new Color(205, 205, 255, 255);
+		private Color selectedColor = new Color(105, 105, 255, 255);
 
 		private int selectedIndex = -1;
 		private int hoverIndex = -1;
@@ -67,7 +67,7 @@ namespace MatterHackers.Agg.UI
 						}
 						else
 						{
-							child.BackgroundColor = new RGBA_Bytes();
+							child.BackgroundColor = new Color();
 						}
 						child.Invalidate();
 					}
@@ -115,7 +115,7 @@ namespace MatterHackers.Agg.UI
 					hoverIndex = value;
 					OnHoverIndexChanged();
 
-					RGBA_Bytes noneColor = new RGBA_Bytes();
+					Color noneColor = new Color();
 					for (int index = 0; index < topToBottomItemList.Children.Count; index++)
 					{
 						if (index != SelectedIndex)
@@ -244,7 +244,7 @@ namespace MatterHackers.Agg.UI
 			{
 				if (widgetLeft != topToBottomItemList.Children[SelectedIndex])
 				{
-					widgetLeft.BackgroundColor = new RGBA_Bytes();
+					widgetLeft.BackgroundColor = new Color();
 					widgetLeft.Invalidate();
 					Invalidate();
 				}

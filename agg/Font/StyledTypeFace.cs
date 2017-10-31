@@ -59,24 +59,24 @@ namespace MatterHackers.Agg.Font
 	{
 		private static StyledTypeFaceImageCache instance;
 
-		private Dictionary<TypeFace, Dictionary<RGBA_Bytes, Dictionary<double, Dictionary<char, ImageBuffer>>>> typeFaceImageCache = new Dictionary<TypeFace, Dictionary<RGBA_Bytes, Dictionary<double, Dictionary<char, ImageBuffer>>>>();
+		private Dictionary<TypeFace, Dictionary<Color, Dictionary<double, Dictionary<char, ImageBuffer>>>> typeFaceImageCache = new Dictionary<TypeFace, Dictionary<Color, Dictionary<double, Dictionary<char, ImageBuffer>>>>();
 
 		// private so you can't use it by accident (it is a singleton)
 		private StyledTypeFaceImageCache()
 		{
 		}
 
-		public static Dictionary<char, ImageBuffer> GetCorrectCache(TypeFace typeFace, RGBA_Bytes color, double emSizeInPoints)
+		public static Dictionary<char, ImageBuffer> GetCorrectCache(TypeFace typeFace, Color color, double emSizeInPoints)
 		{
 			lock(typeFace)
 			{
 				// TODO: check if the cache is getting too big and if so prune it (or just delete it and start over).
 
-				Dictionary<RGBA_Bytes, Dictionary<double, Dictionary<char, ImageBuffer>>> foundTypeFaceColor;
+				Dictionary<Color, Dictionary<double, Dictionary<char, ImageBuffer>>> foundTypeFaceColor;
 				if (!Instance.typeFaceImageCache.TryGetValue(typeFace, out foundTypeFaceColor))
 				{
 					// add in the type face
-					foundTypeFaceColor = new Dictionary<RGBA_Bytes, Dictionary<double, Dictionary<char, ImageBuffer>>>();
+					foundTypeFaceColor = new Dictionary<Color, Dictionary<double, Dictionary<char, ImageBuffer>>>();
 					Instance.typeFaceImageCache.Add(typeFace, foundTypeFaceColor);
 				}
 
@@ -234,7 +234,7 @@ namespace MatterHackers.Agg.Font
 			}
 		}
 
-		public ImageBuffer GetImageForCharacter(char character, double xFraction, double yFraction, RGBA_Bytes color)
+		public ImageBuffer GetImageForCharacter(char character, double xFraction, double yFraction, Color color)
 		{
 			if (xFraction > 1 || xFraction < 0 || yFraction > 1 || yFraction < 0)
 			{

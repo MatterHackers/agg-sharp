@@ -32,11 +32,11 @@ namespace MatterHackers.Agg.UI
 	{
 		public static bool DoubleBufferDefault = true;
 
-		private RGBA_Bytes textColor;
+		private Color textColor;
 
 		public bool EllipsisIfClipped { get; set; }
 
-		public RGBA_Bytes DisabledColor { get; set; }
+		public Color DisabledColor { get; set; }
 
 		public double PointSize
 		{
@@ -60,9 +60,9 @@ namespace MatterHackers.Agg.UI
 
 		public TypeFacePrinter Printer { get; private set; }
 
-		public TextWidget(string text, double x = 0, double y = 0, double pointSize = 12, Justification justification = Justification.Left, RGBA_Bytes textColor = new RGBA_Bytes(), bool ellipsisIfClipped = true, bool underline = false, RGBA_Bytes backgroundColor = new RGBA_Bytes(), TypeFace typeFace = null)
+		public TextWidget(string text, double x = 0, double y = 0, double pointSize = 12, Justification justification = Justification.Left, Color textColor = new Color(), bool ellipsisIfClipped = true, bool underline = false, Color backgroundColor = new Color(), TypeFace typeFace = null)
 		{
-			DisabledColor = new RGBA_Bytes(textColor, 50);
+			DisabledColor = new Color(textColor, 50);
 
 			Selectable = false;
 			DoubleBuffer = DoubleBufferDefault;
@@ -73,7 +73,7 @@ namespace MatterHackers.Agg.UI
 			if (this.textColor.Alpha0To255 == 0)
 			{
 				// we assume it is the default if alpha 0.  Also there is no reason to make a text color of this as it will draw nothing.
-				this.textColor = RGBA_Bytes.Black;
+				this.textColor = Color.Black;
 			}
 			if (backgroundColor.Alpha0To255 != 0)
 			{
@@ -220,7 +220,7 @@ namespace MatterHackers.Agg.UI
 			}
 			graphics2D.SetTransform(graphics2D.GetTransform() * Affine.NewTranslation(xOffsetForText, yOffsetForText));
 
-			RGBA_Bytes currentColor = this.textColor;
+			Color currentColor = this.textColor;
 
 			if (EllipsisIfClipped && Printer.LocalBounds.Width > LocalBounds.Width) // only do this if it's static text
 			{
@@ -241,8 +241,8 @@ namespace MatterHackers.Agg.UI
 			// Debug onscreen fonts
 			if (false && this.Text.Trim().Length > 1)
 			{
-				graphics2D.FillRectangle(this.Width - 13, 0, this.Width, this.Height - 2, RGBA_Bytes.White);
-				graphics2D.DrawString(this.PointSize.ToString(), this.Width - 12, 2, 8, color: RGBA_Bytes.Red);
+				graphics2D.FillRectangle(this.Width - 13, 0, this.Width, this.Height - 2, Color.White);
+				graphics2D.DrawString(this.PointSize.ToString(), this.Width - 12, 2, 8, color: Color.Red);
 			}
 
 			graphics2D.PopTransform();
@@ -250,7 +250,7 @@ namespace MatterHackers.Agg.UI
 			base.OnDraw(graphics2D);
 		}
 
-		public RGBA_Bytes TextColor
+		public Color TextColor
 		{
 			get => (this.Enabled) ? textColor : this.DisabledColor;
 			set

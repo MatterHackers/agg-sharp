@@ -24,7 +24,7 @@ namespace MatterHackers.Agg
 	{
 		int dilation();
 
-		void pixel_high_res(ImageBuffer sourceImage, RGBA_Bytes[] destBuffer, int destBufferOffset, int x, int y);
+		void pixel_high_res(ImageBuffer sourceImage, Color[] destBuffer, int destBufferOffset, int x, int y);
 	}
 
 	//=======================================================pattern_filter_nn
@@ -57,12 +57,12 @@ namespace MatterHackers.Agg
 			return 1;
 		}
 
-		public void pixel_low_res(RGBA_Bytes[][] buf, RGBA_Bytes[] p, int offset, int x, int y)
+		public void pixel_low_res(Color[][] buf, Color[] p, int offset, int x, int y)
 		{
 			p[offset] = buf[y][x];
 		}
 
-		public void pixel_high_res(ImageBuffer sourceImage, RGBA_Bytes[] destBuffer, int destBufferOffset, int x, int y)
+		public void pixel_high_res(ImageBuffer sourceImage, Color[] destBuffer, int destBufferOffset, int x, int y)
 		{
 			int r, g, b, a;
 			r = g = b = a = LineAABasics.line_subpixel_scale * LineAABasics.line_subpixel_scale / 2;

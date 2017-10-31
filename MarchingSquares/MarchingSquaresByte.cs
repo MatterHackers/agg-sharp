@@ -45,14 +45,14 @@ namespace MatterHackers.MarchingSquares
 	{
 		public Vector2 start;
 		public Vector2 end;
-		public RGBA_Bytes color;
+		public Color color;
 
-		public LineSegment(double x1, double y1, double x2, double y2, RGBA_Bytes color)
+		public LineSegment(double x1, double y1, double x2, double y2, Color color)
 			: this(new Vector2(x1, y1), new Vector2(x2, y2), color)
 		{
 		}
 
-		public LineSegment(Vector2 start, Vector2 end, RGBA_Bytes color)
+		public LineSegment(Vector2 start, Vector2 end, Color color)
 		{
 			this.start = start;
 			this.end = end;
@@ -71,7 +71,7 @@ namespace MatterHackers.MarchingSquares
 			this.ending = Math.Max(ending, starting + 1);
 		}
 
-		public double Threshold(RGBA_Bytes color)
+		public double Threshold(Color color)
 		{
 			if (color.Red0To255 < starting)
 			{
@@ -94,7 +94,7 @@ namespace MatterHackers.MarchingSquares
 	{
 		private ImageBuffer imageToMarch;
 
-		public delegate double PositiveArea0to1(RGBA_Bytes color);
+		public delegate double PositiveArea0to1(Color color);
 
 		private PositiveArea0to1 thresholdFunction;
 		private int debugColor;
@@ -201,9 +201,9 @@ namespace MatterHackers.MarchingSquares
 			return LineLoops;
 		}
 
-		private RGBA_Bytes GetRGBA(byte[] buffer, int offset)
+		private Color GetRGBA(byte[] buffer, int offset)
 		{
-			return new RGBA_Bytes(buffer[offset + 2], buffer[offset + 1], buffer[offset + 0], buffer[offset + 3]);
+			return new Color(buffer[offset + 2], buffer[offset + 1], buffer[offset + 0], buffer[offset + 3]);
 		}
 
 		public void CreateLineSegments()
@@ -278,10 +278,10 @@ namespace MatterHackers.MarchingSquares
 
 		private void AddSegmentForFlags(int x, int y, int flags, bool wasFlipped)
 		{
-			RGBA_Bytes color = RGBA_Bytes.Green;
+			Color color = Color.Green;
 			if (flags == debugColor)
 			{
-				color = RGBA_Bytes.Red;
+				color = Color.Red;
 			}
 
 			switch (flags)

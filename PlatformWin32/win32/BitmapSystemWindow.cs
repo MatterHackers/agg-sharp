@@ -107,7 +107,7 @@ namespace MatterHackers.Agg.UI
 
 				int bitDepth = System.Drawing.Image.GetPixelFormatSize(format);
 				bitmapBackBuffer.Initialize((int)Width, (int)Height, bitDepth);
-				NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
+				NewGraphics2D().Clear(new ColorF(1, 1, 1, 1));
 			}
 		}
 
@@ -151,7 +151,7 @@ namespace MatterHackers.Agg.UI
 
 			bitmapBackBuffer.Initialize((int)this.AggSystemWindow.Width, (int)this.AggSystemWindow.Height, this.AggSystemWindow.BitDepth);
 
-			NewGraphics2D().Clear(new RGBA_Floats(1, 1, 1, 1));
+			NewGraphics2D().Clear(new ColorF(1, 1, 1, 1));
 
 			// OnInitialize(); }}
 		}

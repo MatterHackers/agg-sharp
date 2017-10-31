@@ -18,7 +18,7 @@ namespace MatterHackers.Agg
 			Graphics2D imageGraphics = image.NewGraphics2D();
 			for (int i = 0; i < 30; i++)
 			{
-				imageGraphics.Circle(rand.NextDouble() * image.Width, rand.NextDouble() * image.Height, rand.NextDouble() * 10 + 5, RGBA_Bytes.Red);
+				imageGraphics.Circle(rand.NextDouble() * image.Width, rand.NextDouble() * image.Height, rand.NextDouble() * 10 + 5, Color.Red);
 			}
 		}
 

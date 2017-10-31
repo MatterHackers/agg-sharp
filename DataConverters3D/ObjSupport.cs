@@ -180,8 +180,8 @@ namespace MatterHackers.DataConverters3D
 									}
 								}
 
-								context.Color = RGBA_Bytes.White;
-								root.Color = RGBA_Bytes.White;
+								context.Color = Color.White;
+								root.Color = Color.White;
 							}
 						}
 					}

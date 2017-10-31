@@ -142,7 +142,7 @@ namespace MatterHackers.Agg.Image
 		public void clear(IColorType in_c)
 		{
 			int y;
-			RGBA_Bytes c = new RGBA_Bytes(in_c.Red0To255, in_c.Green0To255, in_c.Blue0To255, in_c.Alpha0To255);
+			Color c = new Color(in_c.Red0To255, in_c.Green0To255, in_c.Blue0To255, in_c.Alpha0To255);
 			if (Width != 0)
 			{
 				for (y = 0; y < Height; y++)
@@ -160,12 +160,12 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public override RGBA_Bytes GetPixel(int x, int y)
+		public override Color GetPixel(int x, int y)
 		{
-			return inbox(x, y) ? base.GetPixel(x, y) : new RGBA_Bytes();
+			return inbox(x, y) ? base.GetPixel(x, y) : new Color();
 		}
 
-		public override void copy_hline(int x1, int y, int x2, RGBA_Bytes c)
+		public override void copy_hline(int x1, int y, int x2, Color c)
 		{
 			if (x1 > x2) { int t = (int)x2; x2 = (int)x1; x1 = t; }
 			if (y > ymax()) return;
@@ -179,7 +179,7 @@ namespace MatterHackers.Agg.Image
 			base.copy_hline(x1, y, (int)(x2 - x1 + 1), c);
 		}
 
-		public override void copy_vline(int x, int y1, int y2, RGBA_Bytes c)
+		public override void copy_vline(int x, int y1, int y2, Color c)
 		{
 			if (y1 > y2) { int t = (int)y2; y2 = (int)y1; y1 = t; }
 			if (x > xmax()) return;
@@ -193,7 +193,7 @@ namespace MatterHackers.Agg.Image
 			base.copy_vline(x, y1, (int)(y2 - y1 + 1), c);
 		}
 
-		public override void blend_hline(int x1, int y, int x2, RGBA_Bytes c, byte cover)
+		public override void blend_hline(int x1, int y, int x2, Color c, byte cover)
 		{
 			if (x1 > x2)
 			{
@@ -218,7 +218,7 @@ namespace MatterHackers.Agg.Image
 			base.blend_hline(x1, y, x2, c, cover);
 		}
 
-		public override void blend_vline(int x, int y1, int y2, RGBA_Bytes c, byte cover)
+		public override void blend_vline(int x, int y1, int y2, Color c, byte cover)
 		{
 			if (y1 > y2) { int t = y2; y2 = y1; y1 = t; }
 			if (x > xmax()) return;
@@ -232,7 +232,7 @@ namespace MatterHackers.Agg.Image
 			base.blend_vline(x, y1, y2, c, cover);
 		}
 
-		public override void blend_solid_hspan(int x, int y, int len, RGBA_Bytes c, byte[] covers, int coversIndex)
+		public override void blend_solid_hspan(int x, int y, int len, Color c, byte[] covers, int coversIndex)
 		{
 #if false
             FileStream file = new FileStream("pixels.txt", FileMode.Append, FileAccess.Write);
@@ -260,7 +260,7 @@ namespace MatterHackers.Agg.Image
 			base.blend_solid_hspan(x, y, len, c, covers, coversIndex);
 		}
 
-		public override void blend_solid_vspan(int x, int y, int len, RGBA_Bytes c, byte[] covers, int coversIndex)
+		public override void blend_solid_vspan(int x, int y, int len, Color c, byte[] covers, int coversIndex)
 		{
 #if false
             FileStream file = new FileStream("pixels.txt", FileMode.Append, FileAccess.Write);
@@ -288,7 +288,7 @@ namespace MatterHackers.Agg.Image
 			base.blend_solid_vspan(x, y, len, c, covers, coversIndex);
 		}
 
-		public override void copy_color_hspan(int x, int y, int len, RGBA_Bytes[] colors, int colorsIndex)
+		public override void copy_color_hspan(int x, int y, int len, Color[] colors, int colorsIndex)
 		{
 			if (y > ymax()) return;
 			if (y < ymin()) return;
@@ -309,7 +309,7 @@ namespace MatterHackers.Agg.Image
 			base.copy_color_hspan(x, y, len, colors, colorsIndex);
 		}
 
-		public override void copy_color_vspan(int x, int y, int len, RGBA_Bytes[] colors, int colorsIndex)
+		public override void copy_color_vspan(int x, int y, int len, Color[] colors, int colorsIndex)
 		{
 			if (x > xmax()) return;
 			if (x < xmin()) return;
@@ -330,7 +330,7 @@ namespace MatterHackers.Agg.Image
 			base.copy_color_vspan(x, y, len, colors, colorsIndex);
 		}
 
-		public override void blend_color_hspan(int x, int y, int in_len, RGBA_Bytes[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
+		public override void blend_color_hspan(int x, int y, int in_len, Color[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
 		{
 			int len = (int)in_len;
 			if (y > ymax())
@@ -361,7 +361,7 @@ namespace MatterHackers.Agg.Image
 			CopyFrom(src, new RectangleInt(0, 0, (int)src.Width, (int)src.Height), 0, 0);
 		}
 
-		public override void SetPixel(int x, int y, RGBA_Bytes color)
+		public override void SetPixel(int x, int y, Color color)
 		{
 			if ((uint)x < Width && (uint)y < Height)
 			{
@@ -430,7 +430,7 @@ namespace MatterHackers.Agg.Image
 			return rc;
 		}
 
-		public override void blend_color_vspan(int x, int y, int len, RGBA_Bytes[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
+		public override void blend_color_vspan(int x, int y, int len, Color[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
 		{
 			if (x > xmax()) return;
 			if (x < xmin()) return;
@@ -572,7 +572,7 @@ namespace MatterHackers.Agg.Image
 		public void clear(IColorType in_c)
 		{
 			int y;
-			RGBA_Floats colorFloat = in_c.GetAsRGBA_Floats();
+			ColorF colorFloat = in_c.GetAsRGBA_Floats();
 			if (Width != 0)
 			{
 				for (y = 0; y < Height; y++)
@@ -590,12 +590,12 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public override RGBA_Floats GetPixel(int x, int y)
+		public override ColorF GetPixel(int x, int y)
 		{
-			return inbox(x, y) ? base.GetPixel(x, y) : new RGBA_Floats();
+			return inbox(x, y) ? base.GetPixel(x, y) : new ColorF();
 		}
 
-		public override void copy_hline(int x1, int y, int x2, RGBA_Floats c)
+		public override void copy_hline(int x1, int y, int x2, ColorF c)
 		{
 			if (x1 > x2) { int t = (int)x2; x2 = (int)x1; x1 = t; }
 			if (y > ymax()) return;
@@ -609,7 +609,7 @@ namespace MatterHackers.Agg.Image
 			base.copy_hline(x1, y, (int)(x2 - x1 + 1), c);
 		}
 
-		public override void copy_vline(int x, int y1, int y2, RGBA_Floats c)
+		public override void copy_vline(int x, int y1, int y2, ColorF c)
 		{
 			if (y1 > y2) { int t = (int)y2; y2 = (int)y1; y1 = t; }
 			if (x > xmax()) return;
@@ -623,7 +623,7 @@ namespace MatterHackers.Agg.Image
 			base.copy_vline(x, y1, (int)(y2 - y1 + 1), c);
 		}
 
-		public override void blend_hline(int x1, int y, int x2, RGBA_Floats c, byte cover)
+		public override void blend_hline(int x1, int y, int x2, ColorF c, byte cover)
 		{
 			if (x1 > x2)
 			{
@@ -648,7 +648,7 @@ namespace MatterHackers.Agg.Image
 			base.blend_hline(x1, y, x2, c, cover);
 		}
 
-		public override void blend_vline(int x, int y1, int y2, RGBA_Floats c, byte cover)
+		public override void blend_vline(int x, int y1, int y2, ColorF c, byte cover)
 		{
 			if (y1 > y2) { int t = y2; y2 = y1; y1 = t; }
 			if (x > xmax()) return;
@@ -662,7 +662,7 @@ namespace MatterHackers.Agg.Image
 			base.blend_vline(x, y1, y2, c, cover);
 		}
 
-		public override void blend_solid_hspan(int x, int y, int in_len, RGBA_Floats c, byte[] covers, int coversIndex)
+		public override void blend_solid_hspan(int x, int y, int in_len, ColorF c, byte[] covers, int coversIndex)
 		{
 			int len = (int)in_len;
 			if (y > ymax()) return;
@@ -683,7 +683,7 @@ namespace MatterHackers.Agg.Image
 			base.blend_solid_hspan(x, y, len, c, covers, coversIndex);
 		}
 
-		public override void blend_solid_vspan(int x, int y, int len, RGBA_Floats c, byte[] covers, int coversIndex)
+		public override void blend_solid_vspan(int x, int y, int len, ColorF c, byte[] covers, int coversIndex)
 		{
 			if (x > xmax()) return;
 			if (x < xmin()) return;
@@ -703,7 +703,7 @@ namespace MatterHackers.Agg.Image
 			base.blend_solid_vspan(x, y, len, c, covers, coversIndex);
 		}
 
-		public override void copy_color_hspan(int x, int y, int len, RGBA_Floats[] colors, int colorsIndex)
+		public override void copy_color_hspan(int x, int y, int len, ColorF[] colors, int colorsIndex)
 		{
 			if (y > ymax()) return;
 			if (y < ymin()) return;
@@ -724,7 +724,7 @@ namespace MatterHackers.Agg.Image
 			base.copy_color_hspan(x, y, len, colors, colorsIndex);
 		}
 
-		public override void copy_color_vspan(int x, int y, int len, RGBA_Floats[] colors, int colorsIndex)
+		public override void copy_color_vspan(int x, int y, int len, ColorF[] colors, int colorsIndex)
 		{
 			if (x > xmax()) return;
 			if (x < xmin()) return;
@@ -745,7 +745,7 @@ namespace MatterHackers.Agg.Image
 			base.copy_color_vspan(x, y, len, colors, colorsIndex);
 		}
 
-		public override void blend_color_hspan(int x, int y, int in_len, RGBA_Floats[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
+		public override void blend_color_hspan(int x, int y, int in_len, ColorF[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
 		{
 			int len = (int)in_len;
 			if (y > ymax())
@@ -776,7 +776,7 @@ namespace MatterHackers.Agg.Image
 			CopyFrom(src, new RectangleInt(0, 0, (int)src.Width, (int)src.Height), 0, 0);
 		}
 
-		public override void SetPixel(int x, int y, RGBA_Floats color)
+		public override void SetPixel(int x, int y, ColorF color)
 		{
 			if ((uint)x < Width && (uint)y < Height)
 			{
@@ -845,7 +845,7 @@ namespace MatterHackers.Agg.Image
 			return rc;
 		}
 
-		public override void blend_color_vspan(int x, int y, int len, RGBA_Floats[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
+		public override void blend_color_vspan(int x, int y, int len, ColorF[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
 		{
 			if (x > xmax()) return;
 			if (x < xmin()) return;

@@ -168,7 +168,7 @@ namespace MatterHackers.RayTracer.Traceable
 			}
 		}
 
-		public RGBA_Floats GetColor(IntersectInfo info)
+		public ColorF GetColor(IntersectInfo info)
 		{
 			throw new NotImplementedException("You should not get a color directly from a Difference.");
 		}

@@ -123,7 +123,7 @@ namespace MatterHackers.DataConverters3D
 		[JsonIgnore]
 		IObject3D Parent { get; set; }
 
-		RGBA_Bytes Color { get; set; }
+		Color Color { get; set; }
 		int MaterialIndex { get; set; }
 		MeshGroup Flatten(Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings = null);
 		Object3DTypes ItemType { get; set; }

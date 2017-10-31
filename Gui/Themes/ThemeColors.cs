@@ -37,31 +37,31 @@ namespace MatterHackers.Agg.UI
 
 		public string Name { get; set; }
 
-		public RGBA_Bytes Transparent { get; set; } = new RGBA_Bytes(0, 0, 0, 0);
+		public Color Transparent { get; set; } = new Color(0, 0, 0, 0);
 
-		public RGBA_Bytes TransparentDarkOverlay { get; set; } = new RGBA_Bytes(0, 0, 0, 50);
+		public Color TransparentDarkOverlay { get; set; } = new Color(0, 0, 0, 50);
 
-		public RGBA_Bytes TransparentLightOverlay { get; set; } = new RGBA_Bytes(255, 255, 255, 50);
+		public Color TransparentLightOverlay { get; set; } = new Color(255, 255, 255, 50);
 
-		public RGBA_Bytes TabLabelSelected { get; set; }
+		public Color TabLabelSelected { get; set; }
 
-		public RGBA_Bytes TabLabelUnselected { get; set; }
+		public Color TabLabelUnselected { get; set; }
 
-		public RGBA_Bytes SecondaryTextColor { get; set; }
+		public Color SecondaryTextColor { get; set; }
 
-		public RGBA_Bytes PrimaryBackgroundColor { get; set; }
+		public Color PrimaryBackgroundColor { get; set; }
 
-		public RGBA_Bytes SecondaryBackgroundColor { get; set; }
+		public Color SecondaryBackgroundColor { get; set; }
 
-		public RGBA_Bytes TertiaryBackgroundColor { get; set; }
+		public Color TertiaryBackgroundColor { get; set; }
 
-		public RGBA_Bytes PrimaryTextColor { get; set; }
+		public Color PrimaryTextColor { get; set; }
 
-		public RGBA_Bytes PrimaryAccentColor { get; set; }
+		public Color PrimaryAccentColor { get; set; }
 
-		public RGBA_Bytes SecondaryAccentColor { get; set; }
+		public Color SecondaryAccentColor { get; set; }
 
-		public static ThemeColors Create(string name, RGBA_Bytes primary, RGBA_Bytes secondary, bool darkTheme = true)
+		public static ThemeColors Create(string name, Color primary, Color secondary, bool darkTheme = true)
 		{
 			var colors = new ThemeColors
 			{
@@ -74,29 +74,29 @@ namespace MatterHackers.Agg.UI
 				colors.PrimaryAccentColor = primary;
 				colors.SecondaryAccentColor = secondary;
 
-				colors.PrimaryBackgroundColor = new RGBA_Bytes(68, 68, 68);
-				colors.SecondaryBackgroundColor = new RGBA_Bytes(51, 51, 51);
+				colors.PrimaryBackgroundColor = new Color(68, 68, 68);
+				colors.SecondaryBackgroundColor = new Color(51, 51, 51);
 
-				colors.TabLabelSelected = new RGBA_Bytes(255, 255, 255);
-				colors.TabLabelUnselected = new RGBA_Bytes(180, 180, 180);
-				colors.PrimaryTextColor = new RGBA_Bytes(255, 255, 255);
-				colors.SecondaryTextColor = new RGBA_Bytes(200, 200, 200);
+				colors.TabLabelSelected = new Color(255, 255, 255);
+				colors.TabLabelUnselected = new Color(180, 180, 180);
+				colors.PrimaryTextColor = new Color(255, 255, 255);
+				colors.SecondaryTextColor = new Color(200, 200, 200);
 
-				colors.TertiaryBackgroundColor = new RGBA_Bytes(62, 62, 62);
+				colors.TertiaryBackgroundColor = new Color(62, 62, 62);
 			}
 			else
 			{
 				colors.PrimaryAccentColor = secondary;
 				colors.SecondaryAccentColor = primary;
 
-				colors.PrimaryBackgroundColor = new RGBA_Bytes(208, 208, 208);
-				colors.SecondaryBackgroundColor = new RGBA_Bytes(185, 185, 185);
-				colors.TabLabelSelected = new RGBA_Bytes(51, 51, 51);
-				colors.TabLabelUnselected = new RGBA_Bytes(102, 102, 102);
-				colors.PrimaryTextColor = new RGBA_Bytes(34, 34, 34);
-				colors.SecondaryTextColor = new RGBA_Bytes(51, 51, 51);
+				colors.PrimaryBackgroundColor = new Color(208, 208, 208);
+				colors.SecondaryBackgroundColor = new Color(185, 185, 185);
+				colors.TabLabelSelected = new Color(51, 51, 51);
+				colors.TabLabelUnselected = new Color(102, 102, 102);
+				colors.PrimaryTextColor = new Color(34, 34, 34);
+				colors.SecondaryTextColor = new Color(51, 51, 51);
 
-				colors.TertiaryBackgroundColor = new RGBA_Bytes(190, 190, 190);
+				colors.TertiaryBackgroundColor = new Color(190, 190, 190);
 			}
 
 			return colors;
