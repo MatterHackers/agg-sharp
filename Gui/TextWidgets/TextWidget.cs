@@ -60,7 +60,7 @@ namespace MatterHackers.Agg.UI
 
 		public TypeFacePrinter Printer { get; private set; }
 
-		public TextWidget(string text, double x = 0, double y = 0, double pointSize = 12, Justification justification = Justification.Left, Color textColor = new Color(), bool ellipsisIfClipped = true, bool underline = false, Color backgroundColor = new Color(), TypeFace typeFace = null)
+		public TextWidget(string text, double x = 0, double y = 0, double pointSize = 12, Justification justification = Justification.Left, Color textColor = new Color(), bool ellipsisIfClipped = true, bool underline = false, Color backgroundColor = new Color(), TypeFace typeFace = null, bool bold = false)
 		{
 			DisabledColor = new Color(textColor, 50);
 
@@ -81,9 +81,10 @@ namespace MatterHackers.Agg.UI
 			}
 
 			base.Text = text;
+
 			if (typeFace == null)
 			{
-				typeFace = LiberationSansFont.Instance;
+				typeFace = (bold) ? LiberationSansBoldFont.Instance : LiberationSansFont.Instance;
 			}
 			StyledTypeFace typeFaceStyle = new StyledTypeFace(typeFace, pointSize * GuiWidget.DeviceScale, underline);
 			Printer = new TypeFacePrinter(text, typeFaceStyle, justification: justification);
