@@ -114,7 +114,7 @@ namespace MatterHackers.RayTracer
 			Random rand = new Random(0);
 			for (int i = 0; i < 100; i++)
 			{
-				RGBA_Bytes color = new RGBA_Bytes(rand.NextDouble(), rand.NextDouble(), rand.NextDouble());
+				Color color = new Color(rand.NextDouble(), rand.NextDouble(), rand.NextDouble());
 				graphics.Circle(new Vector2(rand.NextDouble() * testImage.Width, rand.NextDouble() * testImage.Height), rand.NextDouble() * 40 + 10, color);
 			}
 			scene.shapes.Add(new PlaneShape(new Vector3(0, 0, 1), 0, new TextureMaterial(testImage, 0, 0, .2, 1)));
@@ -122,14 +122,14 @@ namespace MatterHackers.RayTracer
 		}
 
 		static Vector3 lightNormal = (new Vector3(-1, 1, 1)).GetNormal();
-		static RGBA_Floats lightIllumination = new RGBA_Floats(1, 1, 1);
-		static RGBA_Floats ambiantIllumination = new RGBA_Floats(.4, .4, .4);
+		static ColorF lightIllumination = new ColorF(1, 1, 1);
+		static ColorF ambiantIllumination = new ColorF(.4, .4, .4);
 
 		internal class RenderPoint
 		{
 			internal Vector2 position;
 			internal double z;
-			internal RGBA_Bytes color;
+			internal Color color;
 		}
 
 		internal void render_gouraud(IImageByte backBuffer, IScanlineCache sl, IRasterizer ras, RenderPoint[] points)
@@ -149,9 +149,9 @@ namespace MatterHackers.RayTracer
 			scanlineRenderer.GenerateAndRender(ras, sl, ren_base, span_alloc, span_gen);
 		}
 
-		public void RenderPerspective(Graphics2D graphics2D, Mesh meshToDraw, RGBA_Bytes partColorIn, double minZ, double maxZ)
+		public void RenderPerspective(Graphics2D graphics2D, Mesh meshToDraw, Color partColorIn, double minZ, double maxZ)
 		{
-			RGBA_Floats partColor = partColorIn.GetAsRGBA_Floats();
+			ColorF partColor = partColorIn.GetAsRGBA_Floats();
 			graphics2D.Rasterizer.gamma(new gamma_power(.3));
 			RenderPoint[] points = new RenderPoint[3] { new RenderPoint(), new RenderPoint(), new RenderPoint() };
 
@@ -170,19 +170,19 @@ namespace MatterHackers.RayTracer
 						i++;
 					}
 
-					RGBA_Floats polyDrawColor = new RGBA_Floats();
+					ColorF polyDrawColor = new ColorF();
 					double L = Vector3.Dot(lightNormal, normal);
 					if (L > 0.0f)
 					{
 						polyDrawColor = partColor * lightIllumination * L;
 					}
 
-					polyDrawColor = RGBA_Floats.ComponentMax(polyDrawColor, partColor * ambiantIllumination);
+					polyDrawColor = ColorF.ComponentMax(polyDrawColor, partColor * ambiantIllumination);
 					for (i = 0; i < 3; i++)
 					{
 						double ratio = (points[i].z - minZ) / (maxZ - minZ);
 						int ratioInt16 = (int)(ratio * 65536);
-						points[i].color = new RGBA_Bytes(polyDrawColor.Red0To255, ratioInt16 >> 8, ratioInt16 & 0xFF);
+						points[i].color = new Color(polyDrawColor.Red0To255, ratioInt16 >> 8, ratioInt16 & 0xFF);
 					}
 
 
@@ -211,12 +211,12 @@ namespace MatterHackers.RayTracer
 
 		public sealed class BlenderZBuffer : BlenderBase8888, IRecieveBlenderByte
 		{
-			public RGBA_Bytes PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+			public Color PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
 			{
-				return new RGBA_Bytes(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
+				return new Color(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
 			}
 
-			public void CopyPixels(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor, int count)
+			public void CopyPixels(byte[] buffer, int bufferOffset, Color sourceColor, int count)
 			{
 				do
 				{
@@ -240,7 +240,7 @@ namespace MatterHackers.RayTracer
 				while (--count != 0);
 			}
 
-			public void BlendPixel(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor)
+			public void BlendPixel(byte[] buffer, int bufferOffset, Color sourceColor)
 			{
 				//unsafe
 				{
@@ -266,7 +266,7 @@ namespace MatterHackers.RayTracer
 			}
 
 			public void BlendPixels(byte[] destBuffer, int bufferOffset,
-				RGBA_Bytes[] sourceColors, int sourceColorsOffset,
+				Color[] sourceColors, int sourceColorsOffset,
 				byte[] covers, int coversIndex, bool firstCoverForAll, int count)
 			{
 				do
@@ -325,7 +325,7 @@ namespace MatterHackers.RayTracer
 			scene = new Scene();
 			scene.camera = new WorldCamera(world);
 			//scene.background = new Background(new RGBA_Floats(0.5, .5, .5), 0.4);
-			scene.background = new Background(new RGBA_Floats(1, 1, 1, 0), 0.6);
+			scene.background = new Background(new ColorF(1, 1, 1, 0), 0.6);
 
 			AddTestMesh(loadedMeshDatas);
 
@@ -338,7 +338,7 @@ namespace MatterHackers.RayTracer
 
 			//add two lights for better lighting effects
 			//scene.lights.Add(new Light(new Vector3(5000, 5000, 5000), new RGBA_Floats(0.8, 0.8, 0.8)));
-			scene.lights.Add(new PointLight(new Vector3(-5000, -5000, 3000), new RGBA_Floats(0.5, 0.5, 0.5)));
+			scene.lights.Add(new PointLight(new Vector3(-5000, -5000, 3000), new ColorF(0.5, 0.5, 0.5)));
 		}
 
 		private RectangleDouble GetScreenBounds(AxisAlignedBoundingBox meshBounds)

@@ -94,7 +94,7 @@ namespace MatterHackers.Agg.UI
 			set => labelTextWidget.Text = value;
 		}
 
-		public RGBA_Bytes TextColor
+		public Color TextColor
 		{
 			get => labelTextWidget.TextColor;
 			set => labelTextWidget.TextColor = value;

@@ -46,7 +46,7 @@ namespace MatterHackers.Agg
 			ImageClippingProxy clippingProxyNormal = new ImageClippingProxy(rasterNormal);
 			ImageClippingProxy clippingProxyGamma = new ImageClippingProxy(rasterGamma);
 
-			clippingProxyNormal.clear(new RGBA_Floats(0, 0, 0));
+			clippingProxyNormal.clear(new ColorF(0, 0, 0));
 
 			ScanlineRasterizer ras = new ScanlineRasterizer();
 			ScanlineCachePacked8 sl = new ScanlineCachePacked8();
@@ -61,10 +61,10 @@ namespace MatterHackers.Agg
 			e.init(m_x[0], m_y[0], 3, 3, 16);
 			ras.add_path(e);
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
-			scanlineRenderer.RenderSolid(clippingProxyNormal, ras, sl, new RGBA_Bytes(127, 127, 127));
+			scanlineRenderer.RenderSolid(clippingProxyNormal, ras, sl, new Color(127, 127, 127));
 			e.init(m_x[1], m_y[1], 3, 3, 16);
 			ras.add_path(e);
-			scanlineRenderer.RenderSolid(clippingProxyNormal, ras, sl, new RGBA_Bytes(127, 127, 127));
+			scanlineRenderer.RenderSolid(clippingProxyNormal, ras, sl, new Color(127, 127, 127));
 
 			// Creating a rounded rectangle
 			VertexSource.RoundedRect r = new VertexSource.RoundedRect(m_x[0], m_y[0], m_x[1], m_y[1], 10);
@@ -76,7 +76,7 @@ namespace MatterHackers.Agg
 			ras.add_path(p);
 
 			//Renderer.RenderSolid(clippingProxyGamma, ras, sl, new RGBA_Bytes(0, 0, 0));
-			scanlineRenderer.RenderSolid(clippingProxyGamma, ras, sl, new RGBA_Bytes(255, 1, 1));
+			scanlineRenderer.RenderSolid(clippingProxyGamma, ras, sl, new Color(255, 1, 1));
 
 			/*
 					int i;

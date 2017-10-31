@@ -35,7 +35,7 @@ namespace MatterHackers.PolygonMesh.Rendering
 {
 	public static class OrthographicZProjection
 	{
-		public static void DrawTo(Graphics2D graphics2D, Mesh meshToDraw, Matrix4X4 matrix, Vector2 offset, double scale, RGBA_Bytes silhouetteColor)
+		public static void DrawTo(Graphics2D graphics2D, Mesh meshToDraw, Matrix4X4 matrix, Vector2 offset, double scale, Color silhouetteColor)
 		{
 			graphics2D.Rasterizer.gamma(new gamma_power(.3));
 			VertexStorage polygonProjected = new VertexStorage();

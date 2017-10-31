@@ -188,8 +188,8 @@ namespace MatterHackers.DataConverters3D
 			return meshGroup;
 		}
 
-		private RGBA_Bytes _color = RGBA_Bytes.Transparent;
-		public RGBA_Bytes Color
+		private Color _color = Color.Transparent;
+		public Color Color
 		{
 			get { return _color; }
 			set

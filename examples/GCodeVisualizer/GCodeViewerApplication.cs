@@ -156,7 +156,7 @@ namespace MatterHackers.GCodeVisualizer
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			this.NewGraphics2D().Clear(new RGBA_Bytes(255, 255, 255));
+			this.NewGraphics2D().Clear(new Color(255, 255, 255));
 
 			if (gCodeViewWidget.LoadedGCode != null)
 			{

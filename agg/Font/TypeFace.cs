@@ -354,13 +354,13 @@ namespace MatterHackers.Agg.Font
 			double x = origX;
 			double y = 10 - typeFaceNameStyle.DescentInPixels;
 			int width = 50;
-			RGBA_Bytes boundingBoxColor = new RGBA_Bytes(0, 0, 0);
-			RGBA_Bytes originColor = new RGBA_Bytes(0, 0, 0);
-			RGBA_Bytes ascentColor = new RGBA_Bytes(255, 0, 0);
-			RGBA_Bytes descentColor = new RGBA_Bytes(255, 0, 0);
-			RGBA_Bytes xHeightColor = new RGBA_Bytes(12, 25, 200);
-			RGBA_Bytes capHeightColor = new RGBA_Bytes(12, 25, 200);
-			RGBA_Bytes underlineColor = new RGBA_Bytes(0, 150, 55);
+			Color boundingBoxColor = new Color(0, 0, 0);
+			Color originColor = new Color(0, 0, 0);
+			Color ascentColor = new Color(255, 0, 0);
+			Color descentColor = new Color(255, 0, 0);
+			Color xHeightColor = new Color(12, 25, 200);
+			Color capHeightColor = new Color(12, 25, 200);
+			Color underlineColor = new Color(0, 150, 55);
 
 			// the origin
 			graphics2D.Line(x, y, x + width, y, originColor);
@@ -391,9 +391,9 @@ namespace MatterHackers.Agg.Font
 			textTransform *= Affine.NewTranslation(10, origX);
 
 			VertexSourceApplyTransform transformedText = new VertexSourceApplyTransform(textTransform);
-			fontNamePrinter.Render(graphics2D, RGBA_Bytes.Black, transformedText);
+			fontNamePrinter.Render(graphics2D, Color.Black, transformedText);
 
-			graphics2D.Render(transformedText, RGBA_Bytes.Black);
+			graphics2D.Render(transformedText, Color.Black);
 
 			// render the legend
 			StyledTypeFace legendFont = new StyledTypeFace(this, 12);

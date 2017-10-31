@@ -109,7 +109,7 @@ namespace MatterHackers.Agg.UI.Tests
 		{
 			SystemWindow buttonContainer = new SystemWindow(300, 200)
 			{
-				BackgroundColor = RGBA_Bytes.White,
+				BackgroundColor = Color.White,
 			};
 
 			AutomationTest testToRun = (testRunner) =>

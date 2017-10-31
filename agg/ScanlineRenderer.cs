@@ -5,10 +5,10 @@ namespace MatterHackers.Agg
 {
 	public class ScanlineRenderer
 	{
-		private VectorPOD<RGBA_Bytes> tempSpanColors = new VectorPOD<RGBA_Bytes>();
-		private VectorPOD<RGBA_Floats> tempSpanColorsFloats = new VectorPOD<RGBA_Floats>();
+		private VectorPOD<Color> tempSpanColors = new VectorPOD<Color>();
+		private VectorPOD<ColorF> tempSpanColorsFloats = new VectorPOD<ColorF>();
 
-		public void RenderSolid(IImageByte destImage, IRasterizer rasterizer, IScanlineCache scanLine, RGBA_Bytes color)
+		public void RenderSolid(IImageByte destImage, IRasterizer rasterizer, IScanlineCache scanLine, Color color)
 		{
 			if (rasterizer.rewind_scanlines())
 			{
@@ -20,7 +20,7 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public void RenderSolid(IImageFloat destImage, IRasterizer rasterizer, IScanlineCache scanLine, RGBA_Floats color)
+		public void RenderSolid(IImageFloat destImage, IRasterizer rasterizer, IScanlineCache scanLine, ColorF color)
 		{
 			if (rasterizer.rewind_scanlines())
 			{
@@ -32,7 +32,7 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		protected virtual void RenderSolidSingleScanLine(IImageByte destImage, IScanlineCache scanLine, RGBA_Bytes color)
+		protected virtual void RenderSolidSingleScanLine(IImageByte destImage, IScanlineCache scanLine, Color color)
 		{
 			int y = scanLine.y();
 			int num_spans = scanLine.num_spans();
@@ -56,7 +56,7 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		private void RenderSolidSingleScanLine(IImageFloat destImage, IScanlineCache scanLine, RGBA_Floats color)
+		private void RenderSolidSingleScanLine(IImageFloat destImage, IScanlineCache scanLine, ColorF color)
 		{
 			int y = scanLine.y();
 			int num_spans = scanLine.num_spans();
@@ -84,7 +84,7 @@ namespace MatterHackers.Agg
 			IRasterizer ras,
 			IScanlineCache sl,
 			IVertexSource vs,
-			RGBA_Bytes[] color_storage,
+			Color[] color_storage,
 			int[] path_id,
 			int num_paths)
 		{

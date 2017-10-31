@@ -28,7 +28,7 @@ namespace MatterHackers.Agg
 	{
 		void prepare();
 
-		void generate(RGBA_Bytes[] span, int spanIndex, int x, int y, int len);
+		void generate(Color[] span, int spanIndex, int x, int y, int len);
 	};
 
 	public abstract class span_image_filter : ISpanGenerator
@@ -68,7 +68,7 @@ namespace MatterHackers.Agg
 			imageBufferAccessor = v;
 		}
 
-		public abstract void generate(RGBA_Bytes[] span, int spanIndex, int x, int y, int len);
+		public abstract void generate(Color[] span, int spanIndex, int x, int y, int len);
 
 		public IImageBufferAccessor GetImageBufferAccessor()
 		{
@@ -137,7 +137,7 @@ namespace MatterHackers.Agg
 	{
 		void prepare();
 
-		void generate(RGBA_Floats[] span, int spanIndex, int x, int y, int len);
+		void generate(ColorF[] span, int spanIndex, int x, int y, int len);
 	};
 
 	public abstract class span_image_filter_float : ISpanGeneratorFloat
@@ -173,7 +173,7 @@ namespace MatterHackers.Agg
 			m_ImageBufferAccessor = v;
 		}
 
-		public abstract void generate(RGBA_Floats[] span, int spanIndex, int x, int y, int len);
+		public abstract void generate(ColorF[] span, int spanIndex, int x, int y, int len);
 
 		public IImageBufferAccessorFloat source()
 		{

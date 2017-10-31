@@ -102,7 +102,7 @@ namespace MatterHackers.Agg.Tests
 				VAnchor = VAnchor.Fit | VAnchor.Center,
 				Margin = new BorderDouble(50),
 				Name = "rootClickable",
-				BackgroundColor = RGBA_Bytes.Blue
+				BackgroundColor = Color.Blue
 			};
 			rootClickable.Click += (sender, e) =>
 			{
@@ -121,7 +121,7 @@ namespace MatterHackers.Agg.Tests
 				OriginRelativeParent = new VectorMath.Vector2(10, 10),
 				Name = "orangeClickable",
 				Margin = new BorderDouble(10),
-				BackgroundColor = RGBA_Bytes.Orange
+				BackgroundColor = Color.Orange
 			};
 			orangeClickable.Click += (sender, e) =>
 			{
@@ -143,7 +143,7 @@ namespace MatterHackers.Agg.Tests
 				HAnchor = HAnchor.Right,
 				Name = "purpleClickable",
 				Margin = new BorderDouble(10),
-				BackgroundColor = new RGBA_Bytes(141, 0, 206)
+				BackgroundColor = new Color(141, 0, 206)
 			};
 			purpleClickable.Click += (sender, e) =>
 			{
@@ -174,7 +174,7 @@ namespace MatterHackers.Agg.Tests
 			var systemWindow = new TestHostWindow(300, 200)
 			{
 				Padding = new BorderDouble(20),
-				BackgroundColor = RGBA_Bytes.Gray
+				BackgroundColor = Color.Gray
 			};
 
 			var rootClickable = new GuiWidget()
@@ -184,7 +184,7 @@ namespace MatterHackers.Agg.Tests
 				VAnchor = VAnchor.Stretch,
 				Margin = new BorderDouble(50),
 				Name = "rootClickable",
-				BackgroundColor = RGBA_Bytes.Blue
+				BackgroundColor = Color.Blue
 			};
 			rootClickable.Click += (sender, e) =>
 			{
@@ -205,7 +205,7 @@ namespace MatterHackers.Agg.Tests
 				OriginRelativeParent = new VectorMath.Vector2(20, 15),
 				Name = "childClickable",
 				Margin = new BorderDouble(10),
-				BackgroundColor = RGBA_Bytes.Orange
+				BackgroundColor = Color.Orange
 			};
 			childClickable.Click += (sender, e) =>
 			{
@@ -250,7 +250,7 @@ namespace MatterHackers.Agg.Tests
 					}
 
 					lastClicked = null;
-					systemWindow.BackgroundColor = RGBA_Bytes.Gray;
+					systemWindow.BackgroundColor = Color.Gray;
 					await Task.Delay(1000);
 
 					// Click should not occur when mouse up is outside of the control bounds
@@ -300,7 +300,7 @@ namespace MatterHackers.Agg.Tests
 			var systemWindow = new TestHostWindow(300, 200)
 			{
 				Padding = new BorderDouble(20),
-				BackgroundColor = RGBA_Bytes.Gray,
+				BackgroundColor = Color.Gray,
 				Name = "System Window",
 			};
 
@@ -311,7 +311,7 @@ namespace MatterHackers.Agg.Tests
 				VAnchor = VAnchor.Stretch,
 				Margin = new BorderDouble(50),
 				Name = "rootClickable",
-				BackgroundColor = RGBA_Bytes.Blue
+				BackgroundColor = Color.Blue
 			};
 			rootClickable.Click += (sender, e) =>
 			{
@@ -332,7 +332,7 @@ namespace MatterHackers.Agg.Tests
 				OriginRelativeParent = new VectorMath.Vector2(20, 15),
 				Name = "childClickable",
 				Margin = new BorderDouble(10),
-				BackgroundColor = RGBA_Bytes.Orange
+				BackgroundColor = Color.Orange
 			};
 			childClickable.Click += (sender, e) =>
 			{
@@ -381,7 +381,7 @@ namespace MatterHackers.Agg.Tests
 					}
 
 					lastClicked = null;
-					systemWindow.BackgroundColor = RGBA_Bytes.Gray;
+					systemWindow.BackgroundColor = Color.Gray;
 					await Task.Delay(1000);
 
 					// Click should not occur when mouse up occurs on child controls
@@ -431,7 +431,7 @@ namespace MatterHackers.Agg.Tests
 		{
 			if (lastClicked == drawingWidget)
 			{
-				e.graphics2D.Rectangle(((GuiWidget)drawingWidget).LocalBounds, RGBA_Bytes.White);
+				e.graphics2D.Rectangle(((GuiWidget)drawingWidget).LocalBounds, Color.White);
 			}
 		}
 	}

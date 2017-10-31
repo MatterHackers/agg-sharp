@@ -100,7 +100,7 @@ namespace MatterHackers.Agg
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			graphics2D.Clear(RGBA_Bytes.White);
+			graphics2D.Clear(Color.White);
 
 			base.OnDraw(graphics2D);
 		}

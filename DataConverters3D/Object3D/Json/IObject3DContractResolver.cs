@@ -39,7 +39,7 @@ namespace MatterHackers.DataConverters3D
 	{
 		private static Type IObject3DType = typeof(IObject3D);
 
-		private static Type RGBA_BtyesType = typeof(RGBA_Bytes);
+		private static Type RGBA_BtyesType = typeof(Color);
 
 		protected override JsonObjectContract CreateObjectContract(Type objectType)
 		{
@@ -84,7 +84,7 @@ namespace MatterHackers.DataConverters3D
 			{
 				property.ShouldSerialize = instance =>
 				{
-					return instance is IObject3D object3D && object3D.Color != RGBA_Bytes.Transparent;
+					return instance is IObject3D object3D && object3D.Color != Color.Transparent;
 				};
 			}
 

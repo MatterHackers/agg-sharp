@@ -602,7 +602,7 @@ namespace MatterHackers.Agg
 		}
 
 		public void RenderAllPaths(IVertexSource vs,
-							  RGBA_Bytes[] colors,
+							  Color[] colors,
 							  int[] path_id,
 							  int num_paths)
 		{

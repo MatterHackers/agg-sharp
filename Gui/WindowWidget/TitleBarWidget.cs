@@ -39,7 +39,7 @@ namespace MatterHackers.Agg.UI
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			RoundedRect roundRect = new RoundedRect(BoundsRelativeToParent, 0);
-			graphics2D.Render(roundRect, new RGBA_Bytes(0, 0, 0, 30));
+			graphics2D.Render(roundRect, new Color(0, 0, 0, 30));
 			base.OnDraw(graphics2D);
 		}
 

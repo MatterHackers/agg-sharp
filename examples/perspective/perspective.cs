@@ -98,7 +98,7 @@ namespace MatterHackers.Agg
 				image.Attach(backBuffer, new BlenderBGR());
 			}
 			ImageClippingProxy clippingProxy = new ImageClippingProxy(image);
-			clippingProxy.clear(new RGBA_Floats(1, 1, 1));
+			clippingProxy.clear(new ColorF(1, 1, 1));
 
 			g_rasterizer.SetVectorClipBox(0, 0, Width, Height);
 
@@ -129,10 +129,10 @@ namespace MatterHackers.Agg
 					VertexSourceApplyTransform trans_ell_stroke = new VertexSourceApplyTransform(ell_stroke, tr);
 
 					g_rasterizer.add_path(trans_ell);
-					scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0.5, 0.3, 0.0, 0.3));
+					scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new Color(0.5, 0.3, 0.0, 0.3));
 
 					g_rasterizer.add_path(trans_ell_stroke);
-					scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0.0, 0.3, 0.2, 1.0));
+					scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new Color(0.0, 0.3, 0.2, 1.0));
 				}
 			}
 			else
@@ -157,17 +157,17 @@ namespace MatterHackers.Agg
 					VertexSourceApplyTransform TransformedEllipesOutline = new VertexSourceApplyTransform(EllipseOutline, tr);
 
 					g_rasterizer.add_path(TransformedFilledEllipse);
-					scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0.5, 0.3, 0.0, 0.3));
+					scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new Color(0.5, 0.3, 0.0, 0.3));
 
 					g_rasterizer.add_path(TransformedEllipesOutline);
-					scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0.0, 0.3, 0.2, 1.0));
+					scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new Color(0.0, 0.3, 0.2, 1.0));
 				}
 			}
 
 			//--------------------------
 			// Render the "quad" tool and controls
 			g_rasterizer.add_path(quadPolygonControl);
-			scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0, 0.3, 0.5, 0.6));
+			scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new Color(0, 0.3, 0.5, 0.6));
 			//m_trans_type.Render(g_rasterizer, g_scanline, clippingProxy);
 			base.OnDraw(graphics2D);
 		}

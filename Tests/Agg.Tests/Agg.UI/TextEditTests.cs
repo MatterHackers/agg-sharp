@@ -250,7 +250,7 @@ namespace MatterHackers.Agg.UI.Tests
 			container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
 			TextEditWidget editField1 = new TextEditWidget("Test", 10, 10, pixelWidth: 50);
 			container.AddChild(editField1);
-			container.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			container.BackBuffer.NewGraphics2D().Clear(Color.White);
 			container.OnDraw(container.BackBuffer.NewGraphics2D());
 			ImageBuffer beforeEditImage = new ImageBuffer(container.BackBuffer);
 			RectangleDouble beforeLocalBounds = editField1.LocalBounds;
@@ -280,7 +280,7 @@ namespace MatterHackers.Agg.UI.Tests
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0));
 			Assert.IsTrue(editField1.Focused == false);
 
-			container.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			container.BackBuffer.NewGraphics2D().Clear(Color.White);
 			container.OnDraw(container.BackBuffer.NewGraphics2D());
 			OutputImage(container.BackBuffer, "z text edited.tga");
 
@@ -525,7 +525,7 @@ namespace MatterHackers.Agg.UI.Tests
 			bounds.Offset(bounds.Left, bounds.Bottom);
 			firstWordText.LocalBounds = bounds;
 
-			firstWordText.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			firstWordText.BackBuffer.NewGraphics2D().Clear(Color.White);
 			firstWordText.OnDraw(firstWordText.BackBuffer.NewGraphics2D());
 			TextWidget lastWordText = new TextWidget("string");
 
@@ -533,10 +533,10 @@ namespace MatterHackers.Agg.UI.Tests
 			bounds.Offset(bounds.Left, bounds.Bottom);
 			lastWordText.LocalBounds = bounds;
 
-			lastWordText.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			lastWordText.BackBuffer.NewGraphics2D().Clear(Color.White);
 			lastWordText.OnDraw(lastWordText.BackBuffer.NewGraphics2D());
-			container.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
-			container.BackgroundColor = RGBA_Bytes.White;
+			container.BackBuffer.NewGraphics2D().Clear(Color.White);
+			container.BackgroundColor = Color.White;
 
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 1, 1, 0));
@@ -578,7 +578,7 @@ namespace MatterHackers.Agg.UI.Tests
 			TextEditWidget editField = null;
 			SystemWindow systemWindow = new SystemWindow(300, 200)
 			{
-				BackgroundColor = RGBA_Bytes.Black,
+				BackgroundColor = Color.Black,
 			};
 
 			AutomationTest testToRun = (testRunner) =>
@@ -608,7 +608,7 @@ namespace MatterHackers.Agg.UI.Tests
 		{
 			SystemWindow systemWindow = new SystemWindow(300, 200)
 			{
-				BackgroundColor = RGBA_Bytes.Black,
+				BackgroundColor = Color.Black,
 			};
 
 			var editField = new TextEditWidget(pixelWidth: 200)
@@ -643,7 +643,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			var systemWindow = new SystemWindow(300, 200)
 			{
-				BackgroundColor = RGBA_Bytes.Gray,
+				BackgroundColor = Color.Gray,
 			};
 			systemWindow.AddChild(editField);
 

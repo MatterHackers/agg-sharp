@@ -69,12 +69,12 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		public static void Render(Mesh meshToRender, RGBA_Bytes partColor, RenderTypes renderType = RenderTypes.Shaded, Matrix4X4? meshToViewTransform = null, RGBA_Bytes wireFrameColor = default(RGBA_Bytes))
+		public static void Render(Mesh meshToRender, Color partColor, RenderTypes renderType = RenderTypes.Shaded, Matrix4X4? meshToViewTransform = null, Color wireFrameColor = default(Color))
 		{
 			Render(meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor);
 		}
 
-		public static void Render(Mesh meshToRender, RGBA_Bytes color, Matrix4X4 transform, RenderTypes renderType, Matrix4X4? meshToViewTransform = null, RGBA_Bytes wireFrameColor = default(RGBA_Bytes))
+		public static void Render(Mesh meshToRender, Color color, Matrix4X4 transform, RenderTypes renderType, Matrix4X4? meshToViewTransform = null, Color wireFrameColor = default(Color))
 		{
 			if (meshToRender != null)
 			{
@@ -124,18 +124,18 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		public static void Render3DLine(WorldView world, Vector3 start, Vector3 end, RGBA_Bytes color, bool doDepthTest = true, double width = 1)
+		public static void Render3DLine(WorldView world, Vector3 start, Vector3 end, Color color, bool doDepthTest = true, double width = 1)
 		{
 			Render3DLine(GetClippingFrustum(world), world, start, end, color, doDepthTest, width);
 		}
 
-		public static void Render3DLine(Frustum clippingFrustum, WorldView world, Vector3 start, Vector3 end, RGBA_Bytes color, bool doDepthTest = true, double width = 1)
+		public static void Render3DLine(Frustum clippingFrustum, WorldView world, Vector3 start, Vector3 end, Color color, bool doDepthTest = true, double width = 1)
 		{
 			PrepareFor3DLineRender(doDepthTest);
 			Render3DLineNoPrep(clippingFrustum, world, start, end, color, width);
 		}
 
-		public static void Render3DLineNoPrep(Frustum clippingFrustum, WorldView world, Vector3 start, Vector3 end, RGBA_Bytes color, double width = 1)
+		public static void Render3DLineNoPrep(Frustum clippingFrustum, WorldView world, Vector3 start, Vector3 end, Color color, double width = 1)
 		{
 			if (clippingFrustum.ClipLine(ref start, ref end))
 			{
@@ -324,7 +324,7 @@ namespace MatterHackers.RenderOpenGl
 			GL.End();
 		}
 
-		private static void DrawWireOverlay(Mesh meshToRender, RenderTypes renderType, RGBA_Bytes color)
+		private static void DrawWireOverlay(Mesh meshToRender, RenderTypes renderType, Color color)
 		{
 			GL.Color4(color.red, color.green, color.blue, color.alpha == 0 ? 255 : color.alpha);
 

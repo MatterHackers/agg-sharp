@@ -85,8 +85,8 @@ namespace MatterHackers.Agg.ImageProcessing
 
 							for (int x = 0; x < width; x++)
 							{
-								RGBA_Bytes color = new RGBA_Bytes(resultBuffer[offset + 2], resultBuffer[offset + 1], resultBuffer[offset + 0], resultBuffer[offset + 3]);
-								RGBA_Bytes invertedColor = InvertColor(color);
+								Color color = new Color(resultBuffer[offset + 2], resultBuffer[offset + 1], resultBuffer[offset + 0], resultBuffer[offset + 3]);
+								Color invertedColor = InvertColor(color);
 
 								resultBuffer[offset + 0] = invertedColor.blue;
 								resultBuffer[offset + 1] = invertedColor.green;
@@ -104,15 +104,15 @@ namespace MatterHackers.Agg.ImageProcessing
 			}
 		}
 
-		public static RGBA_Bytes InvertColor(RGBA_Bytes color)
+		public static Color InvertColor(Color color)
 		{
-			RGBA_Floats colorFloat = new RGBA_Floats(color);
+			ColorF colorFloat = new ColorF(color);
 			double hue0To1;
 			double saturation0To1;
 			double lightness0To1;
 			colorFloat.GetHSL(out hue0To1, out saturation0To1, out lightness0To1);
-			RGBA_Floats colorInvertedFloat = RGBA_Floats.FromHSL(hue0To1, saturation0To1, 1 - lightness0To1);
-			RGBA_Bytes invertedColor = new RGBA_Bytes(
+			ColorF colorInvertedFloat = ColorF.FromHSL(hue0To1, saturation0To1, 1 - lightness0To1);
+			Color invertedColor = new Color(
 				colorInvertedFloat.Red0To255,
 				colorInvertedFloat.Green0To255,
 				colorInvertedFloat.Blue0To255,

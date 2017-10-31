@@ -40,7 +40,7 @@ namespace MatterHackers.Agg
 
 		public PolygonClippingDemo()
 		{
-			BackgroundColor = RGBA_Bytes.White;
+			BackgroundColor = Color.White;
 
 			m_operation = new RadioButtonGroup(new Vector2(555, 5), new Vector2(80, 130))
 			{
@@ -122,8 +122,8 @@ namespace MatterHackers.Agg
 						ps2.LineTo(100 + 351, 100 + 290);
 						ps2.LineTo(100 + 354, 100 + 374);
 
-						graphics2D.Render(ps1, new RGBA_Floats(0, 0, 0, 0.1).GetAsRGBA_Bytes());
-						graphics2D.Render(ps2, new RGBA_Floats(0, 0.6, 0, 0.1).GetAsRGBA_Bytes());
+						graphics2D.Render(ps1, new ColorF(0, 0, 0, 0.1).GetAsRGBA_Bytes());
+						graphics2D.Render(ps2, new ColorF(0, 0.6, 0, 0.1).GetAsRGBA_Bytes());
 
 						CreateAndRenderCombined(graphics2D, ps1, ps2);
 					}
@@ -160,8 +160,8 @@ namespace MatterHackers.Agg
 						ps2.LineTo(100 + 354, 100 + 374);
 						ps2.ClosePolygon();
 
-						graphics2D.Render(ps1, new RGBA_Floats(0, 0, 0, 0.1).GetAsRGBA_Bytes());
-						graphics2D.Render(stroke, new RGBA_Floats(0, 0.6, 0, 0.1).GetAsRGBA_Bytes());
+						graphics2D.Render(ps1, new ColorF(0, 0, 0, 0.1).GetAsRGBA_Bytes());
+						graphics2D.Render(stroke, new ColorF(0, 0.6, 0, 0.1).GetAsRGBA_Bytes());
 
 						CreateAndRenderCombined(graphics2D, ps1, stroke);
 					}
@@ -188,13 +188,13 @@ namespace MatterHackers.Agg
 						VertexSourceApplyTransform trans_gb_poly = new VertexSourceApplyTransform(gb_poly, mtx1);
 						VertexSourceApplyTransform trans_arrows = new VertexSourceApplyTransform(arrows, mtx2);
 
-						graphics2D.Render(trans_gb_poly, new RGBA_Floats(0.5, 0.5, 0, 0.1).GetAsRGBA_Bytes());
+						graphics2D.Render(trans_gb_poly, new ColorF(0.5, 0.5, 0, 0.1).GetAsRGBA_Bytes());
 
 						Stroke stroke_gb_poly = new Stroke(trans_gb_poly);
 						stroke_gb_poly.Width = 0.1;
-						graphics2D.Render(stroke_gb_poly, new RGBA_Floats(0, 0, 0).GetAsRGBA_Bytes());
+						graphics2D.Render(stroke_gb_poly, new ColorF(0, 0, 0).GetAsRGBA_Bytes());
 
-						graphics2D.Render(trans_arrows, new RGBA_Floats(0.0, 0.5, 0.5, 0.1).GetAsRGBA_Bytes());
+						graphics2D.Render(trans_arrows, new ColorF(0.0, 0.5, 0.5, 0.1).GetAsRGBA_Bytes());
 
 						CreateAndRenderCombined(graphics2D, trans_gb_poly, trans_arrows);
 					}
@@ -218,13 +218,13 @@ namespace MatterHackers.Agg
 
 						VertexSourceApplyTransform trans_gb_poly = new VertexSourceApplyTransform(gb_poly, mtx);
 
-						graphics2D.Render(trans_gb_poly, new RGBA_Floats(0.5, 0.5, 0, 0.1).GetAsRGBA_Bytes());
+						graphics2D.Render(trans_gb_poly, new ColorF(0.5, 0.5, 0, 0.1).GetAsRGBA_Bytes());
 
 						Stroke stroke_gb_poly = new Stroke(trans_gb_poly);
 						stroke_gb_poly.width(0.1);
-						graphics2D.Render(stroke_gb_poly, new RGBA_Floats(0, 0, 0).GetAsRGBA_Bytes());
+						graphics2D.Render(stroke_gb_poly, new ColorF(0, 0, 0).GetAsRGBA_Bytes());
 
-						graphics2D.Render(stroke, new RGBA_Floats(0.0, 0.5, 0.5, 0.1).GetAsRGBA_Bytes());
+						graphics2D.Render(stroke, new ColorF(0.0, 0.5, 0.5, 0.1).GetAsRGBA_Bytes());
 
 						CreateAndRenderCombined(graphics2D, trans_gb_poly, stroke);
 					}
@@ -293,9 +293,9 @@ namespace MatterHackers.Agg
 
 						CreateAndRenderCombined(graphics2D, stroke, curve);
 
-						graphics2D.Render(stroke, new RGBA_Floats(0, 0, 0, 0.1).GetAsRGBA_Bytes());
+						graphics2D.Render(stroke, new ColorF(0, 0, 0, 0.1).GetAsRGBA_Bytes());
 
-						graphics2D.Render(curve, new RGBA_Floats(0, 0.6, 0, 0.1).GetAsRGBA_Bytes());
+						graphics2D.Render(curve, new ColorF(0, 0.6, 0, 0.1).GetAsRGBA_Bytes());
 					}
 					break;
 			}
@@ -330,7 +330,7 @@ namespace MatterHackers.Agg
 
 			if (combined != null)
 			{
-				graphics2D.Render(combined, new RGBA_Floats(0.5, 0.0, 0, 0.5).GetAsRGBA_Bytes());
+				graphics2D.Render(combined, new ColorF(0.5, 0.0, 0, 0.5).GetAsRGBA_Bytes());
 			}
 		}
 

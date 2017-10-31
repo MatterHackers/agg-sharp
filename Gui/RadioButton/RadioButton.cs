@@ -112,7 +112,7 @@ namespace MatterHackers.Agg.UI
 		{
 		}
 
-		public RadioButton(string label, RGBA_Bytes textColor, int fontSize = 12)
+		public RadioButton(string label, Color textColor, int fontSize = 12)
 			: this(0, 0, label, fontSize)
 		{
 			this.TextColor = textColor;
@@ -199,7 +199,7 @@ namespace MatterHackers.Agg.UI
 			CheckedStateChanged?.Invoke(this, null);
 		}
 
-		public RGBA_Bytes TextColor
+		public Color TextColor
 		{
 			get
 			{
@@ -208,7 +208,7 @@ namespace MatterHackers.Agg.UI
 					return buttonView.TextColor;
 				}
 
-				return RGBA_Bytes.White;
+				return Color.White;
 			}
 
 			set

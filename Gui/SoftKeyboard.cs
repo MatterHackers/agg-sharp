@@ -108,7 +108,7 @@ namespace MatterHackers.Agg.UI
 		private GuiWidget contentOffsetHolder;
 		private SoftKeyboard keyboard;
 
-		public SoftKeyboardDisplayStateManager(GuiWidget content, RGBA_Bytes backgroundColor)
+		public SoftKeyboardDisplayStateManager(GuiWidget content, Color backgroundColor)
 		{
 			this.content = content;
 			AnchorAll();
@@ -358,7 +358,7 @@ namespace MatterHackers.Agg.UI
 			base.OnDraw(graphics2D);
 			if (content.OriginRelativeParent.y != 0)
 			{
-				graphics2D.FillRectangle(0, 0, Width, KeyboardHeight, RGBA_Bytes.Black);
+				graphics2D.FillRectangle(0, 0, Width, KeyboardHeight, Color.Black);
 			}
 		}
 

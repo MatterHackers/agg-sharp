@@ -56,7 +56,7 @@ namespace MatterHackers.Agg
 			ImageClippingProxy clippingProxyNormal = new ImageClippingProxy(rasterNormal);
 			ImageClippingProxy clippingProxyGamma = new ImageClippingProxy(rasterGamma);
 
-			clippingProxyNormal.clear(new RGBA_Floats(1, 1, 1));
+			clippingProxyNormal.clear(new ColorF(1, 1, 1));
 
 			ScanlineRasterizer ras = new ScanlineRasterizer();
 			scanline_unpacked_8 sl = new scanline_unpacked_8();
@@ -70,10 +70,10 @@ namespace MatterHackers.Agg
 			character.rewind(0);
 			ras.reset();
 			ras.add_path(character);
-			ren_en.RenderSolid(clippingProxyGamma, ras, sl, RGBA_Bytes.Black);
+			ren_en.RenderSolid(clippingProxyGamma, ras, sl, Color.Black);
 
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
-			scanlineRenderer.RenderSolid(clippingProxyGamma, ras, sl, RGBA_Bytes.Black);
+			scanlineRenderer.RenderSolid(clippingProxyGamma, ras, sl, Color.Black);
 
 			ras.gamma(new gamma_none());
 
@@ -104,7 +104,7 @@ namespace MatterHackers.Agg
 #else
 			m_ras.add_path(scaleAndTranslate);
 			ImageClippingProxy clippingProxy = new ImageClippingProxy(graphics2D.DestImage);
-			scanlineRenderer.RenderSolid(clippingProxy, m_ras, m_sl, RGBA_Bytes.Black);
+			scanlineRenderer.RenderSolid(clippingProxy, m_ras, m_sl, Color.Black);
 #endif
 		}
 
@@ -175,7 +175,7 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public override void blend_hline(int x1, int y, int x2, RGBA_Bytes c, byte cover)
+		public override void blend_hline(int x1, int y, int x2, Color c, byte cover)
 		{
 			byte[] buffer = linkedImage.GetBuffer();
 			int index = linkedImage.GetBufferOffsetY(y) + x1;// +x1 + x1;
@@ -194,7 +194,7 @@ namespace MatterHackers.Agg
 
 		private byte[] c3 = new byte[2048 * 3];
 
-		public override void blend_solid_hspan(int x, int y, int len, RGBA_Bytes c, byte[] covers, int coversIndex)
+		public override void blend_solid_hspan(int x, int y, int len, Color c, byte[] covers, int coversIndex)
 		{
 			if (c3.Length < len + 4)
 			{
@@ -263,7 +263,7 @@ namespace MatterHackers.Agg
 			m_size = size;
 		}
 
-		public void draw(ScanlineRasterizer ras, IScanlineCache sl, IImageByte destImage, RGBA_Bytes color,
+		public void draw(ScanlineRasterizer ras, IScanlineCache sl, IImageByte destImage, Color color,
 				  double x, double y)
 		{
 			ras.reset();
@@ -288,7 +288,7 @@ namespace MatterHackers.Agg
 			m_square = new square(size);
 		}
 
-		protected override void RenderSolidSingleScanLine(IImageByte destImage, IScanlineCache scanLineCache, RGBA_Bytes color)
+		protected override void RenderSolidSingleScanLine(IImageByte destImage, IScanlineCache scanLineCache, Color color)
 		{
 			int y = scanLineCache.y();
 			int num_spans = scanLineCache.num_spans();
@@ -305,7 +305,7 @@ namespace MatterHackers.Agg
 				{
 					int a = (ManagedCoversArray[coverIndex++] * color.Alpha0To255) >> 8;
 					m_square.draw(destImage.NewGraphics2D().Rasterizer, m_sl, destImage,
-									new RGBA_Bytes(color.Red0To255, color.Green0To255, color.Blue0To255, a),
+									new Color(color.Red0To255, color.Green0To255, color.Blue0To255, a),
 									x, y);
 					++x;
 				}

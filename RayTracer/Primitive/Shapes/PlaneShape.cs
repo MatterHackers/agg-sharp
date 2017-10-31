@@ -18,7 +18,7 @@ namespace MatterHackers.RayTracer
 	public class PlaneShape : BaseShape
 	{
 		private Plane plane;
-		public RGBA_Floats OddColor;
+		public ColorF OddColor;
 
 		public PlaneShape(Vector3 planeNormal, double distanceFromOrigin, MaterialAbstract material)
 		{
@@ -26,7 +26,7 @@ namespace MatterHackers.RayTracer
 			Material = material;
 		}
 
-		public PlaneShape(Vector3 planeNormal, double distanceFromOrigin, RGBA_Floats color, RGBA_Floats oddcolor, double reflection, double transparency)
+		public PlaneShape(Vector3 planeNormal, double distanceFromOrigin, ColorF color, ColorF oddcolor, double reflection, double transparency)
 		{
 			plane.PlaneNormal = planeNormal;
 			plane.DistanceToPlaneFromOrigin = distanceFromOrigin;
@@ -46,7 +46,7 @@ namespace MatterHackers.RayTracer
 			return new AxisAlignedBoundingBox(Vector3.NegativeInfinity, Vector3.PositiveInfinity);
 		}
 
-		public override RGBA_Floats GetColor(IntersectInfo info)
+		public override ColorF GetColor(IntersectInfo info)
 		{
 			if (Material.HasTexture)
 			{

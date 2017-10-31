@@ -23,14 +23,14 @@ namespace MatterHackers.Agg.UI
 		public static BorderDouble DefaultPadding; //= new BorderDouble(5);
 
 		private double CheckBoxWidth = 10 * GuiWidget.DeviceScale;
-		private RGBA_Bytes inactiveColor;
-		private RGBA_Bytes activeColor;
+		private Color inactiveColor;
+		private Color activeColor;
 
-		public RGBA_Bytes CheckColor = DefaultViewFactory.SelectBlue;
+		public Color CheckColor = DefaultViewFactory.SelectBlue;
 
 		protected TextWidget labelTextWidget;
 
-		public CheckBoxViewText(string label, double textHeight = 12, RGBA_Bytes textColor = new RGBA_Bytes())
+		public CheckBoxViewText(string label, double textHeight = 12, Color textColor = new Color())
 		{
 			FlowLayoutWidget leftToRight = new FlowLayoutWidget();
 			GuiWidget boxSpace = new GuiWidget(CheckBoxWidth * 2, 1)
@@ -113,7 +113,7 @@ namespace MatterHackers.Agg.UI
 			activeColor = c.GetAsRGBA_Bytes();
 		}
 
-		public RGBA_Bytes TextColor
+		public Color TextColor
 		{
 			get
 			{

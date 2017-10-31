@@ -304,7 +304,7 @@ namespace MatterHackers.MarchingSquares
 				m_LinesToDraw.MoveTo(lineSegment.start.x, lineSegment.start.y);
 				m_LinesToDraw.LineTo(lineSegment.end.x, lineSegment.end.y);
 				Stroke StrockedLineToDraw = new Stroke(m_LinesToDraw, .25);
-				graphics2D.Render(StrockedLineToDraw, RGBA_Bytes.Black);
+				graphics2D.Render(StrockedLineToDraw, Color.Black);
 			}
 		}
 	}

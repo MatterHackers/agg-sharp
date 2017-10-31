@@ -73,13 +73,13 @@ namespace MatterHackers.Agg
 				//DiagnosticWidget diagnosticView = new DiagnosticWidget(this);
 				putUpDiagnostics = true;
 			}
-			this.NewGraphics2D().Clear(new RGBA_Bytes(255, 255, 255));
+			this.NewGraphics2D().Clear(new Color(255, 255, 255));
 
 			base.OnDraw(graphics2D);
 
 
 			long milliseconds = totalTime.ElapsedMilliseconds;
-			graphics2D.DrawString("ms: " + milliseconds.ToString() + "  ", Width, Height - 14, justification: Justification.Right, backgroundColor: RGBA_Bytes.White);
+			graphics2D.DrawString("ms: " + milliseconds.ToString() + "  ", Width, Height - 14, justification: Justification.Right, backgroundColor: Color.White);
 			totalTime.Restart();
 		}
 

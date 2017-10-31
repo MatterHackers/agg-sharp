@@ -112,7 +112,7 @@ namespace MatterHackers.Agg.ImageProcessing
 			{
 				for (int testX = 1; testX < width - 1; testX++)
 				{
-					RGBA_Bytes minColor = RGBA_Bytes.White;
+					Color minColor = Color.White;
 					int sourceOffset = source.GetBufferOffsetXY(testX, testY - 1);
 
 					// x-1, y-1
@@ -145,7 +145,7 @@ namespace MatterHackers.Agg.ImageProcessing
 			}
 		}
 
-		private static RGBA_Bytes MinColor(byte[] sourceBuffer, RGBA_Bytes minColor, int sourceOffset)
+		private static Color MinColor(byte[] sourceBuffer, Color minColor, int sourceOffset)
 		{
 			minColor.red = Math.Min(minColor.red, sourceBuffer[sourceOffset + 2]);
 			minColor.green = Math.Min(minColor.green, sourceBuffer[sourceOffset + 1]);

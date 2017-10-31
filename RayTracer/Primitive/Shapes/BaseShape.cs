@@ -20,7 +20,7 @@ namespace MatterHackers.RayTracer
 	{
 		private MaterialAbstract material;
 
-		public abstract RGBA_Floats GetColor(IntersectInfo info);
+		public abstract ColorF GetColor(IntersectInfo info);
 
 		public MaterialAbstract Material
 		{
@@ -52,7 +52,7 @@ namespace MatterHackers.RayTracer
 
 		public BaseShape()
 		{
-			Material = new SolidMaterial(new RGBA_Floats(1, 0, 1), 0, 0, 0);
+			Material = new SolidMaterial(new ColorF(1, 0, 1), 0, 0, 0);
 		}
 
 		public abstract IntersectInfo GetClosestIntersection(Ray ray);

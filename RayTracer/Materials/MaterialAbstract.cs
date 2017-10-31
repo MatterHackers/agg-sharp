@@ -45,7 +45,7 @@ namespace MatterHackers.RayTracer
 
 		public abstract bool HasTexture { get; }
 
-		public abstract RGBA_Floats GetColor(double u, double v);
+		public abstract ColorF GetColor(double u, double v);
 
 		public MaterialAbstract()
 		{

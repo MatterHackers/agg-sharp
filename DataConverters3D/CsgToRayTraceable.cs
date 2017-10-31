@@ -43,7 +43,7 @@ namespace MatterHackers.DataConverters3D
 {
 	public class CsgToRayTraceable
 	{
-		public static MaterialAbstract DefaultMaterial = new SolidMaterial(RGBA_Floats.Green, 0, 0, 0);
+		public static MaterialAbstract DefaultMaterial = new SolidMaterial(ColorF.Green, 0, 0, 0);
 
 		public CsgToRayTraceable()
 		{

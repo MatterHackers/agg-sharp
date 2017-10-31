@@ -35,11 +35,11 @@ namespace MatterHackers.Agg.UI
 	//------------------------------------------------------------------------
 	public class spline_ctrl : SimpleVertexSourceWidget
 	{
-		private RGBA_Bytes m_background_color;
-		private RGBA_Bytes m_border_color;
-		private RGBA_Bytes m_curve_color;
-		private RGBA_Bytes m_inactive_pnt_color;
-		private RGBA_Bytes m_active_pnt_color;
+		private Color m_background_color;
+		private Color m_border_color;
+		private Color m_curve_color;
+		private Color m_inactive_pnt_color;
+		private Color m_active_pnt_color;
 
 		private int m_num_pnt;
 		private double[] m_xp = new double[32];
@@ -76,11 +76,11 @@ namespace MatterHackers.Agg.UI
 			m_curve_poly = new Stroke(m_curve_pnt);
 			m_ellipse = new Ellipse();
 
-			m_background_color = new RGBA_Bytes(1.0, 1.0, 0.9);
-			m_border_color = new RGBA_Bytes(0.0, 0.0, 0.0);
-			m_curve_color = new RGBA_Bytes(0.0, 0.0, 0.0);
-			m_inactive_pnt_color = new RGBA_Bytes(0.0, 0.0, 0.0);
-			m_active_pnt_color = new RGBA_Bytes(1.0, 0.0, 0.0);
+			m_background_color = new Color(1.0, 1.0, 0.9);
+			m_border_color = new Color(0.0, 0.0, 0.0);
+			m_curve_color = new Color(0.0, 0.0, 0.0);
+			m_inactive_pnt_color = new Color(0.0, 0.0, 0.0);
+			m_active_pnt_color = new Color(1.0, 0.0, 0.0);
 
 			m_num_pnt = (num_pnt);
 			m_border_width = (1.0);
@@ -498,27 +498,27 @@ namespace MatterHackers.Agg.UI
 		}
 
 		// Set colors
-		public void background_color(RGBA_Bytes c)
+		public void background_color(Color c)
 		{
 			m_background_color = c;
 		}
 
-		public void border_color(RGBA_Bytes c)
+		public void border_color(Color c)
 		{
 			m_border_color = c;
 		}
 
-		public void curve_color(RGBA_Bytes c)
+		public void curve_color(Color c)
 		{
 			m_curve_color = c;
 		}
 
-		public void inactive_pnt_color(RGBA_Bytes c)
+		public void inactive_pnt_color(Color c)
 		{
 			m_inactive_pnt_color = c;
 		}
 
-		public void active_pnt_color(RGBA_Bytes c)
+		public void active_pnt_color(Color c)
 		{
 			m_active_pnt_color = c;
 		}

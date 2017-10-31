@@ -40,7 +40,7 @@ namespace MatterHackers.Agg.UI
 		private double wrappedWidth = -1;
 
 		public WrappedTextWidget(string text, double pointSize = 12, Justification justification = Justification.Left,
-			RGBA_Bytes textColor = new RGBA_Bytes(), bool ellipsisIfClipped = true, bool underline = false, RGBA_Bytes backgroundColor = new RGBA_Bytes(), bool doubleBufferText = true)
+			Color textColor = new Color(), bool ellipsisIfClipped = true, bool underline = false, Color backgroundColor = new Color(), bool doubleBufferText = true)
 		{
 			this.pointSize = pointSize;
 			TextWidget = new TextWidget("", 0, 0, pointSize, justification, textColor, ellipsisIfClipped, underline, backgroundColor)
@@ -56,7 +56,7 @@ namespace MatterHackers.Agg.UI
 			AddChild(TextWidget);
 		}
 
-		public RGBA_Bytes TextColor
+		public Color TextColor
 		{
 			get { return TextWidget.TextColor; }
 			set { TextWidget.TextColor = value; }

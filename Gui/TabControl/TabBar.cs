@@ -38,7 +38,7 @@ namespace MatterHackers.Agg.UI
 
 		internal Tab currentVisibleTab;
 
-		public RGBA_Bytes BorderColor { get; set; } = new RGBA_Bytes(0, 0, 0, 255);
+		public Color BorderColor { get; set; } = new Color(0, 0, 0, 255);
 
 		public TabBar(FlowDirection direction, GuiWidget tabPageArea)
 			: base(direction)

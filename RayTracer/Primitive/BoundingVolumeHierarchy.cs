@@ -48,7 +48,7 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-		public RGBA_Floats GetColor(IntersectInfo info)
+		public ColorF GetColor(IntersectInfo info)
 		{
 			throw new NotImplementedException("You should not get a color directly from a BoundingVolumeHierarchy.");
 		}
@@ -221,7 +221,7 @@ namespace MatterHackers.RayTracer
 			return false;
 		}
 
-		public RGBA_Floats GetColor(IntersectInfo info)
+		public ColorF GetColor(IntersectInfo info)
 		{
 			throw new NotImplementedException("You should not get a color directly from a BoundingVolumeHierarchy.");
 		}

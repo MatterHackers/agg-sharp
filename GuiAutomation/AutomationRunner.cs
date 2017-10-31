@@ -224,7 +224,14 @@ namespace MatterHackers.GuiAutomation
 			Thread.Sleep((int)(secondsToWait * 1000));
 		}
 
-		public static void StaticDelay(Func<bool> checkConditionSatisfied, double maxSeconds, int checkInterval = 200)
+		/// <summary>
+		/// Wait for the given condition to be satisfied. The check Interval should be nice and short to alow test to
+		/// complete quickely.
+		/// </summary>
+		/// <param name="checkConditionSatisfied"></param>
+		/// <param name="maxSeconds"></param>
+		/// <param name="checkInterval"></param>
+		public static void StaticDelay(Func<bool> checkConditionSatisfied, double maxSeconds, int checkInterval = 10)
 		{
 			Stopwatch timer = Stopwatch.StartNew();
 
@@ -296,10 +303,10 @@ namespace MatterHackers.GuiAutomation
 				Ellipse circle = new Ellipse(new Vector2(mousePosOnWindow.x, mousePosOnWindow.y), 10);
 				if (inputSystem.LeftButtonDown)
 				{
-					graphics2D.Render(circle, RGBA_Bytes.Green);
+					graphics2D.Render(circle, Color.Green);
 				}
-				graphics2D.Render(new Stroke(circle, 3), RGBA_Bytes.Black);
-				graphics2D.Render(new Stroke(circle, 2), RGBA_Bytes.White);
+				graphics2D.Render(new Stroke(circle, 3), Color.Black);
+				graphics2D.Render(new Stroke(circle, 2), Color.White);
 			}
 		}
 

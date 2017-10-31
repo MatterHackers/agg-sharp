@@ -155,7 +155,7 @@ namespace MatterHackers.Agg
 	{
 		private byte[] m_OutsideBufferColor;
 
-		public ImageBufferAccessorClip(IImageByte sourceImage, RGBA_Bytes bk)
+		public ImageBufferAccessorClip(IImageByte sourceImage, Color bk)
 			: base(sourceImage)
 		{
 			m_OutsideBufferColor = new byte[4];
@@ -645,7 +645,7 @@ namespace MatterHackers.Agg
 	{
 		private float[] m_OutsideBufferColor;
 
-		public ImageBufferAccessorClipFloat(IImageFloat sourceImage, RGBA_Floats bk)
+		public ImageBufferAccessorClipFloat(IImageFloat sourceImage, ColorF bk)
 			: base(sourceImage)
 		{
 			m_OutsideBufferColor = new float[4];

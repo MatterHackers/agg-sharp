@@ -74,7 +74,7 @@ namespace MatterHackers.Agg.UI.Tests
 		{
 			GuiWidget containerControl = new GuiWidget(200, 300);
 			containerControl.DoubleBuffer = true;
-			containerControl.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			containerControl.BackBuffer.NewGraphics2D().Clear(Color.White);
 			TextWidget controlButton1 = new TextWidget("text1");
 			controlButton1.Margin = new BorderDouble(buttonMargin);
 			controlButton1.OriginRelativeParent = new VectorMath.Vector2(-controlButton1.LocalBounds.Left, -controlButton1.LocalBounds.Bottom + controlPadding + buttonMargin);
@@ -85,7 +85,7 @@ namespace MatterHackers.Agg.UI.Tests
 			GuiWidget containerTest = new GuiWidget(200, 200);
 			containerTest.Padding = new BorderDouble(controlPadding);
 			containerTest.DoubleBuffer = true;
-			containerTest.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			containerTest.BackBuffer.NewGraphics2D().Clear(Color.White);
 
 			TextWidget testButton1 = new TextWidget("text1");
 			testButton1.Margin = new BorderDouble(buttonMargin);
@@ -96,7 +96,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// now change it's size
 			containerTest.LocalBounds = containerControl.LocalBounds;
-			containerTest.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			containerTest.BackBuffer.NewGraphics2D().Clear(Color.White);
 
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 			OutputImages(containerControl, containerTest);
@@ -622,7 +622,7 @@ namespace MatterHackers.Agg.UI.Tests
 			containerControl.Padding = controlPadding;
 			containerControl.DoubleBuffer = true;
 			GuiWidget controlRectangle = new GuiWidget(100, 100);
-			controlRectangle.BackgroundColor = RGBA_Bytes.Red;
+			controlRectangle.BackgroundColor = Color.Red;
 			controlRectangle.Margin = buttonMargin;
 			double controlCenterX = controlPadding.Left + (containerControl.Width - controlPadding.Left - controlPadding.Right) / 2;
 			double buttonX = controlCenterX - (controlRectangle.Width + controlRectangle.Margin.Left + controlRectangle.Margin.Right) / 2 + controlRectangle.Margin.Left;
@@ -640,7 +640,7 @@ namespace MatterHackers.Agg.UI.Tests
 			RectangleDouble offsetBounds = testRectangle.LocalBounds;
 			offsetBounds.Offset(-10, -10);
 			testRectangle.LocalBounds = offsetBounds;
-			testRectangle.BackgroundColor = RGBA_Bytes.Red;
+			testRectangle.BackgroundColor = Color.Red;
 			testRectangle.Margin = buttonMargin;
 			testRectangle.VAnchor = VAnchor.Center;
 			testRectangle.HAnchor = HAnchor.Center;

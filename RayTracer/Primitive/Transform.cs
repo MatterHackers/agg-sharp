@@ -62,7 +62,7 @@ namespace MatterHackers.RayTracer.Traceable
 			return false;
 		}
 
-		public RGBA_Floats GetColor(IntersectInfo info)
+		public ColorF GetColor(IntersectInfo info)
 		{
 			return Child.GetColor(info);
 		}

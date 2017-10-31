@@ -4,10 +4,10 @@
 	{
 		private GuiWidget groupBoxLabel;
 		private double lineInset = 8.5;
-		private RGBA_Bytes borderColor = RGBA_Bytes.Black;
+		private Color borderColor = Color.Black;
 		private GuiWidget clientArea;
 
-		public RGBA_Bytes TextColor
+		public Color TextColor
 		{
 			get
 			{
@@ -16,7 +16,7 @@
 				{
 					return textBox.TextColor;
 				}
-				return RGBA_Bytes.White;
+				return Color.White;
 			}
 			set
 			{
@@ -28,7 +28,7 @@
 			}
 		}
 
-		public RGBA_Bytes BorderColor
+		public Color BorderColor
 		{
 			get
 			{

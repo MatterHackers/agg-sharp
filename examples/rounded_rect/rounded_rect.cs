@@ -55,10 +55,10 @@ namespace MatterHackers.Agg
 			m_offset.Text = "subpixel offset={0:F3}";
 			m_offset.SetRange(-2.0, 3.0);
 
-			m_white_on_black.TextColor = new RGBA_Bytes(127, 127, 127);
+			m_white_on_black.TextColor = new Color(127, 127, 127);
 			//m_white_on_black.inactive_color(new RGBA_Bytes(127, 127, 127));
 
-			m_DrawAsOutlineCheckBox.TextColor = new RGBA_Floats(.5, .5, .5).GetAsRGBA_Bytes();
+			m_DrawAsOutlineCheckBox.TextColor = new ColorF(.5, .5, .5).GetAsRGBA_Bytes();
 			//m_DrawAsOutlineCheckBox.inactive_color(new RGBA_Bytes(127, 127, 127));
 		}
 
@@ -97,7 +97,7 @@ namespace MatterHackers.Agg
 			ImageClippingProxy clippingProxyNormal = new ImageClippingProxy(rasterNormal);
 			ImageClippingProxy clippingProxyGamma = new ImageClippingProxy(rasterGamma);
 
-			clippingProxyNormal.clear(m_white_on_black.Checked ? new RGBA_Floats(0, 0, 0) : new RGBA_Floats(1, 1, 1));
+			clippingProxyNormal.clear(m_white_on_black.Checked ? new ColorF(0, 0, 0) : new ColorF(1, 1, 1));
 
 			ScanlineRasterizer ras = new ScanlineRasterizer();
 			ScanlineCachePacked8 sl = new ScanlineCachePacked8();
@@ -112,10 +112,10 @@ namespace MatterHackers.Agg
 			e.init(m_x[0], m_y[0], 3, 3, 16);
 			ras.add_path(e);
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
-			scanlineRenderer.RenderSolid(clippingProxyNormal, ras, sl, new RGBA_Bytes(127, 127, 127));
+			scanlineRenderer.RenderSolid(clippingProxyNormal, ras, sl, new Color(127, 127, 127));
 			e.init(m_x[1], m_y[1], 3, 3, 16);
 			ras.add_path(e);
-			scanlineRenderer.RenderSolid(clippingProxyNormal, ras, sl, new RGBA_Bytes(127, 127, 127));
+			scanlineRenderer.RenderSolid(clippingProxyNormal, ras, sl, new Color(127, 127, 127));
 
 			double d = m_offset.Value;
 
@@ -135,7 +135,7 @@ namespace MatterHackers.Agg
 				ras.add_path(r);
 			}
 
-			scanlineRenderer.RenderSolid(clippingProxyGamma, ras, sl, m_white_on_black.Checked ? new RGBA_Bytes(255, 255, 255) : new RGBA_Bytes(0, 0, 0));
+			scanlineRenderer.RenderSolid(clippingProxyGamma, ras, sl, m_white_on_black.Checked ? new Color(255, 255, 255) : new Color(0, 0, 0));
 
 			base.OnDraw(graphics2D);
 		}

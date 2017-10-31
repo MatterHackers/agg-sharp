@@ -143,7 +143,7 @@ namespace MatterHackers.RayTracer
 		{
 			scene = new Scene();
 			scene.camera = new WorldCamera(world);
-			scene.background = new Background(new RGBA_Floats(0.5, .5, .5), 0.4);
+			scene.background = new Background(new ColorF(0.5, .5, .5), 0.4);
 
 			//AddBoxAndSheresBooleanTest();
 			//AddBoxAndBoxBooleanTest();
@@ -171,8 +171,8 @@ namespace MatterHackers.RayTracer
 			//AddAFloor();
 
 			//add two lights for better lighting effects
-			scene.lights.Add(new PointLight(new Vector3(5000, 5000, 5000), new RGBA_Floats(0.8, 0.8, 0.8)));
-			scene.lights.Add(new PointLight(new Vector3(-5000, -5000, 3000), new RGBA_Floats(0.5, 0.5, 0.5)));
+			scene.lights.Add(new PointLight(new Vector3(5000, 5000, 5000), new ColorF(0.8, 0.8, 0.8)));
+			scene.lights.Add(new PointLight(new Vector3(-5000, -5000, 3000), new ColorF(0.5, 0.5, 0.5)));
 		}
 
 		private MatterHackers.Csg.CsgObject BooleanBoxBallThing()
@@ -239,7 +239,7 @@ namespace MatterHackers.RayTracer
 			Random rand = new Random(0);
 			for (int i = 0; i < 100; i++)
 			{
-				RGBA_Bytes color = new RGBA_Bytes(rand.NextDouble(), rand.NextDouble(), rand.NextDouble());
+				Color color = new Color(rand.NextDouble(), rand.NextDouble(), rand.NextDouble());
 				graphics.Circle(new Vector2(rand.NextDouble() * testImage.Width, rand.NextDouble() * testImage.Height), rand.NextDouble() * 40 + 10, color);
 			}
 			scene.shapes.Add(new PlaneShape(new Vector3(0, 0, 1), 0, new TextureMaterial(testImage, 0, 0, .2, 1)));
@@ -255,7 +255,7 @@ namespace MatterHackers.RayTracer
 			{
 				BaseShape littleShpere = new SphereShape(new Vector3(rand.NextDouble() * dist - dist / 2, rand.NextDouble() * dist - dist / 2, rand.NextDouble() * dist - dist / 2),
 					rand.NextDouble() * .1 + .01,
-					new SolidMaterial(new RGBA_Floats(rand.NextDouble() * .5 + .5, rand.NextDouble() * .5 + .5, rand.NextDouble() * .5 + .5), 0, 0.0, 2.0));
+					new SolidMaterial(new ColorF(rand.NextDouble() * .5 + .5, rand.NextDouble() * .5 + .5, rand.NextDouble() * .5 + .5), 0, 0.0, 2.0));
 				scanData1.Add(littleShpere);
 			}
 
@@ -265,10 +265,10 @@ namespace MatterHackers.RayTracer
 		private void AddBoxAndSheresBooleanTest()
 		{
 			BoxShape box1 = new BoxShape(new Vector3(.5, .5, .5), new Vector3(1.5, 1.5, 1.5),
-							   new SolidMaterial(RGBA_Floats.Green, 0, 0, 0));//.01, 0.0, 2.0));
+							   new SolidMaterial(ColorF.Green, 0, 0, 0));//.01, 0.0, 2.0));
 
 			List<IPrimitive> subtractShapes = new List<IPrimitive>();
-			SolidMaterial material = new SolidMaterial(RGBA_Floats.Red, 0, 0, 0);
+			SolidMaterial material = new SolidMaterial(ColorF.Red, 0, 0, 0);
 
 #if false
 			// two big spheres.  Looks good.
@@ -303,10 +303,10 @@ namespace MatterHackers.RayTracer
 		private void AddBoxAndBoxBooleanTest()
 		{
 			BoxShape box1 = new BoxShape(new Vector3(.5, .5, .5), new Vector3(1.5, 1.5, 1.5),
-							   new SolidMaterial(RGBA_Floats.Green, .01, 0.0, 2.0));
+							   new SolidMaterial(ColorF.Green, .01, 0.0, 2.0));
 
 			List<IPrimitive> subtractShapes = new List<IPrimitive>();
-			SolidMaterial material = new SolidMaterial(RGBA_Floats.Red, 0, 0, 0);
+			SolidMaterial material = new SolidMaterial(ColorF.Red, 0, 0, 0);
 			subtractShapes.Add(new BoxShape(new Vector3(), new Vector3(1, 1, 1), material));
 
 			IPrimitive subtractGroup = BoundingVolumeHierarchy.CreateNewHierachy(subtractShapes);
@@ -325,7 +325,7 @@ namespace MatterHackers.RayTracer
                 new double[] {-0.471f, -0.333f, -0.8165f}
             };
 
-			SolidMaterial redStuff = new SolidMaterial(new RGBA_Floats(.9, .2, .1), .01, 0.0, 2.0);
+			SolidMaterial redStuff = new SolidMaterial(new ColorF(.9, .2, .1), .01, 0.0, 2.0);
 			// setup a solid reflecting sphere
 			renderCollection.Add(new TriangleShape(new Vector3(points[0]), new Vector3(points[1]), new Vector3(points[2]), redStuff));
 			renderCollection.Add(new TriangleShape(new Vector3(points[0]), new Vector3(points[3]), new Vector3(points[1]), redStuff));
@@ -362,11 +362,11 @@ namespace MatterHackers.RayTracer
 		{
 			// setup a solid reflecting sphere
 			double radius = 1.5;
-			BaseShape bigSphere = new SphereShape(new Vector3(1, 4, -3), radius, new SolidMaterial(new RGBA_Floats(0, .5, .5), 0.2, 0.0, 2.0));
+			BaseShape bigSphere = new SphereShape(new Vector3(1, 4, -3), radius, new SolidMaterial(new ColorF(0, .5, .5), 0.2, 0.0, 2.0));
 			renderCollection.Add(bigSphere);
 
 			BoxShape box = new BoxShape(new Vector3(-1, 0, -4), new Vector3(1, 2, -2),
-							   new SolidMaterial(new RGBA_Floats(.9, .2, .1), .01, 0.0, 2.0));
+							   new SolidMaterial(new ColorF(.9, .2, .1), .01, 0.0, 2.0));
 			renderCollection.Add(box);
 		}
 
@@ -376,18 +376,18 @@ namespace MatterHackers.RayTracer
 			double size = .1;
 			for (int i = 1; i < count + 1; i++)
 			{
-				RGBA_Floats xColor = new RGBA_Floats(1, i / (double)count, i / (double)count);
+				ColorF xColor = new ColorF(1, i / (double)count, i / (double)count);
 				SolidMaterial xMaterial = new SolidMaterial(xColor, 0, 0.0, 2.0);
 				BoxShape xBox = new BoxShape(new Vector3(i * size, 0, 0), new Vector3(i * size + size, size, size), xMaterial);
 				renderCollection.Add(xBox);
 
-				RGBA_Floats yColor = new RGBA_Floats(i / (double)count, 1, i / (double)count);
+				ColorF yColor = new ColorF(i / (double)count, 1, i / (double)count);
 				SolidMaterial yMaterial = new SolidMaterial(yColor, 0, 0.0, 2.0);
 				BoxShape yBox = new BoxShape(new Vector3(0, i * size, 0), new Vector3(size, i * size + size, size), yMaterial);
 				//yBox.Transform.Position += new Vector3D(1, 1, 1);
 				renderCollection.Add(yBox);
 
-				RGBA_Floats zColor = new RGBA_Floats(i / (double)count, i / (double)count, 1);
+				ColorF zColor = new ColorF(i / (double)count, i / (double)count, 1);
 				SolidMaterial zMaterial = new SolidMaterial(zColor, 0, 0.0, 2.0);
 				BoxShape zBox = new BoxShape(new Vector3(0, 0, i * size), new Vector3(size, size, i * size + size), zMaterial);
 				renderCollection.Add(zBox);
@@ -407,7 +407,7 @@ namespace MatterHackers.RayTracer
 		}
 
 		private Matrix4X4 lastRenderedMatrix = new Matrix4X4();
-		public RGBA_Floats mouseOverColor = new RGBA_Floats();
+		public ColorF mouseOverColor = new ColorF();
 		private bool SavedTimes = false;
 
 		public override void OnDraw(Graphics2D graphics2D)
@@ -424,7 +424,7 @@ namespace MatterHackers.RayTracer
 			}
 			//allObjectsHolder.AxisToWorld = trackBallController.GetTransform4X4();
 
-			graphics2D.FillRectangle(new RectangleDouble(0, 0, 1000, 1000), RGBA_Bytes.Red);
+			graphics2D.FillRectangle(new RectangleDouble(0, 0, 1000, 1000), Color.Red);
 			graphics2D.Render(destImage, 0, 0);
 			//trackBallController.DrawRadius(graphics2D);
 			totalTime.Stop();

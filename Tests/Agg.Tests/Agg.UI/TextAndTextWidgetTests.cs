@@ -114,11 +114,11 @@ namespace MatterHackers.Agg.UI.Tests
 				TextWidget itemToAdd = new TextWidget("test Item", 10, 10);
 				rectangleWidget.AddChild(itemToAdd);
 				rectangleWidget.DoubleBuffer = true;
-				rectangleWidget.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+				rectangleWidget.BackBuffer.NewGraphics2D().Clear(Color.White);
 				rectangleWidget.OnDraw(rectangleWidget.BackBuffer.NewGraphics2D());
 
 				ImageBuffer textOnly = new ImageBuffer(75, 20);
-				textOnly.NewGraphics2D().Clear(RGBA_Bytes.White);
+				textOnly.NewGraphics2D().Clear(Color.White);
 
 				textOnly.NewGraphics2D().DrawString("test Item", 1, 1);
 
@@ -138,15 +138,15 @@ namespace MatterHackers.Agg.UI.Tests
 				TextEditWidget itemToAdd = new TextEditWidget("test Item", 10, 10);
 				rectangleWidget.AddChild(itemToAdd);
 				rectangleWidget.DoubleBuffer = true;
-				rectangleWidget.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+				rectangleWidget.BackBuffer.NewGraphics2D().Clear(Color.White);
 				rectangleWidget.OnDraw(rectangleWidget.BackBuffer.NewGraphics2D());
 
 				ImageBuffer textOnly = new ImageBuffer(75, 20);
-				textOnly.NewGraphics2D().Clear(RGBA_Bytes.White);
+				textOnly.NewGraphics2D().Clear(Color.White);
 
 				TypeFacePrinter stringPrinter = new TypeFacePrinter("test Item", 12);
 				IVertexSource offsetText = new VertexSourceApplyTransform(stringPrinter, Affine.NewTranslation(1, -stringPrinter.LocalBounds.Bottom));
-				textOnly.NewGraphics2D().Render(offsetText, RGBA_Bytes.Black);
+				textOnly.NewGraphics2D().Render(offsetText, Color.Black);
 
 				if (saveImagesForDebug)
 				{

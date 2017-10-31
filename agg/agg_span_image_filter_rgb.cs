@@ -44,7 +44,7 @@ namespace MatterHackers.Agg
 		{
 		}
 
-		public override void generate(RGBA_Bytes[] span, int spanIndex, int x, int y, int len)
+		public override void generate(Color[] span, int spanIndex, int x, int y, int len)
 		{
 			ImageBuffer SourceRenderingBuffer = (ImageBuffer)GetImageBufferAccessor().SourceImage;
 			if (SourceRenderingBuffer.BitDepth != 24)
@@ -75,7 +75,7 @@ namespace MatterHackers.Agg
                 }
             }
 #else
-			RGBA_Bytes color = RGBA_Bytes.White;
+			Color color = Color.White;
 			do
 			{
 				color.blue = fg_ptr[bufferIndex++];
@@ -100,7 +100,7 @@ namespace MatterHackers.Agg
 		{
 		}
 
-		public override void generate(RGBA_Bytes[] span, int spanIndex, int x, int y, int len)
+		public override void generate(Color[] span, int spanIndex, int x, int y, int len)
 		{
 			ImageBuffer SourceRenderingBuffer = (ImageBuffer)GetImageBufferAccessor().SourceImage;
 			if (SourceRenderingBuffer.BitDepth != 24)
@@ -120,7 +120,7 @@ namespace MatterHackers.Agg
 				int y_lr = y_hr >> (int)image_subpixel_scale_e.image_subpixel_shift;
 				int bufferIndex;
 				bufferIndex = SourceRenderingBuffer.GetBufferOffsetXY(x_lr, y_lr);
-				RGBA_Bytes color;
+				Color color;
 				color.blue = fg_ptr[bufferIndex++];
 				color.green = fg_ptr[bufferIndex++];
 				color.red = fg_ptr[bufferIndex++];
@@ -150,7 +150,7 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public override void generate(RGBA_Bytes[] span, int spanIndex, int x, int y, int len)
+		public override void generate(Color[] span, int spanIndex, int x, int y, int len)
 		{
 			base.interpolator().begin(x + base.filter_dx_dbl(), y + base.filter_dy_dbl(), len);
 
@@ -218,7 +218,7 @@ namespace MatterHackers.Agg
 					tempG >>= (int)image_subpixel_scale_e.image_subpixel_shift * 2;
 					tempB >>= (int)image_subpixel_scale_e.image_subpixel_shift * 2;
 
-					RGBA_Bytes color;
+					Color color;
 					color.red = (byte)tempR;
 					color.green = (byte)tempG;
 					color.blue = (byte)tempB;
@@ -261,7 +261,7 @@ namespace MatterHackers.Agg
 	//=====================================span_image_filter_rgb_bilinear_clip
 	public class span_image_filter_rgb_bilinear_clip : span_image_filter
 	{
-		private RGBA_Bytes m_OutsideSourceColor;
+		private Color m_OutsideSourceColor;
 
 		private const int base_shift = 8;
 		private const int base_scale = (int)(1 << base_shift);
@@ -286,7 +286,7 @@ namespace MatterHackers.Agg
 			m_OutsideSourceColor = v.GetAsRGBA_Bytes();
 		}
 
-		public override void generate(RGBA_Bytes[] span, int spanIndex, int x, int y, int len)
+		public override void generate(Color[] span, int spanIndex, int x, int y, int len)
 		{
 			base.interpolator().begin(x + base.filter_dx_dbl(), y + base.filter_dy_dbl(), len);
 
@@ -464,7 +464,7 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public override void generate(RGBA_Bytes[] span, int spanIndex, int x, int y, int len)
+		public override void generate(Color[] span, int spanIndex, int x, int y, int len)
 		{
 			base.interpolator().begin(x + base.filter_dx_dbl(), y + base.filter_dy_dbl(), len);
 
@@ -575,7 +575,7 @@ namespace MatterHackers.Agg
 		{
 		}
 
-		public override void generate(RGBA_Bytes[] span, int spanIndex, int x, int y, int len)
+		public override void generate(Color[] span, int spanIndex, int x, int y, int len)
 		{
 			throw new NotImplementedException(); /*
             ISpanInterpolator spanInterpolator = base.interpolator();
@@ -795,7 +795,7 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public override void generate(RGBA_Bytes[] span, int spanIndex, int x, int y, int len)
+		public override void generate(Color[] span, int spanIndex, int x, int y, int len)
 		{
 			ISpanInterpolator spanInterpolator = base.interpolator();
 			spanInterpolator.begin(x + base.filter_dx_dbl(), y + base.filter_dy_dbl(), len);

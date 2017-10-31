@@ -56,7 +56,7 @@ namespace MatterHackers.Agg.UI
 
 		public static event EventHandler KeyboardCollapsed;
 
-		public RGBA_Bytes TextColor
+		public Color TextColor
 		{
 			get
 			{
@@ -80,7 +80,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public RGBA_Bytes CursorColor
+		public Color CursorColor
 		{
 			get
 			{
@@ -110,7 +110,7 @@ namespace MatterHackers.Agg.UI
 			internalTextEditWidget.ClearUndoHistory();
 		}
 
-		public RGBA_Bytes HighlightColor
+		public Color HighlightColor
 		{
 			get
 			{
@@ -122,7 +122,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public RGBA_Bytes BorderColor
+		public Color BorderColor
 		{
 			get
 			{

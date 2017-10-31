@@ -41,7 +41,7 @@ namespace MatterHackers.ImageProcessing
 		/// <param name="sourceImage">The image to act on</param>
 		/// <param name="color">The color to use</param>
 		/// <returns>A new modified image</returns>
-		public static ImageBuffer Multiply(this ImageBuffer sourceImage, RGBA_Bytes color)
+		public static ImageBuffer Multiply(this ImageBuffer sourceImage, Color color)
 		{
 			var outputImage = new ImageBuffer(sourceImage);
 
@@ -113,7 +113,7 @@ namespace MatterHackers.ImageProcessing
 			return outputImage;
 		}
 
-		public static ImageBuffer ReplaceColor(this ImageBuffer sourceImage, RGBA_Bytes existingColor, RGBA_Bytes newColor, bool keepExistingAlpha = true)
+		public static ImageBuffer ReplaceColor(this ImageBuffer sourceImage, Color existingColor, Color newColor, bool keepExistingAlpha = true)
 		{
 			var outputImage = new ImageBuffer(sourceImage);
 
@@ -167,12 +167,12 @@ namespace MatterHackers.ImageProcessing
 		/// </summary>
 		/// <param name="sourceImage">The source image to act on</param>
 		/// <returns>A new modified image</returns>
-		public static ImageBuffer AnyAlphaToColor(this ImageBuffer sourceImage, RGBA_Bytes color)
+		public static ImageBuffer AnyAlphaToColor(this ImageBuffer sourceImage, Color color)
 		{
-			return AnyAlphaToColor(sourceImage, color, RGBA_Bytes.Transparent);
+			return AnyAlphaToColor(sourceImage, color, Color.Transparent);
 		}
 
-		public static ImageBuffer AnyAlphaToColor(this ImageBuffer sourceImage, RGBA_Bytes color, RGBA_Bytes transparency)
+		public static ImageBuffer AnyAlphaToColor(this ImageBuffer sourceImage, Color color, Color transparency)
 		{
 			var outputImage = new ImageBuffer(sourceImage);
 

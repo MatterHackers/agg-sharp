@@ -48,12 +48,12 @@ namespace MatterHackers.Agg
 			alphaSlider.ValueChanged += new EventHandler(NeedInvalidate);
 			alphaSlider.Text = "Alpha={0:F0}";
 			alphaSlider.Value = 255;
-			alphaSlider.View.TextColor = new RGBA_Bytes(127, 127, 127);
+			alphaSlider.View.TextColor = new Color(127, 127, 127);
 			AddChild(alphaSlider);
 
 			useBlackBackgroundCheckbox = new UI.CheckBox(5, 30 + 12, "Draw Black Background");
 			useBlackBackgroundCheckbox.CheckedStateChanged += NeedInvalidate;
-			useBlackBackgroundCheckbox.TextColor = new RGBA_Bytes(127, 127, 127);
+			useBlackBackgroundCheckbox.TextColor = new Color(127, 127, 127);
 			AddChild(useBlackBackgroundCheckbox);
 		}
 
@@ -99,11 +99,11 @@ namespace MatterHackers.Agg
 				ScanlineRasterizer ras = new ScanlineRasterizer();
 				ScanlineCachePacked8 sl = new ScanlineCachePacked8();
 
-				RGBA_Bytes clearColor = useBlackBackgroundCheckbox.Checked ? new RGBA_Bytes(0, 0, 0) : new RGBA_Bytes(255, 255, 255);
+				Color clearColor = useBlackBackgroundCheckbox.Checked ? new Color(0, 0, 0) : new Color(255, 255, 255);
 				clippingProxy.clear(clearColor);
 				alphaSlider.View.BackgroundColor = clearColor;
 
-				RGBA_Bytes FillColor = useBlackBackgroundCheckbox.Checked ? new RGBA_Bytes(255, 255, 255, (int)(alphaSlider.Value)) : new RGBA_Bytes(0, 0, 0, (int)(alphaSlider.Value));
+				Color FillColor = useBlackBackgroundCheckbox.Checked ? new Color(255, 255, 255, (int)(alphaSlider.Value)) : new Color(0, 0, 0, (int)(alphaSlider.Value));
 
 				VertexSource.Ellipse er = new MatterHackers.Agg.VertexSource.Ellipse(Width / 2 - 0.87 * 50, Height / 2 - 0.5 * 50, 100, 100, 100);
 				ras.add_path(er);

@@ -58,15 +58,15 @@ namespace MatterHackers.Agg.UI
 
 		protected TextWidget mainControlText;
 
-		public RGBA_Bytes NormalColor { get; set; }
+		public Color NormalColor { get; set; }
 
 		public int BorderWidth { get; set; }
 
-		public RGBA_Bytes BorderColor { get; set; }
+		public Color BorderColor { get; set; }
 
-		public RGBA_Bytes HoverColor { get; set; }
+		public Color HoverColor { get; set; }
 
-		public RGBA_Bytes TextColor
+		public Color TextColor
 		{
 			get
 			{
@@ -320,27 +320,27 @@ namespace MatterHackers.Agg.UI
 
 		private string noSelectionString;
 
-		private static RGBA_Bytes whiteSemiTransparent = new RGBA_Bytes(255, 255, 255, 100);
-		private static RGBA_Bytes whiteTransparent = new RGBA_Bytes(255, 255, 255, 0);
+		private static Color whiteSemiTransparent = new Color(255, 255, 255, 100);
+		private static Color whiteTransparent = new Color(255, 255, 255, 0);
 
 		public DropDownList(string noSelectionString, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false)
 			: this(noSelectionString, whiteTransparent, whiteSemiTransparent, direction, maxHeight, useLeftIcons)
 		{
 			this.TextColor = ActiveTheme.Instance.PrimaryTextColor;
 			this.MenuItemsBorderWidth = 1;
-			this.MenuItemsBackgroundColor = RGBA_Bytes.White;
+			this.MenuItemsBackgroundColor = Color.White;
 			this.MenuItemsBorderColor = ActiveTheme.Instance.SecondaryTextColor;
 			this.MenuItemsPadding = new BorderDouble(10, 7, 7, 7);
 			this.MenuItemsBackgroundHoverColor = ActiveTheme.Instance.PrimaryAccentColor;
-			this.MenuItemsTextHoverColor = RGBA_Bytes.Black;
-			this.MenuItemsTextColor = RGBA_Bytes.Black;
+			this.MenuItemsTextHoverColor = Color.Black;
+			this.MenuItemsTextColor = Color.Black;
 			this.BorderWidth = 1;
 			this.BorderColor = ActiveTheme.Instance.SecondaryTextColor;
 			this.HoverColor = whiteSemiTransparent;
-			this.BackgroundColor = new RGBA_Bytes(255, 255, 255, 0);
+			this.BackgroundColor = new Color(255, 255, 255, 0);
 		}
 
-		public DropDownList(string noSelectionString, RGBA_Bytes normalColor, RGBA_Bytes hoverColor, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false)
+		public DropDownList(string noSelectionString, Color normalColor, Color hoverColor, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false)
 			: base(direction, maxHeight)
 		{
 			UseLeftIcons = useLeftIcons;
@@ -358,7 +358,7 @@ namespace MatterHackers.Agg.UI
 				VAnchor = VAnchor.Bottom | VAnchor.Fit,
 				HAnchor = HAnchor.Left | HAnchor.Fit,
 				Margin = new BorderDouble(10, 7, 7, 7),
-				TextColor = RGBA_Bytes.Black
+				TextColor = Color.Black
 			};
 
 			AddChild(mainControlText);
@@ -369,7 +369,7 @@ namespace MatterHackers.Agg.UI
 			NormalColor = normalColor;
 			HoverColor = hoverColor;
 			BackgroundColor = normalColor;
-			BorderColor = RGBA_Bytes.White;
+			BorderColor = Color.White;
 		}
 
 		private void OnSelectionChanged(EventArgs e)
@@ -485,7 +485,7 @@ namespace MatterHackers.Agg.UI
 
 				NormalTextColor = MenuItemsTextColor,
 				OverTextColor = MenuItemsTextHoverColor,
-				DisabledTextColor = RGBA_Bytes.Gray,
+				DisabledTextColor = Color.Gray,
 
 				PointSize = pointSize,
 				Padding = currentPadding,
@@ -525,7 +525,7 @@ namespace MatterHackers.Agg.UI
 			return menuItem;
 		}
 
-		private GuiWidget GetMenuContent(string itemName, ImageBuffer leftImage, RGBA_Bytes color)
+		private GuiWidget GetMenuContent(string itemName, ImageBuffer leftImage, Color color)
 		{
 			var rowContainer = new FlowLayoutWidget()
 			{

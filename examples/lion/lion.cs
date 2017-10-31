@@ -47,7 +47,7 @@ namespace MatterHackers.Agg
 
 		public Lion()
 		{
-			BackgroundColor = RGBA_Bytes.White;
+			BackgroundColor = Color.White;
 			alphaSlider = new Slider(new MatterHackers.VectorMath.Vector2(7, 27), 498);
 			AddChild(alphaSlider);
 			alphaSlider.ValueChanged += new EventHandler(alphaSlider_ValueChanged);

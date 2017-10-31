@@ -95,7 +95,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual IColorType color(int i)
 		{
-			return (IColorType)new RGBA_Floats();
+			return (IColorType)new ColorF();
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)

@@ -111,7 +111,7 @@ namespace MatterHackers.Agg.ImageProcessing
 			{
 				for (int testX = 1; testX < width - 1; testX++)
 				{
-					RGBA_Bytes maxColor = RGBA_Bytes.Black;
+					Color maxColor = Color.Black;
 					int sourceOffset = source.GetBufferOffsetXY(testX, testY - 1);
 
 					// x-1, y-1
@@ -144,7 +144,7 @@ namespace MatterHackers.Agg.ImageProcessing
 			}
 		}
 
-		private static RGBA_Bytes MaxColor(byte[] sourceBuffer, RGBA_Bytes maxColor, int sourceOffset)
+		private static Color MaxColor(byte[] sourceBuffer, Color maxColor, int sourceOffset)
 		{
 			maxColor.red = Math.Max(maxColor.red, sourceBuffer[sourceOffset + 2]);
 			maxColor.green = Math.Max(maxColor.green, sourceBuffer[sourceOffset + 1]);

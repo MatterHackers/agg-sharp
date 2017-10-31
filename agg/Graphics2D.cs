@@ -31,9 +31,9 @@ namespace MatterHackers.Agg
 	{
 		bool is_solid(int style);
 
-		RGBA_Bytes color(int style);
+		Color color(int style);
 
-		void generate_span(RGBA_Bytes[] span, int spanIndex, int x, int y, int len, int style);
+		void generate_span(Color[] span, int spanIndex, int x, int y, int len, int style);
 	};
 
 	public abstract class Graphics2D
@@ -173,7 +173,7 @@ namespace MatterHackers.Agg
 			double angleRadians,
 			double scaleX, double ScaleY);
 
-		public void Render(IVertexSource vertexSource, RGBA_Bytes[] colorArray, int[] pathIdArray, int numPaths)
+		public void Render(IVertexSource vertexSource, Color[] colorArray, int[] pathIdArray, int numPaths)
 		{
 			for (int i = 0; i < numPaths; i++)
 			{
@@ -200,12 +200,12 @@ namespace MatterHackers.Agg
 
 		public void DrawString(string Text, double x, double y, double pointSize = 12,
 			Justification justification = Justification.Left, Baseline baseline = Baseline.Text,
-			RGBA_Bytes color = new RGBA_Bytes(), bool drawFromHintedCach = false, RGBA_Bytes backgroundColor = new RGBA_Bytes())
+			Color color = new Color(), bool drawFromHintedCach = false, Color backgroundColor = new Color())
 		{
 			TypeFacePrinter stringPrinter = new TypeFacePrinter(Text, pointSize, new Vector2(x, y), justification, baseline);
 			if (color.Alpha0To255 == 0)
 			{
-				color = RGBA_Bytes.Black;
+				color = Color.Black;
 			}
 
 			if (backgroundColor.Alpha0To255 != 0)
@@ -217,23 +217,23 @@ namespace MatterHackers.Agg
 			stringPrinter.Render(this, color);
 		}
 
-		public void Circle(Vector2 origin, double radius, RGBA_Bytes color)
+		public void Circle(Vector2 origin, double radius, Color color)
 		{
 			Circle(origin.x, origin.y, radius, color);
 		}
 
-		public void Circle(double x, double y, double radius, RGBA_Bytes color)
+		public void Circle(double x, double y, double radius, Color color)
 		{
 			Ellipse elipse = new Ellipse(x, y, radius, radius);
 			Render(elipse, color);
 		}
 
-		public void Line(Vector2 start, Vector2 end, RGBA_Bytes color, double strokeWidth = 1)
+		public void Line(Vector2 start, Vector2 end, Color color, double strokeWidth = 1)
 		{
 			Line(start.x, start.y, end.x, end.y, color, strokeWidth);
 		}
 
-		public void Line(double x1, double y1, double x2, double y2, RGBA_Bytes color, double strokeWidth = 1)
+		public void Line(double x1, double y1, double x2, double y2, Color color, double strokeWidth = 1)
 		{
 			VertexStorage m_LinesToDraw = new VertexStorage();
 			m_LinesToDraw.remove_all();
@@ -247,14 +247,14 @@ namespace MatterHackers.Agg
 
 		public abstract RectangleDouble GetClippingRect();
 
-		public abstract void Rectangle(double left, double bottom, double right, double top, RGBA_Bytes color, double strokeWidth = 1);
+		public abstract void Rectangle(double left, double bottom, double right, double top, Color color, double strokeWidth = 1);
 
-		public void Rectangle(RectangleDouble rect, RGBA_Bytes color, double strokeWidth = 1)
+		public void Rectangle(RectangleDouble rect, Color color, double strokeWidth = 1)
 		{
 			Rectangle(rect.Left, rect.Bottom, rect.Right, rect.Top, color, strokeWidth);
 		}
 
-		public void Rectangle(RectangleInt rect, RGBA_Bytes color)
+		public void Rectangle(RectangleInt rect, Color color)
 		{
 			Rectangle(rect.Left, rect.Bottom, rect.Right, rect.Top, color);
 		}

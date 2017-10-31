@@ -67,47 +67,47 @@ namespace MatterHackers.Agg.UI
 		private double m_pdx;
 		private double m_pdy;
 
-		private RGBA_Bytes m_background_color;
-		private RGBA_Bytes m_border_color;
-		private RGBA_Bytes m_curve_color;
-		private RGBA_Bytes m_grid_color;
-		private RGBA_Bytes m_inactive_pnt_color;
-		private RGBA_Bytes m_active_pnt_color;
-		private RGBA_Bytes m_text_color;
-		private RGBA_Bytes[] m_colors = new RGBA_Bytes[7];
+		private Color m_background_color;
+		private Color m_border_color;
+		private Color m_curve_color;
+		private Color m_grid_color;
+		private Color m_inactive_pnt_color;
+		private Color m_active_pnt_color;
+		private Color m_text_color;
+		private Color[] m_colors = new Color[7];
 
 		// Set colors
-		public void background_color(RGBA_Bytes c)
+		public void background_color(Color c)
 		{
 			m_background_color = c;
 		}
 
-		public void border_color(RGBA_Bytes c)
+		public void border_color(Color c)
 		{
 			m_border_color = c;
 		}
 
-		public void curve_color(RGBA_Bytes c)
+		public void curve_color(Color c)
 		{
 			m_curve_color = c;
 		}
 
-		public void grid_color(RGBA_Bytes c)
+		public void grid_color(Color c)
 		{
 			m_grid_color = c;
 		}
 
-		public void inactive_pnt_color(RGBA_Bytes c)
+		public void inactive_pnt_color(Color c)
 		{
 			m_inactive_pnt_color = c;
 		}
 
-		public void active_pnt_color(RGBA_Bytes c)
+		public void active_pnt_color(Color c)
 		{
 			m_active_pnt_color = c;
 		}
 
-		public void text_color(RGBA_Bytes c)
+		public void text_color(Color c)
 		{
 			m_text_color = c;
 		}
@@ -152,13 +152,13 @@ namespace MatterHackers.Agg.UI
 			m_pdy = (0.0);
 			calc_spline_box();
 
-			m_background_color = new RGBA_Bytes(1.0, 1.0, 0.9);
-			m_border_color = new RGBA_Bytes(0.0, 0.0, 0.0);
-			m_curve_color = new RGBA_Bytes(0.0, 0.0, 0.0);
-			m_grid_color = new RGBA_Bytes(0.2, 0.2, 0.0);
-			m_inactive_pnt_color = new RGBA_Bytes(0.0, 0.0, 0.0);
-			m_active_pnt_color = new RGBA_Bytes(1.0, 0.0, 0.0);
-			m_text_color = new RGBA_Bytes(0.0, 0.0, 0.0);
+			m_background_color = new Color(1.0, 1.0, 0.9);
+			m_border_color = new Color(0.0, 0.0, 0.0);
+			m_curve_color = new Color(0.0, 0.0, 0.0);
+			m_grid_color = new Color(0.2, 0.2, 0.0);
+			m_inactive_pnt_color = new Color(0.0, 0.0, 0.0);
+			m_active_pnt_color = new Color(1.0, 0.0, 0.0);
+			m_text_color = new Color(0.0, 0.0, 0.0);
 
 			m_colors[0] = m_curve_color;
 			m_colors[1] = m_grid_color;

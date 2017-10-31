@@ -71,13 +71,13 @@ namespace MatterHackers.Agg.Tests
 		public void TestGetHashCode()
 		{
 			{
-				RGBA_Bytes a = new RGBA_Bytes(10, 11, 12);
-				RGBA_Bytes b = new RGBA_Bytes(10, 11, 12);
+				Color a = new Color(10, 11, 12);
+				Color b = new Color(10, 11, 12);
 				Assert.IsTrue(a.GetHashCode() == b.GetHashCode());
 			}
 			{
-				RGBA_Floats a = new RGBA_Floats(10, 11, 12);
-				RGBA_Floats b = new RGBA_Floats(10, 11, 12);
+				ColorF a = new ColorF(10, 11, 12);
+				ColorF b = new ColorF(10, 11, 12);
 				Assert.IsTrue(a.GetHashCode() == b.GetHashCode());
 			}
 			{

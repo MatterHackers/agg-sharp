@@ -30,12 +30,12 @@ namespace MatterHackers.Agg
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Stretch
 			};
-			zBuffer.BackgroundColor = RGBA_Bytes.Blue;
+			zBuffer.BackgroundColor = Color.Blue;
 			leftToRight.AddChild(zBuffer);
 
 			AddChild(leftToRight);
 
-			BackgroundColor = RGBA_Bytes.Black;
+			BackgroundColor = Color.Black;
 
 			ShowAsSystemWindow();
 		}
@@ -90,7 +90,7 @@ namespace MatterHackers.Agg
 			}
 			long referenceMiliseconds = timer.ElapsedMilliseconds;
 
-			SolidMaterial material = new SolidMaterial(RGBA_Floats.Black, 0, 0, 1);
+			SolidMaterial material = new SolidMaterial(ColorF.Black, 0, 0, 1);
 			long sphereMiliseconds = CalculateIntersectCostsForItem(new SphereShape(new Vector3(), .5, material), numInterations);
 			long cylinderMiliseconds = CalculateIntersectCostsForItem(new CylinderShape(.5, 1, material), numInterations);
 			long boxMiliseconds = CalculateIntersectCostsForItem(new BoxShape(new Vector3(-.5, -.5, -.5), new Vector3(.5, .5, .5), material), numInterations);

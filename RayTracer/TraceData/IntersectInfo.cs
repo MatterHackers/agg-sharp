@@ -57,7 +57,7 @@ namespace MatterHackers.RayTracer
 		public Vector3 HitPosition { get; set; }
 		public Vector3 normalAtHit;
 		public double distanceToHit;
-		public RGBA_Floats totalColor;
+		public ColorF totalColor;
 
 		public IntersectInfo()
 		{

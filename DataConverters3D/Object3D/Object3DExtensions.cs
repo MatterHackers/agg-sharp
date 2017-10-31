@@ -116,7 +116,7 @@ namespace MatterHackers.PolygonMesh
 			return ancestors;
 		}
 
-		public static RGBA_Bytes WorldColor(this IObject3D child)
+		public static Color WorldColor(this IObject3D child)
 		{
 			foreach(var item in Enumerable.Reverse(child.Ancestors()))
 			{
@@ -127,7 +127,7 @@ namespace MatterHackers.PolygonMesh
 				}
 			}
 
-			return RGBA_Bytes.White;
+			return Color.White;
 		}
 
 		public static PrintOutputTypes WorldOutputType(this IObject3D child)
@@ -238,7 +238,7 @@ namespace MatterHackers.PolygonMesh
 				// Move each child from objectToCollapse into the target (often the scene), applying the parent transform to each
 				foreach (var child in objectToCollapse.Children)
 				{
-					if (objectToCollapse.Color != RGBA_Bytes.Transparent)
+					if (objectToCollapse.Color != Color.Transparent)
 					{
 						child.Color = objectToCollapse.Color;
 					}

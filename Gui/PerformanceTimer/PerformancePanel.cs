@@ -82,8 +82,8 @@ namespace MatterHackers.Agg.UI
 			{
 				TextWidget titleWidget = new TextWidget(name, pointSize: 14)
 				{
-					BackgroundColor = new RGBA_Bytes(),
-					TextColor = new RGBA_Bytes(20, 120, 20),
+					BackgroundColor = new Color(),
+					TextColor = new Color(20, 120, 20),
 				};
 				titleWidget.Printer.DrawFromHintedCache = true;
 				AddChild(titleWidget);
@@ -93,7 +93,7 @@ namespace MatterHackers.Agg.UI
 
 			panels.AddChild(this);
 
-			BackgroundColor = new RGBA_Bytes(RGBA_Bytes.White, 180);
+			BackgroundColor = new Color(Color.White, 180);
 		}
 
 		public static PerformancePanel GetNamedPanel(string panelName)
@@ -184,7 +184,7 @@ namespace MatterHackers.Agg.UI
 					widget = new TextWidget("waiting")
 					{
 						AutoExpandBoundsToText = true,
-						TextColor = new RGBA_Bytes(120, 20, 20),
+						TextColor = new Color(120, 20, 20),
 						HAnchor = HAnchor.Left,
 					}
 				};

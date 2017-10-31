@@ -149,7 +149,7 @@ bool Box::intersect(const Ray &r, float t0, float t1) const {
 			return oneHitIsWithinLimits;
 		}
 
-		public override RGBA_Floats GetColor(IntersectInfo info)
+		public override ColorF GetColor(IntersectInfo info)
 		{
 			if (Material.HasTexture)
 			{

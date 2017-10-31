@@ -330,11 +330,11 @@ namespace MatterHackers.Agg.UI
 	//template<class IColorType>
 	public class bezier_ctrl : bezier_ctrl_impl
 	{
-		private RGBA_Floats m_color;
+		private ColorF m_color;
 
 		public bezier_ctrl()
 		{
-			m_color = new RGBA_Floats(0.0, 0.0, 0.0);
+			m_color = new ColorF(0.0, 0.0, 0.0);
 		}
 
 		public void line_color(IColorType c)
@@ -610,7 +610,7 @@ namespace MatterHackers.Agg.UI
 
 		public curve3_ctrl()
 		{
-			m_color = new RGBA_Floats(0.0, 0.0, 0.0);
+			m_color = new ColorF(0.0, 0.0, 0.0);
 		}
 
 		public void line_color(IColorType c)

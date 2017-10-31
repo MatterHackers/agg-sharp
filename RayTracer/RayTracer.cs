@@ -60,7 +60,7 @@ namespace MatterHackers.RayTracer
 		}
 
 		public AntiAliasing AntiAliasing { get; set; } = AntiAliasing.Medium;
-		public RGBA_Floats[][] ColorBuffer { get; set; }
+		public ColorF[][] ColorBuffer { get; set; }
 
 		public double[][] DepthBuffer { get; set; }
 
@@ -74,7 +74,7 @@ namespace MatterHackers.RayTracer
 		public bool RenderShadow { get; set; } = true;
 		public bool TraceWithRayBundles { get; set; } = false;
 
-		public void AntiAliasScene(RectangleInt viewport, Scene scene, RGBA_Floats[][] imageBufferAsDoubles, int maxSamples)
+		public void AntiAliasScene(RectangleInt viewport, Scene scene, ColorF[][] imageBufferAsDoubles, int maxSamples)
 		{
 			if (MultiThreaded)
 			{
@@ -198,11 +198,11 @@ namespace MatterHackers.RayTracer
 			destImage.MarkImageChanged();
 		}
 
-		public RGBA_Floats CreateAndTraceSecondaryRays(IntersectInfo info, Ray ray, Scene scene, int depth)
+		public ColorF CreateAndTraceSecondaryRays(IntersectInfo info, Ray ray, Scene scene, int depth)
 		{
 			// calculate ambient light
-			RGBA_Floats infoColorAtHit = info.closestHitObject.GetColor(info);
-			RGBA_Floats color = infoColorAtHit * scene.background.Ambience;
+			ColorF infoColorAtHit = info.closestHitObject.GetColor(info);
+			ColorF color = infoColorAtHit * scene.background.Ambience;
 			color.alpha = infoColorAtHit.alpha;
 			double shininess = Math.Pow(10, info.closestHitObject.Material.Gloss + 1);
 
@@ -232,7 +232,7 @@ namespace MatterHackers.RayTracer
 					{
 						Ray reflectionRay = GetReflectionRay(info.HitPosition, info.normalAtHit, ray.directionNormal);
 						IntersectInfo reflectionInfo = TracePrimaryRay(reflectionRay, scene);
-						RGBA_Floats reflectionColorAtHit;// = reflectionInfo.closestHitObject.GetColor(reflectionInfo);
+						ColorF reflectionColorAtHit;// = reflectionInfo.closestHitObject.GetColor(reflectionInfo);
 						if (reflectionInfo.hitType != IntersectionType.None && reflectionInfo.distanceToHit > 0)
 						{
 							// recursive call, this makes reflections expensive
@@ -252,7 +252,7 @@ namespace MatterHackers.RayTracer
 					{
 						Ray refractionRay = new Ray(info.HitPosition, ray.directionNormal, Ray.sameSurfaceOffset, double.MaxValue);  // GetRefractionRay(info.hitPosition, info.normalAtHit, ray.direction, info.closestHit.Material.Refraction);
 						IntersectInfo refractionInfo = TracePrimaryRay(refractionRay, scene);
-						RGBA_Floats refractionColorAtHit = refractionInfo.closestHitObject.GetColor(refractionInfo);
+						ColorF refractionColorAtHit = refractionInfo.closestHitObject.GetColor(refractionInfo);
 						if (refractionInfo.hitType != IntersectionType.None && refractionInfo.distanceToHit > 0)
 						{
 							// recursive call, this makes refractions expensive
@@ -315,12 +315,12 @@ namespace MatterHackers.RayTracer
 			return color;
 		}
 
-		public RGBA_Floats FullyTraceRay(Ray ray, Scene scene, out IntersectInfo primaryInfo)
+		public ColorF FullyTraceRay(Ray ray, Scene scene, out IntersectInfo primaryInfo)
 		{
 			primaryInfo = TracePrimaryRay(ray, scene);
 			if (primaryInfo.hitType != IntersectionType.None)
 			{
-				RGBA_Floats totalColor = CreateAndTraceSecondaryRays(primaryInfo, ray, scene, 0);
+				ColorF totalColor = CreateAndTraceSecondaryRays(primaryInfo, ray, scene, 0);
 				return totalColor;
 			}
 
@@ -358,10 +358,10 @@ namespace MatterHackers.RayTracer
 
 			if (ColorBuffer == null || ColorBuffer.Length < viewport.Width || ColorBuffer[0].Length < viewport.Height)
 			{
-				ColorBuffer = new RGBA_Floats[viewport.Width][];
+				ColorBuffer = new ColorF[viewport.Width][];
 				for (int i = 0; i < viewport.Width; i++)
 				{
-					ColorBuffer[i] = new RGBA_Floats[viewport.Height];
+					ColorBuffer[i] = new ColorF[viewport.Height];
 				}
 				NormalBuffer = new Vector3[viewport.Width][];
 				for (int i = 0; i < viewport.Width; i++)
@@ -468,13 +468,13 @@ namespace MatterHackers.RayTracer
 			scene.shapes[0].GetClosestIntersections(rayBundle, 0, intersectionsForBundle);
 		}
 
-		private void AntiAliasXSpan(RectangleInt viewport, Scene scene, RGBA_Floats[][] imageBufferAsDoubles, int maxSamples, int y)
+		private void AntiAliasXSpan(RectangleInt viewport, Scene scene, ColorF[][] imageBufferAsDoubles, int maxSamples, int y)
 		{
 			int fillY = viewport.Top - (viewport.Bottom + y);
 
 			for (int x = 1; x < viewport.Width - 1; x++)
 			{
-				RGBA_Floats avg = (imageBufferAsDoubles[x - 1][y - 1] + imageBufferAsDoubles[x][y - 1] + imageBufferAsDoubles[x + 1][y - 1] +
+				ColorF avg = (imageBufferAsDoubles[x - 1][y - 1] + imageBufferAsDoubles[x][y - 1] + imageBufferAsDoubles[x + 1][y - 1] +
 							 imageBufferAsDoubles[x - 1][y] + imageBufferAsDoubles[x][y] + imageBufferAsDoubles[x + 1][y] +
 							 imageBufferAsDoubles[x - 1][y + 1] + imageBufferAsDoubles[x][y + 1] + imageBufferAsDoubles[x + 1][y + 1]) / 9;
 
@@ -483,7 +483,7 @@ namespace MatterHackers.RayTracer
 				double sumOfDifferencesThreshold = .05; // TODO: figure out a good way to determine this.
 				if (avg.SumOfDistances(imageBufferAsDoubles[x][y]) > sumOfDifferencesThreshold)
 				{
-					RGBA_Floats accumulatedColor = imageBufferAsDoubles[x][y];
+					ColorF accumulatedColor = imageBufferAsDoubles[x][y];
 					for (int i = 0; i < maxSamples; i++)
 					{
 						// get some 'random' samples

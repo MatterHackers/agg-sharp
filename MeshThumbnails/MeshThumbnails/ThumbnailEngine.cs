@@ -83,7 +83,7 @@ namespace MatterHackers.RayTracer
 
 							tracer.GetMinMaxZ(item.Mesh, ref minZ, ref maxZ);
 
-							tracer.RenderPerspective(graphics2D, item.Mesh, RGBA_Bytes.White, minZ, maxZ);
+							tracer.RenderPerspective(graphics2D, item.Mesh, Color.White, minZ, maxZ);
 						}
 
 						thumbnail.SetRecieveBlender(new BlenderPreMultBGRA());
@@ -110,7 +110,7 @@ namespace MatterHackers.RayTracer
 			{
 				var tempImage = new ImageBuffer(width, height);
 				Graphics2D partGraphics2D = tempImage.NewGraphics2D();
-				partGraphics2D.Clear(new RGBA_Bytes());
+				partGraphics2D.Clear(new Color());
 
 				AxisAlignedBoundingBox aabb = visibleMeshes[0].Mesh.GetAxisAlignedBoundingBox(visibleMeshes[0].WorldMatrix());
 
@@ -143,7 +143,7 @@ namespace MatterHackers.RayTracer
 						List<MeshEdge> nonManifoldEdges = loadedMesh.Mesh.GetNonManifoldEdges();
 						if (nonManifoldEdges.Count > 0)
 						{
-							partGraphics2D.Circle(width / 4, width / 4, width / 8, RGBA_Bytes.Red);
+							partGraphics2D.Circle(width / 4, width / 4, width / 8, Color.Red);
 						}
 					}
 				}

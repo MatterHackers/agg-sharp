@@ -73,11 +73,11 @@ namespace SmartSweeper
 		private double dCrossoverRate;
 
 		//pens we use for the stats
-		private RGBA_Bytes m_BlackPen;
+		private Color m_BlackPen;
 
-		private RGBA_Bytes m_RedPen;
-		private RGBA_Bytes m_BluePen;
-		private RGBA_Bytes m_GreenPen;
+		private Color m_RedPen;
+		private Color m_BluePen;
+		private Color m_GreenPen;
 
 		//handle to the application window
 		private IImageByte m_hwndMain;
@@ -217,10 +217,10 @@ namespace SmartSweeper
 			}
 
 			//create a pen for the graph drawing
-			m_BlackPen = new RGBA_Bytes(0, 0, 0, 255);
-			m_BluePen = new RGBA_Bytes(0, 0, 255);
-			m_RedPen = new RGBA_Bytes(255, 0, 0);
-			m_GreenPen = new RGBA_Bytes(0, 150, 0);
+			m_BlackPen = new Color(0, 0, 0, 255);
+			m_BluePen = new Color(0, 0, 255);
+			m_RedPen = new Color(255, 0, 0);
+			m_GreenPen = new Color(0, 150, 0);
 
 			//fill the vertex buffers
 			for (int i = 0; i < sweeper.Length; ++i)
@@ -268,7 +268,7 @@ namespace SmartSweeper
 					renderer.Render(m_LinesToDraw, m_BlackPen);
 				}
 
-				RGBA_Bytes currentColor = m_RedPen;
+				Color currentColor = m_RedPen;
 				//render the sweepers
 				for (int i = 0; i < m_vecSweepers.Count; i++)
 				{

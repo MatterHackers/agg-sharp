@@ -57,7 +57,7 @@ namespace MatterHackers.Agg.UI
 
 		public void Draw(Graphics2D graphics2D, double x, double y)
 		{
-			graphics2D.DrawString("{0}ms {1:0.0}mb".FormatWith(GetAverage(), GC.GetTotalMemory(false) / 1000000), x, y, 16, color: RGBA_Bytes.White, drawFromHintedCach: true);
+			graphics2D.DrawString("{0}ms {1:0.0}mb".FormatWith(GetAverage(), GC.GetTotalMemory(false) / 1000000), x, y, 16, color: Color.White, drawFromHintedCach: true);
 		}
 	}
 }

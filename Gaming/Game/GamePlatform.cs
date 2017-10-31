@@ -81,7 +81,7 @@ namespace Gaming.Game
 		private void CreateGraphs()
 		{
 			int FrameRateOffset = -15;
-			RGBA_Floats FrameRateControlColor = new RGBA_Floats(1, 1, 1, 1);
+			ColorF FrameRateControlColor = new ColorF(1, 1, 1, 1);
 
 			m_PotentialDrawsBudgetPosition = new Vector2(10, (double)Height + FrameRateOffset);
 			m_ShowPotentialDrawsBudgetGraph = new MatterHackers.Agg.UI.CheckBox(m_PotentialDrawsBudgetPosition.x, m_PotentialDrawsBudgetPosition.y, "D:000.000");

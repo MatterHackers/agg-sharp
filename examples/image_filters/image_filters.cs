@@ -135,7 +135,7 @@ namespace MatterHackers.Agg
 			filterSelectionButtons.AddRadioButton("blackman");
 			filterSelectionButtons.SelectedIndex = 1;
 
-			filterSelectionButtons.background_color(new RGBA_Floats(0.0, 0.0, 0.0, 0.1));
+			filterSelectionButtons.background_color(new ColorF(0.0, 0.0, 0.0, 0.1));
 		}
 
 		public string Title { get; } = "Image Filters Comparison";
@@ -221,7 +221,7 @@ namespace MatterHackers.Agg
 #else
 			ImageClippingProxy clippingProxy = new ImageClippingProxy(widgetsSubImage);
 
-			clippingProxy.clear(new RGBA_Floats(1.0, 1.0, 1.0));
+			clippingProxy.clear(new ColorF(1.0, 1.0, 1.0));
 			clippingProxy.CopyFrom(m_TempDestImage, new RectangleInt(0, 0, (int)Width, (int)Height), 110, 35);
 #endif
 
@@ -238,7 +238,7 @@ namespace MatterHackers.Agg
 #if SourceDepthFloat
             RGBA_Floats colorBlack = new RGBA_Floats(0, 0, 0);
 #else
-			RGBA_Bytes colorBlack = new RGBA_Bytes(0, 0, 0);
+			Color colorBlack = new Color(0, 0, 0);
 #endif
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
 			scanlineRenderer.RenderSolid(clippingProxy, m_Rasterizer, m_ScanlinePacked, colorBlack);
@@ -275,7 +275,7 @@ namespace MatterHackers.Agg
 			ImageClippingProxy clippedDest = new ImageClippingProxy(m_TempDestImage);
 #endif
 
-			clippedDest.clear(new RGBA_Floats(1.0, 1.0, 1.0));
+			clippedDest.clear(new ColorF(1.0, 1.0, 1.0));
 
 			Affine src_mtx = Affine.NewIdentity();
 			src_mtx *= Affine.NewTranslation(-width / 2.0, -height / 2.0);
@@ -307,7 +307,7 @@ namespace MatterHackers.Agg
 #if SourceDepthFloat
             ImageBufferAccessorClipFloat source = new ImageBufferAccessorClipFloat(m_RotatedImage, RGBA_Floats.rgba_pre(0,0,0,0).GetAsRGBA_Floats());
 #else
-			ImageBufferAccessorClip source = new ImageBufferAccessorClip(m_RotatedImage, RGBA_Floats.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
+			ImageBufferAccessorClip source = new ImageBufferAccessorClip(m_RotatedImage, ColorF.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
 #endif
 			IImageFilterFunction filterFunction = null;
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();

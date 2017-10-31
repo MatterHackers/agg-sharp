@@ -461,12 +461,12 @@ namespace MatterHackers.Agg.Image
 			return m_FloatBuffer;
 		}
 
-		public RGBA_Floats GetPixel(int x, int y)
+		public ColorF GetPixel(int x, int y)
 		{
 			return m_Blender.PixelToColorRGBA_Floats(m_FloatBuffer, GetBufferOffsetXY(x, y));
 		}
 
-		public virtual void SetPixel(int x, int y, RGBA_Floats color)
+		public virtual void SetPixel(int x, int y, ColorF color)
 		{
 			x -= (int)m_OriginOffset.x;
 			y -= (int)m_OriginOffset.y;
@@ -494,7 +494,7 @@ namespace MatterHackers.Agg.Image
 			//p[OrderA] = c.a;
 		}
 
-		public void BlendPixel(int x, int y, RGBA_Floats c, byte cover)
+		public void BlendPixel(int x, int y, ColorF c, byte cover)
 		{
 			throw new System.NotImplementedException();
 			/*
@@ -512,7 +512,7 @@ namespace MatterHackers.Agg.Image
 			//pDestPixel[OrderB] = (byte)c.B_Byte;
 		}
 
-		public void copy_hline(int x, int y, int len, RGBA_Floats sourceColor)
+		public void copy_hline(int x, int y, int len, ColorF sourceColor)
 		{
 			int bufferOffset;
 			float[] buffer = GetPixelPointerXY(x, y, out bufferOffset);
@@ -520,7 +520,7 @@ namespace MatterHackers.Agg.Image
 			m_Blender.CopyPixels(buffer, bufferOffset, sourceColor, len);
 		}
 
-		public void copy_vline(int x, int y, int len, RGBA_Floats sourceColor)
+		public void copy_vline(int x, int y, int len, ColorF sourceColor)
 		{
 			throw new NotImplementedException();
 #if false
@@ -535,7 +535,7 @@ namespace MatterHackers.Agg.Image
 #endif
 		}
 
-		public void blend_hline(int x1, int y, int x2, RGBA_Floats sourceColor, byte cover)
+		public void blend_hline(int x1, int y, int x2, ColorF sourceColor, byte cover)
 		{
 			if (sourceColor.alpha != 0)
 			{
@@ -553,7 +553,7 @@ namespace MatterHackers.Agg.Image
 				{
 					do
 					{
-						m_Blender.BlendPixel(buffer, bufferOffset, new RGBA_Floats(sourceColor.red, sourceColor.green, sourceColor.blue, alpha));
+						m_Blender.BlendPixel(buffer, bufferOffset, new ColorF(sourceColor.red, sourceColor.green, sourceColor.blue, alpha));
 						bufferOffset += m_DistanceInFloatsBetweenPixelsInclusive;
 					}
 					while (--len != 0);
@@ -561,7 +561,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public void blend_vline(int x, int y1, int y2, RGBA_Floats sourceColor, byte cover)
+		public void blend_vline(int x, int y1, int y2, ColorF sourceColor, byte cover)
 		{
 			throw new NotImplementedException();
 #if false
@@ -611,7 +611,7 @@ namespace MatterHackers.Agg.Image
 #endif
 		}
 
-		public void blend_solid_hspan(int x, int y, int len, RGBA_Floats sourceColor, byte[] covers, int coversIndex)
+		public void blend_solid_hspan(int x, int y, int len, ColorF sourceColor, byte[] covers, int coversIndex)
 		{
 			float colorAlpha = sourceColor.alpha;
 			if (colorAlpha != 0)
@@ -630,7 +630,7 @@ namespace MatterHackers.Agg.Image
 						}
 						else
 						{
-							m_Blender.BlendPixel(buffer, bufferOffset, new RGBA_Floats(sourceColor.red, sourceColor.green, sourceColor.blue, alpha));
+							m_Blender.BlendPixel(buffer, bufferOffset, new ColorF(sourceColor.red, sourceColor.green, sourceColor.blue, alpha));
 						}
 						bufferOffset += m_DistanceInFloatsBetweenPixelsInclusive;
 						coversIndex++;
@@ -640,7 +640,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public void blend_solid_vspan(int x, int y, int len, RGBA_Floats c, byte[] covers, int coversIndex)
+		public void blend_solid_vspan(int x, int y, int len, ColorF c, byte[] covers, int coversIndex)
 		{
 			throw new NotImplementedException();
 #if false
@@ -671,7 +671,7 @@ namespace MatterHackers.Agg.Image
 #endif
 		}
 
-		public void copy_color_hspan(int x, int y, int len, RGBA_Floats[] colors, int colorsIndex)
+		public void copy_color_hspan(int x, int y, int len, ColorF[] colors, int colorsIndex)
 		{
 			int bufferOffset = GetBufferOffsetXY(x, y);
 
@@ -685,7 +685,7 @@ namespace MatterHackers.Agg.Image
 			while (--len != 0);
 		}
 
-		public void copy_color_vspan(int x, int y, int len, RGBA_Floats[] colors, int colorsIndex)
+		public void copy_color_vspan(int x, int y, int len, ColorF[] colors, int colorsIndex)
 		{
 			int bufferOffset = GetBufferOffsetXY(x, y);
 
@@ -699,13 +699,13 @@ namespace MatterHackers.Agg.Image
 			while (--len != 0);
 		}
 
-		public void blend_color_hspan(int x, int y, int len, RGBA_Floats[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
+		public void blend_color_hspan(int x, int y, int len, ColorF[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
 		{
 			int bufferOffset = GetBufferOffsetXY(x, y);
 			m_Blender.BlendPixels(m_FloatBuffer, bufferOffset, colors, colorsIndex, covers, coversIndex, firstCoverForAll, len);
 		}
 
-		public void blend_color_vspan(int x, int y, int len, RGBA_Floats[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
+		public void blend_color_vspan(int x, int y, int len, ColorF[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
 		{
 			int bufferOffset = GetBufferOffsetXY(x, y);
 
@@ -753,7 +753,7 @@ namespace MatterHackers.Agg.Image
 
 		private bool IsPixelVisible(int x, int y)
 		{
-			RGBA_Floats pixelValue = GetBlender().PixelToColorRGBA_Floats(m_FloatBuffer, GetBufferOffsetXY(x, y));
+			ColorF pixelValue = GetBlender().PixelToColorRGBA_Floats(m_FloatBuffer, GetBufferOffsetXY(x, y));
 			return (pixelValue.Alpha0To255 != 0 || pixelValue.Red0To255 != 0 || pixelValue.Green0To255 != 0 || pixelValue.Blue0To255 != 0);
 		}
 
@@ -894,7 +894,7 @@ namespace MatterHackers.Agg.Image
 				RectangleInt AbsoluteSourceRect = boundsToCopyFrom;
 				// The first thing we need to do is make sure the frame is cleared. LBB [3/15/2004]
 				Graphics2D graphics2D = NewGraphics2D();
-				graphics2D.Clear(new RGBA_Floats(0, 0, 0, 0));
+				graphics2D.Clear(new ColorF(0, 0, 0, 0));
 
 				int x = -boundsToCopyFrom.Left - (int)sourceImage.OriginOffset.x;
 				int y = -boundsToCopyFrom.Bottom - (int)sourceImage.OriginOffset.y;
@@ -908,7 +908,7 @@ namespace MatterHackers.Agg.Image
 	{
 		private const byte base_mask = 255;
 
-		public static void BasedOnAlpha(IRecieveBlenderFloat Blender, float[] destBuffer, int bufferOffset, RGBA_Floats sourceColor)
+		public static void BasedOnAlpha(IRecieveBlenderFloat Blender, float[] destBuffer, int bufferOffset, ColorF sourceColor)
 		{
 			//if (sourceColor.m_A != 0)
 			{
@@ -925,7 +925,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public static void BasedOnAlphaAndCover(IRecieveBlenderFloat Blender, float[] destBuffer, int bufferOffset, RGBA_Floats sourceColor, int cover)
+		public static void BasedOnAlphaAndCover(IRecieveBlenderFloat Blender, float[] destBuffer, int bufferOffset, ColorF sourceColor, int cover)
 		{
 			if (cover == 255)
 			{

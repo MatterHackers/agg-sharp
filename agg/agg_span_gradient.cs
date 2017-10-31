@@ -24,7 +24,7 @@ namespace MatterHackers.Agg
 	{
 		int size();
 
-		RGBA_Bytes this[int v]
+		Color this[int v]
 		{
 			get;
 		}
@@ -123,7 +123,7 @@ namespace MatterHackers.Agg
 		}
 
 		//--------------------------------------------------------------------
-		public void generate(RGBA_Bytes[] span, int spanIndex, int x, int y, int len)
+		public void generate(Color[] span, int spanIndex, int x, int y, int len)
 		{
 			int dd = m_d2 - m_d1;
 			if (dd < 1) dd = 1;
@@ -150,16 +150,16 @@ namespace MatterHackers.Agg
 	//=====================================================gradient_linear_color
 	public struct gradient_linear_color : IColorFunction
 	{
-		private RGBA_Bytes m_c1;
-		private RGBA_Bytes m_c2;
+		private Color m_c1;
+		private Color m_c2;
 		private int m_size;
 
-		public gradient_linear_color(RGBA_Bytes c1, RGBA_Bytes c2)
+		public gradient_linear_color(Color c1, Color c2)
 			: this(c1, c2, 256)
 		{
 		}
 
-		public gradient_linear_color(RGBA_Bytes c1, RGBA_Bytes c2, int size)
+		public gradient_linear_color(Color c1, Color c2, int size)
 		{
 			m_c1 = c1;
 			m_c2 = c2;
@@ -171,7 +171,7 @@ namespace MatterHackers.Agg
 			return m_size;
 		}
 
-		public RGBA_Bytes this[int v]
+		public Color this[int v]
 		{
 			get
 			{
@@ -179,12 +179,12 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public void colors(RGBA_Bytes c1, RGBA_Bytes c2)
+		public void colors(Color c1, Color c2)
 		{
 			colors(c1, c2, 256);
 		}
 
-		public void colors(RGBA_Bytes c1, RGBA_Bytes c2, int size)
+		public void colors(Color c1, Color c2, int size)
 		{
 			m_c1 = c1;
 			m_c2 = c2;

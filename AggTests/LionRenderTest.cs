@@ -27,7 +27,7 @@ namespace MatterHackers.Agg.Tests
 			// This code renders the lion:
 			VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(lionShape.Path, transform);
 			Graphics2D renderer = renderedImage.NewGraphics2D();
-			renderer.Clear(new RGBA_Floats(1.0, 1.0, 1.0, 1.0));
+			renderer.Clear(new ColorF(1.0, 1.0, 1.0, 1.0));
 			renderer.Render(transformedPathStorage, lionShape.Colors, lionShape.PathIndex, lionShape.NumPaths);
 
 			ImageTgaIO.Save(renderedImage, "TestOutput.tga");

@@ -17,7 +17,7 @@ namespace MatterHackers.DataConverters3D
 			this.Material = material;
 		}
 
-		public RGBA_Floats GetColor(IntersectInfo info)
+		public ColorF GetColor(IntersectInfo info)
 		{
 			if (Material.HasTexture)
 			{

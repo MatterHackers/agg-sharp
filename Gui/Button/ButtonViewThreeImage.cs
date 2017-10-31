@@ -113,7 +113,7 @@ namespace MatterHackers.Agg.UI
 						if (graphics2D.DestImage != null)
 						{
 							oldBlender = graphics2D.DestImage.GetRecieveBlender();
-							graphics2D.DestImage.SetRecieveBlender(new BlenderPolyColorPreMultBGRA(new RGBA_Bytes(1, 1, 1, hoverOpacity)));
+							graphics2D.DestImage.SetRecieveBlender(new BlenderPolyColorPreMultBGRA(new Color(1, 1, 1, hoverOpacity)));
 						}
 						graphics2D.Render(hoverImage, x, y);
 						if (graphics2D.DestImage != null)
@@ -142,7 +142,7 @@ namespace MatterHackers.Agg.UI
 					if (graphics2D.DestImage != null)
 					{
 						oldBlender = graphics2D.DestImage.GetRecieveBlender();
-						graphics2D.DestImage.SetRecieveBlender(new BlenderPolyColorPreMultBGRA(new RGBA_Bytes(1, 1, 1, hoverOpacity)));
+						graphics2D.DestImage.SetRecieveBlender(new BlenderPolyColorPreMultBGRA(new Color(1, 1, 1, hoverOpacity)));
 					}
 
 					graphics2D.Render(hoverImage, x, y);

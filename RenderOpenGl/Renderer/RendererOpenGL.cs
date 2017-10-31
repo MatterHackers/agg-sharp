@@ -139,7 +139,7 @@ namespace MatterHackers.RenderOpenGl
 				vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
 			}
 
-			RGBA_Bytes colorBytes = colorIn.GetAsRGBA_Bytes();
+			Color colorBytes = colorIn.GetAsRGBA_Bytes();
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 			triangleEddgeInfo.Clear();
@@ -151,7 +151,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DrawAALine(Vector2 start, Vector2 end, double halfWidth, IColorType colorIn)
 		{
-			RGBA_Bytes colorBytes = colorIn.GetAsRGBA_Bytes();
+			Color colorBytes = colorIn.GetAsRGBA_Bytes();
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 			Affine transform = GetTransform();
@@ -170,7 +170,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DrawAALineRounded(Vector2 start, Vector2 end, double halfWidth, IColorType colorIn)
 		{
-			RGBA_Bytes colorBytes = colorIn.GetAsRGBA_Bytes();
+			Color colorBytes = colorIn.GetAsRGBA_Bytes();
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 			Affine transform = GetTransform();
@@ -204,7 +204,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DrawAACircle(Vector2 start, double radius, IColorType colorIn)
 		{
-			RGBA_Bytes colorBytes = colorIn.GetAsRGBA_Bytes();
+			Color colorBytes = colorIn.GetAsRGBA_Bytes();
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 			Affine transform = GetTransform();
@@ -258,7 +258,7 @@ namespace MatterHackers.RenderOpenGl
 					vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
 				}
 
-				RGBA_Bytes colorBytes = colorIn.GetAsRGBA_Bytes();
+				Color colorBytes = colorIn.GetAsRGBA_Bytes();
 				GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 				renderNowTesselator.Clear();
@@ -323,7 +323,7 @@ namespace MatterHackers.RenderOpenGl
 			GL.Rotate(MathHelper.RadiansToDegrees(angleRadians), 0, 0, 1);
 			GL.Scale(scaleX, scaleY, 1);
 
-			RGBA_Bytes color = RGBA_Bytes.White;
+			Color color = Color.White;
 			GL.Color4((byte)color.Red0To255, (byte)color.Green0To255, (byte)color.Blue0To255, (byte)color.Alpha0To255);
 
 			glPlugin.DrawToGL();
@@ -340,7 +340,7 @@ namespace MatterHackers.RenderOpenGl
 			throw new NotImplementedException();
 		}
 
-		public override void Rectangle(double left, double bottom, double right, double top, RGBA_Bytes color, double strokeWidth)
+		public override void Rectangle(double left, double bottom, double right, double top, Color color, double strokeWidth)
 		{
 #if true
 			// This only works for translation. If we have a rotation or scale in the transform this will have some problems.
@@ -435,7 +435,7 @@ namespace MatterHackers.RenderOpenGl
 			Render(clearRect, color.GetAsRGBA_Bytes());
 		}
 
-		public void RenderTransformedPath(Matrix4X4 transform, IVertexSource path, RGBA_Bytes color, bool doDepthTest)
+		public void RenderTransformedPath(Matrix4X4 transform, IVertexSource path, Color color, bool doDepthTest)
 		{
 			GL.Disable(EnableCap.Texture2D);
 

@@ -39,7 +39,7 @@ namespace MatterHackers.Agg.UI
 		private int lineCount = 0;
 		private string[] lines = new string[TOTOL_POW2];
 
-		public RGBA_Bytes TextColor = new RGBA_Bytes(102, 102, 102);
+		public Color TextColor = new Color(102, 102, 102);
 
 		public OutputScroll()
 		{
