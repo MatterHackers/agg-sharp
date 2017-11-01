@@ -28,7 +28,7 @@ using System.Text;
 
 namespace ObjParser.Types
 {
-	public class Face : IType
+	public class ObjFace : IObjArray
 	{
 		public const int MinimumDataLength = 4;
 		public const string Prefix = "f";
