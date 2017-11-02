@@ -60,7 +60,7 @@
     <FileAlignment>4096</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>TRACE;DEBUG</DefineConstants>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
