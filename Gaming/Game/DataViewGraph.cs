@@ -33,7 +33,7 @@ namespace Gaming.Game
 
 			internal HistoryData(int Capacity, IColorType Color)
 			{
-				m_Color = Color.GetAsRGBA_Bytes();
+				m_Color = Color.ToColor();
 				m_Capacity = Capacity;
 				m_Data = new TwoSidedStack<double>();
 				Reset();

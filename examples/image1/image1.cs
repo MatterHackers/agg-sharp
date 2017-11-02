@@ -118,14 +118,14 @@ its center. Also, the image is scaled when resizing the window.";
 			{
 				case 24:
 					{
-						ImageBufferAccessorClip source = new ImageBufferAccessorClip(sourceImage, ColorF.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
+						ImageBufferAccessorClip source = new ImageBufferAccessorClip(sourceImage, ColorF.rgba_pre(0, 0, 0, 0).ToColor());
 						sg = new span_image_filter_rgb_bilinear_clip(source, ColorF.rgba_pre(0, 0.4, 0, 0.5), interpolator);
 					}
 					break;
 
 				case 32:
 					{
-						ImageBufferAccessorClip source = new ImageBufferAccessorClip(sourceImage, ColorF.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
+						ImageBufferAccessorClip source = new ImageBufferAccessorClip(sourceImage, ColorF.rgba_pre(0, 0, 0, 0).ToColor());
 						sg = new span_image_filter_rgba_bilinear_clip(source, ColorF.rgba_pre(0, 0.4, 0, 0.5), interpolator);
 					}
 					break;
