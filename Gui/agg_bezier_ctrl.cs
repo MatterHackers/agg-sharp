@@ -339,7 +339,7 @@ namespace MatterHackers.Agg.UI
 
 		public void line_color(IColorType c)
 		{
-			m_color = c.GetAsRGBA_Floats();
+			m_color = c.ToColorF();
 		}
 
 		public override IColorType color(int i)

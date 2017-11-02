@@ -168,7 +168,7 @@ namespace MatterHackers.Agg.UI
 			// now do the thumb
 			RectangleDouble thumbBounds = sliderAttachedTo.GetThumbHitBounds();
 			RoundedRect thumbOutside = new RoundedRect(thumbBounds, sliderAttachedTo.ThumbWidth / 2);
-			graphics2D.Render(thumbOutside, ColorF.GetTweenColor(ThumbColor.GetAsRGBA_Floats(), ColorF.Black.GetAsRGBA_Floats(), .2).GetAsRGBA_Bytes());
+			graphics2D.Render(thumbOutside, ColorF.GetTweenColor(ThumbColor.ToColorF(), ColorF.Black.ToColorF(), .2).ToColor());
 			thumbBounds.Inflate(-1);
 			RoundedRect thumbInside = new RoundedRect(thumbBounds, sliderAttachedTo.ThumbWidth / 2);
 			graphics2D.Render(thumbInside, ThumbColor);

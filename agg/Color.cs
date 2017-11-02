@@ -335,12 +335,12 @@ namespace MatterHackers.Agg
 			return new { blue, green, red, alpha }.GetHashCode();
 		}
 
-		public Color GetAsRGBA_Bytes()
+		public Color ToColor()
 		{
 			return new Color(Red0To255, Green0To255, Blue0To255, Alpha0To255);
 		}
 
-		public ColorF GetAsRGBA_Floats()
+		public ColorF ToColorF()
 		{
 			return this;
 		}
@@ -501,13 +501,13 @@ namespace MatterHackers.Agg
 
 		public Color gradient(Color c_8, double k)
 		{
-			ColorF c = c_8.GetAsRGBA_Floats();
+			ColorF c = c_8.ToColorF();
 			ColorF ret;
 			ret.red = (float)(red + (c.red - red) * k);
 			ret.green = (float)(green + (c.green - green) * k);
 			ret.blue = (float)(blue + (c.blue - blue) * k);
 			ret.alpha = (float)(alpha + (c.alpha - alpha) * k);
-			return ret.GetAsRGBA_Bytes();
+			return ret.ToColor();
 		}
 
 		public static IColorType no_color()
@@ -871,12 +871,12 @@ namespace MatterHackers.Agg
 			return new { blue, green, red, alpha }.GetHashCode();
 		}
 
-		public ColorF GetAsRGBA_Floats()
+		public ColorF ToColorF()
 		{
 			return new ColorF((float)red / (float)base_mask, (float)green / (float)base_mask, (float)blue / (float)base_mask, (float)alpha / (float)base_mask);
 		}
 
-		public Color GetAsRGBA_Bytes()
+		public Color ToColor()
 		{
 			return this;
 		}
@@ -1029,7 +1029,7 @@ namespace MatterHackers.Agg
 			double saturation0To1;
 			double lightness0To1;
 
-			ColorF colorF = original is ColorF ? (ColorF) original : original.GetAsRGBA_Floats();
+			ColorF colorF = original is ColorF ? (ColorF) original : original.ToColorF();
 
 			colorF.GetHSL(out hue0To1, out saturation0To1, out lightness0To1);
 			saturation0To1 *= saturationMultiplier;
@@ -1043,7 +1043,7 @@ namespace MatterHackers.Agg
 			double saturation0To1;
 			double lightness0To1;
 
-			ColorF colorF = original is ColorF ? (ColorF)original : original.GetAsRGBA_Floats();
+			ColorF colorF = original is ColorF ? (ColorF)original : original.ToColorF();
 
 			colorF.GetHSL(out hue0To1, out saturation0To1, out lightness0To1);
 			lightness0To1 *= lightnessMultiplier;

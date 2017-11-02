@@ -163,7 +163,7 @@ namespace MatterHackers.ImageProcessing
 		}
 
 		/// <summary>
-		/// Change all colors to White if not alpha 0 or set to RGBA_Bytes.Transparent
+		/// Change all colors to White if not alpha 0 or set to Color.Transparent
 		/// </summary>
 		/// <param name="sourceImage">The source image to act on</param>
 		/// <returns>A new modified image</returns>

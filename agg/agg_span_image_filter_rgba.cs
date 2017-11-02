@@ -448,7 +448,7 @@ namespace MatterHackers.Agg
 			IColorType back_color, ISpanInterpolator inter)
 			: base(src, inter, null)
 		{
-			m_OutsideSourceColor = back_color.GetAsRGBA_Bytes();
+			m_OutsideSourceColor = back_color.ToColor();
 		}
 
 		public IColorType background_color()
@@ -458,7 +458,7 @@ namespace MatterHackers.Agg
 
 		public void background_color(IColorType v)
 		{
-			m_OutsideSourceColor = v.GetAsRGBA_Bytes();
+			m_OutsideSourceColor = v.ToColor();
 		}
 
 		public override void generate(Color[] span, int spanIndex, int x, int y, int len)

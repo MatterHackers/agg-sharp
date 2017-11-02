@@ -32,17 +32,17 @@ namespace MatterHackers.Agg
 	/*
 	struct pattern_filter_nn
 	{
-		typedef ColorT RGBA_Bytes;
+		typedef ColorT Color;
 		static uint dilation() { return 0; }
 
-		static void pixel_low_res(RGBA_Bytes** buf,
-											 RGBA_Bytes* p, int x, int y)
+		static void pixel_low_res(Color** buf,
+											 Color* p, int x, int y)
 		{
 			*p = buf[y][x];
 		}
 
-		static void pixel_high_res(RGBA_Bytes** buf,
-											  RGBA_Bytes* p, int x, int y)
+		static void pixel_high_res(Color** buf,
+											  Color* p, int x, int y)
 		{
 			*p = buf[y >> line_subpixel_shift]
 					[x >> line_subpixel_shift];

@@ -170,7 +170,7 @@ namespace MatterHackers.Agg.Image
 	{
 		int NumPixelBits { get; }
 
-		Color PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset);
+		Color PixelToColor(byte[] buffer, int bufferOffset);
 
 		void CopyPixels(byte[] buffer, int bufferOffset, Color sourceColor, int count);
 
@@ -210,7 +210,7 @@ namespace MatterHackers.Agg.Image
 
 	public sealed class BlenderBGRA : BlenderBase8888, IRecieveBlenderByte
 	{
-		public Color PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+		public Color PixelToColor(byte[] buffer, int bufferOffset)
 		{
 			return new Color(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
 		}
@@ -309,7 +309,7 @@ namespace MatterHackers.Agg.Image
 
 	public sealed class BlenderBGRAExactCopy : BlenderBase8888, IRecieveBlenderByte
 	{
-		public Color PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+		public Color PixelToColor(byte[] buffer, int bufferOffset)
 		{
 			return new Color(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
 		}
@@ -385,7 +385,7 @@ namespace MatterHackers.Agg.Image
 
 	public sealed class BlenderRGBA : BlenderBase8888, IRecieveBlenderByte
 	{
-		public Color PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+		public Color PixelToColor(byte[] buffer, int bufferOffset)
 		{
 			return new Color(buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderA]);
 		}
@@ -551,7 +551,7 @@ namespace MatterHackers.Agg.Image
 			m_gamma = g;
 		}
 
-		public Color PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+		public Color PixelToColor(byte[] buffer, int bufferOffset)
 		{
 			return new Color(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
 		}
@@ -607,7 +607,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public Color PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+		public Color PixelToColor(byte[] buffer, int bufferOffset)
 		{
 			return new Color(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
 		}
@@ -735,7 +735,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public Color PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+		public Color PixelToColor(byte[] buffer, int bufferOffset)
 		{
 			return new Color(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
 		}

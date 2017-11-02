@@ -139,7 +139,7 @@ namespace MatterHackers.RenderOpenGl
 				vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
 			}
 
-			Color colorBytes = colorIn.GetAsRGBA_Bytes();
+			Color colorBytes = colorIn.ToColor();
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 			triangleEddgeInfo.Clear();
@@ -151,7 +151,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DrawAALine(Vector2 start, Vector2 end, double halfWidth, IColorType colorIn)
 		{
-			Color colorBytes = colorIn.GetAsRGBA_Bytes();
+			Color colorBytes = colorIn.ToColor();
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 			Affine transform = GetTransform();
@@ -170,7 +170,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DrawAALineRounded(Vector2 start, Vector2 end, double halfWidth, IColorType colorIn)
 		{
-			Color colorBytes = colorIn.GetAsRGBA_Bytes();
+			Color colorBytes = colorIn.ToColor();
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 			Affine transform = GetTransform();
@@ -204,7 +204,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DrawAACircle(Vector2 start, double radius, IColorType colorIn)
 		{
-			Color colorBytes = colorIn.GetAsRGBA_Bytes();
+			Color colorBytes = colorIn.ToColor();
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 			Affine transform = GetTransform();
@@ -258,7 +258,7 @@ namespace MatterHackers.RenderOpenGl
 					vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
 				}
 
-				Color colorBytes = colorIn.GetAsRGBA_Bytes();
+				Color colorBytes = colorIn.ToColor();
 				GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 				renderNowTesselator.Clear();
@@ -421,7 +421,7 @@ namespace MatterHackers.RenderOpenGl
 			else
 			{
 				RoundedRect rect = new RoundedRect(left, bottom, right, top, 0);
-				Render(rect, fillColor.GetAsRGBA_Bytes());
+				Render(rect, fillColor.ToColor());
 			}
 		}
 
@@ -432,7 +432,7 @@ namespace MatterHackers.RenderOpenGl
 			RoundedRect clearRect = new RoundedRect(new RectangleDouble(
 				cachedClipRect.Left - transform.tx, cachedClipRect.Bottom - transform.ty,
 				cachedClipRect.Right - transform.tx, cachedClipRect.Top - transform.ty), 0);
-			Render(clearRect, color.GetAsRGBA_Bytes());
+			Render(clearRect, color.ToColor());
 		}
 
 		public void RenderTransformedPath(Matrix4X4 transform, IVertexSource path, Color color, bool doDepthTest)

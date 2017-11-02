@@ -99,7 +99,7 @@ namespace MatterHackers.Agg.UI
 				}
 				else
 				{
-					insideColor = DefaultViewFactory.DefaultBlue.GetAsRGBA_Floats().Blend(ColorF.White, .75).GetAsRGBA_Bytes();
+					insideColor = DefaultViewFactory.DefaultBlue.ToColorF().Blend(ColorF.White, .75).ToColor();
 				}
 			}
 

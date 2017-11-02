@@ -109,7 +109,7 @@ namespace MatterHackers.Agg.Tests
 				var widget = sender as GuiWidget;
 				blueClickCount += 1;
 				var color = rootClickable.BackgroundColor.AdjustSaturation(0.4);
-				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
+				systemWindow.BackgroundColor = color.ToColor();
 				lastClicked = rootClickable;
 			};
 			rootClickable.AfterDraw += widget_DrawSelection;
@@ -129,7 +129,7 @@ namespace MatterHackers.Agg.Tests
 				orangeClickCount += 1;
 
 				var color = widget.BackgroundColor.AdjustSaturation(0.4);
-				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
+				systemWindow.BackgroundColor = color.ToColor();
 				lastClicked = widget;
 			};
 			orangeClickable.AfterDraw += widget_DrawSelection;
@@ -152,7 +152,7 @@ namespace MatterHackers.Agg.Tests
 				purpleClickCount += 1;
 
 				var color = widget.BackgroundColor.AdjustSaturation(0.4);
-				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
+				systemWindow.BackgroundColor = color.ToColor();
 				lastClicked = widget;
 			};
 			purpleClickable.AfterDraw += widget_DrawSelection;
@@ -192,7 +192,7 @@ namespace MatterHackers.Agg.Tests
 
 				rootClickCount += 1;
 				var color = widget.BackgroundColor.AdjustSaturation(0.4);
-				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
+				systemWindow.BackgroundColor = color.ToColor();
 				lastClicked = widget;
 
 			};
@@ -213,7 +213,7 @@ namespace MatterHackers.Agg.Tests
 				childClickCount += 1;
 
 				var color = widget.BackgroundColor.AdjustSaturation(0.4);
-				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
+				systemWindow.BackgroundColor = color.ToColor();
 				lastClicked = widget;
 			};
 			childClickable.AfterDraw += widget_DrawSelection;
@@ -319,7 +319,7 @@ namespace MatterHackers.Agg.Tests
 
 				rootClickCount += 1;
 				var color = widget.BackgroundColor.AdjustSaturation(0.4);
-				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
+				systemWindow.BackgroundColor = color.ToColor();
 				lastClicked = widget;
 
 			};
@@ -340,7 +340,7 @@ namespace MatterHackers.Agg.Tests
 				childClickCount += 1;
 
 				var color = widget.BackgroundColor.AdjustSaturation(0.4);
-				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
+				systemWindow.BackgroundColor = color.ToColor();
 				lastClicked = widget;
 			};
 			childClickable.AfterDraw += widget_DrawSelection;

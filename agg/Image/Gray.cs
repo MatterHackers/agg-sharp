@@ -52,7 +52,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public Color PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+		public Color PixelToColor(byte[] buffer, int bufferOffset)
 		{
 			int value = buffer[bufferOffset];
 			return new Color(value, value, value, 255);
@@ -157,7 +157,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public Color PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+		public Color PixelToColor(byte[] buffer, int bufferOffset)
 		{
 			int value = buffer[bufferOffset];
 			return new Color(value, value, value, 255);
@@ -258,7 +258,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public Color PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+		public Color PixelToColor(byte[] buffer, int bufferOffset)
 		{
 			int value = buffer[bufferOffset];
 			return new Color(value, value, value, 255);

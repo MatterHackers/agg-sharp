@@ -151,7 +151,7 @@ namespace MatterHackers.Agg.Image
 
 	public sealed class BlenderBGR : BlenderBaseBGR, IRecieveBlenderByte
 	{
-		public Color PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+		public Color PixelToColor(byte[] buffer, int bufferOffset)
 		{
 			return new Color(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], 255);
 		}
@@ -251,7 +251,7 @@ namespace MatterHackers.Agg.Image
 			m_gamma = g;
 		}
 
-		public Color PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+		public Color PixelToColor(byte[] buffer, int bufferOffset)
 		{
 			return new Color(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], 255);
 		}
@@ -299,7 +299,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public Color PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+		public Color PixelToColor(byte[] buffer, int bufferOffset)
 		{
 			return new Color(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], 255);
 		}

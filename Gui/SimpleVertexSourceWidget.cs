@@ -102,7 +102,7 @@ namespace MatterHackers.Agg.UI
 		{
 			for (int i = 0; i < num_paths(); i++)
 			{
-				graphics2D.Render(this, i, color(i).GetAsRGBA_Bytes());
+				graphics2D.Render(this, i, color(i).ToColor());
 			}
 			base.OnDraw(graphics2D);
 		}

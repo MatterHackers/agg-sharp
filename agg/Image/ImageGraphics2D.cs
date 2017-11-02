@@ -72,12 +72,12 @@ namespace MatterHackers.Agg
 			rasterizer.add_path(vertexSource, pathIndexToRender);
 			if (destImageByte != null)
 			{
-				scanlineRenderer.RenderSolid(destImageByte, rasterizer, m_ScanlineCache, colorBytes.GetAsRGBA_Bytes());
+				scanlineRenderer.RenderSolid(destImageByte, rasterizer, m_ScanlineCache, colorBytes.ToColor());
 				DestImage.MarkImageChanged();
 			}
 			else
 			{
-				scanlineRenderer.RenderSolid(destImageFloat, rasterizer, m_ScanlineCache, colorBytes.GetAsRGBA_Floats());
+				scanlineRenderer.RenderSolid(destImageFloat, rasterizer, m_ScanlineCache, colorBytes.ToColorF());
 				destImageFloat.MarkImageChanged();
 			}
 		}
@@ -235,7 +235,7 @@ namespace MatterHackers.Agg
 
 							span_image_filter spanImageFilter;
 							span_interpolator_linear interpolator = new span_interpolator_linear(sourceRectTransform);
-							ImageBufferAccessorClip sourceAccessor = new ImageBufferAccessorClip(source, ColorF.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
+							ImageBufferAccessorClip sourceAccessor = new ImageBufferAccessorClip(source, ColorF.rgba_pre(0, 0, 0, 0).ToColor());
 
 							spanImageFilter = new span_image_filter_rgba_bilinear_clip(sourceAccessor, ColorF.rgba_pre(0, 0, 0, 0), interpolator);
 
@@ -253,7 +253,7 @@ namespace MatterHackers.Agg
 							sourceRectTransform.invert();
 
 							span_interpolator_linear interpolator = new span_interpolator_linear(sourceRectTransform);
-							ImageBufferAccessorClip sourceAccessor = new ImageBufferAccessorClip(source, ColorF.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
+							ImageBufferAccessorClip sourceAccessor = new ImageBufferAccessorClip(source, ColorF.rgba_pre(0, 0, 0, 0).ToColor());
 
 							//spanImageFilter = new span_image_filter_rgba_bilinear_clip(sourceAccessor, RGBA_Floats.rgba_pre(0, 0, 0, 0), interpolator);
 
@@ -285,7 +285,7 @@ namespace MatterHackers.Agg
 				sourceRectTransform.invert();
 
 				span_interpolator_linear interpolator = new span_interpolator_linear(sourceRectTransform);
-				ImageBufferAccessorClip sourceAccessor = new ImageBufferAccessorClip(source, ColorF.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
+				ImageBufferAccessorClip sourceAccessor = new ImageBufferAccessorClip(source, ColorF.rgba_pre(0, 0, 0, 0).ToColor());
 
 				span_image_filter spanImageFilter = null;
 				switch (source.BitDepth)
@@ -323,7 +323,7 @@ namespace MatterHackers.Agg
 		public override void FillRectangle(double left, double bottom, double right, double top, IColorType fillColor)
 		{
 			RoundedRect rect = new RoundedRect(left, bottom, right, top, 0);
-			Render(rect, fillColor.GetAsRGBA_Bytes());
+			Render(rect, fillColor.ToColor());
 		}
 
 		public override void Render(IImageFloat source,
@@ -341,7 +341,7 @@ namespace MatterHackers.Agg
 
 			if (DestImage != null)
 			{
-				Color color = iColor.GetAsRGBA_Bytes();
+				Color color = iColor.ToColor();
 				int width = DestImage.Width;
 				int height = DestImage.Height;
 				byte[] buffer = DestImage.GetBuffer();
@@ -407,7 +407,7 @@ namespace MatterHackers.Agg
 					throw new Exception("You have to have either a byte or float DestImage.");
 				}
 
-				ColorF color = iColor.GetAsRGBA_Floats();
+				ColorF color = iColor.ToColorF();
 				int width = DestImageFloat.Width;
 				int height = DestImageFloat.Height;
 				float[] buffer = DestImageFloat.GetBuffer();

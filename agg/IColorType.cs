@@ -16,9 +16,9 @@ namespace MatterHackers.Agg
 {
 	public interface IColorType
 	{
-		ColorF GetAsRGBA_Floats();
+		ColorF ToColorF();
 
-		Color GetAsRGBA_Bytes();
+		Color ToColor();
 
 		Color gradient(Color c, double k);
 

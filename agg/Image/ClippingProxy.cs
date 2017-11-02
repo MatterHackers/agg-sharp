@@ -572,7 +572,7 @@ namespace MatterHackers.Agg.Image
 		public void clear(IColorType in_c)
 		{
 			int y;
-			ColorF colorFloat = in_c.GetAsRGBA_Floats();
+			ColorF colorFloat = in_c.ToColorF();
 			if (Width != 0)
 			{
 				for (y = 0; y < Height; y++)

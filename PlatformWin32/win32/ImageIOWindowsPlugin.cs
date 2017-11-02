@@ -136,9 +136,9 @@ namespace MatterHackers.Agg.Image
 										destBuffer[destIndex++] = pSourceBuffer[sourceIndex++];
 										destBuffer[destIndex++] = pSourceBuffer[sourceIndex++];
 #else
-                                            RGBA_Bytes notPreMultiplied = new RGBA_Bytes(pSourceBuffer[sourceIndex + 0], pSourceBuffer[sourceIndex + 1], pSourceBuffer[sourceIndex + 2], pSourceBuffer[sourceIndex + 3]);
+                                            Color notPreMultiplied = new Color(pSourceBuffer[sourceIndex + 0], pSourceBuffer[sourceIndex + 1], pSourceBuffer[sourceIndex + 2], pSourceBuffer[sourceIndex + 3]);
                                             sourceIndex += 4;
-                                            RGBA_Bytes preMultiplied = notPreMultiplied.GetAsRGBA_Floats().premultiply().GetAsRGBA_Bytes();
+                                            Color preMultiplied = notPreMultiplied.GetAsRGBA_Floats().premultiply().ToColor();
                                             destBuffer[destIndex++] = preMultiplied.blue;
                                             destBuffer[destIndex++] = preMultiplied.green;
                                             destBuffer[destIndex++] = preMultiplied.red;
