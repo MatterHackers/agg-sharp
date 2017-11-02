@@ -112,8 +112,8 @@ namespace MatterHackers.MeshVisualizer
 			RenderBed = true;
 			RenderBuildVolume = false;
 			//SetMaterialColor(1, RGBA_Bytes.LightGray, RGBA_Bytes.White);
-			BedColor = new ColorF(.8, .8, .8, .7).GetAsRGBA_Bytes();
-			BuildVolumeColor = new ColorF(.2, .8, .3, .2).GetAsRGBA_Bytes();
+			BedColor = new ColorF(.8, .8, .8, .7).ToColor();
+			BuildVolumeColor = new ColorF(.2, .8, .3, .2).ToColor();
 
 			trackballTumbleWidget = new TrackballTumbleWidget(this.World);
 			trackballTumbleWidget.TransformState = TrackBallController.MouseDownType.Rotation;
@@ -290,7 +290,7 @@ namespace MatterHackers.MeshVisualizer
 			}
 
 			// we currently expect at most 4 extruders
-			return ColorF.FromHSL((materialIndexBase1 % 4) / 4.0, .5, .5).GetAsRGBA_Bytes();
+			return ColorF.FromHSL((materialIndexBase1 % 4) / 4.0, .5, .5).ToColor();
 		}
 
 		public static Color GetSelectedMaterialColor(int materialIndexBase1)
@@ -298,14 +298,14 @@ namespace MatterHackers.MeshVisualizer
 			double hue0To1;
 			double saturation0To1;
 			double lightness0To1;
-			GetMaterialColor(materialIndexBase1).GetAsRGBA_Floats().GetHSL(out hue0To1, out saturation0To1, out lightness0To1);
+			GetMaterialColor(materialIndexBase1).ToColorF().GetHSL(out hue0To1, out saturation0To1, out lightness0To1);
 
 			// now make it a bit lighter and less saturated
 			saturation0To1 = Math.Min(1, saturation0To1 * 2);
 			lightness0To1 = Math.Min(1, lightness0To1 * 1.2);
 
 			// we sort of expect at most 4 extruders
-			return ColorF.FromHSL(hue0To1, saturation0To1, lightness0To1).GetAsRGBA_Bytes();
+			return ColorF.FromHSL(hue0To1, saturation0To1, lightness0To1).ToColor();
 		}
 
 		public static void SetMaterialColor(int materialIndexBase1, Color color)

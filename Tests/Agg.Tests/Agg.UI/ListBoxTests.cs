@@ -96,7 +96,7 @@ namespace MatterHackers.Agg.UI.Tests
 				{
 					{
 						ListBox listBox = new ListBox(new RectangleDouble(0, 0, 200, 300));
-						//listBox.BackgroundColor = RGBA_Bytes.Red;
+						//listBox.BackgroundColor = Color.Red;
 						listBox.Name = "listBox";
 						listBox.VAnchor = UI.VAnchor.Top;
 						listBox.ScrollArea.Margin = new BorderDouble(15);
@@ -136,7 +136,7 @@ namespace MatterHackers.Agg.UI.Tests
 			GuiWidget contents = new GuiWidget(300, 300);
 			contents.DoubleBuffer = true;
 			ListBox container = new ListBox(new RectangleDouble(0, 0, 200, 300));
-			//container.BackgroundColor = RGBA_Bytes.Red;
+			//container.BackgroundColor = Color.Red;
 			container.Name = "containerListBox";
 			container.VAnchor = UI.VAnchor.Top;
 			container.Margin = new BorderDouble(15);

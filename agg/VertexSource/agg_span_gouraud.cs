@@ -58,9 +58,9 @@ namespace MatterHackers.Agg.VertexSource
 
 		public void colors(IColorType c1, IColorType c2, IColorType c3)
 		{
-			m_coord[0].color = c1.GetAsRGBA_Bytes();
-			m_coord[1].color = c2.GetAsRGBA_Bytes();
-			m_coord[2].color = c3.GetAsRGBA_Bytes();
+			m_coord[0].color = c1.ToColor();
+			m_coord[1].color = c2.ToColor();
+			m_coord[2].color = c3.ToColor();
 		}
 
 		//--------------------------------------------------------------------

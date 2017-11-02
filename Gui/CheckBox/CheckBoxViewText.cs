@@ -105,12 +105,12 @@ namespace MatterHackers.Agg.UI
 
 		public void inactive_color(IColorType c)
 		{
-			inactiveColor = c.GetAsRGBA_Bytes();
+			inactiveColor = c.ToColor();
 		}
 
 		public void active_color(IColorType c)
 		{
-			activeColor = c.GetAsRGBA_Bytes();
+			activeColor = c.ToColor();
 		}
 
 		public Color TextColor

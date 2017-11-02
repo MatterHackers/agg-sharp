@@ -57,10 +57,10 @@ namespace MatterHackers.RayTracer
 			int nu3 = (int)(Math.Floor(nu1 + 1)) % Texture.Width;
 			int nv3 = (int)(Math.Floor(nv1 + 1)) % Texture.Height;
 
-			ColorF c1 = Texture.GetPixel(nu2, nv2).GetAsRGBA_Floats();
-			ColorF c2 = Texture.GetPixel(nu3, nv2).GetAsRGBA_Floats();
-			ColorF c3 = Texture.GetPixel(nu2, nv3).GetAsRGBA_Floats();
-			ColorF c4 = Texture.GetPixel(nu3, nv3).GetAsRGBA_Floats();
+			ColorF c1 = Texture.GetPixel(nu2, nv2).ToColorF();
+			ColorF c2 = Texture.GetPixel(nu3, nv2).ToColorF();
+			ColorF c3 = Texture.GetPixel(nu2, nv3).ToColorF();
+			ColorF c4 = Texture.GetPixel(nu3, nv3).ToColorF();
 			return c1 * w1 + c2 * w2 + c3 * w3 + c4 * w4;
 		}
 	}

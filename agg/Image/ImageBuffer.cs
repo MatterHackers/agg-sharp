@@ -589,7 +589,7 @@ namespace MatterHackers.Agg.Image
 
 		public Color GetPixel(int x, int y)
 		{
-			return recieveBlender.PixelToColorRGBA_Bytes(m_ByteBuffer, GetBufferOffsetXY(x, y));
+			return recieveBlender.PixelToColor(m_ByteBuffer, GetBufferOffsetXY(x, y));
 		}
 
 		public int GetBufferOffsetY(int y)
@@ -868,7 +868,7 @@ namespace MatterHackers.Agg.Image
 
 		private bool IsPixelVisible(int x, int y)
 		{
-			Color pixelValue = GetRecieveBlender().PixelToColorRGBA_Bytes(m_ByteBuffer, GetBufferOffsetXY(x, y));
+			Color pixelValue = GetRecieveBlender().PixelToColor(m_ByteBuffer, GetBufferOffsetXY(x, y));
 			return (pixelValue.Alpha0To255 != 0 || pixelValue.Red0To255 != 0 || pixelValue.Green0To255 != 0 || pixelValue.Blue0To255 != 0);
 		}
 

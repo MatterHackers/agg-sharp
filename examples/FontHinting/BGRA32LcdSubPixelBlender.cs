@@ -13,7 +13,7 @@ namespace MatterHackers.Agg.Font
 		{
 		}
 
-		public Color PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+		public Color PixelToColor(byte[] buffer, int bufferOffset)
 		{
 			return new Color(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
 		}

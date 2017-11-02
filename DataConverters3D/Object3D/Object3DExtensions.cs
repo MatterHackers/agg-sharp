@@ -203,7 +203,7 @@ namespace MatterHackers.PolygonMesh
 		/* 
 		public class SelectionChangeCommand : IUndoRedoCommand
 		{
-			public RGBA_Bytes Color{ get; set; }
+			public Color Color{ get; set; }
 			public int MaterialIndex { get; set; }
 			PrintOutputTypes PrintOutputTypes { get; set; }
 			Matrix4X4 Matrix { get; set; }

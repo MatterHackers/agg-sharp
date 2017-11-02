@@ -1640,7 +1640,7 @@ namespace MatterHackers.Agg
 
 		public void color(IColorType c)
 		{
-			m_color = c.GetAsRGBA_Bytes();
+			m_color = c.ToColor();
 		}
 
 		public abstract void semidot(CompareFunction cmp, int xc1, int yc1, int xc2, int yc2);

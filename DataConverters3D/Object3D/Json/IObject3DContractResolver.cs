@@ -39,7 +39,7 @@ namespace MatterHackers.DataConverters3D
 	{
 		private static Type IObject3DType = typeof(IObject3D);
 
-		private static Type RGBA_BtyesType = typeof(Color);
+		private static Type ColorType = typeof(Color);
 
 		protected override JsonObjectContract CreateObjectContract(Type objectType)
 		{
@@ -80,7 +80,7 @@ namespace MatterHackers.DataConverters3D
 				};
 			}
 
-			if (property.PropertyName == "Color" && RGBA_BtyesType.IsAssignableFrom(property.PropertyType))
+			if (property.PropertyName == "Color" && ColorType.IsAssignableFrom(property.PropertyType))
 			{
 				property.ShouldSerialize = instance =>
 				{

@@ -143,7 +143,7 @@ and the filter produces quite adequate result.";
 			// Render shadow
 			m_ras.add_path(shadow_trans);
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
-			scanlineRenderer.RenderSolid(clippingProxy, m_ras, m_sl, new ColorF(0.2, 0.3, 0).GetAsRGBA_Bytes());
+			scanlineRenderer.RenderSolid(clippingProxy, m_ras, m_sl, new ColorF(0.2, 0.3, 0).ToColor());
 
 			// Calculate the bounding box and extend it by the blur radius
 			RectangleDouble bbox = new RectangleDouble();
@@ -269,7 +269,7 @@ and the filter produces quite adequate result.";
 				m_ras.add_path(m_path);
 			}
 
-			scanlineRenderer.RenderSolid(clippingProxy, m_ras, m_sl, new ColorF(0.6, 0.9, 0.7, 0.8).GetAsRGBA_Bytes());
+			scanlineRenderer.RenderSolid(clippingProxy, m_ras, m_sl, new ColorF(0.6, 0.9, 0.7, 0.8).ToColor());
 
 			graphics2D.DrawString(string.Format("{0:F2} ms", tm), 140, 30);
 			base.OnDraw(graphics2D);

@@ -151,7 +151,7 @@ namespace MatterHackers.RayTracer
 
 		public void RenderPerspective(Graphics2D graphics2D, Mesh meshToDraw, Color partColorIn, double minZ, double maxZ)
 		{
-			ColorF partColor = partColorIn.GetAsRGBA_Floats();
+			ColorF partColor = partColorIn.ToColorF();
 			graphics2D.Rasterizer.gamma(new gamma_power(.3));
 			RenderPoint[] points = new RenderPoint[3] { new RenderPoint(), new RenderPoint(), new RenderPoint() };
 
@@ -211,7 +211,7 @@ namespace MatterHackers.RayTracer
 
 		public sealed class BlenderZBuffer : BlenderBase8888, IRecieveBlenderByte
 		{
-			public Color PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+			public Color PixelToColor(byte[] buffer, int bufferOffset)
 			{
 				return new Color(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
 			}

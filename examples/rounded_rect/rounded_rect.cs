@@ -58,7 +58,7 @@ namespace MatterHackers.Agg
 			m_white_on_black.TextColor = new Color(127, 127, 127);
 			//m_white_on_black.inactive_color(new RGBA_Bytes(127, 127, 127));
 
-			m_DrawAsOutlineCheckBox.TextColor = new ColorF(.5, .5, .5).GetAsRGBA_Bytes();
+			m_DrawAsOutlineCheckBox.TextColor = new ColorF(.5, .5, .5).ToColor();
 			//m_DrawAsOutlineCheckBox.inactive_color(new RGBA_Bytes(127, 127, 127));
 		}
 

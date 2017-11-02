@@ -305,9 +305,9 @@ namespace MatterHackers.Agg
 			bool norm = m_normalize.Checked;
 
 #if SourceDepthFloat
-            ImageBufferAccessorClipFloat source = new ImageBufferAccessorClipFloat(m_RotatedImage, RGBA_Floats.rgba_pre(0,0,0,0).GetAsRGBA_Floats());
+            ImageBufferAccessorClipFloat source = new ImageBufferAccessorClipFloat(m_RotatedImage, RGBA_Floats.rgba_pre(0,0,0,0).ToColorF());
 #else
-			ImageBufferAccessorClip source = new ImageBufferAccessorClip(m_RotatedImage, ColorF.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
+			ImageBufferAccessorClip source = new ImageBufferAccessorClip(m_RotatedImage, ColorF.rgba_pre(0, 0, 0, 0).ToColor());
 #endif
 			IImageFilterFunction filterFunction = null;
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
