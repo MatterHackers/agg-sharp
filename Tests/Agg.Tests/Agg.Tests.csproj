@@ -34,7 +34,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="NUnit.ApplicationDomain, Version=11.0.0.0, Culture=neutral, PublicKeyToken=afbd8211e0c40e2c, processorArchitecture=MSIL">
