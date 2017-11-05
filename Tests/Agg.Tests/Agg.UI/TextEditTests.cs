@@ -80,13 +80,13 @@ namespace MatterHackers.Agg.UI.Tests
 			TextEditWidget editField1 = new TextEditWidget("", 0, 0, pixelWidth: 51);
 			container.AddChild(editField1);
 
-			// select the conrol and type something in it
+			// select the control and type something in it
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
 			SendKey(Keys.A, 'a', container);
 			Assert.IsTrue(editField1.Text == "a", "It should have a in it.");
 
-			// select the begining again and type something else in it
+			// select the beginning again and type something else in it
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
 			SendKey(Keys.B, 'b', container);
