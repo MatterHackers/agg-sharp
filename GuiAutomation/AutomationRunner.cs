@@ -37,7 +37,6 @@ using System.Threading.Tasks;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Platform;
-
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
@@ -225,8 +224,8 @@ namespace MatterHackers.GuiAutomation
 		}
 
 		/// <summary>
-		/// Wait for the given condition to be satisfied. The check Interval should be nice and short to alow test to
-		/// complete quickely.
+		/// Wait for the given condition to be satisfied. The check Interval should be nice and short to allow test to
+		/// complete quickly.
 		/// </summary>
 		/// <param name="checkConditionSatisfied"></param>
 		/// <param name="maxSeconds"></param>
@@ -901,7 +900,7 @@ namespace MatterHackers.GuiAutomation
 		}
 
 		/// <summary>
-		/// Send the string to the system system window
+		/// Send the string to the system window
 		/// ^ will add the control key
 		/// {Enter} will type the enter key
 		/// {BACKSPACE} will type the backspace key
@@ -1017,7 +1016,7 @@ namespace MatterHackers.GuiAutomation
 				{
 					// Wait until the first system window draw before running the test method
 					resetEvent.WaitOne();
-					
+
 					return testMethod(testRunner);
 				}));
 
