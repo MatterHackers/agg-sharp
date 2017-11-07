@@ -86,7 +86,7 @@ namespace MatterHackers.DataConverters3D
 			var items = new Stack<IObject3D>(new[] { root });
 			while (items.Any())
 			{
-				IObject3D item = items.Pop();
+				var item = items.Pop();
 
 				if (root.Visible)
 				{

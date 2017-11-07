@@ -90,6 +90,13 @@ namespace MatterHackers.VectorMath
 			sign[2] = rayToCopy.sign[2];
 		}
 
+		public static Ray Transform(Ray ray, Matrix4X4 matrix)
+		{
+			Vector3 transformedOrigin = Vector3.TransformPosition(ray.origin, matrix);
+			Vector3 transformedDirecton = Vector3.TransformVector(ray.directionNormal, matrix);
+			return new Ray(transformedOrigin, transformedDirecton, ray.minDistanceToConsider, ray.maxDistanceToConsider, ray.intersectionType);
+		}
+
 		public bool Intersection(AxisAlignedBoundingBox bounds)
 		{
 			Ray ray = this;

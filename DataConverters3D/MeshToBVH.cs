@@ -34,14 +34,21 @@ namespace MatterHackers.DataConverters3D
 			var worldMatrix = renderData.WorldMatrix();
 			foreach (Face face in renderData.Mesh.Faces)
 			{
-				var triangles = face.AsTriangles();
-				foreach (var triangle in triangles)
+				if (false)
 				{
-					renderCollection.Add(new TriangleShape(
-						Vector3.Transform(triangle.Item1, worldMatrix),
-						Vector3.Transform(triangle.Item2, worldMatrix),
-						Vector3.Transform(triangle.Item3, worldMatrix),
-						partMaterial));
+					renderCollection.Add(new MeshFaceTraceable(face, partMaterial, worldMatrix));
+				}
+				else
+				{
+					var triangles = face.AsTriangles();
+					foreach (var triangle in triangles)
+					{
+						renderCollection.Add(new TriangleShape(
+							Vector3.Transform(triangle.Item1, worldMatrix),
+							Vector3.Transform(triangle.Item2, worldMatrix),
+							Vector3.Transform(triangle.Item3, worldMatrix),
+							partMaterial));
+					}
 				}
 			}
 

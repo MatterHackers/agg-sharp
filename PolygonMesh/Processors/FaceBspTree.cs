@@ -52,6 +52,19 @@ namespace MatterHackers.PolygonMesh
 			return root;
 		}
 
+		internal class BCF
+		{
+			internal BspNode behind;
+			internal BspNode current;
+			internal BspNode infront;
+
+			public BCF(BspNode behind, BspNode current, BspNode infront)
+			{
+				this.behind = behind;
+				this.current = current;
+				this.infront = infront;
+			}
+		}
 		/// <summary>
 		/// Get an ordered list of the faces to render based on the camera position.
 		/// </summary>
@@ -59,53 +72,34 @@ namespace MatterHackers.PolygonMesh
 		/// <param name="meshToViewTransform"></param>
 		/// <param name="invMeshToViewTransform"></param>
 		/// <param name="faceRenderOrder"></param>
-		public static void GetFacesInVisibiltyOrder(List<Face> meshFaces, BspNode node, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform, List<Face> faceRenderOrder)
+		public static IEnumerable<Face> GetFacesInVisibiltyOrder(List<Face> meshFaces, BspNode root, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform)
 		{
-			// Are we in front of or behind this face
-			var faceNormalInViewSpace = Vector3.TransformNormalInverse(meshFaces[node.Index].Normal, invMeshToViewTransform);
-			var pointOnFaceInViewSpace = Vector3.Transform(meshFaces[node.Index].firstFaceEdge.FirstVertex.Position, meshToViewTransform);
-			var infrontOfFace = Vector3.Dot(faceNormalInViewSpace, pointOnFaceInViewSpace) < 0;
+			var processedBack = new HashSet<BspNode>();
+			var renderOrder = new Stack<BspNode>(new BspNode[] { root } );
 
-			if (infrontOfFace)
+			do
 			{
-				// return all the back faces
-				if (node.BackNode != null && node.BackNode.Index != -1)
+				var lastBack = renderOrder.Peek().ContextBack(meshFaces, meshToViewTransform, invMeshToViewTransform);
+				while (lastBack != null 
+					&& lastBack.Index != -1
+					&& !processedBack.Contains(lastBack))
 				{
-					GetFacesInVisibiltyOrder(meshFaces, node.BackNode, meshToViewTransform, invMeshToViewTransform, faceRenderOrder);
+					processedBack.Add(lastBack);
+					renderOrder.Push(lastBack);
+					lastBack = lastBack.ContextBack(meshFaces, meshToViewTransform, invMeshToViewTransform);
 				}
 
-				// return this face
+				var node = renderOrder.Pop();
 				if (node.Index != -1)
 				{
-					faceRenderOrder.Add(meshFaces[node.Index]);
+					yield return meshFaces[node.Index];
 				}
-
-				// return all the front faces
-				if (node.FrontNode != null && node.FrontNode.Index != -1)
+				var lastFront = node.ContextFront(meshFaces, meshToViewTransform, invMeshToViewTransform);
+				if (lastFront != null && lastFront.Index != -1)
 				{
-					GetFacesInVisibiltyOrder(meshFaces, node.FrontNode, meshToViewTransform, invMeshToViewTransform, faceRenderOrder);
+					renderOrder.Push(lastFront);
 				}
-			}
-			else
-			{
-				// return all the front faces
-				if (node.FrontNode != null && node.FrontNode.Index != -1)
-				{
-					GetFacesInVisibiltyOrder(meshFaces, node.FrontNode, meshToViewTransform, invMeshToViewTransform, faceRenderOrder);
-				}
-
-				// return this face
-				if (node.Index != -1)
-				{
-					faceRenderOrder.Add(meshFaces[node.Index]);
-				}
-
-				// return all the back faces
-				if (node.BackNode != null && node.BackNode.Index != -1)
-				{
-					GetFacesInVisibiltyOrder(meshFaces, node.BackNode, meshToViewTransform, invMeshToViewTransform, faceRenderOrder);
-				}
-			}
+			} while (renderOrder.Any());
 		}
 
 		private static (double, int) CalculateCrosingArrea(int faceIndex, List<Face> faces, double smallestCrossingArrea)
@@ -251,5 +245,40 @@ namespace MatterHackers.PolygonMesh
 		public BspNode BackNode { get; internal set; }
 		public BspNode FrontNode { get; internal set; }
 		public int Index { get; internal set; } = -1;
+	}
+
+	public static class BspNodeExtensions
+	{ 
+		public static BspNode ContextBack(this BspNode node, List<Face> meshFaces, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform)
+		{
+			var faceNormalInViewSpace = Vector3.TransformNormalInverse(meshFaces[node.Index].Normal, invMeshToViewTransform);
+			var pointOnFaceInViewSpace = Vector3.Transform(meshFaces[node.Index].firstFaceEdge.FirstVertex.Position, meshToViewTransform);
+			var infrontOfFace = Vector3.Dot(faceNormalInViewSpace, pointOnFaceInViewSpace) < 0;
+
+			if (infrontOfFace)
+			{
+				return node.BackNode;
+			}
+			else
+			{
+				return node.FrontNode;
+			}
+		}
+
+		public static BspNode ContextFront(this BspNode node, List<Face> meshFaces, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform)
+		{
+			var faceNormalInViewSpace = Vector3.TransformNormalInverse(meshFaces[node.Index].Normal, invMeshToViewTransform);
+			var pointOnFaceInViewSpace = Vector3.Transform(meshFaces[node.Index].firstFaceEdge.FirstVertex.Position, meshToViewTransform);
+			var infrontOfFace = Vector3.Dot(faceNormalInViewSpace, pointOnFaceInViewSpace) < 0;
+
+			if (infrontOfFace)
+			{
+				return node.FrontNode;
+			}
+			else
+			{
+				return node.BackNode;
+			}
+		}
 	}
 }

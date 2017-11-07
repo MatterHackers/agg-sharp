@@ -282,13 +282,11 @@ namespace MatterHackers.RenderOpenGl
 		}
 
 		// There can be a singleton of this because GL must always render on the UI thread and can't overlap this array
-		static List<Face> bspFaceList = new List<Face>();
 		private static void DrawToGLUsingBsp(Mesh meshToRender, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform)
 		{
 			GL.Begin(BeginMode.Triangles);
 
-			bspFaceList.Clear();
-			FaceBspTree.GetFacesInVisibiltyOrder(meshToRender.Faces, meshToRender.FaceBspTree, meshToViewTransform, invMeshToViewTransform, bspFaceList);
+			var bspFaceList = FaceBspTree.GetFacesInVisibiltyOrder(meshToRender.Faces, meshToRender.FaceBspTree, meshToViewTransform, invMeshToViewTransform);
 			foreach (var face in bspFaceList)
 			{
 				if (face == null)

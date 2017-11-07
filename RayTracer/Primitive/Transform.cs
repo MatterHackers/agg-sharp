@@ -157,10 +157,7 @@ namespace MatterHackers.RayTracer.Traceable
 		private Ray GetLocalSpaceRay(Ray ray)
 		{
 			// TODO: cache this.
-			Matrix4X4 WorldToAxis = Matrix4X4.Invert(AxisToWorld);
-			Vector3 transformedOrigin = Vector3.TransformPosition(ray.origin, WorldToAxis);
-			Vector3 transformedDirecton = Vector3.TransformVector(ray.directionNormal, WorldToAxis);
-			return new Ray(transformedOrigin, transformedDirecton, ray.minDistanceToConsider, ray.maxDistanceToConsider, ray.intersectionType);
+			return Ray.Transform(ray, Matrix4X4.Invert(AxisToWorld));
 		}
 
 		private IntersectInfo GetGlobalSpaceInfo(IntersectInfo localInfo)
