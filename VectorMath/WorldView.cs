@@ -42,6 +42,7 @@ namespace MatterHackers.VectorMath
 			this.height = height;
 
 			this.CalculateProjectionMatrix(width, height);
+			this.CalculateModelviewMatrix();
 		}
 
 		public void OnTransformChanged(EventArgs e)

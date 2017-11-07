@@ -11,19 +11,25 @@ namespace MatterHackers.DataConverters3D
 	public class MeshFaceTraceable : IPrimitive
 	{
 		Face face;
-		public MeshFaceTraceable(Face face, MaterialAbstract material)
+		Matrix4X4 worldMatrix;
+		AxisAlignedBoundingBox aabb;
+
+		public MeshFaceTraceable(Face face, MaterialAbstract material, Matrix4X4 worldMatrix)
 		{
 			this.face = face;
 			this.Material = material;
+			this.worldMatrix = worldMatrix;
+
+			aabb = face.GetAxisAlignedBoundingBox(worldMatrix);
 		}
 
 		public ColorF GetColor(IntersectInfo info)
 		{
 			if (Material.HasTexture)
 			{
-				Vector3Float Position = new Vector3Float(face.Normal);
-				Vector3Float vecU = new Vector3Float(Position.y, Position.z, -Position.x);
-				Vector3Float vecV = Vector3Float.Cross(vecU, Position);
+				Vector3Float normalF = new Vector3Float(Vector3.TransformNormal(face.Normal, worldMatrix));
+				Vector3Float vecU = new Vector3Float(normalF.y, normalF.z, -normalF.x);
+				Vector3Float vecV = Vector3Float.Cross(vecU, normalF);
 
 				double u = Vector3Float.Dot(new Vector3Float(info.HitPosition), vecU);
 				double v = Vector3Float.Dot(new Vector3Float(info.HitPosition), vecV);
@@ -127,7 +133,7 @@ namespace MatterHackers.DataConverters3D
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{
-			return face.GetAxisAlignedBoundingBox();
+			return aabb;
 		}
 
 		public Vector3 GetCenter()

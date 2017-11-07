@@ -124,6 +124,17 @@ namespace MatterHackers.PolygonMesh
 			return aabb;
 		}
 
+		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix)
+		{
+			AxisAlignedBoundingBox aabb = AxisAlignedBoundingBox.Empty;
+			foreach (FaceEdge faceEdge in FaceEdges())
+			{
+				aabb = AxisAlignedBoundingBox.Union(aabb, Vector3.Transform(faceEdge.FirstVertex.Position, matrix));
+			}
+
+			return aabb;
+		}
+
 		public Vector3 GetCenter()
 		{
 			bool first = true;

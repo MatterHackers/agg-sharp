@@ -58,21 +58,27 @@ namespace MatterHackers.PolygonMesh
 			return plane;
 		}
 
+		public static Matrix4X4 GetMaxFaceProjection(Face face, ImageBuffer textureToUse)
+		{
+			var textureCoordinateMapping = Matrix4X4.CreateRotation(new Quaternion(Vector3.UnitZ, face.Normal));
+
+			var bounds = RectangleDouble.ZeroIntersection;
+			foreach (FaceEdge faceEdge in face.FaceEdges())
+			{
+				var edgeStartPosition = faceEdge.FirstVertex.Position;
+				var textureUv = Vector3.Transform(edgeStartPosition, textureCoordinateMapping);
+				bounds.ExpandToInclude(new Vector2(textureUv));
+			}
+			var centering = Matrix4X4.CreateTranslation(new Vector3(-bounds.Left, -bounds.Bottom, 0));
+			var scaling = Matrix4X4.CreateScale(new Vector3(1 / bounds.Width, 1 / bounds.Height, 1));
+
+			return textureCoordinateMapping * centering * scaling;
+		}
+
 		public static void PlaceTextureOnFace(Face face, ImageBuffer textureToUse)
 		{
 			// planer project along the normal of this face
-			Matrix4X4 textureCoordinateMapping = Matrix4X4.CreateRotation(new Quaternion(Vector3.UnitZ, face.Normal));
-
-			RectangleDouble bounds = RectangleDouble.ZeroIntersection;
-			foreach (FaceEdge faceEdge in face.FaceEdges())
-			{
-				Vector3 edgeStartPosition = faceEdge.FirstVertex.Position;
-				Vector3 textureUv = Vector3.Transform(edgeStartPosition, textureCoordinateMapping);
-				bounds.ExpandToInclude(new Vector2(textureUv));
-			}
-			Matrix4X4 centering = Matrix4X4.CreateTranslation(new Vector3(-bounds.Left, -bounds.Bottom, 0));
-			Matrix4X4 scaling = Matrix4X4.CreateScale(new Vector3(1 / bounds.Width, 1 / bounds.Height, 1));
-			PlaceTextureOnFace(face, textureToUse, textureCoordinateMapping * centering * scaling);
+			PlaceTextureOnFace(face, textureToUse, GetMaxFaceProjection(face, textureToUse));
 		}
 
 		public static void PlaceTextureOnFace(Face face, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
