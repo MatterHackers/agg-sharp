@@ -74,17 +74,15 @@ namespace MatterHackers.PolygonMesh
 		/// <param name="faceRenderOrder"></param>
 		public static IEnumerable<Face> GetFacesInVisibiltyOrder(List<Face> meshFaces, BspNode root, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform)
 		{
-			var processedBack = new HashSet<BspNode>();
 			var renderOrder = new Stack<BspNode>(new BspNode[] { root.RenderOrder(meshFaces, meshToViewTransform, invMeshToViewTransform) });
 
 			do
 			{
 				var lastBack = renderOrder.Peek().BackNode;
 				while (lastBack != null
-					&& lastBack.Index != -1
-					&& !processedBack.Contains(lastBack))
+					&& lastBack.Index != -1)
 				{
-					processedBack.Add(lastBack);
+					renderOrder.Peek().BackNode = null;
 					renderOrder.Push(lastBack.RenderOrder(meshFaces, meshToViewTransform, invMeshToViewTransform));
 					lastBack = renderOrder.Peek().BackNode;
 				}

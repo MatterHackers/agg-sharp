@@ -233,17 +233,19 @@ namespace MatterHackers.DataConverters3D
 			{
 				if (_outputType != value)
 				{
+					// prevent recursion errors by holding a local pointer
+					var localMesh = Mesh;
 					_outputType = value;
 					if ((_outputType == PrintOutputTypes.Support
 						|| _outputType == PrintOutputTypes.Hole)
-						&& Mesh != null
-						&& Mesh.FaceBspTree == null
-						&& Mesh.Faces.Count < 2000)
+						&& localMesh != null
+						&& localMesh.FaceBspTree == null
+						&& localMesh.Faces.Count < 2000)
 					{
 						Task.Run(() =>
 						{
-							var bspTree = FaceBspTree.Create(Mesh);
-							UiThread.RunOnIdle(() => Mesh.FaceBspTree = bspTree);
+							var bspTree = FaceBspTree.Create(localMesh);
+							UiThread.RunOnIdle(() => localMesh.FaceBspTree = bspTree);
 						});
 					}
 				}
