@@ -75,18 +75,18 @@ namespace MatterHackers.PolygonMesh
 		public static IEnumerable<Face> GetFacesInVisibiltyOrder(List<Face> meshFaces, BspNode root, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform)
 		{
 			var processedBack = new HashSet<BspNode>();
-			var renderOrder = new Stack<BspNode>(new BspNode[] { root } );
+			var renderOrder = new Stack<BspNode>(new BspNode[] { root.RenderOrder(meshFaces, meshToViewTransform, invMeshToViewTransform) });
 
 			do
 			{
-				var lastBack = renderOrder.Peek().ContextBack(meshFaces, meshToViewTransform, invMeshToViewTransform);
-				while (lastBack != null 
+				var lastBack = renderOrder.Peek().BackNode;
+				while (lastBack != null
 					&& lastBack.Index != -1
 					&& !processedBack.Contains(lastBack))
 				{
 					processedBack.Add(lastBack);
-					renderOrder.Push(lastBack);
-					lastBack = lastBack.ContextBack(meshFaces, meshToViewTransform, invMeshToViewTransform);
+					renderOrder.Push(lastBack.RenderOrder(meshFaces, meshToViewTransform, invMeshToViewTransform));
+					lastBack = renderOrder.Peek().BackNode;
 				}
 
 				var node = renderOrder.Pop();
@@ -94,10 +94,10 @@ namespace MatterHackers.PolygonMesh
 				{
 					yield return meshFaces[node.Index];
 				}
-				var lastFront = node.ContextFront(meshFaces, meshToViewTransform, invMeshToViewTransform);
+				var lastFront = node.FrontNode;
 				if (lastFront != null && lastFront.Index != -1)
 				{
-					renderOrder.Push(lastFront);
+					renderOrder.Push(lastFront.RenderOrder(meshFaces, meshToViewTransform, invMeshToViewTransform));
 				}
 			} while (renderOrder.Any());
 		}
@@ -249,7 +249,7 @@ namespace MatterHackers.PolygonMesh
 
 	public static class BspNodeExtensions
 	{ 
-		public static BspNode ContextBack(this BspNode node, List<Face> meshFaces, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform)
+		public static BspNode RenderOrder(this BspNode node, List<Face> meshFaces, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform)
 		{
 			var faceNormalInViewSpace = Vector3.TransformNormalInverse(meshFaces[node.Index].Normal, invMeshToViewTransform);
 			var pointOnFaceInViewSpace = Vector3.Transform(meshFaces[node.Index].firstFaceEdge.FirstVertex.Position, meshToViewTransform);
@@ -257,27 +257,21 @@ namespace MatterHackers.PolygonMesh
 
 			if (infrontOfFace)
 			{
-				return node.BackNode;
+				return new BspNode()
+				{
+					Index = node.Index,
+					BackNode = node.BackNode,
+					FrontNode = node.FrontNode
+				};
 			}
 			else
 			{
-				return node.FrontNode;
-			}
-		}
-
-		public static BspNode ContextFront(this BspNode node, List<Face> meshFaces, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform)
-		{
-			var faceNormalInViewSpace = Vector3.TransformNormalInverse(meshFaces[node.Index].Normal, invMeshToViewTransform);
-			var pointOnFaceInViewSpace = Vector3.Transform(meshFaces[node.Index].firstFaceEdge.FirstVertex.Position, meshToViewTransform);
-			var infrontOfFace = Vector3.Dot(faceNormalInViewSpace, pointOnFaceInViewSpace) < 0;
-
-			if (infrontOfFace)
-			{
-				return node.FrontNode;
-			}
-			else
-			{
-				return node.BackNode;
+				return new BspNode()
+				{
+					Index = node.Index,
+					BackNode = node.FrontNode,
+					FrontNode = node.BackNode
+				};
 			}
 		}
 	}
