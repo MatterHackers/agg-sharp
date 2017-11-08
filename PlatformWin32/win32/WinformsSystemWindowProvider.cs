@@ -36,9 +36,16 @@ namespace MatterHackers.Agg.UI
 			if ((singleWindowMode && isFirstWindow)
 				|| !singleWindowMode)
 			{
-				platformWindow = AggContext.CreateInstanceFrom<IPlatformWindow>(AggContext.Config.ProviderTypes.SystemWindow);
-				platformWindow.Caption = systemWindow.Title;
-				platformWindow.MinimumSize = systemWindow.MinimumSize;
+				if (systemWindow.PlatformWindow == null)
+				{
+					platformWindow = AggContext.CreateInstanceFrom<IPlatformWindow>(AggContext.Config.ProviderTypes.SystemWindow);
+					platformWindow.Caption = systemWindow.Title;
+					platformWindow.MinimumSize = systemWindow.MinimumSize;
+				}
+				else
+				{
+					platformWindow = systemWindow.PlatformWindow;
+				}
 			}
 			else
 			{
