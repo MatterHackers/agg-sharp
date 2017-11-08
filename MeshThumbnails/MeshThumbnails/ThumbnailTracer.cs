@@ -101,8 +101,8 @@ namespace MatterHackers.RayTracer
 			world.Reset();
 			world.Scale = .03;
 
-			world.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, MathHelper.Tau / 16)));
-			world.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
+			world.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, -MathHelper.Tau / 16)));
+			world.Rotate(Quaternion.FromEulerAngles(new Vector3(MathHelper.Tau * .19, 0, 0)));
 
 			ScaleMeshToView(renderDatas);
 		}

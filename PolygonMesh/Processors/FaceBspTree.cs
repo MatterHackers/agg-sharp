@@ -52,19 +52,6 @@ namespace MatterHackers.PolygonMesh
 			return root;
 		}
 
-		internal class BCF
-		{
-			internal BspNode behind;
-			internal BspNode current;
-			internal BspNode infront;
-
-			public BCF(BspNode behind, BspNode current, BspNode infront)
-			{
-				this.behind = behind;
-				this.current = current;
-				this.infront = infront;
-			}
-		}
 		/// <summary>
 		/// Get an ordered list of the faces to render based on the camera position.
 		/// </summary>
