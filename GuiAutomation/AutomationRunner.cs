@@ -994,16 +994,12 @@ namespace MatterHackers.GuiAutomation
 		{
 			var testRunner = new AutomationRunner(imagesDirectory, inputType);
 
-			AutoResetEvent resetEvent = new AutoResetEvent(false);
+			var resetEvent = new AutoResetEvent(false);
 
-			bool firstDraw = true;
-			initialSystemWindow.AfterDraw += (sender, e) =>
+			// On load, release the reset event
+			initialSystemWindow.Load += (s, e) =>
 			{
-				if (firstDraw)
-				{
-					firstDraw = false;
-					resetEvent.Set();
-				}
+				resetEvent.Set();
 			};
 
 			int testTimeout = (int)(1000 * secondsToTestFailure);
