@@ -172,7 +172,7 @@ namespace MatterHackers.VectorMath
 						activeRotationQuaternion.Y = Perp.Y;
 						activeRotationQuaternion.Z = Perp.Z;
 						//In the quaternion values, w is cosine (theta / 2), where theta is the rotation angle
-						activeRotationQuaternion.W = Vector3.Dot(rotationStart3D, moveSpherePosition);
+						activeRotationQuaternion.W = -Vector3.Dot(rotationStart3D, moveSpherePosition);
 
 						mouseDownPosition = mousePosition;
 						world.RotationMatrix = world.RotationMatrix * Matrix4X4.CreateRotation(activeRotationQuaternion);

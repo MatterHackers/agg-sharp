@@ -386,6 +386,55 @@ namespace MatterHackers.VectorMath
 			}
 
 			return rotation;
+#if false
+			double trace = m[0,0] + m[1, 1] + m[2, 2];
+
+			if (trace > 0)
+			{
+				double s = 0.5 / Math.Sqrt(trace + 1.0);
+				this.w = 0.25 / s;
+				this.X = (m[2, 1] - m[1, 2]) * s;
+				this.Y = (m[0, 2] - m[2, 0]) * s;
+				this.Z = (m[1, 0] - m[0, 1]) * s;
+			}
+			else
+			{
+				if (m[0, 0] > m[1, 1] && m[0, 0] > m[2, 2])
+				{
+					double s = 2.0 * Math.Sqrt(1.0 + m[0, 0] - m[1, 1] - m[2, 2]);
+					this.w = (m[2, 1] - m[1, 2]) / s;
+					this.X = 0.25 * s;
+					this.Y = (m[0, 1] + m[1, 0]) / s;
+					this.Z = (m[0, 2] + m[2, 0]) / s;
+				}
+				else if (m[1, 1] > m[2, 2])
+				{
+					double s = 2.0 * Math.Sqrt(1.0 + m[1, 1] - m[0, 0] - m[2, 2]);
+					this.w = (m[0, 2] - m[2, 0]) / s;
+					this.X = (m[0, 1] + m[1, 0]) / s;
+					this.Y = 0.25 * s;
+					this.Z = (m[1, 2] + m[2, 1]) / s;
+				}
+				else
+				{
+					double s = 2.0 * Math.Sqrt(1.0 + m[2, 2] - m[0, 0] - m[1, 1]);
+					this.w = (m[1, 0] - m[0, 1]) / s;
+					this.X = (m[0, 2] + m[2, 0]) / s;
+					this.Y = (m[1, 2] + m[2, 1]) / s;
+					this.Z = 0.25 * s;
+				}
+			}
+#endif
+#if false
+			Quaternion Q = new Quaternion();
+			Q.w = Math.Sqrt(Math.Max(0, 1 + m[0, 0] + m[1, 1] + m[2, 2])) / 2;
+			Q.X = Math.Sqrt(Math.Max(0, 1 + m[0, 0] - m[1, 1] - m[2, 2])) / 2;
+			Q.Y = Math.Sqrt(Math.Max(0, 1 - m[0, 0] + m[1, 1] - m[2, 2])) / 2;
+			Q.Z = Math.Sqrt(Math.Max(0, 1 - m[0, 0] - m[1, 1] + m[2, 2])) / 2;
+			Q.X = CopySign(Q.X, m[2, 1] - m[1, 2]);
+			Q.Y = CopySign(Q.Y, m[0, 2] - m[2, 0]);
+			Q.Z = CopySign(Q.Z, m[1, 0] - m[0, 1]);
+#endif
 		}
 
 		#region public void Invert()
@@ -552,40 +601,8 @@ namespace MatterHackers.VectorMath
 		/// <returns>A rotation matrix</returns>
 		public static Matrix4X4 CreateRotation(Vector3 axis, double angle)
 		{
-#if true
-			double c = Math.Cos(angle);
-			double s = Math.Sin(angle);
-			double t = 1.0 - c;
-			//  if axis is not already normalised then uncomment this
-			// double magnitude = Math.sqrt(a1.x*a1.x + a1.y*a1.y + a1.z*a1.z);
-			// if (magnitude==0) throw error;
-			// a1.x /= magnitude;
-			// a1.y /= magnitude;
-			// a1.z /= magnitude;
-
-			Matrix4X4 m = Matrix4X4.Identity;
-
-			m[0,0] = c + axis.X * axis.X * t;
-			m[1,1] = c + axis.Y * axis.Y * t;
-			m[2,2] = c + axis.Z * axis.Z * t;
-
-
-			double tmp1 = axis.X * axis.Y * t;
-			double tmp2 = axis.Z * s;
-			m[1,0] = tmp1 + tmp2;
-			m[0,1] = tmp1 - tmp2;
-			tmp1 = axis.X * axis.Z * t;
-			tmp2 = axis.Y * s;
-			m[2,0] = tmp1 - tmp2;
-			m[0,2] = tmp1 + tmp2; tmp1 = axis.Y * axis.Z * t;
-			tmp2 = axis.X * s;
-			m[2,1] = tmp1 + tmp2;
-			m[1,2] = tmp1 - tmp2;
-
-			return m;
-#else
-			double cos = System.Math.Cos(-angle);
-			double sin = System.Math.Sin(-angle);
+			double cos = System.Math.Cos(angle);
+			double sin = System.Math.Sin(angle);
 			double t = 1.0 - cos;
 
 			axis.Normalize();
@@ -596,7 +613,6 @@ namespace MatterHackers.VectorMath
 			result.Row2 = new Vector4(t * axis.X * axis.Z - sin * axis.Y, t * axis.Y * axis.Z + sin * axis.X, t * axis.Z * axis.Z + cos, 0.0);
 			result.Row3 = Vector4.UnitW;
 			return result;
-#endif
 		}
 
 		/// <summary>
@@ -606,45 +622,10 @@ namespace MatterHackers.VectorMath
 		/// <returns>A rotation matrix</returns>
 		public static Matrix4X4 CreateRotation(Quaternion q)
 		{
-#if false
-			var m = Matrix4X4.Identity;
-			double sqw = q.W * q.W;
-			double sqx = q.X * q.X;
-			double sqy = q.Y * q.Y;
-			double sqz = q.Z * q.Z;
-
-			// invs (inverse square length) is only required if quaternion is not already normalised
-			double sum = sqx + sqy + sqz + sqw;
-			if(sum == 0)
-			{
-				return m;
-			}
-			double invs = 1 / sum;
-
-			m[0,0] = (sqx - sqy - sqz + sqw) * invs; // since sqw + sqx + sqy + sqz =1/invs*invs
-			m[1,1] = (-sqx + sqy - sqz + sqw) * invs;
-			m[2,2] = (-sqx - sqy + sqz + sqw) * invs;
-
-			double tmp1 = q.X * q.Y;
-			double tmp2 = q.Z * q.W;
-			m[1,0] = 2.0 * (tmp1 + tmp2) * invs;
-			m[0,1] = 2.0 * (tmp1 - tmp2) * invs;
-
-			tmp1 = q.X * q.Z;
-			tmp2 = q.Y * q.W;
-			m[2,0] = 2.0 * (tmp1 - tmp2) * invs;
-			m[0,2] = 2.0 * (tmp1 + tmp2) * invs;
-			tmp1 = q.Y * q.Z;
-			tmp2 = q.X * q.W;
-			m[2,1] = 2.0 * (tmp1 + tmp2) * invs;
-			m[1,2] = 2.0 * (tmp1 - tmp2) * invs;
-			return m;
-#else
 			Vector3 axis;
 			double angle;
 			q.ToAxisAngle(out axis, out angle);
 			return CreateRotation(axis, angle);
-#endif
 		}
 
 		/// <summary>

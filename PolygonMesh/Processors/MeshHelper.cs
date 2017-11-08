@@ -58,9 +58,12 @@ namespace MatterHackers.PolygonMesh
 			return plane;
 		}
 
-		public static Matrix4X4 GetMaxFaceProjection(Face face, ImageBuffer textureToUse)
+		public static Matrix4X4 GetMaxFaceProjection(Face face, ImageBuffer textureToUse, Matrix4X4? initialTransform = null)
 		{
-			var textureCoordinateMapping = Matrix4X4.CreateRotation(new Quaternion(Vector3.UnitZ, face.Normal));
+			// If not set than make it identity
+			var firstTransform = initialTransform == null ? Matrix4X4.Identity : (Matrix4X4)initialTransform;
+
+			var textureCoordinateMapping = Matrix4X4.CreateRotation(new Quaternion(face.Normal, Vector3.UnitZ));
 
 			var bounds = RectangleDouble.ZeroIntersection;
 			foreach (FaceEdge faceEdge in face.FaceEdges())
@@ -72,7 +75,7 @@ namespace MatterHackers.PolygonMesh
 			var centering = Matrix4X4.CreateTranslation(new Vector3(-bounds.Left, -bounds.Bottom, 0));
 			var scaling = Matrix4X4.CreateScale(new Vector3(1 / bounds.Width, 1 / bounds.Height, 1));
 
-			return textureCoordinateMapping * centering * scaling;
+			return textureCoordinateMapping * firstTransform * centering * scaling;
 		}
 
 		public static void PlaceTextureOnFace(Face face, ImageBuffer textureToUse)
