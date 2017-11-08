@@ -101,8 +101,8 @@ namespace MatterHackers.RayTracer
 			world.Reset();
 			world.Scale = .03;
 
-			world.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, MathHelper.Tau / 16)));
-			world.Rotate(Quaternion.FromEulerAngles(new Vector3(-MathHelper.Tau * .19, 0, 0)));
+			world.Rotate(Quaternion.FromEulerAngles(new Vector3d(0, 0, MathHelper.Tau / 16)));
+			world.Rotate(Quaternion.FromEulerAngles(new Vector3d(-MathHelper.Tau * .19, 0, 0)));
 
 			ScaleMeshToView(renderDatas);
 		}
@@ -117,11 +117,11 @@ namespace MatterHackers.RayTracer
 				Color color = new Color(rand.NextDouble(), rand.NextDouble(), rand.NextDouble());
 				graphics.Circle(new Vector2(rand.NextDouble() * testImage.Width, rand.NextDouble() * testImage.Height), rand.NextDouble() * 40 + 10, color);
 			}
-			scene.shapes.Add(new PlaneShape(new Vector3(0, 0, 1), 0, new TextureMaterial(testImage, 0, 0, .2, 1)));
+			scene.shapes.Add(new PlaneShape(new Vector3d(0, 0, 1), 0, new TextureMaterial(testImage, 0, 0, .2, 1)));
 			//scene.shapes.Add(new PlaneShape(new Vector3(0, 0, 1), 0, new ChessboardMaterial(new RGBA_Floats(1, 1, 1), new RGBA_Floats(0, 0, 0), 0, 0, 1, 0.7)));
 		}
 
-		static Vector3 lightNormal = (new Vector3(-1, 1, 1)).GetNormal();
+		static Vector3d lightNormal = (new Vector3d(-1, 1, 1)).GetNormal();
 		static ColorF lightIllumination = new ColorF(1, 1, 1);
 		static ColorF ambiantIllumination = new ColorF(.4, .4, .4);
 
@@ -158,20 +158,20 @@ namespace MatterHackers.RayTracer
 			foreach (Face face in meshToDraw.Faces)
 			{
 				int i = 0;
-				Vector3 normal = Vector3.TransformVector(face.Normal, world.ModelviewMatrix).GetNormal();
+				Vector3d normal = Vector3d.TransformVector(face.Normal, world.ModelviewMatrix).GetNormal();
 				if (normal.Z > 0)
 				{
 					foreach (FaceEdge faceEdge in face.FaceEdges())
 					{
 						points[i].position = world.GetScreenPosition(faceEdge.FirstVertex.Position);
 
-						Vector3 transformedPosition = Vector3.TransformPosition(faceEdge.FirstVertex.Position, world.ModelviewMatrix);
+						Vector3d transformedPosition = Vector3d.TransformPosition(faceEdge.FirstVertex.Position, world.ModelviewMatrix);
 						points[i].z = transformedPosition.Z;
 						i++;
 					}
 
 					ColorF polyDrawColor = new ColorF();
-					double L = Vector3.Dot(lightNormal, normal);
+					double L = Vector3d.Dot(lightNormal, normal);
 					if (L > 0.0f)
 					{
 						polyDrawColor = partColor * lightIllumination * L;
@@ -306,7 +306,7 @@ namespace MatterHackers.RayTracer
 			{
 				AxisAlignedBoundingBox totalMeshBounds = GetAxisAlignedBoundingBox(renderDatas);
 				loadedMeshDatas = renderDatas;
-				Vector3 meshCenter = totalMeshBounds.Center;
+				Vector3d meshCenter = totalMeshBounds.Center;
 				foreach (var renderData in renderDatas)
 				{
 					renderData.Matrix = renderData.Matrix * Matrix4X4.CreateTranslation(-meshCenter);
@@ -338,22 +338,22 @@ namespace MatterHackers.RayTracer
 
 			//add two lights for better lighting effects
 			//scene.lights.Add(new Light(new Vector3(5000, 5000, 5000), new RGBA_Floats(0.8, 0.8, 0.8)));
-			scene.lights.Add(new PointLight(new Vector3(-5000, -5000, 3000), new ColorF(0.5, 0.5, 0.5)));
+			scene.lights.Add(new PointLight(new Vector3d(-5000, -5000, 3000), new ColorF(0.5, 0.5, 0.5)));
 		}
 
 		private RectangleDouble GetScreenBounds(AxisAlignedBoundingBox meshBounds)
 		{
 			RectangleDouble screenBounds = RectangleDouble.ZeroIntersection;
 
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.X, meshBounds.minXYZ.Y, meshBounds.minXYZ.Z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.X, meshBounds.minXYZ.Y, meshBounds.minXYZ.Z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.X, meshBounds.maxXYZ.Y, meshBounds.minXYZ.Z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.X, meshBounds.maxXYZ.Y, meshBounds.minXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3d(meshBounds.minXYZ.X, meshBounds.minXYZ.Y, meshBounds.minXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3d(meshBounds.maxXYZ.X, meshBounds.minXYZ.Y, meshBounds.minXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3d(meshBounds.maxXYZ.X, meshBounds.maxXYZ.Y, meshBounds.minXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3d(meshBounds.minXYZ.X, meshBounds.maxXYZ.Y, meshBounds.minXYZ.Z)));
 
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.X, meshBounds.minXYZ.Y, meshBounds.maxXYZ.Z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.X, meshBounds.minXYZ.Y, meshBounds.maxXYZ.Z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.X, meshBounds.maxXYZ.Y, meshBounds.maxXYZ.Z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.X, meshBounds.maxXYZ.Y, meshBounds.maxXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3d(meshBounds.minXYZ.X, meshBounds.minXYZ.Y, meshBounds.maxXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3d(meshBounds.maxXYZ.X, meshBounds.minXYZ.Y, meshBounds.maxXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3d(meshBounds.maxXYZ.X, meshBounds.maxXYZ.Y, meshBounds.maxXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3d(meshBounds.minXYZ.X, meshBounds.maxXYZ.Y, meshBounds.maxXYZ.Z)));
 			return screenBounds;
 		}
 

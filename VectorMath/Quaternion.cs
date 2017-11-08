@@ -68,6 +68,79 @@ namespace MatterHackers.VectorMath
 		{ }
 
 		/// <summary>
+		/// Construct a new Quaternion
+		/// </summary>
+		/// <param name="matrix">The matrix to discover the rotation of</param>
+		public Quaternion(Matrix4X4 m)
+			: this()
+		{
+			this = m.GetRotation();
+#if false
+			double trace = m[0,0] + m[1, 1] + m[2, 2];
+
+			if (trace > 0)
+			{
+				double s = 0.5 / Math.Sqrt(trace + 1.0);
+				this.w = 0.25 / s;
+				this.X = (m[2, 1] - m[1, 2]) * s;
+				this.Y = (m[0, 2] - m[2, 0]) * s;
+				this.Z = (m[1, 0] - m[0, 1]) * s;
+			}
+			else
+			{
+				if (m[0, 0] > m[1, 1] && m[0, 0] > m[2, 2])
+				{
+					double s = 2.0 * Math.Sqrt(1.0 + m[0, 0] - m[1, 1] - m[2, 2]);
+					this.w = (m[2, 1] - m[1, 2]) / s;
+					this.X = 0.25 * s;
+					this.Y = (m[0, 1] + m[1, 0]) / s;
+					this.Z = (m[0, 2] + m[2, 0]) / s;
+				}
+				else if (m[1, 1] > m[2, 2])
+				{
+					double s = 2.0 * Math.Sqrt(1.0 + m[1, 1] - m[0, 0] - m[2, 2]);
+					this.w = (m[0, 2] - m[2, 0]) / s;
+					this.X = (m[0, 1] + m[1, 0]) / s;
+					this.Y = 0.25 * s;
+					this.Z = (m[1, 2] + m[2, 1]) / s;
+				}
+				else
+				{
+					double s = 2.0 * Math.Sqrt(1.0 + m[2, 2] - m[0, 0] - m[1, 1]);
+					this.w = (m[1, 0] - m[0, 1]) / s;
+					this.X = (m[0, 2] + m[2, 0]) / s;
+					this.Y = (m[1, 2] + m[2, 1]) / s;
+					this.Z = 0.25 * s;
+				}
+			}
+#endif
+#if false
+			Quaternion Q = new Quaternion();
+			Q.w = Math.Sqrt(Math.Max(0, 1 + m[0, 0] + m[1, 1] + m[2, 2])) / 2;
+			Q.X = Math.Sqrt(Math.Max(0, 1 + m[0, 0] - m[1, 1] - m[2, 2])) / 2;
+			Q.Y = Math.Sqrt(Math.Max(0, 1 - m[0, 0] + m[1, 1] - m[2, 2])) / 2;
+			Q.Z = Math.Sqrt(Math.Max(0, 1 - m[0, 0] - m[1, 1] + m[2, 2])) / 2;
+			Q.X = CopySign(Q.X, m[2, 1] - m[1, 2]);
+			Q.Y = CopySign(Q.Y, m[0, 2] - m[2, 0]);
+			Q.Z = CopySign(Q.Z, m[1, 0] - m[0, 1]);
+#endif
+		}
+
+		private double CopySign(double value, double sign)
+		{
+			if(sign < 0)
+			{
+				// return a negative number
+				return value < 0 ? value : -value;
+			}
+			else
+			{
+				// return a positive number
+				return value < 0 ? -value : value;
+			}
+		}
+
+		/// <summary>
 		/// Construct a quaternion that rotates from one direction to another
 		/// </summary>
 		/// <param name="startingDirection"></param>
@@ -83,11 +156,11 @@ namespace MatterHackers.VectorMath
 			Normalize();
 		}
 
-		#endregion Constructors
+#endregion Constructors
 
-		#region Public Members
+#region Public Members
 
-		#region Properties
+#region Properties
 
 		/// <summary>
 		/// Gets or sets an OpenTK.Vector3d with the X, Y and Z components of this instance.
@@ -114,11 +187,11 @@ namespace MatterHackers.VectorMath
 		/// </summary>
 		public double W { get { return w; } set { w = value; } }
 
-		#endregion Properties
+#endregion Properties
 
-		#region Instance
+#region Instance
 
-		#region ToAxisAngle
+#region ToAxisAngle
 
 		/// <summary>
 		/// Convert the current quaternion to axis angle representation
@@ -138,6 +211,28 @@ namespace MatterHackers.VectorMath
 		/// <returns>A Vector4 that is the axis-angle representation of this quaternion.</returns>
 		public Vector4 ToAxisAngle()
 		{
+#if true
+			Vector4 axisAngle = new Vector4();
+			Quaternion q1 = this;
+			if (q1.w > 1) q1.Normalize(); // if w>1 acos and sqrt will produce errors, this cant happen if quaternion is normalised
+			axisAngle.W = 2 * Math.Acos(q1.w);
+			double s = Math.Sqrt(1 - q1.w * q1.w); // assuming quaternion normalised then w is less than 1, so term always positive.
+			if (s < 0.001)
+			{ // test to avoid divide by zero, s is always positive due to sqrt
+			  // if s close to zero then direction of axis not important
+				axisAngle.X = q1.X; // if it is important that axis is normalised then replace with x=1; y=z=0;
+				axisAngle.Y = q1.Y;
+				axisAngle.Z = q1.Z;
+			}
+			else
+			{
+				axisAngle.X = q1.X / s; // normalise axis
+				axisAngle.Y = q1.Y / s;
+				axisAngle.Z = q1.Z / s;
+			}
+
+			return axisAngle;
+#else
 			Quaternion q = this;
 			if (q.W > 1.0f)
 				q.Normalize();
@@ -158,11 +253,12 @@ namespace MatterHackers.VectorMath
 			}
 
 			return result;
+#endif
 		}
 
-		#endregion ToAxisAngle
+#endregion ToAxisAngle
 
-		#region public double Length
+#region public double Length
 
 		/// <summary>
 		/// Gets the length (magnitude) of the Quaterniond.
@@ -176,9 +272,9 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
-		#endregion public double Length
+#endregion public double Length
 
-		#region public double LengthSquared
+#region public double LengthSquared
 
 		/// <summary>
 		/// Gets the square of the Quaterniond length (magnitude).
@@ -191,9 +287,9 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
-		#endregion public double LengthSquared
+#endregion public double LengthSquared
 
-		#region public void Normalize()
+#region public void Normalize()
 
 		/// <summary>
 		/// Scales the Quaterniond to unit length.
@@ -209,9 +305,9 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
-		#endregion public void Normalize()
+#endregion public void Normalize()
 
-		#region public void Conjugate()
+#region public void Conjugate()
 
 		/// <summary>
 		/// Convert this Quaterniond to its conjugate
@@ -221,22 +317,22 @@ namespace MatterHackers.VectorMath
 			Xyz = -Xyz;
 		}
 
-		#endregion public void Conjugate()
+#endregion public void Conjugate()
 
-		#endregion Instance
+#endregion Instance
 
-		#region Static
+#region Static
 
-		#region Fields
+#region Fields
 
 		/// <summary>
 		/// Defines the identity quaternion.
 		/// </summary>
 		public readonly static Quaternion Identity = new Quaternion(0, 0, 0, 1);
 
-		#endregion Fields
+#endregion Fields
 
-		#region Add
+#region Add
 
 		/// <summary>
 		/// Add two quaternions
@@ -264,9 +360,9 @@ namespace MatterHackers.VectorMath
 				left.W + right.W);
 		}
 
-		#endregion Add
+#endregion Add
 
-		#region Sub
+#region Sub
 
 		/// <summary>
 		/// Subtracts two instances.
@@ -294,9 +390,9 @@ namespace MatterHackers.VectorMath
 				left.W - right.W);
 		}
 
-		#endregion Sub
+#endregion Sub
 
-		#region Mult
+#region Mult
 
 		/// <summary>
 		/// Multiplies two instances.
@@ -374,9 +470,9 @@ namespace MatterHackers.VectorMath
 			return new Quaternion(quaternion.X * scale, quaternion.Y * scale, quaternion.Z * scale, quaternion.W * scale);
 		}
 
-		#endregion Mult
+#endregion Mult
 
-		#region Conjugate
+#region Conjugate
 
 		/// <summary>
 		/// Get the conjugate of the given Quaterniond
@@ -398,9 +494,9 @@ namespace MatterHackers.VectorMath
 			result = new Quaternion(-q.Xyz, q.W);
 		}
 
-		#endregion Conjugate
+#endregion Conjugate
 
-		#region Invert
+#region Invert
 
 		/// <summary>
 		/// Get the inverse of the given Quaterniond
@@ -433,9 +529,9 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
-		#endregion Invert
+#endregion Invert
 
-		#region Normalize
+#region Normalize
 
 		/// <summary>
 		/// Scale the given Quaterniond to unit length
@@ -460,9 +556,9 @@ namespace MatterHackers.VectorMath
 			result = new Quaternion(q.Xyz * scale, q.W * scale);
 		}
 
-		#endregion Normalize
+#endregion Normalize
 
-		#region FromEulerAngles
+#region FromEulerAngles
 
 		public static Quaternion FromEulerAngles(Vector3 rotation)
 		{
@@ -474,9 +570,9 @@ namespace MatterHackers.VectorMath
 			return zRotation * yRotation * xRotation;
 		}
 
-		#endregion FromEulerAngles
+#endregion FromEulerAngles
 
-		#region FromAxisAngle
+#region FromAxisAngle
 
 		/// <summary>
 		/// Build a Quaterniond from the given axis and angle
@@ -501,9 +597,9 @@ namespace MatterHackers.VectorMath
 			return Normalize(result);
 		}
 
-		#endregion FromAxisAngle
+#endregion FromAxisAngle
 
-		#region Slerp
+#region Slerp
 
 		/// <summary>
 		/// Do Spherical linear interpolation between two quaternions
@@ -567,11 +663,11 @@ namespace MatterHackers.VectorMath
 				return Identity;
 		}
 
-		#endregion Slerp
+#endregion Slerp
 
-		#endregion Static
+#endregion Static
 
-		#region Operators
+#region Operators
 
 		/// <summary>
 		/// Adds two instances.
@@ -656,11 +752,11 @@ namespace MatterHackers.VectorMath
 			return !left.Equals(right);
 		}
 
-		#endregion Operators
+#endregion Operators
 
-		#region Overrides
+#region Overrides
 
-		#region public override string ToString()
+#region public override string ToString()
 
 		/// <summary>
 		/// Returns a System.String that represents the current Quaterniond.
@@ -671,9 +767,9 @@ namespace MatterHackers.VectorMath
 			return String.Format("V: {0}, W: {1}", Xyz, W);
 		}
 
-		#endregion public override string ToString()
+#endregion public override string ToString()
 
-		#region public override bool Equals (object o)
+#region public override bool Equals (object o)
 
 		/// <summary>
 		/// Compares this object instance to another object for equality.
@@ -686,9 +782,9 @@ namespace MatterHackers.VectorMath
 			return this == (Quaternion)other;
 		}
 
-		#endregion public override bool Equals (object o)
+#endregion public override bool Equals (object o)
 
-		#region public override int GetHashCode ()
+#region public override int GetHashCode ()
 
 		/// <summary>
 		/// Provides the hash code for this object.
@@ -699,13 +795,13 @@ namespace MatterHackers.VectorMath
 			return new { Xyz.X, Xyz.Y, Xyz.Z, W }.GetHashCode();
 		}
 
-		#endregion public override int GetHashCode ()
+#endregion public override int GetHashCode ()
 
-		#endregion Overrides
+#endregion Overrides
 
-		#endregion Public Members
+#endregion Public Members
 
-		#region IEquatable<Quaterniond> Members
+#region IEquatable<Quaterniond> Members
 
 		/// <summary>
 		/// Compares this Quaterniond instance to another Quaterniond for equality.
@@ -717,6 +813,6 @@ namespace MatterHackers.VectorMath
 			return Xyz == other.Xyz && W == other.W;
 		}
 
-		#endregion IEquatable<Quaterniond> Members
+#endregion IEquatable<Quaterniond> Members
 	}
 }

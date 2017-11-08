@@ -27,7 +27,7 @@ namespace MatterHackers.RayTracer
 		private RectangleFloat boundsOnMajorAxis = new RectangleFloat(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
 		private Vector3Float center;
 		public int MajorAxis { get; private set; } = 0;
-		private PlaneFloat plane;
+		public PlaneFloat Plane { get; private set; }
 		private Vector3Float[] vertices = new Vector3Float[3];
 
 		public Vector3 GetVertex(int index)
@@ -39,7 +39,7 @@ namespace MatterHackers.RayTracer
 		{
 			Vector3 planeNormal = Vector3.Cross(vertex1 - vertex0, vertex2 - vertex0).GetNormal();
 			double distanceFromOrigin = Vector3.Dot(vertex0, planeNormal);
-			plane = new PlaneFloat(new Vector3Float(planeNormal), (float)distanceFromOrigin);
+			Plane = new PlaneFloat(new Vector3Float(planeNormal), (float)distanceFromOrigin);
 			Material = material;
 			vertices[0] = new Vector3Float(vertex0);
 			vertices[1] = new Vector3Float(vertex1);
@@ -96,7 +96,7 @@ namespace MatterHackers.RayTracer
 		{
 			bool inFront;
 			float distanceToHit;
-			if (plane.RayHitPlane(ray, out distanceToHit, out inFront))
+			if (Plane.RayHitPlane(ray, out distanceToHit, out inFront))
 			{
 				bool wantFrontAndInFront = (ray.intersectionType & IntersectionType.FrontFace) == IntersectionType.FrontFace && inFront;
 				bool wantBackAndInBack = (ray.intersectionType & IntersectionType.BackFace) == IntersectionType.BackFace && !inFront;
@@ -123,7 +123,7 @@ namespace MatterHackers.RayTracer
 						info.closestHitObject = this;
 						info.hitType = IntersectionType.FrontFace;
 						info.HitPosition = hitPosition;
-						info.normalAtHit = new Vector3(plane.planeNormal);
+						info.normalAtHit = new Vector3(Plane.PlaneNormal);
 						info.distanceToHit = distanceToHit;
 
 						return info;
@@ -143,9 +143,9 @@ namespace MatterHackers.RayTracer
 		{
 			if (Material.HasTexture)
 			{
-				Vector3Float Position = plane.planeNormal;
+				Vector3Float Position = Plane.PlaneNormal;
 				Vector3Float vecU = new Vector3Float(Position.y, Position.z, -Position.x);
-				Vector3Float vecV = Vector3Float.Cross(vecU, plane.planeNormal);
+				Vector3Float vecV = Vector3Float.Cross(vecU, Plane.PlaneNormal);
 
 				double u = Vector3Float.Dot(new Vector3Float(info.HitPosition), vecU);
 				double v = Vector3Float.Dot(new Vector3Float(info.HitPosition), vecV);
