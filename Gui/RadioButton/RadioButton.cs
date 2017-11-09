@@ -65,8 +65,6 @@ namespace MatterHackers.Agg.UI
 
 				MinimumSize = new Vector2(Width, Height);
 			}
-
-			Click += (s, e) => Checked = true;
 		}
 
 		public RadioButton(GuiWidget view)
@@ -141,6 +139,12 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 			}
+		}
+
+		public override void OnClick(MouseEventArgs mouseEvent)
+		{
+			base.OnClick(mouseEvent);
+			this.Checked = true;
 		}
 
 		public bool Checked
