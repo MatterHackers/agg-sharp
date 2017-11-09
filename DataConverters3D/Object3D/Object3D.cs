@@ -416,12 +416,9 @@ namespace MatterHackers.DataConverters3D
 			}
 			else if (Children.Count > 0)
 			{
-				// TODO: If is all holes than return the accumulated bounds
-				// If it has booleans done to it (holes and meshes) return only the non-hole bounds
 				foreach (IObject3D child in Children)
 				{
-					if (child.OutputType != PrintOutputTypes.Hole
-						&& child.Visible)
+					if (child.Visible)
 					{
 						// Add the bounds of each child object
 						var childBounds = child.GetAxisAlignedBoundingBox(totalTransorm, requirePrecision);
@@ -455,13 +452,23 @@ namespace MatterHackers.DataConverters3D
 
 			if (traceData == null || tracedHashCode != hashCode)
 			{
-				// Get the trace data for the local mesh
-				List<IPrimitive> traceables = (Mesh == null) ? new List<IPrimitive>() : new List<IPrimitive> { Mesh.CreateTraceData() };
-
-				// Get the trace data for all children
-				foreach (Object3D child in Children)
+				var traceables = new List<IPrimitive>();
+				// Check if we have a mesh at this level
+				if (Mesh == null)
 				{
-					traceables.Add(child.TraceData());
+					// No mesh, so get the trace data for all children
+					foreach (Object3D child in Children)
+					{
+						if (child.Visible)
+						{
+							traceables.Add(child.TraceData());
+						}
+					}
+				}
+				else // we have a mesh so don't recurse into children
+				{
+					// Get the trace data for the local mesh
+					 traceables.Add(Mesh.CreateTraceData());
 				}
 
 				// Wrap with a BVH
@@ -483,6 +490,11 @@ namespace MatterHackers.DataConverters3D
 			unchecked
 			{
 				hash = hash * 31 + Matrix.GetLongHashCode();
+
+				if(Mesh != null)
+				{
+					hash = hash * 32 + Mesh.GetLongHashCode();
+				}
 
 				foreach (var child in Children)
 				{
