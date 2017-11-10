@@ -27,7 +27,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public Button(string buttonText, double x = 0, double y = 0)
-			: this(x, y, new ButtonViewText(buttonText))
+			: this(x, y, new ButtonViewText(buttonText) { HAnchor = HAnchor.Fit })
 		{
 		}
 
@@ -42,12 +42,12 @@ namespace MatterHackers.Agg.UI
 			{
 				buttonView.Selectable = false;
 
-				AddChild(buttonView);
+				this.AddChild(buttonView);
 
-				HAnchor = HAnchor.Fit;
-				VAnchor = VAnchor.Fit;
+				this.HAnchor = HAnchor.Fit;
+				this.VAnchor = VAnchor.Fit;
 
-				MinimumSize = new Vector2(Width, Height);
+				this.MinimumSize = new Vector2(Width, Height);
 			}
 		}
 	}
