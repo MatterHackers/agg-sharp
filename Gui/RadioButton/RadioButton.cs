@@ -1,6 +1,4 @@
-﻿using MatterHackers.VectorMath;
-
-//----------------------------------------------------------------------------
+﻿//----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
@@ -23,9 +21,9 @@
 //
 //----------------------------------------------------------------------------
 using System;
-using System.Collections.ObjectModel;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
@@ -40,26 +38,15 @@ namespace MatterHackers.Agg.UI
 		IEnumerable<GuiWidget> SiblingRadioButtonList { get; set; }
 	}
 
-	public class RadioButton : GuiWidget, IRadioButton
+	public class RadioButton : FlowLayoutWidget, IRadioButton
 	{
 		public event EventHandler CheckedStateChanged;
 
-		private IEnumerable<GuiWidget> siblingRadioButtonList = null;
 		private bool isChecked = false;
 
 		public static BorderDouble defaultMargin = new BorderDouble(5);
 
-		public IEnumerable<GuiWidget> SiblingRadioButtonList
-		{
-			get
-			{
-				return this.siblingRadioButtonList;
-			}
-			set
-			{
-				this.siblingRadioButtonList = value;
-			}
-		}
+		public IEnumerable<GuiWidget> SiblingRadioButtonList { get; set; }
 
 		public RadioButton(double x, double y, GuiWidget view)
 		{
@@ -71,40 +58,18 @@ namespace MatterHackers.Agg.UI
 			{
 				view.Selectable = false;
 
-				SuspendLayout();
 				AddChild(view);
-				ResumeLayout();
 
-				FixBoundsAndChildrenPositions();
+				view.HAnchor = HAnchor.Fit;
+				view.VAnchor = VAnchor.Fit;
 
 				MinimumSize = new Vector2(Width, Height);
 			}
-
-			Click += (s, e) => Checked = true;
 		}
 
 		public RadioButton(GuiWidget view)
 			: this(0, 0, view)
 		{
-		}
-
-		protected void FixBoundsAndChildrenPositions()
-		{
-			SetBoundsToEncloseChildren();
-
-			if (LocalBounds.Left != 0 || LocalBounds.Bottom != 0)
-			{
-				SuspendLayout();
-				// let's make sure that a button has 0, 0 at the lower left
-				// move the children so they will fit with 0, 0 at the lower left
-				foreach (GuiWidget child in Children)
-				{
-					child.OriginRelativeParent = child.OriginRelativeParent + new Vector2(-LocalBounds.Left, -LocalBounds.Bottom);
-				}
-				ResumeLayout();
-
-				SetBoundsToEncloseChildren();
-			}
 		}
 
 		public RadioButton(string label, int fontSize=12)
@@ -174,6 +139,12 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 			}
+		}
+
+		public override void OnClick(MouseEventArgs mouseEvent)
+		{
+			base.OnClick(mouseEvent);
+			this.Checked = true;
 		}
 
 		public bool Checked

@@ -27,7 +27,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public Button(string buttonText, double x = 0, double y = 0)
-			: this(x, y, new ButtonViewText(buttonText))
+			: this(x, y, new ButtonViewText(buttonText) { HAnchor = HAnchor.Fit })
 		{
 		}
 
@@ -42,32 +42,12 @@ namespace MatterHackers.Agg.UI
 			{
 				buttonView.Selectable = false;
 
-				SuspendLayout();
-				AddChild(buttonView);
-				ResumeLayout();
+				this.AddChild(buttonView);
 
-				FixBoundsAndChildrenPositions();
+				this.HAnchor = HAnchor.Fit;
+				this.VAnchor = VAnchor.Fit;
 
-				MinimumSize = new Vector2(Width, Height);
-			}
-		}
-
-		protected void FixBoundsAndChildrenPositions()
-		{
-			SetBoundsToEncloseChildren();
-
-			if (LocalBounds.Left != 0 || LocalBounds.Bottom != 0)
-			{
-				SuspendLayout();
-				// let's make sure that a button has 0, 0 at the lower left
-				// move the children so they will fit with 0, 0 at the lower left
-				foreach (GuiWidget child in Children)
-				{
-					child.OriginRelativeParent = child.OriginRelativeParent + new Vector2(-LocalBounds.Left, -LocalBounds.Bottom);
-				}
-				ResumeLayout();
-
-				SetBoundsToEncloseChildren();
+				this.MinimumSize = new Vector2(Width, Height);
 			}
 		}
 	}
