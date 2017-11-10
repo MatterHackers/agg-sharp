@@ -334,11 +334,11 @@ namespace MatterHackers.Agg.UI
 		}
 	}
 
-	internal class PopupMenu : PopupWidget
+	internal class DropDownContainer : PopupWidget
 	{
 		private List<MenuItem> MenuItems;
 
-		public PopupMenu(IEnumerable<MenuItem> MenuItems, GuiWidget popupContent, GuiWidget widgetRelativeTo, Direction direction, double maxHeight, bool alignToRightEdge, bool makeScrollable)
+		public DropDownContainer(IEnumerable<MenuItem> MenuItems, GuiWidget popupContent, GuiWidget widgetRelativeTo, Direction direction, double maxHeight, bool alignToRightEdge, bool makeScrollable)
 			: base(popupContent, new PopupLayoutEngine(popupContent, widgetRelativeTo, direction, maxHeight, alignToRightEdge), makeScrollable)
 		{
 			this.Name = "_OpenMenuContents";
