@@ -104,7 +104,7 @@ namespace MatterHackers.Agg.UI
 			base.OnClick(mouseEvent);
 		}
 
-		internal PopupMenu DropDownContainer = null;
+		internal DropDownContainer DropDownContainer = null;
 
 		protected virtual void ShowMenu()
 		{
@@ -124,7 +124,7 @@ namespace MatterHackers.Agg.UI
 				topToBottom.AddChild(menu);
 			}
 
-			DropDownContainer = new PopupMenu(MenuItems, topToBottom, this, MenuDirection, maxHeight, AlignToRightEdge, true)
+			DropDownContainer = new DropDownContainer(MenuItems, topToBottom, this, MenuDirection, maxHeight, AlignToRightEdge, true)
 			{
 				BorderWidth = MenuItemsBorderWidth,
 				BorderColor = MenuItemsBorderColor,
@@ -152,7 +152,7 @@ namespace MatterHackers.Agg.UI
 
 		virtual protected void DropListItems_Closed(object sender, ClosedEventArgs e)
 		{
-			PopupMenu dropListItems = (PopupMenu)sender;
+			DropDownContainer dropListItems = (DropDownContainer)sender;
 			dropListItems.Closed -= DropListItems_Closed;
 			IsOpen = false;
 
