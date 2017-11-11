@@ -81,8 +81,7 @@ namespace MatterHackers.Agg.UI
 		override public void OnMouseDown(MouseEventArgs mouseEvent)
 		{
 			MouseDownOnThumb = true;
-			Vector2 mousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
-			MouseDownPosition = mousePosition;
+			MouseDownPosition = new Vector2(mouseEvent.X, mouseEvent.Y);
 
 			base.OnMouseDown(mouseEvent);
 		}
@@ -124,6 +123,11 @@ namespace MatterHackers.Agg.UI
 		private ThumDragWidget thumb;
 
 		public static double ScrollBarWidth = 15 * GuiWidget.DeviceScale;
+
+		/// <summary>
+		/// The amount to grow each side of the thumb in Y on Hover
+		/// </summary>
+		public static int GrowThumbBy = 3;
 
 		public static BorderDouble DefaultMargin = 0;
 
@@ -180,20 +184,11 @@ namespace MatterHackers.Agg.UI
 
 			this.Margin = ScrollBar.DefaultMargin;
 
-			ParentScrollWidget.BoundsChanged += new EventHandler(Parent_BoundsChanged);
-			ParentScrollWidget.ScrollArea.BoundsChanged += new EventHandler(ScrollArea_BoundsChanged);
-			ParentScrollWidget.ScrollPositionChanged += new EventHandler(scrollWidgeContainingThis_ScrollPositionChanged);
-			ParentScrollWidget.ScrollArea.MarginChanged += new EventHandler(ScrollArea_MarginChanged);
-			UpdateScrollBar();
-		}
+			ParentScrollWidget.BoundsChanged += Bounds_Changed;
+			ParentScrollWidget.ScrollArea.BoundsChanged += Bounds_Changed;
+			ParentScrollWidget.ScrollPositionChanged += Bounds_Changed;
+			ParentScrollWidget.ScrollArea.MarginChanged += Bounds_Changed;
 
-		private void ScrollArea_MarginChanged(object sender, EventArgs e)
-		{
-			UpdateScrollBar();
-		}
-
-		private void scrollWidgeContainingThis_ScrollPositionChanged(object sender, EventArgs e)
-		{
 			UpdateScrollBar();
 		}
 
@@ -255,8 +250,8 @@ namespace MatterHackers.Agg.UI
 					background.LocalBounds = LocalBounds;
 
 					// On hover, grow the thumb bounds by the given value
-					int growAmount = (mouseInBounds) ? 0 : 3;
-					thumb.LocalBounds = new RectangleDouble(growAmount, 0, ScrollBarWidth - growAmount + 1, ThumbHeight);
+					int growAmount = (mouseInBounds) ? 0 : ScrollBar.GrowThumbBy;
+					thumb.LocalBounds = new RectangleDouble(growAmount, 0, ScrollBarWidth - growAmount, ThumbHeight);
 
 					Vector2 scrollRatioFromTop0To1 = ParentScrollWidget.ScrollRatioFromTop0To1;
 					double notThumbHeight = ParentScrollWidget.Height - ThumbHeight;
@@ -288,12 +283,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private void ScrollArea_BoundsChanged(object sender, EventArgs e)
-		{
-			UpdateScrollBar();
-		}
-
-		private void Parent_BoundsChanged(object sender, EventArgs e)
+		private void Bounds_Changed(object sender, EventArgs e)
 		{
 			UpdateScrollBar();
 		}
