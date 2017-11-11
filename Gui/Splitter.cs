@@ -34,18 +34,27 @@ namespace MatterHackers.Agg.UI
 {
 	public class Splitter : GuiWidget
 	{
+		public event EventHandler DistanceChanged;
+
 		private class SplitterBar : GuiWidget
 		{
+			private Splitter parentSplitter;
+
 			private bool mouseDownOnBar = false;
 			private Vector2 DownPosition;
 
-			public SplitterBar()
+			public SplitterBar(Splitter splitter)
 			{
+				this.parentSplitter = splitter;
 				this.Cursor = Cursors.VSplit;
 			}
 
+			double mouseDownPosition = -1;
+
 			override public void OnMouseDown(MouseEventArgs mouseEvent)
 			{
+				mouseDownPosition = parentSplitter.SplitterDistance;
+
 				if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
 				{
 					mouseDownOnBar = true;
@@ -61,6 +70,11 @@ namespace MatterHackers.Agg.UI
 
 			override public void OnMouseUp(MouseEventArgs mouseEvent)
 			{
+				if (mouseDownPosition != parentSplitter.SplitterDistance)
+				{
+					parentSplitter.DistanceChanged?.Invoke(this, null);
+				}
+
 				mouseDownOnBar = false;
 				base.OnMouseUp(mouseEvent);
 			}
@@ -72,7 +86,7 @@ namespace MatterHackers.Agg.UI
 					Vector2 mousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
 					mousePosition += OriginRelativeParent;
 					double deltaX = mousePosition.X - DownPosition.X;
-					double newSplitterPosition = ((Splitter)Parent).SplitterDistance + deltaX;
+					double newSplitterPosition = parentSplitter.SplitterDistance + deltaX;
 
 					if (newSplitterPosition < Parent.LocalBounds.Left + Parent.Padding.Left)
 					{
@@ -83,21 +97,23 @@ namespace MatterHackers.Agg.UI
 						newSplitterPosition = Parent.LocalBounds.Right - Width - Parent.Padding.Right;
 					}
 
-					((Splitter)Parent).SplitterDistance = newSplitterPosition;
+					parentSplitter.SplitterDistance = newSplitterPosition;
 					DownPosition = mousePosition;
 				}
 				base.OnMouseMove(mouseEvent);
 			}
 		}
 
-		private SplitterBar splitterBar = new SplitterBar()
-		{
-			BackgroundColor = Color.Transparent
-		};
+		private SplitterBar splitterBar;
 
 		public Splitter()
 		{
-			splitterBar.Width = 6;
+			 splitterBar = new SplitterBar(this)
+			 {
+				 BackgroundColor = Color.Transparent,
+				 Width = 6,
+			 };
+
 			SplitterDistance = 120;
 
 			AddChild(Panel1);
