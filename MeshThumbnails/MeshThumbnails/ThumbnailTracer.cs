@@ -388,7 +388,9 @@ namespace MatterHackers.RayTracer
 				double scaleFraction = .1;
 				RectangleDouble goalBounds = new RectangleDouble(0, 0, size.x, size.y);
 				goalBounds.Inflate(-10);
-				while (!done)
+
+				int rescaleAttempts = 0;
+				while (!done && rescaleAttempts++ < 500)
 				{
 					RectangleDouble partScreenBounds = GetScreenBounds(meshBounds);
 

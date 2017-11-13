@@ -54,6 +54,13 @@ namespace MatterHackers.RayTracer
 	{
 		public static ImageBuffer Generate(IObject3D loadedItem, RenderType renderType, int width, int height, bool allowMultiThreading = true)
 		{
+			// Skip generation for invalid items
+			if (loadedItem.Children.Count == 0
+				|| !loadedItem.VisibleMeshes().Any())
+			{
+				return null;
+			}
+					
 			switch (renderType)
 			{
 				case RenderType.RAY_TRACE:
