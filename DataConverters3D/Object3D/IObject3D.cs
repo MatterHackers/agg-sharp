@@ -114,6 +114,8 @@ namespace MatterHackers.DataConverters3D
 
 	public interface IObject3D : IAscendable<IObject3D>
 	{
+		event EventHandler Invalidated;
+
 		string ActiveEditor { get; set; }
 		string OwnerID { get; set; }
 
@@ -170,6 +172,12 @@ namespace MatterHackers.DataConverters3D
 		/// </summary>
 		/// <returns></returns>
 		long GetLongHashCode();
+
+		/// <summary>
+		/// Serialize the current instance to Json
+		/// </summary>
+		/// <returns></returns>
+		string ToJson();
 
 		/// <summary>
 		/// Return ray tracing data for the current data. This is used
