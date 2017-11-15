@@ -471,7 +471,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(mouseEnterBounds == 0);
 		}
 
-		[Test, Category("WorkInProgress" /* Functionality needs to be implemented */)]
+		[Test, Ignore("WorkInProgress - Functionality needs to be implemented")]
 		public void ValidateEnterLeaveOnWidgetMoves()
 		{
 			GuiWidget container = new SystemWindow(200, 200);
@@ -536,7 +536,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(gotEnterBounds == 1);
 		}
 
-		[Test, Category("WorkInProgress" /* Functionality needs to be implemented */)]
+		[Test, Ignore("WorkInProgress - Functionality needs to be implemented")]
 		public void ValidateEnterLeaveOnWidgetBoundsChange()
 		{
 			GuiWidget container = new SystemWindow(200, 200);

@@ -34,7 +34,7 @@ using MatterHackers.VectorMath.Tests;
 
 namespace MatterHackers.RayTracer
 {
-    [TestFixture, Category("WorkInProgress")]
+    [TestFixture, Ignore("WorkInProgress")]
 	public class FrustumTests
 	{
 		[Test]
