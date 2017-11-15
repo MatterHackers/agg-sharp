@@ -63,7 +63,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			//Assert.IsTrue(result.IsManifold());
 		}
 
-		[Test, Category("FixNeeded" /* Crashes NUnit on build servers with an unrecoverable StackOverflow error */), Ignore("This test must be disabled due to it taking out nunit")]
+		[Test, Ignore("Crashes NUnit with an unrecoverable StackOverflow error, ending test passes on build servers")]
 		public void SubtractIcosahedronsWorks()
 		{
 			Vector3 centering = new Vector3(100, 100, 20);
@@ -205,7 +205,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			}
 		}
 
-		[Test, Category("FixNeeded"), Ignore("Work in progress")]
+		[Test, Ignore("Work in progress")]
 		public void SubtractionMakesClosedSolid()
 		{
 			double XOffset = -.4;

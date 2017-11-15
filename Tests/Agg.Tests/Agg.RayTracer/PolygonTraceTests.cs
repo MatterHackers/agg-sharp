@@ -64,7 +64,7 @@ namespace MatterHackers.RayTracer
 	[TestFixture, Category("Agg.RayTracer")]
 	public class PolygonTraceTests
 	{
-		[Test, Category("WorkInProgress")]
+		[Test, Ignore("WorkInProgress")]
 		public void RayBundleSameResultAsIndividualRays()
 		{
 		}
