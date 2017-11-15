@@ -114,6 +114,8 @@ namespace MatterHackers.DataConverters3D
 
 	public interface IObject3D : IAscendable<IObject3D>
 	{
+		event EventHandler Invalidated;
+
 		string ActiveEditor { get; set; }
 		string OwnerID { get; set; }
 
@@ -161,15 +163,21 @@ namespace MatterHackers.DataConverters3D
 		/// <summary>
 		/// Get the Axis Aligned Bounding Box transformed by the given offset
 		/// </summary>
-		/// <param name="offet">The initial offset to use for the bounds</param>
+		/// <param name="matrix">The Matrix4X4 to use for the bounds</param>
 		/// <returns></returns>
-		AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 offet, bool requirePrecision = false);
+		AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix, bool requirePrecision = false);
 
 		/// <summary>
 		/// return a 64 bit hash code of the transforms and children and transforms
 		/// </summary>
 		/// <returns></returns>
 		long GetLongHashCode();
+
+		/// <summary>
+		/// Serialize the current instance to Json
+		/// </summary>
+		/// <returns></returns>
+		string ToJson();
 
 		/// <summary>
 		/// Return ray tracing data for the current data. This is used

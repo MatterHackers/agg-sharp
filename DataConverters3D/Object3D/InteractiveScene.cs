@@ -33,17 +33,21 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Processors;
+using MatterHackers.RayTracer;
+using MatterHackers.VectorMath;
 using Newtonsoft.Json;
 
 namespace MatterHackers.MeshVisualizer
 {
-	public class InteractiveScene : Object3D
+	public class InteractiveScene : IObject3D
 	{
 		public event EventHandler SelectionChanged;
+		public event EventHandler Invalidated;
 
 		private IObject3D selectedItem;
 
@@ -92,16 +96,31 @@ namespace MatterHackers.MeshVisualizer
 
 		public void Save(string mcxPath, string libraryPath, Action<double, string> progress = null)
 		{
+			try
+			{
+				this.PersistAssets(libraryPath, progress);
+
+				// Serialize the scene to disk using a modified Json.net pipeline with custom ContractResolvers and JsonConverters
+				File.WriteAllText(mcxPath, this.ToJson());
+			}
+			catch (Exception ex)
+			{
+				Trace.WriteLine("Error saving file: ", ex.Message);
+			}
+		}
+
+		public void PersistAssets(string libraryPath, Action<double, string> progress = null)
+		{
 			var itemsWithUnsavedMeshes = from object3D in this.Descendants()
-							  where object3D.Persistable  &&
-									object3D.MeshPath == null &&
-									object3D.Mesh != null
-							  select object3D;
+										 where object3D.Persistable &&
+											   object3D.MeshPath == null &&
+											   object3D.Mesh != null
+										 select object3D;
 
 			string assetsDirectory = Path.Combine(libraryPath, "Assets");
 			Directory.CreateDirectory(assetsDirectory);
 
-			Dictionary<int, string> assetFiles = new Dictionary<int, string>();
+			var assetFiles = new Dictionary<int, string>();
 
 			try
 			{
@@ -151,9 +170,6 @@ namespace MatterHackers.MeshVisualizer
 						item.MeshPath = Path.GetFileName(assetPath);
 					}
 				}
-
-				// Serialize the scene to disk using a modified Json.net pipeline with custom ContractResolvers and JsonConverters
-				File.WriteAllText(mcxPath, this.ToJson());
 			}
 			catch (Exception ex)
 			{
@@ -253,19 +269,62 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
-		public void Load(string mcxPath)
+		public void Load(IObject3D source)
 		{
-			var root = Object3D.Load(mcxPath, CancellationToken.None);
-
-			this.Children.Modify(list =>
-			{
-				list.Clear();
-
-				if (root != null)
-				{
-					list.AddRange(root.Children);
-				}
-			});
+			sourceItem = source;
 		}
+
+		#region IObject3D
+
+		private IObject3D sourceItem = new Object3D();
+
+		public string ActiveEditor { get => sourceItem.ActiveEditor; set => sourceItem.ActiveEditor = value; }
+		public string OwnerID { get => sourceItem.OwnerID; set => sourceItem.OwnerID = value; }
+		public SafeList<IObject3D> Children { get => sourceItem.Children; set => sourceItem.Children = value; }
+		public IObject3D Parent { get => sourceItem.Parent; set => sourceItem.Parent = value; }
+		public Color Color { get => sourceItem.Color; set => sourceItem.Color = value; }
+		public int MaterialIndex { get => sourceItem.MaterialIndex; set => sourceItem.MaterialIndex = value; }
+		public Object3DTypes ItemType { get => sourceItem.ItemType; set => sourceItem.ItemType = value; }
+		public PrintOutputTypes OutputType { get => sourceItem.OutputType; set => sourceItem.OutputType = value; }
+		public Matrix4X4 Matrix { get => sourceItem.Matrix; set => sourceItem.Matrix = value; }
+		public string TypeName => sourceItem.TypeName;
+		public Mesh Mesh { get => sourceItem.Mesh; set => sourceItem.Mesh = value; }
+		public string MeshPath { get => sourceItem.MeshPath; set => sourceItem.MeshPath = value; }
+		public string Name { get => sourceItem.Name; set => sourceItem.Name = value; }
+		public bool Persistable => sourceItem.Persistable;
+		public bool Visible { get => sourceItem.Visible; set => sourceItem.Visible = value; }
+		public string ID { get => sourceItem.ID; set => sourceItem.ID = value; }
+
+		public IObject3D Clone() => sourceItem.Clone();
+
+		public string ToJson() => sourceItem.ToJson();
+
+		public long GetLongHashCode() => sourceItem.GetLongHashCode();
+
+		public IPrimitive TraceData() => sourceItem.TraceData();
+
+		public void SetAndInvalidateMesh(Mesh mesh)
+		{
+			sourceItem.SetAndInvalidateMesh(mesh);
+		}
+
+		public void Invalidate()
+		{
+			this.Invalidated?.Invoke(this, null);
+		}
+
+		public MeshGroup Flatten(Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings = null)
+		{
+			return sourceItem.Flatten(meshPrintOutputSettings);
+		}
+
+		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix, bool requirePrecision = false)
+		{
+			return sourceItem.GetAxisAlignedBoundingBox(matrix, requirePrecision);
+		}
+
+
+		#endregion
+
 	}
 }
