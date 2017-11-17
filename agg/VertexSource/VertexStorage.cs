@@ -763,7 +763,7 @@ namespace MatterHackers.Agg.VertexSource
 								}
 
 								this.curve4(controlPoint1.X, controlPoint1.Y, secondControlPoint.X, secondControlPoint.Y, curXY.X, curXY.Y);
-								
+
 								// if the next element is another coordinate than we just continue to add more curves.
 							} while(NextElementIsANumber(dString, parseIndex));
 						}

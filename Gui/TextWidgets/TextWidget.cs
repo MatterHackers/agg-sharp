@@ -221,8 +221,6 @@ namespace MatterHackers.Agg.UI
 			}
 			graphics2D.SetTransform(graphics2D.GetTransform() * Affine.NewTranslation(xOffsetForText, yOffsetForText));
 
-			Color currentColor = this.textColor;
-
 			if (EllipsisIfClipped && Printer.LocalBounds.Width > LocalBounds.Width) // only do this if it's static text
 			{
 				TypeFacePrinter shortTextPrinter = Printer;
@@ -231,12 +229,12 @@ namespace MatterHackers.Agg.UI
 				{
 					shortTextPrinter = new TypeFacePrinter(shortTextPrinter.Text.Substring(0, shortTextPrinter.Text.Length - 4).TrimEnd(spaceTrim) + "...", Printer);
 				}
-				shortTextPrinter.Render(graphics2D, currentColor);
+				shortTextPrinter.Render(graphics2D, this.TextColor);
 			}
 			else
 			{
 				// it all fits or it's editable (if editable it will need to be offset/scrolled sometimes).
-				Printer.Render(graphics2D, currentColor);
+				Printer.Render(graphics2D, this.TextColor);
 			}
 
 			// Debug onscreen fonts
