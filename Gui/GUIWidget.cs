@@ -233,6 +233,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual int TabIndex { get; set; }
 
+		#region BackgroundColor
 		private Color backgroundColor = new Color();
 
 		public virtual Color BackgroundColor
@@ -249,16 +250,27 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private BorderDouble devicePadding;
-		private BorderDouble padding;
+		public event EventHandler BackgroundColorChanged;
+
+		public virtual void OnBackgroundColorChanged(EventArgs e)
+		{
+			BackgroundColorChanged?.Invoke(this, e);
+		}
+		#endregion
 
 		/// <summary>
-		/// The padding scaled by the DeviceScale
+		/// The boarder and padding scaled by the DeviceScale (used by the layout engine)
 		/// </summary>
-		public BorderDouble DevicePadding
+		public BorderDouble DeviceBorderAndPadding
 		{
-			get { return devicePadding; }
+			get { return deviceBorder + devicePadding; }
 		}
+		
+		#region Padding
+		public event EventHandler PaddingChanged;
+
+		private BorderDouble devicePadding;
+		private BorderDouble padding;
 
 		/// <summary>
 		/// The space between the Widget and it's contents (the inside border).
@@ -291,14 +303,75 @@ namespace MatterHackers.Agg.UI
 		{
 			PaddingChanged?.Invoke(this, null);
 		}
+		#endregion
+
+		#region Border
+		//private Color borderColor = new Color();
+		private Color borderColor = Color.Red;
+
+		public virtual Color BorderColor
+		{
+			get { return borderColor; }
+			set
+			{
+				if (borderColor != value)
+				{
+					borderColor = value;
+					OnBorderColorChanged(null);
+					Invalidate();
+				}
+			}
+		}
+
+		public event EventHandler BorderColorChanged;
+
+		public virtual void OnBorderColorChanged(EventArgs e)
+		{
+			BorderColorChanged?.Invoke(this, e);
+		}
+
+		public event EventHandler BorderChanged;
+
+		private BorderDouble deviceBorder;
+		private BorderDouble border;
 
 		/// <summary>
-		/// Sets the cusor that will be used when the mouse is over this control
+		/// The space between the Widget and its border.
 		/// </summary>
-		public Cursors Cursor { get; set; }
+		[Category("Layout")]
+		public virtual BorderDouble Border
+		{
+			get { return border; }
+			set
+			{
+				//using (new PerformanceTimer("Draw Timer", "On Layout"))
+				{
+					if (border != value)
+					{
+						border = value;
+						deviceBorder = Border * GuiWidget.DeviceScale;
+						if (EnforceIntegerBounds)
+						{
+							deviceBorder.Round();
+						}
+						// the border affects the children so make sure they are laid out
+						OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.Border));
+						OnBorderChanged();
+					}
+				}
+			}
+		}
+
+		public virtual void OnBorderChanged()
+		{
+			BorderChanged?.Invoke(this, null);
+		}
+		#endregion
+		
+		#region Margin
+		public event EventHandler MarginChanged;
 
 		private BorderDouble margin;
-		private BorderDouble deviceMargin;
 
 		public long LastMouseDownMs { get; private set; }
 
@@ -307,7 +380,8 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		public BorderDouble DeviceMargin
 		{
-			get { return deviceMargin; }
+			get;
+			private set;
 		}
 
 		/// <summary>
@@ -325,11 +399,11 @@ namespace MatterHackers.Agg.UI
 				if (margin != value)
 				{
 					margin = value;
-					deviceMargin = Margin * GuiWidget.DeviceScale;
+					DeviceMargin = Margin * GuiWidget.DeviceScale;
 
 					if (EnforceIntegerBounds)
 					{
-						deviceMargin.Round();
+						DeviceMargin.Round();
 					}
 					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Margin));
 					OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.Margin));
@@ -338,6 +412,17 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public virtual void OnMarginChanged()
+		{
+			MarginChanged?.Invoke(this, null);
+		}
+		#endregion
+
+		/// <summary>
+		/// Sets the cusor that will be used when the mouse is over this control
+		/// </summary>
+		public Cursors Cursor { get; set; }
+
 		[Conditional("DEBUG")]
 		public static void BreakInDebugger(string description = "")
 		{
@@ -345,11 +430,6 @@ namespace MatterHackers.Agg.UI
 #if DEBUG && false
 			Debugger.Break();
 #endif
-		}
-
-		public virtual void OnMarginChanged()
-		{
-			MarginChanged?.Invoke(this, null);
 		}
 
 		public bool HAnchorIsSet(HAnchor testFlags)
@@ -546,13 +626,7 @@ namespace MatterHackers.Agg.UI
 
 		public event EventHandler BoundsChanged;
 
-		public event EventHandler MarginChanged;
-
-		public event EventHandler PaddingChanged;
-
 		public event EventHandler MinimumSizeChanged;
-
-		public event EventHandler BackgroundColorChanged;
 
 		public event EventHandler TextChanged;
 
@@ -1092,7 +1166,7 @@ namespace MatterHackers.Agg.UI
 		public RectangleDouble GetMinimumBoundsToEncloseChildren(bool considerChildAnchor = false)
 		{
 			RectangleDouble minimumSizeToEncloseChildren = GetChildrenBoundsIncludingMargins(considerChildAnchor);
-			minimumSizeToEncloseChildren.Inflate(DevicePadding);
+			minimumSizeToEncloseChildren.Inflate(DeviceBorderAndPadding);
 			return minimumSizeToEncloseChildren;
 		}
 
@@ -1100,11 +1174,6 @@ namespace MatterHackers.Agg.UI
 		{
 			RectangleDouble childrenBounds = GetMinimumBoundsToEncloseChildren();
 			LocalBounds = childrenBounds;
-		}
-
-		public virtual void OnBackgroundColorChanged(EventArgs e)
-		{
-			BackgroundColorChanged?.Invoke(this, e);
 		}
 
 		public virtual void OnBoundsChanged(EventArgs e)
@@ -1839,8 +1908,10 @@ namespace MatterHackers.Agg.UI
 							invertedMargin.Bottom = -invertedMargin.Bottom;
 							invertedMargin.Right = -invertedMargin.Right;
 							invertedMargin.Top = -invertedMargin.Top;
-							DrawBorderBounds(graphics2D, child.BoundsRelativeToParent, invertedMargin, new Color(Red, 128));
+							DrawBorderAndPaddingBounds(graphics2D, child.BoundsRelativeToParent, invertedMargin, new Color(Red, 128));
 						}
+
+						DrawBorder(graphics2D);
 
 						RectangleDouble oldClippingRect = graphics2D.GetClippingRect();
 						graphics2D.PushTransform();
@@ -1915,7 +1986,7 @@ namespace MatterHackers.Agg.UI
 				if (DebugShowBounds)
 				{
 					// draw the padding
-					DrawBorderBounds(graphics2D, LocalBounds, DevicePadding, new Color(Cyan, 128));
+					DrawBorderAndPaddingBounds(graphics2D, LocalBounds, DeviceBorderAndPadding, new Color(Cyan, 128));
 
 					// show the bounds and inside with an x
 					graphics2D.Line(LocalBounds.Left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, new Color(Green, 100), 3);
@@ -2005,24 +2076,67 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private static void DrawBorderBounds(Graphics2D graphics2D, RectangleDouble bounds, BorderDouble border, Color color)
+		private static void DrawBorderAndPaddingBounds(Graphics2D graphics2D, RectangleDouble bounds, BorderDouble border, Color color)
 		{
 			if (border.Width != 0
 				|| border.Height != 0)
 			{
 				VertexStorage borderPath = new VertexStorage();
+				// put in the bounds
 				borderPath.MoveTo(bounds.Left, bounds.Bottom);
 				borderPath.LineTo(bounds.Left, bounds.Top);
 				borderPath.LineTo(bounds.Right, bounds.Top);
 				borderPath.LineTo(bounds.Right, bounds.Bottom);
 				borderPath.LineTo(bounds.Left, bounds.Bottom);
 
+				// take out inside the border
 				borderPath.MoveTo(bounds.Left + border.Left, bounds.Bottom + border.Bottom);
 				borderPath.LineTo(bounds.Right - border.Right, bounds.Bottom + border.Bottom);
 				borderPath.LineTo(bounds.Right - border.Right, bounds.Top - border.Top);
 				borderPath.LineTo(bounds.Left + border.Left, bounds.Top - border.Top);
 				borderPath.LineTo(bounds.Left + border.Left, bounds.Bottom + border.Bottom);
 				graphics2D.Render(borderPath, color);
+			}
+		}
+
+		private void DrawBorder(Graphics2D graphics2D)
+		{
+			var bounds = localBounds;
+			VertexStorage borderPath = new VertexStorage();
+			if (deviceBorder.Left > 0)
+			{
+				borderPath.MoveTo(bounds.Left, bounds.Top);
+				borderPath.LineTo(bounds.Left, bounds.Bottom);
+				borderPath.LineTo(bounds.Left + deviceBorder.Left, bounds.Bottom + deviceBorder.Bottom);
+				borderPath.LineTo(bounds.Left + deviceBorder.Left, bounds.Top - deviceBorder.Top);
+				graphics2D.Render(borderPath, BorderColor);
+			}
+			if (deviceBorder.Bottom > 0)
+			{
+				borderPath.remove_all();
+				borderPath.MoveTo(bounds.Left, bounds.Bottom);
+				borderPath.LineTo(bounds.Right, bounds.Bottom);
+				borderPath.LineTo(bounds.Right - deviceBorder.Right, bounds.Bottom + deviceBorder.Bottom);
+				borderPath.LineTo(bounds.Left + deviceBorder.Left, bounds.Bottom + deviceBorder.Bottom);
+				graphics2D.Render(borderPath, BorderColor);
+			}
+			if (deviceBorder.Right > 0)
+			{
+				borderPath.remove_all();
+				borderPath.MoveTo(bounds.Right, bounds.Bottom);
+				borderPath.LineTo(bounds.Right, bounds.Top);
+				borderPath.LineTo(bounds.Right - deviceBorder.Right, bounds.Top - deviceBorder.Top);
+				borderPath.LineTo(bounds.Right - deviceBorder.Right, bounds.Bottom + deviceBorder.Bottom);
+				graphics2D.Render(borderPath, BorderColor);
+			}
+			if (deviceBorder.Top > 0)
+			{
+				borderPath.remove_all();
+				borderPath.MoveTo(bounds.Right, bounds.Top);
+				borderPath.LineTo(bounds.Left, bounds.Top);
+				borderPath.LineTo(bounds.Left + deviceBorder.Left, bounds.Top - deviceBorder.Top);
+				borderPath.LineTo(bounds.Right - deviceBorder.Right, bounds.Top - deviceBorder.Top);
+				graphics2D.Render(borderPath, BorderColor);
 			}
 		}
 

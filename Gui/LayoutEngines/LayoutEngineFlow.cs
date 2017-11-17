@@ -131,7 +131,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override bool GetOriginAndHeightForChild(GuiWidget parent, GuiWidget child, out Vector2 newOriginRelParent, out double newHeight)
+		public override (bool adjustOrigin, bool adjustHeight) GetOriginAndHeightForChild(GuiWidget parent, GuiWidget child, out Vector2 newOriginRelParent, out double newHeight)
 		{
 			newOriginRelParent = Vector2.Zero;
 			newHeight = 0;
@@ -140,7 +140,7 @@ namespace MatterHackers.Agg.UI
 				return base.GetOriginAndHeightForChild(parent, child, out newOriginRelParent, out newHeight);
 			}
 
-			return false;
+			return (false, false);
 		}
 
 		public override bool GetOriginAndWidthForChild(GuiWidget parent, GuiWidget child, out Vector2 newOriginRelParent, out double newWidth)
@@ -276,7 +276,7 @@ namespace MatterHackers.Agg.UI
 			{
 				case UI.FlowDirection.LeftToRight:
 					{
-						double curX = parent.DevicePadding.Left;
+						double curX = parent.DeviceBorderAndPadding.Left;
 						foreach (GuiWidget child in parent.Children)
 						{
 							if (child.Visible == true)
@@ -286,7 +286,7 @@ namespace MatterHackers.Agg.UI
 								if (child.HAnchorIsSet(HAnchor.Stretch))
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
-									double newWidth = (parent.LocalBounds.Width - parent.DevicePadding.Width - totalWidthOfStaticItems) / numItemsNeedingExpanding;
+									double newWidth = (parent.LocalBounds.Width - parent.DeviceBorderAndPadding.Width - totalWidthOfStaticItems) / numItemsNeedingExpanding;
 									child.LocalBounds = new RectangleDouble(curChildBounds.Left, curChildBounds.Bottom,
 										newWidth, curChildBounds.Top);
 								}
@@ -298,7 +298,7 @@ namespace MatterHackers.Agg.UI
 
 				case UI.FlowDirection.RightToLeft:
 					{
-						double curX = parent.LocalBounds.Right - parent.DevicePadding.Right;
+						double curX = parent.LocalBounds.Right - parent.DeviceBorderAndPadding.Right;
 						foreach (GuiWidget child in parent.Children)
 						{
 							if (child.Visible == true)
@@ -306,7 +306,7 @@ namespace MatterHackers.Agg.UI
 								if (child.HAnchorIsSet(HAnchor.Stretch))
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
-									double newWidth = (parent.LocalBounds.Width - parent.DevicePadding.Width - totalWidthOfStaticItems) / numItemsNeedingExpanding;
+									double newWidth = (parent.LocalBounds.Width - parent.DeviceBorderAndPadding.Width - totalWidthOfStaticItems) / numItemsNeedingExpanding;
 									child.LocalBounds = new RectangleDouble(curChildBounds.Left, curChildBounds.Bottom,
 										newWidth, curChildBounds.Top);
 								}
@@ -321,7 +321,7 @@ namespace MatterHackers.Agg.UI
 
 				case UI.FlowDirection.BottomToTop:
 					{
-						double curY = parent.DevicePadding.Bottom;
+						double curY = parent.DeviceBorderAndPadding.Bottom;
 						foreach (GuiWidget child in parent.Children)
 						{
 							if (child.Visible == true)
@@ -331,7 +331,7 @@ namespace MatterHackers.Agg.UI
 								if (child.VAnchorIsSet(VAnchor.Stretch))
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
-									double newHeight = (parent.LocalBounds.Height - parent.DevicePadding.Height - totalHeightOfStaticItems) / numItemsNeedingExpanding;
+									double newHeight = (parent.LocalBounds.Height - parent.DeviceBorderAndPadding.Height - totalHeightOfStaticItems) / numItemsNeedingExpanding;
 									child.LocalBounds = new RectangleDouble(curChildBounds.Left, curChildBounds.Bottom,
 										curChildBounds.Right, newHeight);
 								}
@@ -343,7 +343,7 @@ namespace MatterHackers.Agg.UI
 
 				case UI.FlowDirection.TopToBottom:
 					{
-						double curY = parent.LocalBounds.Top - parent.DevicePadding.Top;
+						double curY = parent.LocalBounds.Top - parent.DeviceBorderAndPadding.Top;
 						foreach (GuiWidget child in parent.Children)
 						{
 							if (child.Visible == true)
@@ -351,7 +351,7 @@ namespace MatterHackers.Agg.UI
 								if (child.VAnchorIsSet(VAnchor.Stretch))
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
-									double newHeight = (parent.LocalBounds.Height - parent.DevicePadding.Height - totalHeightOfStaticItems) / numItemsNeedingExpanding;
+									double newHeight = (parent.LocalBounds.Height - parent.DeviceBorderAndPadding.Height - totalHeightOfStaticItems) / numItemsNeedingExpanding;
 									child.LocalBounds = new RectangleDouble(curChildBounds.Left, curChildBounds.Bottom,
 										curChildBounds.Right, newHeight);
 								}

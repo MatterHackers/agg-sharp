@@ -773,11 +773,20 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.AreEqual(80, childA.Width);
 		}
 
-		[Test]
+		[Test, Ignore("Not Finished")]
 		public void VAnchorCenterAndVAnchorFitWorkCorrectlyTogether()
 		{
+			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble());
+			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble(3));
+			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(2), new BorderDouble(0));
+			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(2), new BorderDouble(3));
+			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
+		}
+
+		public void VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(BorderDouble padding, BorderDouble childMargin)
+		{
 			//  ______________________________________________________________
-			//  |       containerControl 300                                  |
+			//  |       containerControl 200, 300                             |
 			//  | __________________________________________________________  |
 			//  | |      Child A VAnchor.Center | Fit                       | |
 			//  | |   ________________________                              | |
@@ -788,11 +797,44 @@ namespace MatterHackers.Agg.UI.Tests
 			//
 
 			// create controls
+			GuiWidget containerControl = new GuiWidget(200, 300)
+			{
+				Name = "containerControl",
+				Padding = padding,
+			};
+			containerControl.Padding = padding;
+			var childA = new GuiWidget()
+			{
+				Name = "childA",
+				VAnchor = VAnchor.Center | VAnchor.Fit,
+				Padding = padding,
+				Margin = childMargin,
+			};
+			containerControl.AddChild(childA);
+			var childB = new GuiWidget(50, 50, SizeLimitsToSet.None)
+			{
+				Name = "childB",
+				Margin = childMargin,
+			};
+			childA.AddChild(childB);
+
 			// assert sizes and positions
+			Assert.AreEqual(50, childB.Height);
+			Assert.AreEqual(50 + childMargin.Height + padding.Height, childA.Height);
+			Assert.AreEqual((containerControl.Height - childA.Height) / 2, childA.Position.Y);
+			Assert.AreEqual(0, childB.Position.Y);
 			// expand B
+			childB.Height = 60;
 			// assert sizes and positions
+			Assert.AreEqual(60, childB.Height);
+			Assert.AreEqual(60 + childMargin.Height + padding.Height, childA.Height);
+			Assert.AreEqual((containerControl.Height - childA.Height) / 2, childA.Position.Y);
 			// compact B
+			childB.Height = 40;
 			// assert sizes and positions
+			Assert.AreEqual(40, childB.Height);
+			Assert.AreEqual(40 + childMargin.Height + padding.Height, childA.Height);
+			Assert.AreEqual((containerControl.Height - childA.Height) / 2, childA.Position.Y);
 		}
 
 		[Test]
