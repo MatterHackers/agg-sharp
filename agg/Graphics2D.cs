@@ -234,14 +234,16 @@ namespace MatterHackers.Agg
 			Line(start.X, start.Y, end.X, end.Y, color, strokeWidth);
 		}
 
-		public void Line(double x1, double y1, double x2, double y2, Color color, double strokeWidth = 1)
+		public virtual void Line(double x1, double y1, double x2, double y2, Color color, double strokeWidth = 1)
 		{
-			VertexStorage m_LinesToDraw = new VertexStorage();
-			m_LinesToDraw.remove_all();
-			m_LinesToDraw.MoveTo(x1, y1);
-			m_LinesToDraw.LineTo(x2, y2);
-			Stroke StrockedLineToDraw = new Stroke(m_LinesToDraw, strokeWidth);
-			Render(StrockedLineToDraw, color);
+			var lineToDraw = new VertexStorage();
+			lineToDraw.remove_all();
+			lineToDraw.MoveTo(x1, y1);
+			lineToDraw.LineTo(x2, y2);
+
+			this.Render(
+				new Stroke(lineToDraw, strokeWidth), 
+				color);
 		}
 
 		public abstract void SetClippingRect(RectangleDouble rect_d);
