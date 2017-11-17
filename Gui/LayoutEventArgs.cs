@@ -2,7 +2,7 @@
 
 namespace MatterHackers.Agg.UI
 {
-	public enum PropertyCausingLayout { PerformLayout, LocalBounds, ChildLocalBounds, Position, AddChild, RemoveChild, Padding, Margin, HAnchor, VAnchor, Visible };
+	public enum PropertyCausingLayout { PerformLayout, LocalBounds, ChildLocalBounds, Position, AddChild, RemoveChild, Border, Padding, Margin, HAnchor, VAnchor, Visible };
 
 	public class LayoutEventArgs : EventArgs
 	{
