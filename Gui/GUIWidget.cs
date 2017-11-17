@@ -1223,6 +1223,8 @@ namespace MatterHackers.Agg.UI
 						Unfocus();
 					}
 
+					this.Invalidate();
+
 					OnEnabledChanged(null);
 				}
 			}

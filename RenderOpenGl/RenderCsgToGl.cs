@@ -52,11 +52,11 @@ namespace MatterHackers.RenderOpenGl
 		{
 		}
 
-		#region Visitor Patern Functions
+		#region Visitor Pattern Functions
 
 		public void RenderToGlRecursive(CsgObject objectToProcess)
 		{
-			throw new Exception("You must wirte the specialized function for this type.");
+			throw new Exception("You must write the specialized function for this type.");
 		}
 
 		#region Mesh

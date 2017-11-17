@@ -313,7 +313,7 @@ namespace MatterHackers.MeshVisualizer
 			this.Invalidated?.Invoke(this, null);
 		}
 
-		public MeshGroup Flatten(Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings = null)
+		public MeshGroup Flatten(Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings = null, Predicate<IObject3D> filter = null)
 		{
 			return sourceItem.Flatten(meshPrintOutputSettings);
 		}
