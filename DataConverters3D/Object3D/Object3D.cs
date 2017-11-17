@@ -73,9 +73,9 @@ namespace MatterHackers.DataConverters3D
 
 		public IObject3D Parent { get; set; }
 
-		public MeshGroup Flatten(Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings = null)
+		public MeshGroup Flatten(Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings = null, Predicate<IObject3D> filter = null)
 		{
-			return Flatten(this, new MeshGroup(), Matrix4X4.Identity, meshPrintOutputSettings, this.MaterialIndex, this.OutputType);
+			return Flatten(this, new MeshGroup(), Matrix4X4.Identity, meshPrintOutputSettings, this.MaterialIndex, this.OutputType, filter);
 		}
 
 		void UpdateParent(List<IObject3D> list)
@@ -142,7 +142,7 @@ namespace MatterHackers.DataConverters3D
 
 		private static MeshGroup Flatten(IObject3D item, MeshGroup meshGroup, Matrix4X4 totalTransform, 
 			Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings, 
-			int overrideMaterialIndex, PrintOutputTypes printOutputType)
+			int overrideMaterialIndex, PrintOutputTypes printOutputType, Predicate<IObject3D> filter = null)
 		{
 			totalTransform = item.Matrix * totalTransform;
 
@@ -159,7 +159,8 @@ namespace MatterHackers.DataConverters3D
 				printOutputType = item.OutputType;
 			}
 
-			if (item.Mesh != null)
+			if (item.Mesh != null 
+				&& filter?.Invoke(item) != false)
 			{
 				var mesh = Mesh.Copy(item.Mesh, CancellationToken.None);
 				mesh.Transform(totalTransform);
@@ -181,7 +182,7 @@ namespace MatterHackers.DataConverters3D
 			{
 				foreach (IObject3D child in item.Children.Where(child => child.Visible))
 				{
-					Flatten(child, meshGroup, totalTransform, meshPrintOutputSettings, overrideMaterialIndex, printOutputType);
+					Flatten(child, meshGroup, totalTransform, meshPrintOutputSettings, overrideMaterialIndex, printOutputType, filter);
 				}
 			}
 
