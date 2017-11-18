@@ -306,8 +306,7 @@ namespace MatterHackers.Agg.UI
 		#endregion
 
 		#region Border
-		//private Color borderColor = new Color();
-		private Color borderColor = Color.Red;
+		private Color borderColor = Color.Transparent;
 
 		public virtual Color BorderColor
 		{
