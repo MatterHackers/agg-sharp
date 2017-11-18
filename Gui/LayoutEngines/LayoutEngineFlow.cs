@@ -143,7 +143,7 @@ namespace MatterHackers.Agg.UI
 			return (false, false);
 		}
 
-		public override bool GetOriginAndWidthForChild(GuiWidget parent, GuiWidget child, out Vector2 newOriginRelParent, out double newWidth)
+		public override (bool adjustOrigin, bool adjustWidth) GetOriginAndWidthForChild(GuiWidget parent, GuiWidget child, out Vector2 newOriginRelParent, out double newWidth)
 		{
 			newOriginRelParent = Vector2.Zero;
 			newWidth = 0;
@@ -152,7 +152,7 @@ namespace MatterHackers.Agg.UI
 				return base.GetOriginAndWidthForChild(parent, child, out newOriginRelParent, out newWidth);
 			}
 
-			return false;
+			return (false, false);
 		}
 
 		protected override void ApplyHAnchorToChild(GuiWidget parent, GuiWidget child)
