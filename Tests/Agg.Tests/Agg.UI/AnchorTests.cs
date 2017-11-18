@@ -773,14 +773,14 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.AreEqual(80, childA.Width);
 		}
 
-		[Test, Ignore("Not Finished")]
+		[Test]
 		public void VAnchorCenterAndVAnchorFitWorkCorrectlyTogether()
 		{
 			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble());
 			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble(3));
 			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(2), new BorderDouble(0));
 			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(2), new BorderDouble(3));
-			VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
+			//VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
 		}
 
 		public void VAnchorCenterAndVAnchorFitWorkCorrectlyTogether(BorderDouble padding, BorderDouble childMargin)
@@ -820,7 +820,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// assert sizes and positions
 			Assert.AreEqual(50, childB.Height);
-			Assert.AreEqual(50 + childMargin.Height + padding.Height, childA.Height);
+			Assert.AreEqual(50 + childMargin.Height + padding.Height, childA.Height, .001);
 			Assert.AreEqual((containerControl.Height - childA.Height) / 2, childA.Position.Y);
 			Assert.AreEqual(0, childB.Position.Y);
 			// expand B
@@ -835,6 +835,70 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.AreEqual(40, childB.Height);
 			Assert.AreEqual(40 + childMargin.Height + padding.Height, childA.Height);
 			Assert.AreEqual((containerControl.Height - childA.Height) / 2, childA.Position.Y);
+		}
+
+		[Test]
+		public void HAnchorCenterAndHAnchorFitWorkCorrectlyTogether()
+		{
+			HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble());
+			HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(new BorderDouble(), new BorderDouble(3));
+			HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(new BorderDouble(2), new BorderDouble(0));
+			HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(new BorderDouble(2), new BorderDouble(3));
+			//HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(new BorderDouble(1.1, 1.2, 1.3, 1.4), new BorderDouble(2.1, 2.2, 2.3, 2.4));
+		}
+
+		public void HAnchorCenterAndHAnchorFitWorkCorrectlyTogether(BorderDouble padding, BorderDouble childMargin)
+		{
+			//  ______________________________________________________________
+			//  |       containerControl 200, 300                             |
+			//  | __________________________________________________________  |
+			//  | |      Child A HAnchor.Center | Fit                       | |
+			//  | |   ________________________                              | |
+			//  | |   | Child B Absolute Size |                             | |
+			//  | |   |_______________________|                             | |
+			//  | |_________________________________________________________| |
+			//  |_____________________________________________________________|
+			//
+
+			// create controls
+			GuiWidget containerControl = new GuiWidget(200, 300)
+			{
+				Name = "containerControl",
+				Padding = padding,
+			};
+			containerControl.Padding = padding;
+			var childA = new GuiWidget()
+			{
+				Name = "childA",
+				HAnchor = HAnchor.Center | HAnchor.Fit,
+				Padding = padding,
+				Margin = childMargin,
+			};
+			containerControl.AddChild(childA);
+			var childB = new GuiWidget(50, 50, SizeLimitsToSet.None)
+			{
+				Name = "childB",
+				Margin = childMargin,
+			};
+			childA.AddChild(childB);
+
+			// assert sizes and positions
+			Assert.AreEqual(50, childB.Width);
+			Assert.AreEqual(50 + childMargin.Width + padding.Width, childA.Width, .001);
+			Assert.AreEqual((containerControl.Width - childA.Width) / 2, childA.Position.X);
+			Assert.AreEqual(0, childB.Position.X);
+			// expand B
+			childB.Width = 60;
+			// assert sizes and positions
+			Assert.AreEqual(60, childB.Width);
+			Assert.AreEqual(60 + childMargin.Width + padding.Width, childA.Width);
+			Assert.AreEqual((containerControl.Width - childA.Width) / 2, childA.Position.X);
+			// compact B
+			childB.Width = 40;
+			// assert sizes and positions
+			Assert.AreEqual(40, childB.Width);
+			Assert.AreEqual(40 + childMargin.Width + padding.Width, childA.Width);
+			Assert.AreEqual((containerControl.Width - childA.Width) / 2, childA.Position.X);
 		}
 
 		[Test]
