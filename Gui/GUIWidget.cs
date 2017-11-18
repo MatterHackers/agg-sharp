@@ -2102,41 +2102,73 @@ namespace MatterHackers.Agg.UI
 		private void DrawBorder(Graphics2D graphics2D)
 		{
 			var bounds = localBounds;
-			VertexStorage borderPath = new VertexStorage();
+
 			if (deviceBorder.Left > 0)
 			{
-				borderPath.MoveTo(bounds.Left, bounds.Top);
-				borderPath.LineTo(bounds.Left, bounds.Bottom);
-				borderPath.LineTo(bounds.Left + deviceBorder.Left, bounds.Bottom + deviceBorder.Bottom);
-				borderPath.LineTo(bounds.Left + deviceBorder.Left, bounds.Top - deviceBorder.Top);
-				graphics2D.Render(borderPath, BorderColor);
+				if (deviceBorder.Bottom > 0 || deviceBorder.Top > 0)
+				{
+					var borderPath = new VertexStorage();
+					borderPath.MoveTo(bounds.Left, bounds.Top);
+					borderPath.LineTo(bounds.Left, bounds.Bottom);
+					borderPath.LineTo(bounds.Left + deviceBorder.Left, bounds.Bottom + deviceBorder.Bottom);
+					borderPath.LineTo(bounds.Left + deviceBorder.Left, bounds.Top - deviceBorder.Top);
+					graphics2D.Render(borderPath, BorderColor);
+				}
+				else // do a fill rect
+				{
+					graphics2D.FillRectangle(bounds.Left, bounds.Bottom, bounds.Left + deviceBorder.Left, bounds.Top, BorderColor);
+				}
 			}
+
 			if (deviceBorder.Bottom > 0)
 			{
-				borderPath.remove_all();
-				borderPath.MoveTo(bounds.Left, bounds.Bottom);
-				borderPath.LineTo(bounds.Right, bounds.Bottom);
-				borderPath.LineTo(bounds.Right - deviceBorder.Right, bounds.Bottom + deviceBorder.Bottom);
-				borderPath.LineTo(bounds.Left + deviceBorder.Left, bounds.Bottom + deviceBorder.Bottom);
-				graphics2D.Render(borderPath, BorderColor);
+				if (deviceBorder.Left > 0 || deviceBorder.Right > 0)
+				{
+					var borderPath = new VertexStorage();
+					borderPath.MoveTo(bounds.Left, bounds.Bottom);
+					borderPath.LineTo(bounds.Right, bounds.Bottom);
+					borderPath.LineTo(bounds.Right - deviceBorder.Right, bounds.Bottom + deviceBorder.Bottom);
+					borderPath.LineTo(bounds.Left + deviceBorder.Left, bounds.Bottom + deviceBorder.Bottom);
+					graphics2D.Render(borderPath, BorderColor);
+				}
+				else // do a fill rect
+				{
+					graphics2D.FillRectangle(bounds.Left, bounds.Bottom, bounds.Right, bounds.Bottom + deviceBorder.Bottom, BorderColor);
+				}
 			}
+
 			if (deviceBorder.Right > 0)
 			{
-				borderPath.remove_all();
-				borderPath.MoveTo(bounds.Right, bounds.Bottom);
-				borderPath.LineTo(bounds.Right, bounds.Top);
-				borderPath.LineTo(bounds.Right - deviceBorder.Right, bounds.Top - deviceBorder.Top);
-				borderPath.LineTo(bounds.Right - deviceBorder.Right, bounds.Bottom + deviceBorder.Bottom);
-				graphics2D.Render(borderPath, BorderColor);
+				if (deviceBorder.Bottom > 0 || deviceBorder.Top > 0)
+				{
+					var borderPath = new VertexStorage();
+					borderPath.MoveTo(bounds.Right, bounds.Bottom);
+					borderPath.LineTo(bounds.Right, bounds.Top);
+					borderPath.LineTo(bounds.Right - deviceBorder.Right, bounds.Top - deviceBorder.Top);
+					borderPath.LineTo(bounds.Right - deviceBorder.Right, bounds.Bottom + deviceBorder.Bottom);
+					graphics2D.Render(borderPath, BorderColor);
+				}
+				else // do a fill rect
+				{
+					graphics2D.FillRectangle(bounds.Right - border.Right, bounds.Bottom, bounds.Right, bounds.Top, BorderColor);
+				}
 			}
+
 			if (deviceBorder.Top > 0)
 			{
-				borderPath.remove_all();
-				borderPath.MoveTo(bounds.Right, bounds.Top);
-				borderPath.LineTo(bounds.Left, bounds.Top);
-				borderPath.LineTo(bounds.Left + deviceBorder.Left, bounds.Top - deviceBorder.Top);
-				borderPath.LineTo(bounds.Right - deviceBorder.Right, bounds.Top - deviceBorder.Top);
-				graphics2D.Render(borderPath, BorderColor);
+				if (deviceBorder.Left > 0 || deviceBorder.Right > 0)
+				{
+					var borderPath = new VertexStorage();
+					borderPath.MoveTo(bounds.Right, bounds.Top);
+					borderPath.LineTo(bounds.Left, bounds.Top);
+					borderPath.LineTo(bounds.Left + deviceBorder.Left, bounds.Top - deviceBorder.Top);
+					borderPath.LineTo(bounds.Right - deviceBorder.Right, bounds.Top - deviceBorder.Top);
+					graphics2D.Render(borderPath, BorderColor);
+				}
+				else // do a fill rect
+				{
+					graphics2D.FillRectangle(bounds.Left, bounds.Top - border.Top, bounds.Right, bounds.Top, BorderColor);
+				}
 			}
 		}
 

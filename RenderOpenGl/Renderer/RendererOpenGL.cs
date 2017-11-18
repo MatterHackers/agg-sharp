@@ -38,6 +38,7 @@ using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
 using System;
 using Tesselate;
+using MatterHackers.Agg.Platform;
 
 namespace MatterHackers.RenderOpenGl
 {
@@ -387,10 +388,10 @@ namespace MatterHackers.RenderOpenGl
 			transform.transform(ref fastLeft, ref fastBottom);
 			transform.transform(ref fastRight, ref fastTop);
 
-			if (fastLeft == (int)fastLeft
-				&& fastBottom == (int)fastBottom
-				&& fastRight == (int)fastRight
-				&& fastTop == (int)fastTop)
+			if (Math.Abs(fastLeft - (int)fastLeft) < .01
+				&& Math.Abs(fastBottom - (int)fastBottom) < .01
+				&& Math.Abs(fastRight - (int)fastRight) < .01
+				&& Math.Abs(fastTop - (int)fastTop) < .01)
 			{
 				PushOrthoProjection();
 
@@ -401,14 +402,14 @@ namespace MatterHackers.RenderOpenGl
 				GL.Color4(fillColor.Red0To255, fillColor.Green0To255, fillColor.Blue0To255, fillColor.Alpha0To255);
 
 				GL.Begin(BeginMode.Triangles);
-				// triangel 1
+				// triangle 1
 				{
 					GL.Vertex2(fastLeft, fastBottom);
 					GL.Vertex2(fastRight, fastBottom);
 					GL.Vertex2(fastRight, fastTop);
 				}
 
-				// triangel 2
+				// triangle 2
 				{
 					GL.Vertex2(fastLeft, fastBottom);
 					GL.Vertex2(fastRight, fastTop);
@@ -425,6 +426,37 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
+		public override void Line(double x1, double y1, double x2, double y2, Color color, double strokeWidth = 1)
+		{
+			RectangleDouble strokeBounds;
+			if (x1 == x2) // vertical line
+			{
+				strokeBounds = new RectangleDouble(x1 - strokeWidth / 2, y1, x1 + strokeWidth / 2, y2);
+			}
+			else // horizontal line
+			{
+				strokeBounds = new RectangleDouble(x1, y1 - strokeWidth / 2, x2, y1 + strokeWidth / 2);
+			}
+
+			// lets check for horizontal and vertical lines that are pixel aligned and render them as fills
+			bool canUseFill = (x1 == x2 || y1 == y2) // we are vertical or horizontal
+				&& Math.Abs(strokeBounds.Left - (int)strokeBounds.Left) < .01
+				&& Math.Abs(strokeBounds.Right - (int)strokeBounds.Right) < .01
+				&& Math.Abs(strokeBounds.Bottom - (int)strokeBounds.Bottom) < .01
+				&& Math.Abs(strokeBounds.Top - (int)strokeBounds.Top) < .01;
+
+			if (canUseFill)
+			{
+				// Draw as optimized vertical or horizontal line
+				FillRectangle(strokeBounds, color);
+			}
+			else 
+			{
+				// Draw as a VertexSource - may yield incorrect lines in some cases
+				base.Line(x1, y1, x2, y2, color, strokeWidth);
+			}
+		}
+		
 		public override void Clear(IColorType color)
 		{
 			Affine transform = GetTransform();
