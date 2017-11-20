@@ -146,12 +146,14 @@ namespace MatterHackers.DataConverters3D
 
 					foreach (var material in mtl.MaterialList)
 					{
-						if (!string.IsNullOrEmpty(material.DiffuseTextureFileName))
+						var pathToTexture = Path.Combine(pathToObj, material.DiffuseTextureFileName);
+						if (!string.IsNullOrEmpty(material.DiffuseTextureFileName)
+							&& File.Exists(pathToTexture))
 						{
 							ImageBuffer diffuseTexture = new ImageBuffer();
 
 							// TODO: have consideration for this being in a shared zip file
-							using (var ImageStream = File.OpenRead(Path.Combine(pathToObj, material.DiffuseTextureFileName)))
+							using (var ImageStream = File.OpenRead(pathToTexture))
 							{
 								if (Path.GetExtension(material.DiffuseTextureFileName).ToLower() == ".tga")
 								{

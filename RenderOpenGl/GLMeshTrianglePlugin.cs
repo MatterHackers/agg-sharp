@@ -90,7 +90,7 @@ namespace MatterHackers.RenderOpenGl
 
 		private int meshUpdateCount;
 
-		static public GLMeshTrianglePlugin Get(Mesh meshToGetDisplayListFor, Func<FaceEdge, VertexColorData> getColorFunc = null)
+		static public GLMeshTrianglePlugin Get(Mesh meshToGetDisplayListFor, Func<Vector3, Color> getColorFunc = null)
 		{
 			GLMeshTrianglePlugin plugin;
 			meshesWithCacheData.TryGetValue(meshToGetDisplayListFor, out plugin);
@@ -130,7 +130,7 @@ namespace MatterHackers.RenderOpenGl
 			AddRemoveData();
 		}
 
-		private void CreateRenderData(Mesh meshToBuildListFor, Func<FaceEdge, VertexColorData> getColorFunc)
+		private void CreateRenderData(Mesh meshToBuildListFor, Func<Vector3, Color> getColorFunc)
 		{
 			subMeshs = new List<SubTriangleMesh>();
 			SubTriangleMesh currentSubMesh = null;
@@ -167,14 +167,22 @@ namespace MatterHackers.RenderOpenGl
 
 				Vector2[] textureUV = new Vector2[2];
 				Vector3[] position = new Vector3[2];
+				VertexColorData color = new VertexColorData();
+
+				if (getColorFunc != null)
+				{
+					var faceColor = getColorFunc(face.Normal);
+					color = new VertexColorData
+					{
+						red = faceColor.red,
+						green = faceColor.green,
+						blue = faceColor.blue
+					};
+				}
+
 				int vertexIndex = 0;
 				foreach (FaceEdge faceEdge in face.FaceEdges())
 				{
-					if (getColorFunc != null)
-					{
-						colorData.add(getColorFunc(faceEdge));
-					}
-
 					if (vertexIndex < 2)
 					{
 						textureUV[vertexIndex] = faceEdge.GetUv(0);
@@ -191,6 +199,7 @@ namespace MatterHackers.RenderOpenGl
 						textureData.Add(tempTexture);
 						normalData.Add(tempNormal);
 						positionData.Add(tempPosition);
+						colorData.add(color);
 
 						tempTexture.textureU = (float)textureUV[1].X; tempTexture.textureV = (float)textureUV[1].Y;
 						tempNormal.normalX = (float)face.Normal.X; tempNormal.normalY = (float)face.Normal.Y; tempNormal.normalZ = (float)face.Normal.Z;
@@ -198,6 +207,7 @@ namespace MatterHackers.RenderOpenGl
 						textureData.Add(tempTexture);
 						normalData.Add(tempNormal);
 						positionData.Add(tempPosition);
+						colorData.add(color);
 
 						Vector2 textureUV2 = faceEdge.GetUv(0);
 						Vector3 position2 = faceEdge.FirstVertex.Position;
@@ -207,6 +217,7 @@ namespace MatterHackers.RenderOpenGl
 						textureData.Add(tempTexture);
 						normalData.Add(tempNormal);
 						positionData.Add(tempPosition);
+						colorData.add(color);
 
 						textureUV[1] = faceEdge.GetUv(0);
 						position[1] = faceEdge.FirstVertex.Position;
