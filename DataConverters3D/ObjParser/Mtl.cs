@@ -104,7 +104,7 @@ namespace ObjParser
 			{
 				Material CurrentMaterial = currentMaterial();
 				Color c = new Color();
-				switch (parts[0])
+				switch (parts[0].Trim())
 				{
 					case "d":
 						CurrentMaterial.Dissolve = float.Parse(parts[1]);
