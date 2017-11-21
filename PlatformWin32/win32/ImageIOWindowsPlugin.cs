@@ -90,7 +90,7 @@ namespace MatterHackers.Agg.Image
 
 		public bool LoadImageData(string fileName, ImageBuffer destImage)
 		{
-			if (System.IO.File.Exists(fileName))
+			if (File.Exists(fileName))
 			{
 				using (var bitmap = new Bitmap(fileName))
 				{
@@ -99,7 +99,7 @@ namespace MatterHackers.Agg.Image
 			}
 			else
 			{
-				throw new System.Exception(string.Format("Image file not found: {0}", fileName));
+				throw new Exception(string.Format("Image file not found: {0}", fileName));
 			}
 		}
 
@@ -255,39 +255,47 @@ namespace MatterHackers.Agg.Image
 				filename += ".jpg";
 			}
 
-			if (!System.IO.File.Exists(filename))
+			if (!File.Exists(filename))
 			{
 				if (sourceImage.BitDepth == 32)
 				{
-					using (var bitmapToSave = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format32bppArgb))
+					try
 					{
-						BitmapData bitmapData = bitmapToSave.LockBits(new Rectangle(0, 0, bitmapToSave.Width, bitmapToSave.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmapToSave.PixelFormat);
-						int destIndex = 0;
-						unsafe
+						using (var bitmapToSave = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format32bppArgb))
 						{
-							byte[] sourceBuffer = sourceImage.GetBuffer();
-							byte* pDestBuffer = (byte*)bitmapData.Scan0;
-							int scanlinePadding = bitmapData.Stride - bitmapData.Width * 4;
-							for (int y = 0; y < sourceImage.Height; y++)
+							BitmapData bitmapData = bitmapToSave.LockBits(new Rectangle(0, 0, bitmapToSave.Width, bitmapToSave.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmapToSave.PixelFormat);
+							int destIndex = 0;
+							unsafe
 							{
-								int sourceIndex = sourceImage.GetBufferOffsetXY(0, sourceImage.Height - 1 - y);
-								for (int x = 0; x < sourceImage.Width; x++)
+								byte[] sourceBuffer = sourceImage.GetBuffer();
+								byte* pDestBuffer = (byte*)bitmapData.Scan0;
+								int scanlinePadding = bitmapData.Stride - bitmapData.Width * 4;
+								for (int y = 0; y < sourceImage.Height; y++)
 								{
-									pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
-									pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
-									pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
-									pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
-								}
+									int sourceIndex = sourceImage.GetBufferOffsetXY(0, sourceImage.Height - 1 - y);
+									for (int x = 0; x < sourceImage.Width; x++)
+									{
+										pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+										pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+										pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+										pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+									}
 
-								destIndex += scanlinePadding;
+									destIndex += scanlinePadding;
+								}
 							}
+
+							bitmapToSave.UnlockBits(bitmapData);
+							bitmapToSave.Save(filename, format);
 						}
 
-						bitmapToSave.UnlockBits(bitmapData);
-						bitmapToSave.Save(filename, format);
+						return true;
 					}
-
-					return true;
+					catch (Exception ex)
+					{
+						Console.WriteLine("Error saving file: " + ex.Message);
+						return false;
+					}
 				}
 				else if (sourceImage.BitDepth == 8 && format == ImageFormat.Png)
 				{
@@ -322,16 +330,16 @@ namespace MatterHackers.Agg.Image
 				}
 				else
 				{
-					throw new System.NotImplementedException();
+					throw new NotImplementedException();
 				}
 			}
 
 			return false;
 		}
 
-		public bool LoadImageData(String filename, ImageBufferFloat destImage)
+		public bool LoadImageData(string filename, ImageBufferFloat destImage)
 		{
-			if (System.IO.File.Exists(filename))
+			if (File.Exists(filename))
 			{
 				var bitmap = new Bitmap(filename);
 				if (bitmap != null)
