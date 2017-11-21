@@ -179,6 +179,18 @@ namespace MatterHackers.Agg.Image
 		void BlendPixels(byte[] buffer, int bufferOffset, Color[] sourceColors, int sourceColorsOffset, byte[] sourceCovers, int sourceCoversOffset, bool firstCoverForAll, int count);
 	}
 
+	public static class BlenderExtensions
+	{
+		// Compute a fixed color from a source and a target alpha
+		public static Color Blend(this IRecieveBlenderByte blender, Color start, Color blend)
+		{
+			var result = new byte[] { start.blue, start.green, start.red, start.alpha };
+			blender.BlendPixel(result, 0, blend);
+
+			return new Color(result[2], result[1], result[0], result[3]);
+		}
+	}
+
 	public interface IRecieveBlenderFloat
 	{
 		int NumPixelBits { get; }
