@@ -69,9 +69,18 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		Smooth = 7425,
 	}
 
+	// Use OpenTK enum for full coverage
+	// http://docs.gl/gl3/glDepthFunc
 	public enum DepthFunction
 	{
+		Never = 512,
+		Less = 513,
+		Equal = 514,
 		Lequal = 515,
+		Greater = 516,
+		Notequal = 517,
+		Gequal = 518,
+		Always = 519
 	}
 
 	public enum LightName
