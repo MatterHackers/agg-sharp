@@ -1603,7 +1603,8 @@ namespace MatterHackers.Agg.UI
 		{
 			isCurrentlyInvalid = true;
 
-			if (Parent != null && Parent.Visible)
+			var threadSafeParent = Parent;
+			if (threadSafeParent != null && threadSafeParent.Visible)
 			{
 				rectToInvalidate.Offset(OriginRelativeParent);
 
@@ -1611,7 +1612,7 @@ namespace MatterHackers.Agg.UI
 				//rectToInvalidate.IntersectWithRectangle(Parent.LocalBounds);
 				//if (rectToInvalidate.Width > 0 && rectToInvalidate.Height > 0)
 				{
-					Parent.Invalidate(rectToInvalidate);
+					threadSafeParent.Invalidate(rectToInvalidate);
 				}
 			}
 
