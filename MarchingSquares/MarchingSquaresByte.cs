@@ -34,6 +34,7 @@ using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MatterHackers.MarchingSquares
 {
@@ -99,11 +100,21 @@ namespace MatterHackers.MarchingSquares
 		private PositiveArea0to1 thresholdFunction;
 		private int debugColor;
 
-		public List<LineSegment> LineSegments = new List<LineSegment>();
+		public List<LineSegment> LineSegments { get; } = new List<LineSegment>();
+
 		private double[] thersholdPerPixel = null;
 
-		public MarchingSquaresByte(ImageBuffer imageToMarch, PositiveArea0to1 thresholdFunction, int debugColor)
+		public MarchingSquaresByte(ImageBuffer sourceImage, PositiveArea0to1 thresholdFunction, int debugColor)
 		{
+			// expand the image so we have a border around it (in case it goes to the edge)
+			var imageToMarch = new ImageBuffer(sourceImage.Width + 2, sourceImage.Height + 2);
+
+			// get the color to draw into the edge
+			Color edgeColor = sourceImage.GetPixel(0, 0);
+			imageToMarch.NewGraphics2D().Clear(edgeColor);
+
+			imageToMarch.NewGraphics2D().Render(sourceImage, 1, 1);
+
 			thersholdPerPixel = new double[imageToMarch.Width * imageToMarch.Height];
 			{
 				byte[] buffer = imageToMarch.GetBuffer();
