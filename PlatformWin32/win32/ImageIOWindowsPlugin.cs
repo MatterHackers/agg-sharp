@@ -383,5 +383,15 @@ namespace MatterHackers.Agg.Image
 
 			return false;
 		}
+
+		public ImageBuffer LoadImage(string path)
+		{
+			ImageBuffer temp = new ImageBuffer();
+
+			LoadImageData(path, temp);
+
+			return temp;
+		}
+
 	}
 }
