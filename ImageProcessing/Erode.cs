@@ -27,14 +27,14 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.Image;
 using System;
+using MatterHackers.Agg.Image;
 
 namespace MatterHackers.Agg.ImageProcessing
 {
-	public class Erode
+	public static class Erode
 	{
-		public static void DoErode3x3Binary(ImageBuffer sourceAndDest, int threshold)
+		public static void DoErode3x3Binary(this ImageBuffer sourceAndDest, int threshold)
 		{
 			ImageBuffer temp = new ImageBuffer(sourceAndDest);
 			DoErode3x3Binary(temp, sourceAndDest, threshold);
@@ -42,43 +42,139 @@ namespace MatterHackers.Agg.ImageProcessing
 
 		public static void DoErode3x3Binary(ImageBuffer source, ImageBuffer dest, int threshold)
 		{
-			if (source.BitDepth != 32 || dest.BitDepth != 32)
-			{
-				throw new NotImplementedException("We only work with 32 bit at the moment.");
-			}
-
-			if (source.Width != dest.Width || source.Height != dest.Height)
+			if (source.Width != dest.Width 
+				|| source.Height != dest.Height
+				|| source.StrideInBytes() != dest.StrideInBytes())
 			{
 				throw new NotImplementedException("Source and Dest have to be the same size");
 			}
 
-			int height = source.Height;
-			int width = source.Width;
-			int sourceStrideInBytes = source.StrideInBytes();
-			int destStrideInBytes = dest.StrideInBytes();
-			byte[] sourceBuffer = source.GetBuffer();
-			byte[] destBuffer = dest.GetBuffer();
-
-			for (int testY = 1; testY < height - 1; testY++)
+			switch (source.BitDepth)
 			{
-				for (int testX = 1; testX < width - 1; testX++)
-				{
-					for (int sourceY = -1; sourceY <= 1; sourceY++)
+				case 8:
 					{
-						for (int sourceX = -1; sourceX <= 1; sourceX++)
+						int height = source.Height;
+						int width = source.Width;
+						int strideInBytes = source.StrideInBytes();
+						byte[] sourceBuffer = source.GetBuffer();
+						byte[] destBuffer = dest.GetBuffer();
+
+						for (int y = 1; y < height - 1; y++)
 						{
-							int sourceOffset = source.GetBufferOffsetXY(testX + sourceX, testY + sourceY);
-							if (sourceBuffer[sourceOffset] < threshold)
+							int rowOffset = source.GetBufferOffsetY(y);
+							for (int x = 1; x < width - 1; x++)
 							{
-								int destOffset = dest.GetBufferOffsetXY(testX, testY);
-								destBuffer[destOffset++] = 0;
-								destBuffer[destOffset++] = 0;
-								destBuffer[destOffset++] = 0;
-								destBuffer[destOffset++] = 255;
+								int bufferOffset = rowOffset + x;
+								// do the upper left
+								int checkOffset = bufferOffset - strideInBytes - 1;
+								if (sourceBuffer[checkOffset] < threshold)
+								{
+									destBuffer[bufferOffset] = 0;
+									continue;
+								}
+								// do the upper center
+								checkOffset = bufferOffset - strideInBytes + 0;
+								if (sourceBuffer[checkOffset] < threshold)
+								{
+									destBuffer[bufferOffset] = 0;
+									continue;
+								}
+
+								// do the upper right
+								checkOffset = bufferOffset - strideInBytes + 1;
+								if (sourceBuffer[checkOffset] < threshold)
+								{
+									destBuffer[bufferOffset] = 0;
+									continue;
+								}
+
+								// do the center left
+								checkOffset = bufferOffset + strideInBytes - 1;
+								if (sourceBuffer[checkOffset] < threshold)
+								{
+									destBuffer[bufferOffset] = 0;
+									continue;
+								}
+
+								// do the center center
+								checkOffset = bufferOffset + strideInBytes + 0;
+								if (sourceBuffer[checkOffset] < threshold)
+								{
+									destBuffer[bufferOffset] = 0;
+									continue;
+								}
+
+								// do the lower right
+								checkOffset = bufferOffset + strideInBytes + 1;
+								if (sourceBuffer[checkOffset] < threshold)
+								{
+									destBuffer[bufferOffset] = 0;
+									continue;
+								}
+
+								// do the lower left
+								checkOffset = bufferOffset + strideInBytes - 1;
+								if (sourceBuffer[checkOffset] < threshold)
+								{
+									destBuffer[bufferOffset] = 0;
+									continue;
+								}
+
+								// do the lower center
+								checkOffset = bufferOffset + strideInBytes + 0;
+								if (sourceBuffer[checkOffset] < threshold)
+								{
+									destBuffer[bufferOffset] = 0;
+									continue;
+								}
+
+								// do the lower right
+								checkOffset = bufferOffset + strideInBytes + 1;
+								if (sourceBuffer[checkOffset] < threshold)
+								{
+									destBuffer[bufferOffset] = 0;
+									continue;
+								}
 							}
 						}
 					}
-				}
+					break;
+
+				case 32:
+					{
+						int height = source.Height;
+						int width = source.Width;
+						int sourceStrideInBytes = source.StrideInBytes();
+						int destStrideInBytes = dest.StrideInBytes();
+						byte[] sourceBuffer = source.GetBuffer();
+						byte[] destBuffer = dest.GetBuffer();
+
+						for (int destY = 1; destY < height - 1; destY++)
+						{
+							for (int destX = 1; destX < width - 1; destX++)
+							{
+								for (int sourceY = -1; sourceY <= 1; sourceY++)
+								{
+									for (int sourceX = -1; sourceX <= 1; sourceX++)
+									{
+										int sourceOffset = source.GetBufferOffsetXY(destX + sourceX, destY + sourceY);
+										if (sourceBuffer[sourceOffset] < threshold)
+										{
+											int destOffset = dest.GetBufferOffsetXY(destX, destY);
+											destBuffer[destOffset++] = 0;
+											destBuffer[destOffset++] = 0;
+											destBuffer[destOffset++] = 0;
+											destBuffer[destOffset++] = 255;
+										}
+									}
+								}
+							}
+						}
+					}
+					break;
+
+				default:
+					throw new NotImplementedException();
 			}
 		}
 

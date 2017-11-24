@@ -215,8 +215,6 @@ namespace MatterHackers.PolygonPathing
 			{
 				updateScaleAndOffset = true;
 			};
-
-			AnchorAll();
 		}
 
 		public Affine TotalTransform
@@ -286,8 +284,8 @@ namespace MatterHackers.PolygonPathing
 					avoid = new PathFinder(polygonsToPathAround, avoidInset, null); // -600 is for a .4 nozzle in matterslice
 				}
 
-				IVertexSource outlineShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreateVertexStorage(MSPolygonsToPolygons(avoid.OutsideData.Polygons), 1), TotalTransform);
-				IVertexSource pathingShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreateVertexStorage(MSPolygonsToPolygons(avoid.PathingData.Polygons), 1), TotalTransform);
+				IVertexSource outlineShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreateVertexStorage(MSPolygonsToPolygons(avoid.OutlineData.Polygons), 1), TotalTransform);
+				IVertexSource pathingShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreateVertexStorage(MSPolygonsToPolygons(avoid.OutlineData.Polygons), 1), TotalTransform);
 
 				if (StayInside.Checked)
 				{
@@ -304,7 +302,7 @@ namespace MatterHackers.PolygonPathing
 				List<MSIntPoint> pathThatIsInside = new List<MSIntPoint>();
 				bool found = avoid.CreatePathInsideBoundary(pathStart, pathEnd, pathThatIsInside, false);
 
-				foreach (var node in avoid.PathingData.Waypoints.Nodes)
+				foreach (var node in avoid.OutlineData.Waypoints.Nodes)
 				{
 					foreach (var link in node.Links)
 					{
@@ -349,7 +347,7 @@ namespace MatterHackers.PolygonPathing
 
 				//RenderQuadTree(graphics2D, avoid.BoundaryEdgeQuadTrees, 0);
 
-				if (avoid.OutsideData.Polygons.PointIsInside(pathEnd, avoid.OutsideData.EdgeQuadTrees, avoid.OutsideData.EdgeQuadTrees, avoid.OutsideData.PointIsInside))
+				if (avoid.OutlineData.Polygons.PointIsInside(pathEnd, avoid.OutlineData.EdgeQuadTrees, avoid.OutlineData.EdgeQuadTrees, avoid.OutlineData.PointIsInside))
 				{
 					graphics2D.DrawString("Inside", 30, Height - 60, color: Color.Green);
 				}
@@ -375,7 +373,7 @@ namespace MatterHackers.PolygonPathing
 				if(true)
 				{
 					MSPolygons pathsWithOverlapsRemoved;
-					var insetPolys = MSClipperLib.CLPolygonsExtensions.Offset(avoid.OutsideData.Polygons, 0);
+					var insetPolys = MSClipperLib.CLPolygonsExtensions.Offset(avoid.OutlineData.Polygons, 0);
 					if (insetPolys != null && insetPolys.Count > 0)
 					{
 						var pathHadOverlaps = QTPolygonExtensions.MergePerimeterOverlaps(insetPolys[0], avoidInset*2, out pathsWithOverlapsRemoved, true);
@@ -392,7 +390,8 @@ namespace MatterHackers.PolygonPathing
 					}
 				}
 
-				var image = avoid.OutsideData.InsideCache;
+				var image = avoid.OutlineData.InsideCache;
+				image = avoid.OutlineData.InsetMap;
 				graphics2D.Render(image, Width - image.Width, Height - image.Height, image.Width, image.Height);
 			}
 
@@ -401,7 +400,7 @@ namespace MatterHackers.PolygonPathing
 
 		private void RenderCrossings(Graphics2D graphics2D, MSIntPoint pathStart, MSIntPoint pathEnd, PathFinder avoid)
 		{
-			var crossings = new List<Tuple<int, int, MSIntPoint>>(avoid.OutsideData.Polygons.FindCrossingPoints(pathStart, pathEnd, avoid.OutsideData.EdgeQuadTrees));
+			var crossings = new List<Tuple<int, int, MSIntPoint>>(avoid.OutlineData.Polygons.FindCrossingPoints(pathStart, pathEnd, avoid.OutlineData.EdgeQuadTrees));
 			crossings.Sort(new PolygonAndPointDirectionSorter(pathStart, pathEnd));
 
 			int index = 0;
@@ -488,10 +487,10 @@ namespace MatterHackers.PolygonPathing
 
 				var avoid2 = new PathFinder(sample, avoidInset, null); // -600 is for a .4 nozzle in matterslice
 				if (!avoid2.CreatePathInsideBoundary(start, end, pathThatIsInside)
-					&& avoid2.OutsideData.Polygons.PointIsInside(start)
-					&& PointCount(avoid2.OutsideData.Polygons) <= bestPointCount)
+					&& avoid2.OutlineData.Polygons.PointIsInside(start)
+					&& PointCount(avoid2.OutlineData.Polygons) <= bestPointCount)
 				{
-					bestPointCount = PointCount(avoid2.OutsideData.Polygons);
+					bestPointCount = PointCount(avoid2.OutlineData.Polygons);
 					overrideBadPolys = sample;
 					badCount = 0;
 				}
