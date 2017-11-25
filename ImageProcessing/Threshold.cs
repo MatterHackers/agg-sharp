@@ -46,7 +46,7 @@ namespace MatterHackers.Agg.ImageProcessing
 			return false;
 		}
 
-		public static void DoThreshold(ImageBuffer sourceImageAndDest, int threshold)
+		public static void DoThreshold(this ImageBuffer sourceImageAndDest, int threshold)
 		{
 			DoThreshold(sourceImageAndDest, sourceImageAndDest, threshold, MaxRGB32);
 		}
@@ -69,6 +69,32 @@ namespace MatterHackers.Agg.ImageProcessing
 
 			switch (sourceImage.BitDepth)
 			{
+				case 8:
+					{
+						int height = sourceImage.Height;
+						int width = sourceImage.Width;
+						byte[] resultBuffer = result.GetBuffer();
+						byte[] sourceBuffer = sourceImage.GetBuffer();
+						for (int y = 0; y < height; y++)
+						{
+							int offset = sourceImage.GetBufferOffsetY(y);
+
+							for (int x = 0; x < width; x++)
+							{
+								if (testFunction(sourceBuffer, offset, threshold))
+								{
+									resultBuffer[offset] = (byte)255;
+								}
+								else
+								{
+									resultBuffer[offset] = (byte)0;
+								}
+								offset += 1;
+							}
+						}
+					}
+					break;
+
 				case 32:
 					{
 						int height = sourceImage.Height;
