@@ -335,10 +335,11 @@ namespace MatterHackers.Agg.UI
 					Debug.Print(excep.ToString());
 
 				}
-				base.WndProc(ref m);
 			}
+			base.WndProc(ref m);
+
 		}
-#endregion
+		#endregion
 
 		protected override void OnClosed(EventArgs e)
 		{
