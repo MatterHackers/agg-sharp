@@ -649,7 +649,7 @@ namespace MatterHackers.Agg
 		}
 	}
 
-	[TypeConverter(typeof(RGBA_BytesConverter))]
+	[TypeConverter(typeof(ColorTypeConverter))]
 	public struct Color : IColorType
 	{
 		public const int cover_shift = 8;
@@ -996,7 +996,7 @@ namespace MatterHackers.Agg
 		}
 	}
 
-	public class RGBA_BytesConverter : TypeConverter
+	public class ColorTypeConverter : TypeConverter
 	{
 		public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
 		{
