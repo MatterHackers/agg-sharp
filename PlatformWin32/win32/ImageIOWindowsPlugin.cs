@@ -392,6 +392,5 @@ namespace MatterHackers.Agg.Image
 
 			return temp;
 		}
-
 	}
 }

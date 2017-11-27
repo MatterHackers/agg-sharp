@@ -28,6 +28,7 @@ using System;
 using System.ComponentModel;
 using System.Globalization;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace MatterHackers.Agg
 {
@@ -650,6 +651,7 @@ namespace MatterHackers.Agg
 	}
 
 	[TypeConverter(typeof(ColorTypeConverter))]
+	[JsonConverter(typeof(ColorJsonConverter))]
 	public struct Color : IColorType
 	{
 		public const int cover_shift = 8;
@@ -1018,6 +1020,43 @@ namespace MatterHackers.Agg
 			}
 
 			return base.ConvertFrom(context, culture, value);
+		}
+	}
+
+	public class ColorJsonConverter : JsonConverter
+	{
+		public override bool CanWrite => false;
+
+		public override bool CanRead => true;
+
+		public override bool CanConvert(Type objectType)
+		{
+			return true;
+		}
+
+		public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+		{
+			// Use raw value if string and starts with #
+			if (reader.Value is string itemValue
+				&& itemValue.StartsWith("#"))
+			{
+				return new Color(itemValue);
+			}
+
+			// Use .html if applicable
+			if (JObject.Load(reader)?["Html"] is JToken jtoken
+				&& jtoken.Value<string>() is string html)
+			{
+				return new Color(html);
+			}
+
+			return Color.Transparent;
+		}
+
+		public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+		{
+			// Should never get invoked due to CanWrite => false
+			throw new NotImplementedException();
 		}
 	}
 
