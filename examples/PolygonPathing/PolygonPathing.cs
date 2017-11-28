@@ -392,7 +392,7 @@ namespace MatterHackers.PolygonPathing
 
 				var image = avoid.OutlineData.InsideCache;
 				image = avoid.OutlineData.InsetMap;
-				graphics2D.Render(image, Width - image.Width, Height - image.Height, image.Width, image.Height);
+				//graphics2D.Render(image, Width - image.Width, Height - image.Height, image.Width, image.Height);
 			}
 
 			base.OnDraw(graphics2D);
