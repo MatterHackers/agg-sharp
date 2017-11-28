@@ -198,21 +198,19 @@ namespace MatterHackers.DataConverters3D
 				if (_color != value)
 				{
 					_color = value;
-					if (_color.alpha == 255)
-					{
-						if (Mesh != null)
-						{
-							Mesh.FaceBspTree = null;
-						}
-					}
-					else if (Mesh != null
+
+					if (_color.alpha != 255
+						&& Mesh != null
 						&& Mesh.FaceBspTree == null
-						&& Mesh.Faces.Count < 2000)
+						&& Mesh.Faces.Count < 2000
+						&& !buildingFaceBsp)
 					{
+						this.buildingFaceBsp = true;
 						Task.Run(() =>
 						{
 							var bspTree = FaceBspTree.Create(Mesh);
 							UiThread.RunOnIdle(() => Mesh.FaceBspTree = bspTree);
+							this.buildingFaceBsp = false;
 						});
 					}
 				}
@@ -445,6 +443,7 @@ namespace MatterHackers.DataConverters3D
 
 		// Cache busting on child nodes
 		private long tracedHashCode = long.MinValue;
+		private bool buildingFaceBsp;
 
 		public IPrimitive TraceData()
 		{
