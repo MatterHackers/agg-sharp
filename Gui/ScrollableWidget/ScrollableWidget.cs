@@ -84,6 +84,37 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public override void OnKeyDown(KeyEventArgs keyEvent)
+		{
+			if (!keyEvent.Handled)
+			{
+				switch (keyEvent.KeyCode)
+				{
+					case Keys.Down:
+						ScrollPosition += new Vector2(0, 16);
+						keyEvent.Handled = true;
+						break;
+
+					case Keys.PageDown:
+						keyEvent.Handled = true;
+						ScrollPosition += new Vector2(0, Height - 20);
+						break;
+
+					case Keys.Up:
+						ScrollPosition -= new Vector2(0, 16);
+						keyEvent.Handled = true;
+						break;
+
+					case Keys.PageUp:
+						ScrollPosition -= new Vector2(0, Height - 20);
+						keyEvent.Handled = true;
+						break;
+				}
+			}
+
+			base.OnKeyDown(keyEvent);
+		}
+
 		private void OnScrollPositionChanged()
 		{
 			ScrollPositionChanged?.Invoke(this, null);
