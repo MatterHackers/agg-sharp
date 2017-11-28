@@ -296,6 +296,10 @@ namespace MatterHackers.Agg.UI
 		const int GF_END = 0x4;
 		protected override void WndProc(ref Message m)
 		{
+			base.WndProc(ref m);
+			return;
+			
+			// dissabled for now
 			bool handled;
 			switch (m.Msg)
 			{
