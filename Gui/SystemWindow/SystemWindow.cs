@@ -209,6 +209,11 @@ namespace MatterHackers.Agg.UI
 #endif
 		}
 
+		protected override void SetCursorOnEnter(Cursors cursorToSet)
+		{
+			PlatformWindow?.SetCursor(cursorToSet);
+		}
+
 		public void SetHoveredWidget(GuiWidget widgetToShowToolTipFor)
 		{
 			ToolTipManager.SetHoveredWidget(widgetToShowToolTipFor);
