@@ -308,12 +308,12 @@ namespace MatterHackers.PolygonPathing
 					{
 						var pointA = ObjectToScreen(((Pathfinding.IntPointNode)link.nodeA).Position);
 						var pointB = ObjectToScreen(((Pathfinding.IntPointNode)link.nodeB).Position);
-						graphics2D.Line(pointA.X, pointA.Y, pointB.X, pointB.Y, Color.Yellow);
+						graphics2D.Line(pointA.X, pointA.Y, pointB.X, pointB.Y, node.Links.Count == 2 ? Color.Yellow : Color.Red);
 					}
 					var pos = ObjectToScreen(node.Position);
 					graphics2D.Circle(pos.X, pos.Y, 4, Color.Green);
 					int linkCount = Math.Min(5, node.Links.Count - 2);
-					graphics2D.Circle(pos.X, pos.Y, 4, ColorF.FromHSL((float)linkCount / 5, 1, .5).ToColor());
+					//graphics2D.Circle(pos.X, pos.Y, 4, ColorF.FromHSL((float)linkCount / 5, 1, .5).ToColor());
 				}
 
 				if (found)
@@ -330,7 +330,7 @@ namespace MatterHackers.PolygonPathing
 
 					MSIntPoint end = ObjectToScreen(pathEnd);
 					solution.LineTo(new Vector2(end.X, end.Y));
-					graphics2D.Render(new Stroke(solution, 5), new Color(Color.Green, 100));
+					graphics2D.Render(new Stroke(solution, 5), new Color(Color.Cyan, 100));
 
 					graphics2D.DrawString($"Length = {MSClipperLib.CLPolygonExtensions.PolygonLength(pathThatIsInside, false)}", 30, Height - 40);
 				}
