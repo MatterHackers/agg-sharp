@@ -183,6 +183,14 @@ namespace MatterHackers.PolygonPathing
 			BackgroundColor = Color.White,
 		};
 
+		private CheckBox LockPosition = new CheckBox("Lock Position")
+		{
+			HAnchor = HAnchor.Right | HAnchor.Fit,
+			VAnchor = VAnchor.Bottom | VAnchor.Fit,
+			Margin = new BorderDouble(5, 20, 5, 5),
+			BackgroundColor = Color.White,
+		};
+
 		private Vector2 unscaledRenderOffset = new Vector2(0, 0);
 		private bool updateScaleAndOffset = true;
 
@@ -195,6 +203,21 @@ namespace MatterHackers.PolygonPathing
 
 			StayInside.Checked = true;
 			AddChild(StayInside);
+			AddChild(LockPosition);
+
+			LockPosition.CheckedStateChanged += (s, e) =>
+			{
+				if (LockPosition.Checked)
+				{
+					startOverride = ScreenToObject(new MSIntPoint(mouseDownPosition.X, mouseDownPosition.Y));
+					endOverride = ScreenToObject(new MSIntPoint(mouseCapturedPosition.X, mouseCapturedPosition.Y));
+				}
+				else
+				{
+					startOverride = new MSIntPoint();
+					endOverride = new MSIntPoint();
+				}
+			};
 
 			shapeTypeRadioGroup.AddRadioButton("Boxes");
 			shapeTypeRadioGroup.AddRadioButton("Simple Map");
@@ -308,12 +331,12 @@ namespace MatterHackers.PolygonPathing
 					{
 						var pointA = ObjectToScreen(((Pathfinding.IntPointNode)link.nodeA).Position);
 						var pointB = ObjectToScreen(((Pathfinding.IntPointNode)link.nodeB).Position);
-						graphics2D.Line(pointA.X, pointA.Y, pointB.X, pointB.Y, Color.Yellow);
+						graphics2D.Line(pointA.X, pointA.Y, pointB.X, pointB.Y, node.Links.Count == 2 ? Color.Yellow : Color.Red);
 					}
 					var pos = ObjectToScreen(node.Position);
 					graphics2D.Circle(pos.X, pos.Y, 4, Color.Green);
 					int linkCount = Math.Min(5, node.Links.Count - 2);
-					graphics2D.Circle(pos.X, pos.Y, 4, ColorF.FromHSL((float)linkCount / 5, 1, .5).ToColor());
+					//graphics2D.Circle(pos.X, pos.Y, 4, ColorF.FromHSL((float)linkCount / 5, 1, .5).ToColor());
 				}
 
 				if (found)
@@ -330,7 +353,7 @@ namespace MatterHackers.PolygonPathing
 
 					MSIntPoint end = ObjectToScreen(pathEnd);
 					solution.LineTo(new Vector2(end.X, end.Y));
-					graphics2D.Render(new Stroke(solution, 5), new Color(Color.Green, 100));
+					graphics2D.Render(new Stroke(solution, 5), new Color(Color.Cyan, 100));
 
 					graphics2D.DrawString($"Length = {MSClipperLib.CLPolygonExtensions.PolygonLength(pathThatIsInside, false)}", 30, Height - 40);
 				}
@@ -570,8 +593,8 @@ namespace MatterHackers.PolygonPathing
 
 		private void CreatePolygonData()
 		{
-			startOverride = new MSIntPoint();
-			endOverride = new MSIntPoint();
+			//startOverride = new MSIntPoint();
+			//endOverride = new MSIntPoint();
 
 			IVertexSource pathToUse = null;
 			MSPolygons directPolygons = null;
