@@ -660,42 +660,8 @@ namespace MatterHackers.Agg.UI
 
 		public void Invalidate(RectangleDouble rectToInvalidate)
 		{
-			// Cascade Agg invalidates to Winforms
-			//
-			// TODO: Evaluate the cost of this action
 			this.Invalidate();
 		}
-
-		/*
-		 * 
-		 * // Region based invalidate is pointless given in OnPaint we call OnDraw on the Agg root
-		 * // i.e. We always redraw everything. Region has no effect
-		
-		public override void Invalidate(RectangleDouble rectToInvalidate)
-		{
-			rectToInvalidate.IntersectWithRectangle(LocalBounds);
-
-			//rectToInvalidate = new rect_d(0, 0, Width, Height);
-
-			Rectangle windowsRectToInvalidate = GetRectangleFromRectD(rectToInvalidate);
-			if (WindowsFormsWindow != null)
-			{
-				// This looks like a positive feedback loop
-				WindowsFormsWindow.RequestInvalidate(windowsRectToInvalidate);
-			}
-		}
-
-		public Rectangle GetRectangleFromRectD(RectangleDouble rectD)
-		{
-			Rectangle windowsRect = new Rectangle(
-				(int)System.Math.Floor(rectD.Left),
-				(int)System.Math.Floor(Height - rectD.Top),
-				(int)System.Math.Ceiling(rectD.Width),
-				(int)System.Math.Ceiling(rectD.Height));
-
-			return windowsRect;
-		}
-		 */
 
 		public void SetCursor(Cursors cursorToSet)
 		{
