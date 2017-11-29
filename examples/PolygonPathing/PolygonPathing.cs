@@ -183,6 +183,14 @@ namespace MatterHackers.PolygonPathing
 			BackgroundColor = Color.White,
 		};
 
+		private CheckBox LockPosition = new CheckBox("Lock Position")
+		{
+			HAnchor = HAnchor.Right | HAnchor.Fit,
+			VAnchor = VAnchor.Bottom | VAnchor.Fit,
+			Margin = new BorderDouble(5, 20, 5, 5),
+			BackgroundColor = Color.White,
+		};
+
 		private Vector2 unscaledRenderOffset = new Vector2(0, 0);
 		private bool updateScaleAndOffset = true;
 
@@ -195,6 +203,21 @@ namespace MatterHackers.PolygonPathing
 
 			StayInside.Checked = true;
 			AddChild(StayInside);
+			AddChild(LockPosition);
+
+			LockPosition.CheckedStateChanged += (s, e) =>
+			{
+				if (LockPosition.Checked)
+				{
+					startOverride = ScreenToObject(new MSIntPoint(mouseDownPosition.X, mouseDownPosition.Y));
+					endOverride = ScreenToObject(new MSIntPoint(mouseCapturedPosition.X, mouseCapturedPosition.Y));
+				}
+				else
+				{
+					startOverride = new MSIntPoint();
+					endOverride = new MSIntPoint();
+				}
+			};
 
 			shapeTypeRadioGroup.AddRadioButton("Boxes");
 			shapeTypeRadioGroup.AddRadioButton("Simple Map");
@@ -570,8 +593,8 @@ namespace MatterHackers.PolygonPathing
 
 		private void CreatePolygonData()
 		{
-			startOverride = new MSIntPoint();
-			endOverride = new MSIntPoint();
+			//startOverride = new MSIntPoint();
+			//endOverride = new MSIntPoint();
 
 			IVertexSource pathToUse = null;
 			MSPolygons directPolygons = null;
