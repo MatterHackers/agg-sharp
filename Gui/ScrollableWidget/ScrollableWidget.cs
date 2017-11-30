@@ -216,7 +216,9 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
-			if (mouseDownOnScrollArea && ScrollWithMouse(this))
+			if (mouseDownOnScrollArea
+				&& GuiWidget.TouchScreenMode
+				&& ScrollWithMouse(this))
 			{
 				ScrollPosition = new Vector2(ScrollPosition.X, scrollOnDownY - (mouseDownY - mouseEvent.Y));
 			}
