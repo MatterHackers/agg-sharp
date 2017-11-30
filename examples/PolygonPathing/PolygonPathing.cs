@@ -177,18 +177,24 @@ namespace MatterHackers.PolygonPathing
 
 		private CheckBox StayInside = new CheckBox("Stay Inside")
 		{
-			HAnchor = HAnchor.Right | HAnchor.Fit,
-			VAnchor = VAnchor.Bottom | VAnchor.Fit,
+			HAnchor = HAnchor.Left | HAnchor.Fit,
 			Margin = new BorderDouble(5),
 			BackgroundColor = Color.White,
 		};
 
 		private CheckBox LockPosition = new CheckBox("Lock Position")
 		{
-			HAnchor = HAnchor.Right | HAnchor.Fit,
-			VAnchor = VAnchor.Bottom | VAnchor.Fit,
-			Margin = new BorderDouble(5, 20, 5, 5),
+			HAnchor = HAnchor.Left | HAnchor.Fit,
+			Margin = new BorderDouble(5),
 			BackgroundColor = Color.White,
+		};
+
+		private CheckBox OptomizePath = new CheckBox("Optomize Path")
+		{
+			HAnchor = HAnchor.Left | HAnchor.Fit,
+			Margin = new BorderDouble(5),
+			BackgroundColor = Color.White,
+			Checked = false,
 		};
 
 		private Vector2 unscaledRenderOffset = new Vector2(0, 0);
@@ -202,8 +208,18 @@ namespace MatterHackers.PolygonPathing
 			errorData = new ErrorPathData("C:/Development/MCCentral/MatterControl/bin/Debug/DebugPathFinder.txt");
 
 			StayInside.Checked = true;
-			AddChild(StayInside);
-			AddChild(LockPosition);
+			var checkBoxHolder = new FlowLayoutWidget(FlowDirection.TopToBottom)
+			{
+				HAnchor = HAnchor.Right | HAnchor.Fit,
+				VAnchor = VAnchor.Bottom | VAnchor.Fit,
+				Margin = new BorderDouble(5),
+				BackgroundColor = Color.LightGray,
+			};
+			AddChild(checkBoxHolder);
+
+			checkBoxHolder.AddChild(StayInside);
+			checkBoxHolder.AddChild(LockPosition);
+			checkBoxHolder.AddChild(OptomizePath);
 
 			LockPosition.CheckedStateChanged += (s, e) =>
 			{
@@ -323,7 +339,7 @@ namespace MatterHackers.PolygonPathing
 
 				// create the path
 				List<MSIntPoint> pathThatIsInside = new List<MSIntPoint>();
-				bool found = avoid.CreatePathInsideBoundary(pathStart, pathEnd, pathThatIsInside, false);
+				bool found = avoid.CreatePathInsideBoundary(pathStart, pathEnd, pathThatIsInside, OptomizePath.Checked);
 
 				foreach (var node in avoid.OutlineData.Waypoints.Nodes)
 				{
