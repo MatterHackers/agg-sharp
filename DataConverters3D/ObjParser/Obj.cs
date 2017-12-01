@@ -31,18 +31,18 @@ namespace ObjParser
 {
 	public class Obj
 	{
-		public List<Face> FaceList;
-		public List<TextureVertex> TextureList;
-		public List<Vertex> VertexList;
+		public List<ObjFace> FaceList;
+		public List<ObjTextureVertex> TextureList;
+		public List<ObjVertex> VertexList;
 
 		/// <summary>
 		/// Constructor. Initializes VertexList, FaceList and TextureList.
 		/// </summary>
 		public Obj()
 		{
-			VertexList = new List<Vertex>();
-			FaceList = new List<Face>();
-			TextureList = new List<TextureVertex>();
+			VertexList = new List<ObjVertex>();
+			FaceList = new List<ObjFace>();
+			TextureList = new List<ObjTextureVertex>();
 		}
 
 		public string Material { get; set; } = "";
@@ -101,7 +101,7 @@ namespace ObjParser
 				VertexList.ForEach(v => writer.WriteLine(v));
 				TextureList.ForEach(tv => writer.WriteLine(tv));
 				string lastUseMtl = "";
-				foreach (Face face in FaceList)
+				foreach (ObjFace face in FaceList)
 				{
 					if (face.UseMtl != null && !face.UseMtl.Equals(lastUseMtl))
 					{
@@ -134,21 +134,21 @@ namespace ObjParser
 						break;
 
 					case "v":
-						Vertex v = new Vertex();
+						ObjVertex v = new ObjVertex();
 						v.LoadFromStringArray(lineParts);
 						VertexList.Add(v);
 						v.Index = VertexList.Count();
 						break;
 
 					case "f":
-						Face f = new Face();
+						ObjFace f = new ObjFace();
 						f.LoadFromStringArray(lineParts);
 						f.UseMtl = UseMtl;
 						FaceList.Add(f);
 						break;
 
 					case "vt":
-						TextureVertex vt = new TextureVertex();
+						ObjTextureVertex vt = new ObjTextureVertex();
 						vt.LoadFromStringArray(lineParts);
 						TextureList.Add(vt);
 						vt.Index = TextureList.Count();

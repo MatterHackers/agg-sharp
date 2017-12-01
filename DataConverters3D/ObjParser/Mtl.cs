@@ -31,14 +31,14 @@ namespace ObjParser
 {
 	public class Mtl
 	{
-		public List<Material> MaterialList;
+		public List<ObjMaterial> MaterialList;
 
 		/// <summary>
 		/// Constructor. Initializes VertexList, FaceList and TextureList.
 		/// </summary>
 		public Mtl()
 		{
-			MaterialList = new List<Material>();
+			MaterialList = new List<ObjMaterial>();
 		}
 
 		/// <summary>
@@ -86,10 +86,10 @@ namespace ObjParser
 			}
 		}
 
-		private Material currentMaterial()
+		private ObjMaterial currentMaterial()
 		{
 			if (MaterialList.Count > 0) return MaterialList.Last();
-			return new Material();
+			return new ObjMaterial();
 		}
 
 		/// <summary>
@@ -102,8 +102,8 @@ namespace ObjParser
 
 			if (parts.Length > 0)
 			{
-				Material CurrentMaterial = currentMaterial();
-				Color c = new Color();
+				ObjMaterial CurrentMaterial = currentMaterial();
+				ObjColor c = new ObjColor();
 				switch (parts[0].Trim())
 				{
 					case "d":
@@ -147,7 +147,7 @@ namespace ObjParser
 						break;
 
 					case "newmtl":
-						CurrentMaterial = new Material();
+						CurrentMaterial = new ObjMaterial();
 						CurrentMaterial.Name = parts[1];
 						MaterialList.Add(CurrentMaterial);
 						break;

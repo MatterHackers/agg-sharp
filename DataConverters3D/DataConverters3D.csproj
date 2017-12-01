@@ -97,6 +97,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Object3D\SafeList.cs" />
+    <Compile Include="ObjParser\Types\IObjArray.cs" />
+    <Compile Include="ObjParser\Types\ObjColor.cs" />
+    <Compile Include="ObjParser\Types\ObjMaterial.cs" />
+    <Compile Include="ObjParser\Types\ObjTextureVertex.cs" />
+    <Compile Include="ObjParser\Types\ObjVertex.cs" />
     <Compile Include="ObjSupport.cs" />
     <Compile Include="AmfDocument.cs" />
     <Compile Include="CsgToRayTraceable.cs" />
@@ -113,12 +118,7 @@
     <Compile Include="ObjParser\Extent.cs" />
     <Compile Include="ObjParser\Mtl.cs" />
     <Compile Include="ObjParser\Obj.cs" />
-    <Compile Include="ObjParser\Types\Color.cs" />
-    <Compile Include="ObjParser\Types\Face.cs" />
-    <Compile Include="ObjParser\Types\IType.cs" />
-    <Compile Include="ObjParser\Types\Material.cs" />
-    <Compile Include="ObjParser\Types\TextureVertex.cs" />
-    <Compile Include="ObjParser\Types\Vertex.cs" />
+    <Compile Include="ObjParser\Types\ObjFace.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Object3D\Object3D.cs" />
     <Compile Include="VertexSourceToMesh.cs" />
