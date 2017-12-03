@@ -150,8 +150,13 @@ namespace MatterHackers.Agg.UI
 				ApplyFilter();
 			};
 
-			DropDownContainer.KeyUp += (s, e) =>
+			DropDownContainer.KeyDown += (s, e) =>
 			{
+				if(e.Handled)
+				{
+					return;
+				}
+
 				switch (e.KeyCode)
 				{
 					case Keys.Up:
@@ -159,7 +164,7 @@ namespace MatterHackers.Agg.UI
 						{
 							highLightedIndex--;
 						}
-
+						e.Handled = true;
 						break;
 
 					case Keys.Down:
@@ -167,7 +172,7 @@ namespace MatterHackers.Agg.UI
 						{
 							highLightedIndex++;
 						}
-
+						e.Handled = true;
 						break;
 				}
 
