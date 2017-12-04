@@ -170,6 +170,11 @@ namespace MatterHackers.Localizations
 
 		public override string Translate(string englishString)
 		{
+			if (string.IsNullOrEmpty(englishString))
+			{
+				return englishString;
+			}
+
 			string tranlatedString;
 			if (!translationDictionary.TryGetValue(englishString, out tranlatedString))
 			{
