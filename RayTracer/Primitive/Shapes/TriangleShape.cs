@@ -123,7 +123,7 @@ namespace MatterHackers.RayTracer
 						info.closestHitObject = this;
 						info.hitType = IntersectionType.FrontFace;
 						info.HitPosition = hitPosition;
-						info.normalAtHit = new Vector3(Plane.PlaneNormal);
+						info.normalAtHit = new Vector3(Plane.Normal);
 						info.distanceToHit = distanceToHit;
 
 						return info;
@@ -139,22 +139,16 @@ namespace MatterHackers.RayTracer
 			throw new NotImplementedException();
 		}
 
-		public override ColorF GetColor(IntersectInfo info)
+		public override (double u, double v) GetUv(IntersectInfo info)
 		{
-			if (Material.HasTexture)
-			{
-				Vector3Float Position = Plane.PlaneNormal;
-				Vector3Float vecU = new Vector3Float(Position.y, Position.z, -Position.x);
-				Vector3Float vecV = Vector3Float.Cross(vecU, Plane.PlaneNormal);
+			Vector3Float normal = Plane.Normal;
+			Vector3Float vecU = new Vector3Float(normal.y, normal.z, -normal.x);
+			Vector3Float vecV = Vector3Float.Cross(vecU, Plane.Normal);
 
-				double u = Vector3Float.Dot(new Vector3Float(info.HitPosition), vecU);
-				double v = Vector3Float.Dot(new Vector3Float(info.HitPosition), vecV);
-				return Material.GetColor(u, v);
-			}
-			else
-			{
-				return Material.GetColor(0, 0);
-			}
+			var u = Vector3Float.Dot(new Vector3Float(info.HitPosition), vecU);
+			var v = Vector3Float.Dot(new Vector3Float(info.HitPosition), vecV);
+
+			return (u, v);
 		}
 
 		public override double GetIntersectCost()

@@ -149,28 +149,6 @@ bool Box::intersect(const Ray &r, float t0, float t1) const {
 			return oneHitIsWithinLimits;
 		}
 
-		public override ColorF GetColor(IntersectInfo info)
-		{
-			if (Material.HasTexture)
-			{
-				throw new NotImplementedException();
-#if false
-                //Vector vecU = new Vector(hit.y - Position.y, hit.z - Position.z, Position.x-hit.x);
-                Vector3 Position = Transform.Position;
-                Vector3 vecU = new Vector3D((P1.y + P2.y) / 2 - Position.y, (P1.z + P2.z) / 2 - Position.z, Position.x - (P1.x + P2.x) / 2).GetNormal();
-                Vector3 vecV = vecU.Cross((P1 + P2) / 2 - Position).GetNormal();
-
-                double u = Vector3.Dot(info.hitPosition, vecU);
-                double v = Vector3.Dot(info.hitPosition, vecV);
-                return Material.GetColor(u, v);
-#endif
-			}
-			else
-			{
-				return Material.GetColor(0, 0);
-			}
-		}
-
 		public override IEnumerable IntersectionIterator(Ray ray)
 		{
 			double minDistFound;
@@ -258,6 +236,11 @@ bool Box::intersect(const Ray &r, float t0, float t1) const {
 		public override string ToString()
 		{
 			return string.Format("Box ({0},{1},{2})-({3},{4},{5})", minXYZ.X, minXYZ.Y, minXYZ.Z, maxXYZ.X, maxXYZ.Y, maxXYZ.Z);
+		}
+
+		public override (double u, double v) GetUv(IntersectInfo info)
+		{
+			throw new NotImplementedException();
 		}
 	}
 }

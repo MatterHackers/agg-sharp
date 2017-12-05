@@ -84,19 +84,6 @@ namespace MatterHackers.RayTracer
 			return 1288;
 		}
 
-		public override ColorF GetColor(IntersectInfo info)
-		{
-			if (Material.HasTexture)
-			{
-				throw new NotImplementedException();
-			}
-			else
-			{
-				// skip uv calculation, just get the color
-				return this.Material.GetColor(0, 0);
-			}
-		}
-
 		private double GetRadiusAtHeight(double height)
 		{
 			return 0;
@@ -358,6 +345,11 @@ namespace MatterHackers.RayTracer
 		public override string ToString()
 		{
 			return string.Format("Cylinder");
+		}
+
+		public override (double u, double v) GetUv(IntersectInfo info)
+		{
+			throw new NotImplementedException();
 		}
 	}
 

@@ -18,14 +18,25 @@ namespace MatterHackers.RayTracer
 {
 	public abstract class BaseShape : IPrimitive
 	{
-		private MaterialAbstract material;
+		public ColorF GetColor(IntersectInfo info)
+		{
+			if (Material.HasTexture)
+			{
+				var uv = GetUv(info);
+				return Material.GetColor(uv.u, uv.v);
+			}
+			else
+			{
+				return Material.GetColor(0, 0);
+			}
+		}
 
-		public abstract ColorF GetColor(IntersectInfo info);
+		public abstract (double u, double v) GetUv(IntersectInfo info);
 
 		public MaterialAbstract Material
 		{
-			get { return material; }
-			set { material = value; }
+			get;
+			set;
 		}
 
 		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)

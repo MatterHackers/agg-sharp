@@ -50,44 +50,6 @@ namespace MatterHackers.RayTracer
 			return 670;
 		}
 
-		public override ColorF GetColor(IntersectInfo info)
-		{
-			if (Material.HasTexture)
-			{
-				Vector3 vn = new Vector3(0, 1, 0).GetNormal(); // north pole / up
-				Vector3 ve = new Vector3(0, 0, 1).GetNormal(); // equator / sphere orientation
-				Vector3 vp = (info.HitPosition - position).GetNormal(); //points from center of sphere to intersection
-
-				double phi = Math.Acos(-Vector3.Dot(vp, vn));
-				double v = (phi * 2 / Math.PI) - 1;
-
-				double sinphi = Vector3.Dot(ve, vp) / Math.Sin(phi);
-				sinphi = sinphi < -1 ? -1 : sinphi > 1 ? 1 : sinphi;
-				double theta = Math.Acos(sinphi) * 2 / Math.PI;
-
-				double u;
-
-				if (Vector3.Dot(Vector3.Cross(vn, ve), vp) > 0)
-				{
-					u = theta;
-				}
-				else
-				{
-					u = 1 - theta;
-				}
-
-				// alternative but worse implementation
-				//double u = Math.Atan2(vp.x, vp.z);
-				//double v = Math.Acos(vp.y);
-				return this.Material.GetColor(u, v);
-			}
-			else
-			{
-				// skip uv calculation, just get the color
-				return this.Material.GetColor(0, 0);
-			}
-		}
-
 		/// <summary>
 		/// This implementation of intersect uses the fastest ray-sphere intersection algorithm I could find
 		/// on the internet.
@@ -202,6 +164,33 @@ namespace MatterHackers.RayTracer
 		public override string ToString()
 		{
 			return string.Format("Sphere ({0},{1},{2}) Radius: {3}", position.X, position.Y, position.Z, radius);
+		}
+
+		public override (double u, double v) GetUv(IntersectInfo info)
+		{
+			Vector3 vn = new Vector3(0, 1, 0).GetNormal(); // north pole / up
+			Vector3 ve = new Vector3(0, 0, 1).GetNormal(); // equator / sphere orientation
+			Vector3 vp = (info.HitPosition - position).GetNormal(); //points from center of sphere to intersection
+
+			double phi = Math.Acos(-Vector3.Dot(vp, vn));
+			double v = (phi * 2 / Math.PI) - 1;
+
+			double sinphi = Vector3.Dot(ve, vp) / Math.Sin(phi);
+			sinphi = sinphi < -1 ? -1 : sinphi > 1 ? 1 : sinphi;
+			double theta = Math.Acos(sinphi) * 2 / Math.PI;
+
+			double u;
+
+			if (Vector3.Dot(Vector3.Cross(vn, ve), vp) > 0)
+			{
+				u = theta;
+			}
+			else
+			{
+				u = 1 - theta;
+			}
+
+			return (u, v);
 		}
 	}
 }
