@@ -86,6 +86,9 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnKeyDown(KeyEventArgs keyEvent)
 		{
+			// make sure children controls get to try to handle this event first
+			base.OnKeyDown(keyEvent);
+
 			if (!keyEvent.Handled)
 			{
 				switch (keyEvent.KeyCode)
@@ -111,8 +114,6 @@ namespace MatterHackers.Agg.UI
 						break;
 				}
 			}
-
-			base.OnKeyDown(keyEvent);
 		}
 
 		private void OnScrollPositionChanged()
