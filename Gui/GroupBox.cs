@@ -4,7 +4,6 @@
 	{
 		private GuiWidget groupBoxLabel;
 		private double lineInset = 8.5;
-		private Color borderColor = Color.Black;
 		private GuiWidget clientArea;
 
 		public Color TextColor
@@ -28,18 +27,6 @@
 			}
 		}
 
-		public Color BorderColor
-		{
-			get
-			{
-				return this.borderColor;
-			}
-			set
-			{
-				this.borderColor = value;
-			}
-		}
-
 		public GuiWidget ClientArea
 		{
 			get
@@ -55,6 +42,7 @@
 
 		public GroupBox(GuiWidget groupBoxLabel)
 		{
+			BorderColor = Color.Black;
 			HAnchor = HAnchor.Fit;
 			VAnchor = VAnchor.Fit;
 
@@ -100,14 +88,14 @@
 		{
 			RectangleDouble localBounds = LocalBounds;
 			// bottom
-			graphics2D.Line(localBounds.Left + lineInset, localBounds.Bottom + lineInset, localBounds.Left + Width - lineInset, localBounds.Bottom + lineInset, this.borderColor);
+			graphics2D.Line(localBounds.Left + lineInset, localBounds.Bottom + lineInset, localBounds.Left + Width - lineInset, localBounds.Bottom + lineInset, this.BorderColor);
 			// left
-			graphics2D.Line(localBounds.Left + lineInset, localBounds.Bottom + lineInset, localBounds.Left + lineInset, localBounds.Bottom + Height - lineInset, this.borderColor);
+			graphics2D.Line(localBounds.Left + lineInset, localBounds.Bottom + lineInset, localBounds.Left + lineInset, localBounds.Bottom + Height - lineInset, this.BorderColor);
 			// right
-			graphics2D.Line(localBounds.Left + Width - lineInset, localBounds.Bottom + lineInset, localBounds.Left + Width - lineInset, localBounds.Bottom + Height - lineInset, this.borderColor);
+			graphics2D.Line(localBounds.Left + Width - lineInset, localBounds.Bottom + lineInset, localBounds.Left + Width - lineInset, localBounds.Bottom + Height - lineInset, this.BorderColor);
 			// top
-			graphics2D.Line(localBounds.Left + lineInset, localBounds.Bottom + Height - lineInset, groupBoxLabel.BoundsRelativeToParent.Left - 2, localBounds.Bottom + Height - lineInset, this.borderColor);
-			graphics2D.Line(groupBoxLabel.BoundsRelativeToParent.Right + 2, localBounds.Bottom + Height - lineInset, localBounds.Left + Width - lineInset, localBounds.Bottom + Height - lineInset, this.borderColor);
+			graphics2D.Line(localBounds.Left + lineInset, localBounds.Bottom + Height - lineInset, groupBoxLabel.BoundsRelativeToParent.Left - 2, localBounds.Bottom + Height - lineInset, this.BorderColor);
+			graphics2D.Line(groupBoxLabel.BoundsRelativeToParent.Right + 2, localBounds.Bottom + Height - lineInset, localBounds.Left + Width - lineInset, localBounds.Bottom + Height - lineInset, this.BorderColor);
 
 			base.OnDraw(graphics2D);
 		}
