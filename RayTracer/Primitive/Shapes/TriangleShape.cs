@@ -17,6 +17,35 @@ using System.Linq;
 
 namespace MatterHackers.RayTracer
 {
+	public class TriangleShapeUv : TriangleShape
+	{
+		Vector2Float uv0;
+		Vector2Float uv1;
+		Vector2Float uv2;
+
+		public TriangleShapeUv(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2,
+			Vector2 uv0, Vector2 uv1, Vector2 uv2,
+			MaterialAbstract material)
+			: base(vertex0, vertex1, vertex2, material)
+		{
+			this.uv0 = new Vector2Float(uv0);
+			this.uv1 = new Vector2Float(uv1);
+			this.uv2 = new Vector2Float(uv2);
+		}
+
+		public override (double u, double v) GetUv(IntersectInfo info)
+		{
+			Vector3Float normal = Plane.Normal;
+			Vector3Float vecU = new Vector3Float(normal.y, normal.z, -normal.x);
+			Vector3Float vecV = Vector3Float.Cross(vecU, Plane.Normal);
+
+			var u = Vector3Float.Dot(new Vector3Float(info.HitPosition), vecU);
+			var v = Vector3Float.Dot(new Vector3Float(info.HitPosition), vecV);
+
+			return (u, v);
+		}
+	}
+
 	public class TriangleShape : BaseShape
 	{
 		private readonly static int[] xMapping = new int[] { 1, 0, 0 };
