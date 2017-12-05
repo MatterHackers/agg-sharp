@@ -178,20 +178,38 @@ namespace MatterHackers.PolygonMesh
 		{
 			List<IPrimitive> allPolys = new List<IPrimitive>();
 			List<Vector3> positions = new List<Vector3>();
+			List<Vector2> uvs = new List<Vector2>();
 
 			foreach (Face face in mesh.Faces)
 			{
 				positions.Clear();
-				foreach (Vertex vertex in face.Vertices())
+				bool hasTexture = false;
+
+				foreach (FaceEdge faceEdge in face.FaceEdges())
 				{
-					positions.Add(vertex.Position);
+					if (mesh.TextureUV.ContainsKey((faceEdge, 0)))
+					{
+						uvs.Add(faceEdge.GetUv(0));
+						hasTexture = true;
+					}
+					positions.Add(faceEdge.FirstVertex.Position);
 				}
 
 				// We should use the tessellator for this if it is greater than 3.
 				Vector3 next = positions[1];
+				Vector2 nextuv = hasTexture ? uvs[1] : Vector2.Zero;
 				for (int positionIndex = 2; positionIndex < positions.Count; positionIndex++)
 				{
-					TriangleShape triangel = new TriangleShape(positions[0], next, positions[positionIndex], null);
+					TriangleShape triangel;
+					if (hasTexture)
+					{
+						triangel = new TriangleShapeUv(positions[0], next, positions[positionIndex],
+							uvs[0], nextuv, uvs[positionIndex], null);
+					}
+					else
+					{
+						triangel = new TriangleShape(positions[0], next, positions[positionIndex], null);
+					}
 					allPolys.Add(triangel);
 					next = positions[positionIndex];
 				}
