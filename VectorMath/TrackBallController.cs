@@ -46,8 +46,6 @@ namespace MatterHackers.VectorMath
 		private Vector2 lastTranslationMousePosition = Vector2.Zero;
 		private Vector2 lastScaleMousePosition = Vector2.Zero;
 
-		public event EventHandler TransformChanged;
-
 		private WorldView world;
 
 		public TrackBallController(WorldView world)

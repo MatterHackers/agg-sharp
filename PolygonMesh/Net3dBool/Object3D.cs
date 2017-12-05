@@ -257,7 +257,6 @@ namespace Net3dBool
 										{
 											//System.out.println("possible infinite loop situation: terminating faces split");
 											//return;
-											int a = 0;
 										}
 
 										if (facesFromSplit.Count > facesBeforeSplit)

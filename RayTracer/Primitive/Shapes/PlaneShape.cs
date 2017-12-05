@@ -46,24 +46,6 @@ namespace MatterHackers.RayTracer
 			return new AxisAlignedBoundingBox(Vector3.NegativeInfinity, Vector3.PositiveInfinity);
 		}
 
-		public override ColorF GetColor(IntersectInfo info)
-		{
-			if (Material.HasTexture)
-			{
-				Vector3 Position = plane.PlaneNormal;
-				Vector3 vecU = new Vector3(Position.Y, Position.Z, -Position.X);
-				Vector3 vecV = Vector3.Cross(vecU, plane.PlaneNormal);
-
-				double u = Vector3.Dot(info.HitPosition, vecU);
-				double v = Vector3.Dot(info.HitPosition, vecV);
-				return Material.GetColor(u, v);
-			}
-			else
-			{
-				return Material.GetColor(0, 0);
-			}
-		}
-
 		public override double GetIntersectCost()
 		{
 			return 350;
@@ -101,6 +83,17 @@ namespace MatterHackers.RayTracer
 		public override string ToString()
 		{
 			return string.Format("Sphere {0}x+{1}y+{2}z+{3}=0)", plane.PlaneNormal.X, plane.PlaneNormal.Y, plane.PlaneNormal.Z, plane.DistanceToPlaneFromOrigin);
+		}
+
+		public override (double u, double v) GetUv(IntersectInfo info)
+		{
+			Vector3 Position = plane.PlaneNormal;
+			Vector3 vecU = new Vector3(Position.Y, Position.Z, -Position.X);
+			Vector3 vecV = Vector3.Cross(vecU, plane.PlaneNormal);
+
+			double u = Vector3.Dot(info.HitPosition, vecU);
+			double v = Vector3.Dot(info.HitPosition, vecV);
+			return (u, v);
 		}
 	}
 }

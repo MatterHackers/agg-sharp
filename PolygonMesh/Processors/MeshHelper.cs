@@ -137,7 +137,7 @@ namespace MatterHackers.PolygonMesh
 			throw new NotImplementedException();
 
 			// and merge the mesh edges that are now manifold
-			mesh.MergeMeshEdges(CancellationToken.None);
+			//mesh.MergeMeshEdges(CancellationToken.None);
 		}
 
 		public static bool IsManifold(this Mesh mesh)
