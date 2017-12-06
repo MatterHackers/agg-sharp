@@ -43,6 +43,7 @@ namespace MatterHackers.GuiAutomation
 		Point2D CurrentMousePosition();
 		bool LeftButtonDown { get; }
 		int GetCurrentScreenHeight();
+		int ClickCount { get; }
 		void SetCursorPosition(int x, int y);
 		void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo);
 		void Type(string textToType);
@@ -87,7 +88,9 @@ namespace MatterHackers.GuiAutomation
 				{
 					windowToDrawSimulatedMouseOn.AfterDraw -= DrawMouse;
 				}
+
 				windowToDrawSimulatedMouseOn = topSystemWindow;
+
 				if (windowToDrawSimulatedMouseOn != null && DrawSimulatedMouse)
 				{
 					windowToDrawSimulatedMouseOn.AfterDraw += DrawMouse;
@@ -126,7 +129,7 @@ namespace MatterHackers.GuiAutomation
 
 		public bool LeftButtonDown { get; private set; }
 
-		private long lastMouseDownMs = UiThread.CurrentTimerMs;
+		public int ClickCount { get; private set; }
 
 		public void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo)
 		{
@@ -140,11 +143,11 @@ namespace MatterHackers.GuiAutomation
 					// create the agg event
 					if (dwFlags == NativeMethods.MOUSEEVENTF_LEFTDOWN)
 					{
-						var clickCount = (this.LeftButtonDown) ? 2 : 1;
+						this.ClickCount = (this.LeftButtonDown) ? 2 : 1;
 						
 						UiThread.RunOnIdle(() =>
 						{
-							systemWindow.OnMouseDown(new MouseEventArgs(mouseButtons, clickCount, windowPosition.x, windowPosition.y, 0));
+							systemWindow.OnMouseDown(new MouseEventArgs(mouseButtons, this.ClickCount, windowPosition.x, windowPosition.y, 0));
 						});
 					}
 					else if (dwFlags == NativeMethods.MOUSEEVENTF_LEFTUP)
@@ -176,10 +179,7 @@ namespace MatterHackers.GuiAutomation
 
 			this.LeftButtonDown = (dwFlags == NativeMethods.MOUSEEVENTF_LEFTDOWN);
 
-			if (this.LeftButtonDown)
-			{
-				lastMouseDownMs = UiThread.CurrentTimerMs;
-			}
+			systemWindow.Invalidate();
 		}
 
 		private MouseButtons MapButtons(int cButtons)

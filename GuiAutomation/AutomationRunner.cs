@@ -35,6 +35,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.Agg;
+using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
@@ -300,10 +301,13 @@ namespace MatterHackers.GuiAutomation
 			{
 				Point2D mousePosOnWindow = ScreenToSystemWindow(inputSystem.CurrentMousePosition(), (SystemWindow)parentSystemWindow);
 				Ellipse circle = new Ellipse(new Vector2(mousePosOnWindow.x, mousePosOnWindow.y), 10);
+
 				if (inputSystem.LeftButtonDown)
 				{
 					graphics2D.Render(circle, Color.Green);
+					graphics2D.DrawString(inputSystem.ClickCount.ToString(), mousePosOnWindow.x, mousePosOnWindow.y, 8, justification: Justification.Center, baseline: Baseline.BoundsCenter );
 				}
+
 				graphics2D.Render(new Stroke(circle, 3), Color.Black);
 				graphics2D.Render(new Stroke(circle, 2), Color.White);
 			}
