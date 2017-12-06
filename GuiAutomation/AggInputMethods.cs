@@ -192,11 +192,11 @@ namespace MatterHackers.GuiAutomation
 
 				case NativeMethods.MOUSEEVENTF_RIGHTDOWN:
 				case NativeMethods.MOUSEEVENTF_RIGHTUP:
-					return MouseButtons.Left;
+					return MouseButtons.Right;
 
 				case NativeMethods.MOUSEEVENTF_MIDDLEDOWN:
 				case NativeMethods.MOUSEEVENTF_MIDDLEUP:
-					return MouseButtons.Left;
+					return MouseButtons.Middle;
 			}
 
 			return MouseButtons.Left;
