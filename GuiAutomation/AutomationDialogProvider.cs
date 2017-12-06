@@ -4,7 +4,7 @@ using MatterHackers.Agg.UI;
 
 namespace MatterHackers.Agg.Platform
 {
-	internal class AutomationDialogProvider : IFileDialogProvider
+	public class AutomationDialogProvider : IFileDialogProvider
 	{
 		public string LastDirectoryUsed { get; private set; }
 
