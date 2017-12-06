@@ -135,45 +135,39 @@ namespace MatterHackers.GuiAutomation
 		{
 			var systemWindow = SystemWindow.AllOpenSystemWindows.Last();
 
+			Point2D windowPosition = AutomationRunner.ScreenToSystemWindow(currentMousePosition, systemWindow);
+			if (systemWindow.LocalBounds.Contains(windowPosition))
 			{
-				Point2D windowPosition = AutomationRunner.ScreenToSystemWindow(currentMousePosition, systemWindow);
-				if (systemWindow.LocalBounds.Contains(windowPosition))
+				MouseButtons mouseButtons = MapButtons(cButtons);
+				// create the agg event
+				if (dwFlags == NativeMethods.MOUSEEVENTF_LEFTDOWN)
 				{
-					MouseButtons mouseButtons = MapButtons(cButtons);
-					// create the agg event
-					if (dwFlags == NativeMethods.MOUSEEVENTF_LEFTDOWN)
-					{
-						this.ClickCount = (this.LeftButtonDown) ? 2 : 1;
-						
-						UiThread.RunOnIdle(() =>
-						{
-							systemWindow.OnMouseDown(new MouseEventArgs(mouseButtons, this.ClickCount, windowPosition.x, windowPosition.y, 0));
-						});
-					}
-					else if (dwFlags == NativeMethods.MOUSEEVENTF_LEFTUP)
-					{
-						// send it to the window
-						UiThread.RunOnIdle(() =>
-						{
-							systemWindow.OnMouseUp(new MouseEventArgs(mouseButtons, 0, windowPosition.x, windowPosition.y, 0));
-						});
-					}
-					else if (dwFlags == NativeMethods.MOUSEEVENTF_RIGHTDOWN)
-					{
+					this.ClickCount = (this.LeftButtonDown) ? 2 : 1;
 
-					}
-					else if (dwFlags == NativeMethods.MOUSEEVENTF_RIGHTUP)
+					UiThread.RunOnIdle(() =>
 					{
-
-					}
-					else if (dwFlags == NativeMethods.MOUSEEVENTF_MIDDLEDOWN)
+						systemWindow.OnMouseDown(new MouseEventArgs(mouseButtons, this.ClickCount, windowPosition.x, windowPosition.y, 0));
+					});
+				}
+				else if (dwFlags == NativeMethods.MOUSEEVENTF_LEFTUP)
+				{
+					// send it to the window
+					UiThread.RunOnIdle(() =>
 					{
-
-					}
-					else if (dwFlags == NativeMethods.MOUSEEVENTF_MIDDLEUP)
-					{
-
-					}
+						systemWindow.OnMouseUp(new MouseEventArgs(mouseButtons, 0, windowPosition.x, windowPosition.y, 0));
+					});
+				}
+				else if (dwFlags == NativeMethods.MOUSEEVENTF_RIGHTDOWN)
+				{
+				}
+				else if (dwFlags == NativeMethods.MOUSEEVENTF_RIGHTUP)
+				{
+				}
+				else if (dwFlags == NativeMethods.MOUSEEVENTF_MIDDLEDOWN)
+				{
+				}
+				else if (dwFlags == NativeMethods.MOUSEEVENTF_MIDDLEUP)
+				{
 				}
 			}
 
@@ -247,8 +241,7 @@ namespace MatterHackers.GuiAutomation
 			reciever.OnKeyDown(keyDownEvent);
 			if (!keyDownEvent.SuppressKeyPress)
 			{
-				KeyPressEventArgs keyPressEvent = new KeyPressEventArgs(keyPressed);
-				reciever.OnKeyPress(keyPressEvent);
+				reciever.OnKeyPress(new KeyPressEventArgs(keyPressed));
 			}
 		}
 
