@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Drawing;
+using System.Linq;
 using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
@@ -127,11 +128,10 @@ namespace MatterHackers.GuiAutomation
 
 		private long lastMouseDownMs = UiThread.CurrentTimerMs;
 
-		private int clickCount;
-
 		public void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo)
 		{
-			foreach (var systemWindow in SystemWindow.AllOpenSystemWindows)
+			var systemWindow = SystemWindow.AllOpenSystemWindows.Last();
+
 			{
 				Point2D windowPosition = AutomationRunner.ScreenToSystemWindow(currentMousePosition, systemWindow);
 				if (systemWindow.LocalBounds.Contains(windowPosition))
@@ -140,30 +140,12 @@ namespace MatterHackers.GuiAutomation
 					// create the agg event
 					if (dwFlags == NativeMethods.MOUSEEVENTF_LEFTDOWN)
 					{
-						// send it to the window
-						if (LeftButtonDown)
+						var clickCount = (this.LeftButtonDown) ? 2 : 1;
+						
+						UiThread.RunOnIdle(() =>
 						{
-							UiThread.RunOnIdle(() =>
-							{
-								systemWindow.OnMouseMove(new MouseEventArgs(mouseButtons, 0, windowPosition.x, windowPosition.y, 0));
-							});
-						}
-						else
-						{
-							if (lastMouseDownMs > UiThread.CurrentTimerMs - 200)
-							{
-								clickCount++;
-							}
-							else
-							{
-								clickCount = 1;
-							}
-
-							UiThread.RunOnIdle(() =>
-							{
-								systemWindow.OnMouseDown(new MouseEventArgs(mouseButtons, clickCount, windowPosition.x, windowPosition.y, 0));
-							});
-						}
+							systemWindow.OnMouseDown(new MouseEventArgs(mouseButtons, clickCount, windowPosition.x, windowPosition.y, 0));
+						});
 					}
 					else if (dwFlags == NativeMethods.MOUSEEVENTF_LEFTUP)
 					{

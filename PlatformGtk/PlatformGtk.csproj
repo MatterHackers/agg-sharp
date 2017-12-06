@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" Condition=" '$(OS)' == 'Unix' ">
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -41,7 +41,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="GtkFileDialogProvider.cs" />
   </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <Target Name="Build" Condition=" '$(OS)' != 'Unix' "></Target>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets"  Condition=" '$(OS)' == 'Unix' " />
   <ItemGroup>
     <ProjectReference Include="..\agg\Agg.csproj">
       <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
