@@ -58,7 +58,7 @@ namespace MatterHackers.GuiAutomation
 		public static double TimeToMoveMouse { get; set; } = .5;
 
 		private string imageDirectory;
-		public double UpDelaySeconds = .2;
+		public static double UpDelaySeconds { get; set; } = .2;
 
 		public enum InputType { Native, Simulated, SimulatedDrawMouse };
 
