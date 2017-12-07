@@ -207,7 +207,8 @@ namespace MatterHackers.RenderOpenGl
 		{
 			if (meshToViewTransform != null
 				&& isTransparent
-				&& meshToRender.FaceBspTree != null)
+				&& meshToRender.FaceBspTree != null
+				&& meshToRender.Faces.Count > 0)
 			{
 				var invMeshToViewTransform = meshToViewTransform.Value;
 				invMeshToViewTransform.Invert();

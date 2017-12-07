@@ -89,21 +89,33 @@ namespace MatterHackers.Agg
 #endif
 		}
 
-		public static string GetNonCollidingName(IEnumerable<string> listToCheck, string desiredName)
+		private static Regex fileNameNumberMatch = new Regex("\\(\\d+\\)\\s*$", RegexOptions.Compiled);
+		public static string GetNonCollidingName(string desiredName, IEnumerable<string> listToCheck)
 		{
-			if (!listToCheck.Contains(desiredName))
+			return GetNonCollidingName(desiredName, (name) => !listToCheck.Contains(name));
+		}
+
+		public static string GetNonCollidingName(string desiredName, Func<string, bool> IsUnique)
+		{
+			if (IsUnique(desiredName))
 			{
 				return desiredName;
 			}
 			else
 			{
+				// Drop bracketed number sections from our source filename to ensure we don't generate something like "file (1) (1).amf"
+				if (desiredName.Contains("("))
+				{
+					desiredName = fileNameNumberMatch.Replace(desiredName, "").Trim();
+				}
+
 				int nextNumberToTry = 1;
 				string candidateName;
 
 				do
 				{
 					candidateName = string.Format("{0} ({1})", desiredName, nextNumberToTry++);
-				} while (listToCheck.Contains(candidateName));
+				} while (!IsUnique(candidateName));
 
 				return candidateName;
 			}

@@ -74,6 +74,21 @@ namespace MatterHackers.DataConverters3D
 		}
 
 		/// <summary>
+		/// Got the top of this objects parent tree and get change the name of the object if
+		/// required to make sure it is not the same as any other decendant
+		/// </summary>
+		/// <param name="root"></param>
+		public static void MakeNameNonColliding(this IObject3D item)
+		{
+			var topParent = item.Ancestors().Last();
+			if(topParent != null)
+			{
+				var names = topParent.Descendants().Where((i) => i != item).Select((i2) => i2.Name).ToList();
+				item.Name = agg_basics.GetNonCollidingName(item.Name, names);
+			}
+		}
+
+		/// <summary>
 		/// Enumerator to get the currently visible set of meshes for rendering.
 		/// The returned set may include placeholder or proxy data while
 		/// long operations are happening such as loading or mesh processing.
