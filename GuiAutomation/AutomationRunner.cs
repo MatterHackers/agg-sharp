@@ -246,7 +246,7 @@ namespace MatterHackers.GuiAutomation
 			}
 		}
 
-		public void Delay(Func<bool> checkConditionSatisfied, double maxSeconds, int checkInterval = 200)
+		public void Delay(Func<bool> checkConditionSatisfied, double maxSeconds = 5, int checkInterval = 200)
 		{
 			StaticDelay(checkConditionSatisfied, maxSeconds, checkInterval);
 		}
