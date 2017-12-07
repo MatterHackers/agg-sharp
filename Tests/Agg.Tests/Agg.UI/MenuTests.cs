@@ -112,15 +112,17 @@ namespace MatterHackers.Agg.UI.Tests
 				Assert.IsTrue(!testList.IsOpen);
 
 				testRunner.ClickByName("menu1");
+				testRunner.Delay(.1);
 				Assert.IsTrue(testList.IsOpen);
+
 				testRunner.ClickByName("item3");
+				testRunner.Delay(.1);
 				Assert.IsTrue(testList.IsOpen);
 
 				testRunner.MoveToByName("OffMenu");
 				Assert.IsTrue(testList.IsOpen);
 
 				testRunner.ClickByName("OffMenu");
-
 				testRunner.Delay(() => !testList.IsOpen, 2);
 				Assert.IsFalse(testList.IsOpen, "Menus should close when clicking off menu");
 
