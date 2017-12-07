@@ -833,7 +833,7 @@ namespace MatterHackers.GuiAutomation
 				window.FindNamedChildrenRecursive(widgetName, foundChildren);
 				if (foundChildren.Count > 0)
 				{
-					foreach (GuiWidget.WidgetAndPosition foundChild in foundChildren) 
+					foreach (GuiWidget.WidgetAndPosition foundChild in foundChildren)
 					{
 						RectangleDouble childBounds = foundChild.widget.TransformToParentSpace(window, foundChild.widget.LocalBounds);
 
@@ -853,6 +853,33 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
+		public bool WidgetExists<T>(SearchRegion searchRegion = null) where T : GuiWidget
+		{
+			// Ignore SystemWindows with null PlatformWindow members - SystemWindow constructed but not yet shown
+			foreach (SystemWindow window in SystemWindow.AllOpenSystemWindows.Where(w => w.PlatformWindow != null).ToArray())
+			{
+				IEnumerable<T> foundChildren = window.Children<T>();
+				if (foundChildren.Count() > 0)
+				{
+					foreach (var foundChild in foundChildren)
+					{
+						RectangleDouble childBounds = foundChild.TransformToParentSpace(window, foundChild.LocalBounds);
+
+						ScreenRectangle screenRect = SystemWindowToScreen(childBounds, window);
+						ScreenRectangle result;
+						if (searchRegion == null || ScreenRectangle.Intersection(searchRegion.ScreenRect, screenRect, out result))
+						{
+							if (foundChild.ActuallyVisibleOnScreen())
+							{
+								return true;
+							}
+						}
+					}
+				}
+			}
+
+			return false;
+		}
 		#endregion Search By Names
 
 		public void SetMouseCursorPosition(int x, int y)
