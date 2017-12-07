@@ -566,13 +566,13 @@ namespace MatterHackers.GuiAutomation
 			return null;
 		}
 
-		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, double secondsToWait = 0, SearchRegion searchRegion = null)
+		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, double secondsToWait = 5, SearchRegion searchRegion = null)
 		{
 			Point2D offsetHint;
 			return GetWidgetByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
 		}
 
-		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, out Point2D offsetHint, double secondsToWait = 0, SearchRegion searchRegion = null)
+		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, out Point2D offsetHint, double secondsToWait = 5, SearchRegion searchRegion = null)
 		{
 			containingWindow = null;
 			offsetHint = Point2D.Zero;
