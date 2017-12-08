@@ -305,7 +305,11 @@ namespace MatterHackers.GuiAutomation
 				if (inputSystem.LeftButtonDown)
 				{
 					graphics2D.Render(circle, Color.Green);
-					graphics2D.DrawString(inputSystem.ClickCount.ToString(), mousePosOnWindow.x, mousePosOnWindow.y, 8, justification: Justification.Center, baseline: Baseline.BoundsCenter );
+
+					if (inputSystem.ClickCount > 1)
+					{
+						graphics2D.DrawString(inputSystem.ClickCount.ToString(), mousePosOnWindow.x, mousePosOnWindow.y, 8, justification: Justification.Center, baseline: Baseline.BoundsCenter);
+					}
 				}
 
 				graphics2D.Render(new Stroke(circle, 3), Color.Black);
