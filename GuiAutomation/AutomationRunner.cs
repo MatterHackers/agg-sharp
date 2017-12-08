@@ -548,8 +548,7 @@ namespace MatterHackers.GuiAutomation
 		public SearchRegion GetRegionByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null)
 		{
 			SystemWindow containingWindow;
-			Point2D offsetHint;
-			GuiWidget namedWidget = GetWidgetByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
+			GuiWidget namedWidget = GetWidgetByName(widgetName, out containingWindow, out _, secondsToWait, searchRegion);
 
 			if (namedWidget != null)
 			{
@@ -568,8 +567,7 @@ namespace MatterHackers.GuiAutomation
 
 		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, double secondsToWait = 5, SearchRegion searchRegion = null)
 		{
-			Point2D offsetHint;
-			return GetWidgetByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
+			return GetWidgetByName(widgetName, out containingWindow, out _, secondsToWait, searchRegion);
 		}
 
 		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, out Point2D offsetHint, double secondsToWait = 5, SearchRegion searchRegion = null)
@@ -594,8 +592,7 @@ namespace MatterHackers.GuiAutomation
 
 		public object GetObjectByName(string widgetName, out SystemWindow containingWindow, double secondsToWait = 0, SearchRegion searchRegion = null)
 		{
-			Point2D offsetHint;
-			return GetObjectByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
+			return GetObjectByName(widgetName, out containingWindow, out _, secondsToWait, searchRegion);
 		}
 
 		public object GetObjectByName(string widgetName, out SystemWindow containingWindow, out Point2D offsetHint, double secondsToWait = 0, SearchRegion searchRegion = null)
