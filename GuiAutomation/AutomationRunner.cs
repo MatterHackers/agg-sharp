@@ -710,21 +710,43 @@ namespace MatterHackers.GuiAutomation
 
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
 				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+				WaitforDraw(containingWindow);
 
 				if (isDoubleClick)
 				{
 					Thread.Sleep(150);
 					inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+					WaitforDraw(containingWindow);
 				}
 
 				Delay(UpDelaySeconds);
 
 				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
 
+				WaitforDraw(containingWindow);
+
 				return;
 			}
 
 			throw new Exception($"ClickByName Failed: Named GuiWidget not found [{widgetName}]");
+		}
+
+		public void WaitforDraw(SystemWindow containingWindow)
+		{
+			var resetEvent = new AutoResetEvent(false);
+
+			EventHandler<DrawEventArgs> afterDraw = (s, e) =>
+			{
+				resetEvent.Set();
+			};
+
+			containingWindow.AfterDraw += afterDraw;
+
+			containingWindow.Invalidate();
+
+			resetEvent.WaitOne();
+
+			containingWindow.AfterDraw -= afterDraw;
 		}
 
 		public bool DragDropByName(string widgetNameDrag, string widgetNameDrop, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offsetDrag = default(Point2D), ClickOrigin originDrag = ClickOrigin.Center, Point2D offsetDrop = default(Point2D), ClickOrigin originDrop = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
