@@ -731,7 +731,7 @@ namespace MatterHackers.GuiAutomation
 			throw new Exception($"ClickByName Failed: Named GuiWidget not found [{widgetName}]");
 		}
 
-		public void WaitforDraw(SystemWindow containingWindow)
+		public void WaitforDraw(SystemWindow containingWindow, int maxSeconds = 30)
 		{
 			var resetEvent = new AutoResetEvent(false);
 
@@ -744,7 +744,7 @@ namespace MatterHackers.GuiAutomation
 
 			containingWindow.Invalidate();
 
-			resetEvent.WaitOne();
+			resetEvent.WaitOne(maxSeconds * 1000);
 
 			containingWindow.AfterDraw -= afterDraw;
 		}
