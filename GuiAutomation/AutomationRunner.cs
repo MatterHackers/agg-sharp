@@ -305,7 +305,11 @@ namespace MatterHackers.GuiAutomation
 				if (inputSystem.LeftButtonDown)
 				{
 					graphics2D.Render(circle, Color.Green);
-					graphics2D.DrawString(inputSystem.ClickCount.ToString(), mousePosOnWindow.x, mousePosOnWindow.y, 8, justification: Justification.Center, baseline: Baseline.BoundsCenter );
+
+					if (inputSystem.ClickCount > 1)
+					{
+						graphics2D.DrawString(inputSystem.ClickCount.ToString(), mousePosOnWindow.x, mousePosOnWindow.y, 8, justification: Justification.Center, baseline: Baseline.BoundsCenter);
+					}
 				}
 
 				graphics2D.Render(new Stroke(circle, 3), Color.Black);
@@ -548,8 +552,7 @@ namespace MatterHackers.GuiAutomation
 		public SearchRegion GetRegionByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null)
 		{
 			SystemWindow containingWindow;
-			Point2D offsetHint;
-			GuiWidget namedWidget = GetWidgetByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
+			GuiWidget namedWidget = GetWidgetByName(widgetName, out containingWindow, out _, secondsToWait, searchRegion);
 
 			if (namedWidget != null)
 			{
@@ -568,8 +571,7 @@ namespace MatterHackers.GuiAutomation
 
 		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, double secondsToWait = 5, SearchRegion searchRegion = null)
 		{
-			Point2D offsetHint;
-			return GetWidgetByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
+			return GetWidgetByName(widgetName, out containingWindow, out _, secondsToWait, searchRegion);
 		}
 
 		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, out Point2D offsetHint, double secondsToWait = 5, SearchRegion searchRegion = null)
@@ -594,8 +596,7 @@ namespace MatterHackers.GuiAutomation
 
 		public object GetObjectByName(string widgetName, out SystemWindow containingWindow, double secondsToWait = 0, SearchRegion searchRegion = null)
 		{
-			Point2D offsetHint;
-			return GetObjectByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
+			return GetObjectByName(widgetName, out containingWindow, out _, secondsToWait, searchRegion);
 		}
 
 		public object GetObjectByName(string widgetName, out SystemWindow containingWindow, out Point2D offsetHint, double secondsToWait = 0, SearchRegion searchRegion = null)
@@ -646,9 +647,8 @@ namespace MatterHackers.GuiAutomation
 			}
 
 			List<GetByNameResults> namedWidgetsInRegion = new List<GetByNameResults>();
-			for(int i=SystemWindow.AllOpenSystemWindows.Count-1; i>=0 ; i--)
+			foreach(var systemWindow in SystemWindow.AllOpenSystemWindows.Reverse())
 			{
-				SystemWindow systemWindow = SystemWindow.AllOpenSystemWindows[i];
 				if (searchRegion != null) // only add the widgets that are in the screen region
 				{
 					List<GuiWidget.WidgetAndPosition> namedWidgets = new List<GuiWidget.WidgetAndPosition>();
@@ -849,7 +849,7 @@ namespace MatterHackers.GuiAutomation
 		public bool NamedWidgetExists(string widgetName, SearchRegion searchRegion = null)
 		{
 			// Ignore SystemWindows with null PlatformWindow members - SystemWindow constructed but not yet shown
-			foreach (SystemWindow window in SystemWindow.AllOpenSystemWindows.Where(w => w.PlatformWindow != null).ToArray())
+			foreach (SystemWindow window in SystemWindow.AllOpenSystemWindows.ToArray())
 			{
 				List<GuiWidget.WidgetAndPosition> foundChildren = new List<GuiWidget.WidgetAndPosition>();
 				window.FindNamedChildrenRecursive(widgetName, foundChildren);
@@ -878,7 +878,7 @@ namespace MatterHackers.GuiAutomation
 		public bool WidgetExists<T>(SearchRegion searchRegion = null) where T : GuiWidget
 		{
 			// Ignore SystemWindows with null PlatformWindow members - SystemWindow constructed but not yet shown
-			foreach (SystemWindow window in SystemWindow.AllOpenSystemWindows.Where(w => w.PlatformWindow != null).ToArray())
+			foreach (SystemWindow window in SystemWindow.AllOpenSystemWindows.ToArray())
 			{
 				IEnumerable<T> foundChildren = window.Children<T>();
 				if (foundChildren.Count() > 0)

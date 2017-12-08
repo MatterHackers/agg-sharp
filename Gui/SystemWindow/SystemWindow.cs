@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using MatterHackers.Agg.Platform;
 using MatterHackers.VectorMath;
 
@@ -73,7 +74,7 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnClosed(ClosedEventArgs e)
 		{
-			AllOpenSystemWindows.Remove(this);
+			_openWindows.Remove(this);
 
 			base.OnClosed(e);
 
@@ -87,7 +88,9 @@ namespace MatterHackers.Agg.UI
 			Closing?.Invoke(this, eventArgs);
 		}
 
-		public static List<SystemWindow> AllOpenSystemWindows { get; } = new List<SystemWindow>();
+		private static List<SystemWindow> _openWindows { get; } = new List<SystemWindow>();
+
+		public static IEnumerable<SystemWindow> AllOpenSystemWindows { get; } = _openWindows.Where(w => w.PlatformWindow != null);
 
 		public SystemWindow(double width, double height)
 			: base(width, height, SizeLimitsToSet.None)
@@ -95,8 +98,6 @@ namespace MatterHackers.Agg.UI
 			ToolTipManager = new ToolTipManager(this);
 
 			this.BackgroundColor = ActiveTheme.Instance.PrimaryBackgroundColor;
-
-			AllOpenSystemWindows.Add(this);
 		}
 
 		public override void OnMinimumSizeChanged(EventArgs e)
@@ -156,6 +157,8 @@ namespace MatterHackers.Agg.UI
 			{
 				systemWindowProvider = AggContext.CreateInstanceFrom<ISystemWindowProvider>(AggContext.Config.ProviderTypes.SystemWindowProvider);
 			}
+
+			_openWindows.Add(this);
 
 			// Create the backing IPlatformWindow object and set its AggSystemWindow property to this new SystemWindow
 			systemWindowProvider.ShowSystemWindow(this);
