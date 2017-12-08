@@ -646,9 +646,8 @@ namespace MatterHackers.GuiAutomation
 			}
 
 			List<GetByNameResults> namedWidgetsInRegion = new List<GetByNameResults>();
-			for(int i=SystemWindow.AllOpenSystemWindows.Count-1; i>=0 ; i--)
+			foreach(var systemWindow in SystemWindow.AllOpenSystemWindows.Reverse())
 			{
-				SystemWindow systemWindow = SystemWindow.AllOpenSystemWindows[i];
 				if (searchRegion != null) // only add the widgets that are in the screen region
 				{
 					List<GuiWidget.WidgetAndPosition> namedWidgets = new List<GuiWidget.WidgetAndPosition>();
@@ -849,7 +848,7 @@ namespace MatterHackers.GuiAutomation
 		public bool NamedWidgetExists(string widgetName, SearchRegion searchRegion = null)
 		{
 			// Ignore SystemWindows with null PlatformWindow members - SystemWindow constructed but not yet shown
-			foreach (SystemWindow window in SystemWindow.AllOpenSystemWindows.Where(w => w.PlatformWindow != null).ToArray())
+			foreach (SystemWindow window in SystemWindow.AllOpenSystemWindows.ToArray())
 			{
 				List<GuiWidget.WidgetAndPosition> foundChildren = new List<GuiWidget.WidgetAndPosition>();
 				window.FindNamedChildrenRecursive(widgetName, foundChildren);
@@ -878,7 +877,7 @@ namespace MatterHackers.GuiAutomation
 		public bool WidgetExists<T>(SearchRegion searchRegion = null) where T : GuiWidget
 		{
 			// Ignore SystemWindows with null PlatformWindow members - SystemWindow constructed but not yet shown
-			foreach (SystemWindow window in SystemWindow.AllOpenSystemWindows.Where(w => w.PlatformWindow != null).ToArray())
+			foreach (SystemWindow window in SystemWindow.AllOpenSystemWindows.ToArray())
 			{
 				IEnumerable<T> foundChildren = window.Children<T>();
 				if (foundChildren.Count() > 0)

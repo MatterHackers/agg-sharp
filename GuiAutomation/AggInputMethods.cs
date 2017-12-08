@@ -81,7 +81,7 @@ namespace MatterHackers.GuiAutomation
 
 		public void SetCursorPosition(int x, int y)
 		{
-			SystemWindow topSystemWindow = SystemWindow.AllOpenSystemWindows[SystemWindow.AllOpenSystemWindows.Count - 1];
+			SystemWindow topSystemWindow = SystemWindow.AllOpenSystemWindows.Last();
 			if (windowToDrawSimulatedMouseOn != topSystemWindow)
 			{
 				if (windowToDrawSimulatedMouseOn != null)
@@ -198,7 +198,7 @@ namespace MatterHackers.GuiAutomation
 
 		public void Type(string textToType)
 		{
-			SystemWindow systemWindow = SystemWindow.AllOpenSystemWindows[SystemWindow.AllOpenSystemWindows.Count - 1];
+			var systemWindow = SystemWindow.AllOpenSystemWindows.Last();
 
 			// Setup reset event to block until input received
 			var resetEvent = new AutoResetEvent(false);
