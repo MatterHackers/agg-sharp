@@ -737,18 +737,18 @@ namespace MatterHackers.GuiAutomation
 		{
 			var resetEvent = new AutoResetEvent(false);
 
-			EventHandler<DrawEventArgs> afterDraw = (s, e) =>
-			{
-				resetEvent.Set();
-			};
+			EventHandler<DrawEventArgs> afterDraw = (s, e) => resetEvent.Set();
+			EventHandler<ClosedEventArgs> closed = (s, e) => resetEvent.Set();
 
 			containingWindow.AfterDraw += afterDraw;
+			containingWindow.Closed += closed;
 
 			containingWindow.Invalidate();
 
 			resetEvent.WaitOne(maxSeconds * 1000);
 
 			containingWindow.AfterDraw -= afterDraw;
+			containingWindow.Closed -= closed;
 		}
 
 		public bool DragDropByName(string widgetNameDrag, string widgetNameDrop, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offsetDrag = default(Point2D), ClickOrigin originDrag = ClickOrigin.Center, Point2D offsetDrop = default(Point2D), ClickOrigin originDrop = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
