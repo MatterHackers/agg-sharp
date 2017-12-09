@@ -200,9 +200,12 @@ namespace Net3dBool
 		/// <param name="obj">object3d used to compute the face status</param>
 		public void RayTraceClassify(Object3D obj)
 		{
+			var random = new Random();
+
 			//creating a ray starting at the face baricenter going to the normal direction
-			Line ray = new Line(GetNormal(), center);
-			ray.PerturbDirection();
+			Ray ray = new Ray(center, GetNormal());
+			//Line ray = new Line(GetNormal(), center);
+			ray.PerturbDirection(random);
 
 			bool success;
 			double distance;
@@ -215,21 +218,25 @@ namespace Net3dBool
 				success = true;
 				closestDistance = Double.MaxValue;
 				//for each face from the other solid...
-				foreach(Face face in obj.Faces.AllObjects())
+				//foreach (Face face in obj.Faces.AllObjects())
+				foreach (Face face in obj.Faces.AlongRay(ray))
 				{
-					intersectionPoint = ray.ComputePlaneIntersection(face.GetPlane());
+					double hitDistance;
+					bool front;
 
 					//if ray intersects the plane...
-					if (intersectionPoint.X != double.PositiveInfinity)
+					if (face.GetPlane().RayHitPlane(ray, out hitDistance, out front))
 					{
-						double dotProduct = Vector3.Dot(face.GetNormal(), ray.Direction);
-						distance = ray.ComputePointToPointDistance(intersectionPoint);
+						double dotProduct = Vector3.Dot(face.GetNormal(), ray.directionNormal);
+						distance = hitDistance;
+						intersectionPoint = ray.origin + ray.directionNormal * hitDistance;
+						ray.maxDistanceToConsider = hitDistance;
 
 						//if ray lies in plane...
 						if (Math.Abs(distance) < EqualityTolerance && Math.Abs(dotProduct) < EqualityTolerance)
 						{
 							//disturb the ray in order to not lie into another plane
-							ray.PerturbDirection();
+							ray.PerturbDirection(random);
 							success = false;
 							break;
 						}
@@ -273,7 +280,7 @@ namespace Net3dBool
 			}
 			else //face found: test dot product
 			{
-				double dotProduct = Vector3.Dot(closestFace.GetNormal(), ray.Direction);
+				double dotProduct = Vector3.Dot(closestFace.GetNormal(), ray.directionNormal);
 
 				//distance = 0: coplanar faces
 				if (Math.Abs(closestDistance) < EqualityTolerance)

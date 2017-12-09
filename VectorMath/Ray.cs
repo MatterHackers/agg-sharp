@@ -145,5 +145,12 @@ namespace MatterHackers.VectorMath
 			bool withinDistanceToConsider = (minDistFound < ray.maxDistanceToConsider) && (maxDistFound > ray.minDistanceToConsider);
 			return withinDistanceToConsider;
 		}
+
+		public void PerturbDirection(Random random)
+		{
+			directionNormal.X += 1e-5 * random.NextDouble();
+			directionNormal.Y += 1e-5 * random.NextDouble();
+			directionNormal.Z += 1e-5 * random.NextDouble();
+		}
 	}
 }

@@ -245,6 +245,11 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
+		public IEnumerable<T> AlongRay(Ray ray)
+		{
+			return root.AlongRay(ray);
+		}
+
 		public IEnumerable<T> AllObjects()
 		{
 			return root.AllObjects();
@@ -341,7 +346,7 @@ namespace MatterHackers.VectorMath
 			// | /  0  /  1  /
 			//  /_____/_____/
 
-			var branch = new Branch();
+			var branch = new Branch(bounds);
 			branch.Tree = tree;
 			branch.Parent = parent;
 			branch.Split = false;
@@ -353,14 +358,14 @@ namespace MatterHackers.VectorMath
 			double[] yPos = new double[] { bounds.MinY, midY, midY, bounds.MaxY };
 			double[] zPos = new double[] { bounds.MinZ, midZ, midZ, bounds.MaxZ };
 
-			branch.Bounds[0].Set(xPos[0], yPos[0], zPos[0], xPos[1], yPos[1], zPos[1]);
-			branch.Bounds[1].Set(xPos[2], yPos[0], zPos[0], xPos[3], yPos[1], zPos[1]);
-			branch.Bounds[2].Set(xPos[0], yPos[2], zPos[0], xPos[1], yPos[3], zPos[1]);
-			branch.Bounds[3].Set(xPos[2], yPos[2], zPos[0], xPos[3], yPos[3], zPos[1]);
-			branch.Bounds[4].Set(xPos[0], yPos[0], zPos[2], xPos[1], yPos[1], zPos[3]);
-			branch.Bounds[5].Set(xPos[2], yPos[0], zPos[2], xPos[3], yPos[1], zPos[3]);
-			branch.Bounds[6].Set(xPos[0], yPos[2], zPos[2], xPos[1], yPos[3], zPos[3]);
-			branch.Bounds[7].Set(xPos[2], yPos[2], zPos[2], xPos[3], yPos[3], zPos[3]);
+			branch.ChildBounds[0].Set(xPos[0], yPos[0], zPos[0], xPos[1], yPos[1], zPos[1]);
+			branch.ChildBounds[1].Set(xPos[2], yPos[0], zPos[0], xPos[3], yPos[1], zPos[1]);
+			branch.ChildBounds[2].Set(xPos[0], yPos[2], zPos[0], xPos[1], yPos[3], zPos[1]);
+			branch.ChildBounds[3].Set(xPos[2], yPos[2], zPos[0], xPos[3], yPos[3], zPos[1]);
+			branch.ChildBounds[4].Set(xPos[0], yPos[0], zPos[2], xPos[1], yPos[1], zPos[3]);
+			branch.ChildBounds[5].Set(xPos[2], yPos[0], zPos[2], xPos[3], yPos[1], zPos[3]);
+			branch.ChildBounds[6].Set(xPos[0], yPos[2], zPos[2], xPos[1], yPos[3], zPos[3]);
+			branch.ChildBounds[7].Set(xPos[2], yPos[2], zPos[2], xPos[3], yPos[3], zPos[3]);
 			return branch;
 		}
 
@@ -391,12 +396,118 @@ namespace MatterHackers.VectorMath
 
 		internal class Branch
 		{
-			internal Bounds[] Bounds = new Bounds[8];
+			internal Bounds Bounds = new Bounds();
+			internal Bounds[] ChildBounds = new Bounds[8];
 			internal Branch[] Branches = new Branch[8];
 			internal List<Leaf> Leaves = new List<Leaf>();
 			internal Branch Parent;
 			internal bool Split;
 			internal Octree<T> Tree;
+
+			internal Branch(Bounds bounds)
+			{
+				this.Bounds = bounds;
+			}
+
+			internal IEnumerable<T> AlongRay(Ray ray)
+			{
+				if (intersect(ray))
+				{
+					var items = new Stack<Branch>(new Branch[] { this });
+					while (items.Any())
+					{
+						Branch item = items.Pop();
+
+						if (item.Leaves.Count > 0)
+						{
+							for (int i = 0; i < item.Leaves.Count; ++i)
+							{
+								yield return item.Leaves[i].Value;
+							}
+						}
+
+						for (int i = 0; i < 8; ++i)
+						{
+							if (item.Branches[i] != null)
+							{
+								items.Push(item.Branches[i]);
+							}
+						}
+					}
+				}
+			}
+
+			public Vector3 this[int index]
+			{
+				get
+				{
+					if (index == 0)
+					{
+						return new Vector3(Bounds.MinX, Bounds.MinY, Bounds.MinZ);
+					}
+					else if (index == 1)
+					{
+						return new Vector3(Bounds.MaxX, Bounds.MaxY, Bounds.MaxZ);
+					}
+					else
+					{
+						throw new IndexOutOfRangeException();
+					}
+				}
+			}
+
+			private bool intersect(Ray ray)
+			{
+				double minDistFound;
+				double maxDistFound;
+
+				// we calculate distance to the intersection with the x planes of the box
+				minDistFound = (this[(int)ray.sign[0]].X - ray.origin.X) * ray.oneOverDirection.X;
+				maxDistFound = (this[1 - (int)ray.sign[0]].X - ray.origin.X) * ray.oneOverDirection.X;
+
+				// now find the distance to the y planes of the box
+				double minDistToY = (this[(int)ray.sign[1]].Y - ray.origin.Y) * ray.oneOverDirection.Y;
+				double maxDistToY = (this[1 - (int)ray.sign[1]].Y - ray.origin.Y) * ray.oneOverDirection.Y;
+
+				if ((minDistFound > maxDistToY) || (minDistToY > maxDistFound))
+				{
+					return false;
+				}
+
+				if (minDistToY > minDistFound)
+				{
+					minDistFound = minDistToY;
+				}
+
+				if (maxDistToY < maxDistFound)
+				{
+					maxDistFound = maxDistToY;
+				}
+
+				// and finaly the z planes
+				double minDistToZ = (this[(int)ray.sign[2]].Z - ray.origin.Z) * ray.oneOverDirection.Z;
+				double maxDistToZ = (this[1 - (int)ray.sign[2]].Z - ray.origin.Z) * ray.oneOverDirection.Z;
+
+				if ((minDistFound > maxDistToZ) || (minDistToZ > maxDistFound))
+				{
+					return false;
+				}
+
+				if (minDistToZ > minDistFound)
+				{
+					minDistFound = minDistToZ;
+				}
+
+				if (maxDistToZ < maxDistFound)
+				{
+					maxDistFound = maxDistToZ;
+				}
+
+				bool oneHitIsWithinLimits = (minDistFound < ray.maxDistanceToConsider && minDistFound > ray.minDistanceToConsider)
+					|| (maxDistFound < ray.maxDistanceToConsider && maxDistFound > ray.minDistanceToConsider);
+
+				return oneHitIsWithinLimits;
+			}
 
 			internal IEnumerable<T> AllObjects()
 			{
@@ -444,11 +555,11 @@ namespace MatterHackers.VectorMath
 				{
 					for (int i = 0; i < 8; ++i)
 					{
-						if (Bounds[i].Contains(leaf.Bounds))
+						if (ChildBounds[i].Contains(leaf.Bounds))
 						{
 							if (Branches[i] == null)
 							{
-								Branches[i] = CreateBranch(Tree, this, Bounds[i]);
+								Branches[i] = CreateBranch(Tree, this, ChildBounds[i]);
 							}
 							Branches[i].Insert(leaf);
 							return;
@@ -489,7 +600,7 @@ namespace MatterHackers.VectorMath
 				{
 					for (int i = 0; i < 8; ++i)
 					{
-						if (Bounds[i].Contains(leaf.Bounds)
+						if (ChildBounds[i].Contains(leaf.Bounds)
 							&& Branches[i] != null)
 						{
 							Branches[i].Remove(leaf);
