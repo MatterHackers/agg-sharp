@@ -725,6 +725,8 @@ namespace MatterHackers.GuiAutomation
 
 				WaitforDraw(containingWindow);
 
+				Delay(0.2);
+
 				return;
 			}
 

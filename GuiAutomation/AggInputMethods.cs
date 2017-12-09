@@ -133,13 +133,13 @@ namespace MatterHackers.GuiAutomation
 
 		public void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo)
 		{
-			foreach (var systemWindow in SystemWindow.AllOpenSystemWindows)
+			// Send mouse event into the first SystemWindow (reverse order) containing the mouse
+			foreach (var systemWindow in SystemWindow.AllOpenSystemWindows.Reverse())
 			{
 				Point2D windowPosition = AutomationRunner.ScreenToSystemWindow(currentMousePosition, systemWindow);
 				if (systemWindow.LocalBounds.Contains(windowPosition))
 				{
 					MouseButtons mouseButtons = MapButtons(cButtons);
-					// create the agg event
 					if (dwFlags == NativeMethods.MOUSEEVENTF_LEFTDOWN)
 					{
 						this.ClickCount = (this.LeftButtonDown) ? 2 : 1;
@@ -149,6 +149,9 @@ namespace MatterHackers.GuiAutomation
 							systemWindow.OnMouseDown(new MouseEventArgs(mouseButtons, this.ClickCount, windowPosition.x, windowPosition.y, 0));
 							systemWindow.Invalidate();
 						});
+
+						// Stop processing after first match
+						break;
 					}
 					else if (dwFlags == NativeMethods.MOUSEEVENTF_LEFTUP)
 					{
@@ -158,6 +161,9 @@ namespace MatterHackers.GuiAutomation
 							systemWindow.OnMouseUp(new MouseEventArgs(mouseButtons, 0, windowPosition.x, windowPosition.y, 0));
 							systemWindow.Invalidate();
 						});
+
+						// Stop processing after first match
+						break;
 					}
 					else if (dwFlags == NativeMethods.MOUSEEVENTF_RIGHTDOWN)
 					{
@@ -175,7 +181,6 @@ namespace MatterHackers.GuiAutomation
 			}
 
 			this.LeftButtonDown = (dwFlags == NativeMethods.MOUSEEVENTF_LEFTDOWN);
-			
 		}
 
 		private MouseButtons MapButtons(int cButtons)
