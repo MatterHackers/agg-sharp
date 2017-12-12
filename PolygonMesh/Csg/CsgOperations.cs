@@ -246,16 +246,16 @@ namespace MatterHackers.PolygonMesh.Csg
 				return a;
 			}
 
-			var progress = new ProgressStatus(){Status = "Mesh to Solid"}; reporter(progress);
+			var progress = new ProgressStatus(){Status = "Mesh to Solid"}; reporter?.Invoke(progress);
 			var A = SolidFromMesh(a);
 			var B = SolidFromMesh(b);
 
-			progress.Status = "BooleanModeller"; reporter(progress);
+			progress.Status = "BooleanModeller"; reporter?.Invoke(progress);
 			var modeller = new BooleanModeller(A, B, reporter, cancelationToken);
-			progress.Status = "Difference"; reporter(progress);
+			progress.Status = "Difference"; reporter?.Invoke(progress);
 			var result = modeller.GetDifference();
 
-			progress.Status = "Mesh to Solid"; reporter(progress);
+			progress.Status = "Mesh to Solid"; reporter?.Invoke(progress);
 			return MeshFromSolid(result);
 		}
 
