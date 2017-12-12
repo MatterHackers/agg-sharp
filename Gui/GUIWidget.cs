@@ -46,21 +46,21 @@ namespace MatterHackers.Agg.UI
 	public enum HAnchor
 	{
 		/// <summary>
-		/// The widget will not change width automaticaly and will be positions at the OriginRelative to parent in x.
+		/// The widget will not change width automatically and will be positions at the OriginRelative to parent in x.
 		/// </summary>
 		Absolute = 0,
 		/// <summary>
-		/// Hold the widget to the paretns left edge, respecting widget margin and parent padding.
+		/// Hold the widget to the parents left edge, respecting widget margin and parent padding.
 		/// </summary>
 		Left = 1,
 		Center = 2,
 		Right = 4,
 		/// <summary>
-		/// Maintain a size that horizontaly encloses all of its visible children.
+		/// Maintain a size that horizontally encloses all of its visible children.
 		/// </summary>
 		Fit = 8,
 		/// <summary>
-		/// Maintin a width that is the same width as its parent.
+		/// Maintain a width that is the same width as its parent.
 		/// </summary>
 		Stretch = Left | Right,
 		/// <summary>
@@ -80,7 +80,7 @@ namespace MatterHackers.Agg.UI
 		Center = 2,
 		Top = 4,
 		/// <summary>
-		/// Maintain a size that verticaly encloses all of its visible children.
+		/// Maintain a size that vertically encloses all of its visible children.
 		/// </summary>
 		Fit = 8,
 		Stretch = Bottom | Top,
@@ -418,7 +418,7 @@ namespace MatterHackers.Agg.UI
 		#endregion
 
 		/// <summary>
-		/// Sets the cusor that will be used when the mouse is over this control
+		/// Sets the cursor that will be used when the mouse is over this control
 		/// </summary>
 		public Cursors Cursor { get; set; }
 
@@ -940,7 +940,7 @@ namespace MatterHackers.Agg.UI
 						// when this object moves it requires that the parent re-layout this object (and maybe others)
 						this.Parent.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Position));
 #if false
-                        // and it also means the mouse moved realtive to this widget (so the parent and it's children)
+                        // and it also means the mouse moved relative to this widget (so the parent and it's children)
                         Vector2 parentMousePosition;
                         if (Parent.GetMousePosition(out parentMousePosition))
                         {
@@ -1058,7 +1058,7 @@ namespace MatterHackers.Agg.UI
 #if false
                     if (Parent != null)
                     {
-                        // and it also means the mouse moved realtive to this widget (so the parent and it's children)
+                        // and it also means the mouse moved relative to this widget (so the parent and it's children)
                         Vector2 parentMousePosition;
                         if (Parent.GetMousePosition(out parentMousePosition))
                         {
@@ -1207,7 +1207,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
-		/// If this is set the control will show tool tips on hover, if the platfrom specific SystemWindow implements tool tips.
+		/// If this is set the control will show tool tips on hover, if the platform specific SystemWindow implements tool tips.
 		/// You can change the settings for the tool tip delays in the containing SystemWindow.
 		/// </summary>
 		public string ToolTipText
