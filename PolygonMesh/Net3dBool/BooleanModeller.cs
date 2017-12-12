@@ -35,6 +35,9 @@ Project: https://github.com/MatterHackers/agg-sharp (an included library)
 
 using MatterHackers.VectorMath;
 using System.Collections.Generic;
+using MatterHackers.Agg;
+using System;
+using System.Threading;
 
 namespace Net3dBool
 {
@@ -61,19 +64,30 @@ namespace Net3dBool
      */
 
 		public BooleanModeller(Solid solid1, Solid solid2)
+			: this(solid1, solid2, null, CancellationToken.None)
 		{
+		}
+
+		public BooleanModeller(Solid solid1, Solid solid2, Action<ProgressStatus> reporter, CancellationToken cancelationToken)
+		{
+			var progress = new ProgressStatus() { Status = "Object3D1" }; reporter(progress);
 			//representation to apply boolean operations
 			object1 = new Object3D(solid1);
+			progress.Status = "Object3D2"; reporter(progress);
 			object2 = new Object3D(solid2);
 
 			Object3D object1Copy = new Object3D(solid1);
 
 			//split the faces so that none of them intercepts each other
+			progress.Status = "Split Faces2"; reporter(progress);
 			object1.SplitFaces(object2);
+			progress.Status = "Split Faces1"; reporter(progress);
 			object2.SplitFaces(object1Copy);
 
 			//classify faces as being inside or outside the other solid
+			progress.Status = "Classify Faces2"; reporter(progress);
 			object1.ClassifyFaces(object2);
+			progress.Status = "Classify Faces1"; reporter(progress);
 			object2.ClassifyFaces(object1);
 		}
 

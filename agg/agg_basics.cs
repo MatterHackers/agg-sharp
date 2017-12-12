@@ -26,6 +26,12 @@ using System.Text.RegularExpressions;
 
 namespace MatterHackers.Agg
 {
+	public class ProgressStatus : EventArgs
+	{
+		public string Status { get; set; }
+		public double Progress0To1 { get; set; }
+	}
+
 	static public class agg_basics
 	{
 		//----------------------------------------------------------filling_rule_e

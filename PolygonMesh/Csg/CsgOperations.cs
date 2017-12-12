@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 using System.Threading;
+using MatterHackers.Agg;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
@@ -231,6 +232,11 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// <returns></returns>
 		public static Mesh Subtract(Mesh a, Mesh b)
 		{
+			return Subtract(a, b, null, CancellationToken.None);
+		}
+
+		public static Mesh Subtract(Mesh a, Mesh b, Action<ProgressStatus> reporter, CancellationToken cancelationToken)
+		{
 			if (a.Faces.Count == 0)
 			{
 				return b;
@@ -239,12 +245,17 @@ namespace MatterHackers.PolygonMesh.Csg
 			{
 				return a;
 			}
+
+			var progress = new ProgressStatus(){Status = "Mesh to Solid"}; reporter(progress);
 			var A = SolidFromMesh(a);
 			var B = SolidFromMesh(b);
 
-			var modeller = new BooleanModeller(A, B);
+			progress.Status = "BooleanModeller"; reporter(progress);
+			var modeller = new BooleanModeller(A, B, reporter, cancelationToken);
+			progress.Status = "Difference"; reporter(progress);
 			var result = modeller.GetDifference();
 
+			progress.Status = "Mesh to Solid"; reporter(progress);
 			return MeshFromSolid(result);
 		}
 
