@@ -41,6 +41,7 @@ namespace MatterHackers.PolygonPathing
 {
 	using System.Globalization;
 	using System.IO;
+	using System.Linq;
 	using System.Text.RegularExpressions;
 	using Agg;
 	using Pathfinding;
@@ -371,6 +372,12 @@ namespace MatterHackers.PolygonPathing
 					solution.LineTo(new Vector2(end.X, end.Y));
 					graphics2D.Render(new Stroke(solution, 5), new Color(Color.Cyan, 100));
 
+					foreach (var inPoint in pathThatIsInside)
+					{
+						var point = ObjectToScreen(inPoint);
+						graphics2D.Circle(point.X, point.Y, 2, new Color(Color.Black, 100));
+					}
+
 					graphics2D.DrawString($"Length = {MSClipperLib.CLPolygonExtensions.PolygonLength(pathThatIsInside, false)}", 30, Height - 40);
 				}
 				else
@@ -431,7 +438,7 @@ namespace MatterHackers.PolygonPathing
 
 				var image = avoid.OutlineData.InsideCache;
 				image = avoid.OutlineData.InsetMap;
-				//graphics2D.Render(image, Width - image.Width, Height - image.Height, image.Width, image.Height);
+				graphics2D.Render(image, Width - image.Width, Height - image.Height, image.Width, image.Height);
 			}
 
 			base.OnDraw(graphics2D);
@@ -439,7 +446,7 @@ namespace MatterHackers.PolygonPathing
 
 		private void RenderCrossings(Graphics2D graphics2D, MSIntPoint pathStart, MSIntPoint pathEnd, PathFinder avoid)
 		{
-			var crossings = new List<Tuple<int, int, MSIntPoint>>(avoid.OutlineData.Polygons.FindCrossingPoints(pathStart, pathEnd, avoid.OutlineData.EdgeQuadTrees));
+			var crossings = avoid.OutlineData.Polygons.FindCrossingPoints(pathStart, pathEnd, avoid.OutlineData.EdgeQuadTrees).ToList();
 			crossings.Sort(new PolygonAndPointDirectionSorter(pathStart, pathEnd));
 
 			int index = 0;
@@ -688,6 +695,10 @@ namespace MatterHackers.PolygonPathing
 						// this is a test part for thin edges
 						polyPath = "x: 0, y: 0, z: 0, width: 0,x: 5000, y: 0, z: 0, width: 0,x: 5000, y: 10000, z: 0, width: 0,x: 0, y: 10000, z: 0, width: 0,x: 0, y: 6000, z: 0, width: 0,x: 4900, y: 9900, z: 0, width: 0,x: 4900, y: 100, z: 0, width: 0,x: 0, y: 4000, z: 0, width: 0,";
 						polyPath = "x: 0, y: 0, x: 5000, y: 0, x: 5000, y: 10000, x: 0, y: 10000, x: 0, y: 6000, x: 4900, y: 9900, x: 4900, y: 100, x: 0, y: 4000,";
+
+						polyPath = "x:219655, y:7130,x:212349, y:44250,x:210115, y:46125,x:207012, y:47846,x:211866, y:55536,x:249231, y:52809,x:176266, y:113595,|";
+						// Length of this segment (start->end) 32286.
+						startOverride = new MSIntPoint(205084, 78424); endOverride = new MSIntPoint(213725, 47315);
 
 						directPolygons = MSClipperLib.CLPolygonsExtensions.CreateFromString(polyPath);
 					}
