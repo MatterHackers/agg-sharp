@@ -249,6 +249,12 @@ namespace MatterHackers.Agg.UI
 			base.OnDraw(graphics2D);
 		}
 
+		public override void OnEnabledChanged(EventArgs e)
+		{
+			this.Invalidate();
+			base.OnEnabledChanged(e);
+		}
+
 		public Color TextColor
 		{
 			get => (this.Enabled) ? textColor : this.DisabledColor;
