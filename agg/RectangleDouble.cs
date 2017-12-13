@@ -207,7 +207,7 @@ namespace MatterHackers.Agg
 			RectangleDouble temp = this;
 
 			return temp.IntersectWithRectangle(rectToIntersectWith);
-        }
+		}
 
 		public bool IntersectWithRectangle(RectangleDouble rectToIntersectWith)
 		{
