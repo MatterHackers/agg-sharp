@@ -1185,11 +1185,7 @@ namespace MatterHackers.Agg.UI
 		private string text = "";
 		public virtual string Text
 		{
-			get
-			{
-				return text;
-			}
-
+			get => text;
 			set
 			{
 				if (value == null)
@@ -1210,10 +1206,7 @@ namespace MatterHackers.Agg.UI
 		/// If this is set the control will show tool tips on hover, if the platform specific SystemWindow implements tool tips.
 		/// You can change the settings for the tool tip delays in the containing SystemWindow.
 		/// </summary>
-		public string ToolTipText
-		{
-			get; set;
-		}
+		public string ToolTipText { get; set; }
 
 		public virtual void OnTextChanged(EventArgs e)
 		{
@@ -1227,22 +1220,13 @@ namespace MatterHackers.Agg.UI
 			BoundsRelativeToParent = bounds;
 		}
 
-		public bool MouseCaptured
-		{
-			get { return (mouseCapturedState == MouseCapturedState.ThisHasMouseCaptured); }
-		}
+		public bool MouseCaptured => mouseCapturedState == MouseCapturedState.ThisHasMouseCaptured;
 
-		public bool ChildHasMouseCaptured
-		{
-			get { return (mouseCapturedState == MouseCapturedState.ChildHasMouseCaptured); }
-		}
+		public bool ChildHasMouseCaptured => mouseCapturedState == MouseCapturedState.ChildHasMouseCaptured;
 
 		public virtual bool Visible
 		{
-			get
-			{
-				return visible;
-			}
+			get => visible;
 			set
 			{
 				if (visible != value)
@@ -1266,20 +1250,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual bool Enabled
 		{
-			get
-			{
-				GuiWidget curGUIWidget = this;
-				while (curGUIWidget != null)
-				{
-					if (!curGUIWidget.enabled)
-					{
-						return false;
-					}
-					curGUIWidget = curGUIWidget.Parent;
-				}
-
-				return true;
-			}
+			get => this.enabled && this.Parent?.Enabled != false;
 			set
 			{
 				if (enabled != value)
@@ -1329,53 +1300,36 @@ namespace MatterHackers.Agg.UI
 
 			foreach (GuiWidget child in Children)
 			{
-				child.OnParentEnabledChanged(e);
+				child.OnEnabledChanged(e);
 			}
 		}
 
-		public virtual void OnParentEnabledChanged(EventArgs e)
-		{
-			EnabledChanged?.Invoke(this, e);
-		}
+		private GuiWidget _parent = null;
 
-		private GuiWidget parentBackingStore = null;
-
-		private GuiWidget parent
+		public GuiWidget Parent
 		{
+			get => _parent;
 			set
 			{
-				if (value == null && parentBackingStore != null)
+				if (value == null && _parent != null)
 				{
-					if (parentBackingStore.Children.Contains(this))
+					if (_parent.Children.Contains(this))
 					{
 						throw new Exception("Take this out of the parent before setting this to null.");
 					}
 				}
-				parentBackingStore = value;
-			}
-		}
 
-		public GuiWidget Parent
-		{
-			get
-			{
-				return parentBackingStore;
+				_parent = value;
 			}
 		}
 
 		// Place holder, this is not really implemented.
-		public bool Resizable
-		{
-			get { return true; }
-		}
+		public bool Resizable => true;
 
 		[Category("Layout")]
 		public virtual double Width
 		{
-			get
-			{
-				return LocalBounds.Width;
-			}
+			get => LocalBounds.Width;
 			set
 			{
 				RectangleDouble localBounds = LocalBounds;
@@ -1387,10 +1341,7 @@ namespace MatterHackers.Agg.UI
 		[Category("Layout")]
 		public virtual double Height
 		{
-			get
-			{
-				return LocalBounds.Height;
-			}
+			get => LocalBounds.Height;
 			set
 			{
 				RectangleDouble localBounds = LocalBounds;
@@ -1444,7 +1395,7 @@ namespace MatterHackers.Agg.UI
 				{
 					throw new Exception("This is already the child of another widget.");
 				}
-				childToAdd.parent = this;
+				childToAdd.Parent = this;
 				childToAdd.HasBeenClosed = false;
 				Children.Insert(indexInChildrenList, childToAdd);
 				OnChildAdded(new GuiWidgetEventArgs(childToAdd));
@@ -1515,7 +1466,7 @@ namespace MatterHackers.Agg.UI
 			{
 				GuiWidget child = Children[i];
 				Children.RemoveAt(i);
-				child.parent = null;
+				child.Parent = null;
 				child.Close(osRequest);
 			}
 		}
@@ -1544,7 +1495,7 @@ namespace MatterHackers.Agg.UI
 			childToRemove.ClearCapturedState();
 			childToRemove.hasBeenRemoved = true;
 			Children.Remove(childToRemove);
-			childToRemove.parent = null;
+			childToRemove.Parent = null;
 			childToRemove.OnParentChanged(null);
 			OnChildRemoved(new GuiWidgetEventArgs(childToRemove));
 			OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.RemoveChild));
@@ -1771,10 +1722,7 @@ namespace MatterHackers.Agg.UI
 			return true;
 		}
 
-		public virtual bool CanFocus
-		{
-			get { return Visible && Enabled; }
-		}
+		public virtual bool CanFocus => this.Visible && this.Enabled;
 
 		public bool Focused
 		{
@@ -1798,13 +1746,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public bool ContainsFocus
-		{
-			get
-			{
-				return containsFocus;
-			}
-		}
+		public bool ContainsFocus => containsFocus;
 
 		public bool Initialized { get; private set; } = false;
 
@@ -2287,7 +2229,7 @@ namespace MatterHackers.Agg.UI
 				{
 					// This code will only execute if this is the actual widget we called close on (not a child of the widget we called close on).
 					Parent.RemoveChild(this);
-					parent = null;
+					this.Parent = null;
 				}
 			}
 		}
