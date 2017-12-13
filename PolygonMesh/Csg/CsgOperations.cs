@@ -246,17 +246,39 @@ namespace MatterHackers.PolygonMesh.Csg
 				return a;
 			}
 
-			var progress = new ProgressStatus(){Status = "Mesh to Solid"}; reporter?.Invoke(progress);
+			if (Report(reporter, cancelationToken, "Mesh to Solid A", 0)) return null;
 			var A = SolidFromMesh(a);
+			if (Report(reporter, cancelationToken, "Mesh to Solid B", .2)) return null;
 			var B = SolidFromMesh(b);
 
-			progress.Status = "BooleanModeller"; reporter?.Invoke(progress);
+			if (Report(reporter, cancelationToken, "BooleanModeller", .4)) return null;
 			var modeller = new BooleanModeller(A, B, reporter, cancelationToken);
-			progress.Status = "Difference"; reporter?.Invoke(progress);
+			if (Report(reporter, cancelationToken, "Difference", .6)) return null;
 			var result = modeller.GetDifference();
 
-			progress.Status = "Mesh to Solid"; reporter?.Invoke(progress);
+			if (Report(reporter, cancelationToken, "Solid to Mesh", .8)) return null;
 			return MeshFromSolid(result);
+			if (Report(reporter, cancelationToken, "Solid to Mesh", 1)) return null;
+		}
+
+		private static bool Report(Action<ProgressStatus> reporter, CancellationToken cancelationToken, string status, double progress)
+		{
+			if (reporter != null)
+			{
+				var progressStatus = new ProgressStatus()
+				{
+					Status = status,
+					Progress0To1 = progress
+				};
+				reporter(progressStatus);
+			}
+
+			if(cancelationToken.IsCancellationRequested)
+			{
+				return true;
+			}
+
+			return false;
 		}
 
 		public static Mesh Intersect(Mesh a, Mesh b)

@@ -193,6 +193,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 	public enum TextureWrapMode
 	{
 		ClampToEdge = 33071,
+		Repeat = 0x2901,
 	}
 
 	public enum PixelInternalFormat
