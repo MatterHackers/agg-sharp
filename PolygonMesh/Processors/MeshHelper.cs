@@ -78,13 +78,13 @@ namespace MatterHackers.PolygonMesh
 			return textureCoordinateMapping * firstTransform * centering * scaling;
 		}
 
-		public static void PlaceTextureOnFace(Face face, ImageBuffer textureToUse)
+		public static void PlaceTextureOnFace(this Face face, ImageBuffer textureToUse)
 		{
 			// planer project along the normal of this face
 			PlaceTextureOnFace(face, textureToUse, GetMaxFaceProjection(face, textureToUse));
 		}
 
-		public static void PlaceTextureOnFace(Face face, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
+		public static void PlaceTextureOnFace(this Face face, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
 		{
 			face.SetTexture(0, textureToUse);
 			foreach (FaceEdge faceEdge in face.FaceEdges())
@@ -92,6 +92,14 @@ namespace MatterHackers.PolygonMesh
 				Vector3 edgeStartPosition = faceEdge.FirstVertex.Position;
 				Vector3 textureUv = Vector3.Transform(edgeStartPosition, textureCoordinateMapping);
 				faceEdge.SetUv(0, new Vector2(textureUv));
+			}
+		}
+
+		public static void PlaceTexture(this Mesh mesh, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
+		{
+			foreach (var face in mesh.Faces)
+			{
+				face.PlaceTextureOnFace(textureToUse, textureCoordinateMapping);
 			}
 		}
 

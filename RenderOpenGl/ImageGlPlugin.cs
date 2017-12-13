@@ -89,7 +89,7 @@ namespace MatterHackers.RenderOpenGl
             removeGlDataCallBackHolder = inCallBackHolder;
         }
 
-        static public ImageGlPlugin GetImageGlPlugin(ImageBuffer imageToGetDisplayListFor, bool createAndUseMipMaps, bool TextureMagFilterLinear = true)
+		static public ImageGlPlugin GetImageGlPlugin(ImageBuffer imageToGetDisplayListFor, bool createAndUseMipMaps, bool TextureMagFilterLinear = true, bool clamp = true)
 		{
 			ImageGlPlugin plugin;
 			imagesWithCacheData.TryGetValue(imageToGetDisplayListFor.GetBuffer(), out plugin);
@@ -136,7 +136,7 @@ namespace MatterHackers.RenderOpenGl
 				imagesWithCacheData.Add(imageToGetDisplayListFor.GetBuffer(), newPlugin);
 				newPlugin.createdWithMipMaps = createAndUseMipMaps;
                 newPlugin.glData.glContextId = contextId;
-                newPlugin.CreateGlDataForImage(imageToGetDisplayListFor, TextureMagFilterLinear);
+                newPlugin.CreateGlDataForImage(imageToGetDisplayListFor, TextureMagFilterLinear, clamp);
 				newPlugin.imageUpdateCount = imageToGetDisplayListFor.ChangedCount;
 				newPlugin.glData.refreshCountCreatedOn = currentGlobalRefreshCount;
 				if(removeGlDataCallBackHolder != null)
@@ -200,7 +200,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		private void CreateGlDataForImage(ImageBuffer bufferedImage, bool TextureMagFilterLinear)
+		private void CreateGlDataForImage(ImageBuffer bufferedImage, bool TextureMagFilterLinear, bool clamp)
 		{
 			int imageWidth = bufferedImage.Width;
 			int imageHeight = bufferedImage.Height;
@@ -234,8 +234,16 @@ namespace MatterHackers.RenderOpenGl
 				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
 			}
 
-			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
-			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+			if (clamp)
+			{
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+			}
+			else
+			{
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
+				GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+			}
 
 			// Create the texture
 			switch (bufferedImage.BitDepth)
