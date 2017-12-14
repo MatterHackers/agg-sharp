@@ -399,6 +399,8 @@ namespace MatterHackers.Agg
 					default:
 						throw new NotImplementedException();
 				}
+
+				DestImage.MarkImageChanged();
 			}
 			else // it is a float
 			{

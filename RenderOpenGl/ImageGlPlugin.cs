@@ -39,62 +39,63 @@ using System.Runtime.CompilerServices;
 
 namespace MatterHackers.RenderOpenGl
 {
-    public class RemoveGlDataCallBackHolder
-    {
-        public event EventHandler releaseAllGlData;
+	public class RemoveGlDataCallBackHolder
+	{
+		public event EventHandler releaseAllGlData;
 
-        public void Release()
-        {
-            releaseAllGlData?.Invoke(this, null);
-        }
-    }
+		public void Release()
+		{
+			releaseAllGlData?.Invoke(this, null);
+		}
+	}
 
-    public class ImageGlPlugin
-    {
-        private static ConditionalWeakTable<Byte[], ImageGlPlugin> imagesWithCacheData = new ConditionalWeakTable<Byte[], ImageGlPlugin>();
+	public class ImageGlPlugin
+	{
+		private static ConditionalWeakTable<Byte[], ImageGlPlugin> imagesWithCacheData = new ConditionalWeakTable<Byte[], ImageGlPlugin>();
 
-        internal class glAllocatedData
-        {
-            internal int glTextureHandle;
-            internal int refreshCountCreatedOn;
-            internal int glContextId;
-            public float[] textureUVs;
-            public float[] positions;
+		internal class glAllocatedData
+		{
+			internal int glTextureHandle;
+			internal int refreshCountCreatedOn;
+			internal int glContextId;
+			public float[] textureUVs;
+			public float[] positions;
 
-            internal void DeleteTextureData(object sender, EventArgs e)
-            {
-                GL.DeleteTextures(1, ref glTextureHandle);
-                glTextureHandle = -1;
-            }
-        }
+			internal void DeleteTextureData(object sender, EventArgs e)
+			{
+				GL.DeleteTextures(1, ref glTextureHandle);
+				glTextureHandle = -1;
+			}
+		}
 
-        private static List<glAllocatedData> glDataNeedingToBeDeleted = new List<glAllocatedData>();
+		private static List<glAllocatedData> glDataNeedingToBeDeleted = new List<glAllocatedData>();
 
-        private glAllocatedData glData = new glAllocatedData();
-        private int imageUpdateCount;
-        private bool createdWithMipMaps;
+		private glAllocatedData glData = new glAllocatedData();
+		private int imageUpdateCount;
+		private bool createdWithMipMaps;
+		private bool clamp;
 
-        private static int currentGlobalRefreshCount = 0;
+		private static int currentGlobalRefreshCount = 0;
 
-        static public void MarkAllImagesNeedRefresh()
-        {
-            currentGlobalRefreshCount++;
-        }
+		static public void MarkAllImagesNeedRefresh()
+		{
+			currentGlobalRefreshCount++;
+		}
 
-        static int contextId;
-        static RemoveGlDataCallBackHolder removeGlDataCallBackHolder;
-        public static void SetCurrentContextData(int inContextId, RemoveGlDataCallBackHolder inCallBackHolder)
-        {
-            contextId = inContextId;
-            removeGlDataCallBackHolder = inCallBackHolder;
-        }
+		static int contextId;
+		static RemoveGlDataCallBackHolder removeGlDataCallBackHolder;
+		public static void SetCurrentContextData(int inContextId, RemoveGlDataCallBackHolder inCallBackHolder)
+		{
+			contextId = inContextId;
+			removeGlDataCallBackHolder = inCallBackHolder;
+		}
 
 		static public ImageGlPlugin GetImageGlPlugin(ImageBuffer imageToGetDisplayListFor, bool createAndUseMipMaps, bool TextureMagFilterLinear = true, bool clamp = true)
 		{
 			ImageGlPlugin plugin;
 			imagesWithCacheData.TryGetValue(imageToGetDisplayListFor.GetBuffer(), out plugin);
 
-			lock(glDataNeedingToBeDeleted)
+			lock (glDataNeedingToBeDeleted)
 			{
 				// We run this in here to ensure that we are on the correct thread and have the correct
 				// glcontext realized.
@@ -102,15 +103,15 @@ namespace MatterHackers.RenderOpenGl
 				{
 					int textureToDelete = glDataNeedingToBeDeleted[i].glTextureHandle;
 					if (textureToDelete != -1
-                        && glDataNeedingToBeDeleted[i].glContextId == contextId
-                        && glDataNeedingToBeDeleted[i].refreshCountCreatedOn == currentGlobalRefreshCount) // this is to leak on purpose on android for some gl that kills textures
+						&& glDataNeedingToBeDeleted[i].glContextId == contextId
+						&& glDataNeedingToBeDeleted[i].refreshCountCreatedOn == currentGlobalRefreshCount) // this is to leak on purpose on android for some gl that kills textures
 					{
 						GL.DeleteTextures(1, ref textureToDelete);
 						if (removeGlDataCallBackHolder != null)
 						{
 							removeGlDataCallBackHolder.releaseAllGlData -= glDataNeedingToBeDeleted[i].DeleteTextureData;
 						}
-                    }
+					}
 					glDataNeedingToBeDeleted.RemoveAt(i);
 				}
 			}
@@ -118,7 +119,7 @@ namespace MatterHackers.RenderOpenGl
 			if (plugin != null
 				&& (imageToGetDisplayListFor.ChangedCount != plugin.imageUpdateCount
 				|| plugin.glData.refreshCountCreatedOn != currentGlobalRefreshCount
-                || plugin.glData.glTextureHandle == -1))
+				|| plugin.glData.glTextureHandle == -1))
 			{
 				int textureToDelete = plugin.GLTextureHandle;
 				if (plugin.glData.refreshCountCreatedOn == currentGlobalRefreshCount)
@@ -127,6 +128,9 @@ namespace MatterHackers.RenderOpenGl
 				}
 				plugin.glData.glTextureHandle = -1;
 				imagesWithCacheData.Remove(imageToGetDisplayListFor.GetBuffer());
+				// use the original settings
+				createAndUseMipMaps = plugin.createdWithMipMaps;
+				clamp = plugin.clamp;
 				plugin = null;
 			}
 
@@ -135,22 +139,23 @@ namespace MatterHackers.RenderOpenGl
 				ImageGlPlugin newPlugin = new ImageGlPlugin();
 				imagesWithCacheData.Add(imageToGetDisplayListFor.GetBuffer(), newPlugin);
 				newPlugin.createdWithMipMaps = createAndUseMipMaps;
-                newPlugin.glData.glContextId = contextId;
-                newPlugin.CreateGlDataForImage(imageToGetDisplayListFor, TextureMagFilterLinear, clamp);
+				newPlugin.clamp = clamp;
+				newPlugin.glData.glContextId = contextId;
+				newPlugin.CreateGlDataForImage(imageToGetDisplayListFor, TextureMagFilterLinear);
 				newPlugin.imageUpdateCount = imageToGetDisplayListFor.ChangedCount;
 				newPlugin.glData.refreshCountCreatedOn = currentGlobalRefreshCount;
-				if(removeGlDataCallBackHolder != null)
+				if (removeGlDataCallBackHolder != null)
 				{
 					removeGlDataCallBackHolder.releaseAllGlData += newPlugin.glData.DeleteTextureData;
 				}
 
-                return newPlugin;
+				return newPlugin;
 			}
 
 			return plugin;
 		}
 
-        public int GLTextureHandle
+		public int GLTextureHandle
 		{
 			get
 			{
@@ -165,7 +170,7 @@ namespace MatterHackers.RenderOpenGl
 
 		~ImageGlPlugin()
 		{
-			lock(glDataNeedingToBeDeleted)
+			lock (glDataNeedingToBeDeleted)
 			{
 				glDataNeedingToBeDeleted.Add(glData);
 			}
@@ -200,7 +205,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
-		private void CreateGlDataForImage(ImageBuffer bufferedImage, bool TextureMagFilterLinear, bool clamp)
+		private void CreateGlDataForImage(ImageBuffer bufferedImage, bool TextureMagFilterLinear)
 		{
 			int imageWidth = bufferedImage.Width;
 			int imageHeight = bufferedImage.Height;
