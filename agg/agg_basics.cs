@@ -26,6 +26,8 @@ using System.Text.RegularExpressions;
 
 namespace MatterHackers.Agg
 {
+	public delegate void ProgressReporter(string status, double progress0to1);
+
 	public class ProgressStatus : EventArgs
 	{
 		public string Status { get; set; }

@@ -235,50 +235,38 @@ namespace MatterHackers.PolygonMesh.Csg
 			return Subtract(a, b, null, CancellationToken.None);
 		}
 
-		public static Mesh Subtract(Mesh a, Mesh b, Action<ProgressStatus> reporter, CancellationToken cancelationToken)
+		public static Mesh Subtract(Mesh a, Mesh b, Action<string, double> reporter, CancellationToken cancelationToken)
 		{
 			if (a.Faces.Count == 0)
 			{
 				return b;
 			}
+
 			if (b.Faces.Count == 0)
 			{
 				return a;
 			}
 
-			if (Report(reporter, cancelationToken, "Mesh to Solid A", 0)) return null;
+			reporter?.Invoke("Mesh to Solid A", 0);
 			var A = SolidFromMesh(a);
-			if (Report(reporter, cancelationToken, "Mesh to Solid B", .2)) return null;
+
+			reporter?.Invoke("Mesh to Solid B", .2);
 			var B = SolidFromMesh(b);
 
-			if (Report(reporter, cancelationToken, "BooleanModeller", .4)) return null;
-			var modeller = new BooleanModeller(A, B, reporter, cancelationToken);
-			if (Report(reporter, cancelationToken, "Difference", .6)) return null;
+			reporter?.Invoke("BooleanModeller", .4);
+			var modeller = new BooleanModeller(A, B, (status, progress0To1) =>
+			{
+				reporter?.Invoke(status, .4 + progress0To1 * .2);
+			}, cancelationToken);
+
+			reporter?.Invoke("Difference", .6);
 			var result = modeller.GetDifference();
 
-			if (Report(reporter, cancelationToken, "Solid to Mesh", .8)) return null;
-			return MeshFromSolid(result);
-			if (Report(reporter, cancelationToken, "Solid to Mesh", 1)) return null;
-		}
+			reporter?.Invoke("Solid to Mesh", .8);
+			var solidMesh = MeshFromSolid(result);
 
-		private static bool Report(Action<ProgressStatus> reporter, CancellationToken cancelationToken, string status, double progress)
-		{
-			if (reporter != null)
-			{
-				var progressStatus = new ProgressStatus()
-				{
-					Status = status,
-					Progress0To1 = progress
-				};
-				reporter(progressStatus);
-			}
-
-			if(cancelationToken.IsCancellationRequested)
-			{
-				return true;
-			}
-
-			return false;
+			reporter?.Invoke("Solid to Mesh", 1);
+			return solidMesh;
 		}
 
 		public static Mesh Intersect(Mesh a, Mesh b)

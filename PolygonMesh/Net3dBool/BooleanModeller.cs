@@ -68,27 +68,32 @@ namespace Net3dBool
 		{
 		}
 
-		public BooleanModeller(Solid solid1, Solid solid2, Action<ProgressStatus> reporter, CancellationToken cancelationToken)
+		public BooleanModeller(Solid solid1, Solid solid2, Action<string, double> reporter, CancellationToken cancelationToken)
 		{
-			var progress = new ProgressStatus() { Status = "Object3D1" }; reporter?.Invoke(progress);
 			//representation to apply boolean operations
+			reporter?.Invoke("Object3D1", 0.1);
 			object1 = new Object3D(solid1);
-			progress.Status = "Object3D2"; reporter?.Invoke(progress);
+
+			reporter?.Invoke("Object3D2", 0.2);
 			object2 = new Object3D(solid2);
 
 			Object3D object1Copy = new Object3D(solid1);
 
 			//split the faces so that none of them intercepts each other
-			progress.Status = "Split Faces2"; reporter?.Invoke(progress);
+			reporter?.Invoke("Split Faces2", 0.4);
 			object1.SplitFaces(object2);
-			progress.Status = "Split Faces1"; reporter?.Invoke(progress);
+
+			reporter?.Invoke("Split Faces1", 0.6);
 			object2.SplitFaces(object1Copy);
 
 			//classify faces as being inside or outside the other solid
-			progress.Status = "Classify Faces2"; reporter?.Invoke(progress);
+			reporter?.Invoke("Classify Faces2", 0.8);
 			object1.ClassifyFaces(object2);
-			progress.Status = "Classify Faces1"; reporter?.Invoke(progress);
+
+			reporter?.Invoke("Classify Faces1", 0.9);
 			object2.ClassifyFaces(object1);
+
+			reporter?.Invoke("Classify Faces1", 1);
 		}
 
 		private BooleanModeller()
