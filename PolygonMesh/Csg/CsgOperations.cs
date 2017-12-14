@@ -265,7 +265,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			reporter?.Invoke("Solid to Mesh", .8);
 			var solidMesh = MeshFromSolid(result);
 
-			reporter.Invoke("Solid to Mesh", 1);
+			reporter?.Invoke("Solid to Mesh", 1);
 			return solidMesh;
 		}
 
