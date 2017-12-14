@@ -101,6 +101,8 @@ namespace MatterHackers.PolygonMesh
 			{
 				face.PlaceTextureOnFace(textureToUse, textureCoordinateMapping);
 			}
+
+			mesh.MarkAsChanged();
 		}
 
 		public static Mesh TexturedPlane(ImageBuffer textureToUse, double xScale = 1, double yScale = 1)
