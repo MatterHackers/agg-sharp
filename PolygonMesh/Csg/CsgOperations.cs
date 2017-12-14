@@ -254,7 +254,10 @@ namespace MatterHackers.PolygonMesh.Csg
 			var B = SolidFromMesh(b);
 
 			reporter?.Invoke("BooleanModeller", .4);
-			var modeller = new BooleanModeller(A, B, reporter, cancelationToken);
+			var modeller = new BooleanModeller(A, B, (status, progress0To1) =>
+			{
+				reporter?.Invoke(status, .4 + progress0To1 * .2);
+			}, cancelationToken);
 
 			reporter?.Invoke("Difference", .6);
 			var result = modeller.GetDifference();
