@@ -198,22 +198,29 @@ namespace MatterHackers.DataConverters3D
 				if (_color != value)
 				{
 					_color = value;
-
-					if (_color.alpha != 255
-						&& Mesh != null
-						&& Mesh.FaceBspTree == null
-						&& Mesh.Faces.Count < 2000
-						&& !buildingFaceBsp)
+					if (_color.alpha != 255)
 					{
-						this.buildingFaceBsp = true;
-						Task.Run(() =>
-						{
-							var bspTree = FaceBspTree.Create(Mesh);
-							UiThread.RunOnIdle(() => Mesh.FaceBspTree = bspTree);
-							this.buildingFaceBsp = false;
-						});
+						EnsureTransparentSorting();
 					}
 				}
+			}
+		}
+
+		public void EnsureTransparentSorting()
+		{
+			if (Mesh != null
+				&& Mesh.FaceBspTree == null
+				&& Mesh.Faces.Count < 2000
+				&& !buildingFaceBsp)
+			{
+				this.buildingFaceBsp = true;
+				Task.Run(() =>
+				{
+					// TODO: make a SHA1 based cache for the sorting on this mesh and use them from memory or disk
+					var bspTree = FaceBspTree.Create(Mesh);
+					UiThread.RunOnIdle(() => Mesh.FaceBspTree = bspTree);
+					this.buildingFaceBsp = false;
+				});
 			}
 		}
 
