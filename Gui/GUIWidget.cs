@@ -2218,6 +2218,18 @@ namespace MatterHackers.Agg.UI
 				BreakInDebugger("You should put this close onto the UiThread.RunOnIdle so it can happen after the child list is unlocked.");
 			}
 
+			// Validate via OnClosing if SystemWindow.Close is called
+			if (this is SystemWindow systemWindow)
+			{
+				var closingArgs = new ClosingEventArgs();
+				systemWindow.OnClosing(closingArgs);
+
+				if (closingArgs.Cancel)
+				{
+					return;
+				}
+			}
+
 			if (!HasBeenClosed)
 			{
 				HasBeenClosed = true;
