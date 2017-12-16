@@ -51,7 +51,7 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-		[Test, Apartment(ApartmentState.STA), /* Test was unstable, putting back in rotation with updates... */]
+		[Test, Apartment(ApartmentState.STA), Ignore("Test remains unstable and written in a non-standard form") /* Test was unstable, putting back in rotation with updates... */]
 		public async Task OpenAndCloseMenus()
 		{
 			int item1ClickCount = 0;
