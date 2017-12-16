@@ -246,7 +246,13 @@ namespace MatterHackers.GuiAutomation
 			}
 		}
 
-		public void Delay(Func<bool> checkConditionSatisfied, double maxSeconds = 5, int checkInterval = 200)
+		/// <summary>
+		/// Wait up to maxSeconds for the condition to be satisfied. 
+		/// </summary>
+		/// <param name="checkConditionSatisfied"></param>
+		/// <param name="maxSeconds"></param>
+		/// <param name="checkInterval"></param>
+		public void WaitFor(Func<bool> checkConditionSatisfied, double maxSeconds = 5, int checkInterval = 200)
 		{
 			StaticDelay(checkConditionSatisfied, maxSeconds, checkInterval);
 		}
@@ -1017,10 +1023,10 @@ namespace MatterHackers.GuiAutomation
 		}
 
 		/// <summary>
-		/// Wait up to secondsToWait for the named widget to vanish.
+		/// Wait up to secondsToWait for the named widget to disappear
 		/// </summary>
 		/// <param name="widgetName"></param>
-		public bool WaitVanishForName(string widgetName, double secondsToWait) // TODO: should have a search region
+		public bool WaitForWidgetDisappear(string widgetName, double secondsToWait) // TODO: should have a search region
 		{
 			Stopwatch timeWaited = Stopwatch.StartNew();
 			while (NamedWidgetExists(widgetName)
