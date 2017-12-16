@@ -1023,10 +1023,10 @@ namespace MatterHackers.GuiAutomation
 		}
 
 		/// <summary>
-		/// Wait up to secondsToWait for the named widget to vanish.
+		/// Wait up to secondsToWait for the named widget to disappear
 		/// </summary>
 		/// <param name="widgetName"></param>
-		public bool WaitVanishForName(string widgetName, double secondsToWait) // TODO: should have a search region
+		public bool WaitForWidgetDisappear(string widgetName, double secondsToWait) // TODO: should have a search region
 		{
 			Stopwatch timeWaited = Stopwatch.StartNew();
 			while (NamedWidgetExists(widgetName)
