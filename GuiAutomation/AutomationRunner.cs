@@ -246,7 +246,13 @@ namespace MatterHackers.GuiAutomation
 			}
 		}
 
-		public void Delay(Func<bool> checkConditionSatisfied, double maxSeconds = 5, int checkInterval = 200)
+		/// <summary>
+		/// Wait up to maxSeconds for the condition to be satisfied. 
+		/// </summary>
+		/// <param name="checkConditionSatisfied"></param>
+		/// <param name="maxSeconds"></param>
+		/// <param name="checkInterval"></param>
+		public void WaitFor(Func<bool> checkConditionSatisfied, double maxSeconds = 5, int checkInterval = 200)
 		{
 			StaticDelay(checkConditionSatisfied, maxSeconds, checkInterval);
 		}
