@@ -84,6 +84,14 @@ namespace MatterHackers.DataConverters3D
 			if(topParent != null)
 			{
 				var names = topParent.Descendants().Where((i) => i != item).Select((i2) => i2.Name).ToList();
+
+				if (string.IsNullOrEmpty(item.Name))
+				{
+					// Object3D authors should give their objects a simplified name, but if they fail to do so,
+					// fallback to a sane default before calling into GetNonCollidingName
+					item.Name = item.TypeName;
+				}
+
 				item.Name = agg_basics.GetNonCollidingName(item.Name, names);
 			}
 		}
