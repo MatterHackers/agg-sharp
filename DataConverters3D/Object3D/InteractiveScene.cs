@@ -253,7 +253,8 @@ namespace MatterHackers.MeshVisualizer
 					{
 						list.Remove(itemToAdd);
 						list.Remove(SelectedItem);
-						list.Add(newSelectionGroup);
+						// add the seletionngroup as the first item so we can hit it first
+						list.Insert(0, newSelectionGroup);
 					});
 
 					SelectedItem = newSelectionGroup;
