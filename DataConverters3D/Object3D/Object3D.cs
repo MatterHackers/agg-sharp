@@ -208,17 +208,18 @@ namespace MatterHackers.DataConverters3D
 
 		public void EnsureTransparentSorting()
 		{
-			if (Mesh != null
-				&& Mesh.FaceBspTree == null
-				&& Mesh.Faces.Count < 2000
+			var localMesh = Mesh;
+			if (localMesh != null
+				&& localMesh.FaceBspTree == null
+				&& localMesh.Faces.Count < 2000
 				&& !buildingFaceBsp)
 			{
 				this.buildingFaceBsp = true;
 				Task.Run(() =>
 				{
 					// TODO: make a SHA1 based cache for the sorting on this mesh and use them from memory or disk
-					var bspTree = FaceBspTree.Create(Mesh);
-					UiThread.RunOnIdle(() => Mesh.FaceBspTree = bspTree);
+					var bspTree = FaceBspTree.Create(localMesh);
+					UiThread.RunOnIdle(() => localMesh.FaceBspTree = bspTree);
 					this.buildingFaceBsp = false;
 				});
 			}

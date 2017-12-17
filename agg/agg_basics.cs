@@ -105,6 +105,11 @@ namespace MatterHackers.Agg
 
 		public static string GetNonCollidingName(string desiredName, Func<string, bool> IsUnique)
 		{
+			if (desiredName == null)
+			{
+				desiredName = "No Name";
+			}
+
 			if (IsUnique(desiredName))
 			{
 				return desiredName;
