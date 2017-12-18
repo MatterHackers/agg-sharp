@@ -274,7 +274,6 @@ namespace MatterHackers.RenderOpenGl
 			double angleRadians,
 			double scaleX, double scaleY)
 		{
-#if true
 			Affine transform = GetTransform();
 			if (!transform.is_identity())
 			{
@@ -287,9 +286,7 @@ namespace MatterHackers.RenderOpenGl
 				scaleX *= transform.sx;
 				scaleY *= transform.sy;
 			}
-#endif
 
-#if true
 			// TODO: <BUG> make this do rotation and scaling
 			RectangleInt sourceBounds = source.GetBounds();
 			sourceBounds.Offset((int)x, (int)y);
@@ -303,8 +300,6 @@ namespace MatterHackers.RenderOpenGl
 				}
 				//return;
 			}
-#endif
-
 
 			ImageBuffer sourceAsImageBuffer = (ImageBuffer)source;
 			//ImageIO.SaveImageData($"c:\\temp\\gah-{DateTime.Now.Ticks}.png", sourceAsImageBuffer);

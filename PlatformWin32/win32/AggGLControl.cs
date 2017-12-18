@@ -90,15 +90,9 @@ namespace MatterHackers.Agg.UI
 			return false;
 		}
 
-		protected override void OnPaint(PaintEventArgs e)
-		{
-			//Parent.Invalidate();
-			base.OnPaint(e);
-		}
-
 		public override string ToString()
 		{
-			return "{0}".FormatWith(Id);
+			return Id.ToString();
 		}
 	}
 }

@@ -162,26 +162,6 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		/*
-		TODO: Investigate...
-		public new Size MinimumSize
-		{
-			get
-			{
-				return base.MinimumSize;
-			}
-			set
-			{
-				if (doneLoading)
-				{
-					glControl.MakeCurrent();
-				}
-
-				base.MinimumSize = value;
-			}
-		}
-		*/
-
 		public override void CopyBackBufferToScreen(Graphics displayGraphics)
 		{
             // If this throws an assert, you are calling MakeCurrent() before the glControl is done being constructed.
@@ -195,7 +175,7 @@ namespace MatterHackers.Agg.UI
 
 		public override string ToString()
 		{
-			return "{0}".FormatWith(id);
+			return id.ToString();
 		}
 
 		private bool viewPortHasBeenSet = false;
