@@ -58,7 +58,7 @@ namespace MatterHackers.DataConverters3D
 							child.Parent = object3D;
 						}
 
-						object3D.Children.StoreParent(object3D);
+						object3D.Children.SetParent(object3D);
 					}
 				});
 			}
@@ -68,23 +68,24 @@ namespace MatterHackers.DataConverters3D
 
 		protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
 		{
-			// Conditionally serialize .Children only if .MeshPath is empty. Currently having a Mesh precludes having children - looks like a 
-			// feature for AMF that needs to be reconsidered or constrained to specific scenarios
 			JsonProperty property = base.CreateProperty(member, memberSerialization);
+
 			if (property.PropertyName == "Children" && IObject3DType.IsAssignableFrom(property.DeclaringType))
 			{
-				// TODO: Needs review - clipping the Children property when MeshPath is non-null works for AMF but isn't appropriate for many use cases
-				property.ShouldSerialize = instance => {
-					IObject3D item = (IObject3D)instance;
-					return string.IsNullOrEmpty(item.MeshPath);
+				property.ShouldSerialize = (instance) => 
+				{
+					// Serialize Children property as long as MeshPath is unset
+					return string.IsNullOrEmpty((instance as IObject3D)?.MeshPath);
 				};
 			}
 
 			if (property.PropertyName == "Color" && ColorType.IsAssignableFrom(property.PropertyType))
 			{
-				property.ShouldSerialize = instance =>
+				property.ShouldSerialize = (instance) =>
 				{
-					return instance is IObject3D object3D && object3D.Color != Color.Transparent;
+					// Serialize Color property as long as we're not the default value
+					return instance is IObject3D object3D 
+						&& object3D.Color != Color.Transparent;
 				};
 			}
 

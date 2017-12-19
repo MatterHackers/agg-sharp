@@ -65,7 +65,7 @@ namespace MatterHackers.DataConverters3D
 
 		public bool Contains(T item) => items.Contains(item);
 
-		public void StoreParent(T parent)
+		public void SetParent(T parent)
 		{
 			this.parentItem = parent;
 		}
