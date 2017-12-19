@@ -98,7 +98,7 @@ namespace MatterHackers.DataConverters3D
 		public static IObject3D Load(Stream fileStream, CancellationToken cancellationToken, Action<double, string> reportProgress = null, IObject3D source = null)
 		{
 			IObject3D root = source ?? new Object3D();
-			root.ItemType = Object3DTypes.Group;
+			root.ItemType = Object3DTypes.Node;
 
 			IObject3D context = null;
 
@@ -128,7 +128,7 @@ namespace MatterHackers.DataConverters3D
 								// Move context to a new MeshGroup
 								context = new Object3D()
 								{
-									ItemType = Object3DTypes.Model,
+									ItemType = Object3DTypes.Node,
 								};
 								root.Children.Add(context);
 								break;

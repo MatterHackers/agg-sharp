@@ -41,9 +41,7 @@ namespace MatterHackers.DataConverters3D
 {
 	public enum Object3DTypes
 	{
-		Any,
-		Model,
-		Group,
+		Node,
 		SelectionGroup,
 	};
 

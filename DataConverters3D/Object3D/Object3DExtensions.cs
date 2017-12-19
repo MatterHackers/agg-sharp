@@ -248,7 +248,7 @@ namespace MatterHackers.PolygonMesh
 		{
 			if (objectToCollapse != null 
 				&& (objectToCollapse?.ItemType == typeFilter
-				|| typeFilter == Object3DTypes.Any))
+				|| typeFilter == Object3DTypes.Node))
 			{
 				// Remove the collapsing item from the list
 				collapseInto.Remove(objectToCollapse);
