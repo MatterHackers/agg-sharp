@@ -58,7 +58,7 @@ namespace MatterHackers.DataConverters3D
 							child.Parent = object3D;
 						}
 
-						object3D.Children.StoreParent(object3D);
+						object3D.Children.SetParent(object3D);
 					}
 				});
 			}
