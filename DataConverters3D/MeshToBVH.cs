@@ -40,13 +40,12 @@ namespace MatterHackers.DataConverters3D
 				}
 				else
 				{
-					var triangles = face.AsTriangles();
-					foreach (var triangle in triangles)
+					foreach (var triangle in face.AsTriangles())
 					{
 						renderCollection.Add(new TriangleShape(
-							Vector3.Transform(triangle.Item1, worldMatrix),
-							Vector3.Transform(triangle.Item2, worldMatrix),
-							Vector3.Transform(triangle.Item3, worldMatrix),
+							Vector3.Transform(triangle.p0, worldMatrix),
+							Vector3.Transform(triangle.p1, worldMatrix),
+							Vector3.Transform(triangle.p2, worldMatrix),
 							partMaterial));
 					}
 				}

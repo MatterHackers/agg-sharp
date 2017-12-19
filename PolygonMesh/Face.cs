@@ -465,34 +465,57 @@ namespace MatterHackers.PolygonMesh
 			return delta;
 		}
 
-		public List<(Vector3, Vector3, Vector3)> AsTriangles()
+		public IEnumerable<((Vector3 p, Vector2 uv) v0, (Vector3 p, Vector2 uv) v1, (Vector3 p, Vector2 uv) v2)> AsUvTriangles()
 		{
-			var triangles = new List<(Vector3, Vector3, Vector3)>();
-			AsTriangles(triangles);
-			return triangles;
-		}
+			var uvs = ContainingMesh.TextureUV;
 
-		public void AsTriangles(List<(Vector3, Vector3, Vector3)> triangles)
-		{
 			bool first = true;
 			int vertexIndex = 0;
-			Vector3 firstPosition = Vector3.Zero;
-			Vector3 lastPosition = Vector3.Zero;
+			(Vector3 p, Vector2 uv) firstVertex = (Vector3.Zero, Vector2.Zero);
+			(Vector3 p, Vector2 uv) lastVertex = (Vector3.Zero, Vector2.Zero);
 			// for now we assume the polygon is- convex and can be rendered as a fan
-			foreach (Vertex vertex in Vertices())
+			foreach (var faceEdge in FaceEdges())
 			{
+				Vector2 uv = Vector2.Zero;
+				uvs.TryGetValue((faceEdge, 0), out uv);
+				var vertex = (faceEdge.FirstVertex.Position, uv);
 				if (first)
 				{
-					firstPosition = vertex.Position;
+					firstVertex = vertex;
 					first = false;
 				}
 
 				if (vertexIndex >= 2)
 				{
-					triangles.Add((firstPosition, lastPosition, vertex.Position));
+					yield return (firstVertex, lastVertex, vertex);
 				}
 
-				lastPosition = vertex.Position;
+				lastVertex = vertex;
+				vertexIndex++;
+			}
+		}
+
+		public IEnumerable<(Vector3 p0, Vector3 p1, Vector3 p2)> AsTriangles()
+		{
+			bool first = true;
+			int vertexIndex = 0;
+			Vector3 firstVertex = Vector3.Zero;
+			Vector3 lastVertex = Vector3.Zero;
+			// for now we assume the polygon is- convex and can be rendered as a fan
+			foreach (var vertex in Vertices())
+			{
+				if (first)
+				{
+					firstVertex = vertex.Position;
+					first = false;
+				}
+
+				if (vertexIndex >= 2)
+				{
+					yield return (firstVertex, lastVertex, vertex.Position);
+				}
+
+				lastVertex = vertex.Position;
 				vertexIndex++;
 			}
 		}

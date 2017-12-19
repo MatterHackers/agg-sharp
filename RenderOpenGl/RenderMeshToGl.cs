@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using MatterHackers.Agg;
+using MatterHackers.Agg.Image;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
@@ -186,9 +187,9 @@ namespace MatterHackers.RenderOpenGl
 					{
 						foreach (var vertex in face.AsTriangles())
 						{
-							GL.Vertex3(vertex.Item1.X, vertex.Item1.Y, vertex.Item1.Z);
-							GL.Vertex3(vertex.Item2.X, vertex.Item2.Y, vertex.Item2.Z);
-							GL.Vertex3(vertex.Item3.X, vertex.Item3.Y, vertex.Item3.Z);
+							GL.Vertex3(vertex.p0.X, vertex.p0.Y, vertex.p0.Z);
+							GL.Vertex3(vertex.p1.X, vertex.p1.Y, vertex.p1.Z);
+							GL.Vertex3(vertex.p2.X, vertex.p2.Y, vertex.p2.Z);
 						}
 					}
 					GL.End();
@@ -285,8 +286,7 @@ namespace MatterHackers.RenderOpenGl
 		// There can be a singleton of this because GL must always render on the UI thread and can't overlap this array
 		private static void DrawToGLUsingBsp(Mesh meshToRender, Matrix4X4 meshToViewTransform, Matrix4X4 invMeshToViewTransform)
 		{
-			GL.Begin(BeginMode.Triangles);
-
+			ImageBuffer lastFaceTexture = null;
 			var bspFaceList = FaceBspTree.GetFacesInVisibiltyOrder(meshToRender.Faces, meshToRender.FaceBspTree, meshToViewTransform, invMeshToViewTransform);
 			foreach (var face in bspFaceList)
 			{
@@ -295,32 +295,53 @@ namespace MatterHackers.RenderOpenGl
 					continue;
 				}
 
-				/*
-				// Make sure the GLMeshPlugin has a reference to hold onto the image so it does not go away before this.
-				if (subMesh.texture != null)
+				ImageBuffer faceTexture;
+				meshToRender.FaceTexture.TryGetValue((face, 0), out faceTexture);
+				if (faceTexture != lastFaceTexture)
 				{
-					ImageGlPlugin glPlugin = ImageGlPlugin.GetImageGlPlugin(subMesh.texture, true);
-					GL.Enable(EnableCap.Texture2D);
-					GL.BindTexture(TextureTarget.Texture2D, glPlugin.GLTextureHandle);
-					GL.EnableClientState(ArrayCap.TextureCoordArray);
+					// Make sure the GLMeshPlugin has a reference to hold onto the image so it does not go away before this.
+					if (faceTexture != null)
+					{
+						ImageGlPlugin glPlugin = ImageGlPlugin.GetImageGlPlugin(faceTexture, true);
+						GL.Enable(EnableCap.Texture2D);
+						GL.BindTexture(TextureTarget.Texture2D, glPlugin.GLTextureHandle);
+					}
+					else
+					{
+						GL.Disable(EnableCap.Texture2D);
+					}
+
+					lastFaceTexture = faceTexture;
+				}
+
+				GL.Begin(BeginMode.Triangles);
+				GL.Normal3(face.Normal.X, face.Normal.Y, face.Normal.Z);
+				// load up the uvs
+				if (faceTexture != null)
+				{
+					foreach (var vertex in face.AsUvTriangles())
+					{
+						GL.TexCoord2(vertex.v0.uv);
+						GL.Vertex3(vertex.v0.p);
+
+						GL.TexCoord2(vertex.v1.uv);
+						GL.Vertex3(vertex.v1.p);
+
+						GL.TexCoord2(vertex.v2.uv);
+						GL.Vertex3(vertex.v2.p);
+					}
 				}
 				else
 				{
-					GL.Disable(EnableCap.Texture2D);
-					GL.DisableClientState(ArrayCap.TextureCoordArray);
+					foreach (var vertex in face.AsTriangles())
+					{
+						GL.Vertex3(vertex.p0);
+						GL.Vertex3(vertex.p1);
+						GL.Vertex3(vertex.p2);
+					}
 				}
-				*/
-
-				GL.Normal3(face.Normal.X, face.Normal.Y, face.Normal.Z);
-
-				foreach (var vertex in face.AsTriangles())
-				{
-					GL.Vertex3(vertex.Item1.X, vertex.Item1.Y, vertex.Item1.Z);
-					GL.Vertex3(vertex.Item2.X, vertex.Item2.Y, vertex.Item2.Z);
-					GL.Vertex3(vertex.Item3.X, vertex.Item3.Y, vertex.Item3.Z);
-				}
+				GL.End();
 			}
-			GL.End();
 		}
 
 		private static void DrawWireOverlay(Mesh meshToRender, RenderTypes renderType, Color color)

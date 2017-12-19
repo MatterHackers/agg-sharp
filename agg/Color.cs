@@ -1068,12 +1068,25 @@ namespace MatterHackers.Agg
 			double saturation0To1;
 			double lightness0To1;
 
-			ColorF colorF = original is ColorF ? (ColorF) original : original.ToColorF();
+			ColorF colorF = original is ColorF ? (ColorF)original : original.ToColorF();
 
 			colorF.GetHSL(out hue0To1, out saturation0To1, out lightness0To1);
 			saturation0To1 *= saturationMultiplier;
 
 			return ColorF.FromHSL(hue0To1, saturation0To1, lightness0To1);
+		}
+
+		public static IColorType SetLightness(this IColorType original, double lightness)
+		{
+			double hue0To1;
+			double saturation0To1;
+			double lightness0To1;
+
+			ColorF colorF = original is ColorF ? (ColorF)original : original.ToColorF();
+
+			colorF.GetHSL(out hue0To1, out saturation0To1, out lightness0To1);
+
+			return ColorF.FromHSL(hue0To1, saturation0To1, lightness);
 		}
 
 		public static IColorType AdjustLightness(this IColorType original, double lightnessMultiplier)
