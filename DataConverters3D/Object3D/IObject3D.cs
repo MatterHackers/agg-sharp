@@ -146,7 +146,7 @@ namespace MatterHackers.DataConverters3D
 		SafeList<IObject3D> Children { get; set; }
 
 		[JsonIgnore]
-		IObject3D Parent { get; set; }
+		new IObject3D Parent { get; set; }
 
 		Color Color { get; set; }
 		int MaterialIndex { get; set; }

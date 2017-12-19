@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using MatterHackers.VectorMath;
 
 #if USE_OPENGL
 
@@ -729,6 +730,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #endif
 		}
 
+		public static void TexCoord2(Vector2 uv)
+		{
+			TexCoord2(uv.X, uv.Y);
+		}
+
 		public static void TexCoord2(double x, double y)
 		{
 #if USE_OPENGL
@@ -770,6 +776,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			}
 #else
 #endif
+		}
+
+		public static void Vertex3(Vector3 position)
+		{
+			Vertex3(position.X, position.Y, position.Z);
 		}
 
 		public static void Vertex3(double x, double y, double z)
