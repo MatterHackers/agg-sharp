@@ -73,7 +73,14 @@ namespace MatterHackers.DataConverters3D
 			if (loadedItem != null)
 			{
 				item.Mesh = loadedItem.Mesh;
-				item.Children = loadedItem.Children;
+
+				// TODO: When loading mesh links, if a node has children and a mesh (MeshWrapers for example) 
+				// then we load the mesh and blow away the children in the assignment below. The new conditional
+				// assignment accounts for that case but may need more consideration
+				if (string.Equals(Path.GetExtension(filePath), ".mcx", StringComparison.OrdinalIgnoreCase))
+				{
+					item.Children = loadedItem.Children;
+				}
 			}
 		}
 
