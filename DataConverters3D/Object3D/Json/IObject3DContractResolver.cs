@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.IO;
 using System.Reflection;
 using MatterHackers.Agg;
 using MatterHackers.DataConverters3D;
@@ -75,8 +76,12 @@ namespace MatterHackers.DataConverters3D
 			{
 				property.ShouldSerialize = (instance) => 
 				{
-					// Serialize Children property as long as MeshPath is unset
-					return string.IsNullOrEmpty((instance as IObject3D)?.MeshPath);
+					string meshPath = (instance as IObject3D)?.MeshPath;
+
+					// ShouldSerialize if MeshPath is unset or is a relative path (i.e. no DirectoryName part), otherwise 
+					// we truncate the in memory Children property and fall back to the MeshPath value on reload
+					return string.IsNullOrEmpty(meshPath) 
+						|| string.IsNullOrEmpty(Path.GetDirectoryName(meshPath));
 				};
 			}
 
