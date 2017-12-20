@@ -57,6 +57,16 @@ namespace MatterHackers.GuiAutomation
 
 		private SystemWindow windowToDrawSimulatedMouseOn = null;
 
+		public AggInputMethods(AutomationRunner automationRunner, bool drawSimulatedMouse)
+		{
+			this.DrawSimulatedMouse = drawSimulatedMouse;
+			this.automationRunner = automationRunner;
+		}
+
+		public bool LeftButtonDown { get; private set; }
+
+		public int ClickCount { get; private set; }
+
 		public ImageBuffer GetCurrentScreen()
 		{
 			throw new NotImplementedException();
@@ -68,12 +78,6 @@ namespace MatterHackers.GuiAutomation
 			return sz.Height;
 		}
 
-		public AggInputMethods(AutomationRunner automationRunner, bool drawSimulatedMouse)
-		{
-			this.DrawSimulatedMouse = drawSimulatedMouse;
-			this.automationRunner = automationRunner;
-		}
-
 		public Point2D CurrentMousePosition()
 		{
 			return currentMousePosition;
@@ -81,7 +85,8 @@ namespace MatterHackers.GuiAutomation
 
 		public void SetCursorPosition(int x, int y)
 		{
-			SystemWindow topSystemWindow = SystemWindow.AllOpenSystemWindows.Last();
+			var openWindows = SystemWindow.AllOpenSystemWindows.ToList();
+			SystemWindow topSystemWindow = openWindows.Last();
 			if (windowToDrawSimulatedMouseOn != topSystemWindow)
 			{
 				if (windowToDrawSimulatedMouseOn != null)
@@ -97,7 +102,7 @@ namespace MatterHackers.GuiAutomation
 				}
 			}
 
-			foreach (var systemWindow in SystemWindow.AllOpenSystemWindows)
+			foreach (var systemWindow in openWindows)
 			{
 				currentMousePosition = new Point2D(x, y);
 				Point2D windowPosition = AutomationRunner.ScreenToSystemWindow(currentMousePosition, systemWindow);
@@ -127,14 +132,10 @@ namespace MatterHackers.GuiAutomation
 			automationRunner.RenderMouse(windowToDrawSimulatedMouseOn, e.graphics2D);
 		}
 
-		public bool LeftButtonDown { get; private set; }
-
-		public int ClickCount { get; private set; }
-
 		public void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo)
 		{
 			// Send mouse event into the first SystemWindow (reverse order) containing the mouse
-			foreach (var systemWindow in SystemWindow.AllOpenSystemWindows.Reverse())
+			foreach (var systemWindow in SystemWindow.AllOpenSystemWindows.Reverse().ToList())
 			{
 				Point2D windowPosition = AutomationRunner.ScreenToSystemWindow(currentMousePosition, systemWindow);
 				if (systemWindow.LocalBounds.Contains(windowPosition))
