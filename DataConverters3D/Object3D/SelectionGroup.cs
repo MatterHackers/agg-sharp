@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2016, Lars Brubaker, John Lewin
+Copyright (c) 2017, Kevin Pope, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,9 +31,10 @@ using MatterHackers.DataConverters3D;
 
 namespace MatterHackers.DataConverters3D
 {
-	public class TextObject : Object3D
+	public class SelectionGroup : Object3D
 	{
-		public string Text { get; set; }
-		public double Spacing { get; set; }
+		public SelectionGroup()
+		{
+		}
 	}
 }

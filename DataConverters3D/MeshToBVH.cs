@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using MatterHackers.Agg;
+using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;

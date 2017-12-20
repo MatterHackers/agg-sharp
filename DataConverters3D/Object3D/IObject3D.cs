@@ -39,14 +39,6 @@ using Newtonsoft.Json;
 
 namespace MatterHackers.DataConverters3D
 {
-	public enum Object3DTypes
-	{
-		Any,
-		Model,
-		Group,
-		SelectionGroup,
-	};
-
 	public enum PrintOutputTypes
 	{
 		Default,
@@ -151,7 +143,6 @@ namespace MatterHackers.DataConverters3D
 		Color Color { get; set; }
 		int MaterialIndex { get; set; }
 		MeshGroup Flatten(Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings = null, Predicate<IObject3D> filter = null);
-		Object3DTypes ItemType { get; set; }
 
 		PrintOutputTypes OutputType { get; set; }
 

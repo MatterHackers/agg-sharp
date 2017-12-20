@@ -227,8 +227,6 @@ namespace MatterHackers.DataConverters3D
 
 		public int MaterialIndex { get; set; } = -1;
 
-		public Object3DTypes ItemType { get; set; } = Object3DTypes.Model;
-
 		PrintOutputTypes _outputType = PrintOutputTypes.Default;
 		public PrintOutputTypes OutputType
 		{

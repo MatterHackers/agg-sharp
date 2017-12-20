@@ -36,6 +36,7 @@ using System.Linq;
 using System.Threading;
 using System.Xml;
 using MatterHackers.Agg;
+using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.VectorMath;
@@ -98,7 +99,6 @@ namespace MatterHackers.DataConverters3D
 		public static IObject3D Load(Stream fileStream, CancellationToken cancellationToken, Action<double, string> reportProgress = null, IObject3D source = null)
 		{
 			IObject3D root = source ?? new Object3D();
-			root.ItemType = Object3DTypes.Group;
 
 			IObject3D context = null;
 
@@ -126,10 +126,7 @@ namespace MatterHackers.DataConverters3D
 						{
 							case "object":
 								// Move context to a new MeshGroup
-								context = new Object3D()
-								{
-									ItemType = Object3DTypes.Model,
-								};
+								context = new Object3D();
 								root.Children.Add(context);
 								break;
 
