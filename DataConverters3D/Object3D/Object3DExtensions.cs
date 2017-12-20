@@ -35,10 +35,11 @@ using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.DataConverters3D;
+using MatterHackers.PolygonMesh;
 using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;
 
-namespace MatterHackers.PolygonMesh
+namespace MatterHackers.DataConverters3D
 {
 	public static class Object3DExtensions
 	{
@@ -72,7 +73,6 @@ namespace MatterHackers.PolygonMesh
 			if (loadedItem != null)
 			{
 				item.Mesh = loadedItem.Mesh;
-				item.ItemType = loadedItem.ItemType;
 				item.Children = loadedItem.Children;
 			}
 		}
@@ -244,11 +244,10 @@ namespace MatterHackers.PolygonMesh
 		/// <param name="collapseInto">The target to collapse into</param>
 		/// <param name="typeFilter">Type filter</param>
 		/// <param name="depth">?</param>
-		public static void CollapseInto(this IObject3D objectToCollapse, List<IObject3D> collapseInto, Object3DTypes typeFilter = Object3DTypes.SelectionGroup, int depth = int.MaxValue)
+		public static void CollapseInto(this IObject3D objectToCollapse, List<IObject3D> collapseInto, bool filterToSelectionGroup = true, int depth = int.MaxValue)
 		{
 			if (objectToCollapse != null 
-				&& (objectToCollapse?.ItemType == typeFilter
-				|| typeFilter == Object3DTypes.Node))
+				&& objectToCollapse is SelectionGroup == filterToSelectionGroup)
 			{
 				// Remove the collapsing item from the list
 				collapseInto.Remove(objectToCollapse);
@@ -273,9 +272,9 @@ namespace MatterHackers.PolygonMesh
 
 					child.Matrix *= objectToCollapse.Matrix;
 
-					if (child.ItemType == Object3DTypes.SelectionGroup && depth > 0)
+					if (child is SelectionGroup && depth > 0)
 					{
-						child.CollapseInto(collapseInto, typeFilter, depth - 1);
+						child.CollapseInto(collapseInto, filterToSelectionGroup, depth - 1);
 					}
 					else
 					{

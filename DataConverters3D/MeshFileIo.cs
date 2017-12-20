@@ -34,6 +34,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
+using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Csg;
 using MatterHackers.PolygonMesh.Processors;
@@ -53,7 +54,7 @@ namespace MatterHackers.DataConverters3D
 			{
 				case ".STL":
 
-					var result = source ?? new Object3D { ItemType = Object3DTypes.Node };
+					var result = source ?? new Object3D();
 					result.Mesh = StlProcessing.Load(fileStream, cancellationToken, reportProgress);
 					return result;
 

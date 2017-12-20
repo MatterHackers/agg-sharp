@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Reflection;
 using MatterHackers.Agg;
+using MatterHackers.DataConverters3D;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 

@@ -42,7 +42,7 @@ using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;
 using Newtonsoft.Json;
 
-namespace MatterHackers.MeshVisualizer
+namespace MatterHackers.DataConverters3D
 {
 	public class InteractiveScene : IObject3D
 	{
@@ -67,7 +67,7 @@ namespace MatterHackers.MeshVisualizer
 			{
 				if (selectedItem != value)
 				{
-					if (SelectedItem?.ItemType == Object3DTypes.SelectionGroup)
+					if (SelectedItem is SelectionGroup)
 					{
 						// If the selected item is a SelectionGroup, collapse its contents into the root
 						// of the scene when it loses focus
@@ -92,7 +92,7 @@ namespace MatterHackers.MeshVisualizer
 		[JsonIgnore]
 		public bool ShowSelectionShadow { get; set; } = true;
 
-		public bool IsSelected(Object3DTypes objectType) => HasSelection && SelectedItem.ItemType == objectType;
+		public bool IsSelected(IObject3D item) => HasSelection && SelectedItem == item;
 
 		public void Save(string mcxPath, string libraryPath, Action<double, string> progress = null)
 		{
@@ -225,7 +225,7 @@ namespace MatterHackers.MeshVisualizer
 
 			if (this.HasSelection)
 			{
-				if(SelectedItem.ItemType == Object3DTypes.SelectionGroup)
+				if(SelectedItem is SelectionGroup)
 				{
 					// Remove from the scene root
 					this.Children.Modify(list => list.Remove(itemToAdd));
@@ -238,10 +238,7 @@ namespace MatterHackers.MeshVisualizer
 					// We're adding a new item to the selection. To do so we wrap the selected item
 					// in a new group and with the new item. The selection will continue to grow in this
 					// way until it's applied, due to a loss of focus or until a group operation occurs
-					var newSelectionGroup = new Object3D
-					{
-						ItemType = Object3DTypes.SelectionGroup,
-					};
+					var newSelectionGroup = new SelectionGroup();
 
 					newSelectionGroup.Children.Modify(list =>
 					{
@@ -285,7 +282,6 @@ namespace MatterHackers.MeshVisualizer
 		public IObject3D Parent { get => sourceItem.Parent; set => sourceItem.Parent = value; }
 		public Color Color { get => sourceItem.Color; set => sourceItem.Color = value; }
 		public int MaterialIndex { get => sourceItem.MaterialIndex; set => sourceItem.MaterialIndex = value; }
-		public Object3DTypes ItemType { get => sourceItem.ItemType; set => sourceItem.ItemType = value; }
 		public PrintOutputTypes OutputType { get => sourceItem.OutputType; set => sourceItem.OutputType = value; }
 		public Matrix4X4 Matrix { get => sourceItem.Matrix; set => sourceItem.Matrix = value; }
 		public string TypeName => sourceItem.TypeName;

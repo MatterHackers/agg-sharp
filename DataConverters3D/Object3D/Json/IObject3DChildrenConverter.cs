@@ -32,6 +32,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using MatterHackers.Agg;
+using MatterHackers.DataConverters3D;
 
 namespace MatterHackers.DataConverters3D
 {
