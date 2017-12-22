@@ -30,23 +30,24 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
 	public static class UiThread
 	{
-		private static List<CallBackAndState> functionsToCheckIfTimeToCall = new List<CallBackAndState>();
+		private static List<DeferredAction> functionsToCheckIfTimeToCall = new List<DeferredAction>();
 		private static List<Action> callNextCycle = new List<Action>();
 		private static Stopwatch timer = new Stopwatch();
 
-		private class CallBackAndState
+		private class DeferredAction
 		{
-			internal Action idleCallBack;
+			internal Action action;
 			internal long absoluteMillisecondsToRunAt;
 
-			internal CallBackAndState(Action idleCallBack, long absoluteMillisecondsToRunAt)
+			internal DeferredAction(Action action, long absoluteMillisecondsToRunAt)
 			{
-				this.idleCallBack = idleCallBack;
+				this.action = action;
 				this.absoluteMillisecondsToRunAt = absoluteMillisecondsToRunAt;
 			}
 		}
@@ -67,7 +68,7 @@ namespace MatterHackers.Agg.UI
 			}
 			lock (functionsToCheckIfTimeToCall)
 			{
-				functionsToCheckIfTimeToCall.Add(new CallBackAndState(callBack, timer.ElapsedMilliseconds + (int)(delayInSeconds * 1000)));
+				functionsToCheckIfTimeToCall.Add(new DeferredAction(callBack, timer.ElapsedMilliseconds + (int)(delayInSeconds * 1000)));
 			}
 		}
 
@@ -99,7 +100,7 @@ namespace MatterHackers.Agg.UI
 		{
 			List<Action> callThisCycle = callNextCycle;
 
-			List<CallBackAndState> holdFunctionsToCallOnIdle = new List<CallBackAndState>();
+			List<DeferredAction> holdFunctionsToCallOnIdle = new List<DeferredAction>();
 			// make a copy so we don't keep this locked for long
 			lock (functionsToCheckIfTimeToCall)
 			{
@@ -108,7 +109,7 @@ namespace MatterHackers.Agg.UI
 				long currentMilliseconds = timer.ElapsedMilliseconds;
 				for (int i = functionsToCheckIfTimeToCall.Count - 1; i >= 0; i--)
 				{
-					CallBackAndState callBackAndState = functionsToCheckIfTimeToCall[i];
+					DeferredAction callBackAndState = functionsToCheckIfTimeToCall[i];
 					if (callBackAndState.absoluteMillisecondsToRunAt <= currentMilliseconds)
 					{
 						holdFunctionsToCallOnIdle.Add(callBackAndState);
@@ -134,8 +135,8 @@ namespace MatterHackers.Agg.UI
 			// now call all the functions (we put them in backwards to make it easier to remove them as we went so run them backwards
 			for (int i = holdFunctionsToCallOnIdle.Count - 1; i >= 0; i--)
 			{
-				CallBackAndState callBackAndState = holdFunctionsToCallOnIdle[i];
-				callBackAndState.idleCallBack();
+				DeferredAction callBackAndState = holdFunctionsToCallOnIdle[i];
+				callBackAndState.action();
 			}
 		}
 	}
