@@ -42,13 +42,13 @@ namespace MatterHackers.Agg.UI
 
 		private class DeferredAction
 		{
-			internal Action action;
-			internal long absoluteMillisecondsToRunAt;
+			internal Action Action;
+			internal long AbsoluteMillisecondsToRunAt;
 
 			internal DeferredAction(Action action, long absoluteMillisecondsToRunAt)
 			{
-				this.action = action;
-				this.absoluteMillisecondsToRunAt = absoluteMillisecondsToRunAt;
+				this.Action = action;
+				this.AbsoluteMillisecondsToRunAt = absoluteMillisecondsToRunAt;
 			}
 		}
 
@@ -86,7 +86,7 @@ namespace MatterHackers.Agg.UI
 					long currentMilliseconds = timer.ElapsedMilliseconds;
 					for (int i = 0; i < functionsToCheckIfTimeToCall.Count; i++)
 					{
-						if (functionsToCheckIfTimeToCall[i].absoluteMillisecondsToRunAt <= currentMilliseconds)
+						if (functionsToCheckIfTimeToCall[i].AbsoluteMillisecondsToRunAt <= currentMilliseconds)
 						{
 							count++;
 						}
@@ -110,7 +110,7 @@ namespace MatterHackers.Agg.UI
 				for (int i = functionsToCheckIfTimeToCall.Count - 1; i >= 0; i--)
 				{
 					DeferredAction callBackAndState = functionsToCheckIfTimeToCall[i];
-					if (callBackAndState.absoluteMillisecondsToRunAt <= currentMilliseconds)
+					if (callBackAndState.AbsoluteMillisecondsToRunAt <= currentMilliseconds)
 					{
 						holdFunctionsToCallOnIdle.Add(callBackAndState);
 						functionsToCheckIfTimeToCall.RemoveAt(i);
@@ -136,7 +136,7 @@ namespace MatterHackers.Agg.UI
 			for (int i = holdFunctionsToCallOnIdle.Count - 1; i >= 0; i--)
 			{
 				DeferredAction callBackAndState = holdFunctionsToCallOnIdle[i];
-				callBackAndState.action();
+				callBackAndState.Action();
 			}
 		}
 	}
