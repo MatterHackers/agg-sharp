@@ -51,27 +51,6 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public static void RunOnIdle(Action action)
-		{
-			lock (callLater)
-			{
-				callLater.Add(action);
-			}
-		}
-
-		public static void RunOnIdle(Action action, double delayInSeconds = 0)
-		{
-			if (!timer.IsRunning)
-			{
-				timer.Start();
-			}
-
-			lock (deferredActions)
-			{
-				deferredActions.Add(new DeferredAction(action, timer.ElapsedMilliseconds + (int)(delayInSeconds * 1000)));
-			}
-		}
-
 		public static long CurrentTimerMs => timer.ElapsedMilliseconds;
 
 		public static int Count => deferredActions.Count;
@@ -93,6 +72,27 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 				return count;
+			}
+		}
+
+		public static void RunOnIdle(Action action)
+		{
+			lock (callLater)
+			{
+				callLater.Add(action);
+			}
+		}
+
+		public static void RunOnIdle(Action action, double delayInSeconds = 0)
+		{
+			if (!timer.IsRunning)
+			{
+				timer.Start();
+			}
+
+			lock (deferredActions)
+			{
+				deferredActions.Add(new DeferredAction(action, timer.ElapsedMilliseconds + (int)(delayInSeconds * 1000)));
 			}
 		}
 
