@@ -41,14 +41,12 @@ namespace MatterHackers.Agg.UI
 
 		private class CallBackAndState
 		{
-			internal Action<object> idleCallBack;
-			internal object stateInfo;
+			internal Action idleCallBack;
 			internal long absoluteMillisecondsToRunAt;
 
-			internal CallBackAndState(Action<object> idleCallBack, object stateInfo, long absoluteMillisecondsToRunAt)
+			internal CallBackAndState(Action idleCallBack, long absoluteMillisecondsToRunAt)
 			{
 				this.idleCallBack = idleCallBack;
-				this.stateInfo = stateInfo;
 				this.absoluteMillisecondsToRunAt = absoluteMillisecondsToRunAt;
 			}
 		}
@@ -61,12 +59,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public static void RunOnIdle(Action callBack, double delayInSeconds)
-		{
-			RunOnIdle((state) => callBack(), null, delayInSeconds);
-		}
-
-		public static void RunOnIdle(Action<object> callBack, object state, double delayInSeconds = 0)
+		public static void RunOnIdle(Action callBack, double delayInSeconds = 0)
 		{
 			if (!timer.IsRunning)
 			{
@@ -74,7 +67,7 @@ namespace MatterHackers.Agg.UI
 			}
 			lock (functionsToCheckIfTimeToCall)
 			{
-				functionsToCheckIfTimeToCall.Add(new CallBackAndState(callBack, state, timer.ElapsedMilliseconds + (int)(delayInSeconds * 1000)));
+				functionsToCheckIfTimeToCall.Add(new CallBackAndState(callBack, timer.ElapsedMilliseconds + (int)(delayInSeconds * 1000)));
 			}
 		}
 
@@ -142,7 +135,7 @@ namespace MatterHackers.Agg.UI
 			for (int i = holdFunctionsToCallOnIdle.Count - 1; i >= 0; i--)
 			{
 				CallBackAndState callBackAndState = holdFunctionsToCallOnIdle[i];
-				callBackAndState.idleCallBack(callBackAndState.stateInfo);
+				callBackAndState.idleCallBack();
 			}
 		}
 	}

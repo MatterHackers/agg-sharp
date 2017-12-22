@@ -38,14 +38,10 @@ namespace MatterHackers.Agg.Platform
 
 			WinformsSystemWindow.ShowingSystemDialog = false;
 
-			UiThread.RunOnIdle((state) =>
+			UiThread.RunOnIdle(()=>
 			{
-				OpenFileDialogParams openParamsIn = state as OpenFileDialogParams;
-				if (openParamsIn != null)
-				{
-					callback(openParamsIn);
-				}
-			}, openParams);
+				callback(openParams);
+			});
 			return true;
 		}
 
