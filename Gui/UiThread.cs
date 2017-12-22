@@ -30,7 +30,6 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
@@ -101,8 +100,7 @@ namespace MatterHackers.Agg.UI
 		{
 			List<Action> callThisCycle = callNextCycle;
 
-			List<DeferredAction> holdFunctionsToCallOnIdle = new List<DeferredAction>();
-			// make a copy so we don't keep this locked for long
+			// Don't keep this locked for long
 			lock (deferredActions)
 			{
 				callNextCycle = new List<Action>();
@@ -110,10 +108,11 @@ namespace MatterHackers.Agg.UI
 				long currentMilliseconds = timer.ElapsedMilliseconds;
 				for (int i = deferredActions.Count - 1; i >= 0; i--)
 				{
-					DeferredAction callBackAndState = deferredActions[i];
-					if (callBackAndState.AbsoluteMillisecondsToRunAt <= currentMilliseconds)
+					// If the deferred action has reach its execution time, push it to the list to execute and remove
+					var deferred = deferredActions[i];
+					if (deferred.AbsoluteMillisecondsToRunAt <= currentMilliseconds)
 					{
-						holdFunctionsToCallOnIdle.Add(callBackAndState);
+						callThisCycle.Add(deferred.Action);
 						deferredActions.RemoveAt(i);
 					}
 				}
@@ -131,13 +130,6 @@ namespace MatterHackers.Agg.UI
 					throw (invokeException);
 #endif
 				}
-			}
-
-			// now call all the functions (we put them in backwards to make it easier to remove them as we went so run them backwards
-			for (int i = holdFunctionsToCallOnIdle.Count - 1; i >= 0; i--)
-			{
-				DeferredAction callBackAndState = holdFunctionsToCallOnIdle[i];
-				callBackAndState.Action();
 			}
 		}
 	}
