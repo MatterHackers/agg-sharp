@@ -36,8 +36,14 @@ namespace MatterHackers.Agg.UI
 	public static class UiThread
 	{
 		private static List<DeferredAction> deferredActions = new List<DeferredAction>();
-		private static List<Action> callLater = new List<Action>();
+
+		private static List<Action> listA = new List<Action>();
+		private static List<Action> listB = new List<Action>();
+
+		private static List<Action> callLater = listA;
+
 		private static Stopwatch timer = new Stopwatch();
+		private static object locker = new object();
 
 		public static long CurrentTimerMs => timer.ElapsedMilliseconds;
 
@@ -65,7 +71,7 @@ namespace MatterHackers.Agg.UI
 
 		public static void RunOnIdle(Action action)
 		{
-			lock (callLater)
+			lock (locker)
 			{
 				callLater.Add(action);
 			}
@@ -78,7 +84,7 @@ namespace MatterHackers.Agg.UI
 				timer.Start();
 			}
 
-			lock (deferredActions)
+			lock (locker)
 			{
 				deferredActions.Add(new DeferredAction(action, timer.ElapsedMilliseconds + (int)(delayInSeconds * 1000)));
 			}
@@ -89,9 +95,13 @@ namespace MatterHackers.Agg.UI
 			List<Action> callNow = callLater;
 
 			// Don't keep this locked for long
-			lock (deferredActions)
+			lock (locker)
 			{
-				callLater = new List<Action>();
+				// Swap lists to an empty list per call
+				callLater = (callLater == listA) ? listB : listA;
+
+				// Actually empty the list
+				callLater.Clear();
 
 				long currentMilliseconds = timer.ElapsedMilliseconds;
 				for (int i = deferredActions.Count - 1; i >= 0; i--)
