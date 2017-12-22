@@ -32,7 +32,10 @@ using MatterHackers.VectorMath;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
-
+using MatterHackers.Csg;
+using MatterHackers.Csg.Solids;
+using MatterHackers.Csg.Transform;
+using MatterHackers.RenderOpenGl;
 
 namespace MatterHackers.PolygonMesh.UnitTests
 {
@@ -61,6 +64,15 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 			// Todo: turn this on
 			//Assert.IsTrue(result.IsManifold());
+		}
+
+		[Test]
+		public void SubtractHasAllFaces()
+		{
+			double XOffset = -.4;
+			CsgObject boxCombine = new Box(10, 10, 10);
+			boxCombine -= new Translate(new Box(10, 10, 10), XOffset, -3, 2);
+			var mesh =  CsgToMesh.Convert(boxCombine);
 		}
 
 		[Test, Ignore("Crashes NUnit with an unrecoverable StackOverflow error, ending test passes on build servers")]
