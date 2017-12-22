@@ -35,73 +35,31 @@ namespace MatterHackers.Agg.UI
 {
 	public static class UiThread
 	{
-		private static List<CallBackAndState> functionsToCheckIfTimeToCall = new List<CallBackAndState>();
-		private static List<Action> callNextCycle = new List<Action>();
+		private static List<DeferredAction> deferredActions = new List<DeferredAction>();
+
+		private static List<Action> listA = new List<Action>();
+		private static List<Action> listB = new List<Action>();
+
+		private static List<Action> callLater = listA;
+
 		private static Stopwatch timer = new Stopwatch();
+		private static object locker = new object();
 
-		private class CallBackAndState
-		{
-			internal Action<object> idleCallBack;
-			internal object stateInfo;
-			internal long absoluteMillisecondsToRunAt;
+		public static long CurrentTimerMs => timer.ElapsedMilliseconds;
 
-			internal CallBackAndState(Action<object> idleCallBack, object stateInfo, long absoluteMillisecondsToRunAt)
-			{
-				this.idleCallBack = idleCallBack;
-				this.stateInfo = stateInfo;
-				this.absoluteMillisecondsToRunAt = absoluteMillisecondsToRunAt;
-			}
-		}
-
-		public static void RunOnIdle(Action callBack)
-		{
-			lock(callNextCycle)
-            { 
-                callNextCycle.Add(callBack);
-            }
-		}
-
-		public static void RunOnIdle(Action callBack, double delayInSeconds)
-		{
-			RunOnIdle((state) => callBack(), null, delayInSeconds);
-		}
-
-		public static void RunOnIdle(Action<object> callBack, object state, double delayInSeconds = 0)
-		{
-			if (!timer.IsRunning)
-			{
-				timer.Start();
-			}
-			lock(functionsToCheckIfTimeToCall)
-			{
-				functionsToCheckIfTimeToCall.Add(new CallBackAndState(callBack, state, timer.ElapsedMilliseconds + (int)(delayInSeconds * 1000)));
-			}
-		}
-
-		public static long CurrentTimerMs
-		{
-			get { return timer.ElapsedMilliseconds; }
-		}
-
-		public static int Count
-		{
-			get
-			{
-				return functionsToCheckIfTimeToCall.Count;
-			}
-		}
+		public static int Count => deferredActions.Count;
 
 		public static int CountExpired
 		{
 			get
 			{
 				int count = 0;
-				lock(functionsToCheckIfTimeToCall)
+				lock (deferredActions)
 				{
 					long currentMilliseconds = timer.ElapsedMilliseconds;
-					for (int i = 0; i < functionsToCheckIfTimeToCall.Count; i++)
+					for (int i = 0; i < deferredActions.Count; i++)
 					{
-						if (functionsToCheckIfTimeToCall[i].absoluteMillisecondsToRunAt <= currentMilliseconds)
+						if (deferredActions[i].AbsoluteMillisecondsToRunAt <= currentMilliseconds)
 						{
 							count++;
 						}
@@ -111,29 +69,54 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public static void RunOnIdle(Action action)
+		{
+			lock (locker)
+			{
+				callLater.Add(action);
+			}
+		}
+
+		public static void RunOnIdle(Action action, double delayInSeconds = 0)
+		{
+			if (!timer.IsRunning)
+			{
+				timer.Start();
+			}
+
+			lock (locker)
+			{
+				deferredActions.Add(new DeferredAction(action, timer.ElapsedMilliseconds + (int)(delayInSeconds * 1000)));
+			}
+		}
+
 		public static void InvokePendingActions()
 		{
-			List<Action> callThisCycle = callNextCycle;
+			List<Action> callNow = callLater;
 
-			List<CallBackAndState> holdFunctionsToCallOnIdle = new List<CallBackAndState>();
-			// make a copy so we don't keep this locked for long
-			lock(functionsToCheckIfTimeToCall)
+			// Don't keep this locked for long
+			lock (locker)
 			{
-				callNextCycle = new List<Action>();
+				// Swap lists to an empty list per call
+				callLater = (callLater == listA) ? listB : listA;
+
+				// Actually empty the list
+				callLater.Clear();
 
 				long currentMilliseconds = timer.ElapsedMilliseconds;
-				for (int i = functionsToCheckIfTimeToCall.Count - 1; i >= 0; i--)
+				for (int i = deferredActions.Count - 1; i >= 0; i--)
 				{
-					CallBackAndState callBackAndState = functionsToCheckIfTimeToCall[i];
-					if (callBackAndState.absoluteMillisecondsToRunAt <= currentMilliseconds)
+					// If the deferred action has reach its execution time, push it to the list to execute and remove deferred
+					var deferred = deferredActions[i];
+					if (deferred.AbsoluteMillisecondsToRunAt <= currentMilliseconds)
 					{
-						holdFunctionsToCallOnIdle.Add(callBackAndState);
-						functionsToCheckIfTimeToCall.RemoveAt(i);
+						callNow.Add(deferred.Action);
+						deferredActions.RemoveAt(i);
 					}
 				}
 			}
 
-			foreach (Action action in callThisCycle)
+			foreach (Action action in callNow)
 			{
 				try
 				{
@@ -146,12 +129,17 @@ namespace MatterHackers.Agg.UI
 #endif
 				}
 			}
+		}
 
-			// now call all the functions (we put them in backwards to make it easier to remove them as we went so run them backwards
-			for (int i = holdFunctionsToCallOnIdle.Count - 1; i >= 0; i--)
+		private class DeferredAction
+		{
+			internal Action Action;
+			internal long AbsoluteMillisecondsToRunAt;
+
+			internal DeferredAction(Action action, long absoluteMillisecondsToRunAt)
 			{
-				CallBackAndState callBackAndState = holdFunctionsToCallOnIdle[i];
-				callBackAndState.idleCallBack(callBackAndState.stateInfo);
+				this.Action = action;
+				this.AbsoluteMillisecondsToRunAt = absoluteMillisecondsToRunAt;
 			}
 		}
 	}
