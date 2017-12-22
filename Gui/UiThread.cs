@@ -36,7 +36,7 @@ namespace MatterHackers.Agg.UI
 	public static class UiThread
 	{
 		private static List<DeferredAction> deferredActions = new List<DeferredAction>();
-		private static List<Action> callNextCycle = new List<Action>();
+		private static List<Action> callLater = new List<Action>();
 		private static Stopwatch timer = new Stopwatch();
 
 		private class DeferredAction
@@ -53,9 +53,9 @@ namespace MatterHackers.Agg.UI
 
 		public static void RunOnIdle(Action action)
 		{
-			lock (callNextCycle)
+			lock (callLater)
 			{
-				callNextCycle.Add(action);
+				callLater.Add(action);
 			}
 		}
 
@@ -98,27 +98,27 @@ namespace MatterHackers.Agg.UI
 
 		public static void InvokePendingActions()
 		{
-			List<Action> callThisCycle = callNextCycle;
+			List<Action> callNow = callLater;
 
 			// Don't keep this locked for long
 			lock (deferredActions)
 			{
-				callNextCycle = new List<Action>();
+				callLater = new List<Action>();
 
 				long currentMilliseconds = timer.ElapsedMilliseconds;
 				for (int i = deferredActions.Count - 1; i >= 0; i--)
 				{
-					// If the deferred action has reach its execution time, push it to the list to execute and remove
+					// If the deferred action has reach its execution time, push it to the list to execute and remove deferred
 					var deferred = deferredActions[i];
 					if (deferred.AbsoluteMillisecondsToRunAt <= currentMilliseconds)
 					{
-						callThisCycle.Add(deferred.Action);
+						callNow.Add(deferred.Action);
 						deferredActions.RemoveAt(i);
 					}
 				}
 			}
 
-			foreach (Action action in callThisCycle)
+			foreach (Action action in callNow)
 			{
 				try
 				{
