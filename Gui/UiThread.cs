@@ -39,18 +39,6 @@ namespace MatterHackers.Agg.UI
 		private static List<Action> callLater = new List<Action>();
 		private static Stopwatch timer = new Stopwatch();
 
-		private class DeferredAction
-		{
-			internal Action Action;
-			internal long AbsoluteMillisecondsToRunAt;
-
-			internal DeferredAction(Action action, long absoluteMillisecondsToRunAt)
-			{
-				this.Action = action;
-				this.AbsoluteMillisecondsToRunAt = absoluteMillisecondsToRunAt;
-			}
-		}
-
 		public static long CurrentTimerMs => timer.ElapsedMilliseconds;
 
 		public static int Count => deferredActions.Count;
@@ -130,6 +118,18 @@ namespace MatterHackers.Agg.UI
 					throw (invokeException);
 #endif
 				}
+			}
+		}
+
+		private class DeferredAction
+		{
+			internal Action Action;
+			internal long AbsoluteMillisecondsToRunAt;
+
+			internal DeferredAction(Action action, long absoluteMillisecondsToRunAt)
+			{
+				this.Action = action;
+				this.AbsoluteMillisecondsToRunAt = absoluteMillisecondsToRunAt;
 			}
 		}
 	}
