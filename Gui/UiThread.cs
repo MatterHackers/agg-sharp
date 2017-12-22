@@ -78,18 +78,9 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public static long CurrentTimerMs
-		{
-			get { return timer.ElapsedMilliseconds; }
-		}
+		public static long CurrentTimerMs => timer.ElapsedMilliseconds;
 
-		public static int Count
-		{
-			get
-			{
-				return functionsToCheckIfTimeToCall.Count;
-			}
-		}
+		public static int Count => functionsToCheckIfTimeToCall.Count;
 
 		public static int CountExpired
 		{
