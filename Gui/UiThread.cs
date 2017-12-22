@@ -51,15 +51,15 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public static void RunOnIdle(Action callBack)
+		public static void RunOnIdle(Action action)
 		{
 			lock (callNextCycle)
 			{
-				callNextCycle.Add(callBack);
+				callNextCycle.Add(action);
 			}
 		}
 
-		public static void RunOnIdle(Action callBack, double delayInSeconds = 0)
+		public static void RunOnIdle(Action action, double delayInSeconds = 0)
 		{
 			if (!timer.IsRunning)
 			{
@@ -68,7 +68,7 @@ namespace MatterHackers.Agg.UI
 
 			lock (deferredActions)
 			{
-				deferredActions.Add(new DeferredAction(callBack, timer.ElapsedMilliseconds + (int)(delayInSeconds * 1000)));
+				deferredActions.Add(new DeferredAction(action, timer.ElapsedMilliseconds + (int)(delayInSeconds * 1000)));
 			}
 		}
 
