@@ -164,6 +164,12 @@ namespace MatterHackers.DataConverters3D
 		void SetAndInvalidateMesh(Mesh mesh);
 
 		/// <summary>
+		/// Directly assigns a mesh without firing events or invalidating
+		/// </summary>
+		/// <param name="mesh"></param>
+		void SetMeshDirect(Mesh mesh);
+
+		/// <summary>
 		/// Create a deep copy of the IObject3D objects
 		/// </summary>
 		/// <returns></returns>

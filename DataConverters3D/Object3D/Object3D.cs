@@ -260,7 +260,21 @@ namespace MatterHackers.DataConverters3D
 		public Matrix4X4 Matrix { get; set; } = Matrix4X4.Identity;
 
 		[JsonIgnore]
-		public Mesh Mesh { get; set; }
+		private Mesh _mesh;
+		public Mesh Mesh
+		{
+			get => _mesh;
+			set
+			{
+				if (_mesh != value)
+				{
+					_mesh = value;
+					traceData = null;
+					this.MeshPath = null;
+					this.OnInvalidate();
+				}
+			}
+		}
 
 		public void SetAndInvalidateMesh(Mesh mesh)
 		{
@@ -353,6 +367,11 @@ namespace MatterHackers.DataConverters3D
 			return loadedItem;
 		}
 
+		public void SetMeshDirect(Mesh mesh)
+		{
+			_mesh = mesh;
+		}
+
 		protected virtual void OnInvalidate()
 		{
 			Invalidated?.Invoke(this, null);
@@ -399,7 +418,7 @@ namespace MatterHackers.DataConverters3D
 			// Copy mesh instances to cloned tree
 			foreach(var descendant in clonedItem.Descendants())
 			{
-				descendant.Mesh = allItemsByID[descendant.ID].Mesh;
+				descendant.SetMeshDirect(allItemsByID[descendant.ID].Mesh);
 
 				// store the original id
 				string originalId = descendant.ID;
