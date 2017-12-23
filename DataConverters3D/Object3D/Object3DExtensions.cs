@@ -51,11 +51,11 @@ namespace MatterHackers.DataConverters3D
 
 			foreach (IObject3D object3D in itemsToLoad)
 			{
-				object3D.Load(itemCache, cancellationToken, progress);
+				object3D.LoadLinkedMesh(itemCache, cancellationToken, progress);
 			}
 		}
 
-		public static void Load(this IObject3D item, Dictionary<string, IObject3D> itemCache, CancellationToken cancellationToken, Action<double, string> progress)
+		private static void LoadLinkedMesh(this IObject3D item, Dictionary<string, IObject3D> itemCache, CancellationToken cancellationToken, Action<double, string> progress)
 		{
 			string filePath = item.MeshPath;
 			if (!File.Exists(filePath))
