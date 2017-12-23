@@ -51,11 +51,11 @@ namespace MatterHackers.DataConverters3D
 
 			foreach (IObject3D object3D in itemsToLoad)
 			{
-				object3D.Load(itemCache, cancellationToken, progress);
+				object3D.LoadLinkedMesh(itemCache, cancellationToken, progress);
 			}
 		}
 
-		public static void Load(this IObject3D item, Dictionary<string, IObject3D> itemCache, CancellationToken cancellationToken, Action<double, string> progress)
+		private static void LoadLinkedMesh(this IObject3D item, Dictionary<string, IObject3D> itemCache, CancellationToken cancellationToken, Action<double, string> progress)
 		{
 			string filePath = item.MeshPath;
 			if (!File.Exists(filePath))
@@ -72,7 +72,7 @@ namespace MatterHackers.DataConverters3D
 			// on the reporter to false and MeshFileIo.Load will return null. In those cases, we need to exit rather than continue processing
 			if (loadedItem != null)
 			{
-				item.Mesh = loadedItem.Mesh;
+				item.SetMeshDirect(loadedItem.Mesh);
 
 				// TODO: When loading mesh links, if a node has children and a mesh (MeshWrapers for example) 
 				// then we load the mesh and blow away the children in the assignment below. The new conditional
