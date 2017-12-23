@@ -67,6 +67,7 @@ namespace MatterHackers.DataConverters3D
 		public string OwnerID { get; set; }
 
 		public virtual string ActiveEditor { get; set; }
+
 		public SafeList<IObject3D> Children { get; set; }
 
 		public string TypeName { get; }
@@ -274,13 +275,6 @@ namespace MatterHackers.DataConverters3D
 					this.OnInvalidate();
 				}
 			}
-		}
-
-		public void SetAndInvalidateMesh(Mesh mesh)
-		{
-			this.Mesh = mesh;
-			this.MeshPath = null;
-			this.traceData = null;
 		}
 
 		public string MeshPath { get; set; }

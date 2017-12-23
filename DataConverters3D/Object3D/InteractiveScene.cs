@@ -302,11 +302,6 @@ namespace MatterHackers.DataConverters3D
 
 		public void SetMeshDirect(Mesh mesh) => sourceItem.SetMeshDirect(mesh);
 
-		public void SetAndInvalidateMesh(Mesh mesh)
-		{
-			sourceItem.SetAndInvalidateMesh(mesh);
-		}
-
 		public void Invalidate()
 		{
 			this.Invalidated?.Invoke(this, null);
