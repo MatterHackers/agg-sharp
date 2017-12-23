@@ -300,10 +300,7 @@ namespace MatterHackers.DataConverters3D
 
 		public IPrimitive TraceData() => sourceItem.TraceData();
 
-		public void SetAndInvalidateMesh(Mesh mesh)
-		{
-			sourceItem.SetAndInvalidateMesh(mesh);
-		}
+		public void SetMeshDirect(Mesh mesh) => sourceItem.SetMeshDirect(mesh);
 
 		public void Invalidate()
 		{

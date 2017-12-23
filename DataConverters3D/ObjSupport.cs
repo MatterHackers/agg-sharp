@@ -114,7 +114,7 @@ namespace MatterHackers.DataConverters3D
 			root.Children.Add(context);
 
 			var mesh = new Mesh();
-			context.Mesh = mesh;
+			context.SetMeshDirect(mesh);
 
 			foreach(var vertex in objFile.VertexList)
 			{

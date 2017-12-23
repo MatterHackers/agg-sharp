@@ -133,7 +133,7 @@ namespace MatterHackers.DataConverters3D
 							case "mesh":
 								// Move context to a new Mesh
 								mesh = new Mesh();
-								context.Mesh = mesh;
+								context.SetMeshDirect(mesh);
 
 								totalMeshes += 1;
 								break;

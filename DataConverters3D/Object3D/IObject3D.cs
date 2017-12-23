@@ -151,7 +151,12 @@ namespace MatterHackers.DataConverters3D
 
 		string TypeName { get; }
 
+		/// <summary>
+		/// The associated mesh for this content. Setting to a new value invalidates the MeshPath, TraceData and notifies all active listeners
+		/// </summary>
+		[JsonIgnore]
 		Mesh Mesh { get; set; }
+
 		string MeshPath { get; set; }
 
 		string Name { get; set; }
@@ -159,9 +164,14 @@ namespace MatterHackers.DataConverters3D
 		bool Persistable { get; }
 
 		bool Visible { get; set; }
+
 		string ID { get; set; }
 
-		void SetAndInvalidateMesh(Mesh mesh);
+		/// <summary>
+		/// Directly assigns a mesh without firing events or invalidating
+		/// </summary>
+		/// <param name="mesh"></param>
+		void SetMeshDirect(Mesh mesh);
 
 		/// <summary>
 		/// Create a deep copy of the IObject3D objects

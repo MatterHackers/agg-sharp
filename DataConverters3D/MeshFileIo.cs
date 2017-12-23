@@ -55,7 +55,7 @@ namespace MatterHackers.DataConverters3D
 				case ".STL":
 
 					var result = source ?? new Object3D();
-					result.Mesh = StlProcessing.Load(fileStream, cancellationToken, reportProgress);
+					result.SetMeshDirect(StlProcessing.Load(fileStream, cancellationToken, reportProgress));
 					return result;
 
 				case ".AMF":
