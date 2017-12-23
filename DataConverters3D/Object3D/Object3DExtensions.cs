@@ -72,7 +72,7 @@ namespace MatterHackers.DataConverters3D
 			// on the reporter to false and MeshFileIo.Load will return null. In those cases, we need to exit rather than continue processing
 			if (loadedItem != null)
 			{
-				item.Mesh = loadedItem.Mesh;
+				item.SetMeshDirect(loadedItem.Mesh);
 
 				// TODO: When loading mesh links, if a node has children and a mesh (MeshWrapers for example) 
 				// then we load the mesh and blow away the children in the assignment below. The new conditional
