@@ -1091,13 +1091,18 @@ namespace MatterHackers.Agg.UI
 					if (considerChildAnchor)
 					{
 						var childSize = child.MinimumSize;
-						minSize.X = Max(child.Width + child.DeviceMargin.Width, minSize.X);
-						minSize.Y = Max(child.Height + child.DeviceMargin.Height, minSize.Y);
+						minSize.X = Max((child.HAnchor == HAnchor.Stretch) ? 0 : child.Width
+							+ child.DeviceMargin.Width, minSize.X);
+						minSize.Y = Max((child.VAnchor == VAnchor.Stretch) ? 0 : child.Height 
+							+ child.DeviceMargin.Height, minSize.Y);
 
 						RectangleDouble childBoundsWithMargin = child.BoundsRelativeToParent;
 						childBoundsWithMargin.Inflate(child.DeviceMargin);
 
-						if (!child.HAnchorIsFloating)
+						FlowLayoutWidget flowLayout = this as FlowLayoutWidget;
+						bool childHSizeHasBeenAdjusted = flowLayout != null && (flowLayout.FlowDirection == FlowDirection.LeftToRight || flowLayout.FlowDirection == FlowDirection.RightToLeft);
+						if (!child.HAnchorIsFloating
+							&& (child.HAnchor != HAnchor.Stretch || childHSizeHasBeenAdjusted))
 						{
 							foundHBounds = true;
 							// it can't move so make sure our horizontal bounds enclose it
@@ -1112,7 +1117,9 @@ namespace MatterHackers.Agg.UI
 							}
 						}
 
-						if (!child.VAnchorIsFloating)
+						bool childVSizeHasBeenAdjusted = flowLayout != null && (flowLayout.FlowDirection == FlowDirection.BottomToTop || flowLayout.FlowDirection == FlowDirection.TopToBottom);
+						if (!child.VAnchorIsFloating
+							&& (child.VAnchor != VAnchor.Stretch || childVSizeHasBeenAdjusted))
 						{
 							foundVBounds = true;
 							// it can't move so make sure our vertical bounds enclose it

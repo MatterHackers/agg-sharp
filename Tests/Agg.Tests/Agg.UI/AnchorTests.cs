@@ -653,7 +653,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(containerControl.BackBuffer == containerTest.BackBuffer, "The Anchored widget should be in the correct place.");
 		}
 
-		[Test, Ignore("Not Finished")]
+		[Test]
 		public void VAnchorFitIgnoresChildrenWithVAnchorStretch()
 		{
 			//  ______________________________________________________________
@@ -713,7 +713,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.AreEqual(80, childA.Height);
 		}
 
-		[Test, Ignore("Not Finished")]
+		[Test]
 		public void HAnchorFitIgnoresChildrenWithHAnchorStretch()
 		{
 			//  ______________________________________________________________
