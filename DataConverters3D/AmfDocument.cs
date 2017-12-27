@@ -106,6 +106,9 @@ namespace MatterHackers.DataConverters3D
 			int totalMeshes = 0;
 			Stopwatch time = Stopwatch.StartNew();
 
+			Dictionary<string, ColorF> materials = new Dictionary<string, ColorF>();
+			Dictionary<IObject3D, string> objectMaterialDictionary = new Dictionary<IObject3D, string>();
+
 			using (var decompressedStream = GetCompressedStreamIfRequired(fileStream))
 			{
 				using (var reader = XmlReader.Create(decompressedStream))
@@ -125,17 +128,9 @@ namespace MatterHackers.DataConverters3D
 						switch (reader.Name)
 						{
 							case "object":
-								// Move context to a new MeshGroup
-								context = new Object3D();
-								root.Children.Add(context);
 								break;
 
 							case "mesh":
-								// Move context to a new Mesh
-								mesh = new Mesh();
-								context.SetMeshDirect(mesh);
-
-								totalMeshes += 1;
 								break;
 
 							case "vertices":
@@ -143,13 +138,36 @@ namespace MatterHackers.DataConverters3D
 								break;
 
 							case "volume":
-								ReadVolume(reader, vertices, mesh, progressData);
+								context = new Object3D();
+								root.Children.Add(context);
+								mesh = new Mesh();
+								context.SetMeshDirect(mesh);
+								totalMeshes += 1;
+
+								string materialId;
+								ReadVolume(reader, vertices, mesh, progressData, out materialId);
+								objectMaterialDictionary.Add(context, materialId);
+								break;
+
+							case "material":
+								ReadMaterial(reader, materials);
 								break;
 						}
 					}
 				}
 
 				fileStream.Dispose();
+			}
+
+			foreach(var keyValue in objectMaterialDictionary)
+			{
+				ColorF color = ColorF.White;
+				if(keyValue.Value == null
+					|| !materials.TryGetValue(keyValue.Value, out color))
+				{
+					color = ColorF.White;
+				}
+				keyValue.Key.Color = color.ToColor();
 			}
 
 			double currentMeshProgress = 0;
@@ -412,9 +430,27 @@ namespace MatterHackers.DataConverters3D
 			return vertices;
 		}
 
-		private static List<Vector3> ReadVolume(XmlReader reader, List<Vector3> vertices, Mesh mesh, ProgressData progressData)
+		private static void ReadMaterial(XmlReader reader, Dictionary<string, ColorF> materials)
 		{
-			string materialId = reader["materialid"];
+			var id = reader["id"];
+			var color = ColorF.White;
+
+			if(reader.ReadToDescendant("color"))
+			{
+				if (reader.ReadToDescendant("r"))
+				{
+					color.red = reader.ReadElementContentAsFloat();
+					color.green = reader.ReadElementContentAsFloat();
+					color.blue = reader.ReadElementContentAsFloat();
+				}
+			}
+
+			materials.Add(id, color);
+		}
+
+		private static List<Vector3> ReadVolume(XmlReader reader, List<Vector3> vertices, Mesh mesh, ProgressData progressData, out string material)
+		{
+			material = reader["materialid"];
 
 			if (reader.ReadToDescendant("triangle"))
 			{
