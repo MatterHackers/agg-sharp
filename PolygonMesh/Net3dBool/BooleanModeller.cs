@@ -81,10 +81,10 @@ namespace Net3dBool
 
 			//split the faces so that none of them intercepts each other
 			reporter?.Invoke("Split Faces2", 0.4);
-			object1.SplitFaces(object2);
+			object1.SplitFaces(object2, cancelationToken);
 
 			reporter?.Invoke("Split Faces1", 0.6);
-			object2.SplitFaces(object1Copy);
+			object2.SplitFaces(object1Copy, cancelationToken);
 
 			//classify faces as being inside or outside the other solid
 			reporter?.Invoke("Classify Faces2", 0.8);
