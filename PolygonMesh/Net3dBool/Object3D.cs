@@ -38,6 +38,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 
 namespace Net3dBool
 {
@@ -183,7 +184,7 @@ namespace Net3dBool
 		/// Split faces so that no face is intercepted by a face of other object
 		/// </summary>
 		/// <param name="compareObject">the other object 3d used to make the split</param>
-		public void SplitFaces(Object3D compareObject)
+		public void SplitFaces(Object3D compareObject, CancellationToken cancellationToken)
 		{
 			facesFromSplit.Clear();
 			Segment segment1;
@@ -201,6 +202,8 @@ namespace Net3dBool
 				// make sure we processe every face that we have added durring splitting befor moving on to the next face
 				while (haveAddedFaces)
 				{
+					cancellationToken.ThrowIfCancellationRequested();
+
 					//if object1 face bound and object2 bound overlap ...
 					//for each object2 face...
 					foreach (Face compareFace in compareObject.Faces.SearchBounds(new Bounds(thisFace.GetBound())))

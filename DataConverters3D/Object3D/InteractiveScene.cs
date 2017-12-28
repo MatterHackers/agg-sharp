@@ -269,7 +269,18 @@ namespace MatterHackers.DataConverters3D
 
 		public void Load(IObject3D source)
 		{
+			if (sourceItem != null)
+			{
+				sourceItem.Invalidated -= SourceItem_Invalidated;
+			}
+
 			sourceItem = source;
+			sourceItem.Invalidated += SourceItem_Invalidated;
+		}
+
+		private void SourceItem_Invalidated(object sender, EventArgs e)
+		{
+			this.Invalidated(this, e);
 		}
 
 		#region IObject3D
