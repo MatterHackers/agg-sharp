@@ -23,6 +23,14 @@ namespace MatterHackers.Agg
 		{
 		}
 
+		public BorderDouble(BorderDouble copy, double left = double.MinValue, double bottom = double.MinValue, double right = double.MinValue, double top = double.MinValue)
+		{
+			this.Left = (left != double.MinValue) ? left : copy.Left;
+			this.Bottom = (bottom != double.MinValue) ? bottom : copy.Bottom;
+			this.Right = (right != double.MinValue) ? right : copy.Right;
+			this.Top = (top != double.MinValue) ? top : copy.Top;
+		}
+
 		public BorderDouble(double left = 0, double bottom = 0, double right = 0, double top = 0)
 		{
 			this.Left = left;
@@ -154,6 +162,14 @@ namespace MatterHackers.Agg
 			}
 
 			return base.ConvertFrom(context, culture, value);
+		}
+	}
+
+	public static class BorderDoubleExtensions
+	{
+		public static BorderDouble Clone(this BorderDouble source, double left = double.MinValue, double bottom = double.MinValue, double right = double.MinValue, double top = double.MinValue)
+		{
+			return new BorderDouble(source, left, bottom, right, top);
 		}
 	}
 }
