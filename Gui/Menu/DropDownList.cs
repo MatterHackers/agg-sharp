@@ -328,10 +328,10 @@ namespace MatterHackers.Agg.UI
 		private static Color whiteSemiTransparent = new Color(255, 255, 255, 100);
 		private static Color whiteTransparent = new Color(255, 255, 255, 0);
 
-		public DropDownList(string noSelectionString, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false)
+		public DropDownList(string noSelectionString, Color textColor, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false)
 			: this(noSelectionString, whiteTransparent, whiteSemiTransparent, direction, maxHeight, useLeftIcons)
 		{
-			this.TextColor = ActiveTheme.Instance.PrimaryTextColor;
+			this.TextColor = textColor;
 			this.MenuItemsBorderWidth = 1;
 			this.MenuItemsBackgroundColor = Color.White;
 			this.MenuItemsBorderColor = ActiveTheme.Instance.SecondaryTextColor;
