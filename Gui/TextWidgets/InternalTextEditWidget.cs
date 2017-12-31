@@ -994,7 +994,14 @@ namespace MatterHackers.Agg.UI
 				}
 
 				StringBuilder tempString = new StringBuilder(internalTextWidget.Text);
-				tempString.Insert(CharIndexToInsertBefore, keyPressEvent.KeyChar.ToString());
+				if (keyPressEvent.KeyChar == '\r')
+				{
+					tempString.Insert(CharIndexToInsertBefore, "\n");
+				}
+				else
+				{
+					tempString.Insert(CharIndexToInsertBefore, keyPressEvent.KeyChar.ToString());
+				}
 				keyPressEvent.Handled = true;
 				CharIndexToInsertBefore++;
 				internalTextWidget.Text = tempString.ToString();
