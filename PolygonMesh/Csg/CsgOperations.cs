@@ -271,6 +271,11 @@ namespace MatterHackers.PolygonMesh.Csg
 
 		public static Mesh Intersect(Mesh a, Mesh b)
 		{
+			return Intersect(a, b, null, CancellationToken.None);
+		}
+
+		public static Mesh Intersect(Mesh a, Mesh b, Action<string, double> reporter, CancellationToken cancelationToken)
+		{
 			if (a.Faces.Count == 0)
 			{
 				return b;
@@ -279,12 +284,19 @@ namespace MatterHackers.PolygonMesh.Csg
 			{
 				return a;
 			}
+
+			reporter?.Invoke("Mesh to Solid A", 0);
 			var A = SolidFromMesh(a);
+
+			reporter?.Invoke("Mesh to Solid B", .2);
 			var B = SolidFromMesh(b);
 
+			reporter?.Invoke("BooleanModeller", .4);
 			var modeller = new BooleanModeller(A, B);
+			reporter?.Invoke("Intersection", .6);
 			var result = modeller.GetIntersection();
 
+			reporter?.Invoke("Solid to Mesh", 1);
 			return MeshFromSolid(result);
 		}
 
