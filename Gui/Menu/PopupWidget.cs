@@ -279,6 +279,15 @@ namespace MatterHackers.Agg.UI
 				{
 					// adjust the offset to make it align to the right edged instead
 					bottomLeftScreenSpace -= new Vector2(popupWidget.Width - widgetRelativeTo.LocalBounds.Width, 0);
+
+					if (bottomLeftScreenSpace.X < 0)
+					{
+						//// Right but never negative
+						//bottomLeftScreenSpace = new Vector2(0, 0);
+
+						// Right if possible or left
+						bottomLeftScreenSpace = new Vector2(widgetRelativeTo.Position.X, 0);
+					}
 				}
 
 				// actually transform it to screen space (use the parent because the position is in parent space and it would be double trasformed)
