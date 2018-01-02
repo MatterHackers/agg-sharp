@@ -482,9 +482,30 @@ namespace MatterHackers.DataConverters3D
 			{
 				var traceables = new List<IPrimitive>();
 				// Check if we have a mesh at this level
-				if (Mesh == null)
+				if (Mesh != null)
 				{
-					// No mesh, so get the trace data for all children
+					// we have a mesh so don't recurse into children
+					object objectData;
+					Mesh.PropertyBag.TryGetValue("MeshTraceData", out objectData);
+					IPrimitive meshTraceData = objectData as IPrimitive;
+					if (meshTraceData == null)
+					{
+						// Get the trace data for the local mesh
+						// First create trace data that builds fast but traces slow
+						var simpleTraceData = Mesh.CreateTraceData(0);
+						Mesh.PropertyBag.Add("MeshTraceData", simpleTraceData);
+						traceables.Add(simpleTraceData);
+						// Then create trace data that traces fast but builds slow
+						//var completeTraceData = Mesh.CreateTraceData(0);
+						//Mesh.PropertyBag["MeshTraceData"] = completeTraceData;
+					}
+					else
+					{
+						traceables.Add(meshTraceData);
+					}
+				}
+				else // No mesh, so get the trace data for all children
+				{
 					foreach (Object3D child in Children)
 					{
 						if (child.Visible)
@@ -493,15 +514,9 @@ namespace MatterHackers.DataConverters3D
 						}
 					}
 				}
-				else // we have a mesh so don't recurse into children
-				{
-					// Get the trace data for the local mesh
-					 traceables.Add(Mesh.CreateTraceData());
-				}
 
 				// Wrap with a BVH
 				traceData = BoundingVolumeHierarchy.CreateNewHierachy(traceables, 0);
-
 				tracedHashCode = hashCode;
 			}
 
@@ -526,6 +541,7 @@ namespace MatterHackers.DataConverters3D
 
 				foreach (var child in Children)
 				{
+					// The children need to include their transfroms
 					hash = hash * 31 + child.GetLongHashCode();
 				}
 			}

@@ -52,11 +52,15 @@ namespace MatterHackers.RayTracer.Traceable
 			WorldToAxis = Matrix4X4.Invert(AxisToWorld);
 		}
 
-		public bool Contains(IBvhItem itemToCheckFor)
+		public bool Contains(Vector3 position)
 		{
-			if (this == itemToCheckFor || Child?.Contains(itemToCheckFor) == true)
+			if (this.GetAxisAlignedBoundingBox().Contains(position))
 			{
-				return true;
+				var childPosition = Vector3.Transform(position, WorldToAxis);
+				if (Child?.Contains(childPosition) == true)
+				{
+					return true;
+				}
 			}
 
 			return false;

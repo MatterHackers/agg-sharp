@@ -51,9 +51,9 @@ namespace MatterHackers.RayTracer
 			return false;
 		}
 
-		public bool Contains(IBvhItem itemToCheckFor)
+		public virtual bool Contains(Vector3 position)
 		{
-			if (this == itemToCheckFor)
+			if (this.GetAxisAlignedBoundingBox().Contains(position))
 			{
 				return true;
 			}
