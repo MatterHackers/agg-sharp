@@ -181,7 +181,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static IPrimitive CreateTraceData(this Mesh mesh)
+		public static IPrimitive CreateTraceData(this Mesh mesh, int maxRecursion = int.MaxValue)
 		{
 			List<IPrimitive> allPolys = new List<IPrimitive>();
 			List<Vector3> positions = new List<Vector3>();
@@ -222,7 +222,7 @@ namespace MatterHackers.DataConverters3D
 				}
 			}
 
-			return BoundingVolumeHierarchy.CreateNewHierachy(allPolys, 0);
+			return BoundingVolumeHierarchy.CreateNewHierachy(allPolys, maxRecursion);
 		}
 
 		/* 

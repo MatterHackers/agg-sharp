@@ -65,18 +65,16 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-		public bool Contains(IBvhItem itemToCheckFor)
+		public bool Contains(Vector3 position)
 		{
-			if(this == itemToCheckFor)
+			if (this.GetAxisAlignedBoundingBox().Contains(position))
 			{
-				return true;
-			}
-
-			foreach (IPrimitive item in Items)
-			{
-				if(item.Contains(itemToCheckFor))
+				foreach (IPrimitive item in Items)
 				{
-					return true;
+					if (item.Contains(position))
+					{
+						return true;
+					}
 				}
 			}
 
@@ -209,13 +207,15 @@ namespace MatterHackers.RayTracer
 			this.Aabb = nodeA.GetAxisAlignedBoundingBox() + nodeB.GetAxisAlignedBoundingBox(); // we can cache this because it is not allowed to change.
 		}
 
-		public bool Contains(IBvhItem itemToCheckFor)
+		public bool Contains(Vector3 position)
 		{
-			if (this == itemToCheckFor
-				|| nodeA.Contains(itemToCheckFor)
-				|| nodeB.Contains(itemToCheckFor))
+			if (this.GetAxisAlignedBoundingBox().Contains(position))
 			{
-				return true;
+				if (nodeA.Contains(position)
+					|| nodeB.Contains(position))
+				{
+					return true;
+				}
 			}
 
 			return false;

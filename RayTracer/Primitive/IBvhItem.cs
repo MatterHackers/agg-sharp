@@ -96,7 +96,7 @@ namespace MatterHackers.RayTracer
 		/// </summary>
 		/// <param name="itemToCheckFor"></param>
 		/// <returns></returns>
-		bool Contains(IBvhItem itemToCheckFor);
+		bool Contains(Vector3 position);
 	}
 
 	public class BvhIterator : IEnumerable<BvhIterator>

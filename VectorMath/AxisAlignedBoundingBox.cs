@@ -373,14 +373,14 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
-		public bool Contains(Vector3 position)
+		public bool Contains(Vector3 position, double errorRange = .001)
 		{
-			if (this.minXYZ.X <= position.X
-				&& this.maxXYZ.X >= position.X
-				&& this.minXYZ.Y <= position.Y
-				&& this.maxXYZ.Y >= position.Y
-				&& this.minXYZ.Z <= position.Z
-				&& this.maxXYZ.Z >= position.Z)
+			if (this.minXYZ.X <= position.X + errorRange
+				&& this.maxXYZ.X >= position.X - errorRange
+				&& this.minXYZ.Y <= position.Y + errorRange
+				&& this.maxXYZ.Y >= position.Y - errorRange
+				&& this.minXYZ.Z <= position.Z + errorRange
+				&& this.maxXYZ.Z >= position.Z - errorRange)
 			{
 				return true;
 			}

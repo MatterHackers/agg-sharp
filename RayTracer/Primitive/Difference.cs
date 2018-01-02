@@ -55,13 +55,15 @@ namespace MatterHackers.RayTracer.Traceable
 			throw new NotImplementedException();
 		}
 
-		public bool Contains(IBvhItem itemToCheckFor)
+		public bool Contains(Vector3 position)
 		{
-			if (this == itemToCheckFor 
-				|| primary.Contains(itemToCheckFor)
-				|| subtract.Contains(itemToCheckFor))
+			if (this.GetAxisAlignedBoundingBox().Contains(position))
 			{
-				return true;
+				if (primary.Contains(position)
+				|| subtract.Contains(position))
+				{
+					return true;
+				}
 			}
 
 			return false;

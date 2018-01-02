@@ -55,6 +55,8 @@ namespace MatterHackers.PolygonMesh
 		private Matrix4X4 fastAABBTransform = Matrix4X4.Identity;
 		public BspNode FaceBspTree { get; set; } = null;
 
+		public Dictionary<string, object> PropertyBag = new Dictionary<string, object>();
+
 		public Mesh()
 		{
 		}

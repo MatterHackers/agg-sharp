@@ -64,6 +64,18 @@ namespace MatterHackers.RayTracer
 			return new Vector3(vertices[index].x, vertices[index].y, vertices[index].z);
 		}
 
+		public override bool Contains(Vector3 position)
+		{
+			float distanceToPlane = Plane.GetDistanceFromPlane(new Vector3Float(position));
+
+			if(Math.Abs(distanceToPlane) < .001)
+			{
+				return base.Contains(position);
+			}
+
+			return false;
+		}
+
 		public TriangleShape(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2, MaterialAbstract material)
 		{
 			Vector3 planeNormal = Vector3.Cross(vertex1 - vertex0, vertex2 - vertex0).GetNormal();
