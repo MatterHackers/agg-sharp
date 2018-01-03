@@ -44,6 +44,9 @@ namespace MatterHackers.DataConverters3D
 
 		private List<T> items = new List<T>();
 
+		private static object locker = new object();
+		private static List<List<T>> listCache = new List<List<T>>();
+
 		private T parentItem;
 
 		public SafeList(T parent)
@@ -77,14 +80,37 @@ namespace MatterHackers.DataConverters3D
 		/// <param name="modifier">The Action to invoke</param>
 		public void Modify(Action<List<T>> modifier)
 		{
-			// Copy the child items to a new list
-			var safeClone = new List<T>(items);
+			List<T> safeClone;
+			// Get a copy of the items from the list cache
+			lock (locker)
+			{
+				int lastIndex = listCache.Count - 1;
+				if (lastIndex >= 0)
+				{
+					// set the safe clone
+					safeClone = listCache[lastIndex];
+					safeClone.Clear();
+					safeClone.AddRange(items);
 
-			// Pass the new list to the Action for manipulation
+					// romev the list from available
+					listCache.RemoveAt(lastIndex);
+				}
+				else
+				{
+					// no available lists create one
+					safeClone = new List<T>(items);
+				}
+			}
+
+			// Pass the copy list to the Action for manipulation
 			modifier(safeClone);
 
 			// Swap the modified list into place
-			items = safeClone;
+			lock (locker)
+			{
+				listCache.Add(items);
+				items = safeClone;
+			}
 
 			if (parentItem != null)
 			{
