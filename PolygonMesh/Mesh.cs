@@ -276,8 +276,10 @@ namespace MatterHackers.PolygonMesh
 				hash = hash * 31 + Faces.Count;
 				hash = hash * 31 + Vertices.Count;
 
-				foreach (var vertex in Vertices)
+				int step = Math.Max(1, Vertices.Count / 16);
+				for (int i = 0; i < Vertices.Count; i += step)
 				{
+					var vertex = Vertices[i];
 					hash = hash * 31 + vertex.Position.GetLongHashCode();
 				}
 

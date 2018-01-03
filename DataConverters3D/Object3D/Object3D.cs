@@ -493,7 +493,14 @@ namespace MatterHackers.DataConverters3D
 						// Get the trace data for the local mesh
 						// First create trace data that builds fast but traces slow
 						var simpleTraceData = Mesh.CreateTraceData(0);
-						Mesh.PropertyBag.Add("MeshTraceData", simpleTraceData);
+						try
+						{
+							Mesh.PropertyBag.Add("MeshTraceData", simpleTraceData);
+						}
+						catch
+						{
+
+						}
 						traceables.Add(simpleTraceData);
 						// Then create trace data that traces fast but builds slow
 						//var completeTraceData = Mesh.CreateTraceData(0);
