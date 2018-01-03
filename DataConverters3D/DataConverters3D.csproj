@@ -97,6 +97,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Object3D\SelectionGroup.cs" />
+    <Compile Include="Object3D\SafeList.cs" />
     <Compile Include="ObjParser\Types\IObjArray.cs" />
     <Compile Include="ObjParser\Types\ObjColor.cs" />
     <Compile Include="ObjParser\Types\ObjMaterial.cs" />
