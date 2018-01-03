@@ -809,7 +809,7 @@ namespace MatterHackers.MeshVisualizer
 				bool isSelected = parentSelected ||
 					Scene.HasSelection && (object3D == Scene.SelectedItem || Scene.SelectedItem.Children.Contains(object3D));
 
-				GLHelper.Render(item.Mesh, item.WorldColor(), item.WorldMatrix(), RenderType);
+				GLHelper.Render(item.Mesh, item.WorldColor(Scene.RootItem), item.WorldMatrix(Scene.RootItem), RenderType);
 			}
 		}
 

@@ -22,7 +22,7 @@ namespace MatterHackers.DataConverters3D
 			List<IPrimitive> renderCollection = new List<IPrimitive>();
 
 			SolidMaterial partMaterial;
-			var color = renderData.WorldColor();
+			var color = renderData.WorldColor(null);
 			if (color.alpha != 0)
 			{
 				partMaterial = new SolidMaterial(new ColorF(color.Red0To1, color.Green0To1, color.Blue0To1), .01, 0.0, 2.0);
@@ -32,7 +32,7 @@ namespace MatterHackers.DataConverters3D
 				partMaterial = new SolidMaterial(new ColorF(.9, .2, .1), .01, 0.0, 2.0);
 			}
 
-			var worldMatrix = renderData.WorldMatrix();
+			var worldMatrix = renderData.WorldMatrix(null);
 			foreach (Face face in renderData.Mesh.Faces)
 			{
 				if (false)

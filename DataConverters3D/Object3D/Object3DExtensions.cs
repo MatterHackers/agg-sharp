@@ -96,11 +96,12 @@ namespace MatterHackers.DataConverters3D
 			return totalBounds;
 		}
 
-		public static Matrix4X4 WorldMatrix(this IObject3D child)
+		public static Matrix4X4 WorldMatrix(this IObject3D child, IObject3D root)
 		{
 			var matrix = child.Matrix;
 			var parent = child.Parent;
-			while (parent != null)
+			while (parent != null
+				&& parent != root)
 			{
 				matrix = matrix * parent.Matrix;
 				parent = parent.Parent;
@@ -109,10 +110,13 @@ namespace MatterHackers.DataConverters3D
 			return matrix;
 		}
 
-		public static List<IObject3D> Ancestors(this IObject3D child)
+		public static List<IObject3D> Ancestors(this IObject3D child, bool includeThis = true)
 		{
 			List<IObject3D> ancestors = new List<IObject3D>();
-			ancestors.Add(child);
+			if (includeThis)
+			{
+				ancestors.Add(child);
+			}
 			var parent = child.Parent;
 			while (parent != null)
 			{
@@ -123,46 +127,67 @@ namespace MatterHackers.DataConverters3D
 			return ancestors;
 		}
 
-		public static Color WorldColor(this IObject3D child)
+		public static Color WorldColor(this IObject3D child, IObject3D root)
 		{
-			foreach(var item in Enumerable.Reverse(child.Ancestors()))
+			var lastColorFound = Color.White;
+			foreach(var item in child.Ancestors())
 			{
+				// If we found the root return whatever color we have now
+				if (item == root)
+				{
+					return lastColorFound;
+				}
+
+				// if we find a color it overrides our current color so set it
 				if (item.Color.Alpha0To255 != 0)
 				{
-					// use collection as the color for all recursize children
-					return item.Color;
+					lastColorFound = item.Color;
 				}
 			}
 
-			return Color.White;
+			return lastColorFound;
 		}
 
-		public static PrintOutputTypes WorldOutputType(this IObject3D child)
+		public static PrintOutputTypes WorldOutputType(this IObject3D child, IObject3D root)
 		{
-			foreach (var item in Enumerable.Reverse(child.Ancestors()))
+			var lastOutputTypeFound = PrintOutputTypes.Default;
+			foreach (var item in child.Ancestors())
 			{
+				// If we found the root return whatever output type we have now
+				if (item == root)
+				{
+					return lastOutputTypeFound;
+				}
+
 				if (item.OutputType != PrintOutputTypes.Default)
 				{
 					// use collection as the color for all recursize children
-					return item.OutputType;
+					lastOutputTypeFound = item.OutputType;
 				}
 			}
 
-			return PrintOutputTypes.Default;
+			return lastOutputTypeFound;
 		}
 
-		public static int WorldMaterialIndex(this IObject3D child)
+		public static int WorldMaterialIndex(this IObject3D child, IObject3D root)
 		{
+			var lastMaterialIndexFound = -1;
 			foreach (var item in Enumerable.Reverse(child.Ancestors()))
 			{
+				// If we found the root return whatever material type we have now
+				if (item == root)
+				{
+					return lastMaterialIndexFound;
+				}
+
 				if (item.MaterialIndex != -1)
 				{
 					// use collection as the color for all recursize children
-					return item.MaterialIndex;
+					lastMaterialIndexFound = item.MaterialIndex;
 				}
 			}
 
-			return -1;
+			return lastMaterialIndexFound;
 		}
 
 		public static IEnumerable<IObject3D> Descendants(this IObject3D root)
