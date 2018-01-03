@@ -58,6 +58,14 @@ namespace MatterHackers.Agg.UI
 
 		private Color stashedColor;
 
+		private Color lastRenderColor;
+
+		private ImageBuffer gradientBackground;
+
+		private int gradientDistance = 8;
+
+		private RectangleDouble dropArrowBounds;
+
 		protected TextWidget mainControlText;
 
 		public Color NormalColor { get; set; }
@@ -406,6 +414,16 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public override void OnLoad(EventArgs args)
+		{
+			base.OnLoad(args);
+
+			var firstBackgroundColor = this.Parents<GuiWidget>().Where(p => p.BackgroundColor.Alpha0To1 == 1).FirstOrDefault()?.BackgroundColor;
+			this.BackgroundColor = firstBackgroundColor ?? Color.Transparent;
+
+			this.HoverColor = new BlenderRGBA().Blend(this.BackgroundColor, this.HoverColor);
+		}
+
 		public override void OnBoundsChanged(EventArgs e)
 		{
 			// Set new MinSIze
@@ -414,6 +432,8 @@ namespace MatterHackers.Agg.UI
 			{
 				item.MinimumSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
 			}
+
+			dropArrowBounds = new RectangleDouble(LocalBounds.Right - DropArrow.ArrowHeight * 4, 0, LocalBounds.Right, this.Height);
 
 			base.OnBoundsChanged(e);
 		}
@@ -445,6 +465,19 @@ namespace MatterHackers.Agg.UI
 		{
 			base.OnDraw(graphics2D);
 
+			if (lastRenderColor != this.BackgroundColor)
+			{
+				gradientBackground = agg_basics.TrasparentToColorGradientX(
+					(int)dropArrowBounds.Width + gradientDistance,
+					(int)this.LocalBounds.Height,
+					this.BackgroundColor,
+					gradientDistance);
+
+				lastRenderColor = this.BackgroundColor;
+			}
+
+			graphics2D.Render(this.gradientBackground, dropArrowBounds.Left - gradientDistance, 0);
+
 			// Draw border
 			var strokeRect = new Stroke(new RoundedRect(this.LocalBounds, 0), BorderWidth);
 			graphics2D.Render(strokeRect, BorderColor);
@@ -452,7 +485,10 @@ namespace MatterHackers.Agg.UI
 			// Draw directional arrow
 			if (directionArrow != null)
 			{
-				graphics2D.Render(directionArrow, LocalBounds.Right - DropArrow.ArrowHeight * 2 - 2, LocalBounds.Center.Y + DropArrow.ArrowHeight / 2, ActiveTheme.Instance.SecondaryTextColor);
+				var center = dropArrowBounds.Center;
+				center.Y += 2;
+
+				graphics2D.Render(directionArrow, center, ActiveTheme.Instance.SecondaryTextColor);
 			}
 		}
 
