@@ -56,6 +56,8 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		private int highLightedIndex = 0;
 
+		private Color stashedColor;
+
 		protected TextWidget mainControlText;
 
 		public Color NormalColor { get; set; }
@@ -419,13 +421,14 @@ namespace MatterHackers.Agg.UI
 		public override void OnMouseEnter(MouseEventArgs mouseEvent)
 		{
 			base.OnMouseEnter(mouseEvent);
+			stashedColor = this.BackgroundColor;
 			BackgroundColor = HoverColor;
 		}
 
 		public override void OnMouseLeave(MouseEventArgs mouseEvent)
 		{
 			base.OnMouseLeave(mouseEvent);
-			BackgroundColor = NormalColor;
+			BackgroundColor = this.stashedColor;
 		}
 
 		private void MenuItem_Clicked(object sender, EventArgs e)
