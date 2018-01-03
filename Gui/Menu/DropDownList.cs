@@ -368,9 +368,6 @@ namespace MatterHackers.Agg.UI
 
 			AddChild(mainControlText);
 
-			MouseEnter += (s, e) => BackgroundColor = HoverColor;
-			MouseLeave += (s, e) => BackgroundColor = NormalColor;
-
 			NormalColor = normalColor;
 			HoverColor = hoverColor;
 			BackgroundColor = normalColor;
@@ -417,6 +414,18 @@ namespace MatterHackers.Agg.UI
 			}
 
 			base.OnBoundsChanged(e);
+		}
+
+		public override void OnMouseEnter(MouseEventArgs mouseEvent)
+		{
+			base.OnMouseEnter(mouseEvent);
+			BackgroundColor = HoverColor;
+		}
+
+		public override void OnMouseLeave(MouseEventArgs mouseEvent)
+		{
+			base.OnMouseLeave(mouseEvent);
+			BackgroundColor = NormalColor;
 		}
 
 		private void MenuItem_Clicked(object sender, EventArgs e)
