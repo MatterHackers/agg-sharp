@@ -39,6 +39,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
+using System.Text;
+using System.IO;
 
 namespace Net3dBool
 {
@@ -99,7 +101,7 @@ namespace Net3dBool
 				v1 = verticesTemp[indices[i]];
 				v2 = verticesTemp[indices[i + 1]];
 				v3 = verticesTemp[indices[i + 2]];
-				AddFace(v1, v2, v3, null);
+				AddFace(v1, v2, v3);
 			}
 
 			//create bound
@@ -179,14 +181,19 @@ namespace Net3dBool
 			}
 		}
 
-		Stack<Face> facesFromSplit = new Stack<Face>();
+		public interface IFaceDebug
+		{
+			void Debug(Face face);
+		}
+
 		/// <summary>
 		/// Split faces so that no face is intercepted by a face of other object
 		/// </summary>
 		/// <param name="compareObject">the other object 3d used to make the split</param>
-		public void SplitFaces(Object3D compareObject, CancellationToken cancellationToken)
+		public void SplitFaces(Object3D compareObject, CancellationToken cancellationToken, IFaceDebug faceDebug = null)
 		{
-			facesFromSplit.Clear();
+			Stack<Face> facesFromSplit = new Stack<Face>();
+
 			Segment segment1;
 			Segment segment2;
 			int signFace1Vert1, signFace1Vert2, signFace1Vert3, signFace2Vert1, signFace2Vert2, signFace2Vert3;
@@ -197,25 +204,27 @@ namespace Net3dBool
 			var bounds = new Bounds(compareObject.GetBound());
 			foreach (Face thisFaceIn in Faces.SearchBounds(bounds).ToArray()) // put it in an array as we will be adding new faces to it
 			{
-				Face thisFace = thisFaceIn;
-				bool haveAddedFaces = true;
+				facesFromSplit.Push(thisFaceIn);
 				// make sure we processe every face that we have added durring splitting befor moving on to the next face
-				while (haveAddedFaces)
+				while (facesFromSplit.Count > 0)
 				{
+					var faceToSplit = facesFromSplit.Pop();
+
+					faceDebug?.Debug(faceToSplit);
 					cancellationToken.ThrowIfCancellationRequested();
 
 					//if object1 face bound and object2 bound overlap ...
 					//for each object2 face...
-					foreach (Face compareFace in compareObject.Faces.SearchBounds(new Bounds(thisFace.GetBound())))
+					foreach (Face compareFace in compareObject.Faces.SearchBounds(new Bounds(faceToSplit.GetBound())))
 					{
 						//if object1 face bound and object2 face bound overlap...
 						//PART I - DO TWO POLIGONS INTERSECT?
 						//POSSIBLE RESULTS: INTERSECT, NOT_INTERSECT, COPLANAR
 
 						//distance from the face1 vertices to the face2 plane
-						double v1DistToCompareFace = ComputeDistance(thisFace.v1, compareFace);
-						double v2DistToCompareFace = ComputeDistance(thisFace.v2, compareFace);
-						double v3DistToCompareFace = ComputeDistance(thisFace.v3, compareFace);
+						double v1DistToCompareFace = ComputeDistance(faceToSplit.v1, compareFace);
+						double v2DistToCompareFace = ComputeDistance(faceToSplit.v2, compareFace);
+						double v3DistToCompareFace = ComputeDistance(faceToSplit.v3, compareFace);
 
 						//distances signs from the face1 vertices to the face2 plane
 						signFace1Vert1 = (v1DistToCompareFace > EqualityTolerance ? 1 : (v1DistToCompareFace < -EqualityTolerance ? -1 : 0));
@@ -228,9 +237,9 @@ namespace Net3dBool
 						if (!(signFace1Vert1 == signFace1Vert2 && signFace1Vert2 == signFace1Vert3))
 						{
 							//distance from the face2 vertices to the face1 plane
-							double distFace2Vert1 = ComputeDistance(compareFace.v1, thisFace);
-							double distFace2Vert2 = ComputeDistance(compareFace.v2, thisFace);
-							double distFace2Vert3 = ComputeDistance(compareFace.v3, thisFace);
+							double distFace2Vert1 = ComputeDistance(compareFace.v1, faceToSplit);
+							double distFace2Vert2 = ComputeDistance(compareFace.v2, faceToSplit);
+							double distFace2Vert3 = ComputeDistance(compareFace.v3, faceToSplit);
 
 							//distances signs from the face2 vertices to the face1 plane
 							signFace2Vert1 = (distFace2Vert1 > EqualityTolerance ? 1 : (distFace2Vert1 < -EqualityTolerance ? -1 : 0));
@@ -240,10 +249,10 @@ namespace Net3dBool
 							//if the signs are not equal...
 							if (!(signFace2Vert1 == signFace2Vert2 && signFace2Vert2 == signFace2Vert3))
 							{
-								var line = new Line(thisFace, compareFace);
+								var line = new Line(faceToSplit, compareFace);
 
 								//intersection of the face1 and the plane of face2
-								segment1 = new Segment(line, thisFace, signFace1Vert1, signFace1Vert2, signFace1Vert3);
+								segment1 = new Segment(line, faceToSplit, signFace1Vert1, signFace1Vert2, signFace1Vert3);
 
 								//intersection of the face2 and the plane of face1
 								segment2 = new Segment(line, compareFace, signFace2Vert1, signFace2Vert2, signFace2Vert3);
@@ -253,7 +262,7 @@ namespace Net3dBool
 								{
 									//PART II - SUBDIVIDING NON-COPLANAR POLYGONS
 									int facesBeforeSplit = facesFromSplit.Count;
-									if(this.SplitFace(thisFace, segment1, segment2))
+									if(this.SplitFace(faceToSplit, segment1, segment2, facesFromSplit))
 									{
 										//prevent from infinite loop (with a loss of faces...)
 										if (Faces.Count > numFacesStart * 100)
@@ -271,16 +280,6 @@ namespace Net3dBool
 							}
 						}
 					}
-
-					if (facesFromSplit.Count > 0)
-					{
-						haveAddedFaces = true;
-						thisFace = facesFromSplit.Pop();
-					}
-					else
-					{
-						haveAddedFaces = false;
-					}
 				}
 			}
 		}
@@ -292,48 +291,52 @@ namespace Net3dBool
 		/// <param name="v2">a face vertex</param>
 		/// <param name="v3">a face vertex</param>
 		/// <returns></returns>
-		private Face AddFace(Vertex v1, Vertex v2, Vertex v3, Face faceBeingSplit)
+		private Face AddFaceFromSplit(Vertex v1, Vertex v2, Vertex v3, Face faceBeingSplit, Stack<Face> facesFromSplit)
 		{
 			if (!(v1.Equals(v2) || v1.Equals(v3) || v2.Equals(v3)))
 			{
 				Face face = new Face(v1, v2, v3);
 				if (face.GetArea() > EqualityTolerance)
 				{
-					if (faceBeingSplit != null)
+					if (!faceBeingSplit.Equals(face))
 					{
-						if (!faceBeingSplit.Equals(face))
+						bool exists = false;
+						foreach (var test in facesFromSplit)
 						{
-							bool exists = false;
-							foreach(var test in facesFromSplit)
+							if (test.Equals(face))
 							{
-								if(test.Equals(face))
-								{
-									exists = true;
-									break;
-								}
-							}
-							if (!exists)
-							{
-								Faces.Insert(face, new Bounds(face.GetBound()));
-								facesFromSplit.Push(face);
+								exists = true;
+								break;
 							}
 						}
-					}
-					else
-					{
+						if (!exists)
+						{
 							Faces.Insert(face, new Bounds(face.GetBound()));
+							facesFromSplit.Push(face);
+						}
 					}
+
 					return face;
 				}
-				else
+			}
+
+			return null;
+		}
+
+		private Face AddFace(Vertex v1, Vertex v2, Vertex v3)
+		{
+			if (!(v1.Equals(v2) || v1.Equals(v3) || v2.Equals(v3)))
+			{
+				Face face = new Face(v1, v2, v3);
+				if (face.GetArea() > EqualityTolerance)
 				{
-					return null;
+					Faces.Insert(face, new Bounds(face.GetBound()));
+
+					return face;
 				}
 			}
-			else
-			{
-				return null;
-			}
+
+			return null;
 		}
 
 		/// <summary>
@@ -367,7 +370,7 @@ namespace Net3dBool
 		/// <param name="facePos1">new vertex position</param>
 		/// <param name="facePos2">new vertex position</param>
 		/// <param name="linedVertex">linedVertex what vertex is more lined with the interersection found</param>
-		private bool BreakFaceInFive(Face face, Vector3 facePos1, Vector3 facePos2, int linedVertex)
+		private bool BreakFaceInFive(Face face, Vector3 facePos1, Vector3 facePos2, int linedVertex, Stack<Face> facesFromSplit)
 		{
 			//       O
 			//      - -
@@ -393,27 +396,27 @@ namespace Net3dBool
 
 			if (linedVertex == 1)
 			{
-				AddFace(face.v2, face.v3, faceVertex1, face);
-				AddFace(face.v2, faceVertex1, faceVertex2, face);
-				AddFace(face.v3, faceVertex2, faceVertex1, face);
-				AddFace(face.v2, faceVertex2, face.v1, face);
-				AddFace(face.v3, face.v1, faceVertex2, face);
+				AddFaceFromSplit(face.v2, face.v3, faceVertex1, face, facesFromSplit);
+				AddFaceFromSplit(face.v2, faceVertex1, faceVertex2, face, facesFromSplit);
+				AddFaceFromSplit(face.v3, faceVertex2, faceVertex1, face, facesFromSplit);
+				AddFaceFromSplit(face.v2, faceVertex2, face.v1, face, facesFromSplit);
+				AddFaceFromSplit(face.v3, face.v1, faceVertex2, face, facesFromSplit);
 			}
 			else if (linedVertex == 2)
 			{
-				AddFace(face.v3, face.v1, faceVertex1, face);
-				AddFace(face.v3, faceVertex1, faceVertex2, face);
-				AddFace(face.v1, faceVertex2, faceVertex1, face);
-				AddFace(face.v3, faceVertex2, face.v2, face);
-				AddFace(face.v1, face.v2, faceVertex2, face);
+				AddFaceFromSplit(face.v3, face.v1, faceVertex1, face, facesFromSplit);
+				AddFaceFromSplit(face.v3, faceVertex1, faceVertex2, face, facesFromSplit);
+				AddFaceFromSplit(face.v1, faceVertex2, faceVertex1, face, facesFromSplit);
+				AddFaceFromSplit(face.v3, faceVertex2, face.v2, face, facesFromSplit);
+				AddFaceFromSplit(face.v1, face.v2, faceVertex2, face, facesFromSplit);
 			}
 			else
 			{
-				AddFace(face.v1, face.v2, faceVertex1, face);
-				AddFace(face.v1, faceVertex1, faceVertex2, face);
-				AddFace(face.v2, faceVertex2, faceVertex1, face);
-				AddFace(face.v1, faceVertex2, face.v3, face);
-				AddFace(face.v2, face.v3, faceVertex2, face);
+				AddFaceFromSplit(face.v1, face.v2, faceVertex1, face, facesFromSplit);
+				AddFaceFromSplit(face.v1, faceVertex1, faceVertex2, face, facesFromSplit);
+				AddFaceFromSplit(face.v2, faceVertex2, faceVertex1, face, facesFromSplit);
+				AddFaceFromSplit(face.v1, faceVertex2, face.v3, face, facesFromSplit);
+				AddFaceFromSplit(face.v2, face.v3, faceVertex2, face, facesFromSplit);
 			}
 
 			return true;
@@ -426,7 +429,7 @@ namespace Net3dBool
 		/// <param name="edgePos">new vertex position</param>
 		/// <param name="facePos">new vertex position</param>
 		/// <param name="endVertex">vertex used for the split</param>
-		private bool BreakFaceInFour(Face face, Vector3 edgePos, Vector3 facePos, Vertex endVertex)
+		private bool BreakFaceInFour(Face face, Vector3 edgePos, Vector3 facePos, Vertex endVertex, Stack<Face> facesFromSplit)
 		{
 			//         2
 			//        -*-
@@ -453,24 +456,24 @@ namespace Net3dBool
 			// check that we are not adding back in the same face we are removing
 			if (endVertex.Equals(face.v1))
 			{
-				AddFace(face.v1, edgeVertex, faceVertex, face);
-				AddFace(edgeVertex, face.v2, faceVertex, face);
-				AddFace(face.v2, face.v3, faceVertex, face);
-				AddFace(face.v3, face.v1, faceVertex, face);
+				AddFaceFromSplit(face.v1, edgeVertex, faceVertex, face, facesFromSplit);
+				AddFaceFromSplit(edgeVertex, face.v2, faceVertex, face, facesFromSplit);
+				AddFaceFromSplit(face.v2, face.v3, faceVertex, face, facesFromSplit);
+				AddFaceFromSplit(face.v3, face.v1, faceVertex, face, facesFromSplit);
 			}
 			else if (endVertex.Equals(face.v2))
 			{
-				AddFace(face.v2, edgeVertex, faceVertex, face);
-				AddFace(edgeVertex, face.v3, faceVertex, face);
-				AddFace(face.v3, face.v1, faceVertex, face);
-				AddFace(face.v1, face.v2, faceVertex, face);
+				AddFaceFromSplit(face.v2, edgeVertex, faceVertex, face, facesFromSplit);
+				AddFaceFromSplit(edgeVertex, face.v3, faceVertex, face, facesFromSplit);
+				AddFaceFromSplit(face.v3, face.v1, faceVertex, face, facesFromSplit);
+				AddFaceFromSplit(face.v1, face.v2, faceVertex, face, facesFromSplit);
 			}
 			else
 			{
-				AddFace(face.v3, edgeVertex, faceVertex, face);
-				AddFace(edgeVertex, face.v1, faceVertex, face);
-				AddFace(face.v1, face.v2, faceVertex, face);
-				AddFace(face.v2, face.v3, faceVertex, face);
+				AddFaceFromSplit(face.v3, edgeVertex, faceVertex, face, facesFromSplit);
+				AddFaceFromSplit(edgeVertex, face.v1, faceVertex, face, facesFromSplit);
+				AddFaceFromSplit(face.v1, face.v2, faceVertex, face, facesFromSplit);
+				AddFaceFromSplit(face.v2, face.v3, faceVertex, face, facesFromSplit);
 			}
 
 			return true;
@@ -483,7 +486,7 @@ namespace Net3dBool
 		/// <param name="newPos1">new vertex position</param>
 		/// <param name="newPos2">new vertex position</param>
 		/// <param name="splitEdge">edge that will be split</param>
-		private bool BreakFaceInThree(Face face, Vector3 newPos1, Vector3 newPos2, int splitEdge)
+		private bool BreakFaceInThree(Face face, Vector3 newPos1, Vector3 newPos2, int splitEdge, Stack<Face> facesFromSplit)
 		{
 			//       O
 			//      - -
@@ -502,9 +505,9 @@ namespace Net3dBool
 				if (!willMakeExistingFace)
 				{
 					Faces.Remove(face);
-					AddFace(face.v1, vertex1, face.v3, face);
-					AddFace(vertex1, vertex2, face.v3, face);
-					AddFace(vertex2, face.v2, face.v3, face);
+					AddFaceFromSplit(face.v1, vertex1, face.v3, face, facesFromSplit);
+					AddFaceFromSplit(vertex1, vertex2, face.v3, face, facesFromSplit);
+					AddFaceFromSplit(vertex2, face.v2, face.v3, face, facesFromSplit);
 					return true;
 				}
 			}
@@ -514,9 +517,9 @@ namespace Net3dBool
 				if (!willMakeExistingFace)
 				{
 					Faces.Remove(face);
-					AddFace(face.v2, vertex1, face.v1, face);
-					AddFace(vertex1, vertex2, face.v1, face);
-					AddFace(vertex2, face.v3, face.v1, face);
+					AddFaceFromSplit(face.v2, vertex1, face.v1, face, facesFromSplit);
+					AddFaceFromSplit(vertex1, vertex2, face.v1, face, facesFromSplit);
+					AddFaceFromSplit(vertex2, face.v3, face.v1, face, facesFromSplit);
 					return true;
 				}
 			}
@@ -526,9 +529,9 @@ namespace Net3dBool
 				if (!willMakeExistingFace)
 				{
 					Faces.Remove(face);
-					AddFace(face.v3, vertex1, face.v2, face);
-					AddFace(vertex1, vertex2, face.v2, face);
-					AddFace(vertex2, face.v1, face.v2, face);
+					AddFaceFromSplit(face.v3, vertex1, face.v2, face, facesFromSplit);
+					AddFaceFromSplit(vertex1, vertex2, face.v2, face, facesFromSplit);
+					AddFaceFromSplit(vertex2, face.v1, face.v2, face, facesFromSplit);
 					return true;
 				}
 			}
@@ -546,7 +549,7 @@ namespace Net3dBool
 		/// <param name="faceIndex">face index in the faces array</param>
 		/// <param name="newPos">new vertex position</param>
 		/// <param name="endVertex">vertex used for the split</param>
-		private bool BreakFaceInThree(Face face, Vector3 newPos)
+		private bool BreakFaceInThree(Face face, Vector3 newPos, Stack<Face> facesFromSplit)
 		{
 			//       O
 			//      -*-
@@ -564,9 +567,9 @@ namespace Net3dBool
 
 			Faces.Remove(face);
 
-			AddFace(face.v1, face.v2, vertex, face);
-			AddFace(face.v2, face.v3, vertex, face);
-			AddFace(face.v3, face.v1, vertex, face);
+			AddFaceFromSplit(face.v1, face.v2, vertex, face, facesFromSplit);
+			AddFaceFromSplit(face.v2, face.v3, vertex, face, facesFromSplit);
+			AddFaceFromSplit(face.v3, face.v1, vertex, face, facesFromSplit);
 
 			return true;
 		}
@@ -579,7 +582,7 @@ namespace Net3dBool
 		/// <param name="newPos2">new vertex position</param>
 		/// <param name="startVertex">vertex used for the new faces creation</param>
 		/// <param name="endVertex">vertex used for the new faces creation</param>
-		private bool BreakFaceInThree(Face face, Vector3 newPos1, Vector3 newPos2, Vertex startVertex, Vertex endVertex)
+		private bool BreakFaceInThree(Face face, Vector3 newPos1, Vector3 newPos2, Vertex startVertex, Vertex endVertex, Stack<Face> facesFromSplit)
 		{
 			//       O
 			//      - -
@@ -595,39 +598,39 @@ namespace Net3dBool
 
 			if (startVertex.Equals(face.v1) && endVertex.Equals(face.v2))
 			{
-				AddFace(face.v1, vertex1, vertex2, face);
-				AddFace(face.v1, vertex2, face.v3, face);
-				AddFace(vertex1, face.v2, vertex2, face);
+				AddFaceFromSplit(face.v1, vertex1, vertex2, face, facesFromSplit);
+				AddFaceFromSplit(face.v1, vertex2, face.v3, face, facesFromSplit);
+				AddFaceFromSplit(vertex1, face.v2, vertex2, face, facesFromSplit);
 			}
 			else if (startVertex.Equals(face.v2) && endVertex.Equals(face.v1))
 			{
-				AddFace(face.v1, vertex2, vertex1, face);
-				AddFace(face.v1, vertex1, face.v3, face);
-				AddFace(vertex2, face.v2, vertex1, face);
+				AddFaceFromSplit(face.v1, vertex2, vertex1, face, facesFromSplit);
+				AddFaceFromSplit(face.v1, vertex1, face.v3, face, facesFromSplit);
+				AddFaceFromSplit(vertex2, face.v2, vertex1, face, facesFromSplit);
 			}
 			else if (startVertex.Equals(face.v2) && endVertex.Equals(face.v3))
 			{
-				AddFace(face.v2, vertex1, vertex2, face);
-				AddFace(face.v2, vertex2, face.v1, face);
-				AddFace(vertex1, face.v3, vertex2, face);
+				AddFaceFromSplit(face.v2, vertex1, vertex2, face, facesFromSplit);
+				AddFaceFromSplit(face.v2, vertex2, face.v1, face, facesFromSplit);
+				AddFaceFromSplit(vertex1, face.v3, vertex2, face, facesFromSplit);
 			}
 			else if (startVertex.Equals(face.v3) && endVertex.Equals(face.v2))
 			{
-				AddFace(face.v2, vertex2, vertex1, face);
-				AddFace(face.v2, vertex1, face.v1, face);
-				AddFace(vertex2, face.v3, vertex1, face);
+				AddFaceFromSplit(face.v2, vertex2, vertex1, face, facesFromSplit);
+				AddFaceFromSplit(face.v2, vertex1, face.v1, face, facesFromSplit);
+				AddFaceFromSplit(vertex2, face.v3, vertex1, face, facesFromSplit);
 			}
 			else if (startVertex.Equals(face.v3) && endVertex.Equals(face.v1))
 			{
-				AddFace(face.v3, vertex1, vertex2, face);
-				AddFace(face.v3, vertex2, face.v2, face);
-				AddFace(vertex1, face.v1, vertex2, face);
+				AddFaceFromSplit(face.v3, vertex1, vertex2, face, facesFromSplit);
+				AddFaceFromSplit(face.v3, vertex2, face.v2, face, facesFromSplit);
+				AddFaceFromSplit(vertex1, face.v1, vertex2, face, facesFromSplit);
 			}
 			else
 			{
-				AddFace(face.v3, vertex2, vertex1, face);
-				AddFace(face.v3, vertex1, face.v2, face);
-				AddFace(vertex2, face.v1, vertex1, face);
+				AddFaceFromSplit(face.v3, vertex2, vertex1, face, facesFromSplit);
+				AddFaceFromSplit(face.v3, vertex1, face.v2, face, facesFromSplit);
+				AddFaceFromSplit(vertex2, face.v1, vertex1, face, facesFromSplit);
 			}
 
 			return true;
@@ -639,7 +642,7 @@ namespace Net3dBool
 		/// <param name="faceIndex">face index in the faces array</param>
 		/// <param name="newPos">new vertex position</param>
 		/// <param name="splitEdge">edge that will be split</param>
-		private bool BreakFaceInTwo(Face face, Vector3 newPos, int splitEdge)
+		private bool BreakFaceInTwo(Face face, Vector3 newPos, int splitEdge, Stack<Face> facesFromSplit)
 		{
 			//       O
 			//      -*-
@@ -660,21 +663,21 @@ namespace Net3dBool
 
 			if (splitEdge == 1)
 			{
-				AddFace(face.v1, vertex, face.v3, face);
-				AddFace(vertex, face.v2, face.v3, face);
+				AddFaceFromSplit(face.v1, vertex, face.v3, face, facesFromSplit);
+				AddFaceFromSplit(vertex, face.v2, face.v3, face, facesFromSplit);
 			}
 			else if (splitEdge == 2)
 			{
 				if (!face.v3.Equals(vertex))
 				{
-					AddFace(face.v2, vertex, face.v1, face);
+					AddFaceFromSplit(face.v2, vertex, face.v1, face, facesFromSplit);
 				}
-				AddFace(vertex, face.v3, face.v1, face);
+				AddFaceFromSplit(vertex, face.v3, face.v1, face, facesFromSplit);
 			}
 			else
 			{
-				AddFace(face.v3, vertex, face.v2, face);
-				AddFace(vertex, face.v1, face.v2, face);
+				AddFaceFromSplit(face.v3, vertex, face.v2, face, facesFromSplit);
+				AddFaceFromSplit(vertex, face.v1, face.v2, face, facesFromSplit);
 			}
 
 			return true;
@@ -686,7 +689,7 @@ namespace Net3dBool
 		/// <param name="faceIndex">face index in the faces array</param>
 		/// <param name="newPos">new vertex position</param>
 		/// <param name="endVertex">vertex used for splitting</param>
-		private bool BreakFaceInTwo(Face face, Vector3 newPos, Vertex endVertex)
+		private bool BreakFaceInTwo(Face face, Vector3 newPos, Vertex endVertex, Stack<Face> facesFromSplit)
 		{
 			//       O
 			//      - -
@@ -705,8 +708,8 @@ namespace Net3dBool
 				if (!face.v1.Equals(vertex)
 					&& !face.v2.Equals(vertex))
 				{
-					AddFace(face.v1, vertex, face.v3, face);
-					AddFace(vertex, face.v2, face.v3, face);
+					AddFaceFromSplit(face.v1, vertex, face.v3, face, facesFromSplit);
+					AddFaceFromSplit(vertex, face.v2, face.v3, face, facesFromSplit);
 					Faces.Remove(face);
 					return true;
 				}
@@ -717,8 +720,8 @@ namespace Net3dBool
 				if (!face.v2.Equals(vertex)
 					&& !face.v3.Equals(vertex))
 				{
-					AddFace(face.v2, vertex, face.v1, face);
-					AddFace(vertex, face.v3, face.v1, face);
+					AddFaceFromSplit(face.v2, vertex, face.v1, face, facesFromSplit);
+					AddFaceFromSplit(vertex, face.v3, face.v1, face, facesFromSplit);
 					Faces.Remove(face);
 					return true;
 				}
@@ -729,8 +732,8 @@ namespace Net3dBool
 				if (!face.v1.Equals(vertex)
 					&& !face.v3.Equals(vertex))
 				{
-					AddFace(face.v3, vertex, face.v2, face);
-					AddFace(vertex, face.v1, face.v2, face);
+					AddFaceFromSplit(face.v3, vertex, face.v2, face, facesFromSplit);
+					AddFaceFromSplit(vertex, face.v1, face.v2, face, facesFromSplit);
 					Faces.Remove(face);
 					return true;
 				}
@@ -760,7 +763,7 @@ namespace Net3dBool
 		/// <param name="faceIndex">face index in the array of faces</param>
 		/// <param name="segment1">segment representing the intersection of the face with the plane</param>
 		/// <param name="segment2">segment representing the intersection of other face with the plane of the current face plane</param>
-		private bool SplitFace(Face face, Segment segment1, Segment segment2)
+		private bool SplitFace(Face face, Segment segment1, Segment segment2, Stack<Face> facesFromSplit)
 		{
 			Vector3 startPos, endPos;
 			int startType, endType, middleType;
@@ -836,27 +839,27 @@ namespace Net3dBool
 				if (startType == Segment.VERTEX)
 				{
 					//VERTEX-EDGE-EDGE
-					return BreakFaceInTwo(face, endPos, splitEdge);
+					return BreakFaceInTwo(face, endPos, splitEdge, facesFromSplit);
 				}
 				else if (endType == Segment.VERTEX)
 				{
 					//EDGE-EDGE-VERTEX
-					return BreakFaceInTwo(face, startPos, splitEdge);
+					return BreakFaceInTwo(face, startPos, splitEdge, facesFromSplit);
 				}
 				else if (startDist == endDist)
 				{
 					// EDGE-EDGE-EDGE
-					return BreakFaceInTwo(face, endPos, splitEdge);
+					return BreakFaceInTwo(face, endPos, splitEdge, facesFromSplit);
 				}
 				else
 				{
 					if ((startVertex == face.v1 && endVertex == face.v2) || (startVertex == face.v2 && endVertex == face.v3) || (startVertex == face.v3 && endVertex == face.v1))
 					{
-						return BreakFaceInThree(face, startPos, endPos, splitEdge);
+						return BreakFaceInThree(face, startPos, endPos, splitEdge, facesFromSplit);
 					}
 					else
 					{
-						return BreakFaceInThree(face, endPos, startPos, splitEdge);
+						return BreakFaceInThree(face, endPos, startPos, splitEdge, facesFromSplit);
 					}
 				}
 			}
@@ -864,37 +867,37 @@ namespace Net3dBool
 			else if (startType == Segment.VERTEX && endType == Segment.EDGE)
 			{
 				//VERTEX-FACE-EDGE
-				return BreakFaceInTwo(face, endPos, endVertex);
+				return BreakFaceInTwo(face, endPos, endVertex, facesFromSplit);
 			}
 			else if (startType == Segment.EDGE && endType == Segment.VERTEX)
 			{
 				//EDGE-FACE-VERTEX
-				return BreakFaceInTwo(face, startPos, startVertex);
+				return BreakFaceInTwo(face, startPos, startVertex, facesFromSplit);
 			}
 			else if (startType == Segment.VERTEX && endType == Segment.FACE)
 			{
 				//VERTEX-FACE-FACE
-				return BreakFaceInThree(face, endPos);
+				return BreakFaceInThree(face, endPos, facesFromSplit);
 			}
 			else if (startType == Segment.FACE && endType == Segment.VERTEX)
 			{
 				//FACE-FACE-VERTEX
-				return BreakFaceInThree(face, startPos);
+				return BreakFaceInThree(face, startPos, facesFromSplit);
 			}
 			else if (startType == Segment.EDGE && endType == Segment.EDGE)
 			{
 				//EDGE-FACE-EDGE
-				return BreakFaceInThree(face, startPos, endPos, startVertex, endVertex);
+				return BreakFaceInThree(face, startPos, endPos, startVertex, endVertex, facesFromSplit);
 			}
 			else if (startType == Segment.EDGE && endType == Segment.FACE)
 			{
 				//EDGE-FACE-FACE
-				return BreakFaceInFour(face, startPos, endPos, startVertex);
+				return BreakFaceInFour(face, startPos, endPos, startVertex, facesFromSplit);
 			}
 			else if (startType == Segment.FACE && endType == Segment.EDGE)
 			{
 				//FACE-FACE-EDGE
-				return BreakFaceInFour(face, endPos, startPos, endVertex);
+				return BreakFaceInFour(face, endPos, startPos, endVertex, facesFromSplit);
 			}
 			else if (startType == Segment.FACE && endType == Segment.FACE)
 			{
@@ -904,7 +907,7 @@ namespace Net3dBool
 				//if the intersection segment is a point only...
 				if (Math.Abs(segmentVector.X) < EqualityTolerance && Math.Abs(segmentVector.Y) < EqualityTolerance && Math.Abs(segmentVector.Z) < EqualityTolerance)
 				{
-					return BreakFaceInThree(face, startPos);
+					return BreakFaceInThree(face, startPos, facesFromSplit);
 				}
 
 				//gets the vertex more lined with the intersection segment
@@ -938,11 +941,11 @@ namespace Net3dBool
 				// Now find which of the intersection endpoints is nearest to that vertex.
 				if ((linedVertexPos - startPos).Length > (linedVertexPos - endPos).Length)
 				{
-					return BreakFaceInFive(face, startPos, endPos, linedVertex);
+					return BreakFaceInFive(face, startPos, endPos, linedVertex, facesFromSplit);
 				}
 				else
 				{
-					return BreakFaceInFive(face, endPos, startPos, linedVertex);
+					return BreakFaceInFive(face, endPos, startPos, linedVertex, facesFromSplit);
 				}
 			}
 

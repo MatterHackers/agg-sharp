@@ -36,6 +36,9 @@ using MatterHackers.Csg;
 using MatterHackers.Csg.Solids;
 using MatterHackers.Csg.Transform;
 using MatterHackers.RenderOpenGl;
+using System.Linq;
+using MatterHackers.DataConverters3D;
+using System.IO;
 
 namespace MatterHackers.PolygonMesh.UnitTests
 {
@@ -73,6 +76,70 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			CsgObject boxCombine = new Box(10, 10, 10);
 			boxCombine -= new Translate(new Box(10, 10, 10), XOffset, -3, 2);
 			var mesh =  CsgToMesh.Convert(boxCombine);
+			//mesh.Save("C:/Temp/TempCsgMesh.stl");
+			var bottomOfSubtractFaces = mesh.Faces.Where((f) =>
+				AreEqual(f.Normal.Z, 1)
+				&&
+				FaceAtHeight(f, -3)
+				).ToArray();
+
+			HashSet<IVertex> allVertices = new HashSet<IVertex>();
+			foreach(var face in bottomOfSubtractFaces)
+			{
+				foreach(var vertex in face.Vertices())
+				{
+					if (!allVertices.Contains(vertex))
+					{
+						allVertices.Add(vertex);
+					}
+				}
+			}
+
+			// back right
+			Assert.IsTrue(HasPosition(allVertices, new Vector3(4.6, 2, -3)));
+			// front right
+			Assert.IsTrue(HasPosition(allVertices, new Vector3(4.6, -5, -3)));
+			// back left
+			Assert.IsTrue(HasPosition(allVertices, new Vector3(-5, 2, -3)));
+			// front left
+			Assert.IsTrue(HasPosition(allVertices, new Vector3(-5, -5, -3)), "Must have front left corner point");
+		}
+
+		private bool HasPosition(HashSet<IVertex> allVertices, Vector3 position)
+		{
+			foreach(var vertex in allVertices)
+			{
+				if(vertex.Position.Equals(position, .0001))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		bool FaceAtHeight(Face face, double height)
+		{
+			foreach (var vertex in face.Vertices())
+			{
+				if(!AreEqual(vertex.Position.Z, height))
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		bool AreEqual(double a, double b, double errorRange = .001)
+		{
+			if(a < b + errorRange
+				&& a > b - errorRange)
+			{
+				return true;
+			}
+
+			return false;
 		}
 
 		[Test, Ignore("Crashes NUnit with an unrecoverable StackOverflow error, ending test passes on build servers")]
