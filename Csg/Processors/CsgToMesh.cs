@@ -35,15 +35,22 @@ using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace MatterHackers.RenderOpenGl
 {
 	public class CsgToMesh
 	{
-		public static PolygonMesh.Mesh Convert(CsgObject objectToProcess)
+		public static PolygonMesh.Mesh Convert(CsgObject objectToProcess, bool cleanMeshAfterConvert = false)
 		{
 			CsgToMesh visitor = new CsgToMesh();
-			return visitor.CsgToMeshRecursive((dynamic)objectToProcess);
+			var mesh = visitor.CsgToMeshRecursive((dynamic)objectToProcess);
+			if(cleanMeshAfterConvert)
+			{
+				mesh.CleanAndMergMesh(CancellationToken.None);
+			}
+
+			return mesh;
 		}
 
 		public CsgToMesh()
@@ -134,13 +141,13 @@ namespace MatterHackers.RenderOpenGl
 			List<IVertex> bottomVerts = new List<IVertex>();
 			List<IVertex> topVerts = new List<IVertex>();
 
-			int count = 20;
-			for (int i = 0; i < count; i++)
+			int sides = cylinderToMeasure.Sides;
+			for (int i = 0; i < sides; i++)
 			{
-				Vector2 bottomRadialPos = Vector2.Rotate(new Vector2(cylinderToMeasure.Radius1, 0), MathHelper.Tau * i / 20);
+				Vector2 bottomRadialPos = Vector2.Rotate(new Vector2(cylinderToMeasure.Radius1, 0), MathHelper.Tau * i / sides);
 				IVertex bottomVertex = cylinder.CreateVertex(new Vector3(bottomRadialPos.X, bottomRadialPos.Y, -cylinderToMeasure.Height / 2));
 				bottomVerts.Add(bottomVertex);
-				Vector2 topRadialPos = Vector2.Rotate(new Vector2(cylinderToMeasure.Radius1, 0), MathHelper.Tau * i / 20);
+				Vector2 topRadialPos = Vector2.Rotate(new Vector2(cylinderToMeasure.Radius1, 0), MathHelper.Tau * i / sides);
 				IVertex topVertex = cylinder.CreateVertex(new Vector3(topRadialPos.X, topRadialPos.Y, cylinderToMeasure.Height / 2));
 				topVerts.Add(topVertex);
 			}
@@ -148,11 +155,11 @@ namespace MatterHackers.RenderOpenGl
 			cylinder.ReverseFaceEdges(cylinder.CreateFace(bottomVerts.ToArray()));
 			cylinder.CreateFace(topVerts.ToArray());
 
-			for (int i = 0; i < count - 1; i++)
+			for (int i = 0; i < sides - 1; i++)
 			{
 				cylinder.CreateFace(new IVertex[] { topVerts[i], bottomVerts[i], bottomVerts[i + 1], topVerts[i + 1] });
 			}
-			cylinder.CreateFace(new IVertex[] { topVerts[count - 1], bottomVerts[count - 1], bottomVerts[0], topVerts[0] });
+			cylinder.CreateFace(new IVertex[] { topVerts[sides - 1], bottomVerts[sides - 1], bottomVerts[0], topVerts[0] });
 
 			return cylinder;
 		}

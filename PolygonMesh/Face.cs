@@ -36,7 +36,7 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh
 {
-	[DebuggerDisplay("ID = {Data.ID}")]
+	[DebuggerDisplay("ID = {ID}")]
 	public class Face
 	{
 		public FaceEdge firstFaceEdge;

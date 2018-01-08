@@ -194,7 +194,7 @@ namespace MatterHackers.RayTracer
 			MatterHackers.Csg.CsgObject total = frontRodHolder;
 
 #if true
-			MatterHackers.Csg.CsgObject backRodHolder = new MatterHackers.Csg.Solids.Cylinder(11, 70, name: "back rod holder");
+			MatterHackers.Csg.CsgObject backRodHolder = new MatterHackers.Csg.Solids.Cylinder(11, 70, 30, name: "back rod holder");
 			backRodHolder = new MatterHackers.Csg.Transform.Translate(backRodHolder, 0, 50, 0);
 			//total += backRodHolder;
 
@@ -207,7 +207,7 @@ namespace MatterHackers.RayTracer
 			beltMount = new MatterHackers.Csg.Transform.SetCenter(beltMount, frontRodHolder.GetCenter() + new Vector3(6, -19, 0));
 
 			// belt mount screw holes
-			MatterHackers.Csg.CsgObject screwHole = new MatterHackers.Csg.Solids.Cylinder(2, beltMount.YSize + 1, MatterHackers.Csg.Alignment.x);
+			MatterHackers.Csg.CsgObject screwHole = new MatterHackers.Csg.Solids.Cylinder(2, beltMount.YSize + 1, 30, MatterHackers.Csg.Alignment.x);
 			screwHole = new MatterHackers.Csg.Transform.SetCenter(screwHole, beltMount.GetCenter());
 			//beltMount -= new MatterHackers.Csg.Align(screwHole, Face.Front | Face.Top, beltMount, Face.Front | Face.Top, 0, 3, -4);
 			//beltMount -= new MatterHackers.Csg.Align(screwHole, Face.Front | Face.Top, beltMount, Face.Front | Face.Top, 0, 18, -4);

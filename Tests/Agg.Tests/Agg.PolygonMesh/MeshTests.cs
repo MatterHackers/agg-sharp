@@ -584,7 +584,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				testMesh.CreateFace(new IVertex[] { centerVertex, centerVertexTop, leftVertexTop, leftVertex });
 				Assert.IsTrue(centerEdge.GetNumFacesSharingEdge() == 4, "There should be 4 faces on this edge.");
 
-				foreach (Face face in centerEdge.FacesSharingMeshEdgeIterator())
+				foreach (Face face in centerEdge.FacesSharingMeshEdge())
 				{
 					Assert.IsTrue(face.NumVertices == 4, "The faces should all have 4 vertices.");
 				}
@@ -594,14 +594,14 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				testMesh.SplitMeshEdge(centerEdge, out createdVertx, out createdEdge);
 				Assert.IsTrue(centerEdge.GetNumFacesSharingEdge() == 4, "There should still be 4 faces on this edge.");
 				Assert.IsTrue(createdEdge.GetNumFacesSharingEdge() == 4, "There should be 4 faces on this new edge.");
-				foreach (Face face in centerEdge.FacesSharingMeshEdgeIterator())
+				foreach (Face face in centerEdge.FacesSharingMeshEdge())
 				{
 					Assert.IsTrue(face.NumVertices == 5, "The faces should all now have 5 vertices.");
 				}
 
 				testMesh.UnsplitMeshEdge(centerEdge, createdVertx);
 				Assert.IsTrue(centerEdge.GetNumFacesSharingEdge() == 4, "There should again be 4 faces on this edge.");
-				foreach (Face face in centerEdge.FacesSharingMeshEdgeIterator())
+				foreach (Face face in centerEdge.FacesSharingMeshEdge())
 				{
 					Assert.IsTrue(face.NumVertices == 4, "The faces should all finally have 4 vertices.");
 				}
@@ -625,7 +625,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				testMesh.CreateFace(new IVertex[] { centerVertexTop, centerVertex, rightVertex, rightVertexTop });
 				Assert.IsTrue(centerEdge.GetNumFacesSharingEdge() == 2, "There should be 2 faces on this edge.");
 
-				foreach (Face face in centerEdge.FacesSharingMeshEdgeIterator())
+				foreach (Face face in centerEdge.FacesSharingMeshEdge())
 				{
 					Assert.IsTrue(face.NumVertices == 4, "The faces should all have 4 vertices.");
 				}
@@ -640,7 +640,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				SaveDebugInfo(testMesh);
 				Assert.IsTrue(centerEdge.GetNumFacesSharingEdge() == 4, "There should still be 4 faces on this edge.");
 				Assert.IsTrue(createdEdge.GetNumFacesSharingEdge() == 4, "There should be 4 faces on this new edge.");
-				foreach (Face face in centerEdge.FacesSharingMeshEdgeIterator())
+				foreach (Face face in centerEdge.FacesSharingMeshEdge())
 				{
 					Assert.IsTrue(face.NumVertices == 5, "The faces should all now have 5 vertices.");
 				}
@@ -649,7 +649,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 				testMesh.UnsplitMeshEdge(centerEdge, createdVertx);
 				Assert.IsTrue(centerEdge.GetNumFacesSharingEdge() == 4, "There should again be 4 faces on this edge.");
-				foreach (Face face in centerEdge.FacesSharingMeshEdgeIterator())
+				foreach (Face face in centerEdge.FacesSharingMeshEdge())
 				{
 					Assert.IsTrue(face.NumVertices == 4, "The faces should all finally have 4 vertices.");
 				}
