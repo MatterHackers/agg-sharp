@@ -39,6 +39,7 @@ using MatterHackers.RenderOpenGl;
 using System.Linq;
 using MatterHackers.DataConverters3D;
 using System.IO;
+using System.Threading;
 
 namespace MatterHackers.PolygonMesh.UnitTests
 {
@@ -69,15 +70,35 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			//Assert.IsTrue(result.IsManifold());
 		}
 
+		[Test, Ignore("TODO: Get this test passing")]
+		public void TopIsSolid()
+		{
+			int sides = 3;
+			CsgObject keep = new Cylinder(20, 20, sides);
+			var keepMesh = CsgToMesh.Convert(keep, true);
+			CsgObject subtract = new Cylinder(10, 21, sides);
+			subtract = new SetCenter(subtract, keep.GetCenter());
+			var subtractMesh = CsgToMesh.Convert(subtract, true);
+			CsgObject result = keep - subtract;
+			var resultMesh = CsgToMesh.Convert(result, true);
+
+			Assert.AreEqual(0, keepMesh.GetNonManifoldEdges().Count, "All faces should be 2 manifold");
+			Assert.AreEqual(0, subtractMesh.GetNonManifoldEdges().Count, "All faces should be 2 manifold");
+			//Assert.AreEqual(0, resultMesh.GetNonManifoldEdges().Count, "All faces of this subtract should be 2 manifold");
+		}
+
 		[Test]
 		public void SubtractHasAllFaces()
 		{
 			double XOffset = -.4;
-			CsgObject boxCombine = new Box(10, 10, 10);
-			boxCombine -= new Translate(new Box(10, 10, 10), XOffset, -3, 2);
-			var mesh =  CsgToMesh.Convert(boxCombine);
+			CsgObject keep = new Box(10, 10, 10);
+			var keepMesh = CsgToMesh.Convert(keep, true);
+			var subtract = new Translate(new Box(10, 10, 10), XOffset, -3, 2);
+			var subtractMesh = CsgToMesh.Convert(subtract, true);
+			CsgObject result = keep - subtract;
+			var resultMesh =  CsgToMesh.Convert(result);
 			//mesh.Save("C:/Temp/TempCsgMesh.stl");
-			var bottomOfSubtractFaces = mesh.Faces.Where((f) =>
+			var bottomOfSubtractFaces = resultMesh.Faces.Where((f) =>
 				AreEqual(f.Normal.Z, 1)
 				&&
 				FaceAtHeight(f, -3)
@@ -103,6 +124,10 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			Assert.IsTrue(HasPosition(allVertices, new Vector3(-5, 2, -3)));
 			// front left
 			Assert.IsTrue(HasPosition(allVertices, new Vector3(-5, -5, -3)), "Must have front left corner point");
+
+			Assert.AreEqual(0, keepMesh.GetNonManifoldEdges().Count, "All faces should be 2 manifold");
+			Assert.AreEqual(0, subtractMesh.GetNonManifoldEdges().Count, "All faces should be 2 manifold");
+			//Assert.AreEqual(0, resultMesh.GetNonManifoldEdges().Count, "All faces of this subtract should be 2 manifold");
 		}
 
 		private bool HasPosition(HashSet<IVertex> allVertices, Vector3 position)

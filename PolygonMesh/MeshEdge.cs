@@ -115,7 +115,7 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public IEnumerable<Face> FacesSharingMeshEdgeIterator()
+		public IEnumerable<Face> FacesSharingMeshEdge()
 		{
 			foreach (FaceEdge faceEdge in FaceEdgesSharingMeshEdge())
 			{
@@ -146,7 +146,7 @@ namespace MatterHackers.PolygonMesh
 		{
 			int numFacesSharingEdge = 0;
 
-			foreach (Face face in FacesSharingMeshEdgeIterator())
+			foreach (Face face in FacesSharingMeshEdge())
 			{
 				numFacesSharingEdge++;
 			}

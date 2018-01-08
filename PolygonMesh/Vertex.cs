@@ -113,7 +113,7 @@ namespace MatterHackers.PolygonMesh
 			HashSet<Face> allFacesOfThisEdge = new HashSet<Face>();
 			foreach (MeshEdge meshEdge in ConnectedMeshEdges())
 			{
-				foreach (Face face in meshEdge.FacesSharingMeshEdgeIterator())
+				foreach (Face face in meshEdge.FacesSharingMeshEdge())
 				{
 					allFacesOfThisEdge.Add(face);
 				}
