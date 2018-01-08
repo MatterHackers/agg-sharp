@@ -183,14 +183,16 @@ namespace Net3dBool
 
 		public interface IFaceDebug
 		{
-			void Debug(Face face);
+			void Evaluate(Face face);
 		}
 
 		/// <summary>
 		/// Split faces so that no face is intercepted by a face of other object
 		/// </summary>
 		/// <param name="compareObject">the other object 3d used to make the split</param>
-		public void SplitFaces(Object3D compareObject, CancellationToken cancellationToken, IFaceDebug faceDebug = null)
+		public void SplitFaces(Object3D compareObject, CancellationToken cancellationToken, 
+			IFaceDebug splitFaceDelegate = null,
+			IFaceDebug cuttingFaceDelegate = null)
 		{
 			Stack<Face> facesFromSplit = new Stack<Face>();
 
@@ -210,21 +212,22 @@ namespace Net3dBool
 				{
 					var faceToSplit = facesFromSplit.Pop();
 
-					faceDebug?.Debug(faceToSplit);
+					splitFaceDelegate?.Evaluate(faceToSplit);
 					cancellationToken.ThrowIfCancellationRequested();
 
 					//if object1 face bound and object2 bound overlap ...
 					//for each object2 face...
-					foreach (Face compareFace in compareObject.Faces.SearchBounds(new Bounds(faceToSplit.GetBound())))
+					foreach (Face cuttingFace in compareObject.Faces.SearchBounds(new Bounds(faceToSplit.GetBound())))
 					{
+						cuttingFaceDelegate?.Evaluate(cuttingFace);
 						//if object1 face bound and object2 face bound overlap...
 						//PART I - DO TWO POLIGONS INTERSECT?
 						//POSSIBLE RESULTS: INTERSECT, NOT_INTERSECT, COPLANAR
 
 						//distance from the face1 vertices to the face2 plane
-						double v1DistToCompareFace = ComputeDistance(faceToSplit.v1, compareFace);
-						double v2DistToCompareFace = ComputeDistance(faceToSplit.v2, compareFace);
-						double v3DistToCompareFace = ComputeDistance(faceToSplit.v3, compareFace);
+						double v1DistToCompareFace = ComputeDistance(faceToSplit.v1, cuttingFace);
+						double v2DistToCompareFace = ComputeDistance(faceToSplit.v2, cuttingFace);
+						double v3DistToCompareFace = ComputeDistance(faceToSplit.v3, cuttingFace);
 
 						//distances signs from the face1 vertices to the face2 plane
 						signFace1Vert1 = (v1DistToCompareFace > EqualityTolerance ? 1 : (v1DistToCompareFace < -EqualityTolerance ? -1 : 0));
@@ -237,9 +240,9 @@ namespace Net3dBool
 						if (!(signFace1Vert1 == signFace1Vert2 && signFace1Vert2 == signFace1Vert3))
 						{
 							//distance from the face2 vertices to the face1 plane
-							double distFace2Vert1 = ComputeDistance(compareFace.v1, faceToSplit);
-							double distFace2Vert2 = ComputeDistance(compareFace.v2, faceToSplit);
-							double distFace2Vert3 = ComputeDistance(compareFace.v3, faceToSplit);
+							double distFace2Vert1 = ComputeDistance(cuttingFace.v1, faceToSplit);
+							double distFace2Vert2 = ComputeDistance(cuttingFace.v2, faceToSplit);
+							double distFace2Vert3 = ComputeDistance(cuttingFace.v3, faceToSplit);
 
 							//distances signs from the face2 vertices to the face1 plane
 							signFace2Vert1 = (distFace2Vert1 > EqualityTolerance ? 1 : (distFace2Vert1 < -EqualityTolerance ? -1 : 0));
@@ -249,13 +252,13 @@ namespace Net3dBool
 							//if the signs are not equal...
 							if (!(signFace2Vert1 == signFace2Vert2 && signFace2Vert2 == signFace2Vert3))
 							{
-								var line = new Line(faceToSplit, compareFace);
+								var line = new Line(faceToSplit, cuttingFace);
 
 								//intersection of the face1 and the plane of face2
 								segment1 = new Segment(line, faceToSplit, signFace1Vert1, signFace1Vert2, signFace1Vert3);
 
 								//intersection of the face2 and the plane of face1
-								segment2 = new Segment(line, compareFace, signFace2Vert1, signFace2Vert2, signFace2Vert3);
+								segment2 = new Segment(line, cuttingFace, signFace2Vert1, signFace2Vert2, signFace2Vert3);
 
 								//if the two segments intersect...
 								if (segment1.Intersect(segment2))
@@ -559,7 +562,9 @@ namespace Net3dBool
 			//  -  *   *  -
 			// O-*--------*O
 			Vertex vertex = AddVertex(newPos, Status.BOUNDARY);
-			if (vertex != vertices[vertices.Count - 1]) // it is not new
+			if(face.v1.Position == vertex.Position
+				|| face.v2.Position == vertex.Position
+				|| face.v2.Position == vertex.Position) // it is not new
 			{
 				// if the vertex we are adding is any of the existing vertices then don't add any
 				return false;

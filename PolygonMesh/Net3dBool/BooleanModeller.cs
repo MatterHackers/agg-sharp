@@ -70,15 +70,9 @@ namespace Net3dBool
 		{
 		}
 
-		class DebugFace : Net3dBool.Object3D.IFaceDebug
+		public abstract class DebugFace : Net3dBool.Object3D.IFaceDebug
 		{
-			string firstPolygonDebug;
-			StringBuilder htmlContent = new StringBuilder();
-			StringBuilder allPolygonDebug = new StringBuilder();
-			StringBuilder individualPolygonDebug = new StringBuilder();
-			int allCount;
-
-			private bool HasPosition(Face face, Vector3 position)
+			public static bool HasPosition(Face face, Vector3 position)
 			{
 				if (face.v1.Position.Equals(position, .0001))
 				{
@@ -96,7 +90,7 @@ namespace Net3dBool
 				return false;
 			}
 
-			bool AreEqual(double a, double b, double errorRange = .001)
+			public static bool AreEqual(double a, double b, double errorRange = .001)
 			{
 				if (a < b + errorRange
 					&& a > b - errorRange)
@@ -107,7 +101,7 @@ namespace Net3dBool
 				return false;
 			}
 
-			bool FaceAtHeight(Face face, double height)
+			public static bool FaceAtHeight(Face face, double height)
 			{
 				if (!AreEqual(face.v1.Position.Z, height))
 				{
@@ -127,7 +121,7 @@ namespace Net3dBool
 				return true;
 			}
 
-			bool FaceAtXy(Face face, double x, double y)
+			public static bool FaceAtXy(Face face, double x, double y)
 			{
 				if (!AreEqual(face.v1.Position.X, x)
 					|| !AreEqual(face.v1.Position.Y, y))
@@ -150,7 +144,7 @@ namespace Net3dBool
 				return true;
 			}
 
-			private static string GetCoords(Face face)
+			public static string GetCoords(Face face)
 			{
 				var offset = new Vector2(10, 2);
 				var scale = 30;
@@ -163,7 +157,18 @@ namespace Net3dBool
 				return $"<polygon points=\"{coords}\" style=\"fill: #FF000022; stroke: purple; stroke - width:1\" />";
 			}
 
-			public void Debug(Face thisFace)
+			public abstract void Evaluate(Face face);
+		}
+
+		public class DebugSplitFace : DebugFace
+		{
+			string firstPolygonDebug;
+			StringBuilder htmlContent = new StringBuilder();
+			StringBuilder allPolygonDebug = new StringBuilder();
+			StringBuilder individualPolygonDebug = new StringBuilder();
+			int allCount;
+
+			public override void Evaluate(Face thisFace)
 			{
 				if (FaceAtHeight(thisFace, -3))
 				{
@@ -192,7 +197,80 @@ namespace Net3dBool
 							individualPolygonDebug.AppendLine("</svg>");
 						}
 
-						if(allCount == 6)
+						if (allCount == 6)
+						{
+							int a = 0;
+						}
+
+						allCount++;
+
+						if (allCount == 12)
+						{
+							htmlContent.AppendLine($"<svg height='{svgHeight}' width='640'>");
+
+							htmlContent.Append(allPolygonDebug.ToString());
+
+							htmlContent.AppendLine("</svg>");
+
+							htmlContent.Append(individualPolygonDebug.ToString());
+
+							htmlContent.AppendLine("</body>");
+							htmlContent.AppendLine("</html>");
+
+							File.WriteAllText("C:/Temp/DebugOutput.html", htmlContent.ToString());
+						}
+					}
+				}
+				if (FaceAtXy(thisFace, -5, -5))
+				{
+					int a = 0;
+				}
+				if (HasPosition(thisFace, new Vector3(-5, -5, -3))
+					&& FaceAtHeight(thisFace, -3))
+				{
+					int a = 0;
+				}
+			}
+		}
+
+		public class DebugCuttingFace : DebugFace
+		{
+			string firstPolygonDebug;
+			StringBuilder htmlContent = new StringBuilder();
+			StringBuilder allPolygonDebug = new StringBuilder();
+			StringBuilder individualPolygonDebug = new StringBuilder();
+			int allCount;
+
+			public override void Evaluate(Face thisFace)
+			{
+				if (FaceAtHeight(thisFace, -3))
+				{
+					string coords = GetCoords(thisFace);
+					if (allCount < 12)
+					{
+						int svgHeight = 340;
+
+						allPolygonDebug.AppendLine(coords);
+
+						if (allCount == 0)
+						{
+							firstPolygonDebug = coords;
+
+							htmlContent.AppendLine("<!DOCTYPE html>");
+							htmlContent.AppendLine("<html>");
+							htmlContent.AppendLine("<body>");
+							htmlContent.AppendLine("<br>Full</br>");
+						}
+						else
+						{
+							individualPolygonDebug.AppendLine($"<br>{allCount}</br>");
+							individualPolygonDebug.AppendLine($"<svg height='{svgHeight}' width='640'>");
+							individualPolygonDebug.AppendLine(firstPolygonDebug);
+							individualPolygonDebug.AppendLine(coords);
+							individualPolygonDebug.AppendLine("</svg>");
+						}
+
+						if (allCount == 6)
 						{
 							int a = 0;
 						}
@@ -244,7 +322,7 @@ namespace Net3dBool
 			object1.SplitFaces(object2, cancelationToken);
 
 			reporter?.Invoke("Split Faces1", 0.6);
-			object2.SplitFaces(object1Copy, cancelationToken, new DebugFace());
+			object2.SplitFaces(object1Copy, cancelationToken);// new DebugSplitFace());//, new DebugCuttingFace());
 
 			//classify faces as being inside or outside the other solid
 			reporter?.Invoke("Classify Faces2", 0.8);
