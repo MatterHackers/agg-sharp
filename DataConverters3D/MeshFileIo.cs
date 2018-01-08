@@ -218,6 +218,13 @@ namespace MatterHackers.DataConverters3D
 				return BitConverter.ToString(checksum).Replace("-", String.Empty);
 			}
 		}
+	}
 
+	public static class MeshFileIoExtensions
+	{
+		public static bool Save(this Mesh mesh, string fileName)
+		{
+			return MeshFileIo.Save(mesh, fileName);
+		}
 	}
 }

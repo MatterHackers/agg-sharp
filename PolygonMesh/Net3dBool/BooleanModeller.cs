@@ -38,6 +38,8 @@ using System.Collections.Generic;
 using MatterHackers.Agg;
 using System;
 using System.Threading;
+using System.Text;
+using System.IO;
 
 namespace Net3dBool
 {
@@ -68,6 +70,242 @@ namespace Net3dBool
 		{
 		}
 
+		public abstract class DebugFace : Net3dBool.Object3D.IFaceDebug
+		{
+			public static bool HasPosition(Face face, Vector3 position)
+			{
+				if (face.v1.Position.Equals(position, .0001))
+				{
+					return true;
+				}
+				if (face.v2.Position.Equals(position, .0001))
+				{
+					return true;
+				}
+				if (face.v3.Position.Equals(position, .0001))
+				{
+					return true;
+				}
+
+				return false;
+			}
+
+			public static bool AreEqual(double a, double b, double errorRange = .001)
+			{
+				if (a < b + errorRange
+					&& a > b - errorRange)
+				{
+					return true;
+				}
+
+				return false;
+			}
+
+			public static bool FaceAtHeight(Face face, double height)
+			{
+				if (!AreEqual(face.v1.Position.Z, height))
+				{
+					return false;
+				}
+
+				if (!AreEqual(face.v2.Position.Z, height))
+				{
+					return false;
+				}
+
+				if (!AreEqual(face.v3.Position.Z, height))
+				{
+					return false;
+				}
+
+				return true;
+			}
+
+			public static bool FaceAtXy(Face face, double x, double y)
+			{
+				if (!AreEqual(face.v1.Position.X, x)
+					|| !AreEqual(face.v1.Position.Y, y))
+				{
+					return false;
+				}
+
+				if (!AreEqual(face.v2.Position.X, x)
+					|| !AreEqual(face.v2.Position.Y, y))
+				{
+					return false;
+				}
+
+				if (!AreEqual(face.v3.Position.X, x)
+					|| !AreEqual(face.v3.Position.Y, y))
+				{
+					return false;
+				}
+
+				return true;
+			}
+
+			public static string GetCoords(Face face)
+			{
+				var offset = new Vector2(10, 2);
+				var scale = 30;
+				Vector2 p1 = (new Vector2(face.v1.Position.X, -face.v1.Position.Y) + offset) * scale;
+				Vector2 p2 = (new Vector2(face.v2.Position.X, -face.v2.Position.Y) + offset) * scale;
+				Vector2 p3 = (new Vector2(face.v3.Position.X, -face.v3.Position.Y) + offset) * scale;
+				string coords = $"{p1.X:0.0}, {p1.Y:0.0}";
+				coords += $", {p2.X:0.0}, {p2.Y:0.0}";
+				coords += $", {p3.X:0.0}, {p3.Y:0.0}";
+				return $"<polygon points=\"{coords}\" style=\"fill: #FF000022; stroke: purple; stroke - width:1\" />";
+			}
+
+			public abstract void Evaluate(Face face);
+		}
+
+		public class DebugSplitFace : DebugFace
+		{
+			string firstPolygonDebug;
+			StringBuilder htmlContent = new StringBuilder();
+			StringBuilder allPolygonDebug = new StringBuilder();
+			StringBuilder individualPolygonDebug = new StringBuilder();
+			int allCount;
+
+			public override void Evaluate(Face thisFace)
+			{
+				if (FaceAtHeight(thisFace, -3))
+				{
+					string coords = GetCoords(thisFace);
+					if (allCount < 12)
+					{
+						int svgHeight = 340;
+
+						allPolygonDebug.AppendLine(coords);
+
+						if (allCount == 0)
+						{
+							firstPolygonDebug = coords;
+
+							htmlContent.AppendLine("<!DOCTYPE html>");
+							htmlContent.AppendLine("<html>");
+							htmlContent.AppendLine("<body>");
+							htmlContent.AppendLine("<br>Full</br>");
+						}
+						else
+						{
+							individualPolygonDebug.AppendLine($"<br>{allCount}</br>");
+							individualPolygonDebug.AppendLine($"<svg height='{svgHeight}' width='640'>");
+							individualPolygonDebug.AppendLine(firstPolygonDebug);
+							individualPolygonDebug.AppendLine(coords);
+							individualPolygonDebug.AppendLine("</svg>");
+						}
+
+						if (allCount == 6)
+						{
+							int a = 0;
+						}
+
+						allCount++;
+
+						if (allCount == 12)
+						{
+							htmlContent.AppendLine($"<svg height='{svgHeight}' width='640'>");
+
+							htmlContent.Append(allPolygonDebug.ToString());
+
+							htmlContent.AppendLine("</svg>");
+
+							htmlContent.Append(individualPolygonDebug.ToString());
+
+							htmlContent.AppendLine("</body>");
+							htmlContent.AppendLine("</html>");
+
+							File.WriteAllText("C:/Temp/DebugOutput.html", htmlContent.ToString());
+						}
+					}
+				}
+				if (FaceAtXy(thisFace, -5, -5))
+				{
+					int a = 0;
+				}
+				if (HasPosition(thisFace, new Vector3(-5, -5, -3))
+					&& FaceAtHeight(thisFace, -3))
+				{
+					int a = 0;
+				}
+			}
+		}
+
+		public class DebugCuttingFace : DebugFace
+		{
+			string firstPolygonDebug;
+			StringBuilder htmlContent = new StringBuilder();
+			StringBuilder allPolygonDebug = new StringBuilder();
+			StringBuilder individualPolygonDebug = new StringBuilder();
+			int allCount;
+
+			public override void Evaluate(Face thisFace)
+			{
+				if (FaceAtHeight(thisFace, -3))
+				{
+					string coords = GetCoords(thisFace);
+					if (allCount < 12)
+					{
+						int svgHeight = 340;
+
+						allPolygonDebug.AppendLine(coords);
+
+						if (allCount == 0)
+						{
+							firstPolygonDebug = coords;
+
+							htmlContent.AppendLine("<!DOCTYPE html>");
+							htmlContent.AppendLine("<html>");
+							htmlContent.AppendLine("<body>");
+							htmlContent.AppendLine("<br>Full</br>");
+						}
+						else
+						{
+							individualPolygonDebug.AppendLine($"<br>{allCount}</br>");
+							individualPolygonDebug.AppendLine($"<svg height='{svgHeight}' width='640'>");
+							individualPolygonDebug.AppendLine(firstPolygonDebug);
+							individualPolygonDebug.AppendLine(coords);
+							individualPolygonDebug.AppendLine("</svg>");
+						}
+
+						if (allCount == 6)
+						{
+							int a = 0;
+						}
+
+						allCount++;
+
+						if (allCount == 12)
+						{
+							htmlContent.AppendLine($"<svg height='{svgHeight}' width='640'>");
+
+							htmlContent.Append(allPolygonDebug.ToString());
+
+							htmlContent.AppendLine("</svg>");
+
+							htmlContent.Append(individualPolygonDebug.ToString());
+
+							htmlContent.AppendLine("</body>");
+							htmlContent.AppendLine("</html>");
+
+							File.WriteAllText("C:/Temp/DebugOutput.html", htmlContent.ToString());
+						}
+					}
+				}
+				if (FaceAtXy(thisFace, -5, -5))
+				{
+					int a = 0;
+				}
+				if (HasPosition(thisFace, new Vector3(-5, -5, -3))
+					&& FaceAtHeight(thisFace, -3))
+				{
+					int a = 0;
+				}
+			}
+		}
+
 		public BooleanModeller(Solid solid1, Solid solid2, Action<string, double> reporter, CancellationToken cancelationToken)
 		{
 			//representation to apply boolean operations
@@ -84,7 +322,7 @@ namespace Net3dBool
 			object1.SplitFaces(object2, cancelationToken);
 
 			reporter?.Invoke("Split Faces1", 0.6);
-			object2.SplitFaces(object1Copy, cancelationToken);
+			object2.SplitFaces(object1Copy, cancelationToken);// new DebugSplitFace());//, new DebugCuttingFace());
 
 			//classify faces as being inside or outside the other solid
 			reporter?.Invoke("Classify Faces2", 0.8);

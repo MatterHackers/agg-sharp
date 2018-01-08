@@ -34,7 +34,7 @@ using System.Text;
 
 namespace MatterHackers.PolygonMesh
 {
-	[DebuggerDisplay("ID = {Data.ID} | V1 = {VertexOnEnd[0].Data.ID} V2 = {VertexOnEnd[1].Data.ID}")]
+	[DebuggerDisplay("ID = {ID} | V1 = {VertexOnEnd[0].ID} V2 = {VertexOnEnd[1].ID}")]
 	public class MeshEdge
 	{
 		public FaceEdge firstFaceEdge;
