@@ -1076,6 +1076,110 @@ namespace MatterHackers.Agg
 			return ColorF.FromHSL(hue0To1, saturation0To1, lightness0To1);
 		}
 
+		public static double Luminance0To1(this IColorType color)
+		{
+			double R = 0, G = 0, B = 0;
+			if (color.Red0To1 <= 0.03928)
+			{
+				R = color.Red0To1 / 12.92;
+			}
+			else
+			{
+				R = Math.Pow(((color.Red0To1 + 0.055) / 1.055), 2.4);
+			}
+
+			if (color.Green0To1 <= 0.03928)
+			{
+				G = color.Green0To1 / 12.92;
+			}
+			else
+			{
+				G = Math.Pow(((color.Green0To1 + 0.055) / 1.055), 2.4);
+			}
+
+			if (color.Blue0To1 <= 0.03928)
+			{
+				B = color.Blue0To1 / 12.92;
+			}
+			else
+			{
+				B = Math.Pow(((color.Blue0To1 + 0.055) / 1.055), 2.4);
+			}
+			return 0.2126 * R + 0.7152 * G + 0.0722 * B;
+		}
+
+		// Overlay a color over another
+		public static IColorType OverlayOn(this IColorType thisA, IColorType color)
+		{
+			var overlaid =  thisA;
+
+			var alpha = thisA.Alpha0To1;
+
+			if (alpha >= 1)
+			{
+				return overlaid;
+			}
+
+			overlaid.Red0To1 = overlaid.Red0To1 * alpha + color.Red0To1 * color.Alpha0To1 * (1 - alpha);
+			overlaid.Green0To1 = overlaid.Green0To1 * alpha + color.Green0To1 * color.Alpha0To1 * (1 - alpha);
+			overlaid.Blue0To1 = overlaid.Blue0To1 * alpha + color.Blue0To1 * color.Alpha0To1 * (1 - alpha);
+
+			overlaid.Alpha0To1 = alpha + color.Alpha0To1 * (1 - alpha);
+
+			return overlaid;
+		}
+
+		// Contrast ratios can range from 1 to 21 (commonly written 1:1 to 21:1).
+		public static double Contrast(this IColorType thisA, IColorType color)
+		{
+			// Formula: http://www.w3.org/TR/2008/REC-WCAG20-20081211/#contrast-ratiodef
+			var alpha = thisA.Alpha0To1;
+
+			if (alpha >= 1)
+			{
+				if (color.Alpha0To1 < 1)
+				{
+					color = color.OverlayOn(thisA);
+				}
+
+				var l1 = thisA.Luminance0To1() + .05;
+				var l2 = color.Luminance0To1() + .05;
+				var ratio = l1 / l2;
+
+				if (l2 > l1)
+				{
+					ratio = 1 / ratio;
+				}
+
+				ratio = Math.Round(ratio, 1);
+
+				return ratio;
+			}
+
+			// If we’re here, it means we have a semi-transparent background
+			// The text color may or may not be semi-transparent, but that doesn't matter
+			var onBlack = thisA.OverlayOn(Color.Black);
+			var onWhite = thisA.OverlayOn(Color.White);
+			var contrastOnBlack = onBlack.Contrast(color);
+			var contrastOnWhite = onWhite.Contrast(color);
+
+			var max = Math.Max(contrastOnBlack, contrastOnWhite);
+
+			var min = 1.0;
+			if (onBlack.Luminance0To1() > color.Luminance0To1())
+			{
+				min = contrastOnBlack;
+			}
+			else if (onWhite.Luminance0To1() < color.Luminance0To1())
+			{
+				min = contrastOnWhite;
+			}
+			var error = Math.Round((max - min) / 2, 2);
+			var farthest = contrastOnWhite == max ? Color.White : Color.Black;
+
+			return Math.Round((min + max) / 2, 2);
+		}
+
 		public static IColorType SetLightness(this IColorType original, double lightness)
 		{
 			double hue0To1;

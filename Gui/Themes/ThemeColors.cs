@@ -60,46 +60,73 @@ namespace MatterHackers.Agg.UI
 		public Color PrimaryAccentColor { get; set; }
 
 		public Color SecondaryAccentColor { get; set; }
+		public Color SourceColor { get; private set; }
 
 		public static ThemeColors Create(string name, Color primary, Color secondary, bool darkTheme = true)
 		{
-			var colors = new ThemeColors
+			var color = new ThemeColors
 			{
 				IsDarkTheme = darkTheme,
 				Name = name,
+				SourceColor = primary
 			};
 
 			if (darkTheme)
 			{
-				colors.PrimaryAccentColor = primary;
-				colors.SecondaryAccentColor = secondary;
+				color.PrimaryAccentColor = primary;
 
-				colors.PrimaryBackgroundColor = new Color(68, 68, 68);
-				colors.SecondaryBackgroundColor = new Color(51, 51, 51);
+				color.SecondaryAccentColor = secondary;
 
-				colors.TabLabelSelected = new Color(255, 255, 255);
-				colors.TabLabelUnselected = new Color(180, 180, 180);
-				colors.PrimaryTextColor = new Color(255, 255, 255);
-				colors.SecondaryTextColor = new Color(200, 200, 200);
+				color.PrimaryBackgroundColor = new Color(68, 68, 68);
+				color.SecondaryBackgroundColor = new Color(51, 51, 51);
 
-				colors.TertiaryBackgroundColor = new Color(62, 62, 62);
+				color.TabLabelSelected = new Color(255, 255, 255);
+				color.TabLabelUnselected = new Color(180, 180, 180);
+				color.PrimaryTextColor = new Color(255, 255, 255);
+				color.SecondaryTextColor = new Color(200, 200, 200);
+
+				color.TertiaryBackgroundColor = new Color(62, 62, 62);
 			}
 			else
 			{
-				colors.PrimaryAccentColor = secondary;
-				colors.SecondaryAccentColor = primary;
+				color.PrimaryAccentColor = secondary;
+				color.SecondaryAccentColor = primary;
 
-				colors.PrimaryBackgroundColor = new Color(208, 208, 208);
-				colors.SecondaryBackgroundColor = new Color(185, 185, 185);
-				colors.TabLabelSelected = new Color(51, 51, 51);
-				colors.TabLabelUnselected = new Color(102, 102, 102);
-				colors.PrimaryTextColor = new Color(34, 34, 34);
-				colors.SecondaryTextColor = new Color(51, 51, 51);
+				color.PrimaryBackgroundColor = new Color(208, 208, 208);
+				color.SecondaryBackgroundColor = new Color(185, 185, 185);
+				color.TabLabelSelected = new Color(51, 51, 51);
+				color.TabLabelUnselected = new Color(102, 102, 102);
+				color.PrimaryTextColor = new Color(34, 34, 34);
+				color.SecondaryTextColor = new Color(51, 51, 51);
 
-				colors.TertiaryBackgroundColor = new Color(190, 190, 190);
+				color.TertiaryBackgroundColor = new Color(190, 190, 190);
 			}
 
-			return colors;
+			color.PrimaryAccentColor = FixAccentColor(color.PrimaryBackgroundColor, color.PrimaryAccentColor);
+			color.SecondaryAccentColor = FixAccentColor(color.SecondaryAccentColor, color.PrimaryAccentColor);
+
+			return color;
+		}
+
+		static Color FixAccentColor(Color background, Color colorToUse)
+		{
+			var contrast = colorToUse.Contrast(background);
+			int tries = 0;
+			while (contrast < 3
+				&& tries++ < 10)
+			{
+				if (background.Luminance0To1() < .5)
+				{
+					colorToUse = colorToUse.AdjustLightness(1.1).ToColor();
+				}
+				else
+				{
+					colorToUse = colorToUse.AdjustLightness(.9).ToColor();
+				}
+				contrast = colorToUse.Contrast(background);
+			}
+
+			return colorToUse;
 		}
 	}
 }
