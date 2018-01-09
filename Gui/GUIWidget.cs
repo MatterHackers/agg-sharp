@@ -3308,18 +3308,26 @@ namespace MatterHackers.Agg.UI
 		/// <typeparam name="T">The type filter</typeparam>
 		/// <param name="widget">The context widget</param>
 		/// <returns>All matching child widgets</returns>
-		public static IEnumerable<T> ChildrenRecursive<T>(this GuiWidget widget) where T : GuiWidget
+		public static IEnumerable<T> Decendants<T>(this GuiWidget widget, bool includeThis = true) where T : GuiWidget
 		{
-			foreach (var child in widget.Children)
+			var items = new Stack<GuiWidget>();
+			if (includeThis)
 			{
-				foreach (var childChild in child.ChildrenRecursive<T>())
+				items.Push(widget);
+			}
+
+			while (items.Any())
+			{
+				GuiWidget item = items.Pop();
+
+				if (item is T itemIsType)
 				{
-					yield return childChild;
+					yield return itemIsType;
 				}
 
-				if (child is T)
+				foreach (var child in item.Children)
 				{
-					yield return (T)child;
+					items.Push(child);
 				}
 			}
 		}
