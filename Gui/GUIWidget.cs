@@ -3302,6 +3302,11 @@ namespace MatterHackers.Agg.UI
 			return widget.Children.OfType<T>();
 		}
 
+		public static IEnumerable<GuiWidget> Decendants(this GuiWidget widget, bool includeThis = true)
+		{
+			return Decendants<GuiWidget>(widget, includeThis);
+		}
+
 		/// <summary>
 		/// Returns all children of the current GuiWiget recursively matching the given type
 		/// </summary>
