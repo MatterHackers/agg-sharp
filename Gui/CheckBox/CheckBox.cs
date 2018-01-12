@@ -75,8 +75,8 @@ namespace MatterHackers.Agg.UI
 		{
 		}
 
-		public CheckBox(string label)
-			: this(0, 0, label)
+		public CheckBox(string label, double textSize = 12)
+			: this(0, 0, label, textSize)
 		{
 		}
 
