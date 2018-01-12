@@ -44,22 +44,11 @@ namespace MatterHackers.Agg.UI
 	{
 		public event EventHandler CheckedStateChanged;
 
-		private IEnumerable<GuiWidget> siblingRadioButtonList = null;
 		private bool isChecked = false;
 
 		public static BorderDouble defaultMargin = new BorderDouble(5);
 
-		public IEnumerable<GuiWidget> SiblingRadioButtonList
-		{
-			get
-			{
-				return this.siblingRadioButtonList;
-			}
-			set
-			{
-				this.siblingRadioButtonList = value;
-			}
-		}
+		public IEnumerable<GuiWidget> SiblingRadioButtonList { get; set; }
 
 		public RadioButton(double x, double y, GuiWidget view)
 		{
