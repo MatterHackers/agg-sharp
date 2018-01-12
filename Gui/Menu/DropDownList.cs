@@ -72,8 +72,6 @@ namespace MatterHackers.Agg.UI
 
 		public int BorderWidth { get; set; }
 
-		public Color BorderColor { get; set; }
-
 		public Color HoverColor { get; set; }
 
 		public Color TextColor
@@ -338,8 +336,10 @@ namespace MatterHackers.Agg.UI
 		private static Color whiteSemiTransparent = new Color(255, 255, 255, 100);
 		private static Color whiteTransparent = new Color(255, 255, 255, 0);
 
-		public DropDownList(string noSelectionString, Color textColor, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false)
-			: this(noSelectionString, whiteTransparent, whiteSemiTransparent, direction, maxHeight, useLeftIcons)
+		private double pointSize = 12;
+
+		public DropDownList(string noSelectionString, Color textColor, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false, double pointSize = 12)
+			: this(noSelectionString, whiteTransparent, whiteSemiTransparent, direction, maxHeight, useLeftIcons, pointSize)
 		{
 			this.TextColor = textColor;
 			this.MenuItemsBorderWidth = 1;
@@ -355,9 +355,11 @@ namespace MatterHackers.Agg.UI
 			this.BackgroundColor = new Color(255, 255, 255, 0);
 		}
 
-		public DropDownList(string noSelectionString, Color normalColor, Color hoverColor, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false)
+		public DropDownList(string noSelectionString, Color normalColor, Color hoverColor, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false, double pointSize = 12)
 			: base(direction, maxHeight)
 		{
+			this.pointSize = pointSize;
+
 			UseLeftIcons = useLeftIcons;
 
 			// Always Down, unless Up
@@ -367,7 +369,7 @@ namespace MatterHackers.Agg.UI
 
 			this.noSelectionString = noSelectionString;
 
-			mainControlText = new TextWidget(noSelectionString)
+			mainControlText = new TextWidget(noSelectionString, pointSize: pointSize)
 			{
 				AutoExpandBoundsToText = true,
 				VAnchor = VAnchor.Bottom | VAnchor.Fit,
@@ -514,7 +516,7 @@ namespace MatterHackers.Agg.UI
 
 		public bool UseLeftIcons { get; private set; } = false;
 
-		public MenuItem AddItem(string itemName, string itemValue = null, double pointSize = 12)
+		public MenuItem AddItem(string itemName, string itemValue = null)
 		{
 			if (itemValue == null)
 			{
