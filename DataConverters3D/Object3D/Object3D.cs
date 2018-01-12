@@ -258,7 +258,23 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public Matrix4X4 Matrix { get; set; } = Matrix4X4.Identity;
+		Matrix4X4 _matrix = Matrix4X4.Identity;
+		public Matrix4X4 Matrix
+		{
+			get
+			{
+				return _matrix;
+			}
+
+			set
+			{
+				if(value != _matrix)
+				{
+					_matrix = value;
+					Invalidate();
+				}
+			}
+		}
 
 		[JsonIgnore]
 		private Mesh _mesh;
