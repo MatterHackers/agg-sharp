@@ -238,10 +238,11 @@ namespace MatterHackers.Agg.UI
 			}
 
 			// Debug onscreen fonts
-			if (false && this.Text.Trim().Length > 1)
+			if (false && this.Text.Trim().Length > 0)
 			{
-				graphics2D.FillRectangle(this.Width - 13, 0, this.Width, this.Height - 2, Color.White);
-				graphics2D.DrawString(this.PointSize.ToString(), this.Width - 12, 2, 8, color: Color.Red);
+				graphics2D.FillRectangle(this.Width - 12, this.Height - 13, this.Width, this.Height, new Color(Color.White, 100));
+				graphics2D.DrawString(this.PointSize.ToString(), this.Width - 10, this.Height - 11, 7, color: Color.Black);
+				graphics2D.DrawString(this.PointSize.ToString(), this.Width - 11, this.Height - 12, 7, color: Color.Red);
 			}
 
 			graphics2D.PopTransform();
