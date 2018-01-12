@@ -30,6 +30,8 @@ namespace MatterHackers.Agg.UI
 	//------------------------------------------------------------------------
 	public class TextWidget : GuiWidget
 	{
+		public static bool DebugShowSize { get; set; } = false;
+
 		public static bool DoubleBufferDefault = true;
 
 		private Color textColor;
@@ -238,7 +240,7 @@ namespace MatterHackers.Agg.UI
 			}
 
 			// Debug onscreen fonts
-			if (false && this.Text.Trim().Length > 0)
+			if (DebugShowSize && this.Text.Trim().Length > 0)
 			{
 				graphics2D.FillRectangle(this.Width - 12, this.Height - 13, this.Width, this.Height, new Color(Color.White, 100));
 				graphics2D.DrawString(this.PointSize.ToString(), this.Width - 10, this.Height - 11, 7, color: Color.Black);
