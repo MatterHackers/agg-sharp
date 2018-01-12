@@ -58,7 +58,7 @@ namespace MatterHackers.Agg.UI
 			radioCircle = new RadioCircleWidget();
 			this.AddChild(radioCircle);
 
-			labelTextWidget = new TextWidget(label, fontSize);
+			labelTextWidget = new TextWidget(label, pointSize: fontSize);
 			this.AddChild(labelTextWidget);
 		}
 
