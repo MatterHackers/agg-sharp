@@ -46,17 +46,13 @@ namespace MatterHackers.Agg.Platform
 
 			if (fc.Run() == (int)ResponseType.Accept)
 			{
-                this.LastDirectoryUsed = Path.GetDirectoryName(fc.Filename);
+				this.LastDirectoryUsed = Path.GetDirectoryName(fc.Filename);
 				openParams.FileNames = fc.Filenames;
 				openParams.FileName = fc.Filename;
-				UiThread.RunOnIdle((state) =>
+				UiThread.RunOnIdle(() =>
 					{
-						OpenFileDialogParams openParamsIn = state as OpenFileDialogParams;
-						if (openParamsIn != null)
-						{
-							callback(openParamsIn);
-						}
-					}, openParams);
+						callback(openParams);
+					});
 			}
 				
 			fc.Destroy();
