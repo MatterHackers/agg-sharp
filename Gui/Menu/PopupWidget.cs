@@ -200,6 +200,7 @@ namespace MatterHackers.Agg.UI
 		private bool checkIfNeedScrollBar = true;
 		private HashSet<GuiWidget> hookedParents = new HashSet<GuiWidget>();
 		private PopupWidget popupWidget;
+		private SystemWindow windowToAddTo;
 
 		public PopupLayoutEngine(GuiWidget contentWidget, GuiWidget widgetRelativeTo, Direction direction, double maxHeight, bool alignToRightEdge)
 		{
@@ -240,7 +241,7 @@ namespace MatterHackers.Agg.UI
 		public void ShowPopup(PopupWidget popupWidget)
 		{
 			this.popupWidget = popupWidget;
-			SystemWindow windowToAddTo = widgetRelativeTo.Parents<SystemWindow>().FirstOrDefault();
+			windowToAddTo = widgetRelativeTo.Parents<SystemWindow>().FirstOrDefault();
 			windowToAddTo?.AddChild(popupWidget);
 
 			GuiWidget topParent = widgetRelativeTo.Parent;
@@ -274,24 +275,30 @@ namespace MatterHackers.Agg.UI
 			if (widgetRelativeTo != null
 				&& widgetRelativeTo.Parent != null)
 			{
-				Vector2 bottomLeftScreenSpace = widgetRelativeTo.Position;
-				if (alignToRightEdge)
+
+				var systemWindowWidth = windowToAddTo.Width;
+
+				Vector2 bottomLeftScreenSpace;
+
+				// Calculate left aligned screen space position (using widgetRelativeTo.parent)
+				Vector2 alignLeftPosition = widgetRelativeTo.Parent.TransformToScreenSpace(widgetRelativeTo.Position);
+
+				// Calculate right aligned screen space position (using widgetRelativeTo.parent)
+				var bottomLeftForAlignRight = widgetRelativeTo.Position - new Vector2(popupWidget.Width - widgetRelativeTo.LocalBounds.Width, 0);
+				Vector2 alignRightPosition = widgetRelativeTo.Parent.TransformToScreenSpace( bottomLeftForAlignRight);
+
+				// Conditionally select appropriate left/right position
+				if (alignToRightEdge && alignRightPosition.X >= 0
+					|| alignLeftPosition.X + popupWidget.Width > systemWindowWidth)
 				{
-					// adjust the offset to make it align to the right edged instead
-					bottomLeftScreenSpace -= new Vector2(popupWidget.Width - widgetRelativeTo.LocalBounds.Width, 0);
-
-					if (bottomLeftScreenSpace.X < 0)
-					{
-						//// Right but never negative
-						//bottomLeftScreenSpace = new Vector2(0, 0);
-
-						// Right if possible or left
-						bottomLeftScreenSpace = new Vector2(widgetRelativeTo.Position.X, 0);
-					}
+					// Align right or align left with x > systemWindow.Width
+					bottomLeftScreenSpace = alignRightPosition;
 				}
-
-				// actually transform it to screen space (use the parent because the position is in parent space and it would be double trasformed)
-				bottomLeftScreenSpace = widgetRelativeTo.Parent.TransformToScreenSpace(bottomLeftScreenSpace);
+				else
+				{
+					// Align left or align right with negative x
+					bottomLeftScreenSpace = alignLeftPosition;
+				}
 
 				// we only check for the scroll bar one time (the first time we open)
 				if (checkIfNeedScrollBar)
