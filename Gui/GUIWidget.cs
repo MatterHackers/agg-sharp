@@ -3302,9 +3302,42 @@ namespace MatterHackers.Agg.UI
 			return widget.Children.OfType<T>();
 		}
 
-		public static IEnumerable<GuiWidget> Descendants(this GuiWidget widget, bool includeThis = true)
+		public static IEnumerable<GuiWidget> DescendantsAndSelf(this GuiWidget widget)
 		{
-			return Descendants<GuiWidget>(widget, includeThis);
+			return DescendantsAndSelf<GuiWidget>(widget);
+		}
+
+		/// <summary>
+		/// Returns all descendants and this of the current GuiWiget matching the given type
+		/// </summary>
+		/// <typeparam name="T">The type filter</typeparam>
+		/// <param name="widget">The context widget</param>
+		/// <returns>All matching child widgets</returns>
+		public static IEnumerable<T> DescendantsAndSelf<T>(this GuiWidget widget) where T : GuiWidget
+		{
+			var items = new Stack<GuiWidget>();
+			items.Push(widget);
+
+			while (items.Any())
+			{
+				GuiWidget item = items.Pop();
+
+				if (item is T itemIsType)
+				{
+					yield return itemIsType;
+				}
+
+				foreach (var child in item.Children)
+				{
+					items.Push(child);
+				}
+			}
+		}
+
+
+		public static IEnumerable<GuiWidget> Descendants(this GuiWidget widget)
+		{
+			return Descendants<GuiWidget>(widget);
 		}
 
 		/// <summary>
@@ -3313,13 +3346,9 @@ namespace MatterHackers.Agg.UI
 		/// <typeparam name="T">The type filter</typeparam>
 		/// <param name="widget">The context widget</param>
 		/// <returns>All matching child widgets</returns>
-		public static IEnumerable<T> Descendants<T>(this GuiWidget widget, bool includeThis = true) where T : GuiWidget
+		public static IEnumerable<T> Descendants<T>(this GuiWidget widget) where T : GuiWidget
 		{
-			var items = new Stack<GuiWidget>();
-			if (includeThis)
-			{
-				items.Push(widget);
-			}
+			var items = new Stack<GuiWidget>(widget.Children);
 
 			while (items.Any())
 			{
