@@ -172,12 +172,12 @@ namespace MatterHackers.DataConverters3D
 		public static int WorldMaterialIndex(this IObject3D child, IObject3D root)
 		{
 			var lastMaterialIndexFound = -1;
-			foreach (var item in Enumerable.Reverse(child.Ancestors()))
+			foreach (var item in child.Ancestors())
 			{
 				// If we found the root return whatever material type we have now
 				if (item == root)
 				{
-					return lastMaterialIndexFound;
+					break;
 				}
 
 				if (item.MaterialIndex != -1)
@@ -187,6 +187,7 @@ namespace MatterHackers.DataConverters3D
 				}
 			}
 
+			// If we don't find a color (-1) return 0
 			return lastMaterialIndexFound;
 		}
 
