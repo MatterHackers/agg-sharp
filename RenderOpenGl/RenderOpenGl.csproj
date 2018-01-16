@@ -93,7 +93,7 @@
     <Compile Include="GLMeshWirePlugin.cs" />
     <Compile Include="GLMeshTrianglePlugin.cs" />
     <Compile Include="ImageGlPlugin.cs" />
-    <Compile Include="OverhangeRender.cs" />
+    <Compile Include="OverhangRender.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Renderer\RendererOpenGL.cs" />
     <Compile Include="RenderCsgToGl.cs" />
