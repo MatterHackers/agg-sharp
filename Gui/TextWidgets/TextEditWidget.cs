@@ -122,7 +122,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public Color BorderColor
+		public override Color BorderColor
 		{
 			get
 			{
@@ -213,6 +213,8 @@ namespace MatterHackers.Agg.UI
 			internalTextEditWidget = new InternalTextEditWidget(text, pointSize, multiLine, tabIndex, typeFace: typeFace);
 			HookUpToInternalWidget(pixelWidth, pixelHeight);
 			OriginRelativeParent = new Vector2(x, y);
+
+			HAnchor = HAnchor.Stretch;
 
 			Multiline = multiLine;
 		}
