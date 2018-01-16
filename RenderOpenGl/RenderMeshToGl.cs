@@ -115,6 +115,10 @@ namespace MatterHackers.RenderOpenGl
 						break;
 
 					case RenderTypes.Overhang:
+						OverhangeRender.EnsureUpdated(meshToRender, transform);
+						DrawToGL(meshToRender, color.Alpha0To1 < 1, meshToViewTransform);
+						break;
+
 					case RenderTypes.Shaded:
 					case RenderTypes.Materials:
 						DrawToGL(meshToRender, color.Alpha0To1 < 1, meshToViewTransform);
