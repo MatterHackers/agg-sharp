@@ -168,7 +168,7 @@ namespace MatterHackers.Agg.UI
 				}
 				else if (child.HAnchor != HAnchor.Absolute)
 				{
-					throw new Exception("HAnchor for a left right flow widget needs to be none or Stretch.");
+					throw new Exception("HAnchor for a left right flow widget needs to be Absolute or Stretch.");
 				}
 			}
 		}
@@ -186,7 +186,7 @@ namespace MatterHackers.Agg.UI
 				}
 				else if (child.VAnchor != VAnchor.Absolute)
 				{
-					throw new Exception("VAnchor for a top bottom flow widget needs to be none or Stretch.");
+					throw new Exception("VAnchor for a top bottom flow widget needs to be Absolute or Stretch.");
 				}
 			}
 		}
@@ -244,7 +244,7 @@ namespace MatterHackers.Agg.UI
 						}
 						else
 						{
-							throw new Exception("Only None or Stretch are valid HAnchor for a horizontal flowWidget.");
+							throw new Exception("Only Absolute or Stretch are valid HAnchor for a horizontal flowWidget.");
 						}
 						break;
 
@@ -263,7 +263,7 @@ namespace MatterHackers.Agg.UI
 						}
 						else
 						{
-							throw new Exception("Only None or Stretch are valid VAnchor for a vertial flowWidget.");
+							throw new Exception("Only Absolute or Stretch are valid VAnchor for a vertical flowWidget.");
 						}
 						break;
 
