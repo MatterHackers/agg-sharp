@@ -39,7 +39,7 @@ namespace MatterHackers.RenderOpenGl
 		internal double z;
 	}
 
-	public static class OverhangeRender
+	public static class OverhangRender
 	{
 		public static void EnsureUpdated(Mesh meshToRender, Matrix4X4 transform)
 		{
