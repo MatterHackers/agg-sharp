@@ -37,6 +37,7 @@ using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Threading;
+using System.IO;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -51,7 +52,8 @@ namespace MatterHackers.Agg.UI.Tests
 		{
 			if (saveImagesForDebug)
 			{
-				ImageTgaIO.Save(imageToOutput, fileName);
+				var dirAndFileName = Path.Combine("C:/Temp", fileName);
+				ImageTgaIO.Save(imageToOutput, dirAndFileName);
 			}
 		}
 
