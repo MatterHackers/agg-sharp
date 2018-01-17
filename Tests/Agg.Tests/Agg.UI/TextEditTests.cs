@@ -37,6 +37,7 @@ using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Threading;
+using System.IO;
 
 namespace MatterHackers.Agg.UI.Tests
 {
@@ -45,13 +46,14 @@ namespace MatterHackers.Agg.UI.Tests
 #endif
 	public class TextEditTests
 	{
-		public static bool saveImagesForDebug = false;
+		public static bool saveImagesForDebug = true;
 
 		private void OutputImage(ImageBuffer imageToOutput, string fileName)
 		{
 			if (saveImagesForDebug)
 			{
-				ImageTgaIO.Save(imageToOutput, fileName);
+				var dirAndFileName = Path.Combine("C:/Temp", fileName);
+				ImageTgaIO.Save(imageToOutput, dirAndFileName);
 			}
 		}
 
