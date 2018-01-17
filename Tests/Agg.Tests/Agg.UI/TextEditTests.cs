@@ -46,7 +46,7 @@ namespace MatterHackers.Agg.UI.Tests
 #endif
 	public class TextEditTests
 	{
-		public static bool saveImagesForDebug = true;
+		public static bool saveImagesForDebug = false;
 
 		private void OutputImage(ImageBuffer imageToOutput, string fileName)
 		{
