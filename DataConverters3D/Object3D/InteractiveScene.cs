@@ -48,17 +48,11 @@ namespace MatterHackers.DataConverters3D
 	{
 		public event EventHandler SelectionChanged;
 		public event EventHandler Invalidated;
-		public event EventHandler Focused;
 
 		private IObject3D selectedItem;
 
 		public InteractiveScene()
 		{
-		}
-
-		public void Focus()
-		{
-			Focused?.Invoke(this, null);
 		}
 
 		[JsonIgnore]
