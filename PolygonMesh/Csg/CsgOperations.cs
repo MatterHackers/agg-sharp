@@ -235,7 +235,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			return Subtract(a, b, null, CancellationToken.None);
 		}
 
-		public static Mesh Subtract(Mesh a, Mesh b, Action<string, double> reporter, CancellationToken cancelationToken)
+		public static Mesh Subtract(Mesh a, Mesh b, Action<string, double> reporter, CancellationToken cancellationToken)
 		{
 			if (a.Faces.Count == 0)
 			{
@@ -257,7 +257,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			var modeller = new BooleanModeller(A, B, (status, progress0To1) =>
 			{
 				reporter?.Invoke(status, .4 + progress0To1 * .2);
-			}, cancelationToken);
+			}, cancellationToken);
 
 			reporter?.Invoke("Difference", .6);
 			var result = modeller.GetDifference();
@@ -274,7 +274,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			return Intersect(a, b, null, CancellationToken.None);
 		}
 
-		public static Mesh Intersect(Mesh a, Mesh b, Action<string, double> reporter, CancellationToken cancelationToken)
+		public static Mesh Intersect(Mesh a, Mesh b, Action<string, double> reporter, CancellationToken cancellationToken)
 		{
 			if (a.Faces.Count == 0)
 			{

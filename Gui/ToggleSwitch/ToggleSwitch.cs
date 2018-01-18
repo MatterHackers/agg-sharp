@@ -84,6 +84,8 @@ namespace MatterHackers.Agg.UI
 
 			private Color borderColor;
 
+			private Color disabledBorderColor;
+
 			internal SwitchView(double width, double height, bool startValue, Color backgroundColor, Color interiorColor, Color thumbColor, Color exteriorColor, Color borderColor)
 			{
 				this.Checked = startValue;
@@ -95,6 +97,8 @@ namespace MatterHackers.Agg.UI
 				ExteriorColor = exteriorColor;
 
 				this.borderColor = borderColor;
+
+				disabledBorderColor = new Color(borderColor, 50);
 
 				ThumbColor = thumbColor;
 				LocalBounds = new RectangleDouble(0, 0, width, height);
@@ -128,7 +132,7 @@ namespace MatterHackers.Agg.UI
 				}
 
 				// Draw border
-				graphics2D.Rectangle(borderRect, borderColor, 1);
+				graphics2D.Rectangle(borderRect, (this.Enabled) ? borderColor : disabledBorderColor, 1);
 
 				var thumbBounds = (this.Checked) ? checkedThumbBounds : uncheckedThumbBounds;
 				graphics2D.FillRectangle(thumbBounds, this.ThumbColor);

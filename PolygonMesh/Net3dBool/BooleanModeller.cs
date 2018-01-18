@@ -306,7 +306,7 @@ namespace Net3dBool
 			}
 		}
 
-		public BooleanModeller(Solid solid1, Solid solid2, Action<string, double> reporter, CancellationToken cancelationToken)
+		public BooleanModeller(Solid solid1, Solid solid2, Action<string, double> reporter, CancellationToken cancellationToken)
 		{
 			//representation to apply boolean operations
 			reporter?.Invoke("Object3D1", 0.1);
@@ -319,10 +319,10 @@ namespace Net3dBool
 
 			//split the faces so that none of them intercepts each other
 			reporter?.Invoke("Split Faces2", 0.4);
-			object1.SplitFaces(object2, cancelationToken);
+			object1.SplitFaces(object2, cancellationToken);
 
 			reporter?.Invoke("Split Faces1", 0.6);
-			object2.SplitFaces(object1Copy, cancelationToken);// new DebugSplitFace());//, new DebugCuttingFace());
+			object2.SplitFaces(object1Copy, cancellationToken);// new DebugSplitFace());//, new DebugCuttingFace());
 
 			//classify faces as being inside or outside the other solid
 			reporter?.Invoke("Classify Faces2", 0.8);
