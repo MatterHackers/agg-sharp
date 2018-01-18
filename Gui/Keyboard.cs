@@ -26,6 +26,21 @@ namespace MatterHackers.Agg.UI
 			{
 				downStates.Add(key, down);
 			}
+
+			switch(key)
+			{
+				case Keys.LControlKey:
+				case Keys.RControlKey:
+				case Keys.ControlKey:
+					SetKeyDownState(Keys.Control, down);
+					break;
+
+				case Keys.LShiftKey:
+				case Keys.RShiftKey:
+				case Keys.ShiftKey:
+					SetKeyDownState(Keys.Shift, down);
+					break;
+			}
 		}
 	}
 }
