@@ -139,12 +139,12 @@ namespace MatterHackers.VectorMath
 		}
 
 		//Mouse drag, calculate rotation
-		public void OnMouseMove(Vector2 mousePosition, bool rotateOnZ)
+		public void OnMouseMove(Vector2 mousePosition)
 		{
 			switch (currentTrackingType)
 			{
 				case MouseDownType.Rotation:
-					Quaternion activeRotationQuaternion = GetRotationForMove(world, trackBallRadius, mouseDownPosition, mousePosition, rotateOnZ);
+					Quaternion activeRotationQuaternion = GetRotationForMove(world, trackBallRadius, mouseDownPosition, mousePosition, false);
 
 					if (activeRotationQuaternion != Quaternion.Identity)
 					{
