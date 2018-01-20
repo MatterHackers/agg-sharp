@@ -312,7 +312,7 @@ namespace MatterHackers.Agg.OpenGlGui
 
 			if (!LockTrackBall && TrackBallController.CurrentTrackingType != TrackBallController.MouseDownType.None)
 			{
-				TrackBallController.OnMouseMove(currentMousePosition, Keyboard.IsKeyDown(Keys.ShiftKey));
+				TrackBallController.OnMouseMove(currentMousePosition);
 				Invalidate();
 			}
 
@@ -373,7 +373,7 @@ namespace MatterHackers.Agg.OpenGlGui
 				{
 					Vector2 center = LocalBounds.Center;
 					TrackBallController.OnMouseDown(center, Matrix4X4.Identity, TrackBallController.MouseDownType.Rotation);
-					TrackBallController.OnMouseMove(center + currentVelocityPerMs * msPerUpdate, false);
+					TrackBallController.OnMouseMove(center + currentVelocityPerMs * msPerUpdate);
 					TrackBallController.OnMouseUp();
 					Invalidate();
 
