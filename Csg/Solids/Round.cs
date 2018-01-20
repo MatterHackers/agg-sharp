@@ -38,6 +38,8 @@ namespace MatterHackers.Csg.Solids
 
 	public class Round : CsgObjectWrapper
 	{
+		public int Sides { get; set; } = 30;
+
 		private const double defaultExtraDimension = .02;
 		private const double defaultExtraRadialDimension = .2;
 
@@ -164,7 +166,6 @@ namespace MatterHackers.Csg.Solids
 			{
 				return;
 			}
-			int roundSides = 30;
 			CsgObject newRound = null;
 			double radiusBoxSize = radius + extraDimension;
 			switch (edgeToRound)
@@ -173,7 +174,7 @@ namespace MatterHackers.Csg.Solids
 					{
 						double zSize = size.Z + 2 * extraDimension;
 						newRound = new Box(radiusBoxSize, radiusBoxSize, zSize);
-						CsgObject frontTopCut = new Cylinder(radius, zSize + extraDimension * 2, roundSides, Alignment.z);
+						CsgObject frontTopCut = new Cylinder(radius, zSize + extraDimension * 2, Sides, Alignment.z);
 						frontTopCut = new Align(frontTopCut, Face.Left | Face.Front, newRound, Face.Left | Face.Front, extraDimension, extraDimension, 0);
 						newRound -= frontTopCut;
 						newRound = new Align(newRound, Face.Left | Face.Front, GetEdgeOffset(Face.Left | Face.Front), -extraDimension, -extraDimension, 0);
@@ -184,7 +185,7 @@ namespace MatterHackers.Csg.Solids
 					{
 						double zSize = size.Z + 2 * extraDimension;
 						newRound = new Box(radiusBoxSize, radiusBoxSize, zSize);
-						CsgObject BackTopCut = new Cylinder(radius, zSize + extraDimension * 2, roundSides, Alignment.z);
+						CsgObject BackTopCut = new Cylinder(radius, zSize + extraDimension * 2, Sides, Alignment.z);
 						BackTopCut = new Align(BackTopCut, Face.Left | Face.Back, newRound, Face.Left | Face.Back, extraDimension, -extraDimension, 0);
 						newRound -= BackTopCut;
 						newRound = new Align(newRound, Face.Left | Face.Back, GetEdgeOffset(Face.Left | Face.Back), -extraDimension, extraDimension, 0);
@@ -195,7 +196,7 @@ namespace MatterHackers.Csg.Solids
 					{
 						double ySize = size.Y + 2 * extraDimension;
 						newRound = new Box(radiusBoxSize, ySize, radiusBoxSize);
-						CsgObject frontTopCut = new Cylinder(radius, ySize + extraDimension * 2, roundSides, Alignment.y);
+						CsgObject frontTopCut = new Cylinder(radius, ySize + extraDimension * 2, Sides, Alignment.y);
 						frontTopCut = new Align(frontTopCut, Face.Left | Face.Top, newRound, Face.Left | Face.Top, extraDimension, 0, -extraDimension);
 						newRound -= frontTopCut;
 						newRound = new Align(newRound, Face.Left | Face.Top, GetEdgeOffset(Face.Left | Face.Top), -extraDimension, 0, extraDimension);
@@ -206,7 +207,7 @@ namespace MatterHackers.Csg.Solids
 					{
 						double ySize = size.Y + 2 * extraDimension;
 						newRound = new Box(radiusBoxSize, ySize, radiusBoxSize);
-						CsgObject frontTopCut = new Cylinder(radius, ySize + extraDimension * 2, roundSides, Alignment.y);
+						CsgObject frontTopCut = new Cylinder(radius, ySize + extraDimension * 2, Sides, Alignment.y);
 						frontTopCut = new Align(frontTopCut, Face.Left | Face.Bottom, newRound, Face.Left | Face.Bottom, extraDimension, 0, extraDimension);
 						newRound -= frontTopCut;
 						newRound = new Align(newRound, Face.Left | Face.Bottom, GetEdgeOffset(Face.Left | Face.Bottom), -extraDimension, 0, -extraDimension);
@@ -217,7 +218,7 @@ namespace MatterHackers.Csg.Solids
 					{
 						double zSize = size.Z + 2 * extraDimension;
 						newRound = new Box(radiusBoxSize, radiusBoxSize, zSize);
-						CsgObject frontTopCut = new Cylinder(radius, zSize + extraDimension * 2, roundSides, Alignment.z);
+						CsgObject frontTopCut = new Cylinder(radius, zSize + extraDimension * 2, Sides, Alignment.z);
 						frontTopCut = new Align(frontTopCut, Face.Right | Face.Front, newRound, Face.Right | Face.Front, -extraDimension, extraDimension, 0);
 						newRound -= frontTopCut;
 						newRound = new Align(newRound, Face.Right | Face.Front, GetEdgeOffset(Face.Right | Face.Front), extraDimension, -extraDimension, 0);
@@ -228,7 +229,7 @@ namespace MatterHackers.Csg.Solids
 					{
 						double ySize = size.Y + 2 * extraDimension;
 						newRound = new Box(radiusBoxSize, ySize, radiusBoxSize);
-						CsgObject frontTopCut = new Cylinder(radius, ySize + extraDimension * 2, roundSides, Alignment.y);
+						CsgObject frontTopCut = new Cylinder(radius, ySize + extraDimension * 2, Sides, Alignment.y);
 						frontTopCut = new Align(frontTopCut, Face.Right | Face.Top, newRound, Face.Right | Face.Top, -extraDimension, 0, -extraDimension);
 						newRound -= frontTopCut;
 						newRound = new Align(newRound, Face.Right | Face.Top, GetEdgeOffset(Face.Right | Face.Top), extraDimension, 0, extraDimension);
@@ -239,7 +240,7 @@ namespace MatterHackers.Csg.Solids
 					{
 						double ySize = size.Y + 2 * extraDimension;
 						newRound = new Box(radiusBoxSize, ySize, radiusBoxSize);
-						CsgObject frontBottomCut = new Cylinder(radius, ySize + extraDimension * 2, roundSides, Alignment.y);
+						CsgObject frontBottomCut = new Cylinder(radius, ySize + extraDimension * 2, Sides, Alignment.y);
 						frontBottomCut = new Align(frontBottomCut, Face.Right | Face.Bottom, newRound, Face.Right | Face.Bottom, -extraDimension, 0, extraDimension);
 						newRound -= frontBottomCut;
 						newRound = new Align(newRound, Face.Right | Face.Bottom, GetEdgeOffset(Face.Right | Face.Bottom), extraDimension, 0, -extraDimension);
@@ -250,7 +251,7 @@ namespace MatterHackers.Csg.Solids
 					{
 						double zSize = size.Z + 2 * extraDimension;
 						newRound = new Box(radiusBoxSize, radiusBoxSize, zSize);
-						CsgObject BackTopCut = new Cylinder(radius, zSize + extraDimension * 2, roundSides, Alignment.z);
+						CsgObject BackTopCut = new Cylinder(radius, zSize + extraDimension * 2, Sides, Alignment.z);
 						BackTopCut = new Align(BackTopCut, Face.Right | Face.Back, newRound, Face.Right | Face.Back, -extraDimension, -extraDimension, 0);
 						newRound -= BackTopCut;
 						newRound = new Align(newRound, Face.Right | Face.Back, GetEdgeOffset(Face.Right | Face.Back), extraDimension, extraDimension, 0);
@@ -261,7 +262,7 @@ namespace MatterHackers.Csg.Solids
 					{
 						double xSize = size.X + 2 * extraDimension;
 						newRound = new Box(xSize, radiusBoxSize, radiusBoxSize);
-						CsgObject frontTopCut = new Cylinder(radius, xSize + extraDimension * 2, roundSides, Alignment.x);
+						CsgObject frontTopCut = new Cylinder(radius, xSize + extraDimension * 2, Sides, Alignment.x);
 						frontTopCut = new Align(frontTopCut, Face.Front | Face.Top, newRound, Face.Front | Face.Top, 0, extraDimension, -extraDimension);
 						newRound -= frontTopCut;
 						newRound = new Align(newRound, Face.Front | Face.Top, GetEdgeOffset(Face.Front | Face.Top), 0, -extraDimension, extraDimension);
@@ -272,7 +273,7 @@ namespace MatterHackers.Csg.Solids
 					{
 						double xSize = size.X + 2 * extraDimension;
 						newRound = new Box(xSize, radiusBoxSize, radiusBoxSize);
-						CsgObject frontTopCut = new Cylinder(radius, xSize + extraDimension * 2, roundSides, Alignment.x);
+						CsgObject frontTopCut = new Cylinder(radius, xSize + extraDimension * 2, Sides, Alignment.x);
 						frontTopCut = new Align(frontTopCut, Face.Front | Face.Bottom, newRound, Face.Front | Face.Bottom, 0, extraDimension, extraDimension);
 						newRound -= frontTopCut;
 						newRound = new Align(newRound, Face.Front | Face.Bottom, GetEdgeOffset(Face.Front | Face.Bottom), 0, -extraDimension, -extraDimension);
@@ -283,7 +284,7 @@ namespace MatterHackers.Csg.Solids
 					{
 						double xSize = size.X + 2 * extraDimension;
 						newRound = new Box(xSize, radiusBoxSize, radiusBoxSize);
-						CsgObject backBottomCut = new Cylinder(radius, xSize + extraDimension * 2, roundSides, Alignment.x);
+						CsgObject backBottomCut = new Cylinder(radius, xSize + extraDimension * 2, Sides, Alignment.x);
 						backBottomCut = new Align(backBottomCut, Face.Back | Face.Bottom, newRound, Face.Back | Face.Bottom, 0, -extraDimension, extraDimension);
 						newRound -= backBottomCut;
 						newRound = new Align(newRound, Face.Back | Face.Bottom, GetEdgeOffset(Face.Back | Face.Bottom), 0, extraDimension, -extraDimension);
@@ -294,7 +295,7 @@ namespace MatterHackers.Csg.Solids
 					{
 						double xSize = size.X + 2 * extraDimension;
 						newRound = new Box(xSize, radiusBoxSize, radiusBoxSize);
-						CsgObject backTopCut = new Cylinder(radius, xSize + extraDimension * 2, roundSides, Alignment.x);
+						CsgObject backTopCut = new Cylinder(radius, xSize + extraDimension * 2, Sides, Alignment.x);
 						backTopCut = new Align(backTopCut, Face.Back | Face.Top, newRound, Face.Back | Face.Top, 0, -extraDimension, -extraDimension);
 						newRound -= backTopCut;
 						newRound = new Align(newRound, Face.Back | Face.Top, GetEdgeOffset(Face.Back | Face.Top), 0, extraDimension, extraDimension);
