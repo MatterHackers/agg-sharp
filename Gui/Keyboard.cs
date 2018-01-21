@@ -40,6 +40,10 @@ namespace MatterHackers.Agg.UI
 				case Keys.ShiftKey:
 					SetKeyDownState(Keys.Shift, down);
 					break;
+
+				case Keys.Menu:
+					SetKeyDownState(Keys.Alt, down);
+					break;
 			}
 		}
 	}

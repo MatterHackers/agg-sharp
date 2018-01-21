@@ -30,14 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using ClipperLib;
 using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
-using MatterHackers.Csg;
-using MatterHackers.Csg.Operations;
-using MatterHackers.Csg.Solids;
-using MatterHackers.Csg.Transform;
-using MatterHackers.VectorMath;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace MatterHackers.DataConverters2D
 {

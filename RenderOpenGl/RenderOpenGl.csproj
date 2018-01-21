@@ -55,10 +55,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Csg\Csg.csproj">
-      <Project>{7E61A5BD-E78F-4B80-88C9-3821B4FA062E}</Project>
-      <Name>Csg</Name>
-    </ProjectReference>
     <ProjectReference Include="..\DataConverters2D\DataConverters2D.csproj">
       <Project>{94838988-523C-4B11-AD82-8B9B76F23A31}</Project>
       <Name>DataConverters2D</Name>
@@ -96,7 +92,6 @@
     <Compile Include="OverhangRender.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Renderer\RendererOpenGL.cs" />
-    <Compile Include="RenderCsgToGl.cs" />
     <Compile Include="Renderer\AARenderToGLTesselator.cs" />
     <Compile Include="Renderer\RenderToGLTesselator.cs" />
     <Compile Include="RenderMeshToGl.cs" />
