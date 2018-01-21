@@ -227,9 +227,9 @@ namespace MatterHackers.RayTracer
 			total = MatterHackers.Csg.CsgObject.Flatten(total);
 			MatterHackers.Csg.Processors.OpenSCadOutput.Save(total, "MakerGearXCariage.scad");
 
-			CsgToRayTraceable visitor = new CsgToRayTraceable();
+			//CsgToRayTraceable visitor = new CsgToRayTraceable();
 
-			return visitor.GetIPrimitiveRecursive((dynamic)total);
+			return null; //  visitor.GetIPrimitiveRecursive((dynamic)total);
 		}
 
 		private void AddAFloor()
