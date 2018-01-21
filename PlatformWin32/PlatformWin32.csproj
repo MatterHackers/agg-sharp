@@ -89,10 +89,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="win32\AggGLControl.cs" />
-    <Compile Include="win32\BitmapSystemWindow.cs" />
+    <Compile Include="win32\AggGLControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="win32\BitmapSystemWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="win32\FileSystemStaticData.cs" />
-    <Compile Include="win32\OpenGLSystemWindow.cs" />
+    <Compile Include="win32\OpenGLSystemWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="win32\WinformFileDialogProvider.cs" />
     <Compile Include="win32\NativeMethods.cs" />
     <Compile Include="win32\DirtyRects.cs" />
@@ -104,7 +110,9 @@
     <Compile Include="win32\WindowsFormsClipboard.cs" />
     <Compile Include="win32\WinformsEventSink.cs" />
     <Compile Include="win32\WinformsInformationProvider.cs" />
-    <Compile Include="win32\WinformsSystemWindow.cs" />
+    <Compile Include="win32\WinformsSystemWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="win32\WinformsSystemWindowProvider.cs" />
   </ItemGroup>
   <ItemGroup>

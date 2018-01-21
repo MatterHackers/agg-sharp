@@ -64,10 +64,6 @@
       <Project>{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}</Project>
       <Name>VectorMath</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Csg\Csg.csproj">
-      <Project>{7E61A5BD-E78F-4B80-88C9-3821B4FA062E}</Project>
-      <Name>Csg</Name>
-    </ProjectReference>
     <ProjectReference Include="..\agg\Agg.csproj">
       <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
       <Name>Agg</Name>
