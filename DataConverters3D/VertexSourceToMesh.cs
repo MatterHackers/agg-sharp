@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using ClipperLib;
@@ -97,7 +98,7 @@ namespace MatterHackers.DataConverters3D
 			}
 
 			// make the outside shell
-			double angleDelta = (angleEnd - angleStart) / angleSteps;
+			double angleDelta = (angleEnd - angleStart) / Math.Max(3, angleSteps);
 			double currentAngle = 0;
             for (currentAngle = angleStart; currentAngle < angleEnd - angleDelta - EqualityTolerance; currentAngle += angleDelta)
 			{
