@@ -51,9 +51,8 @@ namespace MatterHackers.RayTracer
 
 		private Transform allObjectsHolder;
 
-		private List<IObject3D> loadedMeshDatas;
+		private IObject3D sceneToRender;
 
-		private List<IPrimitive> renderCollection = new List<IPrimitive>();
 		private Scene scene;
 		private Point2D size;
 		
@@ -71,9 +70,9 @@ namespace MatterHackers.RayTracer
 
 			world = new WorldView(width, height);
 
-			loadedMeshDatas = item.VisibleMeshes().ToList();
+			sceneToRender = item;
 
-			SetRenderPosition(loadedMeshDatas);
+			SetRenderPosition();
 		}
 
 		public bool MultiThreaded
@@ -96,7 +95,7 @@ namespace MatterHackers.RayTracer
 			rayTracer.CopyColorBufferToImage(destImage, rect);
 		}
 
-		public void SetRenderPosition(List<IObject3D> renderDatas)
+		public void SetRenderPosition()
 		{
 			world.Reset();
 			world.Scale = .03;
@@ -104,7 +103,7 @@ namespace MatterHackers.RayTracer
 			world.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, -MathHelper.Tau / 16)));
 			world.Rotate(Quaternion.FromEulerAngles(new Vector3(MathHelper.Tau * .19, 0, 0)));
 
-			ScaleMeshToView(renderDatas);
+			SetViewForScene();
 		}
 
 		private void AddAFloor()
@@ -300,24 +299,25 @@ namespace MatterHackers.RayTracer
 			return totalMeshBounds;
 		}
 
-		private void AddTestMesh(List<IObject3D> renderDatas)
+		private List<IPrimitive> GetRenderCollection()
 		{
-			if (renderDatas != null)
+			if (sceneToRender != null)
 			{
-				AxisAlignedBoundingBox totalMeshBounds = GetAxisAlignedBoundingBox(renderDatas);
-				loadedMeshDatas = renderDatas;
+				AxisAlignedBoundingBox totalMeshBounds = sceneToRender.GetAxisAlignedBoundingBox();
 				Vector3 meshCenter = totalMeshBounds.Center;
-				foreach (var renderData in renderDatas)
-				{
-					renderData.Matrix = renderData.Matrix * Matrix4X4.CreateTranslation(-meshCenter);
-				}
 
-				ScaleMeshToView(loadedMeshDatas);
+				sceneToRender.Matrix = sceneToRender.Matrix * Matrix4X4.CreateTranslation(-meshCenter);
 
-				IPrimitive bvhCollection = MeshToBVH.Convert(loadedMeshDatas);
+				SetViewForScene();
 
+				IPrimitive bvhCollection = MeshToBVH.Convert(sceneToRender);
+
+				List<IPrimitive> renderCollection = new List<IPrimitive>();
 				renderCollection.Add(bvhCollection);
+				return renderCollection;
 			}
+
+			return null;
 		}
 
 		private void CreateScene()
@@ -327,9 +327,7 @@ namespace MatterHackers.RayTracer
 			//scene.background = new Background(new RGBA_Floats(0.5, .5, .5), 0.4);
 			scene.background = new Background(new ColorF(1, 1, 1, 0), 0.6);
 
-			AddTestMesh(loadedMeshDatas);
-
-			allObjects = BoundingVolumeHierarchy.CreateNewHierachy(renderCollection);
+			allObjects = BoundingVolumeHierarchy.CreateNewHierachy(GetRenderCollection());
 			allObjectsHolder = new Transform(allObjects);
 			//allObjects = root;
 			scene.shapes.Add(allObjectsHolder);
@@ -378,11 +376,11 @@ namespace MatterHackers.RayTracer
 			return false;
 		}
 
-		private void ScaleMeshToView(List<IObject3D> renderDatas)
+		private void SetViewForScene()
 		{
-			if (renderDatas != null)
+			if (sceneToRender != null)
 			{
-				AxisAlignedBoundingBox meshBounds = GetAxisAlignedBoundingBox(renderDatas);
+				AxisAlignedBoundingBox meshBounds = sceneToRender.GetAxisAlignedBoundingBox();
 
 				bool done = false;
 				double scaleFraction = .1;
