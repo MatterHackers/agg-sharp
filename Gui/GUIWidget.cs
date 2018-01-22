@@ -1339,9 +1339,12 @@ namespace MatterHackers.Agg.UI
 			get => LocalBounds.Width;
 			set
 			{
-				RectangleDouble localBounds = LocalBounds;
-				localBounds.Right = localBounds.Left + value;
-				LocalBounds = localBounds;
+				if (value != Width)
+				{
+					RectangleDouble localBounds = LocalBounds;
+					localBounds.Right = localBounds.Left + value;
+					LocalBounds = localBounds;
+				}
 			}
 		}
 
@@ -1351,9 +1354,12 @@ namespace MatterHackers.Agg.UI
 			get => LocalBounds.Height;
 			set
 			{
-				RectangleDouble localBounds = LocalBounds;
-				localBounds.Top = localBounds.Bottom + value;
-				LocalBounds = localBounds;
+				if (value != Height)
+				{
+					RectangleDouble localBounds = LocalBounds;
+					localBounds.Top = localBounds.Bottom + value;
+					LocalBounds = localBounds;
+				}
 			}
 		}
 
