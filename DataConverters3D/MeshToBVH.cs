@@ -17,37 +17,40 @@ namespace MatterHackers.DataConverters3D
 			});
 		}
 
-		public static IPrimitive Convert(IObject3D renderData)
+		public static IPrimitive Convert(IObject3D rootItem)
 		{
 			List<IPrimitive> renderCollection = new List<IPrimitive>();
 
-			SolidMaterial partMaterial;
-			var color = renderData.WorldColor(null);
-			if (color.alpha != 0)
+			foreach (var item in rootItem.VisibleMeshes())
 			{
-				partMaterial = new SolidMaterial(new ColorF(color.Red0To1, color.Green0To1, color.Blue0To1), .01, 0.0, 2.0);
-			}
-			else
-			{
-				partMaterial = new SolidMaterial(new ColorF(.9, .2, .1), .01, 0.0, 2.0);
-			}
-
-			var worldMatrix = renderData.WorldMatrix(null);
-			foreach (Face face in renderData.Mesh.Faces)
-			{
-				if (false)
+				SolidMaterial partMaterial;
+				var color = item.WorldColor(null);
+				if (color.alpha != 0)
 				{
-					renderCollection.Add(new MeshFaceTraceable(face, partMaterial, worldMatrix));
+					partMaterial = new SolidMaterial(new ColorF(color.Red0To1, color.Green0To1, color.Blue0To1), .01, 0.0, 2.0);
 				}
 				else
 				{
-					foreach (var triangle in face.AsTriangles())
+					partMaterial = new SolidMaterial(new ColorF(.9, .2, .1), .01, 0.0, 2.0);
+				}
+
+				var worldMatrix = item.WorldMatrix(null);
+				foreach (Face face in item.Mesh.Faces)
+				{
+					if (false)
 					{
-						renderCollection.Add(new TriangleShape(
-							Vector3.Transform(triangle.p0, worldMatrix),
-							Vector3.Transform(triangle.p1, worldMatrix),
-							Vector3.Transform(triangle.p2, worldMatrix),
-							partMaterial));
+						renderCollection.Add(new MeshFaceTraceable(face, partMaterial, worldMatrix));
+					}
+					else
+					{
+						foreach (var triangle in face.AsTriangles())
+						{
+							renderCollection.Add(new TriangleShape(
+								Vector3.Transform(triangle.p0, worldMatrix),
+								Vector3.Transform(triangle.p1, worldMatrix),
+								Vector3.Transform(triangle.p2, worldMatrix),
+								partMaterial));
+						}
 					}
 				}
 			}
