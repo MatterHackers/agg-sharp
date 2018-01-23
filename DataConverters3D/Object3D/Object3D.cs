@@ -452,7 +452,7 @@ namespace MatterHackers.DataConverters3D
 			return clonedItem;
 		}
 
-		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix, bool requirePrecision = false)
+		public virtual AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix, bool requirePrecision = false)
 		{
 			var totalTransorm = this.Matrix * matrix;
 
