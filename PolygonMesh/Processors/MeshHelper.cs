@@ -95,6 +95,25 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
+		public static void RemoveTexture(this Mesh mesh, ImageBuffer texture, int index)
+		{
+			foreach (var face in mesh.Faces)
+			{
+				face.RemoveTexture(texture, index);
+			}
+
+			mesh.MarkAsChanged();
+		}
+
+		public static void RemoveTexture(this Face face, ImageBuffer texture, int index)
+		{
+			face.ContainingMesh.FaceTexture.Remove((face, index));
+			foreach (FaceEdge faceEdge in face.FaceEdges())
+			{
+				face.ContainingMesh.TextureUV.Remove((faceEdge, index));
+			}
+		}
+
 		public static void PlaceTexture(this Mesh mesh, ImageBuffer textureToUse, Matrix4X4 textureCoordinateMapping)
 		{
 			foreach (var face in mesh.Faces)
