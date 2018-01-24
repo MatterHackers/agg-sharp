@@ -59,8 +59,6 @@ namespace MatterHackers.Agg.UI
 
 		Color PrimaryAccentColor { get; }
 
-		Color SecondaryAccentColor { get; }
-
 		Color SourceColor { get; }
 	}
 }
