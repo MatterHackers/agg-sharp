@@ -38,28 +38,28 @@ namespace MatterHackers.Agg.UI
 		private readonly static List<IThemeColors> themeColors = new List<IThemeColors>()
 		{
 			//Dark themes
-			ThemeColors.Create("Red - Dark", new Color(172, 25, 61), new Color(217, 31, 77)),
-			ThemeColors.Create("Pink - Dark", new Color(220, 79, 173), new Color(233, 143, 203)),
-			ThemeColors.Create("Orange - Dark", new Color(255, 129, 25), new Color(255, 157, 76)),
-			ThemeColors.Create("Green - Dark", new Color(0, 138, 23), new Color(0, 189, 32)),
-			ThemeColors.Create("Blue - Dark", new Color(0, 75, 139), new Color(0, 103, 190)),
-			ThemeColors.Create("Teal - Dark", new Color(0, 130, 153), new Color(0, 173, 204)),
-			ThemeColors.Create("Light Blue - Dark", new Color(93, 178, 255), new Color(144, 202, 255)),
-			ThemeColors.Create("Purple - Dark", new Color(70, 23, 180), new Color(104, 51, 229)),
-			ThemeColors.Create("Magenta - Dark", new Color(140, 0, 149), new Color(188, 0, 200)),
-			ThemeColors.Create("Grey - Dark", new Color(88, 88, 88), new Color(114, 114, 114)),
+			ThemeColors.Create("Red - Dark", new Color(172, 25, 61)),
+			ThemeColors.Create("Pink - Dark", new Color(220, 79, 173)),
+			ThemeColors.Create("Orange - Dark", new Color(255, 129, 25)),
+			ThemeColors.Create("Green - Dark", new Color(0, 138, 23)),
+			ThemeColors.Create("Blue - Dark", new Color(0, 75, 139)),
+			ThemeColors.Create("Teal - Dark", new Color(0, 130, 153)),
+			ThemeColors.Create("Light Blue - Dark", new Color(93, 178, 255)),
+			ThemeColors.Create("Purple - Dark", new Color(70, 23, 180)),
+			ThemeColors.Create("Magenta - Dark", new Color(140, 0, 149)),
+			ThemeColors.Create("Grey - Dark", new Color(88, 88, 88)),
 
 			//Light themes
-			ThemeColors.Create("Red - Light", new Color(172, 25, 61), new Color(217, 31, 77), false),
-			ThemeColors.Create("Pink - Light", new Color(220, 79, 173), new Color(233, 143, 203), false),
-			ThemeColors.Create("Orange - Light", new Color(255, 129, 25), new Color(255, 157, 76), false),
-			ThemeColors.Create("Green - Light", new Color(0, 138, 23), new Color(0, 189, 32), false),
-			ThemeColors.Create("Blue - Light", new Color(0, 75, 139), new Color(0, 103, 190), false),
-			ThemeColors.Create("Teal - Light", new Color(0, 130, 153), new Color(0, 173, 204), false),
-			ThemeColors.Create("Light Blue - Light", new Color(93, 178, 255), new Color(144, 202, 255), false),
-			ThemeColors.Create("Purple - Light", new Color(70, 23, 180), new Color(104, 51, 229), false),
-			ThemeColors.Create("Magenta - Light", new Color(140, 0, 149), new Color(188, 0, 200), false),
-			ThemeColors.Create("Grey - Light", new Color(88, 88, 88), new Color(114, 114, 114), false),
+			ThemeColors.Create("Red - Light", new Color(172, 25, 61), false),
+			ThemeColors.Create("Pink - Light", new Color(220, 79, 173), false),
+			ThemeColors.Create("Orange - Light", new Color(255, 129, 25), false),
+			ThemeColors.Create("Green - Light", new Color(0, 138, 23), false),
+			ThemeColors.Create("Blue - Light", new Color(0, 75, 139), false),
+			ThemeColors.Create("Teal - Light", new Color(0, 130, 153), false),
+			ThemeColors.Create("Light Blue - Light", new Color(93, 178, 255), false),
+			ThemeColors.Create("Purple - Light", new Color(70, 23, 180), false),
+			ThemeColors.Create("Magenta - Light", new Color(140, 0, 149), false),
+			ThemeColors.Create("Grey - Light", new Color(88, 88, 88), false),
 		};
 
 		private static IThemeColors activeTheme = themeColors[0];

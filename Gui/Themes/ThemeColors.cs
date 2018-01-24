@@ -59,10 +59,9 @@ namespace MatterHackers.Agg.UI
 
 		public Color PrimaryAccentColor { get; set; }
 
-		public Color SecondaryAccentColor { get; set; }
 		public Color SourceColor { get; private set; }
 
-		public static ThemeColors Create(string name, Color primary, Color secondary, bool darkTheme = true)
+		public static ThemeColors Create(string name, Color primary, bool darkTheme = true)
 		{
 			var color = new ThemeColors
 			{
@@ -74,8 +73,6 @@ namespace MatterHackers.Agg.UI
 			if (darkTheme)
 			{
 				color.PrimaryAccentColor = primary;
-
-				color.SecondaryAccentColor = secondary;
 
 				color.PrimaryBackgroundColor = new Color(68, 68, 68);
 				color.SecondaryBackgroundColor = new Color(51, 51, 51);
@@ -89,8 +86,7 @@ namespace MatterHackers.Agg.UI
 			}
 			else
 			{
-				color.PrimaryAccentColor = secondary;
-				color.SecondaryAccentColor = primary;
+				color.PrimaryAccentColor = primary;
 
 				color.PrimaryBackgroundColor = new Color(208, 208, 208);
 				color.SecondaryBackgroundColor = new Color(185, 185, 185);
@@ -103,7 +99,6 @@ namespace MatterHackers.Agg.UI
 			}
 
 			color.PrimaryAccentColor = FixAccentColor(color.PrimaryBackgroundColor, color.PrimaryAccentColor);
-			color.SecondaryAccentColor = FixAccentColor(color.SecondaryAccentColor, color.PrimaryAccentColor);
 
 			return color;
 		}

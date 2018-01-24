@@ -207,6 +207,11 @@ namespace MatterHackers.PolygonMesh.Csg
 
 		public static Mesh Union(Mesh a, Mesh b)
 		{
+			return Union(a, b, null, CancellationToken.None);
+		}
+
+		public static Mesh Union(Mesh a, Mesh b, Action<string, double> reporter, CancellationToken cancellationToken)
+		{
 			if(a.Faces.Count == 0)
 			{
 				return b;
@@ -215,13 +220,25 @@ namespace MatterHackers.PolygonMesh.Csg
 			{
 				return a;
 			}
+			reporter?.Invoke("Mesh to Solid A", 0);
 			var A = SolidFromMesh(a);
+			reporter?.Invoke("Mesh to Solid B", .2);
 			var B = SolidFromMesh(b);
 
-			var modeller = new BooleanModeller(A, B);
+			reporter?.Invoke("BooleanModeller", .4);
+			var modeller = new BooleanModeller(A, B, (status, progress0To1) =>
+			{
+				reporter?.Invoke(status, .4 + progress0To1 * .2);
+			}, cancellationToken);
+
+			reporter?.Invoke("Union", .6);
 			var result = modeller.GetUnion();
 
-			return MeshFromSolid(result);
+			reporter?.Invoke("Solid to Mesh", .8);
+			var solidMesh = MeshFromSolid(result);
+
+			reporter?.Invoke("Solid to Mesh", 1);
+			return solidMesh;
 		}
 
 		/// <summary>
