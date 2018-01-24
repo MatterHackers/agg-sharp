@@ -59,37 +59,16 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
-		public Vector3 Size
-		{
-			get
-			{
-				return maxXYZ - minXYZ;
-			}
-		}
+		public Vector3 Size => maxXYZ - minXYZ;
+			
+		public double XSize => maxXYZ.X - minXYZ.X;
 
-		public double XSize
-		{
-			get
-			{
-				return maxXYZ.X - minXYZ.X;
-			}
-		}
+		public double YSize => maxXYZ.Y - minXYZ.Y;
 
-		public double YSize
-		{
-			get
-			{
-				return maxXYZ.Y - minXYZ.Y;
-			}
-		}
+		public double ZSize => maxXYZ.Z - minXYZ.Z;
 
-		public double ZSize
-		{
-			get
-			{
-				return maxXYZ.Z - minXYZ.Z;
-			}
-		}
+		
+
 
 		public bool Equals(AxisAlignedBoundingBox bounds, double equalityTolerance = 0)
 		{
@@ -197,13 +176,7 @@ namespace MatterHackers.VectorMath
 			return Vector3.Zero;
 		}
 
-		public Vector3 Center
-		{
-			get
-			{
-				return (minXYZ + maxXYZ) / 2;
-			}
-		}
+		public Vector3 Center => (minXYZ + maxXYZ) / 2;
 
 		/// <summary>
 		/// This is the computation cost of doing an intersection with the given type.
@@ -216,16 +189,10 @@ namespace MatterHackers.VectorMath
 			return 132;
 		}
 
-		public Vector3 GetCenter()
-		{
-			return (minXYZ + maxXYZ) * .5;
-		}
+		public Vector3 GetCenter() => (minXYZ + maxXYZ) * .5;
 
-		public double GetCenterX()
-		{
-			return (minXYZ.X + maxXYZ.X) * .5;
-		}
-
+		public double GetCenterX() => (minXYZ.X + maxXYZ.X) * .5;
+		
 		private double volumeCache = 0;
 
 		public double GetVolume()
