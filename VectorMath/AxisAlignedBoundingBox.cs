@@ -59,6 +59,12 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
+		public Vector3 Center => (minXYZ + maxXYZ) / 2;
+
+		public Vector3 GetCenter() => (minXYZ + maxXYZ) * .5;
+
+		public double GetCenterX() => (minXYZ.X + maxXYZ.X) * .5;
+
 		public Vector3 Size => maxXYZ - minXYZ;
 			
 		public double XSize => maxXYZ.X - minXYZ.X;
@@ -66,9 +72,6 @@ namespace MatterHackers.VectorMath
 		public double YSize => maxXYZ.Y - minXYZ.Y;
 
 		public double ZSize => maxXYZ.Z - minXYZ.Z;
-
-		
-
 
 		public bool Equals(AxisAlignedBoundingBox bounds, double equalityTolerance = 0)
 		{
@@ -176,8 +179,6 @@ namespace MatterHackers.VectorMath
 			return Vector3.Zero;
 		}
 
-		public Vector3 Center => (minXYZ + maxXYZ) / 2;
-
 		/// <summary>
 		/// This is the computation cost of doing an intersection with the given type.
 		/// Attempt to give it in average CPU cycles for the intersection.
@@ -188,11 +189,7 @@ namespace MatterHackers.VectorMath
 			// it would be great to try and measure this more accurately.  This is a guess from looking at the intersect function.
 			return 132;
 		}
-
-		public Vector3 GetCenter() => (minXYZ + maxXYZ) * .5;
-
-		public double GetCenterX() => (minXYZ.X + maxXYZ.X) * .5;
-		
+	
 		private double volumeCache = 0;
 
 		public double GetVolume()
