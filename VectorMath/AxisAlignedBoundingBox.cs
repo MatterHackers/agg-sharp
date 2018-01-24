@@ -40,6 +40,10 @@ namespace MatterHackers.VectorMath
 		public Vector3 minXYZ;
 		public Vector3 maxXYZ;
 
+		public AxisAlignedBoundingBox()
+		{
+		}
+
 		public AxisAlignedBoundingBox(Vector3 minXYZ, Vector3 maxXYZ)
 		{
 			this.minXYZ = minXYZ;

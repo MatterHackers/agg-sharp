@@ -70,7 +70,6 @@ namespace MatterHackers.DataConverters3D
 			return object3D.GetAxisAlignedBoundingBox(Matrix4X4.Identity, requirePrecision);
 		}
 
-
 		/// <summary>
 		/// Got the top of this objects parent tree and get change the name of the object if
 		/// required to make sure it is not the same as any other decendant
