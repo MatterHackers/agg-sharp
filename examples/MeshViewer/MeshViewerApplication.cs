@@ -140,6 +140,8 @@ namespace MatterHackers.MeshVisualizer
 			UiThread.RunOnIdle(DoOpenFileButton_ButtonClick);
 		}
 
+		private string ValidFileExtensions { get; } = ".STL;.AMF;.OBJ";
+
 		private void DoOpenFileButton_ButtonClick()
 		{
 			AggContext.FileDialogs.OpenFileDialog(
@@ -159,7 +161,7 @@ namespace MatterHackers.MeshVisualizer
 				foreach (string file in mouseEvent.DragFiles)
 				{
 					string extension = Path.GetExtension(file).ToUpper();
-					if ((extension != "" && MeshFileIo.ValidFileExtensions().Contains(extension)))
+					if ((extension != "" && this.ValidFileExtensions.Contains(extension)))
 					{
 						mouseEvent.AcceptDrop = true;
 					}
@@ -176,7 +178,7 @@ namespace MatterHackers.MeshVisualizer
 				foreach (string file in mouseEvent.DragFiles)
 				{
 					string extension = Path.GetExtension(file).ToUpper();
-					if ((extension != "" && MeshFileIo.ValidFileExtensions().Contains(extension)))
+					if ((extension != "" && this.ValidFileExtensions.Contains(extension)))
 					{
 						mouseEvent.AcceptDrop = true;
 					}
@@ -194,7 +196,7 @@ namespace MatterHackers.MeshVisualizer
 				foreach (string droppedFileName in mouseEvent.DragFiles)
 				{
 					string extension = Path.GetExtension(droppedFileName).ToUpper();
-					if ((extension != "" && MeshFileIo.ValidFileExtensions().Contains(extension)))
+					if ((extension != "" && this.ValidFileExtensions.Contains(extension)))
 					{
 						meshViewerWidget.LoadItemIntoScene(droppedFileName);
 						break;

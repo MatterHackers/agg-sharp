@@ -43,11 +43,6 @@ namespace MatterHackers.DataConverters3D
 {
 	public static class MeshFileIo
 	{
-		public static string ValidFileExtensions()
-		{
-			return ".STL;.AMF;.OBJ";
-		}
-
 		public static IObject3D Load(Stream fileStream, string fileExtension, CancellationToken cancellationToken, Action<double, string> reportProgress = null, IObject3D source = null)
 		{
 			switch (fileExtension.ToUpper())
