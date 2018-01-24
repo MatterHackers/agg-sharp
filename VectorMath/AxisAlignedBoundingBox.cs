@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace MatterHackers.VectorMath
 {
@@ -63,18 +64,23 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
+		[JsonIgnore]
 		public Vector3 Center => (minXYZ + maxXYZ) / 2;
 
 		public Vector3 GetCenter() => (minXYZ + maxXYZ) * .5;
 
 		public double GetCenterX() => (minXYZ.X + maxXYZ.X) * .5;
 
+		[JsonIgnore]
 		public Vector3 Size => maxXYZ - minXYZ;
-			
+
+		[JsonIgnore]
 		public double XSize => maxXYZ.X - minXYZ.X;
 
+		[JsonIgnore]
 		public double YSize => maxXYZ.Y - minXYZ.Y;
 
+		[JsonIgnore]
 		public double ZSize => maxXYZ.Z - minXYZ.Z;
 
 		public bool Equals(AxisAlignedBoundingBox bounds, double equalityTolerance = 0)
