@@ -407,6 +407,18 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
+		public void ScrollIntoView(string checkBoxName)
+		{
+			// Find any sibling toggle switch and scroll the parent to the bottom
+			var checkBox = GetWidgetByName(checkBoxName, out _, onlyVisible: false);
+
+			if (checkBox != null)
+			{
+				var scrollable = checkBox.Parents<ScrollableWidget>().First();
+				scrollable?.ScrollIntoView(checkBox);
+			}
+		}
+
 		public bool ImageExists(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null)
 		{
 			ImageBuffer imageToLookFor = LoadImageFromSourceFolder(imageName);
@@ -575,17 +587,17 @@ namespace MatterHackers.GuiAutomation
 			return null;
 		}
 
-		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, double secondsToWait = 5, SearchRegion searchRegion = null)
+		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, double secondsToWait = 5, SearchRegion searchRegion = null, bool onlyVisible = true)
 		{
-			return GetWidgetByName(widgetName, out containingWindow, out _, secondsToWait, searchRegion);
+			return GetWidgetByName(widgetName, out containingWindow, out _, secondsToWait, searchRegion, onlyVisible);
 		}
 
-		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, out Point2D offsetHint, double secondsToWait = 5, SearchRegion searchRegion = null)
+		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, out Point2D offsetHint, double secondsToWait = 5, SearchRegion searchRegion = null, bool onlyVisible = true)
 		{
 			containingWindow = null;
 			offsetHint = Point2D.Zero;
 
-			List<GetByNameResults> getResults = GetWidgetsByName(widgetName, secondsToWait, searchRegion);
+			List<GetByNameResults> getResults = GetWidgetsByName(widgetName, secondsToWait, searchRegion, onlyVisible);
 			if (getResults != null
 				&& getResults.Count > 0)
 			{
@@ -605,12 +617,12 @@ namespace MatterHackers.GuiAutomation
 			return GetObjectByName(widgetName, out containingWindow, out _, secondsToWait, searchRegion);
 		}
 
-		public object GetObjectByName(string widgetName, out SystemWindow containingWindow, out Point2D offsetHint, double secondsToWait = 0, SearchRegion searchRegion = null)
+		public object GetObjectByName(string widgetName, out SystemWindow containingWindow, out Point2D offsetHint, double secondsToWait = 0, SearchRegion searchRegion = null, bool onlyVisible = true)
 		{
 			containingWindow = null;
 			offsetHint = Point2D.Zero;
 
-			List<GetByNameResults> getResults = GetWidgetsByName(widgetName, secondsToWait, searchRegion);
+			List<GetByNameResults> getResults = GetWidgetsByName(widgetName, secondsToWait, searchRegion, onlyVisible);
 			if (getResults != null
 				&& getResults.Count > 0)
 			{
@@ -641,11 +653,11 @@ namespace MatterHackers.GuiAutomation
 			}
 		}
 
-		public List<GetByNameResults> GetWidgetsByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null)
+		public List<GetByNameResults> GetWidgetsByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, bool onlyVisible = true)
 		{
 			if (secondsToWait > 0)
 			{
-				bool foundWidget = WaitForName(widgetName, secondsToWait);
+				bool foundWidget = WaitForName(widgetName, secondsToWait, onlyVisible);
 				if (!foundWidget)
 				{
 					return null;
@@ -661,7 +673,8 @@ namespace MatterHackers.GuiAutomation
 					systemWindow.FindNamedChildrenRecursive(widgetName, namedWidgets);
 					foreach (GuiWidget.WidgetAndPosition widgetAndPosition in namedWidgets)
 					{
-						if (widgetAndPosition.widget.ActuallyVisibleOnScreen())
+						if (!onlyVisible 
+							|| widgetAndPosition.widget.ActuallyVisibleOnScreen())
 						{
 							RectangleDouble childBounds = widgetAndPosition.widget.TransformToParentSpace(systemWindow, widgetAndPosition.widget.LocalBounds);
 
@@ -680,7 +693,8 @@ namespace MatterHackers.GuiAutomation
 					systemWindow.FindNamedChildrenRecursive(widgetName, namedWidgets);
 					foreach (GuiWidget.WidgetAndPosition namedWidget in namedWidgets)
 					{
-						if (namedWidget.widget.ActuallyVisibleOnScreen())
+						if (!onlyVisible
+							|| namedWidget.widget.ActuallyVisibleOnScreen())
 						{
 							namedWidgetsInRegion.Add(new GetByNameResults(namedWidget.widget, namedWidget.position, systemWindow, namedWidget.NamedObject));
 						}
@@ -849,12 +863,12 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool NameExists(string widgetName, double secondsToWait = 5)
+		public bool NameExists(string widgetName, double secondsToWait = 5, bool onlyVisible = true)
 		{
-			return WaitForName(widgetName, secondsToWait);
+			return WaitForName(widgetName, secondsToWait, onlyVisible);
 		}
 
-		public bool NamedWidgetExists(string widgetName, SearchRegion searchRegion = null)
+		public bool NamedWidgetExists(string widgetName, SearchRegion searchRegion = null, bool onlyVisible = true)
 		{
 			// Ignore SystemWindows with null PlatformWindow members - SystemWindow constructed but not yet shown
 			foreach (SystemWindow window in SystemWindow.AllOpenSystemWindows.ToArray())
@@ -865,16 +879,24 @@ namespace MatterHackers.GuiAutomation
 				{
 					foreach (GuiWidget.WidgetAndPosition foundChild in foundChildren)
 					{
-						RectangleDouble childBounds = foundChild.widget.TransformToParentSpace(window, foundChild.widget.LocalBounds);
-
-						ScreenRectangle screenRect = SystemWindowToScreen(childBounds, window);
-						ScreenRectangle result;
-						if (searchRegion == null || ScreenRectangle.Intersection(searchRegion.ScreenRect, screenRect, out result))
+						if (onlyVisible)
 						{
-							if (foundChild.widget.ActuallyVisibleOnScreen())
+							RectangleDouble childBounds = foundChild.widget.TransformToParentSpace(window, foundChild.widget.LocalBounds);
+
+							ScreenRectangle screenRect = SystemWindowToScreen(childBounds, window);
+							ScreenRectangle result;
+							if (searchRegion == null
+								|| ScreenRectangle.Intersection(searchRegion.ScreenRect, screenRect, out result))
 							{
-								return true;
+								if (foundChild.widget.ActuallyVisibleOnScreen())
+								{
+									return true;
+								}
 							}
+						}
+						else
+						{
+							return true;
 						}
 					}
 				}
@@ -1005,10 +1027,10 @@ namespace MatterHackers.GuiAutomation
 		/// Wait up to secondsToWait for the named widget to exist and be visible.
 		/// </summary>
 		/// <param name="widgetName"></param>
-		public bool WaitForName(string widgetName, double secondsToWait = 5) // TODO: should have a search region
+		public bool WaitForName(string widgetName, double secondsToWait = 5, bool onlyVisible = true) // TODO: should have a search region
 		{
 			Stopwatch timeWaited = Stopwatch.StartNew();
-			while (!NamedWidgetExists(widgetName)
+			while (!NamedWidgetExists(widgetName, null, onlyVisible)
 				&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
 			{
 				Delay(.05);
