@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.VectorMath;
 using System;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
@@ -347,6 +348,16 @@ namespace MatterHackers.Agg.UI
 				newTopLeftOffset.Y = -(scrollRatio0To1.Y - 1) * maxYMovement;
 
 				TopLeftOffset = newTopLeftOffset;
+			}
+		}
+
+		public void ScrollIntoView(GuiWidget widget)
+		{
+			if (this.Descendants().Contains(widget))
+			{
+				var widgetScreenBounds = widget.TransformToScreenSpace(widget.LocalBounds);
+				var widgetScrollBounds = this.TransformFromScreenSpace(widgetScreenBounds.Center);
+				this.ScrollPosition = new Vector2(0, -widgetScrollBounds.Y);
 			}
 		}
 	}

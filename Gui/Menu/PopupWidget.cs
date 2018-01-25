@@ -55,7 +55,7 @@ namespace MatterHackers.Agg.UI
 					scrollingWindow.AddChild(contentWidget);
 
 					contentWidget.HAnchor = UI.HAnchor.Left | UI.HAnchor.Fit;
-					contentWidget.VAnchor = UI.VAnchor.Bottom;
+					contentWidget.VAnchor |= UI.VAnchor.Bottom; // we may have fit or absolute so or it in
 					Width = contentWidget.Width;
 					Height = contentWidget.Height;
 				}
