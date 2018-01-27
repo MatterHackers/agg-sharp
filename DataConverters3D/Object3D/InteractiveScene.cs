@@ -32,10 +32,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
-using MatterHackers.DataConverters3D;
+using MatterHackers.DataConverters3D.UndoCommands;
 using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RayTracer;
@@ -100,8 +99,33 @@ namespace MatterHackers.DataConverters3D
 			{
 				this.PersistAssets(libraryPath, progress);
 
+				// Clear the selection before saving
+				List<IObject3D> selectedItems = new List<IObject3D>();
+
+				if(this.SelectedItem != null)
+				{
+					if (this.SelectedItem is SelectionGroup selectionGroup)
+					{
+						foreach(var item in selectionGroup.Children)
+						{
+							selectedItems.Add(item);
+						}
+					}
+					else
+					{
+						selectedItems.Add(this.SelectedItem);
+					}
+				}
+
 				// Serialize the scene to disk using a modified Json.net pipeline with custom ContractResolvers and JsonConverters
 				File.WriteAllText(mcxPath, this.ToJson());
+
+
+				// Restore the selection after saving
+				foreach(var item in selectedItems)
+				{
+					this.AddToSelection(item);
+				}
 			}
 			catch (Exception ex)
 			{
@@ -334,6 +358,55 @@ namespace MatterHackers.DataConverters3D
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix, bool requirePrecision = false)
 		{
 			return RootItem.GetAxisAlignedBoundingBox(matrix, requirePrecision);
+		}
+
+		/// <summary>
+		/// Wrap the current selection with the object passed, 
+		/// then add the object to the sceen,
+		/// then select the newly added object
+		/// </summary>
+		/// <param name="itemToWrapWith">Item to wrap selection and add</param>
+		public void WrapSelection(Object3D itemToWrapWith)
+		{
+			if (this.HasSelection)
+			{
+				IObject3D item;
+
+				List<IObject3D> itemsToRestoreOnUndo;
+
+				if (this.SelectedItem is SelectionGroup selectionGroup)
+				{
+					item = new Object3D();
+					itemsToRestoreOnUndo = selectionGroup.Children.ToList();
+					item.Children.Modify((list) =>
+					{
+						var clone = selectionGroup.Clone();
+						list.AddRange(clone.Children);
+					});
+				}
+				else
+				{
+					itemsToRestoreOnUndo = new List<IObject3D> { this.SelectedItem };
+					item = this.SelectedItem.Clone();
+				}
+
+				this.SelectedItem = null;
+
+				itemToWrapWith.Children.Add(item);
+
+				itemToWrapWith.MakeNameNonColliding();
+
+				this.UndoBuffer.AddAndDo(
+					new ReplaceCommand(
+						itemsToRestoreOnUndo,
+						new List<IObject3D> { itemToWrapWith }));
+
+				// Make the object have an identity matrix and keep its position in our new object
+				itemToWrapWith.Matrix = item.Matrix;
+				item.Matrix = Matrix4X4.Identity;
+
+				this.SelectedItem = itemToWrapWith;
+			}
 		}
 
 
