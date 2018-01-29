@@ -162,7 +162,7 @@ namespace MatterHackers.PolygonMesh
 					newMesh.CreateFace(faceVertices.ToArray(), CreateOption.CreateNew);
 				}
 
-				newMesh.CleanAndMergMesh(cancellationToken);
+				newMesh.CleanAndMeregMesh(cancellationToken);
 			}
 
 			return newMesh;
@@ -180,7 +180,7 @@ namespace MatterHackers.PolygonMesh
 			return id;
 		}
 
-		public void CleanAndMergMesh(CancellationToken cancellationToken, double maxDistanceToConsiderVertexAsSame = 0, Action<double, string> reportProgress = null)
+		public void CleanAndMeregMesh(CancellationToken cancellationToken, double maxDistanceToConsiderVertexAsSame = 0, Action<double, string> reportProgress = null)
 		{
 			if (reportProgress != null)
 			{
