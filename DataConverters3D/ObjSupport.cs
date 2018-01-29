@@ -193,7 +193,7 @@ namespace MatterHackers.DataConverters3D
 
 			foreach (var item in root.Children)
 			{
-				item.Mesh.CleanAndMergMesh(cancellationToken, reportProgress: (double progress0To1, string processingState) =>
+				item.Mesh.CleanAndMeregMesh(cancellationToken, reportProgress: (double progress0To1, string processingState) =>
 				{
 					if (reportProgress != null)
 					{
