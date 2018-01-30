@@ -44,7 +44,7 @@ namespace MatterHackers.Agg.UI
 
 		// If you have an error here it is likely that you need to bulid your project with Platform Target x86.
 		public AggGLControl(int bitDepth, int stencilDepth)
-		//: base(new GraphicsMode(new ColorFormat(32), 32, 0, 4))
+			: base(new OpenTK.Graphics.GraphicsMode(32, 24, 0, 8))
 		{
 			if (!checkedCapabilities)
 			{
