@@ -365,7 +365,7 @@ namespace MatterHackers.PolygonMesh.Processors
 			}
 
 			// merge all the vetexes that are in the same place together
-			meshFromStlFile.CleanAndMeregMesh(cancellationToken, reportProgress: (double progress0To1, string processingState) =>
+			meshFromStlFile.CleanAndMergeMesh(cancellationToken, reportProgress: (double progress0To1, string processingState) =>
 			{
 				reportProgress?.Invoke(parsingFileRatio + progress0To1 * (1 - parsingFileRatio), processingState);
 			});

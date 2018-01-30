@@ -631,7 +631,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				}
 
 				SaveDebugInfo(testMesh);
-				testMesh.CleanAndMeregMesh(CancellationToken.None);
+				testMesh.CleanAndMergeMesh(CancellationToken.None);
 				SaveDebugInfo(testMesh);
 
 				IVertex createdVertx;
@@ -645,7 +645,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 					Assert.IsTrue(face.NumVertices == 5, "The faces should all now have 5 vertices.");
 				}
 
-				testMesh.CleanAndMeregMesh(CancellationToken.None);
+				testMesh.CleanAndMergeMesh(CancellationToken.None);
 
 				testMesh.UnsplitMeshEdge(centerEdge, createdVertx);
 				Assert.IsTrue(centerEdge.GetNumFacesSharingEdge() == 4, "There should again be 4 faces on this edge.");
@@ -654,7 +654,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 					Assert.IsTrue(face.NumVertices == 4, "The faces should all finally have 4 vertices.");
 				}
 
-				testMesh.CleanAndMeregMesh(CancellationToken.None);
+				testMesh.CleanAndMergeMesh(CancellationToken.None);
 			}
 		}
 
