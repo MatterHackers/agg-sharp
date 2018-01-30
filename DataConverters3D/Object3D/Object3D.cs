@@ -364,7 +364,8 @@ namespace MatterHackers.DataConverters3D
 						ContractResolver = new IObject3DContractResolver(),
 						NullValueHandling = NullValueHandling.Ignore
 					});
-				loadedItem.LoadMeshLinks(cancellationToken, itemCache, progress);
+
+				loadedItem?.LoadMeshLinks(cancellationToken, itemCache, progress);
 			}
 			else
 			{
