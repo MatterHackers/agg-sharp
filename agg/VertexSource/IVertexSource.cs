@@ -1,4 +1,5 @@
 using MatterHackers.VectorMath;
+using Newtonsoft.Json;
 
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
@@ -33,22 +34,17 @@ namespace MatterHackers.Agg.VertexSource
 		public ShapePath.FlagsAndCommand command;
 		public Vector2 position;
 
-		public bool IsMoveTo
-		{
-			get { return ShapePath.is_move_to(command); }
-		}
+		[JsonIgnore]
+		public bool IsMoveTo => ShapePath.is_move_to(command);
 
-		public bool IsLineTo
-		{
-			get { return ShapePath.is_line_to(command); }
-		}
+		[JsonIgnore]
+		public bool IsLineTo => ShapePath.is_line_to(command);
 
-		public bool IsClose
-		{
-			get { return ShapePath.is_close(command); }
-		}
+		[JsonIgnore]
+		public bool IsClose => ShapePath.is_close(command);
 
-		public bool IsStop { get { return ShapePath.is_stop(command); } }
+		[JsonIgnore]
+		public bool IsStop => ShapePath.is_stop(command);
 
 		public override string ToString()
 		{

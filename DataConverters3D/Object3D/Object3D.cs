@@ -278,7 +278,7 @@ namespace MatterHackers.DataConverters3D
 
 		[JsonIgnore]
 		private Mesh _mesh;
-		public Mesh Mesh
+		public virtual Mesh Mesh
 		{
 			get => _mesh;
 			set

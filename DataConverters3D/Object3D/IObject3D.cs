@@ -32,6 +32,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using MatterHackers.Agg;
+using MatterHackers.Agg.VertexSource;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;
@@ -130,6 +131,11 @@ namespace MatterHackers.DataConverters3D
 				}
 			}
 		}
+	}
+
+	public interface IPathObject
+	{
+		IVertexSource VertexSource { get; set; }
 	}
 
 	public interface IObject3D : IAscendable<IObject3D>
