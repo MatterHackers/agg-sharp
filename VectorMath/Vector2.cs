@@ -157,6 +157,7 @@ namespace MatterHackers.VectorMath
 		/// Gets the length (magnitude) of the vector.
 		/// </summary>
 		/// <seealso cref="LengthSquared"/>
+		[JsonIgnore]
 		public double Length
 		{
 			get
@@ -177,6 +178,7 @@ namespace MatterHackers.VectorMath
 		/// for comparisons.
 		/// </remarks>
 		/// <see cref="Length"/>
+		[JsonIgnore]
 		public double LengthSquared
 		{
 			get
