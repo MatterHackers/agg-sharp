@@ -54,7 +54,7 @@ namespace MatterHackers.Csg.Solids
 					{
 						// save to disk and return the path
 						sourceFileName = Path.ChangeExtension(Path.GetRandomFileName(), ".stl");
-						PolygonMesh.Processors.StlProcessing.Save(polygonMesh, sourceFileName);
+						PolygonMesh.Processors.StlProcessing.Save(polygonMesh, sourceFileName, CancellationToken.None);
 						return sourceFileName;
 					}
 					else
