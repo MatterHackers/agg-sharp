@@ -39,7 +39,7 @@ namespace MatterHackers.PolygonMesh.Processors
 {
 	public static class StlProcessing
 	{
-		public static bool Save(Mesh meshToSave, string fileName, MeshOutputSettings outputInfo = null)
+		public static bool Save(Mesh meshToSave, string fileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null)
 		{
 			using (FileStream file = new FileStream(fileName, FileMode.Create, FileAccess.Write))
 			{
@@ -47,11 +47,11 @@ namespace MatterHackers.PolygonMesh.Processors
 				{
 					outputInfo = new MeshOutputSettings();
 				}
-				return Save(meshToSave, file, outputInfo);
+				return Save(meshToSave, file, cancellationToken, outputInfo);
 			}
 		}
 
-		public static bool Save(Mesh meshToSave, Stream stream, MeshOutputSettings outputInfo)
+		public static bool Save(Mesh meshToSave, Stream stream, CancellationToken cancellationToken, MeshOutputSettings outputInfo)
 		{
 			switch (outputInfo.OutputTypeSetting)
 			{
@@ -63,6 +63,10 @@ namespace MatterHackers.PolygonMesh.Processors
 
 						foreach (Face face in meshToSave.Faces)
 						{
+							if(cancellationToken.IsCancellationRequested)
+							{
+								return false;
+							}
 							List<Vector3> positionsCCW = new List<Vector3>();
 							foreach (FaceEdge faceEdge in face.FaceEdges())
 							{
@@ -103,6 +107,11 @@ namespace MatterHackers.PolygonMesh.Processors
 						int binaryPolyCount = 0;
 						foreach (Face face in meshToSave.Faces)
 						{
+							if (cancellationToken.IsCancellationRequested)
+							{
+								return false;
+							}
+
 							List<Vector3> positionsCCW = new List<Vector3>();
 							foreach (FaceEdge faceEdge in face.FaceEdges())
 							{

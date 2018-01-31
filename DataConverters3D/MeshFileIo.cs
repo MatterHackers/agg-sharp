@@ -92,26 +92,26 @@ namespace MatterHackers.DataConverters3D
 			return await Task.Run(() => Load(meshPathAndFileName, cancellationToken, reportProgress));
 		}
 
-		public static bool Save(IObject3D context, string meshPathAndFileName, MeshOutputSettings outputInfo = null, Action<double, string> reportProgress = null)
+		public static bool Save(IObject3D context, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null, Action<double, string> reportProgress = null)
 		{
 			// TODO: Seems conceptually correct but needs validation and refinements
 			var meshGroups = new List<MeshGroup> { context.Flatten() };
-			return Save(meshGroups, meshPathAndFileName, outputInfo, reportProgress);
+			return Save(meshGroups, meshPathAndFileName, cancellationToken, outputInfo, reportProgress);
 		}
 
-		public static bool Save(Mesh mesh, string meshPathAndFileName, MeshOutputSettings outputInfo = null)
+		public static bool Save(Mesh mesh, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null)
 		{
-			return Save(new MeshGroup(mesh), meshPathAndFileName, outputInfo);
+			return Save(new MeshGroup(mesh), meshPathAndFileName, cancellationToken, outputInfo);
 		}
 
-		public static bool Save(MeshGroup meshGroupToSave, string meshPathAndFileName, MeshOutputSettings outputInfo = null)
+		public static bool Save(MeshGroup meshGroupToSave, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null)
 		{
 			List<MeshGroup> meshGroupsToSave = new List<MeshGroup>();
 			meshGroupsToSave.Add(meshGroupToSave);
-			return Save(meshGroupsToSave, meshPathAndFileName, outputInfo);
+			return Save(meshGroupsToSave, meshPathAndFileName, cancellationToken, outputInfo);
 		}
 
-		public static bool Save(List<MeshGroup> meshGroupsToSave, string meshPathAndFileName, MeshOutputSettings outputInfo = null, Action<double, string> reportProgress = null)
+		public static bool Save(List<MeshGroup> meshGroupsToSave, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null, Action<double, string> reportProgress = null)
 		{
 			try
 			{
@@ -123,7 +123,7 @@ namespace MatterHackers.DataConverters3D
 				{
 					case ".STL":
 						Mesh mesh = DoMerge(meshGroupsToSave, outputInfo);
-						return StlProcessing.Save(mesh, meshPathAndFileName, outputInfo);
+						return StlProcessing.Save(mesh, meshPathAndFileName, cancellationToken, outputInfo);
 
 					case ".AMF":
 						outputInfo.ReportProgress = reportProgress;
@@ -217,9 +217,9 @@ namespace MatterHackers.DataConverters3D
 
 	public static class MeshFileIoExtensions
 	{
-		public static bool Save(this Mesh mesh, string fileName)
+		public static bool Save(this Mesh mesh, string fileName, CancellationToken cancellationToken)
 		{
-			return MeshFileIo.Save(mesh, fileName);
+			return MeshFileIo.Save(mesh, fileName, cancellationToken);
 		}
 	}
 }
