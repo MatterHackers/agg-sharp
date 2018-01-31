@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.DataConverters3D.UndoCommands;
@@ -167,6 +168,7 @@ namespace MatterHackers.DataConverters3D
 						savedSuccessfully = MeshFileIo.Save(
 							new List<MeshGroup> { new MeshGroup(item.Mesh) },
 							tempStlPath,
+							CancellationToken.None,
 							new MeshOutputSettings(MeshOutputSettings.OutputType.Binary),
 							progress);
 
