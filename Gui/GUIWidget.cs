@@ -527,11 +527,15 @@ namespace MatterHackers.Agg.UI
 						BreakInDebugger("You cannot be anchored to all three positions.");
 					}
 					vAnchor = value;
-					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.VAnchor));
 
-					if (VAnchorIsSet(VAnchor.Fit))
+					if (this.Visible)
 					{
-						OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.VAnchor));
+						this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.VAnchor));
+
+						if (VAnchorIsSet(VAnchor.Fit))
+						{
+							OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.VAnchor));
+						}
 					}
 
 					VAnchorChanged?.Invoke(this, null);
