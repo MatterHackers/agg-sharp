@@ -1100,13 +1100,6 @@ namespace MatterHackers.GuiAutomation
 			{
 				long elapsedTime = timer.ElapsedMilliseconds;
 
-				// Create an exception Task for test timeouts
-				if (elapsedTime >= testTimeout)
-				{
-					task = new Task<Task>(() => throw new TimeoutException("TestMethod timed out"));
-					task.RunSynchronously();
-				}
-
 				// Invoke the callers close implementation or fall back to CloseOnIdle
 				if (closeWindow != null)
 				{
@@ -1115,6 +1108,13 @@ namespace MatterHackers.GuiAutomation
 				else
 				{
 					initialSystemWindow.CloseOnIdle();
+				}
+
+				// Create an exception Task for test timeouts
+				if (elapsedTime >= testTimeout)
+				{
+					task = new Task<Task>(() => throw new TimeoutException("TestMethod timed out"));
+					task.RunSynchronously();
 				}
 			});
 
