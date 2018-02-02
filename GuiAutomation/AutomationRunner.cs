@@ -1089,8 +1089,8 @@ namespace MatterHackers.GuiAutomation
 				Task.Delay(testTimeout),
 				Task.Run(() =>
 				{
-					// Wait until the first system window draw before running the test method
-					resetEvent.WaitOne();
+					// Wait until the first system window draw before running the test method, up to the timeout
+					resetEvent.WaitOne(testTimeout);
 
 					return testMethod(testRunner);
 				}));
