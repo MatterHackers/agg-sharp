@@ -258,6 +258,13 @@ namespace MatterHackers.MarchingSquares
 					AddSegmentForFlags(x, y, flags, wasFlipped);
 				}
 			}
+
+			// Account for and reverse one pixel image expansion above
+			foreach(var segment in LineSegments)
+			{
+				segment.start -= Vector2.One;
+				segment.end-= Vector2.One;
+			}
 		}
 
 		private LineSegment GetInterpolatedSegment(LineSegment segmentA, LineSegment segmentB)
