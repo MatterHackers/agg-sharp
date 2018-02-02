@@ -158,7 +158,7 @@ namespace MatterHackers.Agg.UI.Tests
 				Name = "OffMenu",
 			});
 
-			await AutomationRunner.ShowWindowAndExecuteTests(menuTestContainer, testToRun, 20);
+			await AutomationRunner.ShowWindowAndExecuteTests(menuTestContainer, testToRun);
 		}
 	}
 }

@@ -1069,7 +1069,7 @@ namespace MatterHackers.GuiAutomation
 
 		#region Prior TestHarness code
 
-		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure, string imagesDirectory = "", InputType inputType = InputType.Native, Action closeWindow = null)
+		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", InputType inputType = InputType.Native, Action closeWindow = null)
 		{
 			var testRunner = new AutomationRunner(imagesDirectory, inputType);
 
