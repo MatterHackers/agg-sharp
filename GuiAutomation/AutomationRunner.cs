@@ -1113,6 +1113,9 @@ namespace MatterHackers.GuiAutomation
 				// Create an exception Task for test timeouts
 				if (elapsedTime >= testTimeout)
 				{
+					// Wait for CloseOnIdle to complete
+					testRunner.WaitFor(() => initialSystemWindow.HasBeenClosed);
+
 					task = new Task<Task>(() => throw new TimeoutException("TestMethod timed out"));
 					task.RunSynchronously();
 				}
