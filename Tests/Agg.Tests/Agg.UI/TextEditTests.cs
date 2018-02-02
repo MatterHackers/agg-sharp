@@ -602,7 +602,7 @@ namespace MatterHackers.Agg.UI.Tests
 			};
 			systemWindow.AddChild(editField);
 
-			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
+			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun);
 		}
 
 		[Test, Apartment(ApartmentState.STA)]
@@ -629,7 +629,7 @@ namespace MatterHackers.Agg.UI.Tests
 				return Task.CompletedTask;
 			};
 
-			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
+			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun);
 		}
 
 		[Test, Apartment(ApartmentState.STA)]
@@ -668,7 +668,7 @@ namespace MatterHackers.Agg.UI.Tests
 				return Task.CompletedTask;
 			};
 
-			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 15);
+			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun);
 		}
 	}
 #endif

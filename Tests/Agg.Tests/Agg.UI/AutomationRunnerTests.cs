@@ -59,7 +59,7 @@ namespace MatterHackers.Agg.UI.Tests
 				Assert.IsTrue(leftClickCount == 1, "Got left button click");
 
 				return Task.CompletedTask;
-			}, 10);
+			});
 		}
 
 		[Test]
@@ -95,7 +95,7 @@ namespace MatterHackers.Agg.UI.Tests
 				Assert.IsNull(widget, "Left button should not exist in the right button region");
 
 				return Task.CompletedTask;
-			}, 10);
+			});
 		}
 	}
 }

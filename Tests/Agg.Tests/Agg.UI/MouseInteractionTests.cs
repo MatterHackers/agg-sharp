@@ -83,7 +83,7 @@ namespace MatterHackers.Agg.UI.Tests
 			rightButton.Name = "right";
 			buttonContainer.AddChild(rightButton);
 
-			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
+			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun);
 		}
 
 #endif

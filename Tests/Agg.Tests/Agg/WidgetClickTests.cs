@@ -80,8 +80,7 @@ namespace MatterHackers.Agg.Tests
 					Assert.AreEqual(1, testWindow.PurpleWidget.ClickCount, "Unexpected click count on purple widget");
 
 					return Task.CompletedTask;
-				},
-				25);
+				});
 		}
 
 		[Test]
@@ -127,8 +126,7 @@ namespace MatterHackers.Agg.Tests
 					Assert.AreEqual(1, testWindow.BlueWidget.ClickCount, "Expected 1 click on root widget");
 
 					return Task.CompletedTask;
-				},
-				25);
+				});
 		}
 
 		[Test]
@@ -182,8 +180,7 @@ namespace MatterHackers.Agg.Tests
 					Assert.AreEqual(1, testWindow.BlueWidget.ClickCount, "Expected click count to not increment on mouse up within child control");
 					
 					return Task.CompletedTask;
-				},
-				25);
+				});
 		}
 
 		// Test SystemWindow with three clickable controls

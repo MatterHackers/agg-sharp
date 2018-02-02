@@ -1069,7 +1069,7 @@ namespace MatterHackers.GuiAutomation
 
 		#region Prior TestHarness code
 
-		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure, string imagesDirectory = "", InputType inputType = InputType.Native, Action closeWindow = null)
+		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", InputType inputType = InputType.Native, Action closeWindow = null)
 		{
 			var testRunner = new AutomationRunner(imagesDirectory, inputType);
 
@@ -1089,8 +1089,8 @@ namespace MatterHackers.GuiAutomation
 				Task.Delay(testTimeout),
 				Task.Run(() =>
 				{
-					// Wait until the first system window draw before running the test method
-					resetEvent.WaitOne();
+					// Wait until the first system window draw before running the test method, up to the timeout
+					resetEvent.WaitOne(testTimeout);
 
 					return testMethod(testRunner);
 				}));
@@ -1100,13 +1100,6 @@ namespace MatterHackers.GuiAutomation
 			{
 				long elapsedTime = timer.ElapsedMilliseconds;
 
-				// Create an exception Task for test timeouts
-				if (elapsedTime >= testTimeout)
-				{
-					task = new Task<Task>(() => throw new TimeoutException("TestMethod timed out"));
-					task.RunSynchronously();
-				}
-
 				// Invoke the callers close implementation or fall back to CloseOnIdle
 				if (closeWindow != null)
 				{
@@ -1115,6 +1108,16 @@ namespace MatterHackers.GuiAutomation
 				else
 				{
 					initialSystemWindow.CloseOnIdle();
+				}
+
+				// Create an exception Task for test timeouts
+				if (elapsedTime >= testTimeout)
+				{
+					// Wait for CloseOnIdle to complete
+					testRunner.WaitFor(() => initialSystemWindow.HasBeenClosed);
+
+					task = new Task<Task>(() => throw new TimeoutException("TestMethod timed out"));
+					task.RunSynchronously();
 				}
 			});
 
