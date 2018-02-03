@@ -6,18 +6,17 @@ namespace MatterHackers.Agg.UI
 {
 	public class RadioCircleWidget : GuiWidget
 	{
-		private double boxWidth = 10 * GuiWidget.DeviceScale;
-		private double borderRadius;
 		private Vector2 center;
 
 		public RadioCircleWidget()
 		{
+			var boxWidth = RadioImage.BoxWidth;
+
 			this.MinimumSize = new Vector2(boxWidth + 1, boxWidth + 1);
 			this.DoubleBuffer = true;
 			this.Margin = new BorderDouble(right: 10);
 
 			center = this.LocalBounds.Center;
-			borderRadius = boxWidth / 2;
 		}
 
 		public RadioButton RadioButton { get; set; }
@@ -29,22 +28,17 @@ namespace MatterHackers.Agg.UI
 				return;
 			}
 
-			// Radio check
-			if (this.RadioButton.Checked)
-			{
-				graphics2D.Circle(center, boxWidth / 4, this.RadioButton.TextColor);
-			}
-
-			// Radio border
-			int strokeWidth = (this.RadioButton.MouseDownOnWidget && this.RadioButton.FirstWidgetUnderMouse) ? 2 : 1;
-			graphics2D.Render(
-				new Stroke(new Ellipse(center, borderRadius), strokeWidth), 
-				this.RadioButton.TextColor);
+			RadioImage.DrawCircle(
+				graphics2D,
+				center,
+				this.RadioButton.TextColor,
+				this.RadioButton.Checked,
+				isActive: this.RadioButton.MouseDownOnWidget && this.RadioButton.FirstWidgetUnderMouse);
 
 			base.OnDraw(graphics2D);
 		}
 	}
-	
+
 	public class RadioButtonViewText : FlowLayoutWidget
 	{
 		protected TextWidget labelTextWidget;
@@ -98,6 +92,27 @@ namespace MatterHackers.Agg.UI
 		{
 			get => labelTextWidget.TextColor;
 			set => labelTextWidget.TextColor = value;
+		}
+	}
+
+	public static class RadioImage
+	{
+		public static double BoxWidth => 10 * GuiWidget.DeviceScale;
+		public static double BorderRadius => BoxWidth / 2;
+
+		public static void DrawCircle(Graphics2D graphics2D, Vector2 center, Color color, bool isChecked, bool isActive)
+		{
+			// Radio check
+			if (isChecked)
+			{
+				graphics2D.Circle(center, BoxWidth / 4, color);
+			}
+
+			// Radio border
+			int strokeWidth = (isActive) ? 2 : 1;
+			graphics2D.Render(
+				new Stroke(new Ellipse(center, BorderRadius), strokeWidth),
+				color);
 		}
 	}
 }
