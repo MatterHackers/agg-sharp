@@ -284,7 +284,7 @@ namespace MatterHackers.RayTracer
 			bool first = true;
 			foreach (var renderData in renderDatas)
 			{
-				AxisAlignedBoundingBox meshBounds = renderData.Mesh.GetAxisAlignedBoundingBox(renderData.WorldMatrix(null));
+				AxisAlignedBoundingBox meshBounds = renderData.Mesh.GetAxisAlignedBoundingBox(renderData.WorldMatrix());
 				if (first)
 				{
 					totalMeshBounds = meshBounds;

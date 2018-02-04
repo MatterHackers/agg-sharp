@@ -96,12 +96,13 @@ namespace MatterHackers.DataConverters3D
 			return totalBounds;
 		}
 
-		public static Matrix4X4 WorldMatrix(this IObject3D child, IObject3D root)
+		public static Matrix4X4 WorldMatrix(this IObject3D child, IObject3D rootOverride = null)
 		{
 			var matrix = child.Matrix;
 			var parent = child.Parent;
+
 			while (parent != null
-				&& parent != root)
+				&& parent != rootOverride)
 			{
 				matrix = matrix * parent.Matrix;
 				parent = parent.Parent;
@@ -127,63 +128,63 @@ namespace MatterHackers.DataConverters3D
 			return ancestors;
 		}
 
-		public static Color WorldColor(this IObject3D child, IObject3D root)
+		public static Color WorldColor(this IObject3D child, IObject3D rootOverride = null)
 		{
 			var lastColorFound = Color.White;
 			foreach(var item in child.Ancestors())
 			{
-				// If we found the root return whatever color we have now
-				if (item == root)
-				{
-					return lastColorFound;
-				}
-
 				// if we find a color it overrides our current color so set it
 				if (item.Color.Alpha0To255 != 0)
 				{
 					lastColorFound = item.Color;
+				}
+
+				// If the root override has been matched, break and return latest
+				if (item == rootOverride)
+				{
+					break;
 				}
 			}
 
 			return lastColorFound;
 		}
 
-		public static PrintOutputTypes WorldOutputType(this IObject3D child, IObject3D root)
+		public static PrintOutputTypes WorldOutputType(this IObject3D child, IObject3D rootOverride = null)
 		{
 			var lastOutputTypeFound = PrintOutputTypes.Default;
 			foreach (var item in child.Ancestors())
 			{
-				// If we found the root return whatever output type we have now
-				if (item == root)
-				{
-					return lastOutputTypeFound;
-				}
-
 				if (item.OutputType != PrintOutputTypes.Default)
 				{
-					// use collection as the color for all recursize children
+					// use collection as the color for all recursive children
 					lastOutputTypeFound = item.OutputType;
+				}
+
+				// If the root override has been matched, break and return latest
+				if (item == rootOverride)
+				{
+					break;
 				}
 			}
 
 			return lastOutputTypeFound;
 		}
 
-		public static int WorldMaterialIndex(this IObject3D child, IObject3D root)
+		public static int WorldMaterialIndex(this IObject3D child, IObject3D rootOverride = null)
 		{
 			var lastMaterialIndexFound = -1;
 			foreach (var item in child.Ancestors())
 			{
-				// If we found the root return whatever material type we have now
-				if (item == root)
-				{
-					break;
-				}
-
 				if (item.MaterialIndex != -1)
 				{
-					// use collection as the color for all recursize children
+					// use collection as the color for all recursive children
 					lastMaterialIndexFound = item.MaterialIndex;
+				}
+
+				// If the root override has been matched, break and return latest
+				if (item == rootOverride)
+				{
+					break;
 				}
 			}
 
@@ -197,7 +198,7 @@ namespace MatterHackers.DataConverters3D
 			while (items.Any())
 			{
 				IObject3D item = items.Pop();
-				
+
 				yield return item;
 				foreach (var n in item.Children)
 				{
