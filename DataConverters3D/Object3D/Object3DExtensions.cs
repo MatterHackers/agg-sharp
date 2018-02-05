@@ -101,10 +101,15 @@ namespace MatterHackers.DataConverters3D
 			var matrix = child.Matrix;
 			var parent = child.Parent;
 
-			while (parent != null
-				&& parent != rootOverride)
+			while (parent != null)
 			{
 				matrix = matrix * parent.Matrix;
+
+				if (parent == rootOverride)
+				{
+					break;
+				}
+
 				parent = parent.Parent;
 			}
 
