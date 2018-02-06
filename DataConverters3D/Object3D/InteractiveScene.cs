@@ -344,11 +344,6 @@ namespace MatterHackers.DataConverters3D
 			this.Invalidated?.Invoke(this, null);
 		}
 
-		public MeshGroup Flatten(Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings = null, Predicate<IObject3D> filter = null)
-		{
-			return sourceItem.Flatten(meshPrintOutputSettings);
-		}
-
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix, bool requirePrecision = false)
 		{
 			return sourceItem.GetAxisAlignedBoundingBox(matrix, requirePrecision);

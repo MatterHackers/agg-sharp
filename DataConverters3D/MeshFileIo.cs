@@ -95,8 +95,9 @@ namespace MatterHackers.DataConverters3D
 		public static bool Save(IObject3D context, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null, Action<double, string> reportProgress = null)
 		{
 			// TODO: Seems conceptually correct but needs validation and refinements
-			var meshGroups = new List<MeshGroup> { context.Flatten() };
-			return Save(meshGroups, meshPathAndFileName, cancellationToken, outputInfo, reportProgress);
+			throw new NotImplementedException("Need to re-write this to do what we want, Lars.");
+			//var meshGroups = new List<MeshGroup> { context.Flatten() };
+			//return Save(meshGroups, meshPathAndFileName, cancellationToken, outputInfo, reportProgress);
 		}
 
 		public static bool Save(Mesh mesh, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null)
