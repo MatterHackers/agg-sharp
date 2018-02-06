@@ -406,7 +406,7 @@ namespace MatterHackers.DataConverters3D
 		// Deep clone via json serialization
 		public IObject3D Clone()
 		{
-			var oldParent = this.Parent;
+			var originalParent = this.Parent;
 			// Index items by ID
 			var allItemsByID = this.Descendants().ToDictionary(i => i.ID);
 
@@ -447,8 +447,8 @@ namespace MatterHackers.DataConverters3D
 				}
 			}
 
-			// restor the parent
-			this.Parent = oldParent;
+			// restore the parent
+			this.Parent = originalParent;
 
 			return clonedItem;
 		}
