@@ -335,15 +335,7 @@ namespace MatterHackers.DataConverters3D
 
 		public long GetLongHashCode() => sourceItem.GetLongHashCode();
 
-		public IPrimitive TraceData()
-		{
-			var curMatrix = sourceItem.Matrix;
-			sourceItem.Matrix = Matrix4X4.Identity;
-			var rootTraceData = sourceItem.TraceData();
-			sourceItem.Matrix = curMatrix;
-
-			return rootTraceData;
-		}
+		public IPrimitive TraceData() => sourceItem.TraceData();
 
 		public void SetMeshDirect(Mesh mesh) => sourceItem.SetMeshDirect(mesh);
 
