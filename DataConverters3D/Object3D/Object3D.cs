@@ -222,11 +222,42 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
+		Mesh meshBeingCopied = null;
 		[JsonIgnore]
 		private Mesh _mesh;
 		public virtual Mesh Mesh
 		{
-			get => _mesh;
+			get
+			{
+				if (meshBeingCopied == null)
+				{
+					// keep track of the mesh we are copying
+					meshBeingCopied = _mesh;
+
+					if (meshBeingCopied != null
+						&& meshBeingCopied.Vertices != null
+						&& !meshBeingCopied.Vertices.IsSorted)
+					{
+						Task.Run(() =>
+						{
+							// make the coy
+							var copyMesh = Mesh.Copy(meshBeingCopied, CancellationToken.None);
+							// clean the copy
+							copyMesh.CleanAndMergeMesh(CancellationToken.None);
+							// if we have not changed to a new mesh
+							if (meshBeingCopied == _mesh)
+							{
+								// store the new clean mesh
+								_mesh = copyMesh;
+							}
+							// clear that we are working on it
+							meshBeingCopied = null;
+						});
+					}
+				}
+
+				return _mesh;
+			}
 			set
 			{
 				if (_mesh != value)
