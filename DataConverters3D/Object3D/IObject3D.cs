@@ -153,7 +153,6 @@ namespace MatterHackers.DataConverters3D
 
 		Color Color { get; set; }
 		int MaterialIndex { get; set; }
-		MeshGroup Flatten(Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings = null, Predicate<IObject3D> filter = null);
 
 		PrintOutputTypes OutputType { get; set; }
 

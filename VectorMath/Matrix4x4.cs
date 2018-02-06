@@ -1284,6 +1284,11 @@ namespace MatterHackers.VectorMath
 			return String.Format("{0},  \n{1},  \n{2},  \n{3}", Row0, Row1, Row2, Row3);
 		}
 
+		public static Matrix4X4 FromString(string values)
+		{
+			throw new NotImplementedException();
+		}
+
 			#endregion public override string ToString()
 
 			#region public override int GetHashCode()

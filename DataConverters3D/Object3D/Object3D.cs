@@ -74,11 +74,6 @@ namespace MatterHackers.DataConverters3D
 
 		public IObject3D Parent { get; set; }
 
-		public MeshGroup Flatten(Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings = null, Predicate<IObject3D> filter = null)
-		{
-			return Flatten(this, new MeshGroup(), Matrix4X4.Identity, meshPrintOutputSettings, this.MaterialIndex, this.OutputType, filter);
-		}
-
 		void UpdateParent(List<IObject3D> list)
 		{
 			// Make sure all the children have this as their parent
@@ -139,55 +134,6 @@ namespace MatterHackers.DataConverters3D
 
 				}
 			}
-		}
-
-		private static MeshGroup Flatten(IObject3D item, MeshGroup meshGroup, Matrix4X4 totalTransform, 
-			Dictionary<Mesh, MeshPrintOutputSettings> meshPrintOutputSettings, 
-			int overrideMaterialIndex, PrintOutputTypes printOutputType, Predicate<IObject3D> filter = null)
-		{
-			totalTransform = item.Matrix * totalTransform;
-
-			// if the override is set to a value other than -1 than we need to set every child mesh on down to this extruder / setting
-			if (overrideMaterialIndex == -1 
-				&& item.MaterialIndex != -1)
-			{
-				overrideMaterialIndex = item.MaterialIndex;
-			}
-
-			if(printOutputType == PrintOutputTypes.Default
-				&& item.OutputType != PrintOutputTypes.Default)
-			{
-				printOutputType = item.OutputType;
-			}
-
-			if (item.Mesh != null 
-				&& filter?.Invoke(item) != false)
-			{
-				var mesh = Mesh.Copy(item.Mesh, CancellationToken.None);
-				mesh.Transform(totalTransform);
-				meshGroup.Meshes.Add(mesh);
-				if (meshPrintOutputSettings != null)
-				{
-					if (!meshPrintOutputSettings.ContainsKey(mesh))
-					{
-						meshPrintOutputSettings.Add(mesh, new MeshPrintOutputSettings());
-					}
-					var material = meshPrintOutputSettings[mesh];
-
-					// If we are not setting an extruder we are on the first extruder
-					material.ExtruderIndex = overrideMaterialIndex == -1 ? 0 : overrideMaterialIndex;
-					material.PrintOutputTypes = printOutputType == PrintOutputTypes.Default ? PrintOutputTypes.Solid : printOutputType;
-				}
-			}
-			else // we only add child meshes if we did not find a mesh at this level
-			{
-				foreach (IObject3D child in item.Children.Where(child => child.Visible))
-				{
-					Flatten(child, meshGroup, totalTransform, meshPrintOutputSettings, overrideMaterialIndex, printOutputType, filter);
-				}
-			}
-
-			return meshGroup;
 		}
 
 		private Color _color = Color.Transparent;
