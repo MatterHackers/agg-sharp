@@ -146,6 +146,11 @@ namespace MatterHackers.DataConverters3D
 
 		public static Mesh DoMerge(List<MeshGroup> meshGroupsToMerge, MeshOutputSettings outputInfo)
 		{
+			if(meshGroupsToMerge.Count == 1 
+				&& meshGroupsToMerge[0].Meshes.Count == 1)
+			{
+				return meshGroupsToMerge[0].Meshes[0];
+			}
 			Mesh allPolygons = new Mesh();
 			if (outputInfo.CsgOptionState == MeshOutputSettings.CsgOption.DoCsgMerge)
 			{

@@ -102,7 +102,6 @@ namespace MatterHackers.DataConverters3D
 
 			IObject3D context = null;
 
-			double parsingFileRatio = .5;
 			int totalMeshes = 0;
 			Stopwatch time = Stopwatch.StartNew();
 
@@ -168,31 +167,6 @@ namespace MatterHackers.DataConverters3D
 					color = ColorF.White;
 				}
 				keyValue.Key.Color = color.ToColor();
-			}
-
-			double currentMeshProgress = 0;
-			double ratioLeftToUse = 1 - parsingFileRatio;
-			double progressPerMesh = 1.0 / totalMeshes * ratioLeftToUse;
-
-			foreach (var item in root.Children)
-			{
-				item.Mesh.CleanAndMergeMesh(
-					cancellationToken, 
-					reportProgress: (double progress0To1, string processingState) =>
-					{
-						if (reportProgress != null)
-						{
-							double currentTotalProgress = parsingFileRatio + currentMeshProgress;
-							reportProgress.Invoke(currentTotalProgress + progress0To1 * progressPerMesh, processingState);
-						}
-					});
-
-
-				if (cancellationToken.IsCancellationRequested)
-				{
-					return null;
-				}
-				currentMeshProgress += progressPerMesh;
 			}
 
 			time.Stop();
