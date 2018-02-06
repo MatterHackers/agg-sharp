@@ -234,20 +234,14 @@ namespace MatterHackers.PolygonMesh.Processors
 			time.Start();
 			Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
-			double parsingFileRatio = .5;
-
 			if (stlStream == null)
 			{
 				return null;
 			}
 
-			//MemoryStream stlStream = new MemoryStream();
-			//stlStreamIn.CopyTo(stlStream);
-
 			Stopwatch maxProgressReport = new Stopwatch();
 			maxProgressReport.Start();
 			Mesh meshFromStlFile = new Mesh();
-			//meshFromStlFile.MaxDistanceToConsiderVertexAsSame = .0000005;
 			long bytesInFile = stlStream.Length;
 			if (bytesInFile <= 80)
 			{
@@ -306,7 +300,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
 					if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
 					{
-						reportProgress(stlStream.Position / (double)bytesInFile * parsingFileRatio, "Loading Polygons");
+						reportProgress(stlStream.Position / (double)bytesInFile, "Loading Polygons");
 						if (cancellationToken.IsCancellationRequested)
 						{
 							stlStream.Close();
@@ -353,7 +347,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
 					if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
 					{
-						reportProgress(i / (double)numTriangles * parsingFileRatio, "Loading Polygons");
+						reportProgress(i / (double)numTriangles, "Loading Polygons");
 						if (cancellationToken.IsCancellationRequested)
 						{
 							stlStream.Close();
@@ -370,14 +364,7 @@ namespace MatterHackers.PolygonMesh.Processors
 						meshFromStlFile.CreateFace(new IVertex[] { vertex1, vertex2, vertex3 }, CreateOption.CreateNew);
 					}
 				}
-				//uint numTriangles = System.BitConverter.ToSingle(fileContents, 80);
 			}
-
-			// merge all the vetexes that are in the same place together
-			meshFromStlFile.CleanAndMergeMesh(cancellationToken, reportProgress: (double progress0To1, string processingState) =>
-			{
-				reportProgress?.Invoke(parsingFileRatio + progress0To1 * (1 - parsingFileRatio), processingState);
-			});
 
 			reportProgress?.Invoke(1, "");
 

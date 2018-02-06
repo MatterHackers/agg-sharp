@@ -211,6 +211,8 @@ namespace MatterHackers.PolygonMesh
 				MergeVertices(cancellationToken, maxDistanceToConsiderVertexAsSame);
 				MergeMeshEdges(cancellationToken);
 			}
+
+			MarkAsChanged();
 		}
 
 		public override bool Equals(object obj)
@@ -603,8 +605,6 @@ namespace MatterHackers.PolygonMesh
 
 		#region Vertex
 
-		private Stopwatch timer = new Stopwatch();
-
 		public IVertex CreateVertex(double x, double y, double z, CreateOption createOption = CreateOption.ReuseExisting, SortOption sortOption = SortOption.SortNow)
 		{
 			return CreateVertex(new Vector3(x, y, z), createOption, sortOption);
@@ -727,10 +727,7 @@ namespace MatterHackers.PolygonMesh
 		{
 			reportProgress?.Invoke(0, "Sorting Vertices");
 
-			timer.Restart();
 			Vertices.Sort();
-			timer.Stop();
-			Debug.WriteLine(timer.ElapsedMilliseconds);
 
 			reportProgress?.Invoke(1, "Sorting Vertices");
 		}
