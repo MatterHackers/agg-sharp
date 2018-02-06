@@ -252,6 +252,8 @@ namespace MatterHackers.DataConverters3D
 							}
 							// clear that we are working on it
 							meshBeingCopied = null;
+
+							this.Invalidate();
 						});
 					}
 				}
