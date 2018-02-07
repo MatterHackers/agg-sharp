@@ -94,11 +94,11 @@ namespace MatterHackers.DataConverters3D
 
 		public bool IsSelected(IObject3D item) => HasSelection && SelectedItem == item;
 
-		public void Save(string mcxPath, string libraryPath, Action<double, string> progress = null)
+		public void Save(string mcxPath, Action<double, string> progress = null)
 		{
 			try
 			{
-				this.PersistAssets(libraryPath, progress);
+				this.PersistAssets(progress);
 
 				// Clear the selection before saving
 				List<IObject3D> selectedItems = new List<IObject3D>();
@@ -134,7 +134,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public void PersistAssets(string libraryPath, Action<double, string> progress = null)
+		public void PersistAssets(Action<double, string> progress = null)
 		{
 			var itemsWithUnsavedMeshes = from object3D in this.Descendants()
 										 where object3D.Persistable &&
@@ -142,7 +142,7 @@ namespace MatterHackers.DataConverters3D
 											   object3D.Mesh != null
 										 select object3D;
 
-			string assetsDirectory = Path.Combine(libraryPath, "Assets");
+			string assetsDirectory = Object3D.AssetsPath;
 			Directory.CreateDirectory(assetsDirectory);
 
 			var assetFiles = new Dictionary<int, string>();
@@ -162,7 +162,7 @@ namespace MatterHackers.DataConverters3D
 					if (!assetFiles.TryGetValue(hashCode, out assetPath))
 					{
 						// Get an open filename
-						string tempStlPath = GetOpenFilePath(libraryPath, ".stl");
+						string tempStlPath = GetOpenFilePath(Object3D.AssetsPath, ".stl");
 
 						// Save the embedded asset to disk
 						savedSuccessfully = MeshFileIo.Save(
