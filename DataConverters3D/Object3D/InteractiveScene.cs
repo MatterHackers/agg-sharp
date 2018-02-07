@@ -137,7 +137,7 @@ namespace MatterHackers.DataConverters3D
 
 		public void Save(string mcxPath, Action<double, string> progress = null)
 		{
-			using (var stream = File.OpenWrite(mcxPath))
+			using (var stream = new FileStream(mcxPath, FileMode.Create, FileAccess.Write))
 			{
 				this.Save(stream, progress);
 			}
