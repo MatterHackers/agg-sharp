@@ -94,8 +94,9 @@ namespace MatterHackers.DataConverters3D
 
 		public bool IsSelected(IObject3D item) => HasSelection && SelectedItem == item;
 
-		public void Save(string mcxPath, Action<double, string> progress = null)
+		public void Save(Stream stream, Action<double, string> progress = null)
 		{
+			// Serialize the scene to disk using a modified Json.net pipeline with custom ContractResolvers and JsonConverters
 			try
 			{
 				this.PersistAssets(progress);
@@ -103,11 +104,11 @@ namespace MatterHackers.DataConverters3D
 				// Clear the selection before saving
 				List<IObject3D> selectedItems = new List<IObject3D>();
 
-				if(this.SelectedItem != null)
+				if (this.SelectedItem != null)
 				{
 					if (this.SelectedItem is SelectionGroup selectionGroup)
 					{
-						foreach(var item in selectionGroup.Children)
+						foreach (var item in selectionGroup.Children)
 						{
 							selectedItems.Add(item);
 						}
@@ -118,12 +119,12 @@ namespace MatterHackers.DataConverters3D
 					}
 				}
 
-				// Serialize the scene to disk using a modified Json.net pipeline with custom ContractResolvers and JsonConverters
-				File.WriteAllText(mcxPath, this.ToJson());
-
+				var streamWriter = new StreamWriter(stream);
+				streamWriter.Write(this.ToJson());
+				streamWriter.Flush();
 
 				// Restore the selection after saving
-				foreach(var item in selectedItems)
+				foreach (var item in selectedItems)
 				{
 					this.AddToSelection(item);
 				}
@@ -131,6 +132,14 @@ namespace MatterHackers.DataConverters3D
 			catch (Exception ex)
 			{
 				Trace.WriteLine("Error saving file: ", ex.Message);
+			}
+		}
+
+		public void Save(string mcxPath, Action<double, string> progress = null)
+		{
+			using (var stream = File.OpenWrite(mcxPath))
+			{
+				this.Save(stream, progress);
 			}
 		}
 
@@ -276,7 +285,7 @@ namespace MatterHackers.DataConverters3D
 					{
 						list.Remove(itemToAdd);
 						list.Remove(SelectedItem);
-						// add the seletionngroup as the first item so we can hit it first
+						// add the seletionGroup as the first item so we can hit it first
 						list.Insert(0, newSelectionGroup);
 					});
 
@@ -351,7 +360,7 @@ namespace MatterHackers.DataConverters3D
 
 		/// <summary>
 		/// Wrap the current selection with the object passed, 
-		/// then add the object to the sceen,
+		/// then add the object to the scene,
 		/// then select the newly added object
 		/// </summary>
 		/// <param name="itemToWrapWith">Item to wrap selection and add</param>
