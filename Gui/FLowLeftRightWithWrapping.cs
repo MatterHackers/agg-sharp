@@ -34,7 +34,7 @@ namespace MatterHackers.Agg.UI
 {
 	public class FlowLeftRightWithWrapping : FlowLayoutWidget
 	{
-		private List<GuiWidget> addedChildren = new List<GuiWidget>();
+		protected List<GuiWidget> addedChildren = new List<GuiWidget>();
 
 		public HAnchor RowFlowAnchor { get; set; } = HAnchor.Left | HAnchor.Fit;
 		public BorderDouble RowMargin { get; set; } = new BorderDouble(3, 0);
@@ -74,7 +74,7 @@ namespace MatterHackers.Agg.UI
 			addedChildren.Add(childToAdd);
 		}
 
-		void DoWrappingLayout()
+		protected void DoWrappingLayout()
 		{
 			doingLayout = true;
 			// remove all the children we added
@@ -101,7 +101,8 @@ namespace MatterHackers.Agg.UI
 
 			foreach (var child in addedChildren)
 			{
-				if (childContainerRow.Width + child.Width > Parent.Width)
+				if (Parent != null
+					&& childContainerRow.Width + child.Width > Parent.Width)
 				{
 					childContainerRow = new FlowLayoutWidget()
 					{
