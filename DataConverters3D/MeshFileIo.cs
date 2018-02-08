@@ -183,8 +183,6 @@ namespace MatterHackers.DataConverters3D
 						}
 					}
 				}
-
-				allPolygons.CleanAndMergeMesh(CancellationToken.None);
 			}
 
 			return allPolygons;
