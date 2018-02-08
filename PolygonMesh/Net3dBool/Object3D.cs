@@ -342,6 +342,8 @@ namespace Net3dBool
 			return null;
 		}
 
+		Dictionary<long, int> addedVertices = new Dictionary<long, int>();
+
 		/// <summary>
 		/// Method used to add a vertex properly for internal methods
 		/// </summary>
@@ -350,19 +352,20 @@ namespace Net3dBool
 		/// <returns>The vertex inserted (if a similar vertex already exists, this is returned).</returns>
 		private Vertex AddVertex(Vector3 pos, Status status)
 		{
-			Vertex vertex = new Vertex(pos, status);
-			for (int i = 0; i < vertices.Count; i++)
+			Vertex vertex;
+
+			// if the vertex is already there, it is not inserted
+			if (!addedVertices.TryGetValue(pos.GetLongHashCode(), out int position))
 			{
-				if (vertex.Equals(vertices[i]))
-				{
-					// if the vertex is already there, it is not inserted
-					vertex = vertices[i];
-					vertex.SetStatus(status);
-					return vertex;
-				}
+				position = vertices.Count;
+				addedVertices.Add(pos.GetLongHashCode(), position);
+				vertex = new Vertex(pos, status);
+				vertices.Add(vertex);
 			}
 
-			vertices.Add(vertex);
+			vertex = vertices[position];
+			vertex.SetStatus(status);
+
 			return vertex;
 		}
 
