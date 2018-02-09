@@ -222,12 +222,39 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
+		public bool AutomaticallyCleanAndMerge { get; set; } = true;
+		Object locker = new object();
 		Mesh meshBeingCopied = null;
 		[JsonIgnore]
 		private Mesh _mesh;
 		public virtual Mesh Mesh
 		{
 			get
+			{
+				if (AutomaticallyCleanAndMerge)
+				{
+					AsyncCleanAndMerge();
+				}
+				return _mesh;
+			}
+			set
+			{
+				lock (locker)
+				{
+					if (_mesh != value)
+					{
+						_mesh = value;
+						traceData = null;
+						this.MeshPath = null;
+						this.OnInvalidate();
+					}
+				}
+			}
+		}
+
+		private void AsyncCleanAndMerge()
+		{
+			lock (locker)
 			{
 				if (meshBeingCopied == null)
 				{
@@ -240,34 +267,25 @@ namespace MatterHackers.DataConverters3D
 					{
 						Task.Run(() =>
 						{
-							// make the coy
+							// make the copy
 							var copyMesh = Mesh.Copy(meshBeingCopied, CancellationToken.None);
 							// clean the copy
 							copyMesh.CleanAndMergeMesh(CancellationToken.None);
-							// if we have not changed to a new mesh
-							if (meshBeingCopied == _mesh)
+							lock (locker)
 							{
-								// store the new clean mesh
-								_mesh = copyMesh;
+								// if we have not changed to a new mesh
+								if (meshBeingCopied == _mesh)
+								{
+									// store the new clean mesh
+									_mesh = copyMesh;
+								}
+								// clear that we are working on it
+								meshBeingCopied = null;
 							}
-							// clear that we are working on it
-							meshBeingCopied = null;
 
 							this.Invalidate();
 						});
 					}
-				}
-
-				return _mesh;
-			}
-			set
-			{
-				if (_mesh != value)
-				{
-					_mesh = value;
-					traceData = null;
-					this.MeshPath = null;
-					this.OnInvalidate();
 				}
 			}
 		}
