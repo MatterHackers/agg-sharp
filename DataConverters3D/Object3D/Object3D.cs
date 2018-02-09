@@ -222,6 +222,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
+		Object locker = new object();
 		Mesh meshBeingCopied = null;
 		[JsonIgnore]
 		private Mesh _mesh;
@@ -229,32 +230,38 @@ namespace MatterHackers.DataConverters3D
 		{
 			get
 			{
-				if (meshBeingCopied == null)
+				lock(locker)
 				{
-					// keep track of the mesh we are copying
-					meshBeingCopied = _mesh;
-
-					if (meshBeingCopied != null
-						&& meshBeingCopied.Vertices != null
-						&& !meshBeingCopied.Vertices.IsSorted)
+					if (meshBeingCopied == null)
 					{
-						Task.Run(() =>
-						{
-							// make the coy
-							var copyMesh = Mesh.Copy(meshBeingCopied, CancellationToken.None);
-							// clean the copy
-							copyMesh.CleanAndMergeMesh(CancellationToken.None);
-							// if we have not changed to a new mesh
-							if (meshBeingCopied == _mesh)
-							{
-								// store the new clean mesh
-								_mesh = copyMesh;
-							}
-							// clear that we are working on it
-							meshBeingCopied = null;
+						// keep track of the mesh we are copying
+						meshBeingCopied = _mesh;
 
-							this.Invalidate();
-						});
+						if (meshBeingCopied != null
+							&& meshBeingCopied.Vertices != null
+							&& !meshBeingCopied.Vertices.IsSorted)
+						{
+							Task.Run(() =>
+							{
+								// make the copy
+								var copyMesh = Mesh.Copy(meshBeingCopied, CancellationToken.None);
+								// clean the copy
+								copyMesh.CleanAndMergeMesh(CancellationToken.None);
+								lock (locker)
+								{
+									// if we have not changed to a new mesh
+									if (meshBeingCopied == _mesh)
+									{
+										// store the new clean mesh
+										_mesh = copyMesh;
+									}
+									// clear that we are working on it
+									meshBeingCopied = null;
+								}
+
+								this.Invalidate();
+							});
+						}
 					}
 				}
 
@@ -262,12 +269,16 @@ namespace MatterHackers.DataConverters3D
 			}
 			set
 			{
-				if (_mesh != value)
+				lock (locker)
 				{
-					_mesh = value;
-					traceData = null;
-					this.MeshPath = null;
-					this.OnInvalidate();
+					if (_mesh != value)
+					{
+						meshBeingCopied = null;
+						_mesh = value;
+						traceData = null;
+						this.MeshPath = null;
+						this.OnInvalidate();
+					}
 				}
 			}
 		}

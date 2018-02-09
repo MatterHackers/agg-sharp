@@ -107,9 +107,6 @@ namespace MatterHackers.DataConverters3D
 
 			AddRevolveStrip(cleanedPath, mesh, currentAngle, currentAngle + angleDelta);
 
-			// TODO: get this working.
-			mesh.CleanAndMergeMesh(CancellationToken.None, .0001);
-
 			// return the completed mesh
 			return mesh;
 		}
@@ -209,8 +206,6 @@ namespace MatterHackers.DataConverters3D
 
 				extrudedVertexSource.CreateFace(new IVertex[] { bottomVertex2, bottomVertex1, bottomVertex0 });
 			}
-
-			extrudedVertexSource.CleanAndMergeMesh(CancellationToken.None);
 
 			return extrudedVertexSource;
 		}
