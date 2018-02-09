@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
@@ -38,6 +39,7 @@ using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Csg;
 using MatterHackers.PolygonMesh.Processors;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.DataConverters3D
 {
@@ -92,27 +94,12 @@ namespace MatterHackers.DataConverters3D
 			return await Task.Run(() => Load(meshPathAndFileName, cancellationToken, reportProgress));
 		}
 
-		public static bool Save(IObject3D context, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null, Action<double, string> reportProgress = null)
-		{
-			// TODO: Seems conceptually correct but needs validation and refinements
-			throw new NotImplementedException("Need to re-write this to do what we want, Lars.");
-			//var meshGroups = new List<MeshGroup> { context.Flatten() };
-			//return Save(meshGroups, meshPathAndFileName, cancellationToken, outputInfo, reportProgress);
-		}
-
 		public static bool Save(Mesh mesh, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null)
 		{
-			return Save(new MeshGroup(mesh), meshPathAndFileName, cancellationToken, outputInfo);
+			return Save(new Object3D() { Mesh = mesh }, meshPathAndFileName, cancellationToken, outputInfo);
 		}
 
-		public static bool Save(MeshGroup meshGroupToSave, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null)
-		{
-			List<MeshGroup> meshGroupsToSave = new List<MeshGroup>();
-			meshGroupsToSave.Add(meshGroupToSave);
-			return Save(meshGroupsToSave, meshPathAndFileName, cancellationToken, outputInfo);
-		}
-
-		public static bool Save(List<MeshGroup> meshGroupsToSave, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null, Action<double, string> reportProgress = null)
+		public static bool Save(IObject3D item, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null, Action<double, string> reportProgress = null)
 		{
 			try
 			{
@@ -123,16 +110,16 @@ namespace MatterHackers.DataConverters3D
 				switch (Path.GetExtension(meshPathAndFileName).ToUpper())
 				{
 					case ".STL":
-						Mesh mesh = DoMerge(meshGroupsToSave, outputInfo);
+						Mesh mesh = DoMergeAndTransform(item, outputInfo, cancellationToken);
 						return StlProcessing.Save(mesh, meshPathAndFileName, cancellationToken, outputInfo);
 
 					case ".AMF":
 						outputInfo.ReportProgress = reportProgress;
-						return AmfDocument.Save(meshGroupsToSave, meshPathAndFileName, outputInfo);
+						return AmfDocument.Save(item, meshPathAndFileName, outputInfo);
 
 					case ".QBJ":
 						outputInfo.ReportProgress = reportProgress;
-						return ObjSupport.Save(meshGroupsToSave, meshPathAndFileName, outputInfo);
+						return ObjSupport.Save(item, meshPathAndFileName, outputInfo);
 
 					default:
 						return false;
@@ -144,43 +131,42 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static Mesh DoMerge(List<MeshGroup> meshGroupsToMerge, MeshOutputSettings outputInfo)
+		public static Mesh DoMergeAndTransform(IObject3D item, MeshOutputSettings outputInfo, CancellationToken cancellationToken)
 		{
-			if(meshGroupsToMerge.Count == 1 
-				&& meshGroupsToMerge[0].Meshes.Count == 1)
+			var visibleMeshes = item.VisibleMeshes();
+			if (visibleMeshes.Count() == 1)
 			{
-				return meshGroupsToMerge[0].Meshes[0];
-			}
-			Mesh allPolygons = new Mesh();
-			if (outputInfo.CsgOptionState == MeshOutputSettings.CsgOption.DoCsgMerge)
-			{
-				foreach (MeshGroup meshGroup in meshGroupsToMerge)
+				var first = visibleMeshes.First();
+				if(first.WorldMatrix() == Matrix4X4.Identity)
 				{
-					foreach (Mesh mesh in meshGroup.Meshes)
-					{
-						allPolygons = CsgOperations.Union(allPolygons, mesh);
-					}
+					return first.Mesh;
 				}
 			}
-			else
-			{
-				foreach (MeshGroup meshGroup in meshGroupsToMerge)
-				{
-					foreach (Mesh mesh in meshGroup.Meshes)
-					{
-						foreach (Face face in mesh.Faces)
-						{
-							List<IVertex> faceVertices = new List<IVertex>();
-							foreach (FaceEdge faceEdgeToAdd in face.FaceEdges())
-							{
-								// we allow duplicates (the true) to make sure we are not changing the loaded models accuracy.
-								IVertex newVertex = allPolygons.CreateVertex(faceEdgeToAdd.FirstVertex.Position, CreateOption.CreateNew, SortOption.WillSortLater);
-								faceVertices.Add(newVertex);
-							}
 
+			Mesh allPolygons = new Mesh();
+
+			foreach (IObject3D rawItem in visibleMeshes)
+			{
+				var mesh = Mesh.Copy(rawItem.Mesh, cancellationToken);
+				mesh.Transform(rawItem.WorldMatrix());
+				if (outputInfo.CsgOptionState == MeshOutputSettings.CsgOption.DoCsgMerge)
+				{
+					allPolygons = CsgOperations.Union(allPolygons, mesh, null, cancellationToken);
+				}
+				else
+				{
+					foreach (Face face in mesh.Faces)
+					{
+						List<IVertex> faceVertices = new List<IVertex>();
+						foreach (FaceEdge faceEdgeToAdd in face.FaceEdges())
+						{
 							// we allow duplicates (the true) to make sure we are not changing the loaded models accuracy.
-							allPolygons.CreateFace(faceVertices.ToArray(), CreateOption.CreateNew);
+							IVertex newVertex = allPolygons.CreateVertex(faceEdgeToAdd.FirstVertex.Position, CreateOption.CreateNew, SortOption.WillSortLater);
+							faceVertices.Add(newVertex);
 						}
+
+						// we allow duplicates (the true) to make sure we are not changing the loaded models accuracy.
+						allPolygons.CreateFace(faceVertices.ToArray(), CreateOption.CreateNew);
 					}
 				}
 			}

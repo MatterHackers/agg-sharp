@@ -205,7 +205,7 @@ namespace MatterHackers.DataConverters3D
 		/// <param name="fileName">The file path to save at</param>
 		/// <param name="outputInfo">Extra meta data to store in the file</param>
 		/// <returns>The results of the save operation</returns>
-		public static bool Save(List<MeshGroup> meshToSave, string fileName, MeshOutputSettings outputInfo = null)
+		public static bool Save(IObject3D item, string fileName, MeshOutputSettings outputInfo = null)
 		{
 			try
 			{
@@ -215,7 +215,7 @@ namespace MatterHackers.DataConverters3D
 					ZipArchiveEntry zipEntry = archive.CreateEntry(Path.GetFileName(fileName));
 					using (var entryStream = zipEntry.Open())
 					{
-						return Save(meshToSave, entryStream, outputInfo);
+						return Save(item, entryStream, outputInfo);
 					}
 				}
 			}
@@ -227,16 +227,16 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static bool Save(List<MeshGroup> meshToSave, Stream stream, MeshOutputSettings outputInfo)
+		public static bool Save(IObject3D item, Stream stream, MeshOutputSettings outputInfo)
 		{
 			throw new NotImplementedException();
 		}
 
-		public static bool SaveUncompressed(List<MeshGroup> meshToSave, string fileName, MeshOutputSettings outputInfo = null)
+		public static bool SaveUncompressed(IObject3D item, string fileName, MeshOutputSettings outputInfo = null)
 		{
 			using (FileStream file = new FileStream(fileName, FileMode.Create, FileAccess.Write))
 			{
-				return Save(meshToSave, file, outputInfo);
+				return Save(item, file, outputInfo);
 			}
 		}
 

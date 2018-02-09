@@ -188,7 +188,7 @@ namespace MatterHackers.DataConverters3D
 		/// <param name="fileName">The file path to save at</param>
 		/// <param name="outputInfo">Extra meta data to store in the file</param>
 		/// <returns>The results of the save operation</returns>
-		public static bool Save(List<MeshGroup> meshToSave, string fileName, MeshOutputSettings outputInfo = null)
+		public static bool Save(IObject3D item, string fileName, MeshOutputSettings outputInfo = null)
 		{
 			try
 			{
@@ -198,7 +198,7 @@ namespace MatterHackers.DataConverters3D
 					ZipArchiveEntry zipEntry = archive.CreateEntry(Path.GetFileName(fileName));
 					using (var entryStream = zipEntry.Open())
 					{
-						return Save(meshToSave, entryStream, outputInfo);
+						return Save(item, entryStream, outputInfo);
 					}
 				}
 			}
@@ -210,7 +210,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static bool Save(List<MeshGroup> meshToSave, Stream stream, MeshOutputSettings outputInfo)
+		public static bool Save(IObject3D itemToSave, Stream stream, MeshOutputSettings outputInfo)
 		{
 			TextWriter amfFile = new StreamWriter(stream);
 			amfFile.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
@@ -225,20 +225,18 @@ namespace MatterHackers.DataConverters3D
 			{
 				int objectId = 1;
 
-				int totalMeshes = 0;
-				foreach (MeshGroup meshGroup in meshToSave)
-				{
-					foreach (Mesh mesh in meshGroup.Meshes)
-					{
-						totalMeshes++;
-					}
-				}
+				var visibleMeshes = itemToSave.VisibleMeshes();
+				int totalMeshes = visibleMeshes.Count();
 
 				double ratioPerMesh = 1d / totalMeshes;
 				double currentRation = 0;
-				for (int meshGroupIndex = 0; meshGroupIndex < meshToSave.Count; meshGroupIndex++)
+
+				var groupedByExtruder = from item in visibleMeshes
+										group item.Mesh by item.WorldMaterialIndex() into g
+										select new { Extruder = g.Key, Meshes = g.ToList() };
+
+				foreach (var meshForExtruder in groupedByExtruder)
 				{
-					MeshGroup meshGroup = meshToSave[meshGroupIndex];
 					amfFile.WriteLine(Indent(1) + "<object id=\"{0}\">".FormatWith(objectId++));
 					{
 						int vertexCount = 0;
@@ -247,9 +245,8 @@ namespace MatterHackers.DataConverters3D
 						{
 							amfFile.WriteLine(Indent(3) + "<vertices>");
 							{
-								for (int meshIndex = 0; meshIndex < meshGroup.Meshes.Count; meshIndex++)
+								foreach (var mesh in meshForExtruder.Meshes)
 								{
-									Mesh mesh = meshGroup.Meshes[meshIndex];
 									double vertCount = (double)mesh.Vertices.Count;
 
 									meshVertexStart.Add(vertexCount);
@@ -274,11 +271,11 @@ namespace MatterHackers.DataConverters3D
 								}
 							}
 
+							int meshIndex = 0;
 							amfFile.WriteLine(Indent(3) + "</vertices>");
-							for (int meshIndex = 0; meshIndex < meshGroup.Meshes.Count; meshIndex++)
+							foreach (var mesh in meshForExtruder.Meshes)
 							{
-								Mesh mesh = meshGroup.Meshes[meshIndex];
-								int firstVertexIndex = meshVertexStart[meshIndex];
+								int firstVertexIndex = meshVertexStart[meshIndex++];
 								amfFile.WriteLine(Indent(3) + "<volume>");
 
 								double faceCount = (double)mesh.Faces.Count;
@@ -323,11 +320,11 @@ namespace MatterHackers.DataConverters3D
 			return true;
 		}
 
-		public static bool SaveUncompressed(List<MeshGroup> meshToSave, string fileName, MeshOutputSettings outputInfo = null)
+		public static bool SaveUncompressed(IObject3D item, string fileName, MeshOutputSettings outputInfo = null)
 		{
 			using (FileStream file = new FileStream(fileName, FileMode.Create, FileAccess.Write))
 			{
-				return Save(meshToSave, file, outputInfo);
+				return Save(item, file, outputInfo);
 			}
 		}
 
