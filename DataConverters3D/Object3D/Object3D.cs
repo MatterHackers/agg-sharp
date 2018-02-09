@@ -222,6 +222,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
+		public bool AutomaticallyCleanAndMerge { get; set; } = true;
 		Object locker = new object();
 		Mesh meshBeingCopied = null;
 		[JsonIgnore]
@@ -230,41 +231,10 @@ namespace MatterHackers.DataConverters3D
 		{
 			get
 			{
-				lock(locker)
+				if (AutomaticallyCleanAndMerge)
 				{
-					if (meshBeingCopied == null)
-					{
-						// keep track of the mesh we are copying
-						meshBeingCopied = _mesh;
-
-						if (meshBeingCopied != null
-							&& meshBeingCopied.Vertices != null
-							&& !meshBeingCopied.Vertices.IsSorted)
-						{
-							Task.Run(() =>
-							{
-								// make the copy
-								var copyMesh = Mesh.Copy(meshBeingCopied, CancellationToken.None);
-								// clean the copy
-								copyMesh.CleanAndMergeMesh(CancellationToken.None);
-								lock (locker)
-								{
-									// if we have not changed to a new mesh
-									if (meshBeingCopied == _mesh)
-									{
-										// store the new clean mesh
-										_mesh = copyMesh;
-									}
-									// clear that we are working on it
-									meshBeingCopied = null;
-								}
-
-								this.Invalidate();
-							});
-						}
-					}
+					AsyncCleanAndMerge();
 				}
-
 				return _mesh;
 			}
 			set
@@ -273,11 +243,48 @@ namespace MatterHackers.DataConverters3D
 				{
 					if (_mesh != value)
 					{
-						meshBeingCopied = null;
 						_mesh = value;
 						traceData = null;
 						this.MeshPath = null;
 						this.OnInvalidate();
+					}
+				}
+			}
+		}
+
+		private void AsyncCleanAndMerge()
+		{
+			lock (locker)
+			{
+				if (meshBeingCopied == null)
+				{
+					// keep track of the mesh we are copying
+					meshBeingCopied = _mesh;
+
+					if (meshBeingCopied != null
+						&& meshBeingCopied.Vertices != null
+						&& !meshBeingCopied.Vertices.IsSorted)
+					{
+						Task.Run(() =>
+						{
+							// make the copy
+							var copyMesh = Mesh.Copy(meshBeingCopied, CancellationToken.None);
+							// clean the copy
+							copyMesh.CleanAndMergeMesh(CancellationToken.None);
+							lock (locker)
+							{
+								// if we have not changed to a new mesh
+								if (meshBeingCopied == _mesh)
+								{
+									// store the new clean mesh
+									_mesh = copyMesh;
+								}
+								// clear that we are working on it
+								meshBeingCopied = null;
+							}
+
+							this.Invalidate();
+						});
 					}
 				}
 			}
