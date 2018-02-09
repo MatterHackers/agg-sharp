@@ -101,34 +101,6 @@ namespace MatterHackers.Agg.Image
 			SetRecieveBlender(sourceImage.GetRecieveBlender());
 		}
 
-		public static ImageBuffer CreateScaledImage(ImageBuffer unscaledSourceImage, int width, int height)
-		{
-			ImageBuffer destImage = new ImageBuffer(width, height, 32, unscaledSourceImage.GetRecieveBlender());
-
-			// If the source image is more than twice as big as our dest image.
-			while (unscaledSourceImage.Width >= destImage.Width * 2)
-			{
-				// The image sampler we use is a 2x2 filter so we need to scale by a max of 1/2 if we want to get good results.
-				// So we scale as many times as we need to get the Image to be the right size.
-				// If this were going to be a non-uniform scale we could do the x and y separately to get better results.
-				ImageBuffer halfImage = new ImageBuffer(unscaledSourceImage.Width / 2, unscaledSourceImage.Height / 2, 32, unscaledSourceImage.GetRecieveBlender());
-				halfImage.NewGraphics2D().Render(unscaledSourceImage, 0, 0, 0, halfImage.Width / (double)unscaledSourceImage.Width, halfImage.Height / (double)unscaledSourceImage.Height);
-				unscaledSourceImage = halfImage;
-
-				if (unscaledSourceImage.Width == width)
-				{
-					return unscaledSourceImage;
-				}
-			}
-
-			Graphics2D renderGraphics = destImage.NewGraphics2D();
-			renderGraphics.ImageRenderQuality = Graphics2D.TransformQuality.Best;
-
-			renderGraphics.Render(unscaledSourceImage, 0, 0, 0, destImage.Width / (double)unscaledSourceImage.Width, destImage.Height / (double)unscaledSourceImage.Height);
-
-			return destImage;
-		}
-
 		public ImageBuffer(int width, int height, int bitsPerPixel = 32)
 		{
 			Allocate(width, height, width* (bitsPerPixel / 8), bitsPerPixel);
@@ -1227,6 +1199,55 @@ namespace MatterHackers.Agg.Image
 		public uint GetPixel32(double p, double p_2)
 		{
 			throw new NotImplementedException();
+		}
+	}
+
+	public static class ImageBufferExtensionMethods
+	{
+		public static ImageBuffer CreateScaledImage(this ImageBuffer unscaledSourceImage, double width, double height)
+		{
+			return CreateScaledImage(unscaledSourceImage, (int)Math.Round(width), (int)Math.Round(height));
+		}
+
+		public static ImageBuffer CreateScaledImage(this ImageBuffer sourceImage, int width, int height)
+		{
+			ImageBuffer destImage = new ImageBuffer(width, height, 32, sourceImage.GetRecieveBlender());
+
+			// If the source image is more than twice as big as our dest image.
+			while (sourceImage.Width >= destImage.Width * 2)
+			{
+				// The image sampler we use is a 2x2 filter so we need to scale by a max of 1/2 if we want to get good results.
+				// So we scale as many times as we need to get the Image to be the right size.
+				// If this were going to be a non-uniform scale we could do the x and y separately to get better results.
+				ImageBuffer halfImage = new ImageBuffer(sourceImage.Width / 2, sourceImage.Height / 2, 32, sourceImage.GetRecieveBlender());
+				halfImage.NewGraphics2D().Render(sourceImage, 0, 0, 0, halfImage.Width / (double)sourceImage.Width, halfImage.Height / (double)sourceImage.Height);
+				sourceImage = halfImage;
+
+				if (sourceImage.Width == width)
+				{
+					return sourceImage;
+				}
+			}
+
+			Graphics2D renderGraphics = destImage.NewGraphics2D();
+			renderGraphics.ImageRenderQuality = Graphics2D.TransformQuality.Best;
+
+			renderGraphics.Render(sourceImage, 0, 0, 0, destImage.Width / (double)sourceImage.Width, destImage.Height / (double)sourceImage.Height);
+
+			return destImage;
+		}
+
+		public static ImageBuffer CreateScaledImage(this ImageBuffer image, double ratio)
+		{
+			return CreateScaledImage(image, image.Width * ratio, image.Height * ratio);
+		}
+
+		public static ImageBuffer ToGrayscale(this ImageBuffer sourceImage)
+		{
+			var outputImage = new ImageBuffer(sourceImage.Width, sourceImage.Height, 8, new blender_gray(1));
+			outputImage.NewGraphics2D().Render(sourceImage, 0, 0);
+
+			return outputImage;
 		}
 	}
 

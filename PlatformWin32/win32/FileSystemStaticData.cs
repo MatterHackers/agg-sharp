@@ -113,11 +113,10 @@ namespace MatterHackers.Agg
 			int deviceWidth = (int)(width * GuiWidget.DeviceScale);
 			int deviceHeight = (int)(height * GuiWidget.DeviceScale);
 
-			ImageBuffer scaledImage = LoadIcon(path, iconColor);
-			scaledImage.SetRecieveBlender(new BlenderPreMultBGRA());
-			scaledImage = ImageBuffer.CreateScaledImage(scaledImage, deviceWidth, deviceHeight);
+			ImageBuffer image = LoadIcon(path, iconColor);
+			image.SetRecieveBlender(new BlenderPreMultBGRA());
 
-			return scaledImage;
+			return image.CreateScaledImage(deviceWidth, deviceHeight);
 		}
 
 		public void LoadSequence(string pathToImages, ImageSequence sequence)

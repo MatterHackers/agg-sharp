@@ -1160,8 +1160,8 @@ namespace MatterHackers.VectorMath
 				// check for singular matrix
 				if (pivot == 0.0)
 				{
-					throw new InvalidOperationException("Matrix is singular and cannot be inverted.");
-					//return mat;
+					//throw new InvalidOperationException("Matrix is singular and cannot be inverted.");
+					return mat;
 				}
 
 				// Scale row so it has a unit diagonal
