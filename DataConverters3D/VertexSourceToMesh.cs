@@ -80,6 +80,8 @@ namespace MatterHackers.DataConverters3D
 
 		public static Mesh Revolve(IVertexSource source, int angleSteps = 30, double angleStart = 0, double angleEnd = MathHelper.Tau)
 		{
+			angleStart = MathHelper.Range0ToTau(angleStart);
+			angleEnd = MathHelper.Range0ToTau(angleEnd);
 			// convert to clipper polygons and scale so we can ensure good shapes
 			Polygons polygons = VertexSourceToClipperPolygons.CreatePolygons(source);
 			// ensure good winding and consistent shapes
@@ -100,12 +102,21 @@ namespace MatterHackers.DataConverters3D
 			// make the outside shell
 			double angleDelta = (angleEnd - angleStart) / Math.Max(3, angleSteps);
 			double currentAngle = 0;
-            for (currentAngle = angleStart; currentAngle < angleEnd - angleDelta - EqualityTolerance; currentAngle += angleDelta)
+			for (currentAngle = angleStart; currentAngle < angleEnd - angleDelta - EqualityTolerance; currentAngle += angleDelta)
 			{
 				AddRevolveStrip(cleanedPath, mesh, currentAngle, currentAngle + angleDelta);
-            }
+			}
 
-			AddRevolveStrip(cleanedPath, mesh, currentAngle, currentAngle + angleDelta);
+			if ((angleEnd - angleStart) < .0000001
+				|| (angleEnd - MathHelper.Tau - angleStart) < .0000001)
+			{
+				// make sure we close the shape exactly
+				AddRevolveStrip(cleanedPath, mesh, currentAngle, angleStart);
+			}
+			else
+			{
+				AddRevolveStrip(cleanedPath, mesh, currentAngle, currentAngle + angleDelta);
+			}
 
 			// return the completed mesh
 			return mesh;

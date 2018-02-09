@@ -494,6 +494,7 @@ namespace MatterHackers.DataConverters3D
 
 		public IPrimitive TraceData()
 		{
+			var processingMesh = Mesh;
 			// Cache busting on child nodes
 			long hashCode = GetLongHashCode();
 
@@ -501,29 +502,33 @@ namespace MatterHackers.DataConverters3D
 			{
 				var traceables = new List<IPrimitive>();
 				// Check if we have a mesh at this level
-				if (Mesh != null)
+				if (processingMesh != null)
 				{
 					// we have a mesh so don't recurse into children
 					object objectData;
-					Mesh.PropertyBag.TryGetValue("MeshTraceData", out objectData);
+					processingMesh.PropertyBag.TryGetValue("MeshTraceData", out objectData);
 					IPrimitive meshTraceData = objectData as IPrimitive;
-					if (meshTraceData == null)
+					if (meshTraceData == null
+						&& processingMesh.Faces.Count > 0)
 					{
 						// Get the trace data for the local mesh
 						// First create trace data that builds fast but traces slow
-						var simpleTraceData = Mesh.CreateTraceData(0);
-						try
+						var simpleTraceData = processingMesh.CreateTraceData(0);
+						if (simpleTraceData != null)
 						{
-							Mesh.PropertyBag.Add("MeshTraceData", simpleTraceData);
-						}
-						catch
-						{
+							try
+							{
+								processingMesh.PropertyBag.Add("MeshTraceData", simpleTraceData);
+							}
+							catch
+							{
 
+							}
 						}
 						traceables.Add(simpleTraceData);
 						// Then create trace data that traces fast but builds slow
-						//var completeTraceData = Mesh.CreateTraceData(0);
-						//Mesh.PropertyBag["MeshTraceData"] = completeTraceData;
+						//var completeTraceData = processingMesh.CreateTraceData(0);
+						//processingMesh.PropertyBag["MeshTraceData"] = completeTraceData;
 					}
 					else
 					{

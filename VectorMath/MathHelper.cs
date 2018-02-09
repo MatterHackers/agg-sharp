@@ -218,9 +218,10 @@ namespace MatterHackers.VectorMath
 				Value += Tau;
 			}
 
-			if (Value >= Tau)
+			if ((Value - Tau) > .00001)
 			{
-				Value -= Tau;
+				int numTurns = (int)(Value / Tau);
+				Value -= (Tau * numTurns);
 			}
 
 			if (Value < 0 || Value > Tau) throw new Exception("Value >= 0 && Value <= Tau");
