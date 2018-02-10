@@ -175,7 +175,7 @@ namespace MatterHackers.DataConverters3D
 
 						// Save the embedded asset to disk
 						savedSuccessfully = MeshFileIo.Save(
-							item,
+							new Object3D() { Mesh = item.Mesh },
 							tempStlPath,
 							CancellationToken.None,
 							new MeshOutputSettings(MeshOutputSettings.OutputType.Binary),
