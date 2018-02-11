@@ -114,7 +114,7 @@ namespace MatterHackers.DataConverters3D
 					if (!assetFiles.TryGetValue(hashCode, out assetPath))
 					{
 						// Get an open filename
-						string tempStlPath = GetOpenFilePath(Object3D.AssetsPath, ".stl");
+						string tempStlPath = CreateNewLibraryPath(".stl");
 
 						// Save the embedded asset to disk
 						savedSuccessfully = MeshFileIo.Save(
@@ -155,12 +155,17 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		private static string GetOpenFilePath(string libraryPath, string extension)
+		/// <summary>
+		/// Creates a new non-colliding library file path to write library contents to
+		/// </summary>
+		/// <param name="extension">The file extension to use</param>
+		/// <returns>A new unique library path</returns>
+		private static string CreateNewLibraryPath(string extension)
 		{
 			string filePath;
 			do
 			{
-				filePath = Path.Combine(libraryPath, Path.ChangeExtension(Path.GetRandomFileName(), extension));
+				filePath = Path.Combine(Object3D.AssetsPath, Path.ChangeExtension(Path.GetRandomFileName(), extension));
 			} while (File.Exists(filePath));
 
 			return filePath;

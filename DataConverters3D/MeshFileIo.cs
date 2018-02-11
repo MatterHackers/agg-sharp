@@ -193,13 +193,14 @@ namespace MatterHackers.DataConverters3D
 
 		public static string ComputeSHA1(string destPath)
 		{
-			// Alternatively: MD5.Create(),  new SHA256Managed()
 			var timer = Stopwatch.StartNew();
 
 			using (var stream = new BufferedStream(File.OpenRead(destPath), 1200000))
 			{
+				// Alternatively: MD5.Create(),  new SHA256Managed()
 				byte[] checksum = SHA1.Create().ComputeHash(stream);
 				Console.WriteLine("SHA1 computed in {0}ms", timer.ElapsedMilliseconds);
+
 				return BitConverter.ToString(checksum).Replace("-", String.Empty);
 			}
 		}
