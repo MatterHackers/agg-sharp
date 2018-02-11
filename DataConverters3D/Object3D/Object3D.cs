@@ -383,9 +383,16 @@ namespace MatterHackers.DataConverters3D
 			return loadedItem;
 		}
 
+		/// <summary>
+		/// Called when loading existing content and needing to bypass the clearing of MeshPath that normally occurs in the this.Mesh setter
+		/// </summary>
+		/// <param name="mesh">The loaded mesh to assign this instance</param>
 		public void SetMeshDirect(Mesh mesh)
 		{
-			_mesh = mesh;
+			lock (locker)
+			{
+				_mesh = mesh;
+			}
 		}
 
 		protected virtual void OnInvalidate()
