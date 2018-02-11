@@ -213,6 +213,16 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
+		public static void Rotate(this IObject3D item, Vector3 origin, Vector3 axis, double angle)
+		{
+			// move object relative to rotation
+			item.Matrix *= Matrix4X4.CreateTranslation(-origin);
+			// rotate it
+			item.Matrix *= Matrix4X4.CreateRotation(axis, angle);
+			// move it back
+			item.Matrix *= Matrix4X4.CreateTranslation(origin);
+		}
+
 		public static IPrimitive CreateTraceData(this Mesh mesh, int maxRecursion = int.MaxValue)
 		{
 			List<IPrimitive> allPolys = new List<IPrimitive>();
