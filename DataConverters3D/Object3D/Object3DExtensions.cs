@@ -45,7 +45,7 @@ namespace MatterHackers.DataConverters3D
 	{
 		internal static void LoadMeshLinks(this IObject3D tempScene, CancellationToken cancellationToken, Dictionary<string, IObject3D> itemCache, Action<double, string> progress)
 		{
-			var itemsToLoad = (from object3D in tempScene.Descendants()
+			var itemsToLoad = (from object3D in tempScene.DescendantsAndSelf()
 							   where !string.IsNullOrEmpty(object3D.MeshPath)
 							   select object3D).ToList();
 
@@ -133,6 +133,20 @@ namespace MatterHackers.DataConverters3D
 			return ancestors;
 		}
 
+		public static void Unwrap(this IObject3D item)
+		{
+			foreach (var child in item.Children)
+			{
+				child.Matrix *= item.Matrix;
+			}
+
+			item.Parent.Children.Modify(list =>
+			{
+				list.Remove(item);
+				list.AddRange(item.Children);
+			});
+		}
+
 		public static Color WorldColor(this IObject3D child, IObject3D rootOverride = null)
 		{
 			var lastColorFound = Color.White;
@@ -197,7 +211,7 @@ namespace MatterHackers.DataConverters3D
 			return lastMaterialIndexFound;
 		}
 
-		public static IEnumerable<IObject3D> Descendants(this IObject3D root)
+		public static IEnumerable<IObject3D> DescendantsAndSelf(this IObject3D root)
 		{
 			var items = new Stack<IObject3D>(new[] { root });
 			while (items.Any())
@@ -207,6 +221,32 @@ namespace MatterHackers.DataConverters3D
 				yield return item;
 				foreach (var n in item.Children)
 				{
+					// This is code that ensures the tree is bulid with parent pointers correctly
+					n.Parent = item;
+					items.Push(n);
+				}
+			}
+		}
+
+		public static IEnumerable<IObject3D> Descendants(this IObject3D root)
+		{
+			var items = new Stack<IObject3D>();
+
+			foreach (var n in root.Children)
+			{
+				// This is code that ensures the tree is bulid with parent pointers correctly
+				n.Parent = root;
+				items.Push(n);
+			}
+
+			while (items.Any())
+			{
+				IObject3D item = items.Pop();
+
+				yield return item;
+				foreach (var n in item.Children)
+				{
+					// This is code that ensures the tree is bulid with parent pointers correctly
 					n.Parent = item;
 					items.Push(n);
 				}

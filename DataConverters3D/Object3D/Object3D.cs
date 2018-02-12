@@ -298,6 +298,9 @@ namespace MatterHackers.DataConverters3D
 
 		public virtual bool Visible { get; set; } = true;
 
+		public virtual bool CanBake => false;
+		public virtual bool CanRemove => false;
+
 		public static IObject3D Load(string meshPath)
 		{
 			return Load(meshPath, CancellationToken.None);
@@ -405,7 +408,7 @@ namespace MatterHackers.DataConverters3D
 		{
 			var originalParent = this.Parent;
 			// Index items by ID
-			var allItemsByID = this.Descendants().ToDictionary(i => i.ID);
+			var allItemsByID = this.DescendantsAndSelf().ToDictionary(i => i.ID);
 
 			IObject3D clonedItem;
 
@@ -429,7 +432,7 @@ namespace MatterHackers.DataConverters3D
 			}
 
 			// Copy mesh instances to cloned tree
-			foreach(var descendant in clonedItem.Descendants())
+			foreach(var descendant in clonedItem.DescendantsAndSelf())
 			{
 				descendant.SetMeshDirect(allItemsByID[descendant.ID].Mesh);
 
@@ -438,7 +441,7 @@ namespace MatterHackers.DataConverters3D
 				// update it to a new ID
 				descendant.ID = Guid.NewGuid().ToString();
 				// Now OwnerID must be reprocessed after changing ID to ensure consistency
-				foreach (var child in descendant.Descendants().Where((c) => c.OwnerID == originalId))
+				foreach (var child in descendant.DescendantsAndSelf().Where((c) => c.OwnerID == originalId))
 				{
 					child.OwnerID = descendant.ID;
 				}
@@ -617,6 +620,16 @@ namespace MatterHackers.DataConverters3D
 							ContractResolver = new IObject3DContractResolver(),
 							NullValueHandling = NullValueHandling.Ignore
 						});
+		}
+
+		public virtual void Bake()
+		{
+			this.Unwrap();
+		}
+
+		public virtual void Remove()
+		{
+			this.Unwrap();
 		}
 	}
 }
