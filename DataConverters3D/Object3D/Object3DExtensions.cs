@@ -86,6 +86,15 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
+		public static void Save(this IObject3D sourceItem, Stream stream, Action<double, string> progress = null)
+		{
+			sourceItem.PersistAssets(progress);
+
+			var streamWriter = new StreamWriter(stream);
+			streamWriter.Write(sourceItem.ToJson());
+			streamWriter.Flush();
+		}
+
 		public static void PersistAssets(this IObject3D sourceItem, Action<double, string> progress = null)
 		{
 			var itemsWithUnsavedMeshes = from object3D in sourceItem.Descendants()
