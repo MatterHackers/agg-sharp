@@ -39,6 +39,7 @@ using MatterHackers.DataConverters3D.UndoCommands;
 using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RayTracer;
+using MatterHackers.Localizations;
 using MatterHackers.VectorMath;
 using Newtonsoft.Json;
 
@@ -145,7 +146,7 @@ namespace MatterHackers.DataConverters3D
 
 		public void PersistAssets(Action<double, string> progress = null)
 		{
-			var itemsWithUnsavedMeshes = from object3D in this.Descendants()
+			var itemsWithUnsavedMeshes = from object3D in this.DescendantsAndSelf()
 										 where object3D.Persistable &&
 											   object3D.MeshPath == null &&
 											   object3D.Mesh != null
@@ -273,7 +274,10 @@ namespace MatterHackers.DataConverters3D
 					// We're adding a new item to the selection. To do so we wrap the selected item
 					// in a new group and with the new item. The selection will continue to grow in this
 					// way until it's applied, due to a loss of focus or until a group operation occurs
-					var newSelectionGroup = new SelectionGroup();
+					var newSelectionGroup = new SelectionGroup()
+					{
+						Name = "Selection".Localize()
+					};
 
 					newSelectionGroup.Children.Modify(list =>
 					{
@@ -337,6 +341,10 @@ namespace MatterHackers.DataConverters3D
 		public bool Persistable => sourceItem.Persistable;
 		public bool Visible { get => sourceItem.Visible; set => sourceItem.Visible = value; }
 		public string ID { get => sourceItem.ID; set => sourceItem.ID = value; }
+
+		public bool CanBake => false;
+
+		public bool CanRemove => false;
 
 		public IObject3D Clone() => sourceItem.Clone();
 
@@ -405,6 +413,16 @@ namespace MatterHackers.DataConverters3D
 
 				this.SelectedItem = itemToWrapWith;
 			}
+		}
+
+		public void Bake()
+		{
+			throw new NotImplementedException();
+		}
+
+		public void Remove()
+		{
+			throw new NotImplementedException();
 		}
 
 

@@ -36,6 +36,19 @@ using MatterHackers.Agg.Platform;
 
 namespace MatterHackers.Localizations
 {
+	public static class TranslationMapExtensions
+	{
+		public static string Localize(this string englishString)
+		{
+			if (TranslationMap.ActiveTranslationMap != null)
+			{
+				return TranslationMap.ActiveTranslationMap.Translate(englishString);
+			}
+
+			return englishString;
+		}
+	}
+
 	public class TranslationMap
 	{
 		protected const string engishTag = "English:";
@@ -44,6 +57,8 @@ namespace MatterHackers.Localizations
 		protected Dictionary<string, string> translationDictionary = new Dictionary<string, string>();
 
 		public string TwoLetterIsoLanguageName { get; private set; }
+
+		public static TranslationMap ActiveTranslationMap { get; set; }
 
 		public TranslationMap(string pathToTranslationsFolder, string twoLetterIsoLanguageName = "")
 		{

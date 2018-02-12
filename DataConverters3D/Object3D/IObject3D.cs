@@ -81,7 +81,7 @@ namespace MatterHackers.DataConverters3D
 			var topParent = item.Ancestors().Last();
 			if(topParent != null)
 			{
-				var names = topParent.Descendants().Where((i) => i != item).Select((i2) => i2.Name).ToList();
+				var names = topParent.DescendantsAndSelf().Where((i) => i != item).Select((i2) => i2.Name).ToList();
 
 				if (string.IsNullOrEmpty(item.Name))
 				{
@@ -193,6 +193,20 @@ namespace MatterHackers.DataConverters3D
 		/// Mark that this object has changed (and notify its parent)
 		/// </summary>
 		void Invalidate();
+
+		bool CanBake { get; }
+		/// <summary>
+		/// Remove the IObject3D from the tree and keep whatever functionality it was adding. 
+		/// This may require removing many child objects from the tree depending on implemention.
+		/// </summary>
+		void Bake();
+
+		bool CanRemove { get; }
+		/// <summary>
+		/// Remove the IObject3D from the tree and undo whatever functionality it was adding (if appropriate).
+		/// This may require removing many child objects from the tree depending on implemention.
+		/// </summary>
+		void Remove();
 
 		/// <summary>
 		/// Get the Axis Aligned Bounding Box transformed by the given offset
