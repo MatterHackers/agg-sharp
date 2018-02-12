@@ -235,11 +235,6 @@ namespace MatterHackers.DataConverters3D
 		public virtual bool CanBake => false;
 		public virtual bool CanRemove => false;
 
-		public static IObject3D Load(string meshPath)
-		{
-			return Load(meshPath, CancellationToken.None);
-		}
-
 		public static IObject3D Load(string meshPath, CancellationToken cancellationToken, Dictionary<string, IObject3D> itemCache = null, Action<double, string> progress = null)
 		{
 			if (string.IsNullOrEmpty(meshPath) || !File.Exists(meshPath))
