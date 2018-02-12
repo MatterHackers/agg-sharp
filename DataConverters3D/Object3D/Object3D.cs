@@ -145,11 +145,7 @@ namespace MatterHackers.DataConverters3D
 		Matrix4X4 _matrix = Matrix4X4.Identity;
 		public Matrix4X4 Matrix
 		{
-			get
-			{
-				return _matrix;
-			}
-
+			get => _matrix;
 			set
 			{
 				if(value != _matrix)
