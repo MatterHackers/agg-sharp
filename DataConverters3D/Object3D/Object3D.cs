@@ -74,68 +74,6 @@ namespace MatterHackers.DataConverters3D
 
 		public IObject3D Parent { get; set; }
 
-		void UpdateParent(List<IObject3D> list)
-		{
-			// Make sure all the children have this as their parent
-			foreach (var item in list)
-			{
-				item.Parent = this;
-			}
-		}
-
-		void ApplyDifferenceToMeshes()
-		{
-			// spin up a task to remove holes from the objects in the group
-			var holes = Children.Where(obj => obj.OutputType == PrintOutputTypes.Hole).ToList();
-			if (holes.Any())
-			{
-				var itemsToReplace = new List<(IObject3D object3D, Mesh newMesh)>();
-				foreach (var hole in holes)
-				{
-					var transformedHole = Mesh.Copy(hole.Mesh, CancellationToken.None);
-					transformedHole.Transform(hole.Matrix);
-
-					var stuffToModify = Children.Where(obj => obj.OutputType != PrintOutputTypes.Hole && obj.Mesh != null).ToList();
-					foreach (var object3D in stuffToModify)
-					{
-						var transformedObject = Mesh.Copy(object3D.Mesh, CancellationToken.None);
-						transformedObject.Transform(object3D.Matrix);
-
-						var newMesh = PolygonMesh.Csg.CsgOperations.Subtract(transformedObject, transformedHole);
-						if (newMesh != object3D.Mesh)
-						{
-							itemsToReplace.Add((object3D, newMesh));
-						}
-					}
-
-					this.Children.Modify(list =>
-					{
-						foreach (var x in itemsToReplace)
-						{
-							// Remove the original object
-							list.Remove(x.object3D);
-
-							// Create the replacement, wrapping the original
-							var newItem = new Object3D()
-							{
-								Mesh = x.newMesh,
-
-								// Copy over child properties...
-								OutputType = x.object3D.OutputType,
-								Color = x.object3D.Color,
-								MaterialIndex = x.object3D.MaterialIndex
-							};
-							newItem.Children.Modify(childList => childList.Add(x.object3D));
-
-							// Add the replacement
-							list.Add(newItem);
-						}
-					});
-
-				}
-			}
-		}
-
 		private Color _color = Color.Transparent;
 		public Color Color
 		{
