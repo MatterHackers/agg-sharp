@@ -115,8 +115,6 @@ namespace MatterHackers.DataConverters3D
 
 				return assetPath;
 			}
-
-			return null;
 		}
 
 		public static void Save(this IObject3D sourceItem, Stream stream, Action<double, string> progress = null)
@@ -130,7 +128,8 @@ namespace MatterHackers.DataConverters3D
 
 		public static void PersistAssets(this IObject3D sourceItem, Action<double, string> progress = null)
 		{
-			var itemsWithUnsavedMeshes = from object3D in sourceItem.Descendants()
+			// Must use DescendantsAndSelf so that leaf nodes save their meshes
+			var itemsWithUnsavedMeshes = from object3D in sourceItem.DescendantsAndSelf()
 										 where object3D.Persistable &&
 											   object3D.MeshPath == null &&
 											   object3D.Mesh != null
