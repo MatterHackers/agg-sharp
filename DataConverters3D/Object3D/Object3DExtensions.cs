@@ -86,6 +86,39 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
+		public static string SaveToAssets(this IObject3D object3D)
+		{
+			// Serialize object3D to in memory mcx/json stream
+			using (var memoryStream = new MemoryStream())
+			{
+				// Write JSON
+				object3D.Save(memoryStream);
+
+				// Reposition
+				memoryStream.Position = 0;
+
+				// Calculate
+				string sha1 = MeshFileIo.ComputeSHA1(memoryStream);
+
+				Directory.CreateDirectory(Object3D.AssetsPath);
+
+				string assetPath = Path.Combine(Object3D.AssetsPath, sha1 + ".stl");
+				if (!File.Exists(assetPath))
+				{
+					memoryStream.Position = 0;
+
+					using (var outStream = File.Create(assetPath))
+					{
+						memoryStream.CopyTo(outStream);
+					}
+				}
+
+				return assetPath;
+			}
+
+			return null;
+		}
+
 		public static void Save(this IObject3D sourceItem, Stream stream, Action<double, string> progress = null)
 		{
 			sourceItem.PersistAssets(progress);
