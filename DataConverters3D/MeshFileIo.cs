@@ -191,17 +191,24 @@ namespace MatterHackers.DataConverters3D
 			return 0;
 		}
 
-		public static string ComputeSHA1(string destPath)
+		public static string ComputeSHA1(string filePath)
 		{
-			// Alternatively: MD5.Create(),  new SHA256Managed()
+			using (var stream = new BufferedStream(File.OpenRead(filePath), 1200000))
+			{
+				return ComputeSHA1(stream);
+			}
+		}
+
+		public static string ComputeSHA1(Stream stream)
+		{
 			var timer = Stopwatch.StartNew();
 
-			using (var stream = new BufferedStream(File.OpenRead(destPath), 1200000))
-			{
-				byte[] checksum = SHA1.Create().ComputeHash(stream);
-				Console.WriteLine("SHA1 computed in {0}ms", timer.ElapsedMilliseconds);
-				return BitConverter.ToString(checksum).Replace("-", String.Empty);
-			}
+			// Alternatively: MD5.Create(),  new SHA256Managed()
+			byte[] checksum = SHA1.Create().ComputeHash(stream);
+
+			Console.WriteLine("SHA1 computed in {0}ms", timer.ElapsedMilliseconds);
+
+			return BitConverter.ToString(checksum).Replace("-", String.Empty);
 		}
 	}
 

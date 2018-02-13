@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -36,6 +37,7 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh;
+using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;
 
@@ -82,6 +84,132 @@ namespace MatterHackers.DataConverters3D
 					item.Children = loadedItem.Children;
 				}
 			}
+		}
+
+		public static string SaveToAssets(this IObject3D object3D)
+		{
+			// Serialize object3D to in memory mcx/json stream
+			using (var memoryStream = new MemoryStream())
+			{
+				// Write JSON
+				object3D.Save(memoryStream);
+
+				// Reposition
+				memoryStream.Position = 0;
+
+				// Calculate
+				string sha1 = MeshFileIo.ComputeSHA1(memoryStream);
+
+				Directory.CreateDirectory(Object3D.AssetsPath);
+
+				string assetPath = Path.Combine(Object3D.AssetsPath, sha1 + ".stl");
+				if (!File.Exists(assetPath))
+				{
+					memoryStream.Position = 0;
+
+					using (var outStream = File.Create(assetPath))
+					{
+						memoryStream.CopyTo(outStream);
+					}
+				}
+
+				return assetPath;
+			}
+		}
+
+		public static void Save(this IObject3D sourceItem, Stream stream, Action<double, string> progress = null)
+		{
+			sourceItem.PersistAssets(progress);
+
+			var streamWriter = new StreamWriter(stream);
+			streamWriter.Write(sourceItem.ToJson());
+			streamWriter.Flush();
+		}
+
+		public static void PersistAssets(this IObject3D sourceItem, Action<double, string> progress = null)
+		{
+			// Must use DescendantsAndSelf so that leaf nodes save their meshes
+			var itemsWithUnsavedMeshes = from object3D in sourceItem.DescendantsAndSelf()
+										 where object3D.Persistable &&
+											   object3D.MeshPath == null &&
+											   object3D.Mesh != null
+										 select object3D;
+
+			string assetsDirectory = Object3D.AssetsPath;
+			Directory.CreateDirectory(assetsDirectory);
+
+			var assetFiles = new Dictionary<int, string>();
+
+			try
+			{
+				// Write each unsaved mesh to disk
+				foreach (IObject3D item in itemsWithUnsavedMeshes)
+				{
+					// Calculate the mesh hash
+					int hashCode = (int)item.Mesh.GetLongHashCode();
+
+					string assetPath;
+
+					bool savedSuccessfully = true;
+
+					if (!assetFiles.TryGetValue(hashCode, out assetPath))
+					{
+						// Get an open filename
+						string tempStlPath = CreateNewLibraryPath(".stl");
+
+						// Save the embedded asset to disk
+						savedSuccessfully = MeshFileIo.Save(
+							new Object3D() { Mesh = item.Mesh },
+							tempStlPath,
+							CancellationToken.None,
+							new MeshOutputSettings(MeshOutputSettings.OutputType.Binary),
+							progress);
+
+						if (savedSuccessfully)
+						{
+							// There's currently no way to know the actual mesh file hashcode without saving it to disk, thus we save at least once in
+							// order to compute the hash but then throw away the duplicate file if an existing copy exists in the assets directory
+							string sha1 = MeshFileIo.ComputeSHA1(tempStlPath);
+							assetPath = Path.Combine(assetsDirectory, sha1 + ".stl");
+							if (!File.Exists(assetPath))
+							{
+								File.Copy(tempStlPath, assetPath);
+							}
+
+							// Remove the temp file
+							File.Delete(tempStlPath);
+
+							assetFiles.Add(hashCode, assetPath);
+						}
+					}
+
+					if (savedSuccessfully && File.Exists(assetPath))
+					{
+						// Assets should be stored relative to the Asset folder
+						item.MeshPath = Path.GetFileName(assetPath);
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				Trace.WriteLine("Error saving file: ", ex.Message);
+			}
+		}
+
+		/// <summary>
+		/// Creates a new non-colliding library file path to write library contents to
+		/// </summary>
+		/// <param name="extension">The file extension to use</param>
+		/// <returns>A new unique library path</returns>
+		private static string CreateNewLibraryPath(string extension)
+		{
+			string filePath;
+			do
+			{
+				filePath = Path.Combine(Object3D.AssetsPath, Path.ChangeExtension(Path.GetRandomFileName(), extension));
+			} while (File.Exists(filePath));
+
+			return filePath;
 		}
 
 		public static AxisAlignedBoundingBox GetUnionedAxisAlignedBoundingBox(this IEnumerable<IObject3D> items)
