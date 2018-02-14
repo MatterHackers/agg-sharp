@@ -212,9 +212,10 @@ namespace MatterHackers.DataConverters3D
 								{
 									// store the new clean mesh
 									_mesh = copyMesh;
+
+									// reset
+									meshBeingCopied = null;
 								}
-								// clear that we are working on it
-								meshBeingCopied = null;
 							}
 
 							this.Invalidate();
