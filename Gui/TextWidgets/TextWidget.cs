@@ -38,6 +38,15 @@ namespace MatterHackers.Agg.UI
 
 		public bool EllipsisIfClipped { get; set; }
 
+		public bool EllipsisActive => this.EllipsisIfClipped && Printer.LocalBounds.Width > LocalBounds.Width;
+
+		public override string ToolTipText
+		{
+			// Override ToolTipText if empty and EllipsisActive
+			get => string.IsNullOrEmpty(base.ToolTipText) && this.EllipsisActive ? this.Text : base.ToolTipText;
+			set => base.ToolTipText = value;
+		}
+
 		public Color DisabledColor { get; set; }
 
 		public double PointSize
@@ -223,7 +232,7 @@ namespace MatterHackers.Agg.UI
 			}
 			graphics2D.SetTransform(graphics2D.GetTransform() * Affine.NewTranslation(xOffsetForText, yOffsetForText));
 
-			if (EllipsisIfClipped && Printer.LocalBounds.Width > LocalBounds.Width) // only do this if it's static text
+			if (this.EllipsisActive) // only do this if it's static text
 			{
 				TypeFacePrinter shortTextPrinter = Printer;
 				shortTextPrinter.DrawFromHintedCache = Printer.DrawFromHintedCache;
