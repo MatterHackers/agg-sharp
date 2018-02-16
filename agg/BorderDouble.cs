@@ -44,6 +44,11 @@ namespace MatterHackers.Agg
 			return new BorderDouble(valueForAll);
 		}
 
+		public static implicit operator BorderDouble(double valueForAll)
+		{
+			return new BorderDouble(valueForAll);
+		}
+
 		public static bool operator ==(BorderDouble a, BorderDouble b)
 		{
 			if (a.Left == b.Left && a.Bottom == b.Bottom && a.Right == b.Right && a.Top == b.Top)
