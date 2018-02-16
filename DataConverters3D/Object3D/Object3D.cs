@@ -156,7 +156,6 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public bool AutomaticallyCleanAndMerge { get; set; } = true;
 		Object locker = new object();
 		Mesh meshBeingCopied = null;
 		[JsonIgnore]
@@ -165,10 +164,7 @@ namespace MatterHackers.DataConverters3D
 		{
 			get
 			{
-				if (AutomaticallyCleanAndMerge)
-				{
-					AsyncCleanAndMerge();
-				}
+				AsyncCleanAndMerge();
 				return _mesh;
 			}
 			set
