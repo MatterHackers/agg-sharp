@@ -263,6 +263,7 @@ namespace MatterHackers.DataConverters3D
 
 		public static void Unwrap(this IObject3D item)
 		{
+			// Should this be using CollapseInto?
 			foreach (var child in item.Children)
 			{
 				child.Matrix *= item.Matrix;
@@ -349,8 +350,6 @@ namespace MatterHackers.DataConverters3D
 				yield return item;
 				foreach (var n in item.Children)
 				{
-					// This is code that ensures the tree is bulid with parent pointers correctly
-					n.Parent = item;
 					items.Push(n);
 				}
 			}
@@ -362,8 +361,6 @@ namespace MatterHackers.DataConverters3D
 
 			foreach (var n in root.Children)
 			{
-				// This is code that ensures the tree is bulid with parent pointers correctly
-				n.Parent = root;
 				items.Push(n);
 			}
 
@@ -374,8 +371,6 @@ namespace MatterHackers.DataConverters3D
 				yield return item;
 				foreach (var n in item.Children)
 				{
-					// This is code that ensures the tree is bulid with parent pointers correctly
-					n.Parent = item;
 					items.Push(n);
 				}
 			}
