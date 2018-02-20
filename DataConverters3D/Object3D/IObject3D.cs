@@ -104,15 +104,14 @@ namespace MatterHackers.DataConverters3D
 		/// <returns></returns>
 		public static IEnumerable<IObject3D> VisibleMeshes(this IObject3D root)
 		{
-			var items = new Stack<IObject3D>(new[] { root });
-			while (items.Count > 0)
+			if (root.Visible)
 			{
-				var item = items.Pop();
-
-				if (root.Visible)
+				var items = new Stack<IObject3D>(new[] { root });
+				while (items.Count > 0)
 				{
-					if (item.Mesh != null
-						&& item.Visible)
+					var item = items.Pop();
+
+					if (item.Mesh != null)
 					{
 						// there is a mesh return the object
 						yield return item;
@@ -121,7 +120,7 @@ namespace MatterHackers.DataConverters3D
 					{
 						foreach (var n in item.Children)
 						{
-							if (item.Visible)
+							if (n.Visible)
 							{
 								items.Push(n);
 							}
@@ -129,6 +128,7 @@ namespace MatterHackers.DataConverters3D
 					}
 				}
 			}
+
 		}
 	}
 
