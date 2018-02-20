@@ -105,7 +105,7 @@ namespace MatterHackers.DataConverters3D
 		public static IEnumerable<IObject3D> VisibleMeshes(this IObject3D root)
 		{
 			var items = new Stack<IObject3D>(new[] { root });
-			while (items.Any())
+			while (items.Count > 0)
 			{
 				var item = items.Pop();
 

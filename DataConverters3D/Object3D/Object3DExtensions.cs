@@ -328,7 +328,7 @@ namespace MatterHackers.DataConverters3D
 		public static IEnumerable<IObject3D> DescendantsAndSelf(this IObject3D root)
 		{
 			var items = new Stack<IObject3D>(new[] { root });
-			while (items.Any())
+			while (items.Count > 0)
 			{
 				IObject3D item = items.Pop();
 
@@ -349,7 +349,7 @@ namespace MatterHackers.DataConverters3D
 				items.Push(n);
 			}
 
-			while (items.Any())
+			while (items.Count > 0)
 			{
 				IObject3D item = items.Pop();
 
