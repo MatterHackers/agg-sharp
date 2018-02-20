@@ -557,7 +557,18 @@ namespace MatterHackers.DataConverters3D
 
 		public virtual void Bake()
 		{
-			this.Remove();
+			// push our matrix into our children
+			foreach (var child in this.Children)
+			{
+				child.Matrix *= this.Matrix;
+			}
+
+			// add our children to our parent and remove from parent
+			this.Parent.Children.Modify(list =>
+			{
+				list.Remove(this);
+				list.AddRange(this.Children);
+			});
 		}
 
 		public virtual void Remove()
