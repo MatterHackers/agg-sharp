@@ -81,11 +81,14 @@ namespace MatterHackers.Agg.OpenGlGui
 
 		public bool LockTrackBall { get; set; }
 
-		public TrackballTumbleWidget(WorldView world)
+		private GuiWidget sourceWidget;
+
+		public TrackballTumbleWidget(WorldView world, GuiWidget sourceWidget)
 		{
 			AnchorAll();
 			TrackBallController = new TrackBallController(world);
 			this.world = world;
+			this.sourceWidget = sourceWidget;
 		}
 
 		public override void OnBoundsChanged(EventArgs e)
@@ -96,7 +99,7 @@ namespace MatterHackers.Agg.OpenGlGui
 
 			TrackBallController.TrackBallRadius = trackingRadius;
 
-			this.world.CalculateProjectionMatrix(this.Width, this.Height);
+			this.world.CalculateProjectionMatrix(sourceWidget.Width, sourceWidget.Height);
 
 			this.world.CalculateModelviewMatrix();
 
