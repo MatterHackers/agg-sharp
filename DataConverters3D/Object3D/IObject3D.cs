@@ -121,7 +121,6 @@ namespace MatterHackers.DataConverters3D
 					{
 						foreach (var n in item.Children)
 						{
-							n.Parent = item;
 							if (item.Visible)
 							{
 								items.Push(n);
@@ -197,14 +196,14 @@ namespace MatterHackers.DataConverters3D
 		bool CanBake { get; }
 		/// <summary>
 		/// Remove the IObject3D from the tree and keep whatever functionality it was adding. 
-		/// This may require removing many child objects from the tree depending on implemention.
+		/// This may require removing many child objects from the tree depending on implementation.
 		/// </summary>
 		void Bake();
 
 		bool CanRemove { get; }
 		/// <summary>
 		/// Remove the IObject3D from the tree and undo whatever functionality it was adding (if appropriate).
-		/// This may require removing many child objects from the tree depending on implemention.
+		/// This may require removing many child objects from the tree depending on implementation.
 		/// </summary>
 		void Remove();
 
