@@ -101,7 +101,7 @@ namespace MatterHackers.MeshVisualizer
 		private TrackballTumbleWidget trackballTumbleWidget;
 
 		private int volumeIndexWithMouseDown = -1;
-		
+
 		public MeshViewerWidget(Vector3 displayVolume, Vector2 bedCenter, BedShape bedShape, string startingTextMessage = "")
 		{
 			Scene.SelectionChanged += (sender, e) =>
@@ -115,7 +115,7 @@ namespace MatterHackers.MeshVisualizer
 			BedColor = new ColorF(.8, .8, .8, .7).ToColor();
 			BuildVolumeColor = new ColorF(.2, .8, .3, .2).ToColor();
 
-			trackballTumbleWidget = new TrackballTumbleWidget(this.World);
+			trackballTumbleWidget = new TrackballTumbleWidget(this.World, this);
 			trackballTumbleWidget.TransformState = TrackBallController.MouseDownType.Rotation;
 
 			AddChild(trackballTumbleWidget);
