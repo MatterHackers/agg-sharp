@@ -104,9 +104,10 @@ namespace MatterHackers.Agg.UI
 					default:
 						throw new NotImplementedException();
 				}
+				var clientSize = this.ClientSize;
 
 				int bitDepth = System.Drawing.Image.GetPixelFormatSize(format);
-				bitmapBackBuffer.Initialize((int)Width, (int)Height, bitDepth);
+				bitmapBackBuffer.Initialize((int)clientSize.Width, (int)clientSize.Height, bitDepth);
 				NewGraphics2D().Clear(new ColorF(1, 1, 1, 1));
 			}
 		}
