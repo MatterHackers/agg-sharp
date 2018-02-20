@@ -261,21 +261,6 @@ namespace MatterHackers.DataConverters3D
 			return ancestors;
 		}
 
-		public static void Unwrap(this IObject3D item)
-		{
-			// Should this be using CollapseInto?
-			foreach (var child in item.Children)
-			{
-				child.Matrix *= item.Matrix;
-			}
-
-			item.Parent.Children.Modify(list =>
-			{
-				list.Remove(item);
-				list.AddRange(item.Children);
-			});
-		}
-
 		public static Color WorldColor(this IObject3D child, IObject3D rootOverride = null)
 		{
 			var lastColorFound = Color.White;
