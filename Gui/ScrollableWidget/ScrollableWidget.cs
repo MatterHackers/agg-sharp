@@ -85,6 +85,19 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public Vector2 ScrollPositionFromTop
+		{
+			get
+			{
+				return scrollArea.Position + new Vector2(0, ScrollArea.Height - Height);
+			}
+
+			set
+			{
+				scrollArea.Position = value + new Vector2(0, Height - ScrollArea.Height);
+			}
+		}
+
 		public override void OnKeyDown(KeyEventArgs keyEvent)
 		{
 			// make sure children controls get to try to handle this event first
