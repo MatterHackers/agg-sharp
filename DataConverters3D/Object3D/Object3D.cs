@@ -229,8 +229,8 @@ namespace MatterHackers.DataConverters3D
 
 		public virtual bool Visible { get; set; } = true;
 
-		public virtual bool CanBake => false;
-		public virtual bool CanRemove => false;
+		public virtual bool CanBake => this.HasChildren();
+		public virtual bool CanRemove => this.HasChildren();
 
 		public static IObject3D Load(string meshPath, CancellationToken cancellationToken, Dictionary<string, IObject3D> itemCache = null, Action<double, string> progress = null)
 		{
