@@ -51,6 +51,10 @@ namespace MatterHackers.Agg
 			set { m_ScanlineCache = value; }
 		}
 
+		public override int Width => destImageByte.Width;
+
+		public override int Height => destImageByte.Height;
+
 		public override void SetClippingRect(RectangleDouble clippingRect)
 		{
 			Rasterizer.SetVectorClipBox(clippingRect);

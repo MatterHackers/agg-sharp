@@ -87,6 +87,10 @@ namespace MatterHackers.RenderOpenGl
 			set { throw new Exception("There is no scanline cache on a GL surface."); }
 		}
 
+		public override int Width => width;
+
+		public override int Height => height;
+
 		public void PushOrthoProjection()
 		{
 			GL.Disable(EnableCap.CullFace);
