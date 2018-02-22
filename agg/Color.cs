@@ -680,10 +680,13 @@ namespace MatterHackers.Agg
 		public static readonly Color DarkGray = new Color(85, 85, 85, 255);
 		public static readonly Color Black = new Color(0, 0, 0, 255);
 		public static readonly Color Red = new Color(255, 0, 0, 255);
+		public static readonly Color FireEngineRed = new Color("#F62817");
 		public static readonly Color Orange = new Color(255, 127, 0, 255);
 		public static readonly Color Pink = new Color(255, 192, 203, 255);
 		public static readonly Color Green = new Color(0, 255, 0, 255);
-		public static readonly Color Blue = new Color(0, 0, 255, 255);
+		public static readonly Color Blue = new Color("#0000FF");
+		public static readonly Color DargBlue = new Color("#0000A0");
+		public static readonly Color LightBlue = new Color("#ADD8E6");
 		public static readonly Color Indigo = new Color(75, 0, 130, 255);
 		public static readonly Color Violet = new Color(143, 0, 255, 255);
 		public static readonly Color Cyan = new Color(0, 255, 255, 255);

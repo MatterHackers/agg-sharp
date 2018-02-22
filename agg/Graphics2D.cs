@@ -198,6 +198,9 @@ namespace MatterHackers.Agg
 
 		public abstract void Clear(IColorType color);
 
+		public abstract int Width { get; }
+		public abstract int Height { get; }
+
 		public void DrawString(string Text, double x, double y, double pointSize = 12,
 			Justification justification = Justification.Left, Baseline baseline = Baseline.Text,
 			Color color = new Color(), bool drawFromHintedCach = false, Color backgroundColor = new Color(),
