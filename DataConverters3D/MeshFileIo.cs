@@ -133,7 +133,7 @@ namespace MatterHackers.DataConverters3D
 
 		public static Mesh DoMergeAndTransform(IObject3D item, MeshOutputSettings outputInfo, CancellationToken cancellationToken)
 		{
-			var visibleMeshes = item.VisibleMeshes();
+			var visibleMeshes = item.VisibleMeshes().Where((i) => i.WorldPersistable());
 			if (visibleMeshes.Count() == 1)
 			{
 				var first = visibleMeshes.First();

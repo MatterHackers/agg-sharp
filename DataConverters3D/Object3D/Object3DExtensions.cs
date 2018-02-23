@@ -130,7 +130,7 @@ namespace MatterHackers.DataConverters3D
 		{
 			// Must use DescendantsAndSelf so that leaf nodes save their meshes
 			var itemsWithUnsavedMeshes = from object3D in sourceItem.DescendantsAndSelf()
-										 where object3D.Persistable &&
+										 where object3D.WorldPersistable() &&
 											   object3D.MeshPath == null &&
 											   object3D.Mesh != null
 										 select object3D;
@@ -280,6 +280,26 @@ namespace MatterHackers.DataConverters3D
 			}
 
 			return lastColorFound;
+		}
+
+		public static bool WorldPersistable(this IObject3D child, IObject3D rootOverride = null)
+		{
+			foreach (var item in child.Ancestors())
+			{
+				// if we find a color it overrides our current color so set it
+				if (!item.Persistable)
+				{
+					return false;
+				}
+
+				// If the root override has been matched, break and return latest
+				if (item == rootOverride)
+				{
+					break;
+				}
+			}
+
+			return true;
 		}
 
 		public static PrintOutputTypes WorldOutputType(this IObject3D child, IObject3D rootOverride = null)
