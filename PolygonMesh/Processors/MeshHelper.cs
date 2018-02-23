@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
@@ -92,6 +93,23 @@ namespace MatterHackers.PolygonMesh
 				Vector3 edgeStartPosition = faceEdge.FirstVertex.Position;
 				Vector3 textureUv = Vector3.Transform(edgeStartPosition, textureCoordinateMapping);
 				faceEdge.SetUv(0, new Vector2(textureUv));
+			}
+		}
+
+		public static void CopyFaces(this Mesh copyTo, Mesh copyFrom)
+		{
+			foreach (Face face in copyFrom.Faces)
+			{
+				List<IVertex> faceVertices = new List<IVertex>();
+				foreach (FaceEdge faceEdgeToAdd in face.FaceEdges())
+				{
+					// we allow duplicates (the true) to make sure we are not changing the loaded models accuracy.
+					IVertex newVertex = copyTo.CreateVertex(faceEdgeToAdd.FirstVertex.Position, CreateOption.CreateNew, SortOption.WillSortLater);
+					faceVertices.Add(newVertex);
+				}
+
+				// we allow duplicates (the true) to make sure we are not changing the loaded models accuracy.
+				copyTo.CreateFace(faceVertices.ToArray(), CreateOption.CreateNew);
 			}
 		}
 

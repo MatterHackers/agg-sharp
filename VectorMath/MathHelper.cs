@@ -235,12 +235,12 @@ namespace MatterHackers.VectorMath
 			if (EndAngle != Range0ToTau(EndAngle)) throw new Exception("EndAngle != Range0ToTau(EndAngle)");
 
 			double DeltaAngle = EndAngle - StartAngle;
-			if (DeltaAngle > Tau / 2)
+			if (DeltaAngle > Tau)
 			{
 				DeltaAngle -= Tau;
 			}
 
-			if (DeltaAngle < -Tau / 2)
+			if (DeltaAngle < -Tau)
 			{
 				DeltaAngle += Tau;
 			}

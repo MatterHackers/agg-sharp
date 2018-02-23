@@ -93,10 +93,17 @@ namespace MatterHackers.DataConverters3D
 
 			Mesh mesh = new Mesh();
 
+			var hasStartAndEndFaces = angleStart > 0.000001;
+			hasStartAndEndFaces |= angleEnd < MathHelper.Tau - 0.000001;
 			// check if we need to make closing faces
-			if (angleStart != 0 || angleEnd != MathHelper.Tau)
+			if (hasStartAndEndFaces)
 			{
-				// make a face for the start and end
+				// make a face for the start
+				CachedTesselator teselatedSource = new CachedTesselator();
+				Mesh extrudedVertexSource = TriangulateFaces(source, teselatedSource);
+				extrudedVertexSource.Transform(Matrix4X4.CreateRotationX(MathHelper.Tau / 4));
+				extrudedVertexSource.Transform(Matrix4X4.CreateRotationZ(angleStart));
+				mesh.CopyFaces(extrudedVertexSource);
 			}
 
 			// make the outside shell
@@ -107,15 +114,22 @@ namespace MatterHackers.DataConverters3D
 				AddRevolveStrip(cleanedPath, mesh, currentAngle, currentAngle + angleDelta);
 			}
 
-			if ((angleEnd - angleStart) < .0000001
-				|| (angleEnd - MathHelper.Tau - angleStart) < .0000001)
+			if (!hasStartAndEndFaces 
+				&& ((angleEnd - angleStart) < .0000001
+					|| (angleEnd - MathHelper.Tau - angleStart) < .0000001))
 			{
 				// make sure we close the shape exactly
 				AddRevolveStrip(cleanedPath, mesh, currentAngle, angleStart);
 			}
-			else
+			else // add the end face
 			{
-				AddRevolveStrip(cleanedPath, mesh, currentAngle, currentAngle + angleDelta);
+				// make a face for the end
+				CachedTesselator teselatedSource = new CachedTesselator();
+				Mesh extrudedVertexSource = TriangulateFaces(source, teselatedSource);
+				extrudedVertexSource.Transform(Matrix4X4.CreateRotationX(MathHelper.Tau / 4));
+				extrudedVertexSource.Transform(Matrix4X4.CreateRotationZ(currentAngle));
+				extrudedVertexSource.ReverseFaceEdges();
+				mesh.CopyFaces(extrudedVertexSource);
 			}
 
 			// return the completed mesh
