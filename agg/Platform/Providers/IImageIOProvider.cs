@@ -46,5 +46,7 @@ namespace MatterHackers.Agg.Platform
 		bool SaveImageData(string filename, IImageByte sourceImage);
 
 		ImageBuffer LoadImage(string fileName);
+
+		ImageBuffer LoadImage(Stream stream);
 	}
 }
