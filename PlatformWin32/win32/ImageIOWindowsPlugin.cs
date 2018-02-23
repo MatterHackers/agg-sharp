@@ -386,9 +386,16 @@ namespace MatterHackers.Agg.Image
 
 		public ImageBuffer LoadImage(string path)
 		{
-			ImageBuffer temp = new ImageBuffer();
-
+			var temp = new ImageBuffer();
 			LoadImageData(path, temp);
+
+			return temp;
+		}
+
+		public ImageBuffer LoadImage(Stream stream)
+		{
+			var temp = new ImageBuffer();
+			LoadImageData(stream, temp);
 
 			return temp;
 		}
