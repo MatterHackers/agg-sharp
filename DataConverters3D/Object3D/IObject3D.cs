@@ -193,6 +193,11 @@ namespace MatterHackers.DataConverters3D
 		/// </summary>
 		void Invalidate();
 
+		/// <summary>
+		/// Allow this object to be drilled into and edited
+		/// </summary>
+		bool CanEdit { get; }
+
 		bool CanBake { get; }
 		/// <summary>
 		/// Remove the IObject3D from the tree and keep whatever functionality it was adding. 
