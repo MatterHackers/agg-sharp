@@ -262,6 +262,8 @@ namespace MatterHackers.DataConverters3D
 		public bool Visible { get => sourceItem.Visible; set => sourceItem.Visible = value; }
 		public string ID { get => sourceItem.ID; set => sourceItem.ID = value; }
 
+		public bool CanEdit => false;
+
 		public bool CanBake => false;
 
 		public bool CanRemove => false;
