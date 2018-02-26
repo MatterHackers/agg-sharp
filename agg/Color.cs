@@ -1065,6 +1065,27 @@ namespace MatterHackers.Agg
 
 	public static class ColorExtensionMethods
 	{
+		public static IColorType AdjustContrast(this IColorType colorToAdjust, IColorType fixedColor, double minimumRequiredContrast = 3)
+		{
+			var contrast = colorToAdjust.Contrast(fixedColor);
+			int tries = 0;
+			while (contrast < minimumRequiredContrast
+				&& tries++ < 10)
+			{
+				if (fixedColor.Luminance0To1() < .5)
+				{
+					colorToAdjust = colorToAdjust.AdjustLightness(1.1).ToColor();
+				}
+				else
+				{
+					colorToAdjust = colorToAdjust.AdjustLightness(.9).ToColor();
+				}
+				contrast = colorToAdjust.Contrast(fixedColor);
+			}
+
+			return colorToAdjust;
+		}
+
 		public static IColorType AdjustSaturation(this IColorType original, double saturationMultiplier)
 		{
 			double hue0To1;
