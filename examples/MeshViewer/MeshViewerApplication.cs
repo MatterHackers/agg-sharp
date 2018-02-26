@@ -226,6 +226,9 @@ namespace MatterHackers.MeshVisualizer
 		[STAThread]
 		public static void Main(string[] args)
 		{
+			// Force OpenGL
+			AggContext.Config.ProviderTypes.SystemWindow = "MatterHackers.Agg.UI.OpenGLSystemWindow, agg_platform_win32";
+
 			MeshViewerApplication app = new MeshViewerApplication();
 			app.ShowAsSystemWindow();
 		}
