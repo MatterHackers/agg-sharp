@@ -21,6 +21,8 @@ namespace MatterHackers.Agg.Tests
 
 		private void CheckTestAgainstControl(ImageBuffer testImage, string testTypeString)
 		{
+			Directory.SetCurrentDirectory(TestContext.CurrentContext.TestDirectory);
+
 			// there is an assumtion that we got to save valid images at least once.
 			string controlFileTga = testTypeString + " Control.tga";
 			string imageFolder = "ControlImages";
