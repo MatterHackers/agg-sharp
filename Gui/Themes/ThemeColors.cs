@@ -98,30 +98,9 @@ namespace MatterHackers.Agg.UI
 				color.TertiaryBackgroundColor = new Color(190, 190, 190);
 			}
 
-			color.PrimaryAccentColor = FixAccentColor(color.PrimaryBackgroundColor, color.PrimaryAccentColor);
+			color.PrimaryAccentColor = color.PrimaryAccentColor.AdjustContrast(color.PrimaryBackgroundColor).ToColor();
 
 			return color;
-		}
-
-		static Color FixAccentColor(Color background, Color colorToUse)
-		{
-			var contrast = colorToUse.Contrast(background);
-			int tries = 0;
-			while (contrast < 3
-				&& tries++ < 10)
-			{
-				if (background.Luminance0To1() < .5)
-				{
-					colorToUse = colorToUse.AdjustLightness(1.1).ToColor();
-				}
-				else
-				{
-					colorToUse = colorToUse.AdjustLightness(.9).ToColor();
-				}
-				contrast = colorToUse.Contrast(background);
-			}
-
-			return colorToUse;
 		}
 	}
 }
