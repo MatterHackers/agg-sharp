@@ -110,8 +110,7 @@ namespace MatterHackers.MarchingSquares
 			var imageToMarch = new ImageBuffer(sourceImage.Width + 2, sourceImage.Height + 2);
 
 			// get the color to draw into the edge
-			Color edgeColor = sourceImage.GetPixel(0, 0);
-			imageToMarch.NewGraphics2D().Clear(edgeColor);
+			imageToMarch.NewGraphics2D().Clear(Color.White);
 
 			imageToMarch.NewGraphics2D().Render(sourceImage, 1, 1);
 
