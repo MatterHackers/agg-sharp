@@ -1700,14 +1700,15 @@ namespace MatterHackers.Agg.UI
 					return false;
 				}
 
-				if (curGUIWidget.Parent != null)
+				var parent = curGUIWidget.Parent;
+				if (parent != null)
 				{
 					// offset our bounds to the parent bounds
 					visibleBounds.Offset(curGUIWidget.OriginRelativeParent.X, curGUIWidget.OriginRelativeParent.Y);
-					visibleBounds.IntersectWithRectangle(curGUIWidget.Parent.LocalBounds);
+					visibleBounds.IntersectWithRectangle(parent.LocalBounds);
 				}
 
-				curGUIWidget = curGUIWidget.Parent;
+				curGUIWidget = parent;
 			}
 
 			return true;
