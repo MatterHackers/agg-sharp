@@ -94,9 +94,9 @@ namespace MatterHackers.DataConverters3D
 			return await Task.Run(() => Load(meshPathAndFileName, cancellationToken, reportProgress));
 		}
 
-		public static bool Save(Mesh mesh, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null)
+		public static bool Save(Mesh mesh, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null, Action<double, string> reportProgress = null)
 		{
-			return Save(new Object3D() { Mesh = mesh }, meshPathAndFileName, cancellationToken, outputInfo);
+			return Save(new Object3D() { Mesh = mesh }, meshPathAndFileName, cancellationToken, outputInfo, reportProgress);
 		}
 
 		public static bool Save(IObject3D item, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null, Action<double, string> reportProgress = null)
@@ -177,34 +177,6 @@ namespace MatterHackers.DataConverters3D
 			}
 
 			return 0;
-		}
-
-		public static string ComputeSHA1(string filePath)
-		{
-			using (var stream = new BufferedStream(File.OpenRead(filePath), 1200000))
-			{
-				return ComputeSHA1(stream);
-			}
-		}
-
-		public static string ComputeSHA1(Stream stream)
-		{
-			var timer = Stopwatch.StartNew();
-
-			// Alternatively: MD5.Create(),  new SHA256Managed()
-			byte[] checksum = SHA1.Create().ComputeHash(stream);
-
-			Console.WriteLine("SHA1 computed in {0}ms", timer.ElapsedMilliseconds);
-
-			return BitConverter.ToString(checksum).Replace("-", String.Empty);
-		}
-	}
-
-	public static class MeshFileIoExtensions
-	{
-		public static bool Save(this Mesh mesh, string fileName, CancellationToken cancellationToken)
-		{
-			return MeshFileIo.Save(mesh, fileName, cancellationToken);
 		}
 	}
 }
