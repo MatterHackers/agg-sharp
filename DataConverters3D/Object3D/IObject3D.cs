@@ -193,18 +193,22 @@ namespace MatterHackers.DataConverters3D
 		/// </summary>
 		void Invalidate();
 
+		[JsonIgnore]
 		/// <summary>
 		/// Allow this object to be drilled into and edited
 		/// </summary>
 		bool CanEdit { get; }
 
+		[JsonIgnore]
 		bool CanBake { get; }
+
 		/// <summary>
 		/// Remove the IObject3D from the tree and keep whatever functionality it was adding. 
 		/// This may require removing many child objects from the tree depending on implementation.
 		/// </summary>
 		void Bake();
 
+		[JsonIgnore]
 		bool CanRemove { get; }
 		/// <summary>
 		/// Remove the IObject3D from the tree and undo whatever functionality it was adding (if appropriate).
