@@ -87,6 +87,8 @@ namespace MatterHackers.DataConverters3D
 					{
 						EnsureTransparentSorting();
 					}
+
+					Invalidate();
 				}
 			}
 		}
