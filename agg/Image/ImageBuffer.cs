@@ -43,6 +43,34 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
+		bool? _hasTransparency = null;
+		public bool HasTransparency
+		{
+			get
+			{
+				if(_hasTransparency == null)
+				{
+					_hasTransparency = false;
+					// check if the image has any alpha set to something other than 255
+					for(int y=0; y<Height; y++)
+					{
+						for(int x=0; x<Width; x++)
+						{
+							// get the alpha at this pixel
+							if(GetBuffer()[GetBufferOffsetXY(x, y) + 3] < 255)
+							{
+								_hasTransparency = true;
+								x = Width;
+								y = Height;
+							}
+						}
+					}
+				}
+
+				return _hasTransparency.Value;
+			}
+		}
+
 		protected int[] yTableArray;
 		protected int[] xTableArray;
 		private byte[] m_ByteBuffer;
@@ -66,6 +94,7 @@ namespace MatterHackers.Agg.Image
 			unchecked
 			{
 				ChangedCount++;
+				_hasTransparency = null;
 				ImageChanged?.Invoke(this, null);
 			}
 		}
