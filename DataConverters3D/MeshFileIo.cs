@@ -117,7 +117,7 @@ namespace MatterHackers.DataConverters3D
 						outputInfo.ReportProgress = reportProgress;
 						return AmfDocument.Save(item, meshPathAndFileName, outputInfo);
 
-					case ".QBJ":
+					case ".OBJ":
 						outputInfo.ReportProgress = reportProgress;
 						return ObjSupport.Save(item, meshPathAndFileName, outputInfo);
 
