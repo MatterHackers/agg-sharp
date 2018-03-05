@@ -86,6 +86,7 @@ namespace MatterHackers.DataConverters3D
 					if (_color.alpha != 255)
 					{
 						EnsureTransparentSorting();
+						Invalidate();
 					}
 				}
 			}
