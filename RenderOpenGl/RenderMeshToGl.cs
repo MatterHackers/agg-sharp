@@ -228,6 +228,10 @@ namespace MatterHackers.RenderOpenGl
 				// Make sure the GLMeshPlugin has a reference to hold onto the image so it does not go away before this.
 				if (subMesh.texture != null)
 				{
+					if(subMesh.texture.HasTransparency)
+					{
+						GL.Enable(EnableCap.Blend);
+					}
 					ImageGlPlugin glPlugin = ImageGlPlugin.GetImageGlPlugin(subMesh.texture, true);
 					GL.Enable(EnableCap.Texture2D);
 					GL.BindTexture(TextureTarget.Texture2D, glPlugin.GLTextureHandle);
