@@ -268,6 +268,8 @@ namespace MatterHackers.DataConverters3D
 
 		public bool CanRemove => false;
 
+		public bool DrawSelection { get; set; } = true;
+
 		public IObject3D Clone() => sourceItem.Clone();
 
 		public string ToJson() => sourceItem.ToJson();
@@ -283,9 +285,9 @@ namespace MatterHackers.DataConverters3D
 			this.Invalidated?.Invoke(this, null);
 		}
 
-		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix, bool requirePrecision = false)
+		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix)
 		{
-			return sourceItem.GetAxisAlignedBoundingBox(matrix, requirePrecision);
+			return sourceItem.GetAxisAlignedBoundingBox(matrix);
 		}
 
 		/// <summary>

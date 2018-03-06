@@ -389,7 +389,7 @@ namespace MatterHackers.DataConverters3D
 			return clonedItem;
 		}
 
-		public virtual AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix, bool requirePrecision = false)
+		public virtual AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix)
 		{
 			var totalTransorm = this.Matrix * matrix;
 
@@ -397,7 +397,7 @@ namespace MatterHackers.DataConverters3D
 			// Set the initial bounding box to empty or the bounds of the objects MeshGroup
 			if (this.Mesh != null)
 			{
-				totalBounds = this.Mesh.GetAxisAlignedBoundingBox(totalTransorm, requirePrecision);
+				totalBounds = this.Mesh.GetAxisAlignedBoundingBox(totalTransorm);
 			}
 			else if (Children.Count > 0)
 			{
@@ -406,7 +406,7 @@ namespace MatterHackers.DataConverters3D
 					if (child.Visible)
 					{
 						// Add the bounds of each child object
-						var childBounds = child.GetAxisAlignedBoundingBox(totalTransorm, requirePrecision);
+						var childBounds = child.GetAxisAlignedBoundingBox(totalTransorm);
 						// Check if the child actually has any bounds
 						if (childBounds.XSize > 0)
 						{
