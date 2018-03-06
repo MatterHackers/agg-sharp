@@ -43,6 +43,9 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="MIConvexHull, Version=1.0.17.1019, Culture=neutral, PublicKeyToken=bdc96d69606221fd, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\MIConvexHull.1.1.17.1019\lib\netstandard1.0\MIConvexHull.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
     <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -69,6 +72,7 @@
     <Compile Include="Processors\StlProcessing.cs" />
     <Compile Include="Solids\PlatonicSolids.cs" />
     <Compile Include="IVertex.cs" />
+    <Compile Include="TransformedAabbCache.cs" />
     <Compile Include="Vertex.cs" />
     <Compile Include="VertexCollection.cs" />
     <Compile Include="VertexSorters\VertexSorterBase.cs" />
@@ -92,6 +96,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="MIConvexHull.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

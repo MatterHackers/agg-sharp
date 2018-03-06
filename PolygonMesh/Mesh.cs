@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using MatterHackers.Agg;
@@ -50,10 +51,10 @@ namespace MatterHackers.PolygonMesh
 		private static Dictionary<object, int> Ids = new Dictionary<object, int>(ReferenceEqualityComparer.Default);
 
 		private static int nextIdToUse = 0;
-		private AxisAlignedBoundingBox cachedAABB = null;
-		private AxisAlignedBoundingBox fastAABBCache;
-		private Matrix4X4 fastAABBTransform = Matrix4X4.Identity;
 		public BspNode FaceBspTree { get; set; } = null;
+		public AxisAlignedBoundingBox cachedAABB = null;
+
+		TransformedAabbCache transformedAabbCache = new TransformedAabbCache();
 
 		public Dictionary<string, object> PropertyBag = new Dictionary<string, object>();
 
@@ -75,7 +76,9 @@ namespace MatterHackers.PolygonMesh
 		{
 			Mesh newMesh = new Mesh();
 
-			if (allowFastCopy && meshToCopy.Vertices.IsSorted)
+			if (allowFastCopy 
+				&& meshToCopy.Vertices.IsSorted
+				&& !meshToCopy.Vertices.Where((v) => v.FirstMeshEdge == null).Any())
 			{
 				Dictionary<int, int> vertexIndexDictionary = GetVertexToIndexDictionary(meshToCopy, newMesh);
 				Dictionary<int, int> meshEdgeIndexDictionary = GetMeshEdgeToIndexDictionary(meshToCopy, newMesh);
@@ -161,8 +164,6 @@ namespace MatterHackers.PolygonMesh
 
 					newMesh.CreateFace(faceVertices.ToArray(), CreateOption.CreateNew);
 				}
-
-				newMesh.CleanAndMergeMesh(cancellationToken);
 			}
 
 			return newMesh;
@@ -294,8 +295,7 @@ namespace MatterHackers.PolygonMesh
 			// mark this unchecked as we don't want to throw an exception if this rolls over.
 			unchecked
 			{
-				fastAABBTransform = Matrix4X4.Identity;
-				fastAABBTransform[0, 0] = double.MinValue;
+				transformedAabbCache.Changed();
 				cachedAABB = null;
 				ChangedCount++;
 			}
@@ -1254,48 +1254,19 @@ namespace MatterHackers.PolygonMesh
 			return cachedAABB;
 		}
 
-		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 transform,  bool requirePrecision = false)
+		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 transform)
 		{
-			// if precision is not required and the mesh is "big", transform the simple bounds
-			if (!requirePrecision
-				&& Vertices.Count > 100)
-			{
-				// use the cache
-				return GetAxisAlignedBoundingBox().NewTransformed(transform);
-			}
-			else if (fastAABBTransform == transform && fastAABBCache != null)
-			{
-				// return the fast cache for this transform
-				return fastAABBCache;
-			}
-			else
-			{
-				// calculate the aabb for the current transform
-				Vector3 minXYZ = new Vector3(double.MaxValue, double.MaxValue, double.MaxValue);
-				Vector3 maxXYZ = new Vector3(double.MinValue, double.MinValue, double.MinValue);
-
-				foreach (IVertex vertex in Vertices)
-				{
-					Vector3 position = Vector3.Transform(vertex.Position, transform);
-					minXYZ.X = Math.Min(minXYZ.X, position.X);
-					minXYZ.Y = Math.Min(minXYZ.Y, position.Y);
-					minXYZ.Z = Math.Min(minXYZ.Z, position.Z);
-
-					maxXYZ.X = Math.Max(maxXYZ.X, position.X);
-					maxXYZ.Y = Math.Max(maxXYZ.Y, position.Y);
-					maxXYZ.Z = Math.Max(maxXYZ.Z, position.Z);
-				}
-
-				fastAABBTransform = transform;
-				fastAABBCache = new AxisAlignedBoundingBox(minXYZ, maxXYZ);
-			}
-
-			return fastAABBCache;
+			return transformedAabbCache.GetAxisAlignedBoundingBox(Vertices, GetAxisAlignedBoundingBox(), transform);
 		}
 
 		public override string ToString()
 		{
 			return $"ID = {ID}, Faces = {Faces.Count}";
+		}
+
+		public override int GetHashCode()
+		{
+			return (int)GetLongHashCode();
 		}
 
 		#endregion Public Members

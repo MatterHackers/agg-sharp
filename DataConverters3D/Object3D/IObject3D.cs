@@ -66,9 +66,9 @@ namespace MatterHackers.DataConverters3D
 			return object3D.Children.Count > 0;
 		}
 
-		public static AxisAlignedBoundingBox GetAxisAlignedBoundingBox(this IObject3D object3D, bool requirePrecision = false)
+		public static AxisAlignedBoundingBox GetAxisAlignedBoundingBox(this IObject3D object3D)
 		{
-			return object3D.GetAxisAlignedBoundingBox(Matrix4X4.Identity, requirePrecision);
+			return object3D.GetAxisAlignedBoundingBox(Matrix4X4.Identity);
 		}
 
 		/// <summary>
@@ -221,7 +221,7 @@ namespace MatterHackers.DataConverters3D
 		/// </summary>
 		/// <param name="matrix">The Matrix4X4 to use for the bounds</param>
 		/// <returns></returns>
-		AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix, bool requirePrecision = false);
+		AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix);
 
 		/// <summary>
 		/// return a 64 bit hash code of the transforms and children and transforms
