@@ -94,6 +94,7 @@ namespace MatterHackers.PolygonMesh
 				Vector3 textureUv = Vector3.Transform(edgeStartPosition, textureCoordinateMapping);
 				faceEdge.SetUv(0, new Vector2(textureUv));
 			}
+			face.ContainingMesh.MarkAsChanged();
 		}
 
 		public static void CopyFaces(this Mesh copyTo, Mesh copyFrom)
