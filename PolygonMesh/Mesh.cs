@@ -1256,7 +1256,7 @@ namespace MatterHackers.PolygonMesh
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 transform)
 		{
-			return transformedAabbCache.GetAxisAlignedBoundingBox(Vertices, GetAxisAlignedBoundingBox(), transform);
+			return transformedAabbCache.GetAxisAlignedBoundingBox(this, GetAxisAlignedBoundingBox(), transform);
 		}
 
 		public override string ToString()

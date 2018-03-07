@@ -28,78 +28,113 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MatterHackers.VectorMath;
+using MIConvexHull;
 
 namespace MatterHackers.PolygonMesh
 {
 	public class TransformedAabbCache
 	{
-		private object locker = new object();
+		private bool calculatingHull;
 		private Matrix4X4 aabbTransform { get; set; } = Matrix4X4.Identity;
 		private AxisAlignedBoundingBox cachedAabb { get; set; }
 		private Vector3 lastXNormalDirection { get; set; }
 		private Vector3 lastYNormalDirection { get; set; }
 		private Vector3 Vertex0Position { get; set; }
 
-		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(VertexCollecton vertices, AxisAlignedBoundingBox verticesBounds, Matrix4X4 transform)
-		{
-			lock (locker)
-			{
-				// if we already have the transform with exact bounds than return it
-				if (aabbTransform == transform && cachedAabb != null)
-				{
-					// return, the fast cache for this transform is correct
-					return cachedAabb;
-				}
-
-				// check if the last transform is rotated from the new one
-				Vector3 newXNormal = Vector3.TransformNormal(Vector3.UnitX, transform);
-				Vector3 newYNormal = Vector3.TransformNormal(Vector3.UnitY, transform);
-				Vector3 new0Position = Vector3.Transform(vertices.First().Position, transform);
-
-				if (lastXNormalDirection.Equals(newXNormal, .0001)
-					&& lastYNormalDirection.Equals(newYNormal, .0001))
-				{
-					// we only need to translate the aabb
-					var delta = new0Position - Vertex0Position;
-					cachedAabb = cachedAabb.NewTransformed(Matrix4X4.CreateTranslation(delta));
-
-					aabbTransform = transform;
-				}
-				else
-				{
-					CreateFastAabbCache(vertices, transform);
-				}
-
-				lastXNormalDirection = newXNormal;
-				lastYNormalDirection = newYNormal;
-				Vertex0Position = new0Position;
-				return cachedAabb;
-			}
-		}
-
 		public void Changed()
 		{
-			lock (locker)
-			{
-				aabbTransform = Matrix4X4.Identity;
-				var current = aabbTransform;
-				current[0, 0] = double.MinValue;
-				aabbTransform = current;
-			}
+			aabbTransform = Matrix4X4.Identity;
+			var current = aabbTransform;
+			current[0, 0] = double.MinValue;
+			aabbTransform = current;
 		}
 
-		private void CreateFastAabbCache(VertexCollecton vertices, Matrix4X4 transform)
+		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Mesh mesh, AxisAlignedBoundingBox verticesBounds, Matrix4X4 transform)
+		{
+			IEnumerable<Vector3> positions = mesh.Vertices.Select((v) => v.Position);
+			// build the convex hull for faster bounding calculations
+			// we have a mesh so don't recurse into children
+			object objectData;
+			mesh.PropertyBag.TryGetValue("ConvexHullData", out objectData);
+			var convexHullData = objectData as ConvexHull<CHVertex, CHFace>;
+			if (convexHullData == null
+				&& mesh.Vertices.Count > 1000
+				&& !calculatingHull)
+			{
+				calculatingHull = true;
+				Task.Run(() =>
+				{
+					// Get the convex hull for the mesh
+					var cHVertexList = new List<CHVertex>();
+					foreach (var vertex in mesh.Vertices)
+					{
+						cHVertexList.Add(new CHVertex(vertex.Position));
+					}
+					var convexHull = ConvexHull<CHVertex, CHFace>.Create(cHVertexList, .01);
+					if (convexHull != null)
+					{
+						try
+						{
+							mesh.PropertyBag.Add("ConvexHullData", convexHull);
+						}
+						catch
+						{
+						}
+					}
+					calculatingHull = false;
+				});
+			}
+
+			if (convexHullData != null)
+			{
+				positions = convexHullData.Points.Select((p) => new Vector3(p.Position[0], p.Position[1], p.Position[2]));
+			}
+
+			// if we already have the transform with exact bounds than return it
+			if (aabbTransform == transform && cachedAabb != null)
+			{
+				// return, the fast cache for this transform is correct
+				return cachedAabb;
+			}
+
+			// check if the last transform is rotated from the new one
+			Vector3 newXNormal = Vector3.TransformNormal(Vector3.UnitX, transform);
+			Vector3 newYNormal = Vector3.TransformNormal(Vector3.UnitY, transform);
+			Vector3 new0Position = Vector3.Transform(mesh.Vertices.First().Position, transform);
+
+			if (lastXNormalDirection.Equals(newXNormal, .0001)
+				&& lastYNormalDirection.Equals(newYNormal, .0001))
+			{
+				// we only need to translate the aabb
+				var delta = new0Position - Vertex0Position;
+				cachedAabb = cachedAabb.NewTransformed(Matrix4X4.CreateTranslation(delta));
+
+				aabbTransform = transform;
+			}
+			else
+			{
+				CreateFastAabbCache(positions, transform);
+			}
+
+			lastXNormalDirection = newXNormal;
+			lastYNormalDirection = newYNormal;
+			Vertex0Position = new0Position;
+			return cachedAabb;
+		}
+
+		private void CreateFastAabbCache(IEnumerable<Vector3> vertices, Matrix4X4 transform)
 		{
 			// calculate the aabb for the current transform
 			Vector3 minXYZ = new Vector3(double.MaxValue, double.MaxValue, double.MaxValue);
 			Vector3 maxXYZ = new Vector3(double.MinValue, double.MinValue, double.MinValue);
 
-			foreach (IVertex vertex in vertices)
+			foreach (var positionIn in vertices)
 			{
-				Vector3 position = Vector3.Transform(vertex.Position, transform);
+				Vector3 position = Vector3.Transform(positionIn, transform);
 
 				minXYZ.X = Math.Min(minXYZ.X, position.X);
 				minXYZ.Y = Math.Min(minXYZ.Y, position.Y);
@@ -114,5 +149,21 @@ namespace MatterHackers.PolygonMesh
 
 			aabbTransform = transform;
 		}
+	}
+
+	internal class CHFace : ConvexFace<CHVertex, CHFace>
+	{
+	}
+
+	internal class CHVertex : MIConvexHull.IVertex
+	{
+		private double[] position;
+
+		internal CHVertex(Vector3 position)
+		{
+			this.position = position.ToArray();
+		}
+
+		public double[] Position => position;
 	}
 }
