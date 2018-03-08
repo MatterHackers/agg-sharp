@@ -41,22 +41,13 @@ namespace MatterHackers.DataConverters3D
 		string AssetID { get; set; }
 
 		Task<Stream> LoadAsset(CancellationToken cancellationToken, Action<double, string> progress);
-
-		//Task StoreAsset(string filePath, CancellationToken cancellationToken, Action<double, string> progress);
-
-		//Task StoreAsset(Stream stream, CancellationToken cancellationToken, Action<double, string> progress);
 	}
 
 	public interface IAssetManager
 	{
-		//Task AcquireAsset(IAssetObject assetObject);
 		Task<Stream> LoadAsset(IAssetObject assetObject, CancellationToken cancellationToken, Action<double, string> progress);
 
 		Task AcquireAsset(string sha1PlusExtension, CancellationToken cancellationToken, Action<double, string> progress);
-
-		//Task StoreAsset(IAssetObject assetObject, Stream stream, CancellationToken cancellationToken, Action<double, string> progress);
-
-		//Task StoreAsset(IAssetObject assetObject, string filePath, CancellationToken cancellationToken, Action<double, string> progress);
 
 		Task StoreAsset(IAssetObject assetObject, CancellationToken cancellationToken, Action<double, string> progress);
 
@@ -91,15 +82,40 @@ namespace MatterHackers.DataConverters3D
 		{
 			return AssetManager.LoadAsset(this, cancellationToken, progress);
 		}
+	}
 
-		//public Task StoreAsset(string filePath, CancellationToken cancellationToken, Action<double, string> progress)
-		//{
-		//	return AssetManager.StoreAsset(this, filePath, cancellationToken, progress);
-		//}
+	public class MockAssetManager : IAssetManager
+	{
+		public Task AcquireAsset(string sha1PlusExtension, CancellationToken cancellationToken, Action<double, string> progress)
+		{
+			return Task.CompletedTask;
+		}
 
-		//public Task StoreAsset(Stream stream, CancellationToken cancellationToken, Action<double, string> progress)
-		//{
-		//	return AssetManager.StoreAsset(this, stream, cancellationToken, progress);
-		//}
+		public Task<Stream> LoadAsset(IAssetObject assetObject, CancellationToken cancellationToken, Action<double, string> progress)
+		{
+			return Task.FromResult<Stream>(null);
+		}
+
+		public Task StoreAsset(IAssetObject assetObject, CancellationToken cancellationToken, Action<double, string> progress)
+		{
+			return Task.CompletedTask;
+		}
+
+		public Task<string> StoreFile(string filePath, CancellationToken cancellationToken, Action<double, string> progress)
+		{
+			string sha1 = Object3D.ComputeSHA1(filePath);
+			string assetPath = Path.Combine(Object3D.AssetsPath, sha1 + ".stl");
+			if (!File.Exists(assetPath))
+			{
+				File.Copy(filePath, assetPath);
+			}
+
+			return Task.FromResult(Path.GetFileName(assetPath));
+		}
+
+		public Task<string> StoreMcx(IObject3D object3D)
+		{
+			return Task.FromResult<string>(null);
+		}
 	}
 }
