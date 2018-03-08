@@ -54,10 +54,6 @@
       <Project>{036BCCBA-52D8-457C-84AE-8821F209FE4A}</Project>
       <Name>ImageProcessing</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\OpenGlGui\OpenGlGui.csproj">
-      <Project>{C958F745-156E-4BDC-A24A-3721C7BE7B8A}</Project>
-      <Name>OpenGlGui</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\PolygonMesh\PolygonMesh.csproj">
       <Project>{86F6AAF2-9B50-40B8-A427-1897D76471C5}</Project>
       <Name>PolygonMesh</Name>

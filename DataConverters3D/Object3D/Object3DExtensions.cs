@@ -34,8 +34,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using MatterHackers.Agg;
-using MatterHackers.Agg.UI;
-using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RayTracer;
@@ -59,10 +57,25 @@ namespace MatterHackers.DataConverters3D
 
 		private static void LoadLinkedMesh(this IObject3D item, Dictionary<string, IObject3D> itemCache, CancellationToken cancellationToken, Action<double, string> progress)
 		{
+			// Natural path
 			string filePath = item.MeshPath;
-			if (!File.Exists(filePath))
+
+			// If relative/asset file name
+			if (Path.GetDirectoryName(filePath) == "")
 			{
-				filePath = Path.Combine(Object3D.AssetsPath, filePath);
+				string sha1PlusExtension = filePath;
+
+				filePath = Path.Combine(Object3D.AssetsPath, sha1PlusExtension);
+
+				// If the asset is not in the local cache folder, acquire it
+				if (!File.Exists(filePath))
+				{
+					// *************************************************************************
+					// TODO: Fix invalid use of Wait()
+					// *************************************************************************
+					// Prime cache
+					AssetObject3D.AssetManager.AcquireAsset(sha1PlusExtension, cancellationToken, progress).Wait();
+				}
 			}
 
 			var loadedItem = Object3D.Load(filePath, cancellationToken, itemCache, progress);
@@ -86,80 +99,58 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static string SaveToAssets(this IObject3D object3D)
-		{
-			// Serialize object3D to in memory mcx/json stream
-			using (var memoryStream = new MemoryStream())
-			{
-				// Write JSON
-				object3D.Save(memoryStream);
-
-				// Reposition
-				memoryStream.Position = 0;
-
-				// Calculate
-				string sha1 = MeshFileIo.ComputeSHA1(memoryStream);
-
-				Directory.CreateDirectory(Object3D.AssetsPath);
-
-				string assetPath = Path.Combine(Object3D.AssetsPath, sha1 + ".stl");
-				if (!File.Exists(assetPath))
-				{
-					memoryStream.Position = 0;
-
-					using (var outStream = File.Create(assetPath))
-					{
-						memoryStream.CopyTo(outStream);
-					}
-				}
-
-				return assetPath;
-			}
-		}
-
-		public static void Save(this IObject3D sourceItem, Stream stream, Action<double, string> progress = null)
+		public static void SaveTo(this IObject3D sourceItem, Stream outputStream, Action<double, string> progress = null)
 		{
 			sourceItem.PersistAssets(progress);
 
-			var streamWriter = new StreamWriter(stream);
+			var streamWriter = new StreamWriter(outputStream);
 			streamWriter.Write(sourceItem.ToJson());
 			streamWriter.Flush();
 		}
 
-		public static void PersistAssets(this IObject3D sourceItem, Action<double, string> progress = null)
+		public static async void PersistAssets(this IObject3D sourceItem, Action<double, string> progress = null, bool forceToAssets=false)
 		{
 			// Must use DescendantsAndSelf so that leaf nodes save their meshes
-			var itemsWithUnsavedMeshes = from object3D in sourceItem.DescendantsAndSelf()
+			var persistableItems = from object3D in sourceItem.DescendantsAndSelf()
 										 where object3D.WorldPersistable() &&
-											   object3D.MeshPath == null &&
-											   object3D.Mesh != null
+												(((object3D.MeshPath == null || forceToAssets) && object3D.Mesh != null)
+												|| (object3D is IAssetObject && forceToAssets))
 										 select object3D;
 
-			string assetsDirectory = Object3D.AssetsPath;
-			Directory.CreateDirectory(assetsDirectory);
+			Directory.CreateDirectory(Object3D.AssetsPath);
 
 			var assetFiles = new Dictionary<int, string>();
 
 			try
 			{
-				// Write each unsaved mesh to disk
-				foreach (IObject3D item in itemsWithUnsavedMeshes)
+				// Write unsaved content to disk
+				foreach (IObject3D item in persistableItems)
 				{
-					// Calculate the mesh hash
-					int hashCode = (int)item.Mesh.GetLongHashCode();
+					// If forceToAssets is specified, persist any unsaved IAssetObject items to disk
+					if (item is IAssetObject assetObject && forceToAssets)
+					{
+						await AssetObject3D.AssetManager.StoreAsset(assetObject, CancellationToken.None, progress);
 
-					string assetPath;
+						if (string.IsNullOrWhiteSpace(item.MeshPath))
+						{
+							continue;
+						}
+					}
+
+					// Calculate the fast mesh hash
+					int hashCode = (int)item.Mesh.GetLongHashCode();
 
 					bool savedSuccessfully = true;
 
-					if (!assetFiles.TryGetValue(hashCode, out assetPath))
+					// Index into dictionary using fast hash
+					if (!assetFiles.TryGetValue(hashCode, out string assetPath))
 					{
 						// Get an open filename
 						string tempStlPath = CreateNewLibraryPath(".stl");
 
 						// Save the embedded asset to disk
 						savedSuccessfully = MeshFileIo.Save(
-							new Object3D() { Mesh = item.Mesh },
+							item.Mesh,
 							tempStlPath,
 							CancellationToken.None,
 							new MeshOutputSettings(MeshOutputSettings.OutputType.Binary),
@@ -169,24 +160,17 @@ namespace MatterHackers.DataConverters3D
 						{
 							// There's currently no way to know the actual mesh file hashcode without saving it to disk, thus we save at least once in
 							// order to compute the hash but then throw away the duplicate file if an existing copy exists in the assets directory
-							string sha1 = MeshFileIo.ComputeSHA1(tempStlPath);
-							assetPath = Path.Combine(assetsDirectory, sha1 + ".stl");
-							if (!File.Exists(assetPath))
-							{
-								File.Copy(tempStlPath, assetPath);
-							}
+							assetPath = await AssetObject3D.AssetManager.StoreFile(tempStlPath, CancellationToken.None, progress);
 
 							// Remove the temp file
 							File.Delete(tempStlPath);
 
+							assetPath = Path.GetFileName(assetPath);
 							assetFiles.Add(hashCode, assetPath);
-						}
-					}
 
-					if (savedSuccessfully && File.Exists(assetPath))
-					{
-						// Assets should be stored relative to the Asset folder
-						item.MeshPath = Path.GetFileName(assetPath);
+							// Update MeshPath with Assets relative filename
+							item.MeshPath = assetPath;
+						}
 					}
 				}
 			}

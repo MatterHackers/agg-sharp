@@ -519,43 +519,51 @@ namespace MatterHackers.DataConverters3D
 			return hash;
 		}
 
-		public string ComputeSha1()
+		public string ComputeSHA1()
 		{
-			return ComputeSha1(this.ToJson());
-		}
+			// *******************************************************************************************************************************
+			// TODO: We must ensure we always compute with a stream that marks for UTF encoding with BOM, irrelevant of in-memory or on disk
+			// *******************************************************************************************************************************
 
-		private string ComputeSha1(string json)
-		{
 			// SHA1 value is based on UTF8 encoded file contents
-			using (var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+			using (var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(this.ToJson())))
 			{
-				return GenerateSha1(memoryStream);
+				return ComputeSHA1(memoryStream);
 			}
 		}
 
-		private string GenerateSha1(Stream stream)
+		public static string ComputeSHA1(string filePath)
+		{
+			using (var stream = new BufferedStream(File.OpenRead(filePath), 1200000))
+			{
+				return ComputeSHA1(stream);
+			}
+		}
+
+		public static string ComputeSHA1(Stream stream)
 		{
 			// var timer = Stopwatch.StartNew();
+
+			// Alternatively: MD5.Create(),  new SHA256Managed()
 			using (var sha1 = System.Security.Cryptography.SHA1.Create())
 			{
 				byte[] hash = sha1.ComputeHash(stream);
-				string SHA1 = BitConverter.ToString(hash).Replace("-", String.Empty);
-
 				// Console.WriteLine("{0} {1} {2}", SHA1, timer.ElapsedMilliseconds, filePath);
-				return SHA1;
+
+				return BitConverter.ToString(hash).Replace("-", String.Empty);
 			}
 		}
 
 		public string ToJson()
 		{
 			return JsonConvert.SerializeObject(
-						this,
-						Formatting.Indented,
-						new JsonSerializerSettings
-						{
-							ContractResolver = new IObject3DContractResolver(),
-							NullValueHandling = NullValueHandling.Ignore
-						});
+				this,
+				Formatting.Indented,
+				new JsonSerializerSettings
+				{
+					ContractResolver = new IObject3DContractResolver(),
+					NullValueHandling = NullValueHandling.Ignore
+				});
 		}
 
 		public virtual void Bake()
