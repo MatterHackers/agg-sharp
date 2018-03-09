@@ -232,7 +232,7 @@ namespace MatterHackers.DataConverters3D
 				double currentRation = 0;
 
 				var groupedByExtruder = from item in visibleMeshes
-										group item.Mesh by item.WorldMaterialIndex() into g
+										group item.mesh by item.object3D.WorldMaterialIndex() into g
 										select new { Extruder = g.Key, Meshes = g.ToList() };
 
 				foreach (var meshForExtruder in groupedByExtruder)
