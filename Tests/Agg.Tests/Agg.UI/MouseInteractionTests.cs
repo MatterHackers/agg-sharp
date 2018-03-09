@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 #if !__ANDROID__
 
 using MatterHackers.GuiAutomation;
+using MatterHackers.VectorMath;
 
 #endif
 
@@ -480,7 +481,7 @@ namespace MatterHackers.Agg.UI.Tests
 			GuiWidget regionA = new GuiWidget();
 			regionA.Name = "regionA";
 			regionA.BoundsRelativeToParent = new RectangleDouble(0, 0, 180, 180);
-			regionA.OriginRelativeParent = new VectorMath.Vector2(10, 10);
+			regionA.OriginRelativeParent = new Vector2(10, 10);
 			int gotEnter = 0;
 			int gotLeave = 0;
 			regionA.MouseEnter += (sender, e) => { if (regionA.UnderMouseState == UnderMouseState.NotUnderMouse) throw new Exception("It must be under the mouse."); gotEnter++; };
@@ -504,7 +505,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(gotLeaveBounds == 0);
 			Assert.IsTrue(gotEnterBounds == 0);
 			// move regionA under mouse
-			regionA.OriginRelativeParent = new VectorMath.Vector2(0, 0);
+			regionA.OriginRelativeParent = new Vector2(0, 0);
 			Assert.IsTrue(regionA.UnderMouseState == UnderMouseState.FirstUnderMouse);
 			Assert.IsTrue(gotLeave == 0);
 			Assert.IsTrue(gotEnter == 1);
@@ -513,7 +514,7 @@ namespace MatterHackers.Agg.UI.Tests
 			// now regionA and make sure it does not re-trigger either event
 			gotEnter = 0;
 			gotEnterBounds = 0;
-			regionA.OriginRelativeParent = new VectorMath.Vector2(1, 1);
+			regionA.OriginRelativeParent = new Vector2(1, 1);
 			Assert.IsTrue(regionA.UnderMouseState == UnderMouseState.FirstUnderMouse);
 			Assert.IsTrue(gotLeave == 0);
 			Assert.IsTrue(gotEnter == 0);
@@ -521,7 +522,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(gotEnterBounds == 0);
 
 			// now move out from under mouse and make sure we see the leave
-			regionA.OriginRelativeParent = new VectorMath.Vector2(10, 10);
+			regionA.OriginRelativeParent = new Vector2(10, 10);
 			Assert.IsTrue(gotLeave == 1);
 			Assert.IsTrue(gotEnter == 0);
 			Assert.IsTrue(gotLeaveBounds == 1);
@@ -529,7 +530,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// move back under
 			gotLeave = gotEnter = gotLeaveBounds = gotEnterBounds = 0;
-			regionA.OriginRelativeParent = new VectorMath.Vector2(0, 0);
+			regionA.OriginRelativeParent = new Vector2(0, 0);
 			Assert.IsTrue(gotEnter == 1);
 			Assert.IsTrue(gotLeave == 0);
 			Assert.IsTrue(gotLeaveBounds == 0);
@@ -1258,7 +1259,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Button buttonA = new Button();
 			buttonA.Name = "buttonA";
 			buttonA.BoundsRelativeToParent = new RectangleDouble(0, 0, 180, 180);
-			buttonA.OriginRelativeParent = new VectorMath.Vector2(10, 10);
+			buttonA.OriginRelativeParent = new Vector2(10, 10);
 			container.AddChild(buttonA);
 			bool aGotEnter = false;
 			bool aGotLeave = false;
