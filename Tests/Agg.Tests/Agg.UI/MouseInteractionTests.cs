@@ -34,6 +34,7 @@ using MatterHackers.VectorMath;
 
 #endif
 
+using MatterHackers.VectorMath;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
