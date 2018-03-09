@@ -166,6 +166,11 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
+		public double Distance(Vector2 p)
+		{
+			return (this - p).Length;
+		}
+
 		#endregion public double Length
 
 		#region public double LengthSquared
@@ -566,6 +571,11 @@ namespace MatterHackers.VectorMath
 		public static double Cross(Vector2 left, Vector2 right)
 		{
 			return left.X * right.Y - left.Y * right.X;
+		}
+
+		public double Cross(Vector2 right)
+		{
+			return this.X * right.Y - this.Y * right.X;
 		}
 
 		#endregion Cross

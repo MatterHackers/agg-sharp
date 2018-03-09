@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
@@ -287,7 +288,7 @@ namespace MatterHackers.Agg.UI
 					GuiWidget child = sender as GuiWidget;
 					if (child != null)
 					{
-						child.MinimumSize = new VectorMath.Vector2(Math.Max(child.MinimumSize.X, child.Width), 0);
+						child.MinimumSize = new Vector2(Math.Max((double)child.MinimumSize.X, child.Width), 0);
 					}
 				};
 

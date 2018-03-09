@@ -167,7 +167,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 
 			GL.Begin(BeginMode.Triangles);
-			Vector2 widthRightOffset = (end-start).GetPerpendicularRight().GetNormal() * halfWidth/2;
+			Vector2 widthRightOffset = (end - start).GetPerpendicularRight().GetNormal() * halfWidth/2;
 			triangleEddgeInfo.Draw2EdgeTriangle(start - widthRightOffset, end - widthRightOffset, end + widthRightOffset);
 			triangleEddgeInfo.Draw2EdgeTriangle(end + widthRightOffset, start + widthRightOffset, start - widthRightOffset);
 			GL.End();

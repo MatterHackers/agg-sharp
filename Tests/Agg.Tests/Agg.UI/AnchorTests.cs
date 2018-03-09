@@ -77,7 +77,7 @@ namespace MatterHackers.Agg.UI.Tests
 			containerControl.BackBuffer.NewGraphics2D().Clear(Color.White);
 			TextWidget controlButton1 = new TextWidget("text1");
 			controlButton1.Margin = new BorderDouble(buttonMargin);
-			controlButton1.OriginRelativeParent = new VectorMath.Vector2(-controlButton1.LocalBounds.Left, -controlButton1.LocalBounds.Bottom + controlPadding + buttonMargin);
+			controlButton1.OriginRelativeParent = new Vector2(-controlButton1.LocalBounds.Left, -controlButton1.LocalBounds.Bottom + controlPadding + buttonMargin);
 			controlButton1.LocalBounds = new RectangleDouble(controlButton1.LocalBounds.Left, controlButton1.LocalBounds.Bottom, controlButton1.LocalBounds.Right, controlButton1.LocalBounds.Bottom + containerControl.Height - (controlPadding + buttonMargin) * 2);
 			containerControl.AddChild(controlButton1);
 			containerControl.OnDraw(containerControl.NewGraphics2D());
@@ -112,7 +112,7 @@ namespace MatterHackers.Agg.UI.Tests
 			containerControl.DoubleBuffer = true;
 			Button controlButton1 = new Button("button1");
 			controlButton1.Margin = new BorderDouble(buttonMargin);
-			controlButton1.OriginRelativeParent = new VectorMath.Vector2(0, controlPadding + buttonMargin);
+			controlButton1.OriginRelativeParent = new Vector2(0, controlPadding + buttonMargin);
 			controlButton1.LocalBounds = new RectangleDouble(0, 0, controlButton1.LocalBounds.Width, containerControl.LocalBounds.Height - (controlPadding + buttonMargin) * 2);
 			containerControl.AddChild(controlButton1);
 			containerControl.OnDraw(containerControl.NewGraphics2D());
@@ -292,7 +292,7 @@ namespace MatterHackers.Agg.UI.Tests
 			containerControl.DoubleBuffer = true;
 			Button controlButton1 = new Button("button1");
 			controlButton1.Margin = new BorderDouble(buttonMargin);
-			controlButton1.OriginRelativeParent = new VectorMath.Vector2(0, controlPadding + buttonMargin);
+			controlButton1.OriginRelativeParent = new Vector2(0, controlPadding + buttonMargin);
 			controlButton1.LocalBounds = new RectangleDouble(0, 0, controlButton1.LocalBounds.Width, containerControl.LocalBounds.Height - (controlPadding + buttonMargin) * 2);
 			containerControl.AddChild(controlButton1);
 			containerControl.OnDraw(containerControl.NewGraphics2D());
@@ -347,7 +347,7 @@ namespace MatterHackers.Agg.UI.Tests
 				RectangleDouble positionedButtonBounds = positionedButton.LocalBounds;
 				positionedButtonBounds.Offset(-10, -10);
 				positionedButton.LocalBounds = positionedButtonBounds;
-				positionedButton.OriginRelativeParent = new VectorMath.Vector2(10, 10);
+				positionedButton.OriginRelativeParent = new Vector2(10, 10);
 				containerNoAnchor.AddChild(positionedButton);
 				containerNoAnchor.OnDraw(containerNoAnchor.NewGraphics2D());
 
@@ -375,7 +375,7 @@ namespace MatterHackers.Agg.UI.Tests
 				containerNoAnchor.DoubleBuffer = true;
 				Button positionedButton = new Button("button");
 				containerNoAnchor.AddChild(positionedButton);
-				positionedButton.OriginRelativeParent = new VectorMath.Vector2(5, 5);
+				positionedButton.OriginRelativeParent = new Vector2(5, 5);
 				containerNoAnchor.OnDraw(containerNoAnchor.NewGraphics2D());
 
 				GuiWidget containerAnchor = new GuiWidget(300, 200);
@@ -398,7 +398,7 @@ namespace MatterHackers.Agg.UI.Tests
 				containerNoAnchor.DoubleBuffer = true;
 				Button positionedButton = new Button("button");
 				containerNoAnchor.AddChild(positionedButton);
-				positionedButton.OriginRelativeParent = new VectorMath.Vector2(8, 8);
+				positionedButton.OriginRelativeParent = new Vector2(8, 8);
 				containerNoAnchor.OnDraw(containerNoAnchor.NewGraphics2D());
 
 				GuiWidget containerAnchor = new GuiWidget(300, 200);
@@ -422,7 +422,7 @@ namespace MatterHackers.Agg.UI.Tests
 				containerNoAnchor.DoubleBuffer = true;
 				Button positionedButton = new Button("button");
 				containerNoAnchor.AddChild(positionedButton);
-				positionedButton.OriginRelativeParent = new VectorMath.Vector2(5, 5);
+				positionedButton.OriginRelativeParent = new Vector2(5, 5);
 				containerNoAnchor.OnDraw(containerNoAnchor.NewGraphics2D());
 
 				GuiWidget containerAnchor = new GuiWidget(300, 200);
@@ -449,7 +449,7 @@ namespace MatterHackers.Agg.UI.Tests
 				containerNoAnchor.DoubleBuffer = true;
 				Button positionedButton = new Button("button");
 				containerNoAnchor.AddChild(positionedButton);
-				positionedButton.OriginRelativeParent = new VectorMath.Vector2(containerNoAnchor.Width - positionedButton.Width, 0);
+				positionedButton.OriginRelativeParent = new Vector2(containerNoAnchor.Width - positionedButton.Width, 0);
 				containerNoAnchor.OnDraw(containerNoAnchor.NewGraphics2D());
 
 				GuiWidget containerAnchor = new GuiWidget(300, 200);
@@ -472,7 +472,7 @@ namespace MatterHackers.Agg.UI.Tests
 				containerNoAnchor.DoubleBuffer = true;
 				Button positionedButton = new Button("button");
 				containerNoAnchor.AddChild(positionedButton);
-				positionedButton.OriginRelativeParent = new VectorMath.Vector2(containerNoAnchor.Width - positionedButton.Width - 5, 5);
+				positionedButton.OriginRelativeParent = new Vector2(containerNoAnchor.Width - positionedButton.Width - 5, 5);
 				containerNoAnchor.OnDraw(containerNoAnchor.NewGraphics2D());
 
 				GuiWidget containerAnchor = new GuiWidget(300, 200);
@@ -495,7 +495,7 @@ namespace MatterHackers.Agg.UI.Tests
 				containerNoAnchor.DoubleBuffer = true;
 				Button positionedButton = new Button("button");
 				containerNoAnchor.AddChild(positionedButton);
-				positionedButton.OriginRelativeParent = new VectorMath.Vector2(containerNoAnchor.Width - positionedButton.Width - 5, 5);
+				positionedButton.OriginRelativeParent = new Vector2(containerNoAnchor.Width - positionedButton.Width - 5, 5);
 				containerNoAnchor.OnDraw(containerNoAnchor.NewGraphics2D());
 
 				GuiWidget containerAnchor = new GuiWidget(300, 200);
@@ -522,7 +522,7 @@ namespace MatterHackers.Agg.UI.Tests
 				containerNoAnchor.DoubleBuffer = true;
 				Button positionedButton = new Button("button");
 				containerNoAnchor.AddChild(positionedButton);
-				positionedButton.OriginRelativeParent = new VectorMath.Vector2(containerNoAnchor.Width - positionedButton.Width, containerNoAnchor.Height - positionedButton.Height);
+				positionedButton.OriginRelativeParent = new Vector2(containerNoAnchor.Width - positionedButton.Width, containerNoAnchor.Height - positionedButton.Height);
 				containerNoAnchor.OnDraw(containerNoAnchor.NewGraphics2D());
 
 				GuiWidget containerAnchor = new GuiWidget(300, 200);
@@ -584,7 +584,7 @@ namespace MatterHackers.Agg.UI.Tests
 			double buttonX = controlCenterX - (controlButton1.Width + controlButton1.Margin.Left + controlButton1.Margin.Right) / 2 + controlButton1.Margin.Left;
 			double controlCenterY = controlPadding.Bottom + (containerControl.Height - controlPadding.Bottom - controlPadding.Top) / 2 + controlButton1.Margin.Bottom;
 			double buttonY = controlCenterY - (controlButton1.Height + controlButton1.Margin.Bottom + controlButton1.Margin.Top) / 2;
-			controlButton1.OriginRelativeParent = new VectorMath.Vector2(buttonX, buttonY);
+			controlButton1.OriginRelativeParent = new Vector2(buttonX, buttonY);
 			containerControl.AddChild(controlButton1);
 			containerControl.OnDraw(containerControl.NewGraphics2D());
 
@@ -628,7 +628,7 @@ namespace MatterHackers.Agg.UI.Tests
 			double buttonX = controlCenterX - (controlRectangle.Width + controlRectangle.Margin.Left + controlRectangle.Margin.Right) / 2 + controlRectangle.Margin.Left;
 			double controlCenterY = controlPadding.Bottom + (containerControl.Height - controlPadding.Bottom - controlPadding.Top) / 2 + controlRectangle.Margin.Bottom;
 			double buttonY = controlCenterY - (controlRectangle.Height + controlRectangle.Margin.Bottom + controlRectangle.Margin.Top) / 2;
-			controlRectangle.OriginRelativeParent = new VectorMath.Vector2(buttonX, buttonY);
+			controlRectangle.OriginRelativeParent = new Vector2(buttonX, buttonY);
 			containerControl.AddChild(controlRectangle);
 			containerControl.OnDraw(containerControl.NewGraphics2D());
 
@@ -917,7 +917,7 @@ namespace MatterHackers.Agg.UI.Tests
 			containerControl.Padding = controlPadding;
 			containerControl.DoubleBuffer = true;
 			Button controlButton1 = new Button("button1");
-			controlButton1.OriginRelativeParent = new VectorMath.Vector2(
+			controlButton1.OriginRelativeParent = new Vector2(
 				controlPadding.Left + buttonMargin.Left + (containerControl.Width - (controlPadding.Left + controlPadding.Right)) / 2,
 				controlPadding.Bottom + buttonMargin.Bottom + (containerControl.Height - (controlPadding.Bottom + controlPadding.Top)) / 2);
 			controlButton1.LocalBounds = new RectangleDouble(
@@ -954,7 +954,7 @@ namespace MatterHackers.Agg.UI.Tests
 			groupBox.Name = "groupBox";
 			GuiWidget contents = new GuiWidget(30, 20);
 			contents.Name = "contents";
-			contents.MinimumSize = new VectorMath.Vector2(0, 0);
+			contents.MinimumSize = new Vector2(0, 0);
 
 			// make sure the client area will get smaller when the contents get smaller
 			groupBox.ClientArea.VAnchor = Agg.UI.VAnchor.Fit;
