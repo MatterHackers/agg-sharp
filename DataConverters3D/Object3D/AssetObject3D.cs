@@ -50,9 +50,9 @@ namespace MatterHackers.DataConverters3D
 
 		Task AcquireAsset(string sha1PlusExtension, CancellationToken cancellationToken, Action<double, string> progress);
 
-		Task StoreAsset(IAssetObject assetObject, CancellationToken cancellationToken, Action<double, string> progress);
+		Task StoreAsset(IAssetObject assetObject, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress);
 
-		Task StoreMesh(IObject3D object3D, CancellationToken cancellationToken, Action<double, string> progress);
+		Task StoreMesh(IObject3D object3D, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress);
 
 		/// <summary>
 		/// Ensures the given file is stored in the asset system
@@ -61,14 +61,14 @@ namespace MatterHackers.DataConverters3D
 		/// <param name="cancellationToken"></param>
 		/// <param name="progress"></param>
 		/// <returns>The new asset file name</returns>
-		Task<string> StoreFile(string filePath, CancellationToken cancellationToken, Action<double, string> progress);
+		Task<string> StoreFile(string filePath, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress);
 
 		/// <summary>
 		/// Computes and writes the MCX file to the assets system
 		/// </summary>
 		/// <param name="object3D">The source MCX file</param>
 		/// <returns></returns>
-		Task<string> StoreMcx(IObject3D object3D);
+		Task<string> StoreMcx(IObject3D object3D, bool publishAfterSave);
 	}
 
 	public class AssetObject3D : Object3D, IAssetObject
@@ -120,7 +120,7 @@ namespace MatterHackers.DataConverters3D
 			return Task.FromResult<Stream>(File.OpenRead(filePath));
 		}
 
-		public virtual async Task StoreAsset(IAssetObject assetObject, CancellationToken cancellationToken, Action<double, string> progress)
+		public virtual async Task StoreAsset(IAssetObject assetObject, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress)
 		{
 			// Natural path
 			string filePath = assetObject.AssetPath;
@@ -133,7 +133,7 @@ namespace MatterHackers.DataConverters3D
 				{
 					// ComputeSha1 -> Save asset
 					//string assetName = await this.StoreStream(sourceStream, Path.GetExtension(assetObject.AssetPath), cancellationToken, progress);
-					string assetName = await this.StoreFile(assetObject.AssetPath, cancellationToken, progress);
+					string assetName = await this.StoreFile(assetObject.AssetPath, publishAfterSave, cancellationToken, progress);
 
 					// Update AssetID
 					assetObject.AssetID = Path.GetFileNameWithoutExtension(assetName);
@@ -142,7 +142,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public virtual Task<string> StoreFile(string filePath, CancellationToken cancellationToken, Action<double, string> progress)
+		public virtual Task<string> StoreFile(string filePath, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress)
 		{
 			// Compute SHA1
 			string sha1 = Object3D.ComputeSHA1(filePath);
@@ -158,7 +158,7 @@ namespace MatterHackers.DataConverters3D
 			return Task.FromResult(Path.GetFileName(assetPath));
 		}
 
-		public Task<string> StoreMcx(IObject3D object3D)
+		public Task<string> StoreMcx(IObject3D object3D, bool publishAfterSave)
 		{
 			// TODO: Track SHA1 of persisted asset
 			// TODO: Skip if cached sha1 exists in assets
@@ -192,7 +192,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public async Task StoreMesh(IObject3D object3D, CancellationToken cancellationToken, Action<double, string> progress = null)
+		public async Task StoreMesh(IObject3D object3D, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress = null)
 		{
 			// Get an open filename
 			string tempStlPath = CreateNewLibraryPath(".stl");
@@ -209,7 +209,7 @@ namespace MatterHackers.DataConverters3D
 			{
 				// There's currently no way to know the actual mesh file hashcode without saving it to disk, thus we save at least once in
 				// order to compute the hash but then throw away the duplicate file if an existing copy exists in the assets directory
-				string assetPath = await this.StoreFile(tempStlPath, cancellationToken, progress);
+				string assetPath = await this.StoreFile(tempStlPath, publishAfterSave, cancellationToken, progress);
 
 				// Remove the temp file
 				File.Delete(tempStlPath);
