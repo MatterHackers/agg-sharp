@@ -102,7 +102,7 @@ namespace MatterHackers.DataConverters3D
 		/// <param name="transform">The final transform to apply to the returned 
 		/// transforms as the tree is descended. Often passed as Matrix4X4.Identity.</param>
 		/// <returns></returns>
-		public static IEnumerable<IObject3D> VisibleMeshes(this IObject3D root)
+		public static IEnumerable<(IObject3D object3D, Mesh mesh)> VisibleMeshes(this IObject3D root)
 		{
 			if (root.Visible)
 			{
@@ -111,10 +111,12 @@ namespace MatterHackers.DataConverters3D
 				{
 					var item = items.Pop();
 
-					if (item.Mesh != null)
+					// store the mesh so we are thread safe regarding having a valid object (not null)
+					var mesh = item.Mesh;
+					if (mesh != null)
 					{
 						// there is a mesh return the object
-						yield return item;
+						yield return (item, mesh);
 					}
 					else // there is no mesh go into the object and iterate its children
 					{

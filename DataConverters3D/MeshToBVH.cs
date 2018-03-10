@@ -54,7 +54,7 @@ namespace MatterHackers.DataConverters3D
 			foreach (var item in rootItem.VisibleMeshes())
 			{
 				SolidMaterial partMaterial;
-				var color = item.WorldColor();
+				var color = item.object3D.WorldColor();
 				if (color.alpha != 0)
 				{
 					partMaterial = new SolidMaterial(new ColorF(color.Red0To1, color.Green0To1, color.Blue0To1), .01, 0.0, 2.0);
@@ -64,8 +64,8 @@ namespace MatterHackers.DataConverters3D
 					partMaterial = new SolidMaterial(new ColorF(.9, .2, .1), .01, 0.0, 2.0);
 				}
 
-				var worldMatrix = item.WorldMatrix();
-				foreach (Face face in item.Mesh.Faces)
+				var worldMatrix = item.object3D.WorldMatrix();
+				foreach (Face face in item.mesh.Faces)
 				{
 					if (false)
 					{
@@ -109,7 +109,7 @@ namespace MatterHackers.DataConverters3D
 			}
 			int index = 0;
 			Vector3[] triangle = new Vector3[3];
-			foreach (Mesh mesh in item.VisibleMeshes().Select(i => i.Mesh) )
+			foreach (Mesh mesh in item.VisibleMeshes().Select(i => i.mesh) )
 			{
 				foreach (Face face in mesh.Faces)
 				{
