@@ -33,6 +33,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using MatterHackers.Agg;
 using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Processors;
@@ -81,15 +82,15 @@ namespace MatterHackers.DataConverters3D
 			var loadedItem = Object3D.Load(filePath, cancellationToken, itemCache, progress);
 
 			// TODO: Consider refactoring progress reporting to use an instance with state and the original delegate reference to allow anyone along the chain
-			// to determine if continueProcessing has been set to false and allow for more clear aborting (rather than checking for null as we have to do below) 
+			// to determine if continueProcessing has been set to false and allow for more clear aborting (rather than checking for null as we have to do below)
 			//
-			// During startup we reload the main control multiple times. When the timing is right, reportProgress0to100 may set continueProcessing 
+			// During startup we reload the main control multiple times. When the timing is right, reportProgress0to100 may set continueProcessing
 			// on the reporter to false and MeshFileIo.Load will return null. In those cases, we need to exit rather than continue processing
 			if (loadedItem != null)
 			{
 				item.SetMeshDirect(loadedItem.Mesh);
 
-				// TODO: When loading mesh links, if a node has children and a mesh (MeshWrapers for example) 
+				// TODO: When loading mesh links, if a node has children and a mesh (MeshWrapers for example)
 				// then we load the mesh and blow away the children in the assignment below. The new conditional
 				// assignment accounts for that case but may need more consideration
 				if (string.Equals(Path.GetExtension(filePath), ".mcx", StringComparison.OrdinalIgnoreCase))
@@ -140,37 +141,11 @@ namespace MatterHackers.DataConverters3D
 					// Calculate the fast mesh hash
 					int hashCode = (int)item.Mesh.GetLongHashCode();
 
-					bool savedSuccessfully = true;
-
 					// Index into dictionary using fast hash
 					if (!assetFiles.TryGetValue(hashCode, out string assetPath))
 					{
-						// Get an open filename
-						string tempStlPath = CreateNewLibraryPath(".stl");
-
-						// Save the embedded asset to disk
-						savedSuccessfully = MeshFileIo.Save(
-							item.Mesh,
-							tempStlPath,
-							CancellationToken.None,
-							new MeshOutputSettings(MeshOutputSettings.OutputType.Binary),
-							progress);
-
-						if (savedSuccessfully)
-						{
-							// There's currently no way to know the actual mesh file hashcode without saving it to disk, thus we save at least once in
-							// order to compute the hash but then throw away the duplicate file if an existing copy exists in the assets directory
-							assetPath = await AssetObject3D.AssetManager.StoreFile(tempStlPath, CancellationToken.None, progress);
-
-							// Remove the temp file
-							File.Delete(tempStlPath);
-
-							assetPath = Path.GetFileName(assetPath);
-							assetFiles.Add(hashCode, assetPath);
-
-							// Update MeshPath with Assets relative filename
-							item.MeshPath = assetPath;
-						}
+						await AssetObject3D.AssetManager.StoreMesh(item, CancellationToken.None, progress);
+						assetFiles.Add(hashCode, item.MeshPath);
 					}
 				}
 			}
@@ -178,22 +153,6 @@ namespace MatterHackers.DataConverters3D
 			{
 				Trace.WriteLine("Error saving file: ", ex.Message);
 			}
-		}
-
-		/// <summary>
-		/// Creates a new non-colliding library file path to write library contents to
-		/// </summary>
-		/// <param name="extension">The file extension to use</param>
-		/// <returns>A new unique library path</returns>
-		private static string CreateNewLibraryPath(string extension)
-		{
-			string filePath;
-			do
-			{
-				filePath = Path.Combine(Object3D.AssetsPath, Path.ChangeExtension(Path.GetRandomFileName(), extension));
-			} while (File.Exists(filePath));
-
-			return filePath;
 		}
 
 		public static AxisAlignedBoundingBox GetUnionedAxisAlignedBoundingBox(this IEnumerable<IObject3D> items)
@@ -439,7 +398,7 @@ namespace MatterHackers.DataConverters3D
 			return BoundingVolumeHierarchy.CreateNewHierachy(allPolys, maxRecursion);
 		}
 
-		/* 
+		/*
 		public class SelectionChangeCommand : IUndoRedoCommand
 		{
 			public Color Color{ get; set; }
@@ -449,7 +408,7 @@ namespace MatterHackers.DataConverters3D
 
 			public void Do()
 			{
-				
+
 			}
 
 			public void Undo()
@@ -467,7 +426,7 @@ namespace MatterHackers.DataConverters3D
 		/// <param name="depth">?</param>
 		public static void CollapseInto(this IObject3D objectToCollapse, List<IObject3D> collapseInto, bool filterToSelectionGroup = true, int depth = int.MaxValue)
 		{
-			if (objectToCollapse != null 
+			if (objectToCollapse != null
 				&& objectToCollapse is SelectionGroup == filterToSelectionGroup)
 			{
 				// Remove the collapsing item from the list
