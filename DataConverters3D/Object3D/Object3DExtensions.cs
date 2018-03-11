@@ -109,13 +109,13 @@ namespace MatterHackers.DataConverters3D
 			streamWriter.Flush();
 		}
 
-		public static async void PersistAssets(this IObject3D sourceItem, Action<double, string> progress = null, bool forceToAssets=false)
+		public static async void PersistAssets(this IObject3D sourceItem, Action<double, string> progress = null, bool publishAssets=false)
 		{
 			// Must use DescendantsAndSelf so that leaf nodes save their meshes
 			var persistableItems = from object3D in sourceItem.DescendantsAndSelf()
 										 where object3D.WorldPersistable() &&
-												(((object3D.MeshPath == null || forceToAssets) && object3D.Mesh != null)
-												|| (object3D is IAssetObject && forceToAssets))
+												(((object3D.MeshPath == null || publishAssets) && object3D.Mesh != null)
+												|| (object3D is IAssetObject && publishAssets))
 										 select object3D;
 
 			Directory.CreateDirectory(Object3D.AssetsPath);
@@ -127,10 +127,10 @@ namespace MatterHackers.DataConverters3D
 				// Write unsaved content to disk
 				foreach (IObject3D item in persistableItems)
 				{
-					// If forceToAssets is specified, persist any unsaved IAssetObject items to disk
-					if (item is IAssetObject assetObject && forceToAssets)
+					// If publishAssets is specified, persist any unsaved IAssetObject items to disk
+					if (item is IAssetObject assetObject && publishAssets)
 					{
-						await AssetObject3D.AssetManager.StoreAsset(assetObject, CancellationToken.None, progress);
+						await AssetObject3D.AssetManager.StoreAsset(assetObject, publishAssets, CancellationToken.None, progress);
 
 						if (string.IsNullOrWhiteSpace(item.MeshPath))
 						{
@@ -144,7 +144,7 @@ namespace MatterHackers.DataConverters3D
 					// Index into dictionary using fast hash
 					if (!assetFiles.TryGetValue(hashCode, out string assetPath))
 					{
-						await AssetObject3D.AssetManager.StoreMesh(item, CancellationToken.None, progress);
+						await AssetObject3D.AssetManager.StoreMesh(item, publishAssets, CancellationToken.None, progress);
 						assetFiles.Add(hashCode, item.MeshPath);
 					}
 				}
