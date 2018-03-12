@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace MatterHackers.Agg.UI
 {
@@ -45,6 +46,11 @@ namespace MatterHackers.Agg.UI
 					SetKeyDownState(Keys.Alt, down);
 					break;
 			}
+		}
+
+		public static void Clear()
+		{
+			downStates.Clear();
 		}
 	}
 }
