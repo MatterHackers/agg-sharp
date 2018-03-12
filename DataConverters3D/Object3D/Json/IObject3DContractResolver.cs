@@ -31,7 +31,6 @@ using System;
 using System.IO;
 using System.Reflection;
 using MatterHackers.Agg;
-using MatterHackers.DataConverters3D;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -50,7 +49,7 @@ namespace MatterHackers.DataConverters3D
 			if (IObject3DType.IsAssignableFrom(objectType)
 				&& result is JsonObjectContract contract)
 			{
-				// Add a post deserialization callback to set Parent 
+				// Add a post deserialization callback to set Parent
 				contract.OnDeserializedCallbacks.Add((o, context) =>
 				{
 					if (o is IObject3D object3D)
@@ -74,13 +73,13 @@ namespace MatterHackers.DataConverters3D
 
 			if (property.PropertyName == "Children" && IObject3DType.IsAssignableFrom(property.DeclaringType))
 			{
-				property.ShouldSerialize = (instance) => 
+				property.ShouldSerialize = (instance) =>
 				{
 					string meshPath = (instance as IObject3D)?.MeshPath;
 
-					// ShouldSerialize if MeshPath is unset or is a relative path (i.e. no DirectoryName part), otherwise 
+					// ShouldSerialize if MeshPath is unset or is a relative path (i.e. no DirectoryName part), otherwise
 					// we truncate the in memory Children property and fall back to the MeshPath value on reload
-					return string.IsNullOrEmpty(meshPath) 
+					return string.IsNullOrEmpty(meshPath)
 						|| string.IsNullOrEmpty(Path.GetDirectoryName(meshPath));
 				};
 			}
@@ -90,8 +89,30 @@ namespace MatterHackers.DataConverters3D
 				property.ShouldSerialize = (instance) =>
 				{
 					// Serialize Color property as long as we're not the default value
-					return instance is IObject3D object3D 
+					return instance is IObject3D object3D
 						&& object3D.Color != Color.Transparent;
+				};
+			}
+
+			if (property.PropertyType == typeof(bool)
+				&& property.PropertyName == "Persistable")
+			{
+				property.ShouldSerialize = (instance) =>
+				{
+					// Only serialize non-default (false) value
+					return instance is IObject3D object3D
+						&& !object3D.Persistable;
+				};
+			}
+
+			if (property.PropertyType == typeof(bool)
+				&& property.PropertyName == "Visible")
+			{
+				property.ShouldSerialize = (instance) =>
+				{
+					// Only serialize non-default (false) value
+					return instance is IObject3D object3D
+						&& !object3D.Visible;
 				};
 			}
 
