@@ -109,17 +109,20 @@ namespace MatterHackers.DataConverters3D
 			// make the outside shell
 			double angleDelta = (angleEnd - angleStart) / Math.Max(3, angleSteps);
 			double currentAngle = 0;
-			for (currentAngle = angleStart; currentAngle < angleEnd - angleDelta - EqualityTolerance; currentAngle += angleDelta)
+			for (currentAngle = angleStart; currentAngle < angleEnd - EqualityTolerance; currentAngle += angleDelta)
 			{
 				AddRevolveStrip(cleanedPath, mesh, currentAngle, currentAngle + angleDelta);
 			}
 
-			if (!hasStartAndEndFaces 
-				&& ((angleEnd - angleStart) < .0000001
-					|| (angleEnd - MathHelper.Tau - angleStart) < .0000001))
+			if (!hasStartAndEndFaces)
 			{
-				// make sure we close the shape exactly
-				AddRevolveStrip(cleanedPath, mesh, currentAngle, angleStart);
+				if (((angleEnd - angleStart) < .0000001
+					|| (angleEnd - MathHelper.Tau - angleStart) < .0000001)
+					&& (currentAngle - angleEnd) > .0000001)
+				{
+					// make sure we close the shape exactly
+					AddRevolveStrip(cleanedPath, mesh, currentAngle, angleStart);
+				}
 			}
 			else // add the end face
 			{

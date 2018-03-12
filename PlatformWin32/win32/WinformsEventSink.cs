@@ -158,6 +158,7 @@ namespace MatterHackers.Agg.UI
 		private void controlToHook_GotFocus(object sender, EventArgs e)
 		{
 			widgetToSendTo.OnFocusChanged(e);
+			Keyboard.Clear();
 		}
 
 		private void controlToHook_KeyDown(object sender, System.Windows.Forms.KeyEventArgs windowsKeyEvent)
