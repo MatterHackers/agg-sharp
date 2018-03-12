@@ -144,8 +144,14 @@ namespace MatterHackers.DataConverters3D
 					// Index into dictionary using fast hash
 					if (!assetFiles.TryGetValue(hashCode, out string assetPath))
 					{
+						// Store and update cache if missing
 						await AssetObject3D.AssetManager.StoreMesh(item, publishAssets, CancellationToken.None, progress);
 						assetFiles.Add(hashCode, item.MeshPath);
+					}
+					else
+					{
+						// If the Mesh is in the assetFile cache, set .MeshPath to the existing asset name
+						item.MeshPath = assetPath;
 					}
 				}
 			}
