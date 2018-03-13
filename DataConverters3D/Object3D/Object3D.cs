@@ -532,7 +532,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static string ComputeSHA1(string filePath)
+		public static string ComputeFileSHA1(string filePath)
 		{
 			using (var stream = new BufferedStream(File.OpenRead(filePath), 1200000))
 			{
