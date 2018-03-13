@@ -158,7 +158,7 @@ namespace MatterHackers.DataConverters3D
 		public async Task<string> StoreFile(string filePath, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress)
 		{
 			// Compute SHA1
-			string sha1 = Object3D.ComputeSHA1(filePath);
+			string sha1 = Object3D.ComputeFileSHA1(filePath);
 			string sha1PlusExtension = sha1 + Path.GetExtension(filePath).ToLower();
 			string assetPath = Path.Combine(Object3D.AssetsPath, sha1PlusExtension);
 
