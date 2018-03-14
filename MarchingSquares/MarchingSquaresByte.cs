@@ -95,16 +95,18 @@ namespace MatterHackers.MarchingSquares
 	{
 		private ImageBuffer imageToMarch;
 
-		public delegate double PositiveArea0to1(Color color);
+		/// <summary>
+		/// Takes a color and returns the threashold for this pixel
+		/// </summary>
+		public Func<Color, double> ThresholdFunction;
 
-		private PositiveArea0to1 thresholdFunction;
 		private int debugColor;
 
 		public List<LineSegment> LineSegments { get; } = new List<LineSegment>();
 
 		private double[] thersholdPerPixel = null;
 
-		public MarchingSquaresByte(ImageBuffer sourceImage, PositiveArea0to1 thresholdFunction, int debugColor)
+		public MarchingSquaresByte(ImageBuffer sourceImage, Func<Color, double> thresholdFunction, int debugColor)
 		{
 			// expand the image so we have a border around it (in case it goes to the edge)
 			var imageToMarch = new ImageBuffer(sourceImage.Width + 2, sourceImage.Height + 2);
@@ -131,7 +133,7 @@ namespace MatterHackers.MarchingSquares
 				}
 			}
 
-			this.thresholdFunction = thresholdFunction;
+			this.ThresholdFunction = thresholdFunction;
 			this.imageToMarch = imageToMarch;
 			this.debugColor = debugColor;
 
