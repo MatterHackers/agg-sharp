@@ -1,5 +1,8 @@
+using MatterHackers.Agg.Image;
+using MatterHackers.Agg.Transform;
 using MatterHackers.VectorMath;
 using Newtonsoft.Json;
+using System;
 
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
@@ -97,12 +100,50 @@ namespace MatterHackers.Agg.VertexSource
 
 	public static class IVertexSourceExtensions
 	{
-		public static RectangleDouble GetBounds(this IVertexSource source)
+		public static Vector2 GetWeightedCenter(this IVertexSource vertexSource)
 		{
-			return source.Bounds();
+			var polygonBounds = vertexSource.GetBounds();
+
+			int width = 128;
+			int height = 128;
+
+			var imageBuffer = new ImageBuffer(width + 4, height + 4, 8, new blender_gray(1));
+
+			// Set the transform to image space
+			var polygonsToImageTransform = Affine.NewIdentity();
+			// move it to 0, 0
+			polygonsToImageTransform *= Affine.NewTranslation(-polygonBounds.Left, -polygonBounds.Bottom);
+			// scale to fit cache
+			polygonsToImageTransform *= Affine.NewScaling(width / (double)polygonBounds.Width, height / (double)polygonBounds.Height);
+			// and move it in 2 pixels
+			polygonsToImageTransform *= Affine.NewTranslation(2, 2);
+
+			// and render the polygon to the image
+			imageBuffer.NewGraphics2D().Render(new VertexSourceApplyTransform(vertexSource, polygonsToImageTransform), Color.White);
+
+			double accumulatedCount = 0;
+			Vector2 accumulatedPosition = Vector2.Zero;
+
+			for(int y=0; y<imageBuffer.Height; y++)
+			{
+				for(int x=0; x<imageBuffer.Width; x++)
+				{
+					Color color = imageBuffer.GetPixel(x, y);
+					if (color.Red0To255 > 128)
+					{
+						accumulatedCount++;// += color.Red0To255;
+						double px = x;
+						double py = y;
+						polygonsToImageTransform.inverse_transform(ref px, ref py);
+						accumulatedPosition += new Vector2(px, py);
+					}
+				}
+			}
+
+			return accumulatedPosition / accumulatedCount;
 		}
 
-		public static RectangleDouble Bounds(this IVertexSource source)
+		public static RectangleDouble GetBounds(this IVertexSource source)
 		{
 			RectangleDouble bounds = RectangleDouble.ZeroIntersection;
 			foreach (var vertex in source.Vertices())
