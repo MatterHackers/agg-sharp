@@ -64,6 +64,10 @@ namespace MatterHackers.Agg.VertexSource
 			set;
 		}
 
+		public VertexSourceApplyTransform()
+		{
+		}
+
 		public VertexSourceApplyTransform(Transform.ITransform newTransformeToApply)
 			: this(null, newTransformeToApply)
 		{

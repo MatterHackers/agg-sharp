@@ -74,6 +74,8 @@ namespace MatterHackers.Agg.Font
 
 		public Vector2 Origin { get; set; }
 
+		public double ResolutionScale { get; set; } = 1;
+
 		public TypeFacePrinter(String text = "", double pointSize = 12, Vector2 origin = new Vector2(), Justification justification = Justification.Left, Baseline baseline = Baseline.Text, bool bold = false)
 			: this(text, 
 				  bold ? new StyledTypeFace(LiberationSansBoldFont.Instance, pointSize)  : new StyledTypeFace(LiberationSansFont.Instance, pointSize), 
@@ -214,7 +216,7 @@ namespace MatterHackers.Agg.Font
 
 					for (int currentChar = 0; currentChar < line.Length; currentChar++)
 					{
-						IVertexSource currentGlyph = TypeFaceStyle.GetGlyphForCharacter(line[currentChar]);
+						IVertexSource currentGlyph = TypeFaceStyle.GetGlyphForCharacter(line[currentChar], ResolutionScale);
 
 						if (currentGlyph != null)
 						{
