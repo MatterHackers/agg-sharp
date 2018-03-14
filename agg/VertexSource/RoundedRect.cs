@@ -31,7 +31,7 @@ namespace MatterHackers.Agg.VertexSource
 	//
 	// See Implementation agg_rounded_rect.cpp
 	//
-	public class RoundedRect : IVertexSource
+	public class RoundedRect : VertexSourceLegacySupport
 	{
 		private RectangleDouble bounds;
 		private Vector2 leftBottomRadius;
@@ -39,7 +39,7 @@ namespace MatterHackers.Agg.VertexSource
 		private Vector2 rightTopRadius;
 		private Vector2 leftTopRadius;
 		private int state;
-		private Arc currentProcessingArc = new Arc();
+		public double ResolutionScale { get; set; } = 1;
 
 		public RoundedRect(double left, double bottom, double right, double top, double radius)
 		{
@@ -128,18 +128,13 @@ namespace MatterHackers.Agg.VertexSource
 			}
 		}
 
-		public void approximation_scale(double s)
+		public override IEnumerable<VertexData> Vertices()
 		{
-			currentProcessingArc.approximation_scale(s);
-		}
+			Arc currentProcessingArc = new Arc()
+			{
+				ResolutionScale = ResolutionScale
+			};
 
-		public double approximation_scale()
-		{
-			return currentProcessingArc.approximation_scale();
-		}
-
-		public IEnumerable<VertexData> Vertices()
-		{
 			currentProcessingArc.init(bounds.Left + leftBottomRadius.X, bounds.Bottom + leftBottomRadius.Y, leftBottomRadius.X, leftBottomRadius.Y, Math.PI, Math.PI + Math.PI * 0.5);
 			foreach (VertexData vertexData in currentProcessingArc.Vertices())
 			{
@@ -196,104 +191,6 @@ namespace MatterHackers.Agg.VertexSource
 
 			yield return new VertexData(ShapePath.FlagsAndCommand.CommandEndPoly | ShapePath.FlagsAndCommand.FlagClose | ShapePath.FlagsAndCommand.FlagCCW, new Vector2());
 			yield return new VertexData(ShapePath.FlagsAndCommand.CommandStop, new Vector2());
-		}
-
-		public void rewind(int unused)
-		{
-			state = 0;
-		}
-
-		public ShapePath.FlagsAndCommand vertex(out double x, out double y)
-		{
-			x = 0;
-			y = 0;
-			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.CommandStop;
-			switch (state)
-			{
-				case 0:
-					currentProcessingArc.init(bounds.Left + leftBottomRadius.X, bounds.Bottom + leftBottomRadius.Y, leftBottomRadius.X, leftBottomRadius.Y,
-							   Math.PI, Math.PI + Math.PI * 0.5);
-					currentProcessingArc.rewind(0);
-					state++;
-					goto case 1;
-
-				case 1:
-					cmd = currentProcessingArc.vertex(out x, out y);
-					if (ShapePath.is_stop(cmd))
-					{
-						state++;
-					}
-					else
-					{
-						return cmd;
-					}
-					goto case 2;
-
-				case 2:
-					currentProcessingArc.init(bounds.Right - rightBottomRadius.X, bounds.Bottom + rightBottomRadius.Y, rightBottomRadius.X, rightBottomRadius.Y,
-							   Math.PI + Math.PI * 0.5, 0.0);
-					currentProcessingArc.rewind(0);
-					state++;
-					goto case 3;
-
-				case 3:
-					cmd = currentProcessingArc.vertex(out x, out y);
-					if (ShapePath.is_stop(cmd))
-					{
-						state++;
-					}
-					else
-					{
-						return ShapePath.FlagsAndCommand.CommandLineTo;
-					}
-					goto case 4;
-
-				case 4:
-					currentProcessingArc.init(bounds.Right - rightTopRadius.X, bounds.Top - rightTopRadius.Y, rightTopRadius.X, rightTopRadius.Y,
-							   0.0, Math.PI * 0.5);
-					currentProcessingArc.rewind(0);
-					state++;
-					goto case 5;
-
-				case 5:
-					cmd = currentProcessingArc.vertex(out x, out y);
-					if (ShapePath.is_stop(cmd))
-					{
-						state++;
-					}
-					else
-					{
-						return ShapePath.FlagsAndCommand.CommandLineTo;
-					}
-					goto case 6;
-
-				case 6:
-					currentProcessingArc.init(bounds.Left + leftTopRadius.X, bounds.Top - leftTopRadius.Y, leftTopRadius.X, leftTopRadius.Y,
-							   Math.PI * 0.5, Math.PI);
-					currentProcessingArc.rewind(0);
-					state++;
-					goto case 7;
-
-				case 7:
-					cmd = currentProcessingArc.vertex(out x, out y);
-					if (ShapePath.is_stop(cmd))
-					{
-						state++;
-					}
-					else
-					{
-						return ShapePath.FlagsAndCommand.CommandLineTo;
-					}
-					goto case 8;
-
-				case 8:
-					cmd = ShapePath.FlagsAndCommand.CommandEndPoly
-						| ShapePath.FlagsAndCommand.FlagClose
-						| ShapePath.FlagsAndCommand.FlagCCW;
-					state++;
-					break;
-			}
-			return cmd;
 		}
 	};
 }

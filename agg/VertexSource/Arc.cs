@@ -44,7 +44,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		private Vector2 radius;
 
-		private double scale = 1.0;
+		public double ResolutionScale { get; set; } = 1;
 
 		private double startAngle;
 
@@ -55,19 +55,17 @@ namespace MatterHackers.Agg.VertexSource
 		public Arc(double originX, double originY,
 			 double radiusX, double radiusY,
 			 double startAngle, double endAngle,
-			 Direction direction = Direction.CounterClockWise,
-			 double scale = 1.0)
+			 Direction direction = Direction.CounterClockWise)
 		{
-			init(originX, originY, radiusX, radiusY, startAngle, endAngle, direction, scale);
+			init(originX, originY, radiusX, radiusY, startAngle, endAngle, direction);
 		}
 
 		public Arc(Vector2 origin,
 			 Vector2 radius,
 			 double startAngle, double endAngle,
-			 Direction direction = Direction.CounterClockWise,
-			 double scale = 1.0)
+			 Direction direction = Direction.CounterClockWise)
 		{
-			init(origin, radius, startAngle, endAngle, direction, scale);
+			init(origin, radius, startAngle, endAngle, direction);
 		}
 
 		public enum Direction
@@ -76,43 +74,30 @@ namespace MatterHackers.Agg.VertexSource
 			CounterClockWise,
 		}
 
-		public void approximation_scale(double s)
-		{
-			scale = s;
-		}
-
-		public double approximation_scale()
-		{
-			return scale;
-		}
-
 		public void init(double originX, double originY,
-								   double radiusX, double radiusY,
-				   double startAngle, double endAngle,
-			 Direction direction = Direction.CounterClockWise,
-				   double scale = 1.0)
+			double radiusX, double radiusY,
+			double startAngle, double endAngle,
+			Direction direction = Direction.CounterClockWise)
 		{
-			init(new Vector2(originX, originY), new Vector2(radiusX, radiusY), startAngle, endAngle, direction, scale);
+			init(new Vector2(originX, originY), new Vector2(radiusX, radiusY), startAngle, endAngle, direction);
 		}
 
 		public void init(Vector2 origin,
-				   Vector2 radius,
-				   double startAngle, double endAngle,
-			 Direction direction = Direction.CounterClockWise,
-				   double scale = 1.0)
+			Vector2 radius,
+			double startAngle, double endAngle,
+			Direction direction = Direction.CounterClockWise)
 		{
 			this.origin = origin;
 			this.radius = radius;
 			this.startAngle = startAngle;
 			this.endAngle = endAngle;
 			this.direction = direction;
-			this.scale = scale;
 		}
 
 		override public IEnumerable<VertexData> Vertices()
 		{
 			double averageRadius = (Math.Abs(radius.X) + Math.Abs(radius.Y)) / 2;
-			flatenDeltaAngle = Math.Acos(averageRadius / (averageRadius + 0.125 / scale)) * 2;
+			flatenDeltaAngle = Math.Acos(averageRadius / (averageRadius + 0.125 / ResolutionScale)) * 2;
 			while (endAngle < startAngle)
 			{
 				endAngle += Math.PI * 2.0;

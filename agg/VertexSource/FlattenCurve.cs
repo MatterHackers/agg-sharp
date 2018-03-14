@@ -70,7 +70,7 @@ namespace MatterHackers.Agg.VertexSource
 			//lastY = (0.0);
 		}
 
-		public double ApproximationScale
+		public double ResolutionScale
 		{
 			get
 			{

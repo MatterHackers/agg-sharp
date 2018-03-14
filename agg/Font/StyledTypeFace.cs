@@ -249,7 +249,7 @@ namespace MatterHackers.Agg.Font
 				return imageForCharacter;
 			}
 
-			IVertexSource glyphForCharacter = GetGlyphForCharacter(character);
+			IVertexSource glyphForCharacter = GetGlyphForCharacter(character, 1);
 			if (glyphForCharacter == null)
 			{
 				return null;
@@ -273,7 +273,7 @@ namespace MatterHackers.Agg.Font
 			return charImage;
 		}
 
-		public IVertexSource GetGlyphForCharacter(char character)
+		public IVertexSource GetGlyphForCharacter(char character, double resolutionScale = 1)
 		{
 			// scale it to the correct size.
 			IVertexSource sourceGlyph = TypeFace.GetGlyphForCharacter(character);
@@ -289,7 +289,10 @@ namespace MatterHackers.Agg.Font
 
 				if (FlatenCurves)
 				{
-					characterGlyph = new FlattenCurves(characterGlyph);
+					characterGlyph = new FlattenCurves(characterGlyph)
+					{
+						ResolutionScale = resolutionScale
+					};
 				}
 
 				return characterGlyph;
