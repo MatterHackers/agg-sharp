@@ -57,7 +57,7 @@ namespace MatterHackers.Agg.UI
 				var newBounds = value;
 				if (image.Width > 0)
 				{
-					var scale = Math.Min(1, Width / image.Width);
+					var scale = Math.Min(1, newBounds.Width / image.Width);
 					newBounds.Top = newBounds.Bottom + image.Height * scale;
 				}
 				base.LocalBounds = newBounds;
@@ -67,6 +67,13 @@ namespace MatterHackers.Agg.UI
 		private void ImageChanged(object s, EventArgs e)
 		{
 			// kill whatever resize process we are running
+			var newBounds = LocalBounds;
+			if (image.Width > 0)
+			{
+				var scale = Math.Min(1, newBounds.Width / image.Width);
+				newBounds.Top = newBounds.Bottom + image.Height * scale;
+				base.LocalBounds = newBounds;
+			}
 			// clear any cached image we have
 			cachedResize = null;
 			Invalidate();
