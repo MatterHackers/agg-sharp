@@ -29,7 +29,7 @@ namespace MatterHackers.Agg.Platform
 
 		string MapPath(string path);
 
-		Stream OpenSteam(string path);
+		Stream OpenStream(string path);
 
 		string[] ReadAllLines(string path);
 
