@@ -143,7 +143,6 @@ namespace MatterHackers.DataConverters3D
 	{
 		event EventHandler Invalidated;
 
-		string ActiveEditor { get; set; }
 		string OwnerID { get; set; }
 
 		[JsonConverter(typeof(IObject3DChildrenConverter))]

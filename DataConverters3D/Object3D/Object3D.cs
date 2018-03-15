@@ -66,8 +66,6 @@ namespace MatterHackers.DataConverters3D
 
 		public string OwnerID { get; set; }
 
-		public virtual string ActiveEditor { get; set; }
-
 		public SafeList<IObject3D> Children { get; set; }
 
 		public string TypeName { get; }

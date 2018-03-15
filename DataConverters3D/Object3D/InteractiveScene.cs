@@ -246,7 +246,6 @@ namespace MatterHackers.DataConverters3D
 
 		private IObject3D sourceItem = new Object3D();
 
-		public string ActiveEditor { get => sourceItem.ActiveEditor; set => sourceItem.ActiveEditor = value; }
 		public string OwnerID { get => sourceItem.OwnerID; set => sourceItem.OwnerID = value; }
 		public SafeList<IObject3D> Children { get => sourceItem.Children; set => sourceItem.Children = value; }
 		public IObject3D Parent { get => sourceItem.Parent; set => sourceItem.Parent = value; }
