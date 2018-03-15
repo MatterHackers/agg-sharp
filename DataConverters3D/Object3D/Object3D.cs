@@ -225,6 +225,7 @@ namespace MatterHackers.DataConverters3D
 
 		public string Name { get; set; }
 
+		[JsonIgnore]
 		public virtual bool Persistable { get; set; } = true;
 
 		public virtual bool Visible { get; set; } = true;
