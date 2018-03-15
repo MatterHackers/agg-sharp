@@ -80,7 +80,7 @@ namespace MatterHackers.DataConverters3D
 		// Collector
 		public static IAssetManager AssetManager { get; set; }
 
-		public string AssetPath { get; set; }
+		public virtual string AssetPath { get; set; }
 
 		public string AssetID { get; set; }
 

@@ -258,7 +258,7 @@ namespace MatterHackers.DataConverters3D
 					loadedItem = Load(stream, extension, cancellationToken, itemCache, progress);
 
 					// Cache loaded assets
-					if (itemCache != null 
+					if (itemCache != null
 						&& extension != ".mcx"
 						&& loadedItem != null)
 					{
