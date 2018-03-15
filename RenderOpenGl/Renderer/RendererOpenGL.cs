@@ -281,10 +281,6 @@ namespace MatterHackers.RenderOpenGl
 			Affine transform = GetTransform();
 			if (!transform.is_identity())
 			{
-				if (scaleX != 1 || scaleY != 1)// || angleDegrees != 0)
-				{
-					throw new NotImplementedException();
-				}
 				// TODO: <BUG> make this do rotation and scaling
 				transform.transform(ref x, ref y);
 				scaleX *= transform.sx;
