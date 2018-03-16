@@ -1074,11 +1074,11 @@ namespace MatterHackers.Agg
 			{
 				if (fixedColor.Luminance0To1() < .5)
 				{
-					colorToAdjust = colorToAdjust.AdjustLightness(1.1).ToColor();
+					colorToAdjust = colorToAdjust.AdjustLightness(1.05).ToColor();
 				}
 				else
 				{
-					colorToAdjust = colorToAdjust.AdjustLightness(.9).ToColor();
+					colorToAdjust = colorToAdjust.AdjustLightness(.95).ToColor();
 				}
 				contrast = colorToAdjust.Contrast(fixedColor);
 			}
