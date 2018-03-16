@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2017, Lars Brubaker, John Lewin
+Copyright (c) 2018, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -51,9 +51,8 @@ namespace MatterHackers.Agg
 		{
 			string appPathAndFile = Assembly.GetExecutingAssembly().Location;
 			string pathToAppFolder = Path.GetDirectoryName(appPathAndFile);
-			string localStaticDataPath = Path.Combine(pathToAppFolder, "StaticData");
 
-			this.basePath = localStaticDataPath;
+			this.basePath = Path.Combine(pathToAppFolder, "StaticData");
 
 #if DEBUG
 			// In debug builds, use the StaticData folder up two directories from bin\debug, which should be MatterControl\StaticData
@@ -150,7 +149,7 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		static object locker = new object();
+		private static object locker = new object();
 		private void LoadImage(string path, ImageBuffer destImage, IconColor iconColor = IconColor.Raw)
 		{
 			lock (locker)
@@ -158,7 +157,7 @@ namespace MatterHackers.Agg
 				ImageBuffer cachedImage;
 				if (!cachedImages.TryGetValue(path, out cachedImage))
 				{
-					using (var imageStream = OpenSteam(path))
+					using (var imageStream = OpenStream(path))
 					using (var bitmap = new Bitmap(imageStream))
 					{
 						cachedImage = new ImageBuffer();
@@ -197,7 +196,7 @@ namespace MatterHackers.Agg
 			return temp;
 		}
 
-		public Stream OpenSteam(string path)
+		public Stream OpenStream(string path)
 		{
 			return File.OpenRead(MapPath(path));
 		}
@@ -214,8 +213,7 @@ namespace MatterHackers.Agg
 
 		public string MapPath(string path)
 		{
-			string fullPath = Path.GetFullPath(Path.Combine(this.basePath, path));
-			return fullPath;
+			return Path.GetFullPath(Path.Combine(this.basePath, path));
 		}
 	}
 }

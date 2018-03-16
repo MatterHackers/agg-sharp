@@ -225,6 +225,7 @@ namespace MatterHackers.DataConverters3D
 
 		public string Name { get; set; }
 
+		[JsonIgnore]
 		public virtual bool Persistable { get; set; } = true;
 
 		public virtual bool Visible { get; set; } = true;
@@ -257,7 +258,7 @@ namespace MatterHackers.DataConverters3D
 					loadedItem = Load(stream, extension, cancellationToken, itemCache, progress);
 
 					// Cache loaded assets
-					if (itemCache != null 
+					if (itemCache != null
 						&& extension != ".mcx"
 						&& loadedItem != null)
 					{
