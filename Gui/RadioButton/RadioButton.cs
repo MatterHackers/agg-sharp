@@ -29,6 +29,25 @@ using System.Collections.Generic;
 
 namespace MatterHackers.Agg.UI
 {
+	public static class IRadioButtonExtensions
+	{
+		public static void UncheckAllOtherRadioButtons(this IRadioButton radioButton)
+		{
+			var SiblingRadioButtonList = radioButton.SiblingRadioButtonList;
+
+			if (SiblingRadioButtonList != null)
+			{
+				foreach (GuiWidget child in SiblingRadioButtonList.Distinct())
+				{
+					if (child is IRadioButton childRadioButton && childRadioButton != radioButton)
+					{
+						childRadioButton.Checked = false;
+					}
+				}
+			}
+		}
+	}
+
 	public interface ICheckbox
 	{
 		event EventHandler CheckedStateChanged;
@@ -37,7 +56,7 @@ namespace MatterHackers.Agg.UI
 
 	public interface IRadioButton: ICheckbox
 	{
-		IEnumerable<GuiWidget> SiblingRadioButtonList { get; set; }
+		IList<GuiWidget> SiblingRadioButtonList { get; set; }
 	}
 
 	public class RadioButton : GuiWidget, IRadioButton
@@ -48,7 +67,7 @@ namespace MatterHackers.Agg.UI
 
 		public static BorderDouble defaultMargin = new BorderDouble(5);
 
-		public IEnumerable<GuiWidget> SiblingRadioButtonList { get; set; }
+		public IList<GuiWidget> SiblingRadioButtonList { get; set; }
 
 		public RadioButton(double x, double y, GuiWidget view)
 		{
@@ -150,20 +169,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private void UncheckAllOtherRadioButtons()
-		{
-			if (SiblingRadioButtonList != null)
-			{
-				foreach (GuiWidget child in SiblingRadioButtonList.Distinct())
-				{
-					var radioButton = child as IRadioButton;
-					if (radioButton != null && radioButton != this)
-					{
-						radioButton.Checked = false;
-					}
-				}
-			}
-		}
+
 
 		public bool Checked
 		{
@@ -175,7 +181,7 @@ namespace MatterHackers.Agg.UI
 					isChecked = value;
 					if (isChecked)
 					{
-						UncheckAllOtherRadioButtons();
+						this.UncheckAllOtherRadioButtons();
 					}
 					OnCheckStateChanged();
 					Invalidate();
