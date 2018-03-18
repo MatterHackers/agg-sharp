@@ -113,7 +113,6 @@
     <Compile Include="Object3D\Json\MatrixConverter.cs" />
     <Compile Include="Object3D\Json\IObject3DContractResolver.cs" />
     <Compile Include="Object3D\Json\IObject3DChildrenConverter.cs" />
-    <Compile Include="Object3D\TextObject.cs" />
     <Compile Include="Object3D\Object3DExtensions.cs" />
     <Compile Include="Object3D\IObject3D.cs" />
     <Compile Include="MeshToBVH.cs" />
