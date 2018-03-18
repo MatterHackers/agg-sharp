@@ -129,11 +129,32 @@ namespace MatterHackers.RenderOpenGl
 			}
 		}
 
+		/// <summary>
+		/// Draw a line in the scene in 3D but scale it such that it appears as a 2D line in the view.
+		/// If drawing lots of lines call with a pre-calculated clipping frustum.
+		/// </summary>
+		/// <param name="world"></param>
+		/// <param name="start"></param>
+		/// <param name="end"></param>
+		/// <param name="color"></param>
+		/// <param name="doDepthTest"></param>
+		/// <param name="width"></param>
 		public static void Render3DLine(WorldView world, Vector3 start, Vector3 end, Color color, bool doDepthTest = true, double width = 1)
 		{
 			Render3DLine(GetClippingFrustum(world), world, start, end, color, doDepthTest, width);
 		}
 
+		/// <summary>
+		/// Draw a line in the scene in 3D but scale it such that it appears as a 2D line in the view.
+		/// </summary>
+		/// <param name="clippingFrustum">This is a cache of the frustum from world.
+		/// Much faster to pass this way if drawing lots of lines.</param>
+		/// <param name="world"></param>
+		/// <param name="start"></param>
+		/// <param name="end"></param>
+		/// <param name="color"></param>
+		/// <param name="doDepthTest"></param>
+		/// <param name="width"></param>
 		public static void Render3DLine(Frustum clippingFrustum, WorldView world, Vector3 start, Vector3 end, Color color, bool doDepthTest = true, double width = 1)
 		{
 			PrepareFor3DLineRender(doDepthTest);
