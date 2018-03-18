@@ -331,6 +331,11 @@ namespace MatterHackers.DataConverters3D
 
 		public static IEnumerable<IObject3D> Descendants(this IObject3D root)
 		{
+			return (IEnumerable<IObject3D>)Descendants<IObject3D>(root);
+		}
+
+		public static IEnumerable<T> Descendants<T>(this IObject3D root) where T : IObject3D
+		{
 			var items = new Stack<IObject3D>();
 
 			foreach (var n in root.Children)
@@ -342,7 +347,10 @@ namespace MatterHackers.DataConverters3D
 			{
 				IObject3D item = items.Pop();
 
-				yield return item;
+				if (item is T asType)
+				{
+					yield return asType;
+				}
 				foreach (var n in item.Children)
 				{
 					items.Push(n);
