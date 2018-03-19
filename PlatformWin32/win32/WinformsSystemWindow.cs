@@ -925,15 +925,18 @@ namespace MatterHackers.Agg.UI
 			}
 			else if (!SingleWindowMode)
 			{
-				if (systemWindow.IsModal)
+				UiThread.RunOnIdle(() =>
 				{
-					this.ShowModal();
-				}
-				else
-				{
-					this.Show();
-					this.BringToFront();
-				}
+					if (systemWindow.IsModal)
+					{
+						this.ShowModal();
+					}
+					else
+					{
+						this.Show();
+						this.BringToFront();
+					}
+				});
 			}
 			else if (SingleWindowMode)
 			{
