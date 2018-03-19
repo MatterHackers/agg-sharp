@@ -176,9 +176,9 @@ namespace MatterHackers.DataConverters3D
 						_mesh = value;
 						traceData = null;
 						this.MeshPath = null;
-						this.OnInvalidate();
 					}
 				}
+				this.OnInvalidate();
 			}
 		}
 
