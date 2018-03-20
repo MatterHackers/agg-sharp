@@ -112,7 +112,7 @@ namespace MatterHackers.DataConverters3D
 
 		public int MaterialIndex { get; set; } = -1;
 
-		PrintOutputTypes _outputType = PrintOutputTypes.Default;
+		private PrintOutputTypes _outputType = PrintOutputTypes.Default;
 		public PrintOutputTypes OutputType
 		{
 			get
@@ -142,7 +142,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		Matrix4X4 _matrix = Matrix4X4.Identity;
+		private Matrix4X4 _matrix = Matrix4X4.Identity;
 		public Matrix4X4 Matrix
 		{
 			get => _matrix;
@@ -156,10 +156,11 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		Object locker = new object();
-		Mesh meshBeingCopied = null;
+		private Object locker = new object();
+		private Mesh meshBeingCopied = null;
+
 		[JsonIgnore]
-		private Mesh _mesh;
+		protected Mesh _mesh;
 		public virtual Mesh Mesh
 		{
 			get
