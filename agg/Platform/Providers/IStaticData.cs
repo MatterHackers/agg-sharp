@@ -27,7 +27,6 @@ namespace MatterHackers.Agg.Platform
 
 		ImageBuffer LoadImage(string path);
 
-		string MapPath(string path);
 
 		Stream OpenStream(string path);
 
