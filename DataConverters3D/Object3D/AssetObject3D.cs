@@ -56,7 +56,7 @@ namespace MatterHackers.DataConverters3D
 
 		Task StoreMesh(IObject3D object3D, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress);
 
-		Task<string> StoreStream(Stream stream, string extension, CancellationToken cancellationToken, Action<double, string> progress);
+		string StoreStream(Stream stream, string extension);
 
 		/// <summary>
 		/// Ensures the given file is stored in the asset system
@@ -250,7 +250,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public Task<string> StoreStream(Stream stream, string extension, CancellationToken cancellationToken, Action<double, string> progress)
+		public string StoreStream(Stream stream, string extension)
 		{
 			// Compute SHA1
 			string sha1 = Object3D.ComputeSHA1(stream);
@@ -269,7 +269,7 @@ namespace MatterHackers.DataConverters3D
 				}
 			}
 
-			return Task.FromResult(fileName);
+			return fileName;
 		}
 
 		private async Task ConditionalPublish(string sha1PlusExtension, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress)
