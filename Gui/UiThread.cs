@@ -83,13 +83,14 @@ namespace MatterHackers.Agg.UI
 				if(continueInterval == null
 					|| continueInterval.Invoke())
 				{
-					RunOnIdle(action);
-					UiThread.RunOnIdle(IntervalFunction, intervalInSeconds);
+					RunOnIdle(action, intervalInSeconds);
+					RunOnIdle(IntervalFunction, intervalInSeconds);
 				}
 			};
 
-			// run it for the first time right now
-			RunOnIdle(IntervalFunction);
+			// queue the next call and the event to run on uithread
+			RunOnIdle(action, intervalInSeconds);
+			RunOnIdle(IntervalFunction, intervalInSeconds);
 		}
 
 		public static void RunOnIdle(Action action)
