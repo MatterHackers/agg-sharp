@@ -157,7 +157,6 @@ namespace MatterHackers.DataConverters3D
 		}
 
 		private Object locker = new object();
-		private Mesh meshBeingCopied = null;
 
 		[JsonIgnore]
 		protected Mesh _mesh;
@@ -165,7 +164,6 @@ namespace MatterHackers.DataConverters3D
 		{
 			get
 			{
-				AsyncCleanAndMerge();
 				return _mesh;
 			}
 			set
@@ -177,6 +175,8 @@ namespace MatterHackers.DataConverters3D
 						_mesh = value;
 						traceData = null;
 						this.MeshPath = null;
+
+						AsyncCleanAndMerge();
 					}
 				}
 				this.OnInvalidate();
@@ -185,40 +185,31 @@ namespace MatterHackers.DataConverters3D
 
 		private void AsyncCleanAndMerge()
 		{
-			lock (locker)
+			// keep track of the mesh we are copying
+			if (Mesh != null
+				&& Mesh.Vertices != null
+				&& !Mesh.Vertices.IsSorted)
 			{
-				if (meshBeingCopied == null)
+				Task.Run(() =>
 				{
-					// keep track of the mesh we are copying
-					meshBeingCopied = _mesh;
+					var meshThatWasCopied = Mesh;
+					// make the copy
+					var copyMesh = Mesh.Copy(meshThatWasCopied, CancellationToken.None);
+					// clean the copy
+					copyMesh.CleanAndMergeMesh(CancellationToken.None);
 
-					if (meshBeingCopied != null
-						&& meshBeingCopied.Vertices != null
-						&& !meshBeingCopied.Vertices.IsSorted)
+					lock (locker)
 					{
-						Task.Run(() =>
+						// if we have not changed to a new mesh
+						if (meshThatWasCopied == Mesh)
 						{
-							// make the copy
-							var copyMesh = Mesh.Copy(meshBeingCopied, CancellationToken.None);
-							// clean the copy
-							copyMesh.CleanAndMergeMesh(CancellationToken.None);
-							lock (locker)
-							{
-								// if we have not changed to a new mesh
-								if (meshBeingCopied == _mesh)
-								{
-									// store the new clean mesh
-									_mesh = copyMesh;
-
-									// reset
-									meshBeingCopied = null;
-								}
-							}
-
-							this.Invalidate();
-						});
+							// store the new clean mesh
+							_mesh = copyMesh;
+						}
 					}
-				}
+
+					this.Invalidate();
+				});
 			}
 		}
 
@@ -321,6 +312,7 @@ namespace MatterHackers.DataConverters3D
 			lock (locker)
 			{
 				_mesh = mesh;
+				AsyncCleanAndMerge();
 			}
 		}
 
