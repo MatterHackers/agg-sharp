@@ -79,7 +79,7 @@ namespace MatterHackers.Agg.UI
 			};
 
 			// Get the an idle loop up and running
-			UiThread.RunOnIdle(CheckIfNeedToDisplayToolTip, .02);
+			UiThread.SetInterval(CheckIfNeedToDisplayToolTip, .05, () => true);
 		}
 
 		public event EventHandler ToolTipPop;
@@ -154,11 +154,6 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 			}
-
-			// Call again in .1 s so that this is constantly being re-evaluated.
-			UiThread.RunOnIdle(CheckIfNeedToDisplayToolTip, .05);
-
-			//DebugStartTimers();
 		}
 
 		private void DebugStartTimers()

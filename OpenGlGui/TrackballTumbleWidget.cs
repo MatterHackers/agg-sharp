@@ -355,7 +355,7 @@ namespace MatterHackers.Agg.OpenGlGui
 						currentVelocityPerMs = motionQueue.GetVelocityPixelsPerMs();
 						if (currentVelocityPerMs.LengthSquared > 0)
 						{
-							UiThread.RunOnIdle(ApplyVelocity);
+							UiThread.SetInterval(ApplyVelocity, 1.0 / updatesPerSecond, () => !HasBeenClosed && currentVelocityPerMs.LengthSquared > 0);
 						}
 					}
 				}
@@ -384,11 +384,6 @@ namespace MatterHackers.Agg.OpenGlGui
 					if (currentVelocityPerMs.LengthSquared < .01 / msPerUpdate)
 					{
 						currentVelocityPerMs = Vector2.Zero;
-					}
-
-					if (currentVelocityPerMs.LengthSquared > 0)
-					{
-						UiThread.RunOnIdle(ApplyVelocity, 1.0 / updatesPerSecond);
 					}
 				}
 			}
