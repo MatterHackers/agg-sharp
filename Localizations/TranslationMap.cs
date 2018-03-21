@@ -173,13 +173,12 @@ namespace MatterHackers.Localizations
 
 		public AutoGeneratingTranslationMap(string pathToTranslationsFolder, string twoLetterIsoLanguageName = "") : base(pathToTranslationsFolder, twoLetterIsoLanguageName)
 		{
-			string relativePath = Path.Combine(pathToTranslationsFolder, "Master.txt");
-			this.masterFilePath = AggContext.StaticData.MapPath(relativePath);
+			masterFilePath = Path.Combine(pathToTranslationsFolder, "Master.txt");
 
 			// Override the default logic and load master.txt in English debug builds
 			if (this.TwoLetterIsoLanguageName == "en")
 			{
-				translationDictionary = ReadIntoDictionary(relativePath);
+				translationDictionary = ReadIntoDictionary(masterFilePath);
 			}
 		}
 
