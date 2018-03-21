@@ -59,7 +59,7 @@ namespace MatterHackers.Agg.UI
 						// we just turned it on so make sure the update is being called
 						lastTimeUpdated = 0;
 						runningTime.Restart();
-						UiThread.RunOnIdle(UpdateAnimation);
+						UiThread.SetInterval(UpdateAnimation, .01, () => RunAnimation);
 					}
 				}
 			}
@@ -112,11 +112,6 @@ namespace MatterHackers.Agg.UI
 				lastTimeUpdated = runningTime.Elapsed.TotalSeconds;
 				currentFrame = (1 + CurrentFrame) % imageSequence.NumFrames;
 				Invalidate();
-			}
-
-			if (RunAnimation)
-			{
-				UiThread.RunOnIdle(UpdateAnimation);
 			}
 		}
 

@@ -69,6 +69,30 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Repeats a given action at every given time-interval.
+		/// </summary>
+		/// <param name="action"></param>
+		/// <param name="intervalInSeconds"></param>
+		/// <returns>Action to call to canelel interval</returns>
+		public static void SetInterval(Action action, double intervalInSeconds, Func<bool> continueInterval)
+		{
+			Action IntervalFunction = null;
+			IntervalFunction = () =>
+			{
+				if(continueInterval == null
+					|| continueInterval.Invoke())
+				{
+					RunOnIdle(action, intervalInSeconds);
+					RunOnIdle(IntervalFunction, intervalInSeconds);
+				}
+			};
+
+			// queue the next call and the event to run on uithread
+			RunOnIdle(action, intervalInSeconds);
+			RunOnIdle(IntervalFunction, intervalInSeconds);
+		}
+
 		public static void RunOnIdle(Action action)
 		{
 			lock (locker)
