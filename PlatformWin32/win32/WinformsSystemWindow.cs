@@ -660,7 +660,15 @@ namespace MatterHackers.Agg.UI
 
 		public void Invalidate(RectangleDouble rectToInvalidate)
 		{
-			this.Invalidate();
+			// Ignore problems with buggy WinForms on Linux
+			try
+			{
+				this.Invalidate ();
+			}
+			catch (Exception e)
+			{
+				System.Console.WriteLine("WinForms Exception: " + e.Message);
+			}
 		}
 
 		public void SetCursor(Cursors cursorToSet)
