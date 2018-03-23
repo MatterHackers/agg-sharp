@@ -732,5 +732,4 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			Assert.IsTrue(testMesh.Equals(copyMesh));
 		}
 	}
-
 }

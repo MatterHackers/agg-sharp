@@ -33,14 +33,11 @@ Optimized and refactored by: Lars Brubaker (larsbrubaker@matterhackers.com)
 Project: https://github.com/MatterHackers/agg-sharp (an included library)
 */
 
-using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
-using System.Text;
-using System.IO;
+using MatterHackers.VectorMath;
 
 namespace Net3dBool
 {
@@ -54,17 +51,22 @@ namespace Net3dBool
 	public class Object3D
 	{
 		/// <summary>
+		/// solid faces
+		/// </summary>
+		public Octree<Face> Faces;
+
+		/// <summary>
 		/// tolerance value to test equalities
 		/// </summary>
 		private readonly static double EqualityTolerance = 1e-10f;
+
+		private Dictionary<long, int> addedVertices = new Dictionary<long, int>();
+
 		/// <summary>
 		/// object representing the solid extremes
 		/// </summary>
 		private AxisAlignedBoundingBox bound;
-		/// <summary>
-		/// solid faces
-		/// </summary>
-		public Octree<Face> Faces;
+
 		/// <summary>
 		/// solid vertices
 		/// </summary>
@@ -133,7 +135,7 @@ namespace Net3dBool
 			}
 
 			//for each face
-			foreach(Face face in Faces.AllObjects())
+			foreach (Face face in Faces.AllObjects())
 			{
 				//if the face vertices aren't classified to make the simple classify
 				if (face.SimpleClassify() == false)
@@ -181,18 +183,13 @@ namespace Net3dBool
 			}
 		}
 
-		public interface IFaceDebug
-		{
-			void Evaluate(Face face);
-		}
-
 		/// <summary>
 		/// Split faces so that no face is intercepted by a face of other object
 		/// </summary>
 		/// <param name="compareObject">the other object 3d used to make the split</param>
-		public void SplitFaces(Object3D compareObject, CancellationToken cancellationToken, 
-			IFaceDebug splitFaceDelegate = null,
-			IFaceDebug cuttingFaceDelegate = null)
+		public void SplitFaces(Object3D compareObject, CancellationToken cancellationToken,
+			Action<Vector3[]> splitFaces = null,
+			Action<Vector3[]> cuttingFaces = null)
 		{
 			Stack<Face> facesFromSplit = new Stack<Face>();
 
@@ -212,14 +209,14 @@ namespace Net3dBool
 				{
 					var faceToSplit = facesFromSplit.Pop();
 
-					splitFaceDelegate?.Evaluate(faceToSplit);
+					splitFaces?.Invoke(new Vector3[] { faceToSplit.v1.Position, faceToSplit.v2.Position, faceToSplit.v3.Position });
 					cancellationToken.ThrowIfCancellationRequested();
 
 					//if object1 face bound and object2 bound overlap ...
 					//for each object2 face...
 					foreach (Face cuttingFace in compareObject.Faces.SearchBounds(new Bounds(faceToSplit.GetBound())))
 					{
-						cuttingFaceDelegate?.Evaluate(cuttingFace);
+						cuttingFaces?.Invoke(new Vector3[] { cuttingFace.v1.Position, cuttingFace.v2.Position, cuttingFace.v3.Position });
 						//if object1 face bound and object2 face bound overlap...
 						//PART I - DO TWO POLIGONS INTERSECT?
 						//POSSIBLE RESULTS: INTERSECT, NOT_INTERSECT, COPLANAR
@@ -265,7 +262,7 @@ namespace Net3dBool
 								{
 									//PART II - SUBDIVIDING NON-COPLANAR POLYGONS
 									int facesBeforeSplit = facesFromSplit.Count;
-									if(this.SplitFace(faceToSplit, segment1, segment2, facesFromSplit))
+									if (this.SplitFace(faceToSplit, segment1, segment2, facesFromSplit))
 									{
 										//prevent from infinite loop (with a loss of faces...)
 										if (Faces.Count > numFacesStart * 100)
@@ -285,6 +282,22 @@ namespace Net3dBool
 					}
 				}
 			}
+		}
+
+		private Face AddFace(Vertex v1, Vertex v2, Vertex v3)
+		{
+			if (!(v1.Equals(v2) || v1.Equals(v3) || v2.Equals(v3)))
+			{
+				Face face = new Face(v1, v2, v3);
+				if (face.GetArea() > EqualityTolerance)
+				{
+					Faces.Insert(face, new Bounds(face.GetBound()));
+
+					return face;
+				}
+			}
+
+			return null;
 		}
 
 		/// <summary>
@@ -325,24 +338,6 @@ namespace Net3dBool
 
 			return null;
 		}
-
-		private Face AddFace(Vertex v1, Vertex v2, Vertex v3)
-		{
-			if (!(v1.Equals(v2) || v1.Equals(v3) || v2.Equals(v3)))
-			{
-				Face face = new Face(v1, v2, v3);
-				if (face.GetArea() > EqualityTolerance)
-				{
-					Faces.Insert(face, new Bounds(face.GetBound()));
-
-					return face;
-				}
-			}
-
-			return null;
-		}
-
-		Dictionary<long, int> addedVertices = new Dictionary<long, int>();
 
 		/// <summary>
 		/// Method used to add a vertex properly for internal methods
@@ -541,8 +536,8 @@ namespace Net3dBool
 					return true;
 				}
 			}
-			
-			if(vertex2 == vertices[vertices.Count-1])
+
+			if (vertex2 == vertices[vertices.Count - 1])
 				vertices.RemoveAt(vertices.Count - 1);
 			if (vertex1 == vertices[vertices.Count - 1])
 				vertices.RemoveAt(vertices.Count - 1);
@@ -565,7 +560,7 @@ namespace Net3dBool
 			//  -  *   *  -
 			// O-*--------*O
 			Vertex vertex = AddVertex(newPos, Status.BOUNDARY);
-			if(face.v1.Position == vertex.Position
+			if (face.v1.Position == vertex.Position
 				|| face.v2.Position == vertex.Position
 				|| face.v2.Position == vertex.Position) // it is not new
 			{
