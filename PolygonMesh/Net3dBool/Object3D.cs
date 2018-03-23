@@ -188,10 +188,10 @@ namespace Net3dBool
 		/// </summary>
 		/// <param name="compareObject">the other object 3d used to make the split</param>
 		public void SplitFaces(Object3D compareObject, CancellationToken cancellationToken,
-			Action<Vector3[]> splitFaces = null,
-			Action<Vector3[]> cuttingFaces = null)
+			Action<Vector3[], Vector3[]> splitFaces = null,
+			Action<List<Vector3[]>> results = null)
 		{
-			Stack<Face> facesFromSplit = new Stack<Face>();
+			Stack<Face> newFacesFromSplitting = new Stack<Face>();
 
 			Segment segment1;
 			Segment segment2;
@@ -203,20 +203,18 @@ namespace Net3dBool
 			var bounds = new Bounds(compareObject.GetBound());
 			foreach (Face thisFaceIn in Faces.SearchBounds(bounds).ToArray()) // put it in an array as we will be adding new faces to it
 			{
-				facesFromSplit.Push(thisFaceIn);
+				newFacesFromSplitting.Push(thisFaceIn);
 				// make sure we processe every face that we have added durring splitting befor moving on to the next face
-				while (facesFromSplit.Count > 0)
+				while (newFacesFromSplitting.Count > 0)
 				{
-					var faceToSplit = facesFromSplit.Pop();
+					var faceToSplit = newFacesFromSplitting.Pop();
 
-					splitFaces?.Invoke(new Vector3[] { faceToSplit.v1.Position, faceToSplit.v2.Position, faceToSplit.v3.Position });
 					cancellationToken.ThrowIfCancellationRequested();
 
 					//if object1 face bound and object2 bound overlap ...
 					//for each object2 face...
 					foreach (Face cuttingFace in compareObject.Faces.SearchBounds(new Bounds(faceToSplit.GetBound())))
 					{
-						cuttingFaces?.Invoke(new Vector3[] { cuttingFace.v1.Position, cuttingFace.v2.Position, cuttingFace.v3.Position });
 						//if object1 face bound and object2 face bound overlap...
 						//PART I - DO TWO POLIGONS INTERSECT?
 						//POSSIBLE RESULTS: INTERSECT, NOT_INTERSECT, COPLANAR
@@ -261,18 +259,28 @@ namespace Net3dBool
 								if (segment1.Intersect(segment2))
 								{
 									//PART II - SUBDIVIDING NON-COPLANAR POLYGONS
-									int facesBeforeSplit = facesFromSplit.Count;
+									Stack<Face> facesFromSplit = new Stack<Face>();
+
 									if (this.SplitFace(faceToSplit, segment1, segment2, facesFromSplit))
 									{
-										//prevent from infinite loop (with a loss of faces...)
-										if (Faces.Count > numFacesStart * 100)
+										if (facesFromSplit.Count > 0)
 										{
-											//System.out.println("possible infinite loop situation: terminating faces split");
-											//return;
-										}
+											foreach (var face in facesFromSplit)
+											{
+												newFacesFromSplitting.Push(face);
+											}
 
-										if (facesFromSplit.Count > facesBeforeSplit)
-										{
+											splitFaces?.Invoke(faceToSplit.Positions(), cuttingFace.Positions());
+
+											results?.Invoke(facesFromSplit.Select((f) => f.Positions()).ToList());
+
+											//prevent from infinite loop (with a loss of faces...)
+											if (Faces.Count > numFacesStart * 100)
+											{
+												//System.out.println("possible infinite loop situation: terminating faces split");
+												//return;
+											}
+
 											break;
 										}
 									}
@@ -769,59 +777,59 @@ namespace Net3dBool
 		private bool SplitFace(Face face, Segment segment1, Segment segment2, Stack<Face> facesFromSplit)
 		{
 			Vector3 startPos, endPos;
-			int startType, endType, middleType;
+			SegmentEnd startType, endType, middleType;
 			double startDist, endDist;
 
-			Vertex startVertex = segment1.GetStartVertex();
-			Vertex endVertex = segment1.GetEndVertex();
+			Vertex startVertex = segment1.StartVertex;
+			Vertex endVertex = segment1.EndVertex;
 
 			//starting point: deeper starting point
-			if (segment2.StartDist > segment1.StartDist + EqualityTolerance)
+			if (segment2.StartDistance > segment1.StartDistance + EqualityTolerance)
 			{
-				startDist = segment2.StartDist;
-				startType = segment1.GetIntermediateType();
-				startPos = segment2.GetStartPosition();
+				startDist = segment2.StartDistance;
+				startType = segment1.MiddleType;
+				startPos = segment2.StartPosition;
 			}
 			else
 			{
-				startDist = segment1.StartDist;
-				startType = segment1.GetStartType();
-				startPos = segment1.GetStartPosition();
+				startDist = segment1.StartDistance;
+				startType = segment1.StartType;
+				startPos = segment1.StartPosition;
 			}
 
 			//ending point: deepest ending point
-			if (segment2.GetEndDistance() < segment1.GetEndDistance() - EqualityTolerance)
+			if (segment2.EndDistance < segment1.EndDistance - EqualityTolerance)
 			{
-				endDist = segment2.GetEndDistance();
-				endType = segment1.GetIntermediateType();
-				endPos = segment2.GetEndPosition();
+				endDist = segment2.EndDistance;
+				endType = segment1.MiddleType;
+				endPos = segment2.EndPosition;
 			}
 			else
 			{
-				endDist = segment1.GetEndDistance();
-				endType = segment1.GetEndType();
-				endPos = segment1.GetEndPosition();
+				endDist = segment1.EndDistance;
+				endType = segment1.EndType;
+				endPos = segment1.EndPosition;
 			}
-			middleType = segment1.GetIntermediateType();
+			middleType = segment1.MiddleType;
 
-			if (startType == Segment.VERTEX)
+			if (startType == SegmentEnd.Vertex)
 			{
 				//set vertex to BOUNDARY if it is start type
 				startVertex.SetStatus(Status.BOUNDARY);
 			}
 
-			if (endType == Segment.VERTEX)
+			if (endType == SegmentEnd.Vertex)
 			{
 				//set vertex to BOUNDARY if it is end type
 				endVertex.SetStatus(Status.BOUNDARY);
 			}
 
-			if (startType == Segment.VERTEX && endType == Segment.VERTEX)
+			if (startType == SegmentEnd.Vertex && endType == SegmentEnd.Vertex)
 			{
 				//VERTEX-_______-VERTEX
 				return false;
 			}
-			else if (middleType == Segment.EDGE)
+			else if (middleType == SegmentEnd.Edge)
 			{
 				//______-EDGE-______
 				//gets the edge
@@ -839,12 +847,12 @@ namespace Net3dBool
 					splitEdge = 3;
 				}
 
-				if (startType == Segment.VERTEX)
+				if (startType == SegmentEnd.Vertex)
 				{
 					//VERTEX-EDGE-EDGE
 					return BreakFaceInTwo(face, endPos, splitEdge, facesFromSplit);
 				}
-				else if (endType == Segment.VERTEX)
+				else if (endType == SegmentEnd.Vertex)
 				{
 					//EDGE-EDGE-VERTEX
 					return BreakFaceInTwo(face, startPos, splitEdge, facesFromSplit);
@@ -867,42 +875,42 @@ namespace Net3dBool
 				}
 			}
 			//______-FACE-______
-			else if (startType == Segment.VERTEX && endType == Segment.EDGE)
+			else if (startType == SegmentEnd.Vertex && endType == SegmentEnd.Edge)
 			{
 				//VERTEX-FACE-EDGE
 				return BreakFaceInTwo(face, endPos, endVertex, facesFromSplit);
 			}
-			else if (startType == Segment.EDGE && endType == Segment.VERTEX)
+			else if (startType == SegmentEnd.Edge && endType == SegmentEnd.Vertex)
 			{
 				//EDGE-FACE-VERTEX
 				return BreakFaceInTwo(face, startPos, startVertex, facesFromSplit);
 			}
-			else if (startType == Segment.VERTEX && endType == Segment.FACE)
+			else if (startType == SegmentEnd.Vertex && endType == SegmentEnd.Face)
 			{
 				//VERTEX-FACE-FACE
 				return BreakFaceInThree(face, endPos, facesFromSplit);
 			}
-			else if (startType == Segment.FACE && endType == Segment.VERTEX)
+			else if (startType == SegmentEnd.Face && endType == SegmentEnd.Vertex)
 			{
 				//FACE-FACE-VERTEX
 				return BreakFaceInThree(face, startPos, facesFromSplit);
 			}
-			else if (startType == Segment.EDGE && endType == Segment.EDGE)
+			else if (startType == SegmentEnd.Edge && endType == SegmentEnd.Edge)
 			{
 				//EDGE-FACE-EDGE
 				return BreakFaceInThree(face, startPos, endPos, startVertex, endVertex, facesFromSplit);
 			}
-			else if (startType == Segment.EDGE && endType == Segment.FACE)
+			else if (startType == SegmentEnd.Edge && endType == SegmentEnd.Face)
 			{
 				//EDGE-FACE-FACE
 				return BreakFaceInFour(face, startPos, endPos, startVertex, facesFromSplit);
 			}
-			else if (startType == Segment.FACE && endType == Segment.EDGE)
+			else if (startType == SegmentEnd.Face && endType == SegmentEnd.Edge)
 			{
 				//FACE-FACE-EDGE
 				return BreakFaceInFour(face, endPos, startPos, endVertex, facesFromSplit);
 			}
-			else if (startType == Segment.FACE && endType == Segment.FACE)
+			else if (startType == SegmentEnd.Face && endType == SegmentEnd.Face)
 			{
 				//FACE-FACE-FACE
 				Vector3 segmentVector = new Vector3(startPos.X - endPos.X, startPos.Y - endPos.Y, startPos.Z - endPos.Z);

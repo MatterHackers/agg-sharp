@@ -144,10 +144,10 @@ namespace MatterHackers.PolygonMesh.Csg
 		}
 
 		public static Mesh Subtract(this Mesh a, Mesh b, Action<string, double> reporter, CancellationToken cancellationToken,
-			Action<Vector3[]> object1CuttingFaces = null,
-			Action<Vector3[]> object1SplitFaces = null,
-			Action<Vector3[]> object2CuttingFaces = null,
-			Action<Vector3[]> object2SplitFaces = null)
+			Action<Vector3[], Vector3[]> object1SplitFaces = null,
+			Action<List<Vector3[]>> object1SplitResults = null,
+			Action<Vector3[], Vector3[]> object2SplitFaces = null,
+			Action<List<Vector3[]>> object2SplitResults = null)
 		{
 			if (a.Faces.Count == 0)
 			{
@@ -171,9 +171,9 @@ namespace MatterHackers.PolygonMesh.Csg
 				reporter?.Invoke(status, .4 + progress0To1 * .2);
 			}, cancellationToken)
 			{
-				Object1CuttingFaces = object1CuttingFaces,
+				Object1SplitResults = object1SplitResults,
 				Object1SplitFaces = object1SplitFaces,
-				Object2CuttingFaces = object2CuttingFaces,
+				Object2SplitResults = object2SplitResults,
 				Object2SplitFaces = object2SplitFaces,
 			};
 

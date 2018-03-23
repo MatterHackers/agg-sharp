@@ -94,10 +94,10 @@ namespace Net3dBool
 			{
 				//split the faces so that none of them intercepts each other
 				reporter?.Invoke("Split Faces1", 0.4);
-				object1.SplitFaces(object2, cancellationToken, Object1SplitFaces, Object1CuttingFaces);
+				object1.SplitFaces(object2, cancellationToken, Object1SplitFaces, Object1SplitResults);
 
 				reporter?.Invoke("Split Faces2", 0.6);
-				object2.SplitFaces(object1Copy, cancellationToken, Object2SplitFaces, Object2CuttingFaces);
+				object2.SplitFaces(object1Copy, cancellationToken, Object2SplitFaces, Object2SplitResults);
 				// free the momory
 				object1Copy = null;
 
@@ -116,10 +116,10 @@ namespace Net3dBool
 		{
 		}
 
-		public Action<Vector3[]> Object1CuttingFaces { get; set; } = null;
-		public Action<Vector3[]> Object1SplitFaces { get; set; } = null;
-		public Action<Vector3[]> Object2CuttingFaces { get; set; } = null;
-		public Action<Vector3[]> Object2SplitFaces { get; set; } = null;
+		public Action<List<Vector3[]>> Object1SplitResults { get; set; } = null;
+		public Action<Vector3[], Vector3[]> Object1SplitFaces { get; set; } = null;
+		public Action<List<Vector3[]>> Object2SplitResults { get; set; } = null;
+		public Action<Vector3[], Vector3[]> Object2SplitFaces { get; set; } = null;
 		//-------------------------------BOOLEAN_OPERATIONS-----------------------------//
 
 		/**
