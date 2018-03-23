@@ -79,7 +79,7 @@ namespace MatterHackers.Agg.UI
 			base.OnClosed(e);
 
 			// Invoke Close on our PlatformWindow and release our reference when complete
-			systemWindowProvider.CloseSystemWindow(this);
+			systemWindowProvider?.CloseSystemWindow(this);
 			this.PlatformWindow = null;
 		}
 
