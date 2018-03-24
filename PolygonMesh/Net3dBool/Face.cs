@@ -307,6 +307,11 @@ namespace Net3dBool
 			}
 		}
 
+		public Vector3[] Positions()
+		{
+			return new Vector3[] { v1.Position, v2.Position, v3.Position };
+		}
+
 		/// <summary>
 		/// Classifies the face if one of its vertices are classified as INSIDE or OUTSIDE
 		/// </summary>

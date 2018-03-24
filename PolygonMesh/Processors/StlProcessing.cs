@@ -39,7 +39,7 @@ namespace MatterHackers.PolygonMesh.Processors
 {
 	public static class StlProcessing
 	{
-		public static bool Save(Mesh meshToSave, string fileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null)
+		public static bool Save(this Mesh meshToSave, string fileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null)
 		{
 			using (FileStream file = new FileStream(fileName, FileMode.Create, FileAccess.Write))
 			{
