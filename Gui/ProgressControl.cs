@@ -33,8 +33,6 @@ namespace MatterHackers.Agg.UI
 {
 	public class ProgressBar : GuiWidget
 	{
-		public Color BorderColor { get; set; } = Color.Black;
-
 		public Color FillColor { get; set; }
 
 		public event EventHandler ProgressChanged;
@@ -43,6 +41,7 @@ namespace MatterHackers.Agg.UI
 
 		public ProgressBar()
 		{
+			this.BorderColor = Color.Black;
 		}
 
 		public ProgressBar(int width, int height)
