@@ -112,6 +112,20 @@ namespace Net3dBool
 			return clone;
 		}
 
+		/// <summary>
+		/// Computes closest distance from a vertex to a plane
+		/// </summary>
+		/// <param name="vertex">vertex used to compute the distance</param>
+		/// <param name="face">face representing the plane where it is contained</param>
+		/// <returns>the closest distance from the vertex to the plane</returns>
+		public double DistanceFromPlane(Vertex vertex)
+		{
+			double distToV1 = this.Plane.DistanceToPlaneFromOrigin;
+			double distToVertex = Vector3.Dot(Normal, vertex.Position);
+			double distFromFacePlane = distToVertex - distToV1;
+			return distFromFacePlane;
+		}
+
 		/**
      * Makes a string definition for the Face object
      *
@@ -164,22 +178,28 @@ namespace Net3dBool
 			return boundCache;
 		}
 
-		public Plane GetPlane()
+		public Plane Plane
 		{
-			if (planeCache.PlaneNormal == Vector3.Zero)
+			get
 			{
-				Vector3 p1 = v1.GetPosition();
-				Vector3 p2 = v2.GetPosition();
-				Vector3 p3 = v3.GetPosition();
-				planeCache = new Plane(p1, p2, p3);
-			}
+				if (planeCache.PlaneNormal == Vector3.Zero)
+				{
+					Vector3 p1 = v1.GetPosition();
+					Vector3 p2 = v2.GetPosition();
+					Vector3 p3 = v3.GetPosition();
+					planeCache = new Plane(p1, p2, p3);
+				}
 
-			return planeCache;
+				return planeCache;
+			}
 		}
 
-		public Vector3 GetNormal()
+		public Vector3 Normal
 		{
-			return GetPlane().PlaneNormal;
+			get
+			{
+				return Plane.PlaneNormal;
+			}
 		}
 
 		public Status GetStatus()
@@ -203,7 +223,7 @@ namespace Net3dBool
 			var random = new Random();
 
 			//creating a ray starting at the face baricenter going to the normal direction
-			Ray ray = new Ray(center, GetNormal());
+			Ray ray = new Ray(center, Normal);
 			//Line ray = new Line(GetNormal(), center);
 			ray.PerturbDirection(random);
 
@@ -225,9 +245,9 @@ namespace Net3dBool
 					bool front;
 
 					//if ray intersects the plane...
-					if (face.GetPlane().RayHitPlane(ray, out hitDistance, out front))
+					if (face.Plane.RayHitPlane(ray, out hitDistance, out front))
 					{
-						double dotProduct = Vector3.Dot(face.GetNormal(), ray.directionNormal);
+						double dotProduct = Vector3.Dot(face.Normal, ray.directionNormal);
 						distance = hitDistance;
 						intersectionPoint = ray.origin + ray.directionNormal * hitDistance;
 						ray.maxDistanceToConsider = hitDistance;
@@ -280,7 +300,7 @@ namespace Net3dBool
 			}
 			else //face found: test dot product
 			{
-				double dotProduct = Vector3.Dot(closestFace.GetNormal(), ray.directionNormal);
+				double dotProduct = Vector3.Dot(closestFace.Normal, ray.directionNormal);
 
 				//distance = 0: coplanar faces
 				if (Math.Abs(closestDistance) < EqualityTolerance)
@@ -495,10 +515,9 @@ namespace Net3dBool
 			Side result1;
 			Side result2;
 			Side result3;
-			Vector3 normal = GetNormal();
 
 			//if x is constant...
-			if (Math.Abs(normal.X) > EqualityTolerance)
+			if (Math.Abs(Normal.X) > EqualityTolerance)
 			{
 				//tests on the x plane
 				result1 = LinePositionInX(point, v1.GetPosition(), v2.GetPosition());
@@ -507,7 +526,7 @@ namespace Net3dBool
 			}
 
 			//if y is constant...
-			else if (Math.Abs(normal.Y) > EqualityTolerance)
+			else if (Math.Abs(Normal.Y) > EqualityTolerance)
 			{
 				//tests on the y plane
 				result1 = LinePositionInY(point, v1.GetPosition(), v2.GetPosition());

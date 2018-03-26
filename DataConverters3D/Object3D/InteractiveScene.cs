@@ -239,7 +239,7 @@ namespace MatterHackers.DataConverters3D
 
 		private void SourceItem_Invalidated(object sender, EventArgs e)
 		{
-			this.Invalidated(this, e);
+			this.Invalidated?.Invoke(this, e);
 		}
 
 		#region IObject3D
