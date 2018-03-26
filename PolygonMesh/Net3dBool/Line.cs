@@ -57,8 +57,8 @@ namespace Net3dBool
 		/// <param name="face2">face representing one of the planes</param>
 		public Line(Face face1, Face face2)
 		{
-			Vector3 normalFace1 = face1.GetNormal();
-			Vector3 normalFace2 = face2.GetNormal();
+			Vector3 normalFace1 = face1.Normal;
+			Vector3 normalFace2 = face2.Normal;
 
 			//direction: cross product of the faces normals
 			Direction = Vector3.Cross(normalFace1, normalFace2);

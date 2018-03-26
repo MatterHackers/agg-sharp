@@ -220,9 +220,9 @@ namespace Net3dBool
 						//POSSIBLE RESULTS: INTERSECT, NOT_INTERSECT, COPLANAR
 
 						//distance from the face1 vertices to the face2 plane
-						double v1DistToCompareFace = ComputeDistance(faceToSplit.v1, cuttingFace);
-						double v2DistToCompareFace = ComputeDistance(faceToSplit.v2, cuttingFace);
-						double v3DistToCompareFace = ComputeDistance(faceToSplit.v3, cuttingFace);
+						double v1DistToCompareFace = cuttingFace.ComputeDistance(faceToSplit.v1);
+						double v2DistToCompareFace = cuttingFace.ComputeDistance(faceToSplit.v2);
+						double v3DistToCompareFace = cuttingFace.ComputeDistance(faceToSplit.v3);
 
 						//distances signs from the face1 vertices to the face2 plane
 						signFace1Vert1 = (v1DistToCompareFace > EqualityTolerance ? 1 : (v1DistToCompareFace < -EqualityTolerance ? -1 : 0));
@@ -235,9 +235,9 @@ namespace Net3dBool
 						if (!(signFace1Vert1 == signFace1Vert2 && signFace1Vert2 == signFace1Vert3))
 						{
 							//distance from the face2 vertices to the face1 plane
-							double distFace2Vert1 = ComputeDistance(cuttingFace.v1, faceToSplit);
-							double distFace2Vert2 = ComputeDistance(cuttingFace.v2, faceToSplit);
-							double distFace2Vert3 = ComputeDistance(cuttingFace.v3, faceToSplit);
+							double distFace2Vert1 = faceToSplit.ComputeDistance(cuttingFace.v1);
+							double distFace2Vert2 = faceToSplit.ComputeDistance(cuttingFace.v2);
+							double distFace2Vert3 = faceToSplit.ComputeDistance(cuttingFace.v3);
 
 							//distances signs from the face2 vertices to the face1 plane
 							signFace2Vert1 = (distFace2Vert1 > EqualityTolerance ? 1 : (distFace2Vert1 < -EqualityTolerance ? -1 : 0));
@@ -751,21 +751,6 @@ namespace Net3dBool
 			}
 
 			return false;
-		}
-
-		/// <summary>
-		/// Computes closest distance from a vertex to a plane
-		/// </summary>
-		/// <param name="vertex">vertex used to compute the distance</param>
-		/// <param name="face">face representing the plane where it is contained</param>
-		/// <returns>the closest distance from the vertex to the plane</returns>
-		private double ComputeDistance(Vertex vertex, Face face)
-		{
-			Vector3 normal = face.GetNormal();
-			double distToV1 = face.GetPlane().DistanceToPlaneFromOrigin;
-			double distToVertex = Vector3.Dot(normal, vertex.Position);
-			double distFromFacePlane = distToVertex - distToV1;
-			return distFromFacePlane;
 		}
 
 		/// <summary>
