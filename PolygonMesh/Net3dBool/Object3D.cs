@@ -41,6 +41,7 @@ using MatterHackers.VectorMath;
 
 namespace Net3dBool
 {
+	public enum PlaneSide { Back, On, Front };
 	/// <summary>
 	/// Data structure about a 3d solid to apply boolean operations in it.
 	/// Tipically, two 'Object3d' objects are created to apply boolean operation. The
@@ -193,9 +194,7 @@ namespace Net3dBool
 		{
 			Stack<Face> newFacesFromSplitting = new Stack<Face>();
 
-			Segment segment1;
-			Segment segment2;
-			int signFace1Vert1, signFace1Vert2, signFace1Vert3, signFace2Vert1, signFace2Vert2, signFace2Vert3;
+			PlaneSide sideFace1Vert1, sideFace1Vert2, sideFace1Vert3, signFace2Vert1, signFace2Vert2, signFace2Vert3;
 			int numFacesStart = this.Faces.Count;
 
 			//if the objects bounds overlap...
@@ -220,29 +219,29 @@ namespace Net3dBool
 						//POSSIBLE RESULTS: INTERSECT, NOT_INTERSECT, COPLANAR
 
 						//distance from the face1 vertices to the face2 plane
-						double v1DistToCompareFace = cuttingFace.ComputeDistance(faceToSplit.v1);
-						double v2DistToCompareFace = cuttingFace.ComputeDistance(faceToSplit.v2);
-						double v3DistToCompareFace = cuttingFace.ComputeDistance(faceToSplit.v3);
+						double v1DistToCuttingFace = cuttingFace.DistanceFromPlane(faceToSplit.v1);
+						double v2DistToCuttingFace = cuttingFace.DistanceFromPlane(faceToSplit.v2);
+						double v3DistToCuttingFace = cuttingFace.DistanceFromPlane(faceToSplit.v3);
 
 						//distances signs from the face1 vertices to the face2 plane
-						signFace1Vert1 = (v1DistToCompareFace > EqualityTolerance ? 1 : (v1DistToCompareFace < -EqualityTolerance ? -1 : 0));
-						signFace1Vert2 = (v2DistToCompareFace > EqualityTolerance ? 1 : (v2DistToCompareFace < -EqualityTolerance ? -1 : 0));
-						signFace1Vert3 = (v3DistToCompareFace > EqualityTolerance ? 1 : (v3DistToCompareFace < -EqualityTolerance ? -1 : 0));
+						sideFace1Vert1 = (v1DistToCuttingFace > EqualityTolerance ? PlaneSide.Front : (v1DistToCuttingFace < -EqualityTolerance ? PlaneSide.Back : PlaneSide.On));
+						sideFace1Vert2 = (v2DistToCuttingFace > EqualityTolerance ? PlaneSide.Front : (v2DistToCuttingFace < -EqualityTolerance ? PlaneSide.Back : PlaneSide.On));
+						sideFace1Vert3 = (v3DistToCuttingFace > EqualityTolerance ? PlaneSide.Front : (v3DistToCuttingFace < -EqualityTolerance ? PlaneSide.Back : PlaneSide.On));
 
 						//if all the signs are zero, the planes are coplanar
 						//if all the signs are positive or negative, the planes do not intersect
 						//if the signs are not equal...
-						if (!(signFace1Vert1 == signFace1Vert2 && signFace1Vert2 == signFace1Vert3))
+						if (!(sideFace1Vert1 == sideFace1Vert2 && sideFace1Vert2 == sideFace1Vert3))
 						{
 							//distance from the face2 vertices to the face1 plane
-							double distFace2Vert1 = faceToSplit.ComputeDistance(cuttingFace.v1);
-							double distFace2Vert2 = faceToSplit.ComputeDistance(cuttingFace.v2);
-							double distFace2Vert3 = faceToSplit.ComputeDistance(cuttingFace.v3);
+							double faceToSplitTo1 = faceToSplit.DistanceFromPlane(cuttingFace.v1);
+							double faceToSplitTo2 = faceToSplit.DistanceFromPlane(cuttingFace.v2);
+							double faceToSplitTo3 = faceToSplit.DistanceFromPlane(cuttingFace.v3);
 
 							//distances signs from the face2 vertices to the face1 plane
-							signFace2Vert1 = (distFace2Vert1 > EqualityTolerance ? 1 : (distFace2Vert1 < -EqualityTolerance ? -1 : 0));
-							signFace2Vert2 = (distFace2Vert2 > EqualityTolerance ? 1 : (distFace2Vert2 < -EqualityTolerance ? -1 : 0));
-							signFace2Vert3 = (distFace2Vert3 > EqualityTolerance ? 1 : (distFace2Vert3 < -EqualityTolerance ? -1 : 0));
+							signFace2Vert1 = (faceToSplitTo1 > EqualityTolerance ? PlaneSide.Front : (faceToSplitTo1 < -EqualityTolerance ? PlaneSide.Back : PlaneSide.On));
+							signFace2Vert2 = (faceToSplitTo2 > EqualityTolerance ? PlaneSide.Front : (faceToSplitTo2 < -EqualityTolerance ? PlaneSide.Back : PlaneSide.On));
+							signFace2Vert3 = (faceToSplitTo3 > EqualityTolerance ? PlaneSide.Front : (faceToSplitTo3 < -EqualityTolerance ? PlaneSide.Back : PlaneSide.On));
 
 							//if the signs are not equal...
 							if (!(signFace2Vert1 == signFace2Vert2 && signFace2Vert2 == signFace2Vert3))
@@ -250,10 +249,10 @@ namespace Net3dBool
 								var line = new Line(faceToSplit, cuttingFace);
 
 								//intersection of the face1 and the plane of face2
-								segment1 = new Segment(line, faceToSplit, signFace1Vert1, signFace1Vert2, signFace1Vert3);
+								var segment1 = new Segment(line, faceToSplit, sideFace1Vert1, sideFace1Vert2, sideFace1Vert3);
 
 								//intersection of the face2 and the plane of face1
-								segment2 = new Segment(line, cuttingFace, signFace2Vert1, signFace2Vert2, signFace2Vert3);
+								var segment2 = new Segment(line, cuttingFace, signFace2Vert1, signFace2Vert2, signFace2Vert3);
 
 								//if the two segments intersect...
 								if (segment1.Intersect(segment2))

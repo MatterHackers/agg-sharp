@@ -118,7 +118,7 @@ namespace Net3dBool
 		/// <param name="vertex">vertex used to compute the distance</param>
 		/// <param name="face">face representing the plane where it is contained</param>
 		/// <returns>the closest distance from the vertex to the plane</returns>
-		public double ComputeDistance(Vertex vertex)
+		public double DistanceFromPlane(Vertex vertex)
 		{
 			double distToV1 = this.Plane.DistanceToPlaneFromOrigin;
 			double distToVertex = Vector3.Dot(Normal, vertex.Position);

@@ -88,39 +88,39 @@ namespace Net3dBool
      * @param sign2 position of the face vertex1 relative to the plane (-1 behind, 1 front, 0 on)
      * @param sign3 position of the face vertex1 relative to the plane (-1 behind, 1 front, 0 on)  
      */
-		public Segment(Line line, Face face, int sign1, int sign2, int sign3)
+		public Segment(Line line, Face face, PlaneSide side1, PlaneSide side2, PlaneSide side3)
 		{
 			this.line = line;
 			index = 0;
 
 			//VERTEX is an end
-			if (sign1 == 0)
+			if (side1 == PlaneSide.On)
 			{
 				SetVertex(face.v1);
 				//other vertices on the same side - VERTEX-VERTEX VERTEX
-				if (sign2 == sign3)
+				if (side2 == side3)
 				{
 					SetVertex(face.v1);
 				}
 			}
 
 			//VERTEX is an end
-			if (sign2 == 0)
+			if (side2 == PlaneSide.On)
 			{
 				SetVertex(face.v2);
 				//other vertices on the same side - VERTEX-VERTEX VERTEX
-				if (sign1 == sign3)
+				if (side1 == side3)
 				{
 					SetVertex(face.v2);
 				}
 			}
 
 			//VERTEX is an end
-			if (sign3 == 0)
+			if (side3 == PlaneSide.On)
 			{
 				SetVertex(face.v3);
 				//other vertices on the same side - VERTEX-VERTEX VERTEX
-				if (sign1 == sign2)
+				if (side1 == side2)
 				{
 					SetVertex(face.v3);
 				}
@@ -130,17 +130,17 @@ namespace Net3dBool
 			if (GetNumEndsSet() != 2)
 			{
 				//EDGE is an end
-				if ((sign1 == 1 && sign2 == -1) || (sign1 == -1 && sign2 == 1))
+				if ((side1 == PlaneSide.Front && side2 == PlaneSide.Back) || (side1 == PlaneSide.Back && side2 == PlaneSide.Front))
 				{
 					SetEdge(face.v1, face.v2);
 				}
 				//EDGE is an end
-				if ((sign2 == 1 && sign3 == -1) || (sign2 == -1 && sign3 == 1))
+				if ((side2 == PlaneSide.Front && side3 == PlaneSide.Back) || (side2 == PlaneSide.Back && side3 == PlaneSide.Front))
 				{
 					SetEdge(face.v2, face.v3);
 				}
 				//EDGE is an end
-				if ((sign3 == 1 && sign1 == -1) || (sign3 == -1 && sign1 == 1))
+				if ((side3 == PlaneSide.Front && side1 == PlaneSide.Back) || (side3 == PlaneSide.Back && side1 == PlaneSide.Front))
 				{
 					SetEdge(face.v3, face.v1);
 				}
