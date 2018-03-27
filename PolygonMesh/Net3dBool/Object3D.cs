@@ -42,6 +42,7 @@ using MatterHackers.VectorMath;
 namespace Net3dBool
 {
 	public enum PlaneSide { Back, On, Front };
+
 	/// <summary>
 	/// Data structure about a 3d solid to apply boolean operations in it.
 	/// Tipically, two 'Object3d' objects are created to apply boolean operation. The
@@ -91,7 +92,7 @@ namespace Net3dBool
 			vertices = new List<Vertex>();
 			for (int i = 0; i < verticesPoints.Length; i++)
 			{
-				vertex = AddVertex(verticesPoints[i], Status.UNKNOWN);
+				vertex = AddVertex(verticesPoints[i], FaceStatus.Unknown);
 				totalBounds.ExpandToInclude(verticesPoints[i]);
 				verticesTemp.Add(vertex);
 			}
@@ -145,17 +146,17 @@ namespace Net3dBool
 					face.RayTraceClassify(otherObject);
 
 					//mark the vertices
-					if (face.v1.GetStatus() == Status.UNKNOWN)
+					if (face.v1.Status == FaceStatus.Unknown)
 					{
-						face.v1.Mark(face.GetStatus());
+						face.v1.Mark(face.Status);
 					}
-					if (face.v2.GetStatus() == Status.UNKNOWN)
+					if (face.v2.Status == FaceStatus.Unknown)
 					{
-						face.v2.Mark(face.GetStatus());
+						face.v2.Mark(face.Status);
 					}
-					if (face.v3.GetStatus() == Status.UNKNOWN)
+					if (face.v3.Status == FaceStatus.Unknown)
 					{
-						face.v3.Mark(face.GetStatus());
+						face.v3.Mark(face.Status);
 					}
 				}
 			}
@@ -177,7 +178,7 @@ namespace Net3dBool
 		{
 			foreach (Face face in Faces.AllObjects())
 			{
-				if (face.GetStatus() == Status.INSIDE)
+				if (face.Status == FaceStatus.Inside)
 				{
 					face.Invert();
 				}
@@ -352,7 +353,7 @@ namespace Net3dBool
 		/// <param name="pos">vertex position</param>
 		/// <param name="status">vertex status</param>
 		/// <returns>The vertex inserted (if a similar vertex already exists, this is returned).</returns>
-		private Vertex AddVertex(Vector3 pos, Status status)
+		private Vertex AddVertex(Vector3 pos, FaceStatus status)
 		{
 			Vertex vertex;
 
@@ -389,10 +390,10 @@ namespace Net3dBool
 			// O-----------O
 			Faces.Remove(face);
 
-			Vertex faceVertex1 = AddVertex(facePos1, Status.BOUNDARY);
+			Vertex faceVertex1 = AddVertex(facePos1, FaceStatus.Boundary);
 			bool faceVertex1Exists = faceVertex1 != vertices[vertices.Count - 1];
 
-			Vertex faceVertex2 = AddVertex(facePos2, Status.BOUNDARY);
+			Vertex faceVertex2 = AddVertex(facePos2, FaceStatus.Boundary);
 			bool faceVertex2Exists = faceVertex2 != vertices[vertices.Count - 1];
 
 			if (faceVertex1Exists && faceVertex2Exists)
@@ -448,9 +449,9 @@ namespace Net3dBool
 			//   -   *   *   -
 			//  - *         * -
 			// 3---------------1
-			Vertex edgeVertex = AddVertex(edgePos, Status.BOUNDARY);
+			Vertex edgeVertex = AddVertex(edgePos, FaceStatus.Boundary);
 			bool edgeExists = edgeVertex != vertices[vertices.Count - 1];
-			Vertex faceVertex = AddVertex(facePos, Status.BOUNDARY);
+			Vertex faceVertex = AddVertex(facePos, FaceStatus.Boundary);
 			bool faceExists = faceVertex != vertices[vertices.Count - 1];
 
 			if (faceExists && edgeExists)
@@ -504,8 +505,8 @@ namespace Net3dBool
 			//  -* ****   -
 			// X-----------O
 
-			Vertex vertex1 = AddVertex(newPos1, Status.BOUNDARY);
-			Vertex vertex2 = AddVertex(newPos2, Status.BOUNDARY);
+			Vertex vertex1 = AddVertex(newPos1, FaceStatus.Boundary);
+			Vertex vertex2 = AddVertex(newPos2, FaceStatus.Boundary);
 
 			if (splitEdge == 1) // vertex 3
 			{
@@ -566,7 +567,7 @@ namespace Net3dBool
 			//   -   X   -
 			//  -  *   *  -
 			// O-*--------*O
-			Vertex vertex = AddVertex(newPos, Status.BOUNDARY);
+			Vertex vertex = AddVertex(newPos, FaceStatus.Boundary);
 			if (face.v1.Position == vertex.Position
 				|| face.v2.Position == vertex.Position
 				|| face.v2.Position == vertex.Position) // it is not new
@@ -603,8 +604,8 @@ namespace Net3dBool
 			// O-----------O
 			Faces.Remove(face);
 
-			Vertex vertex1 = AddVertex(newPos1, Status.BOUNDARY);
-			Vertex vertex2 = AddVertex(newPos2, Status.BOUNDARY);
+			Vertex vertex1 = AddVertex(newPos1, FaceStatus.Boundary);
+			Vertex vertex2 = AddVertex(newPos2, FaceStatus.Boundary);
 
 			if (startVertex.Equals(face.v1) && endVertex.Equals(face.v2))
 			{
@@ -661,7 +662,7 @@ namespace Net3dBool
 			//   -   *   -
 			//  -    *    -
 			// O-----X-----O
-			Vertex vertex = AddVertex(newPos, Status.BOUNDARY);
+			Vertex vertex = AddVertex(newPos, FaceStatus.Boundary);
 
 			if (vertex != vertices[vertices.Count - 1])
 			{
@@ -710,7 +711,7 @@ namespace Net3dBool
 			// O-----------O
 
 			// TODO: make sure we are not creating extra Vertices and not cleaning them up
-			Vertex vertex = AddVertex(newPos, Status.BOUNDARY);
+			Vertex vertex = AddVertex(newPos, FaceStatus.Boundary);
 
 			if (endVertex.Equals(face.v1))
 			{
@@ -799,13 +800,13 @@ namespace Net3dBool
 			if (startType == SegmentEnd.Vertex)
 			{
 				//set vertex to BOUNDARY if it is start type
-				startVertex.SetStatus(Status.BOUNDARY);
+				startVertex.SetStatus(FaceStatus.Boundary);
 			}
 
 			if (endType == SegmentEnd.Vertex)
 			{
 				//set vertex to BOUNDARY if it is end type
-				endVertex.SetStatus(Status.BOUNDARY);
+				endVertex.SetStatus(FaceStatus.Boundary);
 			}
 
 			if (startType == SegmentEnd.Vertex && endType == SegmentEnd.Vertex)
@@ -894,43 +895,43 @@ namespace Net3dBool
 				//FACE-FACE-EDGE
 				return BreakFaceInFour(face, endPos, startPos, endVertex, facesFromSplit);
 			}
-			else if (startType == SegmentEnd.Face && endType == SegmentEnd.Face)
+			else if (startType == SegmentEnd.Face 
+				&& endType == SegmentEnd.Face)
 			{
 				//FACE-FACE-FACE
 				Vector3 segmentVector = new Vector3(startPos.X - endPos.X, startPos.Y - endPos.Y, startPos.Z - endPos.Z);
 
 				//if the intersection segment is a point only...
-				if (Math.Abs(segmentVector.X) < EqualityTolerance && Math.Abs(segmentVector.Y) < EqualityTolerance && Math.Abs(segmentVector.Z) < EqualityTolerance)
+				if (Math.Abs(segmentVector.X) < EqualityTolerance 
+					&& Math.Abs(segmentVector.Y) < EqualityTolerance 
+					&& Math.Abs(segmentVector.Z) < EqualityTolerance)
 				{
 					return BreakFaceInThree(face, startPos, facesFromSplit);
 				}
 
 				//gets the vertex more lined with the intersection segment
+				double dot1 = Math.Abs(Vector3.Dot(segmentVector, (endPos - face.v1.Position).GetNormal()));
+				double dot2 = Math.Abs(Vector3.Dot(segmentVector, (endPos - face.v2.Position).GetNormal()));
+				double dot3 = Math.Abs(Vector3.Dot(segmentVector, (endPos - face.v3.Position).GetNormal()));
+
 				int linedVertex;
 				Vector3 linedVertexPos;
-				Vector3 vertexVector = new Vector3(endPos.X - face.v1.Position.X, endPos.Y - face.v1.Position.Y, endPos.Z - face.v1.Position.Z);
-				vertexVector.Normalize();
-				double dot1 = Math.Abs(Vector3.Dot(segmentVector, vertexVector));
-				vertexVector = new Vector3(endPos.X - face.v2.Position.X, endPos.Y - face.v2.Position.Y, endPos.Z - face.v2.Position.Z);
-				vertexVector.Normalize();
-				double dot2 = Math.Abs(Vector3.Dot(segmentVector, vertexVector));
-				vertexVector = new Vector3(endPos.X - face.v3.Position.X, endPos.Y - face.v3.Position.Y, endPos.Z - face.v3.Position.Z);
-				vertexVector.Normalize();
-				double dot3 = Math.Abs(Vector3.Dot(segmentVector, vertexVector));
-				if (dot1 > dot2 && dot1 > dot3)
+				if (dot1 > dot2 
+					&& dot1 > dot3)
 				{
 					linedVertex = 1;
-					linedVertexPos = face.v1.GetPosition();
+					linedVertexPos = face.v1.Position;
 				}
-				else if (dot2 > dot3 && dot2 > dot1)
+				else if (dot2 > dot3 
+					&& dot2 > dot1)
 				{
 					linedVertex = 2;
-					linedVertexPos = face.v2.GetPosition();
+					linedVertexPos = face.v2.Position;
 				}
 				else
 				{
 					linedVertex = 3;
-					linedVertexPos = face.v3.GetPosition();
+					linedVertexPos = face.v3.Position;
 				}
 
 				// Now find which of the intersection endpoints is nearest to that vertex.

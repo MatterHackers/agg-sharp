@@ -38,41 +38,73 @@ using System;
 
 namespace Net3dBool
 {
-	public enum Status { UNKNOWN, INSIDE, OUTSIDE, SAME, OPPOSITE, BOUNDARY };
+	/// <summary>
+	/// face status relative to a solid
+	/// </summary>
+	public enum FaceStatus
+	{
+		/// <summary>
+		/// face status if it is still unknown
+		/// </summary>
+		Unknown,
+		/// <summary>
+		/// face status if it is inside a solid
+		/// </summary>
+		Inside,
+		/// <summary>
+		/// face status if it is outside a solid
+		/// </summary>
+		Outside,
+		/// <summary>
+		/// face status if it is coincident with a solid face
+		/// </summary>
+		Same,
+		/// <summary>
+		/// face status if it is coincident with a solid face with opposite orientation
+		/// </summary>
+		Opposite,
+		Boundary
+	};
+
+	public enum LineSide
+	{
+		/// <summary>
+		/// point status if it is up relative to an edge
+		/// </summary>
+		Up,
+		/// <summary>
+		/// point status if it is down relative to an edge
+		/// </summary>
+		Down,
+		/// <summary>
+		/// point status if it is on an edge
+		/// </summary>
+		On,
+		/// <summary>
+		/// point status if it isn't up, down or on relative to an edge
+		/// </summary>
+		None
+	};
 
 	/// <summary>
 	/// Representation of a 3D face (triangle).
 	/// </summary>
-	public class Face //: IPrimitive
+	public class Face
 	{
-		/** first vertex */
 		public Vertex v1;
-		/** second vertex */
 		public Vertex v2;
-		/** third vertex */
 		public Vertex v3;
 
 		private Vector3 center;
 
-		/** face status relative to a solid  */
+		/// <summary>
+		/// tolerance value to test equalities
+		/// </summary>
 		private readonly static double EqualityTolerance = 1e-10f;
-		private enum Side { UP, DOWN, ON, NONE };
 		private AxisAlignedBoundingBox boundCache;
 		private bool cachedBounds = false;
 		private Plane planeCache;
-		private Status status;
-
-		/** face status if it is still unknown */
-		/** face status if it is inside a solid */
-		/** face status if it is outside a solid */
-		/** face status if it is coincident with a solid face */
-		/** face status if it is coincident with a solid face with opposite orientation*/
-		/** point status if it is up relative to an edge - see linePositionIn_ methods */
-		/** point status if it is down relative to an edge - see linePositionIn_ methods */
-		/** point status if it is on an edge - see linePositionIn_ methods */
-		/** point status if it isn't up, down or on relative to an edge - see linePositionIn_ methods */
-		/** tolerance value to test equalities */
-		//---------------------------------CONSTRUCTORS---------------------------------//
+		public FaceStatus Status { get; private set; }
 
 		/// <summary>
 		/// Default constructor
@@ -82,7 +114,7 @@ namespace Net3dBool
 		}
 
 		/// <summary>
-		/// * Constructs a face with unknown status.
+		/// Constructs a face with unknown status.
 		/// </summary>
 		/// <param name="v1">a face vertex</param>
 		/// <param name="v2">a face vertex</param>
@@ -94,7 +126,7 @@ namespace Net3dBool
 			this.v3 = v3;
 			center = (v1.Position + v2.Position + v3.Position) / 3.0;
 
-			status = Status.UNKNOWN;
+			Status = FaceStatus.Unknown;
 		}
 
 		/// <summary>
@@ -108,7 +140,7 @@ namespace Net3dBool
 			clone.v2 = v2.Clone();
 			clone.v3 = v3.Clone();
 			clone.center = center;
-			clone.status = status;
+			clone.Status = Status;
 			return clone;
 		}
 
@@ -126,12 +158,6 @@ namespace Net3dBool
 			return distFromFacePlane;
 		}
 
-		/**
-     * Makes a string definition for the Face object
-     *
-     * @return the string definition
-     */
-
 		public bool Equals(Face face)
 		{
 			bool cond1 = v1.Equals(face.v1) && v2.Equals(face.v2) && v3.Equals(face.v3);
@@ -141,22 +167,12 @@ namespace Net3dBool
 			return cond1 || cond2 || cond3;
 		}
 
-		public double GetIntersectCost()
-		{
-			return 350;
-		}
-
-		public Vector3 GetCenter()
-		{
-			return center;
-		}
-
 		public double GetArea()
 		{
 			//area = (a * c * sen(B))/2
-			Vector3 p1 = v1.GetPosition();
-			Vector3 p2 = v2.GetPosition();
-			Vector3 p3 = v3.GetPosition();
+			Vector3 p1 = v1.Position;
+			Vector3 p2 = v2.Position;
+			Vector3 p3 = v3.Position;
 			Vector3 xy = new Vector3(p2.X - p1.X, p2.Y - p1.Y, p2.Z - p1.Z);
 			Vector3 xz = new Vector3(p3.X - p1.X, p3.Y - p1.Y, p3.Z - p1.Z);
 
@@ -171,7 +187,7 @@ namespace Net3dBool
 		{
 			if (!cachedBounds)
 			{
-				boundCache = new AxisAlignedBoundingBox(new Vector3[] { v1.GetPosition(), v2.GetPosition(), v3.GetPosition() });
+				boundCache = new AxisAlignedBoundingBox(new Vector3[] { v1.Position, v2.Position, v3.Position });
 				cachedBounds = true;
 			}
 
@@ -184,9 +200,9 @@ namespace Net3dBool
 			{
 				if (planeCache.PlaneNormal == Vector3.Zero)
 				{
-					Vector3 p1 = v1.GetPosition();
-					Vector3 p2 = v2.GetPosition();
-					Vector3 p3 = v3.GetPosition();
+					Vector3 p1 = v1.Position;
+					Vector3 p2 = v2.Position;
+					Vector3 p3 = v3.Position;
 					planeCache = new Plane(p1, p2, p3);
 				}
 
@@ -194,18 +210,7 @@ namespace Net3dBool
 			}
 		}
 
-		public Vector3 Normal
-		{
-			get
-			{
-				return Plane.PlaneNormal;
-			}
-		}
-
-		public Status GetStatus()
-		{
-			return status;
-		}
+		public Vector3 Normal => Plane.PlaneNormal;
 
 		public void Invert()
 		{
@@ -291,12 +296,11 @@ namespace Net3dBool
 					}
 				}
 			} while (success == false);
-
 			
 			if (closestFace == null)
 			{
 				//none face found: outside face
-				status = Status.OUTSIDE;
+				Status = FaceStatus.Outside;
 			}
 			else //face found: test dot product
 			{
@@ -307,22 +311,22 @@ namespace Net3dBool
 				{
 					if (dotProduct > EqualityTolerance)
 					{
-						status = Status.SAME;
+						Status = FaceStatus.Same;
 					}
 					else if (dotProduct < -EqualityTolerance)
 					{
-						status = Status.OPPOSITE;
+						Status = FaceStatus.Opposite;
 					}
 				}
 				else if (dotProduct > EqualityTolerance)
 				{
 					//dot product > 0 (same direction): inside face
-					status = Status.INSIDE;
+					Status = FaceStatus.Inside;
 				}
 				else if (dotProduct < -EqualityTolerance)
 				{
 					//dot product < 0 (opposite direction): outside face
-					status = Status.OUTSIDE;
+					Status = FaceStatus.Outside;
 				}
 			}
 		}
@@ -338,23 +342,23 @@ namespace Net3dBool
 		/// <returns>true if the face could be classified, false otherwise</returns>
 		public bool SimpleClassify()
 		{
-			Status status1 = v1.GetStatus();
-			Status status2 = v2.GetStatus();
-			Status status3 = v3.GetStatus();
+			FaceStatus status1 = v1.Status;
+			FaceStatus status2 = v2.Status;
+			FaceStatus status3 = v3.Status;
 
-			if (status1 == Status.INSIDE || status1 == Status.OUTSIDE)
+			if (status1 == FaceStatus.Inside || status1 == FaceStatus.Outside)
 			{
-				this.status = status1;
+				this.Status = status1;
 				return true;
 			}
-			else if (status2 == Status.INSIDE || status2 == Status.OUTSIDE)
+			else if (status2 == FaceStatus.Inside || status2 == FaceStatus.Outside)
 			{
-				this.status = status2;
+				this.Status = status2;
 				return true;
 			}
-			else if (status3 == Status.INSIDE || status3 == Status.OUTSIDE)
+			else if (status3 == FaceStatus.Inside || status3 == FaceStatus.Outside)
 			{
-				this.status = status3;
+				this.Status = status3;
 				return true;
 			}
 			else
@@ -365,43 +369,8 @@ namespace Net3dBool
 
 		public override string ToString()
 		{
-			return v1.toString() + "\n" + v2.toString() + "\n" + v3.toString();
+			return v1.ToString() + "\n" + v2.ToString() + "\n" + v3.ToString();
 		}
-
-		/**
-     * Checks if a face is equal to another. To be equal, they have to have equal
-     * vertices in the same order
-     *
-     * @param anObject the other face to be tested
-     * @return true if they are equal, false otherwise.
-     */
-		//-------------------------------------GETS-------------------------------------//
-
-		/**
-     * Gets the face bound
-     *
-     * @return face bound
-     */
-		/**
-     * Gets the face normal
-     *
-     * @return face normal
-     */
-		/**
-     * Gets the face status
-     *
-     * @return face status - UNKNOWN, INSIDE, OUTSIDE, SAME OR OPPOSITE
-     */
-		/**
-     * Gets the face area
-     *
-     * @return face area
-     */
-		//-------------------------------------OTHERS-----------------------------------//
-
-		/** Invert face direction (normal direction) */
-
-		//------------------------------------PRIVATES----------------------------------//
 
 		/// <summary>
 		/// Gets the position of a point relative to a line in the x plane
@@ -410,7 +379,7 @@ namespace Net3dBool
 		/// <param name="pointLine1">one of the line ends</param>
 		/// <param name="pointLine2">one of the line ends</param>
 		/// <returns>position of the point relative to the line - UP, DOWN, ON, NONE</returns>
-		private static Side LinePositionInX(Vector3 point, Vector3 pointLine1, Vector3 pointLine2)
+		private static LineSide LineSideInX(Vector3 point, Vector3 pointLine1, Vector3 pointLine2)
 		{
 			double a, b, z;
 			if ((Math.Abs(pointLine1.Y - pointLine2.Y) > EqualityTolerance) && (((point.Y >= pointLine1.Y) && (point.Y <= pointLine2.Y)) || ((point.Y <= pointLine1.Y) && (point.Y >= pointLine2.Y))))
@@ -420,20 +389,20 @@ namespace Net3dBool
 				z = a * point.Y + b;
 				if (z > point.Z + EqualityTolerance)
 				{
-					return Side.UP;
+					return LineSide.Up;
 				}
 				else if (z < point.Z - EqualityTolerance)
 				{
-					return Side.DOWN;
+					return LineSide.Down;
 				}
 				else
 				{
-					return Side.ON;
+					return LineSide.On;
 				}
 			}
 			else
 			{
-				return Side.NONE;
+				return LineSide.None;
 			}
 		}
 
@@ -444,7 +413,7 @@ namespace Net3dBool
 		/// <param name="pointLine1">one of the line ends</param>
 		/// <param name="pointLine2">one of the line ends</param>
 		/// <returns>position of the point relative to the line - UP, DOWN, ON, NONE</returns>
-		private static Side LinePositionInY(Vector3 point, Vector3 pointLine1, Vector3 pointLine2)
+		private static LineSide LineSideInY(Vector3 point, Vector3 pointLine1, Vector3 pointLine2)
 		{
 			double a, b, z;
 			if ((Math.Abs(pointLine1.X - pointLine2.X) > EqualityTolerance) && (((point.X >= pointLine1.X) && (point.X <= pointLine2.X)) || ((point.X <= pointLine1.X) && (point.X >= pointLine2.X))))
@@ -454,20 +423,20 @@ namespace Net3dBool
 				z = a * point.X + b;
 				if (z > point.Z + EqualityTolerance)
 				{
-					return Side.UP;
+					return LineSide.Up;
 				}
 				else if (z < point.Z - EqualityTolerance)
 				{
-					return Side.DOWN;
+					return LineSide.Down;
 				}
 				else
 				{
-					return Side.ON;
+					return LineSide.On;
 				}
 			}
 			else
 			{
-				return Side.NONE;
+				return LineSide.None;
 			}
 		}
 
@@ -478,7 +447,7 @@ namespace Net3dBool
 		/// <param name="pointLine1">one of the line ends</param>
 		/// <param name="pointLine2">one of the line ends</param>
 		/// <returns>position of the point relative to the line - UP, DOWN, ON, NONE</returns>
-		private static Side LinePositionInZ(Vector3 point, Vector3 pointLine1, Vector3 pointLine2)
+		private static LineSide LineSideInZ(Vector3 point, Vector3 pointLine1, Vector3 pointLine2)
 		{
 			double a, b, y;
 			if ((Math.Abs(pointLine1.X - pointLine2.X) > EqualityTolerance) && (((point.X >= pointLine1.X) && (point.X <= pointLine2.X)) || ((point.X <= pointLine1.X) && (point.X >= pointLine2.X))))
@@ -488,20 +457,20 @@ namespace Net3dBool
 				y = a * point.X + b;
 				if (y > point.Y + EqualityTolerance)
 				{
-					return Side.UP;
+					return LineSide.Up;
 				}
 				else if (y < point.Y - EqualityTolerance)
 				{
-					return Side.DOWN;
+					return LineSide.Down;
 				}
 				else
 				{
-					return Side.ON;
+					return LineSide.On;
 				}
 			}
 			else
 			{
-				return Side.NONE;
+				return LineSide.None;
 			}
 		}
 
@@ -512,42 +481,42 @@ namespace Net3dBool
 		/// <returns>true if the face contains the point, false otherwise</returns>
 		private bool ContainsPoint(Vector3 point)
 		{
-			Side result1;
-			Side result2;
-			Side result3;
+			LineSide result1;
+			LineSide result2;
+			LineSide result3;
 
 			//if x is constant...
 			if (Math.Abs(Normal.X) > EqualityTolerance)
 			{
 				//tests on the x plane
-				result1 = LinePositionInX(point, v1.GetPosition(), v2.GetPosition());
-				result2 = LinePositionInX(point, v2.GetPosition(), v3.GetPosition());
-				result3 = LinePositionInX(point, v3.GetPosition(), v1.GetPosition());
+				result1 = LineSideInX(point, v1.Position, v2.Position);
+				result2 = LineSideInX(point, v2.Position, v3.Position);
+				result3 = LineSideInX(point, v3.Position, v1.Position);
 			}
 
 			//if y is constant...
 			else if (Math.Abs(Normal.Y) > EqualityTolerance)
 			{
 				//tests on the y plane
-				result1 = LinePositionInY(point, v1.GetPosition(), v2.GetPosition());
-				result2 = LinePositionInY(point, v2.GetPosition(), v3.GetPosition());
-				result3 = LinePositionInY(point, v3.GetPosition(), v1.GetPosition());
+				result1 = LineSideInY(point, v1.Position, v2.Position);
+				result2 = LineSideInY(point, v2.Position, v3.Position);
+				result3 = LineSideInY(point, v3.Position, v1.Position);
 			}
 			else
 			{
 				//tests on the z plane
-				result1 = LinePositionInZ(point, v1.GetPosition(), v2.GetPosition());
-				result2 = LinePositionInZ(point, v2.GetPosition(), v3.GetPosition());
-				result3 = LinePositionInZ(point, v3.GetPosition(), v1.GetPosition());
+				result1 = LineSideInZ(point, v1.Position, v2.Position);
+				result2 = LineSideInZ(point, v2.Position, v3.Position);
+				result3 = LineSideInZ(point, v3.Position, v1.Position);
 			}
 
 			//if the point is up and down two lines...
-			if (((result1 == Side.UP) || (result2 == Side.UP) || (result3 == Side.UP)) && ((result1 == Side.DOWN) || (result2 == Side.DOWN) || (result3 == Side.DOWN)))
+			if (((result1 == LineSide.Up) || (result2 == LineSide.Up) || (result3 == LineSide.Up)) && ((result1 == LineSide.Down) || (result2 == LineSide.Down) || (result3 == LineSide.Down)))
 			{
 				return true;
 			}
 			//if the point is on of the lines...
-			else if ((result1 == Side.ON) || (result2 == Side.ON) || (result3 == Side.ON))
+			else if ((result1 == LineSide.On) || (result2 == LineSide.On) || (result3 == LineSide.On))
 			{
 				return true;
 			}
