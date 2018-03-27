@@ -102,7 +102,6 @@ namespace MatterHackers.DataConverters3D
 		{
 			IObject3D root = source ?? new Object3D();
 
-			int totalMeshes = 0;
 			Stopwatch time = Stopwatch.StartNew();
 
 			// LOAD THE MESH DATA
