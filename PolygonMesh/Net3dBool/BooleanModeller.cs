@@ -132,7 +132,7 @@ namespace Net3dBool
 		{
 			PrepareData();
 			object2.InvertInsideFaces();
-			Solid result = ComposeSolid(Status.OUTSIDE, Status.OPPOSITE, Status.INSIDE);
+			Solid result = ComposeSolid(FaceStatus.Outside, FaceStatus.Opposite, FaceStatus.Inside);
 			object2.InvertInsideFaces();
 
 			return result;
@@ -141,13 +141,13 @@ namespace Net3dBool
 		public Solid GetIntersection()
 		{
 			PrepareData();
-			return ComposeSolid(Status.INSIDE, Status.SAME, Status.INSIDE);
+			return ComposeSolid(FaceStatus.Inside, FaceStatus.Same, FaceStatus.Inside);
 		}
 
 		public Solid GetUnion()
 		{
 			PrepareData();
-			return ComposeSolid(Status.OUTSIDE, Status.SAME, Status.OUTSIDE);
+			return ComposeSolid(FaceStatus.Outside, FaceStatus.Same, FaceStatus.Outside);
 		}
 
 		/**
@@ -174,7 +174,7 @@ namespace Net3dBool
      * @param faceStatus3 status expected for the second solid faces
      */
 
-		private Solid ComposeSolid(Status faceStatus1, Status faceStatus2, Status faceStatus3)
+		private Solid ComposeSolid(FaceStatus faceStatus1, FaceStatus faceStatus2, FaceStatus faceStatus3)
 		{
 			var vertices = new List<Vertex>();
 			var indices = new List<int>();
@@ -187,7 +187,7 @@ namespace Net3dBool
 			Vector3[] verticesArray = new Vector3[vertices.Count];
 			for (int i = 0; i < vertices.Count; i++)
 			{
-				verticesArray[i] = vertices[i].GetPosition();
+				verticesArray[i] = vertices[i].Position;
 			}
 			int[] indicesArray = new int[indices.Count];
 			for (int i = 0; i < indices.Count; i++)
@@ -210,13 +210,13 @@ namespace Net3dBool
      * @param faceStatus2 a status expected for the faces used to to fill the data arrays
      */
 
-		private void GroupObjectComponents(Object3D obj, List<Vertex> vertices, List<int> indices, Status faceStatus1, Status faceStatus2)
+		private void GroupObjectComponents(Object3D obj, List<Vertex> vertices, List<int> indices, FaceStatus faceStatus1, FaceStatus faceStatus2)
 		{
 			//for each face..
 			foreach (Face face in obj.Faces.AllObjects())
 			{
 				//if the face status fits with the desired status...
-				if (face.GetStatus() == faceStatus1 || face.GetStatus() == faceStatus2)
+				if (face.Status == faceStatus1 || face.Status == faceStatus2)
 				{
 					//adds the face elements into the arrays
 					Vertex[] faceVerts = { face.v1, face.v2, face.v3 };

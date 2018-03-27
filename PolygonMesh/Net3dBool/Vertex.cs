@@ -42,41 +42,39 @@ using System.Linq;
 namespace Net3dBool
 {
 	/// <summary>
-	/// Represents of a 3d face vertex.
+	/// Represents a 3d face vertex.
 	/// </summary>
 	public class Vertex
 	{
 		public Vector3 Position;
-		/** references to vertices conected to it by an edge  */
+		// references to vertices conected to it by an edge
 		private List<Vertex> adjacentVertices;
-		/** vertex status relative to other object */
-		private Status status;
+		// vertex status relative to other object
+		public FaceStatus Status { get; private set; }
 
-		/** tolerance value to test equalities */
+		// tolerance value to test equalities
 		private readonly static double EqualityTolerance = 1e-5f;
 
 		//----------------------------------CONSTRUCTORS--------------------------------//
 
-		/**
-     * Constructs a vertex with unknown status
-     * 
-     * @param position vertex position
-     */
+		/// <summary>
+		/// Constructs a vertex with unknown status
+		/// </summary>
+		/// <param name="position"></param>
 		public Vertex(Vector3 position)
 		{
 			this.Position = position;
 
 			adjacentVertices = new List<Vertex>();
-			status = Status.UNKNOWN;
+			Status = FaceStatus.Unknown;
 		}
 
-		/**
-     * Constructs a vertex with unknown status
-     * 
-     * @param x coordinate on the x axis
-     * @param y coordinate on the y axis
-     * @param z coordinate on the z axis
-     */
+		/// <summary>
+		/// Constructs a vertex with unknown status
+		/// </summary>
+		/// <param name="x"></param>
+		/// <param name="y"></param>
+		/// <param name="z"></param>
 		public Vertex(double x, double y, double z)
 		{
 			this.Position.X = x;
@@ -84,7 +82,7 @@ namespace Net3dBool
 			this.Position.Z = z;
 
 			adjacentVertices = new List<Vertex>();
-			status = Status.UNKNOWN;
+			Status = FaceStatus.Unknown;
 		}
 
 		/// <summary>
@@ -92,14 +90,14 @@ namespace Net3dBool
 		/// </summary>
 		/// <param name="position">vertex position</param>
 		/// <param name="status">vertex status - UNKNOWN, BOUNDARY, INSIDE or OUTSIDE</param>
-		public Vertex(Vector3 position, Status status)
+		public Vertex(Vector3 position, FaceStatus status)
 		{
 			Position.X = position.X;
 			Position.Y = position.Y;
 			Position.Z = position.Z;
 
 			adjacentVertices = new List<Vertex>();
-			this.status = status;
+			this.Status = status;
 		}
 
 		/// <summary>
@@ -109,12 +107,12 @@ namespace Net3dBool
 		/// <param name="y">coordinate on the y axis</param>
 		/// <param name="z">coordinate on the z axis</param>
 		/// <param name="status">vertex status - UNKNOWN, BOUNDARY, INSIDE or OUTSIDE</param>
-		public Vertex(double x, double y, double z, Status status)
+		public Vertex(double x, double y, double z, FaceStatus status)
 		{
 			this.Position = new Vector3(x, y, z);
 
 			adjacentVertices = new List<Vertex>();
-			this.status = status;
+			this.Status = status;
 		}
 
 		/// <summary>
@@ -132,7 +130,7 @@ namespace Net3dBool
 		{
 			Vertex clone = new Vertex();
 			clone.Position = Position;
-			clone.status = status;
+			clone.Status = Status;
 			clone.adjacentVertices = new List<Vertex>();
 			for (int i = 0; i < adjacentVertices.Count; i++)
 			{
@@ -142,23 +140,17 @@ namespace Net3dBool
 			return clone;
 		}
 
-		/**
-     * Makes a string definition for the Vertex object
-     * 
-     * @return the string definition
-     */
-		public String toString()
+		public override string ToString()
 		{
 			return "(" + Position.X + ", " + Position.Y + ", " + Position.Z + ")";
 		}
 
-		/**
-     * Checks if an vertex is equal to another. To be equal, they have to have the same
-     * coordinates(with some tolerance)
-     * 
-     * @param anObject the other vertex to be tested
-     * @return true if they are equal, false otherwise. 
-     */
+		/// <summary>
+		/// Checks if an vertex is equal to another. To be equal, they have to have the
+		/// same coordinates(with some tolerance)
+		/// </summary>
+		/// <param name="vertex"></param>
+		/// <returns></returns>
 		public bool Equals(Vertex vertex)
 		{
 			return Position.Equals(vertex.Position, EqualityTolerance);
@@ -166,36 +158,24 @@ namespace Net3dBool
 
 		//--------------------------------------SETS------------------------------------//
 
-		/**
-     * Sets the vertex status
-     * 
-     * @param status vertex status - UNKNOWN, BOUNDARY, INSIDE or OUTSIDE
-     */
-		public void SetStatus(Status status)
+		/// <summary>
+		/// Sets the vertex status
+		/// </summary>
+		/// <param name="status">UNKNOWN, BOUNDARY, INSIDE or OUTSIDE</param>
+		public void SetStatus(FaceStatus status)
 		{
-			if (status >= Status.UNKNOWN && status <= Status.BOUNDARY)
+			if (status >= FaceStatus.Unknown && status <= FaceStatus.Boundary)
 			{
-				this.status = status;
+				this.Status = status;
 			}
 		}
 
 		//--------------------------------------GETS------------------------------------//
 
-		/**
-     * Gets the vertex position
-     * 
-     * @return vertex position
-     */
-		public Vector3 GetPosition()
-		{
-			return Position;
-		}
-
-		/**
-     * Gets an array with the adjacent vertices
-     * 
-     * @return array of the adjacent vertices 
-     */
+		/// <summary>
+		/// Gets an array with the adjacent vertices
+		/// </summary>
+		/// <returns></returns>
 		public Vertex[] GetAdjacentVertices()
 		{
 			Vertex[] vertices = new Vertex[adjacentVertices.Count];
@@ -206,23 +186,12 @@ namespace Net3dBool
 			return vertices;
 		}
 
-		/**
-     * Gets the vertex status
-     * 
-     * @return vertex status - UNKNOWN, BOUNDARY, INSIDE or OUTSIDE
-     */
-		public Status GetStatus()
-		{
-			return status;
-		}
-
 		//----------------------------------OTHERS--------------------------------------//
 
-		/**
-     * Sets a vertex as being adjacent to it
-     * 
-     * @param adjacentVertex an adjacent vertex
-     */
+		/// <summary>
+		/// Sets a vertex as being adjacent to it
+		/// </summary>
+		/// <param name="adjacentVertex"></param>
 		public void AddAdjacentVertex(Vertex adjacentVertex)
 		{
 			if (!adjacentVertices.Contains(adjacentVertex))
@@ -231,12 +200,11 @@ namespace Net3dBool
 			}
 		}
 
-		/**
-     * Sets the vertex status, setting equally the adjacent ones
-     * 
-     * @param status new status to be set
-     */
-		public void Mark(Status status)
+		/// <summary>
+		/// Sets the vertex status, setting equally the adjacent ones
+		/// </summary>
+		/// <param name="status"></param>
+		public void Mark(FaceStatus status)
 		{
 			var items = new Stack<Vertex>(new Vertex[] { this });
 			while (items.Any())
@@ -244,13 +212,13 @@ namespace Net3dBool
 				Vertex item = items.Pop();
 
 				//mark vertex
-				item.status = status;
+				item.Status = status;
 
 				//mark adjacent vertices
 				Vertex[] adjacentVerts = GetAdjacentVertices();
 				for (int i = 0; i < adjacentVerts.Length; i++)
 				{
-					if (adjacentVerts[i].GetStatus() == Status.UNKNOWN)
+					if (adjacentVerts[i].Status == FaceStatus.Unknown)
 					{
 						items.Push(adjacentVertices[i]);
 					}
