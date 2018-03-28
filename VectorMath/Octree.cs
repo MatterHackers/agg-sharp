@@ -250,9 +250,9 @@ namespace MatterHackers.VectorMath
 			return root.AlongRay(ray);
 		}
 
-		public IEnumerable<T> AllObjects()
+		public IEnumerable<T> All()
 		{
-			return root.AllObjects();
+			return root.All();
 		}
 
 		/// <summary>
@@ -509,7 +509,7 @@ namespace MatterHackers.VectorMath
 				return oneHitIsWithinLimits;
 			}
 
-			internal IEnumerable<T> AllObjects()
+			internal IEnumerable<T> All()
 			{
 				var items = new Stack<Branch>(new Branch[] { this });
 				while (items.Any())

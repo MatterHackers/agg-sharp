@@ -85,7 +85,7 @@ namespace Net3dBool
 		/// <param name="side1"></param>
 		/// <param name="side2"></param>
 		/// <param name="side3"></param>
-		public Segment(Line line, Face face, PlaneSide side1, PlaneSide side2, PlaneSide side3)
+		public Segment(Line line, CsgFace face, PlaneSide side1, PlaneSide side2, PlaneSide side3)
 		{
 			this.line = line;
 			index = 0;
