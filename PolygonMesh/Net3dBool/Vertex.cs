@@ -50,12 +50,10 @@ namespace Net3dBool
 		// references to vertices conected to it by an edge
 		private List<Vertex> adjacentVertices;
 		// vertex status relative to other object
-		public FaceStatus Status { get; private set; }
+		public FaceStatus Status { get; set; }
 
 		// tolerance value to test equalities
 		private readonly static double EqualityTolerance = 1e-5f;
-
-		//----------------------------------CONSTRUCTORS--------------------------------//
 
 		/// <summary>
 		/// Constructs a vertex with unknown status
@@ -156,22 +154,6 @@ namespace Net3dBool
 			return Position.Equals(vertex.Position, EqualityTolerance);
 		}
 
-		//--------------------------------------SETS------------------------------------//
-
-		/// <summary>
-		/// Sets the vertex status
-		/// </summary>
-		/// <param name="status">UNKNOWN, BOUNDARY, INSIDE or OUTSIDE</param>
-		public void SetStatus(FaceStatus status)
-		{
-			if (status >= FaceStatus.Unknown && status <= FaceStatus.Boundary)
-			{
-				this.Status = status;
-			}
-		}
-
-		//--------------------------------------GETS------------------------------------//
-
 		/// <summary>
 		/// Gets an array with the adjacent vertices
 		/// </summary>
@@ -185,8 +167,6 @@ namespace Net3dBool
 			}
 			return vertices;
 		}
-
-		//----------------------------------OTHERS--------------------------------------//
 
 		/// <summary>
 		/// Sets a vertex as being adjacent to it
