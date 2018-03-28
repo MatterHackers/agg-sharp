@@ -67,7 +67,7 @@ namespace Net3dBool
 		/// <summary>
 		/// object representing the solid extremes
 		/// </summary>
-		private AxisAlignedBoundingBox bound;
+		private AxisAlignedBoundingBox Bounds { get; set; }
 
 		/// <summary>
 		/// solid vertices
@@ -109,7 +109,7 @@ namespace Net3dBool
 			}
 
 			//create bound
-			bound = new AxisAlignedBoundingBox(verticesPoints);
+			Bounds = new AxisAlignedBoundingBox(verticesPoints);
 		}
 
 		/// <summary>
@@ -125,9 +125,11 @@ namespace Net3dBool
 		/// <param name="otherObject">object 3d used for the comparison</param>
 		public void ClassifyFaces(CsgObject3D otherObject, Action<CsgFace> classifyFaces = null)
 		{
-			foreach(var vertex in vertices)
+			var otherBounds = otherObject.Bounds;
+			foreach (var vertex in vertices)
 			{
-				if(!otherObject.bound.Contains(vertex.Position))
+				if(!otherBounds.Contains(vertex.Position)
+					&& vertex.Status != FaceStatus.Outside)
 				{
 					vertex.Status = FaceStatus.Outside;
 				}
@@ -178,7 +180,7 @@ namespace Net3dBool
 		/// <returns>solid bound</returns>
 		public AxisAlignedBoundingBox GetBound()
 		{
-			return bound;
+			return Bounds;
 		}
 
 		/// <summary>

@@ -55,16 +55,12 @@ namespace Net3dBool
 		private CsgObject3D object2;
 
 		private Action<string, double> reporter;
-		//--------------------------------CONSTRUCTORS----------------------------------//
 
-		/**
-     * Constructs a BooleanModeller object to apply boolean operation in two solids.
-     * Makes preliminary calculations
-     *
-     * @param solid1 first solid where boolean operations will be applied
-     * @param solid2 second solid where boolean operations will be applied
-     */
-
+		/// <summary>
+		/// Constructs a BooleanModeller object to apply boolean operation in two solids. Makes preliminary calculations
+		/// </summary>
+		/// <param name="solid1"></param>
+		/// <param name="solid2"></param>
 		public BooleanModeller(Solid solid1, Solid solid2)
 			: this(solid1, solid2, null, CancellationToken.None)
 		{
@@ -76,10 +72,10 @@ namespace Net3dBool
 			this.cancellationToken = cancellationToken;
 
 			//representation to apply boolean operations
-			reporter?.Invoke("Object3D1", 0.1);
+			reporter?.Invoke("Create Csg Object 1", 0.1);
 			object1 = new CsgObject3D(solid1);
 
-			reporter?.Invoke("Object3D2", 0.2);
+			reporter?.Invoke("Create Csg Object 2", 0.2);
 			object2 = new CsgObject3D(solid2);
 
 			object1Copy = new CsgObject3D(solid1);
@@ -118,8 +114,10 @@ namespace Net3dBool
 		public Solid GetDifference()
 		{
 			PrepareData();
+			reporter?.Invoke("Invert Inside Faces 1", .9);
 			object2.InvertInsideFaces();
 			Solid result = ComposeSolid(FaceStatus.Outside, FaceStatus.Opposite, FaceStatus.Inside);
+			reporter?.Invoke("Invert Inside Faces 2", .9);
 			object2.InvertInsideFaces();
 
 			return result;
@@ -161,7 +159,9 @@ namespace Net3dBool
 			var indices = new List<int>();
 
 			//group the elements of the two solids whose faces fit with the desired status
+			reporter?.Invoke("Group Components 1", .9);
 			GroupObjectComponents(object1, vertices, indices, faceStatus1, faceStatus2);
+			reporter?.Invoke("Group Components 2", .9);
 			GroupObjectComponents(object2, vertices, indices, faceStatus3, faceStatus3);
 
 			//turn the arrayLists to arrays
@@ -177,6 +177,7 @@ namespace Net3dBool
 			}
 
 			//returns the solid containing the grouped elements
+			reporter?.Invoke("Create Solid", .9);
 			return new Solid(verticesArray, indicesArray);
 		}
 
@@ -190,6 +191,7 @@ namespace Net3dBool
 		/// <param name="faceStatus2"></param>
 		private void GroupObjectComponents(CsgObject3D obj, List<Vertex> vertices, List<int> indices, FaceStatus faceStatus1, FaceStatus faceStatus2)
 		{
+			var vertexIndexByHashCode = new Dictionary<Vector3, int>();
 			//for each face..
 			foreach (CsgFace face in obj.Faces.All())
 			{
@@ -200,12 +202,13 @@ namespace Net3dBool
 					Vertex[] faceVerts = { face.v1, face.v2, face.v3 };
 					for (int j = 0; j < faceVerts.Length; j++)
 					{
-						if (vertices.Contains(faceVerts[j]))
+						if (vertexIndexByHashCode.ContainsKey(faceVerts[j].Position))
 						{
-							indices.Add(vertices.IndexOf(faceVerts[j]));
+							indices.Add(vertexIndexByHashCode[faceVerts[j].Position]);
 						}
 						else
 						{
+							vertexIndexByHashCode.Add(faceVerts[j].Position, vertices.Count);
 							indices.Add(vertices.Count);
 							vertices.Add(faceVerts[j]);
 						}
@@ -219,23 +222,20 @@ namespace Net3dBool
 			if (object1Copy != null)
 			{
 				//split the faces so that none of them intercepts each other
-				reporter?.Invoke("Split Faces1", 0.4);
+				reporter?.Invoke("Split Faces 1", 0.4);
 				object1.SplitFaces(object2, cancellationToken, Object1SplitFace, Object1SplitResults);
 
-				reporter?.Invoke("Split Faces2", 0.6);
+				reporter?.Invoke("Split Faces 2", 0.6);
 				object2.SplitFaces(object1Copy, cancellationToken, Object2SplitFace, Object2SplitResults);
 				// free the momory
 				object1Copy = null;
 
 				//classify faces as being inside or outside the other solid
-				reporter?.Invoke("Classify Faces2", 0.8);
-
+				reporter?.Invoke("Classify Faces 1", 0.8);
 				object1.ClassifyFaces(object2, Object1ClassifyFace);
 
-				reporter?.Invoke("Classify Faces1", 0.9);
+				reporter?.Invoke("Classify Faces 2", 0.9);
 				object2.ClassifyFaces(object1, Object2ClassifyFace);
-
-				reporter?.Invoke("Classify Faces1", 1);
 			}
 		}
 	}
