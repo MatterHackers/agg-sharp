@@ -80,6 +80,7 @@ namespace MatterHackers.DataConverters3D
 
 		public static Mesh Revolve(IVertexSource source, int angleSteps = 30, double angleStart = 0, double angleEnd = MathHelper.Tau)
 		{
+			angleSteps = Math.Max(angleSteps, 3);
 			angleStart = MathHelper.Range0ToTau(angleStart);
 			angleEnd = MathHelper.Range0ToTau(angleEnd);
 			// convert to clipper polygons and scale so we can ensure good shapes
@@ -107,11 +108,17 @@ namespace MatterHackers.DataConverters3D
 			}
 
 			// make the outside shell
-			double angleDelta = (angleEnd - angleStart) / Math.Max(3, angleSteps);
-			double currentAngle = 0;
-			for (currentAngle = angleStart; currentAngle < angleEnd - EqualityTolerance; currentAngle += angleDelta)
+			double angleDelta = (angleEnd - angleStart) / angleSteps;
+			double currentAngle = angleStart;
+			if(!hasStartAndEndFaces)
+			{
+				angleSteps--;
+			}
+
+			for (int i=0; i < angleSteps; i++)
 			{
 				AddRevolveStrip(cleanedPath, mesh, currentAngle, currentAngle + angleDelta);
+				currentAngle += angleDelta;
 			}
 
 			if (!hasStartAndEndFaces)

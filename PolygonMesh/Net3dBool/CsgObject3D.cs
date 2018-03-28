@@ -125,6 +125,14 @@ namespace Net3dBool
 		/// <param name="otherObject">object 3d used for the comparison</param>
 		public void ClassifyFaces(CsgObject3D otherObject, Action<CsgFace> classifyFaces = null)
 		{
+			foreach(var vertex in vertices)
+			{
+				if(!otherObject.bound.Contains(vertex.Position))
+				{
+					vertex.Status = FaceStatus.Outside;
+				}
+			}
+
 			//calculate adjacency information
 			foreach (CsgFace face in Faces.All())
 			{
@@ -365,7 +373,7 @@ namespace Net3dBool
 			}
 
 			vertex = vertices[position];
-			vertex.SetStatus(status);
+			vertex.Status = status;
 
 			return vertex;
 		}
@@ -805,13 +813,13 @@ namespace Net3dBool
 			if (startType == SegmentEnd.Vertex)
 			{
 				//set vertex to BOUNDARY if it is start type
-				startVertex.SetStatus(FaceStatus.Boundary);
+				startVertex.Status = FaceStatus.Boundary;
 			}
 
 			if (endType == SegmentEnd.Vertex)
 			{
 				//set vertex to BOUNDARY if it is end type
-				endVertex.SetStatus(FaceStatus.Boundary);
+				endVertex.Status = FaceStatus.Boundary;
 			}
 
 			if (startType == SegmentEnd.Vertex && endType == SegmentEnd.Vertex)
