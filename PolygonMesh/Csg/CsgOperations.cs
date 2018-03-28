@@ -208,7 +208,12 @@ namespace MatterHackers.PolygonMesh.Csg
 			return MeshFromSolid(result);
 		}
 
-		public static (Mesh subtract, Mesh intersect) IntersectAndSubtract(Mesh recieveSubtraction, Mesh recieveIntersection)
+		public static (Mesh subtract, Mesh intersect) IntersectAndSubtract(this Mesh a, Mesh b)
+		{
+			return IntersectAndSubtract(a, b, null, CancellationToken.None);
+		}
+
+		public static (Mesh subtract, Mesh intersect) IntersectAndSubtract(Mesh recieveSubtraction, Mesh recieveIntersection, Action<string, double> reporter, CancellationToken cancellationToken)
 		{
 			if (recieveSubtraction.Faces.Count == 0)
 			{
@@ -218,14 +223,25 @@ namespace MatterHackers.PolygonMesh.Csg
 			{
 				return (recieveSubtraction, recieveIntersection);
 			}
+			reporter?.Invoke("Mesh to Solid A", 0);
 			var A = SolidFromMesh(recieveSubtraction);
+			reporter?.Invoke("Mesh to Solid B", .2);
 			var B = SolidFromMesh(recieveIntersection);
 
-			var modeller = new BooleanModeller(A, B);
+			reporter?.Invoke("BooleanModeller", .4);
+			var modeller = new BooleanModeller(A, B, (status, progress0To1) =>
+			{
+				reporter?.Invoke(status, .4 + progress0To1 * .2);
+			}, cancellationToken);
+			reporter?.Invoke("Intersection", .6);
 			var intersection = modeller.GetIntersection();
+			reporter?.Invoke("Difference", .6);
 			var difference = modeller.GetDifference();
 
-			return (MeshFromSolid(difference), MeshFromSolid(intersection));
+			reporter?.Invoke("Solid to Mesh", .8);
+			var results = (MeshFromSolid(difference), MeshFromSolid(intersection));
+			reporter?.Invoke("Solid to Mesh", 1);
+			return results;
 		}
 	}
 }
