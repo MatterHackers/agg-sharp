@@ -89,7 +89,7 @@ namespace Net3dBool
 	/// <summary>
 	/// Representation of a 3D face (triangle).
 	/// </summary>
-	public class Face
+	public class CsgFace
 	{
 		public Vertex v1;
 		public Vertex v2;
@@ -109,7 +109,7 @@ namespace Net3dBool
 		/// <summary>
 		/// Default constructor
 		/// </summary>
-		private Face()
+		private CsgFace()
 		{
 		}
 
@@ -119,7 +119,7 @@ namespace Net3dBool
 		/// <param name="v1">a face vertex</param>
 		/// <param name="v2">a face vertex</param>
 		/// <param name="v3">a face vertex</param>
-		public Face(Vertex v1, Vertex v2, Vertex v3)
+		public CsgFace(Vertex v1, Vertex v2, Vertex v3)
 		{
 			this.v1 = v1;
 			this.v2 = v2;
@@ -133,9 +133,9 @@ namespace Net3dBool
 		/// Clones the face object
 		/// </summary>
 		/// <returns>cloned face object</returns>
-		public Face Clone()
+		public CsgFace Clone()
 		{
-			Face clone = new Face();
+			CsgFace clone = new CsgFace();
 			clone.v1 = v1.Clone();
 			clone.v2 = v2.Clone();
 			clone.v3 = v3.Clone();
@@ -158,7 +158,7 @@ namespace Net3dBool
 			return distFromFacePlane;
 		}
 
-		public bool Equals(Face face)
+		public bool Equals(CsgFace face)
 		{
 			bool cond1 = v1.Equals(face.v1) && v2.Equals(face.v2) && v3.Equals(face.v3);
 			bool cond2 = v1.Equals(face.v2) && v2.Equals(face.v3) && v3.Equals(face.v1);
@@ -223,7 +223,7 @@ namespace Net3dBool
 		/// Classifies the face based on the ray trace technique
 		/// </summary>
 		/// <param name="obj">object3d used to compute the face status</param>
-		public void RayTraceClassify(Object3D obj)
+		public void RayTraceClassify(CsgObject3D obj)
 		{
 			var random = new Random();
 
@@ -235,7 +235,7 @@ namespace Net3dBool
 			bool success;
 			double distance;
 			Vector3 intersectionPoint;
-			Face closestFace = null;
+			CsgFace closestFace = null;
 			double closestDistance;
 
 			do
@@ -244,7 +244,7 @@ namespace Net3dBool
 				closestDistance = Double.MaxValue;
 				//for each face from the other solid...
 				//foreach (Face face in obj.Faces.AllObjects())
-				foreach (Face face in obj.Faces.AlongRay(ray))
+				foreach (CsgFace face in obj.Faces.AlongRay(ray))
 				{
 					double hitDistance;
 					bool front;

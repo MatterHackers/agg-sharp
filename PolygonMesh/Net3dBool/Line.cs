@@ -55,7 +55,7 @@ namespace Net3dBool
 		/// </summary>
 		/// <param name="face1">face representing one of the planes</param>
 		/// <param name="face2">face representing one of the planes</param>
-		public Line(Face face1, Face face2)
+		public Line(CsgFace face1, CsgFace face2)
 		{
 			Vector3 normalFace1 = face1.Normal;
 			Vector3 normalFace2 = face2.Normal;
