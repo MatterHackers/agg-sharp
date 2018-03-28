@@ -276,7 +276,8 @@ namespace Net3dBool
 									Stack<CsgFace> facesFromSplit = new Stack<CsgFace>();
 
 									if (this.SplitFace(faceToSplit, segment1, segment2, facesFromSplit)
-										&& facesFromSplit.Count > 0)
+										&& facesFromSplit.Count > 0
+										&& !(facesFromSplit.Count == 1 && facesFromSplit.Peek().Equals(faceToSplit)))
 									{
 										foreach (var face in facesFromSplit)
 										{
@@ -286,13 +287,6 @@ namespace Net3dBool
 										// send debugging information if registered
 										splitFaces?.Invoke(faceToSplit, cuttingFace);
 										results?.Invoke(facesFromSplit.ToList());
-
-										//prevent from infinite loop (with a loss of faces...)
-										if (Faces.Count > numFacesStart * 100)
-										{
-											//System.out.println("possible infinite loop situation: terminating faces split");
-											//return;
-										}
 
 										break;
 									}

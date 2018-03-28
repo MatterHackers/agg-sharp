@@ -125,7 +125,7 @@ namespace MatterHackers.DataConverters3D
 			{
 				if (((angleEnd - angleStart) < .0000001
 					|| (angleEnd - MathHelper.Tau - angleStart) < .0000001)
-					&& (currentAngle - angleEnd) > .0000001)
+					&& (angleEnd - currentAngle) > .0000001)
 				{
 					// make sure we close the shape exactly
 					AddRevolveStrip(cleanedPath, mesh, currentAngle, angleStart);
