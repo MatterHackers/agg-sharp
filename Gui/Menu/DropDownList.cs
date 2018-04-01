@@ -381,7 +381,7 @@ namespace MatterHackers.Agg.UI
 			NormalColor = normalColor;
 			HoverColor = hoverColor;
 			BackgroundColor = normalColor;
-			BorderColor = Color.White;
+			this.BorderColor = ActiveTheme.Instance.SecondaryTextColor;
 			this.Border = 1;
 		}
 
@@ -466,17 +466,20 @@ namespace MatterHackers.Agg.UI
 		{
 			base.OnDraw(graphics2D);
 
+			var gradientDistanceMinusBorder = (int) (gradientDistance - Border.Width);
+
 			if (lastRenderColor != this.BackgroundColor)
 			{
 				gradientBackground = agg_basics.TrasparentToColorGradientX(
-					(int)dropArrowBounds.Width + gradientDistance,
-					(int)this.LocalBounds.Height,
+					(int)(dropArrowBounds.Width + gradientDistanceMinusBorder),
+					(int)(this.LocalBounds.Height - Border.Height),
 					this.BackgroundColor,
 					gradientDistance);
 
 				lastRenderColor = this.BackgroundColor;
 			}
 
+			graphics2D.Render(this.gradientBackground, this.LocalBounds.Right - gradientBackground.Width - this.Border.Right, 0);
 
 			// Draw directional arrow
 			if (directionArrow != null)
