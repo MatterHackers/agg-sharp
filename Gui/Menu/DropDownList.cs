@@ -427,11 +427,10 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnBoundsChanged(EventArgs e)
 		{
-			// Set new MinSIze
-			Vector2 minSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
+			// Force child menu items to have parent width
 			foreach (MenuItem item in MenuItems.ToList())
 			{
-				item.MinimumSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
+				item.MinimumSize = new Vector2(LocalBounds.Width, 0);
 			}
 
 			dropArrowBounds = new RectangleDouble(LocalBounds.Right - DropArrow.ArrowHeight * 4, 0, LocalBounds.Right, this.Height);
