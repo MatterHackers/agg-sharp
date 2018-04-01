@@ -56,8 +56,6 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		private int highLightedIndex = 0;
 
-		private Color stashedColor;
-
 		private Color lastRenderColor;
 
 		private ImageBuffer gradientBackground;
@@ -69,8 +67,6 @@ namespace MatterHackers.Agg.UI
 		protected TextWidget mainControlText;
 
 		public Color NormalColor { get; set; }
-
-		public int BorderWidth { get; set; }
 
 		public Color HoverColor { get; set; }
 
@@ -121,6 +117,8 @@ namespace MatterHackers.Agg.UI
 
 		protected override void ShowMenu()
 		{
+			menuVisible = true;
+
 			if (this.Parent == null)
 			{
 				return;
@@ -235,6 +233,7 @@ namespace MatterHackers.Agg.UI
 
 			DropDownContainer.Closed += (s, e) =>
 			{
+				menuVisible = false;
 				mainControlText.Text = selectedIndex == -1 ? this.noSelectionString : MenuItems[SelectedIndex].Text;
 				this.Focus();
 			};
@@ -337,6 +336,7 @@ namespace MatterHackers.Agg.UI
 		private static Color whiteTransparent = new Color(255, 255, 255, 0);
 
 		private double pointSize = 12;
+		private bool menuVisible;
 
 		public DropDownList(string noSelectionString, Color textColor, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false, double pointSize = 12)
 			: this(noSelectionString, whiteTransparent, whiteSemiTransparent, direction, maxHeight, useLeftIcons, pointSize)
@@ -349,10 +349,10 @@ namespace MatterHackers.Agg.UI
 			this.MenuItemsBackgroundHoverColor = ActiveTheme.Instance.PrimaryAccentColor;
 			this.MenuItemsTextHoverColor = Color.Black;
 			this.MenuItemsTextColor = Color.Black;
-			this.BorderWidth = 1;
 			this.BorderColor = ActiveTheme.Instance.SecondaryTextColor;
 			this.HoverColor = whiteSemiTransparent;
 			this.BackgroundColor = new Color(255, 255, 255, 0);
+			this.Border = 1;
 		}
 
 		public DropDownList(string noSelectionString, Color normalColor, Color hoverColor, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false, double pointSize = 12)
@@ -383,7 +383,8 @@ namespace MatterHackers.Agg.UI
 			NormalColor = normalColor;
 			HoverColor = hoverColor;
 			BackgroundColor = normalColor;
-			BorderColor = Color.White;
+			this.BorderColor = ActiveTheme.Instance.SecondaryTextColor;
+			this.Border = 1;
 		}
 
 		private void OnSelectionChanged(EventArgs e)
@@ -416,6 +417,23 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public override Color BackgroundColor
+		{
+			get
+			{
+				if (menuVisible
+					|| (this.mouseInBounds && this.Enabled))
+				{
+					return this.HoverColor;
+				}
+				else
+				{
+					return base.BackgroundColor;
+				}
+			}
+			set => base.BackgroundColor = value;
+		}
+
 		public override void OnLoad(EventArgs args)
 		{
 			base.OnLoad(args);
@@ -428,11 +446,10 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnBoundsChanged(EventArgs e)
 		{
-			// Set new MinSIze
-			Vector2 minSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
+			// Force child menu items to have parent width
 			foreach (MenuItem item in MenuItems.ToList())
 			{
-				item.MinimumSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
+				item.MinimumSize = new Vector2(LocalBounds.Width, 0);
 			}
 
 			dropArrowBounds = new RectangleDouble(LocalBounds.Right - DropArrow.ArrowHeight * 4, 0, LocalBounds.Right, this.Height);
@@ -440,17 +457,19 @@ namespace MatterHackers.Agg.UI
 			base.OnBoundsChanged(e);
 		}
 
-		public override void OnMouseEnter(MouseEventArgs mouseEvent)
+		private bool mouseInBounds;
+		public override void OnMouseEnterBounds(MouseEventArgs mouseEvent)
 		{
-			base.OnMouseEnter(mouseEvent);
-			stashedColor = this.BackgroundColor;
-			BackgroundColor = HoverColor;
+			mouseInBounds = true;
+			base.OnMouseEnterBounds(mouseEvent);
+			this.Invalidate();
 		}
 
-		public override void OnMouseLeave(MouseEventArgs mouseEvent)
+		public override void OnMouseLeaveBounds(MouseEventArgs mouseEvent)
 		{
-			base.OnMouseLeave(mouseEvent);
-			BackgroundColor = this.stashedColor;
+			mouseInBounds = false;
+			base.OnMouseLeaveBounds(mouseEvent);
+			this.Invalidate();
 		}
 
 		private void MenuItem_Clicked(object sender, EventArgs e)
@@ -467,28 +486,26 @@ namespace MatterHackers.Agg.UI
 		{
 			base.OnDraw(graphics2D);
 
+			var gradientDistanceMinusBorder = (int) (gradientDistance - Border.Width);
+
 			if (lastRenderColor != this.BackgroundColor)
 			{
 				gradientBackground = agg_basics.TrasparentToColorGradientX(
-					(int)dropArrowBounds.Width + gradientDistance,
-					(int)this.LocalBounds.Height,
+					(int)(dropArrowBounds.Width + gradientDistanceMinusBorder),
+					(int)(this.LocalBounds.Height - Border.Height),
 					this.BackgroundColor,
 					gradientDistance);
 
 				lastRenderColor = this.BackgroundColor;
 			}
 
-			graphics2D.Render(this.gradientBackground, dropArrowBounds.Left - gradientDistance, 0);
-
-			// Draw border
-			var strokeRect = new Stroke(new RoundedRect(this.LocalBounds, 0), BorderWidth);
-			graphics2D.Render(strokeRect, BorderColor);
+			graphics2D.Render(this.gradientBackground, this.LocalBounds.Right - gradientBackground.Width - this.Border.Right, 0);
 
 			// Draw directional arrow
 			if (directionArrow != null)
 			{
 				var center = dropArrowBounds.Center;
-				center.Y += 2;
+				center.Y += 1;
 
 				graphics2D.Render(directionArrow, center, ActiveTheme.Instance.SecondaryTextColor);
 			}
