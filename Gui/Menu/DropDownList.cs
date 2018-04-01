@@ -70,8 +70,6 @@ namespace MatterHackers.Agg.UI
 
 		public Color NormalColor { get; set; }
 
-		public int BorderWidth { get; set; }
-
 		public Color HoverColor { get; set; }
 
 		public Color TextColor
@@ -349,10 +347,10 @@ namespace MatterHackers.Agg.UI
 			this.MenuItemsBackgroundHoverColor = ActiveTheme.Instance.PrimaryAccentColor;
 			this.MenuItemsTextHoverColor = Color.Black;
 			this.MenuItemsTextColor = Color.Black;
-			this.BorderWidth = 1;
 			this.BorderColor = ActiveTheme.Instance.SecondaryTextColor;
 			this.HoverColor = whiteSemiTransparent;
 			this.BackgroundColor = new Color(255, 255, 255, 0);
+			this.Border = 1;
 		}
 
 		public DropDownList(string noSelectionString, Color normalColor, Color hoverColor, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false, double pointSize = 12)
@@ -384,6 +382,7 @@ namespace MatterHackers.Agg.UI
 			HoverColor = hoverColor;
 			BackgroundColor = normalColor;
 			BorderColor = Color.White;
+			this.Border = 1;
 		}
 
 		private void OnSelectionChanged(EventArgs e)
@@ -478,11 +477,6 @@ namespace MatterHackers.Agg.UI
 				lastRenderColor = this.BackgroundColor;
 			}
 
-			graphics2D.Render(this.gradientBackground, dropArrowBounds.Left - gradientDistance, 0);
-
-			// Draw border
-			var strokeRect = new Stroke(new RoundedRect(this.LocalBounds, 0), BorderWidth);
-			graphics2D.Render(strokeRect, BorderColor);
 
 			// Draw directional arrow
 			if (directionArrow != null)
