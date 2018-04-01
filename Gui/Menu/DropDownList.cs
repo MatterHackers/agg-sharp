@@ -505,7 +505,7 @@ namespace MatterHackers.Agg.UI
 			if (directionArrow != null)
 			{
 				var center = dropArrowBounds.Center;
-				center.Y += 2;
+				center.Y += 1;
 
 				graphics2D.Render(directionArrow, center, ActiveTheme.Instance.SecondaryTextColor);
 			}
