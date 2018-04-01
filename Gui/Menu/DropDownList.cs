@@ -56,8 +56,6 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		private int highLightedIndex = 0;
 
-		private Color stashedColor;
-
 		private Color lastRenderColor;
 
 		private ImageBuffer gradientBackground;
@@ -119,6 +117,8 @@ namespace MatterHackers.Agg.UI
 
 		protected override void ShowMenu()
 		{
+			menuVisible = true;
+
 			if (this.Parent == null)
 			{
 				return;
@@ -233,6 +233,7 @@ namespace MatterHackers.Agg.UI
 
 			DropDownContainer.Closed += (s, e) =>
 			{
+				menuVisible = false;
 				mainControlText.Text = selectedIndex == -1 ? this.noSelectionString : MenuItems[SelectedIndex].Text;
 				this.Focus();
 			};
@@ -335,6 +336,7 @@ namespace MatterHackers.Agg.UI
 		private static Color whiteTransparent = new Color(255, 255, 255, 0);
 
 		private double pointSize = 12;
+		private bool menuVisible;
 
 		public DropDownList(string noSelectionString, Color textColor, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false, double pointSize = 12)
 			: this(noSelectionString, whiteTransparent, whiteSemiTransparent, direction, maxHeight, useLeftIcons, pointSize)
@@ -415,6 +417,23 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public override Color BackgroundColor
+		{
+			get
+			{
+				if (menuVisible
+					|| (this.mouseInBounds && this.Enabled))
+				{
+					return this.HoverColor;
+				}
+				else
+				{
+					return base.BackgroundColor;
+				}
+			}
+			set => base.BackgroundColor = value;
+		}
+
 		public override void OnLoad(EventArgs args)
 		{
 			base.OnLoad(args);
@@ -438,17 +457,19 @@ namespace MatterHackers.Agg.UI
 			base.OnBoundsChanged(e);
 		}
 
-		public override void OnMouseEnter(MouseEventArgs mouseEvent)
+		private bool mouseInBounds;
+		public override void OnMouseEnterBounds(MouseEventArgs mouseEvent)
 		{
-			base.OnMouseEnter(mouseEvent);
-			stashedColor = this.BackgroundColor;
-			BackgroundColor = HoverColor;
+			mouseInBounds = true;
+			base.OnMouseEnterBounds(mouseEvent);
+			this.Invalidate();
 		}
 
-		public override void OnMouseLeave(MouseEventArgs mouseEvent)
+		public override void OnMouseLeaveBounds(MouseEventArgs mouseEvent)
 		{
-			base.OnMouseLeave(mouseEvent);
-			BackgroundColor = this.stashedColor;
+			mouseInBounds = false;
+			base.OnMouseLeaveBounds(mouseEvent);
+			this.Invalidate();
 		}
 
 		private void MenuItem_Clicked(object sender, EventArgs e)
