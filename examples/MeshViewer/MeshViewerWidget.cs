@@ -51,6 +51,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using System.Threading;
+using MatterHackers.VectorMath.TrackBall;
 
 namespace MatterHackers.MeshVisualizer
 {
@@ -116,7 +117,7 @@ namespace MatterHackers.MeshVisualizer
 			BuildVolumeColor = new ColorF(.2, .8, .3, .2).ToColor();
 
 			trackballTumbleWidget = new TrackballTumbleWidget(this.World, this);
-			trackballTumbleWidget.TransformState = TrackBallController.MouseDownType.Rotation;
+			trackballTumbleWidget.TransformState = TrackBallTransformType.Rotation;
 
 			AddChild(trackballTumbleWidget);
 
