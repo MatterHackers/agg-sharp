@@ -57,14 +57,6 @@ namespace MatterHackers.VectorMath
 			this.world = world;
 		}
 
-		public void CopyTransforms(TrackBallController trackBallToCopy)
-		{
-			TrackBallRadius = trackBallToCopy.TrackBallRadius;
-			this.world.RotationMatrix = trackBallToCopy.world.RotationMatrix;
-			this.world.TranslationMatrix = trackBallToCopy.world.TranslationMatrix;
-
-			OnTransformChanged(null);
-		}
 
 		public MouseDownType CurrentTrackingType { get; private set; } = MouseDownType.None;
 
