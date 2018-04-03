@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2018, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -35,6 +35,7 @@ using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
+using MatterHackers.VectorMath.TrackBall;
 
 namespace MatterHackers.Agg.OpenGlGui
 {
@@ -70,7 +71,7 @@ namespace MatterHackers.Agg.OpenGlGui
 
 	public class TrackballTumbleWidget : GuiWidget
 	{
-		public TrackBallController.MouseDownType TransformState { get; set; }
+		public TrackBallTransformType TransformState { get; set; }
 
 		private List<IVertexSource> insideArrows = new List<IVertexSource>();
 		private List<IVertexSource> outsideArrows = new List<IVertexSource>();
@@ -249,48 +250,48 @@ namespace MatterHackers.Agg.OpenGlGui
 
 					startAngle = Math.Atan2(position1.Y - position0.Y, position1.X - position0.X);
 
-					if (TransformState != TrackBallController.MouseDownType.None)
+					if (TransformState != TrackBallTransformType.None)
 					{
-						if (!LockTrackBall && TrackBallController.CurrentTrackingType != TrackBallController.MouseDownType.None)
+						if (!LockTrackBall && TrackBallController.CurrentTrackingType != TrackBallTransformType.None)
 						{
 							TrackBallController.OnMouseUp();
 						}
-						TrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Translation);
+						TrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallTransformType.Translation);
 					}
 				}
 
 				if (mouseEvent.Button == MouseButtons.Left)
 				{
-					if (TrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.None)
+					if (TrackBallController.CurrentTrackingType == TrackBallTransformType.None)
 					{
 						switch (TransformState)
 						{
-							case TrackBallController.MouseDownType.Rotation:
-								TrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Rotation);
+							case TrackBallTransformType.Rotation:
+								TrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallTransformType.Rotation);
 								break;
 
-							case TrackBallController.MouseDownType.Translation:
-								TrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Translation);
+							case TrackBallTransformType.Translation:
+								TrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallTransformType.Translation);
 								break;
 
-							case TrackBallController.MouseDownType.Scale:
-								TrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Scale);
+							case TrackBallTransformType.Scale:
+								TrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallTransformType.Scale);
 								break;
 						}
 					}
 				}
 				else if (mouseEvent.Button == MouseButtons.Middle)
 				{
-					if (TrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.None)
+					if (TrackBallController.CurrentTrackingType == TrackBallTransformType.None)
 					{
-						TrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Translation);
+						TrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallTransformType.Translation);
 					}
 				}
 				else if (mouseEvent.Button == MouseButtons.Right)
 				{
-					if (TrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.None)
+					if (TrackBallController.CurrentTrackingType == TrackBallTransformType.None)
 					{
-						TrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallController.MouseDownType.Rotation);
+						TrackBallController.OnMouseDown(currentMousePosition, Matrix4X4.Identity, TrackBallTransformType.Rotation);
 					}
 				}
 			}
@@ -313,14 +314,14 @@ namespace MatterHackers.Agg.OpenGlGui
 
 			motionQueue.AddMoveToMotionQueue(currentMousePosition, UiThread.CurrentTimerMs);
 
-			if (!LockTrackBall && TrackBallController.CurrentTrackingType != TrackBallController.MouseDownType.None)
+			if (!LockTrackBall && TrackBallController.CurrentTrackingType != TrackBallTransformType.None)
 			{
 				TrackBallController.OnMouseMove(currentMousePosition);
 				Invalidate();
 			}
 
 			// check if we should do some scaling or rotation
-			if (TransformState != TrackBallController.MouseDownType.None
+			if (TransformState != TrackBallTransformType.None
 				&& mouseEvent.NumPositions > 1
 				&& startDistanceBetweenPoints > 0)
 			{
@@ -343,9 +344,9 @@ namespace MatterHackers.Agg.OpenGlGui
 
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
-			if (!LockTrackBall && TrackBallController.CurrentTrackingType != TrackBallController.MouseDownType.None)
+			if (!LockTrackBall && TrackBallController.CurrentTrackingType != TrackBallTransformType.None)
 			{
-				if (TrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.Rotation)
+				if (TrackBallController.CurrentTrackingType == TrackBallTransformType.Rotation)
 				{
 					// try and preserve some of the velocity
 					motionQueue.AddMoveToMotionQueue(mouseEvent.Position, UiThread.CurrentTimerMs);
@@ -372,10 +373,10 @@ namespace MatterHackers.Agg.OpenGlGui
 			double msPerUpdate = 1000.0 / updatesPerSecond;
 			if (currentVelocityPerMs.LengthSquared > 0)
 			{
-				if (TrackBallController.CurrentTrackingType == TrackBallController.MouseDownType.None)
+				if (TrackBallController.CurrentTrackingType == TrackBallTransformType.None)
 				{
 					Vector2 center = LocalBounds.Center;
-					TrackBallController.OnMouseDown(center, Matrix4X4.Identity, TrackBallController.MouseDownType.Rotation);
+					TrackBallController.OnMouseDown(center, Matrix4X4.Identity, TrackBallTransformType.Rotation);
 					TrackBallController.OnMouseMove(center + currentVelocityPerMs * msPerUpdate);
 					TrackBallController.OnMouseUp();
 					Invalidate();

@@ -44,6 +44,7 @@ namespace MatterHackers.RayTracer
 	using System.Threading;
 	using MatterHackers.Agg.OpenGlGui;
 	using MatterHackers.RayTracer.Light;
+	using MatterHackers.VectorMath.TrackBall;
 
 	public class RayTraceWidget : GuiWidget
 	{
@@ -78,7 +79,7 @@ namespace MatterHackers.RayTracer
 
 			trackballTumbleWidget = new TrackballTumbleWidget(world, this);
 			//trackballTumbleWidget.DrawGlContent += trackballTumbleWidget_DrawGlContent;
-			trackballTumbleWidget.TransformState = TrackBallController.MouseDownType.Rotation;
+			trackballTumbleWidget.TransformState = TrackBallTransformType.Rotation;
 
 			AddChild(trackballTumbleWidget);
 
