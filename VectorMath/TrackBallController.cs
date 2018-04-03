@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2017, Lars Brubaker, John Lewin
+Copyright (c) 2018, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -44,12 +44,7 @@ namespace MatterHackers.VectorMath.TrackBall
 
 		private WorldView world;
 
-		public TrackBallController(WorldView world)
-			: this(1, world)
-		{
-		}
-
-		public TrackBallController(double trackBallRadius, WorldView world)
+		public TrackBallController(WorldView world, double trackBallRadius = 1)
 		{
 			mouseDownPosition = new Vector2();
 			this.TrackBallRadius = trackBallRadius;
