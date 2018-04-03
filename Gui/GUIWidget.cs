@@ -265,7 +265,7 @@ namespace MatterHackers.Agg.UI
 		{
 			get { return deviceBorder + devicePadding; }
 		}
-		
+
 		#region Padding
 		public event EventHandler PaddingChanged;
 
@@ -366,7 +366,7 @@ namespace MatterHackers.Agg.UI
 			BorderChanged?.Invoke(this, null);
 		}
 		#endregion
-		
+
 		#region Margin
 		public event EventHandler MarginChanged;
 
@@ -1097,7 +1097,7 @@ namespace MatterHackers.Agg.UI
 						var childSize = child.MinimumSize;
 						minSize.X = Max((child.HAnchor == HAnchor.Stretch) ? 0 : child.Width
 							+ child.DeviceMargin.Width, minSize.X);
-						minSize.Y = Max((child.VAnchor == VAnchor.Stretch) ? 0 : child.Height 
+						minSize.Y = Max((child.VAnchor == VAnchor.Stretch) ? 0 : child.Height
 							+ child.DeviceMargin.Height, minSize.Y);
 
 						RectangleDouble childBoundsWithMargin = child.BoundsRelativeToParent;
@@ -1424,7 +1424,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
-		/// Override this to create child controls and other 
+		/// Override this to create child controls and other
 		/// </summary>
 		public virtual void Initialize()
 		{
@@ -3131,6 +3131,8 @@ namespace MatterHackers.Agg.UI
 				{
 					child.ClearCapturedState();
 				}
+
+				mouseCapturedState = MouseCapturedState.NotCaptured;
 
 				GuiWidget parent = this;
 				while (parent != null)

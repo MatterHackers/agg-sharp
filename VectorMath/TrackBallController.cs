@@ -35,10 +35,6 @@ namespace MatterHackers.VectorMath
 	{
 		public enum MouseDownType { None, Translation, Rotation, Scale };
 
-		private double trackBallRadius;
-
-		private MouseDownType currentTrackingType = MouseDownType.None;
-
 		private Matrix4X4 localToScreenTransform;
 
 		private Vector2 mouseDownPosition;
@@ -56,27 +52,21 @@ namespace MatterHackers.VectorMath
 		public TrackBallController(double trackBallRadius, WorldView world)
 		{
 			mouseDownPosition = new Vector2();
-			this.trackBallRadius = trackBallRadius;
+			this.TrackBallRadius = trackBallRadius;
 
 			this.world = world;
 		}
 
 		public void CopyTransforms(TrackBallController trackBallToCopy)
 		{
-			trackBallRadius = trackBallToCopy.trackBallRadius;
+			TrackBallRadius = trackBallToCopy.TrackBallRadius;
 			this.world.RotationMatrix = trackBallToCopy.world.RotationMatrix;
 			this.world.TranslationMatrix = trackBallToCopy.world.TranslationMatrix;
 
 			OnTransformChanged(null);
 		}
 
-		public MouseDownType CurrentTrackingType
-		{
-			get
-			{
-				return currentTrackingType;
-			}
-		}
+		public MouseDownType CurrentTrackingType { get; private set; } = MouseDownType.None;
 
 		public static Vector3 MapMoveToSphere(WorldView world, double trackBallRadius, Vector2 startPosition, Vector2 endPosition, bool rotateOnZ)
 		{
@@ -116,8 +106,8 @@ namespace MatterHackers.VectorMath
 		{
 			//if (currentTrackingType == MouseDownType.None)
 			{
-				currentTrackingType = trackType;
-				switch (currentTrackingType)
+				CurrentTrackingType = trackType;
+				switch (CurrentTrackingType)
 				{
 					case MouseDownType.Rotation:
 						mouseDownPosition = mousePosition;
@@ -141,10 +131,10 @@ namespace MatterHackers.VectorMath
 		//Mouse drag, calculate rotation
 		public void OnMouseMove(Vector2 mousePosition)
 		{
-			switch (currentTrackingType)
+			switch (CurrentTrackingType)
 			{
 				case MouseDownType.Rotation:
-					Quaternion activeRotationQuaternion = GetRotationForMove(world, trackBallRadius, mouseDownPosition, mousePosition, false);
+					Quaternion activeRotationQuaternion = GetRotationForMove(world, TrackBallRadius, mouseDownPosition, mousePosition, false);
 
 					if (activeRotationQuaternion != Quaternion.Identity)
 					{
@@ -225,7 +215,7 @@ namespace MatterHackers.VectorMath
 
 		public void OnMouseUp()
 		{
-			switch (currentTrackingType)
+			switch (CurrentTrackingType)
 			{
 				case MouseDownType.Rotation:
 					break;
@@ -240,7 +230,7 @@ namespace MatterHackers.VectorMath
 				default:
 					throw new NotImplementedException();
 			}
-			currentTrackingType = MouseDownType.None;
+			CurrentTrackingType = MouseDownType.None;
 		}
 
 		public void OnMouseWheel(int wheelDelta)
@@ -264,18 +254,6 @@ namespace MatterHackers.VectorMath
 			world.OnTransformChanged(x);
 		}
 
-		public double TrackBallRadius
-		{
-			get
-			{
-				return trackBallRadius;
-			}
-
-			set
-			{
-				trackBallRadius = value;
-			}
-		}
-
+		public double TrackBallRadius { get; set; }
 	}
 }
