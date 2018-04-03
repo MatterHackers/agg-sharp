@@ -29,12 +29,12 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 
-namespace MatterHackers.VectorMath
+namespace MatterHackers.VectorMath.TrackBall
 {
+	public enum TrackBallTransformType { None, Translation, Rotation, Scale };
+
 	public class TrackBallController
 	{
-		public enum MouseDownType { None, Translation, Rotation, Scale };
-
 		private Matrix4X4 localToScreenTransform;
 
 		private Vector2 mouseDownPosition;
@@ -57,8 +57,7 @@ namespace MatterHackers.VectorMath
 			this.world = world;
 		}
 
-
-		public MouseDownType CurrentTrackingType { get; private set; } = MouseDownType.None;
+		public TrackBallTransformType CurrentTrackingType { get; private set; } = TrackBallTransformType.None;
 
 		public static Vector3 MapMoveToSphere(WorldView world, double trackBallRadius, Vector2 startPosition, Vector2 endPosition, bool rotateOnZ)
 		{
@@ -94,23 +93,23 @@ namespace MatterHackers.VectorMath
 		}
 
 		//Mouse down
-		public void OnMouseDown(Vector2 mousePosition, Matrix4X4 screenToLocal, MouseDownType trackType = MouseDownType.Rotation)
+		public void OnMouseDown(Vector2 mousePosition, Matrix4X4 screenToLocal, TrackBallTransformType trackType = TrackBallTransformType.Rotation)
 		{
 			//if (currentTrackingType == MouseDownType.None)
 			{
 				CurrentTrackingType = trackType;
 				switch (CurrentTrackingType)
 				{
-					case MouseDownType.Rotation:
+					case TrackBallTransformType.Rotation:
 						mouseDownPosition = mousePosition;
 						break;
 
-					case MouseDownType.Translation:
+					case TrackBallTransformType.Translation:
 						localToScreenTransform = Matrix4X4.Invert(screenToLocal);
 						lastTranslationMousePosition = mousePosition;
 						break;
 
-					case MouseDownType.Scale:
+					case TrackBallTransformType.Scale:
 						lastScaleMousePosition = mousePosition;
 						break;
 
@@ -125,7 +124,7 @@ namespace MatterHackers.VectorMath
 		{
 			switch (CurrentTrackingType)
 			{
-				case MouseDownType.Rotation:
+				case TrackBallTransformType.Rotation:
 					Quaternion activeRotationQuaternion = GetRotationForMove(world, TrackBallRadius, mouseDownPosition, mousePosition, false);
 
 					if (activeRotationQuaternion != Quaternion.Identity)
@@ -137,7 +136,7 @@ namespace MatterHackers.VectorMath
 
 					break;
 
-				case MouseDownType.Translation:
+				case TrackBallTransformType.Translation:
 					{
 						Vector2 mouseDelta = mousePosition - lastTranslationMousePosition;
 						Vector2 scaledDelta = mouseDelta / world.ScreenCenter.X * 4.75;
@@ -150,7 +149,7 @@ namespace MatterHackers.VectorMath
 					}
 					break;
 
-				case MouseDownType.Scale:
+				case TrackBallTransformType.Scale:
 					{
 						Vector2 mouseDelta = mousePosition - lastScaleMousePosition;
 						double zoomDelta = 1;
@@ -209,20 +208,20 @@ namespace MatterHackers.VectorMath
 		{
 			switch (CurrentTrackingType)
 			{
-				case MouseDownType.Rotation:
+				case TrackBallTransformType.Rotation:
 					break;
 
-				case MouseDownType.Translation:
+				case TrackBallTransformType.Translation:
 					//currentTranslationMatrix = Matrix4X4.Identity;
 					break;
 
-				case MouseDownType.Scale:
+				case TrackBallTransformType.Scale:
 					break;
 
 				default:
 					throw new NotImplementedException();
 			}
-			CurrentTrackingType = MouseDownType.None;
+			CurrentTrackingType = TrackBallTransformType.None;
 		}
 
 		public void OnMouseWheel(int wheelDelta)
