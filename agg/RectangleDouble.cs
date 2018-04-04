@@ -451,6 +451,13 @@ namespace MatterHackers.Agg
 			return null;
 		}
 
+		public Vector2 Clamp(Vector2 actualNozzlePosition)
+		{
+			var newX = Math.Min(Right, Math.Max(Left, actualNozzlePosition.X));
+			var newY = Math.Min(Top, Math.Max(Bottom, actualNozzlePosition.Y));
+			return new Vector2(newX, newY);
+		}
+
 		public bool ClipLine(Vector2 p1, Vector2 p2)
 		{
 			if(this.ClipSegment(p1, p2) != null)
