@@ -73,7 +73,7 @@ namespace MatterHackers.Agg.UI
 			{
 				this.AddChild(contentWidget);
 
-				Width = contentWidget.Width;
+				Width = contentWidget.Width + contentWidget.Padding.Width;
 
 				// Clamp height to MaxHeight if specified, otherwise content height
 				Height = layoutEngine.MaxHeight > 0 ? Math.Min(layoutEngine.MaxHeight, contentWidget.Height) : contentWidget.Height;
