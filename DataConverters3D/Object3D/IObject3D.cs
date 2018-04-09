@@ -207,7 +207,7 @@ namespace MatterHackers.DataConverters3D
 		/// Remove the IObject3D from the tree and keep whatever functionality it was adding. 
 		/// This may require removing many child objects from the tree depending on implementation.
 		/// </summary>
-		void Bake();
+		void MakePermanent();
 
 		[JsonIgnore]
 		bool CanRemove { get; }

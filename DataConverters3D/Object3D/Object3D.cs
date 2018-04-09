@@ -558,7 +558,7 @@ namespace MatterHackers.DataConverters3D
 				});
 		}
 
-		public virtual void Bake()
+		public virtual void MakePermanent()
 		{
 			// push our matrix into our children
 			foreach (var child in this.Children)
