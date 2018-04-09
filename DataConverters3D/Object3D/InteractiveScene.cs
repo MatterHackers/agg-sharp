@@ -338,7 +338,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public void Bake()
+		public void MakePermanent()
 		{
 			throw new NotImplementedException();
 		}
