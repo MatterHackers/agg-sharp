@@ -270,7 +270,7 @@ namespace MatterHackers.Agg.UI
 		public event EventHandler PaddingChanged;
 
 		private BorderDouble devicePadding;
-		private BorderDouble padding;
+		private BorderDouble _padding;
 
 		/// <summary>
 		/// The space between the Widget and it's contents (the inside border).
@@ -278,15 +278,15 @@ namespace MatterHackers.Agg.UI
 		[Category("Layout")]
 		public virtual BorderDouble Padding
 		{
-			get { return padding; }
+			get { return _padding; }
 			set
 			{
 				//using (new PerformanceTimer("Draw Timer", "On Layout"))
 				{
-					if (padding != value)
+					if (_padding != value)
 					{
-						padding = value;
-						devicePadding = Padding * GuiWidget.DeviceScale;
+						_padding = value;
+						devicePadding = _padding * GuiWidget.DeviceScale;
 						if (EnforceIntegerBounds)
 						{
 							devicePadding.Round();
@@ -332,7 +332,7 @@ namespace MatterHackers.Agg.UI
 		public event EventHandler BorderChanged;
 
 		private BorderDouble deviceBorder;
-		private BorderDouble border;
+		private BorderDouble _border;
 
 		/// <summary>
 		/// The space between the Widget and its border.
@@ -340,15 +340,15 @@ namespace MatterHackers.Agg.UI
 		[Category("Layout")]
 		public virtual BorderDouble Border
 		{
-			get { return border; }
+			get { return _border; }
 			set
 			{
 				//using (new PerformanceTimer("Draw Timer", "On Layout"))
 				{
-					if (border != value)
+					if (_border != value)
 					{
-						border = value;
-						deviceBorder = Border * GuiWidget.DeviceScale;
+						_border = value;
+						deviceBorder = _border * GuiWidget.DeviceScale;
 						if (EnforceIntegerBounds)
 						{
 							deviceBorder.Round();
@@ -2110,7 +2110,7 @@ namespace MatterHackers.Agg.UI
 				}
 				else // do a fill rect
 				{
-					graphics2D.FillRectangle(bounds.Right - border.Right, bounds.Bottom, bounds.Right, bounds.Top, BorderColor);
+					graphics2D.FillRectangle(bounds.Right - Border.Right, bounds.Bottom, bounds.Right, bounds.Top, BorderColor);
 				}
 			}
 
@@ -2127,7 +2127,7 @@ namespace MatterHackers.Agg.UI
 				}
 				else // do a fill rect
 				{
-					graphics2D.FillRectangle(bounds.Left, bounds.Top - border.Top, bounds.Right, bounds.Top, BorderColor);
+					graphics2D.FillRectangle(bounds.Left, bounds.Top - Border.Top, bounds.Right, bounds.Top, BorderColor);
 				}
 			}
 		}
