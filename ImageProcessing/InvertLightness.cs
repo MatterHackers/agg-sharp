@@ -90,7 +90,7 @@ namespace MatterHackers.Agg.ImageProcessing
 
 								resultBuffer[offset + 0] = invertedColor.blue;
 								resultBuffer[offset + 1] = invertedColor.green;
-								resultBuffer[offset + 2] = invertedColor.blue;
+								resultBuffer[offset + 2] = invertedColor.red;
 								resultBuffer[offset + 3] = invertedColor.alpha;
 
 								offset += 4;
