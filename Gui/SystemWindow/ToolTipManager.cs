@@ -204,7 +204,7 @@ namespace MatterHackers.Agg.UI
 
 					toolTipWidget.AfterDraw += (sender, drawEventHandler) =>
 					{
-						drawEventHandler.graphics2D.Rectangle(toolTipWidget.LocalBounds, Color.Black);
+						drawEventHandler.Graphics2D.Rectangle(toolTipWidget.LocalBounds, Color.Black);
 					};
 
 					// Make sure we wrap long text

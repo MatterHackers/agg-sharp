@@ -63,6 +63,7 @@
     <Compile Include="agg_gamma_ctrl.cs" />
     <Compile Include="agg_gamma_spline.cs" />
     <Compile Include="agg_spline_ctrl.cs" />
+    <Compile Include="Animation.cs" />
     <Compile Include="AverageMillisecondTimer.cs" />
     <Compile Include="Button\ButtonViewText.cs" />
     <Compile Include="Button\ButtonViewThreeImage.cs" />

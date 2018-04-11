@@ -158,8 +158,8 @@ namespace MatterHackers.MeshVisualizer
 				{
 					foreach (var child in Scene.Children)
 					{
-						this.World.RenderDebugAABB(e.graphics2D, child.TraceData().GetAxisAlignedBoundingBox());
-						this.World.RenderDebugAABB(e.graphics2D, child.GetAxisAlignedBoundingBox(Matrix4X4.Identity));
+						this.World.RenderDebugAABB(e.Graphics2D, child.TraceData().GetAxisAlignedBoundingBox());
+						this.World.RenderDebugAABB(e.Graphics2D, child.GetAxisAlignedBoundingBox(Matrix4X4.Identity));
 					}
 				};
 			}

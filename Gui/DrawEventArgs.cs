@@ -33,11 +33,11 @@ namespace MatterHackers.Agg.UI
 {
 	public class DrawEventArgs : EventArgs
 	{
-		public Graphics2D graphics2D { get; }
+		public Graphics2D Graphics2D { get; }
 
 		public DrawEventArgs(Graphics2D graphics2D)
 		{
-			this.graphics2D = graphics2D;
+			this.Graphics2D = graphics2D;
 		}
 	}
 }
