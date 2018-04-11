@@ -36,6 +36,8 @@ namespace MatterHackers.Agg.UI
 
 		private Color textColor;
 
+		private Color disabledColor;
+
 		public bool EllipsisIfClipped { get; set; }
 
 		public bool EllipsisActive => this.EllipsisIfClipped && Printer.LocalBounds.Width > LocalBounds.Width;
@@ -47,15 +49,9 @@ namespace MatterHackers.Agg.UI
 			set => base.ToolTipText = value;
 		}
 
-		public Color DisabledColor { get; set; }
-
 		public double PointSize
 		{
-			get
-			{
-				return Printer.TypeFaceStyle.EmSizeInPoints / GuiWidget.DeviceScale;
-			}
-
+			get => Printer.TypeFaceStyle.EmSizeInPoints / GuiWidget.DeviceScale;
 			set
 			{
 				Printer.TypeFaceStyle = new StyledTypeFace(Printer.TypeFaceStyle.TypeFace, value * GuiWidget.DeviceScale, Printer.TypeFaceStyle.DoUnderline, Printer.TypeFaceStyle.FlatenCurves);
@@ -73,7 +69,7 @@ namespace MatterHackers.Agg.UI
 
 		public TextWidget(string text, double x = 0, double y = 0, double pointSize = 12, Justification justification = Justification.Left, Color textColor = new Color(), bool ellipsisIfClipped = true, bool underline = false, Color backgroundColor = new Color(), TypeFace typeFace = null, bool bold = false)
 		{
-			DisabledColor = new Color(textColor, 50);
+			disabledColor = new Color(textColor, 50);
 
 			Selectable = false;
 			DoubleBuffer = DoubleBufferDefault;
@@ -107,10 +103,7 @@ namespace MatterHackers.Agg.UI
 
 		public override RectangleDouble LocalBounds
 		{
-			get
-			{
-				return base.LocalBounds;
-			}
+			get => base.LocalBounds;
 			set
 			{
 				if (value != LocalBounds)
@@ -132,10 +125,7 @@ namespace MatterHackers.Agg.UI
 
 		public override BorderDouble Padding
 		{
-			get
-			{
-				return base.Padding;
-			}
+			get => base.Padding;
 			set
 			{
 				if (Padding != value)
@@ -167,10 +157,7 @@ namespace MatterHackers.Agg.UI
 
 		public override string Text
 		{
-			get
-			{
-				return base.Text;
-			}
+			get => base.Text;
 			set
 			{
 				string convertedText = value;
@@ -269,12 +256,14 @@ namespace MatterHackers.Agg.UI
 
 		public Color TextColor
 		{
-			get => (this.Enabled) ? textColor : this.DisabledColor;
+			get => (this.Enabled) ? textColor : this.disabledColor;
 			set
 			{
 				if (textColor != value)
 				{
 					textColor = value;
+					disabledColor = new Color(textColor, 50);
+
 					this.Invalidate();
 				}
 			}
