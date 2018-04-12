@@ -94,9 +94,9 @@ namespace MatterHackers.Agg
 		/// </summary>
 		/// <param name="path">The file path to load</param>
 		/// <returns>An ImageBuffer initialized with data from the given file</returns>
-		public ImageBuffer LoadIcon(string path, IconColor iconColor = IconColor.Raw)
+		public ImageBuffer LoadIcon(string path, bool invertImage = false)
 		{
-			return LoadImage(Path.Combine("Icons", path), iconColor);
+			return LoadImage(Path.Combine("Icons", path), invertImage);
 		}
 
 		/// <summary>
@@ -107,12 +107,12 @@ namespace MatterHackers.Agg
 		/// <param name="width"></param>
 		/// <param name="height"></param>
 		/// <returns></returns>
-		public ImageBuffer LoadIcon(string path, int width, int height, IconColor iconColor = IconColor.Raw)
+		public ImageBuffer LoadIcon(string path, int width, int height, bool invertImage = false)
 		{
 			int deviceWidth = (int)(width * GuiWidget.DeviceScale);
 			int deviceHeight = (int)(height * GuiWidget.DeviceScale);
 
-			ImageBuffer image = LoadIcon(path, iconColor);
+			ImageBuffer image = LoadIcon(path, invertImage);
 			image.SetRecieveBlender(new BlenderPreMultBGRA());
 
 			return image.CreateScaledImage(deviceWidth, deviceHeight);
@@ -150,7 +150,7 @@ namespace MatterHackers.Agg
 		}
 
 		private static object locker = new object();
-		private void LoadImage(string path, ImageBuffer destImage, IconColor iconColor = IconColor.Raw)
+		private void LoadImage(string path, ImageBuffer destImage, bool invertImage = false)
 		{
 			lock (locker)
 			{
@@ -172,8 +172,7 @@ namespace MatterHackers.Agg
 				}
 
 				// Themed icons are black and need be inverted on dark themes, or when white icons are requested
-				if ((iconColor == IconColor.Theme && ActiveTheme.Instance.IsDarkTheme)
-					|| iconColor == IconColor.White)
+				if (invertImage)
 				{
 					cachedImage = cachedImage.InvertLightness();
 					cachedImage.SetRecieveBlender(new BlenderPreMultBGRA());
@@ -185,13 +184,13 @@ namespace MatterHackers.Agg
 
 		public ImageBuffer LoadImage(string path)
 		{
-			return LoadImage(path, IconColor.Raw);
+			return this.LoadImage(path, false);
 		}
 
-		public ImageBuffer LoadImage(string path, IconColor iconColor)
+		public ImageBuffer LoadImage(string path, bool invertImage = false)
 		{
 			ImageBuffer temp = new ImageBuffer();
-			LoadImage(path, temp, iconColor);
+			LoadImage(path, temp, invertImage);
 
 			return temp;
 		}
