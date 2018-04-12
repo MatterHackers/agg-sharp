@@ -31,65 +31,141 @@ using System;
 
 namespace MatterHackers.Agg.UI
 {
-	public class Animation
+	public class Animation : IDisposable
 	{
-		private GuiWidget drawTarget;
-		private bool haveDrawn = false;
-		private long lastTimeMs;
-		private int maxUpdatesPerDraw;
-		private RunningInterval runningInterval;
-		private double secondsLeftOverFromLastUpdate;
-		private double secondsPerUpdate;
-		private Action<double> update;
+		#region draw target
 
-		/// <summary>
-		/// Attaches an animation engine to the given drawTarget and ensures a smooth animation.		///
-		/// </summary>
-		/// <param name="drawTarget">GuiWidget that is the draw target of this animation</param>
-		/// <param name="update">A function to call to process one interation of the update loop</param>
-		/// <param name="secondsPerUpdate">The delay between each update 1/fps if you want to think of it that way.</param>
-		/// <param name="maxUpdatesPerDraw">The maximum number of updates to do between draws (animation will slow down if exceeded)</param>
-		public Animation(GuiWidget drawTarget,
-			Action<double> update,
-			double secondsPerUpdate,
-			// optional stuff
-			int maxUpdatesPerDraw = 3)
-		{
-			this.update = update;
-			this.drawTarget = drawTarget;
-			this.secondsPerUpdate = secondsPerUpdate;
-			this.maxUpdatesPerDraw = maxUpdatesPerDraw;
+		private GuiWidget _drawTarget;
 
-			drawTarget.AfterDraw += DrawTarget_AfterDraw;
-
-			// check twice as often as we need to to make sure we don't mis our update by too much
-			runningInterval = UiThread.SetInterval(this.OnIdle, this.secondsPerUpdate / 2);
-
-			// kick off our first draw
-			drawTarget.Initialize();
-		}
-
-		public bool Continue
+		public GuiWidget DrawTarget
 		{
 			get
 			{
-				return runningInterval == null ? false : runningInterval.Continue;
+				return _drawTarget;
 			}
 			set
 			{
-				if (runningInterval != null)
+				if (value != _drawTarget)
 				{
-					runningInterval.Continue = value;
+					// check if we are already hooked to a widget
+					if (_drawTarget != null)
+					{
+						_drawTarget.AfterDraw -= MarkHaveDrawn;
+					}
+
+					_drawTarget = value;
+
+					// check for null as we might have cleared it
+					if (_drawTarget != null)
+					{
+						_drawTarget.AfterDraw += MarkHaveDrawn;
+
+						// kick off our first draw
+						_drawTarget.Invalidate();
+					}
 				}
 			}
 		}
 
-		private void DrawTarget_AfterDraw(object sender, DrawEventArgs e)
+		#endregion draw target
+
+		public EventHandler<double> Update;
+		private bool haveDrawn = false;
+		private long lastTimeMs;
+		private RunningInterval runningInterval;
+		private double secondsLeftOverFromLastUpdate;
+
+		public Animation()
+		{
+		}
+
+		public double FramesPerSecond
+		{
+			get => 1.0 / SecondsPerUpdate;
+			set => SecondsPerUpdate = 1.0 / value;
+		}
+
+		public bool IsRunning => runningInterval != null && runningInterval.Continue;
+
+		#region MaxUpdatesPerDraw
+
+		private int _maxUpdatesPerDraw = 3;
+
+		public int MaxUpdatesPerDraw
+		{
+			get => _maxUpdatesPerDraw;
+			set
+			{
+				if (value != _maxUpdatesPerDraw)
+				{
+					_maxUpdatesPerDraw = Math.Max(1, value);
+				}
+			}
+		}
+
+		#endregion MaxUpdatesPerDraw
+
+		#region SecondsPerUpdate
+
+		private double _secondsPerUpdate;
+
+		public double SecondsPerUpdate
+		{
+			get
+			{
+				return _secondsPerUpdate;
+			}
+			set
+			{
+				if (value != _secondsPerUpdate)
+				{
+					_secondsPerUpdate = value;
+					if (runningInterval != null)
+					{
+						// change the interval to the new timing
+						Stop();
+						Start();
+					}
+				}
+			}
+		}
+
+		#endregion SecondsPerUpdate
+
+		public void Dispose()
+		{
+			Stop();
+			DrawTarget = null;
+		}
+
+		/// <summary>
+		/// override this to do any updating in a derived class
+		/// </summary>
+		public virtual void OnUpdate(double secondsThisUpdate)
+		{
+			Update?.Invoke(this, secondsThisUpdate);
+		}
+
+		public void Start()
+		{
+			// check twice as often as we need to to make sure we don't mis our update by too much
+			runningInterval = UiThread.SetInterval(this.ProcessElapsedTime, this.SecondsPerUpdate / 2);
+		}
+
+		public void Stop()
+		{
+			if (runningInterval != null)
+			{
+				runningInterval.Continue = false;
+			}
+		}
+
+		private void MarkHaveDrawn(object sender, DrawEventArgs e)
 		{
 			haveDrawn = true;
 		}
 
-		private void OnIdle()
+		private void ProcessElapsedTime()
 		{
 			if (!haveDrawn)
 			{
@@ -107,7 +183,7 @@ namespace MatterHackers.Agg.UI
 			numSecondsPassedSinceLastUpdate += secondsLeftOverFromLastUpdate;
 
 			// limit it to the max that we are willing to consider
-			double maxSecondsToCatchUpOn = maxUpdatesPerDraw * secondsPerUpdate;
+			double maxSecondsToCatchUpOn = MaxUpdatesPerDraw * SecondsPerUpdate;
 			if (numSecondsPassedSinceLastUpdate > maxSecondsToCatchUpOn)
 			{
 				numSecondsPassedSinceLastUpdate = maxSecondsToCatchUpOn;
@@ -120,28 +196,28 @@ namespace MatterHackers.Agg.UI
 			bool wasUpdate = false;
 
 			// if enough time has gone by that we are willing to do an update
-			while (numSecondsPassedSinceLastUpdate >= secondsPerUpdate)
+			while (numSecondsPassedSinceLastUpdate >= SecondsPerUpdate)
 			{
 				wasUpdate = true;
 
 				// call update with time slices that are as big as secondsPerUpdate
-				update?.Invoke(secondsPerUpdate);
+				OnUpdate(SecondsPerUpdate);
 
-				if (drawTarget.HasBeenClosed)
+				if (DrawTarget.HasBeenClosed)
 				{
-					drawTarget.AfterDraw -= DrawTarget_AfterDraw;
-					Continue = false;
+					DrawTarget.AfterDraw -= MarkHaveDrawn;
+					Stop();
 				}
 
 				// take out the amount of time we updated and check again
-				numSecondsPassedSinceLastUpdate -= secondsPerUpdate;
+				numSecondsPassedSinceLastUpdate -= SecondsPerUpdate;
 			}
 
 			// if there was an update do a draw
 			if (wasUpdate)
 			{
 				haveDrawn = false;
-				drawTarget.Invalidate();
+				DrawTarget.Invalidate();
 			}
 
 			// remember the time that we didn't use up yet
