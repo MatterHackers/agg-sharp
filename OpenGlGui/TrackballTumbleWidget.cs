@@ -84,6 +84,8 @@ namespace MatterHackers.Agg.OpenGlGui
 
 		private GuiWidget sourceWidget;
 
+		private RunningInterval runningInterval;
+
 		public TrackballTumbleWidget(WorldView world, GuiWidget sourceWidget)
 		{
 			AnchorAll();
@@ -356,7 +358,7 @@ namespace MatterHackers.Agg.OpenGlGui
 						currentVelocityPerMs = motionQueue.GetVelocityPixelsPerMs();
 						if (currentVelocityPerMs.LengthSquared > 0)
 						{
-							UiThread.SetInterval(ApplyVelocity, 1.0 / updatesPerSecond, () => !HasBeenClosed && currentVelocityPerMs.LengthSquared > 0);
+							runningInterval = UiThread.SetInterval(ApplyVelocity, 1.0 / updatesPerSecond);
 						}
 					}
 				}
@@ -370,6 +372,8 @@ namespace MatterHackers.Agg.OpenGlGui
 		int updatesPerSecond = 30;
 		private void ApplyVelocity()
 		{
+			runningInterval.Continue = !HasBeenClosed && currentVelocityPerMs.LengthSquared > 0;
+
 			double msPerUpdate = 1000.0 / updatesPerSecond;
 			if (currentVelocityPerMs.LengthSquared > 0)
 			{

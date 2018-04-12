@@ -79,7 +79,7 @@ namespace MatterHackers.Agg.UI
 			};
 
 			// Get the an idle loop up and running
-			UiThread.SetInterval(CheckIfNeedToDisplayToolTip, .05, () => true);
+			UiThread.SetInterval(CheckIfNeedToDisplayToolTip, .05);
 		}
 
 		public event EventHandler ToolTipPop;
