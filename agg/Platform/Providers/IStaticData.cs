@@ -21,12 +21,11 @@ namespace MatterHackers.Agg.Platform
 		/// </summary>
 		/// <param name="path">The file path to load</param>
 		/// <returns>An ImageBuffer initialized with data from the given file</returns>
-		ImageBuffer LoadIcon(string path, IconColor iconColor = IconColor.Raw);
+		ImageBuffer LoadIcon(string path, bool invertImage = false);
 
-		ImageBuffer LoadIcon(string path, int width, int height, IconColor iconColor = IconColor.Raw);
+		ImageBuffer LoadIcon(string path, int width, int height, bool invertImage = false);
 
 		ImageBuffer LoadImage(string path);
-
 
 		Stream OpenStream(string path);
 
