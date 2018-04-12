@@ -47,6 +47,62 @@ namespace MatterHackers.Agg
 			fill_even_odd
 		}
 
+		public static double EaseInQuad(double t)
+		{
+			return t * t;
+		}
+
+		public static double EaseOutQuad(double t)
+		{
+			return -(t * (t - 2.0));
+		}
+
+		public static double EaseInOutQuad(double t)
+		{
+			if (t <= 0.5)
+			{
+				return 2.0 * (t * t);
+			}
+
+			t -= 0.5;
+			return 2.0 * t * (1.0 - t) + 0.5;
+		}
+
+		/// <summary>
+		/// Modeled after the quartic x^4
+		/// </summary>
+		static public double QuarticEaseIn(double t)
+		{
+			return t * t * t * t;
+		}
+
+		/// <summary>
+		/// Modeled after the quartic y = 1 - (x - 1)^4
+		/// </summary>
+		static public double EaseOutQuartic(double t)
+		{
+			double d = (t - 1);
+			return d * d * d * (1 - t) + 1;
+		}
+
+		/// <summary>
+		// Modeled after the piecewise quartic
+		// y = (1/2)((2x)^4)        ; [0, 0.5)
+		// y = -(1/2)((2x-2)^4 - 2) ; [0.5, 1]
+		/// </summary>
+		static public double QuarticEaseInOut(double t)
+		{
+			if (t < 0.5f)
+			{
+				return 8 * t * t * t * t;
+			}
+			else
+			{
+				double d = (t - 1);
+				return -8 * d * d * d * d + 1;
+			}
+		}
+
 		public static void memcpy(Byte[] dest, int destIndex, Byte[] source, int sourceIndex, int Count)
 		{
 #if USE_UNSAFE

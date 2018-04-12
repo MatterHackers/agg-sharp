@@ -39,6 +39,7 @@ namespace MatterHackers.Agg.UI
 		private ImageSequence imageSequence;
 		private bool runAnimation = false;
 		private double lastTimeUpdated = 0;
+		private RunningInterval runningInterval;
 
 		public int currentFrame;
 		public int CurrentFrame
@@ -59,7 +60,7 @@ namespace MatterHackers.Agg.UI
 						// we just turned it on so make sure the update is being called
 						lastTimeUpdated = 0;
 						runningTime.Restart();
-						UiThread.SetInterval(UpdateAnimation, .01, () => RunAnimation);
+						runningInterval = UiThread.SetInterval(UpdateAnimation, .01);
 					}
 				}
 			}
@@ -102,6 +103,8 @@ namespace MatterHackers.Agg.UI
 
 		private void UpdateAnimation()
 		{
+			runningInterval.Continue = RunAnimation;
+
 			if (runningTime.Elapsed.TotalSeconds - lastTimeUpdated > imageSequence.SecondsPerFrame)
 			{
 				if (imageSequence.NumFrames == 0)

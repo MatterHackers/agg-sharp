@@ -33,6 +33,11 @@ using System.Diagnostics;
 
 namespace MatterHackers.Agg.UI
 {
+	public class RunningInterval
+	{
+		public bool Continue { get; set; } = true;
+	}
+
 	public static class UiThread
 	{
 		private static List<DeferredAction> deferredActions = new List<DeferredAction>();
@@ -75,13 +80,13 @@ namespace MatterHackers.Agg.UI
 		/// <param name="action"></param>
 		/// <param name="intervalInSeconds"></param>
 		/// <returns>Action to call to canelel interval</returns>
-		public static void SetInterval(Action action, double intervalInSeconds, Func<bool> continueInterval)
+		public static RunningInterval SetInterval(Action action, double intervalInSeconds)
 		{
+			RunningInterval runningInterval = new RunningInterval();
 			Action IntervalFunction = null;
 			IntervalFunction = () =>
 			{
-				if(continueInterval == null
-					|| continueInterval.Invoke())
+				if(runningInterval.Continue)
 				{
 					RunOnIdle(action, intervalInSeconds);
 					RunOnIdle(IntervalFunction, intervalInSeconds);
@@ -91,6 +96,8 @@ namespace MatterHackers.Agg.UI
 			// queue the next call and the event to run on uithread
 			RunOnIdle(action, intervalInSeconds);
 			RunOnIdle(IntervalFunction, intervalInSeconds);
+
+			return runningInterval;
 		}
 
 		public static void RunOnIdle(Action action)

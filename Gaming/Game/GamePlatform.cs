@@ -73,7 +73,7 @@ namespace Gaming.Game
 			this.maxUpdatesPerDraw = maxUpdatesPerDraw;
 
 			AudioSystem.Startup();
-			UiThread.SetInterval(OnIdle, secondsPerUpdate, () => true);
+			UiThread.SetInterval(OnIdle, secondsPerUpdate);
 		}
 
 		public override void OnLoad(EventArgs args)

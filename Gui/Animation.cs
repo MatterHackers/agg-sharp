@@ -37,20 +37,21 @@ namespace MatterHackers.Agg.UI
 		private bool haveDrawn = false;
 		private long lastTimeMs;
 		private int maxUpdatesPerDraw;
+		private RunningInterval runningInterval;
 		private double secondsLeftOverFromLastUpdate;
 		private double secondsPerUpdate;
 		private Action<double> update;
 
 		/// <summary>
-		/// Attaches an animation engine to the given drawTarget and ensures a smooth animation.		/// 
+		/// Attaches an animation engine to the given drawTarget and ensures a smooth animation.		///
 		/// </summary>
 		/// <param name="drawTarget">GuiWidget that is the draw target of this animation</param>
 		/// <param name="update">A function to call to process one interation of the update loop</param>
 		/// <param name="secondsPerUpdate">The delay between each update 1/fps if you want to think of it that way.</param>
 		/// <param name="maxUpdatesPerDraw">The maximum number of updates to do between draws (animation will slow down if exceeded)</param>
-		public Animation(GuiWidget drawTarget, 
+		public Animation(GuiWidget drawTarget,
 			Action<double> update,
-			double secondsPerUpdate, 
+			double secondsPerUpdate,
 			// optional stuff
 			int maxUpdatesPerDraw = 3)
 		{
@@ -59,16 +60,33 @@ namespace MatterHackers.Agg.UI
 			this.secondsPerUpdate = secondsPerUpdate;
 			this.maxUpdatesPerDraw = maxUpdatesPerDraw;
 
-			drawTarget.AfterDraw += (obj, drawEvent) =>
-			{
-				haveDrawn = true;
-			};
+			drawTarget.AfterDraw += DrawTarget_AfterDraw;
 
 			// check twice as often as we need to to make sure we don't mis our update by too much
-			UiThread.SetInterval(this.OnIdle, this.secondsPerUpdate / 2, () => !drawTarget.HasBeenClosed);
+			runningInterval = UiThread.SetInterval(this.OnIdle, this.secondsPerUpdate / 2);
 
 			// kick off our first draw
 			drawTarget.Initialize();
+		}
+
+		public bool Continue
+		{
+			get
+			{
+				return runningInterval == null ? false : runningInterval.Continue;
+			}
+			set
+			{
+				if (runningInterval != null)
+				{
+					runningInterval.Continue = value;
+				}
+			}
+		}
+
+		private void DrawTarget_AfterDraw(object sender, DrawEventArgs e)
+		{
+			haveDrawn = true;
 		}
 
 		private void OnIdle()
@@ -108,6 +126,12 @@ namespace MatterHackers.Agg.UI
 
 				// call update with time slices that are as big as secondsPerUpdate
 				update?.Invoke(secondsPerUpdate);
+
+				if (drawTarget.HasBeenClosed)
+				{
+					drawTarget.AfterDraw -= DrawTarget_AfterDraw;
+					Continue = false;
+				}
 
 				// take out the amount of time we updated and check again
 				numSecondsPassedSinceLastUpdate -= secondsPerUpdate;
