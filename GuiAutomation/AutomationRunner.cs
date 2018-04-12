@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2018, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -41,6 +41,7 @@ using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
+using static MatterHackers.Agg.Easing;
 
 namespace MatterHackers.GuiAutomation
 {
@@ -96,34 +97,6 @@ namespace MatterHackers.GuiAutomation
 		public ImageBuffer GetCurrentScreen()
 		{
 			return inputSystem.GetCurrentScreen();
-		}
-
-		public double GetInterpolatedValue(double compleatedRatio0To1, InterpolationType interpolationType)
-		{
-			switch (interpolationType)
-			{
-				case InterpolationType.LINEAR:
-					return compleatedRatio0To1;
-
-				case InterpolationType.EASE_IN:
-					return Math.Pow(compleatedRatio0To1, 3);
-
-				case InterpolationType.EASE_OUT:
-					return (Math.Pow(compleatedRatio0To1 - 1, 3) + 1);
-
-				case InterpolationType.EASE_IN_OUT:
-					if (compleatedRatio0To1 < .5)
-					{
-						return Math.Pow(compleatedRatio0To1 * 2, 3) / 2;
-					}
-					else
-					{
-						return (Math.Pow(compleatedRatio0To1 * 2 - 2, 3) + 2) / 2;
-					}
-
-				default:
-					throw new NotImplementedException();
-			}
 		}
 
 		#endregion Utility
@@ -943,7 +916,7 @@ namespace MatterHackers.GuiAutomation
 			for (int i = 0; i < steps; i++)
 			{
 				double ratio = i / (double)steps;
-				ratio = GetInterpolatedValue(ratio, InterpolationType.EASE_OUT);
+				ratio = Cubic.Out(ratio);
 				Vector2 current = start + delta * ratio;
 				inputSystem.SetCursorPosition((int)current.X, (int)current.Y);
 				Thread.Sleep(20);
