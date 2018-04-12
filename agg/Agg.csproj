@@ -101,6 +101,7 @@
     <Compile Include="Collections\BoundingVolumeHierarchy.cs" />
     <Compile Include="Collections\UnboundCollection.cs" />
     <Compile Include="Color.cs" />
+    <Compile Include="Easing.cs" />
     <Compile Include="Font\LiberationSansBoldFont.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QuickTimer.cs" />
