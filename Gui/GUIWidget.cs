@@ -261,15 +261,15 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// The boarder and padding scaled by the DeviceScale (used by the layout engine)
 		/// </summary>
-		public BorderDouble DeviceBorderAndPadding
+		public BorderDouble DevicePadding
 		{
-			get { return deviceBorder + devicePadding; }
+			get;
+			private set;
 		}
 
 		#region Padding
 		public event EventHandler PaddingChanged;
 
-		private BorderDouble devicePadding;
 		private BorderDouble _padding;
 
 		/// <summary>
@@ -286,10 +286,10 @@ namespace MatterHackers.Agg.UI
 					if (_padding != value)
 					{
 						_padding = value;
-						devicePadding = _padding * GuiWidget.DeviceScale;
+						DevicePadding = _padding * GuiWidget.DeviceScale;
 						if (EnforceIntegerBounds)
 						{
-							devicePadding.Round();
+							DevicePadding.Round();
 						}
 						// the padding affects the children so make sure they are laid out
 						OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.Padding));
@@ -374,13 +374,14 @@ namespace MatterHackers.Agg.UI
 
 		public long LastMouseDownMs { get; private set; }
 
+		BorderDouble deviceMargin;
+
 		/// <summary>
 		/// The Margin scaled by the DeviceScale
 		/// </summary>
-		public BorderDouble DeviceMargin
+		public BorderDouble DeviceMarginAndBorder
 		{
-			get;
-			private set;
+			get { return deviceMargin + deviceBorder; }
 		}
 
 		/// <summary>
@@ -398,11 +399,11 @@ namespace MatterHackers.Agg.UI
 				if (margin != value)
 				{
 					margin = value;
-					DeviceMargin = Margin * GuiWidget.DeviceScale;
+					deviceMargin = Margin * GuiWidget.DeviceScale;
 
 					if (EnforceIntegerBounds)
 					{
-						DeviceMargin.Round();
+						deviceMargin.Round();
 					}
 					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Margin));
 					OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.Margin));
@@ -1096,12 +1097,12 @@ namespace MatterHackers.Agg.UI
 					{
 						var childSize = child.MinimumSize;
 						minSize.X = Max((child.HAnchor == HAnchor.Stretch) ? 0 : child.Width
-							+ child.DeviceMargin.Width, minSize.X);
+							+ child.DeviceMarginAndBorder.Width, minSize.X);
 						minSize.Y = Max((child.VAnchor == VAnchor.Stretch) ? 0 : child.Height
-							+ child.DeviceMargin.Height, minSize.Y);
+							+ child.DeviceMarginAndBorder.Height, minSize.Y);
 
 						RectangleDouble childBoundsWithMargin = child.BoundsRelativeToParent;
-						childBoundsWithMargin.Inflate(child.DeviceMargin);
+						childBoundsWithMargin.Inflate(child.DeviceMarginAndBorder);
 
 						FlowLayoutWidget flowLayout = this as FlowLayoutWidget;
 						bool childHSizeHasBeenAdjusted = flowLayout != null && (flowLayout.FlowDirection == FlowDirection.LeftToRight || flowLayout.FlowDirection == FlowDirection.RightToLeft);
@@ -1176,7 +1177,7 @@ namespace MatterHackers.Agg.UI
 		public RectangleDouble GetMinimumBoundsToEncloseChildren(bool considerChildAnchor = false)
 		{
 			RectangleDouble minimumSizeToEncloseChildren = GetChildrenBoundsIncludingMargins(considerChildAnchor);
-			minimumSizeToEncloseChildren.Inflate(DeviceBorderAndPadding);
+			minimumSizeToEncloseChildren.Inflate(DevicePadding);
 			return minimumSizeToEncloseChildren;
 		}
 
@@ -1855,8 +1856,6 @@ namespace MatterHackers.Agg.UI
 
 				BeforeDraw?.Invoke(this, new DrawEventArgs(graphics2D));
 
-				DrawBorder(graphics2D);
-
 				for (int i = 0; i < Children.Count; i++)
 				{
 					GuiWidget child = Children[i];
@@ -1865,7 +1864,7 @@ namespace MatterHackers.Agg.UI
 						if (child.DebugShowBounds)
 						{
 							// draw the margin
-							BorderDouble invertedMargin = child.DeviceMargin;
+							BorderDouble invertedMargin = child.DeviceMarginAndBorder;
 							invertedMargin.Left = -invertedMargin.Left;
 							invertedMargin.Bottom = -invertedMargin.Bottom;
 							invertedMargin.Right = -invertedMargin.Right;
@@ -1938,6 +1937,8 @@ namespace MatterHackers.Agg.UI
 						}
 						graphics2D.PopTransform();
 						graphics2D.SetClippingRect(oldClippingRect);
+
+						DrawBorder(graphics2D, child);
 					}
 				}
 
@@ -1946,7 +1947,7 @@ namespace MatterHackers.Agg.UI
 				if (DebugShowBounds)
 				{
 					// draw the padding
-					DrawBorderAndPaddingBounds(graphics2D, LocalBounds, DeviceBorderAndPadding, new Color(Cyan, 128));
+					DrawBorderAndPaddingBounds(graphics2D, LocalBounds, DevicePadding, new Color(Cyan, 128));
 
 					// show the bounds and inside with an x
 					graphics2D.Line(LocalBounds.Left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, new Color(Green, 100), 3);
@@ -2059,75 +2060,92 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private void DrawBorder(Graphics2D graphics2D)
+		private void DrawBorder(Graphics2D graphics2D, GuiWidget child)
 		{
-			var bounds = localBounds;
+			var childDeviceBorder = child.deviceBorder;
+			var childBorderColor = child.BorderColor;
 
-			if (deviceBorder.Left > 0)
+			if (childBorderColor == Color.Transparent
+				|| (childDeviceBorder.Left == 0 
+					&& childDeviceBorder.Right == 0
+					&& childDeviceBorder.Bottom == 0
+					&& childDeviceBorder.Top == 0))
 			{
-				if (deviceBorder.Bottom > 0 || deviceBorder.Top > 0)
+				return;
+			}
+
+			var childBounds = child.TransformToParentSpace(this, child.localBounds);
+			//bounds = this.localBounds;
+			//graphics2D.FillRectangle(bounds, new Color(Color.Cyan, 100));
+			//var expand = bounds;
+			//expand.Inflate(1);
+			//graphics2D.Rectangle(expand, new Color(Color.Magenta, 100));
+
+			if (childDeviceBorder.Left > 0)
+			{
+				if (childDeviceBorder.Bottom > 0 || childDeviceBorder.Top > 0)
 				{
 					var borderPath = new VertexStorage();
-					borderPath.MoveTo(bounds.Left, bounds.Top);
-					borderPath.LineTo(bounds.Left, bounds.Bottom);
-					borderPath.LineTo(bounds.Left + deviceBorder.Left, bounds.Bottom + deviceBorder.Bottom);
-					borderPath.LineTo(bounds.Left + deviceBorder.Left, bounds.Top - deviceBorder.Top);
-					graphics2D.Render(borderPath, BorderColor);
+					borderPath.MoveTo(childBounds.Left, childBounds.Top);
+					borderPath.LineTo(childBounds.Left, childBounds.Bottom);
+					borderPath.LineTo(childBounds.Left - childDeviceBorder.Left, childBounds.Bottom - childDeviceBorder.Bottom);
+					borderPath.LineTo(childBounds.Left - childDeviceBorder.Left, childBounds.Top + childDeviceBorder.Top);
+					graphics2D.Render(borderPath, childBorderColor);
 				}
 				else // do a fill rect
 				{
-					graphics2D.FillRectangle(bounds.Left, bounds.Bottom, bounds.Left + deviceBorder.Left, bounds.Top, BorderColor);
+					graphics2D.FillRectangle(childBounds.Left, childBounds.Bottom, childBounds.Left - childDeviceBorder.Left, childBounds.Top, childBorderColor);
 				}
 			}
 
-			if (deviceBorder.Bottom > 0)
+			if (childDeviceBorder.Bottom > 0)
 			{
-				if (deviceBorder.Left > 0 || deviceBorder.Right > 0)
+				if (childDeviceBorder.Left > 0 || childDeviceBorder.Right > 0)
 				{
 					var borderPath = new VertexStorage();
-					borderPath.MoveTo(bounds.Left, bounds.Bottom);
-					borderPath.LineTo(bounds.Right, bounds.Bottom);
-					borderPath.LineTo(bounds.Right - deviceBorder.Right, bounds.Bottom + deviceBorder.Bottom);
-					borderPath.LineTo(bounds.Left + deviceBorder.Left, bounds.Bottom + deviceBorder.Bottom);
-					graphics2D.Render(borderPath, BorderColor);
+					borderPath.MoveTo(childBounds.Left, childBounds.Bottom);
+					borderPath.LineTo(childBounds.Right, childBounds.Bottom);
+					borderPath.LineTo(childBounds.Right + childDeviceBorder.Right, childBounds.Bottom - childDeviceBorder.Bottom);
+					borderPath.LineTo(childBounds.Left - childDeviceBorder.Left, childBounds.Bottom - childDeviceBorder.Bottom);
+					graphics2D.Render(borderPath, childBorderColor);
 				}
 				else // do a fill rect
 				{
-					graphics2D.FillRectangle(bounds.Left, bounds.Bottom, bounds.Right, bounds.Bottom + deviceBorder.Bottom, BorderColor);
+					graphics2D.FillRectangle(childBounds.Left, childBounds.Bottom, childBounds.Right, childBounds.Bottom + childDeviceBorder.Bottom, childBorderColor);
 				}
 			}
 
-			if (deviceBorder.Right > 0)
+			if (childDeviceBorder.Right > 0)
 			{
-				if (deviceBorder.Bottom > 0 || deviceBorder.Top > 0)
+				if (childDeviceBorder.Bottom > 0 || childDeviceBorder.Top > 0)
 				{
 					var borderPath = new VertexStorage();
-					borderPath.MoveTo(bounds.Right, bounds.Bottom);
-					borderPath.LineTo(bounds.Right, bounds.Top);
-					borderPath.LineTo(bounds.Right - deviceBorder.Right, bounds.Top - deviceBorder.Top);
-					borderPath.LineTo(bounds.Right - deviceBorder.Right, bounds.Bottom + deviceBorder.Bottom);
-					graphics2D.Render(borderPath, BorderColor);
+					borderPath.MoveTo(childBounds.Right, childBounds.Bottom);
+					borderPath.LineTo(childBounds.Right, childBounds.Top);
+					borderPath.LineTo(childBounds.Right + childDeviceBorder.Right, childBounds.Top + childDeviceBorder.Top);
+					borderPath.LineTo(childBounds.Right + childDeviceBorder.Right, childBounds.Bottom - childDeviceBorder.Bottom);
+					graphics2D.Render(borderPath, childBorderColor);
 				}
 				else // do a fill rect
 				{
-					graphics2D.FillRectangle(bounds.Right - Border.Right, bounds.Bottom, bounds.Right, bounds.Top, BorderColor);
+					graphics2D.FillRectangle(childBounds.Right + Border.Right, childBounds.Bottom, childBounds.Right, childBounds.Top, childBorderColor);
 				}
 			}
 
-			if (deviceBorder.Top > 0)
+			if (childDeviceBorder.Top > 0)
 			{
-				if (deviceBorder.Left > 0 || deviceBorder.Right > 0)
+				if (childDeviceBorder.Left > 0 || childDeviceBorder.Right > 0)
 				{
 					var borderPath = new VertexStorage();
-					borderPath.MoveTo(bounds.Right, bounds.Top);
-					borderPath.LineTo(bounds.Left, bounds.Top);
-					borderPath.LineTo(bounds.Left + deviceBorder.Left, bounds.Top - deviceBorder.Top);
-					borderPath.LineTo(bounds.Right - deviceBorder.Right, bounds.Top - deviceBorder.Top);
-					graphics2D.Render(borderPath, BorderColor);
+					borderPath.MoveTo(childBounds.Right, childBounds.Top);
+					borderPath.LineTo(childBounds.Left, childBounds.Top);
+					borderPath.LineTo(childBounds.Left - childDeviceBorder.Left, childBounds.Top + childDeviceBorder.Top);
+					borderPath.LineTo(childBounds.Right + childDeviceBorder.Right, childBounds.Top + childDeviceBorder.Top);
+					graphics2D.Render(borderPath, childBorderColor);
 				}
 				else // do a fill rect
 				{
-					graphics2D.FillRectangle(bounds.Left, bounds.Top - Border.Top, bounds.Right, bounds.Top, BorderColor);
+					graphics2D.FillRectangle(childBounds.Left, childBounds.Top + Border.Top, childBounds.Right, childBounds.Top, childBorderColor);
 				}
 			}
 		}
