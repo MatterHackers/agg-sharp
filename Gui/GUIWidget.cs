@@ -1855,6 +1855,8 @@ namespace MatterHackers.Agg.UI
 
 				BeforeDraw?.Invoke(this, new DrawEventArgs(graphics2D));
 
+				DrawBorder(graphics2D);
+
 				for (int i = 0; i < Children.Count; i++)
 				{
 					GuiWidget child = Children[i];
@@ -1870,8 +1872,6 @@ namespace MatterHackers.Agg.UI
 							invertedMargin.Top = -invertedMargin.Top;
 							DrawBorderAndPaddingBounds(graphics2D, child.BoundsRelativeToParent, invertedMargin, new Color(Red, 128));
 						}
-
-						DrawBorder(graphics2D);
 
 						RectangleDouble oldClippingRect = graphics2D.GetClippingRect();
 						graphics2D.PushTransform();
