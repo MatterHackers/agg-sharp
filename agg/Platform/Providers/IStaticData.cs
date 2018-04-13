@@ -4,8 +4,6 @@ using MatterHackers.Agg.Image;
 
 namespace MatterHackers.Agg.Platform
 {
-	public enum IconColor { Theme, White, Raw };
-
 	public interface IStaticData
 	{
 		bool DirectoryExists(string pathToManufacturers);
