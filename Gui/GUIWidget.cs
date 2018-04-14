@@ -2066,7 +2066,7 @@ namespace MatterHackers.Agg.UI
 			var childBorderColor = child.BorderColor;
 
 			if (childBorderColor == Color.Transparent
-				|| (childDeviceBorder.Left == 0 
+				|| (childDeviceBorder.Left == 0
 					&& childDeviceBorder.Right == 0
 					&& childDeviceBorder.Bottom == 0
 					&& childDeviceBorder.Top == 0))
@@ -2111,7 +2111,7 @@ namespace MatterHackers.Agg.UI
 				}
 				else // do a fill rect
 				{
-					graphics2D.FillRectangle(childBounds.Left, childBounds.Bottom, childBounds.Right, childBounds.Bottom + childDeviceBorder.Bottom, childBorderColor);
+					graphics2D.FillRectangle(childBounds.Left, childBounds.Bottom, childBounds.Right, childBounds.Bottom - childDeviceBorder.Bottom, childBorderColor);
 				}
 			}
 
@@ -2128,7 +2128,7 @@ namespace MatterHackers.Agg.UI
 				}
 				else // do a fill rect
 				{
-					graphics2D.FillRectangle(childBounds.Right + Border.Right, childBounds.Bottom, childBounds.Right, childBounds.Top, childBorderColor);
+					graphics2D.FillRectangle(childBounds.Right + childDeviceBorder.Right, childBounds.Bottom, childBounds.Right, childBounds.Top, childBorderColor);
 				}
 			}
 
@@ -2145,7 +2145,7 @@ namespace MatterHackers.Agg.UI
 				}
 				else // do a fill rect
 				{
-					graphics2D.FillRectangle(childBounds.Left, childBounds.Top + Border.Top, childBounds.Right, childBounds.Top, childBorderColor);
+					graphics2D.FillRectangle(childBounds.Left, childBounds.Top + childDeviceBorder.Top, childBounds.Right, childBounds.Top, childBorderColor);
 				}
 			}
 		}
