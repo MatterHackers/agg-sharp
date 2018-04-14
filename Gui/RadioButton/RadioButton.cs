@@ -1,6 +1,4 @@
-﻿using MatterHackers.VectorMath;
-
-//----------------------------------------------------------------------------
+﻿//----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
@@ -23,21 +21,23 @@
 //
 //----------------------------------------------------------------------------
 using System;
-using System.Collections.ObjectModel;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
 	public static class IRadioButtonExtensions
 	{
-		public static void UncheckAllOtherRadioButtons(this IRadioButton radioButton)
+		/// <summary>
+		/// Uncheck all IRadioButton siblings based on our parents children or the custom SiblingRadioButtonList
+		/// </summary>
+		public static void UncheckSiblings(this IRadioButton radioButton)
 		{
-			var SiblingRadioButtonList = radioButton.SiblingRadioButtonList;
-
-			if (SiblingRadioButtonList != null)
+			var siblingButtons = radioButton.SiblingRadioButtonList ?? (radioButton as GuiWidget)?.Parent?.Children;
+			if (siblingButtons != null)
 			{
-				foreach (GuiWidget child in SiblingRadioButtonList.Distinct())
+				foreach (GuiWidget child in siblingButtons.Distinct())
 				{
 					if (child is IRadioButton childRadioButton && childRadioButton != radioButton)
 					{
@@ -181,7 +181,7 @@ namespace MatterHackers.Agg.UI
 					isChecked = value;
 					if (isChecked)
 					{
-						this.UncheckAllOtherRadioButtons();
+						this.UncheckSiblings();
 					}
 					OnCheckStateChanged();
 					Invalidate();
