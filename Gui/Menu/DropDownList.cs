@@ -499,7 +499,7 @@ namespace MatterHackers.Agg.UI
 				lastRenderColor = this.BackgroundColor;
 			}
 
-			graphics2D.Render(this.gradientBackground, this.LocalBounds.Right - gradientBackground.Width - this.Border.Right, 0);
+			graphics2D.Render(this.gradientBackground, this.LocalBounds.Right - gradientBackground.Width, 0);
 
 			// Draw directional arrow
 			if (directionArrow != null)
