@@ -53,7 +53,7 @@ namespace MatterHackers.Agg.UI
 		private static int count = 0;
 		private double CurrentAutoPopDelay = 5;
 		private Vector2 mousePosition;
-		private SystemWindow owner;
+		private SystemWindow systemWindow;
 		private Stopwatch timeCurrentToolTipHasBeenShowing = new Stopwatch();
 		private bool timeCurrentToolTipHasBeenShowingWasRunning;
 		private Stopwatch timeSinceLastMouseMove = new Stopwatch();
@@ -71,8 +71,8 @@ namespace MatterHackers.Agg.UI
 
 		internal ToolTipManager(SystemWindow owner)
 		{
-			this.owner = owner;
-			owner.MouseMove += (sender, e) =>
+			this.systemWindow = owner;
+			systemWindow.MouseMove += (sender, e) =>
 			{
 				mousePosition = e.Position;
 				timeSinceLastMouseMove.Restart();
@@ -185,8 +185,8 @@ namespace MatterHackers.Agg.UI
 			if (widgetThatWantsToShowToolTip != null
 				&& widgetThatWantsToShowToolTip != widgetThatIsShowingToolTip)
 			{
-				RectangleDouble screenBounds = widgetThatWantsToShowToolTip.TransformToScreenSpace(widgetThatWantsToShowToolTip.LocalBounds);
-				if (screenBounds.Contains(mousePosition))
+				RectangleDouble screenBoundsShowingTT = widgetThatWantsToShowToolTip.TransformToScreenSpace(widgetThatWantsToShowToolTip.LocalBounds);
+				if (screenBoundsShowingTT.Contains(mousePosition))
 				{
 					RemoveToolTip();
 					widgetThatIsShowingToolTip = null;
@@ -218,7 +218,7 @@ namespace MatterHackers.Agg.UI
 					double RatioOfExpectedText = Math.Max(1, (widgetThatWantsToShowToolTip.ToolTipText.Length / 50.0));
 					CurrentAutoPopDelay = RatioOfExpectedText * AutoPopDelay;
 
-					owner.AddChild(toolTipWidget);
+					systemWindow.AddChild(toolTipWidget);
 					if (ToolTipShown != null)
 					{
 						ToolTipShown(this, new StringEventArgs(CurrentText));
@@ -233,17 +233,17 @@ namespace MatterHackers.Agg.UI
 					toolTipWidget.OriginRelativeParent = toolTipWidget.OriginRelativeParent + new Vector2(0, -toolTipBounds.Bottom - toolTipBounds.Height - 23);
 
 					Vector2 offset = Vector2.Zero;
-					RectangleDouble ownerBounds = owner.LocalBounds;
+					RectangleDouble systemWindowBounds = systemWindow.LocalBounds;
 					RectangleDouble toolTipBoundsRelativeToParent = toolTipWidget.BoundsRelativeToParent;
 
-					if (toolTipBoundsRelativeToParent.Right > ownerBounds.Right - 3)
+					if (toolTipBoundsRelativeToParent.Right > systemWindowBounds.Right - 3)
 					{
-						offset.X = ownerBounds.Right - toolTipBoundsRelativeToParent.Right - 3;
+						offset.X = systemWindowBounds.Right - toolTipBoundsRelativeToParent.Right - 3;
 					}
 
-					if (toolTipBoundsRelativeToParent.Bottom < ownerBounds.Bottom + 3)
+					if (toolTipBoundsRelativeToParent.Bottom < systemWindowBounds.Bottom + 3)
 					{
-						offset.Y = ownerBounds.Bottom - toolTipBoundsRelativeToParent.Bottom + 3;
+						offset.Y = screenBoundsShowingTT.Top - toolTipBoundsRelativeToParent.Bottom + 3;
 					}
 
 					toolTipWidget.OriginRelativeParent = toolTipWidget.OriginRelativeParent + offset;
@@ -257,7 +257,7 @@ namespace MatterHackers.Agg.UI
 		private void RemoveToolTip()
 		{
 			if (toolTipWidget != null
-				&& toolTipWidget.Parent == owner)
+				&& toolTipWidget.Parent == systemWindow)
 			{
 				if (ToolTipPop != null)
 				{
@@ -266,7 +266,7 @@ namespace MatterHackers.Agg.UI
 				//widgetThatWantsToShowToolTip = null;
 				timeSinceLastMouseMove.Stop();
 				timeSinceLastMouseMove.Reset();
-				owner.RemoveChild(toolTipWidget);
+				systemWindow.RemoveChild(toolTipWidget);
 				toolTipWidget = null;
 				toolTipText = "";
 
