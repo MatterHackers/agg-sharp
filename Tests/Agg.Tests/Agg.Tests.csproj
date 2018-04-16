@@ -57,6 +57,7 @@
     <Compile Include="Agg.Gaming\Vector2D.cs" />
     <Compile Include="Agg.Gaming\Vector3D.cs" />
     <Compile Include="Agg.PolygonMesh\MeshTests.cs" />
+    <Compile Include="Agg.UI\BorderTests.cs" />
     <Compile Include="Agg.VectorMath\OctreeTests.cs" />
     <Compile Include="Agg.PolygonMesh\VertexCollectonTests.cs" />
     <Compile Include="Agg.RayTracer\BooleanTests.cs" />
