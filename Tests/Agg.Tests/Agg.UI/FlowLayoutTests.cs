@@ -27,7 +27,9 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
+using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
 
@@ -102,6 +104,93 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(bounds.Bottom == marginSize, "Bottom margin is incorrect");
 		}
 
+		[Test, Apartment(System.Threading.ApartmentState.STA), RunInApplicationDomain]
+		public async Task SpacingClearedAfterLoadPositionsCorrectly()
+		{
+			// Expectation - no matter what the margin/padding is at construction time, clearing it should result in Flowlayout position that reflects the latest values
+			// Actual - initial margin/padding values cause layout changes to OriginRelativeParent that are never reversed, resulting in the problem described in MatterHackers/MCCentral#3133 and presented below
+
+			var systemWindow = new SystemWindow(700, 200)
+			{
+				BackgroundColor = Color.LightGray,
+			};
+
+			var column = new FlowLayoutWidget(FlowDirection.TopToBottom)
+			{
+				HAnchor = HAnchor.Stretch,
+				VAnchor = VAnchor.Stretch,
+			};
+			systemWindow.AddChild(column);
+
+			FlowLayoutWidget row;
+
+			// **** Reset to zero to see the expected behavior ****
+			int initialSpacing = 8;
+
+			// Header
+			row = new FlowLayoutWidget(FlowDirection.LeftToRight)
+			{
+				Margin = initialSpacing,
+				Padding = initialSpacing,
+				HAnchor = HAnchor.Stretch,
+				VAnchor = VAnchor.Fit,
+				DebugShowBounds = true
+			};
+			column.AddChild(row);
+
+			row.AddChild(new GuiWidget(45, 45) { BackgroundColor = Color.Gray });
+
+			// Body
+			row = new FlowLayoutWidget(FlowDirection.TopToBottom)
+			{
+				Margin = initialSpacing,
+				Padding = initialSpacing,
+				HAnchor = HAnchor.Stretch,
+				VAnchor = VAnchor.Stretch,
+				DebugShowBounds = true
+			};
+			column.AddChild(row);
+
+			row.AddChild(new GuiWidget(45, 45) { BackgroundColor = Color.Gray });
+
+			// Footer
+			var footerRow = new FlowLayoutWidget(FlowDirection.LeftToRight)
+			{
+				Margin = initialSpacing,
+				Padding = initialSpacing,
+				HAnchor = HAnchor.Stretch,
+				VAnchor = VAnchor.Fit,
+				DebugShowBounds = true
+			};
+			column.AddChild(footerRow);
+
+			footerRow.AddChild(new GuiWidget(45, 45) { BackgroundColor = Color.Gray });
+
+			systemWindow.Load += (s, e) =>
+			{
+				// Remove padding and margin at runtime
+				foreach (var child in column.Children)
+				{
+					child.Invalidate();
+					child.Margin = 0;
+					child.Padding = 0;
+				}
+			};
+
+			await AutomationRunner.ShowWindowAndExecuteTests(
+			systemWindow,
+			(testRunner) =>
+			{
+				// Enable to observe
+				// testRunner.Delay(30);
+
+				Assert.AreEqual(0, footerRow.Position.Y, "Footer should be positioned at Y0 when it is the first item in a TopToBottom FlowlayoutWidget");
+
+				return Task.CompletedTask;
+			});
+
+		}
+
 		[Test]
 		public void NestedLayoutTopToBottomTests()
 		{
@@ -132,7 +221,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			GuiWidget containerControl = new GuiWidget(300, 200);
 			containerControl.Name = "containerControl";
-	
+
 			FlowLayoutWidget flow1 = new FlowLayoutWidget(FlowDirection.LeftToRight);
 			flow1.Name = "flow1";
 			flow1.HAnchor = HAnchor.Stretch;

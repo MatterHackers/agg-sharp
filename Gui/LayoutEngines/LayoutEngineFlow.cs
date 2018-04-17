@@ -288,7 +288,7 @@ namespace MatterHackers.Agg.UI
 									RectangleDouble curChildBounds = child.LocalBounds;
 									double newWidth = (parent.LocalBounds.Width - parent.DevicePadding.Width - totalWidthOfStaticItems) / numItemsNeedingExpanding;
 									child.LocalBounds = new RectangleDouble(curChildBounds.Left, curChildBounds.Bottom,
-										newWidth, curChildBounds.Top);
+										curChildBounds.Left + newWidth, curChildBounds.Top);
 								}
 								curX += child.LocalBounds.Width + child.DeviceMarginAndBorder.Width;
 							}
@@ -308,7 +308,7 @@ namespace MatterHackers.Agg.UI
 									RectangleDouble curChildBounds = child.LocalBounds;
 									double newWidth = (parent.LocalBounds.Width - parent.DevicePadding.Width - totalWidthOfStaticItems) / numItemsNeedingExpanding;
 									child.LocalBounds = new RectangleDouble(curChildBounds.Left, curChildBounds.Bottom,
-										newWidth, curChildBounds.Top);
+										curChildBounds.Left + newWidth, curChildBounds.Top);
 								}
 
 								double newX = curX - child.LocalBounds.Left - (child.LocalBounds.Width + child.DeviceMarginAndBorder.Right);
@@ -333,7 +333,7 @@ namespace MatterHackers.Agg.UI
 									RectangleDouble curChildBounds = child.LocalBounds;
 									double newHeight = (parent.LocalBounds.Height - parent.DevicePadding.Height - totalHeightOfStaticItems) / numItemsNeedingExpanding;
 									child.LocalBounds = new RectangleDouble(curChildBounds.Left, curChildBounds.Bottom,
-										curChildBounds.Right, newHeight);
+										curChildBounds.Right, curChildBounds.Bottom + newHeight);
 								}
 								curY += child.LocalBounds.Height + child.DeviceMarginAndBorder.Height;
 							}
@@ -351,9 +351,9 @@ namespace MatterHackers.Agg.UI
 								if (child.VAnchorIsSet(VAnchor.Stretch))
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
-									double newHeight = (parent.LocalBounds.Height - parent.DevicePadding.Height - totalHeightOfStaticItems) / numItemsNeedingExpanding;
+									double newHeight = (parent.LocalBounds.Height - parent.DevicePadding.Height - totalHeightOfStaticItems) / numItemsNeedingExpanding;// - child.DeviceMarginAndBorder.Height;
 									child.LocalBounds = new RectangleDouble(curChildBounds.Left, curChildBounds.Bottom,
-										curChildBounds.Right, newHeight);
+										curChildBounds.Right, curChildBounds.Bottom + newHeight);
 								}
 
 								double newY = curY - child.LocalBounds.Bottom - (child.LocalBounds.Height + child.DeviceMarginAndBorder.Top);
