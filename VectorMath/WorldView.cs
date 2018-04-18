@@ -113,7 +113,34 @@ namespace MatterHackers.VectorMath
 			return currentTranslationMatrix * RotationMatrix;
 		}
 
-		public Vector2 ScreenCenter { get; set; }
+		public void CalculateProjectionMatrixOffCenter(double width, double height, double centerOffsetX)
+		{
+			if (width > 0 && height > 0)
+			{
+				this.width = width;
+				this.height = height;
+
+				var projectionMatrix = Matrix4X4.Identity;
+
+				var yAngleR = MathHelper.DegreesToRadians(45)/2;
+
+				var farDist = height / 2 / Math.Tan(yAngleR);
+
+				var center = width / 2;
+				var xAngleL = Math.Atan2(-center - centerOffsetX / 2, farDist);
+				var xAngleR = Math.Atan2(center - centerOffsetX / 2, farDist);
+
+				// calculate yMin and yMax at the near clip plane
+				double yMax = zNear * System.Math.Tan(yAngleR);
+				double yMin = -yMax;
+				double xMax = zNear * System.Math.Tan(xAngleR);
+				double xMin = zNear * System.Math.Tan(xAngleL);
+				Matrix4X4.CreatePerspectiveOffCenter(xMin, xMax, yMin, yMax, zNear, zFar, out projectionMatrix);
+
+				this.ProjectionMatrix = projectionMatrix;
+				this.InverseProjectionMatrix = Matrix4X4.Invert(projectionMatrix);
+			}
+		}
 
 		public void CalculateProjectionMatrix(double width, double height)
 		{
@@ -122,11 +149,10 @@ namespace MatterHackers.VectorMath
 				this.width = width;
 				this.height = height;
 
+				var fovYRadians = MathHelper.DegreesToRadians(45);
+				var aspectWidthOverHeight = width / height;
 				var projectionMatrix = Matrix4X4.Identity;
-				Matrix4X4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(45), width / height, zNear, zFar, out projectionMatrix);
-
-				// thinking about how to do orthographic
-				//projectionMatrix = Matrix4X4.CreateOrthographic(width * 10, height * 10, zNear, zFar);
+				Matrix4X4.CreatePerspectiveFieldOfView(fovYRadians, aspectWidthOverHeight, zNear, zFar, out projectionMatrix);
 
 				this.ProjectionMatrix = projectionMatrix;
 				this.InverseProjectionMatrix = Matrix4X4.Invert(projectionMatrix);

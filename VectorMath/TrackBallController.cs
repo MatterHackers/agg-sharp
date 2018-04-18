@@ -39,6 +39,8 @@ namespace MatterHackers.VectorMath.TrackBall
 
 		private Vector2 mouseDownPosition;
 
+		public Vector2 ScreenCenter { get; set; }
+
 		private Vector2 lastTranslationMousePosition = Vector2.Zero;
 		private Vector2 lastScaleMousePosition = Vector2.Zero;
 
@@ -54,13 +56,13 @@ namespace MatterHackers.VectorMath.TrackBall
 
 		public TrackBallTransformType CurrentTrackingType { get; private set; } = TrackBallTransformType.None;
 
-		public static Vector3 MapMoveToSphere(WorldView world, double trackBallRadius, Vector2 startPosition, Vector2 endPosition, bool rotateOnZ)
+		public static Vector3 MapMoveToSphere(Vector2 screenCenter, WorldView world, double trackBallRadius, Vector2 startPosition, Vector2 endPosition, bool rotateOnZ)
 		{
 			if (rotateOnZ)
 			{
-				var deltaFromScreenCenter = world.ScreenCenter - endPosition;
+				var deltaFromScreenCenter = screenCenter - endPosition;
 
-				var angleToTravel = world.ScreenCenter.GetDeltaAngle(startPosition, endPosition);
+				var angleToTravel = screenCenter.GetDeltaAngle(startPosition, endPosition);
 
 				// now rotate that position about z in the direction of the screen vector
 				var positionOnRotationSphere = Vector3.Transform(new Vector3(1, 0, 0), Matrix4X4.CreateRotationZ(angleToTravel/2));
@@ -120,7 +122,7 @@ namespace MatterHackers.VectorMath.TrackBall
 			switch (CurrentTrackingType)
 			{
 				case TrackBallTransformType.Rotation:
-					Quaternion activeRotationQuaternion = GetRotationForMove(world, TrackBallRadius, mouseDownPosition, mousePosition, false);
+					Quaternion activeRotationQuaternion = GetRotationForMove(ScreenCenter, world, TrackBallRadius, mouseDownPosition, mousePosition, false);
 
 					if (activeRotationQuaternion != Quaternion.Identity)
 					{
@@ -134,7 +136,7 @@ namespace MatterHackers.VectorMath.TrackBall
 				case TrackBallTransformType.Translation:
 					{
 						Vector2 mouseDelta = mousePosition - lastTranslationMousePosition;
-						Vector2 scaledDelta = mouseDelta / world.ScreenCenter.X * 4.75;
+						Vector2 scaledDelta = mouseDelta / this.ScreenCenter.X * 4.75;
 						Vector3 offset = new Vector3(scaledDelta.X, scaledDelta.Y, 0);
 						offset = Vector3.TransformPosition(offset, Matrix4X4.Invert(world.RotationMatrix));
 						offset = Vector3.TransformPosition(offset, localToScreenTransform);
@@ -167,12 +169,12 @@ namespace MatterHackers.VectorMath.TrackBall
 			}
 		}
 
-		public static Quaternion GetRotationForMove(WorldView world, double trackBallRadius, Vector2 startPosition, Vector2 endPosition, bool rotateOnZ)
+		public static Quaternion GetRotationForMove(Vector2 screenCenter, WorldView world, double trackBallRadius, Vector2 startPosition, Vector2 endPosition, bool rotateOnZ)
 		{
 			var activeRotationQuaternion = Quaternion.Identity;
 
 			//Map the point to the sphere
-			var moveSpherePosition = MapMoveToSphere(world, trackBallRadius, startPosition, endPosition, rotateOnZ);
+			var moveSpherePosition = MapMoveToSphere(screenCenter, world, trackBallRadius, startPosition, endPosition, rotateOnZ);
 
 			//Return the quaternion equivalent to the rotation
 			//Compute the vector perpendicular to the begin and end vectors
