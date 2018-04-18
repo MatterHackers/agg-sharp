@@ -439,7 +439,7 @@ namespace MatterHackers.Agg.UI
 			base.OnLoad(args);
 
 			var firstBackgroundColor = this.Parents<GuiWidget>().Where(p => p.BackgroundColor.Alpha0To1 == 1).FirstOrDefault()?.BackgroundColor;
-			this.BackgroundColor = firstBackgroundColor ?? Color.Transparent;
+				this.BackgroundColor = firstBackgroundColor ?? Color.Transparent;
 
 			this.HoverColor = new BlenderRGBA().Blend(this.BackgroundColor, this.HoverColor);
 		}
@@ -597,6 +597,8 @@ namespace MatterHackers.Agg.UI
 			return menuItem;
 		}
 
+		public bool AutoScaleIcons { get; set; } = true;
+
 		private GuiWidget GetMenuContent(string itemName, ImageBuffer leftImage, Color color)
 		{
 			var rowContainer = new FlowLayoutWidget()
@@ -616,13 +618,20 @@ namespace MatterHackers.Agg.UI
 			{
 				if (leftImage != null)
 				{
-					int size = (int)(20 * GuiWidget.DeviceScale + .5);
-					ImageBuffer scaledImage = leftImage.CreateScaledImage(size, size);
-					rowContainer.AddChild(new ImageWidget(scaledImage)
+					ImageBuffer imageBuffer = leftImage;
+
+					if (this.AutoScaleIcons)
+					{
+						int size = (int)(20 * GuiWidget.DeviceScale + .5);
+						leftImage.CreateScaledImage(size, size);
+					}
+
+					rowContainer.AddChild(new ImageWidget(imageBuffer)
 					{
 						VAnchor = VAnchor.Center,
 						Margin = new BorderDouble(MenuItemsPadding.Left, MenuItemsPadding.Bottom, 3, MenuItemsPadding.Top),
 					});
+
 					textWidget.Margin = new BorderDouble(0, MenuItemsPadding.Bottom, MenuItemsPadding.Right, MenuItemsPadding.Top);
 				}
 				else
