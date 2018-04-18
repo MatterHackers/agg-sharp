@@ -124,11 +124,11 @@ namespace MatterHackers.VectorMath
 
 				var yAngleR = MathHelper.DegreesToRadians(45)/2;
 
-				var farDist = height / 2 / Math.Tan(yAngleR);
+				var screenDist = height / 2 / Math.Tan(yAngleR);
 
 				var center = width / 2;
-				var xAngleL = Math.Atan2(-center - centerOffsetX / 2, farDist);
-				var xAngleR = Math.Atan2(center - centerOffsetX / 2, farDist);
+				var xAngleL = Math.Atan2(-center - centerOffsetX / 2, screenDist);
+				var xAngleR = Math.Atan2(center - centerOffsetX / 2, screenDist);
 
 				// calculate yMin and yMax at the near clip plane
 				double yMax = zNear * System.Math.Tan(yAngleR);

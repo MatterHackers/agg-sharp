@@ -115,7 +115,7 @@ namespace MatterHackers.Agg.OpenGlGui
 		public void RecalculateProjection()
 		{
 			double trackingRadius = Math.Min(Width * .45, Height * .45);
-			TrackBallController.ScreenCenter = new Vector2(Width / 2 + CenterOffsetX, Height / 2);
+			TrackBallController.ScreenCenter = new Vector2(Width / 2 - CenterOffsetX, Height / 2);
 
 			TrackBallController.TrackBallRadius = trackingRadius;
 
