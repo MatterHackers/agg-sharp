@@ -2595,7 +2595,7 @@ namespace MatterHackers.Agg.UI
 
 		private void SetToolTipText(MouseEventArgs mouseEvent)
 		{
-			if (ToolTipText != null)
+			if (!string.IsNullOrWhiteSpace(ToolTipText))
 			{
 				GuiWidget parent = this;
 				while (parent.Parent != null
