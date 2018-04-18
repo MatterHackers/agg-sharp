@@ -98,6 +98,8 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public bool AutoScaleIcons { get; set; } = true;
+
 		private int selectedIndex = -1;
 		public int SelectedIndex
 		{
@@ -439,7 +441,7 @@ namespace MatterHackers.Agg.UI
 			base.OnLoad(args);
 
 			var firstBackgroundColor = this.Parents<GuiWidget>().Where(p => p.BackgroundColor.Alpha0To1 == 1).FirstOrDefault()?.BackgroundColor;
-				this.BackgroundColor = firstBackgroundColor ?? Color.Transparent;
+			this.BackgroundColor = firstBackgroundColor ?? Color.Transparent;
 
 			this.HoverColor = new BlenderRGBA().Blend(this.BackgroundColor, this.HoverColor);
 		}
@@ -596,8 +598,6 @@ namespace MatterHackers.Agg.UI
 
 			return menuItem;
 		}
-
-		public bool AutoScaleIcons { get; set; } = true;
 
 		private GuiWidget GetMenuContent(string itemName, ImageBuffer leftImage, Color color)
 		{
