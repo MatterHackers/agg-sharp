@@ -575,7 +575,7 @@ namespace MatterHackers.Agg.UI
 			return menuItem;
 		}
 
-		public MenuItem AddItem(ImageBuffer leftImage, string itemName, string itemValue = null, double pointSize = 12)
+		public MenuItem AddItem(ImageBuffer leftImage, string itemName, string itemValue = null)
 		{
 			GuiWidget normalTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundColor);
 			GuiWidget hoverTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundHoverColor);
