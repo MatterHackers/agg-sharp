@@ -640,12 +640,17 @@ namespace MatterHackers.Agg.UI
 	{
 		public static void ModifyStatesView(this MenuItem menuItem, bool showHighlight)
 		{
-			var statesView = menuItem.Children<MenuItemColorStatesView>().FirstOrDefault();
-			if (statesView != null)
+			var firstChild = menuItem.Children.FirstOrDefault();
+			if (firstChild is MenuItemStatesView itemStatesView)
 			{
-				statesView.Highlighted = showHighlight;
-				statesView.Invalidate();
+				itemStatesView.Highlighted = showHighlight;
 			}
+			else if (firstChild is MenuItemColorStatesView colorStatesView)
+			{
+				colorStatesView.Highlighted = showHighlight;
+			}
+
+			firstChild?.Invalidate();
 		}
 	}
 }
