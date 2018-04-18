@@ -103,7 +103,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(bounds.Top == dimensions - marginSize, "Top margin is incorrect");
 			Assert.IsTrue(bounds.Bottom == marginSize, "Bottom margin is incorrect");
 		}
-
+#if !__ANDROID__
 		[Test, Apartment(System.Threading.ApartmentState.STA), RunInApplicationDomain]
 		public async Task SpacingClearedAfterLoadPositionsCorrectly()
 		{
@@ -190,6 +190,7 @@ namespace MatterHackers.Agg.UI.Tests
 			});
 
 		}
+#endif
 
 		[Test]
 		public void NestedLayoutTopToBottomTests()
