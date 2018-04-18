@@ -98,6 +98,8 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public bool AutoScaleIcons { get; set; } = true;
+
 		private int selectedIndex = -1;
 		public int SelectedIndex
 		{
@@ -575,7 +577,7 @@ namespace MatterHackers.Agg.UI
 			return menuItem;
 		}
 
-		public MenuItem AddItem(ImageBuffer leftImage, string itemName, string itemValue = null, double pointSize = 12)
+		public MenuItem AddItem(ImageBuffer leftImage, string itemName, string itemValue = null)
 		{
 			GuiWidget normalTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundColor);
 			GuiWidget hoverTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundHoverColor);
@@ -616,13 +618,20 @@ namespace MatterHackers.Agg.UI
 			{
 				if (leftImage != null)
 				{
-					int size = (int)(20 * GuiWidget.DeviceScale + .5);
-					ImageBuffer scaledImage = leftImage.CreateScaledImage(size, size);
-					rowContainer.AddChild(new ImageWidget(scaledImage)
+					ImageBuffer imageBuffer = leftImage;
+
+					if (this.AutoScaleIcons)
+					{
+						int size = (int)(20 * GuiWidget.DeviceScale + .5);
+						leftImage.CreateScaledImage(size, size);
+					}
+
+					rowContainer.AddChild(new ImageWidget(imageBuffer)
 					{
 						VAnchor = VAnchor.Center,
 						Margin = new BorderDouble(MenuItemsPadding.Left, MenuItemsPadding.Bottom, 3, MenuItemsPadding.Top),
 					});
+
 					textWidget.Margin = new BorderDouble(0, MenuItemsPadding.Bottom, MenuItemsPadding.Right, MenuItemsPadding.Top);
 				}
 				else
@@ -640,12 +649,17 @@ namespace MatterHackers.Agg.UI
 	{
 		public static void ModifyStatesView(this MenuItem menuItem, bool showHighlight)
 		{
-			var statesView = menuItem.Children<MenuItemColorStatesView>().FirstOrDefault();
-			if (statesView != null)
+			var firstChild = menuItem.Children.FirstOrDefault();
+			if (firstChild is MenuItemStatesView itemStatesView)
 			{
-				statesView.Highlighted = showHighlight;
-				statesView.Invalidate();
+				itemStatesView.Highlighted = showHighlight;
 			}
+			else if (firstChild is MenuItemColorStatesView colorStatesView)
+			{
+				colorStatesView.Highlighted = showHighlight;
+			}
+
+			firstChild?.Invalidate();
 		}
 	}
 }

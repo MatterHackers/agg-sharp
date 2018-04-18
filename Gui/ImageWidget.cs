@@ -68,11 +68,7 @@ namespace MatterHackers.Agg.UI
 
 		public ImageBuffer Image
 		{
-			get
-			{
-				return image;
-			}
-
+			get  => image;
 			set
 			{
 				if(image != null)
@@ -103,6 +99,12 @@ namespace MatterHackers.Agg.UI
 				graphics2D.Render(image, -pixelAlignXAdjust, -pixelAlignYAdjust);
 			}
 			base.OnDraw(graphics2D);
+		}
+
+		public override void OnClosed(ClosedEventArgs e)
+		{
+			Image.ImageChanged -= ImageChanged;
+			base.OnClosed(e);
 		}
 	}
 }
