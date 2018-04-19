@@ -3013,6 +3013,14 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Fire a mouse click within the bounds of the control
+		/// </summary>
+		public void InvokeClick()
+		{
+			this.OnClick(new MouseEventArgs(MouseButtons.Left, 1, new[] { this.Position + Vector2.One }, 0, null));
+		}
+
 		public virtual void OnClick(MouseEventArgs mouseEvent)
 		{
 			Click?.Invoke(this, mouseEvent);
