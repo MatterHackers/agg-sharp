@@ -105,11 +105,11 @@ namespace MatterHackers.Agg.OpenGlGui
 			}
 		}
 
-		public override void OnBoundsChanged(EventArgs e)
+		public override void OnDraw(Graphics2D graphics2D)
 		{
 			RecalculateProjection();
 
-			base.OnBoundsChanged(e);
+			base.OnDraw(graphics2D);
 		}
 
 		public void RecalculateProjection()
