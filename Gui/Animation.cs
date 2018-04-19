@@ -107,8 +107,7 @@ namespace MatterHackers.Agg.UI
 
 		#region SecondsPerUpdate
 
-		private double _secondsPerUpdate;
-
+		private double _secondsPerUpdate = 1.0/30.0;
 		public double SecondsPerUpdate
 		{
 			get
