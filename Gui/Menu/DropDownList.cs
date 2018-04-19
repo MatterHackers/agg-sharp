@@ -441,7 +441,16 @@ namespace MatterHackers.Agg.UI
 			base.OnLoad(args);
 
 			var firstBackgroundColor = this.Parents<GuiWidget>().Where(p => p.BackgroundColor.Alpha0To1 == 1).FirstOrDefault()?.BackgroundColor;
-			this.BackgroundColor = firstBackgroundColor ?? Color.Transparent;
+			if (this.BackgroundColor == Color.Transparent)
+			{
+				// Propagate first parent opaque background
+				this.BackgroundColor = firstBackgroundColor ?? Color.Transparent;
+			}
+			else if (this.BackgroundColor.alpha != 255 && firstBackgroundColor != null)
+			{
+				// Resolve alpha
+				this.BackgroundColor = new BlenderRGBA().Blend(firstBackgroundColor.Value, this.BackgroundColor);
+			}
 
 			this.HoverColor = new BlenderRGBA().Blend(this.BackgroundColor, this.HoverColor);
 		}
