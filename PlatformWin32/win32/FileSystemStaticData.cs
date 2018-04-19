@@ -69,6 +69,11 @@ namespace MatterHackers.Agg
 			this.basePath = overridePath;
 		}
 
+		public void PurgeCache()
+		{
+			cachedImages.Clear();
+		}
+
 		public bool DirectoryExists(string path)
 		{
 			return Directory.Exists(MapPath(path));
@@ -154,8 +159,7 @@ namespace MatterHackers.Agg
 		{
 			lock (locker)
 			{
-				ImageBuffer cachedImage;
-				if (!cachedImages.TryGetValue(path, out cachedImage))
+				if (!cachedImages.TryGetValue(path, out ImageBuffer cachedImage))
 				{
 					using (var imageStream = OpenStream(path))
 					using (var bitmap = new Bitmap(imageStream))
