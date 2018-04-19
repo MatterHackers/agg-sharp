@@ -79,7 +79,7 @@ namespace MatterHackers.Agg.UI.Tests
 				OutputImage(containerListBox.BackBuffer, "test.tga");
 				OutputImage(textImage, "control.tga");
 
-				double maxError = 20000000;
+				double maxError = 30000000;
 				Vector2 bestPosition;
 				double leastSquares;
 				containerListBox.BackBuffer.FindLeastSquaresMatch(textImage, out bestPosition, out leastSquares, maxError);

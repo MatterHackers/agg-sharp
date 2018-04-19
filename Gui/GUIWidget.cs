@@ -741,8 +741,8 @@ namespace MatterHackers.Agg.UI
 		private void AllocateBackBuffer()
 		{
 			RectangleDouble localBounds = LocalBounds;
-			int intWidth = Max((int)(Ceiling(localBounds.Right) - Floor(localBounds.Left)) + 1, 1);
-			int intHeight = Max((int)(Ceiling(localBounds.Top) - Floor(localBounds.Bottom)) + 1, 1);
+			int intWidth = Max((int)(Ceiling(localBounds.Right) - Floor(localBounds.Left)), 1);
+			int intHeight = Max((int)(Ceiling(localBounds.Top) - Floor(localBounds.Bottom)), 1);
 			if (backBuffer == null || backBuffer.Width != intWidth || backBuffer.Height != intHeight)
 			{
 				backBuffer = new ImageBuffer(intWidth, intHeight, 32, new BlenderPreMultBGRA());
