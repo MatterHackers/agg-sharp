@@ -109,6 +109,77 @@ namespace MatterHackers.DataConverters3D
 			streamWriter.Flush();
 		}
 
+		public static void Fit(this WorldView world, IObject3D sceneToRender, RectangleDouble goalBounds)
+		{
+			AxisAlignedBoundingBox meshBounds = sceneToRender.GetAxisAlignedBoundingBox();
+
+			bool done = false;
+			double scaleFraction = .1;
+			goalBounds.Inflate(-10);
+
+			int rescaleAttempts = 0;
+			while (!done && rescaleAttempts++ < 500)
+			{
+				RectangleDouble partScreenBounds = GetScreenBounds(meshBounds, world);
+
+				if (!NeedsToBeSmaller(partScreenBounds, goalBounds))
+				{
+					world.Scale *= (1 + scaleFraction);
+					partScreenBounds = GetScreenBounds(meshBounds, world);
+
+					// If it crossed over the goal reduct the amount we are adjusting by.
+					if (NeedsToBeSmaller(partScreenBounds, goalBounds))
+					{
+						scaleFraction /= 2;
+					}
+				}
+				else
+				{
+					world.Scale *= (1 - scaleFraction);
+					partScreenBounds = GetScreenBounds(meshBounds, world);
+
+					// If it crossed over the goal reduct the amount we are adjusting by.
+					if (!NeedsToBeSmaller(partScreenBounds, goalBounds))
+					{
+						scaleFraction /= 2;
+						if (scaleFraction < .001)
+						{
+							done = true;
+						}
+					}
+				}
+			}
+		}
+
+		private static bool NeedsToBeSmaller(RectangleDouble partScreenBounds, RectangleDouble goalBounds)
+		{
+			if (partScreenBounds.Bottom < goalBounds.Bottom
+				|| partScreenBounds.Top > goalBounds.Top
+				|| partScreenBounds.Left < goalBounds.Left
+				|| partScreenBounds.Right > goalBounds.Right)
+			{
+				return true;
+			}
+
+			return false;
+		}
+
+		public static RectangleDouble GetScreenBounds(AxisAlignedBoundingBox meshBounds, WorldView world)
+		{
+			RectangleDouble screenBounds = RectangleDouble.ZeroIntersection;
+
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.X, meshBounds.minXYZ.Y, meshBounds.minXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.X, meshBounds.minXYZ.Y, meshBounds.minXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.X, meshBounds.maxXYZ.Y, meshBounds.minXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.X, meshBounds.maxXYZ.Y, meshBounds.minXYZ.Z)));
+
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.X, meshBounds.minXYZ.Y, meshBounds.maxXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.X, meshBounds.minXYZ.Y, meshBounds.maxXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.X, meshBounds.maxXYZ.Y, meshBounds.maxXYZ.Z)));
+			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.X, meshBounds.maxXYZ.Y, meshBounds.maxXYZ.Z)));
+			return screenBounds;
+		}
+
 		public static async void PersistAssets(this IObject3D sourceItem, Action<double, string> progress = null, bool publishAssets=false)
 		{
 			// Must use DescendantsAndSelf so that leaf nodes save their meshes

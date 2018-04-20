@@ -339,22 +339,6 @@ namespace MatterHackers.RayTracer
 			scene.lights.Add(new PointLight(new Vector3(-5000, -5000, 3000), new ColorF(0.5, 0.5, 0.5)));
 		}
 
-		private RectangleDouble GetScreenBounds(AxisAlignedBoundingBox meshBounds)
-		{
-			RectangleDouble screenBounds = RectangleDouble.ZeroIntersection;
-
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.X, meshBounds.minXYZ.Y, meshBounds.minXYZ.Z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.X, meshBounds.minXYZ.Y, meshBounds.minXYZ.Z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.X, meshBounds.maxXYZ.Y, meshBounds.minXYZ.Z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.X, meshBounds.maxXYZ.Y, meshBounds.minXYZ.Z)));
-
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.X, meshBounds.minXYZ.Y, meshBounds.maxXYZ.Z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.X, meshBounds.minXYZ.Y, meshBounds.maxXYZ.Z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.maxXYZ.X, meshBounds.maxXYZ.Y, meshBounds.maxXYZ.Z)));
-			screenBounds.ExpandToInclude(world.GetScreenPosition(new Vector3(meshBounds.minXYZ.X, meshBounds.maxXYZ.Y, meshBounds.maxXYZ.Z)));
-			return screenBounds;
-		}
-
 		public void GetMinMaxZ(Mesh mesh, ref double minZ, ref double maxZ)
 		{
 			AxisAlignedBoundingBox meshBounds = mesh.GetAxisAlignedBoundingBox(world.ModelviewMatrix);
@@ -363,62 +347,11 @@ namespace MatterHackers.RayTracer
 			maxZ = Math.Max(meshBounds.maxXYZ.Z, maxZ);
 		}
 
-		private bool NeedsToBeSmaller(RectangleDouble partScreenBounds, RectangleDouble goalBounds)
-		{
-			if (partScreenBounds.Bottom < goalBounds.Bottom
-				|| partScreenBounds.Top > goalBounds.Top
-				|| partScreenBounds.Left < goalBounds.Left
-				|| partScreenBounds.Right > goalBounds.Right)
-			{
-				return true;
-			}
-
-			return false;
-		}
-
 		private void SetViewForScene()
 		{
 			if (sceneToRender != null)
 			{
-				AxisAlignedBoundingBox meshBounds = sceneToRender.GetAxisAlignedBoundingBox();
-
-				bool done = false;
-				double scaleFraction = .1;
-				RectangleDouble goalBounds = new RectangleDouble(0, 0, size.x, size.y);
-				goalBounds.Inflate(-10);
-
-				int rescaleAttempts = 0;
-				while (!done && rescaleAttempts++ < 500)
-				{
-					RectangleDouble partScreenBounds = GetScreenBounds(meshBounds);
-
-					if (!NeedsToBeSmaller(partScreenBounds, goalBounds))
-					{
-						world.Scale *= (1 + scaleFraction);
-						partScreenBounds = GetScreenBounds(meshBounds);
-
-						// If it crossed over the goal reduct the amount we are adjusting by.
-						if (NeedsToBeSmaller(partScreenBounds, goalBounds))
-						{
-							scaleFraction /= 2;
-						}
-					}
-					else
-					{
-						world.Scale *= (1 - scaleFraction);
-						partScreenBounds = GetScreenBounds(meshBounds);
-
-						// If it crossed over the goal reduct the amount we are adjusting by.
-						if (!NeedsToBeSmaller(partScreenBounds, goalBounds))
-						{
-							scaleFraction /= 2;
-							if (scaleFraction < .001)
-							{
-								done = true;
-							}
-						}
-					}
-				}
+				world.Fit(sceneToRender, new RectangleDouble(0, 0, size.x, size.y));
 			}
 		}
 

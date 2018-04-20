@@ -38,7 +38,6 @@ namespace MatterHackers.Agg.VertexSource
 		private Vector2 rightBottomRadius;
 		private Vector2 rightTopRadius;
 		private Vector2 leftTopRadius;
-		private int state;
 		public double ResolutionScale { get; set; } = 1;
 
 		public RoundedRect(double left, double bottom, double right, double top, double radius)
