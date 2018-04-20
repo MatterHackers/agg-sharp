@@ -53,6 +53,8 @@ namespace MatterHackers.RenderOpenGl
 			return frustum2;
 		}
 
+
+
 		public static void PrepareFor3DLineRender(bool doDepthTest)
 		{
 			GL.Disable(EnableCap.Texture2D);

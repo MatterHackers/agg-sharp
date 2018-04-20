@@ -33,8 +33,8 @@ namespace MatterHackers.VectorMath
 {
 	public class WorldView
 	{
-		private Matrix4X4 currentRotationMatrix = Matrix4X4.Identity;
-		private Matrix4X4 currentTranslationMatrix = Matrix4X4.Identity;
+		private Matrix4X4 _rotationMatrix = Matrix4X4.Identity;
+		private Matrix4X4 _translationMatrix = Matrix4X4.Identity;
 
 		public WorldView(double width, double height)
 		{
@@ -52,19 +52,19 @@ namespace MatterHackers.VectorMath
 
 		public void Reset()
 		{
-			currentRotationMatrix = Matrix4X4.Identity;
-			currentTranslationMatrix = Matrix4X4.Identity;
+			RotationMatrix = Matrix4X4.Identity;
+			TranslationMatrix = Matrix4X4.Identity;
 		}
 
 		public void Translate(Vector3 deltaPosition)
 		{
-			currentTranslationMatrix = Matrix4X4.CreateTranslation(deltaPosition) * currentTranslationMatrix;
+			TranslationMatrix = Matrix4X4.CreateTranslation(deltaPosition) * TranslationMatrix;
 			OnTransformChanged(null);
 		}
 
 		public void Rotate(Quaternion rotation)
 		{
-			currentRotationMatrix = currentRotationMatrix * Matrix4X4.CreateRotation(rotation);
+			RotationMatrix *= Matrix4X4.CreateRotation(rotation);
 			OnTransformChanged(null);
 		}
 
@@ -82,7 +82,7 @@ namespace MatterHackers.VectorMath
 				{
 					double requiredChange = value / Scale;
 
-					currentTranslationMatrix *= Matrix4X4.CreateScale(requiredChange);
+					TranslationMatrix *= Matrix4X4.CreateScale(requiredChange);
 					OnTransformChanged(null);
 				}
 			}
@@ -90,27 +90,27 @@ namespace MatterHackers.VectorMath
 
 		public Matrix4X4 RotationMatrix
 		{
-			get => currentRotationMatrix;
+			get => _rotationMatrix;
 			set
 			{
-				currentRotationMatrix = value;
+				_rotationMatrix = value;
 				OnTransformChanged(null);
 			}
 		}
 
 		public Matrix4X4 TranslationMatrix
 		{
-			get => currentTranslationMatrix;
+			get => _translationMatrix;
 			set
 			{
-				currentTranslationMatrix = value;
+				_translationMatrix = value;
 				OnTransformChanged(null);
 			}
 		}
 
 		public Matrix4X4 GetTransform4X4()
 		{
-			return currentTranslationMatrix * RotationMatrix;
+			return TranslationMatrix * RotationMatrix;
 		}
 
 		public void CalculateProjectionMatrixOffCenter(double width, double height, double centerOffsetX)
