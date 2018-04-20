@@ -72,10 +72,7 @@ namespace MatterHackers.Agg.UI
 
 		public Color TextColor
 		{
-			get
-			{
-				return mainControlText.TextColor;
-			}
+			get => mainControlText.TextColor;
 			set
 			{
 				mainControlText.TextColor = value;
@@ -86,11 +83,7 @@ namespace MatterHackers.Agg.UI
 
 		public BorderDouble MenuItemsPadding
 		{
-			get
-			{
-				return mainControlText.Margin;
-			}
-
+			get => mainControlText.Margin;
 			set
 			{
 				// Ensure minimum right margin
@@ -103,7 +96,7 @@ namespace MatterHackers.Agg.UI
 		private int selectedIndex = -1;
 		public int SelectedIndex
 		{
-			get { return selectedIndex; }
+			get => selectedIndex;
 			set
 			{
 				if (SelectedIndex != value)
@@ -586,29 +579,29 @@ namespace MatterHackers.Agg.UI
 			return menuItem;
 		}
 
+		public int GutterWidth { get; set; } = 35;
+
 		public MenuItem AddItem(ImageBuffer leftImage, string itemName, string itemValue = null)
 		{
-			GuiWidget normalTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundColor);
-			GuiWidget hoverTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundHoverColor);
+			GuiWidget normalTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundColor, MenuItemsTextColor);
+			GuiWidget hoverTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundHoverColor, MenuItemsTextHoverColor);
 
-			MenuItem menuItem = new MenuItem(
+			var menuItem = new MenuItem(
 				new MenuItemStatesView(normalTextWithMargin, hoverTextWithMargin),
 				// If no itemValue is supplied, itemName will be used as the item value
-				itemValue ?? itemName);
-
-			// MenuItem is a long lived object that is added and removed to new containers whenever the
-			// menu is shown. To ensure that event registration is not duplicated, always remove before add
-			menuItem.Selected -= MenuItem_Clicked;
+				itemValue ?? itemName)
+			{
+				Name = itemName + " Menu Item",
+				Text = itemName
+			};
 			menuItem.Selected += MenuItem_Clicked;
 
-			menuItem.Name = itemName + " Menu Item";
-			menuItem.Text = itemName;
 			MenuItems.Add(menuItem);
 
 			return menuItem;
 		}
 
-		private GuiWidget GetMenuContent(string itemName, ImageBuffer leftImage, Color color)
+		private GuiWidget GetMenuContent(string itemName, ImageBuffer leftImage, Color color, Color textColor)
 		{
 			var rowContainer = new FlowLayoutWidget()
 			{
@@ -620,7 +613,8 @@ namespace MatterHackers.Agg.UI
 			var textWidget = new TextWidget(itemName)
 			{
 				Margin = MenuItemsPadding,
-				TextColor = MenuItemsTextColor
+				TextColor = textColor,
+				VAnchor = VAnchor.Center
 			};
 
 			if (UseLeftIcons || leftImage != null)
@@ -635,13 +629,22 @@ namespace MatterHackers.Agg.UI
 						leftImage.CreateScaledImage(size, size);
 					}
 
-					rowContainer.AddChild(new ImageWidget(imageBuffer)
+					var imageContainer = new GuiWidget()
+					{
+						Width = this.GutterWidth * GuiWidget.DeviceScale,
+						Height = this.GutterWidth * GuiWidget.DeviceScale,
+						HAnchor = HAnchor.Absolute,
+						VAnchor = VAnchor.Absolute | VAnchor.Center
+					};
+					rowContainer.AddChild(imageContainer);
+
+					imageContainer.AddChild(new ImageWidget(imageBuffer)
 					{
 						VAnchor = VAnchor.Center,
-						Margin = new BorderDouble(MenuItemsPadding.Left, MenuItemsPadding.Bottom, 3, MenuItemsPadding.Top),
+						HAnchor = HAnchor.Center,
 					});
 
-					textWidget.Margin = new BorderDouble(0, MenuItemsPadding.Bottom, MenuItemsPadding.Right, MenuItemsPadding.Top);
+					textWidget.Margin = 0;
 				}
 				else
 				{
