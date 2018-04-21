@@ -201,7 +201,7 @@ namespace MatterHackers.DataConverters3D
 		bool CanEdit { get; }
 
 		[JsonIgnore]
-		bool CanBake { get; }
+		bool CanMakePermanent { get; }
 
 		/// <summary>
 		/// Remove the IObject3D from the tree and keep whatever functionality it was adding. 
