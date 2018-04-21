@@ -263,7 +263,7 @@ namespace MatterHackers.DataConverters3D
 
 		public bool CanEdit => false;
 
-		public bool CanBake => false;
+		public bool CanMakePermanent => false;
 
 		public bool CanRemove => false;
 

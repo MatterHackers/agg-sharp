@@ -68,7 +68,7 @@ namespace MatterHackers.Agg.Font
 
 		public static Dictionary<char, ImageBuffer> GetCorrectCache(TypeFace typeFace, Color color, double emSizeInPoints)
 		{
-			lock(typeFace)
+			lock (typeFace)
 			{
 				// TODO: check if the cache is getting too big and if so prune it (or just delete it and start over).
 
@@ -114,9 +114,9 @@ namespace MatterHackers.Agg.Font
 		}
 	}
 
-    public class StyledTypeFace
-    {
-        public TypeFace TypeFace { get; private set; }
+	public class StyledTypeFace
+	{
+		public TypeFace TypeFace { get; private set; }
 
 		private const int PointsPerInch = 72;
 		private const int PixelsPerInch = 96;

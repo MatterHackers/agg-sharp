@@ -222,7 +222,7 @@ namespace MatterHackers.DataConverters3D
 
 		public virtual bool Visible { get; set; } = true;
 
-		public virtual bool CanBake => this.HasChildren();
+		public virtual bool CanMakePermanent => this.HasChildren();
 		public virtual bool CanRemove => this.HasChildren();
 		public virtual bool CanEdit => this.HasChildren();
 
