@@ -311,8 +311,11 @@ namespace MatterHackers.DataConverters3D
 		{
 			lock (locker)
 			{
-				_mesh = mesh;
-				AsyncCleanAndMerge();
+				if (_mesh != mesh)
+				{
+					_mesh = mesh;
+					AsyncCleanAndMerge();
+				}
 			}
 		}
 
@@ -348,7 +351,7 @@ namespace MatterHackers.DataConverters3D
 				wrapper.Children.Add(this);
 
 				// Push json into stream and reset to start
-				writer.Write(JsonConvert.SerializeObject(wrapper));
+				writer.Write(JsonConvert.SerializeObject(wrapper, Formatting.Indented));
 				writer.Flush();
 				memoryStream.Position = 0;
 
