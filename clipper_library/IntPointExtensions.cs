@@ -29,11 +29,71 @@ either expressed or implied, of the FreeBSD Project.
 
 using ClipperLib;
 using System;
+using System.Collections.Generic;
 
 namespace ClipperLib
 {
 	public static class IntPointExtensions
 	{
+		public static IntPoint GetRotated(this IntPoint thisPoint, double radians)
+		{
+			double cos = (double)Math.Cos(radians);
+			double sin = (double)Math.Sin(radians);
+
+			IntPoint output;
+			output.X = (long)(Math.Round(thisPoint.X * cos - thisPoint.Y * sin));
+			output.Y = (long)(Math.Round(thisPoint.Y * cos + thisPoint.X * sin));
+
+			return output;
+		}
+
+		public static double GetTurnAmount(this IntPoint currentPoint, IntPoint prevPoint, IntPoint nextPoint)
+		{
+			if (prevPoint != currentPoint
+				&& currentPoint != nextPoint
+				&& nextPoint != prevPoint)
+			{
+				prevPoint = currentPoint - prevPoint;
+				nextPoint -= currentPoint;
+
+				double prevAngle = Math.Atan2(prevPoint.Y, prevPoint.X);
+				IntPoint rotatedPrev = prevPoint.GetRotated(-prevAngle);
+
+				// undo the rotation
+				nextPoint = nextPoint.GetRotated(-prevAngle);
+				double angle = Math.Atan2(nextPoint.Y, nextPoint.X);
+
+				return angle;
+			}
+
+			return 0;
+		}
+
+		/// <summary>
+		/// Return 1 if ccw -1 if cw
+		/// </summary>
+		/// <param name="polygon"></param>
+		/// <returns></returns>
+		public static int GetWindingDirection(this List<IntPoint> polygon)
+		{
+			int pointCount = polygon.Count;
+			double totalTurns = 0;
+			for (int pointIndex = 0; pointIndex < pointCount; pointIndex++)
+			{
+				int prevIndex = ((pointIndex + pointCount - 1) % pointCount);
+				int nextIndex = ((pointIndex + 1) % pointCount);
+				IntPoint prevPoint = polygon[prevIndex];
+				IntPoint currentPoint = polygon[pointIndex];
+				IntPoint nextPoint = polygon[nextIndex];
+
+				double turnAmount = currentPoint.GetTurnAmount(prevPoint, nextPoint);
+
+				totalTurns += turnAmount;
+			}
+
+			return totalTurns > 0 ? 1 : -1;
+		}
+
 		public static bool IsShorterThen(this IntPoint pointToCheck, long len)
 		{
 			if (pointToCheck.X > len || pointToCheck.X < -len)
