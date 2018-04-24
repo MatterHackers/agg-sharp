@@ -28,50 +28,26 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg.Image;
+using MatterHackers.VectorMath;
 using System;
-using System.Diagnostics;
 
 namespace MatterHackers.Agg.UI
 {
 	public class ImageSequenceWidget : GuiWidget
 	{
-		private Stopwatch runningTime = new Stopwatch();
-		private ImageSequence imageSequence;
-		private bool runAnimation = false;
-		private double lastTimeUpdated = 0;
-		private RunningInterval runningInterval;
-
-		public int currentFrame;
-		public int CurrentFrame
-		{
-			get { return currentFrame; }
-		}
-
-		public bool RunAnimation
-		{
-			get { return runAnimation; }
-			set
-			{
-				if (value != runAnimation)
-				{
-					runAnimation = value;
-					if (RunAnimation)
-					{
-						// we just turned it on so make sure the update is being called
-						lastTimeUpdated = 0;
-						runningTime.Restart();
-						runningInterval = UiThread.SetInterval(UpdateAnimation, .01);
-					}
-				}
-			}
-		}
-
-		public bool ForcePixelAlignment { get; set; }
+		private ImageSequence _imageSequence;
+		private Animation animation = new Animation();
 
 		public ImageSequenceWidget(int width, int height)
 		{
-			ForcePixelAlignment = true;
 			LocalBounds = new RectangleDouble(0, 0, width, height);
+
+			animation.DrawTarget = this;
+			animation.Update += (s, time) =>
+			{
+				CurrentFrame++;
+			};
+
 			RunAnimation = true;
 		}
 
@@ -81,48 +57,63 @@ namespace MatterHackers.Agg.UI
 			ImageSequence = initialImageSequence;
 		}
 
+		public int CurrentFrame { get; set; }
+
 		public ImageSequence ImageSequence
 		{
 			get
 			{
-				return imageSequence;
+				return _imageSequence;
 			}
 
 			set
 			{
-				imageSequence = value;
-				LocalBounds = new RectangleDouble(0, 0, imageSequence.Width, imageSequence.Height);
+				_imageSequence = value;
+				LocalBounds = new RectangleDouble(0, 0, _imageSequence.Width, _imageSequence.Height);
+				animation.FramesPerSecond = _imageSequence.FramePerSecond;
 			}
 		}
 
-		public override void OnClosed(ClosedEventArgs e)
-		{
-			RunAnimation = false;
-			base.OnClosed(e);
-		}
+		public bool MaintainAspecRatio { get; set; } = true;
 
-		private void UpdateAnimation()
+		public bool RunAnimation
 		{
-			runningInterval.Continue = RunAnimation;
-
-			if (runningTime.Elapsed.TotalSeconds - lastTimeUpdated > imageSequence.SecondsPerFrame)
+			get { return animation != null && animation.IsRunning; }
+			set
 			{
-				if (imageSequence.NumFrames == 0)
+				if (animation != null
+					&& value != animation.IsRunning)
 				{
-					return;
+					if (value)
+					{
+						animation.Start();
+					}
+					else
+					{
+						animation.Stop();
+					}
 				}
-				
-				lastTimeUpdated = runningTime.Elapsed.TotalSeconds;
-				currentFrame = (1 + CurrentFrame) % imageSequence.NumFrames;
-				Invalidate();
 			}
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			if (imageSequence != null)
+			if (_imageSequence != null)
 			{
-				graphics2D.Render(imageSequence.GetImageByIndex(CurrentFrame % imageSequence.NumFrames), 0, 0);
+				var currentFrame = _imageSequence.GetImageByIndex(CurrentFrame % _imageSequence.NumFrames);
+
+				var bottomLeft = Vector2.Zero;
+				var ratio = 1.0;
+				if (MaintainAspecRatio)
+				{
+					ratio = Math.Min(Width / currentFrame.Width, Height / currentFrame.Height);
+				}
+
+				graphics2D.Render(currentFrame, 
+					Width / 2 - (currentFrame.Width * ratio),
+					Height / 2 - (currentFrame.Height * ratio), 
+					0, 
+					ratio, ratio);
 			}
 			base.OnDraw(graphics2D);
 		}
