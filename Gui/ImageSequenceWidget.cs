@@ -69,7 +69,6 @@ namespace MatterHackers.Agg.UI
 			set
 			{
 				_imageSequence = value;
-				LocalBounds = new RectangleDouble(0, 0, _imageSequence.Width, _imageSequence.Height);
 				animation.FramesPerSecond = _imageSequence.FramePerSecond;
 			}
 		}
@@ -109,10 +108,10 @@ namespace MatterHackers.Agg.UI
 					ratio = Math.Min(Width / currentFrame.Width, Height / currentFrame.Height);
 				}
 
-				graphics2D.Render(currentFrame, 
-					Width / 2 - (currentFrame.Width * ratio),
-					Height / 2 - (currentFrame.Height * ratio), 
-					0, 
+				graphics2D.Render(currentFrame,
+					Width / 2 - (currentFrame.Width * ratio) / 2,
+					Height / 2 - (currentFrame.Height * ratio) / 2,
+					0,
 					ratio, ratio);
 			}
 			base.OnDraw(graphics2D);

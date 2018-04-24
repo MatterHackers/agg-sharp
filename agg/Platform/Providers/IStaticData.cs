@@ -33,6 +33,6 @@ namespace MatterHackers.Agg.Platform
 
 		void LoadImageData(Stream stream, ImageBuffer unScaledImage);
 
-		void LoadSequence(string path, ImageSequence sequence);
+		ImageSequence LoadSequence(string path);
 	}
 }
