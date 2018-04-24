@@ -36,7 +36,6 @@ namespace MatterHackers.Agg.UI
 	public class ResponsiveImageWidget : GuiWidget
 	{
 		private ImageBuffer image;
-		private ImageBuffer cachedResize;
 
 		public ResponsiveImageWidget(ImageBuffer initialImage)
 		{
@@ -74,8 +73,7 @@ namespace MatterHackers.Agg.UI
 				newBounds.Top = newBounds.Bottom + image.Height * scale;
 				base.LocalBounds = newBounds;
 			}
-			// clear any cached image we have
-			cachedResize = null;
+
 			Invalidate();
 		}
 
