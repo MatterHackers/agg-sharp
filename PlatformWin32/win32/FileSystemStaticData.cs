@@ -170,7 +170,7 @@ namespace MatterHackers.Agg
 				}
 
 				// TODO: read the right framerate out of the gif
-				//gifImg.
+				sequence.FramePerSecond = 3;
 			}
 
 			return sequence;

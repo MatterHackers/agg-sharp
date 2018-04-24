@@ -167,5 +167,10 @@ namespace MatterHackers.Agg.Image
 			public bool Looping = false;
 			public double FramePerFrame = 30;
 		}
+
+		public IEnumerable<ImageBuffer> Frames()
+		{
+			return imageList;
+		}
 	}
 }
