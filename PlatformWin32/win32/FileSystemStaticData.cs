@@ -123,11 +123,14 @@ namespace MatterHackers.Agg
 			return image.CreateScaledImage(deviceWidth, deviceHeight);
 		}
 
-		public void LoadSequence(string pathToImages, ImageSequence sequence)
+		public ImageSequence LoadSequence(string path)
 		{
-			if (DirectoryExists(pathToImages))
+			ImageSequence sequence = null;
+
+			if (DirectoryExists(path))
 			{
-				string propertiesPath = Path.Combine(pathToImages, "properties.json");
+				sequence = new ImageSequence();
+				string propertiesPath = Path.Combine(path, "properties.json");
 				if (FileExists(propertiesPath))
 				{
 					string jsonData = ReadAllText(propertiesPath);
@@ -137,13 +140,40 @@ namespace MatterHackers.Agg
 					sequence.Looping = properties.Looping;
 				}
 
-				var pngFiles = GetFiles(pathToImages).Where(fileName => Path.GetExtension(fileName).ToUpper() == ".PNG").OrderBy(s => s);
-				foreach (string path in pngFiles)
+				var pngFiles = GetFiles(path).Where(fileName => Path.GetExtension(fileName).ToUpper() == ".PNG").OrderBy(s => s);
+				foreach (string pngPath in pngFiles)
 				{
-					ImageBuffer image = LoadImage(path);
+					ImageBuffer image = LoadImage(pngPath);
 					sequence.AddImage(image);
 				}
 			}
+			else if (File.Exists(path)
+				&& string.Equals(Path.GetExtension(path), ".gif", StringComparison.OrdinalIgnoreCase))
+			{
+				sequence = new ImageSequence();
+
+				var gifImg = System.Drawing.Image.FromFile(path);
+
+				var dimension = new System.Drawing.Imaging.FrameDimension(gifImg.FrameDimensionsList[0]);
+				// Number of frames
+				int frameCount = gifImg.GetFrameCount(dimension);
+
+				for (var i = 0; i < frameCount; i++)
+				{
+					// Return an Image at a certain index
+					gifImg.SelectActiveFrame(dimension, i);
+					ImageBuffer gifFrame = new ImageBuffer();
+					if (ImageIOWindowsPlugin.ConvertBitmapToImage(gifFrame, new Bitmap(gifImg)))
+					{
+						sequence.AddImage(gifFrame);
+					}
+				}
+
+				// TODO: read the right framerate out of the gif
+				//gifImg.
+			}
+
+			return sequence;
 		}
 
 		public void LoadImageData(Stream imageStream, ImageBuffer destImage)
