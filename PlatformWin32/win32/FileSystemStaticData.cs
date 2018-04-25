@@ -147,30 +147,33 @@ namespace MatterHackers.Agg
 					sequence.AddImage(image);
 				}
 			}
-			else if (File.Exists(path)
+			else if (this.FileExists(path)
 				&& string.Equals(Path.GetExtension(path), ".gif", StringComparison.OrdinalIgnoreCase))
 			{
 				sequence = new ImageSequence();
 
-				var gifImg = System.Drawing.Image.FromFile(path);
-
-				var dimension = new System.Drawing.Imaging.FrameDimension(gifImg.FrameDimensionsList[0]);
-				// Number of frames
-				int frameCount = gifImg.GetFrameCount(dimension);
-
-				for (var i = 0; i < frameCount; i++)
+				using (var fileStream = this.OpenStream(path))
 				{
-					// Return an Image at a certain index
-					gifImg.SelectActiveFrame(dimension, i);
-					ImageBuffer gifFrame = new ImageBuffer();
-					if (ImageIOWindowsPlugin.ConvertBitmapToImage(gifFrame, new Bitmap(gifImg)))
-					{
-						sequence.AddImage(gifFrame);
-					}
-				}
+					var gifImg = System.Drawing.Image.FromStream(fileStream);
 
-				// TODO: read the right framerate out of the gif
-				sequence.FramePerSecond = 3;
+					var dimension = new System.Drawing.Imaging.FrameDimension(gifImg.FrameDimensionsList[0]);
+					// Number of frames
+					int frameCount = gifImg.GetFrameCount(dimension);
+
+					for (var i = 0; i < frameCount; i++)
+					{
+						// Return an Image at a certain index
+						gifImg.SelectActiveFrame(dimension, i);
+						ImageBuffer gifFrame = new ImageBuffer();
+						if (ImageIOWindowsPlugin.ConvertBitmapToImage(gifFrame, new Bitmap(gifImg)))
+						{
+							sequence.AddImage(gifFrame);
+						}
+					}
+
+					// TODO: read the right framerate out of the gif
+					sequence.FramePerSecond = 3;
+				}
 			}
 
 			return sequence;
