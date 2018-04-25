@@ -1,5 +1,4 @@
 ﻿using MatterHackers.VectorMath;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,7 +8,14 @@ namespace MatterHackers.Agg.Image
 {
 	public class ImageSequence
 	{
+		public List<ImageBuffer> Frames = new List<ImageBuffer>();
 		private double secondsPerFrame = 1.0 / 30.0;
+
+		public event EventHandler Invalidated;
+
+		public ImageSequence()
+		{
+		}
 
 		public double FramePerSecond
 		{
@@ -17,44 +23,14 @@ namespace MatterHackers.Agg.Image
 			set { secondsPerFrame = 1 / value; }
 		}
 
-		public double SecondsPerFrame
-		{
-			get { return secondsPerFrame; }
-			set { secondsPerFrame = value; }
-		}
-
-		public int NumFrames
-		{
-			get { return imageList.Count; }
-		}
-
-		public int Width
-		{
-			get
-			{
-				if (imageList.Count > 0)
-				{
-					RectangleInt bounds = new RectangleInt(int.MaxValue, int.MaxValue, int.MinValue, int.MinValue);
-					foreach (ImageBuffer frame in imageList)
-					{
-						bounds.ExpandToInclude(frame.GetBoundingRect());
-					}
-
-					return Math.Max(0, bounds.Width);
-				}
-
-				return 0;
-			}
-		}
-
 		public int Height
 		{
 			get
 			{
-				if (imageList.Count > 0)
+				if (Frames.Count > 0)
 				{
 					RectangleInt bounds = new RectangleInt(int.MaxValue, int.MaxValue, int.MinValue, int.MinValue);
-					foreach (ImageBuffer frame in imageList)
+					foreach (ImageBuffer frame in Frames)
 					{
 						bounds.ExpandToInclude(frame.GetBoundingRect());
 					}
@@ -67,33 +43,33 @@ namespace MatterHackers.Agg.Image
 
 		public bool Looping { get; set; }
 
-		private List<ImageBuffer> imageList = new List<ImageBuffer>();
-
-		public ImageSequence()
+		public int NumFrames
 		{
+			get { return Frames.Count; }
 		}
 
-		public void SetAlpha(byte value)
+		public double SecondsPerFrame
 		{
-			foreach (ImageBuffer image in imageList)
-			{
-				image.SetAlpha(value);
-			}
+			get { return secondsPerFrame; }
+			set { secondsPerFrame = value; }
 		}
 
-		public void CenterOriginOffset()
+		public int Width
 		{
-			foreach (ImageBuffer image in imageList)
+			get
 			{
-				image.OriginOffset = new Vector2(image.Width / 2, image.Height / 2);
-			}
-		}
+				if (Frames.Count > 0)
+				{
+					RectangleInt bounds = new RectangleInt(int.MaxValue, int.MaxValue, int.MinValue, int.MinValue);
+					foreach (ImageBuffer frame in Frames)
+					{
+						bounds.ExpandToInclude(frame.GetBoundingRect());
+					}
 
-		public void CropToVisible()
-		{
-			foreach (ImageBuffer image in imageList)
-			{
-				image.CropToVisible();
+					return Math.Max(0, bounds.Width);
+				}
+
+				return 0;
 			}
 		}
 
@@ -119,23 +95,28 @@ namespace MatterHackers.Agg.Image
 
 		public void AddImage(ImageBuffer imageBuffer)
 		{
-			imageList.Add(imageBuffer);
+			Frames.Add(imageBuffer);
+		}
+
+		public void CenterOriginOffset()
+		{
+			foreach (ImageBuffer image in Frames)
+			{
+				image.OriginOffset = new Vector2(image.Width / 2, image.Height / 2);
+			}
+		}
+
+		public void CropToVisible()
+		{
+			foreach (ImageBuffer image in Frames)
+			{
+				image.CropToVisible();
+			}
 		}
 
 		public int GetFrameIndexByRatio(double fractionOfTotalLength)
 		{
 			return (int)((fractionOfTotalLength * (NumFrames - 1)) + .5);
-		}
-
-		public ImageBuffer GetImageByTime(double NumSeconds)
-		{
-			double TotalSeconds = NumFrames / FramePerSecond;
-			return GetImageByRatio(NumSeconds / TotalSeconds);
-		}
-
-		public ImageBuffer GetImageByRatio(double fractionOfTotalLength)
-		{
-			return GetImageByIndex(fractionOfTotalLength * (NumFrames - 1));
 		}
 
 		public ImageBuffer GetImageByIndex(double ImageIndex)
@@ -147,30 +128,54 @@ namespace MatterHackers.Agg.Image
 		{
 			if (Looping)
 			{
-				return imageList[ImageIndex % NumFrames];
+				return Frames[ImageIndex % NumFrames];
 			}
 
 			if (ImageIndex < 0)
 			{
-				return imageList[0];
+				return Frames[0];
 			}
 			else if (ImageIndex > NumFrames - 1)
 			{
-				return imageList[NumFrames - 1];
+				return Frames[NumFrames - 1];
 			}
 
-			return imageList[ImageIndex];
+			return Frames[ImageIndex];
+		}
+
+		public ImageBuffer GetImageByRatio(double fractionOfTotalLength)
+		{
+			return GetImageByIndex(fractionOfTotalLength * (NumFrames - 1));
+		}
+
+		public ImageBuffer GetImageByTime(double NumSeconds)
+		{
+			double TotalSeconds = NumFrames / FramePerSecond;
+			return GetImageByRatio(NumSeconds / TotalSeconds);
+		}
+
+		public void Invalidate()
+		{
+			OnInvalidated(null);
+		}
+
+		public virtual void OnInvalidated(EventArgs args)
+		{ 
+			Invalidated?.Invoke(this, args);
+		}
+
+		public void SetAlpha(byte value)
+		{
+			foreach (ImageBuffer image in Frames)
+			{
+				image.SetAlpha(value);
+			}
 		}
 
 		public class Properties
 		{
-			public bool Looping = false;
 			public double FramePerFrame = 30;
-		}
-
-		public IEnumerable<ImageBuffer> Frames()
-		{
-			return imageList;
+			public bool Looping = false;
 		}
 	}
 }

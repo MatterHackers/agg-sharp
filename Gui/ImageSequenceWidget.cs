@@ -92,6 +92,8 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public bool AllowStretching { get; set; } = false;
+
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			if (_imageSequence != null)
@@ -103,6 +105,10 @@ namespace MatterHackers.Agg.UI
 				if (MaintainAspecRatio)
 				{
 					ratio = Math.Min(Width / currentFrame.Width, Height / currentFrame.Height);
+					if(!AllowStretching)
+					{
+						ratio = Math.Min(ratio, 1);
+					}
 				}
 
 				graphics2D.Render(currentFrame,

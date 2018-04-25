@@ -155,27 +155,7 @@ namespace MatterHackers.Agg
 
 				using (var fileStream = this.OpenStream(path))
 				{
-					var gifImg = System.Drawing.Image.FromStream(fileStream);
-
-					var dimension = new System.Drawing.Imaging.FrameDimension(gifImg.FrameDimensionsList[0]);
-					// Number of frames
-					int frameCount = gifImg.GetFrameCount(dimension);
-
-					for (var i = 0; i < frameCount; i++)
-					{
-						// Return an Image at a certain index
-						gifImg.SelectActiveFrame(dimension, i);
-						ImageBuffer gifFrame = new ImageBuffer();
-						if (ImageIOWindowsPlugin.ConvertBitmapToImage(gifFrame, new Bitmap(gifImg)))
-						{
-							sequence.AddImage(gifFrame);
-						}
-					}
-
-					var item = gifImg.GetPropertyItem(0x5100); // FrameDelay in libgdiplus
-					// Time is in milliseconds
-					var delay = (item.Value[0] + item.Value[1] * 256) * 10;
-					sequence.SecondsPerFrame = delay / 1000.0;
+					LoadImageSequenceData(fileStream, sequence);
 				}
 			}
 
@@ -188,6 +168,32 @@ namespace MatterHackers.Agg
 			{
 				ImageIOWindowsPlugin.ConvertBitmapToImage(destImage, bitmap);
 			}
+		}
+
+		public void LoadImageSequenceData(Stream stream, ImageSequence sequence)
+		{
+			sequence.Frames.Clear();
+			var gifImg = System.Drawing.Image.FromStream(stream);
+
+			var dimension = new System.Drawing.Imaging.FrameDimension(gifImg.FrameDimensionsList[0]);
+			// Number of frames
+			int frameCount = gifImg.GetFrameCount(dimension);
+
+			for (var i = 0; i < frameCount; i++)
+			{
+				// Return an Image at a certain index
+				gifImg.SelectActiveFrame(dimension, i);
+				ImageBuffer gifFrame = new ImageBuffer();
+				if (ImageIOWindowsPlugin.ConvertBitmapToImage(gifFrame, new Bitmap(gifImg)))
+				{
+					sequence.AddImage(gifFrame);
+				}
+			}
+
+			var item = gifImg.GetPropertyItem(0x5100); // FrameDelay in libgdiplus
+													   // Time is in milliseconds
+			var delay = (item.Value[0] + item.Value[1] * 256) * 10;
+			sequence.SecondsPerFrame = delay / 1000.0;
 		}
 
 		private static object locker = new object();
