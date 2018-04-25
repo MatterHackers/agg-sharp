@@ -61,15 +61,12 @@ namespace MatterHackers.Agg.UI
 
 		public ImageSequence ImageSequence
 		{
-			get
-			{
-				return _imageSequence;
-			}
-
+			get => _imageSequence;
 			set
 			{
 				_imageSequence = value;
 				animation.FramesPerSecond = _imageSequence.FramePerSecond;
+				CurrentFrame = 0;
 			}
 		}
 
