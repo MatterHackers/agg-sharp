@@ -64,10 +64,24 @@ namespace MatterHackers.Agg.UI
 			get => _imageSequence;
 			set
 			{
-				_imageSequence = value;
-				animation.FramesPerSecond = _imageSequence.FramePerSecond;
-				CurrentFrame = 0;
+				if (_imageSequence != value)
+				{
+					// clear the old one
+					if (_imageSequence != null)
+					{
+						_imageSequence.Invalidated += ResetCurrentFrame;
+					}
+					_imageSequence = value;
+					animation.FramesPerSecond = _imageSequence.FramePerSecond;
+					CurrentFrame = 0;
+					_imageSequence.Invalidated += ResetCurrentFrame;
+				}
 			}
+		}
+
+		private void ResetCurrentFrame(object sender, EventArgs e)
+		{
+			CurrentFrame = 0;
 		}
 
 		public bool MaintainAspecRatio { get; set; } = true;
