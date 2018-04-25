@@ -171,8 +171,10 @@ namespace MatterHackers.Agg
 						}
 					}
 
-					// TODO: read the right framerate out of the gif
-					sequence.FramePerSecond = 3;
+					var item = gifImg.GetPropertyItem(0x5100); // FrameDelay in libgdiplus
+					// Time is in milliseconds
+					var delay = (item.Value[0] + item.Value[1] * 256) * 10;
+					sequence.SecondsPerFrame = delay / 1000.0;
 				}
 			}
 
