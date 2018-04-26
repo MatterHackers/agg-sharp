@@ -1385,7 +1385,7 @@ namespace MatterHackers.Agg.UI
 #if DEBUG
 				if (childToAdd.hasBeenRemoved)
 				{
-					throw new Exception("You are adding a child that has previously been remove. You should probably be creating a new widget, or calling ClearRemovedFlag() before adding.");
+					throw new Exception("You are adding a child that has previously been removed. You should probably be creating a new widget, or calling ClearRemovedFlag() before adding.");
 				}
 #endif
 
