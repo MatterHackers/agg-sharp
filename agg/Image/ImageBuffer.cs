@@ -305,7 +305,7 @@ namespace MatterHackers.Agg.Image
 			// make sure we make an exact copy
 			SetRecieveBlender(new BlenderBGRAExactCopy());
 			CopyFrom(sourceImage, sourceImage.GetBounds(), 0, 0);
-			
+
 			// then set the blender to what we expect
 			SetRecieveBlender(sourceImage.GetRecieveBlender());
 		}

@@ -137,11 +137,7 @@ namespace MatterHackers.Agg.UI
 
 		public double SplitterWidth
 		{
-			get
-			{
-				return splitterBar.Width;
-			}
-
+			get => splitterBar.Width;
 			set
 			{
 				if (splitterBar.Width != value)
@@ -156,10 +152,7 @@ namespace MatterHackers.Agg.UI
 
 		public double SplitterDistance
 		{
-			get
-			{
-				return splitterDistance;
-			}
+			get => splitterDistance;
 			set
 			{
 				if (splitterDistance != value)
