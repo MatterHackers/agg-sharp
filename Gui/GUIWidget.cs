@@ -3026,14 +3026,14 @@ namespace MatterHackers.Agg.UI
 			Click?.Invoke(this, mouseEvent);
 		}
 
-		protected virtual void SetCursorOnEnter(Cursors cursorToSet)
+		protected virtual void SetCursor(Cursors cursorToSet)
 		{
-			Parent?.SetCursorOnEnter(cursorToSet);
+			Parent?.SetCursor(cursorToSet);
 		}
 
 		public virtual void OnMouseEnter(MouseEventArgs mouseEvent)
 		{
-			SetCursorOnEnter(Cursor);
+			SetCursor(Cursor);
 			MouseEnter?.Invoke(this, mouseEvent);
 		}
 
