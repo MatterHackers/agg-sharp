@@ -96,22 +96,67 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		Cursors overrideCursor = Cursors.Arrow;
+		public override void OnMouseMove(MouseEventArgs mouseEvent)
+		{
+			if (LocalBounds.Contains(mouseEvent.Position)
+				&& this.ContainsFocus)
+			{
+				if (ImageBounds.Contains(mouseEvent.Position))
+				{
+					overrideCursor = Cursor;
+				}
+				else
+				{
+					overrideCursor = Cursors.Arrow;
+				}
+				base.SetCursor(overrideCursor);
+			}
+
+			base.OnMouseMove(mouseEvent);
+		}
+
+		protected override void SetCursor(Cursors cursorToSet)
+		{
+			base.SetCursor(overrideCursor);
+		}
+
+		public override void OnClick(MouseEventArgs mouseEvent)
+		{
+			if (ImageBounds.Contains(mouseEvent.Position))
+			{
+				base.OnClick(mouseEvent);
+			}
+		}
+
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			if (image != null)
 			{
+				var imageBounds = ImageBounds;
+				graphics2D.Render(image,
+					ImageBounds.Left, ImageBounds.Bottom,
+					ImageBounds.Width, ImageBounds.Height);
+			}
+			base.OnDraw(graphics2D);
+		}
+
+		public RectangleDouble ImageBounds
+		{
+			get
+			{
 				if (Width > image.Width)
 				{
-					graphics2D.Render(image,
-						new Vector2(Width / 2 - image.Width / 2, Height / 2 - image.Height / 2),
-						image.Width, image.Height);
+					var left = new Vector2(Width / 2 - image.Width / 2, Height / 2 - image.Height / 2);
+					return new RectangleDouble(
+							left,
+							new Vector2(left.X + image.Width, left.Y + image.Height));
 				}
 				else
 				{
-					graphics2D.Render(image, Vector2.Zero, Width, Height);
+					return new RectangleDouble(0, 0, Width, Height);
 				}
 			}
-			base.OnDraw(graphics2D);
 		}
 	}
 }

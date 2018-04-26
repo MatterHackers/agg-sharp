@@ -212,7 +212,7 @@ namespace MatterHackers.Agg.UI
 #endif
 		}
 
-		protected override void SetCursorOnEnter(Cursors cursorToSet)
+		protected override void SetCursor(Cursors cursorToSet)
 		{
 			PlatformWindow?.SetCursor(cursorToSet);
 		}
