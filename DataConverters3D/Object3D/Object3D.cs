@@ -48,6 +48,56 @@ namespace MatterHackers.DataConverters3D
 	{
 		public event EventHandler Invalidated;
 
+		public static Color BlendHsl(string a, string b, int index, int count)
+		{
+			return PrimitiveColors[a].BlendHsl(PrimitiveColors[b], 1.0 / (count + 1.0) * index);
+		}
+
+		static Dictionary<string, Color> _primitiveColors;
+		public static Dictionary<string, Color> PrimitiveColors
+		{
+			get
+			{
+				if (_primitiveColors == null)
+				{
+					_primitiveColors = new Dictionary<string, Color>();
+					// order of colors
+					//Cube // red
+					//Wedge
+					//Roof
+					//Pyramid
+
+					//Text // yellow
+
+					//Cylinder
+					//Cone
+					//Ring
+					//RoundRoof
+					//Torus
+					//HalfSphere
+					//Sphere // violet
+
+					// put in all the constant things before blening them
+					_primitiveColors.Add("Cube", Color.FromHSL(.01, .98, .76)); // red
+					_primitiveColors.Add("Text", Color.FromHSL(.175, .98, .76)); // yellow
+					_primitiveColors.Add("Pyramid", BlendHsl("Cube", "Text", 1, 3));
+					_primitiveColors.Add("Wedge", BlendHsl("Cube", "Text", 2, 3));
+					_primitiveColors.Add("Roof", BlendHsl("Cube", "Text", 3, 3));
+
+
+					_primitiveColors.Add("Sphere", Color.FromHSL(.87, .98, .76)); // violet
+					_primitiveColors.Add("Cylinder", BlendHsl("Text", "Sphere", 1, 6));
+					_primitiveColors.Add("Cone", BlendHsl("Text", "Sphere", 2, 6));
+					_primitiveColors.Add("Ring", BlendHsl("Text", "Sphere", 3, 6));
+					_primitiveColors.Add("RoundRoof", BlendHsl("Text", "Sphere", 4, 6));
+					_primitiveColors.Add("Torus", BlendHsl("Text", "Sphere", 5, 6));
+					_primitiveColors.Add("HalfSphere", BlendHsl("Text", "Sphere", 6, 6));
+				}
+
+				return _primitiveColors;
+			}
+		}
+
 		public Object3D()
 		{
 			var type = this.GetType();
