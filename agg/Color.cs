@@ -857,6 +857,11 @@ namespace MatterHackers.Agg
 			return false;
 		}
 
+		public static Color FromHSL(double hue0To1, double saturation0To1, double lightness0To1, double alpha = 1)
+		{
+			return ColorF.FromHSL(hue0To1, saturation0To1, lightness0To1, alpha).ToColor();
+		}
+
 		public override string ToString()
 		{
 			return GetAsHTMLString();
@@ -999,6 +1004,19 @@ namespace MatterHackers.Agg
 			result = this * (1 - weight) + other * weight;
 			return result;
 		}
+
+		public Color BlendHsl(Color b, double rationB)
+		{
+			double aH, aS, aL;
+			new ColorF(this).GetHSL(out aH, out aS, out aL);
+			double bH, bS, bL;
+			new ColorF(b).GetHSL(out bH, out bS, out bL);
+
+			return ColorF.FromHSL(
+				aH * (1 - rationB) + bH * rationB,
+				aS * (1 - rationB) + bS * rationB,
+				aL * (1 - rationB) + bL * rationB).ToColor();
+		}
 	}
 
 	public class ColorTypeConverter : TypeConverter
@@ -1011,7 +1029,6 @@ namespace MatterHackers.Agg
 		public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
 		{
 			string stringValue = value as string;
-
 
 			if (string.IsNullOrEmpty(stringValue))
 			{
