@@ -103,29 +103,36 @@ namespace MatterHackers.Agg.UI
 			// make sure children controls get to try to handle this event first
 			base.OnKeyDown(keyEvent);
 
-			if (!keyEvent.Handled)
+			// check for arrow keys (but only if no modifiers are pressed)
+			if (!keyEvent.Handled
+				&& !keyEvent.Control
+				&& !keyEvent.Alt
+				&& !keyEvent.Shift)
 			{
+				var startingScrollPosition = ScrollPosition;
 				switch (keyEvent.KeyCode)
 				{
 					case Keys.Down:
 						ScrollPosition += new Vector2(0, 16);
-						keyEvent.Handled = true;
 						break;
 
 					case Keys.PageDown:
-						keyEvent.Handled = true;
 						ScrollPosition += new Vector2(0, Height - 20);
 						break;
 
 					case Keys.Up:
 						ScrollPosition -= new Vector2(0, 16);
-						keyEvent.Handled = true;
 						break;
 
 					case Keys.PageUp:
 						ScrollPosition -= new Vector2(0, Height - 20);
-						keyEvent.Handled = true;
 						break;
+				}
+
+				// we only handled the key if it resulted in the arrea scrolling
+				if(startingScrollPosition != ScrollPosition)
+				{
+					keyEvent.Handled = true;
 				}
 			}
 		}
