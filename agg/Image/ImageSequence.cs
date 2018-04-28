@@ -9,7 +9,7 @@ namespace MatterHackers.Agg.Image
 	public class ImageSequence
 	{
 		public List<ImageBuffer> Frames = new List<ImageBuffer>();
-		private double secondsPerFrame = 1.0 / 30.0;
+		public List<int> FrameTimesMs = new List<int>();
 
 		public event EventHandler Invalidated;
 
@@ -17,10 +17,31 @@ namespace MatterHackers.Agg.Image
 		{
 		}
 
+		public double Time
+		{
+			get
+			{
+				if(FrameTimesMs.Any())
+				{
+					int totalTime = 0;
+					foreach (var time in FrameTimesMs)
+					{
+						totalTime += time;
+					}
+
+					return totalTime / 1000.0;
+				}
+				else
+				{
+					return Frames.Count * SecondsPerFrame;
+				}
+			}
+		}
+
 		public double FramePerSecond
 		{
-			get { return 1 / secondsPerFrame; }
-			set { secondsPerFrame = 1 / value; }
+			get { return 1 / SecondsPerFrame; }
+			set { SecondsPerFrame = 1 / value; }
 		}
 
 		public int Height
@@ -48,11 +69,7 @@ namespace MatterHackers.Agg.Image
 			get { return Frames.Count; }
 		}
 
-		public double SecondsPerFrame
-		{
-			get { return secondsPerFrame; }
-			set { secondsPerFrame = value; }
-		}
+		public double SecondsPerFrame { get; set; } = 1.0 / 30.0;
 
 		public int Width
 		{
@@ -93,9 +110,13 @@ namespace MatterHackers.Agg.Image
 			return sequenceLoaded;
 		}
 
-		public void AddImage(ImageBuffer imageBuffer)
+		public void AddImage(ImageBuffer imageBuffer, int frameTimeMs = 0)
 		{
 			Frames.Add(imageBuffer);
+			if(frameTimeMs > 0)
+			{
+				FrameTimesMs.Add(frameTimeMs);
+			}
 		}
 
 		public void CenterOriginOffset()
@@ -148,10 +169,26 @@ namespace MatterHackers.Agg.Image
 			return GetImageByIndex(fractionOfTotalLength * (NumFrames - 1));
 		}
 
-		public ImageBuffer GetImageByTime(double NumSeconds)
+		public ImageBuffer GetImageByTime(double numSeconds)
 		{
+			if (FrameTimesMs.Count > 0)
+			{
+				int timeMs = (int)(numSeconds * 1000);
+				double totalTime = 0;
+				int index = 0;
+				foreach (var time in FrameTimesMs)
+				{
+					totalTime += time;
+					if(totalTime > timeMs)
+					{
+						return Frames[Math.Min(index, Frames.Count - 1)];
+					}
+					index++;
+				}
+			}
+
 			double TotalSeconds = NumFrames / FramePerSecond;
-			return GetImageByRatio(NumSeconds / TotalSeconds);
+			return GetImageByRatio(numSeconds / TotalSeconds);
 		}
 
 		public void Invalidate()

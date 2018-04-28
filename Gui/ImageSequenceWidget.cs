@@ -37,6 +37,7 @@ namespace MatterHackers.Agg.UI
 	{
 		private ImageSequence _imageSequence;
 		private Animation animation = new Animation();
+		private double currentTime = 0;
 
 		public ImageSequenceWidget(int width, int height)
 		{
@@ -45,7 +46,11 @@ namespace MatterHackers.Agg.UI
 			animation.DrawTarget = this;
 			animation.Update += (s, time) =>
 			{
-				CurrentFrame++;
+				currentTime += time;
+				while(currentTime > ImageSequence.Time)
+				{
+					currentTime -= ImageSequence.Time;
+				}
 			};
 
 			RunAnimation = true;
@@ -57,8 +62,6 @@ namespace MatterHackers.Agg.UI
 			ImageSequence = initialImageSequence;
 		}
 
-		public int CurrentFrame { get; set; }
-
 		public ImageSequence ImageSequence
 		{
 			get => _imageSequence;
@@ -69,19 +72,19 @@ namespace MatterHackers.Agg.UI
 					// clear the old one
 					if (_imageSequence != null)
 					{
-						_imageSequence.Invalidated += ResetCurrentFrame;
+						_imageSequence.Invalidated += ResetImageIndex;
 					}
 					_imageSequence = value;
 					animation.FramesPerSecond = _imageSequence.FramePerSecond;
-					CurrentFrame = 0;
-					_imageSequence.Invalidated += ResetCurrentFrame;
+					currentTime = 0;
+					_imageSequence.Invalidated += ResetImageIndex;
 				}
 			}
 		}
 
-		private void ResetCurrentFrame(object sender, EventArgs e)
+		private void ResetImageIndex(object sender, EventArgs e)
 		{
-			CurrentFrame = 0;
+			currentTime = 0;
 		}
 
 		public bool MaintainAspecRatio { get; set; } = true;
@@ -110,24 +113,23 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			if (_imageSequence != null)
+			if (ImageSequence != null)
 			{
-				var currentFrame = _imageSequence.GetImageByIndex(CurrentFrame % _imageSequence.NumFrames);
-
+				var currentImage = ImageSequence.GetImageByTime(currentTime);
 				var bottomLeft = Vector2.Zero;
 				var ratio = 1.0;
 				if (MaintainAspecRatio)
 				{
-					ratio = Math.Min(Width / currentFrame.Width, Height / currentFrame.Height);
+					ratio = Math.Min(Width / currentImage.Width, Height / currentImage.Height);
 					if(!AllowStretching)
 					{
 						ratio = Math.Min(ratio, 1);
 					}
 				}
 
-				graphics2D.Render(currentFrame,
-					Width / 2 - (currentFrame.Width * ratio) / 2,
-					Height / 2 - (currentFrame.Height * ratio) / 2,
+				graphics2D.Render(currentImage,
+					Width / 2 - (currentImage.Width * ratio) / 2,
+					Height / 2 - (currentImage.Height * ratio) / 2,
 					0,
 					ratio, ratio);
 			}
