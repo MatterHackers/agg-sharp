@@ -245,11 +245,11 @@ namespace MatterHackers.GuiAutomation
 							}
 							var keyDownEvent = new KeyEventArgs(k);
 							systemWindow.OnKeyDown(keyDownEvent);
-							if (!keyDownEvent.Handled && !keyDownEvent.SuppressKeyPress)
+							if (!keyDownEvent.SuppressKeyPress)
 							{
 								var keyUpEvent = new KeyEventArgs(k);
 								systemWindow.OnKeyUp(keyUpEvent);
-								if (!keyUpEvent.Handled && !keyUpEvent.SuppressKeyPress)
+								if (!keyUpEvent.SuppressKeyPress)
 								{
 									systemWindow.OnKeyPress(new KeyPressEventArgs(character));
 								}
