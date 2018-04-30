@@ -43,7 +43,9 @@ using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI.Tests
 {
+#if !__ANDROID__
 	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
+#endif
 	public class MouseInteractionTests
 	{
 #if !__ANDROID__

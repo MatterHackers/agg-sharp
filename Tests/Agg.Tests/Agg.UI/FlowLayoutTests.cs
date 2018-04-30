@@ -36,7 +36,9 @@ using NUnit.Framework;
 
 namespace MatterHackers.Agg.UI.Tests
 {
+#if !__ANDROID__
 	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
+#endif
 	public class FlowLayoutTests
 	{
 		public static bool saveImagesForDebug = false;
