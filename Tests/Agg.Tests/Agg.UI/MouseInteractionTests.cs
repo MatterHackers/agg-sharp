@@ -43,11 +43,11 @@ using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	[TestFixture, Category("Agg.UI")]
+	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
 	public class MouseInteractionTests
 	{
 #if !__ANDROID__
-		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
+		[Test]
 		public async Task DoClickButtonInWindow()
 		{
 			int leftClickCount = 0;
