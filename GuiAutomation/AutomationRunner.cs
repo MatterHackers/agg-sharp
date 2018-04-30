@@ -63,7 +63,8 @@ namespace MatterHackers.GuiAutomation
 
 		public enum InputType { Native, Simulated, SimulatedDrawMouse };
 
-		public AutomationRunner(string imageDirectory = "", InputType inputType = InputType.Native)
+		// change default to SimulatedDrawMouse
+		public AutomationRunner(string imageDirectory = "", InputType inputType = InputType.SimulatedDrawMouse)
 		{
 #if !__ANDROID__
 			if (inputType == InputType.Native)
@@ -79,7 +80,6 @@ namespace MatterHackers.GuiAutomation
 #else
 				inputSystem = new AggInputMethods(this, inputType == InputType.SimulatedDrawMouse);
 #endif
-
 			this.imageDirectory = imageDirectory;
 		}
 
@@ -1042,7 +1042,7 @@ namespace MatterHackers.GuiAutomation
 
 		#region Prior TestHarness code
 
-		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", InputType inputType = InputType.Native, Action closeWindow = null)
+		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", InputType inputType = InputType.SimulatedDrawMouse, Action closeWindow = null)
 		{
 			var testRunner = new AutomationRunner(imagesDirectory, inputType);
 

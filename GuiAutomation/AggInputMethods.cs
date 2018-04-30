@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Threading;
@@ -204,6 +205,11 @@ namespace MatterHackers.GuiAutomation
 			return MouseButtons.Left;
 		}
 
+		static Dictionary<char, Keys> charToKeys = new Dictionary<char, Keys>()
+		{
+			['.'] = Keys.OemPeriod
+		};
+
 		public void Type(string textToType)
 		{
 			var systemWindow = SystemWindow.AllOpenSystemWindows.Last();
@@ -232,7 +238,28 @@ namespace MatterHackers.GuiAutomation
 					default:
 						foreach (char character in textToType)
 						{
-							systemWindow.OnKeyPress(new KeyPressEventArgs(character));
+							Keys k = (Keys)char.ToUpper(character);
+							if(charToKeys.ContainsKey(character))
+							{
+								k = charToKeys[character];
+							}
+							var keyDownEvent = new KeyEventArgs(k);
+							systemWindow.OnKeyDown(keyDownEvent);
+							if (!keyDownEvent.Handled && !keyDownEvent.SuppressKeyPress)
+							{
+								var keyUpEvent = new KeyEventArgs(k);
+								systemWindow.OnKeyUp(keyUpEvent);
+								if (!keyUpEvent.Handled && !keyUpEvent.SuppressKeyPress)
+								{
+									systemWindow.OnKeyPress(new KeyPressEventArgs(character));
+								}
+							}
+							else
+							{
+								// If you end up here unexpectadly you may need to add 
+								// a mapping to charToKeys for the inputed character.
+								int a = 0;
+							}
 						}
 						break;
 				}

@@ -928,7 +928,7 @@ namespace MatterHackers.Agg.UI
 #if SILVERLIGHT
                     throw new NotImplementedException();
 #else
-					Clipboard.SetText(internalTextWidget.Text.Substring(CharIndexToInsertBefore, SelectionIndexToStartBefore - CharIndexToInsertBefore));
+					Clipboard.Instance.SetText(internalTextWidget.Text.Substring(CharIndexToInsertBefore, SelectionIndexToStartBefore - CharIndexToInsertBefore));
 #endif
 				}
 				else
@@ -936,7 +936,7 @@ namespace MatterHackers.Agg.UI
 #if SILVERLIGHT
                     throw new NotImplementedException();
 #else
-					Clipboard.SetText(internalTextWidget.Text.Substring(SelectionIndexToStartBefore, CharIndexToInsertBefore - SelectionIndexToStartBefore));
+					Clipboard.Instance.SetText(internalTextWidget.Text.Substring(SelectionIndexToStartBefore, CharIndexToInsertBefore - SelectionIndexToStartBefore));
 #endif
 				}
 			}
@@ -951,7 +951,7 @@ namespace MatterHackers.Agg.UI
 #if SILVERLIGHT
                     throw new NotImplementedException();
 #else
-			if (Clipboard.ContainsText())
+			if (Clipboard.Instance.ContainsText)
 			{
 				if (Selecting)
 				{
@@ -959,7 +959,7 @@ namespace MatterHackers.Agg.UI
 				}
 
 				StringBuilder stringBuilder = new StringBuilder(internalTextWidget.Text);
-				String stringOnClipboard = Clipboard.GetText();
+				String stringOnClipboard = Clipboard.Instance.GetText();
 				if(!Multiline)
 				{
 					stringOnClipboard = Regex.Replace(stringOnClipboard, @"\r\n?|\n", " ");
