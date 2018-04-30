@@ -38,7 +38,7 @@ using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	[TestFixture, Category("Agg.UI")]
+	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
 	public class MenuTests
 	{
 		public static bool saveImagesForDebug = false;
@@ -51,7 +51,7 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
-		[Test, Apartment(ApartmentState.STA), Ignore("Test remains unstable and written in a non-standard form") /* Test was unstable, putting back in rotation with updates... */]
+		[Test, Ignore("Test remains unstable and written in a non-standard form") /* Test was unstable, putting back in rotation with updates... */]
 		public async Task OpenAndCloseMenus()
 		{
 			int item1ClickCount = 0;

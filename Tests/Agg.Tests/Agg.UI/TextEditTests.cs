@@ -42,7 +42,7 @@ using System.IO;
 namespace MatterHackers.Agg.UI.Tests
 {
 #if !__ANDROID__
-	[TestFixture, RunInApplicationDomain, Category("Agg.UI")]
+	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
 #endif
 	public class TextEditTests
 	{
@@ -457,7 +457,7 @@ namespace MatterHackers.Agg.UI.Tests
 #if (__ANDROID__)
 		[Test]
 #else
-		[Test, Apartment(ApartmentState.STA)]
+		[Test]
 #endif
 		public void TextEditingSpecialKeysWork()
 		{
@@ -571,10 +571,10 @@ namespace MatterHackers.Agg.UI.Tests
 	}
 
 #if !__ANDROID__
-	[TestFixture, Category("Agg.UI"), RunInApplicationDomain]
+	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
 	public class TextEditFocusTests
 	{
-		[Test, Apartment(ApartmentState.STA)]
+		[Test]
 		public async Task VerifyFocusMakesTextWidgetEditable()
 		{
 			TextEditWidget editField = null;
@@ -605,7 +605,7 @@ namespace MatterHackers.Agg.UI.Tests
 			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun);
 		}
 
-		[Test, Apartment(ApartmentState.STA)]
+		[Test]
 		public async Task VerifyFocusProperty()
 		{
 			SystemWindow systemWindow = new SystemWindow(300, 200)
@@ -632,7 +632,7 @@ namespace MatterHackers.Agg.UI.Tests
 			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun);
 		}
 
-		[Test, Apartment(ApartmentState.STA)]
+		[Test]
 		public async Task SelectAllOnFocusCanStillClickAfterSelection()
 		{
 			var editField = new TextEditWidget(pixelWidth: 200)

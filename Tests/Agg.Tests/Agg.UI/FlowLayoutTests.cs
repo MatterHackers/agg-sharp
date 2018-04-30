@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
 using MatterHackers.GuiAutomation;
@@ -35,7 +36,7 @@ using NUnit.Framework;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	[TestFixture, Category("Agg.UI")]
+	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
 	public class FlowLayoutTests
 	{
 		public static bool saveImagesForDebug = false;
@@ -104,7 +105,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(bounds.Bottom == marginSize, "Bottom margin is incorrect");
 		}
 #if !__ANDROID__
-		[Test, Apartment(System.Threading.ApartmentState.STA), RunInApplicationDomain]
+		[Test]
 		public async Task SpacingClearedAfterLoadPositionsCorrectly()
 		{
 			// Expectation - no matter what the margin/padding is at construction time, clearing it should result in Flowlayout position that reflects the latest values
