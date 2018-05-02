@@ -53,7 +53,19 @@ namespace MatterHackers.RenderOpenGl
 			return frustum2;
 		}
 
+		public static void ExtendLineEnds(ref Vector3 start, ref Vector3 end, double length)
+		{
+			// extend both sides
+			ExtendLineEnd(start, ref end, length);
+			ExtendLineEnd(end, ref start, length);
+		}
 
+		public static void ExtendLineEnd(Vector3 start, ref Vector3 end, double length)
+		{
+			// extend the start position by the length in the direction of the line
+			var direction = (end - start).GetNormal();
+			end += direction * length;
+		}
 
 		public static void PrepareFor3DLineRender(bool doDepthTest)
 		{
@@ -143,27 +155,27 @@ namespace MatterHackers.RenderOpenGl
 		/// <param name="width"></param>
 		public static void Render3DLine(WorldView world, Vector3 start, Vector3 end, Color color, bool doDepthTest = true, double width = 1)
 		{
-			Render3DLine(GetClippingFrustum(world), world, start, end, color, doDepthTest, width);
+			Render3DLine(world, GetClippingFrustum(world), start, end, color, doDepthTest, width);
 		}
 
 		/// <summary>
 		/// Draw a line in the scene in 3D but scale it such that it appears as a 2D line in the view.
 		/// </summary>
+		/// <param name="world"></param>
 		/// <param name="clippingFrustum">This is a cache of the frustum from world.
 		/// Much faster to pass this way if drawing lots of lines.</param>
-		/// <param name="world"></param>
 		/// <param name="start"></param>
 		/// <param name="end"></param>
 		/// <param name="color"></param>
 		/// <param name="doDepthTest"></param>
 		/// <param name="width"></param>
-		public static void Render3DLine(Frustum clippingFrustum, WorldView world, Vector3 start, Vector3 end, Color color, bool doDepthTest = true, double width = 1)
+		public static void Render3DLine(this WorldView world, Frustum clippingFrustum, Vector3 start, Vector3 end, Color color, bool doDepthTest = true, double width = 1)
 		{
 			PrepareFor3DLineRender(doDepthTest);
-			Render3DLineNoPrep(clippingFrustum, world, start, end, color, width);
+			world.Render3DLineNoPrep(clippingFrustum, start, end, color, width);
 		}
 
-		public static void Render3DLineNoPrep(Frustum clippingFrustum, WorldView world, Vector3 start, Vector3 end, Color color, double width = 1)
+		public static void Render3DLineNoPrep(this WorldView world, Frustum clippingFrustum, Vector3 start, Vector3 end, Color color, double width = 1)
 		{
 			if (clippingFrustum.ClipLine(ref start, ref end))
 			{
