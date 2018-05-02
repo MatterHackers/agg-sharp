@@ -33,6 +33,8 @@ namespace MatterHackers.DataConverters3D
 {
 	public class SelectionGroup : Object3D
 	{
+		public override bool CanEdit => false;
+
 		public SelectionGroup()
 		{
 		}

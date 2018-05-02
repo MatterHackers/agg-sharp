@@ -263,7 +263,7 @@ namespace MatterHackers.DataConverters3D
 
 		public bool CanEdit => false;
 
-		public bool CanMakePermanent => false;
+		public bool CanApply => false;
 
 		public bool CanRemove => false;
 
@@ -338,12 +338,12 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public void MakePermanent()
+		public void Apply(UndoBuffer undoBuffer)
 		{
 			throw new NotImplementedException();
 		}
 
-		public void Remove()
+		public void Remove(UndoBuffer undoBuffer)
 		{
 			throw new NotImplementedException();
 		}
