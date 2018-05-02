@@ -153,9 +153,9 @@ namespace MatterHackers.RenderOpenGl
 		/// <param name="color"></param>
 		/// <param name="doDepthTest"></param>
 		/// <param name="width"></param>
-		public static void Render3DLine(WorldView world, Vector3 start, Vector3 end, Color color, bool doDepthTest = true, double width = 1)
+		public static void Render3DLine(this WorldView world, Vector3 start, Vector3 end, Color color, bool doDepthTest = true, double width = 1)
 		{
-			Render3DLine(world, GetClippingFrustum(world), start, end, color, doDepthTest, width);
+			world.Render3DLine(GetClippingFrustum(world), start, end, color, doDepthTest, width);
 		}
 
 		/// <summary>
