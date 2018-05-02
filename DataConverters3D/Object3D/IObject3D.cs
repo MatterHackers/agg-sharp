@@ -32,6 +32,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using MatterHackers.Agg;
+using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RayTracer;
@@ -201,13 +202,13 @@ namespace MatterHackers.DataConverters3D
 		bool CanEdit { get; }
 
 		[JsonIgnore]
-		bool CanMakePermanent { get; }
+		bool CanApply { get; }
 
 		/// <summary>
 		/// Remove the IObject3D from the tree and keep whatever functionality it was adding. 
 		/// This may require removing many child objects from the tree depending on implementation.
 		/// </summary>
-		void MakePermanent();
+		void Apply(UndoBuffer undoBuffer);
 
 		[JsonIgnore]
 		bool CanRemove { get; }
@@ -215,7 +216,7 @@ namespace MatterHackers.DataConverters3D
 		/// Remove the IObject3D from the tree and undo whatever functionality it was adding (if appropriate).
 		/// This may require removing many child objects from the tree depending on implementation.
 		/// </summary>
-		void Remove();
+		void Remove(UndoBuffer undoBuffer);
 
 		/// <summary>
 		/// Get the Axis Aligned Bounding Box transformed by the given offset

@@ -36,6 +36,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
+using MatterHackers.DataConverters3D.UndoCommands;
 using MatterHackers.PolygonMesh;
 using MatterHackers.RayTracer;
 using MatterHackers.RayTracer.Traceable;
@@ -222,8 +223,8 @@ namespace MatterHackers.DataConverters3D
 
 		public virtual bool Visible { get; set; } = true;
 
-		public virtual bool CanMakePermanent => this.HasChildren();
-		public virtual bool CanRemove => this.HasChildren();
+		public virtual bool CanApply => false;
+		public virtual bool CanRemove => false;
 		public virtual bool CanEdit => this.HasChildren();
 
 		public static IObject3D Load(string meshPath, CancellationToken cancellationToken, Dictionary<string, IObject3D> itemCache = null, Action<double, string> progress = null)
@@ -561,36 +562,34 @@ namespace MatterHackers.DataConverters3D
 				});
 		}
 
-		public virtual void MakePermanent()
+		public virtual void Apply(UndoBuffer undoBuffer)
 		{
-			// push our matrix into our children
+			List<IObject3D> newChildren = new List<IObject3D>();
+			// push our matrix into a copy of our children
 			foreach (var child in this.Children)
 			{
-				child.Matrix *= this.Matrix;
+				var newChild = child.Clone();
+				newChildren.Add(newChild);
+				newChild.Matrix *= this.Matrix;
 			}
 
-			// add our children to our parent and remove from parent
-			this.Parent.Children.Modify(list =>
-			{
-				list.Remove(this);
-				list.AddRange(this.Children);
-			});
+			// and replace us with the children 
+			undoBuffer.AddAndDo(new ReplaceCommand(new List<IObject3D> { this }, newChildren));
 		}
 
-		public virtual void Remove()
+		public virtual void Remove(UndoBuffer undoBuffer)
 		{
-			// push our matrix into our children
+			List<IObject3D> newChildren = new List<IObject3D>();
+			// push our matrix into a copy of our children
 			foreach (var child in this.Children)
 			{
-				child.Matrix *= this.Matrix;
+				var newChild = child.Clone();
+				newChildren.Add(newChild);
+				newChild.Matrix *= this.Matrix;
 			}
 
-			// add our children to our parent and remove from parent
-			this.Parent.Children.Modify(list =>
-			{
-				list.Remove(this);
-				list.AddRange(this.Children);
-			});
+			// and replace us with the children 
+			undoBuffer.AddAndDo(new ReplaceCommand(new List<IObject3D> { this }, newChildren));
 		}
 	}
 }
