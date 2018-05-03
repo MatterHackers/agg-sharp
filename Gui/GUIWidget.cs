@@ -929,8 +929,8 @@ namespace MatterHackers.Agg.UI
 				Affine tempLocalToParentTransform = ParentToChildTransform;
 				if (EnforceIntegerBounds)
 				{
-					value.X = Floor(value.X);
-					value.Y = Floor(value.Y);
+					value.X = Math.Round(value.X);
+					value.Y = Math.Round(value.Y);
 				}
 
 				if (tempLocalToParentTransform.tx != value.X || tempLocalToParentTransform.ty != value.Y)
