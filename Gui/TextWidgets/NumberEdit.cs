@@ -61,7 +61,7 @@ namespace MatterHackers.Agg.UI
 			{
 				minValue = Math.Max(0, minValue);
 			}
-			internalTextEditWidget = new InternalNumberEdit(startingValue, pointSize,
+			InternalTextEditWidget = new InternalNumberEdit(startingValue, pointSize,
 				pixelWidth, pixelHeight, allowNegatives, allowDecimals, minValue, maxValue, increment, tabIndex);
 			HookUpToInternalWidget(pixelWidth, pixelHeight);
 			OriginRelativeParent = new Vector2(x, y);
