@@ -373,6 +373,8 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public bool ReadOnly { get; set; }
+
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			double fontHeight = internalTextWidget.Printer.TypeFaceStyle.EmSizeInPixels;
@@ -579,6 +581,11 @@ namespace MatterHackers.Agg.UI
 
 		private void DeleteSelection(bool createUndoMarker = true)
 		{
+			if (ReadOnly)
+			{
+				return;
+			}
+
 			if (Selecting)
 			{
 				if (CharIndexToInsertBefore < SelectionIndexToStartBefore)
@@ -605,7 +612,7 @@ namespace MatterHackers.Agg.UI
 		{
 			firstIndexSelected = Math.Max(0, Math.Min(firstIndexSelected, Text.Length - 1));
 			lastIndexSelected = Math.Max(0, Math.Min(lastIndexSelected, Text.Length));
-			
+
 			SelectionIndexToStartBefore = firstIndexSelected;
 			CharIndexToInsertBefore = lastIndexSelected + 1;
 			Selecting = true;
@@ -948,9 +955,11 @@ namespace MatterHackers.Agg.UI
 
 		private void PasteFromClipboard()
 		{
-#if SILVERLIGHT
-                    throw new NotImplementedException();
-#else
+			if (ReadOnly)
+			{
+				return;
+			}
+
 			if (Clipboard.Instance.ContainsText)
 			{
 				if (Selecting)
@@ -971,7 +980,6 @@ namespace MatterHackers.Agg.UI
 				TextWidgetUndoCommand newUndoCommand = new TextWidgetUndoCommand(this);
 				undoBuffer.Add(newUndoCommand);
 			}
-#endif
 		}
 
 		public override void OnKeyPress(KeyPressEventArgs keyPressEvent)
@@ -982,11 +990,17 @@ namespace MatterHackers.Agg.UI
 			if (!keyPressEvent.Handled)
 			{
 				if (keyPressEvent.KeyChar < 32
-				&& keyPressEvent.KeyChar != 13
-				&& keyPressEvent.KeyChar != 9)
+					&& keyPressEvent.KeyChar != 13
+					&& keyPressEvent.KeyChar != 9)
 				{
 					return;
 				}
+
+				if(ReadOnly)
+				{
+					return;
+				}
+
 				if (Selecting)
 				{
 					DeleteSelection();

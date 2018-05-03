@@ -36,7 +36,7 @@ namespace MatterHackers.Agg.UI.Tests
 	[TestFixture, Category("Agg.UI")]
 	public class BorderTests
 	{
-		private int borderSize = 0;
+		private int borderSize = 1;
 		private static bool debugResult = false;
 
 		private enum Regions
@@ -207,19 +207,19 @@ namespace MatterHackers.Agg.UI.Tests
 			switch (region)
 			{
 				case  Regions.Left:
-					borderBounds = new RectangleDouble(0, 0, border.Left-1, imageBuffer.Height);
+					borderBounds = new RectangleDouble(0, 0, border.Left, imageBuffer.Height);
 					break;
 
 				case Regions.Bottom:
-					borderBounds = new RectangleDouble(0, 0, imageBuffer.Width, border.Bottom-1);
+					borderBounds = new RectangleDouble(0, 0, imageBuffer.Width, border.Bottom);
 					break;
 
 				case Regions.Right:
-					borderBounds = new RectangleDouble(imageBuffer.Width - border.Right, 0, imageBuffer.Width-1, imageBuffer.Height);
+					borderBounds = new RectangleDouble(imageBuffer.Width - border.Right, 0, imageBuffer.Width, imageBuffer.Height);
 					break;
 
 				case Regions.Top:
-					borderBounds = new RectangleDouble(0, imageBuffer.Height - border.Top, imageBuffer.Width, imageBuffer.Height-1);
+					borderBounds = new RectangleDouble(0, imageBuffer.Height - border.Top, imageBuffer.Width, imageBuffer.Height);
 					break;
 			}
 
@@ -229,8 +229,7 @@ namespace MatterHackers.Agg.UI.Tests
 				{
 					var pixel = imageBuffer.GetPixel(x, y);
 
-					bool shouldBeRed = borderBounds.Contains(new Point2D(x, y));
-
+					bool shouldBeRed = borderBounds.Contains(new Point2D(x + .5, y + .5));
 					if (shouldBeRed)
 					{
 						Assert.AreEqual(Color.Red, pixel);
