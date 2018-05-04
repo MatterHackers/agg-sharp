@@ -11,34 +11,13 @@ namespace MatterHackers.Agg.Image
 		public List<ImageBuffer> Frames = new List<ImageBuffer>();
 		public List<int> FrameTimesMs = new List<int>();
 
-		public event EventHandler Invalidated;
-
 		public ImageSequence()
 		{
 		}
 
-		public double Time
-		{
-			get
-			{
-				if(FrameTimesMs.Any())
-				{
-					int totalTime = 0;
-					foreach (var time in FrameTimesMs)
-					{
-						totalTime += time;
-					}
+		public event EventHandler Invalidated;
 
-					return totalTime / 1000.0;
-				}
-				else
-				{
-					return Frames.Count * SecondsPerFrame;
-				}
-			}
-		}
-
-		public double FramePerSecond
+		public double FramesPerSecond
 		{
 			get { return 1 / SecondsPerFrame; }
 			set { SecondsPerFrame = 1 / value; }
@@ -70,6 +49,27 @@ namespace MatterHackers.Agg.Image
 		}
 
 		public double SecondsPerFrame { get; set; } = 1.0 / 30.0;
+
+		public double Time
+		{
+			get
+			{
+				if (FrameTimesMs.Count > 0)
+				{
+					int totalTime = 0;
+					foreach (var time in FrameTimesMs)
+					{
+						totalTime += time;
+					}
+
+					return totalTime / 1000.0;
+				}
+				else
+				{
+					return Frames.Count * SecondsPerFrame;
+				}
+			}
+		}
 
 		public int Width
 		{
@@ -113,7 +113,7 @@ namespace MatterHackers.Agg.Image
 		public void AddImage(ImageBuffer imageBuffer, int frameTimeMs = 0)
 		{
 			Frames.Add(imageBuffer);
-			if(frameTimeMs > 0)
+			if (frameTimeMs > 0)
 			{
 				FrameTimesMs.Add(frameTimeMs);
 			}
@@ -125,6 +125,13 @@ namespace MatterHackers.Agg.Image
 			{
 				image.OriginOffset = new Vector2(image.Width / 2, image.Height / 2);
 			}
+		}
+
+		public void Copy(ImageSequence imageSequenceToCopy)
+		{
+			this.Frames = imageSequenceToCopy.Frames;
+			this.FrameTimesMs = imageSequenceToCopy.FrameTimesMs;
+			this.Looping = imageSequenceToCopy.Looping;
 		}
 
 		public void CropToVisible()
@@ -166,36 +173,39 @@ namespace MatterHackers.Agg.Image
 
 		public ImageBuffer GetImageByRatio(double fractionOfTotalLength)
 		{
-			return GetImageByIndex(fractionOfTotalLength * (NumFrames - 1));
+			if (NumFrames > 0)
+			{
+				return GetImageByIndex(fractionOfTotalLength * (NumFrames - 1));
+			}
+
+			return null;
 		}
 
 		public ImageBuffer GetImageByTime(double numSeconds)
 		{
-			if (FrameTimesMs.Count > 0)
-			{
-				return Frames[GetImageIndexByTime(numSeconds)];
-			}
-
-			double TotalSeconds = NumFrames / FramePerSecond;
-			return GetImageByRatio(numSeconds / TotalSeconds);
+			return Frames[GetImageIndexByTime(numSeconds)];
 		}
 
 		public int GetImageIndexByTime(double numSeconds)
 		{
-			int timeMs = (int)(numSeconds * 1000);
-			double totalTime = 0;
-			int index = 0;
-			foreach (var time in FrameTimesMs)
+			if (FrameTimesMs.Count > 0)
 			{
-				totalTime += time;
-				if (totalTime > timeMs)
+				int timeMs = (int)(numSeconds * 1000);
+				double totalTime = 0;
+				int index = 0;
+				foreach (var time in FrameTimesMs)
 				{
-					return Math.Min(index, Frames.Count - 1);
+					totalTime += time;
+					if (totalTime > timeMs)
+					{
+						return Math.Min(index, Frames.Count - 1);
+					}
+					index++;
 				}
-				index++;
 			}
 
-			return 0;
+			int frame = (int)Math.Round(numSeconds * FramesPerSecond);
+			return Math.Min(frame, Frames.Count - 1);
 		}
 
 		public void Invalidate()
@@ -204,7 +214,7 @@ namespace MatterHackers.Agg.Image
 		}
 
 		public virtual void OnInvalidated(EventArgs args)
-		{ 
+		{
 			Invalidated?.Invoke(this, args);
 		}
 

@@ -80,7 +80,7 @@ namespace MatterHackers.Agg.UI
 						_imageSequence.Invalidated += ResetImageIndex;
 					}
 					_imageSequence = value;
-					animation.FramesPerSecond = _imageSequence.FramePerSecond;
+					animation.FramesPerSecond = _imageSequence.FramesPerSecond;
 					currentTime = 0;
 					_imageSequence.Invalidated += ResetImageIndex;
 				}
