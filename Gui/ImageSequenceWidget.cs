@@ -44,13 +44,18 @@ namespace MatterHackers.Agg.UI
 			LocalBounds = new RectangleDouble(0, 0, width, height);
 
 			animation.DrawTarget = this;
-			animation.Update += (s, time) =>
+			animation.Update += (s, updateEvent) =>
 			{
-				currentTime += time;
+				var currentImageIndex = ImageSequence.GetImageIndexByTime(currentTime);
+
+				currentTime += updateEvent.SecondsPassed;
 				while(currentTime > ImageSequence.Time)
 				{
 					currentTime -= ImageSequence.Time;
 				}
+
+				var newImageIndex = ImageSequence.GetImageIndexByTime(currentTime);
+				updateEvent.ShouldDraw = currentImageIndex != newImageIndex;
 			};
 
 			RunAnimation = true;
