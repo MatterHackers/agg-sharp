@@ -227,7 +227,9 @@ namespace MatterHackers.GuiAutomation
 						break;
 
 					case "^a":
+						Keyboard.SetKeyDownState(Keys.Control, true);
 						SendKey(Keys.Control | Keys.A, 'A', systemWindow);
+						Keyboard.SetKeyDownState(Keys.Control, false);
 						break;
 
 					case "{BACKSPACE}":
