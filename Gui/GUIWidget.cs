@@ -306,16 +306,16 @@ namespace MatterHackers.Agg.UI
 		#endregion
 
 		#region Border
-		private Color borderColor = Color.Transparent;
+		private Color _borderColor = Color.Transparent;
 
 		public virtual Color BorderColor
 		{
-			get { return borderColor; }
+			get { return _borderColor; }
 			set
 			{
-				if (borderColor != value)
+				if (_borderColor != value)
 				{
-					borderColor = value;
+					_borderColor = value;
 					OnBorderColorChanged(null);
 					Invalidate();
 				}
@@ -2083,70 +2083,42 @@ namespace MatterHackers.Agg.UI
 
 			if (childDeviceBorder.Left > 0)
 			{
-				if (childDeviceBorder.Bottom > 0 || childDeviceBorder.Top > 0)
-				{
-					var borderPath = new VertexStorage();
-					borderPath.MoveTo(childBounds.Left, childBounds.Top);
-					borderPath.LineTo(childBounds.Left, childBounds.Bottom);
-					borderPath.LineTo(childBounds.Left - childDeviceBorder.Left, childBounds.Bottom - childDeviceBorder.Bottom);
-					borderPath.LineTo(childBounds.Left - childDeviceBorder.Left, childBounds.Top + childDeviceBorder.Top);
-					graphics2D.Render(borderPath, childBorderColor);
-				}
-				else // do a fill rect
-				{
-					graphics2D.FillRectangle(childBounds.Left, childBounds.Bottom, childBounds.Left - childDeviceBorder.Left, childBounds.Top, childBorderColor);
-				}
+				// do a fill rect that does not include the top or bottom
+				graphics2D.FillRectangle(childBounds.Left,
+					childBounds.Bottom,
+					childBounds.Left - childDeviceBorder.Left,
+					childBounds.Top,
+					childBorderColor);
 			}
 
 			if (childDeviceBorder.Bottom > 0)
 			{
-				if (childDeviceBorder.Left > 0 || childDeviceBorder.Right > 0)
-				{
-					var borderPath = new VertexStorage();
-					borderPath.MoveTo(childBounds.Left, childBounds.Bottom);
-					borderPath.LineTo(childBounds.Right, childBounds.Bottom);
-					borderPath.LineTo(childBounds.Right + childDeviceBorder.Right, childBounds.Bottom - childDeviceBorder.Bottom);
-					borderPath.LineTo(childBounds.Left - childDeviceBorder.Left, childBounds.Bottom - childDeviceBorder.Bottom);
-					graphics2D.Render(borderPath, childBorderColor);
-				}
-				else // do a fill rect
-				{
-					graphics2D.FillRectangle(childBounds.Left, childBounds.Bottom, childBounds.Right, childBounds.Bottom - childDeviceBorder.Bottom, childBorderColor);
-				}
+				// do a fill rect
+				graphics2D.FillRectangle(childBounds.Left - childDeviceBorder.Left, 
+					childBounds.Bottom, 
+					childBounds.Right + childDeviceBorder.Right, 
+					childBounds.Bottom - childDeviceBorder.Bottom, 
+					childBorderColor);
 			}
 
 			if (childDeviceBorder.Right > 0)
 			{
-				if (childDeviceBorder.Bottom > 0 || childDeviceBorder.Top > 0)
-				{
-					var borderPath = new VertexStorage();
-					borderPath.MoveTo(childBounds.Right, childBounds.Bottom);
-					borderPath.LineTo(childBounds.Right, childBounds.Top);
-					borderPath.LineTo(childBounds.Right + childDeviceBorder.Right, childBounds.Top + childDeviceBorder.Top);
-					borderPath.LineTo(childBounds.Right + childDeviceBorder.Right, childBounds.Bottom - childDeviceBorder.Bottom);
-					graphics2D.Render(borderPath, childBorderColor);
-				}
-				else // do a fill rect
-				{
-					graphics2D.FillRectangle(childBounds.Right + childDeviceBorder.Right, childBounds.Bottom, childBounds.Right, childBounds.Top, childBorderColor);
-				}
+				// do a fill rect that does not include the top or bottom
+				graphics2D.FillRectangle(childBounds.Right + childDeviceBorder.Right,
+					childBounds.Bottom,
+					childBounds.Right,
+					childBounds.Top,
+					childBorderColor);
 			}
 
 			if (childDeviceBorder.Top > 0)
 			{
-				if (childDeviceBorder.Left > 0 || childDeviceBorder.Right > 0)
-				{
-					var borderPath = new VertexStorage();
-					borderPath.MoveTo(childBounds.Right, childBounds.Top);
-					borderPath.LineTo(childBounds.Left, childBounds.Top);
-					borderPath.LineTo(childBounds.Left - childDeviceBorder.Left, childBounds.Top + childDeviceBorder.Top);
-					borderPath.LineTo(childBounds.Right + childDeviceBorder.Right, childBounds.Top + childDeviceBorder.Top);
-					graphics2D.Render(borderPath, childBorderColor);
-				}
-				else // do a fill rect
-				{
-					graphics2D.FillRectangle(childBounds.Left, childBounds.Top + childDeviceBorder.Top, childBounds.Right, childBounds.Top, childBorderColor);
-				}
+				// do a fill rect
+				graphics2D.FillRectangle(childBounds.Left - childDeviceBorder.Left, 
+					childBounds.Top + childDeviceBorder.Top, 
+					childBounds.Right + childDeviceBorder.Right, 
+					childBounds.Top, 
+					childBorderColor);
 			}
 		}
 
