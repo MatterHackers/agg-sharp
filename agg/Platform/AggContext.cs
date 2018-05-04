@@ -97,6 +97,7 @@ namespace MatterHackers.Agg.Platform
 			}
 		}
 
+		public static long PhysicalMemory => OsInformation.PhysicalMemory;
 		public static OSType OperatingSystem => OsInformation.OperatingSystem;
 		public static Point2D DesktopSize => OsInformation.DesktopSize;
 

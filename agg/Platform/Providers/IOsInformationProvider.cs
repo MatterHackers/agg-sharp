@@ -9,5 +9,6 @@ namespace MatterHackers.Agg.Platform
 	{
 		OSType OperatingSystem { get; }
 		Point2D DesktopSize { get; }
+		long PhysicalMemory { get; }
 	}
 }

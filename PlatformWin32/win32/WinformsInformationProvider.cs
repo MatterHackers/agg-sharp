@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using Microsoft.VisualBasic.Devices;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -78,6 +79,15 @@ namespace MatterHackers.Agg.Platform
 
 		public OSType OperatingSystem { get; }
 		public Point2D DesktopSize { get; }
+
+		public long PhysicalMemory
+		{
+			get
+			{
+				var computerInfo = new ComputerInfo();
+				return (long)computerInfo.TotalPhysicalMemory;
+			}
+		}
 
 		private OSType GetOSType()
 		{
