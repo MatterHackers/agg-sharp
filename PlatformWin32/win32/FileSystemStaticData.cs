@@ -137,7 +137,7 @@ namespace MatterHackers.Agg
 					string jsonData = ReadAllText(propertiesPath);
 
 					var properties = JsonConvert.DeserializeObject<ImageSequence.Properties>(jsonData);
-					sequence.FramePerSecond = properties.FramePerFrame;
+					sequence.FramesPerSecond = properties.FramePerFrame;
 					sequence.Looping = properties.Looping;
 				}
 
