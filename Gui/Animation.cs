@@ -69,7 +69,13 @@ namespace MatterHackers.Agg.UI
 
 		#endregion draw target
 
-		public EventHandler<double> Update;
+		public class UpdateEvent
+		{
+			public double SecondsPassed { get; internal set; }
+			public bool ShouldDraw { get; set; } = true;
+		}
+
+		public EventHandler<UpdateEvent> Update;
 		private bool haveDrawn = false;
 		private long lastTimeMs;
 		private RunningInterval runningInterval;
@@ -140,9 +146,10 @@ namespace MatterHackers.Agg.UI
 		/// <summary>
 		/// override this to do any updating in a derived class
 		/// </summary>
-		public virtual void OnUpdate(double secondsThisUpdate)
+		public virtual bool OnUpdate(UpdateEvent updateEvent)
 		{
-			Update?.Invoke(this, secondsThisUpdate);
+			Update?.Invoke(this, updateEvent);
+			return updateEvent.ShouldDraw;
 		}
 
 		public void Start()
@@ -192,15 +199,13 @@ namespace MatterHackers.Agg.UI
 			// Reset our last tick count. Do this as soon as we can, to make the time more accurate.
 			lastTimeMs = currentTimeMs;
 
-			bool wasUpdate = false;
+			bool needToDoDraw = false;
 
 			// if enough time has gone by that we are willing to do an update
 			while (numSecondsPassedSinceLastUpdate >= SecondsPerUpdate)
 			{
-				wasUpdate = true;
-
 				// call update with time slices that are as big as secondsPerUpdate
-				OnUpdate(SecondsPerUpdate);
+				needToDoDraw |= OnUpdate(new UpdateEvent() { SecondsPassed = SecondsPerUpdate });
 
 				if (DrawTarget.HasBeenClosed)
 				{
@@ -213,7 +218,7 @@ namespace MatterHackers.Agg.UI
 			}
 
 			// if there was an update do a draw
-			if (wasUpdate)
+			if (needToDoDraw)
 			{
 				haveDrawn = false;
 				DrawTarget.Invalidate();

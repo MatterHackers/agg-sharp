@@ -173,22 +173,29 @@ namespace MatterHackers.Agg.Image
 		{
 			if (FrameTimesMs.Count > 0)
 			{
-				int timeMs = (int)(numSeconds * 1000);
-				double totalTime = 0;
-				int index = 0;
-				foreach (var time in FrameTimesMs)
-				{
-					totalTime += time;
-					if(totalTime > timeMs)
-					{
-						return Frames[Math.Min(index, Frames.Count - 1)];
-					}
-					index++;
-				}
+				return Frames[GetImageIndexByTime(numSeconds)];
 			}
 
 			double TotalSeconds = NumFrames / FramePerSecond;
 			return GetImageByRatio(numSeconds / TotalSeconds);
+		}
+
+		public int GetImageIndexByTime(double numSeconds)
+		{
+			int timeMs = (int)(numSeconds * 1000);
+			double totalTime = 0;
+			int index = 0;
+			foreach (var time in FrameTimesMs)
+			{
+				totalTime += time;
+				if (totalTime > timeMs)
+				{
+					return Math.Min(index, Frames.Count - 1);
+				}
+				index++;
+			}
+
+			return 0;
 		}
 
 		public void Invalidate()
