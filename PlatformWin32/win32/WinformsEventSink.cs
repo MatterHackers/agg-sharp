@@ -47,7 +47,7 @@ namespace MatterHackers.Agg.UI
 #if DEBUG
 		private WinformsSystemWindow.FormInspector inspectForm;
 #endif
-		
+
 		public WinformsEventSink(ContainerControl controlToHook, SystemWindow systemWindow)
 		{
 			this.controlToHook = controlToHook;
@@ -81,12 +81,12 @@ namespace MatterHackers.Agg.UI
 			};
 #endif
 
-			controlToHook.GotFocus += new EventHandler(controlToHook_GotFocus);
-			controlToHook.LostFocus += new EventHandler(controlToHook_LostFocus);
+			controlToHook.GotFocus += controlToHook_GotFocus;
+			controlToHook.LostFocus += controlToHook_LostFocus;
 
-			controlToHook.KeyDown += new System.Windows.Forms.KeyEventHandler(controlToHook_KeyDown);
-			controlToHook.KeyUp += new System.Windows.Forms.KeyEventHandler(controlToHook_KeyUp);
-			controlToHook.KeyPress += new KeyPressEventHandler(controlToHook_KeyPress);
+			controlToHook.KeyDown += controlToHook_KeyDown;
+			controlToHook.KeyUp += controlToHook_KeyUp;
+			controlToHook.KeyPress += controlToHook_KeyPress;
 
 			controlToHook.MouseDown += controlToHook_MouseDown;
 			controlToHook.MouseMove += formToHook_MouseMove;
@@ -100,9 +100,9 @@ namespace MatterHackers.Agg.UI
 			controlToHook.DragLeave += ControlToHook_DragLeave;
 			controlToHook.DragOver += ControlToHook_DragOver;
 
-			controlToHook.MouseCaptureChanged += new EventHandler(controlToHook_MouseCaptureChanged);
+			controlToHook.MouseCaptureChanged += controlToHook_MouseCaptureChanged;
 
-			controlToHook.MouseLeave += new EventHandler(controlToHook_MouseLeave);
+			controlToHook.MouseLeave += controlToHook_MouseLeave;
 		}
 
 		public void SetActiveSystemWindow(SystemWindow systemWindow)
