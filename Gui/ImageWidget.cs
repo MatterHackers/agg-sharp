@@ -103,7 +103,11 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnClosed(ClosedEventArgs e)
 		{
-			Image.ImageChanged -= ImageChanged;
+			if (this.Image != null)
+			{
+				this.Image.ImageChanged -= ImageChanged;
+			}
+
 			base.OnClosed(e);
 		}
 	}
