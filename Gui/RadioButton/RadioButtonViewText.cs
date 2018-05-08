@@ -39,25 +39,55 @@ namespace MatterHackers.Agg.UI
 		}
 	}
 
-	public class RadioButtonViewText : FlowLayoutWidget
+	public class RadioButtonViewText : RadioButtonView
 	{
 		protected TextWidget labelTextWidget;
 
+		public RadioButtonViewText(string label, int fontSize=12)
+		{
+			this.AddChild(labelTextWidget = new TextWidget(label, pointSize: fontSize));
+		}
+
+		public override string Text
+		{
+			get => labelTextWidget.Text;
+			set => labelTextWidget.Text = value;
+		}
+
+		public Color TextColor
+		{
+			get => labelTextWidget.TextColor;
+			set => labelTextWidget.TextColor = value;
+		}
+	}
+
+	public class RadioButtonView : FlowLayoutWidget
+	{
 		protected RadioCircleWidget radioCircle;
 
 		protected RadioButton radioButton;
 
-		public RadioButtonViewText(string label, int fontSize=12)
+		public RadioButtonView()
 		{
-			radioCircle = new RadioCircleWidget();
+			radioCircle = new RadioCircleWidget()
+			{
+				VAnchor = VAnchor.Center
+			};
 			this.AddChild(radioCircle);
-
-			labelTextWidget = new TextWidget(label, pointSize: fontSize);
-			this.AddChild(labelTextWidget);
 		}
+
+		public RadioButtonView(GuiWidget view) : this()
+		{
+			this.AddChild(view);
+		}
+
+		public RadioCircleWidget RadioCircle => radioCircle;
+
+		public Color TextColor { get; set; }
 
 		public override void OnParentChanged(EventArgs e)
 		{
+			// TODO: This looks to leak if parents change...
 			if (Parent is RadioButton radioButton)
 			{
 				this.radioButton = radioButton;
@@ -80,18 +110,6 @@ namespace MatterHackers.Agg.UI
 		public void redrawButtonIfRequired(object sender, EventArgs e)
 		{
 			((GuiWidget)sender).Invalidate();
-		}
-
-		public override string Text
-		{
-			get => labelTextWidget.Text;
-			set => labelTextWidget.Text = value;
-		}
-
-		public Color TextColor
-		{
-			get => labelTextWidget.TextColor;
-			set => labelTextWidget.TextColor = value;
 		}
 	}
 

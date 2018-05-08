@@ -198,7 +198,7 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				if (Children.FirstOrDefault() is RadioButtonViewText buttonView)
+				if (Children.FirstOrDefault() is RadioButtonView buttonView)
 				{
 					return buttonView.TextColor;
 				}
@@ -208,7 +208,7 @@ namespace MatterHackers.Agg.UI
 
 			set
 			{
-				if (Children.FirstOrDefault() is RadioButtonViewText buttonView)
+				if (Children.FirstOrDefault() is RadioButtonView buttonView)
 				{
 					buttonView.TextColor = value;
 				}
