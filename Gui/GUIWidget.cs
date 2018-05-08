@@ -2261,10 +2261,12 @@ namespace MatterHackers.Agg.UI
 
 		public Vector2 TransformFromParentSpace(GuiWidget parentToGetRelativeTo, Vector2 position)
 		{
-			foreach(var parent in this.Parents<GuiWidget>().Reverse())
+			GuiWidget parent = Parent;
+			while (parent != null
+				&& parent != parentToGetRelativeTo)
 			{
-				position.X -= parent.parentToChildTransform.tx;
-				position.Y -= parent.parentToChildTransform.ty;
+				position -= new Vector2(parent.BoundsRelativeToParent.Left, parent.BoundsRelativeToParent.Bottom);
+				parent = parent.Parent;
 			}
 
 			return position;
