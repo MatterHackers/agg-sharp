@@ -119,7 +119,46 @@ namespace MatterHackers.Agg.UI
 		public override void OnMouseMove(MouseEventArgs mouseEvent)
 		{
 			lastMousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
+
 			base.OnMouseMove(mouseEvent);
+
+			SetToolTipText(mouseEvent);
+
+			Invalidate();
+		}
+
+		private void SetToolTipText(MouseEventArgs mouseEvent)
+		{
+			GuiWidget lastChild = this;
+			// look down our tree to find the first widget under the mouse
+			var items = new Stack<GuiWidget>(new[] { this });
+			while (items.Count > 0)
+			{
+				var item = items.Pop();
+
+				for (int i = item.Children.Count - 1; i >= 0; i--)
+				{
+					var child = item.Children[i];
+					var mouseAtChild = child.TransformFromParentSpace(this, lastMousePosition);
+
+					var childBounds = new RectangleDouble(child.Position.X, child.Position.Y, child.Position.X + child.Size.X, child.Position.Y + child.Size.Y);
+
+					if (childBounds.Contains(mouseAtChild)
+						&& child.Visible
+						&& child.Selectable)
+					{
+						items.Clear();
+						items.Push(child);
+						lastChild = child;
+						break;
+					}
+				}
+			}
+
+			if (!string.IsNullOrWhiteSpace(lastChild.ToolTipText))
+			{
+				SetHoveredWidget(lastChild);
+			}
 		}
 
 		public override void OnMouseUp(MouseEventArgs mouseEvent)

@@ -945,12 +945,12 @@ namespace MatterHackers.Agg.UI
 						// when this object moves it requires that the parent re-layout this object (and maybe others)
 						this.Parent.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Position));
 #if false
-                        // and it also means the mouse moved relative to this widget (so the parent and it's children)
-                        Vector2 parentMousePosition;
-                        if (Parent.GetMousePosition(out parentMousePosition))
-                        {
-                            this.Parent.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, parentMousePosition.x, parentMousePosition.y, 0));
-                        }
+					// and it also means the mouse moved relative to this widget (so the parent and it's children)
+					Vector2 parentMousePosition;
+					if (Parent.GetMousePosition(out parentMousePosition))
+					{
+					this.Parent.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, parentMousePosition.x, parentMousePosition.y, 0));
+					}
 #endif
 					}
 					OnPositionChanged(null);
@@ -2261,12 +2261,10 @@ namespace MatterHackers.Agg.UI
 
 		public Vector2 TransformFromParentSpace(GuiWidget parentToGetRelativeTo, Vector2 position)
 		{
-			GuiWidget parent = Parent;
-			while (parent != null
-				&& parent != parentToGetRelativeTo)
+			foreach(var parent in this.Parents<GuiWidget>().Reverse())
 			{
-				position -= new Vector2(parent.BoundsRelativeToParent.Left, parent.BoundsRelativeToParent.Bottom);
-				parent = parent.Parent;
+				position.X -= parent.parentToChildTransform.tx;
+				position.Y -= parent.parentToChildTransform.ty;
 			}
 
 			return position;
@@ -2458,13 +2456,11 @@ namespace MatterHackers.Agg.UI
 						UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
 						OnMouseEnterBounds(mouseEvent);
 						OnMouseEnter(mouseEvent);
-						SetToolTipText(mouseEvent);
 					}
 					else if (UnderMouseState == UnderMouseState.UnderMouseNotFirst)
 					{
 						UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
 						OnMouseEnter(mouseEvent);
-						SetToolTipText(mouseEvent);
 					}
 				}
 
@@ -2563,22 +2559,6 @@ namespace MatterHackers.Agg.UI
 			}
 
 			return false;
-		}
-
-		private void SetToolTipText(MouseEventArgs mouseEvent)
-		{
-			if (!string.IsNullOrWhiteSpace(ToolTipText))
-			{
-				GuiWidget parent = this;
-				while (parent.Parent != null
-					&& parent as SystemWindow == null)
-				{
-					parent = parent.Parent;
-				}
-
-				SystemWindow systemWindow = parent as SystemWindow;
-				systemWindow?.SetHoveredWidget(this);
-			}
 		}
 
 		public bool MouseDownOnWidget
@@ -2787,13 +2767,11 @@ namespace MatterHackers.Agg.UI
 							UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
 							OnMouseEnterBounds(mouseEvent);
 							OnMouseEnter(mouseEvent);
-							SetToolTipText(mouseEvent);
 						}
 						else if (UnderMouseState == UnderMouseState.UnderMouseNotFirst)
 						{
 							UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
 							OnMouseEnter(mouseEvent);
-							SetToolTipText(mouseEvent);
 						}
 					}
 				}
