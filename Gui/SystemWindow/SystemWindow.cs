@@ -144,7 +144,8 @@ namespace MatterHackers.Agg.UI
 					var childBounds = new RectangleDouble(child.Position.X, child.Position.Y, child.Position.X + child.Size.X, child.Position.Y + child.Size.Y);
 
 					if (childBounds.Contains(mouseAtChild)
-						&& child.Visible)
+						&& child.Visible
+						&& child.Selectable)
 					{
 						items.Clear();
 						items.Push(child);
