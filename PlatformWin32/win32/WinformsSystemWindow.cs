@@ -542,7 +542,8 @@ namespace MatterHackers.Agg.UI
 					}
 
 					// Close the SystemWindow
-					if (!AggSystemWindow.HasBeenClosed)
+					if (AggSystemWindow != null 
+						&& !AggSystemWindow.HasBeenClosed)
 					{
 						// Store that the Close operation started here
 						winformAlreadyClosing = true;
