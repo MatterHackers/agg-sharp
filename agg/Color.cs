@@ -1087,7 +1087,7 @@ namespace MatterHackers.Agg
 			var contrast = colorToAdjust.Contrast(fixedColor);
 			int tries = 0;
 			while (contrast < minimumRequiredContrast
-				&& tries++ < 10)
+				&& tries++ < 30)
 			{
 				if (fixedColor.Luminance0To1() < .5)
 				{

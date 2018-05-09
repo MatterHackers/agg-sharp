@@ -93,6 +93,8 @@ namespace MatterHackers.RenderOpenGl
 		{
 			if (meshToRender != null)
 			{
+				GL.Enable(EnableCap.CullFace);
+
 				GL.Color4(color.Red0To255, color.Green0To255, color.Blue0To255, color.Alpha0To255);
 
 				if (color.Alpha0To1 < 1)
