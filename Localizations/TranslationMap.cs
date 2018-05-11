@@ -79,7 +79,8 @@ namespace MatterHackers.Localizations
 		public virtual string Translate(string englishString)
 		{
 			// Skip dictionary lookups for English
-			if (TwoLetterIsoLanguageName == "en")
+			if (TwoLetterIsoLanguageName == "en"
+				|| englishString == null)
 			{
 				return englishString;
 			}
