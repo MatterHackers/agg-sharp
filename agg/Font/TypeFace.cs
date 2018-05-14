@@ -23,6 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using Typography.OpenFont;
 
 namespace MatterHackers.Agg.Font
 {
@@ -197,6 +198,20 @@ namespace MatterHackers.Agg.Font
 			fontUnderConstruction.ReadSVG(content);
 
 			return fontUnderConstruction;
+		}
+
+		public void LoadTTF(string filename)
+		{
+			var reader = new OpenFontReader();
+			using (var fs = new FileStream(filename, FileMode.Open))
+			{
+				var ttfTypeface = reader.Read(fs);
+				//    public class VertexSourceGlyphTranslator : IGlyphTranslator, IVertexSource
+				//public IEnumerable<VertexData> Vertices()
+				//{
+				//	this.Read(glyph2.GlyphPoints, glyph2.EndPoints, 1);
+				//}
+			}
 		}
 
 		public static TypeFace LoadSVG(String filename)
