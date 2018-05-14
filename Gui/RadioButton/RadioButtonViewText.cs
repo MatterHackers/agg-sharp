@@ -43,9 +43,14 @@ namespace MatterHackers.Agg.UI
 	{
 		protected TextWidget labelTextWidget;
 
-		public RadioButtonViewText(string label, int fontSize=12)
+		public RadioButtonViewText(string label, int fontSize = 12)
+			: this(label, Color.Black, fontSize)
 		{
-			this.AddChild(labelTextWidget = new TextWidget(label, pointSize: fontSize));
+		}
+
+		public RadioButtonViewText(string label, Color textColor, int fontSize=12)
+		{
+			this.AddChild(labelTextWidget = new TextWidget(label, textColor: textColor, pointSize: fontSize));
 		}
 
 		public override string Text
