@@ -12,10 +12,10 @@ namespace Typography.TextLayout
     class GlyphSetPosition
     {
 
-        Typeface typeface;
+        TtfTypeface typeface;
         GPOS gposTable;
         List<GPOS.LookupTable> lookupTables;
-        public GlyphSetPosition(Typeface typeface, string lang)
+        public GlyphSetPosition(TtfTypeface typeface, string lang)
         {
             this.Lang = lang;
             this.typeface = typeface;

@@ -178,7 +178,7 @@ namespace Typography.OpenFont.Tables
         /// fill gdef to each glyphs
         /// </summary>
         /// <param name="inputGlyphs"></param>
-        public void FillGlyphData(Glyph[] inputGlyphs)
+        public void FillGlyphData(TtfGlyph[] inputGlyphs)
         {
             //1. 
             FillClassDefs(inputGlyphs);
@@ -191,7 +191,7 @@ namespace Typography.OpenFont.Tables
             //5.
             FillMarkGlyphSets(inputGlyphs);
         }
-        void FillClassDefs(Glyph[] inputGlyphs)
+        void FillClassDefs(TtfGlyph[] inputGlyphs)
         {
             //1. glyph def 
             ClassDefTable classDef = GlyphClassDef;
@@ -234,7 +234,7 @@ namespace Typography.OpenFont.Tables
                     break;
             }
         }
-        void FillAttachPoints(Glyph[] inputGlyphs)
+        void FillAttachPoints(TtfGlyph[] inputGlyphs)
         {
             AttachmentListTable attachmentListTable = this.AttachmentListTable;
             if (attachmentListTable == null) { return; }
@@ -242,11 +242,11 @@ namespace Typography.OpenFont.Tables
 
             Utils.WarnUnimplemented("please implement GDEF.FillAttachPoints()");
         }
-        void FillLigatureCarets(Glyph[] inputGlyphs)
+        void FillLigatureCarets(TtfGlyph[] inputGlyphs)
         {
             //Console.WriteLine("please implement FillLigatureCarets()");
         }
-        void FillMarkAttachmentClassDefs(Glyph[] inputGlyphs)
+        void FillMarkAttachmentClassDefs(TtfGlyph[] inputGlyphs)
         {
             //Mark Attachment Class Definition Table
             //A Mark Class Definition Table is used to assign mark glyphs into different classes 
@@ -272,7 +272,7 @@ namespace Typography.OpenFont.Tables
                         for (int i = 0; i < len; ++i)
                         {
 #if DEBUG
-                            Glyph dbugTestGlyph = inputGlyphs[gIndex];
+                            TtfGlyph dbugTestGlyph = inputGlyphs[gIndex];
 #endif
                             inputGlyphs[gIndex].MarkClassDef = classValues[i];
                             gIndex++;
@@ -290,7 +290,7 @@ namespace Typography.OpenFont.Tables
                             for (int i = rec.startGlyphId; i <= rec.endGlyphId; ++i)
                             {
 #if DEBUG
-                                Glyph dbugTestGlyph = inputGlyphs[i];
+                                TtfGlyph dbugTestGlyph = inputGlyphs[i];
 #endif
                                 inputGlyphs[i].MarkClassDef = rec.classNo;
                             }
@@ -299,7 +299,7 @@ namespace Typography.OpenFont.Tables
                     break;
             }
         }
-        void FillMarkGlyphSets(Glyph[] inputGlyphs)
+        void FillMarkGlyphSets(TtfGlyph[] inputGlyphs)
         {
             //Mark Glyph Sets Table
             //A Mark Glyph Sets table is used to define sets of mark glyphs that can be used in lookup tables within the GSUB or GPOS table to control 

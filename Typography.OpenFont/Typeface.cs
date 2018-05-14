@@ -5,22 +5,22 @@ using Typography.OpenFont.Tables;
 
 namespace Typography.OpenFont
 {
-    public class Typeface
+    public class TtfTypeface
     {
         readonly Bounds _bounds;
         readonly ushort _unitsPerEm;
-        readonly Glyph[] _glyphs;
+        readonly TtfGlyph[] _glyphs;
         //TODO: implement vertical metrics
         readonly HorizontalMetrics _horizontalMetrics;
         readonly NameEntry _nameEntry;
 
         Kern _kern;
 
-        internal Typeface(
+        internal TtfTypeface(
             NameEntry nameEntry,
             Bounds bounds,
             ushort unitsPerEm,
-            Glyph[] glyphs,
+            TtfGlyph[] glyphs,
             HorizontalMetrics horizontalMetrics,
             OS2Table os2Table)
         {
@@ -154,11 +154,11 @@ namespace Typography.OpenFont
             return CmapTable.LookupIndex(codepoint, nextCodepoint);
         }
 
-        public Glyph Lookup(int codepoint)
+        public TtfGlyph Lookup(int codepoint)
         {
             return _glyphs[LookupIndex(codepoint)];
         }
-        public Glyph GetGlyphByIndex(int glyphIndex)
+        public TtfGlyph GetGlyphByIndex(int glyphIndex)
         {
             return _glyphs[glyphIndex];
         }
@@ -182,7 +182,7 @@ namespace Typography.OpenFont
         }
         public Bounds Bounds { get { return _bounds; } }
         public ushort UnitsPerEm { get { return _unitsPerEm; } }
-        public Glyph[] Glyphs { get { return _glyphs; } }
+        public TtfGlyph[] Glyphs { get { return _glyphs; } }
 
 
         const int pointsPerInch = 72;
@@ -299,7 +299,7 @@ namespace Typography.OpenFont
         public static class TypefaceExtensions
         {
             public static bool DoesSupportUnicode(
-                this Typeface typeface,
+                this TtfTypeface typeface,
                 UnicodeLangBits unicodeLangBits)
             {
                 if (typeface.OS2Table == null)
@@ -337,7 +337,7 @@ namespace Typography.OpenFont
                 }
             }
 
-            public static bool RecommendToUseTypoMetricsForLineSpacing(this Typeface typeface)
+            public static bool RecommendToUseTypoMetricsForLineSpacing(this TtfTypeface typeface)
             {
                 //https://www.microsoft.com/typography/otspec/os2.htm
                 //
@@ -356,7 +356,7 @@ namespace Typography.OpenFont
             /// <summary>
             /// overall calculated line spacing 
             /// </summary>
-            static int Calculate_TypoMetricLineSpacing(Typeface typeface)
+            static int Calculate_TypoMetricLineSpacing(TtfTypeface typeface)
             {
 
                 //from https://www.microsoft.com/typography/OTSpec/recom.htm#tad
@@ -400,7 +400,7 @@ namespace Typography.OpenFont
             /// </summary>
             /// <param name="typeface"></param>
             /// <returns>return 'unscaled-to-pixel' BTBD value</returns>
-            static int Calculate_BTBD_Windows(Typeface typeface)
+            static int Calculate_BTBD_Windows(TtfTypeface typeface)
             {
 
                 //from https://www.microsoft.com/typography/otspec/recom.htm#tad
@@ -444,7 +444,7 @@ namespace Typography.OpenFont
             /// </summary>
             /// <param name="typeface"></param>
             /// <returns>return 'unscaled-to-pixel' BTBD value</returns>
-            static int CalculateBTBD_Mac(Typeface typeface)
+            static int CalculateBTBD_Mac(TtfTypeface typeface)
             {
                 //from https://www.microsoft.com/typography/otspec/recom.htm#tad
 
@@ -469,7 +469,7 @@ namespace Typography.OpenFont
                 return hhea.Ascent + hhea.Descent + hhea.LineGap;
             }
 
-            public static int CalculateRecommendLineSpacing(this Typeface typeface, out LineSpacingChoice choice)
+            public static int CalculateRecommendLineSpacing(this TtfTypeface typeface, out LineSpacingChoice choice)
             {
                 //check if we are on Windows env or macOS eve
                 if (RecommendToUseTypoMetricsForLineSpacing(typeface))
@@ -492,14 +492,14 @@ namespace Typography.OpenFont
                     }
                 }
             }
-            public static int CalculateRecommendLineSpacing(this Typeface typeface)
+            public static int CalculateRecommendLineSpacing(this TtfTypeface typeface)
             {
                 LineSpacingChoice selectedChoice;
                 return CalculateRecommendLineSpacing(typeface, out selectedChoice);
             }
 
 
-            public static int CalculateLineSpacing(this Typeface typeface, LineSpacingChoice choice)
+            public static int CalculateLineSpacing(this TtfTypeface typeface, LineSpacingChoice choice)
             {
                 switch (choice)
                 {

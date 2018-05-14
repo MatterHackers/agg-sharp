@@ -98,6 +98,8 @@ namespace MatterHackers.Agg.Font
 			}
 		}
 
+		TtfTypeface ttfTypeFace;
+
 		private String fontId;
 		private int horiz_adv_x;
 		private String fontFamily;
@@ -202,16 +204,19 @@ namespace MatterHackers.Agg.Font
 
 		public void LoadTTF(string filename)
 		{
-			var reader = new OpenFontReader();
 			using (var fs = new FileStream(filename, FileMode.Open))
 			{
-				var ttfTypeface = reader.Read(fs);
-				//    public class VertexSourceGlyphTranslator : IGlyphTranslator, IVertexSource
-				//public IEnumerable<VertexData> Vertices()
-				//{
-				//	this.Read(glyph2.GlyphPoints, glyph2.EndPoints, 1);
-				//}
+				LoadTTF(fs);
 			}
+		}
+
+		public void LoadTTF(Stream stream)
+		{
+			var reader = new OpenFontReader();
+			ttfTypeFace = reader.Read(stream);
+			this.ascent = ttfTypeFace.Ascender;
+			this.descent = ttfTypeFace.Descender;
+			this.unitsPerEm = ttfTypeFace.UnitsPerEm;
 		}
 
 		public static TypeFace LoadSVG(String filename)
@@ -322,18 +327,86 @@ namespace MatterHackers.Agg.Font
 			}
 		}
 
-		internal IVertexSource GetGlyphForCharacter(char character)
+		public class VertexSourceGlyphTranslator : IGlyphTranslator
 		{
-			// TODO: check for multi character glyphs (we don't currently support them in the reader).
-			Glyph glyph;
-			if (glyphs.TryGetValue(character, out glyph))
+			double scale = 1;
+			VertexStorage vertexStorage;
+			public VertexSourceGlyphTranslator(VertexStorage vertexStorage)
 			{
-				VertexStorage writeableGlyph = new VertexStorage();
-				writeableGlyph.ShareVertexData(glyph.glyphData);
-				return writeableGlyph;
+				this.vertexStorage = vertexStorage;
 			}
 
-			return null;
+			public void BeginRead(int contourCount)
+			{
+			}
+
+			public void CloseContour()
+			{
+				vertexStorage.ClosePolygon();
+			}
+
+			public void Curve3(float x1, float y1, float x2, float y2)
+			{
+				vertexStorage.curve3(x1 / scale, y1 / scale, x2 / scale, y2 / scale);
+			}
+
+			public void Curve4(float x1, float y1, float x2, float y2, float x3, float y3)
+			{
+				vertexStorage.curve4(x1, y1, x2, y2, x3, y3);
+			}
+
+			int start = 0;
+			public void EndRead()
+			{
+				if (vertexStorage.Count > start)
+				{
+					vertexStorage.invert_polygon(start);
+				}
+			}
+
+			public void LineTo(float x, float y)
+			{
+				vertexStorage.LineTo(x / scale, y / scale);
+			}
+
+			public void MoveTo(float x, float y)
+			{
+				if(vertexStorage.Count > start)
+				{
+					vertexStorage.invert_polygon(start);
+				}
+				start = vertexStorage.Count;
+				vertexStorage.MoveTo(x / scale, y / scale);
+			}
+		}
+
+		internal IVertexSource GetGlyphForCharacter(char character)
+		{
+			IVertexSource vertexSource = null;
+			// TODO: check for multi character glyphs (we don't currently support them in the reader).
+			Glyph glyph = null;
+			if (!glyphs.TryGetValue(character, out glyph))
+			{
+				// if we have a loaded ttf try to create the glyph data
+				if (ttfTypeFace != null)
+				{
+					glyph = new Glyph();
+					var translator = new VertexSourceGlyphTranslator(glyph.glyphData);
+					var glyphIndex = ttfTypeFace.LookupIndex(character);
+					var ttfGlyph = ttfTypeFace.GetGlyphByIndex(glyphIndex);
+					translator.Read(ttfGlyph.GlyphPoints, ttfGlyph.EndPoints);
+					glyph.unicode = character;
+					glyph.horiz_adv_x = ttfTypeFace.GetHAdvanceWidthFromGlyphIndex(glyphIndex);
+					glyphs.Add(character, glyph);
+					vertexSource = glyph.glyphData;
+				}
+			}
+			else
+			{
+				vertexSource = glyph.glyphData;
+			}
+
+			return vertexSource;
 		}
 
 		internal int GetAdvanceForCharacter(char character, char nextCharacterToKernWith)

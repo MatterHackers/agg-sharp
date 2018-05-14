@@ -8,9 +8,9 @@ namespace Typography.OpenFont
 
     public class TrueTypeInterpreter
     {
-        Typeface currentTypeFace;
+        TtfTypeface currentTypeFace;
         SharpFontInterpreter _interpreter;
-        public void SetTypeFace(Typeface typeface)
+        public void SetTypeFace(TtfTypeface typeface)
         {
             this.currentTypeFace = typeface;
             Tables.MaxProfile maximumProfile = currentTypeFace.MaxProfile;
@@ -31,7 +31,7 @@ namespace Typography.OpenFont
         public GlyphPointF[] HintGlyph(ushort glyphIndex, float glyphSizeInPixel)
         {
 
-            Glyph glyph = currentTypeFace.GetGlyphByIndex(glyphIndex);
+            TtfGlyph glyph = currentTypeFace.GetGlyphByIndex(glyphIndex);
             //-------------------------------------------
             //1. start with original points/contours from glyph 
             int horizontalAdv = currentTypeFace.GetHAdvanceWidthFromGlyphIndex(glyphIndex);
