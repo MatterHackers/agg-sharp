@@ -232,5 +232,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup />
+  <Import Project="..\Typography.OpenFont\Typography.OpenFont.projitems" Label="Shared" />
+  <Import Project="..\Typography.GlyphLayout\Typography.GlyphLayout.projitems" Label="Shared" />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
