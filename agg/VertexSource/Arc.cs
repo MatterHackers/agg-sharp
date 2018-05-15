@@ -104,53 +104,47 @@ namespace MatterHackers.Agg.VertexSource
 			}
 
 			VertexData vertexData = new VertexData();
-			vertexData.command = FlagsAndCommand.CommandMoveTo;
+			vertexData.command = FlagsAndCommand.MoveTo;
 			if (direction == Direction.CounterClockWise)
 			{
-				vertexData.position.X = origin.X + Math.Cos(startAngle) * radius.X;
-				vertexData.position.Y = origin.Y + Math.Sin(startAngle) * radius.Y;
+				vertexData.position = new Vector2(origin.X + Math.Cos(startAngle) * radius.X, origin.Y + Math.Sin(startAngle) * radius.Y);
 				yield return vertexData;
 
-				vertexData.command = FlagsAndCommand.CommandLineTo;
+				vertexData.command = FlagsAndCommand.LineTo;
 				double angle = startAngle;
 				int numSteps = (int)((endAngle - startAngle) / flatenDeltaAngle);
                 for (int i=0; i<=numSteps; i++)
 				{
-					vertexData.position.X = origin.X + Math.Cos(angle) * radius.X;
-					vertexData.position.Y = origin.Y + Math.Sin(angle) * radius.Y;
+					vertexData.position = new Vector2(origin.X + Math.Cos(angle) * radius.X, origin.Y + Math.Sin(angle) * radius.Y);
 					yield return vertexData;
 
 					angle += flatenDeltaAngle;
 				}
 
-				vertexData.position.X = origin.X + Math.Cos(endAngle) * radius.X;
-				vertexData.position.Y = origin.Y + Math.Sin(endAngle) * radius.Y;
+				vertexData.position = new Vector2(origin.X + Math.Cos(endAngle) * radius.X, origin.Y + Math.Sin(endAngle) * radius.Y);
 				yield return vertexData;
 			}
 			else
 			{
-				vertexData.position.X = origin.X + Math.Cos(endAngle) * radius.X;
-				vertexData.position.Y = origin.Y + Math.Sin(endAngle) * radius.Y;
+				vertexData.position = new Vector2(origin.X + Math.Cos(endAngle) * radius.X, origin.Y + Math.Sin(endAngle) * radius.Y);
 				yield return vertexData;
 
-				vertexData.command = FlagsAndCommand.CommandLineTo;
+				vertexData.command = FlagsAndCommand.LineTo;
 				double angle = endAngle;
 				int numSteps = (int)((endAngle - startAngle) / flatenDeltaAngle);
 				for (int i = 0; i <= numSteps; i++)
 				{
-					vertexData.position.X = origin.X + Math.Cos(angle) * radius.X;
-					vertexData.position.Y = origin.Y + Math.Sin(angle) * radius.Y;
+					vertexData.position = new Vector2(origin.X + Math.Cos(angle) * radius.X, origin.Y + Math.Sin(angle) * radius.Y);
 					yield return vertexData;
 
 					angle -= flatenDeltaAngle;
 				}
 
-				vertexData.position.X = origin.X + Math.Cos(startAngle) * radius.X;
-				vertexData.position.Y = origin.Y + Math.Sin(startAngle) * radius.Y;
+				vertexData.position = new Vector2(origin.X + Math.Cos(startAngle) * radius.X, origin.Y + Math.Sin(startAngle) * radius.Y);
 				yield return vertexData;
 			}
 
-			vertexData.command = FlagsAndCommand.CommandStop;
+			vertexData.command = FlagsAndCommand.Stop;
 			yield return vertexData;
 		}
 	}

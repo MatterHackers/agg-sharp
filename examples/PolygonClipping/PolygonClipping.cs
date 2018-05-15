@@ -27,7 +27,7 @@ namespace MatterHackers.Agg
 
 			VertexStorage output = VertexSourceToClipperPolygons.CreateVertexStorage(intersectedPolys);
 
-			output.Add(0, 0, ShapePath.FlagsAndCommand.CommandStop);
+			output.Add(0, 0, ShapePath.FlagsAndCommand.Stop);
 
 			return output;
 		}
@@ -471,7 +471,7 @@ namespace MatterHackers.Agg
 			y = 0;
 			if (m_curr_r > m_r2)
 			{
-				return ShapePath.FlagsAndCommand.CommandStop;
+				return ShapePath.FlagsAndCommand.Stop;
 			}
 
 			x = m_x + Math.Cos(m_angle) * m_curr_r;
@@ -481,9 +481,9 @@ namespace MatterHackers.Agg
 			if (m_start)
 			{
 				m_start = false;
-				return ShapePath.FlagsAndCommand.CommandMoveTo;
+				return ShapePath.FlagsAndCommand.MoveTo;
 			}
-			return ShapePath.FlagsAndCommand.CommandLineTo;
+			return ShapePath.FlagsAndCommand.LineTo;
 		}
 	}
 

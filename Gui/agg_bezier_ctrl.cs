@@ -300,7 +300,7 @@ namespace MatterHackers.Agg.UI
 		{
 			x = 0;
 			y = 0;
-			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.CommandStop;
+			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.Stop;
 			switch (m_idx)
 			{
 				case 0:
@@ -577,7 +577,7 @@ namespace MatterHackers.Agg.UI
 		{
 			x = 0;
 			y = 0;
-			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.CommandStop;
+			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.Stop;
 			switch (m_idx)
 			{
 				case 0:

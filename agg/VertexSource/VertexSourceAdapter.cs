@@ -43,7 +43,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		public ShapePath.FlagsAndCommand vertex(ref double x, ref double y)
 		{
-			return ShapePath.FlagsAndCommand.CommandStop;
+			return ShapePath.FlagsAndCommand.Stop;
 		}
 	};
 
@@ -98,14 +98,14 @@ namespace MatterHackers.Agg.VertexSource
 		public IEnumerable<VertexData> Vertices()
 		{
 			rewind(0);
-			ShapePath.FlagsAndCommand command = ShapePath.FlagsAndCommand.CommandStop;
+			ShapePath.FlagsAndCommand command = ShapePath.FlagsAndCommand.Stop;
 			do
 			{
 				double x;
 				double y;
 				command = vertex(out x, out y);
 				yield return new VertexData(command, new Vector2(x, y));
-			} while (command != ShapePath.FlagsAndCommand.CommandStop);
+			} while (command != ShapePath.FlagsAndCommand.Stop);
 		}
 
 		public void rewind(int path_id)
@@ -118,7 +118,7 @@ namespace MatterHackers.Agg.VertexSource
 		{
 			x = 0;
 			y = 0;
-			ShapePath.FlagsAndCommand command = ShapePath.FlagsAndCommand.CommandStop;
+			ShapePath.FlagsAndCommand command = ShapePath.FlagsAndCommand.Stop;
 			bool done = false;
 			while (!done)
 			{
@@ -133,12 +133,12 @@ namespace MatterHackers.Agg.VertexSource
 					case status.accumulate:
 						if (ShapePath.is_stop(m_last_cmd))
 						{
-							return ShapePath.FlagsAndCommand.CommandStop;
+							return ShapePath.FlagsAndCommand.Stop;
 						}
 
 						generator.RemoveAll();
-						generator.AddVertex(m_start_x, m_start_y, ShapePath.FlagsAndCommand.CommandMoveTo);
-						markers.add_vertex(m_start_x, m_start_y, ShapePath.FlagsAndCommand.CommandMoveTo);
+						generator.AddVertex(m_start_x, m_start_y, ShapePath.FlagsAndCommand.MoveTo);
+						markers.add_vertex(m_start_x, m_start_y, ShapePath.FlagsAndCommand.MoveTo);
 
 						for (; ; )
 						{
@@ -154,13 +154,13 @@ namespace MatterHackers.Agg.VertexSource
 									break;
 								}
 								generator.AddVertex(x, y, command);
-								markers.add_vertex(x, y, ShapePath.FlagsAndCommand.CommandLineTo);
+								markers.add_vertex(x, y, ShapePath.FlagsAndCommand.LineTo);
 							}
 							else
 							{
 								if (ShapePath.is_stop(command))
 								{
-									m_last_cmd = ShapePath.FlagsAndCommand.CommandStop;
+									m_last_cmd = ShapePath.FlagsAndCommand.Stop;
 									break;
 								}
 								if (ShapePath.is_end_poly(command))

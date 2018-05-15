@@ -34,8 +34,13 @@ namespace MatterHackers.Agg.VertexSource
 			this.position = position;
 		}
 
-		public ShapePath.FlagsAndCommand command;
-		public Vector2 position;
+		public VertexData(ShapePath.FlagsAndCommand command, double x, double y)
+			: this(command, new Vector2(x, y))
+		{
+		}
+
+		public ShapePath.FlagsAndCommand command { get; set; }
+		public Vector2 position { get; set; }
 
 		[JsonIgnore]
 		public bool IsMoveTo => ShapePath.is_move_to(command);

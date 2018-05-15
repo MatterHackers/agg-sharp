@@ -222,7 +222,7 @@ namespace MatterHackers.Agg.Font
 						{
 							foreach (VertexData vertexData in currentGlyph.Vertices())
 							{
-								if (vertexData.command != ShapePath.FlagsAndCommand.CommandStop)
+								if (vertexData.command != ShapePath.FlagsAndCommand.Stop)
 								{
 									VertexData offsetVertex = new VertexData(vertexData.command, vertexData.position + currentOffset + Origin);
 									yield return offsetVertex;
@@ -240,7 +240,7 @@ namespace MatterHackers.Agg.Font
 				}
 			}
 
-			VertexData endVertex = new VertexData(ShapePath.FlagsAndCommand.CommandStop, Vector2.Zero);
+			VertexData endVertex = new VertexData(ShapePath.FlagsAndCommand.Stop, Vector2.Zero);
 			yield return endVertex;
 		}
 

@@ -39,69 +39,63 @@ namespace MatterHackers.Agg.VertexSource
 	{
 		#region InternalVertexStorage
 
-		private class VertexData
+		private class VertexDataManager
 		{
-			private int m_allocated_vertices;
-			private ShapePath.FlagsAndCommand[] m_CommandAndFlags;
-			private double[] m_coord_x;
-			private double[] m_coord_y;
-			private int m_num_vertices;
-			public VertexData()
+			private int allocatedVertices;
+			private VertexData[] vertexData;
+			private int numVertices;
+			public VertexDataManager()
 			{
 			}
 
-			public void AddVertex(double x, double y, ShapePath.FlagsAndCommand CommandAndFlags)
+			public void AddVertex(double x, double y, ShapePath.FlagsAndCommand CommandAndFlags, int index = -1)
 			{
-				allocate_if_required(m_num_vertices);
-				m_coord_x[m_num_vertices] = x;
-				m_coord_y[m_num_vertices] = y;
-				m_CommandAndFlags[m_num_vertices] = CommandAndFlags;
+				index = index == -1 ? numVertices : index;
+				allocate_if_required(numVertices);
+				vertexData[index] = new VertexData(CommandAndFlags, x, y);
 
-				m_num_vertices++;
+				numVertices++;
 			}
 
 			public ShapePath.FlagsAndCommand command(int index)
 			{
-				return m_CommandAndFlags[index];
+				return vertexData[index].command;
 			}
 
 			public void free_all()
 			{
-				m_coord_x = null;
-				m_coord_y = null;
-				m_CommandAndFlags = null;
-
-				m_num_vertices = 0;
+				vertexData = null;
+				numVertices = 0;
 			}
 
 			public ShapePath.FlagsAndCommand last_command()
 			{
-				if (m_num_vertices != 0)
+				if (numVertices != 0)
 				{
-					return command(m_num_vertices - 1);
+					return command(numVertices - 1);
 				}
 
-				return ShapePath.FlagsAndCommand.CommandStop;
+				return ShapePath.FlagsAndCommand.Stop;
 			}
 
 			public ShapePath.FlagsAndCommand last_vertex(out double x, out double y)
 			{
-				if (m_num_vertices != 0)
+				if (numVertices != 0)
 				{
-					return vertex((int)(m_num_vertices - 1), out x, out y);
+					return vertex((int)(numVertices - 1), out x, out y);
 				}
 
 				x = new double();
 				y = new double();
-				return ShapePath.FlagsAndCommand.CommandStop;
+				return ShapePath.FlagsAndCommand.Stop;
 			}
 
 			public double last_x()
 			{
-				if (m_num_vertices > 0)
+				if (numVertices > 0)
 				{
-					int index = (int)(m_num_vertices - 1);
-					return m_coord_x[index];
+					int index = (int)(numVertices - 1);
+					return vertexData[index].position.X;
 				}
 
 				return new double();
@@ -109,103 +103,92 @@ namespace MatterHackers.Agg.VertexSource
 
 			public double last_y()
 			{
-				if (m_num_vertices > 0)
+				if (numVertices > 0)
 				{
-					int index = (int)(m_num_vertices - 1);
-					return m_coord_y[index];
+					int index = (int)(numVertices - 1);
+					return vertexData[index].position.Y;
 				}
 				return new double();
 			}
 
 			public void modify_command(int index, ShapePath.FlagsAndCommand CommandAndFlags)
 			{
-				m_CommandAndFlags[index] = CommandAndFlags;
+				this.vertexData[index].command = CommandAndFlags;
 			}
 
 			public void modify_vertex(int index, double x, double y)
 			{
-				m_coord_x[index] = x;
-				m_coord_y[index] = y;
+				vertexData[index].position = new Vector2(x, y);
 			}
 
 			public void modify_vertex(int index, double x, double y, ShapePath.FlagsAndCommand CommandAndFlags)
 			{
-				m_coord_x[index] = x;
-				m_coord_y[index] = y;
-				m_CommandAndFlags[index] = CommandAndFlags;
+				vertexData[index].position = new Vector2(x, y);
+				vertexData[index].command = CommandAndFlags;
 			}
 
 			public ShapePath.FlagsAndCommand prev_vertex(out double x, out double y)
 			{
-				if (m_num_vertices > 1)
+				if (numVertices > 1)
 				{
-					return vertex((int)(m_num_vertices - 2), out x, out y);
+					return vertex((int)(numVertices - 2), out x, out y);
 				}
 
 				x = new double();
 				y = new double();
-				return ShapePath.FlagsAndCommand.CommandStop;
+				return ShapePath.FlagsAndCommand.Stop;
 			}
 
 			public void remove_all()
 			{
-				m_num_vertices = 0;
+				numVertices = 0;
 			}
 
 			public int size()
 			{
-				return m_num_vertices;
+				return numVertices;
 			}
 			public void swap_vertices(int v1, int v2)
 			{
-				double val;
-
-				val = m_coord_x[v1]; m_coord_x[v1] = m_coord_x[v2]; m_coord_x[v2] = val;
-				val = m_coord_y[v1]; m_coord_y[v1] = m_coord_y[v2]; m_coord_y[v2] = val;
-				ShapePath.FlagsAndCommand cmd = m_CommandAndFlags[v1];
-				m_CommandAndFlags[v1] = m_CommandAndFlags[v2];
-				m_CommandAndFlags[v2] = cmd;
+				var hold = vertexData[v2];
+				vertexData[v2] = vertexData[v1];
+				vertexData[v1] = hold;
 			}
 			public int total_vertices()
 			{
-				return m_num_vertices;
+				return numVertices;
 			}
 
 			public ShapePath.FlagsAndCommand vertex(int index, out double x, out double y)
 			{
-				x = m_coord_x[index];
-				y = m_coord_y[index];
-				return m_CommandAndFlags[index];
+				x = vertexData[index].position.X;
+				y = vertexData[index].position.Y;
+				return vertexData[index].command;
 			}
+
 			private void allocate_if_required(int indexToAdd)
 			{
-				if (indexToAdd < m_num_vertices)
+				if (indexToAdd < numVertices)
 				{
 					return;
 				}
 
-				while (indexToAdd >= m_allocated_vertices)
+				while (indexToAdd >= allocatedVertices)
 				{
-					int newSize = m_allocated_vertices + 256;
-					double[] newX = new double[newSize];
-					double[] newY = new double[newSize];
-					ShapePath.FlagsAndCommand[] newCmd = new ShapePath.FlagsAndCommand[newSize];
+					int newSize = allocatedVertices + 256;
+					VertexData[] newVertexData = new VertexData[newSize];
 
-					if (m_coord_x != null)
+					if (vertexData != null)
 					{
-						for (int i = 0; i < m_num_vertices; i++)
+						for (int i = 0; i < numVertices; i++)
 						{
-							newX[i] = m_coord_x[i];
-							newY[i] = m_coord_y[i];
-							newCmd[i] = m_CommandAndFlags[i];
+							newVertexData[i] = vertexData[i];
 						}
 					}
 
-					m_coord_x = newX;
-					m_coord_y = newY;
-					m_CommandAndFlags = newCmd;
+					vertexData = newVertexData;
 
-					m_allocated_vertices = newSize;
+					allocatedVertices = newSize;
 				}
 			}
 		}
@@ -213,15 +196,15 @@ namespace MatterHackers.Agg.VertexSource
 		#endregion InternalVertexStorage
 
 		private int iteratorIndex;
-		private VertexData vertices;
+		private VertexDataManager vertexDataManager;
 		public VertexStorage()
 		{
-			vertices = new VertexData();
+			vertexDataManager = new VertexDataManager();
 		}
 
 		public VertexStorage(string svgDString)
 		{
-			vertices = new VertexData();
+			vertexDataManager = new VertexDataManager();
 			ParseSvgDString(svgDString);
 		}
 
@@ -229,7 +212,7 @@ namespace MatterHackers.Agg.VertexSource
 		{
 			get
 			{
-				return vertices.total_vertices();
+				return vertexDataManager.total_vertices();
 			}
 		}
 
@@ -249,7 +232,7 @@ namespace MatterHackers.Agg.VertexSource
 			ShapePath.FlagsAndCommand controlFlagsAndCommand = control.vertex(out controlX, out controlY);
 
 			int index = 0;
-			foreach (VertexSource.VertexData vertexData in test.Vertices())
+			foreach (VertexData vertexData in test.Vertices())
 			{
 				if (controlFlagsAndCommand != vertexData.command
 					|| controlX < vertexData.position.X - maxError || controlX > vertexData.position.X + maxError
@@ -261,7 +244,7 @@ namespace MatterHackers.Agg.VertexSource
 				index++;
 			}
 
-			if (controlFlagsAndCommand == ShapePath.FlagsAndCommand.CommandStop)
+			if (controlFlagsAndCommand == ShapePath.FlagsAndCommand.Stop)
 			{
 				return true;
 			}
@@ -284,7 +267,7 @@ namespace MatterHackers.Agg.VertexSource
 			int index = 1;
 			if (controlFlagsAndCommand == otherFlagsAndCommand && controlX == testX && agg_basics.is_equal_eps(controlY, testY, .000000001))
 			{
-				while (controlFlagsAndCommand != ShapePath.FlagsAndCommand.CommandStop)
+				while (controlFlagsAndCommand != ShapePath.FlagsAndCommand.Stop)
 				{
 					controlFlagsAndCommand = control.vertex(out controlX, out controlY);
 					otherFlagsAndCommand = test.vertex(out testX, out testY);
@@ -310,17 +293,17 @@ namespace MatterHackers.Agg.VertexSource
 
 		public void Add(double x, double y, ShapePath.FlagsAndCommand flagsAndCommand)
 		{
-			vertices.AddVertex(x, y, flagsAndCommand);
+			vertexDataManager.AddVertex(x, y, flagsAndCommand);
 		}
 
 		public int arrange_orientations(int start, ShapePath.FlagsAndCommand orientation)
 		{
 			if (orientation != ShapePath.FlagsAndCommand.FlagNone)
 			{
-				while (start < vertices.total_vertices())
+				while (start < vertexDataManager.total_vertices())
 				{
 					start = arrange_polygon_orientation(start, orientation);
-					if (ShapePath.is_stop(vertices.command(start)))
+					if (ShapePath.is_stop(vertexDataManager.command(start)))
 					{
 						++start;
 						break;
@@ -335,7 +318,7 @@ namespace MatterHackers.Agg.VertexSource
 			if (orientation != ShapePath.FlagsAndCommand.FlagNone)
 			{
 				int start = 0;
-				while (start < vertices.total_vertices())
+				while (start < vertexDataManager.total_vertices())
 				{
 					start = arrange_orientations(start, orientation);
 				}
@@ -352,18 +335,18 @@ namespace MatterHackers.Agg.VertexSource
 			if (orientation == ShapePath.FlagsAndCommand.FlagNone) return start;
 
 			// Skip all non-vertices at the beginning
-			while (start < vertices.total_vertices() &&
-				  !ShapePath.is_vertex(vertices.command(start))) ++start;
+			while (start < vertexDataManager.total_vertices() &&
+				  !ShapePath.is_vertex(vertexDataManager.command(start))) ++start;
 
 			// Skip all insignificant move_to
-			while (start + 1 < vertices.total_vertices() &&
-				  ShapePath.is_move_to(vertices.command(start)) &&
-				  ShapePath.is_move_to(vertices.command(start + 1))) ++start;
+			while (start + 1 < vertexDataManager.total_vertices() &&
+				  ShapePath.is_move_to(vertexDataManager.command(start)) &&
+				  ShapePath.is_move_to(vertexDataManager.command(start + 1))) ++start;
 
 			// Find the last vertex
 			int end = start + 1;
-			while (end < vertices.total_vertices() &&
-				  !ShapePath.is_next_poly(vertices.command(end))) ++end;
+			while (end < vertexDataManager.total_vertices() &&
+				  !ShapePath.is_next_poly(vertexDataManager.command(end))) ++end;
 
 			if (end - start > 2)
 			{
@@ -372,10 +355,10 @@ namespace MatterHackers.Agg.VertexSource
 					// Invert polygon, set orientation flag, and skip all end_poly
 					invert_polygon(start, end);
 					ShapePath.FlagsAndCommand PathAndFlags;
-					while (end < vertices.total_vertices() &&
-						  ShapePath.is_end_poly(PathAndFlags = vertices.command(end)))
+					while (end < vertexDataManager.total_vertices() &&
+						  ShapePath.is_end_poly(PathAndFlags = vertexDataManager.command(end)))
 					{
-						vertices.modify_command(end++, PathAndFlags | orientation);// Path.set_orientation(cmd, orientation));
+						vertexDataManager.modify_command(end++, PathAndFlags | orientation);// Path.set_orientation(cmd, orientation));
 					}
 				}
 			}
@@ -394,7 +377,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		public ShapePath.FlagsAndCommand command(int index)
 		{
-			return vertices.command(index);
+			return vertexDataManager.command(index);
 		}
 
 		// Concatenate path. The path is added as is.
@@ -410,7 +393,7 @@ namespace MatterHackers.Agg.VertexSource
 			vs.rewind(path_id);
 			while (!ShapePath.is_stop(PathAndFlags = vs.vertex(out x, out y)))
 			{
-				vertices.AddVertex(x, y, PathAndFlags);
+				vertexDataManager.AddVertex(x, y, PathAndFlags);
 			}
 		}
 
@@ -421,11 +404,10 @@ namespace MatterHackers.Agg.VertexSource
 		/// <param name="yControl"></param>
 		/// <param name="x"></param>
 		/// <param name="y"></param>
-		public void curve3(double xControl, double yControl,
-								   double x, double y)
+		public void curve3(double xControl, double yControl, double x, double y)
 		{
-			vertices.AddVertex(xControl, yControl, ShapePath.FlagsAndCommand.CommandCurve3);
-			vertices.AddVertex(x, y, ShapePath.FlagsAndCommand.CommandCurve3);
+			vertexDataManager.AddVertex(xControl, yControl, ShapePath.FlagsAndCommand.Curve3);
+			vertexDataManager.AddVertex(x, y, ShapePath.FlagsAndCommand.Curve3);
 		}
 
 		/// <summary>
@@ -439,11 +421,11 @@ namespace MatterHackers.Agg.VertexSource
 		{
 			double x0;
 			double y0;
-			if (ShapePath.is_vertex(vertices.last_vertex(out x0, out y0)))
+			if (ShapePath.is_vertex(vertexDataManager.last_vertex(out x0, out y0)))
 			{
 				double x_ctrl;
 				double y_ctrl;
-				ShapePath.FlagsAndCommand cmd = vertices.prev_vertex(out x_ctrl, out y_ctrl);
+				ShapePath.FlagsAndCommand cmd = vertexDataManager.prev_vertex(out x_ctrl, out y_ctrl);
 				if (ShapePath.is_curve(cmd))
 				{
 					x_ctrl = x0 + x0 - x_ctrl;
@@ -469,8 +451,8 @@ namespace MatterHackers.Agg.VertexSource
 		{
 			rel_to_abs(ref dx_ctrl, ref dy_ctrl);
 			rel_to_abs(ref dx_to, ref dy_to);
-			vertices.AddVertex(dx_ctrl, dy_ctrl, ShapePath.FlagsAndCommand.CommandCurve3);
-			vertices.AddVertex(dx_to, dy_to, ShapePath.FlagsAndCommand.CommandCurve3);
+			vertexDataManager.AddVertex(dx_ctrl, dy_ctrl, ShapePath.FlagsAndCommand.Curve3);
+			vertexDataManager.AddVertex(dx_to, dy_to, ShapePath.FlagsAndCommand.Curve3);
 		}
 
 		/// <summary>
@@ -490,9 +472,9 @@ namespace MatterHackers.Agg.VertexSource
 								   double x_ctrl2, double y_ctrl2,
 								   double x_to, double y_to)
 		{
-			vertices.AddVertex(x_ctrl1, y_ctrl1, ShapePath.FlagsAndCommand.CommandCurve4);
-			vertices.AddVertex(x_ctrl2, y_ctrl2, ShapePath.FlagsAndCommand.CommandCurve4);
-			vertices.AddVertex(x_to, y_to, ShapePath.FlagsAndCommand.CommandCurve4);
+			vertexDataManager.AddVertex(x_ctrl1, y_ctrl1, ShapePath.FlagsAndCommand.Curve4);
+			vertexDataManager.AddVertex(x_ctrl2, y_ctrl2, ShapePath.FlagsAndCommand.Curve4);
+			vertexDataManager.AddVertex(x_to, y_to, ShapePath.FlagsAndCommand.Curve4);
 		}
 
 		public void curve4(double x_ctrl2, double y_ctrl2,
@@ -526,9 +508,9 @@ namespace MatterHackers.Agg.VertexSource
 			rel_to_abs(ref dx_ctrl1, ref dy_ctrl1);
 			rel_to_abs(ref dx_ctrl2, ref dy_ctrl2);
 			rel_to_abs(ref dx_to, ref dy_to);
-			vertices.AddVertex(dx_ctrl1, dy_ctrl1, ShapePath.FlagsAndCommand.CommandCurve4);
-			vertices.AddVertex(dx_ctrl2, dy_ctrl2, ShapePath.FlagsAndCommand.CommandCurve4);
-			vertices.AddVertex(dx_to, dy_to, ShapePath.FlagsAndCommand.CommandCurve4);
+			vertexDataManager.AddVertex(dx_ctrl1, dy_ctrl1, ShapePath.FlagsAndCommand.Curve4);
+			vertexDataManager.AddVertex(dx_ctrl2, dy_ctrl2, ShapePath.FlagsAndCommand.Curve4);
+			vertexDataManager.AddVertex(dx_to, dy_to, ShapePath.FlagsAndCommand.Curve4);
 		}
 
 		public void curve4_rel(double dx_ctrl2, double dy_ctrl2,
@@ -546,9 +528,9 @@ namespace MatterHackers.Agg.VertexSource
 
 		public void end_poly(ShapePath.FlagsAndCommand flags)
 		{
-			if (ShapePath.is_vertex(vertices.last_command()))
+			if (ShapePath.is_vertex(vertexDataManager.last_command()))
 			{
-				vertices.AddVertex(0.0, 0.0, ShapePath.FlagsAndCommand.CommandEndPoly | flags);
+				vertexDataManager.AddVertex(0.0, 0.0, ShapePath.FlagsAndCommand.EndPoly | flags);
 			}
 		}
 
@@ -571,12 +553,12 @@ namespace MatterHackers.Agg.VertexSource
 		{
 			int i;
 			double x, y;
-			for (i = 0; i < vertices.total_vertices(); i++)
+			for (i = 0; i < vertexDataManager.total_vertices(); i++)
 			{
-				ShapePath.FlagsAndCommand PathAndFlags = vertices.vertex(i, out x, out y);
+				ShapePath.FlagsAndCommand PathAndFlags = vertexDataManager.vertex(i, out x, out y);
 				if (ShapePath.is_vertex(PathAndFlags))
 				{
-					vertices.modify_vertex(i, x2 - x + x1, y);
+					vertexDataManager.modify_vertex(i, x2 - x + x1, y);
 				}
 			}
 		}
@@ -585,51 +567,51 @@ namespace MatterHackers.Agg.VertexSource
 		{
 			int i;
 			double x, y;
-			for (i = 0; i < vertices.total_vertices(); i++)
+			for (i = 0; i < vertexDataManager.total_vertices(); i++)
 			{
-				ShapePath.FlagsAndCommand PathAndFlags = vertices.vertex(i, out x, out y);
+				ShapePath.FlagsAndCommand PathAndFlags = vertexDataManager.vertex(i, out x, out y);
 				if (ShapePath.is_vertex(PathAndFlags))
 				{
-					vertices.modify_vertex(i, x, y2 - y + y1);
+					vertexDataManager.modify_vertex(i, x, y2 - y + y1);
 				}
 			}
 		}
 
 		public void free_all()
 		{
-			vertices.free_all(); iteratorIndex = 0;
+			vertexDataManager.free_all(); iteratorIndex = 0;
 		}
 
 		public double GetLastX()
 		{
-			return vertices.last_x();
+			return vertexDataManager.last_x();
 		}
 
 		public double GetLastY()
 		{
-			return vertices.last_y();
+			return vertexDataManager.last_y();
 		}
 
 		public void HorizontalLineTo(double x)
 		{
-			vertices.AddVertex(x, GetLastY(), ShapePath.FlagsAndCommand.CommandLineTo);
+			vertexDataManager.AddVertex(x, GetLastY(), ShapePath.FlagsAndCommand.LineTo);
 		}
 
 		public void invert_polygon(int start)
 		{
 			// Skip all non-vertices at the beginning
-			while (start < vertices.total_vertices() &&
-				  !ShapePath.is_vertex(vertices.command(start))) ++start;
+			while (start < vertexDataManager.total_vertices() &&
+				  !ShapePath.is_vertex(vertexDataManager.command(start))) ++start;
 
 			// Skip all insignificant move_to
-			while (start + 1 < vertices.total_vertices() &&
-				  ShapePath.is_move_to(vertices.command(start)) &&
-				  ShapePath.is_move_to(vertices.command(start + 1))) ++start;
+			while (start + 1 < vertexDataManager.total_vertices() &&
+				  ShapePath.is_move_to(vertexDataManager.command(start)) &&
+				  ShapePath.is_move_to(vertexDataManager.command(start + 1))) ++start;
 
 			// Find the last vertex
 			int end = start + 1;
-			while (end < vertices.total_vertices() &&
-				  !ShapePath.is_next_poly(vertices.command(end))) ++end;
+			while (end < vertexDataManager.total_vertices() &&
+				  !ShapePath.is_next_poly(vertexDataManager.command(end))) ++end;
 
 			invert_polygon(start, end);
 		}
@@ -658,27 +640,27 @@ namespace MatterHackers.Agg.VertexSource
 					{
 						if (agg_math.calc_distance(x, y, x0, y0) > agg_math.vertex_dist_epsilon)
 						{
-							if (ShapePath.is_move_to(PathAndFlags)) PathAndFlags = ShapePath.FlagsAndCommand.CommandLineTo;
-							vertices.AddVertex(x, y, PathAndFlags);
+							if (ShapePath.is_move_to(PathAndFlags)) PathAndFlags = ShapePath.FlagsAndCommand.LineTo;
+							vertexDataManager.AddVertex(x, y, PathAndFlags);
 						}
 					}
 					else
 					{
 						if (ShapePath.is_stop(PathAndFlags0))
 						{
-							PathAndFlags = ShapePath.FlagsAndCommand.CommandMoveTo;
+							PathAndFlags = ShapePath.FlagsAndCommand.MoveTo;
 						}
 						else
 						{
-							if (ShapePath.is_move_to(PathAndFlags)) PathAndFlags = ShapePath.FlagsAndCommand.CommandLineTo;
+							if (ShapePath.is_move_to(PathAndFlags)) PathAndFlags = ShapePath.FlagsAndCommand.LineTo;
 						}
-						vertices.AddVertex(x, y, PathAndFlags);
+						vertexDataManager.AddVertex(x, y, PathAndFlags);
 					}
 				}
 				while (!ShapePath.is_stop(PathAndFlags = vs.vertex(out x, out y)))
 				{
-					vertices.AddVertex(x, y, ShapePath.is_move_to(PathAndFlags) ?
-													ShapePath.FlagsAndCommand.CommandLineTo :
+					vertexDataManager.AddVertex(x, y, ShapePath.is_move_to(PathAndFlags) ?
+													ShapePath.FlagsAndCommand.LineTo :
 													PathAndFlags);
 				}
 			}
@@ -686,7 +668,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		public ShapePath.FlagsAndCommand last_vertex(out double x, out double y)
 		{
-			return vertices.last_vertex(out x, out y);
+			return vertexDataManager.last_vertex(out x, out y);
 		}
 
 		public void LineTo(Vector2 position)
@@ -696,32 +678,32 @@ namespace MatterHackers.Agg.VertexSource
 
 		public void LineTo(double x, double y)
 		{
-			vertices.AddVertex(x, y, ShapePath.FlagsAndCommand.CommandLineTo);
+			vertexDataManager.AddVertex(x, y, ShapePath.FlagsAndCommand.LineTo);
 		}
 
 		public void modify_command(int index, ShapePath.FlagsAndCommand PathAndFlags)
 		{
-			vertices.modify_command(index, PathAndFlags);
+			vertexDataManager.modify_command(index, PathAndFlags);
 		}
 
 		public void modify_vertex(int index, double x, double y)
 		{
-			vertices.modify_vertex(index, x, y);
+			vertexDataManager.modify_vertex(index, x, y);
 		}
 
 		public void modify_vertex(int index, double x, double y, ShapePath.FlagsAndCommand PathAndFlags)
 		{
-			vertices.modify_vertex(index, x, y, PathAndFlags);
+			vertexDataManager.modify_vertex(index, x, y, PathAndFlags);
 		}
 
-		public void MoveTo(Vector2 position)
+		public void MoveTo(Vector2 position, int index = -1)
 		{
-			MoveTo(position.X, position.Y);
+			MoveTo(position.X, position.Y, index);
 		}
 
-		public void MoveTo(double x, double y)
+		public void MoveTo(double x, double y, int index = -1)
 		{
-			vertices.AddVertex(x, y, ShapePath.FlagsAndCommand.CommandMoveTo);
+			vertexDataManager.AddVertex(x, y, ShapePath.FlagsAndCommand.MoveTo, index);
 		}
 
 		public void ParseSvgDString(string dString)
@@ -948,16 +930,16 @@ namespace MatterHackers.Agg.VertexSource
 
 		public ShapePath.FlagsAndCommand prev_vertex(out double x, out double y)
 		{
-			return vertices.prev_vertex(out x, out y);
+			return vertexDataManager.prev_vertex(out x, out y);
 		}
 
 		public void rel_to_abs(ref double x, ref double y)
 		{
-			if (vertices.total_vertices() != 0)
+			if (vertexDataManager.total_vertices() != 0)
 			{
 				double x2;
 				double y2;
-				if (ShapePath.is_vertex(vertices.last_vertex(out x2, out y2)))
+				if (ShapePath.is_vertex(vertexDataManager.last_vertex(out x2, out y2)))
 				{
 					x += x2;
 					y += y2;
@@ -967,7 +949,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		public void remove_all()
 		{
-			vertices.remove_all(); iteratorIndex = 0;
+			vertexDataManager.remove_all(); iteratorIndex = 0;
 		}
 
 		public virtual void rewind(int pathId)
@@ -977,26 +959,26 @@ namespace MatterHackers.Agg.VertexSource
 
 		public void ShareVertexData(VertexStorage pathStorageToShareFrom)
 		{
-			vertices = pathStorageToShareFrom.vertices;
+			vertexDataManager = pathStorageToShareFrom.vertexDataManager;
 		}
 
 		public int size()
 		{
-			return vertices.size();
+			return vertexDataManager.size();
 		}
 		// Make path functions
 		//--------------------------------------------------------------------
 		public int start_new_path()
 		{
-			if (!ShapePath.is_stop(vertices.last_command()))
+			if (!ShapePath.is_stop(vertexDataManager.last_command()))
 			{
-				vertices.AddVertex(0.0, 0.0, ShapePath.FlagsAndCommand.CommandStop);
+				vertexDataManager.AddVertex(0.0, 0.0, ShapePath.FlagsAndCommand.Stop);
 			}
-			return vertices.total_vertices();
+			return vertexDataManager.total_vertices();
 		}
 		public int total_vertices()
 		{
-			return vertices.total_vertices();
+			return vertexDataManager.total_vertices();
 		}
 
 		//--------------------------------------------------------------------
@@ -1007,16 +989,16 @@ namespace MatterHackers.Agg.VertexSource
 
 		public void transform(Transform.Affine trans, int path_id)
 		{
-			int num_ver = vertices.total_vertices();
+			int num_ver = vertexDataManager.total_vertices();
 			for (; path_id < num_ver; path_id++)
 			{
 				double x, y;
-				ShapePath.FlagsAndCommand PathAndFlags = vertices.vertex(path_id, out x, out y);
+				ShapePath.FlagsAndCommand PathAndFlags = vertexDataManager.vertex(path_id, out x, out y);
 				if (ShapePath.is_stop(PathAndFlags)) break;
 				if (ShapePath.is_vertex(PathAndFlags))
 				{
 					trans.transform(ref x, ref y);
-					vertices.modify_vertex(path_id, x, y);
+					vertexDataManager.modify_vertex(path_id, x, y);
 				}
 			}
 		}
@@ -1025,14 +1007,14 @@ namespace MatterHackers.Agg.VertexSource
 		public void transform_all_paths(Transform.Affine trans)
 		{
 			int index;
-			int num_ver = vertices.total_vertices();
+			int num_ver = vertexDataManager.total_vertices();
 			for (index = 0; index < num_ver; index++)
 			{
 				double x, y;
-				if (ShapePath.is_vertex(vertices.vertex(index, out x, out y)))
+				if (ShapePath.is_vertex(vertexDataManager.vertex(index, out x, out y)))
 				{
 					trans.transform(ref x, ref y);
-					vertices.modify_vertex(index, x, y);
+					vertexDataManager.modify_vertex(index, x, y);
 				}
 			}
 		}
@@ -1045,17 +1027,17 @@ namespace MatterHackers.Agg.VertexSource
 
 		public void translate(double dx, double dy, int path_id)
 		{
-			int num_ver = vertices.total_vertices();
+			int num_ver = vertexDataManager.total_vertices();
 			for (; path_id < num_ver; path_id++)
 			{
 				double x, y;
-				ShapePath.FlagsAndCommand PathAndFlags = vertices.vertex(path_id, out x, out y);
+				ShapePath.FlagsAndCommand PathAndFlags = vertexDataManager.vertex(path_id, out x, out y);
 				if (ShapePath.is_stop(PathAndFlags)) break;
 				if (ShapePath.is_vertex(PathAndFlags))
 				{
 					x += dx;
 					y += dy;
-					vertices.modify_vertex(path_id, x, y);
+					vertexDataManager.modify_vertex(path_id, x, y);
 				}
 			}
 		}
@@ -1063,39 +1045,39 @@ namespace MatterHackers.Agg.VertexSource
 		public void translate_all_paths(double dx, double dy)
 		{
 			int index;
-			int num_ver = vertices.total_vertices();
+			int num_ver = vertexDataManager.total_vertices();
 			for (index = 0; index < num_ver; index++)
 			{
 				double x, y;
-				if (ShapePath.is_vertex(vertices.vertex(index, out x, out y)))
+				if (ShapePath.is_vertex(vertexDataManager.vertex(index, out x, out y)))
 				{
 					x += dx;
 					y += dy;
-					vertices.modify_vertex(index, x, y);
+					vertexDataManager.modify_vertex(index, x, y);
 				}
 			}
 		}
 
 		public ShapePath.FlagsAndCommand vertex(int index, out double x, out double y)
 		{
-			return vertices.vertex(index, out x, out y);
+			return vertexDataManager.vertex(index, out x, out y);
 		}
 
 		public ShapePath.FlagsAndCommand vertex(out double x, out double y)
 		{
-			if (iteratorIndex >= vertices.total_vertices())
+			if (iteratorIndex >= vertexDataManager.total_vertices())
 			{
 				x = 0;
 				y = 0;
-				return ShapePath.FlagsAndCommand.CommandStop;
+				return ShapePath.FlagsAndCommand.Stop;
 			}
 
-			return vertices.vertex(iteratorIndex++, out x, out y);
+			return vertexDataManager.vertex(iteratorIndex++, out x, out y);
 		}
 
 		public void VerticalLineTo(double y)
 		{
-			vertices.AddVertex(GetLastX(), y, ShapePath.FlagsAndCommand.CommandLineTo);
+			vertexDataManager.AddVertex(GetLastX(), y, ShapePath.FlagsAndCommand.LineTo);
 		}
 
 		/*
@@ -1155,18 +1137,18 @@ namespace MatterHackers.Agg.VertexSource
 			arc_to(rx, ry, angle, large_arc_flag, sweep_flag, dx, dy);
 		}
 		 */
-		public IEnumerable<VertexSource.VertexData> Vertices()
+		public IEnumerable<VertexData> Vertices()
 		{
-			int count = vertices.total_vertices();
+			int count = vertexDataManager.total_vertices();
 			for (int i = 0; i < count; i++)
 			{
 				double x = 0;
 				double y = 0;
-				ShapePath.FlagsAndCommand command = vertices.vertex(i, out x, out y);
-				yield return new VertexSource.VertexData(command, new Vector2(x, y));
+				ShapePath.FlagsAndCommand command = vertexDataManager.vertex(i, out x, out y);
+				yield return new VertexData(command, new Vector2(x, y));
 			}
 
-			yield return new VertexSource.VertexData(ShapePath.FlagsAndCommand.CommandStop, new Vector2(0, 0));
+			yield return new VertexData(ShapePath.FlagsAndCommand.Stop, new Vector2(0, 0));
 		}
 		/*
 		// Concatenate polygon/polyline.
@@ -1188,23 +1170,23 @@ namespace MatterHackers.Agg.VertexSource
 		private void invert_polygon(int start, int end)
 		{
 			int i;
-			ShapePath.FlagsAndCommand tmp_PathAndFlags = vertices.command(start);
+			ShapePath.FlagsAndCommand tmp_PathAndFlags = vertexDataManager.command(start);
 
 			--end; // Make "end" inclusive
 
 			// Shift all commands to one position
 			for (i = start; i < end; i++)
 			{
-				vertices.modify_command(i, vertices.command(i + 1));
+				vertexDataManager.modify_command(i, vertexDataManager.command(i + 1));
 			}
 
 			// Assign starting command to the ending command
-			vertices.modify_command(end, tmp_PathAndFlags);
+			vertexDataManager.modify_command(end, tmp_PathAndFlags);
 
 			// Reverse the polygon
 			while (end > start)
 			{
-				vertices.swap_vertices(start++, end--);
+				vertexDataManager.swap_vertices(start++, end--);
 			}
 		}
 
@@ -1218,8 +1200,8 @@ namespace MatterHackers.Agg.VertexSource
 			for (i = 0; i < np; i++)
 			{
 				double x1, y1, x2, y2;
-				vertices.vertex(start + i, out x1, out y1);
-				vertices.vertex(start + (i + 1) % np, out x2, out y2);
+				vertexDataManager.vertex(start + i, out x1, out y1);
+				vertexDataManager.vertex(start + (i + 1) % np, out x2, out y2);
 				area += x1 * y2 - y1 * x2;
 			}
 			return (area < 0.0) ? ShapePath.FlagsAndCommand.FlagCW : ShapePath.FlagsAndCommand.FlagCCW;

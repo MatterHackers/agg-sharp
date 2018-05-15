@@ -74,7 +74,7 @@ namespace MatterHackers.Agg.VertexSource
 			}
 
 			// and send the actual stop
-			yield return new VertexData(ShapePath.FlagsAndCommand.CommandStop, new Vector2());
+			yield return new VertexData(ShapePath.FlagsAndCommand.Stop, new Vector2());
 		}
 	}
 }

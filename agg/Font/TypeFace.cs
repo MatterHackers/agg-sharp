@@ -15,10 +15,6 @@ using MatterHackers.VectorMath;
 // warranty, and with no claim as to its suitability for any purpose.
 //
 //----------------------------------------------------------------------------
-//
-// Class TypeFace.cs
-//
-//----------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -27,7 +23,7 @@ using Typography.OpenFont;
 
 namespace MatterHackers.Agg.Font
 {
-	public class TypeFace
+	public partial class TypeFace
 	{
 		private class Glyph
 		{
@@ -210,13 +206,19 @@ namespace MatterHackers.Agg.Font
 			}
 		}
 
-		public void LoadTTF(Stream stream)
+		public bool LoadTTF(Stream stream)
 		{
 			var reader = new OpenFontReader();
 			ttfTypeFace = reader.Read(stream);
-			this.ascent = ttfTypeFace.Ascender;
-			this.descent = ttfTypeFace.Descender;
-			this.unitsPerEm = ttfTypeFace.UnitsPerEm;
+			if (ttfTypeFace != null)
+			{
+				this.ascent = ttfTypeFace.Ascender;
+				this.descent = ttfTypeFace.Descender;
+				this.unitsPerEm = ttfTypeFace.UnitsPerEm;
+				return true;
+			}
+
+			return false;
 		}
 
 		public static TypeFace LoadSVG(String filename)
@@ -327,61 +329,13 @@ namespace MatterHackers.Agg.Font
 			}
 		}
 
-		public class VertexSourceGlyphTranslator : IGlyphTranslator
-		{
-			double scale = 1;
-			VertexStorage vertexStorage;
-			public VertexSourceGlyphTranslator(VertexStorage vertexStorage)
-			{
-				this.vertexStorage = vertexStorage;
-			}
-
-			public void BeginRead(int contourCount)
-			{
-			}
-
-			public void CloseContour()
-			{
-				vertexStorage.ClosePolygon();
-			}
-
-			public void Curve3(float x1, float y1, float x2, float y2)
-			{
-				vertexStorage.curve3(x1 / scale, y1 / scale, x2 / scale, y2 / scale);
-			}
-
-			public void Curve4(float x1, float y1, float x2, float y2, float x3, float y3)
-			{
-				vertexStorage.curve4(x1, y1, x2, y2, x3, y3);
-			}
-
-			int start = 0;
-			public void EndRead()
-			{
-				if (vertexStorage.Count > start)
-				{
-					vertexStorage.invert_polygon(start);
-				}
-			}
-
-			public void LineTo(float x, float y)
-			{
-				vertexStorage.LineTo(x / scale, y / scale);
-			}
-
-			public void MoveTo(float x, float y)
-			{
-				if(vertexStorage.Count > start)
-				{
-					vertexStorage.invert_polygon(start);
-				}
-				start = vertexStorage.Count;
-				vertexStorage.MoveTo(x / scale, y / scale);
-			}
-		}
-
 		internal IVertexSource GetGlyphForCharacter(char character)
 		{
+			if (ttfTypeFace != null)
+			{
+				glyphs.Clear();
+			}
+
 			IVertexSource vertexSource = null;
 			// TODO: check for multi character glyphs (we don't currently support them in the reader).
 			Glyph glyph = null;
