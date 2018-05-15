@@ -331,6 +331,7 @@ namespace MatterHackers.Agg.Font
 
 		internal IVertexSource GetGlyphForCharacter(char character)
 		{
+			// TODO: REMOVE THIS!!!!!!! It is un-needed and only for debuging
 			if (ttfTypeFace != null)
 			{
 				glyphs.Clear();
