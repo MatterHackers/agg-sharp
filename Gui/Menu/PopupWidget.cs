@@ -105,16 +105,30 @@ namespace MatterHackers.Agg.UI
 		{
 			UiThread.RunOnIdle(() =>
 			{
+				var openDropList = this.Descendants<DropDownList>().Where(w => w.IsOpen).FirstOrDefault();
+
 				// Fired any time focus changes. Traditionally we closed the menu if the we weren't focused.
 				// To accommodate children (or external widgets) having focus we also query for and consider special cases
 				bool specialChildHasFocus = ignoredWidgets.Any(w => w.ContainsFocus || w.Focused)
-					|| this.DescendantsAndSelf<DropDownList>().Any(w => w.IsOpen);
+					|| openDropList != null;
 
 				// If the focused changed and we've lost focus and no special cases permit, close the menu
 				if (!this.ContainsFocus
 					&& !specialChildHasFocus)
 				{
 					this.CloseMenu();
+				}
+				else if (openDropList != null)
+				{
+					EventHandler<ClosedEventArgs> focusOnChildClose = null;
+
+					focusOnChildClose = (s, e2) =>
+					{
+						this.Focus();
+						openDropList.Closed -= focusOnChildClose;
+					};
+
+					openDropList.Closed += focusOnChildClose;
 				}
 			});
 
