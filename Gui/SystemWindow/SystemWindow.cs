@@ -123,8 +123,6 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseMove(mouseEvent);
 
 			SetToolTipText(mouseEvent);
-
-			Invalidate();
 		}
 
 		private void SetToolTipText(MouseEventArgs mouseEvent)
