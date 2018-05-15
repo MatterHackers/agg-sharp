@@ -127,7 +127,10 @@ namespace MatterHackers.Agg.Platform
 		/// <param name="fileToShow">The path to open</param>
 		public void ShowFileInFolder(string fileToShow)
 		{
-			System.Diagnostics.Process.Start("explorer.exe", $"/select, \"{Path.GetFullPath(fileToShow)}\"");
+			if (AggContext.OperatingSystem == OSType.Windows)
+			{
+				System.Diagnostics.Process.Start("explorer.exe", $"/select, \"{Path.GetFullPath(fileToShow)}\"");
+			}
 		}
 	}
 }
