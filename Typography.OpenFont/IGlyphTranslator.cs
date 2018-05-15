@@ -90,8 +90,8 @@ namespace Typography.OpenFont
             //1. start read data from a glyph
             tx.BeginRead(todoContourCount);
             //-----------------------------------
-            float latest_moveto_x = 0;
-            float latest_moveto_y = 0;
+            float latest_moveto_x = float.MinValue;
+            float latest_moveto_y = float.MinValue;
             int curveControlPointCount = 0; // 1 curve control point => Quadratic, 2 curve control points => Cubic
 
 
@@ -291,14 +291,20 @@ namespace Typography.OpenFont
                                     //------------------------
                                     //3. so curve control point number is reduce by 1***
                                     curveControlPointCount--;
-                                    //------------------------
-                                    //4. and set (p_x,p_y) as 1st control point for the new curve
-                                    c1 = new Vector2(p_x, p_y);
+									//------------------------
+									if (isFirstOnCurvePoint)
+									{
+										latest_moveto_x = c1.X;
+										latest_moveto_y = c1.Y;
+										isFirstOnCurvePoint = false;
+									}
+									//4. and set (p_x,p_y) as 1st control point for the new curve
+									c1 = new Vector2(p_x, p_y);
                                     offCurveMode = true;
-                                    //
-                                    //printf("[%d] bzc2nd,  x: %d,y:%d \n", mm, vpoint.x, vpoint.y); 
-                                }
-                                break;
+									//
+									//printf("[%d] bzc2nd,  x: %d,y:%d \n", mm, vpoint.x, vpoint.y); 
+								}
+								break;
                             default:
                                 throw new NotSupportedException();
                         }
@@ -309,7 +315,8 @@ namespace Typography.OpenFont
                 //--------
                 //when finish,                 
                 //ensure that the contour is closed.
-                if (offCurveMode)
+                if (offCurveMode
+					&& latest_moveto_x != float.MinValue)
                 {
                     switch (curveControlPointCount)
                     {

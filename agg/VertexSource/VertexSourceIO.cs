@@ -38,7 +38,7 @@ namespace MatterHackers.Agg.VertexSource
 						outFile.WriteLine("{0}, {1}, {2}", x, y, flagsAndCommand.ToString());
 						flagsAndCommand = vertexSource.vertex(out x, out y);
 					}
-					while (flagsAndCommand != ShapePath.FlagsAndCommand.CommandStop);
+					while (flagsAndCommand != ShapePath.FlagsAndCommand.Stop);
 				}
 			}
 			else

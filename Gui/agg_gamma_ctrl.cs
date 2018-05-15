@@ -463,7 +463,7 @@ namespace MatterHackers.Agg.UI
 		{
 			x = 0;
 			y = 0;
-			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.CommandLineTo;
+			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.LineTo;
 			switch (m_idx)
 			{
 				case 0:
@@ -474,9 +474,9 @@ namespace MatterHackers.Agg.UI
 					if (m_vertex == 0 ||
 					   m_vertex == 4 ||
 					   m_vertex == 8 ||
-					   m_vertex == 14) cmd = ShapePath.FlagsAndCommand.CommandMoveTo;
+					   m_vertex == 14) cmd = ShapePath.FlagsAndCommand.MoveTo;
 
-					if (m_vertex >= 20) cmd = ShapePath.FlagsAndCommand.CommandStop;
+					if (m_vertex >= 20) cmd = ShapePath.FlagsAndCommand.Stop;
 					x = gridVertexX[m_vertex];
 					y = gridVertexY[m_vertex];
 					m_vertex++;
@@ -492,7 +492,7 @@ namespace MatterHackers.Agg.UI
 					break;
 
 				default:
-					cmd = ShapePath.FlagsAndCommand.CommandStop;
+					cmd = ShapePath.FlagsAndCommand.Stop;
 					break;
 			}
 

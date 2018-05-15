@@ -47,12 +47,12 @@ namespace MatterHackers.DataConverters2D
 				{
 					if (first)
 					{
-						output.Add(point.X / scaling, point.Y / scaling, ShapePath.FlagsAndCommand.CommandMoveTo);
+						output.Add(point.X / scaling, point.Y / scaling, ShapePath.FlagsAndCommand.MoveTo);
 						first = false;
 					}
 					else
 					{
-						output.Add(point.X / scaling, point.Y / scaling, ShapePath.FlagsAndCommand.CommandLineTo);
+						output.Add(point.X / scaling, point.Y / scaling, ShapePath.FlagsAndCommand.LineTo);
 					}
 				}
 

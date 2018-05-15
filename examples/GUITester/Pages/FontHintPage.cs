@@ -80,7 +80,9 @@ namespace MatterHackers.Agg
 				VertexData transformedVertex = vertexData;
 				if (ShapePath.is_vertex(transformedVertex.command))
 				{
-					ApplayYWarp(ref transformedVertex.position.X, ref transformedVertex.position.Y);
+					var position = transformedVertex.position;
+					ApplayYWarp(ref position.X, ref position.Y);
+					transformedVertex.position = position;
 				}
 				yield return transformedVertex;
 			}

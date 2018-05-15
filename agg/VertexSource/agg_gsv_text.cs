@@ -380,7 +380,7 @@ namespace MatterHackers.Agg.VertexSource
 						x = m_CurrentX;
 						y = m_CurrentY;
 						m_status = status.glyph;
-						return ShapePath.FlagsAndCommand.CommandMoveTo;
+						return ShapePath.FlagsAndCommand.MoveTo;
 
 					case status.glyph:
 						if (m_BeginGlyphIndex >= m_EndGlyphIndex)
@@ -407,17 +407,17 @@ namespace MatterHackers.Agg.VertexSource
 						y = m_CurrentY;
 						if (IsAMoveTo_Flag != 0)
 						{
-							return ShapePath.FlagsAndCommand.CommandMoveTo;
+							return ShapePath.FlagsAndCommand.MoveTo;
 						}
 
-						return ShapePath.FlagsAndCommand.CommandLineTo;
+						return ShapePath.FlagsAndCommand.LineTo;
 
 					default:
 						throw new System.Exception("Unknown Status");
 				}
 			}
 
-			return ShapePath.FlagsAndCommand.CommandStop;
+			return ShapePath.FlagsAndCommand.Stop;
 		}
 	};
 

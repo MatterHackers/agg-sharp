@@ -119,36 +119,34 @@ namespace MatterHackers.Agg.VertexSource
 		override public IEnumerable<VertexData> Vertices()
 		{
 			VertexData vertexData = new VertexData();
-			vertexData.command = FlagsAndCommand.CommandMoveTo;
-			vertexData.position.X = originX + radiusX;
-			vertexData.position.Y = originY;
+			vertexData.command = FlagsAndCommand.MoveTo;
+			vertexData.position = new Vector2(originX + radiusX, originY);
 			yield return vertexData;
 
 			double anglePerStep = MathHelper.Tau / (double)numSteps;
 			double angle = 0;
-			vertexData.command = FlagsAndCommand.CommandLineTo;
+			vertexData.command = FlagsAndCommand.LineTo;
 			for (int i = 1; i < numSteps; i++)
 			{
 				angle += anglePerStep;
 
 				if (m_cw)
 				{
-					vertexData.position.X = originX + Math.Cos(MathHelper.Tau - angle) * radiusX;
-					vertexData.position.Y = originY + Math.Sin(MathHelper.Tau - angle) * radiusY;
+					vertexData.position = new Vector2(originX + Math.Cos(MathHelper.Tau - angle) * radiusX,
+						originY + Math.Sin(MathHelper.Tau - angle) * radiusY);
 					yield return vertexData;
 				}
 				else
 				{
-					vertexData.position.X = originX + Math.Cos(angle) * radiusX;
-					vertexData.position.Y = originY + Math.Sin(angle) * radiusY;
+					vertexData.position = new Vector2(originX + Math.Cos(angle) * radiusX, originY + Math.Sin(angle) * radiusY);
 					yield return vertexData;
 				}
 			}
 
 			vertexData.position = new Vector2();
-			vertexData.command = FlagsAndCommand.CommandEndPoly | FlagsAndCommand.FlagClose | FlagsAndCommand.FlagCCW;
+			vertexData.command = FlagsAndCommand.EndPoly | FlagsAndCommand.FlagClose | FlagsAndCommand.FlagCCW;
 			yield return vertexData;
-			vertexData.command = FlagsAndCommand.CommandStop;
+			vertexData.command = FlagsAndCommand.Stop;
 			yield return vertexData;
 		}
 

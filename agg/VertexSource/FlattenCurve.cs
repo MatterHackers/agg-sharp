@@ -141,7 +141,7 @@ namespace MatterHackers.Agg.VertexSource
 				VertexData vertexData = vertexDataEnumerator.Current;
 				switch (vertexData.command)
 				{
-					case ShapePath.FlagsAndCommand.CommandCurve3:
+					case ShapePath.FlagsAndCommand.Curve3:
 						{
 							vertexDataEnumerator.MoveNext();
 							VertexData vertexDataEnd = vertexDataEnumerator.Current;
@@ -155,14 +155,14 @@ namespace MatterHackers.Agg.VertexSource
 								{
 									break;
 								}
-								vertexData = new VertexData(ShapePath.FlagsAndCommand.CommandLineTo, curveIterator.Current.position);
+								vertexData = new VertexData(ShapePath.FlagsAndCommand.LineTo, curveIterator.Current.position);
 								yield return vertexData;
 								lastPosition = vertexData;
 							} while (!ShapePath.is_stop(curveIterator.Current.command));
 						}
 						break;
 
-					case ShapePath.FlagsAndCommand.CommandCurve4:
+					case ShapePath.FlagsAndCommand.Curve4:
 						{
 							vertexDataEnumerator.MoveNext();
 							VertexData vertexDataControl = vertexDataEnumerator.Current;
@@ -178,7 +178,7 @@ namespace MatterHackers.Agg.VertexSource
 								{
 									break;
 								}
-								vertexData = new VertexData(ShapePath.FlagsAndCommand.CommandLineTo, curveIterator.Current.position);
+								vertexData = new VertexData(ShapePath.FlagsAndCommand.LineTo, curveIterator.Current.position);
 								yield return vertexData;
 								lastPosition = vertexData;
 							}

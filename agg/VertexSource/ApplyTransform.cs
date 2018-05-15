@@ -91,7 +91,9 @@ namespace MatterHackers.Agg.VertexSource
 				VertexData transformedVertex = vertexData;
 				if (ShapePath.is_vertex(transformedVertex.command))
 				{
-					transformToApply.transform(ref transformedVertex.position.X, ref transformedVertex.position.Y);
+					var position = transformedVertex.position;
+					transformToApply.transform(ref position.X, ref position.Y);
+					transformedVertex.position = position;
 				}
 				yield return transformedVertex;
 			}

@@ -40,7 +40,7 @@ namespace MatterHackers.Agg.VertexSource
 		public span_gouraud()
 		{
 			m_vertex = (0);
-			m_cmd[0] = ShapePath.FlagsAndCommand.CommandStop;
+			m_cmd[0] = ShapePath.FlagsAndCommand.Stop;
 		}
 
 		public span_gouraud(Color c1,
@@ -81,10 +81,10 @@ namespace MatterHackers.Agg.VertexSource
 			m_coord[1].y = m_y[1] = y2;
 			m_coord[2].x = m_x[2] = x3;
 			m_coord[2].y = m_y[2] = y3;
-			m_cmd[0] = ShapePath.FlagsAndCommand.CommandMoveTo;
-			m_cmd[1] = ShapePath.FlagsAndCommand.CommandLineTo;
-			m_cmd[2] = ShapePath.FlagsAndCommand.CommandLineTo;
-			m_cmd[3] = ShapePath.FlagsAndCommand.CommandStop;
+			m_cmd[0] = ShapePath.FlagsAndCommand.MoveTo;
+			m_cmd[1] = ShapePath.FlagsAndCommand.LineTo;
+			m_cmd[2] = ShapePath.FlagsAndCommand.LineTo;
+			m_cmd[3] = ShapePath.FlagsAndCommand.Stop;
 
 			if (dilation != 0.0)
 			{
@@ -104,10 +104,10 @@ namespace MatterHackers.Agg.VertexSource
 				agg_math.calc_intersection(m_x[2], m_y[2], m_x[3], m_y[3],
 								  m_x[4], m_y[4], m_x[5], m_y[5],
 								  out m_coord[2].x, out m_coord[2].y);
-				m_cmd[3] = ShapePath.FlagsAndCommand.CommandLineTo;
-				m_cmd[4] = ShapePath.FlagsAndCommand.CommandLineTo;
-				m_cmd[5] = ShapePath.FlagsAndCommand.CommandLineTo;
-				m_cmd[6] = ShapePath.FlagsAndCommand.CommandStop;
+				m_cmd[3] = ShapePath.FlagsAndCommand.LineTo;
+				m_cmd[4] = ShapePath.FlagsAndCommand.LineTo;
+				m_cmd[5] = ShapePath.FlagsAndCommand.LineTo;
+				m_cmd[6] = ShapePath.FlagsAndCommand.Stop;
 			}
 		}
 

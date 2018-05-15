@@ -259,7 +259,7 @@ namespace MatterHackers.Agg.Font
 			double x, y;
 			ShapePath.FlagsAndCommand curCommand = glyphForCharacter.vertex(out x, out y);
 			RectangleDouble bounds = new RectangleDouble(x, y, x, y);
-			while (curCommand != ShapePath.FlagsAndCommand.CommandStop)
+			while (curCommand != ShapePath.FlagsAndCommand.Stop)
 			{
 				bounds.ExpandToInclude(x, y);
 				curCommand = glyphForCharacter.vertex(out x, out y);
