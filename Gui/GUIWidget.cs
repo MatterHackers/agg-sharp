@@ -561,7 +561,7 @@ namespace MatterHackers.Agg.UI
 
 		private bool containsFocus = false;
 
-		private int layoutSuspendCount;
+		protected int layoutSuspendCount { get; private set; }
 
 		public event EventHandler Layout;
 
