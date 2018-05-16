@@ -29,13 +29,17 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.VectorMath;
 using System;
+using System.Collections.ObjectModel;
 using System.Linq;
 
-namespace MatterHackers.Agg.UI
+namespace MatterHackers.Agg.UI.TreeView
 {
-	public class TreeViewNode : ScrollableWidget
+	public class TreeNode : ScrollableWidget
 	{
-		public TreeViewNode()
+		public object Tag { get; set; }
+		public ObservableCollection<TreeNode> Nodes { get; } = new ObservableCollection<TreeNode>();
+
+		public TreeNode()
 		{
 
 		}
