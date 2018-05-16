@@ -115,10 +115,13 @@ namespace MatterHackers.Agg.VertexSource
 				int numSteps = (int)((endAngle - startAngle) / flatenDeltaAngle);
                 for (int i=0; i<=numSteps; i++)
 				{
-					vertexData.position = new Vector2(origin.X + Math.Cos(angle) * radius.X, origin.Y + Math.Sin(angle) * radius.Y);
-					yield return vertexData;
+					if (angle < endAngle)
+					{
+						vertexData.position = new Vector2(origin.X + Math.Cos(angle) * radius.X, origin.Y + Math.Sin(angle) * radius.Y);
+						yield return vertexData;
 
-					angle += flatenDeltaAngle;
+						angle += flatenDeltaAngle;
+					}
 				}
 
 				vertexData.position = new Vector2(origin.X + Math.Cos(endAngle) * radius.X, origin.Y + Math.Sin(endAngle) * radius.Y);
