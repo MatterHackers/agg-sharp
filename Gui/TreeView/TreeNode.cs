@@ -34,14 +34,20 @@ using System.Linq;
 
 namespace MatterHackers.Agg.UI.TreeView
 {
-	public class TreeNode : ScrollableWidget
+	public class TreeNode : FlowLayoutWidget
 	{
 		public object Tag { get; set; }
 		public ObservableCollection<TreeNode> Nodes { get; } = new ObservableCollection<TreeNode>();
+		public Color TextColor { get; set; }
+		public int PointSize { get; set; }
 
 		public TreeNode()
+			: base(FlowDirection.TopToBottom)
 		{
+		}
 
+		public void Expand()
+		{
 		}
 	}
 }

@@ -464,6 +464,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void RenderTransformedPath(Matrix4X4 transform, IVertexSource path, Color color, bool doDepthTest)
 		{
+			GL.Disable(EnableCap.CullFace);
 			GL.Disable(EnableCap.Texture2D);
 
 			GL.MatrixMode(MatrixMode.Modelview);

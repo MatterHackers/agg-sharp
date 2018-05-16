@@ -38,6 +38,9 @@ namespace MatterHackers.Agg.UI.TreeView
 	public class TreeView : ScrollableWidget
 	{
 		public ObservableCollection<TreeNode> Nodes { get; } = new ObservableCollection<TreeNode>();
+		FlowLayoutWidget content;
+		public Color TextColor { get; set; } = Color.Black;
+		public double PointSize { get; set; } = 12;
 
 		public TreeView()
 			: this(0, 0)
@@ -48,11 +51,35 @@ namespace MatterHackers.Agg.UI.TreeView
 		public TreeView(int width, int height)
 			: base(width, height)
 		{
+			content = new FlowLayoutWidget()
+			{
+				VAnchor = VAnchor.Fit | VAnchor.Top
+			};
+			this.AddChild(content);
 			Nodes.CollectionChanged += Nodes_CollectionChanged;
 		}
 
 		private void Nodes_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
 		{
+			content.CloseAllChildren();
+			var currentNodes = Nodes.ToArray();
+			AddNodes(currentNodes);
+		}
+
+		private void AddNodes(TreeNode[] currentNodes)
+		{
+			foreach (var node in currentNodes)
+			{
+				var childNodes = node.Nodes.ToArray();
+				if (childNodes.Length > 0)
+				{
+					AddNodes(childNodes);
+				}
+				else
+				{
+					content.AddChild(new TextWidget(node.Text, pointSize: PointSize, textColor: TextColor));
+				}
+			}
 		}
 	}
 }
