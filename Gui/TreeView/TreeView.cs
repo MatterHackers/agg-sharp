@@ -27,59 +27,331 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.Agg.Image;
 using MatterHackers.VectorMath;
 using System;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.Linq;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace MatterHackers.Agg.UI.TreeView
 {
 	public class TreeView : ScrollableWidget
 	{
-		public ObservableCollection<TreeNode> Nodes { get; } = new ObservableCollection<TreeNode>();
-		FlowLayoutWidget content;
-		public Color TextColor { get; set; } = Color.Black;
-		public double PointSize { get; set; } = 12;
-
-		public TreeView()
-			: this(0, 0)
+		public TreeView(TreeNode topNode)
+			: this(topNode, 0, 0)
 		{
-
+			AutoScroll = true;
+			TopNode = new TreeNode();
+			AddChild(TopNode);
 		}
 
-		public TreeView(int width, int height)
+		public TreeView(TreeNode topNode, int width, int height)
 			: base(width, height)
 		{
-			content = new FlowLayoutWidget()
-			{
-				VAnchor = VAnchor.Fit | VAnchor.Top
-			};
-			this.AddChild(content);
-			Nodes.CollectionChanged += Nodes_CollectionChanged;
+			TopNode = topNode;
+			HAnchor = HAnchor.Stretch;
+			VAnchor = VAnchor.Stretch;
+
+			AddChild(TopNode);
 		}
 
-		private void Nodes_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+		#region Events
+
+		public event EventHandler AfterCheck;
+
+		public event EventHandler AfterCollapse;
+
+		public event EventHandler AfterExpand;
+
+		public event EventHandler AfterLabelEdit;
+
+		public event EventHandler AfterSelect;
+
+		public event EventHandler BeforeCheck;
+
+		public event EventHandler BeforeCollapse;
+
+		public event EventHandler BeforeExpand;
+
+		public event EventHandler BeforeLabelEdit;
+
+		public event EventHandler BeforeSelect;
+
+		public event EventHandler NodeMouseClick;
+
+		public event EventHandler NodeMouseDoubleClick;
+
+		public event EventHandler NodeMouseHover;
+
+		#endregion Events
+
+		#region Properties
+
+		//
+		// Summary:
+		//     Gets or sets a value indicating whether check boxes are displayed next to the
+		//     tree nodes in the tree view control.
+		//
+		// Returns:
+		//     true if a check box is displayed next to each tree node in the tree view control;
+		//     otherwise, false. The default is false.
+		public bool CheckBoxes { get; set; }
+
+		//
+		// Summary:
+		//     Gets or sets a value indicating whether the selection highlight spans the width
+		//     of the tree view control.
+		//
+		// Returns:
+		//     true if the selection highlight spans the width of the tree view control; otherwise,
+		//     false. The default is false.
+		public bool FullRowSelect { get; set; }
+
+		//
+		// Summary:
+		//     Gets or sets a value indicating whether the selected tree node remains highlighted
+		//     even when the tree view has lost the focus.
+		//
+		// Returns:
+		//     true if the selected tree node is not highlighted when the tree view has lost
+		//     the focus; otherwise, false. The default is true.
+		public bool HideSelection { get; set; }
+
+		//
+		// Summary:
+		//     Gets or sets the key of the default image for each node in the TreeView
+		//     control when it is in an unselected state.
+		//
+		// Returns:
+		//     The key of the default image shown for each node TreeView
+		//     control when the node is in an unselected state.
+		public string ImageKey { get; set; }
+
+		//
+		// Summary:
+		//     Gets or sets the distance to indent each child tree node level.
+		//
+		// Returns:
+		//     The distance, in pixels, to indent each child tree node level. The default value
+		//     is 19.
+		//
+		// Exceptions:
+		//   T:System.ArgumentOutOfRangeException:
+		//     The assigned value is less than 0 (see Remarks).-or- The assigned value is greater
+		//     than 32,000.
+		public int Indent { get; set; }
+
+		//
+		// Summary:
+		//     Gets or sets the height of each tree node in the tree view control.
+		//
+		// Returns:
+		//     The height, in pixels, of each tree node in the tree view.
+		//
+		// Exceptions:
+		//   T:System.ArgumentOutOfRangeException:
+		//     The assigned value is less than one.-or- The assigned value is greater than the
+		//     System.Int16.MaxValue value.
+		public int ItemHeight { get; set; }
+
+		//
+		// Summary:
+		//     Gets or sets a value indicating whether the label text of the tree nodes can
+		//     be edited.
+		//
+		// Returns:
+		//     true if the label text of the tree nodes can be edited; otherwise, false. The
+		//     default is false.
+		public bool LabelEdit { get; set; }
+
+		//
+		// Summary:
+		//     Gets or sets the color of the lines connecting the nodes of the TreeView
+		//     control.
+		//
+		// Returns:
+		//     The System.Drawing.Color of the lines connecting the tree nodes.
+		public Color LineColor { get; set; }
+
+		//
+		// Summary:
+		//     Gets or sets the delimiter string that the tree node path uses.
+		//
+		// Returns:
+		//     The delimiter string that the tree node TreeNode.FullPath
+		//     property uses. The default is the backslash character (\).
+		public string PathSeparator { get; set; }
+
+		public Color TextColor { get; set; } = Color.Black;
+
+		public double PointSize { get; set; } = 12;
+
+		//
+		// Summary:
+		//     Gets or sets a value indicating whether the tree view control displays scroll
+		//     bars when they are needed.
+		//
+		// Returns:
+		//     true if the tree view control displays scroll bars when they are needed; otherwise,
+		//     false. The default is true.
+		public bool Scrollable { get; set; }
+
+		//
+		public ImageBuffer SelectedImage { get; set; }
+
+		//
+		// Summary:
+		//     Gets or sets the tree node that is currently selected in the tree view control.
+		//
+		// Returns:
+		//     The TreeNode that is currently selected in the tree view
+		//     control.
+		public TreeNode SelectedNode { get; set; }
+
+		public bool ShowLines { get; set; }
+		public bool ShowNodeToolTips { get; set; }
+		public bool ShowPlusMinus { get; set; }
+		public bool ShowRootLines { get; set; }
+		public bool Sorted { get; set; }
+		public TreeNode TopNode { get; }
+
+		public IComparer TreeViewNodeSorter { get; set; }
+
+		//
+		// Summary:
+		//     Gets the number of tree nodes that can be fully visible in the tree view control.
+		//
+		// Returns:
+		//     The number of TreeNode items that can be fully visible in
+		//     the TreeView control.
+		public int VisibleCount { get; }
+
+		#endregion Properties
+
+		//
+		// Summary:
+		//     Disables any redrawing of the tree view.
+		public void BeginUpdate()
 		{
-			content.CloseAllChildren();
-			var currentNodes = Nodes.ToArray();
-			AddNodes(currentNodes);
+			throw new NotImplementedException();
 		}
 
-		private void AddNodes(TreeNode[] currentNodes)
+		//
+		// Summary:
+		//     Collapses all the tree nodes.
+		public void CollapseAll()
 		{
-			foreach (var node in currentNodes)
-			{
-				var childNodes = node.Nodes.ToArray();
-				if (childNodes.Length > 0)
-				{
-					AddNodes(childNodes);
-				}
-				else
-				{
-					content.AddChild(new TextWidget(node.Text, pointSize: PointSize, textColor: TextColor));
-				}
-			}
+			throw new NotImplementedException();
+		}
+
+		//
+		// Summary:
+		//     Enables the redrawing of the tree view.
+		public void EndUpdate()
+		{
+			throw new NotImplementedException();
+		}
+
+		//
+		// Summary:
+		//     Expands all the tree nodes.
+		public void ExpandAll()
+		{
+			throw new NotImplementedException();
+		}
+
+		//
+		// Summary:
+		//     Retrieves the tree node that is at the specified point.
+		//
+		// Parameters:
+		//   pt:
+		//     The System.Drawing.Point to evaluate and retrieve the node from.
+		//
+		// Returns:
+		//     The TreeNode at the specified point, in tree view (client)
+		//     coordinates, or null if there is no node at that location.
+		public TreeNode GetNodeAt(Vector2 pt)
+		{
+			throw new NotImplementedException();
+		}
+
+		/// <summary>
+		/// Retrieves the number of tree nodes, optionally including those in all subtrees,
+		/// assigned to the tree view control.
+		/// </summary>
+		/// <param name="includeSubTrees">true to count the TreeNode items that the subtrees contain;
+		/// otherwise, false.</param>
+		/// <returns>The number of tree nodes, optionally including those in all subtrees, assigned
+		/// to the tree view control.</returns>
+		public int GetNodeCount(bool includeSubTrees)
+		{
+			throw new NotImplementedException();
+		}
+
+		public void Sort()
+		{
+			throw new NotImplementedException();
+		}
+
+		protected internal virtual void OnAfterCollapse(EventArgs e)
+		{
+			throw new NotImplementedException();
+		}
+
+		protected internal virtual void OnBeforeCollapse(EventArgs e)
+		{
+			throw new NotImplementedException();
+		}
+
+		protected virtual void OnAfterCheck(EventArgs e)
+		{
+			throw new NotImplementedException();
+		}
+
+		protected virtual void OnAfterExpand(EventArgs e)
+		{
+			throw new NotImplementedException();
+		}
+
+		protected virtual void OnAfterLabelEdit(EventArgs e)
+		{
+			throw new NotImplementedException();
+		}
+
+		protected virtual void OnAfterSelect(EventArgs e)
+		{
+			throw new NotImplementedException();
+		}
+
+		protected virtual void OnBeforeCheck(EventArgs e)
+		{
+			throw new NotImplementedException();
+		}
+
+		protected virtual void OnBeforeExpand(EventArgs e)
+		{
+			throw new NotImplementedException();
+		}
+
+		protected virtual void OnBeforeLabelEdit(EventArgs e)
+		{
+			throw new NotImplementedException();
+		}
+
+		protected virtual void OnBeforeSelect(EventArgs e)
+		{
+			throw new NotImplementedException();
+		}
+
+		protected virtual void OnNodeMouseClick(EventArgs e)
+		{
+			throw new NotImplementedException();
+		}
+
+		protected virtual void OnNodeMouseDoubleClick(EventArgs e)
+		{
+			throw new NotImplementedException();
 		}
 	}
 }
