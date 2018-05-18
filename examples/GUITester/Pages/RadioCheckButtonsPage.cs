@@ -21,14 +21,14 @@ namespace MatterHackers.Agg
 			topToBottom.AddChild(new CheckBox(fourStates));
 
 			GuiWidget normalPressed = new TextWidget("0 4state");
-			normalPressed.BackgroundColor = RGBA_Bytes.Gray;
+			normalPressed.BackgroundColor = Color.Gray;
 			GuiWidget downPressed = new TextWidget("1 4state");
-			downPressed.BackgroundColor = RGBA_Bytes.Gray;
+			downPressed.BackgroundColor = Color.Gray;
 
 			GuiWidget normalHover = new TextWidget("0 4state");
-			normalHover.BackgroundColor = RGBA_Bytes.Yellow;
+			normalHover.BackgroundColor = Color.Yellow;
 			GuiWidget downHover = new TextWidget("1 4state");
-			downHover.BackgroundColor = RGBA_Bytes.Yellow;
+			downHover.BackgroundColor = Color.Yellow;
 
 			CheckBoxViewStates fourStates2 = new CheckBoxViewStates(new TextWidget("0 4state"), normalHover, normalPressed, new TextWidget("1 4state"), downHover, downPressed, new TextWidget("disabled"));
 			topToBottom.AddChild(new CheckBox(fourStates2));
@@ -52,7 +52,7 @@ namespace MatterHackers.Agg
 
 			AddChild(topToBottom);
 
-			topToBottom.VAnchor = UI.VAnchor.ParentTop;
+			topToBottom.VAnchor = UI.VAnchor.Top;
 		}
 	}
 }

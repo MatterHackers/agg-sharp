@@ -30,7 +30,7 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -41,7 +41,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -51,97 +51,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x86</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release64|AnyCPU'">
-    <OutputPath>bin\Release64\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <CodeAnalysisLogFile>bin\Release\MatterHackers.Agg.UI.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
-    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
-    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRuleSetDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
-    <CodeAnalysisRuleDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug64|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\Debug64\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x86</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
-    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
-    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
-    <WarningLevel>4</WarningLevel>
-    <Optimize>false</Optimize>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\x64\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
-    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
-    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
-    <WarningLevel>4</WarningLevel>
-    <Optimize>false</Optimize>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>bin\x64\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
-    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
-    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release64|x64'">
-    <OutputPath>bin\x64\Release64\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <CodeAnalysisLogFile>bin\Release\MatterHackers.Agg.UI.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
-    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
-    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRuleSetDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
-    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
-    <CodeAnalysisRuleDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
-    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
-    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug64|x64'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\x64\Debug64\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
-    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
-    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
-    <WarningLevel>4</WarningLevel>
-    <Optimize>false</Optimize>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
@@ -149,43 +59,36 @@
     <Reference Include="System.Data" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AppWidgetFactory.cs" />
     <Compile Include="agg_bezier_ctrl.cs" />
     <Compile Include="agg_gamma_ctrl.cs" />
     <Compile Include="agg_gamma_spline.cs" />
     <Compile Include="agg_spline_ctrl.cs" />
+    <Compile Include="Animation.cs" />
     <Compile Include="AverageMillisecondTimer.cs" />
     <Compile Include="Button\ButtonViewText.cs" />
     <Compile Include="Button\ButtonViewThreeImage.cs" />
     <Compile Include="Button\Button.cs" />
-    <Compile Include="Button\ButtonBase.cs" />
     <Compile Include="CheckBox\CheckBox.cs" />
     <Compile Include="CheckBox\CheckBoxViewSates.cs" />
     <Compile Include="CheckBox\CheckBoxViewText.cs" />
     <Compile Include="Clipboard\Clipboard.cs" />
     <Compile Include="DrawEventArgs.cs" />
-    <Compile Include="FileDialogs\AutomationFileDialogCreator.cs" />
-    <Compile Include="FileDialogs\FileDialogCreator.cs" />
     <Compile Include="FLowLeftRightWithWrapping.cs" />
+    <Compile Include="IDemoApp.cs" />
     <Compile Include="InvalidateEventArgs.cs" />
     <Compile Include="DefaultViewFactory.cs" />
     <Compile Include="DiagnosticsWidget.cs" />
-    <Compile Include="FileDialogs\FileDialog.cs" />
-    <Compile Include="FileDialogs\FileDialogParams.cs" />
-    <Compile Include="FileDialogs\OpenFileDialogPrams.cs" />
-    <Compile Include="FileDialogs\SaveFileDialogParams.cs" />
-    <Compile Include="FileDialogs\SelectFolderDialogParams.cs" />
-    <Compile Include="FileDropEventArgs.cs" />
     <Compile Include="FlowLayoutWidget.cs" />
     <Compile Include="GroupBox.cs" />
     <Compile Include="Keyboard.cs" />
+    <Compile Include="Menu\DropArrow.cs" />
     <Compile Include="PerformanceTimer\PerformancePanel.cs" />
     <Compile Include="PerformanceTimer\PerformanceTimer.cs" />
     <Compile Include="ProgressControl.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RelativeTime.cs" />
+    <Compile Include="ResponsiveImageWidget.cs" />
     <Compile Include="SoftKeyboard.cs" />
-    <Compile Include="SystemWindow\OsMappingWidgetFactory.cs" />
     <Compile Include="ImageWidget.cs" />
     <Compile Include="KeyEventArgs.cs" />
     <Compile Include="KeyPressEventArgs.cs" />
@@ -200,16 +103,15 @@
     <Compile Include="Menu\MenuItem.cs" />
     <Compile Include="Menu\MenuItemStatesView.cs" />
     <Compile Include="Menu\MenuStatesView.cs" />
-    <Compile Include="Menu\OpenMenuContents.cs" />
+    <Compile Include="Menu\PopupWidget.cs" />
     <Compile Include="MessageBox.cs" />
     <Compile Include="MouseButtons.cs" />
     <Compile Include="MouseEventArgs.cs" />
     <Compile Include="RadioButton\RadioButtonViewStates.cs" />
     <Compile Include="RadioButton\RadioButtonViewText.cs" />
     <Compile Include="ImageSequenceWidget.cs" />
-    <Compile Include="StringEventArgs.cs" />
-    <Compile Include="SystemWindow\AbstractOsMappingWidget.cs" />
-    <Compile Include="SystemWindow\SystemWindowCreatorPlugin.cs" />
+    <Compile Include="SystemWindow\ISystemWindowProvider.cs" />
+    <Compile Include="SystemWindow\IPlatformWindow.cs" />
     <Compile Include="SystemWindow\ToolTipManager.cs" />
     <Compile Include="TextWidgets\InternalNumberEdit.cs" />
     <Compile Include="TextWidgets\NumberEdit.cs" />
@@ -237,6 +139,8 @@
     <Compile Include="Themes\IThemeColors.cs" />
     <Compile Include="Themes\ThemeColors.cs" />
     <Compile Include="Themes\ActiveTheme.cs" />
+    <Compile Include="TreeView\TreeNode.cs" />
+    <Compile Include="TreeView\TreeView.cs" />
     <Compile Include="UiThread.cs" />
     <Compile Include="WidgetClosingEnventArgs.cs" />
     <Compile Include="WindowWidget\TitleBarWidget.cs" />
@@ -273,6 +177,8 @@
       <Name>Agg</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Platform\" />
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <ItemGroup />
 </Project>

@@ -22,7 +22,7 @@ namespace MatterHackers.RayTracer
 
 		public BoxShape(Vector3 minXYZ, Vector3 maxXYZ, MaterialAbstract material)
 		{
-			if (maxXYZ.x < minXYZ.x || maxXYZ.y < minXYZ.y || maxXYZ.z < minXYZ.z)
+			if (maxXYZ.X < minXYZ.X || maxXYZ.Y < minXYZ.Y || maxXYZ.Z < minXYZ.Z)
 			{
 				throw new ArgumentException("All values of min must be less than all values in max.");
 			}
@@ -34,9 +34,9 @@ namespace MatterHackers.RayTracer
 
 		public override double GetSurfaceArea()
 		{
-			double frontAndBack = (maxXYZ.x - minXYZ.x) * (maxXYZ.z - minXYZ.z) * 2;
-			double leftAndRight = (maxXYZ.y - minXYZ.y) * (maxXYZ.z - minXYZ.z) * 2;
-			double topAndBottom = (maxXYZ.x - minXYZ.x) * (maxXYZ.y - minXYZ.y) * 2;
+			double frontAndBack = (maxXYZ.X - minXYZ.X) * (maxXYZ.Z - minXYZ.Z) * 2;
+			double leftAndRight = (maxXYZ.Y - minXYZ.Y) * (maxXYZ.Z - minXYZ.Z) * 2;
+			double topAndBottom = (maxXYZ.X - minXYZ.X) * (maxXYZ.Y - minXYZ.Y) * 2;
 			return frontAndBack + leftAndRight + topAndBottom;
 		}
 
@@ -99,12 +99,12 @@ bool Box::intersect(const Ray &r, float t0, float t1) const {
 			minAxis = 0;
 			maxAxis = 0;
 			// we calculate distance to the intersection with the x planes of the box
-			minDistFound = (this[(int)ray.sign[0]].x - ray.origin.x) * ray.oneOverDirection.x;
-			maxDistFound = (this[1 - (int)ray.sign[0]].x - ray.origin.x) * ray.oneOverDirection.x;
+			minDistFound = (this[(int)ray.sign[0]].X - ray.origin.X) * ray.oneOverDirection.X;
+			maxDistFound = (this[1 - (int)ray.sign[0]].X - ray.origin.X) * ray.oneOverDirection.X;
 
 			// now find the distance to the y planes of the box
-			double minDistToY = (this[(int)ray.sign[1]].y - ray.origin.y) * ray.oneOverDirection.y;
-			double maxDistToY = (this[1 - (int)ray.sign[1]].y - ray.origin.y) * ray.oneOverDirection.y;
+			double minDistToY = (this[(int)ray.sign[1]].Y - ray.origin.Y) * ray.oneOverDirection.Y;
+			double maxDistToY = (this[1 - (int)ray.sign[1]].Y - ray.origin.Y) * ray.oneOverDirection.Y;
 
 			if ((minDistFound > maxDistToY) || (minDistToY > maxDistFound))
 			{
@@ -124,8 +124,8 @@ bool Box::intersect(const Ray &r, float t0, float t1) const {
 			}
 
 			// and finaly the z planes
-			double minDistToZ = (this[(int)ray.sign[2]].z - ray.origin.z) * ray.oneOverDirection.z;
-			double maxDistToZ = (this[1 - (int)ray.sign[2]].z - ray.origin.z) * ray.oneOverDirection.z;
+			double minDistToZ = (this[(int)ray.sign[2]].Z - ray.origin.Z) * ray.oneOverDirection.Z;
+			double maxDistToZ = (this[1 - (int)ray.sign[2]].Z - ray.origin.Z) * ray.oneOverDirection.Z;
 
 			if ((minDistFound > maxDistToZ) || (minDistToZ > maxDistFound))
 			{
@@ -149,28 +149,6 @@ bool Box::intersect(const Ray &r, float t0, float t1) const {
 			return oneHitIsWithinLimits;
 		}
 
-		public override RGBA_Floats GetColor(IntersectInfo info)
-		{
-			if (Material.HasTexture)
-			{
-				throw new NotImplementedException();
-#if false
-                //Vector vecU = new Vector(hit.y - Position.y, hit.z - Position.z, Position.x-hit.x);
-                Vector3 Position = Transform.Position;
-                Vector3 vecU = new Vector3D((P1.y + P2.y) / 2 - Position.y, (P1.z + P2.z) / 2 - Position.z, Position.x - (P1.x + P2.x) / 2).GetNormal();
-                Vector3 vecV = vecU.Cross((P1 + P2) / 2 - Position).GetNormal();
-
-                double u = Vector3.Dot(info.hitPosition, vecU);
-                double v = Vector3.Dot(info.hitPosition, vecV);
-                return Material.GetColor(u, v);
-#endif
-			}
-			else
-			{
-				return Material.GetColor(0, 0);
-			}
-		}
-
 		public override IEnumerable IntersectionIterator(Ray ray)
 		{
 			double minDistFound;
@@ -185,7 +163,7 @@ bool Box::intersect(const Ray &r, float t0, float t1) const {
 					IntersectInfo info = new IntersectInfo();
 					info.hitType = IntersectionType.FrontFace;
 					info.closestHitObject = this;
-					info.hitPosition = ray.origin + ray.directionNormal * minDistFound;
+					info.HitPosition = ray.origin + ray.directionNormal * minDistFound;
 					info.normalAtHit[minAxis] = ray.sign[minAxis] == Ray.Sign.negative ? 1 : -1; // you hit the side that is oposite your sign
 					info.distanceToHit = minDistFound;
 					yield return info;
@@ -196,7 +174,7 @@ bool Box::intersect(const Ray &r, float t0, float t1) const {
 					IntersectInfo info = new IntersectInfo();
 					info.hitType = IntersectionType.BackFace;
 					info.closestHitObject = this;
-					info.hitPosition = ray.origin + ray.directionNormal * maxDistFound;
+					info.HitPosition = ray.origin + ray.directionNormal * maxDistFound;
 					info.normalAtHit[maxAxis] = ray.sign[maxAxis] == Ray.Sign.negative ? 1 : -1;
 					info.distanceToHit = maxDistFound;
 					yield return info;
@@ -230,7 +208,7 @@ bool Box::intersect(const Ray &r, float t0, float t1) const {
 							return info;
 						}
 						info.closestHitObject = this;
-						info.hitPosition = ray.origin + ray.directionNormal * minDistFound;
+						info.HitPosition = ray.origin + ray.directionNormal * minDistFound;
 						info.normalAtHit[minAxis] = ray.sign[minAxis] == Ray.Sign.negative ? 1 : -1; // you hit the side that is oposite your sign
 						info.distanceToHit = minDistFound;
 					}
@@ -245,7 +223,7 @@ bool Box::intersect(const Ray &r, float t0, float t1) const {
 							return info;
 						}
 						info.closestHitObject = this;
-						info.hitPosition = ray.origin + ray.directionNormal * maxDistFound;
+						info.HitPosition = ray.origin + ray.directionNormal * maxDistFound;
 						info.normalAtHit[maxAxis] = ray.sign[maxAxis] == Ray.Sign.negative ? 1 : -1;
 						info.distanceToHit = maxDistFound;
 					}
@@ -257,7 +235,12 @@ bool Box::intersect(const Ray &r, float t0, float t1) const {
 
 		public override string ToString()
 		{
-			return string.Format("Box ({0},{1},{2})-({3},{4},{5})", minXYZ.x, minXYZ.y, minXYZ.z, maxXYZ.x, maxXYZ.y, maxXYZ.z);
+			return string.Format("Box ({0},{1},{2})-({3},{4},{5})", minXYZ.X, minXYZ.Y, minXYZ.Z, maxXYZ.X, maxXYZ.Y, maxXYZ.Z);
+		}
+
+		public override (double u, double v) GetUv(IntersectInfo info)
+		{
+			throw new NotImplementedException();
 		}
 	}
 }

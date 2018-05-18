@@ -52,9 +52,9 @@ namespace RockBlaster
 		{
 			Affine Final = Affine.NewIdentity();
 			Final *= Affine.NewRotation(m_Rotation);
-			Final *= Affine.NewTranslation(m_Position.x, m_Position.y);
+			Final *= Affine.NewTranslation(m_Position.X, m_Position.Y);
 			var TransformedShip = new VertexSourceApplyTransform(ellipseShape, Final);
-			destRenderer.Render(TransformedShip, new RGBA_Bytes(.9, .4, .2, 1));
+			destRenderer.Render(TransformedShip, new Color(.9, .4, .2, 1));
 		}
 
 		public override void Update(double numSecondsPassed)

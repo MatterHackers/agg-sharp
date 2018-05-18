@@ -4,6 +4,7 @@ using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using System;
+using MatterHackers.Agg.UI.Examples;
 
 namespace MatterHackers.Agg
 {
@@ -16,7 +17,7 @@ namespace MatterHackers.Agg
 			m_size = size;
 		}
 
-		public void draw(ScanlineRasterizer ras, IScanlineCache sl, IImageByte destImage, RGBA_Bytes color,
+		public void draw(ScanlineRasterizer ras, IScanlineCache sl, IImageByte destImage, Color color,
 				  double x, double y)
 		{
 			ras.reset();
@@ -41,7 +42,7 @@ namespace MatterHackers.Agg
 			m_square = new square(size);
 		}
 
-		protected override void RenderSolidSingleScanLine(IImageByte destImage, IScanlineCache scanLineCache, RGBA_Bytes color)
+		protected override void RenderSolidSingleScanLine(IImageByte destImage, IScanlineCache scanLineCache, Color color)
 		{
 			int y = scanLineCache.y();
 			int num_spans = scanLineCache.num_spans();
@@ -58,7 +59,7 @@ namespace MatterHackers.Agg
 				{
 					int a = (ManagedCoversArray[coverIndex++] * color.Alpha0To255) >> 8;
 					m_square.draw(destImage.NewGraphics2D().Rasterizer, m_sl, destImage,
-									new RGBA_Bytes(color.Red0To255, color.Green0To255, color.Blue0To255, a),
+									new Color(color.Red0To255, color.Green0To255, color.Blue0To255, a),
 									x, y);
 					++x;
 				}
@@ -69,7 +70,7 @@ namespace MatterHackers.Agg
 		}
 	}
 
-	public class aa_demo : GuiWidget
+	public class aa_demo : GuiWidget, IDemoApp
 	{
 		private double[] m_x = new double[3];
 		private double[] m_y = new double[3];
@@ -105,6 +106,16 @@ namespace MatterHackers.Agg
 			gammaSlider.Value = 1.0;
 		}
 
+		public string Title { get; } = "Zoomed Anti-Aliasing";
+
+		public string DemoCategory { get; } = "Vector";
+
+		public string DemoDescription { get; } = "Demonstration of the Anti-Aliasing principle with Subpixel Accuracy. The triangle "
+				+ "is rendered two times, with its “natural” size (at the bottom-left) and enlarged. "
+				+ "To draw the enlarged version there is a special scanline renderer written (see "
+				+ "class renderer_enlarged in the source code). You can drag the whole triangle as well "
+				+ "as each vertex of it. Also change “Gamma” to see how it affects the quality of Anti-Aliasing.";
+
 		public override void OnParentChanged(EventArgs e)
 		{
 			AnchorAll();
@@ -128,7 +139,7 @@ namespace MatterHackers.Agg
 			ImageClippingProxy clippingProxyNormal = new ImageClippingProxy(widgetsSubImage);
 			ImageClippingProxy clippingProxyGamma = new ImageClippingProxy(rasterGamma);
 
-			clippingProxyNormal.clear(new RGBA_Floats(1, 1, 1));
+			clippingProxyNormal.clear(new ColorF(1, 1, 1));
 
 			ScanlineRasterizer rasterizer = new ScanlineRasterizer();
 			scanline_unpacked_8 sl = new scanline_unpacked_8();
@@ -141,14 +152,14 @@ namespace MatterHackers.Agg
 			rasterizer.move_to_d(m_x[0] / size_mul, m_y[0] / size_mul);
 			rasterizer.line_to_d(m_x[1] / size_mul, m_y[1] / size_mul);
 			rasterizer.line_to_d(m_x[2] / size_mul, m_y[2] / size_mul);
-			ren_en.RenderSolid(clippingProxyGamma, rasterizer, sl, RGBA_Bytes.Black);
+			ren_en.RenderSolid(clippingProxyGamma, rasterizer, sl, Color.Black);
 
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
-			scanlineRenderer.RenderSolid(clippingProxyGamma, rasterizer, sl, RGBA_Bytes.Black);
+			scanlineRenderer.RenderSolid(clippingProxyGamma, rasterizer, sl, Color.Black);
 
 			rasterizer.gamma(new gamma_none());
 
-			PathStorage ps = new PathStorage();
+			VertexStorage ps = new VertexStorage();
 			Stroke pg = new Stroke(ps);
 			pg.width(2);
 
@@ -158,7 +169,7 @@ namespace MatterHackers.Agg
 			ps.LineTo(m_x[2], m_y[2]);
 			ps.LineTo(m_x[0], m_y[0]);
 			rasterizer.add_path(pg);
-			scanlineRenderer.RenderSolid(clippingProxyNormal, rasterizer, sl, new RGBA_Bytes(0, 150, 160, 200));
+			scanlineRenderer.RenderSolid(clippingProxyNormal, rasterizer, sl, new Color(0, 150, 160, 200));
 
 			base.OnDraw(graphics2D);
 		}
@@ -237,32 +248,12 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new aa_demoFactory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new aa_demo();
 
-	public class aa_demoFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new aa_demo();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-			"Vector",
-			"Zoomed Anti-Aliasing",
-			"Demonstration of the Anti-Aliasing principle with Subpixel Accuracy. The triangle "
-					+ "is rendered two times, with its “natural” size (at the bottom-left) and enlarged. "
-					+ "To draw the enlarged version there is a special scanline renderer written (see "
-					+ "class renderer_enlarged in the source code). You can drag the whole triangle as well "
-					+ "as each vertex of it. Also change “Gamma” to see how it affects the quality of Anti-Aliasing.",
-			600,
-			400);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(600, 400);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

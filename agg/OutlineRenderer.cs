@@ -1629,18 +1629,18 @@ namespace MatterHackers.Agg
 
 	public abstract class LineRenderer
 	{
-		private RGBA_Bytes m_color;
+		private Color m_color;
 
 		public delegate bool CompareFunction(int value);
 
-		public RGBA_Bytes color()
+		public Color color()
 		{
 			return m_color;
 		}
 
 		public void color(IColorType c)
 		{
-			m_color = c.GetAsRGBA_Bytes();
+			m_color = c.ToColor();
 		}
 
 		public abstract void semidot(CompareFunction cmp, int xc1, int yc1, int xc2, int yc2);

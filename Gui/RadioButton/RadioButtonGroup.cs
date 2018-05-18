@@ -47,15 +47,15 @@ namespace MatterHackers.Agg.UI
 			Margin = new BorderDouble();
 			Padding = new BorderDouble(5);
 
-			LocalBounds = new RectangleDouble(0, 0, size.x, size.y);
+			LocalBounds = new RectangleDouble(0, 0, size.X, size.Y);
 			OriginRelativeParent = location;
 			radioButtons = new List<RadioButton>();
 
-			backgroundColor = (new RGBA_Floats(1.0, 1.0, 0.9));
-			borderColor = (new RGBA_Floats(0.0, 0.0, 0.0));
-			textColor = (new RGBA_Floats(0.0, 0.0, 0.0));
-			inactiveColor = (new RGBA_Floats(0.0, 0.0, 0.0));
-			activeColor = (new RGBA_Floats(0.4, 0.0, 0.0));
+			backgroundColor = (new ColorF(1.0, 1.0, 0.9));
+			borderColor = (new ColorF(0.0, 0.0, 0.0));
+			textColor = (new ColorF(0.0, 0.0, 0.0));
+			inactiveColor = (new ColorF(0.0, 0.0, 0.0));
+			activeColor = (new ColorF(0.4, 0.0, 0.0));
 		}
 
 		public void background_color(IColorType c)
@@ -86,19 +86,22 @@ namespace MatterHackers.Agg.UI
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			RoundedRect backgroundRect = new RoundedRect(LocalBounds, 4);
-			graphics2D.Render(backgroundRect, backgroundColor.GetAsRGBA_Bytes());
+			graphics2D.Render(backgroundRect, backgroundColor.ToColor());
 
-			graphics2D.Render(new Stroke(backgroundRect), borderColor.GetAsRGBA_Bytes());
+			graphics2D.Render(new Stroke(backgroundRect), borderColor.ToColor());
 
 			base.OnDraw(graphics2D);
 		}
 
 		public RadioButton AddRadioButton(string text)
 		{
-			RadioButton newRadioButton = new RadioButton(text);
-			newRadioButton.Margin = new BorderDouble(5, 0);
-			newRadioButton.HAnchor = UI.HAnchor.ParentLeft;
-			radioButtons.Add(newRadioButton);
+			RadioButton newRadioButton = new RadioButton(text)
+			{
+				TextColor = Color.Black,
+				Margin = new BorderDouble(5, 0),
+				HAnchor = UI.HAnchor.Left,
+			};
+		radioButtons.Add(newRadioButton);
 			AddChild(newRadioButton);
 
 			newRadioButton.CheckedStateChanged += (s, e) =>

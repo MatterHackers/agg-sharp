@@ -59,9 +59,9 @@ namespace MatterHackers.Csg.Solids
 				double maxRadius = 0;
 				foreach (Vector2 point in points)
 				{
-					maxRadius = Math.Max(Math.Abs(point.x + axisOffset), maxRadius);
-					minY = Math.Min(minY, point.y);
-					maxY = Math.Max(maxY, point.y);
+					maxRadius = Math.Max(Math.Abs(point.X + axisOffset), maxRadius);
+					minY = Math.Min(minY, point.Y);
+					maxY = Math.Max(maxY, point.Y);
 				}
 				return new AxisAlignedBoundingBox(new Vector3(-maxRadius, -maxRadius, minY), new Vector3(maxRadius, maxRadius, maxY));
 			}

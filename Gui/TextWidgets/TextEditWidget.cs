@@ -36,12 +36,7 @@ namespace MatterHackers.Agg.UI
 {
 	public class TextEditWidget : ScrollableWidget
 	{
-		internal InternalTextEditWidget internalTextEditWidget;
-
-		public InternalTextEditWidget InternalTextEditWidget
-		{
-			get { return internalTextEditWidget; }
-		}
+		public InternalTextEditWidget InternalTextEditWidget { get; protected set; }
 
 		public event KeyEventHandler EnterPressed;
 
@@ -56,15 +51,15 @@ namespace MatterHackers.Agg.UI
 
 		public static event EventHandler KeyboardCollapsed;
 
-		public RGBA_Bytes TextColor
+		public Color TextColor
 		{
 			get
 			{
-				return internalTextEditWidget.TextColor;
+				return InternalTextEditWidget.TextColor;
 			}
 			set
 			{
-				internalTextEditWidget.TextColor = value;
+				InternalTextEditWidget.TextColor = value;
 			}
 		}
 
@@ -76,19 +71,19 @@ namespace MatterHackers.Agg.UI
 			}
 			set
 			{
-				internalTextEditWidget.TabIndex = value;
+				InternalTextEditWidget.TabIndex = value;
 			}
 		}
 
-		public RGBA_Bytes CursorColor
+		public Color CursorColor
 		{
 			get
 			{
-				return internalTextEditWidget.cursorColor;
+				return InternalTextEditWidget.cursorColor;
 			}
 			set
 			{
-				internalTextEditWidget.cursorColor = value;
+				InternalTextEditWidget.cursorColor = value;
 			}
 		}
 
@@ -107,30 +102,30 @@ namespace MatterHackers.Agg.UI
 
 		public void ClearUndoHistory()
 		{
-			internalTextEditWidget.ClearUndoHistory();
+			InternalTextEditWidget.ClearUndoHistory();
 		}
 
-		public RGBA_Bytes HighlightColor
+		public Color HighlightColor
 		{
 			get
 			{
-				return internalTextEditWidget.highlightColor;
+				return InternalTextEditWidget.highlightColor;
 			}
 			set
 			{
-				internalTextEditWidget.highlightColor = value;
+				InternalTextEditWidget.highlightColor = value;
 			}
 		}
 
-		public RGBA_Bytes BorderColor
+		public Color BorderColor
 		{
 			get
 			{
-				return internalTextEditWidget.borderColor;
+				return InternalTextEditWidget.borderColor;
 			}
 			set
 			{
-				internalTextEditWidget.borderColor = value;
+				InternalTextEditWidget.borderColor = value;
 			}
 		}
 
@@ -143,22 +138,22 @@ namespace MatterHackers.Agg.UI
 			set
 			{
 				this.borderWidth = value;
-				internalTextEditWidget.BorderWidth = this.borderWidth;
+				InternalTextEditWidget.BorderWidth = this.borderWidth;
 			}
 		}
 
 		public bool Selecting
 		{
-			get { return internalTextEditWidget.Selecting; }
-			set { internalTextEditWidget.Selecting = value; }
+			get { return InternalTextEditWidget.Selecting; }
+			set { InternalTextEditWidget.Selecting = value; }
 		}
 
 		public bool Multiline
 		{
-			get { return internalTextEditWidget.Multiline; }
+			get { return InternalTextEditWidget.Multiline; }
 			set
 			{
-				internalTextEditWidget.Multiline = value;
+				InternalTextEditWidget.Multiline = value;
 				if (Multiline == true)
 				{
 					AutoScroll = true;
@@ -174,25 +169,25 @@ namespace MatterHackers.Agg.UI
 
 		public int SelectionIndexToStartBefore
 		{
-			get { return internalTextEditWidget.SelectionIndexToStartBefore; }
-			set { internalTextEditWidget.SelectionIndexToStartBefore = value; }
+			get { return InternalTextEditWidget.SelectionIndexToStartBefore; }
+			set { InternalTextEditWidget.SelectionIndexToStartBefore = value; }
 		}
 
 		public int CharIndexToInsertBefore
 		{
-			get { return internalTextEditWidget.CharIndexToInsertBefore; }
-			set { internalTextEditWidget.CharIndexToInsertBefore = value; }
+			get { return InternalTextEditWidget.CharIndexToInsertBefore; }
+			set { InternalTextEditWidget.CharIndexToInsertBefore = value; }
 		}
 
 		public override string Text
 		{
 			get
 			{
-				return internalTextEditWidget.Text;
+				return InternalTextEditWidget.Text;
 			}
 			set
 			{
-				internalTextEditWidget.Text = value;
+				InternalTextEditWidget.Text = value;
 			}
 		}
 
@@ -200,7 +195,7 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				return internalTextEditWidget.Selection;
+				return InternalTextEditWidget.Selection;
 			}
 		}
 
@@ -210,7 +205,7 @@ namespace MatterHackers.Agg.UI
 
 		public TextEditWidget(string text = "", double x = 0, double y = 0, double pointSize = 12, double pixelWidth = 0, double pixelHeight = 0, bool multiLine = false, int tabIndex = 0, TypeFace typeFace = null)
 		{
-			internalTextEditWidget = new InternalTextEditWidget(text, pointSize, multiLine, tabIndex, typeFace: typeFace);
+			InternalTextEditWidget = new InternalTextEditWidget(text, pointSize, multiLine, tabIndex, typeFace: typeFace);
 			HookUpToInternalWidget(pixelWidth, pixelHeight);
 			OriginRelativeParent = new Vector2(x, y);
 
@@ -226,21 +221,21 @@ namespace MatterHackers.Agg.UI
 		{
 			Cursor = Cursors.IBeam;
 
-			internalTextEditWidget.EditComplete += new EventHandler(internalTextEditWidget_EditComplete);
-			internalTextEditWidget.EnterPressed += new KeyEventHandler(internalTextEditWidget_EnterPressed);
+			InternalTextEditWidget.EditComplete += new EventHandler(internalTextEditWidget_EditComplete);
+			InternalTextEditWidget.EnterPressed += new KeyEventHandler(internalTextEditWidget_EnterPressed);
 			if (pixelWidth == 0)
 			{
-				pixelWidth = internalTextEditWidget.Width;
+				pixelWidth = InternalTextEditWidget.Width;
 			}
 			if (pixelHeight == 0)
 			{
-				pixelHeight = internalTextEditWidget.Height;
+				pixelHeight = InternalTextEditWidget.Height;
 			}
 			this.LocalBounds = new RectangleDouble(0, 0, pixelWidth, pixelHeight);
-			internalTextEditWidget.InsertBarPositionChanged += new EventHandler(internalTextEditWidget_InsertBarPositionChanged);
-			internalTextEditWidget.FocusChanged += new EventHandler(internalTextEditWidget_FocusChanged);
-			internalTextEditWidget.TextChanged += new EventHandler(internalTextEditWidget_TextChanged);
-			base.AddChild(internalTextEditWidget);
+			InternalTextEditWidget.InsertBarPositionChanged += new EventHandler(internalTextEditWidget_InsertBarPositionChanged);
+			InternalTextEditWidget.FocusChanged += new EventHandler(internalTextEditWidget_FocusChanged);
+			InternalTextEditWidget.TextChanged += new EventHandler(internalTextEditWidget_TextChanged);
+			base.AddChild(InternalTextEditWidget);
 		}
 
 		private void internalTextEditWidget_TextChanged(object sender, EventArgs e)
@@ -261,7 +256,7 @@ namespace MatterHackers.Agg.UI
 			}
 #endif
 
-			internalTextEditWidget.Focus();
+			InternalTextEditWidget.Focus();
 		}
 
 		private void internalTextEditWidget_FocusChanged(object sender, EventArgs e)
@@ -361,7 +356,7 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				return internalTextEditWidget.Printer;
+				return InternalTextEditWidget.Printer;
 			}
 		}
 
@@ -383,33 +378,35 @@ namespace MatterHackers.Agg.UI
 		private void internalTextEditWidget_InsertBarPositionChanged(object sender, EventArgs e)
 		{
 			double fontHeight = Printer.TypeFaceStyle.EmSizeInPixels;
-			Vector2 barPosition = internalTextEditWidget.InsertBarPosition;
+			Vector2 barPosition = InternalTextEditWidget.InsertBarPosition;
 			// move the minimum amount required to keep the bar in view
 			Vector2 currentOffsetInView = barPosition + TopLeftOffset;
 			Vector2 requiredOffet = Vector2.Zero;
-			if (currentOffsetInView.x > Width - 2)
+			if (currentOffsetInView.X > Width - 2)
 			{
-				requiredOffet.x = currentOffsetInView.x - Width + 2;
+				requiredOffet.X = currentOffsetInView.X - Width + 2;
 			}
-			else if (currentOffsetInView.x < 0)
+			else if (currentOffsetInView.X < 0)
 			{
-				requiredOffet.x = currentOffsetInView.x;
+				requiredOffet.X = currentOffsetInView.X;
 			}
-			if (currentOffsetInView.y <= -(Height - fontHeight))
+			if (currentOffsetInView.Y <= -(Height - fontHeight))
 			{
-				requiredOffet.y = -(currentOffsetInView.y + Height) + fontHeight;
+				requiredOffet.Y = -(currentOffsetInView.Y + Height) + fontHeight;
 			}
-			else if (currentOffsetInView.y > 0)
+			else if (currentOffsetInView.Y > 0)
 			{
-				requiredOffet.y = -currentOffsetInView.y;
+				requiredOffet.Y = -currentOffsetInView.Y;
 			}
-			TopLeftOffset = new VectorMath.Vector2(TopLeftOffset.x - requiredOffet.x, TopLeftOffset.y + requiredOffet.y);
+			TopLeftOffset = new VectorMath.Vector2(TopLeftOffset.X - requiredOffet.X, TopLeftOffset.Y + requiredOffet.Y);
 		}
 
-		public bool SelectAllOnFocus 
+		public bool SelectAllOnFocus
 		{
 			get { return InternalTextEditWidget.SelectAllOnFocus; }
 			set { InternalTextEditWidget.SelectAllOnFocus = value; }
 		}
+
+		public bool ReadOnly { get => InternalTextEditWidget.ReadOnly; set => InternalTextEditWidget.ReadOnly = value; }
 	}
 }

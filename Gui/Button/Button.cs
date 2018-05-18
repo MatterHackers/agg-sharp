@@ -17,7 +17,7 @@ using System;
 
 namespace MatterHackers.Agg.UI
 {
-	public class Button : ButtonBase
+	public class Button : GuiWidget
 	{
 		public static BorderDouble DefaultMargin = new BorderDouble(3);
 
@@ -49,6 +49,25 @@ namespace MatterHackers.Agg.UI
 				FixBoundsAndChildrenPositions();
 
 				MinimumSize = new Vector2(Width, Height);
+			}
+		}
+
+		protected void FixBoundsAndChildrenPositions()
+		{
+			SetBoundsToEncloseChildren();
+
+			if (LocalBounds.Left != 0 || LocalBounds.Bottom != 0)
+			{
+				SuspendLayout();
+				// let's make sure that a button has 0, 0 at the lower left
+				// move the children so they will fit with 0, 0 at the lower left
+				foreach (GuiWidget child in Children)
+				{
+					child.OriginRelativeParent = child.OriginRelativeParent + new Vector2(-LocalBounds.Left, -LocalBounds.Bottom);
+				}
+				ResumeLayout();
+
+				SetBoundsToEncloseChildren();
 			}
 		}
 	}

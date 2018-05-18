@@ -26,7 +26,7 @@ using System;
 
 namespace MatterHackers.Agg.UI
 {
-	public class CheckBox : ButtonBase
+	public class CheckBox : GuiWidget, ICheckbox
 	{
 		public static BorderDouble DefaultMargin;// = new BorderDouble(3);
 
@@ -68,8 +68,6 @@ namespace MatterHackers.Agg.UI
 
 				MinimumSize = new Vector2(Width, Height);
 			}
-
-			Click += CheckBox_Click;
 		}
 
 		public CheckBox(double x, double y, string label, double textSize = 12)
@@ -77,18 +75,18 @@ namespace MatterHackers.Agg.UI
 		{
 		}
 
-		public CheckBox(string label)
-			: this(0, 0, label)
+		public CheckBox(string label, double textSize = 12)
+			: this(0, 0, label, textSize)
 		{
 		}
 
-		public CheckBox(string label, RGBA_Bytes textColor, double textSize = 12)
+		public CheckBox(string label, Color textColor, double textSize = 12)
 			: this(0, 0, label, textSize)
 		{
 			TextColor = textColor;
 		}
 
-		public RGBA_Bytes TextColor
+		public Color TextColor
 		{
 			get
 			{
@@ -98,7 +96,7 @@ namespace MatterHackers.Agg.UI
 					return child.TextColor;
 				}
 
-				return RGBA_Bytes.Black;
+				return Color.Black;
 			}
 
 			set
@@ -111,9 +109,10 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private void CheckBox_Click(object sender, EventArgs mouseEvent)
+		public override void OnClick(MouseEventArgs mouseEvent)
 		{
 			Checked = !Checked;
+			base.OnClick(mouseEvent);
 		}
 
 		public bool Checked
@@ -136,10 +135,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void OnCheckStateChanged(EventArgs e)
 		{
-			if (CheckedStateChanged != null)
-			{
-				CheckedStateChanged(this, e);
-			}
+			CheckedStateChanged?.Invoke(this, e);
 		}
 	}
 }

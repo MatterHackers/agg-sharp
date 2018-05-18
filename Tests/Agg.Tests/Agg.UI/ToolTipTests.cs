@@ -44,7 +44,7 @@ namespace MatterHackers.Agg.UI.Tests
 		internal int popCount;
 	}
 
-	[TestFixture, Category("Agg.UI.ToolTip")]
+	[TestFixture, Category("Agg.UI.ToolTip"), Apartment(ApartmentState.STA), RunInApplicationDomain]
 	public class ToolTipTests
 	{
 		static string toolTip1Text = "toolTip1";
@@ -104,12 +104,12 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(systemWindow.ToolTipManager.CurrentText == "");
 		}
 
-		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
+		[Test]
 		public async Task ToolTipsShow()
 		{
 			SystemWindow buttonContainer = new SystemWindow(300, 200)
 			{
-				BackgroundColor = RGBA_Bytes.White,
+				BackgroundColor = Color.White,
 			};
 
 			AutomationTest testToRun = (testRunner) =>
@@ -127,7 +127,7 @@ namespace MatterHackers.Agg.UI.Tests
 				testRunner.Delay(1);
 				buttonContainer.CloseOnIdle();
 
-				return Task.FromResult(0);
+				return Task.CompletedTask;
 			};
 
 			Button leftButton = new Button("left", 10, 40);
@@ -138,7 +138,7 @@ namespace MatterHackers.Agg.UI.Tests
 			rightButton.Name = "right";
 			buttonContainer.AddChild(rightButton);
 
-			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10000);
+			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun);
 		}
 
 		[Test]

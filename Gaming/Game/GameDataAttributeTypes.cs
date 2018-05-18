@@ -134,11 +134,11 @@ namespace Gaming.Game
 
 			Vector2 vector2DToWrite = (Vector2)fieldToWrite;
 			xmlWriter.WriteStartAttribute("x");
-			xmlWriter.WriteValue(vector2DToWrite.x);
+			xmlWriter.WriteValue(vector2DToWrite.X);
 			xmlWriter.WriteEndAttribute();
 
 			xmlWriter.WriteStartAttribute("y");
-			xmlWriter.WriteValue(vector2DToWrite.y);
+			xmlWriter.WriteValue(vector2DToWrite.Y);
 			xmlWriter.WriteEndAttribute();
 		}
 	};

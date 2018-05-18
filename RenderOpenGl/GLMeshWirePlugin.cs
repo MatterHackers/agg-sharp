@@ -112,7 +112,7 @@ namespace MatterHackers.RenderOpenGl
 					{
 						FaceEdge firstFaceEdge = meshEdge.firstFaceEdge;
 						FaceEdge nextFaceEdge = meshEdge.firstFaceEdge.radialNextFaceEdge;
-						double angle = Vector3.CalculateAngle(firstFaceEdge.containingFace.normal, nextFaceEdge.containingFace.normal);
+						double angle = Vector3.CalculateAngle(firstFaceEdge.ContainingFace.Normal, nextFaceEdge.ContainingFace.Normal);
 						if (angle > MathHelper.Tau * .1)
 						{
 							edgeLinesData.Add(AddVertex(meshEdge.VertexOnEnd[0].Position, meshEdge.VertexOnEnd[1].Position));
@@ -133,14 +133,14 @@ namespace MatterHackers.RenderOpenGl
 		private WireVertexData AddVertex(Vector3 vertex0, Vector3 vertex1)
 		{
 			WireVertexData tempVertex;
-			tempVertex.positionsX = (float)vertex0.x;
-			tempVertex.positionsY = (float)vertex0.y;
-			tempVertex.positionsZ = (float)vertex0.z;
+			tempVertex.positionsX = (float)vertex0.X;
+			tempVertex.positionsY = (float)vertex0.Y;
+			tempVertex.positionsZ = (float)vertex0.Z;
 			edgeLinesData.Add(tempVertex);
 
-			tempVertex.positionsX = (float)vertex1.x;
-			tempVertex.positionsY = (float)vertex1.y;
-			tempVertex.positionsZ = (float)vertex1.z;
+			tempVertex.positionsX = (float)vertex1.X;
+			tempVertex.positionsY = (float)vertex1.Y;
+			tempVertex.positionsZ = (float)vertex1.Z;
 			return tempVertex;
 		}
 

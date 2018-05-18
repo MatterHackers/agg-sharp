@@ -35,6 +35,8 @@ namespace MatterHackers.Agg
 	{
 		public int x, y;
 
+		public readonly static Point2D Zero = new Point2D();
+
 		public Point2D(int newX, int newY)
 		{
 			x = newX;

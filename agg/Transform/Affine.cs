@@ -172,7 +172,7 @@ namespace MatterHackers.Agg.Transform
 
 		public static Affine NewTranslation(Vector2 offset)
 		{
-			return new Affine(1.0, 0.0, 0.0, 1.0, offset.x, offset.y);
+			return new Affine(1.0, 0.0, 0.0, 1.0, offset.X, offset.Y);
 		}
 
 		public static Affine NewSkewing(double x, double y)
@@ -479,8 +479,8 @@ namespace MatterHackers.Agg.Transform
 		public static Affine operator +(Affine a, Vector2 b)
 		{
 			Affine temp = new Affine(a);
-			temp.tx += b.x;
-			temp.ty += b.y;
+			temp.tx += b.X;
+			temp.ty += b.Y;
 			return temp;
 		}
 
@@ -524,7 +524,7 @@ namespace MatterHackers.Agg.Transform
 
 		public void transform(ref Vector2 pointToTransform)
 		{
-			transform(ref pointToTransform.x, ref pointToTransform.y);
+			transform(ref pointToTransform.X, ref pointToTransform.Y);
 		}
 
 		public void transform(ref RectangleDouble rectToTransform)
@@ -559,7 +559,7 @@ namespace MatterHackers.Agg.Transform
 
 		public void inverse_transform(ref Vector2 pointToTransform)
 		{
-			inverse_transform(ref pointToTransform.x, ref pointToTransform.y);
+			inverse_transform(ref pointToTransform.X, ref pointToTransform.Y);
 		}
 
 		/*

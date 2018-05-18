@@ -1,126 +1,141 @@
-﻿using MatterHackers.Agg.VertexSource;
+﻿using System;
+using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
-using System;
 
 namespace MatterHackers.Agg.UI
 {
-	public class RadioButtonViewText : GuiWidget
+	public class RadioCircleWidget : GuiWidget
 	{
-		private RGBA_Bytes inactiveColor;
-		private RGBA_Bytes activeColor;
+		private Vector2 center;
 
-		private TextWidget labelTextWidget;
-
-		private double boxWidth = 10 * GuiWidget.DeviceScale;
-
-		public RadioButtonViewText(string label, int fontSize=12)
+		public RadioCircleWidget()
 		{
-            labelTextWidget = new TextWidget(label, fontSize);
-			AddChild(labelTextWidget);
+			var boxWidth = RadioImage.BoxWidth;
 
-			LocalBounds = GetLocalBounds();
+			this.MinimumSize = new Vector2(boxWidth + 1, boxWidth + 1);
+			this.DoubleBuffer = true;
+			this.Margin = new BorderDouble(right: 10);
 
-			inactiveColor = new RGBA_Bytes(0.0, 0.0, 0.0);
-			activeColor = new RGBA_Bytes(0.4, 0.0, 0.0);
+			center = this.LocalBounds.Center;
 		}
 
-		public override void OnParentChanged(EventArgs e)
-		{
-			GuiWidget radioButton = Parent;
-
-			radioButton.MouseEnter += redrawButtonIfRequired;
-			radioButton.MouseDown += redrawButtonIfRequired;
-			radioButton.MouseUp += redrawButtonIfRequired;
-			radioButton.MouseLeave += redrawButtonIfRequired;
-
-			base.OnParentChanged(e);
-		}
+		public RadioButton RadioButton { get; set; }
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			DoDrawBeforeChildren(graphics2D);
+			if (this.RadioButton == null)
+			{
+				return;
+			}
+
+			RadioImage.DrawCircle(
+				graphics2D,
+				center,
+				this.RadioButton.TextColor,
+				this.RadioButton.Checked,
+				isActive: this.RadioButton.MouseDownOnWidget && this.RadioButton.FirstWidgetUnderMouse);
+
 			base.OnDraw(graphics2D);
+		}
+	}
+
+	public class RadioButtonViewText : RadioButtonView
+	{
+		protected TextWidget labelTextWidget;
+
+		public RadioButtonViewText(string label, int fontSize = 12)
+			: this(label, Color.Black, fontSize)
+		{
+		}
+
+		public RadioButtonViewText(string label, Color textColor, int fontSize=12)
+		{
+			this.AddChild(labelTextWidget = new TextWidget(label, textColor: textColor, pointSize: fontSize));
+		}
+
+		public override string Text
+		{
+			get => labelTextWidget.Text;
+			set => labelTextWidget.Text = value;
+		}
+
+		public Color TextColor
+		{
+			get => labelTextWidget.TextColor;
+			set => labelTextWidget.TextColor = value;
+		}
+	}
+
+	public class RadioButtonView : FlowLayoutWidget
+	{
+		protected RadioCircleWidget radioCircle;
+
+		protected RadioButton radioButton;
+
+		public RadioButtonView()
+		{
+			radioCircle = new RadioCircleWidget()
+			{
+				VAnchor = VAnchor.Center
+			};
+			this.AddChild(radioCircle);
+		}
+
+		public RadioButtonView(GuiWidget view) : this()
+		{
+			this.AddChild(view);
+		}
+
+		public RadioCircleWidget RadioCircle => radioCircle;
+
+		public Color TextColor { get; set; }
+
+		public override void OnParentChanged(EventArgs e)
+		{
+			// TODO: This looks to leak if parents change...
+			if (Parent is RadioButton radioButton)
+			{
+				this.radioButton = radioButton;
+				radioButton.MouseEnter += redrawButtonIfRequired;
+				radioButton.MouseDown += redrawButtonIfRequired;
+				radioButton.MouseUp += redrawButtonIfRequired;
+				radioButton.MouseLeave += redrawButtonIfRequired;
+				radioButton.CheckedStateChanged += (s, e2) =>
+				{
+					// Invalidate double buffered control
+					radioCircle.Invalidate();
+				};
+
+				radioCircle.RadioButton = radioButton;
+				radioButton.TextColor = ActiveTheme.Instance.PrimaryTextColor;
+			}
+			base.OnParentChanged(e);
 		}
 
 		public void redrawButtonIfRequired(object sender, EventArgs e)
 		{
 			((GuiWidget)sender).Invalidate();
 		}
+	}
 
-		public void DoDrawBeforeChildren(Graphics2D graphics2D)
+	public static class RadioImage
+	{
+		public static double BoxWidth => 10 * GuiWidget.DeviceScale;
+		public static double BorderRadius => BoxWidth / 2;
+
+		public static void DrawCircle(Graphics2D graphics2D, Vector2 center, Color color, bool isChecked, bool isActive)
 		{
-			RadioButton radioButton = Parent as RadioButton;
-			if (radioButton == null)
+			// Radio check
+			if (isChecked)
 			{
-				return;
-			}
-			Vector2 center = new Vector2(boxWidth / 2 + 1, boxWidth / 2 - labelTextWidget.Printer.TypeFaceStyle.DescentInPixels);
-
-			// the check
-			if (radioButton.Checked)
-			{
-				graphics2D.Circle(center, boxWidth / 4, radioButton.TextColor);
+				graphics2D.Circle(center, BoxWidth / 4, color);
 			}
 
-			if (radioButton.MouseDownOnButton && radioButton.FirstWidgetUnderMouse)
-			{
-				// extra frame
-				graphics2D.Render(new Stroke(new Ellipse(center, boxWidth / 2, boxWidth / 2), 2), radioButton.TextColor);
-			}
-			else
-			{
-				// the frame
-				graphics2D.Render(new Stroke(new Ellipse(center, boxWidth / 2, boxWidth / 2)), radioButton.TextColor);
-			}
-		}
-
-		public override string Text
-		{
-			get
-			{
-				return labelTextWidget.Text;
-			}
-
-			set
-			{
-				labelTextWidget.Text = value;
-			}
-		}
-
-		public RGBA_Bytes TextColor
-		{
-			get
-			{
-				return labelTextWidget.TextColor;
-			}
-
-			set
-			{
-				labelTextWidget.TextColor = value;
-			}
-		}
-
-		public void inactive_color(IColorType c)
-		{
-			inactiveColor = c.GetAsRGBA_Bytes();
-		}
-
-		public void active_color(IColorType c)
-		{
-			activeColor = c.GetAsRGBA_Bytes();
-		}
-
-		internal RectangleDouble GetLocalBounds()
-		{
-			labelTextWidget.OriginRelativeParent = new Vector2(boxWidth * 2, -labelTextWidget.Printer.TypeFaceStyle.DescentInPixels);
-
-			RectangleDouble localBounds = new RectangleDouble();
-			localBounds.Left = 0;
-			localBounds.Bottom = 0;
-			localBounds.Right = localBounds.Left + boxWidth * 2 + labelTextWidget.Width;
-			localBounds.Top = localBounds.Bottom + labelTextWidget.Height;
-
-			return localBounds;
+			// Radio border
+			int strokeWidth = (isActive) ? 2 : 1;
+			graphics2D.Render(
+				new Stroke(new Ellipse(center, BorderRadius), strokeWidth),
+				color);
 		}
 	}
 }

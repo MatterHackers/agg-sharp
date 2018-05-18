@@ -150,47 +150,59 @@ namespace MatterHackers.Agg.Image
 	{
 		int NumPixelBits { get; }
 
-		RGBA_Bytes PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset);
+		Color PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset);
 
-		void SetPixels(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor, int count);
+		void SetPixels(byte[] buffer, int bufferOffset, Color sourceColor, int count);
 
-		void SetPixels(byte[] buffer, int bufferOffset, RGBA_Bytes[] sourceColors, int sourceColorsOffset, int count);
+		void SetPixels(byte[] buffer, int bufferOffset, Color[] sourceColors, int sourceColorsOffset, int count);
 
-		void BlendPixels(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor, int count);
+		void BlendPixels(byte[] buffer, int bufferOffset, Color sourceColor, int count);
 
-		void BlendPixels(byte[] buffer, int bufferOffset, RGBA_Bytes[] sourceColors, int sourceColorsOffset, int count);
+		void BlendPixels(byte[] buffer, int bufferOffset, Color[] sourceColors, int sourceColorsOffset, int count);
 
 		// and we need some that use coverage values
-		void BlendPixels(byte[] buffer, int bufferOffset, RGBA_Bytes[] sourceColors, int sourceColorsOffset, byte sourceCover, int count);
+		void BlendPixels(byte[] buffer, int bufferOffset, Color[] sourceColors, int sourceColorsOffset, byte sourceCover, int count);
 
-		void BlendPixels(byte[] buffer, int bufferOffset, RGBA_Bytes[] sourceColors, int sourceColorsOffset, byte[] sourceCovers, int sourceCoversOffset, int count);
+		void BlendPixels(byte[] buffer, int bufferOffset, Color[] sourceColors, int sourceColorsOffset, byte[] sourceCovers, int sourceCoversOffset, int count);
 	};
 
 	public interface IRecieveBlenderByte
 	{
 		int NumPixelBits { get; }
 
-		RGBA_Bytes PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset);
+		Color PixelToColor(byte[] buffer, int bufferOffset);
 
-		void CopyPixels(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor, int count);
+		void CopyPixels(byte[] buffer, int bufferOffset, Color sourceColor, int count);
 
-		void BlendPixel(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor);
+		void BlendPixel(byte[] buffer, int bufferOffset, Color sourceColor);
 
-		void BlendPixels(byte[] buffer, int bufferOffset, RGBA_Bytes[] sourceColors, int sourceColorsOffset, byte[] sourceCovers, int sourceCoversOffset, bool firstCoverForAll, int count);
+		void BlendPixels(byte[] buffer, int bufferOffset, Color[] sourceColors, int sourceColorsOffset, byte[] sourceCovers, int sourceCoversOffset, bool firstCoverForAll, int count);
+	}
+
+	public static class BlenderExtensions
+	{
+		// Compute a fixed color from a source and a target alpha
+		public static Color Blend(this IRecieveBlenderByte blender, Color start, Color blend)
+		{
+			var result = new byte[] { start.blue, start.green, start.red, start.alpha };
+			blender.BlendPixel(result, 0, blend);
+
+			return new Color(result[2], result[1], result[0], result[3]);
+		}
 	}
 
 	public interface IRecieveBlenderFloat
 	{
 		int NumPixelBits { get; }
 
-		RGBA_Floats PixelToColorRGBA_Floats(float[] buffer, int bufferOffset);
+		ColorF PixelToColorRGBA_Floats(float[] buffer, int bufferOffset);
 
-		void CopyPixels(float[] buffer, int bufferOffset, RGBA_Floats sourceColor, int count);
+		void CopyPixels(float[] buffer, int bufferOffset, ColorF sourceColor, int count);
 
-		void BlendPixel(float[] buffer, int bufferOffset, RGBA_Floats sourceColor);
+		void BlendPixel(float[] buffer, int bufferOffset, ColorF sourceColor);
 
 		void BlendPixels(float[] buffer, int bufferOffset,
-			RGBA_Floats[] sourceColors, int sourceColorsOffset,
+			ColorF[] sourceColors, int sourceColorsOffset,
 			byte[] sourceCovers, int sourceCoversOffset, bool firstCoverForAll, int count);
 	}
 
@@ -210,12 +222,12 @@ namespace MatterHackers.Agg.Image
 
 	public sealed class BlenderBGRA : BlenderBase8888, IRecieveBlenderByte
 	{
-		public RGBA_Bytes PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+		public Color PixelToColor(byte[] buffer, int bufferOffset)
 		{
-			return new RGBA_Bytes(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
+			return new Color(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
 		}
 
-		public void CopyPixels(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor, int count)
+		public void CopyPixels(byte[] buffer, int bufferOffset, Color sourceColor, int count)
 		{
 			do
 			{
@@ -228,7 +240,7 @@ namespace MatterHackers.Agg.Image
 			while (--count != 0);
 		}
 
-		public void BlendPixel(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor)
+		public void BlendPixel(byte[] buffer, int bufferOffset, Color sourceColor)
 		{
 			//unsafe
 			{
@@ -247,17 +259,17 @@ namespace MatterHackers.Agg.Image
 						int g = buffer[bufferOffset + ImageBuffer.OrderG];
 						int b = buffer[bufferOffset + ImageBuffer.OrderB];
 						int a = buffer[bufferOffset + ImageBuffer.OrderA];
-						buffer[bufferOffset + ImageBuffer.OrderR] = (byte)(((sourceColor.red - r) * sourceColor.alpha + (r << (int)RGBA_Bytes.base_shift)) >> (int)RGBA_Bytes.base_shift);
-						buffer[bufferOffset + ImageBuffer.OrderG] = (byte)(((sourceColor.green - g) * sourceColor.alpha + (g << (int)RGBA_Bytes.base_shift)) >> (int)RGBA_Bytes.base_shift);
-						buffer[bufferOffset + ImageBuffer.OrderB] = (byte)(((sourceColor.blue - b) * sourceColor.alpha + (b << (int)RGBA_Bytes.base_shift)) >> (int)RGBA_Bytes.base_shift);
-						buffer[bufferOffset + ImageBuffer.OrderA] = (byte)((sourceColor.alpha + a) - ((sourceColor.alpha * a + base_mask) >> (int)RGBA_Bytes.base_shift));
+						buffer[bufferOffset + ImageBuffer.OrderR] = (byte)(((sourceColor.red - r) * sourceColor.alpha + (r << (int)Color.base_shift)) >> (int)Color.base_shift);
+						buffer[bufferOffset + ImageBuffer.OrderG] = (byte)(((sourceColor.green - g) * sourceColor.alpha + (g << (int)Color.base_shift)) >> (int)Color.base_shift);
+						buffer[bufferOffset + ImageBuffer.OrderB] = (byte)(((sourceColor.blue - b) * sourceColor.alpha + (b << (int)Color.base_shift)) >> (int)Color.base_shift);
+						buffer[bufferOffset + ImageBuffer.OrderA] = (byte)((sourceColor.alpha + a) - ((sourceColor.alpha * a + base_mask) >> (int)Color.base_shift));
 					}
 				}
 			}
 		}
 
 		public void BlendPixels(byte[] destBuffer, int bufferOffset,
-			RGBA_Bytes[] sourceColors, int sourceColorsOffset,
+			Color[] sourceColors, int sourceColorsOffset,
 			byte[] covers, int coversIndex, bool firstCoverForAll, int count)
 		{
 			if (firstCoverForAll)
@@ -295,7 +307,7 @@ namespace MatterHackers.Agg.Image
 					}
 					else
 					{
-						RGBA_Bytes color = sourceColors[sourceColorsOffset];
+						Color color = sourceColors[sourceColorsOffset];
 						color.alpha = (byte)((color.alpha * (cover) + 255) >> 8);
 						BlendPixel(destBuffer, bufferOffset, color);
 					}
@@ -309,12 +321,12 @@ namespace MatterHackers.Agg.Image
 
 	public sealed class BlenderBGRAExactCopy : BlenderBase8888, IRecieveBlenderByte
 	{
-		public RGBA_Bytes PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+		public Color PixelToColor(byte[] buffer, int bufferOffset)
 		{
-			return new RGBA_Bytes(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
+			return new Color(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
 		}
 
-		public void CopyPixels(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor, int count)
+		public void CopyPixels(byte[] buffer, int bufferOffset, Color sourceColor, int count)
 		{
 			do
 			{
@@ -327,13 +339,13 @@ namespace MatterHackers.Agg.Image
 			while (--count != 0);
 		}
 
-		public void BlendPixel(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor)
+		public void BlendPixel(byte[] buffer, int bufferOffset, Color sourceColor)
 		{
 			CopyPixels(buffer, bufferOffset, sourceColor, 1);
 		}
 
 		public void BlendPixels(byte[] destBuffer, int bufferOffset,
-			RGBA_Bytes[] sourceColors, int sourceColorsOffset,
+			Color[] sourceColors, int sourceColorsOffset,
 			byte[] covers, int coversIndex, bool firstCoverForAll, int count)
 		{
 			if (firstCoverForAll)
@@ -371,7 +383,7 @@ namespace MatterHackers.Agg.Image
 					}
 					else
 					{
-						RGBA_Bytes color = sourceColors[sourceColorsOffset];
+						Color color = sourceColors[sourceColorsOffset];
 						color.alpha = (byte)((color.alpha * (cover) + 255) >> 8);
 						BlendPixel(destBuffer, bufferOffset, color);
 					}
@@ -385,12 +397,12 @@ namespace MatterHackers.Agg.Image
 
 	public sealed class BlenderRGBA : BlenderBase8888, IRecieveBlenderByte
 	{
-		public RGBA_Bytes PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+		public Color PixelToColor(byte[] buffer, int bufferOffset)
 		{
-			return new RGBA_Bytes(buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderA]);
+			return new Color(buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderA]);
 		}
 
-		public void CopyPixels(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor, int count)
+		public void CopyPixels(byte[] buffer, int bufferOffset, Color sourceColor, int count)
 		{
 			do
 			{
@@ -403,7 +415,7 @@ namespace MatterHackers.Agg.Image
 			while (--count != 0);
 		}
 
-		public void BlendPixel(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor)
+		public void BlendPixel(byte[] buffer, int bufferOffset, Color sourceColor)
 		{
 			//unsafe
 			{
@@ -422,17 +434,17 @@ namespace MatterHackers.Agg.Image
 						int g = buffer[bufferOffset + ImageBuffer.OrderG];
 						int b = buffer[bufferOffset + ImageBuffer.OrderR];
 						int a = buffer[bufferOffset + ImageBuffer.OrderA];
-						buffer[bufferOffset + ImageBuffer.OrderB] = (byte)(((sourceColor.red - r) * sourceColor.alpha + (r << (int)RGBA_Bytes.base_shift)) >> (int)RGBA_Bytes.base_shift);
-						buffer[bufferOffset + ImageBuffer.OrderG] = (byte)(((sourceColor.green - g) * sourceColor.alpha + (g << (int)RGBA_Bytes.base_shift)) >> (int)RGBA_Bytes.base_shift);
-						buffer[bufferOffset + ImageBuffer.OrderR] = (byte)(((sourceColor.blue - b) * sourceColor.alpha + (b << (int)RGBA_Bytes.base_shift)) >> (int)RGBA_Bytes.base_shift);
-						buffer[bufferOffset + ImageBuffer.OrderA] = (byte)((sourceColor.alpha + a) - ((sourceColor.alpha * a + base_mask) >> (int)RGBA_Bytes.base_shift));
+						buffer[bufferOffset + ImageBuffer.OrderB] = (byte)(((sourceColor.red - r) * sourceColor.alpha + (r << (int)Color.base_shift)) >> (int)Color.base_shift);
+						buffer[bufferOffset + ImageBuffer.OrderG] = (byte)(((sourceColor.green - g) * sourceColor.alpha + (g << (int)Color.base_shift)) >> (int)Color.base_shift);
+						buffer[bufferOffset + ImageBuffer.OrderR] = (byte)(((sourceColor.blue - b) * sourceColor.alpha + (b << (int)Color.base_shift)) >> (int)Color.base_shift);
+						buffer[bufferOffset + ImageBuffer.OrderA] = (byte)((sourceColor.alpha + a) - ((sourceColor.alpha * a + base_mask) >> (int)Color.base_shift));
 					}
 				}
 			}
 		}
 
 		public void BlendPixels(byte[] destBuffer, int bufferOffset,
-			RGBA_Bytes[] sourceColors, int sourceColorsOffset,
+			Color[] sourceColors, int sourceColorsOffset,
 			byte[] covers, int coversIndex, bool firstCoverForAll, int count)
 		{
 			if (firstCoverForAll)
@@ -470,7 +482,7 @@ namespace MatterHackers.Agg.Image
 					}
 					else
 					{
-						RGBA_Bytes color = sourceColors[sourceColorsOffset];
+						Color color = sourceColors[sourceColorsOffset];
 						color.alpha = (byte)((color.alpha * (cover) + 255) >> 8);
 						BlendPixel(destBuffer, bufferOffset, color);
 					}
@@ -484,12 +496,12 @@ namespace MatterHackers.Agg.Image
 
 	public sealed class BlenderBGRAFloat : BlenderBaseBGRAFloat, IRecieveBlenderFloat
 	{
-		public RGBA_Floats PixelToColorRGBA_Floats(float[] buffer, int bufferOffset)
+		public ColorF PixelToColorRGBA_Floats(float[] buffer, int bufferOffset)
 		{
-			return new RGBA_Floats(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
+			return new ColorF(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
 		}
 
-		public void CopyPixels(float[] buffer, int bufferOffset, RGBA_Floats sourceColor, int count)
+		public void CopyPixels(float[] buffer, int bufferOffset, ColorF sourceColor, int count)
 		{
 			do
 			{
@@ -502,7 +514,7 @@ namespace MatterHackers.Agg.Image
 			while (--count != 0);
 		}
 
-		public void BlendPixel(float[] buffer, int bufferOffset, RGBA_Floats sourceColor)
+		public void BlendPixel(float[] buffer, int bufferOffset, ColorF sourceColor)
 		{
 			if (sourceColor.alpha == 1)
 			{
@@ -525,7 +537,7 @@ namespace MatterHackers.Agg.Image
 		}
 
 		public void BlendPixels(float[] destBuffer, int bufferOffset,
-			RGBA_Floats[] sourceColors, int sourceColorsOffset,
+			ColorF[] sourceColors, int sourceColorsOffset,
 			byte[] covers, int coversIndex, bool firstCoverForAll, int count)
 		{
 			throw new NotImplementedException();
@@ -551,12 +563,12 @@ namespace MatterHackers.Agg.Image
 			m_gamma = g;
 		}
 
-		public RGBA_Bytes PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+		public Color PixelToColor(byte[] buffer, int bufferOffset)
 		{
-			return new RGBA_Bytes(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
+			return new Color(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
 		}
 
-		public void CopyPixels(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor, int count)
+		public void CopyPixels(byte[] buffer, int bufferOffset, Color sourceColor, int count)
 		{
 			do
 			{
@@ -569,7 +581,7 @@ namespace MatterHackers.Agg.Image
 			while (--count != 0);
 		}
 
-		public void BlendPixel(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor)
+		public void BlendPixel(byte[] buffer, int bufferOffset, Color sourceColor)
 		{
 			unchecked
 			{
@@ -577,15 +589,15 @@ namespace MatterHackers.Agg.Image
 				int g = buffer[bufferOffset + ImageBuffer.OrderG];
 				int b = buffer[bufferOffset + ImageBuffer.OrderB];
 				int a = buffer[bufferOffset + ImageBuffer.OrderA];
-				buffer[bufferOffset + ImageBuffer.OrderR] = m_gamma.inv((byte)(((sourceColor.red - r) * sourceColor.alpha + (r << (int)RGBA_Bytes.base_shift)) >> (int)RGBA_Bytes.base_shift));
-				buffer[bufferOffset + ImageBuffer.OrderG] = m_gamma.inv((byte)(((sourceColor.green - g) * sourceColor.alpha + (g << (int)RGBA_Bytes.base_shift)) >> (int)RGBA_Bytes.base_shift));
-				buffer[bufferOffset + ImageBuffer.OrderB] = m_gamma.inv((byte)(((sourceColor.blue - b) * sourceColor.alpha + (b << (int)RGBA_Bytes.base_shift)) >> (int)RGBA_Bytes.base_shift));
-				buffer[ImageBuffer.OrderA] = (byte)((sourceColor.alpha + a) - ((sourceColor.alpha * a + base_mask) >> (int)RGBA_Bytes.base_shift));
+				buffer[bufferOffset + ImageBuffer.OrderR] = m_gamma.inv((byte)(((sourceColor.red - r) * sourceColor.alpha + (r << (int)Color.base_shift)) >> (int)Color.base_shift));
+				buffer[bufferOffset + ImageBuffer.OrderG] = m_gamma.inv((byte)(((sourceColor.green - g) * sourceColor.alpha + (g << (int)Color.base_shift)) >> (int)Color.base_shift));
+				buffer[bufferOffset + ImageBuffer.OrderB] = m_gamma.inv((byte)(((sourceColor.blue - b) * sourceColor.alpha + (b << (int)Color.base_shift)) >> (int)Color.base_shift));
+				buffer[ImageBuffer.OrderA] = (byte)((sourceColor.alpha + a) - ((sourceColor.alpha * a + base_mask) >> (int)Color.base_shift));
 			}
 		}
 
 		public void BlendPixels(byte[] buffer, int bufferOffset,
-			RGBA_Bytes[] sourceColors, int sourceColorsOffset,
+			Color[] sourceColors, int sourceColorsOffset,
 			byte[] sourceCovers, int sourceCoversOffset, bool firstCoverForAll, int count)
 		{
 			throw new NotImplementedException();
@@ -607,12 +619,12 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public RGBA_Bytes PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+		public Color PixelToColor(byte[] buffer, int bufferOffset)
 		{
-			return new RGBA_Bytes(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
+			return new Color(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
 		}
 
-		public void CopyPixels(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor, int count)
+		public void CopyPixels(byte[] buffer, int bufferOffset, Color sourceColor, int count)
 		{
 			for (int i = 0; i < count; i++)
 			{
@@ -624,7 +636,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public void BlendPixel(byte[] pDestBuffer, int bufferOffset, RGBA_Bytes sourceColor)
+		public void BlendPixel(byte[] pDestBuffer, int bufferOffset, Color sourceColor)
 		{
 			int oneOverAlpha = base_mask - sourceColor.alpha;
 			unchecked
@@ -641,7 +653,7 @@ namespace MatterHackers.Agg.Image
 		}
 
 		public void BlendPixels(byte[] pDestBuffer, int bufferOffset,
-			RGBA_Bytes[] sourceColors, int sourceColorsOffset,
+			Color[] sourceColors, int sourceColorsOffset,
 			byte[] sourceCovers, int sourceCoversOffset, bool firstCoverForAll, int count)
 		{
 			if (firstCoverForAll)
@@ -650,7 +662,7 @@ namespace MatterHackers.Agg.Image
 				{
 					for (int i = 0; i < count; i++)
 					{
-						RGBA_Bytes sourceColor = sourceColors[sourceColorsOffset];
+						Color sourceColor = sourceColors[sourceColorsOffset];
 						if (sourceColor.alpha == 255)
 						{
 							CopyOpaquePixel(pDestBuffer, bufferOffset, sourceColor);
@@ -668,7 +680,7 @@ namespace MatterHackers.Agg.Image
 				{
 					for (int i = 0; i < count; i++)
 					{
-						RGBA_Bytes sourceColor = sourceColors[sourceColorsOffset];
+						Color sourceColor = sourceColors[sourceColorsOffset];
 						int alpha = (sourceColor.alpha * sourceCovers[sourceCoversOffset] + 255) / 256;
 						if (alpha == 0)
 						{
@@ -691,7 +703,7 @@ namespace MatterHackers.Agg.Image
 			{
 				for (int i = 0; i < count; i++)
 				{
-					RGBA_Bytes sourceColor = sourceColors[sourceColorsOffset];
+					Color sourceColor = sourceColors[sourceColorsOffset];
 					int alpha = (sourceColor.alpha * sourceCovers[sourceCoversOffset] + 255) / 256;
 					if (alpha == 255)
 					{
@@ -708,7 +720,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		private static void CopyOpaquePixel(byte[] pDestBuffer, int bufferOffset, RGBA_Bytes sourceColor)
+		private static void CopyOpaquePixel(byte[] pDestBuffer, int bufferOffset, Color sourceColor)
 		{
 			pDestBuffer[bufferOffset + ImageBuffer.OrderR] = (byte)sourceColor.red;
 			pDestBuffer[bufferOffset + ImageBuffer.OrderG] = (byte)sourceColor.green;
@@ -720,9 +732,9 @@ namespace MatterHackers.Agg.Image
 	public sealed class BlenderPolyColorPreMultBGRA : BlenderBase8888, IRecieveBlenderByte
 	{
 		private static int[] m_Saturate9BitToByte = new int[1 << 9];
-		private RGBA_Bytes polyColor;
+		private Color polyColor;
 
-		public BlenderPolyColorPreMultBGRA(RGBA_Bytes polyColor)
+		public BlenderPolyColorPreMultBGRA(Color polyColor)
 		{
 			this.polyColor = polyColor;
 
@@ -735,12 +747,12 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public RGBA_Bytes PixelToColorRGBA_Bytes(byte[] buffer, int bufferOffset)
+		public Color PixelToColor(byte[] buffer, int bufferOffset)
 		{
-			return new RGBA_Bytes(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
+			return new Color(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
 		}
 
-		public void CopyPixels(byte[] buffer, int bufferOffset, RGBA_Bytes sourceColor, int count)
+		public void CopyPixels(byte[] buffer, int bufferOffset, Color sourceColor, int count)
 		{
 			for (int i = 0; i < count; i++)
 			{
@@ -752,7 +764,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public void BlendPixel(byte[] pDestBuffer, int bufferOffset, RGBA_Bytes sourceColor)
+		public void BlendPixel(byte[] pDestBuffer, int bufferOffset, Color sourceColor)
 		{
 			//unsafe
 			{
@@ -779,7 +791,7 @@ namespace MatterHackers.Agg.Image
 		}
 
 		public void BlendPixels(byte[] pDestBuffer, int bufferOffset,
-			RGBA_Bytes[] sourceColors, int sourceColorsOffset,
+			Color[] sourceColors, int sourceColorsOffset,
 			byte[] sourceCovers, int sourceCoversOffset, bool firstCoverForAll, int count)
 		{
 			if (firstCoverForAll)
@@ -877,13 +889,13 @@ namespace MatterHackers.Agg.Image
 
 	public sealed class BlenderPreMultBGRAFloat : BlenderBaseBGRAFloat, IRecieveBlenderFloat
 	{
-		public RGBA_Floats PixelToColorRGBA_Floats(float[] buffer, int bufferOffset)
+		public ColorF PixelToColorRGBA_Floats(float[] buffer, int bufferOffset)
 		{
 			throw new NotImplementedException();
 			//return new RGBA_(buffer[bufferOffset + ImageBuffer.OrderR], buffer[bufferOffset + ImageBuffer.OrderG], buffer[bufferOffset + ImageBuffer.OrderB], buffer[bufferOffset + ImageBuffer.OrderA]);
 		}
 
-		public void SetPixels(float[] buffer, int bufferOffset, RGBA_Floats sourceColor, int count)
+		public void SetPixels(float[] buffer, int bufferOffset, ColorF sourceColor, int count)
 		{
 			do
 			{
@@ -896,12 +908,12 @@ namespace MatterHackers.Agg.Image
 			while (--count != 0);
 		}
 
-		public void CopyPixels(float[] buffer, int bufferOffset, RGBA_Floats[] sourceColors, int sourceColorsOffset, int count)
+		public void CopyPixels(float[] buffer, int bufferOffset, ColorF[] sourceColors, int sourceColorsOffset, int count)
 		{
 			throw new NotImplementedException();
 		}
 
-		public void CopyPixels(float[] buffer, int bufferOffset, RGBA_Floats sourceColor, int count)
+		public void CopyPixels(float[] buffer, int bufferOffset, ColorF sourceColor, int count)
 		{
 			do
 			{
@@ -914,7 +926,7 @@ namespace MatterHackers.Agg.Image
 			while (--count != 0);
 		}
 
-		public void BlendPixel(float[] buffer, int bufferOffset, RGBA_Floats sourceColor)
+		public void BlendPixel(float[] buffer, int bufferOffset, ColorF sourceColor)
 		{
 			if (sourceColor.alpha == 1)
 			{
@@ -937,24 +949,24 @@ namespace MatterHackers.Agg.Image
 		}
 
 		public void BlendPixels(float[] pDestBuffer, int bufferOffset,
-			RGBA_Floats[] sourceColors, int sourceColorsOffset, int count)
+			ColorF[] sourceColors, int sourceColorsOffset, int count)
 		{
 		}
 
 		public void BlendPixels(float[] pDestBuffer, int bufferOffset,
-			RGBA_Floats[] sourceColors, int sourceColorsOffset,
+			ColorF[] sourceColors, int sourceColorsOffset,
 			byte sourceCovers, int count)
 		{
 		}
 
 		public void BlendPixels(float[] pDestBuffer, int bufferOffset,
-			RGBA_Floats[] sourceColors, int sourceColorsOffset,
+			ColorF[] sourceColors, int sourceColorsOffset,
 			byte[] sourceCovers, int sourceCoversOffset, int count)
 		{
 		}
 
 		public void BlendPixels(float[] pDestBuffer, int bufferOffset,
-			RGBA_Floats[] sourceColors, int sourceColorsOffset,
+			ColorF[] sourceColors, int sourceColorsOffset,
 			byte[] sourceCovers, int sourceCoversOffset, bool firstCoverForAll, int count)
 		{
 			if (firstCoverForAll)
@@ -974,7 +986,7 @@ namespace MatterHackers.Agg.Image
 					{
 						for (int i = 0; i < count; i++)
 						{
-							RGBA_Floats sourceColor = sourceColors[sourceColorsOffset];
+							ColorF sourceColor = sourceColors[sourceColorsOffset];
 							float alpha = (sourceColor.alpha * sourceCovers[sourceCoversOffset] + 255) / 256;
 							if (alpha == 0)
 							{
@@ -1012,7 +1024,7 @@ namespace MatterHackers.Agg.Image
 			{
 				for (int i = 0; i < count; i++)
 				{
-					RGBA_Floats sourceColor = sourceColors[sourceColorsOffset];
+					ColorF sourceColor = sourceColors[sourceColorsOffset];
 					if (sourceColor.alpha == 1 && sourceCovers[sourceCoversOffset] == 255)
 					{
 						pDestBuffer[bufferOffset + ImageBuffer.OrderR] = sourceColor.red;

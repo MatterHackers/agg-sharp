@@ -12,54 +12,85 @@ using MatterHackers.VectorMath;
 //-----------------------------------------------------------------------
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace MatterHackers.RayTracer
 {
+	public class TriangleShapeUv : TriangleShape
+	{
+		Vector2Float uv0;
+		Vector2Float uv1;
+		Vector2Float uv2;
+
+		public TriangleShapeUv(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2,
+			Vector2 uv0, Vector2 uv1, Vector2 uv2,
+			MaterialAbstract material)
+			: base(vertex0, vertex1, vertex2, material)
+		{
+			this.uv0 = new Vector2Float(uv0);
+			this.uv1 = new Vector2Float(uv1);
+			this.uv2 = new Vector2Float(uv2);
+		}
+
+		public override (double u, double v) GetUv(IntersectInfo info)
+		{
+			Vector3Float normal = Plane.Normal;
+			Vector3Float vecU = new Vector3Float(normal.y, normal.z, -normal.x);
+			Vector3Float vecV = Vector3Float.Cross(vecU, Plane.Normal);
+
+			var u = Vector3Float.Dot(new Vector3Float(info.HitPosition), vecU);
+			var v = Vector3Float.Dot(new Vector3Float(info.HitPosition), vecV);
+
+			return (u, v);
+		}
+	}
+
 	public class TriangleShape : BaseShape
 	{
+		private readonly static int[] xMapping = new int[] { 1, 0, 0 };
+		private readonly static int[] yMapping = new int[] { 2, 2, 1 };
+
 		Vector3Float aabbMaxXYZ = Vector3Float.NegativeInfinity;
 		Vector3Float aabbMinXYZ = Vector3Float.NegativeInfinity;
 		private RectangleFloat boundsOnMajorAxis = new RectangleFloat(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
 		private Vector3Float center;
-		private int majorAxis = 0;
-		private PlaneFloat plane;
+		public int MajorAxis { get; private set; } = 0;
+		public PlaneFloat Plane { get; private set; }
 		private Vector3Float[] vertices = new Vector3Float[3];
-		private int[] xMapping = new int[] { 1, 0, 0 };
-		private int[] yMapping = new int[] { 2, 2, 1 };
+
+		public Vector3 GetVertex(int index)
+		{
+			return new Vector3(vertices[index].x, vertices[index].y, vertices[index].z);
+		}
+
+		public override bool Contains(Vector3 position)
+		{
+			float distanceToPlane = Plane.GetDistanceFromPlane(new Vector3Float(position));
+
+			if(Math.Abs(distanceToPlane) < .001)
+			{
+				return base.Contains(position);
+			}
+
+			return false;
+		}
 
 		public TriangleShape(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2, MaterialAbstract material)
 		{
 			Vector3 planeNormal = Vector3.Cross(vertex1 - vertex0, vertex2 - vertex0).GetNormal();
 			double distanceFromOrigin = Vector3.Dot(vertex0, planeNormal);
-			plane = new PlaneFloat(new Vector3Float(planeNormal), (float)distanceFromOrigin);
+			Plane = new PlaneFloat(new Vector3Float(planeNormal), (float)distanceFromOrigin);
 			Material = material;
 			vertices[0] = new Vector3Float(vertex0);
 			vertices[1] = new Vector3Float(vertex1);
 			vertices[2] = new Vector3Float(vertex2);
+
 			center = new Vector3Float((vertex0 + vertex1 + vertex2) / 3);
-			if (Math.Abs(planeNormal.x) > Math.Abs(planeNormal.y))
-			{
-				if (Math.Abs(planeNormal.x) > Math.Abs(planeNormal.z))
-				{
-					// mostly facing x axis
-					majorAxis = 0;
-				}
-				else if (Math.Abs(planeNormal.y) > Math.Abs(planeNormal.z))
-				{
-					// mostly facing z
-					majorAxis = 2;
-				}
-			}
-			else if (Math.Abs(planeNormal.y) > Math.Abs(planeNormal.z))
-			{
-				// mostly facing y
-				majorAxis = 1;
-			}
-			else
-			{
-				// mostly facing z
-				majorAxis = 2;
-			}
+
+			var normalLengths = new [] { Math.Abs(planeNormal.X), Math.Abs(planeNormal.Y), Math.Abs(planeNormal.Z)};
+			MajorAxis = normalLengths.Select((v, i) => new { Axis = i, Value = Math.Abs(v) }).OrderBy(o => o.Value).Last().Axis;
+
 			for (int i = 0; i < 3; i++)
 			{
 				boundsOnMajorAxis.Left = Math.Min(vertices[i][xForMajorAxis], boundsOnMajorAxis.Left);
@@ -69,8 +100,8 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-		private int xForMajorAxis { get { return xMapping[majorAxis]; } }
-		private int yForMajorAxis { get { return yMapping[majorAxis]; } }
+		private int xForMajorAxis { get { return xMapping[MajorAxis]; } }
+		private int yForMajorAxis { get { return yMapping[MajorAxis]; } }
 		public override int FindFirstRay(RayBundle rayBundle, int rayIndexToStartCheckingFrom)
 		{
 			throw new NotImplementedException();
@@ -106,7 +137,7 @@ namespace MatterHackers.RayTracer
 		{
 			bool inFront;
 			float distanceToHit;
-			if (plane.RayHitPlane(ray, out distanceToHit, out inFront))
+			if (Plane.RayHitPlane(ray, out distanceToHit, out inFront))
 			{
 				bool wantFrontAndInFront = (ray.intersectionType & IntersectionType.FrontFace) == IntersectionType.FrontFace && inFront;
 				bool wantBackAndInBack = (ray.intersectionType & IntersectionType.BackFace) == IntersectionType.BackFace && !inFront;
@@ -115,25 +146,25 @@ namespace MatterHackers.RayTracer
 					Vector3 hitPosition = ray.origin + ray.directionNormal * distanceToHit;
 
 					bool haveHitIn2D = false;
-					if (majorAxis == 0)
+					if (MajorAxis == 0)
 					{
-						haveHitIn2D = Check2DHitOnMajorAxis(hitPosition.y, hitPosition.z);
+						haveHitIn2D = Check2DHitOnMajorAxis(hitPosition.Y, hitPosition.Z);
 					}
-					else if (majorAxis == 1)
+					else if (MajorAxis == 1)
 					{
-						haveHitIn2D = Check2DHitOnMajorAxis(hitPosition.x, hitPosition.z);
+						haveHitIn2D = Check2DHitOnMajorAxis(hitPosition.X, hitPosition.Z);
 					}
 					else
 					{
-						haveHitIn2D = Check2DHitOnMajorAxis(hitPosition.x, hitPosition.y);
+						haveHitIn2D = Check2DHitOnMajorAxis(hitPosition.X, hitPosition.Y);
 					}
 					if (haveHitIn2D)
 					{
 						IntersectInfo info = new IntersectInfo();
 						info.closestHitObject = this;
 						info.hitType = IntersectionType.FrontFace;
-						info.hitPosition = hitPosition;
-						info.normalAtHit = new Vector3(plane.planeNormal);
+						info.HitPosition = hitPosition;
+						info.normalAtHit = new Vector3(Plane.Normal);
 						info.distanceToHit = distanceToHit;
 
 						return info;
@@ -149,22 +180,16 @@ namespace MatterHackers.RayTracer
 			throw new NotImplementedException();
 		}
 
-		public override RGBA_Floats GetColor(IntersectInfo info)
+		public override (double u, double v) GetUv(IntersectInfo info)
 		{
-			if (Material.HasTexture)
-			{
-				Vector3Float Position = plane.planeNormal;
-				Vector3Float vecU = new Vector3Float(Position.y, Position.z, -Position.x);
-				Vector3Float vecV = Vector3Float.Cross(vecU, plane.planeNormal);
+			Vector3Float normal = Plane.Normal;
+			Vector3Float vecU = new Vector3Float(normal.y, normal.z, -normal.x);
+			Vector3Float vecV = Vector3Float.Cross(vecU, Plane.Normal);
 
-				double u = Vector3Float.Dot(new Vector3Float(info.hitPosition), vecU);
-				double v = Vector3Float.Dot(new Vector3Float(info.hitPosition), vecV);
-				return Material.GetColor(u, v);
-			}
-			else
-			{
-				return Material.GetColor(0, 0);
-			}
+			var u = Vector3Float.Dot(new Vector3Float(info.HitPosition), vecU);
+			var v = Vector3Float.Dot(new Vector3Float(info.HitPosition), vecV);
+
+			return (u, v);
 		}
 
 		public override double GetIntersectCost()

@@ -10,9 +10,9 @@ namespace SmartSweeper
 {
 	public class CController
 	{
-		private PathStorage m_LinesToDraw = new PathStorage();
-		private PathStorage m_BestPathToDraw = new PathStorage();
-		private PathStorage m_AveragePathToDraw = new PathStorage();
+		private VertexStorage m_LinesToDraw = new VertexStorage();
+		private VertexStorage m_BestPathToDraw = new VertexStorage();
+		private VertexStorage m_AveragePathToDraw = new VertexStorage();
 		private double m_SweeperScale;
 
 		private Vector3[] sweeper = {new Vector3(-1, -1, 0),
@@ -73,11 +73,11 @@ namespace SmartSweeper
 		private double dCrossoverRate;
 
 		//pens we use for the stats
-		private RGBA_Bytes m_BlackPen;
+		private Color m_BlackPen;
 
-		private RGBA_Bytes m_RedPen;
-		private RGBA_Bytes m_BluePen;
-		private RGBA_Bytes m_GreenPen;
+		private Color m_RedPen;
+		private Color m_BluePen;
+		private Color m_GreenPen;
 
 		//handle to the application window
 		private IImageByte m_hwndMain;
@@ -217,10 +217,10 @@ namespace SmartSweeper
 			}
 
 			//create a pen for the graph drawing
-			m_BlackPen = new RGBA_Bytes(0, 0, 0, 255);
-			m_BluePen = new RGBA_Bytes(0, 0, 255);
-			m_RedPen = new RGBA_Bytes(255, 0, 0);
-			m_GreenPen = new RGBA_Bytes(0, 150, 0);
+			m_BlackPen = new Color(0, 0, 0, 255);
+			m_BluePen = new Color(0, 0, 255);
+			m_RedPen = new Color(255, 0, 0);
+			m_GreenPen = new Color(0, 150, 0);
 
 			//fill the vertex buffers
 			for (int i = 0; i < sweeper.Length; ++i)
@@ -259,16 +259,16 @@ namespace SmartSweeper
 
 					//draw the mines
 					m_LinesToDraw.remove_all();
-					m_LinesToDraw.MoveTo(mineVB[0].x, mineVB[0].y);
+					m_LinesToDraw.MoveTo(mineVB[0].X, mineVB[0].Y);
 					for (int vert = 1; vert < mineVB.Count; ++vert)
 					{
-						m_LinesToDraw.LineTo(mineVB[vert].x, mineVB[vert].y);
+						m_LinesToDraw.LineTo(mineVB[vert].X, mineVB[vert].Y);
 					}
 
 					renderer.Render(m_LinesToDraw, m_BlackPen);
 				}
 
-				RGBA_Bytes currentColor = m_RedPen;
+				Color currentColor = m_RedPen;
 				//render the sweepers
 				for (int i = 0; i < m_vecSweepers.Count; i++)
 				{
@@ -284,10 +284,10 @@ namespace SmartSweeper
 
 					//draw the sweeper left track
 					m_LinesToDraw.remove_all();
-					m_LinesToDraw.MoveTo(sweeperVB[0].x, sweeperVB[0].y);
+					m_LinesToDraw.MoveTo(sweeperVB[0].X, sweeperVB[0].Y);
 					for (int vert = 1; vert < 4; ++vert)
 					{
-						m_LinesToDraw.LineTo(sweeperVB[vert].x, sweeperVB[vert].y);
+						m_LinesToDraw.LineTo(sweeperVB[vert].X, sweeperVB[vert].Y);
 					}
 
 					if (i == m_pGA.NumElite)
@@ -299,21 +299,21 @@ namespace SmartSweeper
 
 					//draw the sweeper right track
 					m_LinesToDraw.remove_all();
-					m_LinesToDraw.MoveTo(sweeperVB[4].x, sweeperVB[4].y);
+					m_LinesToDraw.MoveTo(sweeperVB[4].X, sweeperVB[4].Y);
 					for (int vert = 5; vert < 8; ++vert)
 					{
-						m_LinesToDraw.LineTo(sweeperVB[vert].x, sweeperVB[vert].y);
+						m_LinesToDraw.LineTo(sweeperVB[vert].X, sweeperVB[vert].Y);
 					}
 					renderer.Render(m_LinesToDraw, currentColor);
 
 					// draw the body
 					m_LinesToDraw.remove_all();
-					m_LinesToDraw.MoveTo(sweeperVB[8].x, sweeperVB[8].y);
-					m_LinesToDraw.LineTo(sweeperVB[9].x, sweeperVB[9].y);
-					m_LinesToDraw.MoveTo(sweeperVB[10].x, sweeperVB[10].y);
+					m_LinesToDraw.MoveTo(sweeperVB[8].X, sweeperVB[8].Y);
+					m_LinesToDraw.LineTo(sweeperVB[9].X, sweeperVB[9].Y);
+					m_LinesToDraw.MoveTo(sweeperVB[10].X, sweeperVB[10].Y);
 					for (int vert = 11; vert < 16; ++vert)
 					{
-						m_LinesToDraw.LineTo(sweeperVB[vert].x, sweeperVB[vert].y);
+						m_LinesToDraw.LineTo(sweeperVB[vert].X, sweeperVB[vert].Y);
 					}
 					renderer.Render(m_LinesToDraw, currentColor);
 				}
@@ -333,7 +333,7 @@ namespace SmartSweeper
 			matTransform = Matrix4X4.CreateScale(m_MineScale, m_MineScale, 1);
 
 			//translate
-			matTransform *= Matrix4X4.CreateTranslation(vPos.x, vPos.y, 0);
+			matTransform *= Matrix4X4.CreateTranslation(vPos.X, vPos.Y, 0);
 
 			//transform the ships vertices
 			for (int i = 0; i < VBuffer.Count; i++)

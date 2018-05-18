@@ -65,9 +65,9 @@ namespace MatterHackers.RayTracer
 
 			set
 			{
-				axisToWorld[3, 0] = value.x;
-				axisToWorld[3, 1] = value.y;
-				axisToWorld[3, 2] = value.z;
+				axisToWorld[3, 0] = value.X;
+				axisToWorld[3, 1] = value.Y;
+				axisToWorld[3, 2] = value.Z;
 			}
 		}
 
@@ -79,9 +79,9 @@ namespace MatterHackers.RayTracer
 			double y = screenY - heightInPixels / 2.0;
 			x *= oneOverScale;
 			y *= oneOverScale;
-			direction.x = x;
-			direction.y = y;
-			direction.z = -distanceToCameraPlane;
+			direction.X = x;
+			direction.Y = y;
+			direction.Z = -distanceToCameraPlane;
 
 			direction.Normalize();
 

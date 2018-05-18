@@ -51,12 +51,12 @@ namespace MatterHackers.Agg.UI.Tests
 		{
 			GuiWidget containerControl = new GuiWidget(200, 200);
 			containerControl.DoubleBuffer = true;
-			containerControl.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			containerControl.BackBuffer.NewGraphics2D().Clear(Color.White);
 			containerControl.OnDraw(containerControl.NewGraphics2D());
 
 			ScrollableWidget containerTest = new ScrollableWidget(200, 200);
 			containerTest.DoubleBuffer = true;
-			containerTest.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			containerTest.BackBuffer.NewGraphics2D().Clear(Color.White);
 			containerTest.OnDraw(containerTest.NewGraphics2D());
 
 			OutputImages(containerControl, containerTest);

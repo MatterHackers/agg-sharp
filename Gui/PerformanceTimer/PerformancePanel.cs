@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
@@ -51,14 +52,14 @@ namespace MatterHackers.Agg.UI
 			this.Name = name;
 			Margin = new BorderDouble(5);
 			Padding = new BorderDouble(3);
-			VAnchor |= VAnchor.ParentTop;
+			VAnchor |= VAnchor.Top;
 
 			if (panels == null)
 			{
 				panels = new PerformanceDisplayWidget();
 				panels.Selectable = false;
-				panels.HAnchor |= HAnchor.ParentLeft;
-				panels.VAnchor |= VAnchor.ParentTop;
+				panels.HAnchor |= HAnchor.Left;
+				panels.VAnchor |= VAnchor.Top;
 				panels.Visible = false; // start out not visible
 
 				if (true) // only add this when doing testing
@@ -82,8 +83,8 @@ namespace MatterHackers.Agg.UI
 			{
 				TextWidget titleWidget = new TextWidget(name, pointSize: 14)
 				{
-					BackgroundColor = new RGBA_Bytes(),
-					TextColor = new RGBA_Bytes(20, 120, 20),
+					BackgroundColor = new Color(),
+					TextColor = new Color(20, 120, 20),
 				};
 				titleWidget.Printer.DrawFromHintedCache = true;
 				AddChild(titleWidget);
@@ -93,7 +94,7 @@ namespace MatterHackers.Agg.UI
 
 			panels.AddChild(this);
 
-			BackgroundColor = new RGBA_Bytes(RGBA_Bytes.White, 180);
+			BackgroundColor = new Color(Color.White, 180);
 		}
 
 		public static PerformancePanel GetNamedPanel(string panelName)
@@ -184,8 +185,8 @@ namespace MatterHackers.Agg.UI
 					widget = new TextWidget("waiting")
 					{
 						AutoExpandBoundsToText = true,
-						TextColor = new RGBA_Bytes(120, 20, 20),
-						HAnchor = HAnchor.ParentLeft,
+						TextColor = new Color(120, 20, 20),
+						HAnchor = HAnchor.Left,
 					}
 				};
 
@@ -287,7 +288,7 @@ namespace MatterHackers.Agg.UI
 					GuiWidget child = sender as GuiWidget;
 					if (child != null)
 					{
-						child.MinimumSize = new VectorMath.Vector2(Math.Max(child.MinimumSize.x, child.Width), 0);
+						child.MinimumSize = new Vector2(Math.Max((double)child.MinimumSize.X, child.Width), 0);
 					}
 				};
 

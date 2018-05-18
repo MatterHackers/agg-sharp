@@ -1,14 +1,15 @@
+using System;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
-using System;
 
 namespace MatterHackers.Agg
 {
-	public class perspective_application : GuiWidget
+	public class perspective_application : GuiWidget, IDemoApp
 	{
 		private MatterHackers.Agg.ScanlineRasterizer g_rasterizer = new ScanlineRasterizer();
 		private ScanlineCachePacked8 g_scanline = new ScanlineCachePacked8();
@@ -37,6 +38,17 @@ namespace MatterHackers.Agg
 			transformationTypeRadioButton.SelectedIndex = 0;
 			AddChild(transformationTypeRadioButton);
 		}
+
+		public string Title { get; } = "Perspective Rendering";
+
+		public string DemoCategory { get; } = "Vector";
+
+		public string DemoDescription { get; } = "Perspective and bilinear transformations. In general, these classes can transform an arbitrary quadrangle "
+			+ " to another arbitrary quadrangle (with some restrictions). The example demonstrates how to transform "
+			+ "a rectangle to a quadrangle defined by 4 vertices. You can drag the 4 corners of the quadrangle, "
+			+ "as well as its boundaries. Note, that the perspective transformations don't work correctly if "
+			+ "the destination quadrangle is concave. Bilinear transformations give a different result, but "
+			+ "remain valid with any shape of the destination quadrangle.";
 
 		private void NeedsRedraw(object sender, EventArgs e)
 		{
@@ -86,7 +98,7 @@ namespace MatterHackers.Agg
 				image.Attach(backBuffer, new BlenderBGR());
 			}
 			ImageClippingProxy clippingProxy = new ImageClippingProxy(image);
-			clippingProxy.clear(new RGBA_Floats(1, 1, 1));
+			clippingProxy.clear(new ColorF(1, 1, 1));
 
 			g_rasterizer.SetVectorClipBox(0, 0, Width, Height);
 
@@ -117,10 +129,10 @@ namespace MatterHackers.Agg
 					VertexSourceApplyTransform trans_ell_stroke = new VertexSourceApplyTransform(ell_stroke, tr);
 
 					g_rasterizer.add_path(trans_ell);
-					scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0.5, 0.3, 0.0, 0.3));
+					scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new Color(0.5, 0.3, 0.0, 0.3));
 
 					g_rasterizer.add_path(trans_ell_stroke);
-					scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0.0, 0.3, 0.2, 1.0));
+					scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new Color(0.0, 0.3, 0.2, 1.0));
 				}
 			}
 			else
@@ -145,17 +157,17 @@ namespace MatterHackers.Agg
 					VertexSourceApplyTransform TransformedEllipesOutline = new VertexSourceApplyTransform(EllipseOutline, tr);
 
 					g_rasterizer.add_path(TransformedFilledEllipse);
-					scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0.5, 0.3, 0.0, 0.3));
+					scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new Color(0.5, 0.3, 0.0, 0.3));
 
 					g_rasterizer.add_path(TransformedEllipesOutline);
-					scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0.0, 0.3, 0.2, 1.0));
+					scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new Color(0.0, 0.3, 0.2, 1.0));
 				}
 			}
 
 			//--------------------------
 			// Render the "quad" tool and controls
 			g_rasterizer.add_path(quadPolygonControl);
-			scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0, 0.3, 0.5, 0.6));
+			scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new Color(0, 0.3, 0.5, 0.6));
 			//m_trans_type.Render(g_rasterizer, g_scanline, clippingProxy);
 			base.OnDraw(graphics2D);
 		}
@@ -202,33 +214,12 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new PerspectiveFactory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new perspective_application();
 
-	public class PerspectiveFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new perspective_application();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-				"Vector",
-				"Perspective Rendering",
-				"Perspective and bilinear transformations. In general, these classes can transform an arbitrary quadrangle "
-			+ " to another arbitrary quadrangle (with some restrictions). The example demonstrates how to transform "
-			+ "a rectangle to a quadrangle defined by 4 vertices. You can drag the 4 corners of the quadrangle, "
-			+ "as well as its boundaries. Note, that the perspective transformations don't work correctly if "
-			+ "the destination quadrangle is concave. Bilinear thansformations give a different result, but "
-			+ "remain valid with any shape of the destination quadrangle.",
-				600,
-				600);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(600, 600);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

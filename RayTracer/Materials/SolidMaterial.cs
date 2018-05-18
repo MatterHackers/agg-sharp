@@ -14,9 +14,9 @@ namespace MatterHackers.RayTracer
 {
 	public class SolidMaterial : MaterialAbstract
 	{
-		private RGBA_Floats color;
+		private ColorF color;
 
-		public SolidMaterial(RGBA_Floats color, double reflection, double transparency, double gloss)
+		public SolidMaterial(ColorF color, double reflection, double transparency, double gloss)
 		{
 			this.color = color;
 			this.Reflection = reflection;
@@ -29,7 +29,7 @@ namespace MatterHackers.RayTracer
 			get { return false; }
 		}
 
-		public override RGBA_Floats GetColor(double u, double v)
+		public override ColorF GetColor(double u, double v)
 		{
 			return color;
 		}

@@ -41,51 +41,13 @@ namespace MatterHackers.RayTracer
 		public override AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{
 			return new AxisAlignedBoundingBox(
-				new Vector3(position.x - radius, position.y - radius, position.z - radius),
-				new Vector3(position.x + radius, position.y + radius, position.z + radius));
+				new Vector3(position.X - radius, position.Y - radius, position.Z - radius),
+				new Vector3(position.X + radius, position.Y + radius, position.Z + radius));
 		}
 
 		public override double GetIntersectCost()
 		{
 			return 670;
-		}
-
-		public override RGBA_Floats GetColor(IntersectInfo info)
-		{
-			if (Material.HasTexture)
-			{
-				Vector3 vn = new Vector3(0, 1, 0).GetNormal(); // north pole / up
-				Vector3 ve = new Vector3(0, 0, 1).GetNormal(); // equator / sphere orientation
-				Vector3 vp = (info.hitPosition - position).GetNormal(); //points from center of sphere to intersection
-
-				double phi = Math.Acos(-Vector3.Dot(vp, vn));
-				double v = (phi * 2 / Math.PI) - 1;
-
-				double sinphi = Vector3.Dot(ve, vp) / Math.Sin(phi);
-				sinphi = sinphi < -1 ? -1 : sinphi > 1 ? 1 : sinphi;
-				double theta = Math.Acos(sinphi) * 2 / Math.PI;
-
-				double u;
-
-				if (Vector3.Dot(Vector3.Cross(vn, ve), vp) > 0)
-				{
-					u = theta;
-				}
-				else
-				{
-					u = 1 - theta;
-				}
-
-				// alternative but worse implementation
-				//double u = Math.Atan2(vp.x, vp.z);
-				//double v = Math.Acos(vp.y);
-				return this.Material.GetColor(u, v);
-			}
-			else
-			{
-				// skip uv calculation, just get the color
-				return this.Material.GetColor(0, 0);
-			}
 		}
 
 		/// <summary>
@@ -126,8 +88,8 @@ namespace MatterHackers.RayTracer
 						return null;
 					}
 					info.distanceToHit = distanceToFrontHit;
-					info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
-					info.normalAtHit = (info.hitPosition - position).GetNormal();
+					info.HitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
+					info.normalAtHit = (info.HitPosition - position).GetNormal();
 				}
 				else // check back faces
 				{
@@ -138,8 +100,8 @@ namespace MatterHackers.RayTracer
 					}
 					info.hitType = IntersectionType.BackFace;
 					info.distanceToHit = distanceToBackHit;
-					info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
-					info.normalAtHit = -(info.hitPosition - position).GetNormal();
+					info.HitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
+					info.normalAtHit = -(info.HitPosition - position).GetNormal();
 				}
 
 				return info;
@@ -177,8 +139,8 @@ namespace MatterHackers.RayTracer
 					double distanceToFrontHit = distanceFromRayOriginToSphereCenter - amountSphereCenterToRayIsGreaterThanRayOriginToEdge;
 
 					info.distanceToHit = distanceToFrontHit;
-					info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
-					info.normalAtHit = (info.hitPosition - position).GetNormal();
+					info.HitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
+					info.normalAtHit = (info.HitPosition - position).GetNormal();
 
 					yield return info;
 				}
@@ -191,8 +153,8 @@ namespace MatterHackers.RayTracer
 					double distanceToBackHit = distanceFromRayOriginToSphereCenter + amountSphereCenterToRayIsGreaterThanRayOriginToEdge;
 
 					info.distanceToHit = distanceToBackHit;
-					info.hitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
-					info.normalAtHit = -(info.hitPosition - position).GetNormal();
+					info.HitPosition = ray.origin + ray.directionNormal * info.distanceToHit;
+					info.normalAtHit = -(info.HitPosition - position).GetNormal();
 
 					yield return info;
 				}
@@ -201,7 +163,34 @@ namespace MatterHackers.RayTracer
 
 		public override string ToString()
 		{
-			return string.Format("Sphere ({0},{1},{2}) Radius: {3}", position.x, position.y, position.z, radius);
+			return string.Format("Sphere ({0},{1},{2}) Radius: {3}", position.X, position.Y, position.Z, radius);
+		}
+
+		public override (double u, double v) GetUv(IntersectInfo info)
+		{
+			Vector3 vn = new Vector3(0, 1, 0).GetNormal(); // north pole / up
+			Vector3 ve = new Vector3(0, 0, 1).GetNormal(); // equator / sphere orientation
+			Vector3 vp = (info.HitPosition - position).GetNormal(); //points from center of sphere to intersection
+
+			double phi = Math.Acos(-Vector3.Dot(vp, vn));
+			double v = (phi * 2 / Math.PI) - 1;
+
+			double sinphi = Vector3.Dot(ve, vp) / Math.Sin(phi);
+			sinphi = sinphi < -1 ? -1 : sinphi > 1 ? 1 : sinphi;
+			double theta = Math.Acos(sinphi) * 2 / Math.PI;
+
+			double u;
+
+			if (Vector3.Dot(Vector3.Cross(vn, ve), vp) > 0)
+			{
+				u = theta;
+			}
+			else
+			{
+				u = 1 - theta;
+			}
+
+			return (u, v);
 		}
 	}
 }

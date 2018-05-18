@@ -43,7 +43,10 @@ namespace MatterHackers.Agg
 
 		public WebCamWidget()
 		{
-			camera.TakeSnapShot();
+			if (camera.IsNewImageReady())
+			{
+				camera.TakeSnapShot();
+			}
 			AnchorAll();
 		}
 

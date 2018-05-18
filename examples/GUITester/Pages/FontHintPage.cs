@@ -80,7 +80,9 @@ namespace MatterHackers.Agg
 				VertexData transformedVertex = vertexData;
 				if (ShapePath.is_vertex(transformedVertex.command))
 				{
-					ApplayYWarp(ref transformedVertex.position.x, ref transformedVertex.position.y);
+					var position = transformedVertex.position;
+					ApplayYWarp(ref position.X, ref position.Y);
+					transformedVertex.position = position;
 				}
 				yield return transformedVertex;
 			}
@@ -140,8 +142,8 @@ namespace MatterHackers.Agg
 			TypeFacePrinter upperPrinter = new TypeFacePrinter(alphabet);
 			TypeFacePrinter lowerPrinter = new TypeFacePrinter(alphabet.ToLower());
 
-			graphics2D.Render(new VertexSourceApplyTransform(upperPrinter, Affine.NewScaling(1, (12 + ySizeUpper) / 12)), 20, textY - textHeight + yOffsetUpper, RGBA_Bytes.Black);
-			graphics2D.Render(new VertexSourceApplyTransform(lowerPrinter, Affine.NewScaling(1, (12 + ySizeLower) / 12)), 310, textY - textHeight + yOffsetLower, RGBA_Bytes.Black);
+			graphics2D.Render(new VertexSourceApplyTransform(upperPrinter, Affine.NewScaling(1, (12 + ySizeUpper) / 12)), 20, textY - textHeight + yOffsetUpper, Color.Black);
+			graphics2D.Render(new VertexSourceApplyTransform(lowerPrinter, Affine.NewScaling(1, (12 + ySizeLower) / 12)), 310, textY - textHeight + yOffsetLower, Color.Black);
 		}
 
 		public override void OnKeyDown(KeyEventArgs keyEvent)

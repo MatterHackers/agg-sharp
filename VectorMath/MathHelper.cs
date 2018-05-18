@@ -139,6 +139,21 @@ namespace MatterHackers.VectorMath
 			return (int)System.Math.Pow(2, System.Math.Ceiling(System.Math.Log((double)n, 2)));
 		}
 
+		public static double Clamp(double test, double min, double max)
+		{
+			if(test < min)
+			{
+				return min;
+			}
+
+			if(test > max)
+			{
+				return max;
+			}
+
+			return test;
+		}
+
 		/// <summary>
 		/// Returns the next power of two that is larger than the specified number.
 		/// </summary>
@@ -203,9 +218,10 @@ namespace MatterHackers.VectorMath
 				Value += Tau;
 			}
 
-			if (Value >= Tau)
+			if ((Value - Tau) > .00001)
 			{
-				Value -= Tau;
+				int numTurns = (int)(Value / Tau);
+				Value -= (Tau * numTurns);
 			}
 
 			if (Value < 0 || Value > Tau) throw new Exception("Value >= 0 && Value <= Tau");
@@ -219,12 +235,12 @@ namespace MatterHackers.VectorMath
 			if (EndAngle != Range0ToTau(EndAngle)) throw new Exception("EndAngle != Range0ToTau(EndAngle)");
 
 			double DeltaAngle = EndAngle - StartAngle;
-			if (DeltaAngle > Tau / 2)
+			if (DeltaAngle > Tau)
 			{
 				DeltaAngle -= Tau;
 			}
 
-			if (DeltaAngle < -Tau / 2)
+			if (DeltaAngle < -Tau)
 			{
 				DeltaAngle += Tau;
 			}

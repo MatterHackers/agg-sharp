@@ -1,13 +1,14 @@
+using System;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
-using System;
 
 namespace MatterHackers.Agg
 {
-	public class rounded_rect_application : GuiWidget
+	public class rounded_rect_application : GuiWidget, IDemoApp
 	{
 		private double[] m_x = new double[2];
 		private double[] m_y = new double[2];
@@ -54,12 +55,26 @@ namespace MatterHackers.Agg
 			m_offset.Text = "subpixel offset={0:F3}";
 			m_offset.SetRange(-2.0, 3.0);
 
-			m_white_on_black.TextColor = new RGBA_Bytes(127, 127, 127);
+			m_white_on_black.TextColor = new Color(127, 127, 127);
 			//m_white_on_black.inactive_color(new RGBA_Bytes(127, 127, 127));
 
-			m_DrawAsOutlineCheckBox.TextColor = new RGBA_Floats(.5, .5, .5).GetAsRGBA_Bytes();
+			m_DrawAsOutlineCheckBox.TextColor = new ColorF(.5, .5, .5).ToColor();
 			//m_DrawAsOutlineCheckBox.inactive_color(new RGBA_Bytes(127, 127, 127));
 		}
+
+		public string Title { get; } = "Rounded Rect";
+
+		public string DemoCategory { get; } = "Vector";
+
+		public string DemoDescription { get; } = "Yet another example dedicated to Gamma Correction. If you have a CRT monitor: The rectangle looks bad - "
+				+ " the rounded corners are thicker than its side lines. First try to drag the “subpixel offset” control "
+				+ "— it simply adds some fractional value to the coordinates. When dragging you will see that the rectangle"
+				+ "is 'blinking'. Then increase 'Gamma' to about 1.5. The result will look almost perfect — the visual "
+				+ "thickness of the rectangle remains the same. That's good, but turn the checkbox 'White on black' on — what "
+				+ "do we see? Our rounded rectangle looks terrible. Drag the 'subpixel offset' slider — it's blinking as hell."
+				+ "Now decrease 'Gamma' to about 0.6. What do we see now? Perfect result! If you use an LCD monitor, the good "
+				+ "value of gamma will be closer to 1.0 in both cases — black on white or white on black. There's no "
+				+ "perfection in this world, but at least you can control Gamma in Anti-Grain Geometry :-).";
 
 		private void NeedsRedraw(object sender, EventArgs e)
 		{
@@ -82,7 +97,7 @@ namespace MatterHackers.Agg
 			ImageClippingProxy clippingProxyNormal = new ImageClippingProxy(rasterNormal);
 			ImageClippingProxy clippingProxyGamma = new ImageClippingProxy(rasterGamma);
 
-			clippingProxyNormal.clear(m_white_on_black.Checked ? new RGBA_Floats(0, 0, 0) : new RGBA_Floats(1, 1, 1));
+			clippingProxyNormal.clear(m_white_on_black.Checked ? new ColorF(0, 0, 0) : new ColorF(1, 1, 1));
 
 			ScanlineRasterizer ras = new ScanlineRasterizer();
 			ScanlineCachePacked8 sl = new ScanlineCachePacked8();
@@ -97,10 +112,10 @@ namespace MatterHackers.Agg
 			e.init(m_x[0], m_y[0], 3, 3, 16);
 			ras.add_path(e);
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
-			scanlineRenderer.RenderSolid(clippingProxyNormal, ras, sl, new RGBA_Bytes(127, 127, 127));
+			scanlineRenderer.RenderSolid(clippingProxyNormal, ras, sl, new Color(127, 127, 127));
 			e.init(m_x[1], m_y[1], 3, 3, 16);
 			ras.add_path(e);
-			scanlineRenderer.RenderSolid(clippingProxyNormal, ras, sl, new RGBA_Bytes(127, 127, 127));
+			scanlineRenderer.RenderSolid(clippingProxyNormal, ras, sl, new Color(127, 127, 127));
 
 			double d = m_offset.Value;
 
@@ -120,7 +135,7 @@ namespace MatterHackers.Agg
 				ras.add_path(r);
 			}
 
-			scanlineRenderer.RenderSolid(clippingProxyGamma, ras, sl, m_white_on_black.Checked ? new RGBA_Bytes(255, 255, 255) : new RGBA_Bytes(0, 0, 0));
+			scanlineRenderer.RenderSolid(clippingProxyGamma, ras, sl, m_white_on_black.Checked ? new Color(255, 255, 255) : new Color(0, 0, 0));
 
 			base.OnDraw(graphics2D);
 		}
@@ -170,36 +185,12 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new RoundedRectFactory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new rounded_rect_application();
 
-	public class RoundedRectFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new rounded_rect_application();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-				"Vector",
-				"Rounded Rect",
-				"Yet another example dedicated to Gamma Correction. If you have a CRT monitor: The rectangle looks bad - "
-				+ " the rounded corners are thicker than its side lines. First try to drag the “subpixel offset” control "
-				+ "— it simply adds some fractional value to the coordinates. When dragging you will see that the rectangle"
-				+ "is 'blinking'. Then increase 'Gamma' to about 1.5. The result will look almost perfect — the visual "
-				+ "thickness of the rectangle remains the same. That's good, but turn the checkbox 'White on black' on — what "
-				+ "do we see? Our rounded rectangle looks terrible. Drag the 'subpixel offset' slider — it's blinking as hell."
-				+ "Now decrease 'Gamma' to about 0.6. What do we see now? Perfect result! If you use an LCD monitor, the good "
-				+ "value of gamma will be closer to 1.0 in both cases — black on white or white on black. There's no "
-				+ "perfection in this world, but at least you can control Gamma in Anti-Grain Geometry :-).",
-				600,
-				400);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(600, 400);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

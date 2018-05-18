@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace MatterHackers.Agg.UI
 {
@@ -26,6 +27,30 @@ namespace MatterHackers.Agg.UI
 			{
 				downStates.Add(key, down);
 			}
+
+			switch(key)
+			{
+				case Keys.LControlKey:
+				case Keys.RControlKey:
+				case Keys.ControlKey:
+					SetKeyDownState(Keys.Control, down);
+					break;
+
+				case Keys.LShiftKey:
+				case Keys.RShiftKey:
+				case Keys.ShiftKey:
+					SetKeyDownState(Keys.Shift, down);
+					break;
+
+				case Keys.Menu:
+					SetKeyDownState(Keys.Alt, down);
+					break;
+			}
+		}
+
+		public static void Clear()
+		{
+			downStates.Clear();
 		}
 	}
 }

@@ -108,7 +108,7 @@ namespace MatterHackers.Agg.UI
 		private GuiWidget contentOffsetHolder;
 		private SoftKeyboard keyboard;
 
-		public SoftKeyboardDisplayStateManager(GuiWidget content, RGBA_Bytes backgroundColor)
+		public SoftKeyboardDisplayStateManager(GuiWidget content, Color backgroundColor)
 		{
 			this.content = content;
 			AnchorAll();
@@ -246,7 +246,7 @@ namespace MatterHackers.Agg.UI
 					if (textWidgetScreenBounds.Bottom < topOfKeyboard)
 					{
 						// make sure the screen is not resizing vertically
-						content.VAnchor = VAnchor.AbsolutePosition;
+						content.VAnchor = VAnchor.Absolute;
 						// move the screen up so we can see the bottom of the text widget
 						content.OriginRelativeParent = new Vector2(0, topOfKeyboard - textWidgetScreenBounds.Bottom + 3);
 					}
@@ -356,9 +356,9 @@ namespace MatterHackers.Agg.UI
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			base.OnDraw(graphics2D);
-			if (content.OriginRelativeParent.y != 0)
+			if (content.OriginRelativeParent.Y != 0)
 			{
-				graphics2D.FillRectangle(0, 0, Width, KeyboardHeight, RGBA_Bytes.Black);
+				graphics2D.FillRectangle(0, 0, Width, KeyboardHeight, Color.Black);
 			}
 		}
 
@@ -380,7 +380,7 @@ namespace MatterHackers.Agg.UI
 				IsActive = true;
 
 				// make sure the screen is not resizing vertically
-				content.VAnchor = VAnchor.AbsolutePosition;
+				content.VAnchor = VAnchor.Absolute;
 				// move the screen up so we can see the bottom of the text widget
 				content.OriginRelativeParent = new Vector2(0, topOfKeyboard - textWidgetScreenBounds.Bottom + 10);
 			}

@@ -1,16 +1,17 @@
 using System;
 using System.Diagnostics;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg
 {
-	public class image_resample : GuiWidget
+	public class image_resample : GuiWidget, IDemoApp
 	{
 		private Stopwatch stopwatch = new Stopwatch();
 
@@ -62,12 +63,18 @@ namespace MatterHackers.Agg
 			AddChild(m_blur);
 		}
 
+		public string Title { get; } = "Image Transformations with Resampling";
+
+		public string DemoCategory { get; } = "Bitmap";
+
+		public string DemoDescription { get; } = "The demonstration of image transformations with resampling. You can see the difference in quality between regular image transformers and the ones with resampling. Of course, image tranformations with resampling work slower because they provide the best possible quality.";
+
 		public override void OnParentChanged(EventArgs e)
 		{
 			AnchorAll();
 
 			string img_name = "spheres.bmp";
-			if (!ImageIO.LoadImageData(img_name, image_resample.m_SourceImage))
+			if (!AggContext.ImageIO.LoadImageData(img_name, image_resample.m_SourceImage))
 			{
 				string buf;
 				buf = "File not found: "
@@ -155,7 +162,7 @@ namespace MatterHackers.Agg
 			if (m_gamma.Value != m_old_gamma)
 			{
 				m_gamma_lut.SetGamma(m_gamma.Value);
-				ImageIO.LoadImageData("spheres.bmp", m_SourceImage);
+				AggContext.ImageIO.LoadImageData("spheres.bmp", m_SourceImage);
 				//m_SourceImage.apply_gamma_dir(m_gamma_lut);
 				m_old_gamma = m_gamma.Value;
 			}
@@ -177,7 +184,7 @@ namespace MatterHackers.Agg
 
 			ImageClippingProxy clippingProxy = new ImageClippingProxy(pixf);
 
-			clippingProxy.clear(new RGBA_Floats(1, 1, 1));
+			clippingProxy.clear(new ColorF(1, 1, 1));
 
 			if (m_trans_type.SelectedIndex < 2)
 			{
@@ -203,7 +210,7 @@ namespace MatterHackers.Agg
 						rect.normalize_radius();
 
 						g_rasterizer.add_path(rect);
-						scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(.2, .2, .2));
+						scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new Color(.2, .2, .2));
 					}
 				}
 			}
@@ -211,7 +218,7 @@ namespace MatterHackers.Agg
 			//--------------------------
 			// Render the "quad" tool and controls
 			g_rasterizer.add_path(m_quad);
-			scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0, 0.3, 0.5, 0.1));
+			scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new Color(0, 0.3, 0.5, 0.1));
 
 			// Prepare the polygon to rasterize. Here we need to fill
 			// the destination (transformed) polygon.
@@ -366,7 +373,7 @@ namespace MatterHackers.Agg
 			t.text(buf);
 
 			g_rasterizer.add_path(pt);
-			scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new RGBA_Bytes(0, 0, 0));
+			scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, new Color(0, 0, 0));
 
 			//--------------------------
 			//m_trans_type.Render(g_rasterizer, g_scanline, clippingProxy);
@@ -440,25 +447,16 @@ namespace MatterHackers.Agg
 
 			base.OnKeyDown(keyEvent);
 		}
-	}
 
-	public class ImageResampleFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
+		[STAThread]
+		public static void Main(string[] args)
 		{
-			return new image_resample();
-		}
+			var demoWidget = new image_resample();
 
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-				"Bitmap",
-				"Image Transformations with Resampling",
-				"The demonstration of image transformations with resampling. You can see the difference in quality between regular image transformers and the ones with resampling. Of course, image tranformations with resampling work slower because they provide the best possible quality.",
-				600,
-				600);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(600, 600);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

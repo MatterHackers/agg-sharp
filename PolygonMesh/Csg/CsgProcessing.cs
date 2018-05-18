@@ -13,19 +13,20 @@
 // solids are correctly handled.
 //
 
-using MatterHackers.VectorMath;
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
 	public static class FaceHelper
 	{
 		public enum IntersectionType { None, Vertex, MeshEdge, Face }
+
 		public static IntersectionType Intersection(this Face face, Ray ray, out Vector3 intersectionPosition)
 		{
-			Plane facePlane = new Plane(face.normal, face.firstFaceEdge.firstVertex.Position);
+			Plane facePlane = new Plane(face.Normal, face.firstFaceEdge.FirstVertex.Position);
 			double distanceToHit;
 			bool hitFrontOfPlane;
 			if (facePlane.RayHitPlane(ray, out distanceToHit, out hitFrontOfPlane))
@@ -37,168 +38,83 @@ namespace MatterHackers.PolygonMesh.Csg
 			return IntersectionType.None;
 		}
 
-		public static MeshEdge GetIntersectedMeshEdge(this Face face, Vector3 intersectionPosition)
+		public static void SplitFaces(this Mesh meshToSplit, Mesh meshToConsider)
 		{
-			MeshEdge intersectedEdge = null;
-			return intersectedEdge;
-		}
-    }
-
-	public class CsgAcceleratedMesh
-	{
-		//int internalIntegerScale = 100;
-
-		public CsgAcceleratedMesh(Mesh source)
-		{
-			mesh = Mesh.Copy(source);
-			mesh.Triangulate();
-
-			//ScaleAndMakeInteger(mesh, internalIntegerScale);
-			//mesh.MergeVertices(); // now that it is integer remove degenerate faces
-		}
-
-		public static void ScaleAndMakeInteger(Mesh mesh, int scale)
-		{
-			for(int i=0; i<mesh.Vertices.Count; i++)
-			{
-				Vector3 intPosition = mesh.Vertices[i].Position;
-				intPosition.x = (int)(mesh.Vertices[i].Position.x * scale + .5);
-				intPosition.y = (int)(mesh.Vertices[i].Position.x * scale + .5);
-				intPosition.z = (int)(mesh.Vertices[i].Position.x * scale + .5);
-				mesh.Vertices[i].Position = intPosition;
-            }
-		}
-
-		public Mesh mesh { get; internal set; }
-
-		public void SplitOnAllEdgeIntersections(CsgAcceleratedMesh meshWidthEdges)
-		{
-			AxisAlignedBoundingBox boundsForFaces = this.mesh.GetAxisAlignedBoundingBox();
-			AxisAlignedBoundingBox boundsForEdges = meshWidthEdges.mesh.GetAxisAlignedBoundingBox();
+			AxisAlignedBoundingBox boundsForFaces = meshToSplit.GetAxisAlignedBoundingBox();
+			AxisAlignedBoundingBox boundsForEdges = meshToConsider.GetAxisAlignedBoundingBox();
 			AxisAlignedBoundingBox faceEdgeBoundsIntersection = AxisAlignedBoundingBox.Intersection(boundsForEdges, boundsForFaces);
 
-			foreach (var meshEdge in meshWidthEdges.GetMeshEdgesTouching(faceEdgeBoundsIntersection))
+			foreach (Face thisFace in meshToSplit.Faces.ToArray())// GetFacesTouching(faceEdgeBoundsIntersection).ToArray())
 			{
-				// Check the mesh edge bounds agains all polygons. If there is an intersection
-				// subdivide the mesh edge and if the face that is hit. If hit face on an edge only split the edge.
-				Vector3 end0 = meshEdge.VertexOnEnd[0].Position;
-				Vector3 end1 = meshEdge.VertexOnEnd[1].Position;
-				Ray ray = new Ray(end0, (end1 - end0).GetNormal());
-				AxisAlignedBoundingBox edgeBounds = new AxisAlignedBoundingBox(Vector3.ComponentMin(end0, end1), Vector3.ComponentMax(end0, end1));
-
-				foreach (Face face in GetFacesTouching(edgeBounds))
+				foreach (Face compareFace in meshToConsider.Faces)//.GetFacesTouching(thisFace.GetAxisAlignedBoundingBox()))
 				{
-					Vector3 intersectionPosition;
-					// intersect the face with the edge
-					switch (face.Intersection(ray, out intersectionPosition))
+					//distance from the face1 vertices to the face2 plane
+
+					//distances signs from the face1 vertices to the face2 plane
+
+					//if all the signs are zero, the planes are coplanar
+					//if all the signs are positive or negative, the planes do not intersect
+					//if the signs are not equal...
+					bool signsAreSame = true;
+					if (!signsAreSame)
 					{
-						case FaceHelper.IntersectionType.Vertex:
-							break;
+						//distance from the face2 vertices to the face1 plane
 
-						case FaceHelper.IntersectionType.MeshEdge:
-							{
-								SplitMeshEdge(meshEdge, intersectionPosition);
-								// split the face at intersectionPosition
-								SplitMeshEdgeAtPosition(face, intersectionPosition);
-							}
-							break;
+						//distances signs from the face2 vertices to the face1 plane
 
-						case FaceHelper.IntersectionType.Face:
-							{
-								SplitMeshEdge(meshEdge, intersectionPosition);
-								// split the face at intersectionPosition
-								SplitFaceAtPosition(face, intersectionPosition);
-							}
-							break;
+						//if the signs are not equal...
+						if(!signsAreSame)
+						{
+							// split all intersecting mesh edges
+							// get all plits and sort them along the line
+							// split the face at every pair of edge splits
+						}
 					}
 				}
 			}
 		}
 
-		private IEnumerable<MeshEdge> GetMeshEdgesTouching(AxisAlignedBoundingBox faceEdgeBoundsIntersection)
+		public static void FlipFaces(this Mesh a)
 		{
-			// TODO: make this only get the right mesh edges
-			foreach (var meshEdge in mesh.MeshEdges)
-			{
-				yield return meshEdge;
-			}
-		}
-
-		private void SplitMeshEdge(MeshEdge meshEdge, Vector3 intersectionPosition)
-		{
-			Vertex vertexCreatedDuringSplit;
-			MeshEdge meshEdgeCreatedDuringSplit;
-			// split the ray at intersectionPosition
-			mesh.SplitMeshEdge(meshEdge, out vertexCreatedDuringSplit, out meshEdgeCreatedDuringSplit);
-			vertexCreatedDuringSplit.Position = intersectionPosition;
-		}
-
-		private void SplitMeshEdgeAtPosition(Face face, Vector3 intersectionPosition)
-		{
-			MeshEdge intersectedEdge = face.GetIntersectedMeshEdge(intersectionPosition);
-			// split the edge
 			throw new NotImplementedException();
 		}
 
-		private void SplitFaceAtPosition(Face face, Vector3 intersectionPosition)
+		public static void MarkInternalVertices(this Mesh a, Mesh b)
 		{
-			//    ^           ^
-			//   / \         /|\
-			//  /   \   =   / . \
-			// /_____\     /_/_\_\  // imagine the bottom lines are connected to the end points
-
-			// get the center and all the vertices this face was connected to
-			List<Vertex> faceVertices = new List<Vertex>();
-			foreach(var vertex in face.Vertices())
-			{
-				faceVertices.Add(vertex);
-			}
-
-			// remove the face
-			mesh.DeleteFace(face);
-
-			// add the Vertex to the mesh
-			Vertex centerVertex = mesh.CreateVertex(intersectionPosition);
-
-			// put in the new faces
-			for(int i=0; i<faceVertices.Count; i++)
-			{
-				mesh.CreateFace(new Vertex[] { centerVertex, faceVertices[i], faceVertices[(i+1) % faceVertices.Count] });
-			}
+			throw new NotImplementedException();
 		}
 
-		private IEnumerable<Face> GetFacesTouching(AxisAlignedBoundingBox edgeBounds)
+		public static void MergeWith(this Mesh a, Mesh b)
+		{
+			throw new NotImplementedException();
+		}
+
+		public static void RemoveAllExternalEdges(this Mesh a)
+		{
+			throw new NotImplementedException();
+		}
+
+		public static void RemoveAllInternalEdges(this Mesh a)
+		{
+			throw new NotImplementedException();
+		}
+
+		public static IEnumerable<Face> GetFacesTouching(this Mesh a, AxisAlignedBoundingBox edgeBounds)
 		{
 			// TODO: make this only get the right faces
-			foreach(var face in mesh.Faces)
+			foreach (var face in a.Faces)
 			{
 				yield return face;
 			}
 		}
 
-		internal void FlipFaces()
+		public static IEnumerable<MeshEdge> GetMeshEdgesTouching(this Mesh a, AxisAlignedBoundingBox faceEdgeBoundsIntersection)
 		{
-			throw new NotImplementedException();
-		}
-
-		internal void MarkInternalVertices(CsgAcceleratedMesh b)
-		{
-			throw new NotImplementedException();
-		}
-
-		internal void MergeWith(CsgAcceleratedMesh b)
-		{
-			throw new NotImplementedException();
-		}
-
-		internal void RemoveAllExternalEdges()
-		{
-			throw new NotImplementedException();
-		}
-
-		internal void RemoveAllInternalEdges()
-		{
-			throw new NotImplementedException();
+			// TODO: make this only get the right mesh edges
+			foreach (var meshEdge in a.MeshEdges)
+			{
+				yield return meshEdge;
+			}
 		}
 	}
 }

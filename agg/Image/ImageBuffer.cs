@@ -43,6 +43,34 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
+		bool? _hasTransparency = null;
+		public bool HasTransparency
+		{
+			get
+			{
+				if(_hasTransparency == null)
+				{
+					_hasTransparency = false;
+					// check if the image has any alpha set to something other than 255
+					for(int y=0; y<Height; y++)
+					{
+						for(int x=0; x<Width; x++)
+						{
+							// get the alpha at this pixel
+							if(GetBuffer()[GetBufferOffsetXY(x, y) + 3] < 255)
+							{
+								_hasTransparency = true;
+								x = Width;
+								y = Height;
+							}
+						}
+					}
+				}
+
+				return _hasTransparency.Value;
+			}
+		}
+
 		protected int[] yTableArray;
 		protected int[] xTableArray;
 		private byte[] m_ByteBuffer;
@@ -66,6 +94,7 @@ namespace MatterHackers.Agg.Image
 			unchecked
 			{
 				ChangedCount++;
+				_hasTransparency = null;
 				ImageChanged?.Invoke(this, null);
 			}
 		}
@@ -101,37 +130,8 @@ namespace MatterHackers.Agg.Image
 			SetRecieveBlender(sourceImage.GetRecieveBlender());
 		}
 
-		public static ImageBuffer CreateScaledImage(ImageBuffer unscaledSourceImage, int width, int height)
+		public ImageBuffer(int width, int height, int bitsPerPixel = 32)
 		{
-			ImageBuffer destImage = new ImageBuffer(width, height, 32, unscaledSourceImage.GetRecieveBlender());
-
-			// If the source image is more than twice as big as our dest image.
-			while (unscaledSourceImage.Width >= destImage.Width * 2)
-			{
-				// The image sampler we use is a 2x2 filter so we need to scale by a max of 1/2 if we want to get good results.
-				// So we scale as many times as we need to get the Image to be the right size.
-				// If this were going to be a non-uniform scale we could do the x and y separately to get better results.
-				ImageBuffer halfImage = new ImageBuffer(unscaledSourceImage.Width / 2, unscaledSourceImage.Height / 2, 32, unscaledSourceImage.GetRecieveBlender());
-				halfImage.NewGraphics2D().Render(unscaledSourceImage, 0, 0, 0, halfImage.Width / (double)unscaledSourceImage.Width, halfImage.Height / (double)unscaledSourceImage.Height);
-				unscaledSourceImage = halfImage;
-
-				if (unscaledSourceImage.Width == width)
-				{
-					return unscaledSourceImage;
-				}
-			}
-
-			Graphics2D renderGraphics = destImage.NewGraphics2D();
-			renderGraphics.ImageRenderQuality = Graphics2D.TransformQuality.Best;
-
-			renderGraphics.Render(unscaledSourceImage, 0, 0, 0, destImage.Width / (double)unscaledSourceImage.Width, destImage.Height / (double)unscaledSourceImage.Height);
-
-			return destImage;
-		}
-
-		public ImageBuffer(int width, int height)
-		{
-			int bitsPerPixel = 32;
 			Allocate(width, height, width* (bitsPerPixel / 8), bitsPerPixel);
 			SetRecieveBlender(new BlenderBGRA());
 		}
@@ -305,7 +305,7 @@ namespace MatterHackers.Agg.Image
 			// make sure we make an exact copy
 			SetRecieveBlender(new BlenderBGRAExactCopy());
 			CopyFrom(sourceImage, sourceImage.GetBounds(), 0, 0);
-			
+
 			// then set the blender to what we expect
 			SetRecieveBlender(sourceImage.GetRecieveBlender());
 		}
@@ -434,7 +434,7 @@ namespace MatterHackers.Agg.Image
 
 		public virtual RectangleInt GetBounds()
 		{
-			return new RectangleInt(-(int)OriginOffset.x, -(int)OriginOffset.y, Width - (int)OriginOffset.x, Height - (int)OriginOffset.y);
+			return new RectangleInt(-(int)OriginOffset.X, -(int)OriginOffset.Y, Width - (int)OriginOffset.X, Height - (int)OriginOffset.Y);
 		}
 
 		public IRecieveBlenderByte GetRecieveBlender()
@@ -588,9 +588,9 @@ namespace MatterHackers.Agg.Image
 			return m_ByteBuffer;
 		}
 
-		public RGBA_Bytes GetPixel(int x, int y)
+		public Color GetPixel(int x, int y)
 		{
-			return recieveBlender.PixelToColorRGBA_Bytes(m_ByteBuffer, GetBufferOffsetXY(x, y));
+			return recieveBlender.PixelToColor(m_ByteBuffer, GetBufferOffsetXY(x, y));
 		}
 
 		public int GetBufferOffsetY(int y)
@@ -614,7 +614,7 @@ namespace MatterHackers.Agg.Image
 			//p[OrderA] = c.a;
 		}
 
-		public void BlendPixel(int x, int y, RGBA_Bytes c, byte cover)
+		public void BlendPixel(int x, int y, Color c, byte cover)
 		{
 			throw new System.NotImplementedException();
 			/*
@@ -624,14 +624,14 @@ namespace MatterHackers.Agg.Image
 				cover);*/
 		}
 
-		public void SetPixel(int x, int y, RGBA_Bytes color)
+		public void SetPixel(int x, int y, Color color)
 		{
-			x -= (int)OriginOffset.x;
-			y -= (int)OriginOffset.y;
+			x -= (int)OriginOffset.X;
+			y -= (int)OriginOffset.Y;
 			recieveBlender.CopyPixels(GetBuffer(), GetBufferOffsetXY(x, y), color, 1);
 		}
 
-		public void copy_hline(int x, int y, int len, RGBA_Bytes sourceColor)
+		public void copy_hline(int x, int y, int len, Color sourceColor)
 		{
 			int bufferOffset;
 			byte[] buffer = GetPixelPointerXY(x, y, out bufferOffset);
@@ -639,7 +639,7 @@ namespace MatterHackers.Agg.Image
 			recieveBlender.CopyPixels(buffer, bufferOffset, sourceColor, len);
 		}
 
-		public void copy_vline(int x, int y, int len, RGBA_Bytes sourceColor)
+		public void copy_vline(int x, int y, int len, Color sourceColor)
 		{
 			throw new NotImplementedException();
 #if false
@@ -654,7 +654,7 @@ namespace MatterHackers.Agg.Image
 #endif
 		}
 
-		public void blend_hline(int x1, int y, int x2, RGBA_Bytes sourceColor, byte cover)
+		public void blend_hline(int x1, int y, int x2, Color sourceColor, byte cover)
 		{
 			if (sourceColor.alpha != 0)
 			{
@@ -672,7 +672,7 @@ namespace MatterHackers.Agg.Image
 				{
 					do
 					{
-						recieveBlender.BlendPixel(buffer, bufferOffset, new RGBA_Bytes(sourceColor.red, sourceColor.green, sourceColor.blue, alpha));
+						recieveBlender.BlendPixel(buffer, bufferOffset, new Color(sourceColor.red, sourceColor.green, sourceColor.blue, alpha));
 						bufferOffset += m_DistanceInBytesBetweenPixelsInclusive;
 					}
 					while (--len != 0);
@@ -680,7 +680,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public void blend_vline(int x, int y1, int y2, RGBA_Bytes sourceColor, byte cover)
+		public void blend_vline(int x, int y1, int y2, Color sourceColor, byte cover)
 		{
 			throw new NotImplementedException();
 #if false
@@ -730,7 +730,7 @@ namespace MatterHackers.Agg.Image
 #endif
 		}
 
-		public void blend_solid_hspan(int x, int y, int len, RGBA_Bytes sourceColor, byte[] covers, int coversIndex)
+		public void blend_solid_hspan(int x, int y, int len, Color sourceColor, byte[] covers, int coversIndex)
 		{
 			int colorAlpha = sourceColor.alpha;
 			if (colorAlpha != 0)
@@ -749,7 +749,7 @@ namespace MatterHackers.Agg.Image
 						}
 						else
 						{
-							recieveBlender.BlendPixel(buffer, bufferOffset, new RGBA_Bytes(sourceColor.red, sourceColor.green, sourceColor.blue, alpha));
+							recieveBlender.BlendPixel(buffer, bufferOffset, new Color(sourceColor.red, sourceColor.green, sourceColor.blue, alpha));
 						}
 						bufferOffset += m_DistanceInBytesBetweenPixelsInclusive;
 						coversIndex++;
@@ -759,7 +759,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public void blend_solid_vspan(int x, int y, int len, RGBA_Bytes sourceColor, byte[] covers, int coversIndex)
+		public void blend_solid_vspan(int x, int y, int len, Color sourceColor, byte[] covers, int coversIndex)
 		{
 			if (sourceColor.alpha != 0)
 			{
@@ -787,7 +787,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public void copy_color_hspan(int x, int y, int len, RGBA_Bytes[] colors, int colorsIndex)
+		public void copy_color_hspan(int x, int y, int len, Color[] colors, int colorsIndex)
 		{
 			int bufferOffset = GetBufferOffsetXY(x, y);
 
@@ -801,7 +801,7 @@ namespace MatterHackers.Agg.Image
 			while (--len != 0);
 		}
 
-		public void copy_color_vspan(int x, int y, int len, RGBA_Bytes[] colors, int colorsIndex)
+		public void copy_color_vspan(int x, int y, int len, Color[] colors, int colorsIndex)
 		{
 			int bufferOffset = GetBufferOffsetXY(x, y);
 
@@ -815,13 +815,13 @@ namespace MatterHackers.Agg.Image
 			while (--len != 0);
 		}
 
-		public void blend_color_hspan(int x, int y, int len, RGBA_Bytes[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
+		public void blend_color_hspan(int x, int y, int len, Color[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
 		{
 			int bufferOffset = GetBufferOffsetXY(x, y);
 			recieveBlender.BlendPixels(m_ByteBuffer, bufferOffset, colors, colorsIndex, covers, coversIndex, firstCoverForAll, len);
 		}
 
-		public void blend_color_vspan(int x, int y, int len, RGBA_Bytes[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
+		public void blend_color_vspan(int x, int y, int len, Color[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
 		{
 			int bufferOffset = GetBufferOffsetXY(x, y);
 
@@ -869,7 +869,7 @@ namespace MatterHackers.Agg.Image
 
 		private bool IsPixelVisible(int x, int y)
 		{
-			RGBA_Bytes pixelValue = GetRecieveBlender().PixelToColorRGBA_Bytes(m_ByteBuffer, GetBufferOffsetXY(x, y));
+			Color pixelValue = GetRecieveBlender().PixelToColor(m_ByteBuffer, GetBufferOffsetXY(x, y));
 			return (pixelValue.Alpha0To255 != 0 || pixelValue.Red0To255 != 0 || pixelValue.Green0To255 != 0 || pixelValue.Blue0To255 != 0);
 		}
 
@@ -971,7 +971,7 @@ namespace MatterHackers.Agg.Image
 				// set the frame equal to the TempImage
 				Initialize(TempImage);
 
-				OriginOffset = new Vector2(-visibleBounds.Left + OldOriginOffset.x, -visibleBounds.Bottom + OldOriginOffset.y);
+				OriginOffset = new Vector2(-visibleBounds.Left + OldOriginOffset.X, -visibleBounds.Bottom + OldOriginOffset.Y);
 			}
 			else
 			{
@@ -1183,7 +1183,7 @@ namespace MatterHackers.Agg.Image
 		public RectangleInt GetBoundingRect()
 		{
 			RectangleInt boundingRect = new RectangleInt(0, 0, Width, Height);
-			boundingRect.Offset((int)OriginOffset.x, (int)OriginOffset.y);
+			boundingRect.Offset((int)OriginOffset.X, (int)OriginOffset.Y);
 			return boundingRect;
 		}
 
@@ -1211,10 +1211,10 @@ namespace MatterHackers.Agg.Image
 				RectangleInt AbsoluteSourceRect = boundsToCopyFrom;
 				// The first thing we need to do is make sure the frame is cleared. LBB [3/15/2004]
 				MatterHackers.Agg.Graphics2D graphics2D = NewGraphics2D();
-				graphics2D.Clear(new RGBA_Bytes(0, 0, 0, 0));
+				graphics2D.Clear(new Color(0, 0, 0, 0));
 
-				int x = -boundsToCopyFrom.Left - (int)sourceImage.OriginOffset.x;
-				int y = -boundsToCopyFrom.Bottom - (int)sourceImage.OriginOffset.y;
+				int x = -boundsToCopyFrom.Left - (int)sourceImage.OriginOffset.X;
+				int y = -boundsToCopyFrom.Bottom - (int)sourceImage.OriginOffset.Y;
 
 				graphics2D.Render(sourceImage, x, y, 0, 1, 1);
 			}
@@ -1231,11 +1231,60 @@ namespace MatterHackers.Agg.Image
 		}
 	}
 
+	public static class ImageBufferExtensionMethods
+	{
+		public static ImageBuffer CreateScaledImage(this ImageBuffer unscaledSourceImage, double width, double height)
+		{
+			return CreateScaledImage(unscaledSourceImage, (int)Math.Round(width), (int)Math.Round(height));
+		}
+
+		public static ImageBuffer CreateScaledImage(this ImageBuffer sourceImage, int width, int height)
+		{
+			ImageBuffer destImage = new ImageBuffer(width, height, 32, sourceImage.GetRecieveBlender());
+
+			// If the source image is more than twice as big as our dest image.
+			while (sourceImage.Width >= destImage.Width * 2)
+			{
+				// The image sampler we use is a 2x2 filter so we need to scale by a max of 1/2 if we want to get good results.
+				// So we scale as many times as we need to get the Image to be the right size.
+				// If this were going to be a non-uniform scale we could do the x and y separately to get better results.
+				ImageBuffer halfImage = new ImageBuffer(sourceImage.Width / 2, sourceImage.Height / 2, 32, sourceImage.GetRecieveBlender());
+				halfImage.NewGraphics2D().Render(sourceImage, 0, 0, 0, halfImage.Width / (double)sourceImage.Width, halfImage.Height / (double)sourceImage.Height);
+				sourceImage = halfImage;
+
+				if (sourceImage.Width == width)
+				{
+					return sourceImage;
+				}
+			}
+
+			Graphics2D renderGraphics = destImage.NewGraphics2D();
+			renderGraphics.ImageRenderQuality = Graphics2D.TransformQuality.Best;
+
+			renderGraphics.Render(sourceImage, 0, 0, 0, destImage.Width / (double)sourceImage.Width, destImage.Height / (double)sourceImage.Height);
+
+			return destImage;
+		}
+
+		public static ImageBuffer CreateScaledImage(this ImageBuffer image, double ratio)
+		{
+			return CreateScaledImage(image, image.Width * ratio, image.Height * ratio);
+		}
+
+		public static ImageBuffer ToGrayscale(this ImageBuffer sourceImage)
+		{
+			var outputImage = new ImageBuffer(sourceImage.Width, sourceImage.Height, 8, new blender_gray(1));
+			outputImage.NewGraphics2D().Render(sourceImage, 0, 0);
+
+			return outputImage;
+		}
+	}
+
 	public static class DoCopyOrBlend
 	{
 		private const byte base_mask = 255;
 
-		public static void BasedOnAlpha(IRecieveBlenderByte recieveBlender, byte[] destBuffer, int bufferOffset, RGBA_Bytes sourceColor)
+		public static void BasedOnAlpha(IRecieveBlenderByte recieveBlender, byte[] destBuffer, int bufferOffset, Color sourceColor)
 		{
 			//if (sourceColor.m_A != 0)
 			{
@@ -1252,7 +1301,7 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public static void BasedOnAlphaAndCover(IRecieveBlenderByte recieveBlender, byte[] destBuffer, int bufferOffset, RGBA_Bytes sourceColor, int cover)
+		public static void BasedOnAlphaAndCover(IRecieveBlenderByte recieveBlender, byte[] destBuffer, int bufferOffset, Color sourceColor, int cover)
 		{
 			if (cover == 255)
 			{

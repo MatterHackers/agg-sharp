@@ -40,92 +40,84 @@ using System.Collections.Generic;
 
 namespace Net3dBool
 {
+	public enum SegmentEnd { Vertex, Face, Edge };
+
 	/// <summary>
 	/// Represents a line segment resulting from a intersection of a face and a plane.
 	/// </summary>
 	public class Segment
 	{
-		/** line resulting from the two planes intersection */
+		// line resulting from the two planes intersection
 		private Line line;
-		/** shows how many ends were already defined */
+		// shows how many ends were already defined
 		private int index;
 
-		/** distance from the segment starting point to the point defining the plane */
-		public double StartDist { get; private set; }
-		/** distance from the segment ending point to the point defining the plane */
-		private double endDist;
+		// distance from the segment starting point to the point defining the plane
+		public double StartDistance { get; private set; }
+		// distance from the segment ending point to the point defining the plane
+		public double EndDistance { get; private set; }
 
-		/** starting point status relative to the face */
-		private int startType;
-		/** intermediate status relative to the face */
-		private int middleType;
-		/** ending point status relative to the face */
-		private int endType;
+		// starting point status relative to the face
+		public SegmentEnd StartType { get; private set; }
+		// intermediate status relative to the face
+		public SegmentEnd MiddleType { get; private set; }
+		// ending point status relative to the face
+		public SegmentEnd EndType { get; private set; }
 
-		/** nearest vertex from the starting point */
-		private Vertex startVertex;
-		/** nearest vertex from the ending point */
-		private Vertex endVertex;
+		// nearest vertex from the starting point
+		public Vertex StartVertex { get; private set; }
+		// nearest vertex from the ending point
+		public Vertex EndVertex { get; private set; }
 
-		/** start of the intersection point */
-		private Vector3 startPos;
-		/** end of the intersection point */
-		private Vector3 endPos;
+		// start of the intersection point
+		public Vector3 StartPosition { get; private set; }
+		// end of the intersection point
+		public Vector3 EndPosition { get; private set; }
 
-		/** define as vertex one of the segment ends */
-		public static int VERTEX = 1;
-		/** define as face one of the segment ends */
-		public static int FACE = 2;
-		/** define as edge one of the segment ends */
-		public static int EDGE = 3;
-
-		/** tolerance value to test equalities */
+		// tolerance value to test equalities
 		private static double TOL = 1e-10f;
 
-		//---------------------------------CONSTRUCTORS---------------------------------//
-
-		/**
-     * Constructs a Segment based on elements obtained from the two planes relations 
-     * 
-     * @param line resulting from the two planes intersection
-     * @param face face that intersects with the plane
-     * @param sign1 position of the face vertex1 relative to the plane (-1 behind, 1 front, 0 on)
-     * @param sign2 position of the face vertex1 relative to the plane (-1 behind, 1 front, 0 on)
-     * @param sign3 position of the face vertex1 relative to the plane (-1 behind, 1 front, 0 on)  
-     */
-		public Segment(Line line, Face face, int sign1, int sign2, int sign3)
+		/// <summary>
+		/// Constructs a Segment based on elements obtained from the two planes relations
+		/// </summary>
+		/// <param name="line"></param>
+		/// <param name="face"></param>
+		/// <param name="side1"></param>
+		/// <param name="side2"></param>
+		/// <param name="side3"></param>
+		public Segment(Line line, CsgFace face, PlaneSide side1, PlaneSide side2, PlaneSide side3)
 		{
 			this.line = line;
 			index = 0;
 
 			//VERTEX is an end
-			if (sign1 == 0)
+			if (side1 == PlaneSide.On)
 			{
 				SetVertex(face.v1);
 				//other vertices on the same side - VERTEX-VERTEX VERTEX
-				if (sign2 == sign3)
+				if (side2 == side3)
 				{
 					SetVertex(face.v1);
 				}
 			}
 
 			//VERTEX is an end
-			if (sign2 == 0)
+			if (side2 == PlaneSide.On)
 			{
 				SetVertex(face.v2);
 				//other vertices on the same side - VERTEX-VERTEX VERTEX
-				if (sign1 == sign3)
+				if (side1 == side3)
 				{
 					SetVertex(face.v2);
 				}
 			}
 
 			//VERTEX is an end
-			if (sign3 == 0)
+			if (side3 == PlaneSide.On)
 			{
 				SetVertex(face.v3);
 				//other vertices on the same side - VERTEX-VERTEX VERTEX
-				if (sign1 == sign2)
+				if (side1 == side2)
 				{
 					SetVertex(face.v3);
 				}
@@ -135,155 +127,43 @@ namespace Net3dBool
 			if (GetNumEndsSet() != 2)
 			{
 				//EDGE is an end
-				if ((sign1 == 1 && sign2 == -1) || (sign1 == -1 && sign2 == 1))
+				if ((side1 == PlaneSide.Front && side2 == PlaneSide.Back)
+					|| (side1 == PlaneSide.Back && side2 == PlaneSide.Front))
 				{
 					SetEdge(face.v1, face.v2);
 				}
 				//EDGE is an end
-				if ((sign2 == 1 && sign3 == -1) || (sign2 == -1 && sign3 == 1))
+				if ((side2 == PlaneSide.Front && side3 == PlaneSide.Back)
+					|| (side2 == PlaneSide.Back && side3 == PlaneSide.Front))
 				{
 					SetEdge(face.v2, face.v3);
 				}
 				//EDGE is an end
-				if ((sign3 == 1 && sign1 == -1) || (sign3 == -1 && sign1 == 1))
+				if ((side3 == PlaneSide.Front && side1 == PlaneSide.Back)
+					|| (side3 == PlaneSide.Back && side1 == PlaneSide.Front))
 				{
 					SetEdge(face.v3, face.v1);
 				}
 			}
 		}
 
-		private Segment()
-		{
-		}
-
-		//-----------------------------------OVERRIDES----------------------------------//
-
-		/**
-     * Clones the Segment object
-     * 
-     * @return cloned Segment object
-     */
-		public Segment Clone()
-		{
-			Segment clone = new Segment();
-			clone.line = line;
-			clone.index = index;
-			clone.StartDist = StartDist;
-			clone.endDist = endDist;
-			clone.StartDist = startType;
-			clone.middleType = middleType;
-			clone.endType = endType;
-			clone.startVertex = startVertex;
-			clone.endVertex = endVertex;
-			clone.startPos = startPos;
-			clone.endPos = endPos;
-
-			return clone;
-		}
-
-		//-------------------------------------GETS-------------------------------------//
-
-		/**
-     * Gets the start vertex
-     * 
-     * @return start vertex
-     */
-		public Vertex GetStartVertex()
-		{
-			return startVertex;
-		}
-
-		/**
-     * Gets the end vertex
-     * 
-     * @return end vertex
-     */
-		public Vertex GetEndVertex()
-		{
-			return endVertex;
-		}
-
-		/**
-     * Gets the distance from the origin until ending point
-     * 
-     * @return distance from the origin until the ending point
-     */
-		public double GetEndDistance()
-		{
-			return endDist;
-		}
-
-		/**
-     * Gets the type of the starting point
-     * 
-     * @return type of the starting point
-     */
-		public int GetStartType()
-		{
-			return startType;
-		}
-
-		/**
-     * Gets the type of the segment between the starting and ending points
-     * 
-     * @return type of the segment between the starting and ending points
-     */
-		public int GetIntermediateType()
-		{
-			return middleType;
-		}
-
-		/**
-     * Gets the type of the ending point
-     * 
-     * @return type of the ending point
-     */
-		public int GetEndType()
-		{
-			return endType;
-		}
-
-		/**
-     * Gets the number of ends already set
-     *
-     * @return number of ends already set
-     */
+		/// <summary>
+		/// Gets the number of ends already set
+		/// </summary>
+		/// <returns></returns>
 		public int GetNumEndsSet()
 		{
 			return index;
 		}
 
-		/**
-     * Gets the starting position
-     * 
-     * @return start position
-     */
-		public Vector3 GetStartPosition()
-		{
-			return startPos;
-		}
-
-		/**
-     * Gets the ending position
-     * 
-     * @return ending position
-     */
-		public Vector3 GetEndPosition()
-		{
-			return endPos;
-		}
-
-		//------------------------------------OTHERS------------------------------------//
-
-		/**
-     * Checks if two segments intersect
-     * 
-     * @param segment the other segment to check the intesection
-     * @return true if the segments intersect, false otherwise
-     */
+		/// <summary>
+		/// Checks if two segments intersect
+		/// </summary>
+		/// <param name="segment"></param>
+		/// <returns></returns>
 		public bool Intersect(Segment segment)
 		{
-			if (endDist < segment.StartDist + TOL || segment.endDist < StartDist + TOL)
+			if (EndDistance < segment.StartDistance + TOL || segment.EndDistance < StartDistance + TOL)
 			{
 				return false;
 			}
@@ -293,49 +173,46 @@ namespace Net3dBool
 			}
 		}
 
-		//---------------------------------PRIVATES-------------------------------------//
-
-		/**
-     * Sets an end as vertex (starting point if none end were defined, ending point otherwise)
-     * 
-     * @param vertex the vertex that is an segment end 
-     * @return false if all the ends were already defined, true otherwise
-     */
+		/// <summary>
+		/// Sets an end as vertex (starting point if none end were defined, ending point otherwise)
+		/// </summary>
+		/// <param name="vertex"></param>
+		/// <returns>false if all the ends were already defined, true otherwise</returns>
 		private bool SetVertex(Vertex vertex)
 		{
 			//none end were defined - define starting point as VERTEX
 			if (index == 0)
 			{
-				startVertex = vertex;
-				startType = VERTEX;
-				StartDist = line.ComputePointToPointDistance(vertex.GetPosition());
-				startPos = startVertex.GetPosition();
+				StartVertex = vertex;
+				StartType = SegmentEnd.Vertex;
+				StartDistance = line.ComputePointToPointDistance(vertex.Position);
+				StartPosition = StartVertex.Position;
 				index++;
 				return true;
 			}
 			//starting point were defined - define ending point as VERTEX
 			if (index == 1)
 			{
-				endVertex = vertex;
-				endType = VERTEX;
-				endDist = line.ComputePointToPointDistance(vertex.GetPosition());
-				endPos = endVertex.GetPosition();
+				EndVertex = vertex;
+				EndType = SegmentEnd.Vertex;
+				EndDistance = line.ComputePointToPointDistance(vertex.Position);
+				EndPosition = EndVertex.Position;
 				index++;
 
 				//defining middle based on the starting point
 				//VERTEX-VERTEX-VERTEX
-				if (startVertex.Equals(endVertex))
+				if (StartVertex.Equals(EndVertex))
 				{
-					middleType = VERTEX;
+					MiddleType = SegmentEnd.Vertex;
 				}
 				//VERTEX-EDGE-VERTEX
-				else if (startType == VERTEX)
+				else if (StartType == SegmentEnd.Vertex)
 				{
-					middleType = EDGE;
+					MiddleType = SegmentEnd.Edge;
 				}
 
 				//the ending point distance should be smaller than  starting point distance 
-				if (StartDist > endDist)
+				if (StartDistance > EndDistance)
 				{
 					SwapEnds();
 				}
@@ -348,41 +225,38 @@ namespace Net3dBool
 			}
 		}
 
-		/**
-     * Sets an end as edge (starting point if none end were defined, ending point otherwise)
-     * 
-     * @param vertex1 one of the vertices of the intercepted edge 
-     * @param vertex2 one of the vertices of the intercepted edge
-     * @return false if all ends were already defined, true otherwise
-     */
+		/// <summary>
+		/// Sets an end as edge (starting point if none end were defined, ending point otherwise)
+		/// </summary>
+		/// <param name="vertex1"></param>
+		/// <param name="vertex2"></param>
+		/// <returns>false if all ends were already defined, true otherwise</returns>
 		private bool SetEdge(Vertex vertex1, Vertex vertex2)
 		{
-			Vector3 point1 = vertex1.GetPosition();
-			Vector3 point2 = vertex2.GetPosition();
-			Vector3 edgeDirection = new Vector3(point2.x - point1.x, point2.y - point1.y, point2.z - point1.z);
-			Line edgeLine = new Line(edgeDirection, point1);
+			Vector3 edgeDirection = vertex2.Position - vertex1.Position;
+			Line edgeLine = new Line(edgeDirection, vertex1.Position);
 
 			if (index == 0)
 			{
-				startVertex = vertex1;
-				startType = EDGE;
-				startPos = line.ComputeLineIntersection(edgeLine);
-				StartDist = line.ComputePointToPointDistance(startPos);
-				middleType = FACE;
+				StartVertex = vertex1;
+				StartType = SegmentEnd.Edge;
+				StartPosition = line.ComputeLineIntersection(edgeLine);
+				StartDistance = line.ComputePointToPointDistance(StartPosition);
+				MiddleType = SegmentEnd.Face;
 				index++;
 				return true;
 			}
 			else if (index == 1)
 			{
-				endVertex = vertex1;
-				endType = EDGE;
-				endPos = line.ComputeLineIntersection(edgeLine);
-				endDist = line.ComputePointToPointDistance(endPos);
-				middleType = FACE;
+				EndVertex = vertex1;
+				EndType = SegmentEnd.Edge;
+				EndPosition = line.ComputeLineIntersection(edgeLine);
+				EndDistance = line.ComputePointToPointDistance(EndPosition);
+				MiddleType = SegmentEnd.Face;
 				index++;
 
 				//the ending point distance should be smaller than  starting point distance 
-				if (StartDist > endDist)
+				if (StartDistance > EndDistance)
 				{
 					SwapEnds();
 				}
@@ -395,24 +269,26 @@ namespace Net3dBool
 			}
 		}
 
-		/** Swaps the starting point and the ending point */
+		/// <summary>
+		/// Swaps the starting point and the ending point
+		/// </summary>
 		private void SwapEnds()
 		{
-			double distTemp = StartDist;
-			StartDist = endDist;
-			endDist = distTemp;
+			double distTemp = StartDistance;
+			StartDistance = EndDistance;
+			EndDistance = distTemp;
 
-			int typeTemp = startType;
-			startType = endType;
-			endType = typeTemp;
+			SegmentEnd typeTemp = StartType;
+			StartType = EndType;
+			EndType = typeTemp;
 
-			Vertex vertexTemp = startVertex;
-			startVertex = endVertex;
-			endVertex = vertexTemp;
+			Vertex vertexTemp = StartVertex;
+			StartVertex = EndVertex;
+			EndVertex = vertexTemp;
 
-			Vector3 posTemp = startPos;
-			startPos = endPos;
-			endPos = posTemp;
+			Vector3 posTemp = StartPosition;
+			StartPosition = EndPosition;
+			EndPosition = posTemp;
 		}
 	}
 }

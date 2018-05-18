@@ -217,8 +217,13 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnKeyDown(KeyEventArgs keyEvent)
 		{
-			m_poly.OnKeyDown(keyEvent);
+			// this must be called first to ensure we get the correct Handled state
 			base.OnKeyDown(keyEvent);
+
+			if (!keyEvent.Handled)
+			{
+				m_poly.OnKeyDown(keyEvent);
+			}
 		}
 
 		// Vertex source interface
@@ -295,7 +300,7 @@ namespace MatterHackers.Agg.UI
 		{
 			x = 0;
 			y = 0;
-			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.CommandStop;
+			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.Stop;
 			switch (m_idx)
 			{
 				case 0:
@@ -325,16 +330,16 @@ namespace MatterHackers.Agg.UI
 	//template<class IColorType>
 	public class bezier_ctrl : bezier_ctrl_impl
 	{
-		private RGBA_Floats m_color;
+		private ColorF m_color;
 
 		public bezier_ctrl()
 		{
-			m_color = new RGBA_Floats(0.0, 0.0, 0.0);
+			m_color = new ColorF(0.0, 0.0, 0.0);
 		}
 
 		public void line_color(IColorType c)
 		{
-			m_color = c.GetAsRGBA_Floats();
+			m_color = c.ToColorF();
 		}
 
 		public override IColorType color(int i)
@@ -501,7 +506,13 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnKeyDown(KeyEventArgs keyEvent)
 		{
-			m_poly.OnKeyDown(keyEvent);
+			// this must be called first to ensure we get the correct Handled state
+			base.OnKeyDown(keyEvent);
+
+			if (!keyEvent.Handled)
+			{
+				m_poly.OnKeyDown(keyEvent);
+			}
 		}
 
 		// Vertex source interface
@@ -566,7 +577,7 @@ namespace MatterHackers.Agg.UI
 		{
 			x = 0;
 			y = 0;
-			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.CommandStop;
+			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.Stop;
 			switch (m_idx)
 			{
 				case 0:
@@ -599,7 +610,7 @@ namespace MatterHackers.Agg.UI
 
 		public curve3_ctrl()
 		{
-			m_color = new RGBA_Floats(0.0, 0.0, 0.0);
+			m_color = new ColorF(0.0, 0.0, 0.0);
 		}
 
 		public void line_color(IColorType c)

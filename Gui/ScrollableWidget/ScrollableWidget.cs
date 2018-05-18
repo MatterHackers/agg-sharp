@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2016, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.VectorMath;
 using System;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
@@ -38,14 +39,9 @@ namespace MatterHackers.Agg.UI
 
 		public bool AutoScroll { get; set; }
 
-		private ScrollingArea scrollArea;
+		public bool SuppressScroll { get; set; }
 
-		private ScrollBar verticalScrollBar;
-
-		public ScrollBar VerticalScrollBar
-		{
-			get { return verticalScrollBar; }
-		}
+		public ScrollBar VerticalScrollBar { get; private set; }
 
 		public Vector2 TopLeftOffset
 		{
@@ -89,12 +85,61 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public Vector2 ScrollPositionFromTop
+		{
+			get
+			{
+				return scrollArea.Position + new Vector2(0, ScrollArea.Height - Height);
+			}
+
+			set
+			{
+				scrollArea.Position = value + new Vector2(0, Height - ScrollArea.Height);
+			}
+		}
+
+		public override void OnKeyDown(KeyEventArgs keyEvent)
+		{
+			// make sure children controls get to try to handle this event first
+			base.OnKeyDown(keyEvent);
+
+			// check for arrow keys (but only if no modifiers are pressed)
+			if (!keyEvent.Handled
+				&& !keyEvent.Control
+				&& !keyEvent.Alt
+				&& !keyEvent.Shift)
+			{
+				var startingScrollPosition = ScrollPosition;
+				switch (keyEvent.KeyCode)
+				{
+					case Keys.Down:
+						ScrollPosition += new Vector2(0, 16);
+						break;
+
+					case Keys.PageDown:
+						ScrollPosition += new Vector2(0, Height - 20);
+						break;
+
+					case Keys.Up:
+						ScrollPosition -= new Vector2(0, 16);
+						break;
+
+					case Keys.PageUp:
+						ScrollPosition -= new Vector2(0, Height - 20);
+						break;
+				}
+
+				// we only handled the key if it resulted in the arrea scrolling
+				if(startingScrollPosition != ScrollPosition)
+				{
+					keyEvent.Handled = true;
+				}
+			}
+		}
+
 		private void OnScrollPositionChanged()
 		{
-			if (ScrollPositionChanged != null)
-			{
-				ScrollPositionChanged(this, null);
-			}
+			ScrollPositionChanged?.Invoke(this, null);
 		}
 
 		public ScrollingArea ScrollArea
@@ -107,6 +152,8 @@ namespace MatterHackers.Agg.UI
 			base.AddChild(widgetToAdd, indexToAddAt);
 		}
 
+		private ScrollingArea scrollArea;
+
 		public ScrollableWidget(bool autoScroll = false)
 			: this(0, 0, autoScroll)
 		{
@@ -116,13 +163,13 @@ namespace MatterHackers.Agg.UI
 			: base(width, height)
 		{
 			scrollArea = new ScrollingArea(this);
-			scrollArea.HAnchor = UI.HAnchor.FitToChildren;
+			scrollArea.HAnchor = UI.HAnchor.Fit;
 			AutoScroll = autoScroll;
-			verticalScrollBar = new ScrollBar(this);
+			VerticalScrollBar = new ScrollBar(this);
 
 			base.AddChild(scrollArea);
-			base.AddChild(verticalScrollBar);
-			verticalScrollBar.HAnchor = UI.HAnchor.ParentRight;
+			base.AddChild(VerticalScrollBar);
+			VerticalScrollBar.HAnchor = UI.HAnchor.Right;
 		}
 
 		public override void OnBoundsChanged(EventArgs e)
@@ -174,28 +221,35 @@ namespace MatterHackers.Agg.UI
 			return true;
 		}
 
-		bool haveScrolledTooFar = false;
+		bool mouseEventIsTouchScrolling = false;
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
 		{
-			haveScrolledTooFar = false;
+			mouseEventIsTouchScrolling = false;
 			mouseDownY = mouseEvent.Y;
 			mouseDownOnScrollArea = true;
-			scrollOnDownY = ScrollPosition.y;
+			scrollOnDownY = ScrollPosition.Y;
 			base.OnMouseDown(mouseEvent);
 		}
 
 		public override void OnMouseMove(MouseEventArgs mouseEvent)
 		{
-			if (mouseDownOnScrollArea && ScrollWithMouse(this))
+			if(SuppressScroll)
 			{
-				ScrollPosition = new Vector2(ScrollPosition.x, scrollOnDownY - (mouseDownY - mouseEvent.Y));
+				return;
 			}
 
-			if (ScrollPosition.y < scrollOnDownY - 10
-				|| ScrollPosition.y > scrollOnDownY + 10)
+			if (mouseDownOnScrollArea
+				&& GuiWidget.TouchScreenMode
+				&& ScrollWithMouse(this))
 			{
-				// If we have ever scrolled too far remember not to pass a valid up click
-				haveScrolledTooFar = true;
+				ScrollPosition = new Vector2(ScrollPosition.X, scrollOnDownY - (mouseDownY - mouseEvent.Y));
+			}
+
+			if (ScrollPosition.Y < scrollOnDownY - 10
+				|| ScrollPosition.Y > scrollOnDownY + 10)
+			{
+				// If touch is enabled and we've scrolled more than 10 pixels, update to suppress child clicks
+				mouseEventIsTouchScrolling = true;
 			}
 
 			base.OnMouseMove(mouseEvent);
@@ -204,9 +258,11 @@ namespace MatterHackers.Agg.UI
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
 			mouseDownOnScrollArea = false;
-			if (haveScrolledTooFar)
+			if (mouseEventIsTouchScrolling 
+				&& PositionWithinLocalBounds(mouseEvent.Position.X, mouseEvent.Position.Y))
 			{
-				base.OnMouseUp(new MouseEventArgs(mouseEvent, -10000, -10000));
+				// Suppress child clicks by sending MouseUp coordinates that are outside our bounds
+				base.OnMouseUp(new MouseEventArgs(mouseEvent, double.MinValue, double.MinValue));
 			}
 			else
 			{
@@ -239,11 +295,11 @@ namespace MatterHackers.Agg.UI
 
 			if (boundsOfScrollableContents.Width > 0)
 			{
-				ratio.x = Math.Max(0, Math.Min(1, Width / boundsOfScrollableContents.Width));
+				ratio.X = Math.Max(0, Math.Min(1, Width / boundsOfScrollableContents.Width));
 			}
 			if (boundsOfScrollableContents.Height > 0)
 			{
-				ratio.y = Math.Max(0, Math.Min(1, Height / boundsOfScrollableContents.Height));
+				ratio.Y = Math.Max(0, Math.Min(1, Height / boundsOfScrollableContents.Height));
 			}
 
 			return ratio;
@@ -284,13 +340,13 @@ namespace MatterHackers.Agg.UI
 				double x0To1 = 0;
 				if (maxXMovement != 0)
 				{
-					x0To1 = 1 + (TopLeftOffset.x + ScrollArea.Margin.Left) / maxXMovement;
+					x0To1 = 1 + (TopLeftOffset.X + ScrollArea.Margin.Left) / maxXMovement;
 				}
 
 				double y0To1 = 0;
 				if (maxYMovement != 0)
 				{
-					y0To1 = 1 - TopLeftOffset.y / maxYMovement;
+					y0To1 = 1 - TopLeftOffset.Y / maxYMovement;
 				}
 
 				Vector2 scrollRatio0To1 = new Vector2(Math.Min(1, Math.Max(0, x0To1)), Math.Min(1, Math.Max(0, y0To1)));
@@ -308,10 +364,20 @@ namespace MatterHackers.Agg.UI
 
 				Vector2 scrollRatio0To1 = value;
 				Vector2 newTopLeftOffset;
-				newTopLeftOffset.x = scrollRatio0To1.x * maxXMovement + ScrollArea.Margin.Left;
-				newTopLeftOffset.y = -(scrollRatio0To1.y - 1) * maxYMovement;
+				newTopLeftOffset.X = scrollRatio0To1.X * maxXMovement + ScrollArea.Margin.Left;
+				newTopLeftOffset.Y = -(scrollRatio0To1.Y - 1) * maxYMovement;
 
 				TopLeftOffset = newTopLeftOffset;
+			}
+		}
+
+		public void ScrollIntoView(GuiWidget widget)
+		{
+			if (this.Descendants().Contains(widget))
+			{
+				var widgetScreenBounds = widget.TransformToScreenSpace(widget.LocalBounds);
+				var widgetScrollBounds = this.TransformFromScreenSpace(widgetScreenBounds.Center);
+				this.ScrollPosition = new Vector2(0, -widgetScrollBounds.Y);
 			}
 		}
 	}

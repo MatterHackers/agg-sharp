@@ -39,7 +39,7 @@ namespace MatterHackers.Agg.UI
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			RoundedRect roundRect = new RoundedRect(BoundsRelativeToParent, 0);
-			graphics2D.Render(roundRect, new RGBA_Bytes(0, 0, 0, 30));
+			graphics2D.Render(roundRect, new Color(0, 0, 0, 30));
 			base.OnDraw(graphics2D);
 		}
 
@@ -72,11 +72,11 @@ namespace MatterHackers.Agg.UI
 				Vector2 mousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
 
 				Vector2 parentOriginRelativeToItsParent = Parent.OriginRelativeParent;
-				parentOriginRelativeToItsParent.x += mousePosition.x - DownPosition.x;
-				parentOriginRelativeToItsParent.y += mousePosition.y - DownPosition.y;
-				if (parentOriginRelativeToItsParent.y + Parent.Height - (Height - DownPosition.y) > Parent.Parent.Height)
+				parentOriginRelativeToItsParent.X += mousePosition.X - DownPosition.X;
+				parentOriginRelativeToItsParent.Y += mousePosition.Y - DownPosition.Y;
+				if (parentOriginRelativeToItsParent.Y + Parent.Height - (Height - DownPosition.Y) > Parent.Parent.Height)
 				{
-					parentOriginRelativeToItsParent.y = Parent.Parent.Height - Parent.Height + (Height - DownPosition.y);
+					parentOriginRelativeToItsParent.Y = Parent.Parent.Height - Parent.Height + (Height - DownPosition.Y);
 				}
 				Parent.Invalidate();
 				Parent.OriginRelativeParent = parentOriginRelativeToItsParent;

@@ -39,6 +39,10 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonPathing
 {
+	using System.Globalization;
+	using System.IO;
+	using System.Linq;
+	using System.Text.RegularExpressions;
 	using Agg;
 	using Pathfinding;
 	using MSIntPoint = MSClipperLib.IntPoint;
@@ -47,8 +51,109 @@ namespace MatterHackers.PolygonPathing
 	using Polygon = List<IntPoint>;
 	using Polygons = List<List<IntPoint>>;
 
+	public class ErrorPathData
+	{
+		int currentPolyPathLine = -1;
+		int currentSegmentLine = -1;
+		string[] fileContent;
+		public ErrorPathData(string filePath)
+		{
+			if (File.Exists(filePath))
+			{
+				fileContent = File.ReadAllLines(filePath);
+				FindNextStartWith("polyPath", ref currentPolyPathLine);
+				FindNextStartWith("// startOverride", ref currentSegmentLine);
+			}
+		}
+
+		private void FindNextStartWith(string startString, ref int currentPolyPathLine, int searchDirection = 1)
+		{
+			int start = currentPolyPathLine + searchDirection;
+			int endValue = searchDirection == 1 ? fileContent.Length : -1;
+			if (start != endValue)
+			{
+				for (int i = start; i != endValue; i += searchDirection)
+				{
+					if (fileContent[i].StartsWith(startString))
+					{
+						currentPolyPathLine = i;
+						return;
+					}
+				}
+			}
+		}
+
+		public bool Valid { get { return currentPolyPathLine != -1; } }
+
+		private static Regex numberRegex = new Regex(@"[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?");
+		private static double GetNextNumber(String source, ref int startIndex)
+		{
+			Match numberMatch = numberRegex.Match(source, startIndex);
+			String returnString = numberMatch.Value;
+			startIndex = numberMatch.Index + numberMatch.Length;
+			double returnVal;
+			double.TryParse(returnString, NumberStyles.Number, CultureInfo.InvariantCulture, out returnVal);
+			return returnVal;
+		}
+
+		public string PolyPath { get { return fileContent[currentPolyPathLine]; } }
+		public MSIntPoint Start
+		{
+			get
+			{
+				// looks like '// startOverride = new MSIntPoint(114226, 73766); endOverride = new MSIntPoint(100094, 77302);'
+				string line = fileContent[currentSegmentLine];
+				int index = 0;
+				double x = GetNextNumber(line, ref index);
+				double y = GetNextNumber(line, ref index);
+				return new MSIntPoint(x, y);
+			}
+		}
+		public MSIntPoint End
+		{
+			get
+			{
+				string line = fileContent[currentSegmentLine];
+				int index = 0;
+				double skip = GetNextNumber(line, ref index);
+				skip = GetNextNumber(line, ref index);
+				double x = GetNextNumber(line, ref index);
+				double y = GetNextNumber(line, ref index);
+				return new MSIntPoint(x, y);
+			}
+		}
+
+		internal void PrevSegment()
+		{
+			FindNextStartWith("// startOverride", ref currentSegmentLine, -1);
+		}
+
+		internal void NextSegment()
+		{
+			FindNextStartWith("// startOverride", ref currentSegmentLine);
+			// make sure we didn't go past this paths segments
+		}
+
+		internal void PrevOutline()
+		{
+			FindNextStartWith("polyPath", ref currentPolyPathLine, -1);
+			// make sure we are on the segments for this path
+			currentSegmentLine = currentPolyPathLine;
+			NextSegment();
+		}
+
+		internal void NextOutline()
+		{
+			FindNextStartWith("polyPath", ref currentPolyPathLine);
+			// make sure we are on the segments for this path
+			currentSegmentLine = currentPolyPathLine;
+			NextSegment();
+		}
+	}
+
 	public class PolygonPathingDemo : SystemWindow
 	{
+		ErrorPathData errorData;
 		private long avoidInset;
 		private int badCount = 0;
 		private int bestPointCount = int.MaxValue;
@@ -58,14 +163,14 @@ namespace MatterHackers.PolygonPathing
 		private Vector2 mouseCapturedPosition;
 		private Vector2 mouseDownPosition;
 		private MSPolygons overrideBadPolys = null;
-		private RGBA_Bytes pathColor = RGBA_Bytes.Green;
+		private Color pathColor = Color.Green;
 		private MSPolygons polygonsToPathAround;
 		private Random rand = new Random();
 
 		private RadioButtonGroup shapeTypeRadioGroup = new RadioButtonGroup(new Vector2(5, 5), new Vector2(205, 110))
 		{
-			HAnchor = HAnchor.ParentLeft | HAnchor.FitToChildren,
-			VAnchor = VAnchor.ParentBottom | VAnchor.FitToChildren,
+			HAnchor = HAnchor.Left | HAnchor.Fit,
+			VAnchor = VAnchor.Bottom | VAnchor.Fit,
 			Margin = new BorderDouble(5),
 		};
 
@@ -73,22 +178,63 @@ namespace MatterHackers.PolygonPathing
 
 		private CheckBox StayInside = new CheckBox("Stay Inside")
 		{
-			HAnchor = HAnchor.ParentRight | HAnchor.FitToChildren,
-			VAnchor = VAnchor.ParentBottom | VAnchor.FitToChildren,
+			HAnchor = HAnchor.Left | HAnchor.Fit,
 			Margin = new BorderDouble(5),
-			BackgroundColor = RGBA_Bytes.White,
+			BackgroundColor = Color.White,
+		};
+
+		private CheckBox LockPosition = new CheckBox("Lock Position")
+		{
+			HAnchor = HAnchor.Left | HAnchor.Fit,
+			Margin = new BorderDouble(5),
+			BackgroundColor = Color.White,
+		};
+
+		private CheckBox OptomizePath = new CheckBox("Optomize Path")
+		{
+			HAnchor = HAnchor.Left | HAnchor.Fit,
+			Margin = new BorderDouble(5),
+			BackgroundColor = Color.White,
+			Checked = false,
 		};
 
 		private Vector2 unscaledRenderOffset = new Vector2(0, 0);
 		private bool updateScaleAndOffset = true;
 
 		public PolygonPathingDemo()
-			: base(740, 520)
+			: base(1024, 768)
 		{
-			BackgroundColor = RGBA_Bytes.White;
+			BackgroundColor = Color.White;
+
+			errorData = new ErrorPathData("C:/Development/MCCentral/MatterControl/bin/Debug/DebugPathFinder.txt");
 
 			StayInside.Checked = true;
-			AddChild(StayInside);
+			var checkBoxHolder = new FlowLayoutWidget(FlowDirection.TopToBottom)
+			{
+				HAnchor = HAnchor.Right | HAnchor.Fit,
+				VAnchor = VAnchor.Bottom | VAnchor.Fit,
+				Margin = new BorderDouble(5),
+				BackgroundColor = Color.LightGray,
+			};
+			AddChild(checkBoxHolder);
+
+			checkBoxHolder.AddChild(StayInside);
+			checkBoxHolder.AddChild(LockPosition);
+			checkBoxHolder.AddChild(OptomizePath);
+
+			LockPosition.CheckedStateChanged += (s, e) =>
+			{
+				if (LockPosition.Checked)
+				{
+					startOverride = ScreenToObject(new MSIntPoint(mouseDownPosition.X, mouseDownPosition.Y));
+					endOverride = ScreenToObject(new MSIntPoint(mouseCapturedPosition.X, mouseCapturedPosition.Y));
+				}
+				else
+				{
+					startOverride = new MSIntPoint();
+					endOverride = new MSIntPoint();
+				}
+			};
 
 			shapeTypeRadioGroup.AddRadioButton("Boxes");
 			shapeTypeRadioGroup.AddRadioButton("Simple Map");
@@ -98,6 +244,10 @@ namespace MatterHackers.PolygonPathing
 			shapeTypeRadioGroup.AddRadioButton("Rocktopus");
 			shapeTypeRadioGroup.AddRadioButton("Spiral");
 			shapeTypeRadioGroup.AddRadioButton("Glyph");
+			if (errorData.Valid)
+			{
+				shapeTypeRadioGroup.AddRadioButton("Errors");
+			}
 			shapeTypeRadioGroup.SelectedIndex = 0;
 			AddChild(shapeTypeRadioGroup);
 
@@ -105,8 +255,6 @@ namespace MatterHackers.PolygonPathing
 			{
 				updateScaleAndOffset = true;
 			};
-
-			AnchorAll();
 		}
 
 		public Affine TotalTransform
@@ -124,8 +272,8 @@ namespace MatterHackers.PolygonPathing
 			}
 		}
 
-		private RGBA_Bytes fillColor
-		{ get { return RGBA_Bytes.Pink; } }
+		private Color fillColor
+		{ get { return Color.Pink; } }
 
 		private Affine ScalingTransform
 		{
@@ -144,6 +292,8 @@ namespace MatterHackers.PolygonPathing
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
+			//graphics2D.FillRectangle(LocalBounds, Color.White);
+
 			CreatePolygonData();
 
 			if (overrideBadPolys != null)
@@ -153,8 +303,8 @@ namespace MatterHackers.PolygonPathing
 
 			if (polygonsToPathAround?.Count > 0)
 			{
-				MSIntPoint pathStart = ScreenToObject(new MSIntPoint(mouseDownPosition.x, mouseDownPosition.y));
-				MSIntPoint pathEnd = ScreenToObject(new MSIntPoint(mouseCapturedPosition.x, mouseCapturedPosition.y));
+				MSIntPoint pathStart = ScreenToObject(new MSIntPoint(mouseDownPosition.X, mouseDownPosition.Y));
+				MSIntPoint pathEnd = ScreenToObject(new MSIntPoint(mouseCapturedPosition.X, mouseCapturedPosition.Y));
 
 				if (startOverride.X != 0 || startOverride.Y != 0)
 				{
@@ -174,73 +324,88 @@ namespace MatterHackers.PolygonPathing
 					avoid = new PathFinder(polygonsToPathAround, avoidInset, null); // -600 is for a .4 nozzle in matterslice
 				}
 
-				IVertexSource outlineShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.OutlinePolygons), 1), TotalTransform);
-				IVertexSource pathingShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreatePathStorage(MSPolygonsToPolygons(avoid.BoundaryPolygons), 1), TotalTransform);
+				IVertexSource outlineShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreateVertexStorage(MSPolygonsToPolygons(avoid.OutlineData.Polygons), 1), TotalTransform);
+				IVertexSource pathingShape = new VertexSourceApplyTransform(VertexSourceToClipperPolygons.CreateVertexStorage(MSPolygonsToPolygons(avoid.OutlineData.Polygons), 1), TotalTransform);
 
 				if (StayInside.Checked)
 				{
-					graphics2D.Render(outlineShape, RGBA_Bytes.Orange);
+					graphics2D.Render(outlineShape, Color.Orange);
 					graphics2D.Render(pathingShape, fillColor);
 				}
 				else
 				{
 					graphics2D.Render(pathingShape, fillColor);
-					graphics2D.Render(outlineShape, RGBA_Bytes.Orange);
+					graphics2D.Render(outlineShape, Color.Orange);
 				}
 
 				// create the path
 				List<MSIntPoint> pathThatIsInside = new List<MSIntPoint>();
-				bool found = avoid.CreatePathInsideBoundary(pathStart, pathEnd, pathThatIsInside, false);
+				bool found = avoid.CreatePathInsideBoundary(pathStart, pathEnd, pathThatIsInside, OptomizePath.Checked);
 
-				foreach (var node in avoid.Waypoints.Nodes)
+				foreach (var node in avoid.OutlineData.Waypoints.Nodes)
 				{
 					foreach (var link in node.Links)
 					{
 						var pointA = ObjectToScreen(((Pathfinding.IntPointNode)link.nodeA).Position);
 						var pointB = ObjectToScreen(((Pathfinding.IntPointNode)link.nodeB).Position);
-						graphics2D.Line(pointA.X, pointA.Y, pointB.X, pointB.Y, RGBA_Bytes.Yellow);
+						graphics2D.Line(pointA.X, pointA.Y, pointB.X, pointB.Y, node.Links.Count == 2 ? Color.Yellow : Color.Red);
 					}
 					var pos = ObjectToScreen(node.Position);
-					graphics2D.Circle(pos.X, pos.Y, 4, RGBA_Bytes.Green);
+					graphics2D.Circle(pos.X, pos.Y, 4, Color.Green);
 					int linkCount = Math.Min(5, node.Links.Count - 2);
-					graphics2D.Circle(pos.X, pos.Y, 4, RGBA_Floats.FromHSL((float)linkCount / 5, 1, .5).GetAsRGBA_Bytes());
+					//graphics2D.Circle(pos.X, pos.Y, 4, ColorF.FromHSL((float)linkCount / 5, 1, .5).ToColor());
 				}
 
 				if (found)
 				{
-					MSIntPoint last = ObjectToScreen(pathStart);
+					VertexStorage solution = new VertexStorage();
+					MSIntPoint start = ObjectToScreen(pathStart);
+					solution.MoveTo(new Vector2(start.X, start.Y));
+
 					foreach (var inPoint in pathThatIsInside)
 					{
 						var point = ObjectToScreen(inPoint);
-						graphics2D.Line(last.X, last.Y, point.X, point.Y, new RGBA_Bytes(RGBA_Bytes.Black, 64), 3);
-						last = point;
+						solution.LineTo(new Vector2(point.X, point.Y));
 					}
 
-					MSIntPoint point2 = ObjectToScreen(pathEnd);
-					graphics2D.Line(last.X, last.Y, point2.X, point2.Y, new RGBA_Bytes(RGBA_Bytes.Black, 64), 3);
+					MSIntPoint end = ObjectToScreen(pathEnd);
+					solution.LineTo(new Vector2(end.X, end.Y));
+					graphics2D.Render(new Stroke(solution, 5), new Color(Color.Cyan, 100));
+
+					foreach (var inPoint in pathThatIsInside)
+					{
+						var point = ObjectToScreen(inPoint);
+						graphics2D.Circle(point.X, point.Y, 2, new Color(Color.Black, 100));
+					}
 
 					graphics2D.DrawString($"Length = {MSClipperLib.CLPolygonExtensions.PolygonLength(pathThatIsInside, false)}", 30, Height - 40);
 				}
 				else
 				{
-					graphics2D.Line(ObjectToScreen(pathStart).X, ObjectToScreen(pathStart).Y, ObjectToScreen(pathEnd).X, ObjectToScreen(pathEnd).Y, new RGBA_Bytes(RGBA_Bytes.Blue, 128), 4);
+					graphics2D.Line(ObjectToScreen(pathStart).X, ObjectToScreen(pathStart).Y, ObjectToScreen(pathEnd).X, ObjectToScreen(pathEnd).Y, new Color(Color.Blue, 128), 4);
 				}
 
 				// show the crossings
 				//RenderCrossings(graphics2D, pathStart, pathEnd, avoid);
 
-				// show the thin edges
-				//RenderThinEdges(graphics2D, avoid);
-
 				//RenderQuadTree(graphics2D, avoid.BoundaryEdgeQuadTrees, 0);
 
-				if (avoid.BoundaryPolygons.PointIsInside(pathEnd, avoid.BoundaryEdgeQuadTrees, avoid.BoundaryPointQuadTrees))
+				if (avoid.OutlineData.Polygons.PointIsInside(pathEnd, avoid.OutlineData.EdgeQuadTrees, avoid.OutlineData.EdgeQuadTrees, avoid.OutlineData.PointIsInside))
 				{
-					graphics2D.DrawString("Inside", 30, Height - 60, color: RGBA_Bytes.Green);
+					graphics2D.DrawString("Inside", 30, Height - 60, color: Color.Green);
 				}
 				else
 				{
-					graphics2D.DrawString("Outside", 30, Height - 60, color: RGBA_Bytes.Red);
+					graphics2D.DrawString("Outside", 30, Height - 60, color: Color.Red);
+				}
+
+				if(avoid.AllPathSegmentsAreInsideOutlines(pathThatIsInside, pathStart, pathEnd))
+				{
+					graphics2D.DrawString("Good Path", 30, Height - 75, color: Color.Green);
+				}
+				else
+				{
+					graphics2D.DrawString("Bad Path", 30, Height - 75, color: Color.Red);
 				}
 
 				if (doSimplify)
@@ -248,57 +413,23 @@ namespace MatterHackers.PolygonPathing
 					SimplifyBadPolygon(pathStart, pathEnd, pathThatIsInside, found);
 				}
 
-				if(true)
-				{
-					MSPolygons pathsWithOverlapsRemoved;
-					var insetPolys = MSClipperLib.CLPolygonsExtensions.Offset(avoid.OutlinePolygons, 0);
-					if (insetPolys != null && insetPolys.Count > 0)
-					{
-						var pathHadOverlaps = QTPolygonExtensions.MergePerimeterOverlaps(insetPolys[0], avoidInset*2, out pathsWithOverlapsRemoved, true);
-
-						foreach (var polygon in pathsWithOverlapsRemoved)
-						{
-							for (int i = 0; i < polygon.Count - 1; i++)
-							{
-								var point1 = ObjectToScreen(polygon[i]);
-								var point2 = ObjectToScreen(polygon[i + 1]);
-								graphics2D.Line(point1.X, point1.Y, point2.X, point2.Y, new RGBA_Bytes(RGBA_Bytes.Black, 64), 3);
-							}
-						}
-					}
-				}
+				var image = avoid.OutlineData.InsideCache;
+				image = avoid.OutlineData.InsetMap;
+				//graphics2D.Render(image, Width - image.Width, Height - image.Height, image.Width, image.Height);
 			}
 
 			base.OnDraw(graphics2D);
 		}
 
-		private void RenderThinEdges(Graphics2D graphics2D, PathFinder avoid)
-		{
-			if (avoid.ThinLinePolygons != null)
-			{
-				foreach (var polygon in avoid.ThinLinePolygons)
-				{
-					for (int i = 0; i < polygon.Count - 1; i++)
-					{
-						var point = polygon[i];
-						var nextPoint = polygon[i + 1];
-						var start = ObjectToScreen(point);
-						var end = ObjectToScreen(nextPoint);
-						graphics2D.Line(start.X, start.Y, end.X, end.Y, RGBA_Bytes.Black, 3);
-					}
-				}
-			}
-		}
-
 		private void RenderCrossings(Graphics2D graphics2D, MSIntPoint pathStart, MSIntPoint pathEnd, PathFinder avoid)
 		{
-			var crossings = new List<Tuple<int, int, MSIntPoint>>(avoid.BoundaryPolygons.FindCrossingPoints(pathStart, pathEnd, avoid.BoundaryEdgeQuadTrees));
+			var crossings = avoid.OutlineData.Polygons.FindCrossingPoints(pathStart, pathEnd, avoid.OutlineData.EdgeQuadTrees).ToList();
 			crossings.Sort(new PolygonAndPointDirectionSorter(pathStart, pathEnd));
 
 			int index = 0;
 			foreach (var crossing in crossings)
 			{
-				var color = RGBA_Floats.FromHSL((float)index / crossings.Count, 1, .5).GetAsRGBA_Bytes();
+				var color = ColorF.FromHSL((float)index / crossings.Count, 1, .5).ToColor();
 				graphics2D.Circle(ObjectToScreen(crossing.Item3).X, ObjectToScreen(crossing.Item3).Y, 4, color);
 				index++;
 			}
@@ -332,7 +463,7 @@ namespace MatterHackers.PolygonPathing
 			{
 				var start = ObjectToScreen(new MSIntPoint(quad.MinX, quad.MinY));
 				var end = ObjectToScreen(new MSIntPoint(quad.MaxX, quad.MaxY));
-				graphics2D.Rectangle(start.X, start.Y, end.X, end.Y, RGBA_Bytes.YellowGreen);
+				graphics2D.Rectangle(start.X, start.Y, end.X, end.Y, Color.YellowGreen);
 			}
 			foreach (var leaf in branch.Leaves)
 			{
@@ -344,7 +475,7 @@ namespace MatterHackers.PolygonPathing
 		{
 			var start = ObjectToScreen(new MSIntPoint(leaf.Quad.MinX, leaf.Quad.MinY));
 			var end = ObjectToScreen(new MSIntPoint(leaf.Quad.MaxX, leaf.Quad.MaxY));
-			var color = RGBA_Floats.FromHSL((float)depth / 7, 1, .5).GetAsRGBA_Bytes();
+			var color = ColorF.FromHSL((float)depth / 7, 1, .5).ToColor();
 			graphics2D.Rectangle(start.X, start.Y, end.X, end.Y, color);
 		}
 		#endregion
@@ -366,7 +497,7 @@ namespace MatterHackers.PolygonPathing
 				{
 					sample[polyIndex].RemoveAt(pointIndex);
 				}
-				if (sample[polyIndex].Count < 3)
+				if (sample.Count > 1 && sample[polyIndex].Count < 3)
 				{
 					sample.RemoveAt(polyIndex);
 				}
@@ -379,10 +510,10 @@ namespace MatterHackers.PolygonPathing
 
 				var avoid2 = new PathFinder(sample, avoidInset, null); // -600 is for a .4 nozzle in matterslice
 				if (!avoid2.CreatePathInsideBoundary(start, end, pathThatIsInside)
-					&& avoid2.BoundaryPolygons.PointIsInside(start)
-					&& PointCount(avoid2.BoundaryPolygons) <= bestPointCount)
+					&& avoid2.OutlineData.Polygons.PointIsInside(start)
+					&& PointCount(avoid2.OutlineData.Polygons) <= bestPointCount)
 				{
-					bestPointCount = PointCount(avoid2.BoundaryPolygons);
+					bestPointCount = PointCount(avoid2.OutlineData.Polygons);
 					overrideBadPolys = sample;
 					badCount = 0;
 				}
@@ -462,8 +593,8 @@ namespace MatterHackers.PolygonPathing
 
 		private void CreatePolygonData()
 		{
-			startOverride = new MSIntPoint();
-			endOverride = new MSIntPoint();
+			//startOverride = new MSIntPoint();
+			//endOverride = new MSIntPoint();
 
 			IVertexSource pathToUse = null;
 			MSPolygons directPolygons = null;
@@ -471,7 +602,7 @@ namespace MatterHackers.PolygonPathing
 			{
 				case 0:// simple boxes
 					{
-						PathStorage ps1 = new PathStorage();
+						VertexStorage ps1 = new VertexStorage();
 
 						ps1.MoveTo(100, 100);
 						ps1.LineTo(400, 100);
@@ -491,7 +622,7 @@ namespace MatterHackers.PolygonPathing
 
 				case 1:// simple polygon map
 					{
-						PathStorage ps1 = new PathStorage();
+						VertexStorage ps1 = new VertexStorage();
 
 						ps1.MoveTo(85, 417);
 						ps1.LineTo(338, 428);
@@ -538,6 +669,18 @@ namespace MatterHackers.PolygonPathing
 						//startOverride = new MSIntPoint(119160, 104727); endOverride = new MSIntPoint(111711, 91412);
 						//TestSinglePathIsInside(polyPath, new IntPoint(119160, 104727), new IntPoint(111711, 91412));
 
+						// this is a test part for thin edges
+						polyPath = "x: 0, y: 0, z: 0, width: 0,x: 5000, y: 0, z: 0, width: 0,x: 5000, y: 10000, z: 0, width: 0,x: 0, y: 10000, z: 0, width: 0,x: 0, y: 6000, z: 0, width: 0,x: 4900, y: 9900, z: 0, width: 0,x: 4900, y: 100, z: 0, width: 0,x: 0, y: 4000, z: 0, width: 0,";
+						polyPath = "x: 0, y: 0, x: 5000, y: 0, x: 5000, y: 10000, x: 0, y: 10000, x: 0, y: 6000, x: 4900, y: 9900, x: 4900, y: 100, x: 0, y: 4000,";
+
+						polyPath = "x:219655, y:7130,x:212349, y:44250,x:210115, y:46125,x:207012, y:47846,x:211866, y:55536,x:249231, y:52809,x:176266, y:113595,|";
+						// Length of this segment (start->end) 32286.
+						startOverride = new MSIntPoint(205084, 78424); endOverride = new MSIntPoint(213725, 47315);
+
+						polyPath = "x:219655, y:7130,x:212349, y:44250,x:210115, y:46125,x:207012, y:47846,x:211866, y:55536,x:249231, y:52809,x:176266, y:113595,|";
+						// Length of this segment (start->end) 32286.
+						startOverride = new MSIntPoint(205084, 78424); endOverride = new MSIntPoint(213725, 47315);
+
 						directPolygons = MSClipperLib.CLPolygonsExtensions.CreateFromString(polyPath);
 					}
 					break;
@@ -575,7 +718,7 @@ namespace MatterHackers.PolygonPathing
 						//------------------------------------
 						// Spiral and glyph
 						//
-						PathStorage glyph = new PathStorage();
+						VertexStorage glyph = new VertexStorage();
 						glyph.MoveTo(28.47, 6.45);
 						glyph.curve3(21.58, 1.12, 19.82, 0.29);
 						glyph.curve3(17.19, -0.93, 14.21, -0.93);
@@ -630,6 +773,15 @@ namespace MatterHackers.PolygonPathing
 						pathToUse = curve;
 					}
 					break;
+
+				case 8: // errors
+					{
+						directPolygons = MSClipperLib.CLPolygonsExtensions.CreateFromString(errorData.PolyPath);
+						startOverride = errorData.Start;
+						endOverride = errorData.End;
+
+					}
+					break;
 			}
 
 			if (directPolygons == null)
@@ -660,6 +812,30 @@ namespace MatterHackers.PolygonPathing
 				}
 				updateScaleAndOffset = false;
 			}
+		}
+
+		public override void OnKeyDown(KeyEventArgs keyEvent)
+		{
+			switch(keyEvent.KeyCode)
+			{
+				case Keys.Left:
+					errorData.PrevSegment();
+					Invalidate();
+					break;
+				case Keys.Right:
+					errorData.NextSegment();
+					Invalidate();
+					break;
+				case Keys.Up:
+					errorData.PrevOutline();
+					Invalidate();
+					break;
+				case Keys.Down:
+					errorData.NextOutline();
+					Invalidate();
+					break;
+			}
+			base.OnKeyDown(keyEvent);
 		}
 
 		private MSPolygons CreateTravelPath(MSPolygons polygonsToPathAround, MSPolygons travelPolysLine)
@@ -726,7 +902,7 @@ namespace MatterHackers.PolygonPathing
 		{
 			Vector2 position = new Vector2(inPoint.X, inPoint.Y);
 			TotalTransform.transform(ref position);
-			return new MSIntPoint(position.x, position.y);
+			return new MSIntPoint(position.X, position.Y);
 		}
 
 		private int PointCount(MSPolygons boundaryPolygons)
@@ -759,7 +935,7 @@ namespace MatterHackers.PolygonPathing
 		{
 			Vector2 position = new Vector2(inPoint.X, inPoint.Y);
 			TotalTransform.inverse_transform(ref position);
-			return new MSIntPoint(position.x, position.y);
+			return new MSIntPoint(position.X, position.Y);
 		}
 	}
 

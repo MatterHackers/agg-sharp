@@ -125,9 +125,9 @@ namespace MatterHackers.VectorMath
 
 		public Vector3Float(Vector3 position)
 		{
-			this.x = (float)position.x;
-			this.y = (float)position.y;
-			this.z = (float)position.z;
+			this.x = (float)position.X;
+			this.y = (float)position.Y;
+			this.z = (float)position.Z;
 		}
 
 		#endregion Constructors
@@ -1241,7 +1241,7 @@ namespace MatterHackers.VectorMath
 		/// <returns></returns>
 		public override string ToString()
 		{
-			return String.Format("[{0}, {1}, {2}]", x, y, z);
+			return $"[{x}, {y}, {z}]";
 		}
 
 		#endregion public override string ToString()

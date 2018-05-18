@@ -27,84 +27,36 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
+using System.Diagnostics;
 using MatterHackers.Agg;
-using MatterHackers.Agg.Font;
-using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
+using MatterHackers.DataConverters3D;
 using MatterHackers.RayTracer;
-using MatterHackers.RenderOpenGl;
-using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
-using System;
 
 namespace MatterHackers.MeshVisualizer
 {
-	public class ValueDisplayInfo
-	{
-		private string measureDisplayedString = "";
-		private ImageBuffer measureDisplayImage = null;
-		string formatString;
-		string unitsString;
-
-		public ValueDisplayInfo(string formatString = "{0:0.00}", string unitsString = "mm")
-		{
-			this.formatString = formatString;
-			this.unitsString = unitsString;
-		}
-
-		public void DisplaySizeInfo(Graphics2D graphics2D, Vector2 widthDisplayCenter, double size)
-		{
-			string displayString = formatString.FormatWith(size);
-			if (measureDisplayImage == null || measureDisplayedString != displayString)
-			{
-				measureDisplayedString = displayString;
-				TypeFacePrinter printer = new TypeFacePrinter(measureDisplayedString, 16);
-				TypeFacePrinter unitPrinter = new TypeFacePrinter(unitsString, 10);
-				Double unitPrinterOffset = 1;
-
-				BorderDouble margin = new BorderDouble(5);
-				printer.Origin = new Vector2(margin.Left, margin.Bottom);
-				RectangleDouble bounds = printer.LocalBounds;
-
-				unitPrinter.Origin = new Vector2(bounds.Right + unitPrinterOffset, margin.Bottom);
-				RectangleDouble unitPrinterBounds = unitPrinter.LocalBounds;
-
-				measureDisplayImage = new ImageBuffer((int)(bounds.Width + margin.Width + unitPrinterBounds.Width + unitPrinterOffset), (int)(bounds.Height + margin.Height));
-				// make sure the texture has mipmaps (so it can reduce well)
-				ImageGlPlugin glPlugin = ImageGlPlugin.GetImageGlPlugin(measureDisplayImage, true);
-				Graphics2D widthGraphics = measureDisplayImage.NewGraphics2D();
-				widthGraphics.Clear(new RGBA_Bytes(RGBA_Bytes.White, 128));
-				printer.Render(widthGraphics, RGBA_Bytes.Black);
-				unitPrinter.Render(widthGraphics, RGBA_Bytes.Black);
-			}
-
-			widthDisplayCenter -= new Vector2(measureDisplayImage.Width / 2, measureDisplayImage.Height / 2);
-			graphics2D.Render(measureDisplayImage, widthDisplayCenter);
-		}
-	}
+	[Flags]
+	public enum LineArrows { None = 0, Start = 1, End = 2, Both = 3 };
 
 	public class InteractionVolume
 	{
 		public bool MouseDownOnControl;
 		public Matrix4X4 TotalTransform = Matrix4X4.Identity;
-		private IPrimitive collisionVolume;
-		private MeshViewerWidget meshViewerToDrawWith;
 
 		private bool mouseOver = false;
 
 		public InteractionVolume(IPrimitive collisionVolume, MeshViewerWidget meshViewerToDrawWith)
 		{
-			this.collisionVolume = collisionVolume;
-			this.meshViewerToDrawWith = meshViewerToDrawWith;
+			this.CollisionVolume = collisionVolume;
+			this.MeshViewerToDrawWith = meshViewerToDrawWith;
 		}
 
-		[Flags]
-		public enum LineArrows { None = 0, Start = 1, End = 2, Both = 3 };
-
-		public IPrimitive CollisionVolume { get { return collisionVolume; } set { collisionVolume = value; } }
+		public IPrimitive CollisionVolume { get; set; }
 		public bool DrawOnTop { get; protected set; }
-		public MeshViewerWidget MeshViewerToDrawWith { get { return meshViewerToDrawWith; } }
+		public IntersectInfo MouseMoveInfo { get; set; }
 
 		public bool MouseOver
 		{
@@ -123,61 +75,54 @@ namespace MatterHackers.MeshVisualizer
 			}
 		}
 
-		public IntersectInfo MouseMoveInfo { get; set; }
+		protected MeshViewerWidget MeshViewerToDrawWith { get; }
+		protected double SecondsToShowNumberEdit { get; private set; } = 4;
+		protected Stopwatch timeSinceMouseUp { get; private set; } = new Stopwatch();
 
-		public static void DrawMeasureLine(Graphics2D graphics2D, Vector2 lineStart, Vector2 lineEnd, RGBA_Bytes color, LineArrows arrows)
+		public static void DrawMeasureLine(Graphics2D graphics2D, Vector2 lineStart, Vector2 lineEnd, Color color, LineArrows arrows)
 		{
-			graphics2D.Line(lineStart, lineEnd, RGBA_Bytes.Black);
+			graphics2D.Line(lineStart, lineEnd, Color.Black);
 
 			Vector2 direction = lineEnd - lineStart;
 			if (direction.LengthSquared > 0
 				&& (arrows.HasFlag(LineArrows.Start) || arrows.HasFlag(LineArrows.End)))
 			{
-				PathStorage arrow = new PathStorage();
+				VertexStorage arrow = new VertexStorage();
 				arrow.MoveTo(-3, -5);
 				arrow.LineTo(0, 0);
 				arrow.LineTo(3, -5);
 				if (arrows.HasFlag(LineArrows.End))
 				{
-					double rotation = Math.Atan2(direction.y, direction.x);
+					double rotation = Math.Atan2(direction.Y, direction.X);
 					IVertexSource correctRotation = new VertexSourceApplyTransform(arrow, Affine.NewRotation(rotation - MathHelper.Tau / 4));
 					IVertexSource inPosition = new VertexSourceApplyTransform(correctRotation, Affine.NewTranslation(lineEnd));
-					graphics2D.Render(inPosition, RGBA_Bytes.Black);
+					graphics2D.Render(inPosition, Color.Black);
 				}
 				if (arrows.HasFlag(LineArrows.Start))
 				{
-					double rotation = Math.Atan2(direction.y, direction.x) + MathHelper.Tau / 2;
+					double rotation = Math.Atan2(direction.Y, direction.X) + MathHelper.Tau / 2;
 					IVertexSource correctRotation = new VertexSourceApplyTransform(arrow, Affine.NewRotation(rotation - MathHelper.Tau / 4));
 					IVertexSource inPosition = new VertexSourceApplyTransform(correctRotation, Affine.NewTranslation(lineStart));
-					graphics2D.Render(inPosition, RGBA_Bytes.Black);
+					graphics2D.Render(inPosition, Color.Black);
 				}
 			}
 		}
 
-		public static void RenderTransformedPath(Matrix4X4 transform, IVertexSource path, RGBA_Bytes color, bool doDepthTest)
+		public static Vector3 SetBottomControlHeight(AxisAlignedBoundingBox originalSelectedBounds, Vector3 cornerPosition)
 		{
-			GL.Disable(EnableCap.Texture2D);
-
-			GL.MatrixMode(MatrixMode.Modelview);
-			GL.PushMatrix();
-			GL.MultMatrix(transform.GetAsFloatArray());
-			//GL.DepthMask(false);
-			GL.Enable(EnableCap.Blend);
-			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-			GL.Disable(EnableCap.Lighting);
-			if (doDepthTest)
+			if (originalSelectedBounds.minXYZ.Z < 0)
 			{
-				GL.Enable(EnableCap.DepthTest);
-			}
-			else
-			{
-				GL.Disable(EnableCap.DepthTest);
+				if (originalSelectedBounds.maxXYZ.Z < 0)
+				{
+					cornerPosition.Z = originalSelectedBounds.maxXYZ.Z;
+				}
+				else
+				{
+					cornerPosition.Z = 0;
+				}
 			}
 
-			Graphics2DOpenGL openGlRender = new Graphics2DOpenGL();
-			openGlRender.DrawAAShape(path, color);
-
-			GL.PopMatrix();
+			return cornerPosition;
 		}
 
 		public virtual void Draw2DContent(Agg.Graphics2D graphics2D)
@@ -208,25 +153,8 @@ namespace MatterHackers.MeshVisualizer
 			MouseDownOnControl = false;
 		}
 
-		public virtual void SetPosition()
+		public virtual void SetPosition(IObject3D selectedItem)
 		{
-		}
-
-		public static Vector3 SetBottomControlHeight(AxisAlignedBoundingBox originalSelectedBounds, Vector3 cornerPosition)
-		{
-			if (originalSelectedBounds.minXYZ.z < 0)
-			{
-				if (originalSelectedBounds.maxXYZ.z < 0)
-				{
-					cornerPosition.z = originalSelectedBounds.maxXYZ.z;
-				}
-				else
-				{
-					cornerPosition.z = 0;
-				}
-			}
-
-			return cornerPosition;
 		}
 	}
 }

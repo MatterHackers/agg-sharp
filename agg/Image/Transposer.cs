@@ -31,7 +31,7 @@ namespace MatterHackers.Agg.Image
 
 		public override int Height { get { return linkedImage.Width; } }
 
-		public override RGBA_Bytes GetPixel(int x, int y)
+		public override Color GetPixel(int x, int y)
 		{
 			return linkedImage.GetPixel(y, x);
 		}
@@ -41,54 +41,54 @@ namespace MatterHackers.Agg.Image
 			linkedImage.copy_pixel(y, x, c, ByteOffset);
 		}
 
-		public override void copy_hline(int x, int y, int len, RGBA_Bytes c)
+		public override void copy_hline(int x, int y, int len, Color c)
 		{
 			linkedImage.copy_vline(y, x, len, c);
 		}
 
 		public override void copy_vline(int x, int y,
 								   int len,
-								   RGBA_Bytes c)
+								   Color c)
 		{
 			linkedImage.copy_hline(y, x, len, c);
 		}
 
-		public override void blend_hline(int x1, int y, int x2, RGBA_Bytes c, byte cover)
+		public override void blend_hline(int x1, int y, int x2, Color c, byte cover)
 		{
 			linkedImage.blend_vline(y, x1, x2, c, cover);
 		}
 
-		public override void blend_vline(int x, int y1, int y2, RGBA_Bytes c, byte cover)
+		public override void blend_vline(int x, int y1, int y2, Color c, byte cover)
 		{
 			linkedImage.blend_hline(y1, x, y2, c, cover);
 		}
 
-		public override void blend_solid_hspan(int x, int y, int len, RGBA_Bytes c, byte[] covers, int coversIndex)
+		public override void blend_solid_hspan(int x, int y, int len, Color c, byte[] covers, int coversIndex)
 		{
 			linkedImage.blend_solid_vspan(y, x, len, c, covers, coversIndex);
 		}
 
-		public override void blend_solid_vspan(int x, int y, int len, RGBA_Bytes c, byte[] covers, int coversIndex)
+		public override void blend_solid_vspan(int x, int y, int len, Color c, byte[] covers, int coversIndex)
 		{
 			linkedImage.blend_solid_hspan(y, x, len, c, covers, coversIndex);
 		}
 
-		public override void copy_color_hspan(int x, int y, int len, RGBA_Bytes[] colors, int colorsIndex)
+		public override void copy_color_hspan(int x, int y, int len, Color[] colors, int colorsIndex)
 		{
 			linkedImage.copy_color_vspan(y, x, len, colors, colorsIndex);
 		}
 
-		public override void copy_color_vspan(int x, int y, int len, RGBA_Bytes[] colors, int colorsIndex)
+		public override void copy_color_vspan(int x, int y, int len, Color[] colors, int colorsIndex)
 		{
 			linkedImage.copy_color_hspan(y, x, len, colors, colorsIndex);
 		}
 
-		public override void blend_color_hspan(int x, int y, int len, RGBA_Bytes[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
+		public override void blend_color_hspan(int x, int y, int len, Color[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
 		{
 			linkedImage.blend_color_vspan(y, x, len, colors, colorsIndex, covers, coversIndex, firstCoverForAll);
 		}
 
-		public override void blend_color_vspan(int x, int y, int len, RGBA_Bytes[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
+		public override void blend_color_vspan(int x, int y, int len, Color[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
 		{
 			linkedImage.blend_color_hspan(y, x, len, colors, colorsIndex, covers, coversIndex, firstCoverForAll);
 		}

@@ -37,28 +37,28 @@ namespace MatterHackers.Agg.UI
 
 		string Name { get; }
 
-		RGBA_Bytes Transparent { get; }
+		Color Transparent { get; }
 
-		RGBA_Bytes TransparentDarkOverlay { get; }
+		Color TransparentDarkOverlay { get; }
 
-		RGBA_Bytes TransparentLightOverlay { get; }
+		Color TransparentLightOverlay { get; }
 
-		RGBA_Bytes TabLabelSelected { get; }
+		Color TabLabelSelected { get; }
 
-		RGBA_Bytes TabLabelUnselected { get; }
+		Color TabLabelUnselected { get; }
 
-		RGBA_Bytes SecondaryTextColor { get; }
+		Color SecondaryTextColor { get; }
 
-		RGBA_Bytes PrimaryBackgroundColor { get; }
+		Color PrimaryBackgroundColor { get; }
 
-		RGBA_Bytes SecondaryBackgroundColor { get; }
+		Color SecondaryBackgroundColor { get; }
 
-		RGBA_Bytes TertiaryBackgroundColor { get; }
+		Color TertiaryBackgroundColor { get; }
 
-		RGBA_Bytes PrimaryTextColor { get; }
+		Color PrimaryTextColor { get; }
 
-		RGBA_Bytes PrimaryAccentColor { get; }
+		Color PrimaryAccentColor { get; }
 
-		RGBA_Bytes SecondaryAccentColor { get; }
+		Color SourceColor { get; }
 	}
 }

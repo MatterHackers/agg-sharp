@@ -28,49 +28,36 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg.Image;
+using MatterHackers.VectorMath;
 using System;
-using System.Diagnostics;
 
 namespace MatterHackers.Agg.UI
 {
 	public class ImageSequenceWidget : GuiWidget
 	{
-		private Stopwatch runningTime = new Stopwatch();
-		private ImageSequence imageSequence;
-		private bool runAnimation = false;
-		private double lastTimeUpdated = 0;
-
-		public int currentFrame;
-		public int CurrentFrame
-		{
-			get { return currentFrame; }
-		}
-
-		public bool RunAnimation
-		{
-			get { return runAnimation; }
-			set
-			{
-				if (value != runAnimation)
-				{
-					runAnimation = value;
-					if (RunAnimation)
-					{
-						// we just turned it on so make sure the update is being called
-						lastTimeUpdated = 0;
-						runningTime.Restart();
-						UiThread.RunOnIdle(UpdateAnimation);
-					}
-				}
-			}
-		}
-
-		public bool ForcePixelAlignment { get; set; }
+		private ImageSequence _imageSequence;
+		private Animation animation = new Animation();
+		private double currentTime = 0;
 
 		public ImageSequenceWidget(int width, int height)
 		{
-			ForcePixelAlignment = true;
 			LocalBounds = new RectangleDouble(0, 0, width, height);
+
+			animation.DrawTarget = this;
+			animation.Update += (s, updateEvent) =>
+			{
+				var currentImageIndex = ImageSequence.GetImageIndexByTime(currentTime);
+
+				currentTime += updateEvent.SecondsPassed;
+				while(currentTime > ImageSequence.Time)
+				{
+					currentTime -= ImageSequence.Time;
+				}
+
+				var newImageIndex = ImageSequence.GetImageIndexByTime(currentTime);
+				updateEvent.ShouldDraw = currentImageIndex != newImageIndex;
+			};
+
 			RunAnimation = true;
 		}
 
@@ -82,49 +69,74 @@ namespace MatterHackers.Agg.UI
 
 		public ImageSequence ImageSequence
 		{
-			get
-			{
-				return imageSequence;
-			}
-
+			get => _imageSequence;
 			set
 			{
-				imageSequence = value;
-				LocalBounds = new RectangleDouble(0, 0, imageSequence.Width, imageSequence.Height);
-			}
-		}
-
-		public override void OnClosed(ClosedEventArgs e)
-		{
-			RunAnimation = false;
-			base.OnClosed(e);
-		}
-
-		private void UpdateAnimation()
-		{
-			if (runningTime.Elapsed.TotalSeconds - lastTimeUpdated > imageSequence.SecondsPerFrame)
-			{
-				if (imageSequence.NumFrames == 0)
+				if (_imageSequence != value)
 				{
-					return;
+					// clear the old one
+					if (_imageSequence != null)
+					{
+						_imageSequence.Invalidated += ResetImageIndex;
+					}
+					_imageSequence = value;
+					animation.FramesPerSecond = _imageSequence.FramesPerSecond;
+					currentTime = 0;
+					_imageSequence.Invalidated += ResetImageIndex;
 				}
-				
-				lastTimeUpdated = runningTime.Elapsed.TotalSeconds;
-				currentFrame = (1 + CurrentFrame) % imageSequence.NumFrames;
-				Invalidate();
-			}
-
-			if (RunAnimation)
-			{
-				UiThread.RunOnIdle(UpdateAnimation);
 			}
 		}
+
+		private void ResetImageIndex(object sender, EventArgs e)
+		{
+			currentTime = 0;
+		}
+
+		public bool MaintainAspecRatio { get; set; } = true;
+
+		public bool RunAnimation
+		{
+			get { return animation != null && animation.IsRunning; }
+			set
+			{
+				if (animation != null
+					&& value != animation.IsRunning)
+				{
+					if (value)
+					{
+						animation.Start();
+					}
+					else
+					{
+						animation.Stop();
+					}
+				}
+			}
+		}
+
+		public bool AllowStretching { get; set; } = false;
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			if (imageSequence != null)
+			if (ImageSequence != null)
 			{
-				graphics2D.Render(imageSequence.GetImageByIndex(CurrentFrame % imageSequence.NumFrames), 0, 0);
+				var currentImage = ImageSequence.GetImageByTime(currentTime);
+				var bottomLeft = Vector2.Zero;
+				var ratio = 1.0;
+				if (MaintainAspecRatio)
+				{
+					ratio = Math.Min(Width / currentImage.Width, Height / currentImage.Height);
+					if(!AllowStretching)
+					{
+						ratio = Math.Min(ratio, 1);
+					}
+				}
+
+				graphics2D.Render(currentImage,
+					Width / 2 - (currentImage.Width * ratio) / 2,
+					Height / 2 - (currentImage.Height * ratio) / 2,
+					0,
+					ratio, ratio);
 			}
 			base.OnDraw(graphics2D);
 		}

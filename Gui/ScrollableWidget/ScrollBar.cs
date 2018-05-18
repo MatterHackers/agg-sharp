@@ -35,7 +35,7 @@ namespace MatterHackers.Agg.UI
 {
 	public class DefaultThumbView : GuiWidget
 	{
-		public RGBA_Bytes ThumbColor = RGBA_Bytes.DarkGray;
+		public static Color ThumbColor = Color.DarkGray;
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
@@ -46,9 +46,18 @@ namespace MatterHackers.Agg.UI
 		}
 	}
 
+	public class DefaultThumbBackground : GuiWidget
+	{
+		public static Color DefaultBackgroundColor = Color.LightGray;
+
+		public DefaultThumbBackground()
+		{
+			this.BackgroundColor = DefaultBackgroundColor;
+		}
+	}
+
 	public class ThumDragWidget : GuiWidget
 	{
-		private bool mouseDownOnThumb = false;
 		private Vector2 MouseDownPosition;
 		private Orientation orientation;
 
@@ -67,17 +76,12 @@ namespace MatterHackers.Agg.UI
 			base.OnBoundsChanged(e);
 		}
 
-		protected bool MouseDownOnThumb
-		{
-			get { return mouseDownOnThumb; }
-			set { mouseDownOnThumb = value; }
-		}
+		protected bool MouseDownOnThumb { get; set; }
 
 		override public void OnMouseDown(MouseEventArgs mouseEvent)
 		{
 			MouseDownOnThumb = true;
-			Vector2 mousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
-			MouseDownPosition = mousePosition;
+			MouseDownPosition = new Vector2(mouseEvent.X, mouseEvent.Y);
 
 			base.OnMouseDown(mouseEvent);
 		}
@@ -98,11 +102,11 @@ namespace MatterHackers.Agg.UI
 
 				if (orientation == Orientation.Vertical)
 				{
-					deltaFromDownPosition.x = 0;
+					deltaFromDownPosition.X = 0;
 				}
 				else
 				{
-					deltaFromDownPosition.y = 0;
+					deltaFromDownPosition.Y = 0;
 				}
 
 				ScrollBar parentScrollBar = (ScrollBar)Parent;
@@ -119,6 +123,13 @@ namespace MatterHackers.Agg.UI
 		private ThumDragWidget thumb;
 
 		public static double ScrollBarWidth = 15 * GuiWidget.DeviceScale;
+
+		/// <summary>
+		/// The amount to grow each side of the thumb in Y on Hover
+		/// </summary>
+		public static int GrowThumbBy = 3;
+
+		public static BorderDouble DefaultMargin = 0;
 
 		public enum ShowState { Never, WhenRequired, Always };
 
@@ -156,7 +167,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 		internal ScrollBar(ScrollableWidget parent, Orientation orientation = Orientation.Vertical)
-			: this(parent, new GuiWidget(), new DefaultThumbView(), orientation)
+			: this(parent, new DefaultThumbBackground(), new DefaultThumbView(), orientation)
 		{
 		}
 
@@ -168,27 +179,16 @@ namespace MatterHackers.Agg.UI
 			thumb = new ThumDragWidget(orientation);
 			thumb.AddChild(thumbView);
 
-			background.BackgroundColor = RGBA_Bytes.LightGray;
-
 			AddChild(background);
 			AddChild(thumb);
 
-			BackgroundColor = RGBA_Bytes.Blue;
+			this.Margin = ScrollBar.DefaultMargin;
 
-			ParentScrollWidget.BoundsChanged += new EventHandler(Parent_BoundsChanged);
-			ParentScrollWidget.ScrollArea.BoundsChanged += new EventHandler(ScrollArea_BoundsChanged);
-			ParentScrollWidget.ScrollPositionChanged += new EventHandler(scrollWidgeContainingThis_ScrollPositionChanged);
-			ParentScrollWidget.ScrollArea.MarginChanged += new EventHandler(ScrollArea_MarginChanged);
-			UpdateScrollBar();
-		}
+			ParentScrollWidget.BoundsChanged += Bounds_Changed;
+			ParentScrollWidget.ScrollArea.BoundsChanged += Bounds_Changed;
+			ParentScrollWidget.ScrollPositionChanged += Bounds_Changed;
+			ParentScrollWidget.ScrollArea.MarginChanged += Bounds_Changed;
 
-		private void ScrollArea_MarginChanged(object sender, EventArgs e)
-		{
-			UpdateScrollBar();
-		}
-
-		private void scrollWidgeContainingThis_ScrollPositionChanged(object sender, EventArgs e)
-		{
 			UpdateScrollBar();
 		}
 
@@ -197,7 +197,7 @@ namespace MatterHackers.Agg.UI
 			if (!thumb.BoundsRelativeToParent.Contains(mouseEvent.X, mouseEvent.Y))
 			{
 				// we did not click on the thumb so we want to move the scroll bar towards the click
-				if (mouseEvent.Y < thumb.OriginRelativeParent.y)
+				if (mouseEvent.Y < thumb.OriginRelativeParent.Y)
 				{
 					MoveThumb(new Vector2(0, -thumb.Height));
 				}
@@ -208,6 +208,24 @@ namespace MatterHackers.Agg.UI
 			}
 
 			base.OnMouseDown(mouseEvent);
+		}
+
+		bool mouseInBounds = false;
+
+		public override void OnMouseEnterBounds(MouseEventArgs mouseEvent)
+		{
+			mouseInBounds = true;
+			base.OnMouseEnterBounds(mouseEvent);
+
+			this.UpdateScrollBar();
+		}
+
+		public override void OnMouseLeaveBounds(MouseEventArgs mouseEvent)
+		{
+			mouseInBounds = false;
+			base.OnMouseLeaveBounds(mouseEvent);
+
+			this.UpdateScrollBar();
 		}
 
 		private void UpdateScrollBar()
@@ -231,30 +249,28 @@ namespace MatterHackers.Agg.UI
 					LocalBounds = new RectangleDouble(0, 0, ScrollBarWidth, ParentScrollWidget.Height);
 					background.LocalBounds = LocalBounds;
 
-					// this is for vertical scroll bar
-					thumb.LocalBounds = new RectangleDouble(0, 0, ScrollBarWidth, ThumbHeight);
+					// On hover, grow the thumb bounds by the given value
+					int growAmount = (mouseInBounds) ? 0 : ScrollBar.GrowThumbBy;
+					thumb.LocalBounds = new RectangleDouble(growAmount, 0, ScrollBarWidth - growAmount, ThumbHeight);
 
 					Vector2 scrollRatioFromTop0To1 = ParentScrollWidget.ScrollRatioFromTop0To1;
 					double notThumbHeight = ParentScrollWidget.Height - ThumbHeight;
-					thumb.OriginRelativeParent = new Vector2(0, notThumbHeight * scrollRatioFromTop0To1.y);
-
-					ParentScrollWidget.ScrollArea.Padding = new BorderDouble(0, 0, ScrollBar.ScrollBarWidth, 0);
-
+					thumb.OriginRelativeParent = new Vector2(0, notThumbHeight * scrollRatioFromTop0To1.Y);
 					break;
 
 				case ShowState.Never:
 					Visible = false;
-
-					ParentScrollWidget.ScrollArea.Padding = new BorderDouble(0, 0, 0, 0);
-
 					break;
 			}
+
+			// HACK: Workaround to fix problems with initial positioning - set padding on ScrollArea to force layout
+			this.ParentScrollWidget.ScrollArea.Padding = 0;
 		}
 
 		internal void MoveThumb(Vector2 deltaToMove)
 		{
 			double notThumbHeight = ParentScrollWidget.Height - ThumbHeight;
-			double changeRatio = deltaToMove.y / notThumbHeight;
+			double changeRatio = deltaToMove.Y / notThumbHeight;
 			ParentScrollWidget.ScrollRatioFromTop0To1 = ParentScrollWidget.ScrollRatioFromTop0To1 + new Vector2(0, changeRatio);
 		}
 
@@ -263,16 +279,11 @@ namespace MatterHackers.Agg.UI
 			get
 			{
 				Vector2 ratioOfViewToContents0To1 = ParentScrollWidget.RatioOfViewToContents0To1();
-				return ratioOfViewToContents0To1.y * ParentScrollWidget.Height;
+				return ratioOfViewToContents0To1.Y * ParentScrollWidget.Height;
 			}
 		}
 
-		private void ScrollArea_BoundsChanged(object sender, EventArgs e)
-		{
-			UpdateScrollBar();
-		}
-
-		private void Parent_BoundsChanged(object sender, EventArgs e)
+		private void Bounds_Changed(object sender, EventArgs e)
 		{
 			UpdateScrollBar();
 		}

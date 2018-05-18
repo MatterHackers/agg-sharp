@@ -1,16 +1,17 @@
 #define USE_CLIPPING_ALPHA_MASK
 
+using System;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
-using System;
 
 namespace MatterHackers.Agg
 {
-	public class alpha_mask2_application : GuiWidget
+	public class alpha_mask2_application : GuiWidget, IDemoApp
 	{
 		private byte[] alphaByteArray;
 
@@ -48,6 +49,12 @@ namespace MatterHackers.Agg
 			numMasksSlider.OriginRelativeParent = Vector2.Zero;
 		}
 
+		public string Title { get; } = "Clipping to multiple rectangle regions";
+
+		public string DemoCategory { get; } = "Bitmap";
+
+		public string DemoDescription { get; } = "";
+
 		private unsafe void generate_alpha_mask(int cx, int cy)
 		{
 			alphaByteArray = new byte[cx * cy];
@@ -63,7 +70,7 @@ namespace MatterHackers.Agg
 				ImageClippingProxy clippingProxy = new ImageClippingProxy(image);
 				ScanlineCachePacked8 sl = new ScanlineCachePacked8();
 
-				clippingProxy.clear(new RGBA_Floats(0));
+				clippingProxy.clear(new ColorF(0));
 
 				VertexSource.Ellipse ellipseForMask = new MatterHackers.Agg.VertexSource.Ellipse();
 
@@ -78,11 +85,11 @@ namespace MatterHackers.Agg
 					{
 						ellipseForMask.init(Width / 2, Height / 2, 110, 110, 100);
 						rasterizer.add_path(ellipseForMask);
-						scanlineRenderer.RenderSolid(clippingProxy, rasterizer, sl, new RGBA_Bytes(0, 0, 0, 255));
+						scanlineRenderer.RenderSolid(clippingProxy, rasterizer, sl, new Color(0, 0, 0, 255));
 
 						ellipseForMask.init(ellipseForMask.originX, ellipseForMask.originY, ellipseForMask.radiusX - 10, ellipseForMask.radiusY - 10, 100);
 						rasterizer.add_path(ellipseForMask);
-						scanlineRenderer.RenderSolid(clippingProxy, rasterizer, sl, new RGBA_Bytes(255, 0, 0, 255));
+						scanlineRenderer.RenderSolid(clippingProxy, rasterizer, sl, new Color(255, 0, 0, 255));
 					}
 					else
 					{
@@ -95,7 +102,7 @@ namespace MatterHackers.Agg
 						// there is not very much reason to set the alpha as you will get the amount of
 						// transparency based on the color you draw.  (you might want some type of different edeg effect but it will be minor).
 						rasterizer.add_path(ellipseForMask);
-						scanlineRenderer.RenderSolid(clippingProxy, rasterizer, sl, new RGBA_Bytes((int)((float)i / (float)num * 255), 0, 0, 255));
+						scanlineRenderer.RenderSolid(clippingProxy, rasterizer, sl, new Color((int)((float)i / (float)num * 255), 0, 0, 255));
 					}
 				}
 
@@ -136,13 +143,13 @@ namespace MatterHackers.Agg
 				ImageClippingProxy clippingProxy = new ImageClippingProxy(widgetsSubImage);
 
 				Affine transform = Affine.NewIdentity();
-				transform *= Affine.NewTranslation(-lionShape.Center.x, -lionShape.Center.y);
+				transform *= Affine.NewTranslation(-lionShape.Center.X, -lionShape.Center.Y);
 				transform *= Affine.NewScaling(lionScale, lionScale);
 				transform *= Affine.NewRotation(angle + Math.PI);
 				transform *= Affine.NewSkewing(skewX / 1000.0, skewY / 1000.0);
 				transform *= Affine.NewTranslation(Width / 2, Height / 2);
 
-				clippingProxy.clear(new RGBA_Floats(1, 1, 1));
+				clippingProxy.clear(new ColorF(1, 1, 1));
 
 				ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
 				// draw a background to show how the mask is working better
@@ -158,7 +165,7 @@ namespace MatterHackers.Agg
 
 							// Drawing as an outline
 							rasterizer.add_path(rect);
-							scanlineRenderer.RenderSolid(clippingProxy, rasterizer, scanlineCache, new RGBA_Bytes(.9, .9, .9));
+							scanlineRenderer.RenderSolid(clippingProxy, rasterizer, scanlineCache, new Color(.9, .9, .9));
 						}
 					}
 				}
@@ -306,36 +313,15 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public static void StartDemo()
-		{
-			AppWidgetFactory appWidget = new AlphaMask2Factory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			StartDemo();
-		}
-	}
+			var demoWidget = new alpha_mask2_application();
 
-	public class AlphaMask2Factory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new alpha_mask2_application();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-				"Bitmap",
-				"Clipping to multiple rectangle regions",
-				@"",
-										   512,
-										   400);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(512, 400);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

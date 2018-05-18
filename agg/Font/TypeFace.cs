@@ -15,25 +15,22 @@ using MatterHackers.VectorMath;
 // warranty, and with no claim as to its suitability for any purpose.
 //
 //----------------------------------------------------------------------------
-//
-// Class TypeFace.cs
-//
-//----------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using Typography.OpenFont;
 
 namespace MatterHackers.Agg.Font
 {
-	public class TypeFace
+	public partial class TypeFace
 	{
 		private class Glyph
 		{
 			public int horiz_adv_x;
 			public int unicode;
 			public string glyphName;
-			public PathStorage glyphData = new PathStorage();
+			public VertexStorage glyphData = new VertexStorage();
 		}
 
 		private class Panos_1
@@ -96,6 +93,8 @@ namespace MatterHackers.Agg.Font
 					xHeight = (XHeight)tempInt;
 			}
 		}
+
+		TtfTypeface ttfTypeFace;
 
 		private String fontId;
 		private int horiz_adv_x;
@@ -197,6 +196,29 @@ namespace MatterHackers.Agg.Font
 			fontUnderConstruction.ReadSVG(content);
 
 			return fontUnderConstruction;
+		}
+
+		public void LoadTTF(string filename)
+		{
+			using (var fs = new FileStream(filename, FileMode.Open))
+			{
+				LoadTTF(fs);
+			}
+		}
+
+		public bool LoadTTF(Stream stream)
+		{
+			var reader = new OpenFontReader();
+			ttfTypeFace = reader.Read(stream);
+			if (ttfTypeFace != null)
+			{
+				this.ascent = ttfTypeFace.Ascender;
+				this.descent = ttfTypeFace.Descender;
+				this.unitsPerEm = ttfTypeFace.UnitsPerEm;
+				return true;
+			}
+
+			return false;
 		}
 
 		public static TypeFace LoadSVG(String filename)
@@ -309,16 +331,37 @@ namespace MatterHackers.Agg.Font
 
 		internal IVertexSource GetGlyphForCharacter(char character)
 		{
-			// TODO: check for multi character glyphs (we don't currently support them in the reader).
-			Glyph glyph;
-			if (glyphs.TryGetValue(character, out glyph))
+			if (ttfTypeFace != null)
 			{
-				PathStorage writeableGlyph = new PathStorage();
-				writeableGlyph.ShareVertexData(glyph.glyphData);
-				return writeableGlyph;
+				// TODO: MAKE SURE THIS IS OFF!!!!!!! It is un-needed and only for debuging
+				//glyphs.Clear();
 			}
 
-			return null;
+			IVertexSource vertexSource = null;
+			// TODO: check for multi character glyphs (we don't currently support them in the reader).
+			Glyph glyph = null;
+			if (!glyphs.TryGetValue(character, out glyph))
+			{
+				// if we have a loaded ttf try to create the glyph data
+				if (ttfTypeFace != null)
+				{
+					glyph = new Glyph();
+					var translator = new VertexSourceGlyphTranslator(glyph.glyphData);
+					var glyphIndex = ttfTypeFace.LookupIndex(character);
+					var ttfGlyph = ttfTypeFace.GetGlyphByIndex(glyphIndex);
+					translator.Read(ttfGlyph.GlyphPoints, ttfGlyph.EndPoints);
+					glyph.unicode = character;
+					glyph.horiz_adv_x = ttfTypeFace.GetHAdvanceWidthFromGlyphIndex(glyphIndex);
+					glyphs.Add(character, glyph);
+					vertexSource = glyph.glyphData;
+				}
+			}
+			else
+			{
+				vertexSource = glyph.glyphData;
+			}
+
+			return vertexSource;
 		}
 
 		internal int GetAdvanceForCharacter(char character, char nextCharacterToKernWith)
@@ -354,13 +397,13 @@ namespace MatterHackers.Agg.Font
 			double x = origX;
 			double y = 10 - typeFaceNameStyle.DescentInPixels;
 			int width = 50;
-			RGBA_Bytes boundingBoxColor = new RGBA_Bytes(0, 0, 0);
-			RGBA_Bytes originColor = new RGBA_Bytes(0, 0, 0);
-			RGBA_Bytes ascentColor = new RGBA_Bytes(255, 0, 0);
-			RGBA_Bytes descentColor = new RGBA_Bytes(255, 0, 0);
-			RGBA_Bytes xHeightColor = new RGBA_Bytes(12, 25, 200);
-			RGBA_Bytes capHeightColor = new RGBA_Bytes(12, 25, 200);
-			RGBA_Bytes underlineColor = new RGBA_Bytes(0, 150, 55);
+			Color boundingBoxColor = new Color(0, 0, 0);
+			Color originColor = new Color(0, 0, 0);
+			Color ascentColor = new Color(255, 0, 0);
+			Color descentColor = new Color(255, 0, 0);
+			Color xHeightColor = new Color(12, 25, 200);
+			Color capHeightColor = new Color(12, 25, 200);
+			Color underlineColor = new Color(0, 150, 55);
 
 			// the origin
 			graphics2D.Line(x, y, x + width, y, originColor);
@@ -391,19 +434,19 @@ namespace MatterHackers.Agg.Font
 			textTransform *= Affine.NewTranslation(10, origX);
 
 			VertexSourceApplyTransform transformedText = new VertexSourceApplyTransform(textTransform);
-			fontNamePrinter.Render(graphics2D, RGBA_Bytes.Black, transformedText);
+			fontNamePrinter.Render(graphics2D, Color.Black, transformedText);
 
-			graphics2D.Render(transformedText, RGBA_Bytes.Black);
+			graphics2D.Render(transformedText, Color.Black);
 
 			// render the legend
 			StyledTypeFace legendFont = new StyledTypeFace(this, 12);
 			Vector2 textPos = new Vector2(x + width / 2, y + typeFaceNameStyle.EmSizeInPixels * 1.5);
-			graphics2D.Render(new TypeFacePrinter("Descent"), textPos, descentColor); textPos.y += legendFont.EmSizeInPixels;
-			graphics2D.Render(new TypeFacePrinter("Underline"), textPos, underlineColor); textPos.y += legendFont.EmSizeInPixels;
-			graphics2D.Render(new TypeFacePrinter("X Height"), textPos, xHeightColor); textPos.y += legendFont.EmSizeInPixels;
-			graphics2D.Render(new TypeFacePrinter("CapHeight"), textPos, capHeightColor); textPos.y += legendFont.EmSizeInPixels;
-			graphics2D.Render(new TypeFacePrinter("Ascent"), textPos, ascentColor); textPos.y += legendFont.EmSizeInPixels;
-			graphics2D.Render(new TypeFacePrinter("Origin"), textPos, originColor); textPos.y += legendFont.EmSizeInPixels;
+			graphics2D.Render(new TypeFacePrinter("Descent"), textPos, descentColor); textPos.Y += legendFont.EmSizeInPixels;
+			graphics2D.Render(new TypeFacePrinter("Underline"), textPos, underlineColor); textPos.Y += legendFont.EmSizeInPixels;
+			graphics2D.Render(new TypeFacePrinter("X Height"), textPos, xHeightColor); textPos.Y += legendFont.EmSizeInPixels;
+			graphics2D.Render(new TypeFacePrinter("CapHeight"), textPos, capHeightColor); textPos.Y += legendFont.EmSizeInPixels;
+			graphics2D.Render(new TypeFacePrinter("Ascent"), textPos, ascentColor); textPos.Y += legendFont.EmSizeInPixels;
+			graphics2D.Render(new TypeFacePrinter("Origin"), textPos, originColor); textPos.Y += legendFont.EmSizeInPixels;
 			graphics2D.Render(new TypeFacePrinter("Bounding Box"), textPos, boundingBoxColor);
 		}
 	}

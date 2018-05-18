@@ -279,21 +279,21 @@ namespace MatterHackers.Agg.VertexSource
 			{
 				x = 0;
 				y = 0;
-				return ShapePath.FlagsAndCommand.CommandStop;
+				return ShapePath.FlagsAndCommand.Stop;
 			}
 			if (m_step == m_num_steps)
 			{
 				x = m_start_x;
 				y = m_start_y;
 				--m_step;
-				return ShapePath.FlagsAndCommand.CommandMoveTo;
+				return ShapePath.FlagsAndCommand.MoveTo;
 			}
 			if (m_step == 0)
 			{
 				x = m_end_x;
 				y = m_end_y;
 				--m_step;
-				return ShapePath.FlagsAndCommand.CommandLineTo;
+				return ShapePath.FlagsAndCommand.LineTo;
 			}
 			m_fx += m_dfx;
 			m_fy += m_dfy;
@@ -302,7 +302,7 @@ namespace MatterHackers.Agg.VertexSource
 			x = m_fx;
 			y = m_fy;
 			--m_step;
-			return ShapePath.FlagsAndCommand.CommandLineTo;
+			return ShapePath.FlagsAndCommand.LineTo;
 		}
 	}
 
@@ -393,15 +393,15 @@ namespace MatterHackers.Agg.VertexSource
 			{
 				if (i == 0)
 				{
-					yield return new VertexData(ShapePath.FlagsAndCommand.CommandMoveTo, m_points[i]);
+					yield return new VertexData(ShapePath.FlagsAndCommand.MoveTo, m_points[i]);
 				}
 				else
 				{
-					yield return new VertexData(ShapePath.FlagsAndCommand.CommandLineTo, m_points[i]);
+					yield return new VertexData(ShapePath.FlagsAndCommand.LineTo, m_points[i]);
 				}
 			}
 
-			yield return new VertexData(ShapePath.FlagsAndCommand.CommandStop, new Vector2());
+			yield return new VertexData(ShapePath.FlagsAndCommand.Stop, new Vector2());
 		}
 
 		public void rewind(int idx)
@@ -415,13 +415,13 @@ namespace MatterHackers.Agg.VertexSource
 			{
 				x = 0;
 				y = 0;
-				return ShapePath.FlagsAndCommand.CommandStop;
+				return ShapePath.FlagsAndCommand.Stop;
 			}
 
 			Vector2 p = m_points[m_count++];
-			x = p.x;
-			y = p.y;
-			return (m_count == 1) ? ShapePath.FlagsAndCommand.CommandMoveTo : ShapePath.FlagsAndCommand.CommandLineTo;
+			x = p.X;
+			y = p.Y;
+			return (m_count == 1) ? ShapePath.FlagsAndCommand.MoveTo : ShapePath.FlagsAndCommand.LineTo;
 		}
 
 		private void bezier(double x1, double y1,
@@ -744,7 +744,7 @@ namespace MatterHackers.Agg.VertexSource
 			{
 				x = 0;
 				y = 0;
-				return ShapePath.FlagsAndCommand.CommandStop;
+				return ShapePath.FlagsAndCommand.Stop;
 			}
 
 			if (m_step == m_num_steps)
@@ -752,7 +752,7 @@ namespace MatterHackers.Agg.VertexSource
 				x = m_start_x;
 				y = m_start_y;
 				--m_step;
-				return ShapePath.FlagsAndCommand.CommandMoveTo;
+				return ShapePath.FlagsAndCommand.MoveTo;
 			}
 
 			if (m_step == 0)
@@ -760,7 +760,7 @@ namespace MatterHackers.Agg.VertexSource
 				x = m_end_x;
 				y = m_end_y;
 				--m_step;
-				return ShapePath.FlagsAndCommand.CommandLineTo;
+				return ShapePath.FlagsAndCommand.LineTo;
 			}
 
 			m_fx += m_dfx;
@@ -773,7 +773,7 @@ namespace MatterHackers.Agg.VertexSource
 			x = m_fx;
 			y = m_fy;
 			--m_step;
-			return ShapePath.FlagsAndCommand.CommandLineTo;
+			return ShapePath.FlagsAndCommand.LineTo;
 		}
 	}
 
@@ -880,18 +880,18 @@ namespace MatterHackers.Agg.VertexSource
 		public IEnumerable<VertexData> Vertices()
 		{
 			VertexData vertexData = new VertexData();
-			vertexData.command = FlagsAndCommand.CommandMoveTo;
+			vertexData.command = FlagsAndCommand.MoveTo;
 			vertexData.position = m_points[0];
 			yield return vertexData;
 
-			vertexData.command = FlagsAndCommand.CommandLineTo;
+			vertexData.command = FlagsAndCommand.LineTo;
 			for (int i = 1; i < m_points.size(); i++)
 			{
 				vertexData.position = m_points[i];
 				yield return vertexData;
 			}
 
-			vertexData.command = FlagsAndCommand.CommandStop;
+			vertexData.command = FlagsAndCommand.Stop;
 			vertexData.position = new Vector2();
 			yield return vertexData;
 		}
@@ -907,12 +907,12 @@ namespace MatterHackers.Agg.VertexSource
 			{
 				x = 0;
 				y = 0;
-				return ShapePath.FlagsAndCommand.CommandStop;
+				return ShapePath.FlagsAndCommand.Stop;
 			}
 			Vector2 p = m_points[m_count++];
-			x = p.x;
-			y = p.y;
-			return (m_count == 1) ? ShapePath.FlagsAndCommand.CommandMoveTo : ShapePath.FlagsAndCommand.CommandLineTo;
+			x = p.X;
+			y = p.Y;
+			return (m_count == 1) ? ShapePath.FlagsAndCommand.MoveTo : ShapePath.FlagsAndCommand.LineTo;
 		}
 
 		private void bezier(double x1, double y1,

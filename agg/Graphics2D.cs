@@ -31,9 +31,9 @@ namespace MatterHackers.Agg
 	{
 		bool is_solid(int style);
 
-		RGBA_Bytes color(int style);
+		Color color(int style);
 
-		void generate_span(RGBA_Bytes[] span, int spanIndex, int x, int y, int len, int style);
+		void generate_span(Color[] span, int spanIndex, int x, int y, int len, int style);
 	};
 
 	public abstract class Graphics2D
@@ -145,12 +145,12 @@ namespace MatterHackers.Agg
 
 		public void Render(IImageByte imageSource, Vector2 position)
 		{
-			Render(imageSource, position.x, position.y);
+			Render(imageSource, position.X, position.Y);
 		}
 
 		public void Render(IImageByte imageSource, Vector2 position, double width, double height)
 		{
-			Render(imageSource, position.x, position.y, width, height);
+			Render(imageSource, position.X, position.Y, width, height);
 		}
 
 		public void Render(IImageByte imageSource, double x, double y)
@@ -173,7 +173,7 @@ namespace MatterHackers.Agg
 			double angleRadians,
 			double scaleX, double ScaleY);
 
-		public void Render(IVertexSource vertexSource, RGBA_Bytes[] colorArray, int[] pathIdArray, int numPaths)
+		public void Render(IVertexSource vertexSource, Color[] colorArray, int[] pathIdArray, int numPaths)
 		{
 			for (int i = 0; i < numPaths; i++)
 			{
@@ -193,19 +193,23 @@ namespace MatterHackers.Agg
 
 		public void Render(IVertexSource vertexSource, Vector2 position, IColorType color)
 		{
-			Render(new VertexSourceApplyTransform(vertexSource, Affine.NewTranslation(position.x, position.y)), 0, color);
+			Render(new VertexSourceApplyTransform(vertexSource, Affine.NewTranslation(position.X, position.Y)), 0, color);
 		}
 
 		public abstract void Clear(IColorType color);
 
+		public abstract int Width { get; }
+		public abstract int Height { get; }
+
 		public void DrawString(string Text, double x, double y, double pointSize = 12,
 			Justification justification = Justification.Left, Baseline baseline = Baseline.Text,
-			RGBA_Bytes color = new RGBA_Bytes(), bool drawFromHintedCach = false, RGBA_Bytes backgroundColor = new RGBA_Bytes())
+			Color color = new Color(), bool drawFromHintedCach = false, Color backgroundColor = new Color(),
+			bool bold = false)
 		{
-			TypeFacePrinter stringPrinter = new TypeFacePrinter(Text, pointSize, new Vector2(x, y), justification, baseline);
+			TypeFacePrinter stringPrinter = new TypeFacePrinter(Text, pointSize, new Vector2(x, y), justification, baseline, bold);
 			if (color.Alpha0To255 == 0)
 			{
-				color = RGBA_Bytes.Black;
+				color = Color.Black;
 			}
 
 			if (backgroundColor.Alpha0To255 != 0)
@@ -217,44 +221,46 @@ namespace MatterHackers.Agg
 			stringPrinter.Render(this, color);
 		}
 
-		public void Circle(Vector2 origin, double radius, RGBA_Bytes color)
+		public void Circle(Vector2 origin, double radius, Color color)
 		{
-			Circle(origin.x, origin.y, radius, color);
+			Circle(origin.X, origin.Y, radius, color);
 		}
 
-		public void Circle(double x, double y, double radius, RGBA_Bytes color)
+		public void Circle(double x, double y, double radius, Color color)
 		{
 			Ellipse elipse = new Ellipse(x, y, radius, radius);
 			Render(elipse, color);
 		}
 
-		public void Line(Vector2 start, Vector2 end, RGBA_Bytes color, double strokeWidth = 1)
+		public void Line(Vector2 start, Vector2 end, Color color, double strokeWidth = 1)
 		{
-			Line(start.x, start.y, end.x, end.y, color, strokeWidth);
+			Line(start.X, start.Y, end.X, end.Y, color, strokeWidth);
 		}
 
-		public void Line(double x1, double y1, double x2, double y2, RGBA_Bytes color, double strokeWidth = 1)
+		public virtual void Line(double x1, double y1, double x2, double y2, Color color, double strokeWidth = 1)
 		{
-			PathStorage m_LinesToDraw = new PathStorage();
-			m_LinesToDraw.remove_all();
-			m_LinesToDraw.MoveTo(x1, y1);
-			m_LinesToDraw.LineTo(x2, y2);
-			Stroke StrockedLineToDraw = new Stroke(m_LinesToDraw, strokeWidth);
-			Render(StrockedLineToDraw, color);
+			var lineToDraw = new VertexStorage();
+			lineToDraw.remove_all();
+			lineToDraw.MoveTo(x1, y1);
+			lineToDraw.LineTo(x2, y2);
+
+			this.Render(
+				new Stroke(lineToDraw, strokeWidth), 
+				color);
 		}
 
 		public abstract void SetClippingRect(RectangleDouble rect_d);
 
 		public abstract RectangleDouble GetClippingRect();
 
-		public abstract void Rectangle(double left, double bottom, double right, double top, RGBA_Bytes color, double strokeWidth = 1);
+		public abstract void Rectangle(double left, double bottom, double right, double top, Color color, double strokeWidth = 1);
 
-		public void Rectangle(RectangleDouble rect, RGBA_Bytes color, double strokeWidth = 1)
+		public void Rectangle(RectangleDouble rect, Color color, double strokeWidth = 1)
 		{
 			Rectangle(rect.Left, rect.Bottom, rect.Right, rect.Top, color, strokeWidth);
 		}
 
-		public void Rectangle(RectangleInt rect, RGBA_Bytes color)
+		public void Rectangle(RectangleInt rect, Color color)
 		{
 			Rectangle(rect.Left, rect.Bottom, rect.Right, rect.Top, color);
 		}
@@ -271,7 +277,7 @@ namespace MatterHackers.Agg
 
 		public void FillRectangle(Vector2 leftBottom, Vector2 rightTop, IColorType fillColor)
 		{
-			FillRectangle(leftBottom.x, leftBottom.y, rightTop.x, rightTop.y, fillColor);
+			FillRectangle(leftBottom.X, leftBottom.Y, rightTop.X, rightTop.Y, fillColor);
 		}
 
 		public abstract void FillRectangle(double left, double bottom, double right, double top, IColorType fillColor);

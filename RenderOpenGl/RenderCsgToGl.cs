@@ -52,19 +52,19 @@ namespace MatterHackers.RenderOpenGl
 		{
 		}
 
-		#region Visitor Patern Functions
+		#region Visitor Pattern Functions
 
 		public void RenderToGlRecursive(CsgObject objectToProcess)
 		{
-			throw new Exception("You must wirte the specialized function for this type.");
+			throw new Exception("You must write the specialized function for this type.");
 		}
 
 		#region Mesh
 
-		public void RenderToGlRecursive(Csg.Solids.Mesh objectToProcess)
+		public void RenderToGlRecursive(Csg.Solids.MeshContainer objectToProcess)
 		{
-			RGBA_Floats partColor = new RGBA_Floats(.8, .8, 1);
-			RenderMeshToGl.Render(objectToProcess.GetMesh(), partColor);
+			var partColor = new ColorF(.8, .8, 1).ToColor();
+			GLHelper.Render(objectToProcess.GetMesh(), partColor);
 		}
 
 		#endregion Mesh
@@ -83,7 +83,7 @@ namespace MatterHackers.RenderOpenGl
 		public static PolygonMesh.Mesh CreateBox(AxisAlignedBoundingBox aabb)
 		{
 			PolygonMesh.Mesh cube = new PolygonMesh.Mesh();
-			Vertex[] verts = new Vertex[8];
+			IVertex[] verts = new Vertex[8];
 			//verts[0] = cube.CreateVertex(new Vector3(-1, -1, 1));
 			//verts[1] = cube.CreateVertex(new Vector3(1, -1, 1));
 			//verts[2] = cube.CreateVertex(new Vector3(1, 1, 1));
@@ -93,27 +93,27 @@ namespace MatterHackers.RenderOpenGl
 			//verts[6] = cube.CreateVertex(new Vector3(1, 1, -1));
 			//verts[7] = cube.CreateVertex(new Vector3(-1, 1, -1));
 
-			verts[0] = cube.CreateVertex(new Vector3(aabb.minXYZ.x, aabb.minXYZ.y, aabb.maxXYZ.z));
-			verts[1] = cube.CreateVertex(new Vector3(aabb.maxXYZ.x, aabb.minXYZ.y, aabb.maxXYZ.z));
-			verts[2] = cube.CreateVertex(new Vector3(aabb.maxXYZ.x, aabb.maxXYZ.y, aabb.maxXYZ.z));
-			verts[3] = cube.CreateVertex(new Vector3(aabb.minXYZ.x, aabb.maxXYZ.y, aabb.maxXYZ.z));
-			verts[4] = cube.CreateVertex(new Vector3(aabb.minXYZ.x, aabb.minXYZ.y, aabb.minXYZ.z));
-			verts[5] = cube.CreateVertex(new Vector3(aabb.maxXYZ.x, aabb.minXYZ.y, aabb.minXYZ.z));
-			verts[6] = cube.CreateVertex(new Vector3(aabb.maxXYZ.x, aabb.maxXYZ.y, aabb.minXYZ.z));
-			verts[7] = cube.CreateVertex(new Vector3(aabb.minXYZ.x, aabb.maxXYZ.y, aabb.minXYZ.z));
+			verts[0] = cube.CreateVertex(new Vector3(aabb.minXYZ.X, aabb.minXYZ.Y, aabb.maxXYZ.Z));
+			verts[1] = cube.CreateVertex(new Vector3(aabb.maxXYZ.X, aabb.minXYZ.Y, aabb.maxXYZ.Z));
+			verts[2] = cube.CreateVertex(new Vector3(aabb.maxXYZ.X, aabb.maxXYZ.Y, aabb.maxXYZ.Z));
+			verts[3] = cube.CreateVertex(new Vector3(aabb.minXYZ.X, aabb.maxXYZ.Y, aabb.maxXYZ.Z));
+			verts[4] = cube.CreateVertex(new Vector3(aabb.minXYZ.X, aabb.minXYZ.Y, aabb.minXYZ.Z));
+			verts[5] = cube.CreateVertex(new Vector3(aabb.maxXYZ.X, aabb.minXYZ.Y, aabb.minXYZ.Z));
+			verts[6] = cube.CreateVertex(new Vector3(aabb.maxXYZ.X, aabb.maxXYZ.Y, aabb.minXYZ.Z));
+			verts[7] = cube.CreateVertex(new Vector3(aabb.minXYZ.X, aabb.maxXYZ.Y, aabb.minXYZ.Z));
 
 			// front
-			cube.CreateFace(new Vertex[] { verts[0], verts[1], verts[2], verts[3] });
+			cube.CreateFace(new IVertex[] { verts[0], verts[1], verts[2], verts[3] });
 			// left
-			cube.CreateFace(new Vertex[] { verts[4], verts[0], verts[3], verts[7] });
+			cube.CreateFace(new IVertex[] { verts[4], verts[0], verts[3], verts[7] });
 			// right
-			cube.CreateFace(new Vertex[] { verts[1], verts[5], verts[6], verts[2] });
+			cube.CreateFace(new IVertex[] { verts[1], verts[5], verts[6], verts[2] });
 			// back
-			cube.CreateFace(new Vertex[] { verts[4], verts[7], verts[6], verts[5] });
+			cube.CreateFace(new IVertex[] { verts[4], verts[7], verts[6], verts[5] });
 			// top
-			cube.CreateFace(new Vertex[] { verts[3], verts[2], verts[6], verts[7] });
+			cube.CreateFace(new IVertex[] { verts[3], verts[2], verts[6], verts[7] });
 			// bottom
-			cube.CreateFace(new Vertex[] { verts[4], verts[5], verts[1], verts[0] });
+			cube.CreateFace(new IVertex[] { verts[4], verts[5], verts[1], verts[0] });
 
 			return cube;
 		}
@@ -128,8 +128,8 @@ namespace MatterHackers.RenderOpenGl
 			{
 			}
 
-			RGBA_Floats partColor = new RGBA_Floats(.8, .8, 1);
-			RenderMeshToGl.Render(CreateBox(objectToProcess.GetAxisAlignedBoundingBox()), partColor);
+			var partColor = new ColorF(.8, .8, 1).ToColor();
+			GLHelper.Render(CreateBox(objectToProcess.GetAxisAlignedBoundingBox()), partColor);
 		}
 
 		#endregion Box
@@ -139,17 +139,17 @@ namespace MatterHackers.RenderOpenGl
 		public static PolygonMesh.Mesh CreateCylinder(Cylinder.CylinderPrimitive cylinderToMeasure)
 		{
 			PolygonMesh.Mesh cylinder = new PolygonMesh.Mesh();
-			List<Vertex> bottomVerts = new List<Vertex>();
-			List<Vertex> topVerts = new List<Vertex>();
+			List<IVertex> bottomVerts = new List<IVertex>();
+			List<IVertex> topVerts = new List<IVertex>();
 
 			int count = 20;
 			for (int i = 0; i < count; i++)
 			{
 				Vector2 bottomRadialPos = Vector2.Rotate(new Vector2(cylinderToMeasure.Radius1, 0), MathHelper.Tau * i / 20);
-				Vertex bottomVertex = cylinder.CreateVertex(new Vector3(bottomRadialPos.x, bottomRadialPos.y, -cylinderToMeasure.Height / 2));
+				IVertex bottomVertex = cylinder.CreateVertex(new Vector3(bottomRadialPos.X, bottomRadialPos.Y, -cylinderToMeasure.Height / 2));
 				bottomVerts.Add(bottomVertex);
 				Vector2 topRadialPos = Vector2.Rotate(new Vector2(cylinderToMeasure.Radius1, 0), MathHelper.Tau * i / 20);
-				Vertex topVertex = cylinder.CreateVertex(new Vector3(topRadialPos.x, topRadialPos.y, cylinderToMeasure.Height / 2));
+				IVertex topVertex = cylinder.CreateVertex(new Vector3(topRadialPos.X, topRadialPos.Y, cylinderToMeasure.Height / 2));
 				topVerts.Add(topVertex);
 			}
 
@@ -158,17 +158,17 @@ namespace MatterHackers.RenderOpenGl
 
 			for (int i = 0; i < count - 1; i++)
 			{
-				cylinder.CreateFace(new Vertex[] { topVerts[i], bottomVerts[i], bottomVerts[i + 1], topVerts[i + 1] });
+				cylinder.CreateFace(new IVertex[] { topVerts[i], bottomVerts[i], bottomVerts[i + 1], topVerts[i + 1] });
 			}
-			cylinder.CreateFace(new Vertex[] { topVerts[count - 1], bottomVerts[count - 1], bottomVerts[0], topVerts[0] });
+			cylinder.CreateFace(new IVertex[] { topVerts[count - 1], bottomVerts[count - 1], bottomVerts[0], topVerts[0] });
 
 			return cylinder;
 		}
 
 		public void RenderToGlRecursive(Cylinder.CylinderPrimitive objectToProcess)
 		{
-			RGBA_Floats partColor = new RGBA_Floats(.8, .8, 1);
-			RenderMeshToGl.Render(CreateCylinder(objectToProcess), partColor);
+			var partColor = new ColorF(.8, .8, 1).ToColor();
+			GLHelper.Render(CreateCylinder(objectToProcess), partColor);
 		}
 
 		#endregion Cylinder

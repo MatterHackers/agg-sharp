@@ -33,16 +33,17 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Diagnostics;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg
 {
-	public class image_filters : FlowLayoutWidget
+	public class image_filters : FlowLayoutWidget, IDemoApp
 	{
 #if SourceDepthFloat
         public static ImageBufferFloat m_TempDestImage = new ImageBufferFloat();
@@ -134,8 +135,14 @@ namespace MatterHackers.Agg
 			filterSelectionButtons.AddRadioButton("blackman");
 			filterSelectionButtons.SelectedIndex = 1;
 
-			filterSelectionButtons.background_color(new RGBA_Floats(0.0, 0.0, 0.0, 0.1));
+			filterSelectionButtons.background_color(new ColorF(0.0, 0.0, 0.0, 0.1));
 		}
+
+		public string Title { get; } = "Image Filters Comparison";
+
+		public string DemoCategory { get; } = "Bitmap";
+
+		public string DemoDescription { get; } = "The image transformer algorithm can work with different interpolation filters, such as Bilinear, Bicubic, Sinc, Blackman. The example demonstrates the difference in quality between different filters. When switch the �Run Test� on, the image starts rotating. But at each step there is the previously rotated image taken, so the quality degrades. This degradation as well as the performance depend on the type of the interpolation filter.";
 
 		public override void OnParentChanged(EventArgs e)
 		{
@@ -148,7 +155,7 @@ namespace MatterHackers.Agg
 #endif
 
 			string img_name = "spheres.bmp";
-			if (!ImageIO.LoadImageData(img_name, tempImageToLoadInto))
+			if (!AggContext.ImageIO.LoadImageData(img_name, tempImageToLoadInto))
 			{
 				string buf;
 				buf = "File not found: "
@@ -214,7 +221,7 @@ namespace MatterHackers.Agg
 #else
 			ImageClippingProxy clippingProxy = new ImageClippingProxy(widgetsSubImage);
 
-			clippingProxy.clear(new RGBA_Floats(1.0, 1.0, 1.0));
+			clippingProxy.clear(new ColorF(1.0, 1.0, 1.0));
 			clippingProxy.CopyFrom(m_TempDestImage, new RectangleInt(0, 0, (int)Width, (int)Height), 110, 35);
 #endif
 
@@ -231,7 +238,7 @@ namespace MatterHackers.Agg
 #if SourceDepthFloat
             RGBA_Floats colorBlack = new RGBA_Floats(0, 0, 0);
 #else
-			RGBA_Bytes colorBlack = new RGBA_Bytes(0, 0, 0);
+			Color colorBlack = new Color(0, 0, 0);
 #endif
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
 			scanlineRenderer.RenderSolid(clippingProxy, m_Rasterizer, m_ScanlinePacked, colorBlack);
@@ -268,7 +275,7 @@ namespace MatterHackers.Agg
 			ImageClippingProxy clippedDest = new ImageClippingProxy(m_TempDestImage);
 #endif
 
-			clippedDest.clear(new RGBA_Floats(1.0, 1.0, 1.0));
+			clippedDest.clear(new ColorF(1.0, 1.0, 1.0));
 
 			Affine src_mtx = Affine.NewIdentity();
 			src_mtx *= Affine.NewTranslation(-width / 2.0, -height / 2.0);
@@ -298,9 +305,9 @@ namespace MatterHackers.Agg
 			bool norm = m_normalize.Checked;
 
 #if SourceDepthFloat
-            ImageBufferAccessorClipFloat source = new ImageBufferAccessorClipFloat(m_RotatedImage, RGBA_Floats.rgba_pre(0,0,0,0).GetAsRGBA_Floats());
+            ImageBufferAccessorClipFloat source = new ImageBufferAccessorClipFloat(m_RotatedImage, RGBA_Floats.rgba_pre(0,0,0,0).ToColorF());
 #else
-			ImageBufferAccessorClip source = new ImageBufferAccessorClip(m_RotatedImage, RGBA_Floats.rgba_pre(0, 0, 0, 0).GetAsRGBA_Bytes());
+			ImageBufferAccessorClip source = new ImageBufferAccessorClip(m_RotatedImage, ColorF.rgba_pre(0, 0, 0, 0).ToColor());
 #endif
 			IImageFilterFunction filterFunction = null;
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
@@ -536,28 +543,12 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new ImageFiltersFactory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new image_filters();
 
-	public class ImageFiltersFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new image_filters();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-			"Bitmap",
-			"Image Filters Comparison",
-			"The image transformer algorithm can work with different interpolation filters, such as Bilinear, Bicubic, Sinc, Blackman. The example demonstrates the difference in quality between different filters. When switch the �Run Test� on, the image starts rotating. But at each step there is the previously rotated image taken, so the quality degrades. This degradation as well as the performance depend on the type of the interpolation filter.",
-			305,
-			325);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(305, 325);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

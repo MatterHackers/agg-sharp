@@ -16,17 +16,18 @@
 //          mcseemagg@yahoo.com
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Linq;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
-using System;
 using static System.Math;
-using static MatterHackers.Agg.RGBA_Bytes;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Linq;
+using static MatterHackers.Agg.Color;
 
 namespace MatterHackers.Agg.UI
 {
@@ -45,29 +46,27 @@ namespace MatterHackers.Agg.UI
 	public enum HAnchor
 	{
 		/// <summary>
-		/// The widget will not change width automaticaly and will be positions at the OriginRelative to parent in x.
+		/// The widget will not change width automatically and will be positions at the OriginRelative to parent in x.
 		/// </summary>
-		AbsolutePosition = 0,
+		Absolute = 0,
 		/// <summary>
-		/// Hold the widget to the paretns left edge, respecting widget margin and parent padding.
+		/// Hold the widget to the parents left edge, respecting widget margin and parent padding.
 		/// </summary>
-		ParentLeft = 1,
-		ParentCenter = 2,
-		ParentRight = 4,
+		Left = 1,
+		Center = 2,
+		Right = 4,
 		/// <summary>
-		/// Maintain a size that horizontaly encloses all of its visible children.
+		/// Maintain a size that horizontally encloses all of its visible children.
 		/// </summary>
-		FitToChildren = 8,
+		Fit = 8,
 		/// <summary>
-		/// Maintin a width that is the same width as its parent.
+		/// Maintain a width that is the same width as its parent.
 		/// </summary>
-		ParentLeftRight = ParentLeft | ParentRight,
-		ParentLeftCenter = ParentLeft | ParentCenter,
-		ParentCenterRight = ParentCenter | ParentRight,
+		Stretch = Left | Right,
 		/// <summary>
-		/// Take the larger of FitToChildren or ParentLeftRight.
+		/// Take the larger of FitToChildren or Stretch.
 		/// </summary>
-		Max_FitToChildren_ParentWidth = FitToChildren | ParentLeftRight,
+		MaxFitOrStretch = Fit | Stretch,
 	};
 
 	/// <summary>
@@ -76,21 +75,19 @@ namespace MatterHackers.Agg.UI
 	[Flags]
 	public enum VAnchor
 	{
-		AbsolutePosition = 0,
-		ParentBottom = 1,
-		ParentCenter = 2,
-		ParentTop = 4,
+		Absolute = 0,
+		Bottom = 1,
+		Center = 2,
+		Top = 4,
 		/// <summary>
-		/// Maintain a size that verticaly encloses all of its visible children.
+		/// Maintain a size that vertically encloses all of its visible children.
 		/// </summary>
-		FitToChildren = 8,
-		ParentBottomTop = ParentBottom | ParentTop,
-		ParentBottomCenter = ParentBottom | ParentCenter,
-		ParentCenterTop = ParentCenter | ParentTop,
+		Fit = 8,
+		Stretch = Bottom | Top,
 		/// <summary>
-		/// Take the larger of FitToChildren or ParentBottomTop.
+		/// Take the larger of FitToChildren or Stretch.
 		/// </summary>
-		Max_FitToChildren_ParentHeight = FitToChildren | ParentBottomTop,
+		MaxFitOrStretch = Fit | Stretch,
 	};
 
 	public enum Cursors
@@ -131,7 +128,6 @@ namespace MatterHackers.Agg.UI
 		FirstUnderMouse
 	};
 
-	[DebuggerDisplay("Name = {Name}, Bounds = {LocalBounds}")]
 	public class GuiWidget
 	{
 		public static double DeviceScale { get; set; } = 1;
@@ -183,17 +179,17 @@ namespace MatterHackers.Agg.UI
 
 		public bool ContainsFirstUnderMouseRecursive()
 		{
-			if(UnderMouseState == UnderMouseState.FirstUnderMouse)
+			if (UnderMouseState == UnderMouseState.FirstUnderMouse)
 			{
 				return true;
 			}
-			if(UnderMouseState == UnderMouseState.NotUnderMouse)
+			if (UnderMouseState == UnderMouseState.NotUnderMouse)
 			{
 				return false;
 			}
-			foreach(var child in Children)
+			foreach (var child in Children)
 			{
-				if(child.ContainsFirstUnderMouseRecursive())
+				if (child.ContainsFirstUnderMouseRecursive())
 				{
 					return true;
 				}
@@ -237,9 +233,10 @@ namespace MatterHackers.Agg.UI
 
 		public virtual int TabIndex { get; set; }
 
-		private RGBA_Bytes backgroundColor = new RGBA_Bytes();
+		#region BackgroundColor
+		private Color backgroundColor = new Color();
 
-		public RGBA_Bytes BackgroundColor
+		public virtual Color BackgroundColor
 		{
 			get { return backgroundColor; }
 			set
@@ -253,34 +250,46 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private BorderDouble devicePadding;
-		private BorderDouble padding;
+		public event EventHandler BackgroundColorChanged;
+
+		public virtual void OnBackgroundColorChanged(EventArgs e)
+		{
+			BackgroundColorChanged?.Invoke(this, e);
+		}
+		#endregion
 
 		/// <summary>
-		/// The padding scaled by the DeviceScale
+		/// The boarder and padding scaled by the DeviceScale (used by the layout engine)
 		/// </summary>
 		public BorderDouble DevicePadding
 		{
-			get { return devicePadding; }
+			get;
+			private set;
 		}
+
+		#region Padding
+		public event EventHandler PaddingChanged;
+
+		private BorderDouble _padding;
 
 		/// <summary>
 		/// The space between the Widget and it's contents (the inside border).
 		/// </summary>
+		[Category("Layout")]
 		public virtual BorderDouble Padding
 		{
-			get { return padding; }
+			get { return _padding; }
 			set
 			{
 				//using (new PerformanceTimer("Draw Timer", "On Layout"))
 				{
-					if (padding != value)
+					if (_padding != value)
 					{
-						padding = value;
-						devicePadding = Padding * GuiWidget.DeviceScale;
-						if(EnforceIntegerBounds)
+						_padding = value;
+						DevicePadding = _padding * GuiWidget.DeviceScale;
+						if (EnforceIntegerBounds)
 						{
-							devicePadding.Round();
+							DevicePadding.Round();
 						}
 						// the padding affects the children so make sure they are laid out
 						OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.Padding));
@@ -294,28 +303,91 @@ namespace MatterHackers.Agg.UI
 		{
 			PaddingChanged?.Invoke(this, null);
 		}
+		#endregion
+
+		#region Border
+		private Color _borderColor = Color.Transparent;
+
+		public virtual Color BorderColor
+		{
+			get { return _borderColor; }
+			set
+			{
+				if (_borderColor != value)
+				{
+					_borderColor = value;
+					OnBorderColorChanged(null);
+					Invalidate();
+				}
+			}
+		}
+
+		public event EventHandler BorderColorChanged;
+
+		public virtual void OnBorderColorChanged(EventArgs e)
+		{
+			BorderColorChanged?.Invoke(this, e);
+		}
+
+		public event EventHandler BorderChanged;
+
+		private BorderDouble deviceBorder;
+		private BorderDouble _border;
 
 		/// <summary>
-		/// Sets the cusor that will be used when the mouse is over this control
+		/// The space between the Widget and its border.
 		/// </summary>
-		public Cursors Cursor { get; set; }
+		[Category("Layout")]
+		public virtual BorderDouble Border
+		{
+			get { return _border; }
+			set
+			{
+				//using (new PerformanceTimer("Draw Timer", "On Layout"))
+				{
+					if (_border != value)
+					{
+						_border = value;
+						deviceBorder = _border * GuiWidget.DeviceScale;
+						if (EnforceIntegerBounds)
+						{
+							deviceBorder.Round();
+						}
+						// the border affects the children so make sure they are laid out
+						OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.Border));
+						OnBorderChanged();
+					}
+				}
+			}
+		}
+
+		public virtual void OnBorderChanged()
+		{
+			BorderChanged?.Invoke(this, null);
+		}
+		#endregion
+
+		#region Margin
+		public event EventHandler MarginChanged;
 
 		private BorderDouble margin;
-		private BorderDouble deviceMargin;
 
 		public long LastMouseDownMs { get; private set; }
+
+		BorderDouble deviceMargin;
 
 		/// <summary>
 		/// The Margin scaled by the DeviceScale
 		/// </summary>
-		public BorderDouble DeviceMargin
+		public BorderDouble DeviceMarginAndBorder
 		{
-			get { return deviceMargin; }
+			get { return deviceMargin + deviceBorder; }
 		}
 
 		/// <summary>
 		/// The space between the Widget and it's parent (the outside border).
 		/// </summary>
+		[Category("Layout")]
 		public virtual BorderDouble Margin
 		{
 			get
@@ -329,7 +401,7 @@ namespace MatterHackers.Agg.UI
 					margin = value;
 					deviceMargin = Margin * GuiWidget.DeviceScale;
 
-					if(EnforceIntegerBounds)
+					if (EnforceIntegerBounds)
 					{
 						deviceMargin.Round();
 					}
@@ -340,6 +412,17 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public virtual void OnMarginChanged()
+		{
+			MarginChanged?.Invoke(this, null);
+		}
+		#endregion
+
+		/// <summary>
+		/// Sets the cursor that will be used when the mouse is over this control
+		/// </summary>
+		public Cursors Cursor { get; set; }
+
 		[Conditional("DEBUG")]
 		public static void BreakInDebugger(string description = "")
 		{
@@ -347,11 +430,6 @@ namespace MatterHackers.Agg.UI
 #if DEBUG && false
 			Debugger.Break();
 #endif
-		}
-
-		public virtual void OnMarginChanged()
-		{
-			MarginChanged?.Invoke(this, null);
 		}
 
 		public bool HAnchorIsSet(HAnchor testFlags)
@@ -364,15 +442,15 @@ namespace MatterHackers.Agg.UI
 			get
 			{
 				int numSet = 0;
-				if (HAnchorIsSet(UI.HAnchor.ParentLeft))
+				if (HAnchorIsSet(UI.HAnchor.Left))
 				{
 					numSet++;
 				}
-				if (HAnchorIsSet(UI.HAnchor.ParentCenter))
+				if (HAnchorIsSet(UI.HAnchor.Center))
 				{
 					numSet++;
 				}
-				if (HAnchorIsSet(UI.HAnchor.ParentRight))
+				if (HAnchorIsSet(UI.HAnchor.Right))
 				{
 					numSet++;
 				}
@@ -383,6 +461,7 @@ namespace MatterHackers.Agg.UI
 
 		private HAnchor hAnchor;
 
+		[Category("Layout Anchor")]
 		public virtual HAnchor HAnchor
 		{
 			get { return hAnchor; }
@@ -390,14 +469,14 @@ namespace MatterHackers.Agg.UI
 			{
 				if (hAnchor != value)
 				{
-					if (value == (HAnchor.ParentLeft | HAnchor.ParentCenter | HAnchor.ParentRight))
+					if (value == (HAnchor.Left | HAnchor.Center | HAnchor.Right))
 					{
 						BreakInDebugger("You cannot be anchored to all three positions.");
 					}
 					hAnchor = value;
 					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.HAnchor));
 
-					if (HAnchorIsSet(HAnchor.FitToChildren))
+					if (HAnchorIsSet(HAnchor.Fit))
 					{
 						OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.HAnchor));
 					}
@@ -417,15 +496,15 @@ namespace MatterHackers.Agg.UI
 			get
 			{
 				int numSet = 0;
-				if (VAnchorIsSet(UI.VAnchor.ParentBottom))
+				if (VAnchorIsSet(UI.VAnchor.Bottom))
 				{
 					numSet++;
 				}
-				if (VAnchorIsSet(UI.VAnchor.ParentCenter))
+				if (VAnchorIsSet(UI.VAnchor.Center))
 				{
 					numSet++;
 				}
-				if (VAnchorIsSet(UI.VAnchor.ParentTop))
+				if (VAnchorIsSet(UI.VAnchor.Top))
 				{
 					numSet++;
 				}
@@ -436,6 +515,7 @@ namespace MatterHackers.Agg.UI
 
 		private VAnchor vAnchor;
 
+		[Category("Layout Anchor")]
 		public virtual VAnchor VAnchor
 		{
 			get { return vAnchor; }
@@ -443,16 +523,20 @@ namespace MatterHackers.Agg.UI
 			{
 				if (vAnchor != value)
 				{
-					if (value == (VAnchor.ParentBottom | VAnchor.ParentCenter | VAnchor.ParentTop))
+					if (value == (VAnchor.Bottom | VAnchor.Center | VAnchor.Top))
 					{
 						BreakInDebugger("You cannot be anchored to all three positions.");
 					}
 					vAnchor = value;
-					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.VAnchor));
 
-					if (VAnchorIsSet(VAnchor.FitToChildren))
+					if (this.Visible)
 					{
-						OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.VAnchor));
+						this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.VAnchor));
+
+						if (VAnchorIsSet(VAnchor.Fit))
+						{
+							OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.VAnchor));
+						}
 					}
 
 					VAnchorChanged?.Invoke(this, null);
@@ -462,14 +546,14 @@ namespace MatterHackers.Agg.UI
 
 		public void AnchorAll()
 		{
-			VAnchor = VAnchor.ParentBottom | VAnchor.ParentTop;
-			HAnchor = HAnchor.ParentLeft | HAnchor.ParentRight;
+			VAnchor = VAnchor.Bottom | VAnchor.Top;
+			HAnchor = HAnchor.Left | HAnchor.Right;
 		}
 
 		public void AnchorCenter()
 		{
-			VAnchor = VAnchor.ParentCenter;
-			HAnchor = HAnchor.ParentCenter;
+			VAnchor = VAnchor.Center;
+			HAnchor = HAnchor.Center;
 		}
 
 		protected Transform.Affine parentToChildTransform = Affine.NewIdentity();
@@ -477,7 +561,7 @@ namespace MatterHackers.Agg.UI
 
 		private bool containsFocus = false;
 
-		private int layoutSuspendCount;
+		protected int layoutSuspendCount { get; private set; }
 
 		public event EventHandler Layout;
 
@@ -493,8 +577,6 @@ namespace MatterHackers.Agg.UI
 		public event EventHandler<KeyEventArgs> KeyDown;
 
 		public event EventHandler<KeyEventArgs> KeyUp;
-
-		public event EventHandler<ClosingEventArgs> Closing;
 
 		public event EventHandler<ClosedEventArgs> Closed;
 
@@ -548,13 +630,7 @@ namespace MatterHackers.Agg.UI
 
 		public event EventHandler BoundsChanged;
 
-		public event EventHandler MarginChanged;
-
-		public event EventHandler PaddingChanged;
-
 		public event EventHandler MinimumSizeChanged;
-
-		public event EventHandler BackgroundColorChanged;
 
 		public event EventHandler TextChanged;
 
@@ -594,6 +670,11 @@ namespace MatterHackers.Agg.UI
 			LayoutEngine = new LayoutEngineSimpleAlign();
 			HAnchor = hAnchor;
 			VAnchor = vAnchor;
+		}
+
+		public override string ToString()
+		{
+			return $"Name = {Name}, Bounds = {LocalBounds} - {GetType().Name}";
 		}
 
 		private void children_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
@@ -660,8 +741,8 @@ namespace MatterHackers.Agg.UI
 		private void AllocateBackBuffer()
 		{
 			RectangleDouble localBounds = LocalBounds;
-			int intWidth = Max((int)(Ceiling(localBounds.Right) - Floor(localBounds.Left)) + 1, 1);
-			int intHeight = Max((int)(Ceiling(localBounds.Top) - Floor(localBounds.Bottom)) + 1, 1);
+			int intWidth = Max((int)(Ceiling(localBounds.Right) - Floor(localBounds.Left)), 1);
+			int intHeight = Max((int)(Ceiling(localBounds.Top) - Floor(localBounds.Bottom)), 1);
 			if (backBuffer == null || backBuffer.Width != intWidth || backBuffer.Height != intHeight)
 			{
 				backBuffer = new ImageBuffer(intWidth, intHeight, 32, new BlenderPreMultBGRA());
@@ -693,14 +774,19 @@ namespace MatterHackers.Agg.UI
 
 			set
 			{
-				doubleBuffer = value;
-				if (doubleBuffer)
+				if (this.DoubleBuffer != value)
 				{
-					AllocateBackBuffer();
-				}
-				else
-				{
-					backBuffer = null;
+					doubleBuffer = value;
+					if (doubleBuffer)
+					{
+						AllocateBackBuffer();
+					}
+					else
+					{
+						backBuffer = null;
+					}
+
+					Invalidate();
 				}
 			}
 		}
@@ -725,6 +811,7 @@ namespace MatterHackers.Agg.UI
 
 		private Vector2 minimumSize = new Vector2();
 
+		[Category("Layout Constraints")]
 		public virtual Vector2 MinimumSize
 		{
 			get
@@ -736,23 +823,23 @@ namespace MatterHackers.Agg.UI
 			{
 				if (value != minimumSize)
 				{
-					if (value.x < 0 || value.y < 0)
+					if (value.X < 0 || value.Y < 0)
 					{
 						BreakInDebugger("These have to be 0 or greater.");
 					}
 					minimumSize = value;
 
-					maximumSize.x = Max(minimumSize.x, maximumSize.x);
-					maximumSize.y = Max(minimumSize.y, maximumSize.y);
+					maximumSize.X = Max(minimumSize.X, maximumSize.X);
+					maximumSize.Y = Max(minimumSize.Y, maximumSize.Y);
 
 					RectangleDouble localBounds = LocalBounds;
-					if (localBounds.Width < MinimumSize.x)
+					if (localBounds.Width < MinimumSize.X)
 					{
-						localBounds.Right = localBounds.Left + MinimumSize.x;
+						localBounds.Right = localBounds.Left + MinimumSize.X;
 					}
-					if (localBounds.Height < MinimumSize.y)
+					if (localBounds.Height < MinimumSize.Y)
 					{
-						localBounds.Top = localBounds.Bottom + MinimumSize.y;
+						localBounds.Top = localBounds.Bottom + MinimumSize.Y;
 					}
 					LocalBounds = localBounds;
 
@@ -768,6 +855,7 @@ namespace MatterHackers.Agg.UI
 
 		private Vector2 maximumSize = new Vector2(double.MaxValue, double.MaxValue);
 
+		[Category("Layout Constraints")]
 		public Vector2 MaximumSize
 		{
 			get
@@ -779,15 +867,52 @@ namespace MatterHackers.Agg.UI
 			{
 				if (value != maximumSize)
 				{
-					if (value.x < 0 || value.y < 0)
+					if (value.X < 0 || value.Y < 0)
 					{
 						BreakInDebugger("These have to be 0 or greater.");
 					}
 					maximumSize = value;
 
-					minimumSize.x = Min(minimumSize.x, maximumSize.x);
-					minimumSize.y = Min(minimumSize.y, maximumSize.y);
+					minimumSize.X = Min(minimumSize.X, maximumSize.X);
+					minimumSize.Y = Min(minimumSize.Y, maximumSize.Y);
 				}
+			}
+		}
+
+		/// <summary>
+		/// The bottom left position of the widget in its parent space (or the logical/intuitive position).
+		/// </summary>
+		[Category("Layout")]
+		public Vector2 Position
+		{
+			get
+			{
+				var bounds = BoundsRelativeToParent;
+				return new Vector2(bounds.Left, bounds.Bottom);
+			}
+
+			set
+			{
+				var delta = value - Position;
+				OriginRelativeParent = OriginRelativeParent + delta;
+			}
+		}
+
+		/// <summary>
+		/// The width height of the control (its size!)
+		/// </summary>
+		[Category("Layout")]
+		public Vector2 Size
+		{
+			get
+			{
+				return new Vector2(LocalBounds.Width, LocalBounds.Height);
+			}
+
+			set
+			{
+				Width = value.X;
+				Height = value.Y;
 			}
 		}
 
@@ -804,15 +929,15 @@ namespace MatterHackers.Agg.UI
 				Affine tempLocalToParentTransform = ParentToChildTransform;
 				if (EnforceIntegerBounds)
 				{
-					value.x = Floor(value.x);
-					value.y = Floor(value.y);
+					value.X = Math.Round(value.X);
+					value.Y = Math.Round(value.Y);
 				}
 
-				if (tempLocalToParentTransform.tx != value.x || tempLocalToParentTransform.ty != value.y)
+				if (tempLocalToParentTransform.tx != value.X || tempLocalToParentTransform.ty != value.Y)
 				{
 					screenClipping.MarkRecalculate();
-					tempLocalToParentTransform.tx = value.x;
-					tempLocalToParentTransform.ty = value.y;
+					tempLocalToParentTransform.tx = value.X;
+					tempLocalToParentTransform.ty = value.Y;
 					ParentToChildTransform = tempLocalToParentTransform;
 					Invalidate();
 					if (this.Parent != null)
@@ -820,12 +945,12 @@ namespace MatterHackers.Agg.UI
 						// when this object moves it requires that the parent re-layout this object (and maybe others)
 						this.Parent.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Position));
 #if false
-                        // and it also means the mouse moved realtive to this widget (so the parent and it's children)
-                        Vector2 parentMousePosition;
-                        if (Parent.GetMousePosition(out parentMousePosition))
-                        {
-                            this.Parent.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, parentMousePosition.x, parentMousePosition.y, 0));
-                        }
+					// and it also means the mouse moved relative to this widget (so the parent and it's children)
+					Vector2 parentMousePosition;
+					if (Parent.GetMousePosition(out parentMousePosition))
+					{
+					this.Parent.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, parentMousePosition.x, parentMousePosition.y, 0));
+					}
 #endif
 					}
 					OnPositionChanged(null);
@@ -842,7 +967,7 @@ namespace MatterHackers.Agg.UI
 				if (Parent.GetMousePosition(out parentMousePosition))
 				{
 					position = parentMousePosition;
-					ParentToChildTransform.transform(ref position.x, ref position.y);
+					ParentToChildTransform.transform(ref position.X, ref position.Y);
 					return true;
 				}
 			}
@@ -850,6 +975,7 @@ namespace MatterHackers.Agg.UI
 			return false;
 		}
 
+		[Category("Layout")]
 		public virtual RectangleDouble LocalBounds
 		{
 			get
@@ -859,22 +985,22 @@ namespace MatterHackers.Agg.UI
 
 			set
 			{
-				if (value.Width < MinimumSize.x)
+				if (value.Width < MinimumSize.X)
 				{
-					value.Right = value.Left + MinimumSize.x;
+					value.Right = value.Left + MinimumSize.X;
 				}
-				else if (value.Width > MaximumSize.x)
+				else if (value.Width > MaximumSize.X)
 				{
-					value.Right = value.Left + MaximumSize.x;
+					value.Right = value.Left + MaximumSize.X;
 				}
 
-				if (value.Height < MinimumSize.y)
+				if (value.Height < MinimumSize.Y)
 				{
-					value.Top = value.Bottom + MinimumSize.y;
+					value.Top = value.Bottom + MinimumSize.Y;
 				}
-				else if (value.Height > MaximumSize.y)
+				else if (value.Height > MaximumSize.Y)
 				{
-					value.Top = value.Bottom + MaximumSize.y;
+					value.Top = value.Bottom + MaximumSize.Y;
 				}
 
 				if (EnforceIntegerBounds)
@@ -916,28 +1042,28 @@ namespace MatterHackers.Agg.UI
 			get
 			{
 				RectangleDouble boundsRelParent = LocalBounds;
-				boundsRelParent.Offset(OriginRelativeParent.x, OriginRelativeParent.y);
+				boundsRelParent.Offset(OriginRelativeParent.X, OriginRelativeParent.Y);
 				return boundsRelParent;
 			}
 			set
 			{
 				// constrain this to MinimumSize
-				if (value.Width < MinimumSize.x)
+				if (value.Width < MinimumSize.X)
 				{
-					value.Right = value.Left + MinimumSize.x;
+					value.Right = value.Left + MinimumSize.X;
 				}
-				if (value.Height < MinimumSize.y)
+				if (value.Height < MinimumSize.Y)
 				{
-					value.Top = value.Bottom + MinimumSize.y;
+					value.Top = value.Bottom + MinimumSize.Y;
 				}
 				if (value != BoundsRelativeToParent)
 				{
-					value.Offset(-OriginRelativeParent.x, -OriginRelativeParent.y);
+					value.Offset(-OriginRelativeParent.X, -OriginRelativeParent.Y);
 					LocalBounds = value;
 #if false
                     if (Parent != null)
                     {
-                        // and it also means the mouse moved realtive to this widget (so the parent and it's children)
+                        // and it also means the mouse moved relative to this widget (so the parent and it's children)
                         Vector2 parentMousePosition;
                         if (Parent.GetMousePosition(out parentMousePosition))
                         {
@@ -961,7 +1087,7 @@ namespace MatterHackers.Agg.UI
 				bool foundVBounds = false;
 				foreach (GuiWidget child in Children)
 				{
-					if (child.Visible == false 
+					if (child.Visible == false
 					|| (considerChild != null && !considerChild(this, child)))
 					{
 						continue;
@@ -969,13 +1095,19 @@ namespace MatterHackers.Agg.UI
 
 					if (considerChildAnchor)
 					{
-						minSize.x = Max(child.Width + child.DeviceMargin.Width, minSize.x);
-						minSize.y = Max(child.Height + child.DeviceMargin.Height, minSize.y);
+						var childSize = child.MinimumSize;
+						minSize.X = Max((child.HAnchor == HAnchor.Stretch) ? 0 : child.Width
+							+ child.DeviceMarginAndBorder.Width, minSize.X);
+						minSize.Y = Max((child.VAnchor == VAnchor.Stretch) ? 0 : child.Height
+							+ child.DeviceMarginAndBorder.Height, minSize.Y);
 
 						RectangleDouble childBoundsWithMargin = child.BoundsRelativeToParent;
-						childBoundsWithMargin.Inflate(child.DeviceMargin);
+						childBoundsWithMargin.Inflate(child.DeviceMarginAndBorder);
 
-						if (!child.HAnchorIsFloating)
+						FlowLayoutWidget flowLayout = this as FlowLayoutWidget;
+						bool childHSizeHasBeenAdjusted = flowLayout != null && (flowLayout.FlowDirection == FlowDirection.LeftToRight || flowLayout.FlowDirection == FlowDirection.RightToLeft);
+						if (!child.HAnchorIsFloating
+							&& (child.HAnchor != HAnchor.Stretch || childHSizeHasBeenAdjusted))
 						{
 							foundHBounds = true;
 							// it can't move so make sure our horizontal bounds enclose it
@@ -990,7 +1122,9 @@ namespace MatterHackers.Agg.UI
 							}
 						}
 
-						if (!child.VAnchorIsFloating)
+						bool childVSizeHasBeenAdjusted = flowLayout != null && (flowLayout.FlowDirection == FlowDirection.BottomToTop || flowLayout.FlowDirection == FlowDirection.TopToBottom);
+						if (!child.VAnchorIsFloating
+							&& (child.VAnchor != VAnchor.Stretch || childVSizeHasBeenAdjusted))
 						{
 							foundVBounds = true;
 							// it can't move so make sure our vertical bounds enclose it
@@ -1017,22 +1151,22 @@ namespace MatterHackers.Agg.UI
 				{
 					if (foundHBounds)
 					{
-						boundsOfAllChildrenIncludingMargin.Right = boundsOfAllChildrenIncludingMargin.Left + Max(boundsOfAllChildrenIncludingMargin.Width, minSize.x);
+						boundsOfAllChildrenIncludingMargin.Right = boundsOfAllChildrenIncludingMargin.Left + Max(boundsOfAllChildrenIncludingMargin.Width, minSize.X);
 					}
 					else
 					{
 						boundsOfAllChildrenIncludingMargin.Left = 0;
-						boundsOfAllChildrenIncludingMargin.Right = minSize.x;
+						boundsOfAllChildrenIncludingMargin.Right = minSize.X;
 					}
 
 					if (foundVBounds)
 					{
-						boundsOfAllChildrenIncludingMargin.Top = boundsOfAllChildrenIncludingMargin.Bottom + Max(boundsOfAllChildrenIncludingMargin.Height, minSize.y);
+						boundsOfAllChildrenIncludingMargin.Top = boundsOfAllChildrenIncludingMargin.Bottom + Max(boundsOfAllChildrenIncludingMargin.Height, minSize.Y);
 					}
 					else
 					{
 						boundsOfAllChildrenIncludingMargin.Bottom = 0;
-						boundsOfAllChildrenIncludingMargin.Top = minSize.y;
+						boundsOfAllChildrenIncludingMargin.Top = minSize.Y;
 					}
 				}
 			}
@@ -1053,11 +1187,6 @@ namespace MatterHackers.Agg.UI
 			LocalBounds = childrenBounds;
 		}
 
-		public virtual void OnBackgroundColorChanged(EventArgs e)
-		{
-			BackgroundColorChanged?.Invoke(this, e);
-		}
-
 		public virtual void OnBoundsChanged(EventArgs e)
 		{
 			BoundsChanged?.Invoke(this, e);
@@ -1068,11 +1197,7 @@ namespace MatterHackers.Agg.UI
 		private string text = "";
 		public virtual string Text
 		{
-			get
-			{
-				return text;
-			}
-
+			get => text;
 			set
 			{
 				if (value == null)
@@ -1090,13 +1215,10 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
-		/// If this is set the control will show tool tips on hover, if the platfrom specific SystemWindow implements tool tips.
+		/// If this is set the control will show tool tips on hover, if the platform specific SystemWindow implements tool tips.
 		/// You can change the settings for the tool tip delays in the containing SystemWindow.
 		/// </summary>
-		public string ToolTipText
-		{
-			get; set;
-		}
+		public virtual string ToolTipText { get; set; }
 
 		public virtual void OnTextChanged(EventArgs e)
 		{
@@ -1110,22 +1232,13 @@ namespace MatterHackers.Agg.UI
 			BoundsRelativeToParent = bounds;
 		}
 
-		public bool MouseCaptured
-		{
-			get { return (mouseCapturedState == MouseCapturedState.ThisHasMouseCaptured); }
-		}
+		public bool MouseCaptured => mouseCapturedState == MouseCapturedState.ThisHasMouseCaptured;
 
-		public bool ChildHasMouseCaptured
-		{
-			get { return (mouseCapturedState == MouseCapturedState.ChildHasMouseCaptured); }
-		}
+		public bool ChildHasMouseCaptured => mouseCapturedState == MouseCapturedState.ChildHasMouseCaptured;
 
 		public virtual bool Visible
 		{
-			get
-			{
-				return visible;
-			}
+			get => visible;
 			set
 			{
 				if (visible != value)
@@ -1149,20 +1262,7 @@ namespace MatterHackers.Agg.UI
 
 		public virtual bool Enabled
 		{
-			get
-			{
-				GuiWidget curGUIWidget = this;
-				while (curGUIWidget != null)
-				{
-					if (!curGUIWidget.enabled)
-					{
-						return false;
-					}
-					curGUIWidget = curGUIWidget.Parent;
-				}
-
-				return true;
-			}
+			get => this.enabled && this.Parent?.Enabled != false;
 			set
 			{
 				if (enabled != value)
@@ -1170,8 +1270,11 @@ namespace MatterHackers.Agg.UI
 					enabled = value;
 					if (enabled == false)
 					{
+						ClearCapturedState();
 						Unfocus();
 					}
+
+					this.Invalidate();
 
 					OnEnabledChanged(null);
 				}
@@ -1209,71 +1312,59 @@ namespace MatterHackers.Agg.UI
 
 			foreach (GuiWidget child in Children)
 			{
-				child.OnParentEnabledChanged(e);
+				child.OnEnabledChanged(e);
 			}
 		}
 
-		public virtual void OnParentEnabledChanged(EventArgs e)
-		{
-			EnabledChanged?.Invoke(this, e);
-		}
+		private GuiWidget _parent = null;
 
-		private GuiWidget parentBackingStore = null;
-
-		private GuiWidget parent
+		public GuiWidget Parent
 		{
+			get => _parent;
 			set
 			{
-				if (value == null && parentBackingStore != null)
+				if (value == null && _parent != null)
 				{
-					if (parentBackingStore.Children.Contains(this))
+					if (_parent.Children.Contains(this))
 					{
 						throw new Exception("Take this out of the parent before setting this to null.");
 					}
 				}
-				parentBackingStore = value;
-			}
-		}
 
-		public GuiWidget Parent
-		{
-			get
-			{
-				return parentBackingStore;
+				_parent = value;
 			}
 		}
 
 		// Place holder, this is not really implemented.
-		public bool Resizable
-		{
-			get { return true; }
-		}
+		public bool Resizable => true;
 
+		[Category("Layout")]
 		public virtual double Width
 		{
-			get
-			{
-				return LocalBounds.Width;
-			}
+			get => LocalBounds.Width;
 			set
 			{
-				RectangleDouble localBounds = LocalBounds;
-				localBounds.Right = localBounds.Left + value;
-				LocalBounds = localBounds;
+				if (value != Width)
+				{
+					RectangleDouble localBounds = LocalBounds;
+					localBounds.Right = localBounds.Left + value;
+					LocalBounds = localBounds;
+				}
 			}
 		}
 
+		[Category("Layout")]
 		public virtual double Height
 		{
-			get
-			{
-				return LocalBounds.Height;
-			}
+			get => LocalBounds.Height;
 			set
 			{
-				RectangleDouble localBounds = LocalBounds;
-				localBounds.Top = localBounds.Bottom + value;
-				LocalBounds = localBounds;
+				if (value != Height)
+				{
+					RectangleDouble localBounds = LocalBounds;
+					localBounds.Top = localBounds.Bottom + value;
+					LocalBounds = localBounds;
+				}
 			}
 		}
 
@@ -1294,9 +1385,12 @@ namespace MatterHackers.Agg.UI
 #if DEBUG
 				if (childToAdd.hasBeenRemoved)
 				{
-					throw new Exception("You are adding a child that has previously been remove. You should probably be creating a new widget, or calling ClearRemovedFlag() before adding.");
+					throw new Exception("You are adding a child that has previously been removed. You should probably be creating a new widget, or calling ClearRemovedFlag() before adding.");
 				}
 #endif
+
+				// first thing we do is make sure the child has been initialized
+				childToAdd.Initialize();
 
 				if (indexInChildrenList == -1)
 				{
@@ -1319,7 +1413,7 @@ namespace MatterHackers.Agg.UI
 				{
 					throw new Exception("This is already the child of another widget.");
 				}
-				childToAdd.parent = this;
+				childToAdd.Parent = this;
 				childToAdd.HasBeenClosed = false;
 				Children.Insert(indexInChildrenList, childToAdd);
 				OnChildAdded(new GuiWidgetEventArgs(childToAdd));
@@ -1328,6 +1422,14 @@ namespace MatterHackers.Agg.UI
 				childToAdd.InitLayout();
 				OnLayout(new LayoutEventArgs(this, childToAdd, PropertyCausingLayout.AddChild));
 			}
+		}
+
+		/// <summary>
+		/// Override this to create child controls and other
+		/// </summary>
+		public virtual void Initialize()
+		{
+			Initialized = true;
 		}
 
 		public int GetChildIndex(GuiWidget child)
@@ -1382,7 +1484,7 @@ namespace MatterHackers.Agg.UI
 			{
 				GuiWidget child = Children[i];
 				Children.RemoveAt(i);
-				child.parent = null;
+				child.Parent = null;
 				child.Close(osRequest);
 			}
 		}
@@ -1411,7 +1513,7 @@ namespace MatterHackers.Agg.UI
 			childToRemove.ClearCapturedState();
 			childToRemove.hasBeenRemoved = true;
 			Children.Remove(childToRemove);
-			childToRemove.parent = null;
+			childToRemove.Parent = null;
 			childToRemove.OnParentChanged(null);
 			OnChildRemoved(new GuiWidgetEventArgs(childToRemove));
 			OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.RemoveChild));
@@ -1470,7 +1572,8 @@ namespace MatterHackers.Agg.UI
 		{
 			isCurrentlyInvalid = true;
 
-			if (Parent != null && Parent.Visible)
+			var threadSafeParent = Parent;
+			if (threadSafeParent != null && threadSafeParent.Visible)
 			{
 				rectToInvalidate.Offset(OriginRelativeParent);
 
@@ -1478,7 +1581,7 @@ namespace MatterHackers.Agg.UI
 				//rectToInvalidate.IntersectWithRectangle(Parent.LocalBounds);
 				//if (rectToInvalidate.Width > 0 && rectToInvalidate.Height > 0)
 				{
-					Parent.Invalidate(rectToInvalidate);
+					threadSafeParent.Invalidate(rectToInvalidate);
 				}
 			}
 
@@ -1598,14 +1701,15 @@ namespace MatterHackers.Agg.UI
 					return false;
 				}
 
-				if (curGUIWidget.Parent != null)
+				var parent = curGUIWidget.Parent;
+				if (parent != null)
 				{
 					// offset our bounds to the parent bounds
-					visibleBounds.Offset(curGUIWidget.OriginRelativeParent.x, curGUIWidget.OriginRelativeParent.y);
-					visibleBounds.IntersectWithRectangle(curGUIWidget.Parent.LocalBounds);
+					visibleBounds.Offset(curGUIWidget.OriginRelativeParent.X, curGUIWidget.OriginRelativeParent.Y);
+					visibleBounds.IntersectWithRectangle(parent.LocalBounds);
 				}
 
-				curGUIWidget = curGUIWidget.Parent;
+				curGUIWidget = parent;
 			}
 
 			return true;
@@ -1627,7 +1731,7 @@ namespace MatterHackers.Agg.UI
 				if (curGUIWidget.Parent != null)
 				{
 					// offset our bounds to the parent bounds
-					visibleBounds.Offset(curGUIWidget.OriginRelativeParent.x, curGUIWidget.OriginRelativeParent.y);
+					visibleBounds.Offset(curGUIWidget.OriginRelativeParent.X, curGUIWidget.OriginRelativeParent.Y);
 					visibleBounds.IntersectWithRectangle(curGUIWidget.Parent.LocalBounds);
 				}
 
@@ -1637,10 +1741,7 @@ namespace MatterHackers.Agg.UI
 			return true;
 		}
 
-		public virtual bool CanFocus
-		{
-			get { return Visible && Enabled; }
-		}
+		public virtual bool CanFocus => this.Visible && this.Enabled;
 
 		public bool Focused
 		{
@@ -1664,13 +1765,9 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public bool ContainsFocus
-		{
-			get
-			{
-				return containsFocus;
-			}
-		}
+		public bool ContainsFocus => containsFocus;
+
+		public bool Initialized { get; private set; } = false;
 
 		public void SuspendLayout()
 		{
@@ -1689,75 +1786,6 @@ namespace MatterHackers.Agg.UI
 
 		public virtual void InitLayout()
 		{
-		}
-
-		public virtual void OnDragEnter(FileDropEventArgs fileDropEventArgs)
-		{
-			if (PositionWithinLocalBounds(fileDropEventArgs.X, fileDropEventArgs.Y))
-			{
-				for (int i = Children.Count - 1; i >= 0; i--)
-				{
-					GuiWidget child = Children[i];
-					if (child.Visible)
-					{
-						double childX = fileDropEventArgs.X;
-						double childY = fileDropEventArgs.Y;
-						child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
-
-						FileDropEventArgs childDropEvent = new FileDropEventArgs(fileDropEventArgs.DroppedFiles, childX, childY);
-						child.OnDragEnter(childDropEvent);
-						if (childDropEvent.AcceptDrop)
-						{
-							fileDropEventArgs.AcceptDrop = true;
-						}
-					}
-				}
-			}
-		}
-
-		public virtual void OnDragOver(FileDropEventArgs fileDropEventArgs)
-		{
-			if (PositionWithinLocalBounds(fileDropEventArgs.X, fileDropEventArgs.Y))
-			{
-				for (int i = Children.Count - 1; i >= 0; i--)
-				{
-					GuiWidget child = Children[i];
-					if (child.Visible)
-					{
-						double childX = fileDropEventArgs.X;
-						double childY = fileDropEventArgs.Y;
-						child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
-
-						FileDropEventArgs childDropEvent = new FileDropEventArgs(fileDropEventArgs.DroppedFiles, childX, childY);
-						child.OnDragOver(childDropEvent);
-						if (childDropEvent.AcceptDrop)
-						{
-							fileDropEventArgs.AcceptDrop = true;
-						}
-					}
-				}
-			}
-		}
-
-		public virtual void OnDragDrop(FileDropEventArgs fileDropEventArgs)
-		{
-			// to do this we would need to implement OnDragOver (and debug it, it was a mess when I started it and don't care right now). // LBB 2013 04 30
-			if (PositionWithinLocalBounds(fileDropEventArgs.X, fileDropEventArgs.Y))
-			{
-				for (int i = Children.Count - 1; i >= 0; i--)
-				{
-					GuiWidget child = Children[i];
-					if (child.Visible)
-					{
-						double childX = fileDropEventArgs.X;
-						double childY = fileDropEventArgs.Y;
-						child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
-
-						FileDropEventArgs childDropEvent = new FileDropEventArgs(fileDropEventArgs.DroppedFiles, childX, childY);
-						child.OnDragDrop(childDropEvent);
-					}
-				}
-			}
 		}
 
 		public virtual void OnLayout(LayoutEventArgs layoutEventArgs)
@@ -1836,12 +1864,12 @@ namespace MatterHackers.Agg.UI
 						if (child.DebugShowBounds)
 						{
 							// draw the margin
-							BorderDouble invertedMargin = child.DeviceMargin;
+							BorderDouble invertedMargin = child.DeviceMarginAndBorder;
 							invertedMargin.Left = -invertedMargin.Left;
 							invertedMargin.Bottom = -invertedMargin.Bottom;
 							invertedMargin.Right = -invertedMargin.Right;
 							invertedMargin.Top = -invertedMargin.Top;
-							DrawBorderBounds(graphics2D, child.BoundsRelativeToParent, invertedMargin, new RGBA_Bytes(Red, 128));
+							DrawBorderAndPaddingBounds(graphics2D, child.BoundsRelativeToParent, invertedMargin, new Color(Red, 128));
 						}
 
 						RectangleDouble oldClippingRect = graphics2D.GetClippingRect();
@@ -1870,14 +1898,14 @@ namespace MatterHackers.Agg.UI
 									Vector2 offsetToRenderSurface = new Vector2(currentGraphics2DTransform.tx, currentGraphics2DTransform.ty);
 									offsetToRenderSurface += child.OriginRelativeParent;
 
-									double yFraction = offsetToRenderSurface.y - (int)offsetToRenderSurface.y;
-									double xFraction = offsetToRenderSurface.x - (int)offsetToRenderSurface.x;
+									double yFraction = offsetToRenderSurface.Y - (int)offsetToRenderSurface.Y;
+									double xFraction = offsetToRenderSurface.X - (int)offsetToRenderSurface.X;
 									int xOffset = (int)Floor(child.LocalBounds.Left);
 									int yOffset = (int)Floor(child.LocalBounds.Bottom);
 									if (child.isCurrentlyInvalid)
 									{
 										Graphics2D childBackBufferGraphics2D = child.backBuffer.NewGraphics2D();
-										childBackBufferGraphics2D.Clear(new RGBA_Bytes(0, 0, 0, 0));
+										childBackBufferGraphics2D.Clear(new Color(0, 0, 0, 0));
 										Affine transformToBuffer = Affine.NewTranslation(-xOffset + xFraction, -yOffset + yFraction);
 										childBackBufferGraphics2D.SetTransform(transformToBuffer);
 										child.OnDrawBackground(childBackBufferGraphics2D);
@@ -1887,12 +1915,12 @@ namespace MatterHackers.Agg.UI
 										child.isCurrentlyInvalid = false;
 									}
 
-									offsetToRenderSurface.x = (int)offsetToRenderSurface.x + xOffset;
-									offsetToRenderSurface.y = (int)offsetToRenderSurface.y + yOffset;
+									offsetToRenderSurface.X = (int)offsetToRenderSurface.X + xOffset;
+									offsetToRenderSurface.Y = (int)offsetToRenderSurface.Y + yOffset;
 									// The transform to draw the backbuffer to the graphics2D must not have a factional amount
 									// or we will get aliasing in the image and we want our back buffer pixels to map 1:1 to the next buffer
-									if (offsetToRenderSurface.x - (int)offsetToRenderSurface.x != 0
-										|| offsetToRenderSurface.y - (int)offsetToRenderSurface.y != 0)
+									if (offsetToRenderSurface.X - (int)offsetToRenderSurface.X != 0
+										|| offsetToRenderSurface.Y - (int)offsetToRenderSurface.Y != 0)
 									{
 										BreakInDebugger("The transform for a back buffer must be integer to avoid aliasing.");
 									}
@@ -1909,6 +1937,8 @@ namespace MatterHackers.Agg.UI
 						}
 						graphics2D.PopTransform();
 						graphics2D.SetClippingRect(oldClippingRect);
+
+						DrawBorder(graphics2D, child);
 					}
 				}
 
@@ -1917,39 +1947,178 @@ namespace MatterHackers.Agg.UI
 				if (DebugShowBounds)
 				{
 					// draw the padding
-					DrawBorderBounds(graphics2D, LocalBounds, DevicePadding, new RGBA_Bytes(Cyan, 128));
+					DrawBorderAndPaddingBounds(graphics2D, LocalBounds, DevicePadding, new Color(Cyan, 128));
 
 					// show the bounds and inside with an x
-					graphics2D.Line(LocalBounds.Left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, Green);
-					graphics2D.Line(LocalBounds.Left, LocalBounds.Top, LocalBounds.Right, LocalBounds.Bottom, Green);
+					graphics2D.Line(LocalBounds.Left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top, new Color(Green, 100), 3);
+					graphics2D.Line(LocalBounds.Left, LocalBounds.Top, LocalBounds.Right, LocalBounds.Bottom, new Color(Green, 100), 3);
 					graphics2D.Rectangle(LocalBounds, Red);
+
+					RenderAnchoreInfo(graphics2D);
 				}
 				if (debugShowSize)
 				{
-					graphics2D.DrawString(string.Format("{4} {0}, {1} : {2}, {3}", (int)MinimumSize.x, (int)MinimumSize.y, (int)LocalBounds.Width, (int)LocalBounds.Height, Name),
+					graphics2D.DrawString(string.Format("{4} {0}, {1} : {2}, {3}", (int)MinimumSize.X, (int)MinimumSize.Y, (int)LocalBounds.Width, (int)LocalBounds.Height, Name),
 						Width / 2, Max(Height - 16, Height / 2 - 16 * graphics2D.TransformStackCount), color: Magenta, justification: Font.Justification.Center);
 				}
 			}
 		}
 
-		private static void DrawBorderBounds(Graphics2D graphics2D, RectangleDouble bounds, BorderDouble border, RGBA_Bytes color)
+		private void RenderAnchoreInfo(Graphics2D graphics2D)
+		{
+			var color = Color.Cyan;
+			double size = 10;
+
+			// an arrow pointing right
+			VertexStorage rightArrow = new VertexStorage();
+			rightArrow.MoveTo(new Vector2(size * 2, 0));
+			rightArrow.LineTo(new Vector2(size * 1, size * .6));
+			rightArrow.LineTo(new Vector2(size * 1, -size * .6));
+
+			if (HAnchor == HAnchor.Absolute)
+			{
+				//graphics2D.Line(LocalBounds.Center + new Vector2(0, size * .8),
+				//LocalBounds.Center + new Vector2(0, -size * .8),
+				//color, size * .5);
+			}
+			else // figure out what it is
+			{
+				if (HAnchor.HasFlag(HAnchor.Left))
+				{
+					graphics2D.Render(new VertexSourceApplyTransform(rightArrow, Affine.NewRotation(MathHelper.DegreesToRadians(180))), LocalBounds.Center, color);
+				}
+				if (HAnchor.HasFlag(HAnchor.Center))
+				{
+					graphics2D.Circle(LocalBounds.Center, size / 2, color);
+				}
+				if (HAnchor.HasFlag(HAnchor.Right))
+				{
+					graphics2D.Render(rightArrow, LocalBounds.Center, color);
+				}
+				if (HAnchor.HasFlag(HAnchor.Fit))
+				{
+					// draw the right arrow offset
+					var offsetArrow = new VertexSourceApplyTransform(rightArrow, Affine.NewTranslation(-size * 3, 0));
+					graphics2D.Render(offsetArrow, LocalBounds.Center, color);
+					graphics2D.Render(new VertexSourceApplyTransform(offsetArrow,
+						Affine.NewRotation(MathHelper.DegreesToRadians(180))), LocalBounds.Center, color);
+				}
+			}
+
+			if (VAnchor == VAnchor.Absolute)
+			{
+				//graphics2D.Line(LocalBounds.Center + new Vector2(size * .8, 0),
+				//LocalBounds.Center + new Vector2(-size * .8, 0),
+				//color, size * .5);
+			}
+			else // figure out what it is
+			{
+				var upArrow = new VertexSourceApplyTransform(rightArrow, Affine.NewRotation(MathHelper.DegreesToRadians(90)));
+				if (VAnchor.HasFlag(VAnchor.Bottom))
+				{
+					graphics2D.Render(new VertexSourceApplyTransform(upArrow, Affine.NewRotation(MathHelper.DegreesToRadians(180))), LocalBounds.Center, color);
+				}
+				if (VAnchor.HasFlag(VAnchor.Center))
+				{
+					graphics2D.Circle(LocalBounds.Center, size / 2, color);
+				}
+				if (VAnchor.HasFlag(VAnchor.Top))
+				{
+					graphics2D.Render(upArrow, LocalBounds.Center, color);
+				}
+				if (VAnchor.HasFlag(VAnchor.Fit))
+				{
+					// draw the right arrow offset
+					var offsetArrow = new VertexSourceApplyTransform(upArrow, Affine.NewTranslation(0, -size * 3));
+					graphics2D.Render(offsetArrow, LocalBounds.Center, color);
+					graphics2D.Render(new VertexSourceApplyTransform(offsetArrow,
+						Affine.NewRotation(MathHelper.DegreesToRadians(180))), LocalBounds.Center, color);
+				}
+			}
+		}
+
+		private static void DrawBorderAndPaddingBounds(Graphics2D graphics2D, RectangleDouble bounds, BorderDouble border, Color color)
 		{
 			if (border.Width != 0
 				|| border.Height != 0)
 			{
-				PathStorage borderPath = new PathStorage();
+				VertexStorage borderPath = new VertexStorage();
+				// put in the bounds
 				borderPath.MoveTo(bounds.Left, bounds.Bottom);
 				borderPath.LineTo(bounds.Left, bounds.Top);
 				borderPath.LineTo(bounds.Right, bounds.Top);
 				borderPath.LineTo(bounds.Right, bounds.Bottom);
 				borderPath.LineTo(bounds.Left, bounds.Bottom);
 
+				// take out inside the border
 				borderPath.MoveTo(bounds.Left + border.Left, bounds.Bottom + border.Bottom);
 				borderPath.LineTo(bounds.Right - border.Right, bounds.Bottom + border.Bottom);
 				borderPath.LineTo(bounds.Right - border.Right, bounds.Top - border.Top);
 				borderPath.LineTo(bounds.Left + border.Left, bounds.Top - border.Top);
 				borderPath.LineTo(bounds.Left + border.Left, bounds.Bottom + border.Bottom);
 				graphics2D.Render(borderPath, color);
+			}
+		}
+
+		private void DrawBorder(Graphics2D graphics2D, GuiWidget child)
+		{
+			var childDeviceBorder = child.deviceBorder;
+			var childBorderColor = child.BorderColor;
+
+			if (childBorderColor == Color.Transparent
+				|| (childDeviceBorder.Left == 0
+					&& childDeviceBorder.Right == 0
+					&& childDeviceBorder.Bottom == 0
+					&& childDeviceBorder.Top == 0))
+			{
+				return;
+			}
+
+			var childBounds = child.TransformToParentSpace(this, child.localBounds);
+			//bounds = this.localBounds;
+			//graphics2D.FillRectangle(bounds, new Color(Color.Cyan, 100));
+			//var expand = bounds;
+			//expand.Inflate(1);
+			//graphics2D.Rectangle(expand, new Color(Color.Magenta, 100));
+
+			if (childDeviceBorder.Left > 0)
+			{
+				// do a fill rect that does not include the top or bottom
+				graphics2D.FillRectangle(childBounds.Left,
+					childBounds.Bottom,
+					childBounds.Left - childDeviceBorder.Left,
+					childBounds.Top,
+					childBorderColor);
+			}
+
+			if (childDeviceBorder.Bottom > 0)
+			{
+				// do a fill rect
+				graphics2D.FillRectangle(childBounds.Left - childDeviceBorder.Left, 
+					childBounds.Bottom, 
+					childBounds.Right + childDeviceBorder.Right, 
+					childBounds.Bottom - childDeviceBorder.Bottom, 
+					childBorderColor);
+			}
+
+			if (childDeviceBorder.Right > 0)
+			{
+				// do a fill rect that does not include the top or bottom
+				graphics2D.FillRectangle(childBounds.Right + childDeviceBorder.Right,
+					childBounds.Bottom,
+					childBounds.Right,
+					childBounds.Top,
+					childBorderColor);
+			}
+
+			if (childDeviceBorder.Top > 0)
+			{
+				// do a fill rect
+				graphics2D.FillRectangle(childBounds.Left - childDeviceBorder.Left, 
+					childBounds.Top + childDeviceBorder.Top, 
+					childBounds.Right + childDeviceBorder.Right, 
+					childBounds.Top, 
+					childBorderColor);
 			}
 		}
 
@@ -2034,23 +2203,6 @@ namespace MatterHackers.Agg.UI
 			return screenClipping.visibleAfterClipping;
 		}
 
-		public virtual void OnClosing(out bool cancelClose)
-		{
-			cancelClose = false;
-
-			if (Closing != null)
-			{
-				ClosingEventArgs closingEventArgs = new ClosingEventArgs();
-				Closing(this, closingEventArgs);
-				if (closingEventArgs.Cancel == true)
-				{
-					// someone canceled it so stop checking.
-					cancelClose = true;
-					return;
-				}
-			}
-		}
-
 		public void CloseOnIdle()
 		{
 			if (!HasBeenClosed)
@@ -2074,17 +2226,20 @@ namespace MatterHackers.Agg.UI
 				BreakInDebugger("You should put this close onto the UiThread.RunOnIdle so it can happen after the child list is unlocked.");
 			}
 
-			if (!HasBeenClosed)
+			// Validate via OnClosing if SystemWindow.Close is called
+			if (this is SystemWindow systemWindow)
 			{
-				bool cancelClose;
-				OnClosing(out cancelClose);
+				var closingArgs = new ClosingEventArgs();
+				systemWindow.OnClosing(closingArgs);
 
-				// If the close request was aborted by the control, abort the close attempt
-				if (cancelClose)
+				if (closingArgs.Cancel)
 				{
 					return;
 				}
+			}
 
+			if (!HasBeenClosed)
+			{
 				HasBeenClosed = true;
 
 				this.CloseAllChildren(osRequest);
@@ -2094,7 +2249,7 @@ namespace MatterHackers.Agg.UI
 				{
 					// This code will only execute if this is the actual widget we called close on (not a child of the widget we called close on).
 					Parent.RemoveChild(this);
-					parent = null;
+					this.Parent = null;
 				}
 			}
 		}
@@ -2303,13 +2458,11 @@ namespace MatterHackers.Agg.UI
 						UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
 						OnMouseEnterBounds(mouseEvent);
 						OnMouseEnter(mouseEvent);
-						SetToolTipText(mouseEvent);
 					}
 					else if (UnderMouseState == UnderMouseState.UnderMouseNotFirst)
 					{
 						UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
 						OnMouseEnter(mouseEvent);
-						SetToolTipText(mouseEvent);
 					}
 				}
 
@@ -2391,7 +2544,7 @@ namespace MatterHackers.Agg.UI
 
 			LastMouseDownMs = UiThread.CurrentTimerMs;
 
-			if(focusStateBeforeProcessing != containsFocus)
+			if (focusStateBeforeProcessing != containsFocus)
 			{
 				OnContainsFocusChanged(null);
 			}
@@ -2410,21 +2563,15 @@ namespace MatterHackers.Agg.UI
 			return false;
 		}
 
-		private void SetToolTipText(MouseEventArgs mouseEvent)
+		public bool MouseDownOnWidget
 		{
-			if (ToolTipText != null)
+			get
 			{
-				GuiWidget parent = this;
-				while (parent.Parent != null
-					&& parent as SystemWindow == null)
-				{
-					parent = parent.Parent;
-				}
-
-				SystemWindow systemWindow = parent as SystemWindow;
-				systemWindow?.SetHoveredWidget(this);
+				return mouseCapturedState == MouseCapturedState.ThisHasMouseCaptured;
 			}
 		}
+
+		public static bool TouchScreenMode { get; protected set; }
 
 		internal bool mouseMoveEventHasBeenAcceptedByOther = false;
 		public virtual void OnMouseMove(MouseEventArgs mouseEvent)
@@ -2622,13 +2769,11 @@ namespace MatterHackers.Agg.UI
 							UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
 							OnMouseEnterBounds(mouseEvent);
 							OnMouseEnter(mouseEvent);
-							SetToolTipText(mouseEvent);
 						}
 						else if (UnderMouseState == UnderMouseState.UnderMouseNotFirst)
 						{
 							UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
 							OnMouseEnter(mouseEvent);
-							SetToolTipText(mouseEvent);
 						}
 					}
 				}
@@ -2659,6 +2804,7 @@ namespace MatterHackers.Agg.UI
 				if (child.Visible && child.Enabled && child.CanSelect)
 				{
 					child.OnMouseMove(childMouseEvent);
+					mouseEvent.AcceptDrop |= childMouseEvent.AcceptDrop;
 					if (child.UnderMouseState != UnderMouseState.NotUnderMouse)
 					{
 						mouseMoveEventHasBeenAcceptedByOther = true;
@@ -2731,7 +2877,7 @@ namespace MatterHackers.Agg.UI
 					}
 
 					int countOfChildernThatThinkTheyHaveTheMouseCaptured = 0;
-					for(int childIndex = 0; childIndex < Children.Count(); childIndex++)
+					for (int childIndex = 0; childIndex < Children.Count(); childIndex++)
 					{
 						GuiWidget child = Children[childIndex];
 						if (childrenLockedInMouseUpCount != 1)
@@ -2819,19 +2965,27 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Fire a mouse click within the bounds of the control
+		/// </summary>
+		public void InvokeClick()
+		{
+			this.OnClick(new MouseEventArgs(MouseButtons.Left, 1, new[] { this.Position + Vector2.One }, 0, null));
+		}
+
 		public virtual void OnClick(MouseEventArgs mouseEvent)
 		{
 			Click?.Invoke(this, mouseEvent);
 		}
 
-		protected virtual void SetCursorOnEnter(Cursors cursorToSet)
+		protected virtual void SetCursor(Cursors cursorToSet)
 		{
-			Parent?.SetCursorOnEnter(cursorToSet);
+			Parent?.SetCursor(cursorToSet);
 		}
 
 		public virtual void OnMouseEnter(MouseEventArgs mouseEvent)
 		{
-			SetCursorOnEnter(Cursor);
+			SetCursor(Cursor);
 			MouseEnter?.Invoke(this, mouseEvent);
 		}
 
@@ -2840,25 +2994,80 @@ namespace MatterHackers.Agg.UI
 			MouseLeave?.Invoke(this, mouseEvent);
 		}
 
-		public virtual void SendToChildren(object objectToRout)
+		public virtual void SendToChildren(object objectToRoute)
 		{
 			foreach (GuiWidget child in Children)
 			{
-				child.SendToChildren(objectToRout);
+				child.SendToChildren(objectToRoute);
 			}
 		}
 
-		public void FindNamedChildrenRecursive(string nameToSearchFor, List<GuiWidget> foundChildren)
+		public class WidgetAndPosition
 		{
-			if (Name == nameToSearchFor)
+			public Point2D position { get; private set; }
+			public GuiWidget widget { get; private set; }
+			public string name { get; private set; }
+			public object NamedObject { get; private set; }
+
+			public WidgetAndPosition(GuiWidget widget, Point2D position, string name, object namedObject = null)
 			{
-				foundChildren.Add(this);
+				this.name = name;
+				this.widget = widget;
+				this.position = position;
+				if (namedObject == null)
+				{
+					this.NamedObject = widget;
+				}
+				else
+				{
+					this.NamedObject = namedObject;
+				}
+			}
+		}
+
+		public enum SearchType { Exact, Partial };
+
+		public void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren)
+		{
+			FindNamedChildrenRecursive(nameToSearchFor, foundChildren, new RectangleDouble(double.MinValue, double.MinValue, double.MaxValue, double.MaxValue), SearchType.Exact);
+		}
+
+
+		// allowInvalidItems - automation tests use this function and may need to find disabled or non-visible items to validate their state
+		public virtual void FindNamedChildrenRecursive(string nameToSearchFor, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType seachType, bool allowDisabledOrHidden = true)
+		{
+			bool nameFound = false;
+
+			if (seachType == SearchType.Exact)
+			{
+				if (Name == nameToSearchFor)
+				{
+					nameFound = true;
+				}
+			}
+			else
+			{
+				if (nameToSearchFor == ""
+					|| Name.Contains(nameToSearchFor))
+				{
+					nameFound = true;
+				}
+			}
+
+			if (nameFound)
+			{
+				if (touchingBounds.IntersectWithRectangle(this.LocalBounds))
+				{
+					foundChildren.Add(new WidgetAndPosition(this, new Point2D(Width / 2, Height / 2), Name));
+				}
 			}
 
 			List<GuiWidget> searchChildren = new List<GuiWidget>(Children);
-			foreach (GuiWidget child in searchChildren)
+			foreach (GuiWidget child in searchChildren.Where(child => allowDisabledOrHidden || (child.Visible && child.Enabled)))
 			{
-				child.FindNamedChildrenRecursive(nameToSearchFor, foundChildren);
+				RectangleDouble touchingBoundsRelChild = touchingBounds;
+				touchingBoundsRelChild.Offset(-child.OriginRelativeParent);
+				child.FindNamedChildrenRecursive(nameToSearchFor, foundChildren, touchingBoundsRelChild, seachType, allowDisabledOrHidden);
 			}
 		}
 
@@ -2901,6 +3110,8 @@ namespace MatterHackers.Agg.UI
 					child.ClearCapturedState();
 				}
 
+				mouseCapturedState = MouseCapturedState.NotCaptured;
+
 				GuiWidget parent = this;
 				while (parent != null)
 				{
@@ -2937,6 +3148,11 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Occurs when a character. space or backspace key is pressed while the control has focus.
+		/// base.OnKeyPress should always be called first during override to ensure we get the correct Handled state
+		/// </summary>
+		/// <param name="keyPressEvent"></param>
 		public virtual void OnKeyPress(KeyPressEventArgs keyPressEvent)
 		{
 			GuiWidget childWithFocus = GetChildContainingFocus();
@@ -2945,18 +3161,12 @@ namespace MatterHackers.Agg.UI
 				childWithFocus.OnKeyPress(keyPressEvent);
 			}
 
-			if (KeyPressed != null)
-			{
-				KeyPressed(this, keyPressEvent);
-			}
+			KeyPressed?.Invoke(this, keyPressEvent);
 		}
 
 		public virtual void OnPositionChanged(EventArgs e)
 		{
-			if (PositionChanged != null)
-			{
-				PositionChanged(this, e);
-			}
+			PositionChanged?.Invoke(this, e);
 		}
 
 		private static int SortOnTabIndex(GuiWidget one, GuiWidget two)
@@ -3023,6 +3233,11 @@ namespace MatterHackers.Agg.UI
 			AdvanceFocus(-1);
 		}
 
+		/// <summary>
+		/// Occurs when a character. space or backspace key is pressed while the control has focus.
+		/// base.OnKeyDown should always be called first during override to ensure we get the correct Handled state
+		/// </summary>
+		/// <param name="keyEvent"></param>
 		public virtual void OnKeyDown(KeyEventArgs keyEvent)
 		{
 			GuiWidget childWithFocus = GetChildContainingFocus();
@@ -3045,12 +3260,14 @@ namespace MatterHackers.Agg.UI
 				keyEvent.SuppressKeyPress = true;
 			}
 
-			if (KeyDown != null)
-			{
-				KeyDown(this, keyEvent);
-			}
+			KeyDown?.Invoke(this, keyEvent);
 		}
 
+		/// <summary>
+		/// Occurs when a character. space or backspace key is released while the control has focus.
+		/// base.OnKeyUp should always be called first during override to ensure we get the correct Handled state
+		/// </summary>
+		/// <param name="keyEvent"></param>
 		public virtual void OnKeyUp(KeyEventArgs keyEvent)
 		{
 			GuiWidget childWithFocus = GetChildContainingFocus();
@@ -3059,10 +3276,7 @@ namespace MatterHackers.Agg.UI
 				childWithFocus.OnKeyUp(keyEvent);
 			}
 
-			if (KeyUp != null)
-			{
-				KeyUp(this, keyEvent);
-			}
+			KeyUp?.Invoke(this, keyEvent);
 		}
 	}
 
@@ -3077,6 +3291,70 @@ namespace MatterHackers.Agg.UI
 		public static IEnumerable<T> Children<T>(this GuiWidget widget) where T : GuiWidget
 		{
 			return widget.Children.OfType<T>();
+		}
+
+		public static IEnumerable<GuiWidget> DescendantsAndSelf(this GuiWidget widget)
+		{
+			return DescendantsAndSelf<GuiWidget>(widget);
+		}
+
+		/// <summary>
+		/// Returns all descendants and this of the current GuiWiget matching the given type
+		/// </summary>
+		/// <typeparam name="T">The type filter</typeparam>
+		/// <param name="widget">The context widget</param>
+		/// <returns>All matching child widgets</returns>
+		public static IEnumerable<T> DescendantsAndSelf<T>(this GuiWidget widget) where T : GuiWidget
+		{
+			var items = new Stack<GuiWidget>();
+			items.Push(widget);
+
+			while (items.Any())
+			{
+				GuiWidget item = items.Pop();
+
+				if (item is T itemIsType)
+				{
+					yield return itemIsType;
+				}
+
+				foreach (var child in item.Children)
+				{
+					items.Push(child);
+				}
+			}
+		}
+
+
+		public static IEnumerable<GuiWidget> Descendants(this GuiWidget widget)
+		{
+			return Descendants<GuiWidget>(widget);
+		}
+
+		/// <summary>
+		/// Returns all descendants of the current GuiWiget matching the given type
+		/// </summary>
+		/// <typeparam name="T">The type filter</typeparam>
+		/// <param name="widget">The context widget</param>
+		/// <returns>All matching child widgets</returns>
+		public static IEnumerable<T> Descendants<T>(this GuiWidget widget) where T : GuiWidget
+		{
+			var items = new Stack<GuiWidget>(widget.Children);
+
+			while (items.Any())
+			{
+				GuiWidget item = items.Pop();
+
+				if (item is T itemIsType)
+				{
+					yield return itemIsType;
+				}
+
+				foreach (var child in item.Children)
+				{
+					items.Push(child);
+				}
+			}
 		}
 
 		/// <summary>

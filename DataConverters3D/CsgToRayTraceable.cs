@@ -43,17 +43,17 @@ namespace MatterHackers.DataConverters3D
 {
 	public class CsgToRayTraceable
 	{
-		public static MaterialAbstract DefaultMaterial = new SolidMaterial(RGBA_Floats.Green, 0, 0, 0);
+		public static MaterialAbstract DefaultMaterial = new SolidMaterial(ColorF.Green, 0, 0, 0);
 
 		public CsgToRayTraceable()
 		{
 		}
 
-		#region Visitor Patern Functions
+		#region Visitor Pattern Functions
 
 		public IPrimitive GetIPrimitiveRecursive(CsgObject objectToProcess)
 		{
-			throw new Exception("You must wirte the specialized function for this type.");
+			throw new Exception("You must write the specialized function for this type.");
 		}
 
 		#region PrimitiveWrapper
@@ -151,7 +151,7 @@ namespace MatterHackers.DataConverters3D
 
 		#endregion Intersection
 
-		#endregion Visitor Patern Functions
+		#endregion Visitor Pattern Functions
 
 		#region SCAD Formating Functions
 

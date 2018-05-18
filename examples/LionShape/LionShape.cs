@@ -153,7 +153,7 @@ namespace MatterHackers.Agg
 		"M 157,342 L 156,349 L 150,356 L 157,353 L 163,346 L 162,342 L 157,342 L 157,342 L 157,342\n" +
 		"M 99,265 L 96,284 L 92,299 L 73,339 L 73,333 L 87,300 L 99,265 L 99,265 L 99,265\n";
 
-		static public int parse_lion(PathStorage path, RGBA_Bytes[] colors, int[] path_idx)
+		static public int parse_lion(VertexStorage path, Color[] colors, int[] path_idx)
 		{
 			// Parse the lion and then detect its bounding
 			// box and arrange polygons orientations (make all polygons
@@ -170,7 +170,7 @@ namespace MatterHackers.Agg
 				{
 					// New color. Every new color creates new path in the path object.
 					path.ClosePolygon();
-					colors[npaths] = RGBA_Bytes.rgb8_packed((int)c);
+					colors[npaths] = Color.rgb8_packed((int)c);
 					path_idx[npaths] = path.start_new_path();
 					npaths++;
 				}
@@ -210,8 +210,8 @@ namespace MatterHackers.Agg
 
 	public class LionShape
 	{
-		private PathStorage path = new PathStorage();
-		private RGBA_Bytes[] colors = new RGBA_Bytes[100];
+		private VertexStorage path = new VertexStorage();
+		private Color[] colors = new Color[100];
 		private int[] pathIndex = new int[100];
 		private int numPaths = 0;
 
@@ -223,7 +223,7 @@ namespace MatterHackers.Agg
 			ParseLion();
 		}
 
-		public PathStorage Path
+		public VertexStorage Path
 		{
 			get
 			{
@@ -247,7 +247,7 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public RGBA_Bytes[] Colors
+		public Color[] Colors
 		{
 			get
 			{
@@ -275,8 +275,8 @@ namespace MatterHackers.Agg
 		{
 			numPaths = MatterHackers.Agg.LionParser.parse_lion(path, colors, pathIndex);
 			MatterHackers.Agg.bounding_rect.get_bounding_rect(path, pathIndex, 0, numPaths, out boundingRect);
-			center.x = (boundingRect.Right - boundingRect.Left) / 2.0;
-			center.y = (boundingRect.Top - boundingRect.Bottom) / 2.0;
+			center.X = (boundingRect.Right - boundingRect.Left) / 2.0;
+			center.Y = (boundingRect.Top - boundingRect.Bottom) / 2.0;
 		}
 	}
 }

@@ -26,7 +26,7 @@ namespace MatterHackers.Agg
 {
 	static public class bounding_rect
 	{
-		public static bool get_bounding_rect(PathStorage vs, int[] gi,
+		public static bool get_bounding_rect(VertexStorage vs, int[] gi,
 						   int start, int num,
 						   out double x1, out double y1, out double x2, out double y2)
 		{
@@ -69,7 +69,7 @@ namespace MatterHackers.Agg
 			return x1 <= x2 && y1 <= y2;
 		}
 
-		public static bool get_bounding_rect(PathStorage vs, int[] gi,
+		public static bool get_bounding_rect(VertexStorage vs, int[] gi,
 						   int start, int num,
 						   out RectangleDouble boundingRect)
 		{

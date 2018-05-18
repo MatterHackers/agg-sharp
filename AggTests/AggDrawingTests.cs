@@ -21,6 +21,8 @@ namespace MatterHackers.Agg.Tests
 
 		private void CheckTestAgainstControl(ImageBuffer testImage, string testTypeString)
 		{
+			Directory.SetCurrentDirectory(TestContext.CurrentContext.TestDirectory);
+
 			// there is an assumtion that we got to save valid images at least once.
 			string controlFileTga = testTypeString + " Control.tga";
 			string imageFolder = "ControlImages";
@@ -61,7 +63,7 @@ namespace MatterHackers.Agg.Tests
 			// there is an assumtion that we got to save valid vertex lists at least once.
 			string controlFileTxt = testTypeString + " Control.Txt";
 			string vertexSourceFolder = "ControlVertexSources";
-			PathStorage controlVertexSource = new PathStorage();
+			VertexStorage controlVertexSource = new VertexStorage();
 			if (!Directory.Exists(vertexSourceFolder))
 			{
 				Directory.CreateDirectory(vertexSourceFolder);
@@ -119,12 +121,12 @@ namespace MatterHackers.Agg.Tests
 		public void DrawCircle()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
-			testImage.NewGraphics2D().Clear(RGBA_Bytes.White);
-			testImage.NewGraphics2D().Circle(30, 50, 20, RGBA_Bytes.Magenta);
-			testImage.NewGraphics2D().Circle(70, 50, 20, RGBA_Bytes.Cyan);
-			testImage.NewGraphics2D().Circle(50, 30.3, 20, RGBA_Bytes.Indigo);
-			testImage.NewGraphics2D().Circle(50, 70.3, 20, RGBA_Bytes.Orange);
-			testImage.NewGraphics2D().Circle(50, 50, 20, RGBA_Bytes.Yellow);
+			testImage.NewGraphics2D().Clear(Color.White);
+			testImage.NewGraphics2D().Circle(30, 50, 20, Color.Magenta);
+			testImage.NewGraphics2D().Circle(70, 50, 20, Color.Cyan);
+			testImage.NewGraphics2D().Circle(50, 30.3, 20, Color.Indigo);
+			testImage.NewGraphics2D().Circle(50, 70.3, 20, Color.Orange);
+			testImage.NewGraphics2D().Circle(50, 50, 20, Color.Yellow);
 
 			CheckTestAgainstControl(testImage, "DrawCicle");
 			CheckTestAgainstControl(new Ellipse(0, 0, 20, 20), "ShapeCicle");
@@ -134,8 +136,8 @@ namespace MatterHackers.Agg.Tests
 		public void DrawCurve3()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
-			testImage.NewGraphics2D().Clear(RGBA_Bytes.White);
-			testImage.NewGraphics2D().Render(new Curve3(10, 10, 50, 90, 90, 90), RGBA_Bytes.Black);
+			testImage.NewGraphics2D().Clear(Color.White);
+			testImage.NewGraphics2D().Render(new Curve3(10, 10, 50, 90, 90, 90), Color.Black);
 
 			CheckTestAgainstControl(testImage, "DrawCurve3");
 			CheckTestAgainstControl(new Curve3(10, 10, 50, 90, 90, 90), "ShapeCurve3");
@@ -145,8 +147,8 @@ namespace MatterHackers.Agg.Tests
 		public void DrawCurve4()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
-			testImage.NewGraphics2D().Clear(RGBA_Bytes.White);
-			testImage.NewGraphics2D().Render(new Curve4(10, 50, 25, 10, 75, 90, 90, 50), RGBA_Bytes.Black);
+			testImage.NewGraphics2D().Clear(Color.White);
+			testImage.NewGraphics2D().Render(new Curve4(10, 50, 25, 10, 75, 90, 90, 50), Color.Black);
 
 			CheckTestAgainstControl(testImage, "DrawCurve4");
 			CheckTestAgainstControl(new Curve4(10, 50, 25, 10, 75, 90, 90, 50), "ShapeCurve4");
@@ -156,11 +158,11 @@ namespace MatterHackers.Agg.Tests
 		public void DrawString()
 		{
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
-			testImage.NewGraphics2D().DrawString("Test", 30, 50, color: RGBA_Bytes.Magenta, justification: Justification.Center);
-			testImage.NewGraphics2D().DrawString("Test", 70, 50, color: RGBA_Bytes.Cyan, justification: Justification.Center);
-			testImage.NewGraphics2D().DrawString("Test", 50, 30.3, color: RGBA_Bytes.Indigo, justification: Justification.Center);
-			testImage.NewGraphics2D().DrawString("Test", 50, 70.3, color: RGBA_Bytes.Orange, justification: Justification.Center);
-			testImage.NewGraphics2D().DrawString("Test", 50, 50, color: RGBA_Bytes.Yellow, justification: Justification.Center);
+			testImage.NewGraphics2D().DrawString("Test", 30, 50, color: Color.Magenta, justification: Justification.Center);
+			testImage.NewGraphics2D().DrawString("Test", 70, 50, color: Color.Cyan, justification: Justification.Center);
+			testImage.NewGraphics2D().DrawString("Test", 50, 30.3, color: Color.Indigo, justification: Justification.Center);
+			testImage.NewGraphics2D().DrawString("Test", 50, 70.3, color: Color.Orange, justification: Justification.Center);
+			testImage.NewGraphics2D().DrawString("Test", 50, 50, color: Color.Yellow, justification: Justification.Center);
 
 			CheckTestAgainstControl(testImage, "DrawString");
 
@@ -195,7 +197,7 @@ namespace MatterHackers.Agg.Tests
 			ImageBuffer testImage = new ImageBuffer(100, 100, 32, new BlenderBGRA());
 			RoundedRect rect = new RoundedRect(20, 20, 80, 80, 5);
 			Stroke rectOutline = new Stroke(rect, 1);
-			testImage.NewGraphics2D().Render(rectOutline, RGBA_Bytes.White);
+			testImage.NewGraphics2D().Render(rectOutline, Color.White);
 
 			CheckTestAgainstControl(testImage, "DrawStroked");
 			CheckTestAgainstControl(rectOutline, "ShapeStroked");

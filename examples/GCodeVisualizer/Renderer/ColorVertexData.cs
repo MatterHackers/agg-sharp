@@ -52,20 +52,20 @@ namespace MatterHackers.GCodeVisualizer
 
 		public static readonly int Stride = Marshal.SizeOf(default(ColorVertexData));
 
-		public ColorVertexData(Vector3 position, Vector3 normal, RGBA_Bytes color)
+		public ColorVertexData(Vector3 position, Vector3 normal, Color color)
 		{
 			r = (byte)color.Red0To255;
 			g = (byte)color.Green0To255;
 			b = (byte)color.Blue0To255;
 			a = (byte)color.Alpha0To255;
 
-			normalX = (float)normal.x;
-			normalY = (float)normal.y;
-			normalZ = (float)normal.z;
+			normalX = (float)normal.X;
+			normalY = (float)normal.Y;
+			normalZ = (float)normal.Z;
 
-			positionX = (float)position.x;
-			positionY = (float)position.y;
-			positionZ = (float)position.z;
+			positionX = (float)position.X;
+			positionY = (float)position.Y;
+			positionZ = (float)position.Z;
 		}
 	}
 }

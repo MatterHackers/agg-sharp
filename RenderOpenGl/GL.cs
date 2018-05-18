@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using MatterHackers.VectorMath;
 
 #if USE_OPENGL
 
@@ -69,9 +70,18 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		Smooth = 7425,
 	}
 
+	// Use OpenTK enum for full coverage
+	// http://docs.gl/gl3/glDepthFunc
 	public enum DepthFunction
 	{
+		Never = 512,
+		Less = 513,
+		Equal = 514,
 		Lequal = 515,
+		Greater = 516,
+		Notequal = 517,
+		Gequal = 518,
+		Always = 519
 	}
 
 	public enum LightName
@@ -184,6 +194,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 	public enum TextureWrapMode
 	{
 		ClampToEdge = 33071,
+		Repeat = 0x2901,
 	}
 
 	public enum PixelInternalFormat
@@ -396,7 +407,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		{
 			if (HardwareAvailable)
 			{
-				Translate(vector.x, vector.y, vector.z);
+				Translate(vector.X, vector.Y, vector.Z);
 			}
 		}
 
@@ -719,6 +730,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #endif
 		}
 
+		public static void TexCoord2(Vector2 uv)
+		{
+			TexCoord2(uv.X, uv.Y);
+		}
+
 		public static void TexCoord2(double x, double y)
 		{
 #if USE_OPENGL
@@ -749,6 +765,22 @@ namespace MatterHackers.RenderOpenGl.OpenGl
             currentImediateData.color4b.add(ImediateMode.currentColor[2]);
             currentImediateData.color4b.add(ImediateMode.currentColor[3]);
 #endif
+		}
+
+		public static void Normal3(double x, double y, double z)
+		{
+#if USE_OPENGL
+			if (HardwareAvailable)
+			{
+				OpenTK.Graphics.OpenGL.GL.Normal3(x, y, z);
+			}
+#else
+#endif
+		}
+
+		public static void Vertex3(Vector3 position)
+		{
+			Vertex3(position.X, position.Y, position.Z);
 		}
 
 		public static void Vertex3(double x, double y, double z)

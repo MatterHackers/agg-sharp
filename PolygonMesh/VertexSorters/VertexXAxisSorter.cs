@@ -41,16 +41,16 @@ namespace MatterHackers.PolygonMesh
 		{
 		}
 
-		public override int Compare(Vertex a, Vertex b)
+		public override int Compare(IVertex a, IVertex b)
 		{
-			return a.Position.x.CompareTo(b.Position.x);
+			return a.Position.X.CompareTo(b.Position.X);
 		}
 
-		public override List<Vertex> FindVertices(List<Vertex> vertices, Vector3 position, double maxDistanceToConsiderVertexAsSame)
+		public override List<IVertex> FindVertices(List<IVertex> vertices, Vector3 position, double maxDistanceToConsiderVertexAsSame)
 		{
-			List<Vertex> foundVertexes = new List<Vertex>();
+			List<IVertex> foundVertices = new List<IVertex>();
 
-			Vertex testPos = new Vertex(position);
+			IVertex testPos = new Vertex(position);
 			int index = vertices.BinarySearch(testPos, this);
 			if (index < 0)
 			{
@@ -60,27 +60,27 @@ namespace MatterHackers.PolygonMesh
 			double maxDistanceToConsiderVertexAsSameSquared = maxDistanceToConsiderVertexAsSame * maxDistanceToConsiderVertexAsSame;
 			for (int i = index; i < vertices.Count; i++)
 			{
-				if (Math.Abs(vertices[i].Position.x - position.x) > maxDistanceToConsiderVertexAsSame)
+				if (Math.Abs(vertices[i].Position.X - position.X) > maxDistanceToConsiderVertexAsSame)
 				{
 					// we are too far away in x, we are done with this direction
 					break;
 				}
-				AddToListIfSameEnough(vertices, position, foundVertexes, maxDistanceToConsiderVertexAsSameSquared, i);
+				AddToListIfSameEnough(vertices, position, foundVertices, maxDistanceToConsiderVertexAsSameSquared, i);
 			}
 			for (int i = index - 1; i >= 0; i--)
 			{
-				if (Math.Abs(vertices[i].Position.x - position.x) > maxDistanceToConsiderVertexAsSame)
+				if (Math.Abs(vertices[i].Position.X - position.X) > maxDistanceToConsiderVertexAsSame)
 				{
 					// we are too far away in x, we are done with this direction
 					break;
 				}
-				AddToListIfSameEnough(vertices, position, foundVertexes, maxDistanceToConsiderVertexAsSameSquared, i);
+				AddToListIfSameEnough(vertices, position, foundVertices, maxDistanceToConsiderVertexAsSameSquared, i);
 			}
 
-			return foundVertexes;
+			return foundVertices;
 		}
 
-		private void AddToListIfSameEnough(List<Vertex> vertices, Vector3 position, List<Vertex> findList, double maxDistanceToConsiderVertexAsSameSquared, int i)
+		private void AddToListIfSameEnough(List<IVertex> vertices, Vector3 position, List<IVertex> findList, double maxDistanceToConsiderVertexAsSameSquared, int i)
 		{
 			if (vertices[i].Position == position)
 			{

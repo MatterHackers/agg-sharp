@@ -42,6 +42,8 @@ namespace MatterHackers.GuiAutomation
 	{
 		public bool LeftButtonDown { get; private set; }
 
+		public int ClickCount { get; } = 1;
+
 		public void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo)
 		{
 			this.LeftButtonDown = (dwFlags == NativeMethods.MOUSEEVENTF_LEFTDOWN);

@@ -26,10 +26,12 @@ SOFTWARE.
 
 using System;
 using System.Runtime.InteropServices;
+using Newtonsoft.Json;
 
 namespace MatterHackers.VectorMath
 {
 	/// <summary>Represents a 2D vector using two double-precision floating-point numbers.</summary>
+	[JsonObject]
 	[Serializable]
 	[StructLayout(LayoutKind.Sequential)]
 	public struct Vector2 : IEquatable<Vector2> , IConvertible
@@ -37,10 +39,10 @@ namespace MatterHackers.VectorMath
 		#region Fields
 
 		/// <summary>The X coordinate of this instance.</summary>
-		public double x;
+		public double X;
 
 		/// <summary>The Y coordinate of this instance.</summary>
-		public double y;
+		public double Y;
 
 		/// <summary>
 		/// Defines a unit-length Vector2d that points towards the X-axis.
@@ -76,14 +78,14 @@ namespace MatterHackers.VectorMath
 		/// <param name="y">The Y coordinate.</param>
 		public Vector2(double x, double y)
 		{
-			this.x = x;
-			this.y = y;
+			this.X = x;
+			this.Y = y;
 		}
 
 		public Vector2(Vector3 vector)
 		{
-			this.x = vector.x;
-			this.y = vector.y;
+			this.X = vector.X;
+			this.Y = vector.Y;
 		}
 
 		#endregion Constructors
@@ -97,10 +99,10 @@ namespace MatterHackers.VectorMath
 				switch (index)
 				{
 					case 0:
-						return x;
+						return X;
 
 					case 1:
-						return y;
+						return Y;
 
 					default:
 						return 0;
@@ -112,17 +114,35 @@ namespace MatterHackers.VectorMath
 				switch (index)
 				{
 					case 0:
-						x = value;
+						X = value;
 						break;
 
 					case 1:
-						y = value;
+						Y = value;
 						break;
 
 					default:
 						throw new Exception();
 				}
 			}
+		}
+
+		/// <summary>
+		/// Get the delta angle from start to end relative to this
+		/// </summary>
+		/// <param name="startPosition"></param>
+		/// <param name="endPosition"></param>
+		public double GetDeltaAngle(Vector2 startPosition, Vector2 endPosition)
+		{
+			startPosition -= this;
+			var startAngle = Math.Atan2(startPosition.Y, startPosition.X);
+			startAngle = startAngle < 0 ? startAngle + MathHelper.Tau : startAngle;
+
+			endPosition -= this;
+			var endAngle = Math.Atan2(endPosition.Y, endPosition.X);
+			endAngle = endAngle < 0 ? endAngle + MathHelper.Tau : endAngle;
+
+			return endAngle - startAngle;
 		}
 
 		#endregion Properties
@@ -137,12 +157,18 @@ namespace MatterHackers.VectorMath
 		/// Gets the length (magnitude) of the vector.
 		/// </summary>
 		/// <seealso cref="LengthSquared"/>
+		[JsonIgnore]
 		public double Length
 		{
 			get
 			{
-				return System.Math.Sqrt(x * x + y * y);
+				return System.Math.Sqrt(X * X + Y * Y);
 			}
+		}
+
+		public double Distance(Vector2 p)
+		{
+			return (this - p).Length;
 		}
 
 		#endregion public double Length
@@ -157,11 +183,12 @@ namespace MatterHackers.VectorMath
 		/// for comparisons.
 		/// </remarks>
 		/// <see cref="Length"/>
+		[JsonIgnore]
 		public double LengthSquared
 		{
 			get
 			{
-				return x * x + y * y;
+				return X * X + Y * Y;
 			}
 		}
 
@@ -174,7 +201,7 @@ namespace MatterHackers.VectorMath
 
 		public double GetAngle()
 		{
-			return System.Math.Atan2(y, x);
+			return System.Math.Atan2(Y, X);
 		}
 
 		public double GetAngle0To2PI()
@@ -189,7 +216,7 @@ namespace MatterHackers.VectorMath
 		/// </summary>
 		public Vector2 GetPerpendicularRight()
 		{
-			return new Vector2(y, -x);
+			return new Vector2(Y, -X);
 		}
 
 		#endregion public Vector2d PerpendicularRight
@@ -201,7 +228,7 @@ namespace MatterHackers.VectorMath
 		/// </summary>
 		public Vector2 GetPerpendicularLeft()
 		{
-			return new Vector2(-y, x);
+			return new Vector2(-Y, X);
 		}
 
 		#endregion public Vector2d PerpendicularLeft
@@ -225,8 +252,8 @@ namespace MatterHackers.VectorMath
 		public void Normalize()
 		{
 			double scale = 1.0 / Length;
-			x *= scale;
-			y *= scale;
+			X *= scale;
+			Y *= scale;
 		}
 
 		#endregion public void Normalize()
@@ -257,7 +284,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">Result of operation.</param>
 		public static void Add(ref Vector2 a, ref Vector2 b, out Vector2 result)
 		{
-			result = new Vector2(a.x + b.x, a.y + b.y);
+			result = new Vector2(a.X + b.X, a.Y + b.Y);
 		}
 
 		#endregion Add
@@ -284,7 +311,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">Result of subtraction</param>
 		public static void Subtract(ref Vector2 a, ref Vector2 b, out Vector2 result)
 		{
-			result = new Vector2(a.x - b.x, a.y - b.y);
+			result = new Vector2(a.X - b.X, a.Y - b.Y);
 		}
 
 		#endregion Subtract
@@ -311,7 +338,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">Result of the operation.</param>
 		public static void Multiply(ref Vector2 vector, double scale, out Vector2 result)
 		{
-			result = new Vector2(vector.x * scale, vector.y * scale);
+			result = new Vector2(vector.X * scale, vector.Y * scale);
 		}
 
 		/// <summary>
@@ -334,7 +361,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">Result of the operation.</param>
 		public static void Multiply(ref Vector2 vector, ref Vector2 scale, out Vector2 result)
 		{
-			result = new Vector2(vector.x * scale.x, vector.y * scale.y);
+			result = new Vector2(vector.X * scale.X, vector.Y * scale.Y);
 		}
 
 		#endregion Multiply
@@ -384,7 +411,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">Result of the operation.</param>
 		public static void Divide(ref Vector2 vector, ref Vector2 scale, out Vector2 result)
 		{
-			result = new Vector2(vector.x / scale.x, vector.y / scale.y);
+			result = new Vector2(vector.X / scale.X, vector.Y / scale.Y);
 		}
 
 		#endregion Divide
@@ -399,8 +426,8 @@ namespace MatterHackers.VectorMath
 		/// <returns>The component-wise minimum</returns>
 		public static Vector2 Min(Vector2 a, Vector2 b)
 		{
-			a.x = a.x < b.x ? a.x : b.x;
-			a.y = a.y < b.y ? a.y : b.y;
+			a.X = a.X < b.X ? a.X : b.X;
+			a.Y = a.Y < b.Y ? a.Y : b.Y;
 			return a;
 		}
 
@@ -412,8 +439,8 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">The component-wise minimum</param>
 		public static void Min(ref Vector2 a, ref Vector2 b, out Vector2 result)
 		{
-			result.x = a.x < b.x ? a.x : b.x;
-			result.y = a.y < b.y ? a.y : b.y;
+			result.X = a.X < b.X ? a.X : b.X;
+			result.Y = a.Y < b.Y ? a.Y : b.Y;
 		}
 
 		#endregion Min
@@ -428,8 +455,8 @@ namespace MatterHackers.VectorMath
 		/// <returns>The component-wise maximum</returns>
 		public static Vector2 Max(Vector2 a, Vector2 b)
 		{
-			a.x = a.x > b.x ? a.x : b.x;
-			a.y = a.y > b.y ? a.y : b.y;
+			a.X = a.X > b.X ? a.X : b.X;
+			a.Y = a.Y > b.Y ? a.Y : b.Y;
 			return a;
 		}
 
@@ -441,8 +468,8 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">The component-wise maximum</param>
 		public static void Max(ref Vector2 a, ref Vector2 b, out Vector2 result)
 		{
-			result.x = a.x > b.x ? a.x : b.x;
-			result.y = a.y > b.y ? a.y : b.y;
+			result.X = a.X > b.X ? a.X : b.X;
+			result.Y = a.Y > b.Y ? a.Y : b.Y;
 		}
 
 		#endregion Max
@@ -458,8 +485,8 @@ namespace MatterHackers.VectorMath
 		/// <returns>The clamped vector</returns>
 		public static Vector2 Clamp(Vector2 vec, Vector2 min, Vector2 max)
 		{
-			vec.x = vec.x < min.x ? min.x : vec.x > max.x ? max.x : vec.x;
-			vec.y = vec.y < min.y ? min.y : vec.y > max.y ? max.y : vec.y;
+			vec.X = vec.X < min.X ? min.X : vec.X > max.X ? max.X : vec.X;
+			vec.Y = vec.Y < min.Y ? min.Y : vec.Y > max.Y ? max.Y : vec.Y;
 			return vec;
 		}
 
@@ -472,8 +499,8 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">The clamped vector</param>
 		public static void Clamp(ref Vector2 vec, ref Vector2 min, ref Vector2 max, out Vector2 result)
 		{
-			result.x = vec.x < min.x ? min.x : vec.x > max.x ? max.x : vec.x;
-			result.y = vec.y < min.y ? min.y : vec.y > max.y ? max.y : vec.y;
+			result.X = vec.X < min.X ? min.X : vec.X > max.X ? max.X : vec.X;
+			result.Y = vec.Y < min.Y ? min.Y : vec.Y > max.Y ? max.Y : vec.Y;
 		}
 
 		#endregion Clamp
@@ -488,8 +515,8 @@ namespace MatterHackers.VectorMath
 		public static Vector2 Normalize(Vector2 vec)
 		{
 			double scale = 1.0 / vec.Length;
-			vec.x *= scale;
-			vec.y *= scale;
+			vec.X *= scale;
+			vec.Y *= scale;
 			return vec;
 		}
 
@@ -501,8 +528,8 @@ namespace MatterHackers.VectorMath
 		public static void Normalize(ref Vector2 vec, out Vector2 result)
 		{
 			double scale = 1.0 / vec.Length;
-			result.x = vec.x * scale;
-			result.y = vec.y * scale;
+			result.X = vec.X * scale;
+			result.Y = vec.Y * scale;
 		}
 
 		#endregion Normalize
@@ -517,7 +544,7 @@ namespace MatterHackers.VectorMath
 		/// <returns>The dot product of the two inputs</returns>
 		public static double Dot(Vector2 left, Vector2 right)
 		{
-			return left.x * right.x + left.y * right.y;
+			return left.X * right.X + left.Y * right.Y;
 		}
 
 		/// <summary>
@@ -528,7 +555,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">The dot product of the two inputs</param>
 		public static void Dot(ref Vector2 left, ref Vector2 right, out double result)
 		{
-			result = left.x * right.x + left.y * right.y;
+			result = left.X * right.X + left.Y * right.Y;
 		}
 
 		#endregion Dot
@@ -543,7 +570,12 @@ namespace MatterHackers.VectorMath
 		/// <returns>The cross product of the two inputs</returns>
 		public static double Cross(Vector2 left, Vector2 right)
 		{
-			return left.x * right.y - left.y * right.x;
+			return left.X * right.Y - left.Y * right.X;
+		}
+
+		public double Cross(Vector2 right)
+		{
+			return this.X * right.Y - this.Y * right.X;
 		}
 
 		#endregion Cross
@@ -564,8 +596,8 @@ namespace MatterHackers.VectorMath
 			Cos = (double)System.Math.Cos(radians);
 			Sin = (double)System.Math.Sin(radians);
 
-			output.x = input.x * Cos - input.y * Sin;
-			output.y = input.y * Cos + input.x * Sin;
+			output.X = input.X * Cos - input.Y * Sin;
+			output.Y = input.Y * Cos + input.X * Sin;
 		}
 
 		#endregion Rotate
@@ -581,8 +613,8 @@ namespace MatterHackers.VectorMath
 		/// <returns>a when blend=0, b when blend=1, and a linear combination otherwise</returns>
 		public static Vector2 Lerp(Vector2 a, Vector2 b, double blend)
 		{
-			a.x = blend * (b.x - a.x) + a.x;
-			a.y = blend * (b.y - a.y) + a.y;
+			a.X = blend * (b.X - a.X) + a.X;
+			a.Y = blend * (b.Y - a.Y) + a.Y;
 			return a;
 		}
 
@@ -595,8 +627,8 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">a when blend=0, b when blend=1, and a linear combination otherwise</param>
 		public static void Lerp(ref Vector2 a, ref Vector2 b, double blend, out Vector2 result)
 		{
-			result.x = blend * (b.x - a.x) + a.x;
-			result.y = blend * (b.y - a.y) + a.y;
+			result.X = blend * (b.X - a.X) + a.X;
+			result.Y = blend * (b.Y - a.Y) + a.Y;
 		}
 
 		#endregion Lerp
@@ -664,7 +696,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">The result of the operation.</param>
 		public static void Transform(ref Vector2 vec, ref Quaternion quat, out Vector2 result)
 		{
-			Quaternion v = new Quaternion(vec.x, vec.y, 0, 0), i, t;
+			Quaternion v = new Quaternion(vec.X, vec.Y, 0, 0), i, t;
 			Quaternion.Invert(ref quat, out i);
 			Quaternion.Multiply(ref quat, ref v, out t);
 			Quaternion.Multiply(ref t, ref i, out v);
@@ -684,8 +716,8 @@ namespace MatterHackers.VectorMath
 		/// <returns>The component-wise minimum</returns>
 		public static Vector2 ComponentMin(Vector2 a, Vector2 b)
 		{
-			a.x = a.x < b.x ? a.x : b.x;
-			a.y = a.y < b.y ? a.y : b.y;
+			a.X = a.X < b.X ? a.X : b.X;
+			a.Y = a.Y < b.Y ? a.Y : b.Y;
 			return a;
 		}
 
@@ -697,8 +729,8 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">The component-wise minimum</param>
 		public static void ComponentMin(ref Vector2 a, ref Vector2 b, out Vector2 result)
 		{
-			result.x = a.x < b.x ? a.x : b.x;
-			result.y = a.y < b.y ? a.y : b.y;
+			result.X = a.X < b.X ? a.X : b.X;
+			result.Y = a.Y < b.Y ? a.Y : b.Y;
 		}
 
 		#endregion ComponentMin
@@ -713,8 +745,8 @@ namespace MatterHackers.VectorMath
 		/// <returns>The component-wise maximum</returns>
 		public static Vector2 ComponentMax(Vector2 a, Vector2 b)
 		{
-			a.x = a.x > b.x ? a.x : b.x;
-			a.y = a.y > b.y ? a.y : b.y;
+			a.X = a.X > b.X ? a.X : b.X;
+			a.Y = a.Y > b.Y ? a.Y : b.Y;
 			return a;
 		}
 
@@ -726,8 +758,8 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">The component-wise maximum</param>
 		public static void ComponentMax(ref Vector2 a, ref Vector2 b, out Vector2 result)
 		{
-			result.x = a.x > b.x ? a.x : b.x;
-			result.y = a.y > b.y ? a.y : b.y;
+			result.X = a.X > b.X ? a.X : b.X;
+			result.Y = a.Y > b.Y ? a.Y : b.Y;
 		}
 
 		#endregion ComponentMax
@@ -744,8 +776,8 @@ namespace MatterHackers.VectorMath
 		/// <returns>The result of the operation.</returns>
 		public static Vector2 operator +(Vector2 left, Vector2 right)
 		{
-			left.x += right.x;
-			left.y += right.y;
+			left.X += right.X;
+			left.Y += right.Y;
 			return left;
 		}
 
@@ -757,8 +789,8 @@ namespace MatterHackers.VectorMath
 		/// <returns>The result of the operation.</returns>
 		public static Vector2 operator -(Vector2 left, Vector2 right)
 		{
-			left.x -= right.x;
-			left.y -= right.y;
+			left.X -= right.X;
+			left.Y -= right.Y;
 			return left;
 		}
 
@@ -769,8 +801,8 @@ namespace MatterHackers.VectorMath
 		/// <returns>The result of the operation.</returns>
 		public static Vector2 operator -(Vector2 vec)
 		{
-			vec.x = -vec.x;
-			vec.y = -vec.y;
+			vec.X = -vec.X;
+			vec.Y = -vec.Y;
 			return vec;
 		}
 
@@ -782,8 +814,8 @@ namespace MatterHackers.VectorMath
 		/// <returns>The result of the operation.</returns>
 		public static Vector2 operator *(Vector2 vec, double f)
 		{
-			vec.x *= f;
-			vec.y *= f;
+			vec.X *= f;
+			vec.Y *= f;
 			return vec;
 		}
 
@@ -795,8 +827,8 @@ namespace MatterHackers.VectorMath
 		/// <returns>The result of the operation.</returns>
 		public static Vector2 operator *(double f, Vector2 vec)
 		{
-			vec.x *= f;
-			vec.y *= f;
+			vec.X *= f;
+			vec.Y *= f;
 			return vec;
 		}
 
@@ -809,8 +841,8 @@ namespace MatterHackers.VectorMath
 		public static Vector2 operator /(Vector2 vec, double f)
 		{
 			double mult = 1.0 / f;
-			vec.x *= mult;
-			vec.y *= mult;
+			vec.X *= mult;
+			vec.Y *= mult;
 			return vec;
 		}
 
@@ -822,8 +854,8 @@ namespace MatterHackers.VectorMath
 		/// <returns>The result of the operation.</returns>
 		public static Vector2 operator /(double f, Vector2 vec)
 		{
-			vec.x = f / vec.x;
-			vec.y = f / vec.y;
+			vec.X = f / vec.X;
+			vec.Y = f / vec.Y;
 			return vec;
 		}
 
@@ -861,7 +893,7 @@ namespace MatterHackers.VectorMath
 		/// <returns></returns>
 		public override string ToString()
 		{
-			return String.Format("({0}, {1})", x, y);
+			return String.Format("({0}, {1})", X, Y);
 		}
 
 		#endregion public override string ToString()
@@ -874,7 +906,7 @@ namespace MatterHackers.VectorMath
 		/// <returns>A System.Int32 containing the unique hashcode for this instance.</returns>
 		public override int GetHashCode()
 		{
-			return new { x, y }.GetHashCode();
+			return new { X, Y }.GetHashCode();
 		}
 
 		#endregion public override int GetHashCode()
@@ -908,8 +940,8 @@ namespace MatterHackers.VectorMath
 		public bool Equals(Vector2 other)
 		{
 			return
-				x == other.x &&
-				y == other.y;
+				X == other.X &&
+				Y == other.Y;
 		}
 
 		/// <summary>Indicates whether the current vector is equal to another vector.</summary>
@@ -917,8 +949,8 @@ namespace MatterHackers.VectorMath
 		/// <returns>true if the current vector is equal to the vector parameter; otherwise, false.</returns>
 		public bool Equals(Vector2 other, double errorRange)
 		{
-			if ((x < other.x + errorRange && x > other.x - errorRange) &&
-				(y < other.y + errorRange && y > other.y - errorRange))
+			if ((X < other.X + errorRange && X > other.X - errorRange) &&
+				(Y < other.Y + errorRange && Y > other.Y - errorRange))
 			{
 				return true;
 			}

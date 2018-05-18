@@ -56,47 +56,47 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		private int highLightedIndex = 0;
 
+		private Color lastRenderColor;
+
+		private ImageBuffer gradientBackground;
+
+		private int gradientDistance = 8;
+
+		private RectangleDouble dropArrowBounds;
+
 		protected TextWidget mainControlText;
 
-		public RGBA_Bytes NormalColor { get; set; }
+		public Color NormalColor { get; set; }
 
-		public int BorderWidth { get; set; }
+		public Color HoverColor { get; set; }
 
-		public RGBA_Bytes BorderColor { get; set; }
-
-		public RGBA_Bytes HoverColor { get; set; }
-
-		public RGBA_Bytes TextColor
+		public Color TextColor
 		{
-			get
-			{
-				return mainControlText.TextColor;
-			}
+			get => mainControlText.TextColor;
 			set
 			{
 				mainControlText.TextColor = value;
 			}
 		}
 
-		private PathStorage directionArrow = null;
+		private VertexStorage directionArrow = null;
 
 		public BorderDouble MenuItemsPadding
 		{
-			get
-			{
-				return mainControlText.Margin;
-			}
-
+			get => mainControlText.Margin;
 			set
 			{
-				mainControlText.Margin = value;
+				// Ensure minimum right margin
+				mainControlText.Margin = new BorderDouble(value.Left, value.Bottom, Math.Max(value.Right, 30), value.Top);
 			}
 		}
+
+		public bool AutoScaleIcons { get; set; } = true;
 
 		private int selectedIndex = -1;
 		public int SelectedIndex
 		{
-			get { return selectedIndex; }
+			get => selectedIndex;
 			set
 			{
 				if (SelectedIndex != value)
@@ -112,6 +112,8 @@ namespace MatterHackers.Agg.UI
 
 		protected override void ShowMenu()
 		{
+			menuVisible = true;
+
 			if (this.Parent == null)
 			{
 				return;
@@ -149,8 +151,13 @@ namespace MatterHackers.Agg.UI
 				ApplyFilter();
 			};
 
-			DropDownContainer.KeyUp += (s, e) =>
+			DropDownContainer.KeyDown += (s, e) =>
 			{
+				if(e.Handled)
+				{
+					return;
+				}
+
 				switch (e.KeyCode)
 				{
 					case Keys.Up:
@@ -158,7 +165,7 @@ namespace MatterHackers.Agg.UI
 						{
 							highLightedIndex--;
 						}
-
+						e.Handled = true;
 						break;
 
 					case Keys.Down:
@@ -166,7 +173,7 @@ namespace MatterHackers.Agg.UI
 						{
 							highLightedIndex++;
 						}
-
+						e.Handled = true;
 						break;
 				}
 
@@ -221,6 +228,7 @@ namespace MatterHackers.Agg.UI
 
 			DropDownContainer.Closed += (s, e) =>
 			{
+				menuVisible = false;
 				mainControlText.Text = selectedIndex == -1 ? this.noSelectionString : MenuItems[SelectedIndex].Text;
 				this.Focus();
 			};
@@ -319,70 +327,59 @@ namespace MatterHackers.Agg.UI
 
 		private string noSelectionString;
 
-		private static RGBA_Bytes whiteSemiTransparent = new RGBA_Bytes(255, 255, 255, 100);
-		private static RGBA_Bytes whiteTransparent = new RGBA_Bytes(255, 255, 255, 0);
+		private static Color whiteSemiTransparent = new Color(255, 255, 255, 100);
+		private static Color whiteTransparent = new Color(255, 255, 255, 0);
 
-		public DropDownList(string noSelectionString, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false)
-			: this(noSelectionString, whiteTransparent, whiteSemiTransparent, direction, maxHeight, useLeftIcons)
+		private double pointSize = 12;
+		private bool menuVisible;
+
+		public DropDownList(string noSelectionString, Color textColor, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false, double pointSize = 12)
+			: this(noSelectionString, whiteTransparent, whiteSemiTransparent, direction, maxHeight, useLeftIcons, pointSize)
 		{
-			this.TextColor = ActiveTheme.Instance.PrimaryTextColor;
+			this.TextColor = textColor;
 			this.MenuItemsBorderWidth = 1;
-			this.MenuItemsBackgroundColor = RGBA_Bytes.White;
+			this.MenuItemsBackgroundColor = Color.White;
 			this.MenuItemsBorderColor = ActiveTheme.Instance.SecondaryTextColor;
-			this.MenuItemsPadding = new BorderDouble(10, 8, 10, 12);
+			this.MenuItemsPadding = new BorderDouble(10, 7, 7, 7);
 			this.MenuItemsBackgroundHoverColor = ActiveTheme.Instance.PrimaryAccentColor;
-			this.MenuItemsTextHoverColor = RGBA_Bytes.Black;
-			this.MenuItemsTextColor = RGBA_Bytes.Black;
-			this.BorderWidth = 1;
+			this.MenuItemsTextHoverColor = Color.Black;
+			this.MenuItemsTextColor = Color.Black;
 			this.BorderColor = ActiveTheme.Instance.SecondaryTextColor;
 			this.HoverColor = whiteSemiTransparent;
-			this.BackgroundColor = new RGBA_Bytes(255, 255, 255, 0);
+			this.BackgroundColor = new Color(255, 255, 255, 0);
+			this.Border = 1;
 		}
 
-		public DropDownList(string noSelectionString, RGBA_Bytes normalColor, RGBA_Bytes hoverColor, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false)
+		public DropDownList(string noSelectionString, Color normalColor, Color hoverColor, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false, double pointSize = 12)
 			: base(direction, maxHeight)
 		{
+			this.pointSize = pointSize;
+
 			UseLeftIcons = useLeftIcons;
-			if (this.MenuDirection == Direction.Down)
-			{
-				directionArrow = new PathStorage();
-				directionArrow.MoveTo(-4, 0);
-				directionArrow.LineTo(4, 0);
-				directionArrow.LineTo(0, -5);
-			}
-			else if (this.MenuDirection == Direction.Up)
-			{
-				directionArrow = new PathStorage();
-				directionArrow.MoveTo(-4, -5);
-				directionArrow.LineTo(4, -5);
-				directionArrow.LineTo(0, 0);
-			}
-			else
-			{
-				throw new NotImplementedException("Pulldown direction has not been implemented");
-			}
+
+			// Always Down, unless Up
+			directionArrow = (this.MenuDirection == Direction.Up) ? DropArrow.UpArrow : DropArrow.DownArrow;
 
 			MenuItems.CollectionChanged += MenuItems_CollectionChanged;
 
 			this.noSelectionString = noSelectionString;
 
-			mainControlText = new TextWidget(noSelectionString)
+			mainControlText = new TextWidget(noSelectionString, pointSize: pointSize)
 			{
 				AutoExpandBoundsToText = true,
-				VAnchor = VAnchor.ParentBottom | VAnchor.FitToChildren,
-				HAnchor = HAnchor.ParentLeft | HAnchor.FitToChildren,
-				Margin = new BorderDouble(right: 30),
-				TextColor = RGBA_Bytes.Black
+				VAnchor = VAnchor.Bottom | VAnchor.Fit,
+				HAnchor = HAnchor.Left | HAnchor.Fit,
+				Margin = new BorderDouble(10, 7, 7, 7),
+				TextColor = Color.Black
 			};
-			AddChild(mainControlText);
 
-			MouseEnter += (s, e) => BackgroundColor = HoverColor;
-			MouseLeave += (s, e) => BackgroundColor = NormalColor;
+			AddChild(mainControlText);
 
 			NormalColor = normalColor;
 			HoverColor = hoverColor;
 			BackgroundColor = normalColor;
-			BorderColor = RGBA_Bytes.White;
+			this.BorderColor = ActiveTheme.Instance.SecondaryTextColor;
+			this.Border = 1;
 		}
 
 		private void OnSelectionChanged(EventArgs e)
@@ -401,8 +398,8 @@ namespace MatterHackers.Agg.UI
 				{
 					mainControlText.Text = item.Text;
 
-					minSize.x = Math.Max(minSize.x, LocalBounds.Width);
-					minSize.y = Math.Max(minSize.y, LocalBounds.Height);
+					minSize.X = Math.Max(minSize.X, LocalBounds.Width);
+					minSize.Y = Math.Max(minSize.Y, LocalBounds.Height);
 				}
 				mainControlText.Text = startText;
 
@@ -415,16 +412,68 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override void OnBoundsChanged(EventArgs e)
+		public override Color BackgroundColor
 		{
-			// Set new MinSIze
-			Vector2 minSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
-			foreach (MenuItem item in MenuItems.ToList())
+			get
 			{
-				item.MinimumSize = new Vector2(LocalBounds.Width, LocalBounds.Height);
+				if (menuVisible
+					|| (this.mouseInBounds && this.Enabled))
+				{
+					return this.HoverColor;
+				}
+				else
+				{
+					return base.BackgroundColor;
+				}
+			}
+			set => base.BackgroundColor = value;
+		}
+
+		public override void OnLoad(EventArgs args)
+		{
+			base.OnLoad(args);
+
+			var firstBackgroundColor = this.Parents<GuiWidget>().Where(p => p.BackgroundColor.Alpha0To1 == 1).FirstOrDefault()?.BackgroundColor;
+			if (this.BackgroundColor == Color.Transparent)
+			{
+				// Propagate first parent opaque background
+				this.BackgroundColor = firstBackgroundColor ?? Color.Transparent;
+			}
+			else if (this.BackgroundColor.alpha != 255 && firstBackgroundColor != null)
+			{
+				// Resolve alpha
+				this.BackgroundColor = new BlenderRGBA().Blend(firstBackgroundColor.Value, this.BackgroundColor);
 			}
 
+			this.HoverColor = new BlenderRGBA().Blend(this.BackgroundColor, this.HoverColor);
+		}
+
+		public override void OnBoundsChanged(EventArgs e)
+		{
+			// Force child menu items to have parent width
+			foreach (MenuItem item in MenuItems.ToList())
+			{
+				item.MinimumSize = new Vector2(LocalBounds.Width, 0);
+			}
+
+			dropArrowBounds = new RectangleDouble(LocalBounds.Right - DropArrow.ArrowHeight * 4, 0, LocalBounds.Right, this.Height);
+
 			base.OnBoundsChanged(e);
+		}
+
+		private bool mouseInBounds;
+		public override void OnMouseEnterBounds(MouseEventArgs mouseEvent)
+		{
+			mouseInBounds = true;
+			base.OnMouseEnterBounds(mouseEvent);
+			this.Invalidate();
+		}
+
+		public override void OnMouseLeaveBounds(MouseEventArgs mouseEvent)
+		{
+			mouseInBounds = false;
+			base.OnMouseLeaveBounds(mouseEvent);
+			this.Invalidate();
 		}
 
 		private void MenuItem_Clicked(object sender, EventArgs e)
@@ -441,25 +490,43 @@ namespace MatterHackers.Agg.UI
 		{
 			base.OnDraw(graphics2D);
 
-			// Draw border
-			var strokeRect = new Stroke(new RoundedRect(this.LocalBounds, 0), BorderWidth);
-			graphics2D.Render(strokeRect, BorderColor);
+			var gradientDistanceMinusBorder = (int) (gradientDistance - Border.Width);
+
+			if (lastRenderColor != this.BackgroundColor)
+			{
+				gradientBackground = agg_basics.TrasparentToColorGradientX(
+					(int)(dropArrowBounds.Width + gradientDistanceMinusBorder),
+					(int)(this.LocalBounds.Height - Border.Height),
+					this.BackgroundColor,
+					gradientDistance);
+
+				lastRenderColor = this.BackgroundColor;
+			}
+
+			graphics2D.Render(this.gradientBackground, this.LocalBounds.Right - gradientBackground.Width, 0);
 
 			// Draw directional arrow
 			if (directionArrow != null)
 			{
-				graphics2D.Render(directionArrow, LocalBounds.Right - 8, LocalBounds.Top - 4, BorderColor);
+				var center = dropArrowBounds.Center;
+				center.Y += 1;
+
+				graphics2D.Render(directionArrow, center, ActiveTheme.Instance.SecondaryTextColor);
 			}
 		}
 
 		public override void OnKeyUp(KeyEventArgs keyEvent)
 		{
-			if (keyEvent.KeyCode == Keys.Down)
-			{
-				ShowMenu();
-			}
-
+			// this must be called first to ensure we get the correct Handled state
 			base.OnKeyUp(keyEvent);
+
+			if (!keyEvent.Handled)
+			{
+				if (keyEvent.KeyCode == Keys.Down)
+				{
+					ShowMenu();
+				}
+			}
 		}
 
 		public override void OnFocusChanged(EventArgs e)
@@ -470,7 +537,7 @@ namespace MatterHackers.Agg.UI
 
 		public bool UseLeftIcons { get; private set; } = false;
 
-		public MenuItem AddItem(string itemName, string itemValue = null, double pointSize = 12)
+		public MenuItem AddItem(string itemName, string itemValue = null)
 		{
 			if (itemValue == null)
 			{
@@ -494,7 +561,7 @@ namespace MatterHackers.Agg.UI
 
 				NormalTextColor = MenuItemsTextColor,
 				OverTextColor = MenuItemsTextHoverColor,
-				DisabledTextColor = RGBA_Bytes.Gray,
+				DisabledTextColor = Color.Gray,
 
 				PointSize = pointSize,
 				Padding = currentPadding,
@@ -512,55 +579,72 @@ namespace MatterHackers.Agg.UI
 			return menuItem;
 		}
 
-		public MenuItem AddItem(ImageBuffer leftImage, string itemName, string itemValue = null, double pointSize = 12)
-		{
-			GuiWidget normalTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundColor);
-			GuiWidget hoverTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundHoverColor);
+		public int GutterWidth { get; set; } = 35;
 
-			MenuItem menuItem = new MenuItem(
+		public MenuItem AddItem(ImageBuffer leftImage, string itemName, string itemValue = null)
+		{
+			GuiWidget normalTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundColor, MenuItemsTextColor);
+			GuiWidget hoverTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundHoverColor, MenuItemsTextHoverColor);
+
+			var menuItem = new MenuItem(
 				new MenuItemStatesView(normalTextWithMargin, hoverTextWithMargin),
 				// If no itemValue is supplied, itemName will be used as the item value
-				itemValue ?? itemName);
-
-			// MenuItem is a long lived object that is added and removed to new containers whenever the
-			// menu is shown. To ensure that event registration is not duplicated, always remove before add
-			menuItem.Selected -= MenuItem_Clicked;
+				itemValue ?? itemName)
+			{
+				Name = itemName + " Menu Item",
+				Text = itemName
+			};
 			menuItem.Selected += MenuItem_Clicked;
 
-			menuItem.Name = itemName + " Menu Item";
-			menuItem.Text = itemName;
 			MenuItems.Add(menuItem);
 
 			return menuItem;
 		}
 
-		private GuiWidget GetMenuContent(string itemName, ImageBuffer leftImage, RGBA_Bytes color)
+		private GuiWidget GetMenuContent(string itemName, ImageBuffer leftImage, Color color, Color textColor)
 		{
 			var rowContainer = new FlowLayoutWidget()
 			{
-				HAnchor = HAnchor.ParentLeftRight | HAnchor.FitToChildren,
-				VAnchor = VAnchor.FitToChildren,
+				HAnchor = HAnchor.Stretch | HAnchor.Fit,
+				VAnchor = VAnchor.Fit,
 				BackgroundColor = color
 			};
 
 			var textWidget = new TextWidget(itemName)
 			{
 				Margin = MenuItemsPadding,
-				TextColor = MenuItemsTextColor
+				TextColor = textColor,
+				VAnchor = VAnchor.Center
 			};
 
 			if (UseLeftIcons || leftImage != null)
 			{
 				if (leftImage != null)
 				{
-					int size = (int)(20 * GuiWidget.DeviceScale + .5);
-					ImageBuffer scaledImage = ImageBuffer.CreateScaledImage(leftImage, size, size);
-					rowContainer.AddChild(new ImageWidget(scaledImage)
+					ImageBuffer imageBuffer = leftImage;
+
+					if (this.AutoScaleIcons)
 					{
-						VAnchor = VAnchor.ParentCenter,
-						Margin = new BorderDouble(MenuItemsPadding.Left, MenuItemsPadding.Bottom, 3, MenuItemsPadding.Top),
+						int size = (int)(20 * GuiWidget.DeviceScale + .5);
+						leftImage.CreateScaledImage(size, size);
+					}
+
+					var imageContainer = new GuiWidget()
+					{
+						Width = this.GutterWidth * GuiWidget.DeviceScale,
+						Height = this.GutterWidth * GuiWidget.DeviceScale,
+						HAnchor = HAnchor.Absolute,
+						VAnchor = VAnchor.Absolute | VAnchor.Center
+					};
+					rowContainer.AddChild(imageContainer);
+
+					imageContainer.AddChild(new ImageWidget(imageBuffer)
+					{
+						VAnchor = VAnchor.Center,
+						HAnchor = HAnchor.Center,
 					});
-					textWidget.Margin = new BorderDouble(0, MenuItemsPadding.Bottom, MenuItemsPadding.Right, MenuItemsPadding.Top);
+
+					textWidget.Margin = 0;
 				}
 				else
 				{
@@ -577,12 +661,17 @@ namespace MatterHackers.Agg.UI
 	{
 		public static void ModifyStatesView(this MenuItem menuItem, bool showHighlight)
 		{
-			var statesView = menuItem.Children<MenuItemColorStatesView>().FirstOrDefault();
-			if (statesView != null)
+			var firstChild = menuItem.Children.FirstOrDefault();
+			if (firstChild is MenuItemStatesView itemStatesView)
 			{
-				statesView.Highlighted = showHighlight;
-				statesView.Invalidate();
+				itemStatesView.Highlighted = showHighlight;
 			}
+			else if (firstChild is MenuItemColorStatesView colorStatesView)
+			{
+				colorStatesView.Highlighted = showHighlight;
+			}
+
+			firstChild?.Invalidate();
 		}
 	}
 }
