@@ -39,10 +39,30 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 	}
 #endif
 
+	public enum ErrorCode
+	{
+		NoError = 0,
+		InvalidEnum = 1280,
+		InvalidValue = 1281,
+		InvalidOperation = 1282,
+		StackOverflow = 1283,
+		StackUnderflow = 1284,
+		OutOfMemory = 1285,
+		InvalidFramebufferOperation = 1286,
+		InvalidFramebufferOperationExt = 1286,
+		TableTooLargeExt = 32817,
+		TextureTooLargeExt = 32869
+	}
+
 	public enum FrontFaceDirection
 	{
 		Cw = 2304,
 		Ccw = 2305,
+	}
+
+	public enum RenderbufferStorage
+	{
+		Rgba8 = 32856,
 	}
 
 	public enum CullFaceMode
@@ -641,6 +661,116 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				width, height, border,
 				(OpenTK.Graphics.ES11.All)format,
 				(OpenTK.Graphics.ES11.All)type, pixels);
+#endif
+		}
+
+		public static void GenFramebuffers(int n, out int frameBuffers)
+		{
+#if USE_OPENGL
+			OpenTK.Graphics.OpenGL.GL.GenFramebuffers(n, out frameBuffers);
+#else
+#endif
+		}
+
+		public static void GenRenderbuffers(int n, out int renderBuffers)
+		{
+#if USE_OPENGL
+			OpenTK.Graphics.OpenGL.GL.GenRenderbuffers(n, out renderBuffers);
+#else
+#endif
+		}
+
+		public static void DeleteFramebuffers(int n, ref int frameBuffers)
+		{
+#if USE_OPENGL
+			OpenTK.Graphics.OpenGL.GL.DeleteFramebuffers(n, ref frameBuffers);
+#else
+#endif
+		}
+
+		public static void DeleteRenderbuffers(int n, ref int renderBuffers)
+		{
+#if USE_OPENGL
+			OpenTK.Graphics.OpenGL.GL.DeleteRenderbuffers(n, ref renderBuffers);
+#else
+#endif
+		}
+
+		public static void BindRenderbuffer(int renderBuffer)
+		{
+#if USE_OPENGL
+			OpenTK.Graphics.OpenGL.GL.BindRenderbuffer(OpenTK.Graphics.OpenGL.RenderbufferTarget.Renderbuffer, renderBuffer);
+#else
+#endif
+		}
+
+		public static void RenderbufferStorage(RenderbufferStorage storage, int width, int height)
+		{
+#if USE_OPENGL
+			OpenTK.Graphics.OpenGL.GL.RenderbufferStorage(OpenTK.Graphics.OpenGL.RenderbufferTarget.Renderbuffer,
+				(OpenTK.Graphics.OpenGL.RenderbufferStorage)storage, width, height);
+#else
+#endif
+		}
+
+		public static void BindFramebuffer(int renderBuffer)
+		{
+#if USE_OPENGL
+			OpenTK.Graphics.OpenGL.GL.BindFramebuffer(OpenTK.Graphics.OpenGL.FramebufferTarget.DrawFramebuffer,
+				renderBuffer);
+#else
+#endif
+		}
+
+		public static void ReadPixels(int x, int y, int width, int height, PixelFormat pixelFormat, PixelType pixelType, byte[] buffer)
+		{
+#if USE_OPENGL
+			unsafe
+			{
+				fixed (byte* data = buffer)
+				{
+					OpenTK.Graphics.OpenGL.GL.ReadPixels(x, y, width, height,
+						(OpenTK.Graphics.OpenGL.PixelFormat)pixelFormat,
+						(OpenTK.Graphics.OpenGL.PixelType)pixelType, (IntPtr)data);
+				}
+			}
+#else
+#endif
+		}
+
+		public static void ReadBuffer()
+		{
+#if USE_OPENGL
+			OpenTK.Graphics.OpenGL.GL.ReadBuffer(OpenTK.Graphics.OpenGL.ReadBufferMode.ColorAttachment0);
+#else
+#endif
+		}
+
+		public static void FramebufferRenderbuffer(int renderBuffer)
+		{
+#if USE_OPENGL
+			OpenTK.Graphics.OpenGL.GL.FramebufferRenderbuffer(OpenTK.Graphics.OpenGL.FramebufferTarget.Framebuffer,
+				OpenTK.Graphics.OpenGL.FramebufferAttachment.ColorAttachment0,
+				OpenTK.Graphics.OpenGL.RenderbufferTarget.Renderbuffer,
+				renderBuffer);
+
+			var status = OpenTK.Graphics.OpenGL.GL.CheckFramebufferStatus(OpenTK.Graphics.OpenGL.FramebufferTarget.DrawFramebuffer);
+
+			//if(status != OpenTK.Graphics.OpenGL.FramebufferErrorCode.FramebufferComplete)
+				///int a = 0;
+#else
+#endif
+		}
+
+		public static ErrorCode GetError()
+		{
+#if USE_OPENGL
+			var error = (ErrorCode)OpenTK.Graphics.OpenGL.GL.GetError();
+			//if(error != ErrorCode.NoError)
+				//int a = 0;
+
+			return error;
+#else
 #endif
 		}
 
