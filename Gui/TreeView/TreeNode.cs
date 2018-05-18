@@ -92,6 +92,18 @@ namespace MatterHackers.Agg.UI.TreeView
 				};
 				titleBar.AddChild(expandCheckBox);
 			}
+			// add a check box
+			if(Image != null)
+			{
+				titleBar.AddChild(new ImageWidget(Image)
+				{
+					VAnchor = VAnchor.Center,
+					//BorderColor = new Color(ActiveTheme.Instance.PrimaryTextColor, 20),
+					BackgroundColor = new Color(ActiveTheme.Instance.PrimaryTextColor, 12),
+					Border = 1,
+					Margin = 2,
+				});
+			};
 			titleBar.AddChild(new TextWidget(Text));
 		}
 
@@ -148,7 +160,30 @@ namespace MatterHackers.Agg.UI.TreeView
 		//
 		// Returns:
 		//     A zero-based index value that represents the image position in the assigned ImageList.
-		public ImageBuffer Image { get; set; }
+		ImageBuffer _image = new ImageBuffer(16, 16);
+		public ImageBuffer Image
+		{
+			get
+			{
+				return _image;
+			}
+
+			set
+			{
+				if(_image != value)
+				{
+					_image = value;
+					OnImageChanged(null);
+				}
+			}
+		}
+
+		void OnImageChanged(EventArgs args)
+		{
+			ImageChanged?.Invoke(this, null);
+
+			RebuildTitleBar();
+		}
 
 		//
 		// Summary:
@@ -306,6 +341,7 @@ namespace MatterHackers.Agg.UI.TreeView
 		#region Events
 		public event EventHandler ExpandedChanged;
 		public event EventHandler CheckedStateChanged;
+		public event EventHandler ImageChanged;
 		#endregion
 
 		//

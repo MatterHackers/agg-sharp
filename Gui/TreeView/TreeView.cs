@@ -119,16 +119,6 @@ namespace MatterHackers.Agg.UI.TreeView
 
 		//
 		// Summary:
-		//     Gets or sets the key of the default image for each node in the TreeView
-		//     control when it is in an unselected state.
-		//
-		// Returns:
-		//     The key of the default image shown for each node TreeView
-		//     control when the node is in an unselected state.
-		public string ImageKey { get; set; }
-
-		//
-		// Summary:
 		//     Gets or sets the distance to indent each child tree node level.
 		//
 		// Returns:
@@ -195,9 +185,6 @@ namespace MatterHackers.Agg.UI.TreeView
 		//     true if the tree view control displays scroll bars when they are needed; otherwise,
 		//     false. The default is true.
 		public bool Scrollable { get; set; }
-
-		//
-		public ImageBuffer SelectedImage { get; set; }
 
 		//
 		// Summary:
