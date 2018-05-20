@@ -95,7 +95,7 @@ namespace Typography.OpenFont.Tables
         {
             uint version = reader.ReadUInt32();
             VersionMajor = (byte)(version >> 16);
-            VersionMinor = (byte)(version >> 8);
+            VersionMinor = (byte)((version >> 8)&0xFF);
 
             VertTypoAscender = reader.ReadInt16();
             VertTypoDescender = reader.ReadInt16();
