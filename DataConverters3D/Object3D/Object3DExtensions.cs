@@ -115,7 +115,8 @@ namespace MatterHackers.DataConverters3D
 
 			bool done = false;
 			double scaleFraction = .1;
-			goalBounds.Inflate(-10);
+			// make the target size a portion of the total size
+			goalBounds.Inflate(-goalBounds.Width * .1);
 
 			int rescaleAttempts = 0;
 			while (!done && rescaleAttempts++ < 500)
