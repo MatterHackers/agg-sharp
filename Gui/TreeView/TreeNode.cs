@@ -39,7 +39,7 @@ namespace MatterHackers.Agg.UI.TreeView
 {
 	public class TreeNode : FlowLayoutWidget, ICheckbox
 	{
-		FlowLayoutWidget titleBar;
+		public FlowLayoutWidget TitleBar { get; }
 		GuiWidget content;
 
 		public TreeNode()
@@ -48,8 +48,15 @@ namespace MatterHackers.Agg.UI.TreeView
 			HAnchor = HAnchor.Fit | HAnchor.Left;
 			VAnchor = VAnchor.Fit;
 
-			titleBar = new FlowLayoutWidget();
-			AddChild(titleBar);
+			TitleBar = new FlowLayoutWidget();
+			TitleBar.Click += (s, e) =>
+			{
+				if (TreeView != null)
+				{
+					TreeView.SelectedNode = this;
+				}
+			};
+			AddChild(TitleBar);
 			RebuildTitleBar();
 
 			content = new FlowLayoutWidget(FlowDirection.TopToBottom)
@@ -72,7 +79,7 @@ namespace MatterHackers.Agg.UI.TreeView
 
 		private void RebuildTitleBar()
 		{
-			titleBar.RemoveAllChildren();
+			TitleBar.RemoveAllChildren();
 			if(content != null
 				&& GetNodeCount(false) > 0)
 			{
@@ -90,12 +97,12 @@ namespace MatterHackers.Agg.UI.TreeView
 				{
 					Expanded = expandCheckBox.Checked;
 				};
-				titleBar.AddChild(expandCheckBox);
+				TitleBar.AddChild(expandCheckBox);
 			}
 			// add a check box
 			if(Image != null)
 			{
-				titleBar.AddChild(new ImageWidget(Image)
+				TitleBar.AddChild(new ImageWidget(Image)
 				{
 					VAnchor = VAnchor.Center,
 					//BorderColor = new Color(ActiveTheme.Instance.PrimaryTextColor, 20),
@@ -104,7 +111,10 @@ namespace MatterHackers.Agg.UI.TreeView
 					Margin = 2,
 				});
 			};
-			titleBar.AddChild(new TextWidget(Text));
+			TitleBar.AddChild(new TextWidget(Text)
+			{
+				Selectable = false
+			});
 		}
 
 		private void Nodes_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
@@ -123,6 +133,7 @@ namespace MatterHackers.Agg.UI.TreeView
 			// Then add them back in (after the change)
 			foreach (var node in Nodes)
 			{
+				node.NodeParent = this;
 				node.ClearRemovedFlag();
 				content.AddChild(node);
 			}
@@ -221,7 +232,18 @@ namespace MatterHackers.Agg.UI.TreeView
 		//
 		// Returns:
 		//     true if the tree node is in the selected state; otherwise, false.
-		public bool Selected { get; }
+		public bool Selected
+		{
+			get
+			{
+				if(TreeView != null)
+				{
+					return TreeView.SelectedNode == this;
+				}
+
+				return false;
+			}
+		}
 
 		//
 		// Summary:
@@ -273,7 +295,7 @@ namespace MatterHackers.Agg.UI.TreeView
 		// Returns:
 		//     A TreeNode that represents the parent of the current tree
 		//     node.
-		public TreeNode NodeParent { get; }
+		public TreeNode NodeParent { get; protected set; }
 
 		public int PointSize { get; set; }
 
@@ -334,7 +356,13 @@ namespace MatterHackers.Agg.UI.TreeView
 		//     A TreeView that represents the parent tree view that the
 		//     tree node is assigned to, or null if the node has not been assigned to a tree
 		//     view.
-		public TreeView TreeView { get; }
+		public virtual TreeView TreeView
+		{
+			get
+			{
+				return NodeParent.TreeView;
+			}
+		}
 
 		#endregion
 

@@ -32,12 +32,19 @@ using MatterHackers.VectorMath;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MatterHackers.Agg.UI.TreeView
 {
+	public class TopNode : TreeNode
+	{
+		internal TreeView treeView;
+		public override TreeView TreeView => treeView;
+	}
+
 	public class TreeView : ScrollableWidget
 	{
-		public TreeView(TreeNode topNode)
+		public TreeView(TopNode topNode)
 			: this(topNode, 0, 0)
 		{
 			AutoScroll = true;
@@ -45,9 +52,10 @@ namespace MatterHackers.Agg.UI.TreeView
 			AddChild(TopNode);
 		}
 
-		public TreeView(TreeNode topNode, int width, int height)
+		public TreeView(TopNode topNode, int width, int height)
 			: base(width, height)
 		{
+			topNode.treeView = this;
 			TopNode = topNode;
 			HAnchor = HAnchor.Stretch;
 			VAnchor = VAnchor.Stretch;
@@ -65,7 +73,7 @@ namespace MatterHackers.Agg.UI.TreeView
 
 		public event EventHandler AfterLabelEdit;
 
-		public event EventHandler AfterSelect;
+		public event EventHandler<TreeNode> AfterSelect;
 
 		public event EventHandler BeforeCheck;
 
@@ -75,7 +83,7 @@ namespace MatterHackers.Agg.UI.TreeView
 
 		public event EventHandler BeforeLabelEdit;
 
-		public event EventHandler BeforeSelect;
+		public event EventHandler<TreeNode> BeforeSelect;
 
 		public event EventHandler NodeMouseClick;
 
@@ -193,7 +201,24 @@ namespace MatterHackers.Agg.UI.TreeView
 		// Returns:
 		//     The TreeNode that is currently selected in the tree view
 		//     control.
-		public TreeNode SelectedNode { get; set; }
+		TreeNode _selectedNode;
+		public TreeNode SelectedNode
+		{
+			get => _selectedNode; set
+			{
+				if (value != _selectedNode)
+				{
+					OnBeforeSelect(null);
+					foreach (var node in this.Descendants<TreeNode>().Where((c) => c != value))
+					{
+						node.TitleBar.BackgroundColor = Color.Transparent;
+					}
+					_selectedNode = value;
+					_selectedNode.TitleBar.BackgroundColor = Color.Red;
+					OnAfterSelect(null);
+				}
+			}
+		}
 
 		public bool ShowLines { get; set; }
 		public bool ShowNodeToolTips { get; set; }
@@ -306,9 +331,9 @@ namespace MatterHackers.Agg.UI.TreeView
 			throw new NotImplementedException();
 		}
 
-		protected virtual void OnAfterSelect(EventArgs e)
+		protected virtual void OnAfterSelect(TreeNode e)
 		{
-			throw new NotImplementedException();
+			AfterSelect?.Invoke(this, e);
 		}
 
 		protected virtual void OnBeforeCheck(EventArgs e)
@@ -326,9 +351,9 @@ namespace MatterHackers.Agg.UI.TreeView
 			throw new NotImplementedException();
 		}
 
-		protected virtual void OnBeforeSelect(EventArgs e)
+		protected virtual void OnBeforeSelect(TreeNode e)
 		{
-			throw new NotImplementedException();
+			BeforeSelect?.Invoke(this, e);
 		}
 
 		protected virtual void OnNodeMouseClick(EventArgs e)
