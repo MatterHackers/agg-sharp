@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2013, Lars Brubaker
+Copyright (c) 2018, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -37,7 +37,6 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.RayTracer
 {
-	using System.Linq;
 	using MatterHackers.Agg.RasterizerScanline;
 	using MatterHackers.Agg.VertexSource;
 	using MatterHackers.RayTracer.Light;
@@ -45,6 +44,10 @@ namespace MatterHackers.RayTracer
 
 	public class ThumbnailTracer
 	{
+		private static Vector3 lightNormal = (new Vector3(-1, 1, 1)).GetNormal();
+		private static ColorF lightIllumination = new ColorF(1, 1, 1);
+		private static ColorF ambiantIllumination = new ColorF(.4, .4, .4);
+
 		public ImageBuffer destImage;
 
 		private IPrimitive allObjects;
@@ -55,7 +58,7 @@ namespace MatterHackers.RayTracer
 
 		private Scene scene;
 		private Point2D size;
-		
+
 		private WorldView world;
 
 		private RayTracer rayTracer = new RayTracer()
@@ -77,15 +80,15 @@ namespace MatterHackers.RayTracer
 
 		public bool MultiThreaded
 		{
-			get { return rayTracer.MultiThreaded; }
-			set { rayTracer.MultiThreaded = value; }
+			get => rayTracer.MultiThreaded;
+			set => rayTracer.MultiThreaded = value;
 		}
 
 		public void TraceScene()
 		{
 			CreateScene();
 
-			RectangleInt rect = new RectangleInt(0, 0, size.x, size.y);
+			var rect = new RectangleInt(0, 0, size.x, size.y);
 			if (destImage == null || destImage.Width != rect.Width || destImage.Height != rect.Height)
 			{
 				destImage = new ImageBuffer(rect.Width, rect.Height);
@@ -108,21 +111,17 @@ namespace MatterHackers.RayTracer
 
 		private void AddAFloor()
 		{
-			ImageBuffer testImage = new ImageBuffer(200, 200);
+			var testImage = new ImageBuffer(200, 200);
 			Graphics2D graphics = testImage.NewGraphics2D();
-			Random rand = new Random(0);
+			var rand = new Random(0);
 			for (int i = 0; i < 100; i++)
 			{
-				Color color = new Color(rand.NextDouble(), rand.NextDouble(), rand.NextDouble());
+				var color = new Color(rand.NextDouble(), rand.NextDouble(), rand.NextDouble());
 				graphics.Circle(new Vector2(rand.NextDouble() * testImage.Width, rand.NextDouble() * testImage.Height), rand.NextDouble() * 40 + 10, color);
 			}
 			scene.shapes.Add(new PlaneShape(new Vector3(0, 0, 1), 0, new TextureMaterial(testImage, 0, 0, .2, 1)));
 			//scene.shapes.Add(new PlaneShape(new Vector3(0, 0, 1), 0, new ChessboardMaterial(new RGBA_Floats(1, 1, 1), new RGBA_Floats(0, 0, 0), 0, 0, 1, 0.7)));
 		}
-
-		static Vector3 lightNormal = (new Vector3(-1, 1, 1)).GetNormal();
-		static ColorF lightIllumination = new ColorF(1, 1, 1);
-		static ColorF ambiantIllumination = new ColorF(.4, .4, .4);
 
 		internal class RenderPoint
 		{
@@ -133,19 +132,19 @@ namespace MatterHackers.RayTracer
 
 		internal void render_gouraud(IImageByte backBuffer, IScanlineCache sl, IRasterizer ras, RenderPoint[] points)
 		{
-			ImageBuffer image = new ImageBuffer();
+			var image = new ImageBuffer();
 			image.Attach(backBuffer, new BlenderZBuffer());
 
-			ImageClippingProxy ren_base = new ImageClippingProxy(image);
+			var ren_base = new ImageClippingProxy(image);
 
-			MatterHackers.Agg.span_allocator span_alloc = new span_allocator();
-			span_gouraud_rgba span_gen = new span_gouraud_rgba();
-
+			var span_gen = new span_gouraud_rgba();
 			span_gen.colors(points[0].color, points[1].color, points[2].color);
 			span_gen.triangle(points[0].position.X, points[0].position.Y, points[1].position.X, points[1].position.Y, points[2].position.X, points[2].position.Y);
+
 			ras.add_path(span_gen);
-			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
-			scanlineRenderer.GenerateAndRender(ras, sl, ren_base, span_alloc, span_gen);
+
+			var scanlineRenderer = new ScanlineRenderer();
+			scanlineRenderer.GenerateAndRender(ras, sl, ren_base, new span_allocator(), span_gen);
 		}
 
 		public void RenderPerspective(Graphics2D graphics2D, Mesh meshToDraw, Color partColorIn, double minZ, double maxZ)
@@ -184,11 +183,12 @@ namespace MatterHackers.RayTracer
 						points[i].color = new Color(polyDrawColor.Red0To255, ratioInt16 >> 8, ratioInt16 & 0xFF);
 					}
 
-
 #if true
-					scanline_unpacked_8 sl = new scanline_unpacked_8();
-					ScanlineRasterizer ras = new ScanlineRasterizer();
-					render_gouraud(graphics2D.DestImage, sl, ras, points);
+					render_gouraud(
+						graphics2D.DestImage,
+						new scanline_unpacked_8(),
+						new ScanlineRasterizer(),
+						points);
 #else
 					IRecieveBlenderByte oldBlender = graphics2D.DestImage.GetRecieveBlender();
 					graphics2D.DestImage.SetRecieveBlender(new BlenderZBuffer());
@@ -277,7 +277,7 @@ namespace MatterHackers.RayTracer
 				while (--count != 0);
 			}
 		}
-		
+
 		AxisAlignedBoundingBox GetAxisAlignedBoundingBox(List<IObject3D> renderDatas)
 		{
 			AxisAlignedBoundingBox totalMeshBounds = AxisAlignedBoundingBox.Empty;
@@ -304,17 +304,14 @@ namespace MatterHackers.RayTracer
 			if (sceneToRender != null)
 			{
 				AxisAlignedBoundingBox totalMeshBounds = sceneToRender.GetAxisAlignedBoundingBox();
-				Vector3 meshCenter = totalMeshBounds.Center;
 
-				sceneToRender.Matrix = sceneToRender.Matrix * Matrix4X4.CreateTranslation(-meshCenter);
+				sceneToRender.Matrix *= Matrix4X4.CreateTranslation(-totalMeshBounds.Center);
 
 				SetViewForScene();
 
 				IPrimitive bvhCollection = MeshToBVH.Convert(sceneToRender);
 
-				List<IPrimitive> renderCollection = new List<IPrimitive>();
-				renderCollection.Add(bvhCollection);
-				return renderCollection;
+				return new List<IPrimitive> { bvhCollection };
 			}
 
 			return null;
