@@ -93,8 +93,6 @@ namespace MatterHackers.DataConverters3D
 		[JsonIgnore]
 		public bool ShowSelectionShadow { get; set; } = true;
 
-		public bool IsSelected(IObject3D item) => HasSelection && SelectedItem == item;
-
 		public void Save(Stream stream, Action<double, string> progress = null)
 		{
 			// Serialize the scene to disk using a modified Json.net pipeline with custom ContractResolvers and JsonConverters
