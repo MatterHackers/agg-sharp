@@ -72,28 +72,32 @@ namespace MatterHackers.PolygonMesh
 
 		public VertexCollecton Vertices { get; private set; } = new VertexCollecton();
 
-		public static Mesh Copy(Mesh meshToCopy, CancellationToken cancellationToken, Action<double, string> progress = null, bool allowFastCopy = true)
+		public static Mesh Copy(Mesh meshToCopyIn, CancellationToken cancellationToken, Action<double, string> progress = null, bool allowFastCopy = true)
 		{
 			Mesh newMesh = new Mesh();
 
-			if (allowFastCopy 
-				&& meshToCopy.Vertices.IsSorted
-				&& !meshToCopy.Vertices.Where((v) => v.FirstMeshEdge == null).Any())
-			{
-				Dictionary<int, int> vertexIndexDictionary = GetVertexToIndexDictionary(meshToCopy, newMesh);
-				Dictionary<int, int> meshEdgeIndexDictionary = GetMeshEdgeToIndexDictionary(meshToCopy, newMesh);
+			var verticesToCopy = meshToCopyIn.Vertices;
+			var facesToCopy = meshToCopyIn.Faces;
+			var edgesToCopy = meshToCopyIn.MeshEdges;
 
-				for (int faceIndex = 0; faceIndex < meshToCopy.Faces.Count; faceIndex++)
+			if (allowFastCopy 
+				&& verticesToCopy.IsSorted
+				&& !verticesToCopy.Where((v) => v.FirstMeshEdge == null).Any())
+			{
+				Dictionary<int, int> vertexIndexDictionary = GetVertexToIndexDictionary(verticesToCopy, newMesh);
+				Dictionary<int, int> meshEdgeIndexDictionary = GetMeshEdgeToIndexDictionary(edgesToCopy, newMesh);
+
+				for (int faceIndex = 0; faceIndex < facesToCopy.Count; faceIndex++)
 				{
-					Face faceToCopy = meshToCopy.Faces[faceIndex];
+					Face faceToCopy = facesToCopy[faceIndex];
 					newMesh.Faces.Add(new Face(newMesh));
 				}
 
 				// now set all the data for the new mesh
-				newMesh.Vertices.Capacity = meshToCopy.Vertices.Capacity;
-				for (int vertexIndex = 0; vertexIndex < meshToCopy.Vertices.Count; vertexIndex++)
+				newMesh.Vertices.Capacity = verticesToCopy.Capacity;
+				for (int vertexIndex = 0; vertexIndex < verticesToCopy.Count; vertexIndex++)
 				{
-					IVertex vertexToCopy = meshToCopy.Vertices[vertexIndex];
+					IVertex vertexToCopy = verticesToCopy[vertexIndex];
 					// !!!! ON ERROR !!!!! If this throws an error, you likely need to CleanAndMergMesh the mesh before copying
 					int indexOfFirstMeshEdge = meshEdgeIndexDictionary[vertexToCopy.FirstMeshEdge.ID];
 					IVertex newVertex = newMesh.Vertices[vertexIndex];
@@ -101,10 +105,10 @@ namespace MatterHackers.PolygonMesh
 					newVertex.Normal = vertexToCopy.Normal;
 				}
 
-				newMesh.MeshEdges.Capacity = meshToCopy.MeshEdges.Capacity;
-				for (int meshEdgeIndex = 0; meshEdgeIndex < meshToCopy.MeshEdges.Count; meshEdgeIndex++)
+				newMesh.MeshEdges.Capacity = edgesToCopy.Capacity;
+				for (int meshEdgeIndex = 0; meshEdgeIndex < edgesToCopy.Count; meshEdgeIndex++)
 				{
-					MeshEdge meshEdgeToCopy = meshToCopy.MeshEdges[meshEdgeIndex];
+					MeshEdge meshEdgeToCopy = edgesToCopy[meshEdgeIndex];
 					MeshEdge newMeshEdge = newMesh.MeshEdges[meshEdgeIndex];
 
 					newMeshEdge.NextMeshEdgeFromEnd[0] = newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeToCopy.NextMeshEdgeFromEnd[0].ID]];
@@ -118,10 +122,10 @@ namespace MatterHackers.PolygonMesh
 					//newMesh.MeshEdges.Add(newMeshEdge);
 				}
 
-				newMesh.Faces.Capacity = meshToCopy.Faces.Capacity;
-				for (int faceIndex = 0; faceIndex < meshToCopy.Faces.Count; faceIndex++)
+				newMesh.Faces.Capacity = facesToCopy.Capacity;
+				for (int faceIndex = 0; faceIndex < facesToCopy.Count; faceIndex++)
 				{
-					Face faceToCopy = meshToCopy.Faces[faceIndex];
+					Face faceToCopy = facesToCopy[faceIndex];
 					Face newface = newMesh.Faces[faceIndex];
 
 					newface.Normal = faceToCopy.Normal;
@@ -153,7 +157,7 @@ namespace MatterHackers.PolygonMesh
 			}
 			else
 			{
-				foreach (Face face in meshToCopy.Faces)
+				foreach (Face face in facesToCopy)
 				{
 					List<IVertex> faceVertices = new List<IVertex>();
 					foreach (FaceEdge faceEdgeToAdd in face.FaceEdges())
@@ -366,24 +370,24 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		private static Dictionary<int, int> GetMeshEdgeToIndexDictionary(Mesh meshToCopy, Mesh newMesh)
+		private static Dictionary<int, int> GetMeshEdgeToIndexDictionary(List<MeshEdge> edgesToCopy, Mesh newMesh)
 		{
-			Dictionary<int, int> meshEdgeIndexDictionary = new Dictionary<int, int>(meshToCopy.MeshEdges.Count);
-			for (int edgeIndex = 0; edgeIndex < meshToCopy.MeshEdges.Count; edgeIndex++)
+			Dictionary<int, int> meshEdgeIndexDictionary = new Dictionary<int, int>(edgesToCopy.Count);
+			for (int edgeIndex = 0; edgeIndex < edgesToCopy.Count; edgeIndex++)
 			{
-				MeshEdge edgeToCopy = meshToCopy.MeshEdges[edgeIndex];
+				MeshEdge edgeToCopy = edgesToCopy[edgeIndex];
 				meshEdgeIndexDictionary.Add(edgeToCopy.ID, edgeIndex);
 				newMesh.MeshEdges.Add(new MeshEdge());
 			}
 			return meshEdgeIndexDictionary;
 		}
 
-		private static Dictionary<int, int> GetVertexToIndexDictionary(Mesh meshToCopy, Mesh newMesh)
+		private static Dictionary<int, int> GetVertexToIndexDictionary(VertexCollecton verticesToCopy, Mesh newMesh)
 		{
-			Dictionary<int, int> vertexIndexMapping = new Dictionary<int, int>(meshToCopy.Vertices.Count);
-			for (int vertexIndex = 0; vertexIndex < meshToCopy.Vertices.Count; vertexIndex++)
+			Dictionary<int, int> vertexIndexMapping = new Dictionary<int, int>(verticesToCopy.Count);
+			for (int vertexIndex = 0; vertexIndex < verticesToCopy.Count; vertexIndex++)
 			{
-				IVertex vertexToCopy = meshToCopy.Vertices[vertexIndex];
+				IVertex vertexToCopy = verticesToCopy[vertexIndex];
 				vertexIndexMapping.Add(vertexToCopy.ID, vertexIndex);
 				newMesh.Vertices.Add(vertexToCopy.CreateInterpolated(vertexToCopy, 0));
 			}

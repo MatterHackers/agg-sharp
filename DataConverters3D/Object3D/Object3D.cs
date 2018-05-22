@@ -613,8 +613,11 @@ namespace MatterHackers.DataConverters3D
 
 		public virtual void Rebuild(UndoBuffer undoBuffer)
 		{
-			// After all the derived classes have completed their rebuild, tell the parent to rebuild.
-			Parent.Rebuild(undoBuffer);
+			if (!Rebuilding)
+			{
+				// After all the derived children objects have completed their rebuild, tell the parent to rebuild.
+				Parent?.Rebuild(undoBuffer);
+			}
 		}
 	}
 }
