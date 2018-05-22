@@ -75,6 +75,9 @@ namespace MatterHackers.Agg.UI
 								inspectForm = null;
 							};
 							inspectForm.Show();
+
+							// Restore focus to ensure keyboard hooks in main SystemWindow work as expected
+							controlToHook.Focus();
 						}
 						return;
 				}
