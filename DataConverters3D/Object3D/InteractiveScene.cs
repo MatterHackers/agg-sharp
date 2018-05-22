@@ -48,7 +48,7 @@ namespace MatterHackers.DataConverters3D
 	public class InteractiveScene : IObject3D
 	{
 		public event EventHandler SelectionChanged;
-		public event EventHandler Invalidated;
+		public event EventHandler<InvalidateArgs> Invalidated;
 
 		private IObject3D selectedItem;
 
@@ -235,7 +235,7 @@ namespace MatterHackers.DataConverters3D
 			sourceItem.Invalidated += SourceItem_Invalidated;
 		}
 
-		private void SourceItem_Invalidated(object sender, EventArgs e)
+		private void SourceItem_Invalidated(object sender, InvalidateArgs e)
 		{
 			this.Invalidated?.Invoke(this, e);
 		}
@@ -279,9 +279,9 @@ namespace MatterHackers.DataConverters3D
 
 		public void SetMeshDirect(Mesh mesh) => sourceItem.SetMeshDirect(mesh);
 
-		public void Invalidate()
+		public void Invalidate(InvalidateArgs invalidateType)
 		{
-			this.Invalidated?.Invoke(this, null);
+			this.Invalidated?.Invoke(this, invalidateType);
 		}
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix)

@@ -47,7 +47,7 @@ namespace MatterHackers.DataConverters3D
 {
 	public class Object3D : IObject3D
 	{
-		public event EventHandler Invalidated;
+		public event EventHandler<InvalidateArgs> Invalidated;
 
 		public Object3D()
 		{
@@ -87,7 +87,7 @@ namespace MatterHackers.DataConverters3D
 						EnsureTransparentSorting();
 					}
 
-					Invalidate();
+					Invalidate(new InvalidateArgs(this, InvalidateType.Color));
 				}
 			}
 		}
@@ -152,7 +152,7 @@ namespace MatterHackers.DataConverters3D
 				if(value != _matrix)
 				{
 					_matrix = value;
-					Invalidate();
+					Invalidate(new InvalidateArgs(this, InvalidateType.Matrix));
 				}
 			}
 		}
@@ -180,7 +180,7 @@ namespace MatterHackers.DataConverters3D
 						AsyncCleanAndMerge();
 					}
 				}
-				this.OnInvalidate();
+				this.OnInvalidate(new InvalidateArgs(this, InvalidateType.Content));
 			}
 		}
 
@@ -209,7 +209,7 @@ namespace MatterHackers.DataConverters3D
 						}
 					}
 
-					this.Invalidate();
+					this.Invalidate(new InvalidateArgs(this, InvalidateType.Content));
 				});
 			}
 		}
@@ -339,19 +339,19 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		protected virtual void OnInvalidate()
+		public virtual void OnInvalidate(InvalidateArgs invalidateType)
 		{
-			Invalidated?.Invoke(this, null);
+			Invalidated?.Invoke(this, invalidateType);
 
 			if (Parent != null)
 			{
-				Parent.Invalidate();
+				Parent.Invalidate(invalidateType);
 			}
 		}
 
-		public void Invalidate()
+		public void Invalidate(InvalidateArgs invalidateType)
 		{
-			this.OnInvalidate();
+			this.OnInvalidate(invalidateType);
 		}
 
 		// Deep clone via json serialization
@@ -613,11 +613,6 @@ namespace MatterHackers.DataConverters3D
 
 		public virtual void Rebuild(UndoBuffer undoBuffer)
 		{
-			if (!Rebuilding)
-			{
-				// After all the derived children objects have completed their rebuild, tell the parent to rebuild.
-				Parent?.Rebuild(undoBuffer);
-			}
 		}
 	}
 }
