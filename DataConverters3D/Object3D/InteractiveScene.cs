@@ -267,6 +267,8 @@ namespace MatterHackers.DataConverters3D
 
 		public bool DrawSelection { get; set; } = true;
 
+		public bool Rebuilding => Children.Where((c) => c.Rebuilding).Any();
+
 		public IObject3D Clone() => sourceItem.Clone();
 
 		public string ToJson() => sourceItem.ToJson();
@@ -342,6 +344,11 @@ namespace MatterHackers.DataConverters3D
 		}
 
 		public void Remove(UndoBuffer undoBuffer)
+		{
+			throw new NotImplementedException();
+		}
+
+		public void Rebuild(UndoBuffer undoBuffer)
 		{
 			throw new NotImplementedException();
 		}

@@ -172,6 +172,8 @@ namespace MatterHackers.DataConverters3D
 
 		string Name { get; set; }
 
+		bool Rebuilding { get; }
+
 		bool Persistable { get; }
 
 		bool Visible { get; set; }
@@ -194,6 +196,12 @@ namespace MatterHackers.DataConverters3D
 		/// Mark that this object has changed (and notify its parent)
 		/// </summary>
 		void Invalidate();
+
+		/// <summary>
+		/// Request that this object be rebuilt (a child may call this if it has changed to notify thet parent)
+		/// </summary>
+		/// <param name="undoBuffer"></param>
+		void Rebuild(UndoBuffer undoBuffer);
 
 		[JsonIgnore]
 		/// <summary>

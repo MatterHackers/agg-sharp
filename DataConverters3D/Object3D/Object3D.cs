@@ -227,6 +227,25 @@ namespace MatterHackers.DataConverters3D
 		public virtual bool CanRemove => false;
 		public virtual bool CanEdit => this.HasChildren();
 
+		bool _rebuilding;
+		public virtual bool Rebuilding
+		{
+			get
+			{
+				if (_rebuilding || Children.Where((c) => c.Rebuilding).Any())
+				{
+					return true;
+				}
+
+				return false;
+			}
+
+			set
+			{
+				_rebuilding = value;
+			}
+		}
+
 		public static IObject3D Load(string meshPath, CancellationToken cancellationToken, Dictionary<string, IObject3D> itemCache = null, Action<double, string> progress = null)
 		{
 			if (string.IsNullOrEmpty(meshPath) || !File.Exists(meshPath))
@@ -590,6 +609,12 @@ namespace MatterHackers.DataConverters3D
 
 			// and replace us with the children 
 			undoBuffer.AddAndDo(new ReplaceCommand(new List<IObject3D> { this }, newChildren));
+		}
+
+		public virtual void Rebuild(UndoBuffer undoBuffer)
+		{
+			// After all the derived classes have completed their rebuild, tell the parent to rebuild.
+			Parent.Rebuild(undoBuffer);
 		}
 	}
 }
