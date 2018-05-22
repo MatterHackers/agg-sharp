@@ -58,7 +58,7 @@ namespace MatterHackers.Agg.UI
 			{
 				switch (e.KeyCode)
 				{
-					case System.Windows.Forms.Keys.F1:
+					case System.Windows.Forms.Keys.F12:
 						if (inspectForm != null)
 						{
 							// Toggle mode if window is open
@@ -75,6 +75,9 @@ namespace MatterHackers.Agg.UI
 								inspectForm = null;
 							};
 							inspectForm.Show();
+
+							// Restore focus to ensure keyboard hooks in main SystemWindow work as expected
+							controlToHook.Focus();
 						}
 						return;
 				}
