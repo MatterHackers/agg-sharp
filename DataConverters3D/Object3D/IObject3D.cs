@@ -49,6 +49,27 @@ namespace MatterHackers.DataConverters3D
 		Support
 	};
 
+	[Flags]
+	public enum InvalidateType
+	{
+		Matrix = 0x01,
+		Color = 0x02,
+		Material = 0x04,
+		Content = 0x08,
+		Redraw = 0x10,
+	};
+
+	public class InvalidateArgs : EventArgs
+	{
+		public IObject3D Source { get; }
+		public InvalidateType InvalidateType { get; }
+		public InvalidateArgs(IObject3D source, InvalidateType invalidateType)
+		{
+			this.Source = source;
+			this.InvalidateType = invalidateType;
+		}
+	}
+
 	public class MeshPrintOutputSettings
 	{
 		public int ExtruderIndex { get; set; }
@@ -142,7 +163,7 @@ namespace MatterHackers.DataConverters3D
 
 	public interface IObject3D : IAscendable<IObject3D>
 	{
-		event EventHandler Invalidated;
+		event EventHandler<InvalidateArgs> Invalidated;
 
 		string OwnerID { get; set; }
 
@@ -172,6 +193,8 @@ namespace MatterHackers.DataConverters3D
 
 		string Name { get; set; }
 
+		bool Rebuilding { get; }
+
 		bool Persistable { get; }
 
 		bool Visible { get; set; }
@@ -193,7 +216,13 @@ namespace MatterHackers.DataConverters3D
 		/// <summary>
 		/// Mark that this object has changed (and notify its parent)
 		/// </summary>
-		void Invalidate();
+		void Invalidate(InvalidateArgs invalidateType);
+
+		/// <summary>
+		/// Request that this object be rebuilt (a child may call this if it has changed to notify thet parent)
+		/// </summary>
+		/// <param name="undoBuffer"></param>
+		void Rebuild(UndoBuffer undoBuffer);
 
 		[JsonIgnore]
 		/// <summary>

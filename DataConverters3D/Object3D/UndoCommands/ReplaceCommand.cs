@@ -70,7 +70,7 @@ namespace MatterHackers.DataConverters3D.UndoCommands
 					list.Remove(child);
 				}
 				list.AddRange(addItems);
-				firstParent.Invalidate();
+				firstParent.Invalidate(new InvalidateArgs(firstParent, InvalidateType.Content));
 			});
 		}
 
@@ -84,7 +84,7 @@ namespace MatterHackers.DataConverters3D.UndoCommands
 					list.Remove(child);
 				}
 				list.AddRange(removeItems);
-				firstParent.Invalidate();
+				firstParent.Invalidate(new InvalidateArgs(firstParent, InvalidateType.Content));
 			});
 		}
 	}

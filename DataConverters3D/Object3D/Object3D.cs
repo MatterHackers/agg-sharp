@@ -47,7 +47,7 @@ namespace MatterHackers.DataConverters3D
 {
 	public class Object3D : IObject3D
 	{
-		public event EventHandler Invalidated;
+		public event EventHandler<InvalidateArgs> Invalidated;
 
 		public Object3D()
 		{
@@ -87,7 +87,7 @@ namespace MatterHackers.DataConverters3D
 						EnsureTransparentSorting();
 					}
 
-					Invalidate();
+					Invalidate(new InvalidateArgs(this, InvalidateType.Color));
 				}
 			}
 		}
@@ -152,7 +152,7 @@ namespace MatterHackers.DataConverters3D
 				if(value != _matrix)
 				{
 					_matrix = value;
-					Invalidate();
+					Invalidate(new InvalidateArgs(this, InvalidateType.Matrix));
 				}
 			}
 		}
@@ -173,6 +173,7 @@ namespace MatterHackers.DataConverters3D
 				{
 					if (_mesh != value)
 					{
+						Rebuilding = true;
 						_mesh = value;
 						traceData = null;
 						this.MeshPath = null;
@@ -180,7 +181,7 @@ namespace MatterHackers.DataConverters3D
 						AsyncCleanAndMerge();
 					}
 				}
-				this.OnInvalidate();
+				this.OnInvalidate(new InvalidateArgs(this, InvalidateType.Redraw));
 			}
 		}
 
@@ -193,6 +194,7 @@ namespace MatterHackers.DataConverters3D
 			{
 				Task.Run(() =>
 				{
+					Rebuilding = true;
 					var meshThatWasCopied = Mesh;
 					// make the copy
 					var copyMesh = Mesh.Copy(meshThatWasCopied, CancellationToken.None);
@@ -209,8 +211,16 @@ namespace MatterHackers.DataConverters3D
 						}
 					}
 
-					this.Invalidate();
+					UiThread.RunOnIdle(() =>
+					{
+						Rebuilding = false;
+						this.Invalidate(new InvalidateArgs(this, InvalidateType.Content));
+					});
 				});
+			}
+			else
+			{
+				Rebuilding = false;
 			}
 		}
 
@@ -226,6 +236,29 @@ namespace MatterHackers.DataConverters3D
 		public virtual bool CanApply => false;
 		public virtual bool CanRemove => false;
 		public virtual bool CanEdit => this.HasChildren();
+
+		bool _rebuilding;
+		[JsonIgnore]
+		public virtual bool Rebuilding
+		{
+			get
+			{
+				if (_rebuilding || Children.Where((c) => c.Rebuilding).Any())
+				{
+					return true;
+				}
+
+				return false;
+			}
+
+			set
+			{
+				if (_rebuilding != value)
+				{
+					_rebuilding = value;
+				}
+			}
+		}
 
 		public static IObject3D Load(string meshPath, CancellationToken cancellationToken, Dictionary<string, IObject3D> itemCache = null, Action<double, string> progress = null)
 		{
@@ -320,19 +353,19 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		protected virtual void OnInvalidate()
+		public virtual void OnInvalidate(InvalidateArgs invalidateType)
 		{
-			Invalidated?.Invoke(this, null);
+			Invalidated?.Invoke(this, invalidateType);
 
 			if (Parent != null)
 			{
-				Parent.Invalidate();
+				Parent.Invalidate(invalidateType);
 			}
 		}
 
-		public void Invalidate()
+		public void Invalidate(InvalidateArgs invalidateType)
 		{
-			this.OnInvalidate();
+			this.OnInvalidate(invalidateType);
 		}
 
 		// Deep clone via json serialization
@@ -590,6 +623,10 @@ namespace MatterHackers.DataConverters3D
 
 			// and replace us with the children 
 			undoBuffer.AddAndDo(new ReplaceCommand(new List<IObject3D> { this }, newChildren));
+		}
+
+		public virtual void Rebuild(UndoBuffer undoBuffer)
+		{
 		}
 	}
 }
