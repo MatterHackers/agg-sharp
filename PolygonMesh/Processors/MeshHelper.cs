@@ -30,12 +30,34 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.VectorMath;
+using MIConvexHull;
 
 namespace MatterHackers.PolygonMesh
 {
+	internal class CreatingHullFlag
+	{
+	}
+
+	internal class CHFace : ConvexFace<CHVertex, CHFace>
+	{
+	}
+
+	internal class CHVertex : MIConvexHull.IVertex
+	{
+		private double[] position;
+
+		internal CHVertex(Vector3 position)
+		{
+			this.position = position.ToArray();
+		}
+
+		public double[] Position => position;
+	}
+
 	public static class MeshHelper
 	{
 		public static Mesh CreatePlane(double xScale = 1, double yScale = 1)
@@ -95,6 +117,108 @@ namespace MatterHackers.PolygonMesh
 				faceEdge.SetUv(0, new Vector2(textureUv));
 			}
 			face.ContainingMesh.MarkAsChanged();
+		}
+
+		public static string CreatingConvexHullMesh => nameof(CreatingConvexHullMesh);
+		public static string ConvexHullMesh => nameof(ConvexHullMesh);
+
+		public static Mesh GetConvexHull(this Mesh mesh, bool generateAsync)
+		{
+			Mesh CreateHullMesh(VertexCollecton sourceVertices)
+			{
+				// Get the convex hull for the mesh
+				var cHVertexList = new List<CHVertex>();
+				foreach (var vertex in sourceVertices)
+				{
+					cHVertexList.Add(new CHVertex(vertex.Position));
+				}
+				var convexHull = ConvexHull<CHVertex, CHFace>.Create(cHVertexList, .01);
+				if (convexHull != null)
+				{
+					// create the mesh from the hull data
+					Mesh hullMesh = new Mesh();
+					foreach (var face in convexHull.Faces)
+					{
+						if(face.Vertices.Length != 3)
+						{
+							int a = 0;
+						}
+						List<IVertex> vertices = new List<IVertex>();
+						foreach (var vertex in face.Vertices)
+						{
+							if(vertex.Position.Length != 3)
+							{
+								int a = 0;
+							}
+							var meshVertex = hullMesh.CreateVertex(new Vector3(vertex.Position[0], vertex.Position[1], vertex.Position[2]));
+							vertices.Add(meshVertex);
+						}
+						hullMesh.CreateFace(vertices.ToArray());
+					}
+
+					try
+					{
+						if (mesh.PropertyBag.ContainsKey(ConvexHullMesh))
+						{
+							mesh.PropertyBag.Remove(ConvexHullMesh);
+						}
+						mesh.PropertyBag.Add(ConvexHullMesh, hullMesh);
+						mesh.PropertyBag.Remove(CreatingConvexHullMesh);
+						return hullMesh;
+					}
+					catch
+					{
+					}
+				}
+
+				return null;
+			}
+
+			var meshVertices = mesh.Vertices;
+			// build the convex hull for faster bounding calculations
+			// we have a mesh so don't recurse into children
+			object meshData;
+			mesh.PropertyBag.TryGetValue(ConvexHullMesh, out meshData);
+			if (meshData is Mesh convexHullMesh)
+			{
+				return convexHullMesh;
+			}
+			else
+			{
+				object creatingHullData;
+				mesh.PropertyBag.TryGetValue(CreatingConvexHullMesh, out creatingHullData);
+				bool currentlyCreatingHule = creatingHullData is CreatingHullFlag;
+				if (!currentlyCreatingHule)
+				{
+					// set the marker that we are creating the data
+					mesh.PropertyBag.Add(CreatingConvexHullMesh, new CreatingHullFlag());
+
+					if (generateAsync)
+					{
+						Task.Run(() =>
+						{
+							CreateHullMesh(meshVertices);
+						});
+					}
+					else
+					{
+						return CreateHullMesh(meshVertices);
+					}
+				}
+				else if(!generateAsync)
+				{
+					// we need to wait for the data to be ready and return it
+					while(currentlyCreatingHule)
+					{
+						Thread.Sleep(1);
+						mesh.PropertyBag.TryGetValue(CreatingConvexHullMesh, out creatingHullData);
+						currentlyCreatingHule = creatingHullData is CreatingHullFlag;
+						return CreateHullMesh(meshVertices);
+					}
+				}
+			}
+
+			return null;
 		}
 
 		public static void CopyFaces(this Mesh copyTo, Mesh copyFrom)

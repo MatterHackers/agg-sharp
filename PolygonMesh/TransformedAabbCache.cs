@@ -30,15 +30,12 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using MatterHackers.VectorMath;
-using MIConvexHull;
 
 namespace MatterHackers.PolygonMesh
 {
 	public class TransformedAabbCache
 	{
-		private bool calculatingHull;
 		private object locker = new object();
 		private Matrix4X4 aabbTransform { get; set; } = Matrix4X4.Identity;
 		private AxisAlignedBoundingBox cachedAabb { get; set; }
@@ -67,38 +64,10 @@ namespace MatterHackers.PolygonMesh
 
 			lock (locker)
 			{
-				// build the convex hull for faster bounding calculations
-				// we have a mesh so don't recurse into children
-				object objectData;
-				mesh.PropertyBag.TryGetValue("ConvexHullData", out objectData);
-				if (objectData is ConvexHull<CHVertex, CHFace> convexHullData)
+				var convexHull = mesh.GetConvexHull(true);
+				if(convexHull != null)
 				{
-					positions = convexHullData.Points.Select((p) => new Vector3(p.Position[0], p.Position[1], p.Position[2]));
-				}
-				else if (mesh.Vertices.Count > 1000 && !calculatingHull)
-				{
-					calculatingHull = true;
-					Task.Run(() =>
-					{
-						// Get the convex hull for the mesh
-						var cHVertexList = new List<CHVertex>();
-						foreach (var vertex in mesh.Vertices)
-						{
-							cHVertexList.Add(new CHVertex(vertex.Position));
-						}
-						var convexHull = ConvexHull<CHVertex, CHFace>.Create(cHVertexList, .01);
-						if (convexHull != null)
-						{
-							try
-							{
-								mesh.PropertyBag.Add("ConvexHullData", convexHull);
-							}
-							catch
-							{
-							}
-						}
-						calculatingHull = false;
-					});
+					positions = convexHull.Vertices.Select((v) => v.Position);
 				}
 			}
 
@@ -131,21 +100,5 @@ namespace MatterHackers.PolygonMesh
 				aabbTransform = transform;
 			}
 		}
-	}
-
-	internal class CHFace : ConvexFace<CHVertex, CHFace>
-	{
-	}
-
-	internal class CHVertex : MIConvexHull.IVertex
-	{
-		private double[] position;
-
-		internal CHVertex(Vector3 position)
-		{
-			this.position = position.ToArray();
-		}
-
-		public double[] Position => position;
 	}
 }
