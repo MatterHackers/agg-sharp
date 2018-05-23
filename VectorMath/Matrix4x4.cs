@@ -447,6 +447,13 @@ namespace MatterHackers.VectorMath
 			this = Matrix4X4.Invert(this);
 		}
 
+		public Matrix4X4 GetInverted()
+		{
+			var inverted = this;
+			inverted.Invert();
+			return inverted;
+		}
+
 		#endregion public void Invert()
 
 		#region public void Transpose()
