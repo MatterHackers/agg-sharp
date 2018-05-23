@@ -173,6 +173,7 @@ namespace MatterHackers.DataConverters3D
 				{
 					if (_mesh != value)
 					{
+						Rebuilding = true;
 						_mesh = value;
 						traceData = null;
 						this.MeshPath = null;
@@ -180,7 +181,7 @@ namespace MatterHackers.DataConverters3D
 						AsyncCleanAndMerge();
 					}
 				}
-				this.OnInvalidate(new InvalidateArgs(this, InvalidateType.Content));
+				this.OnInvalidate(new InvalidateArgs(this, InvalidateType.Redraw));
 			}
 		}
 
@@ -193,6 +194,7 @@ namespace MatterHackers.DataConverters3D
 			{
 				Task.Run(() =>
 				{
+					Rebuilding = true;
 					var meshThatWasCopied = Mesh;
 					// make the copy
 					var copyMesh = Mesh.Copy(meshThatWasCopied, CancellationToken.None);
@@ -209,8 +211,16 @@ namespace MatterHackers.DataConverters3D
 						}
 					}
 
-					this.Invalidate(new InvalidateArgs(this, InvalidateType.Content));
+					UiThread.RunOnIdle(() =>
+					{
+						Rebuilding = false;
+						this.Invalidate(new InvalidateArgs(this, InvalidateType.Content));
+					});
 				});
+			}
+			else
+			{
+				Rebuilding = false;
 			}
 		}
 
@@ -228,6 +238,7 @@ namespace MatterHackers.DataConverters3D
 		public virtual bool CanEdit => this.HasChildren();
 
 		bool _rebuilding;
+		[JsonIgnore]
 		public virtual bool Rebuilding
 		{
 			get
@@ -242,7 +253,10 @@ namespace MatterHackers.DataConverters3D
 
 			set
 			{
-				_rebuilding = value;
+				if (_rebuilding != value)
+				{
+					_rebuilding = value;
+				}
 			}
 		}
 
