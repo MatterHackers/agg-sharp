@@ -669,6 +669,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
 			OpenTK.Graphics.OpenGL.GL.GenFramebuffers(n, out frameBuffers);
 #else
+			throw new NotImplementedException();
 #endif
 		}
 
@@ -677,6 +678,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
 			OpenTK.Graphics.OpenGL.GL.GenRenderbuffers(n, out renderBuffers);
 #else
+			throw new NotImplementedException();
 #endif
 		}
 
@@ -771,6 +773,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 
 			return error;
 #else
+			throw new NotImplementedException();
 #endif
 		}
 

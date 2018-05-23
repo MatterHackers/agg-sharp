@@ -1502,6 +1502,16 @@ namespace MatterHackers.Agg.UI
 			RemoveChild(Children[index]);
 		}
 
+		public virtual void ReplaceChild(GuiWidget existing, GuiWidget replacement)
+		{
+			int pos = this.GetChildIndex(existing);
+			if (pos >= 0)
+			{
+				this.Children[pos].Close();
+				this.AddChild(replacement, pos);
+			}
+		}
+
 		private bool hasBeenRemoved = false;
 
 		public virtual void RemoveChild(GuiWidget childToRemove)
