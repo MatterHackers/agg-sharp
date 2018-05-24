@@ -139,17 +139,9 @@ namespace MatterHackers.PolygonMesh
 					Mesh hullMesh = new Mesh();
 					foreach (var face in convexHull.Faces)
 					{
-						if(face.Vertices.Length != 3)
-						{
-							int a = 0;
-						}
 						List<IVertex> vertices = new List<IVertex>();
 						foreach (var vertex in face.Vertices)
 						{
-							if(vertex.Position.Length != 3)
-							{
-								int a = 0;
-							}
 							var meshVertex = hullMesh.CreateVertex(new Vector3(vertex.Position[0], vertex.Position[1], vertex.Position[2]));
 							vertices.Add(meshVertex);
 						}

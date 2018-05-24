@@ -57,6 +57,19 @@ namespace MatterHackers.DataConverters3D
 		Material = 0x04,
 		Content = 0x08,
 		Redraw = 0x10,
+		Clean = 0x20,
+	};
+
+	[Flags]
+	public enum Object3DPropertyFlags
+	{
+		Matrix = 0x01,
+		Color = 0x02,
+		MaterialIndex = 0x04,
+		Name = 0x8,
+		OutputType = 0x10,
+		Visible = 0x20,
+		All = 0xFF,
 	};
 
 	public class InvalidateArgs : EventArgs
