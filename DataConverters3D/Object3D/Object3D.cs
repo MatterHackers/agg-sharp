@@ -214,7 +214,7 @@ namespace MatterHackers.DataConverters3D
 					UiThread.RunOnIdle(() =>
 					{
 						Rebuilding = false;
-						this.Invalidate(new InvalidateArgs(this, InvalidateType.Content));
+						this.Invalidate(new InvalidateArgs(this, InvalidateType.Clean));
 					});
 				});
 			}
