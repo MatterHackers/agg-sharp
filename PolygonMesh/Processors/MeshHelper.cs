@@ -124,6 +124,11 @@ namespace MatterHackers.PolygonMesh
 
 		public static Mesh GetConvexHull(this Mesh mesh, bool generateAsync)
 		{
+			if(mesh.Faces.Count < 4)
+			{
+				return null;
+			}
+
 			Mesh CreateHullMesh(VertexCollecton sourceVertices)
 			{
 				// Get the convex hull for the mesh
