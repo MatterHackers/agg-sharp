@@ -718,6 +718,14 @@ namespace MatterHackers.VectorMath
 		/// <returns>a when blend=0, b when blend=1, and a linear combination otherwise</returns>
 		public static Vector3 Lerp(Vector3 a, Vector3 b, double blend)
 		{
+			if(blend == 0)
+			{
+				return a;
+			}
+			if(blend == 1)
+			{
+				return b;
+			}
 			a.X = blend * (b.X - a.X) + a.X;
 			a.Y = blend * (b.Y - a.Y) + a.Y;
 			a.Z = blend * (b.Z - a.Z) + a.Z;
