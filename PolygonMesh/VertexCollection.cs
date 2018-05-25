@@ -44,13 +44,7 @@ namespace MatterHackers.PolygonMesh
 		//VertexSorterBase vertexSorter = new VertexDistanceFromPointSorter();
 		private VertexSorterBase vertexSorter = new VertexXYZAxisWithRotation();
 
-		private bool isSorted = true;
-
-		public bool IsSorted
-		{
-			get { return isSorted; }
-			set { isSorted = value; }
-		}
+		public bool IsSorted { get; set; } = true;
 
 		public VertexCollecton()
 		{
@@ -118,7 +112,7 @@ namespace MatterHackers.PolygonMesh
 			if (!IsSorted)
 			{
 				vertices.Sort(vertexSorter);
-				isSorted = true;
+				IsSorted = true;
 			}
 		}
 
@@ -143,7 +137,7 @@ namespace MatterHackers.PolygonMesh
 			if (sortOption == SortOption.WillSortLater)
 			{
 				vertices.Add(vertexToAdd);
-				isSorted = false;
+				IsSorted = false;
 			}
 			else
 			{

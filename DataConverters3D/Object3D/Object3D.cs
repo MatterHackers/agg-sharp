@@ -218,10 +218,6 @@ namespace MatterHackers.DataConverters3D
 					});
 				});
 			}
-			else
-			{
-				Rebuilding = false;
-			}
 		}
 
 		public string MeshPath { get; set; }
