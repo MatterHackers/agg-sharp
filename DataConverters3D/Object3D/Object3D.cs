@@ -612,17 +612,16 @@ namespace MatterHackers.DataConverters3D
 
 		public virtual void Remove(UndoBuffer undoBuffer)
 		{
-			List<IObject3D> newChildren = new List<IObject3D>();
-			// push our matrix into a copy of our children
-			foreach (var child in this.Children)
+			var newTree = this.Clone();
+
+			// push our matrix into a copy of our children (so they don't jump away)
+			foreach (var child in newTree.Children)
 			{
-				var newChild = child.Clone();
-				newChildren.Add(newChild);
-				newChild.Matrix *= this.Matrix;
+				child.Matrix *= this.Matrix;
 			}
 
 			// and replace us with the children 
-			undoBuffer.AddAndDo(new ReplaceCommand(new List<IObject3D> { this }, newChildren));
+			undoBuffer.AddAndDo(new ReplaceCommand(new List<IObject3D> { this }, newTree.Children.ToList()));
 		}
 
 		public virtual void Rebuild(UndoBuffer undoBuffer)
