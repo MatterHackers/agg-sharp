@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using MatterHackers.Agg;
@@ -36,6 +37,7 @@ using MatterHackers.Agg.Platform;
 
 namespace MatterHackers.Localizations
 {
+	[DebuggerStepThrough]
 	public static class TranslationMapExtensions
 	{
 		public static string Localize(this string englishString)
@@ -49,6 +51,7 @@ namespace MatterHackers.Localizations
 		}
 	}
 
+	[DebuggerStepThrough]
 	public class TranslationMap
 	{
 		protected const string engishTag = "English:";
