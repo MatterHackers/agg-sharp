@@ -63,6 +63,8 @@ namespace MatterHackers.PolygonMesh
 		{
 		}
 
+		public event EventHandler Changed;
+
 		public int ChangedCount { get; private set; } = 0;
 
 		public List<Face> Faces { get; } = new List<Face>();
@@ -291,6 +293,7 @@ namespace MatterHackers.PolygonMesh
 				transformedAabbCache.Changed();
 				cachedAABB = null;
 				ChangedCount++;
+				Changed?.Invoke(this, null);
 			}
 		}
 

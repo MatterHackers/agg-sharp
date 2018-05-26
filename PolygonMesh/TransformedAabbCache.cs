@@ -44,8 +44,8 @@ namespace MatterHackers.PolygonMesh
 		{
 			lock (locker)
 			{
-				aabbTransform = Matrix4X4.Identity;
-				var current = aabbTransform;
+				// set the aabbTransform to a bad value so we detect in needs to be recreated
+				var current = Matrix4X4.Identity;
 				current[0, 0] = double.MinValue;
 				aabbTransform = current;
 			}
