@@ -42,7 +42,7 @@ namespace MatterHackers.Agg.UI
 
 		internal RemoveGlDataCallBackHolder releaseAllGlData = new RemoveGlDataCallBackHolder();
 
-		// If you have an error here it is likely that you need to bulid your project with Platform Target x86.
+		// If you have an error here it is likely that you need to build your project with Platform Target x86.
 		public AggGLControl(int bitDepth, int stencilDepth)
 			: base(new OpenTK.Graphics.GraphicsMode(32, 24, 0, 8))
 		{

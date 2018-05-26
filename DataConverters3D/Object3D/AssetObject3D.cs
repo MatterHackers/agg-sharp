@@ -31,6 +31,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using MatterHackers.Agg.Platform;
 using MatterHackers.PolygonMesh.Processors;
 
 namespace MatterHackers.DataConverters3D
@@ -73,6 +74,23 @@ namespace MatterHackers.DataConverters3D
 		/// <param name="object3D">The source MCX file</param>
 		/// <returns></returns>
 		Task<string> StoreMcx(IObject3D object3D, bool publishAfterSave);
+	}
+
+	public static class StaticDataExtensions
+	{
+		/// <summary>
+		/// Dynamically computes the SHA1 for the content, storing to Assets if needed and returning the given AssetPath
+		/// </summary>
+		/// <param name="staticData">The StaticData instance to act on</param>
+		/// <param name="relativePath">The relative path of the Asset content</param>
+		/// <returns></returns>
+		public static string ToAssetPath(this IStaticData staticData, string relativePath)
+		{
+			using (var sourceStream = AggContext.StaticData.OpenStream(relativePath))
+			{
+				return AssetObject3D.AssetManager.StoreStream(sourceStream, Path.GetExtension(relativePath));
+			}
+		}
 	}
 
 	public class AssetObject3D : Object3D, IAssetObject
