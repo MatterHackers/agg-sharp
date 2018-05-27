@@ -181,7 +181,7 @@ namespace MatterHackers.DataConverters3D
 						AsyncCleanAndMerge();
 					}
 				}
-				this.OnInvalidate(new InvalidateArgs(this, InvalidateType.Redraw));
+				this.OnInvalidate(new InvalidateArgs(this, InvalidateType.Mesh));
 			}
 		}
 
