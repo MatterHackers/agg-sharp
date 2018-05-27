@@ -56,8 +56,8 @@ namespace MatterHackers.DataConverters3D
 		Color = 0x02,
 		Material = 0x04,
 		Content = 0x08,
-		Redraw = 0x10,
 		Clean = 0x20,
+		Mesh = 0x40,
 	};
 
 	[Flags]

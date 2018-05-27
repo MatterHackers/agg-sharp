@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.VectorMath;
@@ -129,6 +130,33 @@ namespace MatterHackers.PolygonMesh
 			foreach (FaceEdge faceEdge in face.FaceEdges())
 			{
 				face.ContainingMesh.TextureUV.Remove((faceEdge, index));
+			}
+		}
+
+		/// <summary>
+		/// Get the planes for all the faces in a mesh. You can use the Normal on the face
+		/// and the distanceFromOrigin to have the plane of the face.
+		/// </summary>
+		/// <param name="mesh"></param>
+		/// <returns></returns>
+		public static IEnumerable<(Face face, double distanceFromOrigin)> FacePlanes(this Mesh mesh)
+		{
+			foreach(var face in mesh.Faces)
+			{
+				yield return (face, Vector3.Dot(face.Normal, face.firstFaceEdge.FirstVertex.Position));
+			}
+		}
+
+		public static IEnumerable<(Face face, double distanceFromOrign)> GetPlanerFaces(this Mesh mesh, Vector3 normal, double distanceFromOrigin, double normalTolerance = 0, double distanceTolerance = 0)
+		{
+			var normalToleranceSquared = normalTolerance * normalTolerance;
+			foreach (var facePlane in mesh.FacePlanes())
+			{
+				if (Math.Abs(facePlane.distanceFromOrigin - distanceFromOrigin) <= distanceTolerance
+					&& (facePlane.face.Normal - normal).LengthSquared <= normalToleranceSquared)
+				{
+					yield return facePlane;
+				}
 			}
 		}
 
