@@ -51,11 +51,11 @@ namespace MatterHackers.DataConverters3D
 		{
 			VertexSourceToTesselator.SendShapeToTesselator(teselatedSource, vertexSource);
 
-			Mesh extrudedVertexSource = new Mesh();
+			Mesh teselatedMesh = new Mesh();
 
 			int numIndicies = teselatedSource.IndicesCache.Count;
 
-			// build the top first so it will render first when we are translucent
+			// turn the teselation output into mesh faces
 			for (int i = 0; i < numIndicies; i += 3)
 			{
 				Vector2 v0 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 0].Index].Position;
@@ -66,17 +66,15 @@ namespace MatterHackers.DataConverters3D
 					continue;
 				}
 
-				IVertex topVertex0 = extrudedVertexSource.CreateVertex(new Vector3(v0, 0));
-				IVertex topVertex1 = extrudedVertexSource.CreateVertex(new Vector3(v1, 0));
-				IVertex topVertex2 = extrudedVertexSource.CreateVertex(new Vector3(v2, 0));
+				IVertex topVertex0 = teselatedMesh.CreateVertex(new Vector3(v0, 0));
+				IVertex topVertex1 = teselatedMesh.CreateVertex(new Vector3(v1, 0));
+				IVertex topVertex2 = teselatedMesh.CreateVertex(new Vector3(v2, 0));
 
-				extrudedVertexSource.CreateFace(new IVertex[] { topVertex0, topVertex1, topVertex2 });
+				teselatedMesh.CreateFace(new IVertex[] { topVertex0, topVertex1, topVertex2 });
 			}
 
-			return extrudedVertexSource;
+			return teselatedMesh;
 		}
-
-		private readonly static double EqualityTolerance = 1e-5f;
 
 		public static Mesh Revolve(IVertexSource source, int angleSteps = 30, double angleStart = 0, double angleEnd = MathHelper.Tau)
 		{
