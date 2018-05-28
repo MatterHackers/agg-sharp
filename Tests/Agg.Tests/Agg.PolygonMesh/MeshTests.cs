@@ -482,7 +482,10 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				Assert.IsTrue(rightVertex.FirstMeshEdge == edgeToSplit, "First edge of right vertex is the edge.");
 				MeshEdge edgeCreatedDuringSplit;
 				IVertex vertexCreatedDuringSplit;
+
+				Assert.AreEqual(1, testMesh.MeshEdges.Count);
 				testMesh.SplitMeshEdge(edgeToSplit, out vertexCreatedDuringSplit, out edgeCreatedDuringSplit);
+				Assert.AreEqual(2, testMesh.MeshEdges.Count);
 
 				Assert.IsTrue(edgeToSplit.VertexOnEnd[1] == vertexCreatedDuringSplit);
 				Assert.IsTrue(edgeToSplit.NextMeshEdgeFromEnd[0] == edgeToSplit);
@@ -494,7 +497,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				Assert.IsTrue(edgeCreatedDuringSplit.NextMeshEdgeFromEnd[0] == edgeToSplit, "The next edge is the one we created.");
 				Assert.IsTrue(edgeCreatedDuringSplit.NextMeshEdgeFromEnd[1] == edgeCreatedDuringSplit, "The other side is connected to itself.");
 
+				Assert.AreEqual(2, testMesh.MeshEdges.Count);
 				testMesh.UnsplitMeshEdge(edgeToSplit, vertexCreatedDuringSplit);
+				Assert.AreEqual(1, testMesh.MeshEdges.Count);
 				Assert.IsTrue(edgeCreatedDuringSplit.VertexOnEnd[0] == null && edgeCreatedDuringSplit.VertexOnEnd[1] == null, "The edgeCreatedDuringSplit is no longer connected to Vertices.");
 				Assert.IsTrue(edgeToSplit.VertexOnEnd[0] == leftVertex, "The unsplit edge is connected back the way it was.");
 				Assert.IsTrue(edgeToSplit.VertexOnEnd[1] == rightVertex, "The unsplit edge is connected back the way it was.");
