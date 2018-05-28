@@ -947,6 +947,8 @@ namespace MatterHackers.PolygonMesh
 					faceEdge.nextFaceEdge = newFaceEdge;
 				}
 			}
+
+			MeshEdges.Add(meshEdgeCreatedDuringSplit);
 		}
 
 		/// <summary>
@@ -1026,6 +1028,8 @@ namespace MatterHackers.PolygonMesh
 			edgeToDelete.NextMeshEdgeFromEnd[0] = null;
 			edgeToDelete.VertexOnEnd[1] = null;
 			edgeToDelete.NextMeshEdgeFromEnd[1] = null;
+
+			MeshEdges.Remove(edgeToDelete);
 		}
 
 		private void RemoveMeshEdgesMarkedForDeletion(HashSet<MeshEdge> markedForDeletion)
