@@ -267,7 +267,7 @@ namespace MatterHackers.DataConverters3D
 
 		public bool DrawSelection { get; set; } = true;
 
-		public bool Rebuilding => Children.Where((c) => c.Rebuilding).Any();
+		public bool RebuildSuspended => throw new NotImplementedException();
 
 		public IObject3D Clone() => sourceItem.Clone();
 
@@ -349,6 +349,16 @@ namespace MatterHackers.DataConverters3D
 		}
 
 		public void Rebuild(UndoBuffer undoBuffer)
+		{
+			throw new NotImplementedException();
+		}
+
+		public void SuspendRebuild()
+		{
+			throw new NotImplementedException();
+		}
+
+		public void ResumeRebuild()
 		{
 			throw new NotImplementedException();
 		}

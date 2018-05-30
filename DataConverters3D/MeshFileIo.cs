@@ -133,13 +133,13 @@ namespace MatterHackers.DataConverters3D
 
 		public static Mesh DoMergeAndTransform(IObject3D item, MeshOutputSettings outputInfo, CancellationToken cancellationToken)
 		{
-			var visibleMeshes = item.VisibleMeshes().Where((i) => i.object3D.WorldPersistable());
+			var visibleMeshes = item.VisibleMeshes().Where((i) => i.WorldPersistable());
 			if (visibleMeshes.Count() == 1)
 			{
 				var first = visibleMeshes.First();
-				if(first.object3D.WorldMatrix() == Matrix4X4.Identity)
+				if(first.WorldMatrix() == Matrix4X4.Identity)
 				{
-					return first.mesh;
+					return first.Mesh;
 				}
 			}
 
@@ -147,8 +147,8 @@ namespace MatterHackers.DataConverters3D
 
 			foreach (var rawItem in visibleMeshes)
 			{
-				var mesh = Mesh.Copy(rawItem.mesh, cancellationToken);
-				mesh.Transform(rawItem.object3D.WorldMatrix());
+				var mesh = Mesh.Copy(rawItem.Mesh, cancellationToken);
+				mesh.Transform(rawItem.WorldMatrix());
 				if (outputInfo.CsgOptionState == MeshOutputSettings.CsgOption.DoCsgMerge)
 				{
 					allPolygons = CsgOperations.Union(allPolygons, mesh, null, cancellationToken);

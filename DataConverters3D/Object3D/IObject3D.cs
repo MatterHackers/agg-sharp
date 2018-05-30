@@ -56,7 +56,6 @@ namespace MatterHackers.DataConverters3D
 		Color = 0x02,
 		Material = 0x04,
 		Content = 0x08,
-		Clean = 0x20,
 		Mesh = 0x40,
 	};
 
@@ -130,14 +129,12 @@ namespace MatterHackers.DataConverters3D
 		}
 
 		/// <summary>
-		/// Enumerator to get the currently visible set of meshes for rendering.
+		/// Enumerator to get the currently visible object that has a meshe for rendering.
 		/// The returned set may include placeholder or proxy data while
 		/// long operations are happening such as loading or mesh processing.
 		/// </summary>
-		/// <param name="transform">The final transform to apply to the returned 
-		/// transforms as the tree is descended. Often passed as Matrix4X4.Identity.</param>
 		/// <returns></returns>
-		public static IEnumerable<(IObject3D object3D, Mesh mesh)> VisibleMeshes(this IObject3D root)
+		public static IEnumerable<IObject3D> VisibleMeshes(this IObject3D root)
 		{
 			if (root.Visible)
 			{
@@ -151,7 +148,7 @@ namespace MatterHackers.DataConverters3D
 					if (mesh != null)
 					{
 						// there is a mesh return the object
-						yield return (item, mesh);
+						yield return item;
 					}
 					else // there is no mesh go into the object and iterate its children
 					{
@@ -206,7 +203,9 @@ namespace MatterHackers.DataConverters3D
 
 		string Name { get; set; }
 
-		bool Rebuilding { get; }
+		void SuspendRebuild();
+		bool RebuildSuspended { get; }
+		void ResumeRebuild();
 
 		bool Persistable { get; }
 

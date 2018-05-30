@@ -119,11 +119,11 @@ namespace MatterHackers.RayTracer
 				Graphics2D partGraphics2D = tempImage.NewGraphics2D();
 				partGraphics2D.Clear(new Color());
 
-				AxisAlignedBoundingBox aabb = visibleMeshes[0].mesh.GetAxisAlignedBoundingBox(visibleMeshes[0].object3D.WorldMatrix());
+				AxisAlignedBoundingBox aabb = visibleMeshes[0].Mesh.GetAxisAlignedBoundingBox(visibleMeshes[0].WorldMatrix());
 
 				for (int i = 1; i < visibleMeshes.Count; i++)
 				{
-					aabb = AxisAlignedBoundingBox.Union(aabb, visibleMeshes[i].mesh.GetAxisAlignedBoundingBox(visibleMeshes[i].object3D.WorldMatrix()));
+					aabb = AxisAlignedBoundingBox.Union(aabb, visibleMeshes[i].Mesh.GetAxisAlignedBoundingBox(visibleMeshes[i].WorldMatrix()));
 				}
 
 				double maxSize = Math.Max(aabb.XSize, aabb.YSize);
@@ -134,20 +134,20 @@ namespace MatterHackers.RayTracer
 				{
 					PolygonMesh.Rendering.OrthographicZProjection.DrawTo(
 						partGraphics2D,
-						meshGroup.mesh,
-						meshGroup.object3D.WorldMatrix(),
+						meshGroup.Mesh,
+						meshGroup.WorldMatrix(),
 						new Vector2(
 							(width / scale - bounds2D.Width) / 2 - bounds2D.Left,
 							(height / scale - bounds2D.Height) / 2 - bounds2D.Bottom),
 						scale,
-						meshGroup.object3D.WorldColor());
+						meshGroup.WorldColor());
 				}
 
 				if (debugNonManifoldEdges)
 				{
 					foreach (var loadedMesh in visibleMeshes)
 					{
-						List<MeshEdge> nonManifoldEdges = loadedMesh.mesh.GetNonManifoldEdges();
+						List<MeshEdge> nonManifoldEdges = loadedMesh.Mesh.GetNonManifoldEdges();
 						if (nonManifoldEdges.Count > 0)
 						{
 							partGraphics2D.Circle(width / 4, width / 4, width / 8, Color.Red);
