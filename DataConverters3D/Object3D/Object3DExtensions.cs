@@ -56,6 +56,17 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
+		public static int Depth(this IObject3D item)
+		{
+			return item.Parents<IObject3D>().Count();
+		}
+
+		[System.Diagnostics.Conditional("DEBUG")]
+		public static void DebugDepth(this IObject3D item, string extra = "")
+		{
+			Debug.WriteLine(new String(' ', item.Depth()) + $"({item.Depth()}) {item.GetType().Name} " + extra);
+		}
+
 		private static void LoadLinkedMesh(this IObject3D item, Dictionary<string, IObject3D> itemCache, CancellationToken cancellationToken, Action<double, string> progress)
 		{
 			// Natural path

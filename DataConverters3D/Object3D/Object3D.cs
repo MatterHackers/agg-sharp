@@ -173,20 +173,37 @@ namespace MatterHackers.DataConverters3D
 				{
 					if (_mesh != value)
 					{
-						Rebuilding = true;
 						_mesh = value;
 						traceData = null;
 						this.MeshPath = null;
 
-						AsyncCleanAndMerge();
+						Invalidate(new InvalidateArgs(this, InvalidateType.Mesh));
+
+						//AsyncCleanAndMerge();
 					}
 				}
-				this.OnInvalidate(new InvalidateArgs(this, InvalidateType.Mesh));
+			}
+		}
+
+		public bool RebuildSuspended
+		{
+			get
+			{
+				return this.DescendantsAndSelf().Where((i) =>
+				{
+					if(i is Object3D object3D)
+					{
+						return object3D.RebuildSuspendCount > 0;
+					}
+					return false;
+				}).Any();
 			}
 		}
 
 		private void AsyncCleanAndMerge()
 		{
+			SuspendRebuild();
+
 			// keep track of the mesh we are copying
 			if (Mesh != null
 				&& Mesh.Vertices != null
@@ -194,7 +211,6 @@ namespace MatterHackers.DataConverters3D
 			{
 				Task.Run(() =>
 				{
-					Rebuilding = true;
 					var meshThatWasCopied = Mesh;
 					// make the copy
 					var copyMesh = Mesh.Copy(meshThatWasCopied, CancellationToken.None);
@@ -213,14 +229,15 @@ namespace MatterHackers.DataConverters3D
 
 					UiThread.RunOnIdle(() =>
 					{
-						Rebuilding = false;
-						this.Invalidate(new InvalidateArgs(this, InvalidateType.Clean));
+						ResumeRebuild();
+						this.Invalidate(new InvalidateArgs(this, InvalidateType.Mesh));
 					});
 				});
 			}
-			else
+			else // the mesh changed but we didn't need to do any work to it
 			{
-				Rebuilding = false;
+				ResumeRebuild();
+				this.Invalidate(new InvalidateArgs(this, InvalidateType.Mesh));
 			}
 		}
 
@@ -237,26 +254,26 @@ namespace MatterHackers.DataConverters3D
 		public virtual bool CanRemove => false;
 		public virtual bool CanEdit => this.HasChildren();
 
-		bool _rebuilding;
 		[JsonIgnore]
-		public virtual bool Rebuilding
+		protected int RebuildSuspendCount { get; set; }
+
+		public void SuspendRebuild()
 		{
-			get
+			this.DebugDepth($"Suspend {RebuildSuspendCount}");
+			RebuildSuspendCount++;
+			if (RebuildSuspendCount > 1000)
 			{
-				if (_rebuilding || Children.Where((c) => c.Rebuilding).Any())
-				{
-					return true;
-				}
-
-				return false;
+				throw new Exception("Looks like you don't have a matching Resume.");
 			}
+		}
 
-			set
+		public void ResumeRebuild()
+		{
+			RebuildSuspendCount--;
+			this.DebugDepth($"Resume {RebuildSuspendCount}");
+			if (RebuildSuspendCount < 0)
 			{
-				if (_rebuilding != value)
-				{
-					_rebuilding = value;
-				}
+				throw new Exception("Resume called without a matching Suspend");
 			}
 		}
 
@@ -348,7 +365,7 @@ namespace MatterHackers.DataConverters3D
 				if (_mesh != mesh)
 				{
 					_mesh = mesh;
-					AsyncCleanAndMerge();
+					//AsyncCleanAndMerge();
 				}
 			}
 		}
@@ -365,7 +382,10 @@ namespace MatterHackers.DataConverters3D
 
 		public void Invalidate(InvalidateArgs invalidateType)
 		{
-			this.OnInvalidate(invalidateType);
+			if (!RebuildSuspended)
+			{
+				this.OnInvalidate(invalidateType);
+			}
 		}
 
 		// Deep clone via json serialization
@@ -399,6 +419,7 @@ namespace MatterHackers.DataConverters3D
 			// Copy mesh instances to cloned tree
 			foreach(var descendant in clonedItem.DescendantsAndSelf())
 			{
+				descendant.SuspendRebuild();
 				descendant.SetMeshDirect(allItemsByID[descendant.ID].Mesh);
 
 				// store the original id
@@ -410,6 +431,7 @@ namespace MatterHackers.DataConverters3D
 				{
 					child.OwnerID = descendant.ID;
 				}
+				descendant.ResumeRebuild();
 			}
 
 			// restore the parent
@@ -645,6 +667,7 @@ namespace MatterHackers.DataConverters3D
 
 		public virtual void Rebuild(UndoBuffer undoBuffer)
 		{
+			this.DebugDepth("Rebuild");
 		}
 	}
 }
