@@ -238,7 +238,7 @@ namespace MatterHackers.MeshVisualizer
 					renderType = value;
 					foreach(var renderTransfrom in Scene.VisibleMeshes())
 					{
-						renderTransfrom.mesh.MarkAsChanged();
+						renderTransfrom.Mesh.MarkAsChanged();
 					}
 				}
 			}
@@ -789,7 +789,7 @@ namespace MatterHackers.MeshVisualizer
 				bool isSelected = parentSelected ||
 					Scene.HasSelection && (object3D == Scene.SelectedItem || Scene.SelectedItem.Children.Contains(object3D));
 
-				GLHelper.Render(item.mesh, item.object3D.WorldColor(), item.object3D.WorldMatrix(), RenderType);
+				GLHelper.Render(item.Mesh, item.WorldColor(), item.WorldMatrix(), RenderType);
 			}
 		}
 
