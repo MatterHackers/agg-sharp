@@ -619,6 +619,8 @@ namespace MatterHackers.DataConverters3D
 
 		public virtual void Apply(UndoBuffer undoBuffer)
 		{
+			SuspendRebuild();
+
 			List<IObject3D> newChildren = new List<IObject3D>();
 			// push our matrix into a copy of our children
 			foreach (var child in this.Children)
@@ -630,20 +632,30 @@ namespace MatterHackers.DataConverters3D
 
 			// and replace us with the children 
 			undoBuffer.AddAndDo(new ReplaceCommand(new List<IObject3D> { this }, newChildren));
+
+			ResumeRebuild();
+
+			Invalidate(new InvalidateArgs(this, InvalidateType.Content));
 		}
 
 		public virtual void Remove(UndoBuffer undoBuffer)
 		{
+			SuspendRebuild();
+
 			if (undoBuffer != null)
 			{
 				var newTree = this.Clone();
+				newTree.SuspendRebuild();
 
 				// push our matrix into a copy of our children (so they don't jump away)
 				foreach (var child in newTree.Children)
 				{
+					//child.SuspendRebuild();
 					child.Matrix *= this.Matrix;
+					//child.ResumeRebuild();
 				}
 
+				newTree.ResumeRebuild();
 				// and replace us with the children 
 				undoBuffer.AddAndDo(new ReplaceCommand(new List<IObject3D> { this }, newTree.Children.ToList()));
 			}
@@ -663,6 +675,10 @@ namespace MatterHackers.DataConverters3D
 					parent.Invalidate(new InvalidateArgs(parent, InvalidateType.Content));
 				});
 			}
+
+			ResumeRebuild();
+
+			Invalidate(new InvalidateArgs(this, InvalidateType.Content));
 		}
 
 		public virtual void Rebuild(UndoBuffer undoBuffer)
