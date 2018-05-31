@@ -284,7 +284,9 @@ namespace MatterHackers.Agg.UI
 						}
 						index++;
 					}
-					selectedIndex = 0;
+
+					// If no match is found, mark as such
+					selectedIndex = -1;
 				}
 			}
 		}
