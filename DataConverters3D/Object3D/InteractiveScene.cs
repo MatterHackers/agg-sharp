@@ -179,7 +179,7 @@ namespace MatterHackers.DataConverters3D
 
 			if (this.HasSelection)
 			{
-				if(SelectedItem is SelectionGroup)
+				if (SelectedItem is SelectionGroup)
 				{
 					// Remove from the scene root
 					this.Children.Modify(list => list.Remove(itemToAdd));
@@ -267,7 +267,7 @@ namespace MatterHackers.DataConverters3D
 
 		public bool DrawSelection { get; set; } = true;
 
-		public bool RebuildSuspended => throw new NotImplementedException();
+		public bool RebuildSuspended => false;
 
 		public IObject3D Clone() => sourceItem.Clone();
 
