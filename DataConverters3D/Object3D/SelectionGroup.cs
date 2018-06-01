@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System.Collections.Generic;
 using MatterHackers.DataConverters3D;
 
 namespace MatterHackers.DataConverters3D
@@ -36,6 +37,11 @@ namespace MatterHackers.DataConverters3D
 		public override bool CanEdit => false;
 
 		public SelectionGroup()
+		{
+		}
+
+		public SelectionGroup(IEnumerable<IObject3D> children)
+			: base (children)
 		{
 		}
 	}

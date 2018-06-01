@@ -192,16 +192,10 @@ namespace MatterHackers.DataConverters3D
 					// We're adding a new item to the selection. To do so we wrap the selected item
 					// in a new group and with the new item. The selection will continue to grow in this
 					// way until it's applied, due to a loss of focus or until a group operation occurs
-					var newSelectionGroup = new SelectionGroup()
+					var newSelectionGroup = new SelectionGroup(new[] { SelectedItem, itemToAdd })
 					{
 						Name = "Selection".Localize()
 					};
-
-					newSelectionGroup.Children.Modify(list =>
-					{
-						list.Add(SelectedItem);
-						list.Add(itemToAdd);
-					});
 
 					this.Children.Modify(list =>
 					{
