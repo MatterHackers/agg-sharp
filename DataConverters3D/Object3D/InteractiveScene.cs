@@ -143,7 +143,7 @@ namespace MatterHackers.DataConverters3D
 		}
 
 		[JsonIgnore]
-		// TODO: Remove from InteractiveScene - coordinate debug details between MeshViewer and Inspector directly 
+		// TODO: Remove from InteractiveScene - coordinate debug details between MeshViewer and Inspector directly
 		public IObject3D DebugItem { get; set; }
 
 		public void SelectLastChild()
@@ -172,23 +172,33 @@ namespace MatterHackers.DataConverters3D
 
 		public void SetSelection(IEnumerable<IObject3D> items)
 		{
-			var newSelectionGroup = new SelectionGroup(items)
+			if (items.Count() == 1)
 			{
-				Name = "Selection".Localize()
-			};
-
-			this.Children.Modify(list =>
+				// Add a single item directly as the SelectedItem
+				SelectedItem = items.First();
+			}
+			else
 			{
-				foreach(var item in items)
+				// Add a range of items wrapped with a new SelectionGroup
+				var SelectionGroup = new SelectionGroup(items)
 				{
-					list.Remove(item);
-				}
+					Name = "Selection".Localize()
+				};
 
-				// add the seletionGroup as the first item so we can hit it first
-				list.Insert(0, newSelectionGroup);
-			});
+				// Move selected items into a new SelectionGroup
+				this.Children.Modify(list =>
+				{
+					foreach (var item in items)
+					{
+						list.Remove(item);
+					}
 
-			SelectedItem = newSelectionGroup;
+					// Add the SeletionGroup as the first child
+					list.Insert(0, SelectionGroup);
+				});
+
+				SelectedItem = SelectionGroup;
+			}
 		}
 
 		public void AddToSelection(IObject3D itemToAdd)
@@ -305,7 +315,7 @@ namespace MatterHackers.DataConverters3D
 		}
 
 		/// <summary>
-		/// Wrap the current selection with the object passed, 
+		/// Wrap the current selection with the object passed,
 		/// then add the object to the scene,
 		/// then select the newly added object
 		/// </summary>
