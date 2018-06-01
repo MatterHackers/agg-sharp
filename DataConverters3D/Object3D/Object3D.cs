@@ -50,6 +50,11 @@ namespace MatterHackers.DataConverters3D
 		public event EventHandler<InvalidateArgs> Invalidated;
 
 		public Object3D()
+			: this (null)
+		{
+		}
+
+		public Object3D(IEnumerable<IObject3D> children)
 		{
 			var type = this.GetType();
 			if (type != typeof(Object3D)
@@ -58,7 +63,14 @@ namespace MatterHackers.DataConverters3D
 				this.TypeName = type.Name;
 			}
 
-			Children = new SafeList<IObject3D>(this);
+			if (children != null)
+			{
+				Children = new SafeList<IObject3D>(children, this);
+			}
+			else
+			{
+				Children = new SafeList<IObject3D>(this);
+			}
 		}
 
 		public static string AssetsPath { get; set; }

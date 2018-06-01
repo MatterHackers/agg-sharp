@@ -170,6 +170,27 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
+		public void SetSelection(IEnumerable<IObject3D> items)
+		{
+			var newSelectionGroup = new SelectionGroup(items)
+			{
+				Name = "Selection".Localize()
+			};
+
+			this.Children.Modify(list =>
+			{
+				foreach(var item in items)
+				{
+					list.Remove(item);
+				}
+
+				// add the seletionGroup as the first item so we can hit it first
+				list.Insert(0, newSelectionGroup);
+			});
+
+			SelectedItem = newSelectionGroup;
+		}
+
 		public void AddToSelection(IObject3D itemToAdd)
 		{
 			if (itemToAdd == SelectedItem || SelectedItem?.Children?.Contains(itemToAdd) == true)
@@ -192,16 +213,10 @@ namespace MatterHackers.DataConverters3D
 					// We're adding a new item to the selection. To do so we wrap the selected item
 					// in a new group and with the new item. The selection will continue to grow in this
 					// way until it's applied, due to a loss of focus or until a group operation occurs
-					var newSelectionGroup = new SelectionGroup()
+					var newSelectionGroup = new SelectionGroup(new[] { SelectedItem, itemToAdd })
 					{
 						Name = "Selection".Localize()
 					};
-
-					newSelectionGroup.Children.Modify(list =>
-					{
-						list.Add(SelectedItem);
-						list.Add(itemToAdd);
-					});
 
 					this.Children.Modify(list =>
 					{
