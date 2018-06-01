@@ -170,6 +170,27 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
+		public void SetSelection(IEnumerable<IObject3D> items)
+		{
+			var newSelectionGroup = new SelectionGroup(items)
+			{
+				Name = "Selection".Localize()
+			};
+
+			this.Children.Modify(list =>
+			{
+				foreach(var item in items)
+				{
+					list.Remove(item);
+				}
+
+				// add the seletionGroup as the first item so we can hit it first
+				list.Insert(0, newSelectionGroup);
+			});
+
+			SelectedItem = newSelectionGroup;
+		}
+
 		public void AddToSelection(IObject3D itemToAdd)
 		{
 			if (itemToAdd == SelectedItem || SelectedItem?.Children?.Contains(itemToAdd) == true)
