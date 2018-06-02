@@ -94,6 +94,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Object3D\AssetObject3D.cs" />
+    <Compile Include="Object3D\ChildrenSelector.cs" />
     <Compile Include="Object3D\SelectionGroup.cs" />
     <Compile Include="Object3D\SafeList.cs" />
     <Compile Include="Object3D\UndoCommands\ReplaceCommand.cs" />
