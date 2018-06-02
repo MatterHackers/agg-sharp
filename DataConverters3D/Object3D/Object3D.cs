@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -139,8 +140,7 @@ namespace MatterHackers.DataConverters3D
 					// prevent recursion errors by holding a local pointer
 					var localMesh = Mesh;
 					_outputType = value;
-					if ((_outputType == PrintOutputTypes.Support
-						|| _outputType == PrintOutputTypes.Hole)
+					if (_outputType == PrintOutputTypes.Support
 						&& localMesh != null
 						&& localMesh.FaceBspTree == null
 						&& localMesh.Faces.Count < 2000)
@@ -399,6 +399,17 @@ namespace MatterHackers.DataConverters3D
 				this.OnInvalidate(invalidateType);
 			}
 		}
+		public const BindingFlags OwnedPropertiesOnly = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+
+		public static IEnumerable<PropertyInfo> GetIDPropreties(IObject3D item)
+		{
+			return item.GetType().GetProperties(OwnedPropertiesOnly)
+				.Where((pi) =>
+				{
+					var classHasAttribute = pi.PropertyType.GetCustomAttributes(typeof(ObjectIdListAttribute), true).FirstOrDefault() as ObjectIdListAttribute;
+					return classHasAttribute != null;
+				});
+		}
 
 		// Deep clone via json serialization
 		public IObject3D Clone()
@@ -428,6 +439,7 @@ namespace MatterHackers.DataConverters3D
 				clonedItem = roundTripped.Children.First();
 			}
 
+			Dictionary<string, string> idRemaping = new Dictionary<string, string>();
 			// Copy mesh instances to cloned tree
 			foreach(var descendant in clonedItem.DescendantsAndSelf())
 			{
@@ -443,6 +455,45 @@ namespace MatterHackers.DataConverters3D
 				{
 					child.OwnerID = descendant.ID;
 				}
+
+				idRemaping.Add(originalId, descendant.ID);
+
+				descendant.ResumeRebuild();
+			}
+
+			// Clean up any child references in the objects
+			foreach (var descendant in clonedItem.DescendantsAndSelf())
+			{
+				descendant.SuspendRebuild();
+
+				// find all ObjecIdListAttributes and update them
+				foreach (var property in GetIDPropreties(descendant))
+				{
+					var newData = new ChildrenSelector();
+					bool updatedData = false;
+
+					// sync ids
+					foreach (var id in (ChildrenSelector)property.GetGetMethod().Invoke(descendant, null))
+					{
+						// update old id to new id
+						if (idRemaping.ContainsKey(id))
+						{
+							newData.Add(idRemaping[id]);
+							updatedData = true;
+						}
+						else
+						{
+							// this really should never happen
+							newData.Add(id);
+						}
+					}
+
+					if (updatedData)
+					{
+						property.GetSetMethod().Invoke(descendant, new[] { newData });
+					}
+				}
+
 				descendant.ResumeRebuild();
 			}
 

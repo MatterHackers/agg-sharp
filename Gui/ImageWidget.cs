@@ -71,15 +71,19 @@ namespace MatterHackers.Agg.UI
 			get  => image;
 			set
 			{
-				if(image != null)
+				if (image != value)
 				{
-					image.ImageChanged -= ImageChanged;
-				}
-				image = value;
-				image.ImageChanged += ImageChanged;
-				if (AutoResize)
-				{
-					LocalBounds = new RectangleDouble(0, 0, image.Width, image.Height);
+					if (image != null)
+					{
+						image.ImageChanged -= ImageChanged;
+					}
+					image = value;
+					image.ImageChanged += ImageChanged;
+					if (AutoResize)
+					{
+						LocalBounds = new RectangleDouble(0, 0, image.Width, image.Height);
+					}
+					Invalidate();
 				}
 			}
 		}
