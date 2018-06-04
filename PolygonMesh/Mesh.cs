@@ -465,6 +465,8 @@ namespace MatterHackers.PolygonMesh
 			{
 				ReverseFaceEdges(face);
 			}
+
+			MarkAsChanged();
 		}
 
 		public void ReverseFaceEdges(Face faceToReverse)
@@ -481,8 +483,6 @@ namespace MatterHackers.PolygonMesh
 				current.nextFaceEdge = temp;
 				current = current.prevFaceEdge; // go to the next
 			} while (current != faceToReverse.firstFaceEdge);
-
-			faceToReverse.CalculateNormal();
 		}
 
 		public void SplitFace(Face faceToSplit, IVertex splitStartVertex, IVertex splitEndVertex, out MeshEdge meshEdgeCreatedDuringSplit, out Face faceCreatedDuringSplit)
