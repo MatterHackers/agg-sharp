@@ -100,5 +100,17 @@ namespace MatterHackers.DataConverters3D
 		public IEnumerator<T> GetEnumerator() => items.GetEnumerator();
 
 		IEnumerator IEnumerable.GetEnumerator() => items.GetEnumerator();
+
+		public override string ToString()
+		{
+			if (Count == 1)
+			{
+				return $"Count = {Count}, Item[0] = {items[0].ToString()}";
+			}
+			else
+			{
+				return $"Count = {Count}";
+			}
+		}
 	}
 }
