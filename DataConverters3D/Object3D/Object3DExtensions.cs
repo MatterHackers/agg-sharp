@@ -377,6 +377,22 @@ namespace MatterHackers.DataConverters3D
 			return lastMaterialIndexFound;
 		}
 
+		public static void SuspendAll(this IObject3D parent)
+		{
+			foreach (var item in parent.DescendantsAndSelf())
+			{
+				item.SuspendRebuild();
+			}
+		}
+
+		public static void ResumeAll(this IObject3D parent)
+		{
+			foreach (var item in parent.DescendantsAndSelf())
+			{
+				item.ResumeRebuild();
+			}
+		}
+
 		public static IEnumerable<IObject3D> DescendantsAndSelf(this IObject3D root)
 		{
 			var items = new Stack<IObject3D>(new[] { root });

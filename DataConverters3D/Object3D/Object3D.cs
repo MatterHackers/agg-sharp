@@ -191,7 +191,7 @@ namespace MatterHackers.DataConverters3D
 
 						Invalidate(new InvalidateArgs(this, InvalidateType.Mesh));
 
-						//AsyncCleanAndMerge();
+						AsyncCleanAndMerge();
 					}
 				}
 			}
@@ -377,7 +377,7 @@ namespace MatterHackers.DataConverters3D
 				if (_mesh != mesh)
 				{
 					_mesh = mesh;
-					//AsyncCleanAndMerge();
+					AsyncCleanAndMerge();
 				}
 			}
 		}
@@ -414,6 +414,7 @@ namespace MatterHackers.DataConverters3D
 		// Deep clone via json serialization
 		public IObject3D Clone()
 		{
+			this.SuspendAll();
 			var originalParent = this.Parent;
 			// Index items by ID
 			var allItemsByID = this.DescendantsAndSelf().ToDictionary(i => i.ID);
@@ -439,11 +440,11 @@ namespace MatterHackers.DataConverters3D
 				clonedItem = roundTripped.Children.First();
 			}
 
+			clonedItem.SuspendAll();
 			Dictionary<string, string> idRemaping = new Dictionary<string, string>();
 			// Copy mesh instances to cloned tree
-			foreach(var descendant in clonedItem.DescendantsAndSelf())
+			foreach (var descendant in clonedItem.DescendantsAndSelf())
 			{
-				descendant.SuspendRebuild();
 				descendant.SetMeshDirect(allItemsByID[descendant.ID].Mesh);
 
 				// store the original id
@@ -457,15 +458,11 @@ namespace MatterHackers.DataConverters3D
 				}
 
 				idRemaping.Add(originalId, descendant.ID);
-
-				descendant.ResumeRebuild();
 			}
 
 			// Clean up any child references in the objects
 			foreach (var descendant in clonedItem.DescendantsAndSelf())
 			{
-				descendant.SuspendRebuild();
-
 				// find all ObjecIdListAttributes and update them
 				foreach (var property in GetIDPropreties(descendant))
 				{
@@ -493,14 +490,25 @@ namespace MatterHackers.DataConverters3D
 						property.GetSetMethod().Invoke(descendant, new[] { newData });
 					}
 				}
-
-				descendant.ResumeRebuild();
 			}
+			clonedItem.ResumeAll();
 
 			// restore the parent
 			this.Parent = originalParent;
 
+			this.ResumeAll();
+
 			return clonedItem;
+		}
+
+		public override string ToString()
+		{
+			if (Parent != null)
+			{
+				return $"{this.GetType().Name}, ID = {ID}, Parent = {Parent.ID}";
+			}
+
+			return $"{this.GetType().Name}, ID = {ID}";
 		}
 
 		public virtual AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix)

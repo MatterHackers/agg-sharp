@@ -57,6 +57,23 @@ namespace MatterHackers.DataConverters3D
 		}
 
 		[JsonIgnore]
+		public IObject3D RootSelectedItem
+		{
+			get
+			{
+				var selectedItem = SelectedItem;
+
+				if (selectedItem != null
+					&& SelectedItem.Parent == sourceItem)
+				{
+					return selectedItem;
+				}
+
+				return null;
+			}
+		}
+
+		[JsonIgnore]
 		public IObject3D SelectedItem
 		{
 			get
