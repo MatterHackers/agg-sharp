@@ -59,7 +59,7 @@ namespace MatterHackers.Agg.UI
 			set => labelTextWidget.Text = value;
 		}
 
-		public Color TextColor
+		public override Color TextColor
 		{
 			get => labelTextWidget.TextColor;
 			set => labelTextWidget.TextColor = value;
@@ -88,7 +88,7 @@ namespace MatterHackers.Agg.UI
 
 		public RadioCircleWidget RadioCircle => radioCircle;
 
-		public Color TextColor { get; set; }
+		public virtual Color TextColor { get; set; }
 
 		public override void OnParentChanged(EventArgs e)
 		{
