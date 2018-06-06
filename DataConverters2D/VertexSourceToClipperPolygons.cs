@@ -36,7 +36,7 @@ namespace MatterHackers.DataConverters2D
 {
 	public static class VertexSourceToClipperPolygons
 	{
-		public static VertexStorage CreateVertexStorage(List<List<IntPoint>> polygons, double scaling = 1000)
+		public static VertexStorage CreateVertexStorage(this List<List<IntPoint>> polygons, double scaling = 1000)
 		{
 			VertexStorage output = new VertexStorage();
 
@@ -61,7 +61,7 @@ namespace MatterHackers.DataConverters2D
 			return output;
 		}
 
-		public static List<List<IntPoint>> CreatePolygons(IVertexSource sourcePath, double scaling = 1000)
+		public static List<List<IntPoint>> CreatePolygons(this IVertexSource sourcePath, double scaling = 1000)
 		{
 			List<List<IntPoint>> allPolys = new List<List<IntPoint>>();
 			List<IntPoint> currentPoly = null;
