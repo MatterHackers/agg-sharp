@@ -61,7 +61,7 @@ namespace MatterHackers.Agg.UI
 			switch (AggSystemWindow.BitDepth)
 			{
 				case 32:
-					glControl = new AggGLControl(32, AggSystemWindow.StencilBufferDepth);
+					glControl = new AggGLControl();
 					glControl.Dock = DockStyle.Fill;
 					break;
 
