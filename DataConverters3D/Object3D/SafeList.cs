@@ -54,6 +54,13 @@ namespace MatterHackers.DataConverters3D
 		public SafeList(IEnumerable<T> sourceItems, T parent)
 		{
 			this.parentItem = parent;
+
+			// Ensure that new parent is pushed to children
+			foreach (var item in sourceItems)
+			{
+				item.Parent = parent;
+			}
+
 			items = new List<T>(sourceItems);
 		}
 
