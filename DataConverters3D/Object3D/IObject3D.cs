@@ -60,6 +60,8 @@ namespace MatterHackers.DataConverters3D
 		Material = 0x04,
 		Content = 0x08,
 		Mesh = 0x40,
+		Path = 0x41,
+		Image = 0x42,
 	};
 
 	[Flags]

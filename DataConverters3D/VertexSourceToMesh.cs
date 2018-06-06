@@ -82,13 +82,13 @@ namespace MatterHackers.DataConverters3D
 			angleStart = MathHelper.Range0ToTau(angleStart);
 			angleEnd = MathHelper.Range0ToTau(angleEnd);
 			// convert to clipper polygons and scale so we can ensure good shapes
-			Polygons polygons = VertexSourceToClipperPolygons.CreatePolygons(source);
+			Polygons polygons = source.CreatePolygons();
 			// ensure good winding and consistent shapes
 			// clip against x=0 left and right
 			// mirror left material across the origin
 			// union mirrored left with right material
 			// convert the data back to PathStorage
-			VertexStorage cleanedPath = VertexSourceToClipperPolygons.CreateVertexStorage(polygons);
+			VertexStorage cleanedPath = polygons.CreateVertexStorage();
 
 			Mesh mesh = new Mesh();
 
