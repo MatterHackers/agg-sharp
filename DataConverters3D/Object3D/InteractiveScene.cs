@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, John Lewin, Lars Brubaker
+Copyright (c) 2018, John Lewin, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -32,12 +32,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.DataConverters3D.UndoCommands;
 using MatterHackers.PolygonMesh;
-using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RayTracer;
 using MatterHackers.Localizations;
 using MatterHackers.VectorMath;

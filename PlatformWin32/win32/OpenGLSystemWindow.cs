@@ -38,6 +38,15 @@ namespace MatterHackers.Agg.UI
 
 		public OpenGLSystemWindow()
 		{
+			glControl = new AggGLControl()
+			{
+				Dock = DockStyle.Fill,
+				Location = new Point(0, 0),
+				TabIndex = 0,
+				VSync = false
+			};
+
+			this.Controls.Add(glControl);
 		}
 
 		private bool doneLoading = false;
@@ -57,19 +66,6 @@ namespace MatterHackers.Agg.UI
 		protected override void OnLoad(EventArgs e)
 		{
 			id = count++;
-
-			switch (AggSystemWindow.BitDepth)
-			{
-				case 32:
-					glControl = new AggGLControl(32, AggSystemWindow.StencilBufferDepth);
-					glControl.Dock = DockStyle.Fill;
-					break;
-
-				default:
-					throw new NotImplementedException();
-			}
-
-			Controls.Add(glControl);
 
 			base.OnLoad(e);
 
