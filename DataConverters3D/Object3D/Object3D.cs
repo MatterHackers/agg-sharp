@@ -242,7 +242,7 @@ namespace MatterHackers.DataConverters3D
 					UiThread.RunOnIdle(() =>
 					{
 						ResumeRebuild();
-						this.Invalidate(new InvalidateArgs(this, InvalidateType.Mesh));
+						this.Invalidate(new InvalidateArgs(this, InvalidateType.Redraw));
 					});
 				});
 			}
