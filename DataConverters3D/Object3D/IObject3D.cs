@@ -48,10 +48,6 @@ namespace MatterHackers.DataConverters3D
 		Support
 	};
 
-	public class ObjectIdListAttribute : Attribute
-	{
-	}
-
 	[Flags]
 	public enum InvalidateType
 	{

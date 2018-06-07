@@ -401,13 +401,12 @@ namespace MatterHackers.DataConverters3D
 		}
 		public const BindingFlags OwnedPropertiesOnly = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
-		public static IEnumerable<PropertyInfo> GetIDPropreties(IObject3D item)
+		public static IEnumerable<PropertyInfo> GetChildSelectorPropreties(IObject3D item)
 		{
 			return item.GetType().GetProperties(OwnedPropertiesOnly)
 				.Where((pi) =>
 				{
-					var classHasAttribute = pi.PropertyType.GetCustomAttributes(typeof(ObjectIdListAttribute), true).FirstOrDefault() as ObjectIdListAttribute;
-					return classHasAttribute != null;
+					return pi.PropertyType == typeof(ChildrenSelector);
 				});
 		}
 
@@ -464,10 +463,10 @@ namespace MatterHackers.DataConverters3D
 			foreach (var descendant in clonedItem.DescendantsAndSelf())
 			{
 				// find all ObjecIdListAttributes and update them
-				foreach (var property in GetIDPropreties(descendant))
+				foreach (var property in GetChildSelectorPropreties(descendant))
 				{
-					var newData = new ChildrenSelector();
-					bool updatedData = false;
+					var newChildrenSelector = new ChildrenSelector();
+					bool foundReplacement = false;
 
 					// sync ids
 					foreach (var id in (ChildrenSelector)property.GetGetMethod().Invoke(descendant, null))
@@ -475,19 +474,19 @@ namespace MatterHackers.DataConverters3D
 						// update old id to new id
 						if (idRemaping.ContainsKey(id))
 						{
-							newData.Add(idRemaping[id]);
-							updatedData = true;
+							newChildrenSelector.Add(idRemaping[id]);
+							foundReplacement = true;
 						}
 						else
 						{
 							// this really should never happen
-							newData.Add(id);
+							newChildrenSelector.Add(id);
 						}
 					}
 
-					if (updatedData)
+					if (foundReplacement)
 					{
-						property.GetSetMethod().Invoke(descendant, new[] { newData });
+						property.GetSetMethod().Invoke(descendant, new[] { newChildrenSelector });
 					}
 				}
 			}
@@ -713,6 +712,7 @@ namespace MatterHackers.DataConverters3D
 		{
 			SuspendRebuild();
 
+			var parent = this.Parent;
 			if (undoBuffer != null)
 			{
 				var newTree = this.Clone();
@@ -738,7 +738,6 @@ namespace MatterHackers.DataConverters3D
 					child.Matrix *= this.Matrix;
 				}
 
-				var parent = this.Parent;
 				parent.Children.Modify(list =>
 				{
 					list.Remove(this);
@@ -749,7 +748,7 @@ namespace MatterHackers.DataConverters3D
 
 			ResumeRebuild();
 
-			Invalidate(new InvalidateArgs(this, InvalidateType.Content));
+			parent.Invalidate(new InvalidateArgs(this, InvalidateType.Content));
 		}
 
 		public virtual void Rebuild(UndoBuffer undoBuffer)
