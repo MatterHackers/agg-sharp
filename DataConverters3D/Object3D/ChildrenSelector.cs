@@ -36,7 +36,6 @@ using System.Linq;
 
 namespace MatterHackers.DataConverters3D
 {
-	[ObjectIdListAttribute]
 	public class ChildrenSelector : List<string>
 	{
 	}

@@ -48,10 +48,6 @@ namespace MatterHackers.DataConverters3D
 		Support
 	};
 
-	public class ObjectIdListAttribute : Attribute
-	{
-	}
-
 	[Flags]
 	public enum InvalidateType
 	{
@@ -60,9 +56,9 @@ namespace MatterHackers.DataConverters3D
 		Material = 0x04,
 		Content = 0x08,
 		Redraw = 0x10,
-		Mesh = 0x40,
-		Path = 0x41,
-		Image = 0x42,
+		Mesh = 0x20,
+		Path = 0x40,
+		Image = 0x80,
 	};
 
 	[Flags]
