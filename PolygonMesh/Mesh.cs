@@ -75,107 +75,6 @@ namespace MatterHackers.PolygonMesh
 
 		public VertexCollecton Vertices { get; private set; } = new VertexCollecton();
 
-		public static Mesh Copy(Mesh meshToCopyIn, CancellationToken cancellationToken, Action<double, string> progress = null, bool allowFastCopy = true)
-		{
-			Mesh newMesh = new Mesh();
-
-			var verticesToCopy = meshToCopyIn.Vertices;
-			var facesToCopy = meshToCopyIn.Faces;
-			var edgesToCopy = meshToCopyIn.MeshEdges;
-
-			// This will add all the vertices to the new mesh
-			Dictionary<int, int> vertexIndexDictionary = GetVertexToIndexDictionary(verticesToCopy, newMesh);
-			// This will add all the edges to the new mesh
-			Dictionary<int, int> meshEdgeIndexDictionary = GetMeshEdgeToIndexDictionary(edgesToCopy, newMesh);
-
-			for (int faceIndex = 0; faceIndex < facesToCopy.Count; faceIndex++)
-			{
-				Face faceToCopy = facesToCopy[faceIndex];
-				newMesh.Faces.Add(new Face(newMesh));
-			}
-
-			// now set all the data for the new mesh
-			newMesh.Vertices.Capacity = verticesToCopy.Capacity;
-			for (int vertexIndex = 0; vertexIndex < verticesToCopy.Count; vertexIndex++)
-			{
-				IVertex vertexToCopy = verticesToCopy[vertexIndex];
-				IVertex newVertex = newMesh.Vertices[vertexIndex];
-				if (vertexToCopy.FirstMeshEdge != null)
-				{
-					int indexOfFirstMeshEdge = meshEdgeIndexDictionary[vertexToCopy.FirstMeshEdge.ID];
-					newVertex.FirstMeshEdge = newMesh.MeshEdges[indexOfFirstMeshEdge];
-				}
-				newVertex.Normal = vertexToCopy.Normal;
-			}
-
-			newMesh.MeshEdges.Capacity = edgesToCopy.Capacity;
-			for (int meshEdgeIndex = 0; meshEdgeIndex < edgesToCopy.Count; meshEdgeIndex++)
-			{
-				MeshEdge meshEdgeToCopy = edgesToCopy[meshEdgeIndex];
-				MeshEdge newMeshEdge = newMesh.MeshEdges[meshEdgeIndex];
-
-				newMeshEdge.NextMeshEdgeFromEnd[0] = newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeToCopy.NextMeshEdgeFromEnd[0].ID]];
-				newMeshEdge.NextMeshEdgeFromEnd[1] = newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeToCopy.NextMeshEdgeFromEnd[1].ID]];
-
-				newMeshEdge.VertexOnEnd[0] = newMesh.Vertices[vertexIndexDictionary[meshEdgeToCopy.VertexOnEnd[0].ID]];
-				newMeshEdge.VertexOnEnd[1] = newMesh.Vertices[vertexIndexDictionary[meshEdgeToCopy.VertexOnEnd[1].ID]];
-
-				// This will get hooked up when we create radial loops with the face edges below
-				//newMeshEdge.firstFaceEdge;
-				//newMesh.MeshEdges.Add(newMeshEdge);
-			}
-
-			newMesh.Faces.Capacity = facesToCopy.Capacity;
-			for (int faceIndex = 0; faceIndex < facesToCopy.Count; faceIndex++)
-			{
-				Face faceToCopy = facesToCopy[faceIndex];
-				Face newface = newMesh.Faces[faceIndex];
-
-				newface.Normal = faceToCopy.Normal;
-
-				// hook up the face edges
-				//public FaceEdge firstFaceEdge;
-				List<IVertex> verticesFromCopy = new List<IVertex>();
-				List<IVertex> verticesForNew = new List<IVertex>();
-				foreach (IVertex vertex in faceToCopy.Vertices())
-				{
-					verticesFromCopy.Add(vertex);
-					verticesForNew.Add(newMesh.Vertices[vertexIndexDictionary[vertex.ID]]);
-				}
-
-				List<MeshEdge> edgesFromCopy = new List<MeshEdge>();
-				List<MeshEdge> edgesForNew = new List<MeshEdge>();
-				for (int i = 0; i < verticesForNew.Count - 1; i++)
-				{
-					MeshEdge meshEdgeFromCopy = verticesFromCopy[i].GetMeshEdgeConnectedToVertex(verticesFromCopy[i + 1]);
-					edgesFromCopy.Add(meshEdgeFromCopy);
-					edgesForNew.Add(newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeFromCopy.ID]]);
-				}
-				MeshEdge lastMeshEdgeFromCopy = verticesFromCopy[verticesFromCopy.Count - 1].GetMeshEdgeConnectedToVertex(verticesFromCopy[0]);
-				edgesFromCopy.Add(lastMeshEdgeFromCopy);
-				edgesForNew.Add(newMesh.MeshEdges[meshEdgeIndexDictionary[lastMeshEdgeFromCopy.ID]]);
-
-				CreateFaceEdges(verticesForNew.ToArray(), edgesForNew, newface);
-			}
-
-			return newMesh;
-		}
-
-		public static int GetID(object item)
-		{
-			int id;
-			lock (nextIdLocker)
-			{
-				if (!Ids.TryGetValue(item, out id))
-				{
-					id = nextIdToUse++;
-					Ids.Add(item, id);
-				}
-			}
-
-			return id;
-		}
-
 		public void CleanAndMergeMesh(CancellationToken cancellationToken, double maxDistanceToConsiderVertexAsSame = 0, Action<double, string> reportProgress = null)
 		{
 			if (reportProgress != null)
@@ -321,7 +220,7 @@ namespace MatterHackers.PolygonMesh
 
 		public void CalculateNormals()
 		{
-			foreach(var face in Faces)
+			foreach (var face in Faces)
 			{
 				face.CalculateNormal();
 			}
@@ -363,31 +262,19 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		private static Dictionary<int, int> GetMeshEdgeToIndexDictionary(List<MeshEdge> edgesToCopy, Mesh newMesh)
+		public static int GetID(object item)
 		{
-			Dictionary<int, int> meshEdgeIndexDictionary = new Dictionary<int, int>(edgesToCopy.Count);
-			for (int edgeIndex = 0; edgeIndex < edgesToCopy.Count; edgeIndex++)
+			int id;
+			lock (nextIdLocker)
 			{
-				MeshEdge edgeToCopy = edgesToCopy[edgeIndex];
-				meshEdgeIndexDictionary.Add(edgeToCopy.ID, edgeIndex);
-				newMesh.MeshEdges.Add(new MeshEdge());
-			}
-			return meshEdgeIndexDictionary;
-		}
-
-		private static Dictionary<int, int> GetVertexToIndexDictionary(VertexCollecton verticesToCopy, Mesh newMesh)
-		{
-			Dictionary<int, int> vertexIndexMapping = new Dictionary<int, int>(verticesToCopy.Count);
-			for (int vertexIndex = 0; vertexIndex < verticesToCopy.Count; vertexIndex++)
-			{
-				IVertex vertexToCopy = verticesToCopy[vertexIndex];
-				vertexIndexMapping.Add(vertexToCopy.ID, vertexIndex);
-				newMesh.Vertices.Add(vertexToCopy.CreateInterpolated(vertexToCopy, 0), SortOption.WillSortLater);
+				if (!Ids.TryGetValue(item, out id))
+				{
+					id = nextIdToUse++;
+					Ids.Add(item, id);
+				}
 			}
 
-			newMesh.Vertices.IsSorted = verticesToCopy.IsSorted;
-
-			return vertexIndexMapping;
+			return id;
 		}
 
 		#region Public Members
@@ -1093,7 +980,7 @@ namespace MatterHackers.PolygonMesh
 			// make the face and set it's data
 			Face createdFace = new Face(this);
 
-			CreateFaceEdges(nonRepeatingSet.ToArray(), edgesToUse, createdFace);
+			createdFace.CreateFaceEdges(nonRepeatingSet.ToArray(), edgesToUse);
 
 			createdFace.CalculateNormal();
 
@@ -1191,42 +1078,6 @@ namespace MatterHackers.PolygonMesh
 
 			return nonManifoldEdges;
 		}
-
-		private static void CreateFaceEdges(IVertex[] verticesToUse, List<MeshEdge> edgesToUse, Face createdFace)
-		{
-			FaceEdge prevFaceEdge = null;
-			for (int i = 0; i < verticesToUse.Length - 1; i++)
-			{
-				MeshEdge currentMeshEdge = edgesToUse[i];
-				FaceEdge currentFaceEdge = new FaceEdge(createdFace, currentMeshEdge, verticesToUse[i]);
-				if (i == 0)
-				{
-					createdFace.firstFaceEdge = currentFaceEdge;
-				}
-				else
-				{
-					prevFaceEdge.nextFaceEdge = currentFaceEdge;
-					currentFaceEdge.prevFaceEdge = prevFaceEdge;
-				}
-				currentFaceEdge.AddToRadialLoop(currentMeshEdge);
-				prevFaceEdge = currentFaceEdge;
-			}
-			// make the last FaceEdge
-			{
-				MeshEdge currentMeshEdge = edgesToUse[verticesToUse.Length - 1];
-				FaceEdge currentFaceEdge = new FaceEdge(createdFace, currentMeshEdge, verticesToUse[verticesToUse.Length - 1]);
-				prevFaceEdge.nextFaceEdge = currentFaceEdge;
-				currentFaceEdge.prevFaceEdge = prevFaceEdge;
-				currentFaceEdge.nextFaceEdge = createdFace.firstFaceEdge;
-				createdFace.firstFaceEdge.prevFaceEdge = currentFaceEdge;
-				currentFaceEdge.AddToRadialLoop(currentMeshEdge);
-			}
-		}
-
-		private static void DeleteFaceEdge(FaceEdge faceEdgeToDelete)
-		{
-		}
-
 		#endregion Face
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
@@ -1274,5 +1125,152 @@ namespace MatterHackers.PolygonMesh
 		}
 
 		#endregion Public Members
+	}
+
+	public static class MeshExtensionMethods
+	{
+		private static Dictionary<int, int> GetMeshEdgeToIndexDictionary(List<MeshEdge> edgesToCopy, Mesh newMesh)
+		{
+			Dictionary<int, int> meshEdgeIndexDictionary = new Dictionary<int, int>(edgesToCopy.Count);
+			for (int edgeIndex = 0; edgeIndex < edgesToCopy.Count; edgeIndex++)
+			{
+				MeshEdge edgeToCopy = edgesToCopy[edgeIndex];
+				meshEdgeIndexDictionary.Add(edgeToCopy.ID, edgeIndex);
+				newMesh.MeshEdges.Add(new MeshEdge());
+			}
+			return meshEdgeIndexDictionary;
+		}
+
+		private static Dictionary<int, int> GetVertexToIndexDictionary(VertexCollecton verticesToCopy, Mesh newMesh)
+		{
+			Dictionary<int, int> vertexIndexMapping = new Dictionary<int, int>(verticesToCopy.Count);
+			for (int vertexIndex = 0; vertexIndex < verticesToCopy.Count; vertexIndex++)
+			{
+				IVertex vertexToCopy = verticesToCopy[vertexIndex];
+				vertexIndexMapping.Add(vertexToCopy.ID, vertexIndex);
+				newMesh.Vertices.Add(vertexToCopy.CreateInterpolated(vertexToCopy, 0), SortOption.WillSortLater);
+			}
+
+			newMesh.Vertices.IsSorted = verticesToCopy.IsSorted;
+
+			return vertexIndexMapping;
+		}
+
+		public static Mesh Copy(this Mesh meshToCopyIn, CancellationToken cancellationToken, Action<double, string> progress = null, bool allowFastCopy = true)
+		{
+			Mesh newMesh = new Mesh();
+
+			var verticesToCopy = meshToCopyIn.Vertices;
+			var facesToCopy = meshToCopyIn.Faces;
+			var edgesToCopy = meshToCopyIn.MeshEdges;
+
+			// This will add all the vertices to the new mesh
+			Dictionary<int, int> vertexIndexDictionary = GetVertexToIndexDictionary(verticesToCopy, newMesh);
+			// This will add all the edges to the new mesh
+			Dictionary<int, int> meshEdgeIndexDictionary = GetMeshEdgeToIndexDictionary(edgesToCopy, newMesh);
+
+			for (int faceIndex = 0; faceIndex < facesToCopy.Count; faceIndex++)
+			{
+				Face faceToCopy = facesToCopy[faceIndex];
+				newMesh.Faces.Add(new Face(newMesh));
+			}
+
+			// now set all the data for the new mesh
+			newMesh.Vertices.Capacity = verticesToCopy.Capacity;
+			for (int vertexIndex = 0; vertexIndex < verticesToCopy.Count; vertexIndex++)
+			{
+				IVertex vertexToCopy = verticesToCopy[vertexIndex];
+				IVertex newVertex = newMesh.Vertices[vertexIndex];
+				if (vertexToCopy.FirstMeshEdge != null)
+				{
+					int indexOfFirstMeshEdge = meshEdgeIndexDictionary[vertexToCopy.FirstMeshEdge.ID];
+					newVertex.FirstMeshEdge = newMesh.MeshEdges[indexOfFirstMeshEdge];
+				}
+				newVertex.Normal = vertexToCopy.Normal;
+			}
+
+			newMesh.MeshEdges.Capacity = edgesToCopy.Capacity;
+			for (int meshEdgeIndex = 0; meshEdgeIndex < edgesToCopy.Count; meshEdgeIndex++)
+			{
+				MeshEdge meshEdgeToCopy = edgesToCopy[meshEdgeIndex];
+				MeshEdge newMeshEdge = newMesh.MeshEdges[meshEdgeIndex];
+
+				newMeshEdge.NextMeshEdgeFromEnd[0] = newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeToCopy.NextMeshEdgeFromEnd[0].ID]];
+				newMeshEdge.NextMeshEdgeFromEnd[1] = newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeToCopy.NextMeshEdgeFromEnd[1].ID]];
+
+				newMeshEdge.VertexOnEnd[0] = newMesh.Vertices[vertexIndexDictionary[meshEdgeToCopy.VertexOnEnd[0].ID]];
+				newMeshEdge.VertexOnEnd[1] = newMesh.Vertices[vertexIndexDictionary[meshEdgeToCopy.VertexOnEnd[1].ID]];
+
+				// This will get hooked up when we create radial loops with the face edges below
+				//newMeshEdge.firstFaceEdge;
+				//newMesh.MeshEdges.Add(newMeshEdge);
+			}
+
+			newMesh.Faces.Capacity = facesToCopy.Capacity;
+			for (int faceIndex = 0; faceIndex < facesToCopy.Count; faceIndex++)
+			{
+				Face faceToCopy = facesToCopy[faceIndex];
+				Face newface = newMesh.Faces[faceIndex];
+
+				newface.Normal = faceToCopy.Normal;
+
+				// hook up the face edges
+				//public FaceEdge firstFaceEdge;
+				List<IVertex> verticesFromCopy = new List<IVertex>();
+				List<IVertex> verticesForNew = new List<IVertex>();
+				foreach (IVertex vertex in faceToCopy.Vertices())
+				{
+					verticesFromCopy.Add(vertex);
+					verticesForNew.Add(newMesh.Vertices[vertexIndexDictionary[vertex.ID]]);
+				}
+
+				List<MeshEdge> edgesFromCopy = new List<MeshEdge>();
+				List<MeshEdge> edgesForNew = new List<MeshEdge>();
+				for (int i = 0; i < verticesForNew.Count - 1; i++)
+				{
+					MeshEdge meshEdgeFromCopy = verticesFromCopy[i].GetMeshEdgeConnectedToVertex(verticesFromCopy[i + 1]);
+					edgesFromCopy.Add(meshEdgeFromCopy);
+					edgesForNew.Add(newMesh.MeshEdges[meshEdgeIndexDictionary[meshEdgeFromCopy.ID]]);
+				}
+				MeshEdge lastMeshEdgeFromCopy = verticesFromCopy[verticesFromCopy.Count - 1].GetMeshEdgeConnectedToVertex(verticesFromCopy[0]);
+				edgesFromCopy.Add(lastMeshEdgeFromCopy);
+				edgesForNew.Add(newMesh.MeshEdges[meshEdgeIndexDictionary[lastMeshEdgeFromCopy.ID]]);
+
+				newface.CreateFaceEdges(verticesForNew.ToArray(), edgesForNew);
+			}
+
+			return newMesh;
+		}
+
+		public static void CreateFaceEdges(this Face createdFace, IVertex[] verticesToUse, List<MeshEdge> edgesToUse)
+		{
+			FaceEdge prevFaceEdge = null;
+			for (int i = 0; i < verticesToUse.Length - 1; i++)
+			{
+				MeshEdge currentMeshEdge = edgesToUse[i];
+				FaceEdge currentFaceEdge = new FaceEdge(createdFace, currentMeshEdge, verticesToUse[i]);
+				if (i == 0)
+				{
+					createdFace.firstFaceEdge = currentFaceEdge;
+				}
+				else
+				{
+					prevFaceEdge.nextFaceEdge = currentFaceEdge;
+					currentFaceEdge.prevFaceEdge = prevFaceEdge;
+				}
+				currentFaceEdge.AddToRadialLoop(currentMeshEdge);
+				prevFaceEdge = currentFaceEdge;
+			}
+			// make the last FaceEdge
+			{
+				MeshEdge currentMeshEdge = edgesToUse[verticesToUse.Length - 1];
+				FaceEdge currentFaceEdge = new FaceEdge(createdFace, currentMeshEdge, verticesToUse[verticesToUse.Length - 1]);
+				prevFaceEdge.nextFaceEdge = currentFaceEdge;
+				currentFaceEdge.prevFaceEdge = prevFaceEdge;
+				currentFaceEdge.nextFaceEdge = createdFace.firstFaceEdge;
+				createdFace.firstFaceEdge.prevFaceEdge = currentFaceEdge;
+				currentFaceEdge.AddToRadialLoop(currentMeshEdge);
+			}
+		}
 	}
 }

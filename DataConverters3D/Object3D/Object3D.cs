@@ -225,7 +225,7 @@ namespace MatterHackers.DataConverters3D
 				{
 					var meshThatWasCopied = Mesh;
 					// make the copy
-					var copyMesh = Mesh.Copy(meshThatWasCopied, CancellationToken.None);
+					var copyMesh = meshThatWasCopied.Copy(CancellationToken.None);
 					// clean the copy
 					copyMesh.CleanAndMergeMesh(CancellationToken.None);
 
