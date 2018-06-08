@@ -33,6 +33,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using MatterHackers.Agg;
+using MatterHackers.PolygonMesh.Csg;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
 
@@ -79,6 +80,28 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			Face face = testMesh.CreateFace(new IVertex[] { vertex0, vertex1, vertex2 });
 
 			Assert.IsTrue(face.PointInPoly(new Vector3(5, 5, 0)));
+		}
+
+		[Test]
+		public void FaceCutByPlane()
+		{
+			var cube = MeshHelper.CreatePlane(10, 10);
+			var cutPlane = new Plane(Vector3.UnitX, new Vector3(3, 0, 0));
+			var start = Vector3.Zero;
+			var end = Vector3.Zero;
+			Assert.IsTrue(cube.Faces[0].GetCutLine(cutPlane, ref start, ref end));
+			Assert.AreEqual(new Vector3(3, -5, 0), start);
+			Assert.AreEqual(new Vector3(3, 5, 0), end);
+		}
+
+		//[Test]
+		public void GetSliceLoop()
+		{
+			var cube = MeshHelper.CreatePlane(10, 10);
+			var cutPlane = new Plane(Vector3.UnitX, new Vector3(3, 0, 0));
+			var slice = new SliceLayer(cutPlane);
+			slice.CreateSlice(cube);
+			//Assert.AreEqual(1, slice.ClosedPolygons.Count);
 		}
 
 		[Test]

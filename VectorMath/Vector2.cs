@@ -128,6 +128,30 @@ namespace MatterHackers.VectorMath
 		}
 
 		/// <summary>
+		/// return a 64 bit hash code proposed by Jon Skeet
+		// http://stackoverflow.com/questions/8094867/good-gethashcode-override-for-list-of-foo-objects-respecting-the-order
+		/// </summary>
+		/// <returns></returns>
+		public long GetLongHashCode()
+		{
+			long hash = 19;
+
+			unsafe
+			{
+				fixed (double* pX = &X)
+				{
+					hash = hash * 31 + *(long*)(pX);
+				}
+				fixed (double* pY = &Y)
+				{
+					hash = hash * 31 + *(long*)(pY);
+				}
+			}
+
+			return hash;
+		}
+
+		/// <summary>
 		/// Get the delta angle from start to end relative to this
 		/// </summary>
 		/// <param name="startPosition"></param>

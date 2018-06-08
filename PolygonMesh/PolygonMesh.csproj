@@ -55,6 +55,11 @@
     <Compile Include="Csg\CsgOperations.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Csg\IndexAndPosition.cs" />
+    <Compile Include="Csg\IndexAndPositionSorter.cs" />
+    <Compile Include="Csg\Segment.cs" />
+    <Compile Include="Csg\SliceLayer.cs" />
+    <Compile Include="Csg\SortedVector2.cs" />
     <Compile Include="MeshEdge.cs" />
     <Compile Include="Face.cs" />
     <Compile Include="FaceEdge.cs" />
