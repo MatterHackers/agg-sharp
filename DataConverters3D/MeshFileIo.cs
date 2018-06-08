@@ -147,7 +147,7 @@ namespace MatterHackers.DataConverters3D
 
 			foreach (var rawItem in visibleMeshes)
 			{
-				var mesh = Mesh.Copy(rawItem.Mesh, cancellationToken);
+				var mesh = rawItem.Mesh.Copy(cancellationToken);
 				mesh.Transform(rawItem.WorldMatrix());
 				if (outputInfo.CsgOptionState == MeshOutputSettings.CsgOption.DoCsgMerge)
 				{

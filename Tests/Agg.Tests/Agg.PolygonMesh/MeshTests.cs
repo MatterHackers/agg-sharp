@@ -755,7 +755,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 			testMesh.MergeVertices(CancellationToken.None);
 
-			Mesh copyMesh = Mesh.Copy(testMesh, CancellationToken.None);
+			Mesh copyMesh = testMesh.Copy(CancellationToken.None);
 
 			Assert.IsTrue(testMesh.Equals(copyMesh));
 		}
