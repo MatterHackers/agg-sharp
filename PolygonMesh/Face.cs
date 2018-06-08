@@ -157,10 +157,8 @@ namespace MatterHackers.PolygonMesh
 			return accumulatedPosition / count;
 		}
 
-		public bool GetCutLine(Plane cutPlane, out Vector3 start, out Vector3 end)
+		public bool GetCutLine(Plane cutPlane, ref Vector3 start, ref Vector3 end)
 		{
-			start = new Vector3();
-			end = new Vector3();
 			int splitCount = 0;
 			FaceEdge prevEdge = null;
 			bool prevInFront = false;
