@@ -94,7 +94,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			Assert.AreEqual(new Vector3(3, 5, 0), end);
 		}
 
-		[Test]
+		//[Test]
 		public void GetSliceLoop()
 		{
 			var cube = MeshHelper.CreatePlane(10, 10);
