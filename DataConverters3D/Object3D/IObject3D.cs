@@ -48,17 +48,16 @@ namespace MatterHackers.DataConverters3D
 		Support
 	};
 
-	[Flags]
 	public enum InvalidateType
 	{
-		Matrix = 0x01,
-		Color = 0x02,
-		Material = 0x04,
-		Content = 0x08,
-		Redraw = 0x10,
-		Mesh = 0x20,
-		Path = 0x40,
-		Image = 0x80,
+		Matrix,
+		Color,
+		Material,
+		Content,
+		Redraw,
+		Mesh,
+		Path,
+		Image,
 	};
 
 	[Flags]
