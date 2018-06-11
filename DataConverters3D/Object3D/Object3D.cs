@@ -214,16 +214,17 @@ namespace MatterHackers.DataConverters3D
 
 		private void AsyncCleanAndMerge()
 		{
-			SuspendRebuild();
-
+			var mesh = Mesh;
 			// keep track of the mesh we are copying
-			if (Mesh != null
-				&& Mesh.Vertices != null
-				&& !Mesh.Vertices.IsSorted)
+			if (mesh != null
+				&& mesh.Vertices != null
+				&& !mesh.Vertices.IsSorted)
 			{
+				SuspendRebuild();
+
 				Task.Run(() =>
 				{
-					var meshThatWasCopied = Mesh;
+					var meshThatWasCopied = mesh;
 					// make the copy
 					var copyMesh = meshThatWasCopied.Copy(CancellationToken.None);
 					// clean the copy
@@ -231,25 +232,19 @@ namespace MatterHackers.DataConverters3D
 
 					lock (locker)
 					{
-						// if we have not changed to a new mesh
+						// if we have not changed to a new mesh (they are still the same)
 						if (meshThatWasCopied == Mesh)
 						{
 							// store the new clean mesh
 							_mesh = copyMesh;
+							UiThread.RunOnIdle(() =>
+							{
+								ResumeRebuild();
+								this.Invalidate(new InvalidateArgs(this, InvalidateType.Redraw));
+							});
 						}
 					}
-
-					UiThread.RunOnIdle(() =>
-					{
-						ResumeRebuild();
-						this.Invalidate(new InvalidateArgs(this, InvalidateType.Redraw));
-					});
 				});
-			}
-			else // the mesh changed but we didn't need to do any work to it
-			{
-				ResumeRebuild();
-				this.Invalidate(new InvalidateArgs(this, InvalidateType.Mesh));
 			}
 		}
 
