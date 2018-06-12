@@ -90,6 +90,7 @@ namespace MatterHackers.Agg.UI
 		private void ResetImageIndex(object sender, EventArgs e)
 		{
 			currentTime = 0;
+			Invalidate();
 		}
 
 		public bool MaintainAspecRatio { get; set; } = true;
