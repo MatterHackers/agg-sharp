@@ -59,13 +59,15 @@ namespace MatterHackers.Agg.UI
 		double oldWidth = 0;
 		private void Parent_BoundsChanged(object sender, EventArgs e)
 		{
-			if (Parent?.Width != oldWidth)
+			var parent = Parent;
+			if (parent != null
+				&& parent.Width != oldWidth)
 			{
 				if (!doingLayout)
 				{
 					DoWrappingLayout();
 				}
-				oldWidth = Parent.Width;
+				oldWidth = parent.Width;
 			}
 		}
 
