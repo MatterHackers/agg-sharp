@@ -106,7 +106,10 @@ namespace MatterHackers.RayTracer
 			world.Rotate(Quaternion.FromEulerAngles(new Vector3(0, 0, -MathHelper.Tau / 16)));
 			world.Rotate(Quaternion.FromEulerAngles(new Vector3(MathHelper.Tau * .19, 0, 0)));
 
-			SetViewForScene();
+			if (sceneToRender != null)
+			{
+				world.Fit(sceneToRender, new RectangleDouble(0, 0, size.x, size.y), Matrix4X4.Identity);
+			}
 		}
 
 		private void AddAFloor()
@@ -305,13 +308,13 @@ namespace MatterHackers.RayTracer
 			{
 				AxisAlignedBoundingBox totalMeshBounds = sceneToRender.GetAxisAlignedBoundingBox();
 
-				sceneToRender.Matrix *= Matrix4X4.CreateTranslation(-totalMeshBounds.Center);
+				var centeredTranslation = Matrix4X4.CreateTranslation(-totalMeshBounds.Center);
 
-				SetViewForScene();
+				world.Fit(sceneToRender, new RectangleDouble(0, 0, size.x, size.y), centeredTranslation);
 
 				IPrimitive bvhCollection = MeshToBVH.Convert(sceneToRender);
 
-				return new List<IPrimitive> { bvhCollection };
+				return new List<IPrimitive> { new Transform(bvhCollection, centeredTranslation) };
 			}
 
 			return null;
@@ -342,14 +345,6 @@ namespace MatterHackers.RayTracer
 
 			minZ = Math.Min(meshBounds.minXYZ.Z, minZ);
 			maxZ = Math.Max(meshBounds.maxXYZ.Z, maxZ);
-		}
-
-		private void SetViewForScene()
-		{
-			if (sceneToRender != null)
-			{
-				world.Fit(sceneToRender, new RectangleDouble(0, 0, size.x, size.y));
-			}
 		}
 
 		private class WorldCamera : ICamera

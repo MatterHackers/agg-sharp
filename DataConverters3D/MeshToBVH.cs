@@ -54,7 +54,7 @@ namespace MatterHackers.DataConverters3D
 			foreach (var item in rootItem.VisibleMeshes())
 			{
 				SolidMaterial partMaterial;
-				var color = item.WorldColor();
+				var color = item.WorldColor(rootItem);
 				if (color.alpha != 0)
 				{
 					partMaterial = new SolidMaterial(new ColorF(color.Red0To1, color.Green0To1, color.Blue0To1), .01, 0.0, 2.0);
@@ -64,7 +64,7 @@ namespace MatterHackers.DataConverters3D
 					partMaterial = new SolidMaterial(new ColorF(.9, .2, .1), .01, 0.0, 2.0);
 				}
 
-				var worldMatrix = item.WorldMatrix();
+				var worldMatrix = item.WorldMatrix(rootItem);
 				foreach (Face face in item.Mesh.Faces)
 				{
 					if (false)
