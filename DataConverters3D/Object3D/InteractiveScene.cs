@@ -307,6 +307,7 @@ namespace MatterHackers.DataConverters3D
 
 		public bool DrawSelection { get; set; } = true;
 
+		[JsonIgnore]
 		public bool RebuildSuspended => false;
 
 		public IObject3D Clone() => sourceItem.Clone();
