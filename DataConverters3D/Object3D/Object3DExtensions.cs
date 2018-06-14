@@ -258,45 +258,44 @@ namespace MatterHackers.DataConverters3D
 
 		public static Matrix4X4 WorldMatrix(this IObject3D child, IObject3D rootOverride = null)
 		{
-			var matrix = child.Matrix;
-			var parent = child.Parent;
-
-			while (parent != null)
+			var matrix = Matrix4X4.Identity;
+			foreach (var item in child.AncestorsAndSelf())
 			{
-				matrix = matrix * parent.Matrix;
-
-				if (parent == rootOverride)
+				matrix *= item.Matrix;
+				if (item == rootOverride)
 				{
 					break;
 				}
-
-				parent = parent.Parent;
 			}
 
 			return matrix;
 		}
 
-		public static List<IObject3D> Ancestors(this IObject3D child, bool includeThis = true)
+		public static IEnumerable<IObject3D> Ancestors(this IObject3D child)
 		{
-			List<IObject3D> ancestors = new List<IObject3D>();
-			if (includeThis)
-			{
-				ancestors.Add(child);
-			}
 			var parent = child.Parent;
 			while (parent != null)
 			{
-				ancestors.Add(parent);
+				yield return parent;
 				parent = parent.Parent;
 			}
+		}
 
-			return ancestors;
+		public static IEnumerable<IObject3D> AncestorsAndSelf(this IObject3D child)
+		{
+			yield return child;
+			var parent = child.Parent;
+			while (parent != null)
+			{
+				yield return parent;
+				parent = parent.Parent;
+			}
 		}
 
 		public static Color WorldColor(this IObject3D child, IObject3D rootOverride = null)
 		{
 			var lastColorFound = Color.White;
-			foreach(var item in child.Ancestors())
+			foreach(var item in child.AncestorsAndSelf())
 			{
 				// if we find a color it overrides our current color so set it
 				if (item.Color.Alpha0To255 != 0)
@@ -316,7 +315,7 @@ namespace MatterHackers.DataConverters3D
 
 		public static bool WorldPersistable(this IObject3D child, IObject3D rootOverride = null)
 		{
-			foreach (var item in child.Ancestors())
+			foreach (var item in child.AncestorsAndSelf())
 			{
 				// if we find a color it overrides our current color so set it
 				if (!item.Persistable)
@@ -337,7 +336,7 @@ namespace MatterHackers.DataConverters3D
 		public static PrintOutputTypes WorldOutputType(this IObject3D child, IObject3D rootOverride = null)
 		{
 			var lastOutputTypeFound = PrintOutputTypes.Default;
-			foreach (var item in child.Ancestors())
+			foreach (var item in child.AncestorsAndSelf())
 			{
 				if (item.OutputType != PrintOutputTypes.Default)
 				{
@@ -358,7 +357,7 @@ namespace MatterHackers.DataConverters3D
 		public static int WorldMaterialIndex(this IObject3D child, IObject3D rootOverride = null)
 		{
 			var lastMaterialIndexFound = -1;
-			foreach (var item in child.Ancestors())
+			foreach (var item in child.AncestorsAndSelf())
 			{
 				if (item.MaterialIndex != -1)
 				{
