@@ -60,7 +60,7 @@ namespace MatterHackers.RayTracer
 			{
 				return null;
 			}
-					
+
 			switch (renderType)
 			{
 				case RenderType.RAY_TRACE:
@@ -102,7 +102,7 @@ namespace MatterHackers.RayTracer
 				default:
 					{
 						var thumbnail = BuildImageFromMeshGroups(loadedItem, width, height);
-						
+
 						// Force to all white and return
 						return thumbnail.AllWhite();
 					}

@@ -120,9 +120,14 @@ namespace MatterHackers.DataConverters3D
 			streamWriter.Flush();
 		}
 
-		public static void Fit(this WorldView world, IObject3D sceneToRender, RectangleDouble goalBounds)
+		public static void Fit(this WorldView world, IObject3D itemToRender, RectangleDouble goalBounds)
 		{
-			AxisAlignedBoundingBox meshBounds = sceneToRender.GetAxisAlignedBoundingBox();
+			world.Fit(itemToRender, goalBounds, Matrix4X4.Identity);
+		}
+
+		public static void Fit(this WorldView world, IObject3D itemToRender, RectangleDouble goalBounds, Matrix4X4 offset)
+		{
+			AxisAlignedBoundingBox meshBounds = itemToRender.GetAxisAlignedBoundingBox(offset);
 
 			bool done = false;
 			double scaleFraction = .1;
