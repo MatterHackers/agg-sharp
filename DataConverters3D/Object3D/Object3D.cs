@@ -124,7 +124,22 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public int MaterialIndex { get; set; } = -1;
+		private int _materialIndex = -1;
+		public int MaterialIndex
+		{
+			get
+			{
+				return _materialIndex;
+			}
+			set
+			{
+				if (value != _materialIndex)
+				{
+					_materialIndex = value;
+					Invalidate(new InvalidateArgs(this, InvalidateType.Material));
+				}
+			}
+		}
 
 		private PrintOutputTypes _outputType = PrintOutputTypes.Default;
 		public PrintOutputTypes OutputType
