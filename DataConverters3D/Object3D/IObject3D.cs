@@ -113,7 +113,7 @@ namespace MatterHackers.DataConverters3D
 		/// <param name="root"></param>
 		public static void MakeNameNonColliding(this IObject3D item)
 		{
-			var topParent = item.Ancestors().Last();
+			var topParent = item.Ancestors().LastOrDefault();
 			if(topParent != null)
 			{
 				var names = topParent.DescendantsAndSelf().Where((i) => i != item).Select((i2) => i2.Name).ToList();
