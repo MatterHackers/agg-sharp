@@ -425,8 +425,12 @@ namespace MatterHackers.DataConverters3D
 		{
 			this.SuspendAll();
 			var originalParent = this.Parent;
+
 			// Index items by ID
-			var allItemsByID = this.DescendantsAndSelf().ToDictionary(i => i.ID);
+			// but make sure we don't blow up if we find duplicate ids (had bad data that did this)
+			var allItemsByID = this.DescendantsAndSelf()
+				.GroupBy(p => p.ID, StringComparer.OrdinalIgnoreCase)
+				.ToDictionary(g => g.Key, g => g.First());
 
 			IObject3D clonedItem;
 
@@ -466,7 +470,10 @@ namespace MatterHackers.DataConverters3D
 					child.OwnerID = descendant.ID;
 				}
 
-				idRemaping.Add(originalId, descendant.ID);
+				if (!idRemaping.ContainsKey(originalId))
+				{
+					idRemaping.Add(originalId, descendant.ID);
+				}
 			}
 
 			// Clean up any child references in the objects
