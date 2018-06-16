@@ -27,6 +27,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.Agg.VertexSource;
+using Newtonsoft.Json;
 using NUnit.Framework;
 using System;
 using System.Globalization;
@@ -50,6 +52,31 @@ namespace MatterHackers.Agg.Tests
 			}
 
 			return true;
+		}
+
+		[Test]
+		public void JsonSerializeVertexStorage()
+		{
+			var test1Control = new VertexStorage();
+			test1Control.MoveTo(10, 11);
+			test1Control.LineTo(100, 11);
+			test1Control.LineTo(100, 110);
+			test1Control.ClosePolygon();
+			string jsonData = JsonConvert.SerializeObject(test1Control);
+			var test1Result = JsonConvert.DeserializeObject<VertexStorage>(jsonData);
+			Assert.AreEqual(test1Control.Count, test1Result.Count);
+
+			var control = test1Control.Vertices().GetEnumerator();
+			var result = test1Result.Vertices().GetEnumerator();
+			for(int i=0; i<test1Control.Count; i++)
+			{
+				control.MoveNext();
+				result.MoveNext();
+				var controlVertex = control.Current;
+				var resultVertex = result.Current;
+				Assert.AreEqual(controlVertex.command, resultVertex.command);
+				Assert.AreEqual(controlVertex.position, resultVertex.position);
+			}
 		}
 
 		[Test]

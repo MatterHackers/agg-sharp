@@ -507,6 +507,8 @@ namespace MatterHackers.DataConverters3D
 					}
 				}
 			}
+			// the cloned item does not have a parent
+			clonedItem.Parent = null;
 			clonedItem.ResumeAll();
 
 			// restore the parent
@@ -738,9 +740,9 @@ namespace MatterHackers.DataConverters3D
 				// push our matrix into a copy of our children (so they don't jump away)
 				foreach (var child in newTree.Children)
 				{
-					//child.SuspendRebuild();
+					child.SuspendRebuild();
 					child.Matrix *= this.Matrix;
-					//child.ResumeRebuild();
+					child.ResumeRebuild();
 				}
 
 				newTree.ResumeRebuild();

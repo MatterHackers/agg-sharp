@@ -1,4 +1,6 @@
 using MatterHackers.VectorMath;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
@@ -20,6 +22,7 @@ using MatterHackers.VectorMath;
 //----------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace MatterHackers.Agg.VertexSource
 {
@@ -148,12 +151,14 @@ namespace MatterHackers.Agg.VertexSource
 			{
 				return numVertices;
 			}
+
 			public void swap_vertices(int v1, int v2)
 			{
 				var hold = vertexData[v2];
 				vertexData[v2] = vertexData[v1];
 				vertexData[v1] = hold;
 			}
+
 			public int total_vertices()
 			{
 				return numVertices;
@@ -203,24 +208,18 @@ namespace MatterHackers.Agg.VertexSource
 		}
 
 		public VertexStorage(string svgDString)
+			: this()
 		{
-			vertexDataManager = new VertexDataManager();
-			ParseSvgDString(svgDString);
+			SvgDString = svgDString;
 		}
 
+
+		[JsonIgnore]
 		public int Count
 		{
 			get
 			{
 				return vertexDataManager.total_vertices();
-			}
-		}
-
-		public Vector2 this[int i]
-		{
-			get
-			{
-				throw new NotImplementedException("make this work");
 			}
 		}
 
@@ -706,6 +705,72 @@ namespace MatterHackers.Agg.VertexSource
 			vertexDataManager.AddVertex(x, y, ShapePath.FlagsAndCommand.MoveTo, index);
 		}
 
+		public string SvgDString
+		{
+			get
+			{
+				return GetSvgDString();
+			}
+
+			set
+			{
+				ParseSvgDString(value);
+			}
+		}
+
+
+		public string GetSvgDString()
+		{
+			var dstring = new StringBuilder();
+			var pendingPositions = new List<Vector2>();
+			foreach (var vertexData in this.Vertices())
+			{
+				if (vertexData.IsStop)
+				{
+					break;
+				}
+				else if (vertexData.IsMoveTo)
+				{
+					pendingPositions.Add(vertexData.position);
+				}
+				else if (vertexData.IsClose)
+				{
+					ReverseAndAdd(dstring, pendingPositions);
+				}
+				else // Assuming this is a line to. if (vertexData.IsLineTo)
+				{
+					pendingPositions.Add(vertexData.position);
+				}
+			}
+
+			if(pendingPositions.Count > 0)
+			{
+				ReverseAndAdd(dstring, pendingPositions);
+			}
+
+			return dstring.ToString();
+		}
+
+		private static void ReverseAndAdd(StringBuilder dstring, List<Vector2> pendingPositions)
+		{
+			// reverse the output so it is wound correctly for SVG
+			bool first = true;
+			for (int i = pendingPositions.Count - 1; i >= 0; i--)
+			{
+				if (first)
+				{
+					first = false;
+					dstring.Append($"M {pendingPositions[i].X:0.###} {pendingPositions[i].Y:0.###}");
+				}
+				else
+				{
+					dstring.Append($"L {pendingPositions[i].X:0.###} {pendingPositions[i].Y:0.###}");
+				}
+			}
+			dstring.Append("Z");
+			pendingPositions.Clear();
+		}
+
 		public void ParseSvgDString(string dString)
 		{
 			bool fastSimpleNumbers = dString.IndexOf('e') == -1;
@@ -891,7 +956,7 @@ namespace MatterHackers.Agg.VertexSource
 						//this.ClosePathStorage();
 						this.ClosePolygon();
 						// svg fonts are stored cw and agg expects its shapes to be ccw.  cw shapes are holes.
-						// We stored the position of the start of this polygon, no we flip it as we colse it.
+						// We stored the position of the start of this polygon, now we flip it as we colse it.
 						this.invert_polygon(polyStartVertexSourceIndex);
 						break;
 
@@ -1080,63 +1145,6 @@ namespace MatterHackers.Agg.VertexSource
 			vertexDataManager.AddVertex(GetLastX(), y, ShapePath.FlagsAndCommand.LineTo);
 		}
 
-		/*
-		public void arc_to(double rx, double ry,
-								   double angle,
-								   bool large_arc_flag,
-								   bool sweep_flag,
-								   double x, double y)
-		{
-			if(m_vertices.total_vertices() && is_vertex(m_vertices.last_command()))
-			{
-				double epsilon = 1e-30;
-				double x0 = 0.0;
-				double y0 = 0.0;
-				m_vertices.last_vertex(&x0, &y0);
-
-				rx = fabs(rx);
-				ry = fabs(ry);
-
-				// Ensure radii are valid
-				//-------------------------
-				if(rx < epsilon || ry < epsilon)
-				{
-					line_to(x, y);
-					return;
-				}
-
-				if(calc_distance(x0, y0, x, y) < epsilon)
-				{
-					// If the endpoints (x, y) and (x0, y0) are identical, then this
-					// is equivalent to omitting the elliptical arc segment entirely.
-					return;
-				}
-				bezier_arc_svg a(x0, y0, rx, ry, angle, large_arc_flag, sweep_flag, x, y);
-				if(a.radii_ok())
-				{
-					join_path(a);
-				}
-				else
-				{
-					line_to(x, y);
-				}
-			}
-			else
-			{
-				move_to(x, y);
-			}
-		}
-
-		public void arc_rel(double rx, double ry,
-									double angle,
-									bool large_arc_flag,
-									bool sweep_flag,
-									double dx, double dy)
-		{
-			rel_to_abs(&dx, &dy);
-			arc_to(rx, ry, angle, large_arc_flag, sweep_flag, dx, dy);
-		}
-		 */
 		public IEnumerable<VertexData> Vertices()
 		{
 			int count = vertexDataManager.total_vertices();
@@ -1150,23 +1158,7 @@ namespace MatterHackers.Agg.VertexSource
 
 			yield return new VertexData(ShapePath.FlagsAndCommand.Stop, new Vector2(0, 0));
 		}
-		/*
-		// Concatenate polygon/polyline.
-		//--------------------------------------------------------------------
-		void concat_poly(T* data, int num_points, bool closed)
-		{
-			poly_plain_adaptor<T> poly(data, num_points, closed);
-			concat_path(poly);
-		}
 
-		// Join polygon/polyline continuously.
-		//--------------------------------------------------------------------
-		void join_poly(T* data, int num_points, bool closed)
-		{
-			poly_plain_adaptor<T> poly(data, num_points, closed);
-			join_path(poly);
-		}
-		 */
 		private void invert_polygon(int start, int end)
 		{
 			int i;
