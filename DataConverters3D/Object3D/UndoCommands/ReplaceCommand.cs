@@ -70,8 +70,8 @@ namespace MatterHackers.DataConverters3D.UndoCommands
 					list.Remove(child);
 				}
 				list.AddRange(addItems);
-				firstParent.Invalidate(new InvalidateArgs(firstParent, InvalidateType.Content));
 			});
+			firstParent.Invalidate(new InvalidateArgs(firstParent, InvalidateType.Content));
 		}
 
 		public void Undo()
