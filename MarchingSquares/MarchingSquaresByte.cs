@@ -111,9 +111,6 @@ namespace MatterHackers.MarchingSquares
 			// expand the image so we have a border around it (in case it goes to the edge)
 			var imageToMarch = new ImageBuffer(sourceImage.Width + 2, sourceImage.Height + 2);
 
-			// get the color to draw into the edge
-			imageToMarch.NewGraphics2D().Clear(Color.White);
-
 			imageToMarch.NewGraphics2D().Render(sourceImage, 1, 1);
 
 			thersholdPerPixel = new double[imageToMarch.Width * imageToMarch.Height];
