@@ -258,6 +258,13 @@ namespace MatterHackers.DataConverters3D
 								this.Invalidate(new InvalidateArgs(this, InvalidateType.Redraw));
 							});
 						}
+						else // we still need to resume the building
+						{
+							UiThread.RunOnIdle(() =>
+							{
+								ResumeRebuild();
+							});
+						}
 					}
 				});
 			}
@@ -277,7 +284,7 @@ namespace MatterHackers.DataConverters3D
 		public virtual bool CanEdit => this.HasChildren();
 
 		[JsonIgnore]
-		protected int RebuildSuspendCount { get; set; }
+		private int RebuildSuspendCount { get; set; }
 
 		public void SuspendRebuild()
 		{
