@@ -277,7 +277,10 @@ namespace MatterHackers.DataConverters3D
 		string Name { get; set; }
 
 		void SuspendRebuild();
+
+		[JsonIgnore]
 		bool RebuildSuspended { get; }
+
 		void ResumeRebuild();
 
 		bool Persistable { get; }
@@ -319,7 +322,7 @@ namespace MatterHackers.DataConverters3D
 		bool CanApply { get; }
 
 		/// <summary>
-		/// Remove the IObject3D from the tree and keep whatever functionality it was adding. 
+		/// Remove the IObject3D from the tree and keep whatever functionality it was adding.
 		/// This may require removing many child objects from the tree depending on implementation.
 		/// </summary>
 		void Apply(UndoBuffer undoBuffer);
