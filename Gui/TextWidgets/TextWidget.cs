@@ -67,6 +67,36 @@ namespace MatterHackers.Agg.UI
 
 		public TypeFacePrinter Printer { get; private set; }
 
+		/// <summary>
+		/// This function only works if the TypeFace you are using is LiberationSans. Otherwise it has no effect.
+		/// </summary>
+		public bool Bold
+		{
+			get
+			{
+				if(Printer.TypeFaceStyle.TypeFace == LiberationSansBoldFont.Instance)
+				{
+					return true;
+				}
+
+				return false;
+			}
+
+			set
+			{
+				if (Printer.TypeFaceStyle.TypeFace == LiberationSansBoldFont.Instance)
+				{
+					StyledTypeFace typeFaceStyle = new StyledTypeFace(LiberationSansFont.Instance, Printer.TypeFaceStyle.EmSizeInPoints, Printer.TypeFaceStyle.DoUnderline);
+					Printer = new TypeFacePrinter(Text, typeFaceStyle, justification: Printer.Justification);
+				}
+				else if(Printer.TypeFaceStyle.TypeFace == LiberationSansFont.Instance)
+				{
+					StyledTypeFace typeFaceStyle = new StyledTypeFace(LiberationSansBoldFont.Instance, Printer.TypeFaceStyle.EmSizeInPoints, Printer.TypeFaceStyle.DoUnderline);
+					Printer = new TypeFacePrinter(Text, typeFaceStyle, justification: Printer.Justification);
+				}
+			}
+		}
+
 		public TextWidget(string text, double x = 0, double y = 0, double pointSize = 12, Justification justification = Justification.Left, Color textColor = new Color(), bool ellipsisIfClipped = true, bool underline = false, Color backgroundColor = new Color(), TypeFace typeFace = null, bool bold = false)
 		{
 			disabledColor = new Color(textColor, 50);
