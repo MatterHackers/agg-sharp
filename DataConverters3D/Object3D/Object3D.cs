@@ -100,7 +100,7 @@ namespace MatterHackers.DataConverters3D
 						EnsureTransparentSorting();
 					}
 
-					Invalidate(new InvalidateArgs(this, InvalidateType.Color));
+					Invalidate(new InvalidateArgs(this, InvalidateType.Color, null));
 				}
 			}
 		}
@@ -136,7 +136,7 @@ namespace MatterHackers.DataConverters3D
 				if (value != _materialIndex)
 				{
 					_materialIndex = value;
-					Invalidate(new InvalidateArgs(this, InvalidateType.Material));
+					Invalidate(new InvalidateArgs(this, InvalidateType.Material, null));
 				}
 			}
 		}
@@ -179,7 +179,7 @@ namespace MatterHackers.DataConverters3D
 				if(value != _matrix)
 				{
 					_matrix = value;
-					Invalidate(new InvalidateArgs(this, InvalidateType.Matrix));
+					Invalidate(new InvalidateArgs(this, InvalidateType.Matrix, null));
 				}
 			}
 		}
@@ -204,7 +204,7 @@ namespace MatterHackers.DataConverters3D
 						traceData = null;
 						this.MeshPath = null;
 
-						Invalidate(new InvalidateArgs(this, InvalidateType.Mesh));
+						Invalidate(new InvalidateArgs(this, InvalidateType.Mesh, null));
 
 						AsyncCleanAndMerge();
 					}
@@ -212,6 +212,7 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
+		[JsonIgnore]
 		public bool RebuildSuspended
 		{
 			get
@@ -235,7 +236,7 @@ namespace MatterHackers.DataConverters3D
 				&& mesh.Vertices != null
 				&& !mesh.Vertices.IsSorted)
 			{
-				SuspendRebuild();
+				var suspendLock = RebuildLock();
 
 				Task.Run(() =>
 				{
@@ -254,15 +255,15 @@ namespace MatterHackers.DataConverters3D
 							_mesh = copyMesh;
 							UiThread.RunOnIdle(() =>
 							{
-								ResumeRebuild();
-								this.Invalidate(new InvalidateArgs(this, InvalidateType.Redraw));
+								suspendLock.Dispose();
+								this.Invalidate(new InvalidateArgs(this, InvalidateType.Redraw, null));
 							});
 						}
 						else // we still need to resume the building
 						{
 							UiThread.RunOnIdle(() =>
 							{
-								ResumeRebuild();
+								suspendLock.Dispose();
 							});
 						}
 					}
@@ -284,26 +285,37 @@ namespace MatterHackers.DataConverters3D
 		public virtual bool CanEdit => this.HasChildren();
 
 		[JsonIgnore]
-		private int RebuildSuspendCount { get; set; }
+		internal int RebuildSuspendCount { get; set; }
 
-		public void SuspendRebuild()
+		private class Object3DSuspendLock : SuspendLock
 		{
-			this.DebugDepth($"Suspend {RebuildSuspendCount}");
-			RebuildSuspendCount++;
-			if (RebuildSuspendCount > 1000)
+			public Object3DSuspendLock(IObject3D item)
+				: base(item)
 			{
-				throw new Exception("Looks like you don't have a matching Resume.");
+				if (item is Object3D object3D)
+				{
+					object3D.RebuildSuspendCount++;
+				}
+			}
+
+			public override void Dispose()
+			{
+				if (item is Object3D object3D)
+				{
+					object3D.RebuildSuspendCount--;
+					item.DebugDepth($"Resume {object3D.RebuildSuspendCount}");
+					if (object3D.RebuildSuspendCount < 0)
+					{
+						throw new Exception("Resume called without a matching Suspend");
+					}
+				}
 			}
 		}
 
-		public void ResumeRebuild()
+		public SuspendLock RebuildLock()
 		{
-			RebuildSuspendCount--;
-			this.DebugDepth($"Resume {RebuildSuspendCount}");
-			if (RebuildSuspendCount < 0)
-			{
-				throw new Exception("Resume called without a matching Suspend");
-			}
+			this.DebugDepth($"Suspend {RebuildSuspendCount}");
+			return new Object3DSuspendLock(this);
 		}
 
 		public static IObject3D Load(string meshPath, CancellationToken cancellationToken, Dictionary<string, IObject3D> itemCache = null, Action<double, string> progress = null)
@@ -430,7 +442,7 @@ namespace MatterHackers.DataConverters3D
 		// Deep clone via json serialization
 		public IObject3D Clone()
 		{
-			this.SuspendAll();
+			var suspendLocks = this.SuspendAll2();
 			var originalParent = this.Parent;
 
 			// Index items by ID
@@ -460,7 +472,7 @@ namespace MatterHackers.DataConverters3D
 				clonedItem = roundTripped.Children.First();
 			}
 
-			clonedItem.SuspendAll();
+			var cloneLocks = clonedItem.SuspendAll2();
 			Dictionary<string, string> idRemaping = new Dictionary<string, string>();
 			// Copy mesh instances to cloned tree
 			foreach (var descendant in clonedItem.DescendantsAndSelf())
@@ -516,12 +528,12 @@ namespace MatterHackers.DataConverters3D
 			}
 			// the cloned item does not have a parent
 			clonedItem.Parent = null;
-			clonedItem.ResumeAll();
+			cloneLocks.ResumeAll();
 
 			// restore the parent
 			this.Parent = originalParent;
 
-			this.ResumeAll();
+			suspendLocks.ResumeAll();
 
 			return clonedItem;
 		}
@@ -715,66 +727,66 @@ namespace MatterHackers.DataConverters3D
 
 		public virtual void Apply(UndoBuffer undoBuffer)
 		{
-			SuspendRebuild();
-
-			List<IObject3D> newChildren = new List<IObject3D>();
-			// push our matrix into a copy of our children
-			foreach (var child in this.Children)
+			using (RebuildLock())
 			{
-				var newChild = child.Clone();
-				newChildren.Add(newChild);
-				newChild.Matrix *= this.Matrix;
+				List<IObject3D> newChildren = new List<IObject3D>();
+				// push our matrix into a copy of our children
+				foreach (var child in this.Children)
+				{
+					var newChild = child.Clone();
+					newChildren.Add(newChild);
+					newChild.Matrix *= this.Matrix;
+				}
+
+				// and replace us with the children 
+				undoBuffer.AddAndDo(new ReplaceCommand(new List<IObject3D> { this }, newChildren));
 			}
 
-			// and replace us with the children 
-			undoBuffer.AddAndDo(new ReplaceCommand(new List<IObject3D> { this }, newChildren));
-
-			ResumeRebuild();
-
-			Invalidate(new InvalidateArgs(this, InvalidateType.Content));
+			Invalidate(new InvalidateArgs(this, InvalidateType.Content, undoBuffer));
 		}
 
 		public virtual void Remove(UndoBuffer undoBuffer)
 		{
-			SuspendRebuild();
-
 			var parent = this.Parent;
-			if (undoBuffer != null)
+
+			using (RebuildLock())
 			{
-				var newTree = this.Clone();
-				newTree.SuspendRebuild();
-
-				// push our matrix into a copy of our children (so they don't jump away)
-				foreach (var child in newTree.Children)
+				if (undoBuffer != null)
 				{
-					child.SuspendRebuild();
-					child.Matrix *= this.Matrix;
-					child.ResumeRebuild();
+					var newTree = this.Clone();
+					using (newTree.RebuildLock())
+					{
+						// push our matrix into a copy of our children (so they don't jump away)
+						foreach (var child in newTree.Children)
+						{
+							using (child.RebuildLock())
+							{
+								child.Matrix *= this.Matrix;
+							}
+						}
+					}
+
+					// and replace us with the children 
+					undoBuffer.AddAndDo(new ReplaceCommand(new List<IObject3D> { this }, newTree.Children.ToList()));
 				}
-
-				newTree.ResumeRebuild();
-				// and replace us with the children 
-				undoBuffer.AddAndDo(new ReplaceCommand(new List<IObject3D> { this }, newTree.Children.ToList()));
-			}
-			else
-			{
-				// push our matrix into a copy of our children (so they don't jump away)
-				foreach (var child in this.Children)
+				else
 				{
-					child.Matrix *= this.Matrix;
+					// push our matrix into a copy of our children (so they don't jump away)
+					foreach (var child in this.Children)
+					{
+						child.Matrix *= this.Matrix;
+					}
+
+					parent.Children.Modify(list =>
+					{
+						list.Remove(this);
+						list.AddRange(this.Children);
+						parent.Invalidate(new InvalidateArgs(parent, InvalidateType.Content, null));
+					});
 				}
-
-				parent.Children.Modify(list =>
-				{
-					list.Remove(this);
-					list.AddRange(this.Children);
-					parent.Invalidate(new InvalidateArgs(parent, InvalidateType.Content));
-				});
 			}
 
-			ResumeRebuild();
-
-			parent.Invalidate(new InvalidateArgs(this, InvalidateType.Content));
+			parent.Invalidate(new InvalidateArgs(this, InvalidateType.Content, null));
 		}
 
 		public virtual void Rebuild(UndoBuffer undoBuffer)

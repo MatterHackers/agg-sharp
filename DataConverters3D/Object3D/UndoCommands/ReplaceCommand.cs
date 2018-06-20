@@ -71,7 +71,7 @@ namespace MatterHackers.DataConverters3D.UndoCommands
 				}
 				list.AddRange(addItems);
 			});
-			firstParent.Invalidate(new InvalidateArgs(firstParent, InvalidateType.Content));
+			firstParent.Invalidate(new InvalidateArgs(firstParent, InvalidateType.Content, null));
 		}
 
 		public void Undo()
@@ -84,7 +84,7 @@ namespace MatterHackers.DataConverters3D.UndoCommands
 					list.Remove(child);
 				}
 				list.AddRange(removeItems);
-				firstParent.Invalidate(new InvalidateArgs(firstParent, InvalidateType.Content));
+				firstParent.Invalidate(new InvalidateArgs(firstParent, InvalidateType.Content, null));
 			});
 		}
 	}

@@ -381,19 +381,22 @@ namespace MatterHackers.DataConverters3D
 			return lastMaterialIndexFound;
 		}
 
-		public static void SuspendAll(this IObject3D parent)
+		public static List<SuspendLock> SuspendAll2(this IObject3D parent)
 		{
+			var resumeLocks = new List<SuspendLock>();
 			foreach (var item in parent.DescendantsAndSelf())
 			{
-				item.SuspendRebuild();
+				resumeLocks.Add(item.RebuildLock());
 			}
+
+			return resumeLocks;
 		}
 
-		public static void ResumeAll(this IObject3D parent)
+		public static void ResumeAll(this List<SuspendLock> resumeLocks)
 		{
-			foreach (var item in parent.DescendantsAndSelf())
+			foreach (var resumeLock in resumeLocks)
 			{
-				item.ResumeRebuild();
+				resumeLock.Dispose();
 			}
 		}
 

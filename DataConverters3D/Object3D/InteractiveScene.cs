@@ -393,16 +393,10 @@ namespace MatterHackers.DataConverters3D
 			throw new NotImplementedException();
 		}
 
-		public void SuspendRebuild()
+		public SuspendLock RebuildLock()
 		{
 			throw new NotImplementedException();
 		}
-
-		public void ResumeRebuild()
-		{
-			throw new NotImplementedException();
-		}
-
 
 		#endregion
 
