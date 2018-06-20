@@ -56,10 +56,11 @@ namespace MatterHackers.DataConverters3D
 		Color,
 		Material,
 		Content,
-		Redraw,
 		Mesh,
 		Path,
 		Image,
+		Properties,
+		Redraw,
 	};
 
 	[Flags]
@@ -87,11 +88,11 @@ namespace MatterHackers.DataConverters3D
 		}
 	}
 
-	public abstract class SuspendLock : IDisposable
+	public abstract class RebuildLock : IDisposable
 	{
 		protected IObject3D item;
 
-		public SuspendLock(IObject3D item)
+		public RebuildLock(IObject3D item)
 		{
 			this.item = item;
 		}
@@ -292,9 +293,9 @@ namespace MatterHackers.DataConverters3D
 
 		string Name { get; set; }
 
-		SuspendLock RebuildLock();
+		RebuildLock RebuildLock();
 		[JsonIgnore]
-		bool RebuildSuspended { get; }
+		bool RebuildLocked { get; }
 
 
 		bool Persistable { get; }

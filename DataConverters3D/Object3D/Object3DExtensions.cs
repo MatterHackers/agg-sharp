@@ -381,9 +381,9 @@ namespace MatterHackers.DataConverters3D
 			return lastMaterialIndexFound;
 		}
 
-		public static List<SuspendLock> SuspendAll2(this IObject3D parent)
+		public static List<RebuildLock> RebuilLockAll(this IObject3D parent)
 		{
-			var resumeLocks = new List<SuspendLock>();
+			var resumeLocks = new List<RebuildLock>();
 			foreach (var item in parent.DescendantsAndSelf())
 			{
 				resumeLocks.Add(item.RebuildLock());
@@ -392,7 +392,7 @@ namespace MatterHackers.DataConverters3D
 			return resumeLocks;
 		}
 
-		public static void ResumeAll(this List<SuspendLock> resumeLocks)
+		public static void ResumeAll(this List<RebuildLock> resumeLocks)
 		{
 			foreach (var resumeLock in resumeLocks)
 			{

@@ -213,7 +213,7 @@ namespace MatterHackers.DataConverters3D
 		}
 
 		[JsonIgnore]
-		public bool RebuildSuspended
+		public bool RebuildLocked
 		{
 			get
 			{
@@ -221,7 +221,7 @@ namespace MatterHackers.DataConverters3D
 				{
 					if(i is Object3D object3D)
 					{
-						return object3D.RebuildSuspendCount > 0;
+						return object3D.RebuildLockCount > 0;
 					}
 					return false;
 				}).Any();
@@ -236,7 +236,7 @@ namespace MatterHackers.DataConverters3D
 				&& mesh.Vertices != null
 				&& !mesh.Vertices.IsSorted)
 			{
-				var suspendLock = RebuildLock();
+				var rebuildLock = RebuildLock();
 
 				Task.Run(() =>
 				{
@@ -255,7 +255,7 @@ namespace MatterHackers.DataConverters3D
 							_mesh = copyMesh;
 							UiThread.RunOnIdle(() =>
 							{
-								suspendLock.Dispose();
+								rebuildLock.Dispose();
 								this.Invalidate(new InvalidateArgs(this, InvalidateType.Redraw, null));
 							});
 						}
@@ -263,7 +263,7 @@ namespace MatterHackers.DataConverters3D
 						{
 							UiThread.RunOnIdle(() =>
 							{
-								suspendLock.Dispose();
+								rebuildLock.Dispose();
 							});
 						}
 					}
@@ -285,16 +285,16 @@ namespace MatterHackers.DataConverters3D
 		public virtual bool CanEdit => this.HasChildren();
 
 		[JsonIgnore]
-		internal int RebuildSuspendCount { get; set; }
+		internal int RebuildLockCount { get; set; }
 
-		private class Object3DSuspendLock : SuspendLock
+		private class Object3DRebuildLock : RebuildLock
 		{
-			public Object3DSuspendLock(IObject3D item)
+			public Object3DRebuildLock(IObject3D item)
 				: base(item)
 			{
 				if (item is Object3D object3D)
 				{
-					object3D.RebuildSuspendCount++;
+					object3D.RebuildLockCount++;
 				}
 			}
 
@@ -302,20 +302,16 @@ namespace MatterHackers.DataConverters3D
 			{
 				if (item is Object3D object3D)
 				{
-					object3D.RebuildSuspendCount--;
-					item.DebugDepth($"Resume {object3D.RebuildSuspendCount}");
-					if (object3D.RebuildSuspendCount < 0)
-					{
-						throw new Exception("Resume called without a matching Suspend");
-					}
+					object3D.RebuildLockCount--;
+					item.DebugDepth($"Decrease Lock Count {object3D.RebuildLockCount}");
 				}
 			}
 		}
 
-		public SuspendLock RebuildLock()
+		public RebuildLock RebuildLock()
 		{
-			this.DebugDepth($"Suspend {RebuildSuspendCount}");
-			return new Object3DSuspendLock(this);
+			this.DebugDepth($"Increase Lock Count {RebuildLockCount}");
+			return new Object3DRebuildLock(this);
 		}
 
 		public static IObject3D Load(string meshPath, CancellationToken cancellationToken, Dictionary<string, IObject3D> itemCache = null, Action<double, string> progress = null)
@@ -423,7 +419,7 @@ namespace MatterHackers.DataConverters3D
 
 		public void Invalidate(InvalidateArgs invalidateType)
 		{
-			if (!RebuildSuspended)
+			if (!RebuildLocked)
 			{
 				this.OnInvalidate(invalidateType);
 			}
@@ -442,7 +438,7 @@ namespace MatterHackers.DataConverters3D
 		// Deep clone via json serialization
 		public IObject3D Clone()
 		{
-			var suspendLocks = this.SuspendAll2();
+			var rebuildLock = this.RebuilLockAll();
 			var originalParent = this.Parent;
 
 			// Index items by ID
@@ -472,7 +468,7 @@ namespace MatterHackers.DataConverters3D
 				clonedItem = roundTripped.Children.First();
 			}
 
-			var cloneLocks = clonedItem.SuspendAll2();
+			var cloneLocks = clonedItem.RebuilLockAll();
 			Dictionary<string, string> idRemaping = new Dictionary<string, string>();
 			// Copy mesh instances to cloned tree
 			foreach (var descendant in clonedItem.DescendantsAndSelf())
@@ -533,7 +529,7 @@ namespace MatterHackers.DataConverters3D
 			// restore the parent
 			this.Parent = originalParent;
 
-			suspendLocks.ResumeAll();
+			rebuildLock.ResumeAll();
 
 			return clonedItem;
 		}
@@ -787,11 +783,6 @@ namespace MatterHackers.DataConverters3D
 			}
 
 			parent.Invalidate(new InvalidateArgs(this, InvalidateType.Content, null));
-		}
-
-		public virtual void Rebuild(UndoBuffer undoBuffer)
-		{
-			this.DebugDepth("Rebuild");
 		}
 	}
 }
