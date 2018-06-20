@@ -42,6 +42,10 @@ namespace MatterHackers.PolygonMesh
 		public FaceEdge firstFaceEdge;
 		public Vector3 Normal { get; set; }
 
+		public Face()
+		{
+		}
+
 		public Face(Mesh containingMesh)
 		{
 			this.ContainingMesh = containingMesh;
