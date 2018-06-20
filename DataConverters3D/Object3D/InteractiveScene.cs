@@ -307,7 +307,7 @@ namespace MatterHackers.DataConverters3D
 
 		public bool DrawSelection { get; set; } = true;
 
-		public bool RebuildSuspended => false;
+		public bool RebuildSuspended => sourceItem.RebuildSuspended;
 
 		public IObject3D Clone() => sourceItem.Clone();
 
