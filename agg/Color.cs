@@ -766,6 +766,21 @@ namespace MatterHackers.Agg
 			}
 		}
 
+		public long GetLongHashCode()
+		{
+			long hash = 19;
+
+			unchecked
+			{
+				hash = hash * 31 + red;
+				hash = hash * 31 + green;
+				hash = hash * 31 + blue;
+				hash = hash * 31 + alpha;
+			}
+
+			return hash;
+		}
+
 		public Color(string htmlString)
 			: this()
 		{

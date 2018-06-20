@@ -82,6 +82,10 @@ namespace MatterHackers.PolygonMesh
 
 		public MeshEdge FirstMeshEdge { get; set; }
 
+		public Vertex()
+		{
+		}
+
 		public Vertex(Vector3 position)
 		{
 			this.Position = position;
