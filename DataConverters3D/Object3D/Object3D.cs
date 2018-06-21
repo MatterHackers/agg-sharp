@@ -187,7 +187,7 @@ namespace MatterHackers.DataConverters3D
 		private Object locker = new object();
 
 		[JsonIgnore]
-		protected Mesh _mesh;
+		private Mesh _mesh;
 		public virtual Mesh Mesh
 		{
 			get
