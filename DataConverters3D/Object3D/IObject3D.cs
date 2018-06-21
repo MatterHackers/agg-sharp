@@ -184,7 +184,7 @@ namespace MatterHackers.DataConverters3D
 				{
 					unchecked
 					{
-						hash = hash * 31 + item.Mesh.GetLongHashCode();
+						hash = hash * 31 + item.Mesh.LongHashBeforeClean;
 						hash = hash * 31 + item.WorldMatrix(root).GetLongHashCode();
 						hash = hash * 31 + item.WorldColor(root).GetLongHashCode();
 					}
