@@ -100,7 +100,7 @@ namespace MatterHackers.DataConverters3D
 		}
 
 		[JsonIgnore]
-		public UndoBuffer UndoBuffer { get; } = new UndoBuffer();
+		public UndoBuffer UndoBuffer { get; } = new UndoBuffer() { MaxUndos = 10 };
 
 		[JsonIgnore]
 		public bool HasSelection => this.HasChildren() && SelectedItem != null;
