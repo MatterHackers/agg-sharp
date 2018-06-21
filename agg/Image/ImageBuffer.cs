@@ -1007,7 +1007,7 @@ namespace MatterHackers.Agg.Image
 			return false;
 		}
 
-		public bool Equals(ImageBuffer b, int maxError = 0)
+		public bool Equals(ImageBuffer b, int maxError)
 		{
 			if (Width == b.Width
 				&& Height == b.Height
