@@ -106,12 +106,15 @@ namespace MatterHackers.MarchingSquares
 
 		private double[] thersholdPerPixel = null;
 
-		public MarchingSquaresByte(ImageBuffer sourceImage, Func<Color, double> thresholdFunction, int debugColor)
+		public MarchingSquaresByte(ImageBuffer sourceImage, Color edgeColor, Func<Color, double> thresholdFunction, int debugColor)
 		{
 			// expand the image so we have a border around it (in case it goes to the edge)
 			var imageToMarch = new ImageBuffer(sourceImage.Width + 2, sourceImage.Height + 2);
+			imageToMarch.SetRecieveBlender(new BlenderBGRAExactCopy());
+			var graphics2D = imageToMarch.NewGraphics2D();
 
-			imageToMarch.NewGraphics2D().Render(sourceImage, 1, 1);
+			graphics2D.Clear(edgeColor);
+			graphics2D.Render(sourceImage, 1, 1);
 
 			thersholdPerPixel = new double[imageToMarch.Width * imageToMarch.Height];
 			{
@@ -125,7 +128,9 @@ namespace MatterHackers.MarchingSquares
 					for (int x = 0; x < imageToMarch.Width; x++)
 					{
 						int imageBufferOffsetWithX = imageBufferOffset + x * 4;
-						thersholdPerPixel[thresholdBufferOffset + x] = thresholdFunction(GetRGBA(buffer, imageBufferOffsetWithX));
+						var color = GetRGBA(buffer, imageBufferOffsetWithX);
+						var thresholdValue = thresholdFunction(color);
+						thersholdPerPixel[thresholdBufferOffset + x] = thresholdValue;
 					}
 				}
 			}
@@ -135,11 +140,6 @@ namespace MatterHackers.MarchingSquares
 			this.debugColor = debugColor;
 
 			CreateLineSegments();
-		}
-
-		public MarchingSquaresByte(ImageBuffer imageToMarch, int thresholdFrom0, int debugColor)
-			: this(imageToMarch, new SimpleRange(thresholdFrom0).Threshold, debugColor)
-		{
 		}
 
 		public Polygons CreateLineLoops(int pixelsToIntPointsScale, int maxLineLoopsToAdd = int.MaxValue)
@@ -212,7 +212,8 @@ namespace MatterHackers.MarchingSquares
 
 		private Color GetRGBA(byte[] buffer, int offset)
 		{
-			return new Color(buffer[offset + 2], buffer[offset + 1], buffer[offset + 0], buffer[offset + 3]);
+			var color = new Color(buffer[offset + 2], buffer[offset + 1], buffer[offset + 0], buffer[offset + 3]);
+			return color;
 		}
 
 		public void CreateLineSegments()

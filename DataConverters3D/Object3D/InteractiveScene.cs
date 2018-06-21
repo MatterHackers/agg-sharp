@@ -307,7 +307,8 @@ namespace MatterHackers.DataConverters3D
 
 		public bool DrawSelection { get; set; } = true;
 
-		public bool RebuildSuspended => sourceItem.RebuildSuspended;
+		[JsonIgnore]
+		public bool RebuildLocked => false;
 
 		public IObject3D Clone() => sourceItem.Clone();
 
@@ -393,16 +394,10 @@ namespace MatterHackers.DataConverters3D
 			throw new NotImplementedException();
 		}
 
-		public void SuspendRebuild()
+		public RebuildLock RebuildLock()
 		{
 			throw new NotImplementedException();
 		}
-
-		public void ResumeRebuild()
-		{
-			throw new NotImplementedException();
-		}
-
 
 		#endregion
 

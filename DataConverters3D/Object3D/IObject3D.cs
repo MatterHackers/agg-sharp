@@ -56,10 +56,11 @@ namespace MatterHackers.DataConverters3D
 		Color,
 		Material,
 		Content,
-		Redraw,
 		Mesh,
 		Path,
 		Image,
+		Properties,
+		Redraw,
 	};
 
 	[Flags]
@@ -78,11 +79,25 @@ namespace MatterHackers.DataConverters3D
 	{
 		public IObject3D Source { get; }
 		public InvalidateType InvalidateType { get; }
-		public InvalidateArgs(IObject3D source, InvalidateType invalidateType)
+		public UndoBuffer UndoBuffer { get; }
+		public InvalidateArgs(IObject3D source, InvalidateType invalidateType, UndoBuffer undoBuffer = null)
 		{
 			this.Source = source;
 			this.InvalidateType = invalidateType;
+			this.UndoBuffer = undoBuffer;
 		}
+	}
+
+	public abstract class RebuildLock : IDisposable
+	{
+		protected IObject3D item;
+
+		public RebuildLock(IObject3D item)
+		{
+			this.item = item;
+		}
+
+		public abstract void Dispose();
 	}
 
 	public class MeshPrintOutputSettings
@@ -160,21 +175,23 @@ namespace MatterHackers.DataConverters3D
 		{
 			long hash = 19;
 
-			root.SuspendRebuild();
-			var oldMatrix = root.Matrix;
-			root.Matrix = Matrix4X4.Identity;
-
-			foreach (var item in root.VisibleMeshes())
+			using (root.RebuildLock())
 			{
-				unchecked
-				{
-					hash = hash * 31 + item.Mesh.GetLongHashCode();
-					hash = hash * 31 + item.WorldMatrix(root).GetLongHashCode();
-					hash = hash * 31 + item.WorldColor(root).GetLongHashCode();
-				}
-			}
+				var oldMatrix = root.Matrix;
+				root.Matrix = Matrix4X4.Identity;
 
-			root.Matrix = oldMatrix;
+				foreach (var item in root.VisibleMeshes())
+				{
+					unchecked
+					{
+						hash = hash * 31 + item.Mesh.GetLongHashCode();
+						hash = hash * 31 + item.WorldMatrix(root).GetLongHashCode();
+						hash = hash * 31 + item.WorldColor(root).GetLongHashCode();
+					}
+				}
+
+				root.Matrix = oldMatrix;
+			}
 
 			return hash;
 		}
@@ -276,12 +293,10 @@ namespace MatterHackers.DataConverters3D
 
 		string Name { get; set; }
 
-		void SuspendRebuild();
-
+		RebuildLock RebuildLock();
 		[JsonIgnore]
-		bool RebuildSuspended { get; }
+		bool RebuildLocked { get; }
 
-		void ResumeRebuild();
 
 		bool Persistable { get; }
 
@@ -305,12 +320,6 @@ namespace MatterHackers.DataConverters3D
 		/// Mark that this object has changed (and notify its parent)
 		/// </summary>
 		void Invalidate(InvalidateArgs invalidateType);
-
-		/// <summary>
-		/// Request that this object be rebuilt (a child may call this if it has changed to notify thet parent)
-		/// </summary>
-		/// <param name="undoBuffer"></param>
-		void Rebuild(UndoBuffer undoBuffer);
 
 		[JsonIgnore]
 		/// <summary>
