@@ -184,16 +184,13 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		private Object locker = new object();
+		private object locker = new object();
 
 		[JsonIgnore]
-		protected Mesh _mesh;
+		private Mesh _mesh;
 		public virtual Mesh Mesh
 		{
-			get
-			{
-				return _mesh;
-			}
+			get => _mesh;
 			set
 			{
 				lock (locker)
@@ -734,7 +731,7 @@ namespace MatterHackers.DataConverters3D
 					newChild.Matrix *= this.Matrix;
 				}
 
-				// and replace us with the children 
+				// and replace us with the children
 				undoBuffer.AddAndDo(new ReplaceCommand(new List<IObject3D> { this }, newChildren));
 			}
 
@@ -762,7 +759,7 @@ namespace MatterHackers.DataConverters3D
 						}
 					}
 
-					// and replace us with the children 
+					// and replace us with the children
 					undoBuffer.AddAndDo(new ReplaceCommand(new List<IObject3D> { this }, newTree.Children.ToList()));
 				}
 				else

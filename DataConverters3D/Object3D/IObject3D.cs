@@ -225,7 +225,7 @@ namespace MatterHackers.DataConverters3D
 		/// </summary>
 		/// <returns></returns>
 		public static IEnumerable<IObject3D> VisibleMeshes(this IObject3D root)
-		{ 
+		{
 			if (root.Visible)
 			{
 				var items = new Stack<IObject3D>(new[] { root });
@@ -274,6 +274,7 @@ namespace MatterHackers.DataConverters3D
 		new IObject3D Parent { get; set; }
 
 		Color Color { get; set; }
+
 		int MaterialIndex { get; set; }
 
 		PrintOutputTypes OutputType { get; set; }
@@ -294,9 +295,9 @@ namespace MatterHackers.DataConverters3D
 		string Name { get; set; }
 
 		RebuildLock RebuildLock();
+
 		[JsonIgnore]
 		bool RebuildLocked { get; }
-
 
 		bool Persistable { get; }
 
@@ -338,6 +339,7 @@ namespace MatterHackers.DataConverters3D
 
 		[JsonIgnore]
 		bool CanRemove { get; }
+
 		/// <summary>
 		/// Remove the IObject3D from the tree and undo whatever functionality it was adding (if appropriate).
 		/// This may require removing many child objects from the tree depending on implementation.
