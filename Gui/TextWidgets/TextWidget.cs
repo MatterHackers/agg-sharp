@@ -88,11 +88,19 @@ namespace MatterHackers.Agg.UI
 				{
 					StyledTypeFace typeFaceStyle = new StyledTypeFace(LiberationSansFont.Instance, Printer.TypeFaceStyle.EmSizeInPoints, Printer.TypeFaceStyle.DoUnderline);
 					Printer = new TypeFacePrinter(Text, typeFaceStyle, justification: Printer.Justification);
+					if (AutoExpandBoundsToText)
+					{
+						DoExpandBoundsToText();
+					}
 				}
 				else if(Printer.TypeFaceStyle.TypeFace == LiberationSansFont.Instance)
 				{
 					StyledTypeFace typeFaceStyle = new StyledTypeFace(LiberationSansBoldFont.Instance, Printer.TypeFaceStyle.EmSizeInPoints, Printer.TypeFaceStyle.DoUnderline);
 					Printer = new TypeFacePrinter(Text, typeFaceStyle, justification: Printer.Justification);
+					if (AutoExpandBoundsToText)
+					{
+						DoExpandBoundsToText();
+					}
 				}
 			}
 		}

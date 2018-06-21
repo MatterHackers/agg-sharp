@@ -21,13 +21,56 @@ using System.Collections.Generic;
 
 namespace MatterHackers.Agg.UI
 {
+	public class LimitStack<T>
+	{
+		public int Limit { get; set; } = int.MaxValue;
+		List<T> content = new List<T>();
+
+		public int Count { get { return content.Count; } }
+
+		public void Push(T item)
+		{
+			content.Add(item);
+			if(content.Count > Limit)
+			{
+				// remove the oldest item
+				content.RemoveAt(0);
+			}
+		}
+
+		public T Pop()
+		{
+			var index = content.Count - 1;
+			var item = content[index];
+			content.RemoveAt(index);
+			return item;
+		}
+
+		public void Clear()
+		{
+			content.Clear();
+		}
+	}
+
 	public class UndoBuffer
 	{
 		private Stack<IUndoRedoCommand> redoBuffer = new Stack<IUndoRedoCommand>();
 		public int RedoCount { get { return redoBuffer.Count; } }
 
-		private Stack<IUndoRedoCommand> undoBuffer = new Stack<IUndoRedoCommand>();
+		private LimitStack<IUndoRedoCommand> undoBuffer = new LimitStack<IUndoRedoCommand>();
 		public int UndoCount { get { return undoBuffer.Count; } }
+
+		public int MaxUndos
+		{
+			get
+			{
+				return undoBuffer.Limit;
+			}
+			set
+			{
+				undoBuffer.Limit = value;
+			}
+		}
 
 		public event EventHandler Changed;
 
