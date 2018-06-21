@@ -75,8 +75,27 @@ namespace MatterHackers.PolygonMesh
 
 		public VertexCollecton Vertices { get; private set; } = new VertexCollecton();
 
+		long _longHashBeforeClean = 0;
+		public long LongHashBeforeClean
+		{
+			get
+			{
+				if (_longHashBeforeClean == 0)
+				{
+					_longHashBeforeClean = GetLongHashCode();
+				}
+
+				return _longHashBeforeClean;
+			}
+		}
+
 		public void CleanAndMergeMesh(CancellationToken cancellationToken, double maxDistanceToConsiderVertexAsSame = 0, Action<double, string> reportProgress = null)
 		{
+			if (_longHashBeforeClean == 0)
+			{
+				_longHashBeforeClean = GetLongHashCode();
+			}
+
 			if (reportProgress != null)
 			{
 				SortVertices((double progress0To1, string processingState) =>
