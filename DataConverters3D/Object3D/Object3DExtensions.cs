@@ -547,7 +547,7 @@ namespace MatterHackers.DataConverters3D
 		public static void CollapseInto(this IObject3D objectToCollapse, List<IObject3D> collapseInto, bool filterToSelectionGroup = true, int depth = int.MaxValue)
 		{
 			if (objectToCollapse != null
-				&& objectToCollapse is SelectionGroup == filterToSelectionGroup)
+				&& objectToCollapse is SelectionGroupObject3D == filterToSelectionGroup)
 			{
 				// Remove the collapsing item from the list
 				collapseInto.Remove(objectToCollapse);
@@ -572,7 +572,7 @@ namespace MatterHackers.DataConverters3D
 
 					child.Matrix *= objectToCollapse.Matrix;
 
-					if (child is SelectionGroup && depth > 0)
+					if (child is SelectionGroupObject3D && depth > 0)
 					{
 						child.CollapseInto(collapseInto, filterToSelectionGroup, depth - 1);
 					}
