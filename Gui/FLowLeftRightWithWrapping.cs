@@ -36,6 +36,10 @@ namespace MatterHackers.Agg.UI
 	{
 	}
 
+	public interface ISkipIfFirst
+	{
+	}
+
 	public class FlowLeftRightWithWrapping : FlowLayoutWidget
 	{
 		protected List<GuiWidget> addedChildren = new List<GuiWidget>();
@@ -82,48 +86,74 @@ namespace MatterHackers.Agg.UI
 
 		protected void DoWrappingLayout()
 		{
-			doingLayout = true;
-			// remove all the children we added
-			foreach (var child in addedChildren)
+			using (this.LayoutLock())
 			{
-				if (child.Parent != null)
+				doingLayout = true;
+				// remove all the children we added
+				foreach (var child in addedChildren)
 				{
-					child.Parent.RemoveChild(child);
-					child.ClearRemovedFlag();
-				}
-			}
-
-			// close all the row containers
-			this.CloseAllChildren();
-
-			// add in new row container
-			FlowLayoutWidget childContainerRow = new FlowLayoutWidget()
-			{
-				Margin = RowMargin,
-				Padding = RowPadding,
-				HAnchor = RowFlowAnchor,
-			};
-			base.AddChild(childContainerRow);
-
-			foreach (var child in addedChildren)
-			{
-				if (Parent != null
-					&& (childContainerRow.Width + child.Width > Parent.Width
-						|| child is IHardBreak))
-				{
-					childContainerRow = new FlowLayoutWidget()
+					if (child.Parent != null)
 					{
-						Margin = RowMargin,
-						Padding = RowPadding,
-						HAnchor = RowFlowAnchor,
-					};
-					base.AddChild(childContainerRow);
+						using (child.Parent.LayoutLock())
+						{
+							child.Parent.RemoveChild(child);
+							child.ClearRemovedFlag();
+						}
+					}
 				}
 
-				// add the button to the current row
-				childContainerRow.AddChild(child);
+				// close all the row containers
+				this.CloseAllChildren();
+
+				// add in new row container
+				FlowLayoutWidget childContainerRow = new FlowLayoutWidget()
+				{
+					Margin = RowMargin,
+					Padding = RowPadding,
+					HAnchor = RowFlowAnchor,
+				};
+				base.AddChild(childContainerRow);
+
+				double runningSize = 0;
+				foreach (var child in addedChildren)
+				{
+					if (Parent != null
+						&& (runningSize + child.Width > Parent.Width
+							|| child is IHardBreak))
+					{
+						runningSize = 0;
+						if (childContainerRow != null)
+						{
+							childContainerRow.PerformLayout();
+						}
+						childContainerRow = new FlowLayoutWidget()
+						{
+							Margin = RowMargin,
+							Padding = RowPadding,
+							HAnchor = RowFlowAnchor,
+						};
+
+						base.AddChild(childContainerRow);
+					}
+
+					if (runningSize > 0 
+						|| !(child is ISkipIfFirst))
+					{
+						// add the new child to the current row
+						using (childContainerRow.LayoutLock())
+						{
+							childContainerRow.AddChild(child);
+						}
+						runningSize += child.Width;
+					}
+				}
+				if (childContainerRow != null)
+				{
+					childContainerRow.PerformLayout();
+				}
+				doingLayout = false;
 			}
-			doingLayout = false;
+			this.PerformLayout();
 		}
 	}
 }

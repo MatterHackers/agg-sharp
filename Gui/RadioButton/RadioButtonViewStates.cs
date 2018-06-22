@@ -49,64 +49,64 @@ namespace MatterHackers.Agg.UI
 			RadioButton radioButton = this.Parent as RadioButton;
 			if (radioButton != null) // This can be null if the button has been closed.
 			{
-				SuspendLayout();
-
-				if (Enabled)
+				using (LayoutLock())
 				{
-					if (radioButton.Checked)
+					if (Enabled)
 					{
-						uncheckedWidget.Visible = false;
-						uncheckedHoverWidget.Visible = false;
-						checkingWidget.Visible = false;
-						disabledWidget.Visible = false;
-
-						checkedWidget.Visible = true;
-					}
-					else
-					{
-						if (radioButton.UnderMouseState != UI.UnderMouseState.FirstUnderMouse)
+						if (radioButton.Checked)
 						{
+							uncheckedWidget.Visible = false;
 							uncheckedHoverWidget.Visible = false;
-							checkedWidget.Visible = false;
 							checkingWidget.Visible = false;
 							disabledWidget.Visible = false;
 
-							uncheckedWidget.Visible = true;
+							checkedWidget.Visible = true;
 						}
 						else
 						{
-							if (radioButton.MouseDownOnWidget)
+							if (radioButton.UnderMouseState != UI.UnderMouseState.FirstUnderMouse)
 							{
-								uncheckedWidget.Visible = false;
 								uncheckedHoverWidget.Visible = false;
-								checkedWidget.Visible = false;
-								disabledWidget.Visible = false;
-
-								checkingWidget.Visible = true;
-							}
-							else
-							{
-								uncheckedWidget.Visible = false;
 								checkedWidget.Visible = false;
 								checkingWidget.Visible = false;
 								disabledWidget.Visible = false;
 
-								uncheckedHoverWidget.Visible = true;
+								uncheckedWidget.Visible = true;
+							}
+							else
+							{
+								if (radioButton.MouseDownOnWidget)
+								{
+									uncheckedWidget.Visible = false;
+									uncheckedHoverWidget.Visible = false;
+									checkedWidget.Visible = false;
+									disabledWidget.Visible = false;
+
+									checkingWidget.Visible = true;
+								}
+								else
+								{
+									uncheckedWidget.Visible = false;
+									checkedWidget.Visible = false;
+									checkingWidget.Visible = false;
+									disabledWidget.Visible = false;
+
+									uncheckedHoverWidget.Visible = true;
+								}
 							}
 						}
 					}
-				}
-				else
-				{
-					uncheckedWidget.Visible = false;
-					uncheckedHoverWidget.Visible = false;
-					checkedWidget.Visible = false;
-					checkingWidget.Visible = false;
+					else
+					{
+						uncheckedWidget.Visible = false;
+						uncheckedHoverWidget.Visible = false;
+						checkedWidget.Visible = false;
+						checkingWidget.Visible = false;
 
-					disabledWidget.Visible = true;
+						disabledWidget.Visible = true;
+					}
 				}
 
-				ResumeLayout();
 				Invalidate();
 			}
 		}

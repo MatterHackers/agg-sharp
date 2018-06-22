@@ -115,11 +115,12 @@ namespace MatterHackers.Agg.UI
 				ScrollableWidget allContainer = new ScrollableWidget(true);
 				topToBottomTotal = new FlowLayoutWidget(FlowDirection.TopToBottom);
 
-				topToBottomTotal.SuspendLayout();
-				GuiWidget.DefaultEnforceIntegerBounds = true;
-				AddInfoRecursive(topLevelWindow, topToBottomTotal);
-				GuiWidget.DefaultEnforceIntegerBounds = false;
-				topToBottomTotal.ResumeLayout();
+				using (topToBottomTotal.LayoutLock())
+				{
+					GuiWidget.DefaultEnforceIntegerBounds = true;
+					AddInfoRecursive(topLevelWindow, topToBottomTotal);
+					GuiWidget.DefaultEnforceIntegerBounds = false;
+				}
 				topToBottomTotal.PerformLayout();
 				allContainer.AddChild(topToBottomTotal);
 

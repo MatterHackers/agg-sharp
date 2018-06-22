@@ -15,48 +15,47 @@ namespace MatterHackers.Agg.UI
 			GuiWidget parent = layoutEventArgs.ParentWidget;
 			if (parent != null)
 			{
-				parent.SuspendLayout();
-
-				// if we didn't specify a child than anchor all the children
-				if (layoutEventArgs.ChildWidget == null)
+				using (parent.LayoutLock())
 				{
-					foreach (GuiWidget child in parent.Children)
+					// if we didn't specify a child than anchor all the children
+					if (layoutEventArgs.ChildWidget == null)
 					{
-						if (child.Visible == false)
+						foreach (GuiWidget child in parent.Children)
 						{
-							continue;
-						}
+							if (child.Visible == false)
+							{
+								continue;
+							}
 
-						ApplyHAnchorToChild(parent, child);
-						ApplyVAnchorToChild(parent, child);
+							ApplyHAnchorToChild(parent, child);
+							ApplyVAnchorToChild(parent, child);
+						}
+					}
+					else
+					{
+						ApplyHAnchorToChild(parent, layoutEventArgs.ChildWidget);
+						ApplyVAnchorToChild(parent, layoutEventArgs.ChildWidget);
+					}
+
+					// make sure we fit to the children after anchoring
+					bool parentChangedSize = false;
+					DoFitToChildrenHorizontal(parent, ref parentChangedSize);
+					DoFitToChildrenVertical(parent, ref parentChangedSize);
+
+					// if we changed size again, than try one more time to anchor the children
+					if (parentChangedSize)
+					{
+						foreach (GuiWidget child in parent.Children)
+						{
+							if (child.Visible == false)
+							{
+								continue;
+							}
+							ApplyHAnchorToChild(parent, child);
+							ApplyVAnchorToChild(parent, child);
+						}
 					}
 				}
-				else
-				{
-					ApplyHAnchorToChild(parent, layoutEventArgs.ChildWidget);
-					ApplyVAnchorToChild(parent, layoutEventArgs.ChildWidget);
-				}
-
-				// make sure we fit to the children after anchoring
-				bool parentChangedSize = false;
-				DoFitToChildrenHorizontal(parent, ref parentChangedSize);
-				DoFitToChildrenVertical(parent, ref parentChangedSize);
-
-				// if we changed size again, than try one more time to anchor the children
-				if (parentChangedSize)
-				{
-					foreach (GuiWidget child in parent.Children)
-					{
-						if (child.Visible == false)
-						{
-							continue;
-						}
-						ApplyHAnchorToChild(parent, child);
-						ApplyVAnchorToChild(parent, child);
-					}
-				}
-
-				parent.ResumeLayout();
 			}
 		}
 
