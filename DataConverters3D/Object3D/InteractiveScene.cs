@@ -83,7 +83,7 @@ namespace MatterHackers.DataConverters3D
 			{
 				if (selectedItem != value)
 				{
-					if (SelectedItem is SelectionGroup)
+					if (SelectedItem is SelectionGroupObject3D)
 					{
 						// If the selected item is a SelectionGroup, collapse its contents into the root
 						// of the scene when it loses focus
@@ -120,7 +120,7 @@ namespace MatterHackers.DataConverters3D
 
 				if (this.SelectedItem != null)
 				{
-					if (this.SelectedItem is SelectionGroup selectionGroup)
+					if (this.SelectedItem is SelectionGroupObject3D selectionGroup)
 					{
 						foreach (var item in selectionGroup.Children)
 						{
@@ -195,7 +195,7 @@ namespace MatterHackers.DataConverters3D
 			else
 			{
 				// Add a range of items wrapped with a new SelectionGroup
-				var SelectionGroup = new SelectionGroup(items)
+				var SelectionGroup = new SelectionGroupObject3D(items)
 				{
 					Name = "Selection".Localize()
 				};
@@ -225,7 +225,7 @@ namespace MatterHackers.DataConverters3D
 
 			if (this.HasSelection)
 			{
-				if (SelectedItem is SelectionGroup)
+				if (SelectedItem is SelectionGroupObject3D)
 				{
 					// Remove from the scene root
 					this.Children.Modify(list => list.Remove(itemToAdd));
@@ -238,7 +238,7 @@ namespace MatterHackers.DataConverters3D
 					// We're adding a new item to the selection. To do so we wrap the selected item
 					// in a new group and with the new item. The selection will continue to grow in this
 					// way until it's applied, due to a loss of focus or until a group operation occurs
-					var newSelectionGroup = new SelectionGroup(new[] { SelectedItem, itemToAdd })
+					var newSelectionGroup = new SelectionGroupObject3D(new[] { SelectedItem, itemToAdd })
 					{
 						Name = "Selection".Localize()
 					};
@@ -344,7 +344,7 @@ namespace MatterHackers.DataConverters3D
 
 				List<IObject3D> itemsToRestoreOnUndo;
 
-				if (this.SelectedItem is SelectionGroup selectionGroup)
+				if (this.SelectedItem is SelectionGroupObject3D selectionGroup)
 				{
 					item = new Object3D();
 					itemsToRestoreOnUndo = selectionGroup.Children.ToList();

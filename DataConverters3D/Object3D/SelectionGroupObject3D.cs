@@ -32,15 +32,15 @@ using MatterHackers.DataConverters3D;
 
 namespace MatterHackers.DataConverters3D
 {
-	public class SelectionGroup : Object3D
+	public class SelectionGroupObject3D : Object3D
 	{
 		public override bool CanEdit => false;
 
-		public SelectionGroup()
+		public SelectionGroupObject3D()
 		{
 		}
 
-		public SelectionGroup(IEnumerable<IObject3D> children)
+		public SelectionGroupObject3D(IEnumerable<IObject3D> children)
 			: base (children)
 		{
 		}

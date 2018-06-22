@@ -253,7 +253,7 @@ namespace MatterHackers.DataConverters3D
 							UiThread.RunOnIdle(() =>
 							{
 								rebuildLock.Dispose();
-								this.Invalidate(new InvalidateArgs(this, InvalidateType.Redraw, null));
+								this.Invalidate(new InvalidateArgs(this, InvalidateType.Mesh, null));
 							});
 						}
 						else // we still need to resume the building
