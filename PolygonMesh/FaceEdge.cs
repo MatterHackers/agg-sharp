@@ -63,7 +63,7 @@ namespace MatterHackers.PolygonMesh
 		public Face ContainingFace { get; set; }
 		public IVertex FirstVertex { get; set; }
 
-		public int ID => Mesh.GetID(this);
+		public int ID { get; } = Mesh.GetID();
 
 		public void AddDebugInfo(StringBuilder totalDebug, int numTabs, bool printRecursive = true)
 		{
