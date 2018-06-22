@@ -387,10 +387,10 @@ namespace MatterHackers.PolygonMesh
 			// doubly linked list
 			do
 			{
-				temp = current.prevFaceEdge;
-				current.prevFaceEdge = current.nextFaceEdge;
-				current.nextFaceEdge = temp;
-				current = current.prevFaceEdge; // go to the next
+				temp = current.PrevFaceEdge;
+				current.PrevFaceEdge = current.NextFaceEdge;
+				current.NextFaceEdge = temp;
+				current = current.PrevFaceEdge; // go to the next
 			} while (current != faceToReverse.firstFaceEdge);
 		}
 
@@ -438,17 +438,17 @@ namespace MatterHackers.PolygonMesh
 			FaceEdge newFaceEdgeForNewFace = new FaceEdge(faceCreatedDuringSplit, meshEdgeCreatedDuringSplit, splitEndVertex);
 
 			// get the new edges injected into the existing loop, spliting it in two.
-			newFaceEdgeExistingFace.prevFaceEdge = faceEdgeAfterSplitStart.prevFaceEdge;
-			newFaceEdgeForNewFace.prevFaceEdge = faceEdgeAfterSplitEnd.prevFaceEdge;
+			newFaceEdgeExistingFace.PrevFaceEdge = faceEdgeAfterSplitStart.PrevFaceEdge;
+			newFaceEdgeForNewFace.PrevFaceEdge = faceEdgeAfterSplitEnd.PrevFaceEdge;
 
-			faceEdgeAfterSplitStart.prevFaceEdge.nextFaceEdge = newFaceEdgeExistingFace;
-			faceEdgeAfterSplitEnd.prevFaceEdge.nextFaceEdge = newFaceEdgeForNewFace;
+			faceEdgeAfterSplitStart.PrevFaceEdge.NextFaceEdge = newFaceEdgeExistingFace;
+			faceEdgeAfterSplitEnd.PrevFaceEdge.NextFaceEdge = newFaceEdgeForNewFace;
 
-			newFaceEdgeExistingFace.nextFaceEdge = faceEdgeAfterSplitEnd;
-			newFaceEdgeForNewFace.nextFaceEdge = faceEdgeAfterSplitStart;
+			newFaceEdgeExistingFace.NextFaceEdge = faceEdgeAfterSplitEnd;
+			newFaceEdgeForNewFace.NextFaceEdge = faceEdgeAfterSplitStart;
 
-			faceEdgeAfterSplitStart.prevFaceEdge = newFaceEdgeForNewFace;
-			faceEdgeAfterSplitEnd.prevFaceEdge = newFaceEdgeExistingFace;
+			faceEdgeAfterSplitStart.PrevFaceEdge = newFaceEdgeForNewFace;
+			faceEdgeAfterSplitEnd.PrevFaceEdge = newFaceEdgeExistingFace;
 
 			// make sure the first face edge of each face is valid
 			faceToSplit.firstFaceEdge = newFaceEdgeExistingFace;
@@ -481,16 +481,16 @@ namespace MatterHackers.PolygonMesh
 				throw new Exception("The faces have opposite windings and you cannot merge the edge");
 			}
 
-			faceEdgeToDeleteOnFaceToKeep.prevFaceEdge.nextFaceEdge = faceEdgeToDeleteOnFaceToDelete.nextFaceEdge;
-			faceEdgeToDeleteOnFaceToDelete.nextFaceEdge.prevFaceEdge = faceEdgeToDeleteOnFaceToKeep.prevFaceEdge;
+			faceEdgeToDeleteOnFaceToKeep.PrevFaceEdge.NextFaceEdge = faceEdgeToDeleteOnFaceToDelete.NextFaceEdge;
+			faceEdgeToDeleteOnFaceToDelete.NextFaceEdge.PrevFaceEdge = faceEdgeToDeleteOnFaceToKeep.PrevFaceEdge;
 
-			faceEdgeToDeleteOnFaceToKeep.nextFaceEdge.prevFaceEdge = faceEdgeToDeleteOnFaceToDelete.prevFaceEdge;
-			faceEdgeToDeleteOnFaceToDelete.prevFaceEdge.nextFaceEdge = faceEdgeToDeleteOnFaceToKeep.nextFaceEdge;
+			faceEdgeToDeleteOnFaceToKeep.NextFaceEdge.PrevFaceEdge = faceEdgeToDeleteOnFaceToDelete.PrevFaceEdge;
+			faceEdgeToDeleteOnFaceToDelete.PrevFaceEdge.NextFaceEdge = faceEdgeToDeleteOnFaceToKeep.NextFaceEdge;
 
 			// if the face we are deleting is the one that the face to keep was looking at as its starting face edge, move it to the next face edge
 			if (faceToKeep.firstFaceEdge == faceEdgeToDeleteOnFaceToKeep)
 			{
-				faceToKeep.firstFaceEdge = faceToKeep.firstFaceEdge.nextFaceEdge;
+				faceToKeep.firstFaceEdge = faceToKeep.firstFaceEdge.NextFaceEdge;
 			}
 
 			// make sure the FaceEdges all point to the kept face.
@@ -502,8 +502,8 @@ namespace MatterHackers.PolygonMesh
 			DeleteMeshEdge(meshEdgeToDelete);
 
 			// clear the data on the deleted face edge to help with debugging
-			faceEdgeToDeleteOnFaceToKeep.meshEdge.VertexOnEnd[0] = null;
-			faceEdgeToDeleteOnFaceToKeep.meshEdge.VertexOnEnd[1] = null;
+			faceEdgeToDeleteOnFaceToKeep.MeshEdge.VertexOnEnd[0] = null;
+			faceEdgeToDeleteOnFaceToKeep.MeshEdge.VertexOnEnd[1] = null;
 			faceToDelete.firstFaceEdge = null;
 			// take the face out of the face list
 			Faces.Remove(faceToDelete);
@@ -785,7 +785,7 @@ namespace MatterHackers.PolygonMesh
 			// fix any face edges that are referencing the edgeToDelete
 			foreach (FaceEdge attachedFaceEdge in edgeToDelete.firstFaceEdge.RadialNextFaceEdges())
 			{
-				attachedFaceEdge.meshEdge = edgeToKeep;
+				attachedFaceEdge.MeshEdge = edgeToKeep;
 			}
 
 			List<FaceEdge> radialLoopToMove = new List<FaceEdge>();
@@ -850,10 +850,10 @@ namespace MatterHackers.PolygonMesh
 					FaceEdge newFaceEdge = new FaceEdge(currentFace, meshEdgeCreatedDuringSplit, vertexCreatedDuringSplit);
 					newFaceEdge.AddToRadialLoop(meshEdgeCreatedDuringSplit);
 					// and inject it into the face loop for this face
-					newFaceEdge.prevFaceEdge = faceEdge;
-					newFaceEdge.nextFaceEdge = faceEdge.nextFaceEdge;
-					faceEdge.nextFaceEdge.prevFaceEdge = newFaceEdge;
-					faceEdge.nextFaceEdge = newFaceEdge;
+					newFaceEdge.PrevFaceEdge = faceEdge;
+					newFaceEdge.NextFaceEdge = faceEdge.NextFaceEdge;
+					faceEdge.NextFaceEdge.PrevFaceEdge = newFaceEdge;
+					faceEdge.NextFaceEdge = newFaceEdge;
 				}
 			}
 
@@ -888,19 +888,19 @@ namespace MatterHackers.PolygonMesh
 				foreach (FaceEdge faceEdge in edgeToJoin.FaceEdgesSharingMeshEdge())
 				{
 					FaceEdge faceEdgeToDelete = null;
-					if (faceEdge.nextFaceEdge.meshEdge == edgeToDelete)
+					if (faceEdge.NextFaceEdge.MeshEdge == edgeToDelete)
 					{
-						faceEdgeToDelete = faceEdge.nextFaceEdge;
-						FaceEdge newNextFaceEdge = faceEdgeToDelete.nextFaceEdge;
-						newNextFaceEdge.prevFaceEdge = faceEdge;
-						faceEdge.nextFaceEdge = newNextFaceEdge;
+						faceEdgeToDelete = faceEdge.NextFaceEdge;
+						FaceEdge newNextFaceEdge = faceEdgeToDelete.NextFaceEdge;
+						newNextFaceEdge.PrevFaceEdge = faceEdge;
+						faceEdge.NextFaceEdge = newNextFaceEdge;
 					}
-					else if (faceEdge.prevFaceEdge.meshEdge == edgeToDelete)
+					else if (faceEdge.PrevFaceEdge.MeshEdge == edgeToDelete)
 					{
-						faceEdgeToDelete = faceEdge.prevFaceEdge;
-						FaceEdge newPrevFaceEdge = faceEdgeToDelete.prevFaceEdge;
-						newPrevFaceEdge.nextFaceEdge = faceEdge;
-						faceEdge.prevFaceEdge = newPrevFaceEdge;
+						faceEdgeToDelete = faceEdge.PrevFaceEdge;
+						FaceEdge newPrevFaceEdge = faceEdgeToDelete.PrevFaceEdge;
+						newPrevFaceEdge.NextFaceEdge = faceEdge;
+						faceEdge.PrevFaceEdge = newPrevFaceEdge;
 					}
 					else
 					{
@@ -914,11 +914,11 @@ namespace MatterHackers.PolygonMesh
 					}
 
 					// and clear out the FaceEdge we are deleting to help debugging and other references to it.
-					faceEdgeToDelete.nextFaceEdge = null;
-					faceEdgeToDelete.prevFaceEdge = null;
-					faceEdgeToDelete.radialNextFaceEdge = null;
+					faceEdgeToDelete.NextFaceEdge = null;
+					faceEdgeToDelete.PrevFaceEdge = null;
+					faceEdgeToDelete.RadialNextFaceEdge = null;
 					faceEdgeToDelete.radialPrevFaceEdge = null;
-					faceEdgeToDelete.meshEdge = null;
+					faceEdgeToDelete.MeshEdge = null;
 					faceEdgeToDelete.ContainingFace = null;
 					faceEdgeToDelete.FirstVertex = null;
 				}
@@ -1016,22 +1016,22 @@ namespace MatterHackers.PolygonMesh
 			List<FaceEdge> faceEdgesToDelete = new List<FaceEdge>(faceToDelete.FaceEdges());
 			foreach (var faceEdgeToDelete in faceEdgesToDelete)
 			{
-				if (faceEdgeToDelete.meshEdge.firstFaceEdge == faceEdgeToDelete)
+				if (faceEdgeToDelete.MeshEdge.firstFaceEdge == faceEdgeToDelete)
 				{
 					// make sure the mesh edge is not pointing to this face edeg
-					if (faceEdgeToDelete.radialNextFaceEdge == faceEdgeToDelete)
+					if (faceEdgeToDelete.RadialNextFaceEdge == faceEdgeToDelete)
 					{
 						// it point to itself, so the edge will point to nothing
-						faceEdgeToDelete.meshEdge.firstFaceEdge = null;
+						faceEdgeToDelete.MeshEdge.firstFaceEdge = null;
 					}
 					else
 					{
-						faceEdgeToDelete.meshEdge.firstFaceEdge = faceEdgeToDelete.radialNextFaceEdge;
+						faceEdgeToDelete.MeshEdge.firstFaceEdge = faceEdgeToDelete.RadialNextFaceEdge;
 					}
 				}
-				FaceEdge temp = faceEdgeToDelete.radialNextFaceEdge.radialPrevFaceEdge;
-				faceEdgeToDelete.radialPrevFaceEdge.radialNextFaceEdge = faceEdgeToDelete.radialPrevFaceEdge;
-				faceEdgeToDelete.radialNextFaceEdge.radialPrevFaceEdge = faceEdgeToDelete.nextFaceEdge;
+				FaceEdge temp = faceEdgeToDelete.RadialNextFaceEdge.radialPrevFaceEdge;
+				faceEdgeToDelete.radialPrevFaceEdge.RadialNextFaceEdge = faceEdgeToDelete.radialPrevFaceEdge;
+				faceEdgeToDelete.RadialNextFaceEdge.radialPrevFaceEdge = faceEdgeToDelete.NextFaceEdge;
 			}
 
 			// clear the data on the deleted face edge to help with debugging
@@ -1276,8 +1276,8 @@ namespace MatterHackers.PolygonMesh
 				}
 				else
 				{
-					prevFaceEdge.nextFaceEdge = currentFaceEdge;
-					currentFaceEdge.prevFaceEdge = prevFaceEdge;
+					prevFaceEdge.NextFaceEdge = currentFaceEdge;
+					currentFaceEdge.PrevFaceEdge = prevFaceEdge;
 				}
 				currentFaceEdge.AddToRadialLoop(currentMeshEdge);
 				prevFaceEdge = currentFaceEdge;
@@ -1286,10 +1286,10 @@ namespace MatterHackers.PolygonMesh
 			{
 				MeshEdge currentMeshEdge = edgesToUse[verticesToUse.Length - 1];
 				FaceEdge currentFaceEdge = new FaceEdge(createdFace, currentMeshEdge, verticesToUse[verticesToUse.Length - 1]);
-				prevFaceEdge.nextFaceEdge = currentFaceEdge;
-				currentFaceEdge.prevFaceEdge = prevFaceEdge;
-				currentFaceEdge.nextFaceEdge = createdFace.firstFaceEdge;
-				createdFace.firstFaceEdge.prevFaceEdge = currentFaceEdge;
+				prevFaceEdge.NextFaceEdge = currentFaceEdge;
+				currentFaceEdge.PrevFaceEdge = prevFaceEdge;
+				currentFaceEdge.NextFaceEdge = createdFace.firstFaceEdge;
+				createdFace.firstFaceEdge.PrevFaceEdge = currentFaceEdge;
 				currentFaceEdge.AddToRadialLoop(currentMeshEdge);
 			}
 		}

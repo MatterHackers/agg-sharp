@@ -111,7 +111,7 @@ namespace MatterHackers.RenderOpenGl
 					if (meshEdge.GetNumFacesSharingEdge() == 2)
 					{
 						FaceEdge firstFaceEdge = meshEdge.firstFaceEdge;
-						FaceEdge nextFaceEdge = meshEdge.firstFaceEdge.radialNextFaceEdge;
+						FaceEdge nextFaceEdge = meshEdge.firstFaceEdge.RadialNextFaceEdge;
 						double angle = Vector3.CalculateAngle(firstFaceEdge.ContainingFace.Normal, nextFaceEdge.ContainingFace.Normal);
 						if (angle > MathHelper.Tau * .1)
 						{

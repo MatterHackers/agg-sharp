@@ -68,10 +68,10 @@ namespace MatterHackers.PolygonMesh
 			{
 				int numVertices = 1;
 				FaceEdge currentFaceEdge = firstFaceEdge;
-				while (currentFaceEdge.nextFaceEdge != firstFaceEdge)
+				while (currentFaceEdge.NextFaceEdge != firstFaceEdge)
 				{
 					numVertices++;
-					currentFaceEdge = currentFaceEdge.nextFaceEdge;
+					currentFaceEdge = currentFaceEdge.NextFaceEdge;
 				}
 				return numVertices;
 			}
@@ -86,13 +86,13 @@ namespace MatterHackers.PolygonMesh
 		public void CalculateNormal()
 		{
 			FaceEdge faceEdge0 = firstFaceEdge;
-			FaceEdge faceEdge1 = faceEdge0.nextFaceEdge;
+			FaceEdge faceEdge1 = faceEdge0.NextFaceEdge;
 			Vector3 faceEdge1Minus0 = faceEdge1.FirstVertex.Position - faceEdge0.FirstVertex.Position;
 			FaceEdge faceEdge2 = faceEdge1;
 			bool collinear = false;
 			do
 			{
-				faceEdge2 = faceEdge2.nextFaceEdge;
+				faceEdge2 = faceEdge2.NextFaceEdge;
 				collinear = Vector3.Collinear(faceEdge0.FirstVertex.Position, faceEdge1.FirstVertex.Position, faceEdge2.FirstVertex.Position);
 			} while (collinear && faceEdge2 != faceEdge0);
 			Vector3 face2Minus0 = faceEdge2.FirstVertex.Position - faceEdge0.FirstVertex.Position;
@@ -103,7 +103,7 @@ namespace MatterHackers.PolygonMesh
 		{
 			foreach (FaceEdge faceEdge in FaceEdges())
 			{
-				if (faceEdge.nextFaceEdge.prevFaceEdge != faceEdge)
+				if (faceEdge.NextFaceEdge.PrevFaceEdge != faceEdge)
 				{
 					return false;
 				}
@@ -390,10 +390,10 @@ namespace MatterHackers.PolygonMesh
 		private int GetMajorAxis()
 		{
 			if (firstFaceEdge?.FirstVertex != null
-				&& firstFaceEdge?.nextFaceEdge?.FirstVertex != null)
+				&& firstFaceEdge?.NextFaceEdge?.FirstVertex != null)
 			{
 				Vector3 position0 = firstFaceEdge.FirstVertex.Position;
-				Vector3 position1 = firstFaceEdge.nextFaceEdge.FirstVertex.Position;
+				Vector3 position1 = firstFaceEdge.NextFaceEdge.FirstVertex.Position;
 				Vector3 delta = position1 - position0;
 				delta.X = Math.Abs(delta.X);
 				delta.Y = Math.Abs(delta.Y);

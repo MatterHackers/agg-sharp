@@ -32,6 +32,10 @@ using System.Collections.Generic;
 
 namespace MatterHackers.Agg.UI
 {
+	public interface IHardBreak
+	{
+	}
+
 	public class FlowLeftRightWithWrapping : FlowLayoutWidget
 	{
 		protected List<GuiWidget> addedChildren = new List<GuiWidget>();
@@ -92,7 +96,7 @@ namespace MatterHackers.Agg.UI
 			// close all the row containers
 			this.CloseAllChildren();
 
-			// add in new row containers with buttons
+			// add in new row container
 			FlowLayoutWidget childContainerRow = new FlowLayoutWidget()
 			{
 				Margin = RowMargin,
@@ -104,7 +108,8 @@ namespace MatterHackers.Agg.UI
 			foreach (var child in addedChildren)
 			{
 				if (Parent != null
-					&& childContainerRow.Width + child.Width > Parent.Width)
+					&& (childContainerRow.Width + child.Width > Parent.Width
+						|| child is IHardBreak))
 				{
 					childContainerRow = new FlowLayoutWidget()
 					{

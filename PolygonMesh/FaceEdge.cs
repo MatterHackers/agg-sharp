@@ -38,11 +38,11 @@ namespace MatterHackers.PolygonMesh
 	[DebuggerDisplay("ID = {ID}")]
 	public class FaceEdge
 	{
-		public MeshEdge meshEdge;
-		public FaceEdge nextFaceEdge;
-		public FaceEdge prevFaceEdge;
-		public FaceEdge radialNextFaceEdge;
-		public FaceEdge radialPrevFaceEdge;
+		public MeshEdge MeshEdge { get; set; }
+		public FaceEdge NextFaceEdge { get; set; }
+		public FaceEdge PrevFaceEdge { get; set; }
+		public FaceEdge RadialNextFaceEdge { get; set; }
+		public FaceEdge radialPrevFaceEdge { get; set; }
 
 		public FaceEdge()
 		{
@@ -51,13 +51,13 @@ namespace MatterHackers.PolygonMesh
 		public FaceEdge(Face face, MeshEdge meshEdge, IVertex vertex)
 		{
 			this.ContainingFace = face;
-			this.meshEdge = meshEdge;
+			this.MeshEdge = meshEdge;
 			this.FirstVertex = vertex;
 
-			nextFaceEdge = null;
-			prevFaceEdge = null;
+			NextFaceEdge = null;
+			PrevFaceEdge = null;
 
-			radialNextFaceEdge = radialPrevFaceEdge = this;
+			RadialNextFaceEdge = radialPrevFaceEdge = this;
 		}
 
 		public Face ContainingFace { get; set; }
@@ -68,7 +68,7 @@ namespace MatterHackers.PolygonMesh
 		public void AddDebugInfo(StringBuilder totalDebug, int numTabs, bool printRecursive = true)
 		{
 			totalDebug.Append(new string('\t', numTabs) + String.Format("Face: {0}\n", ContainingFace.ID));
-			totalDebug.Append(new string('\t', numTabs) + String.Format("MeshEdge: {0}\n", meshEdge.ID));
+			totalDebug.Append(new string('\t', numTabs) + String.Format("MeshEdge: {0}\n", MeshEdge.ID));
 			totalDebug.Append(new string('\t', numTabs) + String.Format("Vertex: {0}\n", FirstVertex.ID));
 
 			if (printRecursive)
@@ -103,11 +103,11 @@ namespace MatterHackers.PolygonMesh
 				// There was a face on this mesh edge so add this one in.
 				// First set the new face edge radias pointers
 				this.radialPrevFaceEdge = currentMeshEdge.firstFaceEdge;
-				this.radialNextFaceEdge = currentMeshEdge.firstFaceEdge.radialNextFaceEdge;
+				this.RadialNextFaceEdge = currentMeshEdge.firstFaceEdge.RadialNextFaceEdge;
 
 				// then fix the insertion point to point to this new face edge.
-				this.radialPrevFaceEdge.radialNextFaceEdge = this;
-				this.radialNextFaceEdge.radialPrevFaceEdge = this;
+				this.radialPrevFaceEdge.RadialNextFaceEdge = this;
+				this.RadialNextFaceEdge.radialPrevFaceEdge = this;
 			}
 		}
 
@@ -129,7 +129,7 @@ namespace MatterHackers.PolygonMesh
 			{
 				yield return curFaceEdge;
 
-				curFaceEdge = curFaceEdge.nextFaceEdge;
+				curFaceEdge = curFaceEdge.NextFaceEdge;
 			} while (curFaceEdge != this);
 		}
 
@@ -140,7 +140,7 @@ namespace MatterHackers.PolygonMesh
 			{
 				yield return curFaceEdge;
 
-				curFaceEdge = curFaceEdge.prevFaceEdge;
+				curFaceEdge = curFaceEdge.PrevFaceEdge;
 			} while (curFaceEdge != this);
 		}
 
@@ -151,7 +151,7 @@ namespace MatterHackers.PolygonMesh
 			{
 				yield return curFaceEdge;
 
-				curFaceEdge = curFaceEdge.radialNextFaceEdge;
+				curFaceEdge = curFaceEdge.RadialNextFaceEdge;
 			} while (curFaceEdge != this);
 		}
 

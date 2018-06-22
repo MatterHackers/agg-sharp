@@ -110,7 +110,7 @@ namespace MatterHackers.PolygonMesh
 				{
 					yield return curFaceEdge;
 
-					curFaceEdge = curFaceEdge.radialNextFaceEdge;
+					curFaceEdge = curFaceEdge.RadialNextFaceEdge;
 				} while (curFaceEdge != this.firstFaceEdge);
 			}
 		}
