@@ -48,10 +48,7 @@ namespace MatterHackers.PolygonMesh
 		public Dictionary<(Face, int), ImageBuffer> FaceTexture = new Dictionary<(Face, int), ImageBuffer>();
 		public Dictionary<(FaceEdge, int), Vector2> TextureUV = new Dictionary<(FaceEdge, int), Vector2>();
 
-		private static Dictionary<object, int> Ids = new Dictionary<object, int>(ReferenceEqualityComparer.Default);
-
 		private static object nextIdLocker = new object();
-		private static int nextIdToUse = 0;
 		public BspNode FaceBspTree { get; set; } = null;
 		public AxisAlignedBoundingBox cachedAABB = null;
 
@@ -77,7 +74,7 @@ namespace MatterHackers.PolygonMesh
 
 		public List<Face> Faces { get; } = new List<Face>();
 
-		public int ID => Mesh.GetID(this);
+		public int ID { get; } = Mesh.GetID();
 
 		public List<MeshEdge> MeshEdges { get; private set; } = new List<MeshEdge>();
 
@@ -289,20 +286,17 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public static int GetID(object item)
+		#region meshIDs
+		//private static Dictionary<object, int> Ids = new Dictionary<object, int>(ReferenceEqualityComparer.Default);
+		private static int nextId = 0;
+		public static int GetID()
 		{
-			int id;
 			lock (nextIdLocker)
 			{
-				if (!Ids.TryGetValue(item, out id))
-				{
-					id = nextIdToUse++;
-					Ids.Add(item, id);
-				}
+				return nextId++;
 			}
-
-			return id;
 		}
+		#endregion
 
 		#region Public Members
 
