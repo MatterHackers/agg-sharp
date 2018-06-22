@@ -79,9 +79,10 @@ namespace MatterHackers.Agg.UI
 			{
 				view.Selectable = false;
 
-				SuspendLayout();
-				AddChild(view);
-				ResumeLayout();
+				using (LayoutLock())
+				{
+					AddChild(view);
+				}
 
 				FixBoundsAndChildrenPositions();
 
@@ -102,14 +103,15 @@ namespace MatterHackers.Agg.UI
 
 			if (LocalBounds.Left != 0 || LocalBounds.Bottom != 0)
 			{
-				SuspendLayout();
-				// let's make sure that a button has 0, 0 at the lower left
-				// move the children so they will fit with 0, 0 at the lower left
-				foreach (GuiWidget child in Children)
+				using (LayoutLock())
 				{
-					child.OriginRelativeParent = child.OriginRelativeParent + new Vector2(-LocalBounds.Left, -LocalBounds.Bottom);
+					// let's make sure that a button has 0, 0 at the lower left
+					// move the children so they will fit with 0, 0 at the lower left
+					foreach (GuiWidget child in Children)
+					{
+						child.OriginRelativeParent = child.OriginRelativeParent + new Vector2(-LocalBounds.Left, -LocalBounds.Bottom);
+					}
 				}
-				ResumeLayout();
 
 				SetBoundsToEncloseChildren();
 			}

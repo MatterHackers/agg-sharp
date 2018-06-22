@@ -53,31 +53,11 @@ namespace MatterHackers.Agg.UI
 			GuiWidget parent = layoutEventArgs.ParentWidget;
 			if (parent != null)
 			{
-				parent.SuspendLayout();
-
-				for (int i = 0; i < parent.Children.Count; i++)
+				using (parent.LayoutLock())
 				{
-					GuiWidget child = parent.Children[i];
-					if (child.Visible == false)
+					for (int i = 0; i < parent.Children.Count; i++)
 					{
-						continue;
-					}
-					ApplyHAnchorToChild(parent, child);
-					ApplyVAnchorToChild(parent, child);
-				}
-
-				DoLayoutChildren(layoutEventArgs);
-
-				FixOriginXIfRightToLeft(parent);
-				FixOriginYIfTopToBottom(parent);
-
-				bool parentChangedSize = false;
-				DoFitToChildrenHorizontal(parent, ref parentChangedSize);
-				DoFitToChildrenVertical(parent, ref parentChangedSize);
-				if (parentChangedSize)
-				{
-					foreach (GuiWidget child in parent.Children)
-					{
+						GuiWidget child = parent.Children[i];
 						if (child.Visible == false)
 						{
 							continue;
@@ -87,9 +67,28 @@ namespace MatterHackers.Agg.UI
 					}
 
 					DoLayoutChildren(layoutEventArgs);
-				}
 
-				parent.ResumeLayout();
+					FixOriginXIfRightToLeft(parent);
+					FixOriginYIfTopToBottom(parent);
+
+					bool parentChangedSize = false;
+					DoFitToChildrenHorizontal(parent, ref parentChangedSize);
+					DoFitToChildrenVertical(parent, ref parentChangedSize);
+					if (parentChangedSize)
+					{
+						foreach (GuiWidget child in parent.Children)
+						{
+							if (child.Visible == false)
+							{
+								continue;
+							}
+							ApplyHAnchorToChild(parent, child);
+							ApplyVAnchorToChild(parent, child);
+						}
+
+						DoLayoutChildren(layoutEventArgs);
+					}
+				}
 			}
 		}
 

@@ -31,6 +31,22 @@ using static MatterHackers.Agg.Color;
 
 namespace MatterHackers.Agg.UI
 {
+	public class LayoutLock : IDisposable
+	{
+		GuiWidget item;
+
+		public LayoutLock(GuiWidget item)
+		{
+			this.item = item;
+			item.LayoutLockCount++;
+		}
+
+		public void Dispose()
+		{
+			item.LayoutLockCount--;
+		}
+	}
+
 	[Flags]
 	public enum SizeLimitsToSet
 	{
@@ -561,7 +577,20 @@ namespace MatterHackers.Agg.UI
 
 		private bool containsFocus = false;
 
-		protected int layoutSuspendCount { get; private set; }
+		internal int LayoutLockCount { get; set; }
+
+		public LayoutLock LayoutLock()
+		{
+			return new LayoutLock(this);
+		}
+
+		public bool LayoutLocked
+		{
+			get
+			{
+				return LayoutLockCount > 0;
+			}
+		}
 
 		public event EventHandler Layout;
 
@@ -1779,16 +1808,6 @@ namespace MatterHackers.Agg.UI
 
 		public bool Initialized { get; private set; } = false;
 
-		public void SuspendLayout()
-		{
-			layoutSuspendCount++;
-		}
-
-		public void ResumeLayout()
-		{
-			layoutSuspendCount--;
-		}
-
 		public void PerformLayout()
 		{
 			OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.PerformLayout));
@@ -1802,13 +1821,14 @@ namespace MatterHackers.Agg.UI
 		{
 			//using (new PerformanceTimer("_LAST_", "Widget OnLayout"))
 			{
-				if (Visible && layoutSuspendCount < 1)
+				if (Visible && !LayoutLocked)
 				{
 					if (LayoutEngine != null)
 					{
-						SuspendLayout();
-						LayoutEngine.Layout(layoutEventArgs);
-						ResumeLayout();
+						using (LayoutLock())
+						{
+							LayoutEngine.Layout(layoutEventArgs);
+						}
 					}
 
 					Layout?.Invoke(this, layoutEventArgs);
