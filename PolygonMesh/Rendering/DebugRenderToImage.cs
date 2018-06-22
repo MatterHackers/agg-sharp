@@ -141,11 +141,11 @@ namespace MatterHackers.PolygonMesh
 		private void DrawFaceEdge(FaceEdge faceEdge, Vector2 faceAverageCenter)
 		{
 			Vector2 start = MoveTowardsCenter(GetImagePosition(faceEdge.FirstVertex.Position), faceAverageCenter);
-			Vector2 end = MoveTowardsCenter(GetImagePosition(faceEdge.nextFaceEdge.FirstVertex.Position), faceAverageCenter);
+			Vector2 end = MoveTowardsCenter(GetImagePosition(faceEdge.NextFaceEdge.FirstVertex.Position), faceAverageCenter);
 
 			DrawEdgeLine(start, end, faceEdge.ID.ToString(), faceEdgeColor);
 			graphics.Circle(start, 3, Color.Black);
-			WriteStringAtPos("{0}".FormatWith(faceEdge.meshEdge.ID), (start + end) / 2 + new Vector2(0, -12), meshEdgeColor);
+			WriteStringAtPos("{0}".FormatWith(faceEdge.MeshEdge.ID), (start + end) / 2 + new Vector2(0, -12), meshEdgeColor);
 			WriteStringAtPos("{0}".FormatWith(faceEdge.ContainingFace.ID), (start + end) / 2 + new Vector2(0, 12), faceColor);
 
 			Vector2 delta = end - start;
@@ -157,11 +157,11 @@ namespace MatterHackers.PolygonMesh
 			WriteStringAtPos("{0}".FormatWith(faceEdge.FirstVertex.ID), start + normal * length * .10, vertexColor);
 
 			// draw the next and prev faceEdge info
-			WriteStringAtPos("{0}".FormatWith(faceEdge.nextFaceEdge.ID), start + normal * length * .60, faceEdgeColor);
-			WriteStringAtPos("{0}".FormatWith(faceEdge.prevFaceEdge.ID), start + normal * length * .40, faceEdgeColor);
+			WriteStringAtPos("{0}".FormatWith(faceEdge.NextFaceEdge.ID), start + normal * length * .60, faceEdgeColor);
+			WriteStringAtPos("{0}".FormatWith(faceEdge.PrevFaceEdge.ID), start + normal * length * .40, faceEdgeColor);
 
 			// draw the radialFaceEdge info
-			WriteStringAtPos("{0}".FormatWith(faceEdge.radialNextFaceEdge.ID), start + new Vector2(0, 7) + normal * length * .90, faceEdgeColor);
+			WriteStringAtPos("{0}".FormatWith(faceEdge.RadialNextFaceEdge.ID), start + new Vector2(0, 7) + normal * length * .90, faceEdgeColor);
 			WriteStringAtPos("{0}".FormatWith(faceEdge.radialPrevFaceEdge.ID), start + new Vector2(0, -7) + normal * length * .90, faceEdgeColor);
 		}
 
