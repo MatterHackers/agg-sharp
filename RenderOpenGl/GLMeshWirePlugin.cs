@@ -49,41 +49,36 @@ namespace MatterHackers.RenderOpenGl
 	{
 		public delegate void DrawToGL(Mesh meshToRender);
 
-		private static ConditionalWeakTable<Mesh, GLMeshWirePlugin> meshesWithCacheData = new ConditionalWeakTable<Mesh, GLMeshWirePlugin>();
+		public static string GLMeshWirePluginName => nameof(GLMeshWirePluginName);
 
 		public VectorPOD<WireVertexData> edgeLinesData = new VectorPOD<WireVertexData>();
 
 		private int meshUpdateCount;
 		private double nonPlanarAngleRequired;
 
-		static public GLMeshWirePlugin Get(Mesh meshToGetDisplayListFor, double nonPlanarAngleRequired = 0)
+		static public GLMeshWirePlugin Get(Mesh mesh, double nonPlanarAngleRequired = 0)
 		{
-			GLMeshWirePlugin plugin;
-			meshesWithCacheData.TryGetValue(meshToGetDisplayListFor, out plugin);
-
-			if (plugin != null
-				&& (meshToGetDisplayListFor.ChangedCount != plugin.meshUpdateCount
-				|| nonPlanarAngleRequired != plugin.nonPlanarAngleRequired))
+			object meshData;
+			mesh.PropertyBag.TryGetValue(GLMeshWirePluginName, out meshData);
+			if (meshData is GLMeshWirePlugin plugin)
 			{
-				plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
-				plugin.AddRemoveData();
-				plugin.CreateRenderData(meshToGetDisplayListFor, nonPlanarAngleRequired);
-				plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
-				plugin.nonPlanarAngleRequired = nonPlanarAngleRequired;
+				if (mesh.ChangedCount == plugin.meshUpdateCount
+					&& nonPlanarAngleRequired == plugin.nonPlanarAngleRequired)
+				{
+					return plugin;
+				}
+
+				// else we need to rebulid the data
+				plugin.meshUpdateCount = mesh.ChangedCount;
+				mesh.PropertyBag.Remove(GLMeshWirePluginName);
 			}
 
-			if (plugin == null)
-			{
-				GLMeshWirePlugin newPlugin = new GLMeshWirePlugin();
-				meshesWithCacheData.Add(meshToGetDisplayListFor, newPlugin);
-				newPlugin.CreateRenderData(meshToGetDisplayListFor, nonPlanarAngleRequired);
-				newPlugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
-				newPlugin.nonPlanarAngleRequired = nonPlanarAngleRequired;
+			GLMeshWirePlugin newPlugin = new GLMeshWirePlugin();
+			newPlugin.CreateRenderData(mesh, nonPlanarAngleRequired);
+			newPlugin.meshUpdateCount = mesh.ChangedCount;
+			mesh.PropertyBag.Add(GLMeshWirePluginName, newPlugin);
 
-				return newPlugin;
-			}
-
-			return plugin;
+			return newPlugin;
 		}
 
 		private GLMeshWirePlugin()
@@ -91,17 +86,9 @@ namespace MatterHackers.RenderOpenGl
 			// This is private as you can't build one of these. You have to call GetImageGLDisplayListPlugin.
 		}
 
-		private void AddRemoveData()
-		{
-		}
-
-		~GLMeshWirePlugin()
-		{
-			AddRemoveData();
-		}
-
 		private void CreateRenderData(Mesh meshToBuildListFor, double nonPlanarAngleRequired = 0)
 		{
+			this.nonPlanarAngleRequired = nonPlanarAngleRequired;
 			edgeLinesData = new VectorPOD<WireVertexData>();
 			// first make sure all the textures are created
 			foreach (MeshEdge meshEdge in meshToBuildListFor.MeshEdges)

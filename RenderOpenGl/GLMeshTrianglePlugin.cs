@@ -84,50 +84,39 @@ namespace MatterHackers.RenderOpenGl
 	{
 		public delegate void DrawToGL(Mesh meshToRender);
 
-		private static ConditionalWeakTable<Mesh, GLMeshTrianglePlugin> meshesWithCacheData = new ConditionalWeakTable<Mesh, GLMeshTrianglePlugin>();
-
 		public List<SubTriangleMesh> subMeshs;
 
 		private int meshUpdateCount;
 
-		static public GLMeshTrianglePlugin Get(Mesh meshToGetDisplayListFor, Func<Vector3, Color> getColorFunc = null)
+		public static string GLMeshTrianglePluginName => nameof(GLMeshTrianglePluginName);
+
+		static public GLMeshTrianglePlugin Get(Mesh mesh, Func<Vector3, Color> getColorFunc = null)
 		{
-			GLMeshTrianglePlugin plugin;
-			meshesWithCacheData.TryGetValue(meshToGetDisplayListFor, out plugin);
-
-			if (plugin != null && meshToGetDisplayListFor.ChangedCount != plugin.meshUpdateCount)
+			object meshData;
+			mesh.PropertyBag.TryGetValue(GLMeshTrianglePluginName, out meshData);
+			if (meshData is GLMeshTrianglePlugin plugin)
 			{
-				plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
-				plugin.AddRemoveData();
-				plugin.CreateRenderData(meshToGetDisplayListFor, getColorFunc);
-				plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
+				if (mesh.ChangedCount == plugin.meshUpdateCount)
+				{
+					return plugin;
+				}
+
+				// else we need to rebulid the data
+				plugin.meshUpdateCount = mesh.ChangedCount;
+				mesh.PropertyBag.Remove(GLMeshTrianglePluginName);
 			}
 
-			if (plugin == null)
-			{
-				GLMeshTrianglePlugin newPlugin = new GLMeshTrianglePlugin();
-				meshesWithCacheData.Add(meshToGetDisplayListFor, newPlugin);
-				newPlugin.CreateRenderData(meshToGetDisplayListFor, getColorFunc);
-				newPlugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
+			GLMeshTrianglePlugin newPlugin = new GLMeshTrianglePlugin();
+			newPlugin.CreateRenderData(mesh, getColorFunc);
+			newPlugin.meshUpdateCount = mesh.ChangedCount;
+			mesh.PropertyBag.Add(GLMeshTrianglePluginName, newPlugin);
 
-				return newPlugin;
-			}
-
-			return plugin;
+			return newPlugin;
 		}
 
 		private GLMeshTrianglePlugin()
 		{
 			// This is private as you can't build one of these. You have to call GetImageGLDisplayListPlugin.
-		}
-
-		private void AddRemoveData()
-		{
-		}
-
-		~GLMeshTrianglePlugin()
-		{
-			AddRemoveData();
 		}
 
 		private void CreateRenderData(Mesh meshToBuildListFor, Func<Vector3, Color> getColorFunc)
