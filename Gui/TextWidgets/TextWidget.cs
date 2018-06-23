@@ -161,6 +161,8 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		public bool StrikeThrough { get; set; }
+
 		public override BorderDouble Padding
 		{
 			get => base.Padding;
@@ -269,6 +271,13 @@ namespace MatterHackers.Agg.UI
 			}
 			else
 			{
+				if (this.StrikeThrough)
+				{
+					var bounds = Printer.LocalBounds;
+					var center = bounds.Center.Y;
+					graphics2D.Line(bounds.Left, center, bounds.Right, center, this.TextColor);
+				}
+
 				// it all fits or it's editable (if editable it will need to be offset/scrolled sometimes).
 				Printer.Render(graphics2D, this.TextColor);
 			}
