@@ -1823,6 +1823,8 @@ namespace MatterHackers.Agg.UI
 			{
 				if (Visible && !LayoutLocked)
 				{
+					LayoutCount++;
+
 					if (LayoutEngine != null)
 					{
 						using (LayoutLock())
@@ -1855,6 +1857,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public static int DrawCount;
+		public static int LayoutCount;
 
 		protected bool formHasLoaded = false;
 
