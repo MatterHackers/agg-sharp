@@ -195,8 +195,31 @@ namespace MatterHackers.Agg.UI
 			var adjust = GetOriginAndWidthForChild(parent, child, out newOriginRelParent, out newWidth);
 			if (adjust.adjustOrigin || adjust.adjustWidth)
 			{
-				child.OriginRelativeParent = newOriginRelParent;
-				child.Width = newWidth;
+				newWidth = Math.Max(newWidth, child.MinimumSize.X);
+				if (child.OriginRelativeParent != newOriginRelParent
+					&& child.Width != newWidth)
+				{
+					var origin = child.OriginRelativeParent;
+					var width = child.Width;
+					var parentLock = (child.Parent != null) ? child.Parent.LayoutLock() : null;
+					// only do one layout
+					using (child.LayoutLock())
+					{
+						child.OriginRelativeParent = newOriginRelParent;
+						child.Width = newWidth;
+					}
+					parentLock?.Dispose();
+					if (child.OriginRelativeParent != origin
+						|| child.Width != width)
+					{
+						child.PerformLayout();
+					}
+				}
+				else // only one of them will actually change anything (so only one layout)
+				{
+					child.OriginRelativeParent = newOriginRelParent;
+					child.Width = newWidth;
+				}
 			}
 		}
 

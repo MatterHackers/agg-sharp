@@ -60,14 +60,6 @@ namespace MatterHackers.PolygonMesh
 		{
 		}
 
-		~Mesh()
-		{
-			if (Vertices.Count > 10000)
-			{
-				int a = 0;
-			}
-		}
-
 		public event EventHandler Changed;
 
 		public int ChangedCount { get; private set; } = 0;

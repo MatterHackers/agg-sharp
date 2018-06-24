@@ -972,14 +972,17 @@ namespace MatterHackers.Agg.UI
 					if (this.Parent != null)
 					{
 						// when this object moves it requires that the parent re-layout this object (and maybe others)
-						this.Parent.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Position));
-#if false
-					// and it also means the mouse moved relative to this widget (so the parent and it's children)
-					Vector2 parentMousePosition;
-					if (Parent.GetMousePosition(out parentMousePosition))
-					{
-					this.Parent.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, parentMousePosition.x, parentMousePosition.y, 0));
-					}
+						if (!this.Parent.LayoutLocked)
+						{
+							this.Parent.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.Position));
+						}
+						#if false
+						// and it also means the mouse moved relative to this widget (so the parent and it's children)
+						Vector2 parentMousePosition;
+						if (Parent.GetMousePosition(out parentMousePosition))
+						{
+							this.Parent.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, parentMousePosition.x, parentMousePosition.y, 0));
+						}
 #endif
 					}
 					OnPositionChanged(null);
@@ -1050,7 +1053,11 @@ namespace MatterHackers.Agg.UI
 					localBounds = value;
 
 					OnLayout(new LayoutEventArgs(this, null, PropertyCausingLayout.LocalBounds));
-					this.Parent?.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.ChildLocalBounds));
+					if (this.Parent != null
+						&& !this.Parent.LayoutLocked)
+					{
+						this.Parent.OnLayout(new LayoutEventArgs(this.Parent, this, PropertyCausingLayout.ChildLocalBounds));
+					}
 
 					Invalidate();
 
@@ -1824,6 +1831,11 @@ namespace MatterHackers.Agg.UI
 				if (Visible && !LayoutLocked)
 				{
 					LayoutCount++;
+
+					if((LayoutCount % 11057) == 0)
+					{
+						int a = 0;
+					}
 
 					if (LayoutEngine != null)
 					{

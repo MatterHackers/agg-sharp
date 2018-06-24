@@ -42,18 +42,23 @@ namespace MatterHackers.Agg.UI
 		public WrappedTextWidget(string text, double pointSize = 12, Justification justification = Justification.Left,
 			Color textColor = new Color(), bool ellipsisIfClipped = true, bool underline = false, Color backgroundColor = new Color(), bool doubleBufferText = true)
 		{
-			this.pointSize = pointSize;
-			TextWidget = new TextWidget("", 0, 0, pointSize, justification, textColor, ellipsisIfClipped, underline, backgroundColor)
+			using (this.LayoutLock())
 			{
-				DoubleBuffer = doubleBufferText,
-			};
-			TextWidget.AutoExpandBoundsToText = true;
-			TextWidget.HAnchor = HAnchor.Left;
-			TextWidget.VAnchor = VAnchor.Center | VAnchor.Fit;
-			unwrappedText = text;
-			HAnchor = HAnchor.Stretch;
-			VAnchor = VAnchor.Fit;
-			AddChild(TextWidget);
+				this.pointSize = pointSize;
+				TextWidget = new TextWidget("", 0, 0, pointSize, justification, textColor, ellipsisIfClipped, underline, backgroundColor)
+				{
+					DoubleBuffer = doubleBufferText,
+				};
+				TextWidget.AutoExpandBoundsToText = true;
+				TextWidget.HAnchor = HAnchor.Left;
+				TextWidget.VAnchor = VAnchor.Center | VAnchor.Fit;
+				unwrappedText = text;
+				HAnchor = HAnchor.Stretch;
+				VAnchor = VAnchor.Fit;
+				AddChild(TextWidget);
+			}
+
+			this.PerformLayout();
 		}
 
 		public Color TextColor
