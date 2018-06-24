@@ -757,9 +757,6 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				renderBuffer);
 
 			var status = OpenTK.Graphics.OpenGL.GL.CheckFramebufferStatus(OpenTK.Graphics.OpenGL.FramebufferTarget.DrawFramebuffer);
-
-			//if(status != OpenTK.Graphics.OpenGL.FramebufferErrorCode.FramebufferComplete)
-				///int a = 0;
 #else
 #endif
 		}
@@ -768,8 +765,6 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		{
 #if USE_OPENGL
 			var error = (ErrorCode)OpenTK.Graphics.OpenGL.GL.GetError();
-			//if(error != ErrorCode.NoError)
-				//int a = 0;
 
 			return error;
 #else
