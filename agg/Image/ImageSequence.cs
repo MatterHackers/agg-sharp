@@ -15,6 +15,11 @@ namespace MatterHackers.Agg.Image
 		{
 		}
 
+		public ImageSequence(ImageBuffer firstImage)
+		{
+			AddImage(firstImage, 0);
+		}
+
 		public event EventHandler Invalidated;
 
 		public double FramesPerSecond
@@ -113,10 +118,7 @@ namespace MatterHackers.Agg.Image
 		public void AddImage(ImageBuffer imageBuffer, int frameTimeMs = 0)
 		{
 			Frames.Add(imageBuffer);
-			if (frameTimeMs > 0)
-			{
-				FrameTimesMs.Add(frameTimeMs);
-			}
+			FrameTimesMs.Add(Math.Max(frameTimeMs, 1));
 		}
 
 		public void CenterOriginOffset()
@@ -132,6 +134,7 @@ namespace MatterHackers.Agg.Image
 			this.Frames = imageSequenceToCopy.Frames;
 			this.FrameTimesMs = imageSequenceToCopy.FrameTimesMs;
 			this.Looping = imageSequenceToCopy.Looping;
+			Invalidated?.Invoke(this, null);
 		}
 
 		public void CropToVisible()
