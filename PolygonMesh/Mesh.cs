@@ -216,8 +216,8 @@ namespace MatterHackers.PolygonMesh
 		{
 			if (matrix != Matrix4X4.Identity)
 			{
-				bool wasSorted = Vertices.IsSorted;
-				Vertices.IsSorted = false;
+				bool wasSorted = Vertices.Sorted;
+				Vertices.Sorted = false;
 				foreach (IVertex vertex in Vertices)
 				{
 					vertex.Position = Vector3.Transform(vertex.Position, matrix);
@@ -645,7 +645,7 @@ namespace MatterHackers.PolygonMesh
 			}
 
 			// we put them in in the same order they were in, so we keep the state
-			NonDeleteVertices.IsSorted = Vertices.IsSorted;
+			NonDeleteVertices.Sorted = Vertices.Sorted;
 			Vertices = NonDeleteVertices;
 		}
 
@@ -1164,7 +1164,7 @@ namespace MatterHackers.PolygonMesh
 				newMesh.Vertices.Add(vertexToCopy.CreateInterpolated(vertexToCopy, 0), SortOption.WillSortLater);
 			}
 
-			newMesh.Vertices.IsSorted = verticesToCopy.IsSorted;
+			newMesh.Vertices.Sorted = verticesToCopy.Sorted;
 
 			return vertexIndexMapping;
 		}

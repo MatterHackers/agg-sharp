@@ -44,7 +44,7 @@ namespace MatterHackers.PolygonMesh
 		//VertexSorterBase vertexSorter = new VertexDistanceFromPointSorter();
 		private VertexSorterBase vertexSorter = new VertexXYZAxisWithRotation();
 
-		public bool IsSorted { get; set; } = true;
+		public bool Sorted { get; set; } = true;
 
 		public VertexCollecton()
 		{
@@ -83,7 +83,7 @@ namespace MatterHackers.PolygonMesh
                 }
             }
 #endif
-			if (!IsSorted)
+			if (!Sorted)
 			{
 				throw new Exception("You can't Find a vertex in an unsorted VertexCollection. Sort it first (or add the vertexes without preventing sorting).");
 			}
@@ -109,16 +109,13 @@ namespace MatterHackers.PolygonMesh
 
 		public void Sort()
 		{
-			if (!IsSorted)
-			{
-				vertices.Sort(vertexSorter);
-				IsSorted = true;
-			}
+			vertices.Sort(vertexSorter);
+			Sorted = true;
 		}
 
 		public void Remove(IVertex vertexToRemove)
 		{
-			if (!IsSorted)
+			if (!Sorted)
 			{
 				vertices.Remove(vertexToRemove);
 			}
@@ -137,7 +134,7 @@ namespace MatterHackers.PolygonMesh
 			if (sortOption == SortOption.WillSortLater)
 			{
 				vertices.Add(vertexToAdd);
-				IsSorted = false;
+				Sorted = false;
 			}
 			else
 			{
@@ -152,7 +149,7 @@ namespace MatterHackers.PolygonMesh
 
 		public int IndexOf(IVertex vertexToLookFor)
 		{
-			if (IsSorted)
+			if (Sorted)
 			{
 				int index = vertices.BinarySearch(vertexToLookFor, vertexSorter);
 				if (index < 0)
@@ -203,7 +200,7 @@ namespace MatterHackers.PolygonMesh
 
 		public bool ContainsAVertexAtPosition(IVertex vertexToLookFor)
 		{
-			if (!IsSorted)
+			if (!Sorted)
 			{
 				throw new Exception("You can't Find a vertex in an unsorted VertexCollection. Sort it first (or add the vertexes without preventing sorting).");
 			}
@@ -211,6 +208,12 @@ namespace MatterHackers.PolygonMesh
 			int index = IndexOf(vertexToLookFor);
 			if (index < 0)
 			{
+#if DEBUG
+				if(index < -1)
+				{
+					throw new Exception("The vertex list has become unsorted (probably mutated). It needs to be resorted.");
+				}
+#endif
 				return false;
 			}
 
@@ -219,7 +222,7 @@ namespace MatterHackers.PolygonMesh
 
 		public bool ContainsVertex(IVertex vertexToLookFor)
 		{
-			if (!IsSorted)
+			if (!Sorted)
 			{
 				throw new Exception("You can't Find a vertex in an unsorted VertexCollection. Sort it first (or add the vertexes without preventing sorting).");
 			}

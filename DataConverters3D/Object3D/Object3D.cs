@@ -231,7 +231,7 @@ namespace MatterHackers.DataConverters3D
 			// keep track of the mesh we are copying
 			if (mesh != null
 				&& mesh.Vertices != null
-				&& !mesh.Vertices.IsSorted)
+				&& !mesh.Vertices.Sorted)
 			{
 				var rebuildLock = RebuildLock();
 
