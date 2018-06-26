@@ -172,32 +172,54 @@ namespace MatterHackers.Agg
 
 		public void LoadImageSequenceData(Stream stream, ImageSequence sequence)
 		{
-			sequence.Frames.Clear();
-			sequence.FrameTimesMs.Clear();
-			var gifImg = System.Drawing.Image.FromStream(stream);
-
-			var dimension = new System.Drawing.Imaging.FrameDimension(gifImg.FrameDimensionsList[0]);
-			// Number of frames
-			int frameCount = gifImg.GetFrameCount(dimension);
-
-			var minFrameTimeMs = int.MaxValue;
-			for (var i = 0; i < frameCount; i++)
+			lock (locker)
 			{
-				// Return an Image at a certain index
-				gifImg.SelectActiveFrame(dimension, i);
-				ImageBuffer gifFrame = new ImageBuffer();
-				if (ImageIOWindowsPlugin.ConvertBitmapToImage(gifFrame, new Bitmap(gifImg)))
+				System.Drawing.Image image;
+				try
 				{
-					var frameDelay = BitConverter.ToInt32(gifImg.GetPropertyItem(20736).Value, i * 4) * 10;
+					image = System.Drawing.Image.FromStream(stream);
+				}
+				catch
+				{
+					return;
+				}
 
-					sequence.AddImage(gifFrame, frameDelay);
-					minFrameTimeMs = Math.Max(10, Math.Min(frameDelay, minFrameTimeMs));
+				sequence.Frames.Clear();
+				sequence.FrameTimesMs.Clear();
+
+				var dimension = new System.Drawing.Imaging.FrameDimension(image.FrameDimensionsList[0]);
+				// Number of frames
+				int frameCount = image.GetFrameCount(dimension);
+
+				if (frameCount > 1)
+				{
+					var minFrameTimeMs = int.MaxValue;
+					for (var i = 0; i < frameCount; i++)
+					{
+						// Return an Image at a certain index
+						image.SelectActiveFrame(dimension, i);
+						ImageBuffer imageBuffer = new ImageBuffer();
+						if (ImageIOWindowsPlugin.ConvertBitmapToImage(imageBuffer, new Bitmap(image)))
+						{
+							var frameDelay = BitConverter.ToInt32(image.GetPropertyItem(20736).Value, i * 4) * 10;
+
+							sequence.AddImage(imageBuffer, frameDelay);
+							minFrameTimeMs = Math.Max(10, Math.Min(frameDelay, minFrameTimeMs));
+						}
+					}
+					var item = image.GetPropertyItem(0x5100); // FrameDelay in libgdiplus
+															  // Time is in milliseconds
+					sequence.SecondsPerFrame = minFrameTimeMs / 1000.0;
+				}
+				else
+				{
+					ImageBuffer imageBuffer = new ImageBuffer();
+					if (ImageIOWindowsPlugin.ConvertBitmapToImage(imageBuffer, new Bitmap(image)))
+					{
+						sequence.AddImage(imageBuffer);
+					}
 				}
 			}
-
-			var item = gifImg.GetPropertyItem(0x5100); // FrameDelay in libgdiplus
-													   // Time is in milliseconds
-			sequence.SecondsPerFrame = minFrameTimeMs / 1000.0;
 		}
 
 		private static object locker = new object();

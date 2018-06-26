@@ -49,7 +49,8 @@ namespace MatterHackers.Agg.UI
 				var currentImageIndex = ImageSequence.GetImageIndexByTime(currentTime);
 
 				currentTime += updateEvent.SecondsPassed;
-				while(currentTime > ImageSequence.Time)
+				while(ImageSequence.Time > 0 
+					&& currentTime > ImageSequence.Time)
 				{
 					currentTime -= ImageSequence.Time;
 				}
@@ -90,6 +91,8 @@ namespace MatterHackers.Agg.UI
 		private void ResetImageIndex(object sender, EventArgs e)
 		{
 			currentTime = 0;
+			this.Width = ImageSequence.Width;
+			this.Height = ImageSequence.Height;
 			Invalidate();
 		}
 
