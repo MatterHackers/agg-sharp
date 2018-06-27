@@ -227,6 +227,7 @@ namespace MatterHackers.DataConverters3D
 
 		private void AsyncCleanAndMerge()
 		{
+			return;
 			var mesh = Mesh;
 			// keep track of the mesh we are copying
 			if (mesh != null
