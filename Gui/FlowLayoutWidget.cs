@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2018, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -37,24 +37,15 @@ namespace MatterHackers.Agg.UI
 
 		public FlowLayoutWidget(FlowDirection direction = FlowDirection.LeftToRight)
 		{
-			HAnchor = HAnchor.Fit;
-			VAnchor = VAnchor.Fit;
-
-			layoutEngine = new LayoutEngineFlow(direction);
-			LayoutEngine = layoutEngine;
+			this.HAnchor = HAnchor.Fit;
+			this.VAnchor = VAnchor.Fit;
+			this.LayoutEngine = layoutEngine = new LayoutEngineFlow(direction);
 		}
 
 		public FlowDirection FlowDirection
 		{
-			get
-			{
-				return layoutEngine.FlowDirection;
-			}
-
-			set
-			{
-				layoutEngine.FlowDirection = value;
-			}
+			get => layoutEngine.FlowDirection;
+			set => layoutEngine.FlowDirection = value;
 		}
 	}
 }
