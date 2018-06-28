@@ -39,14 +39,6 @@ namespace MatterHackers.Agg.UI
 
 		public Color Transparent { get; set; } = new Color(0, 0, 0, 0);
 
-		public Color TransparentDarkOverlay { get; set; } = new Color(0, 0, 0, 50);
-
-		public Color TransparentLightOverlay { get; set; } = new Color(255, 255, 255, 50);
-
-		public Color TabLabelSelected { get; set; }
-
-		public Color TabLabelUnselected { get; set; }
-
 		public Color SecondaryTextColor { get; set; }
 
 		public Color PrimaryBackgroundColor { get; set; }
@@ -76,9 +68,6 @@ namespace MatterHackers.Agg.UI
 
 				color.PrimaryBackgroundColor = new Color(68, 68, 68);
 				color.SecondaryBackgroundColor = new Color(51, 51, 51);
-
-				color.TabLabelSelected = new Color(255, 255, 255);
-				color.TabLabelUnselected = new Color(180, 180, 180);
 				color.PrimaryTextColor = new Color(255, 255, 255);
 				color.SecondaryTextColor = new Color(200, 200, 200);
 
@@ -90,8 +79,6 @@ namespace MatterHackers.Agg.UI
 
 				color.PrimaryBackgroundColor = new Color(208, 208, 208);
 				color.SecondaryBackgroundColor = new Color(185, 185, 185);
-				color.TabLabelSelected = new Color(51, 51, 51);
-				color.TabLabelUnselected = new Color(102, 102, 102);
 				color.PrimaryTextColor = new Color(34, 34, 34);
 				color.SecondaryTextColor = new Color(51, 51, 51);
 
