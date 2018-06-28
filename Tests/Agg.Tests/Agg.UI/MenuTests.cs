@@ -58,11 +58,12 @@ namespace MatterHackers.Agg.UI.Tests
 			int item2ClickCount = 0;
 			int item3ClickCount = 0;
 
-			DropDownList testList = new DropDownList("no selection", Color.Blue, Color.Green)
+			DropDownList testList = new DropDownList("no selection", Color.Blue)
 			{
 				MenuItemsBackgroundColor = Color.White,
 				MenuItemsBackgroundHoverColor = Color.LightGray,
 				Name = "menu1",
+				HoverColor = Color.Green
 			};
 
 			AutomationTest testToRun = (testRunner) =>

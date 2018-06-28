@@ -49,7 +49,10 @@ namespace MatterHackers.Agg
 			popupMenu.OriginRelativeParent = new Vector2(100, 100);
 			//AddChild(popupMenu);
 
-			DropDownList dropDownList = new DropDownList("- Select Something -", Color.Black, Color.Gray);
+			var dropDownList = new DropDownList("- Select Something -", Color.Black)
+			{
+				HoverColor = Color.Gray
+			};
 
 			dropDownList.BackgroundColor = Color.Black;
 			dropDownList.TextColor = Color.White;

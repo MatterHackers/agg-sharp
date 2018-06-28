@@ -117,7 +117,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public Color BorderColor
+		public override Color BorderColor
 		{
 			get
 			{

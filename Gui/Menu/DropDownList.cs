@@ -58,6 +58,9 @@ namespace MatterHackers.Agg.UI
 
 		private Color lastRenderColor;
 
+		private bool mouseInBounds;
+		private Color disabledBorderColor;
+
 		private ImageBuffer gradientBackground;
 
 		private int gradientDistance = 8;
@@ -73,10 +76,7 @@ namespace MatterHackers.Agg.UI
 		public Color TextColor
 		{
 			get => mainControlText.TextColor;
-			set
-			{
-				mainControlText.TextColor = value;
-			}
+			set => mainControlText.TextColor = value;
 		}
 
 		private VertexStorage directionArrow = null;
@@ -332,23 +332,6 @@ namespace MatterHackers.Agg.UI
 		private bool menuVisible;
 
 		public DropDownList(string noSelectionString, Color textColor, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false, double pointSize = 12)
-			: this(noSelectionString, whiteTransparent, whiteSemiTransparent, direction, maxHeight, useLeftIcons, pointSize)
-		{
-			this.TextColor = textColor;
-			this.MenuItemsBorderWidth = 1;
-			this.MenuItemsBackgroundColor = Color.White;
-			this.MenuItemsBorderColor = ActiveTheme.Instance.SecondaryTextColor;
-			this.MenuItemsPadding = new BorderDouble(10, 7, 7, 7);
-			this.MenuItemsBackgroundHoverColor = ActiveTheme.Instance.PrimaryAccentColor;
-			this.MenuItemsTextHoverColor = Color.Black;
-			this.MenuItemsTextColor = Color.Black;
-			this.BorderColor = ActiveTheme.Instance.SecondaryTextColor;
-			this.HoverColor = whiteSemiTransparent;
-			this.BackgroundColor = new Color(255, 255, 255, 0);
-			this.Border = 1;
-		}
-
-		public DropDownList(string noSelectionString, Color normalColor, Color hoverColor, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false, double pointSize = 12)
 			: base(direction, maxHeight)
 		{
 			this.pointSize = pointSize;
@@ -362,22 +345,30 @@ namespace MatterHackers.Agg.UI
 
 			this.noSelectionString = noSelectionString;
 
-			mainControlText = new TextWidget(noSelectionString, pointSize: pointSize)
+			mainControlText = new TextWidget(noSelectionString, pointSize: pointSize, textColor: textColor)
 			{
 				AutoExpandBoundsToText = true,
 				VAnchor = VAnchor.Bottom | VAnchor.Fit,
 				HAnchor = HAnchor.Left | HAnchor.Fit,
 				Margin = new BorderDouble(10, 7, 7, 7),
-				TextColor = Color.Black
 			};
 
 			AddChild(mainControlText);
 
-			NormalColor = normalColor;
-			HoverColor = hoverColor;
-			BackgroundColor = normalColor;
-			this.BorderColor = ActiveTheme.Instance.SecondaryTextColor;
+			NormalColor = whiteTransparent;
+			var borderColor = new Color(textColor, 40);
+
+			this.MenuItemsBorderWidth = 1;
+			this.MenuItemsBackgroundColor = Color.White;
+			this.MenuItemsBorderColor = borderColor;
+			this.MenuItemsPadding = new BorderDouble(10, 7, 7, 7);
+			this.MenuItemsBackgroundHoverColor = new Color("#EC6788FF");
+			this.MenuItemsTextHoverColor = Color.Black;
+			this.MenuItemsTextColor = Color.Black;
+			this.HoverColor = whiteSemiTransparent;
+			this.BackgroundColor = new Color(255, 255, 255, 0);
 			this.Border = 1;
+			this.BorderColor = borderColor;
 		}
 
 		private void OnSelectionChanged(EventArgs e)
@@ -407,6 +398,16 @@ namespace MatterHackers.Agg.UI
 				{
 					item.MinimumSize = minSize;
 				}
+			}
+		}
+
+		public override Color BorderColor
+		{
+			get => this.Enabled ? base.BorderColor : disabledBorderColor;
+			set
+			{
+				base.BorderColor = value;
+				disabledBorderColor = new Color(value, 30);
 			}
 		}
 
@@ -459,7 +460,6 @@ namespace MatterHackers.Agg.UI
 			base.OnBoundsChanged(e);
 		}
 
-		private bool mouseInBounds;
 		public override void OnMouseEnterBounds(MouseEventArgs mouseEvent)
 		{
 			mouseInBounds = true;
@@ -509,7 +509,7 @@ namespace MatterHackers.Agg.UI
 				var center = dropArrowBounds.Center;
 				center.Y += 1;
 
-				graphics2D.Render(directionArrow, center, ActiveTheme.Instance.SecondaryTextColor);
+				graphics2D.Render(directionArrow, center, this.TextColor);
 			}
 		}
 

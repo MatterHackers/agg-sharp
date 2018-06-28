@@ -80,8 +80,6 @@ namespace MatterHackers.Agg.UI
 
 			viewWidget.Selectable = false;
 			viewWidget.BackgroundColor = backgroundColor;
-
-			EnforceSizingAdornActive(viewWidget, isActive, useUnderlineStyling, fixedSize);
 		}
 	}
 
@@ -132,24 +130,6 @@ namespace MatterHackers.Agg.UI
 			}
 
 			base.OnTabIndexChanged();
-		}
-
-		protected static void EnforceSizingAdornActive(GuiWidget viewWidget, bool isActive, bool useUnderlineStyle, int controlHeight = 40, int controlMargin = 0)
-		{
-			viewWidget.Height = controlHeight;
-			viewWidget.Margin = controlMargin;
-
-			if (isActive && useUnderlineStyle)
-			{
-				// Adorn the active tab with a underline bar
-				viewWidget.AddChild(new GuiWidget()
-				{
-					HAnchor = HAnchor.Stretch,
-					Height = UnderlineHeight,
-					BackgroundColor = ActiveTheme.Instance.PrimaryAccentColor,
-					VAnchor = VAnchor.Bottom
-				});
-			}
 		}
 	}
 
