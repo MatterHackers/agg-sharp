@@ -39,14 +39,6 @@ namespace MatterHackers.Agg.UI
 
 		Color Transparent { get; }
 
-		Color TransparentDarkOverlay { get; }
-
-		Color TransparentLightOverlay { get; }
-
-		Color TabLabelSelected { get; }
-
-		Color TabLabelUnselected { get; }
-
 		Color SecondaryTextColor { get; }
 
 		Color PrimaryBackgroundColor { get; }
