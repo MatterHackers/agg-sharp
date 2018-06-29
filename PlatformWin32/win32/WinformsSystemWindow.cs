@@ -18,12 +18,9 @@
 //----------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Security.Permissions;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
@@ -52,10 +49,7 @@ namespace MatterHackers.Agg.UI
 		private SystemWindow systemWindow;
 		public SystemWindow AggSystemWindow
 		{
-			get
-			{
-				return systemWindow;
-			}
+			get => systemWindow;
 			set
 			{
 				systemWindow = value;
@@ -113,237 +107,6 @@ namespace MatterHackers.Agg.UI
 			}
 			catch { }
 		}
-
-		#region touch gestures
-
-		public struct GESTURECONFIG
-		{
-			public int dwID;
-			public int dwWant;
-			public int dwBlock;
-		}
-
-		public struct POINTS
-		{
-			public short x;
-			public short y;
-		}
-
-		public struct GESTUREINFO
-		{
-			public int cbSize;
-			public int dwFlags;
-			public int dwID;
-			public IntPtr hwndTarget;
-			[MarshalAs(UnmanagedType.Struct)]
-			public POINTS ptsLocation;
-			public int dwInstanceID;
-			public int dwSequenceID;
-			public long ullArguments;
-			public int cbExtraArgs;
-		}
-
-		[DllImport("user32")]
-		public static extern bool SetGesture(
-			IntPtr hWnd,
-			int dwReserved,
-			int cIDs,
-			GESTURECONFIG pGesturerConfig,
-			int cbSize);
-
-		[DllImport("user32")]
-		public static extern bool SetGestureConfig(IntPtr hWnd,
-			int dwReserved,
-			int cIDs,
-			GESTURECONFIG pGestureConfig,
-			int cbSize);
-
-		[DllImport("user32")]
-		public static extern bool GetGestureInfo(IntPtr hGestureInfo,
-			GESTUREINFO pGestureInfo);
-
-		int _gestureConfigSize;
-		int _gestureInfoSize;
-
-		[SecurityPermission(SecurityAction.Demand)]
-		void SetupStructSizes()
-		{
-			_gestureConfigSize = Marshal.SizeOf(new GESTURECONFIG());
-			_gestureInfoSize = Marshal.SizeOf(new GESTUREINFO());
-		}
-
-		bool DecodeGesture(Message m)
-		{
-			GESTUREINFO gi;
-			try
-			{
-				gi = new GESTUREINFO();
-			}
-			catch (Exception excep)
-			{
-				Debug.Print("Could not allocate resources to decode gesture");
-				Debug.Print(excep.ToString());
-				return false;
-			}
-
-			gi.cbSize = _gestureInfoSize;
-
-			if (!GetGestureInfo(m.LParam, gi))
-			{
-				return false;
-			}
-
-			switch ( gi.dwID)
-			{
-				case GID_BEGIN:
-				case GID_END:
-				case GID_TWOFINGERTAP:
-					//Receipt.Show();
-					Invalidate();
-					break;
-
-				case GID_ZOOM:
-					switch (gi.dwFlags)
-					{
-						case GF_BEGIN:
-							iArguments = (int)(gi.ullArguments & ULL_ARGUMENTS_BIT_MASK);
-							first_point.X = gi.ptsLocation.x;
-							first_point.Y = gi.ptsLocation.y;
-							first_point = PointToClient(first_point);
-							break;
-
-						default:
-							second_point.X = gi.ptsLocation.x;
-							second_point.Y = gi.ptsLocation.y;
-							second_point = PointToClient(second_point);
-							//RaiseEvent GestureHappened(Me, New GestureEventArgs With {.Operation = Gestures.Pan, .FirstPoint = first_point, .SecondPoint = second_point})
-							//Invalidate();
-							//MsgBox("zoom")
-							break;
-					}
-					break;
-				case GID_PAN:
-					switch (gi.dwFlags)
-					{
-						case GF_BEGIN:
-							first_point.X = gi.ptsLocation.x;
-							first_point.Y = gi.ptsLocation.y;
-							first_point = PointToClient(first_point);
-							break;
-
-						default:
-							second_point.X = gi.ptsLocation.x;
-							second_point.Y = gi.ptsLocation.y;
-							second_point = PointToClient(second_point);
-							//RaiseEvent GestureHappened(Me, New GestureEventArgs With {.Operation = Gestures.Pan, .FirstPoint = first_point, .SecondPoint = second_point})
-							//Invalidate();
-							//MsgBox("pan");
-							break;
-					}
-					break;
-
-				case GID_PRESSANDTAP:
-					//If gi.dwFlags = GF_BEGIN Then
-					//  Invalidate()
-					//End If
-					break;
-				case GID_ROTATE:
-					//Select Case gi.dwFlags
-					//  Case GF_BEGIN
-					//    iArguments = 0
-					//  Case Else
-					//    first_point.X = gi.ptsLocation.x
-					//    first_point.Y = gi.ptsLocation.y
-					//    first_point = PointToClient(first_point)
-					//    Invalidate()
-					//End Select
-					break;
-			}
-			return true;
-		}
-
-		public enum Gestures
-		{
-			Pan,
-			Zoom
-		}
-
-		public class GestureEventArgs : EventArgs
-		{
-			public Gestures Operation;
-			public Point FirstPoint;
-			public Point SecondPoint;
-	    }
-		
-		//public event GestureHappened(object sender, GestureEventArgs e);
-		 
-		Point first_point;
-		Point second_point;
-		int iArguments;
-		long ULL_ARGUMENTS_BIT_MASK = 0xFFFFFFFFL;
-		const int WM_GESTURENOTIFY = 0x11A;
-		const int WM_GESTURE = 0x119;
-		const int GC_ALLGESTURES = 0x1;
-		const int GID_BEGIN = 1;
-		const int GID_END = 2;
-		const int GID_ZOOM = 3;
-		const int GID_PAN = 4;
-		const int GID_ROTATE = 5;
-		const int GID_TWOFINGERTAP = 6;
-		const int GID_PRESSANDTAP = 7;
-		const int GF_BEGIN = 0x1;
-		const int GF_INERTIA = 0x2;
-		const int GF_END = 0x4;
-		protected override void WndProc(ref Message m)
-		{
-			base.WndProc(ref m);
-			return;
-			
-			// dissabled for now
-			bool handled;
-			switch (m.Msg)
-			{
-				case WM_GESTURENOTIFY:
-					var gc = new GESTURECONFIG();
-					gc.dwID = 0;
-					gc.dwWant = GC_ALLGESTURES;
-					gc.dwBlock = 0;
-					bool bResult = SetGestureConfig(Handle, 0, 1, gc, _gestureConfigSize);
-
-					if (!bResult)
-					{
-						throw new Exception("Error in execution of SetGestureConfig");
-					}
-
-					handled = true;
-					break;
-
-				case WM_GESTURE:
-					handled = DecodeGesture(m);
-					break;
-
-				default:
-					handled = false;
-					break;
-			}
-
-			if (handled)
-			{
-				try
-				{
-					m.Result = new IntPtr(1);
-				}
-				catch (Exception excep)
-				{
-					Debug.Print("Could not allocate result ptr");
-					Debug.Print(excep.ToString());
-
-				}
-			}
-			base.WndProc(ref m);
-
-		}
-		#endregion
 
 		protected override void OnClosed(EventArgs e)
 		{
@@ -555,7 +318,6 @@ namespace MatterHackers.Agg.UI
 			base.OnClosing(e);
 		}
 
-
 		#region WidgetForWindowsFormsAbstract/WinformsWindowWidget
 		#endregion
 
@@ -563,9 +325,7 @@ namespace MatterHackers.Agg.UI
 
 		public new Agg.UI.Keys ModifierKeys => (Agg.UI.Keys)Control.ModifierKeys;
 
-		/*
-		 * 
-		 * // Can't simply override BringToFront. Change Interface method name/signature if required. Leaving as is
+		/* // Can't simply override BringToFront. Change Interface method name/signature if required. Leaving as is
 		 * // to call base/this.BringToFront via Interface call
 		public override void BringToFront()
 		{
@@ -610,7 +370,6 @@ namespace MatterHackers.Agg.UI
 		public new void Show()
 		{
 			this.ClientSize = new Size((int)systemWindow.Width, (int)systemWindow.Height);
-			
 
 			// Center the window if specified on the SystemWindow
 			if (MainWindowsFormsWindow != this && systemWindow.CenterInParent)
