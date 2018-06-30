@@ -171,7 +171,7 @@ namespace MatterHackers.DataConverters3D
 		}
 
 		private Matrix4X4 _matrix = Matrix4X4.Identity;
-		public Matrix4X4 Matrix
+		public virtual Matrix4X4 Matrix
 		{
 			get => _matrix;
 			set
