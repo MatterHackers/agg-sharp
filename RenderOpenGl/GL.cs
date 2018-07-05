@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using MatterHackers.Agg;
 using MatterHackers.VectorMath;
 
 #if USE_OPENGL
@@ -465,6 +466,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #else
 			OpenTK.Graphics.ES11.GL.Scale((float)x, (float)y, (float)z);
 #endif
+		}
+
+		public static void Color4(Color color)
+		{
+			Color4(color.red, color.green, color.blue, color.alpha);
 		}
 
 		public static void Color4(int red, int green, int blue, int alpha)
