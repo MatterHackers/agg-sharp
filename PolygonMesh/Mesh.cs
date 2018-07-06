@@ -189,11 +189,22 @@ namespace MatterHackers.PolygonMesh
 				hash = hash * 31 + Faces.Count;
 				hash = hash * 31 + Vertices.Count;
 
-				int step = Math.Max(1, Vertices.Count / 16);
-				for (int i = 0; i < Vertices.Count; i += step)
+				int vertexStep = Math.Max(1, Vertices.Count / 16);
+				for (int i = 0; i < Vertices.Count; i += vertexStep)
 				{
 					var vertex = Vertices[i];
 					hash = hash * 31 + vertex.Position.GetLongHashCode();
+				}
+
+				// also need the direction of vertices for face edges
+				int faceStep = Math.Max(1, Faces.Count / 16);
+				for (int i = 0; i < Faces.Count; i += faceStep)
+				{
+					var face = Faces[i];
+					foreach (var faceEdge in face.FaceEdges())
+					{
+						hash = hash * 31 + faceEdge.FirstVertex.ID;
+					}
 				}
 
 				return hash;
