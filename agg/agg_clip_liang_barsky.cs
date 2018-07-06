@@ -246,7 +246,7 @@ namespace MatterHackers.Agg
 				{
 					return false;
 				}
-				bound = ((flags & (int)clipping_flags_e.clipping_flags_x1_clipped) != 0) ? clip_box.Bottom : clip_box.Top;
+				bound = ((flags & (int)clipping_flags_e.clipping_flags_y1_clipped) != 0) ? clip_box.Bottom : clip_box.Top;
 				x = (int)((double)(bound - y1) * (x2 - x1) / (y2 - y1) + x1);
 				y = bound;
 			}
