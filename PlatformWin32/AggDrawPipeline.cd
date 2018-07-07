@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="MatterHackers.Agg.UI.WinformsSystemWindow">
+    <Position X="4.25" Y="0.5" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>A4iEQAgEAAgRAABAUAAAnCkAIgEEIgACGAkAAAAUIKI=</HashCode>
+      <FileName>win32\WindowsFormsAbstract.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="MatterHackers.Agg.UI.BitmapSystemWindow">
+    <Position X="0.5" Y="8.5" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAACAEAAAACAAAAEAAAAAAAACAAAAAAA=</HashCode>
+      <FileName>win32\WindowsFormsBitmap.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MatterHackers.Agg.UI.OpenGLSystemWindow">
+    <Position X="0.5" Y="0.5" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AACABAAAAAEAAAAGVABAAAgCAQEAIAACAAACEAAAAgA=</HashCode>
+      <FileName>win32\WindowsFormsOpenGL.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MatterHackers.Agg.UI.SystemWindow">
+    <Position X="9.75" Y="4.25" Width="2.5" />
+    <NestedTypes>
+      <Enum Name="MatterHackers.Agg.UI.SystemWindow.PixelTypes" Collapsed="true">
+        <TypeIdentifier />
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier />
+  </Class>
+  <Interface Name="MatterHackers.Agg.UI.IPlatformWindow">
+    <Position X="9.75" Y="0.5" Width="2.5" />
+    <TypeIdentifier />
+  </Interface>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

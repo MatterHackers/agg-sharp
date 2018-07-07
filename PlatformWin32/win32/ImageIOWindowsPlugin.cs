@@ -32,14 +32,14 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 
 namespace MatterHackers.Agg.Image
 {
-	public class ImageIOWindowsPlugin : ImageIOPlugin
+	public class ImageIOWindowsPlugin : IImageIOProvider
 	{
-		public override bool LoadImageData(Stream stream, ImageSequence destImageSequence)
+		public bool LoadImageData(Stream stream, ImageSequence destImageSequence)
 		{
 			var gifImg = System.Drawing.Image.FromStream(stream);
 			if (gifImg != null)
@@ -80,7 +80,7 @@ namespace MatterHackers.Agg.Image
 			return false;
 		}
 
-		public override bool LoadImageData(Stream stream, ImageBuffer destImage)
+		public bool LoadImageData(Stream stream, ImageBuffer destImage)
 		{
 			using (var bitmap = new Bitmap(stream))
 			{
@@ -88,9 +88,9 @@ namespace MatterHackers.Agg.Image
 			}
 		}
 
-		public override bool LoadImageData(string fileName, ImageBuffer destImage)
+		public bool LoadImageData(string fileName, ImageBuffer destImage)
 		{
-			if (System.IO.File.Exists(fileName))
+			if (File.Exists(fileName))
 			{
 				using (var bitmap = new Bitmap(fileName))
 				{
@@ -99,7 +99,7 @@ namespace MatterHackers.Agg.Image
 			}
 			else
 			{
-				throw new System.Exception(string.Format("Image file not found: {0}", fileName));
+				throw new Exception(string.Format("Image file not found: {0}", fileName));
 			}
 		}
 
@@ -136,9 +136,9 @@ namespace MatterHackers.Agg.Image
 										destBuffer[destIndex++] = pSourceBuffer[sourceIndex++];
 										destBuffer[destIndex++] = pSourceBuffer[sourceIndex++];
 #else
-                                            RGBA_Bytes notPreMultiplied = new RGBA_Bytes(pSourceBuffer[sourceIndex + 0], pSourceBuffer[sourceIndex + 1], pSourceBuffer[sourceIndex + 2], pSourceBuffer[sourceIndex + 3]);
+                                            Color notPreMultiplied = new Color(pSourceBuffer[sourceIndex + 0], pSourceBuffer[sourceIndex + 1], pSourceBuffer[sourceIndex + 2], pSourceBuffer[sourceIndex + 3]);
                                             sourceIndex += 4;
-                                            RGBA_Bytes preMultiplied = notPreMultiplied.GetAsRGBA_Floats().premultiply().GetAsRGBA_Bytes();
+                                            Color preMultiplied = notPreMultiplied.ToColorF().premultiply().ToColor();
                                             destBuffer[destIndex++] = preMultiplied.blue;
                                             destBuffer[destIndex++] = preMultiplied.green;
                                             destBuffer[destIndex++] = preMultiplied.red;
@@ -156,6 +156,10 @@ namespace MatterHackers.Agg.Image
 					case System.Drawing.Imaging.PixelFormat.Format24bppRgb:
 						{
 							destImage.Allocate(bitmap.Width, bitmap.Height, bitmap.Width * 4, 32);
+							if (destImage.GetRecieveBlender() == null)
+							{
+								destImage.SetRecieveBlender(new BlenderBGRA());
+							}
 
 							BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmap.PixelFormat);
 							int sourceIndex = 0;
@@ -200,6 +204,10 @@ namespace MatterHackers.Agg.Image
 		private static void Copy8BitDataToImage(ImageBuffer destImage, Bitmap bitmap)
 		{
 			destImage.Allocate(bitmap.Width, bitmap.Height, bitmap.Width * 4, 32);
+			if (destImage.GetRecieveBlender() == null)
+			{
+				destImage.SetRecieveBlender(new BlenderBGRA());
+			}
 
 			BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmap.PixelFormat);
 			int sourceIndex = 0;
@@ -210,7 +218,7 @@ namespace MatterHackers.Agg.Image
 				byte[] destBuffer = destImage.GetBuffer(out offset);
 				byte* pSourceBuffer = (byte*)bitmapData.Scan0;
 
-				Color[] colors = bitmap.Palette.Entries;
+				System.Drawing.Color[] colors = bitmap.Palette.Entries;
 
 				for (int y = 0; y < destImage.Height; y++)
 				{
@@ -218,7 +226,7 @@ namespace MatterHackers.Agg.Image
 					destIndex = destImage.GetBufferOffsetY(destImage.Height - 1 - y);
 					for (int x = 0; x < destImage.Width; x++)
 					{
-						Color color = colors[pSourceBuffer[sourceIndex++]];
+						System.Drawing.Color color = colors[pSourceBuffer[sourceIndex++]];
 						destBuffer[destIndex++] = color.B;
 						destBuffer[destIndex++] = color.G;
 						destBuffer[destIndex++] = color.R;
@@ -230,7 +238,7 @@ namespace MatterHackers.Agg.Image
 			bitmap.UnlockBits(bitmapData);
 		}
 
-		public override bool SaveImageData(string filename, IImageByte sourceImage)
+		public bool SaveImageData(string filename, IImageByte sourceImage)
 		{
 			if (File.Exists(filename))
 			{
@@ -247,39 +255,47 @@ namespace MatterHackers.Agg.Image
 				filename += ".jpg";
 			}
 
-			if (!System.IO.File.Exists(filename))
+			if (!File.Exists(filename))
 			{
 				if (sourceImage.BitDepth == 32)
 				{
-					using (var bitmapToSave = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format32bppArgb))
+					try
 					{
-						BitmapData bitmapData = bitmapToSave.LockBits(new Rectangle(0, 0, bitmapToSave.Width, bitmapToSave.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmapToSave.PixelFormat);
-						int destIndex = 0;
-						unsafe
+						using (var bitmapToSave = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format32bppArgb))
 						{
-							byte[] sourceBuffer = sourceImage.GetBuffer();
-							byte* pDestBuffer = (byte*)bitmapData.Scan0;
-							int scanlinePadding = bitmapData.Stride - bitmapData.Width * 4;
-							for (int y = 0; y < sourceImage.Height; y++)
+							BitmapData bitmapData = bitmapToSave.LockBits(new Rectangle(0, 0, bitmapToSave.Width, bitmapToSave.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmapToSave.PixelFormat);
+							int destIndex = 0;
+							unsafe
 							{
-								int sourceIndex = sourceImage.GetBufferOffsetXY(0, sourceImage.Height - 1 - y);
-								for (int x = 0; x < sourceImage.Width; x++)
+								byte[] sourceBuffer = sourceImage.GetBuffer();
+								byte* pDestBuffer = (byte*)bitmapData.Scan0;
+								int scanlinePadding = bitmapData.Stride - bitmapData.Width * 4;
+								for (int y = 0; y < sourceImage.Height; y++)
 								{
-									pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
-									pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
-									pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
-									pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
-								}
+									int sourceIndex = sourceImage.GetBufferOffsetXY(0, sourceImage.Height - 1 - y);
+									for (int x = 0; x < sourceImage.Width; x++)
+									{
+										pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+										pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+										pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+										pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+									}
 
-								destIndex += scanlinePadding;
+									destIndex += scanlinePadding;
+								}
 							}
+
+							bitmapToSave.UnlockBits(bitmapData);
+							bitmapToSave.Save(filename, format);
 						}
 
-						bitmapToSave.UnlockBits(bitmapData);
-						bitmapToSave.Save(filename, format);
+						return true;
 					}
-
-					return true;
+					catch (Exception ex)
+					{
+						Console.WriteLine("Error saving file: " + ex.Message);
+						return false;
+					}
 				}
 				else if (sourceImage.BitDepth == 8 && format == ImageFormat.Png)
 				{
@@ -288,7 +304,7 @@ namespace MatterHackers.Agg.Image
 						ColorPalette palette = bitmapToSave.Palette;
 						for (int i = 0; i < palette.Entries.Length; i++)
 						{
-							palette.Entries[i] = Color.FromArgb(i, i, i);
+							palette.Entries[i] = System.Drawing.Color.FromArgb(i, i, i);
 						}
 						bitmapToSave.Palette = palette;
 						BitmapData bitmapData = bitmapToSave.LockBits(new Rectangle(0, 0, bitmapToSave.Width, bitmapToSave.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmapToSave.PixelFormat);
@@ -314,16 +330,16 @@ namespace MatterHackers.Agg.Image
 				}
 				else
 				{
-					throw new System.NotImplementedException();
+					throw new NotImplementedException();
 				}
 			}
 
 			return false;
 		}
 
-		public override bool LoadImageData(String filename, ImageBufferFloat destImage)
+		public bool LoadImageData(string filename, ImageBufferFloat destImage)
 		{
-			if (System.IO.File.Exists(filename))
+			if (File.Exists(filename))
 			{
 				var bitmap = new Bitmap(filename);
 				if (bitmap != null)
@@ -366,6 +382,22 @@ namespace MatterHackers.Agg.Image
 			}
 
 			return false;
+		}
+
+		public ImageBuffer LoadImage(string path)
+		{
+			var temp = new ImageBuffer();
+			LoadImageData(path, temp);
+
+			return temp;
+		}
+
+		public ImageBuffer LoadImage(Stream stream)
+		{
+			var temp = new ImageBuffer();
+			LoadImageData(stream, temp);
+
+			return temp;
 		}
 	}
 }

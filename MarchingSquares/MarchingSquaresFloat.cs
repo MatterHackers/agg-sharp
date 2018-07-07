@@ -190,15 +190,15 @@ namespace MatterHackers.MarchingSquares
             float colorBStart = Math.Min(imageToMarch.GetBuffer()[imageToMarch.GetBufferOffsetXY((int)segmentB.start.x, (int)segmentB.start.y)], 1);
             float colorBEnd = Math.Min(imageToMarch.GetBuffer()[imageToMarch.GetBufferOffsetXY((int)segmentB.end.x, (int)segmentB.end.y)], 1);
 #else
-			float colorAStart = imageToMarch.GetBuffer()[imageToMarch.GetBufferOffsetXY((int)segmentA.start.x, (int)segmentA.start.y)];
-			float colorAEnd = imageToMarch.GetBuffer()[imageToMarch.GetBufferOffsetXY((int)segmentA.end.x, (int)segmentA.end.y)];
+			float colorAStart = imageToMarch.GetBuffer()[imageToMarch.GetBufferOffsetXY((int)segmentA.start.X, (int)segmentA.start.Y)];
+			float colorAEnd = imageToMarch.GetBuffer()[imageToMarch.GetBufferOffsetXY((int)segmentA.end.X, (int)segmentA.end.Y)];
 
 			Vector2 directionA = segmentA.end - segmentA.start;
 			double offsetA = 1 - (colorAEnd + colorAStart) / 2.0;
 			directionA *= offsetA;
 
-			float colorBStart = imageToMarch.GetBuffer()[imageToMarch.GetBufferOffsetXY((int)segmentB.start.x, (int)segmentB.start.y)];
-			float colorBEnd = imageToMarch.GetBuffer()[imageToMarch.GetBufferOffsetXY((int)segmentB.end.x, (int)segmentB.end.y)];
+			float colorBStart = imageToMarch.GetBuffer()[imageToMarch.GetBufferOffsetXY((int)segmentB.start.X, (int)segmentB.start.Y)];
+			float colorBEnd = imageToMarch.GetBuffer()[imageToMarch.GetBufferOffsetXY((int)segmentB.end.X, (int)segmentB.end.Y)];
 #endif
 
 			Vector2 directionB = segmentB.end - segmentB.start;
@@ -207,10 +207,10 @@ namespace MatterHackers.MarchingSquares
 
 			double offsetToPixelCenter = .5;
 			LineSegmentFloat segment = new LineSegmentFloat(
-				(segmentA.start.x + directionA.x) + offsetToPixelCenter,
-				(segmentA.start.y + directionA.y) + offsetToPixelCenter,
-				(segmentB.start.x + directionB.x) + offsetToPixelCenter,
-				(segmentB.start.y + directionB.y) + offsetToPixelCenter);
+				(segmentA.start.X + directionA.X) + offsetToPixelCenter,
+				(segmentA.start.Y + directionA.Y) + offsetToPixelCenter,
+				(segmentB.start.X + directionB.X) + offsetToPixelCenter,
+				(segmentB.start.Y + directionB.Y) + offsetToPixelCenter);
 
 			return segment;
 		}
@@ -299,12 +299,12 @@ namespace MatterHackers.MarchingSquares
 		{
 			foreach (LineSegmentFloat lineSegment in LineSegments)
 			{
-				PathStorage m_LinesToDraw = new PathStorage();
+				VertexStorage m_LinesToDraw = new VertexStorage();
 				m_LinesToDraw.remove_all();
-				m_LinesToDraw.MoveTo(lineSegment.start.x, lineSegment.start.y);
-				m_LinesToDraw.LineTo(lineSegment.end.x, lineSegment.end.y);
+				m_LinesToDraw.MoveTo(lineSegment.start.X, lineSegment.start.Y);
+				m_LinesToDraw.LineTo(lineSegment.end.X, lineSegment.end.Y);
 				Stroke StrockedLineToDraw = new Stroke(m_LinesToDraw, .25);
-				graphics2D.Render(StrockedLineToDraw, RGBA_Bytes.Black);
+				graphics2D.Render(StrockedLineToDraw, Color.Black);
 			}
 		}
 	}

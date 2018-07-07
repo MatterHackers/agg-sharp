@@ -30,22 +30,15 @@ either expressed or implied, of the FreeBSD Project.
 using ClipperLib;
 using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
-using MatterHackers.Csg;
-using MatterHackers.Csg.Operations;
-using MatterHackers.Csg.Solids;
-using MatterHackers.Csg.Transform;
-using MatterHackers.VectorMath;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace MatterHackers.DataConverters2D
 {
 	public static class VertexSourceToClipperPolygons
 	{
-		public static PathStorage CreatePathStorage(List<List<IntPoint>> polygons, double scaling = 1000)
+		public static VertexStorage CreateVertexStorage(this List<List<IntPoint>> polygons, double scaling = 1000)
 		{
-			PathStorage output = new PathStorage();
+			VertexStorage output = new VertexStorage();
 
 			foreach (List<IntPoint> polygon in polygons)
 			{
@@ -54,12 +47,12 @@ namespace MatterHackers.DataConverters2D
 				{
 					if (first)
 					{
-						output.Add(point.X / scaling, point.Y / scaling, ShapePath.FlagsAndCommand.CommandMoveTo);
+						output.Add(point.X / scaling, point.Y / scaling, ShapePath.FlagsAndCommand.MoveTo);
 						first = false;
 					}
 					else
 					{
-						output.Add(point.X / scaling, point.Y / scaling, ShapePath.FlagsAndCommand.CommandLineTo);
+						output.Add(point.X / scaling, point.Y / scaling, ShapePath.FlagsAndCommand.LineTo);
 					}
 				}
 
@@ -68,7 +61,7 @@ namespace MatterHackers.DataConverters2D
 			return output;
 		}
 
-		public static List<List<IntPoint>> CreatePolygons(IVertexSource sourcePath, double scaling = 1000)
+		public static List<List<IntPoint>> CreatePolygons(this IVertexSource sourcePath, double scaling = 1000)
 		{
 			List<List<IntPoint>> allPolys = new List<List<IntPoint>>();
 			List<IntPoint> currentPoly = null;
@@ -81,11 +74,11 @@ namespace MatterHackers.DataConverters2D
 				{
 					if (!addedFirst)
 					{
-						currentPoly.Add(new IntPoint((long)(last.position.x * scaling), (long)(last.position.y * scaling)));
+						currentPoly.Add(new IntPoint((long)(last.position.X * scaling), (long)(last.position.Y * scaling)));
 						addedFirst = true;
 						first = last;
 					}
-					currentPoly.Add(new IntPoint((long)(vertexData.position.x * scaling), (long)(vertexData.position.y * scaling)));
+					currentPoly.Add(new IntPoint((long)(vertexData.position.X * scaling), (long)(vertexData.position.Y * scaling)));
 					last = vertexData;
 				}
 				else

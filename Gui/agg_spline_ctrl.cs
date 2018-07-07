@@ -35,11 +35,11 @@ namespace MatterHackers.Agg.UI
 	//------------------------------------------------------------------------
 	public class spline_ctrl : SimpleVertexSourceWidget
 	{
-		private RGBA_Bytes m_background_color;
-		private RGBA_Bytes m_border_color;
-		private RGBA_Bytes m_curve_color;
-		private RGBA_Bytes m_inactive_pnt_color;
-		private RGBA_Bytes m_active_pnt_color;
+		private Color m_background_color;
+		private Color m_border_color;
+		private Color m_curve_color;
+		private Color m_inactive_pnt_color;
+		private Color m_active_pnt_color;
 
 		private int m_num_pnt;
 		private double[] m_xp = new double[32];
@@ -55,7 +55,7 @@ namespace MatterHackers.Agg.UI
 		private double m_ys1;
 		private double m_xs2;
 		private double m_ys2;
-		private VertexSource.PathStorage m_curve_pnt;
+		private VertexSource.VertexStorage m_curve_pnt;
 		private Stroke m_curve_poly;
 		private VertexSource.Ellipse m_ellipse;
 		private int m_idx;
@@ -71,16 +71,16 @@ namespace MatterHackers.Agg.UI
 		public spline_ctrl(Vector2 location, Vector2 size, int num_pnt)
 			: base(location, false)
 		{
-			LocalBounds = new RectangleDouble(0, 0, size.x, size.y);
-			m_curve_pnt = new PathStorage();
+			LocalBounds = new RectangleDouble(0, 0, size.X, size.Y);
+			m_curve_pnt = new VertexStorage();
 			m_curve_poly = new Stroke(m_curve_pnt);
 			m_ellipse = new Ellipse();
 
-			m_background_color = new RGBA_Bytes(1.0, 1.0, 0.9);
-			m_border_color = new RGBA_Bytes(0.0, 0.0, 0.0);
-			m_curve_color = new RGBA_Bytes(0.0, 0.0, 0.0);
-			m_inactive_pnt_color = new RGBA_Bytes(0.0, 0.0, 0.0);
-			m_active_pnt_color = new RGBA_Bytes(1.0, 0.0, 0.0);
+			m_background_color = new Color(1.0, 1.0, 0.9);
+			m_border_color = new Color(0.0, 0.0, 0.0);
+			m_curve_color = new Color(0.0, 0.0, 0.0);
+			m_inactive_pnt_color = new Color(0.0, 0.0, 0.0);
+			m_active_pnt_color = new Color(1.0, 0.0, 0.0);
 
 			m_num_pnt = (num_pnt);
 			m_border_width = (1.0);
@@ -192,28 +192,32 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnKeyDown(KeyEventArgs keyEvent)
 		{
-			double kx = 0.0;
-			double ky = 0.0;
-			bool ret = false;
-			if (m_active_pnt >= 0)
-			{
-				kx = m_xp[m_active_pnt];
-				ky = m_yp[m_active_pnt];
-				if (keyEvent.KeyCode == Keys.Left) { kx -= 0.001; ret = true; }
-				if (keyEvent.KeyCode == Keys.Right) { kx += 0.001; ret = true; }
-				if (keyEvent.KeyCode == Keys.Down) { ky -= 0.001; ret = true; }
-				if (keyEvent.KeyCode == Keys.Up) { ky += 0.001; ret = true; }
-			}
-			if (ret)
-			{
-				set_xp((int)m_active_pnt, kx);
-				set_yp((int)m_active_pnt, ky);
-				update_spline();
-				keyEvent.Handled = true;
-				Invalidate();
-			}
-
+			// this must be called first to ensure we get the correct Handled state
 			base.OnKeyDown(keyEvent);
+
+			if (!keyEvent.Handled)
+			{
+				double kx = 0.0;
+				double ky = 0.0;
+				bool ret = false;
+				if (m_active_pnt >= 0)
+				{
+					kx = m_xp[m_active_pnt];
+					ky = m_yp[m_active_pnt];
+					if (keyEvent.KeyCode == Keys.Left) { kx -= 0.001; ret = true; }
+					if (keyEvent.KeyCode == Keys.Right) { kx += 0.001; ret = true; }
+					if (keyEvent.KeyCode == Keys.Down) { ky -= 0.001; ret = true; }
+					if (keyEvent.KeyCode == Keys.Up) { ky += 0.001; ret = true; }
+				}
+				if (ret)
+				{
+					set_xp((int)m_active_pnt, kx);
+					set_yp((int)m_active_pnt, ky);
+					update_spline();
+					keyEvent.Handled = true;
+					Invalidate();
+				}
+			}
 		}
 
 		public void active_point(int i)
@@ -394,20 +398,20 @@ namespace MatterHackers.Agg.UI
 		{
 			x = 0;
 			y = 0;
-			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.CommandLineTo;
+			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.LineTo;
 			switch (m_idx)
 			{
 				case 0:
-					if (m_vertex == 0) cmd = ShapePath.FlagsAndCommand.CommandMoveTo;
-					if (m_vertex >= 4) cmd = ShapePath.FlagsAndCommand.CommandStop;
+					if (m_vertex == 0) cmd = ShapePath.FlagsAndCommand.MoveTo;
+					if (m_vertex >= 4) cmd = ShapePath.FlagsAndCommand.Stop;
 					x = m_vx[m_vertex];
 					y = m_vy[m_vertex];
 					m_vertex++;
 					break;
 
 				case 1:
-					if (m_vertex == 0 || m_vertex == 4) cmd = ShapePath.FlagsAndCommand.CommandMoveTo;
-					if (m_vertex >= 8) cmd = ShapePath.FlagsAndCommand.CommandStop;
+					if (m_vertex == 0 || m_vertex == 4) cmd = ShapePath.FlagsAndCommand.MoveTo;
+					if (m_vertex >= 8) cmd = ShapePath.FlagsAndCommand.Stop;
 					x = m_vx[m_vertex];
 					y = m_vy[m_vertex];
 					m_vertex++;
@@ -423,7 +427,7 @@ namespace MatterHackers.Agg.UI
 					break;
 
 				default:
-					cmd = ShapePath.FlagsAndCommand.CommandStop;
+					cmd = ShapePath.FlagsAndCommand.Stop;
 					break;
 			}
 
@@ -494,27 +498,27 @@ namespace MatterHackers.Agg.UI
 		}
 
 		// Set colors
-		public void background_color(RGBA_Bytes c)
+		public void background_color(Color c)
 		{
 			m_background_color = c;
 		}
 
-		public void border_color(RGBA_Bytes c)
+		public void border_color(Color c)
 		{
 			m_border_color = c;
 		}
 
-		public void curve_color(RGBA_Bytes c)
+		public void curve_color(Color c)
 		{
 			m_curve_color = c;
 		}
 
-		public void inactive_pnt_color(RGBA_Bytes c)
+		public void inactive_pnt_color(Color c)
 		{
 			m_inactive_pnt_color = c;
 		}
 
-		public void active_pnt_color(RGBA_Bytes c)
+		public void active_pnt_color(Color c)
 		{
 			m_active_pnt_color = c;
 		}

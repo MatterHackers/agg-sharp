@@ -27,10 +27,10 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.VectorMath;
-using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using MatterHackers.VectorMath;
+using NUnit.Framework;
 
 namespace MatterHackers.PolygonMesh.UnitTests
 {
@@ -42,15 +42,15 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		{
 			VertexCollecton collection = new VertexCollecton();
 			Vector3 position1 = new Vector3(10, 11, 12);
-			Vertex vertex1 = new Vertex(position1);
+			IVertex vertex1 = new Vertex(position1);
 			collection.Add(vertex1);
 			Assert.IsTrue(collection.ContainsAVertexAtPosition(vertex1) == true);
-			List<Vertex> found = collection.FindVertices(position1, .001);
+			List<IVertex> found = collection.FindVertices(position1, .001);
 			Assert.IsTrue(found.Count == 1);
 			Assert.IsTrue(found[0] == vertex1);
 
 			Vector3 position2 = new Vector3(20, 21, 22);
-			Vertex vertex2 = new Vertex(position2);
+			IVertex vertex2 = new Vertex(position2);
 			collection.Add(vertex2);
 			Assert.IsTrue(collection.ContainsAVertexAtPosition(vertex1) == true);
 			found = collection.FindVertices(position1, .001);
@@ -58,7 +58,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			Assert.IsTrue(found[0] == vertex1);
 
 			Vector3 position3 = new Vector3(10, 21, 22);
-			Vertex vertex3 = new Vertex(position3);
+			IVertex vertex3 = new Vertex(position3);
 			collection.Add(vertex3);
 			Assert.IsTrue(collection.ContainsAVertexAtPosition(vertex1) == true);
 			found = collection.FindVertices(position1, .001);
@@ -87,7 +87,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			{
 				for (int i = 0; i < numPosition; i++)
 				{
-					List<Vertex> found1 = mesh.FindVertices(new Vector3(positions[i].x, positions[i].y, positions[i].z), distance);
+					List<IVertex> found1 = mesh.FindVertices(new Vector3(positions[i].x, positions[i].y, positions[i].z), distance);
 					List<Vector3Float> found2 = FindWithinDist(positions, positions[i], distance);
 
 					Assert.IsTrue(found1.Count == found2.Count);

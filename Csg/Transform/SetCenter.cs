@@ -47,15 +47,15 @@ namespace MatterHackers.Csg.Transform
 			Vector3 origin = Vector3.Zero; // zero out anything we don't want
 			if (onX)
 			{
-				origin.x = offset.x - center.x;
+				origin.X = offset.X - center.X;
 			}
 			if (onY)
 			{
-				origin.y = offset.y - center.y;
+				origin.Y = offset.Y - center.Y;
 			}
 			if (onZ)
 			{
-				origin.z = offset.z - center.z;
+				origin.Z = offset.Z - center.Z;
 			}
 
 			base.Translation = origin;

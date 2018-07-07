@@ -30,9 +30,11 @@ either expressed or implied, of the FreeBSD Project.
 #if !__ANDROID__
 
 using MatterHackers.GuiAutomation;
+using MatterHackers.VectorMath;
 
 #endif
 
+using MatterHackers.VectorMath;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -41,11 +43,13 @@ using System.Threading.Tasks;
 
 namespace MatterHackers.Agg.UI.Tests
 {
-	[TestFixture, Category("Agg.UI")]
+#if !__ANDROID__
+	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
+#endif
 	public class MouseInteractionTests
 	{
 #if !__ANDROID__
-		[Test, Apartment(ApartmentState.STA), RunInApplicationDomain]
+		[Test]
 		public async Task DoClickButtonInWindow()
 		{
 			int leftClickCount = 0;
@@ -54,12 +58,12 @@ namespace MatterHackers.Agg.UI.Tests
 			AutomationTest testToRun = (testRunner) =>
 			{
 				// Now do the actions specific to this test. (replace this for new tests)
-				testRunner.ClickByName("left", 1);
+				testRunner.ClickByName("left");
 				testRunner.Delay(.5);
 
 				Assert.IsTrue(leftClickCount == 1, "Got left button click");
 
-				testRunner.ClickByName("right", 1);
+				testRunner.ClickByName("right");
 				testRunner.Delay(.5);
 
 				Assert.IsTrue(rightClickCount == 1, "Got right button click");
@@ -69,7 +73,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 				Assert.IsTrue(leftClickCount == 1, "Mouse down not a click");
 
-				return Task.FromResult(0);
+				return Task.CompletedTask;
 			};
 
 			SystemWindow buttonContainer = new SystemWindow(300, 200);
@@ -83,7 +87,7 @@ namespace MatterHackers.Agg.UI.Tests
 			rightButton.Name = "right";
 			buttonContainer.AddChild(rightButton);
 
-			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun, 10);
+			await AutomationRunner.ShowWindowAndExecuteTests(buttonContainer, testToRun);
 		}
 
 #endif
@@ -471,7 +475,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(mouseEnterBounds == 0);
 		}
 
-		[Test, Category("WorkInProgress" /* Functionality needs to be implemented */)]
+		[Test, Ignore("WorkInProgress - Functionality needs to be implemented")]
 		public void ValidateEnterLeaveOnWidgetMoves()
 		{
 			GuiWidget container = new SystemWindow(200, 200);
@@ -480,7 +484,7 @@ namespace MatterHackers.Agg.UI.Tests
 			GuiWidget regionA = new GuiWidget();
 			regionA.Name = "regionA";
 			regionA.BoundsRelativeToParent = new RectangleDouble(0, 0, 180, 180);
-			regionA.OriginRelativeParent = new VectorMath.Vector2(10, 10);
+			regionA.OriginRelativeParent = new Vector2(10, 10);
 			int gotEnter = 0;
 			int gotLeave = 0;
 			regionA.MouseEnter += (sender, e) => { if (regionA.UnderMouseState == UnderMouseState.NotUnderMouse) throw new Exception("It must be under the mouse."); gotEnter++; };
@@ -504,7 +508,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(gotLeaveBounds == 0);
 			Assert.IsTrue(gotEnterBounds == 0);
 			// move regionA under mouse
-			regionA.OriginRelativeParent = new VectorMath.Vector2(0, 0);
+			regionA.OriginRelativeParent = new Vector2(0, 0);
 			Assert.IsTrue(regionA.UnderMouseState == UnderMouseState.FirstUnderMouse);
 			Assert.IsTrue(gotLeave == 0);
 			Assert.IsTrue(gotEnter == 1);
@@ -513,7 +517,7 @@ namespace MatterHackers.Agg.UI.Tests
 			// now regionA and make sure it does not re-trigger either event
 			gotEnter = 0;
 			gotEnterBounds = 0;
-			regionA.OriginRelativeParent = new VectorMath.Vector2(1, 1);
+			regionA.OriginRelativeParent = new Vector2(1, 1);
 			Assert.IsTrue(regionA.UnderMouseState == UnderMouseState.FirstUnderMouse);
 			Assert.IsTrue(gotLeave == 0);
 			Assert.IsTrue(gotEnter == 0);
@@ -521,7 +525,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(gotEnterBounds == 0);
 
 			// now move out from under mouse and make sure we see the leave
-			regionA.OriginRelativeParent = new VectorMath.Vector2(10, 10);
+			regionA.OriginRelativeParent = new Vector2(10, 10);
 			Assert.IsTrue(gotLeave == 1);
 			Assert.IsTrue(gotEnter == 0);
 			Assert.IsTrue(gotLeaveBounds == 1);
@@ -529,14 +533,14 @@ namespace MatterHackers.Agg.UI.Tests
 
 			// move back under
 			gotLeave = gotEnter = gotLeaveBounds = gotEnterBounds = 0;
-			regionA.OriginRelativeParent = new VectorMath.Vector2(0, 0);
+			regionA.OriginRelativeParent = new Vector2(0, 0);
 			Assert.IsTrue(gotEnter == 1);
 			Assert.IsTrue(gotLeave == 0);
 			Assert.IsTrue(gotLeaveBounds == 0);
 			Assert.IsTrue(gotEnterBounds == 1);
 		}
 
-		[Test, Category("WorkInProgress" /* Functionality needs to be implemented */)]
+		[Test, Ignore("WorkInProgress - Functionality needs to be implemented")]
 		public void ValidateEnterLeaveOnWidgetBoundsChange()
 		{
 			GuiWidget container = new SystemWindow(200, 200);
@@ -1258,7 +1262,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Button buttonA = new Button();
 			buttonA.Name = "buttonA";
 			buttonA.BoundsRelativeToParent = new RectangleDouble(0, 0, 180, 180);
-			buttonA.OriginRelativeParent = new VectorMath.Vector2(10, 10);
+			buttonA.OriginRelativeParent = new Vector2(10, 10);
 			container.AddChild(buttonA);
 			bool aGotEnter = false;
 			bool aGotLeave = false;

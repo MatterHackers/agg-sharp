@@ -86,14 +86,14 @@ namespace MatterHackers.Csg.Processors
 				Vector3 position = Vector3.TransformPosition(objectToProcess.GetCenter(), accumulatedMatrix);
 				if (outputAsScad)
 				{
-					string output = "translate([" + position.x.ToString() + ", " + position.y.ToString() + ", " + position.z.ToString() + "])\n";
+					string output = "translate([" + position.X.ToString() + ", " + position.Y.ToString() + ", " + position.Z.ToString() + "])\n";
 					output += "sphere(1, $fn=10);\n";
 					return output;
 				}
 				else
 				{
-					Vector2 position2D = new Vector2(position.x, position.y);
-					return position2D.x.ToString("0.000") + ", " + position2D.y.ToString("0.000") + "\n";
+					Vector2 position2D = new Vector2(position.X, position.Y);
+					return position2D.X.ToString("0.000") + ", " + position2D.Y.ToString("0.000") + "\n";
 				}
 			}
 

@@ -46,8 +46,8 @@ namespace MatterHackers.GCodeVisualizer
 			{
 				Vector3Float start = this.start;
 				Vector2 offset = renderInfo.GetExtruderOffset(extruderIndex);
-				start.x += (float)offset.x;
-				start.y += (float)offset.y;
+				start.x += (float)offset.X;
+				start.y += (float)offset.Y;
 				return start;
 			}
 
@@ -60,8 +60,8 @@ namespace MatterHackers.GCodeVisualizer
 			{
 				Vector3Float end = this.end;
 				Vector2 offset = renderInfo.GetExtruderOffset(extruderIndex);
-				end.x += (float)offset.x;
-				end.y += (float)offset.y;
+				end.x += (float)offset.X;
+				end.y += (float)offset.Y;
 				return end;
 			}
 
@@ -92,7 +92,7 @@ namespace MatterHackers.GCodeVisualizer
 			if ((renderInfo.CurrentRenderType & RenderType.Moves) == RenderType.Moves)
 			{
 				double movementLineWidth = 0.35 * renderInfo.LayerScale;
-				RGBA_Bytes movementColor = new RGBA_Bytes(10, 190, 15);
+				Color movementColor = new Color(10, 190, 15);
 
 				// render the part using opengl
 				Graphics2DOpenGL graphics2DGl = graphics2D as Graphics2DOpenGL;
@@ -110,7 +110,7 @@ namespace MatterHackers.GCodeVisualizer
 				}
 				else
 				{
-					PathStorage pathStorage = new PathStorage();
+					VertexStorage pathStorage = new VertexStorage();
 					VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, renderInfo.Transform);
 					Stroke stroke = new Stroke(transformedPathStorage, movementLineWidth);
 
@@ -120,14 +120,14 @@ namespace MatterHackers.GCodeVisualizer
 					Vector3Float start = this.GetStart(renderInfo);
 					Vector3Float end = this.GetEnd(renderInfo);
 
-					pathStorage.Add(start.x, start.y, ShapePath.FlagsAndCommand.CommandMoveTo);
+					pathStorage.Add(start.x, start.y, ShapePath.FlagsAndCommand.MoveTo);
 					if (end.x != start.x || end.y != start.y)
 					{
-						pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
+						pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.LineTo);
 					}
 					else
 					{
-						pathStorage.Add(end.x + .01, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
+						pathStorage.Add(end.x + .01, end.y, ShapePath.FlagsAndCommand.LineTo);
 					}
 
 					graphics2D.Render(stroke, 0, movementColor);

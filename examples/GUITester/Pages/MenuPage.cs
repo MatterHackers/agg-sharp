@@ -12,7 +12,7 @@ namespace MatterHackers.Agg
 			: base("Menu Controls")
 		{
 			//GuiWidget.DebugBoundsUnderMouse = true;
-			BackgroundColor = RGBA_Bytes.Green;
+			BackgroundColor = Color.Green;
 			lastAction = new TextWidget("Last Menu Action");
 			lastAction.OriginRelativeParent = new Vector2(100, 250);
 			AddChild(lastAction);
@@ -43,23 +43,23 @@ namespace MatterHackers.Agg
 			AddChild(raiseListMenu);
 
 			FlowLayoutWidget mainMenuBar = new FlowLayoutWidget();
-			mainMenuBar.VAnchor = UI.VAnchor.ParentTop;
+			mainMenuBar.VAnchor = UI.VAnchor.Top;
 
 			GuiWidget popupMenu = new TextWidget("Simple Menu");
 			popupMenu.OriginRelativeParent = new Vector2(100, 100);
 			//AddChild(popupMenu);
 
-			DropDownList dropDownList = new DropDownList("- Select Something -", RGBA_Bytes.Black, RGBA_Bytes.Gray);
+			DropDownList dropDownList = new DropDownList("- Select Something -", Color.Black, Color.Gray);
 
-			dropDownList.BackgroundColor = RGBA_Bytes.Black;
-			dropDownList.TextColor = RGBA_Bytes.White;
+			dropDownList.BackgroundColor = Color.Black;
+			dropDownList.TextColor = Color.White;
 
 			dropDownList.MenuItemsPadding = new BorderDouble(13);
 			dropDownList.MenuItemsBorderWidth = 3;
-			dropDownList.MenuItemsBorderColor = RGBA_Bytes.Red;
-			dropDownList.MenuItemsBackgroundColor = RGBA_Bytes.Blue;
-			dropDownList.MenuItemsTextColor = RGBA_Bytes.White;
-			dropDownList.MenuItemsTextHoverColor = RGBA_Bytes.Yellow;
+			dropDownList.MenuItemsBorderColor = Color.Red;
+			dropDownList.MenuItemsBackgroundColor = Color.Blue;
+			dropDownList.MenuItemsTextColor = Color.White;
+			dropDownList.MenuItemsTextHoverColor = Color.Yellow;
 
 			dropDownList.Name = "Drop Down List";
 			dropDownList.AddItem("Item 1", "value1");
@@ -72,9 +72,9 @@ namespace MatterHackers.Agg
 		private void AddMenu(Menu listMenuToAddTo, string name)
 		{
 			GuiWidget normal = new TextWidget(name);
-			normal.BackgroundColor = RGBA_Bytes.White;
+			normal.BackgroundColor = Color.White;
 			GuiWidget hover = new TextWidget(name);
-			hover.BackgroundColor = RGBA_Bytes.LightGray;
+			hover.BackgroundColor = Color.LightGray;
 			MenuItem menuItem = new MenuItem(new MenuItemStatesView(normal, hover));
 			menuItem.Selected += (sender, e) => { lastAction.Text = name; };
 			listMenuToAddTo.MenuItems.Add(menuItem);

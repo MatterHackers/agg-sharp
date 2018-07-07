@@ -34,18 +34,18 @@ namespace MatterHackers.Agg.VertexSource
 		{
 			public double x;
 			public double y;
-			public RGBA_Bytes color;
+			public Color color;
 		};
 
 		public span_gouraud()
 		{
 			m_vertex = (0);
-			m_cmd[0] = ShapePath.FlagsAndCommand.CommandStop;
+			m_cmd[0] = ShapePath.FlagsAndCommand.Stop;
 		}
 
-		public span_gouraud(RGBA_Bytes c1,
-					 RGBA_Bytes c2,
-					 RGBA_Bytes c3,
+		public span_gouraud(Color c1,
+					 Color c2,
+					 Color c3,
 					 double x1, double y1,
 					 double x2, double y2,
 					 double x3, double y3,
@@ -58,9 +58,9 @@ namespace MatterHackers.Agg.VertexSource
 
 		public void colors(IColorType c1, IColorType c2, IColorType c3)
 		{
-			m_coord[0].color = c1.GetAsRGBA_Bytes();
-			m_coord[1].color = c2.GetAsRGBA_Bytes();
-			m_coord[2].color = c3.GetAsRGBA_Bytes();
+			m_coord[0].color = c1.ToColor();
+			m_coord[1].color = c2.ToColor();
+			m_coord[2].color = c3.ToColor();
 		}
 
 		//--------------------------------------------------------------------
@@ -81,10 +81,10 @@ namespace MatterHackers.Agg.VertexSource
 			m_coord[1].y = m_y[1] = y2;
 			m_coord[2].x = m_x[2] = x3;
 			m_coord[2].y = m_y[2] = y3;
-			m_cmd[0] = ShapePath.FlagsAndCommand.CommandMoveTo;
-			m_cmd[1] = ShapePath.FlagsAndCommand.CommandLineTo;
-			m_cmd[2] = ShapePath.FlagsAndCommand.CommandLineTo;
-			m_cmd[3] = ShapePath.FlagsAndCommand.CommandStop;
+			m_cmd[0] = ShapePath.FlagsAndCommand.MoveTo;
+			m_cmd[1] = ShapePath.FlagsAndCommand.LineTo;
+			m_cmd[2] = ShapePath.FlagsAndCommand.LineTo;
+			m_cmd[3] = ShapePath.FlagsAndCommand.Stop;
 
 			if (dilation != 0.0)
 			{
@@ -104,10 +104,10 @@ namespace MatterHackers.Agg.VertexSource
 				agg_math.calc_intersection(m_x[2], m_y[2], m_x[3], m_y[3],
 								  m_x[4], m_y[4], m_x[5], m_y[5],
 								  out m_coord[2].x, out m_coord[2].y);
-				m_cmd[3] = ShapePath.FlagsAndCommand.CommandLineTo;
-				m_cmd[4] = ShapePath.FlagsAndCommand.CommandLineTo;
-				m_cmd[5] = ShapePath.FlagsAndCommand.CommandLineTo;
-				m_cmd[6] = ShapePath.FlagsAndCommand.CommandStop;
+				m_cmd[3] = ShapePath.FlagsAndCommand.LineTo;
+				m_cmd[4] = ShapePath.FlagsAndCommand.LineTo;
+				m_cmd[5] = ShapePath.FlagsAndCommand.LineTo;
+				m_cmd[6] = ShapePath.FlagsAndCommand.Stop;
 			}
 		}
 

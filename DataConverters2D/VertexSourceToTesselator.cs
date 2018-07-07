@@ -46,7 +46,7 @@ namespace MatterHackers.DataConverters2D
 							haveBegunContour = true;
 						}
 
-						tesselator.AddVertex(vertexData.position.x, vertexData.position.y);
+						tesselator.AddVertex(vertexData.position.X, vertexData.position.Y);
 					}
 				}
 

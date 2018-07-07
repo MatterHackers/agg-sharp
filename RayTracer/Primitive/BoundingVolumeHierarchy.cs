@@ -48,7 +48,7 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-		public RGBA_Floats GetColor(IntersectInfo info)
+		public ColorF GetColor(IntersectInfo info)
 		{
 			throw new NotImplementedException("You should not get a color directly from a BoundingVolumeHierarchy.");
 		}
@@ -64,6 +64,23 @@ namespace MatterHackers.RayTracer
 				throw new Exception("You can't set a material on an UnboundCollection.");
 			}
 		}
+
+		public bool Contains(Vector3 position)
+		{
+			if (this.GetAxisAlignedBoundingBox().Contains(position))
+			{
+				foreach (IPrimitive item in Items)
+				{
+					if (item.Contains(position))
+					{
+						return true;
+					}
+				}
+			}
+
+			return false;
+		}
+
 
 		public IntersectInfo GetClosestIntersection(Ray ray)
 		{
@@ -83,7 +100,7 @@ namespace MatterHackers.RayTracer
 			return bestInfo;
 		}
 
-		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
+		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
 		{
 			bool foundItem = false;
 			foreach (IPrimitive item in Items)
@@ -139,7 +156,7 @@ namespace MatterHackers.RayTracer
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{
-			if (cachedAABB.minXYZ.x == double.NegativeInfinity)
+			if (cachedAABB.minXYZ.X == double.NegativeInfinity)
 			{
 				cachedAABB = Items[0].GetAxisAlignedBoundingBox();
 				for (int i = 1; i < Items.Count; i++)
@@ -190,7 +207,21 @@ namespace MatterHackers.RayTracer
 			this.Aabb = nodeA.GetAxisAlignedBoundingBox() + nodeB.GetAxisAlignedBoundingBox(); // we can cache this because it is not allowed to change.
 		}
 
-		public RGBA_Floats GetColor(IntersectInfo info)
+		public bool Contains(Vector3 position)
+		{
+			if (this.GetAxisAlignedBoundingBox().Contains(position))
+			{
+				if (nodeA.Contains(position)
+					|| nodeB.Contains(position))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		public ColorF GetColor(IntersectInfo info)
 		{
 			throw new NotImplementedException("You should not get a color directly from a BoundingVolumeHierarchy.");
 		}
@@ -207,7 +238,7 @@ namespace MatterHackers.RayTracer
 			}
 		}
 
-		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
+		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
 		{
 			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
 			if (bounds.Contains(subRegion))

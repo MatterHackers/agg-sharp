@@ -36,6 +36,6 @@ namespace MatterHackers.RayTracer.Light
 	{
 		Vector3 Origin { get; }
 
-		RGBA_Floats Illumination();
+		ColorF Illumination();
 	}
 }

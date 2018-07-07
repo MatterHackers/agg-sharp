@@ -1,13 +1,14 @@
+using System;
+using System.Diagnostics;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
-using System;
-using System.Diagnostics;
 
 namespace MatterHackers.Agg
 {
-	public class gouraud_application : GuiWidget
+	public class gouraud_application : GuiWidget, IDemoApp
 	{
 		private double[] m_x = new double[3];
 		private double[] m_y = new double[3];
@@ -48,6 +49,20 @@ namespace MatterHackers.Agg
 			m_alpha.Value = 1.0;
 		}
 
+		public string Title { get; } = "Gouraud Colors";
+
+		public string DemoCategory { get; } = "Vector";
+
+		public string DemoDescription { get; } = "Gouraud shading. It's a simple method of interpolating colors in a triangle. There's no 'cube' drawn"
+				+ ", there're just 6 triangles. You define a triangle and colors in its vertices. When rendering, the "
+				+ "colors will be linearly interpolated. But there's a problem that appears when drawing adjacent "
+				+ "triangles with Anti-Aliasing. Anti-Aliased polygons do not 'dock' to each other correctly, there "
+				+ "visual artifacts at the edges appear. I call it “the problem of adjacent edges”. AGG has a simple"
+				+ " mechanism that allows you to get rid of the artifacts, just dilating the polygons and/or changing "
+				+ "the gamma-correction value. But it's tricky, because the values depend on the opacity of the polygons."
+				+ " In this example you can change the opacity, the dilation value and gamma. Also you can drag the "
+				+ "Red, Green and Blue corners of the “cube”.";
+
 		private void SliderValueChanged(object sender, EventArgs e)
 		{
 			Invalidate();
@@ -86,46 +101,46 @@ namespace MatterHackers.Agg
 			double x3 = (m_x[0] + m_x[2]) / 2 - (xc - (m_x[0] + m_x[2]) / 2);
 			double y3 = (m_y[0] + m_y[2]) / 2 - (yc - (m_y[0] + m_y[2]) / 2);
 
-			span_gen.colors(new RGBA_Floats(1, 0, 0, alpha),
-							new RGBA_Floats(0, 1, 0, alpha),
-							new RGBA_Floats(brc, brc, brc, alpha));
+			span_gen.colors(new ColorF(1, 0, 0, alpha),
+							new ColorF(0, 1, 0, alpha),
+							new ColorF(brc, brc, brc, alpha));
 			span_gen.triangle(m_x[0], m_y[0], m_x[1], m_y[1], xc, yc, d);
 			ras.add_path(span_gen);
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
 			scanlineRenderer.GenerateAndRender(ras, sl, ren_base, span_alloc, span_gen);
 
-			span_gen.colors(new RGBA_Floats(0, 1, 0, alpha),
-							new RGBA_Floats(0, 0, 1, alpha),
-							new RGBA_Floats(brc, brc, brc, alpha));
+			span_gen.colors(new ColorF(0, 1, 0, alpha),
+							new ColorF(0, 0, 1, alpha),
+							new ColorF(brc, brc, brc, alpha));
 			span_gen.triangle(m_x[1], m_y[1], m_x[2], m_y[2], xc, yc, d);
 			ras.add_path(span_gen);
 			scanlineRenderer.GenerateAndRender(ras, sl, ren_base, span_alloc, span_gen);
 
-			span_gen.colors(new RGBA_Floats(0, 0, 1, alpha),
-							new RGBA_Floats(1, 0, 0, alpha),
-							new RGBA_Floats(brc, brc, brc, alpha));
+			span_gen.colors(new ColorF(0, 0, 1, alpha),
+							new ColorF(1, 0, 0, alpha),
+							new ColorF(brc, brc, brc, alpha));
 			span_gen.triangle(m_x[2], m_y[2], m_x[0], m_y[0], xc, yc, d);
 			ras.add_path(span_gen);
 			scanlineRenderer.GenerateAndRender(ras, sl, ren_base, span_alloc, span_gen);
 
 			brc = 1 - brc;
-			span_gen.colors(new RGBA_Floats(1, 0, 0, alpha),
-							new RGBA_Floats(0, 1, 0, alpha),
-							new RGBA_Floats(brc, brc, brc, alpha));
+			span_gen.colors(new ColorF(1, 0, 0, alpha),
+							new ColorF(0, 1, 0, alpha),
+							new ColorF(brc, brc, brc, alpha));
 			span_gen.triangle(m_x[0], m_y[0], m_x[1], m_y[1], x1, y1, d);
 			ras.add_path(span_gen);
 			scanlineRenderer.GenerateAndRender(ras, sl, ren_base, span_alloc, span_gen);
 
-			span_gen.colors(new RGBA_Floats(0, 1, 0, alpha),
-							new RGBA_Floats(0, 0, 1, alpha),
-							new RGBA_Floats(brc, brc, brc, alpha));
+			span_gen.colors(new ColorF(0, 1, 0, alpha),
+							new ColorF(0, 0, 1, alpha),
+							new ColorF(brc, brc, brc, alpha));
 			span_gen.triangle(m_x[1], m_y[1], m_x[2], m_y[2], x2, y2, d);
 			ras.add_path(span_gen);
 			scanlineRenderer.GenerateAndRender(ras, sl, ren_base, span_alloc, span_gen);
 
-			span_gen.colors(new RGBA_Floats(0, 0, 1, alpha),
-							new RGBA_Floats(1, 0, 0, alpha),
-							new RGBA_Floats(brc, brc, brc, alpha));
+			span_gen.colors(new ColorF(0, 0, 1, alpha),
+							new ColorF(1, 0, 0, alpha),
+							new ColorF(brc, brc, brc, alpha));
 			span_gen.triangle(m_x[2], m_y[2], m_x[0], m_y[0], x3, y3, d);
 			ras.add_path(span_gen);
 			scanlineRenderer.GenerateAndRender(ras, sl, ren_base, span_alloc, span_gen);
@@ -143,7 +158,7 @@ namespace MatterHackers.Agg
 			pf.Attach(backBuffer, new BlenderBGRA());
 #endif
 			ImageClippingProxy ren_base = new ImageClippingProxy(pf);
-			ren_base.clear(new RGBA_Floats(1.0, 1.0, 1.0));
+			ren_base.clear(new ColorF(1.0, 1.0, 1.0));
 
 			scanline_unpacked_8 sl = new scanline_unpacked_8();
 			ScanlineRasterizer ras = new ScanlineRasterizer();
@@ -278,36 +293,12 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new gouraud_application_Factory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new gouraud_application();
 
-	public class gouraud_application_Factory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new gouraud_application();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-				"Vector",
-				"Gouraud Colors",
-				"Gouraud shading. It's a simple method of interpolating colors in a triangle. There's no 'cube' drawn"
-				+ ", there're just 6 triangles. You define a triangle and colors in its vertices. When rendering, the "
-				+ "colors will be linearly interpolated. But there's a problem that appears when drawing adjacent "
-				+ "triangles with Anti-Aliasing. Anti-Aliased polygons do not 'dock' to each other correctly, there "
-				+ "visual artifacts at the edges appear. I call it “the problem of adjacent edges”. AGG has a simple"
-				+ " mechanism that allows you to get rid of the artifacts, just dilating the polygons and/or changing "
-				+ "the gamma-correction value. But it's tricky, because the values depend on the opacity of the polygons."
-				+ " In this example you can change the opacity, the dilation value and gamma. Also you can drag the "
-				+ "Red, Green and Blue corners of the “cube”.",
-				400,
-				320);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(400, 300);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

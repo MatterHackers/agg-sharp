@@ -21,7 +21,7 @@ namespace MatterHackers.Agg.UI
 		private TitleBarWidget dragBar;
 		private GuiWidget clientArea = new GuiWidget();
 
-		private RGBA_Bytes DragBarColor
+		private Color DragBarColor
 		{
 			get;
 			set;
@@ -31,12 +31,12 @@ namespace MatterHackers.Agg.UI
 		{
 			int sizeOfDragBar = 20;
 
-			BackgroundColor = RGBA_Bytes.White;
+			BackgroundColor = Color.White;
 
 			OriginRelativeParent = new Vector2(InBounds.Left, InBounds.Bottom);
 			LocalBounds = new RectangleDouble(0, 0, InBounds.Width, InBounds.Height);
 
-			DragBarColor = RGBA_Bytes.LightGray;
+			DragBarColor = Color.LightGray;
 			dragBar = new TitleBarWidget(new RectangleDouble(0, InBounds.Height - sizeOfDragBar, InBounds.Width, InBounds.Height));
 			//dragBar.DebugShowBounds = true;
 			base.AddChild(dragBar);
@@ -70,7 +70,7 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			graphics2D.Rectangle(LocalBounds, RGBA_Bytes.Black);
+			graphics2D.Rectangle(LocalBounds, Color.Black);
 
 			RoundedRect boundsRect = new RoundedRect(dragBar.BoundsRelativeToParent, 0);
 			graphics2D.Render(boundsRect, DragBarColor);

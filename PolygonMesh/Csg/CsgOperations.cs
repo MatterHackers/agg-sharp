@@ -14,99 +14,18 @@
 //
 
 using MatterHackers.VectorMath;
+using Net3dBool;
 //using Net3dBool;
 using System.Collections.Generic;
 using System.Linq;
+using System;
+using System.Threading;
+using MatterHackers.Agg;
+using System.Text;
+using System.IO;
 
 namespace MatterHackers.PolygonMesh.Csg
 {
-#if false
-	public static class CsgOperations
-	{
-		// Return a new CSG solid representing space in either this solid or in the
-		// solid `csg`. Neither this solid nor the solid `csg` are modified.
-		//
-		//     +-------+            +-------+
-		//     |       |            |       |
-		//     |   A   |            |       |
-		//     |    +--+----+   =   |       +----+
-		//     +----+--+    |       +----+       |
-		//          |   B   |            |       |
-		//          |       |            |       |
-		//          +-------+            +-------+
-		//
-		public static Mesh Union(Mesh a1, Mesh b1)
-		{
-			CsgAcceleratedMesh a = new CsgAcceleratedMesh(a1);
-			CsgAcceleratedMesh b = new CsgAcceleratedMesh(b1);
-			a.SplitOnAllEdgeIntersections(b);
-			b.SplitOnAllEdgeIntersections(a);
-
-			a.MarkInternalVertices(b);
-			b.MarkInternalVertices(a);
-
-			a.RemoveAllInternalEdges();
-			b.RemoveAllInternalEdges();
-
-			a.MergeWith(b);
-
-			return a.mesh;
-		}
-
-		// Return a new CSG solid representing space in this solid but not in the
-		// solid `csg`. Neither this solid nor the solid `csg` are modified.
-		//
-		//     A.subtract(B)
-		//
-		//     +-------+            +-------+
-		//     |       |            |       |
-		//     |   A   |            |       |
-		//     |    +--+----+   =   |    +--+
-		//     +----+--+    |       +----+
-		//          |   B   |
-		//          |       |
-		//          +-------+
-		//
-		public static Mesh Subtract(Mesh a1, Mesh b1)
-		{
-			CsgAcceleratedMesh a = new CsgAcceleratedMesh(a1);
-			CsgAcceleratedMesh b = new CsgAcceleratedMesh(b1);
-			a.SplitOnAllEdgeIntersections(b);
-			a.MarkInternalVertices(b);
-
-			b.SplitOnAllEdgeIntersections(a);
-			b.MarkInternalVertices(a);
-
-			a.RemoveAllInternalEdges();
-			b.RemoveAllExternalEdges();
-			b.FlipFaces();
-
-			a.MergeWith(b);
-
-			return a.mesh;
-		}
-
-		// Return a new CSG solid representing space both this solid and in the
-		// solid `csg`. Neither this solid nor the solid `csg` are modified.
-		//
-		//     A.intersect(B)
-		//
-		//     +-------+
-		//     |       |
-		//     |   A   |
-		//     |    +--+----+   =   +--+
-		//     +----+--+    |       +--+
-		//          |   B   |
-		//          |       |
-		//          +-------+
-		//
-		public static Mesh Intersect(Mesh a, Mesh b)
-		{
-			return null;//return PerformOperation(a, b, CsgNode.Intersect);
-		}
-	}
-#else
-#if false
 	// Public interface implementation
 	public static class CsgOperations
 	{
@@ -119,14 +38,14 @@ namespace MatterHackers.PolygonMesh.Csg
 			int nextIndex = 0;
 			foreach (Face face in model.Faces)
 			{
-				List<Vertex> triangle = new List<Vertex>();
+				List<IVertex> triangle = new List<IVertex>();
 				VectorMath.Vector3 first = VectorMath.Vector3.Zero;
 				VectorMath.Vector3 last = VectorMath.Vector3.Zero;
 				bool isFirst = true;
 				int count = 0;
 				foreach (FaceEdge faceEdge in face.FaceEdges())
 				{
-					VectorMath.Vector3 position = faceEdge.firstVertex.Position;
+					VectorMath.Vector3 position = faceEdge.FirstVertex.Position;
 					if(isFirst)
 					{
 						first = position;
@@ -134,16 +53,16 @@ namespace MatterHackers.PolygonMesh.Csg
 					}
 					if (count < 3)
 					{
-						vertices.Add(new Vector3(position.x, position.y, position.z));
+						vertices.Add(new Vector3(position.X, position.Y, position.Z));
 						indices.Add(nextIndex++);
 					}
 					else // add an entire new polygon
 					{
-						vertices.Add(new Vector3(first.x, first.y, first.z));
+						vertices.Add(new Vector3(first.X, first.Y, first.Z));
 						indices.Add(nextIndex++);
-						vertices.Add(new Vector3(last.x, last.y, last.z));
+						vertices.Add(new Vector3(last.X, last.Y, last.Z));
 						indices.Add(nextIndex++);
-						vertices.Add(new Vector3(position.x, position.y, position.z));
+						vertices.Add(new Vector3(position.X, position.Y, position.Z));
 						indices.Add(nextIndex++);
 					}
 					count++;
@@ -159,13 +78,13 @@ namespace MatterHackers.PolygonMesh.Csg
 		public static Mesh MeshFromSolid(Solid solid)
 		{
 			Mesh model = new Mesh();
-			List<Vertex> vertices = new List<Vertex>();
+			List<IVertex> vertices = new List<IVertex>();
 			var indices = solid.getIndices();
 			var solidVertices = solid.getVertices();
 			for (int vertexIndex = 0; vertexIndex < indices.Length; vertexIndex++)
 			{
 				var position = solidVertices[indices[vertexIndex]];
-				vertices.Add(model.CreateVertex(position.x, position.y, position.z));
+				vertices.Add(model.CreateVertex(position.X, position.Y, position.Z));
 
 				if (vertices.Count > 2)
 				{
@@ -179,6 +98,11 @@ namespace MatterHackers.PolygonMesh.Csg
 
 		public static Mesh Union(Mesh a, Mesh b)
 		{
+			return Union(a, b, null, CancellationToken.None);
+		}
+
+		public static Mesh Union(Mesh a, Mesh b, Action<string, double> reporter, CancellationToken cancellationToken)
+		{
 			if(a.Faces.Count == 0)
 			{
 				return b;
@@ -187,35 +111,78 @@ namespace MatterHackers.PolygonMesh.Csg
 			{
 				return a;
 			}
+			reporter?.Invoke("Mesh to Solid A", 0);
 			var A = SolidFromMesh(a);
+			reporter?.Invoke("Mesh to Solid B", .2);
 			var B = SolidFromMesh(b);
 
-			var modeller = new BooleanModeller(A, B);
+			reporter?.Invoke("BooleanModeller", .4);
+			var modeller = new BooleanModeller(A, B, (status, progress0To1) =>
+			{
+				reporter?.Invoke(status, .4 + progress0To1 * .2);
+			}, cancellationToken);
+
+			reporter?.Invoke("Union", .6);
 			var result = modeller.GetUnion();
 
-			return MeshFromSolid(result);
+			reporter?.Invoke("Solid to Mesh", .8);
+			var solidMesh = MeshFromSolid(result);
+
+			reporter?.Invoke("Solid to Mesh", 1);
+			return solidMesh;
 		}
 
-		public static Mesh Subtract(Mesh a, Mesh b)
+		/// <summary>
+		/// Subtract b from a
+		/// </summary>
+		/// <param name="a"></param>
+		/// <param name="b"></param>
+		/// <returns></returns>
+		public static Mesh Subtract(this Mesh a, Mesh b)
+		{
+			return Subtract(a, b, null, CancellationToken.None);
+		}
+
+		public static Mesh Subtract(this Mesh a, Mesh b, Action<string, double> reporter, CancellationToken cancellationToken)
 		{
 			if (a.Faces.Count == 0)
 			{
 				return b;
 			}
+
 			if (b.Faces.Count == 0)
 			{
 				return a;
 			}
+
+			reporter?.Invoke("Mesh to Solid A", 0);
 			var A = SolidFromMesh(a);
+
+			reporter?.Invoke("Mesh to Solid B", .2);
 			var B = SolidFromMesh(b);
 
-			var modeller = new BooleanModeller(A, B);
+			reporter?.Invoke("BooleanModeller", .4);
+			var modeller = new BooleanModeller(A, B, (status, progress0To1) =>
+			{
+				reporter?.Invoke(status, .4 + progress0To1 * .2);
+			}, cancellationToken);
+
+			reporter?.Invoke("Difference", .6);
 			var result = modeller.GetDifference();
 
-			return MeshFromSolid(result);
+			reporter?.Invoke("Solid to Mesh", .8);
+			var solidMesh = MeshFromSolid(result);
+
+			reporter?.Invoke("Solid to Mesh", 1);
+			return solidMesh;
 		}
 
 		public static Mesh Intersect(Mesh a, Mesh b)
+		{
+			return Intersect(a, b, null, CancellationToken.None);
+		}
+
+		public static Mesh Intersect(Mesh a, Mesh b, Action<string, double> reporter, CancellationToken cancellationToken)
 		{
 			if (a.Faces.Count == 0)
 			{
@@ -225,89 +192,56 @@ namespace MatterHackers.PolygonMesh.Csg
 			{
 				return a;
 			}
+
+			reporter?.Invoke("Mesh to Solid A", 0);
 			var A = SolidFromMesh(a);
+
+			reporter?.Invoke("Mesh to Solid B", .2);
 			var B = SolidFromMesh(b);
 
+			reporter?.Invoke("BooleanModeller", .4);
 			var modeller = new BooleanModeller(A, B);
+			reporter?.Invoke("Intersection", .6);
 			var result = modeller.GetIntersection();
 
+			reporter?.Invoke("Solid to Mesh", 1);
 			return MeshFromSolid(result);
 		}
-	}
-#else
-	public delegate CsgNode CsgFunctionHandler(CsgNode a, CsgNode b);
 
-	// Public interface implementation
-	public static class CsgOperations
-	{
-		public static List<CsgPolygon> PolygonsFromMesh(Mesh model)
+		public static (Mesh subtract, Mesh intersect) IntersectAndSubtract(this Mesh a, Mesh b)
 		{
-			List<CsgPolygon> list = new List<CsgPolygon>();
+			return IntersectAndSubtract(a, b, null, CancellationToken.None);
+		}
 
-			foreach (Face face in model.Faces)
+		public static (Mesh subtract, Mesh intersect) IntersectAndSubtract(Mesh recieveSubtraction, Mesh recieveIntersection, Action<string, double> reporter, CancellationToken cancellationToken)
+		{
+			if (recieveSubtraction.Faces.Count == 0)
 			{
-				List<Vertex> triangle = new List<Vertex>();
-				foreach (FaceEdge faceEdge in face.FaceEdges())
-				{
-					Vertex v = new Vertex(faceEdge.firstVertex.Position);
-					v.Normal = faceEdge.firstVertex.Normal;
-					triangle.Add(v);
-				}
-
-				// TODO: make sure this polygon is convex
-				list.Add(new CsgPolygon(triangle));
+				return (recieveSubtraction, recieveIntersection);
 			}
-
-			return list;
-		}
-
-		public static Mesh MeshFromPolygons(List<CsgPolygon> polygons)
-		{
-			Mesh model = new Mesh();
-			HashSet<PolygonMesh.Vertex> vertices = new HashSet<PolygonMesh.Vertex>();
-			for (int polygonIndex = 0; polygonIndex < polygons.Count; polygonIndex++)
+			if (recieveIntersection.Faces.Count == 0)
 			{
-				CsgPolygon poly = polygons[polygonIndex];
-				vertices.Clear();
-
-				for (int vertexIndex = 0; vertexIndex < poly.vertices.Count; vertexIndex++)
-				{
-					vertices.Add(model.CreateVertex(poly.vertices[vertexIndex].Position));
-				}
-
-				if (vertices.Count > 2)
-				{
-					model.CreateFace(vertices.ToArray());
-				}
+				return (recieveSubtraction, recieveIntersection);
 			}
+			reporter?.Invoke("Mesh to Solid A", 0);
+			var A = SolidFromMesh(recieveSubtraction);
+			reporter?.Invoke("Mesh to Solid B", .2);
+			var B = SolidFromMesh(recieveIntersection);
 
-			return model;
-		}
+			reporter?.Invoke("BooleanModeller", .4);
+			var modeller = new BooleanModeller(A, B, (status, progress0To1) =>
+			{
+				reporter?.Invoke(status, .4 + progress0To1 * .2);
+			}, cancellationToken);
+			reporter?.Invoke("Intersection", .6);
+			var intersection = modeller.GetIntersection();
+			reporter?.Invoke("Difference", .6);
+			var difference = modeller.GetDifference();
 
-		public static Mesh Union(Mesh a, Mesh b)
-		{
-			return PerformOperation(a, b, CsgNode.Union);
-		}
-
-		public static Mesh Subtract(Mesh a, Mesh b)
-		{
-			return PerformOperation(a, b, CsgNode.Subtract);
-		}
-
-		public static Mesh Intersect(Mesh a, Mesh b)
-		{
-			return PerformOperation(a, b, CsgNode.Intersect);
-		}
-
-		private static Mesh PerformOperation(Mesh a, Mesh b, CsgFunctionHandler fun)
-		{
-			CsgNode A = new CsgNode(PolygonsFromMesh(a));
-			CsgNode B = new CsgNode(PolygonsFromMesh(b));
-			CsgNode AB = fun(A, B);
-			List<CsgPolygon> polygons = AB.GetAllPolygons();
-			return MeshFromPolygons(polygons);
+			reporter?.Invoke("Solid to Mesh", .8);
+			var results = (MeshFromSolid(difference), MeshFromSolid(intersection));
+			reporter?.Invoke("Solid to Mesh", 1);
+			return results;
 		}
 	}
-#endif
-#endif
 }

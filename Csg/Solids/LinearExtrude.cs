@@ -72,10 +72,10 @@ namespace MatterHackers.Csg.Solids
 				double maxX = double.MinValue;
 				foreach (Vector2 point in points)
 				{
-					minY = Math.Min(minY, point.y);
-					maxY = Math.Max(maxY, point.y);
-					minX = Math.Min(minX, point.x);
-					maxX = Math.Max(maxX, point.x);
+					minY = Math.Min(minY, point.Y);
+					maxY = Math.Max(maxY, point.Y);
+					minX = Math.Min(minX, point.X);
+					maxX = Math.Max(maxX, point.X);
 				}
 				return new AxisAlignedBoundingBox(new Vector3(minX, minY, -height / 2), new Vector3(maxX, maxY, height / 2));
 			}

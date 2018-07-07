@@ -35,11 +35,11 @@ using System.Collections.Generic;
 
 namespace MatterHackers.PolygonMesh
 {
-	public abstract class VertexSorterBase : IComparer<Vertex>
+	public abstract class VertexSorterBase : IComparer<IVertex>
 	{
-		public abstract List<Vertex> FindVertices(List<Vertex> vertices, Vector3 position, double maxDistanceToConsiderVertexAsSame);
+		public abstract List<IVertex> FindVertices(List<IVertex> vertices, Vector3 position, double maxDistanceToConsiderVertexAsSame);
 
-		public virtual int Compare(Vertex a, Vertex b)
+		public virtual int Compare(IVertex a, IVertex b)
 		{
 			throw new NotImplementedException();
 		}

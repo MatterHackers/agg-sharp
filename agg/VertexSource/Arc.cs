@@ -44,7 +44,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		private Vector2 radius;
 
-		private double scale = 1.0;
+		public double ResolutionScale { get; set; } = 1;
 
 		private double startAngle;
 
@@ -55,19 +55,17 @@ namespace MatterHackers.Agg.VertexSource
 		public Arc(double originX, double originY,
 			 double radiusX, double radiusY,
 			 double startAngle, double endAngle,
-			 Direction direction = Direction.CounterClockWise,
-			 double scale = 1.0)
+			 Direction direction = Direction.CounterClockWise)
 		{
-			init(originX, originY, radiusX, radiusY, startAngle, endAngle, direction, scale);
+			init(originX, originY, radiusX, radiusY, startAngle, endAngle, direction);
 		}
 
 		public Arc(Vector2 origin,
 			 Vector2 radius,
 			 double startAngle, double endAngle,
-			 Direction direction = Direction.CounterClockWise,
-			 double scale = 1.0)
+			 Direction direction = Direction.CounterClockWise)
 		{
-			init(origin, radius, startAngle, endAngle, direction, scale);
+			init(origin, radius, startAngle, endAngle, direction);
 		}
 
 		public enum Direction
@@ -76,96 +74,80 @@ namespace MatterHackers.Agg.VertexSource
 			CounterClockWise,
 		}
 
-		public void approximation_scale(double s)
-		{
-			scale = s;
-		}
-
-		public double approximation_scale()
-		{
-			return scale;
-		}
-
 		public void init(double originX, double originY,
-								   double radiusX, double radiusY,
-				   double startAngle, double endAngle,
-			 Direction direction = Direction.CounterClockWise,
-				   double scale = 1.0)
+			double radiusX, double radiusY,
+			double startAngle, double endAngle,
+			Direction direction = Direction.CounterClockWise)
 		{
-			init(new Vector2(originX, originY), new Vector2(radiusX, radiusY), startAngle, endAngle, direction, scale);
+			init(new Vector2(originX, originY), new Vector2(radiusX, radiusY), startAngle, endAngle, direction);
 		}
 
 		public void init(Vector2 origin,
-				   Vector2 radius,
-				   double startAngle, double endAngle,
-			 Direction direction = Direction.CounterClockWise,
-				   double scale = 1.0)
+			Vector2 radius,
+			double startAngle, double endAngle,
+			Direction direction = Direction.CounterClockWise)
 		{
 			this.origin = origin;
 			this.radius = radius;
 			this.startAngle = startAngle;
 			this.endAngle = endAngle;
 			this.direction = direction;
-			this.scale = scale;
 		}
 
 		override public IEnumerable<VertexData> Vertices()
 		{
-			double averageRadius = (Math.Abs(radius.x) + Math.Abs(radius.y)) / 2;
-			flatenDeltaAngle = Math.Acos(averageRadius / (averageRadius + 0.125 / scale)) * 2;
+			double averageRadius = (Math.Abs(radius.X) + Math.Abs(radius.Y)) / 2;
+			flatenDeltaAngle = Math.Acos(averageRadius / (averageRadius + 0.125 / ResolutionScale)) * 2;
 			while (endAngle < startAngle)
 			{
 				endAngle += Math.PI * 2.0;
 			}
 
 			VertexData vertexData = new VertexData();
-			vertexData.command = FlagsAndCommand.CommandMoveTo;
+			vertexData.command = FlagsAndCommand.MoveTo;
 			if (direction == Direction.CounterClockWise)
 			{
-				vertexData.position.x = origin.x + Math.Cos(startAngle) * radius.x;
-				vertexData.position.y = origin.y + Math.Sin(startAngle) * radius.y;
+				vertexData.position = new Vector2(origin.X + Math.Cos(startAngle) * radius.X, origin.Y + Math.Sin(startAngle) * radius.Y);
 				yield return vertexData;
 
-				vertexData.command = FlagsAndCommand.CommandLineTo;
+				vertexData.command = FlagsAndCommand.LineTo;
 				double angle = startAngle;
 				int numSteps = (int)((endAngle - startAngle) / flatenDeltaAngle);
                 for (int i=0; i<=numSteps; i++)
 				{
-					vertexData.position.x = origin.x + Math.Cos(angle) * radius.x;
-					vertexData.position.y = origin.y + Math.Sin(angle) * radius.y;
-					yield return vertexData;
+					if (angle < endAngle)
+					{
+						vertexData.position = new Vector2(origin.X + Math.Cos(angle) * radius.X, origin.Y + Math.Sin(angle) * radius.Y);
+						yield return vertexData;
 
-					angle += flatenDeltaAngle;
+						angle += flatenDeltaAngle;
+					}
 				}
 
-				vertexData.position.x = origin.x + Math.Cos(endAngle) * radius.x;
-				vertexData.position.y = origin.y + Math.Sin(endAngle) * radius.y;
+				vertexData.position = new Vector2(origin.X + Math.Cos(endAngle) * radius.X, origin.Y + Math.Sin(endAngle) * radius.Y);
 				yield return vertexData;
 			}
 			else
 			{
-				vertexData.position.x = origin.x + Math.Cos(endAngle) * radius.x;
-				vertexData.position.y = origin.y + Math.Sin(endAngle) * radius.y;
+				vertexData.position = new Vector2(origin.X + Math.Cos(endAngle) * radius.X, origin.Y + Math.Sin(endAngle) * radius.Y);
 				yield return vertexData;
 
-				vertexData.command = FlagsAndCommand.CommandLineTo;
+				vertexData.command = FlagsAndCommand.LineTo;
 				double angle = endAngle;
 				int numSteps = (int)((endAngle - startAngle) / flatenDeltaAngle);
 				for (int i = 0; i <= numSteps; i++)
 				{
-					vertexData.position.x = origin.x + Math.Cos(angle) * radius.x;
-					vertexData.position.y = origin.y + Math.Sin(angle) * radius.y;
+					vertexData.position = new Vector2(origin.X + Math.Cos(angle) * radius.X, origin.Y + Math.Sin(angle) * radius.Y);
 					yield return vertexData;
 
 					angle -= flatenDeltaAngle;
 				}
 
-				vertexData.position.x = origin.x + Math.Cos(startAngle) * radius.x;
-				vertexData.position.y = origin.y + Math.Sin(startAngle) * radius.y;
+				vertexData.position = new Vector2(origin.X + Math.Cos(startAngle) * radius.X, origin.Y + Math.Sin(startAngle) * radius.Y);
 				yield return vertexData;
 			}
 
-			vertexData.command = FlagsAndCommand.CommandStop;
+			vertexData.command = FlagsAndCommand.Stop;
 			yield return vertexData;
 		}
 	}

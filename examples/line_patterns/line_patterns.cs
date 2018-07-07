@@ -29,9 +29,10 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
 
 namespace MatterHackers.Agg
@@ -95,17 +96,17 @@ namespace MatterHackers.Agg
 		{
 		}
 
-		public override RGBA_Bytes GetPixel(int x, int y)
+		public override Color GetPixel(int x, int y)
 		{
-			RGBA_Bytes c = linkedImage.GetPixel(x, y);
+			Color c = linkedImage.GetPixel(x, y);
 			c.Alpha0To255 = brightness_to_alpha[c.Red0To255 + c.Green0To255 + c.Blue0To255];
 			return c;
 		}
 	};
 
-	public class line_patterns_application : GuiWidget
+	public class line_patterns_application : GuiWidget, IDemoApp
 	{
-		private RGBA_Bytes m_ctrl_color;
+		private Color m_ctrl_color;
 		private CheckBox m_approximation_method;
 		private bezier_ctrl m_curve1 = new bezier_ctrl();
 		private bezier_ctrl m_curve2 = new bezier_ctrl();
@@ -129,10 +130,32 @@ namespace MatterHackers.Agg
 		public static ImageBuffer rbuf_img7 = new ImageBuffer();
 		public static ImageBuffer rbuf_img8 = new ImageBuffer();
 
+		static line_patterns_application()
+		{
+			var ImageIO = AggContext.ImageIO;
+			if (!ImageIO.LoadImageData("1.bmp", line_patterns_application.rbuf_img0)
+				|| !ImageIO.LoadImageData("2.bmp", line_patterns_application.rbuf_img1)
+				|| !ImageIO.LoadImageData("3.bmp", line_patterns_application.rbuf_img2)
+				|| !ImageIO.LoadImageData("4.bmp", line_patterns_application.rbuf_img3)
+				|| !ImageIO.LoadImageData("5.bmp", line_patterns_application.rbuf_img4)
+				|| !ImageIO.LoadImageData("6.bmp", line_patterns_application.rbuf_img5)
+				|| !ImageIO.LoadImageData("7.bmp", line_patterns_application.rbuf_img6)
+				|| !ImageIO.LoadImageData("8.bmp", line_patterns_application.rbuf_img7)
+				|| !ImageIO.LoadImageData("9.bmp", line_patterns_application.rbuf_img8))
+			{
+				String buf = "There must be files 1%s...9%s\n"
+							 + "Download and unzip:\n"
+							 + "http://www.antigrain.com/line_patterns.bmp.zip\n"
+							 + "or\n"
+							 + "http://www.antigrain.com/line_patterns.ppm.tar.gz\n";
+				throw new System.Exception(buf);
+			}
+		}
+
 		public line_patterns_application()
 		{
 			AnchorAll();
-			m_ctrl_color = new RGBA_Bytes(0, 0.3, 0.5, 0.3);
+			m_ctrl_color = new Color(0, 0.3, 0.5, 0.3);
 			m_scale_x = new Slider(5.0, 5.0, 240.0, 12.0);
 			m_start_x = new Slider(250.0, 5.0, 495.0, 12.0);
 			m_approximation_method = new CheckBox(10, 30, "Approximation Method = curve_div");
@@ -181,6 +204,12 @@ namespace MatterHackers.Agg
 			m_approximation_method.CheckedStateChanged += m_approximation_method_CheckedStateChanged;
 		}
 
+		public string Title { get; } = "Line Patterns";
+
+		public string DemoCategory { get; } = "Vector";
+
+		public string DemoDescription { get; } = "AGG Example. Drawing Lines with Image Patterns";
+
 		private void m_approximation_method_CheckedStateChanged(object sender, EventArgs e)
 		{
 			Curves.CurveApproximationMethod method = Curves.CurveApproximationMethod.curve_div;
@@ -217,7 +246,7 @@ namespace MatterHackers.Agg
 		{
 			ImageClippingProxy ren_base = new ImageClippingProxy(graphics2D.DestImage);
 
-			ren_base.clear(new RGBA_Floats(1.0, 1.0, .95));
+			ren_base.clear(new ColorF(1.0, 1.0, .95));
 
 			ScanlineRasterizer ras = new ScanlineRasterizer();
 			ScanlineCachePacked8 sl = new ScanlineCachePacked8();
@@ -276,46 +305,12 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new LinePaternsFactory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new line_patterns_application();
 
-	public class LinePaternsFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			if (!ImageIO.LoadImageData("1.bmp", line_patterns_application.rbuf_img0)
-				|| !ImageIO.LoadImageData("2.bmp", line_patterns_application.rbuf_img1)
-				|| !ImageIO.LoadImageData("3.bmp", line_patterns_application.rbuf_img2)
-				|| !ImageIO.LoadImageData("4.bmp", line_patterns_application.rbuf_img3)
-				|| !ImageIO.LoadImageData("5.bmp", line_patterns_application.rbuf_img4)
-				|| !ImageIO.LoadImageData("6.bmp", line_patterns_application.rbuf_img5)
-				|| !ImageIO.LoadImageData("7.bmp", line_patterns_application.rbuf_img6)
-				|| !ImageIO.LoadImageData("8.bmp", line_patterns_application.rbuf_img7)
-				|| !ImageIO.LoadImageData("9.bmp", line_patterns_application.rbuf_img8))
-			{
-				String buf = "There must be files 1%s...9%s\n"
-							 + "Download and unzip:\n"
-							 + "http://www.antigrain.com/line_patterns.bmp.zip\n"
-							 + "or\n"
-							 + "http://www.antigrain.com/line_patterns.ppm.tar.gz\n";
-				throw new System.Exception(buf);
-			}
-
-			return new line_patterns_application();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-				"Vector",
-				"Line Paterns",
-				"AGG Example. Drawing Lines with Image Patterns",
-				500,
-				450);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(500, 450);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

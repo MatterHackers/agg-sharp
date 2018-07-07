@@ -48,10 +48,10 @@ namespace MatterHackers.RayTracer.Light
 	/// </summary>
 	public class PointLight : Axis3D, ILight
 	{
-		public RGBA_Floats Color;
+		public ColorF Color;
 		public double strength;
 
-		public PointLight(Vector3 pos, RGBA_Floats color)
+		public PointLight(Vector3 pos, ColorF color)
 			: base(pos)
 		{
 			Color = color;
@@ -59,7 +59,7 @@ namespace MatterHackers.RayTracer.Light
 			strength = 10;
 		}
 
-		public RGBA_Floats Illumination()
+		public ColorF Illumination()
 		{
 			return Color;
 		}

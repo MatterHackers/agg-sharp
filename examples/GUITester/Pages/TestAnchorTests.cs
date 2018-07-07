@@ -24,50 +24,51 @@ namespace MatterHackers.Agg
 			: base("Text Anchor Tests")
 		{
 			Name = "Anchor Tests Page";
-			SuspendLayout();
-			// add our controls after we are attached to our parent
-			anchorLeft = new TextWidget("Left Anchor", 12);
-			AddChild(anchorLeft);
-			//anchorLeft.DebugShowBounds = true;
+			using (LayoutLock())
+			{
+				// add our controls after we are attached to our parent
+				anchorLeft = new TextWidget("Left Anchor", 12);
+				AddChild(anchorLeft);
+				//anchorLeft.DebugShowBounds = true;
 
-			anchorAll = new TextWidget("All Anchor");
-			anchorAll.Margin = new BorderDouble(20);
-			AddChild(anchorAll);
-			//anchorAll.DebugShowBounds = true;
+				anchorAll = new TextWidget("All Anchor");
+				anchorAll.Margin = new BorderDouble(20);
+				AddChild(anchorAll);
+				//anchorAll.DebugShowBounds = true;
 
-			anchorLeftCentered = new TextWidget("Left Anchor - Centered", 12, justification: Justification.Center);
-			AddChild(anchorLeftCentered);
-			//anchorLeftCentered.DebugShowBounds = true;
+				anchorLeftCentered = new TextWidget("Left Anchor - Centered", 12, justification: Justification.Center);
+				AddChild(anchorLeftCentered);
+				//anchorLeftCentered.DebugShowBounds = true;
 
-			anchorRight = new TextWidget("Right Anchor", 12);
-			AddChild(anchorRight);
-			//anchorRight.DebugShowBounds = true;
+				anchorRight = new TextWidget("Right Anchor", 12);
+				AddChild(anchorRight);
+				//anchorRight.DebugShowBounds = true;
 
-			anchorLeftRight = new TextWidget("Left Right Anchor", 12);
-			AddChild(anchorLeftRight);
-			//anchorLeftRight.DebugShowBounds = true;
+				anchorLeftRight = new TextWidget("Left Right Anchor", 12);
+				AddChild(anchorLeftRight);
+				//anchorLeftRight.DebugShowBounds = true;
 
-			anchorLeftRightCenter = new TextWidget("L R Anchor - Centered", 12, justification: Justification.Center);
-			AddChild(anchorLeftRightCenter);
-			//anchorLeftRightCenter.DebugShowBounds = true;
+				anchorLeftRightCenter = new TextWidget("L R Anchor - Centered", 12, justification: Justification.Center);
+				AddChild(anchorLeftRightCenter);
+				//anchorLeftRightCenter.DebugShowBounds = true;
 
-			anchorLeftRightRight = new TextWidget("L R Anchor - Right", 12, justification: Justification.Right);
-			AddChild(anchorLeftRightRight);
-			//anchorLeftRightRight.DebugShowBounds = true;
+				anchorLeftRightRight = new TextWidget("L R Anchor - Right", 12, justification: Justification.Right);
+				AddChild(anchorLeftRightRight);
+				//anchorLeftRightRight.DebugShowBounds = true;
 
-			anchorBottom = new TextWidget("Bottom Anchor", 12);
-			AddChild(anchorBottom);
-			//anchorBottom.DebugShowBounds = true;
+				anchorBottom = new TextWidget("Bottom Anchor", 12);
+				AddChild(anchorBottom);
+				//anchorBottom.DebugShowBounds = true;
 
-			anchorTop = new TextWidget("Top Anchor", 12);
-			AddChild(anchorTop);
-			//anchorTop.DebugShowBounds = true;
+				anchorTop = new TextWidget("Top Anchor", 12);
+				AddChild(anchorTop);
+				//anchorTop.DebugShowBounds = true;
 
-			anchorBottomTop = new TextWidget("Bottom Top Anchor", 12);
-			AddChild(anchorBottomTop);
-			//anchorBottomTop.DebugShowBounds = true;
-			anchorBottomTop.VAnchor = VAnchor.ParentTop | VAnchor.ParentBottom;
-			ResumeLayout();
+				anchorBottomTop = new TextWidget("Bottom Top Anchor", 12);
+				AddChild(anchorBottomTop);
+				//anchorBottomTop.DebugShowBounds = true;
+				anchorBottomTop.VAnchor = VAnchor.Top | VAnchor.Bottom;
+			}
 			PerformLayout();
 		}
 
@@ -80,31 +81,31 @@ namespace MatterHackers.Agg
 
 			anchorLeft.OriginRelativeParent = new Vector2(leftDist, 290);
 			anchorLeft.Margin = new BorderDouble(leftDist, 0, 0, 0);
-			anchorLeft.HAnchor = HAnchor.ParentLeft;
+			anchorLeft.HAnchor = HAnchor.Left;
 
 			anchorAll.OriginRelativeParent = new Vector2(leftDist, 330);
 			anchorAll.AnchorAll();
 
 			anchorLeftCentered.OriginRelativeParent = new Vector2(leftDist, 250);
-			anchorLeftCentered.HAnchor = HAnchor.ParentLeft;
+			anchorLeftCentered.HAnchor = HAnchor.Left;
 
 			anchorRight.OriginRelativeParent = new Vector2(leftDist, 210);
-			anchorRight.HAnchor = HAnchor.ParentRight;
+			anchorRight.HAnchor = HAnchor.Right;
 
 			anchorLeftRight.OriginRelativeParent = new Vector2(leftDist, 170);
-			anchorLeftRight.HAnchor = HAnchor.ParentRight | HAnchor.ParentLeft;
+			anchorLeftRight.HAnchor = HAnchor.Right | HAnchor.Left;
 
 			anchorLeftRightCenter.OriginRelativeParent = new Vector2(leftDist, 130);
-			anchorLeftRightCenter.HAnchor = HAnchor.ParentRight | HAnchor.ParentLeft;
+			anchorLeftRightCenter.HAnchor = HAnchor.Right | HAnchor.Left;
 
 			anchorLeftRightRight.OriginRelativeParent = new Vector2(leftDist, 100);
-			anchorLeftRightRight.HAnchor = HAnchor.ParentRight | HAnchor.ParentLeft;
+			anchorLeftRightRight.HAnchor = HAnchor.Right | HAnchor.Left;
 
 			anchorBottom.OriginRelativeParent = new Vector2(rightDist, 290);
-			anchorBottom.VAnchor = VAnchor.ParentBottom;
+			anchorBottom.VAnchor = VAnchor.Bottom;
 
 			anchorTop.OriginRelativeParent = new Vector2(rightDist, 250);
-			anchorTop.VAnchor = VAnchor.ParentTop;
+			anchorTop.VAnchor = VAnchor.Top;
 
 			//anchorBottomTop.OriginRelativeParent = new Vector2(rightDist, 210);
 			//anchorBottomTop.AnchorFlags = AnchorFlags.Top | AnchorFlags.Bottom;

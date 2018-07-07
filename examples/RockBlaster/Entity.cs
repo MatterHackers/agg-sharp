@@ -129,21 +129,21 @@ namespace RockBlaster
 		public virtual void Update(double numSecondsPassed)
 		{
 			m_Position += m_Velocity * numSecondsPassed;
-			if (m_Position.x > GameWidth)
+			if (m_Position.X > GameWidth)
 			{
-				m_Position.x -= GameWidth;
+				m_Position.X -= GameWidth;
 			}
-			if (m_Position.x < 0)
+			if (m_Position.X < 0)
 			{
-				m_Position.x += GameWidth;
+				m_Position.X += GameWidth;
 			}
-			if (m_Position.y > GameHeight)
+			if (m_Position.Y > GameHeight)
 			{
-				m_Position.y -= GameHeight;
+				m_Position.Y -= GameHeight;
 			}
-			if (m_Position.y < 0)
+			if (m_Position.Y < 0)
 			{
-				m_Position.y += GameHeight;
+				m_Position.Y += GameHeight;
 			}
 		}
 
@@ -158,17 +158,17 @@ namespace RockBlaster
 
 		private void MirrorOnY(Graphics2D destRenderer)
 		{
-			if (Position.y < Radius)
+			if (Position.Y < Radius)
 			{
 				Vector2 oldPosition = Position;
-				oldPosition.y += GameHeight;
+				oldPosition.Y += GameHeight;
 				Position = oldPosition;
 				this.DoDraw(destRenderer);
 			}
-			else if (Position.y > GameHeight - Radius)
+			else if (Position.Y > GameHeight - Radius)
 			{
 				Vector2 oldPosition = Position;
-				oldPosition.y -= GameHeight;
+				oldPosition.Y -= GameHeight;
 				Position = oldPosition;
 				this.DoDraw(destRenderer);
 			}
@@ -181,17 +181,17 @@ namespace RockBlaster
 
 		private void MirrorOnX(Graphics2D destRenderer)
 		{
-			if (Position.x < Radius)
+			if (Position.X < Radius)
 			{
 				Vector2 oldPosition = Position;
-				oldPosition.x += GameWidth;
+				oldPosition.X += GameWidth;
 				Position = oldPosition;
 				DoDraw(destRenderer);
 			}
-			else if (Position.x > GameWidth - Radius)
+			else if (Position.X > GameWidth - Radius)
 			{
 				Vector2 oldPosition = Position;
-				oldPosition.x -= GameWidth;
+				oldPosition.X -= GameWidth;
 				Position = oldPosition;
 				DoDraw(destRenderer);
 			}

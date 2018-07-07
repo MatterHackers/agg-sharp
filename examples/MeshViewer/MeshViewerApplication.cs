@@ -31,8 +31,9 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using MatterHackers.Agg;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
-using MatterHackers.PolygonMesh.Processors;
+using MatterHackers.DataConverters3D;
 using MatterHackers.RenderOpenGl;
 using MatterHackers.VectorMath;
 
@@ -55,7 +56,7 @@ namespace MatterHackers.MeshVisualizer
 		public MeshViewerApplication(string meshFileToLoad = "")
 			: base(800, 600)
 		{
-			BackgroundColor = RGBA_Bytes.White;
+			BackgroundColor = Color.White;
 			MinimumSize = new VectorMath.Vector2(200, 200);
 			Title = "MatterHackers MeshViewr";
 			UseOpenGL = true;
@@ -77,13 +78,13 @@ namespace MatterHackers.MeshVisualizer
 			mainContainer.AddChild(viewArea);
 
 			FlowLayoutWidget buttonPanel = new FlowLayoutWidget(FlowDirection.LeftToRight);
-			buttonPanel.HAnchor = HAnchor.ParentLeftRight;
+			buttonPanel.HAnchor = HAnchor.Stretch;
 			buttonPanel.Padding = new BorderDouble(3, 3);
-			buttonPanel.BackgroundColor = RGBA_Bytes.DarkGray;
+			buttonPanel.BackgroundColor = Color.DarkGray;
 
 			if (meshFileToLoad != "")
 			{
-				meshViewerWidget.LoadMesh(meshFileToLoad, MeshViewerWidget.CenterPartAfterLoad.DO);
+				meshViewerWidget.LoadItemIntoScene(meshFileToLoad);
 			}
 			else
 			{
@@ -100,7 +101,7 @@ namespace MatterHackers.MeshVisualizer
 			buttonPanel.AddChild(wireframeCheckBox);
 
 			GuiWidget leftRightSpacer = new GuiWidget();
-			leftRightSpacer.HAnchor = HAnchor.ParentLeftRight;
+			leftRightSpacer.HAnchor = HAnchor.Stretch;
 			buttonPanel.AddChild(leftRightSpacer);
 
 			mainContainer.AddChild(buttonPanel);
@@ -139,57 +140,70 @@ namespace MatterHackers.MeshVisualizer
 			UiThread.RunOnIdle(DoOpenFileButton_ButtonClick);
 		}
 
+		private string ValidFileExtensions { get; } = ".STL;.AMF;.OBJ";
+
 		private void DoOpenFileButton_ButtonClick()
 		{
-			FileDialog.OpenFileDialog(
-				new OpenFileDialogParams("3D Mesh Files|*.stl;*.amf"),
+			AggContext.FileDialogs.OpenFileDialog(
+				new OpenFileDialogParams("3D Mesh Files|*.stl;*.amf;*.obj"),
 				(openParams) =>
 				{
-					meshViewerWidget.LoadMesh(openParams.FileName, MeshViewerWidget.CenterPartAfterLoad.DO);
+					meshViewerWidget.LoadItemIntoScene(openParams.FileName);
 				});
 
 			Invalidate();
 		}
 
-		public override void OnDragEnter(FileDropEventArgs fileDropEventArgs)
+		public override void OnMouseEnterBounds(MouseEventArgs mouseEvent)
 		{
-			foreach (string file in fileDropEventArgs.DroppedFiles)
+			if (mouseEvent.DragFiles?.Count > 0)
 			{
-				string extension = Path.GetExtension(file).ToUpper();
-				if ((extension != "" && MeshFileIo.ValidFileExtensions().Contains(extension)))
+				foreach (string file in mouseEvent.DragFiles)
 				{
-					fileDropEventArgs.AcceptDrop = true;
+					string extension = Path.GetExtension(file).ToUpper();
+					if ((extension != "" && this.ValidFileExtensions.Contains(extension)))
+					{
+						mouseEvent.AcceptDrop = true;
+					}
 				}
 			}
-			base.OnDragEnter(fileDropEventArgs);
+
+			base.OnMouseEnterBounds(mouseEvent);
 		}
 
-		public override void OnDragOver(FileDropEventArgs fileDropEventArgs)
+		public override void OnMouseMove(MouseEventArgs mouseEvent)
 		{
-			foreach (string file in fileDropEventArgs.DroppedFiles)
+			if (mouseEvent.DragFiles?.Count > 0)
 			{
-				string extension = Path.GetExtension(file).ToUpper();
-				if ((extension != "" && MeshFileIo.ValidFileExtensions().Contains(extension)))
+				foreach (string file in mouseEvent.DragFiles)
 				{
-					fileDropEventArgs.AcceptDrop = true;
+					string extension = Path.GetExtension(file).ToUpper();
+					if ((extension != "" && this.ValidFileExtensions.Contains(extension)))
+					{
+						mouseEvent.AcceptDrop = true;
+					}
 				}
 			}
-			base.OnDragOver(fileDropEventArgs);
+
+			base.OnMouseMove(mouseEvent);
 		}
 
-		public override void OnDragDrop(FileDropEventArgs fileDropEventArgs)
+
+		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
-			foreach (string droppedFileName in fileDropEventArgs.DroppedFiles)
+			if(mouseEvent.DragFiles?.Count > 0)
 			{
-				string extension = Path.GetExtension(droppedFileName).ToUpper();
-				if ((extension != "" && MeshFileIo.ValidFileExtensions().Contains(extension)))
+				foreach (string droppedFileName in mouseEvent.DragFiles)
 				{
-					meshViewerWidget.LoadMesh(droppedFileName, MeshViewerWidget.CenterPartAfterLoad.DO);
-					break;
+					string extension = Path.GetExtension(droppedFileName).ToUpper();
+					if ((extension != "" && this.ValidFileExtensions.Contains(extension)))
+					{
+						meshViewerWidget.LoadItemIntoScene(droppedFileName);
+						break;
+					}
 				}
 			}
-
-			base.OnDragDrop(fileDropEventArgs);
+			base.OnMouseUp(mouseEvent);
 		}
 
 		private Stopwatch totalDrawTime = new Stopwatch();
@@ -212,6 +226,9 @@ namespace MatterHackers.MeshVisualizer
 		[STAThread]
 		public static void Main(string[] args)
 		{
+			// Force OpenGL
+			AggContext.Config.ProviderTypes.SystemWindow = "MatterHackers.Agg.UI.OpenGLSystemWindow, agg_platform_win32";
+
 			MeshViewerApplication app = new MeshViewerApplication();
 			app.ShowAsSystemWindow();
 		}

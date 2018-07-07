@@ -32,14 +32,26 @@ using System.Collections.Generic;
 
 namespace MatterHackers.Agg.UI
 {
-	public class FLowLeftRightWithWrapping : FlowLayoutWidget
+	public interface IHardBreak
 	{
-		private List<GuiWidget> addedChildren = new List<GuiWidget>();
+	}
 
-		public FLowLeftRightWithWrapping()
+	public interface ISkipIfFirst
+	{
+	}
+
+	public class FlowLeftRightWithWrapping : FlowLayoutWidget
+	{
+		protected List<GuiWidget> addedChildren = new List<GuiWidget>();
+
+		public HAnchor RowFlowAnchor { get; set; } = HAnchor.Left | HAnchor.Fit;
+		public BorderDouble RowMargin { get; set; } = new BorderDouble(3, 0);
+		public BorderDouble RowPadding { get; set; } = new BorderDouble(3);
+
+		public FlowLeftRightWithWrapping()
 			: base(FlowDirection.TopToBottom)
 		{
-			HAnchor = HAnchor.ParentLeftRight;
+			HAnchor = HAnchor.Stretch;
 		}
 
 		public override void OnParentChanged(EventArgs e)
@@ -55,13 +67,15 @@ namespace MatterHackers.Agg.UI
 		double oldWidth = 0;
 		private void Parent_BoundsChanged(object sender, EventArgs e)
 		{
-			if (Parent?.Width != oldWidth)
+			var parent = Parent;
+			if (parent != null
+				&& parent.Width != oldWidth)
 			{
 				if (!doingLayout)
 				{
 					DoWrappingLayout();
 				}
-				oldWidth = Parent.Width;
+				oldWidth = parent.Width;
 			}
 		}
 
@@ -70,46 +84,76 @@ namespace MatterHackers.Agg.UI
 			addedChildren.Add(childToAdd);
 		}
 
-		void DoWrappingLayout()
+		protected void DoWrappingLayout()
 		{
-			doingLayout = true;
-			// remove all the children we added
-			foreach (var child in addedChildren)
+			using (this.LayoutLock())
 			{
-				if (child.Parent != null)
+				doingLayout = true;
+				// remove all the children we added
+				foreach (var child in addedChildren)
 				{
-					child.Parent.RemoveChild(child);
-					child.ClearRemovedFlag();
-				}
-			}
-
-			// close all the row containers
-			this.CloseAllChildren();
-
-			// add in new row containers with buttons
-			FlowLayoutWidget childContairRow = new FlowLayoutWidget()
-			{
-				Margin = new BorderDouble(3, 0),
-				Padding = new BorderDouble(3),
-			};
-			base.AddChild(childContairRow);
-
-			foreach (var child in addedChildren)
-			{
-				if (childContairRow.Width + child.Width > Parent.Width)
-				{
-					childContairRow = new FlowLayoutWidget()
+					if (child.Parent != null)
 					{
-						Margin = new BorderDouble(3, 0),
-						Padding = new BorderDouble(3),
-					};
-					base.AddChild(childContairRow);
+						using (child.Parent.LayoutLock())
+						{
+							child.Parent.RemoveChild(child);
+							child.ClearRemovedFlag();
+						}
+					}
 				}
 
-				// add the button to the current row
-				childContairRow.AddChild(child);
+				// close all the row containers
+				this.CloseAllChildren();
+
+				// add in new row container
+				FlowLayoutWidget childContainerRow = new FlowLayoutWidget()
+				{
+					Margin = RowMargin,
+					Padding = RowPadding,
+					HAnchor = RowFlowAnchor,
+				};
+				base.AddChild(childContainerRow);
+
+				double runningSize = 0;
+				foreach (var child in addedChildren)
+				{
+					if (Parent != null
+						&& (runningSize + child.Width > Parent.Width
+							|| child is IHardBreak))
+					{
+						runningSize = 0;
+						if (childContainerRow != null)
+						{
+							childContainerRow.PerformLayout();
+						}
+						childContainerRow = new FlowLayoutWidget()
+						{
+							Margin = RowMargin,
+							Padding = RowPadding,
+							HAnchor = RowFlowAnchor,
+						};
+
+						base.AddChild(childContainerRow);
+					}
+
+					if (runningSize > 0 
+						|| !(child is ISkipIfFirst))
+					{
+						// add the new child to the current row
+						using (childContainerRow.LayoutLock())
+						{
+							childContainerRow.AddChild(child);
+						}
+						runningSize += child.Width;
+					}
+				}
+				if (childContainerRow != null)
+				{
+					childContainerRow.PerformLayout();
+				}
+				doingLayout = false;
 			}
-			doingLayout = false;
+			this.PerformLayout();
 		}
 	}
 }

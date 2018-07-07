@@ -55,6 +55,11 @@ namespace MatterHackers.Agg
 			Top = intRect.Top;
 		}
 
+		public RectangleDouble(Vector2 position1, Vector2 position2) : 
+			this(Math.Min(position1.X, position2.X), Math.Min(position1.Y, position2.Y), Math.Max(position1.X, position2.X), Math.Max(position1.Y, position2.Y))
+		{
+		}
+
 		public void SetRect(double left, double bottom, double right, double top)
 		{
 			init(left, bottom, right, top);
@@ -169,7 +174,7 @@ namespace MatterHackers.Agg
 
         public bool Contains(Vector2 position)
         {
-            return Contains(position.x, position.y);
+            return Contains(position.X, position.Y);
         }
 
         public bool Contains(Point2D position)
@@ -195,6 +200,13 @@ namespace MatterHackers.Agg
 			}
 
 			return false;
+		}
+
+		public bool IsTouching(RectangleDouble rectToIntersectWith)
+		{
+			RectangleDouble temp = this;
+
+			return temp.IntersectWithRectangle(rectToIntersectWith);
 		}
 
 		public bool IntersectWithRectangle(RectangleDouble rectToIntersectWith)
@@ -234,7 +246,7 @@ namespace MatterHackers.Agg
 
 		public void ExpandToInclude(Vector2 position)
 		{
-			ExpandToInclude(position.x, position.y);
+			ExpandToInclude(position.X, position.Y);
 		}
 
 		public void ExpandToInclude(double x, double y)
@@ -279,7 +291,7 @@ namespace MatterHackers.Agg
 
 		public void Offset(Vector2 offset)
 		{
-			Offset(offset.x, offset.y);
+			Offset(offset.X, offset.Y);
 		}
 
 		public void Offset(double x, double y)
@@ -318,6 +330,142 @@ namespace MatterHackers.Agg
 		public override string ToString()
 		{
 			return string.Format("L:{0}, B:{1}, R:{2}, T:{3}", Left, Bottom, Right, Top);
+		}
+
+		[Flags]
+		public enum OutCode
+		{
+			Inside = 0,
+			Left = 1,
+			Right = 2,
+			Bottom = 4,
+			Top = 8,
+			Surrounded = Left | Right | Bottom | Top
+		}
+
+		public OutCode ComputeOutCode(double x, double y)
+		{
+			var code = OutCode.Inside;
+
+			if (x < this.Left) code |= OutCode.Left;
+			if (x > this.Right) code |= OutCode.Right;
+			if (y < this.Bottom) code |= OutCode.Bottom;
+			if (y > this.Top) code |= OutCode.Top;
+
+			return code;
+		}
+
+		public OutCode ComputeOutCode(Vector2 p) { return ComputeOutCode(p.X, p.Y); }
+
+		private Vector2 CalculateIntersection(Vector2 p1, Vector2 p2, OutCode clipTo)
+		{
+			var dx = (p2.X - p1.X);
+			var dy = (p2.Y - p1.Y);
+
+			var slopeY = dx / dy; // slope to use for possibly-vertical lines
+			var slopeX = dy / dx; // slope to use for possibly-horizontal lines
+
+			if (clipTo.HasFlag(OutCode.Top))
+			{
+				return new Vector2(
+					p1.X + slopeY * (this.Top - p1.Y),
+					this.Top
+					);
+			}
+			if (clipTo.HasFlag(OutCode.Bottom))
+			{
+				return new Vector2(
+					p1.X + slopeY * (this.Bottom - p1.Y),
+					this.Bottom
+					);
+			}
+			if (clipTo.HasFlag(OutCode.Right))
+			{
+				return new Vector2(
+					this.Right,
+					p1.Y + slopeX * (this.Right - p1.X)
+					);
+			}
+			if (clipTo.HasFlag(OutCode.Left))
+			{
+				return new Vector2(
+					this.Left,
+					p1.Y + slopeX * (this.Left - p1.X)
+					);
+			}
+			throw new ArgumentOutOfRangeException("clipTo = " + clipTo);
+		}
+
+		private Tuple<Vector2, Vector2> ClipSegment(Vector2 p1, Vector2 p2)
+		{
+			// classify the endpoints of the line
+			var outCodeP1 = this.ComputeOutCode(p1);
+			var outCodeP2 = this.ComputeOutCode(p2);
+			var accept = false;
+
+			while (true)
+			{ // should only iterate twice, at most
+			  // Case 1:
+			  // both endpoints are within the clipping region
+				if ((outCodeP1 | outCodeP2) == OutCode.Inside)
+				{
+					accept = true;
+					break;
+				}
+
+				// Case 2:
+				// both endpoints share an excluded region, impossible for a line between them to be within the clipping region
+				if ((outCodeP1 & outCodeP2) != 0)
+				{
+					break;
+				}
+
+				// Case 3:
+				// The endpoints are in different regions, and the segment is partially within the clipping rectangle
+
+				// Select one of the endpoints outside the clipping rectangle
+				var outCode = outCodeP1 != OutCode.Inside ? outCodeP1 : outCodeP2;
+
+				// calculate the intersection of the line with the clipping rectangle
+				var p = this.CalculateIntersection(p1, p2, outCode);
+
+				// update the point after clipping and recalculate outcode
+				if (outCode == outCodeP1)
+				{
+					p1 = p;
+					outCodeP1 = this.ComputeOutCode(p1);
+				}
+				else
+				{
+					p2 = p;
+					outCodeP2 = this.ComputeOutCode(p2);
+				}
+			}
+			// if clipping area contained a portion of the line
+			if (accept)
+			{
+				return new Tuple<Vector2, Vector2>(p1, p2);
+			}
+
+			// the line did not intersect the clipping area
+			return null;
+		}
+
+		public Vector2 Clamp(Vector2 actualNozzlePosition)
+		{
+			var newX = Math.Min(Right, Math.Max(Left, actualNozzlePosition.X));
+			var newY = Math.Min(Top, Math.Max(Bottom, actualNozzlePosition.Y));
+			return new Vector2(newX, newY);
+		}
+
+		public bool ClipLine(Vector2 p1, Vector2 p2)
+		{
+			if(this.ClipSegment(p1, p2) != null)
+			{
+				return true;
+			}
+
+			return false;
 		}
 	}
 }

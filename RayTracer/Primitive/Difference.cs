@@ -50,9 +50,23 @@ namespace MatterHackers.RayTracer.Traceable
 
 		public IPrimitive Subtract { get { return subtract; } }
 
-		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
+		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
 		{
 			throw new NotImplementedException();
+		}
+
+		public bool Contains(Vector3 position)
+		{
+			if (this.GetAxisAlignedBoundingBox().Contains(position))
+			{
+				if (primary.Contains(position)
+				|| subtract.Contains(position))
+				{
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		public IntersectInfo GetClosestIntersection(Ray ray)
@@ -156,7 +170,7 @@ namespace MatterHackers.RayTracer.Traceable
 			}
 		}
 
-		public RGBA_Floats GetColor(IntersectInfo info)
+		public ColorF GetColor(IntersectInfo info)
 		{
 			throw new NotImplementedException("You should not get a color directly from a Difference.");
 		}
@@ -172,7 +186,7 @@ namespace MatterHackers.RayTracer.Traceable
 			// get all the intersection for the object
 			Ray currentRayCheckBackfaces = new Ray(ray);
 			currentRayCheckBackfaces.intersectionType = intersectionType;
-			currentRayCheckBackfaces.minDistanceToConsider = ((info.hitPosition + ray.directionNormal * Ray.sameSurfaceOffset) - ray.origin).Length;
+			currentRayCheckBackfaces.minDistanceToConsider = ((info.HitPosition + ray.directionNormal * Ray.sameSurfaceOffset) - ray.origin).Length;
 			currentRayCheckBackfaces.maxDistanceToConsider = double.PositiveInfinity;
 
 			return element.GetClosestIntersection(currentRayCheckBackfaces);

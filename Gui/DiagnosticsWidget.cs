@@ -28,7 +28,7 @@ namespace MatterHackers.Agg.UI
 			Title = "Widget Diagnostics";
 
 			this.topLevelWindow = topLevelWindow;
-			BackgroundColor = RGBA_Bytes.White;
+			BackgroundColor = Color.White;
 			topLevelWindow.MouseMove += topLevelWindow_MouseMove;
 
 			ShowAsSystemWindow();
@@ -64,11 +64,11 @@ namespace MatterHackers.Agg.UI
 
 			widgetInfo.AddChild(new TextWidget(info));
 
-			TextWidget sizeAndPositon = new TextWidget(string.Format("  Size {0}, Position {1}", widgetToAddInfoAbout.LocalBounds, widgetToAddInfoAbout.OriginRelativeParent), pointSize: 8, textColor: RGBA_Bytes.Red);
+			TextWidget sizeAndPositon = new TextWidget(string.Format("  Size {0}, Position {1}", widgetToAddInfoAbout.LocalBounds, widgetToAddInfoAbout.OriginRelativeParent), pointSize: 8, textColor: Color.Red);
 			sizeAndPositon.AutoExpandBoundsToText = true;
 			widgetInfo.AddChild(sizeAndPositon);
 
-			TextWidget boundsText = new TextWidget(string.Format("  Bounds {0}", widgetToAddInfoAbout.BoundsRelativeToParent), pointSize: 8, textColor: RGBA_Bytes.Red);
+			TextWidget boundsText = new TextWidget(string.Format("  Bounds {0}", widgetToAddInfoAbout.BoundsRelativeToParent), pointSize: 8, textColor: Color.Red);
 			boundsText.AutoExpandBoundsToText = true;
 			widgetInfo.AddChild(boundsText);
 
@@ -115,11 +115,12 @@ namespace MatterHackers.Agg.UI
 				ScrollableWidget allContainer = new ScrollableWidget(true);
 				topToBottomTotal = new FlowLayoutWidget(FlowDirection.TopToBottom);
 
-				topToBottomTotal.SuspendLayout();
-				GuiWidget.DefaultEnforceIntegerBounds = true;
-				AddInfoRecursive(topLevelWindow, topToBottomTotal);
-				GuiWidget.DefaultEnforceIntegerBounds = false;
-				topToBottomTotal.ResumeLayout();
+				using (topToBottomTotal.LayoutLock())
+				{
+					GuiWidget.DefaultEnforceIntegerBounds = true;
+					AddInfoRecursive(topLevelWindow, topToBottomTotal);
+					GuiWidget.DefaultEnforceIntegerBounds = false;
+				}
 				topToBottomTotal.PerformLayout();
 				allContainer.AddChild(topToBottomTotal);
 
@@ -134,14 +135,14 @@ namespace MatterHackers.Agg.UI
 		public LineWidget(double width, double height)
 			: base(width, height)
 		{
-			VAnchor = UI.VAnchor.ParentBottomTop;
-			VAnchor = UI.VAnchor.FitToChildren;
-			HAnchor = UI.HAnchor.FitToChildren;
+			VAnchor = UI.VAnchor.Stretch;
+			VAnchor = UI.VAnchor.Fit;
+			HAnchor = UI.HAnchor.Fit;
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			graphics2D.Line(Width / 2, 0, Width / 2, Height, RGBA_Bytes.Black);
+			graphics2D.Line(Width / 2, 0, Width / 2, Height, Color.Black);
 			base.OnDraw(graphics2D);
 		}
 	}

@@ -95,14 +95,14 @@ namespace MatterHackers.Agg.UI
 
 		public virtual IColorType color(int i)
 		{
-			return (IColorType)new RGBA_Floats();
+			return (IColorType)new ColorF();
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			for (int i = 0; i < num_paths(); i++)
 			{
-				graphics2D.Render(this, i, color(i).GetAsRGBA_Bytes());
+				graphics2D.Render(this, i, color(i).ToColor());
 			}
 			base.OnDraw(graphics2D);
 		}

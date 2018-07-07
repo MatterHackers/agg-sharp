@@ -39,16 +39,16 @@ namespace MatterHackers.PolygonMesh
 			Mesh tetrahedron = new Mesh();
 			Vector2 basePoint = new Vector2(1, 0);
 			double baseOffsetZ = -Math.Sin(MathHelper.DegreesToRadians(30));
-			Vertex[] verts = new Vertex[4];
+			IVertex[] verts = new Vertex[4];
 			verts[0] = tetrahedron.CreateVertex(new Vector3(basePoint, baseOffsetZ));
 			verts[1] = tetrahedron.CreateVertex(new Vector3(Vector2.Rotate(basePoint, MathHelper.Tau / 3), baseOffsetZ));
 			verts[2] = tetrahedron.CreateVertex(new Vector3(Vector2.Rotate(basePoint, 2 * MathHelper.Tau / 3), baseOffsetZ));
 			verts[3] = tetrahedron.CreateVertex(new Vector3(0, 0, 1));
 
-			tetrahedron.CreateFace(new Vertex[] { verts[0], verts[2], verts[1] }); // add reversed because we want to see the bottom.
-			tetrahedron.CreateFace(new Vertex[] { verts[0], verts[1], verts[3] });
-			tetrahedron.CreateFace(new Vertex[] { verts[1], verts[2], verts[3] });
-			tetrahedron.CreateFace(new Vertex[] { verts[2], verts[0], verts[3] });
+			tetrahedron.CreateFace(new IVertex[] { verts[0], verts[2], verts[1] }); // add reversed because we want to see the bottom.
+			tetrahedron.CreateFace(new IVertex[] { verts[0], verts[1], verts[3] });
+			tetrahedron.CreateFace(new IVertex[] { verts[1], verts[2], verts[3] });
+			tetrahedron.CreateFace(new IVertex[] { verts[2], verts[0], verts[3] });
 
 			if(scale != 1)
 			{
@@ -67,7 +67,7 @@ namespace MatterHackers.PolygonMesh
 		{
 			scale *= .5; // the cube is -1 to 1 and we want it to be -.5 to .5 so it is a unit cube.
 			Mesh cube = new Mesh();
-			Vertex[] verts = new Vertex[8];
+			IVertex[] verts = new Vertex[8];
 			verts[0] = cube.CreateVertex(new Vector3(-1, -1, 1) * scale);
 			verts[1] = cube.CreateVertex(new Vector3(1, -1, 1) * scale);
 			verts[2] = cube.CreateVertex(new Vector3(1, 1, 1) * scale);
@@ -78,17 +78,17 @@ namespace MatterHackers.PolygonMesh
 			verts[7] = cube.CreateVertex(new Vector3(-1, 1, -1) * scale);
 
 			// front
-			cube.CreateFace(new Vertex[] { verts[0], verts[1], verts[2], verts[3] });
+			cube.CreateFace(new IVertex[] { verts[0], verts[1], verts[2], verts[3] });
 			// left
-			cube.CreateFace(new Vertex[] { verts[4], verts[0], verts[3], verts[7] });
+			cube.CreateFace(new IVertex[] { verts[4], verts[0], verts[3], verts[7] });
 			// right
-			cube.CreateFace(new Vertex[] { verts[1], verts[5], verts[6], verts[2] });
+			cube.CreateFace(new IVertex[] { verts[1], verts[5], verts[6], verts[2] });
 			// back
-			cube.CreateFace(new Vertex[] { verts[4], verts[7], verts[6], verts[5] });
+			cube.CreateFace(new IVertex[] { verts[4], verts[7], verts[6], verts[5] });
 			// top
-			cube.CreateFace(new Vertex[] { verts[3], verts[2], verts[6], verts[7] });
+			cube.CreateFace(new IVertex[] { verts[3], verts[2], verts[6], verts[7] });
 			// bottom
-			cube.CreateFace(new Vertex[] { verts[4], verts[5], verts[1], verts[0] });
+			cube.CreateFace(new IVertex[] { verts[4], verts[5], verts[1], verts[0] });
 
 			return cube;
 		}
@@ -136,7 +136,7 @@ namespace MatterHackers.PolygonMesh
                 4, 8, 0,
             };
 
-			Vertex[] verts = new Vertex[icosahedronVertices.Length / 3];
+			IVertex[] verts = new Vertex[icosahedronVertices.Length / 3];
 			for (int i = 0; i < icosahedronVertices.Length / 3; i++)
 			{
 				verts[i] = icosahedron.CreateVertex(new Vector3(icosahedronVertices[i * 3 + 0], icosahedronVertices[i * 3 + 1], icosahedronVertices[i * 3 + 2]));
@@ -144,7 +144,7 @@ namespace MatterHackers.PolygonMesh
 
 			for (int i = 0; i < icosahedronIndicies.Length / 3; i++)
 			{
-				Vertex[] triangleVertices = new Vertex[]
+				IVertex[] triangleVertices = new IVertex[]
                 {
                     verts[icosahedronIndicies[i * 3 + 0]],
                     verts[icosahedronIndicies[i * 3 + 1]],

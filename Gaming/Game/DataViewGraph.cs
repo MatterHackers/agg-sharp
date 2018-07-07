@@ -9,9 +9,9 @@ namespace Gaming.Game
 {
 	public class DataViewGraph
 	{
-		private RGBA_Floats SentDataLineColor = new RGBA_Floats(200, 200, 0);
-		private RGBA_Floats ReceivedDataLineColor = new RGBA_Floats(0, 200, 20);
-		private RGBA_Floats BoxColor = new RGBA_Floats(10, 25, 240);
+		private ColorF SentDataLineColor = new ColorF(200, 200, 0);
+		private ColorF ReceivedDataLineColor = new ColorF(0, 200, 20);
+		private ColorF BoxColor = new ColorF(10, 25, 240);
 
 		private double m_DataViewMinY;
 		private double m_DataViewMaxY;
@@ -21,7 +21,7 @@ namespace Gaming.Game
 		private uint m_Height;
 		private Dictionary<String, HistoryData> m_DataHistoryArray;
 		private int m_ColorIndex;
-		private PathStorage m_LinesToDraw;
+		private VertexStorage m_LinesToDraw;
 
 		internal class HistoryData
 		{
@@ -29,11 +29,11 @@ namespace Gaming.Game
 			private TwoSidedStack<double> m_Data;
 
 			internal double m_TotalValue;
-			internal RGBA_Bytes m_Color;
+			internal Color m_Color;
 
 			internal HistoryData(int Capacity, IColorType Color)
 			{
-				m_Color = Color.GetAsRGBA_Bytes();
+				m_Color = Color.ToColor();
 				m_Capacity = Capacity;
 				m_Data = new TwoSidedStack<double>();
 				Reset();
@@ -124,7 +124,7 @@ namespace Gaming.Game
 
 		public DataViewGraph(Vector2 RenderPosition, uint Width, uint Height, double StartMin, double StartMax)
 		{
-			m_LinesToDraw = new PathStorage();
+			m_LinesToDraw = new VertexStorage();
 			m_DataHistoryArray = new Dictionary<String, HistoryData>();
 
 			m_Width = Width;
@@ -154,26 +154,26 @@ namespace Gaming.Game
 
 		public void Draw(MatterHackers.Agg.Transform.ITransform Position, Graphics2D renderer)
 		{
-			double TextHeight = m_Position.y - 20;
+			double TextHeight = m_Position.Y - 20;
 			double Range = (m_DataViewMaxY - m_DataViewMinY);
 			VertexSourceApplyTransform TransformedLinesToDraw;
 			Stroke StrockedTransformedLinesToDraw;
 
-			RoundedRect BackGround = new RoundedRect(m_Position.x, m_Position.y - 1, m_Position.x + m_Width, m_Position.y - 1 + m_Height + 2, 5);
+			RoundedRect BackGround = new RoundedRect(m_Position.X, m_Position.Y - 1, m_Position.X + m_Width, m_Position.Y - 1 + m_Height + 2, 5);
 			VertexSourceApplyTransform TransformedBackGround = new VertexSourceApplyTransform(BackGround, Position);
-			renderer.Render(TransformedBackGround, new RGBA_Bytes(0, 0, 0, .5));
+			renderer.Render(TransformedBackGround, new Color(0, 0, 0, .5));
 
 			// if the 0 line is within the window than draw it.
 			if (m_DataViewMinY < 0 && m_DataViewMaxY > 0)
 			{
 				m_LinesToDraw.remove_all();
-				m_LinesToDraw.MoveTo(m_Position.x,
-					m_Position.y + ((0 - m_DataViewMinY) * m_Height / Range));
-				m_LinesToDraw.LineTo(m_Position.x + m_Width,
-					m_Position.y + ((0 - m_DataViewMinY) * m_Height / Range));
+				m_LinesToDraw.MoveTo(m_Position.X,
+					m_Position.Y + ((0 - m_DataViewMinY) * m_Height / Range));
+				m_LinesToDraw.LineTo(m_Position.X + m_Width,
+					m_Position.Y + ((0 - m_DataViewMinY) * m_Height / Range));
 				TransformedLinesToDraw = new VertexSourceApplyTransform(m_LinesToDraw, Position);
 				StrockedTransformedLinesToDraw = new Stroke(TransformedLinesToDraw);
-				renderer.Render(StrockedTransformedLinesToDraw, new RGBA_Bytes(0, 0, 0, 1));
+				renderer.Render(StrockedTransformedLinesToDraw, new Color(0, 0, 0, 1));
 			}
 
 			double MaxMax = -999999999;
@@ -190,13 +190,13 @@ namespace Gaming.Game
 				{
 					if (i == 0)
 					{
-						m_LinesToDraw.MoveTo(m_Position.x + i,
-							m_Position.y + ((history.GetItem(i) - m_DataViewMinY) * m_Height / Range));
+						m_LinesToDraw.MoveTo(m_Position.X + i,
+							m_Position.Y + ((history.GetItem(i) - m_DataViewMinY) * m_Height / Range));
 					}
 					else
 					{
-						m_LinesToDraw.LineTo(m_Position.x + i,
-							m_Position.y + ((history.GetItem(i) - m_DataViewMinY) * m_Height / Range));
+						m_LinesToDraw.LineTo(m_Position.X + i,
+							m_Position.Y + ((history.GetItem(i) - m_DataViewMinY) * m_Height / Range));
 					}
 				}
 
@@ -205,14 +205,14 @@ namespace Gaming.Game
 				renderer.Render(StrockedTransformedLinesToDraw, history.m_Color);
 
 				String Text = historyKeyValue.Key + ": Min:" + MinMin.ToString("0.0") + " Max:" + MaxMax.ToString("0.0");
-				renderer.DrawString(Text, m_Position.x, TextHeight - m_Height);
+				renderer.DrawString(Text, m_Position.X, TextHeight - m_Height);
 				TextHeight -= 20;
 			}
 
-			RoundedRect BackGround2 = new RoundedRect(m_Position.x, m_Position.y - 1, m_Position.x + m_Width, m_Position.y - 1 + m_Height + 2, 5);
+			RoundedRect BackGround2 = new RoundedRect(m_Position.X, m_Position.Y - 1, m_Position.X + m_Width, m_Position.Y - 1 + m_Height + 2, 5);
 			VertexSourceApplyTransform TransformedBackGround2 = new VertexSourceApplyTransform(BackGround2, Position);
 			Stroke StrockedTransformedBackGround = new Stroke(TransformedBackGround2);
-			renderer.Render(StrockedTransformedBackGround, new RGBA_Bytes(0.0, 0, 0, 1));
+			renderer.Render(StrockedTransformedBackGround, new Color(0.0, 0, 0, 1));
 
 			//renderer.Color = BoxColor;
 			//renderer.DrawRect(m_Position.x, m_Position.y - 1, m_Width, m_Height + 2);
@@ -228,19 +228,19 @@ namespace Gaming.Game
 
 			if (!m_DataHistoryArray.ContainsKey(DataType))
 			{
-				RGBA_Bytes LineColor = new RGBA_Bytes(255, 255, 255);
+				Color LineColor = new Color(255, 255, 255);
 				switch (m_ColorIndex++ % 3)
 				{
 					case 0:
-						LineColor = new RGBA_Bytes(255, 55, 55);
+						LineColor = new Color(255, 55, 55);
 						break;
 
 					case 1:
-						LineColor = new RGBA_Bytes(55, 255, 55);
+						LineColor = new Color(55, 255, 55);
 						break;
 
 					case 2:
-						LineColor = new RGBA_Bytes(55, 55, 255);
+						LineColor = new Color(55, 55, 255);
 						break;
 				}
 

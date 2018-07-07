@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 using MatterHackers.VectorMath;
 
@@ -64,6 +65,8 @@ namespace MatterHackers.GCodeVisualizer
 		public GCodeViewerApplication(string gCodeToLoad = "")
 			: base(800, 600)
 		{
+			this.Title = "G Code Visualizer";
+
 			MinimumSize = new VectorMath.Vector2(200, 200);
 			Title = "MatterHackers GCodeVisualizer";
 			gCodeViewWidget = new GCodeViewWidget(new Vector2(), new Vector2(100, 100));
@@ -103,6 +106,10 @@ namespace MatterHackers.GCodeVisualizer
 			UiThread.RunOnIdle(currentLayerIndex.Focus);
 		}
 
+		public string DemoCategory { get; } = "Other";
+
+		public string DemoDescription { get; } = "A sample application to visualize the g-code created for a rep-rap type FDM machine.";
+
 		private void SetActiveLayer(int layer)
 		{
 			gCodeViewWidget.ActiveLayerIndex = layer;
@@ -129,10 +136,10 @@ namespace MatterHackers.GCodeVisualizer
 		private void openFileButton_ButtonClick(object sender, EventArgs mouseEvent)
 		{
 			UiThread.RunOnIdle(() =>
-				{
-					OpenFileDialogParams openParams = new OpenFileDialogParams("gcode files|*.gcode");
-					FileDialog.OpenFileDialog(openParams, onFileSelected);
-				});
+			{
+				OpenFileDialogParams openParams = new OpenFileDialogParams("gcode files|*.gcode");
+				AggContext.FileDialogs.OpenFileDialog(openParams, onFileSelected);
+			});
 		}
 
 		private void onFileSelected(OpenFileDialogParams openParams)
@@ -149,7 +156,7 @@ namespace MatterHackers.GCodeVisualizer
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			this.NewGraphics2D().Clear(new RGBA_Bytes(255, 255, 255));
+			this.NewGraphics2D().Clear(new Color(255, 255, 255));
 
 			if (gCodeViewWidget.LoadedGCode != null)
 			{
@@ -167,26 +174,13 @@ namespace MatterHackers.GCodeVisualizer
 			app.DoubleBuffer = true;
 			app.BackBuffer.SetRecieveBlender(new BlenderPreMultBGRA());
 			app.ShowAsSystemWindow();
-		}
-	}
 
-	public class GCodeVisualizerFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new GCodeViewerApplication();
-		}
+			//var demoWidget = new aa_demo();
 
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-			"Other",
-			"G Code Visualizer",
-			"A sample application to visualize the g-code created for a rep-rap type FDM machine.",
-			600,
-			400);
-
-			return appWidgetInfo;
+			//var systemWindow = new SystemWindow(600, 400);
+			//systemWindow.Title = demoWidget.Title;
+			//systemWindow.AddChild(demoWidget);
+			//systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

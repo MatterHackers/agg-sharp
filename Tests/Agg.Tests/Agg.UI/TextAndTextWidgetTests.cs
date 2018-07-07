@@ -31,6 +31,7 @@ using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
+using MatterHackers.VectorMath;
 using NUnit.Framework;
 
 namespace MatterHackers.Agg.UI.Tests
@@ -66,6 +67,43 @@ namespace MatterHackers.Agg.UI.Tests
 
 				Assert.IsTrue(backToOrignHeight == origHeight);
 			}
+
+			// make sure text widget gets smaller vertically when it needs to
+			{
+				GuiWidget containerControl = new GuiWidget(640, 480);
+				containerControl.DoubleBuffer = true;
+
+				GuiWidget holder = new GuiWidget(500, 10)
+				{
+					VAnchor = VAnchor.Fit,
+					MinimumSize = Vector2.Zero
+				};
+				containerControl.AddChild(holder);
+
+				var textItem = new WrappedTextWidget("some very long text that can wrap");
+				holder.AddChild(textItem);
+
+				var origSize = textItem.Size;
+				Assert.IsTrue(origSize.X > 10, "The control expanded");
+				holder.Width = 100;
+				var bigSize = textItem.Size;
+
+				Assert.IsTrue(bigSize.X < origSize.X, "The control got narrower and taller");
+				Assert.IsTrue(bigSize.Y > origSize.Y, "The control got narrower and taller");
+
+				holder.Width = 500;
+				var backToOrignSize = textItem.Size;
+				Assert.IsTrue(backToOrignSize.X == origSize.X);
+				Assert.IsTrue(backToOrignSize.Y == origSize.Y);
+
+				double origHeight = textItem.Height;
+				textItem.Text = "test\nItem";
+				double newlineHeight = textItem.Height;
+				textItem.Text = "test Item";
+				double backToOrignHeight = textItem.Height;
+
+				Assert.IsTrue(backToOrignHeight == origHeight);
+			}
 		}
 
 		[Test]
@@ -76,11 +114,11 @@ namespace MatterHackers.Agg.UI.Tests
 				TextWidget itemToAdd = new TextWidget("test Item", 10, 10);
 				rectangleWidget.AddChild(itemToAdd);
 				rectangleWidget.DoubleBuffer = true;
-				rectangleWidget.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+				rectangleWidget.BackBuffer.NewGraphics2D().Clear(Color.White);
 				rectangleWidget.OnDraw(rectangleWidget.BackBuffer.NewGraphics2D());
 
 				ImageBuffer textOnly = new ImageBuffer(75, 20);
-				textOnly.NewGraphics2D().Clear(RGBA_Bytes.White);
+				textOnly.NewGraphics2D().Clear(Color.White);
 
 				textOnly.NewGraphics2D().DrawString("test Item", 1, 1);
 
@@ -100,15 +138,15 @@ namespace MatterHackers.Agg.UI.Tests
 				TextEditWidget itemToAdd = new TextEditWidget("test Item", 10, 10);
 				rectangleWidget.AddChild(itemToAdd);
 				rectangleWidget.DoubleBuffer = true;
-				rectangleWidget.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+				rectangleWidget.BackBuffer.NewGraphics2D().Clear(Color.White);
 				rectangleWidget.OnDraw(rectangleWidget.BackBuffer.NewGraphics2D());
 
 				ImageBuffer textOnly = new ImageBuffer(75, 20);
-				textOnly.NewGraphics2D().Clear(RGBA_Bytes.White);
+				textOnly.NewGraphics2D().Clear(Color.White);
 
 				TypeFacePrinter stringPrinter = new TypeFacePrinter("test Item", 12);
 				IVertexSource offsetText = new VertexSourceApplyTransform(stringPrinter, Affine.NewTranslation(1, -stringPrinter.LocalBounds.Bottom));
-				textOnly.NewGraphics2D().Render(offsetText, RGBA_Bytes.Black);
+				textOnly.NewGraphics2D().Render(offsetText, Color.Black);
 
 				if (saveImagesForDebug)
 				{

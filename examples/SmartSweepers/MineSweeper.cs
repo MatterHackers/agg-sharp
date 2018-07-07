@@ -81,12 +81,12 @@ namespace SmartSweeper
 #else
 
 			//add in List to closest mine
-			inputs.Add(vClosestMine.x);
-			inputs.Add(vClosestMine.y);
+			inputs.Add(vClosestMine.X);
+			inputs.Add(vClosestMine.Y);
 
 			//add in sweepers look at List
-			inputs.Add(m_vLookAt.x);
-			inputs.Add(m_vLookAt.y);
+			inputs.Add(m_vLookAt.X);
+			inputs.Add(m_vLookAt.Y);
 #endif
 
 			//update the brain and get feedback
@@ -114,17 +114,17 @@ namespace SmartSweeper
 			m_dSpeed = (m_lTrack + m_rTrack);
 
 			//update Look At
-			m_vLookAt.x = (double)-System.Math.Sin(m_dRotation);
-			m_vLookAt.y = (double)System.Math.Cos(m_dRotation);
+			m_vLookAt.X = (double)-System.Math.Sin(m_dRotation);
+			m_vLookAt.Y = (double)System.Math.Cos(m_dRotation);
 
 			//update position
 			m_vPosition += (m_vLookAt * m_dSpeed);
 
 			//wrap around window limits
-			if (m_vPosition.x > m_WindowWidth) m_vPosition.x = 0;
-			if (m_vPosition.x < 0) m_vPosition.x = m_WindowWidth;
-			if (m_vPosition.y > m_WindowHeight) m_vPosition.y = 0;
-			if (m_vPosition.y < 0) m_vPosition.y = m_WindowHeight;
+			if (m_vPosition.X > m_WindowWidth) m_vPosition.X = 0;
+			if (m_vPosition.X < 0) m_vPosition.X = m_WindowWidth;
+			if (m_vPosition.Y > m_WindowHeight) m_vPosition.Y = 0;
+			if (m_vPosition.Y < 0) m_vPosition.Y = m_WindowHeight;
 
 			return true;
 		}
@@ -142,7 +142,7 @@ namespace SmartSweeper
 			matTransform *= Matrix4X4.CreateRotationZ(m_dRotation);
 
 			//and translate
-			matTransform *= Matrix4X4.CreateTranslation(m_vPosition.x, m_vPosition.y, 0);
+			matTransform *= Matrix4X4.CreateTranslation(m_vPosition.X, m_vPosition.Y, 0);
 
 			//now transform the ships vertices
 			for (int i = 0; i < sweeper.Count; i++)

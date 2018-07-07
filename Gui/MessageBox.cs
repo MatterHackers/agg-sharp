@@ -20,11 +20,11 @@ namespace MatterHackers.Agg.UI
 		public MessageBox(String message, string windowTitle, MessageType messageType, double width, double height)
 			: base(width, height)
 		{
-			BackgroundColor = new RGBA_Bytes(50, 50, 50, 240);
+			BackgroundColor = new Color(50, 50, 50, 240);
 			FlowLayoutWidget topToBottomFlow = new FlowLayoutWidget(FlowDirection.TopToBottom);
-			topToBottomFlow.HAnchor = Agg.UI.HAnchor.ParentCenter;
-			topToBottomFlow.VAnchor = Agg.UI.VAnchor.ParentCenter;
-			topToBottomFlow.AddChild(new TextWidget(message, textColor: RGBA_Bytes.White));
+			topToBottomFlow.HAnchor = Agg.UI.HAnchor.Center;
+			topToBottomFlow.VAnchor = Agg.UI.VAnchor.Center;
+			topToBottomFlow.AddChild(new TextWidget(message, textColor: Color.White));
 
 			Title = windowTitle;
 

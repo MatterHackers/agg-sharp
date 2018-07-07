@@ -68,14 +68,42 @@ namespace MatterHackers.VectorMath
 		{ }
 
 		/// <summary>
+		/// Construct a new Quaternion
+		/// </summary>
+		/// <param name="matrix">The matrix to discover the rotation of</param>
+		public Quaternion(Matrix4X4 m)
+			: this()
+		{
+			this = m.GetRotation();
+		}
+
+		private double CopySign(double value, double sign)
+		{
+			if (sign < 0)
+			{
+				// return a negative number
+				return value < 0 ? value : -value;
+			}
+			else
+			{
+				// return a positive number
+				return value < 0 ? -value : value;
+			}
+		}
+
+		/// <summary>
 		/// Construct a quaternion that rotates from one direction to another
 		/// </summary>
 		/// <param name="startingDirection"></param>
 		/// <param name="endingDirection"></param>
 		public Quaternion(Vector3 startingDirection, Vector3 endingDirection)
 		{
-			this.xyz = Vector3.Cross(startingDirection, endingDirection);
-			this.w = Math.Sqrt(Math.Pow(startingDirection.Length, 2) * Math.Pow(endingDirection.Length, 2)) + Vector3.Dot(startingDirection, endingDirection);
+			if ((endingDirection + startingDirection).LengthSquared == 0)
+			{
+				endingDirection += new Vector3(.0000001, 0, 0);
+			}
+			this.xyz = Vector3.Cross(endingDirection, startingDirection);
+			this.w = Math.Sqrt(Math.Pow(endingDirection.Length, 2) * Math.Pow(startingDirection.Length, 2)) + Vector3.Dot(endingDirection, startingDirection);
 			Normalize();
 		}
 
@@ -93,17 +121,17 @@ namespace MatterHackers.VectorMath
 		/// <summary>
 		/// Gets or sets the X component of this instance.
 		/// </summary>
-		public double X { get { return xyz.x; } set { xyz.x = value; } }
+		public double X { get { return xyz.X; } set { xyz.X = value; } }
 
 		/// <summary>
 		/// Gets or sets the Y component of this instance.
 		/// </summary>
-		public double Y { get { return xyz.y; } set { xyz.y = value; } }
+		public double Y { get { return xyz.Y; } set { xyz.Y = value; } }
 
 		/// <summary>
 		/// Gets or sets the Z component of this instance.
 		/// </summary>
-		public double Z { get { return xyz.z; } set { xyz.z = value; } }
+		public double Z { get { return xyz.Z; } set { xyz.Z = value; } }
 
 		/// <summary>
 		/// Gets or sets the W component of this instance.
@@ -125,7 +153,7 @@ namespace MatterHackers.VectorMath
 		{
 			Vector4 result = ToAxisAngle();
 			axis = result.Xyz;
-			angle = result.w;
+			angle = result.W;
 		}
 
 		/// <summary>
@@ -134,13 +162,35 @@ namespace MatterHackers.VectorMath
 		/// <returns>A Vector4 that is the axis-angle representation of this quaternion.</returns>
 		public Vector4 ToAxisAngle()
 		{
+#if true
+			Vector4 axisAngle = new Vector4();
+			Quaternion q1 = this;
+			if (q1.w > 1) q1.Normalize(); // if w>1 acos and sqrt will produce errors, this cant happen if quaternion is normalised
+			axisAngle.W = 2 * Math.Acos(q1.w);
+			double s = Math.Sqrt(1 - q1.w * q1.w); // assuming quaternion normalised then w is less than 1, so term always positive.
+			if (s < 0.001)
+			{ // test to avoid divide by zero, s is always positive due to sqrt
+			  // if s close to zero then direction of axis not important
+				axisAngle.X = q1.X; // if it is important that axis is normalised then replace with x=1; y=z=0;
+				axisAngle.Y = q1.Y;
+				axisAngle.Z = q1.Z;
+			}
+			else
+			{
+				axisAngle.X = q1.X / s; // normalise axis
+				axisAngle.Y = q1.Y / s;
+				axisAngle.Z = q1.Z / s;
+			}
+
+			return axisAngle;
+#else
 			Quaternion q = this;
-			if (q.W > 1.0f)
+			if (q.W > 1.0)
 				q.Normalize();
 
 			Vector4 result = new Vector4();
 
-			result.w = 2.0f * (float)System.Math.Acos(q.W); // angle
+			result.W = 2.0 * (float)System.Math.Acos(q.W); // angle
 			float den = (float)System.Math.Sqrt(1.0 - q.W * q.W);
 			if (den > 0.0001f)
 			{
@@ -154,6 +204,7 @@ namespace MatterHackers.VectorMath
 			}
 
 			return result;
+#endif
 		}
 
 		#endregion ToAxisAngle
@@ -199,7 +250,7 @@ namespace MatterHackers.VectorMath
 			double length = this.Length;
 			if (length != 0)
 			{
-				double scale = 1.0f / length;
+				double scale = 1.0 / length;
 				Xyz *= scale;
 				W *= scale;
 			}
@@ -420,7 +471,7 @@ namespace MatterHackers.VectorMath
 			double lengthSq = q.LengthSquared;
 			if (lengthSq != 0.0)
 			{
-				double i = 1.0f / lengthSq;
+				double i = 1.0 / lengthSq;
 				result = new Quaternion(q.Xyz * -i, q.W * i);
 			}
 			else
@@ -452,7 +503,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="result">The normalized Quaterniond</param>
 		public static void Normalize(ref Quaternion q, out Quaternion result)
 		{
-			double scale = 1.0f / q.Length;
+			double scale = 1.0 / q.Length;
 			result = new Quaternion(q.Xyz * scale, q.W * scale);
 		}
 
@@ -462,9 +513,9 @@ namespace MatterHackers.VectorMath
 
 		public static Quaternion FromEulerAngles(Vector3 rotation)
 		{
-			Quaternion xRotation = FromAxisAngle(Vector3.UnitX, rotation.x);
-			Quaternion yRotation = FromAxisAngle(Vector3.UnitY, rotation.y);
-			Quaternion zRotation = FromAxisAngle(Vector3.UnitZ, rotation.z);
+			Quaternion xRotation = FromAxisAngle(Vector3.UnitX, rotation.X);
+			Quaternion yRotation = FromAxisAngle(Vector3.UnitY, rotation.Y);
+			Quaternion zRotation = FromAxisAngle(Vector3.UnitZ, rotation.Z);
 
 			//return xRotation * yRotation * zRotation;
 			return zRotation * yRotation * xRotation;
@@ -482,7 +533,7 @@ namespace MatterHackers.VectorMath
 		/// <returns></returns>
 		public static Quaternion FromAxisAngle(Vector3 axis, double angle)
 		{
-			if (axis.LengthSquared == 0.0f)
+			if (axis.LengthSquared == 0.0)
 			{
 				return Identity;
 			}
@@ -511,27 +562,27 @@ namespace MatterHackers.VectorMath
 		public static Quaternion Slerp(Quaternion q1, Quaternion q2, double blend)
 		{
 			// if either input is zero, return the other.
-			if (q1.LengthSquared == 0.0f)
+			if (q1.LengthSquared == 0.0)
 			{
-				if (q2.LengthSquared == 0.0f)
+				if (q2.LengthSquared == 0.0)
 				{
 					return Identity;
 				}
 				return q2;
 			}
-			else if (q2.LengthSquared == 0.0f)
+			else if (q2.LengthSquared == 0.0)
 			{
 				return q1;
 			}
 
 			double cosHalfAngle = q1.W * q2.W + Vector3.Dot(q1.Xyz, q2.Xyz);
 
-			if (cosHalfAngle >= 1.0f || cosHalfAngle <= -1.0f)
+			if (cosHalfAngle >= 1.0 || cosHalfAngle <= -1.0)
 			{
-				// angle = 0.0f, so just return one input.
+				// angle = 0.0, so just return one input.
 				return q1;
 			}
-			else if (cosHalfAngle < 0.0f)
+			else if (cosHalfAngle < 0.0)
 			{
 				q2.Xyz = -q2.Xyz;
 				q2.W = -q2.W;
@@ -545,19 +596,19 @@ namespace MatterHackers.VectorMath
 				// do proper slerp for big angles
 				double halfAngle = (double)System.Math.Acos(cosHalfAngle);
 				double sinHalfAngle = (double)System.Math.Sin(halfAngle);
-				double oneOverSinHalfAngle = 1.0f / sinHalfAngle;
-				blendA = (double)System.Math.Sin(halfAngle * (1.0f - blend)) * oneOverSinHalfAngle;
+				double oneOverSinHalfAngle = 1.0 / sinHalfAngle;
+				blendA = (double)System.Math.Sin(halfAngle * (1.0 - blend)) * oneOverSinHalfAngle;
 				blendB = (double)System.Math.Sin(halfAngle * blend) * oneOverSinHalfAngle;
 			}
 			else
 			{
 				// do lerp if angle is really small.
-				blendA = 1.0f - blend;
+				blendA = 1.0 - blend;
 				blendB = blend;
 			}
 
 			Quaternion result = new Quaternion(blendA * q1.Xyz + blendB * q2.Xyz, blendA * q1.W + blendB * q2.W);
-			if (result.LengthSquared > 0.0f)
+			if (result.LengthSquared > 0.0)
 				return Normalize(result);
 			else
 				return Identity;
@@ -692,7 +743,7 @@ namespace MatterHackers.VectorMath
 		/// <returns>A hash code formed from the bitwise XOR of this objects members.</returns>
 		public override int GetHashCode()
 		{
-			return new { Xyz.x, Xyz.y, Xyz.z, W }.GetHashCode();
+			return new { Xyz.X, Xyz.Y, Xyz.Z, W }.GetHashCode();
 		}
 
 		#endregion public override int GetHashCode ()

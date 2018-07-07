@@ -7,12 +7,12 @@ namespace MatterHackers.Agg
 		[Flags]
 		public enum FlagsAndCommand
 		{
-			CommandStop = 0x00,
-			CommandMoveTo = 0x01,
-			CommandLineTo = 0x02,
-			CommandCurve3 = 0x03,
-			CommandCurve4 = 0x04,
-			CommandEndPoly = 0x0F,
+			Stop = 0x00,
+			MoveTo = 0x01,
+			LineTo = 0x02,
+			Curve3 = 0x03,
+			Curve4 = 0x04,
+			EndPoly = 0x0F,
 			CommandsMask = 0x0F,
 
 			FlagNone = 0x00,
@@ -24,55 +24,55 @@ namespace MatterHackers.Agg
 
 		public static bool is_vertex(FlagsAndCommand c)
 		{
-			return c >= FlagsAndCommand.CommandMoveTo
-				&& c < FlagsAndCommand.CommandEndPoly;
+			return c >= FlagsAndCommand.MoveTo
+				&& c < FlagsAndCommand.EndPoly;
 		}
 
 		public static bool is_drawing(FlagsAndCommand c)
 		{
-			return c >= FlagsAndCommand.CommandLineTo && c < FlagsAndCommand.CommandEndPoly;
+			return c >= FlagsAndCommand.LineTo && c < FlagsAndCommand.EndPoly;
 		}
 
 		public static bool is_stop(FlagsAndCommand c)
 		{
-			return c == FlagsAndCommand.CommandStop;
+			return c == FlagsAndCommand.Stop;
 		}
 
 		public static bool is_move_to(FlagsAndCommand c)
 		{
-			return c == FlagsAndCommand.CommandMoveTo;
+			return c == FlagsAndCommand.MoveTo;
 		}
 
 		public static bool is_line_to(FlagsAndCommand c)
 		{
-			return c == FlagsAndCommand.CommandLineTo;
+			return c == FlagsAndCommand.LineTo;
 		}
 
 		public static bool is_curve(FlagsAndCommand c)
 		{
-			return c == FlagsAndCommand.CommandCurve3
-				|| c == FlagsAndCommand.CommandCurve4;
+			return c == FlagsAndCommand.Curve3
+				|| c == FlagsAndCommand.Curve4;
 		}
 
 		public static bool is_curve3(FlagsAndCommand c)
 		{
-			return c == FlagsAndCommand.CommandCurve3;
+			return c == FlagsAndCommand.Curve3;
 		}
 
 		public static bool is_curve4(FlagsAndCommand c)
 		{
-			return c == FlagsAndCommand.CommandCurve4;
+			return c == FlagsAndCommand.Curve4;
 		}
 
 		public static bool is_end_poly(FlagsAndCommand c)
 		{
-			return (c & FlagsAndCommand.CommandsMask) == FlagsAndCommand.CommandEndPoly;
+			return (c & FlagsAndCommand.CommandsMask) == FlagsAndCommand.EndPoly;
 		}
 
 		public static bool is_close(FlagsAndCommand c)
 		{
 			return (c & ~(FlagsAndCommand.FlagCW | FlagsAndCommand.FlagCCW)) ==
-				   (FlagsAndCommand.CommandEndPoly | FlagsAndCommand.FlagClose);
+				   (FlagsAndCommand.EndPoly | FlagsAndCommand.FlagClose);
 		}
 
 		public static bool is_next_poly(FlagsAndCommand c)

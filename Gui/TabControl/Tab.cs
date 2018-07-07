@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2017, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,99 +28,90 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.Diagnostics;
 
 namespace MatterHackers.Agg.UI
 {
-	public class SimpleTextTabWidget : Tab
+	public class TextTab : ThreeViewTab
 	{
-		public SimpleTextTabWidget(TabPage tabPageControledByTab, string internalTabName)
-			: this(tabPageControledByTab, internalTabName, 12, RGBA_Bytes.DarkGray, RGBA_Bytes.White, RGBA_Bytes.Black, RGBA_Bytes.White)
+		public TextTab(TabPage tabPage, string internalTabName)
+			: this(tabPage, internalTabName, 12, Color.DarkGray, Color.White, Color.Black, Color.White)
 		{
 		}
 
-		public SimpleTextTabWidget(TabPage tabPageControledByTab, string internalTabName, double pointSize,
-			RGBA_Bytes selectedTextColor, RGBA_Bytes selectedBackgroundColor,
-			RGBA_Bytes normalTextColor, RGBA_Bytes normalBackgroundColor)
-			: base(internalTabName, new GuiWidget(), new GuiWidget(), new GuiWidget(), tabPageControledByTab)
+		public TextTab(TabPage tabPage, string internalTabName, double pointSize,
+			Color selectedTextColor, Color selectedBackgroundColor,
+			Color normalTextColor, Color normalBackgroundColor, int fixedSize = 40, bool useUnderlineStyling = false)
+			: base(internalTabName, new GuiWidget(), new GuiWidget(), new GuiWidget(), tabPage)
 		{
-			AddText(tabPageControledByTab.Text, selectedWidget, selectedTextColor, selectedBackgroundColor, pointSize);
-			AddText(tabPageControledByTab.Text, normalWidget, normalTextColor, normalBackgroundColor, pointSize);
-			//hoverWidget;
+			this.Padding = 0;
+			this.Margin = 0;
 
-			tabPageControledByTab.TextChanged += new EventHandler(tabPageControledByTab_TextChanged);
+			normalWidget.HAnchor = HAnchor.Fit;
+			normalWidget.Padding = new BorderDouble(10);
 
-			SetBoundsToEncloseChildren();
+			selectedWidget.HAnchor = HAnchor.Fit;
+			selectedWidget.Padding = new BorderDouble(10, 0);
+
+			AddText(tabPage.Text, selectedWidget, selectedTextColor, selectedBackgroundColor, pointSize, true, fixedSize, useUnderlineStyling);
+			AddText(tabPage.Text, normalWidget, normalTextColor, normalBackgroundColor, pointSize, false, fixedSize, useUnderlineStyling);
+
+			// Bind changes on TabPage.Text to ensure 
+			tabPage.TextChanged += (s, e) =>
+			{
+				if (s is GuiWidget widget)
+				{
+					normalWidget.Children[0].Text = widget.Text;
+					selectedWidget.Children[0].Text = widget.Text;
+				}
+			};
+
+			this.HAnchor = HAnchor.Fit;
+			this.VAnchor = VAnchor.Fit;
 		}
 
-		public override void OnMouseDown(MouseEventArgs mouseEvent)
+		private void AddText(string tabText, GuiWidget viewWidget, Color textColor, Color backgroundColor, double pointSize, bool isActive, int fixedSize, bool useUnderlineStyling)
 		{
-			OnSelected(mouseEvent);
+			var tabTitle = new TextWidget(tabText, pointSize: pointSize, textColor: textColor)
+			{
+				VAnchor = VAnchor.Center,
+				AutoExpandBoundsToText = true,
+			};
+			viewWidget.AddChild(tabTitle);
 
-			base.OnMouseDown(mouseEvent);
-		}
+			viewWidget.Selectable = false;
+			viewWidget.BackgroundColor = backgroundColor;
 
-		private void tabPageControledByTab_TextChanged(object sender, EventArgs e)
-		{
-			normalWidget.Children[0].Text = ((GuiWidget)sender).Text;
-			normalWidget.SetBoundsToEncloseChildren();
-			selectedWidget.Children[0].Text = ((GuiWidget)sender).Text;
-			selectedWidget.SetBoundsToEncloseChildren();
-			SetBoundsToEncloseChildren();
-		}
-
-		public TextWidget tabTitle;
-
-		private void AddText(string tabText, GuiWidget widgetState, RGBA_Bytes textColor, RGBA_Bytes backgroundColor, double pointSize)
-		{
-			tabTitle = new TextWidget(tabText, pointSize: pointSize, textColor: textColor);
-			tabTitle.AutoExpandBoundsToText = true;
-			widgetState.AddChild(tabTitle);
-			widgetState.Selectable = false;
-			widgetState.SetBoundsToEncloseChildren();
-			widgetState.BackgroundColor = backgroundColor;
+			EnforceSizingAdornActive(viewWidget, isActive, useUnderlineStyling, fixedSize);
 		}
 	}
 
-	public abstract class Tab : GuiWidget
+	public abstract class ThreeViewTab : Tab
 	{
-		private RGBA_Bytes backgroundColor = new RGBA_Bytes(230, 230, 230);
+		public static int UnderlineHeight { get; set; } = 2;
 
 		protected GuiWidget normalWidget;
 		protected GuiWidget hoverWidget;
 		protected GuiWidget selectedWidget;
 
-		public event EventHandler Selected;
-
-		public Tab(string tabName, GuiWidget normalWidget, GuiWidget hoverWidget, GuiWidget pressedWidget,
-			TabPage tabPage)
+		public ThreeViewTab(string tabName, GuiWidget normalWidget, GuiWidget hoverWidget, GuiWidget selectedWidget, TabPage tabPage)
+			: base (tabName, tabPage)
 		{
-			base.Name = tabName;
 			this.normalWidget = normalWidget;
 			this.hoverWidget = hoverWidget;
-			this.selectedWidget = pressedWidget;
+			this.selectedWidget = selectedWidget;
+
 			AddChild(normalWidget);
 			AddChild(hoverWidget);
+			AddChild(selectedWidget);
+
 			hoverWidget.Visible = false;
-			AddChild(pressedWidget);
-			pressedWidget.Visible = false;
-			Padding = new BorderDouble(5, 3, 20, 3);
-			this.TabPage = tabPage;
-			SetBoundsToEncloseChildren();
+			selectedWidget.Visible = false;
+
+			this.VAnchor = VAnchor.Fit;
+			this.HAnchor = HAnchor.Fit;
 		}
 
-		public override void OnParentChanged(EventArgs e)
-		{
-			TabBarContaningTab.TabIndexChanged += SelectionChanged;
-			base.OnParentChanged(e);
-		}
-
-		public virtual void OnSelected(EventArgs e)
-		{
-			Selected?.Invoke(this, e);
-		}
-
-		public void SelectionChanged(object sender, EventArgs e)
+		protected override void OnTabIndexChanged()
 		{
 			if (TabBarContaningTab != null)
 			{
@@ -139,12 +130,92 @@ namespace MatterHackers.Agg.UI
 					selectedWidget.Visible = false;
 				}
 			}
+
+			base.OnTabIndexChanged();
 		}
 
-		public TabBar TabBarContaningTab
+		protected static void EnforceSizingAdornActive(GuiWidget viewWidget, bool isActive, bool useUnderlineStyle, int controlHeight = 40, int controlMargin = 0)
 		{
-			get { return (TabBar)Parent; }
+			viewWidget.Height = controlHeight;
+			viewWidget.Margin = controlMargin;
+
+			if (isActive && useUnderlineStyle)
+			{
+				// Adorn the active tab with a underline bar
+				viewWidget.AddChild(new GuiWidget()
+				{
+					HAnchor = HAnchor.Stretch,
+					Height = UnderlineHeight,
+					BackgroundColor = ActiveTheme.Instance.PrimaryAccentColor,
+					VAnchor = VAnchor.Bottom
+				});
+			}
 		}
+	}
+
+	public abstract class Tab : GuiWidget
+	{
+		public event EventHandler Selected;
+
+		private bool registerListener = true;
+
+		public Tab(string tabName, TabPage tabPage)
+		{
+			this.Name = tabName;
+			this.Padding = new BorderDouble(5, 3, 20, 3);
+			this.TabPage = tabPage;
+
+			this.VAnchor = VAnchor.Fit;
+			this.HAnchor = HAnchor.Fit;
+		}
+
+		public virtual void OnSelected(EventArgs e)
+		{
+			Selected?.Invoke(this, e);
+		}
+
+		public void Select()
+		{
+			OnSelected(null);
+		}
+
+		public override void OnMouseDown(MouseEventArgs mouseEvent)
+		{
+			OnSelected(mouseEvent);
+			base.OnClick(mouseEvent);
+		}
+
+		public override void OnParentChanged(EventArgs e)
+		{
+			if (registerListener)
+			{
+				TabBarContaningTab.TabIndexChanged += TabBarContaningTab_TabIndexChanged;
+				registerListener = false;
+			}
+
+			base.OnParentChanged(e);
+		}
+
+		private void TabBarContaningTab_TabIndexChanged(object sender, EventArgs e)
+		{
+			this.OnTabIndexChanged();
+		}
+
+		public override void OnClosed(ClosedEventArgs e)
+		{
+			if (this.TabBarContaningTab != null)
+			{
+				this.TabBarContaningTab.TabIndexChanged -= TabBarContaningTab_TabIndexChanged;
+			}
+
+			base.OnClosed(e);
+		}
+
+		protected virtual void OnTabIndexChanged()
+		{
+		}
+
+		public TabBar TabBarContaningTab => Parent as TabBar;
 
 		public TabPage TabPage { get; }
 	}

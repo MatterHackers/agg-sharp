@@ -59,7 +59,7 @@ namespace MatterHackers.Agg.Image
 
 		byte[] GetBuffer();
 
-		RGBA_Bytes GetPixel(int x, int y);
+		Color GetPixel(int x, int y);
 
 		void copy_pixel(int x, int y, byte[] c, int ByteOffset);
 
@@ -67,31 +67,31 @@ namespace MatterHackers.Agg.Image
 
 		void CopyFrom(IImageByte sourceImage, RectangleInt sourceImageRect, int destXOffset, int destYOffset);
 
-		void SetPixel(int x, int y, RGBA_Bytes color);
+		void SetPixel(int x, int y, Color color);
 
-		void BlendPixel(int x, int y, RGBA_Bytes sourceColor, byte cover);
+		void BlendPixel(int x, int y, Color sourceColor, byte cover);
 
 		// line stuff
-		void copy_hline(int x, int y, int len, RGBA_Bytes sourceColor);
+		void copy_hline(int x, int y, int len, Color sourceColor);
 
-		void copy_vline(int x, int y, int len, RGBA_Bytes sourceColor);
+		void copy_vline(int x, int y, int len, Color sourceColor);
 
-		void blend_hline(int x, int y, int x2, RGBA_Bytes sourceColor, byte cover);
+		void blend_hline(int x, int y, int x2, Color sourceColor, byte cover);
 
-		void blend_vline(int x, int y1, int y2, RGBA_Bytes sourceColor, byte cover);
+		void blend_vline(int x, int y1, int y2, Color sourceColor, byte cover);
 
 		// color stuff
-		void copy_color_hspan(int x, int y, int len, RGBA_Bytes[] colors, int colorIndex);
+		void copy_color_hspan(int x, int y, int len, Color[] colors, int colorIndex);
 
-		void copy_color_vspan(int x, int y, int len, RGBA_Bytes[] colors, int colorIndex);
+		void copy_color_vspan(int x, int y, int len, Color[] colors, int colorIndex);
 
-		void blend_solid_hspan(int x, int y, int len, RGBA_Bytes sourceColor, byte[] covers, int coversIndex);
+		void blend_solid_hspan(int x, int y, int len, Color sourceColor, byte[] covers, int coversIndex);
 
-		void blend_solid_vspan(int x, int y, int len, RGBA_Bytes sourceColor, byte[] covers, int coversIndex);
+		void blend_solid_vspan(int x, int y, int len, Color sourceColor, byte[] covers, int coversIndex);
 
-		void blend_color_hspan(int x, int y, int len, RGBA_Bytes[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll);
+		void blend_color_hspan(int x, int y, int len, Color[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll);
 
-		void blend_color_vspan(int x, int y, int len, RGBA_Bytes[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll);
+		void blend_color_vspan(int x, int y, int len, Color[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll);
 	}
 
 	public interface IImageFloat : IImage
@@ -108,7 +108,7 @@ namespace MatterHackers.Agg.Image
 
 		float[] GetBuffer();
 
-		RGBA_Floats GetPixel(int x, int y);
+		ColorF GetPixel(int x, int y);
 
 		void copy_pixel(int x, int y, float[] c, int floatOffset);
 
@@ -116,30 +116,30 @@ namespace MatterHackers.Agg.Image
 
 		void CopyFrom(IImageFloat sourceImage, RectangleInt sourceImageRect, int destXOffset, int destYOffset);
 
-		void SetPixel(int x, int y, RGBA_Floats color);
+		void SetPixel(int x, int y, ColorF color);
 
-		void BlendPixel(int x, int y, RGBA_Floats sourceColor, byte cover);
+		void BlendPixel(int x, int y, ColorF sourceColor, byte cover);
 
 		// line stuff
-		void copy_hline(int x, int y, int len, RGBA_Floats sourceColor);
+		void copy_hline(int x, int y, int len, ColorF sourceColor);
 
-		void copy_vline(int x, int y, int len, RGBA_Floats sourceColor);
+		void copy_vline(int x, int y, int len, ColorF sourceColor);
 
-		void blend_hline(int x, int y, int x2, RGBA_Floats sourceColor, byte cover);
+		void blend_hline(int x, int y, int x2, ColorF sourceColor, byte cover);
 
-		void blend_vline(int x, int y1, int y2, RGBA_Floats sourceColor, byte cover);
+		void blend_vline(int x, int y1, int y2, ColorF sourceColor, byte cover);
 
 		// color stuff
-		void copy_color_hspan(int x, int y, int len, RGBA_Floats[] colors, int colorIndex);
+		void copy_color_hspan(int x, int y, int len, ColorF[] colors, int colorIndex);
 
-		void copy_color_vspan(int x, int y, int len, RGBA_Floats[] colors, int colorIndex);
+		void copy_color_vspan(int x, int y, int len, ColorF[] colors, int colorIndex);
 
-		void blend_solid_hspan(int x, int y, int len, RGBA_Floats sourceColor, byte[] covers, int coversIndex);
+		void blend_solid_hspan(int x, int y, int len, ColorF sourceColor, byte[] covers, int coversIndex);
 
-		void blend_solid_vspan(int x, int y, int len, RGBA_Floats sourceColor, byte[] covers, int coversIndex);
+		void blend_solid_vspan(int x, int y, int len, ColorF sourceColor, byte[] covers, int coversIndex);
 
-		void blend_color_hspan(int x, int y, int len, RGBA_Floats[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll);
+		void blend_color_hspan(int x, int y, int len, ColorF[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll);
 
-		void blend_color_vspan(int x, int y, int len, RGBA_Floats[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll);
+		void blend_color_vspan(int x, int y, int len, ColorF[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll);
 	}
 }

@@ -27,7 +27,6 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.Font;
 using System;
 using System.Collections.Generic;
 
@@ -38,10 +37,9 @@ namespace MatterHackers.Agg.UI
 	{
 		private Dictionary<string, TabPage> tabPages = new Dictionary<string, TabPage>();
 
-		private StyledTypeFace typeFaceStyle = new StyledTypeFace(LiberationSansFont.Instance, 12);
 		private TabBar tabBar;
 
-		public TabBar TabBar { get { return tabBar; } }
+		public TabBar TabBar => tabBar;
 
 		private Orientation orientation;
 
@@ -56,13 +54,13 @@ namespace MatterHackers.Agg.UI
 					case Orientation.Horizontal:
 						FlowDirection = UI.FlowDirection.TopToBottom;
 						tabBar.FlowDirection = FlowDirection.LeftToRight;
-						tabBar.HAnchor = UI.HAnchor.ParentLeft | UI.HAnchor.ParentRight;
+						tabBar.HAnchor = UI.HAnchor.Left | UI.HAnchor.Right;
 						break;
 
 					case Orientation.Vertical:
 						FlowDirection = UI.FlowDirection.LeftToRight;
 						tabBar.FlowDirection = FlowDirection.TopToBottom;
-						tabBar.VAnchor = VAnchor.ParentTop | VAnchor.ParentBottom;
+						tabBar.VAnchor = VAnchor.Top | VAnchor.Bottom;
 						break;
 
 					default:
@@ -71,18 +69,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override void OnDraw(Graphics2D graphics2D)
-		{
-			// If no selection exists by the first draw, select index 0 if applicable
-			if (SelectedTabIndex == -1 && tabPages.Count > 0)
-			{
-				SelectedTabIndex = 0;
-			}
-
-			base.OnDraw(graphics2D);
-		}
-
-		public TabControl(Orientation orientation = Orientation.Horizontal)
+		public TabControl(Orientation orientation = Orientation.Horizontal, GuiWidget separator = null)
 		{
 			AnchorAll();
 
@@ -91,11 +78,28 @@ namespace MatterHackers.Agg.UI
 			tabBar = new TabBar(FlowDirection.LeftToRight, tabPageArea);
 			
 			base.AddChild(tabBar);
+
+			if (separator != null)
+			{
+				base.AddChild(separator);
+			}
+
 			base.AddChild(tabPageArea);
 
 			tabPageArea.AnchorAll();
 
 			this.Orientation = orientation;
+		}
+
+		public override void OnLoad(EventArgs args)
+		{
+			// If no selection exists by the first draw, select index 0 if applicable
+			if (SelectedTabIndex == -1 && tabPages.Count > 0)
+			{
+				SelectedTabIndex = 0;
+			}
+
+			base.OnLoad(args);
 		}
 
 		public override void AddChild(GuiWidget child, int indexInChildrenList = -1)
@@ -133,8 +137,7 @@ namespace MatterHackers.Agg.UI
 				throw new IndexOutOfRangeException();
 			}
 
-			Tab tab = (Tab)tabBar.Children[index];
-			if (tab != null)
+			if (tabBar.Children[index] is Tab tab)
 			{
 				return tab.TabPage;
 			}
@@ -153,14 +156,15 @@ namespace MatterHackers.Agg.UI
 
 		public int TabCount => tabPages.Count;
 
+		public int TextPointSize { get; set; }
+
 		public void SelectTab(int index)
 		{
 			Tab foundTab = null;
 			int tabCount = 0;
 			foreach (GuiWidget child in tabBar.Children)
 			{
-				Tab tab = child as Tab;
-				if (tab != null)
+				if (child is Tab tab)
 				{
 					foundTab = tab;
 					if (tabCount == index)
@@ -187,34 +191,21 @@ namespace MatterHackers.Agg.UI
 
 		public void AddTab(TabPage tabPageWidget, string internalTabName)
 		{
-			Tab newTab = new SimpleTextTabWidget(tabPageWidget, internalTabName);
-			AddTab(newTab);
+			AddTab(new TextTab(tabPageWidget, internalTabName));
 		}
 
-		public void AddTab(Tab newTab)
+		public void AddTab(Tab newTab, int tabPosition = -1)
 		{
-			TabPage tabPageWidget = newTab.TabPage;
+			var tabPage = newTab.TabPage;
 
 			// Use name, not text
-			tabPages.Add(newTab.Name, tabPageWidget);
+			tabPages.Add(newTab.Name, tabPage);
 
-			switch (Orientation)
-			{
-				case Orientation.Horizontal:
-					newTab.VAnchor = VAnchor.ParentCenter;
-					break;
+			tabBar.AddChild(newTab, tabPosition);
 
-				case Orientation.Vertical:
-					newTab.HAnchor = HAnchor.ParentLeft | HAnchor.ParentRight;
-					break;
-			}
+			tabBar.TabPageContainer.AddChild(tabPage);
 
-			tabBar.AddChild(newTab);
-
-			tabBar.TabPageContainer.AddChild(tabPageWidget);
-
-			tabPageWidget.Visible = false;
+			tabPage.Visible = false;
 		}
 	}
 }
- 

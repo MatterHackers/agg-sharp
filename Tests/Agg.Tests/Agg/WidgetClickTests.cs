@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2016, John Lewin
+Copyright (c) 2017, John Lewin, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,407 +31,224 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.Agg.UI;
-using MatterHackers.Agg.UI.Tests;
 using MatterHackers.GuiAutomation;
+using MatterHackers.VectorMath;
 using NUnit.Framework;
 
 namespace MatterHackers.Agg.Tests
 {
-	[TestFixture, Category("Agg.UI"), RunInApplicationDomain]
+	[TestFixture, Category("Agg.UI"), RunInApplicationDomain, Apartment(ApartmentState.STA)]
 	public class WidgetClickTests
 	{
-		GuiWidget lastClicked = null;
-
-		[Test, Apartment(ApartmentState.STA)]
+		[Test]
 		public async Task ClickFiresOnCorrectWidgets()
 		{
-			int blueClickCount = 0;
-			int orangeClickCount = 0;
-			int purpleClickCount = 0;
+			var testWindow = new ClickTestsWindow(300, 200);
 
-			lastClicked = null;
+			await AutomationRunner.ShowWindowAndExecuteTests(
+				testWindow,
+				(testRunner) =>
+				{
+					testRunner.ClickByName("blueWidget");
+					testRunner.Delay(.1);
+					Assert.AreEqual(1, testWindow.BlueWidget.ClickCount, "Unexpected click count on blue widget");
+					Assert.AreEqual(0, testWindow.OrangeWidget.ClickCount, "Unexpected click count on orange widget");
+					Assert.AreEqual(0, testWindow.PurpleWidget.ClickCount, "Unexpected click count on purple widget");
 
-			double waitTime = .5;
+					testRunner.ClickByName("orangeWidget");
+					testRunner.Delay(.1);
+					Assert.AreEqual(1, testWindow.BlueWidget.ClickCount, "Unexpected click count on blue widget");
+					Assert.AreEqual(1, testWindow.OrangeWidget.ClickCount, "Unexpected click count on orange widget");
+					Assert.AreEqual(0, testWindow.PurpleWidget.ClickCount, "Unexpected click count on purple widget");
 
-			AutomationTest testToRun = (testRunner) =>
-			{
-				testRunner.Delay(2);
-				testRunner.ClickByName("rootClickable", 5);
-				testRunner.Delay(waitTime);
+					testRunner.ClickByName("blueWidget");
+					testRunner.Delay(.1);
+					Assert.AreEqual(2, testWindow.BlueWidget.ClickCount, "Unexpected click count on blue widget");
+					Assert.AreEqual(1, testWindow.OrangeWidget.ClickCount, "Unexpected click count on orange widget");
+					Assert.AreEqual(0, testWindow.PurpleWidget.ClickCount, "Unexpected click count on purple widget");
 
-				Assert.AreEqual(blueClickCount, 1, "Expected 1 click on blue widget");
-				Assert.AreEqual(orangeClickCount, 0, "Expected 0 clicks on orange widget");
-				Assert.AreEqual(purpleClickCount, 0, "Expected 1 click on purple widget");
+					testRunner.ClickByName("orangeWidget");
+					testRunner.Delay(.1);
+					Assert.AreEqual(2, testWindow.BlueWidget.ClickCount, "Unexpected click count on root widget");
+					Assert.AreEqual(2, testWindow.OrangeWidget.ClickCount, "Unexpected click count on orange widget");
+					Assert.AreEqual(0, testWindow.PurpleWidget.ClickCount, "Unexpected click count on purple widget");
 
-				testRunner.ClickByName("orangeClickable", 1);
-				testRunner.Delay(waitTime);
-				Assert.AreEqual(blueClickCount, 1, "Expected 1 click on blue widget");
-				Assert.AreEqual(orangeClickCount, 1, "Expected 1 clicks on orange widget");
-				Assert.AreEqual(purpleClickCount, 0, "Expected 0 click on purple widget");
+					testRunner.ClickByName("purpleWidget");
+					testRunner.Delay(.1);
+					Assert.AreEqual(2, testWindow.BlueWidget.ClickCount, "Unexpected click count on blue widget");
+					Assert.AreEqual(2, testWindow.OrangeWidget.ClickCount, "Unexpected click count on orange widget");
+					Assert.AreEqual(1, testWindow.PurpleWidget.ClickCount, "Unexpected click count on purple widget");
 
-				testRunner.ClickByName("rootClickable", 1);
-				testRunner.Delay(waitTime);
-				Assert.AreEqual(blueClickCount, 2, "Expected 1 click on blue widget");
-				Assert.AreEqual(orangeClickCount, 1, "Expected 0 clicks on orange widget");
-				Assert.AreEqual(purpleClickCount, 0, "Expected 1 click on purple widget");
-
-				testRunner.ClickByName("orangeClickable", 1);
-				testRunner.Delay(waitTime);
-				Assert.AreEqual(blueClickCount, 2, "Expected 1 click on root widget");
-				Assert.AreEqual(orangeClickCount, 2, "Expected 2 clicks on orange widget");
-				Assert.AreEqual(purpleClickCount, 0, "Expected 0 click on purple widget");
-
-				testRunner.ClickByName("purpleClickable", 1);
-				testRunner.Delay(waitTime);
-				Assert.AreEqual(blueClickCount, 2, "Expected 1 click on blue widget");
-				Assert.AreEqual(orangeClickCount, 2, "Expected 2 clicks on orange widget");
-				Assert.AreEqual(purpleClickCount, 1, "Expected 1 click on purple widget");
-
-				return Task.FromResult(0);
-			};
-
-			SystemWindow systemWindow = new SystemWindow(300, 200)
-			{
-				Padding = new BorderDouble(20)
-			};
-
-			var rootClickable = new GuiWidget()
-			{
-				Width = 50,
-				HAnchor = HAnchor.ParentLeftRight,
-				VAnchor = VAnchor.ParentBottomTop,
-				Margin = new BorderDouble(50),
-				Name = "rootClickable",
-				BackgroundColor = RGBA_Bytes.Blue
-			};
-			rootClickable.Click += (sender, e) =>
-			{
-				var widget = sender as GuiWidget;
-				blueClickCount += 1;
-				var color = rootClickable.BackgroundColor.AdjustSaturation(0.4);
-				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
-				lastClicked = rootClickable;
-			};
-			rootClickable.AfterDraw += widget_DrawSelection;
-
-			var orangeClickable = new GuiWidget()
-			{
-				Width = 35,
-				Height = 25,
-				OriginRelativeParent = new VectorMath.Vector2(10, 10),
-				Name = "orangeClickable",
-				Margin = new BorderDouble(10),
-				BackgroundColor = RGBA_Bytes.Orange
-			};
-			orangeClickable.Click += (sender, e) =>
-			{
-				var widget = sender as GuiWidget;
-				orangeClickCount += 1;
-
-				var color = widget.BackgroundColor.AdjustSaturation(0.4);
-				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
-				lastClicked = widget;
-			};
-			orangeClickable.AfterDraw += widget_DrawSelection;
-			rootClickable.AddChild(orangeClickable);
-
-			var purpleClickable = new GuiWidget()
-			{
-				Width = 35,
-				Height = 25,
-				OriginRelativeParent = new VectorMath.Vector2(0, 10),
-				HAnchor = HAnchor.ParentRight,
-				Name = "purpleClickable",
-				Margin = new BorderDouble(10),
-				BackgroundColor = new RGBA_Bytes(141, 0, 206)
-			};
-			purpleClickable.Click += (sender, e) =>
-			{
-				var widget = sender as GuiWidget;
-
-				purpleClickCount += 1;
-
-				var color = widget.BackgroundColor.AdjustSaturation(0.4);
-				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
-				lastClicked = widget;
-			};
-			purpleClickable.AfterDraw += widget_DrawSelection;
-			rootClickable.AddChild(purpleClickable);
-
-			systemWindow.AddChild(rootClickable);
-
-			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 25);
+					return Task.CompletedTask;
+				});
 		}
 
-		[Test, Apartment(ApartmentState.STA)]
-		public void ClickSuppressedOnExternalMouseUp()
+		[Test]
+		public async Task ClickSuppressedOnExternalMouseUp()
 		{
-			int rootClickCount = 0;
-			int childClickCount = 0;
+			var testWindow = new ClickTestsWindow(300, 200);
+			var bounds = testWindow.BlueWidget.BoundsRelativeToParent;
+			var mouseDownPosition = new Vector2(bounds.Left + 25, bounds.Bottom + 4);
 
-			lastClicked = null;
-
-			var systemWindow = new TestHostWindow(300, 200)
-			{
-				Padding = new BorderDouble(20),
-				BackgroundColor = RGBA_Bytes.Gray
-			};
-
-			var rootClickable = new GuiWidget()
-			{
-				Width = 50,
-				HAnchor = HAnchor.ParentLeftRight,
-				VAnchor = VAnchor.ParentBottomTop,
-				Margin = new BorderDouble(50),
-				Name = "rootClickable",
-				BackgroundColor = RGBA_Bytes.Blue
-			};
-			rootClickable.Click += (sender, e) =>
-			{
-				var widget = sender as GuiWidget;
-
-				rootClickCount += 1;
-				var color = widget.BackgroundColor.AdjustSaturation(0.4);
-				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
-				lastClicked = widget;
-
-			};
-			rootClickable.AfterDraw += widget_DrawSelection;
-
-			var childClickable = new GuiWidget()
-			{
-				Width = 35,
-				Height = 25,
-				OriginRelativeParent = new VectorMath.Vector2(20, 15),
-				Name = "childClickable",
-				Margin = new BorderDouble(10),
-				BackgroundColor = RGBA_Bytes.Orange
-			};
-			childClickable.Click += (sender, e) =>
-			{
-				var widget = sender as GuiWidget;
-				childClickCount += 1;
-
-				var color = widget.BackgroundColor.AdjustSaturation(0.4);
-				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
-				lastClicked = widget;
-			};
-			childClickable.AfterDraw += widget_DrawSelection;
-
-			rootClickable.AddChild(childClickable);
-			systemWindow.AddChild(rootClickable);
-
-			var bounds = rootClickable.BoundsRelativeToParent;
-			double x = bounds.Left + 25;
-			double y = bounds.Bottom + 8;
-
-			UiThread.RunOnIdle((Action)(async () =>
-			{
-				try
+			await AutomationRunner.ShowWindowAndExecuteTests(
+				testWindow,
+				(testRunner) =>
 				{
 					MouseEventArgs mouseEvent;
-					AutomationRunner testRunner = new AutomationRunner();
 
-					// Click should occur on mouse[down/up] within the controls bounds
-					{
-						// Move to a position within rootClickable for mousedown
-						mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, x, y, 0);
-						testRunner.SetMouseCursorPosition(systemWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
-						systemWindow.OnMouseDown(mouseEvent);
-						await Task.Delay(1000);
+					// ** Click should occur on mouse[down/up] within the controls bounds **
+					//
+					// Move to a position within the blueWidget for mousedown
+					mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, mouseDownPosition.X, mouseDownPosition.Y, 0);
+					testRunner.SetMouseCursorPosition(testWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
+					testWindow.OnMouseDown(mouseEvent);
 
-						// Move to a position within rootClickable for mouseup
-						mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, x + 119, y + 40, 0);
-						testRunner.SetMouseCursorPosition(systemWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
-						systemWindow.OnMouseUp(mouseEvent);
-						await Task.Delay(1000);
+					// Move to a position within blueWidget for mouseup
+					mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, bounds.Center.X, bounds.Center.Y, 0);
+					testRunner.SetMouseCursorPosition(testWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
+					testWindow.OnMouseUp(mouseEvent);
 
-						Assert.IsTrue(rootClickCount == 1, "Expected 1 click on root widget");
-					}
+					Assert.AreEqual(1, testWindow.BlueWidget.ClickCount, "Expected 1 click on root widget");
 
-					lastClicked = null;
-					systemWindow.BackgroundColor = RGBA_Bytes.Gray;
-					await Task.Delay(1000);
+					// ** Click should not occur when mouse up is outside of the control bounds **
+					//
+					// Move to a position within BlueWidget for mousedown
+					mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, mouseDownPosition.X, mouseDownPosition.Y, 0);
+					testRunner.SetMouseCursorPosition(testWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
+					testWindow.OnMouseDown(mouseEvent);
 
-					// Click should not occur when mouse up is outside of the control bounds
-					{
-						// Move to a position within rootClickable for mousedown
-						mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, x, y, 0);
-						testRunner.SetMouseCursorPosition(systemWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
-						systemWindow.OnMouseDown(mouseEvent);
-						await Task.Delay(1000);
+					// Move to a position **outside** of BlueWidget for mouseup
+					mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, 50, 50, 0);
+					testRunner.SetMouseCursorPosition(testWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
+					testWindow.OnMouseUp(mouseEvent);
 
-						// Move to a position **outside** of rootClickable for mouseup
-						mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, 50, 50, 0);
-						testRunner.SetMouseCursorPosition(systemWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
-						systemWindow.OnMouseUp(mouseEvent);
-						await Task.Delay(1000);
+					// There should be no increment in the click count
+					Assert.AreEqual(1, testWindow.BlueWidget.ClickCount, "Expected 1 click on root widget");
 
-						// There should be no increment in the click count
-						Assert.IsTrue(rootClickCount == 1, "Expected 1 click on root widget");
-					}
-				}
-				catch (Exception ex)
-				{
-					systemWindow.ErrorMessage = ex.Message;
-					systemWindow.TestsPassed = false;
-				}
-
-				UiThread.RunOnIdle(systemWindow.Close, 1);
-
-			}), 1);
-			systemWindow.ShowAsSystemWindow();
-
-			Assert.IsTrue(systemWindow.TestsPassed, systemWindow.ErrorMessage);
+					return Task.CompletedTask;
+				});
 		}
 
-		[Test, Apartment(ApartmentState.STA)]
-		public void ClickSuppressedOnMouseUpWithinChild()
+		[Test]
+		public async Task ClickSuppressedOnMouseUpWithinChild2()
 		{
 			// Agg currently fires mouse up events in child controls when the parent has the mouse captured
 			// and is performing drag like operations. If the mouse goes down in the parent and comes up on the child
 			// neither control should get a click event
 
-			int rootClickCount = 0;
-			int childClickCount = 0;
+			var testWindow = new ClickTestsWindow(300, 200);
+			var bounds = testWindow.BlueWidget.BoundsRelativeToParent;
+			var mouseDownPosition = new Vector2(bounds.Left + 25, bounds.Bottom + 4);
 
-			lastClicked = null;
+			var childBounds = testWindow.OrangeWidget.BoundsRelativeToParent;
+			double childX = bounds.Left + childBounds.Center.X;
+			double childY = bounds.Bottom + childBounds.Center.Y;
 
-			var systemWindow = new TestHostWindow(300, 200)
-			{
-				Padding = new BorderDouble(20),
-				BackgroundColor = RGBA_Bytes.Gray,
-				Name = "System Window",
-			};
-
-			var rootClickable = new GuiWidget()
-			{
-				Width = 50,
-				HAnchor = HAnchor.ParentLeftRight,
-				VAnchor = VAnchor.ParentBottomTop,
-				Margin = new BorderDouble(50),
-				Name = "rootClickable",
-				BackgroundColor = RGBA_Bytes.Blue
-			};
-			rootClickable.Click += (sender, e) =>
-			{
-				var widget = sender as GuiWidget;
-
-				rootClickCount += 1;
-				var color = widget.BackgroundColor.AdjustSaturation(0.4);
-				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
-				lastClicked = widget;
-
-			};
-			rootClickable.AfterDraw += widget_DrawSelection;
-
-			var childClickable = new GuiWidget()
-			{
-				Width = 35,
-				Height = 25,
-				OriginRelativeParent = new VectorMath.Vector2(20, 15),
-				Name = "childClickable",
-				Margin = new BorderDouble(10),
-				BackgroundColor = RGBA_Bytes.Orange
-			};
-			childClickable.Click += (sender, e) =>
-			{
-				var widget = sender as GuiWidget;
-				childClickCount += 1;
-
-				var color = widget.BackgroundColor.AdjustSaturation(0.4);
-				systemWindow.BackgroundColor = color.GetAsRGBA_Bytes();
-				lastClicked = widget;
-			};
-			childClickable.AfterDraw += widget_DrawSelection;
-
-			rootClickable.AddChild(childClickable);
-			systemWindow.AddChild(rootClickable);
-
-			var bounds = rootClickable.BoundsRelativeToParent;
-			double x = bounds.Left + 25;
-			double y = bounds.Bottom + 8;
-
-			var childBounds = childClickable.BoundsRelativeToParent;
-			double childX = bounds.Left + childBounds.Left + 16;
-			double childY = bounds.Bottom + childBounds.Bottom + 10;
-
-			UiThread.RunOnIdle((Action)(async () =>
-			{
-				try
+			await AutomationRunner.ShowWindowAndExecuteTests(
+				testWindow,
+				(testRunner) =>
 				{
 					MouseEventArgs mouseEvent;
-					AutomationRunner testRunner = new AutomationRunner();
 
-					// Click should occur on mouse[down/up] within the controls bounds
-					{
-						// Move to a position within rootClickable for mousedown
-						mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, x, y, 0);
-						testRunner.SetMouseCursorPosition(systemWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
-						systemWindow.OnMouseDown(mouseEvent);
-						await Task.Delay(1000);
+					// ** Click should occur on mouse[down/up] within the controls bounds **
+					//
+					// Move to a position within BlueWidget for mousedown
+					mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, mouseDownPosition.X, mouseDownPosition.Y, 0);
+					testRunner.SetMouseCursorPosition(testWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
+					testWindow.OnMouseDown(mouseEvent);
 
-						// Move to a position within rootClickable for mouseup
-						mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, x + 119, y + 40, 0);
-						testRunner.SetMouseCursorPosition(systemWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
-						systemWindow.OnMouseUp(mouseEvent);
-						await Task.Delay(1000);
+					// Move to a position within BlueWidget for mouseup
+					mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, bounds.Center.X, bounds.Center.Y, 0);
+					testRunner.SetMouseCursorPosition(testWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
+					testWindow.OnMouseUp(mouseEvent);
 
-						Assert.IsTrue(rootClickCount == 1, "Expected 1 click on root widget");
-					}
+					Assert.AreEqual(1, testWindow.BlueWidget.ClickCount, "Expected 1 click on root widget");
 
-					lastClicked = null;
-					systemWindow.BackgroundColor = RGBA_Bytes.Gray;
-					await Task.Delay(1000);
+					// ** Click should not occur when mouse up occurs on child controls **
+					//
+					// Move to a position within BlueWidget for mousedown
+					mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, mouseDownPosition.X, mouseDownPosition.Y, 0);
+					testRunner.SetMouseCursorPosition(testWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
+					testWindow.OnMouseDown(mouseEvent);
 
-					// Click should not occur when mouse up occurs on child controls
-					{
-						// Move to a position within rootClickable for mousedown
-						mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, x, y, 0);
-						testRunner.SetMouseCursorPosition(systemWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
-						systemWindow.OnMouseDown(mouseEvent);
-						await Task.Delay(1000);
+					// Move to a position with the OrangeWidget for mouseup
+					mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, childX, childY, 0);
+					testRunner.SetMouseCursorPosition(testWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
+					testWindow.OnMouseUp(mouseEvent);
 
-						// Move to a position with the childClickable for mouseup
-						mouseEvent = new MouseEventArgs(MouseButtons.Left, 1, childX, childY, 0);
-						testRunner.SetMouseCursorPosition(systemWindow, (int)mouseEvent.X, (int)mouseEvent.Y);
-						systemWindow.OnMouseUp(mouseEvent);
-						await Task.Delay(1000);
-
-						// There should be no increment in the click count
-						Assert.IsTrue(rootClickCount == 1, "Expected click count to not increment on mouse up within child control");
-					}
-				}
-				catch(Exception ex)
-				{
-					systemWindow.ErrorMessage = ex.Message;
-					systemWindow.TestsPassed = false;
-				}
-
-				UiThread.RunOnIdle(systemWindow.Close, 1);
-
-			}), 1);
-			systemWindow.ShowAsSystemWindow();
-
-			Assert.IsTrue(systemWindow.TestsPassed, systemWindow.ErrorMessage);
-
+					// There should be no increment in the click count
+					Assert.AreEqual(1, testWindow.BlueWidget.ClickCount, "Expected click count to not increment on mouse up within child control");
+					
+					return Task.CompletedTask;
+				});
 		}
 
-		private class TestHostWindow : SystemWindow
+		// Test SystemWindow with three clickable controls
+		private class ClickTestsWindow : SystemWindow
 		{
-			public TestHostWindow(double width, double height) : base (width, height)
+			private GuiWidget lastClicked = null;
+
+			public ClickableWidget BlueWidget { get; }
+			public ClickableWidget OrangeWidget { get; }
+			public ClickableWidget PurpleWidget { get; }
+
+			public ClickTestsWindow(double width, double height) : base(width, height)
 			{
+				this.Padding = 50;
+
+				// A clickable widget containing child controls
+				this.BlueWidget = new ClickableWidget()
+				{
+					Name = "blueWidget",
+					HAnchor = HAnchor.Stretch,
+					VAnchor = VAnchor.Fit | VAnchor.Center,
+					BackgroundColor = Color.Blue,
+					Padding = 8
+				};
+				this.BlueWidget.Click += Widget_Click;
+				this.AddChild(BlueWidget);
+
+				// A clickable child control
+				this.OrangeWidget = new ClickableWidget()
+				{
+					Name = "orangeWidget",
+					HAnchor = HAnchor.Left,
+					BackgroundColor = Color.Orange
+				};
+				this.OrangeWidget.Click += Widget_Click;
+				this.BlueWidget.AddChild(OrangeWidget);
+
+				// A clickable child control
+				this.PurpleWidget = new ClickableWidget()
+				{
+					Name = "purpleWidget",
+					HAnchor = HAnchor.Right,
+					BackgroundColor = new Color(141, 0, 206)
+				};
+				this.PurpleWidget.Click += Widget_Click;
+				this.BlueWidget.AddChild(PurpleWidget);
 			}
 
-			public bool TestsPassed { get; set; } = true;
-			public string ErrorMessage { get; set; }
-		}
-
-		private void widget_DrawSelection(Object drawingWidget, DrawEventArgs e)
-		{
-			if (lastClicked == drawingWidget)
+			// Default click event listener which updates lastClicked and increments widget.ClickCount
+			private void Widget_Click(object sender, MouseEventArgs e)
 			{
-				e.graphics2D.Rectangle(((GuiWidget)drawingWidget).LocalBounds, RGBA_Bytes.White);
+				if (sender is ClickableWidget clickWidget)
+				{
+					clickWidget.ClickCount += 1;
+					lastClicked = clickWidget;
+				}
+			}
+
+			// Test class with a default size and a field to track click counts
+			public class ClickableWidget : GuiWidget
+			{
+				public int ClickCount { get; set; } = 0;
+
+				public ClickableWidget()
+				{
+					this.Width = 35;
+					this.Height = 25;
+				}
 			}
 		}
 	}

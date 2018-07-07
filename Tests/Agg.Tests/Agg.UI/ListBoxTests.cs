@@ -69,17 +69,17 @@ namespace MatterHackers.Agg.UI.Tests
 				itemToAddToList.Name = "list item";
 				containerListBox.AddChild(itemToAddToList);
 				containerListBox.DoubleBuffer = true;
-				containerListBox.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+				containerListBox.BackBuffer.NewGraphics2D().Clear(Color.White);
 				containerListBox.OnDraw(containerListBox.BackBuffer.NewGraphics2D());
 
 				ImageBuffer textImage = new ImageBuffer(80, 16);
-				textImage.NewGraphics2D().Clear(RGBA_Bytes.White);
+				textImage.NewGraphics2D().Clear(Color.White);
 				textImage.NewGraphics2D().DrawString("test Item", 1, 1);
 
 				OutputImage(containerListBox.BackBuffer, "test.tga");
 				OutputImage(textImage, "control.tga");
 
-				double maxError = 20000000;
+				double maxError = 30000000;
 				Vector2 bestPosition;
 				double leastSquares;
 				containerListBox.BackBuffer.FindLeastSquaresMatch(textImage, out bestPosition, out leastSquares, maxError);
@@ -90,15 +90,15 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				GuiWidget container = new GuiWidget(202, 302);
 				container.DoubleBuffer = true;
-				container.NewGraphics2D().Clear(RGBA_Bytes.White);
+				container.NewGraphics2D().Clear(Color.White);
 				FlowLayoutWidget leftToRightLayout = new FlowLayoutWidget();
 				leftToRightLayout.AnchorAll();
 				{
 					{
 						ListBox listBox = new ListBox(new RectangleDouble(0, 0, 200, 300));
-						//listBox.BackgroundColor = RGBA_Bytes.Red;
+						//listBox.BackgroundColor = Color.Red;
 						listBox.Name = "listBox";
-						listBox.VAnchor = UI.VAnchor.ParentTop;
+						listBox.VAnchor = UI.VAnchor.Top;
 						listBox.ScrollArea.Margin = new BorderDouble(15);
 						leftToRightLayout.AddChild(listBox);
 
@@ -115,7 +115,7 @@ namespace MatterHackers.Agg.UI.Tests
 				container.OnDraw(container.NewGraphics2D());
 
 				ImageBuffer textImage = new ImageBuffer(80, 16);
-				textImage.NewGraphics2D().Clear(RGBA_Bytes.White);
+				textImage.NewGraphics2D().Clear(Color.White);
 				textImage.NewGraphics2D().DrawString("hand0.stl", 1, 1);
 
 				OutputImage(container.BackBuffer, "control.tga");
@@ -136,9 +136,9 @@ namespace MatterHackers.Agg.UI.Tests
 			GuiWidget contents = new GuiWidget(300, 300);
 			contents.DoubleBuffer = true;
 			ListBox container = new ListBox(new RectangleDouble(0, 0, 200, 300));
-			//container.BackgroundColor = RGBA_Bytes.Red;
+			//container.BackgroundColor = Color.Red;
 			container.Name = "containerListBox";
-			container.VAnchor = UI.VAnchor.ParentTop;
+			container.VAnchor = UI.VAnchor.Top;
 			container.Margin = new BorderDouble(15);
 
 			contents.AddChild(container);
@@ -147,7 +147,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			contents.OnDraw(contents.NewGraphics2D());
 
-			Assert.IsTrue(container.TopLeftOffset.y == 0);
+			Assert.IsTrue(container.TopLeftOffset.Y == 0);
 		}
 
 		private static void AddContents(GuiWidget widgetToAddItemsTo)
@@ -155,13 +155,13 @@ namespace MatterHackers.Agg.UI.Tests
 			string[] listItems = new string[] { "Item1", "Item2", "Item3", "Item4" };
 
 			widgetToAddItemsTo.Padding = new BorderDouble(5);
-			widgetToAddItemsTo.BackgroundColor = new RGBA_Bytes(68, 68, 68);
+			widgetToAddItemsTo.BackgroundColor = new Color(68, 68, 68);
 
 			//Get a list of printer records and add them to radio button list
 			foreach (string listItem in listItems)
 			{
 				TextWidget textItem = new TextWidget(listItem);
-				textItem.BackgroundColor = RGBA_Bytes.Blue;
+				textItem.BackgroundColor = Color.Blue;
 				textItem.Margin = new BorderDouble(2);
 				widgetToAddItemsTo.AddChild(textItem);
 			}

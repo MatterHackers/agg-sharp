@@ -27,8 +27,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg.Image;
 using System;
+using MatterHackers.Agg.Image;
 
 namespace MatterHackers.Agg.UI
 {
@@ -37,6 +37,8 @@ namespace MatterHackers.Agg.UI
 		private ImageBuffer image;
 
 		public bool ForcePixelAlignment { get; set; }
+
+		public bool AutoResize { get; set; } = true;
 
 		public ImageWidget(int width, int height)
 		{
@@ -56,27 +58,33 @@ namespace MatterHackers.Agg.UI
 
 		private void ImageChanged(object s, EventArgs e)
 		{
-			this.Width = image.Width;
-			this.Height = image.Height;
+			if (AutoResize)
+			{
+				this.Width = image.Width;
+				this.Height = image.Height;
+			}
 			Invalidate();
 		}
 
 		public ImageBuffer Image
 		{
-			get
-			{
-				return image;
-			}
-
+			get  => image;
 			set
 			{
-				if(image != null)
+				if (image != value)
 				{
-					image.ImageChanged -= ImageChanged;
+					if (image != null)
+					{
+						image.ImageChanged -= ImageChanged;
+					}
+					image = value;
+					image.ImageChanged += ImageChanged;
+					if (AutoResize)
+					{
+						LocalBounds = new RectangleDouble(0, 0, image.Width, image.Height);
+					}
+					Invalidate();
 				}
-				image = value;
-				image.ImageChanged += ImageChanged;
-				LocalBounds = new RectangleDouble(0, 0, image.Width, image.Height);
 			}
 		}
 
@@ -95,6 +103,16 @@ namespace MatterHackers.Agg.UI
 				graphics2D.Render(image, -pixelAlignXAdjust, -pixelAlignYAdjust);
 			}
 			base.OnDraw(graphics2D);
+		}
+
+		public override void OnClosed(ClosedEventArgs e)
+		{
+			if (this.Image != null)
+			{
+				this.Image.ImageChanged -= ImageChanged;
+			}
+
+			base.OnClosed(e);
 		}
 	}
 }

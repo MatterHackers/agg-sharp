@@ -45,7 +45,7 @@ namespace MatterHackers.Agg
 		// and just for fun lets also draw a circle
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			graphics2D.Circle(320, 100, 50, RGBA_Bytes.Blue);
+			graphics2D.Circle(320, 100, 50, Color.Blue);
 			base.OnDraw(graphics2D);
 		}
 

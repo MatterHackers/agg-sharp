@@ -41,14 +41,14 @@ namespace MatterHackers.GCodeVisualizer
 	{
 		private float extrusionVolumeMm3;
 		private float layerHeight;
-		private RGBA_Bytes color;
+		private Color color;
 
-		public RenderFeatureExtrusion(Vector3 start, Vector3 end, int extruderIndex, double travelSpeed, double totalExtrusionMm, double filamentDiameterMm, double layerHeight, RGBA_Bytes color)
+		public RenderFeatureExtrusion(Vector3 start, Vector3 end, int extruderIndex, double travelSpeed, double totalExtrusionMm, double filamentDiameterMm, double layerHeight, Color color)
 			: base(start, end, extruderIndex, travelSpeed)
 		{
 			this.color = color;
-            double fillamentRadius = filamentDiameterMm / 2;
-			double areaSquareMm = (fillamentRadius * fillamentRadius) * Math.PI;
+            double filamentRadius = filamentDiameterMm / 2;
+			double areaSquareMm = (filamentRadius * filamentRadius) * Math.PI;
 
 			this.extrusionVolumeMm3 = (float)(areaSquareMm * totalExtrusionMm);
 			this.layerHeight = (float)layerHeight;
@@ -107,7 +107,7 @@ namespace MatterHackers.GCodeVisualizer
 			{
 				double extrusionLineWidths = GetExtrusionWidth(renderInfo.CurrentRenderType) * 2 * renderInfo.LayerScale;
 
-				RGBA_Bytes extrusionColor = RGBA_Bytes.Black;
+				Color extrusionColor = Color.Black;
 				if (extruderIndex > 0)
 				{
 					extrusionColor = MeshViewerWidget.GetMaterialColor(extruderIndex + 1);
@@ -119,7 +119,7 @@ namespace MatterHackers.GCodeVisualizer
 
                 if (renderInfo.CurrentRenderType.HasFlag(RenderType.TransparentExtrusion))
                 {
-                    extrusionColor = new RGBA_Bytes(extrusionColor, 200);
+                    extrusionColor = new Color(extrusionColor, 200);
                 }
 
                 // render the part using opengl
@@ -138,7 +138,7 @@ namespace MatterHackers.GCodeVisualizer
 				}
 				else
 				{
-					PathStorage pathStorage = new PathStorage();
+					VertexStorage pathStorage = new VertexStorage();
 					VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(pathStorage, renderInfo.Transform);
 					Stroke stroke = new Stroke(transformedPathStorage, extrusionLineWidths/2);
 
@@ -148,8 +148,8 @@ namespace MatterHackers.GCodeVisualizer
 					Vector3Float start = this.GetStart(renderInfo);
 					Vector3Float end = this.GetEnd(renderInfo);
 
-					pathStorage.Add(start.x, start.y, ShapePath.FlagsAndCommand.CommandMoveTo);
-					pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.CommandLineTo);
+					pathStorage.Add(start.x, start.y, ShapePath.FlagsAndCommand.MoveTo);
+					pathStorage.Add(end.x, end.y, ShapePath.FlagsAndCommand.LineTo);
 
 					graphics2D.Render(stroke, 0, extrusionColor);
 				}

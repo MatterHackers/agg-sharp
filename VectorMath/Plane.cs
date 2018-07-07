@@ -50,10 +50,50 @@ namespace MatterHackers.VectorMath
 			this.DistanceToPlaneFromOrigin = Vector3.Dot(PlaneNormal, point0);
 		}
 
+		public override string ToString()
+		{
+			return $"D:{DistanceToPlaneFromOrigin:0.###} V:x{PlaneNormal.X:0.###}, y{PlaneNormal.Y:0.###}, z{PlaneNormal.Z:0.###}";
+		}
+
 		public Plane(Vector3 planeNormal, Vector3 pointOnPlane)
 		{
 			this.PlaneNormal = planeNormal.GetNormal();
 			this.DistanceToPlaneFromOrigin = Vector3.Dot(planeNormal, pointOnPlane);
+		}
+
+		public double this[int index]
+		{
+			get
+			{
+				switch (index)
+				{
+					case 0:
+					case 1:
+					case 2:
+						return PlaneNormal[index];
+
+					default:
+						return DistanceToPlaneFromOrigin;
+				}
+			}
+
+			set
+			{
+				switch (index)
+				{
+					case 0:
+					case 1:
+					case 2:
+						Vector3 normal = PlaneNormal;
+						normal[index] = value;
+						PlaneNormal = normal;
+						break;
+
+					default:
+						DistanceToPlaneFromOrigin = value;
+						break;
+				}
+			}
 		}
 
 		public override bool Equals(object obj)
@@ -85,8 +125,50 @@ namespace MatterHackers.VectorMath
 
 		public double GetDistanceFromPlane(Vector3 positionToCheck)
 		{
-			double distanceToPointFromOrigin = Vector3.Dot(positionToCheck, PlaneNormal);
-			return distanceToPointFromOrigin - DistanceToPlaneFromOrigin;
+			double distanceToPosition = Vector3.Dot(PlaneNormal, positionToCheck);
+			return distanceToPosition - DistanceToPlaneFromOrigin;
+		}
+
+		/// <summary>
+		/// Modify the start and end points so they fall on the normal side of the plane.
+		/// </summary>
+		/// <param name="startPoint"></param>
+		/// <param name="endPoint"></param>
+		/// <returns>Returns true if any part of the line is on the normal side of the plane else false.</returns>
+		public bool ClipLine(ref Vector3 startPoint, ref Vector3 endPoint)
+		{
+			double startDistance = GetDistanceFromPlane(startPoint);
+			double endDistance = GetDistanceFromPlane(endPoint);
+
+			if(startDistance < 0)
+			{
+				if(endDistance < 0)
+				{
+					// both points are behind the plane
+					return false;
+				}
+
+				// the start point must be clipped
+				// get the normal in the direction of the start point
+				Vector3 lineDirection = startPoint - endPoint;
+				double lineLength = lineDirection.Length;
+				Vector3 lineNormal = lineDirection / lineLength;
+				double startClipRatio = startDistance / (endDistance - startDistance);
+				startPoint = startPoint + lineNormal * (lineLength * startClipRatio);
+			}
+			else if(endDistance < 0)
+			{
+				// the end point must be clipped
+				// get the normal in the direction of the start point
+				Vector3 lineDirection = endPoint - startPoint;
+				double lineLength = lineDirection.Length;
+				Vector3 lineNormal = lineDirection / lineLength;
+				double endClipRatio = endDistance / (startDistance - endDistance);
+				endPoint = endPoint + lineNormal * (lineLength * endClipRatio);
+			}
+
+			// both points in front of the plane
+			return true;
 		}
 
 		public bool Equals(Plane control, double normalError, double lengthError)
@@ -105,13 +187,13 @@ namespace MatterHackers.VectorMath
 			Vector3 planeNormal = inputPlane.PlaneNormal;
 			double distanceToPlane = inputPlane.DistanceToPlaneFromOrigin;
 
-			Plane outputPlan = new Plane();
-			outputPlan.PlaneNormal = Vector3.TransformNormal(planeNormal, matrix);
+			Plane outputPlane = new Plane();
+			outputPlane.PlaneNormal = Vector3.TransformVector(planeNormal, matrix).GetNormal();
 			Vector3 pointOnPlane = planeNormal * distanceToPlane;
 			Vector3 pointOnTransformedPlane = Vector3.Transform(pointOnPlane, matrix);
-			outputPlan.DistanceToPlaneFromOrigin = Vector3.Dot(outputPlan.PlaneNormal, pointOnTransformedPlane);
+			outputPlane.DistanceToPlaneFromOrigin = Vector3.Dot(outputPlane.PlaneNormal, pointOnTransformedPlane);
 
-			return outputPlan;
+			return outputPlane;
 		}
 
 		public double GetDistanceToIntersection(Ray ray, out bool inFront)
@@ -173,6 +255,18 @@ namespace MatterHackers.VectorMath
 
 			distanceToHit = distanceToPlaneFromRayOrigin / normalDotRayDirection;
 			return true;
+		}
+
+		public void Normalize()
+		{
+			Normalize(ref this);
+		}
+
+		public static void Normalize(ref Plane plane)
+		{
+			double length = plane.PlaneNormal.Length;
+			plane.PlaneNormal = plane.PlaneNormal / length;
+			plane.DistanceToPlaneFromOrigin /= length;
 		}
 
 		public bool LineHitPlane(Vector3 start, Vector3 end, out Vector3 intersectionPosition)

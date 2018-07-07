@@ -50,8 +50,8 @@ namespace MatterHackers.Agg.UI
 		public MenuItem(GuiWidget viewItem, string value = null)
 		{
 			Value = value;
-			HAnchor = HAnchor.ParentLeftRight | HAnchor.FitToChildren;
-			VAnchor = VAnchor.FitToChildren;
+			HAnchor = HAnchor.Stretch | HAnchor.Fit;
+			VAnchor = VAnchor.Fit;
 			AddChild(viewItem);
 		}
 

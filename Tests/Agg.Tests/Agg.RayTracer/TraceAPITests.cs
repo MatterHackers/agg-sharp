@@ -27,14 +27,88 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using MatterHackers.RayTracer.Traceable;
 using MatterHackers.VectorMath;
 using NUnit.Framework;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace MatterHackers.RayTracer
 {
 	[TestFixture, Category("Agg.RayTracer")]
 	public class TraceAPITests
 	{
+		[Test]
+		public void EnumerateBvh()
+		{
+			// create a bvh hierarchy
+			var level4_a = new TriangleShape(new Vector3(0, 0, 1), new Vector3(0, 0, 3), new Vector3(0, 1, 2), null);
+			var level4_b = new TriangleShape(new Vector3(0, 0, 11), new Vector3(0, 0, 13), new Vector3(0, 1, 12), null);
+			var level4_c = new TriangleShape(new Vector3(3, 0, 1), new Vector3(3, 0, 3), new Vector3(3, 1, 2), null);
+			var level3_a = new UnboundCollection(new List<IPrimitive>() { level4_a, level4_b, level4_c });
+			var level3_b = new TriangleShape(new Vector3(43, 0, 1), new Vector3(43, 0, 3), new Vector3(43, 1, 2), null);
+			var level2_a = new Transform(level3_a, Matrix4X4.CreateTranslation(0, 0, 40));
+			var level2_b = new Transform(level3_b, Matrix4X4.CreateTranslation(0, 40, 0));
+			var level1 = new UnboundCollection(new List<IPrimitive>() { level2_a, level2_b });
+			var root = new Transform(level1);
+
+			// enumerate it and check it
+			Assert.AreEqual(9, new BvhIterator(root).Count());
+
+			int count = 0;
+			foreach(var item in new BvhIterator(root))
+			{
+				switch(count++)
+				{
+					case 0:
+						Assert.IsTrue(item.Bvh is Transform);
+						Assert.AreEqual(0, item.Depth);
+						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 0), item.TransformToWorld);
+						break;
+					case 1:
+						Assert.IsTrue(item.Bvh is UnboundCollection);
+						Assert.AreEqual(1, item.Depth);
+						Assert.AreEqual(Matrix4X4.CreateTranslation(0,0,0), item.TransformToWorld);
+						break;
+					case 2:
+						Assert.IsTrue(item.Bvh is Transform);
+						Assert.AreEqual(2, item.Depth);
+						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 0), item.TransformToWorld);
+						break;
+					case 3:
+						Assert.IsTrue(item.Bvh is UnboundCollection);
+						Assert.AreEqual(3, item.Depth);
+						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
+						break;
+					case 4:
+						Assert.IsTrue(item.Bvh is TriangleShape);
+						Assert.AreEqual(4, item.Depth);
+						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
+						break;
+					case 5:
+						Assert.IsTrue(item.Bvh is TriangleShape);
+						Assert.AreEqual(4, item.Depth);
+						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
+						break;
+					case 6:
+						Assert.IsTrue(item.Bvh is TriangleShape);
+						Assert.AreEqual(4, item.Depth);
+						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 40), item.TransformToWorld);
+						break;
+					case 7:
+						Assert.IsTrue(item.Bvh is Transform);
+						Assert.AreEqual(2, item.Depth);
+						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 0, 0), item.TransformToWorld);
+						break;
+					case 8:
+						Assert.IsTrue(item.Bvh is TriangleShape);
+						Assert.AreEqual(3, item.Depth);
+						Assert.AreEqual(Matrix4X4.CreateTranslation(0, 40, 0), item.TransformToWorld);
+						break;
+				}
+			}
+		}
+
 		[Test]
 		public void PlaneGetDistanceToIntersection()
 		{

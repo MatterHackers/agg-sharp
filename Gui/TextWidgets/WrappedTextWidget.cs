@@ -35,42 +35,60 @@ namespace MatterHackers.Agg.UI
 	public class WrappedTextWidget : GuiWidget
 	{
 		private String unwrappedText;
-		private TextWidget textWidget;
+		public TextWidget TextWidget { get; }
 		private double pointSize;
 		private double wrappedWidth = -1;
 
 		public WrappedTextWidget(string text, double pointSize = 12, Justification justification = Justification.Left,
-			RGBA_Bytes textColor = new RGBA_Bytes(), bool ellipsisIfClipped = true, bool underline = false, RGBA_Bytes backgroundColor = new RGBA_Bytes(), bool doubleBufferText = true)
+			Color textColor = new Color(), bool ellipsisIfClipped = true, bool underline = false, Color backgroundColor = new Color(), bool doubleBufferText = true)
 		{
-			this.pointSize = pointSize;
-			textWidget = new TextWidget("", 0, 0, pointSize, justification, textColor, ellipsisIfClipped, underline, backgroundColor)
+			using (this.LayoutLock())
 			{
-				DoubleBuffer = doubleBufferText,
-			};
-			textWidget.AutoExpandBoundsToText = true;
-			textWidget.HAnchor = HAnchor.ParentLeft;
-			textWidget.VAnchor = VAnchor.ParentCenter;
-			unwrappedText = text;
-			HAnchor = HAnchor.ParentLeftRight;
-			VAnchor = VAnchor.FitToChildren;
-			AddChild(textWidget);
+				this.pointSize = pointSize;
+				TextWidget = new TextWidget("", 0, 0, pointSize, justification, textColor, ellipsisIfClipped, underline, backgroundColor)
+				{
+					DoubleBuffer = doubleBufferText,
+				};
+				TextWidget.AutoExpandBoundsToText = true;
+				TextWidget.HAnchor = HAnchor.Left;
+				TextWidget.VAnchor = VAnchor.Center | VAnchor.Fit;
+				unwrappedText = text;
+				HAnchor = HAnchor.Stretch;
+				VAnchor = VAnchor.Fit;
+				AddChild(TextWidget);
+			}
+
+			this.PerformLayout();
 		}
 
-		public RGBA_Bytes TextColor
+		public Color TextColor
 		{
-			get { return textWidget.TextColor; }
-			set { textWidget.TextColor = value; }
+			get { return TextWidget.TextColor; }
+			set { TextWidget.TextColor = value; }
 		}
 
 		public bool DrawFromHintedCache
 		{
 			get
 			{
-				return textWidget.Printer.DrawFromHintedCache;
+				return TextWidget.Printer.DrawFromHintedCache;
 			}
 			set
 			{
-				textWidget.Printer.DrawFromHintedCache = value;
+				TextWidget.Printer.DrawFromHintedCache = value;
+			}
+		}
+
+		public override string Text
+		{
+			get => unwrappedText;
+			set
+			{
+				if (unwrappedText != value)
+				{
+					unwrappedText = value;
+					this.AdjustTextWrap();
+				}
 			}
 		}
 
@@ -80,19 +98,20 @@ namespace MatterHackers.Agg.UI
 			{
 				AdjustTextWrap();
 			}
+
 			base.OnBoundsChanged(e);
 		}
 
 		private void AdjustTextWrap()
 		{
-			if (textWidget != null)
+			if (TextWidget != null)
 			{
 				if (Width > 0)
 				{
-					EnglishTextWrapping wrapper = new EnglishTextWrapping(textWidget.Printer.TypeFaceStyle.EmSizeInPoints);
+					EnglishTextWrapping wrapper = new EnglishTextWrapping(TextWidget.Printer.TypeFaceStyle.EmSizeInPoints);
 					string wrappedMessage = wrapper.InsertCRs(unwrappedText, Width);
 					wrappedWidth = Width;
-					textWidget.Text = wrappedMessage;
+					TextWidget.Text = wrappedMessage;
 				}
 			}
 		}

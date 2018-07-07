@@ -59,24 +59,24 @@ namespace MatterHackers.Agg.Font
 	{
 		private static StyledTypeFaceImageCache instance;
 
-		private Dictionary<TypeFace, Dictionary<RGBA_Bytes, Dictionary<double, Dictionary<char, ImageBuffer>>>> typeFaceImageCache = new Dictionary<TypeFace, Dictionary<RGBA_Bytes, Dictionary<double, Dictionary<char, ImageBuffer>>>>();
+		private Dictionary<TypeFace, Dictionary<Color, Dictionary<double, Dictionary<char, ImageBuffer>>>> typeFaceImageCache = new Dictionary<TypeFace, Dictionary<Color, Dictionary<double, Dictionary<char, ImageBuffer>>>>();
 
 		// private so you can't use it by accident (it is a singleton)
 		private StyledTypeFaceImageCache()
 		{
 		}
 
-		public static Dictionary<char, ImageBuffer> GetCorrectCache(TypeFace typeFace, RGBA_Bytes color, double emSizeInPoints)
+		public static Dictionary<char, ImageBuffer> GetCorrectCache(TypeFace typeFace, Color color, double emSizeInPoints)
 		{
-			lock(typeFace)
+			lock (typeFace)
 			{
 				// TODO: check if the cache is getting too big and if so prune it (or just delete it and start over).
 
-				Dictionary<RGBA_Bytes, Dictionary<double, Dictionary<char, ImageBuffer>>> foundTypeFaceColor;
+				Dictionary<Color, Dictionary<double, Dictionary<char, ImageBuffer>>> foundTypeFaceColor;
 				if (!Instance.typeFaceImageCache.TryGetValue(typeFace, out foundTypeFaceColor))
 				{
 					// add in the type face
-					foundTypeFaceColor = new Dictionary<RGBA_Bytes, Dictionary<double, Dictionary<char, ImageBuffer>>>();
+					foundTypeFaceColor = new Dictionary<Color, Dictionary<double, Dictionary<char, ImageBuffer>>>();
 					Instance.typeFaceImageCache.Add(typeFace, foundTypeFaceColor);
 				}
 
@@ -114,9 +114,9 @@ namespace MatterHackers.Agg.Font
 		}
 	}
 
-    public class StyledTypeFace
-    {
-        public TypeFace TypeFace { get; private set; }
+	public class StyledTypeFace
+	{
+		public TypeFace TypeFace { get; private set; }
 
 		private const int PointsPerInch = 72;
 		private const int PixelsPerInch = 96;
@@ -234,7 +234,7 @@ namespace MatterHackers.Agg.Font
 			}
 		}
 
-		public ImageBuffer GetImageForCharacter(char character, double xFraction, double yFraction, RGBA_Bytes color)
+		public ImageBuffer GetImageForCharacter(char character, double xFraction, double yFraction, Color color)
 		{
 			if (xFraction > 1 || xFraction < 0 || yFraction > 1 || yFraction < 0)
 			{
@@ -249,7 +249,7 @@ namespace MatterHackers.Agg.Font
 				return imageForCharacter;
 			}
 
-			IVertexSource glyphForCharacter = GetGlyphForCharacter(character);
+			IVertexSource glyphForCharacter = GetGlyphForCharacter(character, 1);
 			if (glyphForCharacter == null)
 			{
 				return null;
@@ -259,23 +259,21 @@ namespace MatterHackers.Agg.Font
 			double x, y;
 			ShapePath.FlagsAndCommand curCommand = glyphForCharacter.vertex(out x, out y);
 			RectangleDouble bounds = new RectangleDouble(x, y, x, y);
-			while (curCommand != ShapePath.FlagsAndCommand.CommandStop)
+			while (curCommand != ShapePath.FlagsAndCommand.Stop)
 			{
 				bounds.ExpandToInclude(x, y);
 				curCommand = glyphForCharacter.vertex(out x, out y);
 			}
 
-			int descentExtraHeight = (int)(-DescentInPixels + .5);
-			ImageBuffer charImage = new ImageBuffer(Math.Max((int)(bounds.Width + .5), 1) + 1, Math.Max((int)(EmSizeInPixels + descentExtraHeight + .5), 1) + 1, 32, new BlenderPreMultBGRA());
-			charImage.OriginOffset = new VectorMath.Vector2(0, descentExtraHeight);
+			ImageBuffer charImage = new ImageBuffer(Math.Max((int)(bounds.Width + .5), 1) + 1, Math.Max((int)Math.Ceiling(EmSizeInPixels + (-DescentInPixels) + .5), 1) + 1, 32, new BlenderPreMultBGRA());
 			Graphics2D graphics = charImage.NewGraphics2D();
-			graphics.Render(glyphForCharacter, xFraction, yFraction + descentExtraHeight, color);
+			graphics.Render(glyphForCharacter, xFraction, yFraction + (-DescentInPixels) + 1, color);
 			characterImageCache[character] = charImage;
 
 			return charImage;
 		}
 
-		public IVertexSource GetGlyphForCharacter(char character)
+		public IVertexSource GetGlyphForCharacter(char character, double resolutionScale = 1)
 		{
 			// scale it to the correct size.
 			IVertexSource sourceGlyph = TypeFace.GetGlyphForCharacter(character);
@@ -291,7 +289,10 @@ namespace MatterHackers.Agg.Font
 
 				if (FlatenCurves)
 				{
-					characterGlyph = new FlattenCurves(characterGlyph);
+					characterGlyph = new FlattenCurves(characterGlyph)
+					{
+						ResolutionScale = resolutionScale
+					};
 				}
 
 				return characterGlyph;

@@ -83,7 +83,7 @@ namespace MatterHackers.Agg.UI.Tests
 				ImageBuffer drawStringImage = new ImageBuffer(100, 20, 24, new BlenderBGR());
 				{
 					Graphics2D drawStringGraphics = drawStringImage.NewGraphics2D();
-					drawStringGraphics.Clear(RGBA_Bytes.White);
+					drawStringGraphics.Clear(Color.White);
 					drawStringGraphics.DrawString("test", 0, 0);
 					SaveImage(drawStringImage, "z draw string.tga");
 				}
@@ -92,7 +92,7 @@ namespace MatterHackers.Agg.UI.Tests
 				{
 					TextWidget textWidget = new TextWidget("test");
 					Graphics2D textWidgetGraphics = textWidgetImage.NewGraphics2D();
-					textWidgetGraphics.Clear(RGBA_Bytes.White);
+					textWidgetGraphics.Clear(Color.White);
 					textWidget.OnDraw(textWidgetGraphics);
 				}
 
@@ -104,7 +104,7 @@ namespace MatterHackers.Agg.UI.Tests
 				ImageBuffer drawStringOffsetImage = new ImageBuffer(100, 20);
 				{
 					Graphics2D drawStringGraphics = drawStringOffsetImage.NewGraphics2D();
-					drawStringGraphics.Clear(RGBA_Bytes.White);
+					drawStringGraphics.Clear(Color.White);
 					drawStringGraphics.DrawString("test", 23.3, 0);
 					SaveImage(drawStringOffsetImage, "z draw offset string.tga");
 				}
@@ -114,7 +114,7 @@ namespace MatterHackers.Agg.UI.Tests
 				{
 					TextWidget textWidget = new TextWidget("test", 23.3);
 					container.AddChild(textWidget);
-					container.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+					container.BackBuffer.NewGraphics2D().Clear(Color.White);
 					container.OnDraw(container.BackBuffer.NewGraphics2D());
 					SaveImage(container.BackBuffer, "z offset text widget.tga");
 				}
@@ -130,7 +130,7 @@ namespace MatterHackers.Agg.UI.Tests
 				ImageBuffer drawStringOffsetImage = new ImageBuffer(100, 20);
 				{
 					Graphics2D drawStringGraphics = drawStringOffsetImage.NewGraphics2D();
-					drawStringGraphics.Clear(RGBA_Bytes.White);
+					drawStringGraphics.Clear(Color.White);
 					drawStringGraphics.DrawString("test", 23.8, 0);
 					SaveImage(drawStringOffsetImage, "z draw offset string.tga");
 				}
@@ -143,7 +143,7 @@ namespace MatterHackers.Agg.UI.Tests
 				{
 					TextWidget textWidget = new TextWidget("test", 23.3);
 					container2.AddChild(textWidget);
-					container1.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+					container1.BackBuffer.NewGraphics2D().Clear(Color.White);
 					container1.OnDraw(container1.BackBuffer.NewGraphics2D());
 					SaveImage(container1.BackBuffer, "z offset text widget.tga");
 				}

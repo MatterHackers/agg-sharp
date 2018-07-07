@@ -37,11 +37,12 @@ using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Threading;
+using System.IO;
 
 namespace MatterHackers.Agg.UI.Tests
 {
 #if !__ANDROID__
-	[TestFixture, RunInApplicationDomain, Category("Agg.UI")]
+	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
 #endif
 	public class TextEditTests
 	{
@@ -51,7 +52,8 @@ namespace MatterHackers.Agg.UI.Tests
 		{
 			if (saveImagesForDebug)
 			{
-				ImageTgaIO.Save(imageToOutput, fileName);
+				var dirAndFileName = Path.Combine("C:/Temp", fileName);
+				ImageTgaIO.Save(imageToOutput, dirAndFileName);
 			}
 		}
 
@@ -80,13 +82,13 @@ namespace MatterHackers.Agg.UI.Tests
 			TextEditWidget editField1 = new TextEditWidget("", 0, 0, pixelWidth: 51);
 			container.AddChild(editField1);
 
-			// select the conrol and type something in it
+			// select the control and type something in it
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
 			SendKey(Keys.A, 'a', container);
 			Assert.IsTrue(editField1.Text == "a", "It should have a in it.");
 
-			// select the begining again and type something else in it
+			// select the beginning again and type something else in it
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0));
 			SendKey(Keys.B, 'b', container);
@@ -250,7 +252,7 @@ namespace MatterHackers.Agg.UI.Tests
 			container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
 			TextEditWidget editField1 = new TextEditWidget("Test", 10, 10, pixelWidth: 50);
 			container.AddChild(editField1);
-			container.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			container.BackBuffer.NewGraphics2D().Clear(Color.White);
 			container.OnDraw(container.BackBuffer.NewGraphics2D());
 			ImageBuffer beforeEditImage = new ImageBuffer(container.BackBuffer);
 			RectangleDouble beforeLocalBounds = editField1.LocalBounds;
@@ -280,7 +282,7 @@ namespace MatterHackers.Agg.UI.Tests
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0));
 			Assert.IsTrue(editField1.Focused == false);
 
-			container.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			container.BackBuffer.NewGraphics2D().Clear(Color.White);
 			container.OnDraw(container.BackBuffer.NewGraphics2D());
 			OutputImage(container.BackBuffer, "z text edited.tga");
 
@@ -338,15 +340,15 @@ namespace MatterHackers.Agg.UI.Tests
 				container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 5, 1, 0));
 				container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 5, 1, 0));
 				Assert.IsTrue(multiLine.ContainsFocus == true);
-				Assert.IsTrue(multiLine.InsertBarPosition.y == -32);
+				Assert.IsTrue(multiLine.InsertBarPosition.Y == -32);
 				SendKey(Keys.Home, ' ', container);
-				Assert.IsTrue(multiLine.InsertBarPosition.y == -32);
+				Assert.IsTrue(multiLine.InsertBarPosition.Y == -32);
 				Assert.IsTrue(multiLine.Text == "line1\nline2\nline3");
 				SendKey(Keys.A, 'a', container);
 				Assert.IsTrue(multiLine.Text == "line1\nline2\naline3");
 				SendKey(Keys.Back, ' ', container);
 				Assert.IsTrue(multiLine.Text == "line1\nline2\nline3");
-				Assert.IsTrue(multiLine.InsertBarPosition.y == -32);
+				Assert.IsTrue(multiLine.InsertBarPosition.Y == -32);
 				container.Close();
 			}
 
@@ -361,16 +363,16 @@ namespace MatterHackers.Agg.UI.Tests
 				container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0));
 				Assert.IsTrue(multiLine.ContainsFocus == true);
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 0);
-				Assert.IsTrue(multiLine.InsertBarPosition.x == 0);
+				Assert.IsTrue(multiLine.InsertBarPosition.X == 0);
 				SendKey(Keys.Home, ' ', container);
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 0);
-				Assert.IsTrue(multiLine.InsertBarPosition.x == 0);
+				Assert.IsTrue(multiLine.InsertBarPosition.X == 0);
 				SendKey(Keys.Right, ' ', container);
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 1);
-				double leftOne = multiLine.InsertBarPosition.x;
+				double leftOne = multiLine.InsertBarPosition.X;
 				SendKey(Keys.Right, ' ', container);
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 2);
-				Assert.IsTrue(multiLine.InsertBarPosition.x == leftOne * 2);
+				Assert.IsTrue(multiLine.InsertBarPosition.X == leftOne * 2);
 				container.Close();
 			}
 
@@ -387,37 +389,37 @@ namespace MatterHackers.Agg.UI.Tests
 				container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, multiLine.Height - 1, 0));
 
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 0);
-				Assert.IsTrue(multiLine.InsertBarPosition.y == 0);
+				Assert.IsTrue(multiLine.InsertBarPosition.Y == 0);
 
 				// move past \n
 				SendKey(Keys.Right, ' ', container);
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 1);
-				Assert.IsTrue(multiLine.InsertBarPosition.y == -16);
+				Assert.IsTrue(multiLine.InsertBarPosition.Y == -16);
 
 				// move past 1
 				SendKey(Keys.Right, ' ', container);
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 2);
-				Assert.IsTrue(multiLine.InsertBarPosition.y == -16);
+				Assert.IsTrue(multiLine.InsertBarPosition.Y == -16);
 
 				// move past \n
 				SendKey(Keys.Right, ' ', container);
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 3);
-				Assert.IsTrue(multiLine.InsertBarPosition.y == -32);
+				Assert.IsTrue(multiLine.InsertBarPosition.Y == -32);
 
 				// move past \n
 				SendKey(Keys.Right, ' ', container);
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 4);
-				Assert.IsTrue(multiLine.InsertBarPosition.y == -48);
+				Assert.IsTrue(multiLine.InsertBarPosition.Y == -48);
 
 				// move past 3
 				SendKey(Keys.Right, ' ', container);
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 5);
-				Assert.IsTrue(multiLine.InsertBarPosition.y == -48);
+				Assert.IsTrue(multiLine.InsertBarPosition.Y == -48);
 
 				// move past \n
 				SendKey(Keys.Right, ' ', container);
 				Assert.IsTrue(multiLine.CharIndexToInsertBefore == 6);
-				Assert.IsTrue(multiLine.InsertBarPosition.y == -64);
+				Assert.IsTrue(multiLine.InsertBarPosition.Y == -64);
 				container.Close();
 			}
 		}
@@ -435,7 +437,7 @@ namespace MatterHackers.Agg.UI.Tests
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, numberEdit.Height - 1, 0));
 
 			Assert.IsTrue(numberEdit.CharIndexToInsertBefore == 0);
-			Assert.IsTrue(numberEdit.TopLeftOffset.y == 0);
+			Assert.IsTrue(numberEdit.TopLeftOffset.Y == 0);
 
 			// type a . (non numeric character)
 			SendKey(Keys.Back, ' ', container);
@@ -455,7 +457,7 @@ namespace MatterHackers.Agg.UI.Tests
 #if (__ANDROID__)
 		[Test]
 #else
-		[Test, Apartment(ApartmentState.STA)]
+		[Test]
 #endif
 		public void TextEditingSpecialKeysWork()
 		{
@@ -469,7 +471,7 @@ namespace MatterHackers.Agg.UI.Tests
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 1, 1, textEdit.Height - 1, 0));
 
 			Assert.IsTrue(textEdit.CharIndexToInsertBefore == 0);
-			Assert.IsTrue(textEdit.TopLeftOffset.y == 0);
+			Assert.IsTrue(textEdit.TopLeftOffset.Y == 0);
 
 			Assert.IsTrue(textEdit.Text == "some starting text");
 			// this is to select some text
@@ -525,7 +527,7 @@ namespace MatterHackers.Agg.UI.Tests
 			bounds.Offset(bounds.Left, bounds.Bottom);
 			firstWordText.LocalBounds = bounds;
 
-			firstWordText.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			firstWordText.BackBuffer.NewGraphics2D().Clear(Color.White);
 			firstWordText.OnDraw(firstWordText.BackBuffer.NewGraphics2D());
 			TextWidget lastWordText = new TextWidget("string");
 
@@ -533,10 +535,10 @@ namespace MatterHackers.Agg.UI.Tests
 			bounds.Offset(bounds.Left, bounds.Bottom);
 			lastWordText.LocalBounds = bounds;
 
-			lastWordText.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
+			lastWordText.BackBuffer.NewGraphics2D().Clear(Color.White);
 			lastWordText.OnDraw(lastWordText.BackBuffer.NewGraphics2D());
-			container.BackBuffer.NewGraphics2D().Clear(RGBA_Bytes.White);
-			container.BackgroundColor = RGBA_Bytes.White;
+			container.BackBuffer.NewGraphics2D().Clear(Color.White);
+			container.BackgroundColor = Color.White;
 
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0));
 			container.OnMouseUp(new MouseEventArgs(MouseButtons.Left, 0, 1, 1, 0));
@@ -569,16 +571,16 @@ namespace MatterHackers.Agg.UI.Tests
 	}
 
 #if !__ANDROID__
-	[TestFixture, Category("Agg.UI"), RunInApplicationDomain]
+	[TestFixture, Category("Agg.UI"), Apartment(ApartmentState.STA), RunInApplicationDomain]
 	public class TextEditFocusTests
 	{
-		[Test, Apartment(ApartmentState.STA)]
+		[Test]
 		public async Task VerifyFocusMakesTextWidgetEditable()
 		{
 			TextEditWidget editField = null;
 			SystemWindow systemWindow = new SystemWindow(300, 200)
 			{
-				BackgroundColor = RGBA_Bytes.Black,
+				BackgroundColor = Color.Black,
 			};
 
 			AutomationTest testToRun = (testRunner) =>
@@ -590,60 +592,60 @@ namespace MatterHackers.Agg.UI.Tests
 				testRunner.Delay(1);
 				Assert.IsTrue(editField.Text == "Test Text", "validate text is typed");
 
-				return Task.FromResult(0);
+				return Task.CompletedTask;
 			};
 
 			editField = new TextEditWidget(pixelWidth: 200)
 			{
-				HAnchor = HAnchor.ParentCenter,
-				VAnchor = VAnchor.ParentCenter,
+				HAnchor = HAnchor.Center,
+				VAnchor = VAnchor.Center,
 			};
 			systemWindow.AddChild(editField);
 
-			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
+			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun);
 		}
 
-		[Test, Apartment(ApartmentState.STA)]
+		[Test]
 		public async Task VerifyFocusProperty()
 		{
 			SystemWindow systemWindow = new SystemWindow(300, 200)
 			{
-				BackgroundColor = RGBA_Bytes.Black,
+				BackgroundColor = Color.Black,
 			};
 
 			var editField = new TextEditWidget(pixelWidth: 200)
 			{
-				HAnchor = HAnchor.ParentCenter,
-				VAnchor = VAnchor.ParentCenter,
+				HAnchor = HAnchor.Center,
+				VAnchor = VAnchor.Center,
 			};
 			systemWindow.AddChild(editField);
 
 			AutomationTest testToRun = (testRunner) =>
 			{
 				UiThread.RunOnIdle(editField.Focus);
-				testRunner.Delay(() => editField.ContainsFocus, 3);
+				testRunner.WaitFor(() => editField.ContainsFocus);
 				Assert.IsTrue(editField.ContainsFocus, "Focused property should be true after invoking Focus method");
 
-				return Task.FromResult(0);
+				return Task.CompletedTask;
 			};
 
-			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 10);
+			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun);
 		}
 
-		[Test, Apartment(ApartmentState.STA)]
+		[Test]
 		public async Task SelectAllOnFocusCanStillClickAfterSelection()
 		{
 			var editField = new TextEditWidget(pixelWidth: 200)
 			{
 				Name = "editField",
 				Text = "Some Text",
-				HAnchor = HAnchor.ParentCenter,
-				VAnchor = VAnchor.ParentCenter,
+				HAnchor = HAnchor.Center,
+				VAnchor = VAnchor.Center,
 			};
 
 			var systemWindow = new SystemWindow(300, 200)
 			{
-				BackgroundColor = RGBA_Bytes.Gray,
+				BackgroundColor = Color.Gray,
 			};
 			systemWindow.AddChild(editField);
 
@@ -651,22 +653,22 @@ namespace MatterHackers.Agg.UI.Tests
 			{
 				editField.SelectAllOnFocus = true;
 				testRunner.Delay(1);
-				testRunner.ClickByName(editField.Name, 1);
+				testRunner.ClickByName(editField.Name);
 
 				editField.SelectAllOnFocus = true;
 				testRunner.Type("123");
 				Assert.AreEqual("123", editField.Text, "Text input on newly focused control should replace selection");
 
-				testRunner.ClickByName(editField.Name, 1);
+				testRunner.ClickByName(editField.Name);
 				testRunner.Delay(.2);
 
 				testRunner.Type("123");
 				Assert.AreEqual("123123", editField.Text, "Text should be appended if control is focused and has already received input");
 
-				return Task.FromResult(0);
+				return Task.CompletedTask;
 			};
 
-			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun, 15);
+			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, testToRun);
 		}
 	}
 #endif

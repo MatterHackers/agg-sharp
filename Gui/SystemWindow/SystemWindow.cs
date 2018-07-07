@@ -29,19 +29,15 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
+using MatterHackers.Agg.Platform;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
 	public class SystemWindow : GuiWidget
 	{
-		private static SystemWindowCreatorPlugin globalSystemWindowCreator;
-
-		public event EventHandler TitleChanged;
-
-		public AbstractOsMappingWidget AbstractOsMappingWidget { get; set; }
+		public event EventHandler<ClosingEventArgs> Closing;
 
 		public bool AlwaysOnTopOfMain { get; set; }
 
@@ -53,22 +49,19 @@ namespace MatterHackers.Agg.UI
 
 		public int StencilBufferDepth { get; set; }
 
-		private string title = "";
-
 		public ToolTipManager ToolTipManager { get; private set; }
 
+		private string _title;
 		public string Title
 		{
-			get
-			{
-				return title;
-			}
+			get => _title;
 			set
 			{
-				if (title != value)
+				_title = value;
+
+				if (this.PlatformWindow != null)
 				{
-					title = value;
-					TitleChanged?.Invoke(this, null);
+					this.PlatformWindow.Caption = _title;
 				}
 			}
 		}
@@ -81,54 +74,37 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnClosed(ClosedEventArgs e)
 		{
-			allOpenSystemWindows.Remove(this);
+			_openWindows.Remove(this);
+
 			base.OnClosed(e);
-			if (Parent != null)
-			{
-				Parent.Close();
-			}
+
+			// Invoke Close on our PlatformWindow and release our reference when complete
+			systemWindowProvider?.CloseSystemWindow(this);
+			this.PlatformWindow = null;
 		}
 
-		static List<SystemWindow> allOpenSystemWindows = new List<SystemWindow>();
-		public static List<SystemWindow> AllOpenSystemWindows
+		public virtual void OnClosing(ClosingEventArgs eventArgs)
 		{
-			get
-			{
-				return allOpenSystemWindows.Where(window => window.Parent != null).ToList();
-			}
+			Closing?.Invoke(this, eventArgs);
 		}
+
+		private static List<SystemWindow> _openWindows { get; } = new List<SystemWindow>();
+
+		public static IEnumerable<SystemWindow> AllOpenSystemWindows { get; } = _openWindows.Where(w => w.PlatformWindow != null);
 
 		public SystemWindow(double width, double height)
 			: base(width, height, SizeLimitsToSet.None)
 		{
 			ToolTipManager = new ToolTipManager(this);
-			if (globalSystemWindowCreator == null)
-			{
-				string pluginPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-				PluginFinder<SystemWindowCreatorPlugin> systemWindowCreatorFinder = new PluginFinder<SystemWindowCreatorPlugin>(pluginPath);
-				if (systemWindowCreatorFinder.Plugins.Count != 1)
-				{
-					throw new Exception(string.Format("Did not find any SystemWindowCreators in Plugin path ({0}.", pluginPath));
-				}
-				globalSystemWindowCreator = systemWindowCreatorFinder.Plugins[0];
-			}
 
-			allOpenSystemWindows.Add(this);
+			this.BackgroundColor = ActiveTheme.Instance.PrimaryBackgroundColor;
 		}
 
-		public override Vector2 MinimumSize
+		public override void OnMinimumSizeChanged(EventArgs e)
 		{
-			get
+			if (PlatformWindow != null)
 			{
-				return base.MinimumSize;
-			}
-			set
-			{
-				base.MinimumSize = value;
-				if (Parent != null)
-				{
-					Parent.MinimumSize = value;
-				}
+				PlatformWindow.MinimumSize = this.MinimumSize;
 			}
 		}
 
@@ -143,7 +119,44 @@ namespace MatterHackers.Agg.UI
 		public override void OnMouseMove(MouseEventArgs mouseEvent)
 		{
 			lastMousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
+
 			base.OnMouseMove(mouseEvent);
+
+			SetToolTipText(mouseEvent);
+		}
+
+		private void SetToolTipText(MouseEventArgs mouseEvent)
+		{
+			GuiWidget lastChild = this;
+			// look down our tree to find the first widget under the mouse
+			var items = new Stack<GuiWidget>(new[] { this });
+			while (items.Count > 0)
+			{
+				var item = items.Pop();
+
+				for (int i = item.Children.Count - 1; i >= 0; i--)
+				{
+					var child = item.Children[i];
+					var mouseAtChild = child.TransformFromParentSpace(this, lastMousePosition);
+
+					var childBounds = new RectangleDouble(child.Position.X, child.Position.Y, child.Position.X + child.Size.X, child.Position.Y + child.Size.Y);
+
+					if (childBounds.Contains(mouseAtChild)
+						&& child.Visible
+						&& child.Selectable)
+					{
+						items.Clear();
+						items.Push(child);
+						lastChild = child;
+						break;
+					}
+				}
+			}
+
+			if (!string.IsNullOrWhiteSpace(lastChild.ToolTipText))
+			{
+				SetHoveredWidget(lastChild);
+			}
 		}
 
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
@@ -163,27 +176,63 @@ namespace MatterHackers.Agg.UI
 			Parent?.BringToFront();
 		}
 
+		public override Graphics2D NewGraphics2D()
+		{
+			return this.PlatformWindow.NewGraphics2D();
+		}
+
+		private static ISystemWindowProvider systemWindowProvider = null;
+
 		public void ShowAsSystemWindow()
 		{
 			if (Parent != null)
 			{
 				throw new Exception("To be a system window you cannot be a child of another widget.");
 			}
-			globalSystemWindowCreator.ShowSystemWindow(this);
+
+			if (systemWindowProvider == null)
+			{
+				systemWindowProvider = AggContext.CreateInstanceFrom<ISystemWindowProvider>(AggContext.Config.ProviderTypes.SystemWindowProvider);
+			}
+
+			_openWindows.Add(this);
+
+			// Create the backing IPlatformWindow object and set its AggSystemWindow property to this new SystemWindow
+			systemWindowProvider.ShowSystemWindow(this);
 		}
 
 		public virtual bool Maximized { get; set; } = false;
+
+		public Point2D InitialDesktopPosition = new Point2D(-1, -1);
 
 		public Point2D DesktopPosition
 		{
 			get
 			{
-				return globalSystemWindowCreator.GetDesktopPosition(this);
+				return PlatformWindow.DesktopPosition;
 			}
-
 			set
 			{
-				globalSystemWindowCreator.SetDesktopPosition(this, value);
+				Point2D position = value;
+
+				if (PlatformWindow != null)
+				{
+					// Make sure the window is on screen (this logic should improve over time)
+					position.x = Math.Max(0, position.x);
+					position.y = Math.Max(0, position.y);
+
+					// If it's mac make sure we are not completely under the menu bar.
+					if (AggContext.OperatingSystem == OSType.Mac)
+					{
+						position.y = Math.Max(5, position.y);
+					}
+
+					PlatformWindow.DesktopPosition = position;
+				}
+				else
+				{
+					InitialDesktopPosition = position;
+				}
 			}
 		}
 
@@ -200,9 +249,24 @@ namespace MatterHackers.Agg.UI
 #endif
 		}
 
+		protected override void SetCursor(Cursors cursorToSet)
+		{
+			PlatformWindow?.SetCursor(cursorToSet);
+		}
+
 		public void SetHoveredWidget(GuiWidget widgetToShowToolTipFor)
 		{
 			ToolTipManager.SetHoveredWidget(widgetToShowToolTipFor);
 		}
+
+		public override void Invalidate(RectangleDouble rectToInvalidate)
+		{
+			PlatformWindow?.Invalidate(LocalBounds);
+		}
+
+		// TODO: This should become private... Callers should interact with SystemWindow proxies
+		public IPlatformWindow PlatformWindow { get; set; }
+
+		public override Keys ModifierKeys => PlatformWindow.ModifierKeys;
 	}
 }

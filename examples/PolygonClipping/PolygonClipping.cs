@@ -1,17 +1,18 @@
+using System;
+using System.Collections.Generic;
 using ClipperLib;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
-using MatterHackers.VectorMath;
-using System;
-using System.Collections.Generic;
 using MatterHackers.DataConverters2D;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg
 {
-	public class PolygonClippingDemo : GuiWidget
+	public class PolygonClippingDemo : GuiWidget, IDemoApp
 	{
-		private PathStorage CombinePaths(IVertexSource a, IVertexSource b, ClipType clipType)
+		private VertexStorage CombinePaths(IVertexSource a, IVertexSource b, ClipType clipType)
 		{
 			List<List<IntPoint>> aPolys = VertexSourceToClipperPolygons.CreatePolygons(a);
 			List<List<IntPoint>> bPolys = VertexSourceToClipperPolygons.CreatePolygons(b);
@@ -24,9 +25,9 @@ namespace MatterHackers.Agg
 			List<List<IntPoint>> intersectedPolys = new List<List<IntPoint>>();
 			clipper.Execute(clipType, intersectedPolys);
 
-			PathStorage output = VertexSourceToClipperPolygons.CreatePathStorage(intersectedPolys);
+			VertexStorage output = VertexSourceToClipperPolygons.CreateVertexStorage(intersectedPolys);
 
-			output.Add(0, 0, ShapePath.FlagsAndCommand.CommandStop);
+			output.Add(0, 0, ShapePath.FlagsAndCommand.Stop);
 
 			return output;
 		}
@@ -34,23 +35,26 @@ namespace MatterHackers.Agg
 		private double m_x;
 		private double m_y;
 
-        private RadioButtonGroup m_operation = new RadioButtonGroup(new Vector2(555, 5), new Vector2(80, 130))
-        {
-            HAnchor = HAnchor.ParentRight | HAnchor.FitToChildren,
-            VAnchor = VAnchor.ParentBottom | VAnchor.FitToChildren,
-            Margin = new BorderDouble(5),
-        };
-        private RadioButtonGroup m_polygons = new RadioButtonGroup(new Vector2(5, 5), new Vector2(205, 110))
-        {
-            HAnchor = HAnchor.ParentLeft | HAnchor.FitToChildren,
-            VAnchor = VAnchor.ParentBottom | VAnchor.FitToChildren,
-            Margin = new BorderDouble(5),
-        };
+		private RadioButtonGroup m_operation;
+		private RadioButtonGroup m_polygons;
 
-
-public PolygonClippingDemo()
+		public PolygonClippingDemo()
 		{
-			BackgroundColor = RGBA_Bytes.White;
+			BackgroundColor = Color.White;
+
+			m_operation = new RadioButtonGroup(new Vector2(555, 5), new Vector2(80, 130))
+			{
+				HAnchor = HAnchor.Right | HAnchor.Fit,
+				VAnchor = VAnchor.Bottom | VAnchor.Fit,
+				Margin = new BorderDouble(5),
+			};
+
+			m_polygons = new RadioButtonGroup(new Vector2(5, 5), new Vector2(205, 110))
+			{
+				HAnchor = HAnchor.Left | HAnchor.Fit,
+				VAnchor = VAnchor.Bottom | VAnchor.Fit,
+				Margin = new BorderDouble(5),
+			};
 
 			m_operation.AddRadioButton("None");
 			m_operation.AddRadioButton("OR");
@@ -72,6 +76,13 @@ public PolygonClippingDemo()
 			AnchorAll();
 		}
 
+		public string Title { get; } = "PolygonClipping";
+
+		public string DemoCategory { get; } = "Clipping";
+
+		public string DemoDescription { get; } = "Demonstration of general polygon clipping using the clipper library.";
+
+
 		private void render_gpc(Graphics2D graphics2D)
 		{
 			switch (m_polygons.SelectedIndex)
@@ -81,8 +92,8 @@ public PolygonClippingDemo()
 						//------------------------------------
 						// Two simple paths
 						//
-						PathStorage ps1 = new PathStorage();
-						PathStorage ps2 = new PathStorage();
+						VertexStorage ps1 = new VertexStorage();
+						VertexStorage ps2 = new VertexStorage();
 
 						double x = m_x - Width / 2 + 100;
 						double y = m_y - Height / 2 + 100;
@@ -111,8 +122,8 @@ public PolygonClippingDemo()
 						ps2.LineTo(100 + 351, 100 + 290);
 						ps2.LineTo(100 + 354, 100 + 374);
 
-						graphics2D.Render(ps1, new RGBA_Floats(0, 0, 0, 0.1).GetAsRGBA_Bytes());
-						graphics2D.Render(ps2, new RGBA_Floats(0, 0.6, 0, 0.1).GetAsRGBA_Bytes());
+						graphics2D.Render(ps1, new ColorF(0, 0, 0, 0.1).ToColor());
+						graphics2D.Render(ps2, new ColorF(0, 0.6, 0, 0.1).ToColor());
 
 						CreateAndRenderCombined(graphics2D, ps1, ps2);
 					}
@@ -123,8 +134,8 @@ public PolygonClippingDemo()
 						//------------------------------------
 						// Closed stroke
 						//
-						PathStorage ps1 = new PathStorage();
-						PathStorage ps2 = new PathStorage();
+						VertexStorage ps1 = new VertexStorage();
+						VertexStorage ps2 = new VertexStorage();
 						Stroke stroke = new Stroke(ps2);
 						stroke.width(10.0);
 
@@ -149,8 +160,8 @@ public PolygonClippingDemo()
 						ps2.LineTo(100 + 354, 100 + 374);
 						ps2.ClosePolygon();
 
-						graphics2D.Render(ps1, new RGBA_Floats(0, 0, 0, 0.1).GetAsRGBA_Bytes());
-						graphics2D.Render(stroke, new RGBA_Floats(0, 0.6, 0, 0.1).GetAsRGBA_Bytes());
+						graphics2D.Render(ps1, new ColorF(0, 0, 0, 0.1).ToColor());
+						graphics2D.Render(stroke, new ColorF(0, 0.6, 0, 0.1).ToColor());
 
 						CreateAndRenderCombined(graphics2D, ps1, stroke);
 					}
@@ -161,8 +172,8 @@ public PolygonClippingDemo()
 						//------------------------------------
 						// Great Britain and Arrows
 						//
-						PathStorage gb_poly = new PathStorage();
-						PathStorage arrows = new PathStorage();
+						VertexStorage gb_poly = new VertexStorage();
+						VertexStorage arrows = new VertexStorage();
 						GreatBritanPathStorage.Make(gb_poly);
 						make_arrows(arrows);
 
@@ -177,13 +188,13 @@ public PolygonClippingDemo()
 						VertexSourceApplyTransform trans_gb_poly = new VertexSourceApplyTransform(gb_poly, mtx1);
 						VertexSourceApplyTransform trans_arrows = new VertexSourceApplyTransform(arrows, mtx2);
 
-						graphics2D.Render(trans_gb_poly, new RGBA_Floats(0.5, 0.5, 0, 0.1).GetAsRGBA_Bytes());
+						graphics2D.Render(trans_gb_poly, new ColorF(0.5, 0.5, 0, 0.1).ToColor());
 
 						Stroke stroke_gb_poly = new Stroke(trans_gb_poly);
 						stroke_gb_poly.Width = 0.1;
-						graphics2D.Render(stroke_gb_poly, new RGBA_Floats(0, 0, 0).GetAsRGBA_Bytes());
+						graphics2D.Render(stroke_gb_poly, new ColorF(0, 0, 0).ToColor());
 
-						graphics2D.Render(trans_arrows, new RGBA_Floats(0.0, 0.5, 0.5, 0.1).GetAsRGBA_Bytes());
+						graphics2D.Render(trans_arrows, new ColorF(0.0, 0.5, 0.5, 0.1).ToColor());
 
 						CreateAndRenderCombined(graphics2D, trans_gb_poly, trans_arrows);
 					}
@@ -198,7 +209,7 @@ public PolygonClippingDemo()
 						Stroke stroke = new Stroke(sp);
 						stroke.width(15.0);
 
-						PathStorage gb_poly = new PathStorage();
+						VertexStorage gb_poly = new VertexStorage();
 						GreatBritanPathStorage.Make(gb_poly);
 
 						Affine mtx = Affine.NewIdentity(); ;
@@ -207,13 +218,13 @@ public PolygonClippingDemo()
 
 						VertexSourceApplyTransform trans_gb_poly = new VertexSourceApplyTransform(gb_poly, mtx);
 
-						graphics2D.Render(trans_gb_poly, new RGBA_Floats(0.5, 0.5, 0, 0.1).GetAsRGBA_Bytes());
+						graphics2D.Render(trans_gb_poly, new ColorF(0.5, 0.5, 0, 0.1).ToColor());
 
 						Stroke stroke_gb_poly = new Stroke(trans_gb_poly);
 						stroke_gb_poly.width(0.1);
-						graphics2D.Render(stroke_gb_poly, new RGBA_Floats(0, 0, 0).GetAsRGBA_Bytes());
+						graphics2D.Render(stroke_gb_poly, new ColorF(0, 0, 0).ToColor());
 
-						graphics2D.Render(stroke, new RGBA_Floats(0.0, 0.5, 0.5, 0.1).GetAsRGBA_Bytes());
+						graphics2D.Render(stroke, new ColorF(0.0, 0.5, 0.5, 0.1).ToColor());
 
 						CreateAndRenderCombined(graphics2D, trans_gb_poly, stroke);
 					}
@@ -228,7 +239,7 @@ public PolygonClippingDemo()
 						Stroke stroke = new Stroke(sp);
 						stroke.width(15.0);
 
-						PathStorage glyph = new PathStorage();
+						VertexStorage glyph = new VertexStorage();
 						glyph.MoveTo(28.47, 6.45);
 						glyph.curve3(21.58, 1.12, 19.82, 0.29);
 						glyph.curve3(17.19, -0.93, 14.21, -0.93);
@@ -282,9 +293,9 @@ public PolygonClippingDemo()
 
 						CreateAndRenderCombined(graphics2D, stroke, curve);
 
-						graphics2D.Render(stroke, new RGBA_Floats(0, 0, 0, 0.1).GetAsRGBA_Bytes());
+						graphics2D.Render(stroke, new ColorF(0, 0, 0, 0.1).ToColor());
 
-						graphics2D.Render(curve, new RGBA_Floats(0, 0.6, 0, 0.1).GetAsRGBA_Bytes());
+						graphics2D.Render(curve, new ColorF(0, 0.6, 0, 0.1).ToColor());
 					}
 					break;
 			}
@@ -292,7 +303,7 @@ public PolygonClippingDemo()
 
 		private void CreateAndRenderCombined(Graphics2D graphics2D, IVertexSource ps1, IVertexSource ps2)
 		{
-			PathStorage combined = null;
+			VertexStorage combined = null;
 
 			switch (m_operation.SelectedIndex)
 			{
@@ -319,7 +330,7 @@ public PolygonClippingDemo()
 
 			if (combined != null)
 			{
-				graphics2D.Render(combined, new RGBA_Floats(0.5, 0.0, 0, 0.5).GetAsRGBA_Bytes());
+				graphics2D.Render(combined, new ColorF(0.5, 0.0, 0, 0.5).ToColor());
 			}
 		}
 
@@ -364,11 +375,15 @@ public PolygonClippingDemo()
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new PolygonClippingFactory();
-			appWidget.CreateWidgetAndRunInWindow();
+			var demoWidget = new PolygonClippingDemo();
+
+			var systemWindow = new SystemWindow(640, 520);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 
-		private void make_arrows(PathStorage ps)
+		private void make_arrows(VertexStorage ps)
 		{
 			ps.remove_all();
 
@@ -407,26 +422,6 @@ public PolygonClippingDemo()
 			ps.LineTo(1252.599999999999909, 1235.599999999999909);
 			ps.LineTo(1283.799999999999955, 1251.200000000000045);
 			ps.ClosePolygon();
-		}
-	}
-
-	public class PolygonClippingFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new PolygonClippingDemo();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-			"Clipping",
-			"PolygonClipping",
-			"Demonstration of general polygon clipping using the clipper library.",
-			640,
-			520);
-
-			return appWidgetInfo;
 		}
 	}
 
@@ -476,7 +471,7 @@ public PolygonClippingDemo()
 			y = 0;
 			if (m_curr_r > m_r2)
 			{
-				return ShapePath.FlagsAndCommand.CommandStop;
+				return ShapePath.FlagsAndCommand.Stop;
 			}
 
 			x = m_x + Math.Cos(m_angle) * m_curr_r;
@@ -486,9 +481,9 @@ public PolygonClippingDemo()
 			if (m_start)
 			{
 				m_start = false;
-				return ShapePath.FlagsAndCommand.CommandMoveTo;
+				return ShapePath.FlagsAndCommand.MoveTo;
 			}
-			return ShapePath.FlagsAndCommand.CommandLineTo;
+			return ShapePath.FlagsAndCommand.LineTo;
 		}
 	}
 

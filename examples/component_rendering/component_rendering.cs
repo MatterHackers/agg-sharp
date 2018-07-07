@@ -27,15 +27,16 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.VectorMath;
-using System;
 
 namespace MatterHackers.Agg
 {
-	public class ComponentRendering : GuiWidget
+	public class ComponentRendering : GuiWidget, IDemoApp
 	{
 		private Slider alphaSlider;
 		private CheckBox useBlackBackgroundCheckbox;
@@ -47,14 +48,20 @@ namespace MatterHackers.Agg
 			alphaSlider.ValueChanged += new EventHandler(NeedInvalidate);
 			alphaSlider.Text = "Alpha={0:F0}";
 			alphaSlider.Value = 255;
-			alphaSlider.View.TextColor = new RGBA_Bytes(127, 127, 127);
+			alphaSlider.View.TextColor = new Color(127, 127, 127);
 			AddChild(alphaSlider);
 
 			useBlackBackgroundCheckbox = new UI.CheckBox(5, 30 + 12, "Draw Black Background");
 			useBlackBackgroundCheckbox.CheckedStateChanged += NeedInvalidate;
-			useBlackBackgroundCheckbox.TextColor = new RGBA_Bytes(127, 127, 127);
+			useBlackBackgroundCheckbox.TextColor = new Color(127, 127, 127);
 			AddChild(useBlackBackgroundCheckbox);
 		}
+
+		public string Title { get; } = "Component Rendering";
+
+		public string DemoCategory { get; } = "Vector";
+
+		public string DemoDescription { get; } = "AGG has a gray-scale renderer that can use any 8-bit color channel of an RGB or RGBA frame buffer. Most likely it will be used to draw gray-scale images directly in the alpha-channel.";
 
 		public override void OnParentChanged(EventArgs e)
 		{
@@ -92,11 +99,11 @@ namespace MatterHackers.Agg
 				ScanlineRasterizer ras = new ScanlineRasterizer();
 				ScanlineCachePacked8 sl = new ScanlineCachePacked8();
 
-				RGBA_Bytes clearColor = useBlackBackgroundCheckbox.Checked ? new RGBA_Bytes(0, 0, 0) : new RGBA_Bytes(255, 255, 255);
+				Color clearColor = useBlackBackgroundCheckbox.Checked ? new Color(0, 0, 0) : new Color(255, 255, 255);
 				clippingProxy.clear(clearColor);
 				alphaSlider.View.BackgroundColor = clearColor;
 
-				RGBA_Bytes FillColor = useBlackBackgroundCheckbox.Checked ? new RGBA_Bytes(255, 255, 255, (int)(alphaSlider.Value)) : new RGBA_Bytes(0, 0, 0, (int)(alphaSlider.Value));
+				Color FillColor = useBlackBackgroundCheckbox.Checked ? new Color(255, 255, 255, (int)(alphaSlider.Value)) : new Color(0, 0, 0, (int)(alphaSlider.Value));
 
 				VertexSource.Ellipse er = new MatterHackers.Agg.VertexSource.Ellipse(Width / 2 - 0.87 * 50, Height / 2 - 0.5 * 50, 100, 100, 100);
 				ras.add_path(er);
@@ -160,28 +167,13 @@ namespace MatterHackers.Agg
 		{
 			MatterHackers.Agg.Tests.AggDrawingTests.RunAllTests();
 
-			AppWidgetFactory appWidget = new ComponentRenderingFactory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new ComponentRendering();
 
-	public class ComponentRenderingFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new ComponentRendering();
-		}
+			var systemWindow = new SystemWindow(320, 320);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-				"Vector",
-				"Component Rendering",
-				"AGG has a gray-scale renderer that can use any 8-bit color channel of an RGB or RGBA frame buffer. Most likely it will be used to draw gray-scale images directly in the alpha-channel.",
-				320,
-				320);
-
-			return appWidgetInfo;
 		}
 	}
 }

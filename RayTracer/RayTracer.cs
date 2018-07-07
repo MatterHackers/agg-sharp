@@ -36,11 +36,11 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.RayTracer.Light;
 using MatterHackers.VectorMath;
-using System;
 
 namespace MatterHackers.RayTracer
 {
@@ -60,7 +60,7 @@ namespace MatterHackers.RayTracer
 		}
 
 		public AntiAliasing AntiAliasing { get; set; } = AntiAliasing.Medium;
-		public RGBA_Floats[][] ColorBuffer { get; set; }
+		public ColorF[][] ColorBuffer { get; set; }
 
 		public double[][] DepthBuffer { get; set; }
 
@@ -74,7 +74,7 @@ namespace MatterHackers.RayTracer
 		public bool RenderShadow { get; set; } = true;
 		public bool TraceWithRayBundles { get; set; } = false;
 
-		public void AntiAliasScene(RectangleInt viewport, Scene scene, RGBA_Floats[][] imageBufferAsDoubles, int maxSamples)
+		public void AntiAliasScene(RectangleInt viewport, Scene scene, ColorF[][] imageBufferAsDoubles, int maxSamples)
 		{
 			if (MultiThreaded)
 			{
@@ -188,9 +188,9 @@ namespace MatterHackers.RayTracer
 
 					// we don't need to set this if we are anti-aliased
 					int totalOffset = bufferOffset + x * 4;
-					destBuffer[totalOffset++] = (byte)((NormalBuffer[x][y].x + 1) * 128);
-					destBuffer[totalOffset++] = (byte)((NormalBuffer[x][y].y + 1) * 128);
-					destBuffer[totalOffset++] = (byte)((NormalBuffer[x][y].z + 1) * 128);
+					destBuffer[totalOffset++] = (byte)((NormalBuffer[x][y].X + 1) * 128);
+					destBuffer[totalOffset++] = (byte)((NormalBuffer[x][y].Y + 1) * 128);
+					destBuffer[totalOffset++] = (byte)((NormalBuffer[x][y].Z + 1) * 128);
 					destBuffer[totalOffset] = 255;
 				}
 			}
@@ -198,18 +198,18 @@ namespace MatterHackers.RayTracer
 			destImage.MarkImageChanged();
 		}
 
-		public RGBA_Floats CreateAndTraceSecondaryRays(IntersectInfo info, Ray ray, Scene scene, int depth)
+		public ColorF CreateAndTraceSecondaryRays(IntersectInfo info, Ray ray, Scene scene, int depth)
 		{
 			// calculate ambient light
-			RGBA_Floats infoColorAtHit = info.closestHitObject.GetColor(info);
-			RGBA_Floats color = infoColorAtHit * scene.background.Ambience;
+			ColorF infoColorAtHit = info.closestHitObject.GetColor(info);
+			ColorF color = infoColorAtHit * scene.background.Ambience;
 			color.alpha = infoColorAtHit.alpha;
 			double shininess = Math.Pow(10, info.closestHitObject.Material.Gloss + 1);
 
 			foreach (ILight light in scene.lights)
 			{
 				// calculate diffuse lighting
-				Vector3 directiorFromHitToLight = light.Origin - info.hitPosition;
+				Vector3 directiorFromHitToLight = light.Origin - info.HitPosition;
 				double distanceToLight = directiorFromHitToLight.Length;
 				Vector3 directiorFromHitToLightNormalized = directiorFromHitToLight.GetNormal();
 
@@ -230,9 +230,9 @@ namespace MatterHackers.RayTracer
 					// calculate reflection ray
 					if (RenderReflection && info.closestHitObject.Material.Reflection > 0)
 					{
-						Ray reflectionRay = GetReflectionRay(info.hitPosition, info.normalAtHit, ray.directionNormal);
+						Ray reflectionRay = GetReflectionRay(info.HitPosition, info.normalAtHit, ray.directionNormal);
 						IntersectInfo reflectionInfo = TracePrimaryRay(reflectionRay, scene);
-						RGBA_Floats reflectionColorAtHit;// = reflectionInfo.closestHitObject.GetColor(reflectionInfo);
+						ColorF reflectionColorAtHit;// = reflectionInfo.closestHitObject.GetColor(reflectionInfo);
 						if (reflectionInfo.hitType != IntersectionType.None && reflectionInfo.distanceToHit > 0)
 						{
 							// recursive call, this makes reflections expensive
@@ -250,9 +250,9 @@ namespace MatterHackers.RayTracer
 					//calculate refraction ray
 					if (RenderRefraction && info.closestHitObject.Material.Transparency > 0)
 					{
-						Ray refractionRay = new Ray(info.hitPosition, ray.directionNormal, Ray.sameSurfaceOffset, double.MaxValue);  // GetRefractionRay(info.hitPosition, info.normalAtHit, ray.direction, info.closestHit.Material.Refraction);
+						Ray refractionRay = new Ray(info.HitPosition, ray.directionNormal, Ray.sameSurfaceOffset, double.MaxValue);  // GetRefractionRay(info.hitPosition, info.normalAtHit, ray.direction, info.closestHit.Material.Refraction);
 						IntersectInfo refractionInfo = TracePrimaryRay(refractionRay, scene);
-						RGBA_Floats refractionColorAtHit = refractionInfo.closestHitObject.GetColor(refractionInfo);
+						ColorF refractionColorAtHit = refractionInfo.closestHitObject.GetColor(refractionInfo);
 						if (refractionInfo.hitType != IntersectionType.None && refractionInfo.distanceToHit > 0)
 						{
 							// recursive call, this makes refractions expensive
@@ -272,7 +272,7 @@ namespace MatterHackers.RayTracer
 				if (RenderShadow)
 				{
 					// calculate shadow, create ray from intersection point to light
-					Ray shadowRay = new Ray(info.hitPosition, directiorFromHitToLightNormalized, Ray.sameSurfaceOffset, double.MaxValue); // it may be usefull to limit the legth to te dist to the camera (but I doubt it LBB).
+					Ray shadowRay = new Ray(info.HitPosition, directiorFromHitToLightNormalized, Ray.sameSurfaceOffset, double.MaxValue); // it may be usefull to limit the legth to te dist to the camera (but I doubt it LBB).
 					shadowRay.isShadowRay = true;
 
 					// if the normal at the closest hit is away from the shadow it is already it it's own shadow.
@@ -301,8 +301,8 @@ namespace MatterHackers.RayTracer
 				{
 					// only show Gloss light if it is not in a shadow of another element.
 					// calculate Gloss lighting (Phong)
-					Vector3 Lv = (info.hitPosition - light.Origin).GetNormal();
-					Vector3 E = (ray.origin - info.hitPosition).GetNormal();
+					Vector3 Lv = (info.HitPosition - light.Origin).GetNormal();
+					Vector3 E = (ray.origin - info.HitPosition).GetNormal();
 					Vector3 H = (E - Lv).GetNormal();
 
 					double Glossweight = 0.0;
@@ -315,12 +315,12 @@ namespace MatterHackers.RayTracer
 			return color;
 		}
 
-		public RGBA_Floats FullyTraceRay(Ray ray, Scene scene, out IntersectInfo primaryInfo)
+		public ColorF FullyTraceRay(Ray ray, Scene scene, out IntersectInfo primaryInfo)
 		{
 			primaryInfo = TracePrimaryRay(ray, scene);
 			if (primaryInfo.hitType != IntersectionType.None)
 			{
-				RGBA_Floats totalColor = CreateAndTraceSecondaryRays(primaryInfo, ray, scene, 0);
+				ColorF totalColor = CreateAndTraceSecondaryRays(primaryInfo, ray, scene, 0);
 				return totalColor;
 			}
 
@@ -358,10 +358,10 @@ namespace MatterHackers.RayTracer
 
 			if (ColorBuffer == null || ColorBuffer.Length < viewport.Width || ColorBuffer[0].Length < viewport.Height)
 			{
-				ColorBuffer = new RGBA_Floats[viewport.Width][];
+				ColorBuffer = new ColorF[viewport.Width][];
 				for (int i = 0; i < viewport.Width; i++)
 				{
-					ColorBuffer[i] = new RGBA_Floats[viewport.Height];
+					ColorBuffer[i] = new ColorF[viewport.Height];
 				}
 				NormalBuffer = new Vector3[viewport.Width][];
 				for (int i = 0; i < viewport.Width; i++)
@@ -468,13 +468,13 @@ namespace MatterHackers.RayTracer
 			scene.shapes[0].GetClosestIntersections(rayBundle, 0, intersectionsForBundle);
 		}
 
-		private void AntiAliasXSpan(RectangleInt viewport, Scene scene, RGBA_Floats[][] imageBufferAsDoubles, int maxSamples, int y)
+		private void AntiAliasXSpan(RectangleInt viewport, Scene scene, ColorF[][] imageBufferAsDoubles, int maxSamples, int y)
 		{
 			int fillY = viewport.Top - (viewport.Bottom + y);
 
 			for (int x = 1; x < viewport.Width - 1; x++)
 			{
-				RGBA_Floats avg = (imageBufferAsDoubles[x - 1][y - 1] + imageBufferAsDoubles[x][y - 1] + imageBufferAsDoubles[x + 1][y - 1] +
+				ColorF avg = (imageBufferAsDoubles[x - 1][y - 1] + imageBufferAsDoubles[x][y - 1] + imageBufferAsDoubles[x + 1][y - 1] +
 							 imageBufferAsDoubles[x - 1][y] + imageBufferAsDoubles[x][y] + imageBufferAsDoubles[x + 1][y] +
 							 imageBufferAsDoubles[x - 1][y + 1] + imageBufferAsDoubles[x][y + 1] + imageBufferAsDoubles[x + 1][y + 1]) / 9;
 
@@ -483,7 +483,7 @@ namespace MatterHackers.RayTracer
 				double sumOfDifferencesThreshold = .05; // TODO: figure out a good way to determine this.
 				if (avg.SumOfDistances(imageBufferAsDoubles[x][y]) > sumOfDifferencesThreshold)
 				{
-					RGBA_Floats accumulatedColor = imageBufferAsDoubles[x][y];
+					ColorF accumulatedColor = imageBufferAsDoubles[x][y];
 					for (int i = 0; i < maxSamples; i++)
 					{
 						// get some 'random' samples

@@ -64,12 +64,12 @@ namespace MatterHackers.Agg
 		{
 			{
 				FlowLayoutWidget twoColumns = new FlowLayoutWidget();
-				twoColumns.VAnchor = UI.VAnchor.ParentTop | VAnchor.FitToChildren;
+				twoColumns.VAnchor = UI.VAnchor.Top | VAnchor.Fit;
 
 				List<GuiWidget> stuffToHide = new List<GuiWidget>();
 
 				FlowLayoutWidget leftColumn = new FlowLayoutWidget(FlowDirection.TopToBottom);
-				leftColumn.VAnchor |= VAnchor.ParentTop;
+				leftColumn.VAnchor |= VAnchor.Top;
 
 				FlowLayoutWidget topLeftStuff = new FlowLayoutWidget(FlowDirection.TopToBottom);
 				topLeftStuff.AddChild(new TextWidget("Top of Top Stuff"));
@@ -93,7 +93,7 @@ namespace MatterHackers.Agg
 				twoColumns.AddChild(leftColumn);
 
 				FlowLayoutWidget rightColumn = new FlowLayoutWidget(FlowDirection.TopToBottom);
-				rightColumn.VAnchor |= VAnchor.ParentTop;
+				rightColumn.VAnchor |= VAnchor.Top;
 				CheckBox hideCheckBox = new CheckBox("Hide Stuff");
 				rightColumn.AddChild(hideCheckBox);
 				hideCheckBox.CheckedStateChanged += (sender, e) =>

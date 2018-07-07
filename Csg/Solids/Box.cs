@@ -217,7 +217,13 @@ namespace MatterHackers.Csg.Solids
 		/// <param name="ratioOfEdgeToCut">Cut depth is the depth at the center (much like the radius of a fillet.</param>
 		public void ChamferEdge(Face facesThatShareEdge, double cutDepth)
 		{
-			throw new NotImplementedException();
+			Round roundToApply = new Round(Size)
+			{
+				Sides = 4
+			};
+			roundToApply.RoundEdge((Edge)facesThatShareEdge, cutDepth);
+			CsgObject offsetRoundToApply = new Align(roundToApply, Face.Left | Face.Front | Face.Bottom, root, Face.Left | Face.Front | Face.Bottom);
+			root -= offsetRoundToApply;
 		}
 	}
 }

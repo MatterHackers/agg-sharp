@@ -39,44 +39,42 @@ namespace MatterHackers.Csg.Solids
 
 		public class CylinderPrimitive : Solid
 		{
-			internal double radius1, radius2, height;
+			public int Sides { get; }
+			public double Radius1 { get; }
+			public double Radius2 { get; }
+			public double Height { get; }
 
-			public double Radius1 { get { return radius1; } }
-
-			public double Radius2 { get { return radius2; } }
-
-			public double Height { get { return height; } }
-
-			internal CylinderPrimitive(double radius1, double radius2, double height, string name)
+			internal CylinderPrimitive(double radius1, double radius2, double height, int sides, string name)
 				: base(name)
 			{
-				this.radius1 = radius1;
-				this.radius2 = radius2;
-				this.height = height;
+				this.Radius1 = radius1;
+				this.Radius2 = radius2;
+				this.Height = height;
+				this.Sides = sides;
 			}
 
 			internal CylinderPrimitive(CylinderPrimitive objectToCopy)
-				: this(objectToCopy.radius1, objectToCopy.radius2, objectToCopy.height, objectToCopy.name)
+				: this(objectToCopy.Radius1, objectToCopy.Radius2, objectToCopy.Height, objectToCopy.Sides, objectToCopy.name)
 			{
 			}
 
 			public override AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 			{
-				double maxRadius = Math.Max(radius1, radius2);
-				return new AxisAlignedBoundingBox(new Vector3(-maxRadius, -maxRadius, -height / 2), new Vector3(maxRadius, maxRadius, height / 2));
+				double maxRadius = Math.Max(Radius1, Radius2);
+				return new AxisAlignedBoundingBox(new Vector3(-maxRadius, -maxRadius, -Height / 2), new Vector3(maxRadius, maxRadius, Height / 2));
 			}
 		}
 
-		public Cylinder(double radius, double height, Alignment alignment = Alignment.z, string name = "")
-			: this(radius, radius, height, alignment, name)
+		public Cylinder(double radius, double height, int sides, Alignment alignment = Alignment.z, string name = "")
+			: this(radius, radius, height, sides, alignment, name)
 		{
 		}
 
-		public Cylinder(double radius1, double radius2, double height, Alignment alignment = Alignment.z, string name = "")
+		public Cylinder(double radius1, double radius2, double height, int sides, Alignment alignment = Alignment.z, string name = "")
 			: base(name)
 		{
 			this.height = height;
-			root = new CylinderPrimitive(radius1, radius2, height, name);
+			root = new CylinderPrimitive(radius1, radius2, height, sides, name);
 			switch (alignment)
 			{
 				case Alignment.x:

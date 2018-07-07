@@ -269,13 +269,13 @@ namespace MatterHackers.Agg
 		{
 			if (ShapePath.is_move_to(vertexData.command))
 			{
-				move_to_d(vertexData.position.x, vertexData.position.y);
+				move_to_d(vertexData.position.X, vertexData.position.Y);
 			}
 			else
 			{
 				if (ShapePath.is_vertex(vertexData.command))
 				{
-					line_to_d(vertexData.position.x, vertexData.position.y);
+					line_to_d(vertexData.position.X, vertexData.position.Y);
 				}
 				else
 				{

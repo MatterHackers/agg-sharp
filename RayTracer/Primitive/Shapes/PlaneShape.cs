@@ -18,7 +18,7 @@ namespace MatterHackers.RayTracer
 	public class PlaneShape : BaseShape
 	{
 		private Plane plane;
-		public RGBA_Floats OddColor;
+		public ColorF OddColor;
 
 		public PlaneShape(Vector3 planeNormal, double distanceFromOrigin, MaterialAbstract material)
 		{
@@ -26,7 +26,7 @@ namespace MatterHackers.RayTracer
 			Material = material;
 		}
 
-		public PlaneShape(Vector3 planeNormal, double distanceFromOrigin, RGBA_Floats color, RGBA_Floats oddcolor, double reflection, double transparency)
+		public PlaneShape(Vector3 planeNormal, double distanceFromOrigin, ColorF color, ColorF oddcolor, double reflection, double transparency)
 		{
 			plane.PlaneNormal = planeNormal;
 			plane.DistanceToPlaneFromOrigin = distanceFromOrigin;
@@ -46,24 +46,6 @@ namespace MatterHackers.RayTracer
 			return new AxisAlignedBoundingBox(Vector3.NegativeInfinity, Vector3.PositiveInfinity);
 		}
 
-		public override RGBA_Floats GetColor(IntersectInfo info)
-		{
-			if (Material.HasTexture)
-			{
-				Vector3 Position = plane.PlaneNormal;
-				Vector3 vecU = new Vector3(Position.y, Position.z, -Position.x);
-				Vector3 vecV = Vector3.Cross(vecU, plane.PlaneNormal);
-
-				double u = Vector3.Dot(info.hitPosition, vecU);
-				double v = Vector3.Dot(info.hitPosition, vecV);
-				return Material.GetColor(u, v);
-			}
-			else
-			{
-				return Material.GetColor(0, 0);
-			}
-		}
-
 		public override double GetIntersectCost()
 		{
 			return 350;
@@ -78,7 +60,7 @@ namespace MatterHackers.RayTracer
 				IntersectInfo info = new IntersectInfo();
 				info.closestHitObject = this;
 				info.hitType = IntersectionType.FrontFace;
-				info.hitPosition = ray.origin + ray.directionNormal * distanceToHit;
+				info.HitPosition = ray.origin + ray.directionNormal * distanceToHit;
 				info.normalAtHit = plane.PlaneNormal;
 				info.distanceToHit = distanceToHit;
 
@@ -100,7 +82,18 @@ namespace MatterHackers.RayTracer
 
 		public override string ToString()
 		{
-			return string.Format("Sphere {0}x+{1}y+{2}z+{3}=0)", plane.PlaneNormal.x, plane.PlaneNormal.y, plane.PlaneNormal.z, plane.DistanceToPlaneFromOrigin);
+			return string.Format("Sphere {0}x+{1}y+{2}z+{3}=0)", plane.PlaneNormal.X, plane.PlaneNormal.Y, plane.PlaneNormal.Z, plane.DistanceToPlaneFromOrigin);
+		}
+
+		public override (double u, double v) GetUv(IntersectInfo info)
+		{
+			Vector3 Position = plane.PlaneNormal;
+			Vector3 vecU = new Vector3(Position.Y, Position.Z, -Position.X);
+			Vector3 vecV = Vector3.Cross(vecU, plane.PlaneNormal);
+
+			double u = Vector3.Dot(info.HitPosition, vecU);
+			double v = Vector3.Dot(info.HitPosition, vecV);
+			return (u, v);
 		}
 	}
 }

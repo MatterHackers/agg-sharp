@@ -1,12 +1,13 @@
+using System;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
-using System;
 
 namespace MatterHackers.Agg
 {
-	public class aa_test : GuiWidget
+	public class aa_test : GuiWidget, IDemoApp
 	{
 		private double[] m_x = new double[2];
 		private double[] m_y = new double[2];
@@ -29,6 +30,12 @@ namespace MatterHackers.Agg
 			m_gamma.Value = 1.8;
 		}
 
+		public string Title { get; } = "Anti-Alias Test";
+
+		public string DemoCategory { get; } = "Vector";
+
+		public string DemoDescription { get; } = "A test of Anti-Aliasing the same as in http://homepage.mac.com/arekkusu/bugs/invariance";
+
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			GammaLookUpTable gamma = new GammaLookUpTable(m_gamma.Value);
@@ -39,7 +46,7 @@ namespace MatterHackers.Agg
 			ImageClippingProxy clippingProxyNormal = new ImageClippingProxy(rasterNormal);
 			ImageClippingProxy clippingProxyGamma = new ImageClippingProxy(rasterGamma);
 
-			clippingProxyNormal.clear(new RGBA_Floats(0, 0, 0));
+			clippingProxyNormal.clear(new ColorF(0, 0, 0));
 
 			ScanlineRasterizer ras = new ScanlineRasterizer();
 			ScanlineCachePacked8 sl = new ScanlineCachePacked8();
@@ -54,10 +61,10 @@ namespace MatterHackers.Agg
 			e.init(m_x[0], m_y[0], 3, 3, 16);
 			ras.add_path(e);
 			ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
-			scanlineRenderer.RenderSolid(clippingProxyNormal, ras, sl, new RGBA_Bytes(127, 127, 127));
+			scanlineRenderer.RenderSolid(clippingProxyNormal, ras, sl, new Color(127, 127, 127));
 			e.init(m_x[1], m_y[1], 3, 3, 16);
 			ras.add_path(e);
-			scanlineRenderer.RenderSolid(clippingProxyNormal, ras, sl, new RGBA_Bytes(127, 127, 127));
+			scanlineRenderer.RenderSolid(clippingProxyNormal, ras, sl, new Color(127, 127, 127));
 
 			// Creating a rounded rectangle
 			VertexSource.RoundedRect r = new VertexSource.RoundedRect(m_x[0], m_y[0], m_x[1], m_y[1], 10);
@@ -69,7 +76,7 @@ namespace MatterHackers.Agg
 			ras.add_path(p);
 
 			//Renderer.RenderSolid(clippingProxyGamma, ras, sl, new RGBA_Bytes(0, 0, 0));
-			scanlineRenderer.RenderSolid(clippingProxyGamma, ras, sl, new RGBA_Bytes(255, 1, 1));
+			scanlineRenderer.RenderSolid(clippingProxyGamma, ras, sl, new Color(255, 1, 1));
 
 			/*
 					int i;
@@ -316,28 +323,12 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new AATestFactory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new aa_test();
 
-	public class AATestFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new aa_test();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-				"Vector",
-				"Anit-Alias Test",
-				"A test of Anti-Aliasing the same as in http://homepage.mac.com/arekkusu/bugs/invariance",
-				480,
-				350);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(480, 350);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

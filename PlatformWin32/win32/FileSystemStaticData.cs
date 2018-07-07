@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2017, Lars Brubaker, John Lewin
+Copyright (c) 2018, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -34,7 +34,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.Agg.ImageProcessing;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 using Newtonsoft.Json;
 
@@ -50,9 +51,8 @@ namespace MatterHackers.Agg
 		{
 			string appPathAndFile = Assembly.GetExecutingAssembly().Location;
 			string pathToAppFolder = Path.GetDirectoryName(appPathAndFile);
-			string localStaticDataPath = Path.Combine(pathToAppFolder, "StaticData");
 
-			this.basePath = localStaticDataPath;
+			this.basePath = Path.Combine(pathToAppFolder, "StaticData");
 
 #if DEBUG
 			// In debug builds, use the StaticData folder up two directories from bin\debug, which should be MatterControl\StaticData
@@ -67,6 +67,11 @@ namespace MatterHackers.Agg
 		{
 			Console.WriteLine("   Overriding StaticData: " + Path.GetFullPath(overridePath));
 			this.basePath = overridePath;
+		}
+
+		public void PurgeCache()
+		{
+			cachedImages.Clear();
 		}
 
 		public bool DirectoryExists(string path)
@@ -94,9 +99,10 @@ namespace MatterHackers.Agg
 		/// </summary>
 		/// <param name="path">The file path to load</param>
 		/// <returns>An ImageBuffer initialized with data from the given file</returns>
-		public ImageBuffer LoadIcon(string path)
+		public ImageBuffer LoadIcon(string path, bool invertImage = false)
 		{
-			return LoadImage(Path.Combine("Icons", path));
+			var icon = LoadImage(Path.Combine("Icons", path), invertImage);
+			return (GuiWidget.DeviceScale == 1) ? icon : icon.CreateScaledImage(GuiWidget.DeviceScale);
 		}
 
 		/// <summary>
@@ -107,48 +113,53 @@ namespace MatterHackers.Agg
 		/// <param name="width"></param>
 		/// <param name="height"></param>
 		/// <returns></returns>
-		public ImageBuffer LoadIcon(string path, int width, int height)
+		public ImageBuffer LoadIcon(string path, int width, int height, bool invertImage = false)
 		{
 			int deviceWidth = (int)(width * GuiWidget.DeviceScale);
 			int deviceHeight = (int)(height * GuiWidget.DeviceScale);
-			ImageBuffer scaledImage = LoadIcon(path);
-			scaledImage.SetRecieveBlender(new BlenderPreMultBGRA());
-			scaledImage = ImageBuffer.CreateScaledImage(scaledImage, deviceWidth, deviceHeight);
 
-			return scaledImage;
+			ImageBuffer image = LoadIcon(path, invertImage);
+			image.SetRecieveBlender(new BlenderPreMultBGRA());
+
+			return image.CreateScaledImage(deviceWidth, deviceHeight);
 		}
 
-		/// <summary>
-		/// Loads the specified file from the StaticData/Icons path
-		/// </summary>
-		/// <param name="path">The file path to load</param>
-		/// <param name="buffer">The ImageBuffer to populate with data from the given file</param>
-		public void LoadIcon(string path, ImageBuffer buffer)
+		public ImageSequence LoadSequence(string path)
 		{
-			LoadImage(Path.Combine("Icons", path), buffer);
-		}
+			ImageSequence sequence = null;
 
-		public void LoadSequence(string pathToImages, ImageSequence sequence)
-		{
-			if (DirectoryExists(pathToImages))
+			if (DirectoryExists(path))
 			{
-				string propertiesPath = Path.Combine(pathToImages, "properties.json");
+				sequence = new ImageSequence();
+				string propertiesPath = Path.Combine(path, "properties.json");
 				if (FileExists(propertiesPath))
 				{
 					string jsonData = ReadAllText(propertiesPath);
 
 					var properties = JsonConvert.DeserializeObject<ImageSequence.Properties>(jsonData);
-					sequence.FramePerSecond = properties.FramePerFrame;
+					sequence.FramesPerSecond = properties.FramePerFrame;
 					sequence.Looping = properties.Looping;
 				}
 
-				var pngFiles = GetFiles(pathToImages).Where(fileName => Path.GetExtension(fileName).ToUpper() == ".PNG").OrderBy(s => s);
-				foreach (string path in pngFiles)
+				var pngFiles = GetFiles(path).Where(fileName => Path.GetExtension(fileName).ToUpper() == ".PNG").OrderBy(s => s);
+				foreach (string pngPath in pngFiles)
 				{
-					ImageBuffer image = LoadImage(path);
+					ImageBuffer image = LoadImage(pngPath);
 					sequence.AddImage(image);
 				}
 			}
+			else if (this.FileExists(path)
+				&& string.Equals(Path.GetExtension(path), ".gif", StringComparison.OrdinalIgnoreCase))
+			{
+				sequence = new ImageSequence();
+
+				using (var fileStream = this.OpenStream(path))
+				{
+					LoadImageSequenceData(fileStream, sequence);
+				}
+			}
+
+			return sequence;
 		}
 
 		public void LoadImageData(Stream imageStream, ImageBuffer destImage)
@@ -159,15 +170,66 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		static object locker = new object();
-		public void LoadImage(string path, ImageBuffer destImage)
+		public void LoadImageSequenceData(Stream stream, ImageSequence sequence)
 		{
 			lock (locker)
 			{
-				ImageBuffer cachedImage;
-				if (!cachedImages.TryGetValue(path, out cachedImage))
+				System.Drawing.Image image;
+				try
 				{
-					using (var imageStream = OpenSteam(path))
+					image = System.Drawing.Image.FromStream(stream);
+				}
+				catch
+				{
+					return;
+				}
+
+				sequence.Frames.Clear();
+				sequence.FrameTimesMs.Clear();
+
+				var dimension = new System.Drawing.Imaging.FrameDimension(image.FrameDimensionsList[0]);
+				// Number of frames
+				int frameCount = image.GetFrameCount(dimension);
+
+				if (frameCount > 1)
+				{
+					var minFrameTimeMs = int.MaxValue;
+					for (var i = 0; i < frameCount; i++)
+					{
+						// Return an Image at a certain index
+						image.SelectActiveFrame(dimension, i);
+						ImageBuffer imageBuffer = new ImageBuffer();
+						if (ImageIOWindowsPlugin.ConvertBitmapToImage(imageBuffer, new Bitmap(image)))
+						{
+							var frameDelay = BitConverter.ToInt32(image.GetPropertyItem(20736).Value, i * 4) * 10;
+
+							sequence.AddImage(imageBuffer, frameDelay);
+							minFrameTimeMs = Math.Max(10, Math.Min(frameDelay, minFrameTimeMs));
+						}
+					}
+					var item = image.GetPropertyItem(0x5100); // FrameDelay in libgdiplus
+															  // Time is in milliseconds
+					sequence.SecondsPerFrame = minFrameTimeMs / 1000.0;
+				}
+				else
+				{
+					ImageBuffer imageBuffer = new ImageBuffer();
+					if (ImageIOWindowsPlugin.ConvertBitmapToImage(imageBuffer, new Bitmap(image)))
+					{
+						sequence.AddImage(imageBuffer);
+					}
+				}
+			}
+		}
+
+		private static object locker = new object();
+		private void LoadImage(string path, ImageBuffer destImage, bool invertImage = false)
+		{
+			lock (locker)
+			{
+				if (!cachedImages.TryGetValue(path, out ImageBuffer cachedImage))
+				{
+					using (var imageStream = OpenStream(path))
 					using (var bitmap = new Bitmap(imageStream))
 					{
 						cachedImage = new ImageBuffer();
@@ -181,19 +243,31 @@ namespace MatterHackers.Agg
 					}
 				}
 
+				// Themed icons are black and need be inverted on dark themes, or when white icons are requested
+				if (invertImage)
+				{
+					cachedImage = cachedImage.InvertLightness();
+					cachedImage.SetRecieveBlender(new BlenderPreMultBGRA());
+				}
+
 				destImage.CopyFrom(cachedImage);
 			}
 		}
 
 		public ImageBuffer LoadImage(string path)
 		{
+			return this.LoadImage(path, false);
+		}
+
+		public ImageBuffer LoadImage(string path, bool invertImage = false)
+		{
 			ImageBuffer temp = new ImageBuffer();
-			LoadImage(path, temp);
+			LoadImage(path, temp, invertImage);
 
 			return temp;
 		}
 
-		public Stream OpenSteam(string path)
+		public Stream OpenStream(string path)
 		{
 			return File.OpenRead(MapPath(path));
 		}
@@ -210,8 +284,7 @@ namespace MatterHackers.Agg
 
 		public string MapPath(string path)
 		{
-			string fullPath = Path.GetFullPath(Path.Combine(this.basePath, path));
-			return fullPath;
+			return Path.GetFullPath(Path.Combine(this.basePath, path));
 		}
 	}
 }

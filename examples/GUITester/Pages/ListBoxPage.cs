@@ -16,7 +16,7 @@ namespace MatterHackers.Agg
 					leftListBox = new ListBox(new RectangleDouble(0, 0, 200, 300));
 					//leftListBox.BackgroundColor = RGBA_Bytes.Red;
 					leftListBox.Name = "LeftListBox";
-					leftListBox.VAnchor = UI.VAnchor.ParentTop;
+					leftListBox.VAnchor = UI.VAnchor.Top;
 					//leftListBox.DebugShowBounds = true;
 					leftListBox.Margin = new BorderDouble(15);
 					leftToRightLayout.AddChild(leftListBox);
@@ -30,7 +30,7 @@ namespace MatterHackers.Agg
 				if (true)
 				{
 					ListBox rightListBox = new ListBox(new RectangleDouble(0, 0, 200, 300));
-					rightListBox.VAnchor = UI.VAnchor.ParentTop;
+					rightListBox.VAnchor = UI.VAnchor.Top;
 					rightListBox.Margin = new BorderDouble(15);
 					leftToRightLayout.AddChild(rightListBox);
 

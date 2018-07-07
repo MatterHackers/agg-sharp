@@ -66,7 +66,7 @@ namespace MatterHackers.Agg.Font
 			{
 				if (text != value)
 				{
-					totalSizeCache.x = 0;
+					totalSizeCache.X = 0;
 					text = value;
 				}
 			}
@@ -74,8 +74,12 @@ namespace MatterHackers.Agg.Font
 
 		public Vector2 Origin { get; set; }
 
-		public TypeFacePrinter(String text = "", double pointSize = 12, Vector2 origin = new Vector2(), Justification justification = Justification.Left, Baseline baseline = Baseline.Text)
-			: this(text, new StyledTypeFace(LiberationSansFont.Instance, pointSize), origin, justification, baseline)
+		public double ResolutionScale { get; set; } = 1;
+
+		public TypeFacePrinter(String text = "", double pointSize = 12, Vector2 origin = new Vector2(), Justification justification = Justification.Left, Baseline baseline = Baseline.Text, bool bold = false)
+			: this(text, 
+				  bold ? new StyledTypeFace(LiberationSansBoldFont.Instance, pointSize)  : new StyledTypeFace(LiberationSansFont.Instance, pointSize), 
+				  origin, justification, baseline)
 		{
 		}
 
@@ -103,15 +107,15 @@ namespace MatterHackers.Agg.Font
 				switch (Justification)
 				{
 					case Justification.Left:
-						bounds = new RectangleDouble(0, TypeFaceStyle.DescentInPixels, size.x, size.y + TypeFaceStyle.DescentInPixels);
+						bounds = new RectangleDouble(0, TypeFaceStyle.DescentInPixels, size.X, size.Y + TypeFaceStyle.DescentInPixels);
 						break;
 
 					case Justification.Center:
-						bounds = new RectangleDouble(-size.x / 2, TypeFaceStyle.DescentInPixels, size.x / 2, size.y + TypeFaceStyle.DescentInPixels);
+						bounds = new RectangleDouble(-size.X / 2, TypeFaceStyle.DescentInPixels, size.X / 2, size.Y + TypeFaceStyle.DescentInPixels);
 						break;
 
 					case Justification.Right:
-						bounds = new RectangleDouble(-size.x, TypeFaceStyle.DescentInPixels, 0, size.y + TypeFaceStyle.DescentInPixels);
+						bounds = new RectangleDouble(-size.X, TypeFaceStyle.DescentInPixels, 0, size.Y + TypeFaceStyle.DescentInPixels);
 						break;
 
 					default:
@@ -133,7 +137,7 @@ namespace MatterHackers.Agg.Font
 			}
 		}
 
-		public void Render(Graphics2D graphics2D, RGBA_Bytes color, IVertexSourceProxy vertexSourceToApply)
+		public void Render(Graphics2D graphics2D, Color color, IVertexSourceProxy vertexSourceToApply)
 		{
 			vertexSourceToApply.VertexSource = this;
 			rewind(0);
@@ -148,7 +152,7 @@ namespace MatterHackers.Agg.Font
 			}
 		}
 
-		public void Render(Graphics2D graphics2D, RGBA_Bytes color)
+		public void Render(Graphics2D graphics2D, Color color)
 		{
 			if (DrawFromHintedCache)
 			{
@@ -161,20 +165,21 @@ namespace MatterHackers.Agg.Font
 			}
 		}
 
-		private void RenderFromCache(Graphics2D graphics2D, RGBA_Bytes color)
+		private void RenderFromCache(Graphics2D graphics2D, Color color)
 		{
 			if (text != null && text.Length > 0)
 			{
 				Vector2 currentOffset = Vector2.Zero;
 
 				currentOffset = GetBaseline(currentOffset);
-				currentOffset.y += Origin.y;
+				// remove the decent and 1 pixel that were put into the cache image to give space for decenders
+				currentOffset.Y += (Origin.Y + TypeFaceStyle.DescentInPixels - 1);
 
 				string[] lines = text.Split('\n');
 				foreach (string line in lines)
 				{
 					currentOffset = GetXPositionForLineBasedOnJustification(currentOffset, line);
-					currentOffset.x += Origin.x;
+					currentOffset.X += Origin.X;
 
 					for (int currentChar = 0; currentChar < line.Length; currentChar++)
 					{
@@ -186,12 +191,12 @@ namespace MatterHackers.Agg.Font
 						}
 
 						// get the advance for the next character
-						currentOffset.x += TypeFaceStyle.GetAdvanceForCharacter(line, currentChar);
+						currentOffset.X += TypeFaceStyle.GetAdvanceForCharacter(line, currentChar);
 					}
 
 					// before we go onto the next line we need to move down a line
-					currentOffset.x = 0;
-					currentOffset.y -= TypeFaceStyle.EmSizeInPixels;
+					currentOffset.X = 0;
+					currentOffset.Y -= TypeFaceStyle.EmSizeInPixels;
 				}
 			}
 		}
@@ -211,13 +216,13 @@ namespace MatterHackers.Agg.Font
 
 					for (int currentChar = 0; currentChar < line.Length; currentChar++)
 					{
-						IVertexSource currentGlyph = TypeFaceStyle.GetGlyphForCharacter(line[currentChar]);
+						IVertexSource currentGlyph = TypeFaceStyle.GetGlyphForCharacter(line[currentChar], ResolutionScale);
 
 						if (currentGlyph != null)
 						{
 							foreach (VertexData vertexData in currentGlyph.Vertices())
 							{
-								if (vertexData.command != ShapePath.FlagsAndCommand.CommandStop)
+								if (vertexData.command != ShapePath.FlagsAndCommand.Stop)
 								{
 									VertexData offsetVertex = new VertexData(vertexData.command, vertexData.position + currentOffset + Origin);
 									yield return offsetVertex;
@@ -226,16 +231,16 @@ namespace MatterHackers.Agg.Font
 						}
 
 						// get the advance for the next character
-						currentOffset.x += TypeFaceStyle.GetAdvanceForCharacter(line, currentChar);
+						currentOffset.X += TypeFaceStyle.GetAdvanceForCharacter(line, currentChar);
 					}
 
 					// before we go onto the next line we need to move down a line
-					currentOffset.x = 0;
-					currentOffset.y -= TypeFaceStyle.EmSizeInPixels;
+					currentOffset.X = 0;
+					currentOffset.Y -= TypeFaceStyle.EmSizeInPixels;
 				}
 			}
 
-			VertexData endVertex = new VertexData(ShapePath.FlagsAndCommand.CommandStop, Vector2.Zero);
+			VertexData endVertex = new VertexData(ShapePath.FlagsAndCommand.Stop, Vector2.Zero);
 			yield return endVertex;
 		}
 
@@ -245,15 +250,15 @@ namespace MatterHackers.Agg.Font
 			switch (Justification)
 			{
 				case Justification.Left:
-					currentOffset.x = 0;
+					currentOffset.X = 0;
 					break;
 
 				case Justification.Center:
-					currentOffset.x = -size.x / 2;
+					currentOffset.X = -size.X / 2;
 					break;
 
 				case Justification.Right:
-					currentOffset.x = -size.x;
+					currentOffset.X = -size.X;
 					break;
 
 				default:
@@ -267,15 +272,15 @@ namespace MatterHackers.Agg.Font
 			switch (Baseline)
 			{
 				case Baseline.Text:
-					currentOffset.y = 0;
+					currentOffset.Y = 0;
 					break;
 
 				case Baseline.BoundsTop:
-					currentOffset.y = -TypeFaceStyle.AscentInPixels;
+					currentOffset.Y = -TypeFaceStyle.AscentInPixels;
 					break;
 
 				case Baseline.BoundsCenter:
-					currentOffset.y = -TypeFaceStyle.AscentInPixels / 2;
+					currentOffset.Y = -TypeFaceStyle.AscentInPixels / 2;
 					break;
 
 				default:
@@ -298,7 +303,7 @@ namespace MatterHackers.Agg.Font
 				return calculatedSize;
 			}
 
-			if (totalSizeCache.x == 0)
+			if (totalSizeCache.X == 0)
 			{
 				Vector2 calculatedSize;
 				GetSize(0, Math.Max(0, text.Length - 1), out calculatedSize, text);
@@ -315,8 +320,8 @@ namespace MatterHackers.Agg.Font
 				text = this.text;
 			}
 
-			offset.x = 0;
-			offset.y = TypeFaceStyle.EmSizeInPixels;
+			offset.X = 0;
+			offset.Y = TypeFaceStyle.EmSizeInPixels;
 
 			double currentLineX = 0;
 
@@ -329,15 +334,15 @@ namespace MatterHackers.Agg.Font
 						i++;
 					}
 					currentLineX = 0;
-					offset.y += TypeFaceStyle.EmSizeInPixels;
+					offset.Y += TypeFaceStyle.EmSizeInPixels;
 				}
 				else
 				{
 					currentLineX += TypeFaceStyle.GetAdvanceForCharacter(text, i);
 
-					if (currentLineX > offset.x)
+					if (currentLineX > offset.X)
 					{
-						offset.x = currentLineX;
+						offset.X = currentLineX;
 					}
 				}
 			}
@@ -347,11 +352,11 @@ namespace MatterHackers.Agg.Font
 				if (text[characterToMeasureEndIndexInclusive] == '\n')
 				{
 					currentLineX = 0;
-					offset.y += TypeFaceStyle.EmSizeInPixels;
+					offset.Y += TypeFaceStyle.EmSizeInPixels;
 				}
 				else
 				{
-					offset.x += TypeFaceStyle.GetAdvanceForCharacter(text, characterToMeasureEndIndexInclusive);
+					offset.X += TypeFaceStyle.GetAdvanceForCharacter(text, characterToMeasureEndIndexInclusive);
 				}
 			}
 		}
@@ -394,12 +399,12 @@ namespace MatterHackers.Agg.Font
 			{
 				if (text[index] == '\n')
 				{
-					offset.x = 0;
-					offset.y -= TypeFaceStyle.EmSizeInPixels;
+					offset.X = 0;
+					offset.Y -= TypeFaceStyle.EmSizeInPixels;
 				}
 				else
 				{
-					offset.x += TypeFaceStyle.GetAdvanceForCharacter(text, index);
+					offset.X += TypeFaceStyle.GetAdvanceForCharacter(text, index);
 				}
 			}
 		}
@@ -438,15 +443,15 @@ namespace MatterHackers.Agg.Font
 
 					if (text[i] == '\n')
 					{
-						offset.x = 0;
-						offset.y -= TypeFaceStyle.EmSizeInPixels;
+						offset.X = 0;
+						offset.Y -= TypeFaceStyle.EmSizeInPixels;
 					}
 					else
 					{
 						Vector2 nextSize;
 						GetOffset(i, i, out nextSize);
 
-						offset.x += nextSize.x;
+						offset.X += nextSize.X;
 					}
 				}
 
@@ -459,16 +464,16 @@ namespace MatterHackers.Agg.Font
 		private static void CheckForBetterClickPosition(ref Vector2 position, ref int clostestIndex, ref double clostestXDistSquared, ref double clostestYDistSquared, ref Vector2 offset, int i)
 		{
 			Vector2 delta = position - offset;
-			double deltaYLengthSquared = delta.y * delta.y;
+			double deltaYLengthSquared = delta.Y * delta.Y;
 			if (deltaYLengthSquared < clostestYDistSquared)
 			{
 				clostestYDistSquared = deltaYLengthSquared;
-				clostestXDistSquared = delta.x * delta.x;
+				clostestXDistSquared = delta.X * delta.X;
 				clostestIndex = i;
 			}
 			else if (deltaYLengthSquared == clostestYDistSquared)
 			{
-				double deltaXLengthSquared = delta.x * delta.x;
+				double deltaXLengthSquared = delta.X * delta.X;
 				if (deltaXLengthSquared < clostestXDistSquared)
 				{
 					clostestXDistSquared = deltaXLengthSquared;

@@ -23,19 +23,19 @@ namespace MatterHackers.Agg.UI
 		public static BorderDouble DefaultPadding; //= new BorderDouble(5);
 
 		private double CheckBoxWidth = 10 * GuiWidget.DeviceScale;
-		private RGBA_Bytes inactiveColor;
-		private RGBA_Bytes activeColor;
+		private Color inactiveColor;
+		private Color activeColor;
 
-		public RGBA_Bytes CheckColor = DefaultViewFactory.SelectBlue;
+		public Color CheckColor = DefaultViewFactory.SelectBlue;
 
 		protected TextWidget labelTextWidget;
 
-		public CheckBoxViewText(string label, double textHeight = 12, RGBA_Bytes textColor = new RGBA_Bytes())
+		public CheckBoxViewText(string label, double textHeight = 12, Color textColor = new Color())
 		{
 			FlowLayoutWidget leftToRight = new FlowLayoutWidget();
 			GuiWidget boxSpace = new GuiWidget(CheckBoxWidth * 2, 1)
 			{ 
-				VAnchor = VAnchor.ParentCenter,
+				VAnchor = VAnchor.Center,
 			};
 			leftToRight.AddChild(boxSpace);
 
@@ -46,8 +46,8 @@ namespace MatterHackers.Agg.UI
 			AnchorAll();
 
 			Padding = DefaultPadding;
-			HAnchor = UI.HAnchor.FitToChildren;
-			VAnchor = UI.VAnchor.FitToChildren;
+			HAnchor = UI.HAnchor.Fit;
+			VAnchor = UI.VAnchor.Fit;
 
 			if (textColor.Alpha0To1 > 0)
 			{
@@ -94,7 +94,7 @@ namespace MatterHackers.Agg.UI
 			graphics2D.Rectangle(clampedRect, this.TextColor);
 
 			// extra frame
-			if (checkBox.MouseDownOnButton && checkBox.FirstWidgetUnderMouse)
+			if (checkBox.MouseDownOnWidget && checkBox.FirstWidgetUnderMouse)
 			{
 				clampedRect.Inflate(1);
 				graphics2D.Rectangle(clampedRect, this.TextColor);
@@ -105,15 +105,15 @@ namespace MatterHackers.Agg.UI
 
 		public void inactive_color(IColorType c)
 		{
-			inactiveColor = c.GetAsRGBA_Bytes();
+			inactiveColor = c.ToColor();
 		}
 
 		public void active_color(IColorType c)
 		{
-			activeColor = c.GetAsRGBA_Bytes();
+			activeColor = c.ToColor();
 		}
 
-		public RGBA_Bytes TextColor
+		public Color TextColor
 		{
 			get
 			{

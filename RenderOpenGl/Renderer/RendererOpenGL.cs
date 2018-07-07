@@ -38,6 +38,7 @@ using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.VectorMath;
 using System;
 using Tesselate;
+using MatterHackers.Agg.Platform;
 
 namespace MatterHackers.RenderOpenGl
 {
@@ -85,6 +86,10 @@ namespace MatterHackers.RenderOpenGl
 			get { return null; }
 			set { throw new Exception("There is no scanline cache on a GL surface."); }
 		}
+
+		public override int Width => width;
+
+		public override int Height => height;
 
 		public void PushOrthoProjection()
 		{
@@ -139,7 +144,7 @@ namespace MatterHackers.RenderOpenGl
 				vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
 			}
 
-			RGBA_Bytes colorBytes = colorIn.GetAsRGBA_Bytes();
+			Color colorBytes = colorIn.ToColor();
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 			triangleEddgeInfo.Clear();
@@ -151,7 +156,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DrawAALine(Vector2 start, Vector2 end, double halfWidth, IColorType colorIn)
 		{
-			RGBA_Bytes colorBytes = colorIn.GetAsRGBA_Bytes();
+			Color colorBytes = colorIn.ToColor();
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 			Affine transform = GetTransform();
@@ -162,7 +167,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 
 			GL.Begin(BeginMode.Triangles);
-			Vector2 widthRightOffset = (end-start).GetPerpendicularRight().GetNormal() * halfWidth/2;
+			Vector2 widthRightOffset = (end - start).GetPerpendicularRight().GetNormal() * halfWidth/2;
 			triangleEddgeInfo.Draw2EdgeTriangle(start - widthRightOffset, end - widthRightOffset, end + widthRightOffset);
 			triangleEddgeInfo.Draw2EdgeTriangle(end + widthRightOffset, start + widthRightOffset, start - widthRightOffset);
 			GL.End();
@@ -170,7 +175,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DrawAALineRounded(Vector2 start, Vector2 end, double halfWidth, IColorType colorIn)
 		{
-			RGBA_Bytes colorBytes = colorIn.GetAsRGBA_Bytes();
+			Color colorBytes = colorIn.ToColor();
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 			Affine transform = GetTransform();
@@ -204,7 +209,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DrawAACircle(Vector2 start, double radius, IColorType colorIn)
 		{
-			RGBA_Bytes colorBytes = colorIn.GetAsRGBA_Bytes();
+			Color colorBytes = colorIn.ToColor();
 			GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 			Affine transform = GetTransform();
@@ -258,7 +263,7 @@ namespace MatterHackers.RenderOpenGl
 					vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
 				}
 
-				RGBA_Bytes colorBytes = colorIn.GetAsRGBA_Bytes();
+				Color colorBytes = colorIn.ToColor();
 				GL.Color4(colorBytes.red, colorBytes.green, colorBytes.blue, colorBytes.alpha);
 
 				renderNowTesselator.Clear();
@@ -273,22 +278,15 @@ namespace MatterHackers.RenderOpenGl
 			double angleRadians,
 			double scaleX, double scaleY)
 		{
-#if true
 			Affine transform = GetTransform();
 			if (!transform.is_identity())
 			{
-				if (scaleX != 1 || scaleY != 1)// || angleDegrees != 0)
-				{
-					throw new NotImplementedException();
-				}
 				// TODO: <BUG> make this do rotation and scaling
 				transform.transform(ref x, ref y);
 				scaleX *= transform.sx;
 				scaleY *= transform.sy;
 			}
-#endif
 
-#if true
 			// TODO: <BUG> make this do rotation and scaling
 			RectangleInt sourceBounds = source.GetBounds();
 			sourceBounds.Offset((int)x, (int)y);
@@ -302,9 +300,10 @@ namespace MatterHackers.RenderOpenGl
 				}
 				//return;
 			}
-#endif
 
 			ImageBuffer sourceAsImageBuffer = (ImageBuffer)source;
+			//ImageIO.SaveImageData($"c:\\temp\\gah-{DateTime.Now.Ticks}.png", sourceAsImageBuffer);
+
 			ImageGlPlugin glPlugin = ImageGlPlugin.GetImageGlPlugin(sourceAsImageBuffer, false);
 
 			// Prepare openGL for rendering
@@ -320,7 +319,7 @@ namespace MatterHackers.RenderOpenGl
 			GL.Rotate(MathHelper.RadiansToDegrees(angleRadians), 0, 0, 1);
 			GL.Scale(scaleX, scaleY, 1);
 
-			RGBA_Bytes color = RGBA_Bytes.White;
+			Color color = Color.White;
 			GL.Color4((byte)color.Red0To255, (byte)color.Green0To255, (byte)color.Blue0To255, (byte)color.Alpha0To255);
 
 			glPlugin.DrawToGL();
@@ -337,7 +336,7 @@ namespace MatterHackers.RenderOpenGl
 			throw new NotImplementedException();
 		}
 
-		public override void Rectangle(double left, double bottom, double right, double top, RGBA_Bytes color, double strokeWidth)
+		public override void Rectangle(double left, double bottom, double right, double top, Color color, double strokeWidth)
 		{
 #if true
 			// This only works for translation. If we have a rotation or scale in the transform this will have some problems.
@@ -384,10 +383,10 @@ namespace MatterHackers.RenderOpenGl
 			transform.transform(ref fastLeft, ref fastBottom);
 			transform.transform(ref fastRight, ref fastTop);
 
-			if (fastLeft == (int)fastLeft
-				&& fastBottom == (int)fastBottom
-				&& fastRight == (int)fastRight
-				&& fastTop == (int)fastTop)
+			if (Math.Abs(fastLeft - (int)fastLeft) < .01
+				&& Math.Abs(fastBottom - (int)fastBottom) < .01
+				&& Math.Abs(fastRight - (int)fastRight) < .01
+				&& Math.Abs(fastTop - (int)fastTop) < .01)
 			{
 				PushOrthoProjection();
 
@@ -398,14 +397,14 @@ namespace MatterHackers.RenderOpenGl
 				GL.Color4(fillColor.Red0To255, fillColor.Green0To255, fillColor.Blue0To255, fillColor.Alpha0To255);
 
 				GL.Begin(BeginMode.Triangles);
-				// triangel 1
+				// triangle 1
 				{
 					GL.Vertex2(fastLeft, fastBottom);
 					GL.Vertex2(fastRight, fastBottom);
 					GL.Vertex2(fastRight, fastTop);
 				}
 
-				// triangel 2
+				// triangle 2
 				{
 					GL.Vertex2(fastLeft, fastBottom);
 					GL.Vertex2(fastRight, fastTop);
@@ -418,10 +417,41 @@ namespace MatterHackers.RenderOpenGl
 			else
 			{
 				RoundedRect rect = new RoundedRect(left, bottom, right, top, 0);
-				Render(rect, fillColor.GetAsRGBA_Bytes());
+				Render(rect, fillColor.ToColor());
 			}
 		}
 
+		public override void Line(double x1, double y1, double x2, double y2, Color color, double strokeWidth = 1)
+		{
+			RectangleDouble strokeBounds;
+			if (x1 == x2) // vertical line
+			{
+				strokeBounds = new RectangleDouble(x1 - strokeWidth / 2, y1, x1 + strokeWidth / 2, y2);
+			}
+			else // horizontal line
+			{
+				strokeBounds = new RectangleDouble(x1, y1 - strokeWidth / 2, x2, y1 + strokeWidth / 2);
+			}
+
+			// lets check for horizontal and vertical lines that are pixel aligned and render them as fills
+			bool canUseFill = (x1 == x2 || y1 == y2) // we are vertical or horizontal
+				&& Math.Abs(strokeBounds.Left - (int)strokeBounds.Left) < .01
+				&& Math.Abs(strokeBounds.Right - (int)strokeBounds.Right) < .01
+				&& Math.Abs(strokeBounds.Bottom - (int)strokeBounds.Bottom) < .01
+				&& Math.Abs(strokeBounds.Top - (int)strokeBounds.Top) < .01;
+
+			if (canUseFill)
+			{
+				// Draw as optimized vertical or horizontal line
+				FillRectangle(strokeBounds, color);
+			}
+			else 
+			{
+				// Draw as a VertexSource - may yield incorrect lines in some cases
+				base.Line(x1, y1, x2, y2, color, strokeWidth);
+			}
+		}
+		
 		public override void Clear(IColorType color)
 		{
 			Affine transform = GetTransform();
@@ -429,7 +459,33 @@ namespace MatterHackers.RenderOpenGl
 			RoundedRect clearRect = new RoundedRect(new RectangleDouble(
 				cachedClipRect.Left - transform.tx, cachedClipRect.Bottom - transform.ty,
 				cachedClipRect.Right - transform.tx, cachedClipRect.Top - transform.ty), 0);
-			Render(clearRect, color.GetAsRGBA_Bytes());
+			Render(clearRect, color.ToColor());
+		}
+
+		public void RenderTransformedPath(Matrix4X4 transform, IVertexSource path, Color color, bool doDepthTest)
+		{
+			GL.Disable(EnableCap.CullFace);
+			GL.Disable(EnableCap.Texture2D);
+
+			GL.MatrixMode(MatrixMode.Modelview);
+			GL.PushMatrix();
+			GL.MultMatrix(transform.GetAsFloatArray());
+			//GL.DepthMask(false);
+			GL.Enable(EnableCap.Blend);
+			GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+			GL.Disable(EnableCap.Lighting);
+			if (doDepthTest)
+			{
+				GL.Enable(EnableCap.DepthTest);
+			}
+			else
+			{
+				GL.Disable(EnableCap.DepthTest);
+			}
+
+			this.DrawAAShape(path, color);
+
+			GL.PopMatrix();
 		}
 	}
 }

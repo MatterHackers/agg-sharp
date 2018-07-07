@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2018, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,14 +31,17 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.Agg;
+using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.PlatformAbstract;
+using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
+using static MatterHackers.Agg.Easing;
 
 namespace MatterHackers.GuiAutomation
 {
@@ -56,11 +59,12 @@ namespace MatterHackers.GuiAutomation
 		public static double TimeToMoveMouse { get; set; } = .5;
 
 		private string imageDirectory;
-		public double UpDelaySeconds = .2;
+		public static double UpDelaySeconds { get; set; } = .2;
 
 		public enum InputType { Native, Simulated, SimulatedDrawMouse };
 
-		public AutomationRunner(string imageDirectory = "", InputType inputType = InputType.Native)
+		// change default to SimulatedDrawMouse
+		public AutomationRunner(string imageDirectory = "", InputType inputType = InputType.SimulatedDrawMouse)
 		{
 #if !__ANDROID__
 			if (inputType == InputType.Native)
@@ -70,12 +74,12 @@ namespace MatterHackers.GuiAutomation
 			else
 			{
 				inputSystem = new AggInputMethods(this, inputType == InputType.SimulatedDrawMouse);
-				HookWindowsInputAndSendToWidget.EnableInputHook = false;
+				// TODO: Consider how to set this and if needed
+				//HookWindowsInputAndSendToWidget.EnableInputHook = false;
 			}
 #else
 				inputSystem = new AggInputMethods(this, inputType == InputType.SimulatedDrawMouse);
 #endif
-
 			this.imageDirectory = imageDirectory;
 		}
 
@@ -93,34 +97,6 @@ namespace MatterHackers.GuiAutomation
 		public ImageBuffer GetCurrentScreen()
 		{
 			return inputSystem.GetCurrentScreen();
-		}
-
-		public double GetInterpolatedValue(double compleatedRatio0To1, InterpolationType interpolationType)
-		{
-			switch (interpolationType)
-			{
-				case InterpolationType.LINEAR:
-					return compleatedRatio0To1;
-
-				case InterpolationType.EASE_IN:
-					return Math.Pow(compleatedRatio0To1, 3);
-
-				case InterpolationType.EASE_OUT:
-					return (Math.Pow(compleatedRatio0To1 - 1, 3) + 1);
-
-				case InterpolationType.EASE_IN_OUT:
-					if (compleatedRatio0To1 < .5)
-					{
-						return Math.Pow(compleatedRatio0To1 * 2, 3) / 2;
-					}
-					else
-					{
-						return (Math.Pow(compleatedRatio0To1 * 2 - 2, 3) + 2) / 2;
-					}
-
-				default:
-					throw new NotImplementedException();
-			}
 		}
 
 		#endregion Utility
@@ -158,37 +134,15 @@ namespace MatterHackers.GuiAutomation
 			if (searchRegion.Image.FindLeastSquaresMatch(imageNeedle, out matchPosition, out bestMatch, MatchLimit))
 			{
 				int screenHeight = inputSystem.GetCurrentScreenHeight();
-				int clickY = (int)(searchRegion.ScreenRect.Bottom + matchPosition.y + offset.y);
+				int clickY = (int)(searchRegion.ScreenRect.Bottom + matchPosition.Y + offset.y);
 				int clickYOnScreen = screenHeight - clickY; // invert to put it on the screen
 
-				Point2D screenPosition = new Point2D((int)matchPosition.x + offset.x, clickYOnScreen);
+				Point2D screenPosition = new Point2D((int)matchPosition.X + offset.x, clickYOnScreen);
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
-				switch (mouseButtons)
-				{
-					case MouseButtons.None:
-						break;
 
-					case MouseButtons.Left:
-						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
-						Delay(UpDelaySeconds);
-						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
-						break;
-
-					case MouseButtons.Right:
-						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_RIGHTDOWN, screenPosition.x, screenPosition.y, 0, 0);
-						Delay(UpDelaySeconds);
-						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_RIGHTUP, screenPosition.x, screenPosition.y, 0, 0);
-						break;
-
-					case MouseButtons.Middle:
-						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_MIDDLEDOWN, screenPosition.x, screenPosition.y, 0, 0);
-						Delay(UpDelaySeconds);
-						inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_MIDDLEUP, screenPosition.x, screenPosition.y, 0, 0);
-						break;
-
-					default:
-						break;
-				}
+				inputSystem.CreateMouseEvent(GetMouseDown(mouseButtons), screenPosition.x, screenPosition.y, 0, 0);
+				Delay(UpDelaySeconds);
+				inputSystem.CreateMouseEvent(GetMouseUp(mouseButtons), screenPosition.x, screenPosition.y, 0, 0);
 
 				return true;
 			}
@@ -196,12 +150,61 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
+		int GetMouseDown(MouseButtons mouseButtons)
+		{
+			switch (mouseButtons)
+			{
+				case MouseButtons.None:
+					return 0;
+
+				case MouseButtons.Left:
+					return NativeMethods.MOUSEEVENTF_LEFTDOWN;
+
+				case MouseButtons.Right:
+					return NativeMethods.MOUSEEVENTF_RIGHTDOWN;
+
+				case MouseButtons.Middle:
+					return NativeMethods.MOUSEEVENTF_MIDDLEDOWN;
+
+				default:
+					return 0;
+			}
+		}
+
+		int GetMouseUp(MouseButtons mouseButtons)
+		{
+			switch (mouseButtons)
+			{
+				case MouseButtons.None:
+					return 0;
+
+				case MouseButtons.Left:
+					return NativeMethods.MOUSEEVENTF_LEFTUP;
+
+				case MouseButtons.Right:
+					return NativeMethods.MOUSEEVENTF_RIGHTUP;
+
+				case MouseButtons.Middle:
+					return NativeMethods.MOUSEEVENTF_MIDDLEUP;
+
+				default:
+					return 0;
+			}
+		}
+
 		public void Delay(double secondsToWait = .2)
 		{
 			Thread.Sleep((int)(secondsToWait * 1000));
 		}
 
-		public static void StaticDelay(Func<bool> checkConditionSatisfied, double maxSeconds, int checkInterval = 200)
+		/// <summary>
+		/// Wait for the given condition to be satisfied. The check Interval should be nice and short to allow test to
+		/// complete quickly.
+		/// </summary>
+		/// <param name="checkConditionSatisfied"></param>
+		/// <param name="maxSeconds"></param>
+		/// <param name="checkInterval"></param>
+		public static void StaticDelay(Func<bool> checkConditionSatisfied, double maxSeconds, int checkInterval = 10)
 		{
 			Stopwatch timer = Stopwatch.StartNew();
 
@@ -216,7 +219,13 @@ namespace MatterHackers.GuiAutomation
 			}
 		}
 
-		public void Delay(Func<bool> checkConditionSatisfied, double maxSeconds, int checkInterval = 200)
+		/// <summary>
+		/// Wait up to maxSeconds for the condition to be satisfied. 
+		/// </summary>
+		/// <param name="checkConditionSatisfied"></param>
+		/// <param name="maxSeconds"></param>
+		/// <param name="checkInterval"></param>
+		public void WaitFor(Func<bool> checkConditionSatisfied, double maxSeconds = 5, int checkInterval = 200)
 		{
 			StaticDelay(checkConditionSatisfied, maxSeconds, checkInterval);
 		}
@@ -271,12 +280,19 @@ namespace MatterHackers.GuiAutomation
 			{
 				Point2D mousePosOnWindow = ScreenToSystemWindow(inputSystem.CurrentMousePosition(), (SystemWindow)parentSystemWindow);
 				Ellipse circle = new Ellipse(new Vector2(mousePosOnWindow.x, mousePosOnWindow.y), 10);
+
 				if (inputSystem.LeftButtonDown)
 				{
-					graphics2D.Render(circle, RGBA_Bytes.Green);
+					graphics2D.Render(circle, Color.Green);
+
+					if (inputSystem.ClickCount > 1)
+					{
+						graphics2D.DrawString(inputSystem.ClickCount.ToString(), mousePosOnWindow.x, mousePosOnWindow.y, 8, justification: Justification.Center, baseline: Baseline.BoundsCenter);
+					}
 				}
-				graphics2D.Render(new Stroke(circle, 3), RGBA_Bytes.Black);
-				graphics2D.Render(new Stroke(circle, 2), RGBA_Bytes.White);
+
+				graphics2D.Render(new Stroke(circle, 3), Color.Black);
+				graphics2D.Render(new Stroke(circle, 2), Color.White);
 			}
 		}
 
@@ -309,10 +325,10 @@ namespace MatterHackers.GuiAutomation
 			if (searchRegion.Image.FindLeastSquaresMatch(imageNeedle, out matchPosition, out bestMatch, MatchLimit))
 			{
 				int screenHeight = inputSystem.GetCurrentScreenHeight();
-				int clickY = (int)(searchRegion.ScreenRect.Bottom + matchPosition.y + offset.y);
+				int clickY = (int)(searchRegion.ScreenRect.Bottom + matchPosition.Y + offset.y);
 				int clickYOnScreen = screenHeight - clickY; // invert to put it on the screen
 
-				Point2D screenPosition = new Point2D((int)matchPosition.x + offset.x, clickYOnScreen);
+				Point2D screenPosition = new Point2D((int)matchPosition.X + offset.x, clickYOnScreen);
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
 				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 
@@ -351,10 +367,10 @@ namespace MatterHackers.GuiAutomation
 			if (searchRegion.Image.FindLeastSquaresMatch(imageNeedle, out matchPosition, out bestMatch, MatchLimit))
 			{
 				int screenHeight = inputSystem.GetCurrentScreenHeight();
-				int clickY = (int)(searchRegion.ScreenRect.Bottom + matchPosition.y + offset.y);
+				int clickY = (int)(searchRegion.ScreenRect.Bottom + matchPosition.Y + offset.y);
 				int clickYOnScreen = screenHeight - clickY; // invert to put it on the screen
 
-				Point2D screenPosition = new Point2D((int)matchPosition.x + offset.x, clickYOnScreen);
+				Point2D screenPosition = new Point2D((int)matchPosition.X + offset.x, clickYOnScreen);
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
 				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
 
@@ -362,6 +378,18 @@ namespace MatterHackers.GuiAutomation
 			}
 
 			return false;
+		}
+
+		public void ScrollIntoView(string checkBoxName)
+		{
+			// Find any sibling toggle switch and scroll the parent to the bottom
+			var checkBox = GetWidgetByName(checkBoxName, out _, onlyVisible: false);
+
+			if (checkBox != null)
+			{
+				var scrollable = checkBox.Parents<ScrollableWidget>().First();
+				scrollable?.ScrollIntoView(checkBox);
+			}
 		}
 
 		public bool ImageExists(string imageName, double secondsToWait = 0, SearchRegion searchRegion = null)
@@ -410,7 +438,7 @@ namespace MatterHackers.GuiAutomation
 		{
 			Point2D screenPosition = new Point2D(pointOnWindow.x, (int)containingWindow.Height - pointOnWindow.y);
 
-			AbstractOsMappingWidget mappingWidget = containingWindow.Parent as AbstractOsMappingWidget;
+			IPlatformWindow mappingWidget = containingWindow.PlatformWindow;
 			screenPosition.x += mappingWidget.DesktopPosition.x;
 			screenPosition.y += mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight;
 
@@ -420,7 +448,7 @@ namespace MatterHackers.GuiAutomation
 		public static Point2D ScreenToSystemWindow(Point2D pointOnScreen, SystemWindow containingWindow)
 		{
 			Point2D screenPosition = pointOnScreen;
-			AbstractOsMappingWidget mappingWidget = containingWindow.Parent as AbstractOsMappingWidget;
+			IPlatformWindow mappingWidget = containingWindow.PlatformWindow;
 			screenPosition.x -= mappingWidget.DesktopPosition.x;
 			screenPosition.y -= (mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight);
 
@@ -442,7 +470,7 @@ namespace MatterHackers.GuiAutomation
 			screenPosition.Top = (int)containingWindow.Height - screenPosition.Top;
 			screenPosition.Bottom = (int)containingWindow.Height - screenPosition.Bottom;
 
-			AbstractOsMappingWidget mappingWidget = containingWindow.Parent as AbstractOsMappingWidget;
+			IPlatformWindow mappingWidget = containingWindow.PlatformWindow;
 			screenPosition.Left += mappingWidget.DesktopPosition.x;
 			screenPosition.Top += (mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight);
 			screenPosition.Right += mappingWidget.DesktopPosition.x;
@@ -461,7 +489,7 @@ namespace MatterHackers.GuiAutomation
 				Bottom = (int)rectOnScreen.Bottom,
 			};
 
-			AbstractOsMappingWidget mappingWidget = containingWindow.Parent as AbstractOsMappingWidget;
+			IPlatformWindow mappingWidget = containingWindow.PlatformWindow;
 			screenPosition.Left -= mappingWidget.DesktopPosition.x;
 			screenPosition.Top -= (mappingWidget.DesktopPosition.y + mappingWidget.TitleBarHeight);
 			screenPosition.Left -= mappingWidget.DesktopPosition.x;
@@ -499,7 +527,7 @@ namespace MatterHackers.GuiAutomation
 			{
 				ImageBuffer imageToLookFor = new ImageBuffer();
 
-				if (ImageIO.LoadImageData(pathToImage, imageToLookFor))
+				if (AggContext.ImageIO.LoadImageData(pathToImage, imageToLookFor))
 				{
 					return imageToLookFor;
 				}
@@ -515,7 +543,7 @@ namespace MatterHackers.GuiAutomation
 		public SearchRegion GetRegionByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null)
 		{
 			SystemWindow containingWindow;
-			GuiWidget namedWidget = GetWidgetByName(widgetName, out containingWindow, secondsToWait, searchRegion);
+			GuiWidget namedWidget = GetWidgetByName(widgetName, out containingWindow, out _, secondsToWait, searchRegion);
 
 			if (namedWidget != null)
 			{
@@ -532,78 +560,116 @@ namespace MatterHackers.GuiAutomation
 			return null;
 		}
 
-		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, double secondsToWait = 0, SearchRegion searchRegion = null)
+		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, double secondsToWait = 5, SearchRegion searchRegion = null, bool onlyVisible = true)
+		{
+			return GetWidgetByName(widgetName, out containingWindow, out _, secondsToWait, searchRegion, onlyVisible);
+		}
+
+		public GuiWidget GetWidgetByName(string widgetName, out SystemWindow containingWindow, out Point2D offsetHint, double secondsToWait = 5, SearchRegion searchRegion = null, bool onlyVisible = true)
 		{
 			containingWindow = null;
+			offsetHint = Point2D.Zero;
 
-			List<GetResults> getResults = GetWidgetsByName(widgetName, secondsToWait, searchRegion);
+			List<GetByNameResults> getResults = GetWidgetsByName(widgetName, secondsToWait, searchRegion, onlyVisible);
 			if (getResults != null
 				&& getResults.Count > 0)
 			{
-				containingWindow = getResults[0].containingSystemWindow;
-				return getResults[0].widget;
+				containingWindow = getResults[0].ContainingSystemWindow;
+				offsetHint = getResults[0].OffsetHint;
+				getResults[0].Widget.DebugShowBounds = true;
+				UiThread.RunOnIdle(() => getResults[0].Widget.DebugShowBounds = false, 1);
+
+				return getResults[0].Widget;
 			}
 
 			return null;
 		}
 
-		public class GetResults
+		public object GetObjectByName(string widgetName, out SystemWindow containingWindow, double secondsToWait = 0, SearchRegion searchRegion = null)
 		{
-			public GuiWidget widget;
-			public SystemWindow containingSystemWindow;
+			return GetObjectByName(widgetName, out containingWindow, out _, secondsToWait, searchRegion);
 		}
 
-		public List<GetResults> GetWidgetsByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null)
+		public object GetObjectByName(string widgetName, out SystemWindow containingWindow, out Point2D offsetHint, double secondsToWait = 0, SearchRegion searchRegion = null, bool onlyVisible = true)
+		{
+			containingWindow = null;
+			offsetHint = Point2D.Zero;
+
+			List<GetByNameResults> getResults = GetWidgetsByName(widgetName, secondsToWait, searchRegion, onlyVisible);
+			if (getResults != null
+				&& getResults.Count > 0)
+			{
+				containingWindow = getResults[0].ContainingSystemWindow;
+				offsetHint = getResults[0].OffsetHint;
+				getResults[0].Widget.DebugShowBounds = true;
+				UiThread.RunOnIdle(() => getResults[0].Widget.DebugShowBounds = false, 1);
+
+				return getResults[0].NamedObject;
+			}
+
+			return null;
+		}
+
+		public class GetByNameResults
+		{
+			public GuiWidget Widget { get; private set; }
+			public Point2D OffsetHint { get; private set; }
+			public SystemWindow ContainingSystemWindow { get; private set; }
+			public object NamedObject { get; private set; }
+
+			public GetByNameResults(GuiWidget widget, Point2D offsetHint, SystemWindow containingSystemWindow, object namedItem)
+			{
+				this.Widget = widget;
+				this.OffsetHint = offsetHint;
+				this.ContainingSystemWindow = containingSystemWindow;
+				this.NamedObject = namedItem;
+			}
+		}
+
+		public List<GetByNameResults> GetWidgetsByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, bool onlyVisible = true)
 		{
 			if (secondsToWait > 0)
 			{
-				bool foundWidget = WaitForName(widgetName, secondsToWait);
+				bool foundWidget = WaitForName(widgetName, secondsToWait, onlyVisible);
 				if (!foundWidget)
 				{
 					return null;
 				}
 			}
 
-			List<GetResults> namedWidgetsInRegion = new List<GetResults>();
-			for(int i=SystemWindow.AllOpenSystemWindows.Count-1; i>=0 ; i--)
+			List<GetByNameResults> namedWidgetsInRegion = new List<GetByNameResults>();
+			foreach(var systemWindow in SystemWindow.AllOpenSystemWindows.Reverse())
 			{
-				SystemWindow systemWindow = SystemWindow.AllOpenSystemWindows[i];
 				if (searchRegion != null) // only add the widgets that are in the screen region
 				{
-					List<GuiWidget> namedWidgets = new List<GuiWidget>();
+					List<GuiWidget.WidgetAndPosition> namedWidgets = new List<GuiWidget.WidgetAndPosition>();
 					systemWindow.FindNamedChildrenRecursive(widgetName, namedWidgets);
-					foreach (GuiWidget namedWidget in namedWidgets)
+					foreach (GuiWidget.WidgetAndPosition widgetAndPosition in namedWidgets)
 					{
-						if (namedWidget.ActuallyVisibleOnScreen())
+						if (!onlyVisible 
+							|| widgetAndPosition.widget.ActuallyVisibleOnScreen())
 						{
-							RectangleDouble childBounds = namedWidget.TransformToParentSpace(systemWindow, namedWidget.LocalBounds);
+							RectangleDouble childBounds = widgetAndPosition.widget.TransformToParentSpace(systemWindow, widgetAndPosition.widget.LocalBounds);
 
 							ScreenRectangle screenRect = SystemWindowToScreen(childBounds, systemWindow);
 							ScreenRectangle result;
 							if (ScreenRectangle.Intersection(searchRegion.ScreenRect, screenRect, out result))
 							{
-								namedWidgetsInRegion.Add(new GetResults()
-								{
-									widget = namedWidget,
-									containingSystemWindow = systemWindow,
-								});
+								namedWidgetsInRegion.Add(new GetByNameResults(widgetAndPosition.widget, widgetAndPosition.position, systemWindow, widgetAndPosition.NamedObject));
 							}
 						}
 					}
 				}
 				else // add every named widget found
 				{
-					List<GuiWidget> namedWidgets = new List<GuiWidget>();
+					List<GuiWidget.WidgetAndPosition> namedWidgets = new List<GuiWidget.WidgetAndPosition>();
 					systemWindow.FindNamedChildrenRecursive(widgetName, namedWidgets);
-					foreach (GuiWidget namedWidget in namedWidgets)
+					foreach (GuiWidget.WidgetAndPosition namedWidget in namedWidgets)
 					{
-						if (namedWidget.ActuallyVisibleOnScreen())
+						if (!onlyVisible
+							|| namedWidget.widget.ActuallyVisibleOnScreen())
 						{
-							namedWidgetsInRegion.Add(new GetResults()
-							{
-								widget = namedWidget,
-								containingSystemWindow = systemWindow,
-							});
+							namedWidgetsInRegion.Add(new GetByNameResults(namedWidget.widget, namedWidget.position, systemWindow, namedWidget.NamedObject));
 						}
 					}
 				}
@@ -617,32 +683,42 @@ namespace MatterHackers.GuiAutomation
 		/// </summary>
 		/// <param name="widgetName">The given widget name</param>
 		/// <param name="secondsToWait">Total seconds to stay in this function waiting for the named widget to become visible.</param>
-		public void ClickByName(string widgetName, double secondsToWait = 5, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, double delayBeforeReturn = 0.2)
+		public void ClickByName(string widgetName, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, bool isDoubleClick = false)
 		{
+			double secondsToWait = 5;
+
 			SystemWindow containingWindow;
-			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, secondsToWait, searchRegion);
+			Point2D offsetHint;
+			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
 			if (widgetToClick != null)
 			{
 				RectangleDouble childBounds = widgetToClick.TransformToParentSpace(containingWindow, widgetToClick.LocalBounds);
 
 				if (origin == ClickOrigin.Center)
 				{
-					offset.x += (int)childBounds.Width / 2;
-					offset.y += (int)childBounds.Height / 2;
+					offset += offsetHint;
 				}
 
 				Point2D screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
 
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
 				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+				WaitforDraw(containingWindow);
+
+				if (isDoubleClick)
+				{
+					Thread.Sleep(150);
+					inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+					WaitforDraw(containingWindow);
+				}
 
 				Delay(UpDelaySeconds);
 
 				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
 
-				// After firing the click event, wait the given period of time before returning to allow MatterControl 
-				// to complete the targeted action
-				Delay(delayBeforeReturn);
+				WaitforDraw(containingWindow);
+
+				Delay(0.2);
 
 				return;
 			}
@@ -650,33 +726,51 @@ namespace MatterHackers.GuiAutomation
 			throw new Exception($"ClickByName Failed: Named GuiWidget not found [{widgetName}]");
 		}
 
-		public bool DragDropByName(string widgetNameDrag, string widgetNameDrop, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offsetDrag = default(Point2D), ClickOrigin originDrag = ClickOrigin.Center, Point2D offsetDrop = default(Point2D), ClickOrigin originDrop = ClickOrigin.Center)
+		public void WaitforDraw(SystemWindow containingWindow, int maxSeconds = 30)
 		{
-			if (DragByName(widgetNameDrag, secondsToWait, searchRegion, offsetDrag, originDrag))
+			var resetEvent = new AutoResetEvent(false);
+
+			EventHandler<DrawEventArgs> afterDraw = (s, e) => resetEvent.Set();
+			EventHandler<ClosedEventArgs> closed = (s, e) => resetEvent.Set();
+
+			containingWindow.AfterDraw += afterDraw;
+			containingWindow.Closed += closed;
+
+			containingWindow.Invalidate();
+
+			resetEvent.WaitOne(maxSeconds * 1000);
+
+			containingWindow.AfterDraw -= afterDraw;
+			containingWindow.Closed -= closed;
+		}
+
+		public bool DragDropByName(string widgetNameDrag, string widgetNameDrop, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offsetDrag = default(Point2D), ClickOrigin originDrag = ClickOrigin.Center, Point2D offsetDrop = default(Point2D), ClickOrigin originDrop = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
+		{
+			if (DragByName(widgetNameDrag, secondsToWait, searchRegion, offsetDrag, originDrag, mouseButtons))
 			{
-				return DropByName(widgetNameDrop, secondsToWait, searchRegion, offsetDrop, originDrop);
+				return DropByName(widgetNameDrop, secondsToWait, searchRegion, offsetDrop, originDrop, mouseButtons);
 			}
 
 			return false;
 		}
 
-		public bool DragByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
+		public bool DragByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
 		{
 			SystemWindow containingWindow;
-			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, secondsToWait, searchRegion);
+			Point2D offsetHint;
+			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
 			if (widgetToClick != null)
 			{
 				RectangleDouble childBounds = widgetToClick.TransformToParentSpace(containingWindow, widgetToClick.LocalBounds);
 
 				if (origin == ClickOrigin.Center)
 				{
-					offset.x += (int)childBounds.Width / 2;
-					offset.y += (int)childBounds.Height / 2;
+					offset += offsetHint;
 				}
 
 				Point2D screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
-				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+				inputSystem.CreateMouseEvent(GetMouseDown(mouseButtons), screenPosition.x, screenPosition.y, 0, 0);
 
 				return true;
 			}
@@ -684,23 +778,23 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool DropByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
+		public bool DropByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, MouseButtons mouseButtons = MouseButtons.Left)
 		{
 			SystemWindow containingWindow;
-			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, secondsToWait, searchRegion);
+			Point2D offsetHint;
+			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
 			if (widgetToClick != null)
 			{
 				RectangleDouble childBounds = widgetToClick.TransformToParentSpace(containingWindow, widgetToClick.LocalBounds);
 
 				if (origin == ClickOrigin.Center)
 				{
-					offset.x += (int)childBounds.Width / 2;
-					offset.y += (int)childBounds.Height / 2;
+					offset += offsetHint;
 				}
 
 				Point2D screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
-				Drop();
+				Drop(mouseButtons);
 
 				return true;
 			}
@@ -708,29 +802,29 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public void Drop(Point2D offset = default(Point2D))
+		public void Drop(MouseButtons mouseButtons = MouseButtons.Left)
 		{
-			Point2D screenPosition = CurrentMousePosition() + offset;
-			inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
+			Point2D screenPosition = CurrentMousePosition();
+			inputSystem.CreateMouseEvent(GetMouseUp(mouseButtons), screenPosition.x, screenPosition.y, 0, 0);
 		}
 
-		public bool DoubleClickByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
+		public void DoubleClickByName(string widgetName, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
 		{
-			throw new NotImplementedException();
+			this.ClickByName(widgetName, searchRegion, offset, origin, isDoubleClick: true);
 		}
 
 		public bool MoveToByName(string widgetName, double secondsToWait = 0, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
 		{
 			SystemWindow containingWindow;
-			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, secondsToWait, searchRegion);
+			Point2D offsetHint;
+			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
 			if (widgetToClick != null)
 			{
 				RectangleDouble childBounds = widgetToClick.TransformToParentSpace(containingWindow, widgetToClick.LocalBounds);
 
 				if (origin == ClickOrigin.Center)
 				{
-					offset.x += (int)childBounds.Width / 2;
-					offset.y += (int)childBounds.Height / 2;
+					offset += offsetHint;
 				}
 
 				Point2D screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
@@ -742,15 +836,57 @@ namespace MatterHackers.GuiAutomation
 			return false;
 		}
 
-		public bool NameExists(string widgetName, SearchRegion searchRegion = null)
+		public bool NameExists(string widgetName, double secondsToWait = 5, bool onlyVisible = true)
 		{
-			foreach (SystemWindow window in SystemWindow.AllOpenSystemWindows)
+			return WaitForName(widgetName, secondsToWait, onlyVisible);
+		}
+
+		public bool NamedWidgetExists(string widgetName, SearchRegion searchRegion = null, bool onlyVisible = true)
+		{
+			// Ignore SystemWindows with null PlatformWindow members - SystemWindow constructed but not yet shown
+			foreach (SystemWindow window in SystemWindow.AllOpenSystemWindows.ToArray())
 			{
-				List<GuiWidget> foundChildren = new List<GuiWidget>();
+				List<GuiWidget.WidgetAndPosition> foundChildren = new List<GuiWidget.WidgetAndPosition>();
 				window.FindNamedChildrenRecursive(widgetName, foundChildren);
 				if (foundChildren.Count > 0)
 				{
-					foreach (GuiWidget foundChild in foundChildren)
+					foreach (GuiWidget.WidgetAndPosition foundChild in foundChildren)
+					{
+						if (onlyVisible)
+						{
+							RectangleDouble childBounds = foundChild.widget.TransformToParentSpace(window, foundChild.widget.LocalBounds);
+
+							ScreenRectangle screenRect = SystemWindowToScreen(childBounds, window);
+							ScreenRectangle result;
+							if (searchRegion == null
+								|| ScreenRectangle.Intersection(searchRegion.ScreenRect, screenRect, out result))
+							{
+								if (foundChild.widget.ActuallyVisibleOnScreen())
+								{
+									return true;
+								}
+							}
+						}
+						else
+						{
+							return true;
+						}
+					}
+				}
+			}
+
+			return false;
+		}
+
+		public bool WidgetExists<T>(SearchRegion searchRegion = null) where T : GuiWidget
+		{
+			// Ignore SystemWindows with null PlatformWindow members - SystemWindow constructed but not yet shown
+			foreach (SystemWindow window in SystemWindow.AllOpenSystemWindows.ToArray())
+			{
+				IEnumerable<T> foundChildren = window.Children<T>();
+				if (foundChildren.Count() > 0)
+				{
+					foreach (var foundChild in foundChildren)
 					{
 						RectangleDouble childBounds = foundChild.TransformToParentSpace(window, foundChild.LocalBounds);
 
@@ -769,7 +905,6 @@ namespace MatterHackers.GuiAutomation
 
 			return false;
 		}
-
 		#endregion Search By Names
 
 		public void SetMouseCursorPosition(int x, int y)
@@ -781,13 +916,13 @@ namespace MatterHackers.GuiAutomation
 			for (int i = 0; i < steps; i++)
 			{
 				double ratio = i / (double)steps;
-				ratio = GetInterpolatedValue(ratio, InterpolationType.EASE_OUT);
+				ratio = Cubic.Out(ratio);
 				Vector2 current = start + delta * ratio;
-				inputSystem.SetCursorPosition((int)current.x, (int)current.y);
+				inputSystem.SetCursorPosition((int)current.X, (int)current.Y);
 				Thread.Sleep(20);
 			}
 
-			inputSystem.SetCursorPosition((int)end.x, (int)end.y);
+			inputSystem.SetCursorPosition((int)end.X, (int)end.Y);
 		}
 
 		public void Dispose()
@@ -816,6 +951,13 @@ namespace MatterHackers.GuiAutomation
 			throw new NotImplementedException();
 		}
 
+		/// <summary>
+		/// Send the string to the system window
+		/// ^ will add the control key
+		/// {Enter} will type the enter key
+		/// {BACKSPACE} will type the backspace key
+		/// </summary>
+		/// <param name="textToType"></param>
 		public void Type(string textToType)
 		{
 			inputSystem.Type(textToType);
@@ -858,10 +1000,10 @@ namespace MatterHackers.GuiAutomation
 		/// Wait up to secondsToWait for the named widget to exist and be visible.
 		/// </summary>
 		/// <param name="widgetName"></param>
-		public bool WaitForName(string widgetName, double secondsToWait = 1) // TODO: should have a search region
+		public bool WaitForName(string widgetName, double secondsToWait = 5, bool onlyVisible = true) // TODO: should have a search region
 		{
 			Stopwatch timeWaited = Stopwatch.StartNew();
-			while (!NameExists(widgetName)
+			while (!NamedWidgetExists(widgetName, null, onlyVisible)
 				&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
 			{
 				Delay(.05);
@@ -876,13 +1018,13 @@ namespace MatterHackers.GuiAutomation
 		}
 
 		/// <summary>
-		/// Wait up to secondsToWait for the named widget to vanish.
+		/// Wait up to secondsToWait for the named widget to disappear
 		/// </summary>
 		/// <param name="widgetName"></param>
-		public bool WaitVanishForName(string widgetName, double secondsToWait) // TODO: should have a search region
+		public bool WaitForWidgetDisappear(string widgetName, double secondsToWait) // TODO: should have a search region
 		{
 			Stopwatch timeWaited = Stopwatch.StartNew();
-			while (NameExists(widgetName)
+			while (NamedWidgetExists(widgetName)
 				&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
 			{
 				Delay(.05);
@@ -900,20 +1042,16 @@ namespace MatterHackers.GuiAutomation
 
 		#region Prior TestHarness code
 
-		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure, string imagesDirectory = "", InputType inputType = InputType.Native)
+		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", InputType inputType = InputType.SimulatedDrawMouse, Action closeWindow = null)
 		{
 			var testRunner = new AutomationRunner(imagesDirectory, inputType);
 
-			AutoResetEvent resetEvent = new AutoResetEvent(false);
+			var resetEvent = new AutoResetEvent(false);
 
-			bool firstDraw = true;
-			initialSystemWindow.AfterDraw += (sender, e) =>
+			// On load, release the reset event
+			initialSystemWindow.Load += (s, e) =>
 			{
-				if (firstDraw)
-				{
-					firstDraw = false;
-					resetEvent.Set();
-				}
+				resetEvent.Set();
 			};
 
 			int testTimeout = (int)(1000 * secondsToTestFailure);
@@ -924,9 +1062,9 @@ namespace MatterHackers.GuiAutomation
 				Task.Delay(testTimeout),
 				Task.Run(() =>
 				{
-					// Wait until the first system window draw before running the test method
-					resetEvent.WaitOne();
-					
+					// Wait until the first system window draw before running the test method, up to the timeout
+					resetEvent.WaitOne(testTimeout);
+
 					return testMethod(testRunner);
 				}));
 
@@ -935,21 +1073,32 @@ namespace MatterHackers.GuiAutomation
 			{
 				long elapsedTime = timer.ElapsedMilliseconds;
 
+				// Invoke the callers close implementation or fall back to CloseOnIdle
+				if (closeWindow != null)
+				{
+					closeWindow();
+				}
+				else
+				{
+					initialSystemWindow.CloseOnIdle();
+				}
+
 				// Create an exception Task for test timeouts
 				if (elapsedTime >= testTimeout)
 				{
-					task = new Task<Task>(() => { throw new TimeoutException("TestMethod timed out"); });
+					// Wait for CloseOnIdle to complete
+					testRunner.WaitFor(() => initialSystemWindow.HasBeenClosed);
+
+					task = new Task<Task>(() => throw new TimeoutException("TestMethod timed out"));
 					task.RunSynchronously();
 				}
-
-				initialSystemWindow.CloseOnIdle();
 			});
 
 			// Main thread blocks here until released via CloseOnIdle above
 			initialSystemWindow.ShowAsSystemWindow();
 
 			// After the system window is closed return the task and any exception to the calling context
-			return task?.Result ?? Task.FromResult(0);
+			return task?.Result ?? Task.CompletedTask;
 		}
 
 		#endregion

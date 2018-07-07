@@ -15,48 +15,47 @@ namespace MatterHackers.Agg.UI
 			GuiWidget parent = layoutEventArgs.ParentWidget;
 			if (parent != null)
 			{
-				parent.SuspendLayout();
-
-				// if we didn't specify a child than anchor all the children
-				if (layoutEventArgs.ChildWidget == null)
+				using (parent.LayoutLock())
 				{
-					foreach (GuiWidget child in parent.Children)
+					// if we didn't specify a child than anchor all the children
+					if (layoutEventArgs.ChildWidget == null)
 					{
-						if (child.Visible == false)
+						foreach (GuiWidget child in parent.Children)
 						{
-							continue;
-						}
+							if (child.Visible == false)
+							{
+								continue;
+							}
 
-						ApplyHAnchorToChild(parent, child);
-						ApplyVAnchorToChild(parent, child);
+							ApplyHAnchorToChild(parent, child);
+							ApplyVAnchorToChild(parent, child);
+						}
+					}
+					else
+					{
+						ApplyHAnchorToChild(parent, layoutEventArgs.ChildWidget);
+						ApplyVAnchorToChild(parent, layoutEventArgs.ChildWidget);
+					}
+
+					// make sure we fit to the children after anchoring
+					bool parentChangedSize = false;
+					DoFitToChildrenHorizontal(parent, ref parentChangedSize);
+					DoFitToChildrenVertical(parent, ref parentChangedSize);
+
+					// if we changed size again, than try one more time to anchor the children
+					if (parentChangedSize)
+					{
+						foreach (GuiWidget child in parent.Children)
+						{
+							if (child.Visible == false)
+							{
+								continue;
+							}
+							ApplyHAnchorToChild(parent, child);
+							ApplyVAnchorToChild(parent, child);
+						}
 					}
 				}
-				else
-				{
-					ApplyHAnchorToChild(parent, layoutEventArgs.ChildWidget);
-					ApplyVAnchorToChild(parent, layoutEventArgs.ChildWidget);
-				}
-
-				// make sure we fit to the children after anchoring
-				bool parentChangedSize = false;
-				DoFitToChildrenHorizontal(parent, ref parentChangedSize);
-				DoFitToChildrenVertical(parent, ref parentChangedSize);
-
-				// if we changed size again, than try one more time to anchor the children
-				if (parentChangedSize)
-				{
-					foreach (GuiWidget child in parent.Children)
-					{
-						if (child.Visible == false)
-						{
-							continue;
-						}
-						ApplyHAnchorToChild(parent, child);
-						ApplyVAnchorToChild(parent, child);
-					}
-				}
-
-				parent.ResumeLayout();
 			}
 		}
 
@@ -69,7 +68,8 @@ namespace MatterHackers.Agg.UI
 
 			Vector2 newOriginRelParent;
 			double newHeight;
-			if (GetOriginAndHeightForChild(parent, child, out newOriginRelParent, out newHeight))
+			var adjust = GetOriginAndHeightForChild(parent, child, out newOriginRelParent, out newHeight);
+			if (adjust.adjustOrigin || adjust.adjustHeight)
 			{
 				child.OriginRelativeParent = newOriginRelParent;
 				child.Height = newHeight;
@@ -78,13 +78,13 @@ namespace MatterHackers.Agg.UI
 
 		public void DoFitToChildrenVertical(GuiWidget widgetToAdjustBounds, ref bool sizeWasChanged)
 		{
-			if (widgetToAdjustBounds.VAnchorIsSet(VAnchor.FitToChildren))
+			if (widgetToAdjustBounds.VAnchorIsSet(VAnchor.Fit))
 			{
 				double heightToMatchParent = 0;
 				if (widgetToAdjustBounds.Parent != null)
 				{
 					Vector2 newOriginRelParent;
-					if (!GetOriginAndHeightForChild(widgetToAdjustBounds.Parent, widgetToAdjustBounds, out newOriginRelParent, out heightToMatchParent))
+					if (!GetOriginAndHeightForChild(widgetToAdjustBounds.Parent, widgetToAdjustBounds, out newOriginRelParent, out heightToMatchParent).adjustHeight)
 					{
 						// we don't need to adjust anything for the parent so make sure this is not applied below.
 						heightToMatchParent = 0;
@@ -100,7 +100,7 @@ namespace MatterHackers.Agg.UI
 				adjustBounds.Top = Math.Max(childrenEnclosingBounds.Bottom + heightToMatchParent, childrenEnclosingBounds.Top);
 				if (widgetToAdjustBounds.LocalBounds != adjustBounds)
 				{
-					if (widgetToAdjustBounds.VAnchorIsSet(VAnchor.ParentBottomTop))
+					if (widgetToAdjustBounds.VAnchorIsSet(VAnchor.Stretch))
 					{
 						if (widgetToAdjustBounds.LocalBounds.Height < adjustBounds.Height)
 						{
@@ -118,9 +118,10 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override bool GetOriginAndHeightForChild(GuiWidget parent, GuiWidget child, out Vector2 newOriginRelParent, out double newHeight)
+		public override (bool adjustOrigin, bool adjustHeight) GetOriginAndHeightForChild(GuiWidget parent, GuiWidget child, out Vector2 newOriginRelParent, out double newHeight)
 		{
-			bool needToAdjustAnything = false;
+			bool needToAdjustHeight = false;
+			bool needToAdjustOrigin = false;
 			newOriginRelParent = child.OriginRelativeParent;
 			newHeight = child.Height;
 
@@ -129,54 +130,57 @@ namespace MatterHackers.Agg.UI
 				throw new Exception("You need to call this on the parent that has this child.");
 			}
 
-			if ((child.VAnchor & VAnchor.ParentBottom) == VAnchor.ParentBottom)
+			if ((child.VAnchor & VAnchor.Bottom) == VAnchor.Bottom)
 			{
 				// hold it to the Bottom
-				newOriginRelParent = new Vector2(child.OriginRelativeParent.x, parent.LocalBounds.Bottom + child.DeviceMargin.Bottom + parent.DevicePadding.Bottom - child.LocalBounds.Bottom);
+				newOriginRelParent = new Vector2(child.OriginRelativeParent.X, parent.LocalBounds.Bottom + child.DeviceMarginAndBorder.Bottom + parent.DevicePadding.Bottom - child.LocalBounds.Bottom);
+				needToAdjustOrigin = true;
 
-				if ((child.VAnchor & VAnchor.ParentCenter) == VAnchor.ParentCenter)
+				if ((child.VAnchor & VAnchor.Center) == VAnchor.Center)
 				{
 					// widen the bounds to the center
 					double parentUsableHeight = parent.LocalBounds.Height - (parent.DevicePadding.Top + parent.DevicePadding.Bottom);
-					newHeight = parentUsableHeight / 2 - child.DeviceMargin.Height;
+					newHeight = parentUsableHeight / 2 - child.DeviceMarginAndBorder.Height;
+					needToAdjustHeight = true;
 				}
-				else if ((child.VAnchor & VAnchor.ParentTop) == VAnchor.ParentTop)
+				else if ((child.VAnchor & VAnchor.Top) == VAnchor.Top)
 				{
 					// bounds need to be stretched
 					double parentUsableHeight = parent.LocalBounds.Height - (parent.DevicePadding.Bottom + parent.DevicePadding.Top);
-					newHeight = parentUsableHeight - (child.DeviceMargin.Bottom + child.DeviceMargin.Top);
+					newHeight = parentUsableHeight - (child.DeviceMarginAndBorder.Bottom + child.DeviceMarginAndBorder.Top);
+					needToAdjustHeight = true;
 				}
-				needToAdjustAnything = true;
 			}
-			else if ((child.VAnchor & VAnchor.ParentCenter) == VAnchor.ParentCenter)
+			else if ((child.VAnchor & VAnchor.Center) == VAnchor.Center)
 			{
-				if ((child.VAnchor & VAnchor.ParentTop) == VAnchor.ParentTop)
+				if ((child.VAnchor & VAnchor.Top) == VAnchor.Top)
 				{
 					// fix the offset
-					newOriginRelParent = new VectorMath.Vector2(child.OriginRelativeParent.x,
-						parent.DevicePadding.Bottom + child.DeviceMargin.Bottom + (parent.Height - parent.DevicePadding.Bottom - parent.DevicePadding.Top) / 2);
+					newOriginRelParent = new VectorMath.Vector2(child.OriginRelativeParent.X,
+						parent.DevicePadding.Bottom + child.DeviceMarginAndBorder.Bottom + (parent.Height - parent.DevicePadding.Bottom - parent.DevicePadding.Top) / 2);
 
 					// bounds need to be stretched
 					double parentUsableHeight = parent.LocalBounds.Height - (parent.DevicePadding.Top + parent.DevicePadding.Bottom);
-					newHeight = parentUsableHeight / 2 - child.DeviceMargin.Height;
+					newHeight = parentUsableHeight / 2 - child.DeviceMarginAndBorder.Height;
+					needToAdjustHeight = true;
 				}
 				else
 				{
 					// hold it centered
 					double parentCenterY = parent.LocalBounds.Bottom + parent.DevicePadding.Bottom + (parent.Height - parent.DevicePadding.Bottom - parent.DevicePadding.Top) / 2;
-					double originY = parentCenterY - child.LocalBounds.Bottom - (child.Height + child.DeviceMargin.Bottom + child.DeviceMargin.Top) / 2 + child.DeviceMargin.Bottom;
-					newOriginRelParent = new Vector2(child.OriginRelativeParent.x, originY);
+					double originY = parentCenterY - child.LocalBounds.Bottom - (child.Height + child.DeviceMarginAndBorder.Bottom + child.DeviceMarginAndBorder.Top) / 2 + child.DeviceMarginAndBorder.Bottom;
+					newOriginRelParent = new Vector2(child.OriginRelativeParent.X, originY);
+					needToAdjustOrigin = true;
 				}
-				needToAdjustAnything = true;
 			}
-			else if ((child.VAnchor & VAnchor.ParentTop) == VAnchor.ParentTop)
+			else if ((child.VAnchor & VAnchor.Top) == VAnchor.Top)
 			{
 				// hold it to the Top
-				newOriginRelParent = new Vector2(child.OriginRelativeParent.x, parent.LocalBounds.Top - child.DeviceMargin.Top - parent.DevicePadding.Top - child.LocalBounds.Top);
-				needToAdjustAnything = true;
+				newOriginRelParent = new Vector2(child.OriginRelativeParent.X, parent.LocalBounds.Top - child.DeviceMarginAndBorder.Top - parent.DevicePadding.Top - child.LocalBounds.Top);
+				needToAdjustOrigin = true;
 			}
 
-			return needToAdjustAnything;
+			return (needToAdjustOrigin, needToAdjustHeight);
 		}
 
 		protected virtual void ApplyHAnchorToChild(GuiWidget parent, GuiWidget child)
@@ -188,23 +192,47 @@ namespace MatterHackers.Agg.UI
 
 			Vector2 newOriginRelParent;
 			double newWidth;
-			if (GetOriginAndWidthForChild(parent, child, out newOriginRelParent, out newWidth))
+			var adjust = GetOriginAndWidthForChild(parent, child, out newOriginRelParent, out newWidth);
+			if (adjust.adjustOrigin || adjust.adjustWidth)
 			{
-				child.OriginRelativeParent = newOriginRelParent;
-				child.Width = newWidth;
+				newWidth = Math.Max(newWidth, child.MinimumSize.X);
+				if (child.OriginRelativeParent != newOriginRelParent
+					&& child.Width != newWidth)
+				{
+					var origin = child.OriginRelativeParent;
+					var width = child.Width;
+					var parentLock = (child.Parent != null) ? child.Parent.LayoutLock() : null;
+					// only do one layout
+					using (child.LayoutLock())
+					{
+						child.OriginRelativeParent = newOriginRelParent;
+						child.Width = newWidth;
+					}
+					parentLock?.Dispose();
+					if (child.OriginRelativeParent != origin
+						|| child.Width != width)
+					{
+						child.PerformLayout();
+					}
+				}
+				else // only one of them will actually change anything (so only one layout)
+				{
+					child.OriginRelativeParent = newOriginRelParent;
+					child.Width = newWidth;
+				}
 			}
 		}
 
 		public void DoFitToChildrenHorizontal(GuiWidget widgetToAdjust, ref bool sizeWasChanged)
 		{
-			if (widgetToAdjust.HAnchorIsSet(HAnchor.FitToChildren))
+			if (widgetToAdjust.HAnchorIsSet(HAnchor.Fit))
 			{
 				double widthToMatchParent = 0;
 				// let's check if the parent would like to make this widget bigger
 				if (widgetToAdjust.Parent != null)
 				{
 					Vector2 newOriginRelParent;
-					if (!GetOriginAndWidthForChild(widgetToAdjust.Parent, widgetToAdjust, out newOriginRelParent, out widthToMatchParent))
+					if (!GetOriginAndWidthForChild(widgetToAdjust.Parent, widgetToAdjust, out newOriginRelParent, out widthToMatchParent).adjustWidth)
 					{
 						// we don't need to adjust anything for the parent so make sure this is not applied below.
 						widthToMatchParent = 0;
@@ -220,10 +248,10 @@ namespace MatterHackers.Agg.UI
 				if (widgetToAdjust.Parent != null
 					&& widgetToAdjust.Parent.LayoutEngine != null)
 				{
-					if(widgetToAdjust.Parent.LayoutEngine as LayoutEngineFlow != null)
+					if (widgetToAdjust.Parent.LayoutEngine as LayoutEngineFlow != null)
 					{
 						// The parent is a flow layout widget but it will only adjust our size if we are HAnchor leftright
-						if (widgetToAdjust.HAnchorIsSet(HAnchor.ParentLeftRight))
+						if (widgetToAdjust.HAnchorIsSet(HAnchor.Stretch))
 						{
 							// We make the assumption that the parent has set the size correctly assuming flow layout and this can only be made bigger if fit needs to.
 							widgetToAdjustBounds.Right = Math.Max(widgetToAdjustBounds.Right, childrenEnclosingBounds.Right);
@@ -239,7 +267,7 @@ namespace MatterHackers.Agg.UI
 					}
 					else
 					{
-							throw new NotImplementedException();
+						throw new NotImplementedException();
 					}
 				}
 				else
@@ -248,7 +276,7 @@ namespace MatterHackers.Agg.UI
 				}
 				if (widgetToAdjust.LocalBounds != widgetToAdjustBounds)
 				{
-					if (widgetToAdjust.HAnchorIsSet(HAnchor.ParentLeftRight))
+					if (widgetToAdjust.HAnchorIsSet(HAnchor.Stretch))
 					{
 						if (widgetToAdjust.LocalBounds.Width < widgetToAdjustBounds.Width)
 						{
@@ -266,60 +294,64 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public override bool GetOriginAndWidthForChild(GuiWidget parent, GuiWidget child, out Vector2 newOriginRelParent, out double newWidth)
+		public override (bool adjustOrigin, bool adjustWidth) GetOriginAndWidthForChild(GuiWidget parent, GuiWidget child, out Vector2 newOriginRelParent, out double newWidth)
 		{
-			bool needToAdjustAnything = false;
+			bool needToAdjustWidth = false;
+			bool needToAdjustOrigin = false;
 			newOriginRelParent = child.OriginRelativeParent;
 			newWidth = child.Width;
-			if ((child.HAnchor & HAnchor.ParentLeft) == HAnchor.ParentLeft)
+			if ((child.HAnchor & HAnchor.Left) == HAnchor.Left)
 			{
+				needToAdjustOrigin = true;
 				// Hold it to the left
-				newOriginRelParent = new Vector2(parent.LocalBounds.Left + child.DeviceMargin.Left + parent.DevicePadding.Left - child.LocalBounds.Left, child.OriginRelativeParent.y);
+				newOriginRelParent = new Vector2(parent.LocalBounds.Left + child.DeviceMarginAndBorder.Left + parent.DevicePadding.Left - child.LocalBounds.Left, child.OriginRelativeParent.Y);
 
-				if ((child.HAnchor & HAnchor.ParentCenter) == HAnchor.ParentCenter)
+				if ((child.HAnchor & HAnchor.Center) == HAnchor.Center)
 				{
 					// widen the bounds to the center
 					double parentUsableWidth = parent.LocalBounds.Width - (parent.DevicePadding.Left + parent.DevicePadding.Right);
-					newWidth = parentUsableWidth / 2 - (child.DeviceMargin.Left + child.DeviceMargin.Right);
+					newWidth = parentUsableWidth / 2 - (child.DeviceMarginAndBorder.Left + child.DeviceMarginAndBorder.Right);
+					needToAdjustWidth = true;
 				}
-				else if ((child.HAnchor & HAnchor.ParentRight) == HAnchor.ParentRight)
+				else if ((child.HAnchor & HAnchor.Right) == HAnchor.Right)
 				{
 					// widen the bounds to the right
 					double parentUsableWidth = parent.LocalBounds.Width - (parent.DevicePadding.Left + parent.DevicePadding.Right);
-					newWidth = parentUsableWidth - (child.DeviceMargin.Left + child.DeviceMargin.Right);
+					newWidth = parentUsableWidth - (child.DeviceMarginAndBorder.Left + child.DeviceMarginAndBorder.Right);
+					needToAdjustWidth = true;
 				}
-				needToAdjustAnything = true;
 			}
-			else if ((child.HAnchor & HAnchor.ParentCenter) == HAnchor.ParentCenter)
+			else if ((child.HAnchor & HAnchor.Center) == HAnchor.Center)
 			{
-				if ((child.HAnchor & HAnchor.ParentRight) == HAnchor.ParentRight)
+				if ((child.HAnchor & HAnchor.Right) == HAnchor.Right)
 				{
 					// fix the offset
 					newOriginRelParent = new VectorMath.Vector2(
-						parent.DevicePadding.Left + child.DeviceMargin.Left + (parent.Width - parent.DevicePadding.Left - parent.DevicePadding.Right) / 2,
-						child.OriginRelativeParent.y);
+						parent.DevicePadding.Left + child.DeviceMarginAndBorder.Left + (parent.Width - parent.DevicePadding.Left - parent.DevicePadding.Right) / 2,
+						child.OriginRelativeParent.Y);
 
 					// widen the bounds to the right
 					double parentUsableWidth = parent.LocalBounds.Width - (parent.DevicePadding.Left + parent.DevicePadding.Right);
-					newWidth = parentUsableWidth / 2 - (child.DeviceMargin.Left + child.DeviceMargin.Right);
+					newWidth = parentUsableWidth / 2 - (child.DeviceMarginAndBorder.Left + child.DeviceMarginAndBorder.Right);
+					needToAdjustWidth = true;
 				}
 				else
 				{
 					// hold it centered
 					double parentCenterX = parent.LocalBounds.Left + parent.DevicePadding.Left + (parent.Width - (parent.DevicePadding.Left + parent.DevicePadding.Right)) / 2;
-					double originX = parentCenterX - child.LocalBounds.Left - (child.Width + child.DeviceMargin.Left + child.DeviceMargin.Right) / 2 + child.DeviceMargin.Left;
-					newOriginRelParent = new Vector2(originX, child.OriginRelativeParent.y);
+					double originX = parentCenterX - child.LocalBounds.Left - (child.Width + child.DeviceMarginAndBorder.Left + child.DeviceMarginAndBorder.Right) / 2 + child.DeviceMarginAndBorder.Left;
+					newOriginRelParent = new Vector2(originX, child.OriginRelativeParent.Y);
+					needToAdjustOrigin = true;
 				}
-				needToAdjustAnything = true;
 			}
-			else if ((child.HAnchor & HAnchor.ParentRight) == HAnchor.ParentRight)
+			else if ((child.HAnchor & HAnchor.Right) == HAnchor.Right)
 			{
 				// hold it to the right
-				newOriginRelParent = new Vector2(parent.LocalBounds.Right - child.DeviceMargin.Right - parent.DevicePadding.Right - child.LocalBounds.Right, child.OriginRelativeParent.y);
-				needToAdjustAnything = true;
+				newOriginRelParent = new Vector2(parent.LocalBounds.Right - child.DeviceMarginAndBorder.Right - parent.DevicePadding.Right - child.LocalBounds.Right, child.OriginRelativeParent.Y);
+				needToAdjustOrigin = true;
 			}
 
-			return needToAdjustAnything;
+			return (needToAdjustOrigin, needToAdjustWidth);
 		}
 	}
 }

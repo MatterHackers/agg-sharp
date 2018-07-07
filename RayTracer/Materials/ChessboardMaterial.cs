@@ -17,12 +17,12 @@ namespace MatterHackers.RayTracer
 		/// <summary>
 		/// E.g. the represents the black squares on the chessboard
 		/// </summary>
-		public RGBA_Floats ColorEven;
+		public ColorF ColorEven;
 
 		/// <summary>
 		/// represents the white squares on the chessboard
 		/// </summary>
-		public RGBA_Floats ColorOdd;
+		public ColorF ColorOdd;
 
 		/// <summary>
 		/// Density indicates the size of the squares and therefore
@@ -31,7 +31,7 @@ namespace MatterHackers.RayTracer
 		/// </summary>
 		public double Density;
 
-		public ChessboardMaterial(RGBA_Floats coloreven, RGBA_Floats colorodd, double reflection, double transparency, double gloss, double density)
+		public ChessboardMaterial(ColorF coloreven, ColorF colorodd, double reflection, double transparency, double gloss, double density)
 		{
 			this.ColorEven = coloreven;
 			this.ColorOdd = colorodd;
@@ -46,7 +46,7 @@ namespace MatterHackers.RayTracer
 			get { return true; }
 		}
 
-		public override RGBA_Floats GetColor(double u, double v)
+		public override ColorF GetColor(double u, double v)
 		{
 			double t = WrapUp(u) * WrapUp(v);
 

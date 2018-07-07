@@ -9,7 +9,7 @@ namespace MatterHackers.Agg.Tests
 	[TestFixture]
 	public class LionRenderTest
 	{
-		[Test, Category("FixNeeded")]
+		[Test, Ignore("FixNeeded")]
 		public void CompareToLionTGA()
 		{
 			LionShape lionShape = new LionShape();
@@ -21,13 +21,13 @@ namespace MatterHackers.Agg.Tests
 			}
 
 			Affine transform = Affine.NewIdentity();
-			transform *= Affine.NewTranslation(-lionShape.Center.x, -lionShape.Center.y);
+			transform *= Affine.NewTranslation(-lionShape.Center.X, -lionShape.Center.Y);
 			transform *= Affine.NewTranslation(renderedImage.Width / 2, renderedImage.Height / 2);
 
 			// This code renders the lion:
 			VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(lionShape.Path, transform);
 			Graphics2D renderer = renderedImage.NewGraphics2D();
-			renderer.Clear(new RGBA_Floats(1.0, 1.0, 1.0, 1.0));
+			renderer.Clear(new ColorF(1.0, 1.0, 1.0, 1.0));
 			renderer.Render(transformedPathStorage, lionShape.Colors, lionShape.PathIndex, lionShape.NumPaths);
 
 			ImageTgaIO.Save(renderedImage, "TestOutput.tga");

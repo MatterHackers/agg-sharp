@@ -35,29 +35,30 @@ namespace MatterHackers.PolygonMesh.Rendering
 {
 	public static class OrthographicZProjection
 	{
-		public static void DrawTo(Graphics2D graphics2D, Mesh meshToDraw, Vector2 offset, double scale, RGBA_Bytes silhouetteColor)
+		public static void DrawTo(Graphics2D graphics2D, Mesh meshToDraw, Matrix4X4 matrix, Vector2 offset, double scale, Color silhouetteColor)
 		{
 			graphics2D.Rasterizer.gamma(new gamma_power(.3));
-			PathStorage polygonProjected = new PathStorage();
+			VertexStorage polygonProjected = new VertexStorage();
 			foreach (Face face in meshToDraw.Faces)
 			{
-				if (face.normal.z > 0)
+				if (Vector3.TransformNormal(face.Normal, matrix).Z > 0)
 				{
 					polygonProjected.remove_all();
 					bool first = true;
 					foreach (FaceEdge faceEdge in face.FaceEdges())
 					{
-						Vector2 position = new Vector2(faceEdge.firstVertex.Position.x, faceEdge.firstVertex.Position.y);
+						var position3D = Vector3.Transform(faceEdge.FirstVertex.Position, matrix);
+						Vector2 position = new Vector2(position3D.X, position3D.Y);
 						position += offset;
 						position *= scale;
 						if (first)
 						{
-							polygonProjected.MoveTo(position.x, position.y);
+							polygonProjected.MoveTo(position.X, position.Y);
 							first = false;
 						}
 						else
 						{
-							polygonProjected.LineTo(position.x, position.y);
+							polygonProjected.LineTo(position.X, position.Y);
 						}
 					}
 					graphics2D.Render(polygonProjected, silhouetteColor);

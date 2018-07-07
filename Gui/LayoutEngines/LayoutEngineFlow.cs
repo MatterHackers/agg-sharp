@@ -53,31 +53,11 @@ namespace MatterHackers.Agg.UI
 			GuiWidget parent = layoutEventArgs.ParentWidget;
 			if (parent != null)
 			{
-				parent.SuspendLayout();
-
-				for (int i = 0; i < parent.Children.Count; i++)
+				using (parent.LayoutLock())
 				{
-					GuiWidget child = parent.Children[i];
-					if (child.Visible == false)
+					for (int i = 0; i < parent.Children.Count; i++)
 					{
-						continue;
-					}
-					ApplyHAnchorToChild(parent, child);
-					ApplyVAnchorToChild(parent, child);
-				}
-
-				DoLayoutChildren(layoutEventArgs);
-
-				FixOriginXIfRightToLeft(parent);
-				FixOriginYIfTopToBottom(parent);
-
-				bool parentChangedSize = false;
-				DoFitToChildrenHorizontal(parent, ref parentChangedSize);
-				DoFitToChildrenVertical(parent, ref parentChangedSize);
-				if (parentChangedSize)
-				{
-					foreach (GuiWidget child in parent.Children)
-					{
+						GuiWidget child = parent.Children[i];
 						if (child.Visible == false)
 						{
 							continue;
@@ -87,15 +67,34 @@ namespace MatterHackers.Agg.UI
 					}
 
 					DoLayoutChildren(layoutEventArgs);
-				}
 
-				parent.ResumeLayout();
+					FixOriginXIfRightToLeft(parent);
+					FixOriginYIfTopToBottom(parent);
+
+					bool parentChangedSize = false;
+					DoFitToChildrenHorizontal(parent, ref parentChangedSize);
+					DoFitToChildrenVertical(parent, ref parentChangedSize);
+					if (parentChangedSize)
+					{
+						foreach (GuiWidget child in parent.Children)
+						{
+							if (child.Visible == false)
+							{
+								continue;
+							}
+							ApplyHAnchorToChild(parent, child);
+							ApplyVAnchorToChild(parent, child);
+						}
+
+						DoLayoutChildren(layoutEventArgs);
+					}
+				}
 			}
 		}
 
 		private void FixOriginXIfRightToLeft(GuiWidget parent)
 		{
-			if (parent.HAnchorIsSet(HAnchor.FitToChildren) && FlowDirection == UI.FlowDirection.RightToLeft)
+			if (parent.HAnchorIsSet(HAnchor.Fit) && FlowDirection == UI.FlowDirection.RightToLeft)
 			{
 				RectangleDouble encloseChildrenRect = parent.GetMinimumBoundsToEncloseChildren();
 
@@ -107,14 +106,14 @@ namespace MatterHackers.Agg.UI
 						continue;
 					}
 
-					child.OriginRelativeParent = new Vector2(child.OriginRelativeParent.x - encloseChildrenRect.Left, child.OriginRelativeParent.y);
+					child.OriginRelativeParent = new Vector2(child.OriginRelativeParent.X - encloseChildrenRect.Left, child.OriginRelativeParent.Y);
 				}
 			}
 		}
 
 		private void FixOriginYIfTopToBottom(GuiWidget parent)
 		{
-			if (parent.VAnchorIsSet(VAnchor.FitToChildren) && FlowDirection == UI.FlowDirection.TopToBottom)
+			if (parent.VAnchorIsSet(VAnchor.Fit) && FlowDirection == UI.FlowDirection.TopToBottom)
 			{
 				RectangleDouble encloseChildrenRect = parent.GetMinimumBoundsToEncloseChildren();
 
@@ -126,12 +125,12 @@ namespace MatterHackers.Agg.UI
 						continue;
 					}
 
-					child.OriginRelativeParent = new Vector2(child.OriginRelativeParent.x, child.OriginRelativeParent.y - encloseChildrenRect.Bottom);
+					child.OriginRelativeParent = new Vector2(child.OriginRelativeParent.X, child.OriginRelativeParent.Y - encloseChildrenRect.Bottom);
 				}
 			}
 		}
 
-		public override bool GetOriginAndHeightForChild(GuiWidget parent, GuiWidget child, out Vector2 newOriginRelParent, out double newHeight)
+		public override (bool adjustOrigin, bool adjustHeight) GetOriginAndHeightForChild(GuiWidget parent, GuiWidget child, out Vector2 newOriginRelParent, out double newHeight)
 		{
 			newOriginRelParent = Vector2.Zero;
 			newHeight = 0;
@@ -140,10 +139,10 @@ namespace MatterHackers.Agg.UI
 				return base.GetOriginAndHeightForChild(parent, child, out newOriginRelParent, out newHeight);
 			}
 
-			return false;
+			return (false, false);
 		}
 
-		public override bool GetOriginAndWidthForChild(GuiWidget parent, GuiWidget child, out Vector2 newOriginRelParent, out double newWidth)
+		public override (bool adjustOrigin, bool adjustWidth) GetOriginAndWidthForChild(GuiWidget parent, GuiWidget child, out Vector2 newOriginRelParent, out double newWidth)
 		{
 			newOriginRelParent = Vector2.Zero;
 			newWidth = 0;
@@ -152,7 +151,7 @@ namespace MatterHackers.Agg.UI
 				return base.GetOriginAndWidthForChild(parent, child, out newOriginRelParent, out newWidth);
 			}
 
-			return false;
+			return (false, false);
 		}
 
 		protected override void ApplyHAnchorToChild(GuiWidget parent, GuiWidget child)
@@ -163,12 +162,12 @@ namespace MatterHackers.Agg.UI
 			}
 			else
 			{
-				if (child.HAnchor == HAnchor.ParentLeftRight || child.HAnchorIsSet(HAnchor.FitToChildren))
+				if (child.HAnchor == HAnchor.Stretch || child.HAnchorIsSet(HAnchor.Fit))
 				{
 				}
-				else if (child.HAnchor != HAnchor.AbsolutePosition)
+				else if (child.HAnchor != HAnchor.Absolute)
 				{
-					throw new Exception("HAnchor for a left right flow widget needs to be none or ParentLeftRight.");
+					throw new Exception("HAnchor for a left right flow widget needs to be Absolute or Stretch.");
 				}
 			}
 		}
@@ -181,12 +180,12 @@ namespace MatterHackers.Agg.UI
 			}
 			else
 			{
-				if (child.VAnchor == VAnchor.ParentBottomTop || child.VAnchorIsSet(VAnchor.FitToChildren))
+				if (child.VAnchor == VAnchor.Stretch || child.VAnchorIsSet(VAnchor.Fit))
 				{
 				}
-				else if (child.VAnchor != VAnchor.AbsolutePosition)
+				else if (child.VAnchor != VAnchor.Absolute)
 				{
-					throw new Exception("VAnchor for a top bottom flow widget needs to be none or ParentTopBottom.");
+					throw new Exception("VAnchor for a top bottom flow widget needs to be Absolute or Stretch.");
 				}
 			}
 		}
@@ -221,7 +220,7 @@ namespace MatterHackers.Agg.UI
 				}
 
 				RectangleDouble childBoundsWithMargin = child.LocalBounds;
-				childBoundsWithMargin.Inflate(child.DeviceMargin);
+				childBoundsWithMargin.Inflate(child.DeviceMarginAndBorder);
 				totalWidthWithMargin += childBoundsWithMargin.Width;
 				totalHeightWithMargin += childBoundsWithMargin.Height;
 				boundsOfAllChildrenIncludingMargin.ExpandToInclude(childBoundsWithMargin);
@@ -230,40 +229,40 @@ namespace MatterHackers.Agg.UI
 				{
 					case UI.FlowDirection.LeftToRight:
 					case UI.FlowDirection.RightToLeft:
-						totalMinimumWidthOfAllItems += child.MinimumSize.x + child.DeviceMargin.Width;
-						totalMinimumHeightOfAllItems = Math.Max(totalMinimumHeightOfAllItems, child.MinimumSize.y + child.DeviceMargin.Height);
+						totalMinimumWidthOfAllItems += child.MinimumSize.X + child.DeviceMarginAndBorder.Width;
+						totalMinimumHeightOfAllItems = Math.Max(totalMinimumHeightOfAllItems, child.MinimumSize.Y + child.DeviceMarginAndBorder.Height);
 
-						if (child.HAnchorIsSet(HAnchor.ParentLeftRight))
+						if (child.HAnchorIsSet(HAnchor.Stretch))
 						{
 							numItemsNeedingExpanding++;
-							totalWidthOfStaticItems += child.DeviceMargin.Width;
+							totalWidthOfStaticItems += child.DeviceMarginAndBorder.Width;
 						}
-						else if (child.HAnchor == HAnchor.AbsolutePosition || child.HAnchorIsSet(HAnchor.FitToChildren))
+						else if (child.HAnchor == HAnchor.Absolute || child.HAnchorIsSet(HAnchor.Fit))
 						{
 							totalWidthOfStaticItems += childBoundsWithMargin.Width;
 						}
 						else
 						{
-							throw new Exception("Only None or ParentLeftRight are valid HAnchor for a horizontal flowWidget.");
+							throw new Exception("Only Absolute or Stretch are valid HAnchor for a horizontal flowWidget.");
 						}
 						break;
 
 					case UI.FlowDirection.TopToBottom:
 					case UI.FlowDirection.BottomToTop:
-						totalMinimumWidthOfAllItems = Math.Max(totalMinimumWidthOfAllItems, child.MinimumSize.x + child.DeviceMargin.Width);
-						totalMinimumHeightOfAllItems += child.MinimumSize.y + child.DeviceMargin.Height;
-						if (child.VAnchorIsSet(VAnchor.ParentBottomTop))
+						totalMinimumWidthOfAllItems = Math.Max(totalMinimumWidthOfAllItems, child.MinimumSize.X + child.DeviceMarginAndBorder.Width);
+						totalMinimumHeightOfAllItems += child.MinimumSize.Y + child.DeviceMarginAndBorder.Height;
+						if (child.VAnchorIsSet(VAnchor.Stretch))
 						{
 							numItemsNeedingExpanding++;
-							totalHeightOfStaticItems += child.DeviceMargin.Height;
+							totalHeightOfStaticItems += child.DeviceMarginAndBorder.Height;
 						}
-						else if (child.VAnchor == VAnchor.AbsolutePosition || child.VAnchorIsSet(VAnchor.FitToChildren))
+						else if (child.VAnchor == VAnchor.Absolute || child.VAnchorIsSet(VAnchor.Fit))
 						{
 							totalHeightOfStaticItems += childBoundsWithMargin.Height;
 						}
 						else
 						{
-							throw new Exception("Only None or ParentBottomTop are valid VAnchor for a vertial flowWidget.");
+							throw new Exception("Only Absolute or Stretch are valid VAnchor for a vertical flowWidget.");
 						}
 						break;
 
@@ -281,16 +280,16 @@ namespace MatterHackers.Agg.UI
 						{
 							if (child.Visible == true)
 							{
-								double newX = curX - child.LocalBounds.Left + child.DeviceMargin.Left;
-								child.OriginRelativeParent = new Vector2(newX, child.OriginRelativeParent.y);
-								if (child.HAnchorIsSet(HAnchor.ParentLeftRight))
+								double newX = curX - child.LocalBounds.Left + child.DeviceMarginAndBorder.Left;
+								child.OriginRelativeParent = new Vector2(newX, child.OriginRelativeParent.Y);
+								if (child.HAnchorIsSet(HAnchor.Stretch))
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
 									double newWidth = (parent.LocalBounds.Width - parent.DevicePadding.Width - totalWidthOfStaticItems) / numItemsNeedingExpanding;
 									child.LocalBounds = new RectangleDouble(curChildBounds.Left, curChildBounds.Bottom,
-										newWidth, curChildBounds.Top);
+										curChildBounds.Left + newWidth, curChildBounds.Top);
 								}
-								curX += child.LocalBounds.Width + child.DeviceMargin.Width;
+								curX += child.LocalBounds.Width + child.DeviceMarginAndBorder.Width;
 							}
 						}
 					}
@@ -303,17 +302,17 @@ namespace MatterHackers.Agg.UI
 						{
 							if (child.Visible == true)
 							{
-								if (child.HAnchorIsSet(HAnchor.ParentLeftRight))
+								if (child.HAnchorIsSet(HAnchor.Stretch))
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
 									double newWidth = (parent.LocalBounds.Width - parent.DevicePadding.Width - totalWidthOfStaticItems) / numItemsNeedingExpanding;
 									child.LocalBounds = new RectangleDouble(curChildBounds.Left, curChildBounds.Bottom,
-										newWidth, curChildBounds.Top);
+										curChildBounds.Left + newWidth, curChildBounds.Top);
 								}
 
-								double newX = curX - child.LocalBounds.Left - (child.LocalBounds.Width + child.DeviceMargin.Right);
-								child.OriginRelativeParent = new Vector2(newX, child.OriginRelativeParent.y);
-								curX -= (child.LocalBounds.Width + child.DeviceMargin.Width);
+								double newX = curX - child.LocalBounds.Left - (child.LocalBounds.Width + child.DeviceMarginAndBorder.Right);
+								child.OriginRelativeParent = new Vector2(newX, child.OriginRelativeParent.Y);
+								curX -= (child.LocalBounds.Width + child.DeviceMarginAndBorder.Width);
 							}
 						}
 					}
@@ -326,16 +325,16 @@ namespace MatterHackers.Agg.UI
 						{
 							if (child.Visible == true)
 							{
-								double newY = curY - child.LocalBounds.Bottom + child.DeviceMargin.Bottom;
-								child.OriginRelativeParent = new Vector2(child.OriginRelativeParent.x, newY);
-								if (child.VAnchorIsSet(VAnchor.ParentBottomTop))
+								double newY = curY - child.LocalBounds.Bottom + child.DeviceMarginAndBorder.Bottom;
+								child.OriginRelativeParent = new Vector2(child.OriginRelativeParent.X, newY);
+								if (child.VAnchorIsSet(VAnchor.Stretch))
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
 									double newHeight = (parent.LocalBounds.Height - parent.DevicePadding.Height - totalHeightOfStaticItems) / numItemsNeedingExpanding;
 									child.LocalBounds = new RectangleDouble(curChildBounds.Left, curChildBounds.Bottom,
-										curChildBounds.Right, newHeight);
+										curChildBounds.Right, curChildBounds.Bottom + newHeight);
 								}
-								curY += child.LocalBounds.Height + child.DeviceMargin.Height;
+								curY += child.LocalBounds.Height + child.DeviceMarginAndBorder.Height;
 							}
 						}
 					}
@@ -348,17 +347,17 @@ namespace MatterHackers.Agg.UI
 						{
 							if (child.Visible == true)
 							{
-								if (child.VAnchorIsSet(VAnchor.ParentBottomTop))
+								if (child.VAnchorIsSet(VAnchor.Stretch))
 								{
 									RectangleDouble curChildBounds = child.LocalBounds;
-									double newHeight = (parent.LocalBounds.Height - parent.DevicePadding.Height - totalHeightOfStaticItems) / numItemsNeedingExpanding;
+									double newHeight = (parent.LocalBounds.Height - parent.DevicePadding.Height - totalHeightOfStaticItems) / numItemsNeedingExpanding;// - child.DeviceMarginAndBorder.Height;
 									child.LocalBounds = new RectangleDouble(curChildBounds.Left, curChildBounds.Bottom,
-										curChildBounds.Right, newHeight);
+										curChildBounds.Right, curChildBounds.Bottom + newHeight);
 								}
 
-								double newY = curY - child.LocalBounds.Bottom - (child.LocalBounds.Height + child.DeviceMargin.Top);
-								child.OriginRelativeParent = new Vector2(child.OriginRelativeParent.x, newY);
-								curY -= (child.LocalBounds.Height + child.DeviceMargin.Height);
+								double newY = curY - child.LocalBounds.Bottom - (child.LocalBounds.Height + child.DeviceMarginAndBorder.Top);
+								child.OriginRelativeParent = new Vector2(child.OriginRelativeParent.X, newY);
+								curY -= (child.LocalBounds.Height + child.DeviceMarginAndBorder.Height);
 							}
 						}
 					}

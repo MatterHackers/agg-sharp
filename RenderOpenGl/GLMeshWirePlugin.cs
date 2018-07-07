@@ -49,41 +49,36 @@ namespace MatterHackers.RenderOpenGl
 	{
 		public delegate void DrawToGL(Mesh meshToRender);
 
-		private static ConditionalWeakTable<Mesh, GLMeshWirePlugin> meshesWithCacheData = new ConditionalWeakTable<Mesh, GLMeshWirePlugin>();
+		public static string GLMeshWirePluginName => nameof(GLMeshWirePluginName);
 
 		public VectorPOD<WireVertexData> edgeLinesData = new VectorPOD<WireVertexData>();
 
 		private int meshUpdateCount;
 		private double nonPlanarAngleRequired;
 
-		static public GLMeshWirePlugin Get(Mesh meshToGetDisplayListFor, double nonPlanarAngleRequired = 0)
+		static public GLMeshWirePlugin Get(Mesh mesh, double nonPlanarAngleRequired = 0)
 		{
-			GLMeshWirePlugin plugin;
-			meshesWithCacheData.TryGetValue(meshToGetDisplayListFor, out plugin);
-
-			if (plugin != null
-				&& (meshToGetDisplayListFor.ChangedCount != plugin.meshUpdateCount
-				|| nonPlanarAngleRequired != plugin.nonPlanarAngleRequired))
+			object meshData;
+			mesh.PropertyBag.TryGetValue(GLMeshWirePluginName, out meshData);
+			if (meshData is GLMeshWirePlugin plugin)
 			{
-				plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
-				plugin.AddRemoveData();
-				plugin.CreateRenderData(meshToGetDisplayListFor, nonPlanarAngleRequired);
-				plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
-				plugin.nonPlanarAngleRequired = nonPlanarAngleRequired;
+				if (mesh.ChangedCount == plugin.meshUpdateCount
+					&& nonPlanarAngleRequired == plugin.nonPlanarAngleRequired)
+				{
+					return plugin;
+				}
+
+				// else we need to rebulid the data
+				plugin.meshUpdateCount = mesh.ChangedCount;
+				mesh.PropertyBag.Remove(GLMeshWirePluginName);
 			}
 
-			if (plugin == null)
-			{
-				GLMeshWirePlugin newPlugin = new GLMeshWirePlugin();
-				meshesWithCacheData.Add(meshToGetDisplayListFor, newPlugin);
-				newPlugin.CreateRenderData(meshToGetDisplayListFor, nonPlanarAngleRequired);
-				newPlugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
-				newPlugin.nonPlanarAngleRequired = nonPlanarAngleRequired;
+			GLMeshWirePlugin newPlugin = new GLMeshWirePlugin();
+			newPlugin.CreateRenderData(mesh, nonPlanarAngleRequired);
+			newPlugin.meshUpdateCount = mesh.ChangedCount;
+			mesh.PropertyBag.Add(GLMeshWirePluginName, newPlugin);
 
-				return newPlugin;
-			}
-
-			return plugin;
+			return newPlugin;
 		}
 
 		private GLMeshWirePlugin()
@@ -91,17 +86,9 @@ namespace MatterHackers.RenderOpenGl
 			// This is private as you can't build one of these. You have to call GetImageGLDisplayListPlugin.
 		}
 
-		private void AddRemoveData()
-		{
-		}
-
-		~GLMeshWirePlugin()
-		{
-			AddRemoveData();
-		}
-
 		private void CreateRenderData(Mesh meshToBuildListFor, double nonPlanarAngleRequired = 0)
 		{
+			this.nonPlanarAngleRequired = nonPlanarAngleRequired;
 			edgeLinesData = new VectorPOD<WireVertexData>();
 			// first make sure all the textures are created
 			foreach (MeshEdge meshEdge in meshToBuildListFor.MeshEdges)
@@ -111,8 +98,8 @@ namespace MatterHackers.RenderOpenGl
 					if (meshEdge.GetNumFacesSharingEdge() == 2)
 					{
 						FaceEdge firstFaceEdge = meshEdge.firstFaceEdge;
-						FaceEdge nextFaceEdge = meshEdge.firstFaceEdge.radialNextFaceEdge;
-						double angle = Vector3.CalculateAngle(firstFaceEdge.containingFace.normal, nextFaceEdge.containingFace.normal);
+						FaceEdge nextFaceEdge = meshEdge.firstFaceEdge.RadialNextFaceEdge;
+						double angle = Vector3.CalculateAngle(firstFaceEdge.ContainingFace.Normal, nextFaceEdge.ContainingFace.Normal);
 						if (angle > MathHelper.Tau * .1)
 						{
 							edgeLinesData.Add(AddVertex(meshEdge.VertexOnEnd[0].Position, meshEdge.VertexOnEnd[1].Position));
@@ -133,14 +120,14 @@ namespace MatterHackers.RenderOpenGl
 		private WireVertexData AddVertex(Vector3 vertex0, Vector3 vertex1)
 		{
 			WireVertexData tempVertex;
-			tempVertex.positionsX = (float)vertex0.x;
-			tempVertex.positionsY = (float)vertex0.y;
-			tempVertex.positionsZ = (float)vertex0.z;
+			tempVertex.positionsX = (float)vertex0.X;
+			tempVertex.positionsY = (float)vertex0.Y;
+			tempVertex.positionsZ = (float)vertex0.Z;
 			edgeLinesData.Add(tempVertex);
 
-			tempVertex.positionsX = (float)vertex1.x;
-			tempVertex.positionsY = (float)vertex1.y;
-			tempVertex.positionsZ = (float)vertex1.z;
+			tempVertex.positionsX = (float)vertex1.X;
+			tempVertex.positionsY = (float)vertex1.Y;
+			tempVertex.positionsZ = (float)vertex1.Z;
 			return tempVertex;
 		}
 

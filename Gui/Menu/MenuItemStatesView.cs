@@ -11,10 +11,10 @@ namespace MatterHackers.Agg.UI
 
 		public MenuItemStatesView(GuiWidget normalState, GuiWidget overState)
 		{
-			overState.HAnchor |= HAnchor.ParentLeftRight;
-			normalState.HAnchor |= HAnchor.ParentLeftRight;
-			HAnchor = HAnchor.ParentLeftRight | HAnchor.FitToChildren;
-			VAnchor = VAnchor.FitToChildren;
+			overState.HAnchor |= HAnchor.Stretch;
+			normalState.HAnchor |= HAnchor.Stretch;
+			HAnchor = HAnchor.Stretch | HAnchor.Fit;
+			VAnchor = VAnchor.Fit;
 			Selectable = false;
 			this.normalState = normalState;
 			this.overState = overState;
@@ -39,14 +39,14 @@ namespace MatterHackers.Agg.UI
 			base.OnParentChanged(ex);
 		}
 
-		public override void SendToChildren(object objectToRout)
+		public override void SendToChildren(object objectToRoute)
 		{
-			if (objectToRout as MenuItem.MenuClosedMessage != null)
+			if (objectToRoute is MenuItem.MenuClosedMessage)
 			{
 				this.Highlighted = false;
 			}
 
-			base.SendToChildren(objectToRout);
+			base.SendToChildren(objectToRoute);
 		}
 
 		public bool Highlighted
@@ -82,36 +82,31 @@ namespace MatterHackers.Agg.UI
 
 	public class MenuItemColorStatesView : GuiWidget
 	{
-		GuiWidget textWidgetContainer;
 		TextWidget textWidget;
 
-		public RGBA_Bytes NormalBackgroundColor { get; set; }
-		public RGBA_Bytes OverBackgroundColor { get; set; }
-		public RGBA_Bytes DisabledBackgroundColor { get; set; }
+		public Color NormalBackgroundColor { get; set; }
+		public Color OverBackgroundColor { get; set; }
+		public Color DisabledBackgroundColor { get; set; }
 
-		public RGBA_Bytes NormalTextColor { get; set; }
-		public RGBA_Bytes OverTextColor { get; set; }
-		public RGBA_Bytes DisabledTextColor { get; set; }
+		public Color NormalTextColor { get; set; }
+		public Color OverTextColor { get; set; }
+		public Color DisabledTextColor { get; set; }
 
 		public double PointSize { get { return textWidget.PointSize; } set { textWidget.PointSize = value; } }
 
 		public MenuItemColorStatesView(string name)
 		{
-			HAnchor = HAnchor.ParentLeftRight | HAnchor.FitToChildren;
-			VAnchor = VAnchor.FitToChildren;
+			HAnchor = HAnchor.Stretch | HAnchor.Fit;
+			VAnchor = VAnchor.Fit;
 			Selectable = false;
 
-			textWidgetContainer = new GuiWidget();
 			textWidget = new TextWidget(name)
 			{
 				AutoExpandBoundsToText = true,
+				HAnchor = HAnchor.Left
 			};
 
-			textWidgetContainer.HAnchor = HAnchor.FitToChildren;
-			textWidgetContainer.AddChild(textWidget);
-			textWidgetContainer.VAnchor = VAnchor.FitToChildren;
-
-			AddChild(textWidgetContainer);
+			AddChild(textWidget);
 		}
 
 		public override void OnParentChanged(EventArgs ex)
@@ -141,14 +136,14 @@ namespace MatterHackers.Agg.UI
 			base.OnParentChanged(ex);
 		}
 
-		public override void SendToChildren(object objectToRout)
+		public override void SendToChildren(object objectToRoute)
 		{
-			if (objectToRout as MenuItem.MenuClosedMessage != null)
+			if (objectToRoute is MenuItem.MenuClosedMessage)
 			{
 				this.Highlighted = false;
 			}
 
-			base.SendToChildren(objectToRout);
+			base.SendToChildren(objectToRoute);
 		}
 
 		public bool Highlighted

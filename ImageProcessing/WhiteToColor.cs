@@ -35,12 +35,12 @@ namespace MatterHackers.ImageProcessing
 {
 	public class WhiteToColor
 	{
-		public static void DoWhiteToColor(ImageBuffer sourceImageAndDest, RGBA_Bytes color)
+		public static void DoWhiteToColor(ImageBuffer sourceImageAndDest, Color color)
 		{
 			DoWhiteToColor(sourceImageAndDest, sourceImageAndDest, color);
 		}
 
-		public static void DoWhiteToColor(ImageBuffer result, ImageBuffer imageA, RGBA_Bytes color)
+		public static void DoWhiteToColor(ImageBuffer result, ImageBuffer imageA, Color color)
 		{
 			if (imageA.BitDepth != result.BitDepth)
 			{
@@ -81,7 +81,7 @@ namespace MatterHackers.ImageProcessing
 			}
 		}
 
-		public static ImageBuffer CreateWhiteToColor(ImageBuffer normalImage, RGBA_Bytes color)
+		public static ImageBuffer CreateWhiteToColor(ImageBuffer normalImage, Color color)
 		{
 			ImageBuffer destImage = new ImageBuffer(normalImage.Width, normalImage.Height);
 
@@ -93,12 +93,12 @@ namespace MatterHackers.ImageProcessing
 
 	public class SetToColor
 	{
-		public static void DoSetToColor(ImageBuffer sourceImageAndDest, RGBA_Bytes color)
+		public static void DoSetToColor(ImageBuffer sourceImageAndDest, Color color)
 		{
 			DoSetToColor(sourceImageAndDest, sourceImageAndDest, color);
 		}
 
-		public static void DoSetToColor(ImageBuffer result, ImageBuffer imageA, RGBA_Bytes color)
+		public static void DoSetToColor(ImageBuffer result, ImageBuffer imageA, Color color)
 		{
 			if (imageA.BitDepth != result.BitDepth)
 			{
@@ -138,7 +138,7 @@ namespace MatterHackers.ImageProcessing
 			}
 		}
 
-		public static ImageBuffer CreateSetToColor(ImageBuffer normalImage, RGBA_Bytes color)
+		public static ImageBuffer CreateSetToColor(ImageBuffer normalImage, Color color)
 		{
 			ImageBuffer destImage = new ImageBuffer(normalImage.Width, normalImage.Height);
 

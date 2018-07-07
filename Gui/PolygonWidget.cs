@@ -78,13 +78,13 @@ namespace MatterHackers.Agg.UI
 			y = 0;
 			if (m_vertex > m_num_points)
 			{
-				return ShapePath.FlagsAndCommand.CommandStop;
+				return ShapePath.FlagsAndCommand.Stop;
 			}
 
 			if (m_vertex == m_num_points)
 			{
 				++m_vertex;
-				return ShapePath.FlagsAndCommand.CommandEndPoly | (m_close ? ShapePath.FlagsAndCommand.FlagClose : 0);
+				return ShapePath.FlagsAndCommand.EndPoly | (m_close ? ShapePath.FlagsAndCommand.FlagClose : 0);
 			}
 			x = m_polygon[m_vertex * 2];
 			y = m_polygon[m_vertex * 2 + 1];
@@ -94,7 +94,7 @@ namespace MatterHackers.Agg.UI
 				y = Math.Floor(y) + 0.5;
 			}
 			++m_vertex;
-			return (m_vertex == 1) ? ShapePath.FlagsAndCommand.CommandMoveTo : ShapePath.FlagsAndCommand.CommandLineTo;
+			return (m_vertex == 1) ? ShapePath.FlagsAndCommand.MoveTo : ShapePath.FlagsAndCommand.LineTo;
 		}
 	};
 
@@ -273,7 +273,7 @@ namespace MatterHackers.Agg.UI
 
 		public override ShapePath.FlagsAndCommand vertex(out double x, out double y)
 		{
-			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.CommandStop;
+			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.Stop;
 			double r = m_point_radius;
 			if (m_status == 0)
 			{
@@ -293,7 +293,7 @@ namespace MatterHackers.Agg.UI
 				ParentToChildTransform.transform(ref x, ref y);
 				return cmd;
 			}
-			if (m_status >= m_num_points) return ShapePath.FlagsAndCommand.CommandStop;
+			if (m_status >= m_num_points) return ShapePath.FlagsAndCommand.Stop;
 			if (m_node >= 0 && m_node == (int)(m_status)) r *= 1.2;
 			m_ellipse.init(GetXN(m_status), GetYN(m_status), r, r, 32);
 			++m_status;
@@ -424,11 +424,6 @@ namespace MatterHackers.Agg.UI
 			}
 
 			base.OnMouseMove(mouseEvent);
-		}
-
-		public override void OnKeyDown(KeyEventArgs keyEvent)
-		{
-			base.OnKeyDown(keyEvent);
 		}
 
 		private bool check_edge(int i, double x, double y)
@@ -574,7 +569,7 @@ namespace MatterHackers.Agg.UI
 		public PolygonEditWidget(int np, double point_radius)
 			: base(np, point_radius)
 		{
-			m_color = new RGBA_Floats(0.0, 0.0, 0.0);
+			m_color = new ColorF(0.0, 0.0, 0.0);
 		}
 
 		public void line_color(IColorType c)

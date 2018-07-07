@@ -4,7 +4,7 @@ namespace MatterHackers.Agg.VertexSource
 {
 	public class VertexSourceIO
 	{
-		public static void Load(PathStorage vertexSource, string pathAndFileName)
+		public static void Load(VertexStorage vertexSource, string pathAndFileName)
 		{
 			vertexSource.remove_all();
 			string[] allLines = File.ReadAllLines(pathAndFileName);
@@ -38,7 +38,7 @@ namespace MatterHackers.Agg.VertexSource
 						outFile.WriteLine("{0}, {1}, {2}", x, y, flagsAndCommand.ToString());
 						flagsAndCommand = vertexSource.vertex(out x, out y);
 					}
-					while (flagsAndCommand != ShapePath.FlagsAndCommand.CommandStop);
+					while (flagsAndCommand != ShapePath.FlagsAndCommand.Stop);
 				}
 			}
 			else
@@ -47,7 +47,7 @@ namespace MatterHackers.Agg.VertexSource
 				{
 					foreach (VertexData vertexData in vertexSource.Vertices())
 					{
-						outFile.WriteLine("{0}, {1}, {2}", vertexData.position.x, vertexData.position.y, vertexData.command.ToString());
+						outFile.WriteLine("{0}, {1}, {2}", vertexData.position.X, vertexData.position.Y, vertexData.command.ToString());
 					}
 				}
 			}

@@ -36,23 +36,23 @@ namespace MatterHackers.Agg.UI
 	{
 		private Slider sliderAttachedTo;
 
-		public RGBA_Bytes BackgroundColor { get; set; }
+		public Color BackgroundColor { get; set; }
 
-		public RGBA_Bytes TrackColor { get; set; }
+		public Color TrackColor { get; set; }
 
 		public double TrackHeight { get; set; }
 
 		public TickPlacement TextPlacement { get; set; }
 
-		public RGBA_Bytes TextColor { get; set; }
+		public Color TextColor { get; set; }
 
 		public StyledTypeFace TextStyle { get; set; }
 
-		public RGBA_Bytes ThumbColor { get; set; }
+		public Color ThumbColor { get; set; }
 
 		public TickPlacement TickPlacement { get; set; }
 
-		public RGBA_Bytes TickColor { get; set; }
+		public Color TickColor { get; set; }
 
 		public SlideView(Slider sliderWidget)
 		{
@@ -60,8 +60,8 @@ namespace MatterHackers.Agg.UI
 
 			TrackHeight = 3;
 
-			TextColor = RGBA_Bytes.Black;
-			TrackColor = new RGBA_Bytes(220, 220, 220);
+			TextColor = Color.Black;
+			TrackColor = new Color(220, 220, 220);
 			ThumbColor = DefaultViewFactory.DefaultBlue;
 
 			sliderWidget.ValueChanged += new EventHandler(sliderWidget_ValueChanged);
@@ -168,7 +168,7 @@ namespace MatterHackers.Agg.UI
 			// now do the thumb
 			RectangleDouble thumbBounds = sliderAttachedTo.GetThumbHitBounds();
 			RoundedRect thumbOutside = new RoundedRect(thumbBounds, sliderAttachedTo.ThumbWidth / 2);
-			graphics2D.Render(thumbOutside, RGBA_Floats.GetTweenColor(ThumbColor.GetAsRGBA_Floats(), RGBA_Floats.Black.GetAsRGBA_Floats(), .2).GetAsRGBA_Bytes());
+			graphics2D.Render(thumbOutside, ColorF.GetTweenColor(ThumbColor.ToColorF(), ColorF.Black.ToColorF(), .2).ToColor());
 			thumbBounds.Inflate(-1);
 			RoundedRect thumbInside = new RoundedRect(thumbBounds, sliderAttachedTo.ThumbWidth / 2);
 			graphics2D.Render(thumbInside, ThumbColor);
@@ -326,7 +326,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public Slider(Vector2 lowerLeft, Vector2 upperRight)
-			: this(new Vector2(lowerLeft.x, lowerLeft.y + (upperRight.y - lowerLeft.y) / 2), upperRight.x - lowerLeft.x)
+			: this(new Vector2(lowerLeft.X, lowerLeft.Y + (upperRight.Y - lowerLeft.Y) / 2), upperRight.X - lowerLeft.X)
 		{
 		}
 
@@ -410,11 +410,11 @@ namespace MatterHackers.Agg.UI
 			{
 				if (Orientation == Orientation.Horizontal)
 				{
-					mouseDownOffsetFromThumbCenter = mousePos.x - PositionPixelsFromFirstValue;
+					mouseDownOffsetFromThumbCenter = mousePos.X - PositionPixelsFromFirstValue;
 				}
 				else
 				{
-					mouseDownOffsetFromThumbCenter = mousePos.y - PositionPixelsFromFirstValue;
+					mouseDownOffsetFromThumbCenter = mousePos.Y - PositionPixelsFromFirstValue;
 				}
 				downOnThumb = true;
 			}
@@ -425,11 +425,11 @@ namespace MatterHackers.Agg.UI
 				{
 					if (Orientation == Orientation.Horizontal)
 					{
-						PositionPixelsFromFirstValue = mousePos.x;
+						PositionPixelsFromFirstValue = mousePos.X;
 					}
 					else
 					{
-						PositionPixelsFromFirstValue = mousePos.y;
+						PositionPixelsFromFirstValue = mousePos.Y;
 					}
 				}
 			}
@@ -454,11 +454,11 @@ namespace MatterHackers.Agg.UI
 				double oldValue = Value;
 				if (Orientation == Orientation.Horizontal)
 				{
-					PositionPixelsFromFirstValue = mousePos.x - mouseDownOffsetFromThumbCenter;
+					PositionPixelsFromFirstValue = mousePos.X - mouseDownOffsetFromThumbCenter;
 				}
 				else
 				{
-					PositionPixelsFromFirstValue = mousePos.y - mouseDownOffsetFromThumbCenter;
+					PositionPixelsFromFirstValue = mousePos.Y - mouseDownOffsetFromThumbCenter;
 				}
 				if (oldValue != Value)
 				{

@@ -185,7 +185,7 @@ namespace MatterHackers.Agg.VertexSource
 
 		public ShapePath.FlagsAndCommand Vertex(ref double x, ref double y)
 		{
-			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.CommandLineTo;
+			ShapePath.FlagsAndCommand cmd = ShapePath.FlagsAndCommand.LineTo;
 			while (!ShapePath.is_stop(cmd))
 			{
 				switch (m_status)
@@ -197,11 +197,11 @@ namespace MatterHackers.Agg.VertexSource
 					case StrokeMath.status_e.ready:
 						if (m_src_vertices.size() < 2 + (m_closed ? 1 : 0))
 						{
-							cmd = ShapePath.FlagsAndCommand.CommandStop;
+							cmd = ShapePath.FlagsAndCommand.Stop;
 							break;
 						}
 						m_status = StrokeMath.status_e.outline1;
-						cmd = ShapePath.FlagsAndCommand.CommandMoveTo;
+						cmd = ShapePath.FlagsAndCommand.MoveTo;
 						m_src_vertex = 0;
 						m_out_vertex = 0;
 						goto case StrokeMath.status_e.outline1;
@@ -231,19 +231,19 @@ namespace MatterHackers.Agg.VertexSource
 						else
 						{
 							Vector2 c = m_out_vertices[m_out_vertex++];
-							x = c.x;
-							y = c.y;
+							x = c.X;
+							y = c.Y;
 							return cmd;
 						}
 						break;
 
 					case StrokeMath.status_e.end_poly1:
-						if (!m_closed) return ShapePath.FlagsAndCommand.CommandStop;
+						if (!m_closed) return ShapePath.FlagsAndCommand.Stop;
 						m_status = StrokeMath.status_e.stop;
-						return ShapePath.FlagsAndCommand.CommandEndPoly | ShapePath.FlagsAndCommand.FlagClose | ShapePath.FlagsAndCommand.FlagCCW;
+						return ShapePath.FlagsAndCommand.EndPoly | ShapePath.FlagsAndCommand.FlagClose | ShapePath.FlagsAndCommand.FlagCCW;
 
 					case StrokeMath.status_e.stop:
-						return ShapePath.FlagsAndCommand.CommandStop;
+						return ShapePath.FlagsAndCommand.Stop;
 				}
 			}
 			return cmd;

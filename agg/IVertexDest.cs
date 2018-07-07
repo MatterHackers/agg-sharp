@@ -27,10 +27,5 @@ namespace MatterHackers.Agg
 		int size();
 
 		void add(Vector2 vertex);
-
-		Vector2 this[int i]
-		{
-			get;
-		}
 	};
 }

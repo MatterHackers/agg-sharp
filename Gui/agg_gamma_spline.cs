@@ -162,19 +162,19 @@ namespace MatterHackers.Agg.UI
 				ox = localBounds.Left;
 				oy = localBounds.Bottom;
 				m_cur_x += 1.0 / (localBounds.Right - localBounds.Left);
-				return ShapePath.FlagsAndCommand.CommandMoveTo;
+				return ShapePath.FlagsAndCommand.MoveTo;
 			}
 
 			if (m_cur_x > 1.0)
 			{
-				return ShapePath.FlagsAndCommand.CommandStop;
+				return ShapePath.FlagsAndCommand.Stop;
 			}
 
 			ox = localBounds.Left + m_cur_x * (localBounds.Right - localBounds.Left);
 			oy = localBounds.Bottom + y(m_cur_x) * (localBounds.Top - localBounds.Bottom);
 
 			m_cur_x += 1.0 / (localBounds.Right - localBounds.Left);
-			return ShapePath.FlagsAndCommand.CommandLineTo;
+			return ShapePath.FlagsAndCommand.LineTo;
 		}
 	};
 }

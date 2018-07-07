@@ -1,14 +1,15 @@
+using System;
+using System.Globalization;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.UI.Examples;
 using MatterHackers.Agg.VertexSource;
-using System;
-using System.Globalization;
 
 namespace MomsSolitaire
 {
-	public class MomsSolitaire : GuiWidget
+	public class MomsSolitaire : GuiWidget, IDemoApp
 	{
 		private static double CARD_WIDTH = 50;
 		private static double CARD_HEIGHT = 72;
@@ -46,6 +47,12 @@ namespace MomsSolitaire
 			inputString = "M -0.014134084,1046.8659 C -0.11617408,1047.0729 -0.51444404,1048.0169 -1.3283268,1049.1402 C -2.2279798,1050.3819 -2.8141348,1051.01 -3.5427888,1052.198 C -4.0205138,1052.9768 -4.5747888,1055.4361 -2.5444308,1055.9721 C -0.68185405,1056.4637 -0.31250405,1055.0924 -0.31250405,1055.0924 C -0.36461405,1056.9023 -0.36315405,1057.4807 -1.6400568,1057.7007 C -1.7048928,1057.7118 -1.7136608,1057.7763 -1.7001428,1057.8635 L 1.6996155,1057.8635 C 1.7131255,1057.7763 1.7043655,1057.7118 1.6395255,1057.7007 C 0.36262595,1057.4807 0.36408595,1056.9023 0.31197595,1055.0924 C 0.31197595,1055.0924 0.68132594,1056.4637 2.5438955,1055.9721 C 4.5742555,1055.4361 4.0199855,1052.9768 3.5422555,1052.198 C 2.8136055,1051.01 2.2274455,1050.3819 1.3277955,1049.1402 C 0.51391594,1048.0169 0.11564595,1047.0729 0.013605915,1046.8659 L -0.014134084,1046.8659 z";
 			m_SpadeShape = CreatePath(inputString, 0, -1052);
 		}
+
+		public string Title { get; } = "Moms Solitaire";
+
+		public string DemoCategory { get; } = "Game";
+
+		public string DemoDescription { get; } = "A port of the Forth solitaire game that my cousin Marlin Eller wrote for his mom on mothers day in 1989.";
 
 		public override void OnParentChanged(EventArgs e)
 		{
@@ -165,7 +172,7 @@ namespace MomsSolitaire
 
 		public static IVertexSource CreatePath(String DFromSVGFile, double xOffset, double yOffset)
 		{
-			PathStorage path = new PathStorage();
+			VertexStorage path = new VertexStorage();
 			string[] splitOnSpace = DFromSVGFile.Split(' ');
 			string[] splitOnComma;
 			double xc1, yc1, xc2, yc2, x, y;
@@ -242,7 +249,7 @@ namespace MomsSolitaire
 			if (CardValue > (int)CCard.CARD_VALUE.VALUE_ACE)
 			{
 				DestGraphics.SetTransform(Affine.NewIdentity());
-				DestGraphics.Render(CardRectBounds, new RGBA_Bytes(0, 0, 0));
+				DestGraphics.Render(CardRectBounds, new Color(0, 0, 0));
 				if (CardValue > 10)
 				{
 					switch (CardValue)
@@ -271,39 +278,39 @@ namespace MomsSolitaire
 				TextWidget stringToDraw = new TextWidget(ValueString, 10);
 				RectangleDouble textBounds = stringToDraw.Printer.LocalBounds;
 				DestGraphics.SetTransform(Affine.NewTranslation(CardBounds.Left + 2, CardBounds.Top - 8 - textBounds.Height / 2));
-				DestGraphics.Render(stringToDraw.Printer, new RGBA_Bytes(0, 0, 0));
+				DestGraphics.Render(stringToDraw.Printer, new Color(0, 0, 0));
 				DestGraphics.SetTransform(Affine.NewTranslation(CardBounds.Right - 4 - textBounds.Width, CardBounds.Bottom + 9 - textBounds.Height / 2));
-				DestGraphics.Render(stringToDraw.Printer, new RGBA_Bytes(0, 0, 0));
+				DestGraphics.Render(stringToDraw.Printer, new Color(0, 0, 0));
 
-				RGBA_Bytes SuitColor = new RGBA_Bytes(0, 0, 0);
-				IVertexSource suitPath = new PathStorage();
+				Color SuitColor = new Color(0, 0, 0);
+				IVertexSource suitPath = new VertexStorage();
 
 				switch (CardSuit)
 				{
 					case (int)CCard.CARD_SUIT.SUIT_DIAMOND:
 						{
-							SuitColor = new RGBA_Bytes(0xFF, 0x11, 0x11);
+							SuitColor = new Color(0xFF, 0x11, 0x11);
 							suitPath = m_DiamondShape;
 						}
 						break;
 
 					case (int)CCard.CARD_SUIT.SUIT_CLUB:
 						{
-							SuitColor = new RGBA_Bytes(0x22, 0x22, 0x66);
+							SuitColor = new Color(0x22, 0x22, 0x66);
 							suitPath = new FlattenCurves(m_ClubShape);
 						}
 						break;
 
 					case (int)CCard.CARD_SUIT.SUIT_HEART:
 						{
-							SuitColor = new RGBA_Bytes(0xBB, 0x00, 0x00);
+							SuitColor = new Color(0xBB, 0x00, 0x00);
 							suitPath = new FlattenCurves(m_HeartShape);
 						}
 						break;
 
 					case (int)CCard.CARD_SUIT.SUIT_SPADE:
 						{
-							SuitColor = new RGBA_Bytes(0x00, 0x00, 0x00);
+							SuitColor = new Color(0x00, 0x00, 0x00);
 							suitPath = new FlattenCurves(m_SpadeShape);
 						}
 						break;
@@ -334,23 +341,23 @@ namespace MomsSolitaire
 					stringToDraw = new TextWidget(ValueString, 22);
 					textBounds = stringToDraw.Printer.LocalBounds;
 					DestGraphics.SetTransform(Affine.NewTranslation(-1 + CardBounds.Left + CardBounds.Width / 2 - textBounds.Width / 2, CardBounds.Bottom + CardBounds.Height / 2 - textBounds.Height / 2));
-					DestGraphics.Render(stringToDraw.Printer, new RGBA_Bytes(0, 0, 0));
+					DestGraphics.Render(stringToDraw.Printer, new Color(0, 0, 0));
 				}
 			}
 			else
 			{
-				RGBA_Bytes HoleColor = new RGBA_Bytes(0, 0, 0);
+				Color HoleColor = new Color(0, 0, 0);
 
 				String OpenSpaceString;
 
 				if (!MomsGame.SpaceIsClickable(CardX, CardY))
 				{
-					HoleColor = new RGBA_Bytes(0xf8, 0xe2, 0xe8);
+					HoleColor = new Color(0xf8, 0xe2, 0xe8);
 					OpenSpaceString = "X";
 				}
 				else
 				{
-					HoleColor = new RGBA_Bytes(0xe1, 0xe0, 0xf6);
+					HoleColor = new Color(0xe1, 0xe0, 0xf6);
 					OpenSpaceString = "O";
 				}
 
@@ -367,7 +374,7 @@ namespace MomsSolitaire
 				ImageBuffer widgetsSubImage = ImageBuffer.NewSubImageReference(graphics2D.DestImage, graphics2D.GetClippingRect());
 				Graphics2D subGraphics2D = widgetsSubImage.NewGraphics2D();
 
-				subGraphics2D.Clear(new RGBA_Bytes(255, 255, 255));
+				subGraphics2D.Clear(new Color(255, 255, 255));
 				for (int y = 0; y < MomsGame.GetHeight(); y++)
 				{
 					for (int x = 0; x < MomsGame.GetWidth(); x++)
@@ -377,21 +384,21 @@ namespace MomsSolitaire
 				}
 
 				String whatToDo = "Select any open space marked with an 'O'";
-				RGBA_Bytes backFillCollor = new RGBA_Bytes(0xe1, 0xe0, 0xf6);
+				Color backFillCollor = new Color(0xe1, 0xe0, 0xf6);
 
 				if (MomsGame.GetWaitingForKing())
 				{
-					backFillCollor = new RGBA_Bytes(0xf8, 0x89, 0x78);
+					backFillCollor = new Color(0xf8, 0x89, 0x78);
 					whatToDo = "Select a King for the hole";
 				}
 				else if (MomsGame.IsSolved())
 				{
-					backFillCollor = new RGBA_Bytes(0xf8, 0x89, 0x78);
+					backFillCollor = new Color(0xf8, 0x89, 0x78);
 					whatToDo = "You win!";
 				}
 				else if (!MomsGame.MoveAvailable())
 				{
-					backFillCollor = new RGBA_Bytes(0xf8, 0x89, 0x78);
+					backFillCollor = new Color(0xf8, 0x89, 0x78);
 					whatToDo = "No more moves! Shuffle to continue.";
 				}
 
@@ -407,8 +414,8 @@ namespace MomsSolitaire
 
 					subGraphics2D.SetTransform(Affine.NewTranslation(TextX, TextY));
 					subGraphics2D.Render(BackFill, backFillCollor);
-					subGraphics2D.Render(BackBorder, new RGBA_Bytes(0, 0, 0));
-					subGraphics2D.Render(stringToDraw.Printer, new RGBA_Bytes(0, 0, 0));
+					subGraphics2D.Render(BackBorder, new Color(0, 0, 0));
+					subGraphics2D.Render(stringToDraw.Printer, new Color(0, 0, 0));
 				}
 
 				String ShufflesString;
@@ -417,7 +424,7 @@ namespace MomsSolitaire
 
 				TextWidget shuffelStringToDraw = new TextWidget(ShufflesString, 12);
 				subGraphics2D.SetTransform(Affine.NewTranslation(m_BoardX, 350));
-				subGraphics2D.Render(shuffelStringToDraw.Printer, new RGBA_Bytes(0, 0, 0));
+				subGraphics2D.Render(shuffelStringToDraw.Printer, new Color(0, 0, 0));
 
 				subGraphics2D.SetTransform(Affine.NewIdentity());
 			}
@@ -469,25 +476,17 @@ namespace MomsSolitaire
 					break;
 			}
 		}
-	}
 
-	public class MomsSolitaireFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
+
+		[STAThread]
+		public static void Main(string[] args)
 		{
-			return new MomsSolitaire();
-		}
+			var demoWidget = new MomsSolitaire();
 
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-			"Game",
-			"Moms Solitaire",
-			"A port of the Forth solitaire game that my cousin Marlin Eller wrote for his mom on mothers day in 1989.",
-			691,
-			390);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(691, 390);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

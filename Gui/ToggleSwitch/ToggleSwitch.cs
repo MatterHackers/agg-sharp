@@ -31,106 +31,112 @@ namespace MatterHackers.Agg.UI
 {
 	public class ToggleSwitchView : CheckBoxViewStates
 	{
-		string onText = "";
-
-		public ToggleSwitchView(string onText, string offText, double width, double height,
-			RGBA_Bytes backgroundColor, RGBA_Bytes interiorColor, RGBA_Bytes thumbColor, RGBA_Bytes textColor)
+		public ToggleSwitchView(string onText, string offText, double width, double height, Color backgroundColor, Color interiorColor, Color thumbColor, Color textColor, Color borderColor)
 		{
-			this.onText = onText;
-			GuiWidget normal = createState(offText, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
-			GuiWidget normalHover = createState(offText, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
-			GuiWidget switchNormalToPressed = createState(onText, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
-			GuiWidget pressed = createState(onText, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
-			GuiWidget pressedHover = createState(onText, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
-			GuiWidget switchPressedToNormal = createState(offText, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor);
+			GuiWidget normal = createState(offText, false, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor, borderColor);
+			GuiWidget normalHover = createState(offText, false, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor, borderColor);
+			GuiWidget switchNormalToPressed = createState(onText, true, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor, borderColor);
+			GuiWidget pressed = createState(onText, true, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor, borderColor);
+			GuiWidget pressedHover = createState(onText, true, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor, borderColor);
+			GuiWidget switchPressedToNormal = createState(offText, false, width, height, ref backgroundColor, ref interiorColor, ref thumbColor, ref textColor, borderColor);
 			GuiWidget disabled = new TextWidget("disabled");
+
 			SetViewStates(normal, normalHover, switchNormalToPressed, pressed, pressedHover, switchPressedToNormal, disabled);
-			this.VAnchor = VAnchor.FitToChildren;
+
+			this.VAnchor = VAnchor.Fit;
 		}
 
-		private GuiWidget createState(string word, double width, double height, ref RGBA_Bytes backgroundColor, ref RGBA_Bytes interiorColor, ref RGBA_Bytes thumbColor, ref RGBA_Bytes textColor)
+		private GuiWidget createState(string word, bool isChecked, double width, double height, ref Color backgroundColor, ref Color interiorColor, ref Color thumbColor, ref Color textColor, Color borderColor)
 		{
-			TextWidget text = new TextWidget(word, pointSize: 10, textColor: textColor);
-			text.VAnchor = VAnchor.ParentCenter;
-
-			SwitchView switchGraphics = new SwitchView(width, height, word == onText, backgroundColor, interiorColor, thumbColor, textColor);
-			switchGraphics.VAnchor = VAnchor.ParentCenter;
-			switchGraphics.Margin = new BorderDouble(5, 0, 0, 0);
-
 			GuiWidget switchNormalToPressed = new FlowLayoutWidget(FlowDirection.LeftToRight);
-			switchNormalToPressed.AddChild(text);
-			switchNormalToPressed.AddChild(switchGraphics);
+
+			if (!string.IsNullOrEmpty(word))
+			{
+				switchNormalToPressed.AddChild(new TextWidget(word, pointSize: 10, textColor: textColor)
+				{
+					VAnchor = VAnchor.Center,
+					Margin = new BorderDouble(right: 5)
+				});
+			}
+
+			switchNormalToPressed.AddChild(
+				new SwitchView(width, height, isChecked, backgroundColor, interiorColor, isChecked ? thumbColor : Color.Gray, textColor, borderColor)
+				{
+					VAnchor = VAnchor.Center
+				});
 
 			return switchNormalToPressed;
 		}
 
 		internal class SwitchView : GuiWidget
 		{
-			private double switchHeight;
+			private bool Checked { get; }
 
-			private double switchWidth;
+			private RectangleDouble borderRect;
 
-			private double thumbHeight;
+			private RectangleDouble innerRect;
 
-			private double thumbWidth;
-			bool startValue;
+			private RectangleDouble checkedThumbBounds;
 
-			internal SwitchView(double width, double height, bool startValue, 
-				RGBA_Bytes backgroundColor, RGBA_Bytes interiorColor, RGBA_Bytes thumbColor, RGBA_Bytes exteriorColor)
+			private RectangleDouble uncheckedThumbBounds;
+
+			private RectangleDouble switchBounds { get; }
+
+			private Color borderColor;
+
+			private Color disabledBorderColor;
+
+			internal SwitchView(double width, double height, bool startValue, Color backgroundColor, Color interiorColor, Color thumbColor, Color exteriorColor, Color borderColor)
 			{
-				this.startValue = startValue;
-				switchWidth = width;
-				switchHeight = height;
-				thumbHeight = height;
-				thumbWidth = width / 4;
+				this.Checked = startValue;
+
+				var thumbHeight = height;
+				var thumbWidth = 14;
+
 				InteriorColor = interiorColor;
 				ExteriorColor = exteriorColor;
+
+				this.borderColor = borderColor;
+
+				disabledBorderColor = new Color(borderColor, 50);
+
 				ThumbColor = thumbColor;
 				LocalBounds = new RectangleDouble(0, 0, width, height);
+
+				this.switchBounds = new RectangleDouble(0, 0, width, height);
+
+				innerRect = this.switchBounds;
+				innerRect.Inflate(new BorderDouble(-3, -6));
+
+				borderRect = this.switchBounds;
+				borderRect.Inflate(new BorderDouble(0, -3));
+
+				checkedThumbBounds = new RectangleDouble(width - thumbWidth, 0, width, thumbHeight);
+				uncheckedThumbBounds = new RectangleDouble(0, 0, thumbWidth, thumbHeight);
 			}
 
-			public RGBA_Bytes ExteriorColor { get; set; }
+			public Color ExteriorColor { get; set; }
 
-			public RGBA_Bytes InteriorColor { get; set; }
-			public RGBA_Bytes ThumbColor { get; set; }
+			public Color InteriorColor { get; set; }
+
+			public Color ThumbColor { get; set; }
 
 			public override void OnDraw(Graphics2D graphics2D)
 			{
-				graphics2D.FillRectangle(GetSwitchBounds(), BackgroundColor);
+				graphics2D.FillRectangle(switchBounds, this.BackgroundColor);
 				base.OnDraw(graphics2D);
-				if (startValue)
-				{
-					RectangleDouble interior = GetSwitchBounds();
-					interior.Inflate(-6);
-					graphics2D.FillRectangle(interior, InteriorColor);
-				}
-				RectangleDouble border = GetSwitchBounds();
-				border.Inflate(-3);
-				graphics2D.Rectangle(border, ExteriorColor, 1);
-				graphics2D.FillRectangle(GetThumbBounds(), ThumbColor);
-				graphics2D.Rectangle(GetThumbBounds(), new RGBA_Bytes(255, 255, 255, 90), 1);
-			}
 
-			private RectangleDouble GetSwitchBounds()
-			{
-				RectangleDouble switchBounds;
-				switchBounds = new RectangleDouble(0, 0, switchWidth, switchHeight);
-				return switchBounds;
-			}
-
-			private RectangleDouble GetThumbBounds()
-			{
-				RectangleDouble thumbBounds;
-				if (startValue)
+				if (this.Checked)
 				{
-					thumbBounds = new RectangleDouble(switchWidth - thumbWidth, 0, switchWidth, thumbHeight);
-				}
-				else
-				{
-					thumbBounds = new RectangleDouble(0, 0, thumbWidth, thumbHeight);
+					graphics2D.FillRectangle(innerRect, this.InteriorColor);
 				}
 
-				return thumbBounds;
+				// Draw border
+				graphics2D.Rectangle(borderRect, (this.Enabled) ? borderColor : disabledBorderColor, 1);
+
+				var thumbBounds = (this.Checked) ? checkedThumbBounds : uncheckedThumbBounds;
+				graphics2D.FillRectangle(thumbBounds, this.ThumbColor);
+				graphics2D.Rectangle(thumbBounds, new Color(255, 255, 255, 90), 1);
 			}
 		}
 	}

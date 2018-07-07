@@ -23,11 +23,20 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using MatterHackers.Agg.Image;
+using MatterHackers.Agg.RasterizerScanline;
+using MatterHackers.Agg.Transform;
+using MatterHackers.Agg.VertexSource;
 
 namespace MatterHackers.Agg
 {
-	public delegate void ReportProgressRatio(double progress0To1, string processingState, out bool continueProcessing);
+	public delegate void ProgressReporter(string status, double progress0to1);
+
+	public class ProgressStatus : EventArgs
+	{
+		public string Status { get; set; }
+		public double Progress0To1 { get; set; }
+	}
 
 	static public class agg_basics
 	{
@@ -92,21 +101,38 @@ namespace MatterHackers.Agg
 #endif
 		}
 
-		public static string GetNonCollidingName(IEnumerable<string> listToCheck, string desiredName)
+		private static Regex fileNameNumberMatch = new Regex("\\(\\d+\\)\\s*$", RegexOptions.Compiled);
+		public static string GetNonCollidingName(string desiredName, IEnumerable<string> listToCheck)
 		{
-			if (!listToCheck.Contains(desiredName))
+			return GetNonCollidingName(desiredName, (name) => !listToCheck.Contains(name));
+		}
+
+		public static string GetNonCollidingName(string desiredName, Func<string, bool> IsUnique)
+		{
+			if (desiredName == null)
+			{
+				desiredName = "No Name";
+			}
+
+			if (IsUnique(desiredName))
 			{
 				return desiredName;
 			}
 			else
 			{
+				// Drop bracketed number sections from our source filename to ensure we don't generate something like "file (1) (1).amf"
+				if (desiredName.Contains("("))
+				{
+					desiredName = fileNameNumberMatch.Replace(desiredName, "").Trim();
+				}
+
 				int nextNumberToTry = 1;
 				string candidateName;
 
 				do
 				{
 					candidateName = string.Format("{0} ({1})", desiredName, nextNumberToTry++);
-				} while (listToCheck.Contains(candidateName));
+				} while (!IsUnique(candidateName));
 
 				return candidateName;
 			}
@@ -436,6 +462,49 @@ namespace MatterHackers.Agg
 			poly_subpixel_shift = 8,                      //----poly_subpixel_shift
 			poly_subpixel_scale = 1 << poly_subpixel_shift, //----poly_subpixel_scale
 			poly_subpixel_mask = poly_subpixel_scale - 1,  //----poly_subpixel_mask
+		}
+
+		public static ImageBuffer TrasparentToColorGradientX(int width, int height, Color color, int distance)
+		{
+			var innerGradient = new gradient_x();
+			var outerGradient = new gradient_clamp_adaptor(innerGradient); // gradient_repeat_adaptor/gradient_reflect_adaptor/gradient_clamp_adaptor
+
+			var rect = new RoundedRect(new RectangleDouble(0, 0, width, height), 0);
+
+			var ras = new ScanlineRasterizer();
+			ras.add_path(rect);
+
+			var imageBuffer = new ImageBuffer(width, height);
+			imageBuffer.SetRecieveBlender(new BlenderPreMultBGRA());
+
+			var scanlineRenderer = new ScanlineRenderer();
+			scanlineRenderer.GenerateAndRender(
+				ras,
+				new scanline_unpacked_8(),
+				imageBuffer,
+				new span_allocator(),
+				new span_gradient(
+					new span_interpolator_linear(Affine.NewIdentity()),
+					outerGradient,
+					new GradientColors(Enumerable.Range(0, 256).Select(i => new Color(color, i))), // steps from full transparency color to solid color
+					0,
+					distance));
+
+			return imageBuffer;
+		}
+
+		private class GradientColors : IColorFunction
+		{
+			private List<Color> colors;
+
+			public GradientColors(IEnumerable<Color> colors)
+			{
+				this.colors = new List<Color>(colors);
+			}
+
+			public Color this[int v] => colors[v];
+
+			public int size() => colors.Count;
 		}
 	}
 }

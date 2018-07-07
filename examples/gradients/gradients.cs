@@ -5,12 +5,13 @@ using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using System;
+using MatterHackers.Agg.UI.Examples;
 
 namespace MatterHackers.Agg
 {
 	public struct color_function_profile : IColorFunction
 	{
-		public color_function_profile(RGBA_Bytes[] colors, byte[] profile)
+		public color_function_profile(Color[] colors, byte[] profile)
 		{
 			m_colors = colors;
 			m_profile = profile;
@@ -21,7 +22,7 @@ namespace MatterHackers.Agg
 			return 256;
 		}
 
-		public RGBA_Bytes this[int v]
+		public Color this[int v]
 		{
 			get
 			{
@@ -29,11 +30,11 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		private RGBA_Bytes[] m_colors;
+		private Color[] m_colors;
 		private byte[] m_profile;
 	};
 
-	public class Gradients : GuiWidget
+	public class Gradients : GuiWidget, IDemoApp
 	{
 		private double center_x = 350;
 		private double center_y = 280;
@@ -117,10 +118,10 @@ namespace MatterHackers.Agg
 
 			m_profile.border_width(2.0, 2.0);
 
-			m_spline_r.background_color(new RGBA_Bytes(1.0, 0.8, 0.8));
-			m_spline_g.background_color(new RGBA_Bytes(0.8, 1.0, 0.8));
-			m_spline_b.background_color(new RGBA_Bytes(0.8, 0.8, 1.0));
-			m_spline_a.background_color(new RGBA_Bytes(1.0, 1.0, 1.0));
+			m_spline_r.background_color(new Color(1.0, 0.8, 0.8));
+			m_spline_g.background_color(new Color(0.8, 1.0, 0.8));
+			m_spline_b.background_color(new Color(0.8, 0.8, 1.0));
+			m_spline_a.background_color(new Color(1.0, 1.0, 1.0));
 
 			m_spline_r.border_width(1.0, 2.0);
 			m_spline_g.border_width(1.0, 2.0);
@@ -173,6 +174,12 @@ namespace MatterHackers.Agg
 			m_GradWrapRBox.SelectedIndex = 0;
 		}
 
+		public string Title { get; } = "Gradients";
+
+		public string DemoCategory { get; } = "Vector";
+
+		public string DemoDescription { get; } = "This �sphere� is rendered with color gradients only. Initially there was an idea to compensate so called Mach Bands effect. To do so I added a gradient profile functor. Then the concept was extended to set a color profile. As a result you can render simple geometrical objects in 2D looking like 3D ones. In this example you can construct your own color profile and select the gradient function. There're not so many gradient functions in AGG, but you can easily add your own. Also, drag the �gradient� with the left mouse button, scale and rotate it with the right one.";
+
 		private void NeedRedraw(object sender, MouseEventArgs mouseEvent)
 		{
 			Invalidate();
@@ -186,7 +193,7 @@ namespace MatterHackers.Agg
 			scanline_unpacked_8 sl = new scanline_unpacked_8();
 
 			ImageClippingProxy clippingProxy = new ImageClippingProxy(widgetsSubImage);
-			clippingProxy.clear(new RGBA_Floats(0, 0, 0));
+			clippingProxy.clear(new ColorF(0, 0, 0));
 
 			m_profile.text_size(8.0);
 
@@ -206,7 +213,7 @@ namespace MatterHackers.Agg
 						rect.normalize_radius();
 
 						ras.add_path(rect);
-						scanlineRenderer.RenderSolid(clippingProxy, ras, sl, new RGBA_Bytes(.9, .9, .9));
+						scanlineRenderer.RenderSolid(clippingProxy, ras, sl, new Color(.9, .9, .9));
 					}
 				}
 			}
@@ -228,10 +235,10 @@ namespace MatterHackers.Agg
 			mtx_g1 *= Affine.NewTranslation(m_SaveData.m_center_x, m_SaveData.m_center_y);
 			mtx_g1.invert();
 
-			RGBA_Bytes[] color_profile = new RGBA_Bytes[256]; // color_type is defined in pixel_formats.h
+			Color[] color_profile = new Color[256]; // color_type is defined in pixel_formats.h
 			for (int i = 0; i < 256; i++)
 			{
-				color_profile[i] = new RGBA_Bytes(m_spline_r.spline()[i],
+				color_profile[i] = new Color(m_spline_r.spline()[i],
 														m_spline_g.spline()[i],
 														m_spline_b.spline()[i],
 														m_spline_a.spline()[i]);
@@ -359,28 +366,12 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			AppWidgetFactory appWidget = new GradientsFactory();
-			appWidget.CreateWidgetAndRunInWindow();
-		}
-	}
+			var demoWidget = new Gradients();
 
-	public class GradientsFactory : AppWidgetFactory
-	{
-		public override GuiWidget NewWidget()
-		{
-			return new Gradients();
-		}
-
-		public override AppWidgetInfo GetAppParameters()
-		{
-			AppWidgetInfo appWidgetInfo = new AppWidgetInfo(
-			"Vector",
-			"Gradients",
-			"This �sphere� is rendered with color gradients only. Initially there was an idea to compensate so called Mach Bands effect. To do so I added a gradient profile functor. Then the concept was extended to set a color profile. As a result you can render simple geometrical objects in 2D looking like 3D ones. In this example you can construct your own color profile and select the gradient function. There're not so many gradient functions in AGG, but you can easily add your own. Also, drag the �gradient� with the left mouse button, scale and rotate it with the right one.",
-			512,
-			400);
-
-			return appWidgetInfo;
+			var systemWindow = new SystemWindow(512, 400);
+			systemWindow.Title = demoWidget.Title;
+			systemWindow.AddChild(demoWidget);
+			systemWindow.ShowAsSystemWindow();
 		}
 	}
 }

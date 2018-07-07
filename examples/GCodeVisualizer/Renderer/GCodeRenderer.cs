@@ -1,8 +1,5 @@
-﻿using MatterHackers.Agg;
-using MatterHackers.RenderOpenGl;
-using MatterHackers.RenderOpenGl.OpenGl;
-/*
-Copyright (c) 2014, Lars Brubaker
+﻿/*
+Copyright (c) 2017, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -32,6 +29,9 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using MatterHackers.Agg;
+using MatterHackers.RenderOpenGl;
+using MatterHackers.RenderOpenGl.OpenGl;
 
 namespace MatterHackers.GCodeVisualizer
 {
@@ -56,8 +56,8 @@ namespace MatterHackers.GCodeVisualizer
 		private List<List<int>> featureEndIndex = new List<List<int>>();
 		private List<List<RenderFeatureBase>> renderFeatures = new List<List<RenderFeatureBase>>();
 
-		public static RGBA_Bytes ExtrusionColor = RGBA_Bytes.White;
-		public static RGBA_Bytes TravelColor = RGBA_Bytes.Green;
+		public static Color ExtrusionColor = Color.White;
+		public static Color TravelColor = Color.Green;
 
 		private GCodeFile gCodeFileToDraw;
 
@@ -154,7 +154,7 @@ namespace MatterHackers.GCodeVisualizer
 							layerThickness = gCodeFileToDraw.GetFirstLayerHeight();
 						}
 
-                        RGBA_Bytes extrusionColor = extrusionColors.GetColorForSpeed((float)currentInstruction.FeedRate);
+                        Color extrusionColor = extrusionColors.GetColorForSpeed((float)currentInstruction.FeedRate);
                         renderFeaturesForLayer.Add(new RenderFeatureExtrusion(previousInstruction.Position, currentInstruction.Position, currentInstruction.ExtruderIndex, currentInstruction.FeedRate, currentInstruction.EPosition - previousInstruction.EPosition, gCodeFileToDraw.GetFilamentDiameter(), layerThickness, extrusionColor));
 					}
 					else
@@ -271,15 +271,7 @@ namespace MatterHackers.GCodeVisualizer
 		private List<GCodeVertexBuffer> layerVertexBuffer;
 		private RenderType lastRenderType = RenderType.None;
 
-		private static bool Is32Bit()
-		{
-			if (IntPtr.Size == 4)
-			{
-				return true;
-			}
-
-			return false;
-		}
+		private static readonly bool Is32Bit = IntPtr.Size == 4;
 
 		public void Render3D(GCodeRenderInfo renderInfo)
 		{
@@ -308,7 +300,7 @@ namespace MatterHackers.GCodeVisualizer
 
 			if (renderFeatures.Count > 0)
 			{
-				if (Is32Bit() && !GL.GlHasBufferObjects)
+				if (Is32Bit && !GL.GlHasBufferObjects)
 				{
 					int maxFeaturesForThisSystem = 125000;
 					int totalFeaturesToRunder = 0;

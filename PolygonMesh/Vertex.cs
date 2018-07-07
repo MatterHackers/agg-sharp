@@ -27,24 +27,18 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh
 {
-	[DebuggerDisplay("ID = {Data.ID} | XYZ = {Position}")]
-	public class Vertex
+	[DebuggerDisplay("ID = {ID} | XYZ = {Position}")]
+	public class Vertex : IVertex
 	{
-		public MetaData Data
-		{
-			get
-			{
-				return MetaData.Get(this);
-			}
-		}
+		public int ID { get; } = Mesh.GetID();
 
 #if false
         public Vector3 Position { get; set; }
@@ -62,9 +56,9 @@ namespace MatterHackers.PolygonMesh
 			}
 			set
 			{
-				position.x = (float)value.x;
-				position.y = (float)value.y;
-				position.z = (float)value.z;
+				position.x = (float)value.X;
+				position.y = (float)value.Y;
+				position.z = (float)value.Z;
 			}
 		}
 
@@ -78,22 +72,26 @@ namespace MatterHackers.PolygonMesh
 			}
 			set
 			{
-				normal.x = (float)value.x;
-				normal.y = (float)value.y;
-				normal.z = (float)value.z;
+				normal.x = (float)value.X;
+				normal.y = (float)value.Y;
+				normal.z = (float)value.Z;
 			}
 		}
 
 #endif
 
-		public MeshEdge firstMeshEdge;
+		public MeshEdge FirstMeshEdge { get; set; }
+
+		public Vertex()
+		{
+		}
 
 		public Vertex(Vector3 position)
 		{
 			this.Position = position;
 		}
 
-		public virtual Vertex CreateInterpolated(Vertex dest, double ratioToDest)
+		public virtual IVertex CreateInterpolated(IVertex dest, double ratioToDest)
 		{
 			Vertex interpolatedVertex = new Vertex(Vector3.Lerp(this.Position, dest.Position, ratioToDest));
 			interpolatedVertex.Normal = Vector3.Lerp(this.Normal, dest.Normal, ratioToDest).GetNormal();
@@ -103,14 +101,14 @@ namespace MatterHackers.PolygonMesh
 		public void AddDebugInfo(StringBuilder totalDebug, int numTabs)
 		{
 			int firstMeshEdgeID = -1;
-			if (firstMeshEdge != null)
+			if (FirstMeshEdge != null)
 			{
-				firstMeshEdgeID = firstMeshEdge.Data.ID;
+				firstMeshEdgeID = FirstMeshEdge.ID;
 			}
 			totalDebug.Append(new string('\t', numTabs) + String.Format("First MeshEdge: {0}\n", firstMeshEdgeID));
-			if (firstMeshEdge != null)
+			if (FirstMeshEdge != null)
 			{
-				firstMeshEdge.AddDebugInfo(totalDebug, numTabs + 1);
+				FirstMeshEdge.AddDebugInfo(totalDebug, numTabs + 1);
 			}
 		}
 
@@ -119,7 +117,7 @@ namespace MatterHackers.PolygonMesh
 			HashSet<Face> allFacesOfThisEdge = new HashSet<Face>();
 			foreach (MeshEdge meshEdge in ConnectedMeshEdges())
 			{
-				foreach (Face face in meshEdge.FacesSharingMeshEdgeIterator())
+				foreach (Face face in meshEdge.FacesSharingMeshEdge())
 				{
 					allFacesOfThisEdge.Add(face);
 				}
@@ -144,21 +142,21 @@ namespace MatterHackers.PolygonMesh
 
 		public IEnumerable<MeshEdge> ConnectedMeshEdges()
 		{
-			if (this.firstMeshEdge != null)
+			if (this.FirstMeshEdge != null)
 			{
-				MeshEdge curMeshEdge = this.firstMeshEdge;
+				MeshEdge curMeshEdge = this.FirstMeshEdge;
 				do
 				{
 					yield return curMeshEdge;
 
 					curMeshEdge = curMeshEdge.GetNextMeshEdgeConnectedTo(this);
-				} while (curMeshEdge != this.firstMeshEdge);
+				} while (curMeshEdge != this.FirstMeshEdge);
 			}
 		}
 
-		public MeshEdge GetMeshEdgeConnectedToVertex(Vertex vertexToFindConnectionTo)
+		public MeshEdge GetMeshEdgeConnectedToVertex(IVertex vertexToFindConnectionTo)
 		{
-			if (this.firstMeshEdge == null)
+			if (this.FirstMeshEdge == null)
 			{
 				return null;
 			}
@@ -187,7 +185,7 @@ namespace MatterHackers.PolygonMesh
 
 		public void Validate()
 		{
-			if (firstMeshEdge != null)
+			if (FirstMeshEdge != null)
 			{
 				HashSet<MeshEdge> foundEdges = new HashSet<MeshEdge>();
 

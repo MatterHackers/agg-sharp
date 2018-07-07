@@ -47,13 +47,26 @@ namespace MatterHackers.RayTracer.Traceable
 		public Transform(IPrimitive root, Matrix4X4 transform)
 		{
 			this.Child = root;
-			WorldToAxis = transform;
-			AxisToWorld = Matrix4X4.Invert(WorldToAxis);
+
 			AxisToWorld = transform;
 			WorldToAxis = Matrix4X4.Invert(AxisToWorld);
 		}
 
-		public RGBA_Floats GetColor(IntersectInfo info)
+		public bool Contains(Vector3 position)
+		{
+			if (this.GetAxisAlignedBoundingBox().Contains(position))
+			{
+				var childPosition = Vector3.Transform(position, WorldToAxis);
+				if (Child?.Contains(childPosition) == true)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		public ColorF GetColor(IntersectInfo info)
 		{
 			return Child.GetColor(info);
 		}
@@ -70,9 +83,11 @@ namespace MatterHackers.RayTracer.Traceable
 			}
 		}
 
-		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
+		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
 		{
-			throw new NotImplementedException();
+			Child.GetContained(results, subRegion);
+
+			return true;
 		}
 
 		public IntersectInfo GetClosestIntersection(Ray ray)
@@ -128,6 +143,10 @@ namespace MatterHackers.RayTracer.Traceable
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{
+			if(Child == null)
+			{
+				return new AxisAlignedBoundingBox(Vector3.Zero, Vector3.Zero);
+			}
 			Vector3 localOrigin = Origin;
 			AxisAlignedBoundingBox localBounds = Child.GetAxisAlignedBoundingBox();
 			AxisAlignedBoundingBox bounds = localBounds.NewTransformed(AxisToWorld);
@@ -142,10 +161,7 @@ namespace MatterHackers.RayTracer.Traceable
 		private Ray GetLocalSpaceRay(Ray ray)
 		{
 			// TODO: cache this.
-			Matrix4X4 WorldToAxis = Matrix4X4.Invert(AxisToWorld);
-			Vector3 transformedOrigin = Vector3.TransformPosition(ray.origin, WorldToAxis);
-			Vector3 transformedDirecton = Vector3.TransformVector(ray.directionNormal, WorldToAxis);
-			return new Ray(transformedOrigin, transformedDirecton, ray.minDistanceToConsider, ray.maxDistanceToConsider, ray.intersectionType);
+			return Ray.Transform(ray, Matrix4X4.Invert(AxisToWorld));
 		}
 
 		private IntersectInfo GetGlobalSpaceInfo(IntersectInfo localInfo)
@@ -155,7 +171,7 @@ namespace MatterHackers.RayTracer.Traceable
 				return null;
 			}
 			IntersectInfo globalInfo = new IntersectInfo(localInfo);
-			globalInfo.hitPosition = Vector3.TransformPosition(localInfo.hitPosition, this.AxisToWorld);
+			globalInfo.HitPosition = Vector3.TransformPosition(localInfo.HitPosition, this.AxisToWorld);
 			globalInfo.normalAtHit = Vector3.TransformVector(localInfo.normalAtHit, this.AxisToWorld);
 			return globalInfo;
 		}

@@ -27,21 +27,19 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using MatterHackers.Agg;
-using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Text.RegularExpressions;
 using System.Threading;
+using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh.Processors
 {
 	public static class StlProcessing
 	{
-		public static bool Save(Mesh meshToSave, string fileName, MeshOutputSettings outputInfo = null)
+		public static bool Save(this Mesh meshToSave, string fileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null)
 		{
 			using (FileStream file = new FileStream(fileName, FileMode.Create, FileAccess.Write))
 			{
@@ -49,11 +47,11 @@ namespace MatterHackers.PolygonMesh.Processors
 				{
 					outputInfo = new MeshOutputSettings();
 				}
-				return Save(meshToSave, file, outputInfo);
+				return Save(meshToSave, file, cancellationToken, outputInfo);
 			}
 		}
 
-		public static bool Save(Mesh meshToSave, Stream stream, MeshOutputSettings outputInfo)
+		public static bool Save(Mesh meshToSave, Stream stream, CancellationToken cancellationToken, MeshOutputSettings outputInfo)
 		{
 			switch (outputInfo.OutputTypeSetting)
 			{
@@ -65,10 +63,14 @@ namespace MatterHackers.PolygonMesh.Processors
 
 						foreach (Face face in meshToSave.Faces)
 						{
+							if(cancellationToken.IsCancellationRequested)
+							{
+								return false;
+							}
 							List<Vector3> positionsCCW = new List<Vector3>();
 							foreach (FaceEdge faceEdge in face.FaceEdges())
 							{
-								positionsCCW.Add(faceEdge.firstVertex.Position);
+								positionsCCW.Add(faceEdge.FirstVertex.Position);
 							}
 
 							int numPolys = positionsCCW.Count - 2;
@@ -76,7 +78,7 @@ namespace MatterHackers.PolygonMesh.Processors
 							int thirdIndex = 2;
 							for (int polyIndex = 0; polyIndex < numPolys; polyIndex++)
 							{
-								streamWriter.WriteLine("  facet normal " + FormatForStl(face.normal));
+								streamWriter.WriteLine("  facet normal " + FormatForStl(face.Normal));
 								streamWriter.WriteLine("    outer loop");
 								streamWriter.WriteLine("      vertex " + FormatForStl(positionsCCW[0]));
 								streamWriter.WriteLine("      vertex " + FormatForStl(positionsCCW[secondIndex]));
@@ -105,10 +107,15 @@ namespace MatterHackers.PolygonMesh.Processors
 						int binaryPolyCount = 0;
 						foreach (Face face in meshToSave.Faces)
 						{
+							if (cancellationToken.IsCancellationRequested)
+							{
+								return false;
+							}
+
 							List<Vector3> positionsCCW = new List<Vector3>();
 							foreach (FaceEdge faceEdge in face.FaceEdges())
 							{
-								positionsCCW.Add(faceEdge.firstVertex.Position);
+								positionsCCW.Add(faceEdge.FirstVertex.Position);
 							}
 
 							int numPolys = positionsCCW.Count - 2;
@@ -122,9 +129,9 @@ namespace MatterHackers.PolygonMesh.Processors
 								bw.Write((float)0);
 								bw.Write((float)0);
 								// save the position
-								bw.Write((float)positionsCCW[0].x); bw.Write((float)positionsCCW[0].y); bw.Write((float)positionsCCW[0].z);
-								bw.Write((float)positionsCCW[secondIndex].x); bw.Write((float)positionsCCW[secondIndex].y); bw.Write((float)positionsCCW[secondIndex].z);
-								bw.Write((float)positionsCCW[thirdIndex].x); bw.Write((float)positionsCCW[thirdIndex].y); bw.Write((float)positionsCCW[thirdIndex].z);
+								bw.Write((float)positionsCCW[0].X); bw.Write((float)positionsCCW[0].Y); bw.Write((float)positionsCCW[0].Z);
+								bw.Write((float)positionsCCW[secondIndex].X); bw.Write((float)positionsCCW[secondIndex].Y); bw.Write((float)positionsCCW[secondIndex].Z);
+								bw.Write((float)positionsCCW[thirdIndex].X); bw.Write((float)positionsCCW[thirdIndex].Y); bw.Write((float)positionsCCW[thirdIndex].Z);
 
 								// and the attribute
 								bw.Write((ushort)0);
@@ -133,8 +140,10 @@ namespace MatterHackers.PolygonMesh.Processors
 								thirdIndex++;
 							}
 						}
+
 						bw.BaseStream.Position = 80;
-						// the number of tranigles
+
+						// the number of triangles
 						bw.Write(binaryPolyCount);
 					}
 					break;
@@ -142,7 +151,7 @@ namespace MatterHackers.PolygonMesh.Processors
 			return true;
 		}
 
-		public static Mesh Load(string fileName, ReportProgressRatio reportProgress = null)
+		public static Mesh Load(string fileName, CancellationToken cancellationToken, Action<double, string> reportProgress = null)
 		{
 			// Early exit if not STL
 			if (Path.GetExtension(fileName).ToUpper() != ".STL") return null;
@@ -150,17 +159,17 @@ namespace MatterHackers.PolygonMesh.Processors
 			using (Stream fileStream = File.OpenRead(fileName))
 			{
 				// Call the Load signature taking a stream and file extension
-				return Load(fileStream, reportProgress);
+				return Load(fileStream, cancellationToken, reportProgress);
 			}
 		}
 
 		// Note: Changing the Load(Stream) return type - this is a breaking change but methods with the same name should return the same type
-		public static Mesh Load(Stream fileStream, ReportProgressRatio reportProgress = null)
+		public static Mesh Load(Stream fileStream, CancellationToken cancellationToken, Action<double, string> reportProgress = null)
 		{
 			try
 			{
 				// Parse STL
-				Mesh loadedMesh = ParseFileContents(fileStream, reportProgress);
+				Mesh loadedMesh = ParseFileContents(fileStream, cancellationToken, reportProgress);
 
 				// TODO: Sync with AMF processing and have ParseFileContents return List<MeshGroup>?
 				//
@@ -175,7 +184,7 @@ namespace MatterHackers.PolygonMesh.Processors
 				return null;
 			}
 #else
-            // TODO: Consider not supressing exceptions like this or at least logging them. Troubleshooting when this
+            // TODO: Consider not suppressing exceptions like this or at least logging them. Troubleshooting when this
             // scenario occurs is impossible and likely results in an undiagnosable null reference error
             catch (Exception)
             {
@@ -191,13 +200,13 @@ namespace MatterHackers.PolygonMesh.Processors
 			Vector3 vector0;
 			int currentPosition = "vertex".Length;
 			string number = GetNumber(line, ref currentPosition);
-			double.TryParse(number, style, culture, out vector0.x);
+			double.TryParse(number, style, culture, out vector0.X);
 
 			number = GetNumber(line, ref currentPosition);
-			double.TryParse(number, style, culture, out vector0.y);
+			double.TryParse(number, style, culture, out vector0.Y);
 
 			number = GetNumber(line, ref currentPosition);
-			double.TryParse(number, style, culture, out vector0.z);
+			double.TryParse(number, style, culture, out vector0.Z);
 
 			return vector0;
 		}
@@ -219,26 +228,20 @@ namespace MatterHackers.PolygonMesh.Processors
 			return line.Substring(currentPosition-numberLength, numberLength);
 		}
 
-		public static Mesh ParseFileContents(Stream stlStream, ReportProgressRatio reportProgress)
+		public static Mesh ParseFileContents(Stream stlStream, CancellationToken cancellationToken, Action<double, string> reportProgress)
 		{
 			Stopwatch time = new Stopwatch();
 			time.Start();
 			Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
-
-			double parsingFileRatio = .5;
 
 			if (stlStream == null)
 			{
 				return null;
 			}
 
-			//MemoryStream stlStream = new MemoryStream();
-			//stlStreamIn.CopyTo(stlStream);
-
 			Stopwatch maxProgressReport = new Stopwatch();
 			maxProgressReport.Start();
 			Mesh meshFromStlFile = new Mesh();
-			//meshFromStlFile.MaxDistanceToConsiderVertexAsSame = .0000005;
 			long bytesInFile = stlStream.Length;
 			if (bytesInFile <= 80)
 			{
@@ -284,10 +287,10 @@ namespace MatterHackers.PolygonMesh.Processors
 								vector2 = Convert(line);
 								if (!Vector3.Collinear(vector0, vector1, vector2))
 								{
-									Vertex vertex1 = meshFromStlFile.CreateVertex(vector0, CreateOption.CreateNew, SortOption.WillSortLater);
-									Vertex vertex2 = meshFromStlFile.CreateVertex(vector1, CreateOption.CreateNew, SortOption.WillSortLater);
-									Vertex vertex3 = meshFromStlFile.CreateVertex(vector2, CreateOption.CreateNew, SortOption.WillSortLater);
-									meshFromStlFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 }, CreateOption.CreateNew);
+									IVertex vertex1 = meshFromStlFile.CreateVertex(vector0, CreateOption.CreateNew, SortOption.WillSortLater);
+									IVertex vertex2 = meshFromStlFile.CreateVertex(vector1, CreateOption.CreateNew, SortOption.WillSortLater);
+									IVertex vertex3 = meshFromStlFile.CreateVertex(vector2, CreateOption.CreateNew, SortOption.WillSortLater);
+									meshFromStlFile.CreateFace(new IVertex[] { vertex1, vertex2, vertex3 }, CreateOption.CreateNew);
 								}
 								vectorIndex = 0;
 								break;
@@ -297,9 +300,8 @@ namespace MatterHackers.PolygonMesh.Processors
 
 					if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
 					{
-						bool continueProcessing;
-						reportProgress(stlStream.Position / (double)bytesInFile * parsingFileRatio, "Loading Polygons", out continueProcessing);
-						if (!continueProcessing)
+						reportProgress(stlStream.Position / (double)bytesInFile, "Loading Polygons");
+						if (cancellationToken.IsCancellationRequested)
 						{
 							stlStream.Close();
 							return null;
@@ -345,9 +347,8 @@ namespace MatterHackers.PolygonMesh.Processors
 
 					if (reportProgress != null && maxProgressReport.ElapsedMilliseconds > 200)
 					{
-						bool continueProcessing;
-						reportProgress(i / (double)numTriangles * parsingFileRatio, "Loading Polygons", out continueProcessing);
-						if (!continueProcessing)
+						reportProgress(i / (double)numTriangles, "Loading Polygons");
+						if (cancellationToken.IsCancellationRequested)
 						{
 							stlStream.Close();
 							return null;
@@ -357,36 +358,17 @@ namespace MatterHackers.PolygonMesh.Processors
 
 					if (!Vector3.Collinear(vector[0], vector[1], vector[2]))
 					{
-						Vertex vertex1 = meshFromStlFile.CreateVertex(vector[0], CreateOption.CreateNew, SortOption.WillSortLater);
-						Vertex vertex2 = meshFromStlFile.CreateVertex(vector[1], CreateOption.CreateNew, SortOption.WillSortLater);
-						Vertex vertex3 = meshFromStlFile.CreateVertex(vector[2], CreateOption.CreateNew, SortOption.WillSortLater);
-						meshFromStlFile.CreateFace(new Vertex[] { vertex1, vertex2, vertex3 }, CreateOption.CreateNew);
+						IVertex vertex1 = meshFromStlFile.CreateVertex(vector[0], CreateOption.CreateNew, SortOption.WillSortLater);
+						IVertex vertex2 = meshFromStlFile.CreateVertex(vector[1], CreateOption.CreateNew, SortOption.WillSortLater);
+						IVertex vertex3 = meshFromStlFile.CreateVertex(vector[2], CreateOption.CreateNew, SortOption.WillSortLater);
+						meshFromStlFile.CreateFace(new IVertex[] { vertex1, vertex2, vertex3 }, CreateOption.CreateNew);
 					}
 				}
-				//uint numTriangles = System.BitConverter.ToSingle(fileContents, 80);
 			}
 
-			// merge all the vetexes that are in the same place together
-			bool finishedCleanAndMerge = true;
-			meshFromStlFile.CleanAndMergMesh(reportProgress:
-				(double progress0To1, string processingState, out bool continueProcessing) =>
-				{
-					if (reportProgress != null)
-					{
-						reportProgress(parsingFileRatio + progress0To1 * (1 - parsingFileRatio), processingState, out continueProcessing);
-						if (!continueProcessing)
-						{
-							finishedCleanAndMerge = false;
-						}
-					}
-					else
-					{
-						continueProcessing = true;
-					}
-				}
-			);
+			reportProgress?.Invoke(1, "");
 
-			if (!finishedCleanAndMerge)
+			if (cancellationToken.IsCancellationRequested)
 			{
 				return null;
 			}
@@ -400,7 +382,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
 		public static string FormatForStl(Vector3 value)
 		{
-			return string.Format("{0:0.000000} {1:0.000000} {2:0.000000}", value.x, value.y, value.z);
+			return string.Format("{0:0.000000} {1:0.000000} {2:0.000000}", value.X, value.Y, value.Z);
 		}
 
 		private static bool ParseLine(Mesh meshFromStlFile, string thisLine, out Vector3 vertexPosition)
@@ -418,9 +400,9 @@ namespace MatterHackers.PolygonMesh.Processors
 			}
 			string[] splitOnSpace = noDoubleSpaces.Split(' ');
 			vertexPosition = new Vector3();
-			bool goodParse = double.TryParse(splitOnSpace[1], out vertexPosition.x);
-			goodParse &= double.TryParse(splitOnSpace[2], out vertexPosition.y);
-			goodParse &= double.TryParse(splitOnSpace[3], out vertexPosition.z);
+			bool goodParse = double.TryParse(splitOnSpace[1], out vertexPosition.X);
+			goodParse &= double.TryParse(splitOnSpace[2], out vertexPosition.Y);
+			goodParse &= double.TryParse(splitOnSpace[3], out vertexPosition.Z);
 			return goodParse;
 		}
 

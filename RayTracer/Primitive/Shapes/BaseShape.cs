@@ -18,17 +18,28 @@ namespace MatterHackers.RayTracer
 {
 	public abstract class BaseShape : IPrimitive
 	{
-		private MaterialAbstract material;
+		public ColorF GetColor(IntersectInfo info)
+		{
+			if (Material.HasTexture)
+			{
+				var uv = GetUv(info);
+				return Material.GetColor(uv.u, uv.v);
+			}
+			else
+			{
+				return Material.GetColor(0, 0);
+			}
+		}
 
-		public abstract RGBA_Floats GetColor(IntersectInfo info);
+		public abstract (double u, double v) GetUv(IntersectInfo info);
 
 		public MaterialAbstract Material
 		{
-			get { return material; }
-			set { material = value; }
+			get;
+			set;
 		}
 
-		public bool GetContained(List<IPrimitive> results, AxisAlignedBoundingBox subRegion)
+		public bool GetContained(List<IBvhItem> results, AxisAlignedBoundingBox subRegion)
 		{
 			AxisAlignedBoundingBox bounds = GetAxisAlignedBoundingBox();
 			if (bounds.Contains(subRegion))
@@ -40,9 +51,19 @@ namespace MatterHackers.RayTracer
 			return false;
 		}
 
+		public virtual bool Contains(Vector3 position)
+		{
+			if (this.GetAxisAlignedBoundingBox().Contains(position))
+			{
+				return true;
+			}
+
+			return false;
+		}
+
 		public BaseShape()
 		{
-			Material = new SolidMaterial(new RGBA_Floats(1, 0, 1), 0, 0, 0);
+			Material = new SolidMaterial(new ColorF(1, 0, 1), 0, 0, 0);
 		}
 
 		public abstract IntersectInfo GetClosestIntersection(Ray ray);

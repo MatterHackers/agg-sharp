@@ -75,16 +75,16 @@ namespace MatterHackers.GCodeVisualizer
 					position = position + new Vector3(offset);
 				}
 
-				RGBA_Bytes color = MeshViewerWidget.GetMaterialColor(extruderIndex + 1);
+				Color color = MeshViewerWidget.GetMaterialColor(extruderIndex + 1);
 				if (extruderIndex == 0)
 				{
 					if (extrusionAmount > 0)
 					{
-						color = RGBA_Bytes.Blue;
+						color = Color.Blue;
 					}
 					else
 					{
-						color = RGBA_Bytes.Red;
+						color = Color.Red;
 					}
 				}
 				if (extrusionAmount > 0)
@@ -115,11 +115,11 @@ namespace MatterHackers.GCodeVisualizer
 
 				renderInfo.Transform.transform(ref position);
 
-				RGBA_Bytes retractionColor = new RGBA_Bytes(RGBA_Bytes.Red, 200);
+				Color retractionColor = new Color(Color.Red, 200);
 				if (extrusionAmount > 0)
 				{
 					// unretraction
-					retractionColor = new RGBA_Bytes(RGBA_Bytes.Blue, 200);
+					retractionColor = new Color(Color.Blue, 200);
 				}
 
 				// render the part using opengl

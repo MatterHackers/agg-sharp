@@ -36,27 +36,21 @@ using System.Collections.Generic;
 
 namespace MatterHackers.PolygonMesh
 {
-	public class VertexCollecton : IEnumerable
+	public class VertexCollecton : IEnumerable<IVertex>
 	{
-		private List<Vertex> vertices = new List<Vertex>();
+		private List<IVertex> vertices = new List<IVertex>();
 
 		//VertexSorterBase vertexSorter = new VertexXAxisSorter();
 		//VertexSorterBase vertexSorter = new VertexDistanceFromPointSorter();
 		private VertexSorterBase vertexSorter = new VertexXYZAxisWithRotation();
 
-		private bool isSorted = true;
-
-		public bool IsSorted
-		{
-			get { return isSorted; }
-			set { isSorted = value; }
-		}
+		public bool Sorted { get; set; } = true;
 
 		public VertexCollecton()
 		{
 		}
 
-		public Vertex this[int index]
+		public IVertex this[int index]
 		{
 			get { return vertices[index]; }
 		}
@@ -67,12 +61,17 @@ namespace MatterHackers.PolygonMesh
 			set { vertices.Capacity = value; }
 		}
 
-		public IEnumerator GetEnumerator()
+		public IEnumerator<IVertex> GetEnumerator()
 		{
 			return vertices.GetEnumerator();
 		}
 
-		public List<Vertex> FindVertices(Vector3 position, double maxDistanceToConsiderVertexAsSame)
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			return vertices.GetEnumerator();
+		}
+
+		public List<IVertex> FindVertices(Vector3 position, double maxDistanceToConsiderVertexAsSame)
 		{
 #if VALIDATE_SEARCH
             List<Vertex> testList = new List<Vertex>();
@@ -84,12 +83,12 @@ namespace MatterHackers.PolygonMesh
                 }
             }
 #endif
-			if (!IsSorted)
+			if (!Sorted)
 			{
 				throw new Exception("You can't Find a vertex in an unsorted VertexCollection. Sort it first (or add the vertexes without preventing sorting).");
 			}
 
-			List<Vertex> foundVertexes = vertexSorter.FindVertices(vertices, position, maxDistanceToConsiderVertexAsSame);
+			List<IVertex> foundVertices = vertexSorter.FindVertices(vertices, position, maxDistanceToConsiderVertexAsSame);
 
 #if VALIDATE_SEARCH
             if (testList.Count != findList.Count)
@@ -105,21 +104,18 @@ namespace MatterHackers.PolygonMesh
             }
 #endif
 
-			return foundVertexes;
+			return foundVertices;
 		}
 
 		public void Sort()
 		{
-			if (!IsSorted)
-			{
-				vertices.Sort(vertexSorter);
-				isSorted = true;
-			}
+			vertices.Sort(vertexSorter);
+			Sorted = true;
 		}
 
-		public void Remove(Vertex vertexToRemove)
+		public void Remove(IVertex vertexToRemove)
 		{
-			if (!IsSorted)
+			if (!Sorted)
 			{
 				vertices.Remove(vertexToRemove);
 			}
@@ -133,12 +129,12 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public void Add(Vertex vertexToAdd, SortOption sortOption = SortOption.SortNow)
+		public void Add(IVertex vertexToAdd, SortOption sortOption = SortOption.SortNow)
 		{
 			if (sortOption == SortOption.WillSortLater)
 			{
 				vertices.Add(vertexToAdd);
-				isSorted = false;
+				Sorted = false;
 			}
 			else
 			{
@@ -151,9 +147,9 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public int IndexOf(Vertex vertexToLookFor)
+		public int IndexOf(IVertex vertexToLookFor)
 		{
-			if (IsSorted)
+			if (Sorted)
 			{
 				int index = vertices.BinarySearch(vertexToLookFor, vertexSorter);
 				if (index < 0)
@@ -202,9 +198,9 @@ namespace MatterHackers.PolygonMesh
 			}
 		}
 
-		public bool ContainsAVertexAtPosition(Vertex vertexToLookFor)
+		public bool ContainsAVertexAtPosition(IVertex vertexToLookFor)
 		{
-			if (!IsSorted)
+			if (!Sorted)
 			{
 				throw new Exception("You can't Find a vertex in an unsorted VertexCollection. Sort it first (or add the vertexes without preventing sorting).");
 			}
@@ -212,15 +208,21 @@ namespace MatterHackers.PolygonMesh
 			int index = IndexOf(vertexToLookFor);
 			if (index < 0)
 			{
+#if DEBUG
+				if(index < -1)
+				{
+					throw new Exception("The vertex list has become unsorted (probably mutated). It needs to be resorted.");
+				}
+#endif
 				return false;
 			}
 
 			return true;
 		}
 
-		public bool ContainsVertex(Vertex vertexToLookFor)
+		public bool ContainsVertex(IVertex vertexToLookFor)
 		{
-			if (!IsSorted)
+			if (!Sorted)
 			{
 				throw new Exception("You can't Find a vertex in an unsorted VertexCollection. Sort it first (or add the vertexes without preventing sorting).");
 			}

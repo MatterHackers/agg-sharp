@@ -37,7 +37,7 @@ namespace MatterHackers.RayTracer
 	/// </summary>
 	public class Background
 	{
-		public RGBA_Floats Color;
+		public ColorF Color;
 		public double Ambience;
 
 		/// <summary>
@@ -45,7 +45,7 @@ namespace MatterHackers.RayTracer
 		/// </summary>
 		/// <param name="color">the color of the background</param>
 		/// <param name="ambience">the ambient lighting used [0,1]</param>
-		public Background(RGBA_Floats color, double ambience)
+		public Background(ColorF color, double ambience)
 		{
 			Color = color;
 			Ambience = ambience;

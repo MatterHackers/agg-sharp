@@ -162,7 +162,7 @@ namespace MatterHackers.Agg.UI
 				{
 					if (checkBox.FirstWidgetUnderMouse)
 					{
-						if (checkBox.MouseDownOnButton)
+						if (checkBox.MouseDownOnWidget)
 						{
 							normal.Visible = false;
 							normalHover.Visible = false;
@@ -201,7 +201,7 @@ namespace MatterHackers.Agg.UI
 				{
 					if (checkBox.FirstWidgetUnderMouse)
 					{
-						if (checkBox.MouseDownOnButton)
+						if (checkBox.MouseDownOnWidget)
 						{
 							normal.Visible = false;
 							normalHover.Visible = false;

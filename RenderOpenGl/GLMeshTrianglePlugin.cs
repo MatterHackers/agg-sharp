@@ -45,6 +45,14 @@ namespace MatterHackers.RenderOpenGl
 		public static readonly int Stride = Marshal.SizeOf(default(VertexTextureData));
 	}
 
+	public struct VertexColorData
+	{
+		public byte red;
+		public byte green;
+		public byte blue;
+		public static readonly int Stride = Marshal.SizeOf(default(VertexColorData));
+	}
+
 	public struct VertexNormalData
 	{
 		public float normalX;
@@ -64,45 +72,46 @@ namespace MatterHackers.RenderOpenGl
 	public class SubTriangleMesh
 	{
 		public ImageBuffer texture = null;
-		public VectorPOD<VertexTextureData> textrueData = new VectorPOD<VertexTextureData>();
+		public VectorPOD<VertexTextureData> textureData = new VectorPOD<VertexTextureData>();
+		public VectorPOD<VertexColorData> colorData = new VectorPOD<VertexColorData>();
 		public VectorPOD<VertexNormalData> normalData = new VectorPOD<VertexNormalData>();
 		public VectorPOD<VertexPositionData> positionData = new VectorPOD<VertexPositionData>();
+
+		public bool UseVertexColors { get; internal set; }
 	}
 
 	public class GLMeshTrianglePlugin
 	{
 		public delegate void DrawToGL(Mesh meshToRender);
 
-		private static ConditionalWeakTable<Mesh, GLMeshTrianglePlugin> meshesWithCacheData = new ConditionalWeakTable<Mesh, GLMeshTrianglePlugin>();
-
 		public List<SubTriangleMesh> subMeshs;
 
 		private int meshUpdateCount;
 
-		static public GLMeshTrianglePlugin Get(Mesh meshToGetDisplayListFor)
+		public static string GLMeshTrianglePluginName => nameof(GLMeshTrianglePluginName);
+
+		static public GLMeshTrianglePlugin Get(Mesh mesh, Func<Vector3, Color> getColorFunc = null)
 		{
-			GLMeshTrianglePlugin plugin;
-			meshesWithCacheData.TryGetValue(meshToGetDisplayListFor, out plugin);
-
-			if (plugin != null && meshToGetDisplayListFor.ChangedCount != plugin.meshUpdateCount)
+			object meshData;
+			mesh.PropertyBag.TryGetValue(GLMeshTrianglePluginName, out meshData);
+			if (meshData is GLMeshTrianglePlugin plugin)
 			{
-				plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
-				plugin.AddRemoveData();
-				plugin.CreateRenderData(meshToGetDisplayListFor);
-				plugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
+				if (mesh.ChangedCount == plugin.meshUpdateCount)
+				{
+					return plugin;
+				}
+
+				// else we need to rebulid the data
+				plugin.meshUpdateCount = mesh.ChangedCount;
+				mesh.PropertyBag.Remove(GLMeshTrianglePluginName);
 			}
 
-			if (plugin == null)
-			{
-				GLMeshTrianglePlugin newPlugin = new GLMeshTrianglePlugin();
-				meshesWithCacheData.Add(meshToGetDisplayListFor, newPlugin);
-				newPlugin.CreateRenderData(meshToGetDisplayListFor);
-				newPlugin.meshUpdateCount = meshToGetDisplayListFor.ChangedCount;
+			GLMeshTrianglePlugin newPlugin = new GLMeshTrianglePlugin();
+			newPlugin.CreateRenderData(mesh, getColorFunc);
+			newPlugin.meshUpdateCount = mesh.ChangedCount;
+			mesh.PropertyBag.Add(GLMeshTrianglePluginName, newPlugin);
 
-				return newPlugin;
-			}
-
-			return plugin;
+			return newPlugin;
 		}
 
 		private GLMeshTrianglePlugin()
@@ -110,22 +119,14 @@ namespace MatterHackers.RenderOpenGl
 			// This is private as you can't build one of these. You have to call GetImageGLDisplayListPlugin.
 		}
 
-		private void AddRemoveData()
-		{
-		}
-
-		~GLMeshTrianglePlugin()
-		{
-			AddRemoveData();
-		}
-
-		private void CreateRenderData(Mesh meshToBuildListFor)
+		private void CreateRenderData(Mesh meshToBuildListFor, Func<Vector3, Color> getColorFunc)
 		{
 			subMeshs = new List<SubTriangleMesh>();
 			SubTriangleMesh currentSubMesh = null;
-			VectorPOD<VertexTextureData> textureData = new VectorPOD<VertexTextureData>();
-			VectorPOD<VertexNormalData> normalData = new VectorPOD<VertexNormalData>();
-			VectorPOD<VertexPositionData> positionData = new VectorPOD<VertexPositionData>();
+			VectorPOD<VertexTextureData> textureData = null;
+			VectorPOD<VertexColorData> colorData = null;
+			VectorPOD<VertexNormalData> normalData = null;
+			VectorPOD<VertexPositionData> positionData = null;
 			// first make sure all the textures are created
 			foreach (Face face in meshToBuildListFor.Faces)
 			{
@@ -141,53 +142,74 @@ namespace MatterHackers.RenderOpenGl
 					SubTriangleMesh newSubMesh = new SubTriangleMesh();
 					newSubMesh.texture = faceTexture;
 					subMeshs.Add(newSubMesh);
+					if (getColorFunc != null)
+					{
+						newSubMesh.UseVertexColors = true;
+					}
 
 					currentSubMesh = subMeshs[subMeshs.Count - 1];
-					textureData = currentSubMesh.textrueData;
+					textureData = currentSubMesh.textureData;
+					colorData = currentSubMesh.colorData;
 					normalData = currentSubMesh.normalData;
 					positionData = currentSubMesh.positionData;
 				}
 
 				Vector2[] textureUV = new Vector2[2];
 				Vector3[] position = new Vector3[2];
+				VertexColorData color = new VertexColorData();
+
+				if (getColorFunc != null)
+				{
+					var faceColor = getColorFunc(face.Normal);
+					color = new VertexColorData
+					{
+						red = faceColor.red,
+						green = faceColor.green,
+						blue = faceColor.blue
+					};
+				}
+
 				int vertexIndex = 0;
 				foreach (FaceEdge faceEdge in face.FaceEdges())
 				{
 					if (vertexIndex < 2)
 					{
-						textureUV[vertexIndex] = faceEdge.GetUVs(0);
-						position[vertexIndex] = faceEdge.firstVertex.Position;
+						textureUV[vertexIndex] = faceEdge.GetUv(0);
+						position[vertexIndex] = faceEdge.FirstVertex.Position;
 					}
 					else
 					{
 						VertexTextureData tempTexture;
 						VertexNormalData tempNormal;
 						VertexPositionData tempPosition;
-						tempTexture.textureU = (float)textureUV[0].x; tempTexture.textureV = (float)textureUV[0].y;
-						tempNormal.normalX = (float)face.normal.x; tempNormal.normalY = (float)face.normal.y; tempNormal.normalZ = (float)face.normal.z;
-						tempPosition.positionX = (float)position[0].x; tempPosition.positionY = (float)position[0].y; tempPosition.positionZ = (float)position[0].z;
+						tempTexture.textureU = (float)textureUV[0].X; tempTexture.textureV = (float)textureUV[0].Y;
+						tempNormal.normalX = (float)face.Normal.X; tempNormal.normalY = (float)face.Normal.Y; tempNormal.normalZ = (float)face.Normal.Z;
+						tempPosition.positionX = (float)position[0].X; tempPosition.positionY = (float)position[0].Y; tempPosition.positionZ = (float)position[0].Z;
 						textureData.Add(tempTexture);
 						normalData.Add(tempNormal);
 						positionData.Add(tempPosition);
+						colorData.add(color);
 
-						tempTexture.textureU = (float)textureUV[1].x; tempTexture.textureV = (float)textureUV[1].y;
-						tempNormal.normalX = (float)face.normal.x; tempNormal.normalY = (float)face.normal.y; tempNormal.normalZ = (float)face.normal.z;
-						tempPosition.positionX = (float)position[1].x; tempPosition.positionY = (float)position[1].y; tempPosition.positionZ = (float)position[1].z;
+						tempTexture.textureU = (float)textureUV[1].X; tempTexture.textureV = (float)textureUV[1].Y;
+						tempNormal.normalX = (float)face.Normal.X; tempNormal.normalY = (float)face.Normal.Y; tempNormal.normalZ = (float)face.Normal.Z;
+						tempPosition.positionX = (float)position[1].X; tempPosition.positionY = (float)position[1].Y; tempPosition.positionZ = (float)position[1].Z;
 						textureData.Add(tempTexture);
 						normalData.Add(tempNormal);
 						positionData.Add(tempPosition);
+						colorData.add(color);
 
-						Vector2 textureUV2 = faceEdge.GetUVs(0);
-						Vector3 position2 = faceEdge.firstVertex.Position;
-						tempTexture.textureU = (float)textureUV2.x; tempTexture.textureV = (float)textureUV2.y;
-						tempNormal.normalX = (float)face.normal.x; tempNormal.normalY = (float)face.normal.y; tempNormal.normalZ = (float)face.normal.z;
-						tempPosition.positionX = (float)position2.x; tempPosition.positionY = (float)position2.y; tempPosition.positionZ = (float)position2.z;
+						Vector2 textureUV2 = faceEdge.GetUv(0);
+						Vector3 position2 = faceEdge.FirstVertex.Position;
+						tempTexture.textureU = (float)textureUV2.X; tempTexture.textureV = (float)textureUV2.Y;
+						tempNormal.normalX = (float)face.Normal.X; tempNormal.normalY = (float)face.Normal.Y; tempNormal.normalZ = (float)face.Normal.Z;
+						tempPosition.positionX = (float)position2.X; tempPosition.positionY = (float)position2.Y; tempPosition.positionZ = (float)position2.Z;
 						textureData.Add(tempTexture);
 						normalData.Add(tempNormal);
 						positionData.Add(tempPosition);
+						colorData.add(color);
 
-						textureUV[1] = faceEdge.GetUVs(0);
-						position[1] = faceEdge.firstVertex.Position;
+						textureUV[1] = faceEdge.GetUv(0);
+						position[1] = faceEdge.FirstVertex.Position;
 					}
 
 					vertexIndex++;
