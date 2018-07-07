@@ -52,8 +52,7 @@ namespace MatterHackers.Agg.UI
 		private double m_yt2;
 		private Stroke m_curve_poly;
 		private VertexSource.Ellipse m_ellipse = new MatterHackers.Agg.VertexSource.Ellipse();
-		private gsv_text m_text = new gsv_text();
-		private Stroke m_text_poly;
+		private TextWidget gammaText;
 		private int m_idx;
 		private int m_vertex;
 		private double[] gridVertexX = new double[32];
@@ -143,7 +142,15 @@ namespace MatterHackers.Agg.UI
 			m_yt2 = (y2);
 
 			m_curve_poly = new Stroke(m_gamma_spline);
-			m_text_poly = new Stroke(m_text);
+
+			gammaText = new TextWidget("", pointSize: 11)
+			{
+				VAnchor = VAnchor.ParentTop,
+				HAnchor = HAnchor.ParentLeftRight,
+				Margin = new BorderDouble(8, 4)
+			};
+			this.AddChild(gammaText);
+
 			m_idx = (0);
 			m_vertex = (0);
 			m_p1_active = (true);
@@ -360,10 +367,21 @@ namespace MatterHackers.Agg.UI
 			graphics2D.Render(this, m_inactive_pnt_color);
 			rewind(3);
 			graphics2D.Render(this, m_active_pnt_color);
-			rewind(4);
-			graphics2D.Render(this, m_text_color);
+
+			// Ideally this should move to the setter of the gamma data
+			UpdateGammaText();
 
 			base.OnDraw(graphics2D);
+
+		}
+
+		private void UpdateGammaText()
+		{
+			double kx1, ky1, kx2, ky2;
+			m_gamma_spline.values(out kx1, out ky1, out kx2, out ky2);
+
+			// Setter already optimizes for change
+			gammaText.Text = string.Format("{0:F3} {1:F3} {2:F3} {3:F3}", kx1, ky1, kx2, ky2);
 		}
 
 		public override IEnumerable<VertexData> Vertices()
@@ -373,9 +391,6 @@ namespace MatterHackers.Agg.UI
 
 		public override void rewind(int idx)
 		{
-			double kx1, ky1, kx2, ky2;
-			string tbuf;
-
 			m_idx = idx;
 
 			switch (idx)
@@ -444,18 +459,6 @@ namespace MatterHackers.Agg.UI
 					if (m_p1_active) m_ellipse.init(m_xp1, m_yp1, m_point_size, m_point_size, 32);
 					else m_ellipse.init(m_xp2, m_yp2, m_point_size, m_point_size, 32);
 					break;
-
-				case 4:                 // Text
-					m_gamma_spline.values(out kx1, out ky1, out kx2, out ky2);
-					tbuf = string.Format("{0:F3} {1:F3} {2:F3} {3:F3}", kx1, ky1, kx2, ky2);
-					m_text.text(tbuf);
-					m_text.SetFontSize(m_text_height);
-					m_text.start_point(m_xt1 + m_border_width * 2.0, (m_yt1 + m_yt2) * 0.5 - m_text_height * 0.5);
-					m_text_poly.width(m_text_thickness);
-					m_text_poly.line_join(LineJoin.Round);
-					m_text_poly.line_cap(LineCap.Round);
-					m_text_poly.rewind(0);
-					break;
 			}
 		}
 
@@ -485,10 +488,6 @@ namespace MatterHackers.Agg.UI
 				case 2:                 // Point1
 				case 3:                 // Point2
 					cmd = m_ellipse.vertex(out x, out y);
-					break;
-
-				case 4:
-					cmd = m_text_poly.vertex(out x, out y);
 					break;
 
 				default:
