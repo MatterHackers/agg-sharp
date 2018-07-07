@@ -145,8 +145,8 @@ namespace MatterHackers.Agg.UI
 
 			gammaText = new TextWidget("", pointSize: 11)
 			{
-				VAnchor = VAnchor.ParentTop,
-				HAnchor = HAnchor.ParentLeftRight,
+				VAnchor = VAnchor.Top,
+				HAnchor = HAnchor.Stretch,
 				Margin = new BorderDouble(8, 4)
 			};
 			this.AddChild(gammaText);
