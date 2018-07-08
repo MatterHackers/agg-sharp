@@ -35,6 +35,7 @@ using System.Text;
 using System.Threading;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
+using MatterHackers.Localizations;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.PolygonMesh
@@ -1188,11 +1189,13 @@ namespace MatterHackers.PolygonMesh
 			var facesToCopy = meshToCopyIn.Faces;
 			var edgesToCopy = meshToCopyIn.MeshEdges;
 
+			progress?.Invoke(0, "Create Dictionaries".Localize());
 			// This will add all the vertices to the new mesh
 			Dictionary<int, int> vertexIndexDictionary = GetVertexToIndexDictionary(verticesToCopy, newMesh);
 			// This will add all the edges to the new mesh
 			Dictionary<int, int> meshEdgeIndexDictionary = GetMeshEdgeToIndexDictionary(edgesToCopy, newMesh);
 
+			progress?.Invoke(.2, "Copy Faces".Localize());
 			for (int faceIndex = 0; faceIndex < facesToCopy.Count; faceIndex++)
 			{
 				Face faceToCopy = facesToCopy[faceIndex];
@@ -1200,6 +1203,7 @@ namespace MatterHackers.PolygonMesh
 			}
 
 			// now set all the data for the new mesh
+			progress?.Invoke(.4, "Copy Vertices".Localize());
 			newMesh.Vertices.Capacity = verticesToCopy.Capacity;
 			for (int vertexIndex = 0; vertexIndex < verticesToCopy.Count; vertexIndex++)
 			{
@@ -1213,6 +1217,7 @@ namespace MatterHackers.PolygonMesh
 				newVertex.Normal = vertexToCopy.Normal;
 			}
 
+			progress?.Invoke(.5, "Copy Edges".Localize());
 			newMesh.MeshEdges.Capacity = edgesToCopy.Capacity;
 			for (int meshEdgeIndex = 0; meshEdgeIndex < edgesToCopy.Count; meshEdgeIndex++)
 			{
@@ -1230,6 +1235,7 @@ namespace MatterHackers.PolygonMesh
 				//newMesh.MeshEdges.Add(newMeshEdge);
 			}
 
+			progress?.Invoke(.6, "Copy State".Localize());
 			newMesh.Faces.Capacity = facesToCopy.Capacity;
 			for (int faceIndex = 0; faceIndex < facesToCopy.Count; faceIndex++)
 			{
