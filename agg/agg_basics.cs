@@ -235,6 +235,44 @@ namespace MatterHackers.Agg
 			}
 		}
 
+		public static int Clamp(int value, int min, int max, ref bool changed)
+		{
+			min = Math.Min(min, max);
+
+			if (value < min)
+			{
+				value = min;
+				changed = true;
+			}
+
+			if (value > max)
+			{
+				value = max;
+				changed = true;
+			}
+
+			return value;
+		}
+
+		public static double Clamp(double value, double min, double max, ref bool changed)
+		{
+			min = Math.Min(min, max);
+
+			if (value < min)
+			{
+				value = min;
+				changed = true;
+			}
+
+			if (value > max)
+			{
+				value = max;
+				changed = true;
+			}
+
+			return value;
+		}
+
 		public static byte[] GetBytes(string str)
 		{
 			byte[] bytes = new byte[str.Length * sizeof(char)];
