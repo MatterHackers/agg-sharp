@@ -44,7 +44,7 @@ namespace MatterHackers.Agg.UI
 			HAnchor = HAnchor.Stretch;
 
 			ImageSequence = initialSequence;
-			if (_imageSequence != null)
+			if (ImageSequence != null)
 			{
 				ImageSequence.Invalidated += ImageChanged;
 			}
@@ -94,10 +94,10 @@ namespace MatterHackers.Agg.UI
 			set
 			{
 				var newBounds = value;
-				if (_imageSequence.Width > 0)
+				if (ImageSequence.Width > 0)
 				{
-					var scale = Math.Min(1, newBounds.Width / _imageSequence.Width);
-					newBounds.Top = newBounds.Bottom + _imageSequence.Height * scale;
+					var scale = Math.Min(1, newBounds.Width / ImageSequence.Width);
+					newBounds.Top = newBounds.Bottom + ImageSequence.Height * scale;
 				}
 				base.LocalBounds = newBounds;
 			}
@@ -107,10 +107,11 @@ namespace MatterHackers.Agg.UI
 		{
 			// kill whatever resize process we are running
 			var newBounds = LocalBounds;
-			if (_imageSequence.Width > 0)
+			if (ImageSequence.Width > 0)
 			{
-				var scale = Math.Min(1, newBounds.Width / _imageSequence.Width);
-				newBounds.Top = newBounds.Bottom + _imageSequence.Height * scale;
+				var scale = Math.Min(1, newBounds.Width / ImageSequence.Width);
+				MaximumSize = new Vector2(ImageSequence.Width, ImageSequence.Height);
+				newBounds.Top = newBounds.Bottom + ImageSequence.Height * scale;
 				base.LocalBounds = newBounds;
 			}
 
@@ -173,7 +174,7 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			if (_imageSequence != null)
+			if (ImageSequence != null)
 			{
 				var imageBounds = ImageBounds;
 				var currentImage = ImageSequence.GetImageByTime(currentTime);
@@ -188,12 +189,12 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				if (Width > _imageSequence.Width)
+				if (Width > ImageSequence.Width)
 				{
-					var left = new Vector2(Width / 2 - _imageSequence.Width / 2, Height / 2 - _imageSequence.Height / 2);
+					var left = new Vector2(Width / 2 - ImageSequence.Width / 2, Height / 2 - ImageSequence.Height / 2);
 					return new RectangleDouble(
 							left,
-							new Vector2(left.X + _imageSequence.Width, left.Y + _imageSequence.Height));
+							new Vector2(left.X + ImageSequence.Width, left.Y + ImageSequence.Height));
 				}
 				else
 				{
