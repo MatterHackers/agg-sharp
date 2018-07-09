@@ -33,11 +33,11 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
-	public class ResponsiveImageWidget : GuiWidget
+	public class ImageWidgetResponsive : GuiWidget
 	{
 		private ImageBuffer image;
 
-		public ResponsiveImageWidget(ImageBuffer initialImage)
+		public ImageWidgetResponsive(ImageBuffer initialImage)
 		{
 			HAnchor = HAnchor.Stretch;
 
@@ -114,11 +114,6 @@ namespace MatterHackers.Agg.UI
 			}
 
 			base.OnMouseMove(mouseEvent);
-		}
-
-		protected override void SetCursor(Cursors cursorToSet)
-		{
-			base.SetCursor(overrideCursor);
 		}
 
 		public override void OnClick(MouseEventArgs mouseEvent)
