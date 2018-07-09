@@ -44,7 +44,6 @@ namespace MatterHackers.Agg.UI
 	{
 		protected List<GuiWidget> addedChildren = new List<GuiWidget>();
 
-		public HAnchor RowFlowAnchor { get; set; } = HAnchor.Left | HAnchor.Fit;
 		public BorderDouble RowMargin { get; set; } = new BorderDouble(3, 0);
 		public BorderDouble RowPadding { get; set; } = new BorderDouble(3);
 
@@ -110,7 +109,7 @@ namespace MatterHackers.Agg.UI
 				{
 					Margin = RowMargin,
 					Padding = RowPadding,
-					HAnchor = RowFlowAnchor,
+					HAnchor = HAnchor.Stretch,
 				};
 				base.AddChild(childContainerRow);
 
@@ -130,7 +129,7 @@ namespace MatterHackers.Agg.UI
 						{
 							Margin = RowMargin,
 							Padding = RowPadding,
-							HAnchor = RowFlowAnchor,
+							HAnchor = HAnchor.Stretch,
 						};
 
 						base.AddChild(childContainerRow);
