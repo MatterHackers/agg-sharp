@@ -35,14 +35,14 @@ namespace MatterHackers.Agg.UI
 {
 	public class ImageWidgetResponsive : GuiWidget
 	{
-		private ImageBuffer image;
+		private ImageBuffer _image;
 
 		public ImageWidgetResponsive(ImageBuffer initialImage)
 		{
 			HAnchor = HAnchor.Stretch;
 
 			Image = initialImage;
-			if (image != null)
+			if (Image != null)
 			{
 				Image.ImageChanged += ImageChanged;
 			}
@@ -54,10 +54,10 @@ namespace MatterHackers.Agg.UI
 			set
 			{
 				var newBounds = value;
-				if (image.Width > 0)
+				if (Image.Width > 0)
 				{
-					var scale = Math.Min(1, newBounds.Width / image.Width);
-					newBounds.Top = newBounds.Bottom + image.Height * scale;
+					var scale = Math.Min(1, newBounds.Width / Image.Width);
+					newBounds.Top = newBounds.Bottom + Image.Height * scale;
 				}
 				base.LocalBounds = newBounds;
 			}
@@ -67,10 +67,11 @@ namespace MatterHackers.Agg.UI
 		{
 			// kill whatever resize process we are running
 			var newBounds = LocalBounds;
-			if (image.Width > 0)
+			if (Image.Width > 0)
 			{
-				var scale = Math.Min(1, newBounds.Width / image.Width);
-				newBounds.Top = newBounds.Bottom + image.Height * scale;
+				var scale = Math.Min(1, newBounds.Width / Image.Width);
+				MaximumSize = new Vector2(Image.Width, Image.Height);
+				newBounds.Top = newBounds.Bottom + Image.Height * scale;
 				base.LocalBounds = newBounds;
 			}
 
@@ -81,17 +82,17 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				return image;
+				return _image;
 			}
 
 			set
 			{
-				if(image != null)
+				if(_image != null)
 				{
-					image.ImageChanged -= ImageChanged;
+					_image.ImageChanged -= ImageChanged;
 				}
-				image = value;
-				image.ImageChanged += ImageChanged;
+				_image = value;
+				_image.ImageChanged += ImageChanged;
 				ImageChanged(this, null);
 			}
 		}
@@ -126,10 +127,10 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			if (image != null)
+			if (Image != null)
 			{
 				var imageBounds = ImageBounds;
-				graphics2D.Render(image,
+				graphics2D.Render(Image,
 					ImageBounds.Left, ImageBounds.Bottom,
 					ImageBounds.Width, ImageBounds.Height);
 			}
@@ -140,12 +141,12 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				if (Width > image.Width)
+				if (Width > Image.Width)
 				{
-					var left = new Vector2(Width / 2 - image.Width / 2, Height / 2 - image.Height / 2);
+					var left = new Vector2(Width / 2 - Image.Width / 2, Height / 2 - Image.Height / 2);
 					return new RectangleDouble(
 							left,
-							new Vector2(left.X + image.Width, left.Y + image.Height));
+							new Vector2(left.X + Image.Width, left.Y + Image.Height));
 				}
 				else
 				{
