@@ -727,8 +727,7 @@ namespace MatterHackers.PolygonMesh
 		public void MergeMeshEdges(CancellationToken cancellationToken, Action<double, string> reportProgress = null)
 		{
 			HashSet<MeshEdge> markedForDeletion = new HashSet<MeshEdge>();
-			Stopwatch maxProgressReport = new Stopwatch();
-			maxProgressReport.Start();
+			Stopwatch maxProgressReport = Stopwatch.StartNew();
 
 			for (int i = 0; i < MeshEdges.Count; i++)
 			{
@@ -1195,11 +1194,21 @@ namespace MatterHackers.PolygonMesh
 			// This will add all the edges to the new mesh
 			Dictionary<int, int> meshEdgeIndexDictionary = GetMeshEdgeToIndexDictionary(edgesToCopy, newMesh);
 
+			if(cancellationToken.IsCancellationRequested)
+			{
+				return null;
+			}
+
 			progress?.Invoke(.2, "Copy Faces".Localize());
 			for (int faceIndex = 0; faceIndex < facesToCopy.Count; faceIndex++)
 			{
 				Face faceToCopy = facesToCopy[faceIndex];
 				newMesh.Faces.Add(new Face(newMesh));
+			}
+
+			if (cancellationToken.IsCancellationRequested)
+			{
+				return null;
 			}
 
 			// now set all the data for the new mesh
@@ -1215,6 +1224,11 @@ namespace MatterHackers.PolygonMesh
 					newVertex.FirstMeshEdge = newMesh.MeshEdges[indexOfFirstMeshEdge];
 				}
 				newVertex.Normal = vertexToCopy.Normal;
+			}
+
+			if (cancellationToken.IsCancellationRequested)
+			{
+				return null;
 			}
 
 			progress?.Invoke(.5, "Copy Edges".Localize());
@@ -1235,10 +1249,20 @@ namespace MatterHackers.PolygonMesh
 				//newMesh.MeshEdges.Add(newMeshEdge);
 			}
 
+			if (cancellationToken.IsCancellationRequested)
+			{
+				return null;
+			}
+
 			progress?.Invoke(.6, "Copy State".Localize());
 			newMesh.Faces.Capacity = facesToCopy.Capacity;
 			for (int faceIndex = 0; faceIndex < facesToCopy.Count; faceIndex++)
 			{
+				if (cancellationToken.IsCancellationRequested)
+				{
+					return null;
+				}
+
 				Face faceToCopy = facesToCopy[faceIndex];
 				Face newface = newMesh.Faces[faceIndex];
 
