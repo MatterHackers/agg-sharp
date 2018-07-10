@@ -60,6 +60,13 @@ namespace MatterHackers.Agg.UI
 				Parent.BoundsChanged += Parent_BoundsChanged;
 			}
 			base.OnParentChanged(e);
+
+			UiThread.RunOnIdle(DoWrappingLayout);
+		}
+
+		public override void OnLoad(EventArgs args)
+		{
+			base.OnLoad(args);
 		}
 
 		bool doingLayout = false;
