@@ -61,6 +61,7 @@ namespace MatterHackers.Agg.UI
 			}
 			base.OnParentChanged(e);
 
+			// Make sure we always do a layout regardless of having a layout event or a draw.
 			UiThread.RunOnIdle(DoWrappingLayout);
 		}
 
