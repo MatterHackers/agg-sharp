@@ -163,7 +163,19 @@ namespace MatterHackers.Agg.UI
 
 		public bool StrikeThrough { get; set; }
 
-		public bool Underline { get; set; }
+		private bool _underline = false;
+		public bool Underline
+		{
+			get => _underline;
+			set
+			{
+				if (_underline != value)
+				{
+					_underline = value;
+					this.Invalidate();
+				}
+			}
+		}
 
 		public override BorderDouble Padding
 		{
@@ -283,7 +295,7 @@ namespace MatterHackers.Agg.UI
 				if (this.Underline)
 				{
 					var bounds = this.LocalBounds;
-					var bottom = Printer.LocalBounds.Bottom + 1;
+					var bottom = Math.Round(Printer.LocalBounds.Bottom) + .5;
 					graphics2D.Line(bounds.Left, bottom, bounds.Right, bottom, new Color(this.TextColor, 200));
 				}
 
