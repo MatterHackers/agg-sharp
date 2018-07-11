@@ -75,8 +75,6 @@
     <Compile Include="DrawEventArgs.cs" />
     <Compile Include="FLowLeftRightWithWrapping.cs" />
     <Compile Include="IDemoApp.cs" />
-    <Compile Include="ImageSequenceWidgetResponsive.cs" />
-    <Compile Include="ImageWidgetResponsive.cs" />
     <Compile Include="InvalidateEventArgs.cs" />
     <Compile Include="DefaultViewFactory.cs" />
     <Compile Include="DiagnosticsWidget.cs" />
@@ -89,6 +87,8 @@
     <Compile Include="ProgressControl.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RelativeTime.cs" />
+    <Compile Include="ResponsiveImageSequenceWidget.cs" />
+    <Compile Include="ResponsiveImageWidget.cs" />
     <Compile Include="SoftKeyboard.cs" />
     <Compile Include="ImageWidget.cs" />
     <Compile Include="KeyEventArgs.cs" />
