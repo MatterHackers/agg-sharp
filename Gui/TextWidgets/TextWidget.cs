@@ -282,8 +282,8 @@ namespace MatterHackers.Agg.UI
 
 				if (this.Underline)
 				{
-					var bounds = Printer.LocalBounds;
-					var bottom = bounds.Bottom + 1;
+					var bounds = this.LocalBounds;
+					var bottom = Printer.LocalBounds.Bottom + 1;
 					graphics2D.Line(bounds.Left, bottom, bounds.Right, bottom, new Color(this.TextColor, 200));
 				}
 
