@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2018, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -33,18 +33,58 @@ using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
-	public class ImageWidgetResponsive : GuiWidget
+	public class ResponsiveImageSequenceWidget : GuiWidget
 	{
-		private ImageBuffer _image;
+		private ImageSequence _imageSequence;
+		private Animation animation = new Animation();
+		private double currentTime = 0;
 
-		public ImageWidgetResponsive(ImageBuffer initialImage)
+		public ResponsiveImageSequenceWidget(ImageSequence initialSequence)
 		{
 			HAnchor = HAnchor.Stretch;
 
-			Image = initialImage;
-			if (Image != null)
+			ImageSequence = initialSequence;
+			if (ImageSequence != null)
 			{
-				Image.ImageChanged += ImageChanged;
+				ImageSequence.Invalidated += ImageChanged;
+			}
+
+			animation.DrawTarget = this;
+			animation.Update += (s, updateEvent) =>
+			{
+				var currentImageIndex = ImageSequence.GetImageIndexByTime(currentTime);
+
+				currentTime += updateEvent.SecondsPassed;
+				while (ImageSequence.Time > 0
+					&& currentTime > ImageSequence.Time)
+				{
+					currentTime -= ImageSequence.Time;
+				}
+
+				var newImageIndex = ImageSequence.GetImageIndexByTime(currentTime);
+				updateEvent.ShouldDraw = currentImageIndex != newImageIndex;
+			};
+
+			RunAnimation = true;
+		}
+
+		public bool RunAnimation
+		{
+			get { return animation != null && animation.IsRunning; }
+			set
+			{
+				if (animation != null
+					&& value != animation.IsRunning)
+				{
+					if (value)
+					{
+						animation.Start();
+					}
+					else
+					{
+						animation.Stop();
+					}
+				}
 			}
 		}
 
@@ -54,10 +94,10 @@ namespace MatterHackers.Agg.UI
 			set
 			{
 				var newBounds = value;
-				if (Image.Width > 0)
+				if (ImageSequence.Width > 0)
 				{
-					var scale = Math.Min(1, newBounds.Width / Image.Width);
-					newBounds.Top = newBounds.Bottom + Image.Height * scale;
+					var scale = Math.Min(1, newBounds.Width / ImageSequence.Width);
+					newBounds.Top = newBounds.Bottom + ImageSequence.Height * scale;
 				}
 				base.LocalBounds = newBounds;
 			}
@@ -67,34 +107,41 @@ namespace MatterHackers.Agg.UI
 		{
 			// kill whatever resize process we are running
 			var newBounds = LocalBounds;
-			if (Image.Width > 0)
+			if (ImageSequence.Width > 0)
 			{
-				var scale = Math.Min(1, newBounds.Width / Image.Width);
-				MaximumSize = new Vector2(Image.Width, Image.Height);
-				newBounds.Top = newBounds.Bottom + Image.Height * scale;
+				var scale = Math.Min(1, newBounds.Width / ImageSequence.Width);
+				MaximumSize = new Vector2(ImageSequence.Width, ImageSequence.Height);
+				newBounds.Top = newBounds.Bottom + ImageSequence.Height * scale;
 				base.LocalBounds = newBounds;
 			}
 
 			Invalidate();
 		}
 
-		public ImageBuffer Image
+		public ImageSequence ImageSequence
 		{
-			get
-			{
-				return _image;
-			}
-
+			get => _imageSequence;
 			set
 			{
-				if(_image != null)
+				if (_imageSequence != value)
 				{
-					_image.ImageChanged -= ImageChanged;
+					// clear the old one
+					if (_imageSequence != null)
+					{
+						_imageSequence.Invalidated -= ResetImageIndex;
+					}
+					_imageSequence = value;
+					animation.FramesPerSecond = _imageSequence.FramesPerSecond;
+					currentTime = 0;
+					_imageSequence.Invalidated += ResetImageIndex;
 				}
-				_image = value;
-				_image.ImageChanged += ImageChanged;
-				ImageChanged(this, null);
 			}
+		}
+
+		private void ResetImageIndex(object sender, EventArgs e)
+		{
+			currentTime = 0;
+			Invalidate();
 		}
 
 		Cursors overrideCursor = Cursors.Arrow;
@@ -127,10 +174,11 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			if (Image != null)
+			if (ImageSequence != null)
 			{
 				var imageBounds = ImageBounds;
-				graphics2D.Render(Image,
+				var currentImage = ImageSequence.GetImageByTime(currentTime);
+				graphics2D.Render(currentImage,
 					ImageBounds.Left, ImageBounds.Bottom,
 					ImageBounds.Width, ImageBounds.Height);
 			}
@@ -141,12 +189,12 @@ namespace MatterHackers.Agg.UI
 		{
 			get
 			{
-				if (Width > Image.Width)
+				if (Width > ImageSequence.Width)
 				{
-					var left = new Vector2(Width / 2 - Image.Width / 2, Height / 2 - Image.Height / 2);
+					var left = new Vector2(Width / 2 - ImageSequence.Width / 2, Height / 2 - ImageSequence.Height / 2);
 					return new RectangleDouble(
 							left,
-							new Vector2(left.X + Image.Width, left.Y + Image.Height));
+							new Vector2(left.X + ImageSequence.Width, left.Y + ImageSequence.Height));
 				}
 				else
 				{
