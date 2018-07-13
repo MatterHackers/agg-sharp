@@ -1,3 +1,4 @@
+using MatterHackers.Agg.Image.ThresholdFunctions;
 using MatterHackers.Agg.RasterizerScanline;
 using MatterHackers.VectorMath;
 
@@ -1236,6 +1237,33 @@ namespace MatterHackers.Agg.Image
 		public static ImageBuffer CreateScaledImage(this ImageBuffer unscaledSourceImage, double width, double height)
 		{
 			return CreateScaledImage(unscaledSourceImage, (int)Math.Round(width), (int)Math.Round(height));
+		}
+
+		/// <summary>
+		/// Get the weighted center (considering the amount that pixels are set) of the image
+		/// </summary>
+		/// <param name="imageBuffer"></param>
+		/// <returns></returns>
+		public static Vector2 GetWeightedCenter(this ImageBuffer imageBuffer, IThresholdFunction thresholdFunction)
+		{
+			double accumulatedCount = 0;
+			Vector2 accumulatedPosition = Vector2.Zero;
+			for (int y = 0; y < imageBuffer.Height; y++)
+			{
+				for (int x = 0; x < imageBuffer.Width; x++)
+				{
+					Color color = imageBuffer.GetPixel(x, y);
+					if (thresholdFunction.Threshold(color) > .5)
+					{
+						accumulatedCount++;
+						double px = x;
+						double py = y;
+						accumulatedPosition += new Vector2(px, py);
+					}
+				}
+			}
+
+			return accumulatedPosition / accumulatedCount;
 		}
 
 		public static ImageBuffer CreateScaledImage(this ImageBuffer sourceImage, int width, int height)

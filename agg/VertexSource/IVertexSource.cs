@@ -1,4 +1,5 @@
 using MatterHackers.Agg.Image;
+using MatterHackers.Agg.Image.ThresholdFunctions;
 using MatterHackers.Agg.Transform;
 using MatterHackers.VectorMath;
 using Newtonsoft.Json;
@@ -112,8 +113,6 @@ namespace MatterHackers.Agg.VertexSource
 			int width = 128;
 			int height = 128;
 
-			var imageBuffer = new ImageBuffer(width + 4, height + 4, 8, new blender_gray(1));
-
 			// Set the transform to image space
 			var polygonsToImageTransform = Affine.NewIdentity();
 			// move it to 0, 0
@@ -124,28 +123,15 @@ namespace MatterHackers.Agg.VertexSource
 			polygonsToImageTransform *= Affine.NewTranslation(2, 2);
 
 			// and render the polygon to the image
+			var imageBuffer = new ImageBuffer(width + 4, height + 4, 8, new blender_gray(1));
 			imageBuffer.NewGraphics2D().Render(new VertexSourceApplyTransform(vertexSource, polygonsToImageTransform), Color.White);
 
-			double accumulatedCount = 0;
-			Vector2 accumulatedPosition = Vector2.Zero;
+			// center for image
+			var centerPosition = imageBuffer.GetWeightedCenter(new MapOnMaxIntensity());
+			// tranlate to vertex source coordinates
+			polygonsToImageTransform.inverse_transform(ref centerPosition.X, ref centerPosition.Y);
 
-			for(int y=0; y<imageBuffer.Height; y++)
-			{
-				for(int x=0; x<imageBuffer.Width; x++)
-				{
-					Color color = imageBuffer.GetPixel(x, y);
-					if (color.Red0To255 > 128)
-					{
-						accumulatedCount++;// += color.Red0To255;
-						double px = x;
-						double py = y;
-						polygonsToImageTransform.inverse_transform(ref px, ref py);
-						accumulatedPosition += new Vector2(px, py);
-					}
-				}
-			}
-
-			return accumulatedPosition / accumulatedCount;
+			return centerPosition;
 		}
 
 		public static RectangleDouble GetBounds(this IVertexSource source)
