@@ -1400,7 +1400,7 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 		internal void FixHoleLinkage(OutRec outRec)
 		{
 			//skip if an outermost polygon or
-			//already already points to the correct FirstLeft ...
+			//already points to the correct FirstLeft ...
 			if (outRec.FirstLeft == null ||
 				  (outRec.IsHole != outRec.FirstLeft.IsHole &&
 				  outRec.FirstLeft.Pts != null))
@@ -1773,7 +1773,7 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 		private void SetWindingCount(TEdge edge)
 		{
 			TEdge e = edge.PrevInAEL;
-			//find the edge of the same polytype that immediately preceeds 'edge' in AEL
+			//find the edge of the same polytype that immediately precedes 'edge' in AEL
 			while (e != null && ((e.PolyTyp != edge.PolyTyp) || (e.WindDelta == 0))) e = e.PrevInAEL;
 			if (e == null)
 			{
@@ -3549,7 +3549,7 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 				if (op2b.Next == op2 || op2b.Next == op1) return false; //a flat 'polygon'
 
 				cInt Left, Right;
-				//Op1 -. Op1b & Op2 -. Op2b are the extremites of the horizontal edges
+				//Op1 -. Op1b & Op2 -. Op2b are the extremities of the horizontal edges
 				if (!GetOverlap(op1.Pt.X, op1b.Pt.X, op2.Pt.X, op2b.Pt.X, out Left, out Right))
 					return false;
 
@@ -4147,7 +4147,7 @@ new ClipperException("Error: PolyTree struct is need for open path clipping.");
 				if (SlopesNearCollinear(currentOutPoint.Prev.Pt, currentOutPoint.Pt, currentOutPoint.Next.Pt, distSqrd))
 				{
 					// we check if the new end point is collinear with all the points we already have accumulated.
-					// and colapse all the points in between
+					// and collapse all the points in between
 					OutPt start = currentOutPoint.Prev; // -1
 					OutPt firstCheck = currentOutPoint; // 0
 					OutPt currentCheck = firstCheck; // 0

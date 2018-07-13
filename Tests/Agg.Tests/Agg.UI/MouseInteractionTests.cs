@@ -1131,7 +1131,7 @@ namespace MatterHackers.Agg.UI.Tests
 			regionA.MouseMove += (sender, e) => { aGotMove++; };
 			regionA.MouseUp += (sender, e) => { aGotUp++; };
 
-			// make sure we know we are entered and captued on a down event
+			// make sure we know we are entered and captured on a down event
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 15, 15, 0));
 			Assert.IsTrue(regionA.FirstWidgetUnderMouse == true);
 			Assert.IsTrue(regionA.MouseCaptured == true);
@@ -1141,7 +1141,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(aGotLeaveBounds == 0);
 			Assert.IsTrue(aGotMove == 0);
 
-			// make sure we stay on top when internal moves occure
+			// make sure we stay on top when internal moves occur
 			aGotEnter = aGotLeave = aGotEnterBounds = aGotLeaveBounds = aGotMove = 0;
 			container.OnMouseMove(new MouseEventArgs(MouseButtons.Left, 1, 16, 16, 0));
 			Assert.IsTrue(regionA.FirstWidgetUnderMouse == true);
@@ -1273,7 +1273,7 @@ namespace MatterHackers.Agg.UI.Tests
 			buttonA.MouseLeave += (sender, e) => { aGotLeave = true; };
 			buttonA.MouseMove += (sender, mouseEvent) => { aGotMove = true; aMoveX = mouseEvent.X; aMoveY = mouseEvent.Y; };
 
-			// make sure we know we are entered and captued on a down event
+			// make sure we know we are entered and captured on a down event
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 15, 15, 0));
 			Assert.IsTrue(buttonA.FirstWidgetUnderMouse == true);
 			Assert.IsTrue(buttonA.MouseCaptured == true);

@@ -1215,7 +1215,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				if (glHasBufferObjects || currentArrayBufferIndex == 0)
 				{
-					// we are rending from memory so operate normaly
+					// we are rending from memory so operate normally
 					OpenTK.Graphics.OpenGL.GL.ColorPointer(size, (OpenTK.Graphics.OpenGL.ColorPointerType)type, stride, pointer);
 				}
 				else

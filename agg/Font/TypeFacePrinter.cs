@@ -172,7 +172,7 @@ namespace MatterHackers.Agg.Font
 				Vector2 currentOffset = Vector2.Zero;
 
 				currentOffset = GetBaseline(currentOffset);
-				// remove the decent and 1 pixel that were put into the cache image to give space for decenders
+				// remove the decent and 1 pixel that were put into the cache image to give space for descenders
 				currentOffset.Y += (Origin.Y + TypeFaceStyle.DescentInPixels - 1);
 
 				string[] lines = text.Split('\n');

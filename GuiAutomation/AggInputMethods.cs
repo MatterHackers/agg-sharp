@@ -258,7 +258,7 @@ namespace MatterHackers.GuiAutomation
 							}
 							else
 							{
-								// If you end up here unexpectadly you may need to add 
+								// If you end up here unexpectedly you may need to add 
 								// a mapping to charToKeys for the inputed character.
 								int a = 0;
 							}

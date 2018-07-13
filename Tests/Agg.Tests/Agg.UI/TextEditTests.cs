@@ -213,7 +213,7 @@ namespace MatterHackers.Agg.UI.Tests
 			Assert.IsTrue(editField2.Text == "");
 
 			// select edit field 1
-			container.OnMouseMove(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0)); // we move into the widget to make sure we have seprated focus and enter events.
+			container.OnMouseMove(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0)); // we move into the widget to make sure we have separate focus and enter events.
 			Assert.IsTrue(editField1.ContainsFocus == false);
 			Assert.IsTrue(editField1.Focused == false);
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 1, 1, 0));

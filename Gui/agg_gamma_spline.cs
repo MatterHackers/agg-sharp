@@ -54,7 +54,7 @@ namespace MatterHackers.Agg.UI
 	// bounding rectangle. Function values() calculates the curve by these
 	// 4 values. After calling it one can get the gamma-array with call gamma().
 	// Class also supports the vertex source interface, i.e rewind() and
-	// vertex(). It's made for convinience and used in class gamma_ctrl.
+	// vertex(). It's made for convenience and used in class gamma_ctrl.
 	// Before calling rewind/vertex one must set the bounding box
 	// box() using pixel coordinates.
 	//------------------------------------------------------------------------

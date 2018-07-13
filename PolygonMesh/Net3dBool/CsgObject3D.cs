@@ -215,12 +215,12 @@ namespace Net3dBool
 			foreach (CsgFace thisFaceIn in Faces.SearchBounds(bounds).ToArray()) // put it in an array as we will be adding new faces to it
 			{
 				newFacesFromSplitting.Push(thisFaceIn);
-				// make sure we processe every face that we have added durring splitting befor moving on to the next face
+				// make sure we process every face that we have added during splitting before moving on to the next face
 				while (newFacesFromSplitting.Count > 0)
 				{
 					var faceToSplit = newFacesFromSplitting.Pop();
 
-					// stop processing if opperation has been canceled
+					// stop processing if operation has been canceled
 					cancellationToken.ThrowIfCancellationRequested();
 					if(cancellationToken.IsCancellationRequested)
 					{
@@ -380,7 +380,7 @@ namespace Net3dBool
 		/// <param name="faceIndex">face index in the faces array</param>
 		/// <param name="facePos1">new vertex position</param>
 		/// <param name="facePos2">new vertex position</param>
-		/// <param name="linedVertex">linedVertex what vertex is more lined with the interersection found</param>
+		/// <param name="linedVertex">linedVertex what vertex is more lined with the intersection found</param>
 		private bool BreakFaceInFive(CsgFace face, Vector3 facePos1, Vector3 facePos2, int linedVertex, Stack<CsgFace> facesFromSplit)
 		{
 			//       O

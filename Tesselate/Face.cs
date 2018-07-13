@@ -95,7 +95,7 @@ namespace Tesselate
 		* Tessellation consists of adding interior edges (actually pairs of
 		* half-edges), to split the region into non-overlapping triangles.
 		*
-		* The basic idea is explained in Preparata and Shamos (which I don''t
+		* The basic idea is explained in Preparata and Shamos (which I don't
 		* have handy right now), although their implementation is more
 		* complicated than this one.  The are two edge chains, an upper chain
 		* and a lower chain.  We process all vertices from both chains in order,

@@ -91,7 +91,7 @@ namespace Tesselate
 			 * all the vertices in a priority queue.  Events are processed in
 			 * lexicographic order, ie.
 			 *
-			 *	e1 < e2  iff  e1.x < e2.x || (e1.x == e2.x && e1.y < e2.y)
+			 *	e1 < e2  if  e1.x < e2.x || (e1.x == e2.x && e1.y < e2.y)
 			 */
 			RemoveDegenerateEdges(tess);
 			InitPriorityQue(tess);
@@ -250,7 +250,7 @@ namespace Tesselate
 				 */
 				if (reg.upperHalfEdge.winding != 0)
 				{
-					throw new System.Exception("half edeg winding is 0");
+					throw new System.Exception("half edge winding is 0");
 				}
 			}
 			reg.upperHalfEdge.regionThisIsUpperEdgeOf = null;
@@ -544,7 +544,7 @@ namespace Tesselate
 
 		private static void SpliceMergeVertices(Tesselator tess, HalfEdge e1, HalfEdge e2)
 		/*
-		 * Two vertices with idential coordinates are combined into one.
+		 * Two vertices with identical coordinates are combined into one.
 		 * e1.Org is kept, while e2.Org is discarded.
 		 */
 		{
@@ -991,7 +991,7 @@ namespace Tesselate
 			if (isect.VertLeq(tess.CurrentSweepVertex))
 			{
 				/* The intersection point lies slightly to the left of the sweep line,
-				 * so move it until it''s slightly to the right of the sweep line.
+				 * so move it until its slightly to the right of the sweep line.
 				 * (If we had perfect numerical precision, this would never happen
 				 * in the first place).  The easiest and safest thing to do is
 				 * replace the intersection by tess.currentSweepVertex.
@@ -1208,7 +1208,7 @@ namespace Tesselate
 		 *    For example, maybe there is a vertical edge which passes just to
 		 *    the right of vEvent; we would like to splice vEvent into this edge.
 		 *
-		 * However, we don't want to connect vEvent to just any vertex.  We don''t
+		 * However, we don't want to connect vEvent to just any vertex.  We don't
 		 * want the new edge to cross any other edges; otherwise we will create
 		 * intersection vertices even when the input data had no self-intersections.
 		 * (This is a bad thing; if the user's input data has no intersections,
@@ -1217,13 +1217,13 @@ namespace Tesselate
 		 * Our eventual goal is to connect vEvent to the leftmost unprocessed
 		 * vertex of the combined region (the union of regUp and regLo).
 		 * But because of unseen vertices with all right-going edges, and also
-		 * new vertices which may be created by edge intersections, we don''t
+		 * new vertices which may be created by edge intersections, we don't
 		 * know where that leftmost unprocessed vertex is.  In the meantime, we
 		 * connect vEvent to the closest vertex of either chain, and mark the region
 		 * as "fixUpperEdge".  This flag says to delete and reconnect this edge
 		 * to the next processed vertex on the boundary of the combined region.
 		 * Quite possibly the vertex we connected to will turn out to be the
-		 * closest one, in which case we won''t need to make any changes.
+		 * closest one, in which case we won't need to make any changes.
 		 */
 		{
 			HalfEdge eNew;
@@ -1415,7 +1415,7 @@ namespace Tesselate
 			else
 			{
 				/* The new vertex is in a region which does not belong to the polygon.
-				 * We don''t need to connect this vertex to the rest of the mesh.
+				 * We don't need to connect this vertex to the rest of the mesh.
 				 */
 				AddRightEdges(tess, regUp, vEvent.edgeThisIsOriginOf, vEvent.edgeThisIsOriginOf, null, true);
 			}

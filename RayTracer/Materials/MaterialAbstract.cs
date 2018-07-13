@@ -56,7 +56,7 @@ namespace MatterHackers.RayTracer
 		}
 
 		/// <summary>
-		/// wraps any value up in the inteval [-1,1] in a rotational manner
+		/// wraps any value up in the interval [-1,1] in a rotational manner
 		/// e.g. 1.7 -> -0.3
 		/// e.g. -1.1 -> 0.9
 		/// e.g. -2.3 -> -0.3

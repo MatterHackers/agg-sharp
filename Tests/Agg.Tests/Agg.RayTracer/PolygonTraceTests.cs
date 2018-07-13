@@ -134,7 +134,7 @@ namespace MatterHackers.RayTracer
 
 			Ray ray = new Ray(rayOrigin, -Vector3.UnitZ);
 			IntersectInfo primaryInfo = raytracer.TracePrimaryRay(ray, scene);
-			Assert.IsTrue(primaryInfo.hitType == IntersectionType.FrontFace, "allways have a hit");
+			Assert.IsTrue(primaryInfo.hitType == IntersectionType.FrontFace, "always have a hit");
 		}
 
 		[Test]

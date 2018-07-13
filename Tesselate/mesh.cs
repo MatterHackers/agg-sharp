@@ -1008,7 +1008,7 @@ namespace Tesselate
 
 			for (f = this.faceHead.nextFace; f != this.faceHead; f = next)
 			{
-				/* Make sure we don''t try to tessellate the new triangles. */
+				/* Make sure we don't try to tessellate the new triangles. */
 				next = f.nextFace;
 				if (f.isInterior)
 				{

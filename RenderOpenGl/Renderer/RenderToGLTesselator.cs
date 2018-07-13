@@ -98,7 +98,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void EdgeFlagCallBack(bool IsEdge)
 		{
-			// this is not set as it is only used in GL_POLYGON_MODE and GL_POINT or GL_LINE (which we currenly don't use)
+			// this is not set as it is only used in GL_POLYGON_MODE and GL_POINT or GL_LINE (which we currently don't use)
 			//GL.EdgeFlag(IsEdge);
 		}
 

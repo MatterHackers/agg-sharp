@@ -45,7 +45,7 @@ namespace MatterHackers.PolygonMesh
         public Vector3 Normal { get; set; }
 #else
 
-		// this is to save memory on each vertex (12 bytes per positon and 12 per normal rather than 24 and 24)
+		// this is to save memory on each vertex (12 bytes per position and 12 per normal rather than 24 and 24)
 		private Vector3Float position;
 
 		public Vector3 Position
@@ -193,8 +193,8 @@ namespace MatterHackers.PolygonMesh
 				{
 					if (foundEdges.Contains(meshEdge))
 					{
-						// TODO: this should realy not be happening. We should only ever try to iterate to any mesh edge once.
-						// We can get an infinite recursion with this and it needs to be debuged.
+						// TODO: this should really not be happening. We should only ever try to iterate to any mesh edge once.
+						// We can get an infinite recursion with this and it needs to be debugged.
 						throw new Exception("Bad ConnectedMeshEdges");
 					}
 

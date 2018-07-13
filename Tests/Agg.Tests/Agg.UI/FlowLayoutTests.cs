@@ -597,7 +597,7 @@ namespace MatterHackers.Agg.UI.Tests
 				flowWidget.AddChild(fixed10x10); // flowWidget = 0, 0, 300, 20  fitToChildrenOrParent = 0, 0, 290, 20
 				containerControl.OnDraw(containerControl.NewGraphics2D());
 
-				//OutputImage(containerControl, "countainer");
+				//OutputImage(containerControl, "container");
 
 				Assert.IsTrue(flowWidget.Width == containerControl.Width);
 				Assert.IsTrue(fitToChildrenOrParent.Width + fixed10x10.Width == containerControl.Width);
@@ -642,7 +642,7 @@ namespace MatterHackers.Agg.UI.Tests
 				flowWidget.AddChild(fixed10x10); // flowWidget = 0, 0, 300, 20  fitToChildrenOrParent = 0, 0, 290, 20
 				containerControl.OnDraw(containerControl.NewGraphics2D());
 
-				//OutputImage(containerControl, "countainer");
+				//OutputImage(containerControl, "container");
 
 				Assert.IsTrue(flowWidget.Width == containerControl.Width);
 				Assert.IsTrue(fitToChildrenOrParent.Width + fixed10x10.Width == containerControl.Width);
@@ -1680,7 +1680,7 @@ namespace MatterHackers.Agg.UI.Tests
 				};
 				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
 				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
-				// [no content] // attempting to make a visual descrition of what is happening
+				// [no content] // attempting to make a visual depiction of what is happening
 				Assert.IsTrue(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
 				GuiWidget leftWidget = new GuiWidget(10, 10)
 				{
@@ -1739,7 +1739,7 @@ namespace MatterHackers.Agg.UI.Tests
 				leftRightFlowLayout.Name = "leftRightFlowLayout";
 				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
 				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
-				// [<-><->] // attempting to make a visual descrition of what is happening
+				// [<-><->] // attempting to make a visual depiction of what is happening
 				Assert.IsTrue(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
 				GuiWidget leftWidget = new GuiWidget(10, 10); // we call it left widget as it will be the first one in the left to right flow layout
 				leftWidget.Name = "leftWidget";
@@ -1792,7 +1792,7 @@ namespace MatterHackers.Agg.UI.Tests
 				leftRightFlowLayout.Name = "leftRightFlowLayout";
 				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
 				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
-				// [<-><->] // attempting to make a visual descrition of what is happening
+				// [<-><->] // attempting to make a visual depiction of what is happening
 				Assert.IsTrue(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
 
 				GuiWidget middleSpacer = new GuiWidget(0, 10); // this widget will hold the space
@@ -1836,7 +1836,7 @@ namespace MatterHackers.Agg.UI.Tests
 				FlowLayoutWidget leftRightFlowLayout = new FlowLayoutWidget();
 				Assert.IsTrue(leftRightFlowLayout.HAnchor == HAnchor.Fit); // flow layout starts with FitToChildren
 				leftRightFlowLayout.HAnchor |= HAnchor.Stretch; // add to the existing flags Stretch (starts with FitToChildren)
-				// [<-><->] // attempting to make a visual descrition of what is happening
+				// [<-><->] // attempting to make a visual depiction of what is happening
 				Assert.IsTrue(leftRightFlowLayout.Width == 0); // nothing is forcing it to have a width so it doesn't
 				GuiWidget leftWidget = new GuiWidget(10, 10); // we call it left widget as it will be the first one in the left to right flow layout
 				leftRightFlowLayout.AddChild(leftWidget); // add in a child with a width of 10

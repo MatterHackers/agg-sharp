@@ -350,7 +350,7 @@ namespace MatterHackers.RayTracer
 	}
 
 	/// <summary>
-	/// A comparision function to sort Intersect Infos on distance.
+	/// A comparison function to sort Intersect Infos on distance.
 	/// Can be used to sort Lists.
 	/// </summary>
 	public class CompareIntersectInfoOnDistance : IComparer<IntersectInfo>

@@ -79,7 +79,7 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		/// <param name="action"></param>
 		/// <param name="intervalInSeconds"></param>
-		/// <returns>Action to call to canelel interval</returns>
+		/// <returns>Action to call to cancel interval</returns>
 		public static RunningInterval SetInterval(Action action, double intervalInSeconds)
 		{
 			RunningInterval runningInterval = new RunningInterval();

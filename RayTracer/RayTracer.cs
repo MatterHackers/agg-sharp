@@ -272,7 +272,7 @@ namespace MatterHackers.RayTracer
 				if (RenderShadow)
 				{
 					// calculate shadow, create ray from intersection point to light
-					Ray shadowRay = new Ray(info.HitPosition, directiorFromHitToLightNormalized, Ray.sameSurfaceOffset, double.MaxValue); // it may be usefull to limit the legth to te dist to the camera (but I doubt it LBB).
+					Ray shadowRay = new Ray(info.HitPosition, directiorFromHitToLightNormalized, Ray.sameSurfaceOffset, double.MaxValue); // it may be useful to limit the length to the dist to the camera (but I doubt it LBB).
 					shadowRay.isShadowRay = true;
 
 					// if the normal at the closest hit is away from the shadow it is already it it's own shadow.
@@ -288,7 +288,7 @@ namespace MatterHackers.RayTracer
 						shadow = TracePrimaryRay(shadowRay, scene);
 						if (shadow.hitType != IntersectionType.None && shadow.closestHitObject != info.closestHitObject && shadow.distanceToHit < distanceToLight)
 						{
-							// only cast shadow if the found interesection is another
+							// only cast shadow if the found intersection is another
 							// element than the current element
 							color *= 0.5;// +0.5 * Math.Pow(shadow.closestHit.Material.Transparency, 0.5); // Math.Pow(.5, shadow.HitCount);
 							color.Alpha0To1 = infoColorAtHit.alpha;
@@ -478,7 +478,7 @@ namespace MatterHackers.RayTracer
 							 imageBufferAsDoubles[x - 1][y] + imageBufferAsDoubles[x][y] + imageBufferAsDoubles[x + 1][y] +
 							 imageBufferAsDoubles[x - 1][y + 1] + imageBufferAsDoubles[x][y + 1] + imageBufferAsDoubles[x + 1][y + 1]) / 9;
 
-				// use a more accurate antialasing method (MonteCarlo implementation)
+				// use a more accurate anti-aliasing method (MonteCarlo implementation)
 				// this will fire multiple rays per pixel
 				double sumOfDifferencesThreshold = .05; // TODO: figure out a good way to determine this.
 				if (avg.SumOfDistances(imageBufferAsDoubles[x][y]) > sumOfDifferencesThreshold)

@@ -441,7 +441,7 @@ namespace MatterHackers.PolygonMesh
 			FaceEdge newFaceEdgeExistingFace = new FaceEdge(faceToSplit, meshEdgeCreatedDuringSplit, splitStartVertex);
 			FaceEdge newFaceEdgeForNewFace = new FaceEdge(faceCreatedDuringSplit, meshEdgeCreatedDuringSplit, splitEndVertex);
 
-			// get the new edges injected into the existing loop, spliting it in two.
+			// get the new edges injected into the existing loop, splitting it in two.
 			newFaceEdgeExistingFace.PrevFaceEdge = faceEdgeAfterSplitStart.PrevFaceEdge;
 			newFaceEdgeForNewFace.PrevFaceEdge = faceEdgeAfterSplitEnd.PrevFaceEdge;
 
@@ -656,7 +656,7 @@ namespace MatterHackers.PolygonMesh
 				}
 			}
 
-			// we put them in in the same order they were in, so we keep the state
+			// we put them in the same order they were in, so we keep the state
 			NonDeleteVertices.Sorted = Vertices.Sorted;
 			Vertices = NonDeleteVertices;
 		}
@@ -1015,13 +1015,13 @@ namespace MatterHackers.PolygonMesh
 
 		public void DeleteFace(Face faceToDelete)
 		{
-			// fix the radial face edges and the mesh edeges
+			// fix the radial face edges and the mesh edges
 			List<FaceEdge> faceEdgesToDelete = new List<FaceEdge>(faceToDelete.FaceEdges());
 			foreach (var faceEdgeToDelete in faceEdgesToDelete)
 			{
 				if (faceEdgeToDelete.MeshEdge.firstFaceEdge == faceEdgeToDelete)
 				{
-					// make sure the mesh edge is not pointing to this face edeg
+					// make sure the mesh edge is not pointing to this face edge
 					if (faceEdgeToDelete.RadialNextFaceEdge == faceEdgeToDelete)
 					{
 						// it point to itself, so the edge will point to nothing

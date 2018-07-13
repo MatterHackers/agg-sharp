@@ -642,7 +642,7 @@ namespace MatterHackers.VectorMath
 		#region Cross
 
 		/// <summary>
-		/// Caclulate the cross (vector) product of two vectors
+		/// Calculate the cross (vector) product of two vectors
 		/// </summary>
 		/// <param name="left">First operand</param>
 		/// <param name="right">Second operand</param>
@@ -655,7 +655,7 @@ namespace MatterHackers.VectorMath
 		}
 
 		/// <summary>
-		/// Caclulate the cross (vector) product of two vectors
+		/// Calculate the cross (vector) product of two vectors
 		/// </summary>
 		/// <param name="left">First operand</param>
 		/// <param name="right">Second operand</param>
@@ -1182,7 +1182,7 @@ namespace MatterHackers.VectorMath
 		}
 
 		/// <summary>
-		/// Creates a new vector which is the numerator devided by each component of the vector.
+		/// Creates a new vector which is the numerator divide by each component of the vector.
 		/// </summary>
 		/// <param name="numerator"></param>
 		/// <param name="vec"></param>

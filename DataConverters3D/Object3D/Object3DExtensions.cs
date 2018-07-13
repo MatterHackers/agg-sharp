@@ -518,25 +518,6 @@ namespace MatterHackers.DataConverters3D
 			return BoundingVolumeHierarchy.CreateNewHierachy(allPolys, maxRecursion);
 		}
 
-		/*
-		public class SelectionChangeCommand : IUndoRedoCommand
-		{
-			public Color Color{ get; set; }
-			public int MaterialIndex { get; set; }
-			PrintOutputTypes PrintOutputTypes { get; set; }
-			Matrix4X4 Matrix { get; set; }
-
-			public void Do()
-			{
-
-			}
-
-			public void Undo()
-			{
-				throw new NotImplementedException();
-			}
-		}*/
-
 		/// <summary>
 		/// Collapses the source object into the target list (often but not necessarily the scene)
 		/// </summary>

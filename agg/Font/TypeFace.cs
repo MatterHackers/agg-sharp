@@ -333,7 +333,7 @@ namespace MatterHackers.Agg.Font
 		{
 			if (ttfTypeFace != null)
 			{
-				// TODO: MAKE SURE THIS IS OFF!!!!!!! It is un-needed and only for debuging
+				// TODO: MAKE SURE THIS IS OFF!!!!!!! It is un-needed and only for debugging
 				//glyphs.Clear();
 			}
 

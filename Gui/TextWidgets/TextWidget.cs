@@ -303,7 +303,7 @@ namespace MatterHackers.Agg.UI
 				Printer.Render(graphics2D, this.TextColor);
 			}
 
-			// Debug onscreen fonts
+			// Debug on-screen fonts
 			if (DebugShowSize && this.Text.Trim().Length > 0)
 			{
 				graphics2D.FillRectangle(this.Width - 12, this.Height - 13, this.Width, this.Height, new Color(Color.White, 100));

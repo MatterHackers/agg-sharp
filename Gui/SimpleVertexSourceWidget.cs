@@ -28,11 +28,6 @@ namespace MatterHackers.Agg.UI
 	{
 		private bool localBoundsComeFromPoints = true;
 
-		public SimpleVertexSourceWidget()
-		{
-			throw new Exception("this is depricated");
-		}
-
 		public SimpleVertexSourceWidget(Vector2 originRelativeParent, bool localBoundsComeFromPoints = true)
 		{
 			this.localBoundsComeFromPoints = localBoundsComeFromPoints;

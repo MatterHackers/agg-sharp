@@ -102,7 +102,7 @@ namespace MatterHackers.PolygonMesh.Processors
 					{
 						// 80 bytes of nothing
 						bw.Write(new Byte[80]);
-						// the number of tranigles
+						// the number of triangles
 						bw.Write(meshToSave.Faces.Count);
 						int binaryPolyCount = 0;
 						foreach (Face face in meshToSave.Faces)

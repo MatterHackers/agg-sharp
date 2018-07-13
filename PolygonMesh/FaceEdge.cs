@@ -101,7 +101,7 @@ namespace MatterHackers.PolygonMesh
 			else
 			{
 				// There was a face on this mesh edge so add this one in.
-				// First set the new face edge radias pointers
+				// First set the new face edge radius pointers
 				this.radialPrevFaceEdge = currentMeshEdge.firstFaceEdge;
 				this.RadialNextFaceEdge = currentMeshEdge.firstFaceEdge.RadialNextFaceEdge;
 

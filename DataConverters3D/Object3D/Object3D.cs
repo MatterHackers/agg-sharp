@@ -664,7 +664,7 @@ namespace MatterHackers.DataConverters3D
 
 				foreach (var child in Children)
 				{
-					// The children need to include their transfroms
+					// The children need to include their transforms
 					hash = hash * 31 + child.GetLongHashCode();
 				}
 			}

@@ -171,7 +171,7 @@ namespace MatterHackers.Agg.UI
 				}
 
 				// TODO: put this is a pre-draw variable to set next time we are going to draw
-				// Doing it here causes an invalidate and endlelss drawing.
+				// Doing it here causes an invalidate and endless drawing.
 				timerData.widget.Text = outputText;
 			}
 		}

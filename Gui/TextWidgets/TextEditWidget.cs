@@ -343,7 +343,7 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseDown(mouseEvent);
 			if (Focused)
 			{
-				throw new Exception("We should have moved the mouse so that it gave selection to the internal text edit widgte.");
+				throw new Exception("We should have moved the mouse so that it gave selection to the internal text edit widget.");
 			}
 		}
 

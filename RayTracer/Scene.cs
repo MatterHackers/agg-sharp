@@ -72,7 +72,7 @@ namespace MatterHackers.RayTracer
 
 		/// <summary>
 		/// This will remove the shapes from 'Shapes' and add them to a Bounding Volume Hierarchy.  Then add that at a single element
-		/// to 'Shapes'.  You could also create a list of 'List<IPrimitive>' and put that dirrectly into a BVH and then add that
+		/// to 'Shapes'.  You could also create a list of 'List<IPrimitive>' and put that directly into a BVH and then add that
 		/// to the Shapes list (there could be more than 1 BVH in the 'Shapes' list.
 		/// </summary>
 		public IPrimitive MoveShapesIntoBoundingVolumeHierachy()

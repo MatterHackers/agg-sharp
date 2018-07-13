@@ -640,7 +640,7 @@ namespace MatterHackers.VectorMath
 		#region Cross
 
 		/// <summary>
-		/// Caclulate the cross (vector) product of two vectors
+		/// Calculate the cross (vector) product of two vectors
 		/// </summary>
 		/// <param name="left">First operand</param>
 		/// <param name="right">Second operand</param>
@@ -653,7 +653,7 @@ namespace MatterHackers.VectorMath
 		}
 
 		/// <summary>
-		/// Caclulate the cross (vector) product of two vectors
+		/// Calculate the cross (vector) product of two vectors
 		/// </summary>
 		/// <param name="left">First operand</param>
 		/// <param name="right">Second operand</param>
@@ -841,7 +841,7 @@ namespace MatterHackers.VectorMath
 		/// <remarks>
 		/// This calculates the inverse of the given matrix, use TransformNormal if you have 
 		/// a point on the plane (fastest) or TransformNormalInverse if you
-		/// have the inverse but not a ponit on the plane - to avoid this extra calculation
+		/// have the inverse but not a point on the plane - to avoid this extra calculation
 		/// </remarks>
 		/// <param name="normal">The normal to transform</param>
 		/// <param name="mat">The desired transformation</param>
@@ -1161,7 +1161,7 @@ namespace MatterHackers.VectorMath
 		}
 
 		/// <summary>
-		/// Creates a new vector which is the numerator devided by each component of the vector.
+		/// Creates a new vector which is the numerator divide by each component of the vector.
 		/// </summary>
 		/// <param name="numerator"></param>
 		/// <param name="vec"></param>

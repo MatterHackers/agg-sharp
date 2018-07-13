@@ -46,7 +46,7 @@ namespace MatterHackers.VectorMath
 		#region Constructors
 
 		/// <summary>
-		/// Construct a new Quaterniond from vector and w components
+		/// Construct a new Quaternion from vector and w components
 		/// </summary>
 		/// <param name="v">The vector part</param>
 		/// <param name="w">The w part</param>
@@ -57,7 +57,7 @@ namespace MatterHackers.VectorMath
 		}
 
 		/// <summary>
-		/// Construct a new Quaterniond
+		/// Construct a new Quaternion
 		/// </summary>
 		/// <param name="x">The x component</param>
 		/// <param name="y">The y component</param>
@@ -165,19 +165,19 @@ namespace MatterHackers.VectorMath
 #if true
 			Vector4 axisAngle = new Vector4();
 			Quaternion q1 = this;
-			if (q1.w > 1) q1.Normalize(); // if w>1 acos and sqrt will produce errors, this cant happen if quaternion is normalised
+			if (q1.w > 1) q1.Normalize(); // if w>1 acos and sqrt will produce errors, this cant happen if quaternion is normalized
 			axisAngle.W = 2 * Math.Acos(q1.w);
-			double s = Math.Sqrt(1 - q1.w * q1.w); // assuming quaternion normalised then w is less than 1, so term always positive.
+			double s = Math.Sqrt(1 - q1.w * q1.w); // assuming quaternion normalized then w is less than 1, so term always positive.
 			if (s < 0.001)
 			{ // test to avoid divide by zero, s is always positive due to sqrt
 			  // if s close to zero then direction of axis not important
-				axisAngle.X = q1.X; // if it is important that axis is normalised then replace with x=1; y=z=0;
+				axisAngle.X = q1.X; // if it is important that axis is normalized then replace with x=1; y=z=0;
 				axisAngle.Y = q1.Y;
 				axisAngle.Z = q1.Z;
 			}
 			else
 			{
-				axisAngle.X = q1.X / s; // normalise axis
+				axisAngle.X = q1.X / s; // normalize axis
 				axisAngle.Y = q1.Y / s;
 				axisAngle.Z = q1.Z / s;
 			}
@@ -212,7 +212,7 @@ namespace MatterHackers.VectorMath
 		#region public double Length
 
 		/// <summary>
-		/// Gets the length (magnitude) of the Quaterniond.
+		/// Gets the length (magnitude) of the Quaternion.
 		/// </summary>
 		/// <seealso cref="LengthSquared"/>
 		public double Length
@@ -228,7 +228,7 @@ namespace MatterHackers.VectorMath
 		#region public double LengthSquared
 
 		/// <summary>
-		/// Gets the square of the Quaterniond length (magnitude).
+		/// Gets the square of the Quaternion length (magnitude).
 		/// </summary>
 		public double LengthSquared
 		{
@@ -243,7 +243,7 @@ namespace MatterHackers.VectorMath
 		#region public void Normalize()
 
 		/// <summary>
-		/// Scales the Quaterniond to unit length.
+		/// Scales the Quaternion to unit length.
 		/// </summary>
 		public void Normalize()
 		{
@@ -261,7 +261,7 @@ namespace MatterHackers.VectorMath
 		#region public void Conjugate()
 
 		/// <summary>
-		/// Convert this Quaterniond to its conjugate
+		/// Convert this Quaternion to its conjugate
 		/// </summary>
 		public void Conjugate()
 		{
@@ -426,20 +426,20 @@ namespace MatterHackers.VectorMath
 		#region Conjugate
 
 		/// <summary>
-		/// Get the conjugate of the given Quaterniond
+		/// Get the conjugate of the given Quaternion
 		/// </summary>
-		/// <param name="q">The Quaterniond</param>
-		/// <returns>The conjugate of the given Quaterniond</returns>
+		/// <param name="q">The Quaternion</param>
+		/// <returns>The conjugate of the given Quaternion</returns>
 		public static Quaternion Conjugate(Quaternion q)
 		{
 			return new Quaternion(-q.Xyz, q.W);
 		}
 
 		/// <summary>
-		/// Get the conjugate of the given Quaterniond
+		/// Get the conjugate of the given Quaternion
 		/// </summary>
-		/// <param name="q">The Quaterniond</param>
-		/// <param name="result">The conjugate of the given Quaterniond</param>
+		/// <param name="q">The Quaternion</param>
+		/// <param name="result">The conjugate of the given Quaternion</param>
 		public static void Conjugate(ref Quaternion q, out Quaternion result)
 		{
 			result = new Quaternion(-q.Xyz, q.W);
@@ -450,10 +450,10 @@ namespace MatterHackers.VectorMath
 		#region Invert
 
 		/// <summary>
-		/// Get the inverse of the given Quaterniond
+		/// Get the inverse of the given Quaternion
 		/// </summary>
-		/// <param name="q">The Quaterniond to invert</param>
-		/// <returns>The inverse of the given Quaterniond</returns>
+		/// <param name="q">The Quaternion to invert</param>
+		/// <returns>The inverse of the given Quaternion</returns>
 		public static Quaternion Invert(Quaternion q)
 		{
 			Quaternion result;
@@ -462,10 +462,10 @@ namespace MatterHackers.VectorMath
 		}
 
 		/// <summary>
-		/// Get the inverse of the given Quaterniond
+		/// Get the inverse of the given Quaternion
 		/// </summary>
-		/// <param name="q">The Quaterniond to invert</param>
-		/// <param name="result">The inverse of the given Quaterniond</param>
+		/// <param name="q">The Quaternion to invert</param>
+		/// <param name="result">The inverse of the given Quaternion</param>
 		public static void Invert(ref Quaternion q, out Quaternion result)
 		{
 			double lengthSq = q.LengthSquared;
@@ -485,10 +485,10 @@ namespace MatterHackers.VectorMath
 		#region Normalize
 
 		/// <summary>
-		/// Scale the given Quaterniond to unit length
+		/// Scale the given Quaternion to unit length
 		/// </summary>
-		/// <param name="q">The Quaterniond to normalize</param>
-		/// <returns>The normalized Quaterniond</returns>
+		/// <param name="q">The Quaternion to normalize</param>
+		/// <returns>The normalized Quaternion</returns>
 		public static Quaternion Normalize(Quaternion q)
 		{
 			Quaternion result;
@@ -497,10 +497,10 @@ namespace MatterHackers.VectorMath
 		}
 
 		/// <summary>
-		/// Scale the given Quaterniond to unit length
+		/// Scale the given Quaternion to unit length
 		/// </summary>
-		/// <param name="q">The Quaterniond to normalize</param>
-		/// <param name="result">The normalized Quaterniond</param>
+		/// <param name="q">The Quaternion to normalize</param>
+		/// <param name="result">The normalized Quaternion</param>
 		public static void Normalize(ref Quaternion q, out Quaternion result)
 		{
 			double scale = 1.0 / q.Length;
@@ -526,7 +526,7 @@ namespace MatterHackers.VectorMath
 		#region FromAxisAngle
 
 		/// <summary>
-		/// Build a Quaterniond from the given axis and angle
+		/// Build a Quaternion from the given axis and angle
 		/// </summary>
 		/// <param name="axis">The axis to rotate about</param>
 		/// <param name="angle">The rotation angle in radians</param>
@@ -555,8 +555,8 @@ namespace MatterHackers.VectorMath
 		/// <summary>
 		/// Do Spherical linear interpolation between two quaternions
 		/// </summary>
-		/// <param name="q1">The first Quaterniond</param>
-		/// <param name="q2">The second Quaterniond</param>
+		/// <param name="q1">The first Quaternion</param>
+		/// <param name="q2">The second Quaternion</param>
 		/// <param name="blend">The blend factor</param>
 		/// <returns>A smooth blend between the given quaternions</returns>
 		public static Quaternion Slerp(Quaternion q1, Quaternion q2, double blend)
@@ -710,7 +710,7 @@ namespace MatterHackers.VectorMath
 		#region public override string ToString()
 
 		/// <summary>
-		/// Returns a System.String that represents the current Quaterniond.
+		/// Returns a System.String that represents the current Quaternion.
 		/// </summary>
 		/// <returns></returns>
 		public override string ToString()
@@ -755,9 +755,9 @@ namespace MatterHackers.VectorMath
 		#region IEquatable<Quaterniond> Members
 
 		/// <summary>
-		/// Compares this Quaterniond instance to another Quaterniond for equality.
+		/// Compares this Quaternion instance to another Quaternion for equality.
 		/// </summary>
-		/// <param name="other">The other Quaterniond to be used in the comparison.</param>
+		/// <param name="other">The other Quaternion to be used in the comparison.</param>
 		/// <returns>True if both instances are equal; false otherwise.</returns>
 		public bool Equals(Quaternion other)
 		{

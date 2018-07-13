@@ -181,7 +181,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
-		/// Filter to allow click events as long as the scroll position is less than the given threshhold. Prevent click behavior on touch platfroms when drag scrolling
+		/// Filter to allow click events as long as the scroll position is less than the given threshold. Prevent click behavior on touch platforms when drag scrolling
 		/// </summary>
 		/// <returns>A bool indicating if scroll distance is within tolerance</returns>
 		internal bool AllowClickingItems()

@@ -123,7 +123,7 @@ bool Box::intersect(const Ray &r, float t0, float t1) const {
 				maxDistFound = maxDistToY;
 			}
 
-			// and finaly the z planes
+			// and finally the z planes
 			double minDistToZ = (this[(int)ray.sign[2]].Z - ray.origin.Z) * ray.oneOverDirection.Z;
 			double maxDistToZ = (this[1 - (int)ray.sign[2]].Z - ray.origin.Z) * ray.oneOverDirection.Z;
 
@@ -164,7 +164,7 @@ bool Box::intersect(const Ray &r, float t0, float t1) const {
 					info.hitType = IntersectionType.FrontFace;
 					info.closestHitObject = this;
 					info.HitPosition = ray.origin + ray.directionNormal * minDistFound;
-					info.normalAtHit[minAxis] = ray.sign[minAxis] == Ray.Sign.negative ? 1 : -1; // you hit the side that is oposite your sign
+					info.normalAtHit[minAxis] = ray.sign[minAxis] == Ray.Sign.negative ? 1 : -1; // you hit the side that is opposite your sign
 					info.distanceToHit = minDistFound;
 					yield return info;
 				}
@@ -209,7 +209,7 @@ bool Box::intersect(const Ray &r, float t0, float t1) const {
 						}
 						info.closestHitObject = this;
 						info.HitPosition = ray.origin + ray.directionNormal * minDistFound;
-						info.normalAtHit[minAxis] = ray.sign[minAxis] == Ray.Sign.negative ? 1 : -1; // you hit the side that is oposite your sign
+						info.normalAtHit[minAxis] = ray.sign[minAxis] == Ray.Sign.negative ? 1 : -1; // you hit the side that is opposite your sign
 						info.distanceToHit = minDistFound;
 					}
 				}

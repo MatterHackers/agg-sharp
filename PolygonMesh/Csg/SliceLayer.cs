@@ -93,7 +93,7 @@ namespace MatterHackers.PolygonMesh.Csg
 					Vector3.Transform(SlicePlane.PlaneNormal * SlicePlane.DistanceToPlaneFromOrigin, toMeshMatrix));
 			}
 
-			// collect all the segments this plane intesects and record them in unordered segments in z 0 space
+			// collect all the segments this plane intersects and record them in unordered segments in z 0 space
 			var meshTo0Plane = matrix == null ? flatentMatrix : matrix.Value * flatentMatrix;
 			foreach (var face in mesh.Faces)
 			{
@@ -174,7 +174,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				}
 			}
 
-			// Remove all polygons from the open pollygon list that have 0 points
+			// Remove all polygons from the open polygon list that have 0 points
 			for (int i = openPolygonList.Count - 1; i >= 0; i--)
 			{
 				// add in the position of the last point
@@ -274,7 +274,7 @@ namespace MatterHackers.PolygonMesh.Csg
 
 				if (bestScore >= double.MaxValue)
 				{
-					// we colud not find any points to connect this to
+					// we could not find any points to connect this to
 					break;
 				}
 

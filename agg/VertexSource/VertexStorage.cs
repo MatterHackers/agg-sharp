@@ -891,7 +891,7 @@ namespace MatterHackers.Agg.VertexSource
 					case 'M': // move to absolute
 						parseIndex++;
 						// svg fonts are stored cw and agg expects its shapes to be ccw.  cw shapes are holes.
-						// so we store the position of the start of this polygon so we can flip it when we colse it.
+						// so we store the position of the start of this polygon so we can flip it when we close it.
 						polyStartVertexSourceIndex = this.size();
 						curXY.X = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
 						curXY.Y = agg_basics.ParseDouble(dString, ref parseIndex, fastSimpleNumbers);
@@ -956,7 +956,7 @@ namespace MatterHackers.Agg.VertexSource
 						//this.ClosePathStorage();
 						this.ClosePolygon();
 						// svg fonts are stored cw and agg expects its shapes to be ccw.  cw shapes are holes.
-						// We stored the position of the start of this polygon, now we flip it as we colse it.
+						// We stored the position of the start of this polygon, now we flip it as we close it.
 						this.invert_polygon(polyStartVertexSourceIndex);
 						break;
 

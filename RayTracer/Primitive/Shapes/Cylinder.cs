@@ -710,7 +710,7 @@ void CalcBoundingPlanes(Vector3 u, out double minDot, out double maxDot )
 	double alpha = Vector3.Dot(perp, AxisA)*RadiusA;
 	double beta = Vector3.Dot(perp, AxisB)*RadiusB;
 	if ( alpha==0.0 && beta==0.0 )
-    {	// If u perpindicular to top face
+    {	// If u perpendicular to top face
 		maxD = minD = TopPlaneCoef*Vector3.Dot(u,TopNormal);
 	}
 	else
@@ -738,7 +738,7 @@ void CalcBoundingPlanes(Vector3 u, out double minDot, out double maxDot )
 	alpha = Vector3.Dot(perp, AxisA)*RadiusA;
 	beta = Vector3.Dot(perp, AxisB)*RadiusB;
 	if ( alpha==0.0 && beta==0.0 )
-    {			// If u perpindicular to bottom face
+    {			// If u perpendicular to bottom face
 		UpdateMinMax( BottomPlaneCoef*Vector3.Dot(u, BottomNormal), minD, maxD );
 	}
 	else
@@ -803,7 +803,7 @@ void SetCenter( Vector3 center )
 }
 
 	// A "right cylinder" is a cylinder with the base and top faces
-	//  perpindicular to the center axis.
+	//  perpendicular to the center axis.
 	// Calling either SetHeight makes the cylinder
 	//	into a right cylinder.  For right cylinders you should call SetHeight and
 	//	SetCenter().
@@ -908,11 +908,11 @@ inline void ViewableCylinder::SetRadialAxes( const Vector3& axisA,
 											const Vector3& axisB )
 {
 	AxisA = axisA;
-	AxisA -= (AxisA^CenterAxis)*CenterAxis;	// Make perpindicular to CenterAxis
+	AxisA -= (AxisA^CenterAxis)*CenterAxis;	// Make perpendicular to CenterAxis
 	assert( AxisA.Norm()!=0.0 );			// Must not be parallel to CenterAxis
 	AxisA /= RadiusA*AxisA.Norm();
 	AxisB = axisB;
-	AxisB -= (AxisB^CenterAxis)*CenterAxis;	// Make perpindicular to CenterAxis
+	AxisB -= (AxisB^CenterAxis)*CenterAxis;	// Make perpendicular to CenterAxis
 	assert( AxisB.Norm()!=0.0 );			// Must not be parallel to CenterAxis
 	AxisB /= RadiusB*AxisB.Norm();
 }
