@@ -48,7 +48,7 @@ namespace MatterHackers.DataConverters3D
 		public event EventHandler SelectionChanged;
 		public event EventHandler<InvalidateArgs> Invalidated;
 
-		private IObject3D selectedItem;
+		private IObject3D _selectedItem;
 
 		public InteractiveScene()
 		{
@@ -76,24 +76,24 @@ namespace MatterHackers.DataConverters3D
 		{
 			get
 			{
-				return selectedItem;
+				return _selectedItem;
 			}
 
 			set
 			{
-				if (selectedItem != value)
+				if (_selectedItem != value)
 				{
-					if (SelectedItem is SelectionGroupObject3D)
+					if (_selectedItem is SelectionGroupObject3D)
 					{
 						// If the selected item is a SelectionGroup, collapse its contents into the root
 						// of the scene when it loses focus
 						Children.Modify(list =>
 						{
-							SelectedItem.CollapseInto(list);
+							_selectedItem.CollapseInto(list);
 						});
 					}
 
-					selectedItem = value;
+					_selectedItem = value;
 					SelectionChanged?.Invoke(this, null);
 				}
 			}
@@ -101,9 +101,6 @@ namespace MatterHackers.DataConverters3D
 
 		[JsonIgnore]
 		public UndoBuffer UndoBuffer { get; } = new UndoBuffer() { MaxUndos = 10 };
-
-		[JsonIgnore]
-		public bool HasSelection => this.HasChildren() && SelectedItem != null;
 
 		[JsonIgnore]
 		public bool ShowSelectionShadow { get; set; } = true;
@@ -179,10 +176,7 @@ namespace MatterHackers.DataConverters3D
 
 		public void ClearSelection()
 		{
-			if (HasSelection)
-			{
-				SelectedItem = null;
-			}
+			SelectedItem = null;
 		}
 
 		public void SetSelection(IEnumerable<IObject3D> items)
@@ -218,27 +212,28 @@ namespace MatterHackers.DataConverters3D
 
 		public void AddToSelection(IObject3D itemToAdd)
 		{
-			if (itemToAdd == SelectedItem || SelectedItem?.Children?.Contains(itemToAdd) == true)
+			var selectedItem = SelectedItem;
+			if (itemToAdd == selectedItem || selectedItem?.Children?.Contains(itemToAdd) == true)
 			{
 				return;
 			}
 
-			if (this.HasSelection)
+			if (selectedItem != null)
 			{
-				if (SelectedItem is SelectionGroupObject3D)
+				if (selectedItem is SelectionGroupObject3D)
 				{
 					// Remove from the scene root
 					this.Children.Modify(list => list.Remove(itemToAdd));
 
 					// Move into the SelectionGroup
-					SelectedItem.Children.Modify(list => list.Add(itemToAdd));
+					selectedItem.Children.Modify(list => list.Add(itemToAdd));
 				}
 				else // add a new selection group and add to its children
 				{
 					// We're adding a new item to the selection. To do so we wrap the selected item
 					// in a new group and with the new item. The selection will continue to grow in this
 					// way until it's applied, due to a loss of focus or until a group operation occurs
-					var newSelectionGroup = new SelectionGroupObject3D(new[] { SelectedItem, itemToAdd })
+					var newSelectionGroup = new SelectionGroupObject3D(new[] { selectedItem, itemToAdd })
 					{
 						Name = "Selection".Localize()
 					};
@@ -246,7 +241,7 @@ namespace MatterHackers.DataConverters3D
 					this.Children.Modify(list =>
 					{
 						list.Remove(itemToAdd);
-						list.Remove(SelectedItem);
+						list.Remove(selectedItem);
 						// add the seletionGroup as the first item so we can hit it first
 						list.Insert(0, newSelectionGroup);
 					});
@@ -338,13 +333,14 @@ namespace MatterHackers.DataConverters3D
 		/// <param name="itemToWrapWith">Item to wrap selection and add</param>
 		public void WrapSelection(Object3D itemToWrapWith)
 		{
-			if (this.HasSelection)
+			var selectedItem = this.SelectedItem;
+			if (selectedItem != null)
 			{
 				IObject3D item;
 
 				List<IObject3D> itemsToRestoreOnUndo;
 
-				if (this.SelectedItem is SelectionGroupObject3D selectionGroup)
+				if (selectedItem is SelectionGroupObject3D selectionGroup)
 				{
 					item = new Object3D();
 					itemsToRestoreOnUndo = selectionGroup.Children.ToList();
@@ -356,8 +352,8 @@ namespace MatterHackers.DataConverters3D
 				}
 				else
 				{
-					itemsToRestoreOnUndo = new List<IObject3D> { this.SelectedItem };
-					item = this.SelectedItem.Clone();
+					itemsToRestoreOnUndo = new List<IObject3D> { selectedItem };
+					item = selectedItem.Clone();
 				}
 
 				this.SelectedItem = null;
