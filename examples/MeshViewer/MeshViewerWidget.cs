@@ -518,7 +518,7 @@ namespace MatterHackers.MeshVisualizer
 			int volumeHitIndex;
 			Ray ray = this.World.GetRayForLocalBounds(mouseEvent.Position);
 			IntersectInfo info;
-			if (this.Scene.HasSelection
+			if (this.Scene.SelectedItem != null
 				&& !SuppressUiVolumes 
 				&& FindInteractionVolumeHit(ray, out volumeHitIndex, out info))
 			{
@@ -787,7 +787,7 @@ namespace MatterHackers.MeshVisualizer
 			foreach(var item in object3D.VisibleMeshes())
 			{
 				bool isSelected = parentSelected ||
-					Scene.HasSelection && (object3D == Scene.SelectedItem || Scene.SelectedItem.Children.Contains(object3D));
+					Scene.SelectedItem != null && (object3D == Scene.SelectedItem || Scene.SelectedItem.Children.Contains(object3D));
 
 				GLHelper.Render(item.Mesh, item.WorldColor(), item.WorldMatrix(), RenderType);
 			}
