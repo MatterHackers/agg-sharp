@@ -125,7 +125,7 @@ namespace MatterHackers.DataConverters3D
 
 		/// <summary>
 		/// Got the top of this objects parent tree and get change the name of the object if
-		/// required to make sure it is not the same as any other decendant
+		/// required to make sure it is not the same as any other descendant
 		/// </summary>
 		/// <param name="root"></param>
 		public static void MakeNameNonColliding(this IObject3D item)
@@ -219,7 +219,7 @@ namespace MatterHackers.DataConverters3D
 		}
 
 		/// <summary>
-		/// Enumerator to get the currently visible object that has a meshe for rendering.
+		/// Enumerator to get the currently visible object that has a mesh for rendering.
 		/// The returned set may include placeholder or proxy data while
 		/// long operations are happening such as loading or mesh processing.
 		/// </summary>

@@ -131,7 +131,7 @@ namespace MatterHackers.RayTracer
 			WorldToAxis[3, 2] -= add.Z;
 		}
 
-		// palce and object relative to another object
+		// place an object relative to another object
 		// i.e. place and object to the left of the camera (left from the view of the camera)
 		public void PlaceRelativeTo(Axis3D pReferenceAxis, double x, double y, double z)
 		{
@@ -355,7 +355,7 @@ namespace MatterHackers.RayTracer
 
 			TargetPos = Vector3.TransformVector(TargetPos, WorldToAxis);
 
-			// Will roate Y to make z point away from object (make -z point at object)
+			// Will rotate Y to make z point away from object (make -z point at object)
 			return Math.Atan2(TargetPos.X, -TargetPos.Z);
 		}
 
@@ -365,7 +365,7 @@ namespace MatterHackers.RayTracer
 
 			TargetPos = Vector3.TransformVector(TargetPos, WorldToAxis);
 
-			// (-90 degrese) Will rotate X to make z point away from object (-z point at object)
+			// (-90 degrees) Will rotate X to make z point away from object (-z point at object)
 			return Math.Atan2(-TargetPos.Z, TargetPos.Y) - MathHelper.Tau / 4;
 		}
 

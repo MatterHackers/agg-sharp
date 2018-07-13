@@ -208,7 +208,7 @@ namespace MatterHackers.Agg
 					{
 						DirtyCell currCell = dirtyCells[offsetForY + x];
 
-						// if it's not set or it's not totaly covered
+						// if it's not set or it's not totally covered
 						RectangleInt CurCellBounds = new RectangleInt((x << xCellFactor), (y << yCellFactor),
 							((x << xCellFactor) + xCellSize), ((y << yCellFactor) + yCellSize));
 						// if we are setting it for the first time

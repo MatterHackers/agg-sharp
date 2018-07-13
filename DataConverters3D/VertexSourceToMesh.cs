@@ -55,7 +55,7 @@ namespace MatterHackers.DataConverters3D
 
 			int numIndicies = teselatedSource.IndicesCache.Count;
 
-			// turn the teselation output into mesh faces
+			// turn the tessellation output into mesh faces
 			for (int i = 0; i < numIndicies; i += 3)
 			{
 				Vector2 v0 = teselatedSource.VerticesCache[teselatedSource.IndicesCache[i + 0].Index].Position;

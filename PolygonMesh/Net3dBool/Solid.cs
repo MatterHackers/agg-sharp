@@ -29,7 +29,7 @@ SIGGRAPH Proceedings, 1986, p.161.
 original author: Danilo Balby Silva Castanheira (danbalby@yahoo.com)
 
 Ported from Java to C# by Sebastian Loncar, Web: http://loncar.de
-Optomized and refactored by: Lars Brubaker (larsbrubaker@matterhackers.com)
+Optimized and refactored by: Lars Brubaker (larsbrubaker@matterhackers.com)
 Project: https://github.com/MatterHackers/agg-sharp (an included library)
 */
 

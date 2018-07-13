@@ -32,7 +32,7 @@ using MatterHackers.Agg.Image;
 namespace MatterHackers.GuiAutomation
 {
 	/// <summary>
-	/// A clasic screen rect that is upper left 0,0 lower right Width, Height
+	/// A classic screen rect that is upper left 0,0 lower right Width, Height
 	/// </summary>
 	public struct ScreenRectangle
 	{

@@ -101,7 +101,7 @@ namespace MatterHackers.RenderOpenGl
 					return plugin;
 				}
 
-				// else we need to rebulid the data
+				// else we need to rebuild the data
 				plugin.meshUpdateCount = mesh.ChangedCount;
 				mesh.PropertyBag.Remove(GLMeshTrianglePluginName);
 			}

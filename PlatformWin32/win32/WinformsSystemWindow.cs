@@ -196,7 +196,7 @@ namespace MatterHackers.Agg.UI
 				// We do this because calling Invalidate within an OnPaint message will cause our
 				// SaveDialog to not show its 'overwrite' dialog if needed.
 				// We use the Invalidate to cause a continuous pump of the OnPaint message to call our OnIdle.
-				// We could figure another solution but it must be very carful to ensure we don't break SaveDialog
+				// We could figure another solution but it must be very careful to ensure we don't break SaveDialog
 				return;
 			}
 

@@ -29,7 +29,7 @@ SIGGRAPH Proceedings, 1986, p.161.
 original author: Danilo Balby Silva Castanheira (danbalby@yahoo.com)
 
 Ported from Java to C# by Sebastian Loncar, Web: http://loncar.de
-Optomized and refactored by: Lars Brubaker (larsbrubaker@matterhackers.com)
+Optimized and refactored by: Lars Brubaker (larsbrubaker@matterhackers.com)
 Project: https://github.com/MatterHackers/agg-sharp (an included library)
 */
 
@@ -63,7 +63,7 @@ namespace Net3dBool
 			//direction: cross product of the faces normals
 			Direction = Vector3.Cross(normalFace1, normalFace2);
 
-			//if direction lenght is not zero (the planes aren't parallel )...
+			//if direction length is not zero (the planes aren't parallel )...
 			if (!(Direction.Length < EqualityTolerance))
 			{
 				//getting a line point, zero is set to a coordinate whose direction
@@ -127,7 +127,7 @@ namespace Net3dBool
 		/// Computes the point resulting from the intersection with another line
 		/// </summary>
 		/// <param name="otherLine">the other line to apply the intersection. The lines are supposed to intersect</param>
-		/// <returns>point resulting from the intersection. If the point coundn't be obtained, return null</returns>
+		/// <returns>point resulting from the intersection. If the point couldn't be obtained, return null</returns>
 		public Vector3 ComputeLineIntersection(Line otherLine)
 		{
 			//x = x1 + a1*t = x2 + b1*s
@@ -181,7 +181,7 @@ namespace Net3dBool
 
 			if (Math.Abs(denominator) < EqualityTolerance)
 			{
-				//if line is paralel to the plane...
+				//if line is parallel to the plane...
 				if (Math.Abs(distanceFromPlane) < EqualityTolerance)
 				{
 					//if line is contained in the plane...

@@ -154,7 +154,7 @@ namespace MatterHackers.Agg.UI
 
 		public void Start()
 		{
-			// check twice as often as we need to to make sure we don't mis our update by too much
+			// check twice as often as we need to make sure we don't mis our update by too much
 			runningInterval = UiThread.SetInterval(this.ProcessElapsedTime, this.SecondsPerUpdate / 2);
 		}
 

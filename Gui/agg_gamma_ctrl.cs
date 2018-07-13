@@ -333,7 +333,7 @@ namespace MatterHackers.Agg.UI
 			return m_gamma_spline;
 		}
 
-		// Vertex soutce interface
+		// Vertex source interface
 		public override int num_paths()
 		{
 			return 5;

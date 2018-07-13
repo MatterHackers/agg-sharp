@@ -29,7 +29,7 @@ SIGGRAPH Proceedings, 1986, p.161.
 original author: Danilo Balby Silva Castanheira (danbalby@yahoo.com)
 
 Ported from Java to C# by Sebastian Loncar, Web: http://loncar.de
-Optomized and refactored by: Lars Brubaker (larsbrubaker@matterhackers.com)
+Optimized and refactored by: Lars Brubaker (larsbrubaker@matterhackers.com)
 Project: https://github.com/MatterHackers/agg-sharp (an included library)
 */
 
@@ -86,17 +86,17 @@ namespace Net3dBool
 		}
 
 		/// <summary>
-		/// Action that recieves the face being classified
+		/// Action that receives the face being classified
 		/// </summary>
 		public static Action<CsgFace> Object1ClassifyFace { get; set; } = null;
 
 		/// <summary>
-		/// Action that recieves the face being split and the face that is doing the spliting
+		/// Action that receives the face being split and the face that is doing the splitting
 		/// </summary>
 		public static Action<CsgFace, CsgFace> Object1SplitFace { get; set; } = null;
 
 		/// <summary>
-		/// Action that recieves the faces that are the reselts of the split that just occured
+		/// Action that receives the faces that are the results of the split that just occurred
 		/// </summary>
 		public static Action<List<CsgFace>> Object1SplitResults { get; set; } = null;
 
@@ -227,7 +227,7 @@ namespace Net3dBool
 
 				reporter?.Invoke("Split Faces 2", 0.6);
 				object2.SplitFaces(object1Copy, cancellationToken, Object2SplitFace, Object2SplitResults);
-				// free the momory
+				// free the memory
 				object1Copy = null;
 
 				//classify faces as being inside or outside the other solid

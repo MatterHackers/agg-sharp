@@ -90,7 +90,7 @@ namespace MatterHackers.PolygonMesh
 			{
 				int endIndexOnFirstMeshEdge = vertexToAddTo.FirstMeshEdge.GetVertexEndIndex(vertexToAddTo);
 
-				// remember what the one that is there is poiting at
+				// remember what the one that is there is pointing at
 				MeshEdge vertexCurrentNext = vertexToAddTo.FirstMeshEdge.NextMeshEdgeFromEnd[endIndexOnFirstMeshEdge];
 
 				// point the one that is there at us
@@ -221,7 +221,7 @@ namespace MatterHackers.PolygonMesh
 
 		public void RemoveFromMeshEdgeLinksOfVertex(IVertex vertexToRemoveFrom)
 		{
-			// lets first fix up the MeshEdge ponted to by the vertexToRemoveFrom
+			// lets first fix up the MeshEdge pointed to by the vertexToRemoveFrom
 			if (vertexToRemoveFrom.FirstMeshEdge == this)
 			{
 				MeshEdge nextMeshEdgeConnectedToThisVertex = vertexToRemoveFrom.FirstMeshEdge.GetNextMeshEdgeConnectedTo(vertexToRemoveFrom);
@@ -239,11 +239,11 @@ namespace MatterHackers.PolygonMesh
 				}
 			}
 
-			// now lets clean up the edge links on the mesh edges that are stil connected to the vertexToRemoveFrom
+			// now lets clean up the edge links on the mesh edges that are still connected to the vertexToRemoveFrom
 			MeshEdge nextEdgeThisConnectedTo = GetNextMeshEdgeConnectedTo(vertexToRemoveFrom);
 			if (nextEdgeThisConnectedTo == this)
 			{
-				throw new Exception("You can't disconect when you are the only mesh edge.");
+				throw new Exception("You can't disconnect when you are the only mesh edge.");
 			}
 
 			MeshEdge edgeAfterEdgeWeAreConnectedTo = nextEdgeThisConnectedTo.GetNextMeshEdgeConnectedTo(vertexToRemoveFrom);

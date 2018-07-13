@@ -136,7 +136,7 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
-		/// The number of decimal places to show with this numebr. Max is currently 10
+		/// The number of decimal places to show with this number. Max is currently 10
 		/// any number below 0 will render without formating (string default behavior).
 		/// </summary>
 		public int MaxDecimalsPlaces { get; set; } = -1;

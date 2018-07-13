@@ -29,7 +29,7 @@ SIGGRAPH Proceedings, 1986, p.161.
 original author: Danilo Balby Silva Castanheira (danbalby@yahoo.com)
 
 Ported from Java to C# by Sebastian Loncar, Web: http://loncar.de
-Optomized and refactored by: Lars Brubaker (larsbrubaker@matterhackers.com)
+Optimized and refactored by: Lars Brubaker (larsbrubaker@matterhackers.com)
 Project: https://github.com/MatterHackers/agg-sharp (an included library)
 */
 
@@ -47,7 +47,7 @@ namespace Net3dBool
 	public class Vertex
 	{
 		public Vector3 Position;
-		// references to vertices conected to it by an edge
+		// references to vertices connected to it by an edge
 		private List<Vertex> adjacentVertices;
 		// vertex status relative to other object
 		public FaceStatus Status { get; set; }

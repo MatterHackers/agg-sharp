@@ -211,7 +211,7 @@ namespace Gaming.Math
 
         public void EquLinComb(double r, Vector3D A, double s, Vector3D B)
         {
-            // the two Vectors are muliplied by thier own variable scale and then added together
+            // the two Vectors are multiplied by their own variable scale and then added together
             x = r * A.x + s * B.x;
             y = r * A.y + s * B.y;
             z = r * A.z + s * B.z;

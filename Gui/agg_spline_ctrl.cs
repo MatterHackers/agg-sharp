@@ -309,7 +309,7 @@ namespace MatterHackers.Agg.UI
 			base.OnDraw(graphics2D);
 		}
 
-		// Vertex soutce interface
+		// Vertex source interface
 		public override int num_paths()
 		{
 			return 5;

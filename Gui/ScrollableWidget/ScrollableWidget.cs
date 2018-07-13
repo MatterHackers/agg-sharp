@@ -129,7 +129,7 @@ namespace MatterHackers.Agg.UI
 						break;
 				}
 
-				// we only handled the key if it resulted in the arrea scrolling
+				// we only handled the key if it resulted in the area scrolling
 				if(startingScrollPosition != ScrollPosition)
 				{
 					keyEvent.Handled = true;

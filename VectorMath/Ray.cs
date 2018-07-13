@@ -123,7 +123,7 @@ namespace MatterHackers.VectorMath
 				maxDistFound = maxDistToY;
 			}
 
-			// and finaly the z planes
+			// and finally the z planes
 			double minDistToZ = (bounds[(int)ray.sign[2]].Z - ray.origin.Z) * ray.oneOverDirection.Z;
 			double maxDistToZ = (bounds[1 - (int)ray.sign[2]].Z - ray.origin.Z) * ray.oneOverDirection.Z;
 

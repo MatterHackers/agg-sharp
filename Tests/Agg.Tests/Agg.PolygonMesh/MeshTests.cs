@@ -481,7 +481,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				Assert.IsTrue(leftVertexBottom.GetConnectedMeshEdgesCount() == 2, "The vertex we split on should now have 2 mesh edges attached to it.");
 				Assert.IsTrue(rightVertexBottom.GetConnectedMeshEdgesCount() == 2, "The vertex we split on should now have 2 mesh edges attached to it.");
 
-				// unsplite the faces keeping the face we created and test the result
+				// unsplit the faces keeping the face we created and test the result
 				testMesh.UnsplitFace(faceCreatedDuringSplit, originalFace, edgeCreatedDuringSplit);
 				Assert.IsTrue(faceCreatedDuringSplit.NumVertices == 6, "The created face has 4 vertices.");
 			}
@@ -557,8 +557,8 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				Assert.IsTrue(edgeCreatedDuringSplit.firstFaceEdge != null, "First face edge is connected.");
 				Assert.IsTrue(edgeCreatedDuringSplit.firstFaceEdge.MeshEdge == edgeCreatedDuringSplit, "The new face edge is connected to the created mesh edge.");
 				Assert.IsTrue(edgeCreatedDuringSplit.VertexOnEnd[0] != null && edgeCreatedDuringSplit.VertexOnEnd[1] != null, "The edgeCreatedDuringSplit is connected to Vertices.");
-				Assert.IsTrue(edgeCreatedDuringSplit.VertexOnEnd[0].GetConnectedMeshEdges().Contains(edgeCreatedDuringSplit), "The vertex connected to this mesh edege contains this mesh edge.");
-				//Assert.IsTrue(edgeCreatedDuringSplit.VertexOnEnd[1].GetConnectedMeshEdges().Contains(edgeCreatedDuringSplit), "The vertex connected to this mesh edege contains this mesh edge.");
+				Assert.IsTrue(edgeCreatedDuringSplit.VertexOnEnd[0].GetConnectedMeshEdges().Contains(edgeCreatedDuringSplit), "The vertex connected to this mesh edge contains this mesh edge.");
+				//Assert.IsTrue(edgeCreatedDuringSplit.VertexOnEnd[1].GetConnectedMeshEdges().Contains(edgeCreatedDuringSplit), "The vertex connected to this mesh edge contains this mesh edge.");
 
 				testMesh.UnsplitMeshEdge(edgeToSplit, vertexCreatedDuringSplit);
 
@@ -588,7 +588,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 			// make sure that the data on FaceEdges is correct (split the center edge of an extruded plus).
 			{
-				// make an extruded pluss sign.
+				// make an extruded plus sign.
 				Mesh testMesh = new Mesh();
 				IVertex centerVertex = testMesh.CreateVertex(0, 0, 0);
 				IVertex leftVertex = testMesh.CreateVertex(-1, 0, 0);
@@ -697,7 +697,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			// a simple list of 3 faces
 			//
 			// Index 1 ^------------------- z = 3
-			// 
+			//
 			// Index 0 ^------------------- z = 2
 			//
 			// Index 2 ^------------------- z = 1

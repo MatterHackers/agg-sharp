@@ -37,7 +37,7 @@ namespace MatterHackers.PolygonMesh
 		/// <summary>
 		/// This function will search for the first face that produces no polygon cuts
 		/// and split the tree on it. If it can't find a non-cutting face,
-		/// it will split on the face that minimizes the area that it devides.
+		/// it will split on the face that minimizes the area that it divides.
 		/// </summary>
 		/// <param name="mesh"></param>
 		/// <returns></returns>
@@ -108,7 +108,7 @@ namespace MatterHackers.PolygonMesh
 						{
 							if (distanceToPlan < 0)
 							{
-								// Take the square of thi distance to penalize far away points
+								// Take the square of this distance to penalize far away points
 								negativeDistance += (distanceToPlan * distanceToPlan);
 							}
 							else

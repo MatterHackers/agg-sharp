@@ -66,7 +66,7 @@ namespace MatterHackers.PolygonMesh.Csg
 						if(!signsAreSame)
 						{
 							// split all intersecting mesh edges
-							// get all plits and sort them along the line
+							// get all splits and sort them along the line
 							// split the face at every pair of edge splits
 						}
 					}

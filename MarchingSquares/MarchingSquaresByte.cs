@@ -96,7 +96,7 @@ namespace MatterHackers.MarchingSquares
 		private ImageBuffer imageToMarch;
 
 		/// <summary>
-		/// Takes a color and returns the threashold for this pixel
+		/// Takes a color and returns the threshold for this pixel
 		/// </summary>
 		public Func<Color, double> ThresholdFunction;
 

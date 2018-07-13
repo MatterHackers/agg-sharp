@@ -152,7 +152,7 @@ namespace MatterHackers.Agg.UI
 
 		/// <summary>
 		/// This is called when the user has modified the text control.  It will
-		/// be triggered when the control looses focus or enter is pressed on non-multiline control.
+		/// be triggered when the control looses focus or enter is pressed on non-multi-line control.
 		/// </summary>
 		public virtual void OnEditComplete(EventArgs e)
 		{

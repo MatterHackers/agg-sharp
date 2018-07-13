@@ -29,7 +29,7 @@ SIGGRAPH Proceedings, 1986, p.161.
 original author: Danilo Balby Silva Castanheira (danbalby@yahoo.com)
 
 Ported from Java to C# by Sebastian Loncar, Web: http://loncar.de
-Optomized and refactored by: Lars Brubaker (larsbrubaker@matterhackers.com)
+Optimized and refactored by: Lars Brubaker (larsbrubaker@matterhackers.com)
 Project: https://github.com/MatterHackers/agg-sharp (an included library)
 */
 
@@ -475,7 +475,7 @@ namespace Net3dBool
 		}
 
 		/// <summary>
-		/// Checks if the the face contains a point
+		/// Checks if the face contains a point
 		/// </summary>
 		/// <param name="point">point to be tested</param>
 		/// <returns>true if the face contains the point, false otherwise</returns>

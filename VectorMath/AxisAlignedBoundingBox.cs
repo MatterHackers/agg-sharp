@@ -142,7 +142,7 @@ namespace MatterHackers.VectorMath
 		}
 
 		/// <summary>
-		/// Geth the corners by quadrant of the bottom
+		/// Gets the corners by quadrant of the bottom
 		/// </summary>
 		/// <param name="quadrantIndex"></param>
 		public Vector3 GetBottomCorner(int quadrantIndex)

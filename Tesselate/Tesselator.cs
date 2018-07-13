@@ -377,7 +377,7 @@ namespace Tesselate
 			e.originVertex.coords[1] = y;
 
 			/* The winding of an edge says how the winding number changes as we
-			* cross from the edge''s right face to its left face.  We add the
+			* cross from the edge's right face to its left face.  We add the
 			* vertices in such an order that a CCW contour will add +1 to
 			* the winding number of the region inside the contour.
 			*/
