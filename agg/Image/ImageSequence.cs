@@ -24,8 +24,8 @@ namespace MatterHackers.Agg.Image
 
 		public double FramesPerSecond
 		{
-			get { return 1 / SecondsPerFrame; }
-			set { SecondsPerFrame = 1 / value; }
+			get => 1 / this.SecondsPerFrame;
+			set => this.SecondsPerFrame = 1 / value;
 		}
 
 		public int Height
@@ -48,10 +48,7 @@ namespace MatterHackers.Agg.Image
 
 		public bool Looping { get; set; }
 
-		public int NumFrames
-		{
-			get { return Frames.Count; }
-		}
+		public int NumFrames => this.Frames.Count;
 
 		public double SecondsPerFrame { get; set; } = 1.0 / 30.0;
 
@@ -115,7 +112,7 @@ namespace MatterHackers.Agg.Image
 			return sequenceLoaded;
 		}
 
-		public void AddImage(ImageBuffer imageBuffer, int frameTimeMs = 0)
+		public void AddImage(ImageBuffer imageBuffer, int frameTimeMs = 1000/30)
 		{
 			Frames.Add(imageBuffer);
 			FrameTimesMs.Add(Math.Max(frameTimeMs, 1));
