@@ -96,7 +96,7 @@ namespace MatterHackers.Agg.UI
 			{
 				return;
 			}
-	
+
 			if (this.widgetThatWantsToShowToolTip != widgetToShowToolTipFor)
 			{
 				timeSinceMouseOver.Restart();
@@ -208,7 +208,7 @@ namespace MatterHackers.Agg.UI
 					};
 
 					// Make sure we wrap long text
-					toolTipWidget.AddChild(new WrappedTextWidget(toolTipText) 
+					toolTipWidget.AddChild(new WrappedTextWidget(toolTipText)
 					{
 						Width = 350 * GuiWidget.DeviceScale,
 						HAnchor = HAnchor.Fit,
@@ -219,10 +219,8 @@ namespace MatterHackers.Agg.UI
 					CurrentAutoPopDelay = RatioOfExpectedText * AutoPopDelay;
 
 					systemWindow.AddChild(toolTipWidget);
-					if (ToolTipShown != null)
-					{
-						ToolTipShown(this, new StringEventArgs(CurrentText));
-					}
+
+					ToolTipShown?.Invoke(this, new StringEventArgs(CurrentText));
 
 					//timeCurrentToolTipHasBeenShowing.Reset();
 					//timeCurrentToolTipHasBeenShowingWasRunning = true;
@@ -259,10 +257,8 @@ namespace MatterHackers.Agg.UI
 			if (toolTipWidget != null
 				&& toolTipWidget.Parent == systemWindow)
 			{
-				if (ToolTipPop != null)
-				{
-					ToolTipPop(this, null);
-				}
+				ToolTipPop?.Invoke(this, null);
+
 				//widgetThatWantsToShowToolTip = null;
 				timeSinceLastMouseMove.Stop();
 				timeSinceLastMouseMove.Reset();
