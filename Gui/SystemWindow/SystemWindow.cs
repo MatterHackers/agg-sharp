@@ -127,6 +127,8 @@ namespace MatterHackers.Agg.UI
 
 		private void SetToolTipText(MouseEventArgs mouseEvent)
 		{
+			var screenSpaceMouse = this.TransformToScreenSpace(lastMousePosition);
+
 			GuiWidget lastChild = this;
 			// look down our tree to find the first widget under the mouse
 			var items = new Stack<GuiWidget>(new[] { this });
@@ -137,11 +139,10 @@ namespace MatterHackers.Agg.UI
 				for (int i = item.Children.Count - 1; i >= 0; i--)
 				{
 					var child = item.Children[i];
-					var mouseAtChild = child.TransformFromParentSpace(this, lastMousePosition);
 
-					var childBounds = new RectangleDouble(child.Position.X, child.Position.Y, child.Position.X + child.Size.X, child.Position.Y + child.Size.Y);
+					var screenSpaceChildBounds = child.TransformToScreenSpace(child.LocalBounds);
 
-					if (childBounds.Contains(mouseAtChild)
+					if (screenSpaceChildBounds.Contains(screenSpaceMouse)
 						&& child.Visible
 						&& child.Selectable)
 					{
