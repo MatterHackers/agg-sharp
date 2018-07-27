@@ -37,7 +37,7 @@ using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using MatterHackers.VectorMath.TrackBall;
 
-namespace MatterHackers.Agg.OpenGlGui
+namespace MatterHackers.Agg
 {
 	public static class ExtensionMethods
 	{
