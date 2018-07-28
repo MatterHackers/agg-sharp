@@ -137,10 +137,6 @@
       <Project>{74F6BB6C-9D02-4512-A59A-21940E35C532}</Project>
       <Name>Gui</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\OpenGlGui\OpenGlGui.csproj">
-      <Project>{c958f745-156e-4bdc-a24a-3721c7be7b8a}</Project>
-      <Name>OpenGlGui</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj">
       <Project>{670BDDFF-927B-425D-9DD1-22ACB14356EB}</Project>
       <Name>PlatformWin32</Name>

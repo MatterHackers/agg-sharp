@@ -28,7 +28,6 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg;
-using MatterHackers.Agg.OpenGlGui;
 using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RayTracer.Light;
