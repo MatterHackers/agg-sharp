@@ -1276,6 +1276,8 @@ namespace MatterHackers.Agg.UI
 		public void ClearUndoHistory()
 		{
 			undoBuffer.ClearHistory();
+			TextWidgetUndoCommand newUndoData = new TextWidgetUndoCommand(this);
+			undoBuffer.Add(newUndoData);
 		}
 	}
 }
