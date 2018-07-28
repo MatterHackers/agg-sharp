@@ -42,7 +42,6 @@ using System.IO;
 namespace MatterHackers.RayTracer
 {
 	using System.Threading;
-	using MatterHackers.Agg.OpenGlGui;
 	using MatterHackers.RayTracer.Light;
 	using MatterHackers.VectorMath.TrackBall;
 

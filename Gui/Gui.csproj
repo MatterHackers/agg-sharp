@@ -140,6 +140,7 @@
     <Compile Include="Themes\IThemeColors.cs" />
     <Compile Include="Themes\ThemeColors.cs" />
     <Compile Include="Themes\ActiveTheme.cs" />
+    <Compile Include="TrackballTumble\TrackballTumbleWidget.cs" />
     <Compile Include="UiThread.cs" />
     <Compile Include="WidgetClosingEnventArgs.cs" />
     <Compile Include="WindowWidget\TitleBarWidget.cs" />
