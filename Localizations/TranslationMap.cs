@@ -31,9 +31,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
-using MatterHackers.Agg;
-using MatterHackers.Agg.Platform;
 
 namespace MatterHackers.Localizations
 {
@@ -54,48 +51,46 @@ namespace MatterHackers.Localizations
 	[DebuggerStepThrough]
 	public class TranslationMap
 	{
-		protected const string engishTag = "English:";
-		protected const string translatedTag = "Translated:";
+		private const string englishTag = "English:";
+		private const string translatedTag = "Translated:";
 
-		protected Dictionary<string, string> translationDictionary = new Dictionary<string, string>();
+		private Dictionary<string, string> translationDictionary = new Dictionary<string, string>();
 
-		public string TwoLetterIsoLanguageName { get; private set; }
+		private string twoLetterIsoLanguageName;
 
 		public static TranslationMap ActiveTranslationMap { get; set; }
 
-		public TranslationMap(string pathToTranslationsFolder, string twoLetterIsoLanguageName = "")
+		public TranslationMap()
 		{
-			// Select either the user supplied language name or the current thread language name
-			this.TwoLetterIsoLanguageName = string.IsNullOrEmpty(twoLetterIsoLanguageName) ?
-				Thread.CurrentThread.CurrentUICulture.TwoLetterISOLanguageName.ToLower():
-				twoLetterIsoLanguageName.ToLower();
-
-			string translationFilePath = Path.Combine(pathToTranslationsFolder, TwoLetterIsoLanguageName, "Translation.txt");
-
 			// In English no translation file exists and no dictionary will be initialized or loaded
-			if (AggContext.StaticData.FileExists(translationFilePath))
+			twoLetterIsoLanguageName = "en";
+		}
+
+		public TranslationMap(StreamReader streamReader, string twoLetterIsoLanguageName)
+		{
+			if (twoLetterIsoLanguageName != "en")
 			{
-				translationDictionary = ReadIntoDictionary(translationFilePath);
+				translationDictionary = ReadIntoDictionary(streamReader);
 			}
 		}
 
 		public virtual string Translate(string englishString)
 		{
 			// Skip dictionary lookups for English
-			if (TwoLetterIsoLanguageName == "en"
+			if (twoLetterIsoLanguageName == "en"
 				|| englishString == null)
 			{
 				return englishString;
 			}
 
 			// Perform the lookup to the translation table
-			string tranlatedString;
-			if (!translationDictionary.TryGetValue(englishString, out tranlatedString))
+			if (!translationDictionary.TryGetValue(englishString, out string translatedString))
 			{
+				// Use English string if no mapping found
 				return englishString;
 			}
 
-			return tranlatedString;
+			return translatedString;
 		}
 
 		public static void AssertDebugNotDefined()
@@ -105,16 +100,18 @@ namespace MatterHackers.Localizations
 #endif
 		}
 
-		protected Dictionary<string, string> ReadIntoDictionary(string pathAndFilename)
+		protected Dictionary<string, string> ReadIntoDictionary(StreamReader streamReader)
 		{
 			var dictionary = new Dictionary<string, string>();
 
-			string[] lines = AggContext.StaticData.ReadAllLines(pathAndFilename);
 			bool lookingForEnglish = true;
 			string englishString = "";
-			for (int i = 0; i < lines.Length; i++)
+
+			string line;
+
+			int i = 0;
+			while ((line = streamReader.ReadLine()?.Trim()) != null)
 			{
-				string line = lines[i].Trim();
 				if (line.Length == 0)
 				{
 					// we are happy to skip blank lines
@@ -123,13 +120,13 @@ namespace MatterHackers.Localizations
 
 				if (lookingForEnglish)
 				{
-					if (line.Length < engishTag.Length || !line.StartsWith(engishTag))
+					if (line.Length < englishTag.Length || !line.StartsWith(englishTag))
 					{
-						throw new Exception("Found unknown string at line {0}. Looking for {1}.".FormatWith(i, engishTag));
+						throw new Exception(string.Format("Found unknown string at line {0}. Looking for {1}.", i, englishTag));
 					}
 					else
 					{
-						englishString = lines[i].Substring(engishTag.Length);
+						englishString = line.Substring(englishTag.Length);
 						lookingForEnglish = false;
 					}
 				}
@@ -137,20 +134,24 @@ namespace MatterHackers.Localizations
 				{
 					if (line.Length < translatedTag.Length || !line.StartsWith(translatedTag))
 					{
-						throw new Exception("Found unknown string at line {0}. Looking for {1}.".FormatWith(i, translatedTag));
+						throw new Exception(string.Format("Found unknown string at line {0}. Looking for {1}.", i, translatedTag));
 					}
 					else
 					{
-						string translatedString = lines[i].Substring(translatedTag.Length);
+						string translatedString = line.Substring(translatedTag.Length);
 						// store the string
 						if (!dictionary.ContainsKey(DecodeWhileReading(englishString)))
 						{
-							dictionary.Add(DecodeWhileReading(englishString), DecodeWhileReading(translatedString));
+							dictionary.Add(
+								DecodeWhileReading(englishString),
+								DecodeWhileReading(translatedString));
 						}
 						// go back to looking for English
 						lookingForEnglish = true;
 					}
 				}
+
+				i += 1;
 			}
 
 			return dictionary;
@@ -164,86 +165,4 @@ namespace MatterHackers.Localizations
 			return stringToDecode.Replace("\\n", "\n");
 		}
 	}
-
-#if DEBUG
-	/// <summary>
-	/// An auto generating translation map that dumps missing localization strings to master.txt in debug builds
-	/// </summary>
-	/// <seealso cref="MatterHackers.Localizations.TranslationMap" />
-	public class AutoGeneratingTranslationMap : TranslationMap
-	{
-		private static object locker = new object();
-		private string masterFilePath;
-
-		public AutoGeneratingTranslationMap(string pathToTranslationsFolder, string twoLetterIsoLanguageName = "") : base(pathToTranslationsFolder, twoLetterIsoLanguageName)
-		{
-			masterFilePath = Path.Combine(pathToTranslationsFolder, "Master.txt");
-
-			// Override the default logic and load master.txt in English debug builds
-			if (this.TwoLetterIsoLanguageName == "en")
-			{
-				translationDictionary = ReadIntoDictionary(masterFilePath);
-			}
-		}
-
-		public override string Translate(string englishString)
-		{
-			if (string.IsNullOrEmpty(englishString))
-			{
-				return englishString;
-			}
-
-			string tranlatedString;
-			if (!translationDictionary.TryGetValue(englishString, out tranlatedString))
-			{
-				if (TwoLetterIsoLanguageName == "en")
-				{
-					AddNewString(englishString);
-				}
-				return englishString;
-			}
-
-			return tranlatedString;
-		}
-
-		/// <summary>
-		/// Encodes for saving, escaping newlines
-		/// </summary>
-		private string EncodeForSaving(string stringToEncode)
-		{
-			return stringToEncode.Replace("\n", "\\n");
-		}
-
-		private void AddNewString(string englishString)
-		{
-			// We only ship release and this could cause a write to the ProgramFiles directory which is not allowed.
-			// So we only write translation text while in debug (another solution in the future could be implemented). LBB
-			if (AggContext.OperatingSystem == OSType.Windows)
-			{
-				// TODO: make sure we don't throw an assertion when running from the ProgramFiles directory.
-				// Don't do saving when we are.
-				if (!translationDictionary.ContainsKey(englishString))
-				{
-					translationDictionary.Add(englishString, englishString);
-
-					lock (locker)
-					{
-						string pathName = Path.GetDirectoryName(masterFilePath);
-						if (!Directory.Exists(pathName))
-						{
-							Directory.CreateDirectory(pathName);
-						}
-
-						using (StreamWriter masterFileStream = File.AppendText(masterFilePath))
-						{
-							masterFileStream.WriteLine("{0}{1}", engishTag, EncodeForSaving(englishString));
-							masterFileStream.WriteLine("{0}{1}", translatedTag, EncodeForSaving(englishString));
-							masterFileStream.WriteLine("");
-						}
-					}
-				}
-			}
-		}
-	}
-#endif
 }
