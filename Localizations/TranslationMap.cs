@@ -54,23 +54,23 @@ namespace MatterHackers.Localizations
 	[DebuggerStepThrough]
 	public class TranslationMap
 	{
-		protected const string engishTag = "English:";
-		protected const string translatedTag = "Translated:";
+		private const string engishTag = "English:";
+		private const string translatedTag = "Translated:";
 
-		protected Dictionary<string, string> translationDictionary = new Dictionary<string, string>();
+		private Dictionary<string, string> translationDictionary = new Dictionary<string, string>();
 
-		public string TwoLetterIsoLanguageName { get; private set; }
+		private string twoLetterIsoLanguageName;
 
 		public static TranslationMap ActiveTranslationMap { get; set; }
 
 		public TranslationMap(string pathToTranslationsFolder, string twoLetterIsoLanguageName = "")
 		{
 			// Select either the user supplied language name or the current thread language name
-			this.TwoLetterIsoLanguageName = string.IsNullOrEmpty(twoLetterIsoLanguageName) ?
+			this.twoLetterIsoLanguageName = string.IsNullOrEmpty(twoLetterIsoLanguageName) ?
 				Thread.CurrentThread.CurrentUICulture.TwoLetterISOLanguageName.ToLower():
 				twoLetterIsoLanguageName.ToLower();
 
-			string translationFilePath = Path.Combine(pathToTranslationsFolder, TwoLetterIsoLanguageName, "Translation.txt");
+			string translationFilePath = Path.Combine(pathToTranslationsFolder, this.twoLetterIsoLanguageName, "Translation.txt");
 
 			// In English no translation file exists and no dictionary will be initialized or loaded
 			if (AggContext.StaticData.FileExists(translationFilePath))
@@ -82,7 +82,7 @@ namespace MatterHackers.Localizations
 		public virtual string Translate(string englishString)
 		{
 			// Skip dictionary lookups for English
-			if (TwoLetterIsoLanguageName == "en"
+			if (twoLetterIsoLanguageName == "en"
 				|| englishString == null)
 			{
 				return englishString;
