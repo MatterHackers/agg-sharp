@@ -31,9 +31,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
-using MatterHackers.Agg;
-using MatterHackers.Agg.Platform;
 
 namespace MatterHackers.Localizations
 {
@@ -63,19 +60,17 @@ namespace MatterHackers.Localizations
 
 		public static TranslationMap ActiveTranslationMap { get; set; }
 
-		public TranslationMap(string pathToTranslationsFolder, string twoLetterIsoLanguageName = "")
+		public TranslationMap()
 		{
-			// Select either the user supplied language name or the current thread language name
-			this.twoLetterIsoLanguageName = string.IsNullOrEmpty(twoLetterIsoLanguageName) ?
-				Thread.CurrentThread.CurrentUICulture.TwoLetterISOLanguageName.ToLower():
-				twoLetterIsoLanguageName.ToLower();
-
-			string translationFilePath = Path.Combine(pathToTranslationsFolder, this.twoLetterIsoLanguageName, "Translation.txt");
-
 			// In English no translation file exists and no dictionary will be initialized or loaded
-			if (AggContext.StaticData.FileExists(translationFilePath))
+			twoLetterIsoLanguageName = "en";
+		}
+
+		public TranslationMap(StreamReader streamReader, string twoLetterIsoLanguageName)
+		{
+			if (twoLetterIsoLanguageName != "en")
 			{
-				translationDictionary = ReadIntoDictionary(translationFilePath);
+				translationDictionary = ReadIntoDictionary(streamReader);
 			}
 		}
 
@@ -105,17 +100,18 @@ namespace MatterHackers.Localizations
 #endif
 		}
 
-		protected Dictionary<string, string> ReadIntoDictionary(string pathAndFilename)
+		protected Dictionary<string, string> ReadIntoDictionary(StreamReader streamReader)
 		{
 			var dictionary = new Dictionary<string, string>();
 
-			string[] lines = AggContext.StaticData.ReadAllLines(pathAndFilename);
 			bool lookingForEnglish = true;
 			string englishString = "";
 
-			for (int i = 0; i < lines.Length; i++)
+			string line;
+
+			int i = 0;
+			while ((line = streamReader.ReadLine()?.Trim()) != null)
 			{
-				string line = lines[i].Trim();
 				if (line.Length == 0)
 				{
 					// we are happy to skip blank lines
@@ -126,11 +122,11 @@ namespace MatterHackers.Localizations
 				{
 					if (line.Length < englishTag.Length || !line.StartsWith(englishTag))
 					{
-						throw new Exception("Found unknown string at line {0}. Looking for {1}.".FormatWith(i, englishTag));
+						throw new Exception(string.Format("Found unknown string at line {0}. Looking for {1}.", i, englishTag));
 					}
 					else
 					{
-						englishString = lines[i].Substring(englishTag.Length);
+						englishString = line.Substring(englishTag.Length);
 						lookingForEnglish = false;
 					}
 				}
@@ -138,20 +134,24 @@ namespace MatterHackers.Localizations
 				{
 					if (line.Length < translatedTag.Length || !line.StartsWith(translatedTag))
 					{
-						throw new Exception("Found unknown string at line {0}. Looking for {1}.".FormatWith(i, translatedTag));
+						throw new Exception(string.Format("Found unknown string at line {0}. Looking for {1}.", i, translatedTag));
 					}
 					else
 					{
-						string translatedString = lines[i].Substring(translatedTag.Length);
+						string translatedString = line.Substring(translatedTag.Length);
 						// store the string
 						if (!dictionary.ContainsKey(DecodeWhileReading(englishString)))
 						{
-							dictionary.Add(DecodeWhileReading(englishString), DecodeWhileReading(translatedString));
+							dictionary.Add(
+								DecodeWhileReading(englishString),
+								DecodeWhileReading(translatedString));
 						}
 						// go back to looking for English
 						lookingForEnglish = true;
 					}
 				}
+
+				i += 1;
 			}
 
 			return dictionary;
