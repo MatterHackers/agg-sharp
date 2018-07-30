@@ -89,13 +89,13 @@ namespace MatterHackers.Localizations
 			}
 
 			// Perform the lookup to the translation table
-			string tranlatedString;
-			if (!translationDictionary.TryGetValue(englishString, out tranlatedString))
+			if (!translationDictionary.TryGetValue(englishString, out string translatedString))
 			{
+				// Use English string if no mapping found
 				return englishString;
 			}
 
-			return tranlatedString;
+			return translatedString;
 		}
 
 		public static void AssertDebugNotDefined()
