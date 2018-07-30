@@ -54,7 +54,7 @@ namespace MatterHackers.Localizations
 	[DebuggerStepThrough]
 	public class TranslationMap
 	{
-		private const string engishTag = "English:";
+		private const string englishTag = "English:";
 		private const string translatedTag = "Translated:";
 
 		private Dictionary<string, string> translationDictionary = new Dictionary<string, string>();
@@ -112,6 +112,7 @@ namespace MatterHackers.Localizations
 			string[] lines = AggContext.StaticData.ReadAllLines(pathAndFilename);
 			bool lookingForEnglish = true;
 			string englishString = "";
+
 			for (int i = 0; i < lines.Length; i++)
 			{
 				string line = lines[i].Trim();
@@ -123,13 +124,13 @@ namespace MatterHackers.Localizations
 
 				if (lookingForEnglish)
 				{
-					if (line.Length < engishTag.Length || !line.StartsWith(engishTag))
+					if (line.Length < englishTag.Length || !line.StartsWith(englishTag))
 					{
-						throw new Exception("Found unknown string at line {0}. Looking for {1}.".FormatWith(i, engishTag));
+						throw new Exception("Found unknown string at line {0}. Looking for {1}.".FormatWith(i, englishTag));
 					}
 					else
 					{
-						englishString = lines[i].Substring(engishTag.Length);
+						englishString = lines[i].Substring(englishTag.Length);
 						lookingForEnglish = false;
 					}
 				}
