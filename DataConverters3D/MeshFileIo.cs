@@ -64,33 +64,6 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static IObject3D Load(string meshPathAndFileName, CancellationToken cancellationToken, Action<double, string> reportProgress = null, IObject3D source = null)
-		{
-			try
-			{
-				using (Stream stream = new FileStream(meshPathAndFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-				{
-					var loadedItem = Load(stream, Path.GetExtension(meshPathAndFileName), cancellationToken, reportProgress);
-					if (loadedItem != null)
-					{
-						loadedItem.MeshPath = meshPathAndFileName;
-					}
-
-					return loadedItem;
-				}
-			}
-			catch(Exception e)
-			{
-				Debug.Print(e.Message);
-				return null;
-			}
-		}
-
-		public static async Task<IObject3D> LoadAsync(string meshPathAndFileName, CancellationToken cancellationToken, Action<double, string> reportProgress = null)
-		{
-			return await Task.Run(() => Load(meshPathAndFileName, cancellationToken, reportProgress));
-		}
-
 		public static bool Save(Mesh mesh, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null, Action<double, string> reportProgress = null)
 		{
 			return Save(new Object3D() { Mesh = mesh }, meshPathAndFileName, cancellationToken, outputInfo, reportProgress);
