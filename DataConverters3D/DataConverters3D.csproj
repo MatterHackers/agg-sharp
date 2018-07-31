@@ -106,7 +106,6 @@
     <Compile Include="ObjSupport.cs" />
     <Compile Include="AmfDocument.cs" />
     <Compile Include="MeshFaceTraceable.cs" />
-    <Compile Include="MeshFileIo.cs" />
     <Compile Include="Object3D\InteractiveScene.cs" />
     <Compile Include="Object3D\Json\MatrixConverter.cs" />
     <Compile Include="Object3D\Json\IObject3DContractResolver.cs" />
