@@ -312,9 +312,9 @@ namespace MatterHackers.DataConverters3D
 			return new Object3DRebuildLock(this);
 		}
 
-		public static IObject3D Load(string meshPath, CancellationToken cancellationToken, Dictionary<string, IObject3D> itemCache = null, Action<double, string> progress = null)
+		public static IObject3D Load(string filePath, CancellationToken cancellationToken, Dictionary<string, IObject3D> itemCache = null, Action<double, string> progress = null)
 		{
-			if (string.IsNullOrEmpty(meshPath) || !File.Exists(meshPath))
+			if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
 			{
 				return null;
 			}
@@ -327,11 +327,11 @@ namespace MatterHackers.DataConverters3D
 			IObject3D loadedItem;
 
 			// Try to pull the item from cache
-			if (itemCache == null || !itemCache.TryGetValue(meshPath, out loadedItem) || loadedItem == null)
+			if (itemCache == null || !itemCache.TryGetValue(filePath, out loadedItem) || loadedItem == null)
 			{
-				using (var stream = File.OpenRead(meshPath))
+				using (var stream = File.OpenRead(filePath))
 				{
-					string extension = Path.GetExtension(meshPath).ToLower();
+					string extension = Path.GetExtension(filePath).ToLower();
 
 					loadedItem = Load(stream, extension, cancellationToken, itemCache, progress);
 
@@ -340,7 +340,7 @@ namespace MatterHackers.DataConverters3D
 						&& extension != ".mcx"
 						&& loadedItem != null)
 					{
-						itemCache[meshPath] = loadedItem;
+						itemCache[filePath] = loadedItem;
 					}
 				}
 			}
