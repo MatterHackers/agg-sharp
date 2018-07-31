@@ -42,28 +42,6 @@ namespace MatterHackers.DataConverters3D
 {
 	public static class MeshFileIo
 	{
-		public static IObject3D Load(Stream fileStream, string fileExtension, CancellationToken cancellationToken, Action<double, string> reportProgress = null)
-		{
-			switch (fileExtension.ToUpper())
-			{
-				case ".STL":
-
-					var result = new Object3D();
-					result.SetMeshDirect(StlProcessing.Load(fileStream, cancellationToken, reportProgress));
-					return result;
-
-				case ".AMF":
-					//return AmfProcessing.Load(fileStream, reportProgress);
-					return AmfDocument.Load(fileStream, cancellationToken, reportProgress);
-
-				case ".OBJ":
-					return ObjSupport.Load(fileStream, cancellationToken, reportProgress);
-
-				default:
-					return null;
-			}
-		}
-
 		public static bool Save(IObject3D item, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null, Action<double, string> reportProgress = null)
 		{
 			try

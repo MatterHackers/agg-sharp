@@ -39,6 +39,7 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.DataConverters3D.UndoCommands;
 using MatterHackers.PolygonMesh;
+using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RayTracer;
 using MatterHackers.RayTracer.Traceable;
 using MatterHackers.VectorMath;
@@ -355,38 +356,39 @@ namespace MatterHackers.DataConverters3D
 
 		public static IObject3D Load(Stream stream, string extension, CancellationToken cancellationToken, Dictionary<string, IObject3D> itemCache = null, Action<double, string> progress = null)
 		{
-			IObject3D loadedItem = null;
-
-			bool isMcxFile = extension.ToLower() == ".mcx";
-			if (isMcxFile)
+			switch (extension.ToUpper())
 			{
-				string json = new StreamReader(stream).ReadToEnd();
+				case ".MCX":
+					string json = new StreamReader(stream).ReadToEnd();
 
-				// Load the meta file and convert MeshPath links into objects
-				loadedItem = JsonConvert.DeserializeObject<Object3D>(
-					json,
-					new JsonSerializerSettings
-					{
-						ContractResolver = new IObject3DContractResolver(),
-						NullValueHandling = NullValueHandling.Ignore
-					});
+					// Load the meta file and convert MeshPath links into objects
+					var loadedItem = JsonConvert.DeserializeObject<Object3D>(
+						json,
+						new JsonSerializerSettings
+						{
+							ContractResolver = new IObject3DContractResolver(),
+							NullValueHandling = NullValueHandling.Ignore
+						});
 
-				loadedItem?.LoadMeshLinks(cancellationToken, itemCache, progress);
+					loadedItem?.LoadMeshLinks(cancellationToken, itemCache, progress);
+
+					return loadedItem;
+
+				case ".STL":
+
+					var result = new Object3D();
+					result.SetMeshDirect(StlProcessing.Load(stream, cancellationToken, progress));
+					return result;
+
+				case ".AMF":
+					return AmfDocument.Load(stream, cancellationToken, progress);
+
+				case ".OBJ":
+					return ObjSupport.Load(stream, cancellationToken, progress);
+
+				default:
+					return null;
 			}
-			else
-			{
-				loadedItem = MeshFileIo.Load(stream, extension, cancellationToken, progress);
-			}
-
-			// TODO: Stream loaded content isn't cached
-			// TODO: Consider Mesh cache by SHA rather than file path, doing so would allow caching stream loaded content and would simply need SHA serialized at Scene persist
-			/*
-			if (itemCache != null && !isMcxFile)
-			{
-				itemCache[meshPath] = loadedItem;
-			} */
-
-			return loadedItem;
 		}
 
 		/// <summary>
