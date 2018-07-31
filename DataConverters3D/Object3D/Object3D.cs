@@ -327,7 +327,7 @@ namespace MatterHackers.DataConverters3D
 			IObject3D loadedItem;
 
 			// Try to pull the item from cache
-			if (itemCache == null || !itemCache.TryGetValue(filePath, out loadedItem) || loadedItem == null)
+			if (!itemCache.TryGetValue(filePath, out loadedItem) || loadedItem == null)
 			{
 				using (var stream = File.OpenRead(filePath))
 				{
@@ -346,7 +346,7 @@ namespace MatterHackers.DataConverters3D
 			}
 			else
 			{
-				// TODO: Clone seems unnecessary... Review driving requirements
+				// Clone required for instancing
 				loadedItem = loadedItem?.Clone();
 			}
 
