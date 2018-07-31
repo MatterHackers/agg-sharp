@@ -69,6 +69,9 @@ namespace MatterHackers.DataConverters3D
 
 		private static void LoadLinkedMesh(this IObject3D item, Dictionary<string, IObject3D> itemCache, CancellationToken cancellationToken, Action<double, string> progress)
 		{
+			// Abort load if cancel requested
+			cancellationToken.ThrowIfCancellationRequested();
+
 			// Natural path
 			string filePath = item.MeshPath;
 
@@ -92,11 +95,6 @@ namespace MatterHackers.DataConverters3D
 
 			var loadedItem = Object3D.Load(filePath, cancellationToken, itemCache, progress);
 
-			// TODO: Consider refactoring progress reporting to use an instance with state and the original delegate reference to allow anyone along the chain
-			// to determine if continueProcessing has been set to false and allow for more clear aborting (rather than checking for null as we have to do below)
-			//
-			// During startup we reload the main control multiple times. When the timing is right, reportProgress0to100 may set continueProcessing
-			// on the reporter to false and MeshFileIo.Load will return null. In those cases, we need to exit rather than continue processing
 			if (loadedItem != null)
 			{
 				item.SetMeshDirect(loadedItem.Mesh);
