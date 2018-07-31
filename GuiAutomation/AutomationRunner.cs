@@ -220,7 +220,7 @@ namespace MatterHackers.GuiAutomation
 		}
 
 		/// <summary>
-		/// Wait up to maxSeconds for the condition to be satisfied. 
+		/// Wait up to maxSeconds for the condition to be satisfied.
 		/// </summary>
 		/// <param name="checkConditionSatisfied"></param>
 		/// <param name="maxSeconds"></param>
@@ -646,7 +646,7 @@ namespace MatterHackers.GuiAutomation
 					systemWindow.FindNamedChildrenRecursive(widgetName, namedWidgets);
 					foreach (GuiWidget.WidgetAndPosition widgetAndPosition in namedWidgets)
 					{
-						if (!onlyVisible 
+						if (!onlyVisible
 							|| widgetAndPosition.widget.ActuallyVisibleOnScreen())
 						{
 							RectangleDouble childBounds = widgetAndPosition.widget.TransformToParentSpace(systemWindow, widgetAndPosition.widget.LocalBounds);
@@ -687,21 +687,10 @@ namespace MatterHackers.GuiAutomation
 		{
 			double secondsToWait = 5;
 
-			SystemWindow containingWindow;
-			Point2D offsetHint;
-			GuiWidget widgetToClick = GetWidgetByName(widgetName, out containingWindow, out offsetHint, secondsToWait, searchRegion);
+			GuiWidget widgetToClick = GetWidgetByName(widgetName, out SystemWindow containingWindow, out Point2D offsetHint, secondsToWait, searchRegion);
 			if (widgetToClick != null)
 			{
-				RectangleDouble childBounds = widgetToClick.TransformToParentSpace(containingWindow, widgetToClick.LocalBounds);
-
-				if (origin == ClickOrigin.Center)
-				{
-					offset += offsetHint;
-				}
-
-				Point2D screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
-
-				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
+				MoveMouseToWidget(widgetToClick, containingWindow, offset, offsetHint, origin, out Point2D screenPosition);
 				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 				WaitforDraw(containingWindow);
 
@@ -907,11 +896,43 @@ namespace MatterHackers.GuiAutomation
 		}
 		#endregion Search By Names
 
+		public void MoveMouseToWidget(GuiWidget widget, SystemWindow containingWindow, Point2D offset, Point2D offsetHint, ClickOrigin origin, out Point2D screenPosition)
+		{
+			RectangleDouble childBounds = widget.TransformToParentSpace(containingWindow, widget.LocalBounds);
+			screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
+
+			int steps = (int)((TimeToMoveMouse * 1000) / 20);
+			Vector2 start = new Vector2(CurrentMousePosition().x, CurrentMousePosition().y);
+			if (origin == ClickOrigin.Center)
+			{
+				offset += offsetHint;
+			}
+
+			for (int i = 0; i < steps; i++)
+			{
+				childBounds = widget.TransformToParentSpace(containingWindow, widget.LocalBounds);
+
+				screenPosition = SystemWindowToScreen(new Point2D(childBounds.Left + offset.x, childBounds.Bottom + offset.y), containingWindow);
+
+				Vector2 end = new Vector2(screenPosition.x, screenPosition.y);
+				Vector2 delta = end - start;
+
+				double ratio = i / (double)steps;
+				ratio = Cubic.Out(ratio);
+				Vector2 current = start + delta * ratio;
+				inputSystem.SetCursorPosition((int)current.X, (int)current.Y);
+				Thread.Sleep(20);
+			}
+
+			inputSystem.SetCursorPosition(screenPosition.x, screenPosition.y);
+		}
+
 		public void SetMouseCursorPosition(int x, int y)
 		{
 			Vector2 start = new Vector2(CurrentMousePosition().x, CurrentMousePosition().y);
 			Vector2 end = new Vector2(x, y);
 			Vector2 delta = end - start;
+
 			int steps = (int)((TimeToMoveMouse * 1000) / 20);
 			for (int i = 0; i < steps; i++)
 			{
@@ -1068,7 +1089,7 @@ namespace MatterHackers.GuiAutomation
 					return testMethod(testRunner);
 				}));
 
-			// Once either the timeout or the test method has completed, reassign the task/result for timeout errors and shutdown the SystemWindow 
+			// Once either the timeout or the test method has completed, reassign the task/result for timeout errors and shutdown the SystemWindow
 			task.ContinueWith((innerTask) =>
 			{
 				long elapsedTime = timer.ElapsedMilliseconds;
