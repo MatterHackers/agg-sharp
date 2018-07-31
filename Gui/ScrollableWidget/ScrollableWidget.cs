@@ -278,7 +278,7 @@ namespace MatterHackers.Agg.UI
 			if (AutoScroll)
 			{
 				Vector2 oldScrollPosition = ScrollPosition;
-				ScrollPosition += new Vector2(0, -mouseEvent.WheelDelta / 10);
+				ScrollPosition += new Vector2(0, -mouseEvent.WheelDelta / 5);
 				if (oldScrollPosition != ScrollPosition)
 				{
 					mouseEvent.WheelDelta = 0;
