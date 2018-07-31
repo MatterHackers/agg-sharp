@@ -88,17 +88,17 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static IObject3D Load(string amfPath, CancellationToken cancellationToken, Action<double, string> reportProgress = null, IObject3D source = null)
+		public static IObject3D Load(string amfPath, CancellationToken cancellationToken, Action<double, string> reportProgress = null)
 		{
 			using (var stream = File.OpenRead(amfPath))
 			{
-				return Load(stream, cancellationToken, reportProgress, source);
+				return Load(stream, cancellationToken, reportProgress);
 			}
 		}
 
-		public static IObject3D Load(Stream fileStream, CancellationToken cancellationToken, Action<double, string> reportProgress = null, IObject3D source = null)
+		public static IObject3D Load(Stream fileStream, CancellationToken cancellationToken, Action<double, string> reportProgress = null)
 		{
-			IObject3D root = source ?? new Object3D();
+			IObject3D root = new Object3D();
 
 			IObject3D context = null;
 

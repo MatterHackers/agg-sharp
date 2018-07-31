@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2015, Lars Brubaker
+Copyright (c) 2018, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,14 +28,11 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
-using MatterHackers.DataConverters3D;
 using MatterHackers.PolygonMesh;
 using MatterHackers.PolygonMesh.Csg;
 using MatterHackers.PolygonMesh.Processors;
@@ -45,19 +42,19 @@ namespace MatterHackers.DataConverters3D
 {
 	public static class MeshFileIo
 	{
-		public static IObject3D Load(Stream fileStream, string fileExtension, CancellationToken cancellationToken, Action<double, string> reportProgress = null, IObject3D source = null)
+		public static IObject3D Load(Stream fileStream, string fileExtension, CancellationToken cancellationToken, Action<double, string> reportProgress = null)
 		{
 			switch (fileExtension.ToUpper())
 			{
 				case ".STL":
 
-					var result = source ?? new Object3D();
+					var result = new Object3D();
 					result.SetMeshDirect(StlProcessing.Load(fileStream, cancellationToken, reportProgress));
 					return result;
 
 				case ".AMF":
 					//return AmfProcessing.Load(fileStream, reportProgress);
-					return AmfDocument.Load(fileStream, cancellationToken, reportProgress, source);
+					return AmfDocument.Load(fileStream, cancellationToken, reportProgress);
 
 				case ".OBJ":
 					return ObjSupport.Load(fileStream, cancellationToken, reportProgress);
@@ -73,7 +70,7 @@ namespace MatterHackers.DataConverters3D
 			{
 				using (Stream stream = new FileStream(meshPathAndFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
 				{
-					var loadedItem = Load(stream, Path.GetExtension(meshPathAndFileName), cancellationToken, reportProgress, source);
+					var loadedItem = Load(stream, Path.GetExtension(meshPathAndFileName), cancellationToken, reportProgress);
 					if (loadedItem != null)
 					{
 						loadedItem.MeshPath = meshPathAndFileName;
