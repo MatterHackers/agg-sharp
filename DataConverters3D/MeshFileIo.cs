@@ -64,11 +64,6 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		public static bool Save(Mesh mesh, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null, Action<double, string> reportProgress = null)
-		{
-			return Save(new Object3D() { Mesh = mesh }, meshPathAndFileName, cancellationToken, outputInfo, reportProgress);
-		}
-
 		public static bool Save(IObject3D item, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null, Action<double, string> reportProgress = null)
 		{
 			try
