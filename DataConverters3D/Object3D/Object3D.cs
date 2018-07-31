@@ -39,6 +39,7 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.DataConverters3D.UndoCommands;
 using MatterHackers.PolygonMesh;
+using MatterHackers.PolygonMesh.Csg;
 using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RayTracer;
 using MatterHackers.RayTracer.Traceable;
@@ -389,6 +390,78 @@ namespace MatterHackers.DataConverters3D
 				default:
 					return null;
 			}
+		}
+
+		public static bool Save(IObject3D item, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null, Action<double, string> reportProgress = null)
+		{
+			try
+			{
+				if (outputInfo == null)
+				{
+					outputInfo = new MeshOutputSettings();
+				}
+
+				switch (Path.GetExtension(meshPathAndFileName).ToUpper())
+				{
+					// TODO: Consider if save to MCX is needed or if existing patterns already cover that case
+					//case ".MCX":
+					//	using (var outstream = File.OpenWrite(meshPathAndFileName))
+					//	{
+					//		item.SaveTo(outstream, reportProgress);
+					//	}
+					//	return true;
+
+					case ".STL":
+						Mesh mesh = DoMergeAndTransform(item, outputInfo, cancellationToken);
+						return StlProcessing.Save(mesh, meshPathAndFileName, cancellationToken, outputInfo);
+
+					case ".AMF":
+						outputInfo.ReportProgress = reportProgress;
+						return AmfDocument.Save(item, meshPathAndFileName, outputInfo);
+
+					case ".OBJ":
+						outputInfo.ReportProgress = reportProgress;
+						return ObjSupport.Save(item, meshPathAndFileName, outputInfo);
+
+					default:
+						return false;
+				}
+			}
+			catch (Exception)
+			{
+				return false;
+			}
+		}
+
+		private static Mesh DoMergeAndTransform(IObject3D item, MeshOutputSettings outputInfo, CancellationToken cancellationToken)
+		{
+			var visibleMeshes = item.VisibleMeshes().Where((i) => i.WorldPersistable());
+			if (visibleMeshes.Count() == 1)
+			{
+				var first = visibleMeshes.First();
+				if (first.WorldMatrix() == Matrix4X4.Identity)
+				{
+					return first.Mesh;
+				}
+			}
+
+			Mesh allPolygons = new Mesh();
+
+			foreach (var rawItem in visibleMeshes)
+			{
+				var mesh = rawItem.Mesh.Copy(cancellationToken);
+				mesh.Transform(rawItem.WorldMatrix());
+				if (outputInfo.CsgOptionState == MeshOutputSettings.CsgOption.DoCsgMerge)
+				{
+					allPolygons = CsgOperations.Union(allPolygons, mesh, null, cancellationToken);
+				}
+				else
+				{
+					allPolygons.CopyFaces(mesh);
+				}
+			}
+
+			return allPolygons;
 		}
 
 		/// <summary>
