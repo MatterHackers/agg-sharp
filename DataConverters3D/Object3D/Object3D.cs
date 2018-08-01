@@ -314,35 +314,35 @@ namespace MatterHackers.DataConverters3D
 			return new Object3DRebuildLock(this);
 		}
 
-		public static IObject3D Load(string filePath, CancellationToken cancellationToken, Dictionary<string, IObject3D> itemCache = null, Action<double, string> progress = null)
+		public static IObject3D Load(string filePath, CancellationToken cancellationToken, CacheContext cacheContext = null, Action<double, string> progress = null)
 		{
 			if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
 			{
 				return null;
 			}
 
-			if (itemCache == null)
+			if (cacheContext == null)
 			{
-				itemCache = new Dictionary<string, IObject3D>();
+				cacheContext = new CacheContext();
 			}
 
 			IObject3D loadedItem;
 
 			// Try to pull the item from cache
-			if (!itemCache.TryGetValue(filePath, out loadedItem) || loadedItem == null)
+			if (!cacheContext.Items.TryGetValue(filePath, out loadedItem) || loadedItem == null)
 			{
 				using (var stream = File.OpenRead(filePath))
 				{
 					string extension = Path.GetExtension(filePath).ToLower();
 
-					loadedItem = Load(stream, extension, cancellationToken, itemCache, progress);
+					loadedItem = Load(stream, extension, cancellationToken, cacheContext, progress);
 
 					// Cache loaded assets
-					if (itemCache != null
+					if (cacheContext != null
 						&& extension != ".mcx"
 						&& loadedItem != null)
 					{
-						itemCache[filePath] = loadedItem;
+						cacheContext.Items[filePath] = loadedItem;
 					}
 				}
 			}
@@ -355,8 +355,13 @@ namespace MatterHackers.DataConverters3D
 			return loadedItem;
 		}
 
-		public static IObject3D Load(Stream stream, string extension, CancellationToken cancellationToken, Dictionary<string, IObject3D> itemCache = null, Action<double, string> progress = null)
+		public static IObject3D Load(Stream stream, string extension, CancellationToken cancellationToken, CacheContext cacheContext = null, Action<double, string> progress = null)
 		{
+			if (cacheContext == null)
+			{
+				cacheContext = new CacheContext();
+			}
+
 			switch (extension.ToUpper())
 			{
 				case ".MCX":
@@ -371,7 +376,7 @@ namespace MatterHackers.DataConverters3D
 							NullValueHandling = NullValueHandling.Ignore
 						});
 
-					loadedItem?.LoadMeshLinks(cancellationToken, itemCache, progress);
+					loadedItem?.LoadMeshLinks(cancellationToken, cacheContext, progress);
 
 					return loadedItem;
 
@@ -857,5 +862,11 @@ namespace MatterHackers.DataConverters3D
 
 			parent.Invalidate(new InvalidateArgs(this, InvalidateType.Content, null));
 		}
+	}
+
+	public class CacheContext
+	{
+		public Dictionary<string, IObject3D> Items { get; set; } = new Dictionary<string, IObject3D>();
+		public Dictionary<string, Mesh> Meshes { get; set; } = new Dictionary<string, Mesh>();
 	}
 }
