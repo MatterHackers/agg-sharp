@@ -39,6 +39,8 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.DataConverters3D.UndoCommands;
 using MatterHackers.PolygonMesh;
+using MatterHackers.PolygonMesh.Csg;
+using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RayTracer;
 using MatterHackers.RayTracer.Traceable;
 using MatterHackers.VectorMath;
@@ -312,81 +314,159 @@ namespace MatterHackers.DataConverters3D
 			return new Object3DRebuildLock(this);
 		}
 
-		public static IObject3D Load(string meshPath, CancellationToken cancellationToken, Dictionary<string, IObject3D> itemCache = null, Action<double, string> progress = null)
+		public static IObject3D Load(string filePath, CancellationToken cancellationToken, CacheContext cacheContext = null, Action<double, string> progress = null)
 		{
-			if (string.IsNullOrEmpty(meshPath) || !File.Exists(meshPath))
+			if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
 			{
 				return null;
 			}
 
-			if (itemCache == null)
+			if (cacheContext == null)
 			{
-				itemCache = new Dictionary<string, IObject3D>();
+				cacheContext = new CacheContext();
 			}
 
 			IObject3D loadedItem;
 
 			// Try to pull the item from cache
-			if (itemCache == null || !itemCache.TryGetValue(meshPath, out loadedItem) || loadedItem == null)
+			if (!cacheContext.Items.TryGetValue(filePath, out loadedItem) || loadedItem == null)
 			{
-				using (var stream = File.OpenRead(meshPath))
+				using (var stream = File.OpenRead(filePath))
 				{
-					string extension = Path.GetExtension(meshPath).ToLower();
+					string extension = Path.GetExtension(filePath).ToLower();
 
-					loadedItem = Load(stream, extension, cancellationToken, itemCache, progress);
+					loadedItem = Load(stream, extension, cancellationToken, cacheContext, progress);
 
 					// Cache loaded assets
-					if (itemCache != null
+					if (cacheContext != null
 						&& extension != ".mcx"
 						&& loadedItem != null)
 					{
-						itemCache[meshPath] = loadedItem;
+						cacheContext.Items[filePath] = loadedItem;
 					}
 				}
 			}
 			else
 			{
-				// TODO: Clone seems unnecessary... Review driving requirements
+				// Clone required for instancing
 				loadedItem = loadedItem?.Clone();
 			}
 
 			return loadedItem;
 		}
 
-		public static IObject3D Load(Stream stream, string extension, CancellationToken cancellationToken, Dictionary<string, IObject3D> itemCache = null, Action<double, string> progress = null)
+		public static IObject3D Load(Stream stream, string extension, CancellationToken cancellationToken, CacheContext cacheContext = null, Action<double, string> progress = null)
 		{
-			IObject3D loadedItem = null;
-
-			bool isMcxFile = extension.ToLower() == ".mcx";
-			if (isMcxFile)
+			if (cacheContext == null)
 			{
-				string json = new StreamReader(stream).ReadToEnd();
-
-				// Load the meta file and convert MeshPath links into objects
-				loadedItem = JsonConvert.DeserializeObject<Object3D>(
-					json,
-					new JsonSerializerSettings
-					{
-						ContractResolver = new IObject3DContractResolver(),
-						NullValueHandling = NullValueHandling.Ignore
-					});
-
-				loadedItem?.LoadMeshLinks(cancellationToken, itemCache, progress);
-			}
-			else
-			{
-				loadedItem = MeshFileIo.Load(stream, extension, cancellationToken, progress);
+				cacheContext = new CacheContext();
 			}
 
-			// TODO: Stream loaded content isn't cached
-			// TODO: Consider Mesh cache by SHA rather than file path, doing so would allow caching stream loaded content and would simply need SHA serialized at Scene persist
-			/*
-			if (itemCache != null && !isMcxFile)
+			switch (extension.ToUpper())
 			{
-				itemCache[meshPath] = loadedItem;
-			} */
+				case ".MCX":
+					string json = new StreamReader(stream).ReadToEnd();
 
-			return loadedItem;
+					// Load the meta file and convert MeshPath links into objects
+					var loadedItem = JsonConvert.DeserializeObject<Object3D>(
+						json,
+						new JsonSerializerSettings
+						{
+							ContractResolver = new IObject3DContractResolver(),
+							NullValueHandling = NullValueHandling.Ignore
+						});
+
+					loadedItem?.LoadMeshLinks(cancellationToken, cacheContext, progress);
+
+					return loadedItem;
+
+				case ".STL":
+
+					var result = new Object3D();
+					result.SetMeshDirect(StlProcessing.Load(stream, cancellationToken, progress));
+					return result;
+
+				case ".AMF":
+					return AmfDocument.Load(stream, cancellationToken, progress);
+
+				case ".OBJ":
+					return ObjSupport.Load(stream, cancellationToken, progress);
+
+				default:
+					return null;
+			}
+		}
+
+		public static bool Save(IObject3D item, string meshPathAndFileName, CancellationToken cancellationToken, MeshOutputSettings outputInfo = null, Action<double, string> reportProgress = null)
+		{
+			try
+			{
+				if (outputInfo == null)
+				{
+					outputInfo = new MeshOutputSettings();
+				}
+
+				switch (Path.GetExtension(meshPathAndFileName).ToUpper())
+				{
+					// TODO: Consider if save to MCX is needed or if existing patterns already cover that case
+					//case ".MCX":
+					//	using (var outstream = File.OpenWrite(meshPathAndFileName))
+					//	{
+					//		item.SaveTo(outstream, reportProgress);
+					//	}
+					//	return true;
+
+					case ".STL":
+						Mesh mesh = DoMergeAndTransform(item, outputInfo, cancellationToken);
+						return StlProcessing.Save(mesh, meshPathAndFileName, cancellationToken, outputInfo);
+
+					case ".AMF":
+						outputInfo.ReportProgress = reportProgress;
+						return AmfDocument.Save(item, meshPathAndFileName, outputInfo);
+
+					case ".OBJ":
+						outputInfo.ReportProgress = reportProgress;
+						return ObjSupport.Save(item, meshPathAndFileName, outputInfo);
+
+					default:
+						return false;
+				}
+			}
+			catch (Exception)
+			{
+				return false;
+			}
+		}
+
+		private static Mesh DoMergeAndTransform(IObject3D item, MeshOutputSettings outputInfo, CancellationToken cancellationToken)
+		{
+			var visibleMeshes = item.VisibleMeshes().Where((i) => i.WorldPersistable());
+			if (visibleMeshes.Count() == 1)
+			{
+				var first = visibleMeshes.First();
+				if (first.WorldMatrix() == Matrix4X4.Identity)
+				{
+					return first.Mesh;
+				}
+			}
+
+			Mesh allPolygons = new Mesh();
+
+			foreach (var rawItem in visibleMeshes)
+			{
+				var mesh = rawItem.Mesh.Copy(cancellationToken);
+				mesh.Transform(rawItem.WorldMatrix());
+				if (outputInfo.CsgOptionState == MeshOutputSettings.CsgOption.DoCsgMerge)
+				{
+					allPolygons = CsgOperations.Union(allPolygons, mesh, null, cancellationToken);
+				}
+				else
+				{
+					allPolygons.CopyFaces(mesh);
+				}
+			}
+
+			return allPolygons;
 		}
 
 		/// <summary>
@@ -782,5 +862,11 @@ namespace MatterHackers.DataConverters3D
 
 			parent.Invalidate(new InvalidateArgs(this, InvalidateType.Content, null));
 		}
+	}
+
+	public class CacheContext
+	{
+		public Dictionary<string, IObject3D> Items { get; set; } = new Dictionary<string, IObject3D>();
+		public Dictionary<string, Mesh> Meshes { get; set; } = new Dictionary<string, Mesh>();
 	}
 }

@@ -244,12 +244,11 @@ namespace MatterHackers.DataConverters3D
 			string tempStlPath = CreateNewLibraryPath(".stl");
 
 			// Save the embedded asset to disk
-			bool savedSuccessfully = MeshFileIo.Save(
+			bool savedSuccessfully = StlProcessing.Save(
 				object3D.Mesh,
 				tempStlPath,
 				CancellationToken.None,
-				new MeshOutputSettings(MeshOutputSettings.OutputType.Binary),
-				progress);
+				new MeshOutputSettings(MeshOutputSettings.OutputType.Binary));
 
 			if (savedSuccessfully)
 			{

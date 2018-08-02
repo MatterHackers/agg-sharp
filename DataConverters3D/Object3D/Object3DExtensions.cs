@@ -44,7 +44,7 @@ namespace MatterHackers.DataConverters3D
 {
 	public static class Object3DExtensions
 	{
-		internal static void LoadMeshLinks(this IObject3D tempScene, CancellationToken cancellationToken, Dictionary<string, IObject3D> itemCache, Action<double, string> progress)
+		internal static void LoadMeshLinks(this IObject3D tempScene, CancellationToken cancellationToken, CacheContext cacheContext, Action<double, string> progress)
 		{
 			var itemsToLoad = (from object3D in tempScene.DescendantsAndSelf()
 							   where !string.IsNullOrEmpty(object3D.MeshPath)
@@ -52,7 +52,7 @@ namespace MatterHackers.DataConverters3D
 
 			foreach (IObject3D object3D in itemsToLoad)
 			{
-				object3D.LoadLinkedMesh(itemCache, cancellationToken, progress);
+				object3D.LoadLinkedMesh(cacheContext, cancellationToken, progress);
 			}
 		}
 
@@ -67,8 +67,11 @@ namespace MatterHackers.DataConverters3D
 			Debug.WriteLine(new String(' ', item.Depth()) + $"({item.Depth()}) {item.GetType().Name} " + extra);
 		}
 
-		private static void LoadLinkedMesh(this IObject3D item, Dictionary<string, IObject3D> itemCache, CancellationToken cancellationToken, Action<double, string> progress)
+		private static void LoadLinkedMesh(this IObject3D item, CacheContext cacheContext, CancellationToken cancellationToken, Action<double, string> progress)
 		{
+			// Abort load if cancel requested
+			cancellationToken.ThrowIfCancellationRequested();
+
 			// Natural path
 			string filePath = item.MeshPath;
 
@@ -90,24 +93,29 @@ namespace MatterHackers.DataConverters3D
 				}
 			}
 
-			var loadedItem = Object3D.Load(filePath, cancellationToken, itemCache, progress);
-
-			// TODO: Consider refactoring progress reporting to use an instance with state and the original delegate reference to allow anyone along the chain
-			// to determine if continueProcessing has been set to false and allow for more clear aborting (rather than checking for null as we have to do below)
-			//
-			// During startup we reload the main control multiple times. When the timing is right, reportProgress0to100 may set continueProcessing
-			// on the reporter to false and MeshFileIo.Load will return null. In those cases, we need to exit rather than continue processing
-			if (loadedItem != null)
+			if (string.Equals(Path.GetExtension(filePath), ".mcx", StringComparison.OrdinalIgnoreCase))
 			{
-				item.SetMeshDirect(loadedItem.Mesh);
-
-				// TODO: When loading mesh links, if a node has children and a mesh (MeshWrapers for example)
-				// then we load the mesh and blow away the children in the assignment below. The new conditional
-				// assignment accounts for that case but may need more consideration
-				if (string.Equals(Path.GetExtension(filePath), ".mcx", StringComparison.OrdinalIgnoreCase))
+				var loadedItem = Object3D.Load(filePath, cancellationToken, cacheContext, progress);
+				if (loadedItem != null)
 				{
+					item.SetMeshDirect(loadedItem.Mesh);
+
+					// Copy loaded mcx children to source node
+					// TODO: potentially needed for leaf mcx nodes, review and tests required
 					item.Children = loadedItem.Children;
 				}
+			}
+			else
+			{
+				Mesh mesh;
+
+				if (!cacheContext.Meshes.TryGetValue(filePath, out mesh))
+				{
+					mesh = Object3D.Load(filePath, cancellationToken).Mesh;
+					cacheContext.Meshes[filePath] = mesh;
+				}
+
+				item.SetMeshDirect(mesh);
 			}
 		}
 
