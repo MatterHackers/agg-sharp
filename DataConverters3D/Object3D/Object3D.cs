@@ -752,19 +752,6 @@ namespace MatterHackers.DataConverters3D
 			return hash;
 		}
 
-		public string ComputeSHA1()
-		{
-			// *******************************************************************************************************************************
-			// TODO: We must ensure we always compute with a stream that marks for UTF encoding with BOM, irrelevant of in-memory or on disk
-			// *******************************************************************************************************************************
-
-			// SHA1 value is based on UTF8 encoded file contents
-			using (var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(this.ToJson())))
-			{
-				return ComputeSHA1(memoryStream);
-			}
-		}
-
 		public static string ComputeFileSHA1(string filePath)
 		{
 			using (var stream = new BufferedStream(File.OpenRead(filePath), 1200000))

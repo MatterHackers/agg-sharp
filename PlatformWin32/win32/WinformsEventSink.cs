@@ -44,45 +44,51 @@ namespace MatterHackers.Agg.UI
 		private ContainerControl controlToHook;
 
 		private List<string> dragFiles = null;
-#if DEBUG
+
 		private WinformsSystemWindow.FormInspector inspectForm;
-#endif
+
+		public static bool AllowInspector = false;
 
 		public WinformsEventSink(ContainerControl controlToHook, SystemWindow systemWindow)
 		{
 			this.controlToHook = controlToHook;
 			this.widgetToSendTo = systemWindow;
 
-#if DEBUG
-			this.controlToHook.KeyDown += (s, e) =>
+			if (AllowInspector)
 			{
-				switch (e.KeyCode)
+				this.controlToHook.KeyDown += (s, e) =>
 				{
-					case System.Windows.Forms.Keys.F12:
-						if (inspectForm != null)
-						{
+					switch (e.KeyCode)
+					{
+						case System.Windows.Forms.Keys.F12:
+							if (inspectForm != null)
+							{
 							// Toggle mode if window is open
 							inspectForm.Inspecting = !inspectForm.Inspecting;
-						}
-						else
-						{
-							// Otherwise open
-							inspectForm = WinformsSystemWindow.InspectorCreator.Invoke(widgetToSendTo);
-							inspectForm.StartPosition = FormStartPosition.Manual;
-							inspectForm.Location = new System.Drawing.Point(0, 0);
-							inspectForm.FormClosed += (s2, e2) =>
+							}
+							else
 							{
-								inspectForm = null;
-							};
-							inspectForm.Show();
+								try
+								{
+								// Otherwise open
+								inspectForm = WinformsSystemWindow.InspectorCreator.Invoke(widgetToSendTo);
+									inspectForm.StartPosition = FormStartPosition.Manual;
+									inspectForm.Location = new System.Drawing.Point(0, 0);
+									inspectForm.FormClosed += (s2, e2) =>
+									{
+										inspectForm = null;
+									};
+									inspectForm.Show();
 
-							// Restore focus to ensure keyboard hooks in main SystemWindow work as expected
-							controlToHook.Focus();
-						}
-						return;
-				}
-			};
-#endif
+								// Restore focus to ensure keyboard hooks in main SystemWindow work as expected
+								controlToHook.Focus();
+								}
+								catch { }
+							}
+							return;
+					}
+				};
+			}
 
 			controlToHook.GotFocus += controlToHook_GotFocus;
 			controlToHook.LostFocus += controlToHook_LostFocus;
