@@ -28,15 +28,8 @@ namespace MatterHackers.Agg
 
 			string searchPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
-			string[] dllFiles = Directory.GetFiles(searchPath, "*.dll");
-			string[] exeFiles = Directory.GetFiles(searchPath, "*.exe");
-
-			List<string> allFiles = new List<string>();
-			allFiles.AddRange(dllFiles);
-			allFiles.AddRange(exeFiles);
-			string[] files = allFiles.ToArray();
-
-			foreach (var file in files)
+			// Load plugins from all dlls in the startup directory
+			foreach (var file in Directory.GetFiles(searchPath, "*.dll"))
 			{
 				try
 				{
@@ -184,6 +177,11 @@ namespace MatterHackers.Agg
 			}
 
 			return constructedTypes;
+		}
+
+		public static void Initialize(Assembly assembly)
+		{
+			LoadTypesFromAssembly(assembly);
 		}
 	}
 }
