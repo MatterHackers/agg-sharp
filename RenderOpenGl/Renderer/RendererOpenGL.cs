@@ -339,7 +339,6 @@ namespace MatterHackers.RenderOpenGl
 
 		public override void Rectangle(double left, double bottom, double right, double top, Color color, double strokeWidth)
 		{
-#if true
 			// This only works for translation. If we have a rotation or scale in the transform this will have some problems.
 			Affine transform = GetTransform();
 			double fastLeft = left;
@@ -363,7 +362,6 @@ namespace MatterHackers.RenderOpenGl
 				FillRectangle(right - 1, bottom, right, top, color);
 			}
 			else
-#endif
 			{
 				RoundedRect rect = new RoundedRect(left + .5, bottom + .5, right - .5, top - .5, 0);
 				Stroke rectOutline = new Stroke(rect, strokeWidth);
@@ -398,37 +396,32 @@ namespace MatterHackers.RenderOpenGl
 			quadVertices[2] = new VertexPositionColor(new System.Numerics.Vector2(sl, sb), color);
 			quadVertices[3] = new VertexPositionColor(new System.Numerics.Vector2(sr, sb), color);
 
-			VeldridGL._graphicsDevice.UpdateBuffer(VeldridGL._vertexBuffer, 0, quadVertices);
+			VeldridGL.graphicsDevice.UpdateBuffer(VeldridGL.vertexBuffer, 0, quadVertices);
 
 			// Begin() must be called before commands can be issued.
-			VeldridGL._commandList.Begin();
+			VeldridGL.commandList.Begin();
 
 			// We want to render directly to the output window.
-			VeldridGL._commandList.SetFramebuffer(VeldridGL._graphicsDevice.SwapchainFramebuffer);
+			VeldridGL.commandList.SetFramebuffer(VeldridGL.graphicsDevice.SwapchainFramebuffer);
 
 			// Set all relevant state to draw our quad.
-			VeldridGL._commandList.SetVertexBuffer(0, VeldridGL._vertexBuffer);
-			VeldridGL._commandList.SetIndexBuffer(VeldridGL._indexBuffer, IndexFormat.UInt16);
-			VeldridGL._commandList.SetPipeline(VeldridGL._pipeline);
+			VeldridGL.commandList.SetVertexBuffer(0, VeldridGL.vertexBuffer);
+			VeldridGL.commandList.SetIndexBuffer(VeldridGL.indexBuffer, IndexFormat.UInt16);
+			VeldridGL.commandList.SetPipeline(VeldridGL.pipeline);
 
 			// Issue a Draw command for a single instance with 4 indices.
-			VeldridGL._commandList.DrawIndexed(
-				indexCount: 4,
-				instanceCount: 1,
-				indexStart: 0,
-				vertexOffset: 0,
-				instanceStart: 0);
+			VeldridGL.commandList.DrawIndexed(4, 1, 0, 0, 0);
 
 			// End() must be called before commands can be submitted for execution.
-			VeldridGL._commandList.End();
-			VeldridGL._graphicsDevice.SubmitCommands(VeldridGL._commandList);
+			VeldridGL.commandList.End();
+			VeldridGL.graphicsDevice.SubmitCommands(VeldridGL.commandList);
 #else
 			if (Math.Abs(fastLeft - (int)fastLeft) < .01
 				&& Math.Abs(fastBottom - (int)fastBottom) < .01
 				&& Math.Abs(fastRight - (int)fastRight) < .01
 				&& Math.Abs(fastTop - (int)fastTop) < .01)
 			{
-				// PushOrthoProjection();
+				PushOrthoProjection();
 
 				GL.Disable(EnableCap.Texture2D);
 				GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
@@ -450,7 +443,7 @@ namespace MatterHackers.RenderOpenGl
 				}
 				GL.End();
 
-				// PopOrthoProjection();
+				PopOrthoProjection();
 			}
 			else
 			{

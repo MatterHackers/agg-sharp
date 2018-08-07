@@ -47,18 +47,25 @@ namespace MatterHackers.RenderOpenGl
 	public static class VeldridGL
 	{
 		public static VertexPositionColor[] quadVertices;
-		public static GraphicsDevice _graphicsDevice;
-		public static CommandList _commandList;
-		public static DeviceBuffer _vertexBuffer;
-		public static DeviceBuffer _indexBuffer;
-		public static Shader _vertexShader;
-		public static Shader _fragmentShader;
-		public static Pipeline _pipeline;
+		public static GraphicsDevice graphicsDevice;
+
+		// matrix transforms
+		public static DeviceBuffer projectionBuffer;
+
+		public static CommandList commandList;
+
+		public static DeviceBuffer vertexBuffer;
+		public static DeviceBuffer indexBuffer;
+
+		public static Shader vertexShader;
+		public static Shader fragmentShader;
+
+		public static Pipeline pipeline;
 
 		public static Shader LoadShader(ShaderStages stage)
 		{
 			string extension = null;
-			switch (_graphicsDevice.BackendType)
+			switch (graphicsDevice.BackendType)
 			{
 				case GraphicsBackend.Direct3D11:
 					extension = "hlsl.bytes";
@@ -78,25 +85,27 @@ namespace MatterHackers.RenderOpenGl
 			string entryPoint = stage == ShaderStages.Vertex ? "VS" : "FS";
 			string path = Path.Combine(System.AppContext.BaseDirectory, "Shaders", $"{stage.ToString()}.{extension}");
 			byte[] shaderBytes = File.ReadAllBytes(path);
-			return _graphicsDevice.ResourceFactory.CreateShader(new ShaderDescription(stage, shaderBytes, entryPoint));
+			return graphicsDevice.ResourceFactory.CreateShader(new ShaderDescription(stage, shaderBytes, entryPoint));
 		}
 
 		public static void DisposeResources()
 		{
-			_pipeline.Dispose();
-			_vertexShader.Dispose();
-			_fragmentShader.Dispose();
-			_commandList.Dispose();
-			_vertexBuffer.Dispose();
-			_indexBuffer.Dispose();
-			_graphicsDevice.Dispose();
+			pipeline.Dispose();
+			vertexShader.Dispose();
+			fragmentShader.Dispose();
+			commandList.Dispose();
+			vertexBuffer.Dispose();
+			indexBuffer.Dispose();
+			graphicsDevice.Dispose();
 		}
 
 		public static void CreateResources(GraphicsDevice _graphicsDevice)
 		{
-			VeldridGL._graphicsDevice = _graphicsDevice;
+			VeldridGL.graphicsDevice = _graphicsDevice;
 
 			ResourceFactory factory = _graphicsDevice.ResourceFactory;
+
+			projectionBuffer = factory.CreateBuffer(new BufferDescription(64, BufferUsage.UniformBuffer));
 
 			quadVertices = new[]
 			{
@@ -109,22 +118,22 @@ namespace MatterHackers.RenderOpenGl
 			BufferDescription vbDescription = new BufferDescription(
 				4 * VertexPositionColor.SizeInBytes,
 				BufferUsage.VertexBuffer);
-			_vertexBuffer = factory.CreateBuffer(vbDescription);
-			_graphicsDevice.UpdateBuffer(_vertexBuffer, 0, quadVertices);
+			vertexBuffer = factory.CreateBuffer(vbDescription);
+			_graphicsDevice.UpdateBuffer(vertexBuffer, 0, quadVertices);
 
 			ushort[] quadIndices = { 0, 1, 2, 3 };
 			BufferDescription ibDescription = new BufferDescription(
 				4 * sizeof(ushort),
 				BufferUsage.IndexBuffer);
-			_indexBuffer = factory.CreateBuffer(ibDescription);
-			_graphicsDevice.UpdateBuffer(_indexBuffer, 0, quadIndices);
+			indexBuffer = factory.CreateBuffer(ibDescription);
+			_graphicsDevice.UpdateBuffer(indexBuffer, 0, quadIndices);
 
 			VertexLayoutDescription vertexLayout = new VertexLayoutDescription(
 				new VertexElementDescription("Position", VertexElementSemantic.Position, VertexElementFormat.Float2),
 				new VertexElementDescription("Color", VertexElementSemantic.Color, VertexElementFormat.Float4));
 
-			_vertexShader = LoadShader(ShaderStages.Vertex);
-			_fragmentShader = LoadShader(ShaderStages.Fragment);
+			vertexShader = LoadShader(ShaderStages.Vertex);
+			fragmentShader = LoadShader(ShaderStages.Fragment);
 
 			// Create pipeline
 			GraphicsPipelineDescription pipelineDescription = new GraphicsPipelineDescription();
@@ -143,12 +152,12 @@ namespace MatterHackers.RenderOpenGl
 			pipelineDescription.ResourceLayouts = System.Array.Empty<ResourceLayout>();
 			pipelineDescription.ShaderSet = new ShaderSetDescription(
 				vertexLayouts: new VertexLayoutDescription[] { vertexLayout },
-				shaders: new Shader[] { _vertexShader, _fragmentShader });
+				shaders: new Shader[] { vertexShader, fragmentShader });
 			pipelineDescription.Outputs = _graphicsDevice.SwapchainFramebuffer.OutputDescription;
 
-			_pipeline = factory.CreateGraphicsPipeline(pipelineDescription);
+			pipeline = factory.CreateGraphicsPipeline(pipelineDescription);
 
-			_commandList = factory.CreateCommandList();
+			commandList = factory.CreateCommandList();
 		}
 	}
 }
