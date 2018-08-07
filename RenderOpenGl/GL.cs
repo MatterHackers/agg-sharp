@@ -18,7 +18,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if !USE_OPENGL
 	internal class ImediateMode
 	{
-        public static byte[] currentColor = new byte[4];
+		public static byte[] currentColor = new byte[4];
 		BeginMode mode;
 		internal BeginMode Mode
 		{
@@ -29,15 +29,15 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			set
 			{
 				mode = value;
-                positions3f.Clear();
-                color4b.Clear();
-                textureCoords2f.Clear();
+				positions3f.Clear();
+				color4b.Clear();
+				textureCoords2f.Clear();
 			}
 		}
 
 		internal int vertexCount;
-        internal VectorPOD<float> positions3f = new VectorPOD<float>();
-        internal VectorPOD<byte> color4b = new VectorPOD<byte>();
+		internal VectorPOD<float> positions3f = new VectorPOD<float>();
+		internal VectorPOD<byte> color4b = new VectorPOD<byte>();
 		internal VectorPOD<float> textureCoords2f = new VectorPOD<float>();
 	}
 #endif
@@ -509,15 +509,15 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.Color4(red, green, blue, alpha);
 			}
-#elif USE_VELDRID
 #else
+			ImediateMode.currentColor[0] = (byte)red;
+			ImediateMode.currentColor[1] = (byte)green;
+			ImediateMode.currentColor[2] = (byte)blue;
+			ImediateMode.currentColor[3] = (byte)alpha;
 
-            ImediateMode.currentColor[0] = (byte)red;
-            ImediateMode.currentColor[1] = (byte)green;
-            ImediateMode.currentColor[2] = (byte)blue;
-            ImediateMode.currentColor[3] = (byte)alpha;
-
-            OpenTK.Graphics.ES11.GL.Color4(ImediateMode.currentColor[0], ImediateMode.currentColor[1], ImediateMode.currentColor[2], ImediateMode.currentColor[3]);
+	#if !USE_VELDRID // means we are on GL ES
+			OpenTK.Graphics.ES11.GL.Color4(ImediateMode.currentColor[0], ImediateMode.currentColor[1], ImediateMode.currentColor[2], ImediateMode.currentColor[3]);
+	#endif
 #endif
 		}
 
@@ -861,9 +861,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.Begin((OpenTK.Graphics.OpenGL.BeginMode)mode);
 			}
-#elif USE_VELDRID
 #else
-
 			currentImediateData.Mode = mode;
 #endif
 		}
@@ -875,7 +873,6 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.End();
 			}
-#elif USE_VELDRID
 #else
 
 			switch (currentImediateData.Mode)
@@ -910,12 +907,12 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				case BeginMode.Triangles:
 				case BeginMode.TriangleStrip:
 					{
-                        GL.EnableClientState(ArrayCap.ColorArray);
-                        GL.EnableClientState(ArrayCap.VertexArray);
+						GL.EnableClientState(ArrayCap.ColorArray);
+						GL.EnableClientState(ArrayCap.VertexArray);
 						GL.EnableClientState(ArrayCap.TextureCoordArray);
 
 						float[] v = currentImediateData.positions3f.Array;
-                        byte[] c = currentImediateData.color4b.Array;
+						byte[] c = currentImediateData.color4b.Array;
 						float[] t = currentImediateData.textureCoords2f.Array;
 						// pin the data, so that GC doesn't move them, while used
 						// by native code
@@ -923,18 +920,18 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 						{
 							fixed (float* pv = v, pt = t)
 							{
-                                fixed (byte* pc = c)
-                                {
-                                    GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pc));
+								fixed (byte* pc = c)
+								{
+									GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pc));
 									GL.VertexPointer(currentImediateData.vertexCount, VertexPointerType.Float, 0, new IntPtr(pv));
-                                    GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(pt));
-                                    GL.DrawArrays(currentImediateData.Mode, 0, currentImediateData.positions3f.Count / currentImediateData.vertexCount);
-                                }
+									GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(pt));
+									GL.DrawArrays(currentImediateData.Mode, 0, currentImediateData.positions3f.Count / currentImediateData.vertexCount);
+								}
 							}
 						}
 						GL.DisableClientState(ArrayCap.VertexArray);
 						GL.DisableClientState(ArrayCap.TextureCoordArray);
-                        GL.DisableClientState(ArrayCap.ColorArray);
+						GL.DisableClientState(ArrayCap.ColorArray);
 					}
 					break;
 
@@ -971,17 +968,15 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.Vertex2(x, y);
 			}
-#elif USE_VELDRID
 #else
-
 			currentImediateData.vertexCount = 2;
 			currentImediateData.positions3f.Add((float)x);
 			currentImediateData.positions3f.Add((float)y);
 
-            currentImediateData.color4b.add(ImediateMode.currentColor[0]);
-            currentImediateData.color4b.add(ImediateMode.currentColor[1]);
-            currentImediateData.color4b.add(ImediateMode.currentColor[2]);
-            currentImediateData.color4b.add(ImediateMode.currentColor[3]);
+			currentImediateData.color4b.add(ImediateMode.currentColor[0]);
+			currentImediateData.color4b.add(ImediateMode.currentColor[1]);
+			currentImediateData.color4b.add(ImediateMode.currentColor[2]);
+			currentImediateData.color4b.add(ImediateMode.currentColor[3]);
 #endif
 		}
 

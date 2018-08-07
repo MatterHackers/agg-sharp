@@ -46,9 +46,6 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Xml" />
-    <Reference Include="OpenTK">
-      <HintPath>..\PlatformWin32\OpenTK.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DataConverters2D\DataConverters2D.csproj">
