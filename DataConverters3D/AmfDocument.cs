@@ -253,7 +253,7 @@ namespace MatterHackers.DataConverters3D
 									for (int vertexIndex = 0; vertexIndex < mesh.Vertices.Count; vertexIndex++)
 									{
 										IVertex vertex = mesh.Vertices[vertexIndex];
-										outputInfo.ReportProgress?.Invoke(currentRation + vertexIndex / vertCount * ratioPerMesh * .5, "");
+										outputInfo?.ReportProgress?.Invoke(currentRation + vertexIndex / vertCount * ratioPerMesh * .5, "");
 
 										Vector3 position = vertex.Position;
 										amfFile.WriteLine(Indent(4) + "<vertex>");
@@ -281,7 +281,7 @@ namespace MatterHackers.DataConverters3D
 								double faceCount = (double)mesh.Faces.Count;
 								for (int faceIndex = 0; faceIndex < mesh.Faces.Count; faceIndex++)
 								{
-									outputInfo.ReportProgress?.Invoke(currentRation + faceIndex / faceCount * ratioPerMesh * .5, "");
+									outputInfo?.ReportProgress?.Invoke(currentRation + faceIndex / faceCount * ratioPerMesh * .5, "");
 
 									Face face = mesh.Faces[faceIndex];
 									List<IVertex> positionsCCW = new List<IVertex>();
