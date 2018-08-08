@@ -165,7 +165,7 @@ namespace MatterHackers.Agg.UI
 
 			itemHolder.MouseEnterBounds += itemToAdd_MouseEnterBounds;
 			itemHolder.MouseLeaveBounds += itemToAdd_MouseLeaveBounds;
-			itemHolder.MouseDownInBounds += itemHolder_MouseDownInBounds;
+			itemHolder.MouseDown += itemHolder_MouseDownInBounds;
 			itemHolder.ParentChanged += itemHolder_ParentChanged;
 		}
 
@@ -220,7 +220,7 @@ namespace MatterHackers.Agg.UI
 			FlowLayoutWidget itemHolder = (FlowLayoutWidget)sender;
 			itemHolder.MouseEnterBounds -= itemToAdd_MouseEnterBounds;
 			itemHolder.MouseLeaveBounds -= itemToAdd_MouseLeaveBounds;
-			itemHolder.MouseDownInBounds -= itemHolder_MouseDownInBounds;
+			itemHolder.MouseDown -= itemHolder_MouseDownInBounds;
 			itemHolder.ParentChanged -= itemHolder_ParentChanged;
 		}
 

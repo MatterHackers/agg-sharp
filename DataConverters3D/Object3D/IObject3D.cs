@@ -337,9 +337,6 @@ namespace MatterHackers.DataConverters3D
 		/// </summary>
 		void Apply(UndoBuffer undoBuffer);
 
-		[JsonIgnore]
-		bool CanRemove { get; }
-
 		/// <summary>
 		/// Remove the IObject3D from the tree and undo whatever functionality it was adding (if appropriate).
 		/// This may require removing many child objects from the tree depending on implementation.

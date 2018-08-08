@@ -616,12 +616,14 @@ namespace MatterHackers.Agg.UI
 		public event EventHandler ContainsFocusChanged;
 
 		/// <summary>
-		/// The mouse has gone down while in the bounds of this widget
+		/// The mouse has gone down on this widget. This will not trigger if a child of this widget gets the down message.
 		/// </summary>
-		public event EventHandler<MouseEventArgs> MouseDownInBounds;
+		public event EventHandler<MouseEventArgs> MouseDownCaptured;
+
+		public event EventHandler<MouseEventArgs> MouseUpCaptured;
 
 		/// <summary>
-		/// The mouse has gone down on this widget. This will not trigger if a child of this widget gets the down message.
+		/// The mouse has gone down while in the bounds of this widget
 		/// </summary>
 		public event EventHandler<MouseEventArgs> MouseDown;
 
@@ -2139,10 +2141,10 @@ namespace MatterHackers.Agg.UI
 			if (childDeviceBorder.Bottom > 0)
 			{
 				// do a fill rect
-				graphics2D.FillRectangle(childBounds.Left - childDeviceBorder.Left, 
-					childBounds.Bottom, 
-					childBounds.Right + childDeviceBorder.Right, 
-					childBounds.Bottom - childDeviceBorder.Bottom, 
+				graphics2D.FillRectangle(childBounds.Left - childDeviceBorder.Left,
+					childBounds.Bottom,
+					childBounds.Right + childDeviceBorder.Right,
+					childBounds.Bottom - childDeviceBorder.Bottom,
 					childBorderColor);
 			}
 
@@ -2159,10 +2161,10 @@ namespace MatterHackers.Agg.UI
 			if (childDeviceBorder.Top > 0)
 			{
 				// do a fill rect
-				graphics2D.FillRectangle(childBounds.Left - childDeviceBorder.Left, 
-					childBounds.Top + childDeviceBorder.Top, 
-					childBounds.Right + childDeviceBorder.Right, 
-					childBounds.Top, 
+				graphics2D.FillRectangle(childBounds.Left - childDeviceBorder.Left,
+					childBounds.Top + childDeviceBorder.Top,
+					childBounds.Right + childDeviceBorder.Right,
+					childBounds.Top,
 					childBorderColor);
 			}
 		}
@@ -2559,7 +2561,7 @@ namespace MatterHackers.Agg.UI
 				{
 					mouseCapturedState = MouseCapturedState.ThisHasMouseCaptured;
 
-					MouseDown?.Invoke(this, mouseEvent);
+					MouseDownCaptured?.Invoke(this, mouseEvent);
 				}
 
 				if (!childHasTakenFocus)
@@ -2570,7 +2572,7 @@ namespace MatterHackers.Agg.UI
 					}
 				}
 
-				MouseDownInBounds?.Invoke(this, mouseEvent);
+				MouseDown?.Invoke(this, mouseEvent);
 			}
 			// not under the mouse
 			else if (UnderMouseState != UI.UnderMouseState.NotUnderMouse)
@@ -2908,7 +2910,7 @@ namespace MatterHackers.Agg.UI
 
 					if (!childHasAcceptedThisEvent)
 					{
-						MouseUp?.Invoke(this, mouseEvent);
+						MouseUpCaptured?.Invoke(this, mouseEvent);
 					}
 				}
 			}
@@ -2972,7 +2974,7 @@ namespace MatterHackers.Agg.UI
 
 					if (!upHappenedAboveChild)
 					{
-						MouseUp?.Invoke(this, mouseEvent);
+						MouseUpCaptured?.Invoke(this, mouseEvent);
 
 						if (mouseUpOnWidget)
 						{
@@ -3002,6 +3004,9 @@ namespace MatterHackers.Agg.UI
 
 				ClearCapturedState();
 			}
+
+			MouseUp?.Invoke(this, mouseEvent);
+
 			childrenLockedInMouseUpCount--;
 
 			if (childrenLockedInMouseUpCount != 0)

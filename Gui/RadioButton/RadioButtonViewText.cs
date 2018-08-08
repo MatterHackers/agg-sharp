@@ -97,8 +97,8 @@ namespace MatterHackers.Agg.UI
 			{
 				this.radioButton = radioButton;
 				radioButton.MouseEnter += redrawButtonIfRequired;
-				radioButton.MouseDown += redrawButtonIfRequired;
-				radioButton.MouseUp += redrawButtonIfRequired;
+				radioButton.MouseDownCaptured += redrawButtonIfRequired;
+				radioButton.MouseUpCaptured += redrawButtonIfRequired;
 				radioButton.MouseLeave += redrawButtonIfRequired;
 				radioButton.CheckedStateChanged += (s, e2) =>
 				{

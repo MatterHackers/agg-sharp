@@ -281,7 +281,6 @@ namespace MatterHackers.DataConverters3D
 		public virtual bool Visible { get; set; } = true;
 
 		public virtual bool CanApply => false;
-		public virtual bool CanRemove => false;
 		public virtual bool CanEdit => this.HasChildren();
 
 		[JsonIgnore]

@@ -55,30 +55,12 @@ namespace MatterHackers.DataConverters3D
 		}
 
 		[JsonIgnore]
-		public IObject3D RootSelectedItem
-		{
-			get
-			{
-				var selectedItem = SelectedItem;
-
-				if (selectedItem != null
-					&& SelectedItem.Parent == sourceItem)
-				{
-					return selectedItem;
-				}
-
-				return null;
-			}
-		}
+		public IObject3D SelectedItemRoot { get; private set; }
 
 		[JsonIgnore]
 		public IObject3D SelectedItem
 		{
-			get
-			{
-				return _selectedItem;
-			}
-
+			get => _selectedItem;
 			set
 			{
 				if (_selectedItem != value)
@@ -94,6 +76,17 @@ namespace MatterHackers.DataConverters3D
 					}
 
 					_selectedItem = value;
+
+					// When setting SelectedItem, SelecteItemRoot is either the SelectedItem if rooted, or the first ancestor in the root of the scene
+					if (_selectedItem?.Parent.Parent != null)
+					{
+						this.SelectedItemRoot = _selectedItem.Ancestors().FirstOrDefault(o => o.Parent.Parent == null);
+					}
+					else
+					{
+						this.SelectedItemRoot = _selectedItem;
+					}
+
 					SelectionChanged?.Invoke(this, null);
 				}
 			}

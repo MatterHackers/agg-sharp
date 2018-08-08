@@ -223,9 +223,9 @@ namespace MatterHackers.Agg.UI.Tests
 			int containerGotMouseUp = 0;
 			int containerGotMouseDown = 0;
 			int containerGotMouseDownInBounds = 0;
-			container.MouseUp += (sender, e) => { containerGotMouseUp++; };
-			container.MouseDown += (sender, e) => { containerGotMouseDown++; };
-			container.MouseDownInBounds += (sender, e) => { containerGotMouseDownInBounds++; };
+			container.MouseUpCaptured += (sender, e) => { containerGotMouseUp++; };
+			container.MouseDownCaptured += (sender, e) => { containerGotMouseDown++; };
+			container.MouseDown += (sender, e) => { containerGotMouseDownInBounds++; };
 			container.LocalBounds = new RectangleDouble(0, 0, 200, 200);
 			GuiWidget topWidget = new GuiWidget();
 			topWidget.Name = "topWidget";
@@ -233,9 +233,9 @@ namespace MatterHackers.Agg.UI.Tests
 			int topWidgetGotMouseUp = 0;
 			int topWidgetGotMouseDown = 0;
 			int topWidgetGotMouseDownInBounds = 0;
-			topWidget.MouseUp += (sender, e) => { topWidgetGotMouseUp++; };
-			topWidget.MouseDown += (sender, e) => { topWidgetGotMouseDown++; };
-			topWidget.MouseDownInBounds += (sender, e) => { topWidgetGotMouseDownInBounds++; };
+			topWidget.MouseUpCaptured += (sender, e) => { topWidgetGotMouseUp++; };
+			topWidget.MouseDownCaptured += (sender, e) => { topWidgetGotMouseDown++; };
+			topWidget.MouseDown += (sender, e) => { topWidgetGotMouseDownInBounds++; };
 			container.AddChild(topWidget);
 
 			Assert.IsTrue(containerGotMouseUp == 0);
@@ -318,14 +318,14 @@ namespace MatterHackers.Agg.UI.Tests
 			GuiWidget topWidget = new GuiWidget();
 			topWidget.Name = "topWidget";
 			topWidget.LocalBounds = new RectangleDouble(100, 100, 150, 150);
-			topWidget.MouseUp += (sender, e) => { topGotMouseUp = true; };
+			topWidget.MouseUpCaptured += (sender, e) => { topGotMouseUp = true; };
 
 			container.AddChild(topWidget);
 
 			bool blockingGotMouseUp = false;
 			GuiWidget blockingWidegt = new GuiWidget();
 			blockingWidegt.Name = "blockingWidegt";
-			blockingWidegt.MouseUp += (sender, e) => { blockingGotMouseUp = true; };
+			blockingWidegt.MouseUpCaptured += (sender, e) => { blockingGotMouseUp = true; };
 			blockingWidegt.LocalBounds = new RectangleDouble(105, 105, 125, 125);
 			container.AddChild(blockingWidegt);
 
@@ -363,8 +363,8 @@ namespace MatterHackers.Agg.UI.Tests
 			GuiWidget regionA = new GuiWidget();
 			regionA.Name = "regionA";
 			regionA.BoundsRelativeToParent = new RectangleDouble(10, 10, 190, 190);
-			regionA.MouseDown += (sender, e) => { mouseDown++; };
-			regionA.MouseUp += (sender, e) => { mouseUp++; };
+			regionA.MouseDownCaptured += (sender, e) => { mouseDown++; };
+			regionA.MouseUpCaptured += (sender, e) => { mouseUp++; };
 			regionA.MouseEnter += (sender, e) => { if (regionA.UnderMouseState == UnderMouseState.NotUnderMouse) throw new Exception("It must be under the mouse."); mouseEnter++; };
 			regionA.MouseLeave += (sender, e) => { if (regionA.UnderMouseState == UnderMouseState.FirstUnderMouse) throw new Exception("It must not be under the mouse."); mouseLeave++; };
 			regionA.MouseEnterBounds += (sender, e) => { if (regionA.UnderMouseState == UnderMouseState.NotUnderMouse) throw new Exception("It must be under the mouse."); mouseEnterBounds++; };
@@ -1129,7 +1129,7 @@ namespace MatterHackers.Agg.UI.Tests
 			regionA.MouseEnterBounds += (sender, e) => { if (regionA.UnderMouseState == UnderMouseState.NotUnderMouse) throw new Exception("It must be under the mouse."); aGotEnterBounds++; };
 			regionA.MouseLeaveBounds += (sender, e) => { if (regionA.UnderMouseState != UnderMouseState.NotUnderMouse) throw new Exception("It must not be under the mouse."); aGotLeaveBounds++; };
 			regionA.MouseMove += (sender, e) => { aGotMove++; };
-			regionA.MouseUp += (sender, e) => { aGotUp++; };
+			regionA.MouseUpCaptured += (sender, e) => { aGotUp++; };
 
 			// make sure we know we are entered and captured on a down event
 			container.OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 15, 15, 0));

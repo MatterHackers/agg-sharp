@@ -35,8 +35,8 @@ namespace MatterHackers.Agg.UI
 			RadioButton radioButton = (RadioButton)this.Parent;
 
 			radioButton.MouseEnter += setCorrectVisibility;
-			radioButton.MouseDown += setCorrectVisibility;
-			radioButton.MouseUp += setCorrectVisibility;
+			radioButton.MouseDownCaptured += setCorrectVisibility;
+			radioButton.MouseUpCaptured += setCorrectVisibility;
 			radioButton.MouseLeave += setCorrectVisibility;
 			radioButton.CheckedStateChanged += setCorrectVisibility;
 			setCorrectVisibility(radioButton, null);

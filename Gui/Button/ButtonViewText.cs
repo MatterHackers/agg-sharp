@@ -51,8 +51,8 @@ namespace MatterHackers.Agg.UI
 
 			parentButton.TextChanged += ParentButton_TextChanged;
 			parentButton.MouseEnter += Invalidate_Parent;
-			parentButton.MouseDown += Invalidate_Parent;
-			parentButton.MouseUp += Invalidate_Parent;
+			parentButton.MouseDownCaptured += Invalidate_Parent;
+			parentButton.MouseUpCaptured += Invalidate_Parent;
 			parentButton.MouseLeave += Invalidate_Parent;
 
 			base.OnParentChanged(e);

@@ -81,8 +81,8 @@ namespace MatterHackers.Agg.UI
 			Button parentButton = (Button)Parent;
 
 			parentButton.MouseEnter += redrawButtonIfRequired;
-			parentButton.MouseDown += redrawButtonIfRequired;
-			parentButton.MouseUp += redrawButtonIfRequired;
+			parentButton.MouseDownCaptured += redrawButtonIfRequired;
+			parentButton.MouseUpCaptured += redrawButtonIfRequired;
 			parentButton.MouseLeave += redrawButtonIfRequired;
 			parentButton.EnabledChanged += redrawButtonIfRequired;
 
