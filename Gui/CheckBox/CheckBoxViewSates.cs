@@ -78,8 +78,8 @@ namespace MatterHackers.Agg.UI
 			if (widgetWithHooksToUs != null)
 			{
 				widgetWithHooksToUs.MouseEnter -= SetCorrectVisibilityStates;
-				widgetWithHooksToUs.MouseDown -= SetCorrectVisibilityStates;
-				widgetWithHooksToUs.MouseUp -= SetCorrectVisibilityStates;
+				widgetWithHooksToUs.MouseDownCaptured -= SetCorrectVisibilityStates;
+				widgetWithHooksToUs.MouseUpCaptured -= SetCorrectVisibilityStates;
 				widgetWithHooksToUs.MouseLeave -= SetCorrectVisibilityStates;
 				widgetWithHooksToUs.CheckedStateChanged -= SetCorrectVisibilityStates;
 			}
@@ -92,8 +92,8 @@ namespace MatterHackers.Agg.UI
 			widgetWithHooksToUs = parent;
 
 			widgetWithHooksToUs.MouseEnter += SetCorrectVisibilityStates;
-			widgetWithHooksToUs.MouseDown += SetCorrectVisibilityStates;
-			widgetWithHooksToUs.MouseUp += SetCorrectVisibilityStates;
+			widgetWithHooksToUs.MouseDownCaptured += SetCorrectVisibilityStates;
+			widgetWithHooksToUs.MouseUpCaptured += SetCorrectVisibilityStates;
 			widgetWithHooksToUs.MouseLeave += SetCorrectVisibilityStates;
 			widgetWithHooksToUs.CheckedStateChanged += SetCorrectVisibilityStates;
 		}

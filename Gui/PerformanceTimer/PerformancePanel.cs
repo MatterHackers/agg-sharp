@@ -64,7 +64,7 @@ namespace MatterHackers.Agg.UI
 
 				if (true) // only add this when doing testing
 				{
-					UiThread.RunOnIdle(() =>
+					UiThread.RunOnIdle((Action)(() =>
 					{
 						if (PerformanceTimer.GetParentWindowFunction != null)
 						{
@@ -72,10 +72,10 @@ namespace MatterHackers.Agg.UI
 							parentWindow.AddChild(panels);
 #if DEBUG
 							parentWindow.KeyDown += ParentWindow_KeyDown;
-							parentWindow.MouseDownInBounds += ParentWindow_MouseDown;
+							parentWindow.MouseDown += this.ParentWindow_MouseDown;
 #endif
 						}
-					});
+					}));
 				}
 			}
 

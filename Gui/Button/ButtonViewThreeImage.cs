@@ -61,8 +61,8 @@ namespace MatterHackers.Agg.UI
 			parentButton.LocalBounds = bounds;
 
 			parentButton.MouseEnter += redrawButtonIfRequired;
-			parentButton.MouseDown += redrawButtonIfRequired;
-			parentButton.MouseUp += redrawButtonIfRequired;
+			parentButton.MouseDownCaptured += redrawButtonIfRequired;
+			parentButton.MouseUpCaptured += redrawButtonIfRequired;
 			parentButton.MouseLeave += new EventHandler(parentButton_MouseLeave);
 
 			base.OnParentChanged(null);

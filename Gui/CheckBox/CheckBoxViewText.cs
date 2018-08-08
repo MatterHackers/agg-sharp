@@ -62,8 +62,8 @@ namespace MatterHackers.Agg.UI
 			parentButton.TextChanged += new EventHandler(parentButton_TextChanged);
 
 			parentButton.MouseEnter += redrawButtonIfRequired;
-			parentButton.MouseDown += redrawButtonIfRequired;
-			parentButton.MouseUp += redrawButtonIfRequired;
+			parentButton.MouseDownCaptured += redrawButtonIfRequired;
+			parentButton.MouseUpCaptured += redrawButtonIfRequired;
 			parentButton.MouseLeave += redrawButtonIfRequired;
 
 			base.OnParentChanged(e);
