@@ -18,5 +18,7 @@ namespace MatterHackers.Agg.UI
 		string GetText();
 
 		void SetText(string text);
+
+		void SetImage(ImageBuffer imageBuffer);
 	}
 }

@@ -238,6 +238,38 @@ namespace MatterHackers.Agg.Image
 			bitmap.UnlockBits(bitmapData);
 		}
 
+		public static Bitmap ConvertImageToBitmap(ImageBuffer sourceImage)
+		{
+			var bitmap = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format32bppArgb);
+
+			BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadWrite, bitmap.PixelFormat);
+
+			int destIndex = 0;
+			unsafe
+			{
+				byte[] sourceBuffer = sourceImage.GetBuffer();
+				byte* pDestBuffer = (byte*)bitmapData.Scan0;
+				int scanlinePadding = bitmapData.Stride - bitmapData.Width * 4;
+				for (int y = 0; y < sourceImage.Height; y++)
+				{
+					int sourceIndex = sourceImage.GetBufferOffsetXY(0, sourceImage.Height - 1 - y);
+					for (int x = 0; x < sourceImage.Width; x++)
+					{
+						pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+						pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+						pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+						pDestBuffer[destIndex++] = sourceBuffer[sourceIndex++];
+					}
+
+					destIndex += scanlinePadding;
+				}
+			}
+
+			bitmap.UnlockBits(bitmapData);
+
+			return bitmap;
+		}
+
 		public bool SaveImageData(string filename, IImageByte sourceImage)
 		{
 			if (File.Exists(filename))
