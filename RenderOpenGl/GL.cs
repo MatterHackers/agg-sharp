@@ -31,6 +31,7 @@ using System;
 using System.Collections.Generic;
 using MatterHackers.Agg;
 using MatterHackers.VectorMath;
+using Veldrid;
 
 #if USE_OPENGL
 
@@ -586,6 +587,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				OpenTK.Graphics.OpenGL.GL.MultMatrix(m);
 			}
 #elif USE_VELDRID
+			//VeldridGL.commandList.UpdateBuffer(VeldridGL.projectionBuffer, 0, System.Numerics.Matrix4x4.CreatePerspectiveFieldOfView(
+//				1.0f,
+				//(float)Window.Width / Window.Height,
+				//0.5f,
+				//100f));
 #else
 
 			OpenTK.Graphics.ES11.GL.MultMatrix(m);
@@ -739,6 +745,40 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 					(OpenTK.Graphics.OpenGL.PixelType)type, pixels);
 			}
 #elif USE_VELDRID
+#if false
+			Texture texture = VeldridGL.graphicsDevice.ResourceFactory.CreateTexture(new TextureDescription(
+				(uint)width, (uint)height, Depth, MipLevels, ArrayLayers, Format, usage, Type));
+
+			Texture staging = rf.CreateTexture(new TextureDescription(
+				Width, Height, Depth, MipLevels, ArrayLayers, Format, TextureUsage.Staging, Type));
+
+			ulong offset = 0;
+			fixed (byte* texDataPtr = &TextureData[0])
+			{
+				for (uint level = 0; level < MipLevels; level++)
+				{
+					uint mipWidth = GetDimension(Width, level);
+					uint mipHeight = GetDimension(Height, level);
+					uint mipDepth = GetDimension(Depth, level);
+					uint subresourceSize = mipWidth * mipHeight * mipDepth * GetFormatSize(Format);
+
+					for (uint layer = 0; layer < ArrayLayers; layer++)
+					{
+						gd.UpdateTexture(
+							staging, (IntPtr)(texDataPtr + offset), subresourceSize,
+							0, 0, 0, mipWidth, mipHeight, mipDepth,
+							level, layer);
+						offset += subresourceSize;
+					}
+				}
+			}
+
+			CommandList cl = rf.CreateCommandList();
+			cl.Begin();
+			cl.CopyTexture(staging, texture);
+			cl.End();
+			gd.SubmitCommands(cl);
+#endif
 #else
 
 			OpenTK.Graphics.ES11.GL.TexImage2D(
