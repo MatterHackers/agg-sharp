@@ -29,7 +29,7 @@ namespace AGG
 	{
         public static IVertexSource PathStorageFromD(String DFromSVGFile, double xOffset, double yOffset)
         {
-            PathStorage path = new PathStorage();
+            var path = new VertexStorage();
             string[] splitOnSpace = DFromSVGFile.Split(' ');
             string[] splitOnComma;
             double xc1, yc1, xc2, yc2, x, y;
@@ -84,15 +84,17 @@ namespace AGG
                 }
             }
 
-            path.arrange_orientations_all_paths(AGG.Path.FlagsAndCommand.FlagCW);
+			throw new NotImplementedException();
+            //path.arrange_orientations_all_paths(AGG.ShapePath.FlagsAndCommand.FlagCW);
             VertexSourceApplyTransform flipped = new VertexSourceApplyTransform(path, Affine.NewScaling(1, -1));
             return flipped;
         }
 	}
-	
+
+#if false
 	public class Glyph : IVertexSource
 	{
-		PathStorage glyphData;
+		VertexStorage glyphData;
 		
         public void rewind(int pathId)
 		{
@@ -104,5 +106,6 @@ namespace AGG
 			return glyphData.vertex(out x, out y);
 		}
 	}
+#endif
 }
 
