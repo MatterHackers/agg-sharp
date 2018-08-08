@@ -386,7 +386,7 @@ namespace MatterHackers.DataConverters3D
 
 										break;
 								}
-							} while (nextSibling != null && reader.ReadToNextSibling(nextSibling));
+							} while (nextSibling != null && (reader.Name != nextSibling ? reader.ReadToNextSibling(nextSibling) : true));
 						}
 
 						progressData.ReportProgress0To50();
@@ -450,7 +450,7 @@ namespace MatterHackers.DataConverters3D
 									nextSibling = null;
 									break;
 							}
-						} while (nextSibling != null && reader.ReadToNextSibling(nextSibling));
+						} while (nextSibling != null && (reader.Name != nextSibling ? reader.ReadToNextSibling(nextSibling) : true));
 					}
 
 					if (indices[0] != indices[1]
