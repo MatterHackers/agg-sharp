@@ -83,6 +83,7 @@
     <Compile Include="Agg\ImageTests.cs" />
     <Compile Include="Agg\WidgetClickTests.cs" />
     <Compile Include="Agg\SimpleTests.cs" />
+    <Compile Include="AmfDocumentTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
