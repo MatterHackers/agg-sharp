@@ -10,6 +10,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Platform\config.json">
+      <LogicalName>config.json</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
   </ItemGroup>
 
