@@ -40,6 +40,7 @@ using System;
 using Tesselate;
 using MatterHackers.Agg.Platform;
 using Veldrid;
+using RenderOpenGl.VertexFormats;
 
 namespace MatterHackers.RenderOpenGl
 {

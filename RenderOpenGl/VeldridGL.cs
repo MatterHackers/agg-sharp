@@ -27,23 +27,13 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using RenderOpenGl.VertexFormats;
 using System.IO;
 using System.Runtime.InteropServices;
 using Veldrid;
 
 namespace MatterHackers.RenderOpenGl
 {
-	public struct VertexPositionColor
-	{
-		public const uint SizeInBytes = 24;
-		public System.Numerics.Vector2 Position;
-		public RgbaFloat Color;
-		public VertexPositionColor(System.Numerics.Vector2 position, RgbaFloat color)
-		{
-			Position = position;
-			Color = color;
-		}
-	}
 
 	public class VeldridGL
 	{
@@ -171,8 +161,8 @@ namespace MatterHackers.RenderOpenGl
 				new VertexElementDescription("Position", VertexElementSemantic.Position, VertexElementFormat.Float2),
 				new VertexElementDescription("Color", VertexElementSemantic.Color, VertexElementFormat.Float4));
 
-			var vertexShader = LoadShader(ShaderStages.Vertex);
-			var fragmentShader = LoadShader(ShaderStages.Fragment);
+			vertexShader = LoadShader(ShaderStages.Vertex);
+			fragmentShader = LoadShader(ShaderStages.Fragment);
 
 			ShaderSetDescription shaderSet = new ShaderSetDescription(
 				new[]
@@ -183,8 +173,8 @@ namespace MatterHackers.RenderOpenGl
 				},
 				new[]
 				{
-					LoadShader(factory, "Cube", ShaderStages.Vertex, "VS"),
-					LoadShader(factory, "Cube", ShaderStages.Fragment, "FS")
+					LoadShader(factory, "PositionTexture", ShaderStages.Vertex, "VS"),
+					LoadShader(factory, "PositionTexture", ShaderStages.Fragment, "FS")
 				});
 
 
