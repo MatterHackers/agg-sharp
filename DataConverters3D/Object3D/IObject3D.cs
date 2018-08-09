@@ -146,31 +146,6 @@ namespace MatterHackers.DataConverters3D
 			}
 		}
 
-		/// <summary>
-		/// Count all the vertices in all the visible meshes of this object
-		/// </summary>
-		/// <param name="root"></param>
-		/// <returns></returns>
-		public static int EstimatedMemory(this IObject3D root)
-		{
-			var vertex = new Vertex();
-			var face = new Face();
-			var meshEdge = new MeshEdge();
-			int total = 0;
-			foreach (var item in root.VisibleMeshes())
-			{
-				var mesh = item.Mesh;
-				if (mesh != null)
-				{
-					total += mesh.Vertices.Count * SizeOf(vertex);
-					total += mesh.Faces.Count * SizeOf(face);
-					total += mesh.MeshEdges.Count * SizeOf(meshEdge);
-				}
-			}
-
-			return total;
-		}
-
 		public static long MeshRenderId(this IObject3D root)
 		{
 			long hash = 19;
@@ -194,28 +169,6 @@ namespace MatterHackers.DataConverters3D
 			}
 
 			return hash;
-		}
-
-		public static int SizeOf<T>(T obj)
-		{
-			return SizeOfCache<T>.SizeOf;
-		}
-
-		private static class SizeOfCache<T>
-		{
-			public static readonly int SizeOf;
-
-			static SizeOfCache()
-			{
-				var dm = new DynamicMethod("func", typeof(int), Type.EmptyTypes, typeof(Object3DHelperExtensions));
-
-				ILGenerator il = dm.GetILGenerator();
-				il.Emit(OpCodes.Sizeof, typeof(T));
-				il.Emit(OpCodes.Ret);
-
-				var func = (Func<int>)dm.CreateDelegate(typeof(Func<int>));
-				SizeOf = func();
-			}
 		}
 
 		/// <summary>

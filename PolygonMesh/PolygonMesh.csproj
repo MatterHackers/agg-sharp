@@ -1,110 +1,28 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="12.0">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{86F6AAF2-9B50-40B8-A427-1897D76471C5}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>MatterHackers.PolygonMesh</RootNamespace>
-    <AssemblyName>MatterHackers.PolygonMesh</AssemblyName>
-    <FileUpgradeFlags>
-    </FileUpgradeFlags>
-    <UpgradeBackupLocation>
-    </UpgradeBackupLocation>
-    <OldToolsVersion>2.0</OldToolsVersion>
-    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
-    <TargetFrameworkProfile />
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Company>MatterHackers Inc.</Company>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>True</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>False</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>True</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="MIConvexHull, Version=1.0.17.1019, Culture=neutral, PublicKeyToken=bdc96d69606221fd, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\MIConvexHull.1.1.17.1019\lib\netstandard1.0\MIConvexHull.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System" />
+    <Compile Remove="Net3dBool\**" />
+    <Compile Remove="ObjParser\**" />
+    <EmbeddedResource Remove="Net3dBool\**" />
+    <EmbeddedResource Remove="ObjParser\**" />
+    <None Remove="Net3dBool\**" />
+    <None Remove="ObjParser\**" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="Csg\CsgPlane.cs" />
-    <Compile Include="Csg\CsgPolygon.cs" />
-    <Compile Include="Csg\CsgProcessing.cs" />
-    <Compile Include="Csg\CsgOperations.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Csg\IndexAndPosition.cs" />
-    <Compile Include="Csg\IndexAndPositionSorter.cs" />
-    <Compile Include="Csg\Segment.cs" />
-    <Compile Include="Csg\SliceLayer.cs" />
-    <Compile Include="Csg\SortedVector2.cs" />
-    <Compile Include="MeshEdge.cs" />
-    <Compile Include="Face.cs" />
-    <Compile Include="FaceEdge.cs" />
-    <Compile Include="Mesh.cs" />
-    <Compile Include="Processors\MeshConvexHull.cs" />
-    <Compile Include="Processors\FaceBspTree.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Processors\MeshOutputSettings.cs" />
-    <Compile Include="Processors\MeshHelper.cs" />
-    <Compile Include="Rendering\DebugRenderToImage.cs" />
-    <Compile Include="Rendering\OrthographicZProjection.cs" />
-    <Compile Include="Processors\StlProcessing.cs" />
-    <Compile Include="Solids\PlatonicSolids.cs" />
-    <Compile Include="IVertex.cs" />
-    <Compile Include="TransformedAabbCache.cs" />
-    <Compile Include="Vertex.cs" />
-    <Compile Include="VertexCollection.cs" />
-    <Compile Include="VertexSorters\VertexSorterBase.cs" />
-    <Compile Include="VertexSorters\VertexXYZAxisWithRotation.cs" />
-    <Compile Include="VertexSorters\VertexDistanceFromPointSorter.cs" />
-    <Compile Include="VertexSorters\VertexXAxisSorter.cs" />
+    <PackageReference Include="MIConvexHull" Version="1.1.17.1019" />
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\agg\Agg.csproj">
-      <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
-      <Name>Agg</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Localizations\Localizations.csproj">
-      <Project>{CA96058C-1A37-465D-A357-D6D695B13D25}</Project>
-      <Name>Localizations</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\VectorMath\VectorMath.csproj">
-      <Project>{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}</Project>
-      <Name>VectorMath</Name>
-    </ProjectReference>
-    <ProjectReference Include="Net3dBool\Net3dBool.csproj">
-      <Project>{7ee4636d-8a92-4015-9562-7fcd6add0645}</Project>
-      <Name>Net3dBool</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\agg\Agg.csproj" />
+    <ProjectReference Include="..\Localizations\Localizations.csproj" />
+    <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
+    <ProjectReference Include="Net3dBool\Net3dBool.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="MIConvexHull.xml" />
-  </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+
 </Project>

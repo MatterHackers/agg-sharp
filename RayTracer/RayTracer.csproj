@@ -1,88 +1,13 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="12.0">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{1E01ABE0-B494-4FE4-B0D6-540133286887}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>MatterHackers.RayTracer</RootNamespace>
-    <AssemblyName>RayTracer</AssemblyName>
-    <FileUpgradeFlags>
-    </FileUpgradeFlags>
-    <UpgradeBackupLocation>
-    </UpgradeBackupLocation>
-    <OldToolsVersion>2.0</OldToolsVersion>
-    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
-    <TargetFrameworkProfile />
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Company>MatterHackers Inc.</Company>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>True</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>False</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>True</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System" />
+    <ProjectReference Include="..\agg\Agg.csproj" />
+    <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\VectorMath\VectorMath.csproj">
-      <Project>{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}</Project>
-      <Name>VectorMath</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\agg\Agg.csproj">
-      <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
-      <Name>Agg</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Light\ILight.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Primitive\ITraceable.cs" />
-    <Compile Include="Primitive\IBvhItem.cs" />
-    <Compile Include="TraceData\Axis3D.cs" />
-    <Compile Include="Background.cs" />
-    <Compile Include="Camera\ICamera.cs" />
-    <Compile Include="TraceData\IntersectInfo.cs" />
-    <Compile Include="TraceData\RayBundle.cs" />
-    <Compile Include="Primitive\BoundingVolumeHierarchy.cs" />
-    <Compile Include="Camera\SimpleCamera.cs" />
-    <Compile Include="Light\PointLight.cs" />
-    <Compile Include="Materials\MaterialAbstract.cs" />
-    <Compile Include="Materials\ChessboardMaterial.cs" />
-    <Compile Include="Materials\SolidMaterial.cs" />
-    <Compile Include="Materials\TextureMaterial.cs" />
-    <Compile Include="RayTracer.cs" />
-    <Compile Include="Scene.cs" />
-    <Compile Include="Primitive\Difference.cs" />
-    <Compile Include="Primitive\IPrimitive.cs" />
-    <Compile Include="Primitive\Shapes\BaseShape.cs" />
-    <Compile Include="Primitive\Shapes\BoxShape.cs" />
-    <Compile Include="Primitive\Shapes\Cylinder.cs" />
-    <Compile Include="Primitive\Shapes\PlaneShape.cs" />
-    <Compile Include="Primitive\Shapes\SphereShape.cs" />
-    <Compile Include="Primitive\Shapes\TriangleShape.cs" />
-    <Compile Include="Primitive\Transform.cs" />
-  </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+
 </Project>
