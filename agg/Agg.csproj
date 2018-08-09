@@ -1,244 +1,32 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="12.0">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <ProjectGuid>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</ProjectGuid>
-    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <OutputType>Library</OutputType>
-    <RootNamespace>MatterHackers.Agg</RootNamespace>
-    <AssemblyName>AGG</AssemblyName>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <NoStdLib>False</NoStdLib>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <FileUpgradeFlags>
-    </FileUpgradeFlags>
-    <UpgradeBackupLocation>
-    </UpgradeBackupLocation>
-    <OldToolsVersion>2.0</OldToolsVersion>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
-    <PublishUrl>publish\</PublishUrl>
-    <Install>true</Install>
-    <InstallFrom>Disk</InstallFrom>
-    <UpdateEnabled>false</UpdateEnabled>
-    <UpdateMode>Foreground</UpdateMode>
-    <UpdateInterval>7</UpdateInterval>
-    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
-    <UpdatePeriodically>false</UpdatePeriodically>
-    <UpdateRequired>false</UpdateRequired>
-    <MapFileExtensions>true</MapFileExtensions>
-    <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <UseApplicationTrust>false</UseApplicationTrust>
-    <BootstrapperEnabled>true</BootstrapperEnabled>
-    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
-    <TargetFrameworkProfile />
-    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\MatterControl\</SolutionDir>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Company>MatterHackers Inc.</Company>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-    <OutputPath>bin\Debug\</OutputPath>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>Full</DebugType>
-    <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <Optimize>False</Optimize>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-    <OutputPath>bin\Release\</OutputPath>
-    <DebugSymbols>false</DebugSymbols>
-    <DebugType>None</DebugType>
-    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>True</Optimize>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Platform)' == 'AnyCPU' ">
-    <RegisterForComInterop>False</RegisterForComInterop>
-    <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
-    <BaseAddress>4194304</BaseAddress>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <FileAlignment>4096</FileAlignment>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
-    <Optimize>true</Optimize>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Data" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="agg_array.cs" />
-    <Compile Include="agg_basics.cs" />
-    <Compile Include="agg_bounding_rect.cs" />
-    <Compile Include="agg_bspline.cs" />
-    <Compile Include="agg_clip_liang_barsky.cs" />
-    <Compile Include="agg_color_gray.cs" />
-    <Compile Include="agg_dda_line.cs" />
-    <Compile Include="agg_gamma_functions.cs" />
-    <Compile Include="agg_image_filters.cs" />
-    <Compile Include="agg_line_aa_basics.cs" />
-    <Compile Include="agg_math.cs" />
-    <Compile Include="agg_pattern_filters_rgba.cs" />
-    <Compile Include="agg_rasterizer_cells_aa.cs" />
-    <Compile Include="agg_rasterizer_compound_aa.cs" />
-    <Compile Include="agg_rasterizer_outline_aa.cs" />
-    <Compile Include="BorderDouble.cs" />
-    <Compile Include="Collections\IBoundedItem.cs" />
-    <Compile Include="Collections\BoundingVolumeHierarchy.cs" />
-    <Compile Include="Collections\UnboundCollection.cs" />
-    <Compile Include="Color.cs" />
-    <Compile Include="Easing.cs" />
-    <Compile Include="Font\LiberationSansBoldFont.cs" />
-    <Compile Include="Font\VertexSourceGlyphTranslator.cs" />
-    <Compile Include="Image\ThresholdFunctions\AlphaThresholdFunction.cs" />
-    <Compile Include="Image\ThresholdFunctions\HueThresholdFunction.cs" />
-    <Compile Include="Image\ThresholdFunctions\IThresholdFunction.cs" />
-    <Compile Include="Image\ThresholdFunctions\MapOnMaxIntensity.cs" />
-    <Compile Include="Image\ThresholdFunctions\SilhouetteThresholdFunction.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="QuickTimer.cs" />
-    <Compile Include="ReferenceEqualityComparer.cs" />
-    <Compile Include="StatisticsTracker.cs" />
-    <Compile Include="StringEventArgs.cs" />
-    <Compile Include="TraceTiming.cs" />
-    <Compile Include="DumpCallStackIfSlow.cs" />
-    <Compile Include="Platform\AggContext.cs" />
-    <Compile Include="Platform\Providers\IStaticData.cs" />
-    <Compile Include="Platform\Providers\IFileDialogProvider.cs" />
-    <Compile Include="Platform\Providers\IImageIOProvider.cs" />
-    <Compile Include="Platform\Providers\IOsInformationProvider.cs" />
-    <Compile Include="Platform\FileDialogs\FileDialogParams.cs" />
-    <Compile Include="Platform\FileDialogs\OpenFileDialogPrams.cs" />
-    <Compile Include="Platform\FileDialogs\SaveFileDialogParams.cs" />
-    <Compile Include="Platform\FileDialogs\SelectFolderDialogParams.cs" />
-    <Compile Include="Font\TextWrapping.cs" />
-    <Compile Include="Image\ImageSequence.cs" />
-    <Compile Include="PluginFinder.cs" />
-    <Compile Include="RectangleFloat.cs" />
-    <Compile Include="RectangleDouble.cs" />
-    <Compile Include="RectangleInt.cs" />
-    <Compile Include="RootedObjectEventHandler.cs" />
-    <Compile Include="ScanlineRasterizer.cs" />
-    <Compile Include="ShapePath.cs" />
-    <Compile Include="StringHelper.cs" />
-    <Compile Include="VectorClipper.cs" />
-    <Compile Include="OutlineRenderer.cs" />
-    <Compile Include="ImageLineRenderer.cs" />
-    <Compile Include="ScanlineRenderer.cs" />
-    <Compile Include="agg_scanline_bin.cs" />
-    <Compile Include="agg_simul_eq.cs" />
-    <Compile Include="agg_span_allocator.cs" />
-    <Compile Include="agg_span_gradient.cs" />
-    <Compile Include="agg_span_image_filter.cs" />
-    <Compile Include="agg_span_image_filter_gray.cs" />
-    <Compile Include="agg_span_image_filter_rgb.cs" />
-    <Compile Include="agg_span_image_filter_rgba.cs" />
-    <Compile Include="agg_span_interpolator_linear.cs" />
-    <Compile Include="agg_span_interpolator_persp.cs" />
-    <Compile Include="agg_span_subdiv_adaptor.cs" />
-    <Compile Include="Array2D.cs" />
-    <Compile Include="FloodFiller.cs" />
-    <Compile Include="Font\LiberationSansFont.cs" />
-    <Compile Include="Font\TypeFacePrinter.cs" />
-    <Compile Include="Font\TypeFace.cs" />
-    <Compile Include="GammaLookUpTable.cs" />
-    <Compile Include="Graphics2D.cs" />
-    <Compile Include="IColorType.cs" />
-    <Compile Include="Image\IImage.cs" />
-    <Compile Include="Image\ImageBuffer.cs" />
-    <Compile Include="Image\ImageBufferFloat.cs" />
-    <Compile Include="Image\ImageGraphics2D.cs" />
-    <Compile Include="Image\ImageProxy.cs" />
-    <Compile Include="Image\ImageTgaIO.cs" />
-    <Compile Include="IMarkers.cs" />
-    <Compile Include="Image\RecursiveBlur.cs" />
-    <Compile Include="IScanline.cs" />
-    <Compile Include="IVertexDest.cs" />
-    <Compile Include="Image\agg_alpha_mask_u8.cs" />
-    <Compile Include="Image\AlphaMaskAdaptor.cs" />
-    <Compile Include="Image\ClippingProxy.cs" />
-    <Compile Include="Image\Gray.cs" />
-    <Compile Include="Image\rgb.cs" />
-    <Compile Include="Image\rgba.cs" />
-    <Compile Include="Image\Transposer.cs" />
-    <Compile Include="Point2D.cs" />
-    <Compile Include="quicksort.cs" />
-    <Compile Include="RasterBufferAccessors.cs" />
-    <Compile Include="RasterizerScanline\agg_scanline_p.cs" />
-    <Compile Include="RasterizerScanline\agg_scanline_u.cs" />
-    <Compile Include="Transform\Affine.cs" />
-    <Compile Include="Transform\Bilinear.cs" />
-    <Compile Include="Transform\ITransform.cs" />
-    <Compile Include="Transform\Perspective.cs" />
-    <Compile Include="Transform\Viewport.cs" />
-    <Compile Include="VertexSource\Contour.cs" />
-    <Compile Include="VertexSource\ContourGenerator.cs" />
-    <Compile Include="VertexSource\ConnectedPaths.cs" />
-    <Compile Include="VertexSource\VertexSourceAdapter.cs" />
-    <Compile Include="VertexSource\Stroke.cs" />
-    <Compile Include="VertexSource\agg_curves.cs" />
-    <Compile Include="VertexSource\agg_gsv_text.cs" />
-    <Compile Include="VertexSource\agg_span_gouraud.cs" />
-    <Compile Include="VertexSource\agg_span_gouraud_rgba.cs" />
-    <Compile Include="VertexSource\ApplyTransform.cs" />
-    <Compile Include="VertexSource\Arc.cs" />
-    <Compile Include="VertexSource\Ellipse.cs" />
-    <Compile Include="VertexSource\FlattenCurve.cs" />
-    <Compile Include="VertexSource\IVertexSource.cs" />
-    <Compile Include="VertexSource\VertexStorage.cs" />
-    <Compile Include="VertexSource\RoundedRect.cs" />
-    <Compile Include="Font\StyledTypeFace.cs" />
-    <Compile Include="VertexSource\StrokeGenerator.cs" />
-    <Compile Include="agg_VertexSequence.cs" />
-    <Compile Include="VertexSource\StrokeMath.cs" />
-    <Compile Include="VertexSource\IGenerator.cs" />
-    <Compile Include="VertexSource\VertexSourceIO.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Windows.Installer.3.1">
-      <Visible>False</Visible>
-      <ProductName>Windows Installer 3.1</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\VectorMath\VectorMath.csproj">
-      <Project>{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}</Project>
-      <Name>VectorMath</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
     <EmbeddedResource Include="Platform\config.json">
       <LogicalName>config.json</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup />
-  <Import Project="..\Typography.OpenFont\Typography.OpenFont.projitems" Label="Shared" />
-  <Import Project="..\Typography.GlyphLayout\Typography.GlyphLayout.projitems" Label="Shared" />
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Typography.GlyphLayout\Typography.GlyphLayout.csproj" />
+    <ProjectReference Include="..\Typography.OpenFont\Typography.OpenFont.csproj" />
+    <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
+  </ItemGroup>
+
 </Project>
