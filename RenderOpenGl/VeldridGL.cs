@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System.IO;
+using System.Runtime.InteropServices;
 using Veldrid;
 
 namespace MatterHackers.RenderOpenGl
@@ -44,25 +45,27 @@ namespace MatterHackers.RenderOpenGl
 		}
 	}
 
-	public static class VeldridGL
+	public class VeldridGL
 	{
-		public static VertexPositionColor[] quadVertices;
-		public static GraphicsDevice graphicsDevice;
+		public static VeldridGL Instance = new VeldridGL();
+
+		public VertexPositionColor[] quadVertices;
+		public GraphicsDevice graphicsDevice;
 
 		// matrix transforms
-		public static DeviceBuffer projectionBuffer;
+		public DeviceBuffer projectionBuffer;
 
-		public static CommandList commandList;
+		public CommandList commandList;
 
-		public static DeviceBuffer vertexBuffer;
-		public static DeviceBuffer indexBuffer;
+		public DeviceBuffer vertexBuffer;
+		public DeviceBuffer indexBuffer;
 
-		public static Shader vertexShader;
-		public static Shader fragmentShader;
+		public Shader vertexShader;
+		public Shader fragmentShader;
 
-		public static Pipeline pipeline;
+		public Pipeline pipeline;
 
-		public static Shader LoadShader(ShaderStages stage)
+		public Shader LoadShader(ShaderStages stage)
 		{
 			string extension = null;
 			switch (graphicsDevice.BackendType)
@@ -88,7 +91,7 @@ namespace MatterHackers.RenderOpenGl
 			return graphicsDevice.ResourceFactory.CreateShader(new ShaderDescription(stage, shaderBytes, entryPoint));
 		}
 
-		public static void DisposeResources()
+		public void DisposeResources()
 		{
 			pipeline.Dispose();
 			vertexShader.Dispose();
@@ -99,9 +102,45 @@ namespace MatterHackers.RenderOpenGl
 			graphicsDevice.Dispose();
 		}
 
-		public static void CreateResources(GraphicsDevice _graphicsDevice)
+		public Stream OpenEmbeddedAssetStream(string name) => GetType().Assembly.GetManifestResourceStream(name);
+
+		public byte[] ReadEmbeddedAssetBytes(string name)
 		{
-			VeldridGL.graphicsDevice = _graphicsDevice;
+			using (Stream stream = OpenEmbeddedAssetStream(name))
+			{
+				byte[] bytes = new byte[stream.Length];
+				using (MemoryStream ms = new MemoryStream(bytes))
+				{
+					stream.CopyTo(ms);
+					return bytes;
+				}
+			}
+		}
+
+		private string GetExtension(GraphicsBackend backendType)
+		{
+			bool isMacOS = RuntimeInformation.OSDescription.Contains("Darwin");
+
+			return (backendType == GraphicsBackend.Direct3D11)
+				? "hlsl.bytes"
+				: (backendType == GraphicsBackend.Vulkan)
+					? "450.glsl.spv"
+					: (backendType == GraphicsBackend.Metal)
+						? isMacOS ? "metallib" : "ios.metallib"
+						: (backendType == GraphicsBackend.OpenGL)
+							? "330.glsl"
+							: "300.glsles";
+		}
+
+		public Shader LoadShader(ResourceFactory factory, string set, ShaderStages stage, string entryPoint)
+		{
+			string name = $"{set}-{stage.ToString().ToLower()}.{GetExtension(factory.BackendType)}";
+			return factory.CreateShader(new ShaderDescription(stage, ReadEmbeddedAssetBytes(name), entryPoint));
+		}
+
+		public void CreateResources(GraphicsDevice _graphicsDevice)
+		{
+			graphicsDevice = _graphicsDevice;
 
 			ResourceFactory factory = _graphicsDevice.ResourceFactory;
 
@@ -132,8 +171,22 @@ namespace MatterHackers.RenderOpenGl
 				new VertexElementDescription("Position", VertexElementSemantic.Position, VertexElementFormat.Float2),
 				new VertexElementDescription("Color", VertexElementSemantic.Color, VertexElementFormat.Float4));
 
-			vertexShader = LoadShader(ShaderStages.Vertex);
-			fragmentShader = LoadShader(ShaderStages.Fragment);
+			var vertexShader = LoadShader(ShaderStages.Vertex);
+			var fragmentShader = LoadShader(ShaderStages.Fragment);
+
+			ShaderSetDescription shaderSet = new ShaderSetDescription(
+				new[]
+				{
+					new VertexLayoutDescription(
+						new VertexElementDescription("Position", VertexElementSemantic.Position, VertexElementFormat.Float3),
+						new VertexElementDescription("TexCoords", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2))
+				},
+				new[]
+				{
+					LoadShader(factory, "Cube", ShaderStages.Vertex, "VS"),
+					LoadShader(factory, "Cube", ShaderStages.Fragment, "FS")
+				});
+
 
 			// Create pipeline
 			GraphicsPipelineDescription pipelineDescription = new GraphicsPipelineDescription();

@@ -414,7 +414,8 @@ namespace MatterHackers.RenderOpenGl
 			transform.transform(ref fastLeft, ref fastBottom);
 			transform.transform(ref fastRight, ref fastTop);
 #if true
-			var quadVertices = VeldridGL.quadVertices;
+			VeldridGL veldridGL = VeldridGL.Instance;
+			var quadVertices = veldridGL.quadVertices;
 
 			var sl = (float)(-1 + fastLeft / this.Width * 2);
 			var sr = (float)(-1 + fastRight / this.Width * 2);
@@ -428,25 +429,25 @@ namespace MatterHackers.RenderOpenGl
 			quadVertices[2] = new VertexPositionColor(new System.Numerics.Vector2(sl, sb), color);
 			quadVertices[3] = new VertexPositionColor(new System.Numerics.Vector2(sr, sb), color);
 
-			VeldridGL.graphicsDevice.UpdateBuffer(VeldridGL.vertexBuffer, 0, quadVertices);
+			veldridGL.graphicsDevice.UpdateBuffer(veldridGL.vertexBuffer, 0, quadVertices);
 
 			// Begin() must be called before commands can be issued.
-			VeldridGL.commandList.Begin();
+			veldridGL.commandList.Begin();
 
 			// We want to render directly to the output window.
-			VeldridGL.commandList.SetFramebuffer(VeldridGL.graphicsDevice.SwapchainFramebuffer);
+			veldridGL.commandList.SetFramebuffer(veldridGL.graphicsDevice.SwapchainFramebuffer);
 
 			// Set all relevant state to draw our quad.
-			VeldridGL.commandList.SetVertexBuffer(0, VeldridGL.vertexBuffer);
-			VeldridGL.commandList.SetIndexBuffer(VeldridGL.indexBuffer, IndexFormat.UInt16);
-			VeldridGL.commandList.SetPipeline(VeldridGL.pipeline);
+			veldridGL.commandList.SetVertexBuffer(0, veldridGL.vertexBuffer);
+			veldridGL.commandList.SetIndexBuffer(veldridGL.indexBuffer, IndexFormat.UInt16);
+			veldridGL.commandList.SetPipeline(veldridGL.pipeline);
 
 			// Issue a Draw command for a single instance with 4 indices.
-			VeldridGL.commandList.DrawIndexed(4, 1, 0, 0, 0);
+			veldridGL.commandList.DrawIndexed(4, 1, 0, 0, 0);
 
 			// End() must be called before commands can be submitted for execution.
-			VeldridGL.commandList.End();
-			VeldridGL.graphicsDevice.SubmitCommands(VeldridGL.commandList);
+			veldridGL.commandList.End();
+			veldridGL.graphicsDevice.SubmitCommands(veldridGL.commandList);
 #else
 			if (Math.Abs(fastLeft - (int)fastLeft) < .01
 				&& Math.Abs(fastBottom - (int)fastBottom) < .01

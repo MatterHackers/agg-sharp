@@ -26,16 +26,19 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
+#define USE_VELDRID
 
 using System;
 using System.Collections.Generic;
 using MatterHackers.Agg;
 using MatterHackers.VectorMath;
-using Veldrid;
+
 
 #if USE_OPENGL
 
 #elif USE_VELDRID
+
+using Veldrid;
 #else
 
 using OpenTK.Graphics.ES11;
