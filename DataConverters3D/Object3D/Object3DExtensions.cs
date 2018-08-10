@@ -205,7 +205,7 @@ namespace MatterHackers.DataConverters3D
 			return screenBounds;
 		}
 
-		public static async void PersistAssets(this IObject3D sourceItem, Action<double, string> progress = null, bool publishAssets=false)
+		public static async Task PersistAssets(this IObject3D sourceItem, Action<double, string> progress = null, bool publishAssets=false)
 		{
 			// Must use DescendantsAndSelf so that leaf nodes save their meshes
 			var persistableItems = from object3D in sourceItem.DescendantsAndSelf()
