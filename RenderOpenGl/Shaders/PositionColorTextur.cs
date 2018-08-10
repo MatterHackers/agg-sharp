@@ -31,29 +31,21 @@ using ShaderGen;
 using System.Numerics;
 using static ShaderGen.ShaderBuiltins;
 
-[assembly: ShaderSet("PositionColor", "RenderOpenGl.Shaders.PositionColor.VS", "RenderOpenGl.Shaders.PositionColor.FS")]
+[assembly: ShaderSet("PositionColorTexture", "RenderOpenGl.Shaders.PositionColorTexture.VS", "RenderOpenGl.Shaders.PositionColorTexture.FS")]
 
 namespace RenderOpenGl.Shaders
 {
-	public class PositionColor
+	public class PositionColorTexture
 	{
 		[ResourceSet(0)]
 		public Matrix4x4 Projection;
 		[ResourceSet(0)]
 		public Matrix4x4 View;
 
-		[ResourceSet(1)]
-		public Matrix4x4 World;
-
 		[VertexShader]
 		public FragmentInput VS(VertexInput input)
 		{
 			FragmentInput output;
-			Vector4 worldPosition = Mul(World, new Vector4(input.Position, 1));
-			Vector4 viewPosition = Mul(View, worldPosition);
-			Vector4 clipPosition = Mul(Projection, viewPosition);
-			output.SystemPosition = clipPosition;
-
 			output.SystemPosition = new Vector4(input.Position.X, input.Position.Y, 0, 1);
 			output.Color = input.Color;
 
@@ -68,7 +60,7 @@ namespace RenderOpenGl.Shaders
 
 		public struct VertexInput
 		{
-			[PositionSemantic] public Vector3 Position;
+			[PositionSemantic] public Vector2 Position;
 			[ColorSemantic] public Vector4 Color;
 		}
 

@@ -27,55 +27,24 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-using ShaderGen;
 using System.Numerics;
-using static ShaderGen.ShaderBuiltins;
+using Veldrid;
 
-[assembly: ShaderSet("PositionColor", "RenderOpenGl.Shaders.PositionColor.VS", "RenderOpenGl.Shaders.PositionColor.FS")]
-
-namespace RenderOpenGl.Shaders
+namespace RenderOpenGl.VertexFormats
 {
-	public class PositionColor
+	public struct VertexPositionColorTexture
 	{
-		[ResourceSet(0)]
-		public Matrix4x4 Projection;
-		[ResourceSet(0)]
-		public Matrix4x4 View;
+		public const uint SizeInBytes = 36;
 
-		[ResourceSet(1)]
-		public Matrix4x4 World;
+		public Vector3 Position;
+		public RgbaFloat Color;
+		public Vector2 TextureUv;
 
-		[VertexShader]
-		public FragmentInput VS(VertexInput input)
+		public VertexPositionColorTexture(Vector3 pos, RgbaFloat color, Vector2 uv)
 		{
-			FragmentInput output;
-			Vector4 worldPosition = Mul(World, new Vector4(input.Position, 1));
-			Vector4 viewPosition = Mul(View, worldPosition);
-			Vector4 clipPosition = Mul(Projection, viewPosition);
-			output.SystemPosition = clipPosition;
-
-			output.SystemPosition = new Vector4(input.Position.X, input.Position.Y, 0, 1);
-			output.Color = input.Color;
-
-			return output;
-		}
-
-		[FragmentShader]
-		public Vector4 FS(FragmentInput input)
-		{
-			return input.Color;
-		}
-
-		public struct VertexInput
-		{
-			[PositionSemantic] public Vector3 Position;
-			[ColorSemantic] public Vector4 Color;
-		}
-
-		public struct FragmentInput
-		{
-			[SystemPositionSemantic] public Vector4 SystemPosition;
-			[ColorSemantic] public Vector4 Color;
+			Color = color;
+			Position = pos;
+			TextureUv = uv;
 		}
 	}
 }

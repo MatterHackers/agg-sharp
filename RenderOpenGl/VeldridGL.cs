@@ -35,7 +35,6 @@ using Veldrid;
 
 namespace MatterHackers.RenderOpenGl
 {
-
 	public class VeldridGL
 	{
 		public static VeldridGL Instance = new VeldridGL();
