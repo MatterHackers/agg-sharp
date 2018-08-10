@@ -40,6 +40,7 @@ using System;
 using Tesselate;
 using MatterHackers.Agg.Platform;
 using Veldrid;
+using RenderOpenGl.VertexFormats;
 
 namespace MatterHackers.RenderOpenGl
 {
@@ -372,38 +373,6 @@ namespace MatterHackers.RenderOpenGl
 
 		public override void FillRectangle(double left, double bottom, double right, double top, IColorType fillColor)
 		{
-#if false
-			// test to do some textured polygons
-			VeldridGL.commandList.Begin();
-
-			VeldridGL.commandList.UpdateBuffer(VeldridGL.projectionBuffer, 0, Matrix4x4.CreatePerspectiveFieldOfView(
-				1.0f,
-				(float)Window.Width / Window.Height,
-				0.5f,
-				100f));
-
-			VeldridGL.commandList.UpdateBuffer(VeldridGL._viewBuffer, 0, Matrix4x4.CreateLookAt(Vector3.UnitZ * 2.5f, Vector3.Zero, Vector3.UnitY));
-
-			Matrix4x4 rotation =
-				Matrix4x4.CreateFromAxisAngle(Vector3.UnitY, (_ticks / 1000f))
-				* Matrix4x4.CreateFromAxisAngle(Vector3.UnitX, (_ticks / 3000f));
-			VeldridGL.commandList.UpdateBuffer(_worldBuffer, 0, ref rotation);
-
-			VeldridGL.commandList.SetFramebuffer(MainSwapchain.Framebuffer);
-			VeldridGL.commandList.ClearColorTarget(0, RgbaFloat.Black);
-			VeldridGL.commandList.ClearDepthStencil(1f);
-			VeldridGL.commandList.SetPipeline(_pipeline);
-			VeldridGL.commandList.SetVertexBuffer(0, _vertexBuffer);
-			VeldridGL.commandList.SetIndexBuffer(_indexBuffer, IndexFormat.UInt16);
-			VeldridGL.commandList.SetGraphicsResourceSet(0, _projViewSet);
-			VeldridGL.commandList.SetGraphicsResourceSet(1, _worldTextureSet);
-			VeldridGL.commandList.DrawIndexed(36, 1, 0, 0, 0);
-
-			VeldridGL.commandList.End();
-			VeldridGL.graphicsDevice.SubmitCommands(VeldridGL.commandList);
-			VeldridGL.graphicsDevice.SwapBuffers(MainSwapchain);
-			VeldridGL.graphicsDevice.WaitForIdle();
-#else
 			Affine transform = GetTransform();
 			double fastLeft = left;
 			double fastBottom = bottom;
@@ -424,10 +393,10 @@ namespace MatterHackers.RenderOpenGl
 			var sb = (float)(-1 + fastBottom / this.Height * 2);
 
 			var color = new RgbaFloat(fillColor.Red0To1, fillColor.Green0To1, fillColor.Blue0To1, fillColor.Alpha0To1);
-			quadVertices[0] = new VertexPositionColor(new System.Numerics.Vector2(sl, st), color);
-			quadVertices[1] = new VertexPositionColor(new System.Numerics.Vector2(sr, st), color);
-			quadVertices[2] = new VertexPositionColor(new System.Numerics.Vector2(sl, sb), color);
-			quadVertices[3] = new VertexPositionColor(new System.Numerics.Vector2(sr, sb), color);
+			quadVertices[0] = new VertexPositionColor(new System.Numerics.Vector3(sl, st, 0), color);
+			quadVertices[1] = new VertexPositionColor(new System.Numerics.Vector3(sr, st, 0), color);
+			quadVertices[2] = new VertexPositionColor(new System.Numerics.Vector3(sl, sb, 0), color);
+			quadVertices[3] = new VertexPositionColor(new System.Numerics.Vector3(sr, sb, 0), color);
 
 			veldridGL.graphicsDevice.UpdateBuffer(veldridGL.vertexBuffer, 0, quadVertices);
 
@@ -483,7 +452,6 @@ namespace MatterHackers.RenderOpenGl
 				RoundedRect rect = new RoundedRect(left, bottom, right, top, 0);
 				Render(rect, fillColor.ToColor());
 			}
-#endif
 #endif
 		}
 

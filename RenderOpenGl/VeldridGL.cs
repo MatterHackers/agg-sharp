@@ -27,24 +27,14 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using RenderOpenGl.VertexFormats;
 using System.IO;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using Veldrid;
 
 namespace MatterHackers.RenderOpenGl
 {
-	public struct VertexPositionColor
-	{
-		public const uint SizeInBytes = 24;
-		public System.Numerics.Vector2 Position;
-		public RgbaFloat Color;
-		public VertexPositionColor(System.Numerics.Vector2 position, RgbaFloat color)
-		{
-			Position = position;
-			Color = color;
-		}
-	}
-
 	public class VeldridGL
 	{
 		public static VeldridGL Instance = new VeldridGL();
@@ -59,9 +49,6 @@ namespace MatterHackers.RenderOpenGl
 
 		public DeviceBuffer vertexBuffer;
 		public DeviceBuffer indexBuffer;
-
-		public Shader vertexShader;
-		public Shader fragmentShader;
 
 		public Pipeline pipeline;
 
@@ -94,11 +81,10 @@ namespace MatterHackers.RenderOpenGl
 		public void DisposeResources()
 		{
 			pipeline.Dispose();
-			vertexShader.Dispose();
-			fragmentShader.Dispose();
 			commandList.Dispose();
 			vertexBuffer.Dispose();
 			indexBuffer.Dispose();
+
 			graphicsDevice.Dispose();
 		}
 
@@ -142,50 +128,65 @@ namespace MatterHackers.RenderOpenGl
 		{
 			graphicsDevice = _graphicsDevice;
 
-			ResourceFactory factory = _graphicsDevice.ResourceFactory;
+			ResourceFactory resourceFactory = _graphicsDevice.ResourceFactory;
 
-			projectionBuffer = factory.CreateBuffer(new BufferDescription(64, BufferUsage.UniformBuffer));
+			projectionBuffer = resourceFactory.CreateBuffer(new BufferDescription(64, BufferUsage.UniformBuffer));
 
 			quadVertices = new[]
 			{
-				new VertexPositionColor(new System.Numerics.Vector2(-.75f, .75f), RgbaFloat.Red),
-				new VertexPositionColor(new System.Numerics.Vector2(.75f, .75f), RgbaFloat.Green),
-				new VertexPositionColor(new System.Numerics.Vector2(-.75f, -.75f), RgbaFloat.Blue),
-				new VertexPositionColor(new System.Numerics.Vector2(.75f, -.75f), RgbaFloat.Yellow)
+				new VertexPositionColor(new Vector3(-.75f, .75f, 0), RgbaFloat.Red),
+				new VertexPositionColor(new Vector3(.75f, .75f, 0), RgbaFloat.Green),
+				new VertexPositionColor(new Vector3(-.75f, -.75f, 0), RgbaFloat.Blue),
+				new VertexPositionColor(new Vector3(.75f, -.75f, 0), RgbaFloat.Yellow)
 			};
 
 			BufferDescription vbDescription = new BufferDescription(
 				4 * VertexPositionColor.SizeInBytes,
 				BufferUsage.VertexBuffer);
-			vertexBuffer = factory.CreateBuffer(vbDescription);
+			vertexBuffer = resourceFactory.CreateBuffer(vbDescription);
 			_graphicsDevice.UpdateBuffer(vertexBuffer, 0, quadVertices);
 
-			ushort[] quadIndices = { 0, 1, 2, 3 };
-			BufferDescription ibDescription = new BufferDescription(
-				4 * sizeof(ushort),
-				BufferUsage.IndexBuffer);
-			indexBuffer = factory.CreateBuffer(ibDescription);
-			_graphicsDevice.UpdateBuffer(indexBuffer, 0, quadIndices);
+			{
+				ushort[] quadIndices = { 0, 1, 2, 3 };
+				BufferDescription ibDescription = new BufferDescription(
+					4 * sizeof(ushort),
+					BufferUsage.IndexBuffer);
+				indexBuffer = resourceFactory.CreateBuffer(ibDescription);
+				_graphicsDevice.UpdateBuffer(indexBuffer, 0, quadIndices);
 
-			VertexLayoutDescription vertexLayout = new VertexLayoutDescription(
-				new VertexElementDescription("Position", VertexElementSemantic.Position, VertexElementFormat.Float2),
-				new VertexElementDescription("Color", VertexElementSemantic.Color, VertexElementFormat.Float4));
+				VertexLayoutDescription vertexLayout = new VertexLayoutDescription(
+					new VertexElementDescription("Position", VertexElementSemantic.Position, VertexElementFormat.Float2),
+					new VertexElementDescription("Color", VertexElementSemantic.Color, VertexElementFormat.Float4));
 
-			var vertexShader = LoadShader(ShaderStages.Vertex);
-			var fragmentShader = LoadShader(ShaderStages.Fragment);
+				ShaderSetDescription shaderSetPositionTexture = new ShaderSetDescription(
+					new[]
+					{
+					new VertexLayoutDescription(
+						new VertexElementDescription("Position", VertexElementSemantic.Position, VertexElementFormat.Float3),
+						new VertexElementDescription("TexCoords", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2))
+					},
+					new[]
+					{
+					LoadShader(resourceFactory, "PositionTexture", ShaderStages.Vertex, "VS"),
+					LoadShader(resourceFactory, "PositionTexture", ShaderStages.Fragment, "FS")
+					});
+			}
 
-			ShaderSetDescription shaderSet = new ShaderSetDescription(
+			ShaderSetDescription shaderSetPositionColor;
+			{
+				shaderSetPositionColor = new ShaderSetDescription(
 				new[]
 				{
 					new VertexLayoutDescription(
 						new VertexElementDescription("Position", VertexElementSemantic.Position, VertexElementFormat.Float3),
-						new VertexElementDescription("TexCoords", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2))
+						new VertexElementDescription("Color", VertexElementSemantic.Color, VertexElementFormat.Float4))
 				},
 				new[]
 				{
-					LoadShader(factory, "Cube", ShaderStages.Vertex, "VS"),
-					LoadShader(factory, "Cube", ShaderStages.Fragment, "FS")
+					LoadShader(resourceFactory, "PositionColor", ShaderStages.Vertex, "VS"),
+					LoadShader(resourceFactory, "PositionColor", ShaderStages.Fragment, "FS")
 				});
+			}
 
 
 			// Create pipeline
@@ -203,14 +204,12 @@ namespace MatterHackers.RenderOpenGl
 				scissorTestEnabled: false);
 			pipelineDescription.PrimitiveTopology = PrimitiveTopology.TriangleStrip;
 			pipelineDescription.ResourceLayouts = System.Array.Empty<ResourceLayout>();
-			pipelineDescription.ShaderSet = new ShaderSetDescription(
-				vertexLayouts: new VertexLayoutDescription[] { vertexLayout },
-				shaders: new Shader[] { vertexShader, fragmentShader });
+			pipelineDescription.ShaderSet = shaderSetPositionColor;
 			pipelineDescription.Outputs = _graphicsDevice.SwapchainFramebuffer.OutputDescription;
 
-			pipeline = factory.CreateGraphicsPipeline(pipelineDescription);
+			pipeline = resourceFactory.CreateGraphicsPipeline(pipelineDescription);
 
-			commandList = factory.CreateCommandList();
+			commandList = resourceFactory.CreateCommandList();
 		}
 	}
 }
