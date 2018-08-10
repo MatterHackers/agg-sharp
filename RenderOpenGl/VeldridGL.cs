@@ -84,6 +84,7 @@ namespace MatterHackers.RenderOpenGl
 			commandList.Dispose();
 			vertexBuffer.Dispose();
 			indexBuffer.Dispose();
+
 			graphicsDevice.Dispose();
 		}
 
@@ -127,9 +128,9 @@ namespace MatterHackers.RenderOpenGl
 		{
 			graphicsDevice = _graphicsDevice;
 
-			ResourceFactory factory = _graphicsDevice.ResourceFactory;
+			ResourceFactory resourceFactory = _graphicsDevice.ResourceFactory;
 
-			projectionBuffer = factory.CreateBuffer(new BufferDescription(64, BufferUsage.UniformBuffer));
+			projectionBuffer = resourceFactory.CreateBuffer(new BufferDescription(64, BufferUsage.UniformBuffer));
 
 			quadVertices = new[]
 			{
@@ -142,7 +143,7 @@ namespace MatterHackers.RenderOpenGl
 			BufferDescription vbDescription = new BufferDescription(
 				4 * VertexPositionColor.SizeInBytes,
 				BufferUsage.VertexBuffer);
-			vertexBuffer = factory.CreateBuffer(vbDescription);
+			vertexBuffer = resourceFactory.CreateBuffer(vbDescription);
 			_graphicsDevice.UpdateBuffer(vertexBuffer, 0, quadVertices);
 
 			{
@@ -150,7 +151,7 @@ namespace MatterHackers.RenderOpenGl
 				BufferDescription ibDescription = new BufferDescription(
 					4 * sizeof(ushort),
 					BufferUsage.IndexBuffer);
-				indexBuffer = factory.CreateBuffer(ibDescription);
+				indexBuffer = resourceFactory.CreateBuffer(ibDescription);
 				_graphicsDevice.UpdateBuffer(indexBuffer, 0, quadIndices);
 
 				VertexLayoutDescription vertexLayout = new VertexLayoutDescription(
@@ -166,8 +167,8 @@ namespace MatterHackers.RenderOpenGl
 					},
 					new[]
 					{
-					LoadShader(factory, "PositionTexture", ShaderStages.Vertex, "VS"),
-					LoadShader(factory, "PositionTexture", ShaderStages.Fragment, "FS")
+					LoadShader(resourceFactory, "PositionTexture", ShaderStages.Vertex, "VS"),
+					LoadShader(resourceFactory, "PositionTexture", ShaderStages.Fragment, "FS")
 					});
 			}
 
@@ -182,8 +183,8 @@ namespace MatterHackers.RenderOpenGl
 				},
 				new[]
 				{
-					LoadShader(factory, "PositionColor", ShaderStages.Vertex, "VS"),
-					LoadShader(factory, "PositionColor", ShaderStages.Fragment, "FS")
+					LoadShader(resourceFactory, "PositionColor", ShaderStages.Vertex, "VS"),
+					LoadShader(resourceFactory, "PositionColor", ShaderStages.Fragment, "FS")
 				});
 			}
 
@@ -206,9 +207,9 @@ namespace MatterHackers.RenderOpenGl
 			pipelineDescription.ShaderSet = shaderSetPositionColor;
 			pipelineDescription.Outputs = _graphicsDevice.SwapchainFramebuffer.OutputDescription;
 
-			pipeline = factory.CreateGraphicsPipeline(pipelineDescription);
+			pipeline = resourceFactory.CreateGraphicsPipeline(pipelineDescription);
 
-			commandList = factory.CreateCommandList();
+			commandList = resourceFactory.CreateCommandList();
 		}
 	}
 }

@@ -53,9 +53,10 @@ namespace RenderOpenGl.Shaders
 			Vector4 viewPosition = Mul(View, worldPosition);
 			Vector4 clipPosition = Mul(Projection, viewPosition);
 			output.SystemPosition = clipPosition;
-
-			output.SystemPosition = new Vector4(input.Position.X, input.Position.Y, 0, 1);
 			output.Color = input.Color;
+
+			// this is the old behavior
+			output.SystemPosition = new Vector4(input.Position.X, input.Position.Y, 0, 1);
 
 			return output;
 		}
