@@ -34,12 +34,12 @@ namespace RenderOpenGl.VertexFormats
 {
 	public struct VertexPositionColor
 	{
-		public const uint SizeInBytes = 24;
+		public const uint SizeInBytes = 28;
 
-		public Vector2 Position;
+		public Vector3 Position;
 		public RgbaFloat Color;
 
-		public VertexPositionColor(Vector2 position, RgbaFloat color)
+		public VertexPositionColor(Vector3 position, RgbaFloat color)
 		{
 			Position = position;
 			Color = color;

@@ -425,10 +425,10 @@ namespace MatterHackers.RenderOpenGl
 			var sb = (float)(-1 + fastBottom / this.Height * 2);
 
 			var color = new RgbaFloat(fillColor.Red0To1, fillColor.Green0To1, fillColor.Blue0To1, fillColor.Alpha0To1);
-			quadVertices[0] = new VertexPositionColor(new System.Numerics.Vector2(sl, st), color);
-			quadVertices[1] = new VertexPositionColor(new System.Numerics.Vector2(sr, st), color);
-			quadVertices[2] = new VertexPositionColor(new System.Numerics.Vector2(sl, sb), color);
-			quadVertices[3] = new VertexPositionColor(new System.Numerics.Vector2(sr, sb), color);
+			quadVertices[0] = new VertexPositionColor(new System.Numerics.Vector3(sl, st, 0), color);
+			quadVertices[1] = new VertexPositionColor(new System.Numerics.Vector3(sr, st, 0), color);
+			quadVertices[2] = new VertexPositionColor(new System.Numerics.Vector3(sl, sb, 0), color);
+			quadVertices[3] = new VertexPositionColor(new System.Numerics.Vector3(sr, sb, 0), color);
 
 			veldridGL.graphicsDevice.UpdateBuffer(veldridGL.vertexBuffer, 0, quadVertices);
 

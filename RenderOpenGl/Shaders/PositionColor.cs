@@ -37,27 +37,12 @@ namespace RenderOpenGl.Shaders
 {
 	public class PositionColor
 	{
-		[ResourceSet(0)]
-		public Matrix4x4 Projection;
-		[ResourceSet(0)]
-		public Matrix4x4 View;
-
-		[ResourceSet(1)]
-		public Matrix4x4 World;
-		[ResourceSet(1)]
-		public Texture2DResource SurfaceTexture;
-		[ResourceSet(1)]
-		public SamplerResource SurfaceSampler;
-
 		[VertexShader]
 		public FragmentInput VS(VertexInput input)
 		{
 			FragmentInput output;
-			Vector4 worldPosition = Mul(World, new Vector4(input.Position, 1));
-			Vector4 viewPosition = Mul(View, worldPosition);
-			Vector4 clipPosition = Mul(Projection, viewPosition);
-			output.SystemPosition = clipPosition;
-			output.TexCoords = input.TexCoords;
+			output.SystemPosition = new Vector4(input.Position.X, input.Position.Y, 0, 1);
+			output.Color = input.Color;
 
 			return output;
 		}
@@ -65,19 +50,19 @@ namespace RenderOpenGl.Shaders
 		[FragmentShader]
 		public Vector4 FS(FragmentInput input)
 		{
-			return Sample(SurfaceTexture, SurfaceSampler, input.TexCoords);
+			return input.Color;
 		}
 
 		public struct VertexInput
 		{
-			[PositionSemantic] public Vector3 Position;
-			[TextureCoordinateSemantic] public Vector2 TexCoords;
+			[PositionSemantic] public Vector2 Position;
+			[ColorSemantic] public Vector4 Color;
 		}
 
 		public struct FragmentInput
 		{
 			[SystemPositionSemantic] public Vector4 SystemPosition;
-			[TextureCoordinateSemantic] public Vector2 TexCoords;
+			[ColorSemantic] public Vector4 Color;
 		}
 	}
 }

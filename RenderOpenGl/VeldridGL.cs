@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using RenderOpenGl.VertexFormats;
 using System.IO;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using Veldrid;
 
@@ -49,9 +50,6 @@ namespace MatterHackers.RenderOpenGl
 
 		public DeviceBuffer vertexBuffer;
 		public DeviceBuffer indexBuffer;
-
-		public Shader vertexShader;
-		public Shader fragmentShader;
 
 		public Pipeline pipeline;
 
@@ -84,8 +82,6 @@ namespace MatterHackers.RenderOpenGl
 		public void DisposeResources()
 		{
 			pipeline.Dispose();
-			vertexShader.Dispose();
-			fragmentShader.Dispose();
 			commandList.Dispose();
 			vertexBuffer.Dispose();
 			indexBuffer.Dispose();
@@ -138,10 +134,10 @@ namespace MatterHackers.RenderOpenGl
 
 			quadVertices = new[]
 			{
-				new VertexPositionColor(new System.Numerics.Vector2(-.75f, .75f), RgbaFloat.Red),
-				new VertexPositionColor(new System.Numerics.Vector2(.75f, .75f), RgbaFloat.Green),
-				new VertexPositionColor(new System.Numerics.Vector2(-.75f, -.75f), RgbaFloat.Blue),
-				new VertexPositionColor(new System.Numerics.Vector2(.75f, -.75f), RgbaFloat.Yellow)
+				new VertexPositionColor(new Vector3(-.75f, .75f, 0), RgbaFloat.Red),
+				new VertexPositionColor(new Vector3(.75f, .75f, 0), RgbaFloat.Green),
+				new VertexPositionColor(new Vector3(-.75f, -.75f, 0), RgbaFloat.Blue),
+				new VertexPositionColor(new Vector3(.75f, -.75f, 0), RgbaFloat.Yellow)
 			};
 
 			BufferDescription vbDescription = new BufferDescription(
@@ -150,32 +146,47 @@ namespace MatterHackers.RenderOpenGl
 			vertexBuffer = factory.CreateBuffer(vbDescription);
 			_graphicsDevice.UpdateBuffer(vertexBuffer, 0, quadVertices);
 
-			ushort[] quadIndices = { 0, 1, 2, 3 };
-			BufferDescription ibDescription = new BufferDescription(
-				4 * sizeof(ushort),
-				BufferUsage.IndexBuffer);
-			indexBuffer = factory.CreateBuffer(ibDescription);
-			_graphicsDevice.UpdateBuffer(indexBuffer, 0, quadIndices);
+			{
+				ushort[] quadIndices = { 0, 1, 2, 3 };
+				BufferDescription ibDescription = new BufferDescription(
+					4 * sizeof(ushort),
+					BufferUsage.IndexBuffer);
+				indexBuffer = factory.CreateBuffer(ibDescription);
+				_graphicsDevice.UpdateBuffer(indexBuffer, 0, quadIndices);
 
-			VertexLayoutDescription vertexLayout = new VertexLayoutDescription(
-				new VertexElementDescription("Position", VertexElementSemantic.Position, VertexElementFormat.Float2),
-				new VertexElementDescription("Color", VertexElementSemantic.Color, VertexElementFormat.Float4));
+				VertexLayoutDescription vertexLayout = new VertexLayoutDescription(
+					new VertexElementDescription("Position", VertexElementSemantic.Position, VertexElementFormat.Float2),
+					new VertexElementDescription("Color", VertexElementSemantic.Color, VertexElementFormat.Float4));
 
-			vertexShader = LoadShader(ShaderStages.Vertex);
-			fragmentShader = LoadShader(ShaderStages.Fragment);
+				ShaderSetDescription shaderSetPositionTexture = new ShaderSetDescription(
+					new[]
+					{
+					new VertexLayoutDescription(
+						new VertexElementDescription("Position", VertexElementSemantic.Position, VertexElementFormat.Float3),
+						new VertexElementDescription("TexCoords", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2))
+					},
+					new[]
+					{
+					LoadShader(factory, "PositionTexture", ShaderStages.Vertex, "VS"),
+					LoadShader(factory, "PositionTexture", ShaderStages.Fragment, "FS")
+					});
+			}
 
-			ShaderSetDescription shaderSet = new ShaderSetDescription(
+			ShaderSetDescription shaderSetPositionColor;
+			{
+				shaderSetPositionColor = new ShaderSetDescription(
 				new[]
 				{
 					new VertexLayoutDescription(
 						new VertexElementDescription("Position", VertexElementSemantic.Position, VertexElementFormat.Float3),
-						new VertexElementDescription("TexCoords", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2))
+						new VertexElementDescription("Color", VertexElementSemantic.Color, VertexElementFormat.Float4))
 				},
 				new[]
 				{
-					LoadShader(factory, "PositionTexture", ShaderStages.Vertex, "VS"),
-					LoadShader(factory, "PositionTexture", ShaderStages.Fragment, "FS")
+					LoadShader(factory, "PositionColor", ShaderStages.Vertex, "VS"),
+					LoadShader(factory, "PositionColor", ShaderStages.Fragment, "FS")
 				});
+			}
 
 
 			// Create pipeline
@@ -193,9 +204,7 @@ namespace MatterHackers.RenderOpenGl
 				scissorTestEnabled: false);
 			pipelineDescription.PrimitiveTopology = PrimitiveTopology.TriangleStrip;
 			pipelineDescription.ResourceLayouts = System.Array.Empty<ResourceLayout>();
-			pipelineDescription.ShaderSet = new ShaderSetDescription(
-				vertexLayouts: new VertexLayoutDescription[] { vertexLayout },
-				shaders: new Shader[] { vertexShader, fragmentShader });
+			pipelineDescription.ShaderSet = shaderSetPositionColor;
 			pipelineDescription.Outputs = _graphicsDevice.SwapchainFramebuffer.OutputDescription;
 
 			pipeline = factory.CreateGraphicsPipeline(pipelineDescription);
