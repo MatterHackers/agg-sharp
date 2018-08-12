@@ -882,6 +882,11 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #endif
 		}
 
+		public static void Vertex2(Vector2 position)
+		{
+			Vertex2(position.X, position.Y);
+		}
+
 		public static void Vertex2(double x, double y)
 		{
 #if USE_OPENGL
