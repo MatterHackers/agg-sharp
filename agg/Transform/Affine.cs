@@ -527,6 +527,13 @@ namespace MatterHackers.Agg.Transform
 			transform(ref pointToTransform.X, ref pointToTransform.Y);
 		}
 
+		public Vector2 Transform(Vector2 vectorIn)
+		{
+			var temp = vectorIn;
+			transform(ref temp.X, ref temp.Y);
+			return temp;
+		}
+
 		public void transform(ref RectangleDouble rectToTransform)
 		{
 			transform(ref rectToTransform.Left, ref rectToTransform.Bottom);
@@ -544,6 +551,14 @@ namespace MatterHackers.Agg.Transform
 		}
 
 		 */
+
+
+		public Vector2 InverseTransform(Vector2 vectorIn)
+		{
+			var temp = vectorIn;
+			inverse_transform(ref temp.X, ref temp.Y);
+			return temp;
+		}
 
 		// Inverse transformation of x and y. It works slower than the
 		// direct transformation. For massive operations it's better to
