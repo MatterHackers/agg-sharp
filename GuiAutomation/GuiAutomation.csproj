@@ -28,5 +28,5 @@
     <ProjectReference Include="..\PlatformWin32\PlatformWin32.csproj" />
     <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
   </ItemGroup>
-  
+
 </Project>
