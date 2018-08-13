@@ -2,17 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Company>MatterHackers Inc.</Company>
     <ShaderOutputPath>$(BaseIntermediateOutputPath)</ShaderOutputPath>
     <ShaderContentIncludePath>Shaders</ShaderContentIncludePath>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -23,11 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\agg\Agg.csproj" />
-    <ProjectReference Include="..\Csg\Csg.csproj" />
-    <ProjectReference Include="..\DataConverters2D\DataConverters2D.csproj" />
-    <ProjectReference Include="..\PolygonMesh\PolygonMesh.csproj" />
-    <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
+    <ProjectReference Include="..\RenderOpenGl\RenderOpenGl.csproj" />
   </ItemGroup>
 
   <Target Name="IncludeGeneratedShaderEmbeddedResource" AfterTargets="AssignTargetPaths" Condition="'$(ShaderContentIncludePath)' != ''">

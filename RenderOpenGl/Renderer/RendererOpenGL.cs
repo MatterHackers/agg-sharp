@@ -39,6 +39,8 @@ using MatterHackers.VectorMath;
 using System;
 using Tesselate;
 using MatterHackers.Agg.Platform;
+using Veldrid;
+using RenderOpenGl.VertexFormats;
 
 namespace MatterHackers.RenderOpenGl
 {
@@ -338,7 +340,6 @@ namespace MatterHackers.RenderOpenGl
 
 		public override void Rectangle(double left, double bottom, double right, double top, Color color, double strokeWidth)
 		{
-#if true
 			// This only works for translation. If we have a rotation or scale in the transform this will have some problems.
 			Affine transform = GetTransform();
 			double fastLeft = left;
@@ -362,7 +363,6 @@ namespace MatterHackers.RenderOpenGl
 				FillRectangle(right - 1, bottom, right, top, color);
 			}
 			else
-#endif
 			{
 				RoundedRect rect = new RoundedRect(left + .5, bottom + .5, right - .5, top - .5, 0);
 				Stroke rectOutline = new Stroke(rect, strokeWidth);
@@ -373,16 +373,51 @@ namespace MatterHackers.RenderOpenGl
 
 		public override void FillRectangle(double left, double bottom, double right, double top, IColorType fillColor)
 		{
-			// This only works for translation. If we have a rotation or scale in the transform this will have some problems.
 			Affine transform = GetTransform();
 			double fastLeft = left;
 			double fastBottom = bottom;
 			double fastRight = right;
 			double fastTop = top;
 
+			// This only works for translation. If we have a rotation or scale in the transform this will have some problems.
 			transform.transform(ref fastLeft, ref fastBottom);
 			transform.transform(ref fastRight, ref fastTop);
+#if true
+			VeldridGL veldridGL = VeldridGL.Instance;
+			var quadVertices = veldridGL.quadVertices;
 
+			var sl = (float)(-1 + fastLeft / this.Width * 2);
+			var sr = (float)(-1 + fastRight / this.Width * 2);
+
+			var st = (float)(-1 + fastTop / this.Height * 2);
+			var sb = (float)(-1 + fastBottom / this.Height * 2);
+
+			var color = new RgbaFloat(fillColor.Red0To1, fillColor.Green0To1, fillColor.Blue0To1, fillColor.Alpha0To1);
+			quadVertices[0] = new VertexPositionColor(new System.Numerics.Vector3(sl, st, 0), color);
+			quadVertices[1] = new VertexPositionColor(new System.Numerics.Vector3(sr, st, 0), color);
+			quadVertices[2] = new VertexPositionColor(new System.Numerics.Vector3(sl, sb, 0), color);
+			quadVertices[3] = new VertexPositionColor(new System.Numerics.Vector3(sr, sb, 0), color);
+
+			veldridGL.graphicsDevice.UpdateBuffer(veldridGL.vertexBuffer, 0, quadVertices);
+
+			// Begin() must be called before commands can be issued.
+			veldridGL.commandList.Begin();
+
+			// We want to render directly to the output window.
+			veldridGL.commandList.SetFramebuffer(veldridGL.graphicsDevice.SwapchainFramebuffer);
+
+			// Set all relevant state to draw our quad.
+			veldridGL.commandList.SetVertexBuffer(0, veldridGL.vertexBuffer);
+			veldridGL.commandList.SetIndexBuffer(veldridGL.indexBuffer, IndexFormat.UInt16);
+			veldridGL.commandList.SetPipeline(veldridGL.pipeline);
+
+			// Issue a Draw command for a single instance with 4 indices.
+			veldridGL.commandList.DrawIndexed(4, 1, 0, 0, 0);
+
+			// End() must be called before commands can be submitted for execution.
+			veldridGL.commandList.End();
+			veldridGL.graphicsDevice.SubmitCommands(veldridGL.commandList);
+#else
 			if (Math.Abs(fastLeft - (int)fastLeft) < .01
 				&& Math.Abs(fastBottom - (int)fastBottom) < .01
 				&& Math.Abs(fastRight - (int)fastRight) < .01
@@ -397,15 +432,13 @@ namespace MatterHackers.RenderOpenGl
 				GL.Color4(fillColor.Red0To255, fillColor.Green0To255, fillColor.Blue0To255, fillColor.Alpha0To255);
 
 				GL.Begin(BeginMode.Triangles);
-				// triangle 1
 				{
+					// triangle 1
 					GL.Vertex2(fastLeft, fastBottom);
 					GL.Vertex2(fastRight, fastBottom);
 					GL.Vertex2(fastRight, fastTop);
-				}
 
-				// triangle 2
-				{
+					// triangle 2
 					GL.Vertex2(fastLeft, fastBottom);
 					GL.Vertex2(fastRight, fastTop);
 					GL.Vertex2(fastLeft, fastTop);
@@ -419,6 +452,7 @@ namespace MatterHackers.RenderOpenGl
 				RoundedRect rect = new RoundedRect(left, bottom, right, top, 0);
 				Render(rect, fillColor.ToColor());
 			}
+#endif
 		}
 
 		public override void Line(double x1, double y1, double x2, double y2, Color color, double strokeWidth = 1)

@@ -1,11 +1,46 @@
-﻿using System;
+﻿/*
+Copyright (c) 2018, Lars Brubaker, John Lewin
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation are those
+of the authors and should not be interpreted as representing official policies,
+either expressed or implied, of the FreeBSD Project.
+*/
+#define USE_VELDRID
+
+using System;
 using System.Collections.Generic;
 using MatterHackers.Agg;
 using MatterHackers.VectorMath;
 
+
 #if USE_OPENGL
 
+#elif USE_VELDRID
+
+using Veldrid;
 #else
+
 using OpenTK.Graphics.ES11;
 using MatterHackers.VectorMath;
 using MatterHackers.Agg;
@@ -16,26 +51,26 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if !USE_OPENGL
 	internal class ImediateMode
 	{
-        public static byte[] currentColor = new byte[4];
+		public static byte[] currentColor = new byte[4];
 		BeginMode mode;
 		internal BeginMode Mode
 		{
 			get
 			{
-				return mode; 
+				return mode;
 			}
 			set
 			{
 				mode = value;
-                positions3f.Clear();
-                color4b.Clear();
-                textureCoords2f.Clear();
+				positions3f.Clear();
+				color4b.Clear();
+				textureCoords2f.Clear();
 			}
 		}
 
 		internal int vertexCount;
-        internal VectorPOD<float> positions3f = new VectorPOD<float>();
-        internal VectorPOD<byte> color4b = new VectorPOD<byte>();
+		internal VectorPOD<float> positions3f = new VectorPOD<float>();
+		internal VectorPOD<byte> color4b = new VectorPOD<byte>();
 		internal VectorPOD<float> textureCoords2f = new VectorPOD<float>();
 	}
 #endif
@@ -327,7 +362,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.BlendFunc((OpenTK.Graphics.OpenGL.BlendingFactorSrc)sfactor, (OpenTK.Graphics.OpenGL.BlendingFactorDest)dfactor);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.BlendFunc((OpenTK.Graphics.ES11.All)sfactor, (OpenTK.Graphics.ES11.All)dfactor);
 #endif
 		}
@@ -339,7 +376,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.Scissor(x, y, width, height);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.Scissor(x, y, width, height);
 #endif
 		}
@@ -351,7 +390,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.Enable((OpenTK.Graphics.OpenGL.EnableCap)cap);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.Enable((OpenTK.Graphics.ES11.All)cap);
 #endif
 		}
@@ -363,7 +404,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.ColorMask(red, green, blue, alpha);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.ColorMask(red, green, blue, alpha);
 #endif
 
@@ -377,7 +420,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.Disable((OpenTK.Graphics.OpenGL.EnableCap)cap);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.Disable((OpenTK.Graphics.ES11.All)cap);
 #endif
 		}
@@ -389,7 +434,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.DisableClientState((OpenTK.Graphics.OpenGL.ArrayCap)array);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.DisableClientState((OpenTK.Graphics.ES11.All)array);
 #endif
 		}
@@ -401,7 +448,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.LoadMatrix(m);
 			}
+#elif USE_VELDRID
 #else
+
 			float[] asFloats = new float[m.Length];
 			for(int i=0; i<m.Length; i++)
 			{
@@ -419,7 +468,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.MatrixMode((OpenTK.Graphics.OpenGL.MatrixMode)mode);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.MatrixMode((OpenTK.Graphics.ES11.All)mode);
 #endif
 		}
@@ -439,7 +490,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.Translate(x, y, z);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.Translate((float)x, (float)y, (float)z);
 #endif
 		}
@@ -451,7 +504,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.Rotate(angle, x, y, z);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.Rotate((float)angle, (float)x, (float)y, (float)z);
 #endif
 		}
@@ -463,7 +518,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.Scale(x, y, z);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.Scale((float)x, (float)y, (float)z);
 #endif
 		}
@@ -486,12 +543,14 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				OpenTK.Graphics.OpenGL.GL.Color4(red, green, blue, alpha);
 			}
 #else
-            ImediateMode.currentColor[0] = (byte)red;
-            ImediateMode.currentColor[1] = (byte)green;
-            ImediateMode.currentColor[2] = (byte)blue;
-            ImediateMode.currentColor[3] = (byte)alpha;
+			ImediateMode.currentColor[0] = (byte)red;
+			ImediateMode.currentColor[1] = (byte)green;
+			ImediateMode.currentColor[2] = (byte)blue;
+			ImediateMode.currentColor[3] = (byte)alpha;
 
-            OpenTK.Graphics.ES11.GL.Color4(ImediateMode.currentColor[0], ImediateMode.currentColor[1], ImediateMode.currentColor[2], ImediateMode.currentColor[3]);
+	#if !USE_VELDRID // means we are on GL ES
+			OpenTK.Graphics.ES11.GL.Color4(ImediateMode.currentColor[0], ImediateMode.currentColor[1], ImediateMode.currentColor[2], ImediateMode.currentColor[3]);
+	#endif
 #endif
 		}
 
@@ -502,7 +561,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.LoadIdentity();
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.LoadIdentity();
 #endif
 		}
@@ -514,7 +575,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.PushMatrix();
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.PushMatrix();
 #endif
 		}
@@ -526,7 +589,14 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.MultMatrix(m);
 			}
+#elif USE_VELDRID
+			//VeldridGL.commandList.UpdateBuffer(VeldridGL.projectionBuffer, 0, System.Numerics.Matrix4x4.CreatePerspectiveFieldOfView(
+//				1.0f,
+				//(float)Window.Width / Window.Height,
+				//0.5f,
+				//100f));
 #else
+
 			OpenTK.Graphics.ES11.GL.MultMatrix(m);
 #endif
 		}
@@ -538,7 +608,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.PopMatrix();
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.PopMatrix();
 #endif
 		}
@@ -550,7 +622,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.Ortho(left, right, bottom, top, zNear, zFar);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.Ortho((float)left, (float)right, (float)bottom, (float)top, (float)zNear, (float)zFar);
 #endif
 		}
@@ -562,7 +636,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.PushAttrib((OpenTK.Graphics.OpenGL.AttribMask)mask);
 			}
+#elif USE_VELDRID
 #else
+
             pushedAttributStack.Push(mask);
             if ((mask & AttribMask.ViewportBit) == AttribMask.ViewportBit)
             {
@@ -583,7 +659,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.PopAttrib();
 			}
+#elif USE_VELDRID
 #else
+
             AttribMask mask = pushedAttributStack.Pop();
             if ((mask & AttribMask.ViewportBit) == AttribMask.ViewportBit)
             {
@@ -605,7 +683,10 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.GenTextures(n, out textureHandle);
 			}
+#elif USE_VELDRID
+			textureHandle = -1;
 #else
+
 			OpenTK.Graphics.ES11.GL.GenTextures(n, out textureHandle);
 #endif
 		}
@@ -617,7 +698,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.BindTexture((OpenTK.Graphics.OpenGL.TextureTarget)target, texture);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.BindTexture((OpenTK.Graphics.ES11.All)target, texture);
 #endif
 		}
@@ -626,7 +709,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		{
 #if USE_OPENGL
 			throw new NotImplementedException();
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.Finish();
 #endif
 		}
@@ -638,7 +723,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.TexParameter((OpenTK.Graphics.OpenGL.TextureTarget)target, (OpenTK.Graphics.OpenGL.TextureParameterName)pname, param);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.TexParameterx ((OpenTK.Graphics.ES11.All)target,(OpenTK.Graphics.ES11.All)pname, param);
 #endif
 		}
@@ -660,7 +747,43 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 					(OpenTK.Graphics.OpenGL.PixelFormat)format,
 					(OpenTK.Graphics.OpenGL.PixelType)type, pixels);
 			}
+#elif USE_VELDRID
+#if false
+			Texture texture = VeldridGL.graphicsDevice.ResourceFactory.CreateTexture(new TextureDescription(
+				(uint)width, (uint)height, Depth, MipLevels, ArrayLayers, Format, usage, Type));
+
+			Texture staging = rf.CreateTexture(new TextureDescription(
+				Width, Height, Depth, MipLevels, ArrayLayers, Format, TextureUsage.Staging, Type));
+
+			ulong offset = 0;
+			fixed (byte* texDataPtr = &TextureData[0])
+			{
+				for (uint level = 0; level < MipLevels; level++)
+				{
+					uint mipWidth = GetDimension(Width, level);
+					uint mipHeight = GetDimension(Height, level);
+					uint mipDepth = GetDimension(Depth, level);
+					uint subresourceSize = mipWidth * mipHeight * mipDepth * GetFormatSize(Format);
+
+					for (uint layer = 0; layer < ArrayLayers; layer++)
+					{
+						gd.UpdateTexture(
+							staging, (IntPtr)(texDataPtr + offset), subresourceSize,
+							0, 0, 0, mipWidth, mipHeight, mipDepth,
+							level, layer);
+						offset += subresourceSize;
+					}
+				}
+			}
+
+			CommandList cl = rf.CreateCommandList();
+			cl.Begin();
+			cl.CopyTexture(staging, texture);
+			cl.End();
+			gd.SubmitCommands(cl);
+#endif
 #else
+
 			OpenTK.Graphics.ES11.GL.TexImage2D(
 				(OpenTK.Graphics.ES11.All)target, level,
 				(int)internalFormat,
@@ -674,7 +797,10 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		{
 #if USE_OPENGL
 			OpenTK.Graphics.OpenGL.GL.GenFramebuffers(n, out frameBuffers);
+#elif USE_VELDRID
+			throw new NotImplementedException();
 #else
+
 			throw new NotImplementedException();
 #endif
 		}
@@ -683,7 +809,10 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		{
 #if USE_OPENGL
 			OpenTK.Graphics.OpenGL.GL.GenRenderbuffers(n, out renderBuffers);
+#elif USE_VELDRID
+			throw new NotImplementedException();
 #else
+
 			throw new NotImplementedException();
 #endif
 		}
@@ -692,7 +821,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		{
 #if USE_OPENGL
 			OpenTK.Graphics.OpenGL.GL.DeleteFramebuffers(n, ref frameBuffers);
+#elif USE_VELDRID
 #else
+
 #endif
 		}
 
@@ -700,7 +831,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		{
 #if USE_OPENGL
 			OpenTK.Graphics.OpenGL.GL.DeleteRenderbuffers(n, ref renderBuffers);
+#elif USE_VELDRID
 #else
+
 #endif
 		}
 
@@ -708,7 +841,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		{
 #if USE_OPENGL
 			OpenTK.Graphics.OpenGL.GL.BindRenderbuffer(OpenTK.Graphics.OpenGL.RenderbufferTarget.Renderbuffer, renderBuffer);
+#elif USE_VELDRID
 #else
+
 #endif
 		}
 
@@ -717,7 +852,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
 			OpenTK.Graphics.OpenGL.GL.RenderbufferStorage(OpenTK.Graphics.OpenGL.RenderbufferTarget.Renderbuffer,
 				(OpenTK.Graphics.OpenGL.RenderbufferStorage)storage, width, height);
+#elif USE_VELDRID
 #else
+
 #endif
 		}
 
@@ -726,7 +863,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 #if USE_OPENGL
 			OpenTK.Graphics.OpenGL.GL.BindFramebuffer(OpenTK.Graphics.OpenGL.FramebufferTarget.DrawFramebuffer,
 				renderBuffer);
+#elif USE_VELDRID
 #else
+
 #endif
 		}
 
@@ -742,7 +881,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 						(OpenTK.Graphics.OpenGL.PixelType)pixelType, (IntPtr)data);
 				}
 			}
+#elif USE_VELDRID
 #else
+
 #endif
 		}
 
@@ -750,7 +891,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 		{
 #if USE_OPENGL
 			OpenTK.Graphics.OpenGL.GL.ReadBuffer(OpenTK.Graphics.OpenGL.ReadBufferMode.ColorAttachment0);
+#elif USE_VELDRID
 #else
+
 #endif
 		}
 
@@ -763,7 +906,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				renderBuffer);
 
 			var status = OpenTK.Graphics.OpenGL.GL.CheckFramebufferStatus(OpenTK.Graphics.OpenGL.FramebufferTarget.DrawFramebuffer);
+#elif USE_VELDRID
 #else
+
 #endif
 		}
 
@@ -773,7 +918,10 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			var error = (ErrorCode)OpenTK.Graphics.OpenGL.GL.GetError();
 
 			return error;
+#elif USE_VELDRID
+			throw new NotImplementedException();
 #else
+
 			throw new NotImplementedException();
 #endif
 		}
@@ -798,6 +946,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				OpenTK.Graphics.OpenGL.GL.End();
 			}
 #else
+
 			switch (currentImediateData.Mode)
 			{
 				case BeginMode.Lines:
@@ -830,12 +979,12 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				case BeginMode.Triangles:
 				case BeginMode.TriangleStrip:
 					{
-                        GL.EnableClientState(ArrayCap.ColorArray);
-                        GL.EnableClientState(ArrayCap.VertexArray);
+						GL.EnableClientState(ArrayCap.ColorArray);
+						GL.EnableClientState(ArrayCap.VertexArray);
 						GL.EnableClientState(ArrayCap.TextureCoordArray);
 
 						float[] v = currentImediateData.positions3f.Array;
-                        byte[] c = currentImediateData.color4b.Array;
+						byte[] c = currentImediateData.color4b.Array;
 						float[] t = currentImediateData.textureCoords2f.Array;
 						// pin the data, so that GC doesn't move them, while used
 						// by native code
@@ -843,18 +992,18 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 						{
 							fixed (float* pv = v, pt = t)
 							{
-                                fixed (byte* pc = c)
-                                {
-                                    GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pc));
+								fixed (byte* pc = c)
+								{
+									GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pc));
 									GL.VertexPointer(currentImediateData.vertexCount, VertexPointerType.Float, 0, new IntPtr(pv));
-                                    GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(pt));
-                                    GL.DrawArrays(currentImediateData.Mode, 0, currentImediateData.positions3f.Count / currentImediateData.vertexCount);
-                                }
+									GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(pt));
+									GL.DrawArrays(currentImediateData.Mode, 0, currentImediateData.positions3f.Count / currentImediateData.vertexCount);
+								}
 							}
 						}
 						GL.DisableClientState(ArrayCap.VertexArray);
 						GL.DisableClientState(ArrayCap.TextureCoordArray);
-                        GL.DisableClientState(ArrayCap.ColorArray);
+						GL.DisableClientState(ArrayCap.ColorArray);
 					}
 					break;
 
@@ -876,7 +1025,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.TexCoord2(x, y);
 			}
+#elif USE_VELDRID
 #else
+
 			currentImediateData.textureCoords2f.Add((float)x);
 			currentImediateData.textureCoords2f.Add((float)y);
 #endif
@@ -899,10 +1050,10 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			currentImediateData.positions3f.Add((float)x);
 			currentImediateData.positions3f.Add((float)y);
 
-            currentImediateData.color4b.add(ImediateMode.currentColor[0]);
-            currentImediateData.color4b.add(ImediateMode.currentColor[1]);
-            currentImediateData.color4b.add(ImediateMode.currentColor[2]);
-            currentImediateData.color4b.add(ImediateMode.currentColor[3]);
+			currentImediateData.color4b.add(ImediateMode.currentColor[0]);
+			currentImediateData.color4b.add(ImediateMode.currentColor[1]);
+			currentImediateData.color4b.add(ImediateMode.currentColor[2]);
+			currentImediateData.color4b.add(ImediateMode.currentColor[3]);
 #endif
 		}
 
@@ -913,7 +1064,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.Normal3(x, y, z);
 			}
+#elif USE_VELDRID
 #else
+
 #endif
 		}
 
@@ -929,7 +1082,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.Vertex3(x, y, z);
 			}
+#elif USE_VELDRID
 #else
+
 			currentImediateData.vertexCount = 3;
 			currentImediateData.positions3f.Add((float)x);
 			currentImediateData.positions3f.Add((float)y);
@@ -949,7 +1104,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.DeleteTextures(n, ref textures);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.DeleteTextures(n, ref textures);
 #endif
 		}
@@ -962,7 +1119,10 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 				return OpenTK.Graphics.OpenGL.GL.GetString((OpenTK.Graphics.OpenGL.StringName)name);
 			}
 			return "";
+#elif USE_VELDRID
+			return "";
 #else
+
 			return "";
 #endif
 		}
@@ -993,7 +1153,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 					}
 				}
 			}
+#elif USE_VELDRID
 #else
+
 			if (glHasBufferObjects)
 			{
 				OpenTK.Graphics.ES11.GL.BindBuffer((OpenTK.Graphics.ES11.All)target, buffer);
@@ -1060,7 +1222,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 					}
 				}
 			}
+#elif USE_VELDRID
 #else
+
 			if (glHasBufferObjects)
 			{
 				OpenTK.Graphics.ES11.GL.BufferData((OpenTK.Graphics.ES11.All)target, (IntPtr)size, data, (OpenTK.Graphics.ES11.All)usage);
@@ -1111,7 +1275,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 					OpenTK.Graphics.OpenGL.GL.EnableClientState((OpenTK.Graphics.OpenGL.ArrayCap)arrayCap);
 				}
 			}
+#elif USE_VELDRID
 #else
+
 			if (glHasBufferObjects || arrayCap != ArrayCap.IndexArray) // don't set index array if we don't have buffer objects (we will render through DrawElements instead).
 			{
 				OpenTK.Graphics.ES11.GL.EnableClientState((OpenTK.Graphics.ES11.All)arrayCap);
@@ -1144,7 +1310,10 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 					bufferData.Add(buffers, new byte[1]);
 				}
 			}
+#elif USE_VELDRID
+			buffers = -1;
 #else
+
 			if (glHasBufferObjects)
 			{
 				OpenTK.Graphics.ES11.GL.GenBuffers(n, out buffers);
@@ -1179,7 +1348,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 					bufferData.Remove(buffers);
 				}
 			}
+#elif USE_VELDRID
 #else
+
 			if (glHasBufferObjects)
 			{
 				OpenTK.Graphics.ES11.GL.DeleteBuffers(n, ref buffers);
@@ -1202,7 +1373,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.ColorPointer(size, (OpenTK.Graphics.OpenGL.ColorPointerType)type, stride, pointer);
 			}
+#elif USE_VELDRID
 #else
+
 			unsafe
 			{
 				fixed (byte* pArray = pointer)
@@ -1234,7 +1407,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 					}
 				}
 			}
+#elif USE_VELDRID
 #else
+
 			if (glHasBufferObjects || currentArrayBufferIndex == 0)
 			{
 				OpenTK.Graphics.ES11.GL.ColorPointer(size, (OpenTK.Graphics.ES11.All)type, stride, pointer);
@@ -1259,6 +1434,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.NormalPointer((OpenTK.Graphics.OpenGL.NormalPointerType)type, stride, pointer);
 			}
+#elif USE_VELDRID
 #else
 			unsafe
 			{
@@ -1290,6 +1466,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 					}
 				}
 			}
+#elif USE_VELDRID
 #else
 			if (glHasBufferObjects || currentArrayBufferIndex == 0)
 			{
@@ -1339,7 +1516,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 					}
 				}
 			}
+#elif USE_VELDRID
 #else
+
 			if (glHasBufferObjects || currentArrayBufferIndex == 0)
 			{
 				OpenTK.Graphics.ES11.GL.VertexPointer(size, (OpenTK.Graphics.ES11.All)type, stride, pointer);
@@ -1364,7 +1543,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.TexCoordPointer(size, (OpenTK.Graphics.OpenGL.TexCoordPointerType)type, stride, pointer);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.TexCoordPointer(size, (OpenTK.Graphics.ES11.All) type, stride, pointer);
 #endif
 		}
@@ -1390,7 +1571,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 					}
 				}
 			}
+#elif USE_VELDRID
 #else
+
 			if (glHasBufferObjects)
 			{
 				throw new NotImplementedException();
@@ -1416,6 +1599,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.DepthMask(flag);
 			}
+#elif USE_VELDRID
 #else
 			OpenTK.Graphics.ES11.GL.DepthMask(flag);
 #endif
@@ -1428,6 +1612,7 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.ClearDepth(depth);
 			}
+#elif USE_VELDRID
 #else
 			OpenTK.Graphics.ES11.GL.ClearDepth((float)depth);
 #endif
@@ -1441,7 +1626,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.Viewport(x, y, width, height);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.Viewport(x, y, width, height);
 #endif
 		}
@@ -1453,7 +1640,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.Clear((OpenTK.Graphics.OpenGL.ClearBufferMask)mask);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.Clear((OpenTK.Graphics.ES11.ClearBufferMask)mask);
 #endif
 		}
@@ -1465,7 +1654,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.Light((OpenTK.Graphics.OpenGL.LightName)light, (OpenTK.Graphics.OpenGL.LightParameter)pname, param);
 			}
+#elif USE_VELDRID
 #else
+
 			//throw new NotImplementedException();
 #endif
 		}
@@ -1477,7 +1668,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.ShadeModel((OpenTK.Graphics.OpenGL.ShadingModel)model);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.ShadeModel ((OpenTK.Graphics.ES11.All)model);
 #endif
 		}
@@ -1489,7 +1682,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.FrontFace((OpenTK.Graphics.OpenGL.FrontFaceDirection)mode);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.FrontFace((OpenTK.Graphics.ES11.All)mode);
 #endif
 		}
@@ -1501,7 +1696,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.CullFace((OpenTK.Graphics.OpenGL.CullFaceMode)mode);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.CullFace((OpenTK.Graphics.ES11.All)mode);
 #endif
 		}
@@ -1513,7 +1710,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.DepthFunc((OpenTK.Graphics.OpenGL.DepthFunction)func);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.DepthFunc((OpenTK.Graphics.ES11.All)func);
 #endif
 		}
@@ -1525,7 +1724,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.ColorMaterial((OpenTK.Graphics.OpenGL.MaterialFace)face, (OpenTK.Graphics.OpenGL.ColorMaterialParameter)mode);
 			}
+#elif USE_VELDRID
 #else
+
 			//throw new NotImplementedException();
 #endif
 		}
@@ -1537,7 +1738,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.DrawArrays((OpenTK.Graphics.OpenGL.BeginMode)mode, first, count);
 			}
+#elif USE_VELDRID
 #else
+
 			OpenTK.Graphics.ES11.GL.DrawArrays((OpenTK.Graphics.ES11.All)mode, first, count);
 #endif
 		}
@@ -1549,7 +1752,9 @@ namespace MatterHackers.RenderOpenGl.OpenGl
 			{
 				OpenTK.Graphics.OpenGL.GL.PolygonOffset(factor, units);
 			}
+#elif USE_VELDRID
 #else
+
 			throw new NotImplementedException();
 #endif
 		}
