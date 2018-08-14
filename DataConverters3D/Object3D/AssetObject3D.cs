@@ -240,6 +240,11 @@ namespace MatterHackers.DataConverters3D
 
 		public async Task StoreMesh(IObject3D object3D, bool publishAfterSave, CancellationToken cancellationToken, Action<double, string> progress = null)
 		{
+			if (object3D.Mesh == Object3D.FileMissingMesh)
+			{
+				return;
+			}
+
 			// In memory mesh is always saved to stl
 			string tempStlPath = CreateNewLibraryPath(".stl");
 
