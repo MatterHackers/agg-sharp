@@ -52,6 +52,10 @@ namespace MatterHackers.DataConverters3D
 	{
 		public event EventHandler<InvalidateArgs> Invalidated;
 
+		public static string AssetsPath { get; set; }
+
+		public static Mesh FileMissingMesh { get; set; }
+
 		public Object3D()
 			: this (null)
 		{
@@ -75,8 +79,6 @@ namespace MatterHackers.DataConverters3D
 				Children = new SafeList<IObject3D>(this);
 			}
 		}
-
-		public static string AssetsPath { get; set; }
 
 		public string ID { get; set; } = Guid.NewGuid().ToString();
 

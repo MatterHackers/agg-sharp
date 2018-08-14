@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2018, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -36,7 +36,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.Agg;
 using MatterHackers.PolygonMesh;
-using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.RayTracer;
 using MatterHackers.VectorMath;
 
@@ -107,12 +106,20 @@ namespace MatterHackers.DataConverters3D
 			}
 			else
 			{
-				Mesh mesh;
+				Mesh mesh = null;
 
-				if (!cacheContext.Meshes.TryGetValue(filePath, out mesh))
+				try
 				{
-					mesh = Object3D.Load(filePath, cancellationToken).Mesh;
-					cacheContext.Meshes[filePath] = mesh;
+					if (!cacheContext.Meshes.TryGetValue(filePath, out mesh))
+					{
+						mesh = Object3D.Load(filePath, cancellationToken).Mesh;
+						cacheContext.Meshes[filePath] = mesh;
+					}
+				}
+				catch
+				{
+					// Fall back to Missing mesh if available
+					mesh = Object3D.FileMissingMesh;
 				}
 
 				item.SetMeshDirect(mesh);
@@ -212,7 +219,8 @@ namespace MatterHackers.DataConverters3D
 										 where object3D.WorldPersistable() &&
 												(((object3D.MeshPath == null || publishAssets) && object3D.Mesh != null)
 												|| (object3D is IAssetObject && publishAssets))
-										 select object3D;
+												&& object3D.Mesh != Object3D.FileMissingMesh // Ignore items assigned the FileMissing mesh
+								   select object3D;
 
 			Directory.CreateDirectory(Object3D.AssetsPath);
 
