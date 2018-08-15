@@ -78,9 +78,9 @@ namespace MatterHackers.Agg
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			byte alpha = (byte)(alphaSlider.Value * 255);
-			for (int i = 0; i < lionShape.NumPaths; i++)
+			foreach(var shape in lionShape.Shapes)
 			{
-				lionShape.Colors[i].Alpha0To255 = alpha;
+				shape.Color = new Color(shape.Color, alpha);
 			}
 
 			Affine transform = Affine.NewIdentity();
@@ -91,8 +91,11 @@ namespace MatterHackers.Agg
 			transform *= Affine.NewTranslation(Width / 2, Height / 2);
 
 			// This code renders the lion:
-			VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(lionShape.Path, transform);
-			graphics2D.Render(transformedPathStorage, lionShape.Colors, lionShape.PathIndex, lionShape.NumPaths);
+			foreach (var shape in lionShape.Shapes)
+			{
+				VertexSourceApplyTransform transformedPathStorage = new VertexSourceApplyTransform(shape.VertexStorage, transform);
+				graphics2D.Render(transformedPathStorage, shape.Color);
+			}
 
 			graphics2D.DrawString("test", 40, 40, 50);
 

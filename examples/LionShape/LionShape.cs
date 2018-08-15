@@ -1,11 +1,19 @@
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 
 namespace MatterHackers.Agg
 {
-	internal class LionParser
+	public class ColoredVertexStorage
+	{
+		public VertexStorage VertexStorage { get; set; }
+		public Color Color { get; set; }
+	}
+
+	internal static class LionParser
 	{
 		private static string g_lion =
 		"f2cc99\n" +
@@ -153,13 +161,16 @@ namespace MatterHackers.Agg
 		"M 157,342 L 156,349 L 150,356 L 157,353 L 163,346 L 162,342 L 157,342 L 157,342 L 157,342\n" +
 		"M 99,265 L 96,284 L 92,299 L 73,339 L 73,333 L 87,300 L 99,265 L 99,265 L 99,265\n";
 
-		static public int parse_lion(VertexStorage path, Color[] colors, int[] path_idx)
+		static public List<ColoredVertexStorage> parse_lion()
 		{
 			// Parse the lion and then detect its bounding
 			// box and arrange polygons orientations (make all polygons
 			// oriented clockwise or counterclockwise)
 
-			int npaths = 0;
+			var paths = new List<ColoredVertexStorage>();
+
+			ColoredVertexStorage currentPath = null;
+
 			string[] splitOnNL = g_lion.Split('\n');
 			foreach (string LineString in splitOnNL)
 			{
@@ -169,10 +180,22 @@ namespace MatterHackers.Agg
 					&& Int32.TryParse(LineString, NumberStyles.HexNumber, null, out c))
 				{
 					// New color. Every new color creates new path in the path object.
-					path.ClosePolygon();
-					colors[npaths] = Color.rgb8_packed((int)c);
-					path_idx[npaths] = path.start_new_path();
-					npaths++;
+
+					if (currentPath != null)
+					{
+						currentPath.VertexStorage.ClosePolygon();
+						currentPath.VertexStorage.arrange_orientations_all_paths(ShapePath.FlagsAndCommand.FlagCW);
+					}
+
+					currentPath = new ColoredVertexStorage()
+					{
+						Color = Color.rgb8_packed((int)c),
+						VertexStorage = new VertexStorage()
+					};
+
+					currentPath.VertexStorage.start_new_path();
+
+					paths.Add(currentPath);
 				}
 				else
 				{
@@ -191,92 +214,51 @@ namespace MatterHackers.Agg
 							if (!startedPoly)
 							{
 								startedPoly = true;
-								path.ClosePolygon();
-								path.MoveTo(x, y);
+								currentPath.VertexStorage.MoveTo(x, y);
 							}
 							else
 							{
-								path.LineTo(x, y);
+								currentPath.VertexStorage.LineTo(x, y);
 							}
 						}
 					}
 				}
 			}
 
-			path.arrange_orientations_all_paths(ShapePath.FlagsAndCommand.FlagCW);
-			return npaths;
+			currentPath.VertexStorage.ClosePolygon();
+			currentPath.VertexStorage.arrange_orientations_all_paths(ShapePath.FlagsAndCommand.FlagCW);
+
+			return paths;
 		}
 	}
 
 	public class LionShape
 	{
-		private VertexStorage path = new VertexStorage();
-		private Color[] colors = new Color[100];
-		private int[] pathIndex = new int[100];
-		private int numPaths = 0;
-
-		private RectangleDouble boundingRect;
-		private Vector2 center;
+		public List<ColoredVertexStorage> Shapes = null;
 
 		public LionShape()
 		{
 			ParseLion();
 		}
 
-		public VertexStorage Path
-		{
-			get
-			{
-				return path;
-			}
-		}
+		public RectangleDouble Bounds { get; private set;  } = RectangleDouble.ZeroIntersection;
 
-		public int NumPaths
-		{
-			get
-			{
-				return numPaths;
-			}
-		}
-
-		public RectangleDouble Bounds
-		{
-			get
-			{
-				return boundingRect;
-			}
-		}
-
-		public Color[] Colors
-		{
-			get
-			{
-				return colors;
-			}
-		}
-
-		public int[] PathIndex
-		{
-			get
-			{
-				return pathIndex;
-			}
-		}
-
-		public Vector2 Center
-		{
-			get
-			{
-				return center;
-			}
-		}
+		public Vector2 Center = Vector2.Zero;
 
 		public void ParseLion()
 		{
-			numPaths = MatterHackers.Agg.LionParser.parse_lion(path, colors, pathIndex);
-			MatterHackers.Agg.bounding_rect.get_bounding_rect(path, pathIndex, 0, numPaths, out boundingRect);
-			center.X = (boundingRect.Right - boundingRect.Left) / 2.0;
-			center.Y = (boundingRect.Top - boundingRect.Bottom) / 2.0;
+			Shapes = LionParser.parse_lion();
+
+			var bounds = RectangleDouble.ZeroIntersection;
+			foreach (var item in Shapes)
+			{
+				bounds.ExpandToInclude(item.VertexStorage.GetBounds());
+			}
+
+			Bounds = bounds;
+
+			Center.X = (Bounds.Right - Bounds.Left) / 2.0;
+			Center.Y = (Bounds.Top - Bounds.Bottom) / 2.0;
 		}
 	}
 }
