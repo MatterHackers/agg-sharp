@@ -125,7 +125,6 @@
   <ItemGroup>
     <Compile Include="AffineTests.cs" />
     <Compile Include="AggDrawingTests.cs" />
-    <Compile Include="LionRenderTest.cs" />
     <Compile Include="Matrix4x4Tests.cs" />
     <Compile Include="RunTest.cs" />
     <Compile Include="TesselatorTests.cs" />
