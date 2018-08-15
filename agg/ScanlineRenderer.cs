@@ -80,24 +80,6 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public void RenderSolidAllPaths(IImageByte destImage,
-			IRasterizer ras,
-			IScanlineCache sl,
-			IVertexSource vs,
-			Color[] color_storage,
-			int[] path_id,
-			int num_paths)
-		{
-			for (int i = 0; i < num_paths; i++)
-			{
-				ras.reset();
-
-				ras.add_path(vs, path_id[i]);
-
-				RenderSolid(destImage, ras, sl, color_storage[i]);
-			}
-		}
-
 		private void GenerateAndRenderSingleScanline(IScanlineCache scanLineCache, IImageByte destImage, span_allocator alloc, ISpanGenerator span_gen)
 		{
 			int y = scanLineCache.y();

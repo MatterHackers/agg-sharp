@@ -12,9 +12,6 @@ namespace MatterHackers.Agg.Tests
 			Vector3Tests test1 = new Vector3Tests();
 			test1.DotProduct();
 
-			LionRenderTest lionTest = new LionRenderTest();
-			lionTest.CompareToLionTGA();
-
 			Console.Write("There were no unhandled exceptions.\n\nPress any key to continue . . . ");
 			Console.ReadKey(true);
 		}

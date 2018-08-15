@@ -111,9 +111,11 @@ namespace MatterHackers.Agg
 					//--------------------------
 					// Render transformed lion
 					//
-					VertexSourceApplyTransform trans = new VertexSourceApplyTransform(lionShape.Path, tr);
-
-					scanlineRenderer.RenderSolidAllPaths(clippingProxy, g_rasterizer, g_scanline, trans, lionShape.Colors, lionShape.PathIndex, lionShape.NumPaths);
+					foreach (var shape in lionShape.Shapes)
+					{
+						g_rasterizer.add_path(new VertexSourceApplyTransform(shape.VertexStorage, tr));
+						scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, shape.Color);
+					}
 					//--------------------------
 
 					//--------------------------
@@ -141,9 +143,13 @@ namespace MatterHackers.Agg
 				if (tr.is_valid())
 				{
 					// Render transformed lion
-					VertexSourceApplyTransform trans = new VertexSourceApplyTransform(lionShape.Path, tr);
-
-					scanlineRenderer.RenderSolidAllPaths(clippingProxy, g_rasterizer, g_scanline, trans, lionShape.Colors, lionShape.PathIndex, lionShape.NumPaths);
+					foreach(var shape in lionShape.Shapes)
+					{
+						VertexSourceApplyTransform trans = new VertexSourceApplyTransform(shape.VertexStorage, tr);
+						g_rasterizer.reset();
+						g_rasterizer.add_path(trans);
+						scanlineRenderer.RenderSolid(clippingProxy, g_rasterizer, g_scanline, shape.Color);
+					}
 
 					// Render transformed ellipse
 					VertexSource.Ellipse FilledEllipse = new MatterHackers.Agg.VertexSource.Ellipse((lionShape.Bounds.Left + lionShape.Bounds.Right) * 0.5, (lionShape.Bounds.Bottom + lionShape.Bounds.Top) * 0.5,

@@ -86,8 +86,6 @@ namespace MatterHackers.Agg
 
 		void add_path(IVertexSource vs);
 
-		void add_path(IVertexSource vs, int pathID);
-
 		bool rewind_scanlines();
 	}
 
@@ -312,30 +310,11 @@ namespace MatterHackers.Agg
 		//-------------------------------------------------------------------
 		public void add_path(IVertexSource vs)
 		{
-			add_path(vs, 0);
-		}
-
-		public void add_path(IVertexSource vs, int pathID)
-		{
-#if false
-            if (m_outline.sorted())
-            {
-                reset();
-            }
-
-            foreach (VertexData vertexData in vs.Vertices())
-            {
-                if(!ShapePath.is_stop(vertexData.command))
-                {
-                    AddVertex(new VertexData(vertexData.command, new Vector2(vertexData.position.x, vertexData.position.y)));
-                }
-            }
-#else
 			double x = 0;
 			double y = 0;
 
 			ShapePath.FlagsAndCommand PathAndFlags;
-			vs.rewind(pathID);
+			vs.rewind(0);
 			if (m_outline.sorted())
 			{
 				reset();
@@ -345,7 +324,6 @@ namespace MatterHackers.Agg
 			{
 				AddVertex(new VertexData(PathAndFlags, new Vector2(x, y)));
 			}
-#endif
 		}
 
 		//--------------------------------------------------------------------

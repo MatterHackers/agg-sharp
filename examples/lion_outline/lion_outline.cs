@@ -119,12 +119,16 @@ namespace MatterHackers.Agg
 			{
 				rasterizer.SetVectorClipBox(0, 0, width, height);
 
-				Stroke stroke = new Stroke(lionShape.Path);
-				stroke.width(widthSlider.Value);
-				stroke.line_join(LineJoin.Round);
-				VertexSourceApplyTransform trans = new VertexSourceApplyTransform(stroke, transform);
-				ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
-				scanlineRenderer.RenderSolidAllPaths(imageClippingProxy, rasterizer, scanlineCache, trans, lionShape.Colors, lionShape.PathIndex, lionShape.NumPaths);
+				foreach (var shape in lionShape.Shapes)
+				{
+					Stroke stroke = new Stroke(shape.VertexStorage);
+					stroke.width(widthSlider.Value);
+					stroke.line_join(LineJoin.Round);
+					VertexSourceApplyTransform trans = new VertexSourceApplyTransform(stroke, transform);
+					ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
+					rasterizer.add_path(trans);
+					scanlineRenderer.RenderSolid(imageClippingProxy, rasterizer, scanlineCache, shape.Color);
+				}
 			}
 			else
 			{
@@ -139,9 +143,11 @@ namespace MatterHackers.Agg
 					: rasterizer_outline_aa.outline_aa_join_e.outline_round_join);
 				rasterizer.round_cap(true);
 
-				VertexSourceApplyTransform trans = new VertexSourceApplyTransform(lionShape.Path, transform);
-
-				rasterizer.RenderAllPaths(trans, lionShape.Colors, lionShape.PathIndex, lionShape.NumPaths);
+				foreach (var shape in lionShape.Shapes)
+				{
+					VertexSourceApplyTransform trans = new VertexSourceApplyTransform(shape.VertexStorage, transform);
+					rasterizer.RenderAllPaths(trans, new Color[] { shape.Color }, new int[] { 0 }, 1);
+				}
 			}
 
 			base.OnDraw(graphics2D);

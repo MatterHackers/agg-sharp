@@ -245,7 +245,7 @@ namespace MatterHackers.RenderOpenGl
 			GL.Enable(EnableCap.Blend);
 		}
 
-		public override void Render(IVertexSource vertexSource, int pathIndexToRender, IColorType colorIn)
+		public override void Render(IVertexSource vertexSource, IColorType colorIn)
 		{
 			PreRender();
 
@@ -255,7 +255,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 			else
 			{
-				vertexSource.rewind(pathIndexToRender);
+				vertexSource.rewind(0);
 
 				Affine transform = GetTransform();
 				if (!transform.is_identity())

@@ -136,7 +136,7 @@ namespace MatterHackers.Agg
 			}
 		}
 
-		public abstract void Render(IVertexSource vertexSource, int pathIndexToRender, IColorType colorType);
+		public abstract void Render(IVertexSource vertexSource, IColorType colorType);
 
 		public void Render(IImageByte imageSource, Point2D position)
 		{
@@ -173,27 +173,14 @@ namespace MatterHackers.Agg
 			double angleRadians,
 			double scaleX, double ScaleY);
 
-		public void Render(IVertexSource vertexSource, Color[] colorArray, int[] pathIdArray, int numPaths)
-		{
-			for (int i = 0; i < numPaths; i++)
-			{
-				Render(vertexSource, pathIdArray[i], colorArray[i]);
-			}
-		}
-
-		public void Render(IVertexSource vertexSource, IColorType color)
-		{
-			Render(vertexSource, 0, color);
-		}
-
 		public void Render(IVertexSource vertexSource, double x, double y, IColorType color)
 		{
-			Render(new VertexSourceApplyTransform(vertexSource, Affine.NewTranslation(x, y)), 0, color);
+			Render(new VertexSourceApplyTransform(vertexSource, Affine.NewTranslation(x, y)), color);
 		}
 
 		public void Render(IVertexSource vertexSource, Vector2 position, IColorType color)
 		{
-			Render(new VertexSourceApplyTransform(vertexSource, Affine.NewTranslation(position.X, position.Y)), 0, color);
+			Render(new VertexSourceApplyTransform(vertexSource, Affine.NewTranslation(position.X, position.Y)), color);
 		}
 
 		public abstract void Clear(IColorType color);
