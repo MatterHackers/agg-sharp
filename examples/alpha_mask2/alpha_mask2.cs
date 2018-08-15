@@ -173,8 +173,11 @@ namespace MatterHackers.Agg
 				//int x, y;
 
 				// Render the lion
-				VertexSourceApplyTransform trans = new VertexSourceApplyTransform(lionShape.Path, transform);
-				scanlineRenderer.RenderSolidAllPaths(alphaMaskClippingProxy, rasterizer, scanlineCache, trans, lionShape.Colors, lionShape.PathIndex, lionShape.NumPaths);
+				foreach (var shape in lionShape.Shapes)
+				{
+					rasterizer.add_path(new VertexSourceApplyTransform(shape.VertexStorage, transform));
+					scanlineRenderer.RenderSolid(alphaMaskClippingProxy, rasterizer, scanlineCache, shape.Color);
+				}
 
 				/*
 				// Render random Bresenham lines and markers

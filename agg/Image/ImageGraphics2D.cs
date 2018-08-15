@@ -65,7 +65,7 @@ namespace MatterHackers.Agg
 			return Rasterizer.GetVectorClipBox();
 		}
 
-		public override void Render(IVertexSource vertexSource, int pathIndexToRender, IColorType colorBytes)
+		public override void Render(IVertexSource vertexSource, IColorType colorBytes)
 		{
 			rasterizer.reset();
 			Affine transform = GetTransform();
@@ -73,7 +73,7 @@ namespace MatterHackers.Agg
 			{
 				vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
 			}
-			rasterizer.add_path(vertexSource, pathIndexToRender);
+			rasterizer.add_path(vertexSource);
 			if (destImageByte != null)
 			{
 				scanlineRenderer.RenderSolid(destImageByte, rasterizer, m_ScanlineCache, colorBytes.ToColor());

@@ -238,10 +238,25 @@ namespace MatterHackers.Agg
 
 		public void ExpandToInclude(RectangleDouble rectToInclude)
 		{
-			if (Right < rectToInclude.Right) Right = rectToInclude.Right;
-			if (Top < rectToInclude.Top) Top = rectToInclude.Top;
-			if (Left > rectToInclude.Left) Left = rectToInclude.Left;
-			if (Bottom > rectToInclude.Bottom) Bottom = rectToInclude.Bottom;
+			if (Right < rectToInclude.Right)
+			{
+				Right = rectToInclude.Right;
+			}
+
+			if (Top < rectToInclude.Top)
+			{
+				Top = rectToInclude.Top;
+			}
+
+			if (Left > rectToInclude.Left)
+			{
+				Left = rectToInclude.Left;
+			}
+
+			if (Bottom > rectToInclude.Bottom)
+			{
+				Bottom = rectToInclude.Bottom;
+			}
 		}
 
 		public void ExpandToInclude(Vector2 position)

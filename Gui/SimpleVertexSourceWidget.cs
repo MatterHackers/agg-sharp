@@ -97,7 +97,7 @@ namespace MatterHackers.Agg.UI
 		{
 			for (int i = 0; i < num_paths(); i++)
 			{
-				graphics2D.Render(this, i, color(i).ToColor());
+				graphics2D.Render(this, color(i).ToColor());
 			}
 			base.OnDraw(graphics2D);
 		}
