@@ -65,6 +65,8 @@ namespace MatterHackers.GuiAutomation
 		}
 
 		public bool LeftButtonDown { get; private set; }
+		public bool RightButtonDown { get; private set; }
+		public bool MiddleButtonDown { get; private set; }
 
 		public int ClickCount { get; private set; }
 
@@ -141,7 +143,7 @@ namespace MatterHackers.GuiAutomation
 				Point2D windowPosition = AutomationRunner.ScreenToSystemWindow(currentMousePosition, systemWindow);
 				if (systemWindow.LocalBounds.Contains(windowPosition))
 				{
-					MouseButtons mouseButtons = MapButtons(cButtons);
+					MouseButtons mouseButtons = MapButtons(dwFlags);
 					if (dwFlags == NativeMethods.MOUSEEVENTF_LEFTDOWN)
 					{
 						this.ClickCount = (this.LeftButtonDown) ? 2 : 1;
@@ -169,20 +171,60 @@ namespace MatterHackers.GuiAutomation
 					}
 					else if (dwFlags == NativeMethods.MOUSEEVENTF_RIGHTDOWN)
 					{
+						this.ClickCount = (this.RightButtonDown) ? 2 : 1;
+
+						UiThread.RunOnIdle(() =>
+						{
+							systemWindow.OnMouseDown(new MouseEventArgs(mouseButtons, this.ClickCount, windowPosition.x, windowPosition.y, 0));
+							systemWindow.Invalidate();
+						});
+
+						// Stop processing after first match
+						break;
 					}
 					else if (dwFlags == NativeMethods.MOUSEEVENTF_RIGHTUP)
 					{
+						// send it to the window
+						UiThread.RunOnIdle(() =>
+						{
+							systemWindow.OnMouseUp(new MouseEventArgs(mouseButtons, 0, windowPosition.x, windowPosition.y, 0));
+							systemWindow.Invalidate();
+						});
+
+						// Stop processing after first match
+						break;
 					}
 					else if (dwFlags == NativeMethods.MOUSEEVENTF_MIDDLEDOWN)
 					{
+						this.ClickCount = (this.MiddleButtonDown) ? 2 : 1;
+
+						UiThread.RunOnIdle(() =>
+						{
+							systemWindow.OnMouseDown(new MouseEventArgs(mouseButtons, this.ClickCount, windowPosition.x, windowPosition.y, 0));
+							systemWindow.Invalidate();
+						});
+
+						// Stop processing after first match
+						break;
 					}
 					else if (dwFlags == NativeMethods.MOUSEEVENTF_MIDDLEUP)
 					{
+						// send it to the window
+						UiThread.RunOnIdle(() =>
+						{
+							systemWindow.OnMouseUp(new MouseEventArgs(mouseButtons, 0, windowPosition.x, windowPosition.y, 0));
+							systemWindow.Invalidate();
+						});
+
+						// Stop processing after first match
+						break;
 					}
 				}
 			}
 
 			this.LeftButtonDown = (dwFlags == NativeMethods.MOUSEEVENTF_LEFTDOWN);
+			this.MiddleButtonDown = (dwFlags == NativeMethods.MOUSEEVENTF_MIDDLEDOWN);
+			this.RightButtonDown = (dwFlags == NativeMethods.MOUSEEVENTF_RIGHTDOWN);
 		}
 
 		private MouseButtons MapButtons(int cButtons)

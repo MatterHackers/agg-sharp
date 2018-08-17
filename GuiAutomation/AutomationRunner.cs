@@ -715,6 +715,43 @@ namespace MatterHackers.GuiAutomation
 			throw new Exception($"ClickByName Failed: Named GuiWidget not found [{widgetName}]");
 		}
 
+		/// <summary>
+		/// Look for a widget with the given name and click it. It and all its parents must be visible and enabled.
+		/// </summary>
+		/// <param name="widgetName">The given widget name</param>
+		/// <param name="secondsToWait">Total seconds to stay in this function waiting for the named widget to become visible.</param>
+		public void RightClickByName(string widgetName, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center, bool isDoubleClick = false)
+		{
+			double secondsToWait = 5;
+
+			GuiWidget widgetToClick = GetWidgetByName(widgetName, out SystemWindow containingWindow, out Point2D offsetHint, secondsToWait, searchRegion);
+			if (widgetToClick != null)
+			{
+				MoveMouseToWidget(widgetToClick, containingWindow, offset, offsetHint, origin, out Point2D screenPosition);
+				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_RIGHTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+				WaitforDraw(containingWindow);
+
+				if (isDoubleClick)
+				{
+					Thread.Sleep(150);
+					inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_RIGHTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+					WaitforDraw(containingWindow);
+				}
+
+				Delay(UpDelaySeconds);
+
+				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_RIGHTUP, screenPosition.x, screenPosition.y, 0, 0);
+
+				WaitforDraw(containingWindow);
+
+				Delay(0.2);
+
+				return;
+			}
+
+			throw new Exception($"ClickByName Failed: Named GuiWidget not found [{widgetName}]");
+		}
+
 		public void WaitforDraw(SystemWindow containingWindow, int maxSeconds = 30)
 		{
 			var resetEvent = new AutoResetEvent(false);
