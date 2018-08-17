@@ -1,96 +1,40 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="12.0">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{545B6912-77FF-4B34-BA76-6C3D6A32BE6A}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>MatterHackers.RenderOpenGl</RootNamespace>
-    <AssemblyName>MatterHackers.RenderOpenGl</AssemblyName>
-    <FileUpgradeFlags>
-    </FileUpgradeFlags>
-    <UpgradeBackupLocation>
-    </UpgradeBackupLocation>
-    <OldToolsVersion>2.0</OldToolsVersion>
-    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
-    <TargetFrameworkProfile />
+    <TargetFramework>net471</TargetFramework>
+    <Company>MatterHackers Inc.</Company>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>True</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>False</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DefineConstants>TRACE;DEBUG;USE_OPENGL</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>TRACE;USE_OPENGL</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
+    <Compile Remove="RenderCsgToGl.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\agg\Agg.csproj" />
+    <ProjectReference Include="..\Csg\Csg.csproj" />
+    <ProjectReference Include="..\DataConverters2D\DataConverters2D.csproj" />
+    <ProjectReference Include="..\PolygonMesh\PolygonMesh.csproj" />
+    <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="OpenTK">
       <HintPath>..\PlatformWin32\OpenTK.dll</HintPath>
     </Reference>
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\DataConverters2D\DataConverters2D.csproj">
-      <Project>{94838988-523C-4B11-AD82-8B9B76F23A31}</Project>
-      <Name>DataConverters2D</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\DataConverters3D\DataConverters3D.csproj">
-      <Project>{04667764-dc7b-4b95-aef6-b4e6c87a54e9}</Project>
-      <Name>DataConverters3D</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\RayTracer\RayTracer.csproj">
-      <Project>{1e01abe0-b494-4fe4-b0d6-540133286887}</Project>
-      <Name>RayTracer</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Tesselate\Tesselate.csproj">
-      <Project>{AE37DE1F-22F7-49EE-8732-FC6BC8DC58D9}</Project>
-      <Name>Tesselate</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\VectorMath\VectorMath.csproj">
-      <Project>{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}</Project>
-      <Name>VectorMath</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PolygonMesh\PolygonMesh.csproj">
-      <Project>{86F6AAF2-9B50-40B8-A427-1897D76471C5}</Project>
-      <Name>PolygonMesh</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\agg\Agg.csproj">
-      <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
-      <Name>Agg</Name>
-    </ProjectReference>
+    <Folder Include="Properties\" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="GL.cs" />
-    <Compile Include="GLMeshWirePlugin.cs" />
-    <Compile Include="GLMeshTrianglePlugin.cs" />
-    <Compile Include="ImageGlPlugin.cs" />
-    <Compile Include="LightingData.cs" />
-    <Compile Include="OverhangRender.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Renderer\RendererOpenGL.cs" />
-    <Compile Include="Renderer\AARenderToGLTesselator.cs" />
-    <Compile Include="Renderer\RenderToGLTesselator.cs" />
-    <Compile Include="RenderMeshToGl.cs" />
-  </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+
 </Project>

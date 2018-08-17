@@ -1,162 +1,46 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="12.0">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <ProjectGuid>{670BDDFF-927B-425D-9DD1-22ACB14356EB}</ProjectGuid>
-    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <OutputType>Library</OutputType>
-    <RootNamespace>agg_platform_win32</RootNamespace>
+    <TargetFramework>net471</TargetFramework>
+    <Company>MatterHackers Inc.</Company>
     <AssemblyName>agg_platform_win32</AssemblyName>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <NoStdLib>False</NoStdLib>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <FileUpgradeFlags>
-    </FileUpgradeFlags>
-    <UpgradeBackupLocation>
-    </UpgradeBackupLocation>
-    <OldToolsVersion>2.0</OldToolsVersion>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <PublishUrl>publish\</PublishUrl>
-    <Install>true</Install>
-    <InstallFrom>Disk</InstallFrom>
-    <UpdateEnabled>false</UpdateEnabled>
-    <UpdateMode>Foreground</UpdateMode>
-    <UpdateInterval>7</UpdateInterval>
-    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
-    <UpdatePeriodically>false</UpdatePeriodically>
-    <UpdateRequired>false</UpdateRequired>
-    <MapFileExtensions>true</MapFileExtensions>
-    <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
-    <UseApplicationTrust>false</UseApplicationTrust>
-    <BootstrapperEnabled>true</BootstrapperEnabled>
-    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
-    <TargetFrameworkProfile />
+    <RootNamespace>agg_platform_win32</RootNamespace>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-    <OutputPath>bin\Debug\</OutputPath>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>Full</DebugType>
-    <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <Optimize>False</Optimize>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-    <OutputPath>bin\Release\</OutputPath>
-    <DebugSymbols>False</DebugSymbols>
-    <DebugType>None</DebugType>
-    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
-    <DefineConstants>TRACE</DefineConstants>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Platform)' == 'AnyCPU' ">
-    <RegisterForComInterop>False</RegisterForComInterop>
-    <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
-    <BaseAddress>4194304</BaseAddress>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <FileAlignment>4096</FileAlignment>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <Optimize>true</Optimize>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
-    <OutputPath>bin\Release\</OutputPath>
-  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="win32\RendererOpenGL.cs" />
+    <Compile Remove="win32\WindowsFormsDXBackedGui.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <Reference Include="Microsoft.VisualBasic" />
-    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
     <Reference Include="OpenTK">
       <HintPath>OpenTK.dll</HintPath>
     </Reference>
     <Reference Include="OpenTK.GLControl">
       <HintPath>OpenTK.GLControl.dll</HintPath>
     </Reference>
+    <Reference Include="System.Windows.Forms" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="win32\AggGLControl.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="win32\BitmapSystemWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="win32\FileSystemStaticData.cs" />
-    <Compile Include="win32\OpenGLSystemWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="win32\WinformFileDialogProvider.cs" />
-    <Compile Include="win32\NativeMethods.cs" />
-    <Compile Include="win32\DirtyRects.cs" />
-    <Compile Include="win32\ImageIOWindowsPlugin.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="win32\Joystick_win32.cs" />
-    <Compile Include="win32\WindowsFormsBitmapBackBuffer.cs" />
-    <Compile Include="win32\WindowsFormsClipboard.cs" />
-    <Compile Include="win32\WinformsEventSink.cs" />
-    <Compile Include="win32\WinformsInformationProvider.cs" />
-    <Compile Include="win32\WinformsSystemWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="win32\WinformsSystemWindowProvider.cs" />
+    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\Gui\Gui.csproj">
-      <Project>{74F6BB6C-9D02-4512-A59A-21940E35C532}</Project>
-      <Name>Gui</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\ImageProcessing\ImageProcessing.csproj">
-      <Project>{036bccba-52d8-457c-84ae-8821f209fe4a}</Project>
-      <Name>ImageProcessing</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\RenderOpenGl\RenderOpenGl.csproj">
-      <Project>{545B6912-77FF-4B34-BA76-6C3D6A32BE6A}</Project>
-      <Name>RenderOpenGl</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\VectorMath\VectorMath.csproj">
-      <Project>{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}</Project>
-      <Name>VectorMath</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\agg\Agg.csproj">
-      <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
-      <Name>Agg</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\agg\Agg.csproj" />
+    <ProjectReference Include="..\Gui\Gui.csproj" />
+    <ProjectReference Include="..\ImageProcessing\ImageProcessing.csproj" />
+    <ProjectReference Include="..\RenderOpenGl\RenderOpenGl.csproj" />
+    <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Windows.Installer.3.1">
-      <Visible>False</Visible>
-      <ProductName>Windows Installer 3.1</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="AggDrawPipeline.cd" />
-    <None Include="packages.config" />
-  </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+
 </Project>
