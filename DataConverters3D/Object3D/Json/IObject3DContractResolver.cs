@@ -28,9 +28,12 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using MatterHackers.Agg;
+using MatterHackers.VectorMath;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -67,6 +70,25 @@ namespace MatterHackers.DataConverters3D
 			return result;
 		}
 
+		protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
+		{
+			var properties = base.CreateProperties(type, memberSerialization);
+
+			// Custom sort order for properties, [ID] first, alpha by name, [Children] last
+			return properties.OrderBy(p =>
+			{
+				switch (p.PropertyName)
+				{
+					case "ID":
+						return 0;
+					case "Children":
+						return 2;
+					default:
+						return 1;
+				}
+			}).ThenBy(p => p.PropertyName).ToList();
+		}
+
 		protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
 		{
 			JsonProperty property = base.CreateProperty(member, memberSerialization);
@@ -91,6 +113,15 @@ namespace MatterHackers.DataConverters3D
 					// Serialize Color property as long as we're not the default value
 					return instance is IObject3D object3D
 						&& object3D.Color != Color.Transparent;
+				};
+			}
+
+			if (property.PropertyName == "Matrix")
+			{
+				property.ShouldSerialize = (instance) =>
+				{
+					return instance is Object3D object3D
+						&& object3D.Matrix != Matrix4X4.Identity;
 				};
 			}
 
