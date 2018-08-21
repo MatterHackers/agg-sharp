@@ -33,6 +33,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using MatterHackers.Agg;
+using MatterHackers.VectorMath;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -112,6 +113,15 @@ namespace MatterHackers.DataConverters3D
 					// Serialize Color property as long as we're not the default value
 					return instance is IObject3D object3D
 						&& object3D.Color != Color.Transparent;
+				};
+			}
+
+			if (property.PropertyName == "Matrix")
+			{
+				property.ShouldSerialize = (instance) =>
+				{
+					return instance is Object3D object3D
+						&& object3D.Matrix != Matrix4X4.Identity;
 				};
 			}
 
