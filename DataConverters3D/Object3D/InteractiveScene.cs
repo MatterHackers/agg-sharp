@@ -318,56 +318,6 @@ namespace MatterHackers.DataConverters3D
 			return sourceItem.GetAxisAlignedBoundingBox(matrix);
 		}
 
-		/// <summary>
-		/// Wrap the current selection with the object passed,
-		/// then add the object to the scene,
-		/// then select the newly added object
-		/// </summary>
-		/// <param name="itemToWrapWith">Item to wrap selection and add</param>
-		public void WrapSelection(Object3D itemToWrapWith)
-		{
-			var selectedItem = this.SelectedItem;
-			if (selectedItem != null)
-			{
-				IObject3D item;
-
-				List<IObject3D> itemsToRestoreOnUndo;
-
-				if (selectedItem is SelectionGroupObject3D selectionGroup)
-				{
-					item = new Object3D();
-					itemsToRestoreOnUndo = selectionGroup.Children.ToList();
-					item.Children.Modify((list) =>
-					{
-						var clone = selectionGroup.Clone();
-						list.AddRange(clone.Children);
-					});
-				}
-				else
-				{
-					itemsToRestoreOnUndo = new List<IObject3D> { selectedItem };
-					item = selectedItem.Clone();
-				}
-
-				this.SelectedItem = null;
-
-				itemToWrapWith.Children.Add(item);
-
-				itemToWrapWith.MakeNameNonColliding();
-
-				this.UndoBuffer.AddAndDo(
-					new ReplaceCommand(
-						itemsToRestoreOnUndo,
-						new List<IObject3D> { itemToWrapWith }));
-
-				// Make the object have an identity matrix and keep its position in our new object
-				itemToWrapWith.Matrix = item.Matrix;
-				item.Matrix = Matrix4X4.Identity;
-
-				this.SelectedItem = itemToWrapWith;
-			}
-		}
-
 		public void Apply(UndoBuffer undoBuffer)
 		{
 			throw new NotImplementedException();
