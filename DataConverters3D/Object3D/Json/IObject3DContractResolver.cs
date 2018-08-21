@@ -28,7 +28,9 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using MatterHackers.Agg;
 using Newtonsoft.Json;
@@ -65,6 +67,25 @@ namespace MatterHackers.DataConverters3D
 			}
 
 			return result;
+		}
+
+		protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
+		{
+			var properties = base.CreateProperties(type, memberSerialization);
+
+			// Custom sort order for properties, [ID] first, alpha by name, [Children] last
+			return properties.OrderBy(p =>
+			{
+				switch (p.PropertyName)
+				{
+					case "ID":
+						return 0;
+					case "Children":
+						return 2;
+					default:
+						return 1;
+				}
+			}).ThenBy(p => p.PropertyName).ToList();
 		}
 
 		protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
