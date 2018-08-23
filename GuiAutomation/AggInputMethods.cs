@@ -268,6 +268,10 @@ namespace MatterHackers.GuiAutomation
 						systemWindow.OnKeyUp(new KeyEventArgs(Keys.Enter));
 						break;
 
+					case "%{F4}":
+						systemWindow.Close(true);
+						break;
+
 					case "^a":
 						Keyboard.SetKeyDownState(Keys.Control, true);
 						SendKey(Keys.Control | Keys.A, 'A', systemWindow);
