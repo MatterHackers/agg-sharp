@@ -757,7 +757,7 @@ namespace MatterHackers.GuiAutomation
 			var resetEvent = new AutoResetEvent(false);
 
 			EventHandler<DrawEventArgs> afterDraw = (s, e) => resetEvent.Set();
-			EventHandler<ClosedEventArgs> closed = (s, e) => resetEvent.Set();
+			EventHandler closed = (s, e) => resetEvent.Set();
 
 			containingWindow.AfterDraw += afterDraw;
 			containingWindow.Closed += closed;

@@ -278,7 +278,7 @@ namespace MatterHackers.Agg.UI
 			OnFocusChanged(e);
 		}
 
-		public override void OnClosed(ClosedEventArgs e)
+		public override void OnClosed(EventArgs e)
 		{
 			if (Focused)
 			{

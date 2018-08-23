@@ -269,7 +269,7 @@ namespace MatterHackers.GuiAutomation
 						break;
 
 					case "%{F4}":
-						systemWindow.Close(true);
+						systemWindow.Close();
 						break;
 
 					case "^a":
@@ -306,7 +306,6 @@ namespace MatterHackers.GuiAutomation
 							{
 								// If you end up here unexpectedly you may need to add 
 								// a mapping to charToKeys for the inputed character.
-								int a = 0;
 							}
 						}
 						break;

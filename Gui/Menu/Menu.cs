@@ -150,7 +150,7 @@ namespace MatterHackers.Agg.UI
 			return menuItem;
 		}
 
-		virtual protected void DropListItems_Closed(object sender, ClosedEventArgs e)
+		virtual protected void DropListItems_Closed(object sender, EventArgs e)
 		{
 			DropDownContainer dropListItems = (DropDownContainer)sender;
 			dropListItems.Closed -= DropListItems_Closed;

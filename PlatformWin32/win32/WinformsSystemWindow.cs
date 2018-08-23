@@ -310,7 +310,7 @@ namespace MatterHackers.Agg.UI
 					{
 						// Store that the Close operation started here
 						winformAlreadyClosing = true;
-						AggSystemWindow.Close(true);
+						AggSystemWindow.Close();
 					}
 				}
 			}

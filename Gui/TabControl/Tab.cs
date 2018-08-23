@@ -201,7 +201,7 @@ namespace MatterHackers.Agg.UI
 			this.OnTabIndexChanged();
 		}
 
-		public override void OnClosed(ClosedEventArgs e)
+		public override void OnClosed(EventArgs e)
 		{
 			if (this.TabBarContaningTab != null)
 			{
