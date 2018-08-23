@@ -6,13 +6,12 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>TRACE;DEBUG;NET471</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;USE_OPENGL</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>TRACE;USE_OPENGL</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,7 +23,14 @@
     <ProjectReference Include="..\Csg\Csg.csproj" />
     <ProjectReference Include="..\DataConverters2D\DataConverters2D.csproj" />
     <ProjectReference Include="..\PolygonMesh\PolygonMesh.csproj" />
+    <ProjectReference Include="..\RenderOpenGl\RenderOpenGl.csproj" />
     <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="OpenTK">
+      <HintPath>..\PlatformWin32\OpenTK.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
