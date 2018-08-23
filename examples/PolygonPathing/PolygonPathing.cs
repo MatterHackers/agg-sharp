@@ -979,7 +979,7 @@ namespace MatterHackers.PolygonPathing
 			y = 0;
 			if (m_curr_r > m_r2)
 			{
-				return ShapePath.FlagsAndCommand.CommandStop;
+				return ShapePath.FlagsAndCommand.Stop;
 			}
 
 			x = m_x + Math.Cos(m_angle) * m_curr_r;
@@ -989,9 +989,9 @@ namespace MatterHackers.PolygonPathing
 			if (m_start)
 			{
 				m_start = false;
-				return ShapePath.FlagsAndCommand.CommandMoveTo;
+				return ShapePath.FlagsAndCommand.MoveTo;
 			}
-			return ShapePath.FlagsAndCommand.CommandLineTo;
+			return ShapePath.FlagsAndCommand.LineTo;
 		}
 
 		public IEnumerable<VertexData> Vertices()

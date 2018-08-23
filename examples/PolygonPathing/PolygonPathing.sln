@@ -5,17 +5,17 @@ VisualStudioVersion = 15.0.27004.2009
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PolygonPathing", "PolygonPathing.csproj", "{D8C9D451-9E52-4445-9071-928EA277CD59}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Agg", "..\..\agg\Agg.csproj", "{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agg", "..\..\agg\Agg.csproj", "{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "clipper_library", "..\..\clipper_library\clipper_library.csproj", "{9B062971-A88E-4A3D-B3C9-12B78D15FA66}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "clipper_library", "..\..\clipper_library\clipper_library.csproj", "{9B062971-A88E-4A3D-B3C9-12B78D15FA66}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataConverters2D", "..\..\DataConverters2D\DataConverters2D.csproj", "{94838988-523C-4B11-AD82-8B9B76F23A31}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataConverters2D", "..\..\DataConverters2D\DataConverters2D.csproj", "{94838988-523C-4B11-AD82-8B9B76F23A31}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gui", "..\..\Gui\Gui.csproj", "{74F6BB6C-9D02-4512-A59A-21940E35C532}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gui", "..\..\Gui\Gui.csproj", "{74F6BB6C-9D02-4512-A59A-21940E35C532}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlatformWin32", "..\..\PlatformWin32\PlatformWin32.csproj", "{670BDDFF-927B-425D-9DD1-22ACB14356EB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlatformWin32", "..\..\PlatformWin32\PlatformWin32.csproj", "{670BDDFF-927B-425D-9DD1-22ACB14356EB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VectorMath", "..\..\VectorMath\VectorMath.csproj", "{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VectorMath", "..\..\VectorMath\VectorMath.csproj", "{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AggLib", "AggLib", "{0F8F87C6-662F-464B-BE24-8AAA7DBB0EBB}"
 EndProject
@@ -31,21 +31,27 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterSlice", "..\..\..\Mat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterSlice.Tests", "..\..\..\MatterSlice\Tests\MatterSlice.Tests\MatterSlice.Tests.csproj", "{8CD15B23-D30F-470E-99BA-9276FB7CABD4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageProcessing", "..\..\ImageProcessing\ImageProcessing.csproj", "{036BCCBA-52D8-457C-84AE-8821F209FE4A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImageProcessing", "..\..\ImageProcessing\ImageProcessing.csproj", "{036BCCBA-52D8-457C-84AE-8821F209FE4A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Csg", "..\..\Csg\Csg.csproj", "{7E61A5BD-E78F-4B80-88C9-3821B4FA062E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PolygonMesh", "..\..\PolygonMesh\PolygonMesh.csproj", "{86F6AAF2-9B50-40B8-A427-1897D76471C5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PolygonMesh", "..\..\PolygonMesh\PolygonMesh.csproj", "{86F6AAF2-9B50-40B8-A427-1897D76471C5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Net3dBool", "..\..\PolygonMesh\Net3dBool\Net3dBool.csproj", "{7EE4636D-8A92-4015-9562-7FCD6ADD0645}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Net3dBool", "..\..\PolygonMesh\Net3dBool\Net3dBool.csproj", "{7EE4636D-8A92-4015-9562-7FCD6ADD0645}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tesselate", "..\..\Tesselate\Tesselate.csproj", "{AE37DE1F-22F7-49EE-8732-FC6BC8DC58D9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tesselate", "..\..\Tesselate\Tesselate.csproj", "{AE37DE1F-22F7-49EE-8732-FC6BC8DC58D9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RenderOpenGl", "..\..\RenderOpenGl\RenderOpenGl.csproj", "{545B6912-77FF-4B34-BA76-6C3D6A32BE6A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RenderOpenGl", "..\..\RenderOpenGl\RenderOpenGl.csproj", "{545B6912-77FF-4B34-BA76-6C3D6A32BE6A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataConverters3D", "..\..\DataConverters3D\DataConverters3D.csproj", "{04667764-DC7B-4B95-AEF6-B4E6C87A54E9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataConverters3D", "..\..\DataConverters3D\DataConverters3D.csproj", "{04667764-DC7B-4B95-AEF6-B4E6C87A54E9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RayTracer", "..\..\RayTracer\RayTracer.csproj", "{1E01ABE0-B494-4FE4-B0D6-540133286887}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RayTracer", "..\..\RayTracer\RayTracer.csproj", "{1E01ABE0-B494-4FE4-B0D6-540133286887}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Typography.GlyphLayout", "..\..\Typography.GlyphLayout\Typography.GlyphLayout.csproj", "{3B09E214-DAA2-427C-BF9E-25C0BD303E96}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Typography.OpenFont", "..\..\Typography.OpenFont\Typography.OpenFont.csproj", "{89575B13-A421-460C-AF31-07DB9DA9FE16}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Localizations", "..\..\Localizations\Localizations.csproj", "{FD2AFEB5-B16C-4C2F-BFDB-1E4FEB67421D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -379,6 +385,54 @@ Global
 		{1E01ABE0-B494-4FE4-B0D6-540133286887}.Release64|Any CPU.Build.0 = Release|Any CPU
 		{1E01ABE0-B494-4FE4-B0D6-540133286887}.Release64|x64.ActiveCfg = Release|Any CPU
 		{1E01ABE0-B494-4FE4-B0D6-540133286887}.Release64|x64.Build.0 = Release|Any CPU
+		{3B09E214-DAA2-427C-BF9E-25C0BD303E96}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3B09E214-DAA2-427C-BF9E-25C0BD303E96}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3B09E214-DAA2-427C-BF9E-25C0BD303E96}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3B09E214-DAA2-427C-BF9E-25C0BD303E96}.Debug|x64.Build.0 = Debug|Any CPU
+		{3B09E214-DAA2-427C-BF9E-25C0BD303E96}.Debug64|Any CPU.ActiveCfg = Debug|Any CPU
+		{3B09E214-DAA2-427C-BF9E-25C0BD303E96}.Debug64|Any CPU.Build.0 = Debug|Any CPU
+		{3B09E214-DAA2-427C-BF9E-25C0BD303E96}.Debug64|x64.ActiveCfg = Debug|Any CPU
+		{3B09E214-DAA2-427C-BF9E-25C0BD303E96}.Debug64|x64.Build.0 = Debug|Any CPU
+		{3B09E214-DAA2-427C-BF9E-25C0BD303E96}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3B09E214-DAA2-427C-BF9E-25C0BD303E96}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3B09E214-DAA2-427C-BF9E-25C0BD303E96}.Release|x64.ActiveCfg = Release|Any CPU
+		{3B09E214-DAA2-427C-BF9E-25C0BD303E96}.Release|x64.Build.0 = Release|Any CPU
+		{3B09E214-DAA2-427C-BF9E-25C0BD303E96}.Release64|Any CPU.ActiveCfg = Release|Any CPU
+		{3B09E214-DAA2-427C-BF9E-25C0BD303E96}.Release64|Any CPU.Build.0 = Release|Any CPU
+		{3B09E214-DAA2-427C-BF9E-25C0BD303E96}.Release64|x64.ActiveCfg = Release|Any CPU
+		{3B09E214-DAA2-427C-BF9E-25C0BD303E96}.Release64|x64.Build.0 = Release|Any CPU
+		{89575B13-A421-460C-AF31-07DB9DA9FE16}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{89575B13-A421-460C-AF31-07DB9DA9FE16}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{89575B13-A421-460C-AF31-07DB9DA9FE16}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{89575B13-A421-460C-AF31-07DB9DA9FE16}.Debug|x64.Build.0 = Debug|Any CPU
+		{89575B13-A421-460C-AF31-07DB9DA9FE16}.Debug64|Any CPU.ActiveCfg = Debug|Any CPU
+		{89575B13-A421-460C-AF31-07DB9DA9FE16}.Debug64|Any CPU.Build.0 = Debug|Any CPU
+		{89575B13-A421-460C-AF31-07DB9DA9FE16}.Debug64|x64.ActiveCfg = Debug|Any CPU
+		{89575B13-A421-460C-AF31-07DB9DA9FE16}.Debug64|x64.Build.0 = Debug|Any CPU
+		{89575B13-A421-460C-AF31-07DB9DA9FE16}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{89575B13-A421-460C-AF31-07DB9DA9FE16}.Release|Any CPU.Build.0 = Release|Any CPU
+		{89575B13-A421-460C-AF31-07DB9DA9FE16}.Release|x64.ActiveCfg = Release|Any CPU
+		{89575B13-A421-460C-AF31-07DB9DA9FE16}.Release|x64.Build.0 = Release|Any CPU
+		{89575B13-A421-460C-AF31-07DB9DA9FE16}.Release64|Any CPU.ActiveCfg = Release|Any CPU
+		{89575B13-A421-460C-AF31-07DB9DA9FE16}.Release64|Any CPU.Build.0 = Release|Any CPU
+		{89575B13-A421-460C-AF31-07DB9DA9FE16}.Release64|x64.ActiveCfg = Release|Any CPU
+		{89575B13-A421-460C-AF31-07DB9DA9FE16}.Release64|x64.Build.0 = Release|Any CPU
+		{FD2AFEB5-B16C-4C2F-BFDB-1E4FEB67421D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD2AFEB5-B16C-4C2F-BFDB-1E4FEB67421D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD2AFEB5-B16C-4C2F-BFDB-1E4FEB67421D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FD2AFEB5-B16C-4C2F-BFDB-1E4FEB67421D}.Debug|x64.Build.0 = Debug|Any CPU
+		{FD2AFEB5-B16C-4C2F-BFDB-1E4FEB67421D}.Debug64|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD2AFEB5-B16C-4C2F-BFDB-1E4FEB67421D}.Debug64|Any CPU.Build.0 = Debug|Any CPU
+		{FD2AFEB5-B16C-4C2F-BFDB-1E4FEB67421D}.Debug64|x64.ActiveCfg = Debug|Any CPU
+		{FD2AFEB5-B16C-4C2F-BFDB-1E4FEB67421D}.Debug64|x64.Build.0 = Debug|Any CPU
+		{FD2AFEB5-B16C-4C2F-BFDB-1E4FEB67421D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD2AFEB5-B16C-4C2F-BFDB-1E4FEB67421D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FD2AFEB5-B16C-4C2F-BFDB-1E4FEB67421D}.Release|x64.ActiveCfg = Release|Any CPU
+		{FD2AFEB5-B16C-4C2F-BFDB-1E4FEB67421D}.Release|x64.Build.0 = Release|Any CPU
+		{FD2AFEB5-B16C-4C2F-BFDB-1E4FEB67421D}.Release64|Any CPU.ActiveCfg = Release|Any CPU
+		{FD2AFEB5-B16C-4C2F-BFDB-1E4FEB67421D}.Release64|Any CPU.Build.0 = Release|Any CPU
+		{FD2AFEB5-B16C-4C2F-BFDB-1E4FEB67421D}.Release64|x64.ActiveCfg = Release|Any CPU
+		{FD2AFEB5-B16C-4C2F-BFDB-1E4FEB67421D}.Release64|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -403,6 +457,9 @@ Global
 		{545B6912-77FF-4B34-BA76-6C3D6A32BE6A} = {0F8F87C6-662F-464B-BE24-8AAA7DBB0EBB}
 		{04667764-DC7B-4B95-AEF6-B4E6C87A54E9} = {0F8F87C6-662F-464B-BE24-8AAA7DBB0EBB}
 		{1E01ABE0-B494-4FE4-B0D6-540133286887} = {0F8F87C6-662F-464B-BE24-8AAA7DBB0EBB}
+		{3B09E214-DAA2-427C-BF9E-25C0BD303E96} = {0F8F87C6-662F-464B-BE24-8AAA7DBB0EBB}
+		{89575B13-A421-460C-AF31-07DB9DA9FE16} = {0F8F87C6-662F-464B-BE24-8AAA7DBB0EBB}
+		{FD2AFEB5-B16C-4C2F-BFDB-1E4FEB67421D} = {0F8F87C6-662F-464B-BE24-8AAA7DBB0EBB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {855FA983-A3BD-498A-8733-E911268656B3}
