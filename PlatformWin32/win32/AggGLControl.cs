@@ -35,7 +35,6 @@ namespace MatterHackers.Agg.UI
 	public class AggGLControl : GLControl
 	{
 		internal static AggGLControl currentControl;
-		static bool checkedCapabilities = false;
 
 		private static int nextId;
 		public int Id;
@@ -46,35 +45,6 @@ namespace MatterHackers.Agg.UI
 		public AggGLControl()
 			: base(new OpenTK.Graphics.GraphicsMode(32, 24, 0, 8))
 		{
-			if (!checkedCapabilities)
-			{
-				try
-				{
-					IntPtr address = (this.Context as OpenTK.Graphics.IGraphicsContextInternal).GetAddress("glGenBuffers");
-
-					string versionString = GL.GetString(StringName.Version);
-					int firstSpace = versionString.IndexOf(' ');
-					if (firstSpace != -1)
-					{
-						versionString = versionString.Substring(0, firstSpace);
-					}
-
-					Version openGLVersion = new Version(versionString);
-					string glExtensionsString = GL.GetString(StringName.Extensions);
-					bool extensionSupport = glExtensionsString.Contains("GL_ARB_vertex_attrib_binding");
-
-					if (openGLVersion.CompareTo(new Version(2, 1)) < 0 && !extensionSupport)
-					{
-						MatterHackers.RenderOpenGl.OpenGl.GL.DisableGlBuffers();
-					}
-				}
-				catch
-				{
-					MatterHackers.RenderOpenGl.OpenGl.GL.DisableGlBuffers();
-				}
-
-				checkedCapabilities = true;
-			}
 			Id = nextId++;
 		}
 

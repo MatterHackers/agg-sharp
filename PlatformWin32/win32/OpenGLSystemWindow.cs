@@ -46,6 +46,8 @@ namespace MatterHackers.Agg.UI
 				VSync = false
 			};
 
+			RenderOpenGl.OpenGl.GL.Instance = new OpenTkGl();
+
 			this.Controls.Add(glControl);
 		}
 
