@@ -14,6 +14,7 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>TRACE;USE_OPENGL;RELEASE;NET471</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
