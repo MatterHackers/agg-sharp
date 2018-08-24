@@ -34,7 +34,7 @@ namespace MatterHackers.Agg.UI
 			ShowAsSystemWindow();
 		}
 
-		public override void OnClosed(ClosedEventArgs e)
+		public override void OnClosed(EventArgs e)
 		{
 			topLevelWindow.MouseMove -= topLevelWindow_MouseMove;
 			foreach (KeyValuePair<GuiWidget, WidgetInList> keyValue in widgetRefList)

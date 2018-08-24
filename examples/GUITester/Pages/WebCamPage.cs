@@ -50,7 +50,7 @@ namespace MatterHackers.Agg
 			AnchorAll();
 		}
 
-		public override void OnClosed(ClosedEventArgs e)
+		public override void OnClosed(EventArgs e)
 		{
 			camera.CloseCurrentVideoSource();
 			base.OnClosed(e);

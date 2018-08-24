@@ -607,7 +607,7 @@ namespace MatterHackers.Agg.UI
 
 		public event EventHandler<KeyEventArgs> KeyUp;
 
-		public event EventHandler<ClosedEventArgs> Closed;
+		public event EventHandler Closed;
 
 		public event EventHandler ParentChanged;
 
@@ -1513,17 +1513,12 @@ namespace MatterHackers.Agg.UI
 
 		public void CloseAllChildren()
 		{
-			CloseAllChildren(false);
-		}
-
-		public void CloseAllChildren(bool osRequest)
-		{
 			for (int i = Children.Count - 1; i >= 0; i--)
 			{
 				GuiWidget child = Children[i];
 				Children.RemoveAt(i);
 				child.Parent = null;
-				child.Close(osRequest);
+				child.Close();
 			}
 		}
 
@@ -2260,14 +2255,6 @@ namespace MatterHackers.Agg.UI
 
 		public void Close()
 		{
-			Close(false);
-		}
-
-		/// <summary>
-		/// Request a close
-		/// </summary>
-		public void Close(bool osRequest)
-		{
 			if (childrenLockedInMouseUpCount != 0)
 			{
 				BreakInDebugger("You should put this close onto the UiThread.RunOnIdle so it can happen after the child list is unlocked.");
@@ -2289,9 +2276,9 @@ namespace MatterHackers.Agg.UI
 			{
 				HasBeenClosed = true;
 
-				this.CloseAllChildren(osRequest);
+				this.CloseAllChildren();
 
-				OnClosed(new ClosedEventArgs(osRequest));
+				OnClosed(null);
 				if (Parent != null)
 				{
 					// This code will only execute if this is the actual widget we called close on (not a child of the widget we called close on).
@@ -2301,7 +2288,7 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		public virtual void OnClosed(ClosedEventArgs e)
+		public virtual void OnClosed(EventArgs e)
 		{
 			Closed?.Invoke(this, e);
 		}

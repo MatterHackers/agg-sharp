@@ -94,7 +94,7 @@ namespace MatterHackers.Agg.UI
 			this.Close();
 		}
 
-		public override void OnClosed(ClosedEventArgs e)
+		public override void OnClosed(EventArgs e)
 		{
 			layoutEngine.Closed();
 
@@ -120,7 +120,7 @@ namespace MatterHackers.Agg.UI
 				}
 				else if (openDropList != null)
 				{
-					EventHandler<ClosedEventArgs> focusOnChildClose = null;
+					EventHandler focusOnChildClose = null;
 
 					focusOnChildClose = (s, e2) =>
 					{
@@ -278,7 +278,7 @@ namespace MatterHackers.Agg.UI
 			widgetRelativeTo.Closed += widgetRelativeTo_Closed;
 		}
 
-		private void widgetRelativeTo_Closed(object sender, ClosedEventArgs e)
+		private void widgetRelativeTo_Closed(object sender, EventArgs e)
 		{
 			// If the owning widget closed, so should we
 			popupWidget.CloseMenu();
@@ -397,7 +397,7 @@ namespace MatterHackers.Agg.UI
 			base.CloseMenu();
 		}
 
-		public override void OnClosed(ClosedEventArgs e)
+		public override void OnClosed(EventArgs e)
 		{
 			foreach (MenuItem menuItem in MenuItems)
 			{
