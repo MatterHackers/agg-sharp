@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <ShaderOutputPath>$(BaseIntermediateOutputPath)</ShaderOutputPath>
+    <ShaderContentIncludePath>Shaders</ShaderContentIncludePath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ShaderGen.Build" Version="1.2.0-beta2" />
+    <PackageReference Include="ShaderGen.Primitives" Version="1.2.0-beta2" />
+    <PackageReference Include="Veldrid" Version="4.4.0-beta2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RenderOpenGl\RenderOpenGl.csproj" />
+  </ItemGroup>
+
+  <Target Name="IncludeGeneratedShaderEmbeddedResource" AfterTargets="AssignTargetPaths" Condition="'$(ShaderContentIncludePath)' != ''">
+    <ItemGroup>
+      <EmbeddedResource Include="@(GeneratedShader)">
+        <LogicalName>%(FileName)%(Extension)</LogicalName>
+      </EmbeddedResource>
+    </ItemGroup>
+  </Target>
+
+</Project>
