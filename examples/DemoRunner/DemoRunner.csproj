@@ -7,6 +7,10 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{68625601-A793-4222-8916-2A62E6971CB8}</ProjectGuid>
     <OutputType>WinExe</OutputType>
+    <!--See the following for details on netstandard2 binding workround: https://github.com/dotnet/standard/issues/481-->
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>DemoRunner</RootNamespace>
     <AssemblyName>DemoRunner</AssemblyName>
@@ -105,13 +109,7 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="C5, Version=2.5.0.0, Culture=neutral, PublicKeyToken=282361b99ded7e8e, processorArchitecture=MSIL">
-      <HintPath>..\..\..\..\packages\C5.2.5.3\lib\net45\C5.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
+    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\agg\Agg.csproj">
@@ -133,10 +131,6 @@
     <ProjectReference Include="..\..\VectorMath\VectorMath.csproj">
       <Project>{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}</Project>
       <Name>VectorMath</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\WindowsFileDialogs\WindowsFileDialogs.csproj">
-      <Project>{A526DC5D-65F3-461B-805F-D3AC9665F5C9}</Project>
-      <Name>WindowsFileDialogs</Name>
     </ProjectReference>
     <ProjectReference Include="..\aa_demo\aa_demo.csproj">
       <Project>{B90FCE13-D2DA-4759-ABFE-70B36BD32EC1}</Project>
@@ -255,7 +249,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

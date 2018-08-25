@@ -4,12 +4,13 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.VectorMath;
 using System;
+using System.Diagnostics;
 
 namespace RockBlaster
 {
 	public class TimedInterpolator
 	{
-		private static System.Diagnostics.Stopwatch runningTime = new System.Diagnostics.Stopwatch();
+		private static Stopwatch runningTime = new Stopwatch();
 
 		public enum Repeate { NONE, LOOP, PINGPONG };
 
