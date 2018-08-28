@@ -7,6 +7,10 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{E8D6F1EF-5AD2-45F0-B71D-1214D00C5CE4}</ProjectGuid>
     <OutputType>WinExe</OutputType>
+    <!--See the following for details on netstandard2 binding workround: https://github.com/dotnet/standard/issues/481-->
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>PolygonClipping</RootNamespace>
     <AssemblyName>PolygonClipping</AssemblyName>
@@ -18,8 +22,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <FileAlignment>4096</FileAlignment>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <FileUpgradeFlags>
-    </FileUpgradeFlags>
+    <FileUpgradeFlags></FileUpgradeFlags>
     <OldToolsVersion>2.0</OldToolsVersion>
     <UpgradeBackupLocation />
     <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
@@ -139,7 +142,7 @@
     <Compile Include="PolygonClipping.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System" />
+    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

@@ -7,6 +7,10 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{3BEFA755-A647-4A16-A73C-0ACF18211EBD}</ProjectGuid>
     <OutputType>WinExe</OutputType>
+    <!--See the following for details on netstandard2 binding workround: https://github.com/dotnet/standard/issues/481-->
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>lion</RootNamespace>
     <AssemblyName>lion</AssemblyName>
@@ -18,8 +22,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <FileAlignment>4096</FileAlignment>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <FileUpgradeFlags>
-    </FileUpgradeFlags>
+    <FileUpgradeFlags></FileUpgradeFlags>
     <OldToolsVersion>2.0</OldToolsVersion>
     <UpgradeBackupLocation />
     <PublishUrl>publish\</PublishUrl>
@@ -138,18 +141,7 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="C5, Version=2.5.0.0, Culture=neutral, PublicKeyToken=282361b99ded7e8e, processorArchitecture=MSIL">
-      <HintPath>..\..\..\..\packages\C5.2.5.3\lib\net45\C5.dll</HintPath>
-    </Reference>
-    <Reference Include="OpenTK, Version=1.1.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\PlatformWin32\OpenTK.dll</HintPath>
-    </Reference>
-    <Reference Include="OpenTK.GLControl, Version=1.1.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\PlatformWin32\OpenTK.GLControl.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
+    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="lion.cs" />
@@ -185,6 +177,5 @@
     <EmbeddedResource Include="config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </EmbeddedResource>
-    <None Include="packages.config" />
   </ItemGroup>
 </Project>

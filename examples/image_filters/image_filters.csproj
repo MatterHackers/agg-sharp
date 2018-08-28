@@ -7,6 +7,10 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{74BA5082-FD08-4BB9-8B30-39D9E80D2C8F}</ProjectGuid>
     <OutputType>WinExe</OutputType>
+    <!--See the following for details on netstandard2 binding workround: https://github.com/dotnet/standard/issues/481-->
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>image_filters</RootNamespace>
     <AssemblyName>image_filters</AssemblyName>
@@ -132,9 +136,12 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System" />
+    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
   </ItemGroup>
 </Project>

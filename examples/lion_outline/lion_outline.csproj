@@ -7,6 +7,10 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{3E06C55C-4CF1-4CC3-86F4-E4DA1FAFFB06}</ProjectGuid>
     <OutputType>WinExe</OutputType>
+    <!--See the following for details on netstandard2 binding workround: https://github.com/dotnet/standard/issues/481-->
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>lion_outline</RootNamespace>
     <AssemblyName>lion_outline</AssemblyName>
@@ -18,8 +22,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <FileAlignment>4096</FileAlignment>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <FileUpgradeFlags>
-    </FileUpgradeFlags>
+    <FileUpgradeFlags></FileUpgradeFlags>
     <OldToolsVersion>2.0</OldToolsVersion>
     <UpgradeBackupLocation />
     <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
@@ -131,5 +134,8 @@
   <ItemGroup>
     <None Include="app.config" />
     <EmbeddedResource Include="config.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
   </ItemGroup>
 </Project>

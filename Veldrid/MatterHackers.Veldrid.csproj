@@ -1,0 +1,64 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Company>MatterHackers Inc.</Company>
+    <ShaderOutputPath>$(BaseIntermediateOutputPath)</ShaderOutputPath>
+    <ShaderContentIncludePath>Shaders</ShaderContentIncludePath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="AggShadersUnused\**" />
+    <EmbeddedResource Remove="AggShadersUnused\**" />
+    <None Remove="AggShadersUnused\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="RenderOpenGL\RendererOpenGL.cs" />
+    <Compile Remove="RenderOpenGL\Shaders\PositionColorGL.cs" />
+    <Compile Remove="RenderOpenGL\Shaders\PositionColorTextureGL.cs" />
+    <Compile Remove="RenderOpenGL\Shaders\PositionTextureGL.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="RenderOpenGL\Shaders\PositionColorGL.cs" />
+    <None Include="RenderOpenGL\Shaders\PositionColorTextureGL.cs" />
+    <None Include="RenderOpenGL\Shaders\PositionTextureGL.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ShaderGen.Build" Version="1.2.0-beta2" />
+    <PackageReference Include="ShaderGen.Primitives" Version="1.2.0-beta2" />
+    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
+    <PackageReference Include="Veldrid" Version="4.4.0-beta2" />
+    <PackageReference Include="Veldrid.SDL2" Version="4.4.0-beta2" />
+    <PackageReference Include="Veldrid.StartupUtilities" Version="4.4.0-beta2" />
+    <PackageReference Include="Veldrid.Utilities" Version="4.4.0-beta2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\agg\Agg.csproj" />
+    <ProjectReference Include="..\DataConverters2D\DataConverters2D.csproj" />
+    <ProjectReference Include="..\Gui\Gui.csproj" />
+    <ProjectReference Include="..\RenderOpenGl\RenderOpenGl.csproj" />
+    <ProjectReference Include="..\Tesselate\Tesselate.csproj" />
+    <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
+  </ItemGroup>
+
+  <Target Name="IncludeGeneratedShaderEmbeddedResource" AfterTargets="AssignTargetPaths" Condition="'$(ShaderContentIncludePath)' != ''">
+    <ItemGroup>
+      <EmbeddedResource Include="@(GeneratedShader)">
+        <LogicalName>%(FileName)%(Extension)</LogicalName>
+      </EmbeddedResource>
+    </ItemGroup>
+  </Target>
+
+</Project>

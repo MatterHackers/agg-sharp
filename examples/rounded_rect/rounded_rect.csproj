@@ -7,6 +7,10 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{DA8EBDD6-0E11-422D-82E9-B2BA487D106D}</ProjectGuid>
     <OutputType>WinExe</OutputType>
+    <!--See the following for details on netstandard2 binding workround: https://github.com/dotnet/standard/issues/481-->
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>rounded_rect</RootNamespace>
     <AssemblyName>rounded_rect</AssemblyName>
@@ -18,8 +22,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <FileAlignment>4096</FileAlignment>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <FileUpgradeFlags>
-    </FileUpgradeFlags>
+    <FileUpgradeFlags></FileUpgradeFlags>
     <OldToolsVersion>2.0</OldToolsVersion>
     <UpgradeBackupLocation />
     <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
@@ -129,6 +132,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
