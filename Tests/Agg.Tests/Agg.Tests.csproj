@@ -1,6 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\..\..\packages\NUnit3TestAdapter.3.9.0\build\net35\NUnit3TestAdapter.props" Condition="Exists('..\..\..\..\packages\NUnit3TestAdapter.3.9.0\build\net35\NUnit3TestAdapter.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -45,7 +44,9 @@
     <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
     <PackageReference Include="NUnit" Version="3.9.0" />
     <PackageReference Include="NUnit.ApplicationDomain" Version="11.0.0" />
-    <PackageReference Include="NUnit3TestAdapter" Version="3.9.0" />
+    <PackageReference Include="NUnit3TestAdapter">
+      <Version>3.10.0</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Agg.Gaming\Vector2D.cs" />
@@ -91,7 +92,7 @@
       <Name>DataConverters3D</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\GuiAutomation\GuiAutomation.csproj">
-      <Project>{E9102310-0029-4D8F-B1E9-88FBA6147D45}</Project>
+      <Project>{e9102310-0029-4d8f-b1e9-88fba6147d45}</Project>
       <Name>GuiAutomation</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Gui\Gui.csproj">
