@@ -38,10 +38,10 @@ using MatterHackers.Agg.UI;
 using Veldrid;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.RenderOpenGl;
-using MatterHackers.Veldird.VertexFormats;
+using MatterHackers.VeldridProvider.VertexFormats;
 using System.Collections.Generic;
 
-namespace MatterHackers.Veldrid
+namespace MatterHackers.VeldridProvider
 {
 	public class Graphics2DVeldrid : Graphics2D
 	{

@@ -5,6 +5,7 @@
     <Company>MatterHackers Inc.</Company>
     <ShaderOutputPath>$(BaseIntermediateOutputPath)</ShaderOutputPath>
     <ShaderContentIncludePath>Shaders</ShaderContentIncludePath>
+    <AssemblyName>MatterHackers.VeldridProvider</AssemblyName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -19,19 +20,6 @@
     <Compile Remove="AggShadersUnused\**" />
     <EmbeddedResource Remove="AggShadersUnused\**" />
     <None Remove="AggShadersUnused\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="RenderOpenGL\RendererOpenGL.cs" />
-    <Compile Remove="RenderOpenGL\Shaders\PositionColorGL.cs" />
-    <Compile Remove="RenderOpenGL\Shaders\PositionColorTextureGL.cs" />
-    <Compile Remove="RenderOpenGL\Shaders\PositionTextureGL.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="RenderOpenGL\Shaders\PositionColorGL.cs" />
-    <None Include="RenderOpenGL\Shaders\PositionColorTextureGL.cs" />
-    <None Include="RenderOpenGL\Shaders\PositionTextureGL.cs" />
   </ItemGroup>
 
   <ItemGroup>

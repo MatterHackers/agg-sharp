@@ -2,9 +2,9 @@
 using System.Numerics;
 using static ShaderGen.ShaderBuiltins;
 
-[assembly: ShaderSet("PositionTexture", "MatterHackers.Veldird.Shaders.PositionTexture.VS", "MatterHackers.Veldird.Shaders.PositionTexture.FS")]
+[assembly: ShaderSet("PositionTexture", "MatterHackers.VeldridProvider.Shaders.PositionTexture.VS", "MatterHackers.VeldridProvider.Shaders.PositionTexture.FS")]
 
-namespace MatterHackers.Veldird.Shaders
+namespace MatterHackers.VeldridProvider.Shaders
 {
 	public class PositionTexture
 	{
