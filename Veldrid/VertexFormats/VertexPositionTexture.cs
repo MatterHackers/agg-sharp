@@ -29,7 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System.Numerics;
 
-namespace MatterHackers.Veldird.VertexFormats
+namespace MatterHackers.VeldirdProvider.VertexFormats
 {
 	public struct VertexPositionTexture
 	{

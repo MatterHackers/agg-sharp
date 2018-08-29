@@ -28,7 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg.Image;
-using MatterHackers.Veldird.VertexFormats;
+using MatterHackers.VeldirdProvider.VertexFormats;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -36,7 +36,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using Veldrid;
 
-namespace MatterHackers.Veldrid
+namespace MatterHackers.VeldridProvider
 {
 	public class ShaderData
 	{

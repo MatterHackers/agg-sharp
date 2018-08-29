@@ -22,7 +22,7 @@ using Veldrid.StartupUtilities;
 using MatterHackers.RenderOpenGl;
 using MatterHackers.Agg.UI;
 
-namespace MatterHackers.Veldrid
+namespace MatterHackers.VeldridProvider
 {
 	public class VeldridWindowProvider : ISystemWindowProvider
 	{
@@ -67,7 +67,9 @@ namespace MatterHackers.Veldrid
 						new KeyEventArgs((Keys)keyEvent.Key));
 				};
 
-				// VeldridGL.Instance.CreateResources(_graphicsDevice);
+				// setup our veldrid gl imediate mode emulator
+				MatterHackers.RenderOpenGl.OpenGl.GL.Instance = new VeldridGL();
+				VeldridGL.Instance.CreateResources(_graphicsDevice);
 
 				ShaderData.Instance.CreateResources(_graphicsDevice);
 
@@ -134,7 +136,6 @@ namespace MatterHackers.Veldrid
 
 				// MyOpenGLView.RootGLView.ShowSystemWindow(systemWindow);
 				VeldridGL.Instance.DisposeResources();
-
 				ShaderData.Instance.DisposeResources();
 			}
 

@@ -19,8 +19,9 @@
 using MatterHackers.VectorMath;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg;
+using MatterHackers.RenderOpenGl;
 
-namespace MatterHackers.Veldrid
+namespace MatterHackers.VeldridProvider
 {
 	public class VeldridSystemWindow : IPlatformWindow
 	{
@@ -64,12 +65,13 @@ namespace MatterHackers.Veldrid
 
 		public Graphics2D NewGraphics2D()
 		{
-			var graphics2D = new Graphics2DVeldrid(this.Width, this.Height)
+			Graphics2D graphics2D = new Graphics2DVeldrid(this.Width, this.Height)
 			{
 				WindowProvider = windowProvider
 			};
 
-			//var graphics2D = new Graphics2DOpenGL(this.Width, this.Height);
+			// this is for testing the open gl implementation
+			//graphics2D = new Graphics2DOpenGL(this.Width, this.Height);
 			graphics2D.PushTransform();
 
 			return graphics2D;

@@ -31,9 +31,9 @@ using ShaderGen;
 using System.Numerics;
 using static ShaderGen.ShaderBuiltins;
 
-[assembly: ShaderSet("PositionColor", "MatterHackers.Veldird.Shaders.PositionColor.VS", "MatterHackers.Veldird.Shaders.PositionColor.FS")]
+[assembly: ShaderSet("PositionColor", "MatterHackers.VeldirdProvider.Shaders.PositionColor.VS", "MatterHackers.VeldirdProvider.Shaders.PositionColor.FS")]
 
-namespace MatterHackers.Veldird.Shaders
+namespace MatterHackers.VeldirdProvider.Shaders
 {
 	public class PositionColor
 	{
