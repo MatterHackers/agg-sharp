@@ -30,7 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System.Numerics;
 using Veldrid;
 
-namespace MatterHackers.VeldirdProvider.VertexFormats
+namespace MatterHackers.VeldridProvider.VertexFormats
 {
 	public struct VertexPositionColor
 	{

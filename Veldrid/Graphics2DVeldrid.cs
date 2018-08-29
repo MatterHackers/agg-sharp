@@ -38,7 +38,7 @@ using MatterHackers.Agg.UI;
 using Veldrid;
 using MatterHackers.RenderOpenGl.OpenGl;
 using MatterHackers.RenderOpenGl;
-using MatterHackers.VeldirdProvider.VertexFormats;
+using MatterHackers.VeldridProvider.VertexFormats;
 using System.Collections.Generic;
 
 namespace MatterHackers.VeldridProvider

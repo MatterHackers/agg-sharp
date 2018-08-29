@@ -28,7 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using MatterHackers.Agg.Image;
-using MatterHackers.VeldirdProvider.VertexFormats;
+using MatterHackers.VeldridProvider.VertexFormats;
 using System;
 using System.Collections.Generic;
 using System.IO;
