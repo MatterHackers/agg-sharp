@@ -152,6 +152,14 @@ namespace MatterHackers.VectorMath
 			Row3 = new Vector4(double16[12], double16[13], double16[14], double16[15]);
 		}
 
+		public Matrix4X4(float[] float16)
+		{
+			Row0 = new Vector4(float16[0], float16[1], float16[2], float16[3]);
+			Row1 = new Vector4(float16[4], float16[5], float16[6], float16[7]);
+			Row2 = new Vector4(float16[8], float16[9], float16[10], float16[11]);
+			Row3 = new Vector4(float16[12], float16[13], float16[14], float16[15]);
+		}
+
 		#endregion Constructors
 
 		#region Public Members

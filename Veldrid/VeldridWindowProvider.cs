@@ -68,8 +68,9 @@ namespace MatterHackers.VeldridProvider
 				};
 
 				// setup our veldrid gl imediate mode emulator
-				MatterHackers.RenderOpenGl.OpenGl.GL.Instance = new VeldridGL();
-				VeldridGL.Instance.CreateResources(_graphicsDevice);
+				var veldridGl = new VeldridGL();
+				MatterHackers.RenderOpenGl.OpenGl.GL.Instance = veldridGl;
+				veldridGl.CreateResources(_graphicsDevice);
 
 				ShaderData.Instance.CreateResources(_graphicsDevice);
 
@@ -135,7 +136,7 @@ namespace MatterHackers.VeldridProvider
 				}
 
 				// MyOpenGLView.RootGLView.ShowSystemWindow(systemWindow);
-				VeldridGL.Instance.DisposeResources();
+				veldridGl.DisposeResources();
 				ShaderData.Instance.DisposeResources();
 			}
 
