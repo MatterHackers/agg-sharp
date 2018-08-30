@@ -29,11 +29,11 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.Agg;
 using MatterHackers.RenderOpenGl.OpenGl;
+using MatterHackers.VectorMath;
 using RenderOpenGl.VertexFormats;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Numerics;
 using System.Runtime.InteropServices;
 using Veldrid;
 
@@ -41,32 +41,81 @@ namespace MatterHackers.RenderOpenGl
 {
 	public class VeldridGL : IOpenGL
 	{
-		public static VeldridGL Instance = new VeldridGL();
 		public CommandList commandList;
+
 		public GraphicsDevice graphicsDevice;
+
 		public DeviceBuffer indexBuffer;
+
 		public Pipeline pipeline;
 
 		// matrix transforms
 		public DeviceBuffer projectionBuffer;
 
 		public VertexPositionColorGL[] quadVertices;
+
 		public DeviceBuffer vertexBuffer;
+
+		private Dictionary<ArrayCap, bool> ArrayCapState = new Dictionary<ArrayCap, bool>()
+		{
+			[ArrayCap.VertexArray] = false,
+			[ArrayCap.NormalArray] = false,
+			[ArrayCap.ColorArray] = false,
+			[ArrayCap.IndexArray] = false,
+			[ArrayCap.TextureCoordArray] = false,
+		};
+
 		private Dictionary<int, byte[]> bufferData = new Dictionary<int, byte[]>();
+
 		private int currentArrayBufferIndex = 0;
+
 		private int currentElementArrayBufferIndex = 0;
+
+		private ImediateMode currentImediateData = new ImediateMode();
+
 		private ViewPortData currentViewport = new ViewPortData();
+
+		private Dictionary<EnableCap, bool> EnableCapState = new Dictionary<EnableCap, bool>()
+		{
+			[EnableCap.Blend] = false,
+			[EnableCap.ColorMaterial] = false,
+			[EnableCap.CullFace] = false,
+			[EnableCap.DepthTest] = false,
+			[EnableCap.Light0] = false,
+			[EnableCap.Light1] = false,
+			[EnableCap.Lighting] = false,
+			[EnableCap.Normalize] = false,
+			[EnableCap.PolygonOffsetFill] = false,
+			[EnableCap.PolygonSmooth] = false,
+			[EnableCap.ScissorTest] = false,
+			[EnableCap.Texture2D] = false,
+		};
+
 		private int genBuffersIndex = 1;
+
 		private bool glHasBufferObjects = true;
 
+		private MatrixMode matrixMode = OpenGl.MatrixMode.Modelview;
+
+		private Stack<Matrix4X4> modelViewStack = new Stack<Matrix4X4>(new Matrix4X4[] { Matrix4X4.Identity });
+
+		private Stack<Matrix4X4> projectionStack = new Stack<Matrix4X4>(new Matrix4X4[] { Matrix4X4.Identity });
+
 		private Stack<AttribMask> pushedAttributStack = new Stack<AttribMask>();
+
 		private Stack<ViewPortData> viewportStack = new Stack<ViewPortData>();
+
+		public VeldridGL()
+		{
+		}
+
 		public bool GlHasBufferObjects { get { return glHasBufferObjects; } }
+
 		public bool HardwareAvailable { get; set; } = true;
 
 		public void Begin(BeginMode mode)
 		{
-			//currentImediateData.Mode = mode;
+			currentImediateData.Mode = mode;
 		}
 
 		public void BindBuffer(BufferTarget target, int buffer)
@@ -85,8 +134,12 @@ namespace MatterHackers.RenderOpenGl
 		{
 		}
 
+		BlendingFactorSrc blendingFactorSrc;
+		BlendingFactorDest blendingFacterDest;
 		public void BlendFunc(BlendingFactorSrc sfactor, BlendingFactorDest dfactor)
 		{
+			this.blendingFactorSrc = sfactor;
+			this.blendingFacterDest = dfactor;
 		}
 
 		public void BufferData(BufferTarget target, int size, IntPtr data, BufferUsageHint usage)
@@ -113,10 +166,10 @@ namespace MatterHackers.RenderOpenGl
 
 		public void Color4(byte red, byte green, byte blue, byte alpha)
 		{
-			//ImediateMode.currentColor[0] = (byte)red;
-			//ImediateMode.currentColor[1] = (byte)green;
-			//ImediateMode.currentColor[2] = (byte)blue;
-			//ImediateMode.currentColor[3] = (byte)alpha;
+			ImediateMode.currentColor[0] = (byte)red;
+			ImediateMode.currentColor[1] = (byte)green;
+			ImediateMode.currentColor[2] = (byte)blue;
+			ImediateMode.currentColor[3] = (byte)alpha;
 		}
 
 		public void ColorMask(bool red, bool green, bool blue, bool alpha)
@@ -145,10 +198,10 @@ namespace MatterHackers.RenderOpenGl
 
 			quadVertices = new[]
 			{
-				new VertexPositionColorGL(new Vector3(-.75f, .75f, 0), RgbaFloat.Red),
-				new VertexPositionColorGL(new Vector3(.75f, .75f, 0), RgbaFloat.Green),
-				new VertexPositionColorGL(new Vector3(-.75f, -.75f, 0), RgbaFloat.Blue),
-				new VertexPositionColorGL(new Vector3(.75f, -.75f, 0), RgbaFloat.Yellow)
+				new VertexPositionColorGL(new System.Numerics.Vector3(-.75f, .75f, 0), RgbaFloat.Red),
+				new VertexPositionColorGL(new System.Numerics.Vector3(.75f, .75f, 0), RgbaFloat.Green),
+				new VertexPositionColorGL(new System.Numerics.Vector3(-.75f, -.75f, 0), RgbaFloat.Blue),
+				new VertexPositionColorGL(new System.Numerics.Vector3(.75f, -.75f, 0), RgbaFloat.Yellow)
 			};
 
 			BufferDescription vbDescription = new BufferDescription(
@@ -252,10 +305,12 @@ namespace MatterHackers.RenderOpenGl
 
 		public void Disable(EnableCap cap)
 		{
+			EnableCapState[cap] = false;
 		}
 
 		public void DisableClientState(ArrayCap array)
 		{
+			ArrayCapState[array] = false;
 		}
 
 		public void DisableGlBuffers()
@@ -281,77 +336,79 @@ namespace MatterHackers.RenderOpenGl
 
 		public void Enable(EnableCap cap)
 		{
+			EnableCapState[cap] = true;
 		}
 
 		public void EnableClientState(ArrayCap arrayCap)
 		{
+			ArrayCapState[arrayCap] = true;
 		}
 
 		public void End()
 		{
-			//switch (currentImediateData.Mode)
-			//{
-			//	case BeginMode.Lines:
-			//		{
-			//			GL.EnableClientState(ArrayCap.ColorArray);
-			//			GL.EnableClientState(ArrayCap.VertexArray);
+			switch (currentImediateData.Mode)
+			{
+				case BeginMode.Lines:
+					{
+						GL.EnableClientState(ArrayCap.ColorArray);
+						GL.EnableClientState(ArrayCap.VertexArray);
 
-			//			float[] v = currentImediateData.positions3f.Array;
-			//			byte[] c = currentImediateData.color4b.Array;
-			//			// pin the data, so that GC doesn't move them, while used
-			//			// by native code
-			//			unsafe
-			//			{
-			//				fixed (float* pv = v)
-			//				{
-			//					fixed (byte* pc = c)
-			//					{
-			//						GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pc));
-			//						GL.VertexPointer(currentImediateData.vertexCount, VertexPointerType.Float, 0, new IntPtr(pv));
-			//						GL.DrawArrays(currentImediateData.Mode, 0, currentImediateData.positions3f.Count / currentImediateData.vertexCount);
-			//					}
-			//				}
-			//			}
-			//			GL.DisableClientState(ArrayCap.VertexArray);
-			//			GL.DisableClientState(ArrayCap.ColorArray);
-			//		}
-			//		break;
+						float[] v = currentImediateData.positions3f.Array;
+						byte[] c = currentImediateData.color4b.Array;
+						// pin the data, so that GC doesn't move them, while used
+						// by native code
+						unsafe
+						{
+							fixed (float* pv = v)
+							{
+								fixed (byte* pc = c)
+								{
+									GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pc));
+									GL.VertexPointer(currentImediateData.vertexCount, VertexPointerType.Float, 0, new IntPtr(pv));
+									GL.DrawArrays(currentImediateData.Mode, 0, currentImediateData.positions3f.Count / currentImediateData.vertexCount);
+								}
+							}
+						}
+						GL.DisableClientState(ArrayCap.VertexArray);
+						GL.DisableClientState(ArrayCap.ColorArray);
+					}
+					break;
 
-			//	case BeginMode.TriangleFan:
-			//	case BeginMode.Triangles:
-			//	case BeginMode.TriangleStrip:
-			//		{
-			//			GL.EnableClientState(ArrayCap.ColorArray);
-			//			GL.EnableClientState(ArrayCap.VertexArray);
-			//			GL.EnableClientState(ArrayCap.TextureCoordArray);
+				case BeginMode.TriangleFan:
+				case BeginMode.Triangles:
+				case BeginMode.TriangleStrip:
+					{
+						GL.EnableClientState(ArrayCap.ColorArray);
+						GL.EnableClientState(ArrayCap.VertexArray);
+						GL.EnableClientState(ArrayCap.TextureCoordArray);
 
-			//			float[] v = currentImediateData.positions3f.Array;
-			//			byte[] c = currentImediateData.color4b.Array;
-			//			float[] t = currentImediateData.textureCoords2f.Array;
-			//			// pin the data, so that GC doesn't move them, while used
-			//			// by native code
-			//			unsafe
-			//			{
-			//				fixed (float* pv = v, pt = t)
-			//				{
-			//					fixed (byte* pc = c)
-			//					{
-			//						GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pc));
-			//						GL.VertexPointer(currentImediateData.vertexCount, VertexPointerType.Float, 0, new IntPtr(pv));
-			//						GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(pt));
-			//						GL.DrawArrays(currentImediateData.Mode, 0, currentImediateData.positions3f.Count / currentImediateData.vertexCount);
-			//					}
-			//				}
-			//			}
-			//			GL.DisableClientState(ArrayCap.VertexArray);
-			//			GL.DisableClientState(ArrayCap.TextureCoordArray);
-			//			GL.DisableClientState(ArrayCap.ColorArray);
-			//		}
-			//		break;
+						float[] v = currentImediateData.positions3f.Array;
+						byte[] c = currentImediateData.color4b.Array;
+						float[] t = currentImediateData.textureCoords2f.Array;
+						// pin the data, so that GC doesn't move them, while used
+						// by native code
+						unsafe
+						{
+							fixed (float* pv = v, pt = t)
+							{
+								fixed (byte* pc = c)
+								{
+									GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pc));
+									GL.VertexPointer(currentImediateData.vertexCount, VertexPointerType.Float, 0, new IntPtr(pv));
+									GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(pt));
+									GL.DrawArrays(currentImediateData.Mode, 0, currentImediateData.positions3f.Count / currentImediateData.vertexCount);
+								}
+							}
+						}
+						GL.DisableClientState(ArrayCap.VertexArray);
+						GL.DisableClientState(ArrayCap.TextureCoordArray);
+						GL.DisableClientState(ArrayCap.ColorArray);
+					}
+					break;
 
-			//	default:
-			//		throw new NotImplementedException();
-			//}
+				default:
+					throw new NotImplementedException();
+			}
 		}
 
 		public void Finish()
@@ -403,6 +460,16 @@ namespace MatterHackers.RenderOpenGl
 
 		public void LoadIdentity()
 		{
+			if (matrixMode == OpenGl.MatrixMode.Modelview)
+			{
+				modelViewStack.Pop();
+				modelViewStack.Push(Matrix4X4.Identity);
+			}
+			else
+			{
+				projectionStack.Pop();
+				projectionStack.Push(Matrix4X4.Identity);
+			}
 		}
 
 		public void LoadMatrix(double[] m)
@@ -447,15 +514,20 @@ namespace MatterHackers.RenderOpenGl
 
 		public void MatrixMode(MatrixMode mode)
 		{
+			matrixMode = mode;
 		}
 
 		public void MultMatrix(float[] m)
 		{
-			//VeldridGL.commandList.UpdateBuffer(VeldridGL.projectionBuffer, 0, System.Numerics.Matrix4x4.CreatePerspectiveFieldOfView(
-			//				1.0f,
-			//(float)Window.Width / Window.Height,
-			//0.5f,
-			//100f));
+			var matrix = new Matrix4X4(m);
+			if (matrixMode == OpenGl.MatrixMode.Modelview)
+			{
+				modelViewStack.Push(modelViewStack.Pop() * matrix);
+			}
+			else
+			{
+				projectionStack.Push(projectionStack.Pop() * matrix);
+			}
 		}
 
 		public void Normal3(double x, double y, double z)
@@ -470,10 +542,18 @@ namespace MatterHackers.RenderOpenGl
 		{
 		}
 
-		private Stream OpenEmbeddedAssetStream(string name) => GetType().Assembly.GetManifestResourceStream(name);
-
 		public void Ortho(double left, double right, double bottom, double top, double zNear, double zFar)
 		{
+			var ortho = Matrix4X4.CreateOrthographicOffCenter(left, right, bottom, top, zNear, zFar);
+
+			if (matrixMode == OpenGl.MatrixMode.Modelview)
+			{
+				modelViewStack.Push(modelViewStack.Pop() * ortho);
+			}
+			else
+			{
+				projectionStack.Push(projectionStack.Pop() * ortho);
+			}
 		}
 
 		public void PolygonOffset(float factor, float units)
@@ -494,6 +574,14 @@ namespace MatterHackers.RenderOpenGl
 
 		public void PushMatrix()
 		{
+			if (matrixMode == OpenGl.MatrixMode.Modelview)
+			{
+				modelViewStack.Push(modelViewStack.Peek());
+			}
+			else
+			{
+				projectionStack.Push(projectionStack.Peek());
+			}
 		}
 
 		public void ReadBuffer()
@@ -525,7 +613,6 @@ namespace MatterHackers.RenderOpenGl
 		{
 		}
 
-		//private ImediateMode currentImediateData = new ImediateMode();
 		public void Scissor(int x, int y, int width, int height)
 		{
 		}
@@ -579,14 +666,14 @@ namespace MatterHackers.RenderOpenGl
 
 		public void Vertex2(double x, double y)
 		{
-			//currentImediateData.vertexCount = 2;
-			//currentImediateData.positions3f.Add((float)x);
-			//currentImediateData.positions3f.Add((float)y);
+			currentImediateData.vertexCount = 2;
+			currentImediateData.positions3f.Add((float)x);
+			currentImediateData.positions3f.Add((float)y);
 
-			//currentImediateData.color4b.add(ImediateMode.currentColor[0]);
-			//currentImediateData.color4b.add(ImediateMode.currentColor[1]);
-			//currentImediateData.color4b.add(ImediateMode.currentColor[2]);
-			//currentImediateData.color4b.add(ImediateMode.currentColor[3]);
+			currentImediateData.color4b.add(ImediateMode.currentColor[0]);
+			currentImediateData.color4b.add(ImediateMode.currentColor[1]);
+			currentImediateData.color4b.add(ImediateMode.currentColor[2]);
+			currentImediateData.color4b.add(ImediateMode.currentColor[3]);
 		}
 
 		public void Vertex3(Vector3 position)
@@ -633,6 +720,8 @@ namespace MatterHackers.RenderOpenGl
 							: "300.glsles";
 		}
 
+		private Stream OpenEmbeddedAssetStream(string name) => GetType().Assembly.GetManifestResourceStream(name);
+
 		internal struct ViewPortData
 		{
 			internal int height;
@@ -647,6 +736,31 @@ namespace MatterHackers.RenderOpenGl
 				this.y = y;
 				this.width = width;
 				this.height = height;
+			}
+		}
+
+		internal class ImediateMode
+		{
+			public static byte[] currentColor = new byte[4];
+			internal VectorPOD<byte> color4b = new VectorPOD<byte>();
+			internal VectorPOD<float> positions3f = new VectorPOD<float>();
+			internal VectorPOD<float> textureCoords2f = new VectorPOD<float>();
+			internal int vertexCount;
+			private BeginMode mode;
+
+			internal BeginMode Mode
+			{
+				get
+				{
+					return mode;
+				}
+				set
+				{
+					mode = value;
+					positions3f.Clear();
+					color4b.Clear();
+					textureCoords2f.Clear();
+				}
 			}
 		}
 	}
