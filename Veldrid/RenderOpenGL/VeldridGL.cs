@@ -65,8 +65,11 @@ namespace MatterHackers.RenderOpenGl
 			[ArrayCap.TextureCoordArray] = false,
 		};
 
+		private BlendingFactorDest blendingFacterDest;
+		private BlendingFactorSrc blendingFactorSrc;
 		private Dictionary<int, byte[]> bufferData = new Dictionary<int, byte[]>();
 
+		private (int size, int strid, IntPtr pointer) colorPointer;
 		private int currentArrayBufferIndex = 0;
 
 		private int currentElementArrayBufferIndex = 0;
@@ -103,6 +106,8 @@ namespace MatterHackers.RenderOpenGl
 
 		private Stack<AttribMask> pushedAttributStack = new Stack<AttribMask>();
 
+		private (int size, int stride, IntPtr pointer) texCoordPointer;
+		private (int size, int stride, IntPtr pointer) vertexPointer;
 		private Stack<ViewPortData> viewportStack = new Stack<ViewPortData>();
 
 		public VeldridGL()
@@ -134,8 +139,6 @@ namespace MatterHackers.RenderOpenGl
 		{
 		}
 
-		BlendingFactorSrc blendingFactorSrc;
-		BlendingFactorDest blendingFacterDest;
 		public void BlendFunc(BlendingFactorSrc sfactor, BlendingFactorDest dfactor)
 		{
 			this.blendingFactorSrc = sfactor;
@@ -186,6 +189,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void ColorPointer(int size, ColorPointerType type, int stride, IntPtr pointer)
 		{
+			colorPointer = (size, stride, pointer);
 		}
 
 		public void CreateResources(GraphicsDevice _graphicsDevice)
@@ -328,6 +332,20 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DrawArrays(BeginMode mode, int first, int count)
 		{
+			switch (mode)
+			{
+				case BeginMode.Lines:
+					break;
+
+				case BeginMode.Triangles:
+					break;
+
+				case BeginMode.TriangleStrip:
+					break;
+
+				case BeginMode.TriangleFan:
+					break;
+			}
 		}
 
 		public void DrawRangeElements(BeginMode mode, int start, int end, int count, DrawElementsType type, IntPtr indices)
@@ -566,6 +584,14 @@ namespace MatterHackers.RenderOpenGl
 
 		public void PopMatrix()
 		{
+			if (matrixMode == OpenGl.MatrixMode.Modelview)
+			{
+				modelViewStack.Pop();
+			}
+			else
+			{
+				projectionStack.Pop();
+			}
 		}
 
 		public void PushAttrib(AttribMask mask)
@@ -632,6 +658,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void TexCoordPointer(int size, TexCordPointerType type, int stride, IntPtr pointer)
 		{
+			texCoordPointer = (size, stride, pointer);
 		}
 
 		public void TexImage2D(TextureTarget target, int level,
@@ -698,6 +725,7 @@ namespace MatterHackers.RenderOpenGl
 
 		public void VertexPointer(int size, VertexPointerType type, int stride, IntPtr pointer)
 		{
+			vertexPointer = (size, stride, pointer);
 		}
 
 		public void Viewport(int x, int y, int width, int height)
