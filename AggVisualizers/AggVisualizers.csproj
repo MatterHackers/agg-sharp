@@ -67,11 +67,11 @@
       <Name>clipper_library</Name>
     </ProjectReference>
     <ProjectReference Include="..\DataConverters3D\DataConverters3D.csproj">
-      <Project>{04667764-DC7B-4B95-AEF6-B4E6C87A54E9}</Project>
+      <Project>{04667764-dc7b-4b95-aef6-b4e6c87a54e9}</Project>
       <Name>DataConverters3D</Name>
     </ProjectReference>
     <ProjectReference Include="..\Gui\Gui.csproj">
-      <Project>{74F6BB6C-9D02-4512-A59A-21940E35C532}</Project>
+      <Project>{74f6bb6c-9d02-4512-a59a-21940e35c532}</Project>
       <Name>Gui</Name>
     </ProjectReference>
     <ProjectReference Include="..\PlatformWin32\PlatformWin32.csproj">
@@ -79,15 +79,15 @@
       <Name>PlatformWin32</Name>
     </ProjectReference>
     <ProjectReference Include="..\PolygonMesh\PolygonMesh.csproj">
-      <Project>{86F6AAF2-9B50-40B8-A427-1897D76471C5}</Project>
+      <Project>{86f6aaf2-9b50-40b8-a427-1897d76471c5}</Project>
       <Name>PolygonMesh</Name>
     </ProjectReference>
     <ProjectReference Include="..\RenderOpenGl\RenderOpenGl.csproj">
-      <Project>{545B6912-77FF-4B34-BA76-6C3D6A32BE6A}</Project>
+      <Project>{545b6912-77ff-4b34-ba76-6c3d6a32be6a}</Project>
       <Name>RenderOpenGl</Name>
     </ProjectReference>
     <ProjectReference Include="..\VectorMath\VectorMath.csproj">
-      <Project>{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}</Project>
+      <Project>{d3e41b4e-bfbb-44ca-94c8-95c00f754fdd}</Project>
       <Name>VectorMath</Name>
     </ProjectReference>
   </ItemGroup>
