@@ -61,23 +61,23 @@
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <ProjectReference Include="..\..\agg\AGG.csproj">
-      <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
+      <Project>{657dbc6d-c3ea-4398-a3fa-ddb73c14f71b}</Project>
       <Name>AGG</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Gui\Gui.csproj">
-      <Project>{74F6BB6C-9D02-4512-A59A-21940E35C532}</Project>
+      <Project>{74f6bb6c-9d02-4512-a59a-21940e35c532}</Project>
       <Name>Gui</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj">
-      <Project>{670BDDFF-927B-425D-9DD1-22ACB14356EB}</Project>
+      <Project>{670bddff-927b-425d-9dd1-22acb14356eb}</Project>
       <Name>PlatformWin32</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Tesselate\Tesselate.csproj">
-      <Project>{AE37DE1F-22F7-49EE-8732-FC6BC8DC58D9}</Project>
+      <Project>{ae37de1f-22f7-49ee-8732-fc6bc8dc58d9}</Project>
       <Name>Tesselate</Name>
     </ProjectReference>
     <ProjectReference Include="..\CameraCalibrationWidget\CameraCalibrationWidget.csproj">
-      <Project>{A20459AD-3006-402C-952C-F4A9D9969A87}</Project>
+      <Project>{a20459ad-3006-402c-952c-f4a9d9969a87}</Project>
       <Name>CameraCalibrationWidget</Name>
     </ProjectReference>
   </ItemGroup>

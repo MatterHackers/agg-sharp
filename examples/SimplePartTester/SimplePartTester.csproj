@@ -42,11 +42,11 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\agg-sharp\Csg\Csg.csproj">
-      <Project>{7E61A5BD-E78F-4B80-88C9-3821B4FA062E}</Project>
+      <Project>{7e61a5bd-e78f-4b80-88c9-3821b4fa062e}</Project>
       <Name>Csg</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\agg-sharp\VectorMath\VectorMath.csproj">
-      <Project>{D3E41B4E-BFBB-44CA-94C8-95C00F754FDD}</Project>
+      <Project>{d3e41b4e-bfbb-44ca-94c8-95c00f754fdd}</Project>
       <Name>VectorMath</Name>
     </ProjectReference>
   </ItemGroup>

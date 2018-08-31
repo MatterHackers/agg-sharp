@@ -45,19 +45,19 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\agg\AGG.csproj">
-      <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
+      <Project>{657dbc6d-c3ea-4398-a3fa-ddb73c14f71b}</Project>
       <Name>AGG</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\agg_gui\agg_gui.csproj">
-      <Project>{05C9C197-E811-451E-8562-ADB3526667D9}</Project>
+      <Project>{05c9c197-e811-451e-8562-adb3526667d9}</Project>
       <Name>agg_gui</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\agg_platform_win32\agg_platform_win32.csproj">
-      <Project>{670BDDFF-927B-425D-9DD1-22ACB14356EB}</Project>
+      <Project>{670bddff-927b-425d-9dd1-22acb14356eb}</Project>
       <Name>agg_platform_win32</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Tesselate\Tesselate.csproj">
-      <Project>{AE37DE1F-22F7-49EE-8732-FC6BC8DC58D9}</Project>
+      <Project>{ae37de1f-22f7-49ee-8732-fc6bc8dc58d9}</Project>
       <Name>Tesselate</Name>
     </ProjectReference>
   </ItemGroup>

@@ -58,19 +58,19 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\agg\AGG.csproj">
-      <Project>{657DBC6D-C3EA-4398-A3FA-DDB73C14F71B}</Project>
+      <Project>{657dbc6d-c3ea-4398-a3fa-ddb73c14f71b}</Project>
       <Name>AGG</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\agg_gui\agg_gui.csproj">
-      <Project>{74F6BB6C-9D02-4512-A59A-21940E35C532}</Project>
+      <Project>{74f6bb6c-9d02-4512-a59a-21940e35c532}</Project>
       <Name>agg_gui</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\agg_platform_win32\agg_platform_win32.csproj">
-      <Project>{670BDDFF-927B-425D-9DD1-22ACB14356EB}</Project>
+      <Project>{670bddff-927b-425d-9dd1-22acb14356eb}</Project>
       <Name>agg_platform_win32</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Gaming\Gaming.csproj">
-      <Project>{79741A18-3523-41BE-93DB-EECBEF515591}</Project>
+      <Project>{79741a18-3523-41be-93db-eecbef515591}</Project>
       <Name>Gaming</Name>
     </ProjectReference>
   </ItemGroup>
