@@ -253,6 +253,6 @@ namespace MatterHackers.RenderOpenGl
 
 		#endregion Intersection
 
-		#endregion Visitor Patern Functions
+		#endregion Visitor Pattern Functions
 	}
 }

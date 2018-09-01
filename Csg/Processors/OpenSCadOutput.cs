@@ -285,7 +285,7 @@ namespace MatterHackers.Csg.Processors
 
 		#endregion Intersection
 
-		#endregion Visitor Patern Functions
+		#endregion Visitor Pattern Functions
 
 		#region SCAD Formating Functions
 

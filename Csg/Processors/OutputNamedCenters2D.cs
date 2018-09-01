@@ -61,11 +61,11 @@ namespace MatterHackers.Csg.Processors
 			this.nameWeAreLookingFor = nameWeAreLookingFor;
 		}
 
-		#region Visitor Patern Functions
+		#region Visitor Pattern Functions
 
 		public string LookForNamedPartRecursive(CsgObject objectToProcess, Matrix4X4 accumulatedMatrix)
 		{
-			throw new Exception("You must wirte the specialized function for this type.");
+			throw new Exception("You must write the specialized function for this type.");
 		}
 
 		#region PrimitiveWrapper
@@ -152,6 +152,6 @@ namespace MatterHackers.Csg.Processors
 
 		#endregion Transform
 
-		#endregion Visitor Patern Functions
+		#endregion Visitor Pattern Functions
 	}
 }
