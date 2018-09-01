@@ -208,11 +208,14 @@ namespace MatterHackers.Agg
 		public static void Main(string[] args)
 		{
 			//AggContext.Init(embeddedResourceName: "lion_outline.config.json");
+			AggContext.Config.ProviderTypes.SystemWindow = "MatterHackers.Agg.UI.OpenGLSystemWindow, agg_platform_win32";
 
 			var demoWidget = new lion_outline();
 
-			var systemWindow = new SystemWindow(512, 512);
-			systemWindow.Title = demoWidget.Title;
+			var systemWindow = new SystemWindow(512, 512)
+			{
+				Title = demoWidget.Title
+			};
 			systemWindow.AddChild(demoWidget);
 			systemWindow.ShowAsSystemWindow();
 		}
