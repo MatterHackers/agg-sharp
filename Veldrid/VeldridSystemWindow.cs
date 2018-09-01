@@ -71,7 +71,7 @@ namespace MatterHackers.VeldridProvider
 			};
 
 			// this is for testing the open gl implementation
-			//graphics2D = new Graphics2DOpenGL(this.Width, this.Height);
+			graphics2D = new Graphics2DOpenGL(this.Width, this.Height);
 			graphics2D.PushTransform();
 
 			return graphics2D;

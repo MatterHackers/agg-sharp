@@ -44,7 +44,7 @@ namespace MatterHackers.VeldridProvider
 					Y = 100,
 					WindowWidth = 960,
 					WindowHeight = 540,
-					WindowTitle = "Veldrid Tutorial"
+					WindowTitle = "Veldrid Tutorial",
 				};
 
 				Sdl2Window window = VeldridStartup.CreateWindow(ref windowCI);
@@ -53,7 +53,7 @@ namespace MatterHackers.VeldridProvider
 
 				systemWindow.PlatformWindow = veldridPlatformWindow;
 
-				_graphicsDevice = VeldridStartup.CreateGraphicsDevice(window);
+				_graphicsDevice = VeldridStartup.CreateGraphicsDevice(window, GraphicsBackend.OpenGL);
 
 				window.KeyDown += (KeyEvent keyEvent) =>
 				{

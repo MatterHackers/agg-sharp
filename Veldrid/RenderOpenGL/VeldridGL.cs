@@ -45,16 +45,19 @@ namespace MatterHackers.RenderOpenGl
 
 		public GraphicsDevice graphicsDevice;
 
-		public DeviceBuffer indexBuffer;
+		public DeviceBuffer positionColorIndexBuffer;
 
-		public Pipeline pipeline;
+		public Pipeline positionColorGLPipeline;
 
 		// matrix transforms
 		public DeviceBuffer projectionBuffer;
+		public DeviceBuffer modelViewBuffer;
 
-		public VertexPositionColorGL[] quadVertices;
+		public ResourceSet modelViewProjectionResourceSet;
 
-		public DeviceBuffer vertexBuffer;
+		public VertexPositionColorGL[] positionColorVertices;
+
+		public DeviceBuffer positionColorVertexBuffer;
 
 		private Dictionary<ArrayCap, bool> ArrayCapState = new Dictionary<ArrayCap, bool>()
 		{
@@ -194,51 +197,52 @@ namespace MatterHackers.RenderOpenGl
 
 		public void CreateResources(GraphicsDevice _graphicsDevice)
 		{
-			graphicsDevice = _graphicsDevice;
+			this.graphicsDevice = _graphicsDevice;
+			ResourceFactory resourceFactory = graphicsDevice.ResourceFactory;
 
-			ResourceFactory resourceFactory = _graphicsDevice.ResourceFactory;
-
+			// create the modelView and projection resource
 			projectionBuffer = resourceFactory.CreateBuffer(new BufferDescription(64, BufferUsage.UniformBuffer));
+			modelViewBuffer = resourceFactory.CreateBuffer(new BufferDescription(64, BufferUsage.UniformBuffer));
 
-			quadVertices = new[]
+			ResourceLayout projViewLayout = resourceFactory.CreateResourceLayout(
+				new ResourceLayoutDescription(
+					new ResourceLayoutElementDescription("Projection", ResourceKind.UniformBuffer, ShaderStages.Vertex),
+					new ResourceLayoutElementDescription("ModelView", ResourceKind.UniformBuffer, ShaderStages.Vertex)));
+
+			modelViewProjectionResourceSet = resourceFactory.CreateResourceSet(new ResourceSetDescription(
+				projViewLayout,
+				projectionBuffer,
+				modelViewBuffer));
+
+			// create the vertex storage
+			int vertexPositionColorSize = 6;
+			positionColorVertices = new VertexPositionColorGL[vertexPositionColorSize];
+
+			BufferDescription vbDescription = new BufferDescription((uint)(vertexPositionColorSize * VertexPositionColorGL.SizeInBytes), BufferUsage.VertexBuffer);
+			positionColorVertexBuffer = resourceFactory.CreateBuffer(vbDescription);
+			graphicsDevice.UpdateBuffer(positionColorVertexBuffer, 0, positionColorVertices);
+
+			ushort[] quadIndices = { 0, 1, 2, 3, 4, 5 };
+			BufferDescription indexBufferDescription = new BufferDescription(6 * sizeof(ushort), BufferUsage.IndexBuffer);
+			positionColorIndexBuffer = resourceFactory.CreateBuffer(indexBufferDescription);
+			graphicsDevice.UpdateBuffer(positionColorIndexBuffer, 0, quadIndices);
+
+			VertexLayoutDescription vertexLayout = new VertexLayoutDescription(
+				new VertexElementDescription("Position", VertexElementSemantic.Position, VertexElementFormat.Float2),
+				new VertexElementDescription("Color", VertexElementSemantic.Color, VertexElementFormat.Float4));
+
+			ShaderSetDescription shaderSetPositionTexture = new ShaderSetDescription(
+			new[]
 			{
-				new VertexPositionColorGL(new System.Numerics.Vector3(-.75f, .75f, 0), RgbaFloat.Red),
-				new VertexPositionColorGL(new System.Numerics.Vector3(.75f, .75f, 0), RgbaFloat.Green),
-				new VertexPositionColorGL(new System.Numerics.Vector3(-.75f, -.75f, 0), RgbaFloat.Blue),
-				new VertexPositionColorGL(new System.Numerics.Vector3(.75f, -.75f, 0), RgbaFloat.Yellow)
-			};
-
-			BufferDescription vbDescription = new BufferDescription(
-				4 * VertexPositionColorGL.SizeInBytes,
-				BufferUsage.VertexBuffer);
-			vertexBuffer = resourceFactory.CreateBuffer(vbDescription);
-			_graphicsDevice.UpdateBuffer(vertexBuffer, 0, quadVertices);
-
+				new VertexLayoutDescription(
+					new VertexElementDescription("Position", VertexElementSemantic.Position, VertexElementFormat.Float3),
+					new VertexElementDescription("TexCoords", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2))
+			},
+			new[]
 			{
-				ushort[] quadIndices = { 0, 1, 2, 3 };
-				BufferDescription ibDescription = new BufferDescription(
-					4 * sizeof(ushort),
-					BufferUsage.IndexBuffer);
-				indexBuffer = resourceFactory.CreateBuffer(ibDescription);
-				_graphicsDevice.UpdateBuffer(indexBuffer, 0, quadIndices);
-
-				VertexLayoutDescription vertexLayout = new VertexLayoutDescription(
-					new VertexElementDescription("Position", VertexElementSemantic.Position, VertexElementFormat.Float2),
-					new VertexElementDescription("Color", VertexElementSemantic.Color, VertexElementFormat.Float4));
-
-				ShaderSetDescription shaderSetPositionTexture = new ShaderSetDescription(
-					new[]
-					{
-					new VertexLayoutDescription(
-						new VertexElementDescription("Position", VertexElementSemantic.Position, VertexElementFormat.Float3),
-						new VertexElementDescription("TexCoords", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2))
-					},
-					new[]
-					{
-					LoadShader(resourceFactory, "PositionTextureGL", ShaderStages.Vertex, "VS"),
-					LoadShader(resourceFactory, "PositionTextureGL", ShaderStages.Fragment, "FS")
-					});
-			}
+				LoadShader(resourceFactory, "PositionTextureGL", ShaderStages.Vertex, "VS"),
+				LoadShader(resourceFactory, "PositionTextureGL", ShaderStages.Fragment, "FS")
+			});
 
 			ShaderSetDescription shaderSetPositionColor;
 			{
@@ -260,21 +264,21 @@ namespace MatterHackers.RenderOpenGl
 			GraphicsPipelineDescription pipelineDescription = new GraphicsPipelineDescription();
 			pipelineDescription.BlendState = BlendStateDescription.SingleAlphaBlend;
 			pipelineDescription.DepthStencilState = new DepthStencilStateDescription(
-				depthTestEnabled: true,
-				depthWriteEnabled: true,
-				comparisonKind: ComparisonKind.LessEqual);
+				depthTestEnabled: false,
+				depthWriteEnabled: false,
+				comparisonKind: ComparisonKind.Never);
 			pipelineDescription.RasterizerState = new RasterizerStateDescription(
-				cullMode: FaceCullMode.Back,
+				cullMode: FaceCullMode.None,
 				fillMode: PolygonFillMode.Solid,
 				frontFace: Veldrid.FrontFace.Clockwise,
 				depthClipEnabled: true,
 				scissorTestEnabled: false);
-			pipelineDescription.PrimitiveTopology = PrimitiveTopology.TriangleStrip;
-			pipelineDescription.ResourceLayouts = System.Array.Empty<ResourceLayout>();
+			pipelineDescription.ResourceLayouts = new[] { projViewLayout };
+			pipelineDescription.PrimitiveTopology = PrimitiveTopology.TriangleList;
 			pipelineDescription.ShaderSet = shaderSetPositionColor;
-			pipelineDescription.Outputs = _graphicsDevice.SwapchainFramebuffer.OutputDescription;
+			pipelineDescription.Outputs = graphicsDevice.SwapchainFramebuffer.OutputDescription;
 
-			pipeline = resourceFactory.CreateGraphicsPipeline(pipelineDescription);
+			positionColorGLPipeline = resourceFactory.CreateGraphicsPipeline(pipelineDescription);
 
 			commandList = resourceFactory.CreateCommandList();
 		}
@@ -324,20 +328,62 @@ namespace MatterHackers.RenderOpenGl
 
 		public void DisposeResources()
 		{
-			pipeline?.Dispose();
+			positionColorGLPipeline?.Dispose();
 			commandList?.Dispose();
-			vertexBuffer?.Dispose();
-			indexBuffer?.Dispose();
+			positionColorVertexBuffer?.Dispose();
+			positionColorIndexBuffer?.Dispose();
+		}
+
+		public System.Numerics.Matrix4x4 RightHandToLeftHand(Matrix4X4 matrixRightHand)
+		{
+			var rhd = matrixRightHand.GetAsFloatArray();
+			return new System.Numerics.Matrix4x4(
+					rhd[0], rhd[4], -rhd[8], rhd[12],
+					rhd[1], rhd[5], -rhd[9], rhd[13],
+					-rhd[2], -rhd[6], rhd[10], rhd[14],
+					rhd[3], rhd[7], -rhd[11], rhd[15]
+				);
+
 		}
 
 		public void DrawArrays(BeginMode mode, int first, int count)
 		{
+			if(currentImediateData.positions3f.Count < 6)
+			{
+				// don't have support for vertex array yet
+				return;
+			}
 			switch (mode)
 			{
 				case BeginMode.Lines:
 					break;
 
 				case BeginMode.Triangles:
+					// copy our data to the buffer
+					for(int i=0; i< 6; i++)
+					{
+						var positionF = new System.Numerics.Vector3(currentImediateData.positions3f[i * 3 + 0], currentImediateData.positions3f[i * 3 + 1], currentImediateData.positions3f[i * 3 + 2]);
+						var colorF = new RgbaFloat(currentImediateData.color4b[i * 4 + 0] / 255.0f, currentImediateData.color4b[i * 4 + 1] / 255.0f, currentImediateData.color4b[i * 4 + 2] / 255.0f, currentImediateData.color4b[i * 4 + 3] / 255.0f);
+						positionColorVertices[i] = new VertexPositionColorGL(positionF, colorF);
+					}
+
+					commandList.Begin();
+					commandList.UpdateBuffer(positionColorVertexBuffer, 0, positionColorVertices);
+					commandList.UpdateBuffer(modelViewBuffer, 0, RightHandToLeftHand(modelViewStack.Peek()));
+
+					commandList.UpdateBuffer(projectionBuffer, 0, RightHandToLeftHand(projectionStack.Peek()));
+					commandList.UpdateBuffer(projectionBuffer, 0, orthoD3D);
+					
+					commandList.SetPipeline(positionColorGLPipeline);
+
+					commandList.SetVertexBuffer(0, positionColorVertexBuffer);
+					commandList.SetIndexBuffer(positionColorIndexBuffer, IndexFormat.UInt16);
+					commandList.SetGraphicsResourceSet(0, modelViewProjectionResourceSet);
+					commandList.SetFramebuffer(graphicsDevice.SwapchainFramebuffer);
+					commandList.DrawIndexed(6, 1, 0, 0, 0);
+
+					commandList.End();
+					graphicsDevice.SubmitCommands(commandList);
 					break;
 
 				case BeginMode.TriangleStrip:
@@ -382,8 +428,8 @@ namespace MatterHackers.RenderOpenGl
 								fixed (byte* pc = c)
 								{
 									GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pc));
-									GL.VertexPointer(currentImediateData.vertexCount, VertexPointerType.Float, 0, new IntPtr(pv));
-									GL.DrawArrays(currentImediateData.Mode, 0, currentImediateData.positions3f.Count / currentImediateData.vertexCount);
+									GL.VertexPointer(3, VertexPointerType.Float, 0, new IntPtr(pv));
+									GL.DrawArrays(currentImediateData.Mode, 0, currentImediateData.positions3f.Count / 3);
 								}
 							}
 						}
@@ -412,9 +458,9 @@ namespace MatterHackers.RenderOpenGl
 								fixed (byte* pc = c)
 								{
 									GL.ColorPointer(4, ColorPointerType.UnsignedByte, 0, new IntPtr(pc));
-									GL.VertexPointer(currentImediateData.vertexCount, VertexPointerType.Float, 0, new IntPtr(pv));
+									GL.VertexPointer(3, VertexPointerType.Float, 0, new IntPtr(pv));
 									GL.TexCoordPointer(2, TexCordPointerType.Float, 0, new IntPtr(pt));
-									GL.DrawArrays(currentImediateData.Mode, 0, currentImediateData.positions3f.Count / currentImediateData.vertexCount);
+									GL.DrawArrays(currentImediateData.Mode, 0, currentImediateData.positions3f.Count / 3);
 								}
 							}
 						}
@@ -560,6 +606,7 @@ namespace MatterHackers.RenderOpenGl
 		{
 		}
 
+		System.Numerics.Matrix4x4 orthoD3D = new System.Numerics.Matrix4x4();
 		public void Ortho(double left, double right, double bottom, double top, double zNear, double zFar)
 		{
 			var ortho = Matrix4X4.CreateOrthographicOffCenter(left, right, bottom, top, zNear, zFar);
@@ -570,6 +617,7 @@ namespace MatterHackers.RenderOpenGl
 			}
 			else
 			{
+				orthoD3D = System.Numerics.Matrix4x4.CreateOrthographicOffCenter((float)left, (float)right, (float)bottom, (float)top, (float)zNear, (float)zFar);
 				projectionStack.Push(projectionStack.Pop() * ortho);
 			}
 		}
@@ -693,9 +741,10 @@ namespace MatterHackers.RenderOpenGl
 
 		public void Vertex2(double x, double y)
 		{
-			currentImediateData.vertexCount = 2;
 			currentImediateData.positions3f.Add((float)x);
 			currentImediateData.positions3f.Add((float)y);
+			// and z = 0
+			currentImediateData.positions3f.Add(0);
 
 			currentImediateData.color4b.add(ImediateMode.currentColor[0]);
 			currentImediateData.color4b.add(ImediateMode.currentColor[1]);
@@ -773,7 +822,6 @@ namespace MatterHackers.RenderOpenGl
 			internal VectorPOD<byte> color4b = new VectorPOD<byte>();
 			internal VectorPOD<float> positions3f = new VectorPOD<float>();
 			internal VectorPOD<float> textureCoords2f = new VectorPOD<float>();
-			internal int vertexCount;
 			private BeginMode mode;
 
 			internal BeginMode Mode

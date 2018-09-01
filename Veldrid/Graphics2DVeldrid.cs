@@ -31,13 +31,7 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
-using MatterHackers.DataConverters2D;
-using MatterHackers.VectorMath;
-using System;
-using MatterHackers.Agg.UI;
 using Veldrid;
-using MatterHackers.RenderOpenGl.OpenGl;
-using MatterHackers.RenderOpenGl;
 using MatterHackers.VeldridProvider.VertexFormats;
 using System.Collections.Generic;
 

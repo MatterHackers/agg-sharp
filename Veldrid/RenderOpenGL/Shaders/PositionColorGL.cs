@@ -40,24 +40,18 @@ namespace RenderOpenGl.Shaders
 		[ResourceSet(0)]
 		public Matrix4x4 Projection;
 		[ResourceSet(0)]
-		public Matrix4x4 View;
-
-		[ResourceSet(1)]
-		public Matrix4x4 World;
+		public Matrix4x4 ModelView;
 
 		[VertexShader]
 		public FragmentInput VS(VertexInput input)
 		{
 			FragmentInput output;
-			Vector4 worldPosition = Mul(World, new Vector4(input.Position, 1));
-			Vector4 viewPosition = Mul(View, worldPosition);
-			Vector4 clipPosition = Mul(Projection, viewPosition);
-			output.SystemPosition = clipPosition;
+
+			Vector4 modelViewPosition = Mul(ModelView, new Vector4(input.Position, 1));
+			output.SystemPosition = Mul(Projection, modelViewPosition);
 			output.Color = input.Color;
 
-			// this is the old behavior
-			//output.SystemPosition = new Vector4(input.Position.X, input.Position.Y, 0, 1);
-
+			//output.SystemPosition = output.SystemPosition / 4;
 			return output;
 		}
 
