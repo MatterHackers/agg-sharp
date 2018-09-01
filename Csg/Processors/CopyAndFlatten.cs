@@ -46,7 +46,7 @@ namespace MatterHackers.Csg.Processors
 		{
 		}
 
-		#region Visitor Patern Functions
+		#region Visitor Pattern Functions
 
 		public CsgObject DoCopyAndFlatten(CsgObject objectToProcess)
 		{
@@ -135,6 +135,6 @@ namespace MatterHackers.Csg.Processors
 
 		#endregion Intersection
 
-		#endregion Visitor Patern Functions
+		#endregion Visitor Pattern Functions
 	}
 }
