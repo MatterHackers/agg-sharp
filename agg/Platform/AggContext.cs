@@ -132,10 +132,5 @@ namespace MatterHackers.Agg.Platform
 			public string SystemWindowProvider { get; set; } = "MatterHackers.Agg.UI.WinformsSystemWindowProvider, agg_platform_win32";
 			public string SystemWindow { get; set; } = "MatterHackers.Agg.UI.BitmapSystemWindow, agg_platform_win32";
 		}
-
-		public class SliceEngineSettings
-		{
-			public bool RunInProcess { get; set; } = false;
-		}
 	}
 }
