@@ -108,57 +108,50 @@ namespace MatterHackers.Agg.Platform
 			{
 				if (_config == null)
 				{
-					Init("config.json");
+					_config = new PlatformConfig();
 				}
 
 				return _config;
-			}
-			set
-			{
-				_config = value;
-			}
-		}
-
-		// On desktop/msbuild the config.json embedded resource does not have a namespace qualifier. On Android/Mono it does and the caller should pass the right/full resource name
-		public static void Init(string embeddedResourceName)
-		{
-			if (File.Exists("config.json"))
-			{
-				// Use the file system based config or fall back to empty
-				Config = JsonConvert.DeserializeObject<PlatformConfig>(File.ReadAllText("config.json"));
-			}
-			else
-			{
-				// Look for and use an embedded config
-				var resourceStream = Assembly.GetCallingAssembly()?.GetManifestResourceStream(embeddedResourceName);
-				if (resourceStream != null)
-				{
-					using (var reader = new StreamReader(resourceStream))
-					{
-						Config = JsonConvert.DeserializeObject<PlatformConfig>(reader.ReadToEnd());
-					}
-				}
 			}
 		}
 
 		public class PlatformConfig
 		{
-			public ProviderSettings ProviderTypes { get; set; }
+			public ProviderSettings ProviderTypes { get; set; } = new ProviderSettings();
+			public AggGraphicsMode GraphicsMode { get; set; } = new AggGraphicsMode();
 		}
 
 		public class ProviderSettings
 		{
-			public string OsInformationProvider { get; set; }
-			public string DialogProvider { get; set; }
-			public string ImageIOProvider { get; set; }
-			public string StaticDataProvider { get; set; }
-			public string SystemWindowProvider { get; set; }
-			public string SystemWindow { get; set; }
+			public string OsInformationProvider { get; set; } = "MatterHackers.Agg.Platform.WinformsInformationProvider, agg_platform_win32";
+			public string DialogProvider { get; set; } = "MatterHackers.Agg.Platform.WinformsFileDialogProvider, agg_platform_win32";
+			public string ImageIOProvider { get; set; } = "MatterHackers.Agg.Image.ImageIOWindowsPlugin, agg_platform_win32";
+			public string StaticDataProvider { get; set; } = "MatterHackers.Agg.FileSystemStaticData, agg_platform_win32";
+			public string SystemWindowProvider { get; set; } = "MatterHackers.Agg.UI.WinformsSystemWindowProvider, agg_platform_win32";
+			public string SystemWindow { get; set; } = "MatterHackers.Agg.UI.BitmapSystemWindow, agg_platform_win32";
 		}
 
-		public class SliceEngineSettings
+		public class AggGraphicsMode
 		{
-			public bool RunInProcess { get; set; } = false;
+			/// <summary>
+			/// The ColorFormat of the color buffer - when cast from int, constructs a new ColorFormat with the specified aggregate bits per pixel
+			/// </summary>
+			public int Color { get; set; } = 32;
+
+			/// <summary>
+			/// The number of bits in the depth buffer - a System.Int32 that contains the bits per pixel for the depth buffer
+			/// </summary>
+			public int Depth { get; set; } = 24;
+
+			/// <summary>
+			/// The number of bits in the stencil buffer - a System.Int32 that contains the bits per pixel for the stencil buffer
+			/// </summary>
+			public int Stencil { get; set; } = 0;
+
+			/// <summary>
+			/// The number of samples for FSAA - a System.Int32 that contains the number of FSAA samples per pixel
+			/// </summary>
+			public int FSAASamples { get; set; } = 8;
 		}
 	}
 }
