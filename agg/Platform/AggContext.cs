@@ -108,10 +108,7 @@ namespace MatterHackers.Agg.Platform
 			{
 				if (_config == null)
 				{
-					_config = new PlatformConfig()
-					{
-						ProviderTypes = new ProviderSettings()
-					};
+					_config = new PlatformConfig();
 				}
 
 				return _config;
@@ -120,7 +117,7 @@ namespace MatterHackers.Agg.Platform
 
 		public class PlatformConfig
 		{
-			public ProviderSettings ProviderTypes { get; set; }
+			public ProviderSettings ProviderTypes { get; set; } = new ProviderSettings();
 		}
 
 		public class ProviderSettings
