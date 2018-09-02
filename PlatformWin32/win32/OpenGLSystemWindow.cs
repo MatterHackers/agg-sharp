@@ -21,6 +21,7 @@ using System.Windows.Forms;
 using System.Drawing;
 using MatterHackers.RenderOpenGl;
 using System.Diagnostics;
+using MatterHackers.Agg.Platform;
 
 #if USE_GLES
 using OpenTK.Graphics.ES11;
@@ -38,7 +39,11 @@ namespace MatterHackers.Agg.UI
 
 		public OpenGLSystemWindow()
 		{
-			glControl = new AggGLControl()
+			// Set GraphicsMode via user overridable settings
+			var config = AggContext.Config.GraphicsMode;
+			var graphicsMode = new OpenTK.Graphics.GraphicsMode(config.Color, config.Depth, config.Stencil, config.FSAASamples);
+
+			glControl = new AggGLControl(graphicsMode)
 			{
 				Dock = DockStyle.Fill,
 				Location = new Point(0, 0),

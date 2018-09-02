@@ -42,8 +42,8 @@ namespace MatterHackers.Agg.UI
 		internal RemoveGlDataCallBackHolder releaseAllGlData = new RemoveGlDataCallBackHolder();
 
 		// If you have an error here it is likely that you need to build your project with Platform Target x86.
-		public AggGLControl()
-			: base(new OpenTK.Graphics.GraphicsMode(32, 24, 0, 8))
+		public AggGLControl(OpenTK.Graphics.GraphicsMode graphicsMode)
+			: base(graphicsMode)
 		{
 			Id = nextId++;
 		}

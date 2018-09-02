@@ -118,6 +118,7 @@ namespace MatterHackers.Agg.Platform
 		public class PlatformConfig
 		{
 			public ProviderSettings ProviderTypes { get; set; } = new ProviderSettings();
+			public AggGraphicsMode GraphicsMode { get; set; } = new AggGraphicsMode();
 		}
 
 		public class ProviderSettings
@@ -128,6 +129,29 @@ namespace MatterHackers.Agg.Platform
 			public string StaticDataProvider { get; set; } = "MatterHackers.Agg.FileSystemStaticData, agg_platform_win32";
 			public string SystemWindowProvider { get; set; } = "MatterHackers.Agg.UI.WinformsSystemWindowProvider, agg_platform_win32";
 			public string SystemWindow { get; set; } = "MatterHackers.Agg.UI.BitmapSystemWindow, agg_platform_win32";
+		}
+
+		public class AggGraphicsMode
+		{
+			/// <summary>
+			/// The ColorFormat of the color buffer - when cast from int, constructs a new ColorFormat with the specified aggregate bits per pixel
+			/// </summary>
+			public int Color { get; set; } = 32;
+
+			/// <summary>
+			/// The number of bits in the depth buffer - a System.Int32 that contains the bits per pixel for the depth buffer
+			/// </summary>
+			public int Depth { get; set; } = 24;
+
+			/// <summary>
+			/// The number of bits in the stencil buffer - a System.Int32 that contains the bits per pixel for the stencil buffer
+			/// </summary>
+			public int Stencil { get; set; } = 0;
+
+			/// <summary>
+			/// The number of samples for FSAA - a System.Int32 that contains the number of FSAA samples per pixel
+			/// </summary>
+			public int FSAASamples { get; set; } = 8;
 		}
 	}
 }
