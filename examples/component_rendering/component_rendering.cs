@@ -165,7 +165,7 @@ namespace MatterHackers.Agg
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			MatterHackers.Agg.Tests.AggDrawingTests.RunAllTests();
+			Tests.AggDrawingTests.RunAllTests();
 
 			var demoWidget = new ComponentRendering();
 
