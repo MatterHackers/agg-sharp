@@ -74,6 +74,13 @@
     <Compile Include="Agg\WidgetClickTests.cs" />
     <Compile Include="Agg\SimpleTests.cs" />
     <Compile Include="AmfDocumentTests.cs" />
+    <Compile Include="Other\AffineTests.cs" />
+    <Compile Include="Other\AggDrawingTests.cs" />
+    <Compile Include="Other\Matrix4x4Tests.cs" />
+    <Compile Include="Other\RunTest.cs" />
+    <Compile Include="Other\TesselatorTests.cs" />
+    <Compile Include="Other\Vector2DTests.cs" />
+    <Compile Include="Other\Vector3DTests.cs" />
     <Compile Include="PackagesConfigConverter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -108,6 +115,10 @@
     <ProjectReference Include="..\..\RayTracer\RayTracer.csproj">
       <Project>{1e01abe0-b494-4fe4-b0d6-540133286887}</Project>
       <Name>RayTracer</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Tesselate\Tesselate.csproj">
+      <Project>{ae37de1f-22f7-49ee-8732-fc6bc8dc58d9}</Project>
+      <Name>Tesselate</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\VectorMath\VectorMath.csproj">
       <Project>{d3e41b4e-bfbb-44ca-94c8-95c00f754fdd}</Project>

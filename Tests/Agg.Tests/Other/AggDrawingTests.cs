@@ -60,7 +60,7 @@ namespace MatterHackers.Agg.Tests
 
 		private void CheckTestAgainstControl(IVertexSource testVertexSource, string testTypeString)
 		{
-			// there is an assumtion that we got to save valid vertex lists at least once.
+			// there is an assumption that we got to save valid vertex lists at least once.
 			string controlFileTxt = testTypeString + " Control.Txt";
 			string vertexSourceFolder = "ControlVertexSources";
 			VertexStorage controlVertexSource = new VertexStorage();

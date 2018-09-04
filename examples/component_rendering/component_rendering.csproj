@@ -76,10 +76,6 @@
   </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <ProjectReference Include="..\..\AggTests\AggTests.csproj">
-      <Project>{f8441cff-e5bf-4556-af03-609087659b15}</Project>
-      <Name>AggTests</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\agg\Agg.csproj">
       <Project>{657dbc6d-c3ea-4398-a3fa-ddb73c14f71b}</Project>
       <Name>Agg</Name>
@@ -91,6 +87,10 @@
     <ProjectReference Include="..\..\PlatformWin32\PlatformWin32.csproj">
       <Project>{670bddff-927b-425d-9dd1-22acb14356eb}</Project>
       <Name>PlatformWin32</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Tests\Agg.Tests\Agg.Tests.csproj">
+      <Project>{195cbe56-e654-437b-ab05-3be1b9452497}</Project>
+      <Name>Agg.Tests</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\VectorMath\VectorMath.csproj">
       <Project>{d3e41b4e-bfbb-44ca-94c8-95c00f754fdd}</Project>
