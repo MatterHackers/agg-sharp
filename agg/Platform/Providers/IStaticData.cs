@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using MatterHackers.Agg.Image;
 
@@ -34,6 +35,8 @@ namespace MatterHackers.Agg.Platform
 		void LoadImageData(Stream stream, ImageBuffer unScaledImage);
 
 		void LoadImageSequenceData(Stream stream, ImageSequence imageSequence);
+
+		void PurgeCache();
 
 		ImageSequence LoadSequence(string path);
 	}
