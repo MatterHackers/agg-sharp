@@ -334,16 +334,27 @@ namespace MatterHackers.RenderOpenGl
 			positionColorIndexBuffer?.Dispose();
 		}
 
-		public System.Numerics.Matrix4x4 RightHandToLeftHand(Matrix4X4 matrixRightHand)
+		public System.Numerics.Matrix4x4 RightHandToLeftHand(Matrix4X4 matrixRightHand, bool projection)
 		{
 			var rhd = matrixRightHand.GetAsFloatArray();
-			return new System.Numerics.Matrix4x4(
-					rhd[0], rhd[4], -rhd[8], rhd[12],
-					rhd[1], rhd[5], -rhd[9], rhd[13],
-					-rhd[2], -rhd[6], rhd[10], rhd[14],
-					rhd[3], rhd[7], -rhd[11], rhd[15]
-				);
+			if (projection)
+			{
+				var projectionD3D = new System.Numerics.Matrix4x4(
+						rhd[0], rhd[1], -rhd[2], rhd[3],
+						rhd[4], rhd[5], -rhd[6], rhd[7],
+						rhd[8], rhd[9], -rhd[10], rhd[11],
+						rhd[12], rhd[13], -rhd[14], rhd[15]
+					);
 
+				return projectionD3D;
+			}
+
+			return new System.Numerics.Matrix4x4(
+					rhd[0], rhd[1], -rhd[2], rhd[3],
+					rhd[4], rhd[5], -rhd[6], rhd[7],
+					-rhd[8], -rhd[9], rhd[10], -rhd[11],
+					rhd[12], rhd[13], rhd[14], rhd[15]
+				);
 		}
 
 		public void DrawArrays(BeginMode mode, int first, int count)
@@ -359,31 +370,37 @@ namespace MatterHackers.RenderOpenGl
 					break;
 
 				case BeginMode.Triangles:
-					// copy our data to the buffer
-					for(int i=0; i< 6; i++)
+					int polygons = count / 3;
+					int polygonsPerPass = 2;
+					while (polygons > 0)
 					{
-						var positionF = new System.Numerics.Vector3(currentImediateData.positions3f[i * 3 + 0], currentImediateData.positions3f[i * 3 + 1], currentImediateData.positions3f[i * 3 + 2]);
-						var colorF = new RgbaFloat(currentImediateData.color4b[i * 4 + 0] / 255.0f, currentImediateData.color4b[i * 4 + 1] / 255.0f, currentImediateData.color4b[i * 4 + 2] / 255.0f, currentImediateData.color4b[i * 4 + 3] / 255.0f);
-						positionColorVertices[i] = new VertexPositionColorGL(positionF, colorF);
+						// copy our data to the buffer
+						for (int i = 0; i < 6; i++)
+						{
+							var positionF = new System.Numerics.Vector3(currentImediateData.positions3f[i * 3 + 0], currentImediateData.positions3f[i * 3 + 1], currentImediateData.positions3f[i * 3 + 2]);
+							var colorF = new RgbaFloat(currentImediateData.color4b[i * 4 + 0] / 255.0f, currentImediateData.color4b[i * 4 + 1] / 255.0f, currentImediateData.color4b[i * 4 + 2] / 255.0f, currentImediateData.color4b[i * 4 + 3] / 255.0f);
+							positionColorVertices[i] = new VertexPositionColorGL(positionF, colorF);
+						}
+
+						commandList.Begin();
+						commandList.UpdateBuffer(positionColorVertexBuffer, 0, positionColorVertices);
+						commandList.UpdateBuffer(modelViewBuffer, 0, RightHandToLeftHand(modelViewStack.Peek(), false));
+
+						commandList.UpdateBuffer(projectionBuffer, 0, RightHandToLeftHand(projectionStack.Peek(), true));
+						//commandList.UpdateBuffer(projectionBuffer, 0, orthoD3D);
+
+						commandList.SetPipeline(positionColorGLPipeline);
+
+						commandList.SetVertexBuffer(0, positionColorVertexBuffer);
+						commandList.SetIndexBuffer(positionColorIndexBuffer, IndexFormat.UInt16);
+						commandList.SetGraphicsResourceSet(0, modelViewProjectionResourceSet);
+						commandList.SetFramebuffer(graphicsDevice.SwapchainFramebuffer);
+						commandList.DrawIndexed((uint)Math.Min(polygons * 3, polygonsPerPass * 3), 1, 0, 0, 0);
+
+						commandList.End();
+						graphicsDevice.SubmitCommands(commandList);
+						polygons -= polygonsPerPass;
 					}
-
-					commandList.Begin();
-					commandList.UpdateBuffer(positionColorVertexBuffer, 0, positionColorVertices);
-					commandList.UpdateBuffer(modelViewBuffer, 0, RightHandToLeftHand(modelViewStack.Peek()));
-
-					commandList.UpdateBuffer(projectionBuffer, 0, RightHandToLeftHand(projectionStack.Peek()));
-					commandList.UpdateBuffer(projectionBuffer, 0, orthoD3D);
-					
-					commandList.SetPipeline(positionColorGLPipeline);
-
-					commandList.SetVertexBuffer(0, positionColorVertexBuffer);
-					commandList.SetIndexBuffer(positionColorIndexBuffer, IndexFormat.UInt16);
-					commandList.SetGraphicsResourceSet(0, modelViewProjectionResourceSet);
-					commandList.SetFramebuffer(graphicsDevice.SwapchainFramebuffer);
-					commandList.DrawIndexed(6, 1, 0, 0, 0);
-
-					commandList.End();
-					graphicsDevice.SubmitCommands(commandList);
 					break;
 
 				case BeginMode.TriangleStrip:
@@ -759,6 +776,14 @@ namespace MatterHackers.RenderOpenGl
 
 		public void Vertex3(double x, double y, double z)
 		{
+			currentImediateData.positions3f.Add((float)x);
+			currentImediateData.positions3f.Add((float)y);
+			currentImediateData.positions3f.Add((float)z);
+
+			currentImediateData.color4b.add(ImediateMode.currentColor[0]);
+			currentImediateData.color4b.add(ImediateMode.currentColor[1]);
+			currentImediateData.color4b.add(ImediateMode.currentColor[2]);
+			currentImediateData.color4b.add(ImediateMode.currentColor[3]);
 		}
 
 		public void VertexPointer(int size, VertexPointerType type, int stride, float[] pointer)

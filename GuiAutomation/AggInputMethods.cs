@@ -144,7 +144,7 @@ namespace MatterHackers.GuiAutomation
 				if (systemWindow.LocalBounds.Contains(windowPosition))
 				{
 					MouseButtons mouseButtons = MapButtons(dwFlags);
-					if (dwFlags == NativeMethods.MOUSEEVENTF_LEFTDOWN)
+					if (dwFlags == MouseConsts.MOUSEEVENTF_LEFTDOWN)
 					{
 						this.ClickCount = (this.LeftButtonDown) ? 2 : 1;
 
@@ -157,7 +157,7 @@ namespace MatterHackers.GuiAutomation
 						// Stop processing after first match
 						break;
 					}
-					else if (dwFlags == NativeMethods.MOUSEEVENTF_LEFTUP)
+					else if (dwFlags == MouseConsts.MOUSEEVENTF_LEFTUP)
 					{
 						// send it to the window
 						UiThread.RunOnIdle(() =>
@@ -169,7 +169,7 @@ namespace MatterHackers.GuiAutomation
 						// Stop processing after first match
 						break;
 					}
-					else if (dwFlags == NativeMethods.MOUSEEVENTF_RIGHTDOWN)
+					else if (dwFlags == MouseConsts.MOUSEEVENTF_RIGHTDOWN)
 					{
 						this.ClickCount = (this.RightButtonDown) ? 2 : 1;
 
@@ -182,7 +182,7 @@ namespace MatterHackers.GuiAutomation
 						// Stop processing after first match
 						break;
 					}
-					else if (dwFlags == NativeMethods.MOUSEEVENTF_RIGHTUP)
+					else if (dwFlags == MouseConsts.MOUSEEVENTF_RIGHTUP)
 					{
 						// send it to the window
 						UiThread.RunOnIdle(() =>
@@ -194,7 +194,7 @@ namespace MatterHackers.GuiAutomation
 						// Stop processing after first match
 						break;
 					}
-					else if (dwFlags == NativeMethods.MOUSEEVENTF_MIDDLEDOWN)
+					else if (dwFlags == MouseConsts.MOUSEEVENTF_MIDDLEDOWN)
 					{
 						this.ClickCount = (this.MiddleButtonDown) ? 2 : 1;
 
@@ -207,7 +207,7 @@ namespace MatterHackers.GuiAutomation
 						// Stop processing after first match
 						break;
 					}
-					else if (dwFlags == NativeMethods.MOUSEEVENTF_MIDDLEUP)
+					else if (dwFlags == MouseConsts.MOUSEEVENTF_MIDDLEUP)
 					{
 						// send it to the window
 						UiThread.RunOnIdle(() =>
@@ -222,25 +222,25 @@ namespace MatterHackers.GuiAutomation
 				}
 			}
 
-			this.LeftButtonDown = (dwFlags == NativeMethods.MOUSEEVENTF_LEFTDOWN);
-			this.MiddleButtonDown = (dwFlags == NativeMethods.MOUSEEVENTF_MIDDLEDOWN);
-			this.RightButtonDown = (dwFlags == NativeMethods.MOUSEEVENTF_RIGHTDOWN);
+			this.LeftButtonDown = (dwFlags == MouseConsts.MOUSEEVENTF_LEFTDOWN);
+			this.MiddleButtonDown = (dwFlags == MouseConsts.MOUSEEVENTF_MIDDLEDOWN);
+			this.RightButtonDown = (dwFlags == MouseConsts.MOUSEEVENTF_RIGHTDOWN);
 		}
 
 		private MouseButtons MapButtons(int cButtons)
 		{
 			switch (cButtons)
 			{
-				case NativeMethods.MOUSEEVENTF_LEFTDOWN:
-				case NativeMethods.MOUSEEVENTF_LEFTUP:
+				case MouseConsts.MOUSEEVENTF_LEFTDOWN:
+				case MouseConsts.MOUSEEVENTF_LEFTUP:
 					return MouseButtons.Left;
 
-				case NativeMethods.MOUSEEVENTF_RIGHTDOWN:
-				case NativeMethods.MOUSEEVENTF_RIGHTUP:
+				case MouseConsts.MOUSEEVENTF_RIGHTDOWN:
+				case MouseConsts.MOUSEEVENTF_RIGHTUP:
 					return MouseButtons.Right;
 
-				case NativeMethods.MOUSEEVENTF_MIDDLEDOWN:
-				case NativeMethods.MOUSEEVENTF_MIDDLEUP:
+				case MouseConsts.MOUSEEVENTF_MIDDLEDOWN:
+				case MouseConsts.MOUSEEVENTF_MIDDLEUP:
 					return MouseButtons.Middle;
 			}
 
