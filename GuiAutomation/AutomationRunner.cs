@@ -63,15 +63,15 @@ namespace MatterHackers.GuiAutomation
 
 		public enum InputType { Native, Simulated, SimulatedDrawMouse };
 
-		public static IInputMethod OverRideInputSystem = null;
+		public static IInputMethod OverrideInputSystem = null;
 
 		// change default to SimulatedDrawMouse
 		public AutomationRunner(IInputMethod inputMethod, bool drawSimulatedMouse, string imageDirectory = "")
 		{
 #if !__ANDROID__
-			if(OverRideInputSystem != null)
+			if(OverrideInputSystem != null)
 			{
-				inputSystem = OverRideInputSystem;
+				inputSystem = OverrideInputSystem;
 			}
 			else
 			{
