@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
+using MatterHackers.Agg.UI;
 using System;
 using System.Drawing;
 #if !__ANDROID__
@@ -46,7 +47,7 @@ namespace MatterHackers.GuiAutomation
 
 		public void CreateMouseEvent(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo)
 		{
-			this.LeftButtonDown = (dwFlags == NativeMethods.MOUSEEVENTF_LEFTDOWN);
+			this.LeftButtonDown = (dwFlags == MouseConsts.MOUSEEVENTF_LEFTDOWN);
 
 			NativeMethods.mouse_event(dwFlags, dx, dy, cButtons, dwExtraInfo);
 		}
@@ -82,7 +83,8 @@ namespace MatterHackers.GuiAutomation
 			IntPtr hDest = NativeMethods.CreateCompatibleDC(hSrce);
 			IntPtr hBmp = NativeMethods.CreateCompatibleBitmap(hSrce, sz.Width, sz.Height);
 			IntPtr hOldBmp = NativeMethods.SelectObject(hDest, hBmp);
-			bool b = NativeMethods.BitBlt(hDest, 0, 0, sz.Width, sz.Height, hSrce, 0, 0, CopyPixelOperation.SourceCopy | CopyPixelOperation.CaptureBlt);
+			throw new NotImplementedException();
+			//bool b = NativeMethods.BitBlt(hDest, 0, 0, sz.Width, sz.Height, hSrce, 0, 0, CopyPixelOperation.SourceCopy | CopyPixelOperation.CaptureBlt);
 			Bitmap bmpScreenCapture = Bitmap.FromHbitmap(hBmp);
 			NativeMethods.SelectObject(hDest, hOldBmp);
 			NativeMethods.DeleteObject(hBmp);

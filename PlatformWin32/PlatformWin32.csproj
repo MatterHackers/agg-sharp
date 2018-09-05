@@ -39,6 +39,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\agg\Agg.csproj" />
+    <ProjectReference Include="..\GuiAutomation\GuiAutomation.csproj" />
     <ProjectReference Include="..\Gui\Gui.csproj" />
     <ProjectReference Include="..\ImageProcessing\ImageProcessing.csproj" />
     <ProjectReference Include="..\RenderOpenGl\RenderOpenGl.csproj" />

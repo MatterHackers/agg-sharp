@@ -63,17 +63,19 @@ namespace MatterHackers.GuiAutomation
 
 		public enum InputType { Native, Simulated, SimulatedDrawMouse };
 
+		public static IInputMethod OverRideInputSystem = null;
+
 		// change default to SimulatedDrawMouse
-		public AutomationRunner(string imageDirectory = "", InputType inputType = InputType.SimulatedDrawMouse)
+		public AutomationRunner(IInputMethod inputMethod, bool drawSimulatedMouse, string imageDirectory = "")
 		{
 #if !__ANDROID__
-			if (inputType == InputType.Native)
+			if(OverRideInputSystem != null)
 			{
-				inputSystem = new WindowsInputMethods();
+				inputSystem = OverRideInputSystem;
 			}
 			else
 			{
-				inputSystem = new AggInputMethods(this, inputType == InputType.SimulatedDrawMouse);
+				inputSystem = new AggInputMethods(this, drawSimulatedMouse);
 				// TODO: Consider how to set this and if needed
 				//HookWindowsInputAndSendToWidget.EnableInputHook = false;
 			}
@@ -158,13 +160,13 @@ namespace MatterHackers.GuiAutomation
 					return 0;
 
 				case MouseButtons.Left:
-					return NativeMethods.MOUSEEVENTF_LEFTDOWN;
+					return MouseConsts.MOUSEEVENTF_LEFTDOWN;
 
 				case MouseButtons.Right:
-					return NativeMethods.MOUSEEVENTF_RIGHTDOWN;
+					return MouseConsts.MOUSEEVENTF_RIGHTDOWN;
 
 				case MouseButtons.Middle:
-					return NativeMethods.MOUSEEVENTF_MIDDLEDOWN;
+					return MouseConsts.MOUSEEVENTF_MIDDLEDOWN;
 
 				default:
 					return 0;
@@ -179,13 +181,13 @@ namespace MatterHackers.GuiAutomation
 					return 0;
 
 				case MouseButtons.Left:
-					return NativeMethods.MOUSEEVENTF_LEFTUP;
+					return MouseConsts.MOUSEEVENTF_LEFTUP;
 
 				case MouseButtons.Right:
-					return NativeMethods.MOUSEEVENTF_RIGHTUP;
+					return MouseConsts.MOUSEEVENTF_RIGHTUP;
 
 				case MouseButtons.Middle:
-					return NativeMethods.MOUSEEVENTF_MIDDLEUP;
+					return MouseConsts.MOUSEEVENTF_MIDDLEUP;
 
 				default:
 					return 0;
@@ -330,7 +332,7 @@ namespace MatterHackers.GuiAutomation
 
 				Point2D screenPosition = new Point2D((int)matchPosition.X + offset.x, clickYOnScreen);
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
-				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 
 				return true;
 			}
@@ -372,7 +374,7 @@ namespace MatterHackers.GuiAutomation
 
 				Point2D screenPosition = new Point2D((int)matchPosition.X + offset.x, clickYOnScreen);
 				SetMouseCursorPosition(screenPosition.x, screenPosition.y);
-				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
+				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
 
 				return true;
 			}
@@ -691,19 +693,19 @@ namespace MatterHackers.GuiAutomation
 			if (widgetToClick != null)
 			{
 				MoveMouseToWidget(widgetToClick, containingWindow, offset, offsetHint, origin, out Point2D screenPosition);
-				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 				WaitforDraw(containingWindow);
 
 				if (isDoubleClick)
 				{
 					Thread.Sleep(150);
-					inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+					inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_LEFTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 					WaitforDraw(containingWindow);
 				}
 
 				Delay(UpDelaySeconds);
 
-				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
+				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_LEFTUP, screenPosition.x, screenPosition.y, 0, 0);
 
 				WaitforDraw(containingWindow);
 
@@ -728,19 +730,19 @@ namespace MatterHackers.GuiAutomation
 			if (widgetToClick != null)
 			{
 				MoveMouseToWidget(widgetToClick, containingWindow, offset, offsetHint, origin, out Point2D screenPosition);
-				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_RIGHTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_RIGHTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 				WaitforDraw(containingWindow);
 
 				if (isDoubleClick)
 				{
 					Thread.Sleep(150);
-					inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_RIGHTDOWN, screenPosition.x, screenPosition.y, 0, 0);
+					inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_RIGHTDOWN, screenPosition.x, screenPosition.y, 0, 0);
 					WaitforDraw(containingWindow);
 				}
 
 				Delay(UpDelaySeconds);
 
-				inputSystem.CreateMouseEvent(NativeMethods.MOUSEEVENTF_RIGHTUP, screenPosition.x, screenPosition.y, 0, 0);
+				inputSystem.CreateMouseEvent(MouseConsts.MOUSEEVENTF_RIGHTUP, screenPosition.x, screenPosition.y, 0, 0);
 
 				WaitforDraw(containingWindow);
 
@@ -1100,9 +1102,11 @@ namespace MatterHackers.GuiAutomation
 
 		#region Prior TestHarness code
 
-		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", InputType inputType = InputType.SimulatedDrawMouse, Action closeWindow = null)
+		public static IInputMethod InputMethod { get; set; }
+		public static bool DrawSimulatedMouse { get; set; }
+		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", Action closeWindow = null)
 		{
-			var testRunner = new AutomationRunner(imagesDirectory, inputType);
+			var testRunner = new AutomationRunner(InputMethod, DrawSimulatedMouse, imagesDirectory);
 
 			var resetEvent = new AutoResetEvent(false);
 

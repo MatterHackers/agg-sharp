@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net471</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <Company>MatterHackers Inc.</Company>
   </PropertyGroup>
 
@@ -14,18 +14,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="System.Windows.Forms" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="InputSimulator" Version="1.0.4.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\agg\Agg.csproj" />
     <ProjectReference Include="..\Gui\Gui.csproj" />
-    <ProjectReference Include="..\ImageProcessing\ImageProcessing.csproj" />
-    <ProjectReference Include="..\PlatformWin32\PlatformWin32.csproj" />
     <ProjectReference Include="..\VectorMath\VectorMath.csproj" />
   </ItemGroup>
 

@@ -35,7 +35,7 @@ using MatterHackers.Agg.Image;
 
 namespace MatterHackers.GuiAutomation
 {
-	public static class NativeMethods
+	public static class MouseConsts
 	{
 		public const int MOUSEEVENTF_LEFTDOWN = 0x02;
 		public const int MOUSEEVENTF_LEFTUP = 0x04;
@@ -43,41 +43,5 @@ namespace MatterHackers.GuiAutomation
 		public const int MOUSEEVENTF_RIGHTUP = 0x10;
 		public const int MOUSEEVENTF_MIDDLEDOWN = 0x20;
 		public const int MOUSEEVENTF_MIDDLEUP = 0x40;
-
-#if !__ANDROID__
-		// P/Invoke declarations
-		[DllImport("gdi32.dll")]
-		internal static extern bool BitBlt(IntPtr hdcDest, int xDest, int yDest, int wDest, int hDest, IntPtr hdcSource, int xSrc, int ySrc, CopyPixelOperation rop);
-
-		[DllImport("user32.dll")]
-		internal static extern bool ReleaseDC(IntPtr hWnd, IntPtr hDc);
-
-		[DllImport("gdi32.dll")]
-		internal static extern IntPtr DeleteDC(IntPtr hDc);
-
-		[DllImport("gdi32.dll")]
-		internal static extern IntPtr DeleteObject(IntPtr hDc);
-
-		[DllImport("gdi32.dll")]
-		internal static extern IntPtr CreateCompatibleBitmap(IntPtr hdc, int nWidth, int nHeight);
-
-		[DllImport("gdi32.dll")]
-		internal static extern IntPtr CreateCompatibleDC(IntPtr hdc);
-
-		[DllImport("gdi32.dll")]
-		internal static extern IntPtr SelectObject(IntPtr hdc, IntPtr bmp);
-
-		[DllImport("user32.dll")]
-		internal static extern IntPtr GetDesktopWindow();
-
-		[DllImport("user32.dll")]
-		internal static extern IntPtr GetWindowDC(IntPtr ptr);
-
-		[DllImport("User32.Dll")]
-		internal static extern long SetCursorPos(int x, int y);
-
-		[DllImport("user32.dll")]
-		internal static extern void mouse_event(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo);
-#endif
 	}
 }
