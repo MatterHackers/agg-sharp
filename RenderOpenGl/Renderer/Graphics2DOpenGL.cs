@@ -445,13 +445,13 @@ namespace MatterHackers.RenderOpenGl
 				// Draw as optimized vertical or horizontal line
 				FillRectangle(strokeBounds, color);
 			}
-			else 
+			else
 			{
 				// Draw as a VertexSource - may yield incorrect lines in some cases
 				base.Line(x1, y1, x2, y2, color, strokeWidth);
 			}
 		}
-		
+
 		public override void Clear(IColorType color)
 		{
 			Affine transform = GetTransform();
