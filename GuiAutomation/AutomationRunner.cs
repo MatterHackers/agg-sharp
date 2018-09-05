@@ -80,7 +80,7 @@ namespace MatterHackers.GuiAutomation
 				//HookWindowsInputAndSendToWidget.EnableInputHook = false;
 			}
 #else
-				inputSystem = new AggInputMethods(this, inputType == InputType.SimulatedDrawMouse);
+				inputSystem = new AggInputMethods(this, drawSimulatedMouse);
 #endif
 			this.imageDirectory = imageDirectory;
 		}
