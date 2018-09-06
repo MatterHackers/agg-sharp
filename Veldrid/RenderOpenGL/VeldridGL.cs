@@ -215,15 +215,18 @@ namespace MatterHackers.RenderOpenGl
 				modelViewBuffer));
 
 			// create the vertex storage
-			int vertexPositionColorSize = 6;
-			positionColorVertices = new VertexPositionColorGL[vertexPositionColorSize];
+			positionColorVertices = new VertexPositionColorGL[128 * 3];
 
-			BufferDescription vbDescription = new BufferDescription((uint)(vertexPositionColorSize * VertexPositionColorGL.SizeInBytes), BufferUsage.VertexBuffer);
+			BufferDescription vbDescription = new BufferDescription((uint)(positionColorVertices.Length * VertexPositionColorGL.SizeInBytes), BufferUsage.VertexBuffer);
 			positionColorVertexBuffer = resourceFactory.CreateBuffer(vbDescription);
 			graphicsDevice.UpdateBuffer(positionColorVertexBuffer, 0, positionColorVertices);
 
-			ushort[] quadIndices = { 0, 1, 2, 3, 4, 5 };
-			BufferDescription indexBufferDescription = new BufferDescription(6 * sizeof(ushort), BufferUsage.IndexBuffer);
+			ushort[] quadIndices = new ushort[positionColorVertices.Length];
+			for(ushort i=0; i< positionColorVertices.Length; i++)
+			{
+				quadIndices[i] = i;
+			}
+			BufferDescription indexBufferDescription = new BufferDescription((uint)(positionColorVertices.Length * sizeof(ushort)), BufferUsage.IndexBuffer);
 			positionColorIndexBuffer = resourceFactory.CreateBuffer(indexBufferDescription);
 			graphicsDevice.UpdateBuffer(positionColorIndexBuffer, 0, quadIndices);
 
@@ -357,6 +360,8 @@ namespace MatterHackers.RenderOpenGl
 				);
 		}
 
+		Random rand = new Random();
+
 		public void DrawArrays(BeginMode mode, int first, int count)
 		{
 			if(currentImediateData.positions3f.Count < 6)
@@ -371,14 +376,33 @@ namespace MatterHackers.RenderOpenGl
 
 				case BeginMode.Triangles:
 					int polygons = count / 3;
-					int polygonsPerPass = 2;
+					if(polygons > 2)
+					{
+						int a = 0;
+					}
+					int polygonIndex = 0;
 					while (polygons > 0)
 					{
 						// copy our data to the buffer
-						for (int i = 0; i < 6; i++)
+						for (int i = 0; i < Math.Min(polygons*3, positionColorVertices.Length/3); i++)
 						{
-							var positionF = new System.Numerics.Vector3(currentImediateData.positions3f[i * 3 + 0], currentImediateData.positions3f[i * 3 + 1], currentImediateData.positions3f[i * 3 + 2]);
-							var colorF = new RgbaFloat(currentImediateData.color4b[i * 4 + 0] / 255.0f, currentImediateData.color4b[i * 4 + 1] / 255.0f, currentImediateData.color4b[i * 4 + 2] / 255.0f, currentImediateData.color4b[i * 4 + 3] / 255.0f);
+							System.Numerics.Vector3 positionF;
+							unsafe
+							{
+								float* positions = (float*)vertexPointer.pointer;
+								positionF = new System.Numerics.Vector3(positions[polygonIndex * 3 + 0], positions[polygonIndex * 3 + 1], positions[polygonIndex * 3 + 2]);
+								polygonIndex++;
+							}
+
+							RgbaFloat colorF;
+							if (i < currentImediateData.color4b.Length / 4)
+							{
+								colorF = new RgbaFloat(currentImediateData.color4b[i * 4 + 0] / 255.0f, currentImediateData.color4b[i * 4 + 1] / 255.0f, currentImediateData.color4b[i * 4 + 2] / 255.0f, currentImediateData.color4b[i * 4 + 3] / 255.0f);
+							}
+							else
+							{
+								colorF = new RgbaFloat((float)rand.NextDouble(), (float)rand.NextDouble(), (float)rand.NextDouble(), 1);
+							}
 							positionColorVertices[i] = new VertexPositionColorGL(positionF, colorF);
 						}
 
@@ -395,11 +419,11 @@ namespace MatterHackers.RenderOpenGl
 						commandList.SetIndexBuffer(positionColorIndexBuffer, IndexFormat.UInt16);
 						commandList.SetGraphicsResourceSet(0, modelViewProjectionResourceSet);
 						commandList.SetFramebuffer(graphicsDevice.SwapchainFramebuffer);
-						commandList.DrawIndexed((uint)Math.Min(polygons * 3, polygonsPerPass * 3), 1, 0, 0, 0);
+						commandList.DrawIndexed((uint)Math.Min(polygons * 3, positionColorVertices.Length / 3), 1, 0, 0, 0);
 
 						commandList.End();
 						graphicsDevice.SubmitCommands(commandList);
-						polygons -= polygonsPerPass;
+						polygons -= positionColorVertices.Length/3;
 					}
 					break;
 
