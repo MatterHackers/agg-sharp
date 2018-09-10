@@ -1103,7 +1103,7 @@ namespace MatterHackers.GuiAutomation
 		#region Prior TestHarness code
 
 		public static IInputMethod InputMethod { get; set; }
-		public static bool DrawSimulatedMouse { get; set; }
+		public static bool DrawSimulatedMouse { get; set; } = true;
 		public static Task ShowWindowAndExecuteTests(SystemWindow initialSystemWindow, AutomationTest testMethod, double secondsToTestFailure = 30, string imagesDirectory = "", Action closeWindow = null)
 		{
 			var testRunner = new AutomationRunner(InputMethod, DrawSimulatedMouse, imagesDirectory);
