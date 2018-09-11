@@ -3350,18 +3350,17 @@ namespace MatterHackers.Agg.UI
 			{
 				GuiWidget item = items.Pop();
 
-				if (item is T itemIsType)
-				{
-					yield return itemIsType;
-				}
-
 				foreach (var child in item.Children)
 				{
 					items.Push(child);
 				}
+
+				if (item is T itemIsType)
+				{
+					yield return itemIsType;
+				}
 			}
 		}
-
 
 		public static IEnumerable<GuiWidget> Descendants(this GuiWidget widget)
 		{
@@ -3382,14 +3381,14 @@ namespace MatterHackers.Agg.UI
 			{
 				GuiWidget item = items.Pop();
 
-				if (item is T itemIsType)
-				{
-					yield return itemIsType;
-				}
-
 				foreach (var child in item.Children)
 				{
 					items.Push(child);
+				}
+
+				if (item is T itemIsType)
+				{
+					yield return itemIsType;
 				}
 			}
 		}
