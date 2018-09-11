@@ -36,7 +36,7 @@ namespace MatterHackers.Agg.UI
 	{
 		private SplitterBar splitterBar;
 
-		private double splitterDistance;
+		private double _splitterDistance;
 
 		public Splitter()
 		{
@@ -82,13 +82,57 @@ namespace MatterHackers.Agg.UI
 
 		public double SplitterDistance
 		{
-			get => splitterDistance;
+			get => _splitterDistance;
 			set
 			{
-				if (splitterDistance != value)
+				if (_splitterDistance != value)
 				{
-					splitterDistance = value;
-					OnBoundsChanged(null);
+					_splitterDistance = value;
+					if (Orientation == Orientation.Vertical)
+					{
+						// make sure we respect minimum size
+						_splitterDistance = Math.Max(_splitterDistance, Panel2.MinimumSize.X);
+						_splitterDistance = Height == 0 ? _splitterDistance : Math.Min(_splitterDistance, Height - Panel1.MinimumSize.X - splitterBar.Width);
+						if (Panel1Ratio != 0)
+						{
+							Panel1Ratio = Width / _splitterDistance;
+						}
+					}
+					else
+					{
+						// make sure we respect minimum size
+						_splitterDistance = Math.Max(_splitterDistance, Panel2.MinimumSize.Y);
+						_splitterDistance = Height == 0 ? _splitterDistance : Math.Min(_splitterDistance, Height - Panel1.MinimumSize.Y - splitterBar.Height);
+						if (Panel1Ratio != 0)
+						{
+							Panel1Ratio = _splitterDistance / Height;
+						}
+					}
+					if (!ajustingRatio)
+					{
+						OnBoundsChanged(null);
+					}
+				}
+			}
+		}
+
+		double _panel1Ratio = 0;
+		public double Panel1Ratio
+		{
+			get
+			{
+				return _panel1Ratio;
+			}
+
+			set
+			{
+				if (_panel1Ratio != value)
+				{
+					_panel1Ratio = value;
+					if (Height > 0)
+					{
+						SplitterDistance = Height * _panel1Ratio;
+					}
 				}
 			}
 		}
@@ -125,8 +169,18 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		bool ajustingRatio = false;
+
 		public override void OnBoundsChanged(EventArgs e)
 		{
+			if(Panel1Ratio != 0
+				&& Height > 0)
+			{
+				ajustingRatio = true;
+				SplitterDistance = Height * Panel1Ratio;
+				ajustingRatio = false;
+			}
+
 			if (Orientation == Orientation.Vertical)
 			{
 				Panel1.LocalBounds = new RectangleDouble(0, 0, SplitterDistance, LocalBounds.Height);
