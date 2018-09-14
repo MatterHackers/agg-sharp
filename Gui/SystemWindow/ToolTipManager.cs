@@ -66,8 +66,8 @@ namespace MatterHackers.Agg.UI
 		private GuiWidget toolTipWidget;
 
 		private GuiWidget widgetThatIsShowingToolTip;
-
 		private GuiWidget widgetThatWantsToShowToolTip;
+		private GuiWidget widgetThatWasShowingToolTip;
 
 		internal ToolTipManager(SystemWindow owner)
 		{
@@ -131,12 +131,22 @@ namespace MatterHackers.Agg.UI
 				}
 			}
 
+			if(widgetThatWasShowingToolTip != null)
+			{
+				RectangleDouble screenBounds = widgetThatWasShowingToolTip.TransformToScreenSpace(widgetThatWasShowingToolTip.LocalBounds);
+				if (!screenBounds.Contains(mousePosition))
+				{
+					widgetThatWasShowingToolTip = null;
+				}
+			}
+
 			if (!didShow)
 			{
 				bool didRemove = false;
 				if (timeCurrentToolTipHasBeenShowing.Elapsed.TotalSeconds > CurrentAutoPopDelay)
 				{
 					RemoveToolTip();
+					widgetThatWasShowingToolTip = widgetThatIsShowingToolTip;
 					widgetThatIsShowingToolTip = null;
 					timeCurrentToolTipHasBeenShowing.Stop();
 					timeCurrentToolTipHasBeenShowing.Reset();
@@ -183,7 +193,8 @@ namespace MatterHackers.Agg.UI
 		private void DoShowToolTip()
 		{
 			if (widgetThatWantsToShowToolTip != null
-				&& widgetThatWantsToShowToolTip != widgetThatIsShowingToolTip)
+				&& widgetThatWantsToShowToolTip != widgetThatIsShowingToolTip
+				&& widgetThatWasShowingToolTip != widgetThatWantsToShowToolTip)
 			{
 				RectangleDouble screenBoundsShowingTT = widgetThatWantsToShowToolTip.TransformToScreenSpace(widgetThatWantsToShowToolTip.LocalBounds);
 				if (screenBoundsShowingTT.Contains(mousePosition))
@@ -248,8 +259,18 @@ namespace MatterHackers.Agg.UI
 
 					widgetThatIsShowingToolTip = widgetThatWantsToShowToolTip;
 					widgetThatWantsToShowToolTip = null;
+					widgetThatWasShowingToolTip = null;
 				}
 			}
+		}
+
+		public void Clear()
+		{
+			widgetThatWasShowingToolTip = widgetThatIsShowingToolTip;
+			RemoveToolTip();
+			widgetThatIsShowingToolTip = null;
+			timeCurrentToolTipHasBeenShowing.Stop();
+			timeCurrentToolTipHasBeenShowing.Reset();
 		}
 
 		private void RemoveToolTip()

@@ -140,6 +140,8 @@ namespace MatterHackers.VectorMath
 		internal int splitCount;
 		private Branch root;
 
+		public List<T> QueryResults { get; private set; } = new List<T>();
+
 		/// <summary>
 		/// Creates a new Octree.
 		/// </summary>
@@ -192,8 +194,10 @@ namespace MatterHackers.VectorMath
 		/// <returns>True if any collisions were found.</returns>
 		/// <param name="value">The value to check collisions against.</param>
 		/// <param name="values">A list to populate with the results. If null, this function will create the list for you.</param>
-		public IEnumerable<T> FindCollisions(T value)
+		public void FindCollisions(T value)
 		{
+			QueryResults.Clear();
+
 			Leaf leaf;
 			if (leafLookup.TryGetValue(value, out leaf))
 			{
@@ -206,7 +210,7 @@ namespace MatterHackers.VectorMath
 					{
 						if (leaf != branch.Leaves[i] && leaf.Bounds.Intersects(branch.Leaves[i].Bounds))
 						{
-							yield return branch.Leaves[i].Value;
+							QueryResults.Add(branch.Leaves[i].Value);
 						}
 					}
 				}
@@ -218,10 +222,7 @@ namespace MatterHackers.VectorMath
 					{
 						if (branch.Branches[i] != null)
 						{
-							foreach (var child in branch.Branches[i].SearchBounds(leaf.Bounds))
-							{
-								yield return child;
-							}
+							branch.Branches[i].SearchBounds(leaf.Bounds, QueryResults);
 						}
 					}
 				}
@@ -236,7 +237,7 @@ namespace MatterHackers.VectorMath
 						{
 							if (leaf.Bounds.Intersects(branch.Leaves[i].Bounds))
 							{
-								yield return branch.Leaves[i].Value;
+								QueryResults.Add(branch.Leaves[i].Value);
 							}
 						}
 					}
@@ -245,14 +246,14 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
-		public IEnumerable<T> AlongRay(Ray ray)
+		public void AlongRay(Ray ray)
 		{
-			return root.AlongRay(ray);
+			root.AlongRay(ray, QueryResults);
 		}
 
-		public IEnumerable<T> All()
+		public void All()
 		{
-			return root.All();
+			root.All(QueryResults);
 		}
 
 		/// <summary>
@@ -297,9 +298,10 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
-		public IEnumerable<T> SearchBounds(Bounds bounds)
+		public void SearchBounds(Bounds bounds)
 		{
-			return root.SearchBounds(bounds);
+			QueryResults.Clear();
+			root.SearchBounds(bounds, QueryResults);
 		}
 
 		/// <summary>
@@ -311,10 +313,10 @@ namespace MatterHackers.VectorMath
 		/// <param name="xSize">xSize of the search area.</param>
 		/// <param name="ySize">ySize of the search area.</param>
 		/// <param name="values">A list to populate with the results. If null, this function will create the list for you.</param>
-		public IEnumerable<T> SearchBounds(double x, double y, double z, double xSize, double ySize, double zSize)
+		public void SearchBounds(double x, double y, double z, double xSize, double ySize, double zSize)
 		{
 			var bounds = new Bounds(x, y, z, x + xSize, y + ySize, z + zSize);
-			return SearchBounds(bounds);
+			SearchBounds(bounds);
 		}
 
 		/// <summary>
@@ -324,9 +326,10 @@ namespace MatterHackers.VectorMath
 		/// <param name="x">The x coordinate.</param>
 		/// <param name="y">The y coordinate.</param>
 		/// <param name="values">A list to populate with the results. If null, this function will create the list for you.</param>
-		public IEnumerable<T> SearchPoint(double x, double y, double z)
+		public void SearchPoint(double x, double y, double z)
 		{
-			return root.SearchPoint(x, y, z);
+			QueryResults.Clear();
+			root.SearchPoint(x, y, z, QueryResults);
 		}
 
 		private static Branch CreateBranch(Octree<T> tree, Branch parent, Bounds bounds)
@@ -409,7 +412,7 @@ namespace MatterHackers.VectorMath
 				this.Bounds = bounds;
 			}
 
-			internal IEnumerable<T> AlongRay(Ray ray)
+			internal void AlongRay(Ray ray, List<T> queryResults)
 			{
 				if (intersect(ray))
 				{
@@ -422,7 +425,7 @@ namespace MatterHackers.VectorMath
 						{
 							for (int i = 0; i < item.Leaves.Count; ++i)
 							{
-								yield return item.Leaves[i].Value;
+								queryResults.Add(item.Leaves[i].Value);
 							}
 						}
 
@@ -509,8 +512,9 @@ namespace MatterHackers.VectorMath
 				return oneHitIsWithinLimits;
 			}
 
-			internal IEnumerable<T> All()
+			internal void All(List<T> queryResults)
 			{
+				queryResults.Clear();
 				var items = new Stack<Branch>(new Branch[] { this });
 				while (items.Any())
 				{
@@ -520,7 +524,7 @@ namespace MatterHackers.VectorMath
 					{
 						for (int i = 0; i < item.Leaves.Count; ++i)
 						{
-							yield return item.Leaves[i].Value;
+							queryResults.Add(item.Leaves[i].Value);
 						}
 					}
 
@@ -609,7 +613,7 @@ namespace MatterHackers.VectorMath
 				}
 			}
 
-			internal IEnumerable<T> SearchBounds(Bounds bounds)
+			internal void SearchBounds(Bounds bounds, List<T> queryResults)
 			{
 				var items = new Stack<Branch>(new Branch[] { this });
 				while (items.Any())
@@ -622,7 +626,7 @@ namespace MatterHackers.VectorMath
 						{
 							if (bounds.Intersects(item.Leaves[i].Bounds))
 							{
-								yield return item.Leaves[i].Value;
+								queryResults.Add(item.Leaves[i].Value);
 							}
 						}
 					}
@@ -637,7 +641,7 @@ namespace MatterHackers.VectorMath
 				}
 			}
 
-			internal IEnumerable<T> SearchPoint(double x, double y, double z)
+			internal void SearchPoint(double x, double y, double z, List<T> queryResults)
 			{
 				if (Leaves.Count > 0)
 				{
@@ -645,7 +649,7 @@ namespace MatterHackers.VectorMath
 					{
 						if (Leaves[i].Bounds.Contains(x, y, z))
 						{
-							yield return Leaves[i].Value;
+							queryResults.Add(Leaves[i].Value);
 						}
 					}
 				}
@@ -654,10 +658,7 @@ namespace MatterHackers.VectorMath
 				{
 					if (Branches[i] != null)
 					{
-						foreach (var child in Branches[i].SearchPoint(x, y, z))
-						{
-							yield return child;
-						}
+						Branches[i].SearchPoint(x, y, z, queryResults);
 					}
 				}
 			}

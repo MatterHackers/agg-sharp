@@ -406,15 +406,15 @@ namespace MatterHackers.RenderOpenGl
 				glWireMeshPlugin = GLMeshWirePlugin.Get(meshToRender);
 			}
 
-			VectorPOD<WireVertexData> edegLines = glWireMeshPlugin.edgeLinesData;
 			GL.EnableClientState(ArrayCap.VertexArray);
+			VectorPOD<WireVertexData> edgeLines = glWireMeshPlugin.EdgeLines;
 
 			unsafe
 			{
-				fixed (WireVertexData* pv = edegLines.Array)
+				fixed (WireVertexData* pv = edgeLines.Array)
 				{
 					GL.VertexPointer(3, VertexPointerType.Float, 0, new IntPtr(pv));
-					GL.DrawArrays(BeginMode.Lines, 0, edegLines.Count);
+					GL.DrawArrays(BeginMode.Lines, 0, edgeLines.Count);
 				}
 			}
 
