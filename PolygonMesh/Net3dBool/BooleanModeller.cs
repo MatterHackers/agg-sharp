@@ -193,7 +193,8 @@ namespace Net3dBool
 		{
 			var vertexIndexByHashCode = new Dictionary<Vector3, int>();
 			//for each face..
-			foreach (CsgFace face in obj.Faces.All())
+			obj.Faces.All();
+			foreach (CsgFace face in obj.Faces.QueryResults)
 			{
 				//if the face status fits with the desired status...
 				if (face.Status == faceStatus1 || face.Status == faceStatus2)

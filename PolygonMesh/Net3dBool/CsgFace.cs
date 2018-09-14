@@ -244,7 +244,8 @@ namespace Net3dBool
 				closestDistance = Double.MaxValue;
 				//for each face from the other solid...
 				//foreach (Face face in obj.Faces.AllObjects())
-				foreach (CsgFace face in obj.Faces.AlongRay(ray))
+				obj.Faces.AlongRay(ray);
+				foreach (var face in obj.Faces.QueryResults)
 				{
 					double hitDistance;
 					bool front;

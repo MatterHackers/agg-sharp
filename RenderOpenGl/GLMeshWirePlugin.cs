@@ -32,6 +32,7 @@ using MatterHackers.PolygonMesh;
 using MatterHackers.VectorMath;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -107,7 +108,7 @@ namespace MatterHackers.RenderOpenGl
 				{
 					var filteredEdgeLines = new VectorPOD<WireVertexData>();
 
-					List<(Vector3 start, Vector3 end, Vector3 normal, double length)> faceEdges = new List<(Vector3 start, Vector3 end, Vector3 normal, double length)>();
+					List<(Face face, Vector3 start, Vector3 end, Vector3 normal, double length)> faceEdges = new List<(Face face, Vector3 start, Vector3 end, Vector3 normal, double length)>();
 					foreach (var face in meshToBuildListFor.Faces)
 					{
 						foreach (var faceEdge in face.FaceEdges())
@@ -127,34 +128,73 @@ namespace MatterHackers.RenderOpenGl
 							normal.X = ((int)(normal.X * 255)) / 255.0;
 							normal.Y = ((int)(normal.Y * 255)) / 255.0;
 							normal.Z = ((int)(normal.Z * 255)) / 255.0;
-							faceEdges.Add((start, end, normal, (end - start).Length));
+							faceEdges.Add((faceEdge.ContainingFace, start, end, normal, (end - start).Length));
 						}
 					}
 
-					// sort by direction
-					faceEdges.Sort((a, b) =>
+					var startIndexes = new Dictionary<Vector3, List<int>>();
+
+					for (int i = 0; i < faceEdges.Count; i++)
 					{
-						if (a.normal.X == b.normal.X)
+						var faceEdge = faceEdges[i];
+						if (!startIndexes.ContainsKey(faceEdge.start))
 						{
-							if (a.normal.Y == b.normal.Y)
-							{
-								return b.normal.Z.CompareTo(a.normal.Z);
-							}
-							return b.normal.Y.CompareTo(a.normal.Y);
+							startIndexes.Add(faceEdge.start, new List<int>());
 						}
-						return b.normal.X.CompareTo(a.normal.X);
-					});
 
-					// group face edges into co-linear segments
+						startIndexes[faceEdge.start].Add(i);
+					}
 
-					if (meshEdge.GetNumFacesSharingEdge() == 2)
+					for (int i=0; i< faceEdges.Count; i++)
 					{
-						FaceEdge firstFaceEdge = meshEdge.firstFaceEdge;
-						FaceEdge nextFaceEdge = meshEdge.firstFaceEdge.RadialNextFaceEdge;
-						double angle = Vector3.CalculateAngle(firstFaceEdge.ContainingFace.Normal, nextFaceEdge.ContainingFace.Normal);
-						if (angle > MathHelper.Tau * .1)
+						var edgeI = faceEdges[i];
+						// figure out if edge i has any colinear edges that are above the angle
+						if (startIndexes.ContainsKey(edgeI.start))
 						{
-							AddVertex(filteredEdgeLines, meshEdge.VertexOnEnd[0].Position, meshEdge.VertexOnEnd[1].Position);
+							foreach (var faceEdgeIndex in startIndexes[edgeI.start])
+							{
+								if (faceEdgeIndex <= i)
+								{
+									continue;
+								}
+								var edgeJ = faceEdges[faceEdgeIndex];
+
+								// do they share end points
+								if ((edgeI.start == edgeJ.start && edgeI.end == edgeJ.end)
+									|| (edgeI.start == edgeJ.end && edgeI.end == edgeJ.start))
+								{
+									double angle = Vector3.CalculateAngle(edgeI.face.Normal, edgeJ.face.Normal);
+									if (angle > MathHelper.Tau * .1)
+									{
+										AddVertex(filteredEdgeLines, edgeI.start, edgeI.end);
+										break;
+									}
+								}
+							}
+						}
+
+						if (startIndexes.ContainsKey(edgeI.end))
+						{
+							foreach (var faceEdgeIndex in startIndexes[edgeI.end])
+							{
+								if (faceEdgeIndex <= i)
+								{
+									continue;
+								}
+								var edgeJ = faceEdges[faceEdgeIndex];
+
+								// do they share end points
+								if ((edgeI.start == edgeJ.start && edgeI.end == edgeJ.end)
+									|| (edgeI.start == edgeJ.end && edgeI.end == edgeJ.start))
+								{
+									double angle = Vector3.CalculateAngle(edgeI.face.Normal, edgeJ.face.Normal);
+									if (angle > MathHelper.Tau * .1)
+									{
+										AddVertex(filteredEdgeLines, edgeI.start, edgeI.end);
+										break;
+									}
+								}
+							}
 						}
 					}
 

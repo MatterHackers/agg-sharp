@@ -136,7 +136,8 @@ namespace Net3dBool
 			}
 
 			//calculate adjacency information
-			foreach (CsgFace face in Faces.All())
+			Faces.All();
+			foreach (var face in Faces.QueryResults)
 			{
 				face.v1.AddAdjacentVertex(face.v2);
 				face.v1.AddAdjacentVertex(face.v3);
@@ -147,7 +148,7 @@ namespace Net3dBool
 			}
 
 			// for each face
-			foreach (CsgFace face in Faces.All())
+			foreach (var face in Faces.QueryResults)
 			{
 				// If the face vertices can't be classified with the simple classify
 				if (face.SimpleClassify() == false)
@@ -188,7 +189,8 @@ namespace Net3dBool
 		/// </summary>
 		public void InvertInsideFaces()
 		{
-			foreach (CsgFace face in Faces.All())
+			Faces.All();
+			foreach (var face in Faces.QueryResults)
 			{
 				if (face.Status == FaceStatus.Inside)
 				{
@@ -212,7 +214,8 @@ namespace Net3dBool
 			//if the objects bounds overlap...
 			//for each object1 face...
 			var bounds = new Bounds(compareObject.GetBound());
-			foreach (CsgFace thisFaceIn in Faces.SearchBounds(bounds).ToArray()) // put it in an array as we will be adding new faces to it
+			Faces.SearchBounds(bounds);
+			foreach (var thisFaceIn in Faces.QueryResults) // put it in an array as we will be adding new faces to it
 			{
 				newFacesFromSplitting.Push(thisFaceIn);
 				// make sure we process every face that we have added during splitting before moving on to the next face
@@ -229,7 +232,8 @@ namespace Net3dBool
 
 					//if object1 face bound and object2 bound overlap ...
 					//for each object2 face...
-					foreach (CsgFace cuttingFace in compareObject.Faces.SearchBounds(new Bounds(faceToSplit.GetBound())))
+					compareObject.Faces.SearchBounds(new Bounds(faceToSplit.GetBound()));
+					foreach (var cuttingFace in compareObject.Faces.QueryResults)
 					{
 						//if object1 face bound and object2 face bound overlap...
 						//PART I - DO TWO POLIGONS INTERSECT?
