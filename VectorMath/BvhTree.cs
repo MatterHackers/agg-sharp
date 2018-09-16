@@ -284,7 +284,7 @@ namespace MatterHackers.VectorMath
 							results.Add(item.Item);
 						}
 					}
-					else
+					else if(ray.Intersection(item.Aabb))
 					{
 						results.Add(item.Item);
 					}
@@ -293,11 +293,6 @@ namespace MatterHackers.VectorMath
 				nodeA?.AlongRay(ray, results);
 				nodeB?.AlongRay(ray, results);
 			}
-		}
-
-		public void Clear()
-		{
-			throw new NotImplementedException();
 		}
 
 		public int CountBranches()
@@ -392,21 +387,6 @@ namespace MatterHackers.VectorMath
 		public RayHitInfo GetIntersection(Ray ray)
 		{
 			return GetClosestIntersection(ray);
-		}
-
-		public void Insert(T value, AxisAlignedBoundingBox bounds)
-		{
-			throw new NotImplementedException();
-		}
-
-		public void Insert(T value, double x, double y, double z, double xSize, double ySize, double zSize)
-		{
-			throw new NotImplementedException();
-		}
-
-		public void Remove(T value)
-		{
-			throw new NotImplementedException();
 		}
 
 		public void SearchBounds(AxisAlignedBoundingBox bounds, List<T> results)
