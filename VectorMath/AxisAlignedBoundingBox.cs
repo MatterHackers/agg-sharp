@@ -41,7 +41,17 @@ namespace MatterHackers.VectorMath
 		public Vector3 minXYZ;
 		public Vector3 maxXYZ;
 
+
+		public Vector3 Min { get { return minXYZ; } }
+		public Vector3 Max { get { return maxXYZ; } }
+	 
 		public AxisAlignedBoundingBox()
+		{
+		}
+
+		public AxisAlignedBoundingBox(double minX, double minY, double minZ,
+			double maxX, double maxY, double maxZ)
+			: this(new Vector3(minX, minY, minZ), new Vector3(maxX, maxY, maxZ))
 		{
 		}
 
@@ -287,6 +297,12 @@ namespace MatterHackers.VectorMath
 			return false;
 		}
 
+		public void Set(double minX, double minY, double minZ, double maxX, double maxY, double maxZ)
+		{
+			minXYZ = new Vector3(minX, minY, minZ);
+			maxXYZ = new Vector3(maxX, maxY, maxZ);
+		}
+
 		public static AxisAlignedBoundingBox Intersection(AxisAlignedBoundingBox boundsA, AxisAlignedBoundingBox boundsB)
 		{
 			Vector3 minXYZ = new Vector3(
@@ -345,6 +361,11 @@ namespace MatterHackers.VectorMath
 			{
 				positionToClamp.Z = maxXYZ.Z;
 			}
+		}
+
+		public bool Contains(double x, double y, double z, double errorRange = .001)
+		{
+			return Contains(new Vector3(x, y, z), errorRange);
 		}
 
 		public bool Contains(Vector3 position, double errorRange = .001)

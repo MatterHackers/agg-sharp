@@ -41,15 +41,15 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		[Test]
 		public void AllLeavesPutAtRoot()
 		{
-			Octree<int> tree = new Octree<int>(1, new Bounds(-10, -20, -30, 10, 20, 30));
-			tree.Insert(1, new Bounds(-9, -19, -29, 9, 19, 29));
-			tree.Insert(2, new Bounds(-9, -19, -29, 9, 19, 29));
-			tree.Insert(3, new Bounds(-9, -19, -29, 9, 19, 29));
-			tree.Insert(4, new Bounds(-9, -19, -29, 9, 19, 29));
+			Octree<int> tree = new Octree<int>(1, new AxisAlignedBoundingBox(-10, -20, -30, 10, 20, 30));
+			tree.Insert(1, new AxisAlignedBoundingBox(-9, -19, -29, 9, 19, 29));
+			tree.Insert(2, new AxisAlignedBoundingBox(-9, -19, -29, 9, 19, 29));
+			tree.Insert(3, new AxisAlignedBoundingBox(-9, -19, -29, 9, 19, 29));
+			tree.Insert(4, new AxisAlignedBoundingBox(-9, -19, -29, 9, 19, 29));
 
 			Assert.IsTrue(tree.CountBranches() == 1);
 
-			tree.SearchBounds(new Bounds(-9, -19, -29, 9, 19, 29));
+			tree.SearchBounds(new AxisAlignedBoundingBox(-9, -19, -29, 9, 19, 29));
 			Assert.AreEqual(tree.QueryResults.Count(), 4, "Found all items.");
 			tree.SearchPoint(0, 0, 0);
 			Assert.AreEqual(4, tree.QueryResults.Count(), "All or around this point.");
@@ -58,7 +58,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			Assert.AreEqual(4, tree.Count, "Have the right count.");
 
 			tree.Remove(3);
-			tree.SearchBounds(new Bounds(-9, -19, -29, 9, 19, 29));
+			tree.SearchBounds(new AxisAlignedBoundingBox(-9, -19, -29, 9, 19, 29));
 			Assert.AreEqual(3, tree.QueryResults.Count(), "Found all items.");
 			tree.SearchPoint(0, 0, 0);
 			Assert.AreEqual(3, tree.QueryResults.Count(), "All or around this point.");

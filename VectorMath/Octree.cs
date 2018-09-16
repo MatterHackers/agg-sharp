@@ -27,109 +27,6 @@ using System.Linq;
 namespace MatterHackers.VectorMath
 {
 	/// <summary>
-	/// Used by the Octree to represent a rectangular area.
-	/// </summary>
-	public struct Bounds
-	{
-		public double MaxX;
-		public double MaxY;
-		public double MaxZ;
-		public double MinX;
-		public double MinY;
-		public double MinZ;
-
-		public Bounds(AxisAlignedBoundingBox axisAlignedBoundingBox) : this()
-		{
-			this.MinX = axisAlignedBoundingBox.minXYZ.X;
-			this.MinY = axisAlignedBoundingBox.minXYZ.Y;
-			this.MinZ = axisAlignedBoundingBox.minXYZ.Z;
-
-			this.MaxX = axisAlignedBoundingBox.maxXYZ.X;
-			this.MaxY = axisAlignedBoundingBox.maxXYZ.Y;
-			this.MaxZ = axisAlignedBoundingBox.maxXYZ.Z;
-		}
-
-		/// <summary>
-		/// Construct a new Octree.
-		/// </summary>
-		/// <param name="minX">Minimum x.</param>
-		/// <param name="minY">Minimum y.</param>
-		/// <param name="maxX">Max x.</param>
-		/// <param name="maxY">Max y.</param>
-		public Bounds(double minX, double minY, double minZ, double maxX, double maxY, double maxZ)
-		{
-			MinX = minX;
-			MinY = minY;
-			MinZ = minZ;
-			MaxX = maxX;
-			MaxY = maxY;
-			MaxZ = maxZ;
-		}
-
-		/// <summary>
-		/// Check if this Octree can completely contain another.
-		/// </summary>
-		public bool Contains(Bounds other)
-		{
-			return other.MinX >= MinX
-				&& other.MinY >= MinY
-				&& other.MinZ >= MinZ
-				&& other.MaxX <= MaxX
-				&& other.MaxY <= MaxY
-				&& other.MaxZ <= MaxZ;
-		}
-
-		/// <summary>
-		/// Check if this Octree contains the point.
-		/// </summary>
-		public bool Contains(double x, double y, double z)
-		{
-			return x > MinX
-				&& y > MinY
-				&& z > MinZ
-				&& x < MaxX
-				&& y < MaxY
-				&& z < MaxZ;
-		}
-
-		/// <summary>
-		/// Check if this Octree intersects with another.
-		/// </summary>
-		public bool Intersects(Bounds other)
-		{
-			return MinX <= other.MaxX
-				&& MinY <= other.MaxY
-				&& MinZ <= other.MaxZ
-				&& MaxX >= other.MinX
-				&& MaxY >= other.MinY
-				&& MaxZ >= other.MinZ;
-		}
-
-		/// <summary>
-		/// Set the Octree's position.
-		/// </summary>
-		/// <param name="minX">Minimum x.</param>
-		/// <param name="minY">Minimum y.</param>
-		/// <param name="maxX">Max x.</param>
-		/// <param name="maxY">Max y.</param>
-		public void Set(double minX, double minY, double minZ, double maxX, double maxY, double maxZ)
-		{
-			MinX = minX;
-			MinY = minY;
-			MinZ = minZ;
-			MaxX = maxX;
-			MaxY = maxY;
-			MaxZ = maxZ;
-		}
-
-		public void Expand(double amount)
-		{
-			MinX -= amount; MinY -= amount; MinZ -= amount;
-			MaxX += amount; MaxY += amount; MaxZ += amount;
-		}
-	}
-
-	/// <summary>
 	/// A Octree tree where leaf nodes contain a Octree and a unique instance of T.
 	/// For example, if you are developing a game, you might use Octree<GameObject>
 	/// for collisions, or Octree<int> if you just want to populate it with IDs.
@@ -147,7 +44,7 @@ namespace MatterHackers.VectorMath
 		/// </summary>
 		/// <param name="splitCount">How many leaves a branch can hold before it splits into sub-branches.</param>
 		/// <param name="region">The region that your Octree occupies, all inserted bounds should fit into this.</param>
-		public Octree(int splitCount, Bounds region) 
+		public Octree(int splitCount, AxisAlignedBoundingBox region) 
 		{
 			this.splitCount = splitCount;
 			root = CreateBranch(this, null, region);
@@ -162,7 +59,8 @@ namespace MatterHackers.VectorMath
 		/// <param name="maxX">xSize of the region.</param>
 		/// <param name="maxY">ySize of the region.</param>
 		public Octree(int splitCount, double minX, double minY, double minZ, double maxX, double maxY, double maxZ)
-			: this(splitCount, new Bounds(minX, minY, minZ, maxX, maxY, maxZ))
+			: this(splitCount, new AxisAlignedBoundingBox(new Vector3(minX, minY, minZ),
+				new Vector3(maxX, maxY, maxZ)))
 		{
 		}
 
@@ -261,7 +159,7 @@ namespace MatterHackers.VectorMath
 		/// </summary>
 		/// <param name="value">The leaf value.</param>
 		/// <param name="Bounds">The leaf size.</param>
-		public void Insert(T value, Bounds bounds)
+		public void Insert(T value, AxisAlignedBoundingBox bounds)
 		{
 			Leaf leaf;
 			if (!leafLookup.TryGetValue(value, out leaf))
@@ -283,7 +181,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="ySize">ySize of the leaf.</param>
 		public void Insert(T value, double x, double y, double z, double xSize, double ySize, double zSize)
 		{
-			var bounds = new Bounds(x, y, z, x + xSize, y + ySize, z + zSize);
+			var bounds = new AxisAlignedBoundingBox(x, y, z, x + xSize, y + ySize, z + zSize);
 			Insert(value, bounds);
 		}
 
@@ -298,7 +196,7 @@ namespace MatterHackers.VectorMath
 			}
 		}
 
-		public void SearchBounds(Bounds bounds)
+		public void SearchBounds(AxisAlignedBoundingBox bounds)
 		{
 			QueryResults.Clear();
 			root.SearchBounds(bounds, QueryResults);
@@ -315,7 +213,7 @@ namespace MatterHackers.VectorMath
 		/// <param name="values">A list to populate with the results. If null, this function will create the list for you.</param>
 		public void SearchBounds(double x, double y, double z, double xSize, double ySize, double zSize)
 		{
-			var bounds = new Bounds(x, y, z, x + xSize, y + ySize, z + zSize);
+			var bounds = new AxisAlignedBoundingBox(x, y, z, x + xSize, y + ySize, z + zSize);
 			SearchBounds(bounds);
 		}
 
@@ -332,7 +230,7 @@ namespace MatterHackers.VectorMath
 			root.SearchPoint(x, y, z, QueryResults);
 		}
 
-		private static Branch CreateBranch(Octree<T> tree, Branch parent, Bounds bounds)
+		private static Branch CreateBranch(Octree<T> tree, Branch parent, AxisAlignedBoundingBox bounds)
 		{
 			//       ____________
 			//      /     /     /
@@ -353,26 +251,26 @@ namespace MatterHackers.VectorMath
 			branch.Tree = tree;
 			branch.Parent = parent;
 			branch.Split = false;
-			double midX = bounds.MinX + (bounds.MaxX - bounds.MinX) / 2;
-			double midY = bounds.MinY + (bounds.MaxY - bounds.MinY) / 2;
-			double midZ = bounds.MinZ + (bounds.MaxZ - bounds.MinZ) / 2;
+			double midX = bounds.Min.X + (bounds.Max.X - bounds.Min.X) / 2;
+			double midY = bounds.Min.Y + (bounds.Max.Y - bounds.Min.Y) / 2;
+			double midZ = bounds.Min.Z + (bounds.Max.Z - bounds.Min.Z) / 2;
 
-			double[] xPos = new double[] { bounds.MinX, midX, midX, bounds.MaxX };
-			double[] yPos = new double[] { bounds.MinY, midY, midY, bounds.MaxY };
-			double[] zPos = new double[] { bounds.MinZ, midZ, midZ, bounds.MaxZ };
+			double[] xPos = new double[] { bounds.Min.X, midX, midX, bounds.Max.X };
+			double[] yPos = new double[] { bounds.Min.Y, midY, midY, bounds.Max.Y };
+			double[] zPos = new double[] { bounds.Min.Z, midZ, midZ, bounds.Max.Z };
 
-			branch.ChildBounds[0].Set(xPos[0], yPos[0], zPos[0], xPos[1], yPos[1], zPos[1]);
-			branch.ChildBounds[1].Set(xPos[2], yPos[0], zPos[0], xPos[3], yPos[1], zPos[1]);
-			branch.ChildBounds[2].Set(xPos[0], yPos[2], zPos[0], xPos[1], yPos[3], zPos[1]);
-			branch.ChildBounds[3].Set(xPos[2], yPos[2], zPos[0], xPos[3], yPos[3], zPos[1]);
-			branch.ChildBounds[4].Set(xPos[0], yPos[0], zPos[2], xPos[1], yPos[1], zPos[3]);
-			branch.ChildBounds[5].Set(xPos[2], yPos[0], zPos[2], xPos[3], yPos[1], zPos[3]);
-			branch.ChildBounds[6].Set(xPos[0], yPos[2], zPos[2], xPos[1], yPos[3], zPos[3]);
-			branch.ChildBounds[7].Set(xPos[2], yPos[2], zPos[2], xPos[3], yPos[3], zPos[3]);
+			branch.ChildBounds[0] = new AxisAlignedBoundingBox(xPos[0], yPos[0], zPos[0], xPos[1], yPos[1], zPos[1]);
+			branch.ChildBounds[1] = new AxisAlignedBoundingBox(xPos[2], yPos[0], zPos[0], xPos[3], yPos[1], zPos[1]);
+			branch.ChildBounds[2] = new AxisAlignedBoundingBox(xPos[0], yPos[2], zPos[0], xPos[1], yPos[3], zPos[1]);
+			branch.ChildBounds[3] = new AxisAlignedBoundingBox(xPos[2], yPos[2], zPos[0], xPos[3], yPos[3], zPos[1]);
+			branch.ChildBounds[4] = new AxisAlignedBoundingBox(xPos[0], yPos[0], zPos[2], xPos[1], yPos[1], zPos[3]);
+			branch.ChildBounds[5] = new AxisAlignedBoundingBox(xPos[2], yPos[0], zPos[2], xPos[3], yPos[1], zPos[3]);
+			branch.ChildBounds[6] = new AxisAlignedBoundingBox(xPos[0], yPos[2], zPos[2], xPos[1], yPos[3], zPos[3]);
+			branch.ChildBounds[7] = new AxisAlignedBoundingBox(xPos[2], yPos[2], zPos[2], xPos[3], yPos[3], zPos[3]);
 			return branch;
 		}
 
-		private static Leaf CreateLeaf(T value, Bounds bounds)
+		private static Leaf CreateLeaf(T value, AxisAlignedBoundingBox bounds)
 		{
 			var leaf = new Leaf();
 			leaf.Value = value;
@@ -399,15 +297,15 @@ namespace MatterHackers.VectorMath
 
 		internal class Branch
 		{
-			internal Bounds Bounds = new Bounds();
-			internal Bounds[] ChildBounds = new Bounds[8];
+			internal AxisAlignedBoundingBox Bounds = new AxisAlignedBoundingBox();
+			internal AxisAlignedBoundingBox[] ChildBounds = new AxisAlignedBoundingBox[8];
 			internal Branch[] Branches = new Branch[8];
 			internal List<Leaf> Leaves = new List<Leaf>();
 			internal Branch Parent;
 			internal bool Split;
 			internal Octree<T> Tree;
 
-			internal Branch(Bounds bounds)
+			internal Branch(AxisAlignedBoundingBox bounds)
 			{
 				this.Bounds = bounds;
 			}
@@ -446,11 +344,11 @@ namespace MatterHackers.VectorMath
 				{
 					if (index == 0)
 					{
-						return new Vector3(Bounds.MinX, Bounds.MinY, Bounds.MinZ);
+						return new Vector3(Bounds.Min.X, Bounds.Min.Y, Bounds.Min.Z);
 					}
 					else if (index == 1)
 					{
-						return new Vector3(Bounds.MaxX, Bounds.MaxY, Bounds.MaxZ);
+						return new Vector3(Bounds.Max.X, Bounds.Max.Y, Bounds.Max.Z);
 					}
 					else
 					{
@@ -613,7 +511,7 @@ namespace MatterHackers.VectorMath
 				}
 			}
 
-			internal void SearchBounds(Bounds bounds, List<T> queryResults)
+			internal void SearchBounds(AxisAlignedBoundingBox bounds, List<T> queryResults)
 			{
 				var items = new Stack<Branch>(new Branch[] { this });
 				while (items.Any())
@@ -666,7 +564,7 @@ namespace MatterHackers.VectorMath
 
 		internal class Leaf
 		{
-			internal Bounds Bounds;
+			internal AxisAlignedBoundingBox Bounds;
 			internal Branch Branch;
 			internal T Value;
 		}

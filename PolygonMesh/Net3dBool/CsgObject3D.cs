@@ -99,7 +99,7 @@ namespace Net3dBool
 
 			//create faces
 			totalBounds.Expand(1);
-			Faces = new Octree<CsgFace>(5, new Bounds(totalBounds));
+			Faces = new Octree<CsgFace>(5, totalBounds);
 			for (int i = 0; i < indices.Length; i = i + 3)
 			{
 				v1 = verticesTemp[indices[i]];
@@ -213,7 +213,7 @@ namespace Net3dBool
 
 			//if the objects bounds overlap...
 			//for each object1 face...
-			var bounds = new Bounds(compareObject.GetBound());
+			var bounds = compareObject.GetBound();
 			Faces.SearchBounds(bounds);
 			foreach (var thisFaceIn in Faces.QueryResults) // put it in an array as we will be adding new faces to it
 			{
@@ -232,7 +232,7 @@ namespace Net3dBool
 
 					//if object1 face bound and object2 bound overlap ...
 					//for each object2 face...
-					compareObject.Faces.SearchBounds(new Bounds(faceToSplit.GetBound()));
+					compareObject.Faces.SearchBounds(faceToSplit.GetBound());
 					foreach (var cuttingFace in compareObject.Faces.QueryResults)
 					{
 						//if object1 face bound and object2 face bound overlap...
@@ -311,7 +311,7 @@ namespace Net3dBool
 				CsgFace face = new CsgFace(v1, v2, v3);
 				if (face.GetArea() > EqualityTolerance)
 				{
-					Faces.Insert(face, new Bounds(face.GetBound()));
+					Faces.Insert(face, face.GetBound());
 
 					return face;
 				}
@@ -346,7 +346,7 @@ namespace Net3dBool
 					}
 					if (!exists)
 					{
-						Faces.Insert(face, new Bounds(face.GetBound()));
+						Faces.Insert(face, face.GetBound());
 						facesFromSplit.Push(face);
 					}
 				}
