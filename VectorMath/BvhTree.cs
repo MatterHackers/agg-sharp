@@ -44,34 +44,27 @@ namespace MatterHackers.VectorMath
 
 	public class BvhTree<T> : IIntersectable
 	{
-		public class ItemData<T>
-		{
-			public T Item { get; set; }
-
-			public ItemData(T item, AxisAlignedBoundingBox bounds)
-			{
-				this.Item = item;
-				Bounds = bounds;
-			}
-
-			public AxisAlignedBoundingBox Bounds { get; set; }
-			public Vector3 Center { get; set; }
-		}
-
 		// any of the items that are in this node
-		public List<ItemData<T>> Items = new List<ItemData<T>>();
+		public List<BvhTreeItemData<T>> Items = new List<BvhTreeItemData<T>>();
 
 		private BvhTree<T> nodeA;
+
 		private BvhTree<T> nodeB;
+
 		private int splitingPlane;
 
 		public BvhTree()
 		{
 		}
 
-		public BvhTree(IEnumerable<ItemData<T>> items)
+		public BvhTree(IEnumerable<BvhTreeItemData<T>> items)
 		{
-			Items.AddRange(items);
+			Aabb = AxisAlignedBoundingBox.Empty();
+			foreach (var item in items)
+			{
+				Items.Add(item);
+				Aabb += item.Aabb;
+			}
 		}
 
 		public BvhTree(BvhTree<T> nodeA, BvhTree<T> nodeB, int splitingPlane)
@@ -80,16 +73,18 @@ namespace MatterHackers.VectorMath
 			this.nodeA = nodeA;
 			this.nodeB = nodeB;
 			this.Aabb = nodeA.Aabb + nodeB.Aabb; // we can cache this because it is not allowed to change.
-			this.Center = Aabb.Center; 
+			this.Center = Aabb.Center;
 		}
 
 		public AxisAlignedBoundingBox Aabb { get; private set; }
+
 		public Vector3 Center { get; private set; }
+
 		public int Count { get; private set; }
 
-		public static BvhTree<T> CreateNewHierachy(List<ItemData<T>> itemsToAdd, 
-			int maxRecursion = int.MaxValue, 
-			int recursionDepth = 0, 
+		public static BvhTree<T> CreateNewHierachy(List<BvhTreeItemData<T>> itemsToAdd,
+			int maxRecursion = int.MaxValue,
+			int recursionDepth = 0,
 			SortingAccelerator accelerator = null)
 		{
 			if (accelerator == null)
@@ -127,21 +122,21 @@ namespace MatterHackers.VectorMath
 					for (int i = 0; i < numItems; i += skipInterval)
 					{
 						var item = itemsToAdd[i];
-						if(item.Item is IIntersectable intersectable)
+						if (item.Item is IIntersectable intersectable)
 						{
 							totalIntersectCost += intersectable.GetIntersectCost();
 						}
 						else
 						{
-							totalIntersectCost += 1;
+							totalIntersectCost += AxisAlignedBoundingBox.GetIntersectCost();
 						}
 					}
 
 					// get the bounding box of all the items we are going to consider.
-					AxisAlignedBoundingBox OverallBox = itemsToAdd[0].Bounds;
+					AxisAlignedBoundingBox OverallBox = itemsToAdd[0].Aabb;
 					for (int i = skipInterval; i < numItems; i += skipInterval)
 					{
-						OverallBox += itemsToAdd[i].Bounds;
+						OverallBox += itemsToAdd[i].Aabb;
 					}
 					double areaOfTotalBounds = OverallBox.GetSurfaceArea();
 
@@ -159,11 +154,11 @@ namespace MatterHackers.VectorMath
 						itemsToAdd.Sort(axisSorter);
 
 						// Get all left bounds
-						AxisAlignedBoundingBox currentLeftBounds = itemsToAdd[0].Bounds;
+						AxisAlignedBoundingBox currentLeftBounds = itemsToAdd[0].Aabb;
 						surfaceArreaOfItem[0] = currentLeftBounds.GetSurfaceArea();
 						for (int itemIndex = 1; itemIndex < numItems - 1; itemIndex += skipInterval)
 						{
-							currentLeftBounds += itemsToAdd[itemIndex].Bounds;
+							currentLeftBounds += itemsToAdd[itemIndex].Aabb;
 							surfaceArreaOfItem[itemIndex] = currentLeftBounds.GetSurfaceArea();
 
 							totalDeviationOnAxis[axis] += Math.Abs(itemsToAdd[itemIndex].Center[axis] - itemsToAdd[itemIndex - 1].Center[axis]);
@@ -172,11 +167,11 @@ namespace MatterHackers.VectorMath
 						// Get all right bounds
 						if (numItems > 1)
 						{
-							AxisAlignedBoundingBox currentRightBounds = itemsToAdd[numItems - 1].Bounds;
+							AxisAlignedBoundingBox currentRightBounds = itemsToAdd[numItems - 1].Aabb;
 							rightBoundsAtItem[numItems - 2] = currentRightBounds.GetSurfaceArea();
 							for (int itemIndex = numItems - 1; itemIndex > 1; itemIndex -= skipInterval)
 							{
-								currentRightBounds += itemsToAdd[itemIndex - 1].Bounds;
+								currentRightBounds += itemsToAdd[itemIndex - 1].Aabb;
 								rightBoundsAtItem[itemIndex - 2] = currentRightBounds.GetSurfaceArea();
 							}
 						}
@@ -197,7 +192,7 @@ namespace MatterHackers.VectorMath
 								}
 								else
 								{
-									intersectCostOnLeft += 1;
+									intersectCostOnLeft += AxisAlignedBoundingBox.GetIntersectCost();
 								}
 								double leftCost = (surfaceArreaOfItem[itemIndex] / areaOfTotalBounds) * intersectCostOnLeft;
 
@@ -245,8 +240,8 @@ namespace MatterHackers.VectorMath
 			{
 				axisSorter.WhichAxis = bestAxis;
 				itemsToAdd.Sort(axisSorter);
-				var leftItems = new List<ItemData<T>>(bestIndexToSplitOn + 1);
-				var rightItems = new List<ItemData<T>>(numItems - bestIndexToSplitOn + 1);
+				var leftItems = new List<BvhTreeItemData<T>>(bestIndexToSplitOn + 1);
+				var rightItems = new List<BvhTreeItemData<T>>(numItems - bestIndexToSplitOn + 1);
 				for (int i = 0; i <= bestIndexToSplitOn; i++)
 				{
 					leftItems.Add(itemsToAdd[i]);
@@ -295,8 +290,8 @@ namespace MatterHackers.VectorMath
 					}
 				}
 
-				nodeA.AlongRay(ray, results);
-				nodeB.AlongRay(ray, results);
+				nodeA?.AlongRay(ray, results);
+				nodeB?.AlongRay(ray, results);
 			}
 		}
 
@@ -307,12 +302,17 @@ namespace MatterHackers.VectorMath
 
 		public int CountBranches()
 		{
-			throw new NotImplementedException();
-		}
+			int count = 1;
+			if (nodeA != null)
+			{
+				count += nodeA.CountBranches();
+			}
 
-		public Vector3 GetCenter()
-		{
-			throw new NotImplementedException();
+			if (nodeB != null)
+			{
+				count += nodeB.CountBranches();
+			}
+			return count;
 		}
 
 		public RayHitInfo GetClosestIntersection(Ray ray)
@@ -386,7 +386,7 @@ namespace MatterHackers.VectorMath
 
 		public double GetIntersectCost()
 		{
-			return 1;
+			return AxisAlignedBoundingBox.GetIntersectCost();
 		}
 
 		public RayHitInfo GetIntersection(Ray ray)
@@ -416,14 +416,14 @@ namespace MatterHackers.VectorMath
 				// check all the itmes that are part of this object
 				foreach (var item in Items)
 				{
-					if (item.Bounds.Intersects(bounds))
+					if (item.Aabb.Intersects(bounds))
 					{
 						results.Add(item.Item);
 					}
 				}
 
-				nodeA.SearchBounds(bounds, results);
-				nodeB.SearchBounds(bounds, results);
+				nodeA?.SearchBounds(bounds, results);
+				nodeB?.SearchBounds(bounds, results);
 			}
 		}
 
@@ -444,14 +444,14 @@ namespace MatterHackers.VectorMath
 				// check all the itmes that are part of this object
 				foreach (var item in Items)
 				{
-					if (item.Bounds.Contains(position))
+					if (item.Aabb.Contains(position))
 					{
 						results.Add(item.Item);
 					}
 				}
 
-				nodeA.SearchPoint(position, results);
-				nodeB.SearchPoint(position, results);
+				nodeA?.SearchPoint(position, results);
+				nodeB?.SearchPoint(position, results);
 			}
 		}
 
@@ -460,7 +460,7 @@ namespace MatterHackers.VectorMath
 			SearchPoint(new Vector3(x, y, z), results);
 		}
 
-		public class AxisSorter : IComparer<ItemData<T>>
+		public class AxisSorter : IComparer<BvhTreeItemData<T>>
 		{
 			private int whichAxis;
 
@@ -481,7 +481,7 @@ namespace MatterHackers.VectorMath
 				}
 			}
 
-			public int Compare(ItemData<T> a, ItemData<T> b)
+			public int Compare(BvhTreeItemData<T> a, BvhTreeItemData<T> b)
 			{
 				if (a == null || b == null)
 				{
@@ -520,6 +520,19 @@ namespace MatterHackers.VectorMath
 				}
 			}
 		}
+	}
+
+	public class BvhTreeItemData<T>
+	{
+		public BvhTreeItemData(T item, AxisAlignedBoundingBox bounds)
+		{
+			this.Item = item;
+			Aabb = bounds;
+		}
+
+		public AxisAlignedBoundingBox Aabb { get; set; }
+		public Vector3 Center { get; set; }
+		public T Item { get; set; }
 	}
 
 	public class RayHitInfo
