@@ -268,7 +268,7 @@ namespace MatterHackers.DataConverters3D
 		public static AxisAlignedBoundingBox GetUnionedAxisAlignedBoundingBox(this IEnumerable<IObject3D> items)
 		{
 			// first find the bounds of what is already here.
-			AxisAlignedBoundingBox totalBounds = AxisAlignedBoundingBox.Empty;
+			AxisAlignedBoundingBox totalBounds = AxisAlignedBoundingBox.Empty();
 			foreach (var object3D in items)
 			{
 				totalBounds = AxisAlignedBoundingBox.Union(totalBounds, object3D.GetAxisAlignedBoundingBox(Matrix4X4.Identity));

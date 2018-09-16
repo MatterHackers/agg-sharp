@@ -283,7 +283,7 @@ namespace MatterHackers.RayTracer
 
 		AxisAlignedBoundingBox GetAxisAlignedBoundingBox(List<IObject3D> renderDatas)
 		{
-			AxisAlignedBoundingBox totalMeshBounds = AxisAlignedBoundingBox.Empty;
+			AxisAlignedBoundingBox totalMeshBounds = AxisAlignedBoundingBox.Empty();
 			bool first = true;
 			foreach (var renderData in renderDatas)
 			{

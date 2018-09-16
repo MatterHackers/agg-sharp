@@ -119,7 +119,7 @@ namespace MatterHackers.PolygonMesh
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{
-			AxisAlignedBoundingBox aabb = AxisAlignedBoundingBox.Empty;
+			AxisAlignedBoundingBox aabb = AxisAlignedBoundingBox.Empty();
 			foreach (FaceEdge faceEdge in FaceEdges())
 			{
 				aabb = AxisAlignedBoundingBox.Union(aabb, faceEdge.FirstVertex.Position);
@@ -130,7 +130,7 @@ namespace MatterHackers.PolygonMesh
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox(Matrix4X4 matrix)
 		{
-			AxisAlignedBoundingBox aabb = AxisAlignedBoundingBox.Empty;
+			AxisAlignedBoundingBox aabb = AxisAlignedBoundingBox.Empty();
 			foreach (FaceEdge faceEdge in FaceEdges())
 			{
 				aabb = AxisAlignedBoundingBox.Union(aabb, Vector3.Transform(faceEdge.FirstVertex.Position, matrix));
