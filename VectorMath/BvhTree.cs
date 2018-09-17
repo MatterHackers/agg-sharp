@@ -279,7 +279,7 @@ namespace MatterHackers.VectorMath
 					if (item is IIntersectable intersectable)
 					{
 						RayHitInfo info = intersectable.GetIntersection(ray);
-						if (info != null && info.hitType != IntersectionType.None && info.distanceToHit >= 0)
+						if (info != null && info.HitType != IntersectionType.None && info.DistanceToHit >= 0)
 						{
 							results.Add(item.Item);
 						}
@@ -322,16 +322,34 @@ namespace MatterHackers.VectorMath
 					if (item is IIntersectable intersectable)
 					{
 						RayHitInfo info = intersectable.GetIntersection(ray);
-						if (info != null && info.hitType != IntersectionType.None && info.distanceToHit >= 0)
+						if (info != null && info.HitType != IntersectionType.None && info.DistanceToHit >= 0)
 						{
 							if (ray.isShadowRay)
 							{
 								return info;
 							}
-							else if (bestIntersect == null || info.distanceToHit < bestIntersect.distanceToHit)
+							else if (bestIntersect == null || info.DistanceToHit < bestIntersect.DistanceToHit)
 							{
 								bestIntersect = info;
-								ray.maxDistanceToConsider = bestIntersect.distanceToHit;
+								ray.maxDistanceToConsider = bestIntersect.DistanceToHit;
+							}
+						}
+					}
+					// we will just be hitting the bounding box of the type
+					else
+					{
+						RayHitInfo info = ray.GetClosestIntersection(item.Aabb);
+						if (info != null && info.HitType != IntersectionType.None && info.DistanceToHit >= 0)
+						{
+							info.ClosestHitObject = item.Item;
+							if (ray.isShadowRay)
+							{
+								return info;
+							}
+							else if (bestIntersect == null || info.DistanceToHit < bestIntersect.DistanceToHit)
+							{
+								bestIntersect = info;
+								ray.maxDistanceToConsider = bestIntersect.DistanceToHit;
 							}
 						}
 					}
@@ -345,32 +363,35 @@ namespace MatterHackers.VectorMath
 					checkSecond = nodeA;
 				}
 
-				RayHitInfo firstIntersect = checkFirst.GetClosestIntersection(ray);
-				if (firstIntersect != null && firstIntersect.hitType != IntersectionType.None)
+				if (checkFirst != null)
 				{
-					if (ray.isShadowRay)
+					RayHitInfo firstIntersect = checkFirst.GetClosestIntersection(ray);
+					if (firstIntersect != null && firstIntersect.HitType != IntersectionType.None)
 					{
-						return firstIntersect;
-					}
-					else if (bestIntersect == null || firstIntersect.distanceToHit < bestIntersect.distanceToHit)
-					{
-						bestIntersect = firstIntersect;
-						ray.maxDistanceToConsider = bestIntersect.distanceToHit;
+						if (ray.isShadowRay)
+						{
+							return firstIntersect;
+						}
+						else if (bestIntersect == null || firstIntersect.DistanceToHit < bestIntersect.DistanceToHit)
+						{
+							bestIntersect = firstIntersect;
+							ray.maxDistanceToConsider = bestIntersect.DistanceToHit;
+						}
 					}
 				}
 				if (checkSecond != null)
 				{
 					RayHitInfo secondIntersect = checkSecond.GetClosestIntersection(ray);
-					if (secondIntersect != null && secondIntersect.hitType != IntersectionType.None)
+					if (secondIntersect != null && secondIntersect.HitType != IntersectionType.None)
 					{
 						if (ray.isShadowRay)
 						{
 							return secondIntersect;
 						}
-						else if (bestIntersect == null || secondIntersect.distanceToHit < bestIntersect.distanceToHit)
+						else if (bestIntersect == null || secondIntersect.DistanceToHit < bestIntersect.DistanceToHit)
 						{
 							bestIntersect = secondIntersect;
-							ray.maxDistanceToConsider = bestIntersect.distanceToHit;
+							ray.maxDistanceToConsider = bestIntersect.DistanceToHit;
 						}
 					}
 				}
@@ -517,23 +538,23 @@ namespace MatterHackers.VectorMath
 
 	public class RayHitInfo
 	{
-		public object closestHitObject;
-		public double distanceToHit;
-		public IntersectionType hitType;
-		public Vector3 normalAtHit;
+		public object ClosestHitObject { get; set; }
+		public double DistanceToHit { get; set; }
+		public IntersectionType HitType { get; set; }
+		public Vector3 NormalAtHit;
 
 		public RayHitInfo()
 		{
-			distanceToHit = double.MaxValue;
+			DistanceToHit = double.MaxValue;
 		}
 
 		public RayHitInfo(RayHitInfo copyInfo)
 		{
-			this.hitType = copyInfo.hitType;
-			this.closestHitObject = copyInfo.closestHitObject;
+			this.HitType = copyInfo.HitType;
+			this.ClosestHitObject = copyInfo.ClosestHitObject;
 			this.HitPosition = copyInfo.HitPosition;
-			this.normalAtHit = copyInfo.normalAtHit;
-			this.distanceToHit = copyInfo.distanceToHit;
+			this.NormalAtHit = copyInfo.NormalAtHit;
+			this.DistanceToHit = copyInfo.DistanceToHit;
 		}
 
 		public Vector3 HitPosition { get; set; }

@@ -97,6 +97,108 @@ namespace MatterHackers.VectorMath
 			return new Ray(transformedOrigin, transformedDirecton, ray.minDistanceToConsider, ray.maxDistanceToConsider, ray.intersectionType);
 		}
 
+		public bool Intersect(AxisAlignedBoundingBox bounds, out double minDistFound, out double maxDistFound, out int minAxis, out int maxAxis)
+		{
+			minAxis = 0;
+			maxAxis = 0;
+			// we calculate distance to the intersection with the x planes of the box
+			minDistFound = (bounds[(int)this.sign[0]].X - this.origin.X) * this.oneOverDirection.X;
+			maxDistFound = (bounds[1 - (int)this.sign[0]].X - this.origin.X) * this.oneOverDirection.X;
+
+			// now find the distance to the y planes of the box
+			double minDistToY = (bounds[(int)this.sign[1]].Y - this.origin.Y) * this.oneOverDirection.Y;
+			double maxDistToY = (bounds[1 - (int)this.sign[1]].Y - this.origin.Y) * this.oneOverDirection.Y;
+
+			if ((minDistFound > maxDistToY) || (minDistToY > maxDistFound))
+			{
+				return false;
+			}
+
+			if (minDistToY > minDistFound)
+			{
+				minAxis = 1;
+				minDistFound = minDistToY;
+			}
+
+			if (maxDistToY < maxDistFound)
+			{
+				maxAxis = 1;
+				maxDistFound = maxDistToY;
+			}
+
+			// and finally the z planes
+			double minDistToZ = (bounds[(int)this.sign[2]].Z - this.origin.Z) * this.oneOverDirection.Z;
+			double maxDistToZ = (bounds[1 - (int)this.sign[2]].Z - this.origin.Z) * this.oneOverDirection.Z;
+
+			if ((minDistFound > maxDistToZ) || (minDistToZ > maxDistFound))
+			{
+				return false;
+			}
+
+			if (minDistToZ > minDistFound)
+			{
+				minAxis = 2;
+				minDistFound = minDistToZ;
+			}
+
+			if (maxDistToZ < maxDistFound)
+			{
+				maxAxis = 2;
+				maxDistFound = maxDistToZ;
+			}
+
+			bool oneHitIsWithinLimits = (minDistFound < this.maxDistanceToConsider && minDistFound > this.minDistanceToConsider)
+				|| (maxDistFound < this.maxDistanceToConsider && maxDistFound > this.minDistanceToConsider);
+
+			return oneHitIsWithinLimits;
+		}
+
+		public RayHitInfo GetClosestIntersection(AxisAlignedBoundingBox bounds)
+		{
+			RayHitInfo info = new RayHitInfo();
+
+			double minDistFound;
+			double maxDistFound;
+			int minAxis;
+			int maxAxis;
+
+			if (Intersect(bounds, out minDistFound, out maxDistFound, out minAxis, out maxAxis))
+			{
+				if (this.intersectionType == IntersectionType.FrontFace)
+				{
+					if (minDistFound > this.minDistanceToConsider && minDistFound < this.maxDistanceToConsider)
+					{
+						info.HitType = IntersectionType.FrontFace;
+						if (this.isShadowRay)
+						{
+							return info;
+						}
+						info.ClosestHitObject = bounds;
+						info.HitPosition = this.origin + this.directionNormal * minDistFound;
+						info.NormalAtHit[minAxis] = this.sign[minAxis] == Ray.Sign.negative ? 1 : -1; // you hit the side that is opposite your sign
+						info.DistanceToHit = minDistFound;
+					}
+				}
+				else // check back faces
+				{
+					if (maxDistFound > this.minDistanceToConsider && maxDistFound < this.maxDistanceToConsider)
+					{
+						info.HitType = IntersectionType.BackFace;
+						if (this.isShadowRay)
+						{
+							return info;
+						}
+						info.ClosestHitObject = bounds;
+						info.HitPosition = this.origin + this.directionNormal * maxDistFound;
+						info.NormalAtHit[maxAxis] = this.sign[maxAxis] == Ray.Sign.negative ? 1 : -1;
+						info.DistanceToHit = maxDistFound;
+					}
+				}
+			}
+
+			return info;
+		}
+
 		public bool Intersection(AxisAlignedBoundingBox bounds)
 		{
 			Ray ray = this;
